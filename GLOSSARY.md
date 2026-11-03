@@ -304,7 +304,7 @@ Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder un
 _Avoid_: Kategorie, Report-Grund
 
 **Feedback**:
-Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es; nach der Frist im Löschkonzept wird es gelöscht.
+Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es. Feedback ist offen, bis ein Admin es als erledigt markiert; das lässt sich zurücknehmen. Nach der Frist im Löschkonzept wird es gelöscht, offen oder erledigt; vorher kann ein Admin es einzeln löschen.
 _Avoid_: Kontaktformular, Rückmeldung (in `docs/VISION.md` die Rückmeldung zur Nutzungsstatistik der eigenen Beiträge), Ticket
 
 **Dublette**:

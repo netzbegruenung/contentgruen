@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -16,6 +16,8 @@ export interface FeedbackEintrag {
   kontakt: string | null;
   /** ISO-Datum (JJJJ-MM-TT), nur der Tag. */
   eingegangen_am: string;
+  /** Von einem Admin als bearbeitet markiert (#425); die Frist gilt trotzdem. */
+  erledigt: boolean;
 }
 
 export interface FeedbackListe {
@@ -25,7 +27,8 @@ export interface FeedbackListe {
 
 /**
  * Feedback an das Team (#343). Senden darf jede Person, auch ohne Anmeldung;
- * die Liste sehen nur Admins. Gespeichert wird nur Text, Kontakt und Tag.
+ * die Liste sehen, als erledigt markieren und einzeln löschen nur Admins (#425).
+ * Gespeichert wird nur Text, Kontakt und Tag, dazu der Merker „erledigt“.
  */
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {
@@ -37,7 +40,17 @@ export class FeedbackService {
     return this.http.post(`${this.baseUrl}/senden`, { text, kontakt });
   }
 
-  liste(): Observable<FeedbackListe> {
-    return this.http.get<FeedbackListe>(this.baseUrl);
+  /** Nur das offene (erledigt = false) oder nur das erledigte Feedback. */
+  liste(erledigt: boolean): Observable<FeedbackListe> {
+    const params = new HttpParams().set('erledigt', String(erledigt));
+    return this.http.get<FeedbackListe>(this.baseUrl, { params });
+  }
+
+  erledigtSetzen(id: string, erledigt: boolean): Observable<FeedbackEintrag> {
+    return this.http.patch<FeedbackEintrag>(`${this.baseUrl}/${encodeURIComponent(id)}`, { erledigt });
+  }
+
+  loeschen(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${encodeURIComponent(id)}`);
   }
 }

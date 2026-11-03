@@ -202,18 +202,24 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 ## Feedback
 
 Die Tabelle `feedback` (Knopf „Feedback“ im Kopf der App, #343) trägt nur den Freitext,
-eine **optionale Kontaktangabe** und den UTC-Tag, keine Kennung und keine Sitzung, auch
-bei angemeldeten Personen. Über die Kennung aus „Ausgangspunkt“ ist Feedback deshalb
+eine **optionale Kontaktangabe**, den UTC-Tag und den Merker „erledigt“ (#425), keine
+Kennung und keine Sitzung, auch bei angemeldeten Personen. Über die Kennung aus „Ausgangspunkt“ ist Feedback deshalb
 nicht zu finden, und der Ablauf oben erfasst es nicht.
 
 - **Frist:** Nach 180 Tagen löscht ein täglicher Task die ganze Zeile samt Kontakt
   (`services/feedback_service.py`, `loeschen_im_takt`, `AUFBEWAHRUNG_TAGE`). Er hängt
-  nicht am abschaltbaren Bereinigungsjob.
+  nicht am abschaltbaren Bereinigungsjob. Die Frist gilt für offenes wie für
+  erledigtes Feedback; „erledigt“ ändert an ihr nichts.
+- **Einzeln:** Ein Admin löscht ein einzelnes Feedback samt Kontakt in der
+  Feedback-Karte des Admin-Dashboards („Löschen“, mit Rückfrage), etwa wenn es
+  beantwortet ist und nicht bis zur Frist bleiben soll (#425). Nur Admins
+  (`DELETE /api/v1/feedback/{id}`).
 - **Auf Antrag:** Die Person nennt die Kontaktangabe, die sie hinterlassen hat; ein
   Admin löscht die Zeilen mit dieser Angabe, ohne Rücksicht auf Groß- und
   Kleinschreibung und Leerzeichen am Rand
   (`DELETE FROM feedback WHERE lower(btrim(kontakt)) = lower(btrim('<angabe>'));`,
-  vorher mit `SELECT` prüfen).
+  vorher mit `SELECT` prüfen). Ist es nur ein Eintrag, geht das auch über
+  „Löschen“ im Admin-Dashboard.
   Ohne Kontaktangabe ist Feedback keiner Person zuzuordnen. Nennt der Freitext selbst
   die Person, ist das wie bei Beiträgen eine Einzelfallprüfung.
 - Backups: wie unten unter „Was nicht gelöscht wird“, bis zu 28 Tage.

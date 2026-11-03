@@ -9,6 +9,16 @@
     </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
+    <mat-button-toggle-group
+      data-testid="feedback-filter"
+      aria-label="Feedback zeigen"
+      [value]="erledigt"
+      (change)="filtern($event.value)"
+    >
+      <mat-button-toggle [value]="false">Offen</mat-button-toggle>
+      <mat-button-toggle [value]="true">Erledigt</mat-button-toggle>
+    </mat-button-toggle-group>
+
     <p *ngIf="fehler" class="hinweis">Das Feedback konnte nicht geladen werden.</p>
 
     <ng-container *ngIf="daten">
@@ -18,22 +28,46 @@
             <th scope="col" class="tag">Tag</th>
             <th scope="col">Feedback</th>
             <th scope="col">Kontakt</th>
+            <th scope="col" class="aktionen"><span class="cdk-visually-hidden">Aktionen</span></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let e of daten.eintraege" data-testid="feedback-eintrag">
-            <td class="tag">{{ tag(e.eingegangen_am) }}</td>
-            <td class="text">{{ e.text }}</td>
-            <td>{{ e.kontakt ?? '–' }}</td>
+            <td class="inhalt tag">{{ tag(e.eingegangen_am) }}</td>
+            <td class="inhalt text">{{ e.text }}</td>
+            <td class="inhalt">{{ e.kontakt ?? '–' }}</td>
+            <td class="aktionen">
+              <button
+                *ngIf="!e.erledigt; else wiederOffen"
+                mat-stroked-button
+                type="button"
+                [disabled]="laeuft.has(e.id)"
+                (click)="erledigtSetzen(e, true)"
+              >
+                <mat-icon>done</mat-icon>
+                Erledigt
+              </button>
+              <ng-template #wiederOffen>
+                <button mat-stroked-button type="button" [disabled]="laeuft.has(e.id)" (click)="erledigtSetzen(e, false)">
+                  <mat-icon>undo</mat-icon>
+                  Wieder offen
+                </button>
+              </ng-template>
+              <button mat-button type="button" [disabled]="laeuft.has(e.id)" (click)="loeschen(e)">
+                <mat-icon>delete</mat-icon>
+                Löschen
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
       <ng-template #leer>
-        <p class="hinweis">Noch kein Feedback.</p>
+        <p class="hinweis">{{ erledigt ? 'Kein erledigtes Feedback.' : 'Kein offenes Feedback.' }}</p>
       </ng-template>
       <p class="fussnote">
         Ohne Bezug zu einem Konto. Nach {{ daten.aufbewahrung_tage }} Tagen wird ein Eintrag
-        samt Kontakt gelöscht. Den Kontakt nur nutzen, um auf das Feedback zu antworten.
+        samt Kontakt gelöscht, auch wenn er erledigt ist. Den Kontakt nur nutzen, um auf das
+        Feedback zu antworten.
       </p>
     </ng-container>
   </mat-card-content>
