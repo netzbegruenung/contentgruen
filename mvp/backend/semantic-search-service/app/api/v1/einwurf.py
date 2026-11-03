@@ -283,9 +283,9 @@ async def eigene_einwuerfe_laden(
         )
 
 
-@router.get("/{raw_input_id}", response_model=EinwurfResponse)
+@router.get("/{einwurf_id}", response_model=EinwurfResponse)
 async def einwurf_laden(
-    raw_input_id: uuid.UUID,
+    einwurf_id: uuid.UUID,
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: EinwurfRepository = Depends(get_einwurf_repository),
     suchindex: IModerationRepository = Depends(get_moderation_repository),
@@ -297,7 +297,7 @@ async def einwurf_laden(
     braucht - in der Adresse steht nur die ID.
     """
     try:
-        row = repository.get_by_id(raw_input_id, _einwerfende_person(aufrufer.kennung))
+        row = repository.get_by_id(einwurf_id, _einwerfende_person(aufrufer.kennung))
     except Exception as e:
         logger.error(
             f"Fehler in GET /rawinput/{{id}}: {type(e).__name__}", exc_info=True
@@ -310,9 +310,9 @@ async def einwurf_laden(
     return (await _einwuerfe_fuer_aufrufer([row], aufrufer, suchindex))[0]
 
 
-@router.put("/{raw_input_id}/draft", response_model=SatzResponse)
+@router.put("/{einwurf_id}/draft", response_model=SatzResponse)
 async def satz_speichern(
-    raw_input_id: uuid.UUID,
+    einwurf_id: uuid.UUID,
     request: SatzSpeichernRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: EinwurfRepository = Depends(get_einwurf_repository),
@@ -328,7 +328,7 @@ async def satz_speichern(
     person = _angemeldete_person(aufrufer.kennung)
     try:
         gespeichert = repository.satz_speichern(
-            raw_input_id, person, request.sentence, cc0_wortlaut=request.cc0_wortlaut
+            einwurf_id, person, request.sentence, cc0_wortlaut=request.cc0_wortlaut
         )
         return SatzResponse(**gespeichert)
     except EinwurfNichtGefunden:
@@ -374,9 +374,9 @@ async def _beitrag_pruefen(
     raise HTTPException(status_code=422, detail=BEITRAG_FEHLT)
 
 
-@router.patch("/{raw_input_id}/status", response_model=EinwurfResponse)
+@router.patch("/{einwurf_id}/status", response_model=EinwurfResponse)
 async def update_status(
-    raw_input_id: uuid.UUID,
+    einwurf_id: uuid.UUID,
     request: EinwurfStatusRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: EinwurfRepository = Depends(get_einwurf_repository),
@@ -406,7 +406,7 @@ async def update_status(
             # erneut; er kann inzwischen geloescht sein, und die Wiederholung soll
             # unschaedlich bleiben.
             schon_verknuepft = repository.statuswechsel_vorpruefen(
-                raw_input_id, request.status, person, request.content_id
+                einwurf_id, request.status, person, request.content_id
             )
             if not schon_verknuepft:
                 await _beitrag_pruefen(
@@ -419,7 +419,7 @@ async def update_status(
                     },
                 )
         row = repository.set_status(
-            raw_input_id,
+            einwurf_id,
             request.status,
             person,
             request.content_id,
