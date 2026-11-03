@@ -17,15 +17,20 @@ from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
-from repositories.raw_input_repository import (
-    RawInputRepository,
-    get_raw_input_repository,
+from repositories.einwurf_repository import (
+    EinwurfRepository,
+    get_einwurf_repository,
 )
 from repositories.sperre_repository import SperreRepository, get_sperre_repository
 from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
 from domain.models.meldegrund import MELDEGRUENDE, Meldegrund, beschreibung_fehlt
-from domain.models.meldung import MelderAdresse, MelderAngaben
+from domain.models.meldung import (
+    AngabenGeloescht,
+    MelderAdresse,
+    MelderAngaben,
+    MelderSuche,
+)
 from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
@@ -131,7 +136,7 @@ class ModerationService:
         report_repo: Optional[ContentReportRepository] = None,
         moderation_repo: Optional[IModerationRepository] = None,
         vote_repo: Optional[VoteRepository] = None,
-        raw_input_repo: Optional[RawInputRepository] = None,
+        einwurf_repo: Optional[EinwurfRepository] = None,
         sperre_repo: Optional[SperreRepository] = None,
         mitteilung: Optional[MeldungMitteilung] = None,
     ):
@@ -139,7 +144,7 @@ class ModerationService:
         self.moderation_repo = moderation_repo or get_moderation_repository()
         # Erst beim endgueltigen Entfernen gebraucht; vorher keine Verbindung.
         self._vote_repo = vote_repo
-        self._raw_input_repo = raw_input_repo
+        self._einwurf_repo = einwurf_repo
         self._sperre_repo = sperre_repo
         # Mails an die meldende Person (#493); ohne eingerichteten Versand geht nichts hinaus.
         self._mitteilung = mitteilung
@@ -355,6 +360,35 @@ class ModerationService:
                 exc_info=True,
             )
             return []
+
+    async def meldungen_einer_person(self, suche: MelderSuche) -> List[Dict[str, Any]]:
+        """
+        Alle Meldungen mit diesen Angaben der meldenden Person, fuer die Auskunft
+        an Personen ohne Konto (Art. 15 DSGVO, #494). Regeln der Suche: MelderSuche.
+        """
+        return await asyncio.to_thread(self.report_repo.von_melder, suche)
+
+    async def angaben_der_person_loeschen(
+        self,
+        suche: MelderSuche,
+        meldung_ids: List[UUID],
+        dieselbe_person: bool = False,
+    ) -> AngabenGeloescht:
+        """
+        Die Angaben einer Person an ihren Meldungen loeschen (Art. 17 DSGVO, #494):
+        erledigte Meldungen ganz, offene nur Name, E-Mail-Adresse und Pseudonym.
+        Nur die Meldungen aus ``meldung_ids`` (die der Admin gesehen hat), die noch
+        zu den Angaben passen.
+
+        Raises:
+            ValueError: nur nach dem Namen gesucht, ohne dass der Admin bestaetigt
+                hat, dass alle Treffer dieselbe Person sind
+        """
+        if suche.nur_name and not dieselbe_person:
+            raise ValueError("Nur nach dem Namen gesucht: dieselbe Person bestaetigen")
+        return await asyncio.to_thread(
+            self.report_repo.angaben_loeschen, suche, list(meldung_ids)
+        )
 
     async def _beitrag_laden(self, content_id: str) -> Optional[Dict[str, Any]]:
         """Payload eines Beitrags, auch gesperrt; None, wenn es ihn nicht gibt."""
@@ -696,10 +730,10 @@ class ModerationService:
             self._vote_repo = VoteRepository()
         return self._vote_repo
 
-    def _einwuerfe(self) -> RawInputRepository:
-        if self._raw_input_repo is None:
-            self._raw_input_repo = get_raw_input_repository()
-        return self._raw_input_repo
+    def _einwuerfe(self) -> EinwurfRepository:
+        if self._einwurf_repo is None:
+            self._einwurf_repo = get_einwurf_repository()
+        return self._einwurf_repo
 
     def _sperre_repository(self) -> SperreRepository:
         if self._sperre_repo is None:

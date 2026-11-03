@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ContentModerationComponent } from './content-moderation.component';
-import { ContentReport, ModerationService } from '../../services/moderation.service';
+import { ContentReport, ModerationService, PendingReportsResponse } from '../../services/moderation.service';
 import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
@@ -160,6 +160,33 @@ describe('ContentModerationComponent', () => {
     expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-2');
     // Einmal zum Zählen der Widersprüche, dann Ansicht und Neuladen.
     expect(moderation.getGesperrte).toHaveBeenCalledTimes(3);
+  });
+
+  it('zeigt unter „Nach Person“ die Suche nach Name oder E-Mail-Adresse statt der Meldungsliste (#494)', () => {
+    mitMeldungen([meldung()]);
+    moderation.getReports.calls.reset();
+
+    fixture.componentInstance.onStatusFilterChange('person');
+    fixture.detectChanges();
+
+    expect(moderation.getReports).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('app-meldungen-einer-person')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.reports-table')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
+  });
+
+  it('zeigt unter „Nach Person“ keinen Fehler einer Liste, die vorher noch lud (#494)', () => {
+    const liste = new Subject<PendingReportsResponse>();
+    moderation.getReports.and.returnValue(liste);
+    fixture = TestBed.createComponent(ContentModerationComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.onStatusFilterChange('person');
+    liste.error(new Error('zu spät'));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.error).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Fehler beim Laden der Meldungen');
   });
 
   it('zeigt Sperrgrund, Begründung und einen offenen Widerspruch zuerst', () => {

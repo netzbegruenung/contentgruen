@@ -97,7 +97,7 @@ def service(speicher, postausgang, report_repo):
         report_repo=report_repo,
         moderation_repo=QdrantModerationRepository(embeddings_manager=speicher),
         vote_repo=MagicMock(),
-        raw_input_repo=MagicMock(),
+        einwurf_repo=MagicMock(),
         sperre_repo=MagicMock(**{"aktive.return_value": None}),
         mitteilung=MeldungMitteilung(postausgang),
     )
@@ -352,7 +352,7 @@ class TestEntscheidungMitteilen:
             report_repo=report_repo,
             moderation_repo=QdrantModerationRepository(embeddings_manager=speicher),
             vote_repo=MagicMock(),
-            raw_input_repo=MagicMock(),
+            einwurf_repo=MagicMock(),
             sperre_repo=MagicMock(**{"aktive.return_value": None}),
             mitteilung=MeldungMitteilung(None),
         )

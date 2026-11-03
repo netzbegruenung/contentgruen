@@ -23,16 +23,16 @@ from domain.models.content_type import ContentType
 from infrastructure.database.models import (
     Base,
     ContentReport,
-    RawInput,
-    RawInputContentLink,
-    RawInputDraft,
+    Einwurf,
+    Verknuepfung,
+    Satz,
     User,
 )
 from repositories.content_report_repository import ContentReportRepository
 from repositories.implementations.qdrant.moderation_repository import (
     QdrantModerationRepository,
 )
-from repositories.raw_input_repository import RawInputRepository
+from repositories.einwurf_repository import EinwurfRepository
 from repositories.vote_repository import VoteRepository
 from services.loeschfristen_service import LoeschfristenService
 from services.moderation_service import ModerationService
@@ -210,7 +210,7 @@ class TestTagespseudonymAnDerMeldung:
 
 class TestEinwuerfe:
     def _einwurf(self, session, created_at=ALT, status="open") -> uuid.UUID:
-        einwurf = RawInput(
+        einwurf = Einwurf(
             content="ein Fundstueck",
             submitted_by="einwerfer",
             status=status,
@@ -222,7 +222,7 @@ class TestEinwuerfe:
 
     def _satz(self, session, einwurf, von, updated_at=ALT) -> None:
         session.add(
-            RawInputDraft(
+            Satz(
                 raw_input_id=einwurf,
                 user_id=von,
                 sentence="Waermepumpen lohnen sich auch im Altbau",
@@ -240,19 +240,17 @@ class TestEinwuerfe:
             mit_jungem_satz = self._einwurf(s, status="in_progress")
             self._satz(s, mit_jungem_satz, "destillierer", updated_at=JUNG)
             ausformuliert = self._einwurf(s, status="processed")
-            s.add(
-                RawInputContentLink(raw_input_id=ausformuliert, content_id=uuid.uuid4())
-            )
+            s.add(Verknuepfung(raw_input_id=ausformuliert, content_id=uuid.uuid4()))
             jung = self._einwurf(s, created_at=JUNG)
             s.add(User(user_id=platzhalter, anzeigename="ehemalige Person"))
             s.add(User(user_id="destillierer", anzeigename="Anna B."))
 
-        repo = RawInputRepository(db=datenbank)
+        repo = EinwurfRepository(db=datenbank)
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 3
 
         with datenbank.get_session() as s:
-            uebrig = {e.id for e in s.query(RawInput)}
-            saetze = {d.raw_input_id for d in s.query(RawInputDraft)}
+            uebrig = {e.id for e in s.query(Einwurf)}
+            saetze = {d.raw_input_id for d in s.query(Satz)}
             personen = {u.user_id for u in s.query(User)}
         assert uebrig == {mit_jungem_satz, ausformuliert, jung}
         assert not uebrig & {alt, verworfen, mit_altem_satz}
@@ -265,9 +263,9 @@ class TestEinwuerfe:
         beitrag = uuid.uuid4()
         with datenbank.get_session() as s:
             einwurf = self._einwurf(s, status="processed")
-            s.add(RawInputContentLink(raw_input_id=einwurf, content_id=beitrag))
+            s.add(Verknuepfung(raw_input_id=einwurf, content_id=beitrag))
 
-        repo = RawInputRepository(db=datenbank)
+        repo = EinwurfRepository(db=datenbank)
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 0
         assert repo.ausformuliert_in_loeschen(beitrag) == 1
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 1
@@ -309,7 +307,7 @@ class TestGeloeschteBeitraege:
             report_repo=MagicMock(),
             moderation_repo=beitraege,
             vote_repo=MagicMock(),
-            raw_input_repo=MagicMock(),
+            einwurf_repo=MagicMock(),
             sperre_repo=MagicMock(),
         )
         meldungen = MagicMock(**{"bearbeitete_loeschen_vor.return_value": 0})

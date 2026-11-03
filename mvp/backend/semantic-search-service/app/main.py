@@ -34,7 +34,7 @@ from api.v1.statement import router as statement_router
 from api.v1.generic_text import router as generic_text_router
 from api.v1.post import router as post_router
 from api.v1.image import router as image_router
-from api.v1.raw_input import router as raw_input_router
+from api.v1.einwurf import router as einwurf_router
 from api.v1.seeding import router as seeding_router
 from api.v1.usage import router as usage_router
 from api.v1.voting import router as voting_router
@@ -257,7 +257,7 @@ app.include_router(
 )
 app.include_router(post_router, prefix="/api/v1/post", tags=["post"])
 app.include_router(image_router, prefix="/api/v1/image", tags=["image"])
-app.include_router(raw_input_router, prefix="/api/v1/rawinput", tags=["rawinput"])
+app.include_router(einwurf_router, prefix="/api/v1/rawinput", tags=["rawinput"])
 app.include_router(seeding_router, prefix="/api/v1", tags=["seeding"])
 app.include_router(usage_router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(voting_router, prefix="/api/v1/voting", tags=["voting"])

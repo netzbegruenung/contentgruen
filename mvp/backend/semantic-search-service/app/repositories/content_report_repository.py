@@ -7,9 +7,14 @@ import logging
 from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
-from sqlalchemy import and_, desc, or_
+from sqlalchemy import and_, desc, func, or_
 
-from domain.models.meldung import MelderAdresse, MelderAngaben
+from domain.models.meldung import (
+    AngabenGeloescht,
+    MelderAdresse,
+    MelderAngaben,
+    MelderSuche,
+)
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import ContentReport
 from utils.besucher_pseudonym import besucher_tagespseudonym
@@ -52,8 +57,53 @@ def _melder_pseudonym_loeschen(report: ContentReport) -> None:
         return
     if report.reported_by_user_id:
         report.reported_by_session_id = None
-    elif not (report.reported_by_session_id or "").startswith(PRAEFIX_OHNE_PSEUDONYM):
+    else:
+        _anonymes_pseudonym_ersetzen(report)
+
+
+def _anonymes_pseudonym_ersetzen(report: ContentReport) -> None:
+    """Tagespseudonym (oder alte Sitzungskennung) durch einen Zufallswert."""
+    if not (report.reported_by_session_id or "").startswith(PRAEFIX_OHNE_PSEUDONYM):
         report.reported_by_session_id = f"{PRAEFIX_OHNE_PSEUDONYM}{uuid4()}"
+
+
+def _als_dict(report: ContentReport) -> Dict[str, Any]:
+    """Eine Meldung, wie die Admin-Ansichten sie bekommen."""
+    return {
+        "id": str(report.id),
+        "content_id": str(report.content_id),
+        "content_type": report.content_type,
+        "reason": report.reason,
+        "description": report.description,
+        "reported_by_user_id": report.reported_by_user_id,
+        "reported_by_session_id": report.reported_by_session_id,
+        "created": report.created.isoformat() if report.created else None,
+        "status": report.status,
+        "reviewed_by": report.reviewed_by,
+        "reviewed_at": report.reviewed_at.isoformat() if report.reviewed_at else None,
+        "resolution_notes": report.resolution_notes,
+        "melder_name": report.melder_name,
+        "melder_email": report.melder_email,
+        "guter_glaube": report.guter_glaube,
+    }
+
+
+def _von_melder(suche: MelderSuche):
+    """Filter auf die Meldungen mit genau diesen Angaben (MelderSuche).
+
+    Beide Seiten klein in PostgreSQL, nicht die Eingabe in Python: Die beiden
+    verkleinern manche Zeichen verschieden (etwa ein Sigma am Wortende).
+    """
+    bedingungen = []
+    if suche.email is not None:
+        bedingungen.append(
+            func.lower(ContentReport.melder_email) == func.lower(suche.email)
+        )
+    if suche.name is not None:
+        bedingungen.append(
+            func.lower(ContentReport.melder_name) == func.lower(suche.name)
+        )
+    return and_(*bedingungen)
 
 
 class ContentReportRepository:
@@ -194,38 +244,75 @@ class ContentReportRepository:
                 )
 
                 # Convert to dictionaries while still in session
-                return [
-                    {
-                        "id": str(report.id),
-                        "content_id": str(report.content_id),
-                        "content_type": report.content_type,
-                        "reason": report.reason,
-                        "description": report.description,
-                        "reported_by_user_id": report.reported_by_user_id,
-                        "reported_by_session_id": report.reported_by_session_id,
-                        "created": (
-                            report.created.isoformat() if report.created else None
-                        ),
-                        "status": report.status,
-                        "reviewed_by": report.reviewed_by,
-                        "reviewed_at": (
-                            report.reviewed_at.isoformat()
-                            if report.reviewed_at
-                            else None
-                        ),
-                        "resolution_notes": report.resolution_notes,
-                        "melder_name": report.melder_name,
-                        "melder_email": report.melder_email,
-                        "guter_glaube": report.guter_glaube,
-                    }
-                    for report in reports
-                ]
+                return [_als_dict(report) for report in reports]
         except Exception as e:
             logger.error(
                 f"Error getting reports (status={status}): {type(e).__name__}",
                 exc_info=True,
             )
             return []
+
+    def von_melder(self, suche: MelderSuche) -> List[Dict[str, Any]]:
+        """
+        Alle Meldungen mit diesen Angaben der meldenden Person, neueste zuerst,
+        in jedem Status (#494). Fuer die Auskunft an Personen ohne Konto: Nur
+        ueber Name und E-Mail-Adresse sind ihre Meldungen zu finden. Fehler gehen
+        an den Aufrufer; eine leere Liste hiesse sonst "nichts gespeichert".
+        """
+        with self.db.get_session() as session:
+            meldungen = (
+                session.query(ContentReport)
+                .filter(_von_melder(suche))
+                .order_by(desc(ContentReport.created))
+                .all()
+            )
+            return [_als_dict(m) for m in meldungen]
+
+    def angaben_loeschen(
+        self, suche: MelderSuche, meldung_ids: List[UUID]
+    ) -> AngabenGeloescht:
+        """
+        Die Angaben einer Person loeschen, die es verlangt (Art. 17 DSGVO, #494).
+
+        Nur die Meldungen, die der Admin in der Suche gesehen hat (``meldung_ids``)
+        und die noch zu den Angaben passen: Eine Meldung, die seitdem eingegangen
+        ist, hat niemand geprueft.
+
+        Bearbeitete und abgewiesene Meldungen gehen ganz, wie sonst nach ihrer
+        Frist. Offene haben keine Frist, weil sie noch Arbeit sind (Art. 16 DSA):
+        Sie bleiben mit Grund und Beschreibung stehen und verlieren Name,
+        E-Mail-Adresse und das Tagespseudonym (wie beim Abschluss ein Zufallswert,
+        #446). Alles in einer Transaktion (get_session schreibt am Ende); Fehler
+        gehen an den Aufrufer.
+        """
+        if not meldung_ids:
+            return AngabenGeloescht(geloescht=0, angaben_entfernt=0)
+        gesehen = and_(_von_melder(suche), ContentReport.id.in_(meldung_ids))
+        with self.db.get_session() as session:
+            # Gesperrt gelesen und je Zeile entschieden: Schliesst ein anderer
+            # Admin eine Meldung gerade ab, wartet das hier und sieht ihren neuen
+            # Status, statt sie zwischen zwei Anweisungen zu uebergehen.
+            meldungen = (
+                session.query(ContentReport).filter(gesehen).with_for_update().all()
+            )
+            geloescht = 0
+            offene = []
+            for meldung in meldungen:
+                if meldung.status == "pending":
+                    meldung.melder_name = None
+                    meldung.melder_email = None
+                    if not meldung.reported_by_user_id:
+                        _anonymes_pseudonym_ersetzen(meldung)
+                    offene.append(meldung)
+                else:
+                    session.delete(meldung)
+                    geloescht += 1
+            # Wessen Angaben, steht nicht im Log: nur die Zahlen.
+            logger.info(
+                f"Melder-Angaben geloescht: {geloescht} Meldungen entfernt, "
+                f"{len(offene)} offene ohne Angaben"
+            )
+            return AngabenGeloescht(geloescht=geloescht, angaben_entfernt=len(offene))
 
     def get_reports_by_content_id(self, content_id: UUID) -> List[ContentReport]:
         """

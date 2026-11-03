@@ -40,7 +40,7 @@ from core.logging import get_logger
 from domain.models.content_status import FELD_GELOESCHT_AM
 from repositories.content_report_repository import ContentReportRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
-from repositories.raw_input_repository import RawInputRepository
+from repositories.einwurf_repository import EinwurfRepository
 from repositories.sperre_repository import SperreRepository
 from services.moderation_service import ModerationService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
@@ -70,7 +70,7 @@ class LoeschfristenService:
     def __init__(
         self,
         meldungen: ContentReportRepository,
-        einwuerfe: RawInputRepository,
+        einwuerfe: EinwurfRepository,
         beitraege: IModerationRepository,
         moderation: ModerationService,
         sperren: SperreRepository,

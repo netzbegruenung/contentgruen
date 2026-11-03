@@ -22,5 +22,4 @@ export class ImpressumComponent {
   readonly VEREIN = LEGAL_ENTITY;
   readonly KONTAKT_MAIL = LEGAL_ENTITY.KONTAKT_MAIL;
   readonly GUTGESAGT_MAIL = ORGANISATION.gutgesagtMail;
-  readonly MSTV_VERANTWORTLICH = 'Sebastian Banach (Anschrift wie oben)';
 }

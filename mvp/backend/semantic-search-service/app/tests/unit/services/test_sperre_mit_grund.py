@@ -70,7 +70,7 @@ def service(speicher, sperre_repo):
         report_repo=report_repo,
         moderation_repo=QdrantModerationRepository(embeddings_manager=speicher),
         vote_repo=MagicMock(),
-        raw_input_repo=MagicMock(),
+        einwurf_repo=MagicMock(),
         sperre_repo=sperre_repo,
     )
 
