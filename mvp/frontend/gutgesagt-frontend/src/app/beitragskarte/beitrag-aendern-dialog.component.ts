@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, ViewChild, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -31,7 +31,7 @@ export function aendernFehlertext(fehler: { status?: number; error?: any } | und
     return grund;
   }
   if (fehler?.status === 422) {
-    return 'Titel oder Text passen nicht. Der Titel braucht mindestens 3 Zeichen, der Text 10.';
+    return 'Titel, Text oder Herkunft passen nicht. Der Titel braucht 3 bis 120 Zeichen, der Text mindestens 10; höchstens 10 Herkünfte.';
   }
   if (fehler?.status === 403) {
     return 'Ändern kann nur der Autor des Beitrags.';
@@ -134,6 +134,8 @@ export class BeitragAendernDialogComponent {
 
   readonly formular;
 
+  @ViewChild(ReferenceInputComponent) referenceInput?: ReferenceInputComponent;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) private readonly daten: KartenDaten,
     private readonly dialogRef: MatDialogRef<BeitragAendernDialogComponent, boolean>,
@@ -151,6 +153,9 @@ export class BeitragAendernDialogComponent {
   }
 
   speichern(): void {
+    // Noch nicht bestaetigte Herkunft oder offene Notiz uebernehmen, bevor der
+    // Formularwert gelesen wird - wie beim Anlegen, sonst gehen sie stumm verloren.
+    this.referenceInput?.flushPendingInput();
     if (this.formular.invalid || this.speichertGerade()) {
       return;
     }

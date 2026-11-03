@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { NEVER, of, Subject, throwError } from 'rxjs';
 
 import { BeitragAendernDialogComponent, aendernFehlertext } from './beitrag-aendern-dialog.component';
 import { KartenDaten } from './karten-daten';
@@ -53,7 +53,7 @@ describe('BeitragAendernDialogComponent', () => {
         { provide: MAT_DIALOG_DATA, useValue: daten },
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: MeineBeitraegeService, useValue: beitraege },
-        { provide: ReferenceService, useValue: jasmine.createSpyObj('ReferenceService', ['addReference']) },
+        { provide: ReferenceService, useValue: jasmine.createSpyObj('ReferenceService', ['addReference', 'isValidUrl']) },
       ],
     });
   });
@@ -103,6 +103,24 @@ describe('BeitragAendernDialogComponent', () => {
       ],
     });
     expect(dialogRef.close).toHaveBeenCalledOnceWith(true);
+  });
+
+  it('übernimmt beim Speichern eine getippte, noch nicht bestätigte Herkunft', () => {
+    beitraege.beitragAendern.and.returnValue(of(undefined));
+    erstellen();
+    const herkuenfte = TestBed.inject(ReferenceService) as jasmine.SpyObj<ReferenceService>;
+    herkuenfte.isValidUrl.and.returnValue(true);
+    herkuenfte.addReference.and.returnValue(NEVER);
+    komponente.referenceInput!.urlControl.setValue('https://example.org/dritte');
+
+    speichernKnopf().click();
+
+    const gesendet = beitraege.beitragAendern.calls.mostRecent().args[1];
+    expect(gesendet.references.map((h) => h.reference_string)).toEqual([
+      'https://example.org/studie',
+      'https://example.org/zweite',
+      'https://example.org/dritte',
+    ]);
   });
 
   it('zeigt über dem Speichern-Knopf den CC0-Hinweis', () => {
@@ -166,8 +184,10 @@ describe('BeitragAendernDialogComponent', () => {
       expect(aendernFehlertext({ status: 404 })).toBe('Den Beitrag gibt es nicht mehr.');
     });
 
-    it('nennt bei 422 die Grenzen von Titel und Text', () => {
-      expect(aendernFehlertext({ status: 422 })).toContain('mindestens 3 Zeichen');
+    it('nennt bei 422 die Grenzen von Titel, Text und Herkunft', () => {
+      const text = aendernFehlertext({ status: 422 });
+      expect(text).toContain('3 bis 120 Zeichen');
+      expect(text).toContain('höchstens 10 Herkünfte');
     });
 
     it('rät sonst zum erneuten Versuch', () => {
