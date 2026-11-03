@@ -84,6 +84,13 @@ describe('KuerzungsvorschlagComponent', () => {
 
     expect(element().textContent).toContain('Kein Satz passt');
     expect(knopf('Übernehmen')).toBeUndefined();
+    // Für denselben Text käme dieselbe Antwort; erst ein geänderter fragt neu.
+    expect(knopf('Kürzungsvorschlag')).toBeUndefined();
+
+    fixture.componentRef.setInput('text', LANG + ' Noch ein Satz dazu.');
+    fixture.detectChanges();
+
+    expect(knopf('Kürzungsvorschlag')).toBeDefined();
   });
 
   it('sagt, wenn der Dienst nicht antwortet', () => {
@@ -115,6 +122,16 @@ describe('KuerzungsvorschlagComponent', () => {
 
     expect(anfrage.cancelled).toBeTrue();
     expect(element().querySelector('.kuerzungsvorschlag-text')).toBeNull();
+  });
+
+  it('verwirft einen Vorschlag, sobald sich die Aussage ändert', () => {
+    vorschlagHolen('Die Wärmepumpe spart viel Geld.');
+
+    fixture.componentRef.setInput('aussage', 'Wärmepumpen sind zu laut');
+    fixture.detectChanges();
+
+    expect(element().querySelector('.kuerzungsvorschlag-text')).toBeNull();
+    expect(knopf('Kürzungsvorschlag')).toBeDefined();
   });
 
   it('verwirft einen Vorschlag, sobald sich der Kommentar ändert', () => {

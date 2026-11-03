@@ -11,6 +11,7 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from core.logging import get_logger
+from dtos.commentary import KOMMENTAR_TEXT_MAX
 from dependencies import get_kuerzungsvorschlag_service, require_user
 from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from utils.rate_limiter import kuerzungsvorschlag_rate_limiter
@@ -19,8 +20,8 @@ logger = get_logger(__name__)
 
 router = APIRouter()
 
-#: Wie beim Gegenlesen großzügig über den Grenzen des Formulars.
-TEXT_MAX = 10_000
+#: Gekürzt wird nur der Haupttext eines Kommentars; mehr schickt das Formular nie.
+TEXT_MAX = KOMMENTAR_TEXT_MAX
 AUSSAGE_MAX = 1000
 
 #: Fehlt das Sprachmodell, scheitert jede Anfrage gleich; geloggt wird das einmal.

@@ -135,17 +135,18 @@ class TestVerneinungenUndZahlenBleiben:
         assert service.vorschlagen(text, aussage=None) == text
 
     def test_verneinung_und_zahl_bleiben_im_gekuerzten_vorschlag(self, service):
+        # Die Einschübe ohne Verneinung und Zahl fallen weg, Zahl und Verneinung
+        # bleiben in ihrem Satz.
+        assert (
+            service.vorschlagen(
+                "Robert, unser Nachbar, heizt seit 2021 nicht mehr mit Öl "
+                "(das war ihm zu teuer).",
+                aussage=None,
+            )
+            == "Robert heizt seit 2021 nicht mehr mit Öl."
+        )
         vorschlag = service.vorschlagen(LANG, aussage="Wärmepumpen sind zu teuer")
-
-        # Jeder Satz des Vorschlags, der im Original eine Verneinung oder Zahl hatte,
-        # hat sie noch.
-        for satz, merkmale in (
-            ("Robert", ("2021", "nicht")),
-            ("Heizungsgesetz", ("kein",)),
-        ):
-            if satz in vorschlag:
-                for merkmal in merkmale:
-                    assert merkmal in vorschlag
+        assert "Das Heizungsgesetz ist kein Verbot" in vorschlag
 
     @pytest.mark.parametrize(
         "text",
@@ -195,6 +196,38 @@ class TestZentraleSaetzeBleiben:
         )
 
         assert knapp.vorschlagen(text, aussage=None) is None
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Das ist teuer... Die Wärmepumpe spart Geld.",
+            "Er sagt: „Das geht.“ Die Wärmepumpe spart Geld.",
+            "Ein Absatz ohne Schlusspunkt\n\nDie Wärmepumpe spart Geld.",
+        ],
+    )
+    def test_satzgrenzen_auch_nach_auslassung_zitat_und_absatz(self, service, text):
+        # Jeder Satz für sich: Beide zusammen passen nicht in die Grenze, einer allein
+        # schon. Verschmolzen gäbe es keinen Vorschlag.
+        knapp = KuerzungsvorschlagService(werkzeuge=service._werkzeuge, max_zeichen=35)
+
+        vorschlag = knapp.vorschlagen(text, aussage=None)
+
+        assert vorschlag is not None
+        assert vorschlag in text.replace("\n", " ")
+
+    def test_bewertet_wird_der_satz_ohne_seine_einschuebe(self, service):
+        # Der erste Satz hat seinen Bezug zur Aussage nur im Einschub, der zweite im
+        # Satz selbst; nur einer passt hinein.
+        knapp = KuerzungsvorschlagService(werkzeuge=service._werkzeuge, max_zeichen=40)
+        text = (
+            "Mein Onkel, der die Förderung für Wärmepumpen kennt, fährt Rad. "
+            "Die Wärmepumpe spart Geld."
+        )
+
+        assert (
+            knapp.vorschlagen(text, aussage="Die Förderung für Wärmepumpen reicht")
+            == "Die Wärmepumpe spart Geld."
+        )
 
     def test_ohne_passenden_satz_kein_vorschlag(self, service):
         # Kein Satz passt in die Grenze, und abgeschnitten wird nicht.

@@ -59,8 +59,11 @@ _ZAHLWOERTER = {
     "verdoppeln",
     "halbieren",
 }
-#: So endet ein Satz; spaCy trennt manchmal mitten im Satz ("gilt ab | 2024.").
-_SATZENDE = {".", "!", "?", "…"}
+#: So endet ein Satz ("...", "?!" eingeschlossen); spaCy trennt manchmal mitten im
+#: Satz ("gilt ab | 2024.").
+_SATZENDE = set(".!?…")
+#: Was nach dem Satzzeichen noch zum Satz gehört: "Er sagt: „Das geht.“"
+_SCHLIESSEND = {"“", "”", '"', "»", "«", "'", "’", ")", "]"}
 #: Wortarten, deren Grundformen tragen, worum es geht.
 _INHALT = {"NOUN", "PROPN", "VERB", "ADJ"}
 
@@ -77,17 +80,20 @@ class KuerzungsvorschlagService:
             return None
         doc = self._werkzeuge.analysieren(text)
         saetze = _saetze(doc)
-        gekuerzt = [_ohne_einschuebe(s) for s in saetze]
+        behalten = [_ohne_einschuebe(s) for s in saetze]
+        gekuerzt = [_zusammensetzen(b) for b in behalten]
 
-        formen = [_grundformen(s) for s in saetze]
-        ganz = sum(formen, Counter())
+        # Bewertet wird, was im Vorschlag steht: der Satz ohne seine Einschübe. Der
+        # Bezug ist der ganze Kommentar.
+        formen = [_grundformen(b) for b in behalten]
+        ganz = sum((_grundformen(s) for s in saetze), Counter())
         aussage = (aussage or "").strip()
         bezug = _grundformen(self._werkzeuge.analysieren(aussage)) if aussage else None
 
         def wert(i: int) -> float:
             # Ähnlichkeit zum Rest des Kommentars (ohne den Satz selbst, sonst ähnelt
             # jeder Satz sich selbst) und zur Aussage.
-            w = _kosinus(formen[i], ganz - formen[i])
+            w = _kosinus(formen[i], ganz - _grundformen(saetze[i]))
             if bezug:
                 w += _kosinus(formen[i], bezug)
             return w
@@ -99,34 +105,49 @@ class KuerzungsvorschlagService:
         nur_zentrale = any(w > 0 for w in werte.values())
         reihenfolge = sorted(werte, key=lambda i: (-werte[i], i))
         gewaehlt: List[int] = []
+        laenge = 0
         for i in reihenfolge:
             if not gekuerzt[i] or (nur_zentrale and werte[i] <= 0):
                 continue
-            probe = sorted(gewaehlt + [i])
-            if len(" ".join(gekuerzt[j] for j in probe)) <= self._max:
-                gewaehlt = probe
+            # Mit einem Leerzeichen zwischen den Sätzen.
+            neu = laenge + len(gekuerzt[i]) + (1 if gewaehlt else 0)
+            if neu <= self._max:
+                gewaehlt.append(i)
+                laenge = neu
         if not gewaehlt:
             return None
-        return " ".join(gekuerzt[j] for j in gewaehlt)
+        return " ".join(gekuerzt[j] for j in sorted(gewaehlt))
 
 
 def _saetze(doc) -> List[list]:
-    """Die Sätze, wie spaCy sie trennt, aber nie mitten im Satz: Endet einer nicht
-    mit einem Satzzeichen, gehört der nächste noch dazu ("gilt ab" + "2024.")."""
+    """Die Sätze, wie spaCy sie trennt, aber nie mitten im Satz: Endet einer weder
+    mit einem Satzzeichen noch mit dem Absatz, gehört der nächste noch dazu
+    ("gilt ab" + "2024.")."""
     saetze: List[list] = []
     for satz in doc.sents:
         tokens = [t for t in satz if not t.is_space]
         if not tokens:
             continue
-        if saetze and saetze[-1][-1].text not in _SATZENDE:
+        if saetze and not _endet(saetze[-1], tokens[0], doc.text):
             saetze[-1].extend(tokens)
         else:
             saetze.append(tokens)
     return saetze
 
 
-def _ohne_einschuebe(satz: list) -> str:
-    """Der Satz ohne Einschübe, aus seinen eigenen Tokens zusammengesetzt."""
+def _endet(satz: list, naechstes, text: str) -> bool:
+    letztes = satz[-1]
+    if "\n" in text[letztes.idx + len(letztes.text) : naechstes.idx]:
+        return True
+    for t in reversed(satz):
+        if t.text in _SCHLIESSEND:
+            continue
+        return t.is_punct and any(z in _SATZENDE for z in t.text)
+    return False
+
+
+def _ohne_einschuebe(satz: list) -> list:
+    """Die Tokens des Satzes ohne seine Einschübe, in Originalreihenfolge."""
     weg: Set[int] = set()
     for span in _einschuebe(satz):
         if not any(_traegt_bedeutung(t) for t in span):
@@ -140,12 +161,14 @@ def _ohne_einschuebe(satz: list) -> str:
             weg.add(davor.i)
             if danach is not None and danach.text == ",":
                 weg.add(danach.i)
+    return [t for t in satz if t.i not in weg and not t.is_space]
 
+
+def _zusammensetzen(tokens: list) -> str:
+    """Tokens zu Text, mit dem Leerraum des Originals zwischen Nachbarn."""
     teile: List[str] = []
     letzter = None
-    for t in satz:
-        if t.i in weg or t.is_space:
-            continue
+    for t in tokens:
         if letzter is not None:
             if letzter.i == t.i - 1:
                 teile.append(" " if _leerraum_nach(letzter) else "")

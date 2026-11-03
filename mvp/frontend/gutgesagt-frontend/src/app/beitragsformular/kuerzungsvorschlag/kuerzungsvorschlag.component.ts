@@ -53,8 +53,9 @@ export class KuerzungsvorschlagComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Ein Vorschlag gilt nur für den Text, aus dem er entstand.
-    if (changes['text'] && !changes['text'].firstChange) this.verwerfen();
+    // Ein Vorschlag gilt nur für den Text und die Aussage, aus denen er entstand.
+    const geaendert = ['text', 'aussage'].some((name) => changes[name] && !changes[name].firstChange);
+    if (geaendert) this.verwerfen();
   }
 
   vorschlagen(): void {
