@@ -24,7 +24,7 @@ from infrastructure.database.models import (
     Base,
     ContentReport,
     Einwurf,
-    Verknuepfung,
+    AusformuliertIn,
     Satz,
     User,
 )
@@ -240,7 +240,7 @@ class TestEinwuerfe:
             mit_jungem_satz = self._einwurf(s, status="in_progress")
             self._satz(s, mit_jungem_satz, "destillierer", updated_at=JUNG)
             ausformuliert = self._einwurf(s, status="processed")
-            s.add(Verknuepfung(raw_input_id=ausformuliert, content_id=uuid.uuid4()))
+            s.add(AusformuliertIn(raw_input_id=ausformuliert, content_id=uuid.uuid4()))
             jung = self._einwurf(s, created_at=JUNG)
             s.add(User(user_id=platzhalter, anzeigename="ehemalige Person"))
             s.add(User(user_id="destillierer", anzeigename="Anna B."))
@@ -263,7 +263,7 @@ class TestEinwuerfe:
         beitrag = uuid.uuid4()
         with datenbank.get_session() as s:
             einwurf = self._einwurf(s, status="processed")
-            s.add(Verknuepfung(raw_input_id=einwurf, content_id=beitrag))
+            s.add(AusformuliertIn(raw_input_id=einwurf, content_id=beitrag))
 
         repo = EinwurfRepository(db=datenbank)
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 0

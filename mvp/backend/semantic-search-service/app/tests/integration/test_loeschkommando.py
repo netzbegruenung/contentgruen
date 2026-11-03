@@ -21,7 +21,7 @@ from infrastructure.database.models import (
     ContentReport,
     GeseheneNutzung,
     Einwurf,
-    Verknuepfung,
+    AusformuliertIn,
     Satz,
     Sperre,
     UsageEvent,
@@ -275,7 +275,7 @@ def spuren(datenbank, einwuerfe):
         satz = (
             s.query(Satz).filter_by(raw_input_id=einwuerfe.fremd, user_id=PERSON).one()
         )
-        link = Verknuepfung(
+        link = AusformuliertIn(
             raw_input_id=einwuerfe.fremd,
             content_id=beitrag,
             created_by=PERSON,
@@ -325,7 +325,7 @@ class TestLoeschkommando:
             assert [(m.id, m.reviewed_by) for m in meldungen] == [
                 (spuren.bearbeitet, None)
             ]
-            link = s.get(Verknuepfung, spuren.link)
+            link = s.get(AusformuliertIn, spuren.link)
             assert (link.created_by, link.draft_id) == (None, spuren.satz)
             assert s.get(Satz, spuren.satz).sentence == SATZ_DER_PERSON
 

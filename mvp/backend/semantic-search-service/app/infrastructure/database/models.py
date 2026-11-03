@@ -439,9 +439,9 @@ class Einwurf(Base):
     )
 
 
-class Verknuepfung(Base):
+class AusformuliertIn(Base):
     """
-    Verknuepfung zwischen einem Einwurf und dem Beitrag, mit dem er ausformuliert
+    Ausformuliert in (Glossar): die Verknuepfung zwischen einem Einwurf und dem Beitrag, mit dem er ausformuliert
     wurde: einem neu gespeicherten oder, bei einer Dublette, dem vorhandenen.
 
     Geschrieben wird sie, wenn der Destillier-Ablauf den Einwurf mit dem Beitrag

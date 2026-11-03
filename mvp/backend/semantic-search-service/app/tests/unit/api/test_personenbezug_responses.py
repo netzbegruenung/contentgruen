@@ -34,7 +34,7 @@ from domain.models.reference import ReferenceDbEntry
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from dtos.beitrag import BeitragResponse
 from dtos.contribution import ContributionEntry, MeinBeitragResponse
-from dtos.einwurf import SatzAmEinwurfResponse, VerknuepfungResponse, EinwurfResponse
+from dtos.einwurf import SatzAmEinwurfResponse, AusformuliertInResponse, EinwurfResponse
 from dtos.reference import GetReferenceResponse
 from dtos.statement import AussageResponse, AussageTreffer
 from services import beitrag_fuer_aufrufer as regel
@@ -527,7 +527,7 @@ DTOS_JE_BEZUG = [
     (regel.EINWURF, EinwurfResponse),
     (regel.DESTILLIERER, EinwurfResponse),
     (regel.AUSFORMULIERER, EinwurfResponse),
-    (regel.AUSFORMULIERER, VerknuepfungResponse),
+    (regel.AUSFORMULIERER, AusformuliertInResponse),
     (regel.SATZ, SatzAmEinwurfResponse),
 ]
 

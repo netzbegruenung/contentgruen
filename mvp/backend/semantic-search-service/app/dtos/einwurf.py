@@ -3,7 +3,7 @@ DTOs fuer den Fangkorb (Einwuerfe).
 
 Die einzige inhaltliche Pflicht beim Einwerfen ist, dass ueberhaupt etwas
 dasteht. Kein Titel, keine Kategorie, kein Zieltyp - all das ist Destillieren
-und passiert erst im Destillier-Ablauf (Satz, Status, Verknuepfung).
+und passiert erst im Destillier-Ablauf (Satz, Status, Ausformuliert in).
 """
 
 import datetime
@@ -200,9 +200,9 @@ class SatzAmEinwurfResponse(BaseModel):
     updated_at: datetime.datetime
 
 
-class VerknuepfungResponse(BaseModel):
+class AusformuliertInResponse(BaseModel):
     """
-    Ein Beitrag, mit dem der Einwurf verknuepft ist, neu entstanden oder vorhanden.
+    Ausformuliert in (Glossar): ein Beitrag, mit dem der Einwurf verknuepft ist, neu entstanden oder vorhanden.
 
     ``processed_by`` ist der Ausformulierer, nicht zwingend der Autor des Beitrags;
     die Kennung sehen nur Admins (#385).
@@ -253,7 +253,7 @@ class EinwurfResponse(BaseModel):
     processed_by: Optional[str] = None
     processed_at: Optional[datetime.datetime] = None
     drafts: List[SatzAmEinwurfResponse] = Field(default_factory=list)
-    links: List[VerknuepfungResponse] = Field(default_factory=list)
+    links: List[AusformuliertInResponse] = Field(default_factory=list)
 
 
 class EinwerfenResponse(BaseModel):
