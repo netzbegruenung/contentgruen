@@ -78,8 +78,9 @@ nur wenig:
   and Scope: behaviour beyond the ticket is a blocking Fachfrage under the heading `## Fachfrage`
   in the PR description.
 - Summary: strengths, areas to consider, risk, recommendation (Approve/Request Changes).
-- Deliver the review in chat and as a file, naming the PR (`/pulls?state=open`). Post it
-  (`/pulls/{nr}/reviews`) only after the maintainer has seen and approved the draft.
+- Deliver the review in chat and as a file, naming the PR (`/pulls?state=open`). Whether it goes
+  out (`/pulls/{nr}/reviews`) with or without showing a draft first follows the approval rules in
+  `docs/agents/issue-tracker.md` (Approval).
 
 ## Where to find things
 
