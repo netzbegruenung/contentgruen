@@ -291,6 +291,10 @@ _Avoid_: Prüfung, Lektorat, Check, Validierung
 Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
+**Sprachhinweis**:
+Der Satz über dem CC0-Hinweis eines Beitragsformulars oder unter einer neuen Aussage, wenn der Text ab fünf Wörtern offenbar nicht deutsch ist; Gut gesagt ist auf deutsche Texte ausgelegt. Er erscheint etwa eine Sekunde nach der letzten Eingabe, sperrt nichts und zählt nicht in die Güte. Suchanfragen und vorhandene Aussagen bekommen keinen. Er ist keine Anmerkung des Gegenlesens und nicht der Hinweis an einem Einwurf.
+_Avoid_: Sprachwarnung, Sprachprüfung, Spracherkennung (das ist das Werkzeug dahinter)
+
 **Meldung**:
 Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Verlangt die Person Auskunft oder Löschung, findet ein Admin ihre Meldungen über genau diese Angaben; Löschen entfernt erledigte Meldungen ganz, offene behalten Grund und Beschreibung ohne Name, E-Mail-Adresse und Tagespseudonym. Eine E-Mail-Adresse braucht es nur für die Mails an die Person: Den Eingang bestätigt die App sofort und, mit Adresse, auch eine Mail; die Entscheidung über die Meldung (gesperrt, abgewiesen oder Beitrag entfernt) samt den Möglichkeiten, dagegen vorzugehen, kommt per Mail, sobald ein Admin entscheidet oder der Beitrag endgültig entfernt wird. Ohne eingerichteten Mailversand teilt ein Admin sie per Hand mit.
 _Avoid_: Report, Flag, Beschwerde

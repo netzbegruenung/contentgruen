@@ -22,6 +22,7 @@ import {
   VON_PARAM,
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
+import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 
 /**
  * "Hier fehlt eine Antwort": Mitwirkende sehen die unbeantworteten Aussagen (ohne
@@ -63,6 +64,7 @@ export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean):
     ThemenAuswahlComponent,
     ThemenFilterComponent,
     Cc0HinweisComponent,
+    SprachhinweisComponent,
   ],
   templateUrl: './hier-fehlt-eine-antwort.component.html',
   styleUrls: ['./hier-fehlt-eine-antwort.component.css'],

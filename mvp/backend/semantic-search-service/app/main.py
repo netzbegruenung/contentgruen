@@ -44,6 +44,7 @@ from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
 from api.v1.einladungen import router as einladungen_router
 from api.v1.gegenlesen import router as gegenlesen_router
+from api.v1.spracherkennung import router as spracherkennung_router
 from services.cleanup.bereinigungsjob import bereinigungsjob_starten
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
@@ -55,6 +56,7 @@ from repositories.suchen_ohne_treffer_repository import (
 from dependencies import get_feedback_service, get_loeschfristen_service
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
+from services.spracherkennung.spracherkennung import SPRACHERKENNUNG
 from services.loeschfristen_service import (
     loeschen_im_takt as loeschfristen_im_takt,
 )
@@ -64,6 +66,7 @@ from utils.rate_limiter import (
     einladung_rate_limiter,
     feedback_rate_limiter,
     gegenlesen_rate_limiter,
+    spracherkennung_rate_limiter,
     report_rate_limiter,
     search_query_statement_rate_limiter,
 )
@@ -131,6 +134,7 @@ async def lifespan(app: FastAPI):
                     einladung_rate_limiter,
                     einladung_pruefen_rate_limiter,
                     gegenlesen_rate_limiter,
+                    spracherkennung_rate_limiter,
                 ]
             )
         )
@@ -156,6 +160,12 @@ async def lifespan(app: FastAPI):
         # das erste Gegenlesen nicht wartet und der Start nicht blockiert. Fehlt es,
         # antwortet /api/v1/gegenlesen mit 503; der Dienst laeuft trotzdem.
         app.state.gegenlesen_vorladen = asyncio.create_task(_gegenlesen_vorladen())
+
+        # Lingua fuer den Sprachhinweis (#405) ebenso im Hintergrund vorladen; fehlt
+        # es, antwortet /api/v1/spracherkennung mit 503.
+        app.state.spracherkennung_vorladen = asyncio.create_task(
+            _spracherkennung_vorladen()
+        )
 
         # Loeschfristen fuer Meldungen, Einwuerfe und geloeschte Beitraege, ebenso
         # unabhaengig vom Bereinigungsjob (services/loeschfristen_service.py).
@@ -202,6 +212,15 @@ async def _gegenlesen_vorladen() -> None:
         # Auch unerwartete Fehler hier abfangen: Ein Task, dessen Ausnahme niemand
         # abholt, meldet sie erst beim Beenden. Der Dienst laeuft ohne Gegenlesen weiter.
         logger.error("Gegenlesen nicht verfuegbar: %s", type(fehler).__name__)
+
+
+async def _spracherkennung_vorladen() -> None:
+    try:
+        await asyncio.to_thread(SPRACHERKENNUNG.laden)
+        logger.info("✅ Spracherkennung: Lingua geladen")
+    except Exception as fehler:
+        # Wie beim Gegenlesen: Der Dienst laeuft ohne Sprachhinweis weiter.
+        logger.error("Spracherkennung nicht verfuegbar: %s", type(fehler).__name__)
 
 
 logger.info("🔧 Initializing FastAPI app")
@@ -269,6 +288,9 @@ app.include_router(
     einladungen_router, prefix="/api/v1/einladungen", tags=["einladungen"]
 )
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
+app.include_router(
+    spracherkennung_router, prefix="/api/v1/spracherkennung", tags=["spracherkennung"]
+)
 
 # Betriebskennzahlen unter /metrics (#420). Zuletzt hinzugefuegt, also aussen: Die
 # Middleware zaehlt auch, was das Rate-Limit abweist. Am BFF ist /metrics gesperrt.

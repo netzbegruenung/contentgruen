@@ -25,6 +25,7 @@ import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub'
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
+import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { environment } from '../../environments/environment';
 
@@ -92,6 +93,19 @@ describe('AddCommentaryComponent', () => {
       'Ein ausreichend langer Text.',
       'Wärmepumpen sind zu teuer',
     ]);
+    expect(seite().querySelector<HTMLButtonElement>('.submit-btn')!.disabled).toBeFalse();
+  });
+
+  it('gibt Titel und Text dem Sprachhinweis über dem CC0-Hinweis, ohne das Speichern zu sperren (#405)', () => {
+    ausfuellen();
+
+    // Der zweite Sprachhinweis gehört zur Aussage in "Antwort auf".
+    const sprachhinweis = fixture.debugElement
+      .queryAll((el) => el.componentInstance instanceof SprachhinweisComponent)
+      .find((el) => (el.componentInstance as SprachhinweisComponent).gegenstand === 'beitrag')!;
+    const instanz = sprachhinweis.componentInstance as SprachhinweisComponent;
+    expect(instanz.text).toBe('Wärmepumpe lohnt sich im Altbau\nEin ausreichend langer Text.');
+    expect(sprachhinweis.nativeElement.nextElementSibling.hasAttribute('appCc0Hinweis')).toBeTrue();
     expect(seite().querySelector<HTMLButtonElement>('.submit-btn')!.disabled).toBeFalse();
   });
 
