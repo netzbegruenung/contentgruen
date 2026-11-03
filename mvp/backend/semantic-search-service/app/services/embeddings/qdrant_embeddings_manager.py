@@ -407,6 +407,21 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         """
         return self.encode_text(query, content_type="statement")
 
+    async def vektor_neu_berechnen(
+        self, item_id: str, text: str, content_type: str
+    ) -> None:
+        """Nur den Vektor eines Punkts neu schreiben; der Payload bleibt (#299)."""
+        if not self._is_started:
+            raise RuntimeError("QdrantEmbeddingsManager not started.")
+        from qdrant_client.models import PointVectors
+
+        vektor = self.encode_text(text, content_type=encoding_fuer(content_type))
+        await self._async_client.update_vectors(
+            collection_name=self.collection_name,
+            points=[PointVectors(id=item_id, vector=vektor)],
+            wait=True,
+        )
+
     async def upsert_batch(
         self, points: List[Tuple[str, Dict[str, Any], str]], content_type: str
     ) -> None:

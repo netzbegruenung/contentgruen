@@ -1,5 +1,5 @@
 import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -111,3 +111,47 @@ class HintergrundinfoTreffer(HintergrundinfoResponse):
 
 class PostTreffer(PostResponse):
     score: float
+
+
+### Beitrag aendern (#299) ###
+
+# Wie im Formular (reference-input.component.ts, maxReferences).
+HERKUENFTE_HOECHSTENS = 10
+
+
+class HerkunftEingabe(BaseModel):
+    """Eine Herkunft in der Aenderung: Adresse oder Fundstelle, dazu die Notiz."""
+
+    reference_string: str = Field(min_length=1, max_length=2000)
+    description: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("reference_string", mode="before")
+    @classmethod
+    def ohne_leerraum_am_rand(cls, wert):
+        return wert.strip() if isinstance(wert, str) else wert
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def leer_heisst_keine_notiz(cls, wert):
+        if isinstance(wert, str):
+            return wert.strip() or None
+        return wert
+
+
+class BeitragAendernRequest(BaseModel):
+    """
+    Titel, Text und Herkunft eines Kommentars oder einer Hintergrundinfo, je ganz
+    ersetzt. Der Titel folgt der Titelregel (3-120 Zeichen wie beim Anlegen); die
+    Grenze des Texts haengt am Typ und prueft der Service.
+    """
+
+    title: str = Field(min_length=3, max_length=120)
+    text: str = Field(min_length=1)
+    references: List[HerkunftEingabe] = Field(
+        default_factory=list, max_length=HERKUENFTE_HOECHSTENS
+    )
+
+    @field_validator("title", "text", mode="before")
+    @classmethod
+    def ohne_leerraum_am_rand(cls, wert):
+        return wert.strip() if isinstance(wert, str) else wert

@@ -5,6 +5,7 @@ import uuid
 
 from dependencies import (
     get_aufrufer,
+    get_beitrag_aendern_service,
     get_beitrag_loeschen_service,
     get_settings,
     get_reference_service,
@@ -21,6 +22,7 @@ from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
 from dtos.beitrag import (
+    BeitragAendernRequest,
     BeitragResponse,
     HintergrundinfoResponse,
     KommentarResponse,
@@ -30,8 +32,14 @@ from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
 )
+from services.content.beitrag_aendern_service import (
+    AenderErgebnis,
+    Aenderung,
+    BeitragAendernService,
+    HerkunftAngabe,
+)
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
-from core.fehler import INTERNER_FEHLER
+from core.fehler import INTERNER_FEHLER, Validierungsfehler
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -181,6 +189,47 @@ async def get_recent_content(
     except Exception as e:
         logger.error(f"Error in /recent endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+
+@router.put("/{beitrag_id}", status_code=204)
+async def beitrag_aendern(
+    beitrag_id: uuid.UUID,
+    request: BeitragAendernRequest,
+    x_user: Optional[str] = Header(default=None),
+    service: BeitragAendernService = Depends(get_beitrag_aendern_service),
+) -> Response:
+    """
+    Der Autor aendert Titel, Text und Herkunft seines Kommentars oder seiner
+    Hintergrundinfo (#299). Die Suche findet danach den neuen Text.
+
+    404 auch fuer gesperrte und geloeschte Beitraege, wie beim Loeschen.
+    """
+    if not angemeldet(x_user):
+        raise HTTPException(status_code=401, detail="Dafür musst du angemeldet sein.")
+
+    aenderung = Aenderung(
+        titel=request.title,
+        text=request.text,
+        herkuenfte=[
+            HerkunftAngabe(h.reference_string, h.description)
+            for h in request.references
+        ],
+    )
+    try:
+        ergebnis = await service.aendern(beitrag_id, x_user, aenderung)
+    except Validierungsfehler as fehler:
+        raise HTTPException(status_code=400, detail=fehler.antworttext)
+    if ergebnis is AenderErgebnis.NICHT_DA:
+        raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
+    if ergebnis is AenderErgebnis.NICHT_AUTOR:
+        raise HTTPException(
+            status_code=403, detail="Ändern kann nur der Autor des Beitrags."
+        )
+    if ergebnis is AenderErgebnis.NICHT_AENDERBAR:
+        raise HTTPException(
+            status_code=400, detail="Posts und Bilder lassen sich nicht ändern."
+        )
+    return Response(status_code=204)
 
 
 @router.delete("/{beitrag_id}", status_code=204)
