@@ -25,7 +25,8 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
  * nach dem Speichern) und "Ansehen" an einem ausformulierten Einwurf.
  *
  * Mit Abstimmen wie in der Suche (Entscheidung @BanSe 03.11.): Der Endpunkt liefert
- * die eigene Stimme mit (user_vote), sonst zeigte die Karte eine falsche. Gesperrte und geloeschte Beitraege gibt es hier fuer niemanden (404).
+ * die eigene Stimme mit (user_vote), sonst zeigte die Karte eine falsche.
+ * Gesperrte und geloeschte Beitraege gibt es hier fuer niemanden (404).
  */
 @Component({
   selector: 'app-beitrag-ansicht',
