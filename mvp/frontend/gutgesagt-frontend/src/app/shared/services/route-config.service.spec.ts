@@ -65,6 +65,12 @@ describe('RouteConfigService', () => {
     }
   });
 
+  it('nennt die eigene Adresse eines Beitrags "Beitrag", mit Pfeil (#300)', () => {
+    const config = service.getRouteConfig('/beitrag/b-1');
+    expect(config.pageTitle).toBe('Beitrag');
+    expect(config.showBackButton).toBeTrue();
+  });
+
   it('nennt die Ergebnisseite nach dem Speichern "Gespeichert"', () => {
     expect(service.getRouteConfig('/workflow/add-generictext/gespeichert/h-1').pageTitle).toBe('Gespeichert');
     expect(service.getRouteConfig('/workflow/add-post/gespeichert/p-1').pageTitle).toBe('Gespeichert');

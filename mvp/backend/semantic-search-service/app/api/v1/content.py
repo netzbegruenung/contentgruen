@@ -1,11 +1,18 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Header, Response
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 import logging
 import uuid
 
+from pydantic import ValidationError
+
 from dependencies import (
     get_aufrufer,
+    get_beitrag_laden,
     get_beitrag_loeschen_service,
+    get_commentary_service,
+    get_generic_text_service,
+    get_image_service,
+    get_post_service,
     get_settings,
     get_reference_service,
 )
@@ -16,15 +23,20 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
 from domain.models.content import ContentDbEntry
+from domain.models.content_type import ContentType
 from core.config import Settings
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
+from services.beitrag_laden import BeitragLader, BeitragUnlesbar
+from services.content.base_content_service import BaseContentService
 from dtos.beitrag import (
     BeitragResponse,
     HintergrundinfoResponse,
     KommentarResponse,
+    PostResponse,
 )
+from dtos.image import BildResponse
 from services.content.reference_service import ReferenceService
 from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
@@ -180,6 +192,73 @@ async def get_recent_content(
 
     except Exception as e:
         logger.error(f"Error in /recent endpoint: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+
+# Die Antwort je Beitragstyp, wie getById des Typs sie liefert. Aussage und Herkunft
+# fehlen: Sie sind keine Beitraege (ADR 0002) und haben keine eigene Adresse.
+ANSICHT = {
+    ContentType.COMMENTARY: KommentarResponse,
+    ContentType.GENERIC_TEXT: HintergrundinfoResponse,
+    ContentType.POST: PostResponse,
+    ContentType.IMAGE: BildResponse,
+}
+
+BeitragAnsicht = Union[
+    KommentarResponse, HintergrundinfoResponse, PostResponse, BildResponse
+]
+
+
+# response_model=None: Ein Union-Modell liesse Pydantic den Typ raten; die Antwort ist
+# schon das DTO ihres Typs, und das DTO ist die Feldauswahl.
+@router.get("/beitrag/{beitrag_id}", response_model=None)
+async def beitrag_ansehen(
+    beitrag_id: uuid.UUID,
+    laden: BeitragLader = Depends(get_beitrag_laden),
+    commentary_service: BaseContentService = Depends(get_commentary_service),
+    generic_text_service: BaseContentService = Depends(get_generic_text_service),
+    post_service: BaseContentService = Depends(get_post_service),
+    image_service: BaseContentService = Depends(get_image_service),
+    reference_service: ReferenceService = Depends(get_reference_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+) -> BeitragAnsicht:
+    """
+    Ein Beitrag jedes Typs unter seiner eigenen Adresse (/beitrag/:id, #300).
+
+    Die Adresse traegt nur die ID; den Typ liest erst das aggregierte Repository,
+    den Beitrag mit seinen Feldern dann der Dienst seines Typs. Herkunft und Nutzung
+    wie in /recent. Oeffentlich wie die Suche (BFF: EndpointPolicy.AllowAnonymous).
+
+    404 fuer gesperrte, geloeschte und nie vorhandene Beitraege, auch fuer Admins:
+    Gesperrtes finden sie ueber die Moderation (GLOSSARY.md, "Gesperrt").
+    """
+    dienste = {
+        ContentType.COMMENTARY: commentary_service,
+        ContentType.GENERIC_TEXT: generic_text_service,
+        ContentType.POST: post_service,
+        ContentType.IMAGE: image_service,
+    }
+    try:
+        allgemein = await laden(beitrag_id)
+        typ = allgemein.content_type if allgemein else None
+        if typ not in ANSICHT:
+            raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
+        # ValueError: zwischen beiden Lesungen gesperrt oder geloescht.
+        beitrag = await dienste[typ].get(beitrag_id)
+        await reference_service.herkunft_ergaenzen(beitrag)
+        [mit_nutzung] = get_usage_service().enrich_content_with_usage(
+            [beitrag.model_dump()]
+        )
+        return als_responses(ANSICHT[typ], [mit_nutzung], aufrufer)[0]
+    except HTTPException:
+        raise
+    except (BeitragUnlesbar, ValidationError):
+        # Kaputt, nicht abwesend; geloggt hat das Repository (beitrag_laden.py).
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
+    except Exception as e:
+        logger.error(f"Error in /beitrag: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 

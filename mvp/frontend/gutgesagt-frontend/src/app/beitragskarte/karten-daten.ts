@@ -159,6 +159,24 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
   };
 }
 
+/**
+ * Ein Beitrag unter seiner eigenen Adresse (/content/beitrag/{id}, #300): flach wie
+ * getById seines Typs, der Typ in content_type. Dieselbe Karte wie in der Suche, nur
+ * ohne Aussage, ueber die er gefunden wurde.
+ */
+export function ausEinzelansicht(beitrag: BaseContentResult & Record<string, any>): KartenDaten {
+  const typ = resolveContentType(beitrag.content_type);
+  const feld = typ ? CONTENT_TYPE_REGISTRY[typ].resultField : undefined;
+  return ausSuchergebnis({
+    score: 1,
+    statement_text: null,
+    statement_similarity_score: null,
+    reply_relevance: null,
+    content_type: beitrag.content_type,
+    ...(feld ? { [feld]: beitrag } : {}),
+  });
+}
+
 function typAusPaket(paket: Suchpaket): string | null {
   const explizit = resolveContentType(paket.content_type ?? paket.result_type);
   if (explizit && CONTENT_TYPE_REGISTRY[explizit].resultField) {

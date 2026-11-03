@@ -159,15 +159,15 @@ def test_get_by_id_liefert_das_bild(client, image_service):
     assert body["status"] == "visible"
 
 
-# Haelt den Ist-Stand fest: getById filtert nicht nach Zustand. Laut Glossar ist ein
-# gesperrtes Bild fuer Nicht-Admins nicht abrufbar; das baut #300, dann aendert sich
-# dieser Test.
-def test_get_by_id_gesperrtes_bild_bleibt_erkennbar(client, image_service):
-    image_service.get.return_value = _bild(status=ContentStatus.BLOCKED)
+# Gesperrte, geloeschte und Bilder ohne Unterschrift meldet das Repository als "nicht
+# da" (base_repository.get, test_base_repository.py); getById antwortet dann 404, fuer
+# jeden Leser (#300). getAll bekommt sie gar nicht erst (base_repository.get_all).
+def test_get_by_id_ausgeblendetes_bild_ist_404(client, image_service):
+    image_service.get.side_effect = ValueError("Entry is ausgeblendet (blocked)")
 
     response = _get_by_id(client)
 
-    assert response.json()["status"] == "blocked"
+    assert response.status_code == 404
 
 
 def test_get_by_id_liefert_nur_die_bildfelder(client, image_service):
