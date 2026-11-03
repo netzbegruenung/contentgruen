@@ -139,6 +139,8 @@ async def test_loeschen_einziger_beitrag_aussage_zaehlt_nicht_mehr_als_beantwort
     """
     from qdrant_client.models import PointStruct
 
+    from core.config import EMBEDDING_VEKTOR
+
     manager = real_embeddings_manager
     aussagen = real_repository_factory.create_statement_repository(integration_settings)
     post_id, aussage_id = uuid.uuid4(), str(uuid.uuid4())
@@ -149,7 +151,10 @@ async def test_loeschen_einziger_beitrag_aussage_zaehlt_nicht_mehr_als_beantwort
         points=[
             PointStruct(
                 id=aussage_id,
-                vector=[0.1] * sammlung.config.params.vectors.size,
+                vector={
+                    EMBEDDING_VEKTOR: [0.1]
+                    * sammlung.config.params.vectors[EMBEDDING_VEKTOR].size
+                },
                 payload={
                     "content_type": ContentType.STATEMENT.value,
                     "text": "Bringt ein Tempolimit etwas?",

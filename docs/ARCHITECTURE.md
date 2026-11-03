@@ -100,7 +100,8 @@ listens on 5432 inside the container.
   - PostgreSQL for application metadata (usage tracking)
 - **Features**:
   - Unified content storage with type filtering
-  - Semantic similarity search using 768-dimensional E5 embeddings
+  - Semantic similarity search using 768-dimensional E5 embeddings, stored as the named vector
+    `e5_base` and queried with `query_points`, so that further models can sit next to it (#395)
   - Asynchronous data seeding
   - RESTful API with OpenAPI docs
 - **Architecture**:

@@ -237,6 +237,29 @@ Check the state with
 Details, the manual fallback and the convention for new migrations:
 [`mvp/backend/postgres-app/migrations/README.md`](../mvp/backend/postgres-app/migrations/README.md).
 
+### Qdrant: named vector (#395)
+
+Since #395 the service keeps its embedding as the named vector `e5_base`, so that another
+model can get its own vector next to it later. A new collection is created that way; an
+existing one from before keeps its unnamed vector until the script below changes it.
+Until then the service searches the old collection as before (it logs a warning on start).
+Qdrant cannot rename a vector: the script copies all points with their vectors (no new
+embeddings) into `<collection>_e5_base` and turns the old name into an alias for it.
+Backups, restores and the other scripts keep using the old name.
+
+Once per environment:
+
+1. Take a backup (`mvp/scripts/backup/backup.sh`, includes the Qdrant snapshot).
+2. Roll out the image with #395.
+3. Run `mvp/scripts/manual/vektor_benennen.py` without `--ausfuehren`; it only counts.
+4. Run it with `--ausfuehren`, at a quiet time: what is written to Qdrant while the copy runs
+   can get lost (a changed number of points aborts the run without changes).
+5. Restart the semantic search service at once (`docker restart gutgesagt-semantic-search`).
+   Until it restarts it searches without the vector name and every search fails.
+
+Commands are in [`mvp/scripts/manual/README.md`](../mvp/scripts/manual/README.md). Way back:
+restore the backup from step 1 and restart the service; the image with #395 works with both.
+
 ---
 
 ## 🔧 Maintenance Tasks

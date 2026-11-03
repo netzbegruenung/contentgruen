@@ -64,6 +64,37 @@ docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisie
 auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` braucht den
 ausgerollten neuen Stand.
 
+## Vektor benennen (im semantic-search-Container)
+
+`vektor_benennen.py [--ausfuehren]` – **schreibend mit `--ausfuehren`.** Einmalig mit
+#395: fuehrt den unbenannten Vektor der Collection als benannten Vektor `e5_base`.
+Kopiert alle Punkte samt Vektoren und Payload-Indizes in die neue Collection
+`<collection>_e5_base`, loescht die alte und macht ihren Namen zum Alias auf die neue.
+Nichts wird neu eingebettet, die Treffer bleiben gleich. Ohne `--ausfuehren` zaehlt es
+nur; ein zweiter Lauf meldet `"vorher": "benannt"` und aendert nichts. Aendert sich die
+Zahl der Punkte waehrend der Kopie, bricht es ab, ohne umzustellen.
+
+Reihenfolge (auch in `docs/DEPLOYMENT.md`, „Qdrant: named vector“):
+
+1. Backup ziehen (`mvp/scripts/backup/backup.sh`).
+2. Die Version mit #395 ausrollen. Sie sucht bis Schritt 4 auf dem unbenannten Vektor.
+3. Ohne `--ausfuehren` laufen lassen und die Zahl der Punkte pruefen.
+4. Mit `--ausfuehren` laufen lassen, in einer ruhigen Zeit, und den Dienst sofort neu
+   starten: Bis zum Neustart sucht er ohne Vektornamen und jede Suche schlaegt fehl.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/vektor_benennen.py
+docker exec -i gutgesagt-semantic-search python - < vektor_benennen.py
+docker exec -i gutgesagt-semantic-search python - --ausfuehren < vektor_benennen.py
+docker restart gutgesagt-semantic-search
+```
+
+Getestet in `tests/unit/services/test_vektor_benennen.py` (Speicher-Modus, Aufruf) und
+`tests/integration/test_vektor_benennen_qdrant.py` (echter Qdrant; der Dienst sucht vor
+und nach der Umstellung gleich). Ist die Umstellung auf Test und Produktion gelaufen,
+entfaellt der Uebergang fuer den unbenannten Vektor im Dienst
+(`QdrantEmbeddingsManager._vektorname_aus`).
+
 ## Zustaende umstellen (im semantic-search-Container)
 
 `zustaende_umstellen.py [--ausfuehren]` – **schreibend mit `--ausfuehren`.** Einmalig
