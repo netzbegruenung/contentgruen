@@ -9,14 +9,10 @@ import { NgIf } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 
 import { KartenDaten, KartenQuelle } from './karten-daten';
-import { TEXT_MAX as KOMMENTAR_TEXT_MAX, TITEL_MAX } from '../add-commentary/add-commentary.component';
-import { TEXT_MAX as HINTERGRUNDINFO_TEXT_MAX } from '../add-generictext/add-generictext.component';
+import { HINTERGRUNDINFO_TEXT_MAX, KOMMENTAR_TEXT_MAX, TEXT_MIN, TITEL_MAX } from '../shared/beitrag-grenzen';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { HerkunftEingabe, MeineBeitraegeService } from '../services/meine-beitraege.service';
-
-/** Wie in den Formularen beim Anlegen. */
-export const TEXT_MIN = 10;
 
 /** Die Beitragstypen, die der Autor aendern kann (#299), mit der Grenze ihres Texts wie beim Anlegen. */
 export const AENDERBARE_TYPEN: Readonly<Record<string, number>> = {

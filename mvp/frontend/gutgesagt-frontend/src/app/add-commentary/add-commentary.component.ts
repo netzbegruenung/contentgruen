@@ -46,9 +46,10 @@ import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
+import { KOMMENTAR_TEXT_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
 
-export const TITEL_MAX = 120;
-export const TEXT_MAX = 500;
+export { TITEL_MAX } from '../shared/beitrag-grenzen';
+export const TEXT_MAX = KOMMENTAR_TEXT_MAX;
 /** Zeichengrenze von X und Bluesky; nur ein Hinweis, keine Pruefung. */
 export const PLATTFORM_GRENZE = 280;
 /** Die Fassungen Kurz und Lang (#355), wie im Backend (dtos/commentary.py). */
