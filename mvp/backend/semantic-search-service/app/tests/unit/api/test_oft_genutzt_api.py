@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from api.v1 import usage as usage_module
 from api.v1.usage import router as usage_router
-from dependencies import get_reference_service, get_settings
+from dependencies import get_content_repository, get_reference_service, get_settings
 
 URL = "/api/v1/usage/trending/woche"
 AUTORIN = "kim-1"
@@ -42,11 +42,15 @@ def namen(anzeigenamen_ohne_datenbank):
     return anzeigenamen_ohne_datenbank
 
 
+ALLE_TYPEN = Mock(name="alle_typen")
+
+
 def _client(beitraege):
     app = FastAPI()
     app.include_router(usage_router, prefix="/api/v1/usage")
     app.dependency_overrides[get_settings] = lambda: Mock()
     app.dependency_overrides[get_reference_service] = lambda: Mock()
+    app.dependency_overrides[get_content_repository] = lambda: ALLE_TYPEN
 
     nutzung = Mock()
     nutzung.enrich_content_with_usage.side_effect = lambda eintraege: [
@@ -86,6 +90,15 @@ class TestOftGenutztApi:
         for feld in ("authors", "last_modified_by", "edit_history"):
             assert feld not in results[0]
         namen.anzeigenamen.assert_not_called()
+
+    def test_oft_genutzt_liest_ueber_das_aggregierte_repository(self, namen):
+        """Das Repository kommt per get_content_repository, wie bei Nutzung und Stimmen."""
+        patcher, client = _client([_beitrag(1), _beitrag(2), _beitrag(3)])
+        with patcher:
+            client.get(URL)
+            laden = usage_module.sichtbaren_beitrag_laden
+
+        assert laden.call_args.args[1] is ALLE_TYPEN
 
     def test_oft_genutzt_angemeldet_mit_anzeigename_und_nutzung(self, namen):
         patcher, client = _client([_beitrag(1), _beitrag(2), _beitrag(3)])

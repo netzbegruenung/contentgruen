@@ -124,11 +124,13 @@ def _lader(typ_get, beitrag_get):
     des_typs = MagicMock()
     des_typs.get = AsyncMock(side_effect=beitrag_get)
     factory = MagicMock()
-    factory.create_content_repository.return_value = alle_typen
     factory.create_registry_repository.return_value = des_typs
     herkunft = MagicMock()
     herkunft.herkunft_ergaenzen = AsyncMock()
-    return sichtbaren_beitrag_laden(MagicMock(), factory, herkunft), herkunft
+    return (
+        sichtbaren_beitrag_laden(MagicMock(), alle_typen, factory, herkunft),
+        herkunft,
+    )
 
 
 def _post(_id):

@@ -72,6 +72,7 @@ async def test_oft_genutzt_zeigt_sichtbare_ohne_gesperrte(
         _Nutzung([sichtbar[0], gesperrt, uuid.uuid4(), *sichtbar[1:]]),
         sichtbaren_beitrag_laden(
             integration_settings,
+            real_repository_factory.create_content_repository(integration_settings),
             real_repository_factory,
             ReferenceService(integration_settings, real_repository_factory),
         ),

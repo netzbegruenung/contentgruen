@@ -43,10 +43,14 @@ BeitragLaden = Callable[[uuid.UUID], Awaitable[Optional[Dict[str, Any]]]]
 """Den sichtbaren Beitrag zu einer ID als Dict, oder None, wenn er nicht (mehr) sichtbar ist."""
 
 
-def sichtbaren_beitrag_laden(settings, repository_factory, reference_service):
+def sichtbaren_beitrag_laden(
+    settings, alle_typen, repository_factory, reference_service
+) -> BeitragLaden:
     """
-    Der BeitragLaden gegen Qdrant: erst den Typ nachsehen, dann den Beitrag ueber
-    das Repository seines Typs lesen, damit er alle Felder fuer die Karte hat.
+    Der BeitragLaden gegen Qdrant: erst im aggregierten Repository ``alle_typen``
+    (``get_content_repository`` in dependencies.py) den Typ nachsehen, dann den
+    Beitrag ueber das Repository seines Typs lesen, damit er alle Felder fuer die
+    Karte hat.
 
     Gesperrt, geloescht oder nicht vorhanden meldet ``get`` als ValueError
     (base_repository.py); das heisst hier "nicht zeigen". Aussagen und Herkuenfte
@@ -59,8 +63,6 @@ def sichtbaren_beitrag_laden(settings, repository_factory, reference_service):
     ContentType (``generic_text``); das Frontend kennt beide Schreibweisen.
     """
     from domain.content_registry import REGISTRY
-
-    alle_typen = repository_factory.create_content_repository(settings)
 
     async def laden(beitrag_id: uuid.UUID) -> Optional[Dict[str, Any]]:
         try:

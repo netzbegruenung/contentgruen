@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 from dependencies import (
     get_beitrag_laden,
+    get_content_repository,
     get_aufrufer,
     get_settings,
     get_current_user_optional,
@@ -34,6 +35,7 @@ from dtos.image import BildResponse
 from services.content.reference_service import ReferenceService
 from services.cleanup.usage_cleanup_service import get_cleanup_service
 from core.config import Settings
+from repositories.interfaces.content_repository import IContentRepository
 from core.logging import log_pseudonym
 
 logger = logging.getLogger(__name__)
@@ -337,6 +339,7 @@ async def oft_genutzt(
     aufrufer: Aufrufer = Depends(get_aufrufer),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
+    alle_typen: IContentRepository = Depends(get_content_repository),
 ):
     """
     "Diese Woche oft genutzt" auf der Startseite (#364): die sichtbaren Beitraege
@@ -357,7 +360,7 @@ async def oft_genutzt(
         service = OftGenutztService(
             usage_service,
             sichtbaren_beitrag_laden(
-                settings, QdrantRepositoryFactory(), reference_service
+                settings, alle_typen, QdrantRepositoryFactory(), reference_service
             ),
         )
         angereichert = usage_service.enrich_content_with_usage(
