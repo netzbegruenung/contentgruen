@@ -327,7 +327,7 @@ class TestSuchenOhneTreffer:
         assert eins is not None
         assert eins == zwei
 
-    def test_anderer_browser_am_selben_anschluss_ist_eine_weitere_person(
+    def test_anderer_browser_am_selben_anschluss_hat_ein_anderes_tagespseudonym(
         self, suchapp, suchen_ohne_treffer
     ):
         app, service = suchapp
@@ -342,6 +342,43 @@ class TestSuchenOhneTreffer:
         )
 
         assert eins != zwei
+
+    def test_anderer_browser_am_selben_anschluss_meldet_denselben_anschluss(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        """Daran zaehlt die Kennzahl ihn nicht als weitere Person (#496)."""
+        app, service = suchapp
+        service.add_statement = AsyncMock(return_value=(False, uuid.uuid4(), "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+        client = TestClient(app)
+
+        for headers in (BESUCHER, {**BESUCHER, "User-Agent": "Chrome"}):
+            client.post(
+                SEARCH_URL, json={"query_text": "klima", "limit": 10}, headers=headers
+            )
+
+        eins, zwei = (
+            a.kwargs["anschluss_pruefwert"]
+            for a in suchen_ohne_treffer.erfassen.call_args_list
+        )
+        assert eins is not None
+        assert eins == zwei
+
+    def test_angemeldet_meldet_keinen_anschluss(self, suchapp, suchen_ohne_treffer):
+        """Angemeldete erkennt der Server an der Kennung; der Anschluss geht nicht ein."""
+        app, service = suchapp
+        service.add_statement = AsyncMock(return_value=(False, uuid.uuid4(), "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+
+        TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "klima", "limit": 10},
+            headers={"X-User": "person-1", **BESUCHER},
+        )
+
+        assert (
+            suchen_ohne_treffer.erfassen.call_args.kwargs["anschluss_pruefwert"] is None
+        )
 
     def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
         self, suchapp, suchen_ohne_treffer

@@ -318,7 +318,8 @@ und der Ablauf oben erfasst die Tabelle nicht.
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
   zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events`) eine Aussage
   heute schon gezählt haben, liegt nur im Arbeitsspeicher (als SHA-256-Prüfwert) und wird
-  um Mitternacht (UTC) verworfen. Wochen älter als acht löscht ein täglicher Task von
+  um Mitternacht (UTC) verworfen; bei Besuchern ebenso ein Prüfwert aus Anschluss-Prüfwert
+  (Anschluss mit dem Tagesschlüssel) und Aussage, damit je Anschluss höchstens eine Person zählt (#496). Wochen älter als acht löscht ein täglicher Task von
   selbst (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
 - **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
   Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen

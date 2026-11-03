@@ -446,27 +446,29 @@
         Um Personen zu unterscheiden, nutzen wir das oben beschriebene tägliche Pseudonym,
         aber nur im Arbeitsspeicher des Servers und nur für den laufenden Tag: Dort merken
         wir uns einen aus Pseudonym und Eintrag berechneten Prüfwert, damit wiederholte
-        Suchen derselben Person nicht als weitere Personen zählen. Diese Merkliste wird
-        nicht gespeichert und um Mitternacht (UTC, in Deutschland 1 bzw. 2 Uhr nachts)
-        verworfen.
+        Suchen derselben Person nicht als weitere Personen zählen. Zusätzlich merken wir uns
+        bei Suchen ohne Anmeldung einen aus deinem Anschluss (IP-Adresse, bei IPv6 ihr
+        vorderer Teil) und dem Eintrag berechneten Prüfwert, damit je Anschluss höchstens eine
+        Person zählt. Diese Merkliste wird nicht gespeichert und um Mitternacht (UTC, in
+        Deutschland 1 bzw. 2 Uhr nachts) verworfen.
       </p>
       <p>
-        „Person“ heißt hier deshalb: dasselbe Pseudonym am selben Tag. Als weitere Person
-        zählt dieselbe Person, wenn sie <strong>an einem anderen Tag</strong> sucht (das
-        Pseudonym wechselt täglich), wenn sie sich <strong>im Laufe des Tages
-        anmeldet</strong> (vorher gehen IP-Adresse und Browser ein, danach ihre Kennung;
-        beides zu verknüpfen wäre ein neuer Bezug zu ihrer Person), wenn sie einen
-        <strong>anderen Browser</strong> oder ein <strong>anderes Netz</strong> nutzt
-        (etwa vom WLAN ins Mobilfunknetz wechselt) und wenn der <strong>Server neu
-        startet</strong> (Merkliste und Tagesschlüssel gehen dabei verloren). Umgekehrt
-        zählen Personen, die am selben Anschluss denselben Browser nutzen, als eine.
+        „Person“ heißt hier deshalb: dasselbe Pseudonym am selben Tag, ohne Anmeldung
+        höchstens eine je Anschluss. Als weitere Person zählt dieselbe Person, wenn sie
+        <strong>an einem anderen Tag</strong> sucht (das Pseudonym wechselt täglich), wenn
+        sie sich <strong>im Laufe des Tages anmeldet</strong> (vorher gehen IP-Adresse und
+        Browser ein, danach ihre Kennung; beides zu verknüpfen wäre ein neuer Bezug zu ihrer
+        Person), wenn sie ein <strong>anderes Netz</strong> nutzt (etwa vom WLAN ins
+        Mobilfunknetz wechselt) und wenn der <strong>Server neu startet</strong> (Merkliste
+        und Tagesschlüssel gehen dabei verloren). Umgekehrt zählen Personen, die ohne
+        Anmeldung am selben Anschluss suchen, als eine, auch mit verschiedenen Browsern.
       </p>
       <p>
         Auf die Listen der Suchen ohne Treffer kommt ein Eintrag erst, wenn <strong>mindestens
         zwei verschiedene Personen</strong> im obigen Sinn ohne Treffer danach gesucht haben.
-        Wer am selben Tag im selben Browser mehrfach dasselbe sucht, bringt den Eintrag also
-        nicht allein auf die Listen, außer der Server startet zwischendurch neu. Die Listen
-        sehen
+        Wer am selben Tag am selben Anschluss oder mit demselben Konto mehrfach dasselbe sucht,
+        bringt den Eintrag also nicht allein auf die Listen, außer der Server startet
+        zwischendurch neu. Die Listen sehen
       </p>
       <ul>
         <li>
