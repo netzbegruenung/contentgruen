@@ -9,7 +9,7 @@
  * geaendert wird nur noch an einer Stelle.
  *
  * Bewusst nicht hier: alles, was nur in einem der Texte vorkommt
- * (Registereintrag, MStV-Verantwortlicher, Aufsichtsbehoerde, Datenschutz-
+ * (Registereintrag, Aufsichtsbehoerde, Datenschutz-
  * beauftragter). Eine gemeinsame Datei fuer Einzelvorkommen macht die Texte
  * schwerer lesbar, ohne etwas gegen Drift zu tun.
  */
