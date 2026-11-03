@@ -229,10 +229,37 @@ recognised server-side by their daily pseudonym.
 | **Display** | — | Seam 3 (adapter fields + body block in the card) |
 | Special behavior (e.g. dedup) | — | optional behavior strategy |
 
-**Adding a new type =** one registry entry + a model/DTO with its extra fields (ingestion defaults
+**Adding a new type =** (in short; step by step in the checklist below) one registry entry + a model/DTO with its extra fields (ingestion defaults
 to `DirectText`) + a response DTO that selects what goes out (`<Type>Response`/`<Type>Treffer` in
 `dtos/beitrag.py`, without Kennung, #333) + its fields in the card adapter and, only if it needs its own body,
 a block in `app-beitragskarte`. No engine changes, no cloning.
+
+### Adding a Beitragstyp: checklist
+
+Paths below `app/` are in `mvp/backend/semantic-search-service/app/`, frontend paths in
+`mvp/frontend/gutgesagt-frontend/src/app/`.
+
+1. **Model**: `<Type>DbEntry(BaseContentDbEntry)` and `<Type>SearchResult` in `domain/models/`,
+   plus the `ContentType` enum member.
+2. **Registry**: a `ContentTypeSpec` entry in `domain/content_registry.py`, built with
+   `create_registry_repository` (the generic `RegistryQdrantRepository`; no repository subclass).
+3. **Service and router**: a `get_<type>_service` dependency in `dependencies.py` that builds the
+   generic service from the spec, and an `api/v1/<type>.py` router wired in `main.py`. Ingestion is
+   the only type-specific seam.
+4. **Search and responses**: the type joins the `/searchByText` spec list and the `SearchResponse`
+   DTO; the `SearchOrchestrator` handles it generically. Responses go out through
+   `<Type>Response(BeitragResponse)` and `<Type>Treffer` in `dtos/beitrag.py`, an allowlist of
+   fields, never the DbEntry, so no Kennung leaks (#333); build them with
+   `als_responses`/`fuer_aufrufer` (`services/beitrag_fuer_aufrufer.py`). If the type shows up in
+   `/content/recent`, add it to `NEUESTE` in `api/v1/content.py`; `OFT_GENUTZT` in
+   `api/v1/usage.py` maps every type to its response for „Diese Woche oft genutzt“.
+5. **Frontend**: one entry in `shared/content-type-registry.ts` (key, icon, German `label`,
+   `resultField`, `emoji`), the type's fields in the `ausSuchergebnis` adapter
+   (`beitragskarte/karten-daten.ts`) and, only if it needs its own body, a block in
+   `app-beitragskarte`. The registry imports no components, so type names (`typLabel()`) stay out
+   of the initial bundle.
+6. **Tests first** against live Qdrant in `tests/integration/` (round-trip and orchestrator
+   parity), plus a frontend render/vote test.
 
 ## Incremental migration path
 
