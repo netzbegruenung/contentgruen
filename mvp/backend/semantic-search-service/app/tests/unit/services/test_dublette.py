@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from dtos.beitrag import VorhandenDto
 from services.content.base_content_service import Dublettenpruefung
 from services.dublette import (
     Dublette,
@@ -74,8 +75,8 @@ class TestDublette:
         assert Dublette.aus(vorhanden, "person-1", uuid.uuid4()).genommen is False
         assert Dublette.aus(vorhanden, "person-1", vorhanden.id).genommen is True
 
-    def test_als_antwort_nennt_titel_und_eigen(self):
+    def test_antwort_nennt_titel_und_eigen(self):
         dublette = Dublette.aus(_vorhanden(autor="person-2"), "person-1", None)
-        antwort = dublette.als_antwort()
+        antwort = VorhandenDto.aus(dublette.vorhanden, dublette.eigen)
         assert antwort.titel == "Vorhandener Titel"
         assert antwort.eigen is False

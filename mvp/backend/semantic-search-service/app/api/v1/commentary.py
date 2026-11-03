@@ -15,6 +15,7 @@ from dtos.commentary import (
     AddCommentaryRequest,
     AddCommentaryResponse,
 )
+from dtos.beitrag import VorhandenDto
 from services.dublette import Dublette, VorhandenWeg, entscheidung_anwenden
 from services.content.commentary_service import CommentaryService
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
@@ -244,7 +245,11 @@ async def add_commentary(
             statement_text=statement_text,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
-            vorhanden=dublette.als_antwort() if dublette else None,
+            vorhanden=(
+                VorhandenDto.aus(dublette.vorhanden, dublette.eigen)
+                if dublette
+                else None
+            ),
         )
 
     except HTTPException:

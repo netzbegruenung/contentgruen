@@ -22,6 +22,11 @@ class VorhandenDto(BaseModel):
     # Stimme geben, nehmen geht.
     eigen: bool = False
 
+    @classmethod
+    def aus(cls, vorhanden, eigen: bool) -> "VorhandenDto":
+        """Aus dem vorhandenen Beitrag (BaseContentSearchResult)."""
+        return cls(titel=vorhanden.title, eigen=eigen)
+
 
 class BeitragResponse(BaseModel):
     """

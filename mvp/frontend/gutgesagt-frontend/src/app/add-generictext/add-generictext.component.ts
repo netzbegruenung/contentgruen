@@ -208,7 +208,6 @@ export class AddGenerictextComponent implements OnChanges {
     return dublettenHinweis(this.vorhanden, DUBLETTEN_TEXTE, this.mitAussage);
   }
 
-
   private vorschauCache?: { titel: string; text: string; quellen: unknown; aussage: string; karte: KartenDaten };
 
   constructor(
@@ -394,7 +393,7 @@ export class AddGenerictextComponent implements OnChanges {
         if (antwort.vorhanden) {
           // Nichts angelegt und nichts verknuepft: Das Formular bleibt, der Hinweis
           // zeigt die vorhandene. Ein Einwurf aus dem Fangkorb bleibt, wie er war.
-          this.vorhandenZeigen(request, antwort);
+          this.vorhanden = vorhandenAus(request, antwort);
           return;
         }
         this.responseId = antwort.id;
@@ -477,11 +476,6 @@ export class AddGenerictextComponent implements OnChanges {
     });
   }
 
-  private vorhandenZeigen(anfrage: AddGenericTextRequest, antwort: AddGenericTextResponse): void {
-    this.vorhanden = vorhandenAus(anfrage, antwort);
-  }
-
-
   /**
    * Die eigene vorhandene Hintergrundinfo nehmen, ohne Stimme und ohne zweite Kopie.
    * Mit Aussage haengt sie erst diese Wahl an sie: dieselbe Anfrage noch einmal, mit
@@ -511,7 +505,7 @@ export class AddGenerictextComponent implements OnChanges {
         this.nimmt = false;
         if (antwort.vorhanden && antwort.id !== vorhanden.id) {
           // Inzwischen ist eine andere vorhanden: Die Person sieht erst sie.
-          this.vorhandenZeigen(nehmen, antwort);
+          this.vorhanden = vorhandenAus(nehmen, antwort);
           return;
         }
         if (antwort.verknuepft !== true || !antwort.statement_text) {

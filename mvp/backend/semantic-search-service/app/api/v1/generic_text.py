@@ -15,6 +15,7 @@ from dtos.generic_text import (
     AddGenericTextRequest,
     AddGenericTextResponse,
 )
+from dtos.beitrag import VorhandenDto
 from services.dublette import Dublette, VorhandenWeg, entscheidung_anwenden
 from services.content.generic_text_service import (
     GenericTextService,
@@ -233,7 +234,11 @@ async def add_generic_text(
             statement_text=statement_text,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
-            vorhanden=dublette.als_antwort() if dublette else None,
+            vorhanden=(
+                VorhandenDto.aus(dublette.vorhanden, dublette.eigen)
+                if dublette
+                else None
+            ),
         )
 
     except HTTPException:

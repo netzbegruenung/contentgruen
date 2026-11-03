@@ -212,7 +212,7 @@ class EinwurfRepository:
     def get_by_id(
         self, raw_input_id: uuid.UUID, current_user: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """Einen Einwurf mit allen Saetzen und Verknuepfungen, oder None."""
+        """Einen Einwurf mit allen Saetzen und Ausformuliert-in-Eintraegen, oder None."""
         try:
             with self.db.get_session() as session:
                 row = (
@@ -596,7 +596,7 @@ class EinwurfRepository:
     def _mit_saetzen_und_ausformuliert_in(
         self, session, rows: Sequence[Einwurf], current_user: Optional[str]
     ) -> List[Dict[str, Any]]:
-        """Alle Saetze und Verknuepfungen an die Zeilen haengen."""
+        """Alle Saetze und Ausformuliert-in-Eintraege an die Zeilen haengen."""
         if not rows:
             return []
         ids = [row.id for row in rows]
@@ -676,7 +676,7 @@ class EinwurfRepository:
     def _ausformuliert_in(
         session, ids: List[uuid.UUID]
     ) -> Dict[uuid.UUID, List[AusformuliertIn]]:
-        """Die Verknuepfungen zu den Einwuerfen, aelteste zuerst."""
+        """Die Ausformuliert-in-Eintraege zu den Einwuerfen, aelteste zuerst."""
         ausformuliert_in = (
             session.query(AusformuliertIn)
             .filter(AusformuliertIn.raw_input_id.in_(ids))

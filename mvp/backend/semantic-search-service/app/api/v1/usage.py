@@ -35,7 +35,6 @@ from dtos.image import BildResponse
 from services.content.reference_service import ReferenceService
 from services.cleanup.bereinigungsjob import get_bereinigungsjob
 from core.config import Settings
-from repositories.interfaces.content_repository import IContentRepository
 from core.logging import log_pseudonym
 
 logger = logging.getLogger(__name__)
@@ -339,7 +338,6 @@ async def oft_genutzt(
     aufrufer: Aufrufer = Depends(get_aufrufer),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
-    alle_typen: IContentRepository = Depends(get_content_repository),
 ):
     """
     "Diese Woche oft genutzt" auf der Startseite (#364): die sichtbaren Beitraege
@@ -359,8 +357,13 @@ async def oft_genutzt(
         usage_service = get_usage_service()
         service = OftGenutztService(
             usage_service,
+            # Im try gebaut: Scheitert das Repository, antwortet der Endpunkt mit
+            # seinem 500 und Log (wie get_beitrag_laden in dependencies.py).
             sichtbaren_beitrag_laden(
-                settings, alle_typen, QdrantRepositoryFactory(), reference_service
+                settings,
+                get_content_repository(settings),
+                QdrantRepositoryFactory(),
+                reference_service,
             ),
         )
         angereichert = usage_service.enrich_content_with_usage(

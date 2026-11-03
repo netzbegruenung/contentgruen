@@ -19,7 +19,6 @@ from typing import Optional
 from uuid import UUID
 
 from domain.models.base_content import BaseContentSearchResult
-from dtos.beitrag import VorhandenDto
 from services.content.base_content_service import Dublettenpruefung
 
 
@@ -88,6 +87,3 @@ class Dublette:
             eigen=eigen,
             genommen=eigen and ist_gezeigter(vorhanden, vorhanden_nehmen),
         )
-
-    def als_antwort(self) -> VorhandenDto:
-        return VorhandenDto(titel=self.vorhanden.title, eigen=self.eigen)

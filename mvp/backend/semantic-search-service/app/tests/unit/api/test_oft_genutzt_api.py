@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from api.v1 import usage as usage_module
 from api.v1.usage import router as usage_router
-from dependencies import get_content_repository, get_reference_service, get_settings
+from dependencies import get_reference_service, get_settings
 
 URL = "/api/v1/usage/trending/woche"
 AUTORIN = "kim-1"
@@ -50,7 +50,6 @@ def _client(beitraege):
     app.include_router(usage_router, prefix="/api/v1/usage")
     app.dependency_overrides[get_settings] = lambda: Mock()
     app.dependency_overrides[get_reference_service] = lambda: Mock()
-    app.dependency_overrides[get_content_repository] = lambda: ALLE_TYPEN
 
     nutzung = Mock()
     nutzung.enrich_content_with_usage.side_effect = lambda eintraege: [
@@ -69,6 +68,7 @@ def _client(beitraege):
         get_usage_service=Mock(return_value=nutzung),
         OftGenutztService=_Service,
         sichtbaren_beitrag_laden=Mock(),
+        get_content_repository=Mock(return_value=ALLE_TYPEN),
     ), TestClient(app)
 
 
