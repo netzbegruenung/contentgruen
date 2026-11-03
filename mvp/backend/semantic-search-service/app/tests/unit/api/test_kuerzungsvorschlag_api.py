@@ -11,6 +11,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from api.v1.kuerzungsvorschlag import TEXT_MAX
 from api.v1.kuerzungsvorschlag import router as kuerzungsvorschlag_router
 from dependencies import get_kuerzungsvorschlag_service
 from utils.rate_limiter import kuerzungsvorschlag_rate_limiter
@@ -76,7 +77,9 @@ def test_nur_fuer_angemeldete(client):
 
 
 def test_zu_langer_text_wird_abgewiesen(client):
-    response = client.post(PFAD, json={"text": "x" * 10_001}, headers=ANGEMELDET)
+    response = client.post(
+        PFAD, json={"text": "x" * (TEXT_MAX + 1)}, headers=ANGEMELDET
+    )
 
     assert response.status_code == 422
 

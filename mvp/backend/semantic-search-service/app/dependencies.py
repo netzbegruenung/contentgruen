@@ -219,9 +219,17 @@ def get_gegenlesen_service() -> GegenlesenService:
     return _gegenlesen_service
 
 
+_kuerzungsvorschlag_service: Optional[KuerzungsvorschlagService] = None
+
+
 def get_kuerzungsvorschlag_service() -> KuerzungsvorschlagService:
-    """Teilt sich das Sprachmodell mit dem Gegenlesen (#403)."""
-    return KuerzungsvorschlagService(werkzeuge=SPRACHWERKZEUGE)
+    """Einmal je Prozess; teilt sich das Sprachmodell mit dem Gegenlesen (#403)."""
+    global _kuerzungsvorschlag_service
+    if _kuerzungsvorschlag_service is None:
+        _kuerzungsvorschlag_service = KuerzungsvorschlagService(
+            werkzeuge=SPRACHWERKZEUGE
+        )
+    return _kuerzungsvorschlag_service
 
 
 def get_moderation_service() -> ModerationService:

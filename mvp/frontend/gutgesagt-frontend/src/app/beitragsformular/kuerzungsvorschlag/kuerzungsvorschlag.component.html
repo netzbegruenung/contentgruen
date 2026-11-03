@@ -1,4 +1,4 @@
-<div *ngIf="hatText" class="kuerzungsvorschlag">
+<div *ngIf="lohntSich" class="kuerzungsvorschlag">
     <button *ngIf="stand !== 'vorschlag'" type="button" class="text-link" (click)="vorschlagen()"
             [disabled]="stand === 'laedt'">Kürzungsvorschlag</button>
     <div aria-live="polite">

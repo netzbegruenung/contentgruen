@@ -27,6 +27,7 @@ describe('KuerzungsvorschlagComponent', () => {
     http = TestBed.inject(HttpTestingController);
     uebernommen = [];
     fixture.componentInstance.uebernehmen.subscribe((v: string) => uebernommen.push(v));
+    fixture.componentRef.setInput('grenze', 40);
     fixture.componentRef.setInput('text', LANG);
     fixture.componentRef.setInput('aussage', 'Wärmepumpen sind zu teuer');
     fixture.detectChanges();
@@ -94,10 +95,35 @@ describe('KuerzungsvorschlagComponent', () => {
     expect(element().querySelector('[role="alert"]')?.textContent).toContain('gerade nicht');
   });
 
-  it('ohne Text gibt es keinen Knopf', () => {
-    fixture.componentRef.setInput('text', '   ');
+  it('gibt es erst, wenn der Kommentar länger ist als die Kurzfassung', () => {
+    fixture.componentRef.setInput('text', 'a'.repeat(40));
+    fixture.detectChanges();
+    expect(knopf('Kürzungsvorschlag')).toBeUndefined();
+
+    fixture.componentRef.setInput('text', 'a'.repeat(41));
+    fixture.detectChanges();
+    expect(knopf('Kürzungsvorschlag')).toBeDefined();
+  });
+
+  it('eine Antwort zu einem alten Text kommt nicht mehr an', () => {
+    knopf('Kürzungsvorschlag').click();
+    fixture.detectChanges();
+    const anfrage = http.expectOne(PFAD);
+
+    fixture.componentRef.setInput('text', LANG + ' Noch ein Satz dazu.');
     fixture.detectChanges();
 
-    expect(knopf('Kürzungsvorschlag')).toBeUndefined();
+    expect(anfrage.cancelled).toBeTrue();
+    expect(element().querySelector('.kuerzungsvorschlag-text')).toBeNull();
+  });
+
+  it('verwirft einen Vorschlag, sobald sich der Kommentar ändert', () => {
+    vorschlagHolen('Die Wärmepumpe spart viel Geld.');
+
+    fixture.componentRef.setInput('text', LANG + ' Noch ein Satz dazu.');
+    fixture.detectChanges();
+
+    expect(element().querySelector('.kuerzungsvorschlag-text')).toBeNull();
+    expect(uebernommen).toEqual([]);
   });
 });

@@ -23,7 +23,9 @@ from services.gegenlesen.gegenlesen_service import Sprachwerkzeuge
 #: Abhängigkeiten, deren Teilbaum ein Einschub ist, wenn ein Komma davor steht:
 #: Relativsatz, Apposition, Parenthese (TIGER-Schema von de_core_news_sm).
 _EINSCHUB_DEPS = {"rc", "app", "par"}
-_GEDANKENSTRICHE = {"–", "—", "-"}
+#: Nur echte Gedankenstriche: Ein Bindestrich mit Leerzeichen steht auch in
+#: "Ost - West - Problem".
+_GEDANKENSTRICHE = {"–", "—"}
 _VERNEINUNGSWOERTER = {
     "nicht",
     "kein",
@@ -38,7 +40,27 @@ _VERNEINUNGSWOERTER = {
     "niemand",
     "nirgends",
     "keinesfalls",
+    "weder",
+    "noch",
+    "kaum",
+    "ohne",
 }
+#: Zahlwörter, die spaCy nicht als Zahl erkennt (Anteile und Vielfache).
+_ZAHLWOERTER = {
+    "hälfte",
+    "drittel",
+    "viertel",
+    "fünftel",
+    "zehntel",
+    "prozent",
+    "halb",
+    "doppelt",
+    "dreifach",
+    "verdoppeln",
+    "halbieren",
+}
+#: So endet ein Satz; spaCy trennt manchmal mitten im Satz ("gilt ab | 2024.").
+_SATZENDE = {".", "!", "?", "…"}
 #: Wortarten, deren Grundformen tragen, worum es geht.
 _INHALT = {"NOUN", "PROPN", "VERB", "ADJ"}
 
@@ -54,7 +76,7 @@ class KuerzungsvorschlagService:
         if not text:
             return None
         doc = self._werkzeuge.analysieren(text)
-        saetze = [list(s) for s in doc.sents]
+        saetze = _saetze(doc)
         gekuerzt = [_ohne_einschuebe(s) for s in saetze]
 
         formen = [_grundformen(s) for s in saetze]
@@ -71,13 +93,14 @@ class KuerzungsvorschlagService:
             return w
 
         # Die zentralsten zuerst, bei Gleichstand der frühere Satz. Ein Satz, der mit
-        # nichts anderem etwas gemein hat, schweift ab und füllt keinen Platz auf; nur
+        # nichts anderem etwas gemein hat, schweift ab und kommt nicht in Frage; nur
         # wenn alle so sind, bleibt der erste, der passt.
         werte = {i: wert(i) for i in range(len(saetze))}
+        nur_zentrale = any(w > 0 for w in werte.values())
         reihenfolge = sorted(werte, key=lambda i: (-werte[i], i))
         gewaehlt: List[int] = []
         for i in reihenfolge:
-            if not gekuerzt[i] or (gewaehlt and werte[i] <= 0):
+            if not gekuerzt[i] or (nur_zentrale and werte[i] <= 0):
                 continue
             probe = sorted(gewaehlt + [i])
             if len(" ".join(gekuerzt[j] for j in probe)) <= self._max:
@@ -85,6 +108,21 @@ class KuerzungsvorschlagService:
         if not gewaehlt:
             return None
         return " ".join(gekuerzt[j] for j in gewaehlt)
+
+
+def _saetze(doc) -> List[list]:
+    """Die Sätze, wie spaCy sie trennt, aber nie mitten im Satz: Endet einer nicht
+    mit einem Satzzeichen, gehört der nächste noch dazu ("gilt ab" + "2024.")."""
+    saetze: List[list] = []
+    for satz in doc.sents:
+        tokens = [t for t in satz if not t.is_space]
+        if not tokens:
+            continue
+        if saetze and saetze[-1][-1].text not in _SATZENDE:
+            saetze[-1].extend(tokens)
+        else:
+            saetze.append(tokens)
+    return saetze
 
 
 def _ohne_einschuebe(satz: list) -> str:
@@ -104,27 +142,39 @@ def _ohne_einschuebe(satz: list) -> str:
                 weg.add(danach.i)
 
     teile: List[str] = []
+    letzter = None
     for t in satz:
         if t.i in weg or t.is_space:
             continue
-        if teile:
-            vorher = nach_index.get(t.i - 1)
-            teile.append(" " if vorher is not None and _leerraum_nach(vorher) else "")
+        if letzter is not None:
+            if letzter.i == t.i - 1:
+                teile.append(" " if _leerraum_nach(letzter) else "")
+            elif t.is_punct:
+                # Satzzeichen direkt nach einem Einschub: "Strom – xyz – ." -> "Strom."
+                teile.append("")
+            else:
+                teile.append(" ")
         teile.append(t.text)
+        letzter = t
     return "".join(teile).strip()
 
 
 def _einschuebe(satz: list) -> List[list]:
     spans: List[list] = []
-    # Klammern und Gedankenstrich-Paare, samt den Zeichen selbst.
+    # Klammern (die äußerste, samt verschachtelten) und Gedankenstrich-Paare, samt
+    # den Zeichen selbst.
     offen = None
+    tiefe = 0
     strich = None
     for pos, t in enumerate(satz):
         if t.text == "(":
-            offen = pos
-        elif t.text == ")" and offen is not None:
-            spans.append(satz[offen : pos + 1])
-            offen = None
+            if tiefe == 0:
+                offen = pos
+            tiefe += 1
+        elif t.text == ")" and tiefe > 0:
+            tiefe -= 1
+            if tiefe == 0:
+                spans.append(satz[offen : pos + 1])
         elif t.text in _GEDANKENSTRICHE and t.is_punct:
             if strich is None:
                 strich = pos
@@ -132,13 +182,16 @@ def _einschuebe(satz: list) -> List[list]:
                 spans.append(satz[strich : pos + 1])
                 strich = None
     # Relativsätze, Appositionen und Parenthesen, wenn ein Komma sie abtrennt.
-    erstes = satz[0].i if satz else 0
+    nach_index = {t.i: t for t in satz}
     for t in satz:
         if t.dep_ not in _EINSCHUB_DEPS:
             continue
         baum = list(t.subtree)
-        links = baum[0].i - erstes
-        if links > 0 and satz[links - 1].text == ",":
+        # Nur ein zusammenhängender Teilbaum ist ein Einschub.
+        if baum[-1].i - baum[0].i + 1 != len(baum):
+            continue
+        davor = nach_index.get(baum[0].i - 1)
+        if davor is not None and davor.text == ",":
             spans.append(baum)
     return spans
 
@@ -149,6 +202,8 @@ def _traegt_bedeutung(token) -> bool:
         token.dep_ == "ng"
         or token.tag_ == "PTKNEG"
         or token.lower_ in _VERNEINUNGSWOERTER
+        or token.lower_ in _ZAHLWOERTER
+        or token.lemma_.lower() in _ZAHLWOERTER
         or token.like_num
         or token.pos_ == "NUM"
         or any(z.isdigit() for z in token.text)

@@ -292,7 +292,7 @@ Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens e
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
 **Kürzungsvorschlag**:
-Eine Kurzfassung, die das Formular auf Klick aus den eigenen Sätzen eines Kommentars vorschlägt, ohne KI: Die zentralen Sätze bleiben, Einschübe fallen weg, Verneinungen und Zahlen bleiben stehen. Er besteht nur aus Wörtern des Originals in ihrer Reihenfolge und formuliert nichts um. Die Person übernimmt oder verwirft ihn; nichts wird automatisch ersetzt, und gespeichert wird er erst mit dem Kommentar.
+Eine Kurzfassung, die das Formular auf Klick aus den eigenen Sätzen eines Kommentars vorschlägt, der länger ist als die Kurzfassung sein darf, ohne KI: Die zentralen Sätze bleiben, Einschübe fallen weg, Verneinungen und Zahlen bleiben stehen. Er besteht nur aus Wörtern des Originals in ihrer Reihenfolge und formuliert nichts um. Die Person übernimmt oder verwirft ihn; nichts wird automatisch ersetzt, und gespeichert wird er erst mit dem Kommentar.
 _Avoid_: Zusammenfassung, KI-Vorschlag (der kommt von einem Sprachmodell), Zuschnitt
 
 **Meldung**:

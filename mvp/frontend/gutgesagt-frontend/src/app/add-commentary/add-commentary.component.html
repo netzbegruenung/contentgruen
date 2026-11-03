@@ -53,7 +53,7 @@
                         <mat-error *ngIf="commentaryForm.get('kurz')?.hasError('maxlength')">Höchstens {{ kurzMax }} Zeichen.</mat-error>
                     </mat-form-field>
                     <!-- Kürzungsvorschlag aus den eigenen Sätzen, nur auf Klick, ohne KI (#403) -->
-                    <app-kuerzungsvorschlag [text]="commentaryForm.value.text" [aussage]="aussage.text"
+                    <app-kuerzungsvorschlag [text]="commentaryForm.value.text" [aussage]="aussage.text" [grenze]="kurzMax"
                                             (uebernehmen)="kurzUebernehmen($event)"></app-kuerzungsvorschlag>
                     <mat-form-field appearance="outline" class="formular-feld lang-feld">
                         <mat-label>Langfassung (optional)</mat-label>

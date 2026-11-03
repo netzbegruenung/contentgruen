@@ -1,6 +1,18 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, EventEmitter, Input, Output, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  inject,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 
 import { KuerzungsvorschlagService } from './kuerzungsvorschlag.service';
 
@@ -19,11 +31,13 @@ type Stand = 'leer' | 'laedt' | 'vorschlag' | 'passt-nicht' | 'fehler';
   styleUrls: ['./kuerzungsvorschlag.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class KuerzungsvorschlagComponent {
+export class KuerzungsvorschlagComponent implements OnChanges {
   /** Der Haupttext des Kommentars (Mittelfassung). */
   @Input() text: string | null = '';
   /** Die Aussage, auf die der Kommentar antwortet; leer, wenn er auf keine antwortet. */
   @Input() aussage: string | null = '';
+  /** Höchstlänge der Kurzfassung: Erst ein längerer Kommentar bekommt den Knopf. */
+  @Input() grenze = 0;
   @Output() uebernehmen = new EventEmitter<string>();
 
   stand: Stand = 'leer';
@@ -32,14 +46,20 @@ export class KuerzungsvorschlagComponent {
   private readonly service = inject(KuerzungsvorschlagService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private anfrage?: Subscription;
 
-  get hatText(): boolean {
-    return !!this.text?.trim();
+  get lohntSich(): boolean {
+    return (this.text?.trim().length ?? 0) > this.grenze;
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Ein Vorschlag gilt nur für den Text, aus dem er entstand.
+    if (changes['text'] && !changes['text'].firstChange) this.verwerfen();
   }
 
   vorschlagen(): void {
     this.stand = 'laedt';
-    this.service
+    this.anfrage = this.service
       .vorschlagen((this.text ?? '').trim(), (this.aussage ?? '').trim())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -61,7 +81,9 @@ export class KuerzungsvorschlagComponent {
   }
 
   verwerfen(): void {
+    this.anfrage?.unsubscribe();
     this.vorschlag = '';
     this.stand = 'leer';
+    this.cdr.markForCheck();
   }
 }
