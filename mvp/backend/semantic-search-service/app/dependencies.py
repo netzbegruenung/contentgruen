@@ -47,6 +47,7 @@ from services.gegenlesen.gegenlesen_service import (
     GegenlesenService,
     lade_statt_sag_liste,
 )
+from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from services.loeschfristen_service import LoeschfristenService
 from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
@@ -216,6 +217,11 @@ def get_gegenlesen_service() -> GegenlesenService:
             statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
         )
     return _gegenlesen_service
+
+
+def get_kuerzungsvorschlag_service() -> KuerzungsvorschlagService:
+    """Teilt sich das Sprachmodell mit dem Gegenlesen (#403)."""
+    return KuerzungsvorschlagService(werkzeuge=SPRACHWERKZEUGE)
 
 
 def get_moderation_service() -> ModerationService:

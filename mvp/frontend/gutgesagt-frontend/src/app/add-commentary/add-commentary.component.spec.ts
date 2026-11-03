@@ -25,6 +25,7 @@ import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub'
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
+import { KuerzungsvorschlagComponent } from '../beitragsformular/kuerzungsvorschlag/kuerzungsvorschlag.component';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { environment } from '../../environments/environment';
 
@@ -988,6 +989,23 @@ describe('AddCommentaryComponent', () => {
 
       expect(component.vorschauKarte.extra?.kurz).toBe('Die Pumpe rechnet sich.');
       expect(component.vorschauKarte.extra?.lang).toBeUndefined();
+    });
+
+    it('bieten unter der Kurzfassung einen Kuerzungsvorschlag aus dem Kommentar an (#403)', () => {
+      ausfuellen();
+      aufklappen();
+
+      const vorschlag = fixture.debugElement.query((el) => el.componentInstance instanceof KuerzungsvorschlagComponent)!;
+      expect(seite().querySelector('.fassungen')!.contains(vorschlag.nativeElement)).toBeTrue();
+      const instanz = vorschlag.componentInstance as KuerzungsvorschlagComponent;
+      expect(instanz.text).toBe(component.commentaryForm.value.text);
+      expect(component.commentaryForm.value.kurz).toBe('');
+
+      instanz.uebernehmen.emit('Die Pumpe rechnet sich.');
+      fixture.detectChanges();
+
+      expect(component.commentaryForm.value.kurz).toBe('Die Pumpe rechnet sich.');
+      expect(component.commentaryForm.get('kurz')!.dirty).toBeTrue();
     });
 
     it('zaehlen fuers Zuruecksetzen als Eingabe und werden mit geleert', () => {
