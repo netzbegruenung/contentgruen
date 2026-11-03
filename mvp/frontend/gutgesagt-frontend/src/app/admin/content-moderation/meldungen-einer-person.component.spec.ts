@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 import { ContentReport, ModerationService } from '../../services/moderation.service';
+import { BestaetigungsDialogDaten } from '../../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 
 function meldung(overrides: Partial<ContentReport> = {}): ContentReport {
   return {
@@ -154,7 +155,33 @@ describe('MeldungenEinerPersonComponent', () => {
 
       knopf('Angaben löschen')!.click();
 
-      expect(moderation.angabenLoeschen).toHaveBeenCalledWith({ email: 'anna@example.org', name: null }, ['report-1']);
+      expect(moderation.angabenLoeschen).toHaveBeenCalledWith({ email: 'anna@example.org', name: null }, ['report-1'], false);
+    });
+
+    it('lässt nach einer Suche nur mit dem Namen bestätigen, dass alle Treffer dieselbe Person sind', async () => {
+      moderation.meldungenEinerPerson.and.returnValue(
+        of({ total: 2, reports: [meldung(), meldung({ id: 'report-2', melder_email: 'andere@example.org' })] })
+      );
+      eingeben('email', '');
+      eingeben('name', 'Anna Beispiel');
+      await suchen();
+      dialogAntwort(true);
+
+      knopf('Angaben löschen')!.click();
+
+      const daten = dialog.open.calls.mostRecent().args[1]!.data as BestaetigungsDialogDaten;
+      expect(daten.titel).toBe('Alle 2 Treffer gehören zu derselben Person?');
+      expect(daten.ja).toContain('dieselbe Person');
+      expect(moderation.angabenLoeschen).toHaveBeenCalledWith(
+        { email: null, name: 'Anna Beispiel' }, ['report-1', 'report-2'], true
+      );
+    });
+
+    it('lässt nicht suchen, solange das Löschen läuft', () => {
+      fixture.componentInstance.loeschtGerade = true;
+      fixture.detectChanges();
+
+      expect(knopf('Suchen')!.disabled).toBeTrue();
     });
 
     it('lässt nicht löschen, solange eine neue Suche läuft', () => {

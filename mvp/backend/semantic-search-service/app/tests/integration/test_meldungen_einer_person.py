@@ -18,6 +18,7 @@ from sqlalchemy.orm import sessionmaker
 
 from infrastructure.database.connection import AppDatabase
 from infrastructure.database.models import Base, ContentReport
+from domain.models.meldung import MelderSuche
 from repositories.content_report_repository import ContentReportRepository
 from services.moderation_service import ModerationService
 
@@ -82,7 +83,9 @@ def _pseudonym(datenbank, meldung_id):
 
 async def _gesehen(service, **angaben):
     """Die Kennungen der Treffer, wie die Moderation sie nach der Suche hat."""
-    return [m["id"] for m in await service.meldungen_einer_person(**angaben)]
+    return [
+        m["id"] for m in await service.meldungen_einer_person(MelderSuche(**angaben))
+    ]
 
 
 async def test_meldungen_einer_person_findet_die_adresse_ohne_gross_und_kleinschreibung(
@@ -95,7 +98,9 @@ async def test_meldungen_einer_person_findet_die_adresse_ohne_gross_und_kleinsch
     _meldung(datenbank, email="bert@example.org")
     _meldung(datenbank, name="Anna B.")
 
-    gefunden = await service.meldungen_einer_person(email="ANNA.B@example.org")
+    gefunden = await service.meldungen_einer_person(
+        MelderSuche(email="ANNA.B@example.org")
+    )
 
     assert {m["id"] for m in gefunden} == {eigene, erledigte}
     assert {m["description"] for m in gefunden} == {"erste", "zweite"}
@@ -106,11 +111,16 @@ async def test_meldungen_einer_person_sucht_nur_ganze_angaben(service, datenbank
     _meldung(datenbank, email="anna@example.org", name="Anna Beispiel")
     _meldung(datenbank, email="hanna@example.org", name="Hanna")
 
-    assert await service.meldungen_einer_person(email="anna@example.org")
-    assert len(await service.meldungen_einer_person(email="anna@example.org")) == 1
-    assert await service.meldungen_einer_person(name="anna") == []
-    assert await service.meldungen_einer_person(email="%@example.org") == []
-    assert await service.meldungen_einer_person(name="_nna") == []
+    assert await service.meldungen_einer_person(MelderSuche(email="anna@example.org"))
+    assert (
+        len(await service.meldungen_einer_person(MelderSuche(email="anna@example.org")))
+        == 1
+    )
+    assert await service.meldungen_einer_person(MelderSuche(name="anna")) == []
+    assert (
+        await service.meldungen_einer_person(MelderSuche(email="%@example.org")) == []
+    )
+    assert await service.meldungen_einer_person(MelderSuche(name="_nna")) == []
 
 
 async def test_meldungen_einer_person_name_und_adresse_muessen_beide_passen(
@@ -121,17 +131,31 @@ async def test_meldungen_einer_person_name_und_adresse_muessen_beide_passen(
     _meldung(datenbank, name="Anna Beispiel", email="andere@example.org")
 
     gefunden = await service.meldungen_einer_person(
-        email="anna@example.org", name="  anna beispiel "
+        MelderSuche(email="anna@example.org", name="  anna beispiel ")
     )
 
     assert [m["id"] for m in gefunden] == [beide]
 
 
-async def test_meldungen_einer_person_ohne_angabe_ist_ein_fehler(service):
+async def test_melder_suche_ohne_angabe_ist_ein_fehler():
     with pytest.raises(ValueError):
-        await service.meldungen_einer_person()
+        MelderSuche()
     with pytest.raises(ValueError):
-        await service.meldungen_einer_person(email="  ", name="")
+        MelderSuche(email="  ", name="")
+
+
+async def test_meldungen_einer_person_findet_anders_geschriebene_domain(
+    service, datenbank
+):
+    """Gespeichert ist die Adresse so, wie EmailStr sie normalisiert; die Suche
+    normalisiert die Eingabe genauso (Punycode-Domain, Unicode NFC)."""
+    eigene = _meldung(datenbank, email="anna@münchen.example")
+
+    gefunden = await service.meldungen_einer_person(
+        MelderSuche(email="anna@xn--mnchen-3ya.example")
+    )
+
+    assert [m["id"] for m in gefunden] == [eigene]
 
 
 async def test_angaben_loeschen_entfernt_erledigte_und_leert_offene(service, datenbank):
@@ -142,7 +166,7 @@ async def test_angaben_loeschen_entfernt_erledigte_und_leert_offene(service, dat
     gesehen = await _gesehen(service, email="anna@example.org")
 
     ergebnis = await service.angaben_der_person_loeschen(
-        gesehen, email="anna@example.org"
+        MelderSuche(email="anna@example.org"), gesehen
     )
 
     assert ergebnis.geloescht == 2
@@ -153,7 +177,10 @@ async def test_angaben_loeschen_entfernt_erledigte_und_leert_offene(service, dat
     assert alle[offen] == ("pending", None, None, "Grund")
     assert _pseudonym(datenbank, offen).startswith("anon:")
     assert alle[fremd] == ("reviewed", None, "bert@example.org", None)
-    assert await service.meldungen_einer_person(email="anna@example.org") == []
+    assert (
+        await service.meldungen_einer_person(MelderSuche(email="anna@example.org"))
+        == []
+    )
 
 
 async def test_angaben_loeschen_nur_die_gesehenen_meldungen(service, datenbank):
@@ -163,7 +190,7 @@ async def test_angaben_loeschen_nur_die_gesehenen_meldungen(service, datenbank):
     neu = _meldung(datenbank, email="anna@example.org", status="reviewed")
 
     ergebnis = await service.angaben_der_person_loeschen(
-        gesehen, email="anna@example.org"
+        MelderSuche(email="anna@example.org"), gesehen
     )
 
     assert (ergebnis.geloescht, ergebnis.angaben_entfernt) == (0, 1)
@@ -177,16 +204,27 @@ async def test_angaben_loeschen_kennungen_anderer_angaben_bleiben(service, daten
     fremd = _meldung(datenbank, status="reviewed", email="bert@example.org")
 
     ergebnis = await service.angaben_der_person_loeschen(
-        [fremd], email="anna@example.org"
+        MelderSuche(email="anna@example.org"), [fremd]
     )
 
     assert (ergebnis.geloescht, ergebnis.angaben_entfernt) == (0, 0)
     assert fremd in _alle(datenbank)
 
 
-async def test_angaben_loeschen_ohne_angabe_ist_ein_fehler(service, datenbank):
-    fremd = _meldung(datenbank, email="bert@example.org")
+async def test_angaben_loeschen_nur_name_braucht_bestaetigung(service, datenbank):
+    """Gleicher Name, verschiedene Personen: ohne Bestaetigung loescht nichts."""
+    eine = _meldung(datenbank, status="reviewed", name="Anna", email="a@example.org")
+    andere = _meldung(datenbank, status="reviewed", name="Anna", email="b@example.org")
+    suche = MelderSuche(name="Anna")
+    gesehen = await _gesehen(service, name="Anna")
 
     with pytest.raises(ValueError):
-        await service.angaben_der_person_loeschen([fremd])
-    assert len(_alle(datenbank)) == 1
+        await service.angaben_der_person_loeschen(suche, gesehen)
+    assert {eine, andere} <= set(_alle(datenbank))
+
+    ergebnis = await service.angaben_der_person_loeschen(
+        suche, gesehen, dieselbe_person=True
+    )
+
+    assert ergebnis.geloescht == 2
+    assert not {eine, andere} & set(_alle(datenbank))

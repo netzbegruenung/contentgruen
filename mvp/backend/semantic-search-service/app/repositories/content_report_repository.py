@@ -38,7 +38,13 @@ def _melder_pseudonym_loeschen(report: ContentReport) -> None:
         return
     if report.reported_by_user_id:
         report.reported_by_session_id = None
-    elif not (report.reported_by_session_id or "").startswith(PRAEFIX_OHNE_PSEUDONYM):
+    else:
+        _anonymes_pseudonym_ersetzen(report)
+
+
+def _anonymes_pseudonym_ersetzen(report: ContentReport) -> None:
+    """Tagespseudonym (oder alte Sitzungskennung) durch einen Zufallswert."""
+    if not (report.reported_by_session_id or "").startswith(PRAEFIX_OHNE_PSEUDONYM):
         report.reported_by_session_id = f"{PRAEFIX_OHNE_PSEUDONYM}{uuid4()}"
 
 
@@ -264,25 +270,24 @@ class ContentReportRepository:
             return AngabenGeloescht(geloescht=0, angaben_entfernt=0)
         gesehen = and_(_von_melder(suche), ContentReport.id.in_(meldung_ids))
         with self.db.get_session() as session:
-            geloescht = (
-                session.query(ContentReport)
-                .filter(gesehen, ContentReport.status != "pending")
-                .delete(synchronize_session=False)
+            # Gesperrt gelesen und je Zeile entschieden: Schliesst ein anderer
+            # Admin eine Meldung gerade ab, wartet das hier und sieht ihren neuen
+            # Status, statt sie zwischen zwei Anweisungen zu uebergehen.
+            meldungen = (
+                session.query(ContentReport).filter(gesehen).with_for_update().all()
             )
-            offene = (
-                session.query(ContentReport)
-                .filter(gesehen, ContentReport.status == "pending")
-                .all()
-            )
-            for meldung in offene:
-                meldung.melder_name = None
-                meldung.melder_email = None
-                if not meldung.reported_by_user_id and not (
-                    meldung.reported_by_session_id or ""
-                ).startswith(PRAEFIX_OHNE_PSEUDONYM):
-                    meldung.reported_by_session_id = (
-                        f"{PRAEFIX_OHNE_PSEUDONYM}{uuid4()}"
-                    )
+            geloescht = 0
+            offene = []
+            for meldung in meldungen:
+                if meldung.status == "pending":
+                    meldung.melder_name = None
+                    meldung.melder_email = None
+                    if not meldung.reported_by_user_id:
+                        _anonymes_pseudonym_ersetzen(meldung)
+                    offene.append(meldung)
+                else:
+                    session.delete(meldung)
+                    geloescht += 1
             # Wessen Angaben, steht nicht im Log: nur die Zahlen.
             logger.info(
                 f"Melder-Angaben geloescht: {geloescht} Meldungen entfernt, "

@@ -273,24 +273,18 @@ class ModerationService:
             )
             return []
 
-    async def meldungen_einer_person(
-        self, email: Optional[str] = None, name: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    async def meldungen_einer_person(self, suche: MelderSuche) -> List[Dict[str, Any]]:
         """
         Alle Meldungen mit diesen Angaben der meldenden Person, fuer die Auskunft
         an Personen ohne Konto (Art. 15 DSGVO, #494). Regeln der Suche: MelderSuche.
-
-        Raises:
-            ValueError: weder Name noch E-Mail-Adresse angegeben
         """
-        suche = MelderSuche(email=email, name=name)
         return await asyncio.to_thread(self.report_repo.von_melder, suche)
 
     async def angaben_der_person_loeschen(
         self,
-        meldung_ids: List[str],
-        email: Optional[str] = None,
-        name: Optional[str] = None,
+        suche: MelderSuche,
+        meldung_ids: List[UUID],
+        dieselbe_person: bool = False,
     ) -> AngabenGeloescht:
         """
         Die Angaben einer Person an ihren Meldungen loeschen (Art. 17 DSGVO, #494):
@@ -299,11 +293,14 @@ class ModerationService:
         zu den Angaben passen.
 
         Raises:
-            ValueError: weder Name noch E-Mail-Adresse angegeben
+            ValueError: nur nach dem Namen gesucht, ohne dass der Admin bestaetigt
+                hat, dass alle Treffer dieselbe Person sind
         """
-        suche = MelderSuche(email=email, name=name)
-        ids = [UUID(str(i)) for i in meldung_ids]
-        return await asyncio.to_thread(self.report_repo.angaben_loeschen, suche, ids)
+        if suche.nur_name and not dieselbe_person:
+            raise ValueError("Nur nach dem Namen gesucht: dieselbe Person bestaetigen")
+        return await asyncio.to_thread(
+            self.report_repo.angaben_loeschen, suche, list(meldung_ids)
+        )
 
     async def _beitrag_laden(self, content_id: str) -> Optional[Dict[str, Any]]:
         """Payload eines Beitrags, auch gesperrt; None, wenn es ihn nicht gibt."""

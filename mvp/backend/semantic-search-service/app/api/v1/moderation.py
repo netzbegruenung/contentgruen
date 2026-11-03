@@ -10,7 +10,12 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from domain.models.meldegrund import Meldegrund, beschreibung_fehlt
-from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX, MelderAngaben
+from domain.models.meldung import (
+    MELDER_EMAIL_MAX,
+    MELDER_NAME_MAX,
+    MelderAngaben,
+    MelderSuche,
+)
 from domain.models.sperrgrund import Sperrgrund
 from services.moderation_service import (
     ModerationService,
@@ -160,32 +165,42 @@ class GesperrteResponse(BaseModel):
 class MelderSucheRequest(BaseModel):
     """Angaben, nach denen ein Admin die Meldungen einer Person sucht (#494).
 
-    Im Koerper statt in der Adresse, weil Pfade in Logs stehen. Gesucht wird die
-    ganze Angabe ohne Ruecksicht auf Gross- und Kleinschreibung; sind beide
-    angegeben, muessen beide passen (domain/models/meldung.py, MelderSuche).
+    Im Koerper statt in der Adresse, weil Pfade in Logs stehen. Die Regeln der
+    Suche stehen in MelderSuche (domain/models/meldung.py); ohne Angabe 422.
     """
 
     email: Optional[str] = Field(None, max_length=MELDER_EMAIL_MAX)
     name: Optional[str] = Field(None, max_length=MELDER_NAME_MAX)
 
-    @field_validator("email", "name", mode="before")
-    @classmethod
-    def _leer_ist_nicht_angegeben(cls, wert):
-        if isinstance(wert, str):
-            return wert.strip() or None
-        return wert
+    def suche(self) -> MelderSuche:
+        return MelderSuche(email=self.email, name=self.name)
 
     @model_validator(mode="after")
     def _eine_angabe_noetig(self):
-        if self.email is None and self.name is None:
-            raise ValueError("Name oder E-Mail-Adresse fehlt")
+        self.suche()
         return self
 
 
-class AngabenLoeschenRequest(MelderSucheRequest):
-    """Die Angaben der Suche und die Meldungen, die der Admin dazu gesehen hat."""
+# Hoechstens so viele Meldungen auf einmal; die Suche hat keine Grenze, eine
+# Person mit mehr Meldungen gibt es praktisch nicht.
+MELDUNG_IDS_MAX = 10_000
 
-    meldung_ids: List[uuid.UUID] = Field(..., min_length=1, max_length=1000)
+
+class AngabenLoeschenRequest(MelderSucheRequest):
+    """Die Angaben der Suche und die Meldungen, die der Admin dazu gesehen hat.
+
+    ``dieselbe_person``: Der Admin hat bestaetigt, dass alle Treffer zu einer
+    Person gehoeren. Noetig, wenn nur nach dem Namen gesucht wurde.
+    """
+
+    meldung_ids: List[uuid.UUID] = Field(..., min_length=1, max_length=MELDUNG_IDS_MAX)
+    dieselbe_person: bool = False
+
+    @model_validator(mode="after")
+    def _nur_name_braucht_bestaetigung(self):
+        if self.suche().nur_name and not self.dieselbe_person:
+            raise ValueError("Nur nach dem Namen gesucht: dieselbe Person bestaetigen")
+        return self
 
 
 class AngabenGeloeschtResponse(BaseModel):
@@ -363,9 +378,7 @@ async def meldungen_einer_person(
     """
     try:
         logger.info("Admin searching reports by Melder-Angaben")
-        meldungen = await moderation_service.meldungen_einer_person(
-            email=anfrage.email, name=anfrage.name
-        )
+        meldungen = await moderation_service.meldungen_einer_person(anfrage.suche())
         return PendingReportsResponse(total=len(meldungen), reports=meldungen)
 
     except Exception as e:
@@ -385,16 +398,18 @@ async def angaben_der_person_loeschen(
     """
     Die Angaben einer Person an ihren Meldungen loeschen, die es verlangt
     (Admin only, Art. 17 DSGVO). Nur die Meldungen aus der Suche, die der Admin
-    gesehen hat (meldung_ids) und die noch zu den Angaben passen: Bearbeitete und
+    gesehen hat (meldung_ids) und die noch zu den Angaben passen; nach einer
+    Suche nur mit dem Namen erst, wenn der Admin bestaetigt, dass alle Treffer
+    dieselbe Person sind (dieselbe_person). Bearbeitete und
     abgewiesene gehen ganz; offene bleiben fuer die Moderation stehen (Art. 16
     DSA) und verlieren Name, E-Mail-Adresse und das Tagespseudonym.
     """
     try:
         logger.info("Admin deleting Melder-Angaben")
         ergebnis = await moderation_service.angaben_der_person_loeschen(
-            [str(i) for i in anfrage.meldung_ids],
-            email=anfrage.email,
-            name=anfrage.name,
+            anfrage.suche(),
+            anfrage.meldung_ids,
+            dieselbe_person=anfrage.dieselbe_person,
         )
         return AngabenGeloeschtResponse(
             geloescht=ergebnis.geloescht, angaben_entfernt=ergebnis.angaben_entfernt

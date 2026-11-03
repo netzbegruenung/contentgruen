@@ -160,14 +160,15 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   oder ihre Löschung, finden sich seine Meldungen nur über Name und E-Mail-Adresse:
   in der Moderation unter „Nach Person“ (#494, `POST /api/v1/moderation/melder/meldungen`).
   Gesucht wird die ganze Angabe ohne Rücksicht auf Groß- und Kleinschreibung (gespeichert
-  ist die Adresse, wie sie eingegeben wurde, nur die Domain klein); sind beide angegeben,
+  ist die Adresse, wie sie eingegeben wurde, nur die Domain normalisiert; die Suche
+  normalisiert die Eingabe genauso); sind beide angegeben,
   müssen beide passen. Die Liste ist die Auskunft. „Angaben löschen“
   (`POST /api/v1/moderation/melder/angaben-loeschen`) nimmt nur die gezeigten Treffer, die
   noch zu den Angaben passen. Bearbeitete und abgewiesene gehen ganz; **offene** bleiben
   stehen, weil sie noch Arbeit sind und der Beitrag sonst ungeprüft bliebe (Art. 16 DSA),
   und verlieren Name, E-Mail-Adresse und das Tagespseudonym (Zufallswert wie beim
   Abschluss). Wer nur nach dem Namen sucht, prüft vorher, ob alle Treffer dieselbe Person
-  sind. Die Entscheidung kann der Person dann niemand mehr mitteilen; Grund und
+  sind, und bestätigt das in der Rückfrage; ohne diese Bestätigung löscht der Dienst nicht. Die Entscheidung kann der Person dann niemand mehr mitteilen; Grund und
   Beschreibung der offenen Meldung bleiben bis zu ihrer Frist. Ohne solches Verlangen haben
   offene Meldungen keine Frist, Name und E-Mail-Adresse bleiben also, bis die Meldung
   bearbeitet ist. Der Zähler am Beitrag

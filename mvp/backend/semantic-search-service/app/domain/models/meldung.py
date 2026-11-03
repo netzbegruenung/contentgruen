@@ -10,6 +10,9 @@ E-Mail-Adresse (RFC 5321).
 from dataclasses import dataclass
 from typing import Optional
 
+from pydantic.networks import validate_email
+from pydantic_core import PydanticCustomError
+
 MELDER_NAME_MAX = 200
 MELDER_EMAIL_MAX = 254
 
@@ -36,7 +39,9 @@ class MelderSuche:
     Gesucht wird nur die ganze Angabe, ohne Ruecksicht auf Gross- und
     Kleinschreibung: Ein Teiltreffer zeigte Meldungen anderer Personen. Sind
     beide angegeben, muessen beide passen. Leere Angaben zaehlen als nicht
-    angegeben; ohne jede Angabe gibt es keine Suche.
+    angegeben; ohne jede Angabe gibt es keine Suche. Die Adresse wird so
+    normalisiert wie beim Speichern (EmailStr), sonst faende eine anders
+    geschriebene, gleiche Adresse nichts.
     """
 
     email: Optional[str] = None
@@ -47,8 +52,24 @@ class MelderSuche:
         name = (self.name or "").strip() or None
         if email is None and name is None:
             raise ValueError("Name oder E-Mail-Adresse fehlt")
-        object.__setattr__(self, "email", email)
+        object.__setattr__(self, "email", _wie_gespeichert(email))
         object.__setattr__(self, "name", name)
+
+    @property
+    def nur_name(self) -> bool:
+        """Ohne E-Mail-Adresse koennen die Treffer verschiedene Personen sein."""
+        return self.email is None
+
+
+def _wie_gespeichert(email: Optional[str]) -> Optional[str]:
+    """Die Adresse in der Form, in der EmailStr sie speichert (Unicode NFC,
+    Domain normalisiert); was keine gueltige Adresse ist, bleibt, wie es ist."""
+    if email is None:
+        return None
+    try:
+        return validate_email(email)[1]
+    except PydanticCustomError:
+        return email
 
 
 @dataclass(frozen=True)

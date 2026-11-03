@@ -10,21 +10,35 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { filter } from 'rxjs';
 import { AngabenGeloescht, ContentReport, MelderSuche, ModerationService } from '../../services/moderation.service';
 import { meldegrundLabel } from '../../shared/meldegruende';
+import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
 } from '../../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 
-const STATUS: Record<string, string> = { pending: 'Offen', reviewed: 'Bearbeitet', dismissed: 'Abgewiesen' };
+const LOESCHEN_TEXT =
+  'Bearbeitete und abgewiesene Meldungen mit diesen Angaben werden gelöscht. Offene bleiben zur ' +
+  'Bearbeitung stehen, ohne Name und E-Mail-Adresse; die Entscheidung kann der Person dann niemand mehr mitteilen.';
 
-const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
-  titel: 'Angaben der Person löschen?',
-  text:
-    'Bearbeitete und abgewiesene Meldungen mit diesen Angaben werden gelöscht. Offene bleiben zur ' +
-    'Bearbeitung stehen, ohne Name und E-Mail-Adresse; die Entscheidung kann der Person dann niemand mehr mitteilen.',
-  ja: 'Angaben löschen',
-  nein: 'Abbrechen',
-};
+/**
+ * Die Rückfrage vor dem Löschen. Nach einer Suche nur mit dem Namen können die Treffer
+ * verschiedene Personen sein: Dann bestätigt der Admin ausdrücklich, dass alle Treffer
+ * dieselbe Person sind; das Backend löscht sonst nicht.
+ */
+function loeschenFrage(nurName: boolean, anzahl: number): BestaetigungsDialogDaten {
+  if (!nurName) {
+    return { titel: 'Angaben der Person löschen?', text: LOESCHEN_TEXT, ja: 'Angaben löschen', nein: 'Abbrechen' };
+  }
+  const treffer = anzahl === 1 ? 'Der Treffer gehört' : `Alle ${anzahl} Treffer gehören`;
+  return {
+    titel: `${treffer} zu derselben Person?`,
+    text:
+      'Gesucht wurde nur nach dem Namen; den können mehrere Personen tragen. Bitte jeden Treffer prüfen. ' +
+      LOESCHEN_TEXT,
+    ja: 'Ja, dieselbe Person: Angaben löschen',
+    nein: 'Abbrechen',
+  };
+}
 
 /**
  * Meldungen einer Person nach Name oder E-Mail-Adresse finden und ihre Angaben löschen
@@ -59,7 +73,7 @@ const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
         <mat-label>Name</mat-label>
         <input matInput name="name" type="text" autocomplete="off" [(ngModel)]="name" />
       </mat-form-field>
-      <button mat-raised-button color="primary" type="submit" [disabled]="!eingabe() || suchtGerade">
+      <button mat-raised-button color="primary" type="submit" [disabled]="!eingabe() || suchtGerade || loeschtGerade">
         <mat-icon>search</mat-icon>
         Suchen
       </button>
@@ -123,7 +137,7 @@ export class MeldungenEinerPersonComponent {
 
   suchen(): void {
     const suche = this.eingabe();
-    if (suche) {
+    if (suche && !this.loeschtGerade) {
       this.laden(suche);
     }
   }
@@ -134,13 +148,14 @@ export class MeldungenEinerPersonComponent {
     if (!suche || ids.length === 0 || this.suchtGerade || this.loeschtGerade) {
       return;
     }
+    const nurName = !suche.email;
     this.dialog
-      .open(BestaetigungsDialogComponent, { data: LOESCHEN_FRAGE, autoFocus: 'dialog' })
+      .open(BestaetigungsDialogComponent, { data: loeschenFrage(nurName, ids.length), autoFocus: 'dialog' })
       .afterClosed()
       .pipe(filter((ja) => ja === true))
       .subscribe(() => {
         this.loeschtGerade = true;
-        this.moderation.angabenLoeschen(suche, ids).subscribe({
+        this.moderation.angabenLoeschen(suche, ids, nurName).subscribe({
           next: (ergebnis) => {
             this.loeschtGerade = false;
             this.snackBar.open(ergebnisText(ergebnis), 'OK', { duration: 5000 });
@@ -155,7 +170,7 @@ export class MeldungenEinerPersonComponent {
   }
 
   statusLabel(status: string): string {
-    return STATUS[status] ?? status;
+    return meldungsstatusLabel(status);
   }
 
   grundLabel(grund: string): string {

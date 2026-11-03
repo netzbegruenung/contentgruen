@@ -16,6 +16,7 @@ import { ContentStatus } from '../../services/dtos/content-status-enum';
 import { typLabel } from '../../shared/content-type-registry';
 import { meldegrundLabel } from '../../shared/meldegruende';
 import { sperrgrundLabel } from '../../shared/sperrgruende';
+import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 
@@ -92,16 +93,22 @@ export class ContentModerationComponent implements OnInit {
     this.loading = true;
     this.error = null;
     this.expandedReports.clear(); // Reset expanded rows on refresh
+    // Antworten einer Ansicht, die inzwischen verlassen ist, verwerfen: Sonst zeigt
+    // etwa „Nach Person“ den Fehler einer alten Liste (#494).
+    const ansicht = this.selectedStatus;
+    const verlassen = () => this.selectedStatus !== ansicht;
 
-    if (this.selectedStatus === 'gesperrt') {
+    if (ansicht === 'gesperrt') {
       this.moderationService.getGesperrte().subscribe({
         next: (response) => {
+          if (verlassen()) return;
           this.gesperrte = nachWiderspruch(response.beitraege);
           this.offeneWidersprueche = zaehleOffene(response.beitraege);
           this.loading = false;
         },
         error: (error) => {
           console.error('Error loading blocked content:', error);
+          if (verlassen()) return;
           this.error = 'Fehler beim Laden der gesperrten Beiträge';
           this.loading = false;
         }
@@ -109,8 +116,9 @@ export class ContentModerationComponent implements OnInit {
       return;
     }
 
-    this.moderationService.getReports(this.selectedStatus).subscribe({
+    this.moderationService.getReports(ansicht).subscribe({
       next: (response) => {
+        if (verlassen()) return;
         // Force new array reference for change detection
         this.reports = [...response.reports];
         this.loading = false;
@@ -118,6 +126,7 @@ export class ContentModerationComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading reports:', error);
+        if (verlassen()) return;
         this.error = 'Fehler beim Laden der Meldungen';
         this.loading = false;
       }
@@ -304,12 +313,7 @@ export class ContentModerationComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    const labels: { [key: string]: string } = {
-      'pending': 'Offen',
-      'reviewed': 'Bearbeitet',
-      'dismissed': 'Abgewiesen'
-    };
-    return labels[status] || status;
+    return meldungsstatusLabel(status);
   }
 
   getStatusColor(status: string): string {

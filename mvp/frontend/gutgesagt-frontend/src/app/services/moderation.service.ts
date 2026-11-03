@@ -196,12 +196,15 @@ export class ModerationService {
 
   /**
    * Die Angaben der Person an ihren Meldungen löschen (#494): nur die gezeigten
-   * Meldungen (`meldungIds`), die noch zu den Angaben passen.
+   * Meldungen (`meldungIds`), die noch zu den Angaben passen. Nach einer Suche nur mit
+   * dem Namen verlangt das Backend `dieselbePerson`: Der Admin hat bestätigt, dass alle
+   * Treffer zu einer Person gehören.
    */
-  angabenLoeschen(suche: MelderSuche, meldungIds: string[]): Observable<AngabenGeloescht> {
+  angabenLoeschen(suche: MelderSuche, meldungIds: string[], dieselbePerson = false): Observable<AngabenGeloescht> {
     return this.http.post<AngabenGeloescht>(`${this.baseUrl}/melder/angaben-loeschen`, {
       ...suche,
       meldung_ids: meldungIds,
+      dieselbe_person: dieselbePerson,
     });
   }
 
