@@ -9,13 +9,17 @@ import { environment } from '../../environments/environment';
 /**
  * Die Build-Kennung fuer den Footer, etwa "v1.1.0 · 3523b55".
  *
- * Die Version stammt beim Release-Build aus dem Git-Tag (Build-Arg APP_VERSION, #327),
- * sonst aus package.json; der Commit aus GIT_SHA. CI reicht beide als Build-Arg ins Image,
+ * Die Version stammt beim Release-Build aus dem Git-Tag (Build-Arg APP_VERSION, #327); Builds
+ * auf main geben APP_VERSION=main mit und zeigen "main · <sha>" (#542). Ohne APP_VERSION
+ * gilt package.json; der Commit aus GIT_SHA. CI reicht beide als Build-Arg ins Image,
  * replace-env.sh setzt sie beim Containerstart ein. Fehlt der Commit oder steht noch der
  * Platzhalter da (ng serve, Build ohne Container), heisst er "dev".
  */
 export function buildKennung(paketVersion: string, gitSha: string | undefined, appVersion?: string): string {
   const sha = gesetzt(gitSha) ? gitSha.slice(0, 7) : 'dev';
+  if (appVersion === 'main') {
+    return `main · ${sha}`;
+  }
   const version = gesetzt(appVersion) ? appVersion.replace(/^v/, '') : paketVersion;
   return `v${version} · ${sha}`;
 }

@@ -146,8 +146,9 @@ class TestBuild:
         muster = schritte(BUILD)[name]["when"][0]["path"]["include"]
         assert {".woodpecker/build.yaml", "scripts/image_tags.py"} <= set(muster)
 
-    def test_keine_tag_version_auf_main(self):
-        assert "APP_VERSION" not in schritte(BUILD)["frontend"]["settings"]["build_args"]
+    def test_footer_auf_main_sagt_main(self):
+        # Entscheidung @BanSe 03.11. (#542): "main · <sha>" statt einer veralteten Version
+        assert schritte(BUILD)["frontend"]["settings"]["build_args"]["APP_VERSION"] == "main"
 
 
 class TestRelease:

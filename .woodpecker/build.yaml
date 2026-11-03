@@ -41,6 +41,8 @@ steps:
         from_secret: registry_token
       build_args:
         GIT_SHA: ${CI_COMMIT_SHA}
+        # Footer "main · <sha>" statt einer veralteten package.json-Version (#542)
+        APP_VERSION: main
     when:
       - path:
           include:

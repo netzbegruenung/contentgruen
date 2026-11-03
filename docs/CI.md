@@ -148,7 +148,8 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
 - **Version in the footer from the tag.** The release build passes the tag as build
   argument `APP_VERSION` to the frontend image; a release needs no version change in
   `package.json` once the GitHub workflows are gone (`docs/DEPLOYMENT.md`, "Releases").
-  Builds of `main` show the version from `package.json`.
+  Builds of `main` pass `APP_VERSION=main`: the footer shows „main · <commit>“ instead of a
+  version that would go stale.
 - **Path filters** per build step, because a filter on the workflow would hide it. They cover
   everything the Dockerfile copies (the semantic search image also takes the migrations,
   `mvp/scripts/backup`, `mvp/data` and `mvp/.dockerignore`), plus `build.yaml` and

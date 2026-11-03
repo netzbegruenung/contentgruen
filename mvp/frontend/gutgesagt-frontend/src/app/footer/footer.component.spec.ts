@@ -95,6 +95,11 @@ describe('buildKennung', () => {
     expect(buildKennung('0.8.0', '3523b55f0e1d', '0.9.0')).toBe('v0.9.0 · 3523b55');
   });
 
+  // Entscheidung @BanSe 03.11. (#542): Builds auf main zeigen "main" statt einer Version.
+  it('zeigt main ohne v fuer Builds auf main', () => {
+    expect(buildKennung('0.8.0', '3523b55f0e1d', 'main')).toBe('main · 3523b55');
+  });
+
   it('nimmt package.json ohne Tag-Version oder mit unersetztem Platzhalter', () => {
     expect(buildKennung('0.8.0', '3523b55', undefined)).toBe('v0.8.0 · 3523b55');
     expect(buildKennung('0.8.0', '3523b55', '')).toBe('v0.8.0 · 3523b55');
