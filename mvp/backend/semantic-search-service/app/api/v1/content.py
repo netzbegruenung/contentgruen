@@ -35,9 +35,7 @@ from dtos.beitrag import (
     BeitragResponse,
     HintergrundinfoResponse,
     KommentarResponse,
-    PostResponse,
 )
-from dtos.image import BildResponse
 from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
 from services.voting_service import VotingService

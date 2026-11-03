@@ -25,12 +25,7 @@ from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_l
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from domain.models.commentary import Fassung
 from domain.models.content_type import ContentType
-from dtos.beitrag import (
-    BeitragResponse,
-    HintergrundinfoResponse,
-    KommentarResponse,
-    PostResponse,
-)
+from dtos.beitrag import BeitragResponse
 from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
 from services.cleanup.bereinigungsjob import get_bereinigungsjob
@@ -41,10 +36,6 @@ logger = logging.getLogger(__name__)
 
 
 router = APIRouter()
-
-# Was "Diese Woche oft genutzt" je Typ ausliefert (dtos/beitrag.py, #333); ein Typ
-# ohne Eintrag bekommt die allgemeine Auswahl.
-OFT_GENUTZT = ANTWORT_JE_TYP
 
 
 class TrackUsageRequest(BaseModel):
@@ -365,10 +356,11 @@ async def oft_genutzt(
             await service.beitraege()
         )
         # result_type und recent_uses gehoeren nicht zum Beitrag und kommen
-        # danach wieder dazu.
+        # danach wieder dazu. Die Antwort je Typ: dtos/beitragstypen.py; ein Typ
+        # ohne Eintrag bekommt die allgemeine Auswahl.
         antworten = fuer_aufrufer(
             [
-                OFT_GENUTZT.get(e["result_type"], BeitragResponse).model_validate(e)
+                ANTWORT_JE_TYP.get(e["result_type"], BeitragResponse).model_validate(e)
                 for e in angereichert
             ],
             aufrufer,
