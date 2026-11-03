@@ -258,12 +258,15 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('aus deiner E-Mail-Adresse bilden wir keinen Anzeigenamen');
     });
 
-    it('Einladung: Konto bleibt, bis wir es löschen, auch wenn der Link nie benutzt wurde', () => {
+    it('Einladung: Konto bleibt, bis wir es löschen; nie benutztes 30 Tage nach Ablauf des Links (#538)', () => {
       const text = abschnitt('Konto aus einer Einladung');
 
       expect(text).toContain('Das Konto im Anmeldedienst bleibt, bis wir es löschen');
       expect(text).toContain('dessen Link nie benutzt wurde');
+      // NIE_BENUTZTES_KONTO_TAGE und MAIL_GUELTIG_SEKUNDEN im Semantic-Service
+      expect(text).toContain('Wir löschen es automatisch 30 Tage nach Ablauf des Links, also 33 Tage nach dem Einlösen');
       expect(text).not.toContain('bis du oder wir es löschen');
+      expect(text).not.toContain('Es bleibt ohne Passwort stehen');
     });
 
     it('Netzbegrünung: Dauer für das vorab angelegte Konto, Angaben vom Anmeldedienst', () => {

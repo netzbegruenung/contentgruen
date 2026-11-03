@@ -152,6 +152,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
 | Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
+| Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
@@ -233,7 +234,11 @@ und der Ablauf oben erfasst die Tabelle nicht.
 - **Frist:** keine. Einladungen bleiben stehen, auch abgelaufene; sie tragen keinen
   Personenbezug.
 - **Konto im Realm:** Löschen wie bisher in Keycloak; dass es über eine Einladung entstand,
-  steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
+  steht nirgends. Nie benutzte Konten löscht der tägliche Task unter „Fristen“ (#538):
+  Mail-Adresse nicht bestätigt, Pflichtaktion „Terms and Conditions“ offen, kein Passwort,
+  keine Verknüpfung mit einem Identity Provider (`KeycloakKonten.nie_benutzte_loeschen`).
+  Vorab angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Ohne Zugang zur
+  Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
   Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
   Zähler vergleichen.
 

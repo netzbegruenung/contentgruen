@@ -16,6 +16,7 @@ from services.loeschfristen_service import (
     EINWURF_OHNE_BEITRAG_TAGE,
     GELOESCHTER_BEITRAG_TAGE,
     MELDUNG_NACH_BEARBEITUNG_TAGE,
+    NIE_BENUTZTES_KONTO_TAGE,
     SPERRE_NACH_AUFHEBUNG_TAGE,
     LoeschfristenService,
     loeschen_im_takt,
@@ -65,6 +66,7 @@ def test_fristen_wie_im_loeschkonzept():
     assert EINWURF_OHNE_BEITRAG_TAGE == 365
     assert GELOESCHTER_BEITRAG_TAGE == 30
     assert SPERRE_NACH_AUFHEBUNG_TAGE == 180
+    assert NIE_BENUTZTES_KONTO_TAGE == 30
 
 
 class TestPostgres:
@@ -149,6 +151,43 @@ class TestGeloeschteBeitraege:
 
         beitraege.geloescht_am_setzen.assert_awaited_once_with(["a"], HEUTE)
         moderation.delete_content.assert_not_awaited()
+
+
+class TestNieBenutzteKonten:
+    """Konten aus Einladungen, deren Link nie benutzt wurde (#538)."""
+
+    @pytest.fixture
+    def konten(self):
+        return Mock(**{"nie_benutzte_loeschen.return_value": 0})
+
+    @pytest.fixture
+    def mit_konten(self, meldungen, einwuerfe, beitraege, moderation, sperren, konten):
+        return LoeschfristenService(
+            meldungen, einwuerfe, beitraege, moderation, sperren, konten
+        )
+
+    async def test_30_tage_nach_ablauf_des_links(self, mit_konten, konten):
+        # Der Link gilt drei Tage ab dem Anlegen; 30 Tage danach wird geloescht.
+        await mit_konten.fristen_anwenden(HEUTE)
+
+        konten.nie_benutzte_loeschen.assert_called_once_with(
+            datetime(2026, 9, 26, tzinfo=timezone.utc)
+        )
+
+    async def test_fehler_im_realm_haelt_die_anderen_nicht_auf(
+        self, mit_konten, konten, meldungen
+    ):
+        konten.nie_benutzte_loeschen.side_effect = RuntimeError("Keycloak weg")
+
+        await mit_konten.fristen_anwenden(HEUTE)
+
+        meldungen.bearbeitete_loeschen_vor.assert_called_once()
+
+    async def test_ohne_zugang_zum_realm_nichts(self, service, meldungen):
+        # Wie im Dev-Stack: keine Admin-Zugangsdaten, also kein Konto zu loeschen.
+        await service.fristen_anwenden(HEUTE)
+
+        meldungen.bearbeitete_loeschen_vor.assert_called_once()
 
 
 class TestTakt:

@@ -1,11 +1,12 @@
 """
-Konten im Realm von Gut gesagt anlegen (#429). Die Einladung (services/einladung_service.py)
+Konten im Realm von Gut gesagt anlegen (#429) und nie benutzte loeschen (#538). Die Einladung (services/einladung_service.py)
 kennt nur diese Schnittstelle; die Keycloak-Admin-Schnittstelle steckt dahinter
 (infrastructure/keycloak_konten.py).
 """
 
 import enum
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, Iterable, List, Mapping, Protocol
 
 
@@ -17,6 +18,12 @@ class KontoErgebnis(enum.Enum):
 
 class IKontenImRealm(Protocol):
     def konto_anlegen(self, email: str) -> KontoErgebnis: ...
+
+
+class INieBenutzteKonten(Protocol):
+    """Loeschfrist fuer Konten aus Einladungen: services/loeschfristen_service.py."""
+
+    def nie_benutzte_loeschen(self, angelegt_vor: datetime) -> int: ...
 
 
 @dataclass
