@@ -225,6 +225,10 @@ _Avoid_: Freigeben, Wiederherstellen
 Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt bis zu seiner Löschfrist gespeichert; zurückholen lässt er sich nicht. Danach wird er endgültig entfernt, mit seinen Stimmen; Einwürfe sind danach in ihm nicht mehr ausformuliert. Vorher entfernt ihn nur ein Admin endgültig, nach dem Löschkonzept. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
+**Ändern**:
+Der Autor ersetzt Titel, Text oder Herkunft seines Kommentars oder seiner Hintergrundinfo, aus „Meine Beiträge“. Es gelten dieselben Regeln wie beim Anlegen, die Titelregel eingeschlossen; die Suche findet danach den neuen Text. Stimmen, Nutzung und Verknüpfungen bleiben. Festgehalten wird nur, wer wann geändert hat, nicht der alte Wortlaut. Gesperrte und gelöschte Beiträge lassen sich nicht ändern, Posts und Bilder noch nicht.
+_Avoid_: Bearbeiten (heißt bei Meldungen etwas anderes), Editieren
+
 **Titel**:
 Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema. Bild und Post haben auch einen Titel; er beschreibt den Inhalt und folgt dieser Regel nicht.
 _Avoid_: Überschrift, Etikett, Thema

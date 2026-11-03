@@ -11,7 +11,7 @@ import { MeineBeitraegeComponent } from './meine-beitraege.component';
 import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
-import { BeitragSheetComponent, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
+import { BeitragSheetComponent, GEAENDERT, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
 import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
 import { NavigationService } from '../services/navigation.service';
@@ -406,6 +406,40 @@ describe('MeineBeitraegeComponent', () => {
 
     expect(laden.calls.mostRecent().args).toEqual([1, 24]);
     expect(fixture.componentInstance.pageIndex).toBe(0);
+  });
+
+  it('erlaubt im Bottom Sheet das Ändern nur bei Kommentar und Hintergrundinfo', async () => {
+    await erstellen([
+      beitrag(),
+      beitrag({ id: 'b2', content_type: 'commentary', title: 'Tempolimit spart sofort CO2' }),
+      beitrag({ id: 'b3', content_type: 'post', title: 'Ein Post zum Tempolimit' }),
+    ]);
+    const aenderbar = (i: number) => {
+      karten()[i].click();
+      return (bottomSheet.open as jasmine.Spy).calls.mostRecent().args[1].data.aenderbar;
+    };
+
+    expect([aenderbar(0), aenderbar(1), aenderbar(2)]).toEqual([true, true, false]);
+  });
+
+  it('laedt nach dem Ändern die aktuelle Seite neu', async () => {
+    const laden = jasmine
+      .createSpy('meineBeitraege')
+      .and.returnValues(
+        of({ results_count: 1, total_records_count: 1, results: [beitrag()] }),
+        of({ results_count: 1, total_records_count: 1, results: [beitrag({ title: 'Neuer Titel mit Haltung' })] }),
+      );
+    konfigurieren(laden);
+    sheetErgebnis = of(GEAENDERT);
+    await TestBed.compileComponents();
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
+    fixture.detectChanges();
+
+    karten()[0].click();
+    fixture.detectChanges();
+
+    expect(laden).toHaveBeenCalledTimes(2);
+    expect(karten()[0].textContent).toContain('Neuer Titel mit Haltung');
   });
 
   it('sagt, wenn es noch keine Beitraege gibt', async () => {

@@ -14,7 +14,8 @@ import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking
 import { AuthService } from '../auth/auth.service';
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
-import { BeitragSheetComponent, BeitragSheetDaten, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
+import { BeitragSheetComponent, BeitragSheetDaten, GEAENDERT, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
+import { istAenderbar } from '../beitragskarte/beitrag-aendern-dialog.component';
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
 import { SperrnachrichtenComponent } from './sperrnachrichten.component';
@@ -171,20 +172,21 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
 
   /**
    * Oeffnet den Beitrag als volle Karte; schliessen per Wisch, Klick ausserhalb oder Escape.
-   * Hier stehen nur eigene Beitraege, deshalb darf das Sheet loeschen. Danach laedt die
-   * Seite neu, samt Statistik; war es der letzte Beitrag der Seite, die Seite davor.
+   * Hier stehen nur eigene Beitraege, deshalb darf das Sheet loeschen und, bei Kommentar
+   * und Hintergrundinfo, aendern (#299). Danach laedt die Seite neu, samt Statistik; war
+   * der geloeschte der letzte Beitrag der Seite, die Seite davor.
    */
   beitragOeffnen(karte: KartenDaten): void {
-    const daten: BeitragSheetDaten = { ...karte, loeschbar: true };
+    const daten: BeitragSheetDaten = { ...karte, loeschbar: true, aenderbar: istAenderbar(karte.typ) };
     this.bottomSheet
       .open(BeitragSheetComponent, {
         data: daten,
         ariaLabel: karte.titel || karte.text || 'Beitrag',
       })
       .afterDismissed()
-      .pipe(filter((ergebnis) => ergebnis === GELOESCHT))
-      .subscribe(() => {
-        if (this.karten.length === 1 && this.pageIndex > 0) {
+      .pipe(filter((ergebnis) => ergebnis === GELOESCHT || ergebnis === GEAENDERT))
+      .subscribe((ergebnis) => {
+        if (ergebnis === GELOESCHT && this.karten.length === 1 && this.pageIndex > 0) {
           this.pageIndex--;
         }
         this.fetchData(this.pageIndex + 1, this.pageSize);
