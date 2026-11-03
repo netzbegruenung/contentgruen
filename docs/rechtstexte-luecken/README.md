@@ -138,9 +138,9 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
 **Offen:**
 - Juristische Prüfung beider Wortlaute und der geänderten §4, §5 und §10, dazu der Wegfall der
   Angabe nach § 18 Abs. 2 MStV im Impressum (#521; geht schon mit dem nächsten Deploy live): #296.
-  Offen dort vor allem, ob die Zustimmung durch Absenden trägt, obwohl der CC0-Hinweis eine
-  Änderung nicht anzeigt (§10), ob §4 das Widerrufsrecht nach § 31a UrhG erwähnen muss und ob §5
-  beim Sperren fremder Bilder die Prüfung nach §7 ausdrücklich nennen soll.
+  Zu #521 entschieden (Maintainer, 03.11.2026), nicht Teil von #296: Zustimmung durch Absenden
+  unter dem CC0-Hinweis bleibt so (§10), §5 behält die Bedingung „nicht erkennbar ohne Erlaubnis
+  der Berechtigten“ und sperrt nach Prüfung, §4 nennt § 31a UrhG nicht.
 - Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Wegfall offen
   (Entscheidung Maintainer, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
   Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem CC0-Hinweis.

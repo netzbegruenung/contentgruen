@@ -89,12 +89,14 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).not.toContain('alle bekannten Nutzungsarten');
   });
 
-  it('lässt in Abschnitt 5 nur frei zugängliche fremde Bilder einbinden und sperrt andere nach einer Meldung (#521)', () => {
+  it('lässt in Abschnitt 5 nur frei zugängliche fremde Bilder einbinden und sperrt andere erst nach Prüfung (#521)', () => {
     const text = abschnittNummer('5.');
 
     expect(text).toContain('Binde ein fremdes Bild nur ein, wenn es an seinem ursprünglichen Ort frei zugänglich ist');
     expect(text).toContain('ohne Anmeldung, Bezahlschranke oder technischen Schutz');
-    expect(text).toContain('sperren wir den Beitrag, sobald wir davon erfahren');
+    // Wie in Abschnitt 7: Eine Meldung allein sperrt nichts, erst die Prüfung.
+    expect(text).toContain('sperren wir den Beitrag, sobald wir es geprüft haben');
+    expect(text).not.toContain('sobald wir davon erfahren');
   });
 
   it('lässt geänderte Bedingungen in Abschnitt 10 erst mit Zustimmung gelten (#466)', () => {
