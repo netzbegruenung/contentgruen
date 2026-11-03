@@ -33,7 +33,7 @@ from dtos.beitrag import (
 )
 from dtos.image import BildResponse
 from services.content.reference_service import ReferenceService
-from services.cleanup.usage_cleanup_service import get_cleanup_service
+from services.cleanup.bereinigungsjob import get_bereinigungsjob
 from core.config import Settings
 from repositories.interfaces.content_repository import IContentRepository
 from core.logging import log_pseudonym
@@ -405,7 +405,7 @@ async def get_cleanup_status(
         if not settings.is_admin_user(current_user):
             raise HTTPException(status_code=403, detail="Admin access required")
 
-        cleanup_service = get_cleanup_service()
+        cleanup_service = get_bereinigungsjob()
         status = cleanup_service.get_status()
 
         return CleanupStatusResponse(**status)

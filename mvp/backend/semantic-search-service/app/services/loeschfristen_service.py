@@ -29,7 +29,7 @@ core/config.py.
 
 loeschen_im_takt ist ein eigener Hintergrund-Task aus main.py und laeuft taeglich und
 zusaetzlich um Mitternacht (UTC). Wie beim Feedback haengt er nicht am abschaltbaren
-Usage-Cleanup: Die Fristen stehen im Loeschkonzept ohne Bedingung.
+Bereinigungsjob: Die Fristen stehen im Loeschkonzept ohne Bedingung.
 """
 
 import asyncio

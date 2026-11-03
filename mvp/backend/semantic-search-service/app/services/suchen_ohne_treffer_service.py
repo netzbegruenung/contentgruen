@@ -48,7 +48,7 @@ Suchanfragen landen auf derselben Aussage.
 
 Wochen vor der Aufbewahrungsgrenze loescht loeschen_im_takt, ein eigener
 Hintergrund-Task aus main.py, taeglich und zusaetzlich um Mitternacht (UTC). Er
-haengt bewusst nicht am Usage-Cleanup, der sich abschalten laesst: Die
+haengt bewusst nicht am Bereinigungsjob, der sich abschalten laesst: Die
 Datenschutzerklaerung sagt die Loeschung nach acht Wochen ohne Bedingung zu. Gerechnet wird in UTC wie bei search_events.
 """
 

@@ -138,7 +138,7 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 Ein täglicher Task löscht nach festen Fristen, sofort beim Start des Dienstes, dann
 täglich und zusätzlich um Mitternacht (UTC). Die Zahlen stehen an einer Stelle im Code,
 `services/loeschfristen_service.py`; dort steht auch die Begründung. Wie beim Feedback
-hängt der Task nicht am abschaltbaren Usage-Cleanup. Was gelöscht ist, steht in Backups
+hängt der Task nicht am abschaltbaren Bereinigungsjob. Was gelöscht ist, steht in Backups
 bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 
 | Datenart | Frist | Gerechnet ab |
@@ -208,7 +208,7 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
 
 - **Frist:** Nach 180 Tagen löscht ein täglicher Task die ganze Zeile samt Kontakt
   (`services/feedback_service.py`, `loeschen_im_takt`, `AUFBEWAHRUNG_TAGE`). Er hängt
-  nicht am abschaltbaren Usage-Cleanup.
+  nicht am abschaltbaren Bereinigungsjob.
 - **Auf Antrag:** Die Person nennt die Kontaktangabe, die sie hinterlassen hat; ein
   Admin löscht die Zeilen mit dieser Angabe, ohne Rücksicht auf Groß- und
   Kleinschreibung und Leerzeichen am Rand
@@ -292,7 +292,7 @@ und der Ablauf oben erfasst die Tabelle nicht.
   (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
   abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
   und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
-  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_USAGE_CLEANUP=false`
+  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_BEREINIGUNGSJOB=false`
   entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
   ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
   eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
@@ -304,10 +304,11 @@ und der Ablauf oben erfasst die Tabelle nicht.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
-  verdichtet der tägliche Bereinigungsjob (`services/cleanup/usage_cleanup_service.py`,
+  verdichtet der tägliche Bereinigungsjob (`services/cleanup/bereinigungsjob.py`,
   derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
   Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
-  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=true` (Standard); abgeschaltet gilt auch diese
+  `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=true` (Standard; der frühere Name
+  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP` gilt weiter); abgeschaltet gilt auch diese
   Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
   Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
 - **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen,
