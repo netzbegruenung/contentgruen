@@ -3,13 +3,15 @@
 Die Nutzungsbedingungen (`nutzungsbedingungen.component.html`) tragen unten eine Stand-Zeile mit
 Tagesdatum. Dieses Datum ist der **Stand der Nutzungsbedingungen** (`GLOSSARY.md`): Es benennt
 genau einen Text. Geänderte Bedingungen gelten für eine Person erst, wenn sie ihnen zugestimmt hat
-(NB §10, #466); die Zustimmung holt die Keycloak-Pflichtaktion „Terms and Conditions“ beim
-Anmelden ein (#429). Erstmals einbezogen sind sie über den CC0-Hinweis beim Absenden (NB §2,
-#415). Die Pflichtaktion bleibt vorerst (Entscheidung Maintainer, 02.11.2026); ihre Ablösung läuft
-über #521. Fällt sie weg, ändern sich §10 und die Schritte 4 bis 6 unten
+(NB §10, #466). Die Zustimmung kommt wie die erste über den CC0-Hinweis beim Absenden (NB §2,
+#415): Er verlinkt immer den aktuellen Stand, also stimmt jemand mit dem nächsten Absenden dem
+Stand zu, der dann live ist (seit #521). Daneben fragt vorerst die Keycloak-Pflichtaktion
+„Terms and Conditions“ beim Anmelden (#429; bleibt vorerst, Entscheidung Maintainer, 02.11.2026).
+§10 nennt sie nur als Möglichkeit („etwa bei der Anmeldung“) und stimmt deshalb mit und ohne
+sie. Fällt sie weg, entfallen die Schritte 4 und 5 unten
 (`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
 
-Keycloak speichert dabei nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
+Bei der Pflichtaktion speichert Keycloak nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
 zugestimmt hat, ergibt sich deshalb aus diesem Verzeichnis: der Stand, der zu diesem Zeitpunkt
 live war. Wer über den CC0-Hinweis zugestimmt hat (NB §2, #415), dem gehört der Stand, der beim
 Absenden live war; den Zeitpunkt liefert der Beitrag, der Satz oder der Einwurf (Erstellungszeit),
@@ -39,7 +41,8 @@ diesem Zeitpunkt live war.
 3. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum in `stand.md` eintragen, beim
    vorigen Stand das „bis“-Datum. Bei einer reinen Korrektur ist der Ablauf hier zu Ende.
 
-Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer):
+Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer), solange die Pflichtaktion
+läuft:
 
 4. Den Text, den Keycloak bei der Pflichtaktion zeigt, auf den neuen Stand bringen; ohne das
    stimmen die Personen dem alten Stand-Datum zu. Diesen Text (`termsText`) liefert die
@@ -48,19 +51,11 @@ Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer):
 5. Die Pflichtaktion „Terms and Conditions“ für alle Konten im Realm von Gut gesagt erneut
    auslösen (siehe unten). Der Realm gehört nur zu Gut gesagt (#429); in einem geteilten Realm
    träfe das auch Konten, die Gut gesagt nie nutzen.
-6. Alle abmelden, damit niemand mit einer laufenden Sitzung unter dem neuen Stand weiterarbeitet,
-   ohne zugestimmt zu haben (§10; Entscheidung Maintainer, 30.10.2026). Dazu gehören zwei Dinge:
-   - In Keycloak: Admin-Konsole → Realm von Gut gesagt → Sessions → „Sign out all active
-     sessions“. Das beendet die Sitzungen bei Keycloak, sodass die nächste Anmeldung über die
-     Pflichtaktion läuft.
-   - Im BFF: Das Anmelde-Cookie lebt 14 Tage gleitend und wird nicht gegen Keycloak geprüft
-     (`BFF/Program.cs`, Cookie-Lebensdauer; wie in `docs/LOESCHKONZEPT.md`, „Vorab: Sitzung
-     beenden“). Das Abmelden in Keycloak allein beendet es deshalb nicht. Abgemeldet sind alle
-     erst, wenn der DataProtection-Schlüsselring des BFF (`DATAPROTECTION_KEYS_PATH`, Standard
-     `/keys`) geleert und das BFF neu gestartet ist: Danach lässt sich kein altes Cookie mehr
-     entschlüsseln. Wer gerade mitten in einer Anmeldung ist, muss sie einmal neu beginnen.
 
-Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein.
+Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein. Alle
+abzumelden ist seit #521 nicht mehr nötig: Wer mit einer laufenden Sitzung weiterarbeitet und
+etwas absendet, stimmt dabei über den CC0-Hinweis dem neuen Stand zu; wer nur liest oder
+bewertet, für den bleibt der vorige Stand (§10).
 
 Das erneute Auslösen in Schritt 5 geht nicht über die Oberfläche der Admin-Konsole für alle auf
 einmal, sondern über die Admin-Schnittstelle von Keycloak: für jedes Konto `requiredActions` um

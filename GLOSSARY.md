@@ -143,7 +143,7 @@ Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
 **Stand der Nutzungsbedingungen**:
-Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (beim Anmelden, NB §10; Ablösung über #521); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
+Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (mit dem nächsten Absenden unter dem CC0-Hinweis, NB §10); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
 **Schreibregel**:
@@ -292,7 +292,7 @@ Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens e
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Eine E-Mail-Adresse braucht es nur, damit ein Admin der Person die Entscheidung über die Meldung mitteilen kann. Den Eingang bestätigt die App sofort, eine Mail dazu gibt es nicht.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Eine E-Mail-Adresse braucht es nur, damit ein Admin der Person die Entscheidung über die Meldung mitteilen kann. Verlangt die Person Auskunft oder Löschung, findet ein Admin ihre Meldungen über genau diese Angaben; Löschen entfernt erledigte Meldungen ganz, offene behalten Grund und Beschreibung ohne Name, E-Mail-Adresse und Tagespseudonym. Den Eingang bestätigt die App sofort, eine Mail dazu gibt es nicht.
 _Avoid_: Report, Flag, Beschwerde
 
 **Erklärung guten Glaubens**:
@@ -435,6 +435,10 @@ _Avoid_: Managed Login, Managed Auth, Dummy-Login
 **Netzbegrünung-Login**:
 Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Mit dem eigenen Realm von Gut gesagt (#429) läuft sie, sobald die App darauf umgestellt ist, über diesen Realm, in dem die Netzbegrünung Identity Provider ist; die Kennung ist dann die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
 _Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
+
+**Realm**:
+Der eigene Bereich von Gut gesagt im Identitätsdienst Keycloak, der Realm „gutgesagt“ (#429, ADR 0006). Darin liegen die Konten aus dem Netzbegrünung-Login und aus Einladungen, mit Mail-Adresse als Benutzername, Passwort, Mail-Bestätigung und Zustimmung zu den Nutzungsbedingungen; Gut gesagt selbst speichert davon nur die Kennung und den Anzeigenamen. In Texten für Nutzende, etwa der Datenschutzerklärung, heißt er Anmeldedienst.
+_Avoid_: Mandant, Tenant, Keycloak (für den Realm allein)
 
 **Einladung**:
 Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends.

@@ -4,8 +4,8 @@
 bestätigt (Quelle: Vorstand, 03.09.2026) und in `impressum.component.html`
 sowie `impressum.component.ts` eingetragen. Damit ist auch die Grundsatzfrage aus
 „Reihenfolge zum Ausfüllen" Nr. 1 entschieden: Anbieter ist der Verein, nicht
-der Maintainer als Privatperson. Er ist ausschließlich nach § 18 Abs. 2 MStV
-inhaltlich verantwortlich (I12/I13), unter der Vereinsanschrift.
+der Maintainer als Privatperson. Die Angabe nach § 18 Abs. 2 MStV (I12/I13) ist mit #521
+entfallen: Gut gesagt ist kein journalistisch-redaktionelles Angebot.
 I14 ist mit „September 2026" ebenfalls erledigt. Offen bleibt allein I11: Der
 Abschnitt zur USt-IdNr. ist mit der Neufassung entfallen — zu klären ist per
 Rückfrage an den Vorstand, ob der Verein eine USt-IdNr. hat; falls ja, ist sie

@@ -55,9 +55,9 @@ besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und lö
   1 bis 3 brauchen sie als Kennung), dann den Eintrag aus `mvp/config/managed-users.json`
   entfernen (Details unter Schritt 4). Nach dem Umzug in den Realm (#488) ist er ein Konto
   im Realm wie eines aus einer Einladung.
-- **Netzbegrünung-Login:** Die Kennung als eigene Zeile in `geloeschte-konten.txt` im
-  Konfigurationsverzeichnis des BFF eintragen (`GELOESCHTE_KONTEN_PATH`, Standard
-  `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
+- **Netzbegrünung-Login und Konto aus einer Einladung:** Die Kennung als eigene Zeile in
+  `geloeschte-konten.txt` im Konfigurationsverzeichnis des BFF eintragen
+  (`GELOESCHTE_KONTEN_PATH`, Standard `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
   `#` und Leerzeilen zählen nicht. Das Cookie trägt keine Tokens, deshalb kann das BFF
   Keycloak nicht selbst fragen; das Löschen in Keycloak (Schritt 4) allein beendet die
   Sitzung nicht.
@@ -159,12 +159,22 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
   meldende Person, ihre Sitzungskennung, ihren Namen und ihre E-Mail-Adresse (freiwillig,
-  seit #438) oder den Freitext. Verlangt jemand ohne Konto die Löschung dieser Angaben,
-  finden sich seine Meldungen nur über `content_reports.melder_email` oder `melder_name`,
-  per Hand in der Datenbank; ein Werkzeug dafür gibt es nicht. Die Adresse ohne Rücksicht
-  auf Groß- und Kleinschreibung suchen (`ILIKE`): Gespeichert ist sie, wie sie eingegeben
-  wurde, nur die Domain klein. Offene Meldungen haben keine
-  Frist, Name und E-Mail-Adresse bleiben also, bis die Meldung bearbeitet ist. Der Zähler am Beitrag
+  seit #438) oder den Freitext. Verlangt jemand ohne Konto Auskunft über diese Angaben
+  oder ihre Löschung, finden sich seine Meldungen nur über Name und E-Mail-Adresse:
+  in der Moderation unter „Nach Person“ (#494, `POST /api/v1/moderation/melder/meldungen`).
+  Gesucht wird die ganze Angabe ohne Rücksicht auf Groß- und Kleinschreibung (gespeichert
+  ist die Adresse, wie sie eingegeben wurde, nur die Domain normalisiert; die Suche
+  normalisiert die Eingabe genauso); sind beide angegeben,
+  müssen beide passen. Die Liste ist die Auskunft. „Angaben löschen“
+  (`POST /api/v1/moderation/melder/angaben-loeschen`) nimmt nur die gezeigten Treffer, die
+  noch zu den Angaben passen. Bearbeitete und abgewiesene gehen ganz; **offene** bleiben
+  stehen, weil sie noch Arbeit sind und der Beitrag sonst ungeprüft bliebe (Art. 16 DSA),
+  und verlieren Name, E-Mail-Adresse und das Tagespseudonym (Zufallswert wie beim
+  Abschluss). Wer nur nach dem Namen sucht, prüft vorher, ob alle Treffer dieselbe Person
+  sind, und bestätigt das in der Rückfrage; ohne diese Bestätigung löscht der Dienst nicht. Die Entscheidung kann der Person dann niemand mehr mitteilen; Grund und
+  Beschreibung der offenen Meldung bleiben bis zu ihrer Frist. Ohne solches Verlangen haben
+  offene Meldungen keine Frist, Name und E-Mail-Adresse bleiben also, bis die Meldung
+  bearbeitet ist. Der Zähler am Beitrag
   (`report_count`) bleibt; er trägt keinen Personenbezug. Das gilt auch für Meldungen zu
   gesperrten Beiträgen: Die Sperre selbst hat keine Frist, ihr Anlass in der Meldung
   (samt `resolution_notes`) geht nach 180 Tagen.

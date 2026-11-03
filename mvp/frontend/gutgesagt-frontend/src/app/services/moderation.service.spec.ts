@@ -197,6 +197,30 @@ describe('ModerationService', () => {
     });
   });
 
+  describe('Meldungen einer Person (#494)', () => {
+    it('sucht per POST, Name und E-Mail-Adresse stehen nicht in der Adresse', () => {
+      service.meldungenEinerPerson({ email: 'anna@example.org', name: null }).subscribe();
+
+      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/melder/meldungen`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: 'anna@example.org', name: null });
+      expect(req.request.urlWithParams).not.toContain('anna');
+      req.flush({ total: 0, reports: [] });
+    });
+
+    it('löscht die Angaben per POST mit denselben Angaben und den gezeigten Meldungen', () => {
+      let ergebnis: unknown;
+
+      service.angabenLoeschen({ email: null, name: 'Anna' }, ['m-1'], true).subscribe((a) => (ergebnis = a));
+
+      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/melder/angaben-loeschen`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: null, name: 'Anna', meldung_ids: ['m-1'], dieselbe_person: true });
+      req.flush({ geloescht: 2, angaben_entfernt: 1 });
+      expect(ergebnis).toEqual({ geloescht: 2, angaben_entfernt: 1 });
+    });
+  });
+
   describe('dismissReport', () => {
     it('should send dismiss request with optional notes', () => {
       const reportId = 'report-123';
