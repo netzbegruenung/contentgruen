@@ -184,26 +184,30 @@ def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
 
 
-def get_einladung_service() -> EinladungService:
-    """
-    Ohne Zugang zur Keycloak-Admin-Schnittstelle lassen sich Einladungen verwalten,
-    aber nicht einloesen (503); so laeuft es im Dev-Stack.
-    """
-    konten = None
-    if (
+def _keycloak_konten() -> Optional[KeycloakKonten]:
+    """Ohne Zugang zur Keycloak-Admin-Schnittstelle None; so laeuft es im Dev-Stack."""
+    if not (
         settings.keycloak_url
         and settings.keycloak_admin_client_id
         and settings.keycloak_admin_client_secret
     ):
-        konten = KeycloakKonten(
-            basis_url=settings.keycloak_url,
-            realm=settings.keycloak_realm,
-            client_id=settings.keycloak_admin_client_id,
-            client_secret=settings.keycloak_admin_client_secret,
-            app_client_id=settings.keycloak_app_client_id,
-            app_url=settings.app_url,
-        )
-    return EinladungService(get_einladung_repository(), konten)
+        return None
+    return KeycloakKonten(
+        basis_url=settings.keycloak_url,
+        realm=settings.keycloak_realm,
+        client_id=settings.keycloak_admin_client_id,
+        client_secret=settings.keycloak_admin_client_secret,
+        app_client_id=settings.keycloak_app_client_id,
+        app_url=settings.app_url,
+    )
+
+
+def get_einladung_service() -> EinladungService:
+    """
+    Ohne Zugang zur Keycloak-Admin-Schnittstelle lassen sich Einladungen verwalten,
+    aber nicht einloesen (503).
+    """
+    return EinladungService(get_einladung_repository(), _keycloak_konten())
 
 
 _gegenlesen_service: Optional[GegenlesenService] = None
@@ -238,6 +242,8 @@ def get_loeschfristen_service() -> LoeschfristenService:
         get_moderation_repository(),
         get_moderation_service(),
         get_sperre_repository(),
+        # Ohne Zugang zur Keycloak-Admin-Schnittstelle bleiben Konten im Realm unberuehrt.
+        _keycloak_konten(),
     )
 
 

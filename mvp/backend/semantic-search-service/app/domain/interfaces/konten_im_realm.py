@@ -1,12 +1,18 @@
 """
-Konten im Realm von Gut gesagt anlegen (#429). Die Einladung (services/einladung_service.py)
-kennt nur diese Schnittstelle; die Keycloak-Admin-Schnittstelle steckt dahinter
-(infrastructure/keycloak_konten.py).
+Konten im Realm von Gut gesagt anlegen (#429) und nie benutzte loeschen (#538). Die
+Einladung (services/einladung_service.py) kennt nur diese Schnittstelle; die
+Keycloak-Admin-Schnittstelle steckt dahinter (infrastructure/keycloak_konten.py).
 """
 
 import enum
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, Iterable, List, Mapping, Protocol
+
+
+# So lange gilt der Link in der Mail; danach hilft "Passwort vergessen". Die Loeschfrist
+# fuer nie benutzte Konten (services/loeschfristen_service.py) zaehlt ab seinem Ablauf.
+MAIL_GUELTIG_SEKUNDEN = 3 * 24 * 60 * 60
 
 
 class KontoErgebnis(enum.Enum):
@@ -17,6 +23,12 @@ class KontoErgebnis(enum.Enum):
 
 class IKontenImRealm(Protocol):
     def konto_anlegen(self, email: str) -> KontoErgebnis: ...
+
+
+class INieBenutzteKonten(Protocol):
+    """Loeschfrist fuer Konten aus Einladungen: services/loeschfristen_service.py."""
+
+    def nie_benutzte_loeschen(self, angelegt_vor: datetime) -> int: ...
 
 
 @dataclass
