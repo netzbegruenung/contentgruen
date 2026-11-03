@@ -65,7 +65,7 @@
                             [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
                 </div>
 
-                <app-sprachhinweis [text]="(generictextForm.value.title ?? '') + '\n' + (generictextForm.value.text ?? '')"></app-sprachhinweis>
+                <app-sprachhinweis [titel]="generictextForm.value.title" [text]="generictextForm.value.text"></app-sprachhinweis>
                 <p appCc0Hinweis></p>
 
                 <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of, timer } from 'rxjs';
 import { catchError, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 
@@ -13,15 +14,19 @@ import {
 
 const SAETZE = {
   beitrag:
-    'Dieser Beitrag ist offenbar nicht auf Deutsch. Suche und Gegenlesen sind auf deutsche Texte ausgelegt; speichern kannst du trotzdem.',
+    'Dieser Beitrag ist offenbar nicht auf Deutsch. Gut gesagt ist auf deutsche Texte ausgelegt; speichern kannst du trotzdem.',
   aussage:
     'Diese Aussage ist offenbar nicht auf Deutsch. Die Suche ist auf deutsche Texte ausgelegt; anlegen kannst du sie trotzdem.',
 } as const;
 
+/** Zu viele Anfragen: Der letzte Stand bleibt stehen, wie beim Gegenlesen. */
+const ZU_VIELE = 'zu-viele' as const;
+
 /**
  * Der Sprachhinweis (#405): Ist ein Beitrag oder eine neue Aussage ab fünf Wörtern
  * offenbar nicht deutsch, sagt ein Satz das, etwa eine Sekunde nach der letzten Eingabe.
- * Er sperrt nichts. Antwortet der Dienst nicht, steht einfach nichts da.
+ * Er sperrt nichts. Antwortet der Dienst nicht, steht einfach nichts da; beim Rate-Limit
+ * bleibt der letzte Stand.
  */
 @Component({
   selector: 'app-sprachhinweis',
@@ -40,7 +45,9 @@ const SAETZE = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SprachhinweisComponent implements OnChanges {
-  /** Der Text, bei einem Beitrag Titel und Text zusammen. */
+  /** Bei einem Beitrag sein Titel; erkannt werden Titel und Text zusammen. */
+  @Input() titel: string | null = '';
+  /** Der Text des Beitrags oder der Aussage. */
   @Input() text: string | null = '';
   @Input() gegenstand: keyof typeof SAETZE = 'beitrag';
 
@@ -60,12 +67,15 @@ export class SprachhinweisComponent implements OnChanges {
             : timer(SPRACHHINWEIS_VERZOEGERUNG_MS).pipe(
                 switchMap(() => service.fremdsprache(text)),
                 map((antwort) => antwort.sprache !== null),
-                catchError(() => of(false)),
+                catchError((fehler: unknown) =>
+                  of(fehler instanceof HttpErrorResponse && fehler.status === 429 ? ZU_VIELE : false),
+                ),
               ),
         ),
         takeUntilDestroyed(inject(DestroyRef)),
       )
       .subscribe((fremd) => {
+        if (fremd === ZU_VIELE) return;
         this.fremd = fremd;
         cdr.markForCheck();
       });
@@ -76,6 +86,6 @@ export class SprachhinweisComponent implements OnChanges {
   }
 
   ngOnChanges(): void {
-    this.eingabe.next(this.text ?? '');
+    this.eingabe.next([this.titel, this.text].filter((teil) => teil?.trim()).join('\n'));
   }
 }

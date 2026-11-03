@@ -62,6 +62,26 @@ describe('SprachhinweisComponent', () => {
     expect(hinweis()).toContain('speichern kannst du trotzdem');
   }));
 
+  it('erkennt Titel und Text eines Beitrags zusammen', fakeAsync(() => {
+    fixture.componentRef.setInput('titel', 'Heat pumps');
+    schreibe('are far too expensive.');
+    tick(SPRACHHINWEIS_VERZOEGERUNG_MS);
+
+    expect(http.expectOne(PFAD).request.body).toEqual({ text: 'Heat pumps\nare far too expensive.' });
+  }));
+
+  it('lässt beim Rate-Limit den letzten Sprachhinweis stehen', fakeAsync(() => {
+    schreibe(ENGLISCH);
+    tick(SPRACHHINWEIS_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush({ sprache: 'en' });
+    schreibe(ENGLISCH + ' Really.');
+    tick(SPRACHHINWEIS_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush('zu viele', { status: 429, statusText: 'Too Many Requests' });
+    fixture.detectChanges();
+
+    expect(hinweis()).not.toBeNull();
+  }));
+
   it('spricht bei einer Aussage von der Aussage', fakeAsync(() => {
     fixture.componentRef.setInput('gegenstand', 'aussage');
     schreibe(ENGLISCH);

@@ -104,7 +104,7 @@ describe('AddCommentaryComponent', () => {
       .queryAll((el) => el.componentInstance instanceof SprachhinweisComponent)
       .find((el) => (el.componentInstance as SprachhinweisComponent).gegenstand === 'beitrag')!;
     const instanz = sprachhinweis.componentInstance as SprachhinweisComponent;
-    expect(instanz.text).toBe('Wärmepumpe lohnt sich im Altbau\nEin ausreichend langer Text.');
+    expect([instanz.titel, instanz.text]).toEqual(['Wärmepumpe lohnt sich im Altbau', 'Ein ausreichend langer Text.']);
     expect(sprachhinweis.nativeElement.nextElementSibling.hasAttribute('appCc0Hinweis')).toBeTrue();
     expect(seite().querySelector<HTMLButtonElement>('.submit-btn')!.disabled).toBeFalse();
   });

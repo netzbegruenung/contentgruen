@@ -123,6 +123,7 @@ class TestMitLingua:
             # Anglizismen und ein englisches Zitat machen einen Text nicht englisch.
             "Das Narrativ vom Fake-Klimaschutz ist ein Framing der Lobby.",
             "Sie sagen „green deal“, meinen aber höhere Preise für alle.",
+            "Der Bericht sagt: „We need more wind power now“, und das stimmt auch für uns.",
             "Ein Tempolimit rettet Leben und kostet fast nichts.",
         ],
     )
