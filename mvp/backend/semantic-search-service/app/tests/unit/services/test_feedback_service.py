@@ -48,13 +48,19 @@ class TestNeueste:
     def test_neueste_liefert_eintraege_ohne_zeilenobjekt(self, repository):
         kennung = uuid.uuid4()
         repository.neueste.return_value = [
-            SimpleNamespace(id=kennung, text="Gut", kontakt=None, eingegangen_am=HEUTE)
+            SimpleNamespace(
+                id=kennung,
+                text="Gut",
+                kontakt=None,
+                eingegangen_am=HEUTE,
+                erledigt=False,
+            )
         ]
 
         eintraege = FeedbackService(repository).neueste(limit=5)
 
-        repository.neueste.assert_called_once_with(5)
-        assert eintraege == [FeedbackEintrag(kennung, "Gut", None, HEUTE)]
+        repository.neueste.assert_called_once_with(5, None)
+        assert eintraege == [FeedbackEintrag(kennung, "Gut", None, HEUTE, False)]
 
 
 class TestFrist:

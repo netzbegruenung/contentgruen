@@ -13,6 +13,9 @@ Nach AUFBEWAHRUNG_TAGE loescht loeschen_im_takt, ein eigener Hintergrund-Task au
 main.py, die ganze Zeile, Kontakt eingeschlossen, taeglich und zusaetzlich um
 Mitternacht (UTC). Wie bei den Suchen ohne Treffer haengt er nicht am abschaltbaren
 Bereinigungsjob: Die Frist steht im Loeschkonzept ohne Bedingung.
+
+Admins markieren Feedback als erledigt und nehmen das zurueck; das aendert die
+Frist nicht. Vorher loeschen koennen sie es einzeln (#425).
 """
 
 import asyncio
@@ -40,6 +43,13 @@ class FeedbackEintrag:
     text: str
     kontakt: Optional[str]
     eingegangen_am: date
+    erledigt: bool
+
+
+def _eintrag(zeile) -> FeedbackEintrag:
+    return FeedbackEintrag(
+        zeile.id, zeile.text, zeile.kontakt, zeile.eingegangen_am, zeile.erledigt
+    )
 
 
 def aufbewahrungsgrenze(heute: Optional[date] = None) -> date:
@@ -56,11 +66,22 @@ class FeedbackService:
     ) -> None:
         self._repository.anlegen(text, kontakt, heute or heute_utc())
 
-    def neueste(self, limit: int = LIMIT_STANDARD) -> List[FeedbackEintrag]:
-        return [
-            FeedbackEintrag(z.id, z.text, z.kontakt, z.eingegangen_am)
-            for z in self._repository.neueste(limit)
-        ]
+    def neueste(
+        self, limit: int = LIMIT_STANDARD, erledigt: Optional[bool] = None
+    ) -> List[FeedbackEintrag]:
+        """Das Neueste zuerst; mit erledigt nur offenes (False) oder erledigtes (True)."""
+        return [_eintrag(z) for z in self._repository.neueste(limit, erledigt)]
+
+    def erledigt_setzen(
+        self, feedback_id: uuid.UUID, erledigt: bool
+    ) -> Optional[FeedbackEintrag]:
+        """None, wenn es das Feedback nicht (mehr) gibt."""
+        zeile = self._repository.erledigt_setzen(feedback_id, erledigt)
+        return None if zeile is None else _eintrag(zeile)
+
+    def loeschen(self, feedback_id: uuid.UUID) -> bool:
+        """Ein Feedback samt Kontakt loeschen; False, wenn es das nicht (mehr) gibt."""
+        return self._repository.loeschen(feedback_id)
 
     def alte_loeschen(self, heute: Optional[date] = None) -> int:
         """Feedback vor der Aufbewahrungsgrenze loeschen; liefert die Zahl der Zeilen."""
