@@ -7,7 +7,7 @@ beruht. Was eine Variante ist, steht am Modell (infrastructure/database/models.p
 from typing import Dict, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, exists, func, select
+from sqlalchemy import delete, exists, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import AppDatabase, get_app_database
@@ -72,12 +72,23 @@ class VariantenRepository:
         with self.db.get_session() as session:
             return list(session.execute(abfrage).scalars().all())
 
-    def variante_entfernen(self, variante_id: UUID) -> None:
-        """Die Verknuepfung der Variante loesen, etwa wenn ihr Autor sie loescht."""
+    def verknuepfungen_entfernen(self, beitrag_id: UUID) -> int:
+        """
+        Die Verknuepfungen eines Beitrags loesen, der geloescht oder entfernt wird: als
+        Variante zaehlt er am Original nicht mehr mit, als Original haben seine
+        Varianten keines mehr. Die Varianten selbst bleiben Beitraege fuer sich.
+        Gibt die Zahl der geloesten Zeilen zurueck.
+        """
         with self.db.get_session() as session:
-            session.execute(
-                delete(VarianteZeile).where(VarianteZeile.variante_id == variante_id)
+            ergebnis = session.execute(
+                delete(VarianteZeile).where(
+                    or_(
+                        VarianteZeile.variante_id == beitrag_id,
+                        VarianteZeile.original_id == beitrag_id,
+                    )
+                )
             )
+            return int(ergebnis.rowcount or 0)
 
 
 _repository: Optional[VariantenRepository] = None

@@ -1154,6 +1154,23 @@ describe('AddGenerictextComponent', () => {
 
       expect(hinzufuegen.calls.mostRecent().args[0].beruht_auf).toBe('original-1');
     }));
+
+    it('vergisst die Vorlage beim Zuruecksetzen', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      alsVorlage();
+
+      component.leeren();
+      fixture.detectChanges();
+      component.generictextForm.patchValue({
+        title: 'Wärmepumpen senken den Strombedarf im Winter nicht',
+        text: 'Ein ganz anderer, frei geschriebener Text über Wärmepumpen im Winter.',
+      });
+      component.speichern();
+      flush();
+
+      expect(seite().querySelector('.vorlage-hinweis')).toBeNull();
+      expect('beruht_auf' in hinzufuegen.calls.mostRecent().args[0]).toBeFalse();
+    }));
   });
 
   describe('Vorbefuellung aus dem Destillier-Ablauf', () => {

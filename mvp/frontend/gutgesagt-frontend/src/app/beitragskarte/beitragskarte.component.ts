@@ -175,10 +175,6 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Wer etwas eingestellt hat, sieht nur, wer angemeldet ist: Ohne Anmeldung steht in
-   * der Meta-Zeile allein das Alter.
-   */
-  /**
    * "N Varianten" (#356): wie viele Beitraege jemand mit diesem als Vorlage
    * angelegt hat, als Link auf ihre Liste. Nicht in der Formular-Vorschau.
    */
@@ -190,6 +186,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return anzahl === 1 ? '1 Variante' : `${anzahl} Varianten`;
   }
 
+  /**
+   * Wer etwas eingestellt hat, sieht nur, wer angemeldet ist: Ohne Anmeldung steht in
+   * der Meta-Zeile allein das Alter.
+   */
   get zeigtAutor(): boolean {
     return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName || this.daten.eigen != null);
   }

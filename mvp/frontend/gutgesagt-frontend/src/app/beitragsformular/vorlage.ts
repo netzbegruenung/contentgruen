@@ -1,5 +1,5 @@
 import { Params } from '@angular/router';
-import { Observable, map } from 'rxjs';
+import { Observable, Subscription, map } from 'rxjs';
 
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
@@ -72,4 +72,41 @@ export function kommentarVorlageLaden(service: CommentaryService, id: string): O
 
 export function hintergrundinfoVorlageLaden(service: GenericTextService, id: string): Observable<Vorlage> {
   return service.getGenericTextById(id).pipe(map(vorlageAusHintergrundinfo));
+}
+
+/**
+ * Die Vorlage aus ?vorlage= fuer einen Formular-Workflow. Aendert sich die Adresse,
+ * zaehlt nur noch die neue: Ein laufendes Laden fuer die alte wird abgebrochen, damit
+ * eine spaete Antwort weder das Formular ueberschreibt noch mit dem falschen
+ * Original verknuepft.
+ */
+export class VorlageAusAdresse {
+  vorlage: Vorlage | null = null;
+  private id: string | null = null;
+  private laden: Subscription | null = null;
+
+  constructor(
+    private ladenVon: (id: string) => Observable<Vorlage>,
+    private nichtLadbar: (error: unknown) => void,
+  ) {}
+
+  uebernehmen(id: string | null): void {
+    if (id === this.id) {
+      return;
+    }
+    this.beenden();
+    this.id = id;
+    this.vorlage = null;
+    if (id) {
+      this.laden = this.ladenVon(id).subscribe({
+        next: (vorlage) => (this.vorlage = vorlage),
+        error: (error) => this.nichtLadbar(error),
+      });
+    }
+  }
+
+  beenden(): void {
+    this.laden?.unsubscribe();
+    this.laden = null;
+  }
 }

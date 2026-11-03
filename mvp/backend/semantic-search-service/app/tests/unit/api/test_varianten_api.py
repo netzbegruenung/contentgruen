@@ -16,12 +16,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.v1.commentary import router as commentary_router
-from api.v1.content import router as content_router
 from api.v1.generic_text import router as generic_text_router
-from api.v1.varianten import get_karten_beitrag_laden, router as varianten_router
+from api.v1.varianten import router as varianten_router
 from dependencies import (
     get_aussage_themen_service,
-    get_beitrag_loeschen_service,
     get_commentary_service,
     get_generic_text_service,
     get_reference_service,
@@ -29,7 +27,6 @@ from dependencies import (
 )
 from dtos.beitrag import KommentarResponse
 from services.content.base_content_service import Dublettenpruefung
-from services.content.beitrag_loeschen_service import LoeschErgebnis
 from services.varianten import varianten_ergaenzen
 from utils.text_normalisierung import SperreJeText
 
@@ -39,7 +36,6 @@ ORIGINAL = uuid.uuid4()
 app = FastAPI()
 app.include_router(commentary_router, prefix="/api/v1/commentary")
 app.include_router(generic_text_router, prefix="/api/v1/generic_text")
-app.include_router(content_router, prefix="/api/v1/content")
 app.include_router(varianten_router, prefix="/api/v1/varianten")
 
 
@@ -259,16 +255,18 @@ def liste(varianten_ohne_datenbank):
     nutzung.enrich_content_with_usage.side_effect = lambda eintraege: [
         {**e, "usage_count": 5 if e["id"] == erste else 0} for e in eintraege
     ]
-    app.dependency_overrides[get_karten_beitrag_laden] = lambda: laden
-    with patch("api.v1.varianten.get_usage_service", return_value=nutzung):
-        yield erste, zweite
+    app.dependency_overrides[get_reference_service] = lambda: MagicMock()
+    with patch("api.v1.varianten.get_usage_service", return_value=nutzung), patch(
+        "api.v1.varianten.karten_beitrag_laden", return_value=laden
+    ):
+        yield bestand, erste, zweite
     app.dependency_overrides.clear()
 
 
 @pytest.mark.api
 class TestVariantenListe:
     def test_original_und_sichtbare_varianten_meistgenutzte_zuerst(self, liste):
-        erste, zweite = liste
+        _, erste, zweite = liste
 
         resp = TestClient(app).get(f"/api/v1/varianten/{ORIGINAL}")
 
@@ -281,42 +279,24 @@ class TestVariantenListe:
         # Besucher sehen keine Kennung (fuer_aufrufer).
         assert daten["original"]["original_author"] is None
 
+    def test_gleiche_nutzung_die_neueste_zuerst_auch_mit_sekundenbruchteil(self, liste):
+        """Sortiert wird nach dem Zeitpunkt, nicht nach seinem Text (".5Z" < "Z")."""
+        bestand, erste, zweite = liste
+        bestand[erste]["created"] = datetime(2026, 11, 2, 10, 0, 0, tzinfo=timezone.utc)
+        bestand[zweite]["created"] = datetime(
+            2026, 11, 2, 10, 0, 0, 500000, tzinfo=timezone.utc
+        )
+
+        with patch("api.v1.varianten.get_usage_service") as nutzung:
+            nutzung.return_value.enrich_content_with_usage.side_effect = lambda e: e
+            resp = TestClient(app).get(f"/api/v1/varianten/{ORIGINAL}")
+
+        assert [v["id"] for v in resp.json()["varianten"]] == [str(zweite), str(erste)]
+
     def test_original_nicht_sichtbar_ist_404(self, liste):
         resp = TestClient(app).get(f"/api/v1/varianten/{uuid.uuid4()}")
 
         assert resp.status_code == 404
-
-
-@pytest.mark.api
-class TestVarianteLoeschen:
-    def test_geloeschte_variante_zaehlt_nicht_mehr(self, varianten_ohne_datenbank):
-        service = Mock()
-        service.loeschen = AsyncMock(return_value=LoeschErgebnis.GELOESCHT)
-        app.dependency_overrides[get_beitrag_loeschen_service] = lambda: service
-        beitrag_id = uuid.uuid4()
-        try:
-            resp = TestClient(app).delete(
-                f"/api/v1/content/{beitrag_id}", headers=HEADERS
-            )
-        finally:
-            app.dependency_overrides.clear()
-
-        assert resp.status_code == 204
-        varianten_ohne_datenbank.variante_entfernen.assert_called_once_with(beitrag_id)
-
-    def test_nicht_geloescht_bleibt_die_verknuepfung(self, varianten_ohne_datenbank):
-        service = Mock()
-        service.loeschen = AsyncMock(return_value=LoeschErgebnis.NICHT_AUTOR)
-        app.dependency_overrides[get_beitrag_loeschen_service] = lambda: service
-        try:
-            resp = TestClient(app).delete(
-                f"/api/v1/content/{uuid.uuid4()}", headers=HEADERS
-            )
-        finally:
-            app.dependency_overrides.clear()
-
-        assert resp.status_code == 403
-        varianten_ohne_datenbank.variante_entfernen.assert_not_called()
 
 
 @pytest.mark.unit

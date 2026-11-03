@@ -195,7 +195,6 @@ async def beitrag_loeschen(
     beitrag_id: uuid.UUID,
     x_user: Optional[str] = Header(default=None),
     service: BeitragLoeschenService = Depends(get_beitrag_loeschen_service),
-    varianten: VariantenRepository = Depends(get_varianten_repository),
 ) -> Response:
     """
     Der Autor loescht seinen Beitrag: Zustand "geloescht", der Beitrag bleibt
@@ -221,14 +220,5 @@ async def beitrag_loeschen(
     if ergebnis is LoeschErgebnis.NICHT_AUTOR:
         raise HTTPException(
             status_code=403, detail="Löschen kann nur der Autor des Beitrags."
-        )
-    # War er eine Variante, zaehlt er am Original nicht mehr mit (#356). Scheitert
-    # das, ist der Beitrag trotzdem geloescht; dann zaehlt "N Varianten" ihn weiter,
-    # waehrend die Liste der Varianten ihn nicht zeigt.
-    try:
-        varianten.variante_entfernen(beitrag_id)
-    except Exception as e:
-        logger.warning(
-            f"Deleted Beitrag {beitrag_id}, variant link not removed: {type(e).__name__}"
         )
     return Response(status_code=204)

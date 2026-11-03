@@ -70,7 +70,19 @@ class TestVariantenRepository:
         repo.festhalten(erste, original)
         repo.festhalten(zweite, original)
 
-        repo.variante_entfernen(erste)
+        assert repo.verknuepfungen_entfernen(erste) == 1
 
         assert repo.varianten_von(original) == [zweite]
         assert repo.anzahl_je_original([]) == {}
+
+    def test_entfernen_des_originals_loest_seine_varianten(
+        self, datenbank  # noqa: F811
+    ):
+        repo = VariantenRepository(datenbank)
+        original, erste, zweite = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+        repo.festhalten(erste, original)
+        repo.festhalten(zweite, original)
+
+        assert repo.verknuepfungen_entfernen(original) == 2
+
+        assert repo.varianten_von(original) == []

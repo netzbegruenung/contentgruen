@@ -573,6 +573,8 @@ export class AddGenerictextComponent implements OnChanges {
     this.aussage = OHNE_AUSSAGE;
     this.showReferences = false;
     this.fehler = null;
+    // Wer zuruecksetzt, faengt neu an: kein "Variante von", kein beruht_auf (#356).
+    this.vorlage = null;
     this.vorhandenVergessen();
   }
 

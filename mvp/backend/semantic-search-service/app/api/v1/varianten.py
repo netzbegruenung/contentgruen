@@ -5,6 +5,7 @@ Fuer Besucher wie Angemeldete, wie die Suche, in der die Karte steht
 (EndpointPolicy.cs); ``fuer_aufrufer`` entscheidet, wer Anzeigenamen sieht.
 """
 
+import asyncio
 import logging
 import uuid
 from typing import Any, Dict, List
@@ -44,11 +45,14 @@ class VariantenResponse(BaseModel):
     varianten: List[Dict[str, Any]]
 
 
-def get_karten_beitrag_laden(
-    settings: Settings = Depends(get_settings),
-    reference_service: ReferenceService = Depends(get_reference_service),
+def karten_beitrag_laden(
+    settings: Settings, reference_service: ReferenceService
 ) -> BeitragLaden:
-    """Ein sichtbarer Beitrag mit allem, was die Karte braucht; sonst None."""
+    """
+    Ein sichtbarer Beitrag mit allem, was die Karte braucht; sonst None. Wie bei
+    "Oft genutzt" (api/v1/usage.py) im ``try`` des Endpunkts gebaut: Scheitert ein
+    Repository, antwortet er mit seinem 500 und Log.
+    """
     from repositories.implementations.qdrant.qdrant_repository_factory import (
         QdrantRepositoryFactory,
     )
@@ -65,7 +69,8 @@ def get_karten_beitrag_laden(
 async def varianten(
     original_id: uuid.UUID,
     aufrufer: Aufrufer = Depends(get_aufrufer),
-    laden: BeitragLaden = Depends(get_karten_beitrag_laden),
+    settings: Settings = Depends(get_settings),
+    reference_service: ReferenceService = Depends(get_reference_service),
     repository: VariantenRepository = Depends(get_varianten_repository),
 ) -> VariantenResponse:
     """
@@ -73,14 +78,18 @@ async def varianten(
     sind, fehlen. Die meistgenutzte zuerst, bei gleicher Nutzung die neueste.
     """
     try:
+        laden = karten_beitrag_laden(settings, reference_service)
         original = await laden(original_id)
         if original is None:
             raise HTTPException(status_code=404, detail="Beitrag nicht gefunden")
-        eintraege = [original]
-        for variante_id in repository.varianten_von(original_id):
-            variante = await laden(variante_id)
-            if variante is not None:
-                eintraege.append(variante)
+        # Gleichzeitig: Jede Variante kostet einige Abrufe im Suchindex.
+        geladen = await asyncio.gather(
+            *(
+                laden(variante_id)
+                for variante_id in repository.varianten_von(original_id)
+            )
+        )
+        eintraege = [original, *(v for v in geladen if v is not None)]
 
         angereichert = get_usage_service().enrich_content_with_usage(eintraege)
         antworten = fuer_aufrufer(
@@ -92,13 +101,19 @@ async def varianten(
         )
         varianten_ergaenzen(antworten, repository)
         karten = [
-            {**antwort.model_dump(mode="json"), "result_type": e["result_type"]}
+            (
+                antwort,
+                {**antwort.model_dump(mode="json"), "result_type": e["result_type"]},
+            )
             for e, antwort in zip(angereichert, antworten)
         ]
-        erste, *rest = karten
-        rest.sort(key=lambda k: k["created"], reverse=True)
-        rest.sort(key=lambda k: k.get("usage_count") or 0, reverse=True)
-        return VariantenResponse(original=erste, varianten=rest)
+        (_, erste), *rest = karten
+        # Nach dem Zeitpunkt selbst, nicht nach seinem Text: Der hat nicht immer
+        # Sekundenbruchteile und ordnet sich dann nicht zeitlich. timestamp(), damit
+        # Zeitpunkte mit und ohne Zeitzone vergleichbar bleiben.
+        rest.sort(key=lambda paar: paar[0].created.timestamp(), reverse=True)
+        rest.sort(key=lambda paar: paar[0].usage_count or 0, reverse=True)
+        return VariantenResponse(original=erste, varianten=[k for _, k in rest])
     except HTTPException:
         raise
     except Exception as e:

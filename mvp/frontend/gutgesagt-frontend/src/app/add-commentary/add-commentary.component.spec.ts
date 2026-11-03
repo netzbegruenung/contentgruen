@@ -1389,6 +1389,20 @@ describe('AddCommentaryComponent', () => {
       expect(hinzufuegen.calls.mostRecent().args[0].beruht_auf).toBe('original-1');
     }));
 
+    it('vergisst die Vorlage beim Zuruecksetzen', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      alsVorlage();
+
+      component.leeren();
+      fixture.detectChanges();
+      ausfuellen();
+      component.speichern();
+      flush();
+
+      expect(seite().querySelector('.vorlage-hinweis')).toBeNull();
+      expect('beruht_auf' in hinzufuegen.calls.mostRecent().args[0]).toBeFalse();
+    }));
+
     it('ohne Vorlage kein Hinweis und kein beruht_auf', fakeAsync(() => {
       const hinzufuegen = speichernMit();
       ausfuellen();

@@ -29,7 +29,13 @@ import {
 } from '../destillieren/destillier-uebergabe.service';
 import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
 import { CommentaryService } from '../services/commentary.service';
-import { VORLAGE_NICHT_VERFUEGBAR, VORLAGE_PARAM, Vorlage, kommentarVorlageLaden } from '../beitragsformular/vorlage';
+import {
+  VORLAGE_NICHT_VERFUEGBAR,
+  VORLAGE_PARAM,
+  Vorlage,
+  VorlageAusAdresse,
+  kommentarVorlageLaden,
+} from '../beitragsformular/vorlage';
 import { NACH_DEM_AUSFORMULIEREN } from '../fangkorb/fangkorb-filter';
 
 /** Den vorhandenen Kommentar aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
@@ -61,9 +67,22 @@ export const AUSSAGE_NICHT_VERFUEGBAR =
 export class AddCommentaryWorkflowComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private commentaryService = inject(CommentaryService);
-  /** "Als Vorlage nehmen" (#356): das Original aus ?vorlage=, sonst null. */
-  vorlage: Vorlage | null = null;
-  private vorlageId: string | null = null;
+  /**
+   * "Als Vorlage nehmen" (#356): das Original aus ?vorlage=. Ist es nicht ladbar
+   * (gesperrt, geloescht, alter Link), bleibt das Formular leer und nutzbar; ein
+   * Hinweis sagt es.
+   */
+  private vorlageAusAdresse = new VorlageAusAdresse(
+    (id) => kommentarVorlageLaden(this.commentaryService, id),
+    (error) => {
+      this.logger.warn('Vorlage aus der Adresse nicht ladbar', error);
+      this.snackBar.open(VORLAGE_NICHT_VERFUEGBAR, 'OK', { duration: 8000 });
+    },
+  );
+
+  get vorlage(): Vorlage | null {
+    return this.vorlageAusAdresse.vorlage;
+  }
   statementId: string = '';
   statementText: string = '';
   isLoadingStatement: boolean = false;
@@ -89,6 +108,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.vorlageAusAdresse.beenden());
     // Worauf der Beitrag antwortet und aus welchem Einwurf er entsteht, steht in
     // der Adresse. Reaktiv statt ueber den Snapshot: Aendern sich die Parameter,
     // waehrend die Seite offen ist, zieht das Formular nach. Beim Oeffnen wird
@@ -97,7 +117,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
       .pipe(
         switchMap((params) => {
           this.einwurfUebernehmen(params.get(EINWURF_PARAM));
-          this.vorlageUebernehmen(params.get(VORLAGE_PARAM));
+          this.vorlageAusAdresse.uebernehmen(params.get(VORLAGE_PARAM));
           this.herkunftMerken(params);
           return this.aussageLaden(params);
         }),
@@ -125,27 +145,6 @@ export class AddCommentaryWorkflowComponent implements OnInit {
         return of({ statement_id: '', statement_text: '' });
       }),
     );
-  }
-
-  /**
-   * Das Original aus ?vorlage=. Ist es nicht ladbar (gesperrt, geloescht, alter
-   * Link), bleibt das Formular leer und nutzbar; ein Hinweis sagt es.
-   */
-  private vorlageUebernehmen(vorlageId: string | null): void {
-    if (vorlageId === this.vorlageId) {
-      return;
-    }
-    this.vorlageId = vorlageId;
-    this.vorlage = null;
-    if (vorlageId) {
-      kommentarVorlageLaden(this.commentaryService, vorlageId).subscribe({
-        next: (vorlage) => (this.vorlage = vorlage),
-        error: (error) => {
-          this.logger.warn('Vorlage aus der Adresse nicht ladbar', error);
-          this.snackBar.open(VORLAGE_NICHT_VERFUEGBAR, 'OK', { duration: 8000 });
-        },
-      });
-    }
   }
 
   private einwurfUebernehmen(einwurfId: string | null): void {

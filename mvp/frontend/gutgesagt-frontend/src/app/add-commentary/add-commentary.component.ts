@@ -739,6 +739,8 @@ export class AddCommentaryComponent implements OnChanges {
     this.showReferences = false;
     this.zeigtFassungen = false;
     this.fehler = null;
+    // Wer zuruecksetzt, faengt neu an: kein "Variante von", kein beruht_auf (#356).
+    this.vorlage = null;
     this.vorhandenVergessen();
   }
 
