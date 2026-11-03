@@ -254,11 +254,16 @@ Once per environment:
 3. Run `mvp/scripts/manual/vektor_benennen.py` without `--ausfuehren`; it only counts.
 4. Run it with `--ausfuehren`, at a quiet time: what is written to Qdrant while the copy runs
    can get lost (a changed number of points aborts the run without changes).
-5. Restart the semantic search service at once (`docker restart gutgesagt-semantic-search`).
-   Until it restarts it searches without the vector name and every search fails.
+5. Restart the semantic search service right after the script has finished
+   (`docker restart gutgesagt-semantic-search`). Until then it uses no vector name, so every
+   search and every new or changed Beitrag fails. Not during the run: a service that starts
+   while the old name is gone creates an empty collection under it. If the run aborts, run it
+   again; it replaces a half copy or sets only the missing alias.
 
 Commands are in [`mvp/scripts/manual/README.md`](../mvp/scripts/manual/README.md). Way back:
-restore the backup from step 1 and restart the service; the image with #395 works with both.
+restore the backup from step 1 and restart the service. The restore goes through the alias into
+`<collection>_e5_base` (checked against Qdrant 1.18.2), and the image with #395 works with
+both vector layouts.
 
 ---
 

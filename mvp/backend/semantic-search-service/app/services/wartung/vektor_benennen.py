@@ -10,8 +10,10 @@ Backup und Wartungsskripte arbeiten weiter mit dem gewohnten Namen.
 
 Nichts wird neu eingebettet; die Vektoren werden kopiert, die Treffer bleiben gleich.
 Ohne ausfuehren=True wird nur gezaehlt. Idempotent: Ist der Vektor schon benannt,
-aendert ein Lauf nichts. Den Rest eines abgebrochenen Laufs (neue Collection ohne
-Alias) ersetzt der naechste.
+aendert ein Lauf nichts. Brach ein Lauf vor dem Loeschen der alten Collection ab,
+ersetzt der naechste die halbe Kopie; brach er danach ab, setzt der naechste nur den
+Alias. Den Dienst erst nach dem Lauf neu starten: Fehlt der Name, legt er eine leere
+Collection an.
 
 Aufruf: scripts/manual/vektor_benennen.py
 """
@@ -32,6 +34,8 @@ SEITE = 256
 
 BENANNT = "benannt"
 UNBENANNT = "unbenannt"
+# Alte Collection schon geloescht, Alias noch nicht gesetzt: Lauf brach dazwischen ab.
+KEIN_ALIAS = "kein_alias"
 
 
 @dataclass
@@ -64,12 +68,34 @@ def _anzahl(client: QdrantClient, collection: str) -> int:
     return client.count(collection, exact=True).count
 
 
+def _alias_setzen(client: QdrantClient, collection: str, ziel: str) -> None:
+    client.update_collection_aliases(
+        change_aliases_operations=[
+            CreateAliasOperation(
+                create_alias=CreateAlias(collection_name=ziel, alias_name=collection)
+            )
+        ]
+    )
+
+
 def benennen(
     client: QdrantClient, collection: str, ausfuehren: bool = False
 ) -> BenennenBericht:
+    ziel = ziel_collection(collection)
+    if not client.collection_exists(collection) and client.collection_exists(ziel):
+        punkte = _anzahl(client, ziel)
+        if ausfuehren:
+            _alias_setzen(client, collection, ziel)
+        return BenennenBericht(
+            ausgefuehrt=ausfuehren,
+            vorher=KEIN_ALIAS,
+            punkte=punkte,
+            nachher=_stand(client, collection) if ausfuehren else KEIN_ALIAS,
+            ziel=ziel,
+        )
+
     vorher = _stand(client, collection)
     punkte = _anzahl(client, collection)
-    ziel = ziel_collection(collection)
     if vorher == BENANNT or not ausfuehren:
         return BenennenBericht(
             ausgefuehrt=ausfuehren, vorher=vorher, punkte=punkte, nachher=vorher
@@ -122,13 +148,7 @@ def benennen(
         )
 
     client.delete_collection(collection)
-    client.update_collection_aliases(
-        change_aliases_operations=[
-            CreateAliasOperation(
-                create_alias=CreateAlias(collection_name=ziel, alias_name=collection)
-            )
-        ]
-    )
+    _alias_setzen(client, collection, ziel)
     return BenennenBericht(
         ausgefuehrt=True,
         vorher=vorher,

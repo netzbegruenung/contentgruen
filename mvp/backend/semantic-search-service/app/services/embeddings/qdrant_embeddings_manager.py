@@ -289,7 +289,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             )
         return EMBEDDING_VEKTOR
 
-    def _als_punktvektor(self, embedding: List[float]):
+    def _als_punktvektor(
+        self, embedding: List[float]
+    ) -> List[float] | Dict[str, List[float]]:
         """Der Vektor eines Punkts: unter seinem Namen, im Uebergang unbenannt."""
         if self._vektorname is None:
             return embedding

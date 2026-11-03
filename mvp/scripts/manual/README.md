@@ -74,13 +74,10 @@ Nichts wird neu eingebettet, die Treffer bleiben gleich. Ohne `--ausfuehren` zae
 nur; ein zweiter Lauf meldet `"vorher": "benannt"` und aendert nichts. Aendert sich die
 Zahl der Punkte waehrend der Kopie, bricht es ab, ohne umzustellen.
 
-Reihenfolge (auch in `docs/DEPLOYMENT.md`, „Qdrant: named vector“):
-
-1. Backup ziehen (`mvp/scripts/backup/backup.sh`).
-2. Die Version mit #395 ausrollen. Sie sucht bis Schritt 4 auf dem unbenannten Vektor.
-3. Ohne `--ausfuehren` laufen lassen und die Zahl der Punkte pruefen.
-4. Mit `--ausfuehren` laufen lassen, in einer ruhigen Zeit, und den Dienst sofort neu
-   starten: Bis zum Neustart sucht er ohne Vektornamen und jede Suche schlaegt fehl.
+Reihenfolge, Backup und Rueckweg stehen in `docs/DEPLOYMENT.md`, „Qdrant: named vector
+(#395)“. Kurz: Backup, Version mit #395 ausrollen, zaehlen, umstellen und gleich danach
+(nicht waehrend des Laufs) den Dienst neu starten; bis dahin schlagen Suchen und
+Schreiben fehl.
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/vektor_benennen.py

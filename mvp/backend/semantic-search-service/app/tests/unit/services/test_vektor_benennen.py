@@ -12,7 +12,13 @@ from pathlib import Path
 
 import pytest
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import (
+    DeleteAlias,
+    DeleteAliasOperation,
+    Distance,
+    PointStruct,
+    VectorParams,
+)
 
 from core.config import EMBEDDING_VEKTOR
 from services.wartung.vektor_benennen import benennen, ziel_collection
@@ -139,6 +145,22 @@ class TestVektorBenennen:
         bericht = benennen(client, COLLECTION, ausfuehren=True)
 
         assert bericht.kopiert == 3
+        assert client.count(COLLECTION, exact=True).count == 3
+
+    def test_abbruch_nach_dem_loeschen_setzt_nur_den_alias(self, client):
+        """Zwischen Loeschen der alten Collection und Alias abgebrochen."""
+        benennen(client, COLLECTION, ausfuehren=True)
+        client.update_collection_aliases(
+            change_aliases_operations=[
+                DeleteAliasOperation(delete_alias=DeleteAlias(alias_name=COLLECTION))
+            ]
+        )
+
+        bericht = benennen(client, COLLECTION, ausfuehren=True)
+
+        assert bericht.vorher == "kein_alias"
+        assert bericht.nachher == "benannt"
+        assert bericht.punkte == 3
         assert client.count(COLLECTION, exact=True).count == 3
 
 
