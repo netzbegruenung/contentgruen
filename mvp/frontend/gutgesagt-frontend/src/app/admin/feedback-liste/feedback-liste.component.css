@@ -35,3 +35,16 @@ td {
   color: #666;
   margin-top: 12px;
 }
+
+mat-button-toggle-group {
+  margin-top: 8px;
+}
+
+.aktionen {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.aktionen button + button {
+  margin-left: 4px;
+}

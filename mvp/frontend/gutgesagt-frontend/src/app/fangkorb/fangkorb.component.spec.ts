@@ -321,8 +321,15 @@ describe('FangkorbComponent', () => {
       const host: HTMLElement = fixture.nativeElement;
       host.style.display = 'block';
       host.style.width = '320px';
-      await document.fonts.ready;
       const woerter = Array.from(host.querySelectorAll('.tab-wort') as NodeListOf<HTMLElement>);
+      // Gemessen wird mit der Schrift, die die Tabs tatsaechlich nutzen; ohne Laden misst
+      // der Test je nach Reihenfolge der Suite die Ersatzschrift (#552).
+      await Promise.all(
+        woerter.map((wort) => {
+          const stil = getComputedStyle(wort);
+          return document.fonts.load(`${stil.fontWeight} ${stil.fontSize} ${stil.fontFamily}`);
+        }),
+      );
 
       expect(host.isConnected).toBeTrue();
       expect(woerter.length).toBe(2);

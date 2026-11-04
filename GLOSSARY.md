@@ -295,6 +295,10 @@ _Avoid_: Prüfung, Lektorat, Check, Validierung
 Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
+**Kürzungsvorschlag**:
+Eine Kurzfassung, die das Formular auf Klick aus den eigenen Sätzen eines Kommentars vorschlägt, der länger ist als die Kurzfassung sein darf, ohne KI: Die zentralen Sätze bleiben, Einschübe (Klammern, Gedankenstriche, Appositionen) fallen weg; Relativsätze, Verneinungen und Zahlen bleiben stehen, und ein Satz mit Verneinung fällt nie weg. Er besteht nur aus Wörtern des Originals in ihrer Reihenfolge und formuliert nichts um. Die Person übernimmt oder verwirft ihn; nichts wird automatisch ersetzt, und gespeichert wird er erst mit dem Kommentar.
+_Avoid_: Zusammenfassung, KI-Vorschlag (der kommt von einem Sprachmodell), Zuschnitt
+
 **Meldung**:
 Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Verlangt die Person Auskunft oder Löschung, findet ein Admin ihre Meldungen über genau diese Angaben; Löschen entfernt erledigte Meldungen ganz, offene behalten Grund und Beschreibung ohne Name, E-Mail-Adresse und Tagespseudonym. Eine E-Mail-Adresse braucht es nur für die Mails an die Person: Den Eingang bestätigt die App sofort und, mit Adresse, auch eine Mail; die Entscheidung über die Meldung (gesperrt, abgewiesen oder Beitrag entfernt) samt den Möglichkeiten, dagegen vorzugehen, kommt per Mail, sobald ein Admin entscheidet oder der Beitrag endgültig entfernt wird. Ohne eingerichteten Mailversand teilt ein Admin sie per Hand mit.
 _Avoid_: Report, Flag, Beschwerde
@@ -308,7 +312,7 @@ Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder un
 _Avoid_: Kategorie, Report-Grund
 
 **Feedback**:
-Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es; nach der Frist im Löschkonzept wird es gelöscht.
+Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es. Feedback ist offen, bis ein Admin es als erledigt markiert; das lässt sich zurücknehmen. Nach der Frist im Löschkonzept wird es gelöscht, offen oder erledigt; vorher kann ein Admin es einzeln löschen.
 _Avoid_: Kontaktformular, Rückmeldung (in `docs/VISION.md` die Rückmeldung zur Nutzungsstatistik der eigenen Beiträge), Ticket
 
 **Dublette**:
