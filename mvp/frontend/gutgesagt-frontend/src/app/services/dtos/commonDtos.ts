@@ -34,6 +34,8 @@ export interface BaseContentResult {
     references: ContentReference[];
     references_count: number;
     usage_count?: number;
+    /** Wie viele Beitraege auf diesem beruhen (#356); nur Kommentar und Hintergrundinfo. */
+    varianten?: number;
 }
 
 /**

@@ -27,6 +27,14 @@ import {
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
 import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
+import { GenericTextService } from '../services/generic-text.service';
+import {
+  VORLAGE_NICHT_VERFUEGBAR,
+  VORLAGE_PARAM,
+  Vorlage,
+  VorlageAusAdresse,
+  hintergrundinfoVorlageLaden,
+} from '../beitragsformular/vorlage';
 
 /** Hinweis im Formular, wenn ?aussage= auf nichts (mehr) zeigt. */
 export const AUSSAGE_NICHT_VERFUEGBAR =
@@ -56,6 +64,23 @@ export const ERNEUT_VERKNUEPFEN = 'Erneut versuchen';
 })
 export class AddGenerictextWorkflowComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
+  private genericTextService = inject(GenericTextService);
+  /**
+   * "Als Vorlage nehmen" (#356): das Original aus ?vorlage=. Ist es nicht ladbar
+   * (gesperrt, geloescht, alter Link), bleibt das Formular leer und nutzbar; ein
+   * Hinweis sagt es.
+   */
+  private vorlageAusAdresse = new VorlageAusAdresse(
+    (id) => hintergrundinfoVorlageLaden(this.genericTextService, id),
+    (error) => {
+      this.logger.warn('Vorlage aus der Adresse nicht ladbar', error);
+      this.snackBar.open(VORLAGE_NICHT_VERFUEGBAR, 'OK', { duration: 8000 });
+    },
+  );
+
+  get vorlage(): Vorlage | null {
+    return this.vorlageAusAdresse.vorlage;
+  }
   statementId: string = '';
   statementText: string = '';
   isLoadingStatement: boolean = false;
@@ -79,6 +104,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.vorlageAusAdresse.beenden());
     // Worauf der Beitrag antwortet und aus welchem Einwurf er entsteht, steht in
     // der Adresse. Reaktiv statt ueber den Snapshot: Aendern sich die Parameter,
     // waehrend die Seite offen ist, zieht das Formular nach. Beim Oeffnen wird
@@ -87,6 +113,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
       .pipe(
         switchMap((params) => {
           this.einwurfUebernehmen(params.get(EINWURF_PARAM));
+          this.vorlageAusAdresse.uebernehmen(params.get(VORLAGE_PARAM));
           this.herkunftMerken(params);
           return this.aussageLaden(params);
         }),

@@ -93,8 +93,14 @@ echo -e "\n${YELLOW}Step 4: Simulate data change${NC}"
 echo "Adding test marker to Qdrant..."
 # Use Qdrant API to add a test point
 TEST_ID=$(uuidgen 2>/dev/null || echo "00000000-0000-0000-0000-$(date +%s)")
-# Generate random vector using container's Python (not host Python)
-RANDOM_VECTOR=$(docker exec $APP_CONTAINER python -c "import random; print([random.random() for _ in range(768)])")
+# Generate random vector using container's Python (not host Python). Named vector
+# e5_base since #395; a collection from before still has an unnamed one.
+RANDOM_VECTOR=$(docker exec $APP_CONTAINER python -c "
+import json, os, random, requests
+v = [random.random() for _ in range(768)]
+url = os.environ['SEMANTIC_SEARCH_QDRANT_URL'] + '/collections/content_collection'
+vektoren = requests.get(url, timeout=10).json()['result']['config']['params']['vectors']
+print(json.dumps(v if 'size' in vektoren else {'e5_base': v}))")
 curl -X PUT "http://localhost:6333/collections/content_collection/points" \
   -H "Content-Type: application/json" \
   -d "{

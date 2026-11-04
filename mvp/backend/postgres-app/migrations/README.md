@@ -60,9 +60,10 @@ Image enthält sie.
 - **Gleichzeitige Starts:** Eine Advisory-Sperre lässt einen zweiten Dienst
   warten, bis der erste fertig ist, höchstens 10 Minuten.
 - **Image:** Die Skripte stecken im Image des Semantic-Service. Ein neues
-  Skript kommt erst mit einem neu gebauten Image an; ändert ein PR sonst nichts
-  am Dienst, baut die CI nach dem Merge kein neues `:main`-Image (Pfadfilter in
-  `.github/workflows/build.yml`).
+  Skript kommt erst mit einem neu gebauten Image an. Woodpecker baut das Image
+  nach dem Merge auch für eine neue Migration allein (Pfadfilter in
+  `.woodpecker/build.yaml`); die GitHub-CI auf dem Spiegel tut das bis zum Umstieg
+  nicht (`.github/workflows/build.yml`).
 
 Den Stand zeigt das Protokoll:
 

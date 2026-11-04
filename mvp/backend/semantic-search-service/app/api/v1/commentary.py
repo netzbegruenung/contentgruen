@@ -17,6 +17,11 @@ from dtos.commentary import (
 )
 from dtos.beitrag import VorhandenDto
 from services.dublette import Dublette, VorhandenWeg, entscheidung_anwenden
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
+from services.varianten import beruht_auf_festhalten
 from services.content.commentary_service import CommentaryService
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from dtos.beitrag import KommentarResponse
@@ -80,6 +85,7 @@ async def add_commentary(
     reference_service: ReferenceService = Depends(get_reference_service),
     statement_service: StatementService = Depends(get_statement_service),
     themen_service: AussageThemenService = Depends(get_aussage_themen_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
     x_user: str = Header(...),
 ) -> AddCommentaryResponse:
     try:
@@ -191,6 +197,15 @@ async def add_commentary(
                 f"Commentary is a duplicate of {commentary_id} "
                 f"({'same author' if dublette.eigen else 'other author'}, "
                 f"{'taken' if dublette.genommen else 'not linked'})"
+            )
+
+        # Als Vorlage genommen (#356): Nur ein neu angelegter Beitrag beruht auf dem
+        # Original. Bei einer Dublette ist nichts entstanden, was darauf beruhen
+        # koennte - die Person entscheidet erst; speichert sie trotzdem, kommt
+        # beruht_auf mit derselben Anfrage wieder.
+        if request.beruht_auf is not None and dublette is None:
+            await beruht_auf_festhalten(
+                varianten, commentary_id, request.beruht_auf, commentary_service.get
             )
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,

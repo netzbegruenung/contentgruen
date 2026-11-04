@@ -43,6 +43,7 @@ from collections import Counter, defaultdict
 from qdrant_client import QdrantClient
 
 MODELL = "intfloat/multilingual-e5-base"
+VEKTOR = "e5_base"  # core/config.py EMBEDDING_VEKTOR, Name des Vektors seit #395
 FELD = "text_normalisiert"
 TYPEN_MIT_FELD = ("statement", "commentary", "generic_text")
 BEITRAGSTYPEN = ("commentary", "generic_text")
@@ -109,7 +110,11 @@ def praefix_stichprobe(client, collection, typen, n):
         if not punkte:
             continue
         texte = [p.payload["text"] for p in punkte]
-        gespeichert = np.array([p.vector for p in punkte], dtype=np.float32)
+        # Seit #395 benannt ({"e5_base": [...]}), davor ein unbenannter Vektor.
+        vektoren = [
+            p.vector.get(VEKTOR) if isinstance(p.vector, dict) else p.vector for p in punkte
+        ]
+        gespeichert = np.array(vektoren, dtype=np.float32)
         gespeichert /= np.linalg.norm(gespeichert, axis=1, keepdims=True)
         varianten = {
             "query": modell.encode(["query: " + t for t in texte], normalize_embeddings=True),

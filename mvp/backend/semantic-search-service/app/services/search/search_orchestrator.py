@@ -21,9 +21,11 @@ from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from services.content.base_content_service import BaseContentService
 from domain.models.content_type import ContentType
 from dtos.statement import themen_dtos
+from services.varianten import varianten_ergaenzen
 
 if TYPE_CHECKING:
     from services.aussage_themen_service import AussageThemenService
+    from repositories.varianten_repository import VariantenRepository
 
 logger = get_logger(__name__)
 
@@ -309,6 +311,18 @@ class SearchOrchestrator:
             enriched = self._usage_service.enrich_content_with_usage(content_dicts)
             for content_obj, enriched_item in zip(content_objs, enriched):
                 content_obj.usage_count = enriched_item.get("usage_count", 0)
+
+    def varianten_ergaenzen(self, repository: "VariantenRepository") -> None:
+        """Jeder Treffer bekommt "N Varianten" (#356), aus einer Abfrage fuer alle."""
+        varianten_ergaenzen(
+            [
+                getattr(result, spec.result_field)
+                for spec in self._specs.values()
+                for result in self._results[spec.content_type]
+                if getattr(result, spec.result_field)
+            ],
+            repository,
+        )
 
     def themen_ergaenzen(self, themen_service: "AussageThemenService") -> None:
         """

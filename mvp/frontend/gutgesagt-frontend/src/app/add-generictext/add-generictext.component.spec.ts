@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
+import { Vorlage } from '../beitragsformular/vorlage';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -1127,6 +1128,56 @@ describe('AddGenerictextComponent', () => {
       component.zuruecksetzen();
       expect(dialog.open).not.toHaveBeenCalled();
     });
+  });
+
+  describe('Als Vorlage nehmen (#356)', () => {
+    function alsVorlage(): void {
+      component.vorlage = {
+        id: 'original-1',
+        titel: 'Wärmepumpen sparen im Altbau Heizkosten',
+        text: 'Laut Feldtest erreichen Wärmepumpen im Altbau gute Jahresarbeitszahlen.',
+      };
+      component.ngOnChanges({ vorlage: new SimpleChange(null, component.vorlage, true) });
+      fixture.detectChanges();
+    }
+
+    it('belegt Titel und Text mit dem Original vor, die Herkunft nicht', () => {
+      alsVorlage();
+
+      expect(component.generictextForm.value.title).toBe('Wärmepumpen sparen im Altbau Heizkosten');
+      expect(component.generictextForm.value.text).toBe(
+        'Laut Feldtest erreichen Wärmepumpen im Altbau gute Jahresarbeitszahlen.',
+      );
+      expect(component.generictextForm.value.references).toEqual([]);
+      expect(seite().querySelector('.vorlage-hinweis')!.textContent).toContain('Variante von');
+    });
+
+    it('schickt beim Speichern mit, worauf die neue Hintergrundinfo beruht', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      alsVorlage();
+
+      component.speichern();
+      flush();
+
+      expect(hinzufuegen.calls.mostRecent().args[0].beruht_auf).toBe('original-1');
+    }));
+
+    it('vergisst die Vorlage beim Zuruecksetzen', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      alsVorlage();
+
+      component.leeren();
+      fixture.detectChanges();
+      component.generictextForm.patchValue({
+        title: 'Wärmepumpen senken den Strombedarf im Winter nicht',
+        text: 'Ein ganz anderer, frei geschriebener Text über Wärmepumpen im Winter.',
+      });
+      component.speichern();
+      flush();
+
+      expect(seite().querySelector('.vorlage-hinweis')).toBeNull();
+      expect('beruht_auf' in hinzufuegen.calls.mostRecent().args[0]).toBeFalse();
+    }));
   });
 
   describe('Vorbefuellung aus dem Destillier-Ablauf', () => {
