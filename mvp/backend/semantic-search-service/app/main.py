@@ -45,6 +45,7 @@ from api.v1.feedback import router as feedback_router
 from api.v1.einladungen import router as einladungen_router
 from api.v1.gegenlesen import router as gegenlesen_router
 from api.v1.spracherkennung import router as spracherkennung_router
+from api.v1.kuerzungsvorschlag import router as kuerzungsvorschlag_router
 from services.cleanup.bereinigungsjob import bereinigungsjob_starten
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
@@ -67,6 +68,7 @@ from utils.rate_limiter import (
     feedback_rate_limiter,
     gegenlesen_rate_limiter,
     spracherkennung_rate_limiter,
+    kuerzungsvorschlag_rate_limiter,
     report_rate_limiter,
     search_query_statement_rate_limiter,
 )
@@ -135,6 +137,7 @@ async def lifespan(app: FastAPI):
                     einladung_pruefen_rate_limiter,
                     gegenlesen_rate_limiter,
                     spracherkennung_rate_limiter,
+                    kuerzungsvorschlag_rate_limiter,
                 ]
             )
         )
@@ -290,6 +293,11 @@ app.include_router(
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
 app.include_router(
     spracherkennung_router, prefix="/api/v1/spracherkennung", tags=["spracherkennung"]
+)
+app.include_router(
+    kuerzungsvorschlag_router,
+    prefix="/api/v1/kuerzungsvorschlag",
+    tags=["kuerzungsvorschlag"],
 )
 
 # Betriebskennzahlen unter /metrics (#420). Zuletzt hinzugefuegt, also aussen: Die

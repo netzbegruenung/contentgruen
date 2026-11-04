@@ -4,7 +4,7 @@ Prüfen die wichtigsten Szenarien am Handy gegen den laufenden Dev-Stack: Verfas
 einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort auf“ mit neuer Aussage, aus der Suche ergänzen, die Kette im
 Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz
 sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seiten und ohne
-Umleitung bei einem 401 der Suche). Nicht in CI: Die Tests brauchen den vollen Stack.
+Umleitung bei einem 401 der Suche) und den Aufruf eines Beitrags per Direktlink. Nicht in CI: Die Tests brauchen den vollen Stack.
 
 ## Starten
 

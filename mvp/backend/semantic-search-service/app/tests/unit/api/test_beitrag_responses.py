@@ -22,12 +22,14 @@ from api.v1.generic_text import router as generic_text_router
 from api.v1.image import router as image_router
 from api.v1.post import router as post_router
 from dependencies import (
+    get_beitrag_laden,
     get_commentary_service,
     get_generic_text_service,
     get_image_service,
     get_post_service,
     get_reference_service,
     get_settings,
+    get_voting_service,
 )
 from domain.models.author_entry import AuthorEntry
 from domain.models.base_content import BaseContentDbEntry
@@ -206,6 +208,8 @@ ROUTEN = {
     "image/getAll": (GET, "/api/v1/image/getAll"),
     "content/recent": (GET, "/api/v1/content/recent"),
     "content/getAll": (GET, "/api/v1/content/getAll"),
+    # Die eigene Adresse eines Beitrags (#300); der Typ kommt aus _inhalt.
+    "content/beitrag": (GET, f"/api/v1/content/beitrag/{ID}"),
 }
 
 
@@ -237,6 +241,8 @@ def lese_client(anzeigenamen_ohne_datenbank):
             ),
             get_settings: lambda: MagicMock(),
             get_reference_service: lambda: AsyncMock(),
+            get_beitrag_laden: lambda: AsyncMock(side_effect=lambda i: _inhalt(i)),
+            get_voting_service: lambda: MagicMock(get_user_vote=lambda *_: None),
         }
     )
     factory = MagicMock()

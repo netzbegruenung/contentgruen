@@ -126,6 +126,8 @@ gegenlesen_rate_limiter = RateLimiter(max_requests=300, window_minutes=10)
 
 # Spracherkennung beim Schreiben (#405): fragt so oft nach wie das Gegenlesen.
 spracherkennung_rate_limiter = RateLimiter(max_requests=300, window_minutes=10)
+# Kuerzungsvorschlag (#403): nur auf Klick, 60 je Person in 10 Minuten.
+kuerzungsvorschlag_rate_limiter = RateLimiter(max_requests=60, window_minutes=10)
 
 # So oft raeumt der Hintergrund-Task abgelaufene Schluessel weg. Ein Schluessel
 # verschwindet damit spaetestens ein Fenster plus dieser Takt nach seinem letzten

@@ -47,6 +47,7 @@ from services.gegenlesen.gegenlesen_service import (
     GegenlesenService,
     lade_statt_sag_liste,
 )
+from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from services.loeschfristen_service import LoeschfristenService
 from services.spracherkennung.spracherkennung import SPRACHERKENNUNG, Spracherkennung
 from services.moderation_service import ModerationService
@@ -226,6 +227,19 @@ def get_gegenlesen_service() -> GegenlesenService:
 def get_spracherkennung() -> Spracherkennung:
     """Eine Instanz je Prozess; der Start lädt Lingua vor (main.py)."""
     return SPRACHERKENNUNG
+
+
+_kuerzungsvorschlag_service: Optional[KuerzungsvorschlagService] = None
+
+
+def get_kuerzungsvorschlag_service() -> KuerzungsvorschlagService:
+    """Einmal je Prozess; teilt sich das Sprachmodell mit dem Gegenlesen (#403)."""
+    global _kuerzungsvorschlag_service
+    if _kuerzungsvorschlag_service is None:
+        _kuerzungsvorschlag_service = KuerzungsvorschlagService(
+            werkzeuge=SPRACHWERKZEUGE
+        )
+    return _kuerzungsvorschlag_service
 
 
 def get_moderation_service() -> ModerationService:

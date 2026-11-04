@@ -30,6 +30,7 @@ import { Thema } from '../services/dtos/themenDtos';
 import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
+import { KuerzungsvorschlagComponent } from '../beitragsformular/kuerzungsvorschlag/kuerzungsvorschlag.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
@@ -187,6 +188,7 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
     FormularHilfeComponent,
     GegenlesenComponent,
     SprachhinweisComponent,
+    KuerzungsvorschlagComponent,
     FormularLeisteComponent,
     ThemenAuswahlComponent,
     Cc0HinweisComponent,
@@ -480,6 +482,13 @@ export class AddCommentaryComponent implements OnChanges {
   fassungenZeigen(): void {
     this.zeigtFassungen = true;
     this.kurzFokussieren = true;
+  }
+
+  /** Die Person übernimmt den Kürzungsvorschlag (#403) als Kurzfassung. */
+  kurzUebernehmen(vorschlag: string): void {
+    const kurz = this.commentaryForm.get('kurz')!;
+    kurz.setValue(vorschlag);
+    kurz.markAsDirty();
   }
 
   speichern(): void {

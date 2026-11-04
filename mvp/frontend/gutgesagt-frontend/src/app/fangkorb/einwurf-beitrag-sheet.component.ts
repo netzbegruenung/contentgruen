@@ -5,9 +5,11 @@ import {
   Inject,
   OnDestroy,
   OnInit,
+  Optional,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MAT_BOTTOM_SHEET_DATA } from '@angular/material/bottom-sheet';
+import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -21,10 +23,17 @@ import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { LoggingService } from '../services/logging.service';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
+import { ROUTES } from '../shared/constants/app.constants';
 
 /** Was das Sheet braucht: die Beitraege eines Einwurfs, aelteste zuerst. */
 export interface EinwurfBeitragSheetDaten {
   beitraege: EinwurfBeitrag[];
+  /**
+   * Die Auswahl fuehrt auf die Adresse des gewaehlten Beitrags (/beitrag/:id, #300),
+   * statt ihn hier zu zeigen: so aus Fangkorb und "Meine Einwuerfe". Ohne (beim
+   * Einwerfen) bleibt die Person im Sheet und verliert ihre Eingabe nicht.
+   */
+  zurAdresse?: boolean;
 }
 
 /** Ergebnis einer Anfrage: entweder eine Karte oder die Ansage, dass es sie nicht gibt. */
@@ -87,8 +96,9 @@ interface Geladen {
       <p *ngIf="fehler" class="sheet-fehler">Dieser Beitrag ist nicht mehr verfügbar.</p>
 
       <!-- Wie im Album: kopieren und melden bleiben, abstimmen nicht -->
+      <!-- Ohne Link auf die Adresse: Beim Einwerfen ginge die Eingabe verloren -->
       <app-beitragskarte *ngIf="karte as karte" [daten]="karte" variante="voll"
-                         [abstimmenSichtbar]="false"></app-beitragskarte>
+                         [abstimmenSichtbar]="false" [ansichtVerlinkt]="false"></app-beitragskarte>
     </ng-template>
   `,
   styles: [
@@ -162,6 +172,8 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
     private beitragAnsehen: BeitragAnsehenService,
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
+    private router: Router,
+    @Optional() private sheetRef: MatBottomSheetRef<EinwurfBeitragSheetComponent> | null,
   ) {}
 
   ngOnInit(): void {
@@ -188,6 +200,11 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
   }
 
   oeffnen(beitrag: EinwurfBeitrag): void {
+    if (this.daten.zurAdresse) {
+      this.sheetRef?.dismiss();
+      this.router.navigate([ROUTES.BEITRAG, beitrag.contentId]);
+      return;
+    }
     this.auswahlOffen = false;
     this.karte = null;
     this.fehler = false;

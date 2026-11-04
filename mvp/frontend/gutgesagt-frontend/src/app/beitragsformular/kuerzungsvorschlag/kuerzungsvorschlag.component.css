@@ -1,0 +1,28 @@
+.kuerzungsvorschlag {
+  margin: -8px 0 16px;
+}
+
+.kuerzungsvorschlag-box {
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color, #dcdcdc);
+  border-radius: 8px;
+  background: var(--bg-surface, #fff);
+}
+
+.kuerzungsvorschlag-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.kuerzungsvorschlag-fuss {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.kuerzungsvorschlag-aktionen {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}

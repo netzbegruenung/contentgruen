@@ -2,6 +2,7 @@ import { ActivatedRouteSnapshot, convertToParamMap } from '@angular/router';
 
 import { routes } from './app.routes';
 import { AuthGuard } from './auth/auth.guard';
+import { PublicGuard } from './auth/public.guard';
 import { gespeichertEltern } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
@@ -84,6 +85,12 @@ describe('Routentabelle', () => {
     expect(elternFunktion('workflow/add-commentary')(snapshotMit(von))).toBe('/hier-fehlt-eine-antwort');
     expect(gespeichertEltern(snapshotMit(von))).toBe('/hier-fehlt-eine-antwort');
     expect(gespeichertEltern(snapshotMit({}))).toBe('/contribute');
+  });
+
+  it('zeigt einen Beitrag unter /beitrag/:id auch Besuchern (#300)', () => {
+    const eintrag = routes.find((route) => route.path === 'beitrag/:id');
+    expect(eintrag).withContext('Route fehlt').toBeTruthy();
+    expect(eintrag!.canActivate).toEqual([PublicGuard]);
   });
 
   it('zeigt "Hier fehlt eine Antwort" nur Angemeldeten', () => {

@@ -112,6 +112,10 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
     host.style.display = 'block';
     host.style.width = '360px';
     document.body.appendChild(host);
+
+    // Gemessen wird mit der Hausschrift des Titels. Ohne diese Zeile misst der Test,
+    // je nach Reihenfolge der Suite, die breitere Ersatzschrift (#552).
+    await document.fonts.load('28px GrueneType');
   });
 
   afterEach(() => fixture.nativeElement.remove());
