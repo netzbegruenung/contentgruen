@@ -48,10 +48,14 @@ COPY replace-env.sh /usr/share/nginx/html/
 RUN sed -i 's/\r$//' /usr/share/nginx/html/replace-env.sh
 RUN chmod +x /usr/share/nginx/html/replace-env.sh
 
-# Commit of this build, shown in the footer. CI passes github.sha; replace-env.sh
-# substitutes it at container start. Declared late so a new SHA only rebuilds this layer.
+# Commit and version of this build, shown in the footer. CI passes the commit, and on a
+# release the Git tag as version (#327); without APP_VERSION the footer shows the version
+# from package.json. replace-env.sh substitutes both at container start. Declared late so
+# a new SHA only rebuilds this layer.
 ARG GIT_SHA=dev
 ENV GIT_SHA=${GIT_SHA}
+ARG APP_VERSION=
+ENV APP_VERSION=${APP_VERSION}
 
 EXPOSE 80
 
