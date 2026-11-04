@@ -10,6 +10,8 @@ import uuid
 from datetime import datetime, timedelta
 
 from dependencies import (
+    get_beitrag_laden,
+    get_content_repository,
     get_aufrufer,
     get_settings,
     get_current_user_optional,
@@ -18,20 +20,15 @@ from dependencies import (
 )
 from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
-from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
+from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from domain.models.commentary import Fassung
 from domain.models.content_type import ContentType
-from dtos.beitrag import (
-    BeitragResponse,
-    HintergrundinfoResponse,
-    KommentarResponse,
-    PostResponse,
-)
-from dtos.image import BildResponse
+from dtos.beitrag import BeitragResponse
+from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
-from services.cleanup.usage_cleanup_service import get_cleanup_service
+from services.cleanup.bereinigungsjob import get_bereinigungsjob
 from core.config import Settings
 from core.logging import log_pseudonym
 
@@ -39,15 +36,6 @@ logger = logging.getLogger(__name__)
 
 
 router = APIRouter()
-
-# Was "Diese Woche oft genutzt" je Typ ausliefert (dtos/beitrag.py, #333); ein Typ
-# ohne Eintrag bekommt die allgemeine Auswahl.
-OFT_GENUTZT = {
-    ContentType.COMMENTARY.value: KommentarResponse,
-    ContentType.GENERIC_TEXT.value: HintergrundinfoResponse,
-    ContentType.POST.value: PostResponse,
-    ContentType.IMAGE.value: BildResponse,
-}
 
 
 class TrackUsageRequest(BaseModel):
@@ -123,7 +111,7 @@ async def track_content_usage(
     body: TrackUsageRequest,
     user_agent: Optional[str] = Header(None),
     aufrufer: Optional[str] = Depends(get_current_user_optional),
-    settings: Settings = Depends(get_settings),
+    laden: BeitragLader = Depends(get_beitrag_laden),
 ):
     """
     Track that a content item was used (copied).
@@ -157,7 +145,7 @@ async def track_content_usage(
         # auf eine ID, hinter der nichts steht. Ist er da, aber unlesbar, wird im
         # Zweifel gezaehlt - wem er gehoert, ist dann nicht feststellbar.
         try:
-            beitrag = await beitrag_laden(content_uuid, settings)
+            beitrag = await laden(content_uuid)
         except BeitragUnlesbar:
             beitrag = None
             unlesbar = True
@@ -355,18 +343,24 @@ async def oft_genutzt(
         usage_service = get_usage_service()
         service = OftGenutztService(
             usage_service,
+            # Im try gebaut: Scheitert das Repository, antwortet der Endpunkt mit
+            # seinem 500 und Log (wie get_beitrag_laden in dependencies.py).
             sichtbaren_beitrag_laden(
-                settings, QdrantRepositoryFactory(), reference_service
+                settings,
+                get_content_repository(settings),
+                QdrantRepositoryFactory(),
+                reference_service,
             ),
         )
         angereichert = usage_service.enrich_content_with_usage(
             await service.beitraege()
         )
         # result_type und recent_uses gehoeren nicht zum Beitrag und kommen
-        # danach wieder dazu.
+        # danach wieder dazu. Die Antwort je Typ: dtos/beitragstypen.py; ein Typ
+        # ohne Eintrag bekommt die allgemeine Auswahl.
         antworten = fuer_aufrufer(
             [
-                OFT_GENUTZT.get(e["result_type"], BeitragResponse).model_validate(e)
+                ANTWORT_JE_TYP.get(e["result_type"], BeitragResponse).model_validate(e)
                 for e in angereichert
             ],
             aufrufer,
@@ -401,7 +395,7 @@ async def get_cleanup_status(
         if not settings.is_admin_user(current_user):
             raise HTTPException(status_code=403, detail="Admin access required")
 
-        cleanup_service = get_cleanup_service()
+        cleanup_service = get_bereinigungsjob()
         status = cleanup_service.get_status()
 
         return CleanupStatusResponse(**status)

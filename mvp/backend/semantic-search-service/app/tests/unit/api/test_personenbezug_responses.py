@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 
 from api.v1 import contribution as contribution_module
 from api.v1.contribution import router as contribution_router
-from api.v1.raw_input import router as raw_input_router
+from api.v1.einwurf import router as einwurf_router
 from api.v1.reference import router as reference_router
 from api.v1.statement import router as statement_router
 from dependencies import (
@@ -34,14 +34,14 @@ from domain.models.reference import ReferenceDbEntry
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from dtos.beitrag import BeitragResponse
 from dtos.contribution import ContributionEntry, MeinBeitragResponse
-from dtos.raw_input import RawInputDraftResponse, RawInputLinkResponse, RawInputResponse
+from dtos.einwurf import SatzAmEinwurfResponse, AusformuliertInResponse, EinwurfResponse
 from dtos.reference import GetReferenceResponse
 from dtos.statement import AussageResponse, AussageTreffer
 from services import beitrag_fuer_aufrufer as regel
 from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
-from repositories.raw_input_repository import get_raw_input_repository
+from repositories.einwurf_repository import get_einwurf_repository
 from services.content.statement_service import StatementService
 from tests.unit.api.test_beitrag_responses import (
     ADMIN,
@@ -321,7 +321,7 @@ EINWURF_ROUTEN = {
 ALLE_KENNUNGEN = (AUTORIN, BEARBEITER, SATZ_AUTORIN)
 
 einwurf_app = FastAPI()
-einwurf_app.include_router(raw_input_router, prefix="/api/v1/rawinput")
+einwurf_app.include_router(einwurf_router, prefix="/api/v1/rawinput")
 
 
 @pytest.fixture
@@ -333,7 +333,7 @@ def einwurf_client(anzeigenamen_ohne_datenbank):
     repository.mit_gleichem_link.side_effect = lambda *_: [_einwurf()]
     repository.get_by_id.side_effect = lambda *_: _einwurf()
     repository.set_status.side_effect = lambda *_, **__: _einwurf()
-    einwurf_app.dependency_overrides[get_raw_input_repository] = lambda: repository
+    einwurf_app.dependency_overrides[get_einwurf_repository] = lambda: repository
     einwurf_app.dependency_overrides[get_moderation_repository] = lambda: MagicMock(
         zustaende_laden=AsyncMock(return_value={})
     )
@@ -427,7 +427,7 @@ def test_einwurf_ohne_person_ohne_kennzeichen(
     einwurf_client, anzeigenamen_ohne_datenbank
 ):
     """Ohne Einwerfer (Wege ohne Sitzung) gibt es kein "eigen" und kein "fremd"."""
-    repository = einwurf_app.dependency_overrides[get_raw_input_repository]()
+    repository = einwurf_app.dependency_overrides[get_einwurf_repository]()
     repository.get_by_id.side_effect = lambda *_: {**_einwurf(), "submitted_by": None}
 
     einwurf = einwurf_client("rawinput/{id}", FREMD).json()
@@ -524,11 +524,11 @@ DTOS_JE_BEZUG = [
     (regel.AUSSAGE, AussageResponse),
     (regel.AUSSAGE, AussageTreffer),
     (regel.HERKUNFT, GetReferenceResponse),
-    (regel.EINWURF, RawInputResponse),
-    (regel.DESTILLIERER, RawInputResponse),
-    (regel.AUSFORMULIERER, RawInputResponse),
-    (regel.AUSFORMULIERER, RawInputLinkResponse),
-    (regel.SATZ, RawInputDraftResponse),
+    (regel.EINWURF, EinwurfResponse),
+    (regel.DESTILLIERER, EinwurfResponse),
+    (regel.AUSFORMULIERER, EinwurfResponse),
+    (regel.AUSFORMULIERER, AusformuliertInResponse),
+    (regel.SATZ, SatzAmEinwurfResponse),
 ]
 
 

@@ -245,7 +245,8 @@ class FeedbackZeile(Base):
     Traegt bewusst keine Kennung und keine Sitzung, auch wenn die Person angemeldet
     ist, und statt eines Zeitpunkts nur den Tag. Wer eine Antwort will, schreibt
     selbst einen Kontakt dazu. Nach der Frist loescht der Dienst die Zeile ganz
-    (services/feedback_service.py).
+    (services/feedback_service.py), erledigt oder nicht; ein Admin kann sie auch
+    vorher einzeln loeschen (#425).
     """
 
     __tablename__ = "feedback"
@@ -254,6 +255,9 @@ class FeedbackZeile(Base):
     text = Column(Text, nullable=False)
     kontakt = Column(Text, nullable=True)
     eingegangen_am = Column(Date, nullable=False)
+    # Von Admins gesetzt, wenn das Feedback erledigt ist (#425); nur ein Merker,
+    # ohne Zeitpunkt und ohne wer.
+    erledigt = Column(Boolean, nullable=False, default=False, server_default="false")
 
     __table_args__ = (Index("idx_feedback_eingegangen_am", "eingegangen_am"),)
 
@@ -386,13 +390,13 @@ class Sperre(Base):
     )
 
 
-class RawInput(Base):
+class Einwurf(Base):
     """
     Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh, wie
     eingeworfen.
 
     Bewusst eine eigene Tabelle und kein Qdrant-Inhalt (siehe docs/archiv/ROHINPUT.md):
-    Rohinput wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
+    Ein Einwurf wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
     eine spaetere Zuweisung ("ich nehm das") ist ein Wettlauf zweier Nutzer um
     dieselbe Zeile, den nur eine Transaktion entscheidet.
 
@@ -439,9 +443,9 @@ class RawInput(Base):
     )
 
 
-class RawInputContentLink(Base):
+class AusformuliertIn(Base):
     """
-    Verknuepfung zwischen einem Einwurf und dem Beitrag, mit dem er ausformuliert
+    Ausformuliert in (Glossar): die Verknuepfung zwischen einem Einwurf und dem Beitrag, mit dem er ausformuliert
     wurde: einem neu gespeicherten oder, bei einer Dublette, dem vorhandenen.
 
     Geschrieben wird sie, wenn der Destillier-Ablauf den Einwurf mit dem Beitrag
@@ -505,9 +509,9 @@ class RawInputContentLink(Base):
     )
 
 
-class RawInputDraft(Base):
+class Satz(Base):
     """
-    Der Entwurfssatz einer Person zu einem Einwurf ("Was ist der Punkt? Ein Satz.").
+    Der Satz einer Person zu einem Einwurf ("Was ist der Punkt? Ein Satz.").
 
     Gehoert zu (Einwurf, Person) und nicht zum Einwurf allein: mehrere Leute
     duerfen denselben Einwurf gleichzeitig destillieren, jede Person mit ihrem
@@ -515,8 +519,8 @@ class RawInputDraft(Base):
     (120 Zeichen, wie der Titel) prueft das DTO, nicht die Datenbank.
 
     Gespeichert wird per Upsert auf den eindeutigen Index (raw_input_id, user_id).
-    Ein leerer Satz ist kein Entwurf: dann wird die Zeile geloescht statt ""
-    abzulegen, damit "hat einen eigenen Entwurf" genau eine Bedeutung hat.
+    Ein leerer Satz wird nicht abgelegt: dann wird die Zeile geloescht statt ""
+    abzulegen, damit "hat einen eigenen Satz" genau eine Bedeutung hat.
     """
 
     __tablename__ = "raw_input_drafts"
@@ -542,7 +546,7 @@ class RawInputDraft(Base):
 
     __table_args__ = (
         Index("idx_raw_input_drafts_user_id", "user_id"),
-        # Genau ein Entwurf je Person und Einwurf - der Upsert haengt daran.
+        # Genau ein Satz je Person und Einwurf - der Upsert haengt daran.
         Index(
             "idx_raw_input_drafts_unique",
             "raw_input_id",

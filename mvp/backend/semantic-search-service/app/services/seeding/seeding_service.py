@@ -261,7 +261,7 @@ class SeedingService:
             try:
                 progress = await self.get_progress()
                 progress.status = SeedingStatus.FAILED
-                progress.error_message = str(e)
+                progress.error_message = type(e).__name__
                 progress.completed_at = datetime.now()
 
                 with self._lock:
@@ -397,7 +397,7 @@ class SeedingService:
                 for file_status in file_statuses:
                     if file_status.status == FileProcessingStatus.PENDING:
                         file_status.status = FileProcessingStatus.FAILED
-                        file_status.error_message = str(e)
+                        file_status.error_message = type(e).__name__
 
                 await self.metadata.save_file_statuses(file_statuses)
             raise

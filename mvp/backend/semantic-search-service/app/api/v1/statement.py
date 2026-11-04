@@ -58,6 +58,7 @@ from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from domain.themen import NACH_SCHLUESSEL, THEMEN, ThemaUngueltig
+from core.fehler import INTERNER_FEHLER
 
 logger = get_logger(__name__)
 
@@ -122,7 +123,7 @@ async def get_all(
         return response
     except Exception as e:
         logger.error(f"Error in /getAll: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Eine Aussage per ID - fuer Beitragsformulare, die mit ?aussage=<id> geoeffnet
@@ -149,7 +150,7 @@ async def get_by_id(
         raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:
         logger.error(f"Error in /getById: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
     return GetStatementByIdResponse(
         statement_id=statement.id, statement_text=statement.text
@@ -243,7 +244,7 @@ async def themen_zuordnen(
     try:
         themen = await themen_service.zuordnen(request.statement_id, request.themen)
     except ThemaUngueltig as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=e.antworttext)
     except AussageNichtGefunden:
         raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:
@@ -351,7 +352,7 @@ async def search_statements(
         return response
     except Exception as e:
         logger.error(f"Error in /searchStatements: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Adds a new statement to the statement_index
@@ -406,7 +407,7 @@ async def add_statement(
     except Exception as e:
         # Improve error handling by returning specific exception types
         logger.error(f"Error in /addStatement: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Adds a reply suggestion to a statement
@@ -443,7 +444,7 @@ async def add_replysuggestion_to_statement(
             f"Error in /addReplysuggestionToStatement: {type(e).__name__}",
             exc_info=True,
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieves the topics of the statement_index
@@ -463,7 +464,7 @@ def get_topics(
         logger.error(
             f"Error in get_statement_topics: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieves the statements of a specific topic from the statement_index
@@ -491,7 +492,7 @@ def get_statement_topics(
         logger.error(
             f"Error in get_statement_topics: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieves the categories of the statement_index
@@ -513,7 +514,7 @@ def get_categories(
         logger.error(
             f"Error in get_statement_topics: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieves the statements of a specific category from the statement_index
@@ -541,4 +542,4 @@ def get_statements_of_category(
         logger.error(
             f"Error in get_statements_of_category: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

@@ -1,6 +1,6 @@
-import { ausBeitrag, ausEinwurf, ausSuchergebnis } from './karten-daten';
+import { ausBeitrag, ausEinwurf, ausEinzelansicht, ausSuchergebnis } from './karten-daten';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { Einwurf, Satz, Verknuepfung } from '../services/einwurf.service';
+import { Einwurf, Satz, AusformuliertIn } from '../services/einwurf.service';
 
 function inhalt(felder: Record<string, unknown> = {}): any {
   return {
@@ -49,7 +49,7 @@ function satz(id: string, user_id: string, sentence: string): Satz {
   return { id, user_id, sentence, updated_at: '2026-09-13T12:30:00Z' };
 }
 
-function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = 'c-9'): Verknuepfung {
+function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = 'c-9'): AusformuliertIn {
   return { content_id, content_type, draft_id, processed_by: 'carol', processed_at: '2026-09-13T13:00:00Z' };
 }
 
@@ -178,6 +178,38 @@ describe('karten-daten', () => {
 
       expect(daten.typ).toBeNull();
       expect(console.warn).toHaveBeenCalled();
+    });
+  });
+
+  describe('ausEinzelansicht (#300)', () => {
+    it('liest den Typ aus content_type, auch in der Schreibweise des Backends', () => {
+      const daten = ausEinzelansicht(inhalt({ content_type: 'generic_text', title: 'Fakten' }));
+
+      expect(daten.typ).toBe('generictext');
+      expect(daten.titel).toBe('Fakten');
+      expect(daten.nutzung).toBe(3);
+      expect(daten.statement).toBeUndefined();
+    });
+
+    it('uebernimmt die eigene Stimme fuers Abstimmen auf der Seite', () => {
+      expect(ausEinzelansicht(inhalt({ user_vote: 'dislike' })).stimme).toBe('dislike');
+      expect(ausEinzelansicht(inhalt({ user_vote: null })).stimme).toBeUndefined();
+    });
+
+    it('zeigt ein Bild mit seiner Adresse', () => {
+      const daten = ausEinzelansicht(inhalt({ content_type: 'image', image_url: 'https://example.org/b.jpg' }));
+
+      expect(daten.typ).toBe('image');
+      expect(daten.bildUrl).toBe('https://example.org/b.jpg');
+    });
+
+    it('zeigt einen Post mit Plattform und Link', () => {
+      const daten = ausEinzelansicht(
+        inhalt({ content_type: 'post', platform: 'Mastodon', author: '@a', url: 'https://example.org/p' }),
+      );
+
+      expect(daten.extra?.plattform).toBe('Mastodon');
+      expect(daten.extra?.postUrl).toBe('https://example.org/p');
     });
   });
 

@@ -1,6 +1,6 @@
 from domain.models.zeit import utc_jetzt
 import logging
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Depends
 
@@ -15,8 +15,8 @@ from dtos.commentary import (
     AddCommentaryRequest,
     AddCommentaryResponse,
 )
-from domain.models.base_content import BaseContentSearchResult
-from services.content.base_content_service import Dublettenpruefung
+from dtos.beitrag import VorhandenDto
+from services.dublette import Dublette, VorhandenWeg, entscheidung_anwenden
 from services.content.commentary_service import CommentaryService
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from dtos.beitrag import KommentarResponse
@@ -39,18 +39,8 @@ logger = logging.getLogger(__name__)
 KOMMENTAR_RELEVANZ = 1.0
 
 
-def _ist_gezeigter(
-    vorhanden: Optional[BaseContentSearchResult], angefragt: Optional[UUID]
-) -> bool:
-    """Die Entscheidung der Person gilt genau dem vorhandenen, den sie gesehen hat."""
-    return (
-        vorhanden is not None
-        and angefragt is not None
-        and str(vorhanden.id) == str(angefragt)
-    )
-
-
 from fastapi import Query
+from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 
 # Endpoint to search commentary by UUID
@@ -79,7 +69,7 @@ async def get_by_id(
             f"Error fetching commentary with id {commentary_id}: {type(e).__name__}",
             exc_info=True,
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Adds a new commentary to the commentary_index and for each reference in the request, adds a new reference to the reference_index
@@ -104,23 +94,20 @@ async def add_commentary(
         # an keinem Beitrag haengen. add_commentary uebernimmt das Pruefergebnis und
         # bettet nicht noch einmal ein.
         async with commentary_service.sperre(request.commentary.text):
-            pruefung = await commentary_service.pruefe_dublette(request.commentary.text)
-            if _ist_gezeigter(pruefung.vorhanden, request.trotz_dublette_von):
-                # Die Person hat genau diesen vorhandenen Kommentar gesehen und
-                # entschieden: anlegen. Der aehnlichste Treffer bleibt fuer
-                # most_similar_* erhalten.
-                logger.info(
-                    f"Commentary saved although an existing one is similar: {pruefung.vorhanden.id}"
+            gefunden = await commentary_service.pruefe_dublette(request.commentary.text)
+            try:
+                pruefung = entscheidung_anwenden(
+                    gefunden, request.trotz_dublette_von, request.vorhanden_nehmen
                 )
-                pruefung = Dublettenpruefung(
-                    vorhanden=None, aehnlichster=pruefung.aehnlichster
-                )
-            if pruefung.vorhanden is None and request.vorhanden_nehmen is not None:
-                # Der gewaehlte vorhandene ist weg (geloescht, Text geaendert): Einen
-                # neuen anzulegen, hat die Person nicht gewaehlt.
+            except VorhandenWeg:
+                # Der gewaehlte vorhandene ist weg (geloescht, Text geaendert).
                 raise HTTPException(
                     status_code=409,
                     detail="The existing commentary is no longer available",
+                )
+            if gefunden.vorhanden is not None and pruefung.vorhanden is None:
+                logger.info(
+                    f"Commentary saved although an existing one is similar: {gefunden.vorhanden.id}"
                 )
             if pruefung.vorhanden is None:
                 # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
@@ -197,18 +184,13 @@ async def add_commentary(
         # zweite Kopie derselben Antwort. Die Zuordnung fremder Antworten bekommt
         # deshalb einen eigenen Weg an der Karte ("Passt auch auf ..."), der immer
         # funktioniert und die gewaehlte Aussage sichtbar macht.
-        vorhanden = pruefung.vorhanden
-        dublette = vorhanden is not None
-        vorhanden_eigen = dublette and vorhanden.original_author == x_user
-        vorhanden_genommen = vorhanden_eigen and _ist_gezeigter(
-            vorhanden, request.vorhanden_nehmen
-        )
+        dublette = Dublette.aus(pruefung.vorhanden, x_user, request.vorhanden_nehmen)
         if dublette:
-            commentary_id = vorhanden.id
+            commentary_id = dublette.vorhanden.id
             logger.info(
                 f"Commentary is a duplicate of {commentary_id} "
-                f"({'same author' if vorhanden_eigen else 'other author'}, "
-                f"{'taken' if vorhanden_genommen else 'not linked'})"
+                f"({'same author' if dublette.eigen else 'other author'}, "
+                f"{'taken' if dublette.genommen else 'not linked'})"
             )
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
@@ -221,11 +203,11 @@ async def add_commentary(
         # Ohne Dublette und ohne Aussage gibt es nichts zu verknuepfen: True. Bei einer
         # Dublette nur True, wenn der genommene vorhandene jetzt an der Aussage haengt -
         # sonst wurde nichts verknuepft (#238).
-        verknuepft = not dublette
+        verknuepft = dublette is None
         aussage_mitgeschickt = bool(
             request.statement_id or (request.statement_text or "").strip()
         )
-        if aussage_mitgeschickt and (not dublette or vorhanden_genommen):
+        if aussage_mitgeschickt and (dublette is None or dublette.genommen):
             try:
                 statement_id, statement_text = (
                     await statement_service.beitrag_als_antwort_verknuepfen(
@@ -263,16 +245,17 @@ async def add_commentary(
             statement_text=statement_text,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
-            dublette=dublette,
-            vorhanden_titel=vorhanden.title if dublette else None,
-            vorhanden_eigen=vorhanden_eigen,
+            vorhanden=VorhandenDto.aus(dublette),
         )
 
     except HTTPException:
         raise
+    except Validierungsfehler as e:
+        logger.warning(f"Validation error in add_commentary: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.warning(f"Validation error in add_commentary: {type(e).__name__}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
     except Exception as e:
         logger.error(
             f"Unexpected error in add_commentary: {type(e).__name__}", exc_info=True

@@ -61,7 +61,7 @@ def service(speicher):
         report_repo=report_repo,
         moderation_repo=QdrantModerationRepository(embeddings_manager=speicher),
         vote_repo=MagicMock(),
-        raw_input_repo=MagicMock(),
+        einwurf_repo=MagicMock(),
         sperre_repo=MagicMock(**{"aktive.return_value": None}),
     )
 
@@ -246,9 +246,7 @@ class TestLoeschen:
 
         kennung = uuid.UUID(CONTENT_ID)
         service._vote_repo.loeschen_fuer_beitrag.assert_called_once_with(kennung)
-        service._raw_input_repo.ausformuliert_in_loeschen.assert_called_once_with(
-            kennung
-        )
+        service._einwurf_repo.ausformuliert_in_loeschen.assert_called_once_with(kennung)
         aufruf = service.report_repo.update_reports_by_content_id.call_args.kwargs
         assert aufruf["reviewed_by"] is None
         # Bearbeitete Meldungen behalten Entscheidung und Loeschfrist.

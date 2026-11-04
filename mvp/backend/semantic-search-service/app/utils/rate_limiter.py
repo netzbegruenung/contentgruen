@@ -124,10 +124,14 @@ einladung_pruefen_rate_limiter = RateLimiter(max_requests=60, window_minutes=15)
 # weniger als 30 in der Minute.
 gegenlesen_rate_limiter = RateLimiter(max_requests=300, window_minutes=10)
 
+# Kuerzungsvorschlag (#403): nur auf Klick, 60 je Person in 10 Minuten.
+kuerzungsvorschlag_rate_limiter = RateLimiter(max_requests=60, window_minutes=10)
+
 # So oft raeumt der Hintergrund-Task abgelaufene Schluessel weg. Ein Schluessel
 # verschwindet damit spaetestens ein Fenster plus dieser Takt nach seinem letzten
-# Aufruf - fuer die Suchaussage zehn plus eine Minute. Die Datenschutzerklaerung
-# nennt diese Frist ("Ihre Suchanfragen"); wer Fenster oder Takt aendert, zieht
+# Aufruf - fuer die Suchaussage zehn plus eine Minute, fuer Einladungen fuenfzehn
+# plus eine. Die Datenschutzerklaerung nennt diese Fristen ("Deine Suchanfragen",
+# "Konto aus einer Einladung": 16 Minuten); wer Fenster oder Takt aendert, zieht
 # sie nach.
 AUFRAEUM_TAKT_SEKUNDEN = 60
 

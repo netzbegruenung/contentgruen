@@ -1,7 +1,7 @@
 """
-Rohinput ("Fangkorb") - Zustaende und Herkunftskanaele.
+Einwurf (Fangkorb) - Stufen und Wege.
 
-Rohinput ist bewusst *kein* ContentType: er wird nicht gesucht, nicht kopiert,
+Ein Einwurf ist bewusst *kein* ContentType: er wird nicht gesucht, nicht kopiert,
 nicht bewertet und nicht moderiert, sondern liegt als Arbeitsvorrat in
 PostgreSQL neben dem Inhalt (siehe docs/archiv/ROHINPUT.md, Variante C). Deshalb hat er
 eigene Enums statt ContentStatus/ContentOrigin - deren Zustaende beschreiben
@@ -14,8 +14,10 @@ Kanal soll eine Code-Aenderung sein, keine Migration.
 
 from enum import Enum
 
+from core.fehler import Validierungsfehler
 
-class RawInputStatus(str, Enum):
+
+class EinwurfStatus(str, Enum):
     """
     Bearbeitungsstand eines Einwurfs - drei Stufen: Einwerfen, Destillieren,
     Ausformulieren.
@@ -48,7 +50,7 @@ class RawInputStatus(str, Enum):
     """Angeschaut und verworfen. Bleibt liegen, damit er nicht wieder auftaucht."""
 
 
-class RawInputSource(str, Enum):
+class EinwurfWeg(str, Enum):
     """
     Kanal, ueber den der Einwurf hereinkam.
 
@@ -81,21 +83,21 @@ class RawInputSource(str, Enum):
 # Antwort darf nicht scheitern, und bei processed kann ein zweiter Beitrag aus
 # demselben Einwurf entstehen (keine Sperre, Verknuepfung ist n:m).
 _ERLAUBTE_VORGAENGER = {
-    RawInputStatus.DISCARDED: frozenset(
-        {RawInputStatus.OPEN, RawInputStatus.IN_PROGRESS, RawInputStatus.DISCARDED}
+    EinwurfStatus.DISCARDED: frozenset(
+        {EinwurfStatus.OPEN, EinwurfStatus.IN_PROGRESS, EinwurfStatus.DISCARDED}
     ),
-    RawInputStatus.PROCESSED: frozenset(
+    EinwurfStatus.PROCESSED: frozenset(
         {
-            RawInputStatus.OPEN,
-            RawInputStatus.IN_PROGRESS,
-            RawInputStatus.DISCARDED,
-            RawInputStatus.PROCESSED,
+            EinwurfStatus.OPEN,
+            EinwurfStatus.IN_PROGRESS,
+            EinwurfStatus.DISCARDED,
+            EinwurfStatus.PROCESSED,
         }
     ),
 }
 
 
-def uebergang_erlaubt(von: RawInputStatus, nach: RawInputStatus) -> bool:
+def uebergang_erlaubt(von: EinwurfStatus, nach: EinwurfStatus) -> bool:
     """
     Ob ein Einwurf per Statuswechsel von ``von`` nach ``nach`` wechseln darf.
 
@@ -107,27 +109,27 @@ def uebergang_erlaubt(von: RawInputStatus, nach: RawInputStatus) -> bool:
     return von in _ERLAUBTE_VORGAENGER.get(nach, frozenset())
 
 
-def status_nach_satz(aktuell: RawInputStatus) -> RawInputStatus:
+def status_nach_satz(aktuell: EinwurfStatus) -> EinwurfStatus:
     """
     Der Status, nachdem jemand einen nicht-leeren Satz gespeichert hat.
 
     Nur ein offener Einwurf wird dadurch destilliert. Verworfenes bleibt verworfen
     (grau, andere duerfen trotzdem destillieren), Ausformuliertes bleibt ausformuliert.
     """
-    if aktuell == RawInputStatus.OPEN:
-        return RawInputStatus.IN_PROGRESS
+    if aktuell == EinwurfStatus.OPEN:
+        return EinwurfStatus.IN_PROGRESS
     return aktuell
 
 
-def status_ohne_saetze(aktuell: RawInputStatus) -> RawInputStatus:
+def status_ohne_saetze(aktuell: EinwurfStatus) -> EinwurfStatus:
     """
     Der Status, nachdem der letzte Satz zu einem Einwurf geloescht wurde.
 
     Nur ein destillierter Einwurf faellt zurueck auf offen; verworfene und
     ausformulierte behalten ihren Stand.
     """
-    if aktuell == RawInputStatus.IN_PROGRESS:
-        return RawInputStatus.OPEN
+    if aktuell == EinwurfStatus.IN_PROGRESS:
+        return EinwurfStatus.OPEN
     return aktuell
 
 
@@ -139,10 +141,10 @@ class AktionNichtErlaubt(PermissionError):
     """Die Person darf diese Aktion an diesem Einwurf nicht ausfuehren."""
 
 
-class UebergangNichtErlaubt(ValueError):
+class UebergangNichtErlaubt(Validierungsfehler):
     """Der Statuswechsel ist aus dem aktuellen Status nicht erlaubt."""
 
-    def __init__(self, von: RawInputStatus, nach: RawInputStatus):
+    def __init__(self, von: EinwurfStatus, nach: EinwurfStatus):
         super().__init__(
             f"Ein Einwurf im Status {von.value} kann nicht auf {nach.value} wechseln."
         )

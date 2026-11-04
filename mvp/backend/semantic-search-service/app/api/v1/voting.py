@@ -6,10 +6,10 @@ from core.logging import get_logger
 from auth.authorization import validate_user_id, require_auth
 from domain.models.vote import VoteCreate, VoteResponse
 from services.voting_service import VotingService
-from core.config import Settings
-from dependencies import get_settings, get_voting_service
-from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
+from dependencies import get_beitrag_laden, get_voting_service
+from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from middleware.rate_limiter import check_voting_rate_limit
+from core.fehler import NICHT_ERREICHBAR, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 logger = get_logger(__name__)
 
@@ -24,7 +24,7 @@ def get_current_user(x_user: Optional[str] = Header(None)) -> str:
 
 
 async def nur_sichtbarer_beitrag(
-    content_id: uuid.UUID, settings: Settings = Depends(get_settings)
+    content_id: uuid.UUID, laden: BeitragLader = Depends(get_beitrag_laden)
 ) -> None:
     """
     Abstimmen nur auf einen Beitrag, den die Person sehen kann: Gesperrt, geloescht
@@ -38,7 +38,7 @@ async def nur_sichtbarer_beitrag(
     abhaengig machen.
     """
     try:
-        beitrag = await beitrag_laden(content_id, settings)
+        beitrag = await laden(content_id)
     except BeitragUnlesbar:
         return
     except Exception as fehler:
@@ -72,12 +72,15 @@ def set_like(
         result = voting_service.set_like(user_id, content_id)
         logger.debug("Like set successfully")
         return result
+    except Validierungsfehler as e:
+        logger.warning(f"Like validation error: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.warning(f"Like validation error: {type(e).__name__}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
     except ConnectionError as e:
         logger.error(f"Database connection error: {type(e).__name__}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail=NICHT_ERREICHBAR)
     except Exception as e:
         logger.error(f"Error setting like: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to set like")
@@ -104,7 +107,7 @@ def remove_like(
         return result
     except ConnectionError as e:
         logger.error(f"Database connection error: {type(e).__name__}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail=NICHT_ERREICHBAR)
     except Exception as e:
         logger.error(f"Error removing like: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to remove like")
@@ -131,12 +134,15 @@ def set_dislike(
         result = voting_service.set_dislike(user_id, content_id)
         logger.debug("Dislike set successfully")
         return result
+    except Validierungsfehler as e:
+        logger.warning(f"Dislike validation error: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.warning(f"Dislike validation error: {type(e).__name__}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
     except ConnectionError as e:
         logger.error(f"Database connection error: {type(e).__name__}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail=NICHT_ERREICHBAR)
     except Exception as e:
         logger.error(f"Error setting dislike: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to set dislike")
@@ -163,7 +169,7 @@ def remove_dislike(
         return result
     except ConnectionError as e:
         logger.error(f"Database connection error: {type(e).__name__}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail=NICHT_ERREICHBAR)
     except Exception as e:
         logger.error(f"Error removing dislike: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to remove dislike")

@@ -15,20 +15,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy import text
 
-from api.v1.raw_input import _einwuerfe_fuer_aufrufer
+from api.v1.einwurf import _einwuerfe_fuer_aufrufer
 from infrastructure.database.models import (
     Base,
     ContentReport,
     GeseheneNutzung,
-    RawInput,
-    RawInputContentLink,
-    RawInputDraft,
+    Einwurf,
+    AusformuliertIn,
+    Satz,
     Sperre,
     UsageEvent,
     UsageTracking,
     User,
 )
-from repositories.raw_input_repository import RawInputRepository
+from repositories.einwurf_repository import EinwurfRepository
 from repositories.user_repository import UserRepository
 from services.anzeigename_service import AnzeigenameService
 from services.beitrag_fuer_aufrufer import Aufrufer
@@ -82,7 +82,7 @@ def _loeschen(datenbank, uid: str = PERSON) -> None:
 
 
 def _einwurf(session, von: str, destilled_by=None) -> uuid.UUID:
-    einwurf = RawInput(
+    einwurf = Einwurf(
         content="ein Fundstueck",
         submitted_by=von,
         status="in_progress" if destilled_by else "open",
@@ -94,21 +94,20 @@ def _einwurf(session, von: str, destilled_by=None) -> uuid.UUID:
 
 
 def _satz(session, einwurf: uuid.UUID, von: str, satz: str) -> None:
-    session.add(RawInputDraft(raw_input_id=einwurf, user_id=von, sentence=satz))
+    session.add(Satz(raw_input_id=einwurf, user_id=von, sentence=satz))
 
 
 def _saetze(datenbank, einwurf: uuid.UUID):
     """Satz -> Kennung an einem Einwurf."""
     with datenbank.get_session() as s:
         return {
-            d.sentence: d.user_id
-            for d in s.query(RawInputDraft).filter_by(raw_input_id=einwurf)
+            d.sentence: d.user_id for d in s.query(Satz).filter_by(raw_input_id=einwurf)
         }
 
 
 def _destilled_by(datenbank, einwurf: uuid.UUID):
     with datenbank.get_session() as s:
-        return s.get(RawInput, einwurf).destilled_by
+        return s.get(Einwurf, einwurf).destilled_by
 
 
 def _anzeigenamen(datenbank, kennungen):
@@ -117,7 +116,7 @@ def _anzeigenamen(datenbank, kennungen):
 
 def _im_fangkorb(datenbank, einwurf: uuid.UUID, aufrufer: str = ANDERE):
     """Der Einwurf, wie der Fangkorb ihn einer angemeldeten Person ausliefert."""
-    zeile = RawInputRepository(datenbank).get_by_id(einwurf, current_user=aufrufer)
+    zeile = EinwurfRepository(datenbank).get_by_id(einwurf, current_user=aufrufer)
     dienst = AnzeigenameService(UserRepository(datenbank))
     with patch(
         "services.beitrag_fuer_aufrufer.get_anzeigename_service", return_value=dienst
@@ -274,11 +273,9 @@ def spuren(datenbank, einwuerfe):
         )
         s.add(bearbeitet)
         satz = (
-            s.query(RawInputDraft)
-            .filter_by(raw_input_id=einwuerfe.fremd, user_id=PERSON)
-            .one()
+            s.query(Satz).filter_by(raw_input_id=einwuerfe.fremd, user_id=PERSON).one()
         )
-        link = RawInputContentLink(
+        link = AusformuliertIn(
             raw_input_id=einwuerfe.fremd,
             content_id=beitrag,
             created_by=PERSON,
@@ -328,9 +325,9 @@ class TestLoeschkommando:
             assert [(m.id, m.reviewed_by) for m in meldungen] == [
                 (spuren.bearbeitet, None)
             ]
-            link = s.get(RawInputContentLink, spuren.link)
+            link = s.get(AusformuliertIn, spuren.link)
             assert (link.created_by, link.draft_id) == (None, spuren.satz)
-            assert s.get(RawInputDraft, spuren.satz).sentence == SATZ_DER_PERSON
+            assert s.get(Satz, spuren.satz).sentence == SATZ_DER_PERSON
 
     def test_sperren_bleiben_ohne_kennung_und_ohne_widerspruch(self, datenbank, spuren):
         _loeschen(datenbank)
@@ -354,7 +351,7 @@ class TestLoeschkommando:
     def test_eigene_einwuerfe_samt_saetzen_weg(self, datenbank, einwuerfe):
         _loeschen(datenbank)
 
-        assert RawInputRepository(datenbank).get_by_id(einwuerfe.eigen) is None
+        assert EinwurfRepository(datenbank).get_by_id(einwuerfe.eigen) is None
         assert _saetze(datenbank, einwuerfe.eigen) == {}
 
     def test_zweiter_lauf_aendert_nichts(self, datenbank, einwuerfe):

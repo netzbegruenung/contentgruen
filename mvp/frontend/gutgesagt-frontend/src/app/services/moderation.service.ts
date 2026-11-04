@@ -98,6 +98,22 @@ export interface GesperrteResponse {
   beitraege: GemeldeterBeitrag[];
 }
 
+/**
+ * Name und/oder E-Mail-Adresse der meldenden Person (#494). Gesucht wird die ganze
+ * Angabe ohne Rücksicht auf Groß- und Kleinschreibung; sind beide angegeben, müssen
+ * beide passen.
+ */
+export interface MelderSuche {
+  email: string | null;
+  name: string | null;
+}
+
+/** Bearbeitete und abgewiesene Meldungen sind gelöscht, offene ohne Name und E-Mail-Adresse. */
+export interface AngabenGeloescht {
+  geloescht: number;
+  angaben_entfernt: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -168,6 +184,28 @@ export class ModerationService {
 
   getGesperrte(): Observable<GesperrteResponse> {
     return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`);
+  }
+
+  /**
+   * Alle Meldungen mit diesen Angaben der meldenden Person (Auskunft, #494). POST, damit
+   * Name und E-Mail-Adresse nicht in der Adresse und damit nicht in Logs stehen.
+   */
+  meldungenEinerPerson(suche: MelderSuche): Observable<PendingReportsResponse> {
+    return this.http.post<PendingReportsResponse>(`${this.baseUrl}/melder/meldungen`, suche);
+  }
+
+  /**
+   * Die Angaben der Person an ihren Meldungen löschen (#494): nur die gezeigten
+   * Meldungen (`meldungIds`), die noch zu den Angaben passen. Nach einer Suche nur mit
+   * dem Namen verlangt das Backend `dieselbePerson`: Der Admin hat bestätigt, dass alle
+   * Treffer zu einer Person gehören.
+   */
+  angabenLoeschen(suche: MelderSuche, meldungIds: string[], dieselbePerson = false): Observable<AngabenGeloescht> {
+    return this.http.post<AngabenGeloescht>(`${this.baseUrl}/melder/angaben-loeschen`, {
+      ...suche,
+      meldung_ids: meldungIds,
+      dieselbe_person: dieselbePerson,
+    });
   }
 
   dismissReport(reportId: string, notes?: string): Observable<any> {

@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from domain.cc0_hinweis import Cc0Wortlaut
 from domain.themen import ThemenDerAussage
+from dtos.beitrag import VorhandenDto
 from dtos.statement import ThemaDto
 from domain.models.commentary import Commentary
 
@@ -120,19 +121,14 @@ class AddCommentaryResponse(BaseModel):
     # genommen hat und er jetzt an der Aussage haengt; sonst False - auch, wenn gar
     # nichts versucht wurde (kein vorhanden_nehmen, keine Aussage, fremder vorhandener).
     verknuepft: bool = True
-    # True: Es gibt schon einen sehr aehnlichen Kommentar; id ist dessen ID und nichts
-    # wurde angelegt und nichts verknuepft. Die Aussagefelder bleiben leer, bis die
-    # Person den eigenen mit vorhanden_nehmen waehlt (dann statement_*, verknuepft wie
-    # oben). Einen fremden verknuepft auch das nicht: Fremde
-    # Antworten weiteren Aussagen zuzuordnen ist gewollt, greift ueber dieses Formular
-    # aber nur bei wortgleichem Text - dafuer ist ein eigener Weg an der Karte
-    # vorgesehen ("Passt auch auf ..."), siehe api/v1/commentary.py.
+    # Gesetzt: Es gibt schon einen sehr aehnlichen Kommentar; id ist dessen ID, und
+    # nichts wurde angelegt und nichts verknuepft. Die Aussagefelder bleiben leer, bis
+    # die Person den eigenen mit vorhanden_nehmen waehlt (dann statement_*, verknuepft
+    # wie oben). Einen fremden verknuepft auch das nicht: Fremde Antworten weiteren
+    # Aussagen zuzuordnen ist gewollt, greift ueber dieses Formular aber nur bei
+    # wortgleichem Text - dafuer ist ein eigener Weg an der Karte vorgesehen ("Passt
+    # auch auf ..."), siehe api/v1/commentary.py.
     # Das Formular zeigt den vorhandenen Kommentar und laesst die Person entscheiden:
     # zustimmen (Stimme), den eigenen mit vorhanden_nehmen nehmen oder mit
-    # trotz_dublette_von trotzdem speichern.
-    dublette: bool = False
-    # Titel des vorhandenen Kommentars, damit das Formular ihn nennen kann; sonst None.
-    vorhanden_titel: Optional[str] = None
-    # Der vorhandene Kommentar ist von derselben Person: Zustimmen saehe sich selbst
-    # eine Stimme geben. Ohne Dublette False.
-    vorhanden_eigen: bool = False
+    # trotz_dublette_von trotzdem speichern. Ohne Dublette None.
+    vorhanden: Optional[VorhandenDto] = None

@@ -10,7 +10,7 @@ import {
   tabMerken,
   verworfenEinblenden,
 } from './fangkorb-filter';
-import { Einwurf, Satz, Verknuepfung } from '../services/einwurf.service';
+import { Einwurf, Satz, AusformuliertIn } from '../services/einwurf.service';
 
 function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
   return {
@@ -32,7 +32,7 @@ function satz(id: string): Satz {
   return { id, user_id: null, sentence: 'Ein Satz', updated_at: '2026-09-13T12:00:00Z' };
 }
 
-function link(draft_id: string | null): Verknuepfung {
+function link(draft_id: string | null): AusformuliertIn {
   return {
     content_id: `c-${draft_id}`,
     content_type: 'commentary',

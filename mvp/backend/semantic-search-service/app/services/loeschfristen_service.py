@@ -1,5 +1,6 @@
 """
-Loeschfristen fuer Meldungen, Einwuerfe, Sperren, geloeschte Beitraege und deren Stimmen (#421).
+Loeschfristen fuer Meldungen, Einwuerfe, Sperren, geloeschte Beitraege und deren Stimmen (#421)
+und fuer nie benutzte Konten aus Einladungen (#538).
 
 Fachliche Quelle der Fristen ist docs/LOESCHKONZEPT.md ("Fristen"); im Code stehen
 ihre Zahlen hier und nur hier, damit die Datenschutzerklaerung sie zitieren kann.
@@ -24,12 +25,18 @@ core/config.py.
   Widerspruch und Pruefung. Wie bei den Meldungen kann die Entscheidung so lange
   angefochten werden (Art. 20 Abs. 1 DSA). Aktive Sperren haben keine Frist: Der
   Beitrag ist gesperrt, und Sperrgrund und Begruendung gehoeren zu dieser Entscheidung.
+- Nie benutzte Konten aus Einladungen (#538): NIE_BENUTZTES_KONTO_TAGE nach Ablauf
+  des Links in der Mail (MAIL_GUELTIG_SEKUNDEN ab dem Anlegen) im Realm geloescht.
+  Bleibt der Link ungenutzt, war die Adresse vertippt oder fremd, oder die Person hat
+  es sich anders ueberlegt; einen Monat lang kommt sie noch ueber "Passwort vergessen"
+  hinein. Was "nie benutzt" heisst: KeycloakKonten.nie_benutzte_loeschen. Ohne Zugang
+  zur Keycloak-Admin-Schnittstelle (Dev-Stack) entfaellt die Frist.
 - Stimmen haben keine eigene Frist: Aus ihnen entsteht die Guete eines Beitrags, sie
   leben so lange wie er und gehen mit ihm.
 
 loeschen_im_takt ist ein eigener Hintergrund-Task aus main.py und laeuft taeglich und
 zusaetzlich um Mitternacht (UTC). Wie beim Feedback haengt er nicht am abschaltbaren
-Usage-Cleanup: Die Fristen stehen im Loeschkonzept ohne Bedingung.
+Bereinigungsjob: Die Fristen stehen im Loeschkonzept ohne Bedingung.
 """
 
 import asyncio
@@ -37,10 +44,11 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from core.logging import get_logger
+from domain.interfaces.konten_im_realm import MAIL_GUELTIG_SEKUNDEN, INieBenutzteKonten
 from domain.models.content_status import FELD_GELOESCHT_AM
 from repositories.content_report_repository import ContentReportRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
-from repositories.raw_input_repository import RawInputRepository
+from repositories.einwurf_repository import EinwurfRepository
 from repositories.sperre_repository import SperreRepository
 from services.moderation_service import ModerationService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
@@ -51,6 +59,7 @@ MELDUNG_NACH_BEARBEITUNG_TAGE = 180
 EINWURF_OHNE_BEITRAG_TAGE = 365
 GELOESCHTER_BEITRAG_TAGE = 30
 SPERRE_NACH_AUFHEBUNG_TAGE = 180
+NIE_BENUTZTES_KONTO_TAGE = 30
 LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
 
 
@@ -70,16 +79,18 @@ class LoeschfristenService:
     def __init__(
         self,
         meldungen: ContentReportRepository,
-        einwuerfe: RawInputRepository,
+        einwuerfe: EinwurfRepository,
         beitraege: IModerationRepository,
         moderation: ModerationService,
         sperren: SperreRepository,
+        konten: Optional[INieBenutzteKonten] = None,
     ):
         self._meldungen = meldungen
         self._einwuerfe = einwuerfe
         self._beitraege = beitraege
         self._moderation = moderation
         self._sperren = sperren
+        self._konten = konten
 
     async def fristen_anwenden(self, heute: Optional[date] = None) -> None:
         """
@@ -87,21 +98,28 @@ class LoeschfristenService:
         nicht auf; der naechste Lauf holt nach, was liegen blieb.
         """
         heute = heute or heute_utc()
-        await self._zeilen_loeschen(
+        await self._frist_anwenden(
             self._meldungen.bearbeitete_loeschen_vor,
             _grenze(heute, MELDUNG_NACH_BEARBEITUNG_TAGE),
             "handled reports",
         )
-        await self._zeilen_loeschen(
+        await self._frist_anwenden(
             self._einwuerfe.ohne_beitrag_loeschen_vor,
             _grenze(heute, EINWURF_OHNE_BEITRAG_TAGE),
             "raw inputs",
         )
-        await self._zeilen_loeschen(
+        await self._frist_anwenden(
             self._sperren.aufgehobene_loeschen_vor,
             _grenze(heute, SPERRE_NACH_AUFHEBUNG_TAGE),
             "lifted Sperren",
         )
+        if self._konten is not None:
+            await self._frist_anwenden(
+                self._konten.nie_benutzte_loeschen,
+                _grenze(heute, NIE_BENUTZTES_KONTO_TAGE)
+                - timedelta(seconds=MAIL_GUELTIG_SEKUNDEN),
+                "never used accounts from invitations",
+            )
         try:
             await self._geloeschte_beitraege(heute)
         except Exception as e:
@@ -110,8 +128,8 @@ class LoeschfristenService:
             )
 
     @staticmethod
-    async def _zeilen_loeschen(loeschen_vor, grenze: datetime, was: str) -> None:
-        """Eine PostgreSQL-Frist anwenden; ein Fehler wird nur protokolliert."""
+    async def _frist_anwenden(loeschen_vor, grenze: datetime, was: str) -> None:
+        """Eine Frist in PostgreSQL oder im Realm anwenden; ein Fehler wird nur protokolliert."""
         try:
             n = await asyncio.to_thread(loeschen_vor, grenze)
             logger.info(f"Deleted {n} {was} past their Loeschfrist")

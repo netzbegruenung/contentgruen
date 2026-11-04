@@ -2,8 +2,8 @@ import os
 import logging
 from pathlib import Path
 from pydantic_settings import BaseSettings
-from pydantic import Field
-from typing import Optional
+from pydantic import AliasChoices, Field
+from typing import Literal, Optional
 from dotenv import load_dotenv
 
 # Set up logger for module
@@ -18,6 +18,10 @@ if env_file.exists():
 # Das Einbettungsmodell. Die Aehnlichkeitsschwellen in Settings sind dafuer gemessen;
 # das Dockerfile laedt es beim Bauen vor und muss mitgezogen werden.
 EMBEDDING_MODELL = "intfloat/multilingual-e5-base"
+
+# Wie der Mailversand mit dem SMTP-Server spricht (infrastructure/mail/versand.py).
+# Nur verschluesselt: Adresse und Text der Mail gehen nie lesbar ueber das Netz.
+SmtpVerschluesselung = Literal["starttls", "ssl"]
 
 
 class Settings(BaseSettings):
@@ -151,6 +155,21 @@ class Settings(BaseSettings):
     keycloak_app_client_id: Optional[str] = None
     app_url: Optional[str] = None
 
+    # Mailversand an meldende Personen (#493): Eingangsbestaetigung und Entscheidung
+    # nach Art. 16 Abs. 4 und 5 DSA (infrastructure/mail/versand.py). Ohne Host und
+    # Absender geht keine Mail hinaus; die Entscheidung teilt dann ein Admin per Hand
+    # mit. Einrichten: docs/DEPLOYMENT.md, "Mail".
+    smtp_host: Optional[str] = None
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_benutzer: Optional[str] = None
+    smtp_passwort: Optional[str] = None
+    # starttls (Port 587) oder ssl (Port 465); unverschluesselt verschickt der Dienst nicht
+    smtp_verschluesselung: SmtpVerschluesselung = "starttls"
+    mail_absender: Optional[str] = None
+    # Wohin Antworten gehen; ohne Angabe an den Absender. Die Mail der Entscheidung
+    # nennt die Antwort als Weg, gegen sie vorzugehen: keine Adresse, die nichts annimmt.
+    mail_antwort_an: Optional[str] = None
+
     # Admin users (comma-separated list)
     admin_users: str = ""
 
@@ -175,15 +194,25 @@ class Settings(BaseSettings):
     # pseudonym space and inflates the DAU count for that day.
     actor_hash_secret: Optional[str] = None
 
-    # Usage tracking and cleanup configuration
-    enable_usage_cleanup: bool = True
+    # Der taegliche Bereinigungsjob (services/cleanup/bereinigungsjob.py) mit den
+    # Fristen der Nutzungs- und der Suchereignisse und dem Mischen abgeschlossener
+    # Tage; ein Schalter fuer alles. Der fruehere Name ENABLE_USAGE_CLEANUP gilt
+    # weiter, damit ein abgeschalteter Job nach dem Umbenennen nicht still wieder
+    # loescht; der neue Name geht vor.
+    enable_bereinigungsjob: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB",
+            "SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP",
+        ),
+    )
     usage_retention_days: int = 90
     # Frist der Suchereignisse (#289). Aeltere Tage verdichtet der Bereinigungsjob
     # zu Tageszaehlern ohne Pseudonym. 90 wie bei den Nutzungsereignissen: deckt die
     # laengste Auswertung ueber Einzelzeilen (searches-per-user, hoechstens 90 Tage).
     # Darum auch die Untergrenze: Kuerzer zaehlte searches-per-user still zu wenig,
     # und ein negativer Wert verdichtete den laufenden Tag (Personen doppelt).
-    # Laeuft im selben Job: enable_usage_cleanup=false schaltet auch diese Frist ab,
+    # Laeuft im selben Job: enable_bereinigungsjob=false schaltet auch diese Frist ab,
     # ebenso das Mischen abgeschlossener Tage (#337).
     search_event_retention_days: int = Field(default=90, ge=90)
     cleanup_hour: int = 2  # 2 AM
@@ -219,6 +248,10 @@ class Settings(BaseSettings):
         env_prefix = "SEMANTIC_SEARCH_"
         # Also load standard environment variables for logging
         env_ignore_empty = True
+        # Felder mit validation_alias (enable_bereinigungsjob) auch per Feldname
+        # setzbar, etwa Settings(enable_bereinigungsjob=False); aus der Umgebung
+        # gelten nur die Aliase mit Praefix.
+        populate_by_name = True
 
     def _validate_paths(self):
         """Validate that required paths exist or can be created."""

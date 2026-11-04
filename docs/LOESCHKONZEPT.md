@@ -1,8 +1,9 @@
 # Löschkonzept (Art. 17 DSGVO)
 
 > **Vorsorge, keine erprobte Prozedur.** Es gibt heute keine Nutzer und keine
-> erhaltenswerten Daten. Die Anlage hat keinen Codepfad, der eine Person löscht;
-> was hier steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
+> erhaltenswerten Daten. Die Anlage hat keinen Codepfad, der eine Person löscht,
+> außer dem Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“);
+> was hier sonst steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
 > Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
 > zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), der
 > Qdrant-Teil gegen eine Collection im Speicher und gegen einen echten Qdrant
@@ -52,12 +53,18 @@ besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und lö
 
 - **Beta-Zugang:** Die `userId` notieren (Schritt 1 bis 3 brauchen sie als Kennung), dann
   den Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter Schritt 4).
-- **Netzbegrünung-Login:** Die Kennung als eigene Zeile in `geloeschte-konten.txt` im
-  Konfigurationsverzeichnis des BFF eintragen (`GELOESCHTE_KONTEN_PATH`, Standard
-  `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
+- **Netzbegrünung-Login und Konto aus einer Einladung:** Die Kennung als eigene Zeile in
+  `geloeschte-konten.txt` im Konfigurationsverzeichnis des BFF eintragen
+  (`GELOESCHTE_KONTEN_PATH`, Standard `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
   `#` und Leerzeilen zählen nicht. Das Cookie trägt keine Tokens, deshalb kann das BFF
   Keycloak nicht selbst fragen; das Löschen in Keycloak (Schritt 4) allein beendet die
   Sitzung nicht.
+- **Nach dem Umstellen der Kennungen auf den Realm** (`docs/KEYCLOAK_REALM.md`,
+  „Kennungen umstellen“) hat ein Mitglied der Netzbegrünung zwei Kennungen: die im Realm
+  und die alte, die im Realm am Konto als Kennung beim Identity Provider `netzbegruenung`
+  steht. Ein Cookie mit der alten gilt bis zu 14 Tage nach dem Umstellen der BFF, und was
+  die Person darunter anlegt, trägt die alte. In dieser Zeit beide Kennungen in
+  `geloeschte-konten.txt` eintragen und Schritt 1 bis 3 für beide ausführen.
 
 Beide Dateien liest das BFF spätestens nach fünf Minuten neu
 (`BFF/Services/ManagedUserService.cs:16`, `BFF/Services/GeloeschteKontenService.cs`), nach
@@ -132,7 +139,7 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 Ein täglicher Task löscht nach festen Fristen, sofort beim Start des Dienstes, dann
 täglich und zusätzlich um Mitternacht (UTC). Die Zahlen stehen an einer Stelle im Code,
 `services/loeschfristen_service.py`; dort steht auch die Begründung. Wie beim Feedback
-hängt der Task nicht am abschaltbaren Usage-Cleanup. Was gelöscht ist, steht in Backups
+hängt der Task nicht am abschaltbaren Bereinigungsjob. Was gelöscht ist, steht in Backups
 bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 
 | Datenart | Frist | Gerechnet ab |
@@ -146,16 +153,27 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
 | Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
+| Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
   meldende Person, ihre Sitzungskennung, ihren Namen und ihre E-Mail-Adresse (freiwillig,
-  seit #438) oder den Freitext. Verlangt jemand ohne Konto die Löschung dieser Angaben,
-  finden sich seine Meldungen nur über `content_reports.melder_email` oder `melder_name`,
-  per Hand in der Datenbank; ein Werkzeug dafür gibt es nicht. Die Adresse ohne Rücksicht
-  auf Groß- und Kleinschreibung suchen (`ILIKE`): Gespeichert ist sie, wie sie eingegeben
-  wurde, nur die Domain klein. Offene Meldungen haben keine
-  Frist, Name und E-Mail-Adresse bleiben also, bis die Meldung bearbeitet ist. Der Zähler am Beitrag
+  seit #438) oder den Freitext. Verlangt jemand ohne Konto Auskunft über diese Angaben
+  oder ihre Löschung, finden sich seine Meldungen nur über Name und E-Mail-Adresse:
+  in der Moderation unter „Nach Person“ (#494, `POST /api/v1/moderation/melder/meldungen`).
+  Gesucht wird die ganze Angabe ohne Rücksicht auf Groß- und Kleinschreibung (gespeichert
+  ist die Adresse, wie sie eingegeben wurde, nur die Domain normalisiert; die Suche
+  normalisiert die Eingabe genauso); sind beide angegeben,
+  müssen beide passen. Die Liste ist die Auskunft. „Angaben löschen“
+  (`POST /api/v1/moderation/melder/angaben-loeschen`) nimmt nur die gezeigten Treffer, die
+  noch zu den Angaben passen. Bearbeitete und abgewiesene gehen ganz; **offene** bleiben
+  stehen, weil sie noch Arbeit sind und der Beitrag sonst ungeprüft bliebe (Art. 16 DSA),
+  und verlieren Name, E-Mail-Adresse und das Tagespseudonym (Zufallswert wie beim
+  Abschluss). Wer nur nach dem Namen sucht, prüft vorher, ob alle Treffer dieselbe Person
+  sind, und bestätigt das in der Rückfrage; ohne diese Bestätigung löscht der Dienst nicht. Die Entscheidung kann der Person dann niemand mehr mitteilen; Grund und
+  Beschreibung der offenen Meldung bleiben bis zu ihrer Frist. Ohne solches Verlangen haben
+  offene Meldungen keine Frist, Name und E-Mail-Adresse bleiben also, bis die Meldung
+  bearbeitet ist. Der Zähler am Beitrag
   (`report_count`) bleibt; er trägt keinen Personenbezug. Das gilt auch für Meldungen zu
   gesperrten Beiträgen: Die Sperre selbst hat keine Frist, ihr Anlass in der Meldung
   (samt `resolution_notes`) geht nach 180 Tagen.
@@ -180,24 +198,37 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist.
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
+- **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
+  hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
+  Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
+  UTC-Tagen ab dem Anlegen, der tägliche Lauf löscht also 33 bis 35 Tage danach. Was „nie
+  benutzt“ heißt, steht unter „Einladungen“.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
   eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
 
 ## Feedback
 
 Die Tabelle `feedback` (Knopf „Feedback“ im Kopf der App, #343) trägt nur den Freitext,
-eine **optionale Kontaktangabe** und den UTC-Tag, keine Kennung und keine Sitzung, auch
-bei angemeldeten Personen. Über die Kennung aus „Ausgangspunkt“ ist Feedback deshalb
-nicht zu finden, und der Ablauf oben erfasst es nicht.
+eine **optionale Kontaktangabe**, den UTC-Tag und den Merker „erledigt“ (#425), keine
+Kennung und keine Sitzung, auch bei angemeldeten Personen. Über die Kennung aus
+„Ausgangspunkt“ ist Feedback deshalb nicht zu finden, und der Ablauf oben erfasst es
+nicht.
 
 - **Frist:** Nach 180 Tagen löscht ein täglicher Task die ganze Zeile samt Kontakt
   (`services/feedback_service.py`, `loeschen_im_takt`, `AUFBEWAHRUNG_TAGE`). Er hängt
-  nicht am abschaltbaren Usage-Cleanup.
+  nicht am abschaltbaren Bereinigungsjob. Die Frist gilt für offenes wie für
+  erledigtes Feedback; „erledigt“ ändert an ihr nichts.
+- **Einzeln:** Ein Admin löscht ein einzelnes Feedback samt Kontakt in der
+  Feedback-Karte des Admin-Dashboards („Löschen“, mit Rückfrage), etwa wenn es
+  beantwortet ist und nicht bis zur Frist bleiben soll (#425). Nur Admins
+  (`DELETE /api/v1/feedback/{id}`).
 - **Auf Antrag:** Die Person nennt die Kontaktangabe, die sie hinterlassen hat; ein
   Admin löscht die Zeilen mit dieser Angabe, ohne Rücksicht auf Groß- und
   Kleinschreibung und Leerzeichen am Rand
   (`DELETE FROM feedback WHERE lower(btrim(kontakt)) = lower(btrim('<angabe>'));`,
-  vorher mit `SELECT` prüfen).
+  vorher mit `SELECT` prüfen). Zeigt das `SELECT` nur einen Eintrag, geht das auch
+  über „Löschen“ im Admin-Dashboard (unter „Offen“ oder „Erledigt“; die Karte sucht
+  nicht nach Kontakt).
   Ohne Kontaktangabe ist Feedback keiner Person zuzuordnen. Nennt der Freitext selbst
   die Person, ist das wie bei Beiträgen eine Einzelfallprüfung.
 - Backups: wie unten unter „Was nicht gelöscht wird“, bis zu 28 Tage.
@@ -220,6 +251,13 @@ und der Ablauf oben erfasst die Tabelle nicht.
   steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
   Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
   Zähler vergleichen.
+- **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): Mail-Adresse
+  nicht bestätigt, Pflichtaktion „Terms and Conditions“ offen, kein Passwort, keine
+  Verknüpfung mit einem Identity Provider (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
+  angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
+  sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
+  unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
+  Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht.
 
 ## Vier Fallen
 
@@ -276,7 +314,7 @@ und der Ablauf oben erfasst die Tabelle nicht.
   (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
   abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
   und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
-  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_USAGE_CLEANUP=false`
+  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=false`
   entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
   ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
   eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
@@ -288,10 +326,11 @@ und der Ablauf oben erfasst die Tabelle nicht.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
-  verdichtet der tägliche Bereinigungsjob (`services/cleanup/usage_cleanup_service.py`,
+  verdichtet der tägliche Bereinigungsjob (`services/cleanup/bereinigungsjob.py`,
   derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
   Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
-  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=true` (Standard); abgeschaltet gilt auch diese
+  `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=true` (Standard; der frühere Name
+  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP` gilt weiter); abgeschaltet gilt auch diese
   Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
   Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
 - **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen,
@@ -302,7 +341,8 @@ und der Ablauf oben erfasst die Tabelle nicht.
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
   zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events`) eine Aussage
   heute schon gezählt haben, liegt nur im Arbeitsspeicher (als SHA-256-Prüfwert) und wird
-  um Mitternacht (UTC) verworfen. Wochen älter als acht löscht ein täglicher Task von
+  um Mitternacht (UTC) verworfen; bei Besuchern ebenso ein Prüfwert aus Anschluss-Prüfwert
+  (Anschluss mit dem Tagesschlüssel) und Aussage, damit je Anschluss höchstens eine Person zählt (#496). Wochen älter als acht löscht ein täglicher Task von
   selbst (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
 - **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
   Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen

@@ -1,8 +1,9 @@
 """
 Unit-Tests fuer Feedback an das Team (#343).
 
-Das Repository ist gemockt. Geprueft werden der Tag beim Senden, die Frist von
-AUFBEWAHRUNG_TAGE und der Hintergrund-Task, der nach einem Fehler weiterlaeuft.
+Das Repository ist gemockt. Geprueft werden der Tag beim Senden, Erledigt-Setzen
+und Einzelloeschen (#425), die Frist von AUFBEWAHRUNG_TAGE und der Hintergrund-Task,
+der nach einem Fehler weiterlaeuft.
 """
 
 import asyncio
@@ -48,13 +49,52 @@ class TestNeueste:
     def test_neueste_liefert_eintraege_ohne_zeilenobjekt(self, repository):
         kennung = uuid.uuid4()
         repository.neueste.return_value = [
-            SimpleNamespace(id=kennung, text="Gut", kontakt=None, eingegangen_am=HEUTE)
+            SimpleNamespace(
+                id=kennung,
+                text="Gut",
+                kontakt=None,
+                eingegangen_am=HEUTE,
+                erledigt=False,
+            )
         ]
 
         eintraege = FeedbackService(repository).neueste(limit=5)
 
-        repository.neueste.assert_called_once_with(5)
-        assert eintraege == [FeedbackEintrag(kennung, "Gut", None, HEUTE)]
+        repository.neueste.assert_called_once_with(5, None)
+        assert eintraege == [FeedbackEintrag(kennung, "Gut", None, HEUTE, False)]
+
+    def test_neueste_reicht_den_filter_weiter(self, repository):
+        repository.neueste.return_value = []
+
+        FeedbackService(repository).neueste(limit=5, erledigt=True)
+
+        repository.neueste.assert_called_once_with(5, True)
+
+
+class TestErledigtUndLoeschen:
+    def test_erledigt_setzen_liefert_eintrag_ohne_zeilenobjekt(self, repository):
+        kennung = uuid.uuid4()
+        repository.erledigt_setzen.return_value = SimpleNamespace(
+            id=kennung, text="Gut", kontakt=None, eingegangen_am=HEUTE, erledigt=True
+        )
+
+        eintrag = FeedbackService(repository).erledigt_setzen(kennung, True)
+
+        repository.erledigt_setzen.assert_called_once_with(kennung, True)
+        assert eintrag == FeedbackEintrag(kennung, "Gut", None, HEUTE, True)
+
+    def test_erledigt_setzen_fuer_unbekanntes_feedback(self, repository):
+        repository.erledigt_setzen.return_value = None
+
+        assert FeedbackService(repository).erledigt_setzen(uuid.uuid4(), True) is None
+
+    @pytest.mark.parametrize("gefunden", [True, False])
+    def test_loeschen_meldet_ob_es_das_feedback_gab(self, repository, gefunden):
+        kennung = uuid.uuid4()
+        repository.loeschen.return_value = gefunden
+
+        assert FeedbackService(repository).loeschen(kennung) is gefunden
+        repository.loeschen.assert_called_once_with(kennung)
 
 
 class TestFrist:

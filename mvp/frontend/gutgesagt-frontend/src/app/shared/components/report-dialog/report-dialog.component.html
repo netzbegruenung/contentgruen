@@ -46,7 +46,7 @@
              (blur)="emailVerlassen = true"
              [attr.aria-invalid]="emailFehlerZeigen"
              [attr.aria-describedby]="emailFehlerZeigen ? 'melder-email-fehler' : null" />
-      <mat-hint *ngIf="!emailFehlerZeigen">Nur wenn du unsere Entscheidung erfahren willst.</mat-hint>
+      <mat-hint *ngIf="!emailFehlerZeigen">Nur wenn du Bestätigung und Entscheidung per E-Mail willst.</mat-hint>
     </mat-form-field>
     <!-- Erst nach dem Verlassen des Feldes, sonst kündigt ein Screenreader den Fehler bei jedem Zeichen an. -->
     <p *ngIf="emailFehlerZeigen" id="melder-email-fehler" class="feld-fehler" role="alert">Das ist keine E-Mail-Adresse.</p>
@@ -77,7 +77,7 @@
     <p>Deine Meldung ist eingegangen.</p>
     <p class="sub-message">
       Menschen aus unserem Team prüfen sie.
-      <ng-container *ngIf="mitEmail">Unsere Entscheidung teilen wir dir per E-Mail mit.</ng-container>
+      <ng-container *ngIf="mitEmail">Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.</ng-container>
     </p>
   </div>
 

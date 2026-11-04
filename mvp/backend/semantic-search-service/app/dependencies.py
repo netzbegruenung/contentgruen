@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional, TYPE_CHECKING
 from fastapi import Depends, Header, HTTPException
 
@@ -15,6 +16,8 @@ from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
+from services.beitrag_laden import BeitragLader, beitrag_laden
+from repositories.interfaces.content_repository import IContentRepository
 from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
@@ -44,10 +47,11 @@ from services.gegenlesen.gegenlesen_service import (
     GegenlesenService,
     lade_statt_sag_liste,
 )
+from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from services.loeschfristen_service import LoeschfristenService
 from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
-from repositories.raw_input_repository import get_raw_input_repository
+from repositories.einwurf_repository import get_einwurf_repository
 from repositories.sperre_repository import get_sperre_repository
 from core.logging import get_logger
 
@@ -156,7 +160,7 @@ def get_bilanz_service(
     return BilanzService(
         get_search_tracking_repository(),
         get_usage_repository(),
-        settings.usage_retention_days if settings.enable_usage_cleanup else None,
+        settings.usage_retention_days if settings.enable_bereinigungsjob else None,
     )
 
 
@@ -180,26 +184,30 @@ def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
 
 
-def get_einladung_service() -> EinladungService:
-    """
-    Ohne Zugang zur Keycloak-Admin-Schnittstelle lassen sich Einladungen verwalten,
-    aber nicht einloesen (503); so laeuft es im Dev-Stack.
-    """
-    konten = None
-    if (
+def _keycloak_konten() -> Optional[KeycloakKonten]:
+    """Ohne Zugang zur Keycloak-Admin-Schnittstelle None; so laeuft es im Dev-Stack."""
+    if not (
         settings.keycloak_url
         and settings.keycloak_admin_client_id
         and settings.keycloak_admin_client_secret
     ):
-        konten = KeycloakKonten(
-            basis_url=settings.keycloak_url,
-            realm=settings.keycloak_realm,
-            client_id=settings.keycloak_admin_client_id,
-            client_secret=settings.keycloak_admin_client_secret,
-            app_client_id=settings.keycloak_app_client_id,
-            app_url=settings.app_url,
-        )
-    return EinladungService(get_einladung_repository(), konten)
+        return None
+    return KeycloakKonten(
+        basis_url=settings.keycloak_url,
+        realm=settings.keycloak_realm,
+        client_id=settings.keycloak_admin_client_id,
+        client_secret=settings.keycloak_admin_client_secret,
+        app_client_id=settings.keycloak_app_client_id,
+        app_url=settings.app_url,
+    )
+
+
+def get_einladung_service() -> EinladungService:
+    """
+    Ohne Zugang zur Keycloak-Admin-Schnittstelle lassen sich Einladungen verwalten,
+    aber nicht einloesen (503).
+    """
+    return EinladungService(get_einladung_repository(), _keycloak_konten())
 
 
 _gegenlesen_service: Optional[GegenlesenService] = None
@@ -213,6 +221,19 @@ def get_gegenlesen_service() -> GegenlesenService:
             statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
         )
     return _gegenlesen_service
+
+
+_kuerzungsvorschlag_service: Optional[KuerzungsvorschlagService] = None
+
+
+def get_kuerzungsvorschlag_service() -> KuerzungsvorschlagService:
+    """Einmal je Prozess; teilt sich das Sprachmodell mit dem Gegenlesen (#403)."""
+    global _kuerzungsvorschlag_service
+    if _kuerzungsvorschlag_service is None:
+        _kuerzungsvorschlag_service = KuerzungsvorschlagService(
+            werkzeuge=SPRACHWERKZEUGE
+        )
+    return _kuerzungsvorschlag_service
 
 
 def get_moderation_service() -> ModerationService:
@@ -230,21 +251,42 @@ def get_moderation_service() -> ModerationService:
 def get_loeschfristen_service() -> LoeschfristenService:
     return LoeschfristenService(
         get_content_report_repository(),
-        get_raw_input_repository(),
+        get_einwurf_repository(),
         get_moderation_repository(),
         get_moderation_service(),
         get_sperre_repository(),
+        # Ohne Zugang zur Keycloak-Admin-Schnittstelle bleiben Konten im Realm unberuehrt.
+        _keycloak_konten(),
     )
+
+
+def get_content_repository(
+    settings: Settings = Depends(get_settings),
+) -> IContentRepository:
+    """Das aggregierte Content-Repository: liest und loescht jeden Beitragstyp."""
+    return QdrantRepositoryFactory().create_content_repository(settings)
+
+
+def get_beitrag_laden(settings: Settings = Depends(get_settings)) -> BeitragLader:
+    """
+    ``beitrag_laden`` ueber das aggregierte Repository, fuer Nutzung und Stimmen.
+
+    Das Repository entsteht erst beim Laden, nicht beim Aufloesen der Dependency:
+    Scheitert es, faengt das ``try`` des Endpunkts den Fehler wie einen Ausfall des
+    Suchindex (die Stimme zaehlt trotzdem, die Nutzung antwortet mit ihrem 500).
+    """
+
+    async def laden(content_id: uuid.UUID):
+        return await beitrag_laden(content_id, get_content_repository(settings))
+
+    return laden
 
 
 def get_beitrag_loeschen_service(
-    settings: Settings = Depends(get_settings),
+    repository: IContentRepository = Depends(get_content_repository),
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
-    return BeitragLoeschenService(
-        QdrantRepositoryFactory().create_content_repository(settings),
-        get_moderation_repository(),
-    )
+    return BeitragLoeschenService(repository, get_moderation_repository())
 
 
 def get_commentary_service() -> CommentaryService:

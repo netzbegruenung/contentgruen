@@ -9,7 +9,7 @@ import { AddImageComponent } from './add-image.component';
 import { ImageService } from '../services/image.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 
 describe('AddImageComponent', () => {
   let fixture: ComponentFixture<AddImageComponent>;
@@ -33,17 +33,8 @@ describe('AddImageComponent', () => {
     fixture.detectChanges();
   });
 
-  it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
-    const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
-      'a[href="/nutzungsbedingungen"]'
-    );
-
-    expect(link).toBeTruthy();
-    expect(link!.target).toBe('_blank');
-    expect(link!.closest('p')!.classList).toContain('submit-hint');
-    expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
-    );
+  it('zeigt über dem Absende-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
+    erwarteCc0Hinweis(fixture.nativeElement);
   });
 
   it('behaelt nach gescheitertem Speichern die Eingaben und sendet sie mit Erneut versuchen noch einmal', fakeAsync(() => {

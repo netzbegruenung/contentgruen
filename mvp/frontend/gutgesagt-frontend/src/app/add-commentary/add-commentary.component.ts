@@ -2,7 +2,6 @@ import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleCh
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatSelectModule } from '@angular/material/select';
@@ -19,7 +18,7 @@ import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { typFarbe } from '../shared/content-type-registry';
 import { STIL_LABEL, Stil, ZWECK_LABEL, ZWECK_STANDARD, Zweck, stileFuer, stilPasst } from '../shared/zweck-stil';
 import { einzeilig } from '../beitragsformular/einzeilig';
@@ -31,10 +30,19 @@ import { Thema } from '../services/dtos/themenDtos';
 import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
+import { KuerzungsvorschlagComponent } from '../beitragsformular/kuerzungsvorschlag/kuerzungsvorschlag.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
+import { DublettenHinweisComponent } from '../beitragsformular/dublette/dubletten-hinweis.component';
+import {
+  DublettenTexte,
+  Vorhanden as VorhandenBeitrag,
+  dublettenHinweis,
+  offeneEntscheidung,
+  vorhandenAus,
+} from '../beitragsformular/dublette/dublette';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -79,23 +87,18 @@ export const VORHANDEN_WEG = 'Den vorhandenen Kommentar gibt es nicht mehr. Du k
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';
 
-/**
- * Ein schon vorhandener, sehr aehnlicher Kommentar - der eigene waere seine Dublette.
- * Angelegt wurde nichts; die Person entscheidet.
- */
-export interface Vorhanden {
-  id: string;
-  /** Titel, soweit das Backend ihn nennt. */
-  titel: string | null;
-  /** Von derselben Person: Zustimmen sagt dann nichts, nehmen schon. */
-  eigen: boolean;
-  /** Text der Aussage, mit der er nach dem Nehmen verknuepft ist; sonst null. */
-  aussage: string | null;
-  /** Die Anfrage, die ihn gefunden hat; Nehmen schickt sie mit vorhanden_nehmen noch einmal. */
-  anfrage: AddCommentaryRequest;
-  /** Wie die Person ihn gewaehlt hat; null, solange sie nicht entschieden hat. */
-  gewaehlt: 'zugestimmt' | 'genommen' | null;
-}
+/** Die vorhandene Dublette mit der Anfrage, die sie gefunden hat (beitragsformular/dublette). */
+export type Vorhanden = VorhandenBeitrag<AddCommentaryRequest>;
+
+/** Die Hinweise zur Dublette, fuer den gemeinsamen Baustein. */
+export const DUBLETTEN_TEXTE: DublettenTexte = {
+  hinweis: DUBLETTE_HINWEIS,
+  fremdHinweis: DUBLETTE_FREMD_HINWEIS,
+  fremdZuordnen: DUBLETTE_FREMD_ZUORDNEN,
+  zugestimmt: ZUGESTIMMT_HINWEIS,
+  genommen: GENOMMEN_HINWEIS,
+  verknuepft: dubletteVerknuepftHinweis,
+};
 
 /**
  * Die optionalen Angaben zum Kommentar: Zweck mit Standard, Stil ohne Vorgabe (#357),
@@ -178,18 +181,19 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
     TextFieldModule,
     MatButtonToggleModule,
     MatSelectModule,
-    RouterLink,
     BeitragskarteComponent,
     ReferenceInputComponent,
     AntwortAufComponent,
     FormularHilfeComponent,
     GegenlesenComponent,
+    KuerzungsvorschlagComponent,
     FormularLeisteComponent,
     ThemenAuswahlComponent,
+    Cc0HinweisComponent,
+    DublettenHinweisComponent,
   ],
 })
 export class AddCommentaryComponent implements OnChanges {
-  readonly consentHinweis = CONSENT_HINWEIS;
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('commentary');
   readonly titelMax = TITEL_MAX;
@@ -262,7 +266,7 @@ export class AddCommentaryComponent implements OnChanges {
 
   /** Zu entscheiden ist, solange es einen vorhandenen gibt und noch nichts gewaehlt ist. */
   get offeneEntscheidung(): boolean {
-    return !!this.vorhanden && !this.vorhanden.gewaehlt;
+    return offeneEntscheidung(this.vorhanden);
   }
 
   /** Zustimmen nur einem fremden Kommentar: sich selbst zuzustimmen sagt nichts. */
@@ -280,16 +284,7 @@ export class AddCommentaryComponent implements OnChanges {
   }
 
   get dublettenHinweis(): string {
-    const vorhanden = this.vorhanden;
-    if (vorhanden?.gewaehlt === 'zugestimmt') {
-      return ZUGESTIMMT_HINWEIS;
-    }
-    if (vorhanden?.gewaehlt === 'genommen') {
-      return vorhanden.aussage ? dubletteVerknuepftHinweis(vorhanden.aussage) : GENOMMEN_HINWEIS;
-    }
-    return vorhanden && !vorhanden.eigen && this.mitAussage
-      ? `${DUBLETTE_FREMD_HINWEIS} ${DUBLETTE_FREMD_ZUORDNEN}`
-      : DUBLETTE_HINWEIS;
+    return dublettenHinweis(this.vorhanden, DUBLETTEN_TEXTE, this.mitAussage);
   }
 
   private vorschauCache?: {
@@ -487,6 +482,13 @@ export class AddCommentaryComponent implements OnChanges {
     this.kurzFokussieren = true;
   }
 
+  /** Die Person übernimmt den Kürzungsvorschlag (#403) als Kurzfassung. */
+  kurzUebernehmen(vorschlag: string): void {
+    const kurz = this.commentaryForm.get('kurz')!;
+    kurz.setValue(vorschlag);
+    kurz.markAsDirty();
+  }
+
   speichern(): void {
     this.absenden(null);
   }
@@ -531,11 +533,11 @@ export class AddCommentaryComponent implements OnChanges {
     this.commentaryService.addCommentary(request).subscribe({
       next: (antwort) => {
         this.speichert = false;
-        if (antwort.dublette) {
+        if (antwort.vorhanden) {
           // Nichts angelegt und nichts verknuepft: Das Formular bleibt, der Hinweis
           // zeigt den vorhandenen. Kein Erfolg - ein Einwurf aus dem Fangkorb bleibt,
           // wie er war.
-          this.vorhandenZeigen(request, antwort);
+          this.vorhanden = vorhandenAus(request, antwort);
           return;
         }
         this.responseId = antwort.id;
@@ -637,20 +639,6 @@ export class AddCommentaryComponent implements OnChanges {
     });
   }
 
-  private vorhandenZeigen(anfrage: AddCommentaryRequest, antwort: AddCommentaryResponse): void {
-    // Ueber diesen vorhandenen hat die Person noch nicht entschieden: Gemerkt wird die
-    // Anfrage ohne die Entscheidung, die sie hierher gebracht hat.
-    const { trotz_dublette_von, vorhanden_nehmen, ...ohneEntscheidung } = anfrage;
-    this.vorhanden = {
-      id: antwort.id,
-      titel: antwort.vorhanden_titel ?? null,
-      eigen: antwort.vorhanden_eigen === true,
-      aussage: null,
-      anfrage: ohneEntscheidung,
-      gewaehlt: null,
-    };
-  }
-
   /**
    * Den eigenen vorhandenen Kommentar nehmen, ohne Stimme und ohne zweite Kopie. Mit
    * Aussage haengt ihn erst diese Wahl an sie: dieselbe Anfrage noch einmal, mit
@@ -678,9 +666,9 @@ export class AddCommentaryComponent implements OnChanges {
     this.commentaryService.addCommentary(nehmen).subscribe({
       next: (antwort) => {
         this.nimmt = false;
-        if (antwort.dublette && antwort.id !== vorhanden.id) {
+        if (antwort.vorhanden && antwort.id !== vorhanden.id) {
           // Inzwischen ist ein anderer vorhanden: Die Person sieht erst ihn.
-          this.vorhandenZeigen(nehmen, antwort);
+          this.vorhanden = vorhandenAus(nehmen, antwort);
           return;
         }
         if (antwort.verknuepft !== true || !antwort.statement_text) {

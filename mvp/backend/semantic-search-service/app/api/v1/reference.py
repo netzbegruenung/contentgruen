@@ -14,7 +14,10 @@ from dtos.reference import (
     GetReferenceResponse,
 )
 from services.beitrag_fuer_aufrufer import HERKUNFT, Aufrufer, als_responses
-from services.content.reference_service import ReferenceService
+from services.content.reference_service import (
+    HerkunftsadresseUngueltig,
+    ReferenceService,
+)
 from domain.models.reference import Reference
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
@@ -22,6 +25,7 @@ from middleware.rate_limiter import (
     check_reference_creation_rate_limit,
     check_reference_search_rate_limit,
 )
+from core.fehler import INTERNER_FEHLER
 
 
 router = APIRouter()
@@ -56,7 +60,7 @@ async def get_by_id(
         logger.error(
             f"Error fetching reference with id {reference_id}: {type(e).__name__}"
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.post(
@@ -105,7 +109,7 @@ async def search_references(
 
     except Exception as e:
         logger.error(f"Error in search_references: {type(e).__name__}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.post(
@@ -156,9 +160,12 @@ async def add_reference(
 
     except HTTPException:
         raise
+    except HerkunftsadresseUngueltig as e:
+        logger.warning(f"Validation error in add_reference: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except Exception as e:
         logger.error(f"Error in add_reference: {type(e).__name__}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Note: check-and-add functionality has been merged into the /add endpoint

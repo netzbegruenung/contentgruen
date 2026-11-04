@@ -139,11 +139,11 @@ Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitra
 _Avoid_: Tooltip, Anleitung, Hilfetext
 
 **CC0-Hinweis**:
-Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und bestätigt die verlinkten Nutzungsbedingungen. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
+Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und stimmt den Nutzungsbedingungen zu; beide sind verlinkt. Über ihn sind die Nutzungsbedingungen einbezogen (#415), nicht durch bloße Nutzung. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
 **Stand der Nutzungsbedingungen**:
-Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm beim Anmelden zugestimmt hat; eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
+Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (mit dem nächsten Absenden unter dem CC0-Hinweis, NB §10); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
 **Schreibregel**:
@@ -291,8 +291,12 @@ _Avoid_: Prüfung, Lektorat, Check, Validierung
 Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
+**Kürzungsvorschlag**:
+Eine Kurzfassung, die das Formular auf Klick aus den eigenen Sätzen eines Kommentars vorschlägt, der länger ist als die Kurzfassung sein darf, ohne KI: Die zentralen Sätze bleiben, Einschübe (Klammern, Gedankenstriche, Appositionen) fallen weg; Relativsätze, Verneinungen und Zahlen bleiben stehen, und ein Satz mit Verneinung fällt nie weg. Er besteht nur aus Wörtern des Originals in ihrer Reihenfolge und formuliert nichts um. Die Person übernimmt oder verwirft ihn; nichts wird automatisch ersetzt, und gespeichert wird er erst mit dem Kommentar.
+_Avoid_: Zusammenfassung, KI-Vorschlag (der kommt von einem Sprachmodell), Zuschnitt
+
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Eine E-Mail-Adresse braucht es nur, damit ein Admin der Person die Entscheidung über die Meldung mitteilen kann. Den Eingang bestätigt die App sofort, eine Mail dazu gibt es nicht.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Verlangt die Person Auskunft oder Löschung, findet ein Admin ihre Meldungen über genau diese Angaben; Löschen entfernt erledigte Meldungen ganz, offene behalten Grund und Beschreibung ohne Name, E-Mail-Adresse und Tagespseudonym. Eine E-Mail-Adresse braucht es nur für die Mails an die Person: Den Eingang bestätigt die App sofort und, mit Adresse, auch eine Mail; die Entscheidung über die Meldung (gesperrt, abgewiesen oder Beitrag entfernt) samt den Möglichkeiten, dagegen vorzugehen, kommt per Mail, sobald ein Admin entscheidet oder der Beitrag endgültig entfernt wird. Ohne eingerichteten Mailversand teilt ein Admin sie per Hand mit.
 _Avoid_: Report, Flag, Beschwerde
 
 **Erklärung guten Glaubens**:
@@ -304,7 +308,7 @@ Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder un
 _Avoid_: Kategorie, Report-Grund
 
 **Feedback**:
-Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es; nach der Frist im Löschkonzept wird es gelöscht.
+Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es. Feedback ist offen, bis ein Admin es als erledigt markiert; das lässt sich zurücknehmen. Nach der Frist im Löschkonzept wird es gelöscht, offen oder erledigt; vorher kann ein Admin es einzeln löschen.
 _Avoid_: Kontaktformular, Rückmeldung (in `docs/VISION.md` die Rückmeldung zur Nutzungsstatistik der eigenen Beiträge), Ticket
 
 **Dublette**:
@@ -320,7 +324,7 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Suche ohne Treffer**:
-Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen. Unterschieden werden die Personen über ihr Tagespseudonym, deshalb zählt dieselbe Person an zwei Tagen zweimal.
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen. Unterschieden werden die Personen über ihr Tagespseudonym, deshalb zählt dieselbe Person an zwei Tagen zweimal. Je Anschluss und Aussage zählt am Tag höchstens ein Besucher als Person, damit ein Wechsel des User-Agents allein keine zweite Person ergibt; mehrere Besucher hinter demselben Anschluss zählen deshalb als eine.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
@@ -332,7 +336,7 @@ Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die 
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
-Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
+Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme; bei Suchen ohne Treffer zählt je Anschluss höchstens ein Besucher.
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Besuchermerkmal**:
@@ -340,12 +344,16 @@ Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei
 _Avoid_: Fingerprint
 
 **Tagesschlüssel**:
-Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet. Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
 _Avoid_: Salt, Secret
 
 **Anschluss**:
-Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein.
+Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein und begrenzt bei Suchen ohne Treffer die Personen: je Anschluss und Aussage höchstens eine am Tag.
 _Avoid_: IP, Netz
+
+**Anschluss-Prüfwert**:
+Ein Wert, der bei Suchen ohne Treffer den Anschluss eines Besuchers an einem Tag wiedererkennbar macht: aus dem Anschluss allein (ohne User-Agent) und dem Datum mit dem Tagesschlüssel berechnet. Kein Tagespseudonym, denn er steht für einen Anschluss, nicht für eine Person. Er liegt nur im Arbeitsspeicher, in der Merkliste des Tages, und wird um Mitternacht verworfen; gespeichert oder protokolliert wird er nie. Angemeldete haben keinen.
+_Avoid_: Anschluss-Pseudonym, Anschluss-Tagespseudonym
 
 **Sitzungskennung**:
 Nur noch historisch: die Zufallskennung, die die SPA bis #446 für 30 Tage im Browser ablegte und bei Suche, Meldung und Nutzung mitschickte. Seit #446 gibt es sie nicht mehr; ältere Nutzungsereignisse tragen sie bis zu ihrer Frist, ältere Meldungen bis zu ihrem Abschluss (Spalten `session_id`, `reported_by_session_id`). Für Besucher heute: Tagespseudonym.
@@ -432,8 +440,12 @@ _Avoid_: Beta-Account, manueller User, Managed User
 Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Mit dem eigenen Realm von Gut gesagt (#429) läuft sie, sobald die App darauf umgestellt ist, über diesen Realm, in dem die Netzbegrünung Identity Provider ist; die Kennung ist dann die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
 _Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
 
+**Realm**:
+Der eigene Bereich von Gut gesagt im Identitätsdienst Keycloak, der Realm „gutgesagt“ (#429, ADR 0006). Darin liegen die Konten aus dem Netzbegrünung-Login und aus Einladungen, mit Mail-Adresse als Benutzername, Passwort, Mail-Bestätigung und Zustimmung zu den Nutzungsbedingungen; Gut gesagt selbst speichert davon nur die Kennung und den Anzeigenamen. In Texten für Nutzende, etwa der Datenschutzerklärung, heißt er Anmeldedienst.
+_Avoid_: Mandant, Tenant, Keycloak (für den Realm allein)
+
 **Einladung**:
-Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends.
+Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends. Ein Konto aus einer Einladung, dessen Link nie benutzt wurde (kein Passwort, Adresse nie bestätigt), wird nach der Frist im Löschkonzept gelöscht.
 _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 
 **Einlösung**:
@@ -471,6 +483,10 @@ _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 **Löschfrist**:
 Wie lange eine Datenart gespeichert bleibt, bevor ein täglicher Task sie von selbst löscht. Die Fristen stehen im Löschkonzept. Eine Löschfrist ist etwas anderes als das Löschen auf Antrag einer Person.
 _Avoid_: Retention, Aufbewahrungszeit
+
+**Bereinigungsjob**:
+Der tägliche Task für die Fristen der Nutzungsereignisse und der Suchereignisse: Er löscht Nutzungsereignisse nach ihrer Frist, verdichtet ältere Suchereignisse zum Tageszähler der Suchen und schreibt abgeschlossene Tage gemischt neu. Ein Schalter schaltet ihn ganz ab; dann gelten diese Fristen nicht. Die übrigen Löschfristen hängen nicht an ihm.
+_Avoid_: Usage-Cleanup, Cleanup-Service
 
 **Admin**:
 Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Widersprüche prüft, Einwürfe verwirft, Einladungen verwaltet und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.

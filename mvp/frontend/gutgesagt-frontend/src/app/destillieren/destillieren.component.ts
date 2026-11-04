@@ -29,6 +29,7 @@ import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.servi
 import { KartenDaten, ausEinwurf, istSichtbar, istVerwerfbar } from '../beitragskarte/karten-daten';
 import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -58,7 +59,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 @Component({
   selector: 'app-destillieren',
   standalone: true,
-  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent],
+  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent, Cc0HinweisComponent],
   templateUrl: './destillieren.component.html',
   styleUrls: ['./destillieren.component.css'],
 })

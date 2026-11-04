@@ -34,7 +34,7 @@ from api.v1.statement import router as statement_router
 from api.v1.generic_text import router as generic_text_router
 from api.v1.post import router as post_router
 from api.v1.image import router as image_router
-from api.v1.raw_input import router as raw_input_router
+from api.v1.einwurf import router as einwurf_router
 from api.v1.seeding import router as seeding_router
 from api.v1.usage import router as usage_router
 from api.v1.voting import router as voting_router
@@ -44,7 +44,8 @@ from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
 from api.v1.einladungen import router as einladungen_router
 from api.v1.gegenlesen import router as gegenlesen_router
-from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
+from api.v1.kuerzungsvorschlag import router as kuerzungsvorschlag_router
+from services.cleanup.bereinigungsjob import bereinigungsjob_starten
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
     loeschen_im_takt,
@@ -64,6 +65,7 @@ from utils.rate_limiter import (
     einladung_rate_limiter,
     feedback_rate_limiter,
     gegenlesen_rate_limiter,
+    kuerzungsvorschlag_rate_limiter,
     report_rate_limiter,
     search_query_statement_rate_limiter,
 )
@@ -111,10 +113,10 @@ async def lifespan(app: FastAPI):
         initialize_services()
         logger.info("✅ Content services initialized")
 
-        # Start cleanup scheduler for usage data retention
-        logger.info("Starting usage data cleanup scheduler...")
-        start_cleanup_scheduler()
-        logger.info("✅ Cleanup scheduler started")
+        # Der taegliche Bereinigungsjob (Fristen der Nutzungs- und Suchereignisse)
+        logger.info("Starting Bereinigungsjob...")
+        bereinigungsjob_starten()
+        logger.info("✅ Bereinigungsjob started")
 
         # Start rate limiter cleanup task
         logger.info("Starting rate limiter cleanup task...")
@@ -131,13 +133,14 @@ async def lifespan(app: FastAPI):
                     einladung_rate_limiter,
                     einladung_pruefen_rate_limiter,
                     gegenlesen_rate_limiter,
+                    kuerzungsvorschlag_rate_limiter,
                 ]
             )
         )
         logger.info("✅ Rate limiter cleanup task started")
 
         # Kennzahl "Suchen ohne Treffer": alte Wochen taeglich loeschen, unabhaengig
-        # vom abschaltbaren Usage-Cleanup (services/suchen_ohne_treffer_service.py).
+        # vom abschaltbaren Bereinigungsjob (services/suchen_ohne_treffer_service.py).
         app.state.suchen_ohne_treffer_loeschen = asyncio.create_task(
             loeschen_im_takt(
                 get_suchen_ohne_treffer_repository(), get_personen_des_tages()
@@ -145,7 +148,7 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✅ Searches-without-hits cleanup task started")
 
-        # Feedback nach der Frist loeschen, ebenso unabhaengig vom Usage-Cleanup
+        # Feedback nach der Frist loeschen, ebenso unabhaengig vom Bereinigungsjob
         # (services/feedback_service.py).
         app.state.feedback_loeschen = asyncio.create_task(
             feedback_loeschen_im_takt(get_feedback_service())
@@ -158,7 +161,7 @@ async def lifespan(app: FastAPI):
         app.state.gegenlesen_vorladen = asyncio.create_task(_gegenlesen_vorladen())
 
         # Loeschfristen fuer Meldungen, Einwuerfe und geloeschte Beitraege, ebenso
-        # unabhaengig vom Usage-Cleanup (services/loeschfristen_service.py).
+        # unabhaengig vom Bereinigungsjob (services/loeschfristen_service.py).
         app.state.loeschfristen = asyncio.create_task(
             loeschfristen_im_takt(get_loeschfristen_service())
         )
@@ -257,7 +260,7 @@ app.include_router(
 )
 app.include_router(post_router, prefix="/api/v1/post", tags=["post"])
 app.include_router(image_router, prefix="/api/v1/image", tags=["image"])
-app.include_router(raw_input_router, prefix="/api/v1/rawinput", tags=["rawinput"])
+app.include_router(einwurf_router, prefix="/api/v1/rawinput", tags=["rawinput"])
 app.include_router(seeding_router, prefix="/api/v1", tags=["seeding"])
 app.include_router(usage_router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(voting_router, prefix="/api/v1/voting", tags=["voting"])
@@ -269,6 +272,11 @@ app.include_router(
     einladungen_router, prefix="/api/v1/einladungen", tags=["einladungen"]
 )
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
+app.include_router(
+    kuerzungsvorschlag_router,
+    prefix="/api/v1/kuerzungsvorschlag",
+    tags=["kuerzungsvorschlag"],
+)
 
 # Betriebskennzahlen unter /metrics (#420). Zuletzt hinzugefuegt, also aussen: Die
 # Middleware zaehlt auch, was das Rate-Limit abweist. Am BFF ist /metrics gesperrt.

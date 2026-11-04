@@ -8,10 +8,12 @@ einem alten Link; das zweite ist ein Fehler im Bestand und wird geloggt.
 
 import logging
 import uuid
+from typing import Awaitable, Callable, Optional
 
 from pydantic import ValidationError
 
-from core.config import Settings
+from domain.models.content import ContentDbEntry
+from repositories.interfaces.content_repository import IContentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -23,22 +25,26 @@ class BeitragUnlesbar(Exception):
     """
 
 
-async def beitrag_laden(content_id: uuid.UUID, settings: Settings):
+# Was die Endpunkte per Depends(get_beitrag_laden) bekommen: beitrag_laden, das
+# sich das aggregierte Repository erst beim Aufruf holt.
+BeitragLader = Callable[[uuid.UUID], Awaitable[Optional[ContentDbEntry]]]
+
+
+async def beitrag_laden(
+    content_id: uuid.UUID, repository: IContentRepository
+) -> Optional[ContentDbEntry]:
     """
-    Den Beitrag zu dieser ID, oder None, wenn es ihn nicht gibt.
+    Den Beitrag zu dieser ID aus ``repository`` (dem aggregierten
+    Content-Repository), oder None, wenn es ihn nicht gibt.
 
     Gesperrt, geloescht oder nie vorhanden heisst "nicht da". Gebraucht von der
     Nutzung (Existenz und Vergleich mit der zaehlenden Person, api/v1/usage.py) und
-    von den Stimmen (api/v1/voting.py).
+    von den Stimmen (api/v1/voting.py), beide ueber ``get_beitrag_laden`` in
+    dependencies.py.
 
     Raises:
     - BeitragUnlesbar, wenn der Datensatz existiert, aber nicht validiert.
     """
-    from repositories.implementations.qdrant.qdrant_repository_factory import (
-        QdrantRepositoryFactory,
-    )
-
-    repository = QdrantRepositoryFactory().create_content_repository(settings)
     try:
         return await repository.get(content_id)
     except ValidationError as fehler:

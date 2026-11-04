@@ -16,7 +16,7 @@ import {
   EinwurfSeite,
   Einwurf,
   Satz,
-  Verknuepfung,
+  AusformuliertIn,
   EinwurfService,
 } from '../services/einwurf.service';
 import { AuthService, UserInfo } from '../auth/auth.service';
@@ -46,7 +46,7 @@ function satz(id: string, user_id: string, sentence: string): Satz {
   return { id, user_id, sentence, updated_at: '2026-09-13T12:00:00Z' };
 }
 
-function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = `c-${draft_id}`): Verknuepfung {
+function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = `c-${draft_id}`): AusformuliertIn {
   return {
     content_id,
     content_type,
@@ -321,8 +321,15 @@ describe('FangkorbComponent', () => {
       const host: HTMLElement = fixture.nativeElement;
       host.style.display = 'block';
       host.style.width = '320px';
-      await document.fonts.ready;
       const woerter = Array.from(host.querySelectorAll('.tab-wort') as NodeListOf<HTMLElement>);
+      // Gemessen wird mit der Schrift, die die Tabs tatsaechlich nutzen; ohne Laden misst
+      // der Test je nach Reihenfolge der Suite die Ersatzschrift (#552).
+      await Promise.all(
+        woerter.map((wort) => {
+          const stil = getComputedStyle(wort);
+          return document.fonts.load(`${stil.fontWeight} ${stil.fontSize} ${stil.fontFamily}`);
+        }),
+      );
 
       expect(host.isConnected).toBeTrue();
       expect(woerter.length).toBe(2);

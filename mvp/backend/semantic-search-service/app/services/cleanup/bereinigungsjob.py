@@ -1,8 +1,8 @@
 """
-Background service for cleaning up old usage tracking data.
-Implements data retention policy for privacy compliance.
+Der taegliche Bereinigungsjob (Loeschkonzept): loescht Nutzungsereignisse nach
+ihrer Frist.
 
-Derselbe taegliche Job verdichtet Suchereignisse nach ihrer eigenen Frist zu
+Derselbe Job verdichtet Suchereignisse nach ihrer eigenen Frist zu
 Tageszaehlern der Suchen ohne Tagespseudonym (#289, siehe SearchTrackingRepository)
 und schreibt die Suchereignisse abgeschlossener Tage gemischt neu (#337).
 """
@@ -22,9 +22,11 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 
-class UsageCleanupService:
+class Bereinigungsjob:
     """
-    Service for managing automated cleanup of old usage data.
+    Der taegliche Bereinigungsjob: Fristen der Nutzungs- und der Suchereignisse und
+    das Mischen abgeschlossener Tage. Ein Schalter fuer alles:
+    ``enable_bereinigungsjob`` (core/config.py).
     """
 
     def __init__(self, retention_days: int = 90, search_event_retention_days: int = 90):
@@ -197,10 +199,10 @@ class UsageCleanupService:
 
 
 # Global cleanup service instance
-_cleanup_service: Optional[UsageCleanupService] = None
+_bereinigungsjob: Optional[Bereinigungsjob] = None
 
 
-def get_cleanup_service(retention_days: Optional[int] = None) -> UsageCleanupService:
+def get_bereinigungsjob(retention_days: Optional[int] = None) -> Bereinigungsjob:
     """
     Get or create the global cleanup service instance.
 
@@ -208,28 +210,28 @@ def get_cleanup_service(retention_days: Optional[int] = None) -> UsageCleanupSer
         retention_days: Days of data to retain (uses settings if not specified)
 
     Returns:
-        UsageCleanupService instance
+        Bereinigungsjob instance
     """
-    global _cleanup_service
+    global _bereinigungsjob
 
-    if _cleanup_service is None:
+    if _bereinigungsjob is None:
         days = retention_days or settings.usage_retention_days
-        _cleanup_service = UsageCleanupService(
+        _bereinigungsjob = Bereinigungsjob(
             retention_days=days,
             search_event_retention_days=settings.search_event_retention_days,
         )
 
-    return _cleanup_service
+    return _bereinigungsjob
 
 
-def start_cleanup_scheduler():
+def bereinigungsjob_starten():
     """
     Start the cleanup scheduler with default settings.
     Should be called during application startup.
     """
     # Check if cleanup is enabled
-    if not settings.enable_usage_cleanup:
-        logger.info("Usage cleanup is disabled in settings")
+    if not settings.enable_bereinigungsjob:
+        logger.info("Bereinigungsjob is disabled in settings")
         return
 
     # Get configuration from settings
@@ -237,5 +239,5 @@ def start_cleanup_scheduler():
     cleanup_minute = settings.cleanup_minute
 
     # Start the service
-    service = get_cleanup_service()
+    service = get_bereinigungsjob()
     service.start_scheduled_cleanup(hour=cleanup_hour, minute=cleanup_minute)

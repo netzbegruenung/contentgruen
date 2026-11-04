@@ -100,6 +100,13 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                     cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
                     cls._instance._init_instance(settings, einbettungsmodell)
+                    return cls._instance
+        if einbettungsmodell is not None and einbettungsmodell is not getattr(
+            cls._instance, "_vorgegebenes_modell", None
+        ):
+            logger.warning(
+                "QdrantEmbeddingsManager exists already; the passed embedding model is ignored"
+            )
         return cls._instance
 
     def __init__(
@@ -131,7 +138,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         self._client: Optional[QdrantClient] = None
         self._async_client: Optional[AsyncQdrantClient] = None
         self._model: Optional[SentenceTransformer] = None
-        self._einbettungsmodell = einbettungsmodell
+        self._vorgegebenes_modell = einbettungsmodell
         self._is_started = False
         self._initialized = True
         self.collection_name = (
@@ -164,8 +171,8 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                 torch.set_num_threads(threads)
                 logger.info(f"🧵 Torch threads for embeddings: {threads}")
 
-            if self._einbettungsmodell is not None:
-                self._model = self._einbettungsmodell
+            if self._vorgegebenes_modell is not None:
+                self._model = self._vorgegebenes_modell
             else:
                 logger.info(
                     "📥 Loading multilingual E5 model (this may take a while on first startup)..."
@@ -802,7 +809,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                 logger.error(
                     f"❌ Qdrant health check failed: {type(e).__name__}", exc_info=True
                 )
-            return {"status": "unhealthy", "error": error_msg}
+            return {"status": "unhealthy", "error": type(e).__name__}
 
 
 # Global shared manager instance

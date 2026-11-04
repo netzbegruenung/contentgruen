@@ -2,6 +2,7 @@
   <div class="header">
     <h2>Moderation</h2>
     <button
+      *ngIf="selectedStatus !== 'person'"
       mat-raised-button
       color="primary"
       (click)="loadReports()">
@@ -36,6 +37,10 @@
         <mat-icon>block</mat-icon>
         <span [matBadge]="offeneWidersprueche || null" matBadgeOverlap="false" matBadgeColor="warn"
               [attr.aria-label]="offeneWidersprueche ? 'Gesperrt, ' + offeneWidersprueche + ' offene Widersprüche' : null">Gesperrt</span>
+      </mat-button-toggle>
+      <mat-button-toggle value="person">
+        <mat-icon>person_search</mat-icon>
+        Nach Person
       </mat-button-toggle>
     </mat-button-toggle-group>
   </div>
@@ -102,13 +107,15 @@
     </div>
   </ng-container>
 
-  <div *ngIf="selectedStatus !== 'gesperrt' && !loading && !error && reports.length === 0" class="empty-state">
+  <app-meldungen-einer-person *ngIf="selectedStatus === 'person'"></app-meldungen-einer-person>
+
+  <div *ngIf="selectedStatus !== 'gesperrt' && selectedStatus !== 'person' && !loading && !error && reports.length === 0" class="empty-state">
     <mat-icon class="large-icon">check_circle</mat-icon>
     <h2>Keine Meldungen</h2>
     <p>In dieser Ansicht gibt es keine Meldungen.</p>
   </div>
 
-  <div *ngIf="selectedStatus !== 'gesperrt' && !loading && !error && reports.length > 0" class="reports-table">
+  <div *ngIf="selectedStatus !== 'gesperrt' && selectedStatus !== 'person' && !loading && !error && reports.length > 0" class="reports-table">
     <table mat-table [dataSource]="reports" class="mat-elevation-z2" multiTemplateDataRows>
       <!-- Expand Column -->
       <ng-container matColumnDef="expand">
@@ -148,7 +155,8 @@
             <span *ngIf="!report.reported_by_user_id && report.reported_by_session_id" class="anonymous">
               Anonym<ng-container *ngIf="melderQuelle(report.reported_by_session_id) as quelle"> ({{ quelle }})</ng-container>
             </span>
-            <!-- Angaben nach Art. 16 Abs. 2 DSA (#438): Die Entscheidung teilt ein Admin per Mail mit. -->
+            <!-- Angaben nach Art. 16 Abs. 2 DSA (#438). Bestaetigung und Entscheidung gehen per Mail
+                 vom Suchdienst (#493); der Link bleibt fuer Rueckfragen und fuer den Fall ohne Mailversand. -->
             <div *ngIf="report.melder_name" class="melder-angabe">{{ report.melder_name }}</div>
             <div *ngIf="report.melder_email" class="melder-angabe">
               <a [href]="mailtoLink(report.melder_email)">{{ report.melder_email }}</a>

@@ -68,6 +68,10 @@ cd mvp/backend/BFF
 dotnet run
 ```
 
+In the Development environment (`dotnet run` uses it) the BFF serves its Swagger UI at
+[http://localhost:5054/swagger](http://localhost:5054/swagger); the Docker dev stack runs it as
+Production, without Swagger.
+
 ### Semantic Search Service (Python + FastAPI)
 
 ```bash
