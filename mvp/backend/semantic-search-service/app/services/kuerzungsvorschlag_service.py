@@ -43,9 +43,10 @@ _VERNEINUNGSWOERTER = {
     "nirgends",
     "keinesfalls",
     "weder",
-    "kaum",
-    "ohne",
 }
+#: Schwächen ab, ohne zu verneinen: Ein Einschub mit ihnen bleibt stehen, ein Satz mit
+#: ihnen muss aber nicht in den Vorschlag (Entscheidung @BanSe 04.11.).
+_EINSCHRAENKUNGSWOERTER = {"kaum", "ohne"}
 #: Zahlwörter, die spaCy nicht als Zahl erkennt (Anteile und Vielfache).
 _ZAHLWOERTER = {
     "hälfte",
@@ -233,6 +234,9 @@ def _einschuebe(satz: list) -> List[list]:
 
 
 def _verneint(token) -> bool:
+    """Eine echte Verneinung; ein Satz mit ihr fällt nie weg."""
+    if token.lower_ in _EINSCHRAENKUNGSWOERTER:
+        return False
     return (
         token.dep_ == "ng"
         or token.tag_ == "PTKNEG"
@@ -247,9 +251,10 @@ def _relativsatz(token) -> bool:
 
 
 def _traegt_bedeutung(token) -> bool:
-    """Verneinungen und Zahlen fallen nie weg."""
+    """Verneinungen, Einschränkungen und Zahlen fallen nie weg."""
     return (
         _verneint(token)
+        or token.lower_ in _EINSCHRAENKUNGSWOERTER
         or token.lower_ in _ZAHLWOERTER
         or token.lemma_.lower() in _ZAHLWOERTER
         or token.like_num

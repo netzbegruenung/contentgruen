@@ -267,6 +267,28 @@ class TestZentraleSaetzeBleiben:
 
         assert knapp.vorschlagen(text, aussage=None) is None
 
+    def test_ohne_und_kaum_machen_einen_satz_nicht_zur_pflicht(self, service):
+        # Entscheidung @BanSe 04.11.: Pflicht nur für echte Verneinungen.
+        knapp = KuerzungsvorschlagService(werkzeuge=service._werkzeuge, max_zeichen=30)
+        text = (
+            "Wir heizen heute ohne Öl und Gas. Die Wärmepumpe spart Geld. "
+            "Sie braucht im Jahr kaum Wartung."
+        )
+
+        assert knapp.vorschlagen(text, aussage="Wärmepumpe") == (
+            "Die Wärmepumpe spart Geld."
+        )
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Die Pumpe (kaum hörbar) spart Strom.",
+            "Die Pumpe – ohne Öl – spart Strom.",
+        ],
+    )
+    def test_einschub_mit_ohne_oder_kaum_bleibt_stehen(self, service, text):
+        assert service.vorschlagen(text, aussage=None) == text
+
     def test_ohne_passenden_satz_kein_vorschlag(self, service):
         # Kein Satz passt in die Grenze, und abgeschnitten wird nicht.
         knapp = KuerzungsvorschlagService(werkzeuge=service._werkzeuge, max_zeichen=20)
