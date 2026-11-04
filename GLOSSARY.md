@@ -295,6 +295,10 @@ _Avoid_: Prüfung, Lektorat, Check, Validierung
 Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
+**Sprachhinweis**:
+Der Satz über dem CC0-Hinweis eines Beitragsformulars oder unter einer neuen Aussage, wenn der Text ab fünf Wörtern offenbar nicht deutsch ist; Gut gesagt ist auf deutsche Texte ausgelegt. Er erscheint etwa eine Sekunde nach der letzten Eingabe, sperrt nichts und zählt nicht in die Güte. Suchanfragen und vorhandene Aussagen bekommen keinen. Er ist keine Anmerkung des Gegenlesens und nicht der Hinweis an einem Einwurf.
+_Avoid_: Sprachwarnung, Sprachprüfung, Spracherkennung (das ist das Werkzeug dahinter)
+
 **Kürzungsvorschlag**:
 Eine Kurzfassung, die das Formular auf Klick aus den eigenen Sätzen eines Kommentars vorschlägt, der länger ist als die Kurzfassung sein darf, ohne KI: Die zentralen Sätze bleiben, Einschübe (Klammern, Gedankenstriche, Appositionen) fallen weg; Relativsätze, Verneinungen und Zahlen bleiben stehen, und ein Satz mit Verneinung fällt nie weg. Er besteht nur aus Wörtern des Originals in ihrer Reihenfolge und formuliert nichts um. Die Person übernimmt oder verwirft ihn; nichts wird automatisch ersetzt, und gespeichert wird er erst mit dem Kommentar.
 _Avoid_: Zusammenfassung, KI-Vorschlag (der kommt von einem Sprachmodell), Zuschnitt

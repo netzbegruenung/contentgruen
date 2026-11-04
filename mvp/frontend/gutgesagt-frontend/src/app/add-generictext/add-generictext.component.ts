@@ -29,6 +29,7 @@ import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
+import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
@@ -131,6 +132,7 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
     AntwortAufComponent,
     FormularHilfeComponent,
     GegenlesenComponent,
+    SprachhinweisComponent,
     FormularLeisteComponent,
     ThemenAuswahlComponent,
     Cc0HinweisComponent,

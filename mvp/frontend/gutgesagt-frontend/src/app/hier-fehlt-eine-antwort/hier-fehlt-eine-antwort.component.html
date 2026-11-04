@@ -60,6 +60,7 @@
                             [themen]="themen" [gewaehlt]="neueThemen"
                             beschriftung="Themen der neuen Aussage"
                             (gewaehltChange)="neueThemen = $event"></app-themen-auswahl>
+        <app-sprachhinweis [text]="neueAussage" gegenstand="aussage"></app-sprachhinweis>
         <p appCc0Hinweis></p>
         <button mat-raised-button type="button" class="dark-green-button aussage-anlegen"
                 [disabled]="!anlegbar"

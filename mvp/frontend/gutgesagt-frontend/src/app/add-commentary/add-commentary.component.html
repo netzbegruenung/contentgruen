@@ -112,6 +112,7 @@
                             [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
                 </div>
 
+                <app-sprachhinweis [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text"></app-sprachhinweis>
                 <p appCc0Hinweis></p>
 
                 <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
