@@ -5,6 +5,10 @@ import { environment } from '../../environments/environment';
 import { tap, catchError, map } from 'rxjs/operators';
 import { LoggingService } from './logging.service';
 import { throwError } from 'rxjs';
+import { BaseContentResult } from './dtos/commonDtos';
+
+/** Ein Beitrag unter seiner Adresse (#300): flach wie getById seines Typs, dazu die eigene Stimme. */
+export type BeitragAnsicht = BaseContentResult & Record<string, any> & { user_vote?: 'like' | 'dislike' | null };
 
 export interface RecentContentResponse {
   results_count: number;
@@ -21,6 +25,14 @@ export class ContentService {
     private http: HttpClient,
     private logger: LoggingService
   ) { }
+
+  /**
+   * Ein Beitrag jedes Typs nach seiner ID, fuer /beitrag/:id (#300). Oeffentlich wie
+   * die Suche; gesperrte, geloeschte und nie vorhandene Beitraege antworten mit 404.
+   */
+  beitragLaden(id: string): Observable<BeitragAnsicht> {
+    return this.http.get<BeitragAnsicht>(`${this.baseUrl}/beitrag/${encodeURIComponent(id)}`);
+  }
 
   getRecentContent(limit: number = 6): Observable<RecentContentResponse> {
     const timestamp = new Date().toISOString();

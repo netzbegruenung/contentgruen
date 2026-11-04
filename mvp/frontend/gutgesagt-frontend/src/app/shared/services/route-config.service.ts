@@ -184,6 +184,11 @@ export class RouteConfigService {
       };
     }
 
+    // Die eigene Adresse eines Beitrags (#300): /beitrag/:id
+    if (route.startsWith(`${ROUTES.BEITRAG}/`)) {
+      return { ...defaultConfig, pageTitle: PAGE_TITLES.BEITRAG };
+    }
+
     if (route === '/admin' || route.startsWith('/admin/')) {
       return { ...defaultConfig, pageTitle: PAGE_TITLES.ADMIN };
     }

@@ -177,7 +177,12 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
    * der geloeschte der letzte Beitrag der Seite, die Seite davor.
    */
   beitragOeffnen(karte: KartenDaten): void {
-    const daten: BeitragSheetDaten = { ...karte, loeschbar: true, aenderbar: istAenderbar(karte.typ) };
+    const daten: BeitragSheetDaten = {
+      ...karte,
+      loeschbar: true,
+      aenderbar: istAenderbar(karte.typ),
+      zurAdresse: true,
+    };
     this.bottomSheet
       .open(BeitragSheetComponent, {
         data: daten,

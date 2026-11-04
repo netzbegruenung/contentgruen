@@ -86,6 +86,20 @@ describe('BeitragSheetComponent', () => {
     expect(karte.getAttribute('role')).toBeNull();
   });
 
+  function aktionen(): { ansichtVerlinkt: boolean } {
+    return fixture.debugElement.query((d) => d.name === 'app-karten-aktionen').componentInstance;
+  }
+
+  it('bietet "Beitrag öffnen" ohne zurAdresse nicht an, sonst ginge eine Eingabe verloren (#300)', () => {
+    erstellen();
+    expect(aktionen().ansichtVerlinkt).toBeFalse();
+  });
+
+  it('bietet "Beitrag öffnen" mit zurAdresse an (Meine Beitraege)', () => {
+    erstellen({ ...daten, zurAdresse: true });
+    expect(aktionen().ansichtVerlinkt).toBeTrue();
+  });
+
   it('schliesst beim Wisch nach unten, nicht bei einem kurzen', () => {
     erstellen();
     wischen(100, 100 + WISCH_SCHWELLE - 10);
