@@ -1,0 +1,320 @@
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { TextFieldModule } from '@angular/cdk/text-field';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
+import { Einwurf, EinwurfService, EinwerfenRequest } from '../services/einwurf.service';
+import {
+  EinwurfBeitrag,
+  StufenAnzeige,
+  beitraegeVonEinwurf,
+  stufenAnzeigeVonEinwurf,
+} from '../beitragskarte/karten-daten';
+import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
+import {
+  GeteilteFelder,
+  SHARE_FELDER_SCHLUESSEL,
+  felderAusShareDaten,
+} from '../share-target/share-target.guard';
+import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
+import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
+import { LoggingService } from '../services/logging.service';
+import { NavigationService } from '../services/navigation.service';
+import { Router } from '@angular/router';
+import { SHARED_IMPORTS } from '../shared/shared-imports';
+import { Subject, of, timer } from 'rxjs';
+import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+
+export const HINWEIS_LIMIT = 5000;
+
+/** So lange nach dem letzten Tastendruck wird gefragt, ob es den Link schon gibt. */
+export const LINK_PRUEFEN_NACH_MS = 400;
+
+/** Ein vorhandener Einwurf mit gleichem Link, wie das Formular ihn zeigt. */
+export interface GleicherEinwurf {
+  stufe: StufenAnzeige;
+  /**
+   * Die verknuepften Beitraege; leer, solange er nicht ausformuliert ist. Auch ein
+   * verworfener Einwurf kann welche haben, wenn ihn jemand vorher ausformuliert
+   * hat - dann zeigt das Formular die Stufe "Verworfen" und trotzdem den Beitrag,
+   * denn den gibt es ja. Gesperrte und geloeschte Beitraege fehlen; ist keiner
+   * mehr sichtbar, steht statt "Ausformuliert" ihr Zustand (#507).
+   */
+  beitraege: EinwurfBeitrag[];
+}
+
+function alsGleicherEinwurf(einwurf: Einwurf): GleicherEinwurf {
+  return {
+    stufe: stufenAnzeigeVonEinwurf(einwurf),
+    beitraege: beitraegeVonEinwurf(einwurf),
+  };
+}
+
+/**
+ * Womit ein Seitentitel im Hinweis-Feld als Vorbelegung erkennbar bleibt -- im
+ * Formular und, falls die Person ihn stehen laesst, auch spaeter im Fangkorb.
+ */
+export const SEITENTITEL_PRAEFIX = 'Seitentitel: ';
+
+/** Ein Link und nur ein Link. Der Server prueft ihn noch einmal richtig. */
+const NUR_EIN_LINK = /^https?:\/\/\S+$/i;
+
+function nurEinLink(control: AbstractControl): ValidationErrors | null {
+  const wert = (control.value ?? '').trim();
+  return wert && !NUR_EIN_LINK.test(wert) ? { keinLink: true } : null;
+}
+
+/** Der Vorschlag fuer das Hinweis-Feld aus geteilten Feldern, oder null. */
+export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
+  const zeilen = [
+    geteilt.titel ? `${SEITENTITEL_PRAEFIX}${geteilt.titel}` : null,
+    geteilt.text,
+  ].filter((zeile): zeile is string => !!zeile);
+  return zeilen.length ? zeilen.join('\n').slice(0, HINWEIS_LIMIT) : null;
+}
+
+/**
+ * Einwerfen: zwei Felder, Link und Hinweis fuer andere. Eines davon genuegt.
+ *
+ * Keine Kategorien, keine Labels, keine Schalter -- alles Weitere ist schon
+ * Destillieren. Kommt der Einwurf aus dem Teilen-Menue, steht der Link im
+ * Link-Feld; Seitentitel und uebriger Text stehen als markierte Vorbelegung im
+ * Hinweis-Feld und werden nur gespeichert, wenn die Person sie stehen laesst.
+ *
+ * Liegt derselbe Link schon im Fangkorb, steht unter dem Link-Feld eine Anzeige mit
+ * der Stufe des vorhandenen Einwurfs und, falls ausformuliert, seinem Beitrag
+ * (#263). Sie haelt nicht auf: Einwerfen geht trotzdem.
+ */
+@Component({
+  selector: 'app-einwerfen',
+  standalone: true,
+  imports: [...SHARED_IMPORTS, CommonModule, TextFieldModule, Cc0HinweisComponent],
+  templateUrl: './einwerfen.component.html',
+  styleUrls: ['./einwerfen.component.css'],
+})
+export class EinwerfenComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
+  readonly hinweisLimit = HINWEIS_LIMIT;
+  readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
+  readonly kettenIcons = KETTEN_ICONS;
+
+  einwurfForm: FormGroup;
+
+  wirdGespeichert = false;
+  fehler: string | null = null;
+  /** Anzahl der Einwuerfe in dieser Sitzung - das Formular bleibt ja offen. */
+  eingeworfen = 0;
+  /**
+   * Ob der aktuelle Feldinhalt aus dem Teilen-Menue stammt. Steuert nur den
+   * Weg des naechsten Einwurfs und wird danach zurueckgesetzt: das
+   * Formular bleibt offen, und was jemand danach von Hand eintippt, ist wieder
+   * ein Web-Einwurf.
+   */
+  ausShare = false;
+  /** Der Text, mit dem das Hinweis-Feld aus dem Teilen vorbelegt wurde. */
+  vorbelegung: string | null = null;
+  /** Einwuerfe mit gleichem Link wie im Link-Feld, neueste zuerst. */
+  gleicheEinwuerfe: GleicherEinwurf[] = [];
+
+  constructor(
+    private fb: FormBuilder,
+    private einwurfService: EinwurfService,
+    private logger: LoggingService,
+    private navigationService: NavigationService,
+    private router: Router,
+    private bottomSheet: MatBottomSheet,
+  ) {
+    this.einwurfForm = this.fb.group({
+      link: ['', nurEinLink],
+      hinweis: ['', Validators.maxLength(HINWEIS_LIMIT)],
+    });
+  }
+
+  ngOnInit(): void {
+    // Vor der Vorbelegung: Auch ein geteilter Link wird geprueft.
+    this.gleichenLinkPruefen();
+    const geteilt = this.geteilteFelderHolen();
+    if (geteilt) {
+      this.vorbelegung = hinweisVorschlag(geteilt);
+      this.einwurfForm.patchValue({ link: geteilt.url ?? '', hinweis: this.vorbelegung ?? '' });
+      this.ausShare = true;
+    }
+  }
+
+  /**
+   * Holt die ueber das Teilen-Menue hereingereichten Felder und raeumt sie weg.
+   *
+   * Einmalig mit Absicht: bleibt der Wert liegen, befuellt sich das Formular auch
+   * beim naechsten regulaeren Aufruf wieder mit demselben Link. Der Zugriff kann
+   * werfen (privater Modus, blockierte Seitendaten) -- dann gibt es eben keine
+   * Vorbelegung, aber das Formular funktioniert. Liegt noch Klartext einer
+   * aelteren Version dort, wird er wie ein geteilter Text zerlegt.
+   */
+  private geteilteFelderHolen(): GeteilteFelder | null {
+    let wert: string | null;
+    try {
+      wert = sessionStorage.getItem(SHARE_FELDER_SCHLUESSEL);
+      if (wert) {
+        sessionStorage.removeItem(SHARE_FELDER_SCHLUESSEL);
+      }
+    } catch {
+      return null;
+    }
+    if (!wert) {
+      return null;
+    }
+
+    try {
+      const gelesen = JSON.parse(wert) as Partial<GeteilteFelder> | null;
+      if (gelesen && typeof gelesen === 'object') {
+        return {
+          url: typeof gelesen.url === 'string' ? gelesen.url : null,
+          titel: typeof gelesen.titel === 'string' ? gelesen.titel : null,
+          text: typeof gelesen.text === 'string' ? gelesen.text : null,
+        };
+      }
+    } catch {
+      // Kein JSON: Klartext einer aelteren Version, siehe unten.
+    }
+    return felderAusShareDaten({ text: wert });
+  }
+
+  /**
+   * Fragt nach einer Tipppause, ob ein gleicher Link schon im Fangkorb liegt.
+   *
+   * Gefragt wird mit dem Link, wie er gespeichert wuerde (ohne Tracking-Parameter);
+   * was als gleich gilt, entscheidet der Server. Jede Aenderung am Feld leert die
+   * Anzeige und bricht Wartezeit und laufende Frage ab (switchMap vor dem Timer):
+   * Eine spaete Antwort zu einem Link, der nicht mehr dasteht, kommt so nie an,
+   * auch nicht nach dem Einwerfen, wenn das Feld leer ist. Scheitert die Frage,
+   * gibt es eben keine Anzeige - am Einwerfen aendert sie nichts.
+   */
+  private gleichenLinkPruefen(): void {
+    this.einwurfForm
+      .get('link')!
+      .valueChanges.pipe(
+        map((wert: string | null) => (wert ?? '').trim()),
+        map((link) => (NUR_EIN_LINK.test(link) ? trackingParameterEntfernen(link) : '')),
+        tap(() => (this.gleicheEinwuerfe = [])),
+        switchMap((link) =>
+          link
+            ? timer(LINK_PRUEFEN_NACH_MS).pipe(
+                switchMap(() => this.einwurfService.mitGleichemLink(link)),
+                catchError((error) => {
+                  this.logger.warn('Pruefung auf gleichen Link fehlgeschlagen', error);
+                  return of([]);
+                }),
+              )
+            : of([]),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((einwuerfe) => (this.gleicheEinwuerfe = einwuerfe.map(alsGleicherEinwurf)));
+  }
+
+  /**
+   * Zugaenglicher Name des Knopfs: Bei mehreren Einwuerfen hiesse sonst jeder
+   * Knopf gleich. Die Stufe allein reicht nicht, zwei koennen dieselbe haben.
+   */
+  beitragAnsehenLabel(einwurf: GleicherEinwurf, index: number): string {
+    const was = einwurf.beitraege.length === 1 ? 'Beitrag' : 'Beiträge';
+    if (this.gleicheEinwuerfe.length === 1) {
+      return `${was} ansehen`;
+    }
+    return `${was} ansehen, Einwurf ${index + 1} von ${this.gleicheEinwuerfe.length}, ${einwurf.stufe.name}`;
+  }
+
+  /** Die Beitraege eines vorhandenen Einwurfs, im selben Sheet wie im Fangkorb. */
+  beitragAnsehen(einwurf: GleicherEinwurf): void {
+    this.bottomSheet.open(EinwurfBeitragSheetComponent, {
+      data: { beitraege: einwurf.beitraege },
+      ariaLabel: 'Beitrag zu diesem Einwurf',
+    });
+  }
+
+  get link(): string {
+    return (this.einwurfForm.value.link ?? '').trim();
+  }
+
+  get hinweis(): string {
+    return (this.einwurfForm.value.hinweis ?? '').trim();
+  }
+
+  /** Beide Felder leer - die einzige Pflicht, die der Fangkorb kennt. */
+  get istLeer(): boolean {
+    return !this.link && !this.hinweis;
+  }
+
+  get kannEinwerfen(): boolean {
+    return !this.istLeer && this.einwurfForm.valid && !this.wirdGespeichert;
+  }
+
+  /** Solange der Vorschlag unveraendert dasteht, ist er als Vorbelegung markiert. */
+  get istVorbelegt(): boolean {
+    return !!this.vorbelegung && this.einwurfForm.value.hinweis === this.vorbelegung;
+  }
+
+  vorbelegungEntfernen(): void {
+    this.einwurfForm.patchValue({ hinweis: '' });
+    this.vorbelegung = null;
+  }
+
+  einwerfen(): void {
+    if (!this.kannEinwerfen) {
+      this.einwurfForm.markAllAsTouched();
+      return;
+    }
+
+    // Tracking-Parameter fliegen hier raus und nicht erst im Share-Pfad: dieselbe
+    // Adresse von Hand eingefuegt haette sonst dasselbe Problem -- pro Einwurf ein
+    // anderer Link, und ein fremdes Token in der Datenbank.
+    const anfrage: EinwerfenRequest = {};
+    if (this.link) {
+      anfrage.url = trackingParameterEntfernen(this.link);
+    }
+    if (this.hinweis) {
+      anfrage.content = urlsInTextBereinigen(this.hinweis);
+    }
+    if (this.ausShare) {
+      anfrage.source_channel = 'share';
+    }
+
+    this.wirdGespeichert = true;
+    this.fehler = null;
+
+    this.einwurfService.einwerfen(anfrage).subscribe({
+      next: () => {
+        this.wirdGespeichert = false;
+        this.eingeworfen += 1;
+        // Formular bleibt offen und leer: drei Sachen hintereinander einwerfen
+        // ist der Normalfall, nicht die Ausnahme.
+        this.einwurfForm.reset({ link: '', hinweis: '' });
+        this.vorbelegung = null;
+        this.ausShare = false;
+      },
+      error: (error) => {
+        this.logger.error('Einwurf fehlgeschlagen', error);
+        this.wirdGespeichert = false;
+        this.fehler =
+          error?.status === 422
+            ? 'Damit kann der Fangkorb nichts anfangen. Bitte prüfe den Link.'
+            : 'Der Einwurf konnte nicht gespeichert werden. Bitte versuche es erneut.';
+      },
+    });
+  }
+
+  zumFangkorb(): void {
+    this.router.navigate(['/fangkorb']);
+  }
+
+  zurueckZurStartseite(): void {
+    this.navigationService.navigateToStart();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+}

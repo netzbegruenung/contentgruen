@@ -1,0 +1,189 @@
+/* Mobil zuerst: eine Spalte, volle Breite. Ab Tablet nur begrenzt und zentriert. */
+
+.mat-spinner-color::ng-deep circle {
+  stroke: rgb(0, 84, 55) !important;
+}
+
+/* Kopf: die beiden Arbeitslisten als Tabs, Langfassung hinter dem Hilfe-Icon */
+.fangkorb-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Tabs: shared/tabs.css. Hier nur, was im Kopf neben dem Hilfe-Icon anders ist. */
+.tabs {
+  flex: 1;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.tab-wort {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.tab-zahl {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Das ?-Icon selbst: app-hilfe-umschalter */
+
+.erklaerung {
+  margin-top: 4px;
+}
+
+.erklaerung p {
+  margin: 0;
+}
+
+.erklaerung .dreischritt-satz {
+  margin-bottom: 8px;
+  color: var(--text-secondary, #4a4a4a);
+}
+
+/* Etwas einwerfen: schwebend unten rechts, ueber der Liste */
+.einwerfen-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: var(--z-index-fixed, 1030);
+  --mat-fab-container-color: var(--primary-dark, #005437);
+  --mat-fab-foreground-color: #fff;
+  background-color: var(--primary-dark, #005437);
+  color: #fff;
+}
+
+/* Platz, damit der FAB die letzte Karte nicht verdeckt */
+.fangkorb {
+  padding-bottom: 88px;
+}
+
+.dreiklang {
+  margin: 0 0 8px;
+  padding-left: 1.4em;
+  line-height: 1.6;
+}
+
+/* Eine Chip-Zeile, seitlich scrollbar, ohne sichtbare Scrollleiste */
+.filterleiste {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  padding-right: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filterleiste::-webkit-scrollbar {
+  display: none;
+}
+
+.filtergruppe {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.filter-trenner {
+  flex-shrink: 0;
+  width: 1px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: var(--border-radius-medium);
+  background: transparent;
+  color: var(--text-secondary, #4a4a4a);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filter-chip.aktiv {
+  border-color: var(--primary-dark, #005437);
+  background: var(--primary-light, #dcebc3);
+  color: var(--primary-dark, #005437);
+  font-weight: 500;
+}
+
+.filter-chip:focus-visible {
+  outline: 2px solid var(--primary-dark, #005437);
+  outline-offset: 2px;
+}
+
+/* Ein Einwurf, eine Karte: die Saetze liegen in der Karte, nicht darunter */
+.karten {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 16px;
+  list-style: none;
+  background: var(--kartenliste-bg);
+}
+
+.fangkorb-laedt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+}
+
+.fangkorb-leer,
+.fangkorb-fehler,
+.fangkorb-mehr {
+  padding: 16px 0;
+  color: var(--text-secondary, #4a4a4a);
+}
+
+/* Ab Tablet: Tabs, Filter und Liste in derselben 720er-Spalte; die Filter brechen
+   um, statt seitlich zu scrollen, wenn Platz ist (#512). */
+@media (min-width: 600px) {
+  .guidance,
+  .filterleiste,
+  .karten,
+  .fangkorb-mehr {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .filterleiste,
+  .filtergruppe {
+    flex-wrap: wrap;
+  }
+
+  .filterleiste {
+    overflow-x: visible;
+    padding-right: 0;
+  }
+
+  /* Bricht die Leiste um, trennt die Zeile die Gruppen; ein Strich bliebe allein stehen */
+  .filter-trenner {
+    display: none;
+  }
+}

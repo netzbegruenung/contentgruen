@@ -40,8 +40,9 @@ Image enthält sie.
   `fehlgeschlagen` im Protokoll, mit der ersten Zeile der Fehlermeldung. Der
   Dienst startet dann nicht, spätere Skripte laufen nicht. Mit einer
   Restart-Policy (im Dev-Stack `restart: unless-stopped`) startet Docker den
-  Dienst neu, und der nächste Start versucht das Skript erneut. Was
-  schiefging, steht im Log des Dienstes.
+  Dienst neu, und der nächste Start versucht das Skript erneut. Das Log des
+  Dienstes nennt das Skript und den Typ des Fehlers, nicht seinen Fehlertext
+  (der kann Werte tragen, #422).
 - **Nach dem `COMMIT`:** Das `VACUUM FULL` am Ende von
   `2026-08-19-search-events-pseudonymisieren.sql`,
   `2026-08-25-usage-events-datensparsamkeit.sql` und

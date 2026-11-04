@@ -19,7 +19,9 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
 
 from api.v1 import usage as usage_module
-from api.v1.usage import BeitragUnlesbar, beitrag_laden, router as usage_router
+from api.v1.usage import router as usage_router
+from dependencies import get_beitrag_laden
+from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
 from core.config import Settings
 from dependencies import get_settings
 from services.entdoppelung import pruefwert
@@ -48,16 +50,15 @@ def client(dienst, muster):
     app.include_router(usage_router, prefix="/api/v1/usage")
     app.dependency_overrides[get_settings] = einstellungen
 
-    async def beitrag_laden(content_id, settings):
+    async def laden(content_id):
         if str(content_id) != BEITRAG_ID:
             return None
         return SimpleNamespace(id=content_id, original_author=AUTORIN)
 
+    app.dependency_overrides[get_beitrag_laden] = lambda: laden
     with patch.object(
         usage_module, "get_usage_service", return_value=dienst
-    ), patch.object(usage_module, "beitrag_laden", beitrag_laden), patch.object(
-        usage_module, "get_muster_hinweise_service", return_value=muster
-    ):
+    ), patch.object(usage_module, "get_muster_hinweise_service", return_value=muster):
         yield TestClient(app)
 
 
@@ -66,12 +67,12 @@ def muster():
     return Mock()
 
 
-def zaehlen(client, user=None, sitzung=None):
+def zaehlen(client, user=None, agent=None):
     kopf = {"X-User": user} if user else {}
+    if agent:
+        kopf["User-Agent"] = agent
     return client.post(
-        f"/api/v1/usage/content/{BEITRAG_ID}/usage",
-        json={"session_id": sitzung} if sitzung else {},
-        headers=kopf,
+        f"/api/v1/usage/content/{BEITRAG_ID}/usage", json={}, headers=kopf
     )
 
 
@@ -114,24 +115,25 @@ class TestEntdoppelung:
     """Fuer Punkte und "oft genutzt" zaehlt eine Nutzung je Person, Beitrag und Tag."""
 
     def test_angemeldete_nutzung_bekommt_pruefwert_der_person(self, client, dienst):
-        zaehlen(client, "bo-2", sitzung="sitzung-1")
-        zaehlen(client, "bo-2", sitzung="sitzung-2")
+        zaehlen(client, "bo-2", agent="Browser A")
+        zaehlen(client, "bo-2", agent="Browser B")
 
         erster, zweiter = [
             c.kwargs["pruefwert"] for c in dienst.track_content_usage.call_args_list
         ]
         assert erster and erster == zweiter
 
-    def test_besucher_bekommt_pruefwert_der_sitzung(self, client, dienst):
-        zaehlen(client, "anonymous", sitzung="sitzung-1")
-        zaehlen(client, "anonymous", sitzung="sitzung-2")
-        zaehlen(client)
+    def test_besucher_bekommt_pruefwert_des_tagespseudonyms(self, client, dienst):
+        """Ohne Sitzungskennung (#446): Besucher unterscheidet das Besuchermerkmal."""
+        zaehlen(client, "anonymous", agent="Browser A")
+        zaehlen(client, "anonymous", agent="Browser A")
+        zaehlen(client, "anonymous", agent="Browser B")
 
         pruefwerte = [
             c.kwargs["pruefwert"] for c in dienst.track_content_usage.call_args_list
         ]
-        assert pruefwerte[0] and pruefwerte[1] and pruefwerte[0] != pruefwerte[1]
-        assert pruefwerte[2] is None
+        assert pruefwerte[0] and pruefwerte[0] == pruefwerte[1]
+        assert pruefwerte[2] and pruefwerte[2] != pruefwerte[0]
 
     def test_pruefwert_und_tag_gehoeren_zum_selben_tag(self, client, dienst):
         zaehlen(client, "bo-2")
@@ -193,27 +195,15 @@ class TestUnlesbarerBeitrag:
 
         repository = Mock()
         repository.get = AsyncMock(side_effect=fehler)
-        fabrik = Mock()
-        fabrik.return_value.create_content_repository.return_value = repository
 
-        with patch(
-            "repositories.implementations.qdrant.qdrant_repository_factory.QdrantRepositoryFactory",
-            fabrik,
-        ):
-            with pytest.raises(BeitragUnlesbar):
-                asyncio.run(beitrag_laden(uuid.UUID(BEITRAG_ID), Mock()))
+        with pytest.raises(BeitragUnlesbar):
+            asyncio.run(beitrag_laden(uuid.UUID(BEITRAG_ID), repository))
 
     def test_laden_meldet_fehlenden_als_none(self):
         repository = Mock()
         repository.get = AsyncMock(side_effect=ValueError("not found"))
-        fabrik = Mock()
-        fabrik.return_value.create_content_repository.return_value = repository
 
-        with patch(
-            "repositories.implementations.qdrant.qdrant_repository_factory.QdrantRepositoryFactory",
-            fabrik,
-        ):
-            assert asyncio.run(beitrag_laden(uuid.UUID(BEITRAG_ID), Mock())) is None
+        assert asyncio.run(beitrag_laden(uuid.UUID(BEITRAG_ID), repository)) is None
 
     def test_unlesbarer_beitrag_zaehlt_trotzdem(self, dienst):
         """Im Zweifel zaehlen: wem er gehoert, ist dann nicht feststellbar."""
@@ -221,12 +211,11 @@ class TestUnlesbarerBeitrag:
         app.include_router(usage_router, prefix="/api/v1/usage")
         app.dependency_overrides[get_settings] = einstellungen
 
-        async def kaputt(content_id, settings):
+        async def kaputt(content_id):
             raise BeitragUnlesbar(str(content_id))
 
-        with patch.object(
-            usage_module, "get_usage_service", return_value=dienst
-        ), patch.object(usage_module, "beitrag_laden", kaputt):
+        app.dependency_overrides[get_beitrag_laden] = lambda: kaputt
+        with patch.object(usage_module, "get_usage_service", return_value=dienst):
             client = TestClient(app)
             antwort = client.post(
                 f"/api/v1/usage/content/{BEITRAG_ID}/usage",
@@ -236,3 +225,20 @@ class TestUnlesbarerBeitrag:
 
         assert antwort.status_code == 200
         dienst.track_content_usage.assert_called_once()
+
+
+class TestKeineSitzungskennung:
+    """Seit #446 haelt eine Kopie keine Sitzungskennung mehr fest."""
+
+    def test_mitgeschickte_sitzungskennung_wird_nicht_weitergegeben(
+        self, client, dienst
+    ):
+        """Ein alter Client schickt noch session_id mit; sie wird verworfen."""
+        antwort = client.post(
+            f"/api/v1/usage/content/{BEITRAG_ID}/usage",
+            json={"session_id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301"},
+        )
+
+        assert antwort.status_code == 200
+        _, kwargs = dienst.track_content_usage.call_args
+        assert "session_id" not in kwargs

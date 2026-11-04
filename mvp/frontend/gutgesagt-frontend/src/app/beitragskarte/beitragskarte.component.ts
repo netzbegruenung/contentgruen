@@ -28,6 +28,7 @@ import {
   EinwurfAktion,
   EinwurfAngaben,
   EinwurfSatz,
+  NICHT_SICHTBAR,
   STUFEN,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
@@ -115,6 +116,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input() vorschau = false;
   /** Durchgereicht an app-karten-aktionen; aus beim eigenen Beitrag im Album-Sheet. */
   @Input() abstimmenSichtbar = true;
+  /** Durchgereicht an app-karten-aktionen: "Beitrag öffnen" im Menue; aus auf /beitrag/:id selbst. */
+  @Input() ansichtVerlinkt = true;
   /**
    * Einwurf-Karte: die Stufe als Wort in der Meta-Zeile statt des Einwerfers. Fuer
    * "Meine Einwuerfe", wo alle Karten die eigenen sind und die Stufe die Rueckmeldung ist.
@@ -234,6 +237,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     if (this.eigeneLeuteAnzeige) {
       klassen.push('karte--eigene-leute');
     }
+    // Im Formular fuellt die Vorschau ihre Spalte statt fester 450 px (#512).
+    if (this.vorschau) {
+      klassen.push('karte--vorschau');
+    }
     return klassen;
   }
 
@@ -251,7 +258,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * gibt es ohne Beitrag nicht, und Weiterarbeiten steht im ⋮-Menue.
    *
    * Das Zeichen auf dem Knopf ist das der *naechsten* Stufe - es sagt, wohin der
-   * Griff fuehrt, nicht wo der Einwurf steht (das zeigt das Band). Ansehen fuehrt
+   * Griff fuehrt, nicht wo der Einwurf steht (das zeigt das Band). Ist keiner
+   * seiner Beitraege mehr sichtbar, gibt es nichts anzusehen (#507). Ansehen fuehrt
    * auf keine Stufe der Kette weiter und traegt deshalb ein Material-Icon.
    */
   get primaerAktion(): { aktion: EinwurfAktion; wort: string; emoji?: string; icon?: string } | null {
@@ -261,7 +269,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       case 'destilliert':
         return { aktion: 'ausformulieren', wort: 'Ausformulieren', emoji: KETTEN_ICONS.verfassen };
       case 'ausformuliert':
-        return { aktion: 'ansehen', wort: 'Ansehen', icon: 'visibility' };
+        return this.einwurfAngaben.beitraege.length
+          ? { aktion: 'ansehen', wort: 'Ansehen', icon: 'visibility' }
+          : null;
       default:
         return null;
     }
@@ -285,6 +295,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   get stufenName(): string {
     if (!this.einwurfAngaben) {
       return '';
+    }
+    const zustand = this.einwurfAngaben.beitragZustand;
+    if (this.einwurfAngaben.stufe === 'ausformuliert' && zustand) {
+      return NICHT_SICHTBAR[zustand].name;
     }
     if (this.einwurfAngaben.stufe === 'ausformuliert' && this.daten.typ) {
       return `${STUFEN.ausformuliert.name}: ${typLabel(this.daten.typ)}`;

@@ -52,6 +52,9 @@
                         <mat-hint align="end">{{ kurzLaenge }} / {{ kurzMax }}</mat-hint>
                         <mat-error *ngIf="commentaryForm.get('kurz')?.hasError('maxlength')">Höchstens {{ kurzMax }} Zeichen.</mat-error>
                     </mat-form-field>
+                    <!-- Kürzungsvorschlag aus den eigenen Sätzen, nur auf Klick, ohne KI (#403) -->
+                    <app-kuerzungsvorschlag [text]="commentaryForm.value.text" [aussage]="aussage.text" [grenze]="kurzMax"
+                                            (uebernehmen)="kurzUebernehmen($event)"></app-kuerzungsvorschlag>
                     <mat-form-field appearance="outline" class="formular-feld lang-feld">
                         <mat-label>Langfassung (optional)</mat-label>
                         <textarea matInput id="lang" formControlName="lang" [attr.maxlength]="langMax"
@@ -103,30 +106,14 @@
                             [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
                 </div>
 
-                <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
-                       rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
+                <p appCc0Hinweis></p>
 
                 <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
-                <div *ngIf="vorhanden" class="dubletten-hinweis">
-                    <p role="status">
-                        {{ dublettenHinweis }}
-                        <span *ngIf="vorhanden.titel" class="vorhanden-titel">„{{ vorhanden.titel }}“</span>
-                        <button type="button" class="text-link dublette-ansehen" (click)="vorhandenAnsehen()">Ansehen</button>
-                    </p>
-                    <!-- Die Person entscheidet: den vorhandenen waehlen (fremd: zustimmen, eigen: nehmen) oder trotzdem speichern -->
-                    <div *ngIf="offeneEntscheidung" class="dublette-entscheidung">
-                        <button *ngIf="kannZustimmen" mat-stroked-button type="button" class="dublette-zustimmen"
-                                [disabled]="beschaeftigt" (click)="zustimmen()">Zustimmen</button>
-                        <button *ngIf="kannNehmen" mat-stroked-button type="button" class="dublette-nehmen"
-                                [disabled]="beschaeftigt || aussageZuKurz" (click)="nehmen()">
-                            <mat-spinner *ngIf="nimmt" diameter="18" class="knopf-spinner"></mat-spinner>
-                            Vorhandenen nehmen
-                        </button>
-                        <button mat-button type="button" class="dublette-trotzdem"
-                                [disabled]="beschaeftigt" (click)="trotzdemSpeichern()">Trotzdem speichern</button>
-                    </div>
-                    <p *ngIf="entscheidungsFehler" class="entscheidungs-fehler" role="alert">{{ entscheidungsFehler }}</p>
-                </div>
+                <app-dubletten-hinweis *ngIf="vorhanden" [vorhanden]="vorhanden" [hinweis]="dublettenHinweis"
+                                       [kannZustimmen]="kannZustimmen" [kannNehmen]="kannNehmen" nehmenText="Vorhandenen nehmen"
+                                       [beschaeftigt]="beschaeftigt" [nehmenGesperrt]="aussageZuKurz" [nimmt]="nimmt"
+                                       [fehler]="entscheidungsFehler" (ansehen)="vorhandenAnsehen()" (zustimmen)="zustimmen()"
+                                       (nehmen)="nehmen()" (trotzdem)="trotzdemSpeichern()"></app-dubletten-hinweis>
 
                 <app-formular-leiste *ngIf="!responseId"
                                      [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : offeneEntscheidung ? dublettenHinweis : null"

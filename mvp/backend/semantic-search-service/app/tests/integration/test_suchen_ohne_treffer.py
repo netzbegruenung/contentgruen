@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from sqlalchemy import text
+from starlette.requests import Request
 
 from domain.models.content_status import ContentStatus
 from infrastructure.database.models import Base, SucheOhneTrefferZeile
@@ -27,6 +28,7 @@ from services.suchen_ohne_treffer_service import (
 )
 from tests.integration import postgres
 from tests.integration.postgres import Datenbank
+from utils.besucher_pseudonym import anschluss_pruefwert, besucher_tagespseudonym
 
 TABELLE = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer.sql"
 PERSONEN = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer-personen.sql"
@@ -96,6 +98,16 @@ async def _liste(service: SuchenOhneTrefferService):
         (e.statement_id, e.anzahl, e.personen)
         for e in await service.haeufigste(wochen=4, heute=DONNERSTAG)
     ]
+
+
+def _anfrage(headers: dict) -> Request:
+    return Request(
+        {
+            "type": "http",
+            "headers": [(k.lower().encode(), v.encode()) for k, v in headers.items()],
+            "client": ("10.0.0.2", 12345),
+        }
+    )
 
 
 def _zeilen(db: Datenbank) -> list:
@@ -227,6 +239,43 @@ class TestMindestanzahlZaehltPersonen:
         service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
 
         assert await _liste(service) == [(AUSSAGE, 3, 2)]
+
+    async def test_zwei_besucher_erreichen_die_schwelle_einer_nicht(
+        self, neue_datenbank
+    ):
+        """Mit Tagespseudonymen der Besucher (#446): Anschluss und User-Agent."""
+        service = _service(neue_datenbank)
+        eins = besucher_tagespseudonym("198.51.100.5|Firefox", MITTWOCH)
+        zwei = besucher_tagespseudonym("198.51.100.6|Firefox", MITTWOCH)
+        andere = _aussage(9)
+
+        service.erfassen(AUSSAGE, 0, eins, heute=MITTWOCH)
+        service.erfassen(AUSSAGE, 0, zwei, heute=MITTWOCH)
+        for _ in range(2):
+            service.erfassen(andere, 0, eins, heute=MITTWOCH)
+
+        assert await _liste(service) == [(AUSSAGE, 2, 2)]
+
+    async def test_ein_besucher_mit_zwei_user_agents_erreicht_die_schwelle_nicht(
+        self, neue_datenbank
+    ):
+        """Je Anschluss und Aussage hoechstens eine Person am Tag (#496)."""
+        service = _service(neue_datenbank)
+        anschluss = anschluss_pruefwert(
+            _anfrage({"X-Real-IP": "198.51.100.5"}), MITTWOCH
+        )
+
+        for user_agent in ("Firefox", "Chrome"):
+            service.erfassen(
+                AUSSAGE,
+                0,
+                besucher_tagespseudonym(f"198.51.100.5|{user_agent}", MITTWOCH),
+                heute=MITTWOCH,
+                anschluss_pruefwert=anschluss,
+            )
+
+        assert await _liste(service) == []
+        assert [(z.anzahl, z.personen) for z in _zeilen(neue_datenbank)] == [(2, 1)]
 
     async def test_ohne_pseudonym_zaehlt_keine_person(self, neue_datenbank):
         service = _service(neue_datenbank)

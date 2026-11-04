@@ -137,6 +137,7 @@ public class AuthGatePipelineTests
                  {
                      "/api/v1/search/searchByText",
                      "/api/v1/content/recent",
+                     "/api/v1/content/beitrag/33333333-3333-3333-3333-333333333333",
                      "/api/v1/usage/content/abc/usage",
                      "/api/v1/usage/trending",
                      "/api/v1/moderation/report",

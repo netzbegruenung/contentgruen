@@ -1,0 +1,169 @@
+/* Rundgang nach Variante B des Klickdummys (#389): gelber Rand um den Lichtkegel,
+   weiße Sprechblase mit Daumen und Fortschrittsbalken */
+.sperre {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+}
+
+.kegel {
+    position: fixed;
+    z-index: 1101;
+    border-radius: 12px;
+    pointer-events: none;
+    box-shadow: 0 0 0 4px var(--rundgang-gelb), 0 0 0 9999px var(--rundgang-schleier);
+    transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+/* Ohne gefundenes Ziel: nur abdunkeln */
+.schleier {
+    position: fixed;
+    inset: 0;
+    z-index: 1101;
+    background: var(--rundgang-schleier);
+    pointer-events: none;
+}
+
+.blase {
+    position: fixed;
+    z-index: 1102;
+    box-sizing: border-box;
+    width: 340px;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    color: var(--text-primary);
+    animation: auf 0.25s ease;
+}
+
+.blase:focus {
+    outline: none;
+}
+
+.kopf {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.kopf img {
+    width: 40px;
+    height: 40px;
+}
+
+.fortschritt {
+    flex: 1;
+}
+
+.balken {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.balken i {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--rundgang-balken);
+}
+
+.balken i.an {
+    background: var(--primary-dark);
+}
+
+.stand {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+h3 {
+    margin: 0 0 8px;
+    font-family: GrueneType, Roboto, sans-serif;
+    font-weight: 400;
+    font-size: 26px;
+    line-height: 1.1;
+    color: var(--primary-dark);
+}
+
+p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.zeile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.platz {
+    flex: 1;
+}
+
+.pfeil {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: white;
+    transform: rotate(45deg);
+}
+
+.pfeil-oben {
+    top: -8px;
+}
+
+.pfeil-unten {
+    bottom: -8px;
+}
+
+.pfeil-links {
+    left: -8px;
+}
+
+/* Mobil: Karte am unteren Rand statt schwebend, ohne Pfeil */
+:host(.schmal) .blase {
+    left: 12px !important;
+    right: 12px;
+    top: auto !important;
+    bottom: 12px;
+    width: auto;
+}
+
+:host(.schmal) .pfeil {
+    display: none;
+}
+
+@keyframes auf {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Weniger Bewegung: kein Gleiten des Kegels, kein Einblenden der Blase */
+:host(.ruhig) .kegel {
+    transition: none;
+}
+
+:host(.ruhig) .blase {
+    animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kegel {
+        transition: none;
+    }
+
+    .blase {
+        animation: none;
+    }
+}

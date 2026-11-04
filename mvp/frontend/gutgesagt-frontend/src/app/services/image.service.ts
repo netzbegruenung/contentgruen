@@ -17,14 +17,6 @@ export interface AddImageResponse {
   id: string;
 }
 
-export interface SuggestCaptionRequest {
-  image_url: string;
-}
-
-export interface SuggestCaptionResponse {
-  suggested_caption: string;
-}
-
 @Injectable({
   providedIn: 'root',
 })
@@ -39,10 +31,5 @@ export class ImageService {
   addImage(request: AddImageRequest): Observable<AddImageResponse> {
     this.logger.debug('Adding new image:', request.image.title);
     return this.http.post<AddImageResponse>(`${this.baseApiUrl}/addImage`, mitCc0Wortlaut(request));
-  }
-
-  suggestCaption(request: SuggestCaptionRequest): Observable<SuggestCaptionResponse> {
-    this.logger.debug('Requesting caption suggestion for:', request.image_url.slice(0, 60));
-    return this.http.post<SuggestCaptionResponse>(`${this.baseApiUrl}/suggestCaption`, request);
   }
 }

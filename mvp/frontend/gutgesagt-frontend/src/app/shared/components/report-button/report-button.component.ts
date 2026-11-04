@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ReportDialogComponent } from '../report-dialog/report-dialog.component';
+import { meldeDialogOeffnen } from '../report-dialog/report-dialog.component';
 
 @Component({
   selector: 'app-report-button',
@@ -37,12 +37,6 @@ export class ReportButtonComponent {
   constructor(private dialog: MatDialog) {}
 
   openReportDialog() {
-    this.dialog.open(ReportDialogComponent, {
-      width: '500px',
-      data: {
-        contentId: this.contentId,
-        contentType: this.contentType
-      }
-    });
+    meldeDialogOeffnen(this.dialog, { contentId: this.contentId, contentType: this.contentType });
   }
 }

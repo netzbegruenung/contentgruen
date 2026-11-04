@@ -8,7 +8,7 @@ UTC), keine Uhrzeit.
 
 import logging
 from datetime import date, datetime, timedelta, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -22,20 +22,10 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.fixture
-def session():
-    session = MagicMock()
-    session.__enter__ = MagicMock(return_value=session)
-    session.__exit__ = MagicMock(return_value=False)
-    return session
-
-
-@pytest.fixture
-def repository(session):
-    db = MagicMock()
-    db.get_session.return_value = session
+def repository(app_datenbank):
     with patch(
         "repositories.search_tracking_repository.get_app_database",
-        return_value=db,
+        return_value=app_datenbank,
     ):
         yield SearchTrackingRepository()
 

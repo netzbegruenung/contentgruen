@@ -7,9 +7,9 @@
   margin-bottom: 24px;
 }
 
-.dashboard-header h1 {
+/* Titel wie die Seitentitel (globales h2: GrueneType in Tanne), #512 */
+.dashboard-header h2 {
   margin: 0 0 8px 0;
-  color: #333;
 }
 
 .last-updated {

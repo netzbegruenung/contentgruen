@@ -77,7 +77,55 @@ is only a placeholder.
 Memory: since #358 the semantic service also loads spaCy (`de_core_news_sm`) and CharSplit
 for the Gegenlesen, about 0.5 GB more RAM than before (measured on the dev VM: ~180 MB for the
 model, ~350 MB for CharSplit's n-gram table), loaded in the background about two seconds after
-start. If the container has a memory limit, raise it accordingly.
+start. If the container has a memory limit, raise it accordingly. The Kürzungsvorschlag (#403)
+uses the same spaCy model and needs no further memory.
+
+Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
+from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:
+
+- **`X-Real-IP` reaches the semantic service.** nginx sets it, YARP in the BFF passes it on
+  (`IdentityHeaderTransformTests` checks that it is not stripped). Without it the service only
+  sees its peer, and all visitors with the same User-Agent count as one person. The header is
+  only trustworthy while the BFF and the semantic service are reachable through nginx alone;
+  a client that reaches them directly can choose its own address and inflate the person
+  counts (the report rate limit relies on the same header).
+- **One uvicorn worker.** The daily key lives in the memory of the process. With several
+  workers a visitor would count once per worker; a restart counts visitors again on that day.
+
+### 🔑 Login (Keycloak)
+
+#429 prepares an own realm „Gut gesagt“; the BFF takes the realm from `Keycloak__Authority`,
+and the semantic service creates accounts from Einladungen through the Keycloak admin API.
+Until the switch, sign-in stays on the Netzbegrünung realm.
+
+**Do not switch `Keycloak__Authority` to the new realm before the Kennungen are migrated:**
+every member gets a new `sub` there, and their contributions, votes, admin rights and the
+deletion list still hold the old one. Switch the BFF and enable redemption
+(`SEMANTIC_SEARCH_KEYCLOAK_*`) together, after the privacy policy covers self-registration.
+Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
+
+### ✉️ Mail (Meldungen)
+
+#493: Who gives an e-mail address when reporting a Beitrag gets two mails from the semantic
+service (Art. 16 (4) and (5) DSA): the Eingangsbestätigung right away, and the decision with the
+available remedies once an admin sperrt the Beitrag, dismisses the Meldung or removes the
+Beitrag. Texts: `services/meldung_mitteilen.py`; sending: `infrastructure/mail/versand.py`
+(SMTP with STARTTLS or TLS only, one connection per mail, 10 s per step; a request waits at most 15 s for its mails, then answers while the sending finishes in the background). The mails carry no text from the Meldung
+itself, only the title of a visible Beitrag.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `SEMANTIC_SEARCH_SMTP_HOST` | unset | SMTP server. Unset: no mail goes out, admins inform by hand (mailto link in the moderation) |
+| `SEMANTIC_SEARCH_SMTP_PORT` | `587` | |
+| `SEMANTIC_SEARCH_SMTP_VERSCHLUESSELUNG` | `starttls` | `starttls` or `ssl` (port 465). Nothing else: the service refuses to start with any other value and never sends in plain text; the certificate must match the host name |
+| `SEMANTIC_SEARCH_SMTP_BENUTZER` / `_PASSWORT` | unset | SMTP login; without a user no login. The password is a secret |
+| `SEMANTIC_SEARCH_MAIL_ABSENDER` | unset | `From` address; required, without it no mail goes out |
+| `SEMANTIC_SEARCH_MAIL_ANTWORT_AN` | unset | `Reply-To`; unset, replies go to the sender. The decision mail names a reply as the way to challenge the decision (Art. 20 DSA): set this to the contact address of the legal notice whenever the sender accepts no mail |
+
+The sender domain needs SPF/DKIM for the SMTP server, otherwise the mails land in spam. A failed
+mail never undoes a Meldung or decision; the log says `SMTP delivery failed (<error type>)`
+without the address. Check after setting the variables: report a Beitrag on the test system with
+your own address, then dismiss the Meldung in the moderation; both mails must arrive.
 
 ### 🚧 Updating Production
 
@@ -109,29 +157,41 @@ deploy anything by itself.
 #### Releases
 
 1. **Only the maintainer sets tags.** Agents and contributors propose, they do not tag.
-2. **Version scheme:** `v0.x` releases until the launch (`v0.9.0` first), `v1.0.0` at the
-   launch, [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
+2. **Version scheme:** `v0.x` releases until the public launch: `v0.8.0` first, for the move
+   of production, `v0.9.0` at the internal launch, `v1.0.0` at the public launch,
+   [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
    not move `:latest` (see above), and production only follows `:latest`.
-3. **Version in the footer:** the footer shows the `version` from
-   `mvp/frontend/gutgesagt-frontend/package.json`. Before tagging, a pull request sets it to
-   `X.Y.Z` (without the `v`); otherwise the new images show the old number.
-   `npm version X.Y.Z --no-git-tag-version` in that directory also updates `package-lock.json`.
-4. **Tag on Forgejo:** set the tag on a commit of `main` on Forgejo. The push mirror carries it
-   to GitHub, where `release.yml` tests and builds the images. Check that the run is green
-   and `:latest` moved before announcing the release.
-5. **Change list:** the change list of a release is the Forgejo release to its tag (Releases on
-   the Forgejo repository). Draft it with
-   ```bash
-   git fetch origin --tags
-   scripts/changelog.sh vX.Y.Z > changelog.md   # since the previous v* tag
-   scripts/changelog.sh vX.Y.Z <commit>         # first release, or a different start
-   ```
-   The script lists the merged pull requests on `main` (linked, grouped by their Conventional
-   Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the new
-   scripts in `mvp/scripts/manual/`. It recognises a breaking change only by the `!` in the PR
-   title (`feat!:`), not by a `BREAKING CHANGE:` footer, and links any commit on `main` whose
-   subject ends in `(#N)` as pull request N. Review the draft, add operational steps it cannot
-   know (for example a rename that needs action per environment), and publish it as the release.
+3. **Release pull request:** before tagging, one pull request prepares the release:
+   - **Version in the footer:** the footer shows the `version` from
+     `mvp/frontend/gutgesagt-frontend/package.json`. Set it to `X.Y.Z` (without the `v`),
+     otherwise the new images show the old number. `npm version X.Y.Z --no-git-tag-version`
+     in that directory also updates `package-lock.json`.
+   - **Change list:** draft the text of the Forgejo release and show it in the description of
+     the release pull request, so it is reviewed with it. The change list lives only in the
+     Forgejo release, not in a file in the repository. Draft it with
+     ```bash
+     git fetch origin --tags
+     scripts/changelog.sh origin/main             # since the previous v* tag
+     scripts/changelog.sh origin/main <commit>    # first release, or a different start
+     ```
+     The script lists the merged pull requests on `main` (linked, grouped by their Conventional
+     Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the
+     new scripts in `mvp/scripts/manual/`. It recognises a breaking change only by the `!` in the
+     PR title (`feat!:`), not by a `BREAKING CHANGE:` footer, and links any commit on `main`
+     whose subject ends in `(#N)` as pull request N. Review the draft and add, in a section
+     „Ablauf beim Ausrollen“ above the generated list, the operational steps it cannot know: which
+     scripts in `mvp/scripts/manual/` must run and in which order, renames that need action per
+     environment, new settings, more memory.
+   If `main` moves while the pull request is open, merge it in and draft the list again, so
+   that it covers everything up to the tag except the release pull request itself.
+4. **Tag on Forgejo:** set the tag on the merge commit of the release pull request on `main`
+   on Forgejo, not on a later commit: later pull requests belong to the next release. The push
+   mirror carries the tag to GitHub, where `release.yml` tests and builds the images. Check
+   that the run is green and `:latest` moved before announcing the release.
+5. **Forgejo release:** create the release to the tag on Forgejo (Releases on the Forgejo
+   repository) and paste the reviewed draft from the release pull request. `scripts/changelog.sh
+   vX.Y.Z` shows the tagged range for a last comparison; for the first release give the start
+   as well (`scripts/changelog.sh v0.8.0 fae44b4b`, the commit of the former `v1.1.0`).
 
 For urgent deployments, ask in the project channel (see below).
 
@@ -154,10 +214,11 @@ What this means for a rollout:
   its own `lock_timeout`. The container exits; with a restart policy (the dev stack uses
   `restart: unless-stopped`) Docker starts it again, which retries the migration. Without one,
   start it again by hand. A migration that failed on a lock succeeds on a later attempt once
-  the lock is free. If it keeps failing, the service log names the migration and the first
-  line of the error. The failed migration leaves no trace in the database; migrations committed
-  before it in the same start stay in. Before rolling back to the previous image, check that it
-  works with them.
+  the lock is free. If it keeps failing, the service log names the migration and the type
+  of the error (not its message, which can carry values, #422); the first line of the
+  message is in `migrationsprotokoll.fehler`. The failed migration leaves no trace in the
+  database; migrations committed before it in the same start stay in. Before rolling back
+  to the previous image, check that it works with them.
 - **`VACUUM FULL` after the `COMMIT`** of three older migrations runs separately and waits at
   most 30 s for its lock. If it fails, the migration stays committed (`nachlauf_offen`), the
   service starts anyway and retries only the `VACUUM FULL` on its next start.

@@ -11,11 +11,8 @@
       <p>
         Gut gesagt sammelt politische Argumente und Formulierungen, die sich in der Praxis
         bewährt haben, damit andere sie wiederverwenden können. Die Plattform erstellt keine
-        Inhalte; sie sammelt und ordnet, was Mitwirkende eintragen. Die Software
-        enthält eine optionale Funktion, die im Formular für Bilder auf Klick einen Vorschlag
-        für die Unterschrift macht; sie ist auf dieser Plattform nicht aktiv. Auch mit ihr
-        entscheidet ein Mensch, ob er den Vorschlag übernimmt — die Beiträge selbst stammen
-        von Menschen.
+        Inhalte; sie sammelt und ordnet, was Mitwirkende eintragen. Auch die Unterschrift
+        eines Bildes schreibt ein Mensch.
       </p>
       <p>
         Anbieter ist der im <a routerLink="/impressum">Impressum</a> genannte Verein. Die
@@ -31,6 +28,12 @@
       <p>
         Zum Lesen und Suchen ist kein Konto nötig. Zum Einwerfen, Einstellen von Beiträgen und Bewerten
         meldest du dich an. Die Zugangsdaten sind persönlich und nicht übertragbar.
+      </p>
+      <p>
+        Diesen Bedingungen stimmst du zu, wenn du etwas einstellst: Über dem Absende-Knopf jedes
+        Formulars dafür steht ein Hinweis, der auf sie verlinkt, und mit dem Absenden stimmst du
+        ihnen zu. Beim Satz, den du beim Destillieren festhältst, geschieht das schon mit dem
+        Speichern beim Tippen; der Hinweis steht dort über den Knöpfen.
       </p>
       <p>
         Ein Anspruch auf Zugang besteht nicht. Wir können den Zugang sperren, wenn diese
@@ -72,10 +75,11 @@
       <p>
         Diese Plattform existiert, damit Formulierungen weiterwandern. Deshalb stellst du deinen
         Text unter die
-        <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.de"
+        <a [href]="cc0Url"
            target="_blank" rel="noopener">Creative-Commons-Zero-Lizenz (CC0&nbsp;1.0)</a>.
         Das erklärst du mit dem Absenden; beim Satz, den du beim Destillieren festhältst, schon
-        mit dem Speichern beim Tippen. Der Hinweis darüber verlinkt diese Bedingungen.
+        mit dem Speichern beim Tippen. Der Hinweis darüber verlinkt die CC0-Erklärung und diese
+        Bedingungen (Abschnitt 2).
       </p>
       <p>
         Das heißt: Alle dürfen sie kopieren, verändern und veröffentlichen — auch im Wahlkampf,
@@ -88,7 +92,7 @@
         Auf dein Urheberrecht kannst du nach deutschem Recht nicht vollständig verzichten. Soweit
         der Verzicht nicht wirkt, räumst du mit derselben Erklärung jeder Person ein einfaches,
         unentgeltliches und zeitlich, räumlich und inhaltlich unbeschränktes Nutzungsrecht an
-        deinem Text ein, für alle bekannten Nutzungsarten, einschließlich des Rechts, ihn zu
+        deinem Text ein, für bekannte und künftige Nutzungsarten, einschließlich des Rechts, ihn zu
         bearbeiten und Rechte daran weiterzugeben. Dein Recht, als Urheberin oder Urheber genannt
         zu werden, machst du gegenüber Weiterverwendenden nicht geltend. Das entspricht der
         Ersatzlizenz in Abschnitt 3 der CC0-Erklärung.
@@ -113,6 +117,13 @@
         Kurze Zitate sind zulässig, wenn du dich im Beitrag erkennbar mit ihnen
         auseinandersetzt — ein Zitat als bloße Illustration ist davon nicht gedeckt. Verlinke im
         Zweifel und schreib das Argument in eigenen Worten.
+      </p>
+      <p>
+        Binde ein fremdes Bild nur ein, wenn es an seinem ursprünglichen Ort frei zugänglich ist,
+        also ohne Anmeldung, Bezahlschranke oder technischen Schutz gegen das Einbinden, und dort
+        nicht erkennbar ohne Erlaubnis der Berechtigten steht. Erfüllt ein eingebundenes Bild das
+        nicht, sperren wir den Beitrag, sobald wir es geprüft haben, etwa nach einer Meldung
+        (Abschnitt 7).
       </p>
     </section>
 
@@ -148,8 +159,14 @@
       <h2>7. Melden und Moderation</h2>
       <p>
         Über die Meldefunktion an jedem Beitrag kannst du uns — auch ohne Konto — einen
-        Hinweis auf einen Beitrag geben. Eine Meldung nach Artikel 16 der Verordnung (EU)
-        2022/2065 (DSA) richtest du bitte per E-Mail an
+        Beitrag melden, auch einen rechtswidrigen nach Artikel 16 der Verordnung (EU) 2022/2065
+        (DSA). Dazu wählst du einen Grund und erklärst, dass du in gutem Glauben davon
+        überzeugt bist, dass deine Angaben richtig und vollständig sind. Wählst du
+        „Rechtswidriger Inhalt“, schreibst du dazu, warum der Beitrag rechtswidrig ist; bei den
+        anderen Gründen kannst du beschreiben, was nicht stimmt. Name und E-Mail-Adresse kannst du angeben, musst es aber nicht. Den Eingang
+        bestätigen wir dir sofort in der App. Hast du eine E-Mail-Adresse angegeben, bestätigen
+        wir ihn dir auch per E-Mail, und später teilen wir dir unsere Entscheidung über die Meldung
+        per E-Mail mit, zusammen mit deinen Möglichkeiten, dagegen vorzugehen. Melden kannst du auch per E-Mail an
         <a href="mailto:{{KONTAKT_MAIL}}">{{KONTAKT_MAIL}}</a>.
       </p>
       <p>
@@ -221,10 +238,11 @@
       <p>
         Wir können diese Bedingungen ändern, wenn dafür ein sachlicher Grund besteht, etwa eine
         geänderte Rechtslage oder neue Funktionen. Geänderte Bedingungen gelten für dich erst,
-        wenn du ihnen ausdrücklich zustimmst: Bei deiner nächsten Anmeldung zeigen wir dir den
-        neuen Stand und bitten dich um Zustimmung. Bis dahin gilt für dich der Stand, der vorher
-        für dich galt. Schweigen oder bloßes Weiternutzen gilt nicht als Zustimmung. Damit die
-        Frage alle erreicht, melden wir beim Wechsel alle ab.
+        wenn du ihnen zustimmst. Zustimmen kannst du wie in Abschnitt 2, wenn du das nächste Mal
+        etwas einstellst: Der Hinweis über dem Absende-Knopf verlinkt immer den aktuellen Stand. Fragen
+        wir dich schon vorher, etwa bei der Anmeldung, kannst du auch dort zustimmen. Bis dahin
+        gilt für dich der Stand, der vorher für dich galt. Schweigen oder bloßes Weiternutzen,
+        etwa Lesen oder Bewerten, gilt nicht als Zustimmung.
       </p>
       <p>
         Reine Korrekturen, die deine Rechte und Pflichten nicht ändern, etwa an Schreibfehlern,
@@ -232,9 +250,10 @@
         ergeben einen neuen Stand.
       </p>
       <p>
-        Stimmst du nicht zu, kannst du dich nicht mehr anmelden und nichts mehr einstellen.
-        Lesen und Suchen bleiben ohne Konto möglich, und du kannst dein Konto nach Abschnitt 8
-        beenden. Was du bis dahin eingestellt hast, bleibt nach Abschnitt 4 freigegeben.
+        Willst du nicht zustimmen, stell nichts mehr ein. Fragen wir dich bei der Anmeldung,
+        kommst du ohne Zustimmung nicht mehr hinein. Lesen und Suchen bleiben ohne Konto möglich,
+        und du kannst dein Konto nach Abschnitt 8 beenden. Was du bis dahin eingestellt hast,
+        bleibt nach Abschnitt 4 freigegeben.
         Ab diesem Stand bewahren wir jeden Stand dieser Bedingungen mit dem Zeitraum auf, in dem
         er galt.
       </p>
@@ -251,7 +270,7 @@
     </section>
 
     <div class="update-notice">
-      <p><strong>Stand:</strong> 30. Oktober 2026</p>
+      <p><strong>Stand:</strong> 2. November 2026</p>
     </div>
   </div>
 </div>

@@ -1,54 +1,60 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { ModerationService } from './moderation.service';
-import { SessionService } from './session.service';
+import { ModerationService, NeueMeldung } from './moderation.service';
 import { environment } from '../../environments/environment';
 
 describe('ModerationService', () => {
   let service: ModerationService;
   let httpMock: HttpTestingController;
-  let sessionService: jasmine.SpyObj<SessionService>;
-
-  const mockSessionId = '12345678-1234-4234-8234-123456789012';
 
   beforeEach(() => {
-    const sessionServiceSpy = jasmine.createSpyObj('SessionService', ['getSessionId']);
-    sessionServiceSpy.getSessionId.and.returnValue(mockSessionId);
-
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
-        ModerationService,
-        { provide: SessionService, useValue: sessionServiceSpy }
+        ModerationService
       ]
     });
 
     service = TestBed.inject(ModerationService);
     httpMock = TestBed.inject(HttpTestingController);
-    sessionService = TestBed.inject(SessionService) as jasmine.SpyObj<SessionService>;
   });
 
   afterEach(() => {
     httpMock.verify();
   });
 
+  function meldung(felder: Partial<NeueMeldung> = {}): NeueMeldung {
+    return {
+      contentId: 'content-123',
+      contentType: 'commentary',
+      reason: 'spam',
+      melderName: null,
+      melderEmail: null,
+      guterGlaube: true,
+      ...felder,
+    };
+  }
+
   describe('reportContent', () => {
-    it('should send report request with X-Session-Id header', () => {
+    it('sendet die Meldung ohne Sitzungskennung (#446)', () => {
       const contentId = 'content-123';
       const contentType = 'commentary';
       const reason = 'spam';
       const description = 'This is spam content';
 
-      service.reportContent(contentId, contentType, reason, description).subscribe();
+      service.reportContent(meldung({ contentId, contentType, reason, description })).subscribe();
 
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
       expect(req.request.method).toBe('POST');
-      expect(req.request.headers.get('X-Session-Id')).toBe(mockSessionId);
+      expect(req.request.headers.has('X-Session-Id')).toBeFalse();
       expect(req.request.body).toEqual({
         content_id: contentId,
         content_type: contentType,
         reason: reason,
-        description: description
+        description: description,
+        melder_name: null,
+        melder_email: null,
+        guter_glaube: true,
       });
 
       req.flush({ success: true, message: 'Report submitted' });
@@ -59,28 +65,28 @@ describe('ModerationService', () => {
       const contentType = 'generictext';
       const reason = 'inappropriate';
 
-      service.reportContent(contentId, contentType, reason).subscribe();
+      service.reportContent(meldung({ contentId, contentType, reason })).subscribe();
 
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
       expect(req.request.body.description).toBeUndefined();
-      expect(req.request.headers.get('X-Session-Id')).toBe(mockSessionId);
 
       req.flush({ success: true, message: 'Report submitted' });
     });
 
-    it('should call sessionService.getSessionId()', () => {
-      service.reportContent('content-123', 'commentary', 'spam').subscribe();
+    it('schickt Name, E-Mail-Adresse und die Erklärung guten Glaubens mit (#438)', () => {
+      service.reportContent(meldung({ melderName: 'Anna Beispiel', melderEmail: 'anna@example.org' })).subscribe();
 
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
+      expect(req.request.body.melder_name).toBe('Anna Beispiel');
+      expect(req.request.body.melder_email).toBe('anna@example.org');
+      expect(req.request.body.guter_glaube).toBeTrue();
       req.flush({ success: true, message: 'Report submitted' });
-
-      expect(sessionService.getSessionId).toHaveBeenCalled();
     });
 
     it('should handle successful report submission', (done) => {
       const mockResponse = { success: true, message: 'Content reported successfully' };
 
-      service.reportContent('content-123', 'commentary', 'spam').subscribe(response => {
+      service.reportContent(meldung()).subscribe(response => {
         expect(response).toEqual(mockResponse);
         done();
       });
@@ -90,7 +96,7 @@ describe('ModerationService', () => {
     });
 
     it('should handle error response', (done) => {
-      service.reportContent('content-123', 'commentary', 'spam').subscribe({
+      service.reportContent(meldung()).subscribe({
         next: () => fail('should have failed'),
         error: (error) => {
           expect(error.status).toBe(429);
@@ -188,6 +194,30 @@ describe('ModerationService', () => {
 
       req.flush({ total: 1, beitraege: [{ id: 'b-1', content_type: 'commentary', status: 'blocked' }] });
       expect(anzahl).toBe(1);
+    });
+  });
+
+  describe('Meldungen einer Person (#494)', () => {
+    it('sucht per POST, Name und E-Mail-Adresse stehen nicht in der Adresse', () => {
+      service.meldungenEinerPerson({ email: 'anna@example.org', name: null }).subscribe();
+
+      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/melder/meldungen`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: 'anna@example.org', name: null });
+      expect(req.request.urlWithParams).not.toContain('anna');
+      req.flush({ total: 0, reports: [] });
+    });
+
+    it('löscht die Angaben per POST mit denselben Angaben und den gezeigten Meldungen', () => {
+      let ergebnis: unknown;
+
+      service.angabenLoeschen({ email: null, name: 'Anna' }, ['m-1'], true).subscribe((a) => (ergebnis = a));
+
+      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/melder/angaben-loeschen`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: null, name: 'Anna', meldung_ids: ['m-1'], dieselbe_person: true });
+      req.flush({ geloescht: 2, angaben_entfernt: 1 });
+      expect(ergebnis).toEqual({ geloescht: 2, angaben_entfernt: 1 });
     });
   });
 

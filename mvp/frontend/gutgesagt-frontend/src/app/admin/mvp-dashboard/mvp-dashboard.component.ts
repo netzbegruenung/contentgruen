@@ -8,6 +8,7 @@ import { BilanzComponent } from '../bilanz/bilanz.component';
 import { SuchenOhneTrefferComponent } from '../suchen-ohne-treffer/suchen-ohne-treffer.component';
 import { MusterHinweiseComponent } from '../muster-hinweise/muster-hinweise.component';
 import { FeedbackListeComponent } from '../feedback-liste/feedback-liste.component';
+import { EinladungenComponent } from '../einladungen/einladungen.component';
 import { interval, Subscription } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 
@@ -22,7 +23,8 @@ import { startWith, switchMap } from 'rxjs/operators';
     BilanzComponent,
     SuchenOhneTrefferComponent,
     MusterHinweiseComponent,
-    FeedbackListeComponent
+    FeedbackListeComponent,
+    EinladungenComponent
   ],
   templateUrl: './mvp-dashboard.component.html',
   styleUrls: ['./mvp-dashboard.component.css']

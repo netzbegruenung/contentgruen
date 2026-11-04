@@ -1,0 +1,160 @@
+"""
+Das Schema des Fangkorbs festnageln.
+
+``raw_input_content_links`` haelt fest, worin ein Einwurf ausformuliert ist
+(Glossar "Ausformuliert in"), n:m zwischen Einwurf und Beitrag. Eine schmale Tabelle ist die erste, die jemand beim Aufraeumen
+"vereinfacht" - etwa zu einem Feld ``resulting_content_id`` auf ``raw_inputs``.
+Das waere billiger und genau die Blockade, die docs/archiv/ROHINPUT.md (Abschnitt 6)
+benennt: ein Einwurf kann mehrere Beitraege hervorbringen und ein Beitrag aus
+mehreren Einwuerfen entstehen.
+
+Neue Spalten an bestehenden Tabellen legt ``create_all`` nicht an; wer hier eine
+Spalte ergaenzt, braucht ein Migrationsskript in mvp/backend/postgres-app/migrations.
+"""
+
+import pytest
+
+from infrastructure.database.models import Einwurf, AusformuliertIn, Satz
+
+
+@pytest.mark.unit
+class TestEinwurfSchema:
+    def test_felder_stehen_fest(self):
+        assert set(Einwurf.__table__.columns.keys()) == {
+            "id",
+            "content",
+            "url",
+            "image_url",
+            "submitted_by",
+            "source_channel",
+            "status",
+            "created_at",
+            "destilled_by",
+            "cc0_wortlaut",
+        }
+
+    def test_submitted_by_ist_nullable(self):
+        """Ein NOT NULL hier verbaut den spaeteren Share-Eingang ohne Sitzung."""
+        assert Einwurf.__table__.columns["submitted_by"].nullable is True
+
+    def test_cc0_wortlaut_ist_nullable(self):
+        """Einwuerfe von vor #431 und aus Kanaelen ohne Formular haben keine Kennung."""
+        assert Einwurf.__table__.columns["cc0_wortlaut"].nullable is True
+
+    def test_destilled_by_ist_nullable(self):
+        """Offene Einwuerfe hat noch niemand destilliert."""
+        assert Einwurf.__table__.columns["destilled_by"].nullable is True
+
+    def test_status_ist_ein_eigenes_feld(self):
+        """Der Bearbeitungsstand wird geschrieben, nicht bei jedem Lesen abgeleitet."""
+        status = Einwurf.__table__.columns["status"]
+        assert status.nullable is False
+        assert "open" in str(status.server_default.arg)
+
+    def test_die_drei_inhaltsfelder_sind_alle_optional(self):
+        """Pflicht ist nur, dass eines davon dasteht - das prueft der Constraint."""
+        for spalte in ("content", "url", "image_url"):
+            assert Einwurf.__table__.columns[spalte].nullable is True
+
+    def test_leerer_einwurf_ist_per_constraint_ausgeschlossen(self):
+        bedingungen = [
+            str(c.sqltext)
+            for c in Einwurf.__table__.constraints
+            if c.name == "check_raw_input_not_empty"
+        ]
+        assert len(bedingungen) == 1
+        assert "content IS NOT NULL" in bedingungen[0]
+        assert "url IS NOT NULL" in bedingungen[0]
+        assert "image_url IS NOT NULL" in bedingungen[0]
+
+
+@pytest.mark.unit
+class TestAusformuliertInTabelle:
+    def test_tabelle_existiert_mit_ihren_feldern(self):
+        assert set(AusformuliertIn.__table__.columns.keys()) == {
+            "id",
+            "raw_input_id",
+            "content_id",
+            "created_by",
+            "created_at",
+            "draft_id",
+            "content_type",
+        }
+
+    def test_verknuepfung_ist_n_zu_m(self):
+        """
+        Kein Unique auf raw_input_id allein und keines auf content_id allein -
+        genau eine Paarung darf sich nicht wiederholen.
+        """
+        eindeutige_indizes = {
+            tuple(spalte.name for spalte in index.columns)
+            for index in AusformuliertIn.__table__.indexes
+            if index.unique
+        }
+        assert eindeutige_indizes == {("raw_input_id", "content_id")}
+
+    def test_kein_fremdschluessel_auf_inhalte(self):
+        """content_id zeigt auf einen Qdrant-Punkt, nicht auf eine Tabelle."""
+        assert AusformuliertIn.__table__.columns["content_id"].foreign_keys == set()
+
+    def test_verweis_auf_den_einwurf_kaskadiert(self):
+        (fremdschluessel,) = list(
+            AusformuliertIn.__table__.columns["raw_input_id"].foreign_keys
+        )
+        assert fremdschluessel.column.table.name == "raw_inputs"
+        assert fremdschluessel.ondelete == "CASCADE"
+
+    def test_wer_verarbeitet_hat_wird_festgehalten(self):
+        """Die Rolle, die last_modified_by am Beitrag nicht bewahrt."""
+        assert "created_by" in AusformuliertIn.__table__.columns
+
+    def test_geleerter_satz_loescht_ausformuliert_in_nicht(self):
+        """
+        Ein leerer Satz loescht seine Zeile in raw_input_drafts. Der Ausformuliert-in-Eintrag
+        muss das ueberleben - nur draft_id wird leer.
+        """
+        spalte = AusformuliertIn.__table__.columns["draft_id"]
+        (fremdschluessel,) = list(spalte.foreign_keys)
+        assert spalte.nullable is True
+        assert fremdschluessel.column.table.name == "raw_input_drafts"
+        assert fremdschluessel.ondelete == "SET NULL"
+
+    def test_beitragstyp_ist_optional(self):
+        """Ausformuliert-in-Eintraege aus der Zeit vor Fangkorb v2 kennen keinen Typ."""
+        assert AusformuliertIn.__table__.columns["content_type"].nullable is True
+
+
+@pytest.mark.unit
+class TestSatztabelle:
+    """
+    Der Satz gehoert zu (Einwurf, Person). Der Upsert haengt am eindeutigen
+    Index; ohne ihn wuerde ON CONFLICT in PostgreSQL mit einem Fehler abbrechen.
+    """
+
+    def test_tabelle_existiert_mit_ihren_feldern(self):
+        assert set(Satz.__table__.columns.keys()) == {
+            "id",
+            "raw_input_id",
+            "user_id",
+            "sentence",
+            "updated_at",
+            "cc0_wortlaut",
+        }
+
+    def test_genau_ein_satz_je_person_und_einwurf(self):
+        eindeutige_indizes = {
+            tuple(spalte.name for spalte in index.columns)
+            for index in Satz.__table__.indexes
+            if index.unique
+        }
+        assert eindeutige_indizes == {("raw_input_id", "user_id")}
+
+    def test_person_und_satz_sind_pflicht(self):
+        """Ein leerer Satz wird geloescht, nicht als "" oder NULL abgelegt."""
+        assert Satz.__table__.columns["user_id"].nullable is False
+        assert Satz.__table__.columns["sentence"].nullable is False
+
+    def test_verweis_auf_den_einwurf_kaskadiert(self):
+        (fremdschluessel,) = list(Satz.__table__.columns["raw_input_id"].foreign_keys)
+        assert fremdschluessel.column.table.name == "raw_inputs"
+        assert fremdschluessel.ondelete == "CASCADE"

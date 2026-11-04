@@ -11,21 +11,21 @@ schreibt. Nur Standardbibliothek: der Bericht kommt auch, wenn die Installation 
 Aufruf: python3 scripts/ci_bericht.py <schritt> ...  (die Schritte in Pipeline-Reihenfolge)
 Umgebung: CI_FORGE_URL, CI_REPO_OWNER, CI_REPO_NAME, CI_COMMIT_PULL_REQUEST,
 CI_COMMIT_SHA, CI_PIPELINE_NUMBER, CI_PIPELINE_URL (setzt Woodpecker),
-FORGEJO_TOKEN (Secret forgejo_ci_bericht_token).
+FORGEJO_TOKEN (Secret forgejo_ci_bericht_token), CI_BERICHT_KONTO (Login des Kontos, dem
+der Token gehoert; nur dessen Kommentare zaehlen als voriger Bericht).
 """
 
 import hashlib
-import http.client
 import json
 import os
 import pathlib
 import re
 import sys
-import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import dataclass
 from typing import Optional, Sequence
+
+from forgejo_api import NETZFEHLER, anfrage, fehler_melden, pflicht
 
 ZEILEN_JE_SCHRITT = 80
 # Sichtbare Fehlerzeilen je Schritt; der Fingerabdruck nimmt alle
@@ -34,7 +34,6 @@ FEHLERZEILEN_JE_SCHRITT = 20
 ZEICHEN_JE_ZEILE = 1000
 # Forgejo nimmt deutlich mehr an; so bleibt der Kommentar lesbar.
 MAX_ZEICHEN = 60_000
-ZEITLIMIT_S = 30
 ERSATZ = "[Secret entfernt]"
 PROTOKOLL = pathlib.Path(".ci")
 
@@ -175,8 +174,12 @@ def marke_lesen(text: str) -> tuple[Optional[str], bool]:
     return treffer.group(1), bool(treffer.group(2))
 
 
+# Jeder Bericht beginnt so; Agenten schreiben mit demselben Konto, ihre Kommentare nicht
+_KOPF_ANFANG = "*Automatischer CI-Bericht (Woodpecker, "
+
+
 def _kopf(lauf: Lauf) -> str:
-    return f"*Automatischer CI-Bericht (Woodpecker, Pipeline `#{lauf.pipeline}`), kein Agent*"
+    return f"{_KOPF_ANFANG}Pipeline `#{lauf.pipeline}`), kein Agent*"
 
 
 def unveraendert_erstellen(lauf: Lauf, fingerabdruck: str, voriger_url: str) -> str:
@@ -261,44 +264,6 @@ def schritte_lesen(namen: Sequence[str], verzeichnis: pathlib.Path) -> list[Schr
     return schritte
 
 
-def _pflicht(env, name: str) -> str:
-    wert = env.get(name)
-    if not wert:
-        raise SystemExit(f"{name} ist nicht gesetzt")
-    return wert
-
-
-def _anfrage(url: str, token: str, daten: Optional[dict] = None) -> tuple[int, bytes]:
-    """GET (ohne ``daten``) oder POST an die Forgejo-API; wirft wie urlopen."""
-    anfrage = urllib.request.Request(
-        url,
-        data=None if daten is None else json.dumps(daten).encode(),
-        method="GET" if daten is None else "POST",
-        headers={
-            "Authorization": f"token {token}",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        },
-    )
-    with urllib.request.urlopen(anfrage, timeout=ZEITLIMIT_S) as antwort:
-        return antwort.status, antwort.read()
-
-
-def _fehler_melden(was: str, fehler: Exception) -> None:
-    """Nur den Status melden, nie den Antworttext: Forgejo gibt bei ungueltigem Token
-    den Token zurueck."""
-    if isinstance(fehler, urllib.error.HTTPError):
-        print(f"{was}: HTTP {fehler.code}", file=sys.stderr)
-    else:
-        grund = getattr(fehler, "reason", fehler)
-        print(f"{was}: fehlgeschlagen ({type(grund).__name__})", file=sys.stderr)
-
-
-# OSError umfasst URLError, Zeitueberschreitung und abgerissene Verbindungen beim Lesen
-# der Antwort, HTTPException etwa IncompleteRead
-_NETZFEHLER = (OSError, http.client.HTTPException)
-
-
 @dataclass
 class VorigerBericht:
     fingerabdruck: str
@@ -306,16 +271,38 @@ class VorigerBericht:
     url: str
 
 
-def letzter_bericht(kommentare: object) -> Optional[VorigerBericht]:
-    """Fingerabdruck des juengsten Kommentars mit Fingerabdruck und Adresse des
-    juengsten vollen Berichts mit demselben Abdruck. ValueError, wenn die Antwort
-    keine Kommentarliste ist."""
-    if not isinstance(kommentare, list) or not all(
-        isinstance(k, dict) for k in kommentare
-    ):
+def _von(kommentar: dict, konto: str) -> bool:
+    """Ob ``konto`` den Kommentar geschrieben hat (Logins ohne Gross/Klein)."""
+    autor = kommentar.get("user")
+    login = autor.get("login") if isinstance(autor, dict) else None
+    return isinstance(login, str) and login.casefold() == konto.casefold()
+
+
+def _ist_bericht(kommentar: dict, konto: str) -> bool:
+    """Ob der Kommentar ein Bericht dieses Schritts ist: von ``konto`` und mit dem
+    Berichtskopf am Anfang (ein Agent desselben Kontos, der einen Bericht zitiert,
+    zaehlt nicht)."""
+    return _von(kommentar, konto) and str(kommentar.get("body") or "").startswith(
+        _KOPF_ANFANG
+    )
+
+
+def kommentarliste(antwort: object) -> list[dict]:
+    """Die Kommentare der API-Antwort; ValueError, wenn sie keine Kommentarliste ist."""
+    if not isinstance(antwort, list) or not all(isinstance(k, dict) for k in antwort):
         raise ValueError("keine Kommentarliste")
+    return antwort
+
+
+def letzter_bericht(kommentare: object, konto: str) -> Optional[VorigerBericht]:
+    """Fingerabdruck des juengsten Berichts von ``konto`` und Adresse des juengsten
+    vollen Berichts mit demselben Abdruck. Die Marke anderer Konten zaehlt nicht:
+    sonst lenkt ein nachgemachter Kommentar den Bericht um. ValueError, wenn die
+    Antwort keine Kommentarliste ist."""
     gefunden = None
-    for kommentar in reversed(kommentare):
+    for kommentar in reversed(kommentarliste(kommentare)):
+        if not _ist_bericht(kommentar, konto):
+            continue
         abdruck, einzeiler = marke_lesen(str(kommentar.get("body") or ""))
         if not abdruck:
             continue
@@ -340,28 +327,41 @@ def main(
             "kein CI-Bericht im PR."
         )
         return 0
-    forge = _pflicht(env, "CI_FORGE_URL").rstrip("/")
-    repo = f"{_pflicht(env, 'CI_REPO_OWNER')}/{_pflicht(env, 'CI_REPO_NAME')}"
-    pr = _pflicht(env, "CI_COMMIT_PULL_REQUEST")
+    forge = pflicht(env, "CI_FORGE_URL").rstrip("/")
+    repo = f"{pflicht(env, 'CI_REPO_OWNER')}/{pflicht(env, 'CI_REPO_NAME')}"
+    pr = pflicht(env, "CI_COMMIT_PULL_REQUEST")
     kommentare_url = (
         f"{forge}/api/v1/repos/{repo}/issues/{urllib.parse.quote(pr)}/comments"
     )
     lauf = Lauf(
-        pipeline=_pflicht(env, "CI_PIPELINE_NUMBER"),
-        pipeline_url=_pflicht(env, "CI_PIPELINE_URL"),
-        commit=_pflicht(env, "CI_COMMIT_SHA"),
+        pipeline=pflicht(env, "CI_PIPELINE_NUMBER"),
+        pipeline_url=pflicht(env, "CI_PIPELINE_URL"),
+        commit=pflicht(env, "CI_COMMIT_SHA"),
     )
     schritte = schritte_lesen(argv, verzeichnis)
     abdruck = fingerabdruck(schritte, [token])
 
-    # Sind die Kommentare nicht lesbar, kommt der volle Bericht: lieber einmal zu viel
-    # als ein roter Lauf ohne Bericht.
+    # Sind die Kommentare nicht lesbar oder ist das Konto unbekannt, kommt der volle
+    # Bericht: lieber einmal zu viel als ein roter Lauf ohne Bericht.
     voriger = None
-    try:
-        _, antwort = _anfrage(kommentare_url, token)
-        voriger = letzter_bericht(json.loads(antwort))
-    except (*_NETZFEHLER, ValueError) as fehler:
-        _fehler_melden(f"Kommentare in PR #{pr} lesen", fehler)
+    konto = (env.get("CI_BERICHT_KONTO") or "").strip()
+    if not konto:
+        print("CI_BERICHT_KONTO ist nicht gesetzt: voller Bericht ohne Vergleich.")
+    else:
+        try:
+            _, antwort = anfrage(kommentare_url, token)
+            kommentare = kommentarliste(json.loads(antwort))
+            voriger = letzter_bericht(kommentare, konto)
+            if voriger is None and any(
+                marke_lesen(str(k.get("body") or ""))[0] for k in kommentare
+            ):
+                # Sonst faellt nie auf, dass der Token einem anderen Konto gehoert
+                print(
+                    f"Markierungen nur in Kommentaren anderer Konten als {konto}: "
+                    "voller Bericht. Gehoert der Token noch CI_BERICHT_KONTO?"
+                )
+        except (*NETZFEHLER, ValueError) as fehler:
+            fehler_melden(f"Kommentare in PR #{pr} lesen", fehler)
 
     if voriger and voriger.fingerabdruck == abdruck:
         art = "unverändert, Einzeiler"
@@ -372,9 +372,9 @@ def main(
 
     # Ein Versuch, keine Wiederholung: lieber kein Bericht als zwei.
     try:
-        status, _ = _anfrage(kommentare_url, token, {"body": body})
-    except _NETZFEHLER as fehler:
-        _fehler_melden(f"CI-Bericht in PR #{pr}", fehler)
+        status, _ = anfrage(kommentare_url, token, {"body": body})
+    except NETZFEHLER as fehler:
+        fehler_melden(f"CI-Bericht in PR #{pr}", fehler)
         return 1
     print(f"CI-Bericht in PR #{pr} ({art}): HTTP {status}")
     return 0

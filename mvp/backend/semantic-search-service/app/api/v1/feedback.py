@@ -1,13 +1,14 @@
 """
-Feedback an das Team (#343). Senden darf jede Person, auch ohne Anmeldung; lesen
-duerfen nur Admins. Was gespeichert wird: services/feedback_service.py.
+Feedback an das Team (#343). Senden darf jede Person, auch ohne Anmeldung; lesen,
+als erledigt markieren und einzeln loeschen (#425) duerfen nur Admins. Was
+gespeichert wird: services/feedback_service.py.
 """
 
 import uuid
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field, field_validator
 
 from core.logging import get_logger
@@ -17,6 +18,7 @@ from services.feedback_service import (
     KONTAKT_MAX,
     LIMIT_STANDARD,
     TEXT_MAX,
+    FeedbackEintrag,
     FeedbackService,
 )
 from utils.client_identity import derive_client_key
@@ -56,6 +58,21 @@ class FeedbackEintragResponse(BaseModel):
     text: str
     kontakt: Optional[str]
     eingegangen_am: date
+    erledigt: bool
+
+    @classmethod
+    def aus(cls, e: FeedbackEintrag) -> "FeedbackEintragResponse":
+        return cls(
+            id=e.id,
+            text=e.text,
+            kontakt=e.kontakt,
+            eingegangen_am=e.eingegangen_am,
+            erledigt=e.erledigt,
+        )
+
+
+class FeedbackErledigtRequest(BaseModel):
+    erledigt: bool
 
 
 class FeedbackListeResponse(BaseModel):
@@ -82,7 +99,7 @@ async def feedback_senden(
     try:
         service.senden(request.text, request.kontakt)
     except Exception as e:
-        logger.error(f"Error storing feedback: {e}", exc_info=True)
+        logger.error(f"Error storing feedback: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to store feedback")
     return FeedbackSendenResponse(success=True)
 
@@ -90,21 +107,46 @@ async def feedback_senden(
 @router.get("", response_model=FeedbackListeResponse)
 async def feedback_liste(
     limit: int = Query(LIMIT_STANDARD, ge=1, le=500),
+    erledigt: Optional[bool] = Query(None),
     admin_user: str = Depends(require_admin),
     service: FeedbackService = Depends(get_feedback_service),
 ):
-    """Das neueste Feedback zuerst, mit Kontakt, falls angegeben."""
+    """
+    Das neueste Feedback zuerst, mit Kontakt, falls angegeben. erledigt=false
+    liefert nur das offene, erledigt=true nur das erledigte, ohne alles.
+    """
     try:
-        eintraege = service.neueste(limit)
+        eintraege = service.neueste(limit, erledigt)
     except Exception as e:
-        logger.error(f"Error fetching feedback: {e}", exc_info=True)
+        logger.error(f"Error fetching feedback: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch feedback")
     return FeedbackListeResponse(
         aufbewahrung_tage=AUFBEWAHRUNG_TAGE,
-        eintraege=[
-            FeedbackEintragResponse(
-                id=e.id, text=e.text, kontakt=e.kontakt, eingegangen_am=e.eingegangen_am
-            )
-            for e in eintraege
-        ],
+        eintraege=[FeedbackEintragResponse.aus(e) for e in eintraege],
     )
+
+
+@router.patch("/{feedback_id}", response_model=FeedbackEintragResponse)
+async def feedback_erledigt_setzen(
+    feedback_id: uuid.UUID,
+    request: FeedbackErledigtRequest,
+    admin_user: str = Depends(require_admin),
+    service: FeedbackService = Depends(get_feedback_service),
+):
+    """Als erledigt markieren oder das zuruecknehmen; die Frist bleibt."""
+    eintrag = service.erledigt_setzen(feedback_id, request.erledigt)
+    if eintrag is None:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return FeedbackEintragResponse.aus(eintrag)
+
+
+@router.delete("/{feedback_id}", status_code=204)
+async def feedback_loeschen(
+    feedback_id: uuid.UUID,
+    admin_user: str = Depends(require_admin),
+    service: FeedbackService = Depends(get_feedback_service),
+):
+    """Ein Feedback samt Kontakt sofort loeschen, vor der Frist."""
+    if not service.loeschen(feedback_id):
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return Response(status_code=204)

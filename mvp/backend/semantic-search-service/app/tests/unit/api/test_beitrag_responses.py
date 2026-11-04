@@ -22,12 +22,14 @@ from api.v1.generic_text import router as generic_text_router
 from api.v1.image import router as image_router
 from api.v1.post import router as post_router
 from dependencies import (
+    get_beitrag_laden,
     get_commentary_service,
     get_generic_text_service,
     get_image_service,
     get_post_service,
     get_reference_service,
     get_settings,
+    get_voting_service,
 )
 from domain.models.author_entry import AuthorEntry
 from domain.models.base_content import BaseContentDbEntry
@@ -195,13 +197,10 @@ SUCHE = {"query_text": "Wärmepumpe", "limit": 3}
 # (Methode, URL) - jede lesende Route, die Beitraege ausliefert; POST schickt SUCHE.
 ROUTEN = {
     "commentary/getById": (GET, f"/api/v1/commentary/getById?commentary_id={ID}"),
-    "commentary/searchCommentaries": (POST, "/api/v1/commentary/searchCommentaries"),
     "generic_text/getById": (
         GET,
         f"/api/v1/generic_text/getById?generic_text_id={ID}",
     ),
-    "generic_text/getAll": (GET, "/api/v1/generic_text/getAll"),
-    "generic_text/searchGenericText": (POST, "/api/v1/generic_text/searchGenericText"),
     "post/getById": (GET, f"/api/v1/post/getById?post_id={ID}"),
     "post/getAll": (GET, "/api/v1/post/getAll"),
     "post/searchPost": (POST, "/api/v1/post/searchPost"),
@@ -209,7 +208,8 @@ ROUTEN = {
     "image/getAll": (GET, "/api/v1/image/getAll"),
     "content/recent": (GET, "/api/v1/content/recent"),
     "content/getAll": (GET, "/api/v1/content/getAll"),
-    "content/searchContent": (POST, "/api/v1/content/searchContent"),
+    # Die eigene Adresse eines Beitrags (#300); der Typ kommt aus _inhalt.
+    "content/beitrag": (GET, f"/api/v1/content/beitrag/{ID}"),
 }
 
 
@@ -241,6 +241,8 @@ def lese_client(anzeigenamen_ohne_datenbank):
             ),
             get_settings: lambda: MagicMock(),
             get_reference_service: lambda: AsyncMock(),
+            get_beitrag_laden: lambda: AsyncMock(side_effect=lambda i: _inhalt(i)),
+            get_voting_service: lambda: MagicMock(get_user_vote=lambda *_: None),
         }
     )
     factory = MagicMock()
@@ -439,9 +441,7 @@ def _zweck_und_stil(antwort):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize(
-    "route", ["commentary/getById", "commentary/searchCommentaries", "content/recent"]
-)
+@pytest.mark.parametrize("route", ["commentary/getById", "content/recent"])
 def test_kommentar_traegt_zweck_und_stil(lese_client, route):
     """Die Karte zeigt den Stil und markiert Beitraege fuer die eigenen Leute (#357)."""
     assert _zweck_und_stil(lese_client(route, FREMD)) == {

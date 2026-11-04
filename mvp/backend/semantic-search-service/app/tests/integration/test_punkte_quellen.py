@@ -10,7 +10,7 @@ from datetime import date, datetime, timezone
 import pytest
 from sqlalchemy import text
 
-from infrastructure.database.models import RawInput, RawInputContentLink, Sperre
+from infrastructure.database.models import Einwurf, AusformuliertIn, Sperre
 from repositories.punkte_repository import PunkteRepository
 from repositories.vote_repository import VoteRepository
 from tests.integration.test_loeschkommando import datenbank  # noqa: F401
@@ -35,13 +35,13 @@ def _einwurf(
     datenbank, von: str, verknuepft_am: list, gesperrt: bool = False  # noqa: F811
 ) -> None:
     with datenbank.get_session() as s:
-        einwurf = RawInput(content="Fundstueck", submitted_by=von, status="done")
+        einwurf = Einwurf(content="Fundstueck", submitted_by=von, status="done")
         s.add(einwurf)
         s.flush()
         for am in verknuepft_am:
             beitrag = uuid.uuid4()
             s.add(
-                RawInputContentLink(
+                AusformuliertIn(
                     raw_input_id=einwurf.id,
                     content_id=beitrag,
                     created_by="ausformuliererin",

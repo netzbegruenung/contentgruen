@@ -38,11 +38,37 @@ describe('FooterComponent', () => {
   });
 
   it('nennt Anbieter vor Entwickler, wie das Menue', () => {
-    const satz = Array.from(fixture.nativeElement.querySelectorAll('.footer > span') as NodeListOf<HTMLElement>)
+    const satz = Array.from(fixture.nativeElement.querySelectorAll('.footer .traeger') as NodeListOf<HTMLElement>)
       .map((span) => span.textContent!.replace(/\s+/g, ' ').trim())
       .find((text) => text.startsWith('Ein Projekt'));
 
     expect(satz).toBe('Ein Projekt von Netzbegrünung e.V., entwickelt von Sebastian Banach');
+  });
+
+  // Design-Audit C2 (#512): Ein "|" hing am Zeilenende, "Nutzungsbedingungen" stand
+  // allein in der zweiten Zeile. Jetzt Links oben, Traegerzeile darunter, ohne Striche.
+  it('ordnet die Links vor der Traegerzeile, ohne Trennstriche', () => {
+    const footer: HTMLElement = fixture.nativeElement.querySelector('.footer');
+    const links = Array.from(footer.querySelectorAll('.footer-links > a, .footer-links > button')) as HTMLElement[];
+
+    expect(footer.textContent).not.toContain('|');
+    expect(links.map((l) => l.textContent!.trim())).toEqual([
+      'Hilfe',
+      'Über Gut gesagt',
+      'Impressum',
+      'Datenschutz',
+      'Nutzungsbedingungen',
+    ]);
+    expect(footer.lastElementChild!.classList).toContain('traeger');
+  });
+
+  it('oeffnet die Hilfe ueber einen echten Knopf', () => {
+    const hilfe = fixture.nativeElement.querySelector('.help-button') as HTMLElement;
+    const oeffnen = spyOn(component, 'openHelpDialog');
+
+    expect(hilfe.tagName).toBe('BUTTON');
+    hilfe.click();
+    expect(oeffnen).toHaveBeenCalled();
   });
 
   it('zeigt Version aus package.json und Commit', () => {

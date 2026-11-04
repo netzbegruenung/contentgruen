@@ -1,0 +1,701 @@
+"""
+Repository fuer den Fangkorb (Einwuerfe).
+
+Datenzugriff auf ``raw_inputs``, ``raw_input_drafts`` und
+``raw_input_content_links``: anlegen, auflisten, einzeln lesen, Satz speichern,
+Status setzen. Eine Zuweisung ("ich nehm das") gibt es bewusst nicht - mehrere
+Personen duerfen denselben Einwurf gleichzeitig destillieren, und ihre Saetze
+sind fuer alle Angemeldeten sichtbar.
+"""
+
+import logging
+import re
+import uuid
+from collections import defaultdict
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Sequence
+
+from sqlalchemy import case, delete, desc, exists, func, or_, select
+from sqlalchemy.dialects.postgresql import insert
+
+from domain.link_vergleich import gleicher_link, vorfilter_teile
+from domain.models.einwurf import (
+    AktionNichtErlaubt,
+    EinwurfNichtGefunden,
+    EinwurfWeg,
+    EinwurfStatus,
+    UebergangNichtErlaubt,
+    status_nach_satz,
+    status_ohne_saetze,
+    uebergang_erlaubt,
+)
+from infrastructure.database.connection import AppDatabase, get_app_database
+from infrastructure.database.models import (
+    Einwurf,
+    AusformuliertIn,
+    Satz,
+    User,
+)
+
+logger = logging.getLogger(__name__)
+
+# Hoechstens so viele Einwuerfe mit gleichem Link zeigt das Einwurf-Formular.
+GLEICHER_LINK_TREFFER = 5
+# So viele Kandidaten aus dem groben Vorfilter je Abfrage, neueste zuerst. Mehr
+# als die echten Treffer kommen fast nur bei einem nackten Host
+# ("https://example.org").
+GLEICHER_LINK_SEITE = 200
+
+
+class EinwurfRepository:
+    """Repository fuer Einwuerfe im Fangkorb."""
+
+    def __init__(self, db: Optional[AppDatabase] = None):
+        """``db``: eine AppDatabase; ohne Angabe die globale."""
+        self.db = db if db is not None else get_app_database()
+
+    @staticmethod
+    def _to_dict(
+        einwurf: Einwurf,
+        saetze: Sequence[Satz] = (),
+        ausformuliert_in: Sequence[AusformuliertIn] = (),
+        current_user: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        In ein Dict uebersetzen, solange die Session noch offen ist.
+
+        ``saetze`` und ``ausformuliert_in`` kommen aelteste zuerst; der erste Eintrag
+        liefert die processed-Felder.
+        """
+        eigener_satz = next(
+            (
+                satz.sentence
+                for satz in saetze
+                if current_user is not None and satz.user_id == current_user
+            ),
+            None,
+        )
+        erste = ausformuliert_in[0] if ausformuliert_in else None
+        return {
+            "id": str(einwurf.id),
+            "content": einwurf.content,
+            "url": einwurf.url,
+            "image_url": einwurf.image_url,
+            "submitted_by": einwurf.submitted_by,
+            "source_channel": einwurf.source_channel,
+            "status": einwurf.status,
+            "created_at": einwurf.created_at,
+            "destilled_by": einwurf.destilled_by,
+            "own_draft": eigener_satz,
+            # Der erste Ausformuliert-in-Eintrag: in der Tabelle created_by/created_at, nach aussen
+            # processed_*.
+            "processed_content_id": str(erste.content_id) if erste else None,
+            "processed_by": erste.created_by if erste else None,
+            "processed_at": erste.created_at if erste else None,
+            "drafts": [
+                {
+                    "id": str(satz.id),
+                    "user_id": satz.user_id,
+                    "sentence": satz.sentence,
+                    "updated_at": satz.updated_at,
+                }
+                for satz in saetze
+            ],
+            "links": [
+                {
+                    "content_id": str(eintrag.content_id),
+                    "content_type": eintrag.content_type,
+                    "draft_id": (str(eintrag.draft_id) if eintrag.draft_id else None),
+                    "processed_by": eintrag.created_by,
+                    "processed_at": eintrag.created_at,
+                }
+                for eintrag in ausformuliert_in
+            ],
+        }
+
+    def create(
+        self,
+        content: Optional[str] = None,
+        url: Optional[str] = None,
+        image_url: Optional[str] = None,
+        submitted_by: Optional[str] = None,
+        source_channel: str = EinwurfWeg.WEB.value,
+        cc0_wortlaut: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Einen Einwurf anlegen.
+
+        Args:
+            content: Hinweis fuer andere, oder der Fund selbst als Text
+            url: Link auf den Beitrag draussen
+            image_url: Bild-URL (kein Upload, siehe docs/archiv/ROHINPUT.md)
+            submitted_by: Wer eingeworfen hat; None fuer Kanaele ohne Sitzung
+            source_channel: Weg ("web", "share" oder "import")
+            cc0_wortlaut: Kennung des CC0-Hinweises im Formular (domain/cc0_hinweis.py)
+
+        Returns:
+            Dict[str, Any]: der angelegte Einwurf
+        """
+        try:
+            with self.db.get_session() as session:
+                einwurf = Einwurf(
+                    content=content,
+                    url=url,
+                    image_url=image_url,
+                    submitted_by=submitted_by,
+                    source_channel=source_channel,
+                    status=EinwurfStatus.OPEN.value,
+                    cc0_wortlaut=cc0_wortlaut,
+                )
+                session.add(einwurf)
+                session.commit()
+                session.refresh(einwurf)
+                logger.info(f"Einwurf {einwurf.id} angelegt (Kanal: {source_channel})")
+                return self._to_dict(einwurf)
+        except Exception as e:
+            logger.error(
+                f"Fehler beim Anlegen eines Einwurfs: {type(e).__name__}",
+                exc_info=True,
+            )
+            raise
+
+    def get_all(
+        self,
+        limit: int = 20,
+        offset: int = 0,
+        status: Optional[str] = None,
+        current_user: Optional[str] = None,
+        submitted_by: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Einwuerfe auflisten: eigene zuerst, dann neueste zuerst.
+
+        Der Fangkorb fragt ohne ``submitted_by``: er ist ein gemeinsamer Vorrat.
+        ``current_user`` bestimmt nur die Reihenfolge und welcher Satz als
+        ``own_draft`` mitkommt. Nur "Meine Einwuerfe" filtert auf den Einwerfer.
+        Sortiert und gefiltert wird in der Datenbank, weil die Liste paginiert ist.
+
+        Args:
+            limit: maximale Anzahl
+            offset: zu ueberspringende Eintraege
+            status: optionaler Filter auf einen Bearbeitungsstand
+            current_user: die anfragende Person, oder None
+            submitted_by: nur die Einwuerfe dieses Einwerfers, oder alle
+
+        Returns:
+            List[Dict[str, Any]]: die Einwuerfe mit Bearbeitungsstand
+        """
+        try:
+            with self.db.get_session() as session:
+                query = session.query(Einwurf)
+                if status is not None:
+                    query = query.filter(Einwurf.status == status)
+                if submitted_by is not None:
+                    query = query.filter(Einwurf.submitted_by == submitted_by)
+
+                reihenfolge = [desc(Einwurf.created_at)]
+                if current_user is not None:
+                    reihenfolge.insert(
+                        0, case((Einwurf.submitted_by == current_user, 0), else_=1)
+                    )
+
+                rows = query.order_by(*reihenfolge).limit(limit).offset(offset).all()
+                return self._mit_saetzen_und_ausformuliert_in(
+                    session, rows, current_user
+                )
+        except Exception as e:
+            logger.error(
+                f"Fehler beim Lesen der Einwürfe: {type(e).__name__}", exc_info=True
+            )
+            raise
+
+    def get_by_id(
+        self, raw_input_id: uuid.UUID, current_user: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Einen Einwurf mit allen Saetzen und Ausformuliert-in-Eintraegen, oder None."""
+        try:
+            with self.db.get_session() as session:
+                row = (
+                    session.query(Einwurf)
+                    .filter(Einwurf.id == raw_input_id)
+                    .one_or_none()
+                )
+                if row is None:
+                    return None
+                return self._mit_saetzen_und_ausformuliert_in(
+                    session, [row], current_user
+                )[0]
+        except Exception as e:
+            logger.error(
+                f"Fehler beim Lesen eines Einwurfs: {type(e).__name__}", exc_info=True
+            )
+            raise
+
+    def mit_gleichem_link(
+        self, url: str, current_user: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Einwuerfe, deren Link als gleich gilt (``domain.link_vergleich``), neueste
+        zuerst, hoechstens ``GLEICHER_LINK_TREFFER``.
+
+        Die Datenbank filtert grob nach den ``vorfilter_teile`` vor; ob ein Link
+        wirklich gleich ist, entscheidet danach ``gleicher_link``. Die Kandidaten
+        kommen seitenweise, bis genug Treffer da sind - ohne feste Grenze, damit
+        auch ein alter Einwurf gefunden wird, wenn viele andere den Vorfilter
+        passieren (nackter Host). Eine eigene Spalte fuer die Vergleichsform
+        braeuchte eine Migration samt Nachtrag fuer alle vorhandenen Einwuerfe.
+        """
+        teile = vorfilter_teile(url)
+        if teile is None:
+            return []
+        vorfilter = [
+            Einwurf.url.ilike(
+                "%" + re.sub(r"([\\%_])", r"\\\1", teil) + "%", escape="\\"
+            )
+            for teil in teile
+        ]
+        try:
+            with self.db.get_session() as session:
+                query = (
+                    session.query(Einwurf)
+                    .filter(*vorfilter)
+                    .order_by(desc(Einwurf.created_at), desc(Einwurf.id))
+                )
+                treffer: List[Einwurf] = []
+                seite = 0
+                while len(treffer) < GLEICHER_LINK_TREFFER:
+                    kandidaten = (
+                        query.offset(seite * GLEICHER_LINK_SEITE)
+                        .limit(GLEICHER_LINK_SEITE)
+                        .all()
+                    )
+                    treffer += [r for r in kandidaten if gleicher_link(url, r.url)]
+                    if len(kandidaten) < GLEICHER_LINK_SEITE:
+                        break
+                    seite += 1
+                return self._mit_saetzen_und_ausformuliert_in(
+                    session, treffer[:GLEICHER_LINK_TREFFER], current_user
+                )
+        except Exception as e:
+            logger.error(
+                f"Fehler bei der Suche nach gleichem Link: {type(e).__name__}",
+                exc_info=True,
+            )
+            raise
+
+    def count(
+        self, status: Optional[str] = None, submitted_by: Optional[str] = None
+    ) -> int:
+        """Anzahl der Einwuerfe, optional nach Bearbeitungsstand und Einwerfer."""
+        try:
+            with self.db.get_session() as session:
+                query = session.query(Einwurf)
+                if status is not None:
+                    query = query.filter(Einwurf.status == status)
+                if submitted_by is not None:
+                    query = query.filter(Einwurf.submitted_by == submitted_by)
+                return query.count()
+        except Exception as e:
+            logger.error(
+                f"Fehler beim Zaehlen der Einwürfe: {type(e).__name__}", exc_info=True
+            )
+            raise
+
+    def satz_speichern(
+        self,
+        raw_input_id: uuid.UUID,
+        user_id: str,
+        sentence: Optional[str],
+        cc0_wortlaut: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Den eigenen Satz speichern (Upsert) oder, wenn leer, loeschen - und den
+        Stand des Einwurfs nachziehen.
+
+        Ein nicht-leerer Satz macht einen offenen Einwurf zu ``in_progress`` und
+        traegt die Person als ``destilled_by`` ein, falls dort noch niemand steht.
+        Wird der letzte verbliebene Satz geloescht, faellt ein destillierter
+        Einwurf auf ``open`` zurueck und ``destilled_by`` wird geleert. Die
+        Einwurf-Zeile ist dabei gesperrt (FOR UPDATE), damit zwei gleichzeitige
+        Speichervorgaenge sich den Stand nicht gegenseitig ueberschreiben.
+
+        ``cc0_wortlaut`` ist die Kennung des CC0-Hinweises beim Satz; jedes Speichern
+        ueberschreibt sie, denn der Satz steht danach in diesem Wortlaut da.
+
+        Raises:
+            EinwurfNichtGefunden: den Einwurf gibt es nicht
+        """
+        try:
+            with self.db.get_session() as session:
+                row = (
+                    session.query(Einwurf)
+                    .filter(Einwurf.id == raw_input_id)
+                    .with_for_update()
+                    .one_or_none()
+                )
+                if row is None:
+                    raise EinwurfNichtGefunden(raw_input_id)
+                aktuell = EinwurfStatus(row.status)
+
+                if not sentence:
+                    session.query(Satz).filter(
+                        Satz.raw_input_id == raw_input_id,
+                        Satz.user_id == user_id,
+                    ).delete(synchronize_session=False)
+                    zurueck = status_ohne_saetze(aktuell)
+                    if zurueck != aktuell and not self._hat_saetze(
+                        session, raw_input_id
+                    ):
+                        row.status = zurueck.value
+                        row.destilled_by = None
+                        logger.info(
+                            f"Einwurf {raw_input_id}: letzter Satz geloescht, "
+                            f"{aktuell.value} -> {zurueck.value}"
+                        )
+                    session.commit()
+                    return {
+                        "raw_input_id": str(raw_input_id),
+                        "sentence": None,
+                        "updated_at": None,
+                    }
+
+                updated_at = session.execute(
+                    self._satz_upsert(raw_input_id, user_id, sentence, cc0_wortlaut)
+                ).scalar_one()
+                neu = status_nach_satz(aktuell)
+                if neu != aktuell:
+                    row.status = neu.value
+                    logger.info(
+                        f"Einwurf {raw_input_id}: {aktuell.value} -> {neu.value}"
+                    )
+                if row.destilled_by is None:
+                    row.destilled_by = user_id
+                session.commit()
+                return {
+                    "raw_input_id": str(raw_input_id),
+                    "sentence": sentence,
+                    "updated_at": updated_at,
+                }
+        except EinwurfNichtGefunden:
+            raise
+        except Exception as e:
+            logger.error(
+                f"Fehler beim Speichern eines Satzes: {type(e).__name__}",
+                exc_info=True,
+            )
+            raise
+
+    def set_status(
+        self,
+        raw_input_id: uuid.UUID,
+        neuer_status: EinwurfStatus,
+        user_id: str,
+        content_id: Optional[uuid.UUID] = None,
+        content_type: Optional[str] = None,
+        *,
+        ist_admin: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Status setzen; bei processed zugleich den Ausformuliert-in-Eintrag schreiben.
+
+        Verwerfen duerfen der Einwerfer und Admins (``ist_admin``), Admins auch
+        einen Einwurf ohne Einwerfer.
+
+        Der Ausformuliert-in-Eintrag haelt fest, wer verknuepft hat (der Ausformulierer), welchen
+        Beitragstyp der Beitrag hat und welcher Satz ausformuliert wurde - der des
+        Ausformulierers (``draft_id``), sofern er einen gespeichert hat.
+
+        Alles in einer Transaktion, die Zeile ist dabei gesperrt (FOR UPDATE),
+        damit zwei gleichzeitige Wechsel sich nicht ueberschreiben. Der
+        Eintrag ist idempotent (ON CONFLICT DO NOTHING): ein wiederholter
+        Aufruf nach verlorener Antwort schadet nicht.
+
+        Raises:
+            EinwurfNichtGefunden: den Einwurf gibt es nicht
+            AktionNichtErlaubt: verwerfen will weder der Einwerfer noch ein Admin
+            UebergangNichtErlaubt: der Wechsel ist aus dem aktuellen Status nicht erlaubt
+        """
+        if neuer_status == EinwurfStatus.PROCESSED and content_id is None:
+            raise ValueError("processed braucht eine content_id")
+
+        try:
+            with self.db.get_session() as session:
+                row = (
+                    session.query(Einwurf)
+                    .filter(Einwurf.id == raw_input_id)
+                    .with_for_update()
+                    .one_or_none()
+                )
+                aktuell = self._statuswechsel_pruefen(
+                    row, raw_input_id, neuer_status, user_id, ist_admin
+                )
+
+                row.status = neuer_status.value
+                if neuer_status == EinwurfStatus.PROCESSED:
+                    draft_id = self._eigener_satz_id(session, raw_input_id, user_id)
+                    session.execute(
+                        self._ausformuliert_in_einfuegen(
+                            raw_input_id, content_id, user_id, draft_id, content_type
+                        )
+                    )
+                session.commit()
+                logger.info(
+                    f"Einwurf {raw_input_id}: {aktuell.value} -> {neuer_status.value}"
+                )
+                return self._mit_saetzen_und_ausformuliert_in(session, [row], user_id)[
+                    0
+                ]
+        except (EinwurfNichtGefunden, AktionNichtErlaubt, UebergangNichtErlaubt):
+            raise
+        except Exception as e:
+            logger.error(
+                f"Fehler beim Statuswechsel: {type(e).__name__}", exc_info=True
+            )
+            raise
+
+    def statuswechsel_vorpruefen(
+        self,
+        raw_input_id: uuid.UUID,
+        neuer_status: EinwurfStatus,
+        user_id: str,
+        content_id: Optional[uuid.UUID] = None,
+    ) -> bool:
+        """
+        Dieselben Pruefungen wie set_status, nur lesend und ohne Sperre.
+
+        Der Router ruft das vor der Beitragspruefung, damit ein unbekannter
+        Einwurf 404 bleibt und ein unerlaubter Wechsel 409, egal was hinter
+        ``content_id`` steht. set_status prueft unter der Sperre erneut.
+
+        Returns:
+            True, wenn der Einwurf mit genau dieser ``content_id`` schon
+            verknuepft ist - eine Wiederholung, deren Beitrag nicht noch einmal
+            geprueft werden muss (er kann inzwischen geloescht sein).
+
+        Raises:
+            EinwurfNichtGefunden, AktionNichtErlaubt, UebergangNichtErlaubt
+        """
+        with self.db.get_session() as session:
+            row = (
+                session.query(Einwurf).filter(Einwurf.id == raw_input_id).one_or_none()
+            )
+            # Nur der processed-Pfad ruft das; die Admin-Ausnahme gilt allein fuers
+            # Verwerfen, das set_status unter der Sperre prueft.
+            self._statuswechsel_pruefen(
+                row, raw_input_id, neuer_status, user_id, ist_admin=False
+            )
+            if content_id is None:
+                return False
+            return (
+                session.query(AusformuliertIn.content_id)
+                .filter(
+                    AusformuliertIn.raw_input_id == raw_input_id,
+                    AusformuliertIn.content_id == content_id,
+                )
+                .first()
+                is not None
+            )
+
+    # Hilfsfunktionen
+
+    @staticmethod
+    def _statuswechsel_pruefen(
+        row: Optional[Einwurf],
+        raw_input_id: uuid.UUID,
+        neuer_status: EinwurfStatus,
+        user_id: str,
+        ist_admin: bool,
+    ) -> EinwurfStatus:
+        """Existenz, Berechtigung und Uebergang; gibt den aktuellen Status zurueck."""
+        if row is None:
+            raise EinwurfNichtGefunden(raw_input_id)
+
+        if (
+            neuer_status == EinwurfStatus.DISCARDED
+            and row.submitted_by != user_id
+            and not ist_admin
+        ):
+            raise AktionNichtErlaubt("Verwerfen duerfen nur der Einwerfer und Admins")
+
+        aktuell = EinwurfStatus(row.status)
+        if not uebergang_erlaubt(aktuell, neuer_status):
+            raise UebergangNichtErlaubt(aktuell, neuer_status)
+        return aktuell
+
+    @staticmethod
+    def _satz_upsert(
+        raw_input_id: uuid.UUID,
+        user_id: str,
+        sentence: str,
+        cc0_wortlaut: Optional[str] = None,
+    ):
+        """INSERT ... ON CONFLICT (raw_input_id, user_id) DO UPDATE."""
+        stmt = insert(Satz).values(
+            raw_input_id=raw_input_id,
+            user_id=user_id,
+            sentence=sentence,
+            cc0_wortlaut=cc0_wortlaut,
+        )
+        return stmt.on_conflict_do_update(
+            index_elements=[Satz.raw_input_id, Satz.user_id],
+            set_={
+                "sentence": stmt.excluded.sentence,
+                "cc0_wortlaut": stmt.excluded.cc0_wortlaut,
+                "updated_at": func.now(),
+            },
+        ).returning(Satz.updated_at)
+
+    @staticmethod
+    def _ausformuliert_in_einfuegen(
+        raw_input_id: uuid.UUID,
+        content_id: uuid.UUID,
+        user_id: str,
+        draft_id: Optional[uuid.UUID] = None,
+        content_type: Optional[str] = None,
+    ):
+        """INSERT ... ON CONFLICT (raw_input_id, content_id) DO NOTHING."""
+        return (
+            insert(AusformuliertIn)
+            .values(
+                raw_input_id=raw_input_id,
+                content_id=content_id,
+                created_by=user_id,
+                draft_id=draft_id,
+                content_type=content_type,
+            )
+            .on_conflict_do_nothing(
+                index_elements=[
+                    AusformuliertIn.raw_input_id,
+                    AusformuliertIn.content_id,
+                ]
+            )
+        )
+
+    @staticmethod
+    def _hat_saetze(session, raw_input_id: uuid.UUID) -> bool:
+        """Ob zu dem Einwurf noch irgendein Satz gespeichert ist, von wem auch immer."""
+        return (
+            session.query(Satz.id).filter(Satz.raw_input_id == raw_input_id).first()
+            is not None
+        )
+
+    @staticmethod
+    def _eigener_satz_id(
+        session, raw_input_id: uuid.UUID, user_id: str
+    ) -> Optional[uuid.UUID]:
+        """Die Zeile des Satzes, den diese Person zu dem Einwurf gespeichert hat."""
+        return (
+            session.query(Satz.id)
+            .filter(
+                Satz.raw_input_id == raw_input_id,
+                Satz.user_id == user_id,
+            )
+            .scalar()
+        )
+
+    def _mit_saetzen_und_ausformuliert_in(
+        self, session, rows: Sequence[Einwurf], current_user: Optional[str]
+    ) -> List[Dict[str, Any]]:
+        """Alle Saetze und Ausformuliert-in-Eintraege an die Zeilen haengen."""
+        if not rows:
+            return []
+        ids = [row.id for row in rows]
+        saetze = self._saetze(session, ids)
+        ausformuliert_in = self._ausformuliert_in(session, ids)
+        return [
+            self._to_dict(
+                row,
+                saetze.get(row.id, []),
+                ausformuliert_in.get(row.id, []),
+                current_user,
+            )
+            for row in rows
+        ]
+
+    @staticmethod
+    def _saetze(session, ids: List[uuid.UUID]) -> Dict[uuid.UUID, List[Satz]]:
+        """Die Saetze aller Personen zu den Einwuerfen, aelteste Aenderung zuerst."""
+        saetze = (
+            session.query(Satz)
+            .filter(Satz.raw_input_id.in_(ids))
+            .order_by(Satz.updated_at)
+            .all()
+        )
+        gruppiert: Dict[uuid.UUID, List[Satz]] = defaultdict(list)
+        for satz in saetze:
+            gruppiert[satz.raw_input_id].append(satz)
+        return gruppiert
+
+    def ohne_beitrag_loeschen_vor(self, grenze: datetime) -> int:
+        """
+        Einwuerfe, die in keinem Beitrag ausformuliert sind, loeschen, an denen seit
+        ``grenze`` niemand gearbeitet hat: weder eingeworfen noch einen Satz gespeichert
+        (services/loeschfristen_service.py). Die Saetze daran gehen per CASCADE mit,
+        ebenso die Platzhalter ehemaliger Personen in ``users``, deren Satz damit
+        weg ist (wie in mvp/scripts/manual/person_loeschen.sql).
+
+        Returns:
+            int: Zahl der geloeschten Einwuerfe
+        """
+        letzter_satz = (
+            select(func.max(Satz.updated_at))
+            .where(Satz.raw_input_id == Einwurf.id)
+            .scalar_subquery()
+        )
+        with self.db.get_session() as session:
+            geloescht = (
+                session.query(Einwurf)
+                .filter(
+                    ~exists().where(AusformuliertIn.raw_input_id == Einwurf.id),
+                    Einwurf.created_at < grenze,
+                    or_(letzter_satz.is_(None), letzter_satz < grenze),
+                )
+                .delete(synchronize_session=False)
+            )
+            session.execute(
+                delete(User).where(
+                    User.user_id.like("ehemalige-person-%"),
+                    ~exists().where(Satz.user_id == User.user_id),
+                )
+            )
+            return geloescht
+
+    def ausformuliert_in_loeschen(self, content_id: uuid.UUID) -> int:
+        """
+        "Ausformuliert in" zu einem Beitrag loeschen, der endgueltig entfernt wird;
+        die Einwuerfe selbst bleiben.
+        """
+        with self.db.get_session() as session:
+            return (
+                session.query(AusformuliertIn)
+                .filter(AusformuliertIn.content_id == content_id)
+                .delete(synchronize_session=False)
+            )
+
+    @staticmethod
+    def _ausformuliert_in(
+        session, ids: List[uuid.UUID]
+    ) -> Dict[uuid.UUID, List[AusformuliertIn]]:
+        """Die Ausformuliert-in-Eintraege zu den Einwuerfen, aelteste zuerst."""
+        ausformuliert_in = (
+            session.query(AusformuliertIn)
+            .filter(AusformuliertIn.raw_input_id.in_(ids))
+            .order_by(AusformuliertIn.created_at)
+            .all()
+        )
+        gruppiert: Dict[uuid.UUID, List[AusformuliertIn]] = defaultdict(list)
+        for eintrag in ausformuliert_in:
+            gruppiert[eintrag.raw_input_id].append(eintrag)
+        return gruppiert
+
+
+# Globale Repository-Instanz
+_einwurf_repository: Optional[EinwurfRepository] = None
+
+
+def get_einwurf_repository() -> EinwurfRepository:
+    """Die globale EinwurfRepository-Instanz holen oder anlegen."""
+    global _einwurf_repository
+    if _einwurf_repository is None:
+        _einwurf_repository = EinwurfRepository()
+    return _einwurf_repository

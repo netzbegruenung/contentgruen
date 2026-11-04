@@ -25,7 +25,7 @@ import { ErrorMessageComponent } from '../shared/components/error-message/error-
 import { LoggingService } from '../services/logging.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService, UserInfo } from '../auth/auth.service';
-import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
+import { hilfeOeffnen } from '../help-dialog/help-dialog.component';
 import { FORMULAR_PFAD, aussageParameter, istAussageId } from '../shared/formular-adresse';
 import { typBeschreibung } from '../shared/content-type-registry';
 import { BaseSearchResult } from '../services/dtos/commonDtos';
@@ -33,13 +33,6 @@ import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 
 // Dialog configuration constants
-const HELP_DIALOG_CONFIG = {
-  width: '800px',
-  maxWidth: '90vw',
-  maxHeight: '90vh',
-  panelClass: 'help-dialog'
-};
-
 /** Die Abschnitte der Ergebnisseite: am Handy je ein Tab. */
 type Ergebnisabschnitt = 'commentary' | 'generictext' | 'post';
 
@@ -303,8 +296,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.navigationService.navigateToContribute();
   }
 
-  navigateToContributionsView(): void {
-    this.navigationService.navigateToContributions();
+  navigateToMeineBeitraege(): void {
+    this.navigationService.navigateToMeineBeitraege();
   }
 
   login(): void {
@@ -320,7 +313,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   openHelpDialog(): void {
-    this.dialog.open(HelpDialogComponent, HELP_DIALOG_CONFIG);
+    hilfeOeffnen(this.dialog);
   }
 
   handleContributeClick(): void {

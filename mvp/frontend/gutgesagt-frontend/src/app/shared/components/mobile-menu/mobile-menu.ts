@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { UserInfo } from '../../../auth/auth.service';
 import { EINWERFEN_TITEL, KETTEN_ICONS } from '../../fangkorb-texte';
 import { ROUTES } from '../../constants/app.constants';
+import { RundgangId } from '../../../rundgang/rundgang-daten';
 
 @Component({
   selector: 'app-mobile-menu',
@@ -31,15 +32,16 @@ export class MobileMenuComponent {
   @Output() closeMenu = new EventEmitter<void>();
   @Output() home = new EventEmitter<void>();
   @Output() contribute = new EventEmitter<void>();
-  @Output() contributions = new EventEmitter<void>();
-  @Output() rawInput = new EventEmitter<void>();
-  @Output() rawInputList = new EventEmitter<void>();
+  @Output() meineBeitraege = new EventEmitter<void>();
+  @Output() einwerfen = new EventEmitter<void>();
+  @Output() fangkorb = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
   @Output() loginToContribute = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
   @Output() profilbild = new EventEmitter<void>();
   @Output() help = new EventEmitter<void>();
   @Output() feedback = new EventEmitter<void>();
+  @Output() rundgang = new EventEmitter<RundgangId>();
 
   close(): void {
     this.closeMenu.emit();
@@ -55,18 +57,18 @@ export class MobileMenuComponent {
     this.close();
   }
 
-  onContributionsClick(): void {
-    this.contributions.emit();
+  onMeineBeitraegeClick(): void {
+    this.meineBeitraege.emit();
     this.close();
   }
 
-  onRawInputClick(): void {
-    this.rawInput.emit();
+  onEinwerfenClick(): void {
+    this.einwerfen.emit();
     this.close();
   }
 
-  onRawInputListClick(): void {
-    this.rawInputList.emit();
+  onFangkorbClick(): void {
+    this.fangkorb.emit();
     this.close();
   }
 
@@ -92,6 +94,11 @@ export class MobileMenuComponent {
 
   onHelpClick(): void {
     this.help.emit();
+    this.close();
+  }
+
+  onRundgangClick(id: RundgangId): void {
+    this.rundgang.emit(id);
     this.close();
   }
 

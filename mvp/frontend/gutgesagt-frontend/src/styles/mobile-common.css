@@ -10,7 +10,7 @@
         bottom: 0;
         background-color: white;
         padding: var(--spacing-md);
-        border-top: 2px solid var(--divider);
+        border-top: 2px solid var(--divider-color);
         z-index: 50;
     }
 
@@ -125,7 +125,7 @@
 .mobile-form-container {
     position: relative;
     min-height: 100vh;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-card);
 }
 
 .mobile-form-content {

@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ContentModerationComponent } from './content-moderation.component';
-import { ContentReport, ModerationService } from '../../services/moderation.service';
+import { ContentReport, ModerationService, PendingReportsResponse } from '../../services/moderation.service';
 import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
@@ -78,6 +78,30 @@ describe('ContentModerationComponent', () => {
     TestBed.overrideProvider(MatDialog, { useValue: dialog });
   });
 
+  describe('anonyme Melder (#446)', () => {
+    function melder(): string {
+      return (fixture.nativeElement.querySelector('.anonymous')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    }
+
+    it('zeigt bei einer erledigten Meldung (Zufallswert) nur „Anonym“', () => {
+      mitMeldungen([meldung({ reported_by_session_id: 'anon:3f2504e0-4f89-41d3-9a0c-0305e82c3301' })]);
+
+      expect(melder()).toBe('Anonym');
+    });
+
+    it('zeigt bei einer offenen Meldung den Anfang des Tagespseudonyms als Quelle', () => {
+      mitMeldungen([meldung({ reported_by_session_id: 'besucher:' + '9f86d081'.padEnd(64, '0') })]);
+
+      expect(melder()).toBe('Anonym (Quelle 9f86d081)');
+    });
+
+    it('zeigt bei einer alten Sitzungskennung weiter ihren Anfang', () => {
+      mitMeldungen([meldung({ reported_by_session_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301' })]);
+
+      expect(melder()).toBe('Anonym (3f2504e0)');
+    });
+  });
+
   it('bietet zu einer offenen Meldung Sperren statt Löschen an', () => {
     mitMeldungen([meldung()]);
 
@@ -136,6 +160,33 @@ describe('ContentModerationComponent', () => {
     expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-2');
     // Einmal zum Zählen der Widersprüche, dann Ansicht und Neuladen.
     expect(moderation.getGesperrte).toHaveBeenCalledTimes(3);
+  });
+
+  it('zeigt unter „Nach Person“ die Suche nach Name oder E-Mail-Adresse statt der Meldungsliste (#494)', () => {
+    mitMeldungen([meldung()]);
+    moderation.getReports.calls.reset();
+
+    fixture.componentInstance.onStatusFilterChange('person');
+    fixture.detectChanges();
+
+    expect(moderation.getReports).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('app-meldungen-einer-person')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.reports-table')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
+  });
+
+  it('zeigt unter „Nach Person“ keinen Fehler einer Liste, die vorher noch lud (#494)', () => {
+    const liste = new Subject<PendingReportsResponse>();
+    moderation.getReports.and.returnValue(liste);
+    fixture = TestBed.createComponent(ContentModerationComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.onStatusFilterChange('person');
+    liste.error(new Error('zu spät'));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.error).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Fehler beim Laden der Meldungen');
   });
 
   it('zeigt Sperrgrund, Begründung und einen offenen Widerspruch zuerst', () => {
@@ -230,5 +281,31 @@ describe('ContentModerationComponent', () => {
     mitMeldungen([]);
 
     expect(fixture.componentInstance.getReasonLabel('etwas_altes')).toBe('etwas_altes');
+  });
+
+  it('zeigt Name und E-Mail-Adresse der meldenden Person, damit Admins die Entscheidung mitteilen können (#438)', () => {
+    mitMeldungen([meldung({ melder_name: 'Anna Beispiel', melder_email: 'anna@example.org', guter_glaube: true })]);
+
+    const zelle: HTMLElement = fixture.nativeElement.querySelector('.reporter-cell');
+    expect(zelle.textContent).toContain('Anna Beispiel');
+    const link = zelle.querySelector('a') as HTMLAnchorElement;
+    expect(link.textContent).toContain('anna@example.org');
+    expect(link.getAttribute('href')).toBe('mailto:anna@example.org');
+    expect(zelle.textContent).toContain('in gutem Glauben');
+  });
+
+  it('hängt über die E-Mail-Adresse keine weiteren Empfänger an den mailto-Link', () => {
+    mitMeldungen([meldung({ melder_email: 'anna?cc=b@example.org', guter_glaube: true })]);
+
+    const link = fixture.nativeElement.querySelector('.reporter-cell a') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('mailto:anna%3Fcc%3Db@example.org');
+  });
+
+  it('vermerkt bei alten Meldungen, dass die Erklärung guten Glaubens fehlt', () => {
+    mitMeldungen([meldung({ guter_glaube: null })]);
+
+    const zelle: HTMLElement = fixture.nativeElement.querySelector('.reporter-cell');
+    expect(zelle.textContent).toContain('ohne Erklärung guten Glaubens');
+    expect(zelle.querySelector('a')).toBeNull();
   });
 });

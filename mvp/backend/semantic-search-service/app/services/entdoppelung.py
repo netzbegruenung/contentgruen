@@ -2,7 +2,7 @@
 Pruefwerte fuer die entdoppelte Nutzung (ADR 0004, #352).
 
 Fuer Punkte und "Diese Woche oft genutzt" zaehlt eine Nutzung hoechstens einmal je
-Person (bei Besuchern je Sitzung), Beitrag und Tag. Dafuer muss sich der Dienst einen
+Person (bei Besuchern je Tagespseudonym der Besucher, #446), Beitrag und Tag. Dafuer muss sich der Dienst einen
 Tag lang merken, dass diese Person diesen Beitrag schon genutzt hat, ohne festzuhalten,
 wer was genutzt hat (DSFA zu #374, Massnahme M2). Gemerkt wird deshalb nur ein
 Pruefwert: ein HMAC ueber das Tagespseudonym (GLOSSARY.md) und den Beitrag. Ohne den
@@ -45,18 +45,21 @@ def _hmac(text: str) -> str:
 
 def pruefwert(
     user_id: Optional[str],
-    session_id: Optional[str],
+    besucher_merkmal: Optional[str],
     content_id: uuid.UUID,
     moment: Optional[datetime] = None,
 ) -> Optional[str]:
     """
     Der Pruefwert dieser Nutzung: gleich fuer dieselbe Person (angemeldet: Kennung,
-    sonst Sitzung) und denselben Beitrag am selben UTC-Tag. None, wenn niemand zu
+    sonst Besuchermerkmal, utils/besucher_pseudonym.py) und denselben Beitrag am
+    selben UTC-Tag. None, wenn niemand zu
     erkennen ist; eine solche Nutzung laesst sich nicht entdoppeln und zaehlt nur am
     Zaehler der Karte.
     """
     person = user_id if user_id and user_id != ANONYM else None
-    pseudonym = tagespseudonym(user_id=person, session_id=session_id, moment=moment)
+    pseudonym = tagespseudonym(
+        user_id=person, besucher_merkmal=besucher_merkmal, moment=moment
+    )
     if pseudonym is None:
         return None
     return _hmac(f"nutzung|{pseudonym}|{content_id}")
@@ -80,7 +83,9 @@ async def pruefwerte_verwerfen_im_takt(
             verworfen = await asyncio.to_thread(nutzung.vergangene_tage_verwerfen)
             logger.info(f"Discarded {verworfen} check values of past days")
         except Exception as e:
-            logger.error(f"Error discarding check values: {e}", exc_info=True)
+            logger.error(
+                f"Error discarding check values: {type(e).__name__}", exc_info=True
+            )
         await asyncio.sleep(
             sekunden_bis_mitternacht() + 1 if takt_sekunden is None else takt_sekunden
         )

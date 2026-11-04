@@ -41,7 +41,6 @@ class UsageTrackingRepository:
         self,
         content_id: uuid.UUID,
         event_type: str = "copy",
-        session_id: Optional[str] = None,
         device_category: Optional[str] = None,
         fassung: Optional[str] = None,
         pruefwert: Optional[str] = None,
@@ -53,7 +52,6 @@ class UsageTrackingRepository:
         Args:
             content_id: UUID of the content item
             event_type: Type of usage event (default: "copy")
-            session_id: Optional session identifier
             device_category: Grobe Geraetekategorie, bereits vom Aufrufer
                 abgeleitet (utils.device_category). Der User-Agent-Rohwert
                 kommt hier nicht mehr an.
@@ -108,7 +106,6 @@ class UsageTrackingRepository:
                 event = UsageEvent(
                     content_id=content_id,
                     event_type=event_type,
-                    session_id=session_id,
                     device_category=device_category,
                     fassung=fassung,
                     entdoppelt=entdoppelt,
@@ -137,7 +134,8 @@ class UsageTrackingRepository:
 
         except Exception as e:
             logger.error(
-                f"Error tracking usage for content {content_id}: {e}", exc_info=True
+                f"Error tracking usage for content {content_id}: {type(e).__name__}",
+                exc_info=True,
             )
             return False
 
@@ -484,7 +482,9 @@ class UsageTrackingRepository:
                 return deleted_count
 
         except Exception as e:
-            logger.error(f"Error during cleanup of old events: {e}", exc_info=True)
+            logger.error(
+                f"Error during cleanup of old events: {type(e).__name__}", exc_info=True
+            )
             raise
 
 

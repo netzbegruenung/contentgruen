@@ -34,16 +34,16 @@ def test_pruefwert_anders_je_beitrag_und_person():
     assert basis != pruefwert("bo-2", None, BEITRAG, MORGENS)
 
 
-def test_pruefwert_besucher_ueber_sitzung():
-    assert pruefwert(None, "sitzung-1", BEITRAG, MORGENS) == pruefwert(
-        None, "sitzung-1", BEITRAG, ABENDS
+def test_pruefwert_besucher_ueber_besuchermerkmal():
+    assert pruefwert(None, "anschluss-1|Browser", BEITRAG, MORGENS) == pruefwert(
+        None, "anschluss-1|Browser", BEITRAG, ABENDS
     )
-    assert pruefwert(None, "sitzung-1", BEITRAG, MORGENS) != pruefwert(
-        None, "sitzung-2", BEITRAG, MORGENS
+    assert pruefwert(None, "anschluss-1|Browser", BEITRAG, MORGENS) != pruefwert(
+        None, "anschluss-2|Browser", BEITRAG, MORGENS
     )
 
 
-def test_pruefwert_ohne_person_und_sitzung_keiner():
+def test_pruefwert_ohne_person_und_merkmal_keiner():
     assert pruefwert(None, None, BEITRAG, MORGENS) is None
     assert pruefwert("anonymous", None, BEITRAG, MORGENS) is None
 

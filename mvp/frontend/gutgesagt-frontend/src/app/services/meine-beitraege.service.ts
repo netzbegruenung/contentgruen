@@ -1,0 +1,26 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { GetContributionsOfUserResponse } from './dtos/contributionDtos';
+
+/** "Meine Beiträge": die eigenen Beiträge der angemeldeten Person, seitenweise. */
+@Injectable({
+  providedIn: 'root'
+})
+export class MeineBeitraegeService {
+  private apiUrl = `${environment.baseUrl}/api/v1/contribution/getContributionsOfUser`;
+
+  constructor(private http: HttpClient) {}
+
+  meineBeitraege(page: number, pageSize: number): Observable<GetContributionsOfUserResponse> {
+    const url = `${this.apiUrl}?page=${page}&page_size=${pageSize}`;
+
+    return this.http.get<GetContributionsOfUserResponse>(url);
+  }
+
+  /** Der Autor loescht seinen Beitrag; er bekommt den Zustand "geloescht" (#250). */
+  beitragLoeschen(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.baseUrl}/api/v1/content/${encodeURIComponent(id)}`);
+  }
+}

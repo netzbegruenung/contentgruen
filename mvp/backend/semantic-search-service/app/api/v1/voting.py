@@ -6,8 +6,10 @@ from core.logging import get_logger
 from auth.authorization import validate_user_id, require_auth
 from domain.models.vote import VoteCreate, VoteResponse
 from services.voting_service import VotingService
-from dependencies import get_voting_service
+from dependencies import get_beitrag_laden, get_voting_service
+from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from middleware.rate_limiter import check_voting_rate_limit
+from core.fehler import NICHT_ERREICHBAR, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 logger = get_logger(__name__)
 
@@ -21,6 +23,34 @@ def get_current_user(x_user: Optional[str] = Header(None)) -> str:
     return require_auth(x_user, operation="write")
 
 
+async def nur_sichtbarer_beitrag(
+    content_id: uuid.UUID, laden: BeitragLader = Depends(get_beitrag_laden)
+) -> None:
+    """
+    Abstimmen nur auf einen Beitrag, den die Person sehen kann: Gesperrt, geloescht
+    oder nie vorhanden gibt 404 und keine Stimme. Zuruecknehmen prueft das nicht,
+    eine alte Stimme an einem inzwischen gesperrten Beitrag bleibt loszuwerden.
+
+    Ein Datensatz, der da ist, sich aber nicht lesen laesst, ist kaputt und nicht
+    abwesend; die Stimme zaehlt dann wie die Nutzung (services/beitrag_laden.py).
+    Antwortet der Suchindex nicht, zaehlt sie ebenfalls: Stimmen liegen in
+    PostgreSQL und gingen bis #272 ohne Suchindex, die Pruefung soll sie nicht davon
+    abhaengig machen.
+    """
+    try:
+        beitrag = await laden(content_id)
+    except BeitragUnlesbar:
+        return
+    except Exception as fehler:
+        # Mit Stacktrace: Auch ein Programmierfehler landet hier und soll auffallen.
+        logger.warning(
+            f"Visibility check for vote skipped: {type(fehler).__name__}", exc_info=True
+        )
+        return
+    if beitrag is None:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+
 @router.put(
     "/content/{content_id}/like",
     response_model=VoteResponse,
@@ -29,6 +59,7 @@ def get_current_user(x_user: Optional[str] = Header(None)) -> str:
 def set_like(
     content_id: uuid.UUID,
     user_id: str = Depends(get_current_user),
+    _: None = Depends(nur_sichtbarer_beitrag),
     voting_service: VotingService = Depends(get_voting_service),
 ) -> VoteResponse:
     """
@@ -41,14 +72,17 @@ def set_like(
         result = voting_service.set_like(user_id, content_id)
         logger.debug("Like set successfully")
         return result
+    except Validierungsfehler as e:
+        logger.warning(f"Like validation error: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
-        logger.warning(f"Like validation error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning(f"Like validation error: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
     except ConnectionError as e:
-        logger.error(f"Database connection error: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        logger.error(f"Database connection error: {type(e).__name__}")
+        raise HTTPException(status_code=503, detail=NICHT_ERREICHBAR)
     except Exception as e:
-        logger.error(f"Error setting like: {e}", exc_info=True)
+        logger.error(f"Error setting like: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to set like")
 
 
@@ -72,10 +106,10 @@ def remove_like(
         logger.debug("Like removed successfully")
         return result
     except ConnectionError as e:
-        logger.error(f"Database connection error: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        logger.error(f"Database connection error: {type(e).__name__}")
+        raise HTTPException(status_code=503, detail=NICHT_ERREICHBAR)
     except Exception as e:
-        logger.error(f"Error removing like: {e}", exc_info=True)
+        logger.error(f"Error removing like: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to remove like")
 
 
@@ -87,6 +121,7 @@ def remove_like(
 def set_dislike(
     content_id: uuid.UUID,
     user_id: str = Depends(get_current_user),
+    _: None = Depends(nur_sichtbarer_beitrag),
     voting_service: VotingService = Depends(get_voting_service),
 ) -> VoteResponse:
     """
@@ -99,14 +134,17 @@ def set_dislike(
         result = voting_service.set_dislike(user_id, content_id)
         logger.debug("Dislike set successfully")
         return result
+    except Validierungsfehler as e:
+        logger.warning(f"Dislike validation error: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
-        logger.warning(f"Dislike validation error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning(f"Dislike validation error: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
     except ConnectionError as e:
-        logger.error(f"Database connection error: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        logger.error(f"Database connection error: {type(e).__name__}")
+        raise HTTPException(status_code=503, detail=NICHT_ERREICHBAR)
     except Exception as e:
-        logger.error(f"Error setting dislike: {e}", exc_info=True)
+        logger.error(f"Error setting dislike: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to set dislike")
 
 
@@ -130,10 +168,10 @@ def remove_dislike(
         logger.debug("Dislike removed successfully")
         return result
     except ConnectionError as e:
-        logger.error(f"Database connection error: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        logger.error(f"Database connection error: {type(e).__name__}")
+        raise HTTPException(status_code=503, detail=NICHT_ERREICHBAR)
     except Exception as e:
-        logger.error(f"Error removing dislike: {e}", exc_info=True)
+        logger.error(f"Error removing dislike: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to remove dislike")
 
 
@@ -151,7 +189,7 @@ def get_user_vote(
             "vote_type": vote_type,  # Can be "like", "dislike", or None
         }
     except Exception as e:
-        logger.error(f"Error getting user vote: {e}")
+        logger.error(f"Error getting user vote: {type(e).__name__}")
         # Return None vote_type if error occurs
         return {"content_id": str(content_id), "vote_type": None}
 

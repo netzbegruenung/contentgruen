@@ -49,6 +49,28 @@ describe('RouteConfigService', () => {
     }
   });
 
+  // Design-Audit C6 (#512): Dort stand "Gut gesagt" statt des Seitennamens.
+  it('nennt Rechtstexte, Ueber, Einladung und Admin beim Namen', () => {
+    const titel: Record<string, string> = {
+      '/impressum': 'Impressum',
+      '/datenschutz': 'Datenschutz',
+      '/nutzungsbedingungen': 'Nutzungsbedingungen',
+      '/about': 'Über Gut gesagt',
+      '/einladung?code=abc': 'Einladung',
+      '/admin/dashboard': 'Admin',
+      '/admin/moderation': 'Admin',
+    };
+    for (const [pfad, erwartet] of Object.entries(titel)) {
+      expect(service.getRouteConfig(pfad).pageTitle).withContext(pfad).toBe(erwartet);
+    }
+  });
+
+  it('nennt die eigene Adresse eines Beitrags "Beitrag", mit Pfeil (#300)', () => {
+    const config = service.getRouteConfig('/beitrag/b-1');
+    expect(config.pageTitle).toBe('Beitrag');
+    expect(config.showBackButton).toBeTrue();
+  });
+
   it('nennt die Ergebnisseite nach dem Speichern "Gespeichert"', () => {
     expect(service.getRouteConfig('/workflow/add-generictext/gespeichert/h-1').pageTitle).toBe('Gespeichert');
     expect(service.getRouteConfig('/workflow/add-post/gespeichert/p-1').pageTitle).toBe('Gespeichert');

@@ -57,7 +57,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: var(--primary-main);
+  background-color: var(--primary-dark);
   color: white;
   border: none;
   cursor: pointer;
@@ -78,7 +78,6 @@
 }
 
 .scroll-button:hover:not(:disabled) {
-  background-color: var(--primary-dark);
   box-shadow: var(--elevation-4);
   transform: translateY(-50%) scale(1.1);
 }
@@ -87,10 +86,9 @@
   transform: translateY(-50%) scale(0.95);
 }
 
+/* Am Anfang bzw. Ende gibt es nichts zu blaettern: Pfeil weg statt leerem Kreis (#512) */
 .scroll-button:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  background-color: var(--on-surface-variant);
+  visibility: hidden;
 }
 
 .scroll-button mat-icon {

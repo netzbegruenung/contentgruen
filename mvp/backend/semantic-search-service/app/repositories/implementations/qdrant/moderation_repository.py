@@ -51,6 +51,17 @@ class QdrantModerationRepository(IModerationRepository):
     async def laden(self, beitrag_id: str) -> Optional[Dict[str, Any]]:
         return await self._manager.get_by_id(beitrag_id)
 
+    async def zustaende_laden(self, beitrag_ids: List[str]) -> Dict[str, Optional[str]]:
+        if not beitrag_ids:
+            return {}
+        punkte = await self._client.retrieve(
+            collection_name=self._collection,
+            ids=list(beitrag_ids),
+            with_payload=["status"],
+            with_vectors=False,
+        )
+        return {str(punkt.id): (punkt.payload or {}).get("status") for punkt in punkte}
+
     async def sperren(self, beitrag: Dict[str, Any]) -> None:
         if beitrag.get("status") == ContentStatus.BLOCKED.value:
             return

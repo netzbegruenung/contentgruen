@@ -39,6 +39,32 @@ describe('MobileMenuComponent', () => {
     expect(schliessen).toHaveBeenCalled();
   });
 
+  // Rundgaenge wieder aufrufen (#389)
+  describe('Rundgang', () => {
+    it('bietet „Rundgang starten“ auch ohne Anmeldung an und schliesst danach das Menue', () => {
+      const rundgang = spyOn(component.rundgang, 'emit');
+      const schliessen = spyOn(component.closeMenu, 'emit');
+
+      const eintrag = fixture.nativeElement.querySelector('.mobile-menu-rundgang') as HTMLButtonElement;
+      expect(eintrag.textContent).toContain('Rundgang starten');
+      eintrag.click();
+
+      expect(rundgang).toHaveBeenCalledWith('antwort-finden');
+      expect(schliessen).toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen')).toBeNull();
+    });
+
+    it('bietet Angemeldeten zusaetzlich den Rundgang Mitmachen an', () => {
+      component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+      fixture.detectChanges();
+      const rundgang = spyOn(component.rundgang, 'emit');
+
+      (fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen') as HTMLButtonElement).click();
+
+      expect(rundgang).toHaveBeenCalledWith('mitmachen');
+    });
+  });
+
   describe('Rechtstexte', () => {
     const eintraege: Array<[string, string]> = [
       ['.legal-impressum', '/impressum'],
@@ -98,6 +124,26 @@ describe('MobileMenuComponent', () => {
     component.userInfo = null;
     fixture.detectChanges();
     expect(link('.mobile-menu-fehlt-antwort')).toBeNull();
+  });
+
+  // Design-Audit A4 (#512): Mobil fuehrte kein Weg in den Admin-Bereich.
+  it('verlinkt Admins auf den Admin-Bereich und schliesst danach das Menue', () => {
+    component.userInfo = { isAuthenticated: true, isAdmin: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+
+    const eintrag = link('.mobile-menu-admin');
+    expect(eintrag.getAttribute('href')).toBe('/admin/dashboard');
+    expect(eintrag.textContent).toContain('Admin');
+
+    spyOn(component.closeMenu, 'emit');
+    eintrag.click();
+    expect(component.closeMenu.emit).toHaveBeenCalled();
+  });
+
+  it('zeigt den Admin-Bereich nur Admins', () => {
+    component.userInfo = { isAuthenticated: true, isAdmin: false, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+    expect(link('.mobile-menu-admin')).toBeNull();
   });
 
   it('bietet Angemeldeten "Profilbild wählen" an und schliesst danach das Menue', () => {

@@ -3,6 +3,9 @@ import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { ElternZiel } from '../app.routes';
 
+/** Query-Parameter, mit dem "Meine Beitraege" gleich einen Tab oeffnet. */
+export const MEINE_TAB_PARAM = 'tab';
+
 /** Wohin der Pfeil faellt, wenn eine Route kein Elternziel nennt. */
 const STANDARD_ZIEL = '/search';
 
@@ -34,15 +37,23 @@ export class NavigationService {
     this.router.navigate(['/contribute']);
   }
 
-  navigateToContributions(): void {
+  navigateToMeineBeitraege(): void {
     this.router.navigate(['/contributions']);
   }
 
-  navigateToRawInput(): void {
+  /**
+   * "Meine Einwuerfe" im Tab von "Meine Beitraege": dort steht ein ausformulierter
+   * Einwurf, in keiner Arbeitsliste des Fangkorbs (#508).
+   */
+  navigateToMeineEinwuerfe(): void {
+    this.router.navigate(['/contributions'], { queryParams: { [MEINE_TAB_PARAM]: 'einwuerfe' } });
+  }
+
+  navigateToEinwerfen(): void {
     this.router.navigate(['/einwerfen']);
   }
 
-  navigateToRawInputList(): void {
+  navigateToFangkorb(): void {
     this.router.navigate(['/fangkorb']);
   }
 

@@ -682,7 +682,9 @@ class ContentOrchestrator:
             self.statement_service.refresh_topics()
             logger.info("Successfully refreshed topics for statement service")
         except Exception as e:
-            logger.warning(f"Could not refresh topics for statement service: {e}")
+            logger.warning(
+                f"Could not refresh topics for statement service: {type(e).__name__}"
+            )
 
     def load_processed_fingerprints(self, fingerprints: Set[str]) -> None:
         """Load previously processed content fingerprints for idempotent seeding."""

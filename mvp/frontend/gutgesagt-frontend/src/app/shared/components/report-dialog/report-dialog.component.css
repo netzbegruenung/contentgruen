@@ -1,7 +1,3 @@
-.report-dialog {
-  min-width: 400px;
-}
-
 .description {
   color: #666;
   margin-bottom: 20px;
@@ -30,7 +26,7 @@
   font-size: 64px;
   width: 64px;
   height: 64px;
-  color: #4caf50;
+  color: var(--primary-dark);
   margin-bottom: 16px;
 }
 
@@ -42,4 +38,21 @@
 button mat-spinner {
   display: inline-block;
   margin: 0;
+}
+
+.feld-fehler {
+  color: #d32f2f;
+  font-size: 12px;
+  margin: -12px 0 12px;
+}
+
+.guter-glaube {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.hinweis {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.4;
 }

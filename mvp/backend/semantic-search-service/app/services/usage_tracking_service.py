@@ -52,7 +52,6 @@ class UsageTrackingService:
     def track_content_usage(
         self,
         content_id: str,
-        session_id: Optional[str] = None,
         device_category: Optional[str] = None,
         fassung: Optional[str] = None,
         pruefwert: Optional[str] = None,
@@ -63,7 +62,6 @@ class UsageTrackingService:
 
         Args:
             content_id: String UUID of the content item
-            session_id: Optional session identifier
             device_category: Grobe Geraetekategorie, bereits abgeleitet
             fassung: Die kopierte Fassung eines Kommentars (#355), sonst None
             pruefwert: Pruefwert fuer die Entdoppelung (services/entdoppelung.py,
@@ -73,19 +71,19 @@ class UsageTrackingService:
         Returns:
             bool: True if tracking was successful
         """
-        logger.info(f"Service: Tracking usage for content {content_id}")
-
         # Validate content ID
         if not self._validate_content_id(content_id):
-            logger.error(f"Invalid content ID format: {content_id}")
+            # Eine ungueltige ID ist freier Text von aussen (#422).
+            logger.error("Invalid content ID format")
             return False
+
+        logger.info(f"Service: Tracking usage for content {content_id}")
 
         try:
             content_uuid = uuid.UUID(content_id)
             result = self.repository.track_usage(
                 content_id=content_uuid,
                 event_type="copy",
-                session_id=session_id,
                 device_category=device_category,
                 fassung=fassung,
                 pruefwert=pruefwert,
@@ -102,7 +100,7 @@ class UsageTrackingService:
 
             return result
         except ValueError:
-            logger.error(f"Invalid content ID format: {content_id}")
+            logger.error("Invalid content ID format")
             return False
 
     def get_content_usage(self, content_id: str) -> int:
@@ -116,14 +114,16 @@ class UsageTrackingService:
             int: Usage count
         """
         if not self._validate_content_id(content_id):
-            logger.error(f"Invalid content ID format: {content_id}")
+            logger.error("Invalid content ID format")
             return 0
 
         try:
             content_uuid = uuid.UUID(content_id)
             return self.repository.get_usage_count(content_uuid)
         except Exception as e:
-            logger.error(f"Error getting usage count for {content_id}: {e}")
+            logger.error(
+                f"Error getting usage count for {content_id}: {type(e).__name__}"
+            )
             return 0
 
     def get_content_usage_stats(self, content_id: str) -> Optional[Dict[str, Any]]:
@@ -137,14 +137,16 @@ class UsageTrackingService:
             Dict with usage statistics or None if error
         """
         if not self._validate_content_id(content_id):
-            logger.error(f"Invalid content ID format: {content_id}")
+            logger.error("Invalid content ID format")
             return None
 
         try:
             content_uuid = uuid.UUID(content_id)
             return self.repository.get_content_stats(content_uuid)
         except Exception as e:
-            logger.error(f"Error getting usage stats for {content_id}: {e}")
+            logger.error(
+                f"Error getting usage stats for {content_id}: {type(e).__name__}"
+            )
             return None
 
     def enrich_content_with_usage(
@@ -335,7 +337,7 @@ class UsageTrackingService:
             logger.info(f"Deleted {deleted_count} old usage event records")
             return deleted_count
         except Exception as e:
-            logger.error(f"Error cleaning up old events: {e}")
+            logger.error(f"Error cleaning up old events: {type(e).__name__}")
             return 0
 
     def get_usage_count(self, content_id: str) -> int:

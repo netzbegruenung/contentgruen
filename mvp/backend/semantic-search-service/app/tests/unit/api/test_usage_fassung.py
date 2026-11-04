@@ -15,6 +15,7 @@ from api.v1 import usage as usage_module
 from api.v1.usage import router as usage_router
 from core.config import Settings
 from dependencies import get_settings
+from dependencies import get_beitrag_laden
 from domain.models.content_type import ContentType
 
 KOMMENTAR_ID = "11111111-1111-4111-8111-111111111111"
@@ -36,14 +37,13 @@ def client(dienst):
     app.dependency_overrides[get_settings] = lambda: Settings()
     typen = {KOMMENTAR_ID: ContentType.COMMENTARY, BILD_ID: ContentType.IMAGE}
 
-    async def beitrag_laden(content_id, settings):
+    async def laden(content_id):
         return SimpleNamespace(
             id=content_id, original_author="kim-1", content_type=typen[str(content_id)]
         )
 
-    with patch.object(
-        usage_module, "get_usage_service", return_value=dienst
-    ), patch.object(usage_module, "beitrag_laden", beitrag_laden):
+    app.dependency_overrides[get_beitrag_laden] = lambda: laden
+    with patch.object(usage_module, "get_usage_service", return_value=dienst):
         yield TestClient(app)
 
 

@@ -22,15 +22,23 @@ there are not processed.
 ## Quickstart (Docker)
 
 ```bash
-git clone https://github.com/netzbegruenung/contentgruen.git
-cd contentgruen/mvp
+git clone https://github.com/netzbegruenung/contentgruen.git gutgesagt
+cd gutgesagt/mvp
 docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up
 ```
 
-- **Frontend**: [http://localhost](http://localhost)
+- **Frontend**: [http://localhost:8080](http://localhost:8080) (host port 8080, because rootless
+  Docker cannot bind ports below 1024)
 - **BFF** (.NET): [http://localhost:5054](http://localhost:5054)
 - **Semantic Search Service**: [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
+- **Sign in**: button "Anmelden" ("Direktanmeldung"), Beta-Zugang `test.user@example.com` /
+  `Liebe>Hass!` from `mvp/config/managed-users.example.json`. With plain `docker compose`, copy
+  that file to `mvp/config/managed-users.json` before starting, otherwise this sign-in is off
+  (see [docs/DEV-SETUP.md](docs/DEV-SETUP.md)).
+
+On Linux, `mvp/run-local.sh up` does the same in the background and creates
+`managed-users.json` itself (`status`, `reset`, `logs`, `down`).
 
 ## Local Setup (component-based development)
 
@@ -59,6 +67,10 @@ ng serve
 cd mvp/backend/BFF
 dotnet run
 ```
+
+In the Development environment (`dotnet run` uses it) the BFF serves its Swagger UI at
+[http://localhost:5054/swagger](http://localhost:5054/swagger); the Docker dev stack runs it as
+Production, without Swagger.
 
 ### Semantic Search Service (Python + FastAPI)
 
@@ -90,14 +102,65 @@ cd mvp/backend && dotnet test
 End-to-end tests (Playwright) run against the dev stack, not in CI: see
 [mvp/frontend/gutgesagt-frontend/e2e/README.md](mvp/frontend/gutgesagt-frontend/e2e/README.md).
 
-## Contribution Flow
+## Issues
+
+Issues live on Forgejo. Before you open one, search whether it already exists. Describe what you
+expected, what happened and how to reproduce it; for a new feature, what problem it solves.
+
+Issues are labelled with a type and, while they are being worked out, a triage label:
+
+| Label             | Meaning                                                      |
+| ----------------- | ------------------------------------------------------------ |
+| `bug`             | Something is broken                                          |
+| `enhancement`     | New feature or improvement                                   |
+| `needs-triage`    | A maintainer still has to evaluate the issue                 |
+| `needs-info`      | Waiting for the reporter to add information                  |
+| `ready-for-agent` | Fully specified; a coding agent can implement it unattended  |
+| `ready-for-human` | Fully specified, but needs a person to implement it          |
+| `wontfix`         | Will not be done                                             |
+
+The triage labels follow [docs/agents/triage-labels.md](docs/agents/triage-labels.md); a maintainer
+sets them. Planning happens on the
+[Forgejo milestones](https://git.verdigado.com/Netzbegruenung/gutgesagt/milestones), not in a file.
+
+## Branches
+
+`main` is protected: nobody pushes to it directly, maintainers merge pull requests. Create a
+branch in the Forgejo repository named after the kind of change, ideally with the issue number:
+
+| Prefix    | For                                  | Example                       |
+| --------- | ------------------------------------ | ----------------------------- |
+| `feat/`   | New features                         | `feat/123-bildsuche`          |
+| `fix/`    | Bug fixes                            | `fix/124-login-redirect`      |
+| `docs/`   | Documentation only                   | `docs/125-dev-setup`          |
+| `chore/`  | Tooling, dependencies, housekeeping  | `chore/126-renovate`          |
+
+Coding agents use `sb/<issue>-<topic>`.
+
+## Commits
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`feat: …`, `fix: …`, `docs: …`, `chore: …`), without emojis. The pre-commit hooks format Python
+code and run the unit tests; if they reformat a file, commit again.
+
+### License of contributions
+
+By opening a pull request you license your contribution under the AGPL, like the rest of the code,
+and confirm that you have the right to do so.
+
+## Pull requests
 
 1. Open an issue on Forgejo or comment on an existing one to coordinate
-2. Create a branch in the Forgejo repository: `feature/<your-feature>`
-3. Make your changes and run the tests (`scripts/check.sh`)
-4. Open a pull request on Forgejo with a clear description of what and why
+2. Create a branch as described above
+3. Make your changes and run the checks: `scripts/check.sh --geaendert` while working, the full
+   `scripts/check.sh --integration` before opening the pull request
+4. Open a pull request against `main` on Forgejo with a clear description of what and why, and
+   `Closes #<issue>`
+5. Woodpecker runs the same checks on every pull request ([docs/CI.md](docs/CI.md)); a maintainer
+   reviews and merges
 
-Before starting significant work, please get in touch first to avoid duplication.
+Before starting significant work, please get in touch first to avoid duplication. Judgement rules
+for reviews are in [CODING_STANDARDS.md](CODING_STANDARDS.md).
 
 ## Feedback and security
 
@@ -116,4 +179,5 @@ mvp/docker-compose.dev.yml         Full containerized setup (local development)
 mvp/docker-compose.local-dbs.yml   Databases only, for component-based development
 ```
 
-See [STATUS.md](./STATUS.md) for the current roadmap.
+Planning: [Forgejo milestones](https://git.verdigado.com/Netzbegruenung/gutgesagt/milestones).
+Current state of the project: [STATUS.md](./STATUS.md).

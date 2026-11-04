@@ -58,14 +58,14 @@ export interface SperrenDialogErgebnis {
         Der Autor liest {{ daten.art === 'sperren' ? 'Sperrgrund und Begründung' : 'die Begründung' }} in „Meine Beiträge“.
       </p>
 
-      <mat-form-field *ngIf="daten.art === 'sperren'" appearance="fill" class="volle-breite">
+      <mat-form-field *ngIf="daten.art === 'sperren'" appearance="outline" class="volle-breite">
         <mat-label>Sperrgrund</mat-label>
         <mat-select [(ngModel)]="sperrgrund" required>
           <mat-option *ngFor="let grund of sperrgruende" [value]="grund.value">{{ grund.label }}</mat-option>
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="fill" class="volle-breite">
+      <mat-form-field appearance="outline" class="volle-breite">
         <mat-label>Begründung</mat-label>
         <textarea matInput [(ngModel)]="begruendung" rows="4" required
                   [maxlength]="BEGRUENDUNG_MAX"
@@ -84,7 +84,7 @@ export interface SperrenDialogErgebnis {
     `
       .volle-breite { width: 100%; }
       .sperren-titel { font-weight: 500; }
-      .sperren-hinweis { color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6)); }
+      .sperren-hinweis { color: var(--text-secondary); }
     `,
   ],
 })

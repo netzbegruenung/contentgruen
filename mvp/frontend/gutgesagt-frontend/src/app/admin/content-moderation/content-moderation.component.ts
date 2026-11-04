@@ -16,9 +16,12 @@ import { ContentStatus } from '../../services/dtos/content-status-enum';
 import { typLabel } from '../../shared/content-type-registry';
 import { meldegrundLabel } from '../../shared/meldegruende';
 import { sperrgrundLabel } from '../../shared/sperrgruende';
+import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
+import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 
-type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
+// 'person': Meldungen einer Person nach Name oder E-Mail-Adresse (#494).
+type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'person';
 
 @Component({
   selector: 'app-content-moderation',
@@ -34,7 +37,8 @@ type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
     MatSnackBarModule,
     MatTooltipModule,
     MatButtonToggleModule,
-    MatBadgeModule
+    MatBadgeModule,
+    MeldungenEinerPersonComponent
   ],
   templateUrl: './content-moderation.component.html',
   styleUrls: ['./content-moderation.component.css'],
@@ -80,19 +84,31 @@ export class ContentModerationComponent implements OnInit {
   }
 
   loadReports() {
+    if (this.selectedStatus === 'person') {
+      // Die Suche lädt selbst, erst wenn Angaben eingegeben sind.
+      this.loading = false;
+      this.error = null;
+      return;
+    }
     this.loading = true;
     this.error = null;
     this.expandedReports.clear(); // Reset expanded rows on refresh
+    // Antworten einer Ansicht, die inzwischen verlassen ist, verwerfen: Sonst zeigt
+    // etwa „Nach Person“ den Fehler einer alten Liste (#494).
+    const ansicht = this.selectedStatus;
+    const verlassen = () => this.selectedStatus !== ansicht;
 
-    if (this.selectedStatus === 'gesperrt') {
+    if (ansicht === 'gesperrt') {
       this.moderationService.getGesperrte().subscribe({
         next: (response) => {
+          if (verlassen()) return;
           this.gesperrte = nachWiderspruch(response.beitraege);
           this.offeneWidersprueche = zaehleOffene(response.beitraege);
           this.loading = false;
         },
         error: (error) => {
           console.error('Error loading blocked content:', error);
+          if (verlassen()) return;
           this.error = 'Fehler beim Laden der gesperrten Beiträge';
           this.loading = false;
         }
@@ -100,8 +116,9 @@ export class ContentModerationComponent implements OnInit {
       return;
     }
 
-    this.moderationService.getReports(this.selectedStatus).subscribe({
+    this.moderationService.getReports(ansicht).subscribe({
       next: (response) => {
+        if (verlassen()) return;
         // Force new array reference for change detection
         this.reports = [...response.reports];
         this.loading = false;
@@ -109,6 +126,7 @@ export class ContentModerationComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading reports:', error);
+        if (verlassen()) return;
         this.error = 'Fehler beim Laden der Meldungen';
         this.loading = false;
       }
@@ -237,6 +255,31 @@ export class ContentModerationComponent implements OnInit {
     });
   }
 
+  /**
+   * Was hinter „Anonym“ steht. Offene anonyme Meldungen tragen das Tagespseudonym
+   * („besucher:…“, #446): gleicher Anfang heißt dieselbe Quelle am selben Tag.
+   * Erledigte tragen einen Zufallswert („anon:…“) und zeigen nichts; alte Meldungen
+   * den Anfang ihrer Sitzungskennung.
+   */
+  melderQuelle(kennung: string): string | null {
+    if (kennung.startsWith('anon:')) {
+      return null;
+    }
+    if (kennung.startsWith('besucher:')) {
+      return `Quelle ${kennung.substring('besucher:'.length, 'besucher:'.length + 8)}`;
+    }
+    return kennung.substring(0, 8);
+  }
+
+  /**
+   * mailto-Link an die meldende Person (#438). Die Adresse kommt von aussen: `?` oder `&`
+   * im lokalen Teil wuerden sonst Empfaenger oder Betreff anhaengen.
+   */
+  mailtoLink(email: string): string {
+    const at = email.lastIndexOf('@');
+    return `mailto:${encodeURIComponent(email.slice(0, at))}@${encodeURIComponent(email.slice(at + 1))}`;
+  }
+
   getReasonLabel(reason: string): string {
     return meldegrundLabel(reason);
   }
@@ -270,12 +313,7 @@ export class ContentModerationComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    const labels: { [key: string]: string } = {
-      'pending': 'Offen',
-      'reviewed': 'Bearbeitet',
-      'dismissed': 'Abgewiesen'
-    };
-    return labels[status] || status;
+    return meldungsstatusLabel(status);
   }
 
   getStatusColor(status: string): string {

@@ -57,9 +57,8 @@ Everything else is shared.
 ```
 
 - For every type the ingestion strategy is **identity**: `searchable_text = user input`.
-- For an **image/graphic**, that input is the Unterschrift. The image form can ask the AI vision
-  endpoint for a suggestion (`POST /image/suggestCaption`), but only the text the person saves is
-  stored (ADR 0003, #281). From that point on the image is just another text-bearing content item —
+- For an **image/graphic**, that input is the Unterschrift the person writes in the image form
+  (ADR 0003, #281, #393). From that point on the image is just another text-bearing content item —
   matched on its Unterschrift, rendered as a picture.
 - The text is **persisted, never recomputed**. Search is cheap and deterministic.
 
@@ -119,9 +118,11 @@ class DirectText:        # comment, generic_text, speech transcript, paper abstr
     async def derive_text(self, raw): return DerivedContent(text=raw.text)
 ```
 
-An AI-derived ingestion (e.g. describing an image) is not a strategy here: by ADR 0003 an AI text
-reaches the Vorrat only after a person takes it over. The image form fetches a suggestion
-(`POST /image/suggestCaption`) and the person saves it as the Unterschrift (#281).
+An AI text that is shown to people is not a strategy here: by ADR 0003 it reaches the Vorrat only
+after a person takes it over. A future KI-Vorschlag for the Unterschrift therefore belongs in the
+image form: fetched on click, edited or discarded by the person, saved only with the form (#281,
+#393). Texts that only serve indexing and search (text in the image, an image description) may be
+derived in the background and are never shown (ADR 0003, Ergänzung 28.10.2026).
 
 **3. Per-type models (Seam 2)** stay tiny — just the extra fields:
 
@@ -208,10 +209,10 @@ into the initial bundle) — so a new type is
 registered once and picked up by search results, recent-content, and contribution menus
 automatically. This also retired the false-abstraction `unified-result-item`.
 
-**4. A shared HTTP layer** *(still open)*: an `X-Session-Id` interceptor, an
-`ApiUrlService` for the `/api/v1` base, and a reusable `handleHttpError` operator — removing the
-per-service URL/header/error duplication that every type's service still re-copies. Today
-`X-Session-Id` is set per-service in `search.service.ts` and `moderation.service.ts`.
+**4. A shared HTTP layer** *(still open)*: an `ApiUrlService` for the `/api/v1` base and a
+reusable `handleHttpError` operator — removing the per-service URL/error duplication that every
+type's service still re-copies. The `X-Session-Id` header is gone since #446: visitors are
+recognised server-side by their daily pseudonym.
 
 ## What is shared vs per-type (the contract)
 
@@ -228,10 +229,40 @@ per-service URL/header/error duplication that every type's service still re-copi
 | **Display** | — | Seam 3 (adapter fields + body block in the card) |
 | Special behavior (e.g. dedup) | — | optional behavior strategy |
 
-**Adding a new type =** one registry entry + a model/DTO with its extra fields (ingestion defaults
+**Adding a new type =** (in short; step by step in the checklist below) one registry entry + a model/DTO with its extra fields (ingestion defaults
 to `DirectText`) + a response DTO that selects what goes out (`<Type>Response`/`<Type>Treffer` in
 `dtos/beitrag.py`, without Kennung, #333) + its fields in the card adapter and, only if it needs its own body,
 a block in `app-beitragskarte`. No engine changes, no cloning.
+
+### Adding a Beitragstyp: checklist
+
+Paths below `app/` are in `mvp/backend/semantic-search-service/app/`, frontend paths in
+`mvp/frontend/gutgesagt-frontend/src/app/`.
+
+1. **Model**: `<Type>DbEntry(BaseContentDbEntry)` and `<Type>SearchResult` in `domain/models/`,
+   plus the `ContentType` enum member.
+2. **Registry**: a `ContentTypeSpec` entry in `domain/content_registry.py`, built with
+   `create_registry_repository` (the generic `RegistryQdrantRepository`; no repository subclass).
+3. **Service and router**: a `get_<type>_service` dependency in `dependencies.py` that builds the
+   generic service from the spec, and an `api/v1/<type>.py` router wired in `main.py`. Ingestion is
+   the only type-specific seam.
+4. **Search and responses**: the type joins the `/searchByText` spec list and the `SearchResponse`
+   DTO; the `SearchOrchestrator` handles it generically. Responses go out through
+   `<Type>Response(BeitragResponse)` and `<Type>Treffer` in `dtos/beitrag.py`, an allowlist of
+   fields, never the DbEntry, so no Kennung leaks (#333); build them with
+   `als_responses`/`fuer_aufrufer` (`services/beitrag_fuer_aufrufer.py`). If the type shows up in
+   `/content/recent`, add it to `NEUESTE` in `api/v1/content.py`. `ANTWORT_JE_TYP` in
+   `dtos/beitragstypen.py` maps every type to its response for „Diese Woche oft genutzt“
+   (`api/v1/usage.py`) and the Beitrag's own address; add the type there. The Beitrag's own
+   address (`/beitrag/:id`, #300) also needs its service in `beitrag_ansehen` in
+   `api/v1/content.py`.
+5. **Frontend**: one entry in `shared/content-type-registry.ts` (key, icon, German `label`,
+   `resultField`, `emoji`), the type's fields in the `ausSuchergebnis` adapter
+   (`beitragskarte/karten-daten.ts`) and, only if it needs its own body, a block in
+   `app-beitragskarte`. The registry imports no components, so type names (`typLabel()`) stay out
+   of the initial bundle.
+6. **Tests first** against live Qdrant in `tests/integration/` (round-trip and orchestrator
+   parity), plus a frontend render/vote test.
 
 ## Incremental migration path
 
@@ -275,11 +306,10 @@ dedup behavior as a strategy) and `reference`.
   (`references_count`, `usage_count`, `content_type`), so the frontend DTOs adopt snake_case to
   match — no per-field transformation, no `DtoMapper` boundary. This unblocked the shared
   `BaseContentResult` DTO base (`services/dtos/commonDtos.ts`).
-- **AI vision provider — DECIDED.** OpenAI `gpt-4o-mini`, called from the search service only for
-  the suggested Unterschrift in the image form (`CaptionSuggestionService`, `POST
-  /image/suggestCaption`). Configured via `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`);
-  without a key there is no suggestion and the person writes the Unterschrift. Since #281 the AI is
-  no longer called at ingestion (ADR 0003).
+- **AI vision provider — DECIDED: none external.** The OpenAI suggestion for the Unterschrift
+  (`gpt-4o-mini`, `POST /image/suggestCaption`) was removed together with the `openai` dependency
+  (#393); the person writes the Unterschrift. Image models run on own infrastructure only
+  (ADR 0005); since #281 no AI is called at ingestion (ADR 0003).
 
 ## Open decisions
 - **Legacy type migration**: whether to move `statement` and `reference` onto the registry, or leave

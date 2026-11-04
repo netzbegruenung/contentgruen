@@ -3,24 +3,38 @@ API endpoints for content moderation and reporting.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
-from domain.models.meldegrund import Meldegrund
+from domain.models.meldegrund import Meldegrund, beschreibung_fehlt
+from domain.models.meldung import (
+    MELDER_EMAIL_MAX,
+    MELDER_NAME_MAX,
+    MelderAngaben,
+    MelderSuche,
+)
 from domain.models.sperrgrund import Sperrgrund
 from services.moderation_service import (
+    ModerationService,
     SchonGesperrt,
     SperreUngueltig,
-    get_moderation_service,
 )
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.config import Settings
 from core.logging import get_logger
-from dependencies import get_settings, get_current_user_optional, require_admin
+from dependencies import (
+    get_current_user_optional,
+    get_moderation_service,
+    get_settings,
+    require_admin,
+)
 from utils.rate_limiter import report_rate_limiter
-from utils.client_identity import derive_client_key, normalize_session_id
+from utils.besucher_pseudonym import besucher_merkmal
+from utils.client_identity import derive_client_key
+from repositories.content_report_repository import melder_pseudonym
 
 logger = get_logger(__name__)
 
@@ -48,8 +62,51 @@ class ReportContentRequest(BaseModel):
     description: Optional[str] = Field(
         None,
         max_length=1000,
-        description="Optional detailed description (max 1000 characters)",
+        description="Description (max 1000 characters); required for illegal_content",
     )
+    # Angaben nach Art. 16 Abs. 2 DSA (#438); der DSA gilt fuer Gut gesagt.
+    # Name und E-Mail-Adresse sind freiwillig
+    # (lit. c); nur wer sie angibt, kann die Entscheidung erfahren (Abs. 5).
+    # Beides sehen nur Admins, und keins von beiden landet im Log.
+    melder_name: Optional[str] = Field(
+        None,
+        max_length=MELDER_NAME_MAX,
+        description="Optional: Name der meldenden Person",
+    )
+    melder_email: Optional[EmailStr] = Field(
+        None,
+        max_length=MELDER_EMAIL_MAX,
+        description="Optional: E-Mail-Adresse fuer die Mitteilung der Entscheidung",
+    )
+    # Die Erklaerung guten Glaubens (lit. d) ist Pflicht: Ohne sie ist eine
+    # Meldung nach Abs. 3 nicht vollstaendig.
+    guter_glaube: bool = Field(
+        ...,
+        description="Die meldende Person erklaert, in gutem Glauben zu melden",
+    )
+
+    @field_validator("melder_name", "melder_email", mode="before")
+    @classmethod
+    def _leer_ist_nicht_angegeben(cls, wert):
+        if isinstance(wert, str):
+            wert = wert.strip()
+            return wert or None
+        return wert
+
+    @field_validator("guter_glaube")
+    @classmethod
+    def _guter_glaube_erklaert(cls, wert: bool) -> bool:
+        if wert is not True:
+            raise ValueError("Die Erklaerung guten Glaubens fehlt")
+        return wert
+
+    @model_validator(mode="after")
+    def _rechtswidriges_begruendet(self):
+        # Art. 16 Abs. 2 lit. a DSA (#438): wer einen Inhalt als rechtswidrig
+        # meldet, erklaert, warum.
+        if beschreibung_fehlt(self.reason, self.description):
+            raise ValueError("Bei rechtswidrigem Inhalt fehlt die Begruendung")
+        return self
 
 
 class ReportContentResponse(BaseModel):
@@ -105,6 +162,54 @@ class GesperrteResponse(BaseModel):
     beitraege: List[Dict[str, Any]]
 
 
+class MelderSucheRequest(BaseModel):
+    """Angaben, nach denen ein Admin die Meldungen einer Person sucht (#494).
+
+    Im Koerper statt in der Adresse, weil Pfade in Logs stehen. Die Regeln der
+    Suche stehen in MelderSuche (domain/models/meldung.py); ohne Angabe 422.
+    """
+
+    email: Optional[str] = Field(None, max_length=MELDER_EMAIL_MAX)
+    name: Optional[str] = Field(None, max_length=MELDER_NAME_MAX)
+
+    def suche(self) -> MelderSuche:
+        return MelderSuche(email=self.email, name=self.name)
+
+    @model_validator(mode="after")
+    def _eine_angabe_noetig(self):
+        self.suche()
+        return self
+
+
+# Hoechstens so viele Meldungen auf einmal; die Suche hat keine Grenze, eine
+# Person mit mehr Meldungen gibt es praktisch nicht.
+MELDUNG_IDS_MAX = 10_000
+
+
+class AngabenLoeschenRequest(MelderSucheRequest):
+    """Die Angaben der Suche und die Meldungen, die der Admin dazu gesehen hat.
+
+    ``dieselbe_person``: Der Admin hat bestaetigt, dass alle Treffer zu einer
+    Person gehoeren. Noetig, wenn nur nach dem Namen gesucht wurde.
+    """
+
+    meldung_ids: List[uuid.UUID] = Field(..., min_length=1, max_length=MELDUNG_IDS_MAX)
+    dieselbe_person: bool = False
+
+    @model_validator(mode="after")
+    def _nur_name_braucht_bestaetigung(self):
+        if self.suche().nur_name and not self.dieselbe_person:
+            raise ValueError("Nur nach dem Namen gesucht: dieselbe Person bestaetigen")
+        return self
+
+
+class AngabenGeloeschtResponse(BaseModel):
+    """Bearbeitete und abgewiesene Meldungen sind geloescht, offene ohne Angaben."""
+
+    geloescht: int
+    angaben_entfernt: int
+
+
 class DismissReportResponse(BaseModel):
     """Response model for report dismissal."""
 
@@ -128,8 +233,8 @@ async def report_content(
     request: ReportContentRequest,
     http_request: Request,
     x_user_id: Optional[str] = Header(None, alias="X-User"),
-    x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Report a content item.
@@ -139,10 +244,9 @@ async def report_content(
     verletzung meldet, ist typischerweise kein Nutzer der Plattform.
 
     Das Rate-Limit haengt deshalb an der Adresse des Aufrufers, nicht mehr an
-    X-Session-Id. Der Session-Header wird von der SPA selbst erzeugt und in
-    localStorage gehalten; wer je Anfrage einen neuen Wert schickt, hatte damit
-    gar kein Limit. Er dient weiterhin der Zuordnung anonymer Meldungen, aber
-    keiner Sicherheitsentscheidung mehr.
+    X-Session-Id. Den Session-Header erzeugte die SPA selbst; wer je Anfrage
+    einen neuen Wert schickte, hatte damit gar kein Limit. Seit #446 gibt es ihn
+    nicht mehr, und ein mitgeschickter Wert wird auch nicht gespeichert.
 
     Fuer angemeldete Melder gilt zusaetzlich ein Limit auf der Nutzerkennung und
     eine Deduplizierung auf (Nutzer, Inhalt).
@@ -164,8 +268,6 @@ async def report_content(
                     detail="Too many reports. Please wait before submitting another report.",
                 )
 
-        moderation_service = get_moderation_service()
-
         # Existenz pruefen, bevor irgendetwas angelegt wird. Vorher genuegte ein
         # gueltiges UUID-Format, sodass Meldungen zu nie existierenden Kennungen
         # im Posteingang landeten.
@@ -174,20 +276,19 @@ async def report_content(
 
         logger.info(f"Content report received: {request.content_id} - {request.reason}")
 
-        # Meldungen brauchen eine Melder-Kennung: der Service verlangt sie, und die
-        # Tabelle hat einen CHECK darauf. Wer ohne Anmeldung und ohne
-        # X-Session-Id meldet -- etwa direkt gegen die API statt ueber die SPA --
-        # bekam deshalb 400, obwohl die Route ausdruecklich ohne Anmeldung
-        # erreichbar sein soll. Ein Zufallstoken je Meldung erfuellt die
-        # Bedingung, ohne irgendetwas ueber den Melder auszusagen; insbesondere
-        # ist er nicht aus der Adresse abgeleitet.
-        # Nur eine wohlgeformte Kennung uebernehmen. Das ist Hygiene, keine
-        # Sicherheitsmassnahme -- an diesem Wert haengt seit dem Umbau des
-        # Rate-Limits keine Entscheidung mehr. Ein unpassender Wert wird
-        # verworfen statt die Meldung abzuweisen.
-        reporter_session = normalize_session_id(x_session_id)
-        if not is_authenticated and not reporter_session:
-            reporter_session = f"anon:{uuid.uuid4()}"
+        # Anonyme Meldungen tragen das Tagespseudonym des Besuchers: Admins sehen
+        # so, ob offene Meldungen am selben Tag aus derselben Quelle kommen. Es
+        # bleibt nur, bis die Meldung erledigt ist; dann ersetzt das Repository es
+        # durch einen Zufallswert (repositories/content_report_repository.py).
+        # Eine Sitzungskennung aus dem Browser gibt es seit #446 nicht mehr, auch
+        # nicht neben der Kennung angemeldeter Melder.
+        reporter_session = (
+            None
+            if is_authenticated
+            else melder_pseudonym(
+                besucher_merkmal(http_request), datetime.now(timezone.utc).date()
+            )
+        )
 
         success = await moderation_service.report_content(
             content_id=request.content_id,
@@ -196,6 +297,11 @@ async def report_content(
             user_id=x_user_id if is_authenticated else None,
             session_id=reporter_session,
             description=request.description,
+            melder=MelderAngaben(
+                guter_glaube=request.guter_glaube,
+                name=request.melder_name,
+                email=request.melder_email,
+            ),
         )
 
         if success:
@@ -211,7 +317,9 @@ async def report_content(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in report_content endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in report_content endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -227,6 +335,7 @@ async def get_reports(
     offset: int = Query(0, ge=0, description="Number of reports to skip"),
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Get content reports filtered by status (Admin only).
@@ -239,8 +348,6 @@ async def get_reports(
     """
     try:
         logger.info(f"Admin fetching {status} reports (limit={limit}, offset={offset})")
-
-        moderation_service = get_moderation_service()
         reports = await moderation_service.get_reports(
             status=status, limit=limit, offset=offset
         )
@@ -250,7 +357,69 @@ async def get_reports(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_reports endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in get_reports endpoint: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Admin Endpoints - Meldungen einer Person (#494)
+@router.post("/melder/meldungen", response_model=PendingReportsResponse)
+async def meldungen_einer_person(
+    anfrage: MelderSucheRequest,
+    admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
+):
+    """
+    Alle Meldungen mit diesem Namen oder dieser E-Mail-Adresse der meldenden
+    Person, in jedem Status (Admin only). Fuer die Auskunft an Personen ohne
+    Konto (Art. 15 DSGVO): Nur ueber diese Angaben sind ihre Meldungen zu finden.
+    Die Angaben stehen nicht im Log.
+    """
+    try:
+        logger.info("Admin searching reports by Melder-Angaben")
+        meldungen = await moderation_service.meldungen_einer_person(anfrage.suche())
+        return PendingReportsResponse(total=len(meldungen), reports=meldungen)
+
+    except Exception as e:
+        logger.error(
+            f"Error in meldungen_einer_person endpoint: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/melder/angaben-loeschen", response_model=AngabenGeloeschtResponse)
+async def angaben_der_person_loeschen(
+    anfrage: AngabenLoeschenRequest,
+    admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
+):
+    """
+    Die Angaben einer Person an ihren Meldungen loeschen, die es verlangt
+    (Admin only, Art. 17 DSGVO). Nur die Meldungen aus der Suche, die der Admin
+    gesehen hat (meldung_ids) und die noch zu den Angaben passen; nach einer
+    Suche nur mit dem Namen erst, wenn der Admin bestaetigt, dass alle Treffer
+    dieselbe Person sind (dieselbe_person). Bearbeitete und
+    abgewiesene gehen ganz; offene bleiben fuer die Moderation stehen (Art. 16
+    DSA) und verlieren Name, E-Mail-Adresse und das Tagespseudonym.
+    """
+    try:
+        logger.info("Admin deleting Melder-Angaben")
+        ergebnis = await moderation_service.angaben_der_person_loeschen(
+            anfrage.suche(),
+            anfrage.meldung_ids,
+            dieselbe_person=anfrage.dieselbe_person,
+        )
+        return AngabenGeloeschtResponse(
+            geloescht=ergebnis.geloescht, angaben_entfernt=ergebnis.angaben_entfernt
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error in angaben_der_person_loeschen endpoint: {type(e).__name__}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -260,6 +429,7 @@ async def sperren(
     content_id: uuid.UUID,
     anfrage: SperrenRequest,
     admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Einen gemeldeten Beitrag sperren (Admin only), mit Sperrgrund und Begruendung.
@@ -270,8 +440,6 @@ async def sperren(
     """
     try:
         logger.info(f"Admin blocking (sperren) content: {content_id}")
-
-        moderation_service = get_moderation_service()
         if not await moderation_service.sperren(
             str(content_id),
             gesperrt_von=admin_user,
@@ -285,11 +453,11 @@ async def sperren(
     except SchonGesperrt:
         raise HTTPException(status_code=409, detail="Beitrag ist schon gesperrt")
     except SperreUngueltig as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=e.antworttext)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in sperren endpoint: {e}", exc_info=True)
+        logger.error(f"Error in sperren endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -297,6 +465,7 @@ async def sperren(
 async def entsperren(
     content_id: uuid.UUID,
     admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Eine Sperre aufheben (Admin only). Der Beitrag ist danach wieder so sichtbar
@@ -304,8 +473,6 @@ async def entsperren(
     """
     try:
         logger.info(f"Admin unblocking (entsperren) content: {content_id}")
-
-        moderation_service = get_moderation_service()
         if not await moderation_service.entsperren(
             str(content_id), entsperrt_von=admin_user
         ):
@@ -316,7 +483,7 @@ async def entsperren(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in entsperren endpoint: {e}", exc_info=True)
+        logger.error(f"Error in entsperren endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -325,6 +492,7 @@ async def sperre_bestaetigen(
     sperre_id: uuid.UUID,
     anfrage: SperreBestaetigenRequest,
     admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Nach einem Widerspruch erneut geprueft: Die Sperre bleibt (Admin only). Die
@@ -334,7 +502,7 @@ async def sperre_bestaetigen(
     try:
         logger.info(f"Admin confirming Sperre {sperre_id} after Widerspruch")
 
-        if not await get_moderation_service().sperre_bestaetigen(
+        if not await moderation_service.sperre_bestaetigen(
             str(sperre_id), admin_user, anfrage.begruendung
         ):
             raise HTTPException(
@@ -344,16 +512,21 @@ async def sperre_bestaetigen(
         return SperreResponse(success=True, message="Sperre bestaetigt")
 
     except SperreUngueltig as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=e.antworttext)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in sperre_bestaetigen endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in sperre_bestaetigen endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/gesperrt", response_model=GesperrteResponse)
-async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
+async def gesperrte_beitraege(
+    admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
+):
     """
     Alle gesperrten Beitraege (Admin only), auch solche ohne Meldung, jeder mit
     seiner Sperre unter "sperre" (Sperrgrund, Widerspruch, Pruefung).
@@ -361,11 +534,13 @@ async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
     try:
         logger.info("Admin fetching gesperrte Beitraege")
 
-        beitraege = await get_moderation_service().gesperrte_beitraege()
+        beitraege = await moderation_service.gesperrte_beitraege()
         return GesperrteResponse(total=len(beitraege), beitraege=beitraege)
 
     except Exception as e:
-        logger.error(f"Error in gesperrte_beitraege endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in gesperrte_beitraege endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -378,6 +553,7 @@ async def delete_content(
     content_id: str,
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Delete content from the system (Admin only).
@@ -394,8 +570,6 @@ async def delete_content(
     """
     try:
         logger.info(f"Admin deleting content: {content_type}/{content_id}")
-
-        moderation_service = get_moderation_service()
         success = await moderation_service.delete_content(
             content_id=content_id, content_type=content_type, deleted_by=admin_user
         )
@@ -422,7 +596,9 @@ async def delete_content(
             ),
         )
     except Exception as e:
-        logger.error(f"Error in delete_content endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in delete_content endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -433,6 +609,7 @@ async def dismiss_report(
     notes: Optional[str] = None,
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Dismiss a content report without taking action (Admin only).
@@ -441,8 +618,6 @@ async def dismiss_report(
     """
     try:
         logger.info(f"Admin dismissing report: {report_id}")
-
-        moderation_service = get_moderation_service()
         success = await moderation_service.dismiss_report(
             report_id=report_id, dismissed_by=admin_user, notes=notes
         )
@@ -457,7 +632,9 @@ async def dismiss_report(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in dismiss_report endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in dismiss_report endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -466,6 +643,7 @@ async def dismiss_report(
 async def get_report_stats(
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Get report statistics (Admin only).
@@ -474,8 +652,6 @@ async def get_report_stats(
     """
     try:
         logger.info("Admin fetching report stats")
-
-        moderation_service = get_moderation_service()
         stats = moderation_service.get_report_stats()
 
         return ReportStatsResponse(**stats)
@@ -483,5 +659,7 @@ async def get_report_stats(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_report_stats endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in get_report_stats endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")

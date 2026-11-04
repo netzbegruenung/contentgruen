@@ -3,9 +3,7 @@
 }
 
 .zeitraum {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  width: 180px;
   margin-top: 8px;
 }
 

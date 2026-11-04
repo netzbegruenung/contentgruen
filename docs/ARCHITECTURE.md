@@ -14,7 +14,7 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 
 ### 2. Docker Development
 - **Purpose**: Testing containerized deployment locally
-- **Access**: http://localhost (frontend via nginx proxy)
+- **Access**: http://localhost:8080 (frontend via nginx proxy; `docker-compose.dev.yml` publishes container port 80 on host port 8080)
 - **Infrastructure**: All services in Docker containers
 - **Authentication**: E-mail login against `managed-users.json` (`test.user@example.com`/`Liebe>Hass!`)
 
@@ -50,7 +50,7 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
                 ▼               ▼               ▼
 ┌─────────────────────┐ ┌─────────────┐ ┌──────────────────┐
 │  Frontend (Angular) │ │  BFF (.NET) │ │ Semantic Search  │
-│    Port: 80/4200    │ │ Port: 5054  │ │   (FastAPI)      │
+│  Port: 8080/4200    │ │ Port: 5054  │ │   (FastAPI)      │
 │                     │ │             │ │  Port: 8000      │
 │  Container nginx    │ │   YARP      │ │                  │
 │  serves static      │ │   Proxy     │ │  E5 embeddings   │
@@ -195,6 +195,9 @@ frontend no longer has a form for it.
 - **docker-compose.local-dbs.yml**: Qdrant + PostgreSQL only, for local component-based development
 - **docker-compose.prd.yml**: Placeholder; the production compose file is managed outside this repository
 
+Container names are the same in dev, test and production: `gutgesagt-app-postgres`,
+`gutgesagt-semantic-search`, `gutgesagt-qdrant`.
+
 ### Container Registry
 - Test/Prod images: `git.verdigado.com/netzbegruenung-images/*`
 - Local: Built from source
@@ -255,9 +258,6 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - `SEMANTIC_SEARCH_DATA_PATH` - Seed data path
 - `SEMANTIC_SEARCH_METADATA_PATH` - Persistent metadata storage path
 - `SEMANTIC_SEARCH_LOG_LEVEL` - DEBUG/INFO
-- `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`) - enables the suggested Unterschrift in the
-  image form (`POST /api/v1/image/suggestCaption`); without it the person writes the Unterschrift.
-  Setting it starts a transfer to a third country, see the privacy warning in `CLAUDE.md`
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts

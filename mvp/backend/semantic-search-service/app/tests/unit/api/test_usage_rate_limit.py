@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 from api.v1 import usage as usage_module
 from api.v1.usage import router as usage_router
 from core.config import Settings
-from dependencies import get_nutzung_rate_limiter, get_settings
+from dependencies import get_beitrag_laden, get_nutzung_rate_limiter, get_settings
 from utils.rate_limiter import RateLimiter
 
 URL = "/api/v1/usage/content/11111111-1111-4111-8111-111111111111/usage"
@@ -36,12 +36,11 @@ def client(dienst):
     limiter = RateLimiter(max_requests=2, window_minutes=10)
     app.dependency_overrides[get_nutzung_rate_limiter] = lambda: limiter
 
-    async def beitrag_laden(content_id, settings):
+    async def laden(content_id):
         return SimpleNamespace(id=content_id, original_author="kim-1")
 
-    with patch.object(
-        usage_module, "get_usage_service", return_value=dienst
-    ), patch.object(usage_module, "beitrag_laden", beitrag_laden):
+    app.dependency_overrides[get_beitrag_laden] = lambda: laden
+    with patch.object(usage_module, "get_usage_service", return_value=dienst):
         yield TestClient(app)
 
 

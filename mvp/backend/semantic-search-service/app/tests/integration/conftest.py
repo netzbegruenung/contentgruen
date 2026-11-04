@@ -19,12 +19,11 @@ import uuid
 
 import pytest
 import pytest_asyncio
-import torch
 from sentence_transformers import SentenceTransformer
 
 from core.config import EMBEDDING_MODELL, Settings
+from infrastructure.database.models import Base, SearchEvent
 from tests.integration import postgres, stack
-from services.embeddings import qdrant_embeddings_manager
 from services.embeddings.qdrant_embeddings_manager import QdrantEmbeddingsManager
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
@@ -75,6 +74,7 @@ def integration_settings() -> Settings:
         qdrant_url=QDRANT_URL,
         qdrant_collection=f"itest_{uuid.uuid4().hex[:12]}",
         initial_data_author="integration_test",
+        embedding_threads=EINBETTUNG_THREADS,
     )
 
 
@@ -84,39 +84,33 @@ def einbettungsmodell():
 
     Jeder neue Manager laedt es sonst in ``start()`` neu; das kostete je Test Sekunden.
     Das Modell haelt keinen Zustand zwischen Aufrufen, geteilt bettet es dasselbe ein.
-    Zwei Threads: Mit einem je Kern bremsen sie sich auf einem ausgelasteten Rechner
-    gegenseitig aus, eine kurze Einbettung dauerte dann Sekunden statt Zehntelsekunden.
-    Die Zahl gilt fuer den ganzen Testprozess; die Integrationssuite laeuft allein in ihm.
+    ``real_embeddings_manager`` reicht es dem Manager herein (#480).
     """
-    torch.set_num_threads(EINBETTUNG_THREADS)
     return SentenceTransformer(EMBEDDING_MODELL)
 
 
 @pytest_asyncio.fixture
-async def real_embeddings_manager(integration_settings, einbettungsmodell, monkeypatch):
+async def real_embeddings_manager(integration_settings, einbettungsmodell):
     """A started, real ``QdrantEmbeddingsManager`` bound to a clean collection.
 
     Resets the process-wide singleton on the way in and out (the manager is a
     singleton; the autouse ``clean_singleton_state`` in the parent conftest also
     nulls ``_instance`` between tests, so we hold the object reference directly and
     drive it via the injected factory rather than the global getter). The model
-    comes from ``einbettungsmodell``.
+    comes from ``einbettungsmodell``. Zwei Torch-Threads ueber ``integration_settings``:
+    Mit einem je Kern bremsen sie sich auf einem ausgelasteten Rechner gegenseitig
+    aus, eine kurze Einbettung dauerte dann Sekunden statt Zehntelsekunden (#478).
+    Die Zahl gilt fuer den ganzen Testprozess; die Integrationssuite laeuft allein in ihm.
     """
-    # Der Manager laedt das Modell in start() ueber diesen Importnamen, eine andere
-    # Naht hat er nicht. Benennt jemand den Import um, schlaegt die Pruefung unten fehl,
-    # statt dass jeder Test das Modell still neu laedt.
-    monkeypatch.setattr(
-        qdrant_embeddings_manager,
-        "SentenceTransformer",
-        lambda *_, **__: einbettungsmodell,
-    )
     QdrantEmbeddingsManager._instance = None
-    manager = QdrantEmbeddingsManager(integration_settings)
+    manager = QdrantEmbeddingsManager(
+        integration_settings, einbettungsmodell=einbettungsmodell
+    )
     await manager.start()
     try:
         assert (
             manager.model is einbettungsmodell
-        ), "Modell nicht geteilt: laedt QdrantEmbeddingsManager.start() es anders?"
+        ), "Modell nicht geteilt: nutzt QdrantEmbeddingsManager.start() das uebergebene nicht?"
         yield manager
     finally:
         try:
@@ -159,3 +153,13 @@ def wegwerf_schema(postgres_url):
     """Ein leeres Schema je Test; wird danach mit allem Inhalt geloescht."""
     with postgres.schema(postgres_url) as db:
         yield db
+
+
+@pytest.fixture
+def suchereignisse_db(wegwerf_schema):
+    """Wegwerf-Schema mit ``search_events``, wie create_all die Tabelle anlegt.
+
+    Das Repository dazu: ``suchtracking_repository`` in ``suchereignis_helfer.py``.
+    """
+    Base.metadata.create_all(wegwerf_schema.engine, tables=[SearchEvent.__table__])
+    return wegwerf_schema

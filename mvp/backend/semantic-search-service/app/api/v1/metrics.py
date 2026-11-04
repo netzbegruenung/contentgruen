@@ -35,6 +35,7 @@ from services.suchen_ohne_treffer_service import (
 )
 from core.config import Settings
 from core.logging import get_logger
+from core.fehler import INTERNER_FEHLER
 
 logger = get_logger(__name__)
 
@@ -231,8 +232,8 @@ async def get_metrics(
             _metrics_cache = (time.monotonic(), metrics)
             return metrics
     except Exception as e:
-        logger.error(f"Error in getMetrics: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in getMetrics: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # MVP Metrics Endpoints -- alle admin-only.
@@ -262,8 +263,10 @@ async def get_mvp_dashboard_metrics(
         metrics = metrics_service.get_mvp_dashboard_metrics()
         return MVPMetricsResponse(**metrics)
     except Exception as e:
-        logger.error(f"Error fetching MVP dashboard metrics: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to fetch MVP metrics: {e}")
+        logger.error(
+            f"Error fetching MVP dashboard metrics: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/daily-active-users", response_model=DailyActiveUsersResponse)
@@ -289,10 +292,10 @@ async def get_daily_active_users(
             date=(target_date or date.today()).isoformat(), active_users=dau
         )
     except Exception as e:
-        logger.error(f"Error fetching daily active users: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch daily active users: {e}"
+        logger.error(
+            f"Error fetching daily active users: {type(e).__name__}", exc_info=True
         )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/searches-per-user", response_model=SearchesPerUserResponse)
@@ -316,10 +319,10 @@ async def get_searches_per_user(
 
         return SearchesPerUserResponse(period_days=days, **stats)
     except Exception as e:
-        logger.error(f"Error fetching searches per user: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch searches per user: {e}"
+        logger.error(
+            f"Error fetching searches per user: {type(e).__name__}", exc_info=True
         )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/content-created", response_model=ContentCreatedResponse)
@@ -343,10 +346,10 @@ async def get_content_created(
 
         return ContentCreatedResponse(weeks_analyzed=weeks, weekly_stats=weekly_stats)
     except Exception as e:
-        logger.error(f"Error fetching content created: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch content created: {e}"
+        logger.error(
+            f"Error fetching content created: {type(e).__name__}", exc_info=True
         )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/usage-trend", response_model=UsageTrendResponse)
@@ -384,8 +387,8 @@ async def get_usage_trend(
             trend_direction=trend_direction,
         )
     except Exception as e:
-        logger.error(f"Error fetching usage trend: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to fetch usage trend: {e}")
+        logger.error(f"Error fetching usage trend: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/helpful-rate", response_model=HelpfulRateResponse)
@@ -409,10 +412,8 @@ async def get_helpful_rate(
 
         return HelpfulRateResponse(period_days=days, **stats)
     except Exception as e:
-        logger.error(f"Error fetching helpful rate: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch helpful rate: {e}"
-        )
+        logger.error(f"Error fetching helpful rate: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/bilanz", response_model=BilanzResponse)
@@ -440,8 +441,8 @@ def get_bilanz(
             ],
         )
     except Exception as e:
-        logger.error(f"Error fetching Bilanz: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to fetch Bilanz")
+        logger.error(f"Error fetching Bilanz: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/suchen-ohne-treffer", response_model=SuchenOhneTrefferResponse)
@@ -472,10 +473,10 @@ async def get_suchen_ohne_treffer(
             ],
         )
     except Exception as e:
-        logger.error(f"Error fetching searches without hits: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch searches without hits"
+        logger.error(
+            f"Error fetching searches without hits: {type(e).__name__}", exc_info=True
         )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 class MusterHinweisEintrag(BaseModel):
@@ -501,8 +502,8 @@ async def get_muster_hinweise(
     service: MusterHinweiseService = Depends(get_muster_hinweise_service),
 ):
     """
-    Muster-Hinweise (#352): Kontenpaare, die sich am selben Tag gegenseitig genutzt
-    haben, zuletzt aufgefallene zuerst. Nur ein Hinweis fuer Admins, keine
+    Muster-Hinweise (#352): Kontenpaare, die sich innerhalb von sieben Tagen gegenseitig
+    genutzt haben, zuletzt aufgefallene zuerst. Nur ein Hinweis fuer Admins, keine
     Automatik (services/muster_hinweise_service.py). Ohne ``punkte_aktiv`` entstehen
     keine Hinweise; ``aktiv`` sagt das dem Dashboard.
     """
@@ -516,8 +517,8 @@ async def get_muster_hinweise(
             k for h in hinweise for k in (h.konto_a, h.konto_b)
         )
     except Exception as e:
-        logger.error(f"Error fetching pattern notes: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to fetch pattern notes")
+        logger.error(f"Error fetching pattern notes: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
     return MusterHinweiseResponse(
         aktiv=True,
         frist_tage=MUSTER_FRIST_TAGE,

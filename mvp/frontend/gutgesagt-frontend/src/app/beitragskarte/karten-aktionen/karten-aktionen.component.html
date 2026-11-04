@@ -75,9 +75,11 @@
             <mat-icon>flag</mat-icon>
             <span>Inhalt melden</span>
         </button>
-        <button mat-menu-item type="button" disabled>
-            <mat-icon>info</mat-icon>
-            <span>Details</span>
+        <!-- Die eigene Adresse des Beitrags (#300), etwa um ihn wiederzufinden -->
+        <button mat-menu-item type="button" class="beitrag-oeffnen" *ngIf="ansichtVerlinkt && inhaltId && !vorschau"
+                (click)="beitragOeffnen()">
+            <mat-icon>article</mat-icon>
+            <span>Beitrag öffnen</span>
         </button>
     </mat-menu>
 </div>

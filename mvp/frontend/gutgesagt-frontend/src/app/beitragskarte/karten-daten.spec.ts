@@ -1,6 +1,6 @@
-import { ausBeitrag, ausEinwurf, ausSuchergebnis } from './karten-daten';
+import { ausBeitrag, ausEinwurf, ausEinzelansicht, ausSuchergebnis } from './karten-daten';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { Einwurf, Satz, Verknuepfung } from '../services/einwurf.service';
+import { Einwurf, Satz, AusformuliertIn } from '../services/einwurf.service';
 
 function inhalt(felder: Record<string, unknown> = {}): any {
   return {
@@ -49,7 +49,7 @@ function satz(id: string, user_id: string, sentence: string): Satz {
   return { id, user_id, sentence, updated_at: '2026-09-13T12:30:00Z' };
 }
 
-function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = 'c-9'): Verknuepfung {
+function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = 'c-9'): AusformuliertIn {
   return { content_id, content_type, draft_id, processed_by: 'carol', processed_at: '2026-09-13T13:00:00Z' };
 }
 
@@ -178,6 +178,38 @@ describe('karten-daten', () => {
 
       expect(daten.typ).toBeNull();
       expect(console.warn).toHaveBeenCalled();
+    });
+  });
+
+  describe('ausEinzelansicht (#300)', () => {
+    it('liest den Typ aus content_type, auch in der Schreibweise des Backends', () => {
+      const daten = ausEinzelansicht(inhalt({ content_type: 'generic_text', title: 'Fakten' }));
+
+      expect(daten.typ).toBe('generictext');
+      expect(daten.titel).toBe('Fakten');
+      expect(daten.nutzung).toBe(3);
+      expect(daten.statement).toBeUndefined();
+    });
+
+    it('uebernimmt die eigene Stimme fuers Abstimmen auf der Seite', () => {
+      expect(ausEinzelansicht(inhalt({ user_vote: 'dislike' })).stimme).toBe('dislike');
+      expect(ausEinzelansicht(inhalt({ user_vote: null })).stimme).toBeUndefined();
+    });
+
+    it('zeigt ein Bild mit seiner Adresse', () => {
+      const daten = ausEinzelansicht(inhalt({ content_type: 'image', image_url: 'https://example.org/b.jpg' }));
+
+      expect(daten.typ).toBe('image');
+      expect(daten.bildUrl).toBe('https://example.org/b.jpg');
+    });
+
+    it('zeigt einen Post mit Plattform und Link', () => {
+      const daten = ausEinzelansicht(
+        inhalt({ content_type: 'post', platform: 'Mastodon', author: '@a', url: 'https://example.org/p' }),
+      );
+
+      expect(daten.extra?.plattform).toBe('Mastodon');
+      expect(daten.extra?.postUrl).toBe('https://example.org/p');
     });
   });
 
@@ -314,6 +346,7 @@ describe('karten-daten', () => {
         linkText: 'instagram.com/reel/ABC',
         saetze: [],
         beitraege: [],
+        beitragZustand: null,
         verwerfbar: true,
       });
     });
@@ -386,6 +419,81 @@ describe('karten-daten', () => {
         { contentId: 'c-1', typ: 'commentary', satz: 'Genommen' },
         { contentId: 'c-alt', typ: null, satz: null },
       ]);
+    });
+
+    // #507: Einwuerfe, deren Beitrag gesperrt oder geloescht ist, werden beschriftet.
+    it('beschriftet einen Einwurf, dessen Beitrag gesperrt ist, und bietet ihn nicht an', () => {
+      const karte = ausEinwurf(
+        einwurf({ status: 'processed', links: [{ ...link(null, 'commentary', 'c-1'), zustand: 'gesperrt' }] }),
+      );
+
+      expect(karte.einwurfAngaben!.stufe).toBe('ausformuliert');
+      expect(karte.einwurfAngaben!.beitragZustand).toBe('gesperrt');
+      expect(karte.einwurfAngaben!.beitraege).toEqual([]);
+      expect(karte.typ).toBeNull();
+    });
+
+    it('beschriftet einen Einwurf, dessen Beitrag geloescht ist', () => {
+      const karte = ausEinwurf(
+        einwurf({ status: 'processed', links: [{ ...link(null, 'commentary', 'c-1'), zustand: 'geloescht' }] }),
+      );
+
+      expect(karte.einwurfAngaben!.beitragZustand).toBe('geloescht');
+      expect(karte.einwurfAngaben!.beitraege).toEqual([]);
+    });
+
+    it('nennt gesperrt vor geloescht, wenn keiner seiner Beitraege mehr sichtbar ist', () => {
+      const karte = ausEinwurf(
+        einwurf({
+          status: 'processed',
+          links: [
+            { ...link(null, 'commentary', 'c-1'), zustand: 'geloescht' },
+            { ...link(null, 'commentary', 'c-2'), zustand: 'gesperrt' },
+          ],
+        }),
+      );
+
+      expect(karte.einwurfAngaben!.beitragZustand).toBe('gesperrt');
+    });
+
+    it('bleibt ausformuliert, solange einer seiner Beitraege sichtbar ist, und bietet nur den an', () => {
+      const karte = ausEinwurf(
+        einwurf({
+          status: 'processed',
+          links: [
+            { ...link(null, 'commentary', 'c-weg'), zustand: 'gesperrt' },
+            { ...link(null, 'generic_text', 'c-da'), zustand: 'sichtbar' },
+          ],
+        }),
+      );
+
+      expect(karte.einwurfAngaben!.beitragZustand).toBeNull();
+      expect(karte.einwurfAngaben!.beitraege).toEqual([{ contentId: 'c-da', typ: 'generictext', satz: null }]);
+      expect(karte.typ).toBe('generictext');
+    });
+
+    it('zaehlt am Satz nur sichtbare Beitraege', () => {
+      const karte = ausEinwurf(
+        einwurf({
+          status: 'processed',
+          drafts: [{ id: 's-1', user_id: 'u', sentence: 'Ein Satz', updated_at: '2026-09-13T18:00:00Z' } as any],
+          links: [
+            { ...link('s-1', 'commentary', 'c-weg'), zustand: 'geloescht' },
+            { ...link('s-1', 'commentary', 'c-da'), zustand: 'sichtbar' },
+          ],
+        }),
+      );
+
+      expect(karte.einwurfAngaben!.saetze.map((satz) => satz.beitraege)).toEqual([1]);
+    });
+
+    it('behandelt einen unbekannten Zustand wie sichtbar', () => {
+      const karte = ausEinwurf(
+        einwurf({ status: 'processed', links: [{ ...link(null, 'commentary', 'c-1'), zustand: null }] }),
+      );
+
+      expect(karte.einwurfAngaben!.beitragZustand).toBeNull();
+      expect(karte.einwurfAngaben!.beitraege.length).toBe(1);
     });
 
     it('nimmt fuer Farbe und Zeichen die erste Verknuepfung mit Typ', () => {

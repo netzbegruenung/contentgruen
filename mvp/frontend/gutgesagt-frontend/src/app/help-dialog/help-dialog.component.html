@@ -1,7 +1,25 @@
-<div mat-dialog-title>
-    <h2>Hilfe zur Nutzung</h2>
+<!-- Fester Kopf mit Titel und Schliessen; darunter scrollt nur der Inhalt (#512) -->
+<div class="hilfe-kopf">
+    <h2 mat-dialog-title>Hilfe zur Nutzung</h2>
+    <button mat-button type="button" mat-dialog-close class="hilfe-schliessen">Schließen</button>
 </div>
-<mat-dialog-content>
+<mat-dialog-content class="hilfe-inhalt">
+
+    <!-- Rundgang wieder aufrufen (#389, Variante B: gelber Kasten mit Daumen) -->
+    <section class="rundgang-kasten" aria-labelledby="rundgang-kasten-titel">
+        <img src="marke/daumen.svg" alt="" width="56" height="56">
+        <div>
+            <h3 id="rundgang-kasten-titel">Lieber zeigen lassen?</h3>
+            <div class="rundgang-kasten-knoepfe">
+                <button type="button" class="rundgang-knopf umriss rundgang-starten"
+                        (click)="rundgangStarten('antwort-finden')">Rundgang starten</button>
+                @if (angemeldet) {
+                    <button type="button" class="rundgang-knopf umriss rundgang-mitmachen"
+                            (click)="rundgangStarten('mitmachen')">Rundgang Mitmachen</button>
+                }
+            </div>
+        </div>
+    </section>
 
     <p>
         Das hier ist KEIN KI-Generator! <br>
@@ -73,6 +91,3 @@
         </a>
     </div>
 </mat-dialog-content>
-<mat-dialog-actions align="end">
-    <button class="gutgesagt-primary-dark" mat-button mat-dialog-close>Schließen</button>
-</mat-dialog-actions>

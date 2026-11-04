@@ -1,8 +1,9 @@
 # Löschkonzept (Art. 17 DSGVO)
 
 > **Vorsorge, keine erprobte Prozedur.** Es gibt heute keine Nutzer und keine
-> erhaltenswerten Daten. Die Anlage hat keinen Codepfad, der eine Person löscht;
-> was hier steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
+> erhaltenswerten Daten. Die Anlage hat keinen Codepfad, der eine Person löscht,
+> außer dem Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“);
+> was hier sonst steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
 > Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
 > zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), der
 > Qdrant-Teil gegen eine Collection im Speicher und gegen einen echten Qdrant
@@ -52,12 +53,18 @@ besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und lö
 
 - **Beta-Zugang:** Die `userId` notieren (Schritt 1 bis 3 brauchen sie als Kennung), dann
   den Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter Schritt 4).
-- **Netzbegrünung-Login:** Die Kennung als eigene Zeile in `geloeschte-konten.txt` im
-  Konfigurationsverzeichnis des BFF eintragen (`GELOESCHTE_KONTEN_PATH`, Standard
-  `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
+- **Netzbegrünung-Login und Konto aus einer Einladung:** Die Kennung als eigene Zeile in
+  `geloeschte-konten.txt` im Konfigurationsverzeichnis des BFF eintragen
+  (`GELOESCHTE_KONTEN_PATH`, Standard `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
   `#` und Leerzeilen zählen nicht. Das Cookie trägt keine Tokens, deshalb kann das BFF
   Keycloak nicht selbst fragen; das Löschen in Keycloak (Schritt 4) allein beendet die
   Sitzung nicht.
+- **Nach dem Umstellen der Kennungen auf den Realm** (`docs/KEYCLOAK_REALM.md`,
+  „Kennungen umstellen“) hat ein Mitglied der Netzbegrünung zwei Kennungen: die im Realm
+  und die alte, die im Realm am Konto als Kennung beim Identity Provider `netzbegruenung`
+  steht. Ein Cookie mit der alten gilt bis zu 14 Tage nach dem Umstellen der BFF, und was
+  die Person darunter anlegt, trägt die alte. In dieser Zeit beide Kennungen in
+  `geloeschte-konten.txt` eintragen und Schritt 1 bis 3 für beide ausführen.
 
 Beide Dateien liest das BFF spätestens nach fünf Minuten neu
 (`BFF/Services/ManagedUserService.cs:16`, `BFF/Services/GeloeschteKontenService.cs`), nach
@@ -72,9 +79,12 @@ Solange das Keycloak-Konto besteht, kann sich die Person neu anmelden; die Liste
 dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
-   die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
-   (`api/v1/moderation.py:169-174`). Nur über sie sind die `usage_events` einer Person
-   erreichbar.
+   die `reported_by_user_id` und `reported_by_session_id` nebeneinander führen kann
+   (geschrieben bis #446). Nur über sie sind die `usage_events` einer Person
+   erreichbar. Seit #446 gibt es keine Sitzungskennung mehr: Neue Meldungen und neue
+   `usage_events` tragen keine, der Schritt findet also nur noch ältere Zeilen.
+   Anonyme offene Meldungen tragen stattdessen ein Tagespseudonym; es hat keinen
+   Bezug zu einem Konto und wird beim Abschluss der Meldung gelöscht.
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
    `content_reports` löschen (ein von der Person gemeldeter, inzwischen gesperrter
    Beitrag bleibt über die Moderationsansicht „Gesperrt“ erreichbar);
@@ -130,12 +140,13 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 Ein täglicher Task löscht nach festen Fristen, sofort beim Start des Dienstes, dann
 täglich und zusätzlich um Mitternacht (UTC). Die Zahlen stehen an einer Stelle im Code,
 `services/loeschfristen_service.py`; dort steht auch die Begründung. Wie beim Feedback
-hängt der Task nicht am abschaltbaren Usage-Cleanup. Was gelöscht ist, steht in Backups
+hängt der Task nicht am abschaltbaren Bereinigungsjob. Was gelöscht ist, steht in Backups
 bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 
 | Datenart | Frist | Gerechnet ab |
 |---|---|---|
 | Meldungen (`content_reports`), bearbeitet oder abgewiesen | 180 Tage | Bearbeitung (`reviewed_at`; ohne sie, im Altbestand, der Eingang) |
+| Tagespseudonym an anonymen Meldungen (`reported_by_session_id`, `besucher:…`) | bis zum Abschluss der Meldung | Bearbeiten oder Abweisen ersetzt es durch einen Zufallswert (`anon:…`), angemeldete Meldungen verlieren den Wert (#446, `repositories/content_report_repository.py`) |
 | Meldungen, offen | keine | — sie sind Arbeit und bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird (dann bearbeitet, Frist wie oben) |
 | Einwürfe (`raw_inputs`), die in keinem Beitrag ausformuliert sind, samt Sätzen | 365 Tage | letzte Arbeit daran: Einwerfen oder zuletzt gespeicherter Satz |
 | Einwürfe, die in einem Beitrag ausformuliert sind | solange dieser Beitrag besteht | — danach wie die anderen |
@@ -146,10 +157,27 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Prüfwerte der entdoppelten Nutzung (`nutzung_heute`) | ihr Tag | verworfen beim ersten Lauf nach Mitternacht (UTC) |
 | Paar-Prüfwerte der Muster-Hinweise (`muster_pruefwerte`) | 7 Tage | letzte Nutzung in dieser Richtung (`tag`) |
 | Muster-Hinweise (`muster_hinweise`) | 56 Tage (8 Wochen) | letzter Tag mit gegenseitiger Nutzung (`letzter_tag`) |
+| Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
-  meldende Person, ihre Sitzungskennung oder den Freitext. Der Zähler am Beitrag
+  meldende Person, ihre Sitzungskennung, ihren Namen und ihre E-Mail-Adresse (freiwillig,
+  seit #438) oder den Freitext. Verlangt jemand ohne Konto Auskunft über diese Angaben
+  oder ihre Löschung, finden sich seine Meldungen nur über Name und E-Mail-Adresse:
+  in der Moderation unter „Nach Person“ (#494, `POST /api/v1/moderation/melder/meldungen`).
+  Gesucht wird die ganze Angabe ohne Rücksicht auf Groß- und Kleinschreibung (gespeichert
+  ist die Adresse, wie sie eingegeben wurde, nur die Domain normalisiert; die Suche
+  normalisiert die Eingabe genauso); sind beide angegeben,
+  müssen beide passen. Die Liste ist die Auskunft. „Angaben löschen“
+  (`POST /api/v1/moderation/melder/angaben-loeschen`) nimmt nur die gezeigten Treffer, die
+  noch zu den Angaben passen. Bearbeitete und abgewiesene gehen ganz; **offene** bleiben
+  stehen, weil sie noch Arbeit sind und der Beitrag sonst ungeprüft bliebe (Art. 16 DSA),
+  und verlieren Name, E-Mail-Adresse und das Tagespseudonym (Zufallswert wie beim
+  Abschluss). Wer nur nach dem Namen sucht, prüft vorher, ob alle Treffer dieselbe Person
+  sind, und bestätigt das in der Rückfrage; ohne diese Bestätigung löscht der Dienst nicht. Die Entscheidung kann der Person dann niemand mehr mitteilen; Grund und
+  Beschreibung der offenen Meldung bleiben bis zu ihrer Frist. Ohne solches Verlangen haben
+  offene Meldungen keine Frist, Name und E-Mail-Adresse bleiben also, bis die Meldung
+  bearbeitet ist. Der Zähler am Beitrag
   (`report_count`) bleibt; er trägt keinen Personenbezug. Das gilt auch für Meldungen zu
   gesperrten Beiträgen: Die Sperre selbst hat keine Frist, ihr Anlass in der Meldung
   (samt `resolution_notes`) geht nach 180 Tagen.
@@ -175,7 +203,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
 - **Prüfwerte und Muster-Hinweise (#352):** Ein Prüfwert ist ein HMAC über das
-  Tagespseudonym und den Beitrag; er entdoppelt nur an seinem Tag und geht danach.
+  Tagespseudonym (bei Besuchern das aus #446) und den Beitrag; er entdoppelt nur an seinem Tag und geht danach.
   Ein Paar-Prüfwert ist ein HMAC über die Kennungen zweier Konten („A hat einen
   Beitrag von B genutzt“, welcher steht nirgends); er bleibt sieben Tage, damit sich
   gegenseitige Nutzung über mehrere Tage erkennen lässt. Er ist nicht per Kennung
@@ -185,30 +213,69 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   helfen, Punkte gegen Absprachen zu schützen; nach acht Wochen ohne neuen auffälligen
   Tag ist er dafür nicht mehr nötig (DSFA zu #374). Prüfwerte verwirft ein eigener
   Task (`services/entdoppelung.py`), Paar-Prüfwerte und Hinweise ein zweiter
-  (`services/muster_hinweise_service.py`), beide unabhängig vom Usage-Cleanup.
+  (`services/muster_hinweise_service.py`), beide unabhängig vom abschaltbaren Bereinigungsjob.
   Punkte selbst werden nicht gespeichert, sondern bei jedem Abruf berechnet
   (`services/punkte_service.py`); sie brauchen keine Frist.
+- **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
+  hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
+  Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
+  UTC-Tagen ab dem Anlegen, der tägliche Lauf löscht also 33 bis 35 Tage danach. Was „nie
+  benutzt“ heißt, steht unter „Einladungen“.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
   eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
 
 ## Feedback
 
 Die Tabelle `feedback` (Knopf „Feedback“ im Kopf der App, #343) trägt nur den Freitext,
-eine **optionale Kontaktangabe** und den UTC-Tag, keine Kennung und keine Sitzung, auch
-bei angemeldeten Personen. Über die Kennung aus „Ausgangspunkt“ ist Feedback deshalb
-nicht zu finden, und der Ablauf oben erfasst es nicht.
+eine **optionale Kontaktangabe**, den UTC-Tag und den Merker „erledigt“ (#425), keine
+Kennung und keine Sitzung, auch bei angemeldeten Personen. Über die Kennung aus
+„Ausgangspunkt“ ist Feedback deshalb nicht zu finden, und der Ablauf oben erfasst es
+nicht.
 
 - **Frist:** Nach 180 Tagen löscht ein täglicher Task die ganze Zeile samt Kontakt
   (`services/feedback_service.py`, `loeschen_im_takt`, `AUFBEWAHRUNG_TAGE`). Er hängt
-  nicht am abschaltbaren Usage-Cleanup.
+  nicht am abschaltbaren Bereinigungsjob. Die Frist gilt für offenes wie für
+  erledigtes Feedback; „erledigt“ ändert an ihr nichts.
+- **Einzeln:** Ein Admin löscht ein einzelnes Feedback samt Kontakt in der
+  Feedback-Karte des Admin-Dashboards („Löschen“, mit Rückfrage), etwa wenn es
+  beantwortet ist und nicht bis zur Frist bleiben soll (#425). Nur Admins
+  (`DELETE /api/v1/feedback/{id}`).
 - **Auf Antrag:** Die Person nennt die Kontaktangabe, die sie hinterlassen hat; ein
   Admin löscht die Zeilen mit dieser Angabe, ohne Rücksicht auf Groß- und
   Kleinschreibung und Leerzeichen am Rand
   (`DELETE FROM feedback WHERE lower(btrim(kontakt)) = lower(btrim('<angabe>'));`,
-  vorher mit `SELECT` prüfen).
+  vorher mit `SELECT` prüfen). Zeigt das `SELECT` nur einen Eintrag, geht das auch
+  über „Löschen“ im Admin-Dashboard (unter „Offen“ oder „Erledigt“; die Karte sucht
+  nicht nach Kontakt).
   Ohne Kontaktangabe ist Feedback keiner Person zuzuordnen. Nennt der Freitext selbst
   die Person, ist das wie bei Beiträgen eine Einzelfallprüfung.
 - Backups: wie unten unter „Was nicht gelöscht wird“, bis zu 28 Tage.
+
+## Einladungen
+
+Die Tabelle `einladungen` (#429) trägt eine Notiz, die Zahl erlaubter und erfolgter Einlösungen,
+den letzten gültigen Tag und ob die Einladung abgeschaltet ist. Sie enthält **keine
+Mail-Adresse und keine Kennung**: Wer eine Einladung einlöst, erhöht nur den
+Zähler. Die Mail-Adresse geht beim Einlösen an Keycloak und wird in Gut gesagt weder
+gespeichert noch geloggt. Über die Kennung aus „Ausgangspunkt“ ist deshalb nichts zu finden,
+und der Ablauf oben erfasst die Tabelle nicht.
+
+- **Notiz:** Das Dashboard bittet, keine Namen oder Mail-Adressen einzutragen. Steht doch
+  einer darin, ist das eine Einzelfallprüfung; die Notiz lässt sich in der Datenbank
+  ändern.
+- **Frist:** keine. Einladungen bleiben stehen, auch abgelaufene; sie tragen keinen
+  Personenbezug.
+- **Konto im Realm:** Löschen wie bisher in Keycloak; dass es über eine Einladung entstand,
+  steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
+  Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
+  Zähler vergleichen.
+- **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): Mail-Adresse
+  nicht bestätigt, Pflichtaktion „Terms and Conditions“ offen, kein Passwort, keine
+  Verknüpfung mit einem Identity Provider (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
+  angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
+  sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
+  unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
+  Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht.
 
 ## Vier Fallen
 
@@ -235,7 +302,7 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
 
 - **`search_events`** trägt seit der Migration vom 19.08.2026 (unten) nur `actor_hash`,
   ein täglich rotierendes HMAC-SHA256 über Kennung + UTC-Datum
-  (`services/search_tracking_service.py:35`, `_derive_actor_hash`).
+  (`services/search_tracking_service.py`, `tagespseudonym`).
   Ohne Geheimnis nicht umkehrbar, mit Geheimnis nur tageweise nachrechenbar: Löschen
   auf Antrag ist unmöglich und mangels Personenbezug auch nicht geschuldet.
   **Vorher prüfen, ob die Zielumgebung migriert ist** — auf einem Stand ohne
@@ -265,7 +332,7 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
   (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
   abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
   und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
-  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_USAGE_CLEANUP=false`
+  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=false`
   entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
   ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
   eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
@@ -277,10 +344,11 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
-  verdichtet der tägliche Bereinigungsjob (`services/cleanup/usage_cleanup_service.py`,
+  verdichtet der tägliche Bereinigungsjob (`services/cleanup/bereinigungsjob.py`,
   derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
   Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
-  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=true` (Standard); abgeschaltet gilt auch diese
+  `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=true` (Standard; der frühere Name
+  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP` gilt weiter); abgeschaltet gilt auch diese
   Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
   Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
 - **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen,
@@ -291,7 +359,8 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
   zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events`) eine Aussage
   heute schon gezählt haben, liegt nur im Arbeitsspeicher (als SHA-256-Prüfwert) und wird
-  um Mitternacht (UTC) verworfen. Wochen älter als acht löscht ein täglicher Task von
+  um Mitternacht (UTC) verworfen; bei Besuchern ebenso ein Prüfwert aus Anschluss-Prüfwert
+  (Anschluss mit dem Tagesschlüssel) und Aussage, damit je Anschluss höchstens eine Person zählt (#496). Wochen älter als acht löscht ein täglicher Task von
   selbst (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
 - **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
   Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen
@@ -326,8 +395,9 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     `managed-users.json` ist die `UserId` einer Adresse zugeordnet; wer die Datei hat,
     rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
     Debug steht das Pseudonym bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warn- und Fehlerzeilen nennen den Pfad
-    unverändert; seit #284 trägt kein Pfad, den das Frontend aufruft, eine Kennung (die
+    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warnzeilen nennen den Pfad unverändert
+    (Fehlerzeilen seit #422 nicht mehr, `BFF/Program.cs`); seit #284 trägt kein Pfad,
+    den das Frontend aufruft, eine Kennung (die
     Nutzungsstatistik unter „Meine Beiträge“ heißt `/api/v1/usage/users/me/usage-stats`,
     die Rückmeldung beim Anmelden `/api/v1/usage/users/me/besuch`, die Person kommt aus
     der Anmeldung). Unabhängig davon sind die Zeilen unterdrückt, in
@@ -355,9 +425,27 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     eingespielten Beiträge (`services/orchestration/content_orchestrator.py`), kuratierte
     Daten aus dem Repo. Die Zugriffszeilen von uvicorn sind unterdrückt
     (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
-  - **Nicht abgedeckt:** Fehlerzeilen geben die Meldung der Ausnahme mit aus
-    (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
-    eine Validierungsmeldung, stehen diese mit darin.
+  - **Fehlerzeilen (BFF und Semantic-Service):** Seit #422 nennen sie von einer Ausnahme
+    nur Typ und Stack, nicht ihren Fehlertext, der oft Eingabewerte trägt (eine
+    Validierungsmeldung den abgelehnten Wert, ein Datenbankfehler die Parameter der
+    Abfrage). Im Semantic-Service schreibt der Formatter Tracebacks so
+    (`ausnahme_ohne_fehlertext()` in `app/core/logging.py`, auch für unbehandelte Ausnahmen,
+    die uvicorn meldet), und die Log-Aufrufe setzen statt der Ausnahme nur
+    `type(e).__name__` in den Text. Für Aufrufe im `except`-Block, die die Ausnahme
+    direkt verwenden, prüft das `tests/unit/core/test_kein_fehlertext_im_log.py`
+    am Quelltext; einen Fehlertext, der erst über eine Variable ins Log geht, sieht der
+    Test nicht. Ebenso seit #422 ohne Eingabe: abgelehnte und bereinigte Herkunfts-Adressen
+    (`utils/url_validator.py`, `services/content/reference_service.py`), ein unbekannter
+    Meldegrund und ungültige IDs von Beiträgen und Meldungen
+    (`services/moderation_service.py`, `services/usage_tracking_service.py`, Test
+    `tests/unit/services/test_ungueltige_id_nicht_im_log.py`). Die Skripte für
+    Sicherung und Wiederherstellung von Qdrant (`scripts/backup_qdrant.py`,
+    `scripts/restore_qdrant.py`) schreiben mit demselben Formatter. Im BFF schreibt die
+    Konsole mit `AusnahmeOhneFehlertextFormatter`
+    (`BFF/Logging/`), im Code gesetzt, sodass ein `Logging__Console__FormatterName` von
+    außen ihn nicht ersetzt; Fehlerzeilen zu einer Anfrage nennen den Pfad nicht.
+    **Altbestand:** Zeilen von vor #422 können Fehlertexte samt Eingabewerten tragen,
+    bis sie aus dem `json-file`-Strom rotiert sind (Frist unten).
   - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
     (`mvp/frontend/gutgesagt-frontend/nginx.protokoll.conf`, für `nginx.conf` und
     `nginx.docker.conf` gemeinsam) nach stdout: Absenderadresse, Zeitpunkt,
@@ -369,10 +457,13 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     schreibt es keine Zeile: Ihre genaue Uhrzeit ließe sich, je Tag durchgezählt, mit dem
     Anlagezeitpunkt der Aussage aus derselben Suche verbinden. Ins Fehlerprotokoll
     (stderr, im selben `json-file`-Strom) schreibt es für fehlende Dateien keine Zeile
-    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. **Nicht
-    abgedeckt:** Andere Fehlerzeilen tragen Adresse und Referrer weiter, etwa im Dev-Stack
-    `connect() failed … request: "POST /api/v1/search/searchByText …"`, wenn das BFF
-    nicht antwortet. Belegt mit
+    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. Seit #422
+    schreibt es überhaupt keine Fehlerzeile zu einer Anfrage mehr (`error_log … emerg` im
+    http-Block): nginx kennt für Fehlerzeilen kein eigenes Format, und jede trüge Adresse,
+    Anfrage samt Adresszusatz und Referrer, etwa im Dev-Stack `connect() failed …`, wenn
+    das BFF nicht antwortet. Den Ausgang einer solchen Anfrage zeigt das Zugriffsprotokoll
+    mit dem Status (413, 502 …). Zeilen außerhalb einer Anfrage (Start, Konfiguration,
+    Worker) schreibt nginx weiter. Belegt mit
     `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
     `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen
     Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem
@@ -400,7 +491,16 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     Referrer, wie im Frontend-nginx.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
-    Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als
+    Produktionskonfiguration liegt nicht im Repo.
+    - **Ziel (#422): höchstens 14 Tage** für alles im `json-file`-Strom (Anwendung,
+      Frontend-nginx) und für die Protokolle des vorgelagerten Reverse Proxy. Der
+      `json-file`-Treiber rotiert nur nach Größe; im Betrieb ist dafür eine Grenze von
+      10 MB × 3 Dateien je Container vorgesehen, vorläufig, bis das Wachstum je Tag
+      gemessen ist. Die Grenze hält die Frist nur, solange drei Dateien höchstens
+      14 Tage Protokoll fassen; wächst ein Container langsamer, bleiben seine Zeilen
+      länger stehen. **Noch nicht ausgerollt** (Stand 30.10.2026); bis dahin gilt der
+      Stand darunter, und die Datenschutzerklärung nennt noch keine Frist
+      (`docs/rechtstexte-luecken/pruefliste/P7.md`). Im Repo nicht belegbar, deshalb nur als
     Stand der Bestandsaufnahme (`docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.4):
     - **Stand 04.09.2026, vom Maintainer am Host geprüft:** Die Zugriffsprotokolle des
       vorgelagerten Reverse Proxy, die als einzige die volle Client-IP enthalten, löscht

@@ -7,9 +7,8 @@ Kriterien trennscharf genug, um zwischen einem schwachen und einem tragfaehigen
 Entwurf zu unterscheiden, ohne bei harmlosen Texten ueberall etwas zu finden?
 
 Es ist bewusst standalone: kein Import aus dem app-Paket, kein Endpunkt, keine
-Aenderung an Produktivcode. Der Zuschnitt der Anbindung folgt
-app/services/vision/caption_suggestion_service.py (asynchroner Client, Key aus
-der Umgebung, harter Fehler bei Fehlkonfiguration) -- gerufen wird aber die
+Aenderung an Produktivcode. Die Anbindung ist bewusst schlicht (asynchroner
+Client, Key aus der Umgebung, harter Fehler bei Fehlkonfiguration); gerufen wird die
 Anthropic-API (AsyncAnthropic, Default-Modell claude-sonnet-4-5).
 
 Zwei Dinge werden ABSICHTLICH im Code entschieden und nicht dem Modell ueberlassen:

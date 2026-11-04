@@ -38,6 +38,31 @@ test('Besucher: 401 der Suche fuehrt nicht zur Anmeldung', async ({ page }) => {
   expect(new URL(page.url()).pathname).toBe('/result');
 });
 
+test('Besucher: Beitrag per Direktlink (#300)', async ({ page, bild }) => {
+  // Irgendein sichtbarer Beitrag; /content/recent ist wie die Adresse selbst oeffentlich.
+  const neueste = await (await page.request.get('/api/v1/content/recent?limit=1')).json();
+  const beitrag = neueste.results[0];
+  expect(beitrag, 'Dev-Stack ohne Beitraege: mvp/run-local.sh seed').toBeTruthy();
+
+  const laden = page.waitForResponse((r) => r.url().includes(`/api/v1/content/beitrag/${beitrag.id}`));
+  await page.goto(`/beitrag/${beitrag.id}`);
+  expect((await laden).status()).toBe(200);
+
+  const karte = page.locator('app-beitrag-ansicht app-beitragskarte');
+  await expect(karte.locator('.karte-titel')).toHaveText(beitrag.title);
+  await expect(karte.locator('.kopieren-knopf')).toBeVisible();
+  // Kein Umweg ueber die Anmeldung, und die Adresse bleibt stehen.
+  expect(new URL(page.url()).pathname).toBe(`/beitrag/${beitrag.id}`);
+  await bild('91-besucher-beitrag');
+});
+
+test('Besucher: Direktlink auf einen Beitrag, den es nicht gibt', async ({ page }) => {
+  await page.goto('/beitrag/00000000-0000-0000-0000-000000000000');
+  await expect(page.getByText('Dieser Beitrag ist nicht verfügbar.')).toBeVisible();
+  await expect(page.locator('app-beitrag-ansicht app-beitragskarte')).toHaveCount(0);
+  expect(new URL(page.url()).pathname).toBe('/beitrag/00000000-0000-0000-0000-000000000000');
+});
+
 for (const pfad of ['/contribute', '/contributions', '/einwerfen', '/fangkorb']) {
   test(`Besucher: ${pfad} fuehrt zur Anmeldung`, async ({ page }) => {
     await page.goto(pfad);

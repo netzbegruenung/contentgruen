@@ -122,6 +122,12 @@ def test_waehlen_frontend_ohne_erreichte_spec_alle_specs(baum):
         ("docs/CI.md", ["retired-words"]),
         ("GLOSSARY.md", ["retired-words"]),
         ("docs/adr/0001-x.md", ["retired-words"]),
+        # Eine Datei je Eintrag, geprüft von scripts/tests/ (#500)
+        ("docs/rechtstexte-luecken/pruefliste/P11.md", ["retired-words", "unit"]),
+        (
+            "docs/nutzungsbedingungen-staende/2027-03-01/512.md",
+            ["retired-words", "unit"],
+        ),
     ],
 )
 def test_waehlen_schritte_nach_pfad(baum, pfad, schritte):

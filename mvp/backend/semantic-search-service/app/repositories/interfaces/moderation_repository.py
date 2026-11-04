@@ -18,6 +18,14 @@ class IModerationRepository(ABC):
         pass
 
     @abstractmethod
+    async def zustaende_laden(self, beitrag_ids: List[str]) -> Dict[str, Optional[str]]:
+        """
+        Der gespeicherte Status je Beitrag, in einer Abfrage (#507). Beitraege, die es
+        nicht gibt, fehlen im Ergebnis; ohne Status-Feld steht None.
+        """
+        pass
+
+    @abstractmethod
     async def sperren(self, beitrag: Dict[str, Any]) -> None:
         """
         Den mit laden geholten Beitrag sperren und seinen Status von vorher fuer

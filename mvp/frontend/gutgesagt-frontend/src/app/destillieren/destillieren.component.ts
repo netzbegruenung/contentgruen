@@ -21,14 +21,15 @@ import {
   TAB_PARAM,
 } from './destillier-uebergabe.service';
 import { EINWURF_PARAM } from './einwurf-adresse';
-import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
+import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../fangkorb/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
-import { KartenDaten, ausEinwurf, istVerwerfbar } from '../beitragskarte/karten-daten';
+import { KartenDaten, ausEinwurf, istSichtbar, istVerwerfbar } from '../beitragskarte/karten-daten';
 import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -58,7 +59,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 @Component({
   selector: 'app-destillieren',
   standalone: true,
-  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent],
+  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent, Cc0HinweisComponent],
   templateUrl: './destillieren.component.html',
   styleUrls: ['./destillieren.component.css'],
 })
@@ -181,12 +182,13 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   private kopfCache?: { einwurf: Einwurf; satz: string; karte: KartenDaten };
 
   /**
-   * Ein schon verknuepfter Beitrag dieses Einwurfs (der erste), fuer den Hinweis
-   * in der Typwahl. Ein weiterer Beitrag bleibt moeglich - man soll nur sehen, dass
-   * es schon einen gibt, etwa nach dem Zurueck von der Ergebnisseite.
+   * Ein schon verknuepfter Beitrag dieses Einwurfs (der erste sichtbare), fuer den
+   * Hinweis in der Typwahl. Ein weiterer Beitrag bleibt moeglich - man soll nur
+   * sehen, dass es schon einen gibt, etwa nach dem Zurueck von der Ergebnisseite.
+   * Gesperrte und geloeschte zaehlen nicht: Die findet niemand mehr (#507).
    */
   get verknuepfterBeitrag(): { contentId: string; contentType: string | null } | null {
-    const link = this.einwurf?.links?.[0];
+    const link = this.einwurf?.links?.find((verknuepfung) => istSichtbar(verknuepfung));
     return link ? { contentId: link.content_id, contentType: link.content_type } : null;
   }
 

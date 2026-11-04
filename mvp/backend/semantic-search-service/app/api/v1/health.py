@@ -13,6 +13,7 @@ from sqlalchemy import text
 
 from core.config import settings
 from core.logging import get_logger
+from core.fehler import INTERNER_FEHLER
 from infrastructure.database.connection import get_app_database
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 
@@ -47,7 +48,7 @@ async def check_database_connection() -> Dict[str, Any]:
             session.execute(text("SELECT 1"))
         return {"status": "healthy", "message": "Database connection successful"}
     except Exception as e:
-        logger.error(f"Database health check failed: {e}")
+        logger.error(f"Database health check failed: {type(e).__name__}")
         return {"status": "unhealthy", "message": "Database connection failed"}
 
 
@@ -67,7 +68,7 @@ async def check_qdrant_connection() -> Dict[str, Any]:
             return {"status": "unhealthy", "message": "Qdrant connection failed"}
     except Exception as e:
         # Log without stack trace - already logged in health_check method
-        logger.warning(f"Qdrant health check failed: {e}")
+        logger.warning(f"Qdrant health check failed: {type(e).__name__}")
         return {"status": "unhealthy", "message": "Qdrant connection failed"}
 
 
@@ -95,7 +96,7 @@ def check_disk_space() -> Dict[str, Any]:
             "percent_used": round(percent_used, 2),
         }
     except Exception as e:
-        logger.error(f"Disk space check failed: {e}")
+        logger.error(f"Disk space check failed: {type(e).__name__}")
         return {"status": "unhealthy", "message": "Disk space check failed"}
 
 
@@ -122,7 +123,7 @@ def check_memory_usage() -> Dict[str, Any]:
             "percent_used": round(percent_used, 2),
         }
     except Exception as e:
-        logger.error(f"Memory usage check failed: {e}")
+        logger.error(f"Memory usage check failed: {type(e).__name__}")
         return {"status": "unhealthy", "message": "Memory usage check failed"}
 
 
@@ -151,7 +152,7 @@ def get_last_backup_time() -> Optional[str]:
 
         return None
     except Exception as e:
-        logger.error(f"Failed to get last backup time: {e}")
+        logger.error(f"Failed to get last backup time: {type(e).__name__}")
         return None
 
 
@@ -294,5 +295,5 @@ async def get_statistics():
         )
 
     except Exception as e:
-        logger.error(f"Failed to fetch statistics: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to fetch statistics: {e}")
+        logger.error(f"Failed to fetch statistics: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

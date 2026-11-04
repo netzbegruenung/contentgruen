@@ -4,9 +4,9 @@ from typing import List, Optional
 
 from domain.cc0_hinweis import Cc0Wortlaut
 from domain.themen import ThemenDerAussage
+from dtos.beitrag import VorhandenDto
 from dtos.statement import ThemaDto
 from domain.models.generic_text import GenericText
-from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 
 
 ### AddGenericText ###
@@ -96,35 +96,9 @@ class AddGenericTextResponse(BaseModel):
     # werden konnte. Bei einer Dublette True nur, wenn die Person die eigene mit
     # vorhanden_nehmen genommen hat und sie jetzt an der Aussage haengt; sonst False.
     verknuepft: bool = True
-    # True: Es gibt schon eine sehr aehnliche Hintergrundinfo; id ist deren ID, nichts
-    # wurde angelegt. Wie beim Kommentar (dtos/commentary.py) entscheidet die Person:
-    # zustimmen (Stimme), die eigene mit vorhanden_nehmen nehmen oder mit
-    # trotz_dublette_von trotzdem speichern. Eine fremde wird nie verknuepft.
-    dublette: bool = False
-    # Titel der vorhandenen Hintergrundinfo, damit das Formular sie nennen kann.
-    vorhanden_titel: Optional[str] = None
-    # Die vorhandene ist von derselben Person. Ohne Dublette False.
-    vorhanden_eigen: bool = False
-
-
-### GetAll ###
-
-
-class GenericTextGetAllResponse(BaseModel):
-    results_count: int
-    results: List[HintergrundinfoResponse]
-    total_records_count: int
-
-
-### SearchGenericText ###
-
-
-class SearchGenericTextByTextRequest(BaseModel):
-    query_text: str
-    limit: int = 10
-    # TODO: Add a field to specify the search type (content, commentary, etc.)
-    # TODO: Add a field to specify minimum score
-
-
-class GenericTextSearchResponse(BaseModel):
-    results: List[HintergrundinfoTreffer]
+    # Gesetzt: Es gibt schon eine sehr aehnliche Hintergrundinfo; id ist deren ID,
+    # nichts wurde angelegt. Wie beim Kommentar (dtos/commentary.py) entscheidet die
+    # Person: zustimmen (Stimme), die eigene mit vorhanden_nehmen nehmen oder mit
+    # trotz_dublette_von trotzdem speichern. Eine fremde wird nie verknuepft. Ohne
+    # Dublette None.
+    vorhanden: Optional[VorhandenDto] = None

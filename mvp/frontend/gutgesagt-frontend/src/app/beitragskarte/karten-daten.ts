@@ -1,11 +1,12 @@
 import { BaseContentResult, BaseSearchResult, ContentReference } from '../services/dtos/commonDtos';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { Einwurf } from '../services/einwurf.service';
+import { BeitragZustand, Einwurf, AusformuliertIn } from '../services/einwurf.service';
 import { CONTENT_TYPE_REGISTRY, resolveContentType } from '../shared/content-type-registry';
 import { plattformAusUrl, plattformName } from '../shared/plattform';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import type { NutzungJeFassung } from '../shared/fassung';
 import { STIL_LABEL, Stil } from '../shared/zweck-stil';
+import type { BeitragAnsicht } from '../services/content.service';
 
 /**
  * Was eine Beitragskarte anzeigt, unabhaengig davon, woher die Daten kommen.
@@ -85,8 +86,10 @@ export interface EinwurfAngaben {
   linkText: string | null;
   /** Alle Saetze, aelteste Aenderung zuerst. */
   saetze: EinwurfSatz[];
-  /** Die verknuepften Beitraege, aelteste zuerst. */
+  /** Die verknuepften Beitraege, die sich ansehen lassen, aelteste zuerst. */
   beitraege: EinwurfBeitrag[];
+  /** Gesetzt, wenn keiner der verknuepften Beitraege mehr sichtbar ist (#507). */
+  beitragZustand: NichtSichtbar | null;
   /** Nur im Kopf: der Satz, aus dem gerade ein Beitrag entsteht. */
   kopfSatz?: string;
   /** Offen oder destilliert (`istVerwerfbar`); wer verwerfen darf, entscheidet die Karte. */
@@ -155,6 +158,25 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
     stimme: paket.user_vote === 'like' || paket.user_vote === 'dislike' ? paket.user_vote : undefined,
     extra: extra(typ, inhalt),
   };
+}
+
+/**
+ * Ein Beitrag unter seiner eigenen Adresse (/content/beitrag/{id}, #300): flach wie
+ * getById seines Typs, der Typ in content_type, dazu die eigene Stimme (user_vote).
+ * Dieselbe Karte wie in der Suche, nur ohne Aussage, ueber die er gefunden wurde.
+ */
+export function ausEinzelansicht(beitrag: BeitragAnsicht): KartenDaten {
+  const typ = resolveContentType(beitrag.content_type);
+  const feld = typ ? CONTENT_TYPE_REGISTRY[typ].resultField : undefined;
+  return ausSuchergebnis({
+    score: 1,
+    statement_text: null,
+    statement_similarity_score: null,
+    reply_relevance: null,
+    content_type: beitrag.content_type,
+    user_vote: beitrag.user_vote ?? undefined,
+    ...(feld ? { [feld]: beitrag } : {}),
+  });
 }
 
 function typAusPaket(paket: Suchpaket): string | null {
@@ -311,6 +333,48 @@ export const STUFEN: Record<EinwurfStufe, StufenAnzeige> = {
   verworfen: { emoji: KETTEN_ICONS.einwerfen, name: 'Verworfen' },
 };
 
+/** Was aus den Beitraegen eines Einwurfs wurde, wenn keiner mehr sichtbar ist. */
+export type NichtSichtbar = Exclude<BeitragZustand, 'sichtbar'>;
+
+/**
+ * Die Beschriftung statt "Ausformuliert", wenn niemand die Beitraege mehr findet
+ * (#507). Die Stufe bleibt ausformuliert - das ist der Einwurf ja -, aber
+ * "Ausformuliert" und "Ansehen" versprechen einen Beitrag, den es nicht mehr gibt.
+ */
+export const NICHT_SICHTBAR: Record<NichtSichtbar, StufenAnzeige> = {
+  gesperrt: { emoji: KETTEN_ICONS.verfassen, name: 'Beitrag gesperrt' },
+  geloescht: { emoji: KETTEN_ICONS.verfassen, name: 'Beitrag gelöscht' },
+};
+
+/** Ob sich ein Beitrag, in dem der Einwurf ausformuliert ist, ansehen laesst; ohne Angabe vom Server: ja. */
+export function istSichtbar(link: AusformuliertIn): boolean {
+  return link.zustand !== 'gesperrt' && link.zustand !== 'geloescht';
+}
+
+/**
+ * Gesperrt oder geloescht, wenn ein Einwurf ausformuliert ist, aber keiner der
+ * Beitraege, in denen er ausformuliert ist, mehr sichtbar; sonst null. Solange einer sichtbar ist, bleibt alles
+ * wie bisher. Sind die Beitraege teils gesperrt, teils geloescht, steht
+ * "gesperrt": Eine Sperre laesst sich aufheben, ein Loeschen nicht.
+ */
+export function nichtSichtbar(einwurf: Einwurf): NichtSichtbar | null {
+  const links = einwurf.links ?? [];
+  if (!links.length || links.some(istSichtbar)) {
+    return null;
+  }
+  return links.some((link) => link.zustand === 'gesperrt') ? 'gesperrt' : 'geloescht';
+}
+
+/**
+ * Wie die Stufe eines Einwurfs angezeigt wird, etwa beim Einwerfen: die Stufe,
+ * bei Ausformuliertem ohne sichtbaren Beitrag stattdessen dessen Zustand.
+ */
+export function stufenAnzeigeVonEinwurf(einwurf: Einwurf): StufenAnzeige {
+  const stufe = stufeVonEinwurf(einwurf);
+  const zustand = nichtSichtbar(einwurf);
+  return stufe === 'ausformuliert' && zustand ? NICHT_SICHTBAR[zustand] : STUFEN[stufe];
+}
+
 /**
  * Die Stufe eines Einwurfs bestimmen.
  *
@@ -339,10 +403,14 @@ export function stufeInDerKette(einwurf: Einwurf): Exclude<EinwurfStufe, 'verwor
   return (einwurf.drafts ?? []).length > 0 ? 'destilliert' : 'offen';
 }
 
-/** Die mit einem Einwurf verknuepften Beitraege, aelteste zuerst, samt ausformuliertem Satz. */
+/**
+ * Die mit einem Einwurf verknuepften Beitraege, die sich ansehen lassen, aelteste
+ * zuerst, samt ausformuliertem Satz. Gesperrte und geloeschte fehlen (#507): Das
+ * Sheet koennte sie nicht laden.
+ */
 export function beitraegeVonEinwurf(einwurf: Einwurf): EinwurfBeitrag[] {
   const saetze = einwurf.drafts ?? [];
-  return (einwurf.links ?? []).map((link) => ({
+  return (einwurf.links ?? []).filter(istSichtbar).map((link) => ({
     contentId: link.content_id,
     typ: resolveContentType(link.content_type) ?? null,
     satz: saetze.find((satz) => satz.id === link.draft_id)?.sentence ?? null,
@@ -370,7 +438,9 @@ export function ausEinwurf(einwurf: Einwurf): KartenDaten {
   const saetze: EinwurfSatz[] = (einwurf.drafts ?? []).map((satz) => ({
     id: satz.id,
     text: satz.sentence,
-    beitraege: links.filter((link) => link.draft_id === satz.id).length,
+    // Nur sichtbare zaehlen, wie unter ``beitraege`` (#507): Sonst truege der Satz
+    // einen Haken, waehrend der Kopf "Beitrag geloescht" sagt.
+    beitraege: links.filter((link) => link.draft_id === satz.id && istSichtbar(link)).length,
   }));
 
   return {
@@ -380,10 +450,14 @@ export function ausEinwurf(einwurf: Einwurf): KartenDaten {
     // haben keinen Typ - ihr Band bleibt Sand.
     // Die erste Verknuepfung *mit* Typ: Verknuepfungen aus der Zeit vor Fangkorb v2
     // tragen keinen, und stuende so eine vorn, blieben Band und Emoji farblos,
-    // obwohl ein typisierter Beitrag daneben liegt.
+    // obwohl ein typisierter Beitrag daneben liegt. Nur sichtbare Beitraege faerben:
+    // Ist keiner mehr sichtbar, bleibt das Band Sand (#507).
     typ:
       stufe === 'ausformuliert'
-        ? (links.map((link) => resolveContentType(link.content_type)).find(Boolean) ?? null)
+        ? (links
+            .filter(istSichtbar)
+            .map((link) => resolveContentType(link.content_type))
+            .find(Boolean) ?? null)
         : null,
     titel: hinweis(einwurf),
     text: null,
@@ -401,6 +475,7 @@ export function ausEinwurf(einwurf: Einwurf): KartenDaten {
       linkText: adresseKurz(adresse),
       saetze,
       beitraege: beitraegeVonEinwurf(einwurf),
+      beitragZustand: nichtSichtbar(einwurf),
       verwerfbar: istVerwerfbar(einwurf),
     },
   };

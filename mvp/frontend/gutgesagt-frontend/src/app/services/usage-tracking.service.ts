@@ -1,14 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
-import { SessionService } from './session.service';
 import type { Fassung } from '../shared/fassung';
 
 export interface TrackUsageRequest {
-  session_id?: string;
   /** Die kopierte Fassung eines Kommentars (#355); fehlt bei anderen Beitragstypen. */
   fassung?: Fassung;
 }
@@ -67,8 +65,7 @@ export class UsageTrackingService {
 
   constructor(
     private http: HttpClient,
-    private loggingService: LoggingService,
-    private sessionService: SessionService
+    private loggingService: LoggingService
   ) {}
 
 
@@ -123,10 +120,7 @@ export class UsageTrackingService {
    */
   private performUsageTracking(contentId: string, fassung?: Fassung): void {
     const url = `${this.apiUrl}/content/${contentId}/usage`;
-    const body: TrackUsageRequest = {
-      session_id: this.sessionService.getSessionId(),
-      ...(fassung ? { fassung } : {}),
-    };
+    const body: TrackUsageRequest = fassung ? { fassung } : {};
 
     // Fire the request but don't wait for response
     // Using catchError to handle failures silently

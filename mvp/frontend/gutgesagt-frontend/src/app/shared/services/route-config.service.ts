@@ -60,9 +60,9 @@ export class RouteConfigService {
       case FORMULAR_PFAD.post:
         return this.getFormularConfig(PAGE_TITLES.POST_FORM, typLabel('post'));
 
-      case ROUTES.CONTRIBUTIONS:
+      case ROUTES.MEINE_BEITRAEGE:
         return {
-          pageTitle: PAGE_TITLES.CONTRIBUTIONS,
+          pageTitle: PAGE_TITLES.MEINE_BEITRAEGE,
           showBackButton: true,
           showContributeButton: true
         };
@@ -110,6 +110,18 @@ export class RouteConfigService {
           showBackButton: true,
           showContributeButton: false
         };
+
+      // Feste Seiten mit eigenem Namen statt "Gut gesagt" (#512)
+      case '/impressum':
+        return { ...defaultConfig, pageTitle: PAGE_TITLES.IMPRESSUM };
+      case '/datenschutz':
+        return { ...defaultConfig, pageTitle: PAGE_TITLES.DATENSCHUTZ };
+      case '/nutzungsbedingungen':
+        return { ...defaultConfig, pageTitle: PAGE_TITLES.NUTZUNGSBEDINGUNGEN };
+      case '/about':
+        return { ...defaultConfig, pageTitle: PAGE_TITLES.UEBER };
+      case '/einladung':
+        return { ...defaultConfig, pageTitle: PAGE_TITLES.EINLADUNG };
 
       default:
         return this.getDynamicRouteConfig(route, queryParams, defaultConfig);
@@ -170,6 +182,15 @@ export class RouteConfigService {
         showBackButton: true,
         showContributeButton: false
       };
+    }
+
+    // Die eigene Adresse eines Beitrags (#300): /beitrag/:id
+    if (route.startsWith(`${ROUTES.BEITRAG}/`)) {
+      return { ...defaultConfig, pageTitle: PAGE_TITLES.BEITRAG };
+    }
+
+    if (route === '/admin' || route.startsWith('/admin/')) {
+      return { ...defaultConfig, pageTitle: PAGE_TITLES.ADMIN };
     }
 
     if (route.startsWith('/commentary/')) {

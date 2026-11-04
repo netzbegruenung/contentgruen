@@ -3,6 +3,7 @@ import { NO_ERRORS_SCHEMA, SimpleChange } from '@angular/core';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { KartenAktionenComponent } from './karten-aktionen.component';
@@ -49,6 +50,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         { provide: UsageTrackingService, useValue: usageTrackingSpy },
         { provide: AuthService, useValue: authServiceSpy },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
+        { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -474,6 +476,38 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.openReportDialog();
 
       expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ contentId: INHALT_ID, contentType: 'commentary' });
+    });
+  });
+
+  describe('Beitrag öffnen (#300)', () => {
+    function menueEintrag(): HTMLElement | null {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+      return document.querySelector('.beitrag-oeffnen');
+    }
+
+    it('fuehrt aus dem Menue auf die eigene Adresse des Beitrags', () => {
+      const router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+
+      menueEintrag()!.click();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/beitrag', INHALT_ID]);
+    });
+
+    it('fehlt auf der eigenen Adresse selbst', () => {
+      fixture.componentRef.setInput('ansichtVerlinkt', false);
+
+      expect(menueEintrag()).toBeNull();
+    });
+
+    it('fuehrt in der Vorschau nirgendwohin', () => {
+      const router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+      fixture.componentRef.setInput('vorschau', true);
+
+      component.beitragOeffnen();
+
+      expect(router.navigate).not.toHaveBeenCalled();
     });
   });
 

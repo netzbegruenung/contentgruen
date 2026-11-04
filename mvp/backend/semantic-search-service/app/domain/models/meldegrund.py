@@ -17,7 +17,17 @@ Meldegrund = Literal[
     # nennt docs/VISION.md ausdruecklich als Meldegrund.
     "fabricated_or_false",
     "duplicate",
+    # Rechtswidriger Inhalt (#438): Art. 16 Abs. 2 lit. a DSA verlangt dafuer eine
+    # begruendete Erlaeuterung, deshalb ist die Beschreibung hier Pflicht.
+    "illegal_content",
     "other",
 ]
 
 MELDEGRUENDE: tuple[str, ...] = get_args(Meldegrund)
+
+RECHTSWIDRIGER_INHALT = "illegal_content"
+
+
+def beschreibung_fehlt(reason: str, description: str | None) -> bool:
+    """Ob eine Meldung wegen rechtswidrigen Inhalts ohne Begruendung kommt."""
+    return reason == RECHTSWIDRIGER_INHALT and not (description or "").strip()

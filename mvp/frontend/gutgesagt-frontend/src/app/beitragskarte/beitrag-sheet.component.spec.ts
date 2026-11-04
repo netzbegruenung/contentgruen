@@ -7,7 +7,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { BeitragSheetComponent, BeitragSheetDaten, WISCH_SCHWELLE } from './beitrag-sheet.component';
-import { ContributionsService } from '../services/contributions.service';
+import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { KartenDaten } from './karten-daten';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
@@ -19,7 +19,7 @@ describe('BeitragSheetComponent', () => {
   let sheet: jasmine.SpyObj<MatBottomSheetRef<BeitragSheetComponent>>;
   let dialog: jasmine.SpyObj<MatDialog>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
-  let beitraege: jasmine.SpyObj<ContributionsService>;
+  let beitraege: jasmine.SpyObj<MeineBeitraegeService>;
 
   const daten: KartenDaten = {
     id: 'b-1',
@@ -43,7 +43,7 @@ describe('BeitragSheetComponent', () => {
     sheet = jasmine.createSpyObj('MatBottomSheetRef', ['dismiss']);
     dialog = jasmine.createSpyObj('MatDialog', ['open']);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
-    beitraege = jasmine.createSpyObj('ContributionsService', ['beitragLoeschen']);
+    beitraege = jasmine.createSpyObj('MeineBeitraegeService', ['beitragLoeschen']);
     const auth = jasmine.createSpyObj('AuthService', ['getUserInfo', 'login']);
     auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'user-001' });
     auth.userInfo$ = of({ isAuthenticated: true, userId: 'user-001' });
@@ -55,7 +55,7 @@ describe('BeitragSheetComponent', () => {
         { provide: MatBottomSheetRef, useValue: sheet },
         { provide: VotingService, useValue: jasmine.createSpyObj('VotingService', ['setLike']) },
         { provide: MatSnackBar, useValue: snackBar },
-        { provide: ContributionsService, useValue: beitraege },
+        { provide: MeineBeitraegeService, useValue: beitraege },
         { provide: AuthService, useValue: auth },
         { provide: Clipboard, useValue: jasmine.createSpyObj('Clipboard', ['copy']) },
         { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']) },
@@ -83,6 +83,20 @@ describe('BeitragSheetComponent', () => {
     expect(karte.querySelector('.menue-knopf')).not.toBeNull();
     expect(karte.querySelector('.quelle-link')!.getAttribute('href')).toBe('https://example.org/studie');
     expect(karte.getAttribute('role')).toBeNull();
+  });
+
+  function aktionen(): { ansichtVerlinkt: boolean } {
+    return fixture.debugElement.query((d) => d.name === 'app-karten-aktionen').componentInstance;
+  }
+
+  it('bietet "Beitrag öffnen" ohne zurAdresse nicht an, sonst ginge eine Eingabe verloren (#300)', () => {
+    erstellen();
+    expect(aktionen().ansichtVerlinkt).toBeFalse();
+  });
+
+  it('bietet "Beitrag öffnen" mit zurAdresse an (Meine Beitraege)', () => {
+    erstellen({ ...daten, zurAdresse: true });
+    expect(aktionen().ansichtVerlinkt).toBeTrue();
   });
 
   it('schliesst beim Wisch nach unten, nicht bei einem kurzen', () => {

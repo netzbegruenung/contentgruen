@@ -11,9 +11,10 @@ import { KartenDaten, ausAussage } from '../../beitragskarte/karten-daten';
 import { BeitragAnsehenService } from '../beitrag-ansehen.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
+import { EinwurfService } from '../../services/einwurf.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
-import { NACH_DEM_AUSFORMULIEREN, tabMerken } from '../../raw-input-list/fangkorb-filter';
+import { NACH_DEM_AUSFORMULIEREN, tabMerken } from '../../fangkorb/fangkorb-filter';
 import { FORMULAR_PFAD, FormularTyp } from '../../shared/formular-adresse';
 import {
   GespeichertZustand,
@@ -75,6 +76,11 @@ export class BeitragGespeichertComponent implements OnInit {
   karte: KartenDaten | null = null;
   laedt = true;
   nichtLadbar = false;
+  /**
+   * Ob der eben ausformulierte Einwurf der eigene ist; null, solange das nicht
+   * feststeht. Nur dann fuehrt der zweite Knopf nach "Meine Einwuerfe" (F1 in #511).
+   */
+  einwurfEigen: boolean | null = null;
   readonly zustand: GespeichertZustand;
   readonly aussageKopf: KartenDaten | null;
 
@@ -84,6 +90,7 @@ export class BeitragGespeichertComponent implements OnInit {
     private beitragAnsehen: BeitragAnsehenService,
     private navigationService: NavigationService,
     private uebergabe: DestillierUebergabeService,
+    private einwurfService: EinwurfService,
     private logger: LoggingService,
   ) {
     // Der State haengt an der laufenden Navigation; nach dem Neuladen gibt es keinen.
@@ -113,6 +120,7 @@ export class BeitragGespeichertComponent implements OnInit {
   ngOnInit(): void {
     this.typ = this.route.snapshot.data['typ'] ?? 'commentary';
     this.herkunft = herkunftAus(this.route.snapshot.queryParamMap);
+    this.eigenenEinwurfPruefen();
     this.route.paramMap
       .pipe(
         switchMap((params) => {
@@ -140,6 +148,24 @@ export class BeitragGespeichertComponent implements OnInit {
     this.uebergabe.zumNaechsten(this.einwurfId ?? '', NACH_DEM_AUSFORMULIEREN);
   }
 
+  /**
+   * Ausformuliertes liegt in keiner Arbeitsliste des Fangkorbs; ein eigener Einwurf
+   * steht danach unter "Meine Einwuerfe" (#508). Dorthin fuehrt der Knopf aber nur,
+   * wenn der Einwurf sicher der eigene ist: Fremde stehen dort nie (F1 in #511).
+   */
+  get zuMeinenEinwuerfen(): boolean {
+    return this.einwurfEigen === true;
+  }
+
+  zuMeinenEinwuerfenGehen(): void {
+    this.navigationService.navigateToMeineEinwuerfe();
+  }
+
+  /**
+   * Bei einem fremden Einwurf, solange unklar ist, wessen er ist, und wenn die
+   * Verknuepfung gescheitert ist (dann ist er noch destilliert): in den Fangkorb, in
+   * die Arbeitsliste, aus der der Einwurf kam.
+   */
   zumFangkorb(): void {
     tabMerken(NACH_DEM_AUSFORMULIEREN);
     this.router.navigate(['/fangkorb']);
@@ -156,6 +182,25 @@ export class BeitragGespeichertComponent implements OnInit {
 
   nochEiner(): void {
     this.router.navigate([FORMULAR_PFAD[this.typ]]);
+  }
+
+  /**
+   * Wessen Einwurf es ist, sagt nur der Server (Kennzeichen, #385). Gefragt wird nur,
+   * wenn die Verknuepfung geklappt hat; laesst er sich nicht laden, bleibt es beim
+   * Fangkorb.
+   */
+  private eigenenEinwurfPruefen(): void {
+    const einwurfId = this.einwurfId;
+    if (this.herkunft !== 'fangkorb' || !einwurfId || this.zustand.einwurfVerknuepft === false) {
+      return;
+    }
+    this.einwurfService
+      .einwurfLaden(einwurfId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (einwurf) => (this.einwurfEigen = einwurf.ist_eigener_einwurf === true),
+        error: (error) => this.logger.warn('Einwurf nach dem Ausformulieren nicht ladbar', error),
+      });
   }
 
   private laden(id: string): Observable<KartenDaten> {

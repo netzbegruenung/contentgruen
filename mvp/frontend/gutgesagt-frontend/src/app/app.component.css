@@ -24,6 +24,7 @@ main * {
 .header {
     display: flex;
     justify-content: space-between;
+    gap: var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
 }
 
@@ -34,9 +35,13 @@ main * {
     align-items: center;
     gap: var(--spacing-md);
     height: var(--header-height-desktop);
+    flex-shrink: 0;
 }
 
+/* Der Titel bricht nicht um und weicht nicht: Platz macht die rechte Box (#512). */
 .desktop-header-title {
+    white-space: nowrap;
+    flex-shrink: 0;
     margin: 0;
     font-size: var(--font-size-h2-desktop); /* Match h2 size: 40px */
     font-weight: 400; /* Match h2 weight */
@@ -66,11 +71,38 @@ main * {
 
 .right-header-box {
     flex: 1;
+    min-width: 0;
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     height: var(--header-height-desktop);
+}
+
+.right-header-box > * {
+    flex-shrink: 0;
+}
+
+/* Wird es eng, weicht zuerst die Begruessung (als Ganzes mit Auslassung), nie ein Knopf */
+.right-header-box > .user-info-compact {
+    display: block;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Neben einem langen Titel ist fuer die Begruessung erst ab 1440 px Platz */
+@media (max-width: 1439px) {
+    .header--titel-lang .right-header-box > .user-info-compact {
+        display: none;
+    }
+}
+
+.right-header-box .mat-mdc-icon-button {
+    width: 44px;
+    height: 44px;
+    padding: 10px;
 }
 
 .user-info-compact {
@@ -80,16 +112,83 @@ main * {
     white-space: nowrap;
 }
 
+/* Textlinks im Kopf: einer der zwei Stile neben den runden Icon-Knoepfen (#512) */
 .header-link {
+    color: var(--primary-dark);
+    font-weight: 600;
     text-decoration: underline;
+    text-underline-offset: 3px;
     transition: opacity var(--transition-fast);
     cursor: pointer;
     white-space: nowrap;
+    margin: 0 var(--spacing-xs);
 }
 
-/* Der einzige echte Link im Kopf ("Hier fehlt eine Antwort") sieht aus wie die anderen. */
-a.header-link {
-    color: inherit;
+.header-link .kopf-icon {
+    display: none;
+}
+
+/* Lange Titel ("Hintergrundinfo verfassen") eine Stufe kleiner, damit sie in eine Zeile passen */
+.desktop-header-title--lang {
+    font-size: var(--font-size-h2-tablet);
+}
+
+/*
+ * Schmale Desktops, damit Titel und Knoepfe in eine Zeile passen (#512):
+ * unter 1200 px weicht die Begruessung, die Textlinks werden zu runden Icon-Knoepfen;
+ * unter 1100 px zeigt Beitragen nur das Plus. Die Namen bleiben fuer Screenreader.
+ */
+@media (max-width: 1199px) {
+    .right-header-box > .user-info-compact {
+        display: none;
+    }
+
+    .header-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        border-radius: 50%;
+        background: var(--bg-card);
+        box-shadow: var(--elevation-1);
+        color: var(--text-primary);
+    }
+
+    .header-link .kopf-icon {
+        display: inline-block;
+    }
+
+    /* Nur noch fuer Screenreader, wie .cdk-visually-hidden */
+    .header-link .kopf-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 1099px) {
+    .beitragen-knopf {
+        min-width: 0;
+        padding: 0 10px;
+    }
+
+    .beitragen-knopf mat-icon {
+        margin: 0;
+    }
+
+    .beitragen-knopf .beitragen-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
 }
 
 .header-link:hover {
@@ -130,7 +229,8 @@ a.header-link {
 .profile-avatar {
     width: var(--avatar-size-desktop);
     height: var(--avatar-size-desktop);
-    box-shadow: var(--elevation-4);
+    /* Derselbe Schatten wie die runden Icon-Knoepfe daneben */
+    box-shadow: var(--elevation-1);
     border-radius: 50%;
     background-color: white;
     transition: transform var(--transition-standard), opacity var(--transition-standard);
@@ -397,6 +497,13 @@ mat-sidenav-content {
     height: 100%;
     overflow-y: auto;
     background-color: var(--bg-main);
+}
+
+/* Ketten-Icon im Profilmenue im Platz eines mat-icon, damit die Eintraege fluchten (#512) */
+.profilmenue-emoji {
+    font-size: 20px;
+    line-height: 24px;
+    text-align: center;
 }
 
 /* Ketten-Icon (Emoji) im runden Header-Knopf, so gross wie ein mat-icon */

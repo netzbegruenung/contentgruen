@@ -112,6 +112,10 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
     host.style.display = 'block';
     host.style.width = '360px';
     document.body.appendChild(host);
+
+    // Gemessen wird mit der Hausschrift des Titels. Ohne diese Zeile misst der Test,
+    // je nach Reihenfolge der Suite, die breitere Ersatzschrift (#552).
+    await document.fonts.load('28px GrueneType');
   });
 
   afterEach(() => fixture.nativeElement.remove());
@@ -146,14 +150,37 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
     });
   }
 
-  it('kuerzt einen zu langen Titel mit Auslassungszeichen', () => {
-    aufbauen('Ein sehr langer Seitentitel, der niemals passt');
+  // A8 aus dem Design-Audit (#512): "Suchergebnisse" und "Hier fehlt eine Antwort"
+  // waren abgeschnitten. Lange Titel werden kleiner und duerfen zweizeilig stehen.
+  for (const titel of ['Suchergebnisse', 'Hier fehlt eine Antwort', 'Kommentar']) {
+    it(`zeigt "${titel}" ganz, ohne Auslassung`, () => {
+      aufbauen(titel);
+      const text: HTMLElement = fixture.nativeElement.querySelector('.mobile-header-title-text');
+
+      // Toleranz fuer Unterlaengen; eine abgeschnittene dritte Zeile waere > 20 px
+      expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth);
+      expect(text.scrollHeight).toBeLessThanOrEqual(text.clientHeight + 4);
+    });
+  }
+
+  it('setzt kurze Titel in voller Groesse, lange kleiner', () => {
+    aufbauen('Fangkorb');
+    const kurz = parseFloat(getComputedStyle(fixture.nativeElement.querySelector('.mobile-header-title-text')).fontSize);
+    aufbauen('Hier fehlt eine Antwort');
+    const lang = parseFloat(getComputedStyle(fixture.nativeElement.querySelector('.mobile-header-title-text')).fontSize);
+
+    expect(kurz).toBe(28);
+    expect(lang).toBe(22);
+  });
+
+  it('kuerzt einen Titel, der auch zweizeilig nicht passt, mit Auslassungszeichen', () => {
+    aufbauen('Ein sehr langer Seitentitel, der niemals passt, auch nicht in zwei Zeilen');
     const text: HTMLElement = fixture.nativeElement.querySelector('.mobile-header-title-text');
     const stil = getComputedStyle(text);
 
-    expect(text.scrollWidth).toBeGreaterThan(text.clientWidth);
-    expect(stil.textOverflow).toBe('ellipsis');
-    expect(stil.whiteSpace).toBe('nowrap');
+    expect(text.scrollHeight).toBeGreaterThan(text.clientHeight);
+    expect(stil.overflow).toBe('hidden');
+    expect(stil.getPropertyValue('-webkit-line-clamp')).toBe('2');
   });
 });
 

@@ -17,6 +17,8 @@ from typing import Annotated, Dict, Iterable, List, Tuple
 
 from pydantic import AfterValidator
 
+from core.fehler import Validierungsfehler
+
 # Glossar: "eine Aussage hat hoechstens zwei".
 HOECHSTENS_JE_AUSSAGE = 2
 
@@ -38,7 +40,7 @@ class Zuordnungsart(StrEnum):
     VON_HAND = "von_hand"
 
 
-class ThemaUngueltig(ValueError):
+class ThemaUngueltig(Validierungsfehler):
     """Ein Schluessel steht nicht in der Liste, oder es sind mehr als zwei."""
 
 

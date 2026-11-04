@@ -37,10 +37,10 @@ class BildResponse(BeitragResponse):
     Dublettenpruefung. Wer hier ein Feld ergaenzt, entscheidet, dass es nach aussen
     geht.
 
-    Der Zustand bleibt, weil getById und getAll bisher nicht nach ihm filtern und
-    gesperrte oder geloeschte Bilder sonst nicht von sichtbaren zu unterscheiden
-    waeren. Das ist eine bekannte Luecke: Laut Glossar findet ein gesperrtes Bild
-    nur ein Admin, ein geloeschtes niemand. Das Filtern gehoert zu #300.
+    Gesperrte und geloeschte Bilder liefern getById und getAll nicht aus (das
+    Repository blendet sie aus, #300); der Zustand ist hier also immer "sichtbar".
+    Er bleibt trotzdem, weil BeitragResponse ihn fuer alle Beitragstypen fuehrt und
+    die Karte jeden Typ gleich liest.
     """
 
     title: str
@@ -51,11 +51,3 @@ class ImageGetAllResponse(BaseModel):
     results_count: int
     results: List[BildResponse]
     total_records_count: int
-
-
-class SuggestCaptionRequest(BaseModel):
-    image_url: str
-
-
-class SuggestCaptionResponse(BaseModel):
-    suggested_caption: str

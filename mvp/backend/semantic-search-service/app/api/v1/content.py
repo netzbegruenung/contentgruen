@@ -3,37 +3,48 @@ from typing import List, Optional, Dict, Any
 import logging
 import uuid
 
+from pydantic import ValidationError
+
 from dependencies import (
     get_aufrufer,
+    get_beitrag_laden,
     get_beitrag_loeschen_service,
+    get_commentary_service,
+    get_generic_text_service,
+    get_image_service,
+    get_post_service,
     get_settings,
     get_reference_service,
+    get_voting_service,
 )
 from dtos.content import (
     ContentGetAllResponse,
-    SearchContentByTextRequest,
-    ContentSearchResponse,
 )
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
-from domain.models.content import ContentDbEntry, ContentSearchResult
+from domain.models.content import ContentDbEntry
+from domain.models.content_type import ContentType
 from core.config import Settings
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
+from services.beitrag_laden import BeitragLader, BeitragUnlesbar
+from services.content.base_content_service import BaseContentService
 from dtos.beitrag import (
     BeitragResponse,
-    BeitragTreffer,
     HintergrundinfoResponse,
     KommentarResponse,
 )
+from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
+from services.voting_service import VotingService
 from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
 )
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
+from core.fehler import INTERNER_FEHLER
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -41,12 +52,6 @@ logger = logging.getLogger(__name__)
 # Was /recent liefert, je result_type; ein Typ ohne Eintrag bekommt die allgemeine
 # Auswahl (BeitragResponse), statt die Route abzubrechen.
 NEUESTE = {"commentary": KommentarResponse, "generictext": HintergrundinfoResponse}
-
-
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
 
 
 # Retrieves all content from the index
@@ -83,40 +88,8 @@ async def get_all(
 
         return response
     except Exception as e:
-        logger.error(f"Error in /getAll: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Searches for content in the content_index using similarity search
-@router.post("/searchContent", response_model=ContentSearchResponse)
-async def search_content(
-    request: SearchContentByTextRequest,
-    settings: Settings = Depends(get_settings),
-    aufrufer: Aufrufer = Depends(get_aufrufer),
-) -> ContentSearchResponse:
-    try:
-        logger.debug("/searchContent was called")
-
-        repository_factory = QdrantRepositoryFactory()
-        content_repository = repository_factory.create_content_repository(settings)
-        content_index_results: List[ContentSearchResult] = (
-            await content_repository.search(request.query_text, request.limit)
-        )
-        logger.debug(f"/searchContent got {len(content_index_results)} results")
-
-        # Enrich results with usage statistics
-        usage_service = get_usage_service()
-        results_dict = [item.model_dump() for item in content_index_results]
-        enriched_results = usage_service.enrich_content_with_usage(results_dict)
-
-        response: ContentSearchResponse = ContentSearchResponse(
-            results=als_responses(BeitragTreffer, enriched_results, aufrufer)
-        )
-
-        return response
-    except Exception as e:
-        logger.error(f"Error in search_content: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in /getAll: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Get recent content
@@ -219,8 +192,86 @@ async def get_recent_content(
         return {"results_count": len(enriched_results), "results": enriched_results}
 
     except Exception as e:
-        logger.error(f"Error in /recent endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in /recent endpoint: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+
+# response_model=None: Ein Union-Modell liesse Pydantic den Typ raten; die Antwort ist
+# schon das DTO ihres Typs (die Feldauswahl), dazu nur die eigene Stimme.
+@router.get("/beitrag/{beitrag_id}", response_model=None)
+async def beitrag_ansehen(
+    beitrag_id: uuid.UUID,
+    laden: BeitragLader = Depends(get_beitrag_laden),
+    commentary_service: BaseContentService = Depends(get_commentary_service),
+    generic_text_service: BaseContentService = Depends(get_generic_text_service),
+    post_service: BaseContentService = Depends(get_post_service),
+    image_service: Optional[BaseContentService] = Depends(get_image_service),
+    reference_service: ReferenceService = Depends(get_reference_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+    voting_service: VotingService = Depends(get_voting_service),
+) -> Dict[str, Any]:
+    """
+    Ein Beitrag jedes Typs unter seiner eigenen Adresse (/beitrag/:id, #300).
+
+    Die Adresse traegt nur die ID; den Typ liest erst das aggregierte Repository,
+    den Beitrag mit seinen Feldern dann der Dienst seines Typs (die Antwort je Typ:
+    dtos/beitragstypen.py). Herkunft und Nutzung wie in /recent. Oeffentlich wie die
+    Suche (BFF: EndpointPolicy.AllowAnonymous).
+
+    404 fuer gesperrte, geloeschte und nie vorhandene Beitraege, auch fuer Admins:
+    Gesperrtes finden sie ueber die Moderation (GLOSSARY.md, "Gesperrt"). Aussage
+    und Herkunft sind keine Beitraege und haben hier keine Adresse.
+
+    user_vote ist die Stimme der angemeldeten Person wie in der Suche, damit die
+    Seite das Abstimmen anbietet (Entscheidung @BanSe 03.11.); ohne Anmeldung None.
+    """
+    nicht_da = HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
+    dienste = {
+        ContentType.COMMENTARY.value: commentary_service,
+        ContentType.GENERIC_TEXT.value: generic_text_service,
+        ContentType.POST.value: post_service,
+        ContentType.IMAGE.value: image_service,
+    }
+    try:
+        allgemein = await laden(beitrag_id)
+    except BeitragUnlesbar:
+        # Geloggt hat beitrag_laden.
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    typ = allgemein.content_type.value if allgemein else None
+    if typ not in ANTWORT_JE_TYP:
+        raise nicht_da
+    dienst = dienste[typ]
+    if dienst is None:
+        # get_image_service liefert None, solange der Suchindex nicht bereit ist.
+        logger.error(f"No service for content type {typ} in /beitrag")
+        raise HTTPException(status_code=503, detail=INTERNER_FEHLER)
+
+    try:
+        beitrag = await dienst.get(beitrag_id)
+    except ValidationError:
+        # Vor ValueError, denn Pydantics ValidationError ist einer; kaputt, nicht
+        # abwesend. Geloggt hat das Repository.
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    except ValueError:
+        # Zwischen beiden Lesungen gesperrt oder geloescht (base_repository.get).
+        raise nicht_da
+
+    try:
+        await reference_service.herkunft_ergaenzen(beitrag)
+        [mit_nutzung] = get_usage_service().enrich_content_with_usage(
+            [beitrag.model_dump()]
+        )
+        [antwort] = als_responses(ANTWORT_JE_TYP[typ], [mit_nutzung], aufrufer)
+        # get_user_vote faengt Datenbankfehler selbst ab: ohne Stimme bleibt die Seite.
+        stimme = (
+            voting_service.get_user_vote(aufrufer.kennung, beitrag_id)
+            if aufrufer.angemeldet
+            else None
+        )
+        return {**antwort.model_dump(mode="json"), "user_vote": stimme}
+    except Exception as e:
+        logger.error(f"Error in /beitrag: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.delete("/{beitrag_id}", status_code=204)

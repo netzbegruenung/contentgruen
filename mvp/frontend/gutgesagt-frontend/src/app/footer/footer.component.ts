@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { RouterModule } from '@angular/router';
-import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
+import { hilfeOeffnen } from '../help-dialog/help-dialog.component';
 // Default-Import: Der Karma-Builder (webpack) lehnt benannte Importe aus JSON ab.
 import paket from '../../../package.json';
 import { environment } from '../../environments/environment';
@@ -33,10 +33,6 @@ export class FooterComponent {
     private dialog: MatDialog) {
   }
     openHelpDialog() {
-      this.dialog.open(HelpDialogComponent, {
-        width: '80vw',
-        maxWidth: '80vw',
-        data: {} // Pass any data you need here
-      });
+      hilfeOeffnen(this.dialog);
     }
 }

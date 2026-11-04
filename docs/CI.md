@@ -70,11 +70,18 @@ dotnet or Ruff), the last 80 lines of its output folded in
   `FAILED`/`ERROR` lines (for a step without such lines its last 20 non-empty lines, since a
   summary like "Found 1 error." alone looks the same for different errors), without
   timestamps, clock times, durations and memory addresses. Before posting, the step reads
-  the comments of the pull request. If the most recent comment with such a marker has the
-  same fingerprint, it posts only one line ("Unverändert rot", commit, pipeline, link to the
-  last full report) carrying the marker again. If the comments cannot be read (refused, connection
-  broken, unexpected answer), the full report is posted. The marker is not signed: whoever can comment on the pull
-  request can fake one, at worst turning a report into the one line.
+  the comments of the pull request. If the most recent earlier report has the same
+  fingerprint, it posts only one line ("Unverändert rot", commit, pipeline, link to the last
+  full report) carrying the marker again. If the comments cannot be read (refused,
+  connection broken, unexpected answer), the full report is posted.
+- **Which comments count as a report.** Only comments of the account that owns the token
+  (`CI_BERICHT_KONTO` in `ci.yaml`) that start with the report header. A marker in a new
+  comment of another account, or in an agent comment of the same account that quotes a
+  report, is ignored. Whoever can write to the repository can still edit a report's marker,
+  at worst turning the next report into the one line; they could change `ci.yaml` anyway.
+  Without `CI_BERICHT_KONTO` the full report is posted without comparing. If the token moves
+  to another account and the variable stays, every run posts the full report and the log
+  says that markers exist only in comments of other accounts.
 - A green run writes nothing: the step only runs on red runs, the last report stays.
 - Each step runs its commands through `scripts/ci-protokoll.sh`: output to the Woodpecker
   log and appended to `.ci/<step>.log`, exit code to `.ci/<step>.status`. A log without a
@@ -92,6 +99,35 @@ dotnet or Ruff), the last 80 lines of its output folded in
   bot in this repository: this repository only, `write:issue` and `read:repository`, event
   `pull_request` only.
 
+## Wiki page of the legal-text files
+
+The gap list and the Stände der Nutzungsbedingungen are stored as one file per entry (#500); a
+checked-in overview would again be the file every pull request appends to. So the workflow
+`.woodpecker/rechtstexte-wiki.yaml` renders both tables after every push to `main` and
+overwrites the wiki page „Rechtstexte Übersicht“ (#503). Readers without Python find the
+overview there; the head of the page names the commit and says to change the entry files,
+not the page.
+
+- `scripts/rechtstexte_wiki.py` (standard library only, Forgejo helpers shared with
+  `ci-bericht` in `scripts/forgejo_api.py`) writes only if its commit is still the head of
+  `main` and the tables changed: of two merges running in parallel only the newer one
+  writes, and most runs write nothing. Then it updates the page (`PATCH`) or, on 404,
+  creates it (`POST /wiki/new`). Errors log the HTTP status only. Without a token the step
+  is red: its only job is the page.
+- No path filter: whether the Ablage changed is the script's decision, not Woodpecker's
+  list of changed files, which is unverified for merge commits.
+- The title has no hyphen: Forgejo stores a title with "-" under a path ending in `.-`, and
+  reading the page by its title would then never find it again (`seitenpfad`).
+- After a red run, restart the last push pipeline on `main` in Woodpecker; there is no
+  manual or cron trigger, so the secret stays out of branch runs.
+- Own workflow, not a step in `ci`: a red run here leaves the status of `ci` alone.
+- `push` on `main` only, and the secret is released for `push` only: pull-request and manual
+  runs of a branch never see it. Whoever can push a branch to this repository could still
+  read it through a changed workflow; they have write access already. The scope
+  `write:repository` is wider than the wiki: the token could also push to unprotected
+  branches and create tags. Forgejo has no narrower scope for the wiki, so a leaked token
+  is revoked and replaced at once.
+
 ## Setup by a person
 
 The bot can write the pipeline, but cannot enable a repository, create secrets or change the
@@ -103,13 +139,20 @@ enabled, and the pull request that adds the pipeline already needs it):
    by any person with Woodpecker access (staff and authorised members of Netzbegrünung); check the diff for changes to `.woodpecker/` and
    `scripts/` first (see the known limit above).
 2. **Secret, right after enabling and before the first pull-request run.** Create a token
-   `woodpecker-ci-bericht-gutgesagt` for the bot account: this repository only, scopes
+   `woodpecker-ci-bericht-gutgesagt` for the bot account (its login is `CI_BERICHT_KONTO` in
+   `ci.yaml`): this repository only, scopes
    `write:issue` and `read:repository`, nothing else. Store it in the team's password
    manager and add it in Woodpecker as secret `forgejo_ci_bericht_token`, event "Pull
    Request" only, no image filter. Woodpecker resolves secrets when it compiles a run: if
    the secret is missing or not released for pull requests, **every pull-request run fails
    with "secret not found"** before any step.
-3. **Required status:** after the first pull-request run, add `ci/woodpecker/pr/ci` as a
+3. **Wiki secret, before merging the pull request that adds `rechtstexte-wiki.yaml`.** Create
+   a token `woodpecker-rechtstexte-wiki-gutgesagt` for the bot account: this repository only,
+   scope `write:repository` (the wiki needs it; what else it allows is above), no other
+   scope. Store it in the team's password manager and add it in Woodpecker as secret
+   `forgejo_wiki_token`, event "Push" only, no image filter. The wiki of the repository must
+   stay enabled.
+4. **Required status:** after the first pull-request run, add `ci/woodpecker/pr/ci` as a
    required status check in the branch protection of `main`, and switch on "pull request
    must be up to date", so combinations of two pull requests run before the merge. A branch
    is brought up to date by merge ("Update branch"), not by rebase. Whoever wants a linear

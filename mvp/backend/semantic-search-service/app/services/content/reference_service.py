@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple
 import uuid
 
 from core.config import Settings
+from core.fehler import Validierungsfehler
 from utils.url_validator import validate_url_security, sanitize_url
 from services.content.base_content_service import BaseContentService
 from repositories.interfaces.reference_repository import (
@@ -21,6 +22,10 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
 
 logger = logging.getLogger(__name__)
+
+
+class HerkunftsadresseUngueltig(Validierungsfehler):
+    """Die Adresse einer Herkunft ist nicht erlaubt; der Text nennt keine Adressteile (#422)."""
 
 
 class ReferenceService(
@@ -82,7 +87,7 @@ class ReferenceService(
 
             return None
         except Exception as e:
-            logger.warning(f"Error in find_exact_match: {e}")
+            logger.warning(f"Error in find_exact_match: {type(e).__name__}")
             return None
 
     async def add_reference(
@@ -109,8 +114,9 @@ class ReferenceService(
         # Validate URL security
         is_valid, error_msg = validate_url_security(reference.reference_string)
         if not is_valid:
-            logger.warning(f"Rejected reference URL for security: {error_msg}")
-            raise ValueError(f"Invalid reference URL: {error_msg}")
+            # error_msg kann Teile der Adresse tragen, etwa das Schema (#422).
+            logger.warning("Rejected reference URL for security")
+            raise HerkunftsadresseUngueltig("Ungültige Adresse")
 
         # Sanitize the URL
         reference.reference_string = sanitize_url(reference.reference_string)
@@ -151,7 +157,9 @@ class ReferenceService(
             try:
                 herkunft = await self.get(ref.reference_id)
             except Exception as e:
-                logger.warning(f"Failed to fetch reference {ref.reference_id}: {e}")
+                logger.warning(
+                    f"Failed to fetch reference {ref.reference_id}: {type(e).__name__}"
+                )
                 continue
             if herkunft:
                 ref.reference_text = herkunft.reference_string
@@ -168,5 +176,5 @@ class ReferenceService(
                 await super()._upsert(reference)
         except Exception as e:
             logger.warning(
-                f"Error incrementing usage count for reference {reference_id}: {e}"
+                f"Error incrementing usage count for reference {reference_id}: {type(e).__name__}"
             )

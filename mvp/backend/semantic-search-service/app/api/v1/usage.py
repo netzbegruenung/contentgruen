@@ -6,11 +6,13 @@ import asyncio
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, ValidationError, validator
+from pydantic import BaseModel
 import uuid
 from datetime import datetime, timedelta, timezone
 
 from dependencies import (
+    get_beitrag_laden,
+    get_content_repository,
     get_aufrufer,
     get_muster_hinweise_service,
     get_nutzung_rate_limiter,
@@ -20,25 +22,22 @@ from dependencies import (
     get_reference_service,
     require_user,
 )
+from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
 from utils.device_category import derive_device_category
 from utils.rate_limiter import RateLimiter
 from services.entdoppelung import ANONYM, pruefwert
 from services.punkte_service import PunkteService
 from services.usage_tracking_service import get_usage_service
+from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from domain.models.commentary import Fassung
 from domain.models.content_type import ContentType
-from dtos.beitrag import (
-    BeitragResponse,
-    HintergrundinfoResponse,
-    KommentarResponse,
-    PostResponse,
-)
-from dtos.image import BildResponse
+from dtos.beitrag import BeitragResponse
+from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
-from services.cleanup.usage_cleanup_service import get_cleanup_service
+from services.cleanup.bereinigungsjob import get_bereinigungsjob
 from core.config import Settings
 from core.logging import log_pseudonym
 
@@ -47,29 +46,18 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Was "Diese Woche oft genutzt" je Typ ausliefert (dtos/beitrag.py, #333); ein Typ
-# ohne Eintrag bekommt die allgemeine Auswahl.
-OFT_GENUTZT = {
-    ContentType.COMMENTARY.value: KommentarResponse,
-    ContentType.GENERIC_TEXT.value: HintergrundinfoResponse,
-    ContentType.POST.value: PostResponse,
-    ContentType.IMAGE.value: BildResponse,
-}
-
 
 class TrackUsageRequest(BaseModel):
-    """Request model for tracking usage."""
+    """
+    Request model for tracking usage.
 
-    session_id: Optional[str] = Field(None, max_length=255)
+    Ohne Sitzungskennung (#446): Ein session_id, den ein alter Client noch
+    mitschickt, ist ein unbekanntes Feld und wird verworfen.
+    """
+
     # Die kopierte Fassung eines Kommentars (#355); bei anderen Beitragstypen
     # ohne Bedeutung und nicht gespeichert.
     fassung: Optional[Fassung] = None
-
-    @validator("session_id")
-    def validate_session_id(cls, v):
-        if v and len(v) > 255:
-            raise ValueError("Session ID must be less than 255 characters")
-        return v
 
 
 class TrackUsageResponse(BaseModel):
@@ -135,42 +123,6 @@ class CleanupResultResponse(BaseModel):
     message: str
 
 
-class BeitragUnlesbar(Exception):
-    """
-    Der Datensatz ist da, aber er laesst sich nicht lesen. Das ist kaputt, nicht
-    abwesend - also kein 404, und die Nutzung wird trotzdem gezaehlt.
-    """
-
-
-async def beitrag_laden(content_id: uuid.UUID, settings: Settings):
-    """
-    Den Beitrag zu dieser ID, oder None, wenn es ihn nicht gibt.
-
-    Eigene Funktion, weil der Zaehl-Endpunkt sie fuer zwei Dinge braucht: die
-    Existenzpruefung und den Vergleich mit der zaehlenden Person.
-
-    Raises:
-    - BeitragUnlesbar, wenn der Datensatz existiert, aber nicht validiert.
-    """
-    from repositories.implementations.qdrant.qdrant_repository_factory import (
-        QdrantRepositoryFactory,
-    )
-
-    repository = QdrantRepositoryFactory().create_content_repository(settings)
-    try:
-        return await repository.get(content_id)
-    except ValidationError as fehler:
-        # Vor ValueError, denn Pydantics ValidationError ist einer. Ohne diesen
-        # Zweig gaelte ein kaputter Datensatz als "nicht vorhanden": Der Aufruf
-        # bekaeme 404, die Kopie fiele unter den Tisch und niemand erfuehre, dass
-        # da etwas im Bestand nicht stimmt.
-        logger.error(f"Content {content_id} is not readable: {fehler}", exc_info=True)
-        raise BeitragUnlesbar(str(content_id)) from fehler
-    except ValueError:
-        # Nicht vorhanden - erwartbar bei einem alten Link, kein Fehlerfall.
-        return None
-
-
 @router.post("/content/{content_id}/usage", response_model=TrackUsageResponse)
 async def track_content_usage(
     content_id: str,
@@ -178,6 +130,7 @@ async def track_content_usage(
     request: Request,
     user_agent: Optional[str] = Header(None),
     aufrufer: Optional[str] = Depends(get_current_user_optional),
+    laden: BeitragLader = Depends(get_beitrag_laden),
     settings: Settings = Depends(get_settings),
     limiter: RateLimiter = Depends(get_nutzung_rate_limiter),
 ):
@@ -196,7 +149,8 @@ async def track_content_usage(
 
     Der User-Agent wird sofort zu einer groben Geraetekategorie verdichtet; der
     Rohwert wird nicht weitergereicht und nicht gespeichert. Die IP-Adresse wird
-    gar nicht mehr angefasst.
+    gar nicht mehr angefasst, und eine Kennung der Person oder des Browsers haelt
+    das Ereignis seit #446 auch nicht mehr fest.
     """
     logger.debug(f"Tracking usage for content {content_id}")
     # Rate-Limit (#352): angemeldet je Kennung, sonst je Adresse (derive_client_key,
@@ -219,7 +173,7 @@ async def track_content_usage(
         # auf eine ID, hinter der nichts steht. Ist er da, aber unlesbar, wird im
         # Zweifel gezaehlt - wem er gehoert, ist dann nicht feststellbar.
         try:
-            beitrag = await beitrag_laden(content_uuid, settings)
+            beitrag = await laden(content_uuid)
         except BeitragUnlesbar:
             beitrag = None
             unlesbar = True
@@ -257,11 +211,6 @@ async def track_content_usage(
                 usage_count=service.get_content_usage(content_id),
             )
 
-        # Sanitize session_id if provided
-        if body.session_id:
-            # Remove any potentially malicious characters
-            body.session_id = body.session_id[:255]  # Truncate to max length
-
         # User-Agent hier verdichten, nicht weiter unten: ab dieser Zeile
         # existiert der Rohwert im weiteren Ablauf nicht mehr.
         device_category = derive_device_category(user_agent)
@@ -284,12 +233,16 @@ async def track_content_usage(
         logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
-            session_id=body.session_id,
             device_category=device_category,
             fassung=fassung,
             # Entdoppelung fuer Punkte und "oft genutzt" (#352): angemeldet je Kennung,
-            # sonst je Sitzung, je Beitrag und UTC-Tag.
-            pruefwert=pruefwert(aufrufer, body.session_id, content_uuid, jetzt),
+            # sonst je Tagespseudonym der Besucher (#446), je Beitrag und UTC-Tag.
+            pruefwert=pruefwert(
+                aufrufer,
+                None if angemeldet else besucher_merkmal(request),
+                content_uuid,
+                jetzt,
+            ),
             tag=jetzt.date(),
         )
 
@@ -311,7 +264,9 @@ async def track_content_usage(
                     jetzt,
                 )
             except Exception as e:
-                logger.error(f"Pattern check for content {content_id} failed: {e}")
+                logger.error(
+                    f"Pattern check for content {content_id} failed: {type(e).__name__}"
+                )
 
         # Get updated count
         usage_count = service.get_content_usage(content_id)
@@ -327,7 +282,8 @@ async def track_content_usage(
         raise
     except Exception as e:
         logger.error(
-            f"Error tracking usage for content {content_id}: {e}", exc_info=True
+            f"Error tracking usage for content {content_id}: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -355,7 +311,8 @@ async def get_content_usage(
         raise
     except Exception as e:
         logger.error(
-            f"Error getting usage for content {content_id}: {e}", exc_info=True
+            f"Error getting usage for content {content_id}: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -378,7 +335,7 @@ async def eigene_nutzungsstatistik(
 
     except Exception as e:
         logger.error(
-            f"Nutzungsstatistik fuer {log_pseudonym(current_user)} nicht geladen: {e}",
+            f"Nutzungsstatistik fuer {log_pseudonym(current_user)} nicht geladen: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -403,7 +360,7 @@ async def eigene_punkte(
         stand = await service.punkte(current_user)
     except Exception as e:
         logger.error(
-            f"Punkte fuer {log_pseudonym(current_user)} nicht berechnet: {e}",
+            f"Punkte fuer {log_pseudonym(current_user)} nicht berechnet: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -429,7 +386,7 @@ async def besuch(
         return BesuchResponse(nutzung_seit_letztem_besuch=anzahl)
     except Exception as e:
         logger.error(
-            f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {e}",
+            f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -456,7 +413,9 @@ async def get_trending_content(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting trending content: {e}", exc_info=True)
+        logger.error(
+            f"Error getting trending content: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -484,18 +443,24 @@ async def oft_genutzt(
         usage_service = get_usage_service()
         service = OftGenutztService(
             usage_service,
+            # Im try gebaut: Scheitert das Repository, antwortet der Endpunkt mit
+            # seinem 500 und Log (wie get_beitrag_laden in dependencies.py).
             sichtbaren_beitrag_laden(
-                settings, QdrantRepositoryFactory(), reference_service
+                settings,
+                get_content_repository(settings),
+                QdrantRepositoryFactory(),
+                reference_service,
             ),
         )
         angereichert = usage_service.enrich_content_with_usage(
             await service.beitraege()
         )
         # result_type und recent_uses gehoeren nicht zum Beitrag und kommen
-        # danach wieder dazu.
+        # danach wieder dazu. Die Antwort je Typ: dtos/beitragstypen.py; ein Typ
+        # ohne Eintrag bekommt die allgemeine Auswahl.
         antworten = fuer_aufrufer(
             [
-                OFT_GENUTZT.get(e["result_type"], BeitragResponse).model_validate(e)
+                ANTWORT_JE_TYP.get(e["result_type"], BeitragResponse).model_validate(e)
                 for e in angereichert
             ],
             aufrufer,
@@ -512,7 +477,7 @@ async def oft_genutzt(
         )
 
     except Exception as e:
-        logger.error(f"Error getting oft genutzt: {e}", exc_info=True)
+        logger.error(f"Error getting oft genutzt: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -530,7 +495,7 @@ async def get_cleanup_status(
         if not settings.is_admin_user(current_user):
             raise HTTPException(status_code=403, detail="Admin access required")
 
-        cleanup_service = get_cleanup_service()
+        cleanup_service = get_bereinigungsjob()
         status = cleanup_service.get_status()
 
         return CleanupStatusResponse(**status)
@@ -538,7 +503,7 @@ async def get_cleanup_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting cleanup status: {e}", exc_info=True)
+        logger.error(f"Error getting cleanup status: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -583,5 +548,5 @@ async def run_cleanup_manually(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error running manual cleanup: {e}", exc_info=True)
+        logger.error(f"Error running manual cleanup: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

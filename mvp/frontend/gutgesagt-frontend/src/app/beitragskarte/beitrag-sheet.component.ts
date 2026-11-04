@@ -9,7 +9,7 @@ import { filter, finalize, switchMap } from 'rxjs/operators';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenDaten } from './karten-daten';
-import { ContributionsService } from '../services/contributions.service';
+import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -18,8 +18,12 @@ import {
 /** Ab so vielen Pixeln nach unten schliesst ein Wisch das Sheet. */
 export const WISCH_SCHWELLE = 80;
 
-/** loeschbar nur aus "Meine Beitraege": dort ist es sicher der eigene Beitrag. */
-export type BeitragSheetDaten = KartenDaten & { loeschbar?: boolean };
+/**
+ * loeschbar nur aus "Meine Beitraege": dort ist es sicher der eigene Beitrag.
+ * zurAdresse zeigt "Beitrag öffnen" im Menue (#300); aus, wo das Sheet mitten im
+ * Schreiben aufgeht (Dublette, Destillieren) und die Eingabe sonst verloren ginge.
+ */
+export type BeitragSheetDaten = KartenDaten & { loeschbar?: boolean; zurAdresse?: boolean };
 
 /** Ergebnis des Sheets, wenn der Autor den Beitrag geloescht hat; die Liste laedt dann neu. */
 export const GELOESCHT = 'geloescht';
@@ -62,7 +66,8 @@ export function loeschenFehlertext(status: number | undefined): string {
   template: `
     <div class="sheet-griff" aria-hidden="true"></div>
     <!-- Der eigene Beitrag: nicht abstimmen, Kopieren und Melden bleiben -->
-    <app-beitragskarte [daten]="daten" variante="voll" [abstimmenSichtbar]="false"></app-beitragskarte>
+    <app-beitragskarte [daten]="daten" variante="voll" [abstimmenSichtbar]="false"
+                       [ansichtVerlinkt]="!!daten.zurAdresse"></app-beitragskarte>
     <div class="sheet-fuss" *ngIf="daten.loeschbar">
       <button
         mat-button
@@ -122,7 +127,7 @@ export class BeitragSheetComponent {
     private element: ElementRef<HTMLElement>,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private beitraege: ContributionsService,
+    private beitraege: MeineBeitraegeService,
   ) {}
 
   /** Ein 404 heisst: schon geloescht oder gesperrt. Fuer die Liste ist er so oder so weg. */

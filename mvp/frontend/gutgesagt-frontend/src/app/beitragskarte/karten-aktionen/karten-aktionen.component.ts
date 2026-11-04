@@ -18,6 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
@@ -25,12 +26,14 @@ import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
-import { ReportDialogComponent } from '../../shared/components/report-dialog/report-dialog.component';
+import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
 import { HAND_UMRISS } from '../../shared/marke/hand';
+import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 
 /**
- * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden.
+ * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden und im
+ * Menue der Weg zur eigenen Adresse des Beitrags (/beitrag/:id, #300).
  * Hat der Beitrag eine Herkunft, steht neben "Kopieren" die Wahl "Text" oder
  * "Text + Herkunft".
  *
@@ -68,6 +71,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() abstimmenSichtbar = true;
   /** Die angezeigte Fassung eines Kommentars, gezaehlt wird je Fassung (#355); sonst null. */
   @Input() fassung: Fassung | null = null;
+  /** Der Menueeintrag "Beitrag öffnen"; aus auf der eigenen Adresse selbst. */
+  @Input() ansichtVerlinkt = true;
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();
@@ -104,6 +109,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     private authService: AuthService,
     private logger: LoggingService,
     private dialog: MatDialog,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -164,14 +170,18 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  beitragOeffnen(): void {
+    if (this.vorschau || !this.inhaltId) {
+      return;
+    }
+    this.router.navigate([ROUTES.BEITRAG, this.inhaltId]);
+  }
+
   openReportDialog(): void {
     if (this.vorschau) {
       return;
     }
-    this.dialog.open(ReportDialogComponent, {
-      width: '500px',
-      data: { contentId: this.inhaltId, contentType: this.typ ?? '' },
-    });
+    meldeDialogOeffnen(this.dialog, { contentId: this.inhaltId, contentType: this.typ ?? '' });
   }
 
   private initializeVoteState(): void {

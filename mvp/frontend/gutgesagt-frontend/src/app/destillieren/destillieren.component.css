@@ -72,7 +72,7 @@
 }
 
 .fehler {
-  color: var(--warn-color, #b00020);
+  color: var(--error-color, #b00020);
 }
 
 /* Schrift kommt aus der globalen .submit-hint, siehe styles.css. */

@@ -1,4 +1,4 @@
-import { HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
+import { HttpContext, HttpContextToken, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { finalize, of, tap } from 'rxjs';
 
@@ -40,18 +40,20 @@ class CacheService {
 const cacheService = new CacheService();
 
 /**
- * POST-Anfragen, die nur lesen (Aussagen- und Herkunftssuche, Bildvorschlag, Stimmen
- * mehrerer Beitraege). Sie lassen den Cache stehen. Fehlt hier eine, wird der Cache nur
- * unnoetig geleert. Steht hier eine, die schreibt, bleibt ein veralteter Stand stehen.
- * Die Suche (searchByText) gehoert nicht hierher: Sie legt eine Aussage an und zaehlt
+ * Markiert eine POST-Anfrage, die nur liest (Aussagen- und Herkunftssuche, Stimmen
+ * mehrerer Beitraege): Sie laesst den Cache stehen. Jede andere POST-Anfrage gilt als
+ * Aenderung. Die Markierung setzt der Service an seiner Anfrage, statt dass hier eine
+ * Liste seiner Pfade gepflegt wird. Fehlt sie, wird der Cache nur unnoetig geleert;
+ * steht sie an einer Anfrage, die schreibt, bleibt ein veralteter Stand stehen.
+ * Die Suche (searchByText) traegt sie nicht: Sie legt eine Aussage an und zaehlt
  * Suchereignisse und Suchen ohne Treffer, die in den Kennzahlen erscheinen.
  */
-const LESENDE_POSTS = [
-  '/api/v1/statement/searchStatements',
-  '/api/v1/reference/search',
-  '/api/v1/image/suggestCaption',
-  '/api/v1/voting/votes/batch',
-];
+export const NUR_LESEND = new HttpContextToken<boolean>(() => false);
+
+/** Die Optionen fuer eine nur lesende POST-Anfrage: ``http.post(url, body, nurLesend())``. */
+export function nurLesend(): { context: HttpContext } {
+  return { context: new HttpContext().set(NUR_LESEND, true) };
+}
 
 /**
  * Der Fangkorb ist der gemeinsame Vorrat aller Einwuerfe: Andere Mitwirkende aendern ihn
@@ -85,7 +87,7 @@ function pfadEnthaelt(req: HttpRequest<unknown>, pfade: string[]): boolean {
 
 function istAenderung(req: HttpRequest<unknown>): boolean {
   if (req.method === 'POST') {
-    return !pfadEnthaelt(req, LESENDE_POSTS);
+    return !req.context.get(NUR_LESEND);
   }
   return req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE';
 }

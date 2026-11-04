@@ -6,7 +6,7 @@ import { CONSENT_HINWEIS_SATZ, mitCc0Wortlaut } from '../shared/consent-hinweis'
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 
-/** Spiegelt RawInputSource im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
+/** Spiegelt EinwurfWeg im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
 export type EinwurfWeg = 'web' | 'share';
 
 /**
@@ -55,8 +55,11 @@ export interface Satz {
   updated_at: string;
 }
 
-/** Die Verknuepfung eines Einwurfs mit einem Beitrag, neu entstanden oder vorhanden. */
-export interface Verknuepfung {
+/** Die Zustaende eines Beitrags (Glossar), wie die Einwurf-Antwort sie nennt (#507). */
+export type BeitragZustand = 'sichtbar' | 'gesperrt' | 'geloescht';
+
+/** Ausformuliert in (Glossar): ein Beitrag, mit dem der Einwurf verknuepft ist, neu entstanden oder vorhanden. */
+export interface AusformuliertIn {
   content_id: string;
   /** Null bei Verknuepfungen aus der Zeit vor Fangkorb v2. */
   content_type: string | null;
@@ -65,6 +68,11 @@ export interface Verknuepfung {
   /** Der Ausformulierer, nicht zwingend der Autor des Beitrags; nur fuer Admins. */
   processed_by: string | null;
   processed_at: string;
+  /**
+   * Der Zustand des Beitrags; null oder fehlend, wenn der Server ihn nicht kannte
+   * (dann gilt er wie sichtbar).
+   */
+  zustand?: BeitragZustand | null;
 }
 
 export interface Einwurf {
@@ -93,7 +101,7 @@ export interface Einwurf {
   /** Alle Saetze aller Personen, aelteste Aenderung zuerst. */
   drafts?: Satz[];
   /** Alle verknuepften Beitraege, aelteste zuerst. */
-  links?: Verknuepfung[];
+  links?: AusformuliertIn[];
 }
 
 /** Eine Seite Einwuerfe, wie Fangkorb und Meine Einwuerfe sie bekommen. */

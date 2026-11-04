@@ -23,20 +23,21 @@ from domain.models.content_type import ContentType
 from infrastructure.database.models import (
     Base,
     ContentReport,
-    RawInput,
-    RawInputContentLink,
-    RawInputDraft,
+    Einwurf,
+    AusformuliertIn,
+    Satz,
     User,
 )
 from repositories.content_report_repository import ContentReportRepository
 from repositories.implementations.qdrant.moderation_repository import (
     QdrantModerationRepository,
 )
-from repositories.raw_input_repository import RawInputRepository
+from repositories.einwurf_repository import EinwurfRepository
 from repositories.vote_repository import VoteRepository
 from services.loeschfristen_service import LoeschfristenService
 from services.moderation_service import ModerationService
 from tests.integration.beitrag_helfer import post_beitrag
+from tests.integration import postgres
 from tests.integration.conftest import requires_qdrant
 
 pytestmark = pytest.mark.integration
@@ -121,9 +122,95 @@ class TestMeldungen:
             assert (alt.status, alt.reviewed_at) == ("dismissed", ALT)
 
 
+class TestTagespseudonymAnDerMeldung:
+    """
+    Anonyme Meldungen tragen das Tagespseudonym nur, solange sie offen sind (#446):
+    Abschliessen ersetzt es durch einen Zufallswert, angemeldete verlieren den Wert.
+    """
+
+    PSEUDONYM = "besucher:" + "a" * 64
+
+    def _meldung(self, session, user_id=None, status="pending") -> uuid.UUID:
+        meldung = ContentReport(
+            content_id=uuid.uuid4(),
+            content_type="post",
+            reported_by_user_id=user_id,
+            reported_by_session_id=self.PSEUDONYM,
+            reason="spam",
+            status=status,
+        )
+        session.add(meldung)
+        session.flush()
+        return meldung.id
+
+    def test_abschliessen_einer_meldung_loescht_das_pseudonym(self, datenbank):
+        with datenbank.get_session() as s:
+            meldung = self._meldung(s)
+
+        repo = _mit(datenbank, "content_report_repository", ContentReportRepository)
+        repo.update_report_status(meldung, status="dismissed", reviewed_by="admin")
+
+        with datenbank.get_session() as s:
+            melder = s.get(ContentReport, meldung).reported_by_session_id
+        assert melder.startswith("anon:")
+        assert "a" * 8 not in melder
+
+    def test_abschliessen_je_beitrag_loescht_es_bei_allen(self, datenbank):
+        with datenbank.get_session() as s:
+            anonym = self._meldung(s)
+            angemeldet = self._meldung(s, user_id="user-1")
+            beitrag = s.get(ContentReport, anonym).content_id
+            s.get(ContentReport, angemeldet).content_id = beitrag
+
+        repo = _mit(datenbank, "content_report_repository", ContentReportRepository)
+        assert repo.update_reports_by_content_id(beitrag, status="reviewed") == 2
+
+        with datenbank.get_session() as s:
+            assert s.get(ContentReport, anonym).reported_by_session_id.startswith(
+                "anon:"
+            )
+            assert s.get(ContentReport, angemeldet).reported_by_session_id is None
+
+    def test_offene_meldungen_behalten_es(self, datenbank):
+        """Admins sehen so, ob offene Meldungen aus derselben Quelle kommen."""
+        with datenbank.get_session() as s:
+            offen = self._meldung(s)
+            erledigt = self._meldung(s)
+
+        repo = _mit(datenbank, "content_report_repository", ContentReportRepository)
+        repo.update_report_status(erledigt, status="reviewed")
+
+        with datenbank.get_session() as s:
+            assert s.get(ContentReport, offen).reported_by_session_id == (
+                self.PSEUDONYM
+            )
+
+    def test_migration_bereinigt_vor_446_erledigte_meldungen(self, datenbank):
+        """Erledigte Altmeldungen verlieren die Sitzungskennung, offene nicht."""
+        with datenbank.get_session() as s:
+            offen = self._meldung(s)
+            anonym = self._meldung(s, status="dismissed")
+            angemeldet = self._meldung(s, user_id="user-1", status="reviewed")
+
+        postgres.migration(
+            datenbank,
+            postgres.MIGRATIONEN
+            / "2026-10-30-446-erledigte-meldungen-ohne-melderwert.sql",
+        )
+
+        with datenbank.get_session() as s:
+            assert s.get(ContentReport, offen).reported_by_session_id == (
+                self.PSEUDONYM
+            )
+            assert s.get(ContentReport, anonym).reported_by_session_id.startswith(
+                "anon:"
+            )
+            assert s.get(ContentReport, angemeldet).reported_by_session_id is None
+
+
 class TestEinwuerfe:
     def _einwurf(self, session, created_at=ALT, status="open") -> uuid.UUID:
-        einwurf = RawInput(
+        einwurf = Einwurf(
             content="ein Fundstueck",
             submitted_by="einwerfer",
             status=status,
@@ -135,7 +222,7 @@ class TestEinwuerfe:
 
     def _satz(self, session, einwurf, von, updated_at=ALT) -> None:
         session.add(
-            RawInputDraft(
+            Satz(
                 raw_input_id=einwurf,
                 user_id=von,
                 sentence="Waermepumpen lohnen sich auch im Altbau",
@@ -153,19 +240,17 @@ class TestEinwuerfe:
             mit_jungem_satz = self._einwurf(s, status="in_progress")
             self._satz(s, mit_jungem_satz, "destillierer", updated_at=JUNG)
             ausformuliert = self._einwurf(s, status="processed")
-            s.add(
-                RawInputContentLink(raw_input_id=ausformuliert, content_id=uuid.uuid4())
-            )
+            s.add(AusformuliertIn(raw_input_id=ausformuliert, content_id=uuid.uuid4()))
             jung = self._einwurf(s, created_at=JUNG)
             s.add(User(user_id=platzhalter, anzeigename="ehemalige Person"))
             s.add(User(user_id="destillierer", anzeigename="Anna B."))
 
-        repo = RawInputRepository(db=datenbank)
+        repo = EinwurfRepository(db=datenbank)
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 3
 
         with datenbank.get_session() as s:
-            uebrig = {e.id for e in s.query(RawInput)}
-            saetze = {d.raw_input_id for d in s.query(RawInputDraft)}
+            uebrig = {e.id for e in s.query(Einwurf)}
+            saetze = {d.raw_input_id for d in s.query(Satz)}
             personen = {u.user_id for u in s.query(User)}
         assert uebrig == {mit_jungem_satz, ausformuliert, jung}
         assert not uebrig & {alt, verworfen, mit_altem_satz}
@@ -178,9 +263,9 @@ class TestEinwuerfe:
         beitrag = uuid.uuid4()
         with datenbank.get_session() as s:
             einwurf = self._einwurf(s, status="processed")
-            s.add(RawInputContentLink(raw_input_id=einwurf, content_id=beitrag))
+            s.add(AusformuliertIn(raw_input_id=einwurf, content_id=beitrag))
 
-        repo = RawInputRepository(db=datenbank)
+        repo = EinwurfRepository(db=datenbank)
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 0
         assert repo.ausformuliert_in_loeschen(beitrag) == 1
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 1
@@ -222,7 +307,7 @@ class TestGeloeschteBeitraege:
             report_repo=MagicMock(),
             moderation_repo=beitraege,
             vote_repo=MagicMock(),
-            raw_input_repo=MagicMock(),
+            einwurf_repo=MagicMock(),
             sperre_repo=MagicMock(),
         )
         meldungen = MagicMock(**{"bearbeitete_loeschen_vor.return_value": 0})

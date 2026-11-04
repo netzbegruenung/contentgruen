@@ -14,6 +14,7 @@ import pytest
 
 from sqlalchemy.orm import sessionmaker
 
+from domain.models.meldung import MelderAngaben
 from infrastructure.database.connection import AppDatabase
 from infrastructure.database.models import Base, ContentReport
 from repositories.content_report_repository import ContentReportRepository
@@ -55,6 +56,7 @@ async def test_report_content_erfunden_oder_sachlich_falsch_steht_in_der_admin_l
         "fabricated_or_false",
         user_id="person-1",
         description="Die Zahl im zweiten Satz stimmt nicht",
+        melder=MelderAngaben(guter_glaube=True),
     )
 
     [meldung] = await service.get_pending_reports()
@@ -83,7 +85,11 @@ async def test_report_content_bestehende_meldungen_bleiben_unveraendert(
             )
 
     await service.report_content(
-        str(uuid.uuid4()), "commentary", "fabricated_or_false", user_id="person-1"
+        str(uuid.uuid4()),
+        "commentary",
+        "fabricated_or_false",
+        user_id="person-1",
+        melder=MelderAngaben(guter_glaube=True),
     )
 
     nachher = {m["content_id"]: m for m in await service.get_pending_reports()}

@@ -39,6 +39,9 @@ MONTAG = date(2026, 10, 26)
 # Tagespseudonyme zweier Personen, wie sie SearchTrackingService bildet.
 PERSON_A = "a" * 64
 PERSON_B = "b" * 64
+# Anschluss-Pruefwerte zweier Anschluesse (utils/besucher_pseudonym.py).
+ANSCHLUSS_1 = "1" * 64
+ANSCHLUSS_2 = "2" * 64
 
 
 class FakeRepository:
@@ -144,8 +147,76 @@ class TestErfassen:
             (ANDERE, MONTAG, True),
         ]
 
+    def test_erfassen_zaehlt_je_anschluss_und_aussage_hoechstens_eine_person(self):
+        """
+        Wer am selben Anschluss den User-Agent wechselt, hat ein anderes
+        Tagespseudonym, zaehlt aber nicht als weitere Person (#496).
+        """
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+        )
+        service.erfassen(
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+        )
+
+        assert [neu for *_, neu in repo.gezaehlt] == [True, False]
+
+    def test_erfassen_zaehlt_verschiedene_anschluesse_als_zwei_personen(self):
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+        )
+        service.erfassen(
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_2
+        )
+
+        assert [neu for *_, neu in repo.gezaehlt] == [True, True]
+
+    def test_erfassen_zaehlt_denselben_anschluss_je_aussage(self):
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+        )
+        service.erfassen(
+            ANDERE, 0, PERSON_B, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+        )
+
+        assert [neu for *_, neu in repo.gezaehlt] == [True, True]
+
+    def test_erfassen_zaehlt_den_anschluss_am_naechsten_tag_wieder(self):
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+        )
+        service.erfassen(
+            AUSSAGE, 0, PERSON_B, heute=DONNERSTAG, anschluss_pruefwert=ANSCHLUSS_1
+        )
+
+        assert [neu for *_, neu in repo.gezaehlt] == [True, True]
+
+    def test_erfassen_ohne_anschluss_zaehlt_wie_bisher_nach_pseudonym(self):
+        """Angemeldete erkennt der Server an der Kennung; einen Anschluss gibt es nicht."""
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+        )
+        service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
+
+        assert [neu for *_, neu in repo.gezaehlt] == [True, True]
+
     def test_erfassen_ohne_pseudonym_zaehlt_die_suche_aber_keine_person(self):
-        """Ohne Nutzer- und Sitzungskennung laesst sich keine Person unterscheiden."""
+        """Ohne Tagespseudonym laesst sich keine Person unterscheiden."""
         repo = FakeRepository()
 
         _service(repo).erfassen(AUSSAGE, 0, None, heute=MITTWOCH)
@@ -185,6 +256,22 @@ class TestErfassen:
         with pytest.raises(RuntimeError):
             service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
         service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+
+        assert repo.zaehlen.call_args.args == (AUSSAGE, MONTAG, True)
+
+    def test_erfassen_vergisst_auch_den_anschluss_wenn_das_schreiben_scheitert(self):
+        repo = FakeRepository()
+        personen = PersonenDesTages()
+        service = _service(repo, personen=personen)
+        repo.zaehlen = Mock(side_effect=[RuntimeError("weg"), None])
+
+        with pytest.raises(RuntimeError):
+            service.erfassen(
+                AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+            )
+        service.erfassen(
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
+        )
 
         assert repo.zaehlen.call_args.args == (AUSSAGE, MONTAG, True)
 

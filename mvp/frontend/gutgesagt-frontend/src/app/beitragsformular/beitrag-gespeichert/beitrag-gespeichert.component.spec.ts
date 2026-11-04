@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 
 import { BeitragGespeichertComponent, EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT } from './beitrag-gespeichert.component';
 import { GespeichertZustand, gespeichertEltern } from './gespeichert-adresse';
@@ -9,10 +9,11 @@ import { GenericTextService } from '../../services/generic-text.service';
 import { PostService } from '../../services/post.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
+import { Einwurf, EinwurfService } from '../../services/einwurf.service';
+import { FILTER_SCHLUESSEL, filterLaden } from '../../fangkorb/fangkorb-filter';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../../beitragskarte/beitragskarte.stub';
-import { FILTER_SCHLUESSEL, filterLaden } from '../../raw-input-list/fangkorb-filter';
 
 describe('BeitragGespeichertComponent', () => {
   let fixture: ComponentFixture<BeitragGespeichertComponent>;
@@ -20,6 +21,13 @@ describe('BeitragGespeichertComponent', () => {
   let postService: jasmine.SpyObj<PostService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
   let navigation: jasmine.SpyObj<NavigationService>;
+  let einwurfService: jasmine.SpyObj<EinwurfService>;
+  /** Was das Nachladen des Einwurfs liefert; Standard: der eigene. */
+  let geladenerEinwurf: Observable<Einwurf>;
+
+  beforeEach(() => {
+    geladenerEinwurf = of({ id: 'e-1', ist_eigener_einwurf: true } as Einwurf);
+  });
 
   async function oeffnen(
     adresse: Record<string, string> = {},
@@ -38,7 +46,9 @@ describe('BeitragGespeichertComponent', () => {
       of({ id: 'k-1', title: 'Ein Reel zur Wärmepumpe', text: 'Text', content_type: 'post', platform: 'Instagram', author: '@konto' } as any),
     );
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
-    navigation = jasmine.createSpyObj('NavigationService', ['navigateToResult']);
+    navigation = jasmine.createSpyObj('NavigationService', ['navigateToResult', 'navigateToMeineEinwuerfe']);
+    einwurfService = jasmine.createSpyObj('EinwurfService', ['einwurfLaden']);
+    einwurfService.einwurfLaden.and.callFake(() => geladenerEinwurf);
 
     await TestBed.configureTestingModule({
       imports: [BeitragGespeichertComponent],
@@ -50,6 +60,7 @@ describe('BeitragGespeichertComponent', () => {
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn']) },
         { provide: DestillierUebergabeService, useValue: uebergabe },
         { provide: NavigationService, useValue: navigation },
+        { provide: EinwurfService, useValue: einwurfService },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -113,21 +124,41 @@ describe('BeitragGespeichertComponent', () => {
       expect(seite().querySelector('a.meine-beitraege')!.getAttribute('href')).toBe('/contributions');
     });
 
-    it('Fangkorb: naechster Einwurf und zum Fangkorb', async () => {
+    it('Fangkorb, eigener Einwurf: naechster Einwurf und zu meinen Einwuerfen', async () => {
       await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: true });
       const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
-      expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
+      expect(einwurfService.einwurfLaden).toHaveBeenCalledOnceWith('e-1');
+      expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
       expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
 
-      (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
-      expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
-      // Ausformuliertes liegt in keinem Tab; zurueck in die Arbeitsliste, aus der es kam.
-      expect(filterLaden().tab).toBe('ausformulieren');
-      sessionStorage.removeItem(FILTER_SCHLUESSEL);
+      // Ausformuliertes liegt in keinem Tab, sondern unter "Meine Einwuerfe" (#508, F1).
+      (seite().querySelector('.zu-meinen-einwuerfen') as HTMLButtonElement).click();
+      expect(navigation.navigateToMeineEinwuerfe).toHaveBeenCalledOnceWith();
+      expect(navigieren).not.toHaveBeenCalled();
     });
+
+    // F1 in #511: Fremde Einwuerfe stehen nicht unter "Meine Einwuerfe".
+    for (const [fall, laden] of [
+      ['fremder Einwurf', () => of({ id: 'e-1', ist_eigener_einwurf: false } as Einwurf)],
+      ['Einwurf nicht ladbar', () => throwError(() => ({ status: 500 }))],
+    ] as const) {
+      it(`Fangkorb, ${fall}: zum Fangkorb nach Ausformulieren`, async () => {
+        geladenerEinwurf = laden();
+        await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: true });
+        const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+        expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
+        (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
+
+        expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
+        expect(navigation.navigateToMeineEinwuerfe).not.toHaveBeenCalled();
+        expect(filterLaden().tab).toBe('ausformulieren');
+        sessionStorage.removeItem(FILTER_SCHLUESSEL);
+      });
+    }
 
     it('Fangkorb: nicht verknuepft fuehrt nach Ausformulieren und sagt es', async () => {
       await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: false });
@@ -135,6 +166,19 @@ describe('BeitragGespeichertComponent', () => {
       expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT);
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
       expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+    });
+
+    it('Fangkorb: nicht verknuepft fuehrt "Zum Fangkorb" nach Ausformulieren, wo der Einwurf noch liegt', async () => {
+      await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: false });
+      const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+      (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
+
+      expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
+      expect(navigation.navigateToMeineEinwuerfe).not.toHaveBeenCalled();
+      expect(einwurfService.einwurfLaden).not.toHaveBeenCalled();
+      expect(filterLaden().tab).toBe('ausformulieren');
+      sessionStorage.removeItem(FILTER_SCHLUESSEL);
     });
 
     it('Suche: zurueck zur Suche mit der urspruenglichen Anfrage', async () => {

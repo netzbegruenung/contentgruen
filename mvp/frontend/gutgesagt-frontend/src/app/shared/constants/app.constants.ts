@@ -53,12 +53,13 @@ export const PAGE_TITLES = {
   HOME: 'Gut gesagt',
   SEARCH_RESULTS: 'Suchergebnisse',
   CONTRIBUTE: 'Beitrag verfassen',
-  CONTRIBUTIONS: 'Meine Beiträge',
+  MEINE_BEITRAEGE: 'Meine Beiträge',
   RAW_INPUT: EINWERFEN_TITEL,
   RAW_INPUT_LIST: 'Fangkorb',
   DESTILLIEREN: 'Destillieren',
   AUSFORMULIEREN: 'Ausformulieren',
   HIER_FEHLT_EINE_ANTWORT: 'Hier fehlt eine Antwort',
+  BEITRAG: 'Beitrag',
   SHARE_TARGET: 'Geteilter Inhalt',
   // Typnamen aus der Registry
   COMMENTARY: typLabel('commentary'),
@@ -70,7 +71,13 @@ export const PAGE_TITLES = {
   POST_FORM: `${typLabel('post')} verfassen`,
   GESPEICHERT: 'Gespeichert',
   LOGIN: 'Anmelden',
-  HELP: 'Hilfe'
+  HELP: 'Hilfe',
+  IMPRESSUM: 'Impressum',
+  DATENSCHUTZ: 'Datenschutz',
+  NUTZUNGSBEDINGUNGEN: 'Nutzungsbedingungen',
+  UEBER: 'Über Gut gesagt',
+  EINLADUNG: 'Einladung',
+  ADMIN: 'Admin'
 };
 
 export const ROUTES = {
@@ -78,11 +85,12 @@ export const ROUTES = {
   SEARCH: '/search',
   RESULT: '/result',
   CONTRIBUTE: '/contribute',
-  CONTRIBUTIONS: '/contributions',
+  MEINE_BEITRAEGE: '/contributions',
   RAW_INPUT: '/einwerfen',
   RAW_INPUT_LIST: '/fangkorb',
   DESTILLIEREN: '/destillieren',
   HIER_FEHLT_EINE_ANTWORT: '/hier-fehlt-eine-antwort',
+  BEITRAG: '/beitrag',
   SHARE_TARGET: '/teilen',
   LOGIN: '/login',
   HELP: '/help'

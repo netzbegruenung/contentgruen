@@ -2,6 +2,16 @@
 
 Judgement rules the reviewer checks on every pull request. Each rule says why it exists. Mechanical rules live in checks instead (`scripts/check.sh`, pre-commit).
 
+## Severity of findings
+
+Every review finding carries one of three severities; tracker texts use the German word in brackets.
+
+- **must** („muss“): the PR is not ready to merge until the finding is fixed or the maintainer decides otherwise. An open Fachfrage is always a must.
+- **should** („sollte“): fixed in this PR; deferring it needs a stated reason and the ticket it moves to.
+- **optional**: an improvement the author may leave out; one outside the PR's scope goes to a follow-up ticket instead of into the PR.
+
+Why: "must" decides whether a PR can merge, and a reviewer and an author who read the same word differently either block a finished PR or merge an unfinished one.
+
 ## Domain language
 
 - **Use the glossary term.** Names in code, UI texts, tests, commits and PR texts use the term `GLOSSARY.md` defines and none of its _Avoid_ words for that concept. Why: the glossary is how people, agents and code talk about the same thing; a synonym in one layer splits the concept (see the Einwurf stages, which had four name sets).
@@ -18,6 +28,7 @@ Judgement rules the reviewer checks on every pull request. Each rule says why it
 
 - **Visible numbers are real.** Counters, badges, points and statistics shown to people come from real events; no pre-filled or estimated values, also not in seeds that could reach test or production. Why: the product asks people to trust usage as a quality signal (`docs/VISION.md`, ADR 0004).
 - **Organisation-neutral where it costs nothing.** New code takes texts, names and links specific to Netzbegrünung or the Greens from one place (configuration or a single constant) rather than scattering them; existing code stays until it is touched for another reason. Why: later instances for other organisations are planned (`docs/VISION.md`, Ausbaustufen), and scattered literals make that expensive.
+- **A Titel is a claim, not a topic.** The Titel of a Kommentar or a Hintergrundinfo is exactly one sentence stating a claim with a stance, 3–120 characters (`GLOSSARY.md`, Titel). Questions and topics belong in the Aussage the Beitrag answers. During Destillieren, the Satz field „Was ist der Punkt? Ein Satz.“ is this Titel. Right: „Wärmepumpe lohnt sich auch im Altbau“. Wrong: a question („Lohnt sich Wärmepumpe im Altbau?“), a topic („Wärmepumpen im Altbau“), a label („Faktenhammer“). Bild titles (descriptive, up to 200 characters) and Post titles do not follow this rule. The Titel box of the search card is measured for this length: a change to the limit re-measures the card, and loosening the rule needs a product decision. Why: the product helps people find arguments, and a topic as Titel shows no argument on the card.
 
 ## Public repository
 
@@ -26,8 +37,8 @@ Judgement rules the reviewer checks on every pull request. Each rule says why it
 
 ## Legal texts and data protection
 
-- **Legal texts change through their own ticket.** Changes to the privacy policy, terms of use or imprint are listed in the PR but made in a dedicated ticket that goes through legal review. Why: these texts carry legal weight and need sign-off; a side change in a feature PR skips that.
-- **Data handling matches the privacy policy.** A change that stores, logs or derives personal data either fits the current privacy policy or names the needed change as an open point. Why: the policy promises what the code does.
+- **Legal texts change through their own ticket.** Changes to the privacy policy, terms of use or imprint are listed in the PR under `## Fachfrage` but made in a dedicated ticket that goes through legal review. Why: these texts carry legal weight and need sign-off; a side change in a feature PR skips that.
+- **Data handling matches the privacy policy.** A change that stores, logs or derives personal data either fits the current privacy policy or names the needed change as an item under `## Fachfrage`. Why: the policy promises what the code does, and only the maintainer can have it extended.
 
 ## Documentation
 

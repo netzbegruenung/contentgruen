@@ -14,6 +14,7 @@ import {
   UnbeantworteteAussagenResponse,
 } from './dtos/statementDtos';
 import { environment } from '../../environments/environment';
+import { nurLesend } from '../auth/cache.interceptor';
 import { LoggingService } from './logging.service';
 import { AUSSAGE_PARAM, SUCHTEXT_PARAM } from '../shared/formular-adresse';
 
@@ -69,7 +70,7 @@ export class StatementService {
     };
 
     this.logger.debug('Searching for statements:', request);
-    return this.http.post<StatementSearchResponse>(this.searchStatementsApiUrl, request).pipe(
+    return this.http.post<StatementSearchResponse>(this.searchStatementsApiUrl, request, nurLesend()).pipe(
       tap(response => {
         this.logger.debug('Statement search results:', response);
       })

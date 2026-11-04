@@ -1,0 +1,52 @@
+/*
+ * Tabs als sekundaerer Ansichts-Umschalter: graue Kontur, gleich breite Segmente,
+ * gewaehlt ein Tanne-Hauch mit Tanne-Text und Unterstrich. Gefuelltes Gruen bleibt
+ * Aktionen vorbehalten (#512). Derselbe Stil wie Kurz/Mittel/Lang auf der Karte und
+ * die Ergebnis-Tabs. Fangkorb (Arbeitslisten) und "Meine Beitraege" binden die Datei
+ * in ihre styleUrls ein und ergaenzen nur, was bei ihnen anders ist. Die
+ * Tastenbedienung liegt in shared/tab-tasten.ts.
+ */
+.tabs {
+  display: grid;
+  /* Halb und halb; minmax(0, ...) laesst einen langen Namen nicht ueber die Spalte
+     hinauswachsen (im Fangkorb passt "Ausformulieren" auch bei 320 px ungekuerzt). */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--divider-color);
+  border-radius: var(--border-radius-medium);
+  background: var(--bg-card);
+}
+
+.tab {
+  min-width: 0;
+  min-height: 48px;
+  padding: 4px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tab + .tab {
+  border-left: 1px solid var(--divider-color);
+}
+
+.tab.aktiv {
+  background: var(--auswahl-grund);
+  color: var(--primary-dark);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--primary-dark);
+}
+
+.tab:not(.aktiv):hover {
+  background: var(--hover-bg);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--primary-dark);
+  outline-offset: -2px;
+}

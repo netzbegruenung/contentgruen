@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional, TYPE_CHECKING
 from fastapi import Depends, Header, HTTPException
 
@@ -16,6 +17,8 @@ from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
+from services.beitrag_laden import BeitragLader, beitrag_laden
+from repositories.interfaces.content_repository import IContentRepository
 from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
@@ -34,6 +37,9 @@ from repositories.suchen_ohne_treffer_repository import (
 )
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
+from repositories.einladung_repository import get_einladung_repository
+from services.einladung_service import EinladungService
+from infrastructure.keycloak_konten import KeycloakKonten
 from services.bilanz_service import BilanzService
 from repositories.search_tracking_repository import get_search_tracking_repository
 from repositories.usage_tracking_repository import get_usage_repository
@@ -42,12 +48,13 @@ from services.gegenlesen.gegenlesen_service import (
     GegenlesenService,
     lade_statt_sag_liste,
 )
+from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from services.loeschfristen_service import LoeschfristenService
 from services.muster_hinweise_service import MusterHinweiseService
 from services.punkte_service import PunkteService
-from services.moderation_service import get_moderation_service
+from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
-from repositories.raw_input_repository import get_raw_input_repository
+from repositories.einwurf_repository import get_einwurf_repository
 from repositories.sperre_repository import get_sperre_repository
 from core.logging import get_logger
 
@@ -64,7 +71,6 @@ generic_text_service_instance: Optional[GenericTextService] = None
 post_service_instance: Optional["BaseContentService"] = None
 # Registry-driven content type (Image): same pattern as Post.
 image_service_instance: Optional["BaseContentService"] = None
-caption_suggestion_service_instance: Optional["CaptionSuggestionService"] = None
 content_orchestrator_instance: Optional[ContentOrchestrator] = None
 voting_service_instance: Optional[VotingService] = None
 
@@ -157,7 +163,7 @@ def get_bilanz_service(
     return BilanzService(
         get_search_tracking_repository(),
         get_usage_repository(),
-        settings.usage_retention_days if settings.enable_usage_cleanup else None,
+        settings.usage_retention_days if settings.enable_bereinigungsjob else None,
     )
 
 
@@ -211,6 +217,32 @@ def get_muster_hinweise_service() -> MusterHinweiseService:
     return MusterHinweiseService(get_muster_hinweis_repository())
 
 
+def _keycloak_konten() -> Optional[KeycloakKonten]:
+    """Ohne Zugang zur Keycloak-Admin-Schnittstelle None; so laeuft es im Dev-Stack."""
+    if not (
+        settings.keycloak_url
+        and settings.keycloak_admin_client_id
+        and settings.keycloak_admin_client_secret
+    ):
+        return None
+    return KeycloakKonten(
+        basis_url=settings.keycloak_url,
+        realm=settings.keycloak_realm,
+        client_id=settings.keycloak_admin_client_id,
+        client_secret=settings.keycloak_admin_client_secret,
+        app_client_id=settings.keycloak_app_client_id,
+        app_url=settings.app_url,
+    )
+
+
+def get_einladung_service() -> EinladungService:
+    """
+    Ohne Zugang zur Keycloak-Admin-Schnittstelle lassen sich Einladungen verwalten,
+    aber nicht einloesen (503).
+    """
+    return EinladungService(get_einladung_repository(), _keycloak_konten())
+
+
 _gegenlesen_service: Optional[GegenlesenService] = None
 
 
@@ -238,24 +270,70 @@ def get_gegenlesen_service() -> GegenlesenService:
     return _gegenlesen_service
 
 
+_kuerzungsvorschlag_service: Optional[KuerzungsvorschlagService] = None
+
+
+def get_kuerzungsvorschlag_service() -> KuerzungsvorschlagService:
+    """Einmal je Prozess; teilt sich das Sprachmodell mit dem Gegenlesen (#403)."""
+    global _kuerzungsvorschlag_service
+    if _kuerzungsvorschlag_service is None:
+        _kuerzungsvorschlag_service = KuerzungsvorschlagService(
+            werkzeuge=SPRACHWERKZEUGE
+        )
+    return _kuerzungsvorschlag_service
+
+
+def get_moderation_service() -> ModerationService:
+    """
+    Der Moderationsdienst ueber die Repository-Singletons. Die Repositories, die erst
+    das endgueltige Entfernen braucht (Stimmen, Einwuerfe, Sperren), holt der Dienst
+    selbst, wenn es so weit ist; vorher oeffnet er keine Verbindung dafuer.
+    """
+    return ModerationService(
+        report_repo=get_content_report_repository(),
+        moderation_repo=get_moderation_repository(),
+    )
+
+
 def get_loeschfristen_service() -> LoeschfristenService:
     return LoeschfristenService(
         get_content_report_repository(),
-        get_raw_input_repository(),
+        get_einwurf_repository(),
         get_moderation_repository(),
         get_moderation_service(),
         get_sperre_repository(),
+        # Ohne Zugang zur Keycloak-Admin-Schnittstelle bleiben Konten im Realm unberuehrt.
+        _keycloak_konten(),
     )
+
+
+def get_content_repository(
+    settings: Settings = Depends(get_settings),
+) -> IContentRepository:
+    """Das aggregierte Content-Repository: liest und loescht jeden Beitragstyp."""
+    return QdrantRepositoryFactory().create_content_repository(settings)
+
+
+def get_beitrag_laden(settings: Settings = Depends(get_settings)) -> BeitragLader:
+    """
+    ``beitrag_laden`` ueber das aggregierte Repository, fuer Nutzung und Stimmen.
+
+    Das Repository entsteht erst beim Laden, nicht beim Aufloesen der Dependency:
+    Scheitert es, faengt das ``try`` des Endpunkts den Fehler wie einen Ausfall des
+    Suchindex (die Stimme zaehlt trotzdem, die Nutzung antwortet mit ihrem 500).
+    """
+
+    async def laden(content_id: uuid.UUID):
+        return await beitrag_laden(content_id, get_content_repository(settings))
+
+    return laden
 
 
 def get_beitrag_loeschen_service(
-    settings: Settings = Depends(get_settings),
+    repository: IContentRepository = Depends(get_content_repository),
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
-    return BeitragLoeschenService(
-        QdrantRepositoryFactory().create_content_repository(settings),
-        get_moderation_repository(),
-    )
+    return BeitragLoeschenService(repository, get_moderation_repository())
 
 
 def get_commentary_service() -> CommentaryService:
@@ -335,31 +413,6 @@ def get_image_service():
             REGISTRY[ContentType.IMAGE], get_settings(), QdrantRepositoryFactory()
         )
     return image_service_instance
-
-
-def get_caption_suggestion_service():
-    """
-    Dependency for the CaptionSuggestionService (singleton).
-
-    Raises ValueError if OPENAI_API_KEY / SEMANTIC_SEARCH_OPENAI_API_KEY is unset,
-    so misconfiguration is caught at the first request rather than at startup.
-    The singleton avoids creating a new AsyncOpenAI connection pool per request.
-    """
-    global caption_suggestion_service_instance
-    if caption_suggestion_service_instance is None:
-        from services.vision.caption_suggestion_service import CaptionSuggestionService
-
-        s = get_settings()
-        if not s.openai_api_key:
-            raise ValueError(
-                "openai_api_key is not configured. "
-                "Set OPENAI_API_KEY or SEMANTIC_SEARCH_OPENAI_API_KEY."
-            )
-        caption_suggestion_service_instance = CaptionSuggestionService(
-            api_key=s.openai_api_key,
-            model=s.openai_vision_model,
-        )
-    return caption_suggestion_service_instance
 
 
 def get_voting_service() -> VotingService:

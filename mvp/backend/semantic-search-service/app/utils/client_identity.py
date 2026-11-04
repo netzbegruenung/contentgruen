@@ -2,9 +2,9 @@
 Kurzlebiger Client-Schluessel fuer Rate-Limits auf unauthentifizierten Routen.
 
 Hintergrund: Das Rate-Limit auf POST /api/v1/moderation/report war auf
-X-Session-Id gekeyed. Den Header erzeugt die SPA selbst und legt ihn in
-localStorage ab -- er ist frei waehlbar und wurde nirgends geprueft. Wer je
-Anfrage einen neuen Wert schickt, hat kein Limit. Extern nachgewiesen: zwoelf
+X-Session-Id gekeyed. Den Header erzeugte die SPA bis #446 selbst und legte ihn
+in localStorage ab -- er war frei waehlbar und wurde nirgends geprueft. Wer je
+Anfrage einen neuen Wert schickte, hatte kein Limit. Extern nachgewiesen: zwoelf
 Meldungen in derselben Sekunde von einer Adresse, jede mit anderem
 X-Session-Id, alle 200.
 
@@ -31,7 +31,6 @@ sie fluechtig und pseudonymisiert.
 import hashlib
 import ipaddress
 import secrets
-import uuid
 from typing import Optional
 
 from fastapi import Request
@@ -70,7 +69,7 @@ def get_client_address(request: Request) -> Optional[str]:
     return None
 
 
-def _anschluss(address: str) -> str:
+def anschluss(address: str) -> str:
     """
     Die Einheit, die ein Kontingent bekommt: bei IPv4 die Adresse, bei IPv6 ihr /64.
 
@@ -99,42 +98,11 @@ def derive_client_key(request: Request) -> str:
 
     Gibt "unknown" zurueck, wenn keine Adresse zu ermitteln ist -- solche
     Aufrufe teilen sich dann ein Kontingent, was die sichere Richtung ist.
-    IPv6 wird vorher auf das /64 gekuerzt (_anschluss).
+    IPv6 wird vorher auf das /64 gekuerzt (anschluss).
     """
     address = get_client_address(request)
     if not address:
         return "ip:unknown"
 
-    digest = hashlib.sha256(_SALT + _anschluss(address).encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(_SALT + anschluss(address).encode("utf-8")).hexdigest()
     return f"ip:{digest[:16]}"
-
-
-def normalize_session_id(session_id: Optional[str]) -> Optional[str]:
-    """
-    Nimmt eine clientseitige Session-Kennung an, wenn sie wie eine aussieht.
-
-    Was diese Pruefung *nicht* leistet: Sicherheit. Der Wert kommt vom Client,
-    und wer ihn wechseln will, erzeugt eben gueltige UUIDs -- seit dieser
-    Aenderung erzeugt die SPA selbst welche. Deshalb haengt seit dem Umbau von
-    /moderation/report auch keine Entscheidung mehr an diesem Wert.
-
-    Was sie leistet, ist Hygiene: der Wert landet in einer Spalte, die anonyme
-    Meldungen zusammenhaelt und im Moderationsposteingang angezeigt wird. Ohne
-    Pruefung kann dort auf einer Route ohne Anmeldung beliebiger Text mit bis zu
-    255 Zeichen stehen.
-
-    Ein unpassender Wert wird verworfen, nicht abgewiesen: eine kaputte Kennung
-    darf niemanden seine Meldung kosten (DSA Art. 16). Der Aufrufer wird dann
-    behandelt, als haette er gar keine geschickt.
-    """
-    if not session_id:
-        return None
-
-    candidate = session_id.strip()
-    try:
-        # Akzeptiert die kanonische Form mit Bindestrichen ebenso wie ohne.
-        uuid.UUID(candidate)
-    except (ValueError, AttributeError):
-        return None
-
-    return candidate

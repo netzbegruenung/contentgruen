@@ -101,7 +101,7 @@
 @mixin success-color-pulse {
   position: relative;
   &.success {
-    background-color: var(--success-color, #4caf50) !important;
+    background-color: var(--success-color) !important;
     color: white !important;
     animation: copySuccess 0.4s ease-out;
 

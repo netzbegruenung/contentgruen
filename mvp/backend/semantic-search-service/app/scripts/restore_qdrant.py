@@ -21,11 +21,14 @@ from core.config import Settings
 # Use simple logging for standalone script (not application logging)
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+from core.logging import SafeFormatter
+
+# Tracebacks ohne Fehlertext wie in der Anwendung (#422).
+_handler = logging.StreamHandler()
+_handler.setFormatter(
+    SafeFormatter("%(asctime)s | %(levelname)-8s | %(message)s", "%Y-%m-%d %H:%M:%S")
 )
+logging.basicConfig(level=logging.INFO, handlers=[_handler])
 logger = logging.getLogger(__name__)
 
 
@@ -82,10 +85,12 @@ class QdrantRestore:
                 logger.warning(f"Unexpected response format: {result}")
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to upload and recover snapshot: {e}")
+            logger.error(f"Failed to upload and recover snapshot: {type(e).__name__}")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error during upload and recovery: {e}")
+            logger.error(
+                f"Unexpected error during upload and recovery: {type(e).__name__}"
+            )
             raise
 
     def verify_restore(self):
@@ -110,7 +115,7 @@ class QdrantRestore:
             return True
 
         except Exception as e:
-            logger.error(f"Verification failed: {e}")
+            logger.error(f"Verification failed: {type(e).__name__}")
             return False
 
     def run(self, snapshot_path: str):
@@ -151,7 +156,7 @@ class QdrantRestore:
                 sys.exit(1)
 
         except Exception as e:
-            logger.error(f"Restore failed: {e}", exc_info=True)
+            logger.error(f"Restore failed: {type(e).__name__}", exc_info=True)
             sys.exit(1)
 
 

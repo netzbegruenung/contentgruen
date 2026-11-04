@@ -96,6 +96,21 @@ def clean_singleton_state():
 
 
 @pytest.fixture(autouse=True)
+def frischer_tagesschluessel(monkeypatch):
+    """
+    Je Test ein neuer Tagesschluessel der Besucher (utils/besucher_pseudonym.py).
+
+    Der prozessweite kennt sonst schon den Tag eines frueheren Tests: Ein Test mit
+    einem frueheren festen Datum bekaeme dann bei jedem Aufruf einen Einmalschluessel.
+    """
+    import utils.besucher_pseudonym as besucher_pseudonym
+
+    monkeypatch.setattr(
+        besucher_pseudonym, "_TAGESSCHLUESSEL", besucher_pseudonym.Tagesschluessel()
+    )
+
+
+@pytest.fixture(autouse=True)
 def anzeigenamen_ohne_datenbank(monkeypatch):
     """
     Der AnzeigenameService haengt an jeder angemeldeten Antwort. Ohne diesen Ersatz
@@ -175,10 +190,6 @@ def create_base_content_fields(**overrides):
         "most_similar_similarity_score": None,
         "most_similar_content_id": None,
         "report_count": 0,
-        "is_archived": False,
-        "report_flagged": False,
-        "rejection_reason": None,
-        "block_reason": None,
     }
     base_fields.update(overrides)
     return base_fields

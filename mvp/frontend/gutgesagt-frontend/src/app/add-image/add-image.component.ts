@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { typBeschreibung } from '../shared/content-type-registry';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ImageService } from '../services/image.service';
@@ -14,7 +14,7 @@ import { ContentOrigin } from '../services/dtos/content-origin-enum';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 
 @Component({
   selector: 'app-add-image',
@@ -24,7 +24,7 @@ import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
     CommonModule,
     FormsModule,
     BeitragskarteComponent,
-    RouterLink,
+    Cc0HinweisComponent,
   ],
   templateUrl: './add-image.component.html',
   styleUrls: ['./add-image.component.scss'],
@@ -33,7 +33,6 @@ export class AddImageComponent implements OnDestroy {
   /** Der Satz zum Typ aus der Registry, wie auf /contribute. */
   readonly typBeschreibung = typBeschreibung('image');
 
-  readonly consentHinweis = CONSENT_HINWEIS;
   @Output() success = new EventEmitter<string>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -57,12 +56,6 @@ export class AddImageComponent implements OnDestroy {
   imageLoading = false;
   imageSaved = false;
   imageError: string | null = null;
-  captionLoading = false;
-  captionError: string | null = null;
-  /** Die Unterschrift kam als KI-Vorschlag; gespeichert wird sie erst mit „Bild speichern“ (ADR 0003). */
-  vorschlagEingesetzt = false;
-  /** Der eingesetzte Vorschlag, um ihn beim Wechsel der Bild-URL zu erkennen. */
-  private vorschlag: string | null = null;
   responseId: string = '';
 
   constructor(
@@ -81,27 +74,7 @@ export class AddImageComponent implements OnDestroy {
       this.updatePreview(values);
     });
 
-    // Ein Vorschlag beschreibt das Bild, fuer das er geholt wurde. Wechselt die URL und
-    // steht er noch unbearbeitet im Feld, kommt er heraus, statt beim neuen Bild zu landen.
-    this.imageForm
-      .get('image_url')!
-      .valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        if (this.vorschlag === null) return;
-        const unterschrift = this.imageForm.get('caption')!;
-        if (unterschrift.value === this.vorschlag) {
-          unterschrift.setValue('');
-          this.vorschlagEingesetzt = false;
-        }
-        this.vorschlag = null;
-      });
-
     this.updatePreview(this.imageForm.value);
-  }
-
-  get imageUrlInvalid(): boolean {
-    const ctrl = this.imageForm.get('image_url');
-    return !ctrl || ctrl.invalid || !ctrl.value?.trim();
   }
 
   updatePreview(values: any): void {
@@ -115,7 +88,6 @@ export class AddImageComponent implements OnDestroy {
         title: values.title || 'Titel eingeben...',
         text: values.caption || 'Bildunterschrift eingeben...',
         image_url: values.image_url || '',
-        description_model: null,
         references: [],
         created: new Date().toISOString(),
         last_modified: new Date().toISOString(),
@@ -130,46 +102,16 @@ export class AddImageComponent implements OnDestroy {
         most_similar_similarity_score: 0,
         most_similar_content_id: '',
         report_count: 0,
-        is_archived: false,
-        report_flagged: false,
-        rejection_reason: '',
-        block_reason: '',
         usage_count: 0,
         references_count: 0,
       },
     } as ImageSearchResult;
   }
 
-  suggestCaption(): void {
-    const imageUrl = this.imageForm.get('image_url')?.value?.trim();
-    if (!imageUrl) return;
-
-    this.captionLoading = true;
-    this.captionError = null;
-
-    this.imageService.suggestCaption({ image_url: imageUrl }).subscribe({
-      next: (response) => {
-        this.imageForm.get('caption')?.setValue(response.suggested_caption);
-        this.vorschlag = response.suggested_caption;
-        this.vorschlagEingesetzt = true;
-        this.captionLoading = false;
-      },
-      error: (error) => {
-        this.logger.error('Caption suggestion failed', error);
-        this.captionError =
-          'Vorschlag konnte nicht erstellt werden. Bitte gib eine Beschriftung manuell ein.';
-        this.captionLoading = false;
-      },
-    });
-  }
-
   reset(): void {
     this.responseId = '';
     this.imageSaved = false;
     this.imageError = null;
-    this.captionError = null;
-    this.vorschlagEingesetzt = false;
-    this.vorschlag = null;
     this.imageForm.reset();
     this.updatePreview(this.imageForm.value);
   }

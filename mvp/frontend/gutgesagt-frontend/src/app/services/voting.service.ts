@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { nurLesend } from '../auth/cache.interceptor';
 import { LoggingService } from './logging.service';
 
 export interface VoteRequest {
@@ -134,7 +135,8 @@ export class VotingService {
   getUserVotesBatch(contentIds: string[]): Observable<{ [key: string]: string }> {
     return this.http.post<{ [key: string]: string }>(
       `${this.apiUrl}/votes/batch`,
-      contentIds
+      contentIds,
+      nurLesend()
     ).pipe(
       catchError(error => {
         this.loggingService.logError('Failed to get user votes batch', error);

@@ -21,15 +21,10 @@ from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from dtos.beitrag import PostResponse, PostTreffer
+from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
 
 
 # Retrieve a single post by its UUID
@@ -47,11 +42,11 @@ async def get_by_id(
     except HTTPException:
         raise
     except ValueError as e:
-        logger.info(f"Post with id {post_id} not found: {e}")
+        logger.info(f"Post with id {post_id} not found: {type(e).__name__}")
         raise HTTPException(status_code=404, detail=f"Post with id {post_id} not found")
     except Exception as e:
-        logger.error(f"Error fetching post with id {post_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error fetching post with id {post_id}: {type(e).__name__}")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieve all posts from the index
@@ -73,8 +68,8 @@ async def get_all(
             total_records_count=await post_service.count(),
         )
     except Exception as e:
-        logger.error(f"Error in /getAll: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in /getAll: {type(e).__name__}")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Search posts in the post index using similarity search
@@ -88,8 +83,8 @@ async def search_post(
         results = await post_service.search(request.query_text, request.limit)
         return PostSearchResponse(results=als_responses(PostTreffer, results, aufrufer))
     except Exception as e:
-        logger.error(f"Error in search_post: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in search_post: {type(e).__name__}")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Add a new post to the post index
@@ -128,11 +123,14 @@ async def add_post(
 
     except HTTPException:
         raise
+    except Validierungsfehler as e:
+        logger.error(f"Validation error in add_post: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
-        logger.error(f"Validation error in add_post: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Validation error in add_post: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
     except Exception as e:
-        logger.error(f"Unexpected error in add_post: {e}")
+        logger.error(f"Unexpected error in add_post: {type(e).__name__}")
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while adding the post. Please try again later.",

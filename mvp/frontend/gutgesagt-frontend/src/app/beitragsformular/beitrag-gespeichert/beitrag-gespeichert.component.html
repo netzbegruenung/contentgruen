@@ -33,9 +33,16 @@
             <button mat-raised-button type="button" class="primaer naechster-einwurf" (click)="naechsterEinwurf()">
                 Nächster Einwurf
             </button>
-            <button mat-stroked-button type="button" class="zum-fangkorb" (click)="zumFangkorb()">
-                Zum Fangkorb
+            <!-- Nur der eigene Einwurf steht unter "Meine Einwuerfe" (F1 in #511) -->
+            <button *ngIf="zuMeinenEinwuerfen; else zumFangkorbKnopf" mat-stroked-button type="button"
+                    class="zu-meinen-einwuerfen" (click)="zuMeinenEinwuerfenGehen()">
+                Zu meinen Einwürfen
             </button>
+            <ng-template #zumFangkorbKnopf>
+                <button mat-stroked-button type="button" class="zum-fangkorb" (click)="zumFangkorb()">
+                    Zum Fangkorb
+                </button>
+            </ng-template>
         </ng-container>
         <button *ngSwitchCase="'suche'" mat-raised-button type="button" class="primaer zur-suche"
                 (click)="zurueckZurSuche()">

@@ -25,7 +25,7 @@
   overflow: hidden;
   background: var(--bg-card);
   color: var(--text-primary);
-  border-radius: 12px;
+  border-radius: var(--border-radius-large);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
@@ -49,6 +49,12 @@
 .karte--voll {
   width: 450px;
   max-width: 100%;
+}
+
+// Vorschau im Formular: so breit wie die Spalte, hoechstens wie im Karussell (#512)
+.karte--vorschau {
+  width: 100%;
+  max-width: 450px;
 }
 
 // Kopf: nur das Band, so breit wie sein Platz, der Titel ohne Mindesthoehe
@@ -134,7 +140,7 @@
 }
 
 .badge-neu {
-  background: var(--primary-main);
+  background: var(--primary-dark);
   color: white;
 }
 
@@ -429,32 +435,42 @@
   line-height: 1.4;
 }
 
-// Kurz/Mittel/Lang - auch am Handy, dort mit groesserer Tippflaeche (#355)
+// Kurz/Mittel/Lang - auch am Handy, dort mit 44 px Tippflaeche (#355). Ansichts-
+// Umschalter wie Fangkorb- und Ergebnis-Tabs: graue Kontur, gewaehlt Tanne-Hauch mit
+// Tanne-Text und Unterstrich (#512). Farben ueber die Tokens von Material.
 
 .textlaenge {
   display: flex;
   width: 100%;
   overflow: hidden;
   border: 1px solid var(--divider-color);
-  border-radius: var(--border-radius-small);
+  border-radius: var(--border-radius-medium);
+  --mat-button-toggle-text-color: var(--text-secondary);
+  --mat-button-toggle-selected-state-text-color: var(--primary-dark);
+  --mat-button-toggle-selected-state-background-color: var(--auswahl-grund);
+  --mat-button-toggle-divider-color: var(--divider-color);
 
   ::ng-deep .mat-button-toggle {
     flex: 1 1 0;
   }
 
   ::ng-deep .mat-button-toggle-button {
-    height: 28px;
+    height: 32px;
     font-size: 13px;
   }
 
   ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
     padding: 0;
-    font-weight: 600;
-    line-height: 28px;
+    font-weight: 500;
+    line-height: 32px;
   }
 
-  ::ng-deep .mat-button-toggle-checked .mat-button-toggle-button {
-    background-color: rgba(0, 0, 0, 0.08);
+  ::ng-deep .mat-button-toggle-checked {
+    box-shadow: inset 0 -2px 0 var(--primary-dark);
+  }
+
+  ::ng-deep .mat-button-toggle-checked .mat-button-toggle-label-content {
+    font-weight: 700;
   }
 }
 
@@ -513,11 +529,11 @@
   }
 
   .textlaenge ::ng-deep .mat-button-toggle-button {
-    height: 40px;
+    height: 44px;
   }
 
   .textlaenge ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
-    line-height: 40px;
+    line-height: 44px;
   }
 
   .karte-meta {

@@ -63,9 +63,9 @@ mode too, because the pipeline starts no BFF (`stack.pflicht_ausser_in_ci`).
 `tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL, or,
 under `api/`, to the running BFF.
 A test that mocks the services belongs in `tests/unit/api/`: `TestClient` with
-`dependency_overrides` for services the router takes via `Depends`; where the router
-calls the getter directly (moderation: `get_moderation_service()`), patch that name in
-the router module instead, an override would not take effect. With a running stack no integration test is skipped; a new skip
+`dependency_overrides` for services the router takes via `Depends`. Where a router still
+calls a getter directly, patch that name in the router module instead, an override would
+not take effect. With a running stack no integration test is skipped; a new skip
 needs a reason that names what is missing.
 
 ### Integration Tests Against PostgreSQL
@@ -77,7 +77,8 @@ Suchereignis (`test_suchereignisse.py`), the shuffled rewrite of closed days
 (`test_suchereignisse_mischen.py`), "Suchen ohne Treffer"
 (`test_suchen_ohne_treffer.py`), the Rückmeldung on usage (`test_rueckmeldung_nutzung.py`),
 the deletion command (`test_loeschkommando.py`), Meldungen with each Meldegrund
-(`test_meldegrund.py`), Sperren with Sperrgrund and Widerspruch
+(`test_meldegrund.py`), the Angaben nach Art. 16 DSA at a Meldung
+(`test_meldung_angaben.py`), Sperren with Sperrgrund and Widerspruch
 (`test_sperren_postgres.py`) and the Löschfristen (`test_loeschfristen.py`, its Qdrant
 part needs a running Qdrant).
 
@@ -88,7 +89,7 @@ pytest tests/integration/test_migrationen.py tests/integration/test_suchereignis
        tests/integration/test_suchereignisse_mischen.py \
        tests/integration/test_suchen_ohne_treffer.py tests/integration/test_rueckmeldung_nutzung.py \
        tests/integration/test_loeschkommando.py tests/integration/test_meldegrund.py \
-       tests/integration/test_sperren_postgres.py tests/integration/test_loeschfristen.py
+       tests/integration/test_meldung_angaben.py tests/integration/test_sperren_postgres.py tests/integration/test_loeschfristen.py
 ```
 
 - **Database:** without further setup the run starts a throwaway container with
@@ -239,6 +240,7 @@ pytest -x              # Stop on first failure
 
 ### Do
 - Use dependency injection fixtures
+- In service tests, mock the repository interfaces (`repositories/interfaces/`)
 - Follow AAA pattern (Arrange, Act, Assert)
 - Test both success and failure scenarios
 - Use descriptive test names: `test_search_with_empty_query_returns_empty_list`

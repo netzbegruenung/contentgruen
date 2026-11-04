@@ -9,9 +9,10 @@ import { DestillierUebergabeService } from './destillier-uebergabe.service';
 import { SatzResponse, Einwurf, EinwurfService } from '../services/einwurf.service';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
-import { FILTER_SCHLUESSEL, filterLaden } from '../raw-input-list/fangkorb-filter';
+import { FILTER_SCHLUESSEL, filterLaden } from '../fangkorb/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
+import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 
 function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
   return {
@@ -137,19 +138,10 @@ describe('DestillierenComponent', () => {
       expect(text()).toContain('example.org/post');
     });
 
-    it('verlinkt die Nutzungsbedingungen ueber den Knoepfen, mit dem Hinweis aufs Speichern beim Tippen', async () => {
+    it('zeigt über den Knöpfen den CC0-Hinweis mit dem Wortlaut fürs Speichern beim Tippen und beiden Links (#415)', async () => {
       await erstellen('id-1');
 
-      const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
-        'section.satz a[href="/nutzungsbedingungen"]',
-      );
-      expect(link).toBeTruthy();
-      expect(link!.target).toBe('_blank');
-      const hinweis = link!.closest('p')!;
-      expect(hinweis.classList).toContain('submit-hint');
-      expect(hinweis.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        `${CONSENT_HINWEIS_SATZ.vorLink}${CONSENT_HINWEIS_SATZ.link}${CONSENT_HINWEIS_SATZ.nachLink}`,
-      );
+      const hinweis = erwarteCc0Hinweis(fixture.nativeElement.querySelector('section.satz'), CONSENT_HINWEIS_SATZ);
       expect(hinweis.nextElementSibling!.classList).toContain('knoepfe');
     });
 
@@ -477,6 +469,16 @@ describe('DestillierenComponent', () => {
 
       (hinweis.querySelector('.beitrag-ansehen') as HTMLButtonElement).click();
       expect(beitragAnsehen.oeffnen).toHaveBeenCalledOnceWith('k-1', 'commentary');
+    });
+
+    it('zeigt keinen Hinweis, wenn der verknuepfte Beitrag gesperrt oder geloescht ist (#507)', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+      const weg = ausformuliert();
+      weg.links = weg.links!.map((link) => ({ ...link, zustand: 'gesperrt' as const }));
+
+      await erstellen('id-1', weg);
+
+      expect(fixture.nativeElement.querySelector('.schon-verknuepft')).toBeNull();
     });
 
     it('zeigt ohne verknuepften Beitrag keinen Hinweis', async () => {

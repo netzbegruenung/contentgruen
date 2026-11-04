@@ -25,7 +25,8 @@ import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub'
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { KuerzungsvorschlagComponent } from '../beitragsformular/kuerzungsvorschlag/kuerzungsvorschlag.component';
+import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { environment } from '../../environments/environment';
 
 describe('AddCommentaryComponent', () => {
@@ -140,15 +141,8 @@ describe('AddCommentaryComponent', () => {
       expect(input.placeholder).toBe('Was ist der Punkt? Ein Satz.');
     });
 
-    it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
-      const link: HTMLAnchorElement | null = seite().querySelector('a[href="/nutzungsbedingungen"]');
-
-      expect(link).toBeTruthy();
-      expect(link!.target).toBe('_blank');
-      expect(link!.closest('p')!.classList).toContain('submit-hint');
-      expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
-      );
+    it('zeigt über dem Absende-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
+      erwarteCc0Hinweis(seite());
     });
 
     it('beschriftet den Knopf mit "Kommentar speichern" und zeigt kein Info-Icon an der Vorschau', () => {
@@ -453,7 +447,7 @@ describe('AddCommentaryComponent', () => {
 
   describe('Dublette', () => {
     it('Dublette ohne Aussage: bleibt im Formular, zeigt den Hinweis mit Link, meldet keinen Erfolg', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
       const erfolg = spyOn(component.success, 'emit');
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
       ausfuellen();
@@ -476,7 +470,7 @@ describe('AddCommentaryComponent', () => {
     it('fremde Dublette mit Aussage: nennt den anderen Autor und den Weg über die Karte', fakeAsync(() => {
       // Keine Aussage in der Antwort, obwohl eine mitgeschickt wurde: der vorhandene
       // Kommentar ist von jemand anderem und wurde nicht verknuepft (verknuepft: false).
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
       ausfuellen();
       aussageAusAdresse('Wärmepumpen sind zu teuer');
@@ -495,7 +489,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('eigene Dublette mit Aussage: verknuepft noch nichts, bietet Nehmen und Trotzdem speichern an', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, vorhanden_eigen: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false });
       const erfolg = spyOn(component.success, 'emit');
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
       ausfuellen();
@@ -520,11 +514,10 @@ describe('AddCommentaryComponent', () => {
 
     it('Nehmen mit Aussage: schickt vorhanden_nehmen und meldet den vorhandenen, jetzt verknuepft', fakeAsync(() => {
       const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
-        of({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
         of({
           id: 'k-alt',
-          dublette: true,
-          vorhanden_eigen: true,
+          vorhanden: { eigen: true },
           statement_id: ID,
           statement_text: 'Wärmepumpen sind zu teuer',
           verknuepft: true,
@@ -558,8 +551,8 @@ describe('AddCommentaryComponent', () => {
 
     it('Nehmen scheitert beim Verknuepfen: sagt es, die Entscheidung bleibt offen', fakeAsync(() => {
       spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
-        of({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
-        of({ id: 'k-alt', dublette: true, vorhanden_eigen: true, statement_text: null, verknuepft: false } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: { eigen: true }, statement_text: null, verknuepft: false } as AddCommentaryResponse),
       );
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
       ausfuellen();
@@ -580,7 +573,7 @@ describe('AddCommentaryComponent', () => {
 
     it('Nehmen scheitert mit 422: zeigt die Meldung des Backends', fakeAsync(() => {
       spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
-        of({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
         throwError(
           () =>
             new HttpErrorResponse({
@@ -607,7 +600,7 @@ describe('AddCommentaryComponent', () => {
 
     it('Nehmen, aber der vorhandene ist weg: sagt es und laesst neu speichern', fakeAsync(() => {
       spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
-        of({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
         throwError(() => new HttpErrorResponse({ status: 409 })),
       );
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
@@ -630,12 +623,11 @@ describe('AddCommentaryComponent', () => {
 
     it('Nehmen findet inzwischen einen anderen vorhandenen: zeigt erst ihn, ohne Entscheidung', fakeAsync(() => {
       const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
-        of({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
-        of({ id: 'k-anderer', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
+        of({ id: 'k-anderer', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
         of({
           id: 'k-anderer',
-          dublette: true,
-          vorhanden_eigen: true,
+          vorhanden: { eigen: true },
           statement_text: 'Wärmepumpen sind zu teuer',
           verknuepft: true,
         } as AddCommentaryResponse),
@@ -664,12 +656,11 @@ describe('AddCommentaryComponent', () => {
 
     it('nach Trotzdem speichern ein anderer eigener vorhandener: Nehmen schickt nur vorhanden_nehmen', fakeAsync(() => {
       const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
-        of({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
-        of({ id: 'k-anderer', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
+        of({ id: 'k-anderer', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
         of({
           id: 'k-anderer',
-          dublette: true,
-          vorhanden_eigen: true,
+          vorhanden: { eigen: true },
           statement_text: 'Wärmepumpen sind zu teuer',
           verknuepft: true,
         } as AddCommentaryResponse),
@@ -694,7 +685,7 @@ describe('AddCommentaryComponent', () => {
     it('waehrend Nehmen: Knoepfe gesperrt, Speichern dreht sich nicht', fakeAsync(() => {
       const verknuepfen = new Subject<AddCommentaryResponse>();
       spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
-        of({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
         verknuepfen,
       );
       ausfuellen();
@@ -713,7 +704,7 @@ describe('AddCommentaryComponent', () => {
       expect((seite().querySelector('.dublette-trotzdem') as HTMLButtonElement).disabled).toBeTrue();
       expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeTrue();
 
-      verknuepfen.next({ id: 'k-alt', dublette: true, vorhanden_eigen: true, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
+      verknuepfen.next({ id: 'k-alt', vorhanden: { eigen: true }, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
       verknuepfen.complete();
       flush();
       expect(component.nimmt).toBeFalse();
@@ -721,7 +712,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('Nehmen mit zu kurzer Aussage: gesperrt, keine Anfrage', fakeAsync(() => {
-      const speichern = speichernMit({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      const speichern = speichernMit({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false });
       ausfuellen();
       aussageAusAdresse('Wärmepumpen sind zu teuer');
       component.speichern();
@@ -742,7 +733,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('nennt den Titel des vorhandenen Kommentars und bietet Zustimmen und Trotzdem speichern an', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_titel: 'Wärmepumpen rechnen sich auch im Altbau' });
+      speichernMit({ id: 'k-alt', vorhanden: { titel: 'Wärmepumpen rechnen sich auch im Altbau' }, verknuepft: false });
       ausfuellen();
 
       component.speichern();
@@ -755,7 +746,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('Zustimmen: gibt dem vorhandenen Kommentar eine Stimme, meldet sie und keinen Erfolg', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
       const stimme = spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
         of({ content_id: 'k-alt', vote_type: 'like', message: 'ok' }),
       );
@@ -781,7 +772,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('Zustimmen scheitert: sagt es, das Formular bleibt, nichts wird gemeldet', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
       spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
         throwError(() => new HttpErrorResponse({ status: 503 })),
       );
@@ -802,8 +793,8 @@ describe('AddCommentaryComponent', () => {
 
     it('Trotzdem speichern: schickt dasselbe mit trotz_dublette_von und meldet den neuen Kommentar', fakeAsync(() => {
       const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
-        of({ id: 'k-alt', dublette: true, verknuepft: false } as AddCommentaryResponse),
-        of({ id: 'k-neu', dublette: false, verknuepft: true } as AddCommentaryResponse),
+        of({ id: 'k-alt', vorhanden: {}, verknuepft: false } as AddCommentaryResponse),
+        of({ id: 'k-neu', verknuepft: true } as AddCommentaryResponse),
       );
       const erfolg = spyOn(component.success, 'emit');
       ausfuellen();
@@ -824,7 +815,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('verschwindet, sobald der Text geaendert wird: der Hinweis galt dem alten Text', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -839,7 +830,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('eigene Dublette: kein Zustimmen, aber Trotzdem speichern', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      speichernMit({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -850,7 +841,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('eigene Dublette ohne Aussage: kein Zustimmen, ausserhalb des Fangkorbs auch kein Nehmen', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      speichernMit({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -862,7 +853,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('eigene Dublette aus dem Fangkorb ohne Aussage: Nehmen meldet den vorhandenen ohne Stimme', fakeAsync(() => {
-      const speichern = speichernMit({ id: 'k-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      const speichern = speichernMit({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false });
       const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
       const erfolg = spyOn(component.success, 'emit');
@@ -887,7 +878,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('liest nur den Hinweis als Statusmeldung vor, nicht die Knoepfe', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -899,7 +890,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('nach dem Zustimmen steht in der Leiste kein Fehler', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
       spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
         of({ content_id: 'k-alt', vote_type: 'like', message: 'ok' }),
       );
@@ -915,7 +906,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('verschwindet mit Zuruecksetzen, auch der Link in der Leiste', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -998,6 +989,23 @@ describe('AddCommentaryComponent', () => {
 
       expect(component.vorschauKarte.extra?.kurz).toBe('Die Pumpe rechnet sich.');
       expect(component.vorschauKarte.extra?.lang).toBeUndefined();
+    });
+
+    it('bieten unter der Kurzfassung einen Kuerzungsvorschlag aus dem Kommentar an (#403)', () => {
+      ausfuellen();
+      aufklappen();
+
+      const vorschlag = fixture.debugElement.query((el) => el.componentInstance instanceof KuerzungsvorschlagComponent)!;
+      expect(seite().querySelector('.fassungen')!.contains(vorschlag.nativeElement)).toBeTrue();
+      const instanz = vorschlag.componentInstance as KuerzungsvorschlagComponent;
+      expect(instanz.text).toBe(component.commentaryForm.value.text);
+      expect(component.commentaryForm.value.kurz).toBe('');
+
+      instanz.uebernehmen.emit('Die Pumpe rechnet sich.');
+      fixture.detectChanges();
+
+      expect(component.commentaryForm.value.kurz).toBe('Die Pumpe rechnet sich.');
+      expect(component.commentaryForm.get('kurz')!.dirty).toBeTrue();
     });
 
     it('zaehlen fuers Zuruecksetzen als Eingabe und werden mit geleert', () => {

@@ -89,7 +89,8 @@ test('Post aus dem Fangkorb: Typwahl, vorbelegt, Einwurf ausformuliert', async (
   await bild('105-post-einwurf');
 
   const id = await speichernUndErgebnis(page);
-  expect.soft(await ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
+  // Der eigene Einwurf; der Knopf steht, sobald das Kennzeichen vom Server da ist (F1 in #511).
+  await expect.poll(() => ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Meine Beiträge']);
   const stand = await einwurfStand(page, einwurf.id);
   expect.soft(stand.status).toBe('processed');
   expect.soft(stand.beitraege).toContain(id);

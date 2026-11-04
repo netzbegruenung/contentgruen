@@ -107,5 +107,8 @@ async def loeschen_im_takt(
         try:
             await asyncio.to_thread(service.fristen_anwenden)
         except Exception as e:
-            logger.error(f"Error applying pattern note retention: {e}", exc_info=True)
+            logger.error(
+                f"Error applying pattern note retention: {type(e).__name__}",
+                exc_info=True,
+            )
         await asyncio.sleep(min(takt_sekunden, sekunden_bis_mitternacht() + 1))

@@ -24,7 +24,8 @@ public class ManagedUserService
     /// Kennung des Platzhalters "ehemalige Person" an den Beitraegen geloeschter Personen.
     /// Reserviert, ebenso wie alles mit dem Praefix "ehemalige-person-" (Saetze im
     /// Fangkorb); muss zu EHEMALIGE_PERSON_KENNUNG in
-    /// semantic-search-service/app/services/anzeigename_service.py passen.
+    /// semantic-search-service/app/services/anzeigename_service.py passen
+    /// (scripts/tests/test_platzhalter_kennung.py prueft das).
     /// </summary>
     public const string EhemaligePersonKennung = "ehemalige-person";
 

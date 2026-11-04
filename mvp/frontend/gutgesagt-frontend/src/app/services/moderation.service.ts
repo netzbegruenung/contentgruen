@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { SessionService } from './session.service';
 import { MeldegrundWert } from '../shared/meldegruende';
 import { SperrgrundWert } from '../shared/sperrgruende';
 
@@ -11,6 +10,23 @@ export interface ReportContentRequest {
   content_type: string;
   reason: MeldegrundWert;
   description?: string;
+  melder_name: string | null;
+  melder_email: string | null;
+  guter_glaube: true;
+}
+
+/**
+ * Eine neue Meldung, wie der Meldedialog sie abschickt. Name und E-Mail-Adresse
+ * sind freiwillig, die Erklaerung guten Glaubens Pflicht (Art. 16 Abs. 2 DSA, #438).
+ */
+export interface NeueMeldung {
+  contentId: string;
+  contentType: string;
+  reason: MeldegrundWert;
+  description?: string;
+  melderName: string | null;
+  melderEmail: string | null;
+  guterGlaube: true;
 }
 
 export interface ReportContentResponse {
@@ -31,6 +47,10 @@ export interface ContentReport {
   reviewed_by?: string | null;
   reviewed_at?: string | null;
   resolution_notes?: string | null;
+  /** Angaben der meldenden Person (#438); null, wenn keine oder vor #438. */
+  melder_name?: string | null;
+  melder_email?: string | null;
+  guter_glaube?: boolean | null;
   // Der gemeldete Beitrag, wie die Moderation ihn liest -- auch gesperrt.
   // null, wenn er nicht mehr existiert.
   content?: GemeldeterBeitrag | null;
@@ -78,6 +98,22 @@ export interface GesperrteResponse {
   beitraege: GemeldeterBeitrag[];
 }
 
+/**
+ * Name und/oder E-Mail-Adresse der meldenden Person (#494). Gesucht wird die ganze
+ * Angabe ohne Rücksicht auf Groß- und Kleinschreibung; sind beide angegeben, müssen
+ * beide passen.
+ */
+export interface MelderSuche {
+  email: string | null;
+  name: string | null;
+}
+
+/** Bearbeitete und abgewiesene Meldungen sind gelöscht, offene ohne Name und E-Mail-Adresse. */
+export interface AngabenGeloescht {
+  geloescht: number;
+  angaben_entfernt: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -85,33 +121,21 @@ export class ModerationService {
   private baseUrl = `${environment.baseUrl}/api/v1/moderation`;
 
   constructor(
-    private http: HttpClient,
-    private sessionService: SessionService
+    private http: HttpClient
   ) {}
 
-  reportContent(
-    contentId: string,
-    contentType: string,
-    reason: MeldegrundWert,
-    description?: string
-  ): Observable<ReportContentResponse> {
+  reportContent(meldung: NeueMeldung): Observable<ReportContentResponse> {
     const request: ReportContentRequest = {
-      content_id: contentId,
-      content_type: contentType,
-      reason: reason,
-      description: description
+      content_id: meldung.contentId,
+      content_type: meldung.contentType,
+      reason: meldung.reason,
+      description: meldung.description,
+      melder_name: meldung.melderName,
+      melder_email: meldung.melderEmail,
+      guter_glaube: meldung.guterGlaube,
     };
 
-    // Add session ID header for anonymous user tracking
-    const headers = new HttpHeaders({
-      'X-Session-Id': this.sessionService.getSessionId()
-    });
-
-    return this.http.post<ReportContentResponse>(
-      `${this.baseUrl}/report`,
-      request,
-      { headers }
-    );
+    return this.http.post<ReportContentResponse>(`${this.baseUrl}/report`, request);
   }
 
   getPendingReports(limit: number = 50, offset: number = 0): Observable<PendingReportsResponse> {
@@ -160,6 +184,28 @@ export class ModerationService {
 
   getGesperrte(): Observable<GesperrteResponse> {
     return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`);
+  }
+
+  /**
+   * Alle Meldungen mit diesen Angaben der meldenden Person (Auskunft, #494). POST, damit
+   * Name und E-Mail-Adresse nicht in der Adresse und damit nicht in Logs stehen.
+   */
+  meldungenEinerPerson(suche: MelderSuche): Observable<PendingReportsResponse> {
+    return this.http.post<PendingReportsResponse>(`${this.baseUrl}/melder/meldungen`, suche);
+  }
+
+  /**
+   * Die Angaben der Person an ihren Meldungen löschen (#494): nur die gezeigten
+   * Meldungen (`meldungIds`), die noch zu den Angaben passen. Nach einer Suche nur mit
+   * dem Namen verlangt das Backend `dieselbePerson`: Der Admin hat bestätigt, dass alle
+   * Treffer zu einer Person gehören.
+   */
+  angabenLoeschen(suche: MelderSuche, meldungIds: string[], dieselbePerson = false): Observable<AngabenGeloescht> {
+    return this.http.post<AngabenGeloescht>(`${this.baseUrl}/melder/angaben-loeschen`, {
+      ...suche,
+      meldung_ids: meldungIds,
+      dieselbe_person: dieselbePerson,
+    });
   }
 
   dismissReport(reportId: string, notes?: string): Observable<any> {

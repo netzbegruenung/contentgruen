@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Set
 from sqlalchemy import bindparam, func, select
 
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import RawInput, RawInputContentLink, Sperre
+from infrastructure.database.models import Einwurf, AusformuliertIn, Sperre
 from repositories.vote_repository import OHNE_AUSGENOMMENE, ohne_ausgenommene
 
 
@@ -50,21 +50,21 @@ class PunkteRepository:
         gesperrt = (
             select(Sperre.content_id)
             .where(
-                Sperre.content_id == RawInputContentLink.content_id,
+                Sperre.content_id == AusformuliertIn.content_id,
                 Sperre.aufgehoben_am.is_(None),
             )
             .exists()
         )
         erste = (
             select(
-                func.min(RawInputContentLink.created_at)
+                func.min(AusformuliertIn.created_at)
                 .op("AT TIME ZONE")("UTC")
                 .label("am")
             )
-            .join(RawInput, RawInput.id == RawInputContentLink.raw_input_id)
-            .where(RawInput.submitted_by == user_id, ~gesperrt)
-            .group_by(RawInputContentLink.raw_input_id)
-            .having(func.min(RawInputContentLink.created_at) <= bis)
+            .join(Einwurf, Einwurf.id == AusformuliertIn.raw_input_id)
+            .where(Einwurf.submitted_by == user_id, ~gesperrt)
+            .group_by(AusformuliertIn.raw_input_id)
+            .having(func.min(AusformuliertIn.created_at) <= bis)
             .subquery()
         )
         tag = func.date(erste.c.am)

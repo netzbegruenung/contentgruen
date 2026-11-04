@@ -50,7 +50,7 @@ function formularEltern(snapshot: ActivatedRouteSnapshot): string | unknown[] {
  *
  * Ausnahme ist der FAB im Fangkorb: Wer dort einwirft, will zurueck in die Liste, in
  * der der Einwurf gleich liegt. Der FAB sagt das ueber ``?von=fangkorb``
- * (zumEinwerfen in raw-input-list.component.ts).
+ * (zumEinwerfen in fangkorb.component.ts).
  */
 function einwerfenEltern(snapshot: ActivatedRouteSnapshot): string {
   return snapshot.queryParamMap.get('von') === 'fangkorb' ? '/fangkorb' : '/contribute';
@@ -79,13 +79,13 @@ export const routes: Routes = [
     },
     {
         path: 'einwerfen',
-        loadComponent: () => import('./add-raw-input/add-raw-input.component').then(m => m.AddRawInputComponent),
+        loadComponent: () => import('./einwerfen/einwerfen.component').then(m => m.EinwerfenComponent),
         canActivate: [AuthGuard],
         data: { parent: einwerfenEltern }
     },
     {
         path: 'fangkorb',
-        loadComponent: () => import('./raw-input-list/raw-input-list.component').then(m => m.RawInputListComponent),
+        loadComponent: () => import('./fangkorb/fangkorb.component').then(m => m.FangkorbComponent),
         canActivate: [AuthGuard],
         data: { parent: '/search' }
     },
@@ -104,8 +104,16 @@ export const routes: Routes = [
     },
     {
         path: 'contributions',
-        loadComponent: () => import('./contributions-view/contributions-view.component').then(m => m.ContributionsViewComponent),
+        loadComponent: () => import('./meine-beitraege/meine-beitraege.component').then(m => m.MeineBeitraegeComponent),
         canActivate: [AuthGuard],
+        data: { parent: '/search' }
+    },
+    {
+        // Die eigene Adresse eines Beitrags, fuer alle Beitragstypen (#300). Oeffentlich
+        // wie die Suche: Sichtbare Beitraege koennen auch Besucher finden und kopieren.
+        path: 'beitrag/:id',
+        loadComponent: () => import('./beitrag-ansicht/beitrag-ansicht.component').then(m => m.BeitragAnsichtComponent),
+        canActivate: [PublicGuard],
         data: { parent: '/search' }
     },
     {
@@ -185,6 +193,13 @@ export const routes: Routes = [
         path: 'login/managed',
         loadComponent: () => import('./login/login.component').then(m => m.LoginComponent),
         data: { parent: '/login' }
+    },
+    {
+        // Einladung einloesen (#429); der Code steht hinter #, siehe einladungslink.
+        path: 'einladung',
+        loadComponent: () => import('./einladung/einladung.component').then(m => m.EinladungComponent),
+        canActivate: [PublicGuard],
+        data: { parent: '/search' }
     },
     {
         path: 'about',

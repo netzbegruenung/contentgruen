@@ -58,6 +58,7 @@ from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from domain.themen import NACH_SCHLUESSEL, THEMEN, ThemaUngueltig
+from core.fehler import INTERNER_FEHLER
 
 logger = get_logger(__name__)
 
@@ -76,12 +77,6 @@ async def _ueber_der_schwelle_fuer(
     if aufrufer.ist_admin:
         return None
     return await suchen_ohne_treffer.ueber_der_schwelle()
-
-
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
 
 
 # Alle Aussagen, seitenweise; was Nicht-Admins sehen: _ueber_der_schwelle_fuer.
@@ -127,8 +122,8 @@ async def get_all(
 
         return response
     except Exception as e:
-        logger.error(f"Error in /getAll: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in /getAll: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Eine Aussage per ID - fuer Beitragsformulare, die mit ?aussage=<id> geoeffnet
@@ -144,15 +139,18 @@ async def get_by_id(
         # Vor ValueError: Pydantics ValidationError ist eine Unterklasse davon. Ein
         # Datensatz, der sich nicht lesen laesst, ist kaputt, nicht abwesend - das
         # gehoert ins Log und als 500 zum Aufrufer, nicht als 404 unter den Teppich.
-        logger.error(f"Statement {statement_id} ist nicht lesbar: {e}", exc_info=True)
+        logger.error(
+            f"Statement {statement_id} ist nicht lesbar: {type(e).__name__}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="Statement not readable")
     except ValueError:
         # Das Repository meldet "nicht gefunden" und "anderer Inhaltstyp unter
         # dieser ID" als ValueError - beides heisst: diese Aussage gibt es nicht.
         raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:
-        logger.error(f"Error in /getById: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in /getById: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
     return GetStatementByIdResponse(
         statement_id=statement.id, statement_text=statement.text
@@ -179,7 +177,7 @@ async def unbeantwortet(
     try:
         aussagen = await service.liste(thema=thema)
     except Exception as e:
-        logger.error(f"Error in /unbeantwortet: {e}", exc_info=True)
+        logger.error(f"Error in /unbeantwortet: {type(e).__name__}", exc_info=True)
         raise HTTPException(
             status_code=500, detail="Failed to fetch unanswered statements"
         )
@@ -215,7 +213,7 @@ async def vorab_anlegen(
             await statement_service.vorab_anlegen(request.text, user_id)
         )
     except Exception as e:
-        logger.error(f"Error in /vorab: {e}", exc_info=True)
+        logger.error(f"Error in /vorab: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to add statement")
     themen = await themen_beim_anlegen(themen_service, statement_id, request.themen)
     return AussageVorabResponse(
@@ -246,11 +244,11 @@ async def themen_zuordnen(
     try:
         themen = await themen_service.zuordnen(request.statement_id, request.themen)
     except ThemaUngueltig as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=e.antworttext)
     except AussageNichtGefunden:
         raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:
-        logger.error(f"Error in /themen/zuordnen: {e}", exc_info=True)
+        logger.error(f"Error in /themen/zuordnen: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to assign Themen")
     return ThemenZuordnenResponse(
         statement_id=request.statement_id, themen=themen_dtos(themen)
@@ -267,7 +265,7 @@ async def themen_aussagen(
     try:
         aussagen = await themen_service.aussagen_zum_zuordnen()
     except Exception as e:
-        logger.error(f"Error in /themen/aussagen: {e}", exc_info=True)
+        logger.error(f"Error in /themen/aussagen: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch statements")
     return AussagenMitThemenResponse(
         aussagen=[
@@ -292,7 +290,7 @@ async def themen_testset(
     try:
         zuordnungen = await themen_service.testset()
     except Exception as e:
-        logger.error(f"Error in /themen/testset: {e}", exc_info=True)
+        logger.error(f"Error in /themen/testset: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to export Themen-Testset")
     return ThemenTestsetResponse(
         zuordnungen=[
@@ -353,8 +351,8 @@ async def search_statements(
 
         return response
     except Exception as e:
-        logger.error(f"Error in /searchStatements: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in /searchStatements: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Adds a new statement to the statement_index
@@ -408,8 +406,8 @@ async def add_statement(
 
     except Exception as e:
         # Improve error handling by returning specific exception types
-        logger.error(f"Error in /addStatement: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in /addStatement: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Adds a reply suggestion to a statement
@@ -442,8 +440,11 @@ async def add_replysuggestion_to_statement(
         # andere ValueErrors) ist ein echter Fehler.
         raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:
-        logger.error(f"Error in /addReplysuggestionToStatement: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(
+            f"Error in /addReplysuggestionToStatement: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieves the topics of the statement_index
@@ -460,8 +461,10 @@ def get_topics(
 
         return response
     except Exception as e:
-        logger.error(f"Error in get_statement_topics: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(
+            f"Error in get_statement_topics: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieves the statements of a specific topic from the statement_index
@@ -486,8 +489,10 @@ def get_statement_topics(
 
         return response
     except Exception as e:
-        logger.error(f"Error in get_statement_topics: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(
+            f"Error in get_statement_topics: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieves the categories of the statement_index
@@ -506,8 +511,10 @@ def get_categories(
 
         return response
     except Exception as e:
-        logger.error(f"Error in get_statement_topics: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(
+            f"Error in get_statement_topics: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Retrieves the statements of a specific category from the statement_index
@@ -532,5 +539,7 @@ def get_statements_of_category(
 
         return response
     except Exception as e:
-        logger.error(f"Error in get_statements_of_category: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(
+            f"Error in get_statements_of_category: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

@@ -7,7 +7,7 @@
 
 .thema-chip {
   border: 1px solid var(--primary-dark);
-  border-radius: 16px;
+  border-radius: var(--border-radius-medium);
   background: transparent;
   color: var(--primary-dark);
   padding: 4px 12px;

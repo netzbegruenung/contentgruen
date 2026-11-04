@@ -10,7 +10,7 @@ import { PostService } from '../services/post.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 
 describe('AddPostComponent', () => {
   let fixture: ComponentFixture<AddPostComponent>;
@@ -39,15 +39,8 @@ describe('AddPostComponent', () => {
     fixture.detectChanges();
   });
 
-  it('verlinkt die Nutzungsbedingungen ueber dem Speichern-Knopf', () => {
-    const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector('a[href="/nutzungsbedingungen"]');
-
-    expect(link).toBeTruthy();
-    expect(link!.target).toBe('_blank');
-    expect(link!.closest('p')!.classList).toContain('submit-hint');
-    expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
-    );
+  it('zeigt über dem Speichern-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
+    erwarteCc0Hinweis(fixture.nativeElement);
   });
 
   it('leitet die Plattform aus dem Link ab, solange niemand sie selbst gewaehlt hat', () => {

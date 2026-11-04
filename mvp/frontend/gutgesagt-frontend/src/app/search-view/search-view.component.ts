@@ -12,6 +12,7 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { typLabel } from '../shared/content-type-registry';
 import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
+import { BEISPIEL_AUSSAGE } from '../rundgang/rundgang-daten';
 
 @Component({
   selector: 'app-search-view',
@@ -101,7 +102,8 @@ export class SearchViewComponent implements AfterViewInit {
   }
 
   performExampleSearch(): void {
-    const exampleQuery = 'Windräder töten die Vögel!';
+    // Dieselbe Aussage durchsucht der Rundgang „Antwort finden“ (#389)
+    const exampleQuery = BEISPIEL_AUSSAGE;
     this.logger.debug('Performing example search:', exampleQuery);
     this.navigationService.navigateToResult(exampleQuery);
   }

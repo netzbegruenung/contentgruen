@@ -5,6 +5,7 @@ from typing import Dict, Any
 from services.seeding.seeding_service import get_seeding_service
 from services.seeding.seeding_status import SeedingStatus
 from core.logging import get_logger
+from core.fehler import INTERNER_FEHLER
 
 logger = get_logger(__name__)
 
@@ -100,12 +101,10 @@ async def get_seeding_status(health_check: bool = False) -> Dict[str, Any]:
                 "progress": {"files_processed": 0, "total_files": 0, "percentage": 0},
                 "seeding_needed": True,
                 "is_healthy": False,
-                "error": str(e),
+                "error": type(e).__name__,
             }
         # Normal mode: raise HTTP exception
-        raise HTTPException(
-            status_code=500, detail=f"Error getting seeding status: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/health")
@@ -148,7 +147,7 @@ async def start_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
             try:
                 await seeding_service.start_seeding()
             except Exception as e:
-                logger.error(f"Seeding failed: {e}", exc_info=True)
+                logger.error(f"Seeding failed: {type(e).__name__}", exc_info=True)
                 raise
 
         background_tasks.add_task(run_seeding)
@@ -158,7 +157,7 @@ async def start_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error starting seeding: {str(e)}")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.post("/reset")
@@ -176,9 +175,7 @@ async def reset_seeding() -> Dict[str, str]:
         return {"message": "Seeding status reset successfully", "status": "reset"}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error resetting seeding: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/needs-seeding")
@@ -215,7 +212,7 @@ async def check_needs_seeding() -> Dict[str, Any]:
         return {
             "needs_seeding": True,
             "content_count": 0,
-            "reason": f"Error checking content: {str(e)}",
+            "reason": f"Error checking content: {type(e).__name__}",
         }
 
 
@@ -250,7 +247,7 @@ async def resume_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error resuming seeding: {str(e)}")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.post("/stop")
@@ -281,7 +278,7 @@ async def stop_seeding() -> Dict[str, str]:
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error stopping seeding: {str(e)}")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/files")
@@ -350,6 +347,4 @@ async def get_seeding_files() -> Dict[str, Any]:
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error getting file information: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
