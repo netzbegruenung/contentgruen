@@ -38,6 +38,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/usage/cleanup/run")]
     [InlineData("/api/v1/metrics/mvp-dashboard")]  // admin-only, anders als /getMetrics
     [InlineData("/api/v1/feedback")]             // Admin-Liste, anders als /senden
+    [InlineData("/api/v1/feedback/11111111-1111-1111-1111-111111111111")]  // erledigt, loeschen (#425)
     [InlineData("/api/v1/einladungen")]          // Verwalten nur fuer Admins (#429)
     [InlineData("/api/v1/einladungen/33333333-3333-3333-3333-333333333333")]
     [InlineData("/api/v1/content/33333333-3333-3333-3333-333333333333")]  // Loeschen durch den Autor
