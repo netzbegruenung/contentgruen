@@ -6,12 +6,13 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { EMPTY, Observable } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
-import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
+import { EinwurfBeitragSheetComponent, EinwurfBeitragSheetDaten } from './einwurf-beitrag-sheet.component';
 import { SCHRITT_PARAM } from '../destillieren/destillier-uebergabe.service';
 import { EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
 import { verwerfenFehlertext } from '../shared/fangkorb-texte';
-import { EinwurfAktion, KartenDaten } from '../beitragskarte/karten-daten';
+import { ROUTES } from '../shared/constants/app.constants';
+import { EinwurfAktion, EinwurfBeitrag, KartenDaten } from '../beitragskarte/karten-daten';
 
 /**
  * Was der Griff auf einer Einwurf-Karte ausloest, gleich ob sie im Fangkorb oder
@@ -57,10 +58,7 @@ export class EinwurfAktionenService {
         this.router.navigate(['/destillieren', angaben.einwurfId]);
         break;
       case 'ansehen':
-        this.bottomSheet.open(EinwurfBeitragSheetComponent, {
-          data: { beitraege: angaben.beitraege },
-          ariaLabel: karte.titel || 'Beitrag zu diesem Einwurf',
-        });
+        this.ansehen(karte, angaben.beitraege);
         break;
       case 'linkKopieren':
         this.linkKopieren(angaben.link);
@@ -69,6 +67,25 @@ export class EinwurfAktionenService {
         return this.verwerfen(angaben.einwurfId);
     }
     return EMPTY;
+  }
+
+  /**
+   * Ein Beitrag: gleich auf seine Adresse (#300). Mehrere: erst die Auswahl im
+   * Sheet, die dann auf die Adresse des gewaehlten fuehrt.
+   */
+  private ansehen(karte: KartenDaten, beitraege: EinwurfBeitrag[]): void {
+    const [einziger] = beitraege;
+    if (beitraege.length === 1 && einziger) {
+      this.router.navigate([ROUTES.BEITRAG, einziger.contentId]);
+      return;
+    }
+    if (beitraege.length > 1) {
+      const daten: EinwurfBeitragSheetDaten = { beitraege, zurAdresse: true };
+      this.bottomSheet.open(EinwurfBeitragSheetComponent, {
+        data: daten,
+        ariaLabel: karte.titel || 'Beiträge zu diesem Einwurf',
+      });
+    }
   }
 
   private linkKopieren(link: string | null): void {

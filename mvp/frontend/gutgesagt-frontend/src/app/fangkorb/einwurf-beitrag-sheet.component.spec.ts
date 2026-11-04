@@ -1,12 +1,14 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MAT_BOTTOM_SHEET_DATA } from '@angular/material/bottom-sheet';
+import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
+import { Router } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Subject, of, throwError } from 'rxjs';
 
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
 import { EinwurfBeitrag } from '../beitragskarte/karten-daten';
+import { EinwurfBeitragSheetDaten } from './einwurf-beitrag-sheet.component';
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { LoggingService } from '../services/logging.service';
@@ -35,9 +37,12 @@ describe('EinwurfBeitragSheetComponent', () => {
   let commentary: jasmine.SpyObj<CommentaryService>;
   let genericText: jasmine.SpyObj<GenericTextService>;
   let beitragAnsehen: jasmine.SpyObj<BeitragAnsehenService>;
+  let router: jasmine.SpyObj<Router>;
+  let sheetRef: jasmine.SpyObj<MatBottomSheetRef<EinwurfBeitragSheetComponent>>;
 
   async function erstellen(
     beitraege: EinwurfBeitrag[],
+    weitere: Partial<EinwurfBeitragSheetDaten> = {},
   ): Promise<ComponentFixture<EinwurfBeitragSheetComponent>> {
     await TestBed.configureTestingModule({
       imports: [EinwurfBeitragSheetComponent, NoopAnimationsModule],
@@ -46,7 +51,9 @@ describe('EinwurfBeitragSheetComponent', () => {
         // Nutzungserfassung einen HttpClient nach.
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: MAT_BOTTOM_SHEET_DATA, useValue: { beitraege } },
+        { provide: MAT_BOTTOM_SHEET_DATA, useValue: { beitraege, ...weitere } },
+        { provide: MatBottomSheetRef, useValue: sheetRef },
+        { provide: Router, useValue: router },
         { provide: CommentaryService, useValue: commentary },
         { provide: GenericTextService, useValue: genericText },
         { provide: BeitragAnsehenService, useValue: beitragAnsehen },
@@ -66,6 +73,8 @@ describe('EinwurfBeitragSheetComponent', () => {
     commentary = jasmine.createSpyObj('CommentaryService', ['getCommentaryById']);
     genericText = jasmine.createSpyObj('GenericTextService', ['getGenericTextById']);
     beitragAnsehen = jasmine.createSpyObj('BeitragAnsehenService', ['karteLaden']);
+    router = jasmine.createSpyObj('Router', ['navigate']);
+    sheetRef = jasmine.createSpyObj('MatBottomSheetRef', ['dismiss']);
   });
 
   it('laedt bei genau einem Beitrag sofort', async () => {
@@ -143,5 +152,18 @@ describe('EinwurfBeitragSheetComponent', () => {
       fixture.nativeElement.querySelectorAll('.auswahl-knopf') as NodeListOf<HTMLElement>,
     ).map((knopf) => knopf.textContent!.trim());
     expect(knoepfe).toEqual(['Erster', 'Zweiter']);
+  });
+
+  it('fuehrt mit zurAdresse aus der Auswahl auf die Adresse des Beitrags (#300)', async () => {
+    const fixture = await erstellen(
+      [beitrag({ contentId: 'c-1', satz: 'Erster' }), beitrag({ contentId: 'c-2', satz: 'Zweiter' })],
+      { zurAdresse: true },
+    );
+
+    (fixture.nativeElement.querySelectorAll('.auswahl-knopf')[1] as HTMLElement).click();
+
+    expect(sheetRef.dismiss).toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(['/beitrag', 'c-2']);
+    expect(commentary.getCommentaryById).not.toHaveBeenCalled();
   });
 });

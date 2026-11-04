@@ -109,19 +109,40 @@ describe('MeineEinwuerfeComponent', () => {
     expect(texte('.einwurf-stufe')[1]).toBe('Verworfen');
   });
 
-  it('fuehrt bei einem ausformulierten Einwurf zu seinem Beitrag', () => {
-    anzeigen();
-
+  function ansehenKlicken(): void {
     const ansehen = Array.from(fixture.nativeElement.querySelectorAll('.einwurf-primaer') as NodeListOf<HTMLElement>).find(
       (knopf) => knopf.textContent!.includes('Ansehen'),
     )!;
     ansehen.click();
+  }
+
+  it('fuehrt bei einem ausformulierten Einwurf auf die Adresse seines Beitrags (#300)', () => {
+    anzeigen();
+
+    ansehenKlicken();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/beitrag', 'c-1']);
+    expect(bottomSheet.open).not.toHaveBeenCalled();
+  });
+
+  it('laesst bei mehreren Beitraegen erst waehlen, dann auf die Adresse', () => {
+    const zweiBeitraege = einwurf({
+      ...ausformuliert,
+      links: [
+        ...(ausformuliert.links ?? []),
+        { content_id: 'c-2', content_type: 'post', draft_id: 's-1', processed_by: 'jemand', processed_at: '2026-10-23T12:00:00Z' },
+      ],
+    });
+    einwurfService.eigeneLaden.and.returnValue(of(antwort([zweiBeitraege])));
+    anzeigen();
+
+    ansehenKlicken();
 
     const [inhalt, konfiguration] = (bottomSheet.open as jasmine.Spy).calls.mostRecent().args;
     expect(inhalt).toBe(EinwurfBeitragSheetComponent);
-    expect(konfiguration.data).toEqual({
-      beitraege: [{ contentId: 'c-1', typ: 'commentary', satz: 'Waermepumpe lohnt sich auch im Altbau' }],
-    });
+    expect(konfiguration.data.zurAdresse).toBeTrue();
+    expect(konfiguration.data.beitraege.map((b: { contentId: string }) => b.contentId)).toEqual(['c-1', 'c-2']);
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('fuehrt bei einem offenen Einwurf zum Destillieren', () => {
