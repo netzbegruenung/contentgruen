@@ -86,6 +86,27 @@ class TestBeitragAendernApi:
         assert aenderung.titel == "Ein Titel mit Haltung"
         assert aenderung.text == "Text mit Rand"
 
+    def test_aendern_ohne_fassungen_laesst_sie_unveraendert(self, client, service):
+        """Eine aeltere App schickt keine Fassungen: None heisst unveraendert."""
+        _aendern(client)
+
+        aenderung = service.aendern.await_args.args[2]
+        assert aenderung.kurzfassung is None
+        assert aenderung.langfassung is None
+
+    def test_aendern_reicht_fassungen_ohne_leerraum_am_rand_weiter(
+        self, client, service
+    ):
+        _aendern(
+            client,
+            {**ANFRAGE, "short_text": " Kurz und klar. ", "long_text": "   "},
+        )
+
+        aenderung = service.aendern.await_args.args[2]
+        assert aenderung.kurzfassung == "Kurz und klar."
+        # Leer heisst: die Fassung entfernen.
+        assert aenderung.langfassung == ""
+
     def test_aendern_andere_person_ist_403(self, client, service):
         service.aendern.return_value = AenderErgebnis.NICHT_AUTOR
 

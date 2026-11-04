@@ -9,10 +9,17 @@ import { NgIf } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 
 import { KartenDaten, KartenQuelle } from './karten-daten';
-import { HINTERGRUNDINFO_TEXT_MAX, KOMMENTAR_TEXT_MAX, TEXT_MIN, TITEL_MAX } from '../shared/beitrag-grenzen';
+import {
+  HINTERGRUNDINFO_TEXT_MAX,
+  KOMMENTAR_TEXT_MAX,
+  KURZFASSUNG_MAX,
+  LANGFASSUNG_MAX,
+  TEXT_MIN,
+  TITEL_MAX,
+} from '../shared/beitrag-grenzen';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
-import { HerkunftEingabe, MeineBeitraegeService } from '../services/meine-beitraege.service';
+import { BeitragAenderung, HerkunftEingabe, MeineBeitraegeService } from '../services/meine-beitraege.service';
 
 /** Die Beitragstypen, die der Autor aendern kann (#299), mit der Grenze ihres Texts wie beim Anlegen. */
 export const AENDERBARE_TYPEN: Readonly<Record<string, number>> = {
@@ -54,7 +61,8 @@ function alsEingabe(quelle: KartenQuelle): HerkunftEingabe {
 
 /**
  * Der Autor aendert Titel, Text und Herkunft seines Kommentars oder seiner
- * Hintergrundinfo (#299). Schliesst mit true, wenn gespeichert ist.
+ * Hintergrundinfo (#299), beim Kommentar auch Kurz- und Langfassung (#551), damit sie
+ * dem neuen Text nicht widersprechen. Schliesst mit true, wenn gespeichert ist.
  */
 @Component({
   selector: 'app-beitrag-aendern-dialog',
@@ -96,6 +104,26 @@ function alsEingabe(quelle: KartenQuelle): HerkunftEingabe {
           <mat-error *ngIf="formular.controls.text.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
         </mat-form-field>
 
+        <ng-container *ngIf="hatFassungen">
+          <mat-form-field appearance="outline" class="feld">
+            <mat-label>Kurzfassung (optional)</mat-label>
+            <textarea matInput id="aendern-kurz" formControlName="kurz" [attr.maxlength]="kurzMax"
+                      placeholder="Der Punkt in einem Satz"
+                      cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="6"></textarea>
+            <mat-hint>für X/Bluesky</mat-hint>
+            <mat-hint align="end">{{ formular.value.kurz?.length ?? 0 }} / {{ kurzMax }}</mat-hint>
+            <mat-error *ngIf="formular.controls.kurz.hasError('maxlength')">Höchstens {{ kurzMax }} Zeichen.</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="feld">
+            <mat-label>Langfassung (optional)</mat-label>
+            <textarea matInput id="aendern-lang" formControlName="lang" [attr.maxlength]="langMax"
+                      cdkTextareaAutosize cdkAutosizeMinRows="3" cdkAutosizeMaxRows="12"></textarea>
+            <mat-hint align="end">{{ formular.value.lang?.length ?? 0 }} / {{ langMax }}</mat-hint>
+            <mat-error *ngIf="formular.controls.lang.hasError('maxlength')">Höchstens {{ langMax }} Zeichen.</mat-error>
+          </mat-form-field>
+        </ng-container>
+
         <app-reference-input formControlName="references" [kompakt]="true"></app-reference-input>
 
         <p class="fehler" role="alert" *ngIf="fehler()">{{ fehler() }}</p>
@@ -130,6 +158,10 @@ export class BeitragAendernDialogComponent {
   readonly titelMax = TITEL_MAX;
   readonly textMin = TEXT_MIN;
   readonly textMax: number;
+  readonly kurzMax = KURZFASSUNG_MAX;
+  readonly langMax = LANGFASSUNG_MAX;
+  /** Kurz- und Langfassung hat nur der Kommentar (GLOSSARY.md, Fassung). */
+  readonly hatFassungen: boolean;
   readonly speichertGerade = signal(false);
   readonly fehler = signal<string | null>(null);
 
@@ -144,10 +176,14 @@ export class BeitragAendernDialogComponent {
     fb: NonNullableFormBuilder,
   ) {
     this.textMax = AENDERBARE_TYPEN[daten.typ ?? ''] ?? KOMMENTAR_TEXT_MAX;
+    this.hatFassungen = daten.typ === 'commentary';
     this.formular = fb.group({
       // Wie beim Anlegen: eine Behauptung in einem Satz, 3 bis 120 Zeichen (Titelregel).
       title: [daten.titel ?? '', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
       text: [daten.text ?? '', [Validators.required, Validators.minLength(TEXT_MIN), Validators.maxLength(this.textMax)]],
+      // Leer, wenn der Kommentar die Fassung nicht hat; ausserhalb des Kommentars nicht angezeigt.
+      kurz: [daten.extra?.kurz ?? '', [Validators.maxLength(KURZFASSUNG_MAX)]],
+      lang: [daten.extra?.lang ?? '', [Validators.maxLength(LANGFASSUNG_MAX)]],
       // Herkuenfte, die sich nicht laden liessen, haben keine Adresse und lassen sich nicht anzeigen.
       references: [daten.quellen.filter((q) => !!q.url).map(alsEingabe)],
     });
@@ -162,9 +198,15 @@ export class BeitragAendernDialogComponent {
     }
     this.speichertGerade.set(true);
     this.fehler.set(null);
-    const { title, text, references } = this.formular.getRawValue();
+    const { title, text, kurz, lang, references } = this.formular.getRawValue();
+    const aenderung: BeitragAenderung = { title: title.trim(), text: text.trim(), references };
+    if (this.hatFassungen) {
+      // Immer beide mitschicken: leer entfernt die Fassung, wie beim Anlegen.
+      aenderung.short_text = kurz.trim();
+      aenderung.long_text = lang.trim();
+    }
     this.beitraege
-      .beitragAendern(this.daten.id, { title: title.trim(), text: text.trim(), references })
+      .beitragAendern(this.daten.id, aenderung)
       .pipe(finalize(() => this.speichertGerade.set(false)))
       .subscribe({
         next: () => this.dialogRef.close(true),

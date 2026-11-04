@@ -220,7 +220,8 @@ async def beitrag_aendern(
 ) -> Response:
     """
     Der Autor aendert Titel, Text und Herkunft seines Kommentars oder seiner
-    Hintergrundinfo (#299). Die Suche findet danach den neuen Text.
+    Hintergrundinfo (#299), beim Kommentar auch Kurz- und Langfassung (#551). Die
+    Suche findet danach den neuen Text.
 
     404 auch fuer gesperrte und geloeschte Beitraege, wie beim Loeschen.
     """
@@ -235,6 +236,8 @@ async def beitrag_aendern(
             for h in request.references
         ],
         cc0_wortlaut=request.cc0_wortlaut,
+        kurzfassung=request.short_text,
+        langfassung=request.long_text,
     )
     try:
         ergebnis = await service.aendern(beitrag_id, x_user, aenderung)

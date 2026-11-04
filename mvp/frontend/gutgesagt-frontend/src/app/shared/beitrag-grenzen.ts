@@ -12,3 +12,7 @@ export const TEXT_MIN = 10;
 export const KOMMENTAR_TEXT_MAX = 500;
 /** Wie im AddGenericTextRequest; laenger ist keine Hintergrundinfo mehr, sondern ein Artikel. */
 export const HINTERGRUNDINFO_TEXT_MAX = 2000;
+/** Fassung Kurz eines Kommentars (#355): passt auf X und Bluesky, wie im Backend (dtos/commentary.py). */
+export const KURZFASSUNG_MAX = 280;
+/** Fassung Lang eines Kommentars (#355): Platz fuer Begruendung und Herkunft. */
+export const LANGFASSUNG_MAX = 2000;

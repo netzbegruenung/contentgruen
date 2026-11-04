@@ -3,7 +3,8 @@ Der Autor aendert seinen Beitrag, gegen echtes Qdrant (#299).
 
 Die Unit-Tests pruefen den Service gegen den Speicher-Modus; hier zeigt sich, dass
 die Suche nach dem Aendern den neuen Text findet (der Vektor ist neu berechnet), dass
-der Rest des Punkts bleibt und dass eine Sperre zwischen Lesen und Schreiben steht.
+der Rest des Punkts bleibt, dass Kurz- und Langfassung sich ersetzen und entfernen
+lassen (#551) und dass eine Sperre zwischen Lesen und Schreiben steht.
 """
 
 import uuid
@@ -83,6 +84,38 @@ async def test_aendern_suche_findet_den_neuen_text(
     assert gespeichert.report_count == 2
     assert gespeichert.original_author == AUTOR
     assert [e.editor for e in gespeichert.edit_history] == [AUTOR]
+
+
+async def test_aendern_ersetzt_und_entfernt_fassungen(kommentare, aendern):
+    """#551: Kurz ersetzt, Lang entfernt; der Kommentar bleibt lesbar."""
+    _, kommentar_id, _ = await kommentare.add_commentary(
+        Commentary(
+            title="Tempolimit spart CO2",
+            text=ALT,
+            short_text="Tempolimit spart CO2.",
+            long_text="Ein Tempolimit spart CO2, weil Autos langsamer weniger verbrauchen.",
+            references=[],
+        ),
+        AUTOR,
+        ContentStatus.VISIBLE,
+        ContentOrigin.MANUALLY_CREATED,
+    )
+
+    await aendern.aendern(
+        kommentar_id,
+        AUTOR,
+        Aenderung(
+            "Radwege machen den Schulweg sicher",
+            NEU,
+            [],
+            kurzfassung="Radwege machen Schulwege sicher.",
+            langfassung="",
+        ),
+    )
+
+    gespeichert = await kommentare.get(kommentar_id)
+    assert gespeichert.short_text == "Radwege machen Schulwege sicher."
+    assert gespeichert.long_text is None
 
 
 async def test_aendern_laesst_eine_sperre_stehen(

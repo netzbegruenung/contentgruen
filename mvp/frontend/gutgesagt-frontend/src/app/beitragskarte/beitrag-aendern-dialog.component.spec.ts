@@ -64,10 +64,86 @@ describe('BeitragAendernDialogComponent', () => {
     expect(komponente.formular.value).toEqual({
       title: daten.titel!,
       text: daten.text!,
+      kurz: '',
+      lang: '',
       references: [
         { reference_string: 'https://example.org/studie', description: 'Feldtest' },
         { reference_string: 'https://example.org/zweite', description: undefined },
       ],
+    });
+  });
+
+  describe('Kurz- und Langfassung (#551)', () => {
+    const mitFassungen: KartenDaten = {
+      ...daten,
+      extra: {
+        kurz: 'Wärmepumpe lohnt sich.',
+        lang: 'Mit Förderung und Flächenheizung liegt die Wärmepumpe nach zehn Jahren vorn.',
+      },
+    };
+
+    function feld(id: string): HTMLTextAreaElement | null {
+      return fixture.nativeElement.querySelector(`textarea#${id}`);
+    }
+
+    it('zeigt beim Kommentar beide Fassungen, vorbefüllt', () => {
+      erstellen(mitFassungen);
+
+      expect(feld('aendern-kurz')!.value).toBe(mitFassungen.extra!.kurz!);
+      expect(feld('aendern-lang')!.value).toBe(mitFassungen.extra!.lang!);
+    });
+
+    it('zeigt bei der Hintergrundinfo keine Fassungen', () => {
+      erstellen({ ...daten, typ: 'generictext' });
+
+      expect(feld('aendern-kurz')).toBeNull();
+      expect(feld('aendern-lang')).toBeNull();
+    });
+
+    it('speichert geänderte Fassungen beim Kommentar mit', () => {
+      beitraege.beitragAendern.and.returnValue(of(undefined));
+      erstellen(mitFassungen);
+      komponente.formular.controls.kurz.setValue(' Wärmepumpe spart Geld. ');
+
+      speichernKnopf().click();
+
+      const gesendet = beitraege.beitragAendern.calls.mostRecent().args[1];
+      expect(gesendet.short_text).toBe('Wärmepumpe spart Geld.');
+      expect(gesendet.long_text).toBe(mitFassungen.extra!.lang!);
+    });
+
+    it('schickt eine geleerte Fassung leer, damit sie entfällt', () => {
+      beitraege.beitragAendern.and.returnValue(of(undefined));
+      erstellen(mitFassungen);
+      komponente.formular.controls.lang.setValue('   ');
+
+      speichernKnopf().click();
+
+      expect(beitraege.beitragAendern.calls.mostRecent().args[1].long_text).toBe('');
+    });
+
+    it('schickt bei der Hintergrundinfo keine Fassungen', () => {
+      beitraege.beitragAendern.and.returnValue(of(undefined));
+      erstellen({ ...daten, typ: 'generictext' });
+
+      speichernKnopf().click();
+
+      const gesendet = beitraege.beitragAendern.calls.mostRecent().args[1];
+      expect('short_text' in gesendet).toBeFalse();
+      expect('long_text' in gesendet).toBeFalse();
+    });
+
+    it('nimmt die Grenzen des Formulars: Kurz 280, Lang 2000 Zeichen', () => {
+      erstellen(mitFassungen);
+      komponente.formular.controls.kurz.setValue('x'.repeat(281));
+      expect(komponente.formular.valid).toBeFalse();
+
+      komponente.formular.controls.kurz.setValue('x'.repeat(280));
+      komponente.formular.controls.lang.setValue('x'.repeat(2001));
+      expect(komponente.formular.valid).toBeFalse();
+
+      komponente.formular.controls.lang.setValue('x'.repeat(2000));
+      expect(komponente.formular.valid).toBeTrue();
     });
   });
 
@@ -97,6 +173,8 @@ describe('BeitragAendernDialogComponent', () => {
     expect(beitraege.beitragAendern).toHaveBeenCalledOnceWith('b-1', {
       title: 'Wärmepumpen sparen auch im Altbau Geld',
       text: daten.text!,
+      short_text: '',
+      long_text: '',
       references: [
         { reference_string: 'https://example.org/studie', description: 'Feldtest' },
         { reference_string: 'https://example.org/zweite', description: undefined },

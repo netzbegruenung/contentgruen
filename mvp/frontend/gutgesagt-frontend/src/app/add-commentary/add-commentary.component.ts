@@ -25,6 +25,7 @@ import { STIL_LABEL, Stil, ZWECK_LABEL, ZWECK_STANDARD, Zweck, stileFuer, stilPa
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
+import { KURZFASSUNG_MAX, LANGFASSUNG_MAX } from '../shared/beitrag-grenzen';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { AussageInAnfrage, aussageFuerAnfrage, themenHinweisNachSpeichern } from '../beitragsformular/aussage-fuer-anfrage';
 import { Thema } from '../services/dtos/themenDtos';
@@ -54,10 +55,10 @@ import { KOMMENTAR_TEXT_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
 export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = KOMMENTAR_TEXT_MAX;
 /** Zeichengrenze von X und Bluesky; nur ein Hinweis, keine Pruefung. */
-export const PLATTFORM_GRENZE = 280;
+export const PLATTFORM_GRENZE = KURZFASSUNG_MAX;
 /** Die Fassungen Kurz und Lang (#355), wie im Backend (dtos/commentary.py). */
 export const KURZ_MAX = PLATTFORM_GRENZE;
-export const LANG_MAX = 2000;
+export const LANG_MAX = LANGFASSUNG_MAX;
 
 export const DUBLETTE_HINWEIS = 'Es gibt schon einen sehr ähnlichen Kommentar.';
 
