@@ -188,7 +188,7 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('Kürzungsvorschlag');
       expect(text).toContain('der Vorschlag entsteht ohne KI, wird nicht gespeichert');
-      expect(text).toContain('erst in deinem Kommentar, wenn du ihn übernimmst');
+      expect(text).toContain('erst in der Kurzfassung, wenn du ihn übernimmst');
       expect(text).toContain('oder einen Kürzungsvorschlag anfragt');
     });
 
@@ -196,6 +196,7 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Gegenlesen beim Schreiben');
 
       expect(text).toContain('lokale Spracherkennung');
+      expect(text).toContain('zeigt dir dann einen Sprachhinweis');
       expect(text).toContain('neue Aussage');
       expect(text).toContain('„Aussage vorab anlegen“');
       expect(text).toContain('auch davon speichern wir nichts');
