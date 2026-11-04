@@ -104,11 +104,13 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
     """
     from qdrant_client.models import PointStruct
 
+    from core.config import EMBEDDING_VEKTOR
+
     beitrag_id, aussage_id, andere = (str(uuid.uuid4()) for _ in range(3))
     sammlung = await real_embeddings_manager.async_client.get_collection(
         real_embeddings_manager.collection_name
     )
-    groesse = sammlung.config.params.vectors.size
+    groesse = sammlung.config.params.vectors[EMBEDDING_VEKTOR].size
     # Verschiedene Vektoren: Ueberschriebe die Kaskade die Aussage mit dem Vektor des
     # Beitrags, fiele das sonst nicht auf.
     await real_embeddings_manager.async_client.upsert(
@@ -116,12 +118,15 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
         points=[
             PointStruct(
                 id=beitrag_id,
-                vector=[0.1] * groesse,
+                vector={EMBEDDING_VEKTOR: [0.1] * groesse},
                 payload={"content_type": typ, "text": TEXT},
             ),
             PointStruct(
                 id=aussage_id,
-                vector=[0.1, 0.9] * (groesse // 2) + [0.1] * (groesse % 2),
+                vector={
+                    EMBEDDING_VEKTOR: [0.1, 0.9] * (groesse // 2)
+                    + [0.1] * (groesse % 2)
+                },
                 payload={
                     "content_type": ContentType.STATEMENT.value,
                     "text": "Bringt ein Tempolimit etwas?",

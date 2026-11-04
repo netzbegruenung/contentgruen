@@ -106,7 +106,6 @@ class QdrantRestore:
             logger.info(f"Collection: {self.collection_name}")
             logger.info(f"Status: {collection_info.status}")
             logger.info(f"Points count: {collection_info.points_count}")
-            logger.info(f"Vectors count: {collection_info.vectors_count}")
 
             if collection_info.points_count == 0:
                 logger.warning("Collection is empty after restore!")
