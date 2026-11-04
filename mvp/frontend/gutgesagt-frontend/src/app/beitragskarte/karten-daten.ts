@@ -119,6 +119,8 @@ export interface KartenDaten {
   autorName: string | null;
   /** Verwendungen; null = unbekannt, dann kein Badge. */
   nutzung: number | null;
+  /** Wie viele Beitraege auf diesem beruhen ("N Varianten", #356); fehlt = keine. */
+  varianten?: number;
   /** Davon in den letzten 7 Tagen; nur in Meine Beitraege gesetzt, sonst kein Zuwachs. */
   nutzungLetzte7Tage?: number;
   /** Am Kommentar in Meine Beitraege: Nutzung und Zuwachs je vorhandener Fassung (#355). */
@@ -154,6 +156,7 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
     eigen: inhalt.ist_eigener_beitrag ?? null,
     autorName: inhalt.autor_name ?? null,
     nutzung: inhalt.usage_count ?? 0,
+    varianten: inhalt.varianten ?? 0,
     quellen: (inhalt.references ?? []).map(quelle),
     bildUrl: inhalt['image_url'] || undefined,
     statement: statement(paket),

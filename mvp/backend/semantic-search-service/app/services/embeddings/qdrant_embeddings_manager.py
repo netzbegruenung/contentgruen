@@ -16,7 +16,7 @@ from qdrant_client.models import (
     Filter,
     FieldCondition,
     MatchValue,
-    SearchRequest,
+    QueryRequest,
     UpdateStatus,
     CollectionInfo,
     ScrollRequest,
@@ -29,7 +29,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI
 
-from core.config import EMBEDDING_MODELL, Settings
+from core.config import EMBEDDING_MODELL, EMBEDDING_VEKTOR, Settings
 from core.logging import get_logger
 from domain.interfaces.embeddings_manager import IEmbeddingsManager, Suchparameter
 from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
@@ -141,6 +141,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         self._vorgegebenes_modell = einbettungsmodell
         self._is_started = False
         self._initialized = True
+        # Name des Vektors in der Collection; None bei einer Collection von vor #395 mit
+        # einem unbenannten Vektor (Uebergang bis scripts/manual/vektor_benennen.py).
+        self._vektorname: Optional[str] = EMBEDDING_VEKTOR
         self.collection_name = (
             settings.qdrant_collection or "content_collection"
         ).strip()
@@ -197,23 +200,24 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
     async def _ensure_collection(self) -> None:
         """Ensure the Qdrant collection exists with proper configuration."""
         try:
-            # Check if collection exists
-            collections = await self._async_client.get_collections()
-            collection_names = [c.name for c in collections.collections]
-
-            if self.collection_name not in collection_names:
+            # collection_exists() kennt auch Aliase; get_collections() listet sie nicht.
+            if not await self._async_client.collection_exists(self.collection_name):
                 logger.info(f"📦 Creating Qdrant collection: {self.collection_name}")
+                # Auch nach einem Start auf einer alten Collection im selben Prozess.
+                self._vektorname = EMBEDDING_VEKTOR
 
                 # Create collection with optimized settings for <10k documents
                 await self._async_client.create_collection(
                     collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=768,  # E5-base has 768 dimensions
-                        distance=Distance.COSINE,
-                        hnsw_config=HnswConfigDiff(
-                            m=8, ef_construct=100  # Optimal for <10k documents
-                        ),
-                    ),
+                    vectors_config={
+                        EMBEDDING_VEKTOR: VectorParams(
+                            size=768,  # E5-base has 768 dimensions
+                            distance=Distance.COSINE,
+                            hnsw_config=HnswConfigDiff(
+                                m=8, ef_construct=100  # Optimal for <10k documents
+                            ),
+                        )
+                    },
                     on_disk_payload=False,  # In-memory for better performance
                 )
 
@@ -252,6 +256,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             else:
                 # Get collection info for logging
                 info = await self._async_client.get_collection(self.collection_name)
+                self._vektorname = self._vektorname_aus(info)
                 logger.info(
                     f"✅ Using existing collection {self.collection_name} with {info.points_count} points"
                 )
@@ -263,6 +268,36 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                 f"❌ Failed to ensure collection: {type(e).__name__}", exc_info=True
             )
             raise
+
+    def _vektorname_aus(self, info: CollectionInfo) -> Optional[str]:
+        """
+        Unter welchem Namen die bestehende Collection den Vektor fuehrt.
+
+        Benannte Vektoren: EMBEDDING_VEKTOR muss dabei sein, sonst passt die
+        Collection nicht zum Modell. Ein unbenannter Vektor (vor #395) bleibt
+        nutzbar, bis scripts/manual/vektor_benennen.py umgestellt hat; danach
+        braucht der Dienst einen Neustart.
+        """
+        vektoren = info.config.params.vectors
+        if not isinstance(vektoren, dict):
+            logger.warning(
+                f"⚠️ Collection {self.collection_name} has an unnamed vector; "
+                "run scripts/manual/vektor_benennen.py"
+            )
+            return None
+        if EMBEDDING_VEKTOR not in vektoren:
+            raise RuntimeError(
+                f"Collection {self.collection_name} has no vector {EMBEDDING_VEKTOR}"
+            )
+        return EMBEDDING_VEKTOR
+
+    def _als_punktvektor(
+        self, embedding: List[float]
+    ) -> List[float] | Dict[str, List[float]]:
+        """Der Vektor eines Punkts: unter seinem Namen, im Uebergang unbenannt."""
+        if self._vektorname is None:
+            return embedding
+        return {self._vektorname: embedding}
 
     async def _text_normalisiert_index_sicherstellen(self) -> None:
         """
@@ -456,7 +491,11 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                         document[date_field] = document[date_field].isoformat()
 
                 # Create point
-                point = PointStruct(id=point_id, vector=embedding, payload=document)
+                point = PointStruct(
+                    id=point_id,
+                    vector=self._als_punktvektor(embedding),
+                    payload=document,
+                )
                 qdrant_points.append(point)
 
             # Batch upsert
@@ -514,17 +553,17 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         try:
             query_vector = self._suchvektor(query, praefix)
 
-            # Perform search
-            results = await self._async_client.search(
+            antwort = await self._async_client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,
+                using=self._vektorname,
                 limit=limit,
                 query_filter=self._suchfilter(content_type, filter_dict),
                 with_payload=True,
                 with_vectors=False,
             )
 
-            return self._treffer(results)
+            return self._treffer(antwort.points)
 
         except (UnexpectedResponse, ResponseHandlingException) as e:
             logger.error(
@@ -564,11 +603,12 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         try:
             query_vector = self._suchvektor(query, praefix)
 
-            results = await self._async_client.search_batch(
+            antworten = await self._async_client.query_batch_points(
                 collection_name=self.collection_name,
                 requests=[
-                    SearchRequest(
-                        vector=query_vector,
+                    QueryRequest(
+                        query=query_vector,
+                        using=self._vektorname,
                         filter=self._suchfilter(suche.content_type, suche.filter_dict),
                         limit=suche.limit,
                         with_payload=True,
@@ -578,7 +618,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                 ],
             )
 
-            return [self._treffer(treffer) for treffer in results]
+            return [self._treffer(antwort.points) for antwort in antworten]
 
         except (UnexpectedResponse, ResponseHandlingException) as e:
             logger.error(
@@ -799,16 +839,28 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             for ct in content_types:
                 type_counts[ct] = await self.count(ct)
 
+            vektor = info.config.params.vectors
+            if isinstance(vektor, dict):
+                if self._vektorname is None:
+                    # vektor_benennen.py lief, der Dienst wurde nicht neu gestartet:
+                    # Suchen und Schreiben ohne Vektornamen schlagen fehl.
+                    logger.error(
+                        f"❌ Collection {self.collection_name} has named vectors now; "
+                        "restart the service"
+                    )
+                    return {"status": "unhealthy", "error": "restart_required"}
+                vektor = vektor[self._vektorname]
             return {
                 "status": "healthy",
                 "collection": self.collection_name,
                 "total_points": info.points_count,
-                "vectors_count": info.vectors_count or info.points_count or 0,
+                # Ein Vektor je Punkt; vectors_count gibt es seit qdrant-client 1.16 nicht mehr.
+                "vectors_count": info.points_count or 0,
                 "indexed_vectors_count": info.indexed_vectors_count or 0,
                 "content_types": type_counts,
                 "config": {
-                    "vector_size": info.config.params.vectors.size,
-                    "distance": info.config.params.vectors.distance.value,
+                    "vector_size": vektor.size,
+                    "distance": vektor.distance.value,
                 },
             }
 

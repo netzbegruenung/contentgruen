@@ -26,6 +26,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/feedback/senden")]      // Feedback auch von Besuchern
     [InlineData("/api/v1/einladungen/pruefen")]  // Einladung oeffnen, noch ohne Konto (#429)
     [InlineData("/api/v1/einladungen/einloesen")]
+    [InlineData("/api/v1/varianten/0b8f6c1e-3d2a-4f5b-9c7e-1a2b3c4d5e6f")]  // "N Varianten" (#356)
     public void IsAnonymousAllowed_TrueForPublicPaths(string path)
     {
         Assert.True(EndpointPolicy.IsAnonymousAllowed(path));

@@ -53,6 +53,11 @@ from services.content.beitrag_aendern_service import (
 )
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.fehler import INTERNER_FEHLER, Validierungsfehler
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
+from services.varianten import varianten_ergaenzen
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -107,6 +112,7 @@ async def get_recent_content(
     limit: int = Query(default=6, ge=1, le=20),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
 ) -> Dict[str, Any]:
     """
     Get the most recently added content items.
@@ -186,6 +192,7 @@ async def get_recent_content(
             ],
             aufrufer,
         )
+        varianten_ergaenzen(antworten, varianten)
         enriched_results = [
             {**antwort.model_dump(mode="json"), "result_type": e["result_type"]}
             for e, antwort in zip(angereichert, antworten)

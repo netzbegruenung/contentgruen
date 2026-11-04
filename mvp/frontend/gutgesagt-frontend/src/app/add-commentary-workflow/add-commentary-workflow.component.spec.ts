@@ -16,6 +16,7 @@ import { environment } from '../../environments/environment';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { VORLAGE_NICHT_VERFUEGBAR } from '../beitragsformular/vorlage';
 
 describe('AddCommentaryWorkflowComponent', () => {
   let component: AddCommentaryWorkflowComponent;
@@ -249,6 +250,33 @@ describe('AddCommentaryWorkflowComponent mit Aussage aus der Adresse', () => {
     expect(component.statementId).toBe('a-1');
     expect(formular()!.statementText).toBe('Waermepumpen sind zu teuer');
     expect(formular()!.aussage.text).toBe('Waermepumpen sind zu teuer');
+  });
+
+  it('belegt das Formular mit der Vorlage aus ?vorlage= vor (#356)', async () => {
+    await oeffnen({ vorlage: 'k-1' });
+
+    const anfrage = http.expectOne((req) => req.url.includes('/api/v1/commentary/getById'));
+    expect(anfrage.request.url).toContain('commentary_id=k-1');
+    anfrage.flush({ id: 'k-1', title: 'Waermepumpen lohnen sich', text: 'Mit Foerderung rechnet sich die Pumpe.', short_text: '', long_text: '', zweck: 'kommentarspalte', style: null });
+    fixture.detectChanges();
+
+    expect(formular()!.vorlage!.id).toBe('k-1');
+    expect(formular()!.commentaryForm.value.title).toBe('Waermepumpen lohnen sich');
+    expect(formular()!.commentaryForm.value.text).toBe('Mit Foerderung rechnet sich die Pumpe.');
+  });
+
+  it('laesst das Formular leer und sagt es, wenn die Vorlage nicht ladbar ist (#356)', async () => {
+    await oeffnen({ vorlage: 'k-weg' });
+    const snackBar = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+
+    http
+      .expectOne((req) => req.url.includes('/api/v1/commentary/getById'))
+      .flush('weg', { status: 404, statusText: 'Not Found' });
+    fixture.detectChanges();
+
+    expect(component.vorlage).toBeNull();
+    expect(formular()!.commentaryForm.value.title).toBe('');
+    expect(snackBar).toHaveBeenCalledWith(VORLAGE_NICHT_VERFUEGBAR, 'OK', { duration: 8000 });
   });
 
   it('nimmt ?searchQuery= nur als Text und ruft dafuer nichts auf', async () => {

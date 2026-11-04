@@ -79,13 +79,42 @@ class TestBeitragLoeschen:
         with pytest.raises(ValueError):
             await repository.get(uuid.UUID(BEITRAG_ID))
 
-    async def test_loeschen_andere_person_aendert_nichts(self, service, speicher):
+    async def test_loeschen_loest_die_verknuepfungen_als_variante(
+        self, service, speicher, varianten_ohne_datenbank
+    ):
+        """Eine geloeschte Variante zaehlt am Original nicht mehr mit (#356)."""
+        speicher.add_test_data("commentary", [_beitrag()])
+
+        await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
+
+        varianten_ohne_datenbank.verknuepfungen_entfernen.assert_called_once_with(
+            uuid.UUID(BEITRAG_ID)
+        )
+
+    async def test_loeschen_varianten_scheitern_beitrag_bleibt_sichtbar(
+        self, service, speicher, varianten_ohne_datenbank
+    ):
+        """Erst die Verknuepfungen, dann der Zustand: Ein neuer Versuch findet ihn."""
+        speicher.add_test_data("commentary", [_beitrag()])
+        varianten_ohne_datenbank.verknuepfungen_entfernen.side_effect = RuntimeError(
+            "PostgreSQL nicht erreichbar"
+        )
+
+        with pytest.raises(RuntimeError):
+            await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
+
+        assert _status(speicher) == ContentStatus.VISIBLE.value
+
+    async def test_loeschen_andere_person_aendert_nichts(
+        self, service, speicher, varianten_ohne_datenbank
+    ):
         speicher.add_test_data("commentary", [_beitrag()])
 
         ergebnis = await service.loeschen(uuid.UUID(BEITRAG_ID), "andere-person")
 
         assert ergebnis is LoeschErgebnis.NICHT_AUTOR
         assert _status(speicher) == ContentStatus.VISIBLE.value
+        varianten_ohne_datenbank.verknuepfungen_entfernen.assert_not_called()
 
     async def test_loeschen_aussage_ist_kein_beitrag(self, service, speicher):
         speicher.add_test_data("statement", [_beitrag("statement")])

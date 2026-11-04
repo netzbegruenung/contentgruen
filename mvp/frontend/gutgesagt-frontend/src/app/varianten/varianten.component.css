@@ -1,0 +1,9 @@
+.abschnitt {
+  margin: var(--spacing-md) 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.hinweis {
+  color: var(--text-secondary);
+}

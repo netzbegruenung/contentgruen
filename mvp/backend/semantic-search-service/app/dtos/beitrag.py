@@ -78,12 +78,17 @@ class KommentarResponse(BeitragResponse):
     style: Optional[Stil] = None
     references: List[CommentaryReference] = []
     references_count: int = 0
+    # Wie viele Kommentare auf diesem beruhen ("N Varianten", #356); nachgetragen
+    # von services/varianten.py, wo die Karte sie zeigt, sonst 0.
+    varianten: int = 0
 
 
 class HintergrundinfoResponse(BeitragResponse):
     title: str
     references: List[GenericTextReference] = []
     references_count: int = 0
+    # Wie bei KommentarResponse (#356).
+    varianten: int = 0
 
 
 class PostResponse(BeitragResponse):

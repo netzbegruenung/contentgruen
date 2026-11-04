@@ -24,6 +24,26 @@ app-formular-hilfe {
   }
 }
 
+// Als Vorlage genommen (#356): ein Hinweis ueber dem Formular, kein Fehler.
+.vorlage-hinweis {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+
+  mat-icon {
+    flex: none;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  @include bp.mobile-only {
+    padding: 0 16px;
+  }
+}
+
 .beitrag-formular {
   display: flex;
   flex-direction: column;

@@ -10,12 +10,15 @@ vorher durch einen Admin nach dem Loeschkonzept (docs/LOESCHKONZEPT.md).
 
 Nur die Verweise der Aussagen auf ihn gehen weg (#294): Sonst zaehlte eine Aussage,
 deren einziger Beitrag geloescht ist, weiter als beantwortet, etwa im Zaehler auf der
-Startseite (StatementRepository.count_curated).
+Startseite (StatementRepository.count_curated). Ebenso seine Verknuepfungen als
+Variante oder Original (#356): Sonst zaehlte "N Varianten" am Original ihn weiter.
 """
 
+import asyncio
 import logging
 import uuid
 from enum import Enum
+from typing import Optional
 
 from pydantic import ValidationError
 
@@ -23,6 +26,10 @@ from domain.models.content_status import AUSGEBLENDET, ContentStatus
 from domain.content_registry import BEITRAGSTYPEN
 from repositories.interfaces.base_content_repository import IBaseContentRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
 from services.content.verweise_entfernen import verweise_entfernen
 
 logger = logging.getLogger(__name__)
@@ -40,9 +47,12 @@ class BeitragLoeschenService:
         self,
         repository: IBaseContentRepository,
         moderation_repo: IModerationRepository,
+        varianten: Optional[VariantenRepository] = None,
     ):
         self.repository = repository
         self.moderation_repo = moderation_repo
+        # Ohne Angabe die globale; ihre Verbindung entsteht erst beim Loeschen.
+        self.varianten = varianten or get_varianten_repository()
 
     async def loeschen(self, beitrag_id: uuid.UUID, aufrufer: str) -> LoeschErgebnis:
         """
@@ -58,9 +68,10 @@ class BeitragLoeschenService:
         Ein unlesbarer Datensatz ist ein Fehler, kein "nicht da": ValidationError
         (eine Unterklasse von ValueError) geht weiter.
 
-        Erst die Verweise der Aussagen, dann der Zustand: Scheitert das Entfernen der
-        Verweise, geht VerweiseNichtEntfernt weiter und der Beitrag bleibt sichtbar,
-        sodass ein erneuter Versuch aufraeumt. Andersherum faende ein zweiter Versuch
+        Erst die Verweise der Aussagen und die Verknuepfungen als Variante, dann der
+        Zustand: Scheitert das Entfernen der Verweise, geht VerweiseNichtEntfernt
+        weiter, scheitert das der Verknuepfungen, der Datenbankfehler; der Beitrag
+        bleibt sichtbar, sodass ein erneuter Versuch aufraeumt. Andersherum faende ein zweiter Versuch
         den geloeschten Beitrag nicht mehr, und die Verweise blieben stehen. Was ein
         abgebrochener Lauf ohne zweiten Versuch hinterlaesst: verweise_entfernen.py.
         """
@@ -77,6 +88,7 @@ class BeitragLoeschenService:
             return LoeschErgebnis.NICHT_AUTOR
 
         await verweise_entfernen(self.moderation_repo, str(beitrag_id))
+        await asyncio.to_thread(self.varianten.verknuepfungen_entfernen, beitrag_id)
         await self.repository.update_status(
             beitrag_id, ContentStatus.DELETED, nicht_aus=AUSGEBLENDET
         )

@@ -154,6 +154,11 @@ export class RouteConfigService {
     queryParams: URLSearchParams,
     defaultConfig: RouteConfig
   ): RouteConfig {
+    // /varianten/:id (#356): die Varianten eines Beitrags
+    if (route.startsWith(`${ROUTES.VARIANTEN}/`)) {
+      return { ...defaultConfig, pageTitle: PAGE_TITLES.VARIANTEN };
+    }
+
     // Ergebnisseite nach dem Speichern: <Formularpfad>/gespeichert/<id>
     if (
       route.startsWith(`${FORMULAR_PFAD.commentary}/${GESPEICHERT_SEGMENT}/`) ||

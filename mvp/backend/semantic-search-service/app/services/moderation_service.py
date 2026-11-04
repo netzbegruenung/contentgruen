@@ -23,6 +23,10 @@ from repositories.einwurf_repository import (
 )
 from repositories.sperre_repository import SperreRepository, get_sperre_repository
 from repositories.vote_repository import VoteRepository
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
 from domain.models.content_status import ContentStatus
 from domain.models.meldegrund import MELDEGRUENDE, Meldegrund, beschreibung_fehlt
 from domain.models.meldung import (
@@ -139,6 +143,7 @@ class ModerationService:
         einwurf_repo: Optional[EinwurfRepository] = None,
         sperre_repo: Optional[SperreRepository] = None,
         mitteilung: Optional[MeldungMitteilung] = None,
+        varianten_repo: Optional[VariantenRepository] = None,
     ):
         self.report_repo = report_repo or get_content_report_repository()
         self.moderation_repo = moderation_repo or get_moderation_repository()
@@ -146,6 +151,7 @@ class ModerationService:
         self._vote_repo = vote_repo
         self._einwurf_repo = einwurf_repo
         self._sperre_repo = sperre_repo
+        self._varianten_repo = varianten_repo
         # Mails an die meldende Person (#493); ohne eingerichteten Versand geht nichts hinaus.
         self._mitteilung = mitteilung
 
@@ -625,14 +631,15 @@ class ModerationService:
     ) -> bool:
         """
         Einen Beitrag endgueltig entfernen, samt den Verweisen der Aussagen auf ihn,
-        seinen Stimmen und dem "ausformuliert in" der Einwuerfe, die in ihm
-        ausformuliert sind (#421).
+        seinen Stimmen, dem "ausformuliert in" der Einwuerfe, die in ihm
+        ausformuliert sind (#421), und seinen Verknuepfungen als Variante oder
+        Original (#356).
 
         Die Verweise gehen fuer jeden Beitragstyp weg, unabhaengig von content_type:
-        Aussagen verweisen auf Beitraege jedes Typs (#294). Erst Verweise, Stimmen und
-        "ausformuliert in", dann der Beitrag: Scheitert davor etwas, bleibt der Beitrag
-        stehen und ein erneuter Versuch raeumt auf. Andersherum stuende ein Verweis auf
-        einen Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf
+        Aussagen verweisen auf Beitraege jedes Typs (#294). Erst Verweise, Stimmen,
+        "ausformuliert in" und Varianten, dann der Beitrag: Scheitert davor etwas,
+        bleibt der Beitrag stehen und ein erneuter Versuch raeumt auf. Andersherum
+        stuende ein Verweis auf einen Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf
         ohne zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
 
         Danach gilt eine Sperre des Beitrags als aufgehoben, und die offenen
@@ -668,9 +675,12 @@ class ModerationService:
         ausformuliert = await asyncio.to_thread(
             self._einwuerfe().ausformuliert_in_loeschen, UUID(content_id)
         )
+        varianten = await asyncio.to_thread(
+            self._varianten().verknuepfungen_entfernen, UUID(content_id)
+        )
         logger.info(
-            f"Content {content_id}: {stimmen} votes and {ausformuliert} "
-            "raw input links deleted"
+            f"Content {content_id}: {stimmen} votes, {ausformuliert} "
+            f"raw input links and {varianten} variant links deleted"
         )
 
         if not await self.moderation_repo.entfernen(content_id):
@@ -734,6 +744,11 @@ class ModerationService:
         if self._einwurf_repo is None:
             self._einwurf_repo = get_einwurf_repository()
         return self._einwurf_repo
+
+    def _varianten(self) -> VariantenRepository:
+        if self._varianten_repo is None:
+            self._varianten_repo = get_varianten_repository()
+        return self._varianten_repo
 
     def _sperre_repository(self) -> SperreRepository:
         if self._sperre_repo is None:

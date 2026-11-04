@@ -240,13 +240,18 @@ class TestLoeschen:
         assert CONTENT_ID in speicher.get_data()
         service.report_repo.update_reports_by_content_id.assert_not_called()
 
-    async def test_loeschen_nimmt_stimmen_und_ausformuliert_in_mit(self, service):
-        """Nach dem Beitrag zeigt nichts mehr auf ihn (#421)."""
+    async def test_loeschen_nimmt_stimmen_und_ausformuliert_in_mit(
+        self, service, varianten_ohne_datenbank
+    ):
+        """Nach dem Beitrag zeigt nichts mehr auf ihn (#421), auch keine Variante (#356)."""
         assert await service.delete_content(CONTENT_ID, "commentary", None)
 
         kennung = uuid.UUID(CONTENT_ID)
         service._vote_repo.loeschen_fuer_beitrag.assert_called_once_with(kennung)
         service._einwurf_repo.ausformuliert_in_loeschen.assert_called_once_with(kennung)
+        varianten_ohne_datenbank.verknuepfungen_entfernen.assert_called_once_with(
+            kennung
+        )
         aufruf = service.report_repo.update_reports_by_content_id.call_args.kwargs
         assert aufruf["reviewed_by"] is None
         # Bearbeitete Meldungen behalten Entscheidung und Loeschfrist.

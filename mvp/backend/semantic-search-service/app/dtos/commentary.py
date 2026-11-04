@@ -50,6 +50,11 @@ class AddCommentaryRequest(BaseModel):
     # verknuepft - beim ersten Versuch entscheidet die Person noch. Gilt wie
     # trotz_dublette_von nur fuer den gezeigten.
     vorhanden_nehmen: Optional[UUID] = None
+    # "Als Vorlage nehmen" (#356): der Beitrag desselben Typs, auf dem der neue
+    # beruht. Verknuepft wird nur, wenn ein neuer angelegt wird und das Original
+    # noch sichtbar ist (services/varianten.py); bei einer Dublette entscheidet die
+    # Person wie sonst.
+    beruht_auf: Optional[UUID] = None
 
     # Trotzdem speichern und den vorhandenen nehmen schliessen einander aus.
     @model_validator(mode="after")
