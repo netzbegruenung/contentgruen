@@ -551,6 +551,36 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     });
   });
 
+  describe('Als Vorlage nehmen (#356)', () => {
+    it('fuehrt angemeldet ins Formular des Typs mit der Vorlage', () => {
+      const navigieren = (TestBed.inject(Router) as jasmine.SpyObj<Router>).navigate;
+
+      expect(component.kannAlsVorlage).toBeTrue();
+      component.alsVorlageNehmen();
+
+      expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary'], {
+        queryParams: { vorlage: INHALT_ID },
+      });
+    });
+
+    it('gibt es an der Hintergrundinfo, nicht an Post und Bild', () => {
+      for (const [typ, erwartet] of [['generictext', true], ['post', false], ['image', false]] as const) {
+        component.typ = typ;
+        expect(component.kannAlsVorlage).withContext(typ).toBe(erwartet);
+      }
+    });
+
+    it('gibt es nicht fuer Besucher und nicht in der Vorschau', () => {
+      const authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      authService.getUserInfo.and.returnValue(null);
+      expect(component.kannAlsVorlage).toBeFalse();
+
+      authService.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' } as any);
+      component.vorschau = true;
+      expect(component.kannAlsVorlage).toBeFalse();
+    });
+  });
+
   describe('Vorschau', () => {
     beforeEach(() => {
       fixture.componentRef.setInput('vorschau', true);

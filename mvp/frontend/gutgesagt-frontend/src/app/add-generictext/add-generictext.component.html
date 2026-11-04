@@ -6,6 +6,12 @@
 
     <app-formular-hilfe typ="generictext"></app-formular-hilfe>
 
+    <!-- Als Vorlage genommen (#356): wessen Text hier steht -->
+    <p class="vorlage-hinweis" *ngIf="vorlageHinweis as hinweis">
+        <mat-icon aria-hidden="true">content_copy</mat-icon>
+        <span>{{ hinweis }}</span>
+    </p>
+
     <div class="content-wrapper">
         <div class="form-column">
             <form [formGroup]="generictextForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>

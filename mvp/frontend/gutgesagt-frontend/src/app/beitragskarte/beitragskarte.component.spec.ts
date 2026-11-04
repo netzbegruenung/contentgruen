@@ -16,6 +16,7 @@ import { VotingService } from '../services/voting.service';
 import { Einwurf } from '../services/einwurf.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
 import { Anfragen, bildFertig, fremdeAdresse } from '../testing/anfragen';
+import { provideRouter } from '@angular/router';
 
 /**
  * Portiert aus den Specs der vier alten Karten (commentary-, generictext- und
@@ -112,6 +113,7 @@ describe('BeitragskarteComponent', () => {
         { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']) },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['error', 'debug', 'info', 'warn']) },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
+        provideRouter([]),
       ],
     }).compileComponents();
   });
@@ -720,6 +722,30 @@ describe('BeitragskarteComponent', () => {
       fixture.detectChanges();
 
       expect(element('.mehr-knopf')).toBeNull();
+    });
+  });
+
+  describe('Varianten (#356)', () => {
+    it('zeigt "N Varianten" als Link auf ihre Liste', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { varianten: 3 })));
+
+      const link = element<HTMLAnchorElement>('.karte-varianten');
+      expect(link.textContent!.trim()).toContain('3 Varianten');
+      expect(link.getAttribute('href')).toBe('/varianten/test-id');
+    });
+
+    it('sagt "1 Variante" in der Einzahl', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { varianten: 1 })));
+
+      expect(element('.karte-varianten').textContent!.trim()).toContain('1 Variante');
+    });
+
+    it('zeigt nichts ohne Varianten und nichts in der Vorschau', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+      expect(element('.karte-varianten')).toBeNull();
+
+      zeigen(ausSuchergebnis(paket('commentary_result', { varianten: 2 })), { vorschau: true });
+      expect(element('.karte-varianten')).toBeNull();
     });
   });
 

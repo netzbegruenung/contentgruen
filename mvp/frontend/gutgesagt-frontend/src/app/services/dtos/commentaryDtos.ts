@@ -28,6 +28,8 @@ export interface AddCommentaryRequest {
     trotz_dublette_von?: string;
     /** Die Person nimmt diesen eigenen vorhandenen Kommentar (ID): er haengt dann an der Aussage. */
     vorhanden_nehmen?: string;
+    /** "Als Vorlage nehmen" (#356): der Beitrag (ID), auf dem der neue beruht. */
+    beruht_auf?: string;
 }
 
 export interface Commentary {

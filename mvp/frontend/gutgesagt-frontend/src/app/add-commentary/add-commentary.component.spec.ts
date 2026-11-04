@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
+import { Vorlage } from '../beitragsformular/vorlage';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -1361,6 +1362,75 @@ describe('AddCommentaryComponent', () => {
       component.zuruecksetzen();
       expect(dialog.open).not.toHaveBeenCalled();
     });
+  });
+
+  describe('Als Vorlage nehmen (#356)', () => {
+    function alsVorlage(vorlage: Partial<Vorlage> = {}): void {
+      component.vorlage = {
+        id: 'original-1',
+        titel: 'Wärmepumpen lohnen sich auch im Altbau',
+        text: 'Mit Förderung rechnet sich die Pumpe schon nach wenigen Jahren.',
+        ...vorlage,
+      };
+      component.ngOnChanges({ vorlage: new SimpleChange(null, component.vorlage, true) });
+      fixture.detectChanges();
+    }
+
+    it('belegt Titel, Text, Fassungen, Zweck und Stil mit dem Original vor', () => {
+      alsVorlage({ kurz: 'Kurz gesagt.', lang: 'Ausführlich.', zweck: 'eigene_leute', stil: 'humorvoll' });
+
+      expect(component.commentaryForm.value).toEqual(
+        jasmine.objectContaining({
+          title: 'Wärmepumpen lohnen sich auch im Altbau',
+          text: 'Mit Förderung rechnet sich die Pumpe schon nach wenigen Jahren.',
+          kurz: 'Kurz gesagt.',
+          lang: 'Ausführlich.',
+          zweck: 'eigene_leute',
+          stil: 'humorvoll',
+          references: [],
+        }),
+      );
+      expect(component.zeigtFassungen).toBeTrue();
+      expect(seite().querySelector('.vorlage-hinweis')!.textContent).toContain(
+        'Variante von „Wärmepumpen lohnen sich auch im Altbau“',
+      );
+    });
+
+    it('schickt beim Speichern mit, worauf der neue Kommentar beruht', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      alsVorlage();
+      component.commentaryForm.patchValue({ text: 'Mit Förderung rechnet sich die Pumpe nach sieben Jahren.' });
+
+      component.speichern();
+      flush();
+
+      expect(hinzufuegen.calls.mostRecent().args[0].beruht_auf).toBe('original-1');
+    }));
+
+    it('vergisst die Vorlage beim Zuruecksetzen', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      alsVorlage();
+
+      component.leeren();
+      fixture.detectChanges();
+      ausfuellen();
+      component.speichern();
+      flush();
+
+      expect(seite().querySelector('.vorlage-hinweis')).toBeNull();
+      expect('beruht_auf' in hinzufuegen.calls.mostRecent().args[0]).toBeFalse();
+    }));
+
+    it('ohne Vorlage kein Hinweis und kein beruht_auf', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      ausfuellen();
+
+      component.speichern();
+      flush();
+
+      expect(seite().querySelector('.vorlage-hinweis')).toBeNull();
+      expect('beruht_auf' in hinzufuegen.calls.mostRecent().args[0]).toBeFalse();
+    }));
   });
 
   describe('Vorbefuellung aus dem Destillier-Ablauf', () => {

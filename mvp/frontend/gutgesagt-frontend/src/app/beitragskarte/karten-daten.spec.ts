@@ -75,6 +75,11 @@ describe('karten-daten', () => {
       expect(daten.einwurfAngaben).toBeUndefined();
     });
 
+    it('uebernimmt die Zahl der Varianten, ohne Angabe 0 (#356)', () => {
+      expect(ausSuchergebnis(paket('commentary_result', { varianten: 2 })).varianten).toBe(2);
+      expect(ausSuchergebnis(paket('commentary_result')).varianten).toBe(0);
+    });
+
     it('nimmt den Anzeigenamen vom Inhalt', () => {
       expect(ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim' })).autorName).toBe('Kim');
     });
