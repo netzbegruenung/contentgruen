@@ -229,6 +229,10 @@ _Avoid_: Archiviert
 Der Autor ersetzt Titel, Text oder Herkunft seines Kommentars oder seiner Hintergrundinfo, aus „Meine Beiträge“. Es gelten dieselben Grenzen wie beim Anlegen, die Titelregel und der CC0-Hinweis eingeschlossen, aber keine Dublettenprüfung; die Suche findet danach den neuen Text. Stimmen, Nutzung und Verknüpfungen bleiben. Festgehalten wird nur, wer wann geändert hat, nicht der alte Wortlaut. Gesperrte und gelöschte Beiträge lassen sich nicht ändern, Posts und Bilder noch nicht. Solange eine Meldung offen ist, auch nicht: Der Admin sieht den gemeldeten Wortlaut.
 _Avoid_: Bearbeiten (heißt bei Meldungen etwas anderes), Editieren
 
+**Änderungsverlauf**:
+Was an einem Beitrag über das Ändern festgehalten wird: je Änderung die Kennung und der Zeitpunkt, nie der alte Wortlaut. Angezeigt wird er nirgends; bei der Kontolöschung bekommt er wie die anderen Kennungen am Beitrag den Platzhalter.
+_Avoid_: Bearbeitungsgeschichte, Versionsgeschichte, Historie
+
 **Titel**:
 Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema. Bild und Post haben auch einen Titel; er beschreibt den Inhalt und folgt dieser Regel nicht.
 _Avoid_: Überschrift, Etikett, Thema

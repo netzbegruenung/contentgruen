@@ -182,6 +182,45 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('höchstens etwa elf Minuten');
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe b DSGVO');
     });
+
+    it('nennt den Kürzungsvorschlag: ohne KI, nicht gespeichert, erst beim Übernehmen im Beitrag (#403, #550)', () => {
+      const text = abschnitt('Gegenlesen beim Schreiben');
+
+      expect(text).toContain('Kürzungsvorschlag');
+      expect(text).toContain('der Vorschlag entsteht ohne KI, wird nicht gespeichert');
+      expect(text).toContain('erst in deinem Kommentar, wenn du ihn übernimmst');
+      expect(text).toContain('oder einen Kürzungsvorschlag anfragt');
+    });
+
+    it('nennt die Spracherkennung für Beiträge und neue Aussagen, auch beim Vorab-Anlegen (#405, #550)', () => {
+      const text = abschnitt('Gegenlesen beim Schreiben');
+
+      expect(text).toContain('lokale Spracherkennung');
+      expect(text).toContain('neue Aussage');
+      expect(text).toContain('„Aussage vorab anlegen“');
+      expect(text).toContain('auch davon speichern wir nichts');
+      expect(text).toContain('wie oft dein Konto gegenlesen lässt, die Spracherkennung fragt');
+    });
+  });
+
+  describe('Ändern eigener Beiträge (#299, #550)', () => {
+    it('beschreibt den Änderungsverlauf mit Kennung und Zeitpunkt, ohne den alten Wortlaut', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('Kommentar oder deine Hintergrundinfo kannst du unter „Meine Beiträge“ ändern');
+      expect(text).toContain('Änderungsverlauf');
+      expect(text).toContain('deine Kennung und den Zeitpunkt');
+      expect(text).toContain('Den alten Wortlaut bewahren wir nicht auf');
+      expect(text).not.toContain('Eine Bearbeitungsgeschichte führen wir nicht');
+      expect(text).not.toContain('lassen sich derzeit gar nicht ändern');
+      expect(text).not.toContain('Solange ein Beitrag nicht geändert werden kann');
+    });
+
+    it('nimmt die Kennung im Änderungsverlauf in die Anonymisierung bei Kontolöschung auf', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('an allen genannten Stellen, auch im Änderungsverlauf, durch einen Platzhalter');
+    });
   });
 
   describe('Kennung (#284, #333, #385)', () => {
