@@ -141,7 +141,7 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 Ein täglicher Task löscht nach festen Fristen, sofort beim Start des Dienstes, dann
 täglich und zusätzlich um Mitternacht (UTC). Die Zahlen stehen an einer Stelle im Code,
 `services/loeschfristen_service.py`; dort steht auch die Begründung. Wie beim Feedback
-hängt der Task nicht am abschaltbaren Usage-Cleanup. Was gelöscht ist, steht in Backups
+hängt der Task nicht am abschaltbaren Bereinigungsjob. Was gelöscht ist, steht in Backups
 bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 
 | Datenart | Frist | Gerechnet ab |
@@ -155,6 +155,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
 | Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
+| Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
@@ -199,6 +200,11 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist.
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
+- **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
+  hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
+  Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
+  UTC-Tagen ab dem Anlegen, der tägliche Lauf löscht also 33 bis 35 Tage danach. Was „nie
+  benutzt“ heißt, steht unter „Einladungen“.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
   eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
 
@@ -211,7 +217,7 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
 
 - **Frist:** Nach 180 Tagen löscht ein täglicher Task die ganze Zeile samt Kontakt
   (`services/feedback_service.py`, `loeschen_im_takt`, `AUFBEWAHRUNG_TAGE`). Er hängt
-  nicht am abschaltbaren Usage-Cleanup.
+  nicht am abschaltbaren Bereinigungsjob.
 - **Auf Antrag:** Die Person nennt die Kontaktangabe, die sie hinterlassen hat; ein
   Admin löscht die Zeilen mit dieser Angabe, ohne Rücksicht auf Groß- und
   Kleinschreibung und Leerzeichen am Rand
@@ -239,6 +245,13 @@ und der Ablauf oben erfasst die Tabelle nicht.
   steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
   Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
   Zähler vergleichen.
+- **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): Mail-Adresse
+  nicht bestätigt, Pflichtaktion „Terms and Conditions“ offen, kein Passwort, keine
+  Verknüpfung mit einem Identity Provider (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
+  angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
+  sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
+  unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
+  Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht.
 
 ## Vier Fallen
 
@@ -295,7 +308,7 @@ und der Ablauf oben erfasst die Tabelle nicht.
   (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
   abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
   und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
-  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_USAGE_CLEANUP=false`
+  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=false`
   entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
   ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
   eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
@@ -307,10 +320,11 @@ und der Ablauf oben erfasst die Tabelle nicht.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
-  verdichtet der tägliche Bereinigungsjob (`services/cleanup/usage_cleanup_service.py`,
+  verdichtet der tägliche Bereinigungsjob (`services/cleanup/bereinigungsjob.py`,
   derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
   Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
-  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=true` (Standard); abgeschaltet gilt auch diese
+  `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=true` (Standard; der frühere Name
+  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP` gilt weiter); abgeschaltet gilt auch diese
   Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
   Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
 - **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen,

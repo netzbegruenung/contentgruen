@@ -26,7 +26,7 @@ Durchprobieren von Passwörtern liegen bei Keycloak. Warum so: ADR 0006
 | Realm `gutgesagt`, Selbstregistrierung aus | Konten entstehen nur über eine Einladung oder den Identity Provider |
 | Anmelden mit Mail-Adresse, Passwort vergessen, Mail-Bestätigung, Brute-Force-Schutz | alles von Keycloak |
 | Client `gutgesagt` | Anmeldung der App (BFF, Authorization Code mit PKCE) |
-| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users` | der Semantic-Service legt damit Konten aus Einladungen an; engere Rechte für „Konto anlegen“ bietet Keycloak nicht |
+| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users` | der Semantic-Service legt damit Konten aus Einladungen an und löscht nie benutzte nach der Frist (#538, `docs/LOESCHKONZEPT.md`); engere Rechte für „Konto anlegen“ bietet Keycloak nicht |
 | Identity Provider `netzbegruenung` | Netzbegrünung-Login; Adresse und Client sind Platzhalter |
 
 Die Pflichtaktionen stehen bewusst nicht in der Vorlage: Eine Liste dort ersetzt die
@@ -193,17 +193,18 @@ in das Konto im Realm mit seiner Mail-Adresse um:
   Netzbegrünung, gehen die Beiträge des Beta-Zugangs dorthin. Die Adresse ist im Realm
   der Benutzername; wer sie hat, ist dieselbe Person.
 - Sonst legt der Lauf ein Konto an: Vor- und Nachname aus `displayName` (der Anzeigename
-  bleibt derselbe, „Anna B.“; aus einem einzelnen Wort wie bisher keiner), Pflichtaktion Nutzungsbedingungen, und Keycloak schickt die
-  Mail „Passwort festlegen“ (drei Tage gültig, danach „Passwort vergessen“). Das alte
-  Passwort lässt sich nicht mitnehmen, Keycloak kennt bcrypt nicht.
+  bleibt derselbe, „Anna B.“; aus einem einzelnen Wort wie bisher keiner), Pflichtaktion Nutzungsbedingungen, Adresse als bestätigt, und Keycloak
+  schickt die Mail „Passwort festlegen“ (drei Tage gültig, danach „Passwort vergessen“). Das
+  alte Passwort lässt sich nicht mitnehmen, Keycloak kennt bcrypt nicht. Bestätigt, weil die
+  Adresse schon die Anmeldung des Beta-Zugangs war, und damit die Löschfrist für nie
+  benutzte Konten aus Einladungen (#538) das Konto nicht entfernt, wenn die Mail ungeöffnet
+  bleibt; die Beiträge liegen dann schon dort.
 - Konten bekommt jeder Beta-Zugang, auch ohne Beiträge; der Trockenlauf zählt, wie viele
   der Lauf anlegt. Für Kennungen auf der Löschliste legt er keins an.
 - Scheitert die Mail, bleibt das Konto (die Beiträge ziehen gleich dorthin um); der Lauf
   nennt die Kennung unter „Ab hier Kennungen“. Dann „Passwort vergessen“, oder ein Admin
-  setzt in der Admin-Konsole das Passwort (*Users → Credentials*) und schaltet beim Konto
-  *Email verified* ein; sonst verlangt Keycloak beim Anmelden die Bestätigung per Mail
-  (`verifyEmail` in der Vorlage). Das gilt auch für ein Startkonto, dessen Adresse kein
-  echtes Postfach ist.
+  setzt in der Admin-Konsole das Passwort (*Users → Credentials*). Das gilt auch für ein
+  Startkonto, dessen Adresse kein echtes Postfach ist.
 - Gehört die Adresse im Realm schon zu einer anderen alten Kennung (ein Mitglied, ein
   zweiter Beta-Zugang mit derselben Adresse), zieht der Beta-Zugang nicht um; der Lauf
   nennt ihn. Ob die beiden zusammengehören, entscheidet ein Admin.

@@ -1,5 +1,6 @@
 """
-Konten im Realm von Gut gesagt ueber die Keycloak-Admin-Schnittstelle anlegen (#429).
+Konten im Realm von Gut gesagt ueber die Keycloak-Admin-Schnittstelle anlegen (#429)
+und nie benutzte wieder loeschen (#538).
 
 Angemeldet wird mit einem eigenen Client im Realm (Client Credentials), dessen
 Dienstkonto nur die Rolle manage-users aus realm-management hat; einen engeren
@@ -10,12 +11,14 @@ Was hinausgeht, ist nur die Mail-Adresse. Den Code der Einladung erfaehrt Keyclo
 nicht (services/einladung_service.py).
 """
 
-from typing import Dict, Iterable, Mapping, Optional
+from datetime import datetime
+from typing import Dict, Iterable, List, Mapping, Optional
 
 import httpx
 
 from core.logging import get_logger
 from domain.interfaces.konten_im_realm import (
+    MAIL_GUELTIG_SEKUNDEN,
     BetaZugang,
     KontenMitPasswort,
     KontoErgebnis,
@@ -30,9 +33,8 @@ logger = get_logger(__name__)
 PFLICHTAKTIONEN = ["TERMS_AND_CONDITIONS"]
 # Was der Link in der Mail tut. Keycloak bestaetigt dabei auch die Mail-Adresse.
 MAIL_AKTIONEN = ["UPDATE_PASSWORD"]
-# So lange gilt der Link in der Mail; danach hilft "Passwort vergessen".
-MAIL_GUELTIG_SEKUNDEN = 3 * 24 * 60 * 60
 ZEITLIMIT_SEKUNDEN = 10.0
+KONTEN_JE_SEITE = 100
 
 
 class KeycloakKonten:
@@ -189,7 +191,8 @@ class KeycloakKonten:
     ) -> KontenMitPasswort:
         """
         Je Beta-Zugang (alte Kennung -> Eintrag) ein Konto mit Mail und Passwort, wie
-        aus einer Einladung, dazu Vor- und Nachname fuer den Anzeigenamen. Keycloak
+        aus einer Einladung, dazu Vor- und Nachname fuer den Anzeigenamen und mit
+        bestaetigter Adresse (_konto_mit_namen). Keycloak
         schickt "Passwort festlegen"; das Passwort aus managed-users.json laesst sich
         nicht mitnehmen (bcrypt kennt Keycloak nicht).
 
@@ -278,6 +281,71 @@ class KeycloakKonten:
         # hoechstens mit einem Konto verknuepft.
         return treffer[0]["id"] if treffer else None
 
+    # --- Nie benutzte Konten loeschen (#538) -------------------------------
+
+    def nie_benutzte_loeschen(self, angelegt_vor: datetime) -> int:
+        """
+        Loescht Konten, die vor ``angelegt_vor`` angelegt und nie benutzt wurden, und
+        gibt die Zahl der in diesem Lauf geloeschten zurueck. Nie benutzt: Die
+        Mail-Adresse ist nicht bestaetigt, die Pflichtaktion aus dem Anlegen steht noch
+        aus, es gibt kein Passwort und keine Verknuepfung mit einem Identity Provider.
+        So sieht ein Konto aus einer Einladung aus, dessen Link niemand geoeffnet hat;
+        wer ihn oeffnet, setzt ein Passwort und bestaetigt dabei die Adresse. Vorab
+        angelegte Konten (#487) sind verknuepft.
+        """
+        grenze_ms = int(angelegt_vor.timestamp() * 1000)
+        with self._client() as http:
+            sitzung = _Sitzung(self, http)
+            # Erst alle Seiten lesen, dann loeschen: Loeschen verschoebe die Seiten.
+            faellig = [
+                konto["id"]
+                for konto in self._unbestaetigte_konten(sitzung)
+                # emailVerified auch hier: Der Filter in der Anfrage allein haelt ein
+                # bestaetigtes Konto nicht fern, falls Keycloak ihn uebergeht.
+                if konto.get("emailVerified") is False
+                and konto.get("createdTimestamp", grenze_ms) < grenze_ms
+                and set(PFLICHTAKTIONEN) <= set(konto.get("requiredActions") or [])
+                and not self._benutzt(sitzung, konto["id"])
+            ]
+            geloescht = 0
+            for konto_id in faellig:
+                antwort = sitzung.anfrage("DELETE", f"{self._admin}/{konto_id}")
+                # 404: inzwischen von Hand geloescht; das Ziel ist erreicht, gezaehlt
+                # wird es nicht.
+                if antwort.status_code == 404:
+                    continue
+                antwort.raise_for_status()
+                geloescht += 1
+        return geloescht
+
+    def _unbestaetigte_konten(self, sitzung: "_Sitzung") -> List[dict]:
+        konten: List[dict] = []
+        while True:
+            antwort = sitzung.anfrage(
+                "GET",
+                self._admin,
+                params={
+                    "emailVerified": "false",
+                    # Die kurze Form laesst requiredActions weg.
+                    "briefRepresentation": "false",
+                    "first": str(len(konten)),
+                    "max": str(KONTEN_JE_SEITE),
+                },
+            )
+            antwort.raise_for_status()
+            seite = antwort.json()
+            konten.extend(seite)
+            if len(seite) < KONTEN_JE_SEITE:
+                return konten
+
+    def _benutzt(self, sitzung: "_Sitzung", konto_id: str) -> bool:
+        for teil in ("credentials", "federated-identity"):
+            antwort = sitzung.anfrage("GET", f"{self._admin}/{konto_id}/{teil}")
+            antwort.raise_for_status()
+            if antwort.json():
+                return True
+        return False
+
 
 def _konto(email: str, email_bestaetigt: bool) -> Dict[str, object]:
     """Ein Konto im Realm: die Adresse als Benutzername, Pflichtaktion Nutzungsbedingungen."""
@@ -295,8 +363,12 @@ def _konto_mit_namen(zugang: BetaZugang) -> Dict[str, object]:
     # (DisplayNamePolicy); "Anna Maria Beispiel" ergibt so wie bisher "Anna B.". Aus
     # einem einzelnen Wort machte sie keinen Namen; als Vorname allein zeigte sie es,
     # deshalb dann keiner von beiden.
+    #
+    # Bestaetigt: Die Adresse war schon die Anmeldung des Beta-Zugangs. Unbestaetigt
+    # loeschte nie_benutzte_loeschen (#538) das Konto, sobald die Mail ungeoeffnet
+    # bleibt, obwohl die Beitraege schon dorthin umgezogen sind.
     vorname, _, nachname = " ".join(zugang.name.split()).partition(" ")
-    konto = _konto(zugang.email, email_bestaetigt=False)
+    konto = _konto(zugang.email, email_bestaetigt=True)
     if nachname:
         konto["firstName"] = vorname
         konto["lastName"] = nachname

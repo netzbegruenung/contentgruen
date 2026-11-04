@@ -174,6 +174,10 @@ class TestBetaZugaengeUmziehen:
         assert konto["lastName"] == "Maria von Beispiel"
         assert konto["requiredActions"] == PFLICHTAKTIONEN
         assert "federatedIdentities" not in konto
+        # Die Adresse war schon die Anmeldung des Beta-Zugangs. Unbestaetigt hielte die
+        # Loeschfrist fuer nie benutzte Konten aus Einladungen (#538) das Konto samt
+        # umgezogener Beitraege fuer verwaist, sobald die Mail ungeoeffnet bleibt.
+        assert konto["emailVerified"] is True
         (mail,) = [
             r
             for r in keycloak.anfragen

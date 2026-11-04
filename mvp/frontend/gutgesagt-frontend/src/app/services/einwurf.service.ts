@@ -58,8 +58,8 @@ export interface Satz {
 /** Die Zustaende eines Beitrags (Glossar), wie die Einwurf-Antwort sie nennt (#507). */
 export type BeitragZustand = 'sichtbar' | 'gesperrt' | 'geloescht';
 
-/** Die Verknuepfung eines Einwurfs mit einem Beitrag, neu entstanden oder vorhanden. */
-export interface Verknuepfung {
+/** Ausformuliert in (Glossar): ein Beitrag, mit dem der Einwurf verknuepft ist, neu entstanden oder vorhanden. */
+export interface AusformuliertIn {
   content_id: string;
   /** Null bei Verknuepfungen aus der Zeit vor Fangkorb v2. */
   content_type: string | null;
@@ -101,7 +101,7 @@ export interface Einwurf {
   /** Alle Saetze aller Personen, aelteste Aenderung zuerst. */
   drafts?: Satz[];
   /** Alle verknuepften Beitraege, aelteste zuerst. */
-  links?: Verknuepfung[];
+  links?: AusformuliertIn[];
 }
 
 /** Eine Seite Einwuerfe, wie Fangkorb und Meine Einwuerfe sie bekommen. */

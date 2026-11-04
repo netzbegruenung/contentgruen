@@ -445,7 +445,7 @@ Der eigene Bereich von Gut gesagt im Identitätsdienst Keycloak, der Realm „gu
 _Avoid_: Mandant, Tenant, Keycloak (für den Realm allein)
 
 **Einladung**:
-Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends.
+Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends. Ein Konto aus einer Einladung, dessen Link nie benutzt wurde (kein Passwort, Adresse nie bestätigt), wird nach der Frist im Löschkonzept gelöscht.
 _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 
 **Einlösung**:
@@ -483,6 +483,10 @@ _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 **Löschfrist**:
 Wie lange eine Datenart gespeichert bleibt, bevor ein täglicher Task sie von selbst löscht. Die Fristen stehen im Löschkonzept. Eine Löschfrist ist etwas anderes als das Löschen auf Antrag einer Person.
 _Avoid_: Retention, Aufbewahrungszeit
+
+**Bereinigungsjob**:
+Der tägliche Task für die Fristen der Nutzungsereignisse und der Suchereignisse: Er löscht Nutzungsereignisse nach ihrer Frist, verdichtet ältere Suchereignisse zum Tageszähler der Suchen und schreibt abgeschlossene Tage gemischt neu. Ein Schalter schaltet ihn ganz ab; dann gelten diese Fristen nicht. Die übrigen Löschfristen hängen nicht an ihm.
+_Avoid_: Usage-Cleanup, Cleanup-Service
 
 **Admin**:
 Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Widersprüche prüft, Einwürfe verwirft, Einladungen verwaltet und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.

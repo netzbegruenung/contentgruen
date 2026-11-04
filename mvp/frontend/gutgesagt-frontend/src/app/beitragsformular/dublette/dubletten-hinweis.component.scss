@@ -1,0 +1,51 @@
+.dubletten-hinweis {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border-left: 4px solid #f57c00;
+  border-radius: 4px;
+  background: #fff3e0;
+}
+
+.dubletten-hinweis p {
+  margin: 0;
+}
+
+.vorhanden-titel {
+  font-weight: 500;
+}
+
+// Wie die Textlinks der Formulare
+.text-link {
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-dark);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+  }
+}
+
+.dublette-entscheidung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.knopf-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.entscheidungs-fehler {
+  margin-top: 8px;
+  color: var(--error-color, #d32f2f);
+}

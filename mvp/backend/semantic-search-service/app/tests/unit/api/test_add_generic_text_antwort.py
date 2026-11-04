@@ -97,9 +97,7 @@ class TestAddGenericTextAntwort:
             "statement_id": None,
             "statement_text": None,
             "verknuepft": True,
-            "dublette": False,
-            "vorhanden_titel": None,
-            "vorhanden_eigen": False,
+            "vorhanden": None,
             "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
@@ -225,9 +223,7 @@ class TestAddGenericTextAntwort:
             "statement_id": None,
             "statement_text": None,
             "verknuepft": False,
-            "dublette": False,
-            "vorhanden_titel": None,
-            "vorhanden_eigen": False,
+            "vorhanden": None,
             "themen": [],
         }
 
@@ -276,9 +272,7 @@ class TestAddGenericTextAntwort:
             "statement_id": None,
             "statement_text": None,
             "verknuepft": False,
-            "dublette": True,
-            "vorhanden_titel": VORHANDEN_TITEL,
-            "vorhanden_eigen": True,
+            "vorhanden": {"titel": VORHANDEN_TITEL, "eigen": True},
             "themen": [],
         }
         generic_text_service.pruefe_dublette.assert_awaited_once_with(
@@ -311,7 +305,7 @@ class TestAddGenericTextAntwort:
         resp = TestClient(app).post(ADD_URL, json=anfrage, headers=HEADERS)
 
         assert resp.status_code == 200
-        assert resp.json()["dublette"] is False
+        assert resp.json()["vorhanden"] is None
         reference_service.add_reference.assert_awaited_once()
         # Das Pruefergebnis geht mit - add_generic_text bettet nicht noch einmal ein.
         pruefung = generic_text_service.pruefe_dublette.return_value
@@ -332,8 +326,8 @@ class TestAddGenericTextAntwort:
 
         assert resp.status_code == 200
         assert resp.json()["id"] == str(vorhanden)
-        assert resp.json()["dublette"] is True
-        assert resp.json()["vorhanden_eigen"] is True
+        assert resp.json()["vorhanden"] is not None
+        assert resp.json()["vorhanden"]["eigen"] is True
         assert resp.json()["statement_id"] is None
         assert resp.json()["verknuepft"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
@@ -355,9 +349,7 @@ class TestAddGenericTextAntwort:
             "statement_id": None,
             "statement_text": None,
             "verknuepft": False,
-            "dublette": True,
-            "vorhanden_titel": VORHANDEN_TITEL,
-            "vorhanden_eigen": False,
+            "vorhanden": {"titel": VORHANDEN_TITEL, "eigen": False},
             "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
@@ -385,9 +377,7 @@ class TestAddGenericTextAntwort:
             "statement_id": str(statement_id),
             "statement_text": "Waermepumpen sind zu teuer",
             "verknuepft": True,
-            "dublette": True,
-            "vorhanden_titel": VORHANDEN_TITEL,
-            "vorhanden_eigen": True,
+            "vorhanden": {"titel": VORHANDEN_TITEL, "eigen": True},
             "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once_with(
@@ -414,7 +404,7 @@ class TestAddGenericTextAntwort:
             headers=HEADERS,
         )
 
-        assert resp.json()["dublette"] is True
+        assert resp.json()["vorhanden"] is not None
         assert resp.json()["verknuepft"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
         generic_text_service.add_generic_text.assert_not_awaited()
@@ -435,7 +425,7 @@ class TestAddGenericTextAntwort:
         )
 
         assert resp.json()["id"] == str(andere)
-        assert resp.json()["dublette"] is True
+        assert resp.json()["vorhanden"] is not None
         assert resp.json()["verknuepft"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -479,7 +469,7 @@ class TestAddGenericTextAntwort:
 
         assert resp.status_code == 200
         assert resp.json()["id"] == str(vorhanden)
-        assert resp.json()["dublette"] is True
+        assert resp.json()["vorhanden"] is not None
         assert resp.json()["verknuepft"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
         generic_text_service.add_generic_text.assert_not_awaited()
@@ -501,7 +491,7 @@ class TestAddGenericTextAntwort:
             headers=HEADERS,
         )
 
-        assert resp.json()["dublette"] is True
+        assert resp.json()["vorhanden"] is not None
         assert resp.json()["verknuepft"] is False
         assert resp.json()["id"] == str(vorhanden)
 
@@ -522,7 +512,7 @@ class TestAddGenericTextAntwort:
 
         assert resp.status_code == 200
         assert resp.json()["id"] == str(neu_id)
-        assert resp.json()["dublette"] is False
+        assert resp.json()["vorhanden"] is None
         # Angelegt wird ohne "vorhanden"; die aehnlichste bleibt fuer most_similar_*.
         pruefung = generic_text_service.add_generic_text.call_args.kwargs[
             "dublettenpruefung"
@@ -547,7 +537,7 @@ class TestAddGenericTextAntwort:
         )
 
         assert resp.json()["id"] == str(neu_id)
-        assert resp.json()["dublette"] is False
+        assert resp.json()["vorhanden"] is None
         assert resp.json()["statement_id"] == str(statement_id)
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once()
         assert (
@@ -568,7 +558,7 @@ class TestAddGenericTextAntwort:
         )
 
         assert resp.json()["id"] == str(andere)
-        assert resp.json()["dublette"] is True
+        assert resp.json()["vorhanden"] is not None
         generic_text_service.add_generic_text.assert_not_awaited()
 
 
@@ -684,7 +674,7 @@ class TestThemenDerAussage:
             headers=HEADERS,
         )
 
-        assert resp.json()["dublette"] is True
+        assert resp.json()["vorhanden"] is not None
         themen_service.ergaenzen.assert_not_called()
 
     def test_vorhanden_nehmen_gibt_der_neuen_aussage_die_themen(

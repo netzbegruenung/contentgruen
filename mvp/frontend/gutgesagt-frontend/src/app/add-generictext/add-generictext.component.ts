@@ -31,6 +31,14 @@ import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.c
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
+import { DublettenHinweisComponent } from '../beitragsformular/dublette/dubletten-hinweis.component';
+import {
+  DublettenTexte,
+  Vorhanden as VorhandenBeitrag,
+  dublettenHinweis,
+  offeneEntscheidung,
+  vorhandenAus,
+} from '../beitragsformular/dublette/dublette';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -71,23 +79,18 @@ export const NEHMEN_FEHLGESCHLAGEN =
 /** Die gewaehlte vorhandene ist inzwischen weg: Die Eingaben bleiben, Speichern legt neu an. */
 export const VORHANDEN_WEG = 'Die vorhandene Hintergrundinfo gibt es nicht mehr. Du kannst deine jetzt speichern.';
 
-/**
- * Eine schon vorhandene, sehr aehnliche Hintergrundinfo - die eigene waere ihre
- * Dublette. Angelegt wurde nichts; die Person entscheidet.
- */
-export interface Vorhanden {
-  id: string;
-  /** Titel, soweit das Backend ihn nennt. */
-  titel: string | null;
-  /** Von derselben Person: Zustimmen sagt dann nichts, nehmen schon. */
-  eigen: boolean;
-  /** Text der Aussage, mit der sie nach dem Nehmen verknuepft ist; sonst null. */
-  aussage: string | null;
-  /** Die Anfrage, die sie gefunden hat; Nehmen schickt sie mit vorhanden_nehmen noch einmal. */
-  anfrage: AddGenericTextRequest;
-  /** Wie die Person sie gewaehlt hat; null, solange sie nicht entschieden hat. */
-  gewaehlt: 'zugestimmt' | 'genommen' | null;
-}
+/** Die vorhandene Dublette mit der Anfrage, die sie gefunden hat (beitragsformular/dublette). */
+export type Vorhanden = VorhandenBeitrag<AddGenericTextRequest>;
+
+/** Die Hinweise zur Dublette, fuer den gemeinsamen Baustein. */
+export const DUBLETTEN_TEXTE: DublettenTexte = {
+  hinweis: DUBLETTE_HINWEIS,
+  fremdHinweis: DUBLETTE_FREMD_HINWEIS,
+  fremdZuordnen: DUBLETTE_FREMD_ZUORDNEN,
+  zugestimmt: ZUGESTIMMT_HINWEIS,
+  genommen: GENOMMEN_HINWEIS,
+  verknuepft: dubletteVerknuepftHinweis,
+};
 
 /** Die Rueckfrage nennt die Themen nur, wenn ihre Auswahl zu sehen ist. */
 function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
@@ -130,6 +133,7 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
     FormularLeisteComponent,
     ThemenAuswahlComponent,
     Cc0HinweisComponent,
+    DublettenHinweisComponent,
   ],
 })
 export class AddGenerictextComponent implements OnChanges {
@@ -185,7 +189,7 @@ export class AddGenerictextComponent implements OnChanges {
 
   /** Zu entscheiden ist, solange es eine vorhandene gibt und noch nichts gewaehlt ist. */
   get offeneEntscheidung(): boolean {
-    return !!this.vorhanden && !this.vorhanden.gewaehlt;
+    return offeneEntscheidung(this.vorhanden);
   }
 
   /** Zustimmen nur einer fremden Hintergrundinfo: sich selbst zuzustimmen sagt nichts. */
@@ -202,16 +206,7 @@ export class AddGenerictextComponent implements OnChanges {
   }
 
   get dublettenHinweis(): string {
-    const vorhanden = this.vorhanden;
-    if (vorhanden?.gewaehlt === 'zugestimmt') {
-      return ZUGESTIMMT_HINWEIS;
-    }
-    if (vorhanden?.gewaehlt === 'genommen') {
-      return vorhanden.aussage ? dubletteVerknuepftHinweis(vorhanden.aussage) : GENOMMEN_HINWEIS;
-    }
-    return vorhanden && !vorhanden.eigen && this.mitAussage
-      ? `${DUBLETTE_FREMD_HINWEIS} ${DUBLETTE_FREMD_ZUORDNEN}`
-      : DUBLETTE_HINWEIS;
+    return dublettenHinweis(this.vorhanden, DUBLETTEN_TEXTE, this.mitAussage);
   }
 
   private vorschauCache?: { titel: string; text: string; quellen: unknown; aussage: string; karte: KartenDaten };
@@ -396,10 +391,10 @@ export class AddGenerictextComponent implements OnChanges {
     this.genericTextService.addGenericText(request).subscribe({
       next: (antwort) => {
         this.speichert = false;
-        if (antwort.dublette) {
+        if (antwort.vorhanden) {
           // Nichts angelegt und nichts verknuepft: Das Formular bleibt, der Hinweis
           // zeigt die vorhandene. Ein Einwurf aus dem Fangkorb bleibt, wie er war.
-          this.vorhandenZeigen(request, antwort);
+          this.vorhanden = vorhandenAus(request, antwort);
           return;
         }
         this.responseId = antwort.id;
@@ -482,20 +477,6 @@ export class AddGenerictextComponent implements OnChanges {
     });
   }
 
-  private vorhandenZeigen(anfrage: AddGenericTextRequest, antwort: AddGenericTextResponse): void {
-    // Ueber diese vorhandene hat die Person noch nicht entschieden: Gemerkt wird die
-    // Anfrage ohne die Entscheidung, die sie hierher gebracht hat.
-    const { trotz_dublette_von, vorhanden_nehmen, ...ohneEntscheidung } = anfrage;
-    this.vorhanden = {
-      id: antwort.id,
-      titel: antwort.vorhanden_titel ?? null,
-      eigen: antwort.vorhanden_eigen === true,
-      aussage: null,
-      anfrage: ohneEntscheidung,
-      gewaehlt: null,
-    };
-  }
-
   /**
    * Die eigene vorhandene Hintergrundinfo nehmen, ohne Stimme und ohne zweite Kopie.
    * Mit Aussage haengt sie erst diese Wahl an sie: dieselbe Anfrage noch einmal, mit
@@ -523,9 +504,9 @@ export class AddGenerictextComponent implements OnChanges {
     this.genericTextService.addGenericText(nehmen).subscribe({
       next: (antwort) => {
         this.nimmt = false;
-        if (antwort.dublette && antwort.id !== vorhanden.id) {
+        if (antwort.vorhanden && antwort.id !== vorhanden.id) {
           // Inzwischen ist eine andere vorhanden: Die Person sieht erst sie.
-          this.vorhandenZeigen(nehmen, antwort);
+          this.vorhanden = vorhandenAus(nehmen, antwort);
           return;
         }
         if (antwort.verknuepft !== true || !antwort.statement_text) {

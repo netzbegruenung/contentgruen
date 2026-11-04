@@ -42,6 +42,9 @@ def namen(anzeigenamen_ohne_datenbank):
     return anzeigenamen_ohne_datenbank
 
 
+ALLE_TYPEN = Mock(name="alle_typen")
+
+
 def _client(beitraege):
     app = FastAPI()
     app.include_router(usage_router, prefix="/api/v1/usage")
@@ -65,6 +68,7 @@ def _client(beitraege):
         get_usage_service=Mock(return_value=nutzung),
         OftGenutztService=_Service,
         sichtbaren_beitrag_laden=Mock(),
+        get_content_repository=Mock(return_value=ALLE_TYPEN),
     ), TestClient(app)
 
 
@@ -86,6 +90,15 @@ class TestOftGenutztApi:
         for feld in ("authors", "last_modified_by", "edit_history"):
             assert feld not in results[0]
         namen.anzeigenamen.assert_not_called()
+
+    def test_oft_genutzt_liest_ueber_das_aggregierte_repository(self, namen):
+        """Das Repository kommt per get_content_repository, wie bei Nutzung und Stimmen."""
+        patcher, client = _client([_beitrag(1), _beitrag(2), _beitrag(3)])
+        with patcher:
+            client.get(URL)
+            laden = usage_module.sichtbaren_beitrag_laden
+
+        assert laden.call_args.args[1] is ALLE_TYPEN
 
     def test_oft_genutzt_angemeldet_mit_anzeigename_und_nutzung(self, namen):
         patcher, client = _client([_beitrag(1), _beitrag(2), _beitrag(3)])

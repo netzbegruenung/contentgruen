@@ -365,10 +365,10 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
 
     daten = [a.json() for a in antworten]
     assert all(a.status_code == 200 for a in antworten), daten
-    assert sorted(d["dublette"] for d in daten) == [False, True]
+    assert sorted(d["vorhanden"] is not None for d in daten) == [False, True]
     assert daten[0]["id"] == daten[1]["id"]
-    angelegt = next(d for d in daten if not d["dublette"])
-    dublette = next(d for d in daten if d["dublette"])
+    angelegt = next(d for d in daten if d["vorhanden"] is None)
+    dublette = next(d for d in daten if d["vorhanden"] is not None)
     # Die zweite Person bekommt den Kommentar der ersten - fremder Inhalt wird nicht
     # an ihre Aussage gehaengt.
     assert angelegt["statement_id"] is not None
@@ -511,18 +511,18 @@ async def test_hintergrundinfo_ueber_den_router(
 
     daten = [a.json() for a in antworten]
     assert all(a.status_code == 200 for a in antworten), daten
-    assert sorted(d["dublette"] for d in daten) == [False, True]
+    assert sorted(d["vorhanden"] is not None for d in daten) == [False, True]
     assert daten[0]["id"] == daten[1]["id"]
-    angelegt = next(d for d in daten if not d["dublette"])
-    dublette = next(d for d in daten if d["dublette"])
+    angelegt = next(d for d in daten if d["vorhanden"] is None)
+    dublette = next(d for d in daten if d["vorhanden"] is not None)
     # Die fremde vorhandene wird nicht an die Aussage der zweiten Person gehaengt.
     assert angelegt["statement_id"] is not None
     assert dublette["statement_id"] is None
     assert dublette["verknuepft"] is False
-    assert dublette["vorhanden_eigen"] is False
+    assert dublette["vorhanden"]["eigen"] is False
 
     assert andere.status_code == 200
-    assert andere.json()["dublette"] is False
+    assert andere.json()["vorhanden"] is None
     assert andere.json()["id"] != angelegt["id"]
 
     manager = generic_text_service._repository._shared_manager
