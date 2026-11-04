@@ -17,6 +17,7 @@ from sqlalchemy import text
 from infrastructure.database.models import GeseheneNutzung, Satz, User
 from domain.interfaces.konten_im_realm import VerknuepfteKonten
 from services.wartung.kennungen_umstellen import (
+    NICHT_UMGESCHRIEBEN,
     kennungen_in_postgres,
     postgres_umschreiben,
     umstellen,
@@ -24,7 +25,7 @@ from services.wartung.kennungen_umstellen import (
 from tests.integration.test_loeschkommando import (  # noqa: F401 (Fixtures)
     ANDERE,
     PERSON,
-    _kennung_irgendwo,
+    _kennung_irgendwo as _kennung_in_jeder_spalte,
     _satz,
     datenbank,
     einwuerfe,
@@ -52,6 +53,18 @@ JE_SPALTE_EINE = {
     "sperren.gesperrt_von": 1,
     "sperren.geprueft_von": 1,
 }
+
+
+def _kennung_irgendwo(datenbank, uid):
+    """Wie im Loeschkommando, ohne die Spalten, die der Lauf bewusst stehen laesst."""
+    ausgenommen = {
+        f"{t}.{s}" for t, spalten in NICHT_UMGESCHRIEBEN.items() for s in spalten
+    }
+    return [
+        stelle
+        for stelle in _kennung_in_jeder_spalte(datenbank, uid)
+        if stelle not in ausgenommen
+    ]
 
 
 def _umschreiben(datenbank, zuordnung=None, ausfuehren=True):
