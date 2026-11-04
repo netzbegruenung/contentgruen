@@ -99,7 +99,8 @@ class BeitragAendernService:
         self, beitrag_id: uuid.UUID, aufrufer: str, aenderung: Aenderung
     ) -> AenderErgebnis:
         """
-        Titel, Text und Herkunft ersetzen, wenn aufrufer der Autor ist.
+        Titel, Text und Herkunft ersetzen, beim Kommentar auch Kurz- und Langfassung,
+        wenn aufrufer der Autor ist.
 
         Gesperrte und geloeschte Beitraege sind fuer den Autor nicht da, wie beim
         Loeschen (BeitragLoeschenService). Solange eine Meldung offen ist, bleibt
@@ -107,7 +108,9 @@ class BeitragAendernService:
         Schreiben, schuetzt nicht_aus die Sperre im selben Schreibvorgang.
 
         Raises:
-        - TextZuLang, wenn der Text die Grenze des Typs ueberschreitet.
+        - TextZuLang, wenn der Text die Grenze des Typs oder eine Fassung ihre
+          Grenze ueberschreitet.
+        - FassungNichtMoeglich, wenn ein Beitrag ohne Fassungen eine bekommen soll.
         - ValidationError bei einem unlesbaren Datensatz (kein "nicht da").
         """
         try:
@@ -188,6 +191,7 @@ def _fassungen(content_type: ContentType, aenderung: Aenderung) -> dict:
     for feld, (wert, grenze, name) in angaben.items():
         if wert is None:
             continue
+        wert = wert.strip()
         if content_type is not ContentType.COMMENTARY:
             if wert:
                 raise FassungNichtMoeglich(

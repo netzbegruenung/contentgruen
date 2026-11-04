@@ -147,8 +147,9 @@ class HerkunftEingabe(BaseModel):
 class BeitragAendernRequest(BaseModel):
     """
     Titel, Text und Herkunft eines Kommentars oder einer Hintergrundinfo, je ganz
-    ersetzt, beim Kommentar auch Kurz- und Langfassung. Der Titel folgt der Titelregel (3-120 Zeichen wie beim Anlegen); die
-    Grenze des Texts haengt am Typ und prueft der Service.
+    ersetzt, beim Kommentar auch Kurz- und Langfassung. Der Titel folgt der
+    Titelregel (3-120 Zeichen wie beim Anlegen); die Grenze des Texts haengt am Typ
+    und prueft der Service.
     """
 
     title: str = Field(min_length=3, max_length=120)

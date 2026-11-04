@@ -169,6 +169,25 @@ class TestBeitragAendern:
         assert gespeichert["short_text"] is None
         assert gespeichert["long_text"] is None
 
+    async def test_aendern_fassung_aus_leerraum_entfernt_sie(self, service, speicher):
+        """Wie beim Anlegen: nur Leerraum ist keine Fassung, auch ohne das DTO davor."""
+        speicher.add_test_data(
+            "commentary", [_beitrag(short_text="Alt kurz", long_text="Alt lang")]
+        )
+        leerraum = Aenderung(
+            AENDERUNG.titel,
+            AENDERUNG.text,
+            [],
+            kurzfassung="   ",
+            langfassung=" Neu lang ",
+        )
+
+        await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, leerraum)
+
+        gespeichert = _gespeichert(speicher)
+        assert gespeichert["short_text"] is None
+        assert gespeichert["long_text"] == "Neu lang"
+
     async def test_aendern_ohne_angabe_laesst_die_fassungen_stehen(
         self, service, speicher
     ):
