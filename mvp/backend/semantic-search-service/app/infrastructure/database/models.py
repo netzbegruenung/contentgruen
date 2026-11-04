@@ -245,7 +245,8 @@ class FeedbackZeile(Base):
     Traegt bewusst keine Kennung und keine Sitzung, auch wenn die Person angemeldet
     ist, und statt eines Zeitpunkts nur den Tag. Wer eine Antwort will, schreibt
     selbst einen Kontakt dazu. Nach der Frist loescht der Dienst die Zeile ganz
-    (services/feedback_service.py).
+    (services/feedback_service.py), erledigt oder nicht; ein Admin kann sie auch
+    vorher einzeln loeschen (#425).
     """
 
     __tablename__ = "feedback"
@@ -254,6 +255,9 @@ class FeedbackZeile(Base):
     text = Column(Text, nullable=False)
     kontakt = Column(Text, nullable=True)
     eingegangen_am = Column(Date, nullable=False)
+    # Von Admins gesetzt, wenn das Feedback erledigt ist (#425); nur ein Merker,
+    # ohne Zeitpunkt und ohne wer.
+    erledigt = Column(Boolean, nullable=False, default=False, server_default="false")
 
     __table_args__ = (Index("idx_feedback_eingegangen_am", "eingegangen_am"),)
 
