@@ -453,7 +453,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         vektor = self.encode_text(text, content_type=encoding_fuer(content_type))
         await self._async_client.update_vectors(
             collection_name=self.collection_name,
-            points=[PointVectors(id=item_id, vector=vektor)],
+            points=[PointVectors(id=item_id, vector=self._als_punktvektor(vektor))],
             wait=True,
         )
 
