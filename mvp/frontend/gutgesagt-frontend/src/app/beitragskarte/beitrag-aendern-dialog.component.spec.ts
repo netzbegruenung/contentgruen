@@ -179,6 +179,12 @@ describe('BeitragAendernDialogComponent', () => {
       );
     });
 
+    it('nennt bei 409 (Meldung offen) den Grund des Servers', () => {
+      expect(
+        aendernFehlertext({ status: 409, error: { detail: 'Der Beitrag lässt sich gerade nicht ändern.' } }),
+      ).toBe('Der Beitrag lässt sich gerade nicht ändern.');
+    });
+
     it('rät bei 403 und 404 nicht zum erneuten Versuch', () => {
       expect(aendernFehlertext({ status: 403 })).toBe('Ändern kann nur der Autor des Beitrags.');
       expect(aendernFehlertext({ status: 404 })).toBe('Den Beitrag gibt es nicht mehr.');

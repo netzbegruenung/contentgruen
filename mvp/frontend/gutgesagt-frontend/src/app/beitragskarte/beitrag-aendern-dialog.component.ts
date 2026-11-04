@@ -27,7 +27,8 @@ export function istAenderbar(typ: string | null): boolean {
 /** Was beim Speichern schiefging; 401 behandelt der Auth-Interceptor. */
 export function aendernFehlertext(fehler: { status?: number; error?: any } | undefined): string {
   const grund = fehler?.error?.detail;
-  if (fehler?.status === 400 && typeof grund === 'string') {
+  // 400: Grenzen, die nur der Server kennt; 409: eine Meldung ist offen.
+  if ((fehler?.status === 400 || fehler?.status === 409) && typeof grund === 'string') {
     return grund;
   }
   if (fehler?.status === 422) {

@@ -7,7 +7,7 @@ echtes Qdrant (tests/integration/test_autor_aendert.py).
 """
 
 import uuid
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -58,9 +58,14 @@ def herkunft_id():
 
 
 @pytest.fixture
-def service(test_settings, speicher, herkunft_id):
+def offene_meldung():
+    return Mock(return_value=False)
+
+
+@pytest.fixture
+def service(test_settings, speicher, herkunft_id, offene_meldung):
     return BeitragAendernService(
-        ContentRepository(test_settings, speicher), herkunft_id
+        ContentRepository(test_settings, speicher), herkunft_id, offene_meldung
     )
 
 
@@ -158,6 +163,30 @@ class TestBeitragAendern:
         assert ergebnis is AenderErgebnis.NICHT_AUTOR
         assert _gespeichert(speicher)["text"] == "Alter Text"
         herkunft_id.assert_not_awaited()
+
+    async def test_aendern_mit_offener_meldung_aendert_nichts(
+        self, service, speicher, herkunft_id, offene_meldung
+    ):
+        """Der Admin soll den gemeldeten Wortlaut sehen, nicht einen neuen."""
+        speicher.add_test_data("commentary", [_beitrag()])
+        offene_meldung.return_value = True
+
+        ergebnis = await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, AENDERUNG)
+
+        assert ergebnis is AenderErgebnis.MELDUNG_OFFEN
+        offene_meldung.assert_called_once_with(uuid.UUID(BEITRAG_ID))
+        assert _gespeichert(speicher)["text"] == "Alter Text"
+        herkunft_id.assert_not_awaited()
+
+    async def test_aendern_andere_person_verraet_keine_meldung(
+        self, service, speicher, offene_meldung
+    ):
+        speicher.add_test_data("commentary", [_beitrag()])
+        offene_meldung.return_value = True
+
+        ergebnis = await service.aendern(uuid.UUID(BEITRAG_ID), "andere", AENDERUNG)
+
+        assert ergebnis is AenderErgebnis.NICHT_AUTOR
 
     @pytest.mark.parametrize(
         "status", [ContentStatus.BLOCKED.value, ContentStatus.DELETED.value]

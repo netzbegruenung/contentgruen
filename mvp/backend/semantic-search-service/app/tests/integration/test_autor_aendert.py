@@ -42,7 +42,9 @@ def inhalte(integration_settings, real_repository_factory):
 
 @pytest.fixture
 def aendern(inhalte):
-    return BeitragAendernService(inhalte, AsyncMock(return_value=uuid.uuid4()))
+    return BeitragAendernService(
+        inhalte, AsyncMock(return_value=uuid.uuid4()), lambda _beitrag_id: False
+    )
 
 
 async def _kommentar(kommentare) -> uuid.UUID:

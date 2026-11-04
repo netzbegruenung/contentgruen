@@ -314,6 +314,23 @@ class ContentReportRepository:
             )
             return AngabenGeloescht(geloescht=geloescht, angaben_entfernt=len(offene))
 
+    def hat_offene_meldung(self, content_id: UUID) -> bool:
+        """
+        Ist zu diesem Beitrag eine Meldung offen?
+
+        Ein Datenbankfehler wird weitergereicht: Im Zweifel nicht aendern lassen.
+        """
+        with self.db.get_session() as session:
+            offen = (
+                session.query(ContentReport.id)
+                .filter(
+                    ContentReport.content_id == content_id,
+                    ContentReport.status == "pending",
+                )
+                .first()
+            )
+            return offen is not None
+
     def get_reports_by_content_id(self, content_id: UUID) -> List[ContentReport]:
         """
         Get all reports for a specific content item.

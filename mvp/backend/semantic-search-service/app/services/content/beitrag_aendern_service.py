@@ -41,6 +41,9 @@ TEXT_HOECHSTENS: Dict[ContentType, int] = {
 # (ReferenceService.herkunft_id).
 HerkunftId = Callable[[str, Optional[str], str], Awaitable[uuid.UUID]]
 
+# Ob zum Beitrag eine Meldung offen ist (ContentReportRepository.hat_offene_meldung).
+OffeneMeldung = Callable[[uuid.UUID], bool]
+
 
 class TextZuLang(Validierungsfehler):
     """Der neue Text ist laenger, als der Beitragstyp beim Anlegen erlaubt."""
@@ -68,12 +71,20 @@ class AenderErgebnis(Enum):
     NICHT_AUTOR = "nicht_autor"
     NICHT_AENDERBAR = "nicht_aenderbar"
     """Ein Beitragstyp, den man (noch) nicht aendern kann: Post und Bild."""
+    MELDUNG_OFFEN = "meldung_offen"
+    """Eine Meldung ist offen: Der Admin soll den gemeldeten Wortlaut sehen."""
 
 
 class BeitragAendernService:
-    def __init__(self, repository: IBaseContentRepository, herkunft_id: HerkunftId):
+    def __init__(
+        self,
+        repository: IBaseContentRepository,
+        herkunft_id: HerkunftId,
+        offene_meldung: OffeneMeldung,
+    ):
         self.repository = repository
         self.herkunft_id = herkunft_id
+        self.offene_meldung = offene_meldung
 
     async def aendern(
         self, beitrag_id: uuid.UUID, aufrufer: str, aenderung: Aenderung
@@ -82,7 +93,8 @@ class BeitragAendernService:
         Titel, Text und Herkunft ersetzen, wenn aufrufer der Autor ist.
 
         Gesperrte und geloeschte Beitraege sind fuer den Autor nicht da, wie beim
-        Loeschen (BeitragLoeschenService). Sperrt ein Admin zwischen Lesen und
+        Loeschen (BeitragLoeschenService). Solange eine Meldung offen ist, bleibt
+        der gemeldete Wortlaut stehen (Entscheidung zu #299). Sperrt ein Admin zwischen Lesen und
         Schreiben, schuetzt nicht_aus die Sperre im selben Schreibvorgang.
 
         Raises:
@@ -103,6 +115,9 @@ class BeitragAendernService:
         hoechstens = TEXT_HOECHSTENS.get(beitrag.content_type)
         if hoechstens is None:
             return AenderErgebnis.NICHT_AENDERBAR
+        # Erst nach der Autorpruefung: Andere erfahren nichts ueber Meldungen.
+        if self.offene_meldung(beitrag_id):
+            return AenderErgebnis.MELDUNG_OFFEN
         if len(aenderung.text) > hoechstens:
             raise TextZuLang(f"Der Text darf höchstens {hoechstens} Zeichen lang sein")
 

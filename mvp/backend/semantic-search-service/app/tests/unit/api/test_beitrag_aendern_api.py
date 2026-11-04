@@ -96,6 +96,14 @@ class TestBeitragAendernApi:
 
         assert _aendern(client).status_code == 404
 
+    def test_aendern_mit_offener_meldung_ist_409_mit_text(self, client, service):
+        service.aendern.return_value = AenderErgebnis.MELDUNG_OFFEN
+
+        antwort = _aendern(client)
+
+        assert antwort.status_code == 409
+        assert antwort.json()["detail"] == "Der Beitrag lässt sich gerade nicht ändern."
+
     def test_aendern_post_oder_bild_ist_400(self, client, service):
         service.aendern.return_value = AenderErgebnis.NICHT_AENDERBAR
 

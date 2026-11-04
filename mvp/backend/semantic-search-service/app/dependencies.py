@@ -280,7 +280,11 @@ def get_beitrag_aendern_service(
     repository: IContentRepository = Depends(get_content_repository),
 ) -> BeitragAendernService:
     """Ueber das aggregierte Repository, wie das Loeschen (#299)."""
-    return BeitragAendernService(repository, get_reference_service().herkunft_id)
+    return BeitragAendernService(
+        repository,
+        get_reference_service().herkunft_id,
+        get_content_report_repository().hat_offene_meldung,
+    )
 
 
 def get_commentary_service() -> CommentaryService:

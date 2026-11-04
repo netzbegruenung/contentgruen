@@ -230,6 +230,10 @@ async def beitrag_aendern(
         raise HTTPException(
             status_code=400, detail="Posts und Bilder lassen sich nicht ändern."
         )
+    if ergebnis is AenderErgebnis.MELDUNG_OFFEN:
+        raise HTTPException(
+            status_code=409, detail="Der Beitrag lässt sich gerade nicht ändern."
+        )
     return Response(status_code=204)
 
 

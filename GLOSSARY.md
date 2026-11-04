@@ -226,7 +226,7 @@ Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleib
 _Avoid_: Archiviert
 
 **Ändern**:
-Der Autor ersetzt Titel, Text oder Herkunft seines Kommentars oder seiner Hintergrundinfo, aus „Meine Beiträge“. Es gelten dieselben Grenzen wie beim Anlegen, die Titelregel und der CC0-Hinweis eingeschlossen, aber keine Dublettenprüfung; die Suche findet danach den neuen Text. Stimmen, Nutzung und Verknüpfungen bleiben. Festgehalten wird nur, wer wann geändert hat, nicht der alte Wortlaut. Gesperrte und gelöschte Beiträge lassen sich nicht ändern, Posts und Bilder noch nicht.
+Der Autor ersetzt Titel, Text oder Herkunft seines Kommentars oder seiner Hintergrundinfo, aus „Meine Beiträge“. Es gelten dieselben Grenzen wie beim Anlegen, die Titelregel und der CC0-Hinweis eingeschlossen, aber keine Dublettenprüfung; die Suche findet danach den neuen Text. Stimmen, Nutzung und Verknüpfungen bleiben. Festgehalten wird nur, wer wann geändert hat, nicht der alte Wortlaut. Gesperrte und gelöschte Beiträge lassen sich nicht ändern, Posts und Bilder noch nicht. Solange eine Meldung offen ist, auch nicht: Der Admin sieht den gemeldeten Wortlaut.
 _Avoid_: Bearbeiten (heißt bei Meldungen etwas anderes), Editieren
 
 **Titel**:
