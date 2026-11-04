@@ -183,7 +183,7 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe b DSGVO');
     });
 
-    it('nennt den Kürzungsvorschlag: ohne KI, nicht gespeichert, erst beim Übernehmen im Beitrag (#403, #550)', () => {
+    it('nennt den Kürzungsvorschlag: ohne KI, nicht gespeichert, erst beim Übernehmen in der Kurzfassung (#403, #550)', () => {
       const text = abschnitt('Gegenlesen beim Schreiben');
 
       expect(text).toContain('Kürzungsvorschlag');
@@ -199,6 +199,7 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('zeigt dir dann einen Sprachhinweis');
       expect(text).toContain('neue Aussage');
       expect(text).toContain('„Aussage vorab anlegen“');
+      expect(text).toContain('Titel und Text des Beitrags (beim Bild die Unterschrift)');
       expect(text).toContain('auch davon speichern wir nichts');
       expect(text).toContain('wie oft dein Konto gegenlesen lässt, die Spracherkennung fragt');
     });
@@ -221,6 +222,25 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Beiträge, die du einstellst');
 
       expect(text).toContain('an allen genannten Stellen, auch im Änderungsverlauf, durch einen Platzhalter');
+    });
+
+    it('stützt den Änderungsverlauf auch in der Zusammenfassung auf lit. f', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('für die Herkunftsangabe am Beitrag und den Änderungsverlauf');
+    });
+
+    it('sagt, dass eine entfernte Herkunft als Herkunft gespeichert bleibt', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('Eine Herkunft, die du dabei entfernst, verschwindet vom Beitrag, bleibt aber als Herkunft gespeichert');
+    });
+
+    it('nennt beim CC0-Wortlaut, dass Ändern die Kennung ersetzt', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('tritt die Kennung des Wortlauts, den dir das Formular zum Ändern gezeigt hat, an die Stelle der bisherigen');
+      expect(text).toContain('Was du vor dem 29.10.2026 eingestellt und seither nicht geändert hast');
     });
   });
 
