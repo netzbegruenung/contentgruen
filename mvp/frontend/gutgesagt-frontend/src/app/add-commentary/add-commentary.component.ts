@@ -25,7 +25,6 @@ import { STIL_LABEL, Stil, ZWECK_LABEL, ZWECK_STANDARD, Zweck, stileFuer, stilPa
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
-import { KURZFASSUNG_MAX, LANGFASSUNG_MAX } from '../shared/beitrag-grenzen';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { AussageInAnfrage, aussageFuerAnfrage, themenHinweisNachSpeichern } from '../beitragsformular/aussage-fuer-anfrage';
 import { Thema } from '../services/dtos/themenDtos';
@@ -50,7 +49,7 @@ import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
-import { KOMMENTAR_TEXT_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
+import { KOMMENTAR_TEXT_MAX, KURZFASSUNG_MAX, LANGFASSUNG_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
 
 export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = KOMMENTAR_TEXT_MAX;
