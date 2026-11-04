@@ -135,6 +135,114 @@ class TestBeitragAendern:
 
         assert _gespeichert(speicher)["cc0_wortlaut"] == "2026-11-02-formular"
 
+    async def test_aendern_kommentar_ersetzt_kurz_und_langfassung(
+        self, service, speicher
+    ):
+        speicher.add_test_data(
+            "commentary", [_beitrag(short_text="Alt kurz", long_text="Alt lang")]
+        )
+        mit_fassungen = Aenderung(
+            AENDERUNG.titel,
+            AENDERUNG.text,
+            [],
+            kurzfassung="Wärmepumpe lohnt sich.",
+            langfassung="Wärmepumpe lohnt sich, weil sie Strom effizient nutzt.",
+        )
+
+        await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, mit_fassungen)
+
+        gespeichert = _gespeichert(speicher)
+        assert gespeichert["short_text"] == "Wärmepumpe lohnt sich."
+        assert gespeichert["long_text"] == mit_fassungen.langfassung
+
+    async def test_aendern_leere_fassung_entfernt_sie(self, service, speicher):
+        speicher.add_test_data(
+            "commentary", [_beitrag(short_text="Alt kurz", long_text="Alt lang")]
+        )
+        ohne = Aenderung(
+            AENDERUNG.titel, AENDERUNG.text, [], kurzfassung="", langfassung=""
+        )
+
+        await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, ohne)
+
+        gespeichert = _gespeichert(speicher)
+        assert gespeichert["short_text"] is None
+        assert gespeichert["long_text"] is None
+
+    async def test_aendern_fassung_aus_leerraum_entfernt_sie(self, service, speicher):
+        """Wie beim Anlegen: nur Leerraum ist keine Fassung, auch ohne das DTO davor."""
+        speicher.add_test_data(
+            "commentary", [_beitrag(short_text="Alt kurz", long_text="Alt lang")]
+        )
+        leerraum = Aenderung(
+            AENDERUNG.titel,
+            AENDERUNG.text,
+            [],
+            kurzfassung="   ",
+            langfassung=" Neu lang ",
+        )
+
+        await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, leerraum)
+
+        gespeichert = _gespeichert(speicher)
+        assert gespeichert["short_text"] is None
+        assert gespeichert["long_text"] == "Neu lang"
+
+    async def test_aendern_ohne_angabe_laesst_die_fassungen_stehen(
+        self, service, speicher
+    ):
+        """Eine aeltere App schickt keine Fassungen mit: Sie bleiben, wie sie sind."""
+        speicher.add_test_data(
+            "commentary", [_beitrag(short_text="Alt kurz", long_text="Alt lang")]
+        )
+
+        await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, AENDERUNG)
+
+        gespeichert = _gespeichert(speicher)
+        assert gespeichert["short_text"] == "Alt kurz"
+        assert gespeichert["long_text"] == "Alt lang"
+
+    @pytest.mark.parametrize(
+        "fassungen",
+        [{"kurzfassung": "x" * 281}, {"langfassung": "x" * 2001}],
+    )
+    async def test_aendern_zu_lange_fassung_wie_beim_anlegen(
+        self, service, speicher, fassungen
+    ):
+        speicher.add_test_data("commentary", [_beitrag(short_text="Alt kurz")])
+        zu_lang = Aenderung(AENDERUNG.titel, AENDERUNG.text, [], **fassungen)
+
+        with pytest.raises(Validierungsfehler):
+            await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, zu_lang)
+
+        assert _gespeichert(speicher)["short_text"] == "Alt kurz"
+
+    async def test_aendern_hintergrundinfo_mit_fassung_wird_abgelehnt(
+        self, service, speicher
+    ):
+        speicher.add_test_data("generic_text", [_beitrag("generic_text")])
+        mit_kurz = Aenderung(AENDERUNG.titel, AENDERUNG.text, [], kurzfassung="Kurz")
+
+        with pytest.raises(Validierungsfehler):
+            await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, mit_kurz)
+
+        gespeichert = _gespeichert(speicher)
+        assert gespeichert["text"] == "Alter Text"
+        assert "short_text" not in gespeichert
+
+    async def test_aendern_hintergrundinfo_mit_leeren_fassungen_geht(
+        self, service, speicher
+    ):
+        speicher.add_test_data("generic_text", [_beitrag("generic_text")])
+        leer = Aenderung(
+            AENDERUNG.titel, AENDERUNG.text, [], kurzfassung="", langfassung=""
+        )
+
+        ergebnis = await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, leer)
+
+        assert ergebnis is AenderErgebnis.GEAENDERT
+        assert "short_text" not in _gespeichert(speicher)
+
     async def test_inhalt_aendern_gesperrt_bekommt_keinen_neuen_vektor(
         self, test_settings, speicher
     ):

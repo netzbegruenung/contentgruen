@@ -49,15 +49,15 @@ import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
-import { KOMMENTAR_TEXT_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
+import { KOMMENTAR_TEXT_MAX, KURZFASSUNG_MAX, LANGFASSUNG_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
 
 export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = KOMMENTAR_TEXT_MAX;
 /** Zeichengrenze von X und Bluesky; nur ein Hinweis, keine Pruefung. */
-export const PLATTFORM_GRENZE = 280;
+export const PLATTFORM_GRENZE = KURZFASSUNG_MAX;
 /** Die Fassungen Kurz und Lang (#355), wie im Backend (dtos/commentary.py). */
 export const KURZ_MAX = PLATTFORM_GRENZE;
-export const LANG_MAX = 2000;
+export const LANG_MAX = LANGFASSUNG_MAX;
 
 export const DUBLETTE_HINWEIS = 'Es gibt schon einen sehr ähnlichen Kommentar.';
 

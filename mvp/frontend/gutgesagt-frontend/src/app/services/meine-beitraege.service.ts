@@ -11,10 +11,16 @@ export interface HerkunftEingabe {
   description?: string;
 }
 
-/** Was der Autor an seinem Beitrag aendert (#299): Titel, Text und Herkunft, je ganz ersetzt. */
+/**
+ * Was der Autor an seinem Beitrag aendert (#299): Titel, Text und Herkunft, je ganz ersetzt.
+ * Beim Kommentar auch Kurz- und Langfassung (#551): leer heisst, die Fassung entfaellt;
+ * ohne das Feld bleibt sie, wie sie ist.
+ */
 export interface BeitragAenderung {
   title: string;
   text: string;
+  short_text?: string;
+  long_text?: string;
   references: HerkunftEingabe[];
 }
 
@@ -34,7 +40,8 @@ export class MeineBeitraegeService {
   }
 
   /**
-   * Der Autor aendert Titel, Text und Herkunft seines Beitrags (#299). Der Dialog zeigt
+   * Der Autor aendert Titel, Text und Herkunft seines Beitrags (#299), beim Kommentar auch
+   * Kurz- und Langfassung (#551). Der Dialog zeigt
    * den CC0-Hinweis; seine Kennung geht mit wie beim Anlegen (#431).
    */
   beitragAendern(id: string, aenderung: BeitragAenderung): Observable<void> {

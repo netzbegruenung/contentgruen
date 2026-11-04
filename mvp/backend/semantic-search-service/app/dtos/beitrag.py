@@ -147,8 +147,9 @@ class HerkunftEingabe(BaseModel):
 class BeitragAendernRequest(BaseModel):
     """
     Titel, Text und Herkunft eines Kommentars oder einer Hintergrundinfo, je ganz
-    ersetzt. Der Titel folgt der Titelregel (3-120 Zeichen wie beim Anlegen); die
-    Grenze des Texts haengt am Typ und prueft der Service.
+    ersetzt, beim Kommentar auch Kurz- und Langfassung. Der Titel folgt der
+    Titelregel (3-120 Zeichen wie beim Anlegen); die Grenze des Texts haengt am Typ
+    und prueft der Service.
     """
 
     title: str = Field(min_length=3, max_length=120)
@@ -159,8 +160,13 @@ class BeitragAendernRequest(BaseModel):
     )
     # Der CC0-Hinweis im Dialog, wie beim Anlegen (#431, domain/cc0_hinweis.py).
     cc0_wortlaut: Cc0Wortlaut = None
+    # Kurz- und Langfassung, nur beim Kommentar (#551). Fehlt das Feld (eine aeltere
+    # App), bleibt die Fassung; leer heisst, sie entfaellt. Die Grenzen haengen am
+    # Typ und prueft der Service wie beim Text.
+    short_text: Optional[str] = None
+    long_text: Optional[str] = None
 
-    @field_validator("title", "text", mode="before")
+    @field_validator("title", "text", "short_text", "long_text", mode="before")
     @classmethod
     def ohne_leerraum_am_rand(cls, wert):
         return wert.strip() if isinstance(wert, str) else wert
