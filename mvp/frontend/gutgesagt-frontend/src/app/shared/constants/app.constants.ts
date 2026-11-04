@@ -60,6 +60,7 @@ export const PAGE_TITLES = {
   AUSFORMULIEREN: 'Ausformulieren',
   HIER_FEHLT_EINE_ANTWORT: 'Hier fehlt eine Antwort',
   VARIANTEN: 'Varianten',
+  BEITRAG: 'Beitrag',
   SHARE_TARGET: 'Geteilter Inhalt',
   // Typnamen aus der Registry
   COMMENTARY: typLabel('commentary'),
@@ -91,6 +92,7 @@ export const ROUTES = {
   DESTILLIEREN: '/destillieren',
   HIER_FEHLT_EINE_ANTWORT: '/hier-fehlt-eine-antwort',
   VARIANTEN: '/varianten',
+  BEITRAG: '/beitrag',
   SHARE_TARGET: '/teilen',
   LOGIN: '/login',
   HELP: '/help'

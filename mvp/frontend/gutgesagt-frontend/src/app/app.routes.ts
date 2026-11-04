@@ -117,6 +117,14 @@ export const routes: Routes = [
         data: { parent: '/search' }
     },
     {
+        // Die eigene Adresse eines Beitrags, fuer alle Beitragstypen (#300). Oeffentlich
+        // wie die Suche: Sichtbare Beitraege koennen auch Besucher finden und kopieren.
+        path: 'beitrag/:id',
+        loadComponent: () => import('./beitrag-ansicht/beitrag-ansicht.component').then(m => m.BeitragAnsichtComponent),
+        canActivate: [PublicGuard],
+        data: { parent: '/search' }
+    },
+    {
         path: 'hier-fehlt-eine-antwort',
         loadComponent: () => import('./hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component').then(m => m.HierFehltEineAntwortComponent),
         canActivate: [AuthGuard],

@@ -77,7 +77,8 @@ is only a placeholder.
 Memory: since #358 the semantic service also loads spaCy (`de_core_news_sm`) and CharSplit
 for the Gegenlesen, about 0.5 GB more RAM than before (measured on the dev VM: ~180 MB for the
 model, ~350 MB for CharSplit's n-gram table), loaded in the background about two seconds after
-start. If the container has a memory limit, raise it accordingly.
+start. If the container has a memory limit, raise it accordingly. The Kürzungsvorschlag (#403)
+uses the same spaCy model and needs no further memory.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:

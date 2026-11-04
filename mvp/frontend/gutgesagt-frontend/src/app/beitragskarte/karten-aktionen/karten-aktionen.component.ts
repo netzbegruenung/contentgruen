@@ -28,11 +28,13 @@ import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
 import { HAND_UMRISS } from '../../shared/marke/hand';
+import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
 
 /**
- * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden und,
+ * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
+ * Menue der Weg zur eigenen Adresse des Beitrags (/beitrag/:id, #300) und,
  * angemeldet, als Vorlage nehmen (#356).
  * Hat der Beitrag eine Herkunft, steht neben "Kopieren" die Wahl "Text" oder
  * "Text + Herkunft".
@@ -71,6 +73,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() abstimmenSichtbar = true;
   /** Die angezeigte Fassung eines Kommentars, gezaehlt wird je Fassung (#355); sonst null. */
   @Input() fassung: Fassung | null = null;
+  /** Der Menueeintrag "Beitrag öffnen"; aus auf der eigenen Adresse selbst. */
+  @Input() ansichtVerlinkt = true;
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();
@@ -166,6 +170,13 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       this.kopiert.emit();
     }
     this.cdr.markForCheck();
+  }
+
+  beitragOeffnen(): void {
+    if (this.vorschau || !this.inhaltId) {
+      return;
+    }
+    this.router.navigate([ROUTES.BEITRAG, this.inhaltId]);
   }
 
   /**

@@ -118,6 +118,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input() vorschau = false;
   /** Durchgereicht an app-karten-aktionen; aus beim eigenen Beitrag im Album-Sheet. */
   @Input() abstimmenSichtbar = true;
+  /** Durchgereicht an app-karten-aktionen: "Beitrag öffnen" im Menue; aus auf /beitrag/:id selbst. */
+  @Input() ansichtVerlinkt = true;
   /**
    * Einwurf-Karte: die Stufe als Wort in der Meta-Zeile statt des Einwerfers. Fuer
    * "Meine Einwuerfe", wo alle Karten die eigenen sind und die Stufe die Rueckmeldung ist.

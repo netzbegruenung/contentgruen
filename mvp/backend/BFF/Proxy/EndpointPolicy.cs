@@ -25,6 +25,10 @@ public static class EndpointPolicy
     {
         "/api/v1/search/",
         "/api/v1/content/recent",        // anonymer Zugriff auf neue Inhalte
+        // Ein Beitrag unter seiner eigenen Adresse (/beitrag/:id, #300), lesbar wie in
+        // der Suche. Nur dieses Praefix: Loeschen (DELETE /api/v1/content/{id}) bleibt
+        // hinter dem Gate.
+        "/api/v1/content/beitrag",
         "/api/v1/usage/content/",        // anonyme Nutzungserfassung
         "/api/v1/usage/trending",        // anonymer Zugriff auf Trending
         "/api/v1/moderation/report",     // anonyme Meldung (DSA Art. 16)

@@ -1,0 +1,129 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+
+import { BeitragAnsichtComponent } from './beitrag-ansicht.component';
+import { BeitragAnsicht, ContentService } from '../services/content.service';
+import { LoggingService } from '../services/logging.service';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
+
+describe('BeitragAnsichtComponent', () => {
+  let fixture: ComponentFixture<BeitragAnsichtComponent>;
+  let contentService: jasmine.SpyObj<ContentService>;
+  let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+
+  function beitrag(felder: Partial<BeitragAnsicht> = {}): BeitragAnsicht {
+    return {
+      id: 'b-1',
+      content_type: 'commentary',
+      title: 'Wärmepumpe lohnt sich auch im Altbau',
+      text: 'Text',
+      created: '2026-11-01T12:00:00Z',
+      references: [],
+      ...felder,
+    } as BeitragAnsicht;
+  }
+
+  async function oeffnen(antwort: Observable<BeitragAnsicht>, id = 'b-1'): Promise<void> {
+    contentService = jasmine.createSpyObj('ContentService', ['beitragLaden']);
+    contentService.beitragLaden.and.returnValue(antwort);
+    params = new BehaviorSubject(convertToParamMap({ id }));
+
+    await TestBed.configureTestingModule({
+      imports: [BeitragAnsichtComponent],
+      providers: [
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: { paramMap: params.asObservable() } },
+        { provide: ContentService, useValue: contentService },
+        { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn', 'error']) },
+      ],
+    })
+      .overrideComponent(BeitragAnsichtComponent, {
+        remove: { imports: [BeitragskarteComponent] },
+        add: { imports: [BeitragskarteStubComponent] },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(BeitragAnsichtComponent);
+    fixture.detectChanges();
+  }
+
+  function karte(): BeitragskarteStubComponent | null {
+    const element = fixture.debugElement.query((d) => d.componentInstance instanceof BeitragskarteStubComponent);
+    return element?.componentInstance ?? null;
+  }
+
+  function text(): string {
+    return (fixture.nativeElement as HTMLElement).textContent ?? '';
+  }
+
+  function fehler(status: number): Observable<never> {
+    return throwError(() => new HttpErrorResponse({ status }));
+  }
+
+  describe('Laden', () => {
+    it('laedt den Beitrag zur ID aus der Adresse', async () => {
+      await oeffnen(of(beitrag()), 'b-7');
+
+      expect(contentService.beitragLaden).toHaveBeenCalledWith('b-7');
+    });
+
+    it('zeigt ihn als volle Karte mit Abstimmen, ohne Link auf sich selbst', async () => {
+      await oeffnen(of(beitrag()));
+
+      expect(karte()?.daten?.titel).toBe('Wärmepumpe lohnt sich auch im Altbau');
+      expect(karte()?.variante).toBe('voll');
+      expect(karte()?.abstimmenSichtbar).toBeTrue();
+      expect(karte()?.ansichtVerlinkt).toBeFalse();
+    });
+
+    it('zeigt die eigene Stimme an der Karte', async () => {
+      await oeffnen(of(beitrag({ user_vote: 'like' })));
+
+      expect(karte()?.daten?.stimme).toBe('like');
+    });
+
+    it('zeigt jeden Beitragstyp, auch ein Bild', async () => {
+      await oeffnen(of(beitrag({ content_type: 'image', image_url: 'https://example.org/b.jpg' })));
+
+      expect(karte()?.daten?.typ).toBe('image');
+      expect(karte()?.daten?.bildUrl).toBe('https://example.org/b.jpg');
+    });
+
+    it('laedt neu, wenn sich die ID in der Adresse aendert', async () => {
+      await oeffnen(of(beitrag()));
+
+      params.next(convertToParamMap({ id: 'b-2' }));
+
+      expect(contentService.beitragLaden).toHaveBeenCalledWith('b-2');
+    });
+  });
+
+  describe('Nicht da', () => {
+    it('sagt bei 404, dass es den Beitrag nicht gibt, und zeigt keine Karte', async () => {
+      await oeffnen(fehler(404));
+      fixture.detectChanges();
+
+      expect(karte()).toBeNull();
+      expect(text()).toContain('Dieser Beitrag ist nicht verfügbar.');
+    });
+
+    it('unterscheidet eine Stoerung von einem fehlenden Beitrag', async () => {
+      await oeffnen(fehler(500));
+      fixture.detectChanges();
+
+      expect(karte()).toBeNull();
+      expect(text()).toContain('Der Beitrag lässt sich gerade nicht anzeigen.');
+    });
+
+    it('fuehrt ohne Beitrag zur Suche', async () => {
+      await oeffnen(fehler(404));
+      fixture.detectChanges();
+
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a.zur-suche');
+      expect(link.getAttribute('href')).toBe('/search');
+    });
+  });
+});

@@ -22,7 +22,7 @@ from dependencies import (
     get_settings,
 )
 from dtos.beitrag import BeitragResponse
-from api.v1.usage import OFT_GENUTZT
+from dtos.beitragstypen import ANTWORT_JE_TYP
 from repositories.varianten_repository import (
     VariantenRepository,
     get_varianten_repository,
@@ -94,7 +94,7 @@ async def varianten(
         angereichert = get_usage_service().enrich_content_with_usage(eintraege)
         antworten = fuer_aufrufer(
             [
-                OFT_GENUTZT.get(e["result_type"], BeitragResponse).model_validate(e)
+                ANTWORT_JE_TYP.get(e["result_type"], BeitragResponse).model_validate(e)
                 for e in angereichert
             ],
             aufrufer,
