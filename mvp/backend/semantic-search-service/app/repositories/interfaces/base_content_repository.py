@@ -265,6 +265,21 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         """
         pass
 
+    async def inhalt_aendern(
+        self,
+        item_id: uuid.UUID,
+        content_type: str,
+        felder: Dict[str, Any],
+        nicht_aus: AbstractSet[ContentStatus],
+    ) -> None:
+        """
+        Die Felder eines Eintrags ueberschreiben und, wenn "text" dabei ist, seinen
+        Vektor neu berechnen (Autor aendert seinen Beitrag, #299). Die Felder
+        aendern sich nur, wenn der Eintrag in keinem Zustand aus nicht_aus steht.
+        Default implementation is a no-op.
+        """
+        pass
+
     async def get_recent(self, limit: int = 10) -> List[TContentDbEntry]:
         """
         Get the most recently created content items.

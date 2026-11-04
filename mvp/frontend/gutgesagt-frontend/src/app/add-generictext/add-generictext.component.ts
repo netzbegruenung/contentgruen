@@ -44,10 +44,10 @@ import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
+import { HINTERGRUNDINFO_TEXT_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
 
-export const TITEL_MAX = 120;
-/** Wie im AddGenericTextRequest; laenger ist keine Hintergrundinfo mehr, sondern ein Artikel. */
-export const TEXT_MAX = 2000;
+export { TITEL_MAX } from '../shared/beitrag-grenzen';
+export const TEXT_MAX = HINTERGRUNDINFO_TEXT_MAX;
 
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';

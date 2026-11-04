@@ -7,6 +7,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { BeitragSheetComponent, BeitragSheetDaten, WISCH_SCHWELLE } from './beitrag-sheet.component';
+import { BeitragAendernDialogComponent } from './beitrag-aendern-dialog.component';
 import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { KartenDaten } from './karten-daten';
 import { AuthService } from '../auth/auth.service';
@@ -106,6 +107,40 @@ describe('BeitragSheetComponent', () => {
 
     wischen(100, 100 + WISCH_SCHWELLE + 20);
     expect(sheet.dismiss).toHaveBeenCalledTimes(1);
+  });
+
+  describe('Ändern', () => {
+    function aendernKnopf(): HTMLButtonElement | null {
+      return fixture.nativeElement.querySelector('.aendern-knopf');
+    }
+
+    it('zeigt keinen Ändern-Knopf, wenn der Aufrufer es nicht erlaubt', () => {
+      erstellen({ ...daten, loeschbar: true });
+
+      expect(aendernKnopf()).toBeNull();
+    });
+
+    it('öffnet den Dialog mit dem Beitrag und schliesst nach dem Speichern mit "geaendert"', () => {
+      dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+      erstellen({ ...daten, loeschbar: true, aenderbar: true });
+
+      aendernKnopf()!.click();
+
+      const [komponente, konfiguration] = dialog.open.calls.mostRecent().args;
+      expect(komponente).toBe(BeitragAendernDialogComponent);
+      expect((konfiguration as any).data.id).toBe('b-1');
+      expect(sheet.dismiss).toHaveBeenCalledOnceWith('geaendert');
+      expect(snackBar.open).toHaveBeenCalledWith('Beitrag geändert', 'OK', jasmine.any(Object));
+    });
+
+    it('bleibt offen, wenn der Dialog abgebrochen wird', () => {
+      dialog.open.and.returnValue({ afterClosed: () => of(false) } as any);
+      erstellen({ ...daten, loeschbar: true, aenderbar: true });
+
+      aendernKnopf()!.click();
+
+      expect(sheet.dismiss).not.toHaveBeenCalled();
+    });
   });
 
   describe('Löschen', () => {

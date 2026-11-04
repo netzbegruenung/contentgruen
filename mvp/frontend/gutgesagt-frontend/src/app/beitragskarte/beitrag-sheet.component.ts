@@ -10,6 +10,7 @@ import { filter, finalize, switchMap } from 'rxjs/operators';
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenDaten } from './karten-daten';
 import { MeineBeitraegeService } from '../services/meine-beitraege.service';
+import { BeitragAendernDialogComponent } from './beitrag-aendern-dialog.component';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -19,14 +20,18 @@ import {
 export const WISCH_SCHWELLE = 80;
 
 /**
- * loeschbar nur aus "Meine Beitraege": dort ist es sicher der eigene Beitrag.
+ * loeschbar und aenderbar nur aus "Meine Beitraege": dort ist es sicher der eigene
+ * Beitrag. Aendern geht nur bei Kommentar und Hintergrundinfo (istAenderbar).
  * zurAdresse zeigt "Beitrag öffnen" im Menue (#300); aus, wo das Sheet mitten im
  * Schreiben aufgeht (Dublette, Destillieren) und die Eingabe sonst verloren ginge.
  */
-export type BeitragSheetDaten = KartenDaten & { loeschbar?: boolean; zurAdresse?: boolean };
+export type BeitragSheetDaten = KartenDaten & { loeschbar?: boolean; aenderbar?: boolean; zurAdresse?: boolean };
 
 /** Ergebnis des Sheets, wenn der Autor den Beitrag geloescht hat; die Liste laedt dann neu. */
 export const GELOESCHT = 'geloescht';
+
+/** Ergebnis des Sheets, wenn der Autor den Beitrag geaendert hat (#299); die Liste laedt dann neu. */
+export const GEAENDERT = 'geaendert';
 
 const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Beitrag löschen?',
@@ -56,7 +61,8 @@ export function loeschenFehlertext(status: number | undefined): string {
  * oben steht, sonst gehoert die Geste dem Scrollen im Sheet.
  *
  * Mit loeschbar kann der Autor den Beitrag nach einer Rueckfrage loeschen (#250); das
- * Sheet schliesst dann mit GELOESCHT.
+ * Sheet schliesst dann mit GELOESCHT. Mit aenderbar oeffnet "Ändern" den Dialog fuer
+ * Titel, Text und Herkunft (#299); gespeichert, schliesst das Sheet mit GEAENDERT.
  */
 @Component({
   selector: 'app-beitrag-sheet',
@@ -68,8 +74,20 @@ export function loeschenFehlertext(status: number | undefined): string {
     <!-- Der eigene Beitrag: nicht abstimmen, Kopieren und Melden bleiben -->
     <app-beitragskarte [daten]="daten" variante="voll" [abstimmenSichtbar]="false"
                        [ansichtVerlinkt]="!!daten.zurAdresse"></app-beitragskarte>
-    <div class="sheet-fuss" *ngIf="daten.loeschbar">
+    <div class="sheet-fuss" *ngIf="daten.loeschbar || daten.aenderbar">
       <button
+        *ngIf="daten.aenderbar"
+        mat-button
+        type="button"
+        class="aendern-knopf"
+        [disabled]="aendertGerade()"
+        (click)="aendern()"
+      >
+        <mat-icon>edit</mat-icon>
+        Ändern
+      </button>
+      <button
+        *ngIf="daten.loeschbar"
         mat-button
         type="button"
         class="loeschen-knopf"
@@ -105,6 +123,7 @@ export function loeschenFehlertext(status: number | undefined): string {
       .sheet-fuss {
         display: flex;
         justify-content: flex-end;
+        gap: 8px;
         max-width: 450px;
         margin: 8px auto 0;
       }
@@ -121,6 +140,9 @@ export class BeitragSheetComponent {
   /** Solange Rueckfrage oder Anfrage laufen: ein zweiter Klick oeffnet keine zweite Rueckfrage. */
   readonly loeschtGerade = signal(false);
 
+  /** Solange der Dialog offen ist: ein zweiter Klick oeffnet keinen zweiten. */
+  readonly aendertGerade = signal(false);
+
   constructor(
     @Inject(MAT_BOTTOM_SHEET_DATA) readonly daten: BeitragSheetDaten,
     private sheet: MatBottomSheetRef<BeitragSheetComponent>,
@@ -129,6 +151,24 @@ export class BeitragSheetComponent {
     private snackBar: MatSnackBar,
     private beitraege: MeineBeitraegeService,
   ) {}
+
+  /** Den Beitrag im Dialog aendern; gespeichert, ist die Karte veraltet und das Sheet schliesst. */
+  aendern(): void {
+    if (this.aendertGerade()) {
+      return;
+    }
+    this.aendertGerade.set(true);
+    this.dialog
+      .open(BeitragAendernDialogComponent, { data: this.daten, width: '560px', maxWidth: '95vw' })
+      .afterClosed()
+      .pipe(finalize(() => this.aendertGerade.set(false)))
+      .subscribe((gespeichert) => {
+        if (gespeichert === true) {
+          this.snackBar.open('Beitrag geändert', 'OK', { duration: 3000 });
+          this.sheet.dismiss(GEAENDERT);
+        }
+      });
+  }
 
   /** Ein 404 heisst: schon geloescht oder gesperrt. Fuer die Liste ist er so oder so weg. */
   loeschen(): void {

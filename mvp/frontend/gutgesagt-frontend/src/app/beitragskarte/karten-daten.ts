@@ -34,6 +34,8 @@ export interface KartenQuelle {
   id: string;
   url?: string;
   beschreibung?: string;
+  /** Die Notiz dieses Beitrags, ohne den Text der Herkunft als Ersatz; zum Aendern (#299). */
+  notiz?: string;
 }
 
 export interface KartenStatement {
@@ -201,6 +203,7 @@ function quelle(referenz: ContentReference): KartenQuelle {
     id: referenz.reference_id,
     url: referenz.reference_text || undefined,
     beschreibung: referenz.reference_description || undefined,
+    ...(referenz.description ? { notiz: referenz.description } : {}),
   };
 }
 
