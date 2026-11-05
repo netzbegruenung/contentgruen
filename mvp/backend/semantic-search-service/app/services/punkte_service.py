@@ -17,15 +17,28 @@ Woher die drei Stufen kommen:
   Gewicht und Deckel stehen schon in der Konfiguration, weil ADR 0004 alle drei
   Stufen dort verlangt.
 
-Ein Startkonto sammelt keine Punkte.
+Ein Startkonto sammelt keine Punkte, ein Konto ohne geltende Art.-9-Einwilligung
+(nie erteilt oder widerrufen) auch nicht (#559, F559-1): Die Datenschutzerklaerung
+stuetzt die Punkte auf sie. Gefragt wird je Abruf, damit ein Widerruf sofort wirkt.
 """
 
 import asyncio
 from datetime import date, datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable, Dict, Iterable, List, Protocol, Set
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    Set,
+)
 
 from core.config import Settings
 from domain.punkte import Punktegewichte, Punktestand, Wirkungsdaten, punkte_berechnen
+from services.art9_einwilligung_service import get_art9_einwilligung_service
 
 BEITRAG_WARTEZEIT = timedelta(days=3)
 """
@@ -79,16 +92,24 @@ class PunkteService:
         stimmen_und_einwuerfe: StimmenUndEinwuerfe,
         settings: Settings,
         jetzt: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+        eingewilligt: Optional[Callable[[str], bool]] = None,
     ):
         self._sichtbare_beitraege = sichtbare_beitraege
         self._nutzung = nutzung
         self._stimmen_und_einwuerfe = stimmen_und_einwuerfe
         self._settings = settings
         self._jetzt = jetzt
+        # Ohne Angabe die gespeicherte Art.-9-Einwilligung; spaet geholt, damit
+        # Tests den Dienst ersetzen koennen (tests/conftest.py).
+        self._eingewilligt = eingewilligt or (
+            lambda user_id: get_art9_einwilligung_service().eingewilligt(user_id)
+        )
 
     async def punkte(self, user_id: str) -> Punktestand:
         gewichte = gewichte_aus(self._settings)
         if self._settings.ist_startkonto(user_id):
+            return punkte_berechnen(Wirkungsdaten(), gewichte)
+        if not await asyncio.to_thread(self._eingewilligt, user_id):
             return punkte_berechnen(Wirkungsdaten(), gewichte)
 
         beitraege = await self._sichtbare_beitraege(user_id)

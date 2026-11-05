@@ -292,11 +292,11 @@ Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höch
 _Avoid_: eindeutige Nutzung, Unique Usage
 
 **Prüfwert**:
-Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dasselbe Besuchermerkmal) denselben Beitrag schon genutzt hat: aus Kennung bzw. Besuchermerkmal, Beitrag und Datum mit einem eigenen Tagesschlüssel berechnet, der nur im Arbeitsspeicher liegt. Auch mit Datenbank und Konfiguration lässt er sich weder auf die Person noch auf den Beitrag zurückführen oder nachrechnen. Nach seinem Tag wird er verworfen; nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal.
+Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dasselbe Besuchermerkmal) denselben Beitrag schon genutzt hat: aus Kennung bzw. Besuchermerkmal, Beitrag und Datum mit einem eigenen Tagesschlüssel berechnet, der nur im Arbeitsspeicher liegt. Auch mit Datenbank und Konfiguration lässt er sich weder auf die Person noch auf den Beitrag zurückführen oder nachrechnen. Nach seinem Tag wird er verworfen; nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal. Für ein Konto ohne Art.-9-Einwilligung entsteht keiner (#559); seine Kopien fehlen deshalb in der entdoppelten Nutzung.
 _Avoid_: Hash, Fingerabdruck
 
 **Paar-Prüfwert**:
-Der Prüfwert der Muster-Hinweise für „ein Konto hat einen Beitrag eines anderen Kontos genutzt“: aus den Kennungen beider Konten mit dem Fensterschlüssel berechnet, ohne Beitrag und Datum, weil er das Fenster von sieben Tagen überdauern muss. Er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung; nach einem Neustart beginnt ein Muster neu. Wie der Prüfwert lässt er sich auch mit Datenbank und Konfiguration nicht nachrechnen.
+Der Prüfwert der Muster-Hinweise für „ein Konto hat einen Beitrag eines anderen Kontos genutzt“: aus den Kennungen beider Konten mit dem Fensterschlüssel berechnet, ohne Beitrag und Datum, weil er das Fenster von sieben Tagen überdauern muss. Er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung; nach einem Neustart beginnt ein Muster neu. Er entsteht nur, wenn beide Konten eine Art.-9-Einwilligung haben (#559). Wie der Prüfwert lässt er sich auch mit Datenbank und Konfiguration nicht nachrechnen.
 
 **Oft genutzt**:
 Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde, gezählt als entdoppelte Nutzung. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
@@ -414,7 +414,7 @@ Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt 
 _Avoid_: Tour, Onboarding, Tutorial
 
 **Punkte**:
-Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte.
+Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte. Ein Konto ohne geltende Art.-9-Einwilligung (nie erteilt oder widerrufen) hat keine Punkte, wie ein Startkonto (#559).
 _Avoid_: XP, Score, Karma
 
 **Muster-Hinweis**:
@@ -441,8 +441,12 @@ _Avoid_: Kommandozentrale, Monitoring, Radar
 Gut gesagt als Ort, an dem Mitwirkende Beiträge gemeinsam herstellen und dabei Fähigkeiten entlang realer Tätigkeiten aufbauen, bis hin zur eigenen Stimme. Die Werkstatt gibt keine Aufträge und betreut keine Kanäle.
 _Avoid_: Kommandozentrale, Armee, Agentur
 
+**Level**:
+Was eine Person mit ihren Punkten erreicht, in aufsteigender Folge; ein höheres Level schaltet neue Aktionen frei. Wie Punktestand, Quests und Meilenstein-Abzeichen sieht die Person es nur selbst, solange sie nicht gesondert zustimmt, es anderen Angemeldeten zu zeigen. Bisher nur im Wortlaut der Art.-9-Einwilligung genannt (#559); gebaut wird es mit [#564](https://git.verdigado.com/Netzbegruenung/gutgesagt/issues/564).
+_Avoid_: Rang
+
 **Meilenstein**:
-Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; am Anzeigenamen steht dafür ein Abzeichen.
+Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; dafür gibt es ein Abzeichen, das am Anzeigenamen nur steht, wenn die Person gesondert zustimmt, es anderen zu zeigen, und dann nur für Angemeldete.
 _Avoid_: Achievement, Badge, Erfolg
 
 **Meine Einwürfe**:
@@ -504,7 +508,7 @@ Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit e
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
 **Art.-9-Einwilligung**:
-Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist. Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten. Widerrufen geht jederzeit im Profilmenü unter „Einwilligung“; schon Gespeichertes bleibt dann, bis die Person es löscht oder ihr Konto löschen lässt. Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit dem Opt-in für die Sichtbarkeit von Punkten. Ablauf: `docs/ART9_EINWILLIGUNG.md`.
+Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist (ein zweiter Wortlaut vom selben Tag mit Suffix). Der Wortlaut nennt als Zwecke auch Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, solange sie nicht gesondert zustimmt, sie anderen Angemeldeten zu zeigen), die Freischaltungen eines höheren Levels und Muster-Hinweise (#559). Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten, und sie hat keine eigenen Punkte; kopiert sie einen Beitrag, zählt das am Zähler der Karte, aber ohne Prüfwert und Paar-Prüfwert: Die Kopie bringt der Autorin keine Punkte und ergibt keinen Muster-Hinweis (#559). Widerrufen geht jederzeit im Profilmenü unter „Einwilligung“; schon Gespeichertes bleibt dann, bis die Person es löscht oder ihr Konto löschen lässt. Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit dem Opt-in für die Sichtbarkeit von Punkten, Level, Quests und Abzeichen. Ablauf: `docs/ART9_EINWILLIGUNG.md`.
 _Avoid_: Consent, Opt-in, Datenschutz-Häkchen, Zustimmung (die gilt den Nutzungsbedingungen)
 
 **Besucher**:

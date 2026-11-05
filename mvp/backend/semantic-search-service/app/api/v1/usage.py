@@ -29,6 +29,7 @@ from utils.rate_limiter import RateLimiter
 from services.entdoppelung import pruefwert
 from utils.aufrufer import ANONYM
 from services.punkte_service import PunkteService
+from services.art9_einwilligung_service import get_art9_einwilligung_service
 from services.usage_tracking_service import get_usage_service
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
@@ -129,6 +130,25 @@ class CleanupResultResponse(BaseModel):
     message: str
 
 
+async def _eingewilligt(kennung: str) -> bool:
+    """
+    Hat das Konto eine geltende Art.-9-Einwilligung (#559)? Je Aufruf aus der
+    Datenbank gefragt, damit ein Widerruf sofort wirkt. Anders als
+    ``require_art9_einwilligung`` kein Fehler, wenn sie nicht lesbar ist: Gezaehlt
+    wird trotzdem (Kopieren ist Lesen), im Zweifel aber als nicht erteilt.
+    """
+    try:
+        return await asyncio.to_thread(
+            get_art9_einwilligung_service().eingewilligt, kennung
+        )
+    except Exception as e:
+        logger.error(
+            f"Art.-9-Einwilligung beim Zaehlen nicht lesbar: {type(e).__name__}",
+            exc_info=True,
+        )
+        return False
+
+
 @router.post("/content/{content_id}/usage", response_model=TrackUsageResponse)
 async def track_content_usage(
     content_id: str,
@@ -217,6 +237,13 @@ async def track_content_usage(
                 usage_count=service.get_content_usage(content_id),
             )
 
+        # Ohne geltende Art.-9-Einwilligung (#559) zaehlt die Kopie am Zaehler der
+        # Karte - Kopieren ist Lesen und bleibt offen (#556 F489-2) -, aber es
+        # entsteht nichts, was ihr Konto mit dem Beitrag verbindet: kein Pruefwert
+        # (also keine entdoppelte Nutzung und keine Wirkung fuer die Autorin) und
+        # kein Paar-Pruefwert fuer die Muster-Hinweise.
+        eingewilligt = bool(angemeldet) and await _eingewilligt(aufrufer)
+
         # User-Agent hier verdichten, nicht weiter unten: ab dieser Zeile
         # existiert der Rohwert im weiteren Ablauf nicht mehr.
         device_category = derive_device_category(user_agent)
@@ -235,20 +262,23 @@ async def track_content_usage(
         # gehoerten sie kurz vor Mitternacht (UTC) zu verschiedenen Tagen.
         jetzt = datetime.now(timezone.utc)
 
+        # Entdoppelung fuer Punkte und "oft genutzt" (#352): angemeldet je Kennung,
+        # sonst je Besuchermerkmal (#446), je Beitrag und UTC-Tag. Ein Konto ohne
+        # Einwilligung bekommt keinen (#559).
+        if not angemeldet:
+            wert = pruefwert(aufrufer, besucher_merkmal(request), content_uuid, jetzt)
+        elif eingewilligt:
+            wert = pruefwert(aufrufer, None, content_uuid, jetzt)
+        else:
+            wert = None
+
         # Track usage
         logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
             device_category=device_category,
             fassung=fassung,
-            # Entdoppelung fuer Punkte und "oft genutzt" (#352): angemeldet je Kennung,
-            # sonst je Besuchermerkmal (#446), je Beitrag und UTC-Tag.
-            pruefwert=pruefwert(
-                aufrufer,
-                None if angemeldet else besucher_merkmal(request),
-                content_uuid,
-                jetzt,
-            ),
+            pruefwert=wert,
             tag=jetzt.date(),
         )
 
@@ -262,7 +292,15 @@ async def track_content_usage(
         # Erkannt wird gegenseitige Nutzung innerhalb von MUSTER_FENSTER_TAGE (sieben)
         # Tagen; gemerkt wird dafuer nur ein Paar-Pruefwert mit einem Schluessel im
         # Speicher (services/entdoppelung.py, DSFA Risiko 2).
-        if settings.punkte_aktiv and beitrag is not None:
+        # Ein Muster-Hinweis nennt beide Konten (#559): Hat die Autorin nicht
+        # eingewilligt oder widerrufen, keine Meldung - sonst ergaebe ihr frueherer
+        # Paar-Pruefwert noch einen Hinweis mit ihrer Kennung.
+        if (
+            settings.punkte_aktiv
+            and eingewilligt
+            and beitrag is not None
+            and await _eingewilligt(beitrag.original_author)
+        ):
             try:
                 await asyncio.to_thread(
                     get_muster_hinweise_service().nutzung_melden,
