@@ -29,6 +29,7 @@ from utils.rate_limiter import RateLimiter
 from services.entdoppelung import pruefwert
 from utils.aufrufer import ANONYM
 from services.punkte_service import PunkteService
+from services.art9_einwilligung_service import get_art9_einwilligung_service
 from services.usage_tracking_service import get_usage_service
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
@@ -217,6 +218,23 @@ async def track_content_usage(
                 usage_count=service.get_content_usage(content_id),
             )
 
+        # Ohne geltende Art.-9-Einwilligung (#559) zaehlt die Kopie am Zaehler der
+        # Karte - Kopieren ist Lesen und bleibt offen (#556 F489-2) -, aber es
+        # entsteht nichts, was ihr Konto mit dem Beitrag verbindet: kein Pruefwert
+        # (also keine entdoppelte Nutzung und keine Punkte) und kein Paar-Pruefwert
+        # fuer die Muster-Hinweise. Je Kopie gefragt, damit ein Widerruf sofort wirkt.
+        # Ist die Einwilligung nicht lesbar, gilt sie als nicht erteilt.
+        eingewilligt = False
+        if angemeldet:
+            try:
+                eingewilligt = await asyncio.to_thread(
+                    get_art9_einwilligung_service().eingewilligt, aufrufer
+                )
+            except Exception as e:
+                logger.error(
+                    f"Art.-9-Einwilligung beim Zaehlen nicht lesbar: {type(e).__name__}"
+                )
+
         # User-Agent hier verdichten, nicht weiter unten: ab dieser Zeile
         # existiert der Rohwert im weiteren Ablauf nicht mehr.
         device_category = derive_device_category(user_agent)
@@ -243,11 +261,15 @@ async def track_content_usage(
             fassung=fassung,
             # Entdoppelung fuer Punkte und "oft genutzt" (#352): angemeldet je Kennung,
             # sonst je Besuchermerkmal (#446), je Beitrag und UTC-Tag.
-            pruefwert=pruefwert(
-                aufrufer,
-                None if angemeldet else besucher_merkmal(request),
-                content_uuid,
-                jetzt,
+            pruefwert=(
+                None
+                if angemeldet and not eingewilligt
+                else pruefwert(
+                    aufrufer,
+                    None if angemeldet else besucher_merkmal(request),
+                    content_uuid,
+                    jetzt,
+                )
             ),
             tag=jetzt.date(),
         )
@@ -262,7 +284,7 @@ async def track_content_usage(
         # Erkannt wird gegenseitige Nutzung innerhalb von MUSTER_FENSTER_TAGE (sieben)
         # Tagen; gemerkt wird dafuer nur ein Paar-Pruefwert mit einem Schluessel im
         # Speicher (services/entdoppelung.py, DSFA Risiko 2).
-        if settings.punkte_aktiv and beitrag is not None:
+        if settings.punkte_aktiv and eingewilligt and beitrag is not None:
             try:
                 await asyncio.to_thread(
                     get_muster_hinweise_service().nutzung_melden,

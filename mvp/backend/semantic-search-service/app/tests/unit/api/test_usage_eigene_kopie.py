@@ -25,6 +25,7 @@ from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
 from core.config import Settings
 from dependencies import get_settings
 from services.entdoppelung import pruefwert
+from repositories.art9_einwilligung_repository import Art9Einwilligung
 
 BEITRAG_ID = "11111111-1111-4111-8111-111111111111"
 AUTORIN = "kim-1"
@@ -157,6 +158,74 @@ class TestEntdoppelung:
 
         zaehlen(client, "bo-2")
 
+        muster.nutzung_melden.assert_not_called()
+
+
+class TestArt9Einwilligung:
+    """
+    Ohne geltende Art.-9-Einwilligung (#559): Die Kopie zaehlt am Kartenzaehler
+    (Kopieren ist Lesen, #556 F489-2), aber es entsteht kein Pruefwert, also keine
+    entdoppelte Nutzung und keine Punkte, und keine Meldung fuer die Muster-Hinweise.
+    """
+
+    def test_ohne_einwilligung_zaehlt_ohne_pruefwert_und_muster(
+        self, client, dienst, muster, art9_einwilligung_ohne_datenbank
+    ):
+        art9_einwilligung_ohne_datenbank.lesen.return_value = None
+
+        antwort = zaehlen(client, "bo-2")
+
+        assert antwort.status_code == 200
+        assert antwort.json()["usage_count"] == 4
+        dienst.track_content_usage.assert_called_once()
+        assert dienst.track_content_usage.call_args.kwargs["pruefwert"] is None
+        muster.nutzung_melden.assert_not_called()
+
+    def test_widerruf_wirkt_sofort_fuer_die_naechste_kopie(
+        self, client, dienst, muster, art9_einwilligung_ohne_datenbank
+    ):
+        zaehlen(client, "bo-2")
+        art9_einwilligung_ohne_datenbank.lesen.return_value = Art9Einwilligung(
+            wortlaut="2026-11-05",
+            eingewilligt_am=datetime(2026, 11, 5, tzinfo=timezone.utc),
+            widerrufen_am=datetime(2026, 11, 5, 10, tzinfo=timezone.utc),
+        )
+        zaehlen(client, "bo-2")
+
+        vorher, nachher = [
+            c.kwargs["pruefwert"] for c in dienst.track_content_usage.call_args_list
+        ]
+        assert vorher and nachher is None
+        muster.nutzung_melden.assert_called_once()
+
+    def test_einwilligung_wird_je_kopie_gefragt(
+        self, client, art9_einwilligung_ohne_datenbank
+    ):
+        zaehlen(client, "bo-2")
+        zaehlen(client, "bo-2")
+
+        assert art9_einwilligung_ohne_datenbank.lesen.call_count == 2
+
+    def test_besucher_braucht_keine_einwilligung(
+        self, client, dienst, art9_einwilligung_ohne_datenbank
+    ):
+        art9_einwilligung_ohne_datenbank.lesen.return_value = None
+
+        zaehlen(client, "anonymous", agent="Browser A")
+
+        assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
+        art9_einwilligung_ohne_datenbank.lesen.assert_not_called()
+
+    def test_unlesbare_einwilligung_zaehlt_ohne_pruefwert(
+        self, client, dienst, muster, art9_einwilligung_ohne_datenbank
+    ):
+        """Im Zweifel ohne Einwilligung: die Kopie zaehlt, mehr entsteht nicht."""
+        art9_einwilligung_ohne_datenbank.lesen.side_effect = RuntimeError("weg")
+
+        antwort = zaehlen(client, "bo-2")
+
+        assert antwort.status_code == 200
+        assert dienst.track_content_usage.call_args.kwargs["pruefwert"] is None
         muster.nutzung_melden.assert_not_called()
 
 
