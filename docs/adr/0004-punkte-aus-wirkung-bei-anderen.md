@@ -26,6 +26,10 @@ Die Sitzung, über die oben Nutzungen von Besuchern entdoppelt werden, gibt es s
 
 Entschieden mit der Punktezählung (PR #476, BanSe/todo#266): Besucher werden über ihr Besuchermerkmal entdoppelt, angemeldete Personen über ihre Kennung. An der Nutzung wird dafür weder Kennung noch Tagespseudonym gespeichert, sondern nur ein Prüfwert für den laufenden Tag, gebildet mit einem eigenen Schlüssel, der nur im Arbeitsspeicher liegt; die Muster-Hinweise vergleichen ebenso Paar-Prüfwerte mit dem Fensterschlüssel. Preis: Nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal, und ein Muster beginnt neu. Bestand von vor der Umstellung, der keine Sitzung trägt, zählt je Beitrag und Tag einmal.
 
+## Ranglisten nur mit Zustimmung (Ergänzung 05.11.2026)
+
+Ranglisten erscheinen nur bei Personen, die ausdrücklich zugestimmt haben (Opt-in), nicht bei allen, die sie abschalten könnten (Opt-out). Die Zustimmung lässt sich jederzeit widerrufen. Grund: Schon die Teilnahme an einer Rangliste verrät eine politische Haltung (DSGVO Art. 9), und die Ranglisten zeigen anderen Anzeigenamen. Die Entscheidung steht in `docs/VISION.md` und `docs/DSFA_PUNKTE.md`; der Satz zur Abschaltbarkeit im Abschnitt Consequences oben gilt seitdem nicht mehr.
+
 ## Considered Options
 
 - Punkte für jede Tätigkeit in voller Höhe (Schreiben, Einwerfen, Bewerten): am einfachsten, belohnt aber Menge statt Qualität. Übernommen ist nur die gedeckelte Form (siehe „Drei Stufen“).
@@ -34,4 +38,4 @@ Entschieden mit der Punktezählung (PR #476, BanSe/todo#266): Besucher werden ü
 
 ## Consequences
 
-Der Zähler an der Karte darf weiter jede Nutzung zählen, die Punkte brauchen aber eine eigene, entdoppelte Zählung. Die Gewichte stehen in der Konfiguration, nicht im Code. Ranglisten zeigen Anzeigenamen; die Datenschutzerklärung braucht dafür einen Abschnitt, und die Teilnahme lässt sich in den Einstellungen abschalten.
+Der Zähler an der Karte darf weiter jede Nutzung zählen, die Punkte brauchen aber eine eigene, entdoppelte Zählung. Die Gewichte stehen in der Konfiguration, nicht im Code. Ranglisten zeigen Anzeigenamen; die Datenschutzerklärung braucht dafür einen Abschnitt, und die Teilnahme an Ranglisten braucht die Zustimmung der Person (Opt-in, Ergänzung 05.11.2026).
