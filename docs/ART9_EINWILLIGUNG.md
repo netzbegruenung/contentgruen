@@ -65,6 +65,11 @@ Stand-Datum; ein zweiter Wortlaut vom selben Tag bekommt ein Suffix (`-b`, `-c` 
 
 Eine Einwilligung zu einem älteren Wortlaut gilt weiter. Ob ein geänderter Wortlaut eine neue
 Einwilligung verlangt, ist beim Ändern zu entscheiden; heute fragt die App nicht erneut.
+Die Prüfung der Einwilligung (`Art9EinwilligungService.eingewilligt`) unterscheidet heute nicht
+nach Wortlaut: Eine Einwilligung zu `2026-11-05` zählt also auch für Punkte, obwohl erst
+`2026-11-05-b` sie nennt. Das ist vertretbar, weil `2026-11-05` nie produktiv war (#559). Nennt
+ein künftiger Wortlaut neue Zwecke, muss die Prüfung für diese Zwecke die Kennung
+berücksichtigen oder die App neu fragen.
 
 ## Wortlaute
 
