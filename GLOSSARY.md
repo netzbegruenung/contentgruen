@@ -429,6 +429,10 @@ _Avoid_: Kommandozentrale, Monitoring, Radar
 Gut gesagt als Ort, an dem Mitwirkende Beiträge gemeinsam herstellen und dabei Fähigkeiten entlang realer Tätigkeiten aufbauen, bis hin zur eigenen Stimme. Die Werkstatt gibt keine Aufträge und betreut keine Kanäle.
 _Avoid_: Kommandozentrale, Armee, Agentur
 
+**Level**:
+Was eine Person mit ihren Punkten erreicht, in aufsteigender Folge; ein höheres Level schaltet neue Aktionen frei. Wie Punktestand und Quests sieht die Person es nur selbst, solange sie nicht gesondert zustimmt, es anderen zu zeigen. Bisher nur im Wortlaut der Art.-9-Einwilligung genannt (#559); gebaut wird es mit einem eigenen Ticket.
+_Avoid_: Rang
+
 **Meilenstein**:
 Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; am Anzeigenamen steht dafür ein Abzeichen.
 _Avoid_: Achievement, Badge, Erfolg
@@ -492,7 +496,7 @@ Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit e
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
 **Art.-9-Einwilligung**:
-Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist (ein zweiter Wortlaut vom selben Tag mit Suffix). Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten, und sie hat keine eigenen Punkte; kopiert sie einen Beitrag, zählt das am Zähler der Karte, aber ohne Prüfwert und Paar-Prüfwert: Die Kopie bringt der Autorin keine Punkte und ergibt keinen Muster-Hinweis (#559). Widerrufen geht jederzeit im Profilmenü unter „Einwilligung“; schon Gespeichertes bleibt dann, bis die Person es löscht oder ihr Konto löschen lässt. Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit dem Opt-in für die Sichtbarkeit von Punkten. Ablauf: `docs/ART9_EINWILLIGUNG.md`.
+Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist (ein zweiter Wortlaut vom selben Tag mit Suffix). Der Wortlaut nennt als Zwecke auch Punktestand, Level und Quests (nur für die Person, solange sie nicht gesondert zustimmt, sie anderen zu zeigen), die Freischaltungen eines höheren Levels, Meilenstein-Abzeichen am Anzeigenamen, die nur Angemeldete sehen, und Muster-Hinweise (#559). Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten, und sie hat keine eigenen Punkte; kopiert sie einen Beitrag, zählt das am Zähler der Karte, aber ohne Prüfwert und Paar-Prüfwert: Die Kopie bringt der Autorin keine Punkte und ergibt keinen Muster-Hinweis (#559). Widerrufen geht jederzeit im Profilmenü unter „Einwilligung“; schon Gespeichertes bleibt dann, bis die Person es löscht oder ihr Konto löschen lässt. Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit dem Opt-in für die Sichtbarkeit von Punkten. Ablauf: `docs/ART9_EINWILLIGUNG.md`.
 _Avoid_: Consent, Opt-in, Datenschutz-Häkchen, Zustimmung (die gilt den Nutzungsbedingungen)
 
 **Besucher**:

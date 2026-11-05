@@ -76,4 +76,4 @@ berücksichtigen oder die App neu fragen.
 | Kennung | Stand | gültig |
 |---------|-------|--------|
 | `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | nie produktiv: von `2026-11-05-b` abgelöst, bevor #489 in einem Release war |
-| `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punkte, Quests und Meilenstein-Abzeichen und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA_PUNKTE.md` Abschnitt 4) | seit dem Produktiv-Deploy von #489 und #559 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level und Quests (nur für die Person, ohne gesonderte Zustimmung), Freischaltungen eines höheren Levels, Meilenstein-Abzeichen am Anzeigenamen für Angemeldete und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA_PUNKTE.md` Abschnitt 4); vor dem Merge noch einmal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 (Datum nach dem Ausrollen eintragen) |

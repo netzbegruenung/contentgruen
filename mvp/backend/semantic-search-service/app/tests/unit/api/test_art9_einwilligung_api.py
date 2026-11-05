@@ -94,7 +94,12 @@ class TestWortlaute:
         text = WORTLAUTE[AKTUELLER_WORTLAUT]
 
         assert AKTUELLER_WORTLAUT == "2026-11-05-b"
-        assert "ein Punktestand sowie Quests und Meilenstein-Abzeichen" in text
+        assert "ein Punktestand, ein Level und Quests, die nur ich sehe" in text
+        assert "neue Aktionen, die ein höheres Level freischaltet" in text
+        assert (
+            "Meilenstein-Abzeichen an meinem Anzeigenamen, die nur Angemeldete sehen"
+            in text
+        )
         assert "wenn zwei Konten sich auffällig oft gegenseitig nutzen" in text
 
     def test_frueherer_wortlaut_bleibt_bekannt(self):
