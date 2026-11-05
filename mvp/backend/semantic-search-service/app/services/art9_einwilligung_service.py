@@ -4,8 +4,8 @@ Art.-9-Einwilligung (#489): einwilligen, widerrufen, pruefen.
 Ohne geltende Einwilligung sperrt ``require_art9_einwilligung`` (dependencies.py)
 die Endpunkte, die etwas mit Personenbezug speichern, aus dem sich auf die
 politische Meinung schliessen laesst: Beitraege anlegen und aendern, Herkunft
-anlegen, Einwurf, Satz und Stufe eines Einwurfs, Bewertungen. Lesen, Suchen,
-Loeschen, Melden und Feedback bleiben offen; die Liste steht an den Endpunkten,
+anlegen, Einwurf und Satz, Ausformulieren eines Einwurfs, Stimmen. Lesen, Suchen,
+Loeschen, Verwerfen, Melden und Feedback bleiben offen; die Liste steht an den Endpunkten,
 ``tests/unit/api/test_art9_einwilligung_api.py`` prueft sie.
 
 Jede Pruefung fragt die Datenbank (eine Zeile ueber einen Index). Ein Merken im

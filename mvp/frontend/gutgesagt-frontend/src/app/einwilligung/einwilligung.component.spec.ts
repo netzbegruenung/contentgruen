@@ -144,6 +144,21 @@ describe('EinwilligungComponent', () => {
       expect(fixture.componentInstance.angehakt).toBeFalse();
       expect(knopf('Einwilligen und weiter').disabled).toBeTrue();
     });
+
+    it('zeigt einen frueheren Widerruf auch nach dem Neuladen', () => {
+      starten(null);
+      standLiefern(stand({ wortlaut: '2026-11-05', widerrufen_am: '2026-11-06T09:30:00Z' }));
+
+      expect(el().querySelector('.hinweis')?.textContent).toContain('06.11.2026');
+      expect(el().querySelector('mat-checkbox')).not.toBeNull();
+    });
+
+    it('zeigt beim ersten Mal keinen Hinweis auf einen Widerruf', () => {
+      starten(null);
+      standLiefern(stand());
+
+      expect(el().querySelector('.hinweis')).toBeNull();
+    });
   });
 
   it('zeigt einen Fehler, wenn der Stand nicht kommt', () => {

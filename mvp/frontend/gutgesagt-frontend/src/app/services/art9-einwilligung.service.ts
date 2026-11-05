@@ -28,6 +28,11 @@ export const ART9_EINWILLIGUNG_FEHLT = 'art9_einwilligung_fehlt';
 
 export const EINWILLIGUNG_PFAD = '/einwilligung';
 
+/** Ob ein HTTP-Fehler die fehlende Art.-9-Einwilligung meldet (403 mit Kennzeichen). */
+export function einwilligungFehlt(fehler: { status?: number; error?: any } | null | undefined): boolean {
+  return fehler?.status === 403 && fehler?.error?.detail === ART9_EINWILLIGUNG_FEHLT;
+}
+
 /**
  * Seiten, von denen aus nicht auf die Einwilligung umgeleitet wird: die Seite selbst,
  * was sie verlinkt, und die Anmeldung.

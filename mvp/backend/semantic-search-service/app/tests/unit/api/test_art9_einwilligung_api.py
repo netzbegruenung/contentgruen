@@ -188,6 +188,9 @@ class TestSperre:
 # Was ohne Art.-9-Einwilligung gesperrt ist: alles, was mit Personenbezug etwas
 # speichert, aus dem sich auf die politische Meinung schliessen laesst. Kommt ein
 # solcher Endpunkt dazu, gehoert er hierher und an ihn die Sperre.
+# PATCH /api/v1/rawinput/{einwurf_id}/status prueft selbst, nur beim Ausformulieren
+# (Verwerfen bleibt offen); die Tests dazu stehen in test_einwurf.py
+# (TestStatuswechsel).
 GESPERRT = {
     ("POST", "/api/v1/commentary/addCommentary"),
     ("POST", "/api/v1/generic_text/addGenericText"),
@@ -199,9 +202,58 @@ GESPERRT = {
     ("PUT", "/api/v1/content/{beitrag_id}"),
     ("POST", "/api/v1/rawinput/addRawInput"),
     ("PUT", "/api/v1/rawinput/{einwurf_id}/draft"),
-    ("PATCH", "/api/v1/rawinput/{einwurf_id}/status"),
     ("PUT", "/api/v1/voting/content/{content_id}/like"),
     ("PUT", "/api/v1/voting/content/{content_id}/dislike"),
+}
+
+
+# Schreibende Endpunkte, die ohne Art.-9-Einwilligung offen bleiben: lesen und
+# suchen per POST, ohne Personenbezug, nur fuer Admins, Zuruecknehmen und Melden.
+# Ein neuer schreibender Endpunkt gehoert in GESPERRT (mit Sperre) oder hierher.
+OFFEN = {
+    # Die Einwilligung selbst
+    ("POST", "/api/v1/art9-einwilligung"),
+    # Suchen und Lesen per POST
+    ("POST", "/api/v1/search/searchByText"),
+    ("POST", "/api/v1/post/searchPost"),
+    ("POST", "/api/v1/reference/search"),
+    ("POST", "/api/v1/statement/searchStatements"),
+    ("POST", "/api/v1/statement/getStatementsOfTopic"),
+    ("POST", "/api/v1/statement/getStatementsOfCategory"),
+    ("POST", "/api/v1/rawinput/gleicherLink"),
+    ("POST", "/api/v1/voting/votes/batch"),
+    # Ohne gespeicherten Personenbezug (Werkzeuge, Zaehler, Zuordnungen)
+    ("POST", "/api/v1/gegenlesen"),
+    ("POST", "/api/v1/kuerzungsvorschlag"),
+    ("POST", "/api/v1/spracherkennung"),
+    ("POST", "/api/v1/usage/content/{content_id}/usage"),
+    ("POST", "/api/v1/usage/users/me/besuch"),
+    ("POST", "/api/v1/statement/addReplysuggestionToStatement"),
+    ("PUT", "/api/v1/statement/themen/zuordnen"),
+    ("POST", "/api/v1/feedback/senden"),
+    # Ausformulieren prueft selbst, Verwerfen bleibt offen (test_einwurf.py)
+    ("PATCH", "/api/v1/rawinput/{einwurf_id}/status"),
+    # Melden, Widerspruch, Angaben der Meldenden
+    ("POST", "/api/v1/moderation/report"),
+    ("POST", "/api/v1/moderation/melder/meldungen"),
+    ("POST", "/api/v1/moderation/melder/angaben-loeschen"),
+    ("POST", "/api/v1/sperren/{sperre_id}/widerspruch"),
+    # Einladungen (vor dem Konto) und Admin-Endpunkte
+    ("POST", "/api/v1/einladungen"),
+    ("PATCH", "/api/v1/einladungen/{einladung_id}"),
+    ("POST", "/api/v1/einladungen/pruefen"),
+    ("POST", "/api/v1/einladungen/einloesen"),
+    ("PATCH", "/api/v1/feedback/{feedback_id}"),
+    ("PUT", "/api/v1/moderation/content/{content_id}/sperren"),
+    ("PUT", "/api/v1/moderation/content/{content_id}/entsperren"),
+    ("PUT", "/api/v1/moderation/reports/{report_id}/dismiss"),
+    ("PUT", "/api/v1/moderation/sperren/{sperre_id}/bestaetigen"),
+    ("POST", "/api/v1/usage/cleanup/run"),
+    # Seeding: am BFF gesperrt (EndpointPolicy.Blocked)
+    ("POST", "/api/v1/seeding/start"),
+    ("POST", "/api/v1/seeding/reset"),
+    ("POST", "/api/v1/seeding/resume"),
+    ("POST", "/api/v1/seeding/stop"),
 }
 
 
@@ -227,3 +279,18 @@ def test_app_loeschen_bleibt_ohne_einwilligung_offen():
     gesperrt = _gesperrte_routen()
 
     assert not [eintrag for eintrag in gesperrt if eintrag[0] == "DELETE"]
+
+
+def test_jeder_schreibende_endpunkt_ist_entschieden():
+    """Ein neuer POST/PUT/PATCH-Endpunkt faellt hier auf, bis er in GESPERRT oder OFFEN steht."""
+    from main import app
+
+    schreibend = {
+        (methode, route.path)
+        for route in app.routes
+        if isinstance(route, APIRoute)
+        for methode in route.methods & {"POST", "PUT", "PATCH"}
+    }
+
+    assert schreibend == GESPERRT | OFFEN
+    assert not GESPERRT & OFFEN

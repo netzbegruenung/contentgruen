@@ -35,8 +35,6 @@ export class EinwilligungComponent implements OnInit {
   zustand: Zustand = 'laedt';
   stand?: Art9EinwilligungStand;
   angehakt = false;
-  /** Nach einem Widerruf auf dieser Seite: Bestaetigung ueber der erneuten Frage. */
-  widerrufen = false;
 
   constructor(
     private einwilligung: Art9EinwilligungService,
@@ -82,10 +80,7 @@ export class EinwilligungComponent implements OnInit {
     }
     this.zustand = 'widerruft';
     this.einwilligung.widerrufen().subscribe({
-      next: () => {
-        this.widerrufen = true;
-        this.laden();
-      },
+      next: () => this.laden(),
       error: () => (this.zustand = 'fehler'),
     });
   }

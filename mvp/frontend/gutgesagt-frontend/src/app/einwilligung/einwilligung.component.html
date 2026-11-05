@@ -11,8 +11,8 @@
     </ng-container>
 
     <form *ngIf="stand && (zustand === 'frage' || zustand === 'sendet')" (ngSubmit)="einwilligen()">
-      <p *ngIf="widerrufen" class="hinweis" role="status">
-        Du hast deine Einwilligung widerrufen. Du kannst weiter suchen und lesen.
+      <p *ngIf="stand.widerrufen_am" class="hinweis" role="status">
+        Du hast deine Einwilligung am {{ stand.widerrufen_am | date: 'dd.MM.yyyy' }} widerrufen. Du kannst weiter suchen und lesen.
       </p>
       <p>
         Was du bei Gut gesagt beiträgst und bewertest, kann zeigen, wie du politisch denkst. Solche Daten darf

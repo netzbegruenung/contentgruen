@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
@@ -120,54 +120,73 @@ describe('AuthInterceptor', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it('zeigt bei fehlender Art.-9-Einwilligung einen Hinweis und bleibt auf der Seite (#489)', () => {
+  it('zeigt bei fehlender Art.-9-Einwilligung einen Hinweis und bleibt auf der Seite (#489)', fakeAsync(() => {
     (router as any).url = '/einwerfen?von=fangkorb';
     httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
 
     httpMock
       .expectOne('/api/v1/rawinput/addRawInput')
       .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
 
     expect(snackBar.open).toHaveBeenCalledWith(jasmine.stringContaining('Einwilligung'), 'Einwilligen', jasmine.any(Object));
     expect(router.navigate).not.toHaveBeenCalled();
-  });
+  }));
 
-  it('fuehrt ueber den Knopf im Hinweis zur Einwilligung und zurueck', () => {
+  it('oeffnet den Hinweis nach dem Fehlerzweig des Aufrufers, damit dessen Hinweis ihn nicht ersetzt', fakeAsync(() => {
+    const reihenfolge: string[] = [];
+    snackBar.open.and.callFake(((text: string) => {
+      reihenfolge.push(text);
+      return { onAction: () => knopf.asObservable() } as any;
+    }) as any);
+    httpClient.post('/api/v1/voting/content/1/like', {}).subscribe({ error: () => snackBar.open('Aufrufer') });
+    httpMock
+      .expectOne('/api/v1/voting/content/1/like')
+      .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(reihenfolge).toEqual(['Aufrufer', jasmine.stringContaining('Einwilligung') as any]);
+  }));
+
+  it('fuehrt ueber den Knopf im Hinweis zur Einwilligung und zurueck', fakeAsync(() => {
     (router as any).url = '/einwerfen?von=fangkorb';
     httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
     httpMock
       .expectOne('/api/v1/rawinput/addRawInput')
       .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
 
     knopf.next();
 
     expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], {
       queryParams: { returnUrl: '/einwerfen?von=fangkorb' },
     });
-  });
+  }));
 
-  it('leitet bei anderem 403 nicht um', () => {
+  it('leitet bei anderem 403 nicht um', fakeAsync(() => {
     (router as any).url = '/einwerfen';
     httpClient.post('/api/v1/moderation/x', {}).subscribe({ error: () => {} });
 
     httpMock
       .expectOne('/api/v1/moderation/x')
       .flush({ detail: 'Admin privileges required' }, { status: 403, statusText: 'Forbidden' });
+    tick();
 
     expect(snackBar.open).not.toHaveBeenCalled();
-  });
+  }));
 
-  it('fuehrt auf der Seite der Einwilligung selbst nicht noch einmal hin', () => {
+  it('fuehrt auf der Seite der Einwilligung selbst nicht noch einmal hin', fakeAsync(() => {
     (router as any).url = '/einwilligung?returnUrl=%2Feinwerfen';
     httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
     httpMock
       .expectOne('/api/v1/rawinput/addRawInput')
       .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
 
     knopf.next();
 
     expect(router.navigate).not.toHaveBeenCalled();
-  });
+  }));
 
   it('should handle successful requests without intervention', () => {
     const testData = { message: 'success' };

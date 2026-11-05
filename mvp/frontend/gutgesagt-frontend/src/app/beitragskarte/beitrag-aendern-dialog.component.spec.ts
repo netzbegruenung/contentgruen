@@ -268,6 +268,12 @@ describe('BeitragAendernDialogComponent', () => {
       expect(aendernFehlertext({ status: 404 })).toBe('Den Beitrag gibt es nicht mehr.');
     });
 
+    it('nennt bei fehlender Art.-9-Einwilligung die Einwilligung, nicht die Autorschaft (#489)', () => {
+      expect(aendernFehlertext({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })).toBe(
+        'Zum Ändern brauchst du deine Einwilligung.',
+      );
+    });
+
     it('nennt bei 422 die Grenzen von Titel, Text und Herkunft', () => {
       const text = aendernFehlertext({ status: 422 });
       expect(text).toContain('3 bis 120 Zeichen');

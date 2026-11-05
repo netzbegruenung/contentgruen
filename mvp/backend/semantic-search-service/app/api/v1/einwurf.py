@@ -15,6 +15,7 @@ import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.concurrency import run_in_threadpool
 from pydantic import ValidationError
 
 from dependencies import (
@@ -384,11 +385,7 @@ async def _beitrag_pruefen(
     raise HTTPException(status_code=422, detail=BEITRAG_FEHLT)
 
 
-@router.patch(
-    "/{einwurf_id}/status",
-    response_model=EinwurfResponse,
-    dependencies=[Depends(require_art9_einwilligung)],
-)
+@router.patch("/{einwurf_id}/status", response_model=EinwurfResponse)
 async def update_status(
     einwurf_id: uuid.UUID,
     request: EinwurfStatusRequest,
@@ -412,6 +409,11 @@ async def update_status(
     Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.
     """
     person = _angemeldete_person(aufrufer.kennung)
+    # Ausformulieren verknuepft den Einwurf mit einem Beitrag und braucht die
+    # Art.-9-Einwilligung (#489). Verwerfen nimmt nur etwas zurueck, wie Loeschen,
+    # und bleibt ohne sie offen: auch nach einem Widerruf und fuer Admins.
+    if request.status != EinwurfStatus.DISCARDED:
+        await run_in_threadpool(require_art9_einwilligung, aufrufer.kennung)
     try:
         if request.status == EinwurfStatus.PROCESSED:
             # Erst der Einwurf, dann der Beitrag: Ein unbekannter Einwurf bleibt

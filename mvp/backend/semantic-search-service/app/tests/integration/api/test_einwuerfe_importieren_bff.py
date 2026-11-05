@@ -86,6 +86,24 @@ def sitzung():
     return s
 
 
+@pytest.fixture(scope="module", autouse=True)
+def eingewilligt(sitzung):
+    """
+    Einwerfen verlangt die Art.-9-Einwilligung (#489). Das Testkonto willigt einmal in
+    den aktuellen Wortlaut ein; ein zweites Mal aendert nichts. Ein Dev-Stack mit
+    einem Stand vor #489 kennt den Endpunkt nicht (404) und sperrt auch nichts.
+    """
+    basis = f"{BFF_URL}/api/v1/art9-einwilligung"
+    stand = sitzung.get(basis, timeout=10)
+    if stand.status_code == 404:
+        return
+    assert stand.status_code == 200
+    kennung = stand.json()["aktueller_wortlaut"]["kennung"]
+    assert (
+        sitzung.post(basis, json={"wortlaut": kennung}, timeout=10).status_code == 204
+    )
+
+
 def _gleiche(sitzung, link):
     antwort = sitzung.post(
         f"{BFF_URL}/api/v1/rawinput/gleicherLink", json={"url": link}, timeout=10

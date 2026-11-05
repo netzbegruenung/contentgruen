@@ -20,6 +20,7 @@ import {
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { BeitragAenderung, HerkunftEingabe, MeineBeitraegeService } from '../services/meine-beitraege.service';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
 
 /** Die Beitragstypen, die der Autor aendern kann (#299), mit der Grenze ihres Texts wie beim Anlegen. */
 export const AENDERBARE_TYPEN: Readonly<Record<string, number>> = {
@@ -40,6 +41,9 @@ export function aendernFehlertext(fehler: { status?: number; error?: any } | und
   }
   if (fehler?.status === 422) {
     return 'Titel, Text oder Herkunft passen nicht. Der Titel braucht 3 bis 120 Zeichen, der Text mindestens 10; höchstens 10 Herkünfte.';
+  }
+  if (einwilligungFehlt(fehler)) {
+    return 'Zum Ändern brauchst du deine Einwilligung.';
   }
   if (fehler?.status === 403) {
     return 'Ändern kann nur der Autor des Beitrags.';
