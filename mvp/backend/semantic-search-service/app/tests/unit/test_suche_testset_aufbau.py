@@ -6,16 +6,24 @@ Gemessen gegen einen Stack wird mit `python -m tests.regression.suche_messen`
 """
 
 import json
+import uuid
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from domain.models.content_type import ContentType
+from tests.regression import suche_messen
 from tests.regression.suche_messen import (
+    BESTAND_PASST_NICHT,
     VORLAEUFIG,
+    AngezeigterBeitrag,
     FallMessung,
-    Kandidat,
+    _Erwartung,
     als_json,
+    angezeigte_beitraege,
     auswerten,
     einordnen,
     faelle_text,
@@ -108,7 +116,7 @@ def _fall(id_="X01", erwartet=(A,), dieselbe=False, phaenomen="umformulierung"):
 
 
 def _k(passt, aussage=A, score=0.9):
-    return Kandidat(
+    return AngezeigterBeitrag(
         beitrag_id=f"b{score}{passt}{aussage[:3]}",
         typ="commentary",
         aussage_text=aussage,
@@ -165,7 +173,9 @@ class TestAuswertung:
         # Angezeigt: X01 zwei, X02 zwei, X04 einer; passend zwei davon.
         assert a.praezision == pytest.approx(2 / 5)
         # X01 und X02 haben einen passenden Beitrag, X03 nicht.
-        assert a.recall == pytest.approx(2 / 3)
+        assert a.recall_seite == pytest.approx(2 / 3)
+        # Unter den ersten 5 bzw. 10: X01 auf Platz 1, X02 auf Platz 2.
+        assert a.recall_bei == {5: pytest.approx(2 / 3), 10: pytest.approx(2 / 3)}
         assert (a.direkt_passend, a.direkt_angezeigt) == (1, 2)
 
     def test_andere_schwelle_andere_anzeige(self):
@@ -173,7 +183,14 @@ class TestAuswertung:
 
         assert (a.treffer, a.fehltreffer, a.keine) == (1, 1, 1)
         assert (a.ohne_richtig_keine, a.ohne_fehltreffer) == (1, 0)
-        assert a.recall == pytest.approx(1 / 3)
+        assert a.recall_seite == pytest.approx(1 / 3)
+
+    def test_recall_bei_k_zaehlt_nur_die_ersten_k_der_ergebnisseite(self):
+        weit_hinten = (_k(False, score=0.99),) * 5 + (_k(True),)
+        a = auswerten([_m(_fall("X01"), {0.8: weit_hinten})], 0.8)
+
+        assert a.recall_bei == {5: 0.0, 10: 1.0}
+        assert a.recall_seite == 1.0
 
     def test_nicht_gemessene_schwelle_ist_ein_fehler(self):
         with pytest.raises(KeyError):
@@ -227,11 +244,85 @@ class TestAuswertung:
         text = faelle_text(messungen, 0.8)
         assert "| X01 | umformulierung | treffer |" in text
         assert "direkt (2)" in text  # X02: erster passender auf Platz 2
-        daten = als_json(messungen, (0.8,))
+        daten = als_json(messungen, (0.8,), umgebung={"modell": "m"})
         assert daten["hinweis"] == VORLAEUFIG
+        assert daten["umgebung"] == {"modell": "m"}
         assert [f["id"] for f in daten["faelle"]] == [m.fall.id for m in messungen]
         assert daten["auswertung"][0]["treffer"] == 1
+        # Fuer Vergleiche je Phaenomen (Stemmer, Verneinung) ohne das Set zu laden.
+        x02 = daten["faelle"][1]
+        assert (x02["phaenomen"], x02["erwartet"]) == ("umformulierung", [A])
+        assert x02["einordnung"]["0.80"] == "fehltreffer"
+        assert daten["je_phaenomen"]["fremd"]["fehltreffer"] == 1
         json.dumps(daten)
+
+    def test_main_meldet_wenn_kein_fall_mit_erwartung_gemessen_ist(self, capsys):
+        """Leere oder falsche Sammlung, Startbestand ohne passende Faelle: Exit-Code
+        statt Zahlen, die nach einer Messung aussehen (naechtlicher Lauf, #391)."""
+        alle_fehlen = [m._replace(fehlt=(A,)) for m in self._messungen()]
+
+        with patch.object(
+            suche_messen, "messen", AsyncMock(return_value=alle_fehlen)
+        ), patch("core.logging.initialize_logging"):
+            code = suche_messen.main(["--schwellen", "0.8,0.84"])
+
+        assert code == BESTAND_PASST_NICHT
+        assert "Kein Fall mit Erwartung" in capsys.readouterr().err
+
+
+class TestAngezeigteBeitraege:
+    """Was die Ergebnisseite aus dem Ergebnis des Orchestrators zeigt."""
+
+    @staticmethod
+    def _spec(typ, feld):
+        return SimpleNamespace(content_type=typ, result_field=feld)
+
+    @staticmethod
+    def _treffer(feld, beitrag_id, aussage_id=None, score=0.9):
+        return SimpleNamespace(
+            **{feld: SimpleNamespace(id=beitrag_id)},
+            statement_id=aussage_id,
+            statement_text="Aussage" if aussage_id else None,
+            score=score,
+        )
+
+    def test_reihenfolge_der_ergebnisseite_ohne_bilder_und_passt(self):
+        erwartete_aussage, andere_aussage = uuid.uuid4(), uuid.uuid4()
+        specs = [
+            self._spec(ContentType.POST, "post_result"),
+            self._spec(ContentType.IMAGE, "image_result"),
+            self._spec(ContentType.GENERIC_TEXT, "generictext_result"),
+            self._spec(ContentType.COMMENTARY, "commentary_result"),
+        ]
+        ergebnis = {
+            ContentType.POST: [self._treffer("post_result", "p1", andere_aussage)],
+            ContentType.IMAGE: [self._treffer("image_result", "b1", erwartete_aussage)],
+            ContentType.GENERIC_TEXT: [
+                self._treffer("generictext_result", "h1", erwartete_aussage)
+            ],
+            ContentType.COMMENTARY: [
+                # Direkt gefunden, haengt aber an der erwarteten Aussage.
+                self._treffer("commentary_result", "k1"),
+                self._treffer("commentary_result", "k2"),
+            ],
+        }
+        orchestrator = SimpleNamespace(results_for=lambda typ: ergebnis[typ])
+        erwartung = _Erwartung(
+            aussage_ids=frozenset({str(erwartete_aussage)}),
+            beitrag_ids=frozenset({"k1"}),
+            fehlt=(),
+        )
+
+        gezeigt = angezeigte_beitraege(orchestrator, specs, erwartung)
+
+        assert [(b.beitrag_id, b.passt) for b in gezeigt] == [
+            ("k1", True),
+            ("k2", False),
+            ("h1", True),
+            ("p1", False),
+        ]
+        assert gezeigt[0].aussage_text == ""  # direkter Treffer
+        assert gezeigt[2].aussage_text == "Aussage"
 
 
 class TestDoku:

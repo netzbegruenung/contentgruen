@@ -99,11 +99,11 @@ Die Entscheidung eines Menschen über ein Paar im Messset: *gleich* (dieselbe Be
 _Avoid_: Klasse, Kategorie (die Kategorie A–E im Messset beschreibt die Textabweichung)
 
 **Suchtestset**:
-Suchanfragen, zu denen Menschen festgelegt haben, an welchen Aussagen passende Beiträge hängen (oder dass keine passen), und an denen gemessen wird, wie gut die Suche findet: je Suchanfrage ein Treffer (der erste angezeigte Beitrag passt), ein Fehltreffer (er passt nicht, oder es wird etwas angezeigt, obwohl nichts passt) oder keine Treffer. Grundlage für die Schwelle der Suche. Es misst auch die Zerfaserung: wie viele Suchanfragen, die dieselbe Behauptung wie eine vorhandene Aussage sind, trotzdem eine neue Aussage ergeben. Regeln und Ergebnis in `tests/regression/SUCHTESTSET.md` des Semantic-Search-Service. Anders als das Messset misst es die ganze Suche, nicht Textpaare.
+Suchanfragen, zu denen Menschen festgelegt haben, an welchen Aussagen passende Beiträge hängen (oder dass keine passen), und an denen gemessen wird, wie gut die Suche findet: je Suchanfrage ein Treffer (der erste angezeigte Beitrag passt), ein Fehltreffer (er passt nicht, oder es wird etwas angezeigt, obwohl nichts passt) oder eine Suche ohne Treffer (nichts angezeigt). Grundlage für die Schwelle der Suche. Es misst auch die Zerfaserung: wie viele Suchanfragen, die dieselbe Behauptung wie eine vorhandene Aussage sind, trotzdem eine neue Aussage ergeben. Regeln und Ergebnis in `tests/regression/SUCHTESTSET.md` des Semantic-Search-Service. Anders als das Messset misst es die ganze Suche, nicht Textpaare.
 _Avoid_: Testset (allein), Messset (das sind Textpaare)
 
 **Fehltreffer**:
-Eine Suche, deren erster angezeigter Beitrag nicht auf die Suchanfrage passt, oder die etwas anzeigt, obwohl im Bestand nichts passt. Gemessen im Suchtestset; das Gegenstück zur Suche ohne Treffer, bei der nichts angezeigt wird.
+Eine Suche, deren erster angezeigter Beitrag nicht auf die Suchanfrage passt, oder die etwas anzeigt, obwohl im Bestand nichts passt. Gemessen im Suchtestset; das Gegenstück zur Suche ohne Treffer, bei der nichts angezeigt wird. Für die Suche selbst passt bei einem Fehltreffer etwas ausreichend (über der Schwelle); er zählt deshalb nie als Suche ohne Treffer.
 _Avoid_: falsch positiv
 
 **Zerfaserung**:

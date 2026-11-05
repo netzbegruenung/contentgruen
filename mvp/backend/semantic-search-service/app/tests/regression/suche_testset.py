@@ -16,7 +16,7 @@ Felder:
   (Paar-Label gleich nach den Regeln in MESSSET.md). Nur diese Faelle zaehlen fuer die
   Zerfaserung: Sie sollten auf der vorhandenen Aussage landen statt eine neue anzulegen.
 - quelle: seed = Aussage aus mvp/data/seed/v1.0 woertlich, dev = Suchanfrage aus der
-  Entwicklungsumgebung (Messset), eigen = fuer das Testset formuliert.
+  Entwicklungsumgebung (Messset), eigen = fuer das Suchtestset formuliert.
 
 Keine echten Personen, keine Personendaten, keine Eingaben aus Produktion. Die erwarteten
 Aussagen stammen heute aus dem Seed (Testbestand); nach dem Startbestand (#288) kommen

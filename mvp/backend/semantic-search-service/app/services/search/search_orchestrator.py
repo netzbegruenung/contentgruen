@@ -99,7 +99,7 @@ class SearchOrchestrator:
     ):
         # Treffer bis einschliesslich dieser Schwelle fallen weg. Der Dienst nutzt immer
         # MINIMUM_SCORE_THRESHOLD; das Suchtestset (tests/regression/suche_messen.py)
-        # sammelt mit einer niedrigeren und wertet mehrere Schwellen danach aus.
+        # laesst je zu messender Schwelle einen eigenen Orchestrator laufen.
         self._schwelle = schwelle
         self._specs: Dict[ContentType, ContentTypeSearchSpec] = {
             spec.content_type: spec for spec in specs

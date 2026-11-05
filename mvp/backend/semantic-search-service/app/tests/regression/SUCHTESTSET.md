@@ -33,7 +33,13 @@ SEMANTIC_SEARCH_QDRANT_URL=http://localhost:6333 SEMANTIC_SEARCH_QDRANT_COLLECTI
 Optionen: `--schwellen 0.78,0.8,0.82` (welche Schwellen gemessen werden; die von heute
 immer), `--k` (Beiträge je Beitragstyp, Standard 10 wie im Frontend), `--faelle` (jeder
 Fall mit erstem angezeigtem und erstem passendem Beitrag), `--json PFAD` (die ganze
-Messung als Datei, für Vergleiche und Folgetickets).
+Messung als Datei, für Vergleiche und Folgetickets: je Fall Suchanfrage, Phänomen,
+Erwartung, Einordnung und angezeigte Beiträge je Schwelle, dazu Auswertung, Phänomene,
+Zerfaserung sowie Modell, Sammlung, Dublettenschwelle und Datum).
+
+Exit-Code 0 nach einer Messung; 2, wenn kein Fall mit Erwartung gemessen wurde (leere
+oder falsche Sammlung, oder ein Bestand ohne passende Fälle). Die Zahlen sind dann nicht
+aussagekräftig, etwa für den nächtlichen Lauf (#391).
 
 Das Skript lädt das Einbettungsmodell (etwa 1,5 GB RAM) und liest den Bestand nur;
 einzige Ausnahme ist der Start der Einbettung, der wie im Dienst eine fehlende Sammlung
@@ -60,17 +66,24 @@ so wie er im Dienst mit dieser Schwelle liefe.
   wird. Angezeigt ist, was die Suche liefert, in der Reihenfolge der Ergebnisseite:
   Kommentare, dann Hintergrundinfos, dann Posts, je Typ höchstens k. Bilder zeigt die
   Ergebnisseite nicht, sie zählen nicht.
-- **Präzision:** passende unter allen angezeigten Beiträgen. **Recall:** Anteil der
-  Fälle mit Erwartung, bei denen ein passender Beitrag irgendwo auf der Ergebnisseite
-  steht (je Beitragstyp höchstens k), nicht nur unter den ersten k.
+- **Präzision:** passende unter allen angezeigten Beiträgen. **Recall@5, Recall@10:**
+  Anteil der Fälle mit Erwartung, bei denen ein passender Beitrag unter den ersten 5
+  bzw. 10 der Ergebnisseite steht (Recall@1 ist Treffer durch Fälle mit Erwartung).
+  **Recall (Seite):** dasselbe für die ganze Ergebnisseite, je Beitragstyp höchstens k,
+  also bis zu drei mal k Beiträge.
 - **Zerfaserung:** Fälle mit `dieselbe_behauptung` sind dieselbe Behauptung wie eine
   erwartete Aussage (Paar-Label *gleich* nach `MESSSET.md`). Gezählt wird, wie viele
   davon nicht auf dieser Aussage landen, sondern eine neue anlegen würden, insgesamt und
-  unter den Suchen ohne Treffer. **Grenze:** Am Seed hat jede erwartete Aussage
-  Antworten, solche Suchanfragen haben also fast immer Treffer. Die Fälle, um die es bei
-  Suchen ohne Treffer eigentlich geht (dieselbe Behauptung wie eine Aussage noch ohne
-  Antwort, etwa eine vorab angelegte), kann das Set erst mit dem Startbestand enthalten;
-  bis dahin ist „0 unter den Suchen ohne Treffer“ kein Befund.
+  unter den Suchen ohne Treffer. Ob eine Suchanfrage auf einer Aussage landet, prüft
+  dieselbe Dublettenprüfung wie beim Anlegen (`vorhandene_finden`); sie hängt nicht davon
+  ab, ob die Aussage Antworten hat. Der Anteil „insgesamt“ gilt deshalb auch für Aussagen
+  ohne Antwort. **Grenze:** Am Seed hat jede erwartete Aussage Antworten, solche
+  Suchanfragen haben also fast immer Treffer; „0 unter den Suchen ohne Treffer“ ist dort
+  kein Befund. Wie viele Aussagen im Bestand aus Suchen ohne Treffer zerfasert sind,
+  braucht echte Suchen und Aussagen ohne Antwort, also den Startbestand.
+- **Fremd und Verneinung** sind auf den Testbestand bezogen: „fremd“ heißt, der Seed hat
+  keine Aussage dazu. Nach dem Startbestand vor dem Messen prüfen, ob er Aussagen zu
+  diesen Themen hat; sonst zählen echte Treffer als Fehltreffer.
 - Fälle, deren erwartete Aussage im gemessenen Bestand fehlt, zählen nicht mit; die
   Ausgabe nennt sie. Heute stammen alle erwarteten Aussagen aus dem Seed (Testbestand).
 - Keine Personendaten, keine Eingaben aus Produktion: Suchanfragen sind selbst
@@ -82,19 +95,19 @@ so wie er im Dienst mit dieser Schwelle liefe.
 `intfloat/multilingual-e5-base`, 42 Fälle (33 mit Erwartung, 9 ohne). Der Seed hat 14
 Aussagen mit Antworten, jede Antwort hängt an einer Aussage, und er ist klein und
 geschrieben, um gefunden zu werden. Nach dem Startbestand (#288) kommen Fälle zu dessen
-Aussagen dazu, dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu
-bewertet.
+Aussagen dazu (auch zu Aussagen ohne Antwort) und die Fälle „fremd“ werden geprüft;
+dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
 
-| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall | direkt: passend / angezeigt |
-|---|---|---|---|---|---|---|---|
-| 0.76 | 31/33 | 2 | 0 | 0/9 / 9 | 0.16 | 1.00 | 13 / 368 |
-| 0.78 | 30/33 | 2 | 1 | 0/9 / 9 | 0.21 | 0.97 | 13 / 251 |
-| 0.79 | 30/33 | 2 | 1 | 1/9 / 8 | 0.25 | 0.97 | 13 / 203 |
-| 0.80 (heute) | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.94 | 11 / 136 |
-| 0.81 | 28/33 | 3 | 2 | 3/9 / 6 | 0.39 | 0.94 | 21 / 102 |
-| 0.82 | 27/33 | 3 | 3 | 4/9 / 5 | 0.50 | 0.88 | 20 / 54 |
-| 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 12 / 15 |
-| 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 8 / 8 |
+| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.76 | 31/33 | 2 | 0 | 0/9 / 9 | 0.16 | 0.94 | 0.97 | 1.00 | 13 / 368 |
+| 0.78 | 30/33 | 2 | 1 | 0/9 / 9 | 0.21 | 0.91 | 0.94 | 0.97 | 13 / 251 |
+| 0.79 | 30/33 | 2 | 1 | 1/9 / 8 | 0.25 | 0.91 | 0.94 | 0.97 | 13 / 203 |
+| 0.80 (heute) | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.88 | 0.91 | 0.94 | 11 / 136 |
+| 0.81 | 28/33 | 3 | 2 | 3/9 / 6 | 0.39 | 0.88 | 0.91 | 0.94 | 21 / 102 |
+| 0.82 | 27/33 | 3 | 3 | 4/9 / 5 | 0.50 | 0.85 | 0.88 | 0.88 | 20 / 54 |
+| 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 0.76 | 0.76 | 12 / 15 |
+| 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
 - **Schwelle 0,8 bleibt (vorläufig).** Es gibt keinen klaren Knick, nur einen Tausch:
   Darunter kommt ein Treffer dazu, und die Fälle ohne passende Aussage zeigen fast
@@ -114,8 +127,12 @@ bewertet.
   zwei davon nur über den direkten Weg.
 - **Zerfaserung:** 14 der 15 Suchanfragen, die dieselbe Behauptung wie eine vorhandene
   Aussage sind, landen nicht auf ihr, sondern ergäben eine neue Aussage; nur der
-  wörtliche Fall landet. Unter den 4 Suchen ohne Treffer ist keine dieselbe Behauptung
-  wie eine vorhandene Aussage. Das folgt aus dem Seed (siehe Grenze oben): Umformulierungen
-  landen als neue Aussagen, haben aber Treffer und erscheinen deshalb nicht in „Hier
-  fehlt eine Antwort“. Wie oft Suchen ohne Treffer eine Aussage ohne Antwort zerfasern,
-  misst erst der Startbestand.
+  wörtliche Fall landet, schon ein Tippfehler („Vögle“) nicht. Die Dublettenprüfung
+  (query/query-Ähnlichkeit ab 0,98) fängt also fast nur wörtliche Wiederholungen. Weil
+  sie nicht auf Antworten achtet, gilt das ebenso für Aussagen ohne Antwort: Wer eine
+  Behauptung in anderen Worten sucht, zu der es noch keine Antwort gibt, legt eine
+  weitere Aussage an, und die Suchen ohne Treffer verteilen sich auf mehrere Aussagen in
+  „Hier fehlt eine Antwort“. Unter den 4 Suchen ohne Treffer am Seed ist keine dieselbe
+  Behauptung wie eine vorhandene Aussage (siehe Grenze oben). Wie groß der Anteil im
+  Bestand ist, misst erst der Startbestand; die Trennung gleicher Behauptungen ist
+  Aufgabe der NLI-Stufe (#387).

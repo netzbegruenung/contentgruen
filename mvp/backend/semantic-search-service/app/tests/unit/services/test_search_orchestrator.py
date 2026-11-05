@@ -84,7 +84,7 @@ def test_enrich_with_usage_bild_und_post_ohne_fehler():
 async def test_schwelle_entscheidet_ueber_die_aufnahme(schwelle, erwartet):
     """
     Ohne Angabe gilt MINIMUM_SCORE_THRESHOLD wie in der Suche; das Suchtestset
-    sammelt mit einer niedrigeren Schwelle (#346). Beide Wege, ueber die Aussage
+    misst auch andere Schwellen (#346). Beide Wege, ueber die Aussage
     (kombinierter Score) und direkt (Rohscore), pruefen dieselbe Schwelle.
     """
     post = _post()

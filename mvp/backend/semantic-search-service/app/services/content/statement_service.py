@@ -10,7 +10,7 @@ import logging
 from pydantic import ValidationError
 
 from core.config import Settings
-from services.content.base_content_service import BaseContentService
+from services.content.base_content_service import BaseContentService, Dublettenpruefung
 from repositories.interfaces.statement_repository import (
     IStatementRepository,
 )
@@ -200,10 +200,15 @@ class StatementService(
         Pruefung wie in add_statement. None, wenn er eine neue Aussage ergaebe. Fuer die
         Messung der Zerfaserung im Suchtestset (tests/regression/suche_messen.py).
         """
-        pruefung = await self._vorhandenen_finden(
+        return (await self._dieselbe_pruefen(text)).vorhanden
+
+    async def _dieselbe_pruefen(self, text: str) -> Dublettenpruefung:
+        """Die Dublettenpruefung fuer Aussagen, gemeinsam fuer add_statement und
+        vorhandene_finden: normalisiert gleich oder query/query-Aehnlichkeit ab
+        statement_similarity_threshold."""
+        return await self._vorhandenen_finden(
             text, self.settings.statement_similarity_threshold, praefix="query"
         )
-        return pruefung.vorhanden
 
     async def add_statement(
         self,
@@ -229,11 +234,7 @@ class StatementService(
             - (neu angelegt, ID, Text) - bei einer vorhandenen Aussage deren ID und Text.
         """
         async with self._text_sperre.halten(statement.text):
-            pruefung = await self._vorhandenen_finden(
-                statement.text,
-                self.settings.statement_similarity_threshold,
-                praefix="query",
-            )
+            pruefung = await self._dieselbe_pruefen(statement.text)
             vorhandene, bester = pruefung.vorhanden, pruefung.aehnlichster
             if vorhandene is not None:
                 # DEBUG: Jede Suche laeuft hier durch; eine INFO-Zeile mit ID und
