@@ -115,8 +115,9 @@ class AttrappenNli:
         self.verfuegbar = verfuegbar
         self.aufrufe = []
 
-    async def urteile(self, paare):
+    async def urteile(self, paare, warte_hoechstens=None):
         self.aufrufe.append(list(paare))
+        self.gewartet = warte_hoechstens
         if not self.verfuegbar:
             return None
         return [self.nach_kandidat.get(b, NEUTRAL) for _, b in paare]
@@ -255,6 +256,20 @@ class TestNliStufeImStatementService:
         assert nli.aufrufe == []
 
     @pytest.mark.asyncio
+    async def test_an_normalisiert_gleicher_altbestand_vor_jedem_urteil(self, baue):
+        """Altbestand ohne Payload-Feld: normalisiert gleich zaehlt immer, auch wenn
+        ein anderer Kandidat staerker gefolgert wuerde oder die Schwelle erreicht."""
+        anderer = _treffer("Windkraftanlagen töten Vögel", 0.99)
+        gleicher = _treffer("Windräder töten Vögel!", 0.93)
+        service = baue("an", AttrappenNli({anderer.text: DIESELBE}))
+        service._repository.finde_normalisiert_gleich = AsyncMock(return_value=None)
+        service._repository.search = AsyncMock(return_value=[anderer, gleicher])
+
+        _, statement_id, _ = await _anlegen(service, "windräder töten vögel")
+
+        assert statement_id == gleicher.id
+
+    @pytest.mark.asyncio
     async def test_schatten_entscheidet_nach_der_schwelle_und_zaehlt(self, baue):
         vorhanden = _treffer("Windräder töten Vögel", 0.93)
         nli = AttrappenNli({vorhanden.text: DIESELBE})
@@ -273,9 +288,9 @@ class TestNliStufeImStatementService:
         freigabe = asyncio.Event()
 
         class LangsameNli(AttrappenNli):
-            async def urteile(self, paare):
+            async def urteile(self, paare, warte_hoechstens=None):
                 await freigabe.wait()
-                return await super().urteile(paare)
+                return await super().urteile(paare, warte_hoechstens)
 
         service = baue("schatten", LangsameNli())
         service._repository.search = AsyncMock(
@@ -334,6 +349,30 @@ class TestNliStufeImStatementService:
         assert uebrig == [passend]
 
     @pytest.mark.asyncio
+    async def test_ohne_widerspruch_wartet_nicht_unbegrenzt(self, baue):
+        nli = AttrappenNli()
+        service = baue("schatten", nli)
+
+        await service.ohne_widerspruch(
+            "Windräder töten Vögel", [_treffer("Windräder schützen Vögel", 0.95)]
+        )
+
+        assert nli.gewartet is not None
+
+    @pytest.mark.asyncio
+    async def test_ohne_widerspruch_bei_fehler_ungefiltert(self, baue):
+        class KaputteNli(AttrappenNli):
+            async def urteile(self, paare, warte_hoechstens=None):
+                raise RuntimeError("weg")
+
+        treffer = [_treffer("Windräder schützen Vögel", 0.95)]
+        service = baue("an", KaputteNli())
+
+        assert (
+            await service.ohne_widerspruch("Windräder töten Vögel", treffer) == treffer
+        )
+
+    @pytest.mark.asyncio
     async def test_ohne_widerspruch_ohne_modell_laesst_alle(self, baue):
         treffer = [_treffer("Windräder schützen Vögel", 0.95)]
         service = baue("an", AttrappenNli(verfuegbar=False))
@@ -341,6 +380,44 @@ class TestNliStufeImStatementService:
         assert (
             await service.ohne_widerspruch("Windräder töten Vögel", treffer) == treffer
         )
+
+
+@pytest.mark.unit
+class TestNliModellOhneModell:
+    """Was ohne geladenes Modell gilt; das Modell selbst laedt hier niemand."""
+
+    def test_wer_nicht_warten_will_bekommt_waehrend_des_ladens_none(self):
+        from services.dieselbe_behauptung.nli_modell import NliModell
+
+        modell = NliModell("gibt-es-nicht/modell")
+        modell._laden = lambda: pytest.fail("darf nicht laden")
+
+        assert modell.urteile_sync([("a", "b")], warte_hoechstens=0.1) is None
+
+    def test_belegtes_modell_gibt_nach_der_wartezeit_none(self):
+        from services.dieselbe_behauptung.nli_modell import NliModell
+
+        modell = NliModell("gibt-es-nicht/modell")
+        modell._modell = object()  # gilt als geladen
+        modell._sperre.acquire()
+        try:
+            assert modell.urteile_sync([("a", "b")], warte_hoechstens=0.05) is None
+        finally:
+            modell._sperre.release()
+
+    def test_scheitert_das_laden_gilt_die_schwelle(self, monkeypatch):
+        import transformers
+
+        from services.dieselbe_behauptung.nli_modell import NliModell
+
+        def scheitern(*args, **kwargs):
+            raise OSError("kein Modell")
+
+        monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", scheitern)
+        modell = NliModell("gibt-es-nicht/modell")
+
+        assert modell.urteile_sync([("a", "b")]) is None
+        assert modell.verfuegbar is False
 
 
 @pytest.mark.unit

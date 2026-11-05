@@ -149,8 +149,8 @@ class Settings(BaseSettings):
     # widerspricht mit dieser Wahrscheinlichkeit oder mehr.
     nli_folgerung_ab: float = Field(default=0.95, ge=0.0, le=1.0)
     nli_widerspruch_unter: float = Field(default=0.05, ge=0.0, le=1.0)
-    # CPU-Threads fuer das NLI-Modell (torch.set_num_threads, gilt prozessweit).
-    nli_threads: int = Field(default=2, ge=1, le=64)
+    # CPU-Threads: wie die Einbettung (embedding_threads); torch.set_num_threads gilt
+    # prozessweit, ein eigener Wert fuer das NLI-Modell braeche die Einbettung.
     # Kommentar-Dublette: passage/passage-Einbettung, >= Schwelle.
     # Modell: intfloat/multilingual-e5-base. Umformulierungen hoechstens 0,972,
     # trivial abweichende Kopien und Kopien mit angehaengter Herkunft ab 0,996, andere
@@ -167,8 +167,9 @@ class Settings(BaseSettings):
     # Vorschlaege im Feld "Antwort auf" (#387, frueher Konstante im Frontend):
     # Aussagen ab dieser query/query-Aehnlichkeit. Gemessen fuer EMBEDDING_MODELL
     # (passende Aussagen 0,892-0,940). Widerspricht eine Aussage dem Getippten in einer
-    # Richtung mindestens so wahrscheinlich, schlaegt das Feld sie nicht vor (NLI-Modell,
-    # ausser dieselbe_aussage_nli = aus).
+    # Richtung mindestens so wahrscheinlich, schlaegt das Feld sie nicht vor. Der Filter
+    # wirkt schon im Schattenbetrieb (#387: zuerst als Filter der Vorschlaege), nur bei
+    # dieselbe_aussage_nli = aus nicht.
     aussage_vorschlag_schwelle: float = Field(default=0.885, ge=0.0, le=1.0)
     aussage_vorschlag_widerspruch_ab: float = Field(default=0.5, ge=0.0, le=1.0)
     default_search_limit: int = 10

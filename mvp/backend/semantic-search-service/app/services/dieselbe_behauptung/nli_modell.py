@@ -6,6 +6,9 @@ wie die Einbettung; kein Text verlaesst den Dienst (ADR 0005).
 Modell: NLI_MODELL in core/config.py (MIT). Nur fp32: Die Model Card schliesst FP16
 aus, und dynamisches int8 aenderte in der Erkundung vom 28.10.2026 44 % der Urteile.
 
+Die CPU-Threads teilt es mit der Einbettung (embedding_threads): torch.set_num_threads
+gilt prozessweit, deshalb setzt das NLI-Modell keinen eigenen Wert.
+
 Geladen wird beim ersten Urteil (oder mit vorladen() im Hintergrund), nicht beim
 Import: Der Dienst startet ohne das Modell, und ohne Modell gilt die heutige Regel.
 Scheitert das Laden, bleibt das Modell fuer diesen Prozess aus (eine WARNING), statt
@@ -31,16 +34,21 @@ MAX_TOKEN = 512
 class NliPruefer(Protocol):
     """Was StatementService vom Modell braucht; Tests geben eine Attrappe."""
 
-    async def urteile(self, paare: Sequence[Tuple[str, str]]) -> Optional[List[Urteil]]:
+    async def urteile(
+        self,
+        paare: Sequence[Tuple[str, str]],
+        warte_hoechstens: Optional[float] = None,
+    ) -> Optional[List[Urteil]]:
         """Je Paar (neuer Text, Kandidat) das Urteil in beide Richtungen; None, wenn
-        das Modell nicht verfuegbar ist."""
+        das Modell nicht verfuegbar ist. Mit warte_hoechstens (Sekunden) auch None,
+        solange es noch laedt oder laenger belegt ist - fuer Anfragen, die lieber ohne
+        Urteil weitermachen als zu warten."""
         ...
 
 
 class NliModell:
-    def __init__(self, modell_name: str, threads: int):
+    def __init__(self, modell_name: str):
         self._modell_name = modell_name
-        self._threads = threads
         self._sperre = threading.Lock()
         self._tokenizer = None
         self._modell = None
@@ -64,7 +72,6 @@ class NliModell:
                 AutoTokenizer,
             )
 
-            torch.set_num_threads(self._threads)
             tokenizer = AutoTokenizer.from_pretrained(self._modell_name)
             modell = AutoModelForSequenceClassification.from_pretrained(
                 self._modell_name, torch_dtype=torch.float32
@@ -119,25 +126,40 @@ class NliModell:
             ]
         return ergebnis
 
-    def urteile_sync(self, paare: Sequence[Tuple[str, str]]) -> Optional[List[Urteil]]:
+    def urteile_sync(
+        self,
+        paare: Sequence[Tuple[str, str]],
+        warte_hoechstens: Optional[float] = None,
+    ) -> Optional[List[Urteil]]:
         if not paare:
             return []
-        with self._sperre:
+        if warte_hoechstens is not None and self._modell is None:
+            return None  # laedt noch (oder nie): nicht auf das Laden warten
+        if not self._sperre.acquire(
+            timeout=-1 if warte_hoechstens is None else warte_hoechstens
+        ):
+            return None
+        try:
             if not self._laden():
                 return None
-            try:
-                texte = [a for a, _ in paare]
-                kandidaten = [b for _, b in paare]
-                # Hin und rueck in einem Durchlauf: ein Stapel statt zwei.
-                richtungen = self._wahrscheinlichkeiten(
-                    texte + kandidaten, kandidaten + texte
-                )
-            except Exception as e:
-                logger.warning("NLI-Urteil gescheitert (%s)", type(e).__name__)
-                return None
+            texte = [a for a, _ in paare]
+            kandidaten = [b for _, b in paare]
+            # Hin und rueck in einem Durchlauf: ein Stapel statt zwei.
+            richtungen = self._wahrscheinlichkeiten(
+                texte + kandidaten, kandidaten + texte
+            )
+        except Exception as e:
+            logger.warning("NLI-Urteil gescheitert (%s)", type(e).__name__)
+            return None
+        finally:
+            self._sperre.release()
         n = len(paare)
         return [Urteil(richtungen[i], richtungen[n + i]) for i in range(n)]
 
-    async def urteile(self, paare: Sequence[Tuple[str, str]]) -> Optional[List[Urteil]]:
+    async def urteile(
+        self,
+        paare: Sequence[Tuple[str, str]],
+        warte_hoechstens: Optional[float] = None,
+    ) -> Optional[List[Urteil]]:
         # Rechnet in einem Thread: Die Suche anderer Personen wartet nicht darauf.
-        return await asyncio.to_thread(self.urteile_sync, list(paare))
+        return await asyncio.to_thread(self.urteile_sync, list(paare), warte_hoechstens)

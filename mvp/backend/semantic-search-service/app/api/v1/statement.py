@@ -310,6 +310,11 @@ async def themen_testset(
     )
 
 
+# Vorschlaege im Feld "Antwort auf": so viele mal das Limit werden gesucht, bevor die
+# widersprechenden wegfallen (#387).
+VORSCHLAG_VORRAT = 3
+
+
 # Aehnliche Aussagen. Fuer Nicht-Admins dieselbe Auswahl wie in getAll (#436);
 # nur_kuratiert laesst fuer alle auch die Suchanfragen ueber der Schwelle weg
 # (Vorschlaege im Antwort-auf-Feld).
@@ -328,8 +333,13 @@ async def search_statements(
         # vorschlaege: Feld "Antwort auf" - gepflegte Aussagen ab der Schwelle des
         # Dienstes, Widersprueche fallen danach weg (#387).
         min_similarity = request.min_similarity
-        if request.vorschlaege and min_similarity is None:
-            min_similarity = statement_service.settings.aussage_vorschlag_schwelle
+        limit = request.limit
+        if request.vorschlaege:
+            if min_similarity is None:
+                min_similarity = statement_service.settings.aussage_vorschlag_schwelle
+            # Mehr holen, als gezeigt wird: Faellt ein Widerspruch weg, rueckt der
+            # naechste passende nach.
+            limit = min(request.limit * VORSCHLAG_VORRAT, 100)
 
         # nur_kuratiert: fuer jede Rolle ohne Suchanfragen ohne Antwort, auch ohne
         # die ueber der Schwelle; die Kennzahl wird dann nicht abgefragt.
@@ -342,20 +352,22 @@ async def search_statements(
 
         if ueber_der_schwelle is None and min_similarity is None:
             statement_index_results = await statement_service.search(
-                request.query_text, request.limit
+                request.query_text, limit
             )
         else:
             statement_index_results = await statement_service.search_filtered(
                 request.query_text,
-                request.limit,
+                limit,
                 nur_kuratiert=ueber_der_schwelle is not None,
                 min_similarity=min_similarity,
                 ueber_der_schwelle=ueber_der_schwelle or frozenset(),
             )
         if request.vorschlaege:
-            statement_index_results = await statement_service.ohne_widerspruch(
-                request.query_text, statement_index_results
-            )
+            statement_index_results = (
+                await statement_service.ohne_widerspruch(
+                    request.query_text, statement_index_results
+                )
+            )[: request.limit]
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 
         response: StatementSearchResponse = StatementSearchResponse(

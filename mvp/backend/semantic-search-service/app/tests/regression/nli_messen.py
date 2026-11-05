@@ -41,6 +41,8 @@ NLI_PAARE = [p for p in PAARE if p.art in ARTEN]
 HARTE_FAELLE = ("D11", "B09", "D15")
 
 _ZIEL = Path(__file__).with_name("nli_gemessen.py")
+# CPU-Threads der Messung; im Dienst gilt embedding_threads fuer beide Modelle.
+THREADS = 2
 
 
 def urteil(paar_id: str) -> Urteil:
@@ -123,7 +125,10 @@ def auswertung(urteile: Dict[str, Urteil], settings: Settings) -> str:
 def urteile_messen(threads: int) -> Dict[str, Urteil]:
     from services.dieselbe_behauptung.nli_modell import NliModell
 
-    modell = NliModell(NLI_MODELL, threads)
+    import torch
+
+    torch.set_num_threads(threads)
+    modell = NliModell(NLI_MODELL)
     ergebnis = modell.urteile_sync([(p.kandidat, p.bestand) for p in NLI_PAARE])
     if ergebnis is None:
         raise SystemExit(f"NLI-Modell {NLI_MODELL} nicht verfuegbar")
@@ -160,14 +165,15 @@ def zeit_messen(threads: int, laeufe: int = 5) -> str:
     """Antwortzeit je Aufruf (Median aus `laeufe`) fuer 1, 5 und 10 Kandidaten (je
     zwei Richtungen) und den zusaetzlichen Speicher. Kurze deutsche Aussagen aus dem
     Messset, wie in der Suche."""
-    import torch  # noqa: F401 - laedt der Dienst ohnehin fuer die Einbettung
+    import torch  # laedt der Dienst ohnehin fuer die Einbettung
     import transformers  # noqa: F401
 
     from services.dieselbe_behauptung.nli_modell import NliModell
 
+    torch.set_num_threads(threads)
     vorher = _rss_mb()
     start = time.perf_counter()
-    modell = NliModell(NLI_MODELL, threads)
+    modell = NliModell(NLI_MODELL)
     modell.urteile_sync([("a", "b")])
     laden = time.perf_counter() - start
     zeilen = [
@@ -194,7 +200,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--schreiben", action="store_true")
     parser.add_argument("--zeit", action="store_true")
-    parser.add_argument("--threads", type=int, default=Settings().nli_threads)
+    parser.add_argument("--threads", type=int, default=THREADS)
     args = parser.parse_args()
     if args.zeit:
         print(zeit_messen(args.threads))

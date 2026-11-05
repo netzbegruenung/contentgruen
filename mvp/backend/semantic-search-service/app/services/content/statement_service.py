@@ -38,12 +38,19 @@ from utils.text_normalisierung import SperreJeText, text_normalisiert
 logger = logging.getLogger(__name__)
 
 
-def _normalisiert_gleich(text: str, pruefung: Dublettenpruefung) -> bool:
-    """Ist der gefundene Eintrag normalisiert gleich? Dann entscheidet keine Stufe."""
-    if pruefung.vorhanden is None:
-        return False
+# So lange wartet der Filter der Vorschlaege hoechstens auf das NLI-Modell (Sekunden).
+VORSCHLAG_WARTET_HOECHSTENS = 2.0
+
+
+def _normalisiert_gleich(
+    text: str, treffer: List[BaseContentSearchResult]
+) -> Optional[BaseContentSearchResult]:
+    """Ein normalisiert gleicher Treffer (Altbestand ohne Payload-Feld): Er gilt immer
+    als dieselbe, vor jedem Score und jedem NLI-Urteil."""
     normalform = text_normalisiert(text)
-    return bool(normalform) and normalform == text_normalisiert(pruefung.vorhanden.text)
+    if not normalform:
+        return None
+    return next((t for t in treffer if text_normalisiert(t.text) == normalform), None)
 
 
 class AussageNichtGefunden(ValueError):
@@ -78,7 +85,7 @@ class StatementService(
 
         # NLI-Stufe (#387). Ohne Modell (aus) gilt allein die Schwelle.
         if nli is None and settings.dieselbe_aussage_nli != "aus":
-            nli = NliModell(NLI_MODELL, settings.nli_threads)
+            nli = NliModell(NLI_MODELL)
         self._nli: Optional[NliPruefer] = nli
         self.schattenprotokoll = Schattenprotokoll()
         self._schatten_laeuft = False
@@ -251,7 +258,10 @@ class StatementService(
             text, treffer, self.settings.statement_similarity_threshold
         )
         modus = self.settings.dieselbe_aussage_nli
-        if self._nli is None or modus == "aus" or _normalisiert_gleich(text, heute):
+        gleich = _normalisiert_gleich(text, treffer)
+        if gleich is not None:
+            return Dublettenpruefung(vorhanden=gleich, aehnlichster=heute.aehnlichster)
+        if self._nli is None or modus == "aus":
             return heute
         if modus == "an":
             nach_nli = await self._nli_entscheiden(text, treffer)
@@ -348,7 +358,18 @@ class StatementService(
             return treffer
         if not treffer:
             return treffer
-        urteile = await self._nli.urteile([(text, t.text) for t in treffer])
+        try:
+            # Nicht auf das Laden oder ein laufendes Urteil warten: Die Vorschlaege
+            # kommen beim Tippen, lieber ungefiltert als spaet.
+            urteile = await self._nli.urteile(
+                [(text, t.text) for t in treffer],
+                warte_hoechstens=VORSCHLAG_WARTET_HOECHSTENS,
+            )
+        except Exception as e:
+            logger.warning(
+                "NLI-Filter der Vorschlaege gescheitert (%s)", type(e).__name__
+            )
+            urteile = None
         if urteile is None:
             return treffer
         return [

@@ -41,7 +41,7 @@ async def paare_finden(statement_service) -> tuple[int, List[Paar]]:
     from core.config import NLI_MODELL
 
     settings = statement_service.settings
-    nli = NliModell(NLI_MODELL, settings.nli_threads)
+    nli = NliModell(NLI_MODELL)
     aussagen = []
     offset = 0
     while True:

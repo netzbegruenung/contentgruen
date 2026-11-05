@@ -14,6 +14,7 @@ import pytest
 
 from core.config import Settings
 from tests.regression.nli_messen import (
+    THREADS,
     NLI_PAARE,
     entscheidung_nli,
     urteil,
@@ -28,7 +29,7 @@ TOLERANZ = 0.01
 
 @lru_cache(maxsize=1)
 def _urteile():
-    return urteile_messen(Settings().nli_threads)
+    return urteile_messen(THREADS)
 
 
 @pytest.mark.parametrize("paar", NLI_PAARE, ids=[p.id for p in NLI_PAARE])
