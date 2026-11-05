@@ -109,9 +109,6 @@ Offen:
 
 - DSFA übernommen (Abschnitt 6).
 - Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt.
-- Im Code Punkte und Muster-Hinweise nur für Konten mit geltender Einwilligung (#559): Heute
-  prüft der Zählendpunkt der Nutzung (`ss/api/v1/usage.py`) sie nicht, und die DSE stützt
-  beides auf lit. a (Abschnitt 4).
 
 Erledigt:
 
@@ -121,3 +118,7 @@ Erledigt:
   Profiling“ gilt nur, solange Punkte aus sind; „Rückmeldung zur Nutzung“ nennt Muster-Hinweise
   als Ausnahme.
 - Umstellung auf #470 und Schlüssel im Speicher aus Risiko 2 (PR #476).
+- Im Code Punkte und Muster-Hinweise nur für Konten mit geltender Einwilligung (#559, PR #560):
+  Der Zählendpunkt der Nutzung (`ss/api/v1/usage.py`) bildet ohne Einwilligung keinen Prüfwert
+  und meldet nichts für Muster-Hinweise, auch nicht, wenn die Autorin nicht eingewilligt hat;
+  `GET /users/me/punkte` liefert ohne Einwilligung 0. Gefragt wird je Kopie und je Abruf.
