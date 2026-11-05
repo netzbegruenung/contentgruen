@@ -41,29 +41,29 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
             "geschehen ist, bleibt rechtmäßig."
         ),
         # Variante B (#559): nennt die Zwecke aus docs/DSFA_PUNKTE.md Abschnitt 4:
-        # Punkte, Level, Quests und Meilenstein-Abzeichen (fuer andere Angemeldete
-        # nur mit gesonderter Zustimmung), Freischaltungen und die Muster-Hinweise. Zweiter Wortlaut vom selben Tag,
-        # deshalb mit Suffix. Vor dem Merge noch zweimal geaendert (Level,
-        # Freischaltungen, Abzeichen nur mit Zustimmung); die Kennung blieb, weil sie
-        # nie auf main und in keinem Release war.
+        # Punkte, Level, Quests und Meilenstein-Abzeichen (fuer andere Angemeldete nur
+        # mit gesonderter Zustimmung), Freischaltungen und die Muster-Hinweise. Zweiter
+        # Wortlaut vom selben Tag, deshalb mit Suffix. Vor dem Merge noch zweimal
+        # geaendert (Level, Freischaltungen, Abzeichen nur mit Zustimmung); die Kennung
+        # blieb, weil sie nie auf main und in keinem Release war.
         "2026-11-05-b": (
             "Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung "
             "verarbeitet, auch wenn sich daraus auf meine politische Meinung "
             "schließen lässt (Art. 9 Abs. 2 lit. a DSGVO). Das betrifft Beiträge, "
             "Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere, "
-            "und meinen Anzeigenamen daran. Beiträge sind für alle sichtbar, "
-            "mein Anzeigename nur für Angemeldete. Gut gesagt nutzt meine "
-            "Mitwirkung nur für den Betrieb der Plattform. Dazu gehören ein "
-            "Punktestand, ein Level, Quests und Meilenstein-Abzeichen, die nur ich "
-            "sehe, solange ich nicht gesondert zustimme, sie anderen Angemeldeten zu "
-            "zeigen; neue Aktionen, die ein höheres Level freischaltet; und ein "
-            "Hinweis an die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. Gut gesagt wertet meine Mitwirkung nicht nach "
-            "politischer Haltung aus und gibt sie nicht an Dritte weiter. Ich kann "
-            "die Einwilligung jederzeit im "
-            "Profilmenü unter „Einwilligung“ widerrufen. Danach kann ich nichts "
-            "mehr beitragen oder bewerten; was ich schon gespeichert habe, bleibt, "
-            "bis ich es lösche oder mein Konto löschen lasse. Was bis zum Widerruf "
-            "geschehen ist, bleibt rechtmäßig."
+            "und meinen Anzeigenamen daran. Beiträge sind für alle sichtbar, mein "
+            "Anzeigename nur für Angemeldete. Gut gesagt nutzt meine Mitwirkung "
+            "nur für den Betrieb der Plattform. Dazu gehören ein Punktestand, ein "
+            "Level, Quests und Meilenstein-Abzeichen, die nur ich sehe, solange "
+            "ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen; "
+            "neue Aktionen, die ein höheres Level freischaltet; und ein Hinweis an "
+            "die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. "
+            "Gut gesagt wertet meine Mitwirkung nicht nach politischer Haltung aus "
+            "und gibt sie nicht an Dritte weiter. Ich kann die Einwilligung "
+            "jederzeit im Profilmenü unter „Einwilligung“ widerrufen. Danach kann "
+            "ich nichts mehr beitragen oder bewerten; was ich schon gespeichert "
+            "habe, bleibt, bis ich es lösche oder mein Konto löschen lasse. Was "
+            "bis zum Widerruf geschehen ist, bleibt rechtmäßig."
         ),
     }
 )
