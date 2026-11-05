@@ -20,15 +20,17 @@ from typing import Dict, List, NamedTuple, Optional, Sequence
 
 from tests.regression.suche_messen import (
     BESTAND_PASST_NICHT,
+    KEIN_FALL_GEMESSEN,
     FallMessung,
-    _umgebung,
     aehnliche_aussagen,
     als_json,
     auswerten,
+    bestand_passt,
     gemessen,
     messen,
     schwelle_heute,
     tabellen,
+    umgebung,
     zerfaserung,
 )
 
@@ -204,13 +206,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print()
     print(bericht(pruefungen))
     if args.json:
-        daten = als_json(messungen, (schwelle,), umgebung=_umgebung())
+        daten = als_json(messungen, (schwelle,), umgebung=umgebung())
         daten["pruefungen"] = [p._asdict() for p in pruefungen]
         with open(args.json, "w", encoding="utf-8") as datei:
             json.dump(daten, datei, ensure_ascii=False, indent=1)
 
-    if not any(m.fall.erwartet for m in gemessen(messungen)):
-        print("Kein Fall mit Erwartung gemessen: Seed geladen?", file=sys.stderr)
+    if not bestand_passt(messungen):
+        print(f"{KEIN_FALL_GEMESSEN} Seed geladen (seed_laden)?", file=sys.stderr)
         return BESTAND_PASST_NICHT
     return 0 if all(p.ok for p in pruefungen) else ABWEICHUNG
 

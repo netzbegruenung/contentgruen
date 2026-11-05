@@ -594,6 +594,18 @@ async def fall_messen(
     )
 
 
+KEIN_FALL_GEMESSEN = (
+    "Kein Fall mit Erwartung gemessen: Der Bestand passt nicht zum Suchtestset "
+    "(leere oder falsche Sammlung, oder Faelle fuer den Startbestand fehlen). "
+    "Die Zahlen oben sind nicht aussagekraeftig."
+)
+
+
+def bestand_passt(messungen: Iterable[FallMessung]) -> bool:
+    """Mindestens ein Fall mit Erwartung ist gemessen, sonst sagen die Zahlen nichts."""
+    return any(m.fall.erwartet for m in gemessen(messungen))
+
+
 def mit_schwelle_heute(schwellen: Iterable[float]) -> Tuple[float, ...]:
     """
     Die Schwellen aufsteigend, die von heute immer dabei: Phaenomene, Zerfaserung und
@@ -646,23 +658,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.json:
         with open(args.json, "w", encoding="utf-8") as datei:
             json.dump(
-                als_json(messungen, schwellen, args.k, _umgebung()),
+                als_json(messungen, schwellen, args.k, umgebung()),
                 datei,
                 ensure_ascii=False,
                 indent=1,
             )
-    if not any(m.fall.erwartet for m in gemessen(messungen)):
-        print(
-            "Kein Fall mit Erwartung gemessen: Der Bestand passt nicht zum Suchtestset "
-            "(leere oder falsche Sammlung, oder Faelle fuer den Startbestand fehlen). "
-            "Die Zahlen oben sind nicht aussagekraeftig.",
-            file=sys.stderr,
-        )
+    if not bestand_passt(messungen):
+        print(KEIN_FALL_GEMESSEN, file=sys.stderr)
         return BESTAND_PASST_NICHT
     return 0
 
 
-def _umgebung() -> dict:
+def umgebung() -> dict:
     """Womit gemessen wurde, fuer den Vergleich zweier Messungen."""
     from core.config import EMBEDDING_MODELL, settings
 

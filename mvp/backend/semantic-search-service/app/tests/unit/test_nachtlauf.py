@@ -26,7 +26,7 @@ from tests.regression.suche_messen import (
     AngezeigterBeitrag,
     FallMessung,
 )
-from tests.regression.suche_testset import Fall
+from tests.regression.suche_testset import FAELLE, Fall
 
 A = "Windräder töten die Vögel!"
 SCHWELLE = 0.8
@@ -152,11 +152,21 @@ class TestPruefen:
             )
 
     def test_soll_haelt_tor_und_untere_grenze_ein(self):
-        """Das Soll selbst darf nicht rot sein: Tor und Grenze liegen darunter."""
+        """Auch ein erlaubter Ausreisser (Soll minus Toleranz) bleibt ueber Tor und
+        Grenze. Recall@10 ist mindestens Treffer durch Faelle mit Erwartung."""
         mit = SOLL["treffer"] + SOLL["fehltreffer"] + SOLL["keine"]
-        assert SOLL["aehnliche_erwartete_dabei"] / mit >= UNTERE_GRENZE_AEHNLICHE
-        assert 0 < UNTERE_GRENZE_AEHNLICHE <= 1
+        schlechtester = SOLL["aehnliche_erwartete_dabei"] - TOLERANZ_FAELLE
+        assert schlechtester / mit >= UNTERE_GRENZE_AEHNLICHE
+        assert (SOLL["treffer"] - TOLERANZ_FAELLE) / mit >= TOR_STUFE_3["recall_bei_10"]
         assert all(0 < wert <= 1 for wert in TOR_STUFE_3.values())
+
+    def test_soll_kennt_jeden_fall_des_suchtestsets(self):
+        """Ein neuer Fall ohne nachgezogenes Soll faellt im PR auf, nicht erst nachts."""
+        assert SOLL["gemessen"] == len(FAELLE)
+        assert SOLL["dieselbe_behauptung"] == sum(f.dieselbe_behauptung for f in FAELLE)
+        assert SOLL["treffer"] + SOLL["fehltreffer"] + SOLL["keine"] == sum(
+            1 for f in FAELLE if f.erwartet
+        )
 
 
 class TestBericht:

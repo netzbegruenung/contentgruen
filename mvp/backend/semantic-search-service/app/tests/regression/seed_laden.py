@@ -8,13 +8,23 @@ Qdrant misst; nie gegen Test oder Produktion (mvp/data/seed/README.md).
     SEMANTIC_SEARCH_QDRANT_COLLECTION=nachtlauf ../venv/bin/python -m tests.regression.seed_laden
 
 Bricht ab (Exit 1), wenn die Sammlung schon Inhalte hat: So landet der Seed nie in einem
-gepflegten Bestand, und ein zweiter Aufruf misst nicht gegen einen doppelten Seed.
+gepflegten Bestand, und ein zweiter Aufruf misst nicht gegen einen doppelten Seed. Ebenso,
+wenn danach nichts in der Sammlung steht (Seed-Pfad falsch).
 """
 
 import asyncio
 import sys
 import tempfile
 from typing import Optional, Sequence
+
+
+async def _anzahl(manager) -> int:
+    """Exakte Zahl der Eintraege. Nicht manager.count(): Das gibt bei jedem Fehler 0
+    zurueck, und die Sperre gegen einen gepflegten Bestand liefe dann ins Leere."""
+    ergebnis = await manager._async_client.count(
+        collection_name=manager.collection_name, exact=True
+    )
+    return ergebnis.count
 
 
 async def seed_laden(metadaten_pfad: str) -> int:
@@ -29,7 +39,7 @@ async def seed_laden(metadaten_pfad: str) -> int:
     manager = get_qdrant_embeddings_manager(settings)
     await manager.start()
     try:
-        vorher = await manager.count()
+        vorher = await _anzahl(manager)
         if vorher:
             raise RuntimeError(
                 f"Sammlung {settings.qdrant_collection} hat schon {vorher} Eintraege"
@@ -39,7 +49,10 @@ async def seed_laden(metadaten_pfad: str) -> int:
         stand = await dienst.get_progress()
         if stand.status is not SeedingStatus.COMPLETED:
             raise RuntimeError(f"Seeding endete mit {stand.status.value}")
-        return await manager.count()
+        nachher = await _anzahl(manager)
+        if not nachher:
+            raise RuntimeError(f"Nichts geladen: kein Seed unter {settings.data_path}?")
+        return nachher
     finally:
         await manager.shutdown()
 

@@ -3,7 +3,8 @@
 # Tor fuer Roadmap-Stufe 3 bzw. untere Grenze fuer aehnliche Aussagen unterschritten sind;
 # die Tabellen stehen im Log (docs/CI.md, "Nightly run").
 # Kein Pflichtstatus fuer PRs (zu langsam). PRs, die Modell, Schwellen, Stemmer oder
-# Normalisierung aendern, stossen den Lauf auf ihrem Branch an ("Run pipeline").
+# Normalisierung aendern, stossen den Lauf auf ihrem Branch an ("Run pipeline"); dabei
+# laeuft ci.yaml mit (auch manual), auf main zudem build.yaml.
 # Cron-Job "nachtlauf" in den Woodpecker-Einstellungen des Repos richtet eine Person ein.
 when:
   - event: cron
@@ -30,6 +31,8 @@ services:
 steps:
   - name: messset
     image: git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:main
+    # :main wandert mit jedem Build; ohne pull bliebe ein altes Image im Cache des Agents.
+    pull: true
     depends_on: []
     environment:
       DOCKER_CONTAINER: "false"
@@ -42,6 +45,8 @@ steps:
   # Nacheinander, nicht parallel: Jeder Schritt laedt das Modell (gut 1 GB RAM).
   - name: suchtest
     image: git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:main
+    # :main wandert mit jedem Build; ohne pull bliebe ein altes Image im Cache des Agents.
+    pull: true
     depends_on: [messset]
     when:
       - status: [success, failure]

@@ -182,6 +182,8 @@ def test_nachtlauf_misst_messset_und_suchtestset_mit_dem_modell_aus_dem_image():
     assert set(NACHT_SCHRITTE) == {"messset", "suchtest"}
     for schritt in NACHT_SCHRITTE.values():
         assert schritt["image"] == SEMANTIC_SEARCH_IMAGE
+        # :main wandert; ohne pull misst der Agent mit einem alten Image.
+        assert schritt["pull"] is True
         assert schritt["environment"]["DOCKER_CONTAINER"] == "false"
         assert "secrets" not in schritt and not any(
             isinstance(w, dict) and "from_secret" in w
