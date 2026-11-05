@@ -34,6 +34,9 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   `tests/unit/api/test_usage_eigene_kopie.py`). Gefragt wird je Kopie; ist die Einwilligung
   nicht lesbar, gilt sie als nicht erteilt und die Kopie zählt trotzdem. Paar-Prüfwerte und
   Hinweise von vor einem Widerruf gehen mit ihren Fristen (`docs/LOESCHKONZEPT.md`).
+- **Punkte:** Ein Konto ohne geltende Einwilligung (nie erteilt oder widerrufen) hat keine
+  Punkte; `GET /api/v1/usage/users/me/punkte` liefert dann 0 in jeder Stufe, wie bei einem
+  Startkonto (#559, F559-1, `PunkteService.punkte`). Gefragt wird je Abruf.
 - **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Einwilligung“). Die Zeile bekommt
   den Zeitpunkt des Widerrufs und bleibt stehen, als Nachweis, dass die Verarbeitung bis dahin
   auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Schon Gespeichertes
