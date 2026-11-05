@@ -9,12 +9,13 @@ getrennt von den Nutzungsbedingungen (Entscheidung Maintainer, 29.10. und
 und speichert zur Einwilligung den Zeitpunkt und die Kennung des gezeigten
 Wortlauts.
 
-Die Kennung ist das Stand-Datum des Wortlauts. Ein geaenderter Wortlaut bekommt
+Die Kennung ist das Stand-Datum des Wortlauts, ein zweiter Wortlaut vom selben Tag
+bekommt ein Suffix (``-b``, ``-c`` ...). Ein geaenderter Wortlaut bekommt
 eine neue Kennung und wird hier ergaenzt; alte bleiben stehen, damit jede
 gespeicherte Kennung ihren Text behaelt. Ablauf: docs/ART9_EINWILLIGUNG.md.
 
-Der Wortlaut vom 05.11.2026 ist vorlaeufig, bis die juristische Pruefung (#296)
-ihn bestaetigt oder ersetzt.
+Die Wortlaute vom 05.11.2026 sind vorlaeufig, bis die juristische Pruefung (#296)
+sie bestaetigt oder ersetzt.
 """
 
 from types import MappingProxyType
@@ -39,11 +40,32 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
             "bis ich es lösche oder mein Konto löschen lasse. Was bis zum Widerruf "
             "geschehen ist, bleibt rechtmäßig."
         ),
+        # Variante B (#559): nennt die Zwecke aus docs/DSFA_PUNKTE.md Abschnitt 4,
+        # Punkte samt Quests und Meilensteinen und die Muster-Hinweise. Zweiter
+        # Wortlaut vom selben Tag, deshalb mit Suffix.
+        "2026-11-05-b": (
+            "Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung "
+            "verarbeitet, auch wenn sich daraus auf meine politische Meinung "
+            "schließen lässt (Art. 9 Abs. 2 lit. a DSGVO). Das betrifft Beiträge, "
+            "Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere, "
+            "und meinen Anzeigenamen daran. Beiträge sind für alle sichtbar, "
+            "mein Anzeigename nur für Angemeldete. Gut gesagt nutzt meine "
+            "Mitwirkung nur für den Betrieb der Plattform. Dazu gehören ein "
+            "Punktestand sowie Quests und Meilenstein-Abzeichen, die nur ich sehe, "
+            "und ein Hinweis an die Admins, wenn zwei Konten sich auffällig oft "
+            "gegenseitig nutzen. Gut gesagt wertet meine Mitwirkung nicht nach "
+            "politischer Haltung aus und gibt sie nicht an Dritte weiter. Ich kann "
+            "die Einwilligung jederzeit im "
+            "Profilmenü unter „Einwilligung“ widerrufen. Danach kann ich nichts "
+            "mehr beitragen oder bewerten; was ich schon gespeichert habe, bleibt, "
+            "bis ich es lösche oder mein Konto löschen lasse. Was bis zum Widerruf "
+            "geschehen ist, bleibt rechtmäßig."
+        ),
     }
 )
 
 # Der Wortlaut, den die App heute zeigt.
-AKTUELLER_WORTLAUT = "2026-11-05"
+AKTUELLER_WORTLAUT = "2026-11-05-b"
 
 
 def bekannter_wortlaut(kennung: str) -> bool:

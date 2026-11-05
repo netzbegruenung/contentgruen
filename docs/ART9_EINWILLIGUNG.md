@@ -54,11 +54,11 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
 Der Wortlaut steht an einer Stelle: `WORTLAUTE` in
 `mvp/backend/semantic-search-service/app/domain/art9_einwilligung.py`. Das Frontend zeigt,
 was das Backend liefert, und hat keinen eigenen Text. Die Kennung eines Wortlauts ist sein
-Stand-Datum.
+Stand-Datum; ein zweiter Wortlaut vom selben Tag bekommt ein Suffix (`-b`, `-c` …).
 
 1. Neuen Eintrag in `WORTLAUTE` mit dem Tagesdatum als Kennung anlegen; den alten stehen lassen,
    sonst ist eine gespeicherte Kennung keinem Text mehr zuzuordnen. Ein Datum nie für einen
-   anderen Text wiederverwenden.
+   anderen Text wiederverwenden; gibt es das Tagesdatum schon, mit Suffix (`2026-11-05-b`).
 2. `AKTUELLER_WORTLAUT` auf die neue Kennung setzen.
 3. Unten in der Tabelle eine Zeile ergänzen, beim vorigen Wortlaut das „bis“-Datum nach dem
    Produktiv-Deploy.
@@ -70,4 +70,5 @@ Einwilligung verlangt, ist beim Ändern zu entscheiden; heute fragt die App nich
 
 | Kennung | Stand | gültig |
 |---------|-------|--------|
-| `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | seit dem Produktiv-Deploy von #489 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | nie produktiv: von `2026-11-05-b` abgelöst, bevor #489 in einem Release war |
+| `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punkte, Quests und Meilenstein-Abzeichen und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA_PUNKTE.md` Abschnitt 4) | seit dem Produktiv-Deploy von #489 und #559 (Datum nach dem Ausrollen eintragen) |
