@@ -12,21 +12,24 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   für jede Kontoart (Netzbegrünung-Login, Konto aus einer Einladung, Beta-Zugang). Dort steht
   der Wortlaut an einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht
   angehakt. „Ohne Einwilligung weiter“ führt zurück; die Person kann suchen und lesen.
-- **Speichern:** Tabelle `art9_einwilligungen`, je Kennung eine Zeile mit Zeitpunkt und
-  Kennung des gezeigten Wortlauts.
+- **Speichern:** Tabelle `art9_einwilligungen`, je Einwilligung eine Zeile mit Kennung der
+  Person, Zeitpunkt und Kennung des gezeigten Wortlauts. Es gilt die jüngste Zeile.
 - **Sperren:** Ohne geltende Einwilligung antworten die Endpunkte, die mit Personenbezug etwas
   speichern, aus dem sich auf die politische Meinung schließen lässt, mit 403
-  (`art9_einwilligung_fehlt`); die App führt dann auf `/einwilligung` und danach zurück.
+  (`art9_einwilligung_fehlt`); die App zeigt dann einen Hinweis mit Knopf, der auf
+  `/einwilligung` und danach zurück führt, und bleibt sonst auf der Seite, damit kein Text im
+  Formular verloren geht.
   Gesperrt: Beiträge anlegen und ändern, Herkunft anlegen, Einwurf, Satz und Stufe eines
   Einwurfs, Bewertungen. Offen bleiben Lesen, Suchen, Löschen, Melden, Feedback,
   Gegenlesen, Sprachhinweis, Kürzungsvorschlag und Widerspruch gegen eine Sperre. Die Liste
   prüft `tests/unit/api/test_art9_einwilligung_api.py` (`GESPERRT`); ein neuer Endpunkt dieser
   Art gehört dort und an `require_art9_einwilligung` (`dependencies.py`).
-- **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Einwilligung“). Die Zeile bleibt
-  mit dem Zeitpunkt des Widerrufs stehen, als Nachweis, dass die Verarbeitung bis dahin auf der
-  Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Schon Gespeichertes bleibt,
-  bis die Person es löscht oder ihr Konto löschen lässt (Löschkonzept). Eine neue Einwilligung
-  ersetzt die Zeile.
+- **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Einwilligung“). Die Zeile bekommt
+  den Zeitpunkt des Widerrufs und bleibt stehen, als Nachweis, dass die Verarbeitung bis dahin
+  auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Schon Gespeichertes
+  bleibt, bis die Person es löscht oder ihr Konto löschen lässt (Löschkonzept). Eine neue
+  Einwilligung ist eine neue Zeile; die früheren bleiben. Jede Prüfung fragt die Datenbank,
+  damit ein Widerruf und das Löschkommando sofort wirken.
 - **Löschen und Umstellen:** Die Zeile geht mit dem Konto (`docs/LOESCHKONZEPT.md`, Schritt 2)
   und zieht beim Umstellen der Kennungen mit (`services/wartung/kennungen_umstellen.py`).
 

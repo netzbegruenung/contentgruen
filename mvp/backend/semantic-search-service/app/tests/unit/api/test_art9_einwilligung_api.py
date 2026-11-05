@@ -160,7 +160,7 @@ class TestSperre:
         repository.lesen.assert_not_called()
 
     def test_nach_widerruf_sofort_gesperrt(self, gesperrt_client, repository):
-        # Der Dienst merkt sich ein Ja; der Widerruf muss es vergessen.
+        # Kein Merken im Prozess: Jede Pruefung fragt die Datenbank.
         assert gesperrt_client.post("/speichern", headers=PERSON).status_code == 200
 
         gesperrt_client.delete(BASIS, headers=PERSON)
@@ -175,6 +175,7 @@ class TestSperre:
         gesperrt_client.post(
             BASIS, headers=PERSON, json={"wortlaut": AKTUELLER_WORTLAUT}
         )
+        repository.lesen.return_value = Art9Einwilligung("2026-11-05", SPAETER, None)
 
         assert gesperrt_client.post("/speichern", headers=PERSON).status_code == 200
 

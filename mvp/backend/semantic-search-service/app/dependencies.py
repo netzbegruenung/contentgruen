@@ -468,8 +468,7 @@ def require_art9_einwilligung(
     Art.-9-Einwilligung (#489) mit 403. Ob jemand angemeldet sein muss,
     entscheidet der Endpunkt selbst; ohne Anmeldung laesst diese Pruefung durch.
 
-    Synchron, damit FastAPI sie im Threadpool ausfuehrt: Beim ersten Zugriff je
-    Person und Prozess fragt sie die Datenbank.
+    Synchron, damit FastAPI sie im Threadpool ausfuehrt: Sie fragt die Datenbank.
     """
     if not angemeldet(x_user):
         return

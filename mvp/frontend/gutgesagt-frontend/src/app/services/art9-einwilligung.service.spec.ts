@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
+import { NavigationEnd, Router } from '@angular/router';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
@@ -12,7 +12,7 @@ import { Art9EinwilligungService, Art9EinwilligungStand } from './art9-einwillig
 describe('Art9EinwilligungService', () => {
   const ADRESSE = `${environment.baseUrl}/api/v1/art9-einwilligung`;
   let anmeldung: BehaviorSubject<UserInfo | null>;
-  let router: { url: string; navigate: jasmine.Spy };
+  let router: { url: string; navigate: jasmine.Spy; events: Subject<unknown>; getCurrentNavigation: jasmine.Spy };
   let http: HttpTestingController;
   let service: Art9EinwilligungService;
 
@@ -33,7 +33,12 @@ describe('Art9EinwilligungService', () => {
 
   beforeEach(() => {
     anmeldung = new BehaviorSubject<UserInfo | null>(null);
-    router = { url: '/fangkorb', navigate: jasmine.createSpy('navigate') };
+    router = {
+      url: '/fangkorb',
+      navigate: jasmine.createSpy('navigate'),
+      events: new Subject<unknown>(),
+      getCurrentNavigation: jasmine.createSpy('getCurrentNavigation').and.returnValue(null),
+    };
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -56,6 +61,7 @@ describe('Art9EinwilligungService', () => {
     anmeldung.next({ isAuthenticated: false, userId: null, userName: null, claims: null });
 
     http.expectNone(ADRESSE);
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('fuehrt ohne Einwilligung auf /einwilligung, mit Rueckweg', () => {
@@ -65,6 +71,20 @@ describe('Art9EinwilligungService', () => {
     http.expectOne(ADRESSE).flush(stand(false));
 
     expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], { queryParams: { returnUrl: '/fangkorb' } });
+  });
+
+  it('wartet eine laufende Navigation ab, damit der Rueckweg dorthin fuehrt', () => {
+    router.url = '/login';
+    router.getCurrentNavigation.and.returnValue({});
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+    http.expectOne(ADRESSE).flush(stand(false));
+    expect(router.navigate).not.toHaveBeenCalled();
+
+    router.url = '/beitrag/123';
+    router.events.next(new NavigationEnd(1, '/beitrag/123', '/beitrag/123'));
+
+    expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], { queryParams: { returnUrl: '/beitrag/123' } });
   });
 
   it('laesst mit Einwilligung in Ruhe', () => {
@@ -83,6 +103,7 @@ describe('Art9EinwilligungService', () => {
     anmeldung.next(angemeldet('kim'));
 
     http.expectNone(ADRESSE);
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('leitet von der Datenschutzerklaerung aus nicht um', () => {

@@ -2,21 +2,29 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClient, HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subject } from 'rxjs';
 import { AuthInterceptor } from './auth.interceptor';
 
 describe('AuthInterceptor', () => {
   let httpClient: HttpClient;
   let httpMock: HttpTestingController;
   let router: jasmine.SpyObj<Router>;
+  let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let knopf: Subject<void>;
 
   beforeEach(() => {
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    knopf = new Subject<void>();
+    snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+    snackBar.open.and.returnValue({ onAction: () => knopf.asObservable() } as any);
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([AuthInterceptor])),
         provideHttpClientTesting(),
-        { provide: Router, useValue: routerSpy }
+        { provide: Router, useValue: routerSpy },
+        { provide: MatSnackBar, useValue: snackBar }
       ]
     });
 
@@ -112,13 +120,26 @@ describe('AuthInterceptor', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it('fuehrt bei fehlender Art.-9-Einwilligung auf /einwilligung und zurueck (#489)', () => {
+  it('zeigt bei fehlender Art.-9-Einwilligung einen Hinweis und bleibt auf der Seite (#489)', () => {
     (router as any).url = '/einwerfen?von=fangkorb';
     httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
 
     httpMock
       .expectOne('/api/v1/rawinput/addRawInput')
       .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+    expect(snackBar.open).toHaveBeenCalledWith(jasmine.stringContaining('Einwilligung'), 'Einwilligen', jasmine.any(Object));
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('fuehrt ueber den Knopf im Hinweis zur Einwilligung und zurueck', () => {
+    (router as any).url = '/einwerfen?von=fangkorb';
+    httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
+    httpMock
+      .expectOne('/api/v1/rawinput/addRawInput')
+      .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+    knopf.next();
 
     expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], {
       queryParams: { returnUrl: '/einwerfen?von=fangkorb' },
@@ -133,16 +154,17 @@ describe('AuthInterceptor', () => {
       .expectOne('/api/v1/moderation/x')
       .flush({ detail: 'Admin privileges required' }, { status: 403, statusText: 'Forbidden' });
 
-    expect(router.navigate).not.toHaveBeenCalled();
+    expect(snackBar.open).not.toHaveBeenCalled();
   });
 
-  it('leitet auf der Seite der Einwilligung selbst nicht noch einmal um', () => {
+  it('fuehrt auf der Seite der Einwilligung selbst nicht noch einmal hin', () => {
     (router as any).url = '/einwilligung?returnUrl=%2Feinwerfen';
     httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
-
     httpMock
       .expectOne('/api/v1/rawinput/addRawInput')
       .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+    knopf.next();
 
     expect(router.navigate).not.toHaveBeenCalled();
   });

@@ -4,11 +4,16 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { PublicEndpoints } from '../shared/public-endpoints';
 import { ART9_EINWILLIGUNG_FEHLT, zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
 
+export const EINWILLIGUNG_FEHLT_HINWEIS = 'Zum Beitragen und Bewerten brauchst du deine Einwilligung.';
+const HINWEIS_DAUER_MS = 10000;
+
 export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
   const router = inject(Router);  // Inject Router for navigation
+  const snackBar = inject(MatSnackBar);
 
   const modifiedRequest = req.clone({
     withCredentials: true,  // Ensures cookies are included also cross-origin
@@ -24,10 +29,14 @@ export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
           router.navigate(['/login'], { queryParams: { returnUrl: currentUrl } });
         }
       }
-      // Ohne Art.-9-Einwilligung sperrt das Backend das Speichern (#489): auf die
-      // Seite der Einwilligung fuehren, danach zurueck an diese Stelle.
+      // Ohne Art.-9-Einwilligung sperrt das Backend das Speichern (#489). Nicht von
+      // selbst wegnavigieren, sonst ginge der Text im Formular verloren: ein Hinweis,
+      // der auf Wunsch zur Einwilligung fuehrt und danach zurueck an diese Stelle.
       if (error.status === 403 && error.error?.detail === ART9_EINWILLIGUNG_FEHLT) {
-        zurEinwilligungFuehren(router);
+        snackBar
+          .open(EINWILLIGUNG_FEHLT_HINWEIS, 'Einwilligen', { duration: HINWEIS_DAUER_MS })
+          .onAction()
+          .subscribe(() => zurEinwilligungFuehren(router));
       }
       return throwError(() => error);  // Pass error along to be handled if needed
     })

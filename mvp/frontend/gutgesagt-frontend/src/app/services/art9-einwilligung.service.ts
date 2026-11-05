@@ -1,8 +1,8 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { Observable, Subscription, of } from 'rxjs';
-import { catchError, distinctUntilChanged, filter, map, switchMap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, map, switchMap, take } from 'rxjs/operators';
 
 import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
@@ -59,8 +59,8 @@ export function zurEinwilligungFuehren(router: Router): void {
  *
  * Nach dem Anmelden fragt ``starten`` einmal je Person und App-Start nach dem Stand
  * und fuehrt ohne Einwilligung auf /einwilligung. Wer dort ohne Einwilligung
- * weitergeht, wird erst wieder hingefuehrt, wenn ein Endpunkt sie verlangt
- * (auth.interceptor.ts) oder beim naechsten App-Start.
+ * weitergeht, wird erst beim naechsten App-Start wieder hingefuehrt; verlangt ein
+ * Endpunkt sie vorher, zeigt der Auth-Interceptor einen Hinweis mit Knopf.
  */
 @Injectable({ providedIn: 'root' })
 export class Art9EinwilligungService implements OnDestroy {
@@ -99,8 +99,18 @@ export class Art9EinwilligungService implements OnDestroy {
         // Interceptor fuehrt dann hin.
         switchMap(() => this.stand().pipe(catchError(() => of(null)))),
         filter((stand): stand is Art9EinwilligungStand => !!stand && !stand.eingewilligt),
+        // Laeuft gerade eine Navigation (etwa zurueck an die Stelle vor dem Anmelden),
+        // erst ihr Ende abwarten, damit der Rueckweg dorthin fuehrt.
+        switchMap(() => (this.router.getCurrentNavigation() ? this.navigationsEnde() : of(undefined))),
       )
       .subscribe(() => zurEinwilligungFuehren(this.router));
+  }
+
+  private navigationsEnde(): Observable<unknown> {
+    return this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      take(1),
+    );
   }
 
   ngOnDestroy(): void {

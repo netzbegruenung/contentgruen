@@ -6,6 +6,8 @@ sie. Dazu laeuft die Migration auf einer Datenbank ohne die Tabelle.
 """
 
 import pytest
+from sqlalchemy import text
+
 from infrastructure.database.models import Art9EinwilligungZeile, Base
 from repositories.art9_einwilligung_repository import Art9EinwilligungRepository
 from services.art9_einwilligung_service import (
@@ -68,7 +70,9 @@ class TestRepository:
 
         assert repository.lesen(PERSON) is None
 
-    def test_erneut_einwilligen_ersetzt_den_widerruf(self, repository):
+    def test_erneut_einwilligen_neue_zeile_der_widerruf_bleibt_belegt(
+        self, repository, datenbank
+    ):
         repository.einwilligen(PERSON, "2026-11-05")
         repository.widerrufen(PERSON)
 
@@ -77,6 +81,29 @@ class TestRepository:
         einwilligung = repository.lesen(PERSON)
         assert einwilligung.gilt
         assert einwilligung.widerrufen_am is None
+        assert _zeilen(datenbank) == [("2026-11-05", True), ("2026-11-05", False)]
+
+    def test_doppelt_absenden_legt_keine_zweite_zeile_an(self, repository, datenbank):
+        repository.einwilligen(PERSON, "2026-11-05")
+        repository.einwilligen(PERSON, "2026-11-05")
+
+        assert _zeilen(datenbank) == [("2026-11-05", False)]
+
+
+def _zeilen(datenbank):
+    """(Wortlaut, widerrufen) je Zeile der Person, die aelteste zuerst."""
+    with datenbank.engine.connect() as c:
+        return [
+            (wortlaut, widerrufen)
+            for wortlaut, widerrufen in c.execute(
+                text(
+                    "SELECT wortlaut, widerrufen_am IS NOT NULL"
+                    " FROM art9_einwilligungen WHERE user_id = :k"
+                    " ORDER BY eingewilligt_am"
+                ),
+                {"k": PERSON},
+            )
+        ]
 
 
 class TestDienst:
@@ -89,8 +116,6 @@ class TestDienst:
 
         dienst.widerrufen(PERSON)
         assert not dienst.eingewilligt(PERSON)
-        # Ein frischer Prozess sieht dasselbe.
-        assert not Art9EinwilligungService(repository).eingewilligt(PERSON)
 
     def test_unbekannter_wortlaut_speichert_nichts(self, repository):
         dienst = Art9EinwilligungService(repository)

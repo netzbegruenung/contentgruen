@@ -7,8 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import func, select, update
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import func, insert, select, update
 
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import Art9EinwilligungZeile
@@ -31,14 +30,9 @@ class Art9EinwilligungRepository:
         self.db = db if db is not None else get_app_database()
 
     def lesen(self, user_id: str) -> Optional[Art9Einwilligung]:
+        """Die juengste Einwilligung der Kennung, auch wenn sie widerrufen ist."""
         with self.db.get_session() as session:
-            zeile = session.execute(
-                select(
-                    Art9EinwilligungZeile.wortlaut,
-                    Art9EinwilligungZeile.eingewilligt_am,
-                    Art9EinwilligungZeile.widerrufen_am,
-                ).where(Art9EinwilligungZeile.user_id == user_id)
-            ).first()
+            zeile = self._juengste(session, user_id)
             if zeile is None:
                 return None
             return Art9Einwilligung(
@@ -48,26 +42,26 @@ class Art9EinwilligungRepository:
             )
 
     def einwilligen(self, user_id: str, wortlaut: str) -> None:
-        """Neue Einwilligung; eine fruehere oder widerrufene wird ersetzt."""
-        stmt = insert(Art9EinwilligungZeile).values(
-            user_id=user_id,
-            wortlaut=wortlaut,
-            eingewilligt_am=func.now(),
-            widerrufen_am=None,
-        )
-        stmt = stmt.on_conflict_do_update(
-            index_elements=[Art9EinwilligungZeile.user_id],
-            set_={
-                "wortlaut": stmt.excluded.wortlaut,
-                "eingewilligt_am": stmt.excluded.eingewilligt_am,
-                "widerrufen_am": None,
-            },
-        )
+        """
+        Eine neue Zeile; fruehere bleiben als Nachweis stehen. Gilt schon eine
+        Einwilligung zu diesem Wortlaut, bleibt es bei ihr (doppeltes Absenden).
+        """
         with self.db.get_session() as session:
-            session.execute(stmt)
+            juengste = self._juengste(session, user_id)
+            if (
+                juengste is not None
+                and juengste.widerrufen_am is None
+                and juengste.wortlaut == wortlaut
+            ):
+                return
+            session.execute(
+                insert(Art9EinwilligungZeile).values(
+                    user_id=user_id, wortlaut=wortlaut, eingewilligt_am=func.now()
+                )
+            )
 
     def widerrufen(self, user_id: str) -> None:
-        """Setzt den Zeitpunkt des Widerrufs; ohne geltende Einwilligung nichts."""
+        """Setzt den Zeitpunkt des Widerrufs an jeder noch geltenden Zeile."""
         with self.db.get_session() as session:
             session.execute(
                 update(Art9EinwilligungZeile)
@@ -77,6 +71,19 @@ class Art9EinwilligungRepository:
                 )
                 .values(widerrufen_am=func.now())
             )
+
+    @staticmethod
+    def _juengste(session, user_id: str):
+        return session.execute(
+            select(
+                Art9EinwilligungZeile.wortlaut,
+                Art9EinwilligungZeile.eingewilligt_am,
+                Art9EinwilligungZeile.widerrufen_am,
+            )
+            .where(Art9EinwilligungZeile.user_id == user_id)
+            .order_by(Art9EinwilligungZeile.eingewilligt_am.desc())
+            .limit(1)
+        ).first()
 
 
 _repository: Optional[Art9EinwilligungRepository] = None

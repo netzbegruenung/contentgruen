@@ -35,7 +35,7 @@
       </div>
     </form>
 
-    <ng-container *ngIf="stand && zustand === 'eingewilligt'">
+    <ng-container *ngIf="stand && (zustand === 'eingewilligt' || zustand === 'widerruft')">
       <p>
         Du hast am {{ stand.eingewilligt_am | date: 'dd.MM.yyyy, HH:mm' }} Uhr eingewilligt
         (Wortlaut vom {{ stand.wortlaut | date: 'dd.MM.yyyy' }}).
@@ -47,7 +47,7 @@
         Widerrufst du, kannst du nichts mehr beitragen und nichts bewerten. Was du schon gespeichert hast,
         bleibt, bis du es löschst oder dein Konto löschen lässt.
       </p>
-      <button mat-stroked-button color="warn" type="button" (click)="widerrufenKlick()">
+      <button mat-stroked-button color="warn" type="button" (click)="widerrufenKlick()" [disabled]="zustand === 'widerruft'">
         Einwilligung widerrufen
       </button>
     </ng-container>

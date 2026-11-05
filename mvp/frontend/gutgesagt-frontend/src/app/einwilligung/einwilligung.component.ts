@@ -12,7 +12,7 @@ import {
 } from '../services/art9-einwilligung.service';
 import { ROUTES } from '../shared/constants/app.constants';
 
-type Zustand = 'laedt' | 'frage' | 'sendet' | 'eingewilligt' | 'fehler';
+type Zustand = 'laedt' | 'frage' | 'sendet' | 'eingewilligt' | 'widerruft' | 'fehler';
 
 /**
  * Die Art.-9-Einwilligung (#489): ein eigenes Haekchen, getrennt von den
@@ -77,6 +77,10 @@ export class EinwilligungComponent implements OnInit {
   }
 
   widerrufenKlick(): void {
+    if (this.zustand !== 'eingewilligt') {
+      return;
+    }
+    this.zustand = 'widerruft';
     this.einwilligung.widerrufen().subscribe({
       next: () => {
         this.widerrufen = true;

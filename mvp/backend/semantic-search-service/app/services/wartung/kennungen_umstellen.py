@@ -120,7 +120,6 @@ class PostgresBericht:
 _ZEILE_DER_NEUEN_GEWINNT = {
     ("users", "user_id"): (),
     ("gesehene_nutzung", "user_id"): (),
-    ("art9_einwilligungen", "user_id"): (),
     ("votes", "user_id"): ("content_id",),
 }
 
