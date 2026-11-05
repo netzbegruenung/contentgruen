@@ -22,6 +22,10 @@ Unterstützungsarbeit ohne eigene Nutzung (Einwerfen, Destillieren, Fangkorb) er
 
 Die Sitzung, über die oben Nutzungen von Besuchern entdoppelt werden, gibt es seit #446 nicht mehr: Der Browser trägt keine Kennung, und Nutzungsereignisse halten keine fest. Wie Nutzungen von Besuchern für Punkte entdoppelt werden, ist damit offen und wird mit der Punktezählung entschieden. Das Tagespseudonym wäre ein Kandidat; es müsste dann an der Nutzung gespeichert werden, was die Datenschutzerklärung heute ausschließt.
 
+## Entdoppelung ohne gespeicherte Nutzung (Ergänzung 05.11.2026, #352)
+
+Entschieden mit der Punktezählung (PR #476, BanSe/todo#266): Besucher werden über ihr Besuchermerkmal entdoppelt, angemeldete Personen über ihre Kennung. An der Nutzung wird dafür weder Kennung noch Tagespseudonym gespeichert, sondern nur ein Prüfwert für den laufenden Tag, gebildet mit einem eigenen Schlüssel, der nur im Arbeitsspeicher liegt; die Muster-Hinweise vergleichen ebenso Paar-Prüfwerte mit dem Fensterschlüssel. Preis: Nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal, und ein Muster beginnt neu. Bestand von vor der Umstellung, der keine Sitzung trägt, zählt je Beitrag und Tag einmal.
+
 ## Considered Options
 
 - Punkte für jede Tätigkeit in voller Höhe (Schreiben, Einwerfen, Bewerten): am einfachsten, belohnt aber Menge statt Qualität. Übernommen ist nur die gedeckelte Form (siehe „Drei Stufen“).

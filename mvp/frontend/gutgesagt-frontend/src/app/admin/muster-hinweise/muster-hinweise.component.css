@@ -1,0 +1,33 @@
+.muster-hinweise {
+  margin-top: 24px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-wrap: anywhere;
+}
+
+.anzahl {
+  text-align: right;
+  white-space: nowrap;
+  width: 1%;
+}
+
+.hinweis {
+  color: #666;
+}
+
+.fussnote {
+  font-size: 12px;
+  color: #666;
+  margin-top: 12px;
+}

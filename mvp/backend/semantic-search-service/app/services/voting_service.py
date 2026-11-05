@@ -13,8 +13,10 @@ logger = get_logger(__name__)
 class VotingService:
     """Service for managing user votes on content items."""
 
-    def __init__(self):
+    def __init__(self, startkonten: frozenset = frozenset()):
         self.vote_repository = VoteRepository()
+        # Stimmen von Startkonten sieht niemand (#352, GLOSSARY.md "Startkonto").
+        self._startkonten = startkonten
         # Ensure the votes table exists
         self.vote_repository.create_votes_table()
 
@@ -180,8 +182,10 @@ class VotingService:
     def get_content_vote_stats(self, content_id: uuid.UUID) -> dict:
         """Get voting statistics for a content item."""
         try:
-            counts = self.vote_repository.get_vote_counts(content_id)
-            score = self.vote_repository.get_content_score(content_id)
+            counts = self.vote_repository.get_vote_counts(content_id, self._startkonten)
+            score = self.vote_repository.get_content_score(
+                content_id, self._startkonten
+            )
 
             return {
                 "content_id": str(content_id),

@@ -15,6 +15,7 @@
 CREATE TABLE IF NOT EXISTS usage_tracking (
     content_id UUID PRIMARY KEY,
     usage_count INTEGER DEFAULT 0 NOT NULL,
+    nutzung_entdoppelt INTEGER DEFAULT 0 NOT NULL,
     last_used TIMESTAMP WITH TIME ZONE,
     first_used TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -37,6 +38,7 @@ CREATE TABLE IF NOT EXISTS usage_events (
     session_id VARCHAR(255),
     device_category VARCHAR(20),
     fassung VARCHAR(10),
+    entdoppelt BOOLEAN DEFAULT false NOT NULL,
     FOREIGN KEY (content_id) REFERENCES usage_tracking(content_id) ON DELETE CASCADE
 );
 
