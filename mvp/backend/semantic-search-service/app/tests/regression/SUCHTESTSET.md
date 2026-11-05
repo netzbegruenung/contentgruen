@@ -35,9 +35,12 @@ immer), `--k` (Beiträge je Beitragstyp, Standard 10 wie im Frontend), `--faelle
 Fall mit erstem angezeigtem und erstem passendem Beitrag), `--json PFAD` (die ganze
 Messung als Datei, für Vergleiche und Folgetickets).
 
-Das Skript lädt das Einbettungsmodell (etwa 1,5 GB RAM) und liest nur. Es ruft dieselben
-Schritte wie die Suche (`aussagetreffer_finden` und `suchspezifikationen` in
-`api/v1/search.py`, dann den `SearchOrchestrator` mit Limit, Kürzen und Umsortieren),
+Das Skript lädt das Einbettungsmodell (etwa 1,5 GB RAM) und liest den Bestand nur;
+einzige Ausnahme ist der Start der Einbettung, der wie im Dienst eine fehlende Sammlung
+anlegt (bei falsch geschriebenem `SEMANTIC_SEARCH_QDRANT_COLLECTION` also eine leere,
+und alle Fälle stehen dann unter „nicht gemessen“). Es ruft dieselben Schritte wie die
+Suche (`aussagetreffer_finden`, `suchspezifikationen` und `treffer_sammeln` in
+`api/v1/search.py`: Limit, Kürzen und Umsortieren wie im Dienst),
 aber nicht den Endpunkt. Darum legt es keine Aussage aus der Suchanfrage an und zählt
 weder Suchereignis noch Suche ohne Treffer. Je Schwelle läuft der Orchestrator einmal,
 so wie er im Dienst mit dieser Schwelle liefe.
@@ -57,12 +60,17 @@ so wie er im Dienst mit dieser Schwelle liefe.
   wird. Angezeigt ist, was die Suche liefert, in der Reihenfolge der Ergebnisseite:
   Kommentare, dann Hintergrundinfos, dann Posts, je Typ höchstens k. Bilder zeigt die
   Ergebnisseite nicht, sie zählen nicht.
-- **Präzision:** passende unter allen angezeigten Beiträgen. **Recall@k:** Anteil der
-  Fälle mit Erwartung, bei denen ein passender Beitrag unter den ersten k steht.
+- **Präzision:** passende unter allen angezeigten Beiträgen. **Recall:** Anteil der
+  Fälle mit Erwartung, bei denen ein passender Beitrag irgendwo auf der Ergebnisseite
+  steht (je Beitragstyp höchstens k), nicht nur unter den ersten k.
 - **Zerfaserung:** Fälle mit `dieselbe_behauptung` sind dieselbe Behauptung wie eine
   erwartete Aussage (Paar-Label *gleich* nach `MESSSET.md`). Gezählt wird, wie viele
   davon nicht auf dieser Aussage landen, sondern eine neue anlegen würden, insgesamt und
-  unter den Suchen ohne Treffer.
+  unter den Suchen ohne Treffer. **Grenze:** Am Seed hat jede erwartete Aussage
+  Antworten, solche Suchanfragen haben also fast immer Treffer. Die Fälle, um die es bei
+  Suchen ohne Treffer eigentlich geht (dieselbe Behauptung wie eine Aussage noch ohne
+  Antwort, etwa eine vorab angelegte), kann das Set erst mit dem Startbestand enthalten;
+  bis dahin ist „0 unter den Suchen ohne Treffer“ kein Befund.
 - Fälle, deren erwartete Aussage im gemessenen Bestand fehlt, zählen nicht mit; die
   Ausgabe nennt sie. Heute stammen alle erwarteten Aussagen aus dem Seed (Testbestand).
 - Keine Personendaten, keine Eingaben aus Produktion: Suchanfragen sind selbst
@@ -77,7 +85,7 @@ geschrieben, um gefunden zu werden. Nach dem Startbestand (#288) kommen Fälle z
 Aussagen dazu, dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu
 bewertet.
 
-| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@k | direkt: passend / angezeigt |
+| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|
 | 0.76 | 31/33 | 2 | 0 | 0/9 / 9 | 0.16 | 1.00 | 13 / 368 |
 | 0.78 | 30/33 | 2 | 1 | 0/9 / 9 | 0.21 | 0.97 | 13 / 251 |
@@ -107,5 +115,7 @@ bewertet.
 - **Zerfaserung:** 14 der 15 Suchanfragen, die dieselbe Behauptung wie eine vorhandene
   Aussage sind, landen nicht auf ihr, sondern ergäben eine neue Aussage; nur der
   wörtliche Fall landet. Unter den 4 Suchen ohne Treffer ist keine dieselbe Behauptung
-  wie eine vorhandene Aussage: Am Testbestand landen Umformulierungen also als neue
-  Aussagen, haben aber Treffer und erscheinen deshalb nicht in „Hier fehlt eine Antwort“.
+  wie eine vorhandene Aussage. Das folgt aus dem Seed (siehe Grenze oben): Umformulierungen
+  landen als neue Aussagen, haben aber Treffer und erscheinen deshalb nicht in „Hier
+  fehlt eine Antwort“. Wie oft Suchen ohne Treffer eine Aussage ohne Antwort zerfasern,
+  misst erst der Startbestand.

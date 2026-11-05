@@ -124,6 +124,25 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
     return statement_index_results, polarity_metadata
 
 
+async def treffer_sammeln(
+    orchestrator: SearchOrchestrator,
+    query_text: str,
+    limit: int,
+    statement_index_results: List[StatementSearchResult],
+    polarity_metadata: dict,
+) -> None:
+    """
+    Phase 1 (Antworten ueber die Aussagen), Phase 2 (direkte Treffer), Phase 3
+    (sortieren und kuerzen). Danach haelt der Orchestrator, was die Suche zeigt; die
+    Anreicherung folgt im Endpunkt. Auch vom Suchtestset genutzt.
+    """
+    await orchestrator.collect_statement_based(
+        statement_index_results, limit, polarity_metadata
+    )
+    await orchestrator.collect_direct(query_text, limit)
+    orchestrator.sort_and_truncate(limit)
+
+
 def suchspezifikationen(
     commentary_service, generictext_service, post_service, image_service
 ) -> List[ContentTypeSearchSpec]:
@@ -252,14 +271,15 @@ async def search_by_text(
             voting_service=voting_service,
         )
 
-        # Phase 1: statement-based reply retrieval. Phase 2: direct-search fallback.
-        await orchestrator.collect_statement_based(
-            statement_index_results, request.limit, polarity_metadata
+        await treffer_sammeln(
+            orchestrator,
+            request.query_text,
+            request.limit,
+            statement_index_results,
+            polarity_metadata,
         )
-        await orchestrator.collect_direct(request.query_text, request.limit)
 
-        # Phase 3: sort/truncate, then enrich with usage counts and (if any) user votes.
-        orchestrator.sort_and_truncate(request.limit)
+        # Then enrich with usage counts and (if any) user votes.
         orchestrator.enrich_with_usage()
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)

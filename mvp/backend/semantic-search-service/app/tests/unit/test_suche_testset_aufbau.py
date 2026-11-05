@@ -165,7 +165,7 @@ class TestAuswertung:
         # Angezeigt: X01 zwei, X02 zwei, X04 einer; passend zwei davon.
         assert a.praezision == pytest.approx(2 / 5)
         # X01 und X02 haben einen passenden Beitrag, X03 nicht.
-        assert a.recall_at_k == pytest.approx(2 / 3)
+        assert a.recall == pytest.approx(2 / 3)
         assert (a.direkt_passend, a.direkt_angezeigt) == (1, 2)
 
     def test_andere_schwelle_andere_anzeige(self):
@@ -173,7 +173,7 @@ class TestAuswertung:
 
         assert (a.treffer, a.fehltreffer, a.keine) == (1, 1, 1)
         assert (a.ohne_richtig_keine, a.ohne_fehltreffer) == (1, 0)
-        assert a.recall_at_k == pytest.approx(1 / 3)
+        assert a.recall == pytest.approx(1 / 3)
 
     def test_nicht_gemessene_schwelle_ist_ein_fehler(self):
         with pytest.raises(KeyError):

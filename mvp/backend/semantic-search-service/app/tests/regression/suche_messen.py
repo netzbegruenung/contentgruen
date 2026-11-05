@@ -1,6 +1,6 @@
 """
 Misst das Suchtestset (suche_testset.py) gegen den Bestand eines Stacks: je Schwelle
-Treffer, Fehltreffer und keine Treffer, dazu Praezision, Recall@k und die Zerfaserung.
+Treffer, Fehltreffer und keine Treffer, dazu Praezision, Recall und die Zerfaserung.
 Regeln und Ergebnis in SUCHTESTSET.md.
 
     cd mvp/backend/semantic-search-service/app
@@ -86,7 +86,9 @@ class Auswertung(NamedTuple):
     ohne_richtig_keine: int
     ohne_fehltreffer: int
     praezision: Optional[float]  # passende / alle angezeigten Beitraege
-    recall_at_k: Optional[float]  # Faelle mit Erwartung und passendem Beitrag
+    # Faelle mit Erwartung und einem passenden Beitrag irgendwo auf der Ergebnisseite
+    # (je Beitragstyp hoechstens k), nicht nur unter den ersten k insgesamt.
+    recall: Optional[float]
     direkt_angezeigt: int  # angezeigte Beitraege ohne Aussage (direkter Weg)
     direkt_passend: int
 
@@ -158,7 +160,7 @@ def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
         ohne_richtig_keine=ohne["keine"],
         ohne_fehltreffer=ohne["fehltreffer"],
         praezision=passend / gezeigt_gesamt if gezeigt_gesamt else None,
-        recall_at_k=gefunden / mit_erwartung if mit_erwartung else None,
+        recall=gefunden / mit_erwartung if mit_erwartung else None,
         direkt_angezeigt=direkt,
         direkt_passend=direkt_passend,
     )
@@ -222,7 +224,7 @@ def tabellen(
         f"{k} Beiträge, Schwelle der Suche heute {aktuell}.",
         "",
         "| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer "
-        "| Präzision | Recall@k | direkt: passend / angezeigt |",
+        "| Präzision | Recall | direkt: passend / angezeigt |",
         "|---|---|---|---|---|---|---|---|",
     ]
     for schwelle in schwellen:
@@ -232,7 +234,7 @@ def tabellen(
             f"| {schwelle:.2f}{markierung} | {a.treffer}/{a.mit_erwartung} "
             f"| {a.fehltreffer} | {a.keine} "
             f"| {a.ohne_richtig_keine}/{a.ohne_erwartung} / {a.ohne_fehltreffer} "
-            f"| {_anteil(a.praezision)} | {_anteil(a.recall_at_k)} "
+            f"| {_anteil(a.praezision)} | {_anteil(a.recall)} "
             f"| {a.direkt_passend} / {a.direkt_angezeigt} |"
         )
     zeilen += [
@@ -337,6 +339,7 @@ async def dienste_starten() -> Dienste:
     from dependencies import (
         get_commentary_service,
         get_generic_text_service,
+        get_image_service,
         get_post_service,
         get_reference_service,
         get_statement_service,
@@ -350,12 +353,11 @@ async def dienste_starten() -> Dienste:
     initialize_services()
     return Dienste(
         statement_service=get_statement_service(),
-        # Ohne Bilder: Die Ergebnisseite zeigt sie nicht.
         specs=suchspezifikationen(
             get_commentary_service(),
             get_generic_text_service(),
             get_post_service(),
-            None,
+            get_image_service(),
         ),
         reference_service=get_reference_service(),
     )
@@ -412,7 +414,7 @@ async def fall_messen(
     k: int = K,
     cache: Optional[dict] = None,
 ) -> FallMessung:
-    from api.v1.search import aussagetreffer_finden
+    from api.v1.search import aussagetreffer_finden, treffer_sammeln
     from services.search.search_orchestrator import SearchOrchestrator
 
     erwartung = await _erwartung(dienste, fall, {} if cache is None else cache)
@@ -422,7 +424,7 @@ async def fall_messen(
 
     angezeigt = {}
     for schwelle in schwellen:
-        # Wie search_by_text: Phase 1 und 2 mit dem Limit der Anfrage, dann kuerzen.
+        # Wie search_by_text, mit dem Limit der Anfrage je Beitragstyp.
         orchestrator = SearchOrchestrator(
             dienste.specs,
             reference_service=dienste.reference_service,
@@ -430,13 +432,16 @@ async def fall_messen(
             voting_service=None,
             schwelle=schwelle,
         )
-        await orchestrator.collect_statement_based(aussagetreffer, k, polaritaet)
-        await orchestrator.collect_direct(fall.anfrage, k)
-        orchestrator.sort_and_truncate(k)
+        await treffer_sammeln(orchestrator, fall.anfrage, k, aussagetreffer, polaritaet)
 
         gezeigt = []
+        # Bilder laufen mit (sie zaehlen im Dienst beim Limit mit), angezeigt werden
+        # sie auf der Ergebnisseite nicht.
+        angezeigte = [
+            s for s in dienste.specs if s.content_type.value in ANGEZEIGTE_TYPEN
+        ]
         for spec in sorted(
-            dienste.specs, key=lambda s: ANGEZEIGTE_TYPEN.index(s.content_type.value)
+            angezeigte, key=lambda s: ANGEZEIGTE_TYPEN.index(s.content_type.value)
         ):
             for treffer in orchestrator.results_for(spec.content_type):
                 beitrag_id = str(getattr(treffer, spec.result_field).id)
@@ -468,6 +473,9 @@ async def fall_messen(
 async def messen(
     schwellen: Sequence[float], faelle: Sequence[Fall] = FAELLE, k: int = K
 ) -> List[FallMessung]:
+    # Die Schwelle von heute immer mit: Phaenomene, Zerfaserung und die Faelle in
+    # tabellen(), faelle_text() und als_json() beziehen sich auf sie.
+    schwellen = tuple(sorted(set(schwellen) | {schwelle_heute()}))
     dienste = await dienste_starten()
     try:
         cache: dict = {}
@@ -498,8 +506,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # Nur Warnungen, damit die Tabellen lesbar bleiben.
     initialize_logging(LoggingConfig(level="WARNING", enable_console_utf8=False))
     heute = schwelle_heute()
-    # Die Schwelle von heute wird immer gemessen: Phaenomene, Zerfaserung und die
-    # Faelle beziehen sich auf sie.
     schwellen = tuple(sorted(set(args.schwellen) | {heute}))
 
     messungen = asyncio.run(messen(schwellen, k=args.k))
