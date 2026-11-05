@@ -15,7 +15,11 @@ from fastapi.testclient import TestClient
 
 from api.v1.art9_einwilligung import router as art9_router
 from dependencies import ART9_EINWILLIGUNG_FEHLT, require_art9_einwilligung
-from domain.art9_einwilligung import AKTUELLER_WORTLAUT, WORTLAUTE
+from domain.art9_einwilligung import (
+    AKTUELLER_WORTLAUT,
+    WORTLAUTE,
+    WORTLAUT_KENNUNG_MAX,
+)
 from repositories.art9_einwilligung_repository import Art9Einwilligung
 
 pytestmark = [pytest.mark.unit, pytest.mark.api]
@@ -82,6 +86,28 @@ class TestStand:
         assert stand["eingewilligt"] is False
         assert stand["wortlaut"] == "2026-11-05"
         assert stand["widerrufen_am"].startswith("2026-11-06T09:30")
+
+
+class TestWortlaute:
+    def test_aktueller_wortlaut_nennt_punkte_und_muster_hinweise(self):
+        """Wortlaut vom 05.11.2026, Variante B (#559): die Zwecke aus DSFA Abschnitt 4."""
+        text = WORTLAUTE[AKTUELLER_WORTLAUT]
+
+        assert AKTUELLER_WORTLAUT == "2026-11-05-b"
+        assert (
+            "ein Punktestand, ein Level, Quests und Meilenstein-Abzeichen, die nur ich "
+            "sehe, solange ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen"
+        ) in text
+        assert "neue Aktionen, die ein höheres Level freischaltet" in text
+        assert "wenn zwei Konten sich auffällig oft gegenseitig nutzen" in text
+
+    def test_frueherer_wortlaut_bleibt_bekannt(self):
+        """Eine gespeicherte Kennung behaelt ihren Text (docs/ART9_EINWILLIGUNG.md)."""
+        assert "2026-11-05" in WORTLAUTE
+        assert "Punktestand" not in WORTLAUTE["2026-11-05"]
+
+    def test_kennungen_passen_in_die_spalte(self):
+        assert all(len(kennung) <= WORTLAUT_KENNUNG_MAX for kennung in WORTLAUTE)
 
 
 class TestEinwilligen:

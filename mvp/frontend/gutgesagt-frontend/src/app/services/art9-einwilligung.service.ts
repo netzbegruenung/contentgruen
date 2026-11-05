@@ -7,7 +7,10 @@ import { catchError, distinctUntilChanged, filter, map, switchMap, take } from '
 import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 
-/** Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum. */
+/**
+ * Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum, ein zweiter
+ * Wortlaut vom selben Tag mit Suffix (z. B. 2026-11-05-b).
+ */
 export interface Art9Wortlaut {
   kennung: string;
   text: string;
@@ -27,6 +30,15 @@ export interface Art9EinwilligungStand {
 export const ART9_EINWILLIGUNG_FEHLT = 'art9_einwilligung_fehlt';
 
 export const EINWILLIGUNG_PFAD = '/einwilligung';
+
+/**
+ * Das Stand-Datum (JJJJ-MM-TT) aus der Kennung eines Wortlauts, ohne Suffix; null, wenn
+ * sie nicht mit einem Datum beginnt. Die DatePipe wirft bei einer Kennung mit Suffix.
+ */
+export function wortlautDatum(kennung: string | null | undefined): string | null {
+  const datum = kennung?.match(/^\d{4}-\d{2}-\d{2}/);
+  return datum ? datum[0] : null;
+}
 
 /** Ob ein HTTP-Fehler die fehlende Art.-9-Einwilligung meldet (403 mit Kennzeichen). */
 export function einwilligungFehlt(fehler: { status?: number; error?: any } | null | undefined): boolean {

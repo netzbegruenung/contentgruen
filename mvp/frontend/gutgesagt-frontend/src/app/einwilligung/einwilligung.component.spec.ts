@@ -132,6 +132,22 @@ describe('EinwilligungComponent', () => {
       expect(el().querySelector('mat-checkbox')).toBeNull();
     });
 
+    it('zeigt das Datum eines Wortlauts mit Suffix in der Kennung (2026-11-05-b)', () => {
+      starten(null);
+      const zweiter = { kennung: '2026-11-05-b', text: 'Dazu gehören ein Punktestand, ein Level, Quests und Meilenstein-Abzeichen …' };
+      standLiefern(
+        stand({
+          eingewilligt: true,
+          wortlaut: '2026-11-05-b',
+          eingewilligt_am: '2026-11-06T09:30:00Z',
+          aktueller_wortlaut: zweiter,
+        }),
+      );
+
+      expect(el().textContent).toContain('Wortlaut vom 05.11.2026');
+      expect(el().querySelector('.wortlaut')?.textContent).toContain(zweiter.text);
+    });
+
     it('widerrufen fragt danach erneut, ohne Haekchen', () => {
       starten(null);
       standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));

@@ -8,7 +8,7 @@ ein Post im Index lag, warf Pydantic beim Setzen einen ValueError und
 
 import uuid
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -72,6 +72,59 @@ def test_enrich_with_usage_bild_und_post_ohne_fehler():
 
     assert bild.usage_count == 3
     assert post.usage_count == 3
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "schwelle, erwartet",
+    [(None, ["ueber"]), (0.7, ["ueber", "darunter"])],
+    ids=["schwelle-der-suche", "schwelle-des-suchtestsets"],
+)
+async def test_schwelle_entscheidet_ueber_die_aufnahme(schwelle, erwartet):
+    """
+    Ohne Angabe gilt MINIMUM_SCORE_THRESHOLD wie in der Suche; das Suchtestset
+    misst auch andere Schwellen (#346). Beide Wege, ueber die Aussage
+    (kombinierter Score) und direkt (Rohscore), pruefen dieselbe Schwelle.
+    """
+    post = _post()
+    service = MagicMock()
+    service.get = AsyncMock(return_value=post)
+    aussage = SimpleNamespace(
+        id=uuid.uuid4(),
+        text="Solarparks verschandeln die Landschaft",
+        score=0.75,
+        replysuggestions=[
+            SimpleNamespace(id=post.id, content_type=ContentType.POST, relevance=0.75)
+        ],
+    )
+    kwargs = {} if schwelle is None else {"schwelle": schwelle}
+    orchestrator = SearchOrchestrator(
+        specs=[
+            ContentTypeSearchSpec(
+                ContentType.POST, service, PostSearchResultDto, "post_result"
+            )
+        ],
+        reference_service=None,
+        usage_service=None,
+        voting_service=None,
+        **kwargs,
+    )
+    direkt_ueber, direkt_darunter = _post(), _post()
+    direkt_ueber.title, direkt_darunter.title = "ueber", "darunter"
+    direkt_ueber.score, direkt_darunter.score = 0.85, 0.75
+
+    await orchestrator.collect_statement_based([aussage], 10, {})
+    with patch(
+        "services.search.search_orchestrator.BaseContentService.search_batch",
+        AsyncMock(return_value=[[direkt_ueber, direkt_darunter]]),
+    ):
+        await orchestrator.collect_direct("Solarpark", 10)
+
+    treffer = orchestrator.results_for(ContentType.POST)
+    ueber_aussage = [t for t in treffer if t.statement_id is not None]
+    assert len(ueber_aussage) == (0 if schwelle is None else 1)
+    assert [t.post_result.title for t in treffer if t.statement_id is None] == erwartet
 
 
 @pytest.mark.unit
