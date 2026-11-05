@@ -58,7 +58,7 @@ export class LoginSelectorComponent implements OnInit {
           this.authModes = modes;
           this.isLoading = false;
 
-          // Always show both options - no auto-redirect
+          // No auto-redirect; the Beta-Zugang card only shows while the Direktanmeldung is on
           // This ensures users always see the registration information
         },
         error: (err) => {

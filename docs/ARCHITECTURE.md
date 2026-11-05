@@ -23,7 +23,8 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 - **Access**: https://gutgesagt-test.netzbegruenung.de
 - **Infrastructure**: Docker containers on verdigado's internal infrastructure
 - **Authentication**: Whatever the BFF configuration enables (`GET /api/auth/modes`): Keycloak and/or
-  Direktanmeldung; the accounts are not part of this repository
+  Direktanmeldung; the accounts are not part of this repository. The login selection shows the
+  Beta-Zugang card only while the Direktanmeldung is enabled
 - **Management**: Rolled out manually on verdigado's internal infrastructure; details are documented internally
 
 ### 4. Production Environment

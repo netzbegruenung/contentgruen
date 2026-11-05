@@ -106,8 +106,31 @@ describe('LoginSelectorComponent', () => {
     });
 
     it('beschriftet die Direktanmeldung als Beta-Zugang', () => {
+      component.authModes = { keycloakEnabled: false, managedAuthEnabled: true };
+      fixture.detectChanges();
+
       expect(text('.gutgesagt-button .button-title')).toBe('Beta-Zugang');
       expect(text('.gutgesagt-button ~ .login-description')).toContain('Beta-Zugang');
+    });
+
+    it('blendet die Karte Beta-Zugang aus, wenn die Direktanmeldung aus ist (#488)', () => {
+      component.authModes = { keycloakEnabled: true, managedAuthEnabled: false };
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.gutgesagt-button')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.divider-container')).toBeNull();
+      expect(fixture.nativeElement.querySelectorAll('.login-option-card').length).toBe(1);
+      expect(fixture.nativeElement.querySelector('.keycloak-button')).not.toBeNull();
+    });
+
+    it('zeigt die Karte Beta-Zugang, solange die Direktanmeldung an ist (Dev-Stack)', () => {
+      component.authModes = { keycloakEnabled: false, managedAuthEnabled: true };
+      fixture.detectChanges();
+
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.gutgesagt-button');
+      expect(knopf).not.toBeNull();
+      expect(knopf.disabled).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.divider-container')).not.toBeNull();
     });
 
     it('verwendet keine Begriffe, die das Glossar für die Anmeldung meidet, auch nicht in Attributen', () => {

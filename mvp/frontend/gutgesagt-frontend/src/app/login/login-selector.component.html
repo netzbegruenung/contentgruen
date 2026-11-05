@@ -39,7 +39,8 @@
 
 
     <div class="login-selector-container" *ngIf="!isLoading">
-        <!-- Always show both login options -->
+        <!-- The realm card is always shown; the Beta-Zugang card only while the Direktanmeldung is on
+             (dev stack). In test and production the Beta-Zugaenge have moved into the realm (#488). -->
         <div class="login-options">
 
             <!-- Login over the own Keycloak realm: Netzbegrünung as identity provider, or an account with mail and password (Einladung, moved Beta-Zugang) -->
@@ -66,15 +67,15 @@
                 </p>
             </div>
 
+            <ng-container *ngIf="authModes.managedAuthEnabled">
             <div class="divider-container">
                 <span class="divider-text">oder</span>
             </div>
 
-            <!-- Gut gesagt Login Option -->
-            <div class="login-option-card mat-elevation-z2" [class.disabled-option]="!authModes.managedAuthEnabled">
+            <!-- Beta-Zugang (Direktanmeldung) -->
+            <div class="login-option-card mat-elevation-z2">
                 <button mat-raised-button
                         class="login-option-button gutgesagt-button"
-                        [disabled]="!authModes.managedAuthEnabled"
                         (click)="loginWithGutGesagt()">
                     <mat-icon class="login-icon">account_circle</mat-icon>
                     <div class="button-content">
@@ -86,11 +87,8 @@
                     Für einen Beta-Zugang: Melde dich direkt bei Gut gesagt
                     mit deiner Mail-Adresse und deinem Passwort an.
                 </p>
-                <p class="disabled-notice" *ngIf="!authModes.managedAuthEnabled">
-                    <mat-icon class="notice-icon">info_outline</mat-icon>
-                    Diese Anmeldeoption ist in dieser Umgebung nicht verfügbar.
-                </p>
             </div>
+            </ng-container>
 
         </div>
     </div>
