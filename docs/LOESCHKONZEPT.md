@@ -17,8 +17,9 @@
 Alles hängt am Wert des Headers `X-User`. Das BFF setzt ihn ausschließlich aus dem
 Claim `sub`, ersatzweise `NameIdentifier` (`BFF/Program.cs:659`, `ClaimUtilities.GetUserId`,
 aufgerufen in `BFF/Proxy/IdentityHeaderTransform.cs:79`).
-Mit Keycloak ist das die Keycloak-UUID, mit `USE_KEYCLOAK=false` (dev/tst) die
-`userId` aus `managed-users.json` (`user-001`). **Vorher prüfen, welche Form die
+Mit Keycloak ist das die Keycloak-UUID, bei einem Beta-Zugang aus `managed-users.json`
+(Direktanmeldung; nach dem Umzug in den Realm, #488, nur noch in der Entwicklung) dessen
+`userId` (`user-001`). **Vorher prüfen, welche Form die
 Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert nicht.
 
 ## Zwei Wege, einen Beitrag zu löschen
@@ -51,8 +52,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 nichts Neues anlegt. Das BFF prüft bei jeder Anfrage mit Anmelde-Cookie, ob das Konto noch
 besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und löscht es:
 
-- **Beta-Zugang:** Die `userId` notieren (Schritt 1 bis 3 brauchen sie als Kennung), dann
-  den Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter Schritt 4).
+- **Beta-Zugang, solange er in `managed-users.json` steht:** Die `userId` notieren (Schritt
+  1 bis 3 brauchen sie als Kennung), dann den Eintrag aus `mvp/config/managed-users.json`
+  entfernen (Details unter Schritt 4). Nach dem Umzug in den Realm (#488) ist er ein Konto
+  im Realm wie eines aus einer Einladung.
 - **Netzbegrünung-Login und Konto aus einer Einladung:** Die Kennung als eigene Zeile in
   `geloeschte-konten.txt` im Konfigurationsverzeichnis des BFF eintragen
   (`GELOESCHTE_KONTEN_PATH`, Standard `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit

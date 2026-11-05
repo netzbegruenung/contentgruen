@@ -8,7 +8,6 @@
 3. Frontend: `cd mvp/frontend/gutgesagt-frontend && npm ci && npx ng serve`
    Fehlt `src/environments/environment.ts`, vorher `environment.local.ts` dorthin kopieren.
 4. http://localhost:4200 → Anmelden → Direktanmeldung: `test.user@example.com` / `Liebe>Hass!`.
-   `testuser` gilt nur für den alten Dummy-Endpunkt `POST /login`; ein Formular dafür hat die App nicht mehr.
 
 Die App ruft das BFF relativ auf (`baseUrl: ''`). `ng serve` leitet `/api`, `/content`, `/recent`, `/getMetrics`,
 `/report` und `/reports` per `proxy.conf.json` an http://localhost:5054 weiter – kein CORS, Cookies same-origin.

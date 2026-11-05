@@ -36,7 +36,7 @@ echo Semantic Search API: http://localhost:8000/docs
 echo PostgreSQL (Semantic): localhost:5432
 echo PostgreSQL (App): localhost:5433
 echo.
-echo Default login: testuser / Liebe^>Hass!
+echo Default login (Anmelden -^> Direktanmeldung): test.user@example.com / Liebe^>Hass!
 echo.
 echo Press Ctrl+C to stop all services
 pause

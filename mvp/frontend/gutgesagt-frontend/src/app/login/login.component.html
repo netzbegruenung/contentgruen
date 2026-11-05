@@ -1,16 +1,7 @@
 <div class="component-box">
     <div class="login-box">
         <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="login-form">
-            <mat-form-field class="full-width" appearance="outline" *ngIf="!isManagedLogin">
-                <mat-label>Benutzername</mat-label>
-                <input matInput type="text" formControlName="username"
-                       autocomplete="username" aria-label="Benutzername" />
-                <mat-error *ngIf="loginForm.get('username')?.invalid">
-                    {{ getErrorMessage('username') }}
-                </mat-error>
-            </mat-form-field>
-
-            <mat-form-field class="full-width" appearance="outline" *ngIf="isManagedLogin">
+            <mat-form-field class="full-width" appearance="outline">
                 <mat-label>E-Mail-Adresse</mat-label>
                 <input matInput type="email" formControlName="email"
                        autocomplete="email" aria-label="E-Mail-Adresse" />

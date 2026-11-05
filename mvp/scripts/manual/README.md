@@ -146,11 +146,14 @@ dort steht auch der Aufruf. Getestet in `tests/integration/test_loeschkommando.p
 
 ## Kennungen auf den Realm umstellen (im semantic-search-Container)
 
-`kennungen_umstellen.py [--ausfuehren] [--konten-anlegen DATEI] [--liste NAME=K1,K2] [--loeschliste K1,K2]` –
+`kennungen_umstellen.py [--ausfuehren] [--konten-anlegen DATEI] [--beta-zugaenge DATEI] [--liste NAME=K1,K2] [--loeschliste K1,K2]` –
 **schreibend mit `--ausfuehren`.** Einmalig vor dem Umstellen der BFF auf den Realm
 „gutgesagt“ (#487): schreibt die Kennungen von Mitgliedern der Netzbegruenung in
 PostgreSQL und Qdrant auf die ihres Kontos im Realm um, gibt die neuen Werte der
-Admin-Listen aus und ergaenzt die Loeschliste; ohne `--ausfuehren` zaehlt es nur. Ablauf und
+Admin-Listen aus und ergaenzt die Loeschliste; ohne `--ausfuehren` zaehlt es nur. Mit
+`--beta-zugaenge managed-users.json` ziehen auch die Beta-Zugaenge in das Konto mit ihrer
+Mail-Adresse um, fehlende legt der Lauf mit Mail „Passwort festlegen“ an (#488; „Beta-Zugänge
+umziehen“). Ablauf und
 Aufruf in `docs/KEYCLOAK_REALM.md`, „Kennungen umstellen“; getestet in
 `tests/unit/services/test_kennungen_umstellen.py` (Qdrant),
 `tests/unit/infrastructure/test_keycloak_kennungen.py` (Realm),

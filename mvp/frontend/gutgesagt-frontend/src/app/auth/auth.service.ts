@@ -12,13 +12,6 @@ export interface UserInfo {
   claims: { [key: string]: string } | null;
 }
 
-export interface LoginResponse {
-  userId: string;
-  userName: string;
-  success: boolean;
-  message?: string;
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -35,31 +28,6 @@ export class AuthService {
     // Always navigate to the login selector page
     // The selector will determine which auth methods are available
     this.router.navigate(['/login']);
-  }
-
-  // Dummy login with username and password (backward compatibility)
-  loginWithCredentials(username: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${environment.baseUrl}/login`, { Username: username, Password: password }, {
-      withCredentials: true // Ensure cookies are sent/received
-    }).pipe(
-      tap((response) => {
-        // Use the response data if available, then fetch full user info
-        if (response?.userId) {
-          // Set temporary user info from login response
-          const tempUserInfo: UserInfo = {
-            isAuthenticated: true,
-            userId: response.userId,
-            userName: response.userName,
-            claims: null
-          };
-          this.setUserInfo(tempUserInfo);
-        }
-        // Fetch complete user info after a short delay to ensure cookie is set
-        setTimeout(() => {
-          this.fetchUserInfo().subscribe();
-        }, 100);
-      })
-    );
   }
 
   // Gut gesagt managed login with email and password

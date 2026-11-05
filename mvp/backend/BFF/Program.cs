@@ -33,8 +33,8 @@ using var loggerFactory = LoggerFactory.Create(loggingBuilder => loggingBuilder.
 var startupLogger = loggerFactory.CreateLogger("Startup");
 startupLogger.LogInformation("USE_KEYCLOAK is set to: {UseKeycloak}", useKeycloak);
 
-// FRONTEND_URL is the origin the browser loads the SPA from. It drives the OIDC redirect,
-// the dummy-auth CORS header, and the CORS allowlist below. Required outside Development so a
+// FRONTEND_URL is the origin the browser loads the SPA from. It drives the OIDC redirect
+// and the CORS allowlist below. Required outside Development so a
 // missing value fails at startup instead of silently redirecting users to localhost.
 var frontendUrl = builder.Configuration.GetValue<string>("FRONTEND_URL");
 if (string.IsNullOrWhiteSpace(frontendUrl))
@@ -157,7 +157,8 @@ if (useKeycloak)
 }
 else
 {
-    // Gut gesagt Managed Authentication (replaces Dummy-Authentication)
+    // Nur die Direktanmeldung (Beta-Zugang, AuthController). Die fruehere Dummy-Anmeldung
+    // (POST /login, ein fester Nutzer mit Passwort im Repo) gibt es seit #488 nicht mehr.
     builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                    .AddCookie(options =>
                    {
@@ -170,9 +171,6 @@ else
                        options.SlidingExpiration = true;
                        options.Events.OnValidatePrincipal = KontoPruefung.ValidatePrincipalAsync;
                    });
-
-    // Keep the dummy auth for backward compatibility if managed users are not configured
-    builder.Services.AddSingleton<IStartupFilter>(new DummyAuthStartupFilter(frontendUrl));
 }
 
 // Authorization -- in beiden Betriebsarten, weil der Auth-Gate in der Proxy-Pipeline
@@ -493,8 +491,8 @@ app.MapGet("/api/check-session", (HttpContext context, ILogger<Program> logger) 
 // Der Auth-Gate stand bisher in einem if (useKeycloak); der else-Zweig mappte den Proxy
 // ohne jede Pruefung. Damit haing die Frage, ob ueberhaupt etwas Anmeldung verlangt, an
 // einer Betriebsart-Variablen statt an der Endpunkt-Definition. Er gilt jetzt in beiden
-// Modi -- die Anmeldung selbst kommt entweder von Keycloak oder von Managed Auth bzw.
-// der Dummy-Auth, aber ob sie noetig ist, entscheidet allein EndpointPolicy.
+// Modi -- die Anmeldung selbst kommt entweder von Keycloak oder von der
+// Direktanmeldung, aber ob sie noetig ist, entscheidet allein EndpointPolicy.
 app.MapReverseProxy(proxyPipeline =>
 {
     proxyPipeline.UseAuthorization();
@@ -517,150 +515,6 @@ app.MapReverseProxy(proxyPipeline =>
 
 
 app.Run();
-
-
-public class DummyAuthStartupFilter : IStartupFilter
-{
-    private readonly string _frontendUrl;
-    private readonly string _dummyUsername;
-    private readonly string _dummyPassword;
-
-
-    public DummyAuthStartupFilter(string frontendUrl)
-    {
-        _frontendUrl = frontendUrl;
-        // Get dummy credentials from environment variables for security
-        _dummyUsername = Environment.GetEnvironmentVariable("DUMMY_AUTH_USERNAME") ?? "testuser";
-        _dummyPassword = Environment.GetEnvironmentVariable("DUMMY_AUTH_PASSWORD") ?? "Liebe>Hass!";
-    }
-
-    public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
-    {
-        return builder =>
-        {
-            builder.Use(async (context, next) =>
-            {
-                var logger = context.RequestServices.GetRequiredService<ILogger<DummyAuthStartupFilter>>();
-
-                if (context.Request.Path.StartsWithSegments("/login") && context.Request.Method == "POST")
-                {
-                    logger.LogDebug("DummyAuthStartupFilter: Login endpoint called");
-
-                    context.Response.Headers.Append("Access-Control-Allow-Origin", _frontendUrl);
-                    context.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
-
-                    // Ensure the Content-Type is application/json
-                    if (!context.Request.ContentType?.Contains("application/json") ?? true)
-                    {
-                        context.Response.StatusCode = 400; // Bad Request
-                        await context.Response.WriteAsync("Invalid Content-Type. Expected application/json.");
-                        return;
-                    }
-
-                    try
-                    {
-                        // Deserialize the JSON body to extract username and password from the request body
-                        using var reader = new StreamReader(context.Request.Body);
-                        var body = await reader.ReadToEndAsync();
-                        var loginRequest = System.Text.Json.JsonSerializer.Deserialize<LoginRequest>(body);
-
-
-                        logger.LogDebug("DummyAuthStartupFilter: Received login request");
-
-                        if (loginRequest?.Username == _dummyUsername && loginRequest?.Password == _dummyPassword)
-                        {
-                            // Generate an identity with claims replicating Keycloak behavior
-                            var identity = new ClaimsIdentity(new[]
-                            {
-                                new Claim("name", _dummyUsername),
-                                new Claim(ClaimTypes.GivenName, "Test"),
-                                new Claim(ClaimTypes.Surname, "User"),
-                                new Claim(ClaimTypes.NameIdentifier, "test-user-id-1")
-                            }, CookieAuthenticationDefaults.AuthenticationScheme);
-
-
-                            var principal = new ClaimsPrincipal(identity);
-
-                            // Configure cookie options for proper cross-domain functionality
-                            var authProperties = new AuthenticationProperties
-                            {
-                                IsPersistent = true,
-                                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1)
-                            };
-
-                            await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
-
-                            logger.LogDebug("Signed in with the principal, cookie should be set");
-
-                            // Ensure the cookie is properly set before responding
-                            context.Response.StatusCode = 200; // OK
-                            await context.Response.WriteAsJsonAsync(new {
-                                message = "Login successful",
-                                userId = "test-user-id-1",
-                                userName = _dummyUsername
-                            });
-                            return;
-                        }
-
-                        // Invalid credentials
-                        logger.LogWarning("Invalid credentials provided.");
-                        context.Response.StatusCode = 401; // Unauthorized
-                        await context.Response.WriteAsync("Invalid username or password");
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Error processing login");
-                        context.Response.StatusCode = 500; // Internal Server Error
-                        await context.Response.WriteAsync("An error occurred while processing the login.");
-                    }
-
-                    return;
-                }
-
-                if (context.Request.Path.StartsWithSegments("/logout"))
-                {
-                    logger.LogDebug("DummyAuthStartupFilter: Logout endpoint called");
-
-                    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-                    logger.LogDebug("Signed out of context, redirecting to: {FrontendUrl}", _frontendUrl);
-
-                    // Ensure proper redirect without double-encoding
-                    context.Response.Headers["Location"] = _frontendUrl;
-                    context.Response.StatusCode = 302; // Found (redirect)
-                    return;
-                }
-
-                // Maintain dummy user session if signed in
-                if (context.User.Identity?.IsAuthenticated == true)
-                {
-                    logger.LogDebug("DummyAuthStartupFilter: User is authenticated");
-
-                    // Generate an identity with claims replicating Keycloak behavior
-                    var identity = new ClaimsIdentity(new[]
-                    {
-                        new Claim("name", _dummyUsername),
-                        new Claim(ClaimTypes.GivenName, "Test"),
-                        new Claim(ClaimTypes.Surname, "User"),
-                        new Claim(ClaimTypes.NameIdentifier, "test-user-id-1")
-                    }, CookieAuthenticationDefaults.AuthenticationScheme);
-
-                    context.User = new ClaimsPrincipal(identity);
-                }
-
-                await next();
-            });
-
-            next(builder);
-        };
-    }
-
-    private class LoginRequest
-    {
-        public string? Username { get; set; }
-        public string? Password { get; set; }
-    }
-}
 
 
 public class ClaimUtilities
