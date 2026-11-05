@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import ValidationError
 
 from dependencies import (
+    require_art9_einwilligung,
     get_aufrufer,
     get_commentary_service,
     get_generic_text_service,
@@ -159,7 +160,12 @@ async def _seite(
     )
 
 
-@router.post("/addRawInput", response_model=EinwerfenResponse, status_code=201)
+@router.post(
+    "/addRawInput",
+    response_model=EinwerfenResponse,
+    status_code=201,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def einwerfen(
     request: EinwerfenRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
@@ -310,7 +316,11 @@ async def einwurf_laden(
     return (await _einwuerfe_fuer_aufrufer([row], aufrufer, suchindex))[0]
 
 
-@router.put("/{einwurf_id}/draft", response_model=SatzResponse)
+@router.put(
+    "/{einwurf_id}/draft",
+    response_model=SatzResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def satz_speichern(
     einwurf_id: uuid.UUID,
     request: SatzSpeichernRequest,
@@ -374,7 +384,11 @@ async def _beitrag_pruefen(
     raise HTTPException(status_code=422, detail=BEITRAG_FEHLT)
 
 
-@router.patch("/{einwurf_id}/status", response_model=EinwurfResponse)
+@router.patch(
+    "/{einwurf_id}/status",
+    response_model=EinwurfResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def update_status(
     einwurf_id: uuid.UUID,
     request: EinwurfStatusRequest,

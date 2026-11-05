@@ -4,7 +4,11 @@ from uuid import UUID
 from datetime import datetime
 import logging
 
-from dependencies import get_aufrufer, get_reference_service
+from dependencies import (
+    get_aufrufer,
+    get_reference_service,
+    require_art9_einwilligung,
+)
 from dtos.reference import (
     AddReferenceRequest,
     AddReferenceResponse,
@@ -115,7 +119,10 @@ async def search_references(
 @router.post(
     "/add",
     response_model=AddReferenceResponse,
-    dependencies=[Depends(check_reference_creation_rate_limit)],
+    dependencies=[
+        Depends(check_reference_creation_rate_limit),
+        Depends(require_art9_einwilligung),
+    ],
 )
 async def add_reference(
     request: AddReferenceRequest,

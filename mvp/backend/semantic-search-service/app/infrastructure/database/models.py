@@ -621,6 +621,30 @@ class GeseheneNutzung(Base):
     nutzung = Column(Integer, nullable=False)
 
 
+class Art9EinwilligungZeile(Base):
+    """
+    Die Art.-9-Einwilligung einer Person (#489): wann sie eingewilligt hat und
+    welchem Wortlaut (Kennung aus domain/art9_einwilligung.py). Ohne Zeile, oder
+    mit ``widerrufen_am``, hat sie nicht eingewilligt.
+
+    Nach einem Widerruf bleibt die Zeile mit dem Zeitpunkt des Widerrufs: Sie
+    belegt, dass die Verarbeitung bis dahin auf der Einwilligung beruhte
+    (Art. 7 Abs. 1 DSGVO). Willigt die Person erneut ein, gilt die neue
+    Einwilligung, die alte steht nicht mehr da.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-05-art9-einwilligung.sql dokumentiert das Schema.
+    Loeschen: docs/LOESCHKONZEPT.md, Schritt 2.
+    """
+
+    __tablename__ = "art9_einwilligungen"
+
+    user_id = Column(String(255), primary_key=True)
+    wortlaut = Column(String(64), nullable=False)
+    eingewilligt_am = Column(DateTime(timezone=True), nullable=False)
+    widerrufen_am = Column(DateTime(timezone=True), nullable=True)
+
+
 class MigrationsprotokollZeile(Base):
     """
     Welche Migration aus postgres-app/migrations eingespielt ist, eine Zeile je Datei.

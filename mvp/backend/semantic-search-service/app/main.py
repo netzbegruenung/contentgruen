@@ -47,6 +47,7 @@ from api.v1.gegenlesen import router as gegenlesen_router
 from api.v1.spracherkennung import router as spracherkennung_router
 from api.v1.varianten import router as varianten_router
 from api.v1.kuerzungsvorschlag import router as kuerzungsvorschlag_router
+from api.v1.art9_einwilligung import router as art9_einwilligung_router
 from services.cleanup.bereinigungsjob import bereinigungsjob_starten
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
@@ -300,6 +301,11 @@ app.include_router(
     kuerzungsvorschlag_router,
     prefix="/api/v1/kuerzungsvorschlag",
     tags=["kuerzungsvorschlag"],
+)
+app.include_router(
+    art9_einwilligung_router,
+    prefix="/api/v1/art9-einwilligung",
+    tags=["art9-einwilligung"],
 )
 
 # Betriebskennzahlen unter /metrics (#420). Zuletzt hinzugefuegt, also aussen: Die

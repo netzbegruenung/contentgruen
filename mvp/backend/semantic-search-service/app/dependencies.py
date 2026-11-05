@@ -13,7 +13,8 @@ from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
-from services.anzeigename_service import get_anzeigename_service
+from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services import art9_einwilligung_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_aendern_service import BeitragAendernService
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
@@ -55,6 +56,7 @@ from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
 from repositories.einwurf_repository import get_einwurf_repository
 from repositories.sperre_repository import get_sperre_repository
+from core.fehler import INTERNER_FEHLER
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -451,6 +453,39 @@ def require_user(
     if not x_user_id or x_user_id == "anonymous":
         raise HTTPException(status_code=401, detail="Authentication required")
     return x_user_id
+
+
+# Antworttext, an dem das Frontend erkennt, dass die Art.-9-Einwilligung fehlt
+# (auth.interceptor.ts), und dann auf /einwilligung fuehrt.
+ART9_EINWILLIGUNG_FEHLT = "art9_einwilligung_fehlt"
+
+
+def require_art9_einwilligung(
+    x_user: Optional[str] = Header(None, alias="X-User"),
+) -> None:
+    """
+    Sperrt einen Endpunkt fuer angemeldete Personen ohne geltende
+    Art.-9-Einwilligung (#489) mit 403. Ob jemand angemeldet sein muss,
+    entscheidet der Endpunkt selbst; ohne Anmeldung laesst diese Pruefung durch.
+
+    Synchron, damit FastAPI sie im Threadpool ausfuehrt: Beim ersten Zugriff je
+    Person und Prozess fragt sie die Datenbank.
+    """
+    if not angemeldet(x_user):
+        return
+    try:
+        eingewilligt = (
+            art9_einwilligung_service.get_art9_einwilligung_service().eingewilligt(
+                x_user
+            )
+        )
+    except Exception as e:
+        logger.error(
+            f"Art.-9-Einwilligung nicht lesbar: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    if not eingewilligt:
+        raise HTTPException(status_code=403, detail=ART9_EINWILLIGUNG_FEHLT)
 
 
 def require_admin(

@@ -1,0 +1,55 @@
+<mat-card class="einwilligung">
+  <mat-card-header>
+    <mat-card-title>Einwilligung</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <p *ngIf="zustand === 'laedt'" role="status">Einen Moment …</p>
+
+    <ng-container *ngIf="zustand === 'fehler'">
+      <p class="warnung" role="alert">Das hat nicht geklappt. Bitte versuch es gleich noch einmal.</p>
+      <button mat-stroked-button type="button" (click)="nochmal()">Noch einmal</button>
+    </ng-container>
+
+    <form *ngIf="stand && (zustand === 'frage' || zustand === 'sendet')" (ngSubmit)="einwilligen()">
+      <p *ngIf="widerrufen" class="hinweis" role="status">
+        Du hast deine Einwilligung widerrufen. Du kannst weiter suchen und lesen.
+      </p>
+      <p>
+        Was du bei Gut gesagt beiträgst und bewertest, kann zeigen, wie du politisch denkst. Solche Daten darf
+        Gut gesagt nur mit deiner ausdrücklichen Einwilligung verarbeiten. Ohne sie kannst du suchen und lesen, aber nichts
+        beitragen und nichts bewerten.
+      </p>
+      <mat-checkbox name="angehakt" [(ngModel)]="angehakt" class="haekchen">
+        {{ stand.aktueller_wortlaut.text }}
+      </mat-checkbox>
+      <p class="fussnote">
+        Mehr dazu in der <a routerLink="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
+      </p>
+      <div class="knoepfe">
+        <button mat-raised-button color="primary" type="submit" [disabled]="!angehakt || zustand === 'sendet'">
+          Einwilligen und weiter
+        </button>
+        <button mat-stroked-button type="button" (click)="ohneEinwilligung()" [disabled]="zustand === 'sendet'">
+          Ohne Einwilligung weiter
+        </button>
+      </div>
+    </form>
+
+    <ng-container *ngIf="stand && zustand === 'eingewilligt'">
+      <p>
+        Du hast am {{ stand.eingewilligt_am | date: 'dd.MM.yyyy, HH:mm' }} Uhr eingewilligt
+        (Wortlaut vom {{ stand.wortlaut | date: 'dd.MM.yyyy' }}).
+      </p>
+      <blockquote *ngIf="stand.wortlaut === stand.aktueller_wortlaut.kennung" class="wortlaut">
+        {{ stand.aktueller_wortlaut.text }}
+      </blockquote>
+      <p>
+        Widerrufst du, kannst du nichts mehr beitragen und nichts bewerten. Was du schon gespeichert hast,
+        bleibt, bis du es löschst oder dein Konto löschen lässt.
+      </p>
+      <button mat-stroked-button color="warn" type="button" (click)="widerrufenKlick()">
+        Einwilligung widerrufen
+      </button>
+    </ng-container>
+  </mat-card-content>
+</mat-card>

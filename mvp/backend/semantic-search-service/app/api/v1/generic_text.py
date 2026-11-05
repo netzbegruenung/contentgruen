@@ -5,6 +5,7 @@ import logging
 from uuid import UUID
 
 from dependencies import (
+    require_art9_einwilligung,
     get_aussage_themen_service,
     get_aufrufer,
     get_generic_text_service,
@@ -127,7 +128,11 @@ async def get_by_id(
 
 
 # Adds a new generic text to the generic_text_index
-@router.post("/addGenericText", response_model=AddGenericTextResponse)
+@router.post(
+    "/addGenericText",
+    response_model=AddGenericTextResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def add_generic_text(
     request: AddGenericTextRequest,
     generic_text_service: GenericTextService = Depends(get_generic_text_service),

@@ -50,4 +50,5 @@ DELETE FROM users AS u WHERE u.user_id LIKE 'ehemalige-person-%'
 AND NOT EXISTS (SELECT 1 FROM raw_input_drafts AS d WHERE d.user_id = u.user_id);
 DELETE FROM users           WHERE user_id             = :'uid';
 DELETE FROM gesehene_nutzung WHERE user_id            = :'uid';
+DELETE FROM art9_einwilligungen WHERE user_id         = :'uid';
 COMMIT;

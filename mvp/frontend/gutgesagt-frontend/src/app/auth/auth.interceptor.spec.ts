@@ -112,6 +112,41 @@ describe('AuthInterceptor', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  it('fuehrt bei fehlender Art.-9-Einwilligung auf /einwilligung und zurueck (#489)', () => {
+    (router as any).url = '/einwerfen?von=fangkorb';
+    httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
+
+    httpMock
+      .expectOne('/api/v1/rawinput/addRawInput')
+      .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+    expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], {
+      queryParams: { returnUrl: '/einwerfen?von=fangkorb' },
+    });
+  });
+
+  it('leitet bei anderem 403 nicht um', () => {
+    (router as any).url = '/einwerfen';
+    httpClient.post('/api/v1/moderation/x', {}).subscribe({ error: () => {} });
+
+    httpMock
+      .expectOne('/api/v1/moderation/x')
+      .flush({ detail: 'Admin privileges required' }, { status: 403, statusText: 'Forbidden' });
+
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('leitet auf der Seite der Einwilligung selbst nicht noch einmal um', () => {
+    (router as any).url = '/einwilligung?returnUrl=%2Feinwerfen';
+    httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
+
+    httpMock
+      .expectOne('/api/v1/rawinput/addRawInput')
+      .flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
   it('should handle successful requests without intervention', () => {
     const testData = { message: 'success' };
 

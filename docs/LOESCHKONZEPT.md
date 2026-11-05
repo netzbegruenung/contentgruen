@@ -98,8 +98,9 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    `raw_inputs` der Person löschen (CASCADE räumt deren Links und die Sätze daran mit
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
-   `users` (Anzeigename) und die in `gesehene_nutzung` (Stand der Rückmeldung beim
-   Anmelden, nur eine Zahl) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
+   `users` (Anzeigename), die in `gesehene_nutzung` (Stand der Rückmeldung beim
+   Anmelden, nur eine Zahl) und die in `art9_einwilligungen` (Art.-9-Einwilligung mit
+   Zeitpunkt und Wortlaut, auch nach einem Widerruf; #489) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
    zeigen nach Schritt 3 „ehemalige Person“.
 
@@ -519,7 +520,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, art9_einwilligungen;"
 ```
 
 ```bash
