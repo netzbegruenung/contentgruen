@@ -445,8 +445,12 @@ Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und be
 _Avoid_: User, Mitglieder
 
 **Beta-Zugang**:
-Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll.
+Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll. Bis zum Umstellen auf den eigenen Realm steht es mit eigener Kennung und Passwort in einer Datei der BFF (Anmeldung über „Direktanmeldung“). Beim Umstellen zieht es in das Konto im Realm mit derselben Mail-Adresse um, samt Beiträgen; danach ist es ein Konto mit Mail und Passwort wie eines aus einer Einladung, und die Datei entfällt (#488). In der Entwicklung bleibt die Datei mit Beispielkonten.
 _Avoid_: Beta-Account, manueller User, Managed User
+
+**Direktanmeldung**:
+Die Anmeldung eines Beta-Zugangs mit Mail-Adresse und Passwort direkt an der BFF, ohne Keycloak. Nach dem Umzug der Beta-Zugänge in den Realm (#488) gibt es sie nur noch in der Entwicklung. Nicht zu verwechseln mit der Anmeldung mit Mail und Passwort im Realm, die über Keycloak läuft.
+_Avoid_: Managed Login, Managed Auth, Dummy-Login
 
 **Netzbegrünung-Login**:
 Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Mit dem eigenen Realm von Gut gesagt (#429) läuft sie, sobald die App darauf umgestellt ist, über diesen Realm, in dem die Netzbegrünung Identity Provider ist; die Kennung ist dann die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).

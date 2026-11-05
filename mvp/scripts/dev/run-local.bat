@@ -76,7 +76,7 @@ echo Semantic Search API: http://localhost:8000/docs
 echo Qdrant Dashboard: http://localhost:6333/dashboard
 echo PostgreSQL (App): localhost:5433
 echo.
-echo Default login: testuser / Liebe^>Hass!
+echo Default login (Anmelden -^> Direktanmeldung): test.user@example.com / Liebe^>Hass!
 echo.
 echo To stop services:
 echo 1. Close all the service windows

@@ -179,6 +179,9 @@ Legt Einwürfe aus einer CSV- oder Markdown-Liste in den Fangkorb, je Zeile eine
 über dieselbe API wie das Einwurf-Formular. Das Skript meldet sich am BFF unter dem
 angegebenen Konto an (E-Mail und Passwort wie im Login-Formular, also nur mit einem
 Beta-Zugang, nicht mit dem Netzbegrünung-Login); dieses Konto ist dann der Einwerfer.
+Nach dem Umzug der Beta-Zugänge in den Realm (#488) gibt es die Direktanmeldung nur noch in
+der Entwicklung; einen Import in Test oder Produktion also vorher laufen lassen
+(`docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“).
 Für den Startbestand ist das ein Startkonto (`docs/VISION.md`). Als Weg trägt jeder
 Einwurf „Import“ (`import`), nicht „Formular“.
 

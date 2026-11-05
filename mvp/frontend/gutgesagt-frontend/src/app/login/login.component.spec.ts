@@ -43,6 +43,13 @@ describe('LoginComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('fragt immer nach E-Mail-Adresse und Passwort, nie nach einem Benutzernamen (#488)', () => {
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('input[formControlName="email"]')).not.toBeNull();
+    expect(el.querySelector('input[formControlName="username"]')).toBeNull();
+  });
+
   describe('Rueckkehrziel (Befund 10 aus dem Review zu PR 458)', () => {
     function mitParametern(queryParams: Record<string, string>): LoginComponent {
       TestBed.inject(ActivatedRoute).snapshot.queryParams = queryParams;

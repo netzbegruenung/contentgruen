@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stellt die Kennungen auf den Realm von Gut gesagt um (#487), einmalig vor dem Umstellen der BFF.
+Stellt die Kennungen auf den Realm von Gut gesagt um (#487, #488), einmalig vor dem Umstellen der BFF.
 
 Ablauf und Reihenfolge: docs/KEYCLOAK_REALM.md, "Kennungen umstellen". Die Zuordnung
 alt -> neu kommt aus dem Realm: Ein Konto dort, das mit dem Identity Provider
@@ -36,12 +36,16 @@ Optionen:
                              fuer jede, die noch kein Konto hat, eins im Realm an,
                              mit dem Identity Provider verknuepft, ohne Mail.
                              Der Trockenlauf zaehlt ihre Zeilen noch nicht mit.
+    --beta-zugaenge DATEI    managed-users.json: jeder Beta-Zugang zieht in das
+                             Konto mit seiner Mail-Adresse um; fehlt es, legt der
+                             Lauf eins an, und Keycloak schickt "Passwort festlegen"
     --ohne-konto-zeigen      die Kennungen ohne Konto im Realm einzeln ausgeben
 
 Idempotent: Ein zweiter Lauf zaehlt null (bis auf stehen gebliebene Saetze).
 """
 
 import argparse
+import json
 import os
 import sys
 
@@ -58,6 +62,7 @@ from core.logging import LoggingConfig, initialize_logging  # noqa: E402
 # Logging sonst nicht eingerichtet.
 initialize_logging(LoggingConfig(level="WARNING"))
 
+from domain.interfaces.konten_im_realm import BetaZugang  # noqa: E402
 from infrastructure.keycloak_konten import KeycloakKonten  # noqa: E402
 from services.wartung.kennungen_umstellen import umstellen  # noqa: E402
 
@@ -95,6 +100,50 @@ def _konten_lesen(pfad: str):
     return konten
 
 
+def _beta_zugaenge_lesen(pfad: str):
+    """userId -> BetaZugang; bricht vor jedem Schreiben ab, wenn ein Feld fehlt."""
+    with open(pfad, encoding="utf-8") as datei:
+        eintraege = json.load(datei).get("users", [])
+    zugaenge = {}
+    for eintrag in eintraege:
+        kennung = str(eintrag.get("userId") or "").strip()
+        email = str(eintrag.get("email") or "").strip()
+        if not kennung or "@" not in email:
+            raise SystemExit("--beta-zugaenge: Eintrag ohne userId oder email")
+        if kennung in zugaenge:
+            raise SystemExit("--beta-zugaenge: userId doppelt")
+        admin = eintrag.get("isAdmin", False)
+        if not isinstance(admin, bool):
+            raise SystemExit("--beta-zugaenge: isAdmin ist nicht true oder false")
+        zugaenge[kennung] = BetaZugang(
+            email=email,
+            name=str(eintrag.get("displayName") or ""),
+            admin=admin,
+        )
+    return zugaenge
+
+
+def _beta_zahlen_ausgeben(ergebnis, beta) -> None:
+    mit_konto = sum(1 for k in beta if k in ergebnis.zuordnung)
+    print(f"Beta-Zugaenge: {len(beta)}, mit Konto im Realm: {mit_konto}")
+    print(
+        f"Beta-Zugaenge anzulegen beim Lauf: {len(ergebnis.beta_anzulegen)}"
+        " (ihre Zeilen und Beitraege zaehlt erst der Lauf)"
+    )
+    print(
+        "Beta-Zugaenge nicht umgezogen, Adresse gehoert im Realm schon zu einer"
+        f" anderen Kennung: {len(ergebnis.beta_vergeben)}"
+    )
+    print(
+        "Beta-Zugaenge ohne Mail \"Passwort festlegen\":"
+        f" {len(ergebnis.beta_ohne_mail)}"
+    )
+    print(
+        "Beta-Zugaenge, deren Konto Keycloak abwies:"
+        f" {len(ergebnis.beta_abgewiesen)}"
+    )
+
+
 def _zahlen_ausgeben(ergebnis, mit_anzulegenden: bool) -> None:
     print(
         "Trockenlauf: nichts geaendert"
@@ -127,6 +176,30 @@ def _kennungen_ausgeben(ergebnis, args) -> None:
         abschnitte.append(("Ohne Konto im Realm:", ergebnis.ohne_konto))
     if ergebnis.vergeben:
         abschnitte.append(("Adresse im Realm schon vergeben:", ergebnis.vergeben))
+    if ergebnis.beta_vergeben:
+        abschnitte.append(
+            (
+                "Beta-Zugaenge nicht umgezogen (Admin entscheidet, wessen Konto"
+                " bleibt):",
+                ergebnis.beta_vergeben,
+            )
+        )
+    if ergebnis.beta_abgewiesen:
+        abschnitte.append(
+            (
+                "Beta-Zugaenge ohne Konto, von Keycloak abgewiesen (Adresse in der"
+                " Datei pruefen, dann erneut laufen lassen):",
+                ergebnis.beta_abgewiesen,
+            )
+        )
+    if ergebnis.beta_ohne_mail:
+        abschnitte.append(
+            (
+                "Beta-Zugaenge ohne Mail (\"Passwort vergessen\" oder Passwort"
+                " in der Admin-Konsole setzen):",
+                ergebnis.beta_ohne_mail,
+            )
+        )
     # Im Trockenlauf fehlen die erst anzulegenden Konten noch: nur eine Vorschau.
     setzen = (
         "(von Hand setzen)"
@@ -138,6 +211,14 @@ def _kennungen_ausgeben(ergebnis, args) -> None:
             (
                 f"Listen, neue Werte {setzen}:",
                 [f"{n}={','.join(w)}" for n, w in ergebnis.listen.items()],
+            )
+        )
+    if ergebnis.beta_admins:
+        abschnitte.append(
+            (
+                f"Admins unter den Beta-Zugaengen, neue Kennungen {setzen}: in"
+                " ADMIN_USER_IDS und SEMANTIC_SEARCH_ADMIN_USERS ergaenzen",
+                ergebnis.beta_admins,
             )
         )
     if args.loeschliste:
@@ -167,6 +248,7 @@ def main() -> int:
     parser.add_argument("--liste", type=_liste, action="append", default=[])
     parser.add_argument("--konten-anlegen", metavar="DATEI")
     parser.add_argument("--loeschliste", type=_kennungen, default=[])
+    parser.add_argument("--beta-zugaenge", metavar="DATEI")
     parser.add_argument("--ohne-konto-zeigen", action="store_true")
     args = parser.parse_args()
 
@@ -183,6 +265,7 @@ def main() -> int:
         listen["SEMANTIC_SEARCH_ADMIN_USERS"] = _kennungen(konfiguration.admin_users)
     listen.update(args.liste)
     anzulegen = _konten_lesen(args.konten_anlegen) if args.konten_anlegen else None
+    beta = _beta_zugaenge_lesen(args.beta_zugaenge) if args.beta_zugaenge else None
 
     realm = KeycloakKonten(
         basis_url=konfiguration.keycloak_url,
@@ -205,12 +288,15 @@ def main() -> int:
                 listen=listen,
                 loeschliste=args.loeschliste,
                 anzulegen=anzulegen,
+                beta_zugaenge=beta,
                 ausfuehren=args.ausfuehren,
             )
     finally:
         engine.dispose()
 
     _zahlen_ausgeben(ergebnis, anzulegen is not None)
+    if beta is not None:
+        _beta_zahlen_ausgeben(ergebnis, beta)
     _kennungen_ausgeben(ergebnis, args)
     return 0
 

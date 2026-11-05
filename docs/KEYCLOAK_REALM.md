@@ -115,10 +115,10 @@ verknüpft das Skript nichts und nennt die Kennung. Ob diese Person ihr Konto au
 Einladung behält oder das verknüpfte bekommt, entscheidet ein Admin; ein zweiter Lauf
 stellt sie dann um. Für Kennungen aus der Löschliste legt das Skript nie ein Konto an.
 
-Was ohne Konto bleibt, behält seine Kennung: Beta-Zugänge (#488), Konten aus Einladungen
-(die haben schon die Kennung im Realm), Autor-Werte, die keine Person bezeichnen
-(`system:suchanfrage`, „Gut gesagt Team“), und Mitglieder, für die keine Adresse
-angegeben ist.
+Beta-Zugänge ziehen im selben Lauf um (`--beta-zugaenge`, unten „Beta-Zugänge umziehen“).
+Was ohne Konto bleibt, behält seine Kennung: Konten aus Einladungen (die haben schon die
+Kennung im Realm), Autor-Werte, die keine Person bezeichnen (`system:suchanfrage`, „Gut
+gesagt Team“), und Mitglieder, für die keine Adresse angegeben ist.
 
 Die Ausgabe nennt zuerst nur Zahlen; nur die gehören in einen PR oder ein Issue. Nach der
 Zeile „Ab hier Kennungen“ folgen Kennungen (Personendaten, bleiben auf dem Host) und die
@@ -137,9 +137,11 @@ export SEMANTIC_SEARCH_KEYCLOAK_URL=<keycloak> SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CL
 read -rs SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET; export SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET
 KC=(-e SEMANTIC_SEARCH_KEYCLOAK_URL -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID
     -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET)
-# ADMIN_USER_IDS der BFF und die Löschliste
+# ADMIN_USER_IDS der BFF, die Löschliste und die Beta-Zugänge der BFF (managed-users.json)
+docker cp <pfad>/managed-users.json gutgesagt-semantic-search:/tmp/managed-users.json
 LISTEN=(--liste "ADMIN_USER_IDS=<Wert aus der BFF>"
-        --loeschliste "$(grep -v '^#' <pfad>/geloeschte-konten.txt | paste -sd, -)")
+        --loeschliste "$(grep -v '^#' <pfad>/geloeschte-konten.txt | paste -sd, -)"
+        --beta-zugaenge /tmp/managed-users.json)
 
 # 1. Trockenlauf: welche Kennungen haben kein Konto?
 docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
@@ -164,10 +166,72 @@ docker exec gutgesagt-semantic-search rm /tmp/konten.csv; rm konten.csv
 ```
 
 5. Die neuen Werte aus dem Lauf (Schritt 4, nicht aus einem Trockenlauf) setzen:
-   `SEMANTIC_SEARCH_ADMIN_USERS`, `ADMIN_USER_IDS` und `geloeschte-konten.txt`.
-6. Gleich danach Schritt 3 der Reihenfolge oben (BFF auf den Realm). Bis dahin melden sich
-   Mitglieder noch mit der alten Kennung an, und was sie dann anlegen, trägt sie; ein
-   Lauf nach dem Umstellen holt das nach, die Zuordnung bleibt im Realm.
+   `SEMANTIC_SEARCH_ADMIN_USERS`, `ADMIN_USER_IDS` und `geloeschte-konten.txt`, dazu die
+   neuen Kennungen der Admins unter den Beta-Zugängen in beiden Admin-Listen.
+6. Gleich danach, am selben Tag: Schritt 3 der Reihenfolge oben (BFF auf den Realm) und die
+   Datei der Beta-Zugänge aus der BFF entfernen (unten). Bis dahin melden sich Mitglieder
+   und Beta-Zugänge noch mit der alten Kennung an, und was sie dann anlegen, trägt sie.
+   Die Mails „Passwort festlegen“ aus Schritt 4 führen zwar schon in den Realm, anmelden
+   kann man sich damit in der App aber erst nach diesem Schritt.
+7. Nachholen, was zwischen 4 und 6 entstand: derselbe Aufruf wie in Schritt 4, ohne
+   `--konten-anlegen` (die Zuordnung steht jetzt im Realm). Erst danach die Kopie der
+   Beta-Zugänge löschen, sie enthält Personendaten:
+
+```bash
+docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
+  --ausfuehren < kennungen_umstellen.py
+docker exec gutgesagt-semantic-search rm /tmp/managed-users.json
+```
+
+## Beta-Zugänge umziehen
+
+Bis zum Umstellen stehen Beta-Zugänge (auch die Startkonten) in `managed-users.json` der
+BFF, mit eigener Kennung (`userId`) und Passwort. Mit `--beta-zugaenge` (#488) zieht jeder
+in das Konto im Realm mit seiner Mail-Adresse um:
+
+- Gibt es zur Adresse schon ein Konto, etwa aus einer Einladung oder über die
+  Netzbegrünung, gehen die Beiträge des Beta-Zugangs dorthin. Die Adresse ist im Realm
+  der Benutzername; wer sie hat, ist dieselbe Person.
+- Sonst legt der Lauf ein Konto an: Vor- und Nachname aus `displayName` (der Anzeigename
+  bleibt derselbe, „Anna B.“; aus einem einzelnen Wort wie bisher keiner), Pflichtaktion Nutzungsbedingungen, Adresse als bestätigt, und Keycloak
+  schickt die Mail „Passwort festlegen“ (drei Tage gültig, danach „Passwort vergessen“). Das
+  alte Passwort lässt sich nicht mitnehmen, Keycloak kennt bcrypt nicht. Bestätigt, weil die
+  Adresse schon die Anmeldung des Beta-Zugangs war, und damit die Löschfrist für nie
+  benutzte Konten aus Einladungen (#538) das Konto nicht entfernt, wenn die Mail ungeöffnet
+  bleibt; die Beiträge liegen dann schon dort.
+- Konten bekommt jeder Beta-Zugang, auch ohne Beiträge; der Trockenlauf zählt, wie viele
+  der Lauf anlegt. Für Kennungen auf der Löschliste legt er keins an.
+- Scheitert die Mail, bleibt das Konto (die Beiträge ziehen gleich dorthin um); der Lauf
+  nennt die Kennung unter „Ab hier Kennungen“. Dann „Passwort vergessen“, oder ein Admin
+  setzt in der Admin-Konsole das Passwort (*Users → Credentials*). Das gilt auch für ein
+  Startkonto, dessen Adresse kein echtes Postfach ist.
+- Gehört die Adresse im Realm schon zu einer anderen alten Kennung (ein Mitglied, ein
+  zweiter Beta-Zugang mit derselben Adresse), zieht der Beta-Zugang nicht um; der Lauf
+  nennt ihn. Ob die beiden zusammengehören, entscheidet ein Admin.
+- Der Lauf prüft die Zuordnung, bevor er ein Konto anlegt; ist sie nicht eindeutig, bricht
+  er ab, ohne dass ein Konto entsteht oder eine Mail hinausgeht. Bricht er später ab (etwa
+  beim Schreiben in PostgreSQL), denselben Aufruf wiederholen: Er findet die schon
+  angelegten Konten über die Adresse und schickt keine zweite Mail. Welche Mails beim
+  abgebrochenen Lauf scheiterten, nennt er dann nicht mehr; in der Admin-Konsole haben diese
+  Konten dann noch kein Passwort (*Users → Credentials* leer), für sie „Passwort vergessen“.
+- Zurück auf die Datei: Bis Schritt 6 meldet sich jeder Beta-Zugang weiter mit der Datei an.
+  Vor dem Lauf (Schritt 4) ändert nichts die Daten, angelegte Konten kann ein Admin löschen.
+  Nach dem Lauf tragen die Beiträge die neuen Kennungen; zurück geht es dann nur mit dem
+  Backup aus Schritt 4 (`mvp/scripts/backup/restore.sh`), und was seitdem entstand, geht
+  verloren.
+- `isAdmin` aus der Datei gibt es im Realm nicht: Der Lauf nennt die neuen Kennungen dieser
+  Admins, sie gehören in `ADMIN_USER_IDS` und `SEMANTIC_SEARCH_ADMIN_USERS`.
+
+Danach, zusammen mit dem Umstellen der BFF, die Datei entfernen: `managed-users.json` und
+ihren Mount aus Test und Produktion löschen und `ENABLE_MANAGED_AUTH=false` setzen. Eine
+Direktanmeldung mit der Datei liefe sonst weiter unter der alten Kennung, deren Beiträge
+schon umgezogen sind. Die Direktanmeldung bleibt im Code für die Entwicklung: Der Dev-Stack
+und die E2E-Tests haben kein Keycloak und melden sich mit
+`mvp/config/managed-users.example.json` an.
+
+Was ohne Direktanmeldung nicht mehr geht: `mvp/scripts/manual/einwuerfe_importieren.py`
+meldet sich mit Mail und Passwort an der BFF an, also nur über die Direktanmeldung. Einen
+Import unter einem Startkonto deshalb vor dem Umzug laufen lassen.
 
 ## Konfiguration der App
 

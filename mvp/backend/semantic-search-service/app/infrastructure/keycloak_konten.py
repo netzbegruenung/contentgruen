@@ -19,6 +19,8 @@ import httpx
 from core.logging import get_logger
 from domain.interfaces.konten_im_realm import (
     MAIL_GUELTIG_SEKUNDEN,
+    BetaZugang,
+    KontenMitPasswort,
     KontoErgebnis,
     VerknuepfteKonten,
 )
@@ -84,28 +86,18 @@ class KeycloakKonten:
             antwort = http.post(
                 admin,
                 headers=kopf,
-                json={
-                    "username": email,
-                    "email": email,
-                    "enabled": True,
-                    "emailVerified": False,
-                    "requiredActions": PFLICHTAKTIONEN,
-                },
+                json=_konto(email, email_bestaetigt=False),
             )
             if antwort.status_code == 409:
                 return KontoErgebnis.VORHANDEN
             antwort.raise_for_status()
             konto_id = self._konto_id(antwort)
 
-            parameter = {"lifespan": str(MAIL_GUELTIG_SEKUNDEN)}
-            if self._app_client_id and self._app_url:
-                parameter["client_id"] = self._app_client_id
-                parameter["redirect_uri"] = self._app_url
             try:
                 http.put(
                     f"{admin}/{konto_id}/execute-actions-email",
                     headers=kopf,
-                    params=parameter,
+                    params=self._mail_parameter(),
                     json=MAIL_AKTIONEN,
                 ).raise_for_status()
             except httpx.HTTPError:
@@ -163,12 +155,8 @@ class KeycloakKonten:
                     "POST",
                     self._admin,
                     json={
-                        "username": email,
-                        "email": email,
-                        "enabled": True,
                         # Der Identity Provider hat sie bestaetigt (Trust Email).
-                        "emailVerified": True,
-                        "requiredActions": PFLICHTAKTIONEN,
+                        **_konto(email, email_bestaetigt=True),
                         "federatedIdentities": [
                             {
                                 "identityProvider": identity_provider,
@@ -184,6 +172,96 @@ class KeycloakKonten:
                 antwort.raise_for_status()
                 ergebnis.angelegt[kennung] = self._konto_id(antwort)
         return ergebnis
+
+    # --- Beta-Zugaenge umziehen (#488) -------------------------------------
+
+    def konten_nach_adresse(self, adressen: Iterable[str]) -> Dict[str, str]:
+        """Mail-Adresse (klein geschrieben) -> Konto im Realm, nur wo es eins gibt."""
+        konten: Dict[str, str] = {}
+        with self._client() as http:
+            sitzung = _Sitzung(self, http)
+            for adresse in adressen:
+                konto = self._konto_zur_adresse(sitzung, adresse)
+                if konto:
+                    konten[adresse.lower()] = konto
+        return konten
+
+    def konten_mit_passwort_anlegen(
+        self, zugaenge: Mapping[str, BetaZugang]
+    ) -> KontenMitPasswort:
+        """
+        Je Beta-Zugang (alte Kennung -> Eintrag) ein Konto mit Mail und Passwort, wie
+        aus einer Einladung, dazu Vor- und Nachname fuer den Anzeigenamen und mit
+        bestaetigter Adresse (_konto_mit_namen). Keycloak
+        schickt "Passwort festlegen"; das Passwort aus managed-users.json laesst sich
+        nicht mitnehmen (bcrypt kennt Keycloak nicht).
+
+        Anders als bei der Einladung bleibt das Konto, wenn die Mail scheitert: Die
+        Beitraege ziehen gleich danach dorthin um. Die Person kommt dann ueber
+        "Passwort vergessen" hinein. Gibt es zur Adresse inzwischen ein Konto, gilt
+        dieses.
+        """
+        ergebnis = KontenMitPasswort()
+        with self._client() as http:
+            sitzung = _Sitzung(self, http)
+            for kennung, zugang in zugaenge.items():
+                antwort = sitzung.anfrage(
+                    "POST", self._admin, json=_konto_mit_namen(zugang)
+                )
+                if antwort.status_code == 400:
+                    # Keycloak weist den Eintrag ab (etwa eine ungueltige Adresse). Nur
+                    # dieser bleibt ohne Konto; ein Abbruch mitten in der Schleife liesse
+                    # angelegte Konten und verschickte Mails ohne Umstellung zurueck.
+                    ergebnis.abgewiesen.append(kennung)
+                    continue
+                if antwort.status_code == 409:
+                    vorhanden = self._konto_zur_adresse(sitzung, zugang.email)
+                    if vorhanden:
+                        ergebnis.angelegt[kennung] = vorhanden
+                    else:
+                        ergebnis.vergeben.append(kennung)
+                    continue
+                antwort.raise_for_status()
+                konto_id = self._konto_id(antwort)
+                ergebnis.angelegt[kennung] = konto_id
+                try:
+                    sitzung.anfrage(
+                        "PUT",
+                        f"{self._admin}/{konto_id}/execute-actions-email",
+                        params=self._mail_parameter(),
+                        json=MAIL_AKTIONEN,
+                    ).raise_for_status()
+                except httpx.HTTPError:
+                    ergebnis.ohne_mail.append(kennung)
+        return ergebnis
+
+    def _mail_parameter(self) -> Dict[str, str]:
+        parameter = {"lifespan": str(MAIL_GUELTIG_SEKUNDEN)}
+        if self._app_client_id and self._app_url:
+            parameter["client_id"] = self._app_client_id
+            parameter["redirect_uri"] = self._app_url
+        return parameter
+
+    def _konto_zur_adresse(self, sitzung: "_Sitzung", adresse: str) -> Optional[str]:
+        antwort = sitzung.anfrage(
+            "GET",
+            self._admin,
+            params={"email": adresse, "exact": "true", "briefRepresentation": "true"},
+        )
+        if antwort.is_error:
+            # Nicht raise_for_status: Dessen Meldung nennt die URL und damit die Adresse.
+            raise httpx.HTTPStatusError(
+                f"Konto zur Adresse suchen: HTTP {antwort.status_code}",
+                request=antwort.request,
+                response=antwort,
+            )
+        # exact vergleicht ohne Gross und Klein; Keycloak speichert Adressen klein.
+        treffer = [
+            k
+            for k in antwort.json()
+            if (k.get("email") or "").lower() == adresse.lower()
+        ]
+        return treffer[0]["id"] if treffer else None
 
     def _verknuepftes_konto(
         self, sitzung: "_Sitzung", identity_provider: str, kennung: str
@@ -267,6 +345,34 @@ class KeycloakKonten:
             if antwort.json():
                 return True
         return False
+
+
+def _konto(email: str, email_bestaetigt: bool) -> Dict[str, object]:
+    """Ein Konto im Realm: die Adresse als Benutzername, Pflichtaktion Nutzungsbedingungen."""
+    return {
+        "username": email,
+        "email": email,
+        "enabled": True,
+        "emailVerified": email_bestaetigt,
+        "requiredActions": PFLICHTAKTIONEN,
+    }
+
+
+def _konto_mit_namen(zugang: BetaZugang) -> Dict[str, object]:
+    # Die BFF bildet den Anzeigenamen aus Vorname und dem letzten Wort des Nachnamens
+    # (DisplayNamePolicy); "Anna Maria Beispiel" ergibt so wie bisher "Anna B.". Aus
+    # einem einzelnen Wort machte sie keinen Namen; als Vorname allein zeigte sie es,
+    # deshalb dann keiner von beiden.
+    #
+    # Bestaetigt: Die Adresse war schon die Anmeldung des Beta-Zugangs. Unbestaetigt
+    # loeschte nie_benutzte_loeschen (#538) das Konto, sobald die Mail ungeoeffnet
+    # bleibt, obwohl die Beitraege schon dorthin umgezogen sind.
+    vorname, _, nachname = " ".join(zugang.name.split()).partition(" ")
+    konto = _konto(zugang.email, email_bestaetigt=True)
+    if nachname:
+        konto["firstName"] = vorname
+        konto["lastName"] = nachname
+    return konto
 
 
 class _Sitzung:
