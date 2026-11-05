@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
@@ -13,6 +13,8 @@ import { AuthService } from '../../auth/auth.service';
 import { StatementService } from '../../services/statement.service';
 import { LoggingService } from '../../services/logging.service';
 import { StatementSearchResult } from '../../services/dtos/statementDtos';
+import { SprachhinweisComponent } from '../../shared/components/sprachhinweis/sprachhinweis.component';
+import { SprachhinweisService } from '../../shared/components/sprachhinweis/sprachhinweis.service';
 
 describe('AntwortAufComponent', () => {
   let fixture: ComponentFixture<AntwortAufComponent>;
@@ -35,6 +37,7 @@ describe('AntwortAufComponent', () => {
       imports: [AntwortAufComponent, NoopAnimationsModule],
       providers: [
         { provide: StatementService, useValue: statementService },
+        { provide: SprachhinweisService, useValue: { fremdsprache: () => of({ sprache: null }) } },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn', 'error', 'debug']) },
         // Die Kopf-Karte fragt den Dienst nach der eigenen Kennung ("Von: Du").
         { provide: AuthService, useValue: { getUserInfo: () => null, userInfo$: of(null) } },
@@ -157,6 +160,30 @@ describe('AntwortAufComponent', () => {
     expect(hinweis().textContent).toContain('Die Aussage, auf die du reagierst');
     expect(component.feldZustand).toBe('leer');
   });
+
+  it('gibt dem Sprachhinweis nur eine Aussage, die beim Speichern neu entsteht', fakeAsync(() => {
+    const sprachhinweis = () =>
+      fixture.debugElement.query((el) => el.componentInstance instanceof SprachhinweisComponent)!
+        .componentInstance as SprachhinweisComponent;
+    expect(sprachhinweis().gegenstand).toBe('aussage');
+
+    tippen('Windrad');
+    expect(sprachhinweis().text).withContext('zu kurz').toBe('');
+
+    statementService.aussageVorschlaege.and.returnValue(of([]));
+    tippen('Wind turbines kill far too many birds');
+    expect(sprachhinweis().text).toBe('Wind turbines kill far too many birds');
+
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+    (seite().querySelector('.neue-aussage') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(sprachhinweis().text).withContext('als neue gewaehlt').toBe('Wind turbines kill far too many birds');
+
+    adresse({ id: 'a-1', text: VORSCHLAG.text });
+    expect(sprachhinweis().text).withContext('vorhandene Aussage').toBe('');
+    flush();
+  }));
 
   it('bietet einen zu kurzen Text nicht als neue Aussage an', fakeAsync(() => {
     statementService.aussageVorschlaege.and.returnValue(of([]));

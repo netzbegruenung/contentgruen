@@ -6,4 +6,5 @@ for file in /usr/share/nginx/html/*.js; do
   sed -i "s|\${API_BASE_URL}|${API_BASE_URL}|g" $file
   sed -i "s|\${USE_KEYCLOAK}|${USE_KEYCLOAK}|g" $file
   sed -i "s|\${GIT_SHA}|${GIT_SHA:-dev}|g" $file
+  sed -i "s|\${APP_VERSION}|${APP_VERSION}|g" $file
 done

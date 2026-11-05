@@ -59,6 +59,7 @@ export const PAGE_TITLES = {
   DESTILLIEREN: 'Destillieren',
   AUSFORMULIEREN: 'Ausformulieren',
   HIER_FEHLT_EINE_ANTWORT: 'Hier fehlt eine Antwort',
+  VARIANTEN: 'Varianten',
   BEITRAG: 'Beitrag',
   SHARE_TARGET: 'Geteilter Inhalt',
   // Typnamen aus der Registry
@@ -90,6 +91,7 @@ export const ROUTES = {
   RAW_INPUT_LIST: '/fangkorb',
   DESTILLIEREN: '/destillieren',
   HIER_FEHLT_EINE_ANTWORT: '/hier-fehlt-eine-antwort',
+  VARIANTEN: '/varianten',
   BEITRAG: '/beitrag',
   SHARE_TARGET: '/teilen',
   LOGIN: '/login',

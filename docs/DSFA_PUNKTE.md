@@ -5,7 +5,7 @@
 > derselben Runde wie #296; die Fragen an sie stehen in Abschnitt 6. Bis dahin bleiben die Punkte
 > aus (`SEMANTIC_SEARCH_PUNKTE_AKTIV`, Standard aus).
 
-Stand 02.11.2026; Code `main` @ `2c28931a` und PR #476 @ `5b19ef32` (offen). `ss/` =
+Stand 05.11.2026; Code `main` @ `cdb7ec64` und PR #476 (offen, `main` eingemergt). `ss/` =
 `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), **(#476)** =
 Stand auf dem Branch von PR #476. Begriffe wie in [`GLOSSARY.md`](../GLOSSARY.md); Prüfwert,
@@ -17,13 +17,13 @@ Paar-Prüfwert und Muster-Hinweis kommen mit PR #476 dorthin, Ausbaustufe steht 
 - **Gebaut (PR #476, ausgeschaltet):** Entdoppelte Nutzung über einen Prüfwert, der nach seinem
   Tag verworfen wird (`ss/services/entdoppelung.py:1-18` (#476)); ein Punktestand, den nur die
   Person selbst sieht und der nicht gespeichert, sondern bei jedem Abruf berechnet wird
-  (`ss/services/punkte_service.py:1-7` (#476), `ss/api/v1/usage.py:387-412` (#476));
+  (`ss/services/punkte_service.py:1-7` (#476), `ss/api/v1/usage.py:349-375` (#476));
   Muster-Hinweise für Admins, wenn zwei Konten sich innerhalb von 7 Tagen gegenseitig nutzen
   (`ss/services/muster_hinweise_service.py:1-24` (#476)).
 - **Geplant, nicht gebaut:** Ranglisten (die ersten 10 und der eigene Platz, nur für Angemeldete,
   nur mit Zustimmung), Quests, Meilenstein-Abzeichen, Krone, Wochenthema
   (`docs/VISION.md:99-103`).
-- **Fristen** (`docs/LOESCHKONZEPT.md:146-148` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
+- **Fristen** (`docs/LOESCHKONZEPT.md:157-159` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
   Muster-Hinweis 56 Tage und mit dem Konto gelöscht
   (`mvp/scripts/manual/person_loeschen.sql:55` (#476)).
 
@@ -51,7 +51,7 @@ Neu zu prüfen ist sie vor Ausbaustufe 2 (Grünes Netz), weil dann lit. b anders
 | Risiko | Maßnahmen | Rest |
 |---|---|---|
 | **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:423-424`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete. Vorschlag zusätzlich: keine Linkvorschau für Ranglisten und eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | gering |
-| **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Die werden aber mit dem **konfigurierten** Schlüssel gebildet (`ss/services/entdoppelung.py:37-43,65-67` (#476), `ss/services/search_tracking_service.py:34-36` (#476)). Wer Datenbank und Schlüssel hat, kann für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | Die Entdoppelung über Prüfwerte statt Protokoll ist **umgesetzt**. **Neu:** Prüfwerte und Paar-Prüfwerte mit einem Schlüssel bilden, der nur im Speicher liegt, wie der Tagesschlüssel der Besucher (`ss/utils/besucher_pseudonym.py:45-73`). Nach einem Neustart beginnt dann ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | gering (ohne den Speicherschlüssel: mittel) |
+| **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Die werden aber mit dem **konfigurierten** Schlüssel gebildet (`ss/services/entdoppelung.py:37-43,59-65` (#476), `ss/services/search_tracking_service.py:34-36` (#476)). Wer Datenbank und Schlüssel hat, kann für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | Die Entdoppelung über Prüfwerte statt Protokoll ist **umgesetzt**. **Neu:** Prüfwerte und Paar-Prüfwerte mit einem Schlüssel bilden, der nur im Speicher liegt, wie der Tagesschlüssel der Besucher (`ss/utils/besucher_pseudonym.py:45-73`). Nach einem Neustart beginnt dann ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | gering (ohne den Speicherschlüssel: mittel) |
 | **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug, keine Punkte fürs Bewerten (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md:9-19`). | gering bis mittel; in der Acht-Wochen-Bilanz ansehen |
 
 Mit diesen Maßnahmen ist das Restrisiko gering bis mittel. Die Aufsichtsbehörde muss deshalb

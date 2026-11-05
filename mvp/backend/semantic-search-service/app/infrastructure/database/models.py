@@ -358,6 +358,26 @@ class EinladungZeile(Base):
     angelegt_am = Column(Date, nullable=False)
 
 
+class VarianteZeile(Base):
+    """Die Verknuepfung "beruht auf" (Glossar "Variante", #356).
+
+    Eine Zeile je Variante: Jemand hat das Original als Vorlage genommen und einen
+    eigenen Beitrag gespeichert. Variante und Original sind Beitraege desselben Typs
+    im Suchindex; hier stehen nur ihre IDs, keine Kennung und kein Zeitpunkt. Wer die
+    Variante gespeichert hat, steht an ihr selbst (``original_author``).
+
+    Loescht der Autor die Variante, geht die Zeile mit (api/v1/content.py), damit
+    "N Varianten" am Original nur zaehlt, was es noch gibt.
+    """
+
+    __tablename__ = "varianten"
+
+    variante_id = Column(SQLUUID(as_uuid=True), primary_key=True)
+    original_id = Column(SQLUUID(as_uuid=True), nullable=False)
+
+    __table_args__ = (Index("idx_varianten_original_id", "original_id"),)
+
+
 class AussageThemaZeile(Base):
     """Ein Thema an einer Aussage, aus der festen Liste (domain/themen.py).
 

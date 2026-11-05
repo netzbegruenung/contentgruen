@@ -9,13 +9,24 @@ import { environment } from '../../environments/environment';
 /**
  * Die Build-Kennung fuer den Footer, etwa "v1.1.0 · 3523b55".
  *
- * Die Version stammt aus package.json, der Commit aus GIT_SHA: CI reicht ihn als
- * Build-Arg ins Image, replace-env.sh setzt ihn beim Containerstart ein. Fehlt er
- * oder steht noch der Platzhalter da (ng serve, Build ohne Container), heisst er "dev".
+ * Die Version stammt beim Release-Build aus dem Git-Tag (Build-Arg APP_VERSION, #327); Builds
+ * auf main geben APP_VERSION=main mit und zeigen "main · <sha>" (#542). Ohne APP_VERSION
+ * gilt package.json; der Commit aus GIT_SHA. CI reicht beide als Build-Arg ins Image,
+ * replace-env.sh setzt sie beim Containerstart ein. Fehlt der Commit oder steht noch der
+ * Platzhalter da (ng serve, Build ohne Container), heisst er "dev".
  */
-export function buildKennung(paketVersion: string, gitSha: string | undefined): string {
-  const sha = gitSha && !gitSha.startsWith('${') ? gitSha.slice(0, 7) : 'dev';
-  return `v${paketVersion} · ${sha}`;
+export function buildKennung(paketVersion: string, gitSha: string | undefined, appVersion?: string): string {
+  const sha = gesetzt(gitSha) ? gitSha.slice(0, 7) : 'dev';
+  if (appVersion === 'main') {
+    return `main · ${sha}`;
+  }
+  const version = gesetzt(appVersion) ? appVersion.replace(/^v/, '') : paketVersion;
+  return `v${version} · ${sha}`;
+}
+
+/** Ein Wert aus replace-env.sh, der wirklich ersetzt wurde. */
+function gesetzt(wert: string | undefined): wert is string {
+  return !!wert && !wert.startsWith('${');
 }
 
 @Component({
@@ -26,8 +37,9 @@ export function buildKennung(paketVersion: string, gitSha: string | undefined): 
   styleUrls: ['./footer.component.css']
 })
 export class FooterComponent {
-  // Ein lokales environment.ts ist nicht eingecheckt und kennt gitSha womoeglich nicht.
-  readonly buildKennung = buildKennung(paket.version, (environment as { gitSha?: string }).gitSha);
+  // Ein lokales environment.ts ist nicht eingecheckt und kennt gitSha und appVersion womoeglich nicht.
+  private readonly buildUmgebung = environment as { gitSha?: string; appVersion?: string };
+  readonly buildKennung = buildKennung(paket.version, this.buildUmgebung.gitSha, this.buildUmgebung.appVersion);
 
   constructor(
     private dialog: MatDialog) {

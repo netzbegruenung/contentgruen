@@ -18,7 +18,7 @@ from domain.models.reference import (
     ReferenceSearchResult,
 )
 from domain.models.author_entry import AuthorEntry
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS, ContentStatus
 from domain.models.content_origin import ContentOrigin
 
 logger = logging.getLogger(__name__)
@@ -145,6 +145,30 @@ class ReferenceService(
         # Call upsert method of base class
         await super()._upsert(reference_input)
         return id, True, "New reference created successfully"
+
+    async def herkunft_id(
+        self, reference_string: str, description: Optional[str], author: str
+    ) -> uuid.UUID:
+        """
+        Die ID der Herkunft unter dieser Adresse: eine schon gespeicherte
+        wiederverwenden, sonst neu anlegen. Die Notiz gehoert an die Verknuepfung,
+        nicht an die Herkunft; hier dient sie nur als Text einer neuen Herkunft.
+        """
+        vorhandene = await self.find_exact_match(reference_string)
+        if vorhandene:
+            logger.info(f"Reusing existing reference {vorhandene.id}")
+            return vorhandene.id
+        reference_id, _, _ = await self.add_reference(
+            Reference(
+                text=description or reference_string,
+                reference_string=reference_string,
+            ),
+            author,
+            NEW_CONTENT_STATUS,
+            ContentOrigin.MANUALLY_CREATED,
+        )
+        logger.info(f"Created new reference {reference_id}")
+        return reference_id
 
     async def herkunft_ergaenzen(self, beitrag) -> None:
         """

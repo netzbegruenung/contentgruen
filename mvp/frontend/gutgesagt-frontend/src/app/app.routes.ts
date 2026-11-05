@@ -109,6 +109,14 @@ export const routes: Routes = [
         data: { parent: '/search' }
     },
     {
+        // Die Varianten eines Beitrags (#356), Ziel von "N Varianten" an der Karte;
+        // auch fuer Besucher, die die Karte in der Suche sehen.
+        path: 'varianten/:id',
+        loadComponent: () => import('./varianten/varianten.component').then(m => m.VariantenComponent),
+        canActivate: [PublicGuard],
+        data: { parent: '/search' }
+    },
+    {
         // Die eigene Adresse eines Beitrags, fuer alle Beitragstypen (#300). Oeffentlich
         // wie die Suche: Sichtbare Beitraege koennen auch Besucher finden und kopieren.
         path: 'beitrag/:id',

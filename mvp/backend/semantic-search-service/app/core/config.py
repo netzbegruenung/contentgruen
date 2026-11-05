@@ -18,6 +18,9 @@ if env_file.exists():
 # Das Einbettungsmodell. Die Aehnlichkeitsschwellen in Settings sind dafuer gemessen;
 # das Dockerfile laedt es beim Bauen vor und muss mitgezogen werden.
 EMBEDDING_MODELL = "intfloat/multilingual-e5-base"
+# Name seines Vektors in der Qdrant-Collection (Named Vector, #395): weitere Modelle
+# bekommen daneben einen eigenen Namen, statt die Collection zu ersetzen.
+EMBEDDING_VEKTOR = "e5_base"
 
 # Wie der Mailversand mit dem SMTP-Server spricht (infrastructure/mail/versand.py).
 # Nur verschluesselt: Adresse und Text der Mail gehen nie lesbar ueber das Netz.

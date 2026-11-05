@@ -11,6 +11,8 @@ export interface ContentReference {
     created: string;
     reference_text?: string;  // The URL
     reference_description?: string;  // The description
+    /** Die Notiz dieses Beitrags zur Herkunft; ohne sie zeigt reference_description den Text der Herkunft. */
+    description?: string | null;
 }
 
 /**
@@ -34,6 +36,8 @@ export interface BaseContentResult {
     references: ContentReference[];
     references_count: number;
     usage_count?: number;
+    /** Wie viele Beitraege auf diesem beruhen (#356); nur Kommentar und Hintergrundinfo. */
+    varianten?: number;
 }
 
 /**

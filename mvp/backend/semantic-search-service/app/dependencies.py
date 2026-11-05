@@ -16,6 +16,7 @@ from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
 from services.beitrag_fuer_aufrufer import Aufrufer
+from services.content.beitrag_aendern_service import BeitragAendernService
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
 from services.beitrag_laden import BeitragLader, beitrag_laden
 from repositories.interfaces.content_repository import IContentRepository
@@ -52,6 +53,7 @@ from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from services.loeschfristen_service import LoeschfristenService
 from services.muster_hinweise_service import MusterHinweiseService
 from services.punkte_service import PunkteService
+from services.spracherkennung.spracherkennung import SPRACHERKENNUNG, Spracherkennung
 from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
 from repositories.einwurf_repository import get_einwurf_repository
@@ -270,6 +272,11 @@ def get_gegenlesen_service() -> GegenlesenService:
     return _gegenlesen_service
 
 
+def get_spracherkennung() -> Spracherkennung:
+    """Eine Instanz je Prozess; der Start lädt Lingua vor (main.py)."""
+    return SPRACHERKENNUNG
+
+
 _kuerzungsvorschlag_service: Optional[KuerzungsvorschlagService] = None
 
 
@@ -334,6 +341,17 @@ def get_beitrag_loeschen_service(
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
     return BeitragLoeschenService(repository, get_moderation_repository())
+
+
+def get_beitrag_aendern_service(
+    repository: IContentRepository = Depends(get_content_repository),
+) -> BeitragAendernService:
+    """Ueber das aggregierte Repository, wie das Loeschen (#299)."""
+    return BeitragAendernService(
+        repository,
+        get_reference_service().herkunft_id,
+        get_content_report_repository().hat_offene_meldung,
+    )
 
 
 def get_commentary_service() -> CommentaryService:

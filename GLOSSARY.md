@@ -225,6 +225,14 @@ _Avoid_: Freigeben, Wiederherstellen
 Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt bis zu seiner Löschfrist gespeichert; zurückholen lässt er sich nicht. Danach wird er endgültig entfernt, mit seinen Stimmen; Einwürfe sind danach in ihm nicht mehr ausformuliert. Vorher entfernt ihn nur ein Admin endgültig, nach dem Löschkonzept. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
+**Ändern**:
+Der Autor ersetzt Titel, Text oder Herkunft seines Kommentars oder seiner Hintergrundinfo, aus „Meine Beiträge“; beim Kommentar auch Kurz- und Langfassung, damit sie zum neuen Text passen. Es gelten dieselben Grenzen wie beim Anlegen, die Titelregel und der CC0-Hinweis eingeschlossen, aber keine Dublettenprüfung; die Suche findet danach den neuen Text. Stimmen, Nutzung und Verknüpfungen bleiben. Festgehalten wird nur, wer wann geändert hat, nicht der alte Wortlaut. Gesperrte und gelöschte Beiträge lassen sich nicht ändern, Posts und Bilder noch nicht. Solange eine Meldung offen ist, auch nicht: Der Admin sieht den gemeldeten Wortlaut.
+_Avoid_: Bearbeiten (heißt bei Meldungen etwas anderes), Editieren
+
+**Änderungsverlauf**:
+Was an einem Beitrag über das Ändern festgehalten wird: je Änderung die Kennung und der Zeitpunkt, nie der alte Wortlaut. Angezeigt wird er nirgends; bei der Kontolöschung bekommt er wie die anderen Kennungen am Beitrag den Platzhalter.
+_Avoid_: Bearbeitungsgeschichte, Versionsgeschichte, Historie
+
 **Titel**:
 Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema. Bild und Post haben auch einen Titel; er beschreibt den Inhalt und folgt dieser Regel nicht.
 _Avoid_: Überschrift, Etikett, Thema
@@ -298,6 +306,10 @@ _Avoid_: Prüfung, Lektorat, Check, Validierung
 **Anmerkung**:
 Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
+
+**Sprachhinweis**:
+Der Satz über dem CC0-Hinweis eines Beitragsformulars oder unter einer neuen Aussage, wenn der Text ab fünf Wörtern offenbar nicht deutsch ist; Gut gesagt ist auf deutsche Texte ausgelegt. Er erscheint etwa eine Sekunde nach der letzten Eingabe, sperrt nichts und zählt nicht in die Güte. Suchanfragen und vorhandene Aussagen bekommen keinen. Er ist keine Anmerkung des Gegenlesens und nicht der Hinweis an einem Einwurf.
+_Avoid_: Sprachwarnung, Sprachprüfung, Spracherkennung (das ist das Werkzeug dahinter)
 
 **Kürzungsvorschlag**:
 Eine Kurzfassung, die das Formular auf Klick aus den eigenen Sätzen eines Kommentars vorschlägt, der länger ist als die Kurzfassung sein darf, ohne KI: Die zentralen Sätze bleiben, Einschübe (Klammern, Gedankenstriche, Appositionen) fallen weg; Relativsätze, Verneinungen und Zahlen bleiben stehen, und ein Satz mit Verneinung fällt nie weg. Er besteht nur aus Wörtern des Originals in ihrer Reihenfolge und formuliert nichts um. Die Person übernimmt oder verwirft ihn; nichts wird automatisch ersetzt, und gespeichert wird er erst mit dem Kommentar.

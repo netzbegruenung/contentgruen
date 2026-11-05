@@ -1,8 +1,9 @@
 import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.commentary import CommentaryReference, Stil, Zweck
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
@@ -77,12 +78,17 @@ class KommentarResponse(BeitragResponse):
     style: Optional[Stil] = None
     references: List[CommentaryReference] = []
     references_count: int = 0
+    # Wie viele Kommentare auf diesem beruhen ("N Varianten", #356); nachgetragen
+    # von services/varianten.py, wo die Karte sie zeigt, sonst 0.
+    varianten: int = 0
 
 
 class HintergrundinfoResponse(BeitragResponse):
     title: str
     references: List[GenericTextReference] = []
     references_count: int = 0
+    # Wie bei KommentarResponse (#356).
+    varianten: int = 0
 
 
 class PostResponse(BeitragResponse):
@@ -111,3 +117,56 @@ class HintergrundinfoTreffer(HintergrundinfoResponse):
 
 class PostTreffer(PostResponse):
     score: float
+
+
+### Beitrag aendern (#299) ###
+
+# Wie im Formular (reference-input.component.ts, maxReferences).
+HERKUENFTE_HOECHSTENS = 10
+
+
+class HerkunftEingabe(BaseModel):
+    """Eine Herkunft in der Aenderung: Adresse oder Fundstelle, dazu die Notiz."""
+
+    reference_string: str = Field(min_length=1, max_length=2000)
+    description: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("reference_string", mode="before")
+    @classmethod
+    def ohne_leerraum_am_rand(cls, wert):
+        return wert.strip() if isinstance(wert, str) else wert
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def leer_heisst_keine_notiz(cls, wert):
+        if isinstance(wert, str):
+            return wert.strip() or None
+        return wert
+
+
+class BeitragAendernRequest(BaseModel):
+    """
+    Titel, Text und Herkunft eines Kommentars oder einer Hintergrundinfo, je ganz
+    ersetzt, beim Kommentar auch Kurz- und Langfassung. Der Titel folgt der
+    Titelregel (3-120 Zeichen wie beim Anlegen); die Grenze des Texts haengt am Typ
+    und prueft der Service.
+    """
+
+    title: str = Field(min_length=3, max_length=120)
+    # Mindestens 10 Zeichen wie in den Formularen beim Anlegen.
+    text: str = Field(min_length=10)
+    references: List[HerkunftEingabe] = Field(
+        default_factory=list, max_length=HERKUENFTE_HOECHSTENS
+    )
+    # Der CC0-Hinweis im Dialog, wie beim Anlegen (#431, domain/cc0_hinweis.py).
+    cc0_wortlaut: Cc0Wortlaut = None
+    # Kurz- und Langfassung, nur beim Kommentar (#551). Fehlt das Feld (eine aeltere
+    # App), bleibt die Fassung; leer heisst, sie entfaellt. Die Grenzen haengen am
+    # Typ und prueft der Service wie beim Text.
+    short_text: Optional[str] = None
+    long_text: Optional[str] = None
+
+    @field_validator("title", "text", "short_text", "long_text", mode="before")
+    @classmethod
+    def ohne_leerraum_am_rand(cls, wert):
+        return wert.strip() if isinstance(wert, str) else wert

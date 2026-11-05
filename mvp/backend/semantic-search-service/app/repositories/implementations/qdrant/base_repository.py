@@ -795,6 +795,63 @@ class QdrantBaseRepository(
             )
             raise
 
+    async def inhalt_aendern(
+        self,
+        item_id: uuid.UUID,
+        content_type: str,
+        felder: Dict[str, Any],
+        nicht_aus: AbstractSet[ContentStatus],
+    ) -> None:
+        """
+        Die Felder ueberschreiben, dann den Vektor aus dem neuen Text berechnen.
+
+        Wie update_status mit nicht_aus: Qdrant prueft den Zustand im selben
+        Schreibvorgang, eine inzwischen gesetzte Sperre bleibt so stehen. Den Vektor
+        gibt es nur, wenn danach der neue Text im Punkt steht; sonst passte er nicht
+        zum gespeicherten. Der Rest des Payloads (Stimmen-, Melde- und Sperrfelder)
+        bleibt unberuehrt, anders als bei upsert(). Scheitert der Vektor nach den
+        Feldern, findet die Suche bis zum naechsten Versuch noch den alten Text.
+        """
+        from qdrant_client.models import (
+            FieldCondition,
+            Filter,
+            HasIdCondition,
+            MatchAny,
+        )
+
+        felder = dict(felder)
+        text = felder.get("text")
+        if text is not None and content_type in TYPEN_MIT_TEXT_NORMALISIERT:
+            felder[FELD_TEXT_NORMALISIERT] = text_normalisiert(text)
+
+        await self._shared_manager.async_client.set_payload(
+            collection_name=self._shared_manager.collection_name,
+            payload=felder,
+            points=Filter(
+                must=[HasIdCondition(has_id=[str(item_id)])],
+                must_not=[
+                    FieldCondition(
+                        key="status",
+                        match=MatchAny(any=sorted(s.value for s in nicht_aus)),
+                    )
+                ],
+            ),
+        )
+        if text is not None and await self._text_steht_im_punkt(item_id, text):
+            await self._shared_manager.vektor_neu_berechnen(
+                str(item_id), text, content_type
+            )
+        logger.debug(f"Changed fields of {item_id}: {sorted(felder)}")
+
+    async def _text_steht_im_punkt(self, item_id: uuid.UUID, text: str) -> bool:
+        punkte = await self._shared_manager.async_client.retrieve(
+            collection_name=self._shared_manager.collection_name,
+            ids=[str(item_id)],
+            with_payload=["text"],
+            with_vectors=False,
+        )
+        return bool(punkte) and (punkte[0].payload or {}).get("text") == text
+
     @abstractmethod
     def initialize_with_initial_data(self):
         """

@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -7,6 +7,7 @@ import { HierFehltEineAntwortComponent } from './hier-fehlt-eine-antwort.compone
 import { environment } from '../../environments/environment';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 
+const SPRACHE_URL = `${environment.baseUrl}/api/v1/spracherkennung`;
 const LISTE_URL = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
 const VORAB_URL = `${environment.baseUrl}/api/v1/statement/vorab`;
 const THEMEN_URL = `${environment.baseUrl}/api/v1/statement/themen`;
@@ -316,6 +317,20 @@ describe('HierFehltEineAntwortComponent', () => {
 
       expect(text()).toContain('Diese Aussage gibt es schon.');
     });
+
+    it('zeigt einen Sprachhinweis zu einer offenbar nicht deutschen Aussage, anlegen bleibt möglich (#405)', fakeAsync(() => {
+      eingeben('Heat pumps are far too expensive');
+      tick(1000);
+      const anfrage = http.expectOne(SPRACHE_URL);
+      expect(anfrage.request.body).toEqual({ text: 'Heat pumps are far too expensive' });
+      anfrage.flush({ sprache: 'en' });
+      fixture.detectChanges();
+
+      expect(element().querySelector('.vorab .sprachhinweis')!.textContent).toContain(
+        'Diese Aussage ist offenbar nicht auf Deutsch',
+      );
+      expect((element().querySelector('button.aussage-anlegen') as HTMLButtonElement).disabled).toBeFalse();
+    }));
 
     it('schickt zu kurze Aussagen nicht ab', () => {
       eingeben('ab');

@@ -45,6 +45,11 @@ class AddGenericTextRequest(BaseModel):
     # speichern: Dann haengt sie an der mitgeschickten Aussage. Erst diese Wahl
     # verknuepft. Gilt wie trotz_dublette_von nur fuer die gezeigte.
     vorhanden_nehmen: Optional[UUID] = None
+    # "Als Vorlage nehmen" (#356): der Beitrag desselben Typs, auf dem der neue
+    # beruht. Verknuepft wird nur, wenn ein neuer angelegt wird und das Original
+    # noch sichtbar ist (services/varianten.py); bei einer Dublette entscheidet die
+    # Person wie sonst.
+    beruht_auf: Optional[UUID] = None
 
     # Trotzdem speichern und die vorhandene nehmen schliessen einander aus.
     @model_validator(mode="after")

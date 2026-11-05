@@ -10,6 +10,7 @@ import { ImageService } from '../services/image.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
+import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
 
 describe('AddImageComponent', () => {
   let fixture: ComponentFixture<AddImageComponent>;
@@ -35,6 +36,16 @@ describe('AddImageComponent', () => {
 
   it('zeigt über dem Absende-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
     erwarteCc0Hinweis(fixture.nativeElement);
+  });
+
+  it('gibt Titel und Bildunterschrift dem Sprachhinweis über dem CC0-Hinweis (#405)', () => {
+    fixture.componentInstance.imageForm.patchValue({
+      title: 'Solardach in Freiburg',
+      caption: 'Solarmodule auf dem Dach der Grundschule.',
+    });
+    fixture.detectChanges();
+
+    erwarteSprachhinweisZumBeitrag(fixture.debugElement, 'Solardach in Freiburg', 'Solarmodule auf dem Dach der Grundschule.');
   });
 
   it('behaelt nach gescheitertem Speichern die Eingaben und sendet sie mit Erneut versuchen noch einmal', fakeAsync(() => {

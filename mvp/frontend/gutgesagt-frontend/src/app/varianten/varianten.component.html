@@ -1,0 +1,14 @@
+<div class="component-box">
+    <p *ngIf="fehler" class="hinweis" role="alert">{{ fehler }}</p>
+
+    <ng-container *ngIf="!laedt && !fehler && original">
+        <h2 class="abschnitt">Original</h2>
+        <app-beitragskarte [daten]="original" variante="voll"></app-beitragskarte>
+
+        <h2 class="abschnitt">{{ varianten.length === 1 ? '1 Variante' : varianten.length + ' Varianten' }}</h2>
+        <app-kartenliste *ngIf="varianten.length; else keine" [daten]="varianten" variante="voll"></app-kartenliste>
+        <ng-template #keine>
+            <p class="hinweis">Noch keine Varianten.</p>
+        </ng-template>
+    </ng-container>
+</div>
