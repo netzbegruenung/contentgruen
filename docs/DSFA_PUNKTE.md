@@ -5,11 +5,12 @@
 > derselben Runde wie #296; die Fragen an sie stehen in Abschnitt 6. Bis dahin bleiben die Punkte
 > aus (`SEMANTIC_SEARCH_PUNKTE_AKTIV`, Standard aus).
 
-Stand 05.11.2026; Code `main` @ `cdb7ec64` und #476 (gemergt). `ss/` =
-`mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
-(`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), **(#476)** =
-Stand nach dem Merge von #476. Begriffe wie in [`GLOSSARY.md`](../GLOSSARY.md); Prüfwert,
-Paar-Prüfwert und Muster-Hinweis kommen mit #476 dorthin, Ausbaustufe steht in
+Stand 05.11.2026; Code `main` @ `cdb7ec64` und #476 (gemergt), Datenschutzerklärung nach #499.
+`ss/` = `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
+(`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), zitiert mit
+dem Titel ihres Abschnitts, **(#476)** = Stand nach dem Merge von #476. Begriffe wie in
+[`GLOSSARY.md`](../GLOSSARY.md), dort auch Prüfwert, Paar-Prüfwert, Fensterschlüssel und
+Muster-Hinweis; Ausbaustufe steht in
 `docs/VISION.md:14-23`, die Krone unter „Siegel“ (`GLOSSARY.md:278-279`).
 
 ## 1. Worum es geht
@@ -40,7 +41,7 @@ in der Regel zwei von neun Kriterien, und zwei treffen sicher zu:
 - **Bewerten oder Einstufen:** Punkte und Rangplatz stufen Personen nach ihrem Verhalten ein
   (`ss/domain/punkte.py:55-73` (#476)).
 - **Besondere Kategorien:** Schon die Mitwirkung lässt auf eine politische Meinung schließen
-  (Art. 9 Abs. 1; DSE:876-889; `docs/VISION.md:101`).
+  (Art. 9 Abs. 1; DSE „Rückschlüsse auf deine politische Haltung“; `docs/VISION.md:101`).
 
 Die DSFA muss stehen, **bevor die Punkte eingeschaltet werden**, nicht erst vor den Ranglisten,
 wie `docs/VISION.md:134` es vorsieht: Schon der eigene Punktestand ist eine Bewertung von
@@ -62,10 +63,11 @@ nicht konsultiert werden (Art. 36).
 
 **Empfehlung: ausdrückliche Einwilligung, Art. 9 Abs. 2 lit. a, in zwei Stufen.**
 
-1. **Beim ersten Login** gibt es die Art. 9-Einwilligung schon als Entscheidung (Lückenliste
-   D-N15, `docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N15.md`). Sie nennt zusätzlich als
-   Zwecke: Punkte, Quests und Meilensteine, und den Schutz der Punkte durch Muster-Hinweise. Für
-   die Muster-Hinweise reicht Art. 6 Abs. 1 lit. f allein nicht, weil sie Art. 9-Daten betreffen.
+1. **Beim ersten Login** fragt die App seit #489 nach der Art.-9-Einwilligung (Lückenliste
+   D-N15, `docs/ART9_EINWILLIGUNG.md`); die DSE nennt sie seit #557. Ihr Wortlaut muss zusätzlich
+   als Zwecke nennen: Punkte, Quests und Meilensteine, und den Schutz der Punkte durch
+   Muster-Hinweise; der Wortlaut vom 05.11.2026 tut das noch nicht. Für die Muster-Hinweise
+   reicht Art. 6 Abs. 1 lit. f allein nicht, weil sie Art. 9-Daten betreffen.
 2. **Beim ersten Punkt** fragt die App nach dem Opt-in aus Risiko 1, das ist eine eigene
    Einwilligung für die Sichtbarkeit.
 
@@ -79,7 +81,7 @@ deshalb höchstens eine interne Hilfsbegründung und gehört nicht in die Datens
 Besuchermerkmal (#470), gebildet mit einem Tagesschlüssel nur im Speicher
 (`ss/services/entdoppelung.py:93-114` (#476)). Nach dem Tag verweist nichts mehr auf den
 Besucher. Für diesen Stand trägt Art. 6 Abs. 1 lit. f wie bei der bestehenden Nutzungsmessung
-(DSE:425-430); zu prüfen mit #495.
+(DSE „Verwendung von Beiträgen“); zu prüfen mit #495.
 
 ## 5. Notwendigkeit und Verhältnismäßigkeit (Art. 35 Abs. 7 lit. b)
 
@@ -89,8 +91,10 @@ Punkte werden beim Abruf berechnet, nicht gespeichert (`ss/services/punkte_servi
 (#476)); statt eines Protokolls, wer was genutzt hat, gibt es nur Prüfwerte mit kurzen Fristen
 (Abschnitt 1); andere sehen etwas nur mit Opt-in. **Widerruf** (Vorschlag): Wer das Opt-in
 zurücknimmt, verschwindet sofort aus Ranglisten und Abzeichen; die eigenen Punkte sieht die
-Person weiter. Was der Widerruf der Login-Einwilligung bewirkt, legt #429 fest (D-N15). Geht
-dabei das Konto, gehen die Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
+Person weiter. Nach dem Widerruf der Login-Einwilligung kann die Person nichts mehr beitragen und
+nichts bewerten; Gespeichertes bleibt, bis sie es löscht oder ihr Konto löschen lässt (#489,
+`docs/ART9_EINWILLIGUNG.md`). Geht das Konto, gehen die Muster-Hinweise mit, die Paar-Prüfwerte
+laufen nach 7 Tagen aus.
 
 ## 6. Fragen an Vorstand und Datenschutzbeauftragte
 
@@ -101,7 +105,19 @@ dabei das Konto, gehen die Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 
 
 ## 7. Vor dem Einschalten der Punkte
 
-DSFA übernommen, Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt,
-Datenschutzerklärung angepasst (#499; dabei werden „kein Profiling“, DSE:864-870, und „kein
-Pseudonym“ beim Kopieren, DSE:419-421, falsch). Umstellung auf #470 und Schlüssel im Speicher
-aus Risiko 2 sind in PR #476 umgesetzt.
+Offen:
+
+- DSFA übernommen (Abschnitt 6).
+- Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt.
+- Im Code Punkte und Muster-Hinweise nur für Konten mit geltender Einwilligung (#559): Heute
+  prüft der Zählendpunkt der Nutzung (`ss/api/v1/usage.py`) sie nicht, und die DSE stützt
+  beides auf lit. a (Abschnitt 4).
+
+Erledigt:
+
+- Datenschutzerklärung angepasst (#499): Prüfwert und Vermerk der ersten Kopie unter
+  „Verwendung von Beiträgen“, eigener Abschnitt „Punkte“ mit Paar-Prüfwert (7 Tage) und
+  Muster-Hinweisen (8 Wochen), Startkonten; „kein Pseudonym“ beim Kopieren gestrichen, „kein
+  Profiling“ gilt nur, solange Punkte aus sind; „Rückmeldung zur Nutzung“ nennt Muster-Hinweise
+  als Ausnahme.
+- Umstellung auf #470 und Schlüssel im Speicher aus Risiko 2 (PR #476).
