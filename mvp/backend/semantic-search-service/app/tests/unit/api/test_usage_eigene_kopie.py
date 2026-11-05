@@ -204,7 +204,29 @@ class TestArt9Einwilligung:
         zaehlen(client, "bo-2")
         zaehlen(client, "bo-2")
 
-        assert art9_einwilligung_ohne_datenbank.lesen.call_count == 2
+        gefragt = [
+            c.args[0] for c in art9_einwilligung_ohne_datenbank.lesen.call_args_list
+        ]
+        assert gefragt.count("bo-2") == 2
+
+    def test_autorin_ohne_einwilligung_kein_muster_aber_pruefwert(
+        self, client, dienst, muster, art9_einwilligung_ohne_datenbank
+    ):
+        """Ein Muster-Hinweis nennt auch die Autorin; hat sie widerrufen, keiner."""
+        art9_einwilligung_ohne_datenbank.lesen.side_effect = lambda kennung: (
+            None
+            if kennung == AUTORIN
+            else Art9Einwilligung(
+                wortlaut="2026-11-05",
+                eingewilligt_am=datetime(2026, 11, 5, tzinfo=timezone.utc),
+                widerrufen_am=None,
+            )
+        )
+
+        assert zaehlen(client, "bo-2").status_code == 200
+
+        assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
+        muster.nutzung_melden.assert_not_called()
 
     def test_besucher_braucht_keine_einwilligung(
         self, client, dienst, art9_einwilligung_ohne_datenbank

@@ -284,14 +284,21 @@ async def track_content_usage(
         # Erkannt wird gegenseitige Nutzung innerhalb von MUSTER_FENSTER_TAGE (sieben)
         # Tagen; gemerkt wird dafuer nur ein Paar-Pruefwert mit einem Schluessel im
         # Speicher (services/entdoppelung.py, DSFA Risiko 2).
+        # Ein Muster-Hinweis nennt beide Konten (#559): Hat die Autorin nicht
+        # eingewilligt oder widerrufen, keine Meldung - sonst ergaebe ihr frueherer
+        # Paar-Pruefwert noch einen Hinweis mit ihrer Kennung.
         if settings.punkte_aktiv and eingewilligt and beitrag is not None:
             try:
-                await asyncio.to_thread(
-                    get_muster_hinweise_service().nutzung_melden,
-                    aufrufer,
+                if await asyncio.to_thread(
+                    get_art9_einwilligung_service().eingewilligt,
                     beitrag.original_author,
-                    jetzt,
-                )
+                ):
+                    await asyncio.to_thread(
+                        get_muster_hinweise_service().nutzung_melden,
+                        aufrufer,
+                        beitrag.original_author,
+                        jetzt,
+                    )
             except Exception as e:
                 logger.error(
                     f"Pattern check for content {content_id} failed: {type(e).__name__}"
