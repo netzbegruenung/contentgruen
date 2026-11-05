@@ -31,13 +31,6 @@ export const AUSSAGE_MIN_ZEICHEN = 3;
 /** Wie viele vorhandene Aussagen das Antwort-auf-Feld hoechstens vorschlaegt. */
 export const VORSCHLAG_ANZAHL = 3;
 
-/**
- * Ab diesem Aehnlichkeitswert (0-1) gilt eine Aussage als Vorschlag. Gemessen fuer
- * intfloat/multilingual-e5-base (passende Aussagen 0,892-0,940, unpassende meist
- * darunter); bei einem Modellwechsel neu messen.
- */
-export const VORSCHLAG_MIN_AEHNLICHKEIT = 0.885;
-
 @Injectable({
   providedIn: 'root'
 })
@@ -61,7 +54,7 @@ export class StatementService {
   searchStatements(
     queryText: string,
     limit: number = 10,
-    filter: Pick<SearchStatementByTextRequest, 'nur_kuratiert' | 'min_similarity'> = {},
+    filter: Pick<SearchStatementByTextRequest, 'nur_kuratiert' | 'min_similarity' | 'vorschlaege'> = {},
   ): Observable<StatementSearchResponse> {
     const request: SearchStatementByTextRequest = {
       query_text: queryText,
@@ -79,12 +72,14 @@ export class StatementService {
 
   /**
    * Vorhandene Aussagen, die zum Getippten passen - fuer die Vorschlaege im
-   * Antwort-auf-Feld. Nur gepflegte Aussagen und nur hinreichend aehnliche.
+   * Antwort-auf-Feld. Nur gepflegte Aussagen, nur hinreichend aehnliche und keine,
+   * die dem Getippten widersprechen; Schwelle und Widerspruch entscheidet der
+   * Suchdienst (aussage_vorschlag_schwelle, #387).
    */
   aussageVorschlaege(text: string): Observable<StatementSearchResult[]> {
     return this.searchStatements(text, VORSCHLAG_ANZAHL, {
       nur_kuratiert: true,
-      min_similarity: VORSCHLAG_MIN_AEHNLICHKEIT,
+      vorschlaege: true,
     }).pipe(map((antwort) => antwort.results));
   }
 

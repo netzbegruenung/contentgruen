@@ -325,16 +325,22 @@ async def search_statements(
     try:
         logger.debug("/searchStatements was called")
 
+        # vorschlaege: Feld "Antwort auf" - gepflegte Aussagen ab der Schwelle des
+        # Dienstes, Widersprueche fallen danach weg (#387).
+        min_similarity = request.min_similarity
+        if request.vorschlaege and min_similarity is None:
+            min_similarity = statement_service.settings.aussage_vorschlag_schwelle
+
         # nur_kuratiert: fuer jede Rolle ohne Suchanfragen ohne Antwort, auch ohne
         # die ueber der Schwelle; die Kennzahl wird dann nicht abgefragt.
-        if request.nur_kuratiert:
+        if request.nur_kuratiert or request.vorschlaege:
             ueber_der_schwelle = frozenset()
         else:
             ueber_der_schwelle = await _ueber_der_schwelle_fuer(
                 aufrufer, suchen_ohne_treffer
             )
 
-        if ueber_der_schwelle is None and request.min_similarity is None:
+        if ueber_der_schwelle is None and min_similarity is None:
             statement_index_results = await statement_service.search(
                 request.query_text, request.limit
             )
@@ -343,8 +349,12 @@ async def search_statements(
                 request.query_text,
                 request.limit,
                 nur_kuratiert=ueber_der_schwelle is not None,
-                min_similarity=request.min_similarity,
+                min_similarity=min_similarity,
                 ueber_der_schwelle=ueber_der_schwelle or frozenset(),
+            )
+        if request.vorschlaege:
+            statement_index_results = await statement_service.ohne_widerspruch(
+                request.query_text, statement_index_results
             )
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 

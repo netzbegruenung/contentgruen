@@ -10,6 +10,8 @@ entschieden hat: Ist der Kandidat dieselbe Behauptung wie der Bestandstext?
 | `aehnlichkeit_gemessen.py` | Scores und Entscheidung je Paar (erzeugt, nicht von Hand ändern) |
 | `aehnlichkeit_messen.py` | misst und gibt die Auswertung je Paar-Label aus |
 | `test_aehnlichkeit_messset.py` | Regressionstest mit Modell (langsam, nicht in CI) |
+| `nli_messen.py`, `nli_gemessen.py` | NLI-Stufe (#387): Urteile je Aussagepaar, Auswertung, Antwortzeit |
+| `test_nli_messset.py`, `../unit/test_nli_messset.py` | NLI-Stufe mit Modell (langsam) bzw. über die gespeicherten Urteile (in CI) |
 | `../unit/test_aehnlichkeit_messset_aufbau.py` | Aufbau, Umfang und Split ohne Modell (in CI) |
 
 ```bash
@@ -190,3 +192,78 @@ hintergrundinfo (Score pp, Dublette ab 0.975):
 | widerspricht | 10 | 7/3 | 0.976–1.000 | 10 | 10 | 10 |
 | verwandt | 9 | 6/3 | 0.827–0.999 | 3 | 3 | 6 |
 | fremd | 6 | 4/2 | 0.772–0.843 | 0 | 0 | 0 |
+
+## NLI-Stufe (#387)
+
+Die zweite Stufe der Prüfung auf dieselbe Aussage (`services/dieselbe_behauptung`): Die
+Einbettung liefert Kandidaten, ein NLI-Modell urteilt je Paar in beide Richtungen.
+Gemessen am 06.11.2026 mit `MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`
+(MIT, fp32) an den Aussage- und Suchpaaren; Kommentare und Hintergrundinfos prüft die
+Stufe nicht.
+
+```bash
+../venv/bin/python -m tests.regression.nli_messen               # nur Auswertung
+../venv/bin/python -m tests.regression.nli_messen --schreiben   # nli_gemessen.py neu
+../venv/bin/python -m tests.regression.nli_messen --zeit        # Antwortzeit, Speicher
+```
+
+**Regel** (`regel.entscheiden`): Normalisiert gleich zählt immer. Sonst muss der Kandidat
+eine query/query-Ähnlichkeit ab `nli_kandidaten_ab` haben, zwei Vorprüfungen bestehen
+und das Modell muss in beiden Richtungen mit mindestens τ = `nli_folgerung_ab` folgern,
+ohne dass eine Richtung mit κ = `nli_widerspruch_unter` oder mehr widerspricht.
+
+- **Vorprüfung Frage:** Frage gegen Behauptung wird nie geprüft (Regel 4, B09).
+- **Vorprüfung Quantoren:** Unterscheiden sich die Quantoren (`regel.QUANTOREN`: alle,
+  manche, nie, immer, nur …), wird nicht geprüft. Ohne sie folgert das Modell „Manche
+  Windräder töten Vögel“ und „Windräder töten Vögel“ in beide Richtungen mit über 0,95
+  (WI07, RW06, WA06, BI06), nach Regel 1 und 3 sind sie *verwandt*. Der Preis: Gleichwertige
+  Umformungen mit anderem Quantor („immer unpünktlich“ / „nie pünktlich“, DB02) bleiben
+  getrennt.
+- **Untergrenze 0,85:** Das niedrigste *gleich*-Paar der Aussagen liegt bei 0,887, alle
+  *fremd*-Paare darunter (höchstens 0,852). **Höchstens 5 Kandidaten** (10 Modellaufrufe
+  in einem Stapel): Im Messset hat jede Aussage einen Bestandstext; mehr Kandidaten
+  kosten Antwortzeit (unten), ohne dass das Messset einen Fall dafür hat.
+- **τ und κ am Train-Teil:** Gitter τ 0,30–0,98, κ 0,01–0,5; gewählt ist das τ mit den
+  meisten erkannten *gleich*-Paaren ohne eine falsche Zusammenführung im Train-Teil.
+  τ = 0,95 erkennt 58 von 92 (Aussage und Suche), schon 0,94 führte TL12 und IN05
+  zusammen. κ ändert bei τ = 0,95 nichts, 0,05 schließt nur klare Widersprüche aus.
+- **Vorschläge im Feld „Antwort auf“:** nicht vorgeschlagen, wenn eine Richtung mit
+  mindestens `aussage_vorschlag_widerspruch_ab` = 0,5 widerspricht. Am Train-Teil
+  fallen damit 101 von 104 *widerspricht*-Paaren weg und 2 von 89 *gleich*-Paaren.
+
+Ergebnis (Ausgabe von `nli_messen.py`; ein Unit-Test prüft, dass sie hier unverändert
+steht):
+
+```text
+aussage (NLI ab Score 0.85, tau 0.95, kappa 0.05):
+
+| Label | Paare (train/test) | dieselbe heute | dieselbe mit NLI train | dieselbe mit NLI test | nicht vorgeschlagen (Widerspruch) |
+|---|---|---|---|---|---|
+| gleich | 119 (89/30) | 50 | 55/89 | 20/30 | 4/119 |
+| widerspricht | 151 (104/47) | 31 | 0/104 | 0/47 | 148/151 |
+| verwandt | 131 (94/37) | 28 | 0/94 | 0/37 | 15/124 |
+| fremd | 39 (29/10) | 0 | 0/29 | 0/10 | 0/0 |
+
+suche (NLI ab Score 0.85, tau 0.95, kappa 0.05):
+
+| Label | Paare (train/test) | dieselbe heute | dieselbe mit NLI train | dieselbe mit NLI test | nicht vorgeschlagen (Widerspruch) |
+|---|---|---|---|---|---|
+| gleich | 3 (3/0) | 3 | 3/3 | 0/0 | 0/3 |
+| verwandt | 3 (3/0) | 0 | 0/3 | 0/0 | 0/3 |
+| fremd | 1 (1/0) | 0 | 0/1 | 0/0 | 0/0 |
+
+Andere Behauptung als dieselbe: keine
+gleich, aber nicht erkannt (44): C01, C04, C05, C08, C09, C10, C11, C12, C13, WI02, WI03, BS03, EA03, FL01, FL03, EE02, EE13, HZ01, HZ02, HZ03, AT02, DB01, DB02, KW02, KW13, SP03, LR01, LR03, CO01, RW01, RW03, GN02, WS02, IN01, WA02, WA03, NV01, NV12, FB01, AK01, AK02, MO02, FW01, WO02
+```
+
+- **Test-Teil:** 20 von 30 *gleich*-Paaren werden dieselbe Aussage (mit der Schwelle 0,98
+  heute 14), keins der 84 *widerspricht*- und *verwandt*-Paare (heute 23). D11, B09 und
+  D15 bleiben getrennt.
+- **Nicht erkannt** werden vor allem Umformulierungen mit anderen Wörtern („Windkraft im
+  Wald macht die Natur kaputt“, WA02), andere Wortstellung mit Objekt vorn (SP03, RW03,
+  WA03) und Tippfehler, deren Folgerung knapp unter τ liegt (0,92–0,95: FB01, AK01, FW01).
+  Hier bleibt es bei einer Aussage zu viel, nie bei einer falschen Zusammenführung.
+- **Antwortzeit und Speicher** (`--zeit`, 2 Threads, AMD EPYC 9684X, geteilter Host unter
+  Last, Median aus 5 Läufen): 1 Kandidat 176 ms, 5 Kandidaten 507 ms, 10 Kandidaten
+  1241 ms; Laden 2,5 s, Speicher bis zu rund 2 GB zusätzlich (höchster Stand beim Laden,
+  ohne torch). Auf der Ziel-VM neu messen.

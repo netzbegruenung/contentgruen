@@ -66,6 +66,47 @@ class TestSearchStatementsFilter:
         )
         statement_service.search.assert_not_awaited()
 
+    def test_vorschlaege_mit_schwelle_des_dienstes_ohne_widersprueche(
+        self, statement_service
+    ):
+        """Feld "Antwort auf" (#387): Schwelle aus den Einstellungen, nicht aus dem
+        Frontend; widersprechende Aussagen filtert der Dienst danach heraus."""
+        from core.config import Settings
+
+        statement_service.settings = Settings(aussage_vorschlag_schwelle=0.9)
+        gefunden, uebrig = [MagicMock()], []
+        statement_service.search_filtered = AsyncMock(return_value=gefunden)
+        statement_service.ohne_widerspruch = AsyncMock(return_value=uebrig)
+
+        resp = TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "waermepumpe", "limit": 3, "vorschlaege": True},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["results"] == []
+        statement_service.search_filtered.assert_awaited_once_with(
+            "waermepumpe",
+            3,
+            nur_kuratiert=True,
+            min_similarity=0.9,
+            ueber_der_schwelle=frozenset(),
+        )
+        statement_service.ohne_widerspruch.assert_awaited_once_with(
+            "waermepumpe", gefunden
+        )
+
+    def test_ohne_vorschlaege_kein_widerspruchsfilter(self, statement_service):
+        statement_service.ohne_widerspruch = AsyncMock()
+
+        TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "waermepumpe", "nur_kuratiert": True},
+            headers=ADMIN,
+        )
+
+        statement_service.ohne_widerspruch.assert_not_awaited()
+
     def test_min_similarity_ausserhalb_gibt_422(self, statement_service):
         resp = TestClient(app).post(
             SEARCH_URL, json={"query_text": "waermepumpe", "min_similarity": 1.5}

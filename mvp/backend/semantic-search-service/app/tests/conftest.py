@@ -17,6 +17,9 @@ from unittest.mock import MagicMock, patch
 # Set test environment before any imports
 os.environ["TESTING"] = "true"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+# Die NLI-Stufe (#387) laedt sonst im Schattenbetrieb das NLI-Modell (~1,2 GB) im
+# Hintergrund. Tests der NLI-Stufe geben ihr eine Attrappe und schalten sie selbst an.
+os.environ.setdefault("SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI", "aus")
 
 # Patch logging before imports to prevent initialization errors
 import logging
