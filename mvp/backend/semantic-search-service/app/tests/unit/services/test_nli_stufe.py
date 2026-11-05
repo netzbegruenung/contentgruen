@@ -245,6 +245,20 @@ class TestNliStufeImStatementService:
         assert statement_id == fast_gleich.id
 
     @pytest.mark.asyncio
+    async def test_an_wartet_begrenzt_auf_das_modell(self, baue):
+        """Belegt oder noch beim Laden: Das Modell antwortet nach der Wartezeit mit
+        None, dann gilt die Schwelle (Test oben); unbegrenzt warten darf keine Suche."""
+        nli = AttrappenNli()
+        service = baue("an", nli)
+        service._repository.search = AsyncMock(
+            return_value=[_treffer("Windräder töten Vögel", 0.93)]
+        )
+
+        await _anlegen(service, "Windkraft bringt Vögel um")
+
+        assert nli.gewartet is not None
+
+    @pytest.mark.asyncio
     async def test_normalisiert_gleich_braucht_kein_modell(self, baue):
         nli = AttrappenNli()
         service = baue("an", nli)
@@ -319,6 +333,25 @@ class TestNliStufeImStatementService:
 
         assert not service._schatten_tasks
         assert nli.aufrufe == []
+
+    def test_aus_laedt_kein_modell(self, test_settings, repository_factory):
+        settings = test_settings.model_copy(update={"dieselbe_aussage_nli": "aus"})
+        service = StatementService(settings, repository_factory=repository_factory)
+
+        service.nli_vorladen()  # ohne Modell nichts zu laden
+
+        assert service._nli is None
+
+    def test_schatten_baut_das_modell_ohne_es_zu_laden(
+        self, test_settings, repository_factory
+    ):
+        from services.dieselbe_behauptung.nli_modell import NliModell
+
+        settings = test_settings.model_copy(update={"dieselbe_aussage_nli": "schatten"})
+        service = StatementService(settings, repository_factory=repository_factory)
+
+        assert isinstance(service._nli, NliModell)
+        assert service._nli._modell is None, "geladen wird erst mit vorladen/Urteil"
 
     @pytest.mark.asyncio
     async def test_aus_fragt_das_modell_nie(self, baue):

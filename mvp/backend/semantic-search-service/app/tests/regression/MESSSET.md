@@ -253,6 +253,7 @@ suche (NLI ab Score 0.85, tau 0.95, kappa 0.05):
 | fremd | 1 (1/0) | 0 | 0/1 | 0/0 | 0/0 |
 
 Andere Behauptung als dieselbe: keine
+gleich, nur mit der Schwelle erkannt (7): HZ02, CO01, RW01, WA03, NV12, AK01, FW01
 gleich, aber nicht erkannt (44): C01, C04, C05, C08, C09, C10, C11, C12, C13, WI02, WI03, BS03, EA03, FL01, FL03, EE02, EE13, HZ01, HZ02, HZ03, AT02, DB01, DB02, KW02, KW13, SP03, LR01, LR03, CO01, RW01, RW03, GN02, WS02, IN01, WA02, WA03, NV01, NV12, FB01, AK01, AK02, MO02, FW01, WO02
 ```
 
@@ -263,6 +264,11 @@ gleich, aber nicht erkannt (44): C01, C04, C05, C08, C09, C10, C11, C12, C13, WI
   Wald macht die Natur kaputt“, WA02), andere Wortstellung mit Objekt vorn (SP03, RW03,
   WA03) und Tippfehler, deren Folgerung knapp unter τ liegt (0,92–0,95: FB01, AK01, FW01).
   Hier bleibt es bei einer Aussage zu viel, nie bei einer falschen Zusammenführung.
+- **Nur mit der Schwelle erkannt** werden 7 *gleich*-Paare (oben), vier davon Tippfehler
+  über 0,98 („teuerer“ / „teurer“, FW01). Die 14 von heute sind also keine Teilmenge der
+  20. Die Schwelle zusätzlich gelten zu lassen, wenn das Modell keinen Widerspruch sieht,
+  führte TL13, HZ09, SP07, IN05 und WA10 falsch zusammen; deshalb entscheidet im Modus
+  `an` nur die NLI-Stufe.
 - **Antwortzeit und Speicher** (`--zeit`, 2 Threads, AMD EPYC 9684X, geteilter Host unter
   Last, Median aus 5 Läufen): 1 Kandidat 176 ms, 5 Kandidaten 507 ms, 10 Kandidaten
   1241 ms; Laden 2,5 s, Speicher bis zu rund 2 GB zusätzlich (höchster Stand beim Laden,

@@ -128,6 +128,31 @@ class TestSearchStatementsFilter:
         assert resp.status_code == 200
         assert [r["text"] for r in resp.json()["results"]] == ["Aussage 0", "Aussage 1"]
 
+    def test_vorschlaege_schwelle_und_menge_legt_der_dienst_fest(
+        self, statement_service
+    ):
+        """Jeder Kandidat kostet zwei Modellaufrufe: Die Anfrage kann weder die
+        Schwelle senken noch hundert Kandidaten verlangen."""
+        from api.v1.statement import VORSCHLAG_HOECHSTENS, VORSCHLAG_VORRAT
+        from core.config import Settings
+
+        statement_service.settings = Settings(aussage_vorschlag_schwelle=0.9)
+        statement_service.ohne_widerspruch = AsyncMock(return_value=[])
+
+        TestClient(app).post(
+            SEARCH_URL,
+            json={
+                "query_text": "waermepumpe",
+                "limit": 100,
+                "min_similarity": 0.0,
+                "vorschlaege": True,
+            },
+        )
+
+        args, kwargs = statement_service.search_filtered.call_args
+        assert args[1] == VORSCHLAG_HOECHSTENS * VORSCHLAG_VORRAT
+        assert kwargs["min_similarity"] == 0.9
+
     def test_ohne_vorschlaege_kein_widerspruchsfilter(self, statement_service):
         statement_service.ohne_widerspruch = AsyncMock()
 

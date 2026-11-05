@@ -114,9 +114,18 @@ def auswertung(urteile: Dict[str, Urteil], settings: Settings) -> str:
         for p in NLI_PAARE
         if p.label == "gleich" and not entscheidung_nli(p, urteile[p.id], settings)
     ]
+    nur_heute = [
+        p.id
+        for p in NLI_PAARE
+        if p.label == "gleich"
+        and gemessen(p.id).gleich
+        and not entscheidung_nli(p, urteile[p.id], settings)
+    ]
     zeilen += [
         "",
         f"Andere Behauptung als dieselbe: {', '.join(falsch) or 'keine'}",
+        f"gleich, nur mit der Schwelle erkannt ({len(nur_heute)}): "
+        f"{', '.join(nur_heute) or 'keine'}",
         f"gleich, aber nicht erkannt ({len(verfehlt)}): {', '.join(verfehlt)}",
     ]
     return "\n".join(zeilen)

@@ -38,7 +38,9 @@ from utils.text_normalisierung import SperreJeText, text_normalisiert
 logger = logging.getLogger(__name__)
 
 
-# So lange wartet der Filter der Vorschlaege hoechstens auf das NLI-Modell (Sekunden).
+# So lange warten die Pruefung auf dieselbe Aussage und der Filter der Vorschlaege
+# hoechstens auf das NLI-Modell (Sekunden); danach gilt die Schwelle bzw. ungefiltert.
+DIESELBE_WARTET_HOECHSTENS = 3.0
 VORSCHLAG_WARTET_HOECHSTENS = 2.0
 
 
@@ -297,7 +299,12 @@ class StatementService(
         kandidaten = self._nli_kandidaten(text, treffer)
         if not kandidaten:
             return Dublettenpruefung(vorhanden=None, aehnlichster=aehnlichster)
-        urteile = await self._nli.urteile([(text, k.text) for k in kandidaten])
+        # Begrenzt warten: Ist das Modell belegt oder laedt noch, gilt die Schwelle,
+        # statt dass alle Suchen hintereinander auf die Sperre warten.
+        urteile = await self._nli.urteile(
+            [(text, k.text) for k in kandidaten],
+            warte_hoechstens=DIESELBE_WARTET_HOECHSTENS,
+        )
         if urteile is None:
             return None
         dieselben = [

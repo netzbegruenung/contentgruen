@@ -80,7 +80,13 @@ model, ~350 MB for CharSplit's n-gram table), loaded in the background about two
 start. If the container has a memory limit, raise it accordingly. The Kürzungsvorschlag (#403)
 uses the same spaCy model and needs no further memory. Since #405 Lingua adds about 45 MB for
 the Sprachhinweis (11 languages, measured in the service image), also preloaded at start. Its
-models make the image about 300 MB larger on disk (the wheel ships all languages).
+models make the image about 300 MB larger on disk (the wheel ships all languages). Since #387
+the NLI-Stufe loads an NLI model (mDeBERTa-v3-base-xnli, fp32) in the background at start
+(`SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI`, default `schatten`): about 1.2 GB more RAM in use and
+up to about 2 GB at the peak while loading (measured on the dev VM, `python -m
+tests.regression.nli_messen --zeit`), and the image grows by about 0.55 GB. If the container has
+a memory limit, raise it accordingly; `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=aus` skips the model
+and restores the rule before #387.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:
