@@ -82,31 +82,47 @@ Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“
   `mvp/backend/semantic-search-service/app/domain/art9_einwilligung.py`; Kennung höchstens
   `WORTLAUT_KENNUNG_MAX` Zeichen (Spalte `art9_einwilligungen.wortlaut`).
 - **Diese Datei:** Tabelle „Wortlaute“ unten, Abschnitt „Wortlaut ändern“ (Prüfung nach Kennung).
+- **Prüfung der Einwilligung:** `Art9EinwilligungService.eingewilligt` in
+  `mvp/backend/semantic-search-service/app/services/art9_einwilligung_service.py` unterscheidet
+  nicht nach Kennung; ihre Aufrufer setzen voraus, dass der Wortlaut ihren Zweck nennt:
+  `punkte_service.py` (Punkte), `muster_hinweise_service.py` (Muster-Hinweise) und
+  `api/v1/usage.py` (`_eingewilligt`). Nennt ein neuer Wortlaut neue Zwecke, hier ansetzen.
 - **Backend-Tests:** `TestWortlaute` in
   `mvp/backend/semantic-search-service/app/tests/unit/api/test_art9_einwilligung_api.py`
   (aktuelle Kennung, zitierte Zwecke, Kennungsformat, Spaltenlänge).
 - **Frontend:** `wortlautDatum` in
   `mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.ts` liest das
-  Stand-Datum aus der Kennung (Muster `JJJJ-MM-TT` mit optionalem `-x`); Specs
+  Stand-Datum aus der Kennung (nur das führende `JJJJ-MM-TT`, ein Suffix fällt weg); das
+  Kennungsformat `JJJJ-MM-TT` mit optionalem `-x` sichert `TestWortlaute`; Specs
   `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung.component.spec.ts`
   (Wortlaut mit Suffix, Auszug aus dem Text) und
   `mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.spec.ts`.
 - **DSFA:** `docs/DSFA_PUNKTE.md`, Abschnitt 3 Risiko 1 (Opt-in für die Sichtbarkeit),
   Abschnitt 4 (Zwecke, die der Wortlaut nennen muss, Kennung), Abschnitt 5 (Folgen des
   Widerrufs), Abschnitt 7 (Stand mit Kennung).
-- **Glossar:** `GLOSSARY.md`, „Art.-9-Einwilligung“ (Zwecke, Kennungsformat) und „Level“
-  (bisher nur im Wortlaut genannt).
+- **Glossar:** `GLOSSARY.md`, „Art.-9-Einwilligung“ (Zwecke, Kennungsformat), „Level“
+  (bisher nur im Wortlaut genannt) und „Meilenstein“ (Abzeichen nur mit Zustimmung).
 - **Vision:** `docs/VISION.md`, Abschnitt mit „Meilensteine“ (Abzeichen nur mit Opt-in) und
   „Ranglisten“ (Zustimmung, Art. 9).
 - **Datenschutzerklärung:** `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`,
   „Rückschlüsse auf deine politische Haltung“ → „Deine Einwilligung“ (Kennungsformat, Folgen,
   Widerruf) und „Punkte“ (Rechtsgrundlage, ohne Einwilligung keine Punkte); Spec
   `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.spec.ts`
-  (gleichnamiger `describe`-Block und die Punkte-Tests).
-- **Prüfliste:** `docs/rechtstexte-luecken/pruefliste/P11.md` (Wortlaut zur Prüfung mit #296).
+  (`describe`-Blöcke „Rückschlüsse auf die politische Haltung“ und „Entdoppelte Nutzung, Punkte
+  und Muster-Hinweise“).
+- **Lückenliste:** `docs/rechtstexte-luecken/pruefliste/P11.md` (Wortlaut zur Prüfung mit
+  #296) und `docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N15.md` (fasst „Deine
+  Einwilligung“ samt Widerrufsfolgen zusammen).
 
-Ohne Änderung ziehen mit: die Seite `/einwilligung` und die E2E-Anmeldung
-(`mvp/frontend/gutgesagt-frontend/e2e/tests/anmelden.setup.ts`), beide nehmen den aktuellen
+- **Seite `/einwilligung`:** `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung.component.html`
+  zeigt den Wortlaut vom Backend, wiederholt aber in eigenen Sätzen, was ohne Einwilligung
+  geht und was der Widerruf bewirkt.
+- **Profilmenü:** Der Wortlaut nennt den Widerruf „im Profilmenü unter „Einwilligung““; der
+  Eintrag steht in `mvp/frontend/gutgesagt-frontend/src/app/app.component.html` und
+  `mvp/frontend/gutgesagt-frontend/src/app/shared/components/mobile-menu/mobile-menu.html`.
+
+Ohne Änderung zieht die E2E-Anmeldung mit
+(`mvp/frontend/gutgesagt-frontend/e2e/tests/anmelden.setup.ts`): Sie nimmt den aktuellen
 Wortlaut vom Backend.
 
 ## Wortlaute

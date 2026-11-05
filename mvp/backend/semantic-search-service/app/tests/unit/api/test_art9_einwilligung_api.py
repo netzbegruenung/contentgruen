@@ -112,14 +112,17 @@ class TestWortlaute:
 
     def test_kennungen_passen_auf_das_muster_des_frontends(self):
         """
-        Das Frontend liest das Stand-Datum mit ``wortlautDatum``
-        (mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.ts);
-        eine Kennung, die nicht auf dieses Muster passt, liess die DatePipe
-        abstuerzen (``2026-11-05-b``, #560, #569).
+        Das Frontend liest mit ``wortlautDatum``
+        (mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.ts)
+        das fuehrende ``JJJJ-MM-TT`` als Stand-Datum fuer die DatePipe; ohne
+        ``wortlautDatum`` liess das Suffix von ``2026-11-05-b`` sie abstuerzen
+        (#560, #569). Das Datum muss deshalb ein echtes Kalenderdatum sein.
         """
         muster = re.compile(r"^\d{4}-\d{2}-\d{2}(-[a-z])?$")
 
         assert [k for k in WORTLAUTE if not muster.fullmatch(k)] == []
+        for kennung in WORTLAUTE:
+            datetime.date.fromisoformat(kennung[:10])
         assert AKTUELLER_WORTLAUT in WORTLAUTE
 
 
