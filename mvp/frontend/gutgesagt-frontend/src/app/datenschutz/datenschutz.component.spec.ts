@@ -177,8 +177,10 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Verwendung von Beiträgen');
 
       expect(text).toContain('ob es an diesem Tag die erste Kopie dieses Beitrags durch dieselbe Person war');
-      expect(text).toContain('dass mehrere Vorgänge an einem Beitrag am selben Tag von derselben Person kamen, aber nicht, von wem');
+      expect(text).toContain('dass mehrere Vorgänge an einem Beitrag am selben Tag von derselben Person');
+      expect(text).toContain('aber nicht, von wem');
       expect(text).not.toContain('noch ob mehrere Vorgänge vom selben Gerät kamen');
+      expect(text).not.toContain('und ein Pseudonym werden dabei nicht gespeichert');
     });
 
     it('Verwendung: Prüfwert bis Tagesende mit einem täglichen Schlüssel nur im Arbeitsspeicher', () => {
@@ -437,7 +439,7 @@ describe('DatenschutzComponent', () => {
     it('Verwendung von Beiträgen: kein Pseudonym und kein Gerätebezug mehr', () => {
       const text = abschnitt('Verwendung von Beiträgen');
 
-      expect(text).toContain('nicht ablesen, welches Konto oder welches Gerät einen Beitrag verwendet hat');
+      expect(text).toContain('nicht ablesen, welches Konto einen Beitrag verwendet hat');
       expect(text).not.toContain('höchstens 30 Tage');
     });
 
