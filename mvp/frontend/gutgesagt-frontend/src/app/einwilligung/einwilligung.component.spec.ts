@@ -134,7 +134,7 @@ describe('EinwilligungComponent', () => {
 
     it('zeigt das Datum eines Wortlauts mit Suffix in der Kennung (2026-11-05-b)', () => {
       starten(null);
-      const zweiter = { kennung: '2026-11-05-b', text: 'Dazu gehören ein Punktestand, ein Level und Quests …' };
+      const zweiter = { kennung: '2026-11-05-b', text: 'Dazu gehören ein Punktestand, ein Level, Quests und Meilenstein-Abzeichen …' };
       standLiefern(
         stand({
           eingewilligt: true,

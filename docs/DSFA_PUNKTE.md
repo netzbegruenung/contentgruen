@@ -65,10 +65,10 @@ nicht konsultiert werden (Art. 36).
 
 1. **Beim ersten Login** fragt die App seit #489 nach der Art.-9-Einwilligung (Lückenliste
    D-N15, `docs/ART9_EINWILLIGUNG.md`); die DSE nennt sie seit #557. Ihr Wortlaut muss zusätzlich
-   als Zwecke nennen: Punktestand, Level und Quests (nur für die Person, solange sie nicht
-   gesondert zustimmt, sie anderen zu zeigen), neue Aktionen, die ein höheres Level freischaltet,
-   Meilenstein-Abzeichen am Anzeigenamen, die nur Angemeldete sehen, und den Schutz der Punkte
-   durch Muster-Hinweise; das tut der Wortlaut `2026-11-05-b` (#559), der den ersten vom selben
+   als Zwecke nennen: Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person,
+   solange sie nicht gesondert zustimmt, sie anderen Angemeldeten zu zeigen; Opt-in aus Risiko 1),
+   neue Aktionen, die ein höheres Level freischaltet, und den Schutz der Punkte durch
+   Muster-Hinweise; das tut der Wortlaut `2026-11-05-b` (#559), der den ersten vom selben
    Tag ablöst, bevor er in einem Release war. Für die Muster-Hinweise
    reicht Art. 6 Abs. 1 lit. f allein nicht, weil sie Art. 9-Daten betreffen.
 2. **Beim ersten Punkt** fragt die App nach dem Opt-in aus Risiko 1, das ist eine eigene
