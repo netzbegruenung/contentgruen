@@ -9,6 +9,7 @@ import {
   Art9EinwilligungService,
   Art9EinwilligungStand,
   EINWILLIGUNG_PFAD,
+  wortlautDatum,
 } from '../services/art9-einwilligung.service';
 import { ROUTES } from '../shared/constants/app.constants';
 
@@ -41,6 +42,11 @@ export class EinwilligungComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
   ) {}
+
+  /** Stand-Datum des Wortlauts, dem die Person zugestimmt hat (Kennung ggf. mit Suffix). */
+  get wortlautVom(): string | null {
+    return wortlautDatum(this.stand?.wortlaut);
+  }
 
   ngOnInit(): void {
     this.laden();

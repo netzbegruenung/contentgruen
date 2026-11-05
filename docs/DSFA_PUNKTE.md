@@ -94,9 +94,9 @@ Punkte werden beim Abruf berechnet, nicht gespeichert (`ss/services/punkte_servi
 zurücknimmt, verschwindet sofort aus Ranglisten und Abzeichen; die eigenen Punkte sieht die
 Person weiter. Nach dem Widerruf der Login-Einwilligung kann die Person nichts mehr beitragen und
 nichts bewerten, ihre Punkte sind 0, und ihre Kopien zählen nur noch am Zähler der Karte, ohne
-Prüfwert und ohne Meldung für Muster-Hinweise (#559); Gespeichertes bleibt, bis sie es löscht oder ihr Konto löschen lässt (#489,
-`docs/ART9_EINWILLIGUNG.md`). Geht das Konto, gehen die Muster-Hinweise mit, die Paar-Prüfwerte
-laufen nach 7 Tagen aus.
+Prüfwert und ohne Meldung für Muster-Hinweise (#559); Gespeichertes bleibt, bis sie es löscht
+oder ihr Konto löschen lässt (#489, `docs/ART9_EINWILLIGUNG.md`). Geht das Konto, gehen die
+Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
 
 ## 6. Fragen an Vorstand und Datenschutzbeauftragte
 

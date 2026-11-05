@@ -6,7 +6,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
-import { Art9EinwilligungService, Art9EinwilligungStand } from './art9-einwilligung.service';
+import { Art9EinwilligungService, Art9EinwilligungStand, wortlautDatum } from './art9-einwilligung.service';
 
 /** Nach dem Anmelden ohne Art.-9-Einwilligung auf /einwilligung fuehren (#489). */
 describe('Art9EinwilligungService', () => {
@@ -25,10 +25,10 @@ describe('Art9EinwilligungService', () => {
 
   const stand = (eingewilligt: boolean): Art9EinwilligungStand => ({
     eingewilligt,
-    wortlaut: eingewilligt ? '2026-11-05' : null,
+    wortlaut: eingewilligt ? '2026-11-05-b' : null,
     eingewilligt_am: null,
     widerrufen_am: null,
-    aktueller_wortlaut: { kennung: '2026-11-05', text: '…' },
+    aktueller_wortlaut: { kennung: '2026-11-05-b', text: '…' },
   });
 
   beforeEach(() => {
@@ -125,10 +125,17 @@ describe('Art9EinwilligungService', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  it('wortlautDatum liest das Stand-Datum aus der Kennung, auch mit Suffix', () => {
+    expect(wortlautDatum('2026-11-05')).toBe('2026-11-05');
+    expect(wortlautDatum('2026-11-05-b')).toBe('2026-11-05');
+    expect(wortlautDatum('kein-datum')).toBeNull();
+    expect(wortlautDatum(null)).toBeNull();
+  });
+
   it('einwilligen schickt die Kennung, widerrufen loescht', () => {
-    service.einwilligen('2026-11-05').subscribe();
+    service.einwilligen('2026-11-05-b').subscribe();
     const post = http.expectOne({ method: 'POST', url: ADRESSE });
-    expect(post.request.body).toEqual({ wortlaut: '2026-11-05' });
+    expect(post.request.body).toEqual({ wortlaut: '2026-11-05-b' });
     post.flush(null);
 
     service.widerrufen().subscribe();

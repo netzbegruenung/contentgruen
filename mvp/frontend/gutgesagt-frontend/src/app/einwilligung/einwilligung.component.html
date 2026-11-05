@@ -37,8 +37,11 @@
 
     <ng-container *ngIf="stand && (zustand === 'eingewilligt' || zustand === 'widerruft')">
       <p>
-        Du hast am {{ stand.eingewilligt_am | date: 'dd.MM.yyyy, HH:mm' }} Uhr eingewilligt
-        (Wortlaut vom {{ stand.wortlaut | date: 'dd.MM.yyyy' }}).
+        Du hast am {{ stand.eingewilligt_am | date: 'dd.MM.yyyy, HH:mm' }} Uhr eingewilligt<ng-container
+          *ngIf="wortlautVom as vom"
+        >
+          (Wortlaut vom {{ vom | date: 'dd.MM.yyyy' }})</ng-container
+        >.
       </p>
       <blockquote *ngIf="stand.wortlaut === stand.aktueller_wortlaut.kennung" class="wortlaut">
         {{ stand.aktueller_wortlaut.text }}
