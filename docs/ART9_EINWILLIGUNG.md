@@ -71,6 +71,44 @@ nach Wortlaut: Eine Einwilligung zu `2026-11-05` zählt also auch für Punkte, o
 ein künftiger Wortlaut neue Zwecke, muss die Prüfung für diese Zwecke die Kennung
 berücksichtigen oder die App neu fragen.
 
+## Wortlaut ändern: diese Stellen mitziehen
+
+Diese Stellen geben den Wortlaut wieder oder setzen ihn voraus (ermittelt per `git grep` nach
+der Kennung, „Art.-9-Einwilligung“, „Einwilligung“ und den Zwecken des Wortlauts). Wer den
+Wortlaut ändert, prüft jede und zieht sie im selben PR mit; Rechtstexte nur über ein eigenes
+Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“).
+
+- **Quelle:** `WORTLAUTE` und `AKTUELLER_WORTLAUT` in
+  `mvp/backend/semantic-search-service/app/domain/art9_einwilligung.py`; Kennung höchstens
+  `WORTLAUT_KENNUNG_MAX` Zeichen (Spalte `art9_einwilligungen.wortlaut`).
+- **Diese Datei:** Tabelle „Wortlaute“ unten, Abschnitt „Wortlaut ändern“ (Prüfung nach Kennung).
+- **Backend-Tests:** `TestWortlaute` in
+  `mvp/backend/semantic-search-service/app/tests/unit/api/test_art9_einwilligung_api.py`
+  (aktuelle Kennung, zitierte Zwecke, Kennungsformat, Spaltenlänge).
+- **Frontend:** `wortlautDatum` in
+  `mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.ts` liest das
+  Stand-Datum aus der Kennung (Muster `JJJJ-MM-TT` mit optionalem `-x`); Specs
+  `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung.component.spec.ts`
+  (Wortlaut mit Suffix, Auszug aus dem Text) und
+  `mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.spec.ts`.
+- **DSFA:** `docs/DSFA_PUNKTE.md`, Abschnitt 3 Risiko 1 (Opt-in für die Sichtbarkeit),
+  Abschnitt 4 (Zwecke, die der Wortlaut nennen muss, Kennung), Abschnitt 5 (Folgen des
+  Widerrufs), Abschnitt 7 (Stand mit Kennung).
+- **Glossar:** `GLOSSARY.md`, „Art.-9-Einwilligung“ (Zwecke, Kennungsformat) und „Level“
+  (bisher nur im Wortlaut genannt).
+- **Vision:** `docs/VISION.md`, Abschnitt mit „Meilensteine“ (Abzeichen nur mit Opt-in) und
+  „Ranglisten“ (Zustimmung, Art. 9).
+- **Datenschutzerklärung:** `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`,
+  „Rückschlüsse auf deine politische Haltung“ → „Deine Einwilligung“ (Kennungsformat, Folgen,
+  Widerruf) und „Punkte“ (Rechtsgrundlage, ohne Einwilligung keine Punkte); Spec
+  `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.spec.ts`
+  (gleichnamiger `describe`-Block und die Punkte-Tests).
+- **Prüfliste:** `docs/rechtstexte-luecken/pruefliste/P11.md` (Wortlaut zur Prüfung mit #296).
+
+Ohne Änderung ziehen mit: die Seite `/einwilligung` und die E2E-Anmeldung
+(`mvp/frontend/gutgesagt-frontend/e2e/tests/anmelden.setup.ts`), beide nehmen den aktuellen
+Wortlaut vom Backend.
+
 ## Wortlaute
 
 | Kennung | Stand | gültig |

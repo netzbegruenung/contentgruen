@@ -37,7 +37,7 @@ Why: "must" decides whether a PR can merge, and a reviewer and an author who rea
 
 ## Legal texts and data protection
 
-- **Legal texts change through their own ticket.** Changes to the privacy policy, terms of use or imprint are listed in the PR under `## Fachfrage` but made in a dedicated ticket that goes through legal review. Why: these texts carry legal weight and need sign-off; a side change in a feature PR skips that.
+- **Legal texts change through their own ticket.** Changes to the privacy policy, terms of use or imprint are listed in the PR under `## Fachfrage` but made in a dedicated ticket that goes through legal review. Why: these texts carry legal weight and need sign-off; a side change in a feature PR skips that. When the wording of the Art.-9-Einwilligung changes, the review works through `docs/ART9_EINWILLIGUNG.md`, „Wortlaut ändern: diese Stellen mitziehen“ (#569).
 - **Data handling matches the privacy policy.** A change that stores, logs or derives personal data either fits the current privacy policy or names the needed change as an item under `## Fachfrage`. Why: the policy promises what the code does, and only the maintainer can have it extended.
 
 ## Documentation

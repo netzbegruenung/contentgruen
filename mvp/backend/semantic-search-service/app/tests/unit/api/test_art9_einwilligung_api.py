@@ -7,6 +7,7 @@ Die Datenbank ersetzt ``art9_einwilligung_ohne_datenbank`` (tests/conftest.py).
 """
 
 import datetime
+import re
 
 import pytest
 from fastapi import Depends, FastAPI
@@ -108,6 +109,18 @@ class TestWortlaute:
 
     def test_kennungen_passen_in_die_spalte(self):
         assert all(len(kennung) <= WORTLAUT_KENNUNG_MAX for kennung in WORTLAUTE)
+
+    def test_kennungen_passen_auf_das_muster_des_frontends(self):
+        """
+        Das Frontend liest das Stand-Datum mit ``wortlautDatum``
+        (mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.ts);
+        eine Kennung, die nicht auf dieses Muster passt, liess die DatePipe
+        abstuerzen (``2026-11-05-b``, #560, #569).
+        """
+        muster = re.compile(r"^\d{4}-\d{2}-\d{2}(-[a-z])?$")
+
+        assert [k for k in WORTLAUTE if not muster.fullmatch(k)] == []
+        assert AKTUELLER_WORTLAUT in WORTLAUTE
 
 
 class TestEinwilligen:
