@@ -7,7 +7,7 @@
    Der Frontend-Container (8080) wird dafür nicht gebraucht; `mvp/run-local.sh up` startet ihn trotzdem mit.
 3. Frontend: `cd mvp/frontend/gutgesagt-frontend && npm ci && npx ng serve`
    Fehlt `src/environments/environment.ts`, vorher `environment.local.ts` dorthin kopieren.
-4. http://localhost:4200 → Anmelden → Direktanmeldung: `test.user@example.com` / `Liebe>Hass!`.
+4. http://localhost:4200 → Anmelden → Beta-Zugang (Direktanmeldung): `test.user@example.com` / `Liebe>Hass!`.
 
 Die App ruft das BFF relativ auf (`baseUrl: ''`). `ng serve` leitet `/api`, `/content`, `/recent`, `/getMetrics`,
 `/report` und `/reports` per `proxy.conf.json` an http://localhost:5054 weiter – kein CORS, Cookies same-origin.

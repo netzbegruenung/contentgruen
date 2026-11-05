@@ -28,7 +28,6 @@ export class LoginSelectorComponent implements OnInit {
   returnUrl: string = '/';
   isRegistrationInfoExpanded = false;
   readonly organisation = ORGANISATION;
-  readonly gutgesagtMail = ORGANISATION.gutgesagtMail;
 
   constructor(
     private authService: AuthService,
@@ -91,7 +90,7 @@ export class LoginSelectorComponent implements OnInit {
   }
 
   getMailtoLink(): string {
-    const email = this.gutgesagtMail;
+    const email = this.organisation.gutgesagtMail;
     const subject = 'Einladung zu Gut gesagt';
     return `mailto:${email}?subject=${encodeURIComponent(subject)}`;
   }

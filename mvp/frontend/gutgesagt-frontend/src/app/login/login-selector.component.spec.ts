@@ -63,10 +63,11 @@ describe('LoginSelectorComponent', () => {
       expect(fixture.nativeElement.textContent).not.toContain('Selbstregistrierung');
     });
 
-    it('erklärt den Weg über einen Einladungslink', () => {
+    it('erklärt den Weg über den Link einer Einladung', () => {
       const inhalt = text('.registration-content');
 
-      expect(inhalt).toContain('Einladungslink');
+      expect(inhalt).toContain('Hast du eine Einladung bekommen, öffne ihren Link');
+      expect(inhalt).not.toContain('Einladungslink');
       expect(inhalt).toContain('Mail-Adresse und Passwort');
     });
 
@@ -83,6 +84,13 @@ describe('LoginSelectorComponent', () => {
 
       expect(link.textContent?.trim()).toBe(ORGANISATION.vereinsname);
       expect(link.getAttribute('href')).toBe(ORGANISATION.url);
+      expect(text('.registration-content')).toContain(`Konto bei der ${ORGANISATION.name} an`);
+      expect(text('.registration-content')).toContain(`Kein Mitglied bei der ${ORGANISATION.name}`);
+    });
+
+    it('sagt Mitgliedern nicht, dass ihr Konto erst beim ersten Mal entsteht', () => {
+      expect(text('.registration-content')).toContain('Hast du noch kein Konto bei Gut gesagt, entsteht es dabei.');
+      expect(text('.registration-content')).not.toContain('Beim ersten Mal');
     });
 
     it('beschriftet die Anmeldung über den Realm mit Netzbegrünung-Login und Einladung', () => {
@@ -90,6 +98,11 @@ describe('LoginSelectorComponent', () => {
       expect(text('.keycloak-button .button-subtitle')).toBe('Netzbegrünung-Login oder Einladung');
       expect(text('.keycloak-button ~ .login-description')).toContain('„Mit Netzbegrünung anmelden“');
       expect(text('.keycloak-button ~ .login-description')).toContain('„Passwort vergessen“');
+    });
+
+    it('schickt umgezogene Beta-Zugänge zur Anmeldung über den Realm (#488)', () => {
+      expect(text('.keycloak-button ~ .login-description'))
+        .toContain('Konto aus einer Einladung oder deinen bisherigen Beta-Zugang');
     });
 
     it('beschriftet die Direktanmeldung als Beta-Zugang', () => {
@@ -106,7 +119,8 @@ describe('LoginSelectorComponent', () => {
       const alles = [text('.component-box'), ...attribute].join(' ');
 
       for (const gemieden of [
-        'Keycloak', 'SSO', 'Vereinslogin', 'Beta-Account', 'manueller User', 'Managed User', 'Netzbegrünung Login'
+        'Keycloak', 'SSO', 'Vereinslogin', 'Beta-Account', 'manueller User', 'Managed User', 'Netzbegrünung Login',
+        'Managed Login', 'Managed Auth', 'Dummy-Login', 'Registrierungslink', 'Einladungscode', 'Invite', 'Realm'
       ]) {
         expect(alles).not.toContain(gemieden);
       }
