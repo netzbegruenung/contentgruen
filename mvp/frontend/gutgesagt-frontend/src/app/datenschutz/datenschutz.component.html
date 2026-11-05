@@ -525,19 +525,44 @@
         Mobiltelefon, Tablet, Rechner und unbekannt.
       </p>
       <p>
-        <strong>Deine Kennung, deine IP-Adresse, die genaue Bezeichnung deines Browsers
-        (User-Agent) und ein Pseudonym werden dabei nicht gespeichert.</strong> Wir können
-        aus diesen Zeilen also weder ablesen, welches Konto einen Beitrag verwendet hat, noch
-        ob mehrere Vorgänge vom selben Gerät kamen. Vorgänge aus der Zeit, als dein Browser
-        noch eine Sitzungskennung mitschickte, tragen diese noch, bis sie nach 90 Tagen
-        gelöscht werden.
+        <strong>Deine Kennung, deine IP-Adresse und die genaue Bezeichnung deines Browsers
+        (User-Agent) werden dabei nicht gespeichert.</strong> Wir können aus diesen Zeilen
+        also nicht ablesen, welches Konto einen Beitrag verwendet hat. Vorgänge aus der Zeit,
+        als dein Browser noch eine Sitzungskennung mitschickte, tragen diese noch, bis sie nach
+        90 Tagen gelöscht werden.
+      </p>
+      <p>
+        Für „Diese Woche oft genutzt“ und für Punkte (siehe „Punkte“) zählt ein Beitrag
+        höchstens einmal je Person und Tag, auch wenn sie ihn mehrfach kopiert. Dafür halten
+        wir an jedem Vorgang zusätzlich fest, <strong>ob es an diesem Tag die erste Kopie
+        dieses Beitrags durch dieselbe Person war</strong>, und zählen diese ersten Kopien je
+        Beitrag. Aus diesem Vermerk lässt sich deshalb ablesen, dass mehrere Vorgänge an
+        einem Beitrag am selben Tag von derselben Person (ohne Anmeldung: vom selben Anschluss
+        mit demselben Browser) kamen, aber nicht, von wem.
+      </p>
+      <p>
+        Um die erste Kopie zu erkennen, speichern wir <strong>bis zum Ende des Tages einen
+        Prüfwert</strong>: einen Kurzwert, berechnet aus deiner Kennung (ohne Anmeldung aus
+        deiner IP-Adresse, bei IPv6 nur ihrem vorderen Teil, und der Bezeichnung deines
+        Browsers, wie bei den Suchvorgängen), dem Beitrag und dem Datum. Der Server bildet ihn
+        mit einem geheimen Schlüssel, den er <strong>jeden Tag neu zufällig erzeugt, nur im
+        Arbeitsspeicher hält und nirgends speichert</strong>. Auch wer die gespeicherten Daten
+        hat, kann deshalb einen Prüfwert weder auf dich noch auf den Beitrag zurückführen.
+        Nach Mitternacht (UTC) verwirft der Server die Prüfwerte des Vortags; startet er neu,
+        passt keiner mehr, und eine weitere Kopie am selben Tag zählt noch einmal.
+      </p>
+      <p>
+        Kopien durch die Zugänge, unter denen unser Team den Startbestand an Beiträgen
+        schreibt (Startkonten), zählen wir gar nicht; zu ihnen entsteht kein Vorgang.
       </p>
       <p>
         <strong>Zweck:</strong> zu erkennen, welche Beiträge gebraucht werden.<br>
         <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO.<br>
         <strong>Dauer:</strong> Die einzelnen Vorgänge werden <strong>nach 90 Tagen
-        automatisch gelöscht</strong>. Erhalten bleibt danach nur ein Zähler pro Beitrag, bei
-        Kommentaren auch je Fassung, aus dem sich nichts über einzelne Personen oder Geräte ergibt.
+        automatisch gelöscht</strong>. Erhalten bleiben danach nur Zähler pro Beitrag (alle
+        Kopien und die ersten Kopien je Person und Tag), bei Kommentaren auch je Fassung, aus
+        denen sich nichts über einzelne Personen oder Geräte ergibt. Prüfwerte bleiben nur
+        bis zum Ende ihres Tages.
       </p>
 
       <h3>Rückmeldung zur Nutzung deiner Beiträge</h3>
@@ -553,7 +578,9 @@
         warst. Wann du da warst, speichern wir nicht. Die Gesamtzahl und die Zahl seit deinem
         letzten Besuch siehst nur du selbst; wie oft ein einzelner Beitrag genutzt wurde,
         steht wie bisher auch an ihm. Wer deine Beiträge genutzt hat, wissen wir nicht und
-        zeigen wir nicht.
+        zeigen wir nicht. Einzige Ausnahme, sobald Punkte eingeschaltet sind: Nutzen sich zwei
+        Konten gegenseitig, sehen unsere Administratorinnen und Administratoren das in einem
+        Muster-Hinweis, ohne die genutzten Beiträge (siehe „Punkte“).
       </p>
       <p>
         <strong>Zweck:</strong> dir zeigen, dass deine Beiträge anderen helfen.<br>
@@ -561,6 +588,60 @@
         berechtigtes Interesse ist, Mitwirkende über die Wirkung ihrer Beiträge zu
         informieren.<br>
         <strong>Dauer:</strong> bis zur Löschung deines Kontos.
+      </p>
+    </section>
+
+    <mat-divider></mat-divider>
+
+    <section class="legal-section">
+      <h2>Punkte</h2>
+      <p>
+        <strong>Punkte sind noch nicht eingeschaltet.</strong> Dieser Abschnitt beschreibt,
+        was gilt, sobald wir sie einschalten. Bis dahin entsteht nichts von dem, was hier
+        steht.
+      </p>
+      <p>
+        Mit Punkten zeigen wir dir, wie deine Mitwirkung wirkt: wenige Punkte für deine
+        Beiträge und ausformulierten Einwürfe, die meisten dafür, dass andere deine Beiträge
+        nutzen (gezählt wie oben unter „Verwendung von Beiträgen“: höchstens einmal je
+        Person, Beitrag und Tag) und ihnen zustimmen. Deinen Punktestand
+        <strong>siehst nur du</strong>. Wir speichern ihn nicht, sondern berechnen ihn bei
+        jedem Abruf aus deinen sichtbaren Beiträgen und den Zählern daran. Eigene Kopien und
+        Stimmen zählen nicht, ebenso wenig Kopien und Stimmen der Startkonten; ein Startkonto
+        sammelt selbst keine Punkte.
+      </p>
+      <p>
+        Damit Punkte nicht durch Absprachen entstehen, achten wir darauf, ob sich zwei Konten
+        gegenseitig nutzen. Nutzt ein Konto einen Beitrag eines anderen, merken wir uns dafür
+        <strong>für sieben Tage einen Paar-Prüfwert</strong>: einen Kurzwert aus den
+        Kennungen beider Konten, ohne den Beitrag und ohne das Datum, gespeichert nur mit dem
+        Tag der letzten Nutzung in dieser Richtung. Welcher Beitrag genutzt wurde,
+        steht nirgends. Der Schlüssel dafür liegt wie beim Prüfwert <strong>nur im
+        Arbeitsspeicher</strong>; er wechselt alle sieben Tage, der vorige bleibt sieben Tage
+        lang zum Vergleich. Auch wer die gespeicherten Daten hat, kann deshalb einen
+        Paar-Prüfwert nicht nachrechnen, und nach einem Neustart passt keiner mehr.
+      </p>
+      <p>
+        Hat innerhalb von sieben Tagen jedes der beiden Konten einen Beitrag des anderen
+        genutzt, entsteht ein <strong>Muster-Hinweis</strong>. Er nennt die Kennungen beider
+        Konten, an wie vielen Tagen das auffiel, den ersten und den letzten solchen Tag. Ihn
+        sehen nur unsere Administratorinnen und Administratoren, mit Kennung und, wenn es
+        einen gibt, Anzeigename der beiden Konten. Ein Muster-Hinweis ist kein Urteil: Er
+        zieht keine Punkte ab und sperrt niemanden; ein Mensch prüft ihn.
+        Nutzung ohne Anmeldung zählt hier nicht.
+      </p>
+      <p>
+        <strong>Zweck:</strong> dir die Wirkung deiner Mitwirkung zeigen und die Punkte gegen
+        Absprachen schützen.<br>
+        <strong>Rechtsgrundlage:</strong> deine Einwilligung nach Artikel 6 Absatz 1
+        Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO (siehe „Rückschlüsse auf deine
+        politische Haltung“). Bevor wir
+        Punkte einschalten, ergänzen wir ihren Wortlaut um Punkte und Muster-Hinweise.<br>
+        <strong>Dauer:</strong> Paar-Prüfwerte löschen wir sieben Tage nach der letzten
+        Nutzung in ihrer Richtung, Muster-Hinweise acht Wochen nach dem letzten auffälligen
+        Tag, jeweils automatisch (täglicher Löschlauf, also spätestens einen Tag danach). Wird
+        ein Konto gelöscht, gehen die Muster-Hinweise, die es nennen, mit; seine Paar-Prüfwerte
+        laufen nach spätestens sieben Tagen aus.
       </p>
     </section>
 
@@ -980,7 +1061,10 @@
         Wir treffen keine Entscheidungen über dich, die allein auf einer automatisierten
         Verarbeitung beruhen und dir gegenüber rechtliche Wirkung entfalten oder dich in
         ähnlicher Weise erheblich beeinträchtigen. Ein Profiling im Sinne von Artikel 4
-        Nummer 4 DSGVO findet nicht statt.
+        Nummer 4 DSGVO findet nicht statt, solange Punkte ausgeschaltet sind. Sind sie
+        eingeschaltet, bewertet dein Punktestand, wie deine Mitwirkung bei anderen wirkt
+        (siehe „Punkte“); er wird automatisch berechnet, aber nur dir gezeigt und hat keine
+        Folgen für dich. Auch ein Muster-Hinweis löst nichts automatisch aus.
       </p>
     </section>
 
@@ -999,6 +1083,41 @@
         werten deine Mitwirkung nicht danach aus, welche politische Haltung du hast. Wer was
         davon sieht, steht in den einzelnen Abschnitten.
       </p>
+
+      <h3>Deine Einwilligung</h3>
+      <p>
+        Deshalb fragen wir dich nach deiner ersten Anmeldung, ob du <strong>ausdrücklich
+        einwilligst</strong>, dass wir deine Mitwirkung verarbeiten, auch wenn sich daraus
+        auf deine politische Meinung schließen lässt. Das ist ein eigenes Häkchen, getrennt
+        von den Nutzungsbedingungen und nicht vorbelegt; den Wortlaut siehst du dort.
+        <strong>Ohne Einwilligung kannst du suchen und lesen, aber nichts beitragen und
+        nichts bewerten.</strong> Melden, Feedback schicken, eigene Beiträge löschen und einer
+        Sperre widersprechen geht auch ohne sie.
+      </p>
+      <p>
+        Willigst du ein, speichern wir deine Kennung, <strong>den Zeitpunkt und die Kennung
+        des Wortlauts</strong>, dem du zugestimmt hast (sein Stand-Datum), damit wir
+        nachweisen können, worin du eingewilligt hast.
+      </p>
+      <p>
+        <strong>Widerrufen</strong> kannst du jederzeit im Profilmenü unter „Einwilligung“.
+        Dann vermerken wir den Zeitpunkt des Widerrufs an deiner Einwilligung; sie bleibt als
+        Nachweis stehen, dass wir uns bis dahin auf sie stützen durften. Danach kannst du
+        nichts mehr beitragen und nichts bewerten. Was du schon gespeichert hast, bleibt, bis
+        du es löschst oder dein Konto löschen lässt; was bis zum Widerruf geschehen ist, bleibt
+        rechtmäßig. Willigst du später erneut ein, kommt eine neue Einwilligung hinzu.
+      </p>
+      <p>
+        <strong>Zweck:</strong> deine Mitwirkung verarbeiten zu dürfen und nachzuweisen, dass
+        du eingewilligt hast.<br>
+        <strong>Rechtsgrundlage:</strong> Artikel 9 Absatz 2 Buchstabe a DSGVO, deine
+        ausdrückliche Einwilligung, zusätzlich zu der Rechtsgrundlage, die in den einzelnen
+        Abschnitten steht. Den Nachweis bewahren wir auf, weil Artikel 7 Absatz 1 DSGVO ihn
+        verlangt.<br>
+        <strong>Dauer:</strong> Deine Einwilligungen, auch widerrufene, bleiben bis zur
+        Löschung deines Kontos (siehe „Deine Rechte“); wie lange deine einzelnen Beiträge und
+        Bewertungen bleiben, steht in ihren Abschnitten.
+      </p>
     </section>
 
     <mat-divider></mat-divider>
@@ -1010,8 +1129,10 @@
         Kennung und eine E-Mail-Adresse, bei jeder Kontoart: über die Netzbegrünung, aus
         einer Einladung oder als von uns angelegter Zugang — ohne die können wir kein Konto
         einrichten. Alles Weitere ist freiwillig: Ob du einen Beitrag einstellst, bewertest,
-        meldest, Feedback schickst oder etwas in den Fangkorb wirfst, entscheidest du.
-        Nachteile entstehen dir nicht, wenn du es lässt.
+        meldest, Feedback schickst oder etwas in den Fangkorb wirfst, entscheidest du. Zum
+        Beitragen und Bewerten brauchst du deine Einwilligung (siehe „Rückschlüsse auf deine
+        politische Haltung“); ohne sie kannst du weiter suchen, lesen, melden und Feedback
+        schicken. Darüber hinaus hat es keine Folgen für dich, wenn du etwas davon lässt.
       </p>
     </section>
 
@@ -1026,15 +1147,17 @@
         <strong>Einschränkung der Verarbeitung</strong> (Artikel 18), auf
         <strong>Datenübertragbarkeit</strong> (Artikel 20) und auf
         <strong>Widerruf einer Einwilligung</strong> mit Wirkung für die Zukunft (Artikel 7
-        Absatz 3). Wende dich dafür an
+        Absatz 3); deine Einwilligung zur Mitwirkung widerrufst du direkt im Profilmenü unter
+        „Einwilligung“. Wende dich dafür an
         <a href="mailto:{{ KONTAKT_MAIL }}">{{ KONTAKT_MAIL }}</a>.
       </p>
       <p>
         <strong>Wie eine Löschung bei uns abläuft, und was sie nicht leistet:</strong> Es gibt
         keine Schaltfläche, die dein Konto und alles daran Hängende von selbst entfernt. Wir
         führen die Löschung von Hand aus. Dabei entfernen wir deinen Zugang, deinen
-        Anzeigenamen, deine Bewertungen, deine Meldungen, deine Einwürfe und die gespeicherte
-        Zahl für die Rückmeldung zur Nutzung, außerdem die Verwendungen von Beiträgen aus
+        Anzeigenamen, deine Bewertungen, deine Meldungen, deine Einwürfe, die gespeicherte
+        Zahl für die Rückmeldung zur Nutzung, deine Einwilligungen samt Widerrufen und die
+        Muster-Hinweise, die dein Konto nennen, außerdem die Verwendungen von Beiträgen aus
         Browsern, aus denen du angemeldet gemeldet hast (siehe „Meldungen von Beiträgen“).
         Deine <strong>Beiträge bleiben erhalten und werden anonymisiert</strong> — an die
         Stelle deiner Kennung tritt ein Platzhalter; die Gründe stehen oben unter „Beiträge,
@@ -1106,7 +1229,7 @@
     </section>
 
     <div class="update-notice">
-      <p><strong>Stand:</strong> 4. November 2026</p>
+      <p><strong>Stand:</strong> 5. November 2026</p>
     </div>
   </div>
 </div>
