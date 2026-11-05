@@ -706,6 +706,33 @@ class TestAddStatementDubletten:
         assert statement_id == fast_gleich.id
 
     @pytest.mark.asyncio
+    async def test_vorhandene_finden_prueft_wie_add_statement_und_legt_nichts_an(
+        self, service, test_settings, test_embeddings_manager
+    ):
+        """Grundlage der Zerfaserung im Suchtestset (#346)."""
+        from unittest.mock import AsyncMock
+
+        fast_gleich = self._treffer(
+            "Deutschland kann das Klima nicht alleine retten",
+            test_settings.statement_similarity_threshold,
+        )
+        verwandt = self._treffer("Die Grünen sind keine Verbotspartei", 0.969)
+        vorher = dict(test_embeddings_manager.get_data())
+
+        service._repository.search = AsyncMock(return_value=[fast_gleich])
+        gefunden = await service.vorhandene_finden(
+            "Deutschland kann nicht alleine das Klima retten!"
+        )
+        service._repository.search = AsyncMock(return_value=[verwandt])
+        nicht_gefunden = await service.vorhandene_finden(
+            "Die Grünen sind eine Verbotspartei"
+        )
+
+        assert gefunden.id == fast_gleich.id
+        assert nicht_gefunden is None
+        assert test_embeddings_manager.get_data() == vorher
+
+    @pytest.mark.asyncio
     async def test_vektorsuche_mit_query_einbettung_und_ohne_ersetzung(self, service):
         from unittest.mock import AsyncMock
 
