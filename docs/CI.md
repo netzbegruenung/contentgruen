@@ -149,6 +149,8 @@ model), so the run is not a required status.
   request that switches to another model downloads it once in that run.
 - `suchtest` also runs after a red `messset`, one after the other: each step loads the
   model.
+- The log line „Folder not found: …/index_data/content_index“ while loading the seed is
+  harmless; seeding logs it in the dev stack too.
 - Always against the seed in the service `qdrant` of the run, never against test or
   production. No secret and no report step (there is no pull request to comment on): a red
   run is visible in Woodpecker.
