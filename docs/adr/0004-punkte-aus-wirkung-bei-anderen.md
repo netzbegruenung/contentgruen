@@ -28,7 +28,7 @@ Entschieden mit der Punktezählung (PR #476, BanSe/todo#266): Besucher werden ü
 
 ## Ranglisten nur mit Zustimmung (Ergänzung 05.11.2026)
 
-Ranglisten erscheinen nur bei Personen, die ausdrücklich zugestimmt haben (Opt-in), nicht bei allen, die sie abschalten könnten (Opt-out). Die Zustimmung lässt sich jederzeit widerrufen. Grund: Schon die Teilnahme an einer Rangliste verrät eine politische Haltung (DSGVO Art. 9), und die Ranglisten zeigen anderen Anzeigenamen. Die Entscheidung steht in `docs/VISION.md` und `docs/DSFA_PUNKTE.md`; der Satz zur Abschaltbarkeit im Abschnitt Consequences oben gilt seitdem nicht mehr.
+Ranglisten erscheinen nur bei Personen, die ausdrücklich zugestimmt haben. Die Zustimmung ist freiwillig, nichts ist vorbelegt, und sie lässt sich jederzeit widerrufen. Die frühere Variante, die Teilnahme abschalten zu müssen, ist verworfen. Grund: Schon die Teilnahme an einer Rangliste verrät eine politische Haltung (DSGVO Art. 9), und Ranglisten zeigen anderen nur den Anzeigenamen. Die Entscheidung steht in `docs/VISION.md` und `docs/DSFA_PUNKTE.md`. Der Satz in Consequences unten ist entsprechend ersetzt.
 
 ## Considered Options
 
@@ -38,4 +38,4 @@ Ranglisten erscheinen nur bei Personen, die ausdrücklich zugestimmt haben (Opt-
 
 ## Consequences
 
-Der Zähler an der Karte darf weiter jede Nutzung zählen, die Punkte brauchen aber eine eigene, entdoppelte Zählung. Die Gewichte stehen in der Konfiguration, nicht im Code. Ranglisten zeigen Anzeigenamen; die Datenschutzerklärung braucht dafür einen Abschnitt, und die Teilnahme an Ranglisten braucht die Zustimmung der Person (Opt-in, Ergänzung 05.11.2026).
+Der Zähler an der Karte darf weiter jede Nutzung zählen, die Punkte brauchen aber eine eigene, entdoppelte Zählung. Die Gewichte stehen in der Konfiguration, nicht im Code. Ranglisten zeigen Anzeigenamen; die Datenschutzerklärung braucht dafür einen Abschnitt, und die Teilnahme an Ranglisten braucht die Zustimmung der Person (siehe Ergänzung vom 05.11.2026).
