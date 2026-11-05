@@ -13,14 +13,15 @@ laedt das Einbettungsmodell (~1,5 GB RAM). Im Container des Semantic-Search-Serv
 `python -m tests.regression.suche_messen`.
 
 Liest nur: Es ruft dieselben Schritte wie die Suche (api/v1/search.py: Aussagetreffer,
-Polaritaetsfilter, Schlagwort-Ueberlappung, Orchestrator), aber nicht den Endpunkt. Es
-legt keine Aussage aus der Suchanfrage an und zaehlt weder Suchereignis noch Suche ohne
-Treffer. Gesammelt wird ohne Schwelle; welche Treffer eine Schwelle zeigen wuerde,
-rechnet die Auswertung danach aus. So kostet ein Vergleich vieler Schwellen eine Messung.
+Polaritaetsfilter, Schlagwort-Ueberlappung, dann der SearchOrchestrator mit Limit und
+Kuerzen), aber nicht den Endpunkt. Es legt keine Aussage aus der Suchanfrage an und
+zaehlt weder Suchereignis noch Suche ohne Treffer. Je Schwelle laeuft der Orchestrator
+einmal, so wie er im Dienst mit dieser Schwelle liefe; die Aussagetreffer werden je Fall
+nur einmal gesucht.
 
 Schnittstelle fuer Folgetickets (naechtlicher Lauf, Stemmer, Modellwechsel): messen()
-liefert je Fall eine FallMessung, auswerten() und zerfaserung() rechnen daraus ohne
-Stack; --json schreibt beides als Datei.
+liefert je Fall eine FallMessung, auswerten(), je_phaenomen() und zerfaserung() rechnen
+daraus ohne Stack; --json schreibt alles als Datei.
 """
 
 import argparse
@@ -36,13 +37,12 @@ from utils.text_normalisierung import text_normalisiert
 # (MINIMUM_SCORE_THRESHOLD, siehe schwelle_heute()). Das Modul wird erst bei Bedarf
 # geladen: Es braucht ein initialisiertes Logging (main()).
 
-# So viele Treffer fragt das Frontend je Suche an (result-view.component.ts).
+# So viele Treffer je Beitragstyp fragt das Frontend an (result-view.component.ts).
 K = 10
 STANDARD_SCHWELLEN = (0.76, 0.78, 0.79, 0.80, 0.81, 0.82, 0.84, 0.86)
-# Gesammelt wird unterhalb jeder sinnvollen Schwelle und mit grosszuegigem Limit, damit
-# die Auswertung jede Schwelle nachrechnen kann.
-SAMMELSCHWELLE = 0.0
-SAMMELLIMIT = 100
+# Die Abschnitte der Ergebnisseite in ihrer Reihenfolge (result-view.component.html);
+# Bilder zeigt sie nicht.
+ANGEZEIGTE_TYPEN = ("commentary", "generic_text", "post")
 
 VORLAEUFIG = (
     "Vorläufig: gemessen am Testbestand (Seed). Nach dem Startbestand (#288) einmal neu "
@@ -53,19 +53,20 @@ EINORDNUNGEN = ("treffer", "fehltreffer", "keine")
 
 
 class Kandidat(NamedTuple):
-    """Ein Beitrag, den die Suche zu einer Suchanfrage findet, vor jeder Schwelle."""
+    """Ein Beitrag, den die Suche zu einer Suchanfrage zeigt."""
 
     beitrag_id: str
     typ: str
     aussage_text: str  # leer bei einem direkten Treffer
-    schwellenwert: float  # damit vergleicht die Suche die Schwelle
-    rangwert: float  # danach sortiert sie
+    score: float  # wie im Suchergebnis (direkt: mit DIRECT_MATCH_PENALTY)
     passt: bool
 
 
 class FallMessung(NamedTuple):
     fall: Fall
-    kandidaten: Tuple[Kandidat, ...]
+    # Je Schwelle die angezeigten Beitraege in der Reihenfolge der Ergebnisseite:
+    # Kommentare, Hintergrundinfos, Posts, je Typ hoechstens k.
+    angezeigt: Dict[float, Tuple[Kandidat, ...]]
     # Aussagen aus fall.erwartet, die im gemessenen Bestand fehlen. Ist eine davon
     # nicht da, zaehlt der Fall nicht mit.
     fehlt: Tuple[str, ...]
@@ -85,7 +86,9 @@ class Auswertung(NamedTuple):
     ohne_richtig_keine: int
     ohne_fehltreffer: int
     praezision: Optional[float]  # passende / alle angezeigten Beitraege
-    recall_at_k: Optional[float]  # Faelle mit Erwartung und passendem Beitrag unter k
+    recall_at_k: Optional[float]  # Faelle mit Erwartung und passendem Beitrag
+    direkt_angezeigt: int  # angezeigte Beitraege ohne Aussage (direkter Weg)
+    direkt_passend: int
 
 
 class Zerfaserung(NamedTuple):
@@ -109,15 +112,6 @@ def schwelle_heute() -> float:
     return MINIMUM_SCORE_THRESHOLD
 
 
-def angezeigt(
-    kandidaten: Iterable[Kandidat], schwelle: float, k: int = K
-) -> List[Kandidat]:
-    """Was die Suche bei dieser Schwelle zeigen wuerde: ueber der Schwelle, die besten k."""
-    ueber = [c for c in kandidaten if c.schwellenwert > schwelle]
-    ueber.sort(key=lambda c: c.rangwert, reverse=True)
-    return ueber[:k]
-
-
 def einordnen(fall: Fall, gezeigt: Sequence[Kandidat]) -> str:
     """
     treffer: der erste angezeigte Beitrag passt. fehltreffer: es wird etwas angezeigt,
@@ -135,18 +129,18 @@ def gemessen(messungen: Iterable[FallMessung]) -> List[FallMessung]:
     return [m for m in messungen if not m.fehlt]
 
 
-def auswerten(
-    messungen: Iterable[FallMessung], schwelle: float, k: int = K
-) -> Auswertung:
+def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
     faelle = gemessen(messungen)
     zaehler = {"treffer": 0, "fehltreffer": 0, "keine": 0}
     ohne = {"keine": 0, "fehltreffer": 0}
-    passend = gezeigt_gesamt = gefunden = 0
+    passend = gezeigt_gesamt = gefunden = direkt = direkt_passend = 0
     for m in faelle:
-        gezeigt = angezeigt(m.kandidaten, schwelle, k)
+        gezeigt = m.angezeigt[schwelle]
         einordnung = einordnen(m.fall, gezeigt)
         gezeigt_gesamt += len(gezeigt)
         passend += sum(c.passt for c in gezeigt)
+        direkt += sum(1 for c in gezeigt if not c.aussage_text)
+        direkt_passend += sum(1 for c in gezeigt if not c.aussage_text and c.passt)
         if m.fall.erwartet:
             zaehler[einordnung] += 1
             gefunden += any(c.passt for c in gezeigt)
@@ -165,39 +159,42 @@ def auswerten(
         ohne_fehltreffer=ohne["fehltreffer"],
         praezision=passend / gezeigt_gesamt if gezeigt_gesamt else None,
         recall_at_k=gefunden / mit_erwartung if mit_erwartung else None,
+        direkt_angezeigt=direkt,
+        direkt_passend=direkt_passend,
     )
 
 
 def je_phaenomen(
-    messungen: Iterable[FallMessung], schwelle: float, k: int = K
+    messungen: Iterable[FallMessung], schwelle: float
 ) -> Dict[str, Dict[str, int]]:
     """Je Phaenomen, wie viele Faelle treffer, fehltreffer und keine sind."""
     tabelle: Dict[str, Dict[str, int]] = {}
     for m in gemessen(messungen):
         zeile = tabelle.setdefault(m.fall.phaenomen, dict.fromkeys(EINORDNUNGEN, 0))
-        zeile[einordnen(m.fall, angezeigt(m.kandidaten, schwelle, k))] += 1
+        zeile[einordnen(m.fall, m.angezeigt[schwelle])] += 1
     return tabelle
 
 
-def zerfaserung(
-    messungen: Iterable[FallMessung], schwelle: float, k: int = K
-) -> Zerfaserung:
+def zerfaserung(messungen: Iterable[FallMessung], schwelle: float) -> Zerfaserung:
     """
     Wie viele Suchanfragen, die dieselbe Behauptung wie eine vorhandene Aussage sind,
     trotzdem eine neue Aussage anlegen wuerden; insgesamt und unter den Suchen ohne
-    Treffer (die landen in "Hier fehlt eine Antwort").
+    Treffer (die landen in "Hier fehlt eine Antwort"). Nur gemessene Faelle zaehlen:
+    landet_auf_erwarteter ist True oder False, None hiesse nicht geprueft.
     """
     faelle = gemessen(messungen)
     dieselbe = [m for m in faelle if m.fall.dieselbe_behauptung]
-    ohne = [m for m in faelle if not angezeigt(m.kandidaten, schwelle, k)]
+    ohne = [m for m in faelle if not m.angezeigt[schwelle]]
     ohne_dieselbe = [m for m in ohne if m.fall.dieselbe_behauptung]
     return Zerfaserung(
         schwelle=schwelle,
         dieselbe_behauptung=len(dieselbe),
-        davon_neu=sum(1 for m in dieselbe if not m.landet_auf_erwarteter),
+        davon_neu=sum(1 for m in dieselbe if m.landet_auf_erwarteter is False),
         ohne_treffer=len(ohne),
         ohne_treffer_dieselbe=len(ohne_dieselbe),
-        ohne_treffer_neu=sum(1 for m in ohne_dieselbe if not m.landet_auf_erwarteter),
+        ohne_treffer_neu=sum(
+            1 for m in ohne_dieselbe if m.landet_auf_erwarteter is False
+        ),
     )
 
 
@@ -213,29 +210,30 @@ def _anteil(wert: Optional[float]) -> str:
 def tabellen(
     messungen: Sequence[FallMessung],
     schwellen: Sequence[float],
-    k: int = K,
     aktuell: Optional[float] = None,
+    k: int = K,
 ) -> str:
     aktuell = schwelle_heute() if aktuell is None else aktuell
     faelle = gemessen(messungen)
     zeilen = [
         VORLAEUFIG,
         "",
-        f"{len(faelle)} von {len(messungen)} Fällen gemessen, die besten {k} Beiträge "
-        f"je Suche, Schwelle der Suche heute {aktuell}.",
+        f"{len(faelle)} von {len(messungen)} Fällen gemessen, je Beitragstyp höchstens "
+        f"{k} Beiträge, Schwelle der Suche heute {aktuell}.",
         "",
         "| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer "
-        "| Präzision | Recall@k |",
-        "|---|---|---|---|---|---|---|",
+        "| Präzision | Recall@k | direkt: passend / angezeigt |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for schwelle in schwellen:
-        a = auswerten(messungen, schwelle, k)
+        a = auswerten(messungen, schwelle)
         markierung = " (heute)" if abs(schwelle - aktuell) < 1e-9 else ""
         zeilen.append(
             f"| {schwelle:.2f}{markierung} | {a.treffer}/{a.mit_erwartung} "
             f"| {a.fehltreffer} | {a.keine} "
             f"| {a.ohne_richtig_keine}/{a.ohne_erwartung} / {a.ohne_fehltreffer} "
-            f"| {_anteil(a.praezision)} | {_anteil(a.recall_at_k)} |"
+            f"| {_anteil(a.praezision)} | {_anteil(a.recall_at_k)} "
+            f"| {a.direkt_passend} / {a.direkt_angezeigt} |"
         )
     zeilen += [
         "",
@@ -244,12 +242,12 @@ def tabellen(
         "| Phänomen | Treffer | Fehltreffer | keine |",
         "|---|---|---|---|",
     ]
-    for phaenomen, zeile in sorted(je_phaenomen(messungen, aktuell, k).items()):
+    for phaenomen, zeile in sorted(je_phaenomen(messungen, aktuell).items()):
         zeilen.append(
             f"| {phaenomen} | {zeile['treffer']} | {zeile['fehltreffer']} "
             f"| {zeile['keine']} |"
         )
-    z = zerfaserung(messungen, aktuell, k)
+    z = zerfaserung(messungen, aktuell)
     zeilen += [
         "",
         f"Zerfaserung bei {aktuell}: {z.davon_neu} von {z.dieselbe_behauptung} "
@@ -267,34 +265,33 @@ def tabellen(
 
 
 def faelle_text(
-    messungen: Sequence[FallMessung],
-    schwelle: Optional[float] = None,
-    k: int = K,
+    messungen: Sequence[FallMessung], schwelle: Optional[float] = None
 ) -> str:
-    """Je Fall: Einordnung, erster angezeigter Beitrag, bester passender (auch darunter)."""
+    """Je Fall: Einordnung, erster angezeigter und erster passender angezeigter Beitrag."""
     schwelle = schwelle_heute() if schwelle is None else schwelle
     zeilen = [
-        f"| Fall | Phänomen | bei {schwelle} | erster angezeigter | bester passender |",
+        f"| Fall | Phänomen | bei {schwelle} | erster angezeigter "
+        "| erster passender (Platz) |",
         "|---|---|---|---|---|",
     ]
     for m in gemessen(messungen):
-        gezeigt = angezeigt(m.kandidaten, schwelle, k)
-        passende = [c for c in m.kandidaten if c.passt]
-        bester_passender = max(passende, key=lambda c: c.rangwert, default=None)
+        gezeigt = m.angezeigt[schwelle]
+        platz, passender = next(
+            ((i, c) for i, c in enumerate(gezeigt, 1) if c.passt), (None, None)
+        )
         zeilen.append(
             f"| {m.fall.id} | {m.fall.phaenomen} | {einordnen(m.fall, gezeigt)} "
             f"| {_kandidat_text(gezeigt[0] if gezeigt else None)} "
-            f"| {_kandidat_text(bester_passender)} |"
+            f"| {_kandidat_text(passender)}{f' ({platz})' if platz else ''} |"
         )
     return "\n".join(zeilen)
 
 
 def _kandidat_text(c: Optional[Kandidat]) -> str:
-    """Score, mit dem die Schwelle verglichen wird, und woher der Treffer kommt."""
     if c is None:
         return "–"
     herkunft = c.aussage_text[:40] if c.aussage_text else "direkt"
-    return f"{c.schwellenwert:.4f} {herkunft}"
+    return f"{c.typ} {c.score:.3f} {herkunft}"
 
 
 def als_json(
@@ -305,14 +302,17 @@ def als_json(
         "hinweis": VORLAEUFIG,
         "k": k,
         "schwelle_heute": heute,
-        "auswertung": [auswerten(messungen, s, k)._asdict() for s in schwellen],
-        "zerfaserung": zerfaserung(messungen, heute, k)._asdict(),
+        "auswertung": [auswerten(messungen, s)._asdict() for s in schwellen],
+        "zerfaserung": zerfaserung(messungen, heute)._asdict(),
         "faelle": [
             {
                 "id": m.fall.id,
                 "fehlt": list(m.fehlt),
                 "landet_auf_erwarteter": m.landet_auf_erwarteter,
-                "kandidaten": [c._asdict() for c in m.kandidaten],
+                "angezeigt": {
+                    f"{s:.2f}": [c._asdict() for c in kandidaten]
+                    for s, kandidaten in sorted(m.angezeigt.items())
+                },
             }
             for m in messungen
         ],
@@ -337,7 +337,6 @@ async def dienste_starten() -> Dienste:
     from dependencies import (
         get_commentary_service,
         get_generic_text_service,
-        get_image_service,
         get_post_service,
         get_reference_service,
         get_statement_service,
@@ -351,109 +350,130 @@ async def dienste_starten() -> Dienste:
     initialize_services()
     return Dienste(
         statement_service=get_statement_service(),
+        # Ohne Bilder: Die Ergebnisseite zeigt sie nicht.
         specs=suchspezifikationen(
             get_commentary_service(),
             get_generic_text_service(),
             get_post_service(),
-            get_image_service(),
+            None,
         ),
         reference_service=get_reference_service(),
     )
 
 
+async def dienste_beenden() -> None:
+    from core.config import settings
+    from services.embeddings.qdrant_embeddings_manager import (
+        get_qdrant_embeddings_manager,
+    )
+
+    await get_qdrant_embeddings_manager(settings).shutdown()
+
+
 class _Erwartung(NamedTuple):
     aussage_ids: frozenset
     beitrag_ids: frozenset
-    normalformen: frozenset
     fehlt: Tuple[str, ...]
 
 
-async def _erwartung(dienste: Dienste, fall: Fall) -> _Erwartung:
+async def _aussage_im_bestand(dienste: Dienste, text: str):
+    """
+    Die Aussage mit genau diesem Text (normalisiert) oder None. vorhandene_finden sucht
+    zuerst ueber die Normalform im Keyword-Index; nur Altbestand ohne dieses Feld geht
+    ueber die Vektorsuche. Eine bloss sehr aehnliche Aussage zaehlt nicht.
+    """
+    vorhanden = await dienste.statement_service.vorhandene_finden(text)
+    if vorhanden is None or text_normalisiert(vorhanden.text) != text_normalisiert(
+        text
+    ):
+        return None
+    return await dienste.statement_service.get(vorhanden.id)
+
+
+async def _erwartung(dienste: Dienste, fall: Fall, cache: dict) -> _Erwartung:
     """Die erwarteten Aussagen im Bestand: ihre IDs und die ihrer Beitraege."""
     aussage_ids, beitrag_ids, fehlt = set(), set(), []
     for text in fall.erwartet:
-        vorhanden = await dienste.statement_service.vorhandene_finden(text)
-        # Nur der Text selbst (normalisiert), nicht eine bloss sehr aehnliche Aussage.
-        if vorhanden is None or text_normalisiert(vorhanden.text) != text_normalisiert(
-            text
-        ):
+        if text not in cache:
+            cache[text] = await _aussage_im_bestand(dienste, text)
+        aussage = cache[text]
+        if aussage is None:
             fehlt.append(text)
             continue
-        aussage_ids.add(str(vorhanden.id))
-        aussage = await dienste.statement_service.get(vorhanden.id)
+        aussage_ids.add(str(aussage.id))
         beitrag_ids.update(str(r.id) for r in aussage.replysuggestions)
-    return _Erwartung(
-        frozenset(aussage_ids),
-        frozenset(beitrag_ids),
-        frozenset(text_normalisiert(t) for t in fall.erwartet),
-        tuple(fehlt),
-    )
+    return _Erwartung(frozenset(aussage_ids), frozenset(beitrag_ids), tuple(fehlt))
 
 
-async def fall_messen(dienste: Dienste, fall: Fall) -> FallMessung:
+async def fall_messen(
+    dienste: Dienste,
+    fall: Fall,
+    schwellen: Sequence[float],
+    k: int = K,
+    cache: Optional[dict] = None,
+) -> FallMessung:
     from api.v1.search import aussagetreffer_finden
-    from services.search.search_orchestrator import (
-        DIRECT_MATCH_PENALTY,
-        SearchOrchestrator,
-    )
+    from services.search.search_orchestrator import SearchOrchestrator
 
-    erwartung = await _erwartung(dienste, fall)
-
+    erwartung = await _erwartung(dienste, fall, {} if cache is None else cache)
     aussagetreffer, polaritaet = await aussagetreffer_finden(
         dienste.statement_service, fall.anfrage
     )
-    orchestrator = SearchOrchestrator(
-        dienste.specs,
-        reference_service=dienste.reference_service,
-        usage_service=None,
-        voting_service=None,
-        schwelle=SAMMELSCHWELLE,
-    )
-    await orchestrator.collect_statement_based(aussagetreffer, SAMMELLIMIT, polaritaet)
-    await orchestrator.collect_direct(fall.anfrage, SAMMELLIMIT)
 
-    kandidaten = []
-    for spec in dienste.specs:
-        for treffer in orchestrator.results_for(spec.content_type):
-            beitrag = getattr(treffer, spec.result_field)
-            beitrag_id = str(beitrag.id)
-            ueber_aussage = treffer.statement_id is not None
-            kandidaten.append(
-                Kandidat(
-                    beitrag_id=beitrag_id,
-                    typ=spec.content_type.value,
-                    aussage_text=treffer.statement_text if ueber_aussage else "",
-                    # Ein direkter Treffer steht mit DIRECT_MATCH_PENALTY gedaempft im
-                    # Ergebnis, die Schwelle prueft aber den Rohscore.
-                    schwellenwert=(
-                        treffer.score
-                        if ueber_aussage
-                        else treffer.score / DIRECT_MATCH_PENALTY
-                    ),
-                    rangwert=treffer.score,
-                    passt=(
-                        beitrag_id in erwartung.beitrag_ids
-                        or (
-                            ueber_aussage
-                            and str(treffer.statement_id) in erwartung.aussage_ids
-                        )
-                    ),
+    angezeigt = {}
+    for schwelle in schwellen:
+        # Wie search_by_text: Phase 1 und 2 mit dem Limit der Anfrage, dann kuerzen.
+        orchestrator = SearchOrchestrator(
+            dienste.specs,
+            reference_service=dienste.reference_service,
+            usage_service=None,
+            voting_service=None,
+            schwelle=schwelle,
+        )
+        await orchestrator.collect_statement_based(aussagetreffer, k, polaritaet)
+        await orchestrator.collect_direct(fall.anfrage, k)
+        orchestrator.sort_and_truncate(k)
+
+        gezeigt = []
+        for spec in sorted(
+            dienste.specs, key=lambda s: ANGEZEIGTE_TYPEN.index(s.content_type.value)
+        ):
+            for treffer in orchestrator.results_for(spec.content_type):
+                beitrag_id = str(getattr(treffer, spec.result_field).id)
+                ueber_aussage = treffer.statement_id is not None
+                gezeigt.append(
+                    Kandidat(
+                        beitrag_id=beitrag_id,
+                        typ=spec.content_type.value,
+                        aussage_text=treffer.statement_text if ueber_aussage else "",
+                        score=treffer.score,
+                        passt=(
+                            beitrag_id in erwartung.beitrag_ids
+                            or (
+                                ueber_aussage
+                                and str(treffer.statement_id) in erwartung.aussage_ids
+                            )
+                        ),
+                    )
                 )
-            )
+        angezeigt[schwelle] = tuple(gezeigt)
 
     landet = None
     if fall.dieselbe_behauptung:
         vorhanden = await dienste.statement_service.vorhandene_finden(fall.anfrage)
-        landet = (
-            vorhanden is not None
-            and text_normalisiert(vorhanden.text) in erwartung.normalformen
-        )
-    return FallMessung(fall, tuple(kandidaten), erwartung.fehlt, landet)
+        landet = vorhanden is not None and str(vorhanden.id) in erwartung.aussage_ids
+    return FallMessung(fall, angezeigt, erwartung.fehlt, landet)
 
 
-async def messen(faelle: Sequence[Fall] = FAELLE) -> List[FallMessung]:
+async def messen(
+    schwellen: Sequence[float], faelle: Sequence[Fall] = FAELLE, k: int = K
+) -> List[FallMessung]:
     dienste = await dienste_starten()
-    return [await fall_messen(dienste, fall) for fall in faelle]
+    try:
+        cache: dict = {}
+        return [await fall_messen(dienste, f, schwellen, k, cache) for f in faelle]
+    finally:
+        await dienste_beenden()
 
 
 def _schwellen(text: str) -> Tuple[float, ...]:
@@ -468,7 +488,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=STANDARD_SCHWELLEN,
         help="durch Komma getrennt, z. B. 0.78,0.8,0.82",
     )
-    parser.add_argument("--k", type=int, default=K)
+    parser.add_argument("--k", type=int, default=K, help="Beitraege je Typ")
     parser.add_argument("--faelle", action="store_true", help="jeden Fall ausgeben")
     parser.add_argument("--json", metavar="PFAD", help="Messung als JSON schreiben")
     args = parser.parse_args(argv)
@@ -477,15 +497,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     # Nur Warnungen, damit die Tabellen lesbar bleiben.
     initialize_logging(LoggingConfig(level="WARNING", enable_console_utf8=False))
-    messungen = asyncio.run(messen())
-    print(tabellen(messungen, args.schwellen, args.k))
+    heute = schwelle_heute()
+    # Die Schwelle von heute wird immer gemessen: Phaenomene, Zerfaserung und die
+    # Faelle beziehen sich auf sie.
+    schwellen = tuple(sorted(set(args.schwellen) | {heute}))
+
+    messungen = asyncio.run(messen(schwellen, k=args.k))
+    print(tabellen(messungen, schwellen, heute, args.k))
     if args.faelle:
         print()
-        print(faelle_text(messungen, k=args.k))
+        print(faelle_text(messungen, heute))
     if args.json:
         with open(args.json, "w", encoding="utf-8") as datei:
             json.dump(
-                als_json(messungen, args.schwellen, args.k),
+                als_json(messungen, schwellen, args.k),
                 datei,
                 ensure_ascii=False,
                 indent=1,

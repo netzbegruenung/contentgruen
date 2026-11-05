@@ -102,6 +102,14 @@ _Avoid_: Klasse, Kategorie (die Kategorie A–E im Messset beschreibt die Textab
 Suchanfragen, zu denen Menschen festgelegt haben, an welchen Aussagen passende Beiträge hängen (oder dass keine passen), und an denen gemessen wird, wie gut die Suche findet: je Suchanfrage ein Treffer (der erste angezeigte Beitrag passt), ein Fehltreffer (er passt nicht, oder es wird etwas angezeigt, obwohl nichts passt) oder keine Treffer. Grundlage für die Schwelle der Suche. Es misst auch die Zerfaserung: wie viele Suchanfragen, die dieselbe Behauptung wie eine vorhandene Aussage sind, trotzdem eine neue Aussage ergeben. Regeln und Ergebnis in `tests/regression/SUCHTESTSET.md` des Semantic-Search-Service. Anders als das Messset misst es die ganze Suche, nicht Textpaare.
 _Avoid_: Testset (allein), Messset (das sind Textpaare)
 
+**Fehltreffer**:
+Eine Suche, deren erster angezeigter Beitrag nicht auf die Suchanfrage passt, oder die etwas anzeigt, obwohl im Bestand nichts passt. Gemessen im Suchtestset; das Gegenstück zur Suche ohne Treffer, bei der nichts angezeigt wird.
+_Avoid_: falsch positiv
+
+**Zerfaserung**:
+Wenn dieselbe Behauptung als mehrere Aussagen im Bestand liegt, etwa weil eine Suchanfrage in anderen Worten nicht auf der vorhandenen Aussage landet, sondern eine neue ergibt. Antworten, Nutzung und Suchen ohne Treffer verteilen sich dann auf mehrere Aussagen. Das Suchtestset misst sie, die NLI-Stufe (#387) soll sie verhindern.
+_Avoid_: Fragmentierung, Dubletten (Dubletten sind gleiche Beiträge)
+
 ### Stufen eines Einwurfs
 
 **Offen**:

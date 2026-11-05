@@ -16,7 +16,6 @@ from tests.regression.suche_messen import (
     FallMessung,
     Kandidat,
     als_json,
-    angezeigt,
     auswerten,
     einordnen,
     faelle_text,
@@ -108,36 +107,28 @@ def _fall(id_="X01", erwartet=(A,), dieselbe=False, phaenomen="umformulierung"):
     return Fall(id_, "Anfrage", "satz", phaenomen, erwartet, dieselbe, "eigen")
 
 
-def _k(schwellenwert, passt, rangwert=None, aussage=A, id_=None):
+def _k(passt, aussage=A, score=0.9):
     return Kandidat(
-        beitrag_id=id_ or f"b{schwellenwert}{passt}",
+        beitrag_id=f"b{score}{passt}{aussage[:3]}",
         typ="commentary",
         aussage_text=aussage,
-        schwellenwert=schwellenwert,
-        rangwert=schwellenwert if rangwert is None else rangwert,
+        score=score,
         passt=passt,
     )
 
 
+def _m(fall, je_schwelle, fehlt=(), landet=None):
+    return FallMessung(fall, je_schwelle, fehlt, landet)
+
+
 class TestAuswertung:
-    def test_angezeigt_nur_ueber_der_schwelle_nach_rang_und_hoechstens_k(self):
-        direkt = _k(0.9, False, rangwert=0.63, aussage="")
-        auf_der_schwelle = _k(0.8, True)
-        oben, mitte = _k(0.85, True), _k(0.82, False)
-
-        gezeigt = angezeigt([mitte, direkt, auf_der_schwelle, oben], 0.8, k=2)
-
-        # Wie die Suche: "<= Schwelle" faellt weg, ein direkter Treffer steht mit
-        # seinem gedaempften Rang hinten, obwohl sein Rohscore hoeher ist.
-        assert gezeigt == [oben, mitte]
-
     @pytest.mark.parametrize(
-        "erwartet, kandidaten, einordnung",
+        "erwartet, gezeigt, einordnung",
         [
-            ((A,), [_k(0.9, True), _k(0.85, False)], "treffer"),
-            ((A,), [_k(0.9, False), _k(0.85, True)], "fehltreffer"),
+            ((A,), [_k(True), _k(False)], "treffer"),
+            ((A,), [_k(False), _k(True)], "fehltreffer"),
             ((A,), [], "keine"),
-            ((), [_k(0.9, False)], "fehltreffer"),
+            ((), [_k(False)], "fehltreffer"),
             ((), [], "keine"),
         ],
         ids=[
@@ -148,22 +139,21 @@ class TestAuswertung:
             "ohne-erwartung-nichts",
         ],
     )
-    def test_einordnen(self, erwartet, kandidaten, einordnung):
-        assert einordnen(_fall(erwartet=erwartet), kandidaten) == einordnung
+    def test_einordnen(self, erwartet, gezeigt, einordnung):
+        assert einordnen(_fall(erwartet=erwartet), gezeigt) == einordnung
 
     def _messungen(self):
+        direkt_passend = _k(True, aussage="", score=0.6)
         return [
-            FallMessung(_fall("X01"), (_k(0.9, True), _k(0.81, False)), (), None),
-            FallMessung(_fall("X02"), (_k(0.85, False), _k(0.82, True)), (), None),
-            FallMessung(_fall("X03"), (_k(0.7, True),), (), None),
-            FallMessung(
+            _m(_fall("X01"), {0.8: (_k(True), _k(False)), 0.84: (_k(True),)}),
+            _m(_fall("X02"), {0.8: (_k(False), direkt_passend), 0.84: (_k(False),)}),
+            _m(_fall("X03"), {0.8: (), 0.84: ()}),
+            _m(
                 _fall("X04", erwartet=(), phaenomen="fremd"),
-                (_k(0.83, False),),
-                (),
-                None,
+                {0.8: (_k(False, aussage=""),), 0.84: ()},
             ),
             # Aussage fehlt im Bestand: zaehlt nirgends mit.
-            FallMessung(_fall("X05"), (_k(0.95, False),), (A,), None),
+            _m(_fall("X05"), {0.8: (_k(False),), 0.84: (_k(False),)}, fehlt=(A,)),
         ]
 
     def test_auswerten_zaehlt_je_fall_und_je_beitrag(self):
@@ -174,21 +164,25 @@ class TestAuswertung:
         assert (a.ohne_richtig_keine, a.ohne_fehltreffer) == (0, 1)
         # Angezeigt: X01 zwei, X02 zwei, X04 einer; passend zwei davon.
         assert a.praezision == pytest.approx(2 / 5)
-        # X01 und X02 haben einen passenden unter den ersten k, X03 nicht.
+        # X01 und X02 haben einen passenden Beitrag, X03 nicht.
         assert a.recall_at_k == pytest.approx(2 / 3)
+        assert (a.direkt_passend, a.direkt_angezeigt) == (1, 2)
 
-    def test_hoehere_schwelle_zeigt_weniger(self):
+    def test_andere_schwelle_andere_anzeige(self):
         a = auswerten(self._messungen(), 0.84)
 
         assert (a.treffer, a.fehltreffer, a.keine) == (1, 1, 1)
         assert (a.ohne_richtig_keine, a.ohne_fehltreffer) == (1, 0)
         assert a.recall_at_k == pytest.approx(1 / 3)
 
-    def test_ohne_angezeigte_beitraege_keine_praezision(self):
-        a = auswerten(self._messungen(), 0.99)
+    def test_nicht_gemessene_schwelle_ist_ein_fehler(self):
+        with pytest.raises(KeyError):
+            auswerten(self._messungen(), 0.9)
 
-        assert a.praezision is None
-        assert a.keine == 3
+    def test_ohne_angezeigte_beitraege_keine_praezision(self):
+        leer = [_m(_fall("X01"), {0.8: ()})]
+
+        assert auswerten(leer, 0.8).praezision is None
 
     def test_je_phaenomen(self):
         tabelle = je_phaenomen(self._messungen(), 0.8)
@@ -199,20 +193,23 @@ class TestAuswertung:
         }
 
     def test_zerfaserung(self):
+        gefunden = {0.8: (_k(True),)}
         messungen = [
-            FallMessung(_fall("X01", dieselbe=True), (_k(0.9, True),), (), True),
-            FallMessung(_fall("X02", dieselbe=True), (_k(0.9, True),), (), False),
-            FallMessung(_fall("X03", dieselbe=True), (_k(0.7, True),), (), False),
-            FallMessung(_fall("X04", dieselbe=True), (), (), True),
-            FallMessung(_fall("X05"), (), (), None),
+            _m(_fall("X01", dieselbe=True), gefunden, landet=True),
+            _m(_fall("X02", dieselbe=True), gefunden, landet=False),
+            _m(_fall("X03", dieselbe=True), {0.8: ()}, landet=False),
+            _m(_fall("X04", dieselbe=True), {0.8: ()}, landet=True),
+            # Nicht geprueft (None) zaehlt nicht als neu.
+            _m(_fall("X05", dieselbe=True), {0.8: ()}, landet=None),
+            _m(_fall("X06"), {0.8: ()}),
         ]
 
         z = zerfaserung(messungen, 0.8)
 
-        assert (z.dieselbe_behauptung, z.davon_neu) == (4, 2)
+        assert (z.dieselbe_behauptung, z.davon_neu) == (5, 2)
         assert (z.ohne_treffer, z.ohne_treffer_dieselbe, z.ohne_treffer_neu) == (
+            4,
             3,
-            2,
             1,
         )
 
@@ -227,7 +224,9 @@ class TestAuswertung:
     def test_faelle_text_und_json(self):
         messungen = self._messungen()
 
-        assert "| X01 | umformulierung | treffer |" in faelle_text(messungen, 0.8)
+        text = faelle_text(messungen, 0.8)
+        assert "| X01 | umformulierung | treffer |" in text
+        assert "direkt (2)" in text  # X02: erster passender auf Platz 2
         daten = als_json(messungen, (0.8,))
         assert daten["hinweis"] == VORLAEUFIG
         assert [f["id"] for f in daten["faelle"]] == [m.fall.id for m in messungen]
