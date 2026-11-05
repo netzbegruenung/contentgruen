@@ -16,12 +16,17 @@ import pytest
 
 from domain.models.content_type import ContentType
 from tests.regression import suche_messen
+from tests.regression.aehnlichkeit_messen import VORSCHLAG_SCHWELLE
 from tests.regression.suche_messen import (
+    AEHNLICHE_AB,
+    AEHNLICHE_ANZAHL,
     BESTAND_PASST_NICHT,
     VORLAEUFIG,
+    AehnlicheAussagen,
     AngezeigterBeitrag,
     FallMessung,
     _Erwartung,
+    aehnliche_aussagen,
     als_json,
     angezeigte_beitraege,
     auswerten,
@@ -125,8 +130,8 @@ def _k(passt, aussage=A, score=0.9):
     )
 
 
-def _m(fall, je_schwelle, fehlt=(), landet=None):
-    return FallMessung(fall, je_schwelle, fehlt, landet)
+def _m(fall, je_schwelle, fehlt=(), landet=None, aehnliche=()):
+    return FallMessung(fall, je_schwelle, fehlt, landet, aehnliche)
 
 
 class TestAuswertung:
@@ -229,6 +234,42 @@ class TestAuswertung:
             3,
             1,
         )
+
+    def test_aehnliche_aussagen(self):
+        messungen = [
+            _m(_fall("X01"), {0.8: ()}, aehnliche=(False, True)),
+            _m(_fall("X02"), {0.8: ()}, aehnliche=(False,)),
+            _m(_fall("X03"), {0.8: ()}),
+            _m(
+                _fall("X04", erwartet=(), phaenomen="fremd"),
+                {0.8: ()},
+                aehnliche=(False,),
+            ),
+            _m(_fall("X05", erwartet=(), phaenomen="fremd"), {0.8: ()}),
+            # Aussage fehlt im Bestand: zaehlt nicht mit.
+            _m(_fall("X06"), {0.8: ()}, fehlt=(A,), aehnliche=(True,)),
+        ]
+
+        assert aehnliche_aussagen(messungen) == AehnlicheAussagen(
+            mit_erwartung=3,
+            erwartete_dabei=1,
+            ohne_erwartung=2,
+            ohne_mit_vorschlag=1,
+        )
+
+    def test_aehnliche_aussagen_wie_im_beitragsformular(self):
+        """Anzahl und untere Grenze wie VORSCHLAG_ANZAHL und VORSCHLAG_MIN_AEHNLICHKEIT
+        im Frontend und VORSCHLAG_SCHWELLE im Messset."""
+        if REPO_WURZEL is None:
+            pytest.skip("Frontend nicht im Checkout")
+        ts = (
+            REPO_WURZEL
+            / "mvp/frontend/gutgesagt-frontend/src/app/services/statement.service.ts"
+        ).read_text(encoding="utf-8")
+
+        assert f"VORSCHLAG_ANZAHL = {AEHNLICHE_ANZAHL};" in ts
+        assert f"VORSCHLAG_MIN_AEHNLICHKEIT = {AEHNLICHE_AB};" in ts
+        assert AEHNLICHE_AB == VORSCHLAG_SCHWELLE
 
     def test_ausgabe_ist_als_vorlaeufig_gekennzeichnet(self):
         text = tabellen(self._messungen(), (0.8, 0.84), aktuell=0.8)

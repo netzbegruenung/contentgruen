@@ -9,7 +9,7 @@ entschieden hat: Ist der Kandidat dieselbe Behauptung wie der Bestandstext?
 | `aehnlichkeit_paare.py` | die Paare mit Paar-Label, Kategorie, Phänomen und Gruppe (von Hand) |
 | `aehnlichkeit_gemessen.py` | Scores und Entscheidung je Paar (erzeugt, nicht von Hand ändern) |
 | `aehnlichkeit_messen.py` | misst und gibt die Auswertung je Paar-Label aus |
-| `test_aehnlichkeit_messset.py` | Regressionstest mit Modell (langsam, nicht in CI) |
+| `test_aehnlichkeit_messset.py` | Regressionstest mit Modell (langsam, nicht in der PR-CI, jede Nacht in `.woodpecker/nacht.yaml`) |
 | `../unit/test_aehnlichkeit_messset_aufbau.py` | Aufbau, Umfang und Split ohne Modell (in CI) |
 
 ```bash

@@ -162,6 +162,50 @@ def test_wiki_seite_mit_eigenem_secret_im_python_image():
     assert schritt["commands"] == ["python3 scripts/rechtstexte_wiki.py"]
 
 
+NACHT = yaml.safe_load((WURZEL / ".woodpecker" / "nacht.yaml").read_text())
+NACHT_SCHRITTE = {s["name"]: s for s in NACHT["steps"]}
+# Das Image des Semantic-Search-Service bringt das Modell mit (Modell-Cache, docs/CI.md).
+SEMANTIC_SEARCH_IMAGE = (
+    "git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:main"
+)
+
+
+def test_nachtlauf_nur_per_cron_nachtlauf_und_manuell():
+    # Kein pull_request und kein push: zu langsam fuer jeden PR, kein Pflichtstatus.
+    assert NACHT["when"] == [
+        {"event": "cron", "cron": "nachtlauf"},
+        {"event": "manual"},
+    ]
+
+
+def test_nachtlauf_misst_messset_und_suchtestset_mit_dem_modell_aus_dem_image():
+    assert set(NACHT_SCHRITTE) == {"messset", "suchtest"}
+    for schritt in NACHT_SCHRITTE.values():
+        assert schritt["image"] == SEMANTIC_SEARCH_IMAGE
+        assert schritt["environment"]["DOCKER_CONTAINER"] == "false"
+        assert "secrets" not in schritt and not any(
+            isinstance(w, dict) and "from_secret" in w
+            for w in schritt["environment"].values()
+        )
+    befehle = "\n".join(
+        b for s in NACHT_SCHRITTE.values() for b in s["commands"]
+    )
+    assert "tests/regression/test_aehnlichkeit_messset.py -m langsam" in befehle
+    assert "python -m tests.regression.seed_laden" in befehle
+    assert "python -m tests.regression.nachtlauf" in befehle
+
+
+def test_nachtlauf_suchtest_laeuft_auch_nach_rotem_messset():
+    suchtest = NACHT_SCHRITTE["suchtest"]
+    assert suchtest["depends_on"] == ["messset"]
+    assert suchtest["when"] == [{"status": ["success", "failure"]}]
+
+
+def test_nachtlauf_qdrant_wie_in_ci():
+    (dienst,) = NACHT["services"]
+    assert dienst == DIENSTE["qdrant"]
+
+
 def test_schritte_rufen_check_sh_mit_ihrem_namen_auf():
     # Die Schritte von check.sh (SCHRITTE=...) laufen in der Pipeline je als eigener Schritt.
     check = (WURZEL / "scripts" / "check.sh").read_text()

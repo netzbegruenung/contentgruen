@@ -65,6 +65,11 @@ RECALL_BEI = (5, 10)
 # Exit-Code, wenn kein Fall mit Erwartung gemessen wurde: Der Bestand passt nicht zum
 # Set (leere oder falsche Sammlung, Startbestand ohne passende Faelle).
 BESTAND_PASST_NICHT = 2
+# Aehnliche Aussagen wie die Vorschlaege im Beitragsformular (statement.service.ts:
+# VORSCHLAG_ANZAHL, VORSCHLAG_MIN_AEHNLICHKEIT): hoechstens so viele gepflegte Aussagen,
+# und nur ab dieser unteren Grenze. Ein Unit-Test haelt beide Stellen gleich.
+AEHNLICHE_ANZAHL = 3
+AEHNLICHE_AB = 0.885
 
 VORLAEUFIG = (
     "Vorläufig: gemessen am Testbestand (Seed). Nach dem Startbestand (#288) einmal neu "
@@ -95,6 +100,9 @@ class FallMessung(NamedTuple):
     # Nur bei dieselbe_behauptung: Landet die Suchanfrage auf einer erwarteten Aussage
     # (True) oder ergaebe sie eine neue bzw. landet auf einer anderen (False)?
     landet_auf_erwarteter: Optional[bool]
+    # Die aehnlichen Aussagen zur Suchanfrage (AEHNLICHE_ANZAHL, ab AEHNLICHE_AB), je
+    # Aussage: ist sie eine erwartete? Unabhaengig von der Schwelle der Suche.
+    aehnliche: Tuple[bool, ...] = ()
 
 
 class Auswertung(NamedTuple):
@@ -125,6 +133,13 @@ class Zerfaserung(NamedTuple):
     ohne_treffer: int  # alle gemessenen Faelle ohne angezeigten Beitrag
     ohne_treffer_dieselbe: int  # davon dieselbe_behauptung
     ohne_treffer_neu: int  # davon landen nicht auf der erwarteten Aussage
+
+
+class AehnlicheAussagen(NamedTuple):
+    mit_erwartung: int  # gemessene Faelle mit Erwartung
+    erwartete_dabei: int  # davon eine erwartete Aussage unter den aehnlichen
+    ohne_erwartung: int  # gemessene Faelle ohne Erwartung
+    ohne_mit_vorschlag: int  # davon mit mindestens einer aehnlichen Aussage
 
 
 # ---------------------------------------------------------------------- #
@@ -232,6 +247,23 @@ def zerfaserung(messungen: Iterable[FallMessung], schwelle: float) -> Zerfaserun
     )
 
 
+def aehnliche_aussagen(messungen: Iterable[FallMessung]) -> AehnlicheAussagen:
+    """
+    Untere Grenze fuer aehnliche Aussagen: Bei wie vielen Faellen mit Erwartung ist eine
+    erwartete Aussage unter den aehnlichen, bei wie vielen ohne Erwartung erscheint
+    trotzdem eine (die waere unpassend).
+    """
+    faelle = gemessen(messungen)
+    mit = [m for m in faelle if m.fall.erwartet]
+    ohne = [m for m in faelle if not m.fall.erwartet]
+    return AehnlicheAussagen(
+        mit_erwartung=len(mit),
+        erwartete_dabei=sum(1 for m in mit if any(m.aehnliche)),
+        ohne_erwartung=len(ohne),
+        ohne_mit_vorschlag=sum(1 for m in ohne if m.aehnliche),
+    )
+
+
 # ---------------------------------------------------------------------- #
 # Ausgabe
 # ---------------------------------------------------------------------- #
@@ -295,6 +327,14 @@ def tabellen(
         f"Behauptung wie eine vorhandene Aussage, davon landen {z.ohne_treffer_neu} "
         "nicht auf ihr.",
     ]
+    a = aehnliche_aussagen(messungen)
+    zeilen += [
+        "",
+        f"Ähnliche Aussagen (höchstens {AEHNLICHE_ANZAHL}, ab {AEHNLICHE_AB}): "
+        f"erwartete Aussage dabei bei {a.erwartete_dabei} von {a.mit_erwartung} "
+        f"Fällen mit Erwartung; {a.ohne_mit_vorschlag} von {a.ohne_erwartung} Fällen "
+        "ohne Erwartung zeigen trotzdem eine.",
+    ]
     fehlend = [m for m in messungen if m.fehlt]
     if fehlend:
         zeilen += ["", "Nicht gemessen (Aussage fehlt im Bestand):"]
@@ -352,6 +392,7 @@ def als_json(
         "auswertung": [auswerten(messungen, s)._asdict() for s in schwellen],
         "je_phaenomen": je_phaenomen(messungen, heute),
         "zerfaserung": zerfaserung(messungen, heute)._asdict(),
+        "aehnliche_aussagen": aehnliche_aussagen(messungen)._asdict(),
         "faelle": [
             {
                 "id": m.fall.id,
@@ -363,6 +404,7 @@ def als_json(
                 "dieselbe_behauptung": m.fall.dieselbe_behauptung,
                 "fehlt": list(m.fehlt),
                 "landet_auf_erwarteter": m.landet_auf_erwarteter,
+                "aehnliche": list(m.aehnliche),
                 "einordnung": {
                     f"{s:.2f}": einordnen(m.fall, kandidaten)
                     for s, kandidaten in sorted(m.angezeigt.items())
@@ -536,7 +578,20 @@ async def fall_messen(
     if fall.dieselbe_behauptung:
         vorhanden = await dienste.statement_service.vorhandene_finden(fall.anfrage)
         landet = vorhanden is not None and str(vorhanden.id) in erwartung.aussage_ids
-    return FallMessung(fall, angezeigt, erwartung.fehlt, landet)
+    # Dieselbe Abfrage wie die Vorschlaege im Beitragsformular (aussageVorschlaege).
+    aehnliche = await dienste.statement_service.search_filtered(
+        fall.anfrage,
+        AEHNLICHE_ANZAHL,
+        nur_kuratiert=True,
+        min_similarity=AEHNLICHE_AB,
+    )
+    return FallMessung(
+        fall,
+        angezeigt,
+        erwartung.fehlt,
+        landet,
+        tuple(str(a.id) in erwartung.aussage_ids for a in aehnliche),
+    )
 
 
 def mit_schwelle_heute(schwellen: Iterable[float]) -> Tuple[float, ...]:

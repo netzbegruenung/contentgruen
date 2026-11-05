@@ -11,6 +11,9 @@ dieselbe Aussage oder nicht.
 |---|---|
 | `suche_testset.py` | die Fälle: Suchanfrage, Form, Phänomen, erwartete Aussagen (von Hand) |
 | `suche_messen.py` | misst gegen den Bestand eines Stacks und gibt die Auswertung aus |
+| `seed_laden.py` | lädt den Seed in eine leere Sammlung, ohne den Dienst (nächtlicher Lauf) |
+| `nachtlauf.py` | misst am Seed und vergleicht mit dem Soll (nächtlicher Lauf) |
+| `../unit/test_nachtlauf.py` | Soll, Toleranz, Tor und untere Grenze ohne Stack (in CI) |
 | `../unit/test_suche_testset_aufbau.py` | Aufbau, Bezug zum Seed und Auswertung ohne Stack (in CI) |
 
 ## Messen
@@ -81,6 +84,11 @@ so wie er im Dienst mit dieser Schwelle liefe.
   Suchanfragen haben also fast immer Treffer; „0 unter den Suchen ohne Treffer“ ist dort
   kein Befund. Wie viele Aussagen im Bestand aus Suchen ohne Treffer zerfasert sind,
   braucht echte Suchen und Aussagen ohne Antwort, also den Startbestand.
+- **Ähnliche Aussagen:** dieselbe Abfrage wie die Vorschläge im Beitragsformular
+  (höchstens 3 gepflegte Aussagen, ab 0,885; `AEHNLICHE_ANZAHL`, `AEHNLICHE_AB`). Gezählt
+  wird, bei wie vielen Fällen mit Erwartung eine erwartete Aussage darunter ist, und bei
+  wie vielen Fällen ohne Erwartung trotzdem eine erscheint. Unabhängig von der Schwelle
+  der Suche.
 - **Fremd und Verneinung** sind auf den Testbestand bezogen: „fremd“ heißt, der Seed hat
   keine Aussage dazu. Nach dem Startbestand vor dem Messen prüfen, ob er Aussagen zu
   diesen Themen hat; sonst zählen echte Treffer als Fehltreffer.
@@ -136,3 +144,35 @@ dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
   Behauptung wie eine vorhandene Aussage (siehe Grenze oben). Wie groß der Anteil im
   Bestand ist, misst erst der Startbestand; die Trennung gleicher Behauptungen ist
   Aufgabe der NLI-Stufe (#387).
+- **Ähnliche Aussagen** (gemessen am 06.11.2026, #391): Bei 25 von 33 Fällen mit
+  Erwartung ist eine erwartete Aussage unter den ähnlichen Aussagen; 6 von 9 Fällen ohne
+  Erwartung zeigen trotzdem eine, darunter alle 4 Verneinungen. Die untere Grenze 0,885
+  hält also das Gegenteil einer Aussage nicht fern, das kann nur #387.
+
+## Nächtlicher Lauf
+
+`.woodpecker/nacht.yaml` (#391) misst jede Nacht und auf Anstoß das Messset und das
+Suchtestset gegen das echte Modell und ein eigenes Qdrant mit dem Seed (Ablauf und
+Einrichtung in `docs/CI.md`, „Nightly run“). Für das Suchtestset:
+
+```bash
+cd mvp/backend/semantic-search-service/app
+export SEMANTIC_SEARCH_QDRANT_COLLECTION=nachtlauf   # eine leere Sammlung
+../venv/bin/python -m tests.regression.seed_laden    # bricht ab, wenn sie nicht leer ist
+../venv/bin/python -m tests.regression.nachtlauf     # Tabellen und Prüfungen, Exit 1 = rot
+```
+
+Geprüft wird bei der Schwelle von heute (Werte in `nachtlauf.py`):
+
+- **Soll:** die Zahlen der Zeile „(heute)“ oben, dazu Zerfaserung und ähnliche Aussagen.
+  Weicht eine um mehr als einen Fall ab, ist der Lauf rot, auch bei einer Verbesserung:
+  Wer Modell, Schwelle, Stemmer, Normalisierung oder das Set ändert, zieht `SOLL` und
+  diese Seite im selben PR nach (ein Unit-Test vergleicht beide).
+- **Tor für Roadmap-Stufe 3** (`docs/VISION.md`): Recall@10 mindestens 0,80 und Präzision
+  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,91 und 0,32.
+- **Untere Grenze für ähnliche Aussagen:** Bei mindestens 70 % der Fälle mit Erwartung
+  ist eine erwartete Aussage unter den ähnlichen Aussagen. Am Seed heute 76 %.
+
+Tor und Grenze sind vorläufig am Seed gesetzt, so dass ein erlaubter Ausreißer von einem
+Fall nicht rot wird; mit dem Startbestand (#568) werden sie neu bewertet. Der Lauf misst
+immer am Seed, nie am Bestand von Test oder Produktion.

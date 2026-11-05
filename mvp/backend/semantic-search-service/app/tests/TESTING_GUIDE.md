@@ -11,7 +11,9 @@ tests/
 ├── integration/                   # Integration tests against real Qdrant and PostgreSQL
 │   └── api/                       # Against the running dev-stack BFF (skipped by GitHub CI)
 ├── regression/                    # Messset and Suchtestset: data, checks, measurement scripts
-│                                  # (scripts run by hand against a stack; MESSSET.md, SUCHTESTSET.md)
+│                                  # (by hand against a stack, and every night in
+│                                  # .woodpecker/nacht.yaml; MESSSET.md, SUCHTESTSET.md,
+│                                  # docs/CI.md "Nightly run": when a PR must trigger it)
 ├── fixtures/                      # Test utilities
 │   └── embeddings_manager.py      # In-memory test backend
 └── conftest.py                    # Shared fixtures
