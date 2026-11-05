@@ -195,7 +195,8 @@ class TestArt9Einwilligung:
         vorher, nachher = [
             c.kwargs["pruefwert"] for c in dienst.track_content_usage.call_args_list
         ]
-        assert vorher and nachher is None
+        assert vorher
+        assert nachher is None
         muster.nutzung_melden.assert_called_once()
 
     def test_einwilligung_wird_je_kopie_gefragt(
@@ -227,6 +228,33 @@ class TestArt9Einwilligung:
 
         assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
         muster.nutzung_melden.assert_not_called()
+
+    def test_unlesbare_einwilligung_der_autorin_kein_muster(
+        self, client, dienst, muster, art9_einwilligung_ohne_datenbank
+    ):
+        """Im Zweifel ohne Einwilligung der Autorin: Pruefwert ja, Meldung nein."""
+        stand = art9_einwilligung_ohne_datenbank.lesen.return_value
+
+        def lesen(kennung):
+            if kennung == AUTORIN:
+                raise RuntimeError("weg")
+            return stand
+
+        art9_einwilligung_ohne_datenbank.lesen.side_effect = lesen
+
+        assert zaehlen(client, "bo-2").status_code == 200
+
+        assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
+        muster.nutzung_melden.assert_not_called()
+
+    def test_eigene_kopie_und_startkonto_fragen_nicht(
+        self, client, art9_einwilligung_ohne_datenbank
+    ):
+        """Was ohnehin nicht zaehlt, braucht keine Abfrage."""
+        zaehlen(client, AUTORIN)
+        zaehlen(client, STARTKONTO)
+
+        art9_einwilligung_ohne_datenbank.lesen.assert_not_called()
 
     def test_besucher_braucht_keine_einwilligung(
         self, client, dienst, art9_einwilligung_ohne_datenbank

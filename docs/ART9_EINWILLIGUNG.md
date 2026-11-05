@@ -26,11 +26,14 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   (`GESPERRT`, `OFFEN`): Ein neuer schreibender Endpunkt fällt dort auf, bis er in einer der
   beiden steht; gesperrte tragen `require_art9_einwilligung` (`dependencies.py`).
 - **Kopieren:** bleibt offen und zählt am Zähler der Karte (Kopieren ist Lesen). Ohne geltende
-  Einwilligung entsteht dabei aber kein Prüfwert und kein Paar-Prüfwert, also keine
-  entdoppelte Nutzung, keine Punkte und keine Muster-Hinweise; einen Paar-Prüfwert gibt es
-  auch nicht, wenn die Autorin des Beitrags nicht eingewilligt hat (#559,
-  `track_content_usage` in `api/v1/usage.py`, Tests `TestArt9Einwilligung` in
-  `tests/unit/api/test_usage_eigene_kopie.py`). Gefragt wird je Kopie.
+  Einwilligung entsteht dabei aber kein Prüfwert und kein Paar-Prüfwert: keine entdoppelte
+  Nutzung, also keine Wirkung-Punkte für die Autorin und kein Eintrag in „Diese Woche oft
+  genutzt“, und keine Muster-Hinweise. Einen Paar-Prüfwert gibt es auch nicht, wenn die
+  Autorin des Beitrags nicht eingewilligt hat (#559, `track_content_usage` in
+  `api/v1/usage.py`, Tests `TestArt9Einwilligung` in
+  `tests/unit/api/test_usage_eigene_kopie.py`). Gefragt wird je Kopie; ist die Einwilligung
+  nicht lesbar, gilt sie als nicht erteilt und die Kopie zählt trotzdem. Paar-Prüfwerte und
+  Hinweise von vor einem Widerruf gehen mit ihren Fristen (`docs/LOESCHKONZEPT.md`).
 - **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Einwilligung“). Die Zeile bekommt
   den Zeitpunkt des Widerrufs und bleibt stehen, als Nachweis, dass die Verarbeitung bis dahin
   auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Schon Gespeichertes

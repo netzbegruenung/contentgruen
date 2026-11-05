@@ -208,6 +208,9 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   haben keine Frist: Admins brauchen sie für die Moderation.
 - **Prüfwerte und Muster-Hinweise (#352):** Ein Prüfwert ist ein HMAC über Kennung
   (bei Besuchern das Besuchermerkmal aus #446), Beitrag und Tag; er entdoppelt nur an seinem Tag und geht danach.
+  Für ein Konto ohne Art.-9-Einwilligung entsteht keiner; ein Paar-Prüfwert nur, wenn beide
+  Konten eingewilligt haben (#559). Was vor einem Widerruf entstand, geht mit den Fristen
+  unten.
   Ein Paar-Prüfwert ist ein HMAC über die Kennungen zweier Konten („A hat einen
   Beitrag von B genutzt“, welcher steht nirgends); er bleibt sieben Tage, damit sich
   gegenseitige Nutzung über mehrere Tage erkennen lässt. Beide Schlüssel (Tagesschlüssel
