@@ -204,9 +204,13 @@ enabled, and the pull request that adds the pipeline already needs it):
    stay enabled.
 4. **Registry secrets, before merging the pull request that adds `build.yaml`.** A registry
    account with write access to the packages of `netzbegruenung-images`, and a token for it
-   with the scope `write:package` only. Store it in the team's password manager and add it in
-   Woodpecker as secrets `registry_user` (the account name) and `registry_token`, events
-   "Push", "Tag" and "Manual" (for "Run pipeline" on `main`), image filter
+   with the scope `write:package` only. The account is the Forgejo user `WoodpeckerCI` in the
+   team "Pipelines" of the organisation `netzbegruenung-images` (unit "Packages": write); the
+   release bot of the organisation has no package rights. When creating the token, choose the
+   repository access "All (public, private, and limited)" and only "package: Read and Write":
+   with "Specific repositories" Forgejo offers no package scope. Store it in the team's password
+   manager and add it in Woodpecker as secrets `registry_user` (the account name) and
+   `registry_token`, events "Push", "Tag" and "Manual" (for "Run pipeline" on `main`), image filter
    `woodpeckerci/plugin-docker-buildx` (so only the build steps see them). The plugin needs
    Docker inside its container: it must be on the list of privileged plugins of the
    Woodpecker server as `woodpeckerci/plugin-docker-buildx`, without a tag. The workflows pin
