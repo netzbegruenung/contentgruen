@@ -214,12 +214,21 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO');
     });
 
-    it('Punkte: ohne Einwilligung keine Punkte, kein Muster-Hinweis, kein Prüfwert bei Kopien', () => {
+    it('Punkte: ohne Einwilligung keine Punkte, kein Paar-Prüfwert, kein Muster-Hinweis (#562)', () => {
       const text = abschnitt('Punkte');
 
-      expect(text).toContain('Ohne diese Einwilligung hat dein Konto keine Punkte');
-      expect(text).toContain('kein Muster-Hinweis, der es nennt');
+      expect(text).toContain('Ohne diese Einwilligung (nie erteilt oder widerrufen) hat dein Konto keine Punkte');
+      expect(text).toContain('weder ein Paar-Prüfwert noch ein Muster-Hinweis, der es nennt');
+      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung macht, bringen niemandem Punkte');
       expect(text).not.toContain('Bevor wir Punkte einschalten');
+    });
+
+    it('Verwendung: Kopien ohne Einwilligung ohne Prüfwert, nur im Zähler aller Kopien (#562)', () => {
+      const text = abschnitt('Verwendung von Beiträgen');
+
+      expect(text).toContain('Kopien angemeldeter Konten ohne Einwilligung');
+      expect(text).toContain('bekommen keinen Prüfwert');
+      expect(text).toContain('nicht für „Diese Woche oft genutzt“ und nicht für Punkte');
     });
 
     it('Rückmeldung: Muster-Hinweise als einzige Ausnahme von „wer genutzt hat, zeigen wir nicht“', () => {
@@ -556,6 +565,7 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Artikel 9 Absatz 2 Buchstabe a DSGVO');
       expect(text).toContain('eigenes Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt');
       expect(text).toContain('den Zeitpunkt und die Kennung des Wortlauts');
+      expect(text).toContain('sein Stand-Datum, bei einem zweiten Wortlaut vom selben Tag mit einem Buchstaben dahinter');
       expect(text).toContain('Ohne Einwilligung kannst du suchen und lesen, aber nichts beitragen und nichts bewerten');
     });
 
