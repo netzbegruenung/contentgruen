@@ -513,8 +513,9 @@ async def get_muster_hinweise(
         )
     try:
         hinweise = await asyncio.to_thread(service.hinweise)
-        namen = get_anzeigename_service().namen(
-            k for h in hinweise for k in (h.konto_a, h.konto_b)
+        namen = await asyncio.to_thread(
+            get_anzeigename_service().namen,
+            [k for h in hinweise for k in (h.konto_a, h.konto_b)],
         )
     except Exception as e:
         logger.error(f"Error fetching pattern notes: {type(e).__name__}", exc_info=True)

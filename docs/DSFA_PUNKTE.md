@@ -14,8 +14,9 @@ Paar-Prüfwert und Muster-Hinweis kommen mit PR #476 dorthin, Ausbaustufe steht 
 
 ## 1. Worum es geht
 
-- **Gebaut (PR #476, ausgeschaltet):** Entdoppelte Nutzung über einen Prüfwert, der nach seinem
-  Tag verworfen wird (`ss/services/entdoppelung.py:1-30` (#476)); ein Punktestand, den nur die
+- **Gebaut (PR #476):** Entdoppelte Nutzung über einen Prüfwert, der nach seinem Tag
+  verworfen wird (`ss/services/entdoppelung.py:1-30` (#476)), wirkt ab dem Einspielen auf
+  „Diese Woche oft genutzt“. Ausgeschaltet bis zum Ende dieser DSFA: ein Punktestand, den nur die
   Person selbst sieht und der nicht gespeichert, sondern bei jedem Abruf berechnet wird
   (`ss/services/punkte_service.py:1-7` (#476), `ss/api/v1/usage.py:349-375` (#476));
   Muster-Hinweise für Admins, wenn zwei Konten sich innerhalb von 7 Tagen gegenseitig nutzen
@@ -23,7 +24,7 @@ Paar-Prüfwert und Muster-Hinweis kommen mit PR #476 dorthin, Ausbaustufe steht 
 - **Geplant, nicht gebaut:** Ranglisten (die ersten 10 und der eigene Platz, nur für Angemeldete,
   nur mit Zustimmung), Quests, Meilenstein-Abzeichen, Krone, Wochenthema
   (`docs/VISION.md:99-103`).
-- **Fristen** (`docs/LOESCHKONZEPT.md:157-159` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
+- **Fristen** (`docs/LOESCHKONZEPT.md:160-162` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
   Muster-Hinweis 56 Tage und mit dem Konto gelöscht
   (`mvp/scripts/manual/person_loeschen.sql:55` (#476)).
 

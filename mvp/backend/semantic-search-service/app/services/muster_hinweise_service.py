@@ -34,11 +34,11 @@ from repositories.muster_hinweis_repository import (
     MusterHinweisRepository,
 )
 from services.entdoppelung import (
-    ANONYM,
     MUSTER_FENSTER_TAGE,
     paar_pruefwert,
     paar_pruefwerte_im_fenster,
 )
+from utils.aufrufer import ANONYM
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
 logger = get_logger(__name__)

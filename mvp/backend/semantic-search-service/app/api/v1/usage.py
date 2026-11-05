@@ -26,7 +26,8 @@ from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
 from utils.device_category import derive_device_category
 from utils.rate_limiter import RateLimiter
-from services.entdoppelung import ANONYM, pruefwert
+from services.entdoppelung import pruefwert
+from utils.aufrufer import ANONYM
 from services.punkte_service import PunkteService
 from services.usage_tracking_service import get_usage_service
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
@@ -241,7 +242,7 @@ async def track_content_usage(
             device_category=device_category,
             fassung=fassung,
             # Entdoppelung fuer Punkte und "oft genutzt" (#352): angemeldet je Kennung,
-            # sonst je Tagespseudonym der Besucher (#446), je Beitrag und UTC-Tag.
+            # sonst je Besuchermerkmal (#446), je Beitrag und UTC-Tag.
             pruefwert=pruefwert(
                 aufrufer,
                 None if angemeldet else besucher_merkmal(request),

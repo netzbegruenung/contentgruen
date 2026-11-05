@@ -1,7 +1,7 @@
 -- Entdoppelte Nutzung und Muster-Hinweise (#352, ADR 0004)
 --
 -- Fuer Punkte und "Diese Woche oft genutzt" zaehlt eine Nutzung hoechstens einmal
--- je Person (Besucher: Sitzung), Beitrag und Tag; der Zaehler an der Karte zaehlt
+-- je Person (Besucher: Besuchermerkmal), Beitrag und Tag; der Zaehler an der Karte zaehlt
 -- weiter jede. Fuenf Aenderungen:
 --
 --   usage_tracking.nutzung_entdoppelt  die entdoppelte Nutzung je Beitrag, wie
@@ -21,8 +21,12 @@
 -- init.sql hat die Spalten. Bestehende brauchen es fuer die Spalten.
 --
 -- Nachtragen: aus den vorhandenen usage_events, so gut es geht entdoppelt: je
--- Sitzung, Beitrag und UTC-Tag zaehlt das erste Ereignis, Ereignisse ohne
--- Sitzung zaehlen nicht. nutzung_entdoppelt ist die Zahl dieser Ereignisse. Nutzung
+-- Sitzung, Beitrag und UTC-Tag zaehlt das erste Ereignis. Ereignisse ohne Sitzung
+-- (seit #446 alle) zaehlen je Beitrag und UTC-Tag einmal: eine Untergrenze, denn
+-- mindestens eine andere Person hat ihn an dem Tag genutzt (eigene Kopien zaehlt der
+-- Endpunkt nicht). So ist "Diese Woche oft genutzt" nach dem Einspielen nicht leer.
+-- PARTITION BY fasst die fehlenden Sitzungen zu einer Gruppe zusammen.
+-- nutzung_entdoppelt ist die Zahl dieser Ereignisse. Nutzung
 -- von vor der Frist der usage_events (90 Tage) ist nicht mehr zu entdoppeln und
 -- zaehlt nicht; usage_count, der Zaehler an der Karte, bleibt. Nachgetragen wird
 -- nur, wo die Spalte noch leer ist; ein zweiter Lauf aendert nichts.
@@ -47,8 +51,7 @@ FROM (
     ) AS erste_id
     FROM usage_events
 ) AS x
-WHERE e.id = x.id AND e.entdoppelt IS NULL AND e.session_id IS NOT NULL;
-UPDATE usage_events SET entdoppelt = false WHERE entdoppelt IS NULL;
+WHERE e.id = x.id AND e.entdoppelt IS NULL;
 ALTER TABLE usage_events ALTER COLUMN entdoppelt SET DEFAULT false;
 ALTER TABLE usage_events ALTER COLUMN entdoppelt SET NOT NULL;
 

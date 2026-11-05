@@ -108,7 +108,10 @@ class TestEntdoppelteNutzung:
 
 
 class TestNachtragImBestand:
-    """Die Migration entdoppelt vorhandene Nutzung je Sitzung, Beitrag und Tag."""
+    """
+    Die Migration entdoppelt vorhandene Nutzung je Sitzung, Beitrag und Tag; ohne
+    Sitzung (seit #446) zaehlt je Beitrag und Tag eine.
+    """
 
     def test_migration_entdoppelt_je_sitzung_beitrag_und_tag(
         self, datenbank  # noqa: F811
@@ -129,6 +132,8 @@ class TestNachtragImBestand:
                 ("s1", beitrag, montag + timedelta(days=1)),
                 ("s2", beitrag, montag),
                 (None, beitrag, montag),
+                (None, beitrag, montag + timedelta(hours=1)),
+                (None, beitrag, montag + timedelta(days=1)),
                 ("s1", anderer, montag),
             ]:
                 s.add(
@@ -145,7 +150,14 @@ class TestNachtragImBestand:
 
         repo = UsageTrackingRepository(datenbank)
         assert repo.get_nutzung_entdoppelt_batch([beitrag, anderer]) == {
-            str(beitrag): 3,
+            str(beitrag): 5,
             str(anderer): 1,
         }
         assert repo.get_usage_count(beitrag) == 5
+        with datenbank.get_session() as s:
+            ohne_sitzung = s.scalars(
+                select(UsageEvent.entdoppelt)
+                .where(UsageEvent.session_id.is_(None))
+                .order_by(UsageEvent.timestamp)
+            ).all()
+        assert ohne_sitzung == [True, False, True]

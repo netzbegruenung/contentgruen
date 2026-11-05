@@ -1,6 +1,6 @@
 """
 Pruefwerte fuer die entdoppelte Nutzung (#352): eine Nutzung je Person (Besucher:
-Tagespseudonym), Beitrag und Tag, ohne festzuhalten, wer was genutzt hat. Die
+Besuchermerkmal), Beitrag und Tag, ohne festzuhalten, wer was genutzt hat. Die
 Schluessel liegen nur im Speicher (BanSe/todo#266, DSFA Risiko 2).
 """
 
@@ -65,11 +65,11 @@ def test_pruefwert_enthaelt_weder_kennung_noch_beitrag():
     assert str(BEITRAG) not in wert
 
 
-def test_pruefwert_nach_neustart_anders():
+def test_pruefwert_nach_neustart_anders(monkeypatch):
     """Der Schluessel liegt nur im Speicher: ein Neustart beginnt neu."""
     vorher = pruefwert("kim-1", None, BEITRAG, MORGENS)
 
-    _neustart()
+    _neustart(monkeypatch)
 
     assert pruefwert("kim-1", None, BEITRAG, ABENDS) != vorher
 
@@ -116,11 +116,11 @@ def test_paar_pruefwert_nach_zwei_fenstern_nicht_mehr_herzustellen():
     assert alt not in paar_pruefwerte_im_fenster("kim-1", "bo-2", spaeter)
 
 
-def test_paar_pruefwert_nach_neustart_anders():
+def test_paar_pruefwert_nach_neustart_anders(monkeypatch):
     tag = MORGENS.date()
     vorher = paar_pruefwert("kim-1", "bo-2", tag)
 
-    _neustart()
+    _neustart(monkeypatch)
 
     assert vorher not in paar_pruefwerte_im_fenster("kim-1", "bo-2", tag)
 
@@ -136,6 +136,16 @@ class TestFensterschluessel:
         assert vorheriger == aktuell
         assert naechster != aktuell
 
+    def test_sprung_ueber_einen_block_vergisst_den_vorigen(self):
+        schluessel = Fensterschluessel(tage=7)
+        tag = date(2026, 10, 1)
+        aktuell, _ = schluessel.fuer(tag)
+
+        naechster, vorheriger = schluessel.fuer(tag + timedelta(days=14))
+
+        assert vorheriger is None
+        assert naechster != aktuell
+
     def test_vergangenes_fenster_bekommt_einmalschluessel(self):
         schluessel = Fensterschluessel(tage=7)
         tag = date(2026, 10, 1)
@@ -147,7 +157,9 @@ class TestFensterschluessel:
         assert vorheriger is None
 
 
-def _neustart():
+def _neustart(monkeypatch):
     """Wie ein Neustart des Prozesses: die Schluessel im Speicher sind weg."""
-    entdoppelung._NUTZUNG_SCHLUESSEL = Tagesschluessel()
-    entdoppelung._PAAR_SCHLUESSEL = Fensterschluessel(tage=MUSTER_FENSTER_TAGE)
+    monkeypatch.setattr(entdoppelung, "_NUTZUNG_SCHLUESSEL", Tagesschluessel())
+    monkeypatch.setattr(
+        entdoppelung, "_PAAR_SCHLUESSEL", Fensterschluessel(tage=MUSTER_FENSTER_TAGE)
+    )

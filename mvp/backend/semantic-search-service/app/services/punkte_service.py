@@ -20,6 +20,7 @@ Woher die drei Stufen kommen:
 Ein Startkonto sammelt keine Punkte.
 """
 
+import asyncio
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Protocol, Set
 
@@ -92,11 +93,23 @@ class PunkteService:
 
         beitraege = await self._sichtbare_beitraege(user_id)
         ids = [b.id for b in beitraege]
-        nutzung = sum(self._nutzung.get_nutzung_entdoppelt_batch(ids).values())
-        zustimmungen = self._stimmen_und_einwuerfe.zustimmungen(
-            ids, {user_id} | set(self._settings.startkonto_kennungen())
+        # Die Repositories fragen PostgreSQL synchron ab: im Thread, nicht im Event-Loop.
+        nutzung = sum(
+            (
+                await asyncio.to_thread(self._nutzung.get_nutzung_entdoppelt_batch, ids)
+            ).values()
+        )
+        zustimmungen = await asyncio.to_thread(
+            self._stimmen_und_einwuerfe.zustimmungen,
+            ids,
+            {user_id} | set(self._settings.startkonto_kennungen()),
         )
         grenze = self._jetzt() - BEITRAG_WARTEZEIT
+        einwuerfe = await asyncio.to_thread(
+            self._stimmen_und_einwuerfe.einwuerfe_ausformuliert_je_tag,
+            user_id,
+            bis=grenze,
+        )
         stehende = [
             b.created.astimezone(timezone.utc).date()
             for b in beitraege
@@ -106,10 +119,6 @@ class PunkteService:
             nutzungen=nutzung,
             zustimmungen=zustimmungen,
             beitraege_je_tag=_je_tag(stehende),
-            einwuerfe_ausformuliert_je_tag=(
-                self._stimmen_und_einwuerfe.einwuerfe_ausformuliert_je_tag(
-                    user_id, bis=grenze
-                )
-            ),
+            einwuerfe_ausformuliert_je_tag=einwuerfe,
         )
         return punkte_berechnen(daten, gewichte)

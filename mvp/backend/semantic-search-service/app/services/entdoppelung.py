@@ -40,12 +40,11 @@ from typing import List, Optional, Tuple
 
 from core.logging import get_logger
 from repositories.usage_tracking_repository import UsageTrackingRepository
+from utils.aufrufer import ANONYM
 from utils.besucher_pseudonym import Tagesschluessel
 from utils.utc_tag import sekunden_bis_mitternacht
 
 logger = get_logger(__name__)
-
-ANONYM = "anonymous"
 
 MUSTER_FENSTER_TAGE = 7
 """So viele Tage (der heutige eingeschlossen) duerfen zwischen A->B und B->A liegen."""

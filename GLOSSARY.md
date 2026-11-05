@@ -276,12 +276,15 @@ Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als se
 _Avoid_: Usage, Aufruf, Klick
 
 **Entdoppelte Nutzung**:
-Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Tagespseudonym), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus Person und Beitrag, keinen Eintrag, wer welchen Beitrag genutzt hat.
+Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Besuchermerkmal), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus Person und Beitrag, keinen Eintrag, wer welchen Beitrag genutzt hat.
 _Avoid_: eindeutige Nutzung, Unique Usage
 
 **Prüfwert**:
-Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dasselbe Besuchermerkmal) denselben Beitrag schon genutzt hat: aus Kennung bzw. Besuchermerkmal, Beitrag und Datum mit einem eigenen Tagesschlüssel berechnet, der nur im Arbeitsspeicher liegt. Auch mit Datenbank und Konfiguration lässt er sich weder auf die Person noch auf den Beitrag zurückführen oder nachrechnen. Nach seinem Tag wird er verworfen; nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal. Der Paar-Prüfwert für Muster-Hinweise entsteht aus den Kennungen zweier Konten mit dem Fensterschlüssel, weil er das Fenster von sieben Tagen überdauern muss; er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung, nach einem Neustart beginnt ein Muster neu.
+Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dasselbe Besuchermerkmal) denselben Beitrag schon genutzt hat: aus Kennung bzw. Besuchermerkmal, Beitrag und Datum mit einem eigenen Tagesschlüssel berechnet, der nur im Arbeitsspeicher liegt. Auch mit Datenbank und Konfiguration lässt er sich weder auf die Person noch auf den Beitrag zurückführen oder nachrechnen. Nach seinem Tag wird er verworfen; nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal.
 _Avoid_: Hash, Fingerabdruck
+
+**Paar-Prüfwert**:
+Der Prüfwert der Muster-Hinweise für „ein Konto hat einen Beitrag eines anderen Kontos genutzt“: aus den Kennungen beider Konten mit dem Fensterschlüssel berechnet, ohne Beitrag und Datum, weil er das Fenster von sieben Tagen überdauern muss. Er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung; nach einem Neustart beginnt ein Muster neu. Wie der Prüfwert lässt er sich auch mit Datenbank und Konfiguration nicht nachrechnen.
 
 **Oft genutzt**:
 Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde, gezählt als entdoppelte Nutzung. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
@@ -364,7 +367,7 @@ Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei
 _Avoid_: Fingerprint
 
 **Tagesschlüssel**:
-Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen. Die Prüfwerte der entdoppelten Nutzung bildet ein zweiter, davon unabhängiger Tagesschlüssel, der beim ersten Prüfwert eines neuen Tages wechselt.
 _Avoid_: Salt, Secret
 
 **Fensterschlüssel**:
