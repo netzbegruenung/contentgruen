@@ -65,8 +65,11 @@ nicht konsultiert werden (Art. 36).
 
 1. **Beim ersten Login** fragt die App seit #489 nach der Art.-9-Einwilligung (Lückenliste
    D-N15, `docs/ART9_EINWILLIGUNG.md`); die DSE nennt sie seit #557. Ihr Wortlaut muss zusätzlich
-   als Zwecke nennen: Punkte, Quests und Meilensteine, und den Schutz der Punkte durch
-   Muster-Hinweise; der Wortlaut vom 05.11.2026 tut das noch nicht. Für die Muster-Hinweise
+   als Zwecke nennen: Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person,
+   solange sie nicht gesondert zustimmt, sie anderen Angemeldeten zu zeigen; Opt-in aus Risiko 1),
+   neue Aktionen, die ein höheres Level freischaltet, und den Schutz der Punkte durch
+   Muster-Hinweise; das tut der Wortlaut `2026-11-05-b` (#559), der den ersten vom selben
+   Tag ablöst, bevor er in einem Release war. Für die Muster-Hinweise
    reicht Art. 6 Abs. 1 lit. f allein nicht, weil sie Art. 9-Daten betreffen.
 2. **Beim ersten Punkt** fragt die App nach dem Opt-in aus Risiko 1, das ist eine eigene
    Einwilligung für die Sichtbarkeit.
@@ -92,9 +95,10 @@ Punkte werden beim Abruf berechnet, nicht gespeichert (`ss/services/punkte_servi
 (Abschnitt 1); andere sehen etwas nur mit Opt-in. **Widerruf** (Vorschlag): Wer das Opt-in
 zurücknimmt, verschwindet sofort aus Ranglisten und Abzeichen; die eigenen Punkte sieht die
 Person weiter. Nach dem Widerruf der Login-Einwilligung kann die Person nichts mehr beitragen und
-nichts bewerten; Gespeichertes bleibt, bis sie es löscht oder ihr Konto löschen lässt (#489,
-`docs/ART9_EINWILLIGUNG.md`). Geht das Konto, gehen die Muster-Hinweise mit, die Paar-Prüfwerte
-laufen nach 7 Tagen aus.
+nichts bewerten, ihre Punkte sind 0, und ihre Kopien zählen nur noch am Zähler der Karte, ohne
+Prüfwert und ohne Meldung für Muster-Hinweise (#559); Gespeichertes bleibt, bis sie es löscht
+oder ihr Konto löschen lässt (#489, `docs/ART9_EINWILLIGUNG.md`). Geht das Konto, gehen die
+Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
 
 ## 6. Fragen an Vorstand und Datenschutzbeauftragte
 
@@ -108,10 +112,6 @@ laufen nach 7 Tagen aus.
 Offen:
 
 - DSFA übernommen (Abschnitt 6).
-- Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt.
-- Im Code Punkte und Muster-Hinweise nur für Konten mit geltender Einwilligung (#559): Heute
-  prüft der Zählendpunkt der Nutzung (`ss/api/v1/usage.py`) sie nicht, und die DSE stützt
-  beides auf lit. a (Abschnitt 4).
 
 Erledigt:
 
@@ -121,3 +121,8 @@ Erledigt:
   Profiling“ gilt nur, solange Punkte aus sind; „Rückmeldung zur Nutzung“ nennt Muster-Hinweise
   als Ausnahme.
 - Umstellung auf #470 und Schlüssel im Speicher aus Risiko 2 (PR #476).
+- Im Code Punkte und Muster-Hinweise nur für Konten mit geltender Einwilligung (#559, PR #560):
+  Der Zählendpunkt der Nutzung (`ss/api/v1/usage.py`) bildet ohne Einwilligung keinen Prüfwert
+  und meldet nichts für Muster-Hinweise, auch nicht, wenn die Autorin nicht eingewilligt hat;
+  `GET /users/me/punkte` liefert ohne Einwilligung 0. Gefragt wird je Kopie und je Abruf.
+- Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt (PR #560, Wortlaut `2026-11-05-b`).
