@@ -105,12 +105,19 @@ laufen nach 7 Tagen aus.
 
 ## 7. Vor dem Einschalten der Punkte
 
-DSFA übernommen, Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt, und im Code
-Punkte und Muster-Hinweise nur für Konten mit geltender Einwilligung: Heute prüft der
-Zählendpunkt der Nutzung (`ss/api/v1/usage.py`) sie nicht, und die DSE stützt beides auf
-lit. a (Abschnitt 4). Erledigt:
-Datenschutzerklärung angepasst (#499): Prüfwert und Vermerk der ersten Kopie unter „Verwendung
-von Beiträgen“, eigener Abschnitt „Punkte“ mit Paar-Prüfwert (7 Tage) und Muster-Hinweisen
-(8 Wochen), Startkonten; „kein Pseudonym“ beim Kopieren gestrichen, „kein Profiling“ gilt nur,
-solange Punkte aus sind. Umstellung auf #470
-und Schlüssel im Speicher aus Risiko 2 sind in PR #476 umgesetzt.
+Offen:
+
+- DSFA übernommen (Abschnitt 6).
+- Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt.
+- Im Code Punkte und Muster-Hinweise nur für Konten mit geltender Einwilligung (#559): Heute
+  prüft der Zählendpunkt der Nutzung (`ss/api/v1/usage.py`) sie nicht, und die DSE stützt
+  beides auf lit. a (Abschnitt 4).
+
+Erledigt:
+
+- Datenschutzerklärung angepasst (#499): Prüfwert und Vermerk der ersten Kopie unter
+  „Verwendung von Beiträgen“, eigener Abschnitt „Punkte“ mit Paar-Prüfwert (7 Tage) und
+  Muster-Hinweisen (8 Wochen), Startkonten; „kein Pseudonym“ beim Kopieren gestrichen, „kein
+  Profiling“ gilt nur, solange Punkte aus sind; „Rückmeldung zur Nutzung“ nennt Muster-Hinweise
+  als Ausnahme.
+- Umstellung auf #470 und Schlüssel im Speicher aus Risiko 2 (PR #476).

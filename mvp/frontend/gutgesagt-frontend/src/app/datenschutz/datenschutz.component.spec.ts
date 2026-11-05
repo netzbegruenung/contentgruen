@@ -211,7 +211,15 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Muster-Hinweis');
       expect(text).toContain('nur unsere Administratorinnen und Administratoren');
       expect(text).toContain('Muster-Hinweise acht Wochen nach dem letzten auffälligen Tag');
-      expect(text).toContain('Artikel 9 Absatz 2 Buchstabe a DSGVO');
+      expect(text).toContain('Artikel 6 Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO');
+    });
+
+    it('Rückmeldung: Muster-Hinweise als einzige Ausnahme von „wer genutzt hat, zeigen wir nicht“', () => {
+      const text = abschnitt('Rückmeldung zur Nutzung deiner Beiträge');
+
+      expect(text).toContain('Wer deine Beiträge genutzt hat, wissen wir nicht und zeigen wir nicht');
+      expect(text).toContain('Einzige Ausnahme, sobald Punkte eingeschaltet sind');
+      expect(text).toContain('ohne die genutzten Beiträge (siehe „Punkte“)');
     });
 
     it('Profiling: nur mit eingeschalteten Punkten, ohne Folgen', () => {
@@ -436,7 +444,7 @@ describe('DatenschutzComponent', () => {
       expect(text).not.toContain('neue Sitzungskennung');
     });
 
-    it('Verwendung von Beiträgen: kein Pseudonym und kein Gerätebezug mehr', () => {
+    it('Verwendung von Beiträgen: kein Pseudonym und kein Kontobezug', () => {
       const text = abschnitt('Verwendung von Beiträgen');
 
       expect(text).toContain('nicht ablesen, welches Konto einen Beitrag verwendet hat');
