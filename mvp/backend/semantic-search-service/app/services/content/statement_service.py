@@ -21,6 +21,7 @@ from domain.models.statement import (
     StatementSearchResult,
     StatementReplysuggestion,
 )
+from domain.models.base_content import BaseContentSearchResult
 from domain.models.content_type import ContentType
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS, ContentStatus
@@ -192,6 +193,17 @@ class StatementService(
                 aussage.last_modified = utc_jetzt()
                 await self.update_statement(aussage)
         return neu, statement_id, statement_text
+
+    async def vorhandene_finden(self, text: str) -> Optional[BaseContentSearchResult]:
+        """
+        Die Aussage, auf der dieser Text landen wuerde, ohne etwas anzulegen: dieselbe
+        Pruefung wie in add_statement. None, wenn er eine neue Aussage ergaebe. Fuer die
+        Messung der Zerfaserung im Suchtestset (tests/regression/suche_messen.py).
+        """
+        pruefung = await self._vorhandenen_finden(
+            text, self.settings.statement_similarity_threshold, praefix="query"
+        )
+        return pruefung.vorhanden
 
     async def add_statement(
         self,

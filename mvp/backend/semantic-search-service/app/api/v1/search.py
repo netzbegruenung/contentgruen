@@ -76,6 +76,95 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
+async def aussagetreffer_finden(statement_service: StatementService, query_text: str):
+    """
+    Die Aussagen mit Antworten, die zur Suchanfrage passen, gewichtet mit
+    Polaritaetsfilter und Schlagwort-Ueberlappung. Liefert die Treffer und die
+    Polaritaets-Metadaten je Aussage. Eigene Funktion, damit das Suchtestset
+    (tests/regression/suche_messen.py) genau so sucht und gewichtet wie die Suche.
+    """
+    # Query most similar statements that do contain replysuggestions from the statement index
+    statement_index_results: List[StatementSearchResult] = (
+        await statement_service.search_statements(
+            query_text,
+            settings.statement_search_limit,
+            settings.min_reply_suggestions_for_search,
+        )
+    )
+    logger.debug(f"📊 Statement search results: {len(statement_index_results)} items")
+
+    polarity_filter = get_polarity_filter_service(
+        enable_filtering=settings.enable_polarity_filtering
+    )
+    statement_index_results, polarity_metadata = (
+        polarity_filter.analyze_and_filter_statement_results(
+            query_text=query_text,
+            statement_results=statement_index_results,
+            get_text_fn=lambda r: r.text,
+        )
+    )
+    logger.debug(
+        f"📊 After polarity filtering: {len(statement_index_results)} statement results"
+    )
+
+    keyword_overlap_service = get_keyword_overlap_service(
+        enable_boosting=settings.enable_keyword_overlap_boost,
+        boost_strength=settings.keyword_overlap_boost_strength,
+    )
+    statement_index_results, _keyword_metadata = (
+        keyword_overlap_service.analyze_and_boost_results(
+            query_text=query_text,
+            results=statement_index_results,
+            get_text_fn=lambda r: r.text,
+        )
+    )
+    logger.debug(
+        f"📊 After keyword overlap boosting: {len(statement_index_results)} statement results"
+    )
+    return statement_index_results, polarity_metadata
+
+
+def suchspezifikationen(
+    commentary_service, generictext_service, post_service, image_service
+) -> List[ContentTypeSearchSpec]:
+    """Die Beitragstypen, die die Suche durchsucht, in dieser Reihenfolge."""
+    return [
+        ContentTypeSearchSpec(
+            content_type=ContentType.COMMENTARY,
+            service=commentary_service,
+            result_cls=CommentarySearchResult,
+            result_field="commentary_result",
+            # Je Aussage die Kommentare fuer die Kommentarspalte vor denen fuer
+            # die eigenen Leute (#357, entschieden in #456: Variante B).
+            nachrangig=fuer_eigene_leute,
+        ),
+        ContentTypeSearchSpec(
+            content_type=ContentType.GENERIC_TEXT,
+            service=generictext_service,
+            result_cls=GenericTextSearchResult,
+            result_field="generictext_result",
+        ),
+        ContentTypeSearchSpec(
+            content_type=ContentType.POST,
+            service=post_service,
+            result_cls=PostSearchResult,
+            result_field="post_result",
+        ),
+        *(
+            [
+                ContentTypeSearchSpec(
+                    content_type=ContentType.IMAGE,
+                    service=image_service,
+                    result_cls=ImageSearchResult,
+                    result_field="image_result",
+                )
+            ]
+            if image_service is not None
+            else []
+        ),
+    ]
+
+
 # Searches for content in various indexes using similarity search
 # later to probably be split up in specific seach operations
 # returns analysis of input content (=identified statement), topics (TBD), commentaries & generictext snippets
@@ -148,85 +237,14 @@ async def search_by_text(
             )
             # Continue with search even if auto-creation fails
 
-        # Business logic: Query most similar statements that do contain replysuggestions from the statement index
-        statement_index_results: List[StatementSearchResult] = (
-            await statement_service.search_statements(
-                request.query_text,
-                settings.statement_search_limit,
-                settings.min_reply_suggestions_for_search,
-            )
-        )
-        logger.debug(
-            f"📊 Statement search results: {len(statement_index_results)} items"
-        )
-
-        # Apply polarity filtering to statement results
-        polarity_filter = get_polarity_filter_service(
-            enable_filtering=settings.enable_polarity_filtering
-        )
-        statement_index_results, polarity_metadata = (
-            polarity_filter.analyze_and_filter_statement_results(
-                query_text=request.query_text,
-                statement_results=statement_index_results,
-                get_text_fn=lambda r: r.text,
-            )
-        )
-        logger.debug(
-            f"📊 After polarity filtering: {len(statement_index_results)} statement results"
-        )
-
-        # Apply keyword overlap boosting to statement results
-        keyword_overlap_service = get_keyword_overlap_service(
-            enable_boosting=settings.enable_keyword_overlap_boost,
-            boost_strength=settings.keyword_overlap_boost_strength,
-        )
-        statement_index_results, keyword_metadata = (
-            keyword_overlap_service.analyze_and_boost_results(
-                query_text=request.query_text,
-                results=statement_index_results,
-                get_text_fn=lambda r: r.text,
-            )
-        )
-        logger.debug(
-            f"📊 After keyword overlap boosting: {len(statement_index_results)} statement results"
+        statement_index_results, polarity_metadata = await aussagetreffer_finden(
+            statement_service, request.query_text
         )
 
         # Run the type-agnostic search pipeline over the registered content types.
-        specs = [
-            ContentTypeSearchSpec(
-                content_type=ContentType.COMMENTARY,
-                service=commentary_service,
-                result_cls=CommentarySearchResult,
-                result_field="commentary_result",
-                # Je Aussage die Kommentare fuer die Kommentarspalte vor denen fuer
-                # die eigenen Leute (#357, entschieden in #456: Variante B).
-                nachrangig=fuer_eigene_leute,
-            ),
-            ContentTypeSearchSpec(
-                content_type=ContentType.GENERIC_TEXT,
-                service=generictext_service,
-                result_cls=GenericTextSearchResult,
-                result_field="generictext_result",
-            ),
-            ContentTypeSearchSpec(
-                content_type=ContentType.POST,
-                service=post_service,
-                result_cls=PostSearchResult,
-                result_field="post_result",
-            ),
-            *(
-                [
-                    ContentTypeSearchSpec(
-                        content_type=ContentType.IMAGE,
-                        service=image_service,
-                        result_cls=ImageSearchResult,
-                        result_field="image_result",
-                    )
-                ]
-                if image_service is not None
-                else []
-            ),
-        ]
+        specs = suchspezifikationen(
+            commentary_service, generictext_service, post_service, image_service
+        )
         orchestrator = SearchOrchestrator(
             specs,
             reference_service=reference_service,

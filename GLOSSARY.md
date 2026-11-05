@@ -98,6 +98,10 @@ _Avoid_: Testset, Goldstandard, Benchmark
 Die Entscheidung eines Menschen über ein Paar im Messset: *gleich* (dieselbe Behauptung), *widerspricht* (beide können nicht zugleich stimmen), *verwandt* (selbes Thema, andere Behauptung) oder *fremd* (anderes Thema). Die Labels entsprechen den Verknüpfungen zwischen Aussagen.
 _Avoid_: Klasse, Kategorie (die Kategorie A–E im Messset beschreibt die Textabweichung)
 
+**Suchtestset**:
+Suchanfragen, zu denen Menschen festgelegt haben, an welchen Aussagen passende Beiträge hängen (oder dass keine passen), und an denen gemessen wird, wie gut die Suche findet: je Suchanfrage ein Treffer (der erste angezeigte Beitrag passt), ein Fehltreffer (er passt nicht, oder es wird etwas angezeigt, obwohl nichts passt) oder keine Treffer. Grundlage für die Schwelle der Suche. Es misst auch die Zerfaserung: wie viele Suchanfragen, die dieselbe Behauptung wie eine vorhandene Aussage sind, trotzdem eine neue Aussage ergeben. Regeln und Ergebnis in `tests/regression/SUCHTESTSET.md` des Semantic-Search-Service. Anders als das Messset misst es die ganze Suche, nicht Textpaare.
+_Avoid_: Testset (allein), Messset (das sind Textpaare)
+
 ### Stufen eines Einwurfs
 
 **Offen**:

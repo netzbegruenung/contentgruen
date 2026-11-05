@@ -95,7 +95,12 @@ class SearchOrchestrator:
         reference_service,
         usage_service,
         voting_service,
+        schwelle: float = MINIMUM_SCORE_THRESHOLD,
     ):
+        # Treffer bis einschliesslich dieser Schwelle fallen weg. Der Dienst nutzt immer
+        # MINIMUM_SCORE_THRESHOLD; das Suchtestset (tests/regression/suche_messen.py)
+        # sammelt mit einer niedrigeren und wertet mehrere Schwellen danach aus.
+        self._schwelle = schwelle
         self._specs: Dict[ContentType, ContentTypeSearchSpec] = {
             spec.content_type: spec for spec in specs
         }
@@ -184,11 +189,11 @@ class SearchOrchestrator:
                 )
 
                 # Filter sub-threshold (and unknown content types) before any retrieval.
-                if combined_score <= MINIMUM_SCORE_THRESHOLD:
+                if combined_score <= self._schwelle:
                     # DEBUG: je Suche, mit Uhrzeit und Aussagetext (#239).
                     logger.debug(
                         f"❌ FILTERED OUT: statement='{statement_result.text[:50]}...' | "
-                        f"combined_score={combined_score:.3f} ≤ threshold={MINIMUM_SCORE_THRESHOLD} | "
+                        f"combined_score={combined_score:.3f} ≤ threshold={self._schwelle} | "
                         f"statement_score={statement_result.score:.3f}, "
                         f"reply_relevance={replysuggestion.relevance}, "
                         f"type={replysuggestion.content_type.value}"
@@ -259,7 +264,7 @@ class SearchOrchestrator:
                 # und einer Schwelle von 0.8 haette der Rohscore ueber 1.143 liegen
                 # muessen, was eine Kosinus-Aehnlichkeit nie erreicht. Der Zweig
                 # konnte dadurch nie etwas liefern.
-                if content_result.score <= MINIMUM_SCORE_THRESHOLD:
+                if content_result.score <= self._schwelle:
                     continue
 
                 # Die Penalty bleibt und wirkt weiter auf das Ranking: ein direkter
