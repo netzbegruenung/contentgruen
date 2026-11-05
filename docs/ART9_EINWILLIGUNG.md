@@ -25,6 +25,18 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   gegen eine Sperre. Die Liste prüft `tests/unit/api/test_art9_einwilligung_api.py`
   (`GESPERRT`, `OFFEN`): Ein neuer schreibender Endpunkt fällt dort auf, bis er in einer der
   beiden steht; gesperrte tragen `require_art9_einwilligung` (`dependencies.py`).
+- **Kopieren:** bleibt offen und zählt am Zähler der Karte (Kopieren ist Lesen). Ohne geltende
+  Einwilligung entsteht dabei aber kein Prüfwert und kein Paar-Prüfwert: keine entdoppelte
+  Nutzung, also keine Wirkung-Punkte für die Autorin und kein Eintrag in „Diese Woche oft
+  genutzt“, und keine Muster-Hinweise. Einen Paar-Prüfwert gibt es auch nicht, wenn die
+  Autorin des Beitrags nicht eingewilligt hat (#559, `track_content_usage` in
+  `api/v1/usage.py`, Tests `TestArt9Einwilligung` in
+  `tests/unit/api/test_usage_eigene_kopie.py`). Gefragt wird je Kopie; ist die Einwilligung
+  nicht lesbar, gilt sie als nicht erteilt und die Kopie zählt trotzdem. Paar-Prüfwerte und
+  Hinweise von vor einem Widerruf gehen mit ihren Fristen (`docs/LOESCHKONZEPT.md`).
+- **Punkte:** Ein Konto ohne geltende Einwilligung (nie erteilt oder widerrufen) hat keine
+  Punkte; `GET /api/v1/usage/users/me/punkte` liefert dann 0 in jeder Stufe, wie bei einem
+  Startkonto (#559, F559-1, `PunkteService.punkte`). Gefragt wird je Abruf.
 - **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Einwilligung“). Die Zeile bekommt
   den Zeitpunkt des Widerrufs und bleibt stehen, als Nachweis, dass die Verarbeitung bis dahin
   auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Schon Gespeichertes
@@ -42,20 +54,26 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
 Der Wortlaut steht an einer Stelle: `WORTLAUTE` in
 `mvp/backend/semantic-search-service/app/domain/art9_einwilligung.py`. Das Frontend zeigt,
 was das Backend liefert, und hat keinen eigenen Text. Die Kennung eines Wortlauts ist sein
-Stand-Datum.
+Stand-Datum; ein zweiter Wortlaut vom selben Tag bekommt ein Suffix (`-b`, `-c` …).
 
 1. Neuen Eintrag in `WORTLAUTE` mit dem Tagesdatum als Kennung anlegen; den alten stehen lassen,
    sonst ist eine gespeicherte Kennung keinem Text mehr zuzuordnen. Ein Datum nie für einen
-   anderen Text wiederverwenden.
+   anderen Text wiederverwenden; gibt es das Tagesdatum schon, mit Suffix (`2026-11-05-b`).
 2. `AKTUELLER_WORTLAUT` auf die neue Kennung setzen.
 3. Unten in der Tabelle eine Zeile ergänzen, beim vorigen Wortlaut das „bis“-Datum nach dem
    Produktiv-Deploy.
 
 Eine Einwilligung zu einem älteren Wortlaut gilt weiter. Ob ein geänderter Wortlaut eine neue
 Einwilligung verlangt, ist beim Ändern zu entscheiden; heute fragt die App nicht erneut.
+Die Prüfung der Einwilligung (`Art9EinwilligungService.eingewilligt`) unterscheidet heute nicht
+nach Wortlaut: Eine Einwilligung zu `2026-11-05` zählt also auch für Punkte, obwohl erst
+`2026-11-05-b` sie nennt. Das ist vertretbar, weil `2026-11-05` nie produktiv war (#559). Nennt
+ein künftiger Wortlaut neue Zwecke, muss die Prüfung für diese Zwecke die Kennung
+berücksichtigen oder die App neu fragen.
 
 ## Wortlaute
 
 | Kennung | Stand | gültig |
 |---------|-------|--------|
-| `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | seit dem Produktiv-Deploy von #489 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | nie produktiv: von `2026-11-05-b` abgelöst, bevor #489 in einem Release war |
+| `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA_PUNKTE.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 (Datum nach dem Ausrollen eintragen) |
