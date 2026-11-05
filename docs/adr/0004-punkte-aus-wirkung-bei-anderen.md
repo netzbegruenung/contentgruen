@@ -28,7 +28,7 @@ Entschieden mit der Punktezählung (PR #476, BanSe/todo#266): Besucher werden ü
 
 ## Ranglisten nur mit Zustimmung (Ergänzung 05.11.2026)
 
-Ranglisten erscheinen nur bei Personen, die ausdrücklich zugestimmt haben. Die Zustimmung ist freiwillig, nichts ist vorbelegt, und sie lässt sich jederzeit widerrufen. Die frühere Variante, die Teilnahme abschalten zu müssen, ist verworfen. Grund: Schon die Teilnahme an einer Rangliste verrät eine politische Haltung (DSGVO Art. 9), und Ranglisten zeigen anderen nur den Anzeigenamen. Die Entscheidung steht in `docs/VISION.md` und `docs/DSFA_PUNKTE.md`. Der Satz in Consequences unten ist entsprechend ersetzt.
+Ranglisten erscheinen nur bei Personen, die ausdrücklich zugestimmt haben. Die Zustimmung ist freiwillig, nichts ist vorbelegt, und sie lässt sich jederzeit widerrufen. Meilenstein-Abzeichen, die anderen sichtbar sind, brauchen ebenfalls eine gesonderte Zustimmung. Grund: Schon die Teilnahme an einer Rangliste verrät eine politische Haltung (DSGVO Art. 9), und Ranglisten zeigen anderen nur den Anzeigenamen. Die Entscheidung steht in `docs/VISION.md` und `docs/DSFA_PUNKTE.md`. Der Satz in Consequences unten ist entsprechend ersetzt.
 
 ## Considered Options
 
