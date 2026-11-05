@@ -214,6 +214,14 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO');
     });
 
+    it('Punkte: ohne Einwilligung keine Punkte, kein Muster-Hinweis, kein Prüfwert bei Kopien', () => {
+      const text = abschnitt('Punkte');
+
+      expect(text).toContain('Ohne diese Einwilligung hat dein Konto keine Punkte');
+      expect(text).toContain('kein Muster-Hinweis, der es nennt');
+      expect(text).not.toContain('Bevor wir Punkte einschalten');
+    });
+
     it('Rückmeldung: Muster-Hinweise als einzige Ausnahme von „wer genutzt hat, zeigen wir nicht“', () => {
       const text = abschnitt('Rückmeldung zur Nutzung deiner Beiträge');
 
