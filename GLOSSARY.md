@@ -276,11 +276,11 @@ Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als se
 _Avoid_: Usage, Aufruf, Klick
 
 **Entdoppelte Nutzung**:
-Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Tagespseudonym), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus dem Tagespseudonym und dem Beitrag, keinen Eintrag, wer welchen Beitrag genutzt hat.
+Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Tagespseudonym), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus Person und Beitrag, keinen Eintrag, wer welchen Beitrag genutzt hat.
 _Avoid_: eindeutige Nutzung, Unique Usage
 
 **Prüfwert**:
-Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dieselbe Sitzung) denselben Beitrag schon genutzt hat: aus dem Tagespseudonym und dem Beitrag mit dem geheimen Schlüssel berechnet. Ohne den Schlüssel lässt er sich weder auf die Person noch auf den Beitrag zurückführen. Wer den Schlüssel hat, kann ihn für eine bekannte Kennung und einen bekannten Beitrag am selben Tag nachrechnen, wie beim Tagespseudonym. Nach seinem Tag wird er verworfen. Der Paar-Prüfwert für Muster-Hinweise entsteht aus den Kennungen zweier Konten statt aus Tagespseudonymen, weil er das Fenster von sieben Tagen überdauern muss; er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung.
+Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dasselbe Besuchermerkmal) denselben Beitrag schon genutzt hat: aus Kennung bzw. Besuchermerkmal, Beitrag und Datum mit einem eigenen Tagesschlüssel berechnet, der nur im Arbeitsspeicher liegt. Auch mit Datenbank und Konfiguration lässt er sich weder auf die Person noch auf den Beitrag zurückführen oder nachrechnen. Nach seinem Tag wird er verworfen; nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal. Der Paar-Prüfwert für Muster-Hinweise entsteht aus den Kennungen zweier Konten mit dem Fensterschlüssel, weil er das Fenster von sieben Tagen überdauern muss; er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung, nach einem Neustart beginnt ein Muster neu.
 _Avoid_: Hash, Fingerabdruck
 
 **Oft genutzt**:
@@ -366,6 +366,10 @@ _Avoid_: Fingerprint
 **Tagesschlüssel**:
 Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
 _Avoid_: Salt, Secret
+
+**Fensterschlüssel**:
+Der geheime Schlüssel der Paar-Prüfwerte. Er entsteht je Block von sieben Tagen neu zufällig und liegt nur im Arbeitsspeicher; der des vorigen Blocks bleibt einen Block lang zum Vergleich, damit gegenseitige Nutzung über den Wechsel hinweg erkannt wird. Danach ist er weg, ein Neustart verwirft beide.
+_Avoid_: Wochenschlüssel, Salt, Secret
 
 **Anschluss**:
 Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein und begrenzt bei Suchen ohne Treffer die Personen: je Anschluss und Aussage höchstens eine am Tag.

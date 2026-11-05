@@ -202,11 +202,14 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist.
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
-- **Prüfwerte und Muster-Hinweise (#352):** Ein Prüfwert ist ein HMAC über das
-  Tagespseudonym (bei Besuchern das aus #446) und den Beitrag; er entdoppelt nur an seinem Tag und geht danach.
+- **Prüfwerte und Muster-Hinweise (#352):** Ein Prüfwert ist ein HMAC über Kennung
+  (bei Besuchern das Besuchermerkmal aus #446), Beitrag und Tag; er entdoppelt nur an seinem Tag und geht danach.
   Ein Paar-Prüfwert ist ein HMAC über die Kennungen zweier Konten („A hat einen
   Beitrag von B genutzt“, welcher steht nirgends); er bleibt sieben Tage, damit sich
-  gegenseitige Nutzung über mehrere Tage erkennen lässt. Er ist nicht per Kennung
+  gegenseitige Nutzung über mehrere Tage erkennen lässt. Beide Schlüssel (Tagesschlüssel
+  der Prüfwerte, Fensterschlüssel der Paar-Prüfwerte) liegen nur im Arbeitsspeicher, nicht in
+  der Konfiguration: Mit Datenbank und Konfiguration lässt sich kein Wert nachrechnen, und
+  nach einem Neustart passt keiner mehr. Ein Paar-Prüfwert ist nicht per Kennung
   löschbar (`person_loeschen.sql` kennt den Schlüssel nicht) und geht nach spätestens
   sieben Tagen von selbst; ein gelöschtes Konto nutzt nichts mehr, ein Hinweis kann
   aus ihm also nicht mehr entstehen. Ein Muster-Hinweis nennt zwei Kennungen und soll Admins

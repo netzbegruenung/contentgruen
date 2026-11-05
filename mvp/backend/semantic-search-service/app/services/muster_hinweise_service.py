@@ -7,9 +7,9 @@ ist nur ein Hinweis fuer Admins; keine Automatik zieht Punkte ab oder sperrt jem
 
 Wer welchen Beitrag genutzt hat, steht nirgends: Fuer jede Richtung zwischen zwei
 Konten merkt sich der Dienst einen Paar-Pruefwert mit dem letzten Tag dieser Richtung
-(services/entdoppelung.py, Tabelle muster_pruefwerte). Erst wenn auch der Pruefwert
-der Gegenrichtung im Fenster liegt, entsteht eine Zeile mit beiden Kennungen. Nutzung
-durch Besucher hat kein Konto und zaehlt hier nicht.
+(services/entdoppelung.py, Tabelle muster_pruefwerte; Schluessel nur im Speicher).
+Erst wenn auch der Pruefwert der Gegenrichtung im Fenster liegt, entsteht eine Zeile
+mit beiden Kennungen. Nutzung durch Besucher hat kein Konto und zaehlt hier nicht.
 
 Fristen, angewendet von loeschen_im_takt, einem eigenen Hintergrund-Task aus main.py
 (die Pruefwerte der entdoppelten Nutzung verwirft ein eigener, services/entdoppelung.py):
@@ -33,13 +33,15 @@ from repositories.muster_hinweis_repository import (
     MusterHinweis,
     MusterHinweisRepository,
 )
-from services.entdoppelung import ANONYM, paar_pruefwert
+from services.entdoppelung import (
+    ANONYM,
+    MUSTER_FENSTER_TAGE,
+    paar_pruefwert,
+    paar_pruefwerte_im_fenster,
+)
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
 logger = get_logger(__name__)
-
-MUSTER_FENSTER_TAGE = 7
-"""So viele Tage (der heutige eingeschlossen) duerfen zwischen A->B und B->A liegen."""
 
 MUSTER_FRIST_TAGE = 56
 """Acht Wochen nach dem letzten auffaelligen Tag."""
@@ -68,8 +70,8 @@ class MusterHinweiseService:
         moment = moment or datetime.now(timezone.utc)
         tag = moment.astimezone(timezone.utc).date()
         self._repository.nutzung_merken(
-            paar_pruefwert(nutzende, autor),
-            paar_pruefwert(autor, nutzende),
+            paar_pruefwert(nutzende, autor, tag),
+            paar_pruefwerte_im_fenster(autor, nutzende, tag),
             nutzende,
             autor,
             tag,

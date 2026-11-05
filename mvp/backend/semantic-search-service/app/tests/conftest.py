@@ -108,6 +108,17 @@ def frischer_tagesschluessel(monkeypatch):
     monkeypatch.setattr(
         besucher_pseudonym, "_TAGESSCHLUESSEL", besucher_pseudonym.Tagesschluessel()
     )
+    # Ebenso die Schluessel der Pruefwerte (services/entdoppelung.py, #352).
+    import services.entdoppelung as entdoppelung
+
+    monkeypatch.setattr(
+        entdoppelung, "_NUTZUNG_SCHLUESSEL", besucher_pseudonym.Tagesschluessel()
+    )
+    monkeypatch.setattr(
+        entdoppelung,
+        "_PAAR_SCHLUESSEL",
+        entdoppelung.Fensterschluessel(tage=entdoppelung.MUSTER_FENSTER_TAGE),
+    )
 
 
 @pytest.fixture(autouse=True)

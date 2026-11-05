@@ -7,7 +7,7 @@ services/muster_hinweise_service.py.
 
 from dataclasses import dataclass
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from sqlalchemy import delete, desc, exists, func, select
 from sqlalchemy.dialects.postgresql import insert
@@ -33,7 +33,7 @@ class MusterHinweisRepository:
     def nutzung_merken(
         self,
         hin: str,
-        rueck: str,
+        rueck: Sequence[str],
         nutzende: str,
         autor: str,
         tag: date,
@@ -41,7 +41,8 @@ class MusterHinweisRepository:
     ) -> bool:
         """
         Merkt sich den Pruefwert ``hin`` (``nutzende`` hat einen Beitrag von ``autor``
-        genutzt) mit ``tag``. Steht ``rueck`` mit einem Tag ab ``fenster_ab`` da,
+        genutzt) mit ``tag``. Steht einer der Werte ``rueck`` (die Gegenrichtung, je
+        Schluessel im Speicher einer) mit einem Tag ab ``fenster_ab`` da,
         nutzen sich beide gegenseitig: Dann zaehlt der Hinweis zum Paar diesen Tag,
         hoechstens einmal. Liefert, ob das Paar gegenseitig war.
         """
@@ -66,7 +67,7 @@ class MusterHinweisRepository:
             gegenseitig = session.execute(
                 select(
                     exists().where(
-                        MusterPruefwert.pruefwert == rueck,
+                        MusterPruefwert.pruefwert.in_(list(rueck)),
                         MusterPruefwert.tag >= fenster_ab,
                     )
                 )
