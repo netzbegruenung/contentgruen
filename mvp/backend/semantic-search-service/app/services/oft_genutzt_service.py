@@ -4,7 +4,7 @@
 Die Beitraege mit der meisten Nutzung der letzten sieben Tage. Gezaehlt wird nur
 Nutzung verschiedener anderer Personen: Die eigene Kopie und die eines Startkontos
 erfasst der Zaehl-Endpunkt gar nicht erst (api/v1/usage.py), und die
-Nutzungsabfrage zaehlt je Person (Besucher: Sitzung), Beitrag und Tag nur die
+Nutzungsabfrage zaehlt je Person (Besucher: Besuchermerkmal), Beitrag und Tag nur die
 erste Nutzung (UsageTrackingRepository.get_trending_content, #352).
 
 Bei zu wenig Nutzung gibt es keinen Bereich: Eine Liste mit einem einmal kopierten

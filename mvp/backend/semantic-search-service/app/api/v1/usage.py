@@ -258,8 +258,9 @@ async def track_content_usage(
         # Fuer die Muster-Hinweise (#352), nur mit Punkten. Ein Fehler hier kostet
         # die Nutzung nicht, sie ist schon gezaehlt. Kein Depends: Ohne Punkte soll
         # der Dienst gar nicht erst entstehen.
-        # ANNAHME (#352): erkannt wird nur gegenseitige Nutzung am selben UTC-Tag;
-        # ueber Tagesgrenzen hinweg merkt sich der Dienst nichts (DSFA zu #374, M2).
+        # Erkannt wird gegenseitige Nutzung innerhalb von MUSTER_FENSTER_TAGE (sieben)
+        # Tagen; gemerkt wird dafuer nur ein Paar-Pruefwert mit einem Schluessel im
+        # Speicher (services/entdoppelung.py, DSFA Risiko 2).
         if settings.punkte_aktiv and beitrag is not None:
             try:
                 await asyncio.to_thread(

@@ -5,7 +5,7 @@
       Muster-Hinweise
     </mat-card-title>
     <mat-card-subtitle>
-      Konten, die am selben Tag jeweils einen Beitrag des anderen genutzt haben. Nur ein
+      Konten, die innerhalb von sieben Tagen jeweils einen Beitrag des anderen genutzt haben. Nur ein
       Hinweis zum Prüfen; niemand verliert dadurch automatisch Punkte.
     </mat-card-subtitle>
   </mat-card-header>
@@ -39,7 +39,8 @@
           <p class="hinweis">Kein auffälliges Muster.</p>
         </ng-template>
         <p class="fussnote">
-          Erkannt wird nur innerhalb eines Tages. Ein Hinweis verschwindet
+          Erkannt wird innerhalb von sieben Tagen; nach einem Neustart des Dienstes beginnt
+          das Fenster neu. Ein Hinweis verschwindet
           {{ daten.frist_tage }} Tage nach dem letzten auffälligen Tag.
         </p>
       </ng-template>

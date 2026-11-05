@@ -6,7 +6,7 @@ import { MetricsService } from '../../services/metrics.service';
 import { MusterHinweis, MusterHinweiseResponse } from '../../services/dtos/metricsDtos';
 
 /**
- * Muster-Hinweise (#352): Kontenpaare, die sich am selben Tag gegenseitig genutzt haben.
+ * Muster-Hinweise (#352): Kontenpaare, die sich innerhalb von sieben Tagen gegenseitig genutzt haben.
  * Nur ein Hinweis für Admins; keine Automatik zieht Punkte ab (ADR 0004).
  */
 @Component({

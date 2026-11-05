@@ -42,7 +42,7 @@ class UsageTracking(Base):
     # (tests/integration/test_migrationen.py). default bleibt, damit das ORM den Wert
     # nach dem Flush kennt, ohne die Zeile neu zu laden.
     usage_count = Column(Integer, default=0, server_default="0", nullable=False)
-    # Entdoppelte Nutzung (#352): hoechstens eine je Person (Besucher: Sitzung),
+    # Entdoppelte Nutzung (#352): hoechstens eine je Person (Besucher: Besuchermerkmal),
     # Beitrag und Tag. Traegt die Punkte fuer Nutzung und ueberdauert wie usage_count
     # die Frist der usage_events; usage_count bleibt der Zaehler an der Karte.
     nutzung_entdoppelt = Column(Integer, default=0, server_default="0", nullable=False)
@@ -145,7 +145,7 @@ class UsageEvent(Base):
     # #355); leer bei anderen Beitragstypen und bei Nutzung von vor #355. Traegt den
     # Zuwachs der letzten 7 Tage je Fassung; die Summe steht in nutzung_je_fassung.
     fassung = Column(String(10), nullable=True)
-    # Die erste Nutzung dieser Person (Besucher: Sitzung) an diesem Beitrag und Tag
+    # Die erste Nutzung dieser Person (Besucher: Besuchermerkmal) an diesem Beitrag und Tag
     # (#352). Nur sie zaehlt fuer "Diese Woche oft genutzt"; wer sie war, steht
     # nirgends (services/entdoppelung.py).
     entdoppelt = Column(
@@ -166,10 +166,10 @@ class NutzungHeute(Base):
     """
     Pruefwerte der Nutzungen des laufenden Tages fuer die Entdoppelung (#352).
 
-    Je Person (Besucher: Sitzung) und Beitrag ein HMAC ueber Tagespseudonym und
-    Beitrag (services/entdoppelung.py). Ohne den geheimen Schluessel verraet ein Wert
-    weder Person noch Beitrag. Der taegliche Lauf verwirft alle Zeilen vergangener Tage
-    (services/muster_hinweise_service.py); gespeichert bleibt nicht, wer wessen
+    Je Person (Besucher: Besuchermerkmal) und Beitrag ein HMAC mit einem Schluessel
+    nur im Speicher (services/entdoppelung.py). Ohne ihn verraet ein Wert weder Person
+    noch Beitrag. Ein eigener Task verwirft alle Zeilen vergangener Tage
+    (pruefwerte_verwerfen_im_takt in services/entdoppelung.py); gespeichert bleibt nicht, wer wessen
     Beitrag genutzt hat (DSFA zu #374, Massnahme M2).
     """
 
@@ -184,8 +184,8 @@ class NutzungHeute(Base):
 class MusterPruefwert(Base):
     """
     Paar-Pruefwerte fuer die Muster-Hinweise (#352): je Richtung "Konto A hat einen
-    Beitrag von Konto B genutzt" ein HMAC ueber beide Kennungen, mit dem letzten Tag
-    dieser Richtung (services/entdoppelung.py). Welcher Beitrag, steht nirgends. Der
+    Beitrag von Konto B genutzt" ein HMAC ueber beide Kennungen mit dem Fensterschluessel
+    (nur im Speicher), mit dem letzten Tag dieser Richtung (services/entdoppelung.py). Welcher Beitrag, steht nirgends. Der
     taegliche Lauf verwirft Werte, die aelter als das Fenster von sieben Tagen sind
     (services/muster_hinweise_service.py).
     """
