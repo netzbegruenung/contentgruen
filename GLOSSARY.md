@@ -275,8 +275,19 @@ _Avoid_: Eval-Set, Trainingsdaten, Goldstandard
 Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als seinen Autor. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft. Sie ist immer echt: Kein Zähler wird vorbelegt oder geschätzt, ein neuer Beitrag beginnt bei 0.
 _Avoid_: Usage, Aufruf, Klick
 
+**Entdoppelte Nutzung**:
+Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Besuchermerkmal), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus Person und Beitrag, keinen Eintrag, wer welchen Beitrag genutzt hat.
+_Avoid_: eindeutige Nutzung, Unique Usage
+
+**Prüfwert**:
+Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dasselbe Besuchermerkmal) denselben Beitrag schon genutzt hat: aus Kennung bzw. Besuchermerkmal, Beitrag und Datum mit einem eigenen Tagesschlüssel berechnet, der nur im Arbeitsspeicher liegt. Auch mit Datenbank und Konfiguration lässt er sich weder auf die Person noch auf den Beitrag zurückführen oder nachrechnen. Nach seinem Tag wird er verworfen; nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal.
+_Avoid_: Hash, Fingerabdruck
+
+**Paar-Prüfwert**:
+Der Prüfwert der Muster-Hinweise für „ein Konto hat einen Beitrag eines anderen Kontos genutzt“: aus den Kennungen beider Konten mit dem Fensterschlüssel berechnet, ohne Beitrag und Datum, weil er das Fenster von sieben Tagen überdauern muss. Er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung; nach einem Neustart beginnt ein Muster neu. Wie der Prüfwert lässt er sich auch mit Datenbank und Konfiguration nicht nachrechnen.
+
 **Oft genutzt**:
-Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
+Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde, gezählt als entdoppelte Nutzung. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
 _Avoid_: Trending, Trend, beliebt, Top-Beiträge
 
 **Stimme**:
@@ -356,8 +367,12 @@ Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei
 _Avoid_: Fingerprint
 
 **Tagesschlüssel**:
-Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen. Die Prüfwerte der entdoppelten Nutzung bildet ein zweiter, davon unabhängiger Tagesschlüssel, der beim ersten Prüfwert eines neuen Tages wechselt.
 _Avoid_: Salt, Secret
+
+**Fensterschlüssel**:
+Der geheime Schlüssel der Paar-Prüfwerte. Er entsteht je Block von sieben Tagen neu zufällig und liegt nur im Arbeitsspeicher; der des vorigen Blocks bleibt einen Block lang zum Vergleich, damit gegenseitige Nutzung über den Wechsel hinweg erkannt wird. Danach ist er weg, ein Neustart verwirft beide.
+_Avoid_: Wochenschlüssel, Salt, Secret
 
 **Anschluss**:
 Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein und begrenzt bei Suchen ohne Treffer die Personen: je Anschluss und Aussage höchstens eine am Tag.
@@ -389,6 +404,10 @@ _Avoid_: Tour, Onboarding, Tutorial
 **Punkte**:
 Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte.
 _Avoid_: XP, Score, Karma
+
+**Muster-Hinweis**:
+Der Hinweis an Admins, dass zwei Konten sich gegenseitig nutzen: Innerhalb von sieben Tagen hat jedes einen Beitrag des anderen genutzt. Er nennt beide Konten und an wie vielen Tagen eine Nutzung auf eine der Gegenrichtung traf, und verschwindet acht Wochen nach dem letzten solchen Tag. Er ist kein Urteil; keine Automatik zieht Punkte ab, ein Admin prüft.
+_Avoid_: Betrugsverdacht, Alarm, Sockenpuppen-Erkennung
 
 **Rangliste**:
 Die Reihenfolge der Mitwirkenden nach Punkten einer Woche oder eines Monats. Nur Angemeldete sehen sie, und dort erscheint nur, wer ausdrücklich zugestimmt hat.
@@ -469,7 +488,7 @@ Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt,
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
 **Startkonto**:
-Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte.
+Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
 **Besucher**:

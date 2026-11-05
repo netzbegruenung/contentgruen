@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, date, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy import text, func, distinct, and_, or_
 
+from repositories.vote_repository import OHNE_AUSGENOMMENE, ohne_ausgenommene
 from repositories.search_tracking_repository import get_search_tracking_repository
 from repositories.usage_tracking_repository import get_usage_repository
 from infrastructure.database.connection import get_app_database
@@ -19,7 +20,9 @@ logger = logging.getLogger(__name__)
 class MetricsService:
     """Service for managing application metrics and analytics."""
 
-    def __init__(self):
+    def __init__(self, startkonten: frozenset = frozenset()):
+        """``startkonten``: Kennungen, deren Stimmen nicht zaehlen (#352)."""
+        self._startkonten = startkonten
         self.search_repo = get_search_tracking_repository()
         self.usage_repo = get_usage_repository()
         self.db = get_app_database()
@@ -198,19 +201,21 @@ class MetricsService:
             start_date = datetime.utcnow() - timedelta(days=days)
 
             with self.db.get_session() as session:
-                result = session.execute(
-                    text(
-                        """
+                # Stimmen von Startkonten zaehlen nicht (#352).
+                abfrage, werte = ohne_ausgenommene(
+                    f"""
                     SELECT
                         COUNT(CASE WHEN vote_type = 'like' THEN 1 END) as like_count,
                         COUNT(CASE WHEN vote_type = 'dislike' THEN 1 END) as dislike_count,
                         COUNT(*) as total_votes
                     FROM votes
                     WHERE created >= :start_date
-                    """
-                    ),
-                    {"start_date": start_date},
-                ).fetchone()
+                        AND {OHNE_AUSGENOMMENE}
+                    """,
+                    self._startkonten,
+                    start_date=start_date,
+                )
+                result = session.execute(abfrage, werte).fetchone()
 
                 if result and result[2] > 0:  # total_votes > 0
                     like_count = result[0] or 0
@@ -363,5 +368,7 @@ def get_metrics_service() -> MetricsService:
     """Get or create the global metrics service instance."""
     global _metrics_service
     if _metrics_service is None:
-        _metrics_service = MetricsService()
+        from core.config import settings
+
+        _metrics_service = MetricsService(settings.startkonto_kennungen())
     return _metrics_service

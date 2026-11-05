@@ -17,10 +17,10 @@ from typing import Dict, Iterable, Optional
 from urllib.parse import unquote
 
 from repositories.user_repository import UserRepository, get_user_repository
+from utils.aufrufer import ANONYM
 
 logger = logging.getLogger(__name__)
 
-ANONYM = "anonymous"
 MAX_LAENGE = 100
 
 # Platzhalter fuer die Kennung einer Person, die ihr Konto geloescht hat, an ihren

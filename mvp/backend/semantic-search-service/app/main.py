@@ -55,9 +55,19 @@ from services.suchen_ohne_treffer_service import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
-from dependencies import get_feedback_service, get_loeschfristen_service
+from dependencies import (
+    get_feedback_service,
+    get_loeschfristen_service,
+    get_muster_hinweise_service,
+    get_nutzung_rate_limiter,
+)
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
+from repositories.usage_tracking_repository import get_usage_repository
+from services.entdoppelung import pruefwerte_verwerfen_im_takt
+from services.muster_hinweise_service import (
+    loeschen_im_takt as muster_hinweise_loeschen_im_takt,
+)
 from services.spracherkennung.spracherkennung import SPRACHERKENNUNG
 from services.loeschfristen_service import (
     loeschen_im_takt as loeschfristen_im_takt,
@@ -137,6 +147,7 @@ async def lifespan(app: FastAPI):
                     einladung_rate_limiter,
                     einladung_pruefen_rate_limiter,
                     gegenlesen_rate_limiter,
+                    get_nutzung_rate_limiter(),
                     spracherkennung_rate_limiter,
                     kuerzungsvorschlag_rate_limiter,
                 ]
@@ -178,6 +189,18 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✅ Loeschfristen task started")
 
+        # Pruefwerte der Entdoppelung nach ihrem Tag verwerfen (#352), unabhaengig
+        # von Punkten und Usage-Cleanup (services/entdoppelung.py).
+        app.state.pruefwerte_verwerfen = asyncio.create_task(
+            pruefwerte_verwerfen_im_takt(get_usage_repository())
+        )
+        # Paar-Pruefwerte nach dem Fenster verwerfen und alte Muster-Hinweise
+        # loeschen (#352, services/muster_hinweise_service.py).
+        app.state.muster_hinweise_loeschen = asyncio.create_task(
+            muster_hinweise_loeschen_im_takt(get_muster_hinweise_service())
+        )
+        logger.info("✅ Check value and pattern note cleanup tasks started")
+
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
         )
@@ -196,6 +219,8 @@ async def lifespan(app: FastAPI):
                 "suchen_ohne_treffer_loeschen",
                 "feedback_loeschen",
                 "loeschfristen",
+                "pruefwerte_verwerfen",
+                "muster_hinweise_loeschen",
             ):
                 task = getattr(app.state, name, None)
                 if task is not None:

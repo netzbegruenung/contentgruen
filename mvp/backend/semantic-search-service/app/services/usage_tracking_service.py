@@ -4,6 +4,7 @@ Provides business logic for tracking and retrieving usage statistics.
 """
 
 import logging
+from datetime import date
 from typing import Optional, List, Dict, Any
 import uuid
 import hashlib
@@ -53,6 +54,8 @@ class UsageTrackingService:
         content_id: str,
         device_category: Optional[str] = None,
         fassung: Optional[str] = None,
+        pruefwert: Optional[str] = None,
+        tag: Optional[date] = None,
     ) -> bool:
         """
         Track that a content item was used (copied).
@@ -61,6 +64,9 @@ class UsageTrackingService:
             content_id: String UUID of the content item
             device_category: Grobe Geraetekategorie, bereits abgeleitet
             fassung: Die kopierte Fassung eines Kommentars (#355), sonst None
+            pruefwert: Pruefwert fuer die Entdoppelung (services/entdoppelung.py,
+                #352); None, wenn niemand zu erkennen ist
+            tag: Der UTC-Tag, fuer den der Pruefwert gilt; Standard heute
 
         Returns:
             bool: True if tracking was successful
@@ -80,6 +86,8 @@ class UsageTrackingService:
                 event_type="copy",
                 device_category=device_category,
                 fassung=fassung,
+                pruefwert=pruefwert,
+                tag=tag,
             )
             logger.info(
                 f"Service: Repository returned {result} for content {content_id}"
@@ -269,7 +277,7 @@ class UsageTrackingService:
         )
 
     def get_trending_content(
-        self, limit: int = 10, hours: int = 24
+        self, limit: int = 10, hours: int = 24, nur_entdoppelt: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Get currently trending content based on recent usage.
@@ -278,12 +286,13 @@ class UsageTrackingService:
         Args:
             limit: Maximum number of items to return
             hours: Time window for trending calculation (default 24 hours)
+            nur_entdoppelt: nur die erste Nutzung je Person, Beitrag und Tag (#352)
 
         Returns:
             List of trending content with usage stats
         """
         # Create cache key based on parameters
-        cache_key = f"trending:{limit}:{hours}"
+        cache_key = f"trending:{limit}:{hours}:{nur_entdoppelt}"
 
         # Try to get from cache first
         cached_result = self.cache.get(cache_key)
@@ -294,7 +303,7 @@ class UsageTrackingService:
         # Fetch from database if not in cache
         logger.debug(f"Fetching trending content from database for {cache_key}")
         trending_content = self.repository.get_trending_content(
-            limit=limit, hours=hours
+            limit=limit, hours=hours, nur_entdoppelt=nur_entdoppelt
         )
 
         # Cache the result with appropriate TTL

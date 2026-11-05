@@ -83,6 +83,10 @@ def clean_singleton_state():
 
     QdrantEmbeddingsManager._instance = None
     QdrantEmbeddingsManager._lock = threading.Lock()
+    # Das Rate-Limit am Zaehl-Endpunkt zaehlt sonst ueber Tests hinweg mit.
+    import dependencies
+
+    dependencies._nutzung_rate_limiter = None
 
     yield
 
@@ -103,6 +107,17 @@ def frischer_tagesschluessel(monkeypatch):
 
     monkeypatch.setattr(
         besucher_pseudonym, "_TAGESSCHLUESSEL", besucher_pseudonym.Tagesschluessel()
+    )
+    # Ebenso die Schluessel der Pruefwerte (services/entdoppelung.py, #352).
+    import services.entdoppelung as entdoppelung
+
+    monkeypatch.setattr(
+        entdoppelung, "_NUTZUNG_SCHLUESSEL", besucher_pseudonym.Tagesschluessel()
+    )
+    monkeypatch.setattr(
+        entdoppelung,
+        "_PAAR_SCHLUESSEL",
+        entdoppelung.Fensterschluessel(tage=entdoppelung.MUSTER_FENSTER_TAGE),
     )
 
 

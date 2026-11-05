@@ -1,7 +1,7 @@
 import uuid
-from typing import List, Optional, Dict
+from typing import Dict, Iterable, List, Optional, Tuple
 from datetime import datetime
-from sqlalchemy import text
+from sqlalchemy import TextClause, bindparam, text
 
 from core.logging import get_logger
 from domain.models.vote import Vote, VoteType
@@ -10,12 +10,30 @@ from infrastructure.database.connection import get_app_database
 logger = get_logger(__name__)
 
 
+OHNE_AUSGENOMMENE = "NOT (user_id IN :ausgenommen)"
+"""Bedingung fuer Abfragen auf votes: ohne die Stimmen ausgenommener Kennungen."""
+
+
+def ohne_ausgenommene(
+    sql: str, ausgenommen: Iterable[str], **werte
+) -> Tuple[TextClause, Dict]:
+    """
+    Eine Abfrage auf votes, deren ``sql`` OHNE_AUSGENOMMENE enthaelt, samt Werten.
+    Die eine Stelle fuer jede Stimmen-Abfrage, die Kennungen auslaesst, etwa die
+    Startkonten (#352): Ein Startkonto vergibt keine Stimmen, die andere sehen.
+    Ohne Ausnahmen nie leer: Eine leere Liste ergaebe "IN ()", und "" ist keine
+    Kennung.
+    """
+    abfrage = text(sql).bindparams(bindparam("ausgenommen", expanding=True))
+    return abfrage, {**werte, "ausgenommen": sorted(ausgenommen) or [""]}
+
+
 class VoteRepository:
     """Repository for managing user votes on content items."""
 
-    def __init__(self):
-        """Initialize repository with app database connection."""
-        self.db = get_app_database()
+    def __init__(self, db=None):
+        """Initialize repository with app database connection (``db``, sonst die globale)."""
+        self.db = db if db is not None else get_app_database()
 
     def create_votes_table(self):
         """Create the votes table if it doesn't exist."""
@@ -176,19 +194,30 @@ class VoteRepository:
                 )
             return votes
 
-    def get_vote_counts(self, content_id: uuid.UUID) -> Dict[str, int]:
-        """Get the count of likes and dislikes for a content item."""
-        query = """
+    def get_vote_counts(
+        self, content_id: uuid.UUID, ausgenommen: Iterable[str] = ()
+    ) -> Dict[str, int]:
+        """
+        Get the count of likes and dislikes for a content item.
+
+        ``ausgenommen``: Kennungen, deren Stimmen nicht zaehlen - die Startkonten
+        (#352): Ein Startkonto vergibt keine Stimmen, die andere sehen.
+        """
+        query, werte = ohne_ausgenommene(
+            f"""
         SELECT
             vote_type,
             COUNT(*) as count
         FROM votes
-        WHERE content_id = :content_id
+        WHERE content_id = :content_id AND {OHNE_AUSGENOMMENE}
         GROUP BY vote_type
-        """
+        """,
+            ausgenommen,
+            content_id=str(content_id),
+        )
 
         with self.db.get_session() as session:
-            result = session.execute(text(query), {"content_id": str(content_id)})
+            result = session.execute(query, werte)
 
             counts = {"likes": 0, "dislikes": 0}
             for row in result:
@@ -199,7 +228,9 @@ class VoteRepository:
 
             return counts
 
-    def get_content_score(self, content_id: uuid.UUID) -> float:
+    def get_content_score(
+        self, content_id: uuid.UUID, ausgenommen: Iterable[str] = ()
+    ) -> float:
         """
         Calculate a score for a content item based on votes.
         Returns a value between 0 and 1, where:
@@ -207,7 +238,7 @@ class VoteRepository:
         - > 0.5 = more likes than dislikes
         - < 0.5 = more dislikes than likes
         """
-        counts = self.get_vote_counts(content_id)
+        counts = self.get_vote_counts(content_id, ausgenommen)
         total_votes = counts["likes"] + counts["dislikes"]
 
         if total_votes == 0:

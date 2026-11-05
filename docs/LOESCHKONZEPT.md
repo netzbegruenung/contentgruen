@@ -99,7 +99,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
    `users` (Anzeigename) und die in `gesehene_nutzung` (Stand der Rückmeldung beim
-   Anmelden, nur eine Zahl) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
+   Anmelden, nur eine Zahl) löschen, ebenso jeden Muster-Hinweis (`muster_hinweise`,
+   #352), der die Person nennt. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
    zeigen nach Schritt 3 „ehemalige Person“.
 
@@ -156,6 +157,9 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
 | Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
+| Prüfwerte der entdoppelten Nutzung (`nutzung_heute`) | ihr Tag | verworfen beim ersten Lauf nach Mitternacht (UTC) |
+| Paar-Prüfwerte der Muster-Hinweise (`muster_pruefwerte`) | 7 Tage | letzte Nutzung in dieser Richtung (`tag`) |
+| Muster-Hinweise (`muster_hinweise`) | 56 Tage (8 Wochen) | letzter Tag mit gegenseitiger Nutzung (`letzter_tag`) |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
@@ -201,6 +205,23 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist.
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
+- **Prüfwerte und Muster-Hinweise (#352):** Ein Prüfwert ist ein HMAC über Kennung
+  (bei Besuchern das Besuchermerkmal aus #446), Beitrag und Tag; er entdoppelt nur an seinem Tag und geht danach.
+  Ein Paar-Prüfwert ist ein HMAC über die Kennungen zweier Konten („A hat einen
+  Beitrag von B genutzt“, welcher steht nirgends); er bleibt sieben Tage, damit sich
+  gegenseitige Nutzung über mehrere Tage erkennen lässt. Beide Schlüssel (Tagesschlüssel
+  der Prüfwerte, Fensterschlüssel der Paar-Prüfwerte) liegen nur im Arbeitsspeicher, nicht in
+  der Konfiguration: Mit Datenbank und Konfiguration lässt sich kein Wert nachrechnen, und
+  nach einem Neustart passt keiner mehr. Ein Paar-Prüfwert ist nicht per Kennung
+  löschbar (`person_loeschen.sql` kennt den Schlüssel nicht) und geht nach spätestens
+  sieben Tagen von selbst; ein gelöschtes Konto nutzt nichts mehr, ein Hinweis kann
+  aus ihm also nicht mehr entstehen. Ein Muster-Hinweis nennt zwei Kennungen und soll Admins
+  helfen, Punkte gegen Absprachen zu schützen; nach acht Wochen ohne neuen auffälligen
+  Tag ist er dafür nicht mehr nötig (DSFA zu #374). Prüfwerte verwirft ein eigener
+  Task (`services/entdoppelung.py`), Paar-Prüfwerte und Hinweise ein zweiter
+  (`services/muster_hinweise_service.py`), beide unabhängig vom abschaltbaren Bereinigungsjob.
+  Punkte selbst werden nicht gespeichert, sondern bei jedem Abruf berechnet
+  (`services/punkte_service.py`); sie brauchen keine Frist.
 - **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
   hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
   Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
@@ -519,7 +540,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise;"
 ```
 
 ```bash

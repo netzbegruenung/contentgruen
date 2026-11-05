@@ -50,4 +50,7 @@ DELETE FROM users AS u WHERE u.user_id LIKE 'ehemalige-person-%'
 AND NOT EXISTS (SELECT 1 FROM raw_input_drafts AS d WHERE d.user_id = u.user_id);
 DELETE FROM users           WHERE user_id             = :'uid';
 DELETE FROM gesehene_nutzung WHERE user_id            = :'uid';
+-- Muster-Hinweise (#352) nennen die Person neben einer anderen; der Hinweis geht
+-- ganz, ohne die Person ist er keiner mehr.
+DELETE FROM muster_hinweise WHERE konto_a = :'uid' OR konto_b = :'uid';
 COMMIT;
