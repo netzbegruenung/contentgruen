@@ -251,9 +251,9 @@ def calculate_polarity_penalty(
 
     Returns:
         Multiplier between 0.0 and 1.0 to apply to similarity score
-        - 1.0 = no penalty (polarities match)
-        - 0.8 = light penalty (one is neutral)
-        - 0.3 = heavy penalty (polarities contradict)
+        - 1.0 = no penalty (polarities match, or one side is neutral)
+        - 1.0 - 0.7 * average confidence, clamped to 0.2..1.0, when the
+          polarities contradict (e.g. 0.37 at confidence 0.9)
     """
     # If polarities match, no penalty
     if polarities_match(query_polarity, result_polarity):
@@ -265,8 +265,8 @@ def calculate_polarity_penalty(
 
     # Higher confidence = stronger penalty
     # Low confidence (0.5): penalty = 0.65 (35% reduction)
-    # Medium confidence (0.7): penalty = 0.45 (55% reduction)
-    # High confidence (0.9): penalty = 0.25 (75% reduction)
+    # Medium confidence (0.7): penalty = 0.51 (49% reduction)
+    # High confidence (0.9): penalty = 0.37 (63% reduction)
     penalty = 1.0 - (avg_confidence * 0.7)
 
     return max(0.2, min(1.0, penalty))  # Clamp between 0.2 and 1.0
