@@ -1,0 +1,40 @@
+.einwilligung {
+  max-width: 640px;
+  margin: 24px auto;
+}
+
+.haekchen {
+  display: block;
+  margin: 16px 0;
+}
+
+/* Der Wortlaut ist lang: umbrechen statt in einer Zeile neben dem Haekchen. */
+.haekchen ::ng-deep label {
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.wortlaut {
+  margin: 16px 0;
+  padding-left: 12px;
+  border-left: 3px solid #ccc;
+}
+
+.knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hinweis {
+  font-weight: 500;
+}
+
+.warnung {
+  color: #b00020;
+}
+
+.fussnote {
+  font-size: 12px;
+  color: #666;
+}

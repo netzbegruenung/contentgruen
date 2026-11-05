@@ -2,7 +2,8 @@
 Eine Einbettung und eine Anfrage an den Suchindex je Suche (#304).
 
 - einbettungen_teilen(): gleicher Text wird im Block nur einmal eingebettet.
-- QdrantEmbeddingsManager.search_batch(): mehrere Suchen, ein Vektor, eine Anfrage.
+- QdrantEmbeddingsManager.search_batch(): mehrere Suchen, ein Vektor, eine Anfrage
+  (query_batch_points auf den benannten Vektor, #395).
 - QdrantBaseRepository.search_batch() / BaseContentService.search_batch(): je
   Repository bzw. Dienst dasselbe wie dessen search().
 - SearchOrchestrator.collect_direct(): dieselben Treffer wie mit einer Suche je Typ.
@@ -83,6 +84,11 @@ def _punkt(score, **payload):
     return SimpleNamespace(id=uuid.uuid4(), score=score, payload=payload)
 
 
+def _antwort(*punkte):
+    """Antwort von query_points: die Treffer in .points."""
+    return SimpleNamespace(points=list(punkte))
+
+
 class TestEinbettungenTeilen:
     def test_encode_text_gleicher_text_im_block_einmal(self, manager):
         with einbettungen_teilen():
@@ -139,8 +145,12 @@ class TestManagerSearchBatch:
     @pytest.mark.asyncio
     async def test_search_batch_ein_vektor_eine_anfrage(self, manager):
         must_not = [FieldCondition(key="status", match=MatchValue(value="blocked"))]
-        manager._async_client.search_batch = AsyncMock(
-            return_value=[[_punkt(0.9, text="a")], [], [_punkt(0.85, text="c")]]
+        manager._async_client.query_batch_points = AsyncMock(
+            return_value=[
+                _antwort(_punkt(0.9, text="a")),
+                _antwort(),
+                _antwort(_punkt(0.85, text="c")),
+            ]
         )
 
         treffer = await manager.search_batch(
@@ -153,9 +163,10 @@ class TestManagerSearchBatch:
         )
 
         assert manager._model.encode.call_count == 1
-        manager._async_client.search_batch.assert_awaited_once()
-        anfragen = manager._async_client.search_batch.call_args.kwargs["requests"]
+        manager._async_client.query_batch_points.assert_awaited_once()
+        anfragen = manager._async_client.query_batch_points.call_args.kwargs["requests"]
         assert [a.limit for a in anfragen] == [5, 5, 3]
+        assert {a.using for a in anfragen} == {"e5_base"}
         assert anfragen[0].filter == manager._suchfilter(
             "commentary", {"must_not": must_not}
         )
@@ -167,8 +178,12 @@ class TestManagerSearchBatch:
     async def test_search_batch_anfragen_wie_search_je_suche(self, manager):
         """Was an Qdrant geht: je Suche derselbe Vektor, Filter und dasselbe Limit."""
         punkte = [[_punkt(0.9, text="a"), _punkt(0.8, text="b")], [_punkt(0.7)], []]
-        manager._async_client.search = AsyncMock(side_effect=punkte)
-        manager._async_client.search_batch = AsyncMock(return_value=punkte)
+        manager._async_client.query_points = AsyncMock(
+            side_effect=[_antwort(*p) for p in punkte]
+        )
+        manager._async_client.query_batch_points = AsyncMock(
+            return_value=[_antwort(*p) for p in punkte]
+        )
         sichtbar = {"must": nur_sichtbar_bedingungen()}
         suchen = [
             Suchparameter("commentary", sichtbar, 10),
@@ -188,11 +203,12 @@ class TestManagerSearchBatch:
         gebuendelt = await manager.search_batch("Tempolimit jetzt", suchen)
 
         assert gebuendelt == einzeln
-        anfragen = manager._async_client.search_batch.call_args.kwargs["requests"]
+        anfragen = manager._async_client.query_batch_points.call_args.kwargs["requests"]
         for anfrage, aufruf in zip(
-            anfragen, manager._async_client.search.call_args_list
+            anfragen, manager._async_client.query_points.call_args_list
         ):
-            assert anfrage.vector == aufruf.kwargs["query_vector"]
+            assert anfrage.query == aufruf.kwargs["query"]
+            assert anfrage.using == aufruf.kwargs["using"] == "e5_base"
             assert anfrage.filter == aufruf.kwargs["query_filter"]
             assert anfrage.limit == aufruf.kwargs["limit"]
             assert anfrage.with_payload == aufruf.kwargs["with_payload"]
@@ -203,7 +219,7 @@ class TestManagerSearchBatch:
 
     @pytest.mark.asyncio
     async def test_search_batch_qdrant_fehler_als_runtime_error(self, manager):
-        manager._async_client.search_batch = AsyncMock(
+        manager._async_client.query_batch_points = AsyncMock(
             side_effect=UnexpectedResponse(500, "Server Error", b"", httpx.Headers())
         )
 
@@ -214,10 +230,10 @@ class TestManagerSearchBatch:
 
     @pytest.mark.asyncio
     async def test_search_batch_ohne_suchen_fragt_nicht_an(self, manager):
-        manager._async_client.search_batch = AsyncMock()
+        manager._async_client.query_batch_points = AsyncMock()
 
         assert await manager.search_batch("Tempolimit jetzt", []) == []
-        manager._async_client.search_batch.assert_not_called()
+        manager._async_client.query_batch_points.assert_not_called()
         manager._model.encode.assert_not_called()
 
 

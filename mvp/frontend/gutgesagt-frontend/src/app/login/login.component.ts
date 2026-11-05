@@ -18,7 +18,6 @@ export class LoginComponent {
     loginForm: FormGroup;
     errorMessage: string | null = null;
     isLoading = false;
-    isManagedLogin = false; // Flag to determine if this is managed login
     returnUrl: string = '/';
 
     constructor(
@@ -45,12 +44,10 @@ export class LoginComponent {
             this.returnUrl = '/';
         }
 
-        // Check if this is managed login based on route
-        this.isManagedLogin = this.router.url.includes('/managed');
-
+        // Nur die Direktanmeldung (Beta-Zugang); die Dummy-Anmeldung mit Benutzername gibt es
+        // seit #488 nicht mehr.
         this.loginForm = this.fb.group({
-            username: ['', this.isManagedLogin ? [] : [Validators.required, Validators.minLength(3)]],
-            email: ['', this.isManagedLogin ? [Validators.required, Validators.email] : []],
+            email: ['', [Validators.required, Validators.email]],
             password: ['', [Validators.required, Validators.minLength(6)]]
         });
     }
@@ -63,61 +60,34 @@ export class LoginComponent {
 
         this.isLoading = true;
 
-        if (this.isManagedLogin) {
-            // Gut gesagt managed login
-            const { email, password } = this.loginForm.value;
+        // Gut gesagt managed login
+        const { email, password } = this.loginForm.value;
 
-            this.authService.loginWithManagedAuth(email, password).subscribe({
-                next: () => {
-                    this.isLoading = false;
-                    this.snackBar.open('Anmeldung erfolgreich!', 'OK', {
-                        duration: 3000,
-                        panelClass: ['success-snackbar']
-                    });
-                    // Clear the stored return URL after successful login
-                    rueckkehrzielLoeschen();
-                    this.router.navigateByUrl(this.returnUrl);
-                },
-                error: (err) => {
-                    this.isLoading = false;
-                    this.errorMessage = 'Ungültige E-Mail-Adresse oder Passwort';
-                    this.snackBar.open('Anmeldung fehlgeschlagen. Bitte überprüfe deine Eingaben.', 'OK', {
-                        duration: 5000,
-                        panelClass: ['error-snackbar']
-                    });
-                },
-            });
-        } else {
-            // Legacy dummy login
-            const { username, password } = this.loginForm.value;
-
-            this.authService.loginWithCredentials(username, password).subscribe({
-                next: () => {
-                    this.isLoading = false;
-                    this.snackBar.open('Anmeldung erfolgreich!', 'OK', {
-                        duration: 3000,
-                        panelClass: ['success-snackbar']
-                    });
-                    // Clear the stored return URL after successful login
-                    rueckkehrzielLoeschen();
-                    this.router.navigateByUrl(this.returnUrl);
-                },
-                error: (err) => {
-                    this.isLoading = false;
-                    this.errorMessage = 'Ungültiger Benutzername oder Passwort';
-                    this.snackBar.open('Anmeldung fehlgeschlagen. Bitte überprüfe deine Eingaben.', 'OK', {
-                        duration: 5000,
-                        panelClass: ['error-snackbar']
-                    });
-                },
-            });
-        }
+        this.authService.loginWithManagedAuth(email, password).subscribe({
+            next: () => {
+                this.isLoading = false;
+                this.snackBar.open('Anmeldung erfolgreich!', 'OK', {
+                    duration: 3000,
+                    panelClass: ['success-snackbar']
+                });
+                // Clear the stored return URL after successful login
+                rueckkehrzielLoeschen();
+                this.router.navigateByUrl(this.returnUrl);
+            },
+            error: (err) => {
+                this.isLoading = false;
+                this.errorMessage = 'Ungültige E-Mail-Adresse oder Passwort';
+                this.snackBar.open('Anmeldung fehlgeschlagen. Bitte überprüfe deine Eingaben.', 'OK', {
+                    duration: 5000,
+                    panelClass: ['error-snackbar']
+                });
+            },
+        });
     }
 
     getErrorMessage(field: string): string {
         const control = this.loginForm.get(field);
         if (control?.hasError('required')) {
-            if (field === 'username') return 'Benutzername ist erforderlich';
             if (field === 'email') return 'E-Mail-Adresse ist erforderlich';
             if (field === 'password') return 'Passwort ist erforderlich';
         }

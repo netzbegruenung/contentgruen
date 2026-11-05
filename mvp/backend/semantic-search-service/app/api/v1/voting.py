@@ -6,7 +6,11 @@ from core.logging import get_logger
 from auth.authorization import validate_user_id, require_auth
 from domain.models.vote import VoteCreate, VoteResponse
 from services.voting_service import VotingService
-from dependencies import get_beitrag_laden, get_voting_service
+from dependencies import (
+    get_beitrag_laden,
+    get_voting_service,
+    require_art9_einwilligung,
+)
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from middleware.rate_limiter import check_voting_rate_limit
 from core.fehler import NICHT_ERREICHBAR, UNGUELTIGE_ANFRAGE, Validierungsfehler
@@ -54,7 +58,7 @@ async def nur_sichtbarer_beitrag(
 @router.put(
     "/content/{content_id}/like",
     response_model=VoteResponse,
-    dependencies=[Depends(check_voting_rate_limit)],
+    dependencies=[Depends(check_voting_rate_limit), Depends(require_art9_einwilligung)],
 )
 def set_like(
     content_id: uuid.UUID,
@@ -116,7 +120,7 @@ def remove_like(
 @router.put(
     "/content/{content_id}/dislike",
     response_model=VoteResponse,
-    dependencies=[Depends(check_voting_rate_limit)],
+    dependencies=[Depends(check_voting_rate_limit), Depends(require_art9_einwilligung)],
 )
 def set_dislike(
     content_id: uuid.UUID,

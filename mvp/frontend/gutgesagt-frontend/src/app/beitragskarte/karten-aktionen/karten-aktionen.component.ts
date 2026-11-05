@@ -30,10 +30,13 @@ import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report
 import { HAND_UMRISS } from '../../shared/marke/hand';
 import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
+import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
+import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
 
 /**
- * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden und im
- * Menue der Weg zur eigenen Adresse des Beitrags (/beitrag/:id, #300).
+ * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
+ * Menue der Weg zur eigenen Adresse des Beitrags (/beitrag/:id, #300) und,
+ * angemeldet, als Vorlage nehmen (#356).
  * Hat der Beitrag eine Herkunft, steht neben "Kopieren" die Wahl "Text" oder
  * "Text + Herkunft".
  *
@@ -177,6 +180,23 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.router.navigate([ROUTES.BEITRAG, this.inhaltId]);
   }
 
+  /**
+   * "Als Vorlage nehmen" (#356): nur angemeldet und nur, wo sich das Formular
+   * vorbelegen laesst (Kommentar, Hintergrundinfo). Besucher sehen den Eintrag
+   * nicht: Das Formular verlangt ohnehin eine Anmeldung.
+   */
+  get kannAlsVorlage(): boolean {
+    return !this.vorschau && kannVorlageSein(this.typ) && !!this.authService.getUserInfo()?.isAuthenticated;
+  }
+
+  alsVorlageNehmen(): void {
+    if (!this.kannAlsVorlage || !kannVorlageSein(this.typ)) {
+      return;
+    }
+    const { pfad, queryParams } = vorlageAdresse(this.typ, this.inhaltId);
+    this.router.navigate([pfad], { queryParams });
+  }
+
   openReportDialog(): void {
     if (this.vorschau) {
       return;
@@ -275,6 +295,10 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private handleVoteError(error: any): void {
+    if (einwilligungFehlt(error)) {
+      // Den Hinweis mit Knopf zur Einwilligung zeigt der Auth-Interceptor (#489).
+      return;
+    }
     if (error.status === 401 || error.status === 403) {
       this.promptLogin();
     } else if (error.status === 429) {

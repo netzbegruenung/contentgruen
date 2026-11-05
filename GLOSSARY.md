@@ -225,6 +225,14 @@ _Avoid_: Freigeben, Wiederherstellen
 Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt bis zu seiner Löschfrist gespeichert; zurückholen lässt er sich nicht. Danach wird er endgültig entfernt, mit seinen Stimmen; Einwürfe sind danach in ihm nicht mehr ausformuliert. Vorher entfernt ihn nur ein Admin endgültig, nach dem Löschkonzept. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
+**Ändern**:
+Der Autor ersetzt Titel, Text oder Herkunft seines Kommentars oder seiner Hintergrundinfo, aus „Meine Beiträge“; beim Kommentar auch Kurz- und Langfassung, damit sie zum neuen Text passen. Es gelten dieselben Grenzen wie beim Anlegen, die Titelregel und der CC0-Hinweis eingeschlossen, aber keine Dublettenprüfung; die Suche findet danach den neuen Text. Stimmen, Nutzung und Verknüpfungen bleiben. Festgehalten wird nur, wer wann geändert hat, nicht der alte Wortlaut. Gesperrte und gelöschte Beiträge lassen sich nicht ändern, Posts und Bilder noch nicht. Solange eine Meldung offen ist, auch nicht: Der Admin sieht den gemeldeten Wortlaut.
+_Avoid_: Bearbeiten (heißt bei Meldungen etwas anderes), Editieren
+
+**Änderungsverlauf**:
+Was an einem Beitrag über das Ändern festgehalten wird: je Änderung die Kennung und der Zeitpunkt, nie der alte Wortlaut. Angezeigt wird er nirgends; bei der Kontolöschung bekommt er wie die anderen Kennungen am Beitrag den Platzhalter.
+_Avoid_: Bearbeitungsgeschichte, Versionsgeschichte, Historie
+
 **Titel**:
 Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema. Bild und Post haben auch einen Titel; er beschreibt den Inhalt und folgt dieser Regel nicht.
 _Avoid_: Überschrift, Etikett, Thema
@@ -267,8 +275,19 @@ _Avoid_: Eval-Set, Trainingsdaten, Goldstandard
 Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als seinen Autor. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft. Sie ist immer echt: Kein Zähler wird vorbelegt oder geschätzt, ein neuer Beitrag beginnt bei 0.
 _Avoid_: Usage, Aufruf, Klick
 
+**Entdoppelte Nutzung**:
+Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Besuchermerkmal), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus Person und Beitrag, keinen Eintrag, wer welchen Beitrag genutzt hat.
+_Avoid_: eindeutige Nutzung, Unique Usage
+
+**Prüfwert**:
+Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dasselbe Besuchermerkmal) denselben Beitrag schon genutzt hat: aus Kennung bzw. Besuchermerkmal, Beitrag und Datum mit einem eigenen Tagesschlüssel berechnet, der nur im Arbeitsspeicher liegt. Auch mit Datenbank und Konfiguration lässt er sich weder auf die Person noch auf den Beitrag zurückführen oder nachrechnen. Nach seinem Tag wird er verworfen; nach einem Neustart zählt eine Nutzung am selben Tag ein zweites Mal.
+_Avoid_: Hash, Fingerabdruck
+
+**Paar-Prüfwert**:
+Der Prüfwert der Muster-Hinweise für „ein Konto hat einen Beitrag eines anderen Kontos genutzt“: aus den Kennungen beider Konten mit dem Fensterschlüssel berechnet, ohne Beitrag und Datum, weil er das Fenster von sieben Tagen überdauern muss. Er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung; nach einem Neustart beginnt ein Muster neu. Wie der Prüfwert lässt er sich auch mit Datenbank und Konfiguration nicht nachrechnen.
+
 **Oft genutzt**:
-Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
+Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde, gezählt als entdoppelte Nutzung. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
 _Avoid_: Trending, Trend, beliebt, Top-Beiträge
 
 **Stimme**:
@@ -290,6 +309,10 @@ _Avoid_: Prüfung, Lektorat, Check, Validierung
 **Anmerkung**:
 Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
+
+**Sprachhinweis**:
+Der Satz über dem CC0-Hinweis eines Beitragsformulars oder unter einer neuen Aussage, wenn der Text ab fünf Wörtern offenbar nicht deutsch ist; Gut gesagt ist auf deutsche Texte ausgelegt. Er erscheint etwa eine Sekunde nach der letzten Eingabe, sperrt nichts und zählt nicht in die Güte. Suchanfragen und vorhandene Aussagen bekommen keinen. Er ist keine Anmerkung des Gegenlesens und nicht der Hinweis an einem Einwurf.
+_Avoid_: Sprachwarnung, Sprachprüfung, Spracherkennung (das ist das Werkzeug dahinter)
 
 **Kürzungsvorschlag**:
 Eine Kurzfassung, die das Formular auf Klick aus den eigenen Sätzen eines Kommentars vorschlägt, der länger ist als die Kurzfassung sein darf, ohne KI: Die zentralen Sätze bleiben, Einschübe (Klammern, Gedankenstriche, Appositionen) fallen weg; Relativsätze, Verneinungen und Zahlen bleiben stehen, und ein Satz mit Verneinung fällt nie weg. Er besteht nur aus Wörtern des Originals in ihrer Reihenfolge und formuliert nichts um. Die Person übernimmt oder verwirft ihn; nichts wird automatisch ersetzt, und gespeichert wird er erst mit dem Kommentar.
@@ -344,8 +367,12 @@ Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei
 _Avoid_: Fingerprint
 
 **Tagesschlüssel**:
-Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen. Die Prüfwerte der entdoppelten Nutzung bildet ein zweiter, davon unabhängiger Tagesschlüssel, der beim ersten Prüfwert eines neuen Tages wechselt.
 _Avoid_: Salt, Secret
+
+**Fensterschlüssel**:
+Der geheime Schlüssel der Paar-Prüfwerte. Er entsteht je Block von sieben Tagen neu zufällig und liegt nur im Arbeitsspeicher; der des vorigen Blocks bleibt einen Block lang zum Vergleich, damit gegenseitige Nutzung über den Wechsel hinweg erkannt wird. Danach ist er weg, ein Neustart verwirft beide.
+_Avoid_: Wochenschlüssel, Salt, Secret
 
 **Anschluss**:
 Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein und begrenzt bei Suchen ohne Treffer die Personen: je Anschluss und Aussage höchstens eine am Tag.
@@ -377,6 +404,10 @@ _Avoid_: Tour, Onboarding, Tutorial
 **Punkte**:
 Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte.
 _Avoid_: XP, Score, Karma
+
+**Muster-Hinweis**:
+Der Hinweis an Admins, dass zwei Konten sich gegenseitig nutzen: Innerhalb von sieben Tagen hat jedes einen Beitrag des anderen genutzt. Er nennt beide Konten und an wie vielen Tagen eine Nutzung auf eine der Gegenrichtung traf, und verschwindet acht Wochen nach dem letzten solchen Tag. Er ist kein Urteil; keine Automatik zieht Punkte ab, ein Admin prüft.
+_Avoid_: Betrugsverdacht, Alarm, Sockenpuppen-Erkennung
 
 **Rangliste**:
 Die Reihenfolge der Mitwirkenden nach Punkten einer Woche oder eines Monats. Nur Angemeldete sehen sie, und dort erscheint nur, wer ausdrücklich zugestimmt hat.
@@ -433,8 +464,12 @@ Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und be
 _Avoid_: User, Mitglieder
 
 **Beta-Zugang**:
-Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll.
+Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll. Bis zum Umstellen auf den eigenen Realm steht es mit eigener Kennung und Passwort in einer Datei der BFF (Anmeldung über „Direktanmeldung“). Beim Umstellen zieht es in das Konto im Realm mit derselben Mail-Adresse um, samt Beiträgen; danach ist es ein Konto mit Mail und Passwort wie eines aus einer Einladung, und die Datei entfällt (#488). In der Entwicklung bleibt die Datei mit Beispielkonten.
 _Avoid_: Beta-Account, manueller User, Managed User
+
+**Direktanmeldung**:
+Die Anmeldung eines Beta-Zugangs mit Mail-Adresse und Passwort direkt an der BFF, ohne Keycloak. Nach dem Umzug der Beta-Zugänge in den Realm (#488) gibt es sie nur noch in der Entwicklung. Nicht zu verwechseln mit der Anmeldung mit Mail und Passwort im Realm, die über Keycloak läuft.
+_Avoid_: Managed Login, Managed Auth, Dummy-Login
 
 **Netzbegrünung-Login**:
 Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Mit dem eigenen Realm von Gut gesagt (#429) läuft sie, sobald die App darauf umgestellt ist, über diesen Realm, in dem die Netzbegrünung Identity Provider ist; die Kennung ist dann die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
@@ -453,8 +488,12 @@ Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt,
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
 **Startkonto**:
-Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte.
+Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
+
+**Art.-9-Einwilligung**:
+Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist. Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten. Widerrufen geht jederzeit im Profilmenü unter „Einwilligung“; schon Gespeichertes bleibt dann, bis die Person es löscht oder ihr Konto löschen lässt. Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit dem Opt-in für die Sichtbarkeit von Punkten. Ablauf: `docs/ART9_EINWILLIGUNG.md`.
+_Avoid_: Consent, Opt-in, Datenschutz-Häkchen, Zustimmung (die gilt den Nutzungsbedingungen)
 
 **Besucher**:
 Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitragen dürfen.

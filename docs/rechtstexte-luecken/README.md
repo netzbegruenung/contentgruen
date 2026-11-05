@@ -144,8 +144,9 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
 - Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Wegfall offen
   (Entscheidung Maintainer, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
   Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem CC0-Hinweis.
-  Die Art.-9-Einwilligung beim ersten Login (D-N15) hängt ebenfalls an ihr, ebenso die
-  Zustimmung von Personen, die nur bewerten.
+  Die Zustimmung von Personen, die nur bewerten, hängt ebenfalls an ihr. Die
+  Art.-9-Einwilligung (D-N15) hängt seit #489 nicht mehr daran: Die App fragt selbst, mit
+  eigenem Häkchen; ihr Wortlaut ist vorläufig und offen für #296 (P11).
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
   Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
   dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.

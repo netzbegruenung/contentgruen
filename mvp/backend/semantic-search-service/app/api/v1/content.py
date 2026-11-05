@@ -6,7 +6,9 @@ import uuid
 from pydantic import ValidationError
 
 from dependencies import (
+    require_art9_einwilligung,
     get_aufrufer,
+    get_beitrag_aendern_service,
     get_beitrag_laden,
     get_beitrag_loeschen_service,
     get_commentary_service,
@@ -32,6 +34,7 @@ from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufe
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.content.base_content_service import BaseContentService
 from dtos.beitrag import (
+    BeitragAendernRequest,
     BeitragResponse,
     HintergrundinfoResponse,
     KommentarResponse,
@@ -43,8 +46,19 @@ from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
 )
+from services.content.beitrag_aendern_service import (
+    AenderErgebnis,
+    Aenderung,
+    BeitragAendernService,
+    HerkunftAngabe,
+)
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
-from core.fehler import INTERNER_FEHLER
+from core.fehler import INTERNER_FEHLER, Validierungsfehler
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
+from services.varianten import varianten_ergaenzen
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -99,6 +113,7 @@ async def get_recent_content(
     limit: int = Query(default=6, ge=1, le=20),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
 ) -> Dict[str, Any]:
     """
     Get the most recently added content items.
@@ -178,6 +193,7 @@ async def get_recent_content(
             ],
             aufrufer,
         )
+        varianten_ergaenzen(antworten, varianten)
         enriched_results = [
             {**antwort.model_dump(mode="json"), "result_type": e["result_type"]}
             for e, antwort in zip(angereichert, antworten)
@@ -194,6 +210,59 @@ async def get_recent_content(
     except Exception as e:
         logger.error(f"Error in /recent endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+
+@router.put(
+    "/{beitrag_id}",
+    status_code=204,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
+async def beitrag_aendern(
+    beitrag_id: uuid.UUID,
+    request: BeitragAendernRequest,
+    x_user: Optional[str] = Header(default=None),
+    service: BeitragAendernService = Depends(get_beitrag_aendern_service),
+) -> Response:
+    """
+    Der Autor aendert Titel, Text und Herkunft seines Kommentars oder seiner
+    Hintergrundinfo (#299), beim Kommentar auch Kurz- und Langfassung (#551). Die
+    Suche findet danach den neuen Text.
+
+    404 auch fuer gesperrte und geloeschte Beitraege, wie beim Loeschen.
+    """
+    if not angemeldet(x_user):
+        raise HTTPException(status_code=401, detail="Dafür musst du angemeldet sein.")
+
+    aenderung = Aenderung(
+        titel=request.title,
+        text=request.text,
+        herkuenfte=[
+            HerkunftAngabe(h.reference_string, h.description)
+            for h in request.references
+        ],
+        cc0_wortlaut=request.cc0_wortlaut,
+        kurzfassung=request.short_text,
+        langfassung=request.long_text,
+    )
+    try:
+        ergebnis = await service.aendern(beitrag_id, x_user, aenderung)
+    except Validierungsfehler as fehler:
+        raise HTTPException(status_code=400, detail=fehler.antworttext)
+    if ergebnis is AenderErgebnis.NICHT_DA:
+        raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
+    if ergebnis is AenderErgebnis.NICHT_AUTOR:
+        raise HTTPException(
+            status_code=403, detail="Ändern kann nur der Autor des Beitrags."
+        )
+    if ergebnis is AenderErgebnis.NICHT_AENDERBAR:
+        raise HTTPException(
+            status_code=400, detail="Posts und Bilder lassen sich nicht ändern."
+        )
+    if ergebnis is AenderErgebnis.MELDUNG_OFFEN:
+        raise HTTPException(
+            status_code=409, detail="Der Beitrag lässt sich gerade nicht ändern."
+        )
+    return Response(status_code=204)
 
 
 # response_model=None: Ein Union-Modell liesse Pydantic den Typ raten; die Antwort ist

@@ -6,10 +6,12 @@ Attrappe, die festhaelt, womit es aufgerufen wird.
 """
 
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
 
+from domain.interfaces.konten_im_realm import BetaZugang
 from services.wartung.kennungen_umstellen import PostgresBericht, Umstellung
 
 pytestmark = pytest.mark.unit
@@ -38,6 +40,11 @@ def skript(monkeypatch):
             },
             loeschliste=[*kwargs["loeschliste"], "neu-geloescht"],
             ohne_konto=["user-001"],
+            beta_anzulegen=["user-002"] if kwargs["beta_zugaenge"] else [],
+            beta_ohne_mail=["user-003"] if kwargs["beta_zugaenge"] else [],
+            beta_admins=["neu-admin"] if kwargs["beta_zugaenge"] else [],
+            beta_vergeben=["user-004"] if kwargs["beta_zugaenge"] else [],
+            beta_abgewiesen=["user-005"] if kwargs["beta_zugaenge"] else [],
         )
 
     monkeypatch.setattr(modul, "umstellen", umstellen)
@@ -127,6 +134,79 @@ class TestSkript:
         skript("--konten-anlegen", str(datei))
 
         assert skript.aufrufe[0]["anzulegen"] == {"alt": "anna@example.org"}
+
+    def test_beta_zugaenge_aus_managed_users_json(self, skript, tmp_path, capsys):
+        datei = tmp_path / "managed-users.json"
+        datei.write_text(
+            json.dumps(
+                {
+                    "users": [
+                        {
+                            "email": "anna@example.org",
+                            "passwordHash": "$2b$12$x",
+                            "displayName": "Anna Beispiel",
+                            "userId": "alt",
+                            "isAdmin": True,
+                        },
+                        {
+                            "email": "ben@example.org",
+                            "passwordHash": "$2b$12$y",
+                            "displayName": "Ben Beispiel",
+                            "userId": "user-002",
+                        },
+                    ]
+                }
+            )
+        )
+
+        skript("--beta-zugaenge", str(datei))
+
+        assert skript.aufrufe[0]["beta_zugaenge"] == {
+            "alt": BetaZugang("anna@example.org", "Anna Beispiel", admin=True),
+            "user-002": BetaZugang("ben@example.org", "Ben Beispiel"),
+        }
+        zahlen, _, kennungen = capsys.readouterr().out.partition(
+            "--- Ab hier Kennungen"
+        )
+        assert "Beta-Zugaenge: 2, mit Konto im Realm: 1" in zahlen
+        assert "Beta-Zugaenge anzulegen beim Lauf: 1 (ihre Zeilen" in zahlen
+        assert "Beta-Zugaenge nicht umgezogen, Adresse gehoert" in zahlen
+        assert "ohne Mail" in zahlen and "user-003" not in zahlen
+        assert "neu-admin" not in zahlen and "anna@example.org" not in zahlen
+        assert "  neu-admin\n" in kennungen
+        assert "  user-003\n" in kennungen
+        assert "  user-004\n" in kennungen
+        assert "Konto Keycloak abwies: 1" in zahlen
+        assert "  user-005\n" in kennungen
+
+    def test_ohne_beta_zugaenge_keine_zeilen_dazu(self, skript, capsys):
+        skript()
+
+        assert skript.aufrufe[0]["beta_zugaenge"] is None
+        assert "Beta-Zugaenge" not in capsys.readouterr().out
+
+    @pytest.mark.parametrize(
+        "eintraege",
+        [
+            [{"userId": "alt"}],
+            # Doppelte userId: Der zweite Eintrag ueberschriebe still den ersten.
+            [
+                {"userId": "alt", "email": "anna@example.org"},
+                {"userId": "alt", "email": "ben@example.org"},
+            ],
+            # "false" als Text waere sonst ein Admin.
+            [{"userId": "alt", "email": "anna@example.org", "isAdmin": "false"}],
+        ],
+    )
+    def test_kaputte_managed_users_json_bricht_ab_ohne_zu_schreiben(
+        self, skript, tmp_path, eintraege
+    ):
+        datei = tmp_path / "managed-users.json"
+        datei.write_text(json.dumps({"users": eintraege}))
+
+        with pytest.raises(SystemExit):
+            skript("--beta-zugaenge", str(datei))
+        assert skript.aufrufe == []
 
     def test_ohne_keycloak_bricht_ab_ohne_zu_schreiben(
         self, skript, monkeypatch, capsys

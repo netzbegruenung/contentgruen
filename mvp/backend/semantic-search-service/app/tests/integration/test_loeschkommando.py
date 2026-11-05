@@ -8,7 +8,9 @@ kommen aus ``conftest.py`` (siehe ``postgres.py``).
 """
 
 import asyncio
+from datetime import datetime, timezone
 import uuid
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -17,9 +19,11 @@ from sqlalchemy import text
 
 from api.v1.einwurf import _einwuerfe_fuer_aufrufer
 from infrastructure.database.models import (
+    Art9EinwilligungZeile,
     Base,
     ContentReport,
     GeseheneNutzung,
+    MusterHinweisZeile,
     Einwurf,
     AusformuliertIn,
     Satz,
@@ -251,6 +255,24 @@ def spuren(datenbank, einwuerfe):
             {"uid": PERSON, "beitrag": beitrag},
         )
         s.add(GeseheneNutzung(user_id=PERSON, nutzung=3))
+        s.add(
+            Art9EinwilligungZeile(
+                user_id=PERSON,
+                wortlaut="2026-11-05",
+                eingewilligt_am=datetime.now(timezone.utc),
+            )
+        )
+        # Muster-Hinweise (#352): einer mit der Person, einer ohne sie.
+        for a, b in [(ANDERE, PERSON), (ANDERE, DRITTE)]:
+            s.add(
+                MusterHinweisZeile(
+                    konto_a=a,
+                    konto_b=b,
+                    tage=1,
+                    erster_tag=date(2026, 10, 26),
+                    letzter_tag=date(2026, 10, 26),
+                )
+            )
         s.add(UsageTracking(content_id=beitrag))
         s.flush()
         s.add(UsageEvent(content_id=beitrag, session_id="sitzung-der-person"))
@@ -328,6 +350,14 @@ class TestLoeschkommando:
             link = s.get(AusformuliertIn, spuren.link)
             assert (link.created_by, link.draft_id) == (None, spuren.satz)
             assert s.get(Satz, spuren.satz).sentence == SATZ_DER_PERSON
+
+    def test_muster_hinweise_ohne_die_person_bleiben(self, datenbank, spuren):
+        _loeschen(datenbank)
+
+        with datenbank.get_session() as s:
+            assert [(h.konto_a, h.konto_b) for h in s.query(MusterHinweisZeile)] == [
+                (ANDERE, DRITTE)
+            ]
 
     def test_sperren_bleiben_ohne_kennung_und_ohne_widerspruch(self, datenbank, spuren):
         _loeschen(datenbank)

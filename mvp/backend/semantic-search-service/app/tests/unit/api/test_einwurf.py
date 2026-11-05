@@ -815,6 +815,41 @@ class TestStatuswechsel:
             "Verwerfen können nur der Einwerfer und Admins."
         )
 
+    def test_verwerfen_geht_ohne_art9_einwilligung(
+        self, client, repository, art9_einwilligung_ohne_datenbank
+    ):
+        """Verwerfen nimmt nur etwas zurueck, wie Loeschen (#489)."""
+        art9_einwilligung_ohne_datenbank.lesen.return_value = None
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), status=EinwurfStatus.DISCARDED.value
+        )
+
+        antwort = client.patch(
+            STATUS_URL, json={"status": "discarded"}, headers={"X-User": "alice"}
+        )
+
+        assert antwort.status_code == 200
+        art9_einwilligung_ohne_datenbank.lesen.assert_not_called()
+
+    def test_ausformulieren_ohne_art9_einwilligung_ist_403(
+        self, client, repository, art9_einwilligung_ohne_datenbank
+    ):
+        art9_einwilligung_ohne_datenbank.lesen.return_value = None
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(uuid.uuid4()),
+                "content_type": "commentary",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 403
+        assert antwort.json()["detail"] == "art9_einwilligung_fehlt"
+        repository.set_status.assert_not_called()
+
     def test_ausformuliert_gibt_beitrag_und_ausformulierer_zurueck(
         self, client, repository
     ):

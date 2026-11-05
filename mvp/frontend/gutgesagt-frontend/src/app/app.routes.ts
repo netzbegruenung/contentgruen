@@ -109,6 +109,14 @@ export const routes: Routes = [
         data: { parent: '/search' }
     },
     {
+        // Die Varianten eines Beitrags (#356), Ziel von "N Varianten" an der Karte;
+        // auch fuer Besucher, die die Karte in der Suche sehen.
+        path: 'varianten/:id',
+        loadComponent: () => import('./varianten/varianten.component').then(m => m.VariantenComponent),
+        canActivate: [PublicGuard],
+        data: { parent: '/search' }
+    },
+    {
         // Die eigene Adresse eines Beitrags, fuer alle Beitragstypen (#300). Oeffentlich
         // wie die Suche: Sichtbare Beitraege koennen auch Besucher finden und kopieren.
         path: 'beitrag/:id',
@@ -223,6 +231,14 @@ export const routes: Routes = [
         path: 'nutzungsbedingungen',
         loadComponent: () => import('./nutzungsbedingungen/nutzungsbedingungen.component').then(m => m.NutzungsbedingungenComponent),
         canActivate: [PublicGuard],
+        data: { parent: '/search' }
+    },
+    {
+        // Art.-9-Einwilligung (#489): einwilligen nach dem ersten Anmelden, spaeter
+        // Stand ansehen und widerrufen (Profilmenue "Einwilligung").
+        path: 'einwilligung',
+        loadComponent: () => import('./einwilligung/einwilligung.component').then(m => m.EinwilligungComponent),
+        canActivate: [AuthGuard],
         data: { parent: '/search' }
     },
     {

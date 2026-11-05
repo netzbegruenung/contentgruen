@@ -23,6 +23,7 @@ import { KartenDaten, ausAussage } from '../../beitragskarte/karten-daten';
 import { AUSSAGE_MAX_ZEICHEN, StatementService } from '../../services/statement.service';
 import { StatementSearchResult } from '../../services/dtos/statementDtos';
 import { LoggingService } from '../../services/logging.service';
+import { SprachhinweisComponent } from '../../shared/components/sprachhinweis/sprachhinweis.component';
 
 /** Worauf ein Beitrag antwortet: eine vorhandene Aussage (mit ID) oder nur ihr Text. */
 export interface AntwortAuf {
@@ -58,7 +59,14 @@ export { AUSSAGE_MAX_ZEICHEN } from '../../services/statement.service';
   selector: 'app-antwort-auf',
   templateUrl: './antwort-auf.component.html',
   styleUrls: ['./antwort-auf.component.css'],
-  imports: [...SHARED_IMPORTS, CommonModule, ReactiveFormsModule, TextFieldModule, BeitragskarteComponent],
+  imports: [
+    ...SHARED_IMPORTS,
+    CommonModule,
+    ReactiveFormsModule,
+    TextFieldModule,
+    BeitragskarteComponent,
+    SprachhinweisComponent,
+  ],
 })
 export class AntwortAufComponent implements OnInit, OnChanges {
   private destroyRef = inject(DestroyRef);
@@ -153,6 +161,17 @@ export class AntwortAufComponent implements OnInit, OnChanges {
       return 'leer';
     }
     return zuKurz(text) ? 'zu-kurz' : 'neu';
+  }
+
+  /**
+   * Der Text der Aussage, die beim Speichern neu entsteht - gewaehlt als neue oder getippt;
+   * leer bei einer vorhandenen. Nur dafuer gibt es den Sprachhinweis.
+   */
+  get neueAussage(): string {
+    if (this.gewaehlt) {
+      return this.gewaehltNeu ? this.gewaehlt.text : '';
+    }
+    return this.feldZustand === 'neu' ? this.feld.value.trim() : '';
   }
 
   /** Den getippten Text als neue Aussage nehmen - angelegt wird sie beim Speichern. */

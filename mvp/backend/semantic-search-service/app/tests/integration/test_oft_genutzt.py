@@ -31,7 +31,7 @@ class _Nutzung:
     def __init__(self, ids):
         self.ids = ids
 
-    def get_trending_content(self, limit=10, hours=24):
+    def get_trending_content(self, limit=10, hours=24, nur_entdoppelt=False):
         return [
             {"content_id": str(i), "recent_uses": 5, "total_uses": 5} for i in self.ids
         ]

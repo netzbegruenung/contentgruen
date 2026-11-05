@@ -42,6 +42,10 @@ class UsageTracking(Base):
     # (tests/integration/test_migrationen.py). default bleibt, damit das ORM den Wert
     # nach dem Flush kennt, ohne die Zeile neu zu laden.
     usage_count = Column(Integer, default=0, server_default="0", nullable=False)
+    # Entdoppelte Nutzung (#352): hoechstens eine je Person (Besucher: Besuchermerkmal),
+    # Beitrag und Tag. Traegt die Punkte fuer Nutzung und ueberdauert wie usage_count
+    # die Frist der usage_events; usage_count bleibt der Zaehler an der Karte.
+    nutzung_entdoppelt = Column(Integer, default=0, server_default="0", nullable=False)
     last_used = Column(DateTime(timezone=True), nullable=True)
     first_used = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
@@ -59,11 +63,15 @@ class UsageTracking(Base):
         "UsageEvent", back_populates="tracking", cascade="all, delete-orphan"
     )
 
-    def increment_usage(self, timestamp: Optional[datetime] = None):
+    def increment_usage(
+        self, timestamp: Optional[datetime] = None, entdoppelt: bool = False
+    ):
         """Increment the usage count and update timestamps."""
         if self.usage_count is None:
             self.usage_count = 0
         self.usage_count += 1
+        if entdoppelt:
+            self.nutzung_entdoppelt = (self.nutzung_entdoppelt or 0) + 1
         now = timestamp or datetime.utcnow()
         self.last_used = now
         if self.first_used is None:
@@ -137,6 +145,12 @@ class UsageEvent(Base):
     # #355); leer bei anderen Beitragstypen und bei Nutzung von vor #355. Traegt den
     # Zuwachs der letzten 7 Tage je Fassung; die Summe steht in nutzung_je_fassung.
     fassung = Column(String(10), nullable=True)
+    # Die erste Nutzung dieser Person (Besucher: Besuchermerkmal) an diesem Beitrag und Tag
+    # (#352). Nur sie zaehlt fuer "Diese Woche oft genutzt"; wer sie war, steht
+    # nirgends (services/entdoppelung.py).
+    entdoppelt = Column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
 
     # Relationship to tracking
     tracking = relationship("UsageTracking", back_populates="events")
@@ -145,6 +159,67 @@ class UsageEvent(Base):
     __table_args__ = (
         Index("idx_usage_events_content_id", "content_id"),
         Index("idx_usage_events_timestamp", "timestamp"),
+    )
+
+
+class NutzungHeute(Base):
+    """
+    Pruefwerte der Nutzungen des laufenden Tages fuer die Entdoppelung (#352).
+
+    Je Person (Besucher: Besuchermerkmal) und Beitrag ein HMAC mit einem Schluessel
+    nur im Speicher (services/entdoppelung.py). Ohne ihn verraet ein Wert weder Person
+    noch Beitrag. Ein eigener Task verwirft alle Zeilen vergangener Tage
+    (pruefwerte_verwerfen_im_takt in services/entdoppelung.py); gespeichert bleibt nicht, wer wessen
+    Beitrag genutzt hat (DSFA zu #374, Massnahme M2).
+    """
+
+    __tablename__ = "nutzung_heute"
+
+    pruefwert = Column(String(64), primary_key=True)
+    tag = Column(Date, nullable=False)
+
+    __table_args__ = (Index("idx_nutzung_heute_tag", "tag"),)
+
+
+class MusterPruefwert(Base):
+    """
+    Paar-Pruefwerte fuer die Muster-Hinweise (#352): je Richtung "Konto A hat einen
+    Beitrag von Konto B genutzt" ein HMAC ueber beide Kennungen mit dem Fensterschluessel
+    (nur im Speicher), mit dem letzten Tag dieser Richtung (services/entdoppelung.py). Welcher Beitrag, steht nirgends. Der
+    taegliche Lauf verwirft Werte, die aelter als das Fenster von sieben Tagen sind
+    (services/muster_hinweise_service.py).
+    """
+
+    __tablename__ = "muster_pruefwerte"
+
+    pruefwert = Column(String(64), primary_key=True)
+    tag = Column(Date, nullable=False)
+
+    __table_args__ = (Index("idx_muster_pruefwerte_tag", "tag"),)
+
+
+class MusterHinweisZeile(Base):
+    """
+    Ein auffaelliges Muster fuer Admins (ADR 0004, #352): zwei Konten, die innerhalb
+    von sieben Tagen jeweils einen Beitrag des anderen genutzt haben. Ein Hinweis,
+    keine Automatik; niemand verliert dadurch Punkte.
+
+    konto_a ist die kleinere Kennung, konto_b die groessere. tage zaehlt die Tage, an
+    denen eine Nutzung auf eine der Gegenrichtung im Fenster traf. Nach MUSTER_FRIST_TAGE ohne neuen Tag loescht der taegliche
+    Lauf die Zeile (services/muster_hinweise_service.py, docs/LOESCHKONZEPT.md).
+    """
+
+    __tablename__ = "muster_hinweise"
+
+    konto_a = Column(String(255), primary_key=True)
+    konto_b = Column(String(255), primary_key=True)
+    tage = Column(Integer, nullable=False)
+    erster_tag = Column(Date, nullable=False)
+    letzter_tag = Column(Date, nullable=False)
+
+    __table_args__ = (
+        Index("idx_muster_hinweise_letzter_tag", "letzter_tag"),
+        Index("idx_muster_hinweise_konto_b", "konto_b"),
     )
 
 
@@ -281,6 +356,26 @@ class EinladungZeile(Base):
     gueltig_bis = Column(Date, nullable=False)
     abgeschaltet = Column(Boolean, nullable=False, server_default=text("false"))
     angelegt_am = Column(Date, nullable=False)
+
+
+class VarianteZeile(Base):
+    """Die Verknuepfung "beruht auf" (Glossar "Variante", #356).
+
+    Eine Zeile je Variante: Jemand hat das Original als Vorlage genommen und einen
+    eigenen Beitrag gespeichert. Variante und Original sind Beitraege desselben Typs
+    im Suchindex; hier stehen nur ihre IDs, keine Kennung und kein Zeitpunkt. Wer die
+    Variante gespeichert hat, steht an ihr selbst (``original_author``).
+
+    Loescht der Autor die Variante, geht die Zeile mit (api/v1/content.py), damit
+    "N Varianten" am Original nur zaehlt, was es noch gibt.
+    """
+
+    __tablename__ = "varianten"
+
+    variante_id = Column(SQLUUID(as_uuid=True), primary_key=True)
+    original_id = Column(SQLUUID(as_uuid=True), nullable=False)
+
+    __table_args__ = (Index("idx_varianten_original_id", "original_id"),)
 
 
 class AussageThemaZeile(Base):
@@ -599,6 +694,35 @@ class GeseheneNutzung(Base):
 
     user_id = Column(String(255), primary_key=True)
     nutzung = Column(Integer, nullable=False)
+
+
+class Art9EinwilligungZeile(Base):
+    """
+    Eine Art.-9-Einwilligung einer Person (#489): wann sie eingewilligt hat, welchem
+    Wortlaut (Kennung aus domain/art9_einwilligung.py) und wann sie widerrufen hat.
+    Es gilt die juengste Zeile der Kennung; ohne Zeile, oder ist die juengste
+    widerrufen, hat die Person nicht eingewilligt.
+
+    Ein Widerruf setzt ``widerrufen_am``, eine erneute Einwilligung ist eine neue
+    Zeile. So bleibt fuer jeden Zeitraum belegt, ob die Verarbeitung auf einer
+    Einwilligung beruhte (Art. 7 Abs. 1 DSGVO).
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-05-art9-einwilligung.sql dokumentiert das Schema.
+    Loeschen: docs/LOESCHKONZEPT.md, Schritt 2.
+    """
+
+    __tablename__ = "art9_einwilligungen"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(255), nullable=False)
+    wortlaut = Column(String(64), nullable=False)
+    eingewilligt_am = Column(DateTime(timezone=True), nullable=False)
+    widerrufen_am = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("idx_art9_einwilligungen_user", "user_id", "eingewilligt_am"),
+    )
 
 
 class MigrationsprotokollZeile(Base):

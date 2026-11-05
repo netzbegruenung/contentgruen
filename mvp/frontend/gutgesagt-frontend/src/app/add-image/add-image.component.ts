@@ -15,6 +15,7 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
+import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 
 @Component({
   selector: 'app-add-image',
@@ -25,6 +26,7 @@ import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component
     FormsModule,
     BeitragskarteComponent,
     Cc0HinweisComponent,
+    SprachhinweisComponent,
   ],
   templateUrl: './add-image.component.html',
   styleUrls: ['./add-image.component.scss'],

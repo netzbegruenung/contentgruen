@@ -5,7 +5,11 @@ import logging
 import uuid
 from uuid import UUID
 
-from dependencies import get_aufrufer, get_image_service
+from dependencies import (
+    get_aufrufer,
+    get_image_service,
+    require_art9_einwilligung,
+)
 from dtos.image import (
     AddImageRequest,
     AddImageResponse,
@@ -71,6 +75,7 @@ async def get_all(
     "/addImage",
     response_model=AddImageResponse,
     status_code=201,
+    dependencies=[Depends(require_art9_einwilligung)],
 )
 async def add_image(
     request: AddImageRequest,

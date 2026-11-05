@@ -124,6 +124,8 @@ einladung_pruefen_rate_limiter = RateLimiter(max_requests=60, window_minutes=15)
 # weniger als 30 in der Minute.
 gegenlesen_rate_limiter = RateLimiter(max_requests=300, window_minutes=10)
 
+# Spracherkennung beim Schreiben (#405): fragt so oft nach wie das Gegenlesen.
+spracherkennung_rate_limiter = RateLimiter(max_requests=300, window_minutes=10)
 # Kuerzungsvorschlag (#403): nur auf Klick, 60 je Person in 10 Minuten.
 kuerzungsvorschlag_rate_limiter = RateLimiter(max_requests=60, window_minutes=10)
 

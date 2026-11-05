@@ -7,14 +7,17 @@ if TYPE_CHECKING:
     # under TYPE_CHECKING to avoid pulling the registry/service graph at module load.
     from services.content.base_content_service import BaseContentService
 from core.config import settings, Settings
+from utils.rate_limiter import RateLimiter
 from services.orchestration.content_orchestrator import ContentOrchestrator
 from services.content.commentary_service import CommentaryService
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
-from services.anzeigename_service import get_anzeigename_service
+from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services import art9_einwilligung_service
 from services.beitrag_fuer_aufrufer import Aufrufer
+from services.content.beitrag_aendern_service import BeitragAendernService
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
 from services.beitrag_laden import BeitragLader, beitrag_laden
 from repositories.interfaces.content_repository import IContentRepository
@@ -49,10 +52,14 @@ from services.gegenlesen.gegenlesen_service import (
 )
 from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from services.loeschfristen_service import LoeschfristenService
+from services.muster_hinweise_service import MusterHinweiseService
+from services.punkte_service import PunkteService
+from services.spracherkennung.spracherkennung import SPRACHERKENNUNG, Spracherkennung
 from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
 from repositories.einwurf_repository import get_einwurf_repository
 from repositories.sperre_repository import get_sperre_repository
+from core.fehler import INTERNER_FEHLER
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -109,7 +116,7 @@ def initialize_services() -> None:
     generic_text_service_instance = GenericTextService(settings=settings_instance)
 
     global voting_service_instance
-    voting_service_instance = VotingService()
+    voting_service_instance = VotingService(settings_instance.startkonto_kennungen())
     logger.debug("created content service instances...")
 
     # Create the content orchestrator instance (without triggering data load)
@@ -184,6 +191,36 @@ def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
 
 
+def get_punkte_service(
+    settings: Settings = Depends(get_settings),
+) -> PunkteService:
+    from domain.content_registry import BEITRAGSTYPEN_WERTE
+    from repositories.aggregated.content_repository import ContentRepository
+    from repositories.punkte_repository import get_punkte_repository
+    from repositories.usage_tracking_repository import get_usage_repository
+
+    async def sichtbare_beitraege(user_id: str):
+        # get_by_author laesst gesperrte und geloeschte Beitraege aus: Sie verlieren
+        # ihre Punkte (#352).
+        return await ContentRepository(settings).get_by_author(
+            # Alle Beitraege der Person, wie get_user_statistics.
+            user_id,
+            limit=10000,
+            offset=0,
+            content_types=BEITRAGSTYPEN_WERTE,
+        )
+
+    return PunkteService(
+        sichtbare_beitraege, get_usage_repository(), get_punkte_repository(), settings
+    )
+
+
+def get_muster_hinweise_service() -> MusterHinweiseService:
+    from repositories.muster_hinweis_repository import get_muster_hinweis_repository
+
+    return MusterHinweiseService(get_muster_hinweis_repository())
+
+
 def _keycloak_konten() -> Optional[KeycloakKonten]:
     """Ohne Zugang zur Keycloak-Admin-Schnittstelle None; so laeuft es im Dev-Stack."""
     if not (
@@ -213,6 +250,20 @@ def get_einladung_service() -> EinladungService:
 _gegenlesen_service: Optional[GegenlesenService] = None
 
 
+_nutzung_rate_limiter: Optional[RateLimiter] = None
+
+
+def get_nutzung_rate_limiter() -> RateLimiter:
+    """Das Rate-Limit am Zaehl-Endpunkt (#352), Werte aus der Konfiguration."""
+    global _nutzung_rate_limiter
+    if _nutzung_rate_limiter is None:
+        _nutzung_rate_limiter = RateLimiter(
+            max_requests=settings.nutzung_rate_limit_anfragen,
+            window_minutes=settings.nutzung_rate_limit_minuten,
+        )
+    return _nutzung_rate_limiter
+
+
 def get_gegenlesen_service() -> GegenlesenService:
     """Einmal je Prozess: die Liste "statt X sag Y" wird beim ersten Aufruf gelesen."""
     global _gegenlesen_service
@@ -221,6 +272,11 @@ def get_gegenlesen_service() -> GegenlesenService:
             statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
         )
     return _gegenlesen_service
+
+
+def get_spracherkennung() -> Spracherkennung:
+    """Eine Instanz je Prozess; der Start lädt Lingua vor (main.py)."""
+    return SPRACHERKENNUNG
 
 
 _kuerzungsvorschlag_service: Optional[KuerzungsvorschlagService] = None
@@ -287,6 +343,17 @@ def get_beitrag_loeschen_service(
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
     return BeitragLoeschenService(repository, get_moderation_repository())
+
+
+def get_beitrag_aendern_service(
+    repository: IContentRepository = Depends(get_content_repository),
+) -> BeitragAendernService:
+    """Ueber das aggregierte Repository, wie das Loeschen (#299)."""
+    return BeitragAendernService(
+        repository,
+        get_reference_service().herkunft_id,
+        get_content_report_repository().hat_offene_meldung,
+    )
 
 
 def get_commentary_service() -> CommentaryService:
@@ -433,6 +500,38 @@ def require_user(
     if not x_user_id or x_user_id == "anonymous":
         raise HTTPException(status_code=401, detail="Authentication required")
     return x_user_id
+
+
+# Antworttext, an dem das Frontend erkennt, dass die Art.-9-Einwilligung fehlt
+# (auth.interceptor.ts), und dann auf /einwilligung fuehrt.
+ART9_EINWILLIGUNG_FEHLT = "art9_einwilligung_fehlt"
+
+
+def require_art9_einwilligung(
+    x_user: Optional[str] = Header(None, alias="X-User"),
+) -> None:
+    """
+    Sperrt einen Endpunkt fuer angemeldete Personen ohne geltende
+    Art.-9-Einwilligung (#489) mit 403. Ob jemand angemeldet sein muss,
+    entscheidet der Endpunkt selbst; ohne Anmeldung laesst diese Pruefung durch.
+
+    Synchron, damit FastAPI sie im Threadpool ausfuehrt: Sie fragt die Datenbank.
+    """
+    if not angemeldet(x_user):
+        return
+    try:
+        eingewilligt = (
+            art9_einwilligung_service.get_art9_einwilligung_service().eingewilligt(
+                x_user
+            )
+        )
+    except Exception as e:
+        logger.error(
+            f"Art.-9-Einwilligung nicht lesbar: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    if not eingewilligt:
+        raise HTTPException(status_code=403, detail=ART9_EINWILLIGUNG_FEHLT)
 
 
 def require_admin(

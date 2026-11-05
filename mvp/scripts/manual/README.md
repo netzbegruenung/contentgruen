@@ -64,6 +64,36 @@ docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisie
 auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` braucht den
 ausgerollten neuen Stand.
 
+## Vektor benennen (im semantic-search-Container)
+
+`vektor_benennen.py [--ausfuehren]` – **schreibend mit `--ausfuehren`.** Einmalig mit
+#395: fuehrt den unbenannten Vektor der Collection als benannten Vektor `e5_base`.
+Kopiert alle Punkte samt Vektoren und Payload-Indizes in die neue Collection
+`<collection>_e5_base`, loescht die alte und macht ihren Namen zum Alias auf die neue.
+Nichts wird neu eingebettet, die Treffer bleiben gleich. Ohne `--ausfuehren` zaehlt es
+nur; ein zweiter Lauf meldet `"vorher": "benannt"` und aendert nichts. Aendert sich die
+Zahl der Punkte waehrend der Kopie, bricht es ab, ohne umzustellen. Nach dem Rueckweg
+(Restore ueber den Alias) kopiert ein neuer Lauf nach `<collection>_e5_base_2` und setzt
+den Alias in einem Schritt um.
+
+Reihenfolge, Backup und Rueckweg stehen in `docs/DEPLOYMENT.md`, „Qdrant: named vector
+(#395)“. Kurz: Backup, Version mit #395 ausrollen, zaehlen, umstellen und gleich danach
+(nicht waehrend des Laufs) den Dienst neu starten; bis dahin schlagen Suchen und
+Schreiben fehl.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/vektor_benennen.py
+docker exec -i gutgesagt-semantic-search python - < vektor_benennen.py
+docker exec -i gutgesagt-semantic-search python - --ausfuehren < vektor_benennen.py
+docker restart gutgesagt-semantic-search
+```
+
+Getestet in `tests/unit/services/test_vektor_benennen.py` (Speicher-Modus, Aufruf) und
+`tests/integration/test_vektor_benennen_qdrant.py` (echter Qdrant; der Dienst sucht vor
+und nach der Umstellung gleich). Ist die Umstellung auf Test und Produktion gelaufen,
+entfaellt der Uebergang fuer den unbenannten Vektor im Dienst
+(`QdrantEmbeddingsManager._vektorname_aus`).
+
 ## Zustaende umstellen (im semantic-search-Container)
 
 `zustaende_umstellen.py [--ausfuehren]` – **schreibend mit `--ausfuehren`.** Einmalig
@@ -116,11 +146,14 @@ dort steht auch der Aufruf. Getestet in `tests/integration/test_loeschkommando.p
 
 ## Kennungen auf den Realm umstellen (im semantic-search-Container)
 
-`kennungen_umstellen.py [--ausfuehren] [--konten-anlegen DATEI] [--liste NAME=K1,K2] [--loeschliste K1,K2]` –
+`kennungen_umstellen.py [--ausfuehren] [--konten-anlegen DATEI] [--beta-zugaenge DATEI] [--liste NAME=K1,K2] [--loeschliste K1,K2]` –
 **schreibend mit `--ausfuehren`.** Einmalig vor dem Umstellen der BFF auf den Realm
 „gutgesagt“ (#487): schreibt die Kennungen von Mitgliedern der Netzbegruenung in
 PostgreSQL und Qdrant auf die ihres Kontos im Realm um, gibt die neuen Werte der
-Admin-Listen aus und ergaenzt die Loeschliste; ohne `--ausfuehren` zaehlt es nur. Ablauf und
+Admin-Listen aus und ergaenzt die Loeschliste; ohne `--ausfuehren` zaehlt es nur. Mit
+`--beta-zugaenge managed-users.json` ziehen auch die Beta-Zugaenge in das Konto mit ihrer
+Mail-Adresse um, fehlende legt der Lauf mit Mail „Passwort festlegen“ an (#488; „Beta-Zugänge
+umziehen“). Ablauf und
 Aufruf in `docs/KEYCLOAK_REALM.md`, „Kennungen umstellen“; getestet in
 `tests/unit/services/test_kennungen_umstellen.py` (Qdrant),
 `tests/unit/infrastructure/test_keycloak_kennungen.py` (Realm),

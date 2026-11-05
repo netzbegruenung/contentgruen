@@ -5,8 +5,9 @@ verdigado's Woodpecker. It checks what `scripts/check.sh --integration` checks l
 its status `ci/woodpecker/pr/ci` is required before a merge into `main` once a person has
 completed the [setup](#setup-by-a-person).
 
-The GitHub Actions on the mirror (`.github/workflows/`) are unchanged: they run after the
-merge and build the images.
+After the merge, `.woodpecker/build.yaml` and, on `v*` tags, `release.yaml` build the images
+(see [Images and releases](#images-and-releases)). Until the switch the GitHub Actions on the
+mirror (`.github/workflows/`) still build them too and publish the tags the environments use.
 
 ## What runs
 
@@ -128,6 +129,55 @@ not the page.
   branches and create tags. Forgejo has no narrower scope for the wiki, so a leaked token
   is revoked and replaced at once.
 
+## Images and releases
+
+Two workflows build the four images (frontend, BFF, semantic search, postgres-app) with the
+plugin `woodpeckerci/plugin-docker-buildx` and push them to
+`git.verdigado.com/netzbegruenung-images/gutgesagt-*`, the names the GitHub CI used, so
+deployment and Renovate keep working (#327). Both start only after a green `ci` run
+(`depends_on: [ci]`): a tag cannot ship what `main` would have rejected.
+
+| Workflow | Runs on | Builds | Tags |
+|---|---|---|---|
+| `build.yaml` | push to `main`; "Run pipeline" on `main` | images whose files changed; a manual run builds all | `main`, `sha-<7 characters>` |
+| `release.yaml` | tag `v*` | all four | `X.Y.Z`, `X.Y`, `latest`; a prerelease only `X.Y.Z` |
+
+- **Tags from one script.** The step `image-tags` runs `scripts/image_tags.py`, which writes
+  the tags to `.image-tags`; the build steps read them (`tags_file`). A tag that is not a
+  SemVer version `vX.Y.Z` turns the step red and nothing is built.
+- **Version in the footer from the tag.** The release build passes the tag as build
+  argument `APP_VERSION` to the frontend image; a release needs no version change in
+  `package.json` once the GitHub workflows are gone (`docs/DEPLOYMENT.md`, "Releases").
+  Builds of `main` pass `APP_VERSION=main`: the footer shows „main · <commit>“ instead of a
+  version that would go stale.
+- **Path filters** per build step, because a filter on the workflow would hide it. They cover
+  everything the Dockerfile copies (the semantic search image also takes the migrations,
+  `mvp/scripts/backup`, `mvp/data` and `mvp/.dockerignore`), plus `build.yaml` and
+  `scripts/image_tags.py`, so a change to the build rebuilds every image. Woodpecker takes
+  the changed files of a push from the webhook; if the list is empty, every step runs.
+- `scripts/tests/test_woodpecker_images.py` keeps the two workflows identical except for the
+  path filters and `APP_VERSION`, checks the image names, the filters against the
+  Dockerfiles and that only the plugin steps see the registry secret.
+- No build cache: each run builds from scratch, as the earlier Woodpecker builds did.
+
+**Parallel run.** As long as the GitHub workflows build, every Woodpecker tag carries the
+prefix `woodpecker-` (`IMAGE_TAG_PRAEFIX` in both workflows): `:woodpecker-main`,
+`:woodpecker-0.9.0` and so on. The two CIs never overwrite each other's tags, and nothing
+deployed follows a prefixed tag.
+
+**Switch** (one pull request, with the maintainer's consent, because `.github/workflows/`
+changes act on the mirror at once), after at least one push to `main` and one test tag
+have built on both sides:
+
+1. Compare the images: same base layers, the same files in the image
+   (`docker run --rm --entrypoint ls <image> -R /app` or similar per image), the frontend
+   footer with the expected version and commit.
+2. Remove `IMAGE_TAG_PRAEFIX` from `build.yaml` and `release.yaml` and delete
+   `.github/workflows/`; update this section and `docs/DEPLOYMENT.md` (the `package.json`
+   step in "Releases" goes, the GitHub CI paragraph in "Updating Production" too).
+3. After the merge: delete the GitHub Actions secrets on the mirror and the prefixed tags in
+   the registry.
+
 ## Setup by a person
 
 The bot can write the pipeline, but cannot enable a repository, create secrets or change the
@@ -152,7 +202,28 @@ enabled, and the pull request that adds the pipeline already needs it):
    scope. Store it in the team's password manager and add it in Woodpecker as secret
    `forgejo_wiki_token`, event "Push" only, no image filter. The wiki of the repository must
    stay enabled.
-4. **Required status:** after the first pull-request run, add `ci/woodpecker/pr/ci` as a
+4. **Registry secrets, before merging the pull request that adds `build.yaml`.** A registry
+   account with write access to the packages of `netzbegruenung-images`, and a token for it
+   with the scope `write:package` only. The account is the Forgejo user `WoodpeckerCI` in the
+   team "Pipelines" of the organisation `netzbegruenung-images` (unit "Packages": write); the
+   release bot of the organisation has no package rights. When creating the token, choose the
+   repository access "All (public, private, and limited)" and only "package: Read and Write":
+   with "Specific repositories" Forgejo offers no package scope. Store it in the team's password
+   manager and add it in Woodpecker as secrets `registry_user` (the account name) and
+   `registry_token`, events "Push", "Tag" and "Manual" (for "Run pipeline" on `main`), image filter
+   `woodpeckerci/plugin-docker-buildx` (so only the build steps see them). The plugin needs
+   Docker inside its container: it must be on the list of privileged plugins of the
+   Woodpecker server as `woodpeckerci/plugin-docker-buildx`, without a tag. The workflows pin
+   the plugin by tag and digest, and an entry with a tag only matches that exact reference.
+   In the repository settings, switch on "Cancel previous pipelines" for "Push": otherwise
+   two quick merges can build in parallel, and the older one, finishing last, leaves `:main`
+   on the older commit (the GitHub CI cancelled superseded runs too). Without the secrets
+   the workflows fail before any step; `ci` is not affected. Known limit: Woodpecker has no
+   branch filter for secrets. Whoever can push a branch or a tag (write access, the bot
+   included) can run a changed `build.yaml` or `release.yaml` with the secret, limited to
+   the plugin, which can push any image under any tag to the registry, `:main` included.
+   The same holds for `forgejo_wiki_token`. Tags are set by the maintainer only.
+5. **Required status:** after the first pull-request run, add `ci/woodpecker/pr/ci` as a
    required status check in the branch protection of `main`, and switch on "pull request
    must be up to date", so combinations of two pull requests run before the merge. A branch
    is brought up to date by merge ("Update branch"), not by rebase. Whoever wants a linear

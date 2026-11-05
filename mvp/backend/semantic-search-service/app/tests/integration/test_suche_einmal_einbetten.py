@@ -255,7 +255,15 @@ async def test_search_by_text_neue_suchanfrage_einmal_eingebettet(suche):
     assert antwort["commentary_search_results_count"] >= 1
     assert einbettungen == [f"query: {SUCHANFRAGE}"]
     assert sorted(anfragen) == sorted(
-        ["scroll", "search", "upsert", "upsert", "search", "retrieve", "search_batch"]
+        [
+            "scroll",
+            "query_points",
+            "upsert",
+            "upsert",
+            "query_points",
+            "retrieve",
+            "query_batch_points",
+        ]
     )
 
 
@@ -269,7 +277,9 @@ async def test_search_by_text_vorhandene_suchanfrage_einmal_eingebettet(suche):
 
     assert antwort["query_was_newly_added_as_statement"] is False
     assert einbettungen == [f"query: {SUCHANFRAGE}"]
-    assert sorted(anfragen) == sorted(["scroll", "search", "retrieve", "search_batch"])
+    assert sorted(anfragen) == sorted(
+        ["scroll", "query_points", "retrieve", "query_batch_points"]
+    )
 
 
 @pytest.mark.parametrize(

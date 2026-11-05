@@ -13,6 +13,8 @@ from fastapi.testclient import TestClient
 
 from api.v1 import usage as usage_module
 from api.v1.usage import router as usage_router
+from core.config import Settings
+from dependencies import get_settings
 from dependencies import get_beitrag_laden
 from domain.models.content_type import ContentType
 
@@ -32,6 +34,7 @@ def dienst():
 def client(dienst):
     app = FastAPI()
     app.include_router(usage_router, prefix="/api/v1/usage")
+    app.dependency_overrides[get_settings] = lambda: Settings()
     typen = {KOMMENTAR_ID: ContentType.COMMENTARY, BILD_ID: ContentType.IMAGE}
 
     async def laden(content_id):

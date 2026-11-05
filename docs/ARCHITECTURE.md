@@ -85,7 +85,7 @@ listens on 5432 inside the container.
 ### BFF (Backend-for-Frontend)
 - **Technology**: .NET 9.0, YARP reverse proxy
 - **Purpose**:
-  - Authentication handling (Keycloak, Direktanmeldung, or the old dummy login)
+  - Authentication handling (Keycloak or Direktanmeldung)
   - API gateway/proxy to semantic search service
   - User context injection via headers
 - **Configuration**:
@@ -100,7 +100,8 @@ listens on 5432 inside the container.
   - PostgreSQL for application metadata (usage tracking)
 - **Features**:
   - Unified content storage with type filtering
-  - Semantic similarity search using 768-dimensional E5 embeddings
+  - Semantic similarity search using 768-dimensional E5 embeddings, stored as the named vector
+    `e5_base` and queried with `query_points`, so that further models can sit next to it (#395)
   - Asynchronous data seeding
   - RESTful API with OpenAPI docs
 - **Architecture**:
@@ -110,7 +111,7 @@ listens on 5432 inside the container.
 
 ### PostgreSQL
 - **Purpose**: Application data — votes, usage tracking, search tracking, moderation reports,
-  Sperren with Sperrgrund and Widerspruch (`sperren`), and per person the usage last shown in the Rückmeldung (`gesehene_nutzung`).
+  Sperren with Sperrgrund and Widerspruch (`sperren`), and per person the usage last shown in the Rückmeldung (`gesehene_nutzung`); for the entdoppelte Nutzung the check values of the current day (`nutzung_heute`, HMAC only), the pair check values of the last seven days (`muster_pruefwerte`, HMAC only) and the Muster-Hinweise for admins (`muster_hinweise`, #352).
   Content and its vector embeddings live in Qdrant, not in PostgreSQL.
 - **Image**: `postgres:16-alpine` (service `postgres-app`, container `gutgesagt-app-postgres`)
 - **Access**:
@@ -161,8 +162,9 @@ referrer, and no line for searches or the results page (#275, see
 ### Direktanmeldung (Beta-Zugang)
 Login with e-mail address and password, for Beta-Zugang accounts. It does not depend on the
 environment: it is on whenever `ENABLE_MANAGED_AUTH` is true (the default) and the BFF finds a
-non-empty users file, so production can offer it next to Keycloak. Local and Docker development
-log in this way.
+non-empty users file. Local and Docker development log in this way. In test and production the
+Beta-Zugänge move into the Keycloak realm and the file goes away (#488,
+`docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“).
 
 1. User enters e-mail address and password in frontend ("Direktanmeldung")
 2. Frontend POSTs to BFF `/api/auth/login/managed`
@@ -175,10 +177,8 @@ log in this way.
 the Docker dev stack; for the local mode copy it by hand (`docs/DEV-SETUP.md`). Without the
 file the Direktanmeldung is off.
 
-With `USE_KEYCLOAK=false` the BFF also still answers the old dummy `POST /login`
-(default `testuser`/`Liebe>Hass!`, overridable via `DUMMY_AUTH_USERNAME`/`DUMMY_AUTH_PASSWORD`;
-user id `test-user-id-1`, which must never be an admin, see `ADMIN_USER_IDS` below). The
-frontend no longer has a form for it.
+The old dummy login (`POST /login`, user id `test-user-id-1`) is gone since #488;
+`DUMMY_AUTH_USERNAME`/`DUMMY_AUTH_PASSWORD` have no effect any more.
 
 ### Keycloak (Production)
 1. User accesses protected resource
@@ -239,10 +239,9 @@ Container names are the same in dev, test and production: `gutgesagt-app-postgre
   logged in: it is exactly the string this check compares, whereas reading a `sub` claim by
   hand is a detour - .NET's inbound claim mapping renames `sub` to `nameidentifier` before
   the application sees it. The list is parsed once at startup, so changing it only takes
-  effect after the BFF container is restarted. Never put `test-user-id-1` on the list: that
-  is the id handed out by the dummy login that is active whenever `USE_KEYCLOAK=false`, and
-  its password is documented in this repository (`mvp/backend/BFF/Program.cs:509-510`,
-  `:554`, `:575`).
+  effect after the BFF container is restarted. Never put an id from
+  `managed-users.example.json` on the list: their passwords are documented in this
+  repository.
 
   It exists because the claim route needs a Keycloak protocol mapper: `OnTokenValidated`
   copies token claims unchanged, so a flat `isAdmin`/`role` claim has to come from the realm
@@ -296,7 +295,6 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 
 ### Local/Test
 - Direktanmeldung; locally with the example accounts from `managed-users.example.json`
-- The old dummy `POST /login` stays reachable while `USE_KEYCLOAK=false`
 - No TLS (HTTP only)
 - Open CORS for development
 
@@ -341,11 +339,12 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 ### Test/Production
 - Woodpecker checks every pull request on Forgejo (`.woodpecker/ci.yaml`, required status
   for `main`, see `docs/CI.md`)
-- GitHub Actions on the mirror for automated builds (`.github/workflows/build.yml` on `main`,
-  `.github/workflows/release.yml` on `v*` tags)
+- Image builds after a green `ci` run: Woodpecker (`.woodpecker/build.yaml` on `main`,
+  `release.yaml` on `v*` tags), for now next to GitHub Actions on the mirror
+  (`.github/workflows/build.yml`, `release.yml`) until the switch in `docs/CI.md`
 - Container registry at git.verdigado.com (`netzbegruenung-images`)
 - Test: runs the floating `:main` tag, rolled out manually by the operators
-- Production: pins `:latest` by digest; how it updates: `docs/DEPLOYMENT.md`, "Updating Production"
+- Production: pins a release version (`:X.Y.Z`) by digest; how it updates: `docs/DEPLOYMENT.md`, "Updating Production"
 
 ## Storage & Persistence
 

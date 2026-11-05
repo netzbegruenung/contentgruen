@@ -154,6 +154,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(profilmenue().map((e) => e.textContent?.trim())).toEqual([
         jasmine.stringContaining('Meine Beiträge'),
         jasmine.stringContaining('Profilbild wählen'),
+        jasmine.stringContaining('Einwilligung'),
         jasmine.stringContaining('Abmelden'),
       ]);
       expect(navigation.navigateToMeineBeitraege).not.toHaveBeenCalled();
@@ -180,9 +181,19 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      profilmenue()[2].click();
+      profilmenue()[3].click();
 
       expect(auth.logout).toHaveBeenCalledTimes(1);
+    });
+
+    it('fuehrt ueber das Profilmenue zur Art.-9-Einwilligung (#489)', async () => {
+      avatar().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      profilmenue()[2].click();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/einwilligung']);
     });
 
     it('oeffnet ueber das Profilmenue den Dialog Profilbild waehlen', async () => {

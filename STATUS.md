@@ -14,7 +14,7 @@ use existing comments/background info, and contribute their own.
 
 ## What's Already Working
 
-* [x] Login via Keycloak (production) and dummy auth (dev/test)
+* [x] Login via Keycloak (production) and Direktanmeldung with Beta-Zugänge (dev; in test and production until they move into the realm, #488)
 * [x] Anonymous / public search — search and view results without logging in (contribution stays behind login)
 * [x] Semantic search using Qdrant v1.18.2 and E5 multilingual embeddings
 * [x] Content-type-aware encoding, polarity filtering, and keyword-overlap score boosting
@@ -74,7 +74,7 @@ Candidate features:
 ## Environments
 
 * **Test:** https://gutgesagt-test.netzbegruenung.de — tracks `:main`, rolled out manually.
-* **Production:** https://gutgesagt.netzbegruenung.de — pins `:latest` by digest (release flow: `docs/DEPLOYMENT.md`).
+* **Production:** https://gutgesagt.netzbegruenung.de — pins a release version (`:X.Y.Z`) by digest (release flow: `docs/DEPLOYMENT.md`).
   https://contentgruen.de redirects here.
 
 Both run on verdigado's internal infrastructure; operational details are documented internally.

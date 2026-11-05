@@ -296,6 +296,18 @@ class TestBffFangkorb:
             }
         ]
 
+    def test_fehlende_art9_einwilligung_nennt_den_weg(self, skript, monkeypatch):
+        """Ohne Einwilligung antwortet das Einwerfen mit 403 (#489)."""
+        fangkorb = skript.BffFangkorb("http://localhost:5054")
+
+        def gesperrt(pfad, daten):
+            raise skript.ApiFehler(403, "art9_einwilligung_fehlt")
+
+        monkeypatch.setattr(fangkorb, "_post", gesperrt)
+
+        with pytest.raises(skript.ApiFehler, match="/einwilligung"):
+            fangkorb.einwerfen("https://example.org/a", None)
+
     def test_login_404_nennt_die_ursache(self, skript, monkeypatch):
         """Ist der Login mit Beta-Zugang aus, antwortet das BFF mit 404."""
         fangkorb = skript.BffFangkorb("http://localhost:5054")

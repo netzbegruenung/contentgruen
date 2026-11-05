@@ -410,6 +410,17 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         duration: 5000,
       });
     }));
+
+    it('fordert ohne Art.-9-Einwilligung nicht zum Anmelden auf; den Hinweis zeigt der Interceptor (#489)', fakeAsync(() => {
+      votingService.setLike.and.returnValue(
+        throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })),
+      );
+
+      component.toggleLike();
+      tick(50);
+
+      expect(snackBar.open).not.toHaveBeenCalled();
+    }));
   });
 
   describe('Kopieren', () => {
@@ -548,6 +559,36 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
       expect(knoepfe.map((k) => k.querySelector('svg')!.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
       expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Gefällt mir', 'Gefällt mir nicht']);
+    });
+  });
+
+  describe('Als Vorlage nehmen (#356)', () => {
+    it('fuehrt angemeldet ins Formular des Typs mit der Vorlage', () => {
+      const navigieren = (TestBed.inject(Router) as jasmine.SpyObj<Router>).navigate;
+
+      expect(component.kannAlsVorlage).toBeTrue();
+      component.alsVorlageNehmen();
+
+      expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary'], {
+        queryParams: { vorlage: INHALT_ID },
+      });
+    });
+
+    it('gibt es an der Hintergrundinfo, nicht an Post und Bild', () => {
+      for (const [typ, erwartet] of [['generictext', true], ['post', false], ['image', false]] as const) {
+        component.typ = typ;
+        expect(component.kannAlsVorlage).withContext(typ).toBe(erwartet);
+      }
+    });
+
+    it('gibt es nicht fuer Besucher und nicht in der Vorschau', () => {
+      const authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      authService.getUserInfo.and.returnValue(null);
+      expect(component.kannAlsVorlage).toBeFalse();
+
+      authService.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' } as any);
+      component.vorschau = true;
+      expect(component.kannAlsVorlage).toBeFalse();
     });
   });
 

@@ -15,6 +15,7 @@ import { LoggingService } from '../services/logging.service';
 import { AddCommentaryRequest, AddCommentaryResponse, Commentary } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
+import { Vorlage, vorlageHinweis } from '../beitragsformular/vorlage';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
@@ -32,6 +33,7 @@ import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.componen
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { KuerzungsvorschlagComponent } from '../beitragsformular/kuerzungsvorschlag/kuerzungsvorschlag.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
+import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
@@ -47,14 +49,15 @@ import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
+import { KOMMENTAR_TEXT_MAX, KURZFASSUNG_MAX, LANGFASSUNG_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
 
-export const TITEL_MAX = 120;
-export const TEXT_MAX = 500;
+export { TITEL_MAX } from '../shared/beitrag-grenzen';
+export const TEXT_MAX = KOMMENTAR_TEXT_MAX;
 /** Zeichengrenze von X und Bluesky; nur ein Hinweis, keine Pruefung. */
-export const PLATTFORM_GRENZE = 280;
+export const PLATTFORM_GRENZE = KURZFASSUNG_MAX;
 /** Die Fassungen Kurz und Lang (#355), wie im Backend (dtos/commentary.py). */
 export const KURZ_MAX = PLATTFORM_GRENZE;
-export const LANG_MAX = 2000;
+export const LANG_MAX = LANGFASSUNG_MAX;
 
 export const DUBLETTE_HINWEIS = 'Es gibt schon einen sehr ähnlichen Kommentar.';
 
@@ -186,6 +189,7 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
     AntwortAufComponent,
     FormularHilfeComponent,
     GegenlesenComponent,
+    SprachhinweisComponent,
     KuerzungsvorschlagComponent,
     FormularLeisteComponent,
     ThemenAuswahlComponent,
@@ -213,6 +217,8 @@ export class AddCommentaryComponent implements OnChanges {
   @Input() aussageHinweis: string | null = null;
   /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft, der Einwurf als Kopf. */
   @Input() vorbefuellung: Vorbefuellung | null = null;
+  /** "Als Vorlage nehmen" (#356): das Original, dessen Text das Formular vorbelegt. */
+  @Input() vorlage: Vorlage | null = null;
   @Output() success = new EventEmitter<BeitragGespeichert>();
   /** Den vorhandenen Kommentar gewaehlt (zugestimmt oder genommen) statt zu speichern: seine ID. */
   @Output() vorhandenGewaehlt = new EventEmitter<string>();
@@ -347,6 +353,31 @@ export class AddCommentaryComponent implements OnChanges {
     }
     if (changes['vorbefuellung'] && this.vorbefuellung) {
       this.vorbefuellungAnwenden(this.vorbefuellung);
+    }
+    if (changes['vorlage'] && this.vorlage) {
+      this.vorlageAnwenden(this.vorlage);
+    }
+  }
+
+  /** Der Hinweis ueber dem Formular, solange eine Vorlage gilt. */
+  get vorlageHinweis(): string | null {
+    return this.vorlage ? vorlageHinweis(this.vorlage) : null;
+  }
+
+  // "Als Vorlage nehmen": der Text des Originals, alles aenderbar. Die Herkunft
+  // nicht - fuer die eigene Fassung gibt die Person ihre an.
+  vorlageAnwenden(vorlage: Vorlage): void {
+    this.commentaryForm.patchValue({
+      title: vorlage.titel,
+      text: vorlage.text,
+      kurz: vorlage.kurz ?? '',
+      lang: vorlage.lang ?? '',
+      ...(vorlage.zweck ? { zweck: vorlage.zweck } : {}),
+      stil: vorlage.stil ?? null,
+    });
+    // Hat das Original Kurz oder Lang, sind sie aufgeklappt, damit man sie sieht.
+    if (vorlage.kurz || vorlage.lang) {
+      this.zeigtFassungen = true;
     }
   }
 
@@ -528,6 +559,7 @@ export class AddCommentaryComponent implements OnChanges {
       references: references || [],
       ...this.aussageFuerAnfrage(),
       ...(trotzDubletteVon ? { trotz_dublette_von: trotzDubletteVon } : {}),
+      ...(this.vorlage ? { beruht_auf: this.vorlage.id } : {}),
     };
 
     this.commentaryService.addCommentary(request).subscribe({
@@ -719,6 +751,8 @@ export class AddCommentaryComponent implements OnChanges {
     this.showReferences = false;
     this.zeigtFassungen = false;
     this.fehler = null;
+    // Wer zuruecksetzt, faengt neu an: kein "Variante von", kein beruht_auf (#356).
+    this.vorlage = null;
     this.vorhandenVergessen();
   }
 

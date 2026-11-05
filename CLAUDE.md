@@ -95,11 +95,12 @@ nur wenig:
 | Python backend conventions, interface locations | `mvp/backend/semantic-search-service/README.md` |
 | Python tests (`TestEmbeddingsManager`, fixtures, integration) | `mvp/backend/semantic-search-service/app/tests/TESTING_GUIDE.md` |
 | E2E tests (Playwright, against the dev stack, not in CI) | `mvp/frontend/gutgesagt-frontend/e2e/README.md` |
-| CI | `docs/CI.md` |
+| CI, and setting up CI or the image registry (account, token, Woodpecker secrets) | `docs/CI.md` |
 | Test/production, releases, migrations, logs, database access | `docs/DEPLOYMENT.md` |
 | Backup and restore (restore is destructive: confirm first) | `mvp/scripts/backup/README.md` |
 | Keycloak realm „Gut gesagt“ (#429) | `docs/KEYCLOAK_REALM.md` |
 | Deletion of personal data | `docs/LOESCHKONZEPT.md` |
+| Art. 9 consent (own checkbox after first login, wording, withdrawal, #489) | `docs/ART9_EINWILLIGUNG.md` |
 | Current state | `STATUS.md` (Lageseite); planning is on the Forgejo milestones |
 | Purpose and limits of the product | `docs/VISION.md` |
 

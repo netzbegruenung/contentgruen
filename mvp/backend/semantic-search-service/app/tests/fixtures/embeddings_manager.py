@@ -27,6 +27,8 @@ class TestEmbeddingsManager(IEmbeddingsManager):
     def __init__(self):
         """Initialize the test embeddings manager with in-memory storage."""
         self._data: Dict[str, Dict[str, Any]] = {}
+        # Je Punkt der Text, aus dem vektor_neu_berechnen den Vektor zuletzt schrieb.
+        self.vektor_texte: Dict[str, str] = {}
         self._embeddings_mock = MagicMock()
         self._embeddings_mock.search = self._search_impl
         self._embeddings_mock.upsert = self._upsert_impl
@@ -456,6 +458,12 @@ class TestEmbeddingsManager(IEmbeddingsManager):
             )
             for suche in suchen
         ]
+
+    async def vektor_neu_berechnen(
+        self, item_id: str, text: str, content_type: str
+    ) -> None:
+        """Merkt sich je Punkt den Text, aus dem der Vektor zuletzt berechnet wurde."""
+        self.vektor_texte[str(item_id)] = text
 
     async def upsert_batch(self, points: List[tuple], content_type: str) -> None:
         """

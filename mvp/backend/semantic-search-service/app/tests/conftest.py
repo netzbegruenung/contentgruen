@@ -83,6 +83,10 @@ def clean_singleton_state():
 
     QdrantEmbeddingsManager._instance = None
     QdrantEmbeddingsManager._lock = threading.Lock()
+    # Das Rate-Limit am Zaehl-Endpunkt zaehlt sonst ueber Tests hinweg mit.
+    import dependencies
+
+    dependencies._nutzung_rate_limiter = None
 
     yield
 
@@ -103,6 +107,17 @@ def frischer_tagesschluessel(monkeypatch):
 
     monkeypatch.setattr(
         besucher_pseudonym, "_TAGESSCHLUESSEL", besucher_pseudonym.Tagesschluessel()
+    )
+    # Ebenso die Schluessel der Pruefwerte (services/entdoppelung.py, #352).
+    import services.entdoppelung as entdoppelung
+
+    monkeypatch.setattr(
+        entdoppelung, "_NUTZUNG_SCHLUESSEL", besucher_pseudonym.Tagesschluessel()
+    )
+    monkeypatch.setattr(
+        entdoppelung,
+        "_PAAR_SCHLUESSEL",
+        entdoppelung.Fensterschluessel(tage=entdoppelung.MUSTER_FENSTER_TAGE),
     )
 
 
@@ -126,6 +141,28 @@ def anzeigenamen_ohne_datenbank(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def art9_einwilligung_ohne_datenbank(monkeypatch):
+    """
+    Die schreibenden Endpunkte pruefen die Art.-9-Einwilligung (#489,
+    ``require_art9_einwilligung``). Ohne diesen Ersatz verbaende sich der erste
+    Aufruf mit dem PostgreSQL aus den Settings (siehe anzeigenamen_ohne_datenbank).
+    Der Ersatz laesst jede Person als eingewilligt durch; Tests ohne Einwilligung
+    setzen ``art9_einwilligung_ohne_datenbank.lesen.return_value = None``.
+    """
+    import services.art9_einwilligung_service as modul
+    from repositories.art9_einwilligung_repository import Art9Einwilligung
+
+    repository = MagicMock()
+    repository.lesen.return_value = Art9Einwilligung(
+        wortlaut="2026-11-05",
+        eingewilligt_am=datetime.datetime(2026, 11, 5, tzinfo=datetime.timezone.utc),
+        widerrufen_am=None,
+    )
+    monkeypatch.setattr(modul, "_service", modul.Art9EinwilligungService(repository))
+    yield repository
+
+
+@pytest.fixture(autouse=True)
 def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
     """
     Jede Suche meldet sich bei der Kennzahl "Suchen ohne Treffer", und ein
@@ -137,6 +174,23 @@ def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
 
     repository = MagicMock()
     repository.haeufigste.return_value = []
+    monkeypatch.setattr(modul, "_repository", repository)
+    yield repository
+
+
+@pytest.fixture(autouse=True)
+def varianten_ohne_datenbank(monkeypatch):
+    """
+    Suche, /content/recent, "Oft genutzt" und das Loeschen fragen die Varianten ab
+    (#356, ``get_varianten_repository``). Ohne diesen Ersatz baute der erste Aufruf
+    das echte Repository und verbaende sich mit dem PostgreSQL aus den Settings
+    (siehe anzeigenamen_ohne_datenbank). Der Ersatz kennt keine Varianten.
+    """
+    import repositories.varianten_repository as modul
+
+    repository = MagicMock()
+    repository.anzahl_je_original.return_value = {}
+    repository.varianten_von.return_value = []
     monkeypatch.setattr(modul, "_repository", repository)
     yield repository
 

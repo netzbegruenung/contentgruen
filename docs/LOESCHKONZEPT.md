@@ -17,8 +17,9 @@
 Alles hängt am Wert des Headers `X-User`. Das BFF setzt ihn ausschließlich aus dem
 Claim `sub`, ersatzweise `NameIdentifier` (`BFF/Program.cs:659`, `ClaimUtilities.GetUserId`,
 aufgerufen in `BFF/Proxy/IdentityHeaderTransform.cs:79`).
-Mit Keycloak ist das die Keycloak-UUID, mit `USE_KEYCLOAK=false` (dev/tst) die
-`userId` aus `managed-users.json` (`user-001`). **Vorher prüfen, welche Form die
+Mit Keycloak ist das die Keycloak-UUID, bei einem Beta-Zugang aus `managed-users.json`
+(Direktanmeldung; nach dem Umzug in den Realm, #488, nur noch in der Entwicklung) dessen
+`userId` (`user-001`). **Vorher prüfen, welche Form die
 Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert nicht.
 
 ## Zwei Wege, einen Beitrag zu löschen
@@ -51,8 +52,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 nichts Neues anlegt. Das BFF prüft bei jeder Anfrage mit Anmelde-Cookie, ob das Konto noch
 besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und löscht es:
 
-- **Beta-Zugang:** Die `userId` notieren (Schritt 1 bis 3 brauchen sie als Kennung), dann
-  den Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter Schritt 4).
+- **Beta-Zugang, solange er in `managed-users.json` steht:** Die `userId` notieren (Schritt
+  1 bis 3 brauchen sie als Kennung), dann den Eintrag aus `mvp/config/managed-users.json`
+  entfernen (Details unter Schritt 4). Nach dem Umzug in den Realm (#488) ist er ein Konto
+  im Realm wie eines aus einer Einladung.
 - **Netzbegrünung-Login und Konto aus einer Einladung:** Die Kennung als eigene Zeile in
   `geloeschte-konten.txt` im Konfigurationsverzeichnis des BFF eintragen
   (`GELOESCHTE_KONTEN_PATH`, Standard `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
@@ -95,8 +98,10 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    `raw_inputs` der Person löschen (CASCADE räumt deren Links und die Sätze daran mit
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
-   `users` (Anzeigename) und die in `gesehene_nutzung` (Stand der Rückmeldung beim
-   Anmelden, nur eine Zahl) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
+   `users` (Anzeigename), die in `gesehene_nutzung` (Stand der Rückmeldung beim
+   Anmelden, nur eine Zahl) und die in `art9_einwilligungen` (jede Art.-9-Einwilligung mit
+   Zeitpunkt und Wortlaut, auch widerrufene; #489) löschen, ebenso jeden Muster-Hinweis
+   (`muster_hinweise`, #352), der die Person nennt. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
    zeigen nach Schritt 3 „ehemalige Person“.
 
@@ -153,6 +158,9 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
 | Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
+| Prüfwerte der entdoppelten Nutzung (`nutzung_heute`) | ihr Tag | verworfen beim ersten Lauf nach Mitternacht (UTC) |
+| Paar-Prüfwerte der Muster-Hinweise (`muster_pruefwerte`) | 7 Tage | letzte Nutzung in dieser Richtung (`tag`) |
+| Muster-Hinweise (`muster_hinweise`) | 56 Tage (8 Wochen) | letzter Tag mit gegenseitiger Nutzung (`letzter_tag`) |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
@@ -198,6 +206,23 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist.
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
+- **Prüfwerte und Muster-Hinweise (#352):** Ein Prüfwert ist ein HMAC über Kennung
+  (bei Besuchern das Besuchermerkmal aus #446), Beitrag und Tag; er entdoppelt nur an seinem Tag und geht danach.
+  Ein Paar-Prüfwert ist ein HMAC über die Kennungen zweier Konten („A hat einen
+  Beitrag von B genutzt“, welcher steht nirgends); er bleibt sieben Tage, damit sich
+  gegenseitige Nutzung über mehrere Tage erkennen lässt. Beide Schlüssel (Tagesschlüssel
+  der Prüfwerte, Fensterschlüssel der Paar-Prüfwerte) liegen nur im Arbeitsspeicher, nicht in
+  der Konfiguration: Mit Datenbank und Konfiguration lässt sich kein Wert nachrechnen, und
+  nach einem Neustart passt keiner mehr. Ein Paar-Prüfwert ist nicht per Kennung
+  löschbar (`person_loeschen.sql` kennt den Schlüssel nicht) und geht nach spätestens
+  sieben Tagen von selbst; ein gelöschtes Konto nutzt nichts mehr, ein Hinweis kann
+  aus ihm also nicht mehr entstehen. Ein Muster-Hinweis nennt zwei Kennungen und soll Admins
+  helfen, Punkte gegen Absprachen zu schützen; nach acht Wochen ohne neuen auffälligen
+  Tag ist er dafür nicht mehr nötig (DSFA zu #374). Prüfwerte verwirft ein eigener
+  Task (`services/entdoppelung.py`), Paar-Prüfwerte und Hinweise ein zweiter
+  (`services/muster_hinweise_service.py`), beide unabhängig vom abschaltbaren Bereinigungsjob.
+  Punkte selbst werden nicht gespeichert, sondern bei jedem Abruf berechnet
+  (`services/punkte_service.py`); sie brauchen keine Frist.
 - **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
   hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
   Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
@@ -354,6 +379,12 @@ und der Ablauf oben erfasst die Tabelle nicht.
   `fuers_testset`). Wer es herunterlädt, verwaltet die Kopie selbst; der Text einer
   vorab angelegten Aussage stammt von einer Person und kann, wie jeder Beitrag, Namen
   enthalten.
+- **`varianten`** (#356) trägt je Variante nur ihre ID und die ID des Originals, weder
+  Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen ließe. Wer die Variante
+  gespeichert hat, steht an ihr selbst. Löscht der Autor einen Beitrag oder entfernt ihn ein
+  Admin oder die Löschfrist, gehen seine Zeilen mit, als Variante wie als Original, und zwar
+  vor dem Beitrag (`BeitragLoeschenService.loeschen`, `ModerationService.delete_content`);
+  gesperrte zählen am Original nicht mit. Keine Frist.
 - **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände
   (`mvp/scripts/backup/backup.sh:12,28-29`), gelöschte Daten leben dort bis zu 28 Tage
   weiter. Selektives Editieren von
@@ -510,7 +541,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen;"
 ```
 
 ```bash

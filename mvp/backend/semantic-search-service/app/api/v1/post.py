@@ -6,7 +6,11 @@ import logging
 import uuid
 from uuid import UUID
 
-from dependencies import get_aufrufer, get_post_service
+from dependencies import (
+    get_aufrufer,
+    get_post_service,
+    require_art9_einwilligung,
+)
 from dtos.post import (
     AddPostRequest,
     AddPostResponse,
@@ -88,7 +92,11 @@ async def search_post(
 
 
 # Add a new post to the post index
-@router.post("/addPost", response_model=AddPostResponse)
+@router.post(
+    "/addPost",
+    response_model=AddPostResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def add_post(
     request: AddPostRequest,
     post_service: BaseContentService = Depends(get_post_service),

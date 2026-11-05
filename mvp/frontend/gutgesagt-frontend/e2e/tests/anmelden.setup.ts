@@ -13,5 +13,13 @@ setup('anmelden', async ({ page }) => {
   });
   expect(antwort.status()).toBe(200);
   expect((await page.request.get('/api/check-session')).status()).toBe(200);
+  // Ohne Art.-9-Einwilligung fuehrt die App auf /einwilligung und sperrt Beitragen und
+  // Bewerten (#489). Das Testkonto willigt einmal in den aktuellen Wortlaut ein.
+  const stand = await page.request.get('/api/v1/art9-einwilligung');
+  expect(stand.status()).toBe(200);
+  const { aktueller_wortlaut } = await stand.json();
+  expect(
+    (await page.request.post('/api/v1/art9-einwilligung', { data: { wortlaut: aktueller_wortlaut.kennung } })).status(),
+  ).toBe(204);
   await page.context().storageState({ path: SITZUNG });
 });

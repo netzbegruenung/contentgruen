@@ -168,7 +168,65 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Verwendung von Beiträgen');
 
       expect(text).toContain('bei einem Kommentar auch welche Fassung (kurz, mittel oder lang)');
-      expect(text).toContain('Zähler pro Beitrag, bei Kommentaren auch je Fassung');
+      expect(text).toContain('Zähler pro Beitrag (alle Kopien und die ersten Kopien je Person und Tag), bei Kommentaren auch je Fassung');
+    });
+  });
+
+  describe('Entdoppelte Nutzung, Punkte und Muster-Hinweise (#476, #499)', () => {
+    it('Verwendung: Vermerk der ersten Kopie je Person und Tag, ablesbar „dieselbe Person“, nicht wer', () => {
+      const text = abschnitt('Verwendung von Beiträgen');
+
+      expect(text).toContain('ob es an diesem Tag die erste Kopie dieses Beitrags durch dieselbe Person war');
+      expect(text).toContain('dass mehrere Vorgänge an einem Beitrag am selben Tag von derselben Person');
+      expect(text).toContain('aber nicht, von wem');
+      expect(text).not.toContain('noch ob mehrere Vorgänge vom selben Gerät kamen');
+      expect(text).not.toContain('und ein Pseudonym werden dabei nicht gespeichert');
+    });
+
+    it('Verwendung: Prüfwert bis Tagesende mit einem täglichen Schlüssel nur im Arbeitsspeicher', () => {
+      const text = abschnitt('Verwendung von Beiträgen');
+
+      expect(text).toContain('bis zum Ende des Tages einen Prüfwert');
+      expect(text).toContain('jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends speichert');
+      expect(text).toContain('Prüfwerte bleiben nur bis zum Ende ihres Tages');
+    });
+
+    it('Verwendung: Kopien durch Startkonten zählen nicht', () => {
+      expect(abschnitt('Verwendung von Beiträgen')).toContain('(Startkonten), zählen wir gar nicht');
+    });
+
+    it('Punkte: noch aus, nur für dich sichtbar, nicht gespeichert', () => {
+      const text = abschnitt('Punkte');
+
+      expect(text).toContain('Punkte sind noch nicht eingeschaltet');
+      expect(text).toContain('siehst nur du');
+      expect(text).toContain('Wir speichern ihn nicht, sondern berechnen ihn bei jedem Abruf');
+    });
+
+    it('Punkte: Paar-Prüfwert sieben Tage, Muster-Hinweis acht Wochen, nur für Admins, Einwilligung als Rechtsgrundlage', () => {
+      const text = abschnitt('Punkte');
+
+      expect(text).toContain('für sieben Tage einen Paar-Prüfwert');
+      expect(text).toContain('ohne den Beitrag und ohne das Datum');
+      expect(text).toContain('Muster-Hinweis');
+      expect(text).toContain('nur unsere Administratorinnen und Administratoren');
+      expect(text).toContain('Muster-Hinweise acht Wochen nach dem letzten auffälligen Tag');
+      expect(text).toContain('Artikel 6 Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO');
+    });
+
+    it('Rückmeldung: Muster-Hinweise als einzige Ausnahme von „wer genutzt hat, zeigen wir nicht“', () => {
+      const text = abschnitt('Rückmeldung zur Nutzung deiner Beiträge');
+
+      expect(text).toContain('Wer deine Beiträge genutzt hat, wissen wir nicht und zeigen wir nicht');
+      expect(text).toContain('Einzige Ausnahme, sobald Punkte eingeschaltet sind');
+      expect(text).toContain('ohne die genutzten Beiträge (siehe „Punkte“)');
+    });
+
+    it('Profiling: nur mit eingeschalteten Punkten, ohne Folgen', () => {
+      const text = abschnitt('Keine automatisierte Entscheidungsfindung');
+
+      expect(text).toContain('solange Punkte ausgeschaltet sind');
+      expect(text).toContain('hat keine Folgen für dich');
     });
   });
 
@@ -181,6 +239,66 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('wir speichern weder deinen Entwurf noch die Anmerkungen');
       expect(text).toContain('höchstens etwa elf Minuten');
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe b DSGVO');
+    });
+
+    it('nennt den Kürzungsvorschlag: ohne KI, nicht gespeichert, erst beim Übernehmen in der Kurzfassung (#403, #550)', () => {
+      const text = abschnitt('Gegenlesen beim Schreiben');
+
+      expect(text).toContain('Kürzungsvorschlag');
+      expect(text).toContain('der Vorschlag entsteht ohne KI, wird nicht gespeichert');
+      expect(text).toContain('erst in der Kurzfassung, wenn du ihn übernimmst');
+      expect(text).toContain('oder einen Kürzungsvorschlag anfragt');
+    });
+
+    it('nennt die Spracherkennung für Beiträge und neue Aussagen, auch beim Vorab-Anlegen (#405, #550)', () => {
+      const text = abschnitt('Gegenlesen beim Schreiben');
+
+      expect(text).toContain('lokale Spracherkennung');
+      expect(text).toContain('zeigt dir dann einen Sprachhinweis');
+      expect(text).toContain('neue Aussage');
+      expect(text).toContain('„Aussage vorab anlegen“');
+      expect(text).toContain('Titel und Text des Beitrags (beim Bild die Unterschrift)');
+      expect(text).toContain('auch davon speichern wir nichts');
+      expect(text).toContain('wie oft dein Konto gegenlesen lässt, die Spracherkennung fragt');
+    });
+  });
+
+  describe('Ändern eigener Beiträge (#299, #550)', () => {
+    it('beschreibt den Änderungsverlauf mit Kennung und Zeitpunkt, ohne den alten Wortlaut', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('Kommentar oder deine Hintergrundinfo kannst du unter „Meine Beiträge“ ändern');
+      expect(text).toContain('Änderungsverlauf');
+      expect(text).toContain('deine Kennung und den Zeitpunkt');
+      expect(text).toContain('Den alten Wortlaut bewahren wir nicht auf');
+      expect(text).not.toContain('Eine Bearbeitungsgeschichte führen wir nicht');
+      expect(text).not.toContain('lassen sich derzeit gar nicht ändern');
+      expect(text).not.toContain('Solange ein Beitrag nicht geändert werden kann');
+    });
+
+    it('nimmt die Kennung im Änderungsverlauf in die Anonymisierung bei Kontolöschung auf', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('an allen genannten Stellen, auch im Änderungsverlauf, durch einen Platzhalter');
+    });
+
+    it('stützt den Änderungsverlauf auch in der Zusammenfassung auf lit. f', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('für die Herkunftsangabe am Beitrag und den Änderungsverlauf');
+    });
+
+    it('sagt, dass eine entfernte Herkunft als Herkunft gespeichert bleibt', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('Eine Herkunft, die du dabei entfernst, verschwindet vom Beitrag, bleibt aber als Herkunft gespeichert');
+    });
+
+    it('nennt beim CC0-Wortlaut, dass Ändern die Kennung ersetzt', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('tritt die Kennung des Wortlauts, den dir das Formular zum Ändern gezeigt hat, an die Stelle der bisherigen');
+      expect(text).toContain('Was du vor dem 29.10.2026 eingestellt und seither nicht geändert hast');
     });
   });
 
@@ -326,10 +444,10 @@ describe('DatenschutzComponent', () => {
       expect(text).not.toContain('neue Sitzungskennung');
     });
 
-    it('Verwendung von Beiträgen: kein Pseudonym und kein Gerätebezug mehr', () => {
+    it('Verwendung von Beiträgen: kein Pseudonym und kein Kontobezug', () => {
       const text = abschnitt('Verwendung von Beiträgen');
 
-      expect(text).toContain('noch ob mehrere Vorgänge vom selben Gerät kamen');
+      expect(text).toContain('nicht ablesen, welches Konto einen Beitrag verwendet hat');
       expect(text).not.toContain('höchstens 30 Tage');
     });
 
@@ -417,13 +535,30 @@ describe('DatenschutzComponent', () => {
   });
 
   describe('Rückschlüsse auf die politische Haltung (Art. 9, Entscheidung 29.10.2026)', () => {
-    it('nennt Art. 9, ohne bis #429 eine Rechtsgrundlage zu behaupten', () => {
+    it('nennt Art. 9 und keine Auswertung nach politischer Haltung', () => {
       const text = abschnitt('Rückschlüsse auf deine politische Haltung');
 
       expect(text).toContain('Artikel 9 DSGVO');
       expect(text).toContain('Wir werten deine Mitwirkung nicht danach aus, welche politische Haltung du hast');
-      expect(text).not.toContain('Rechtsgrundlage');
-      expect(text).not.toContain('Einwilligung');
+    });
+
+    it('Art.-9-Einwilligung: Rechtsgrundlage lit. a, Zeitpunkt und Kennung des Wortlauts (#557)', () => {
+      const text = abschnitt('Rückschlüsse auf deine politische Haltung');
+
+      expect(text).toContain('Artikel 9 Absatz 2 Buchstabe a DSGVO');
+      expect(text).toContain('eigenes Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt');
+      expect(text).toContain('den Zeitpunkt und die Kennung des Wortlauts');
+      expect(text).toContain('Ohne Einwilligung kannst du suchen und lesen, aber nichts beitragen und nichts bewerten');
+    });
+
+    it('Art.-9-Einwilligung: Widerruf im Profilmenü, Folgen und Dauer bis zur Kontolöschung (#557)', () => {
+      const text = abschnitt('Rückschlüsse auf deine politische Haltung');
+
+      expect(text).toContain('Widerrufen kannst du jederzeit im Profilmenü unter „Einwilligung“');
+      expect(text).toContain('Was du schon gespeichert hast, bleibt, bis du es löschst oder dein Konto löschen lässt');
+      expect(text).toContain('was bis zum Widerruf geschehen ist, bleibt rechtmäßig');
+      expect(text).toContain('Deine Einwilligungen, auch widerrufene, bleiben bis zur Löschung deines Kontos');
+      expect(abschnitt('Deine Rechte')).toContain('deine Einwilligungen samt Widerrufen und die Muster-Hinweise, die dein Konto nennen');
     });
   });
 

@@ -2,23 +2,33 @@
 API endpoints for usage tracking functionality.
 """
 
+import asyncio
 import logging
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dependencies import (
     get_beitrag_laden,
     get_content_repository,
     get_aufrufer,
+    get_muster_hinweise_service,
+    get_nutzung_rate_limiter,
+    get_punkte_service,
     get_settings,
     get_current_user_optional,
     get_reference_service,
     require_user,
 )
+from utils.besucher_pseudonym import besucher_merkmal
+from utils.client_identity import derive_client_key
 from utils.device_category import derive_device_category
+from utils.rate_limiter import RateLimiter
+from services.entdoppelung import pruefwert
+from utils.aufrufer import ANONYM
+from services.punkte_service import PunkteService
 from services.usage_tracking_service import get_usage_service
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
@@ -31,6 +41,11 @@ from services.content.reference_service import ReferenceService
 from services.cleanup.bereinigungsjob import get_bereinigungsjob
 from core.config import Settings
 from core.logging import log_pseudonym
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
+from services.varianten import varianten_ergaenzen
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +89,15 @@ class BesuchResponse(BaseModel):
     nutzung_seit_letztem_besuch: int
 
 
+class PunkteResponse(BaseModel):
+    """Der eigene Punktestand je Stufe (ADR 0004, #352)."""
+
+    tun: int
+    quests: int
+    wirkung: int
+    gesamt: int
+
+
 class TrendingContentResponse(BaseModel):
     """Response model for trending content."""
 
@@ -109,9 +133,12 @@ class CleanupResultResponse(BaseModel):
 async def track_content_usage(
     content_id: str,
     body: TrackUsageRequest,
+    request: Request,
     user_agent: Optional[str] = Header(None),
     aufrufer: Optional[str] = Depends(get_current_user_optional),
     laden: BeitragLader = Depends(get_beitrag_laden),
+    settings: Settings = Depends(get_settings),
+    limiter: RateLimiter = Depends(get_nutzung_rate_limiter),
 ):
     """
     Track that a content item was used (copied).
@@ -132,6 +159,13 @@ async def track_content_usage(
     das Ereignis seit #446 auch nicht mehr fest.
     """
     logger.debug(f"Tracking usage for content {content_id}")
+    # Rate-Limit (#352): angemeldet je Kennung, sonst je Adresse (derive_client_key,
+    # ein prozesslokaler Hash, der nirgends gespeichert wird).
+    angemeldet = aufrufer and aufrufer != ANONYM
+    if await limiter.is_rate_limited(
+        f"user:{aufrufer}" if angemeldet else derive_client_key(request)
+    ):
+        raise HTTPException(status_code=429, detail="Too many copies. Please wait.")
     try:
         # Validate content_id format
         try:
@@ -160,13 +194,26 @@ async def track_content_usage(
         if (
             beitrag is not None
             and aufrufer
-            and aufrufer != "anonymous"
+            and aufrufer != ANONYM
             and beitrag.original_author == aufrufer
         ):
             logger.debug(f"Own content {content_id} copied by its author, not counted")
             return TrackUsageResponse(
                 success=True,
                 message="Own content is not counted",
+                usage_count=service.get_content_usage(content_id),
+            )
+
+        # Ein Startkonto vergibt keine Nutzung (GLOSSARY.md "Startkonto", #352): weder
+        # in Meine Beitraege, der Rueckmeldung beim Anmelden, "Diese Woche oft genutzt"
+        # oder den Punkten. Wie die eigene Kopie kein Fehler.
+        # ANNAHME (#352): auch nicht am Zaehler der Karte, der sonst jede Nutzung
+        # zaehlt; "vergibt keine Nutzung" gilt dort ebenso.
+        if settings.ist_startkonto(aufrufer):
+            logger.debug(f"Content {content_id} copied by a Startkonto, not counted")
+            return TrackUsageResponse(
+                success=True,
+                message="Usage by a Startkonto is not counted",
                 usage_count=service.get_content_usage(content_id),
             )
 
@@ -184,17 +231,49 @@ async def track_content_usage(
             else None
         )
 
+        # Ein Zeitpunkt fuer Pruefwert, seinen Tag und die Muster-Hinweise: Sonst
+        # gehoerten sie kurz vor Mitternacht (UTC) zu verschiedenen Tagen.
+        jetzt = datetime.now(timezone.utc)
+
         # Track usage
         logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
             device_category=device_category,
             fassung=fassung,
+            # Entdoppelung fuer Punkte und "oft genutzt" (#352): angemeldet je Kennung,
+            # sonst je Besuchermerkmal (#446), je Beitrag und UTC-Tag.
+            pruefwert=pruefwert(
+                aufrufer,
+                None if angemeldet else besucher_merkmal(request),
+                content_uuid,
+                jetzt,
+            ),
+            tag=jetzt.date(),
         )
 
         if not success:
             logger.error(f"Failed to track usage for content {content_id}")
             raise HTTPException(status_code=500, detail="Failed to track usage")
+
+        # Fuer die Muster-Hinweise (#352), nur mit Punkten. Ein Fehler hier kostet
+        # die Nutzung nicht, sie ist schon gezaehlt. Kein Depends: Ohne Punkte soll
+        # der Dienst gar nicht erst entstehen.
+        # Erkannt wird gegenseitige Nutzung innerhalb von MUSTER_FENSTER_TAGE (sieben)
+        # Tagen; gemerkt wird dafuer nur ein Paar-Pruefwert mit einem Schluessel im
+        # Speicher (services/entdoppelung.py, DSFA Risiko 2).
+        if settings.punkte_aktiv and beitrag is not None:
+            try:
+                await asyncio.to_thread(
+                    get_muster_hinweise_service().nutzung_melden,
+                    aufrufer,
+                    beitrag.original_author,
+                    jetzt,
+                )
+            except Exception as e:
+                logger.error(
+                    f"Pattern check for content {content_id} failed: {type(e).__name__}"
+                )
 
         # Get updated count
         usage_count = service.get_content_usage(content_id)
@@ -269,6 +348,34 @@ async def eigene_nutzungsstatistik(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@router.get("/users/me/punkte", response_model=PunkteResponse)
+async def eigene_punkte(
+    current_user: str = Depends(require_user),
+    settings: Settings = Depends(get_settings),
+    service: PunkteService = Depends(get_punkte_service),
+):
+    """
+    Die Punkte der angemeldeten Person, je Stufe und gesamt (#352). Nur die Person
+    selbst sieht sie; Ranglisten kommen spaeter mit eigenem Opt-in.
+
+    Ohne ``punkte_aktiv`` 404: Die Funktion gibt es dann nicht. Die Person kommt aus
+    ``X-User``, nicht aus dem Pfad (#284).
+    """
+    if not settings.punkte_aktiv:
+        raise HTTPException(status_code=404, detail="Not found")
+    try:
+        stand = await service.punkte(current_user)
+    except Exception as e:
+        logger.error(
+            f"Punkte fuer {log_pseudonym(current_user)} nicht berechnet: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return PunkteResponse(
+        tun=stand.tun, quests=stand.quests, wirkung=stand.wirkung, gesamt=stand.gesamt
+    )
+
+
 @router.post("/users/me/besuch", response_model=BesuchResponse)
 async def besuch(
     current_user: str = Depends(require_user),
@@ -324,6 +431,7 @@ async def oft_genutzt(
     aufrufer: Aufrufer = Depends(get_aufrufer),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
 ):
     """
     "Diese Woche oft genutzt" auf der Startseite (#364): die sichtbaren Beitraege
@@ -365,6 +473,7 @@ async def oft_genutzt(
             ],
             aufrufer,
         )
+        varianten_ergaenzen(antworten, varianten)
         return OftGenutztResponse(
             results=[
                 {

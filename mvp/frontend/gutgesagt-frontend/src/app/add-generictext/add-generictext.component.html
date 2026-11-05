@@ -6,6 +6,12 @@
 
     <app-formular-hilfe typ="generictext"></app-formular-hilfe>
 
+    <!-- Als Vorlage genommen (#356): wessen Text hier steht -->
+    <p class="vorlage-hinweis" *ngIf="vorlageHinweis as hinweis">
+        <mat-icon aria-hidden="true">content_copy</mat-icon>
+        <span>{{ hinweis }}</span>
+    </p>
+
     <div class="content-wrapper">
         <div class="form-column">
             <form [formGroup]="generictextForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
@@ -65,6 +71,7 @@
                             [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
                 </div>
 
+                <app-sprachhinweis [titel]="generictextForm.value.title" [text]="generictextForm.value.text"></app-sprachhinweis>
                 <p appCc0Hinweis></p>
 
                 <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>

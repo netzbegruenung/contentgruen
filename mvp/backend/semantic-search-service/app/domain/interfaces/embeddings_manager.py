@@ -98,6 +98,16 @@ class IEmbeddingsManager(ABC):
         pass
 
     @abstractmethod
+    async def vektor_neu_berechnen(
+        self, item_id: str, text: str, content_type: str
+    ) -> None:
+        """
+        Nur den Vektor eines Punkts aus ``text`` neu berechnen und schreiben; der
+        Payload bleibt, wie er ist (Autor aendert seinen Beitrag, #299).
+        """
+        pass
+
+    @abstractmethod
     async def get_by_id(self, item_id: str) -> Optional[Dict[str, Any]]:
         """
         Get an item by its ID.

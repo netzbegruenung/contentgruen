@@ -5,6 +5,7 @@ import logging
 from uuid import UUID
 
 from dependencies import (
+    require_art9_einwilligung,
     get_aussage_themen_service,
     get_aufrufer,
     get_generic_text_service,
@@ -17,6 +18,11 @@ from dtos.generic_text import (
 )
 from dtos.beitrag import VorhandenDto
 from services.dublette import Dublette, VorhandenWeg, entscheidung_anwenden
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
+from services.varianten import beruht_auf_festhalten
 from services.content.generic_text_service import (
     GenericTextService,
     zu_pruefender_text,
@@ -122,13 +128,18 @@ async def get_by_id(
 
 
 # Adds a new generic text to the generic_text_index
-@router.post("/addGenericText", response_model=AddGenericTextResponse)
+@router.post(
+    "/addGenericText",
+    response_model=AddGenericTextResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def add_generic_text(
     request: AddGenericTextRequest,
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
     reference_service: ReferenceService = Depends(get_reference_service),
     statement_service: StatementService = Depends(get_statement_service),
     themen_service: AussageThemenService = Depends(get_aussage_themen_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
     x_user: str = Header(...),
 ) -> AddGenericTextResponse:
     try:
@@ -184,6 +195,15 @@ async def add_generic_text(
                 f"Generic text is a duplicate of {generic_text_id} "
                 f"({'same author' if dublette.eigen else 'other author'}, "
                 f"{'taken' if dublette.genommen else 'not linked'})"
+            )
+
+        # Als Vorlage genommen (#356): Nur ein neu angelegter Beitrag beruht auf dem
+        # Original. Bei einer Dublette ist nichts entstanden, was darauf beruhen
+        # koennte - die Person entscheidet erst; speichert sie trotzdem, kommt
+        # beruht_auf mit derselben Anfrage wieder.
+        if request.beruht_auf is not None and dublette is None:
+            await beruht_auf_festhalten(
+                varianten, generic_text_id, request.beruht_auf, generic_text_service.get
             )
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,

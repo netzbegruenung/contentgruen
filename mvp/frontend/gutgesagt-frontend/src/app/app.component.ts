@@ -15,6 +15,7 @@ import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { RueckmeldungService } from './services/rueckmeldung.service';
+import { Art9EinwilligungService, EINWILLIGUNG_PFAD } from './services/art9-einwilligung.service';
 import { ProfilbildService } from './services/profilbild.service';
 import { rueckkehrzielLesen, rueckkehrzielLoeschen } from './login/rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
@@ -100,6 +101,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private breakpointObserver: BreakpointObserver,
     private routeConfigService: RouteConfigService,
     private rueckmeldung: RueckmeldungService,
+    private art9Einwilligung: Art9EinwilligungService,
     private profilbild: ProfilbildService) {
     this.logger.debug('AppComponent created');
   }
@@ -147,6 +149,9 @@ export class AppComponent implements OnInit, OnDestroy {
 
     // Rueckmeldung beim Anmelden, wie oft die eigenen Beitraege genutzt wurden (#349)
     this.rueckmeldung.starten();
+
+    // Nach dem Anmelden ohne Art.-9-Einwilligung auf /einwilligung (#489)
+    this.art9Einwilligung.starten();
 
     // Try to fetch initial user info but don't redirect on failure
     this.authService.fetchUserInfo()
@@ -197,6 +202,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   navigateToContributeView(): void {
     this.navigationService.navigateToContribute();
+  }
+
+  navigateToEinwilligung(): void {
+    this.router.navigate([EINWILLIGUNG_PFAD]);
   }
 
   navigateToMeineBeitraege(): void {
