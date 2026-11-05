@@ -5,16 +5,16 @@
 > derselben Runde wie #296; die Fragen an sie stehen in Abschnitt 6. Bis dahin bleiben die Punkte
 > aus (`SEMANTIC_SEARCH_PUNKTE_AKTIV`, Standard aus).
 
-Stand 05.11.2026; Code `main` @ `cdb7ec64` und PR #476 (offen, `main` eingemergt). `ss/` =
+Stand 05.11.2026; Code `main` @ `cdb7ec64` und #476 (gemergt). `ss/` =
 `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), **(#476)** =
-Stand auf dem Branch von PR #476. Begriffe wie in [`GLOSSARY.md`](../GLOSSARY.md); Prüfwert,
-Paar-Prüfwert und Muster-Hinweis kommen mit PR #476 dorthin, Ausbaustufe steht in
+Stand nach dem Merge von #476. Begriffe wie in [`GLOSSARY.md`](../GLOSSARY.md); Prüfwert,
+Paar-Prüfwert und Muster-Hinweis kommen mit #476 dorthin, Ausbaustufe steht in
 `docs/VISION.md:14-23`, die Krone unter „Siegel“ (`GLOSSARY.md:278-279`).
 
 ## 1. Worum es geht
 
-- **Gebaut (PR #476):** Entdoppelte Nutzung über einen Prüfwert, der nach seinem Tag
+- **Gebaut (#476):** Entdoppelte Nutzung über einen Prüfwert, der nach seinem Tag
   verworfen wird (`ss/services/entdoppelung.py:1-30` (#476)), wirkt ab dem Einspielen auf
   „Diese Woche oft genutzt“. Ausgeschaltet bis zum Ende dieser DSFA: ein Punktestand, den nur die
   Person selbst sieht und der nicht gespeichert, sondern bei jedem Abruf berechnet wird

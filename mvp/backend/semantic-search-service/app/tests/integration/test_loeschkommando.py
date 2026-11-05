@@ -8,6 +8,7 @@ kommen aus ``conftest.py`` (siehe ``postgres.py``).
 """
 
 import asyncio
+from datetime import datetime, timezone
 import uuid
 from datetime import date
 from types import SimpleNamespace
@@ -18,6 +19,7 @@ from sqlalchemy import text
 
 from api.v1.einwurf import _einwuerfe_fuer_aufrufer
 from infrastructure.database.models import (
+    Art9EinwilligungZeile,
     Base,
     ContentReport,
     GeseheneNutzung,
@@ -253,6 +255,13 @@ def spuren(datenbank, einwuerfe):
             {"uid": PERSON, "beitrag": beitrag},
         )
         s.add(GeseheneNutzung(user_id=PERSON, nutzung=3))
+        s.add(
+            Art9EinwilligungZeile(
+                user_id=PERSON,
+                wortlaut="2026-11-05",
+                eingewilligt_am=datetime.now(timezone.utc),
+            )
+        )
         # Muster-Hinweise (#352): einer mit der Person, einer ohne sie.
         for a, b in [(ANDERE, PERSON), (ANDERE, DRITTE)]:
             s.add(

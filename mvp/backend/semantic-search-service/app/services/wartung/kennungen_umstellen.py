@@ -57,6 +57,7 @@ SEITE = 256
 SPALTEN = {
     "users": ("user_id",),
     "gesehene_nutzung": ("user_id",),
+    "art9_einwilligungen": ("user_id",),
     "votes": ("user_id",),
     "raw_inputs": ("submitted_by", "destilled_by"),
     "raw_input_drafts": ("user_id",),

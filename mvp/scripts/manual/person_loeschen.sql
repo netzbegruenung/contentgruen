@@ -53,4 +53,5 @@ DELETE FROM gesehene_nutzung WHERE user_id            = :'uid';
 -- Muster-Hinweise (#352) nennen die Person neben einer anderen; der Hinweis geht
 -- ganz, ohne die Person ist er keiner mehr.
 DELETE FROM muster_hinweise WHERE konto_a = :'uid' OR konto_b = :'uid';
+DELETE FROM art9_einwilligungen WHERE user_id         = :'uid';
 COMMIT;

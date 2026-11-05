@@ -160,6 +160,15 @@ describe('MobileMenuComponent', () => {
     expect(schliessen).toHaveBeenCalled();
   });
 
+  it('bietet Angemeldeten die Art.-9-Einwilligung an (#489)', () => {
+    component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+
+    const eintrag = link('.mobile-menu-einwilligung');
+    expect(eintrag?.getAttribute('href')).toBe('/einwilligung');
+    expect(eintrag?.textContent).toContain('Einwilligung');
+  });
+
   it('zeigt "Profilbild wählen" ohne Anmeldung nicht', () => {
     component.userInfo = null;
     fixture.detectChanges();

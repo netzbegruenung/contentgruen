@@ -234,6 +234,14 @@ export const routes: Routes = [
         data: { parent: '/search' }
     },
     {
+        // Art.-9-Einwilligung (#489): einwilligen nach dem ersten Anmelden, spaeter
+        // Stand ansehen und widerrufen (Profilmenue "Einwilligung").
+        path: 'einwilligung',
+        loadComponent: () => import('./einwilligung/einwilligung.component').then(m => m.EinwilligungComponent),
+        canActivate: [AuthGuard],
+        data: { parent: '/search' }
+    },
+    {
         // Die Kinder erben das Elternziel: goBack sucht vom tiefsten Snapshot
         // aufwaerts, bis es eines findet.
         path: 'admin',

@@ -31,6 +31,7 @@ import { HAND_UMRISS } from '../../shared/marke/hand';
 import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
+import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
 
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
@@ -294,6 +295,10 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private handleVoteError(error: any): void {
+    if (einwilligungFehlt(error)) {
+      // Den Hinweis mit Knopf zur Einwilligung zeigt der Auth-Interceptor (#489).
+      return;
+    }
     if (error.status === 401 || error.status === 403) {
       this.promptLogin();
     } else if (error.status === 429) {

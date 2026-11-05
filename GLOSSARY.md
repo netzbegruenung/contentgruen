@@ -491,6 +491,10 @@ _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
+**Art.-9-Einwilligung**:
+Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist. Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten. Widerrufen geht jederzeit im Profilmenü unter „Einwilligung“; schon Gespeichertes bleibt dann, bis die Person es löscht oder ihr Konto löschen lässt. Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit dem Opt-in für die Sichtbarkeit von Punkten. Ablauf: `docs/ART9_EINWILLIGUNG.md`.
+_Avoid_: Consent, Opt-in, Datenschutz-Häkchen, Zustimmung (die gilt den Nutzungsbedingungen)
+
 **Besucher**:
 Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitragen dürfen.
 _Avoid_: Gast, anonymer Nutzer

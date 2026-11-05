@@ -6,6 +6,7 @@ import uuid
 from pydantic import ValidationError
 
 from dependencies import (
+    require_art9_einwilligung,
     get_aufrufer,
     get_beitrag_aendern_service,
     get_beitrag_laden,
@@ -211,7 +212,11 @@ async def get_recent_content(
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
-@router.put("/{beitrag_id}", status_code=204)
+@router.put(
+    "/{beitrag_id}",
+    status_code=204,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def beitrag_aendern(
     beitrag_id: uuid.UUID,
     request: BeitragAendernRequest,

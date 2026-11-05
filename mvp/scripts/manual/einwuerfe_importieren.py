@@ -184,6 +184,10 @@ STUFEN = {
 }
 
 
+# Antworttext des Suchdienstes ohne Art.-9-Einwilligung (#489, dependencies.py).
+ART9_EINWILLIGUNG_FEHLT = "art9_einwilligung_fehlt"
+
+
 class ApiFehler(RuntimeError):
     """Das BFF hat eine Anfrage abgelehnt oder ist nicht erreichbar."""
 
@@ -328,7 +332,18 @@ class BffFangkorb:
         if hinweis:
             daten["content"] = hinweis
         pfad = "/api/v1/rawinput/addRawInput"
-        return self._feld(self._post(pfad, daten), "id", pfad)
+        try:
+            antwort = self._post(pfad, daten)
+        except ApiFehler as fehler:
+            if fehler.status == 403 and ART9_EINWILLIGUNG_FEHLT in str(fehler):
+                raise ApiFehler(
+                    403,
+                    "Das Konto hat noch nicht in die Art.-9-Einwilligung eingewilligt: "
+                    "einmal in der App anmelden und unter /einwilligung einwilligen "
+                    "(docs/ART9_EINWILLIGUNG.md)",
+                ) from None
+            raise
+        return self._feld(antwort, "id", pfad)
 
 
 def _fehlertext(fehler: "urllib.error.HTTPError") -> str:

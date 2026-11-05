@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Depends
 
 from dependencies import (
+    require_art9_einwilligung,
     get_aussage_themen_service,
     get_aufrufer,
     get_commentary_service,
@@ -78,7 +79,11 @@ async def get_by_id(
 
 
 # Adds a new commentary to the commentary_index and for each reference in the request, adds a new reference to the reference_index
-@router.post("/addCommentary", response_model=AddCommentaryResponse)
+@router.post(
+    "/addCommentary",
+    response_model=AddCommentaryResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def add_commentary(
     request: AddCommentaryRequest,
     commentary_service: CommentaryService = Depends(get_commentary_service),

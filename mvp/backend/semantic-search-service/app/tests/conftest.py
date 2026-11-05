@@ -141,6 +141,28 @@ def anzeigenamen_ohne_datenbank(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def art9_einwilligung_ohne_datenbank(monkeypatch):
+    """
+    Die schreibenden Endpunkte pruefen die Art.-9-Einwilligung (#489,
+    ``require_art9_einwilligung``). Ohne diesen Ersatz verbaende sich der erste
+    Aufruf mit dem PostgreSQL aus den Settings (siehe anzeigenamen_ohne_datenbank).
+    Der Ersatz laesst jede Person als eingewilligt durch; Tests ohne Einwilligung
+    setzen ``art9_einwilligung_ohne_datenbank.lesen.return_value = None``.
+    """
+    import services.art9_einwilligung_service as modul
+    from repositories.art9_einwilligung_repository import Art9Einwilligung
+
+    repository = MagicMock()
+    repository.lesen.return_value = Art9Einwilligung(
+        wortlaut="2026-11-05",
+        eingewilligt_am=datetime.datetime(2026, 11, 5, tzinfo=datetime.timezone.utc),
+        widerrufen_am=None,
+    )
+    monkeypatch.setattr(modul, "_service", modul.Art9EinwilligungService(repository))
+    yield repository
+
+
+@pytest.fixture(autouse=True)
 def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
     """
     Jede Suche meldet sich bei der Kennzahl "Suchen ohne Treffer", und ein

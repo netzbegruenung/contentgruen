@@ -46,6 +46,7 @@ COLLECTION = "beitraege"
 JE_SPALTE_EINE = {
     "users.user_id": 1,
     "gesehene_nutzung.user_id": 1,
+    "art9_einwilligungen.user_id": 1,
     "votes.user_id": 1,
     "raw_inputs.submitted_by": 1,
     "raw_inputs.destilled_by": 1,

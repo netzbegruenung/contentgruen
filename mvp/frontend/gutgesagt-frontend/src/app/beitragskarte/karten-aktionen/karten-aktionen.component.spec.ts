@@ -410,6 +410,17 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         duration: 5000,
       });
     }));
+
+    it('fordert ohne Art.-9-Einwilligung nicht zum Anmelden auf; den Hinweis zeigt der Interceptor (#489)', fakeAsync(() => {
+      votingService.setLike.and.returnValue(
+        throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })),
+      );
+
+      component.toggleLike();
+      tick(50);
+
+      expect(snackBar.open).not.toHaveBeenCalled();
+    }));
   });
 
   describe('Kopieren', () => {

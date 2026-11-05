@@ -100,6 +100,7 @@ nur wenig:
 | Backup and restore (restore is destructive: confirm first) | `mvp/scripts/backup/README.md` |
 | Keycloak realm „Gut gesagt“ (#429) | `docs/KEYCLOAK_REALM.md` |
 | Deletion of personal data | `docs/LOESCHKONZEPT.md` |
+| Art. 9 consent (own checkbox after first login, wording, withdrawal, #489) | `docs/ART9_EINWILLIGUNG.md` |
 | Current state | `STATUS.md` (Lageseite); planning is on the Forgejo milestones |
 | Purpose and limits of the product | `docs/VISION.md` |
 

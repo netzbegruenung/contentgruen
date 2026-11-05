@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import ValidationError
 
 from dependencies import (
+    require_art9_einwilligung,
     get_aufrufer,
     get_aussage_themen_service,
     get_statement_service,
@@ -201,7 +202,11 @@ async def unbeantwortet(
 # keine hat (themen_beim_anlegen). Die Antwort nennt die Themen, die die Aussage
 # jetzt hat. Schlaegt das Zuordnen fehl, bleibt die Aussage angelegt und die Antwort
 # ohne Themen: Die Aussage gibt es dann, und die Seite sagt das.
-@router.post("/vorab", response_model=AussageVorabResponse)
+@router.post(
+    "/vorab",
+    response_model=AussageVorabResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def vorab_anlegen(
     request: AussageVorabRequest,
     user_id: str = Depends(require_user),
@@ -356,7 +361,11 @@ async def search_statements(
 
 
 # Adds a new statement to the statement_index
-@router.post("/addStatement", response_model=AddStatementResponse)
+@router.post(
+    "/addStatement",
+    response_model=AddStatementResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def add_statement(
     request: AddStatementRequest,
     statement_service: StatementService = Depends(get_statement_service),

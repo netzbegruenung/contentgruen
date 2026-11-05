@@ -15,9 +15,11 @@ import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.concurrency import run_in_threadpool
 from pydantic import ValidationError
 
 from dependencies import (
+    require_art9_einwilligung,
     get_aufrufer,
     get_commentary_service,
     get_generic_text_service,
@@ -159,7 +161,12 @@ async def _seite(
     )
 
 
-@router.post("/addRawInput", response_model=EinwerfenResponse, status_code=201)
+@router.post(
+    "/addRawInput",
+    response_model=EinwerfenResponse,
+    status_code=201,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def einwerfen(
     request: EinwerfenRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
@@ -310,7 +317,11 @@ async def einwurf_laden(
     return (await _einwuerfe_fuer_aufrufer([row], aufrufer, suchindex))[0]
 
 
-@router.put("/{einwurf_id}/draft", response_model=SatzResponse)
+@router.put(
+    "/{einwurf_id}/draft",
+    response_model=SatzResponse,
+    dependencies=[Depends(require_art9_einwilligung)],
+)
 async def satz_speichern(
     einwurf_id: uuid.UUID,
     request: SatzSpeichernRequest,
@@ -398,6 +409,11 @@ async def update_status(
     Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.
     """
     person = _angemeldete_person(aufrufer.kennung)
+    # Ausformulieren verknuepft den Einwurf mit einem Beitrag und braucht die
+    # Art.-9-Einwilligung (#489). Verwerfen nimmt nur etwas zurueck, wie Loeschen,
+    # und bleibt ohne sie offen: auch nach einem Widerruf und fuer Admins.
+    if request.status != EinwurfStatus.DISCARDED:
+        await run_in_threadpool(require_art9_einwilligung, aufrufer.kennung)
     try:
         if request.status == EinwurfStatus.PROCESSED:
             # Erst der Einwurf, dann der Beitrag: Ein unbekannter Einwurf bleibt
