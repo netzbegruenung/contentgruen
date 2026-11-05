@@ -52,3 +52,17 @@ def test_eigene_punkte_nur_angemeldet(dienst):
 
     assert client.get(URL).status_code == 401
     assert client.get(URL, headers={"X-User": "anonymous"}).status_code == 401
+
+
+def test_eigene_punkte_einwilligung_nicht_lesbar_500(art9_einwilligung_ohne_datenbank):
+    """Ist die Art.-9-Einwilligung nicht lesbar (#559), gibt es keine Punkte, sondern 500."""
+    from services.punkte_service import PunkteService
+
+    art9_einwilligung_ohne_datenbank.lesen.side_effect = RuntimeError("weg")
+    quellen = Mock()
+    dienst = PunkteService(AsyncMock(return_value=[]), quellen, quellen, Settings())
+
+    antwort = _client(dienst, aktiv=True).get(URL, headers={"X-User": "kim-1"})
+
+    assert antwort.status_code == 500
+    quellen.get_nutzung_entdoppelt_batch.assert_not_called()

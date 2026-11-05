@@ -50,7 +50,9 @@ class _Quellen:
         return self.einwuerfe
 
 
-def _service(quellen: _Quellen, **einstellungen) -> PunkteService:
+def _service(
+    quellen: _Quellen, eingewilligt=lambda user_id: True, **einstellungen
+) -> PunkteService:
     settings = Settings(
         startkonten=START,
         punkte_nutzung=10,
@@ -61,7 +63,12 @@ def _service(quellen: _Quellen, **einstellungen) -> PunkteService:
         **einstellungen,
     )
     return PunkteService(
-        quellen.sichtbare_beitraege, quellen, quellen, settings, jetzt=lambda: JETZT
+        quellen.sichtbare_beitraege,
+        quellen,
+        quellen,
+        settings,
+        jetzt=lambda: JETZT,
+        eingewilligt=eingewilligt,
     )
 
 
@@ -112,6 +119,33 @@ async def test_punkte_startkonto_sammelt_keine():
     assert stand.gesamt == 0
 
 
+async def test_punkte_ohne_art9_einwilligung_keine():
+    """Nie erteilt oder widerrufen (#559, F559-1): keine Punkte, auch keine Wirkung."""
+    beitrag = _beitrag(10)
+    quellen = _Quellen([beitrag], nutzung={beitrag.id: 5}, zustimmungen=5)
+
+    stand = await _service(quellen, eingewilligt=lambda user_id: False).punkte(KIM)
+
+    assert stand.gesamt == 0
+
+
+async def test_punkte_widerruf_wirkt_beim_naechsten_abruf():
+    """Die Einwilligung wird je Abruf gefragt, nicht gemerkt."""
+    beitrag = _beitrag(10)
+    quellen = _Quellen([beitrag], nutzung={beitrag.id: 1})
+    stand_der_einwilligung = {KIM: True}
+    service = _service(
+        quellen, eingewilligt=lambda user_id: stand_der_einwilligung[user_id]
+    )
+
+    vorher = await service.punkte(KIM)
+    stand_der_einwilligung[KIM] = False
+    nachher = await service.punkte(KIM)
+
+    assert vorher.gesamt > 0
+    assert nachher.gesamt == 0
+
+
 async def test_punkte_ohne_beitraege_keine_wirkung():
     """Gesperrte und entfernte Beitraege liefert die Quelle nicht: keine Punkte."""
     stand = await _service(_Quellen([])).punkte(KIM)
@@ -145,4 +179,27 @@ async def test_get_punkte_service_liest_nur_sichtbare_beitraege_der_person():
     inhalte.return_value.get_by_author.assert_awaited_once_with(
         KIM, limit=10000, offset=0, content_types=BEITRAGSTYPEN_WERTE
     )
+    assert stand.gesamt == 0
+
+
+async def test_get_punkte_service_fragt_die_art9_einwilligung(
+    art9_einwilligung_ohne_datenbank,
+):
+    """Die Verdrahtung prueft die gespeicherte Einwilligung (#559, F559-1)."""
+    from dependencies import get_punkte_service
+
+    art9_einwilligung_ohne_datenbank.lesen.return_value = None
+    with patch(
+        "repositories.aggregated.content_repository.ContentRepository"
+    ) as inhalte, patch(
+        "repositories.usage_tracking_repository.get_usage_repository"
+    ), patch(
+        "repositories.punkte_repository.get_punkte_repository"
+    ):
+        inhalte.return_value.get_by_author = AsyncMock(return_value=[_beitrag(10)])
+
+        stand = await get_punkte_service(Settings()).punkte(KIM)
+
+    art9_einwilligung_ohne_datenbank.lesen.assert_called_once_with(KIM)
+    inhalte.return_value.get_by_author.assert_not_awaited()
     assert stand.gesamt == 0
