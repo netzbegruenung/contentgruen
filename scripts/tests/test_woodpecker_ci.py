@@ -199,6 +199,20 @@ def test_nachtlauf_misst_messset_und_suchtestset_mit_dem_modell_aus_dem_image():
     assert "python -m tests.regression.nachtlauf" in befehle
 
 
+def test_semantic_search_image_laeuft_offline_nach_dem_vorladen():
+    # #578: Die Produktion nutzt nur die eingebauten Modelle, ohne Anfragen an den Hub.
+    # Die ENV-Zeile steht nach dem letzten Vorlade-Schritt, sonst laedt der Build nichts.
+    zeilen = (
+        (WURZEL / "mvp/backend/semantic-search-service/Dockerfile")
+        .read_text()
+        .splitlines()
+    )
+    offline = [i for i, z in enumerate(zeilen) if z.strip() == "ENV HF_HUB_OFFLINE=1"]
+    vorladen = [i for i, z in enumerate(zeilen) if "from_pretrained" in z or "SentenceTransformer(" in z]
+    assert len(offline) == 1 and vorladen
+    assert offline[0] > max(vorladen)
+
+
 def test_nachtlauf_suchtest_laeuft_auch_nach_rotem_messset():
     suchtest = NACHT_SCHRITTE["suchtest"]
     assert suchtest["depends_on"] == ["messset"]
