@@ -14,3 +14,8 @@ mvp/frontend/gutgesagt-frontend/public/avatars/ are emojis from Fluent Emoji
 used under the MIT License, modified. The license text is in
 mvp/frontend/gutgesagt-frontend/public/marke/FLUENT-EMOJI-LIZENZ.txt and
 mvp/frontend/gutgesagt-frontend/public/avatars/FLUENT-EMOJI-LIZENZ.txt.
+
+The stemmer in mvp/backend/semantic-search-service/app/utils/german_stemmer.py follows
+the CISTEM reference implementation (https://github.com/LeonieWeissweiler/CISTEM),
+Copyright (c) 2017 Leonie Weißweiler, used under the MIT License, modified. The license
+text is in mvp/backend/semantic-search-service/app/utils/CISTEM-LIZENZ.txt.

@@ -3,8 +3,8 @@ Schlagwoerter fuer die Schlagwort-Ueberlappung der Suche (keyword_overlap_servic
 
 Der Stemmer ist CISTEM (Weissweiler & Fraser 2017, "Developing a Stemmer for German
 Based on a Comparative Analysis of Publicly Available Stemmers"), umgesetzt nach der
-Referenzimplementierung (https://github.com/LeonieWeissweiler/CISTEM, MIT-Lizenz),
-ohne Abhaengigkeit. Gewaehlt am Suchtestset (#392, tests/regression/SUCHTESTSET.md):
+Referenzimplementierung (https://github.com/LeonieWeissweiler/CISTEM, MIT-Lizenz,
+Text in CISTEM-LIZENZ.txt), ohne Abhaengigkeit. Gewaehlt am Suchtestset (#392, tests/regression/SUCHTESTSET.md):
 CISTEM, Snowball German und die spaCy-Lemmata aus dem Gegenlesen messen gleich; nur
 Kleinschreibung und Umlaute (ohne Stemmer) verliert einen Fall. CISTEM ist der kleinste
 der drei und kostet keine Rechenzeit fuer ein Sprachmodell.
@@ -22,6 +22,7 @@ _EM_ER = re.compile(r"e[mr]$")
 _ND = re.compile(r"nd$")
 _T = re.compile(r"t$")
 _E_S_N = re.compile(r"[esn]$")
+_PLATZHALTER_RAUS = re.compile(r"[$%&*]")
 
 
 def stem_german(word: str) -> str:
@@ -30,8 +31,8 @@ def stem_german(word: str) -> str:
 
     Kleinschreibung, Umlaute werden zu a/o/u, ss statt ß, ein ge- am Anfang faellt weg
     (wenn mindestens vier Zeichen bleiben). Dann werden vom Ende -em/-er/-nd (bei mehr
-    als fuenf Zeichen), -t und -e/-s/-n abgeschnitten, solange mehr als drei Zeichen
-    bleiben. sch, ei, ie und Doppelbuchstaben bleiben dabei ganz.
+    als fuenf Zeichen), -t und -e/-s/-n abgeschnitten, solange das Wort laenger als
+    drei Zeichen ist (ein Stamm kann also drei Zeichen haben: gruen -> gru). sch, ei, ie und Doppelbuchstaben bleiben dabei ganz.
 
     Variante ohne Gross-/Kleinschreibung (case_insensitive der Referenz): Die
     Grundvariante schneidet -t nur bei kleingeschriebenen Woertern ab. Suchanfragen
@@ -46,6 +47,8 @@ def stem_german(word: str) -> str:
     word = word.replace("ä", "a").replace("ö", "o").replace("ü", "u")
     word = word.replace("ß", "ss")
 
+    # Zeichen, die als Platzhalter dienen, kommen in Woertern nicht vor.
+    word = _PLATZHALTER_RAUS.sub("", word)
     word = _GE_PRAEFIX.sub(r"\1", word)
     # Platzhalter, damit die Regeln unten diese Buchstabenfolgen nicht zerlegen.
     word = word.replace("sch", "$").replace("ei", "%").replace("ie", "&")
@@ -86,6 +89,9 @@ def extract_keywords(
     """
     if stop_words is None:
         stop_words = GERMAN_STOP_WORDS
+    # Gebeugte Formen ("allen", "euren", "nichts") fallen ueber ihren Stamm heraus,
+    # ohne dass jede Form in der Liste stehen muss.
+    stop_stems = _STOP_STEMS if stop_words is GERMAN_STOP_WORDS else _stems(stop_words)
 
     # Lowercase and split into words
     text = text.lower()
@@ -117,12 +123,12 @@ def extract_keywords(
                 if len(part) >= min_length:
                     if part not in stop_words and not part.isdigit():
                         stemmed = stem_german(part)
-                        if stemmed and len(stemmed) >= min_length:
+                        if len(stemmed) >= min_length and stemmed not in stop_stems:
                             keywords.append(stemmed)
         else:
             # Stem the word normally
             stemmed = stem_german(word)
-            if stemmed and len(stemmed) >= min_length:
+            if len(stemmed) >= min_length and stemmed not in stop_stems:
                 keywords.append(stemmed)
 
     return keywords
@@ -338,3 +344,10 @@ GERMAN_STOP_WORDS = {
     "alle",
     "alles",
 }
+
+
+def _stems(words: Set[str]) -> Set[str]:
+    return {stem_german(w) for w in words}
+
+
+_STOP_STEMS = _stems(GERMAN_STOP_WORDS)

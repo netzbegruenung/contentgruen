@@ -124,8 +124,9 @@ dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
   0,89 bis 0,98 und damit weit über jeder Schwelle. Das löst keine Schwelle, sondern eine
   bessere Trennung von Widersprüchen (#387).
 - **Stemmer (#392):** CISTEM statt der einfachen Suffixkürzung lässt Treffer, keine
-  Treffer und Zerfaserung an jeder Schwelle gleich; bei 0,8 auch die Präzision, bei
-  0,84 sinkt sie von 0,70 auf 0,66 (S14, S20 zeigen mehr unpassende Beiträge).
+  Treffer und Zerfaserung bei 0,8 und darunter gleich, ebenso die Präzision bei 0,8;
+  bei 0,86 kommt ein Treffer dazu (S32), bei 0,84 sinkt die Präzision von 0,70 auf
+  0,66 (S14, S20 zeigen mehr unpassende Beiträge, weil „mir“ nicht mehr zählt).
   Snowball German und die spaCy-Lemmata aus dem Gegenlesen messen gleich; nur
   Kleinschreibung und Umlaute ohne Stemmer verliert S25. Pronomen („uns“, „mir“)
   stehen jetzt in der Stoppliste: Mit „uns“ als Schlagwort ging S13 an „Die Grünen

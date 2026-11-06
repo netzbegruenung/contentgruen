@@ -31,7 +31,7 @@ class TestGermanStemmer:
         """Test umlaut replacement."""
         assert stem_german("über") == "uber"
         assert stem_german("schön") == "schon"
-        assert stem_german("grün") == stem_german("grun")
+        assert stem_german("grün") == stem_german("grun") == "gru"
 
     def test_plural_mit_umlaut_hat_denselben_stamm(self):
         """Plural mit Umlaut und Singular fallen zusammen (#392)."""
@@ -63,6 +63,11 @@ class TestGermanStemmer:
     def test_stem_eszett_replacement(self):
         """Test eszett (ß) replacement."""
         assert stem_german("Straße") == "strass"
+
+    def test_stem_ignores_placeholder_characters(self):
+        """Die internen Platzhalter ($ % & *) veraendern keinen Stamm."""
+        assert stem_german("%") == ""
+        assert stem_german("a*b") == "ab"
 
     def test_stem_preserves_short_words(self):
         """Test that short words are not over-stemmed."""
@@ -140,6 +145,12 @@ class TestKeywordExtraction:
         """Pronomen tragen kein Thema: "uns" darf nicht verbinden (#392)."""
         keywords = extract_keywords("Die Grünen nehmen uns alles weg")
         assert not {"uns", "alles", "all"} & set(keywords)
+
+    def test_extract_skips_inflected_stop_words(self):
+        """Gebeugte Formen fallen ueber den Stamm heraus, ohne eigenen Listeneintrag."""
+        keywords = extract_keywords("Das nimmt uns allen nichts, euren Kindern auch")
+        assert not {"all", "nich", "eur"} & set(keywords)
+        assert stem_german("Kindern") in keywords
 
     def test_extract_only_stop_words(self):
         """Test extraction when only stop words present."""

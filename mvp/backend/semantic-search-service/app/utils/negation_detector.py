@@ -250,7 +250,7 @@ def calculate_polarity_penalty(
         result_confidence: Confidence in result polarity (0-1)
 
     Returns:
-        Multiplier between 0.0 and 1.0 to apply to similarity score
+        Multiplier between 0.2 and 1.0 to apply to similarity score
         - 1.0 = no penalty (polarities match, or one side is neutral)
         - 1.0 - 0.7 * average confidence, clamped to 0.2..1.0, when the
           polarities contradict (e.g. 0.37 at confidence 0.9)
