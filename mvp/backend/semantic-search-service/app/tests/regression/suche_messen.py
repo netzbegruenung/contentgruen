@@ -452,7 +452,12 @@ class Dienste(NamedTuple):
 
 
 async def dienste_starten() -> Dienste:
-    """Die Dienste wie beim Start des Semantic-Search-Service, ohne Datenbank und Jobs."""
+    """Die Dienste wie beim Start des Semantic-Search-Service, ohne Jobs.
+
+    Braucht die App-Datenbank (app_database_url): initialize_services legt den
+    VotingService an, und der oeffnet sie (#576). Im naechtlichen Lauf ist das der
+    Dienst postgres, lokal die Datenbank des Dev-Stacks.
+    """
     from api.v1.search import suchspezifikationen
     from core.config import settings
     from dependencies import (

@@ -141,7 +141,7 @@ model), so the run is not a required status.
 | Step | Runs | Red when |
 |---|---|---|
 | `messset` | `pytest tests/regression/test_aehnlichkeit_messset.py -m langsam`, then the table per Paar-Label | a score differs from `aehnlichkeit_gemessen.py` by more than 0.005, or a decision of the Dublettenprüfung changes (`MESSSET.md`) |
-| `suchtest` | `tests.regression.seed_laden` loads the seed into an empty collection of the service `qdrant`, `tests.regression.nachtlauf` measures the Suchtestset at today's threshold and prints the tables and the checks | a number differs from the Soll by more than one case (in either direction), or the gate for Roadmap-Stufe 3 or the lower bound for ähnliche Aussagen is not met (`SUCHTESTSET.md`, „Nächtlicher Lauf“) |
+| `suchtest` | waits for the services (`scripts/ci_dienste_warten.py`), `tests.regression.seed_laden` loads the seed into an empty collection of the service `qdrant`, `tests.regression.nachtlauf` measures the Suchtestset at today's threshold and prints the tables and the checks | a number differs from the Soll by more than one case (in either direction), or the gate for Roadmap-Stufe 3 or the lower bound for ähnliche Aussagen is not met (`SUCHTESTSET.md`, „Nächtlicher Lauf“) |
 
 - **Model cache:** both steps run in the image of the semantic search service
   (`gutgesagt-semantic-search:main`, pulled anew each run, `pull: true`; the package is
@@ -152,10 +152,18 @@ model), so the run is not a required status.
   it to `"0"` in `nacht.yaml` on its branch for the manual run, so the run downloads the
   new model, and back to `"1"` before the merge: `scripts/tests/test_woodpecker_ci.py`
   keeps `ci` red until then, so `"0"` never lands on `main`.
+- **Services:** `qdrant` and `postgres`, the same as in `ci.yaml` (`scripts/tests/test_woodpecker_ci.py`
+  keeps them equal). `suchtest` needs the database: starting the services
+  (`dependencies.initialize_services`) creates the `VotingService`, which opens the app
+  database and creates its tables. The step points `SEMANTIC_SEARCH_APP_DATABASE_URL` at
+  `postgres:5432`; without it the run fails with „Connection refused“ on `localhost:5433` (#576).
 - `suchtest` also runs after a red `messset`, one after the other: each step loads the
   model.
 - The log line „Folder not found: …/index_data/content_index“ while loading the seed is
-  harmless; seeding logs it in the dev stack too.
+  harmless: the aggregated `ContentRepository` looks for initial data in
+  `index_data/content_index`, which the seed does not have (it keeps everything under
+  `statements_with_*`), finds nothing and loads the seed the regular way. Seeding logs it in
+  the dev stack too.
 - Always against the seed in the service `qdrant` of the run, never against test or
   production. No secret and no report step (there is no pull request to comment on): a red
   run is visible in Woodpecker.

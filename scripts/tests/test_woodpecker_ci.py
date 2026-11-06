@@ -205,9 +205,24 @@ def test_nachtlauf_suchtest_laeuft_auch_nach_rotem_messset():
     assert suchtest["when"] == [{"status": ["success", "failure"]}]
 
 
-def test_nachtlauf_qdrant_wie_in_ci():
-    (dienst,) = NACHT["services"]
-    assert dienst == DIENSTE["qdrant"]
+def test_nachtlauf_dienste_wie_in_ci():
+    # Postgres (#576): Der Dienststart oeffnet die App-Datenbank (VotingService).
+    assert NACHT["services"] == [DIENSTE["qdrant"], DIENSTE["postgres"]]
+
+
+def test_nachtlauf_suchtest_wartet_auf_die_dienste_und_nutzt_ihre_datenbank():
+    suchtest = NACHT_SCHRITTE["suchtest"]
+    pg = DIENSTE["postgres"]["environment"]
+
+    assert suchtest["environment"]["SEMANTIC_SEARCH_APP_DATABASE_URL"] == (
+        f"postgresql+psycopg2://{pg['POSTGRES_USER']}:{pg['POSTGRES_PASSWORD']}"
+        f"@postgres:5432/{pg['POSTGRES_DB']}"
+    )
+    befehle = suchtest["commands"]
+    warten = befehle.index(
+        "python3 scripts/ci_dienste_warten.py qdrant:6333 postgres:5432"
+    )
+    assert warten < befehle.index("python -m tests.regression.nachtlauf")
 
 
 def test_schritte_rufen_check_sh_mit_ihrem_namen_auf():
