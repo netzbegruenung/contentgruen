@@ -210,8 +210,13 @@ class TestAuswertung:
         tabelle = je_phaenomen(self._messungen(), 0.8)
 
         assert tabelle == {
-            "umformulierung": {"treffer": 1, "fehltreffer": 1, "keine": 1},
-            "fremd": {"treffer": 0, "fehltreffer": 1, "keine": 0},
+            "umformulierung": {
+                "treffer": 1,
+                "fehltreffer": 1,
+                "keine": 1,
+                "gefunden@10": 2,
+            },
+            "fremd": {"treffer": 0, "fehltreffer": 1, "keine": 0, "gefunden@10": 0},
         }
 
     def test_zerfaserung(self):

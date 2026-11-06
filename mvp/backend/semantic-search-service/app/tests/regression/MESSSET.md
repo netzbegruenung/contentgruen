@@ -19,6 +19,9 @@ cd mvp/backend/semantic-search-service/app
 ../venv/bin/python -m pytest tests/regression -m langsam -q
 ```
 
+Jede Nacht läuft der Regressionstest in `.woodpecker/nacht.yaml`; wann ein PR den Lauf
+anstoßen muss, steht in `docs/CI.md`, „Nightly run“.
+
 ## Paar-Labels
 
 | Label | Bedeutung | Prüffrage |

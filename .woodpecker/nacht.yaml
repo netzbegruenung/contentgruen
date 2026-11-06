@@ -37,6 +37,9 @@ steps:
     environment:
       DOCKER_CONTAINER: "false"
       HF_HOME: /root/.cache/huggingface
+      # Nur das Modell aus dem Image, keine neue Revision vom Hub (wie in Produktion).
+      # Ein PR mit neuem Modell setzt hier "0" (docs/CI.md).
+      HF_HUB_OFFLINE: "1"
     commands:
       - pip install -q --no-cache-dir --root-user-action=ignore -r mvp/backend/semantic-search-service/requirements.txt
       - cd mvp/backend/semantic-search-service/app
@@ -53,6 +56,9 @@ steps:
     environment:
       DOCKER_CONTAINER: "false"
       HF_HOME: /root/.cache/huggingface
+      # Nur das Modell aus dem Image, keine neue Revision vom Hub (wie in Produktion).
+      # Ein PR mit neuem Modell setzt hier "0" (docs/CI.md).
+      HF_HUB_OFFLINE: "1"
       SEMANTIC_SEARCH_QDRANT_URL: http://qdrant:6333
       SEMANTIC_SEARCH_QDRANT_COLLECTION: nachtlauf
     commands:

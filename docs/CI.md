@@ -146,8 +146,10 @@ model), so the run is not a required status.
 - **Model cache:** both steps run in the image of the semantic search service
   (`gutgesagt-semantic-search:main`, pulled anew each run, `pull: true`; the package is
   public, no registry login), which downloads the model at build time. The code
-  measured is the checkout; pip only installs what `requirements.txt` changed. A pull
-  request that switches to another model downloads it once in that run.
+  measured is the checkout; pip only installs what `requirements.txt` changed.
+  `HF_HUB_OFFLINE=1` keeps the run on the model revision in the image, the one production
+  runs, instead of whatever the hub serves that night. A pull request that switches to
+  another model sets it to `"0"` in `nacht.yaml` on its branch, so the run downloads it.
 - `suchtest` also runs after a red `messset`, one after the other: each step loads the
   model.
 - The log line „Folder not found: …/index_data/content_index“ while loading the seed is
@@ -161,7 +163,8 @@ model), so the run is not a required status.
   seed, the Messset or the Suchtestset. Run it with "Run pipeline" on the pull-request
   branch (not on `main`: there a manual run also builds every image, `build.yaml`) and name
   the result in the pull request. `ci` runs alongside (it reacts to `manual` too), so the
-  agent carries both at once for a few minutes. If a number changes on purpose, update the Soll in the
+  agent carries both at once for a few minutes. The other way round as well: every manual
+  run, also one meant for `ci` or the images, starts the nightly run. If a number changes on purpose, update the Soll in the
   same pull request (`aehnlichkeit_gemessen.py` or `SOLL` in `nachtlauf.py`).
 - Locally: the commands in `MESSSET.md` and `SUCHTESTSET.md`.
 

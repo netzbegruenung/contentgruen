@@ -107,7 +107,7 @@ Eine Suche, deren erster angezeigter Beitrag nicht auf die Suchanfrage passt, od
 _Avoid_: falsch positiv
 
 **Ähnliche Aussagen**:
-Vorhandene gepflegte Aussagen, die einer Eingabe nahekommen, ohne dieselbe Behauptung zu sein: höchstens drei, ab einer unteren Grenze der Ähnlichkeit (heute 0,885). Das Beitragsformular schlägt sie im Feld „Antwort auf“ vor; bei null Treffern soll die Ergebnisseite sie als „passt vielleicht“ zeigen (`docs/VISION.md`). Das Suchtestset misst, wie oft die erwartete Aussage darunter ist; die untere Grenze dafür prüft der nächtliche Lauf.
+Vorhandene gepflegte Aussagen, die einer Eingabe nahekommen, auch dieselbe Behauptung in anderen Worten: höchstens drei, ab einer unteren Grenze der Ähnlichkeit (heute 0,885). Das Beitragsformular schlägt sie im Feld „Antwort auf“ vor; bei null Treffern soll die Ergebnisseite sie als „passt vielleicht“ zeigen (`docs/VISION.md`). Das Suchtestset misst, wie oft die erwartete Aussage darunter ist; die untere Grenze dafür prüft der nächtliche Lauf.
 _Avoid_: Dubletten (die gelten als dieselbe Aussage)
 
 **Nächtlicher Lauf**:

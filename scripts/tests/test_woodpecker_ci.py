@@ -185,6 +185,8 @@ def test_nachtlauf_misst_messset_und_suchtestset_mit_dem_modell_aus_dem_image():
         # :main wandert; ohne pull misst der Agent mit einem alten Image.
         assert schritt["pull"] is True
         assert schritt["environment"]["DOCKER_CONTAINER"] == "false"
+        # Modellrevision aus dem Image, nicht was der Hub in der Nacht liefert.
+        assert schritt["environment"]["HF_HUB_OFFLINE"] == "1"
         assert "secrets" not in schritt and not any(
             isinstance(w, dict) and "from_secret" in w
             for w in schritt["environment"].values()

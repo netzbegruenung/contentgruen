@@ -216,11 +216,20 @@ def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
 def je_phaenomen(
     messungen: Iterable[FallMessung], schwelle: float
 ) -> Dict[str, Dict[str, int]]:
-    """Je Phaenomen, wie viele Faelle treffer, fehltreffer und keine sind."""
+    """
+    Je Phaenomen, wie viele Faelle treffer, fehltreffer und keine sind, dazu
+    gefunden@10: Faelle mit Erwartung und einem passenden Beitrag unter den ersten 10
+    (Recall@10 = gefunden@10 / Faelle mit Erwartung des Phaenomens).
+    """
     tabelle: Dict[str, Dict[str, int]] = {}
     for m in gemessen(messungen):
-        zeile = tabelle.setdefault(m.fall.phaenomen, dict.fromkeys(EINORDNUNGEN, 0))
-        zeile[einordnen(m.fall, m.angezeigt[schwelle])] += 1
+        zeile = tabelle.setdefault(
+            m.fall.phaenomen, {**dict.fromkeys(EINORDNUNGEN, 0), "gefunden@10": 0}
+        )
+        gezeigt = m.angezeigt[schwelle]
+        zeile[einordnen(m.fall, gezeigt)] += 1
+        if m.fall.erwartet and any(c.passt for c in gezeigt[:10]):
+            zeile["gefunden@10"] += 1
     return tabelle
 
 
@@ -309,13 +318,13 @@ def tabellen(
         "",
         f"Je Phänomen bei {aktuell}:",
         "",
-        "| Phänomen | Treffer | Fehltreffer | keine |",
-        "|---|---|---|---|",
+        "| Phänomen | Treffer | Fehltreffer | keine | passend unter den ersten 10 |",
+        "|---|---|---|---|---|",
     ]
     for phaenomen, zeile in sorted(je_phaenomen(messungen, aktuell).items()):
         zeilen.append(
             f"| {phaenomen} | {zeile['treffer']} | {zeile['fehltreffer']} "
-            f"| {zeile['keine']} |"
+            f"| {zeile['keine']} | {zeile['gefunden@10']} |"
         )
     z = zerfaserung(messungen, aktuell)
     zeilen += [
