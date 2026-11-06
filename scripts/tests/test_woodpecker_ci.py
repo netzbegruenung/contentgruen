@@ -208,7 +208,11 @@ def test_semantic_search_image_laeuft_offline_nach_dem_vorladen():
         .splitlines()
     )
     offline = [i for i, z in enumerate(zeilen) if z.strip() == "ENV HF_HUB_OFFLINE=1"]
-    vorladen = [i for i, z in enumerate(zeilen) if "from_pretrained" in z or "SentenceTransformer(" in z]
+    vorladen = [
+        i
+        for i, z in enumerate(zeilen)
+        if "from_pretrained" in z or "SentenceTransformer(" in z
+    ]
     assert len(offline) == 1 and vorladen
     assert offline[0] > max(vorladen)
 
