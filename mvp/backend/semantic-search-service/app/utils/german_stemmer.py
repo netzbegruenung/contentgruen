@@ -16,6 +16,8 @@ Staemme werden nirgends gespeichert; eine Aenderung wirkt ab dem naechsten Start
 import re
 from typing import List, Set
 
+# Die Schritte von CISTEM, Namen wie in der Referenz: ge- vorn weg, Doppelbuchstaben
+# als x* merken und zurueck, dann im Kuerzungslauf -em/-er, -nd, -t und -e/-s/-n.
 _GE_PRAEFIX = re.compile(r"^ge(.{4,})")
 _DOPPELT = re.compile(r"(.)\1")
 _DOPPELT_ZURUECK = re.compile(r"(.)\*")
@@ -37,9 +39,10 @@ def stem_german(word: str) -> str:
     ie und Doppelbuchstaben bleiben dabei ganz.
 
     Variante ohne Gross-/Kleinschreibung (case_insensitive der Referenz): Die
-    Grundvariante schneidet -t nur bei kleingeschriebenen Woertern ab. Suchanfragen
-    sind aber oft kleingeschrieben ("grüne nur großstadt"), und dann faenden
-    "großstadt" und "Großstädte" nicht zusammen.
+    Grundvariante schneidet -t nur bei kleingeschriebenen Woertern ab. extract_keywords
+    schreibt den Text vorher klein, dort waeren beide Varianten gleich; die Variante
+    sorgt dafuer, dass auch ein direkter Aufruf "großstadt" und "Großstädte" auf
+    denselben Stamm bringt.
 
     Beispiele: Windraeder und Windrad -> windrad, toetet und toeten -> tot.
     """
@@ -345,11 +348,14 @@ GERMAN_STOP_WORDS = {
     "allen",
     "aller",
     "allem",
+    "unseres",
     "unsrer",
     "unsren",
     "unsrem",
+    "unsres",
     "euren",
     "eurem",
     "eurer",
+    "eures",
     "nichts",
 }

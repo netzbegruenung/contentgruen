@@ -150,6 +150,7 @@ class TestKeywordExtraction:
         """Gebeugte Pronomen und "nichts" sind Stoppwoerter."""
         keywords = extract_keywords("Das nimmt uns allen nichts, euren Kindern auch")
         assert not {"all", "nich", "eur"} & set(keywords)
+        assert not extract_keywords("unseres unsres eures")
         assert stem_german("Kindern") in keywords
 
     def test_extract_keeps_words_whose_stem_equals_a_stop_word_stem(self):
@@ -324,6 +325,16 @@ class TestRealWorldExamples:
         boost = calculate_keyword_boost(query, result)
         # Should boost - high overlap on key terms
         assert boost > 1.0
+
+    def test_plural_umlaut_und_verbform_verbinden(self):
+        """Der Boost wirkt ueber CISTEM: Windraeder/Windrad, toeten/toetet (#392)."""
+        query = "Windräder töten Vögel"
+        result = "Ein Windrad tötet einen Vogel"
+
+        assert calculate_keyword_overlap(
+            extract_keywords(query), extract_keywords(result)
+        ) == pytest.approx(1.0)
+        assert calculate_keyword_boost(query, result) == pytest.approx(1.3)
 
     def test_wind_power_variations(self):
         """Test wind power variations."""
