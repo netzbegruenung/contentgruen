@@ -100,7 +100,8 @@ so wie er im Dienst mit dieser Schwelle liefe.
 ## Ergebnis am Testbestand (vorläufig)
 
 **Vorläufig:** gemessen am 05.11.2026 gegen den Seed im Dev-Stack mit
-`intfloat/multilingual-e5-base`, 42 Fälle (33 mit Erwartung, 9 ohne). Der Seed hat 14
+`intfloat/multilingual-e5-base`, 42 Fälle (33 mit Erwartung, 9 ohne), mit dem Stemmer
+vor #392 (Unterschiede danach unter „Stemmer“). Der Seed hat 14
 Aussagen mit Antworten, jede Antwort hängt an einer Aussage, und er ist klein und
 geschrieben, um gefunden zu werden. Nach dem Startbestand (#288) kommen Fälle zu dessen
 Aussagen dazu (auch zu Aussagen ohne Antwort) und die Fälle „fremd“ werden geprüft;
@@ -131,6 +132,14 @@ dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
 - **Verneinungen** (4 Fälle) sind alle Fehltreffer: Das Gegenteil einer Aussage liegt bei
   0,89 bis 0,98 und damit weit über jeder Schwelle. Das löst keine Schwelle, sondern eine
   bessere Trennung von Widersprüchen (#387).
+- **Stemmer (#392):** CISTEM statt der einfachen Suffixkürzung lässt Treffer, keine
+  Treffer und Zerfaserung an jeder Schwelle gleich, bei 0,78 und 0,8 auch die
+  Präzision; bei 0,82 sinkt sie von 0,50 auf 0,49, bei 0,84 von 0,70 auf 0,66 (S14,
+  S20 zeigen mehr unpassende Beiträge, weil „mir“ und „alles“ nicht mehr zählen).
+  Snowball German und die spaCy-Lemmata aus dem Gegenlesen messen gleich; nur
+  Kleinschreibung und Umlaute ohne Stemmer verliert S25. Pronomen („uns“, „mir“)
+  stehen jetzt in der Stoppliste: Mit „uns“ als Schlagwort ging S13 an „Die Grünen
+  wollen uns das Fleisch verbieten“ verloren.
 - **Fremde Themen:** 3 von 5 zeigen etwas (Rente, Mülltrennung, Deutschlandticket),
   zwei davon nur über den direkten Weg.
 - **Zerfaserung:** 14 der 15 Suchanfragen, die dieselbe Behauptung wie eine vorhandene
