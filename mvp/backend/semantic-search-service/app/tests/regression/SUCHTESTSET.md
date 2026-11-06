@@ -164,6 +164,9 @@ dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
 Suchtestset gegen das echte Modell und ein eigenes Qdrant mit dem Seed (Ablauf und
 Einrichtung in `docs/CI.md`, „Nightly run“). Für das Suchtestset:
 
+Der Dienststart braucht die App-Datenbank (lokal die des Dev-Stacks auf Port 5433, sonst
+`SEMANTIC_SEARCH_APP_DATABASE_URL` setzen).
+
 ```bash
 cd mvp/backend/semantic-search-service/app
 export SEMANTIC_SEARCH_QDRANT_COLLECTION=nachtlauf   # eine leere Sammlung

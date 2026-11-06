@@ -23,6 +23,13 @@ services:
     image: qdrant/qdrant:v1.18.2
     # Ohne absoluten Pfad startet der Dienst nicht
     entrypoint: [/qdrant/qdrant]
+  # Der Dienststart (dependencies.initialize_services) oeffnet die App-Datenbank (#576).
+  - name: postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: ci
+      POSTGRES_DB: gutgesagt_app
 
 # Modell-Cache: Das Image des Semantic-Search-Service bringt das Modell schon mit
 # (Dockerfile, "Pre-download"), Python und die Pakete von main auch. Gemessen wird der
@@ -61,9 +68,10 @@ steps:
       HF_HUB_OFFLINE: "1"
       SEMANTIC_SEARCH_QDRANT_URL: http://qdrant:6333
       SEMANTIC_SEARCH_QDRANT_COLLECTION: nachtlauf
+      SEMANTIC_SEARCH_APP_DATABASE_URL: postgresql+psycopg2://app_user:ci@postgres:5432/gutgesagt_app
     commands:
       - pip install -q --no-cache-dir --root-user-action=ignore -r mvp/backend/semantic-search-service/requirements.txt
-      - python3 scripts/ci_dienste_warten.py qdrant:6333
+      - python3 scripts/ci_dienste_warten.py qdrant:6333 postgres:5432
       - cd mvp/backend/semantic-search-service/app
       - python -m tests.regression.seed_laden
       - python -m tests.regression.nachtlauf

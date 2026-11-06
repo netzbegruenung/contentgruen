@@ -1,4 +1,5 @@
-"""Wartet, bis die Dienste der CI Verbindungen annehmen (.woodpecker/ci.yaml, Schritt integration).
+"""Wartet, bis die Dienste der CI Verbindungen annehmen (.woodpecker/ci.yaml, Schritt integration;
+.woodpecker/nacht.yaml, Schritt suchtest).
 
 Woodpecker startet die Dienste gleichzeitig mit den Schritten. Im Pflichtmodus
 (INTEGRATION_STACK_PFLICHT=1) bricht die Suite ab, wenn ein Dienst noch startet.
