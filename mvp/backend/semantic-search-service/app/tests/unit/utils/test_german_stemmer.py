@@ -147,10 +147,16 @@ class TestKeywordExtraction:
         assert not {"uns", "alles", "all"} & set(keywords)
 
     def test_extract_skips_inflected_stop_words(self):
-        """Gebeugte Formen fallen ueber den Stamm heraus, ohne eigenen Listeneintrag."""
+        """Gebeugte Pronomen und "nichts" sind Stoppwoerter."""
         keywords = extract_keywords("Das nimmt uns allen nichts, euren Kindern auch")
         assert not {"all", "nich", "eur"} & set(keywords)
         assert stem_german("Kindern") in keywords
+
+    def test_extract_keeps_words_whose_stem_equals_a_stop_word_stem(self):
+        """Werte (-> wer) und Wirt (-> wir) bleiben: Geprueft wird das Wort."""
+        keywords = extract_keywords("Der Wirt verteidigt unsere Werte")
+        assert stem_german("Wirt") in keywords
+        assert stem_german("Werte") in keywords
 
     def test_extract_only_stop_words(self):
         """Test extraction when only stop words present."""

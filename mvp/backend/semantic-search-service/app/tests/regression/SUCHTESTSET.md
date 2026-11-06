@@ -92,7 +92,8 @@ so wie er im Dienst mit dieser Schwelle liefe.
 ## Ergebnis am Testbestand (vorläufig)
 
 **Vorläufig:** gemessen am 05.11.2026 gegen den Seed im Dev-Stack mit
-`intfloat/multilingual-e5-base`, 42 Fälle (33 mit Erwartung, 9 ohne). Der Seed hat 14
+`intfloat/multilingual-e5-base`, 42 Fälle (33 mit Erwartung, 9 ohne), mit dem Stemmer
+vor #392 (Unterschiede danach unter „Stemmer“). Der Seed hat 14
 Aussagen mit Antworten, jede Antwort hängt an einer Aussage, und er ist klein und
 geschrieben, um gefunden zu werden. Nach dem Startbestand (#288) kommen Fälle zu dessen
 Aussagen dazu (auch zu Aussagen ohne Antwort) und die Fälle „fremd“ werden geprüft;
@@ -124,9 +125,9 @@ dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
   0,89 bis 0,98 und damit weit über jeder Schwelle. Das löst keine Schwelle, sondern eine
   bessere Trennung von Widersprüchen (#387).
 - **Stemmer (#392):** CISTEM statt der einfachen Suffixkürzung lässt Treffer, keine
-  Treffer und Zerfaserung bei 0,8 und darunter gleich, ebenso die Präzision bei 0,8;
-  bei 0,86 kommt ein Treffer dazu (S32), bei 0,84 sinkt die Präzision von 0,70 auf
-  0,66 (S14, S20 zeigen mehr unpassende Beiträge, weil „mir“ nicht mehr zählt).
+  Treffer und Zerfaserung an jeder Schwelle gleich, bei 0,8 auch die Präzision; bei
+  0,84 sinkt sie von 0,70 auf 0,66 (S14, S20 zeigen mehr unpassende Beiträge, weil
+  „mir“ nicht mehr zählt).
   Snowball German und die spaCy-Lemmata aus dem Gegenlesen messen gleich; nur
   Kleinschreibung und Umlaute ohne Stemmer verliert S25. Pronomen („uns“, „mir“)
   stehen jetzt in der Stoppliste: Mit „uns“ als Schlagwort ging S13 an „Die Grünen
