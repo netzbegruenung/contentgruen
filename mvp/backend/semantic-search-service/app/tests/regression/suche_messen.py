@@ -62,6 +62,8 @@ STANDARD_SCHWELLEN = (0.76, 0.78, 0.79, 0.80, 0.81, 0.82, 0.84, 0.86)
 ANGEZEIGTE_TYPEN = ("commentary", "generic_text", "post")
 # Recall@k ueber die Ergebnisseite in ihrer Reihenfolge (ANGEZEIGTE_TYPEN).
 RECALL_BEI = (5, 10)
+# Recall je Phaenomen: das groesste k aus RECALL_BEI (wie das Tor fuer Roadmap-Stufe 3).
+RECALL_JE_PHAENOMEN = max(RECALL_BEI)
 # Exit-Code, wenn kein Fall mit Erwartung gemessen wurde: Der Bestand passt nicht zum
 # Set (leere oder falsche Sammlung, Startbestand ohne passende Faelle).
 BESTAND_PASST_NICHT = 2
@@ -166,6 +168,11 @@ def einordnen(fall: Fall, gezeigt: Sequence[AngezeigterBeitrag]) -> str:
     return "fehltreffer"
 
 
+def passend_unter(gezeigt: Sequence[AngezeigterBeitrag], k: int) -> bool:
+    """Ist unter den ersten k angezeigten Beitraegen ein passender (Zaehler von Recall@k)?"""
+    return any(c.passt for c in gezeigt[:k])
+
+
 def gemessen(messungen: Iterable[FallMessung]) -> List[FallMessung]:
     """Nur Faelle, deren erwartete Aussagen alle im Bestand sind."""
     return [m for m in messungen if not m.fehlt]
@@ -188,7 +195,7 @@ def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
             zaehler[einordnung] += 1
             gefunden += any(c.passt for c in gezeigt)
             for k in RECALL_BEI:
-                gefunden_bei[k] += any(c.passt for c in gezeigt[:k])
+                gefunden_bei[k] += passend_unter(gezeigt, k)
         else:
             ohne[einordnung] += 1
     mit_erwartung = sum(1 for m in faelle if m.fall.erwartet)
@@ -218,18 +225,21 @@ def je_phaenomen(
 ) -> Dict[str, Dict[str, int]]:
     """
     Je Phaenomen, wie viele Faelle treffer, fehltreffer und keine sind, dazu
-    gefunden@10: Faelle mit Erwartung und einem passenden Beitrag unter den ersten 10
-    (Recall@10 = gefunden@10 / Faelle mit Erwartung des Phaenomens).
+    mit_erwartung und gefunden@k (k = RECALL_JE_PHAENOMEN): Faelle mit Erwartung und
+    einem passenden Beitrag unter den ersten k (Recall@k = gefunden@k / mit_erwartung).
     """
+    gefunden_k = f"gefunden@{RECALL_JE_PHAENOMEN}"
     tabelle: Dict[str, Dict[str, int]] = {}
     for m in gemessen(messungen):
         zeile = tabelle.setdefault(
-            m.fall.phaenomen, {**dict.fromkeys(EINORDNUNGEN, 0), "gefunden@10": 0}
+            m.fall.phaenomen,
+            {**dict.fromkeys(EINORDNUNGEN, 0), "mit_erwartung": 0, gefunden_k: 0},
         )
         gezeigt = m.angezeigt[schwelle]
         zeile[einordnen(m.fall, gezeigt)] += 1
-        if m.fall.erwartet and any(c.passt for c in gezeigt[:10]):
-            zeile["gefunden@10"] += 1
+        if m.fall.erwartet:
+            zeile["mit_erwartung"] += 1
+            zeile[gefunden_k] += passend_unter(gezeigt, RECALL_JE_PHAENOMEN)
     return tabelle
 
 
@@ -318,13 +328,15 @@ def tabellen(
         "",
         f"Je Phänomen bei {aktuell}:",
         "",
-        "| Phänomen | Treffer | Fehltreffer | keine | passend unter den ersten 10 |",
+        "| Phänomen | Treffer | Fehltreffer | keine "
+        f"| passend unter den ersten {RECALL_JE_PHAENOMEN} / mit Erwartung |",
         "|---|---|---|---|---|",
     ]
     for phaenomen, zeile in sorted(je_phaenomen(messungen, aktuell).items()):
         zeilen.append(
             f"| {phaenomen} | {zeile['treffer']} | {zeile['fehltreffer']} "
-            f"| {zeile['keine']} | {zeile['gefunden@10']} |"
+            f"| {zeile['keine']} "
+            f"| {zeile[f'gefunden@{RECALL_JE_PHAENOMEN}']}/{zeile['mit_erwartung']} |"
         )
     z = zerfaserung(messungen, aktuell)
     zeilen += [

@@ -108,7 +108,7 @@ _Avoid_: falsch positiv
 
 **Ähnliche Aussagen**:
 Vorhandene gepflegte Aussagen, die einer Eingabe nahekommen, auch dieselbe Behauptung in anderen Worten: höchstens drei, ab einer unteren Grenze der Ähnlichkeit (heute 0,885). Das Beitragsformular schlägt sie im Feld „Antwort auf“ vor; bei null Treffern soll die Ergebnisseite sie als „passt vielleicht“ zeigen (`docs/VISION.md`). Das Suchtestset misst, wie oft die erwartete Aussage darunter ist; die untere Grenze dafür prüft der nächtliche Lauf.
-_Avoid_: Dubletten (die gelten als dieselbe Aussage)
+_Avoid_: Dubletten (Dubletten sind gleiche Beiträge)
 
 **Nächtlicher Lauf**:
 Die CI-Pipeline, die jede Nacht und auf Anstoß Messset und Suchtestset mit dem echten Einbettungsmodell misst und mit dem Soll vergleicht, dazu das Tor für Roadmap-Stufe 3 und die untere Grenze für ähnliche Aussagen (`.woodpecker/nacht.yaml`, `docs/CI.md`). Kein Pflichtstatus für PRs.

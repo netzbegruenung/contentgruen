@@ -214,9 +214,16 @@ class TestAuswertung:
                 "treffer": 1,
                 "fehltreffer": 1,
                 "keine": 1,
+                "mit_erwartung": 3,
                 "gefunden@10": 2,
             },
-            "fremd": {"treffer": 0, "fehltreffer": 1, "keine": 0, "gefunden@10": 0},
+            "fremd": {
+                "treffer": 0,
+                "fehltreffer": 1,
+                "keine": 0,
+                "mit_erwartung": 0,
+                "gefunden@10": 0,
+            },
         }
 
     def test_zerfaserung(self):

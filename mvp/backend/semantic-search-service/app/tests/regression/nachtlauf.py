@@ -124,17 +124,15 @@ def pruefen(messungen: Sequence[FallMessung], schwelle: float) -> List[Pruefung]
         if aehnlich.mit_erwartung
         else None
     )
+    anzahl = len(gemessen(messungen))
+    alle_gemessen = anzahl == SOLL["gemessen"]
     return [
         Pruefung(
             "gemessene Fälle",
             str(SOLL["gemessen"]),
-            str(len(gemessen(messungen))),
-            len(gemessen(messungen)) == SOLL["gemessen"],
-            (
-                ""
-                if len(gemessen(messungen)) == SOLL["gemessen"]
-                else "Seed oder Suchtestset passen nicht zum Soll"
-            ),
+            str(anzahl),
+            alle_gemessen,
+            "" if alle_gemessen else "Seed oder Suchtestset passen nicht zum Soll",
         ),
         _gegen_soll("Treffer", "treffer", a.treffer, mit),
         _gegen_soll("Fehltreffer", "fehltreffer", a.fehltreffer),

@@ -147,9 +147,11 @@ model), so the run is not a required status.
   (`gutgesagt-semantic-search:main`, pulled anew each run, `pull: true`; the package is
   public, no registry login), which downloads the model at build time. The code
   measured is the checkout; pip only installs what `requirements.txt` changed.
-  `HF_HUB_OFFLINE=1` keeps the run on the model revision in the image, the one production
-  runs, instead of whatever the hub serves that night. A pull request that switches to
-  another model sets it to `"0"` in `nacht.yaml` on its branch, so the run downloads it.
+  `HF_HUB_OFFLINE=1` keeps the run on the model revision baked into the image instead of
+  whatever the hub serves that night. A pull request that switches to another model sets
+  it to `"0"` in `nacht.yaml` on its branch for the manual run, so the run downloads the
+  new model, and back to `"1"` before the merge: `scripts/tests/test_woodpecker_ci.py`
+  keeps `ci` red until then, so `"0"` never lands on `main`.
 - `suchtest` also runs after a red `messset`, one after the other: each step loads the
   model.
 - The log line „Folder not found: …/index_data/content_index“ while loading the seed is
@@ -164,8 +166,9 @@ model), so the run is not a required status.
   branch (not on `main`: there a manual run also builds every image, `build.yaml`) and name
   the result in the pull request. `ci` runs alongside (it reacts to `manual` too), so the
   agent carries both at once for a few minutes. The other way round as well: every manual
-  run, also one meant for `ci` or the images, starts the nightly run. If a number changes on purpose, update the Soll in the
-  same pull request (`aehnlichkeit_gemessen.py` or `SOLL` in `nachtlauf.py`).
+  run, also one meant for `ci` or the images, starts the nightly run. If a number changes
+  on purpose, update the Soll in the same pull request (`aehnlichkeit_gemessen.py` or
+  `SOLL` in `nachtlauf.py`).
 - Locally: the commands in `MESSSET.md` and `SUCHTESTSET.md`.
 
 ## Images and releases
