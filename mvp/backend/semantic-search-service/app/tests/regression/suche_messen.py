@@ -407,6 +407,9 @@ async def dienste_starten() -> Dienste:
 
     await get_qdrant_embeddings_manager(settings).start()
     initialize_services()
+    # Die NLI-Stufe laedt im Hintergrund; ohne Warten mischt die Messung bis dahin die
+    # Schwelle ein (#387).
+    await get_statement_service().nli_laden_abwarten()
     return Dienste(
         statement_service=get_statement_service(),
         specs=suchspezifikationen(

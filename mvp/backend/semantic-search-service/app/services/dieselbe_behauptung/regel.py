@@ -10,7 +10,8 @@ Richtungen folgern sich (Paraphrase als beidseitige Folgerung) und keine widersp
 Zwei Vorpruefungen per Regel kommen davor, weil das Modell diese Faelle nicht trennt:
 
 - Fragen: Eine Frage behauptet nichts (MESSSET.md, Regel 4). Frage gegen Behauptung
-  wird nie dieselbe Aussage.
+  wird nie dieselbe Aussage. Erkannt am Fragezeichen am Ende oder an einem finiten
+  Verb an erster Stelle (FRAGEVERBEN).
 - Quantoren: "Manche Windraeder toeten Voegel" folgert das Modell in beide Richtungen
   aus "Windraeder toeten Voegel"; nach Regel 1 und 3 ist es aber eine andere
   Behauptung. Andere Quantoren in beiden Texten fuehren deshalb nie zusammen. Der Preis:
@@ -74,6 +75,74 @@ QUANTOREN = frozenset(
     }
 )
 
+# Finite Verben, die an erster Stelle eine Entscheidungsfrage einleiten ("Sind
+# Waermepumpen im Altbau sinnvoll"): Suchanfragen kommen oft ohne Fragezeichen. Nur
+# Hilfs- und Modalverben und haeufige Verben aus Suchanfragen, keine, die am Satzanfang
+# meist einen Imperativ einleiten ("Macht ...", "Geht ...").
+FRAGEVERBEN = frozenset(
+    {
+        "ist",
+        "sind",
+        "bin",
+        "bist",
+        "seid",
+        "war",
+        "waren",
+        "wäre",
+        "wären",
+        "hat",
+        "haben",
+        "hast",
+        "habt",
+        "hatte",
+        "hatten",
+        "hätte",
+        "hätten",
+        "wird",
+        "werden",
+        "wirst",
+        "wurde",
+        "wurden",
+        "würde",
+        "würden",
+        "kann",
+        "können",
+        "kannst",
+        "konnte",
+        "könnte",
+        "könnten",
+        "muss",
+        "müssen",
+        "musste",
+        "müsste",
+        "soll",
+        "sollen",
+        "sollte",
+        "sollten",
+        "darf",
+        "dürfen",
+        "dürfte",
+        "will",
+        "wollen",
+        "wollte",
+        "gibt",
+        "gab",
+        "lohnt",
+        "lohnen",
+        "stimmt",
+        "braucht",
+        "brauchen",
+        "hilft",
+        "helfen",
+        "kostet",
+        "schadet",
+        "funktioniert",
+        "funktionieren",
+        "bringt",
+        "bringen",
+    }
+)
+
 _WORT = re.compile(r"\w+")
 _SCHLUSS = " \t\r\n\"'„“”‚‘’«»)"
 
@@ -103,8 +172,12 @@ class Urteil(NamedTuple):
 
 
 def ist_frage(text: str) -> bool:
-    """Endet der Text (ohne Anfuehrungszeichen und Leerraum) mit einem Fragezeichen?"""
-    return text.rstrip(_SCHLUSS).endswith("?")
+    """Eine Frage: endet (ohne Anfuehrungszeichen und Leerraum) mit einem Fragezeichen
+    oder beginnt mit einem finiten Verb (FRAGEVERBEN)."""
+    if text.rstrip(_SCHLUSS).endswith("?"):
+        return True
+    erstes = _WORT.search(text)
+    return erstes is not None and erstes.group().lower() in FRAGEVERBEN
 
 
 def quantoren(text: str) -> frozenset[str]:

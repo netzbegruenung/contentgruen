@@ -37,11 +37,15 @@ async def paare_finden(statement_service) -> tuple[int, List[Paar]]:
     Paar zaehlt einmal, auch wenn beide Richtungen es finden."""
     from domain.models.content_status import ContentStatus
     from services.dieselbe_behauptung import regel
-    from services.dieselbe_behauptung.nli_modell import NliModell
     from core.config import NLI_MODELL
+    from services.dieselbe_behauptung.nli_modell import nli_modell
 
     settings = statement_service.settings
-    nli = NliModell(NLI_MODELL)
+    # Das eine Modell des Prozesses (im Schattenbetrieb schon im Hintergrund geladen),
+    # kein zweites im Speicher; auch bei dieselbe_aussage_nli = aus.
+    nli = nli_modell(NLI_MODELL)
+    if not await asyncio.to_thread(nli.laden_abwarten):
+        raise SystemExit(f"NLI-Modell {NLI_MODELL} nicht verfuegbar")
     aussagen = []
     offset = 0
     while True:

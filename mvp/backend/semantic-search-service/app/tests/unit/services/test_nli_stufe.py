@@ -44,13 +44,31 @@ class TestRegel:
 
     @pytest.mark.parametrize(
         "text",
-        ["Lohnt sich Balkonsolar?", "„Lohnt sich Balkonsolar?“ ", "Echt jetzt?)"],
+        [
+            "Lohnt sich Balkonsolar?",
+            "„Lohnt sich Balkonsolar?“ ",
+            "Echt jetzt?)",
+            # Suchanfragen ohne Fragezeichen: finites Verb an erster Stelle
+            "Sind Wärmepumpen im Altbau sinnvoll",
+            "„Lohnt sich Balkonsolar“",
+            "gibt es den Klimawandel",
+        ],
     )
     def test_frage(self, text):
         assert regel.ist_frage(text)
 
-    def test_behauptung_ist_keine_frage(self):
-        assert not regel.ist_frage("Balkonsolar lohnt sich!")
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Balkonsolar lohnt sich!",
+            "Wärmepumpen sind im Altbau sinnvoll",
+            # Substantive am Satzanfang, die auch Verbformen sein koennten
+            "Kosten der Energiewende sind zu hoch",
+            "Schaden durch Windräder ist gering",
+        ],
+    )
+    def test_behauptung_ist_keine_frage(self, text):
+        assert not regel.ist_frage(text)
 
     def test_frage_gegen_behauptung_wird_nicht_geprueft(self):
         """B09 im Messset: Eine Frage behauptet nichts (MESSSET.md, Regel 4)."""
@@ -259,6 +277,38 @@ class TestNliStufeImStatementService:
         assert nli.gewartet is not None
 
     @pytest.mark.asyncio
+    async def test_seeding_wartet_auf_das_modell(
+        self, test_settings, repository_factory
+    ):
+        """Eine Regel fuer alle Wege: Das Seeding (nli_warten) laesst nicht nach der
+        Wartezeit die Schwelle gelten, sondern wartet auf das Urteil."""
+        nli = AttrappenNli()
+        settings = test_settings.model_copy(update={"dieselbe_aussage_nli": "an"})
+        service = StatementService(
+            settings, repository_factory=repository_factory, nli=nli, nli_warten=True
+        )
+        service._repository.search = AsyncMock(
+            return_value=[_treffer("Windräder töten Vögel", 0.93)]
+        )
+
+        await _anlegen(service, "Windkraft bringt Vögel um")
+
+        assert nli.aufrufe and nli.gewartet is None
+
+    def test_seeding_und_dienst_teilen_ein_modell(
+        self, test_settings, repository_factory
+    ):
+        """Das Seeding baut einen eigenen StatementService; er bekommt dasselbe, im
+        Hintergrund vorgeladene Modell statt eines zweiten, nie geladenen."""
+        settings = test_settings.model_copy(update={"dieselbe_aussage_nli": "schatten"})
+        dienst = StatementService(settings, repository_factory=repository_factory)
+        seeding = StatementService(
+            settings, repository_factory=repository_factory, nli_warten=True
+        )
+
+        assert seeding._nli is dienst._nli
+
+    @pytest.mark.asyncio
     async def test_normalisiert_gleich_braucht_kein_modell(self, baue):
         nli = AttrappenNli()
         service = baue("an", nli)
@@ -382,6 +432,53 @@ class TestNliStufeImStatementService:
         assert uebrig == [passend]
 
     @pytest.mark.asyncio
+    async def test_ohne_widerspruch_prueft_nur_so_viele_wie_noetig(self, baue):
+        """Vorschlaege: in Score-Reihenfolge stapelweise, bis genug uebrig sind - ohne
+        Widerspruch reicht ein Stapel, statt den ganzen Vorrat zu pruefen."""
+        treffer = [_treffer(f"Windkraft hilft {i}", 0.95 - i / 100) for i in range(9)]
+        nli = AttrappenNli()
+        service = baue("schatten", nli)
+
+        uebrig = await service.ohne_widerspruch(
+            "Windkraft hilft", treffer, hoechstens=3
+        )
+
+        assert uebrig == treffer[:3]
+        assert [len(a) for a in nli.aufrufe] == [3]
+
+    @pytest.mark.asyncio
+    async def test_ohne_widerspruch_rueckt_nach_wenn_einer_wegfaellt(self, baue):
+        treffer = [_treffer(f"Windkraft hilft {i}", 0.95 - i / 100) for i in range(9)]
+        nli = AttrappenNli({treffer[1].text: WIDERSPRUCH})
+        service = baue("schatten", nli)
+
+        uebrig = await service.ohne_widerspruch(
+            "Windkraft hilft", treffer, hoechstens=3
+        )
+
+        assert uebrig == [treffer[0], treffer[2], treffer[3]]
+        assert [len(a) for a in nli.aufrufe] == [3, 1]
+
+    @pytest.mark.asyncio
+    async def test_ohne_widerspruch_rest_ungefiltert_wenn_modell_ausfaellt(self, baue):
+        treffer = [_treffer(f"Windkraft hilft {i}", 0.95 - i / 100) for i in range(5)]
+
+        class ErstDannWeg(AttrappenNli):
+            async def urteile(self, paare, warte_hoechstens=None):
+                if self.aufrufe:
+                    self.aufrufe.append(list(paare))
+                    return None
+                return await super().urteile(paare, warte_hoechstens)
+
+        service = baue("schatten", ErstDannWeg({treffer[0].text: WIDERSPRUCH}))
+
+        uebrig = await service.ohne_widerspruch(
+            "Windkraft hilft", treffer, hoechstens=3
+        )
+
+        assert uebrig == treffer[1:]
+
+    @pytest.mark.asyncio
     async def test_ohne_widerspruch_wartet_nicht_unbegrenzt(self, baue):
         nli = AttrappenNli()
         service = baue("schatten", nli)
@@ -437,6 +534,43 @@ class TestNliModellOhneModell:
             assert modell.urteile_sync([("a", "b")], warte_hoechstens=0.05) is None
         finally:
             modell._sperre.release()
+
+    @pytest.mark.asyncio
+    async def test_wartende_belegen_keinen_thread(self, monkeypatch):
+        """Asynchron wartet ein Aufruf in der Ereignisschleife auf die Sperre, nicht in
+        einem Thread des gemeinsamen Executors (den brauchen auch andere)."""
+        from services.dieselbe_behauptung.nli_modell import NliModell
+
+        modell = NliModell("gibt-es-nicht/modell")
+        modell._modell = object()  # gilt als geladen
+        threads = []
+        monkeypatch.setattr(
+            asyncio, "to_thread", lambda *a, **k: threads.append(a) or pytest.fail()
+        )
+        modell._sperre.acquire()
+        try:
+            assert await modell.urteile([("a", "b")], warte_hoechstens=0.1) is None
+        finally:
+            modell._sperre.release()
+        assert threads == []
+
+    @pytest.mark.asyncio
+    async def test_gibt_die_sperre_nach_dem_urteil_frei(self):
+        from services.dieselbe_behauptung.nli_modell import NliModell
+
+        modell = NliModell("gibt-es-nicht/modell")
+        modell._modell = object()
+        modell._rechnen = lambda paare: [NEUTRAL for _ in paare]
+
+        assert await modell.urteile([("a", "b")], warte_hoechstens=0.1) == [NEUTRAL]
+        assert modell._sperre.acquire(blocking=False)
+        modell._sperre.release()
+
+    def test_ein_modell_je_name_und_prozess(self):
+        from services.dieselbe_behauptung.nli_modell import nli_modell
+
+        assert nli_modell("gibt-es-nicht/a") is nli_modell("gibt-es-nicht/a")
+        assert nli_modell("gibt-es-nicht/a") is not nli_modell("gibt-es-nicht/b")
 
     def test_scheitert_das_laden_gilt_die_schwelle(self, monkeypatch):
         import transformers

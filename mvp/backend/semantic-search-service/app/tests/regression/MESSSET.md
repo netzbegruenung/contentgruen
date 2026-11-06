@@ -212,7 +212,9 @@ eine query/query-Ähnlichkeit ab `nli_kandidaten_ab` haben, zwei Vorprüfungen b
 und das Modell muss in beiden Richtungen mit mindestens τ = `nli_folgerung_ab` folgern,
 ohne dass eine Richtung mit κ = `nli_widerspruch_unter` oder mehr widerspricht.
 
-- **Vorprüfung Frage:** Frage gegen Behauptung wird nie geprüft (Regel 4, B09).
+- **Vorprüfung Frage:** Frage gegen Behauptung wird nie geprüft (Regel 4, B09). Frage
+  heißt: Fragezeichen am Ende oder ein finites Verb an erster Stelle (`regel.FRAGEVERBEN`,
+  für Suchanfragen ohne Fragezeichen); am Messset ändert das nichts.
 - **Vorprüfung Quantoren:** Unterscheiden sich die Quantoren (`regel.QUANTOREN`: alle,
   manche, nie, immer, nur …), wird nicht geprüft. Ohne sie folgert das Modell „Manche
   Windräder töten Vögel“ und „Windräder töten Vögel“ in beide Richtungen mit über 0,95

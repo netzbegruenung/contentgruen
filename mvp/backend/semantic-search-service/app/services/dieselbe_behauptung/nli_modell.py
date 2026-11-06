@@ -13,12 +13,16 @@ Geladen wird beim ersten Urteil (oder mit vorladen() im Hintergrund), nicht beim
 Import: Der Dienst startet ohne das Modell, und ohne Modell gilt die heutige Regel.
 Scheitert das Laden, bleibt das Modell fuer diesen Prozess aus (eine WARNING), statt
 bei jeder Suche neu zu laden.
+
+Je Prozess gibt es ein Modell je Name (nli_modell()): Auch das Seeding baut einen eigenen
+StatementService und soll dasselbe, schon vorgeladene Modell nutzen statt eines zweiten.
 """
 
 import asyncio
 import logging
 import threading
-from typing import List, Optional, Protocol, Sequence, Tuple
+import time
+from typing import Dict, List, Optional, Protocol, Sequence, Tuple
 
 from services.dieselbe_behauptung.regel import Richtung, Urteil
 
@@ -29,6 +33,10 @@ STAPEL = 32
 # Laengere Texte schneidet der Tokenizer ab. Eine Aussage hat hoechstens 1000 Zeichen
 # (AUSSAGE_MAX_ZEICHEN), das sind deutlich unter 512 Token.
 MAX_TOKEN = 512
+# So oft fragt ein wartender Aufruf nach, ob die Sperre frei ist (Sekunden). Gewartet
+# wird in der Ereignisschleife, nicht in einem Thread: Wartende belegen so keinen Thread
+# des gemeinsamen Executors, den auch andere asyncio.to_thread-Nutzer brauchen.
+NACHFRAGEN_ALLE = 0.05
 
 
 class NliPruefer(Protocol):
@@ -92,6 +100,12 @@ class NliModell:
         logger.info("NLI-Modell %s geladen", self._modell_name)
         return True
 
+    def laden_abwarten(self) -> bool:
+        """Blockiert, bis das Modell geladen ist (oder das Laden scheiterte). True,
+        wenn es bereitsteht. Fuer Messskripte, die sofort nach dem Start fragen."""
+        with self._sperre:
+            return self._laden()
+
     def vorladen(self) -> None:
         """Laedt das Modell in einem Hintergrund-Thread, damit das erste Urteil nicht
         auf das Laden wartet."""
@@ -126,6 +140,24 @@ class NliModell:
             ]
         return ergebnis
 
+    def _rechnen(self, paare: List[Tuple[str, str]]) -> Optional[List[Urteil]]:
+        """Unter self._sperre aufrufen. Laedt bei Bedarf und urteilt in beide
+        Richtungen; None, wenn das Modell nicht verfuegbar ist oder scheitert."""
+        try:
+            if not self._laden():
+                return None
+            texte = [a for a, _ in paare]
+            kandidaten = [b for _, b in paare]
+            # Hin und rueck in einem Durchlauf: ein Stapel statt zwei.
+            richtungen = self._wahrscheinlichkeiten(
+                texte + kandidaten, kandidaten + texte
+            )
+        except Exception as e:
+            logger.warning("NLI-Urteil gescheitert (%s)", type(e).__name__)
+            return None
+        n = len(paare)
+        return [Urteil(richtungen[i], richtungen[n + i]) for i in range(n)]
+
     def urteile_sync(
         self,
         paare: Sequence[Tuple[str, str]],
@@ -140,26 +172,46 @@ class NliModell:
         ):
             return None
         try:
-            if not self._laden():
-                return None
-            texte = [a for a, _ in paare]
-            kandidaten = [b for _, b in paare]
-            # Hin und rueck in einem Durchlauf: ein Stapel statt zwei.
-            richtungen = self._wahrscheinlichkeiten(
-                texte + kandidaten, kandidaten + texte
-            )
-        except Exception as e:
-            logger.warning("NLI-Urteil gescheitert (%s)", type(e).__name__)
-            return None
+            return self._rechnen(list(paare))
         finally:
             self._sperre.release()
-        n = len(paare)
-        return [Urteil(richtungen[i], richtungen[n + i]) for i in range(n)]
+
+    async def _sperre_holen(self, warte_hoechstens: Optional[float]) -> bool:
+        """Die Sperre holen, ohne einen Thread zu belegen; False nach der Wartezeit."""
+        frist = (
+            None if warte_hoechstens is None else time.monotonic() + warte_hoechstens
+        )
+        while not self._sperre.acquire(blocking=False):
+            if frist is not None and time.monotonic() >= frist:
+                return False
+            await asyncio.sleep(NACHFRAGEN_ALLE)
+        return True
 
     async def urteile(
         self,
         paare: Sequence[Tuple[str, str]],
         warte_hoechstens: Optional[float] = None,
     ) -> Optional[List[Urteil]]:
-        # Rechnet in einem Thread: Die Suche anderer Personen wartet nicht darauf.
-        return await asyncio.to_thread(self.urteile_sync, list(paare), warte_hoechstens)
+        if not paare:
+            return []
+        if warte_hoechstens is not None and self._modell is None:
+            return None  # laedt noch (oder nie): nicht auf das Laden warten
+        if not await self._sperre_holen(warte_hoechstens):
+            return None
+        try:
+            # Rechnet in einem Thread: Die Suche anderer Personen wartet nicht darauf.
+            return await asyncio.to_thread(self._rechnen, list(paare))
+        finally:
+            self._sperre.release()
+
+
+_MODELLE: Dict[str, NliModell] = {}
+_MODELLE_SPERRE = threading.Lock()
+
+
+def nli_modell(modell_name: str) -> NliModell:
+    """Das eine NliModell dieses Prozesses fuer modell_name (Dienst, Seeding, Bericht)."""
+    with _MODELLE_SPERRE:
+        if modell_name not in _MODELLE:
+            _MODELLE[modell_name] = NliModell(modell_name)
+        return _MODELLE[modell_name]

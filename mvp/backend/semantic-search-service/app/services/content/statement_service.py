@@ -15,7 +15,7 @@ from services.content.base_content_service import (
     Dublettenpruefung,
     dublette_nach_schwelle,
 )
-from services.dieselbe_behauptung.nli_modell import NliModell, NliPruefer
+from services.dieselbe_behauptung.nli_modell import NliModell, NliPruefer, nli_modell
 from services.dieselbe_behauptung.schatten import Schattenprotokoll
 from services.dieselbe_behauptung import regel
 from repositories.interfaces.statement_repository import (
@@ -67,6 +67,7 @@ class StatementService(
         settings: Settings,
         repository_factory: Optional[IRepositoryFactory] = None,
         nli: Optional[NliPruefer] = None,
+        nli_warten: bool = False,
     ):
         # Use provided factory or default to QdrantRepositoryFactory
         if repository_factory is None:
@@ -85,10 +86,16 @@ class StatementService(
         # Eine Sperre je normalisiertem Text um Pruefen-und-Anlegen in add_statement.
         self._text_sperre = SperreJeText()
 
-        # NLI-Stufe (#387). Ohne Modell (aus) gilt allein die Schwelle.
+        # NLI-Stufe (#387). Ohne Modell (aus) gilt allein die Schwelle. Ein Modell je
+        # Prozess: Das Seeding nutzt dasselbe, schon vorgeladene wie der Dienst.
         if nli is None and settings.dieselbe_aussage_nli != "aus":
-            nli = NliModell(NLI_MODELL)
+            nli = nli_modell(NLI_MODELL)
         self._nli: Optional[NliPruefer] = nli
+        # nli_warten: auf das Modell warten statt nach DIESELBE_WARTET_HOECHSTENS die
+        # Schwelle gelten zu lassen - fuer das Seeding, bei dem niemand auf die Antwort
+        # wartet und sonst die ersten Aussagen waehrend des Ladens nach der Schwelle
+        # gingen (eine Regel fuer alle Wege).
+        self._nli_warten = nli_warten
         self.schattenprotokoll = Schattenprotokoll()
         self._schatten_laeuft = False
         self._schatten_tasks: set[asyncio.Task] = set()
@@ -108,6 +115,13 @@ class StatementService(
         """Das NLI-Modell im Hintergrund laden, wenn die NLI-Stufe es braucht."""
         if isinstance(self._nli, NliModell):
             self._nli.vorladen()
+
+    async def nli_laden_abwarten(self) -> bool:
+        """Warten, bis das NLI-Modell geladen ist; True, wenn es bereitsteht. Fuer
+        Messskripte, die gleich nach dem Start fragen und sonst die Schwelle messen."""
+        if isinstance(self._nli, NliModell):
+            return await asyncio.to_thread(self._nli.laden_abwarten)
+        return self._nli is not None
 
     async def search_statements(
         self, query_text: str, limit: int = 10, min_replysuggestions_count: int = 0
@@ -303,7 +317,7 @@ class StatementService(
         # statt dass alle Suchen hintereinander auf die Sperre warten.
         urteile = await self._nli.urteile(
             [(text, k.text) for k in kandidaten],
-            warte_hoechstens=DIESELBE_WARTET_HOECHSTENS,
+            warte_hoechstens=None if self._nli_warten else DIESELBE_WARTET_HOECHSTENS,
         )
         if urteile is None:
             return None
@@ -354,36 +368,50 @@ class StatementService(
         task.add_done_callback(self._schatten_tasks.discard)
 
     async def ohne_widerspruch(
-        self, text: str, treffer: List[StatementSearchResult]
+        self,
+        text: str,
+        treffer: List[StatementSearchResult],
+        hoechstens: Optional[int] = None,
     ) -> List[StatementSearchResult]:
         """
         Die Treffer ohne die, die dem Text in einer Richtung widersprechen
         (aussage_vorschlag_widerspruch_ab) - fuer die Vorschlaege im Feld "Antwort
         auf". Ohne NLI-Modell (aus oder nicht verfuegbar) bleiben alle.
+
+        Mit hoechstens prueft das Modell die Treffer in Score-Reihenfolge stapelweise
+        und hoert auf, sobald so viele uebrig sind: Meist reicht ein Stapel, statt bei
+        jedem Tastendruck den ganzen Vorrat zu pruefen. Kann das Modell einen Stapel
+        nicht pruefen, bleiben dieser und die restlichen Treffer ungefiltert.
         """
         if self._nli is None or self.settings.dieselbe_aussage_nli == "aus":
             return treffer
-        if not treffer:
-            return treffer
-        try:
-            # Nicht auf das Laden oder ein laufendes Urteil warten: Die Vorschlaege
-            # kommen beim Tippen, lieber ungefiltert als spaet.
-            urteile = await self._nli.urteile(
-                [(text, t.text) for t in treffer],
-                warte_hoechstens=VORSCHLAG_WARTET_HOECHSTENS,
-            )
-        except Exception as e:
-            logger.warning(
-                "NLI-Filter der Vorschlaege gescheitert (%s)", type(e).__name__
-            )
-            urteile = None
-        if urteile is None:
-            return treffer
-        return [
-            t
-            for t, u in zip(treffer, urteile)
-            if not regel.widerspricht(u, self.settings.aussage_vorschlag_widerspruch_ab)
-        ]
+        behalten: List[StatementSearchResult] = []
+        rest = list(treffer)
+        while rest and (hoechstens is None or len(behalten) < hoechstens):
+            groesse = len(rest) if hoechstens is None else hoechstens - len(behalten)
+            stapel, rest = rest[:groesse], rest[groesse:]
+            try:
+                # Nicht auf das Laden oder ein laufendes Urteil warten: Die Vorschlaege
+                # kommen beim Tippen, lieber ungefiltert als spaet.
+                urteile = await self._nli.urteile(
+                    [(text, t.text) for t in stapel],
+                    warte_hoechstens=VORSCHLAG_WARTET_HOECHSTENS,
+                )
+            except Exception as e:
+                logger.warning(
+                    "NLI-Filter der Vorschlaege gescheitert (%s)", type(e).__name__
+                )
+                urteile = None
+            if urteile is None:
+                return behalten + stapel + rest
+            behalten += [
+                t
+                for t, u in zip(stapel, urteile)
+                if not regel.widerspricht(
+                    u, self.settings.aussage_vorschlag_widerspruch_ab
+                )
+            ]
+        return behalten
 
     async def add_statement(
         self,

@@ -95,7 +95,7 @@ class TestSearchStatementsFilter:
             ueber_der_schwelle=frozenset(),
         )
         statement_service.ohne_widerspruch.assert_awaited_once_with(
-            "waermepumpe", gefunden
+            "waermepumpe", gefunden, hoechstens=3
         )
 
     def test_vorschlaege_hoechstens_das_limit(self, statement_service):

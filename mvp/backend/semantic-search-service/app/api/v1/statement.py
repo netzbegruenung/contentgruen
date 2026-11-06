@@ -371,7 +371,7 @@ async def search_statements(
         if request.vorschlaege:
             statement_index_results = (
                 await statement_service.ohne_widerspruch(
-                    request.query_text, statement_index_results
+                    request.query_text, statement_index_results, hoechstens=limit
                 )
             )[:limit]
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
