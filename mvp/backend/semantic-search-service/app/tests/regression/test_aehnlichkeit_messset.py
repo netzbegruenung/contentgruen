@@ -3,10 +3,11 @@ Regressionstest Aehnlichkeit: Faellt ein Modellwechsel oder eine neue Normalisie
 auf das Messset, schlaegt das hier an.
 
 Laedt das Einbettungsmodell (~1,5 GB RAM, einige Minuten auf zwei Kernen) und
-braucht kein Qdrant. Deshalb langsam markiert und nicht in CI: CI sammelt nur
-tests/unit und tests/integration, pytest.ini nur tests/unit. Den Aufbau des Messsets
-(Labels, Split, Umfang) prueft tests/unit/test_aehnlichkeit_messset_aufbau.py ohne
-Modell. Manuell:
+braucht kein Qdrant. Deshalb langsam markiert und nicht in der PR-CI: Die sammelt nur
+tests/unit und tests/integration, pytest.ini nur tests/unit. Jede Nacht und auf Anstoss
+laeuft er in .woodpecker/nacht.yaml (docs/CI.md, "Nightly run"); conftest.py gibt danach
+die Tabelle je Paar-Label aus. Den Aufbau des Messsets (Labels, Split, Umfang) prueft
+tests/unit/test_aehnlichkeit_messset_aufbau.py ohne Modell. Manuell:
 
     cd mvp/backend/semantic-search-service/app
     ../venv/bin/python -m pytest tests/regression -m langsam -v
