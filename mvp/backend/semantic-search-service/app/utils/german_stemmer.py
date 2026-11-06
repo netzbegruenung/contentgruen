@@ -1,58 +1,73 @@
 """
-Lightweight German stemmer using CISTEM algorithm.
+Schlagwoerter fuer die Schlagwort-Ueberlappung der Suche (keyword_overlap_service).
 
-CISTEM (Context-Independent Stemmer) is optimized for German text
-and provides good performance without requiring external dependencies.
+Der Stemmer ist CISTEM (Weissweiler & Fraser 2017, "Developing a Stemmer for German
+Based on a Comparative Analysis of Publicly Available Stemmers"), umgesetzt nach der
+Referenzimplementierung (https://github.com/LeonieWeissweiler/CISTEM, MIT-Lizenz),
+ohne Abhaengigkeit. Gewaehlt am Suchtestset (#392, tests/regression/SUCHTESTSET.md):
+CISTEM, Snowball German und die spaCy-Lemmata aus dem Gegenlesen messen gleich; nur
+Kleinschreibung und Umlaute (ohne Stemmer) verliert einen Fall. CISTEM ist der kleinste
+der drei und kostet keine Rechenzeit fuer ein Sprachmodell.
+
+Staemme werden nirgends gespeichert; eine Aenderung wirkt ab dem naechsten Start.
 """
 
 import re
 from typing import List, Set
 
+_GE_PRAEFIX = re.compile(r"^ge(.{4,})")
+_DOPPELT = re.compile(r"(.)\1")
+_DOPPELT_ZURUECK = re.compile(r"(.)\*")
+_EM_ER = re.compile(r"e[mr]$")
+_ND = re.compile(r"nd$")
+_T = re.compile(r"t$")
+_E_S_N = re.compile(r"[esn]$")
+
 
 def stem_german(word: str) -> str:
     """
-    Stem a German word using the CISTEM algorithm.
+    Stamm eines deutschen Worts nach CISTEM.
 
-    Args:
-        word: The word to stem
+    Kleinschreibung, Umlaute werden zu a/o/u, ss statt ß, ein ge- am Anfang faellt weg
+    (wenn mindestens vier Zeichen bleiben). Dann werden vom Ende -em/-er/-nd (bei mehr
+    als fuenf Zeichen), -t und -e/-s/-n abgeschnitten, solange mehr als drei Zeichen
+    bleiben. sch, ei, ie und Doppelbuchstaben bleiben dabei ganz.
 
-    Returns:
-        Stemmed version of the word
+    Variante ohne Gross-/Kleinschreibung (case_insensitive der Referenz): Die
+    Grundvariante schneidet -t nur bei kleingeschriebenen Woertern ab. Suchanfragen
+    sind aber oft kleingeschrieben ("grüne nur großstadt"), und dann faenden
+    "großstadt" und "Großstädte" nicht zusammen.
+
+    Beispiele: Windraeder und Windrad -> windrad, toetet und toeten -> tot.
     """
-    word = word.lower().strip()
-
-    if len(word) <= 2:
+    word = word.strip().lower()
+    if not word:
         return word
-
-    # Replace umlauts
-    word = word.replace("ä", "a")
-    word = word.replace("ö", "o")
-    word = word.replace("ü", "u")
+    word = word.replace("ä", "a").replace("ö", "o").replace("ü", "u")
     word = word.replace("ß", "ss")
 
-    # Remove genitiv-s
-    if word.endswith("s") and len(word) >= 3:
-        # Check if it's likely a genitiv-s (preceded by consonant)
-        if word[-2] not in "aeiou":
-            word = word[:-1]
+    word = _GE_PRAEFIX.sub(r"\1", word)
+    # Platzhalter, damit die Regeln unten diese Buchstabenfolgen nicht zerlegen.
+    word = word.replace("sch", "$").replace("ei", "%").replace("ie", "&")
+    word = _DOPPELT.sub(r"\1*", word)
 
-    # Strip common suffixes
-    suffixes = [
-        "ern",
-        "em",
-        "er",
-        "en",
-        "es",
-        "e",
-        "s",
-    ]
-
-    for suffix in suffixes:
-        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
-            word = word[: -len(suffix)]
+    while len(word) > 3:
+        if len(word) > 5:
+            word, n = _EM_ER.subn("", word)
+            if n:
+                continue
+            word, n = _ND.subn("", word)
+            if n:
+                continue
+        word, n = _T.subn("", word)
+        if n:
+            continue
+        word, n = _E_S_N.subn("", word)
+        if not n:
             break
 
-    return word
+    word = _DOPPELT_ZURUECK.sub(r"\1\1", word)
+    return word.replace("%", "ei").replace("&", "ie").replace("$", "sch")
 
 
 def extract_keywords(
@@ -185,7 +200,11 @@ def calculate_keyword_boost(
     return multiplier
 
 
-# Common German stop words (function words with little semantic meaning)
+# Common German stop words (function words with little semantic meaning).
+# "nicht", "kein", "keine" und "ohne" bleiben drin: Die Verneinung prueft der
+# Polaritaetsfilter (negation_detector), spaeter die NLI-Stufe (#387). Am Suchtestset
+# aendert ihr Wegfall nichts (#392). Pronomen wie "uns" und "mir" verbinden sonst
+# Aussagen ueber verschiedene Themen ("Die Gruenen wollen uns ... verbieten").
 GERMAN_STOP_WORDS = {
     "der",
     "die",
@@ -300,4 +319,22 @@ GERMAN_STOP_WORDS = {
     "denn",
     "also",
     "etwa",
+    "uns",
+    "unser",
+    "unsere",
+    "unserer",
+    "unserem",
+    "unseren",
+    "mir",
+    "mich",
+    "dir",
+    "dich",
+    "euch",
+    "euer",
+    "eure",
+    "ihm",
+    "ihn",
+    "ihnen",
+    "alle",
+    "alles",
 }

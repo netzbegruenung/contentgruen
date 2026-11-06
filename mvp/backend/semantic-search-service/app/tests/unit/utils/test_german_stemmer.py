@@ -31,7 +31,34 @@ class TestGermanStemmer:
         """Test umlaut replacement."""
         assert stem_german("über") == "uber"
         assert stem_german("schön") == "schon"
-        assert stem_german("grün") == "grun"
+        assert stem_german("grün") == stem_german("grun")
+
+    def test_plural_mit_umlaut_hat_denselben_stamm(self):
+        """Plural mit Umlaut und Singular fallen zusammen (#392)."""
+        assert stem_german("Windräder") == stem_german("Windrad") == "windrad"
+        assert stem_german("Vögel") == stem_german("Vogel") == "vogel"
+        assert stem_german("Großstädte") == stem_german("Großstadt") == "grossstad"
+        assert stem_german("Verbote") == stem_german("Verbot") == "verbo"
+
+    def test_verbformen_haben_denselben_stamm(self):
+        """Verbformen verlieren -t und -en, ge- faellt weg (CISTEM)."""
+        assert stem_german("tötet") == stem_german("töten") == "tot"
+        assert stem_german("gebaut") == stem_german("bauen") == "bau"
+
+    def test_gross_und_klein_haben_denselben_stamm(self):
+        """Kleingeschriebene Suchanfragen treffen grossgeschriebene Texte (#392)."""
+        assert stem_german("großstadt") == stem_german("Großstädte")
+
+    def test_cistem_von_hand_gerechnet(self):
+        """Von Hand nach den CISTEM-Regeln gerechnet (ohne Gross-/Kleinschreibung)."""
+        # speicherbehaltern -n -er -t
+        assert stem_german("Speicherbehältern") == "speicherbehal"
+        # grenzpostens -s -n -e -t -s
+        assert stem_german("Grenzpostens") == "grenzpo"
+        # sch und ei zaehlen je als ein Zeichen: $w%nen -n -e -n
+        assert stem_german("Schweinen") == "schwei"
+        # ge- vorn faellt weg, sch und ie je ein Zeichen: $r&ben -n -e
+        assert stem_german("geschrieben") == "schrieb"
 
     def test_stem_eszett_replacement(self):
         """Test eszett (ß) replacement."""
@@ -108,6 +135,11 @@ class TestKeywordExtraction:
         """Test extraction from empty text."""
         keywords = extract_keywords("")
         assert len(keywords) == 0
+
+    def test_extract_skips_pronouns(self):
+        """Pronomen tragen kein Thema: "uns" darf nicht verbinden (#392)."""
+        keywords = extract_keywords("Die Grünen nehmen uns alles weg")
+        assert not {"uns", "alles", "all"} & set(keywords)
 
     def test_extract_only_stop_words(self):
         """Test extraction when only stop words present."""
