@@ -1,0 +1,69 @@
+# Naechtlicher Lauf (#391): Messset und Suchtestset gegen das echte Modell und ein eigenes
+# Qdrant mit dem Seed. Rot, wenn eine Messung ueber der Toleranz vom Soll abweicht oder
+# Tor fuer Roadmap-Stufe 3 bzw. untere Grenze fuer aehnliche Aussagen unterschritten sind;
+# die Tabellen stehen im Log (docs/CI.md, "Nightly run").
+# Kein Pflichtstatus fuer PRs (zu langsam). PRs, die Modell, Schwellen, Stemmer oder
+# Normalisierung aendern, stossen den Lauf auf ihrem Branch an ("Run pipeline"); dabei
+# laeuft ci.yaml mit (auch manual), auf main zudem build.yaml.
+# Cron-Job "nachtlauf" in den Woodpecker-Einstellungen des Repos richtet eine Person ein.
+when:
+  - event: cron
+    cron: nachtlauf
+  - event: manual
+
+# Nur der Workspace: Die Schritte holen nichts, was eine ganze Historie braucht.
+clone:
+  - name: clone
+    image: docker.io/woodpeckerci/plugin-git:2.10.1
+    settings:
+      depth: 1
+
+services:
+  - name: qdrant
+    image: qdrant/qdrant:v1.18.2
+    # Ohne absoluten Pfad startet der Dienst nicht
+    entrypoint: [/qdrant/qdrant]
+
+# Modell-Cache: Das Image des Semantic-Search-Service bringt das Modell schon mit
+# (Dockerfile, "Pre-download"), Python und die Pakete von main auch. Gemessen wird der
+# Code aus dem Checkout; pip zieht nur nach, was sich in requirements.txt geaendert hat.
+# DOCKER_CONTAINER=false: Seed-Pfad aus dem Checkout statt aus dem Image.
+steps:
+  - name: messset
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:main
+    # :main wandert mit jedem Build; ohne pull bliebe ein altes Image im Cache des Agents.
+    pull: true
+    depends_on: []
+    environment:
+      DOCKER_CONTAINER: "false"
+      HF_HOME: /root/.cache/huggingface
+      # Nur das Modell aus dem Image, keine neue Revision vom Hub. Ein PR mit neuem
+      # Modell setzt hier fuer den manuellen Lauf "0", vor dem Merge wieder "1" (docs/CI.md).
+      HF_HUB_OFFLINE: "1"
+    commands:
+      - pip install -q --no-cache-dir --root-user-action=ignore -r mvp/backend/semantic-search-service/requirements.txt
+      - cd mvp/backend/semantic-search-service/app
+      - python -m pytest tests/regression/test_aehnlichkeit_messset.py -m langsam -q -p no:cacheprovider
+
+  # Nacheinander, nicht parallel: Jeder Schritt laedt das Modell (gut 1 GB RAM).
+  - name: suchtest
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:main
+    # :main wandert mit jedem Build; ohne pull bliebe ein altes Image im Cache des Agents.
+    pull: true
+    depends_on: [messset]
+    when:
+      - status: [success, failure]
+    environment:
+      DOCKER_CONTAINER: "false"
+      HF_HOME: /root/.cache/huggingface
+      # Nur das Modell aus dem Image, keine neue Revision vom Hub. Ein PR mit neuem
+      # Modell setzt hier fuer den manuellen Lauf "0", vor dem Merge wieder "1" (docs/CI.md).
+      HF_HUB_OFFLINE: "1"
+      SEMANTIC_SEARCH_QDRANT_URL: http://qdrant:6333
+      SEMANTIC_SEARCH_QDRANT_COLLECTION: nachtlauf
+    commands:
+      - pip install -q --no-cache-dir --root-user-action=ignore -r mvp/backend/semantic-search-service/requirements.txt
+      - python3 scripts/ci_dienste_warten.py qdrant:6333
+      - cd mvp/backend/semantic-search-service/app
+      - python -m tests.regression.seed_laden
+      - python -m tests.regression.nachtlauf

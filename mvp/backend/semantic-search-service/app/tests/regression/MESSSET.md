@@ -9,7 +9,7 @@ entschieden hat: Ist der Kandidat dieselbe Behauptung wie der Bestandstext?
 | `aehnlichkeit_paare.py` | die Paare mit Paar-Label, Kategorie, Phänomen und Gruppe (von Hand) |
 | `aehnlichkeit_gemessen.py` | Scores und Entscheidung je Paar (erzeugt, nicht von Hand ändern) |
 | `aehnlichkeit_messen.py` | misst und gibt die Auswertung je Paar-Label aus |
-| `test_aehnlichkeit_messset.py` | Regressionstest mit Modell (langsam, nicht in CI) |
+| `test_aehnlichkeit_messset.py` | Regressionstest mit Modell (langsam, nicht in der PR-CI, jede Nacht in `.woodpecker/nacht.yaml`) |
 | `nli_messen.py`, `nli_gemessen.py` | NLI-Stufe (#387): Urteile je Aussagepaar, Auswertung, Antwortzeit |
 | `test_nli_messset.py`, `../unit/test_nli_messset.py` | NLI-Stufe mit Modell (langsam) bzw. über die gespeicherten Urteile (in CI) |
 | `../unit/test_aehnlichkeit_messset_aufbau.py` | Aufbau, Umfang und Split ohne Modell (in CI) |
@@ -20,6 +20,9 @@ cd mvp/backend/semantic-search-service/app
 ../venv/bin/python -m tests.regression.aehnlichkeit_messen --schreiben  # gemessen.py neu
 ../venv/bin/python -m pytest tests/regression -m langsam -q
 ```
+
+Jede Nacht läuft der Regressionstest in `.woodpecker/nacht.yaml`; wann ein PR den Lauf
+anstoßen muss, steht in `docs/CI.md`, „Nightly run“.
 
 ## Paar-Labels
 

@@ -190,15 +190,20 @@ def _schreiben(messungen: dict[str, Messung]) -> None:
     _ZIEL.write_text(kopf + "\n".join(zeilen) + "\n}\n# fmt: on\n", encoding="utf-8")
 
 
-def main(argv: list[str]) -> None:
-    settings = Settings()
+def messungen_jetzt(settings: Settings) -> dict[str, Messung]:
+    """Die Messung mit dem Modell, wie sie aehnlichkeit_gemessen.py speichert."""
     roh = scores()
-    messungen = {
+    return {
         p.id: Messung(
             *roh[p.id], entscheidung(p, roh[p.id], settings), fingerabdruck(p)
         )
         for p in PAARE
     }
+
+
+def main(argv: list[str]) -> None:
+    settings = Settings()
+    messungen = messungen_jetzt(settings)
     if "--schreiben" in argv:
         _schreiben(messungen)
         print(f"geschrieben: {_ZIEL}")

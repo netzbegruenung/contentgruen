@@ -106,6 +106,13 @@ _Avoid_: Testset (allein), Messset (das sind Textpaare)
 Eine Suche, deren erster angezeigter Beitrag nicht auf die Suchanfrage passt, oder die etwas anzeigt, obwohl im Bestand nichts passt. Gemessen im Suchtestset; das Gegenstück zur Suche ohne Treffer, bei der nichts angezeigt wird. Für die Suche selbst passt bei einem Fehltreffer etwas ausreichend (über der Schwelle); er zählt deshalb nie als Suche ohne Treffer.
 _Avoid_: falsch positiv
 
+**Ähnliche Aussagen**:
+Vorhandene gepflegte Aussagen, die einer Eingabe nahekommen, auch dieselbe Behauptung in anderen Worten: höchstens drei, ab einer unteren Grenze der Ähnlichkeit (heute 0,885). Das Beitragsformular schlägt sie im Feld „Antwort auf“ vor; bei null Treffern soll die Ergebnisseite sie als „passt vielleicht“ zeigen (`docs/VISION.md`). Das Suchtestset misst, wie oft die erwartete Aussage darunter ist; die untere Grenze dafür prüft der nächtliche Lauf.
+_Avoid_: Dubletten (Dubletten sind gleiche Beiträge)
+
+**Nächtlicher Lauf**:
+Die CI-Pipeline, die jede Nacht und auf Anstoß Messset und Suchtestset mit dem echten Einbettungsmodell misst und mit dem Soll vergleicht, dazu das Tor für Roadmap-Stufe 3 und die untere Grenze für ähnliche Aussagen (`.woodpecker/nacht.yaml`, `docs/CI.md`). Kein Pflichtstatus für PRs.
+
 **Zerfaserung**:
 Wenn dieselbe Behauptung als mehrere Aussagen im Bestand liegt, etwa weil eine Suchanfrage in anderen Worten nicht auf der vorhandenen Aussage landet, sondern eine neue ergibt. Antworten, Nutzung und Suchen ohne Treffer verteilen sich dann auf mehrere Aussagen. Das Suchtestset misst sie, die NLI-Stufe (#387) soll sie verhindern.
 _Avoid_: Fragmentierung, Dubletten (Dubletten sind gleiche Beiträge)

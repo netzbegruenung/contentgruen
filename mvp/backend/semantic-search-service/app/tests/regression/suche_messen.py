@@ -62,9 +62,16 @@ STANDARD_SCHWELLEN = (0.76, 0.78, 0.79, 0.80, 0.81, 0.82, 0.84, 0.86)
 ANGEZEIGTE_TYPEN = ("commentary", "generic_text", "post")
 # Recall@k ueber die Ergebnisseite in ihrer Reihenfolge (ANGEZEIGTE_TYPEN).
 RECALL_BEI = (5, 10)
+# Recall je Phaenomen: das groesste k aus RECALL_BEI (wie das Tor fuer Roadmap-Stufe 3).
+RECALL_JE_PHAENOMEN = max(RECALL_BEI)
 # Exit-Code, wenn kein Fall mit Erwartung gemessen wurde: Der Bestand passt nicht zum
 # Set (leere oder falsche Sammlung, Startbestand ohne passende Faelle).
 BESTAND_PASST_NICHT = 2
+# Aehnliche Aussagen wie die Vorschlaege im Beitragsformular (statement.service.ts:
+# VORSCHLAG_ANZAHL, Settings.aussage_vorschlag_schwelle): hoechstens so viele gepflegte
+# Aussagen, und nur ab dieser unteren Grenze. Ein Unit-Test haelt beide Stellen gleich.
+AEHNLICHE_ANZAHL = 3
+AEHNLICHE_AB = 0.885
 
 VORLAEUFIG = (
     "Vorläufig: gemessen am Testbestand (Seed). Nach dem Startbestand (#288) einmal neu "
@@ -95,6 +102,9 @@ class FallMessung(NamedTuple):
     # Nur bei dieselbe_behauptung: Landet die Suchanfrage auf einer erwarteten Aussage
     # (True) oder ergaebe sie eine neue bzw. landet auf einer anderen (False)?
     landet_auf_erwarteter: Optional[bool]
+    # Die aehnlichen Aussagen zur Suchanfrage (AEHNLICHE_ANZAHL, ab AEHNLICHE_AB), je
+    # Aussage: ist sie eine erwartete? Unabhaengig von der Schwelle der Suche.
+    aehnliche: Tuple[bool, ...] = ()
 
 
 class Auswertung(NamedTuple):
@@ -127,6 +137,13 @@ class Zerfaserung(NamedTuple):
     ohne_treffer_neu: int  # davon landen nicht auf der erwarteten Aussage
 
 
+class AehnlicheAussagen(NamedTuple):
+    mit_erwartung: int  # gemessene Faelle mit Erwartung
+    erwartete_dabei: int  # davon eine erwartete Aussage unter den aehnlichen
+    ohne_erwartung: int  # gemessene Faelle ohne Erwartung
+    ohne_mit_vorschlag: int  # davon mit mindestens einer aehnlichen Aussage
+
+
 # ---------------------------------------------------------------------- #
 # Auswertung (ohne Stack)
 # ---------------------------------------------------------------------- #
@@ -151,6 +168,11 @@ def einordnen(fall: Fall, gezeigt: Sequence[AngezeigterBeitrag]) -> str:
     return "fehltreffer"
 
 
+def passend_unter(gezeigt: Sequence[AngezeigterBeitrag], k: int) -> bool:
+    """Ist unter den ersten k angezeigten Beitraegen ein passender (Zaehler von Recall@k)?"""
+    return any(c.passt for c in gezeigt[:k])
+
+
 def gemessen(messungen: Iterable[FallMessung]) -> List[FallMessung]:
     """Nur Faelle, deren erwartete Aussagen alle im Bestand sind."""
     return [m for m in messungen if not m.fehlt]
@@ -173,7 +195,7 @@ def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
             zaehler[einordnung] += 1
             gefunden += any(c.passt for c in gezeigt)
             for k in RECALL_BEI:
-                gefunden_bei[k] += any(c.passt for c in gezeigt[:k])
+                gefunden_bei[k] += passend_unter(gezeigt, k)
         else:
             ohne[einordnung] += 1
     mit_erwartung = sum(1 for m in faelle if m.fall.erwartet)
@@ -201,11 +223,23 @@ def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
 def je_phaenomen(
     messungen: Iterable[FallMessung], schwelle: float
 ) -> Dict[str, Dict[str, int]]:
-    """Je Phaenomen, wie viele Faelle treffer, fehltreffer und keine sind."""
+    """
+    Je Phaenomen, wie viele Faelle treffer, fehltreffer und keine sind, dazu
+    mit_erwartung und gefunden@k (k = RECALL_JE_PHAENOMEN): Faelle mit Erwartung und
+    einem passenden Beitrag unter den ersten k (Recall@k = gefunden@k / mit_erwartung).
+    """
+    gefunden_k = f"gefunden@{RECALL_JE_PHAENOMEN}"
     tabelle: Dict[str, Dict[str, int]] = {}
     for m in gemessen(messungen):
-        zeile = tabelle.setdefault(m.fall.phaenomen, dict.fromkeys(EINORDNUNGEN, 0))
-        zeile[einordnen(m.fall, m.angezeigt[schwelle])] += 1
+        zeile = tabelle.setdefault(
+            m.fall.phaenomen,
+            {**dict.fromkeys(EINORDNUNGEN, 0), "mit_erwartung": 0, gefunden_k: 0},
+        )
+        gezeigt = m.angezeigt[schwelle]
+        zeile[einordnen(m.fall, gezeigt)] += 1
+        if m.fall.erwartet:
+            zeile["mit_erwartung"] += 1
+            zeile[gefunden_k] += passend_unter(gezeigt, RECALL_JE_PHAENOMEN)
     return tabelle
 
 
@@ -229,6 +263,23 @@ def zerfaserung(messungen: Iterable[FallMessung], schwelle: float) -> Zerfaserun
         ohne_treffer_neu=sum(
             1 for m in ohne_dieselbe if m.landet_auf_erwarteter is False
         ),
+    )
+
+
+def aehnliche_aussagen(messungen: Iterable[FallMessung]) -> AehnlicheAussagen:
+    """
+    Untere Grenze fuer aehnliche Aussagen: Bei wie vielen Faellen mit Erwartung ist eine
+    erwartete Aussage unter den aehnlichen, bei wie vielen ohne Erwartung erscheint
+    trotzdem eine (die waere unpassend).
+    """
+    faelle = gemessen(messungen)
+    mit = [m for m in faelle if m.fall.erwartet]
+    ohne = [m for m in faelle if not m.fall.erwartet]
+    return AehnlicheAussagen(
+        mit_erwartung=len(mit),
+        erwartete_dabei=sum(1 for m in mit if any(m.aehnliche)),
+        ohne_erwartung=len(ohne),
+        ohne_mit_vorschlag=sum(1 for m in ohne if m.aehnliche),
     )
 
 
@@ -277,13 +328,15 @@ def tabellen(
         "",
         f"Je Phänomen bei {aktuell}:",
         "",
-        "| Phänomen | Treffer | Fehltreffer | keine |",
-        "|---|---|---|---|",
+        "| Phänomen | Treffer | Fehltreffer | keine "
+        f"| passend unter den ersten {RECALL_JE_PHAENOMEN} / mit Erwartung |",
+        "|---|---|---|---|---|",
     ]
     for phaenomen, zeile in sorted(je_phaenomen(messungen, aktuell).items()):
         zeilen.append(
             f"| {phaenomen} | {zeile['treffer']} | {zeile['fehltreffer']} "
-            f"| {zeile['keine']} |"
+            f"| {zeile['keine']} "
+            f"| {zeile[f'gefunden@{RECALL_JE_PHAENOMEN}']}/{zeile['mit_erwartung']} |"
         )
     z = zerfaserung(messungen, aktuell)
     zeilen += [
@@ -294,6 +347,14 @@ def tabellen(
         f"{z.ohne_treffer} Suchen ohne Treffer sind {z.ohne_treffer_dieselbe} dieselbe "
         f"Behauptung wie eine vorhandene Aussage, davon landen {z.ohne_treffer_neu} "
         "nicht auf ihr.",
+    ]
+    a = aehnliche_aussagen(messungen)
+    zeilen += [
+        "",
+        f"Ähnliche Aussagen (höchstens {AEHNLICHE_ANZAHL}, ab {AEHNLICHE_AB}): "
+        f"erwartete Aussage dabei bei {a.erwartete_dabei} von {a.mit_erwartung} "
+        f"Fällen mit Erwartung; {a.ohne_mit_vorschlag} von {a.ohne_erwartung} Fällen "
+        "ohne Erwartung zeigen trotzdem eine.",
     ]
     fehlend = [m for m in messungen if m.fehlt]
     if fehlend:
@@ -352,6 +413,7 @@ def als_json(
         "auswertung": [auswerten(messungen, s)._asdict() for s in schwellen],
         "je_phaenomen": je_phaenomen(messungen, heute),
         "zerfaserung": zerfaserung(messungen, heute)._asdict(),
+        "aehnliche_aussagen": aehnliche_aussagen(messungen)._asdict(),
         "faelle": [
             {
                 "id": m.fall.id,
@@ -363,6 +425,7 @@ def als_json(
                 "dieselbe_behauptung": m.fall.dieselbe_behauptung,
                 "fehlt": list(m.fehlt),
                 "landet_auf_erwarteter": m.landet_auf_erwarteter,
+                "aehnliche": list(m.aehnliche),
                 "einordnung": {
                     f"{s:.2f}": einordnen(m.fall, kandidaten)
                     for s, kandidaten in sorted(m.angezeigt.items())
@@ -539,7 +602,32 @@ async def fall_messen(
     if fall.dieselbe_behauptung:
         vorhanden = await dienste.statement_service.vorhandene_finden(fall.anfrage)
         landet = vorhanden is not None and str(vorhanden.id) in erwartung.aussage_ids
-    return FallMessung(fall, angezeigt, erwartung.fehlt, landet)
+    # Dieselbe Abfrage wie die Vorschlaege im Beitragsformular (aussageVorschlaege).
+    aehnliche = await dienste.statement_service.search_filtered(
+        fall.anfrage,
+        AEHNLICHE_ANZAHL,
+        nur_kuratiert=True,
+        min_similarity=AEHNLICHE_AB,
+    )
+    return FallMessung(
+        fall,
+        angezeigt,
+        erwartung.fehlt,
+        landet,
+        tuple(str(a.id) in erwartung.aussage_ids for a in aehnliche),
+    )
+
+
+KEIN_FALL_GEMESSEN = (
+    "Kein Fall mit Erwartung gemessen: Der Bestand passt nicht zum Suchtestset "
+    "(leere oder falsche Sammlung, oder Faelle fuer den Startbestand fehlen). "
+    "Die Zahlen oben sind nicht aussagekraeftig."
+)
+
+
+def bestand_passt(messungen: Iterable[FallMessung]) -> bool:
+    """Mindestens ein Fall mit Erwartung ist gemessen, sonst sagen die Zahlen nichts."""
+    return any(m.fall.erwartet for m in gemessen(messungen))
 
 
 def mit_schwelle_heute(schwellen: Iterable[float]) -> Tuple[float, ...]:
@@ -594,23 +682,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.json:
         with open(args.json, "w", encoding="utf-8") as datei:
             json.dump(
-                als_json(messungen, schwellen, args.k, _umgebung()),
+                als_json(messungen, schwellen, args.k, umgebung()),
                 datei,
                 ensure_ascii=False,
                 indent=1,
             )
-    if not any(m.fall.erwartet for m in gemessen(messungen)):
-        print(
-            "Kein Fall mit Erwartung gemessen: Der Bestand passt nicht zum Suchtestset "
-            "(leere oder falsche Sammlung, oder Faelle fuer den Startbestand fehlen). "
-            "Die Zahlen oben sind nicht aussagekraeftig.",
-            file=sys.stderr,
-        )
+    if not bestand_passt(messungen):
+        print(KEIN_FALL_GEMESSEN, file=sys.stderr)
         return BESTAND_PASST_NICHT
     return 0
 
 
-def _umgebung() -> dict:
+def umgebung() -> dict:
     """Womit gemessen wurde, fuer den Vergleich zweier Messungen."""
     from core.config import EMBEDDING_MODELL, settings
 

@@ -6,7 +6,8 @@ its status `ci/woodpecker/pr/ci` is required before a merge into `main` once a p
 completed the [setup](#setup-by-a-person).
 
 After the merge, `.woodpecker/build.yaml` and, on `v*` tags, `release.yaml` build the images
-(see [Images and releases](#images-and-releases)). Until the switch the GitHub Actions on the
+(see [Images and releases](#images-and-releases)), and every night `.woodpecker/nacht.yaml`
+measures search quality against the real model (see [Nightly run](#nightly-run)). Until the switch the GitHub Actions on the
 mirror (`.github/workflows/`) still build them too and publish the tags the environments use.
 
 ## What runs
@@ -129,6 +130,47 @@ not the page.
   branches and create tags. Forgejo has no narrower scope for the wiki, so a leaked token
   is revoked and replaced at once.
 
+## Nightly run
+
+`.woodpecker/nacht.yaml` (workflow `nacht`, #391) measures the Messset and the
+Suchtestset against the real embedding model, every night and on request. Both decide
+whether a change to the model, a threshold, the stemmer or the normalisation shifts
+results; they are too slow for every pull request (several minutes, over 1 GB RAM for the
+model), so the run is not a required status.
+
+| Step | Runs | Red when |
+|---|---|---|
+| `messset` | `pytest tests/regression/test_aehnlichkeit_messset.py -m langsam`, then the table per Paar-Label | a score differs from `aehnlichkeit_gemessen.py` by more than 0.005, or a decision of the Dublettenprüfung changes (`MESSSET.md`) |
+| `suchtest` | `tests.regression.seed_laden` loads the seed into an empty collection of the service `qdrant`, `tests.regression.nachtlauf` measures the Suchtestset at today's threshold and prints the tables and the checks | a number differs from the Soll by more than one case (in either direction), or the gate for Roadmap-Stufe 3 or the lower bound for ähnliche Aussagen is not met (`SUCHTESTSET.md`, „Nächtlicher Lauf“) |
+
+- **Model cache:** both steps run in the image of the semantic search service
+  (`gutgesagt-semantic-search:main`, pulled anew each run, `pull: true`; the package is
+  public, no registry login), which downloads the model at build time. The code
+  measured is the checkout; pip only installs what `requirements.txt` changed.
+  `HF_HUB_OFFLINE=1` keeps the run on the model revision baked into the image instead of
+  whatever the hub serves that night. A pull request that switches to another model sets
+  it to `"0"` in `nacht.yaml` on its branch for the manual run, so the run downloads the
+  new model, and back to `"1"` before the merge: `scripts/tests/test_woodpecker_ci.py`
+  keeps `ci` red until then, so `"0"` never lands on `main`.
+- `suchtest` also runs after a red `messset`, one after the other: each step loads the
+  model.
+- The log line „Folder not found: …/index_data/content_index“ while loading the seed is
+  harmless; seeding logs it in the dev stack too.
+- Always against the seed in the service `qdrant` of the run, never against test or
+  production. No secret and no report step (there is no pull request to comment on): a red
+  run is visible in Woodpecker.
+- **When a pull request must trigger the run:** if it changes the embedding model,
+  a threshold (`core/config.py`, `MINIMUM_SCORE_THRESHOLD`, `VORSCHLAG_MIN_AEHNLICHKEIT`),
+  the stemmer, the normalisation (`utils/text_normalisierung.py`), the search pipeline, the
+  seed, the Messset or the Suchtestset. Run it with "Run pipeline" on the pull-request
+  branch (not on `main`: there a manual run also builds every image, `build.yaml`) and name
+  the result in the pull request. `ci` runs alongside (it reacts to `manual` too), so the
+  agent carries both at once for a few minutes. The other way round as well: every manual
+  run, also one meant for `ci` or the images, starts the nightly run. If a number changes
+  on purpose, update the Soll in the same pull request (`aehnlichkeit_gemessen.py` or
+  `SOLL` in `nachtlauf.py`).
+- Locally: the commands in `MESSSET.md` and `SUCHTESTSET.md`.
+
 ## Images and releases
 
 Two workflows build the four images (frontend, BFF, semantic search, postgres-app) with the
@@ -228,6 +270,11 @@ enabled, and the pull request that adds the pipeline already needs it):
    must be up to date", so combinations of two pull requests run before the merge. A branch
    is brought up to date by merge ("Update branch"), not by rebase. Whoever wants a linear
    `main` sets the merge style to squash.
+
+6. **Cron job for the nightly run,** after the pull request that adds `nacht.yaml` is
+   merged: in the repository settings of Woodpecker, "Cron", add a job named `nachtlauf`
+   (the workflow only reacts to this name), branch `main`, schedule e.g. `0 3 * * *`
+   (every night at 03:00). No secret needed.
 
 Check without admin rights: `GET /api/v1/repos/<owner>/<repo>/branches/main` shows
 `enable_status_check` and `status_check_contexts`.
