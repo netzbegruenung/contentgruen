@@ -14,6 +14,11 @@ export interface SearchStatementByTextRequest {
     nur_kuratiert?: boolean;
     /** Nur Treffer mit mindestens diesem Aehnlichkeitswert, 0-1. */
     min_similarity?: number;
+    /**
+     * Vorschlaege fuer das Feld "Antwort auf": Schwelle aus den Einstellungen des
+     * Suchdienstes, ohne Aussagen, die dem Text widersprechen (#387).
+     */
+    vorschlaege?: boolean;
 }
 
 export interface StatementSearchResult {

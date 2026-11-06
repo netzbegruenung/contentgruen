@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 
 import { convertToParamMap } from '@angular/router';
 
-import { StatementService, VORSCHLAG_ANZAHL, VORSCHLAG_MIN_AEHNLICHKEIT } from './statement.service';
+import { StatementService, VORSCHLAG_ANZAHL } from './statement.service';
 import { environment } from '../../environments/environment';
 import { NUR_LESEND } from '../auth/cache.interceptor';
 
@@ -69,7 +69,7 @@ describe('StatementService: Vorschlaege im Antwort-auf-Feld', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('fragt nur gepflegte, hinreichend aehnliche Aussagen ab', () => {
+  it('fragt Vorschlaege an, Schwelle und Widerspruch entscheidet der Suchdienst', () => {
     let ergebnis: unknown;
     service.aussageVorschlaege('Wärmepumpen teuer').subscribe((vorschlaege) => (ergebnis = vorschlaege));
 
@@ -78,7 +78,7 @@ describe('StatementService: Vorschlaege im Antwort-auf-Feld', () => {
       query_text: 'Wärmepumpen teuer',
       limit: VORSCHLAG_ANZAHL,
       nur_kuratiert: true,
-      min_similarity: VORSCHLAG_MIN_AEHNLICHKEIT,
+      vorschlaege: true,
     });
     anfrage.flush({ results: [{ id: 'a-1', text: 'x', replysuggestions_count: 1, score: 0.7 }] });
 

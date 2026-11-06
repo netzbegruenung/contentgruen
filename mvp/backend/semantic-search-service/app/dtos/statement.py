@@ -258,6 +258,15 @@ class SearchStatementByTextRequest(BaseModel):
         le=1.0,
         description="Nur Treffer mit mindestens diesem Aehnlichkeitswert",
     )
+    vorschlaege: bool = Field(
+        default=False,
+        description=(
+            "Vorschlaege fuer das Feld 'Antwort auf': nur gepflegte Aussagen ab der "
+            "Vorschlagsschwelle des Dienstes (aussage_vorschlag_schwelle; "
+            "min_similarity wird dann nicht beachtet), hoechstens 5, ohne die, die "
+            "dem Text widersprechen (#387)."
+        ),
+    )
     # TODO: Add a field to specify the search type (content, statement, reply_suggestion, reply_suggestion_candidate)
 
 

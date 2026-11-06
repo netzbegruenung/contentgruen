@@ -117,6 +117,10 @@ Die CI-Pipeline, die jede Nacht und auf Anstoß Messset und Suchtestset mit dem 
 Wenn dieselbe Behauptung als mehrere Aussagen im Bestand liegt, etwa weil eine Suchanfrage in anderen Worten nicht auf der vorhandenen Aussage landet, sondern eine neue ergibt. Antworten, Nutzung und Suchen ohne Treffer verteilen sich dann auf mehrere Aussagen. Das Suchtestset misst sie, die NLI-Stufe (#387) soll sie verhindern.
 _Avoid_: Fragmentierung, Dubletten (Dubletten sind gleiche Beiträge)
 
+**NLI-Stufe**:
+Die zweite Stufe der Prüfung, ob ein neuer Text dieselbe Aussage ist wie eine vorhandene (#387): Die Einbettung sucht wenige ähnliche Aussagen als Kandidaten, ein lokales NLI-Modell prüft je Paar, ob beide Texte einander folgern und keiner dem anderen widerspricht. Fragen gegen Behauptungen und Texte mit anderen Quantoren („manche“, „alle“, „nie“) prüft es nicht, sie bleiben getrennt. Bei einer Übernahme bleibt der Wortlaut der vorhandenen Aussage. Im **Schattenbetrieb** entscheidet weiter die Ähnlichkeitsschwelle, die NLI-Stufe urteilt nur mit und wird gezählt, bis die Auswertung die Umstellung trägt. Ist das Modell nicht verfügbar, gilt die Schwelle. Dasselbe Modell filtert die Vorschläge im Feld „Antwort auf“: Eine Aussage, die dem Getippten widerspricht, wird nicht vorgeschlagen.
+_Avoid_: Paraphrasen-Erkennung, KI-Prüfung (es erzeugt keinen Text)
+
 ### Stufen eines Einwurfs
 
 **Offen**:

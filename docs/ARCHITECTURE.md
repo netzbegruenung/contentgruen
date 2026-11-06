@@ -257,6 +257,12 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - `SEMANTIC_SEARCH_DATA_PATH` - Seed data path
 - `SEMANTIC_SEARCH_METADATA_PATH` - Persistent metadata storage path
 - `SEMANTIC_SEARCH_LOG_LEVEL` - DEBUG/INFO
+- `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI` - NLI-Stufe (#387): `aus`, `schatten` (default: for the
+  same-Aussage check the similarity threshold decides and the NLI model only counts along) or
+  `an` (the NLI model decides whether a new text is the same Aussage). In `schatten` and `an`
+  the model also drops contradicting Aussagen from the "Antwort auf" suggestions; ~1.2 GB extra
+  RAM, threads as `SEMANTIC_SEARCH_EMBEDDING_THREADS`. Thresholds `SEMANTIC_SEARCH_NLI_*` and
+  `SEMANTIC_SEARCH_AUSSAGE_VORSCHLAG_*`, measured in `tests/regression/MESSSET.md`.
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts

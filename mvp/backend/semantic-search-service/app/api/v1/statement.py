@@ -310,6 +310,13 @@ async def themen_testset(
     )
 
 
+# Vorschlaege im Feld "Antwort auf": so viele mal das Limit werden gesucht, bevor die
+# widersprechenden wegfallen (#387).
+VORSCHLAG_VORRAT = 3
+# Hoechstens so viele Vorschlaege (das Frontend fragt 3 an, VORSCHLAG_ANZAHL).
+VORSCHLAG_HOECHSTENS = 5
+
+
 # Aehnliche Aussagen. Fuer Nicht-Admins dieselbe Auswahl wie in getAll (#436);
 # nur_kuratiert laesst fuer alle auch die Suchanfragen ueber der Schwelle weg
 # (Vorschlaege im Antwort-auf-Feld).
@@ -325,27 +332,48 @@ async def search_statements(
     try:
         logger.debug("/searchStatements was called")
 
+        # vorschlaege: Feld "Antwort auf" - gepflegte Aussagen ab der Schwelle des
+        # Dienstes, Widersprueche fallen danach weg (#387).
+        min_similarity = request.min_similarity
+        limit = request.limit
+        if request.vorschlaege:
+            # Schwelle und Menge legt der Dienst fest, nicht die Anfrage: Jeder
+            # Kandidat kostet zwei Modellaufrufe.
+            min_similarity = statement_service.settings.aussage_vorschlag_schwelle
+            limit = min(request.limit, VORSCHLAG_HOECHSTENS)
+            # Mehr holen, als gezeigt wird: Faellt ein Widerspruch weg, rueckt der
+            # naechste passende nach.
+            vorrat = limit * VORSCHLAG_VORRAT
+        else:
+            vorrat = limit
+
         # nur_kuratiert: fuer jede Rolle ohne Suchanfragen ohne Antwort, auch ohne
         # die ueber der Schwelle; die Kennzahl wird dann nicht abgefragt.
-        if request.nur_kuratiert:
+        if request.nur_kuratiert or request.vorschlaege:
             ueber_der_schwelle = frozenset()
         else:
             ueber_der_schwelle = await _ueber_der_schwelle_fuer(
                 aufrufer, suchen_ohne_treffer
             )
 
-        if ueber_der_schwelle is None and request.min_similarity is None:
+        if ueber_der_schwelle is None and min_similarity is None:
             statement_index_results = await statement_service.search(
-                request.query_text, request.limit
+                request.query_text, vorrat
             )
         else:
             statement_index_results = await statement_service.search_filtered(
                 request.query_text,
-                request.limit,
+                vorrat,
                 nur_kuratiert=ueber_der_schwelle is not None,
-                min_similarity=request.min_similarity,
+                min_similarity=min_similarity,
                 ueber_der_schwelle=ueber_der_schwelle or frozenset(),
             )
+        if request.vorschlaege:
+            statement_index_results = (
+                await statement_service.ohne_widerspruch(
+                    request.query_text, statement_index_results, hoechstens=limit
+                )
+            )[:limit]
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 
         response: StatementSearchResponse = StatementSearchResponse(

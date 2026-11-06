@@ -320,7 +320,9 @@ class SeedingService:
         return {
             "commentary": CommentaryService(self.settings),
             "reference": ReferenceService(self.settings),
-            "statement": StatementService(self.settings),
+            # nli_warten: Seeding wartet auf das NLI-Modell, damit dieselbe Regel gilt
+            # wie in Formular und Suche (#387).
+            "statement": StatementService(self.settings, nli_warten=True),
             "generic_text": GenericTextService(self.settings),
         }
 

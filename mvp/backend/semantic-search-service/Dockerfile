@@ -20,6 +20,12 @@ RUN python -c "from sentence_transformers import SentenceTransformer; \
     model = SentenceTransformer('intfloat/multilingual-e5-base'); \
     print('E5 multilingual model pre-downloaded successfully')"
 
+# Das NLI-Modell der NLI-Stufe (#387, core/config.py NLI_MODELL), ebenso vorgeladen
+RUN python -c "from transformers import AutoModelForSequenceClassification, AutoTokenizer; \
+    name = 'MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7'; \
+    AutoTokenizer.from_pretrained(name); AutoModelForSequenceClassification.from_pretrained(name); \
+    print('NLI model pre-downloaded successfully')"
+
 # Copy application code - adjusted path for mvp context
 COPY backend/semantic-search-service/app /app
 

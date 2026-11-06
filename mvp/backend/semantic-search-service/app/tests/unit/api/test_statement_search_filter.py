@@ -66,6 +66,104 @@ class TestSearchStatementsFilter:
         )
         statement_service.search.assert_not_awaited()
 
+    def test_vorschlaege_mit_schwelle_des_dienstes_ohne_widersprueche(
+        self, statement_service
+    ):
+        """Feld "Antwort auf" (#387): Schwelle aus den Einstellungen, nicht aus dem
+        Frontend; widersprechende Aussagen filtert der Dienst danach heraus."""
+        from core.config import Settings
+
+        statement_service.settings = Settings(aussage_vorschlag_schwelle=0.9)
+        gefunden, uebrig = [MagicMock()], []
+        statement_service.search_filtered = AsyncMock(return_value=gefunden)
+        statement_service.ohne_widerspruch = AsyncMock(return_value=uebrig)
+        # Es wird mehr gesucht als gezeigt (VORSCHLAG_VORRAT), damit nach dem Filter
+        # der naechste passende nachruecken kann.
+
+        resp = TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "waermepumpe", "limit": 3, "vorschlaege": True},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["results"] == []
+        statement_service.search_filtered.assert_awaited_once_with(
+            "waermepumpe",
+            9,
+            nur_kuratiert=True,
+            min_similarity=0.9,
+            ueber_der_schwelle=frozenset(),
+        )
+        statement_service.ohne_widerspruch.assert_awaited_once_with(
+            "waermepumpe", gefunden, hoechstens=3
+        )
+
+    def test_vorschlaege_hoechstens_das_limit(self, statement_service):
+        import uuid
+
+        from core.config import Settings
+        from domain.models.content_type import ContentType
+        from domain.models.statement import StatementSearchResult
+        from tests.conftest import create_base_content_fields, create_statement_data
+
+        statement_service.settings = Settings()
+        statement_service.ohne_widerspruch = AsyncMock(
+            return_value=[
+                StatementSearchResult(
+                    **create_base_content_fields(),
+                    **create_statement_data(text=f"Aussage {i}"),
+                    id=uuid.uuid4(),
+                    content_type=ContentType.STATEMENT,
+                    score=0.9,
+                )
+                for i in range(5)
+            ]
+        )
+
+        resp = TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "waermepumpe", "limit": 2, "vorschlaege": True},
+        )
+
+        assert resp.status_code == 200
+        assert [r["text"] for r in resp.json()["results"]] == ["Aussage 0", "Aussage 1"]
+
+    def test_vorschlaege_schwelle_und_menge_legt_der_dienst_fest(
+        self, statement_service
+    ):
+        """Jeder Kandidat kostet zwei Modellaufrufe: Die Anfrage kann weder die
+        Schwelle senken noch hundert Kandidaten verlangen."""
+        from api.v1.statement import VORSCHLAG_HOECHSTENS, VORSCHLAG_VORRAT
+        from core.config import Settings
+
+        statement_service.settings = Settings(aussage_vorschlag_schwelle=0.9)
+        statement_service.ohne_widerspruch = AsyncMock(return_value=[])
+
+        TestClient(app).post(
+            SEARCH_URL,
+            json={
+                "query_text": "waermepumpe",
+                "limit": 100,
+                "min_similarity": 0.0,
+                "vorschlaege": True,
+            },
+        )
+
+        args, kwargs = statement_service.search_filtered.call_args
+        assert args[1] == VORSCHLAG_HOECHSTENS * VORSCHLAG_VORRAT
+        assert kwargs["min_similarity"] == 0.9
+
+    def test_ohne_vorschlaege_kein_widerspruchsfilter(self, statement_service):
+        statement_service.ohne_widerspruch = AsyncMock()
+
+        TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "waermepumpe", "nur_kuratiert": True},
+            headers=ADMIN,
+        )
+
+        statement_service.ohne_widerspruch.assert_not_awaited()
+
     def test_min_similarity_ausserhalb_gibt_422(self, statement_service):
         resp = TestClient(app).post(
             SEARCH_URL, json={"query_text": "waermepumpe", "min_similarity": 1.5}

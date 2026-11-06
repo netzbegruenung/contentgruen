@@ -270,8 +270,9 @@ class TestAuswertung:
         )
 
     def test_aehnliche_aussagen_wie_im_beitragsformular(self):
-        """Anzahl und untere Grenze wie VORSCHLAG_ANZAHL und VORSCHLAG_MIN_AEHNLICHKEIT
-        im Frontend und VORSCHLAG_SCHWELLE im Messset."""
+        """Anzahl wie VORSCHLAG_ANZAHL im Frontend, untere Grenze wie die Vorschlagsschwelle
+        des Dienstes (aussage_vorschlag_schwelle, #387) und VORSCHLAG_SCHWELLE im Messset.
+        """
         if REPO_WURZEL is None:
             pytest.skip("Frontend nicht im Checkout")
         ts = (
@@ -280,7 +281,7 @@ class TestAuswertung:
         ).read_text(encoding="utf-8")
 
         assert f"VORSCHLAG_ANZAHL = {AEHNLICHE_ANZAHL};" in ts
-        assert f"VORSCHLAG_MIN_AEHNLICHKEIT = {AEHNLICHE_AB};" in ts
+        assert "VORSCHLAG_MIN_AEHNLICHKEIT" not in ts
         assert AEHNLICHE_AB == VORSCHLAG_SCHWELLE
 
     def test_ausgabe_ist_als_vorlaeufig_gekennzeichnet(self):

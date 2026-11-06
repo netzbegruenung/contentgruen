@@ -105,6 +105,9 @@ def initialize_services() -> None:
     # Create content service instances (lightweight - no data loading)
     global statement_service_instance
     statement_service_instance = StatementService(settings=settings_instance)
+    # NLI-Stufe (#387): das Modell im Hintergrund laden, damit die erste Suche nicht
+    # darauf wartet. Ohne Modell gilt die Schwelle, der Start scheitert nicht daran.
+    statement_service_instance.nli_vorladen()
 
     global commentary_service_instance
     commentary_service_instance = CommentaryService(settings=settings_instance)

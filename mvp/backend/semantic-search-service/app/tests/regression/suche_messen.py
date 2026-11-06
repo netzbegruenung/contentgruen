@@ -68,8 +68,8 @@ RECALL_JE_PHAENOMEN = max(RECALL_BEI)
 # Set (leere oder falsche Sammlung, Startbestand ohne passende Faelle).
 BESTAND_PASST_NICHT = 2
 # Aehnliche Aussagen wie die Vorschlaege im Beitragsformular (statement.service.ts:
-# VORSCHLAG_ANZAHL, VORSCHLAG_MIN_AEHNLICHKEIT): hoechstens so viele gepflegte Aussagen,
-# und nur ab dieser unteren Grenze. Ein Unit-Test haelt beide Stellen gleich.
+# VORSCHLAG_ANZAHL, Settings.aussage_vorschlag_schwelle): hoechstens so viele gepflegte
+# Aussagen, und nur ab dieser unteren Grenze. Ein Unit-Test haelt beide Stellen gleich.
 AEHNLICHE_ANZAHL = 3
 AEHNLICHE_AB = 0.885
 
@@ -470,6 +470,9 @@ async def dienste_starten() -> Dienste:
 
     await get_qdrant_embeddings_manager(settings).start()
     initialize_services()
+    # Die NLI-Stufe laedt im Hintergrund; ohne Warten mischt die Messung bis dahin die
+    # Schwelle ein (#387).
+    await get_statement_service().nli_laden_abwarten()
     return Dienste(
         statement_service=get_statement_service(),
         specs=suchspezifikationen(

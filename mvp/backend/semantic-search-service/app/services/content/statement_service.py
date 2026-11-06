@@ -9,8 +9,15 @@ import logging
 
 from pydantic import ValidationError
 
-from core.config import Settings
-from services.content.base_content_service import BaseContentService, Dublettenpruefung
+from core.config import NLI_MODELL, Settings
+from services.content.base_content_service import (
+    BaseContentService,
+    Dublettenpruefung,
+    dublette_nach_schwelle,
+)
+from services.dieselbe_behauptung.nli_modell import NliModell, NliPruefer, nli_modell
+from services.dieselbe_behauptung.schatten import Schattenprotokoll
+from services.dieselbe_behauptung import regel
 from repositories.interfaces.statement_repository import (
     IStatementRepository,
 )
@@ -26,9 +33,26 @@ from domain.models.content_type import ContentType
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS, ContentStatus
 from domain.models.content_origin import ContentOrigin
-from utils.text_normalisierung import SperreJeText
+from utils.text_normalisierung import SperreJeText, text_normalisiert
 
 logger = logging.getLogger(__name__)
+
+
+# So lange warten die Pruefung auf dieselbe Aussage und der Filter der Vorschlaege
+# hoechstens auf das NLI-Modell (Sekunden); danach gilt die Schwelle bzw. ungefiltert.
+DIESELBE_WARTET_HOECHSTENS = 3.0
+VORSCHLAG_WARTET_HOECHSTENS = 2.0
+
+
+def _normalisiert_gleich(
+    text: str, treffer: List[BaseContentSearchResult]
+) -> Optional[BaseContentSearchResult]:
+    """Ein normalisiert gleicher Treffer (Altbestand ohne Payload-Feld): Er gilt immer
+    als dieselbe, vor jedem Score und jedem NLI-Urteil."""
+    normalform = text_normalisiert(text)
+    if not normalform:
+        return None
+    return next((t for t in treffer if text_normalisiert(t.text) == normalform), None)
 
 
 class AussageNichtGefunden(ValueError):
@@ -42,6 +66,8 @@ class StatementService(
         self,
         settings: Settings,
         repository_factory: Optional[IRepositoryFactory] = None,
+        nli: Optional[NliPruefer] = None,
+        nli_warten: bool = False,
     ):
         # Use provided factory or default to QdrantRepositoryFactory
         if repository_factory is None:
@@ -60,6 +86,20 @@ class StatementService(
         # Eine Sperre je normalisiertem Text um Pruefen-und-Anlegen in add_statement.
         self._text_sperre = SperreJeText()
 
+        # NLI-Stufe (#387). Ohne Modell (aus) gilt allein die Schwelle. Ein Modell je
+        # Prozess: Das Seeding nutzt dasselbe, schon vorgeladene wie der Dienst.
+        if nli is None and settings.dieselbe_aussage_nli != "aus":
+            nli = nli_modell(NLI_MODELL)
+        self._nli: Optional[NliPruefer] = nli
+        # nli_warten: auf das Modell warten statt nach DIESELBE_WARTET_HOECHSTENS die
+        # Schwelle gelten zu lassen - fuer das Seeding, bei dem niemand auf die Antwort
+        # wartet und sonst die ersten Aussagen waehrend des Ladens nach der Schwelle
+        # gingen (eine Regel fuer alle Wege).
+        self._nli_warten = nli_warten
+        self.schattenprotokoll = Schattenprotokoll()
+        self._schatten_laeuft = False
+        self._schatten_tasks: set[asyncio.Task] = set()
+
         repository = repository_factory.create_statement_repository(settings)
         content_repository = repository_factory.create_content_repository(settings)
 
@@ -70,6 +110,18 @@ class StatementService(
             StatementDbEntry,
             StatementSearchResult,
         )
+
+    def nli_vorladen(self) -> None:
+        """Das NLI-Modell im Hintergrund laden, wenn die NLI-Stufe es braucht."""
+        if isinstance(self._nli, NliModell):
+            self._nli.vorladen()
+
+    async def nli_laden_abwarten(self) -> bool:
+        """Warten, bis das NLI-Modell geladen ist; True, wenn es bereitsteht. Fuer
+        Messskripte, die gleich nach dem Start fragen und sonst die Schwelle messen."""
+        if isinstance(self._nli, NliModell):
+            return await asyncio.to_thread(self._nli.laden_abwarten)
+        return self._nli is not None
 
     async def search_statements(
         self, query_text: str, limit: int = 10, min_replysuggestions_count: int = 0
@@ -198,17 +250,168 @@ class StatementService(
         """
         Die Aussage, auf der dieser Text landen wuerde, ohne etwas anzulegen: dieselbe
         Pruefung wie in add_statement. None, wenn er eine neue Aussage ergaebe. Fuer die
-        Messung der Zerfaserung im Suchtestset (tests/regression/suche_messen.py).
+        Messung der Zerfaserung im Suchtestset (tests/regression/suche_messen.py) und
+        den Bericht ueber den Bestand (tests/regression/dieselbe_bericht.py).
         """
-        return (await self._dieselbe_pruefen(text)).vorhanden
+        return (await self._dieselbe_pruefen(text, schatten=False)).vorhanden
 
-    async def _dieselbe_pruefen(self, text: str) -> Dublettenpruefung:
-        """Die Dublettenpruefung fuer Aussagen, gemeinsam fuer add_statement und
-        vorhandene_finden: normalisiert gleich oder query/query-Aehnlichkeit ab
-        statement_similarity_threshold."""
-        return await self._vorhandenen_finden(
-            text, self.settings.statement_similarity_threshold, praefix="query"
+    async def _dieselbe_pruefen(self, text: str, schatten: bool) -> Dublettenpruefung:
+        """
+        Die Pruefung auf dieselbe Aussage, gemeinsam fuer add_statement und
+        vorhandene_finden. Normalisiert gleich zaehlt immer. Sonst je nach
+        dieselbe_aussage_nli:
+
+        - aus, oder das NLI-Modell ist nicht verfuegbar: query/query-Aehnlichkeit ab
+          statement_similarity_threshold (Regel vor #387).
+        - schatten: dieselbe Entscheidung; mit schatten=True urteilt die NLI-Stufe im
+          Hintergrund mit und wird nur gezaehlt (Schattenprotokoll).
+        - an: die NLI-Stufe entscheidet (_nli_entscheiden).
+        """
+        gleich, treffer = await self._dublettenkandidaten(text, praefix="query")
+        if gleich is not None:
+            return Dublettenpruefung(vorhanden=gleich, aehnlichster=gleich)
+        heute = dublette_nach_schwelle(
+            text, treffer, self.settings.statement_similarity_threshold
         )
+        modus = self.settings.dieselbe_aussage_nli
+        gleich = _normalisiert_gleich(text, treffer)
+        if gleich is not None:
+            return Dublettenpruefung(vorhanden=gleich, aehnlichster=heute.aehnlichster)
+        if self._nli is None or modus == "aus":
+            return heute
+        if modus == "an":
+            nach_nli = await self._nli_entscheiden(text, treffer)
+            return heute if nach_nli is None else nach_nli
+        if schatten:
+            self._schatten_starten(text, treffer, heute)
+        return heute
+
+    def _nli_kandidaten(
+        self, text: str, treffer: List[BaseContentSearchResult]
+    ) -> List[BaseContentSearchResult]:
+        """Die Treffer, die das Modell pruefen soll: ab nli_kandidaten_ab, die
+        Vorpruefungen bestanden (regel.nli_darf_pruefen), hoechstens
+        nli_kandidaten_hoechstens."""
+        kandidaten = [
+            k
+            for k in treffer
+            if k.score is not None
+            and k.score >= self.settings.nli_kandidaten_ab
+            and regel.nli_darf_pruefen(text, k.text)
+        ]
+        return kandidaten[: self.settings.nli_kandidaten_hoechstens]
+
+    async def _nli_entscheiden(
+        self, text: str, treffer: List[BaseContentSearchResult]
+    ) -> Optional[Dublettenpruefung]:
+        """
+        Die Entscheidung der NLI-Stufe: der Kandidat mit der staerksten beidseitigen
+        Folgerung, der dieselbe Behauptung ist (regel.entscheiden), sonst keiner.
+        None, wenn das Modell nicht urteilen konnte - dann gilt die Schwelle.
+        """
+        aehnlichster = treffer[0] if treffer else None
+        kandidaten = self._nli_kandidaten(text, treffer)
+        if not kandidaten:
+            return Dublettenpruefung(vorhanden=None, aehnlichster=aehnlichster)
+        # Begrenzt warten: Ist das Modell belegt oder laedt noch, gilt die Schwelle,
+        # statt dass alle Suchen hintereinander auf die Sperre warten.
+        urteile = await self._nli.urteile(
+            [(text, k.text) for k in kandidaten],
+            warte_hoechstens=None if self._nli_warten else DIESELBE_WARTET_HOECHSTENS,
+        )
+        if urteile is None:
+            return None
+        dieselben = [
+            (u.folgerung, k)
+            for k, u in zip(kandidaten, urteile)
+            if regel.entscheiden(
+                text,
+                k.text,
+                k.score,
+                u,
+                kandidaten_ab=self.settings.nli_kandidaten_ab,
+                folgerung_ab=self.settings.nli_folgerung_ab,
+                widerspruch_unter=self.settings.nli_widerspruch_unter,
+            )
+        ]
+        vorhanden = max(dieselben, key=lambda paar: paar[0])[1] if dieselben else None
+        return Dublettenpruefung(vorhanden=vorhanden, aehnlichster=aehnlichster)
+
+    def _schatten_starten(
+        self,
+        text: str,
+        treffer: List[BaseContentSearchResult],
+        heute: Dublettenpruefung,
+    ) -> None:
+        """
+        Schattenbetrieb: die NLI-Stufe im Hintergrund urteilen lassen, ohne dass die
+        Anfrage wartet. Laeuft schon ein Urteil, wird dieses uebersprungen (gezaehlt),
+        damit sich beim Seeding oder unter Last keine Warteschlange bildet.
+        """
+        if self._schatten_laeuft:
+            self.schattenprotokoll.zaehlen("uebersprungen")
+            return
+        self._schatten_laeuft = True
+
+        async def urteilen():
+            try:
+                nach_nli = await self._nli_entscheiden(text, treffer)
+                self.schattenprotokoll.vergleichen(heute.vorhanden, nach_nli)
+            except Exception as e:  # der Schatten darf nie etwas stoeren
+                logger.warning("NLI-Schatten gescheitert (%s)", type(e).__name__)
+            finally:
+                self._schatten_laeuft = False
+
+        task = asyncio.create_task(urteilen())
+        # Referenz halten: asyncio haelt Tasks nur schwach.
+        self._schatten_tasks.add(task)
+        task.add_done_callback(self._schatten_tasks.discard)
+
+    async def ohne_widerspruch(
+        self,
+        text: str,
+        treffer: List[StatementSearchResult],
+        hoechstens: Optional[int] = None,
+    ) -> List[StatementSearchResult]:
+        """
+        Die Treffer ohne die, die dem Text in einer Richtung widersprechen
+        (aussage_vorschlag_widerspruch_ab) - fuer die Vorschlaege im Feld "Antwort
+        auf". Ohne NLI-Modell (aus oder nicht verfuegbar) bleiben alle.
+
+        Mit hoechstens prueft das Modell die Treffer in Score-Reihenfolge stapelweise
+        und hoert auf, sobald so viele uebrig sind: Meist reicht ein Stapel, statt bei
+        jedem Tastendruck den ganzen Vorrat zu pruefen. Kann das Modell einen Stapel
+        nicht pruefen, bleiben dieser und die restlichen Treffer ungefiltert.
+        """
+        if self._nli is None or self.settings.dieselbe_aussage_nli == "aus":
+            return treffer
+        behalten: List[StatementSearchResult] = []
+        rest = list(treffer)
+        while rest and (hoechstens is None or len(behalten) < hoechstens):
+            groesse = len(rest) if hoechstens is None else hoechstens - len(behalten)
+            stapel, rest = rest[:groesse], rest[groesse:]
+            try:
+                # Nicht auf das Laden oder ein laufendes Urteil warten: Die Vorschlaege
+                # kommen beim Tippen, lieber ungefiltert als spaet.
+                urteile = await self._nli.urteile(
+                    [(text, t.text) for t in stapel],
+                    warte_hoechstens=VORSCHLAG_WARTET_HOECHSTENS,
+                )
+            except Exception as e:
+                logger.warning(
+                    "NLI-Filter der Vorschlaege gescheitert (%s)", type(e).__name__
+                )
+                urteile = None
+            if urteile is None:
+                return behalten + stapel + rest
+            behalten += [
+                t
+                for t, u in zip(stapel, urteile)
+                if not regel.widerspricht(
+                    u, self.settings.aussage_vorschlag_widerspruch_ab
+                )
+            ]
+        return behalten
 
     async def add_statement(
         self,
@@ -222,10 +425,13 @@ class StatementService(
         """
         Eine Aussage anlegen - oder die vorhandene liefern, wenn es dieselbe schon gibt.
 
-        Dieselbe ist: normalisiert gleicher Text (utils/text_normalisierung.py) oder
-        query/query-Aehnlichkeit >= statement_similarity_threshold. Inhaltlich nur
-        aehnliche Aussagen gelten nicht als dieselbe - sie schlaegt das Formular vor,
-        uebernommen wird still nichts. Gilt fuer alle Wege: Formular, Suche, Seeding.
+        Dieselbe ist: normalisiert gleicher Text (utils/text_normalisierung.py) oder,
+        je nach NLI-Stufe (_dieselbe_pruefen), query/query-Aehnlichkeit >=
+        statement_similarity_threshold bzw. dieselbe Behauptung nach dem NLI-Modell.
+        Inhaltlich nur aehnliche Aussagen gelten nicht als dieselbe - sie schlaegt das
+        Formular vor, uebernommen wird still nichts. Gilt fuer alle Wege: Formular,
+        Suche, Seeding. Bei einer vorhandenen bleibt deren Wortlaut; der neue Text
+        wird nicht gespeichert (#387, vgl. #370).
 
         Pruefen und Schreiben laufen unter einer Sperre je normalisiertem Text, damit
         zwei gleichzeitige Anfragen mit demselben neuen Text nicht zwei Aussagen anlegen.
@@ -234,7 +440,7 @@ class StatementService(
             - (neu angelegt, ID, Text) - bei einer vorhandenen Aussage deren ID und Text.
         """
         async with self._text_sperre.halten(statement.text):
-            pruefung = await self._dieselbe_pruefen(statement.text)
+            pruefung = await self._dieselbe_pruefen(statement.text, schatten=True)
             vorhandene, bester = pruefung.vorhanden, pruefung.aehnlichster
             if vorhandene is not None:
                 # DEBUG: Jede Suche laeuft hier durch; eine INFO-Zeile mit ID und

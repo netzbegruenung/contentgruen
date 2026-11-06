@@ -21,6 +21,14 @@ EMBEDDING_MODELL = "intfloat/multilingual-e5-base"
 # Name seines Vektors in der Qdrant-Collection (Named Vector, #395): weitere Modelle
 # bekommen daneben einen eigenen Namen, statt die Collection zu ersetzen.
 EMBEDDING_VEKTOR = "e5_base"
+# Das NLI-Modell der NLI-Stufe (#387, services/dieselbe_behauptung): mehrsprachiger
+# Cross-Encoder mit XNLI-Training, MIT-Lizenz, nur fp32. Die Schwellen nli_* in Settings
+# sind dafuer gemessen (tests/regression/MESSSET.md); das Dockerfile laedt es vor.
+NLI_MODELL = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
+# aus: nur die Einbettung entscheidet (Regel vor #387). schatten: Die Einbettung
+# entscheidet, die NLI-Stufe urteilt im Hintergrund mit und wird nur gezaehlt.
+# an: Die NLI-Stufe entscheidet ueber dieselbe Aussage.
+NliModus = Literal["aus", "schatten", "an"]
 
 # Wie der Mailversand mit dem SMTP-Server spricht (infrastructure/mail/versand.py).
 # Nur verschluesselt: Adresse und Text der Mail gehen nie lesbar ueber das Netz.
@@ -126,8 +134,23 @@ class Settings(BaseSettings):
     # Das Messset mit Paar-Labels (tests/regression/MESSSET.md) zeigt: Verneinungen,
     # Gegenteile und Fragen liegen auch ueber 0,98 - das faengt erst #387 ab.
     # Inhaltlich aehnliche Aussagen werden nicht still uebernommen, sondern im
-    # Formular vorgeschlagen (0,885, Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
+    # Formular vorgeschlagen (aussage_vorschlag_schwelle).
     statement_similarity_threshold: float = 0.98
+    # NLI-Stufe (#387): zweite Stufe der Pruefung auf dieselbe Aussage. Gilt in
+    # StatementService fuer alle Wege (Formular, Suche, Seeding). Ohne verfuegbares
+    # Modell gilt die Schwelle oben. Gemessen am Messset (tests/regression/MESSSET.md,
+    # Abschnitt NLI-Stufe): tau und kappa am Train-Teil, Ergebnis am Test-Teil.
+    dieselbe_aussage_nli: NliModus = "schatten"
+    # Kandidaten: Vektortreffer ab dieser query/query-Aehnlichkeit, hoechstens so viele.
+    # Das niedrigste gleich-Paar der Aussagen liegt bei 0,887.
+    nli_kandidaten_ab: float = Field(default=0.85, ge=0.0, le=1.0)
+    nli_kandidaten_hoechstens: int = Field(default=5, ge=1, le=10)
+    # tau: beide Richtungen folgern mindestens so sicher. kappa: keine Richtung
+    # widerspricht mit dieser Wahrscheinlichkeit oder mehr.
+    nli_folgerung_ab: float = Field(default=0.95, ge=0.0, le=1.0)
+    nli_widerspruch_unter: float = Field(default=0.05, ge=0.0, le=1.0)
+    # CPU-Threads: wie die Einbettung (embedding_threads); torch.set_num_threads gilt
+    # prozessweit, ein eigener Wert fuer das NLI-Modell braeche die Einbettung.
     # Kommentar-Dublette: passage/passage-Einbettung, >= Schwelle.
     # Modell: intfloat/multilingual-e5-base. Umformulierungen hoechstens 0,972,
     # trivial abweichende Kopien und Kopien mit angehaengter Herkunft ab 0,996, andere
@@ -141,6 +164,14 @@ class Settings(BaseSettings):
     # Derselbe Text mit anderer Zahl liegt darueber und gilt als Dublette,
     # Umformulierungen zum Teil darunter. Die Schwelle trennt das nicht; siehe #387.
     generic_text_similarity_threshold: float = 0.975
+    # Vorschlaege im Feld "Antwort auf" (#387, frueher Konstante im Frontend):
+    # Aussagen ab dieser query/query-Aehnlichkeit. Gemessen fuer EMBEDDING_MODELL
+    # (passende Aussagen 0,892-0,940). Widerspricht eine Aussage dem Getippten in einer
+    # Richtung mindestens so wahrscheinlich, schlaegt das Feld sie nicht vor. Der Filter
+    # wirkt schon im Schattenbetrieb (#387: zuerst als Filter der Vorschlaege), nur bei
+    # dieselbe_aussage_nli = aus nicht.
+    aussage_vorschlag_schwelle: float = Field(default=0.885, ge=0.0, le=1.0)
+    aussage_vorschlag_widerspruch_ab: float = Field(default=0.5, ge=0.0, le=1.0)
     default_search_limit: int = 10
     max_reply_suggestions: int = 50
     statement_search_limit: int = 5

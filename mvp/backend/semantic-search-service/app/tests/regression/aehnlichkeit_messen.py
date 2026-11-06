@@ -24,8 +24,8 @@ from core.config import EMBEDDING_MODELL, Settings
 from tests.regression.aehnlichkeit_paare import LABELS, PAARE, Paar
 from utils.text_normalisierung import ist_dasselbe, text_normalisiert
 
-# Vorschlagsschwelle im Feld "Antwort auf" (Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
-VORSCHLAG_SCHWELLE = 0.885
+# Vorschlagsschwelle im Feld "Antwort auf" (Settings.aussage_vorschlag_schwelle, #387).
+VORSCHLAG_SCHWELLE = Settings().aussage_vorschlag_schwelle
 # So nah an der Schwelle kann eine Entscheidung auf anderer Hardware oder mit einer
 # anderen Bibliotheksversion kippen; der Regressionstest vergleicht sie dort nicht.
 KNAPP = 0.001
