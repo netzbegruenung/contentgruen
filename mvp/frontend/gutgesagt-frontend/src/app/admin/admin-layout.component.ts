@@ -104,7 +104,7 @@ import { MatIconModule } from '@angular/material/icon';
       }
 
       .admin-nav a.aktiv {
-        box-shadow: inset 0 -2px 0 var(--primary-dark);
+        box-shadow: inset 0 -2px 0 var(--akzent-tanne);
       }
     }
   `]

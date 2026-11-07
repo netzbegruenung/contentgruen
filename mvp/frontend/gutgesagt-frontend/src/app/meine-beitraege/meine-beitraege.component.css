@@ -1,7 +1,7 @@
 /* Removed .loading-container - using global styles */
 
 .mat-spinner-color::ng-deep circle {
-  stroke: var(--primary-dark) !important;
+  stroke: var(--akzent-tanne) !important;
 }
 
 .album-statistik {

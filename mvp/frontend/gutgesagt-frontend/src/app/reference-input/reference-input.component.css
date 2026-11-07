@@ -163,8 +163,8 @@
 
 .reference-item.new-reference {
     background-color: var(--success-bg);
-    border-color: var(--primary-main);
-    border-left: 3px solid var(--primary-main);
+    border-color: var(--akzent-klee);
+    border-left: 3px solid var(--linie-klee);
 }
 
 .reference-item.existing-reference {
@@ -355,7 +355,7 @@
 }
 
 .entfernen-klein:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: -2px;
 }
 

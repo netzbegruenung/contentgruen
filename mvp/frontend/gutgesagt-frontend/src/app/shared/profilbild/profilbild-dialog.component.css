@@ -36,12 +36,12 @@
 }
 
 .profilbild-option:has(.profilbild-radio:checked) {
-  border-color: var(--primary-main);
+  border-color: var(--akzent-klee);
   background-color: var(--selected-bg);
 }
 
 .profilbild-option:has(.profilbild-radio:focus-visible) {
-  outline: 3px solid var(--primary-dark);
+  outline: 3px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
 

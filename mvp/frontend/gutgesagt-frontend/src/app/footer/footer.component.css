@@ -44,6 +44,13 @@
     cursor: pointer;
 }
 
+/* Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588) */
+@media (prefers-color-scheme: dark) {
+    .footer a {
+        text-decoration: underline;
+    }
+}
+
 .footer a:hover {
     text-decoration: underline;
 }

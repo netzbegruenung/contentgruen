@@ -342,7 +342,7 @@
     padding: 10px 20px;
     background: var(--surface-variant);
     border-radius: 20px;
-    border: 1px solid var(--primary-dark);
+    border: 1px solid var(--linie-tanne);
     animation: fadeInScale 0.4s ease-out;
 
     @include bp.mobile-only {
@@ -732,12 +732,12 @@
       .mdc-notched-outline__leading,
       .mdc-notched-outline__notch,
       .mdc-notched-outline__trailing {
-        border-color: var(--primary-dark) !important;
+        border-color: var(--akzent-tanne) !important;
       }
     }
 
     .mat-mdc-progress-spinner circle {
-      stroke: var(--primary-dark) !important;
+      stroke: var(--akzent-tanne) !important;
     }
   }
 }

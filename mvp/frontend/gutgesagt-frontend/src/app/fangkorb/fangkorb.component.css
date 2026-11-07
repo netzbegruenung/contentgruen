@@ -1,7 +1,7 @@
 /* Mobil zuerst: eine Spalte, volle Breite. Ab Tablet nur begrenzt und zentriert. */
 
 .mat-spinner-color::ng-deep circle {
-  stroke: var(--primary-dark) !important;
+  stroke: var(--akzent-tanne) !important;
 }
 
 /* Kopf: die beiden Arbeitslisten als Tabs, Langfassung hinter dem Hilfe-Icon */
@@ -123,7 +123,7 @@
 }
 
 .filter-chip.aktiv {
-  border-color: var(--primary-dark);
+  border-color: var(--akzent-tanne);
   background: var(--primary-light);
   color: var(--primary-dark);
   font-weight: 500;
@@ -137,7 +137,7 @@
 }
 
 .filter-chip:focus-visible {
-  outline: 2px solid var(--primary-dark);
+  outline: 2px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
 

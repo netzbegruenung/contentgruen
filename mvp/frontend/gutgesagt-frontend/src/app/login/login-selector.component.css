@@ -22,7 +22,7 @@
 .emphasis {
     color: var(--primary-dark);
     font-weight: 500;
-    border-bottom: 2px dotted var(--primary-main);
+    border-bottom: 2px dotted var(--linie-klee);
     cursor: help;
 }
 
@@ -48,7 +48,7 @@
 
 .registration-expansion-panel {
     background: var(--surface-variant);
-    border-left: 4px solid var(--primary-main);
+    border-left: 4px solid var(--linie-klee);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -146,8 +146,15 @@
     color: var(--primary-dark);
     text-decoration: none;
     font-weight: 500;
-    border-bottom: 1px dotted var(--primary-main);
+    border-bottom: 1px dotted var(--linie-klee);
     transition: all 0.2s ease;
+}
+
+/* Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588) */
+@media (prefers-color-scheme: dark) {
+    .registration-option .email-link {
+        text-decoration: underline;
+    }
 }
 
 .registration-option .email-link:hover {

@@ -52,7 +52,7 @@
 }
 
 .entfernen:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: -2px;
 }
 
@@ -92,7 +92,7 @@
 }
 
 .vorschlag:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
 }
 
@@ -104,7 +104,7 @@
     min-height: 44px;
     margin-top: 6px;
     padding: 10px 12px;
-    border: 1px dashed var(--primary-main);
+    border: 1px dashed var(--linie-klee);
     border-radius: 8px;
     background: var(--bg-card);
     color: var(--primary-dark);
@@ -121,7 +121,7 @@
 }
 
 .neue-aussage:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
 }
 

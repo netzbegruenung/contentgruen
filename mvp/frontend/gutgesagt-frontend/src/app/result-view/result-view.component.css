@@ -200,6 +200,13 @@ mat-sidenav-content {
   text-decoration: none;
 }
 
+/* Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588) */
+@media (prefers-color-scheme: dark) {
+    .mobile-menu-about a {
+        text-decoration: underline;
+    }
+}
+
 .mobile-menu-about a:hover {
   text-decoration: underline;
 }
@@ -290,7 +297,7 @@ mat-sidenav-content {
   color: var(--primary-dark);
   font-weight: 700;
   background: var(--auswahl-grund);
-  box-shadow: inset 0 -2px 0 var(--primary-dark);
+  box-shadow: inset 0 -2px 0 var(--akzent-tanne);
 }
 
 .tab-button:disabled {
@@ -558,7 +565,7 @@ mat-sidenav-content {
 }
 
 .ergaenzen-link:focus-visible {
-  outline: 2px solid var(--primary-dark);
+  outline: 2px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
 

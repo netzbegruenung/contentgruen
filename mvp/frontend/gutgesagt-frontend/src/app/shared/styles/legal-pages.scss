@@ -107,6 +107,11 @@
     color: var(--primary-dark);
     text-decoration: none;
 
+    // Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588)
+    @media (prefers-color-scheme: dark) {
+      text-decoration: underline;
+    }
+
     &:hover {
       text-decoration: underline;
     }
@@ -151,7 +156,7 @@ mat-divider {
 
 .info-box {
   background-color: var(--success-bg);
-  border-left: 4px solid var(--primary-dark);
+  border-left: 4px solid var(--linie-tanne);
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
   border-radius: 4px;

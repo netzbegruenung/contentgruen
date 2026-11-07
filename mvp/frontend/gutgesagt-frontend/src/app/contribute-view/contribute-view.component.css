@@ -43,7 +43,7 @@
  */
 .rahmen-kachel {
     padding: 14px 18px;
-    border: 2px solid var(--primary-dark);
+    border: 2px solid var(--linie-tanne);
     background: var(--bg-card);
 }
 
@@ -72,7 +72,7 @@
 }
 
 .typ-zeile:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
 }
 

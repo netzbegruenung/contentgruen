@@ -1,5 +1,5 @@
 .mat-spinner-color::ng-deep circle {
-  stroke: var(--primary-dark) !important;
+  stroke: var(--akzent-tanne) !important;
 }
 
 .einwuerfe-laedt {

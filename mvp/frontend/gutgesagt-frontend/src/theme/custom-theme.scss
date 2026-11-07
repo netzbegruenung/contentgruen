@@ -120,6 +120,13 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   // Flaechen in Tanne (Knoepfe, Leisten, Snackbar). Im Hellen gleich --primary-dark; im
   // Dunkeln bleibt sie gruen, waehrend --primary-dark als Schrift- und Linienfarbe heller wird (#588).
   --primary-fill: #005437;
+  // Kleine Markierungen (Fokusring, aktiver Reiter, Ladekreis) und gruene Linien (Kachelrand,
+  // Randstrich). Im Hellen die frueheren Gruentoene; im Dunkeln Markierungen in Grashalm,
+  // Linien neutral, damit Gruen dort nur noch Knopf-Fuellung und kleiner Akzent ist (#588).
+  --akzent-tanne: #005437;
+  --akzent-klee: #008939;
+  --linie-tanne: #005437;
+  --linie-klee: #008939;
 
   // Accent colors
   --accent-main: #8abd24;
@@ -257,7 +264,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
 // Dunkelmodus (#588): folgt der Einstellung des Geraets (prefers-color-scheme), ohne
 // eigenen Schalter. Flaechen neutral Anthrazit, Gruen nur als Akzent (Knoepfe, Links,
 // Siegel), keine gruen getoenten Flaechen. Knoepfe in Klee statt Tanne, damit sie sich
-// vom dunklen Grund abheben; Schrift in Grashalm statt Tanne.
+// vom dunklen Grund abheben; Schrift hellgrau, Grashalm nur fuer kleine Markierungen.
 $gutgesagt-dark-primary: mat.m2-define-palette($gutgesagt-green-palette, 500, 300, 700);
 $gutgesagt-dark-theme: mat.m2-define-dark-theme((
   color: (
@@ -273,9 +280,15 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
   :root {
     color-scheme: dark;
 
-    --primary-main: #8abd24;
-    --primary-dark: #8abd24;
+    // Schrift, Ueberschriften und Links hellgrau statt Grashalm ("zu limonig", 07.11.);
+    // Gruen bleibt Knopf-Fuellung (Klee) und kleine Markierung (Grashalm).
+    --primary-main: #e0e0e0;
+    --primary-dark: #ececec;
     --primary-fill: #008939;
+    --akzent-tanne: #8abd24;
+    --akzent-klee: #8abd24;
+    --linie-tanne: #5c5c5c;
+    --linie-klee: #5c5c5c;
 
     --accent-light: #3a3a3a; // neutral: Themen-Marken sind Flaechen, kein Akzent
 
@@ -296,7 +309,7 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --text-body: #d0d0d0;
     --text-muted: #b3b3b3;
     --text-subtle: #a8a8a8;
-    --text-faint: #949494;
+    --text-faint: #9e9e9e;
 
     --error-bg: #3a2526;
     --error-color: #ff8a80;
@@ -324,7 +337,7 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --info-accent: #64b5f6;
     --info-text: #90caf9;
     --info-tint: rgba(66, 165, 245, 0.14);
-    --trend-steigt: var(--primary-dark);
+    --trend-steigt: #8abd24;
     --trend-faellt: var(--error-main);
     --trend-gleich: var(--warning-color);
 
@@ -394,7 +407,7 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --mat-select-focused-arrow-color: var(--primary-dark);
   }
 
-  // Klee als Schrift erreicht auf Anthrazit kein AA: Text-Knoepfe, Icons und Reiter in Grashalm
+  // Klee als Schrift erreicht auf Anthrazit kein AA: Text-Knoepfe, Icons und Reiter hellgrau
   .mat-mdc-button.mat-primary,
   .mat-mdc-outlined-button.mat-primary {
     --mat-button-text-label-text-color: var(--primary-dark);

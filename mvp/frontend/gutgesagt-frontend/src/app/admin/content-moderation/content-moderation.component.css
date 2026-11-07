@@ -302,7 +302,7 @@ table {
 
 .statement-text {
   font-style: italic;
-  border-left: 3px solid var(--primary-dark);
+  border-left: 3px solid var(--linie-tanne);
   background-color: var(--success-faint);
 }
 

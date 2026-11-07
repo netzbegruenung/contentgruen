@@ -143,7 +143,7 @@
 .schon-verknuepft {
   margin: 0 0 12px;
   padding: 10px 14px;
-  border-left: 4px solid var(--primary-main);
+  border-left: 4px solid var(--linie-klee);
   border-radius: 4px;
   background: var(--commentary-bg);
 }
@@ -160,6 +160,6 @@
 }
 
 .text-link:focus-visible {
-  outline: 2px solid var(--primary-dark);
+  outline: 2px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
