@@ -327,7 +327,8 @@ class TestAuswertung:
         text = faelle_text(messungen, 0.8)
         assert "| X01 | umformulierung | treffer |" in text
         assert "direkt (2)" in text  # X02: erster passender auf Platz 2
-        daten = als_json(messungen, (0.8,), umgebung={"modell": "m"})
+        with patch.object(suche_messen, "schwelle_heute", return_value=0.8):
+            daten = als_json(messungen, (0.8,), umgebung={"modell": "m"})
         assert daten["hinweis"] == HINWEIS
         assert daten["umgebung"] == {"modell": "m"}
         assert [f["id"] for f in daten["faelle"]] == [m.fall.id for m in messungen]

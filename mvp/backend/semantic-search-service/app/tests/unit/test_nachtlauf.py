@@ -29,7 +29,7 @@ from tests.regression.suche_messen import (
 from tests.regression.suche_testset import FAELLE, Fall, am_seed_gemessen
 
 A = "Windräder töten die Vögel!"
-SCHWELLE = 0.8
+SCHWELLE = 0.82
 DOKU = Path(__file__).parents[1] / "regression" / "SUCHTESTSET.md"
 
 
@@ -64,9 +64,11 @@ def _messungen(soll=SOLL):
         + [True] * (soll["dieselbe_behauptung"] - soll["zerfaserung_neu"])
     )
     zerfaserung_offen = soll["dieselbe_behauptung"]
+    # Bei Fehltreffern steht die passende Antwort weiter unten, wie am Seed: so liegt
+    # Recall@10 ueber Treffer durch Faelle mit Erwartung.
     for gezeigt, anzahl in (
         ((_b(True),), soll["treffer"]),
-        ((_b(False),), soll["fehltreffer"]),
+        ((_b(False), _b(True)), soll["fehltreffer"]),
         ((), soll["keine"]),
     ):
         for _ in range(anzahl):
@@ -87,6 +89,14 @@ def _messungen(soll=SOLL):
     for _ in range(soll["ohne_fehltreffer"]):
         neu((), (_b(False),), aehnliche=next(aehnlich_ohne))
     return messungen
+
+
+def _zeile_von_heute():
+    """Zellen der Zeile "(heute)" in der Seed-Tabelle von SUCHTESTSET.md."""
+    zeile = next(
+        z for z in DOKU.read_text(encoding="utf-8").splitlines() if "(heute)" in z
+    )
+    return [z.strip() for z in zeile.strip("|").split("|")]
 
 
 def _rot(pruefungen):
@@ -153,11 +163,13 @@ class TestPruefen:
 
     def test_soll_haelt_tor_und_untere_grenze_ein(self):
         """Auch ein erlaubter Ausreisser (Soll minus Toleranz) bleibt ueber Tor und
-        Grenze. Recall@10 ist mindestens Treffer durch Faelle mit Erwartung."""
+        Grenze. Recall@10 steht im Soll nicht; er kommt aus der Zeile von heute in
+        SUCHTESTSET.md, die Toleranz kostet hoechstens einen Fall."""
         mit = SOLL["treffer"] + SOLL["fehltreffer"] + SOLL["keine"]
         schlechtester = SOLL["aehnliche_erwartete_dabei"] - TOLERANZ_FAELLE
         assert schlechtester / mit >= UNTERE_GRENZE_AEHNLICHE
-        assert (SOLL["treffer"] - TOLERANZ_FAELLE) / mit >= TOR_STUFE_3["recall_bei_10"]
+        recall_10 = float(_zeile_von_heute()[7])
+        assert recall_10 - TOLERANZ_FAELLE / mit >= TOR_STUFE_3["recall_bei_10"]
         assert all(0 < wert <= 1 for wert in TOR_STUFE_3.values())
 
     def test_soll_kennt_jeden_fall_des_suchtestsets(self):
@@ -224,10 +236,7 @@ class TestMain:
 class TestSollWieDoku:
     def test_soll_ist_die_zeile_von_heute_in_suchtestset_md(self):
         """Das Soll ist die dokumentierte Messung am Seed, keine zweite Wahrheit."""
-        zeile = next(
-            z for z in DOKU.read_text(encoding="utf-8").splitlines() if "(heute)" in z
-        )
-        zellen = [z.strip() for z in zeile.strip("|").split("|")]
+        zellen = _zeile_von_heute()
         mit = SOLL["treffer"] + SOLL["fehltreffer"] + SOLL["keine"]
         ohne = SOLL["ohne_richtig_keine"] + SOLL["ohne_fehltreffer"]
 

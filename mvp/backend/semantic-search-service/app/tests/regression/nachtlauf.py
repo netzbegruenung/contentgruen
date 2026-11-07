@@ -37,17 +37,17 @@ from tests.regression.suche_messen import (
 # Exit-Code bei einer Abweichung (BESTAND_PASST_NICHT = 2 bleibt fuer "nichts gemessen").
 ABWEICHUNG = 1
 
-# Messung am Seed (mvp/data/seed/v1.0) vom 06.11.2026 mit intfloat/multilingual-e5-base
-# und der Schwelle von heute, dieselben Zahlen wie in SUCHTESTSET.md (ein Unit-Test
+# Messung am Seed (mvp/data/seed/v1.0) vom 07.11.2026 mit intfloat/multilingual-e5-base
+# und der Schwelle von heute (0,82, #568), dieselben Zahlen wie in SUCHTESTSET.md (ein Unit-Test
 # vergleicht). Aendert sich eine Zahl gewollt (Modell, Schwelle, Stemmer, Normalisierung,
 # neue Faelle), wird sie hier und in SUCHTESTSET.md im selben PR nachgezogen.
 SOLL: Dict[str, int] = {
     "gemessen": 42,
-    "treffer": 29,
-    "fehltreffer": 2,
-    "keine": 2,
-    "ohne_richtig_keine": 2,
-    "ohne_fehltreffer": 7,
+    "treffer": 27,
+    "fehltreffer": 3,
+    "keine": 3,
+    "ohne_richtig_keine": 4,
+    "ohne_fehltreffer": 5,
     "dieselbe_behauptung": 15,
     "zerfaserung_neu": 14,
     "aehnliche_erwartete_dabei": 25,
@@ -62,8 +62,8 @@ TOLERANZ_FAELLE = 1
 # Tor fuer Roadmap-Stufe 3 (docs/VISION.md, "Testset vor Stellschrauben"): Mindestwerte
 # bei der Schwelle von heute, unabhaengig vom Soll. Recall@10: Bei so vielen Faellen mit
 # Erwartung steht eine passende Antwort unter den ersten 10. Praezision: so viel des
-# Angezeigten passt. Am Seed gesetzt; am Entwurf des Startbestands bewertet und belassen
-# (#568, SUCHTESTSET.md: dort ist die Praezision bei zwei Kommentaren je Aussage begrenzt).
+# Angezeigten passt. Am Seed gesetzt; am Entwurf des Startbestands bei 0,82 ebenfalls
+# eingehalten (Recall@10 0,95, Praezision 0,34; #568, SUCHTESTSET.md).
 # Liegt unter dem Soll abzueglich Toleranz, sonst waere ein erlaubter Ausreisser rot.
 TOR_STUFE_3: Dict[str, float] = {
     "recall_bei_10": 0.80,

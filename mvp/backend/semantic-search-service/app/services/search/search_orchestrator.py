@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Search scoring constants (single source of truth; re-exported by api/v1/search.py).
-MINIMUM_SCORE_THRESHOLD = 0.8  # Minimum score for results to be included
+MINIMUM_SCORE_THRESHOLD = 0.82  # Minimum score for results to be included
 DIRECT_MATCH_PENALTY = 0.7  # Penalty multiplier for direct content matches
 STATEMENT_WEIGHT = 0.7  # Weight for statement similarity score in combined score
 RELEVANCE_WEIGHT = 0.3  # Weight for reply relevance score in combined score

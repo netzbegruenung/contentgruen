@@ -33,7 +33,7 @@ SEMANTIC_SEARCH_QDRANT_URL=http://localhost:6333 SEMANTIC_SEARCH_QDRANT_COLLECTI
   ../venv/bin/python -m tests.regression.suche_messen --faelle
 ```
 
-Optionen: `--schwellen 0.78,0.8,0.82` (welche Schwellen gemessen werden; die von heute
+Optionen: `--schwellen 0.8,0.82,0.84` (welche Schwellen gemessen werden; die von heute
 immer), `--k` (Beiträge je Beitragstyp, Standard 10 wie im Frontend), `--faelle` (jeder
 Fall mit erstem angezeigtem und erstem passendem Beitrag), `--json PFAD` (die ganze
 Messung als Datei, für Vergleiche und Folgetickets: je Fall Suchanfrage, Phänomen,
@@ -114,23 +114,25 @@ vor #392 (Unterschiede danach unter „Stemmer“). Der Seed hat 14
 Aussagen mit Antworten, jede Antwort hängt an einer Aussage, und er ist klein und
 geschrieben, um gefunden zu werden. Die Bewertung der Schwelle steht unter „Ergebnis am
 Startbestand“; die Zeile der Schwelle von heute ist hier das Soll des nächtlichen Laufs.
+Die Zeile 0,82 ist am 07.11.2026 mit dem nächtlichen Lauf nachgemessen (Stemmer nach
+#392); die übrigen Zeilen sind die Messung vom 05.11.
 
 | Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|---|---|
 | 0.76 | 31/33 | 2 | 0 | 0/9 / 9 | 0.16 | 0.94 | 0.97 | 1.00 | 13 / 368 |
 | 0.78 | 30/33 | 2 | 1 | 0/9 / 9 | 0.21 | 0.91 | 0.94 | 0.97 | 13 / 251 |
 | 0.79 | 30/33 | 2 | 1 | 1/9 / 8 | 0.25 | 0.91 | 0.94 | 0.97 | 13 / 203 |
-| 0.80 (heute) | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.88 | 0.91 | 0.94 | 11 / 136 |
+| 0.80 | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.88 | 0.91 | 0.94 | 11 / 136 |
 | 0.81 | 28/33 | 3 | 2 | 3/9 / 6 | 0.39 | 0.88 | 0.91 | 0.94 | 21 / 102 |
-| 0.82 | 27/33 | 3 | 3 | 4/9 / 5 | 0.50 | 0.85 | 0.88 | 0.88 | 20 / 54 |
+| 0.82 (heute) | 27/33 | 3 | 3 | 4/9 / 5 | 0.49 | 0.85 | 0.88 | 0.88 | 17 / 51 |
 | 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 0.76 | 0.76 | 12 / 15 |
 | 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
-- **Schwelle 0,8 bleibt** (am Startbestand bestätigt, siehe unten). Es gibt keinen
-  klaren Knick, nur einen Tausch: Darunter kommt ein Treffer dazu, und die Fälle ohne
-  passende Aussage zeigen fast immer etwas; darüber gehen ein bis zwei Treffer verloren, dafür steigt die Präzision
-  (0,82: 27 statt 29 Treffer, Präzision 0,50 statt 0,32). Für Gut gesagt zählt zuerst,
-  dass eine passende Antwort erscheint; am kleinen Seed trägt das keine Verschiebung.
+- **Schwelle seit #568: 0,82** (Entscheidung am Startbestand, siehe unten). Es gibt
+  keinen klaren Knick, nur einen Tausch: Darunter kommt ein Treffer dazu, und die Fälle
+  ohne passende Aussage zeigen fast immer etwas; darüber gehen ein bis zwei Treffer
+  verloren, dafür steigt die Präzision (0,82: 27 statt 29 Treffer, Präzision 0,49 statt
+  0,32).
 - **Der direkte Weg rettet Fälle, bringt aber viel Unpassendes.** Bei 0,8 kommen 5
   Treffer nur über ihn („Heizungsverbot“, „Fleischverbot“, „Bürokratiemonster“, die
   Gurken, die Dunkelflaute in Worten); zugleich sind 125 der 136 direkt angezeigten
@@ -181,21 +183,22 @@ reicht eine Kontrollmessung mit dem Befehl oben.
 | 0.76 | 81/86 | 5 | 0 | 0/13 / 13 | 0.18 | 0.99 | 1.00 | 1.00 | 0 / 0 |
 | 0.78 | 80/86 | 5 | 1 | 1/13 / 12 | 0.19 | 0.98 | 0.99 | 0.99 | 0 / 3 |
 | 0.79 | 80/86 | 5 | 1 | 1/13 / 12 | 0.19 | 0.98 | 0.99 | 0.99 | 0 / 27 |
-| **0.80** | 80/86 | 5 | 1 | 1/13 / 12 | 0.22 | 0.98 | 0.99 | 0.99 | 0 / 65 |
+| 0.80 | 80/86 | 5 | 1 | 1/13 / 12 | 0.22 | 0.98 | 0.99 | 0.99 | 0 / 65 |
 | 0.81 | 79/86 | 5 | 2 | 1/13 / 12 | 0.27 | 0.97 | 0.98 | 0.98 | 1 / 97 |
-| 0.82 | 78/86 | 4 | 4 | 3/13 / 10 | 0.34 | 0.94 | 0.95 | 0.95 | 4 / 94 |
+| **0.82** | 78/86 | 4 | 4 | 3/13 / 10 | 0.34 | 0.94 | 0.95 | 0.95 | 4 / 94 |
 | 0.83 | 77/86 | 5 | 4 | 3/13 / 10 | 0.40 | 0.94 | 0.95 | 0.95 | 7 / 69 |
 | 0.84 | 73/86 | 5 | 8 | 3/13 / 10 | 0.45 | 0.88 | 0.90 | 0.90 | 7 / 29 |
 | 0.86 | 67/86 | 3 | 16 | 3/13 / 10 | 0.49 | 0.79 | 0.80 | 0.80 | 2 / 6 |
 
-- **Schwelle 0,8 bleibt, „vorläufig“ entfällt.** Bei 0,8 erscheint in 80 von 86 Fällen
-  die passende Antwort zuerst, in 85 unter den ersten zehn. 0,82 kostet drei Treffer
-  (S26 „Genderzwang“, S72 „Akademikerpartei“, S29 die Gurken; dann ohne Ergebnis) und
-  gewinnt einen (S46); zwei fremde Themen zeigen dann nichts mehr (S70, S89). Wer kurze
-  Schlagwörter tippt, bekäme bei 0,82 öfter „Hier fehlt eine Antwort“, obwohl es eine
-  gibt. Für Gut gesagt zählt zuerst, dass eine passende Antwort erscheint.
-- **Präzision oberhalb 0,8:** 0,82 hebt sie von 0,22 auf 0,34, 0,84 auf 0,45 (bei 73
-  statt 80 Treffern). Sie ist am Startbestand nach oben begrenzt: Je Aussage gibt es
+- **Schwelle 0,82 statt 0,8** (entschieden am 07.11.2026, #568). Bei 0,8 stehen im
+  Median zehn Kommentare auf der Seite, von denen meist zwei passen (Präzision 0,22);
+  bei 0,82 sind es vier, die Präzision steigt auf 0,34. Der Preis: drei Treffer weniger
+  (S26 „Genderzwang“, S72 „Akademikerpartei“, S29 die Gurken; dann ohne Ergebnis), einer
+  mehr (S46), 78 statt 80 von 86; zwei fremde Themen zeigen nichts mehr (S70, S89). Wer
+  kurze Schlagwörter tippt, bekommt etwas öfter „Hier fehlt eine Antwort“, obwohl es eine
+  gibt. 0,84 kostet weitere fünf Treffer.
+- **Präzision:** 0,82 hebt sie von 0,22 auf 0,34, 0,84 auf 0,45 (bei 73 statt 80
+  Treffern). Sie ist am Startbestand nach oben begrenzt: Je Aussage gibt es
   zwei Kommentare, die Ergebnisseite zeigt bis zu zehn; bei 0,8 stehen im Median zehn
   Kommentare auf der Seite, bei 0,82 vier. Gemessen mit der Pronomen-Stoppliste aus
   #392; der Tausch Treffer gegen Präzision ist derselbe wie am Seed, nur mit mehr
@@ -204,12 +207,11 @@ reicht eine Kontrollmessung mit dem Befehl oben.
   erster Stelle; er rettet keinen Treffer. Ab 0,81 fallen Aussagetreffer weg und er
   füllt die Plätze, bei 0,82 mit vier passenden (ohne ihn 75 statt 78 Treffer). Am
   Startbestand hängt jeder Kommentar an einer Aussage, ein Beitrag ohne Aussage ist dort
-  nicht dabei; am Seed rettete er fünf Treffer. Er bleibt, eine eigene Schwelle trägt
-  das Set nicht.
-- **Tor für Roadmap-Stufe 3:** Recall@10 0,99 (Tor 0,80), Präzision 0,22 (Tor 0,25).
-  Die Präzision liegt am Startbestand unter dem Tor, weil sie dort nach oben begrenzt
-  ist (siehe oben), nicht weil Unpassendes vor Passendem steht. Tor und Grenze bleiben
-  am Seed gesetzt, der nächtliche Lauf misst nur dort.
+  nicht dabei; am Seed rettete er fünf Treffer. Er bleibt, gerade bei 0,82; eine eigene
+  Schwelle trägt das Set nicht.
+- **Tor für Roadmap-Stufe 3:** bei 0,82 Recall@10 0,95 (Tor 0,80), Präzision 0,34
+  (Tor 0,25); bei 0,8 lag die Präzision mit 0,22 darunter. Tor und Grenze bleiben am
+  Seed gesetzt, der nächtliche Lauf misst nur dort.
 - **Verneinungen** (8) sind alle Fehltreffer, wie am Seed; **fremde Themen** zeigen in 4
   von 5 Fällen etwas (Mülltrennung, Mietpreisbremse, Bahn, Schuldenbremse). Beides löst
   keine gemessene Schwelle: Auch bei 0,86 zeigen 10 der 13 Fälle ohne Erwartung etwas
@@ -241,9 +243,9 @@ reicht eine Kontrollmessung mit dem Befehl oben.
 - **Anteil aus Suchen ohne Treffer:** Im Startbestand hat jede Aussage Antworten; welcher
   Anteil der Aussagen aus Suchen ohne Treffer dieselbe Behauptung wie eine andere ist,
   ist dort nicht messbar, die drei Punkte oben sind Ersatzgrößen. Ihn zeigt erst eine
-  Zählung auf Produktion nach einigen Wochen Suchen. Am Startbestand sind
-  2 der 99 gemessenen Suchen ohne Treffer, keine davon dieselbe Behauptung wie eine
-  Aussage.
+  Zählung auf Produktion nach einigen Wochen Suchen. Am Startbestand sind bei 0,82
+  7 der 99 gemessenen Suchen ohne Treffer (bei 0,8: 2), keine davon dieselbe Behauptung
+  wie eine Aussage.
 
 ## Nächtlicher Lauf
 
@@ -268,11 +270,11 @@ Geprüft wird bei der Schwelle von heute (Werte in `nachtlauf.py`):
   Wer Modell, Schwelle, Stemmer, Normalisierung oder das Set ändert, zieht `SOLL` und
   diese Seite im selben PR nach (ein Unit-Test vergleicht beide).
 - **Tor für Roadmap-Stufe 3** (`docs/VISION.md`): Recall@10 mindestens 0,80 und Präzision
-  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,91 und 0,32.
+  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,88 und 0,49.
 - **Untere Grenze für ähnliche Aussagen:** Bei mindestens 70 % der Fälle mit Erwartung
   ist eine erwartete Aussage unter den ähnlichen Aussagen. Am Seed heute 76 %.
 
 Tor und Grenze sind am Seed gesetzt, so dass ein erlaubter Ausreißer von einem Fall
-nicht rot wird. Am Entwurf des Startbestands (#568) hält die Grenze (76 %), die
-Präzision liegt dort strukturbedingt unter dem Tor (siehe oben); beide bleiben. Der Lauf
+nicht rot wird. Am Entwurf des Startbestands (#568) halten bei 0,82 beide (Präzision
+0,34, ähnliche Aussagen 76 %). Der Lauf
 misst immer am Seed, nie am Bestand von Test oder Produktion.
