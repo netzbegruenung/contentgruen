@@ -615,10 +615,11 @@ async def fall_messen(
     erwartung = await _erwartung(dienste, fall, {} if cache is None else cache)
     if erwartung.fehlt or erwartung.ausgeschlossen:
         # Zaehlt nicht mit (gemessen()): keine Suche. Am Seed sind das die Faelle zum
-        # Startbestand, im naechtlichen Lauf mehr als die Haelfte.
+        # Startbestand, im naechtlichen Lauf mehr als die Haelfte. Ohne Eintrag je
+        # Schwelle, sonst stuende im JSON "keine" fuer eine Suche, die es nie gab.
         return FallMessung(
             fall,
-            {s: () for s in schwellen},
+            {},
             erwartung.fehlt,
             None,
             (),

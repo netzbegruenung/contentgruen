@@ -127,8 +127,8 @@ Startbestand“; die Zeile der Schwelle von heute ist hier das Soll des nächtli
 | 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
 - **Schwelle 0,8 bleibt** (am Startbestand bestätigt, siehe unten). Es gibt keinen
-  klaren Knick, nur einen Tausch: Darunter kommt ein Treffer dazu, und die Fälle ohne passende Aussage zeigen fast
-  immer etwas; darüber gehen ein bis zwei Treffer verloren, dafür steigt die Präzision
+  klaren Knick, nur einen Tausch: Darunter kommt ein Treffer dazu, und die Fälle ohne
+  passende Aussage zeigen fast immer etwas; darüber gehen ein bis zwei Treffer verloren, dafür steigt die Präzision
   (0,82: 27 statt 29 Treffer, Präzision 0,50 statt 0,32). Für Gut gesagt zählt zuerst,
   dass eine passende Antwort erscheint; am kleinen Seed trägt das keine Verschiebung.
 - **Der direkte Weg rettet Fälle, bringt aber viel Unpassendes.** Bei 0,8 kommen 5
@@ -224,20 +224,24 @@ reicht eine Kontrollmessung mit dem Befehl oben.
   Startbestands sind, landen nicht auf ihr; die zehn, die landen, sind alle wörtlich.
   Keine Umformulierung, kein Tippfehler und keine Umgangssprache landet. Mit der
   NLI-Stufe „an“ (#387) landen 6 der 31 (S32, S36, S51, S61, S74, S97), 25 bleiben.
+  Zu Deutschlandticket und Insektensterben gibt es nur den wörtlichen Fall; Fälle mit
+  derselben Behauptung in anderen Worten kommen mit der Kontrollmessung dazu.
 - **Aussagen ohne Antwort:** Einmal-Versuch am selben Stack über den Suchendpunkt: Vier
   Suchen zu Themen ohne Aussage legten je eine Aussage ohne Antwort an (Radwege,
   Grundsteuer, Handys an Schulen, Homeoffice), dann je drei Suchen mit derselben
   Behauptung in anderen Worten. 6 von 12 landen, alle mit fast gleichem Wortlaut
   („Die Grundsteuer ist nicht gerecht“, „Home Office macht faul“); die übrigen sechs
   legen eine weitere Aussage an. Die Dublettenprüfung achtet nicht auf Antworten, Aussagen
-  ohne Antwort zerfasern also wie die mit Antwort.
+  ohne Antwort zerfasern also wie die mit Antwort. Die zwölf Suchanfragen stehen nicht
+  im Set, der Versuch ist ein Anhaltspunkt und keine wiederholbare Messung.
 - **Im Bestand:** Der Bericht der NLI-Stufe (`dieselbe_bericht.py`) findet unter den 30
   Aussagen kein Paar mit derselben Behauptung. Nah beieinander liegen „Die Grünen
   interessieren sich nur für Großstädte …“ und „Die Grünen machen Politik nur für
   Akademiker in der Stadt“: S24 (Land) zeigt zuerst die Antworten auf die zweite.
 - **Anteil aus Suchen ohne Treffer:** Im Startbestand hat jede Aussage Antworten; welcher
   Anteil der Aussagen aus Suchen ohne Treffer dieselbe Behauptung wie eine andere ist,
-  zeigt erst eine Zählung auf Produktion nach einigen Wochen Suchen. Am Startbestand sind
+  ist dort nicht messbar, die drei Punkte oben sind Ersatzgrößen. Ihn zeigt erst eine
+  Zählung auf Produktion nach einigen Wochen Suchen. Am Startbestand sind
   2 der 99 gemessenen Suchen ohne Treffer, keine davon dieselbe Behauptung wie eine
   Aussage.
 
@@ -270,5 +274,5 @@ Geprüft wird bei der Schwelle von heute (Werte in `nachtlauf.py`):
 
 Tor und Grenze sind am Seed gesetzt, so dass ein erlaubter Ausreißer von einem Fall
 nicht rot wird. Am Entwurf des Startbestands (#568) hält die Grenze (76 %), die
-Präzision liegt dort strukturbedingt unter dem Tor (siehe oben); beide bleiben. Der Lauf misst
-immer am Seed, nie am Bestand von Test oder Produktion.
+Präzision liegt dort strukturbedingt unter dem Tor (siehe oben); beide bleiben. Der Lauf
+misst immer am Seed, nie am Bestand von Test oder Produktion.

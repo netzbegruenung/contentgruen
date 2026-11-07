@@ -47,7 +47,6 @@ from tests.regression.suche_testset import (
     Fall,
     am_seed_gemessen,
 )
-from tests.regression.nachtlauf import SOLL
 from utils.text_normalisierung import text_normalisiert
 
 REPO_WURZEL = next((p for p in Path(__file__).parents if (p / "mvp").is_dir()), None)
@@ -129,8 +128,7 @@ class TestBezugZumSeed:
 
     def test_faelle_zum_startbestand_zaehlen_am_seed_nicht(self):
         """Das Soll des naechtlichen Laufs (gemessen am Seed) bleibt, wenn Faelle zum
-        Startbestand dazukommen."""
-        assert sum(1 for f in FAELLE if am_seed_gemessen(f)) == SOLL["gemessen"]
+        Startbestand dazukommen; die Zahl gegen das Soll prueft test_nachtlauf.py."""
         assert not any(am_seed_gemessen(f) for f in FAELLE if f.quelle == "start")
 
 
@@ -450,7 +448,8 @@ class TestErwartung:
 
         suche.assert_not_called()
         assert messung.ausgeschlossen == ("W",)
-        assert messung.angezeigt == {0.8: (), 0.84: ()}
+        assert messung.angezeigt == {}
+        assert als_json([messung], (0.8,))["faelle"][0]["einordnung"] == {}
         assert suche_messen.gemessen([messung]) == []
 
     def test_erwartete_aussagen_wie_bisher(self):
