@@ -26,6 +26,13 @@ RUN python -c "from transformers import AutoModelForSequenceClassification, Auto
     AutoTokenizer.from_pretrained(name); AutoModelForSequenceClassification.from_pretrained(name); \
     print('NLI model pre-downloaded successfully')"
 
+# Ab hier nur noch die eingebauten Modelle: Ohne Offline-Modus fragt der Dienst bei
+# jedem Start huggingface.co an (Startzeit, Datenverkehr in die USA) und koennte eine
+# neuere Modellrevision ziehen als die, die der Nachtlauf misst. Erst nach den beiden
+# Vorlade-Schritten, damit der Build die Modelle noch herunterladen kann (#578).
+# Ein neues Modell gehoert oben in einen Vorlade-Schritt (docs/CI.md, "Model cache").
+ENV HF_HUB_OFFLINE=1
+
 # Copy application code - adjusted path for mvp context
 COPY backend/semantic-search-service/app /app
 
