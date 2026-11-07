@@ -33,11 +33,12 @@ Exit-Codes in `mvp/SCRIPTS.md`; Beispiellisten `einwuerfe_beispiel.csv` und
 
 ## Startbestand einspielen, Beitraege entfernen (gegen das BFF)
 
-`beitraege_importieren.py <datei> [--email <konto>] [--adresse <url>] [--ausfuehren]` –
+`beitraege_importieren.py <datei> [--sitzung-datei <datei> | --email <konto>] [--adresse <url>] [--ausfuehren]` –
 **schreibend mit `--ausfuehren`.** Legt Kommentare samt Aussage und Herkunft aus einer
 Markdown-Datei an (Startbestand, unter einem Startkonto). Mit `--entfernen` ist die Datei
 eine Liste `<typ> <id>` und die Beitraege werden endgueltig entfernt (Admin-Konto). Ohne
-`--ausfuehren` ein Trockenlauf. Nur Standardbibliothek. Aufruf und Dateiformat in
+`--ausfuehren` ein Trockenlauf. Angemeldet mit dem Sitzungs-Cookie des Browsers (Test,
+Produktion), lokal mit `--email`. Nur Standardbibliothek. Aufruf und Dateiformat in
 `mvp/SCRIPTS.md`; Beispiel `beitraege_beispiel.md`.
 
 ## Bestand in Qdrant (im semantic-search-Container)

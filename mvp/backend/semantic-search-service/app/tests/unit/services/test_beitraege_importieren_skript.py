@@ -127,6 +127,32 @@ class TestDateiLesen:
         assert anfrage["commentary"]["zweck"] == "eigene_leute"
         assert anfrage["commentary"]["style"] == "sachlich"
 
+    def test_varianten_die_beim_schreiben_vorkommen(self, skript, tmp_path):
+        pfad = _datei(
+            tmp_path,
+            "## 9. Hinweise\n"
+            "### Offene Fragen\n"
+            "**Titel:** Gehoert nicht zum Bestand\n"
+            "## 2.1 „Eine Aussage in Anführungszeichen“\n"
+            "### (a)\n"
+            "**Titel**: Doppelpunkt hinter dem Fettdruck\n\n"
+            "**Mittel**: Text.\n\n"
+            "#### Quellen\n"
+            "**Herkunft**: https://de.wikipedia.org/wiki/Rotmilan_(Art) – Artikel.\n"
+            "Herkunft: [Bericht](https://example.org/a_(b)) aus 2024\n"
+            "**Herkunft:** keine Zahl, Allgemeinwissen. Keine Herkunft nötig.\n",
+        )
+
+        (k,), fehler = skript.datei_lesen(pfad)
+
+        assert fehler == []
+        assert k.aussage == "Eine Aussage in Anführungszeichen"
+        assert (k.titel, k.mittel) == ("Doppelpunkt hinter dem Fettdruck", "Text.")
+        assert [(h.link, h.beschreibung) for h in k.herkuenfte] == [
+            ("https://de.wikipedia.org/wiki/Rotmilan_(Art)", "Artikel."),
+            ("https://example.org/a_(b)", "Bericht aus 2024"),
+        ]
+
     def test_laengen_und_pflichtfelder_alle_auf_einmal(self, skript, tmp_path):
         pfad = _datei(
             tmp_path,
@@ -229,7 +255,8 @@ class Speicher:
         self.fehler = list(fehler or [])
         self.angelegt = []
         self.entfernt = []
-        self.titel_je_id = {}
+        # ID -> (Typ, Titel) der Beitraege, die die Ansicht zeigt.
+        self.beitraege = {}
 
     def kommentar_anlegen(self, daten):
         if self.fehler:
@@ -246,11 +273,14 @@ class Speicher:
             "verknuepft": True,
         }
 
-    def titel(self, beitrag_id):
-        return self.titel_je_id.get(beitrag_id)
+    def ansehen(self, beitrag_id):
+        if beitrag_id not in self.beitraege:
+            return None
+        typ, titel = self.beitraege[beitrag_id]
+        return {"id": beitrag_id, "content_type": typ, "title": titel}
 
     def entfernen(self, typ, beitrag_id):
-        if beitrag_id not in self.titel_je_id:
+        if beitrag_id not in self.beitraege:
             raise self.skript.ApiFehler(404, "Content not found or already deleted")
         self.entfernt.append((typ, beitrag_id))
 
@@ -322,6 +352,52 @@ class TestImportieren:
 
         assert "nicht mit der Aussage verknuepft" in bericht.fehlgeschlagen[0][1]
 
+    def test_eigener_vorhandener_wird_an_die_aussage_gehaengt(self, skript, tmp_path):
+        speicher = Speicher(
+            skript,
+            antworten=[
+                # Aelterer Dienst: Dublette in den flachen Feldern von vor #541.
+                {
+                    "id": "alt",
+                    "verknuepft": False,
+                    "dublette": True,
+                    "vorhanden_titel": "Aus dem ersten Lauf",
+                    "vorhanden_eigen": True,
+                },
+                {"id": "alt", "statement_id": "a1", "verknuepft": True},
+            ],
+        )
+
+        bericht = skript.importieren(
+            _kommentare(skript, tmp_path)[:1], speicher, ausfuehren=True
+        )
+
+        erster, zweiter = speicher.angelegt
+        assert "vorhanden_nehmen" not in erster
+        assert zweiter["vorhanden_nehmen"] == "alt"
+        assert "trotz_dublette_von" not in zweiter
+        assert bericht.angelegt == [] and bericht.fehlgeschlagen == []
+        ((_, grund),) = bericht.uebersprungen
+        assert "eigener aehnlicher Kommentar schon da" in grund
+        assert "an Aussage a1 gehaengt" in grund
+
+    def test_stundenlimit_beendet_den_lauf(self, skript, tmp_path):
+        limit = skript.ApiFehler(429, "Rate limit exceeded")
+        speicher = Speicher(skript, fehler=[limit] * skript.VERSUCHE_BEI_LIMIT)
+        gewartet = []
+
+        bericht = skript.importieren(
+            _kommentare(skript, tmp_path),
+            speicher,
+            ausfuehren=True,
+            warten=gewartet.append,
+        )
+
+        assert len(gewartet) == skript.VERSUCHE_BEI_LIMIT - 1
+        assert speicher.angelegt == []
+        assert [z for z, _ in bericht.fehlgeschlagen] == [14, 25]
+        assert all("nicht versucht: Rate-Limit" in g for _, g in bericht.fehlgeschlagen)
+
     def test_rate_limit_wartet_und_versucht_erneut(self, skript, tmp_path):
         speicher = Speicher(
             skript, fehler=[skript.ApiFehler(429, "Rate limit exceeded")]
@@ -386,7 +462,7 @@ class TestEntfernen:
 
     def test_trockenlauf_zeigt_titel_und_entfernt_nichts(self, skript):
         speicher = Speicher(skript)
-        speicher.titel_je_id = {"id-1": "Ein alter Kommentar"}
+        speicher.beitraege = {"id-1": ("commentary", "Ein alter Kommentar")}
 
         bericht = skript.entfernen(self._eintraege(skript), speicher)
 
@@ -398,13 +474,24 @@ class TestEntfernen:
 
     def test_entfernen_und_fehlende_melden(self, skript):
         speicher = Speicher(skript)
-        speicher.titel_je_id = {"id-1": "x"}
+        speicher.beitraege = {"id-1": ("commentary", "x")}
 
         bericht = skript.entfernen(self._eintraege(skript), speicher, ausfuehren=True)
 
         assert speicher.entfernt == [("commentary", "id-1")]
         assert bericht.uebersprungen == [
             (2, "nicht gefunden oder schon entfernt: post id-2")
+        ]
+
+    def test_typ_muss_zum_beitrag_passen(self, skript):
+        speicher = Speicher(skript)
+        speicher.beitraege = {"id-1": ("commentary", "x"), "id-2": ("commentary", "y")}
+
+        bericht = skript.entfernen(self._eintraege(skript), speicher, ausfuehren=True)
+
+        assert speicher.entfernt == [("commentary", "id-1")]
+        assert bericht.fehlgeschlagen == [
+            (2, "Typ passt nicht, der Beitrag ist commentary: post id-2")
         ]
 
 
@@ -425,9 +512,84 @@ class TestAufruf:
 
         assert skript.main([str(pfad)]) == 1
 
-    def test_ausfuehren_braucht_email(self, skript, tmp_path):
+    def test_ausfuehren_braucht_eine_anmeldung(self, skript, tmp_path, monkeypatch):
+        monkeypatch.delenv("GUTGESAGT_SITZUNG", raising=False)
         with pytest.raises(SystemExit):
             skript.main([str(_datei(tmp_path, ENTWURF)), "--ausfuehren"])
+
+    def test_mit_sitzung_aus_datei(self, skript, tmp_path, capsys, monkeypatch):
+        monkeypatch.delenv("GUTGESAGT_SITZUNG", raising=False)
+        sitzung = _datei(tmp_path, "geheimer-wert\n", name="sitzung.txt")
+        gebaut = []
+
+        class Bff(skript.BffBestand):
+            def __init__(self, adresse):
+                super().__init__(adresse)
+                gebaut.append(self)
+
+            def wer(self):
+                return {"userName": "Startkonto 1", "isAdmin": False}
+
+            def kommentar_anlegen(self, daten):
+                return {"id": "k", "statement_id": "a", "verknuepft": True}
+
+        aufruf = [str(_datei(tmp_path, ENTWURF)), "--sitzung-datei", str(sitzung)]
+        aufruf += ["--adresse", "https://gutgesagt.example.org", "--ausfuehren"]
+
+        assert skript.main(aufruf, Bff) == 0
+
+        assert gebaut[0]._kopfzeilen()["Cookie"] == "GutGesagtAuthCookie=geheimer-wert"
+        ausgabe = capsys.readouterr()
+        assert "Angemeldet als Startkonto 1" in ausgabe.out
+        assert "geheimer-wert" not in ausgabe.out + ausgabe.err
+
+    def test_entfernen_ohne_admin_bricht_vor_dem_ersten_eintrag_ab(
+        self, skript, tmp_path, capsys, monkeypatch
+    ):
+        monkeypatch.setenv("GUTGESAGT_SITZUNG", "wert")
+        liste = _datei(
+            tmp_path, "commentary 525f4e66-0000-4000-8000-000000000001\n", "l.txt"
+        )
+
+        class Bff(skript.BffBestand):
+            def wer(self):
+                return {"userName": "Startkonto 1", "isAdmin": False}
+
+            def ansehen(self, beitrag_id):
+                raise AssertionError("ohne Admin nichts ansehen")
+
+        assert skript.main([str(liste), "--entfernen"], Bff) == 2
+        assert "Admin-Konto" in capsys.readouterr().err
+
+    def test_nicht_email_und_sitzung_zugleich(self, skript, tmp_path, monkeypatch):
+        monkeypatch.setenv("GUTGESAGT_SITZUNG", "wert")
+        with pytest.raises(SystemExit):
+            skript.main([str(_datei(tmp_path, ENTWURF)), "--email", "a@example.org"])
+
+
+class TestSitzung:
+    @pytest.mark.parametrize(
+        "eingabe, cookie",
+        [
+            ("  wert\n", "GutGesagtAuthCookie=wert"),
+            ("GutGesagtAuthCookie=wert", "GutGesagtAuthCookie=wert"),
+            (
+                "Cookie: GutGesagtAuthCookie=wert; GutGesagtAuthCookieC1=mehr",
+                "GutGesagtAuthCookie=wert; GutGesagtAuthCookieC1=mehr",
+            ),
+        ],
+    )
+    def test_wert_oder_ganze_cookie_zeile(self, skript, eingabe, cookie):
+        bff = skript.BffBestand("https://gutgesagt.example.org")
+
+        bff.sitzung_nutzen(eingabe)
+
+        assert bff._kopfzeilen()["Cookie"] == cookie
+
+    @pytest.mark.parametrize("eingabe", ["", "  ", "a\nb", "a\rb"])
+    def test_leer_oder_mit_umbruch_abgelehnt(self, skript, eingabe):
+        with pytest.raises(skript.ApiFehler):
+            skript.BffBestand("https://x.example.org").sitzung_nutzen(eingabe)
 
     def test_passwort_nur_verschluesselt(self, skript, tmp_path):
         assert (

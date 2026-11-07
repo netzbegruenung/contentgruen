@@ -197,28 +197,33 @@ def test_import_dann_dubletten_dann_entfernen(
     # Die Herkunft mit Beschreibung, ohne den Pruefvermerk darunter.
     assert f"Übersicht {lauf}." in str(a["references"])
 
-    # Nochmal: der Server erkennt beide als Dublette, nichts wird angelegt.
-    assert skript.main([*aufruf, "--ausfuehren"]) == 0
-    ausgabe = capsys.readouterr().out
-    assert "angelegt: 0, uebersprungen: 2, Fehler: 0" in ausgabe
-    assert "aehnlicher Kommentar schon da" in ausgabe
+    # Nochmal, diesmal mit der Sitzung eines "Browsers" (Weg fuer Test und
+    # Produktion): der Server erkennt beide als eigene Dublette, nichts wird neu
+    # angelegt, beide haengen schon an der Aussage.
+    monkeypatch.delenv("GUTGESAGT_PASSWORT")
+    sitzung_datei = tmp_path / "sitzung.txt"
+    sitzung_datei.write_text(
+        sitzung.cookies.get("GutGesagtAuthCookie"), encoding="utf-8"
+    )
+    mit_sitzung = [str(datei), "--sitzung-datei", str(sitzung_datei)]
+    assert skript.main([*mit_sitzung, "--adresse", BFF_URL, "--ausfuehren"]) == 0
+    ausgabe = capsys.readouterr()
+    assert "Angemeldet als" in ausgabe.out
+    assert "angelegt: 0, uebersprungen: 2, Fehler: 0" in ausgabe.out
+    assert f"an Aussage {aussage_id} gehaengt" in ausgabe.out
+    assert sitzung_datei.read_text() not in ausgabe.out + ausgabe.err
 
-    # Entfernen ohne Admin: Abbruch, nichts entfernt.
+    # Entfernen ohne Admin: Abbruch vor dem ersten Eintrag, nichts entfernt.
     liste = tmp_path / "entfernen.txt"
     liste.write_text(f"commentary {a_id}\ncommentary {b_id}\n", encoding="utf-8")
-    assert skript.main([str(liste), "--entfernen", *aufruf[1:], "--ausfuehren"]) == 2
+    assert (
+        skript.main([str(liste), "--entfernen", *mit_sitzung[1:], "--adresse", BFF_URL])
+        == 2
+    )
     assert "Admin-Konto" in capsys.readouterr().err
     assert _kommentar(sitzung, a_id).status_code == 200
 
-    # Trockenlauf des Entfernens: je Eintrag eine Zeile, nichts entfernt. Die
-    # Titel liest er aus /content/beitrag (#300); die Formatierung pruefen die
-    # Unit-Tests, weil ein Dev-Stack von vor #300 die Adresse nicht kennt.
-    assert skript.main([str(liste), "--entfernen", *aufruf[1:]]) == 0
-    ausgabe = capsys.readouterr().out
-    assert a_id in ausgabe and b_id in ausgabe
-    assert _kommentar(sitzung, b_id).status_code == 200
-
-    # Entfernen als Admin, am Suchdienst mit den Kopfzeilen des BFF.
+    # Als Admin, am Suchdienst mit den Kopfzeilen des BFF.
     if not _erreichbar(f"{SUCHDIENST_URL}/docs"):
         pytest.skip(f"Suchdienst nicht direkt erreichbar unter {SUCHDIENST_URL}")
 
@@ -226,16 +231,24 @@ def test_import_dann_dubletten_dann_entfernen(
         def _kopfzeilen(self):
             return {**super()._kopfzeilen(), **ALS_ADMIN}
 
-        def anmelden(self, email, passwort):
-            pass
+        def wer(self):
+            return {"userId": "user-002", "isAdmin": True}
+
+    # Trockenlauf: je Eintrag eine Zeile, nichts entfernt. Titel und Typ liest
+    # er aus /content/beitrag (#300); die Formatierung pruefen die Unit-Tests,
+    # weil ein Dev-Stack von vor #300 die Adresse nicht kennt.
+    trocken = [str(liste), "--entfernen", *mit_sitzung[1:], "--adresse"]
+    assert skript.main([*trocken, SUCHDIENST_URL], AlsAdmin) == 0
+    ausgabe = capsys.readouterr().out
+    assert a_id in ausgabe and b_id in ausgabe
+    assert _kommentar(sitzung, b_id).status_code == 200
 
     assert (
         skript.main(
             [
                 str(liste),
                 "--entfernen",
-                "--email",
-                "admin",
+                *mit_sitzung[1:],
                 "--adresse",
                 SUCHDIENST_URL,
                 "--ausfuehren",
@@ -263,8 +276,7 @@ def test_import_dann_dubletten_dann_entfernen(
             [
                 str(liste),
                 "--entfernen",
-                "--email",
-                "admin",
+                *mit_sitzung[1:],
                 "--adresse",
                 SUCHDIENST_URL,
                 "--ausfuehren",

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Startbestand einspielen und Altbeitraege entfernen (#592).
+Startbestand einspielen und Beitraege endgueltig entfernen (#592).
 
 Import: liest eine Markdown-Datei mit Aussagen und je Aussage einem oder mehreren
 Kommentaren und legt jeden Kommentar ueber dieselbe API an wie das
 Kommentar-Formular, als Antwort auf seine Aussage und mit seinen Herkuenften
 (``POST /api/v1/commentary/addCommentary``). Die Aussage legt der Server an oder
-findet die vorhandene; eine vorhandene Herkunft nimmt er wieder. Angemeldet wird
-am BFF wie im Login-Formular, fuer den Startbestand mit einem Startkonto.
+findet die vorhandene; eine vorhandene Herkunft nimmt er wieder. Fuer den
+Startbestand schreibt ein Startkonto.
 
 Entfernen (``--entfernen``): liest je Zeile ``<typ> <id>`` und entfernt den
 Beitrag endgueltig ueber die Admin-API
@@ -16,6 +16,22 @@ Admin-Konto. Im Frontend gibt es dafuer keinen Knopf, nur das Sperren.
 
 Beides ist ohne ``--ausfuehren`` ein Trockenlauf, der nichts schreibt. Aufruf,
 Dateiformat und Exit-Codes: ``mvp/SCRIPTS.md``.
+
+Anmeldung, zwei Wege:
+
+- Test und Produktion (Anmeldung nur ueber Keycloak im Browser): die Sitzung des
+  Browsers mitgeben. In Gut gesagt mit dem Konto anmelden, das schreiben soll,
+  Entwicklertools oeffnen (F12), unter "Web-Speicher" (Firefox) bzw. "Anwendung"
+  (Chrome) bei "Cookies" die Adresse von Gut gesagt waehlen und den Wert des
+  Cookies ``GutGesagtAuthCookie`` kopieren. Ihn in eine Datei schreiben, die nur
+  man selbst lesen kann, und ``--sitzung-datei <datei>`` angeben (oder ihn in
+  die Umgebungsvariable ``GUTGESAGT_SITZUNG`` legen). Statt des Werts geht auch
+  die ganze Cookie-Zeile einer Anfrage (``name=wert; …``). Nie als Argument auf
+  der Kommandozeile: Das stuende in der Shell-Historie.
+  Das Cookie gilt wie im Browser bis zu 14 Tage nach der letzten Anfrage, auch
+  nach dem Abmelden im Browser (das BFF fuehrt keine Sitzungen auf dem Server);
+  die Datei deshalb danach loeschen. Das Skript gibt das Cookie nirgends aus.
+- Lokaler Dev-Stack: ``--email`` mit Passwort (Direktanmeldung, nur dort an).
 
 Nur Standardbibliothek, damit das Skript ohne Repo-Checkout und ohne venv laeuft.
 """
@@ -92,25 +108,30 @@ class Fehler:
 
 # --- Markdown lesen -------------------------------------------------------
 
-# "## 1.1 „Aussage“" oder "## Aussage: …"; andere "##"-Ueberschriften (etwa
-# "## Stand") gehoeren nicht zum Bestand.
+# "## 1.1 „Aussage“" (nummeriert und in Anfuehrungszeichen) oder "## Aussage: …";
+# andere "##"-Ueberschriften ("## Stand", "## 9. Hinweise") gehoeren nicht zum Bestand.
 _AUSSAGE = re.compile(
-    r"^##\s+(?:(?:\d+(?:\.\d+)*\.?)\s+(?P<nummeriert>.+)|Aussage:\s*(?P<benannt>.+))$",
+    r"^##\s+(?:\d+(?:\.\d+)*\.?\s+(?P<nummeriert>[„“\"»«‚].+[“”\"«»‘])"
+    r"|Aussage:\s*(?P<benannt>.+))$",
     re.I,
 )
 _KOMMENTAR = re.compile(r"^###\s+(?P<rest>.*)$")
 _KOMMENTAR_TITEL = re.compile(r"^Kommentar:\s*(?P<titel>.+)$", re.I)
-_UEBERSCHRIFT = re.compile(r"^#{1,6}\s")
-# Ein Feld: "**Kurz:** …", "Kurz: …" oder "- kurz: …". Vor "Herkunft" darf ein
-# Wort stehen und dahinter eine Klammer ("Zweite Herkunft (Anteil …):").
+_UEBERSCHRIFT = re.compile(r"^#{1,3}\s")
+# Ein Feld: "**Kurz:** …", "**Kurz**: …", "Kurz: …" oder "- kurz: …". Vor
+# "Herkunft" darf ein Wort stehen und dahinter eine Klammer ("Zweite Herkunft
+# (Anteil …):"). Tiefere Ueberschriften ("#### …") sind Text im Kommentar.
 _FELD = re.compile(
     r"^\s*(?:[-*]\s+)?(?:\*\*)?"
     r"(?P<name>titel|kurz|mittel|lang|zweck|stil|(?:\w+\s+)?herkunft(?:\s*\([^)]*\))?)"
-    r"\s*:\s*(?:\*\*)?\s*(?P<wert>.*)$",
+    r"(?:\*\*)?\s*:\s*(?:\*\*)?\s*(?P<wert>.*)$",
     re.I,
 )
-_LINK = re.compile(r"https?://[^\s<>|]+")
-_MD_LINK = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<link>https?://[^\s)]+)\)")
+_LINK = re.compile(r"https?://[^\s<>|„“”»«]+")
+# Klammern im Link nur paarweise, eine Ebene tief (".../Rotmilan_(Art)").
+_MD_LINK = re.compile(
+    r"\[(?P<text>[^\]]*)\]\((?P<link>https?://(?:[^()\s]|\([^()\s]*\))+)\)"
+)
 _SPITZ_LINK = re.compile(r"<(?P<link>https?://[^>\s]+)>")
 # Was zwischen Link und Beschreibung steht und nicht zur Beschreibung gehoert.
 _TRENNER = " \t-–—:|"
@@ -138,7 +159,14 @@ def _herkunft(wert: str) -> Optional[Herkunft]:
     treffer = _LINK.search(wert)
     if not treffer:
         return None
-    link = treffer.group(0).rstrip(".,;:!?)'\"")
+    link = treffer.group(0)
+    # Satzzeichen am Ende gehoeren zum Satz; eine schliessende Klammer nur, wenn
+    # im Link keine oeffnende zu ihr gehoert.
+    while link and (
+        link[-1] in ".,;:!?'\""
+        or (link[-1] == ")" and link.count(")") > link.count("("))
+    ):
+        link = link[:-1]
     rest = wert[: treffer.start()] + wert[treffer.start() + len(link) :]
     beschreibung = _PRUEFVERMERK.sub("", rest).strip(_TRENNER)
     return Herkunft(link, beschreibung or None)
@@ -196,6 +224,10 @@ def datei_lesen(pfad: Path) -> Tuple[List[Kommentar], List[Fehler]]:
             offenes_feld = None
             if "herkunft" in name:
                 herkunft = _herkunft(wert)
+                # "Herkunft: keine …" sagt bewusst, dass es keine braucht;
+                # ohne Link sonst ("[Quelle fehlt]") ein Fehler.
+                if herkunft is None and wert.lower().startswith("keine"):
+                    continue
                 if herkunft is None:
                     herkunft_fehler.setdefault(aktuell.zeile, []).append(
                         f"Herkunft in Zeile {nummer} ohne http(s)-Link"
@@ -328,6 +360,8 @@ def liste_lesen(pfad: Path) -> Tuple[List[Eintrag], List[Fehler]]:
 # --- Ablauf ---------------------------------------------------------------
 
 
+# Name des Sitzungs-Cookies des BFF (BFF/Program.cs, AddCookie).
+SITZUNGS_COOKIE = "GutGesagtAuthCookie"
 # Antworttext des Suchdienstes ohne Art.-9-Einwilligung (#489, dependencies.py).
 ART9_EINWILLIGUNG_FEHLT = "art9_einwilligung_fehlt"
 # Rate-Limit des Dienstes fuer addCommentary: 10 je Minute, 100 je Stunde
@@ -349,7 +383,7 @@ class Bestand(Protocol):
 
     def kommentar_anlegen(self, daten: Dict) -> Dict: ...
 
-    def titel(self, beitrag_id: str) -> Optional[str]: ...
+    def ansehen(self, beitrag_id: str) -> Optional[Dict]: ...
 
     def entfernen(self, typ: str, beitrag_id: str) -> None: ...
 
@@ -367,20 +401,33 @@ def _anmelden_noetig(fehler: ApiFehler) -> bool:
     return fehler.status in (401, 403)
 
 
-def _mit_wartezeit(
-    aufruf: Callable[[], Dict], warten: Callable[[float], None]
-) -> Dict:
+def _mit_wartezeit(aufruf: Callable[[], Dict], warten: Callable[[float], None]) -> Dict:
+    """Bei 429 eine Minute warten und neu versuchen, hoechstens VERSUCHE_BEI_LIMIT-mal."""
     for versuch in range(VERSUCHE_BEI_LIMIT):
         try:
             return aufruf()
         except ApiFehler as fehler:
             if fehler.status != 429 or versuch == VERSUCHE_BEI_LIMIT - 1:
                 raise
-            print(
-                f"Rate-Limit erreicht, warte {WARTEN_NACH_LIMIT} s …", file=sys.stderr
-            )
+            print(f"Rate-Limit erreicht, warte {WARTEN_NACH_LIMIT} s …", file=sys.stderr)
             warten(WARTEN_NACH_LIMIT)
     raise AssertionError("nicht erreichbar")
+
+
+def _vorhanden(antwort: Dict) -> Optional[Dict]:
+    """
+    Der vorhandene Kommentar, dessen Dublette der neue waere, oder None. Seit #541
+    (v0.8.1) steht er unter "vorhanden", davor als "dublette"/"vorhanden_titel"/
+    "vorhanden_eigen"; ein Dienst auf aelterem Stand antwortet so.
+    """
+    if antwort.get("vorhanden"):
+        return antwort["vorhanden"]
+    if antwort.get("dublette"):
+        return {
+            "titel": antwort.get("vorhanden_titel"),
+            "eigen": bool(antwort.get("vorhanden_eigen")),
+        }
+    return None
 
 
 def importieren(
@@ -393,43 +440,78 @@ def importieren(
     Je Kommentar einen ``addCommentary``-Aufruf; im Trockenlauf keinen.
 
     Ist schon ein sehr aehnlicher Kommentar da, legt der Server nichts an; das
-    wird als uebersprungen gemeldet, nicht mit ``trotz_dublette_von`` uebergangen.
-    Ein abgelehnter Kommentar haelt den Rest nicht auf; ohne gueltige Anmeldung
-    (401/403) bricht der Lauf mit ``ApiFehler`` ab.
+    wird als uebersprungen gemeldet, nie mit ``trotz_dublette_von`` uebergangen.
+    Ist der vorhandene vom selben Konto (etwa aus einem frueheren Lauf), haengt
+    ein zweiter Aufruf mit ``vorhanden_nehmen`` ihn an die Aussage, wie im
+    Formular "den eigenen nehmen". Ein abgelehnter Kommentar haelt den Rest nicht
+    auf; ohne gueltige Anmeldung (401/403) bricht der Lauf mit ``ApiFehler`` ab.
+    Bleibt das Rate-Limit nach den Versuchen (100 je Stunde erreicht), endet der
+    Lauf, und die uebrigen stehen als nicht versucht im Bericht.
     """
     bericht = Bericht()
     cc0: Optional[str] = CC0_WORTLAUT
-    for k in kommentare:
+
+    def anlegen(k: Kommentar, **zusatz) -> Dict:
+        nonlocal cc0
+        try:
+            return _mit_wartezeit(
+                lambda: bestand.kommentar_anlegen({**anfrage(k, cc0), **zusatz}), warten
+            )
+        except ApiFehler as fehler:
+            if cc0 is None or CC0_UNBEKANNT not in str(fehler):
+                raise
+            print(
+                f"Der Dienst kennt die CC0-Kennung {cc0} nicht (aeltere Version); "
+                "lege ohne Kennung an.",
+                file=sys.stderr,
+            )
+            cc0 = None
+            return _mit_wartezeit(
+                lambda: bestand.kommentar_anlegen({**anfrage(k, cc0), **zusatz}), warten
+            )
+
+    for nummer, k in enumerate(kommentare):
         if not ausfuehren:
             bericht.angelegt.append((k.zeile, f"wuerde angelegt: {k.titel}"))
             continue
         try:
-            try:
-                antwort = _mit_wartezeit(
-                    lambda: bestand.kommentar_anlegen(anfrage(k, cc0)), warten
+            antwort = anlegen(k)
+            vorhanden = _vorhanden(antwort)
+            if vorhanden and vorhanden.get("eigen"):
+                genommen = anlegen(k, vorhanden_nehmen=antwort.get("id"))
+                bericht.uebersprungen.append(
+                    (
+                        k.zeile,
+                        f"eigener aehnlicher Kommentar schon da ({antwort.get('id')}: "
+                        f"{vorhanden.get('titel')}), nicht neu angelegt"
+                        + (
+                            f", an Aussage {genommen.get('statement_id')} gehaengt"
+                            if genommen.get("verknuepft")
+                            else ", Verknuepfung mit der Aussage gescheitert"
+                        )
+                        + f": {k.titel}",
+                    )
                 )
-            except ApiFehler as fehler:
-                if cc0 is None or CC0_UNBEKANNT not in str(fehler):
-                    raise
-                print(
-                    f"Der Dienst kennt die CC0-Kennung {cc0} nicht (aeltere "
-                    "Version); lege ohne Kennung an.",
-                    file=sys.stderr,
-                )
-                cc0 = None
-                antwort = _mit_wartezeit(
-                    lambda: bestand.kommentar_anlegen(anfrage(k, cc0)), warten
-                )
+                if not genommen.get("verknuepft"):
+                    bericht.fehlgeschlagen.append(
+                        (k.zeile, f"nicht mit der Aussage verknuepft: {k.titel}")
+                    )
+                continue
         except ApiFehler as fehler:
             if _anmelden_noetig(fehler):
                 raise
+            if fehler.status == 429:
+                for rest in kommentare[nummer:]:
+                    bericht.fehlgeschlagen.append(
+                        (
+                            rest.zeile,
+                            "nicht versucht: Rate-Limit (100 je Stunde), in einer "
+                            f"Stunde mit derselben Datei erneut laufen lassen: {rest.titel}",
+                        )
+                    )
+                break
             bericht.fehlgeschlagen.append((k.zeile, f"{fehler}: {k.titel}"))
             continue
-        # Seit #541 (v0.8.1) steht der vorhandene unter "vorhanden", davor als
-        # "dublette"/"vorhanden_titel"; ein Dienst auf aelterem Stand antwortet so.
-        vorhanden = antwort.get("vorhanden") or (
-            {"titel": antwort.get("vorhanden_titel")} if antwort.get("dublette") else None
-        )
         if vorhanden:
             bericht.uebersprungen.append(
                 (
@@ -464,22 +546,30 @@ def entfernen(
     eintraege: List[Eintrag], bestand: Bestand, ausfuehren: bool = False
 ) -> Bericht:
     """
-    Im Trockenlauf je Eintrag den Titel zeigen, sonst den Beitrag entfernen.
+    Je Eintrag erst ansehen: Passt der Typ nicht zum Beitrag, bleibt er stehen (der
+    Server nimmt den Typ nur fuers Log und entfernte sonst, was die ID trifft).
+    Im Trockenlauf den Titel zeigen, sonst den Beitrag entfernen.
 
-    Gesperrte Beitraege zeigt die oeffentliche Ansicht nicht; im Trockenlauf
-    stehen sie als "nicht gefunden oder gesperrt" da, entfernen laesst sich ein
-    gesperrter trotzdem.
+    Gesperrte Beitraege zeigt die Ansicht nicht; sie stehen im Trockenlauf als
+    "nicht gefunden oder gesperrt" da und lassen sich trotzdem entfernen.
     """
     bericht = Bericht()
     for e in eintraege:
         try:
+            beitrag = bestand.ansehen(e.id)
+            typ = beitrag.get("content_type") if beitrag else None
+            if typ and typ != e.typ:
+                bericht.fehlgeschlagen.append(
+                    (e.zeile, f"Typ passt nicht, der Beitrag ist {typ}: {e.typ} {e.id}")
+                )
+                continue
             if not ausfuehren:
-                titel = bestand.titel(e.id)
-                if titel is None:
+                if beitrag is None:
                     bericht.uebersprungen.append(
                         (e.zeile, f"nicht gefunden oder gesperrt: {e.typ} {e.id}")
                     )
                 else:
+                    titel = beitrag.get("title") or "(ohne Titel)"
                     bericht.angelegt.append(
                         (e.zeile, f"wuerde entfernt: {e.typ} {e.id} „{titel}“")
                     )
@@ -503,19 +593,24 @@ def entfernen(
 
 class BffBestand:
     """
-    Der Bestand ueber das BFF, angemeldet wie im Login-Formular (E-Mail und
-    Passwort). Das Auth-Cookie bleibt im Speicher dieses Prozesses.
+    Der Bestand ueber das BFF, angemeldet mit der Sitzung eines Browsers oder,
+    im Dev-Stack, wie im Login-Formular. Das Cookie bleibt im Speicher dieses
+    Prozesses und wird nie ausgegeben.
     """
 
     def __init__(self, adresse: str, timeout: float = 60):
         self.adresse = adresse.rstrip("/")
         self.timeout = timeout
+        self._cookie: Optional[str] = None
         self._oeffner = urllib.request.build_opener(
             urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
         )
 
     def _kopfzeilen(self) -> Dict[str, str]:
-        return {"Content-Type": "application/json", "Accept": "application/json"}
+        kopf = {"Content-Type": "application/json", "Accept": "application/json"}
+        if self._cookie:
+            kopf["Cookie"] = self._cookie
+        return kopf
 
     def _anfrage(self, methode: str, pfad: str, daten: Optional[Dict] = None) -> Dict:
         anfrage = urllib.request.Request(
@@ -530,9 +625,7 @@ class BffBestand:
         except urllib.error.HTTPError as fehler:
             raise ApiFehler(fehler.code, _fehlertext(fehler)) from None
         except (urllib.error.URLError, OSError) as fehler:
-            raise ApiFehler(
-                None, f"{self.adresse} nicht erreichbar: {fehler}"
-            ) from None
+            raise ApiFehler(None, f"{self.adresse} nicht erreichbar: {fehler}") from None
         try:
             antwort = json.loads(text) if text else {}
         except ValueError:
@@ -543,7 +636,26 @@ class BffBestand:
             raise ApiFehler(None, f"Antwort von {pfad} unerwartet (stimmt --adresse?)")
         return antwort
 
+    def sitzung_nutzen(self, cookie: str) -> None:
+        """
+        Die Sitzung eines Browsers: der Wert von ``GutGesagtAuthCookie`` oder eine
+        ganze Cookie-Zeile (``name=wert; …``, auch mit ``Cookie:`` davor). Das BFF
+        prueft weder Antiforgery-Token noch Origin (CORS gilt nur im Browser); das
+        Cookie allein reicht.
+        """
+        cookie = cookie.strip()
+        if cookie.lower().startswith("cookie:"):
+            cookie = cookie[len("cookie:") :].strip()
+        if not cookie:
+            raise ApiFehler(None, "Die Sitzung ist leer")
+        if any(ord(z) < 32 for z in cookie):
+            raise ApiFehler(None, "Die Sitzung enthaelt Zeilenumbrueche oder Steuerzeichen")
+        if "=" not in cookie.split(";")[0]:
+            cookie = f"{SITZUNGS_COOKIE}={cookie}"
+        self._cookie = cookie
+
     def anmelden(self, email: str, passwort: str) -> None:
+        """Direktanmeldung mit Mail und Passwort; nur im Dev-Stack eingeschaltet."""
         try:
             self._anfrage(
                 "POST",
@@ -554,8 +666,21 @@ class BffBestand:
             if fehler.status == 404:
                 raise ApiFehler(
                     404,
-                    "Login mit Beta-Zugang ist auf dieser Instanz aus oder "
-                    "--adresse zeigt nicht auf Gut gesagt",
+                    "Direktanmeldung ist auf dieser Instanz aus (Test und Produktion: "
+                    "--sitzung-datei) oder --adresse zeigt nicht auf Gut gesagt",
+                ) from None
+            raise
+
+    def wer(self) -> Dict:
+        """Wer angemeldet ist (``/api/user-info`` des BFF)."""
+        try:
+            return self._anfrage("GET", "/api/user-info")
+        except ApiFehler as fehler:
+            if fehler.status == 401:
+                raise ApiFehler(
+                    401,
+                    "nicht angemeldet: Sitzung abgelaufen, unvollstaendig kopiert "
+                    "oder von einer anderen Adresse",
                 ) from None
             raise
 
@@ -576,23 +701,21 @@ class BffBestand:
             raise ApiFehler(None, f"Antwort von {pfad} ohne id (stimmt --adresse?)")
         return antwort
 
-    def titel(self, beitrag_id: str) -> Optional[str]:
+    def ansehen(self, beitrag_id: str) -> Optional[Dict]:
+        """Der Beitrag wie unter /beitrag/:id; None, wenn gesperrt, geloescht oder nie da."""
         try:
-            antwort = self._anfrage("GET", f"/api/v1/content/beitrag/{beitrag_id}")
+            return self._anfrage("GET", f"/api/v1/content/beitrag/{beitrag_id}")
         except ApiFehler as fehler:
             if fehler.status == 404:
                 return None
             raise
-        return antwort.get("title") or "(ohne Titel)"
 
     def entfernen(self, typ: str, beitrag_id: str) -> None:
         try:
             self._anfrage("DELETE", f"/api/v1/moderation/content/{typ}/{beitrag_id}")
         except ApiFehler as fehler:
             if fehler.status == 403:
-                raise ApiFehler(
-                    403, "Entfernen braucht ein Admin-Konto (--email)"
-                ) from None
+                raise ApiFehler(403, "Entfernen braucht ein Admin-Konto") from None
             raise
 
 
@@ -636,12 +759,12 @@ _LOKALE_HOSTS = ("localhost", "127.0.0.1", "::1")
 
 
 def _adresse_pruefen(adresse: str) -> Optional[str]:
-    """Warum die Adresse nicht taugt, oder None. Das Passwort geht nie im Klartext ins Netz."""
+    """Warum die Adresse nicht taugt, oder None. Passwort und Sitzung gehen nie im Klartext ins Netz."""
     teile = urlsplit(adresse)
     if teile.scheme not in ("http", "https") or not teile.hostname:
         return f"--adresse {adresse} ist keine http(s)-Adresse"
     if teile.scheme == "http" and teile.hostname not in _LOKALE_HOSTS:
-        return f"--adresse {adresse}: ausser fuer localhost nur https, sonst ginge das Passwort unverschluesselt"
+        return f"--adresse {adresse}: ausser fuer localhost nur https, sonst gingen Passwort oder Sitzung unverschluesselt"
     return None
 
 
@@ -662,7 +785,13 @@ def main(
         help="DATEI ist eine Liste '<typ> <id>' je Zeile; die Beitraege entfernen (Admin)",
     )
     parser.add_argument(
-        "--email", help="Konto: Startkonto beim Import, Admin beim Entfernen"
+        "--email",
+        help="nur lokaler Dev-Stack: Direktanmeldung mit Mail und Passwort",
+    )
+    parser.add_argument(
+        "--sitzung-datei",
+        type=Path,
+        help="Datei mit dem Sitzungs-Cookie des Browsers (sonst GUTGESAGT_SITZUNG)",
     )
     parser.add_argument(
         "--adresse",
@@ -676,8 +805,20 @@ def main(
     )
     args = parser.parse_args(argv)
 
-    if (args.ausfuehren or args.entfernen) and not args.email:
-        parser.error("--ausfuehren und --entfernen brauchen --email")
+    sitzung = os.environ.get("GUTGESAGT_SITZUNG")
+    if args.sitzung_datei:
+        try:
+            sitzung = args.sitzung_datei.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            print(f"Sitzung nicht lesbar: {e}", file=sys.stderr)
+            return 2
+    if args.email and sitzung:
+        parser.error("entweder --email oder eine Sitzung, nicht beides")
+    if (args.ausfuehren or args.entfernen) and not (args.email or sitzung):
+        parser.error(
+            "--ausfuehren und --entfernen brauchen eine Anmeldung: "
+            "--sitzung-datei (oder GUTGESAGT_SITZUNG), lokal --email"
+        )
     unpassend = _adresse_pruefen(args.adresse)
     if unpassend:
         print(f"Abgebrochen: {unpassend}", file=sys.stderr)
@@ -699,10 +840,20 @@ def main(
         bestand = bestand_bauen(args.adresse)
     try:
         if bestand is not None:
-            passwort = os.environ.get("GUTGESAGT_PASSWORT") or getpass.getpass(
-                f"Passwort fuer {args.email}: "
+            if sitzung:
+                bestand.sitzung_nutzen(sitzung)
+            else:
+                passwort = os.environ.get("GUTGESAGT_PASSWORT") or getpass.getpass(
+                    f"Passwort fuer {args.email}: "
+                )
+                bestand.anmelden(args.email, passwort)
+            wer = bestand.wer()
+            print(
+                f"Angemeldet als {wer.get('userName') or wer.get('userId')}"
+                f"{' (Admin)' if wer.get('isAdmin') else ''}"
             )
-            bestand.anmelden(args.email, passwort)
+            if args.entfernen and not wer.get("isAdmin"):
+                raise ApiFehler(403, "Entfernen braucht ein Admin-Konto")
         if args.entfernen:
             bericht = entfernen(eintraege, bestand, ausfuehren=args.ausfuehren)
             was = "entfernt"

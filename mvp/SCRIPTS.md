@@ -239,41 +239,69 @@ Legt Kommentare aus einer Markdown-Datei an, je Kommentar ein Aufruf derselben A
 Kommentar-Formular (`/api/v1/commentary/addCommentary`): mit Titel, Fassungen und Herkunft,
 als Antwort auf seine Aussage. Die Aussage legt der Server an oder nimmt eine vorhandene,
 sehr ähnliche; eine vorhandene Herkunft nimmt er wieder. Gedacht für den Startbestand unter
-einem Startkonto (`GLOSSARY.md`); Anmeldung, Art.-9-Einwilligung und Direktanmeldung wie
-beim Einwurf-Import oben. Als CC0-Kennung schickt das Skript die des Kommentar-Formulars
+einem Startkonto (`GLOSSARY.md`), das vorher einmal in der App in die Art.-9-Einwilligung
+eingewilligt hat. Als CC0-Kennung schickt das Skript die des Kommentar-Formulars
 (`docs/CC0_HINWEIS_WORTLAUTE.md`): Wer mit `--ausfuehren` importiert, stellt die Texte unter
 CC0 wie beim Absenden im Formular. Kennt der Dienst die Kennung noch nicht (ältere Version),
 legt es ohne Kennung an und sagt das.
+
+**Anmeldung.** Auf Test und Produktion meldet man sich nur über Keycloak im Browser an;
+das Skript nimmt deshalb die Sitzung des Browsers:
+
+1. In Gut gesagt mit dem Konto anmelden, das schreiben soll (Startkonto bzw. Admin).
+2. Entwicklertools öffnen (F12), „Web-Speicher“ (Firefox) bzw. „Anwendung“ (Chrome) →
+   „Cookies“ → Adresse von Gut gesagt → Zeile `GutGesagtAuthCookie`, den Wert kopieren.
+3. Den Wert in eine Datei schreiben, die nur man selbst lesen kann, und sie mit
+   `--sitzung-datei <datei>` angeben (oder den Wert in `GUTGESAGT_SITZUNG` legen). Statt des
+   Werts geht auch die ganze Cookie-Zeile einer Anfrage aus dem Netzwerk-Reiter.
+
+Das Cookie ist HttpOnly und gilt 14 Tage nach der letzten Anfrage, gleitend
+(`BFF/Program.cs`, `AddCookie`). Das BFF führt keine Sitzungen auf dem Server: Abmelden im
+Browser macht den kopierten Wert nicht ungültig. Die Datei deshalb nach dem Lauf löschen.
+Antiforgery-Token oder eine Origin-Prüfung gibt es im BFF nicht, das Cookie allein reicht.
+Das Skript gibt das Cookie nirgends aus; es zeigt nur, als wer es angemeldet ist
+(`/api/user-info`). Im lokalen Dev-Stack geht stattdessen `--email` mit Passwort
+(Direktanmeldung, auf Test und Produktion aus).
 
 - **Ohne `--ausfuehren` ein Trockenlauf:** prüft Pflichtfelder und Längen lokal (Titel
   3–120 Zeichen in einer Zeile, Mittel Pflicht bis 500, Kurz bis 280, Lang bis 2000, Aussage
   10–1000, Herkunft mit http(s)-Link) und zeigt, was angelegt würde; ohne Server und
   Passwort.
 - Ist schon ein sehr ähnlicher Kommentar da, legt der Server nichts an; das Skript meldet ihn
-  als übersprungen und übergeht die Dublettenprüfung nicht. Ein zweiter Lauf mit derselben
-  Datei legt also nichts doppelt an.
+  als übersprungen und übergeht die Dublettenprüfung nicht. Ist der vorhandene vom selben
+  Konto (etwa aus einem früheren Lauf), hängt das Skript ihn an die Aussage, wie „den eigenen
+  nehmen“ im Formular. Ein zweiter Lauf mit derselben Datei legt also nichts doppelt an und
+  holt fehlende Verknüpfungen nach.
 - Je angelegtem Kommentar nennt die Ausgabe seine ID und die der Aussage; hängt er an einer
   schon vorhandenen Aussage mit anderem Wortlaut, steht deren Text dabei.
 - Der Dienst nimmt höchstens 10 Kommentare je Minute und 100 je Stunde und Konto an; bei
-  einer Ablehnung wartet das Skript eine Minute und versucht es bis zu dreimal.
+  einer Ablehnung wartet das Skript eine Minute und versucht es bis zu dreimal. Bleibt es
+  dabei (Stundenlimit), endet der Lauf, die übrigen stehen als „nicht versucht“ im Bericht:
+  nach einer Stunde mit derselben Datei erneut laufen lassen.
 - Exit-Code 0: alles angelegt oder übersprungen; 1: mindestens ein Kommentar mit Fehler (in
   der Datei, vom Server abgelehnt, oder angelegt, aber nicht mit der Aussage verknüpft);
-  2: Datei unlesbar, `--adresse` unpassend, Anmeldung gescheitert, ohne Einwilligung oder
-  Server nicht erreichbar.
+  2: Datei unlesbar, `--adresse` unpassend, Anmeldung gescheitert (auch: Sitzung abgelaufen),
+  ohne Einwilligung, ohne Admin beim Entfernen oder Server nicht erreichbar.
 
 **Dateiformat** (Beispiel: `scripts/manual/beitraege_beispiel.md`), UTF-8:
 
-- `## 1.1 „Aussage“` (nummeriert, Anführungszeichen werden entfernt) oder `## Aussage: …`
-  beginnt eine Aussage. Andere Überschriften, Einleitung und Fließtext zählen nicht.
+- `## 1.1 „Aussage“` (nummeriert und in Anführungszeichen, die entfernt werden) oder
+  `## Aussage: …` beginnt eine Aussage. Andere Überschriften (`## Stand`, `## 9. Hinweise`),
+  Einleitung und Fließtext zählen nicht.
 - Jede `###`-Überschrift darunter beginnt einen Kommentar; `### Kommentar: <Titel>` setzt
   zugleich den Titel.
-- Felder je Zeile, fett oder als Listenpunkt, Groß- und Kleinschreibung egal: `Titel:`,
+- Felder je Zeile, fett (`**Kurz:**` oder `**Kurz**:`) oder als Listenpunkt, Groß- und
+  Kleinschreibung egal: `Titel:`,
   `Kurz:`, `Mittel:`, `Lang:`, `Herkunft:` (mehrfach; auch `Zweite Herkunft (…):`),
   optional `Zweck:` (`kommentarspalte`, `eigene_leute`) und `Stil:` (`sachlich`,
   `humorvoll`, `persoenlich`, `brueckenbauend`, `bissig`). Kurz, Mittel und Lang gehen auf
-  den Folgezeilen weiter bis zur nächsten Leerzeile.
-- Herkunft: `URL – Beschreibung` oder `URL | Beschreibung`; ein Vermerk ab `geprüft:` und
-  Zeilen darunter, die kein Feld sind, werden nicht übernommen.
+  den Folgezeilen weiter bis zur nächsten Leerzeile; jede Zeile wird ein eigener Absatz
+  (Zeilenumbruch), also nicht von Hand umbrechen. `####`-Überschriften im Kommentar zählen
+  nicht.
+- Herkunft: `URL – Beschreibung` oder `URL | Beschreibung` (Link auch als `<URL>` oder
+  `[Text](URL)`); ein Vermerk ab `geprüft:` und Zeilen darunter, die kein Feld sind, werden
+  nicht übernommen. Eine Herkunft ohne Link ist ein Fehler (etwa „[Quelle fehlt]“), außer sie
+  beginnt mit „keine“ (bewusst keine Herkunft).
 
 ## Beiträge endgültig entfernen (`beitraege_importieren.py --entfernen`)
 
@@ -285,27 +313,35 @@ Stimmen und Varianten-Verknüpfungen des Beitrags gehen mit.
 
 - Datei: je Zeile `<typ> <id>`, Typ `commentary`, `generic_text`, `post` oder `image`;
   Leerzeilen und alles ab `#` zählen nicht.
+- Angemeldet wie beim Import, mit einem Admin-Konto; ohne Admin bricht es vor dem ersten
+  Eintrag ab.
 - Ohne `--ausfuehren` zeigt es je Eintrag den Titel. Gesperrte Beiträge zeigt die
   Ansicht nicht, sie stehen dann als „nicht gefunden oder gesperrt“ da und lassen sich
   trotzdem entfernen.
+- Passt der Typ in der Liste nicht zum Beitrag (der Server nimmt den Typ nur fürs Log), bleibt
+  der Eintrag stehen und wird als Fehler gemeldet.
 - Schon entfernte oder nie vorhandene Beiträge werden als übersprungen gemeldet.
 
 **Usage:**
 ```bash
-# Erst prüfen, dann anlegen. Ohne GUTGESAGT_PASSWORT fragt das Skript nach dem Passwort.
+# Erst prüfen (ohne Server), dann mit der Sitzung des Startkontos anlegen.
 python3 scripts/manual/beitraege_importieren.py bestand.md
-python3 scripts/manual/beitraege_importieren.py bestand.md --email startkonto@example.org \
+python3 scripts/manual/beitraege_importieren.py bestand.md --sitzung-datei ~/sitzung.txt \
   --adresse https://gutgesagt-test.netzbegruenung.de --ausfuehren
-# Entfernen: erst Titel ansehen, dann entfernen
+# Entfernen mit der Sitzung eines Admins: erst Titel ansehen, dann entfernen.
 python3 scripts/manual/beitraege_importieren.py entfernen.txt --entfernen \
-  --email admin@example.org --adresse https://gutgesagt-test.netzbegruenung.de
+  --sitzung-datei ~/sitzung-admin.txt --adresse https://gutgesagt-test.netzbegruenung.de
 python3 scripts/manual/beitraege_importieren.py entfernen.txt --entfernen \
-  --email admin@example.org --adresse https://gutgesagt-test.netzbegruenung.de --ausfuehren
+  --sitzung-datei ~/sitzung-admin.txt --adresse https://gutgesagt-test.netzbegruenung.de --ausfuehren
+rm ~/sitzung.txt ~/sitzung-admin.txt
+# Lokaler Dev-Stack: Direktanmeldung
+python3 scripts/manual/beitraege_importieren.py bestand.md --email test.user@example.com --ausfuehren
 ```
 
 Getestet in `tests/unit/services/test_beitraege_importieren_skript.py` (Lesen, Import,
 Entfernen) und `tests/integration/api/test_beitraege_importieren_bff.py` (gegen den
-Dev-Stack; das Entfernen dort direkt am Suchdienst mit den Admin-Kopfzeilen des BFF).
+Dev-Stack, auch mit Sitzungs-Cookie; das Entfernen als Admin dort direkt am Suchdienst mit
+den Admin-Kopfzeilen des BFF).
 
 ## Utility Scripts (`scripts/utils/`)
 
