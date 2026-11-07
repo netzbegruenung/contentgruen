@@ -148,10 +148,14 @@ model), so the run is not a required status.
   public, no registry login), which downloads the model at build time. The code
   measured is the checkout; pip only installs what `requirements.txt` changed.
   `HF_HUB_OFFLINE=1` keeps the run on the model revision baked into the image instead of
-  whatever the hub serves that night. A pull request that switches to another model sets
-  it to `"0"` in `nacht.yaml` on its branch for the manual run, so the run downloads the
-  new model, and back to `"1"` before the merge: `scripts/tests/test_woodpecker_ci.py`
-  keeps `ci` red until then, so `"0"` never lands on `main`.
+  whatever the hub serves that night. The image itself sets it too, after the two preload
+  steps of its Dockerfile, so production and the dev stack never ask the hub either (#578);
+  the step's `environment` overrides the image. A pull request that switches to another
+  model adds a preload step for it to the Dockerfile and sets `HF_HUB_OFFLINE` to `"0"` in
+  `nacht.yaml` on its branch for the manual run, so the run downloads the new model (the
+  `:main` image does not have it yet), and back to `"1"` before the merge:
+  `scripts/tests/test_woodpecker_ci.py` keeps `ci` red until then, so `"0"` never lands on
+  `main`.
 - **Services:** `qdrant` and `postgres`, the same as in `ci.yaml` (`scripts/tests/test_woodpecker_ci.py`
   keeps them equal). `suchtest` needs the database: starting the services
   (`dependencies.initialize_services`) creates the `VotingService`, which opens the app
