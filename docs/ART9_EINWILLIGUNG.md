@@ -44,7 +44,8 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   Einwilligung ist eine neue Zeile; die früheren bleiben. Jede Prüfung fragt die Datenbank,
   damit ein Widerruf und das Löschkommando sofort wirken.
 - **Startkonten und Import:** Auch ein Startkonto willigt einmal in der App ein, bevor es
-  schreibt oder `mvp/scripts/manual/einwuerfe_importieren.py` unter ihm läuft (`mvp/SCRIPTS.md`).
+  schreibt oder `mvp/scripts/manual/einwuerfe_importieren.py` bzw. `beitraege_importieren.py`
+  unter ihm läuft (`mvp/SCRIPTS.md`).
   Verwerfen eines Einwurfs bleibt ohne Einwilligung offen, wie Löschen.
 - **Löschen und Umstellen:** Die Zeile geht mit dem Konto (`docs/LOESCHKONZEPT.md`, Schritt 2)
   und zieht beim Umstellen der Kennungen mit (`services/wartung/kennungen_umstellen.py`).
