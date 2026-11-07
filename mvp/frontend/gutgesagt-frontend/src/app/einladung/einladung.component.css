@@ -8,12 +8,12 @@
 }
 
 .warnung {
-  color: #b00020;
+  color: var(--error-strong);
 }
 
 .fussnote {
   font-size: 12px;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .unsichtbar {

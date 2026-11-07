@@ -24,7 +24,7 @@
 
 .content-type-description {
   margin: 0;
-  color: #757575;
+  color: var(--text-subtle);
   font-size: 14px;
 }
 
@@ -99,7 +99,7 @@
 .input-label {
   font-size: 13px;
   font-weight: 500;
-  color: #424242;
+  color: var(--text-body);
 }
 
 // Schrift und Farbe kommen aus der globalen .submit-hint (styles.css).
@@ -128,7 +128,7 @@
 }
 
 .loading-state {
-  color: #424242;
+  color: var(--text-body);
 }
 
 .success-state {
@@ -145,12 +145,12 @@
     font-size: 48px;
     height: 48px;
     width: 48px;
-    color: #e53935;
+    color: var(--error-main);
   }
 }
 
 .error-message {
-  color: #e53935;
+  color: var(--error-main);
 }
 
 .action-buttons {

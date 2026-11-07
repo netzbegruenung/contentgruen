@@ -34,7 +34,7 @@ td {
   text-align: left;
   vertical-align: middle;
   padding: 8px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--divider-color);
   overflow-wrap: anywhere;
 }
 
@@ -48,7 +48,7 @@ td {
 }
 
 tr.inaktiv td {
-  color: #888;
+  color: var(--text-faint);
 }
 
 .unsichtbar {
@@ -60,15 +60,15 @@ tr.inaktiv td {
 }
 
 .warnung {
-  color: #b00020;
+  color: var(--error-strong);
 }
 
 .hinweis {
-  color: #666;
+  color: var(--text-muted);
 }
 
 .fussnote {
   font-size: 12px;
-  color: #666;
+  color: var(--text-muted);
   margin-top: 12px;
 }

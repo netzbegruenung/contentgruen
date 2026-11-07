@@ -12,9 +12,9 @@
     align-items: center;
     width: 100%;
     padding: 16px 12px 12px 12px;  /* More top padding for label space */
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--overlay-faint);
     border-radius: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--line-light);
     box-sizing: border-box;
 }
 
@@ -168,15 +168,15 @@
 }
 
 .reference-item.existing-reference {
-    background-color: rgba(33, 150, 243, 0.08);
-    border-color: #2196F3;
-    border-left: 3px solid #2196F3;
+    background-color: var(--info-tint);
+    border-color: var(--info-border);
+    border-left: 3px solid var(--info-border);
 }
 
 .reference-item.pending-reference {
-    background-color: rgba(255, 152, 0, 0.08);
-    border-color: #FF9800;
-    border-left: 3px solid #FF9800;
+    background-color: var(--warning-tint);
+    border-color: var(--warning-border);
+    border-left: 3px solid var(--warning-border);
     opacity: 0.8;
     animation: pulse 1.5s ease-in-out infinite;
 }
@@ -231,12 +231,12 @@
 }
 
 .reference-badge {
-    background: #2196F3;
+    background: var(--info-border);
     color: white;
 }
 
 .reference-badge.pending {
-    background: #FF9800;
+    background: var(--warning-border);
     color: white;
 }
 

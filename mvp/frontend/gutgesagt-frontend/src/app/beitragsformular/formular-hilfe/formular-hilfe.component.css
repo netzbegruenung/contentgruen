@@ -56,7 +56,7 @@
 }
 
 .regel-nicht .regel-zeichen {
-    color: #b3261e;
+    color: var(--error-strong);
 }
 
 .hilfe-abschnitt {

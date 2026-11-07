@@ -43,7 +43,7 @@
 }
 
 .mat-spinner-color::ng-deep circle {
-    stroke: rgb(0, 84, 55) !important;
+    stroke: var(--primary-dark) !important;
 }
 
 /* Empty State Improvements */

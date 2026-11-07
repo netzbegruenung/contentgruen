@@ -106,7 +106,7 @@
     padding: 10px 12px;
     border: 1px dashed var(--primary-main);
     border-radius: 8px;
-    background: white;
+    background: var(--bg-card);
     color: var(--primary-dark);
     font: inherit;
     text-align: left;
@@ -129,7 +129,7 @@
     margin-left: 6px;
     padding: 1px 6px;
     border-radius: 8px;
-    background: var(--primary-dark);
+    background: var(--primary-fill);
     color: white;
     font-size: 0.75rem;
     font-weight: 600;
@@ -143,13 +143,13 @@
 .aussage-hinweis {
     margin: 0 0 12px;
     padding: 12px 16px;
-    border-left: 4px solid #f57c00;
+    border-left: 4px solid var(--warning-edge);
     border-radius: 4px;
-    background: #fff3e0;
+    background: var(--warning-bg);
 }
 
 /* 1-9 Zeichen: kein Fehler, aber Speichern ist gesperrt, bis es passt oder leer ist */
 .zu-kurz {
-    color: #8a5300;
+    color: var(--warning-text);
     font-weight: 500;
 }

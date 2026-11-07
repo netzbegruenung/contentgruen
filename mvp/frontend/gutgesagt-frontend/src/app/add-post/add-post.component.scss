@@ -56,9 +56,9 @@ app-formular-hilfe {
 .speicher-fehler {
   margin: 12px 0 0;
   padding: 12px 16px;
-  border-left: 4px solid var(--error-color, #d32f2f);
+  border-left: 4px solid var(--error-color);
   border-radius: 4px;
-  background: rgba(211, 47, 47, 0.08);
+  background: var(--error-tint);
 }
 
 // Der Einwurf aus dem Fangkorb ueber dem Formular

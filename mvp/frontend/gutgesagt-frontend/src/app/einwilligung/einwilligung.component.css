@@ -17,7 +17,7 @@
 .wortlaut {
   margin: 16px 0;
   padding-left: 12px;
-  border-left: 3px solid #ccc;
+  border-left: 3px solid var(--border-color);
 }
 
 .knoepfe {
@@ -31,10 +31,10 @@
 }
 
 .warnung {
-  color: #b00020;
+  color: var(--error-strong);
 }
 
 .fussnote {
   font-size: 12px;
-  color: #666;
+  color: var(--text-muted);
 }

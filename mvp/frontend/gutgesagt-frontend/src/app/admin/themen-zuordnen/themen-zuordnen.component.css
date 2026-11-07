@@ -18,7 +18,7 @@
 }
 
 .fehler {
-  color: #b00020;
+  color: var(--error-strong);
 }
 
 .aussagen {
@@ -29,7 +29,7 @@
 
 .aussage {
   padding: 12px 0;
-  border-bottom: 1px solid var(--disabled-bg, #f0f0f0);
+  border-bottom: 1px solid var(--disabled-bg);
 }
 
 .aussage-text {

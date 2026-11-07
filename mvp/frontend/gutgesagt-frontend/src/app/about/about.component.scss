@@ -143,8 +143,8 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background: var(--primary-dark);
-      border: 2px solid white;
+      background: var(--primary-fill);
+      border: 2px solid var(--bg-card);
       box-shadow: 0 0 0 2px var(--primary-dark);
       transform: translateX(-5px);
     }
@@ -202,11 +202,11 @@
   }
 
   .secondary-button {
-    background-color: #f5f5f5;
-    color: #333;
+    background-color: var(--surface-muted);
+    color: var(--text-strong);
 
     &:hover {
-      background-color: #e0e0e0;
+      background-color: var(--divider-color);
     }
   }
 

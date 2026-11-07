@@ -117,6 +117,9 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --primary-main: #008939;
   --primary-light: #8abd24;
   --primary-dark: #005437;
+  // Flaechen in Tanne (Knoepfe, Leisten, Snackbar). Im Hellen gleich --primary-dark; im
+  // Dunkeln bleibt sie gruen, waehrend --primary-dark als Schrift- und Linienfarbe heller wird (#588).
+  --primary-fill: #005437;
 
   // Accent colors
   --accent-main: #8abd24;
@@ -133,6 +136,12 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --text-secondary: rgba(0, 0, 0, 0.60);
   --text-disabled: rgba(0, 0, 0, 0.38);
   --text-hint: rgba(0, 0, 0, 0.38);
+  // Feste Grauwerte aus den Komponenten (#588); im Hellen genau die frueheren Werte
+  --text-strong: #333;
+  --text-body: #4a4a4a;
+  --text-muted: #666;
+  --text-subtle: #757575;
+  --text-faint: #999;
 
   // Spacing system (8px grid)
   --spacing-xs: 4px;
@@ -163,21 +172,42 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --error-bg: #ffebee;
   --error-color: #c62828;
   --error-border: #f44336;
+  --error-strong: #b00020; // Fehlertexte unter Formularen
+  --error-main: #d32f2f;
+  --error-tint: rgba(211, 47, 47, 0.08);
   --success-bg: #e8f5e9;
   --success-color: var(--primary-dark);
   --success-border: var(--primary-main);
   --warning-bg: #fff3e0;
   --warning-color: #e65100;
   --warning-border: #ff9800;
+  --warning-edge: #f57c00; // Randstrich der Hinweiskaesten (Dublette, Antwort auf)
+  --warning-text: #8a5300;
+  --warning-tint: rgba(255, 152, 0, 0.08);
+  --hint-bg: #fff3cd; // Gelber Hinweis (Anmeldung, Dubletten-Dialog)
+  --hint-bg-start: #fff9e6;
+  --hint-border: #ffc107;
+  --hint-line: #ffe082;
+  --hint-text: #856404;
   --info-bg: #e3f2fd;
   --info-color: #0d47a1;
   --info-border: #2196f3;
+  --info-accent: #1976d2;
+  --info-text: #1565c0;
+  --info-bg-end: #f3f9ff;
+  --info-tint: rgba(33, 150, 243, 0.08);
+  --success-faint: #f1f8f4;
 
   // Content type colors
   --commentary-bg: #e6f0d2; // Light green for commentary
   --generictext-bg: #e3f2fd; // Light blue for generic text
   --image-bg: #ede7f6; // Light violet for images
   --post-bg: #fde3cf; // Apricot for social-media posts
+  // Zweite Verlaufsfarbe der Beitragstyp-Kacheln in "Beitragen"
+  --commentary-bg-end: rgb(220, 235, 195);
+  --generictext-bg-end: rgb(212, 234, 251);
+  --image-bg-end: rgb(225, 215, 240);
+  --post-bg-end: rgb(250, 214, 188);
   --statement-bg: #f5f5f5; // Light gray: statements, Einwuerfe ohne Beitrag
   --kartenliste-bg: #f4f4f2; // Grund unter Kartenlisten, damit Karten als Karten lesbar sind
   --such-band: #f6ff7c; // Gelbes Band hinter der Suche auf der Startseite; bewusst nicht Sonne (#512)
@@ -193,12 +223,25 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --hover-bg: #f5f5f5;
   --selected-bg: #e6f0d2; // Keep for backward compatibility
   --auswahl-grund: rgba(0, 84, 55, 0.07); // Tanne-Hauch: gewaehlter Ansichts-Umschalter, aktiver Admin-Link
+  --primary-tint-faint: rgba(0, 137, 57, 0.04); // Klee-Hauch: Zeile "Antwort auf" in der Karte
+  --primary-tint: rgba(0, 137, 57, 0.08);
+  --primary-tint-strong: rgba(0, 137, 57, 0.1);
+  --primary-line: rgba(0, 137, 57, 0.3);
+  --overlay-faint: rgba(0, 0, 0, 0.04); // Schleier fuer Hover und Wert-Chips
+  --overlay-light: rgba(0, 0, 0, 0.09);
+  --line-faint: rgba(0, 0, 0, 0.08);
+  --line-light: rgba(0, 0, 0, 0.12);
+  --line-soft: rgba(0, 0, 0, 0.16);
+  --line-medium: rgba(0, 0, 0, 0.24);
   --disabled-bg: #f5f5f5;
   --disabled-color: rgba(0, 0, 0, 0.38);
 
   // Surface colors
   --surface-variant: #fafafa;
   --surface-elevated: white;
+  --surface-muted: #f5f5f5;
+  --surface-pressed: #f0f0f0;
+  --surface-glaze: rgba(255, 255, 255, 0.85); // Milchglas ueber farbigen Baendern
 
   // Transitions
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);

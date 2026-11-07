@@ -22,11 +22,11 @@ import { meldeDialogOeffnen } from '../report-dialog/report-dialog.component';
   `,
   styles: [`
     .report-button {
-      color: #666;
+      color: var(--text-muted);
     }
 
     .report-button:hover {
-      color: #d32f2f;
+      color: var(--error-main);
     }
   `]
 })

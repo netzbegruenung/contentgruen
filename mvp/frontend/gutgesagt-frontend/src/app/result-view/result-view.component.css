@@ -53,7 +53,7 @@
   position: sticky;
   top: 0;
   z-index: var(--z-index-sticky);
-  background-color: white;
+  background-color: var(--bg-card);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -61,8 +61,8 @@
 .mobile-nav-bar {
   display: flex;
   align-items: center;
-  background-color: white;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--line-faint);
   padding: var(--spacing-sm) 0;
 }
 
@@ -133,7 +133,7 @@ mat-sidenav-content {
 .mobile-sidenav {
   width: 280px;
   max-width: 85vw;
-  background: white;
+  background: var(--bg-card);
 }
 
 .mobile-menu-content {
@@ -186,7 +186,7 @@ mat-sidenav-content {
 .mobile-menu-about {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  border-top: 1px solid var(--line-light);
   font-size: 12px;
   color: var(--text-secondary);
 }
@@ -321,7 +321,7 @@ mat-sidenav-content {
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--primary-dark);
+  background: var(--primary-fill);
   animation: slide-in 0.3s ease;
 }
 
@@ -350,7 +350,7 @@ mat-sidenav-content {
 }
 
 .mobile-empty-state .search-query-info {
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--text-secondary);
   font-style: italic;
   margin: 0;
 }

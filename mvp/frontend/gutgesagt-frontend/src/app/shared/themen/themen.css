@@ -17,7 +17,7 @@
 }
 
 .thema-chip.gewaehlt {
-  background: var(--primary-dark);
+  background: var(--primary-fill);
   color: var(--bg-surface);
 }
 

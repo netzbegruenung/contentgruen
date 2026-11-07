@@ -30,7 +30,7 @@
     box-sizing: border-box;
     width: 340px;
     padding: 20px;
-    background: white;
+    background: var(--bg-card);
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     color: var(--text-primary);
@@ -71,7 +71,7 @@
 }
 
 .balken i.an {
-    background: var(--primary-dark);
+    background: var(--primary-fill);
 }
 
 .stand {
@@ -109,7 +109,7 @@ p {
     position: absolute;
     width: 16px;
     height: 16px;
-    background: white;
+    background: var(--bg-card);
     transform: rotate(45deg);
 }
 

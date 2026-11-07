@@ -15,7 +15,7 @@
 .welcome-text {
     font-size: 16px;
     line-height: 1.6;
-    color: #333;
+    color: var(--text-strong);
     margin-bottom: 15px;
 }
 
@@ -28,7 +28,7 @@
 
 .login-prompt {
     font-size: 16px;
-    color: #666;
+    color: var(--text-muted);
     margin-top: 30px;
     font-weight: 500;
 }
@@ -47,18 +47,18 @@
 }
 
 .registration-expansion-panel {
-    background: #f8f9fa;
+    background: var(--surface-variant);
     border-left: 4px solid var(--primary-main);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .registration-expansion-panel .mat-expansion-panel-header {
-    background: #f8f9fa !important;
+    background: var(--surface-variant) !important;
     padding: 16px 24px;
 }
 
 .registration-expansion-panel .mat-expansion-panel-header:hover {
-    background: #f0f1f2 !important;
+    background: var(--surface-pressed) !important;
 }
 
 .registration-panel-title {
@@ -81,7 +81,7 @@
 
 .expansion-hint {
     margin-left: auto;
-    color: #666;
+    color: var(--text-muted);
     font-size: 14px;
     font-weight: normal;
     padding-right: 24px;
@@ -93,7 +93,7 @@
 }
 
 .registration-intro {
-    color: #333;
+    color: var(--text-strong);
     font-size: 15px;
     line-height: 1.5;
     margin-bottom: 20px;
@@ -110,9 +110,9 @@
     align-items: flex-start;
     gap: 12px;
     padding: 12px;
-    background: white;
+    background: var(--bg-card);
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--divider-color);
 }
 
 .registration-option .option-icon {
@@ -136,7 +136,7 @@
 }
 
 .registration-option .option-text p {
-    color: #555;
+    color: var(--text-body);
     font-size: 14px;
     line-height: 1.4;
     margin: 0;
@@ -169,7 +169,7 @@
 }
 
 .login-option-card {
-    background: white;
+    background: var(--bg-card);
     padding: 20px;
     border-radius: 8px;
     transition: transform 0.2s ease;
@@ -181,7 +181,7 @@
 
 .login-option-card.disabled-option {
     opacity: 0.7;
-    background: #f5f5f5;
+    background: var(--surface-muted);
 }
 
 .login-option-card.disabled-option .login-option-button {
@@ -195,10 +195,10 @@
 .disabled-notice {
     margin-top: 12px;
     padding: 8px 12px;
-    background: #fff3cd;
-    border: 1px solid #ffc107;
+    background: var(--hint-bg);
+    border: 1px solid var(--hint-border);
     border-radius: 4px;
-    color: #856404;
+    color: var(--hint-text);
     font-size: 13px;
     display: flex;
     align-items: center;
@@ -209,7 +209,7 @@
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: #f39c12;
+    color: var(--warning-border);
 }
 
 .login-option-button {
@@ -226,7 +226,7 @@
 /* Beide Anmeldewege im einen Primaergruen, ohne Verlaeufe (#512) */
 .keycloak-button,
 .gutgesagt-button {
-    background: var(--primary-dark);
+    background: var(--primary-fill);
     color: white;
 }
 
@@ -261,7 +261,7 @@
 
 .login-description {
     margin-top: 12px;
-    color: #666;
+    color: var(--text-muted);
     font-size: 14px;
     text-align: center;
 }
@@ -279,13 +279,13 @@
     top: 50%;
     width: 100%;
     height: 1px;
-    background: #e0e0e0;
+    background: var(--divider-color);
 }
 
 .divider-text {
-    background: white;
+    background: var(--bg-card);
     padding: 0 16px;
-    color: #999;
+    color: var(--text-faint);
     position: relative;
     font-size: 14px;
 }
@@ -297,7 +297,7 @@
 
 .loading-container p {
     margin-top: 20px;
-    color: #666;
+    color: var(--text-muted);
 }
 
 @media (max-width: 600px) {
