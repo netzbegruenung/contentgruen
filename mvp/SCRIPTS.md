@@ -16,6 +16,7 @@ All scripts are located in the `mvp/scripts/` directory and organized by categor
 | **Restore backup** | N/A (Linux/Unix only) | `scripts/backup/restore.sh` |
 | **Test backup/restore** | N/A (Linux/Unix only) | `scripts/backup/test-backup-restore.sh` |
 | **Einwürfe aus einer Liste einwerfen** | `python scripts\manual\einwuerfe_importieren.py` | `scripts/manual/einwuerfe_importieren.py` |
+| **Startbestand einspielen, Beiträge entfernen** | `python scripts\manual\beitraege_importieren.py` | `scripts/manual/beitraege_importieren.py` |
 
 ## Directory Structure
 
@@ -39,7 +40,8 @@ mvp/scripts/
 │   ├── test-backup-restore.sh  # Test backup/restore workflow
 │   └── README.md          # Detailed backup documentation
 ├── manual/                 # Handarbeit an einer laufenden Instanz (README.md)
-│   └── einwuerfe_importieren.py  # Einwürfe aus einer Liste in den Fangkorb
+│   ├── einwuerfe_importieren.py  # Einwürfe aus einer Liste in den Fangkorb
+│   └── beitraege_importieren.py  # Startbestand einspielen, Beiträge entfernen
 └── utils/                  # Utility scripts
     ├── clean-all.*        # Clean all build artifacts and dependencies
     ├── switch-to-docker.* # Configure for Docker mode
@@ -230,6 +232,80 @@ python3 scripts/manual/einwuerfe_importieren.py liste.csv --email konto@example.
 BFF selbst; Standard ist das lokale BFF `http://localhost:5054`. Getestet in
 `tests/unit/services/test_einwuerfe_importieren_skript.py` (Lesen, Import) und
 `tests/integration/api/test_einwuerfe_importieren_bff.py` (gegen den Dev-Stack).
+
+## Startbestand einspielen (`scripts/manual/beitraege_importieren.py`)
+
+Legt Kommentare aus einer Markdown-Datei an, je Kommentar ein Aufruf derselben API wie im
+Kommentar-Formular (`/api/v1/commentary/addCommentary`): mit Titel, Fassungen und Herkunft,
+als Antwort auf seine Aussage. Die Aussage legt der Server an oder nimmt eine vorhandene,
+sehr ähnliche; eine vorhandene Herkunft nimmt er wieder. Gedacht für den Startbestand unter
+einem Startkonto (`GLOSSARY.md`); Anmeldung, Art.-9-Einwilligung und Direktanmeldung wie
+beim Einwurf-Import oben. Als CC0-Kennung schickt das Skript die des Kommentar-Formulars
+(`docs/CC0_HINWEIS_WORTLAUTE.md`): Wer mit `--ausfuehren` importiert, stellt die Texte unter
+CC0 wie beim Absenden im Formular. Kennt der Dienst die Kennung noch nicht (ältere Version),
+legt es ohne Kennung an und sagt das.
+
+- **Ohne `--ausfuehren` ein Trockenlauf:** prüft Pflichtfelder und Längen lokal (Titel
+  3–120 Zeichen in einer Zeile, Mittel Pflicht bis 500, Kurz bis 280, Lang bis 2000, Aussage
+  10–1000, Herkunft mit http(s)-Link) und zeigt, was angelegt würde; ohne Server und
+  Passwort.
+- Ist schon ein sehr ähnlicher Kommentar da, legt der Server nichts an; das Skript meldet ihn
+  als übersprungen und übergeht die Dublettenprüfung nicht. Ein zweiter Lauf mit derselben
+  Datei legt also nichts doppelt an.
+- Je angelegtem Kommentar nennt die Ausgabe seine ID und die der Aussage; hängt er an einer
+  schon vorhandenen Aussage mit anderem Wortlaut, steht deren Text dabei.
+- Der Dienst nimmt höchstens 10 Kommentare je Minute und 100 je Stunde und Konto an; bei
+  einer Ablehnung wartet das Skript eine Minute und versucht es bis zu dreimal.
+- Exit-Code 0: alles angelegt oder übersprungen; 1: mindestens ein Kommentar mit Fehler (in
+  der Datei, vom Server abgelehnt, oder angelegt, aber nicht mit der Aussage verknüpft);
+  2: Datei unlesbar, `--adresse` unpassend, Anmeldung gescheitert, ohne Einwilligung oder
+  Server nicht erreichbar.
+
+**Dateiformat** (Beispiel: `scripts/manual/beitraege_beispiel.md`), UTF-8:
+
+- `## 1.1 „Aussage“` (nummeriert, Anführungszeichen werden entfernt) oder `## Aussage: …`
+  beginnt eine Aussage. Andere Überschriften, Einleitung und Fließtext zählen nicht.
+- Jede `###`-Überschrift darunter beginnt einen Kommentar; `### Kommentar: <Titel>` setzt
+  zugleich den Titel.
+- Felder je Zeile, fett oder als Listenpunkt, Groß- und Kleinschreibung egal: `Titel:`,
+  `Kurz:`, `Mittel:`, `Lang:`, `Herkunft:` (mehrfach; auch `Zweite Herkunft (…):`),
+  optional `Zweck:` (`kommentarspalte`, `eigene_leute`) und `Stil:` (`sachlich`,
+  `humorvoll`, `persoenlich`, `brueckenbauend`, `bissig`). Kurz, Mittel und Lang gehen auf
+  den Folgezeilen weiter bis zur nächsten Leerzeile.
+- Herkunft: `URL – Beschreibung` oder `URL | Beschreibung`; ein Vermerk ab `geprüft:` und
+  Zeilen darunter, die kein Feld sind, werden nicht übernommen.
+
+## Beiträge endgültig entfernen (`beitraege_importieren.py --entfernen`)
+
+Entfernt Beiträge endgültig über die Admin-API
+(`DELETE /api/v1/moderation/content/{typ}/{id}`), mit einem Admin-Konto. Im Frontend gibt es
+dafür keinen Knopf, nur das Sperren. Die Aussagen, auf die ein Beitrag antwortete, bleiben;
+ihnen fehlt danach nur diese Antwort (ohne andere Antwort sind sie wieder unbeantwortet).
+Stimmen und Varianten-Verknüpfungen des Beitrags gehen mit.
+
+- Datei: je Zeile `<typ> <id>`, Typ `commentary`, `generic_text`, `post` oder `image`;
+  Leerzeilen und alles ab `#` zählen nicht.
+- Ohne `--ausfuehren` zeigt es je Eintrag den Titel. Gesperrte Beiträge zeigt die
+  Ansicht nicht, sie stehen dann als „nicht gefunden oder gesperrt“ da und lassen sich
+  trotzdem entfernen.
+- Schon entfernte oder nie vorhandene Beiträge werden als übersprungen gemeldet.
+
+**Usage:**
+```bash
+# Erst prüfen, dann anlegen. Ohne GUTGESAGT_PASSWORT fragt das Skript nach dem Passwort.
+python3 scripts/manual/beitraege_importieren.py bestand.md
+python3 scripts/manual/beitraege_importieren.py bestand.md --email startkonto@example.org \
+  --adresse https://gutgesagt-test.netzbegruenung.de --ausfuehren
+# Entfernen: erst Titel ansehen, dann entfernen
+python3 scripts/manual/beitraege_importieren.py entfernen.txt --entfernen \
+  --email admin@example.org --adresse https://gutgesagt-test.netzbegruenung.de
+python3 scripts/manual/beitraege_importieren.py entfernen.txt --entfernen \
+  --email admin@example.org --adresse https://gutgesagt-test.netzbegruenung.de --ausfuehren
+```
+
+Getestet in `tests/unit/services/test_beitraege_importieren_skript.py` (Lesen, Import,
+Entfernen) und `tests/integration/api/test_beitraege_importieren_bff.py` (gegen den
+Dev-Stack; das Entfernen dort direkt am Suchdienst mit den Admin-Kopfzeilen des BFF).
 
 ## Utility Scripts (`scripts/utils/`)
 

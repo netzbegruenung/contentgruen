@@ -31,6 +31,15 @@ Standardbibliothek, laeuft von jedem Rechner mit Python 3. Aufruf, Dateiformat u
 Exit-Codes in `mvp/SCRIPTS.md`; Beispiellisten `einwuerfe_beispiel.csv` und
 `einwuerfe_beispiel.md`.
 
+## Startbestand einspielen, Beitraege entfernen (gegen das BFF)
+
+`beitraege_importieren.py <datei> [--email <konto>] [--adresse <url>] [--ausfuehren]` –
+**schreibend mit `--ausfuehren`.** Legt Kommentare samt Aussage und Herkunft aus einer
+Markdown-Datei an (Startbestand, unter einem Startkonto). Mit `--entfernen` ist die Datei
+eine Liste `<typ> <id>` und die Beitraege werden endgueltig entfernt (Admin-Konto). Ohne
+`--ausfuehren` ein Trockenlauf. Nur Standardbibliothek. Aufruf und Dateiformat in
+`mvp/SCRIPTS.md`; Beispiel `beitraege_beispiel.md`.
+
 ## Bestand in Qdrant (im semantic-search-Container)
 
 Diese beiden Skripte laufen nicht gegen die HTTP-API, sondern per stdin im

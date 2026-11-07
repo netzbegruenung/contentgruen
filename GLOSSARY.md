@@ -514,6 +514,10 @@ _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt, auch wenn es zur Adresse schon ein Konto gibt oder die Adresse einen Tippfehler hat; nur wenn Keycloak das Konto nicht anlegen konnte, wird sie zurückgenommen. Die Zahl erlaubter Einlösungen begrenzt eine Einladung.
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
+**Startbestand**:
+Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start unter Startkonten schreibt, damit Gut gesagt nicht leer beginnt. Er wird wie jeder Beitrag angelegt, über das Formular oder das Importskript aus einer Datei.
+_Avoid_: Seed, Grundbestand, Demo-Inhalt
+
 **Startkonto**:
 Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot

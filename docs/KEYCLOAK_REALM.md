@@ -229,9 +229,10 @@ schon umgezogen sind. Die Direktanmeldung bleibt im Code für die Entwicklung: D
 und die E2E-Tests haben kein Keycloak und melden sich mit
 `mvp/config/managed-users.example.json` an.
 
-Was ohne Direktanmeldung nicht mehr geht: `mvp/scripts/manual/einwuerfe_importieren.py`
-meldet sich mit Mail und Passwort an der BFF an, also nur über die Direktanmeldung. Einen
-Import unter einem Startkonto deshalb vor dem Umzug laufen lassen.
+Was ohne Direktanmeldung nicht mehr geht: `mvp/scripts/manual/einwuerfe_importieren.py` und
+`beitraege_importieren.py` melden sich mit Mail und Passwort an der BFF an, also nur über die
+Direktanmeldung. Einen Import unter einem Startkonto und das Entfernen mit einem Admin-Konto
+deshalb vor dem Umzug laufen lassen.
 
 ## Konfiguration der App
 
