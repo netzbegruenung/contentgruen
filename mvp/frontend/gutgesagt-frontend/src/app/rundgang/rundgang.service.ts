@@ -1,88 +1,65 @@
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
-import { MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialog';
-import { filter, take } from 'rxjs/operators';
-import { AuthService } from '../auth/auth.service';
-import { AngebotDialogComponent, AngebotWahl, angebotOeffnen } from './angebot-dialog.component';
+import { filter } from 'rxjs/operators';
+import { AuthService, UserInfo } from '../auth/auth.service';
+import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { Angebot, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
-import { gesehen, merken } from './rundgang-merker';
+import { gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
 
 export interface RundgangStand {
   rundgang: Rundgang;
   index: number;
 }
 
-/** Ein offenes Angebot; abgelöst heißt: Ein anderer Rundgang hat es geschlossen. */
-interface OffenesAngebot {
-  ref: MatDialogRef<AngebotDialogComponent, AngebotWahl>;
-  angebot: Angebot;
-  abgeloest: boolean;
-}
-
-/**
- * Seiten, auf denen das Willkommen beim ersten Besuch erscheint: Startseite und
- * Treffer. Nicht auf Einladung, Anmeldung oder Rechtstexten, wo es den Weg verstellte.
- */
-const WILLKOMMEN_SEITEN = ['/search', '/result'];
-
-/** Hier legt sich auch das Mitmachen-Angebot nicht darüber; es wartet auf die nächste Seite. */
-const OHNE_ANGEBOT = ['/login', '/einladung', '/datenschutz', '/impressum', '/nutzungsbedingungen'];
-
 /**
  * Steuert Willkommen, Mitmachen-Angebot und den laufenden Rundgang (#389). Die
- * Darstellung macht app-rundgang; hier steht nur, welcher Schritt dran ist und
- * auf welcher Seite er spielt.
+ * Darstellung machen app-rundgang-band und app-rundgang; hier steht nur, welches
+ * Angebot und welcher Schritt dran ist und auf welcher Seite er spielt.
+ *
+ * Gestaffelt, kein Fenster (#587): Das Willkommen steht als Band über
+ * Startseite und Treffern. Nach der Anmeldung kommt nur die Art.-9-Einwilligung;
+ * Mitmachen bietet erst das Band auf Beitragen oder Fangkorb an, wenn die Person dort
+ * zum ersten Mal ankommt. Bis dahin trägt „Beitragen“ im Kopf einen Neu-Punkt.
+ * Ein Band bleibt, bis die Person darauf reagiert; nach einem Rundgang ist es für
+ * diesen Besuch weg. Kein Band auf Formularen, Einladung, Anmeldung, Einwilligung
+ * oder Rechtstexten.
  */
 @Injectable({ providedIn: 'root' })
 export class RundgangService {
   private readonly router = inject(Router);
-  private readonly dialog = inject(MatDialog);
   private readonly auth = inject(AuthService);
+  private readonly einwilligung = inject(Art9EinwilligungService);
 
   private readonly stand = signal<RundgangStand | null>(null);
   /** Der laufende Rundgang mit dem aktuellen Schritt, sonst null. */
   readonly aktiv = this.stand.asReadonly();
 
+  private readonly angebot = signal<Angebot | null>(null);
   /**
-   * Das offene Angebot, bis es ganz geschlossen ist (auch während der Animation, damit
-   * kein zweites daneben aufgeht); ein startender Rundgang schließt es (#585).
+   * Ab dem Start, nicht erst ab dem ersten Schritt (#585): Solange dessen Seite lädt,
+   * ist `aktiv()` noch leer. Nach einem Rundgang bleibt das Band für diesen Besuch weg.
    */
-  private offenesAngebot: OffenesAngebot | null = null;
-  /**
-   * Läuft ab dem Start, nicht erst ab dem ersten Schritt: Solange dessen Seite lädt, ist
-   * `aktiv()` noch leer, und das Ende der Navigation darf kein Angebot darüberlegen (#585).
-   */
-  private laeuft = false;
+  private readonly rundgangGestartet = signal(false);
+  /** Das Angebot, das das Band gerade zeigt; ab dem ersten Rundgang des Besuchs keines. */
+  readonly band = computed(() => (this.rundgangGestartet() ? null : this.angebot()));
+  private readonly mitmachenOffen = signal(false);
+  /** Neu-Punkt an „Beitragen“: angemeldet, eingewilligt, Mitmachen noch nicht beantwortet. */
+  readonly beitragenNeu = this.mitmachenOffen.asReadonly();
   /** Zaehlt Schrittwechsel; ein ueberholter Wechsel setzt nach dem Laden nichts mehr. */
   private wechsel = 0;
-  private mitmachenAusstehend = false;
-  /** Erst nach der ersten Seite steht fest, ob dort das Willkommen erscheint. */
+  /** Die letzten Anmeldedaten; null, solange /api/user-info nicht geantwortet hat. */
+  private info: UserInfo | null = null;
+  /** Vor der ersten Seite steht nicht fest, wo die Person landet. */
   private ersteSeiteDa = false;
-
   /**
-   * Einmal beim Start der App: Willkommen beim ersten Besuch, Mitmachen nach der
-   * ersten Anmeldung.
+   * In diesem Besuch beantwortete Angebote, auch ohne Speicher im Browser (privates
+   * Fenster): „Ausblenden“ wirkt dann wenigstens bis zum nächsten Besuch.
    */
-  beobachten(destroyRef: DestroyRef): void {
-    this.router.events
-      .pipe(
-        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        filter((e) => WILLKOMMEN_SEITEN.some((s) => e.urlAfterRedirects.startsWith(s))),
-        take(1),
-        takeUntilDestroyed(destroyRef),
-      )
-      .subscribe(() => {
-        // Führt ein Rundgang hierher, entfällt das Willkommen für diesen Besuch: nicht
-        // darüber und nicht danach mit dem Rundgang, den die Person gerade kennt (#585).
-        if (!this.laeuft && !gesehen(WILLKOMMEN.schluessel)) {
-          this.anbieten(WILLKOMMEN);
-        }
-      });
+  private readonly beantworteteAngebote = new Set<string>();
 
-    // Mitmachen wartet die erste Seite ab: Ist sie Startseite oder Treffer, kommt dort
-    // zuerst das Willkommen; sonst (etwa nach einer Einladung) gleich das Angebot.
-    // Ein zurückgestelltes Angebot kommt mit der nächsten Seite.
+  /** Einmal beim Start der App. */
+  beobachten(destroyRef: DestroyRef): void {
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -90,31 +67,35 @@ export class RundgangService {
       )
       .subscribe(() => {
         this.ersteSeiteDa = true;
-        // Das Willkommen-Abo oben hat schon reagiert, falls es diese Seite war
-        if (!this.offenesAngebot) this.naechstesAngebot();
+        this.angebotPruefen();
       });
 
     this.auth.userInfo$.pipe(takeUntilDestroyed(destroyRef)).subscribe((info) => {
-      if (info?.isAuthenticated) {
-        this.mitmachenPruefen();
-      }
+      this.info = info;
+      this.angebotPruefen();
     });
+    this.einwilligung.geklaert$.pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.angebotPruefen());
   }
 
-  starten(id: RundgangId): Promise<void> {
-    this.mitmachenAusstehend = this.mitmachenAusstehend && id !== 'mitmachen';
-    this.laeuft = true;
-    // Höchstens eins: Angebot oder Rundgang (#585). Ein Fenster, das schon schließt,
-    // behält die Wahl der Person; close() würde sie überschreiben.
-    const offen = this.offenesAngebot;
-    if (offen?.ref.getState() === MatDialogState.OPEN) {
-      if (offen.angebot.rundgang !== id) {
-        offen.abgeloest = true;
-        if (offen.angebot === MITMACHEN_ANGEBOT) this.mitmachenAusstehend = true;
-      }
-      offen.ref.close();
+  starten(id: RundgangId, ab = 0): Promise<void> {
+    // Auch über Hilfe oder Menü gestartet ist das offene Angebot beantwortet: das Band
+    // oder Mitmachen hinter dem Neu-Punkt
+    const angebot = this.angebot();
+    if (angebot?.rundgang === id) this.beantwortet(angebot);
+    else if (id === MITMACHEN_ANGEBOT.rundgang && this.beitragenNeu()) this.beantwortet(MITMACHEN_ANGEBOT);
+    this.rundgangGestartet.set(true);
+    return this.zuSchritt(RUNDGAENGE[id], ab);
+  }
+
+  /** Ein Knopf im Band: Rundgang starten oder ausblenden. Das Angebot kommt nicht wieder. */
+  bandBeantworten(starten: boolean): void {
+    const angebot = this.band();
+    if (!angebot) return;
+    if (starten) {
+      void this.starten(angebot.rundgang, angebot.ab);
+    } else {
+      this.beantwortet(angebot);
     }
-    return this.zuSchritt(RUNDGAENGE[id], 0);
   }
 
   async weiter(): Promise<void> {
@@ -136,10 +117,7 @@ export class RundgangService {
 
   beenden(): void {
     this.wechsel++; // ein Schritt, dessen Seite noch laedt, erscheint nicht mehr
-    if (!this.laeuft) return;
-    this.laeuft = false;
     this.stand.set(null);
-    this.naechstesAngebot();
   }
 
   /**
@@ -159,37 +137,47 @@ export class RundgangService {
     this.stand.set({ rundgang, index });
   }
 
-  private mitmachenPruefen(): void {
-    if (gesehen(MITMACHEN_ANGEBOT.schluessel)) return;
-    // Nicht über ein anderes Angebot oder einen laufenden Rundgang legen; danach.
-    const ruhigeSeite = OHNE_ANGEBOT.some((s) => this.router.url.startsWith(s));
-    if (this.offenesAngebot || this.laeuft || !this.ersteSeiteDa || ruhigeSeite) {
-      this.mitmachenAusstehend = true;
-      return;
+  /** Welches Angebot jetzt dran ist, falls überhaupt eines. */
+  private faelligesAngebot(): Angebot | null {
+    if (!this.ersteSeiteDa) return null;
+    const url = this.router.url;
+    const hier = (a: Angebot): boolean => a.seiten.some((s) => url.startsWith(s));
+    const info = this.info;
+    // Bis /api/user-info antwortet, ist offen, ob jemand angemeldet ist: Ein Willkommen
+    // blitzte sonst vor der Umleitung auf die Einwilligung auf (#587).
+    if (!info) return null;
+    if (info.isAuthenticated) {
+      // Nicht vor der Einwilligung; ohne sie kein Angebot
+      if (!this.eingewilligt(info.userId)) return null;
+      if (this.mitmachenFaellig(info) && hier(MITMACHEN_ANGEBOT)) return MITMACHEN_ANGEBOT;
     }
-    this.anbieten(MITMACHEN_ANGEBOT);
+    // Wer Mitmachen schon hatte, braucht kein Willkommen mehr
+    if (!this.gesehen(WILLKOMMEN) && !this.gesehen(MITMACHEN_ANGEBOT) && hier(WILLKOMMEN)) return WILLKOMMEN;
+    return null;
   }
 
-  private naechstesAngebot(): void {
-    if (this.mitmachenAusstehend && this.auth.getUserInfo()?.isAuthenticated) {
-      this.mitmachenAusstehend = false;
-      this.mitmachenPruefen();
-    }
+  /** Ohne Kennung ist nichts geklärt, auch wenn `geklaert()` ebenfalls null ist. */
+  private eingewilligt(kennung: string | null): boolean {
+    return kennung !== null && this.einwilligung.geklaert() === kennung;
   }
 
-  private anbieten(angebot: Angebot): void {
-    const offen: OffenesAngebot = { ref: angebotOeffnen(this.dialog, angebot), angebot, abgeloest: false };
-    this.offenesAngebot = offen;
-    offen.ref.afterClosed().subscribe((wahl) => {
-      if (this.offenesAngebot === offen) this.offenesAngebot = null;
-      // Auch Escape und „Später“ zählen als gesehen: Das Angebot kommt nicht wieder.
-      // Ein abgelöstes gilt nicht als gesehen; Mitmachen kommt nach dem Rundgang wieder.
-      if (!offen.abgeloest) merken(angebot.schluessel);
-      if (wahl === 'starten') {
-        void this.starten(angebot.rundgang);
-      } else {
-        this.naechstesAngebot();
-      }
-    });
+  /** Angemeldet, eingewilligt, Mitmachen noch nicht beantwortet. */
+  private mitmachenFaellig(info: UserInfo | null): boolean {
+    return !!info?.isAuthenticated && this.eingewilligt(info.userId) && !this.gesehen(MITMACHEN_ANGEBOT);
+  }
+
+  private angebotPruefen(): void {
+    this.angebot.set(this.faelligesAngebot());
+    this.mitmachenOffen.set(this.mitmachenFaellig(this.info));
+  }
+
+  private gesehen(angebot: Angebot): boolean {
+    return this.beantworteteAngebote.has(angebot.schluessel) || imSpeicher(angebot.schluessel);
+  }
+
+  private beantwortet(angebot: Angebot): void {
+    this.beantworteteAngebote.add(angebot.schluessel);
+    speichern(angebot.schluessel);
+    this.angebotPruefen();
   }
 }

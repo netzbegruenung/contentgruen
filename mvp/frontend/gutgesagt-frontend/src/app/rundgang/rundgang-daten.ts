@@ -39,13 +39,23 @@ export interface Rundgang {
   schritte: RundgangSchritt[];
 }
 
-/** Das Fenster, das einen Rundgang anbietet: Willkommen beim ersten Besuch oder Mitmachen nach der Anmeldung. */
+/**
+ * Das Band, das einen Rundgang anbietet (#587): Willkommen auf Startseite und
+ * Treffern, Mitmachen, sobald jemand zum ersten Mal auf Beitragen oder Fangkorb ankommt.
+ */
 export interface Angebot {
   rundgang: RundgangId;
-  /** Unter diesem Schlüssel merkt sich der Browser, dass das Angebot gezeigt wurde. */
+  /** Unter diesem Schlüssel merkt sich der Browser, dass das Angebot beantwortet wurde. */
   schluessel: string;
   titel: string;
   satz: string;
+  /** Seiten (Pfadanfang), auf denen das Band steht. */
+  seiten: string[];
+  /** Beschriftung der beiden Knöpfe: Rundgang starten bzw. ausblenden. */
+  ja: string;
+  nein: string;
+  /** Erster Schritt des Rundgangs, wenn er aus dem Band startet. */
+  ab: number;
 }
 
 /** Dieselbe Aussage wie „Beispiel probieren“ auf der Startseite. */
@@ -56,17 +66,26 @@ export const WILLKOMMEN: Angebot = {
   schluessel: WILLKOMMEN_SCHLUESSEL,
   titel: 'Schön, dass du da bist!',
   satz:
-    'Gut gesagt ist eine Tauschbörse für bewährte Argumente: Gib eine Aussage aus dem Netz ein und ' +
-    'finde Kommentare, die andere schon in echten Diskussionen erprobt haben.',
+    'Gut gesagt ist eine Tauschbörse für bewährte Argumente. Der Rundgang zeigt dir in fünf Schritten, ' +
+    'wie du zu einer Aussage aus dem Netz eine erprobte Antwort findest.',
+  seiten: ['/search', '/result'],
+  ja: 'Rundgang starten',
+  nein: 'Ausblenden',
+  ab: 0,
 };
 
 export const MITMACHEN_ANGEBOT: Angebot = {
   rundgang: 'mitmachen',
   schluessel: MITMACHEN_SCHLUESSEL,
-  titel: 'Jetzt kannst du mitmachen!',
-  satz:
-    'Du bist angemeldet: Du kannst Fundstücke einwerfen, im Fangkorb weiterarbeiten und eigene Beiträge ' +
-    'verfassen. Der Rundgang zeigt dir in vier Schritten, wo das geht.',
+  titel: 'Kurz zeigen, wie Beitragen geht?',
+  satz: 'Drei Schritte: Fundstücke einwerfen, im Fangkorb weiterarbeiten und deine Beiträge im Blick behalten.',
+  // Wer hier ist, hat „Beitragen“ schon gefunden: Der Rundgang beginnt beim Einwerfen.
+  // Nicht auf /einwerfen: Das ist ein Formular (oft per Teilen schon gefüllt), und der
+  // Rundgang spielt auf /contribute; „Zeig mir’s“ würde den Einwurf verwerfen.
+  seiten: ['/contribute', '/fangkorb'],
+  ja: 'Zeig mir’s',
+  nein: 'Nein danke',
+  ab: 1,
 };
 
 export const RUNDGAENGE: Record<RundgangId, Rundgang> = {

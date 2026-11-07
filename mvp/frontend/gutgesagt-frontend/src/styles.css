@@ -685,16 +685,6 @@ a:hover {
     overflow-y: auto !important;
 }
 
-/* Willkommen und Mitmachen-Angebot (#389): runde Ecken, Schleier im Ton des Rundgangs */
-.angebot-fenster .mat-mdc-dialog-surface {
-    border-radius: var(--border-radius-large) !important;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25) !important;
-}
-
-.angebot-schleier {
-    background: var(--rundgang-schleier);
-}
-
 /* Ensure body doesn't get height restricted when dialog opens */
 body.cdk-global-scrollblock {
     position: fixed !important;
@@ -726,4 +716,31 @@ body.cdk-global-scrollblock {
     body.hat-feste-leiste {
         padding-bottom: var(--feste-leiste-hoehe, 73px);
     }
+}
+
+/* Neu-Punkt an „Beitragen“ im Kopf, bis Mitmachen beantwortet ist (#587) */
+.beitragen-knopf,
+.mobile-header .contribute-button {
+    position: relative;
+    overflow: visible;
+}
+
+.neu-punkt {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--primary-fill);
+    border-radius: 50%;
+    /* Kegel statt Band: Das Band ist im Dunkelmodus Anthrazit, der Punkt bleibt gelb (#591) */
+    background: var(--rundgang-kegel);
+    pointer-events: none;
+}
+
+/* Material legt den Inhalt in ein eigenes, positioniertes Label; um dessen Abstand zum
+   Rand verschoben sitzt der Punkt an der Ecke des Knopfs */
+.beitragen-knopf .neu-punkt {
+    top: -12px;
+    right: -20px;
 }

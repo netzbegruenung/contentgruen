@@ -1,10 +1,9 @@
 import { DestroyRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router } from '@angular/router';
-import { MatDialog, MatDialogState } from '@angular/material/dialog';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { take } from 'rxjs/operators';
 import { AuthService, UserInfo } from '../auth/auth.service';
+import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from './rundgang.service';
 import { BEISPIEL_AUSSAGE, MITMACHEN_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
 import { MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
@@ -13,19 +12,19 @@ describe('RundgangService', () => {
   let service: RundgangService;
   let events: Subject<unknown>;
   let router: jasmine.SpyObj<Router> & { url: string };
-  let dialog: jasmine.SpyObj<MatDialog>;
-  let geschlossen: Subject<string | undefined>;
   let userInfo: BehaviorSubject<UserInfo | null>;
+  let geklaert: BehaviorSubject<string | null>;
   let zerstoert: () => void;
 
   const angemeldet: UserInfo = { isAuthenticated: true, userId: 'u1', userName: 'Test', claims: null };
+  const besucher: UserInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
 
   beforeEach(() => {
     localStorage.removeItem(WILLKOMMEN_SCHLUESSEL);
     localStorage.removeItem(MITMACHEN_SCHLUESSEL);
     events = new Subject();
-    geschlossen = new Subject();
-    userInfo = new BehaviorSubject<UserInfo | null>(null);
+    userInfo = new BehaviorSubject<UserInfo | null>(besucher);
+    geklaert = new BehaviorSubject<string | null>(null);
     router = Object.assign(
       jasmine.createSpyObj<Router>('Router', ['navigateByUrl', 'createUrlTree', 'serializeUrl']),
       { url: '/search', events },
@@ -39,25 +38,17 @@ describe('RundgangService', () => {
       return q ? `${baum.pfad}?${q}` : baum.pfad;
     }) as never);
     router.navigateByUrl.and.resolveTo(true);
-    dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
-    // Wie Material: close() startet nur die Animation, afterClosed kommt danach (geschlossen.next).
-    dialog.open.and.callFake((() => {
-      let zustand = MatDialogState.OPEN;
-      geschlossen.pipe(take(1)).subscribe(() => (zustand = MatDialogState.CLOSED));
-      return {
-        afterClosed: () => geschlossen.pipe(take(1)),
-        close: () => (zustand = MatDialogState.CLOSING),
-        getState: () => zustand,
-      };
-    }) as never);
 
     TestBed.configureTestingModule({
       providers: [
         { provide: Router, useValue: router },
-        { provide: MatDialog, useValue: dialog },
         {
           provide: AuthService,
           useValue: { userInfo$: userInfo, getUserInfo: () => userInfo.value },
+        },
+        {
+          provide: Art9EinwilligungService,
+          useValue: { geklaert$: geklaert, geklaert: () => geklaert.value },
         },
       ],
     });
@@ -73,62 +64,122 @@ describe('RundgangService', () => {
     localStorage.removeItem(MITMACHEN_SCHLUESSEL);
   });
 
+  /** Ein neuer Besuch: eine frische Instanz, wie nach dem Neuladen der App. */
+  function neuerBesuch(): RundgangService {
+    const neu = TestBed.runInInjectionContext(() => new RundgangService());
+    neu.beobachten({ onDestroy: () => undefined } as unknown as DestroyRef);
+    return neu;
+  }
+
   function navigiert(url: string): void {
     router.url = url;
     events.next(new NavigationEnd(1, url, url));
   }
 
-  function angebotDaten(aufruf = 0): unknown {
-    return (dialog.open.calls.argsFor(aufruf)[1] as { data: unknown }).data;
-  }
 
   describe('Erstbesuch', () => {
-    it('zeigt beim ersten Besuch der Startseite das Willkommen', () => {
+    it('zeigt beim ersten Besuch der Startseite das Willkommen als Band', () => {
+      expect(service.band()).toBeNull();
       navigiert('/search');
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-      expect(angebotDaten()).toBe(WILLKOMMEN);
+      expect(service.band()).toBe(WILLKOMMEN);
     });
 
-    it('zeigt es beim zweiten Besuch nicht mehr, auch nach „Später“ oder Escape', () => {
+    it('zeigt es nach „Ausblenden“ nicht mehr, auch nicht beim nächsten Besuch', () => {
       navigiert('/search');
-      geschlossen.next(undefined); // Escape
+      service.bandBeantworten(false);
+      expect(service.band()).toBeNull();
       expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBe('1');
 
-      dialog.open.calls.reset();
-      const zweiter = TestBed.inject(RundgangService);
-      zweiter.beobachten({ onDestroy: () => undefined } as unknown as DestroyRef);
+      const zweiter = neuerBesuch();
       navigiert('/search');
-      expect(dialog.open).not.toHaveBeenCalled();
+      expect(zweiter.band()).toBeNull();
     });
 
-    it('legt sich nicht über Einladung, Anmeldung oder Rechtstexte', () => {
-      navigiert('/einladung/abc');
-      navigiert('/login');
-      navigiert('/datenschutz');
-      expect(dialog.open).not.toHaveBeenCalled();
+    it('merkt sich nichts, solange niemand reagiert: Das Band kommt beim nächsten Besuch wieder', () => {
+      navigiert('/search');
+      const zweiter = neuerBesuch();
+      navigiert('/search');
+      expect(zweiter.band()).toBe(WILLKOMMEN);
     });
 
-    it('erscheint ohne Speicher (privates Fenster) eben wieder, ohne Fehler', () => {
+    it('steht nur auf Startseite und Treffern, nicht auf Formularen, Einwilligung oder Rechtstexten', () => {
+      for (const seite of ['/einladung/abc', '/login', '/einwilligung?returnUrl=%2Fsearch', '/datenschutz', '/contribute']) {
+        navigiert(seite);
+        expect(service.band()).withContext(seite).toBeNull();
+      }
+      navigiert('/result?searchQuery=x');
+      expect(service.band()).toBe(WILLKOMMEN);
+    });
+
+    it('verschwindet auf einer Seite ohne Angebot und kommt auf der Startseite wieder', () => {
+      navigiert('/search');
+      navigiert('/impressum');
+      expect(service.band()).toBeNull();
+      navigiert('/search');
+      expect(service.band()).toBe(WILLKOMMEN);
+    });
+
+    it('geht ohne Speicher (privates Fenster) ohne Fehler und blendet sich für diesen Besuch aus', () => {
       spyOn(Storage.prototype, 'getItem').and.throwError('gesperrt');
       spyOn(Storage.prototype, 'setItem').and.throwError('gesperrt');
       navigiert('/search');
-      expect(() => geschlossen.next('spaeter')).not.toThrow();
-      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(() => service.bandBeantworten(false)).not.toThrow();
+      expect(service.band()).toBeNull();
+      navigiert('/result?searchQuery=x');
+      expect(service.band()).toBeNull();
     });
 
-    it('startet mit „Rundgang starten“ den Rundgang Antwort finden auf der Startseite', () => {
+    it('zeigt nichts, solange offen ist, ob jemand angemeldet ist (#587)', () => {
+      userInfo.next(null);
       navigiert('/search');
-      geschlossen.next('starten');
+      expect(service.band()).toBeNull();
+      userInfo.next(besucher);
+      expect(service.band()).toBe(WILLKOMMEN);
+    });
+
+    it('gilt als beantwortet, wenn derselbe Rundgang über Hilfe oder Menü startet', async () => {
+      navigiert('/search');
+      await service.starten('antwort-finden');
+      service.beenden();
+      expect(service.band()).toBeNull();
+      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBe('1');
+    });
+
+    it('zeigt kein Willkommen, wer Mitmachen schon hatte (Merker aus der Zeit vor #587)', () => {
+      localStorage.setItem(MITMACHEN_SCHLUESSEL, '1');
+      navigiert('/search');
+      expect(service.band()).toBeNull();
+    });
+
+    it('startet mit „Rundgang starten“ den Rundgang Antwort finden und blendet sich aus', () => {
+      navigiert('/search');
+      service.bandBeantworten(true);
       const stand = service.aktiv();
       expect(stand?.rundgang.id).toBe('antwort-finden');
       expect(stand?.index).toBe(0);
       expect(router.navigateByUrl).not.toHaveBeenCalled(); // schon auf /search
+      expect(service.band()).toBeNull();
     });
 
-    it('startet mit „Später“ keinen Rundgang', () => {
-      navigiert('/search');
-      geschlossen.next('spaeter');
+    it('steht nicht neben einem Rundgang, auch nicht, solange dessen erster Schritt lädt (#585)', async () => {
+      navigiert('/result?searchQuery=x');
+      expect(service.band()).toBe(WILLKOMMEN);
+      router.navigateByUrl.and.returnValue(new Promise(() => undefined));
+      void service.starten('antwort-finden'); // erster Schritt auf /search, lädt noch
       expect(service.aktiv()).toBeNull();
+      expect(service.band()).toBeNull();
+    });
+
+    it('bleibt nach einem Rundgang für diesen Besuch weg, ohne als beantwortet zu gelten (#585)', async () => {
+      navigiert('/search');
+      await service.starten('mitmachen');
+      service.beenden();
+      navigiert('/search');
+      expect(service.band()).toBeNull();
+      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBeNull();
+      const naechster = neuerBesuch();
+      navigiert('/search');
+      expect(naechster.band()).toBe(WILLKOMMEN);
     });
   });
 
@@ -181,156 +232,125 @@ describe('RundgangService', () => {
     });
   });
 
-  describe('Mitmachen nach der ersten Anmeldung', () => {
-    it('bietet den Rundgang Mitmachen einmal an', () => {
+  describe('Mitmachen beim ersten Beitragen (#587)', () => {
+    /** Angemeldet, und die App führt nicht (mehr) auf die Einwilligung. */
+    function angemeldetGeklaert(): void {
+      userInfo.next(angemeldet);
+      geklaert.next('u1');
+    }
+
+    it('bietet nach der Anmeldung auf der Startseite kein Mitmachen an, nur den Neu-Punkt', () => {
       localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
       navigiert('/search');
-      userInfo.next(angemeldet);
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-      expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
-      geschlossen.next('spaeter');
+      angemeldetGeklaert();
+      expect(service.band()).toBeNull();
+      expect(service.beitragenNeu()).toBeTrue();
+    });
+
+    it('bietet Mitmachen auf Beitragen und Fangkorb an, bis die Person reagiert', () => {
+      angemeldetGeklaert();
+      for (const seite of ['/contribute', '/fangkorb']) {
+        navigiert(seite);
+        expect(service.band()).withContext(seite).toBe(MITMACHEN_ANGEBOT);
+      }
+      service.bandBeantworten(false);
       expect(localStorage.getItem(MITMACHEN_SCHLUESSEL)).toBe('1');
-
-      userInfo.next(angemeldet);
-      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(service.band()).toBeNull();
+      expect(service.beitragenNeu()).toBeFalse();
     });
 
-    it('bietet ihn nach einer Einladung auch ohne Willkommen an, wenn die erste Seite keine Startseite ist', () => {
-      userInfo.next(angemeldet);
-      expect(dialog.open).not.toHaveBeenCalled(); // erste Seite steht noch nicht fest
+    it('startet mit „Zeig mir’s“ den Rundgang Mitmachen ohne den Schritt „Beitragen“', async () => {
+      angemeldetGeklaert();
       navigiert('/contribute');
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-      expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
+      service.bandBeantworten(true);
+      await Promise.resolve();
+      expect(service.aktiv()?.rundgang.id).toBe('mitmachen');
+      expect(service.aktiv()?.rundgang.schritte[service.aktiv()!.index].titel).toBe('Einwerfen');
+      expect(service.beitragenNeu()).toBeFalse();
     });
 
-    it('legt sich nicht über Anmeldung, Einladung oder Rechtstexte, sondern kommt mit der nächsten Seite', () => {
-      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
-      navigiert('/einladung/abc');
-      userInfo.next(angemeldet);
-      navigiert('/datenschutz');
-      expect(dialog.open).not.toHaveBeenCalled();
-      navigiert('/contribute');
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-      expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
+    it('steht nicht über dem Einwerfen: „Zeig mir’s“ würde den Einwurf verwerfen', () => {
+      angemeldetGeklaert();
+      navigiert('/einwerfen');
+      expect(service.band()).toBeNull();
+      expect(service.beitragenNeu()).toBeTrue();
     });
 
-    it('bietet nichts an, solange niemand angemeldet ist', () => {
-      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
-      userInfo.next({ isAuthenticated: false, userId: null, userName: null, claims: null });
-      expect(dialog.open).not.toHaveBeenCalled();
-    });
-
-    it('wartet, bis Willkommen und Rundgang vorbei sind', () => {
-      userInfo.next(angemeldet);
-      navigiert('/search');
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-      expect(angebotDaten()).toBe(WILLKOMMEN);
-
-      geschlossen.next('starten');
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-      service.beenden();
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
-    });
-
-    it('legt sich nicht über einen Rundgang, der noch zu seinem ersten Schritt lädt (#585)', async () => {
-      userInfo.next(angemeldet);
-      navigiert('/search?code=abc'); // etwa nach der Rückkehr von der Anmeldung
-      geschlossen.next('starten'); // Willkommen: Rundgang Antwort finden
+    it('startet „Zeig mir’s“ auch vom Fangkorb aus beim Einwerfen', async () => {
+      angemeldetGeklaert();
+      navigiert('/fangkorb');
+      service.bandBeantworten(true);
+      await new Promise((fertig) => setTimeout(fertig)); // erst die Seite, dann der Schritt
       expect(router.navigateByUrl).toHaveBeenCalled();
-      navigiert('/search'); // die Navigation des ersten Schritts endet
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-
-      await new Promise((fertig) => setTimeout(fertig));
-      expect(service.aktiv()?.index).toBe(0);
-      await service.weiter(); // Schritt 2 auf den Treffern
-      navigiert(`/result?searchQuery=${BEISPIEL_AUSSAGE}`);
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-
-      service.beenden();
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+      expect(service.aktiv()?.rundgang.schritte[service.aktiv()!.index].titel).toBe('Einwerfen');
     });
 
-    it('kommt auch nach, wenn der Rundgang schon beim Laden des ersten Schritts beendet wird', async () => {
-      userInfo.next(angemeldet);
-      navigiert('/search?code=abc');
-      geschlossen.next('starten');
-      service.beenden();
-      await new Promise((fertig) => setTimeout(fertig));
-      expect(service.aktiv()).toBeNull();
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+    it('nimmt Band und Neu-Punkt nach dem Widerruf der Einwilligung weg', () => {
+      angemeldetGeklaert();
+      navigiert('/contribute');
+      expect(service.band()).toBe(MITMACHEN_ANGEBOT);
+      geklaert.next(null);
+      expect(service.band()).toBeNull();
+      expect(service.beitragenNeu()).toBeFalse();
     });
 
-    it('schließt ein offenes Angebot, wenn ein Rundgang startet, und bietet es danach wieder an (#585)', async () => {
-      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
+    it('wertet eine Anmeldung ohne Kennung nie als eingewilligt', () => {
+      userInfo.next({ ...angemeldet, userId: null });
+      navigiert('/contribute');
+      expect(service.band()).toBeNull();
+      expect(service.beitragenNeu()).toBeFalse();
+    });
+
+    it('nimmt den Neu-Punkt weg, wenn Mitmachen über Hilfe oder Menü startet', async () => {
+      angemeldetGeklaert();
       navigiert('/search');
-      userInfo.next(angemeldet);
-      expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
-      const fenster = dialog.open.calls.mostRecent().returnValue;
-
-      await service.starten('antwort-finden'); // etwa über Hilfe
-      expect(fenster.getState()).toBe(MatDialogState.CLOSING);
-      expect(service.aktiv()?.rundgang.id).toBe('antwort-finden');
-      service.beenden(); // noch während der Animation: kein zweites Fenster daneben
-      expect(dialog.open).toHaveBeenCalledTimes(1);
-
-      geschlossen.next(undefined); // Animation vorbei
-      expect(localStorage.getItem(MITMACHEN_SCHLUESSEL)).toBeNull();
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
-    });
-
-    it('lässt die Wahl eines Fensters, das schon schließt, stehen', async () => {
-      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
-      navigiert('/search');
-      userInfo.next(angemeldet);
-      const fenster = dialog.open.calls.mostRecent().returnValue;
-      fenster.close('starten'); // Klick auf „Rundgang starten“, Animation läuft
-      const schliessen = spyOn(fenster, 'close');
-
-      await service.starten('antwort-finden');
-      expect(schliessen).not.toHaveBeenCalled();
-    });
-
-    it('zeigt das Willkommen nicht, während ein Rundgang zur Startseite führt, und auch nicht danach (#585)', async () => {
-      navigiert('/einladung/abc');
-      await service.starten('antwort-finden');
-      navigiert('/search');
-      expect(dialog.open).not.toHaveBeenCalled();
-
-      service.beenden();
-      navigiert(`/result?searchQuery=${BEISPIEL_AUSSAGE}`);
-      expect(dialog.open).not.toHaveBeenCalled();
-      // Entfällt nur für diesen Besuch
-      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBeNull();
-    });
-
-    it('merkt ein Willkommen, das ein anderer Rundgang ablöst, nicht als gesehen (#585)', async () => {
-      navigiert('/search');
-      expect(angebotDaten()).toBe(WILLKOMMEN);
-
       await service.starten('mitmachen');
-      geschlossen.next(undefined);
-      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBeNull();
-      expect(service.aktiv()?.rundgang.id).toBe('mitmachen');
-      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(service.beitragenNeu()).toBeFalse();
+      expect(localStorage.getItem(MITMACHEN_SCHLUESSEL)).toBe('1');
     });
 
-    it('merkt ein Willkommen als gesehen, wenn dessen eigener Rundgang startet', async () => {
+    it('zeigt angemeldet weiter das Willkommen auf der Startseite, wenn es noch offen ist', () => {
       navigiert('/search');
-      await service.starten('antwort-finden');
-      geschlossen.next(undefined);
-      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBe('1');
+      angemeldetGeklaert();
+      expect(service.band()).toBe(WILLKOMMEN);
     });
 
-    it('startet mit „Rundgang starten“ den Rundgang Mitmachen', () => {
-      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
-      navigiert('/search');
+    it('wartet auf die Einwilligung, auch mit dem Neu-Punkt (#587)', () => {
       userInfo.next(angemeldet);
-      geschlossen.next('starten');
-      expect(service.aktiv()?.rundgang.id).toBe('mitmachen');
+      navigiert('/contribute');
+      expect(service.band()).toBeNull();
+      expect(service.beitragenNeu()).toBeFalse();
+      geklaert.next('u1');
+      expect(service.band()).toBe(MITMACHEN_ANGEBOT);
+      expect(service.beitragenNeu()).toBeTrue();
+    });
+
+    it('steht nicht auf der Einwilligung (#587)', () => {
+      userInfo.next(angemeldet);
+      navigiert('/einwilligung?returnUrl=%2Fcontribute');
+      geklaert.next('u1');
+      expect(service.band()).toBeNull();
+      navigiert('/contribute');
+      expect(service.band()).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('steht nicht über einem Formular, das die Person gerade begonnen hat', () => {
+      angemeldetGeklaert();
+      navigiert('/workflow/add-commentary');
+      expect(service.band()).toBeNull();
+    });
+
+    it('bietet ohne Einwilligung nichts an und zeigt keinen Neu-Punkt (#587)', () => {
+      userInfo.next(angemeldet);
+      navigiert('/contribute');
+      expect(service.band()).toBeNull();
+      expect(service.beitragenNeu()).toBeFalse();
+    });
+
+    it('zeigt Besuchern keinen Neu-Punkt', () => {
+      userInfo.next(besucher);
+      navigiert('/search');
+      expect(service.beitragenNeu()).toBeFalse();
     });
   });
 });

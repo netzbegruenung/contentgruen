@@ -30,6 +30,7 @@
                     (openMenu)="toggleMobileMenu()"
                     (login)="login()"
                     (loginToContribute)="loginWithReturnUrl('/contribute')"
+                    [beitragenNeu]="rundgang.beitragenNeu()"
                     (logout)="logout()"
                     (contribute)="navigateToContributeView()">
                 </app-mobile-header>
@@ -146,6 +147,10 @@
 
                         <button mat-raised-button class="dark-green-button beitragen-knopf" (click)="navigateToContributeView()">
                             <mat-icon>add</mat-icon> <span class="beitragen-text">Beitragen</span>
+                            <!-- Neu-Punkt, bis Mitmachen beantwortet ist (#587) -->
+                            @if (rundgang.beitragenNeu()) {
+                                <span class="neu-punkt" aria-hidden="true"></span><span class="visually-hidden">, neu</span>
+                            }
                         </button>
                     </ng-container>
                     <ng-container *ngIf="!userInfo?.isAuthenticated">
@@ -203,6 +208,8 @@
         </div>
 
         <div class="main-content">
+            <!-- Angebot eines Rundgangs als Band statt Fenster (#587) -->
+            <app-rundgang-band></app-rundgang-band>
             <router-outlet></router-outlet>
         </div>
 

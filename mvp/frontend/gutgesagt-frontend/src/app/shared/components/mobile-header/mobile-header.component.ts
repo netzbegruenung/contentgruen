@@ -25,6 +25,8 @@ import { takeUntil, filter } from 'rxjs/operators';
 export class MobileHeaderComponent implements OnInit, OnDestroy {
   @Input() userInfo: UserInfo | null = null;
   @Input() selectedProfilePictureUrl: string = '';
+  /** Neu-Punkt an „Beitragen“, bis Mitmachen beantwortet ist (#587). */
+  @Input() beitragenNeu = false;
   @Output() openMenu = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
   @Output() loginToContribute = new EventEmitter<void>();

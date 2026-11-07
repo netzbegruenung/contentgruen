@@ -32,6 +32,7 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { KETTEN_ICONS } from './shared/fangkorb-texte';
 import { ROUTES } from './shared/constants/app.constants';
 import { RundgangComponent } from './rundgang/rundgang.component';
+import { RundgangBandComponent } from './rundgang/rundgang-band.component';
 import { RundgangService } from './rundgang/rundgang.service';
 import { RundgangId } from './rundgang/rundgang-daten';
 
@@ -54,7 +55,8 @@ import { RundgangId } from './rundgang/rundgang-daten';
     FooterComponent,
     MobileMenuComponent,
     MobileHeaderComponent,
-    RundgangComponent
+    RundgangComponent,
+    RundgangBandComponent
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
