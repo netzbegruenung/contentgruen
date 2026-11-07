@@ -68,7 +68,7 @@ SPALTEN = {
 
 # Spalten mit einer Kennung, die der Lauf bewusst stehen laesst. Muster-Hinweise
 # (#352) entstehen nur mit eingeschalteten Punkten, und die kommen erst nach dem
-# Umstellen (DSFA_PUNKTE.md); beim Lauf ist die Tabelle leer. Stuende doch ein
+# Umstellen (docs/DSFA.md); beim Lauf ist die Tabelle leer. Stuende doch ein
 # Hinweis darin, zeigte er die alte Kennung ohne Anzeigenamen und ginge nach acht
 # Wochen (docs/LOESCHKONZEPT.md).
 NICHT_UMGESCHRIEBEN = {"muster_hinweise": ("konto_a", "konto_b")}
