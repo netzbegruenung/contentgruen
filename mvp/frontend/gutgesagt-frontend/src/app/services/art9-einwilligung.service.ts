@@ -1,8 +1,8 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { NavigationEnd, Router } from '@angular/router';
-import { Observable, Subscription, of } from 'rxjs';
-import { catchError, distinctUntilChanged, filter, map, switchMap, take } from 'rxjs/operators';
+import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, map, switchMap, take, tap } from 'rxjs/operators';
 
 import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
@@ -83,6 +83,15 @@ export function zurEinwilligungFuehren(router: Router): void {
 export class Art9EinwilligungService implements OnDestroy {
   private readonly apiUrl = `${environment.baseUrl}/api/v1/art9-einwilligung`;
   private abo?: Subscription;
+  /** Kennung der angemeldeten Person, sonst null. */
+  private kennung: string | null = null;
+  private readonly geklaertFuer = new BehaviorSubject<string | null>(null);
+  /**
+   * Kennung der angemeldeten Person, sobald feststeht, dass sie eingewilligt hat (oder
+   * der Stand nicht abrufbar ist); sonst null. Bis dahin bietet die App keinen Rundgang
+   * an (#587): Kein Angebot soll über oder vor der Einwilligung liegen.
+   */
+  readonly geklaert$ = this.geklaertFuer.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -95,11 +104,21 @@ export class Art9EinwilligungService implements OnDestroy {
   }
 
   einwilligen(kennung: string): Observable<void> {
-    return this.http.post<void>(this.apiUrl, { wortlaut: kennung });
+    return this.http.post<void>(this.apiUrl, { wortlaut: kennung }).pipe(tap(() => this.geklaertSetzen(this.kennung)));
   }
 
+  /** Der jetzige Wert von ``geklaert$``. */
+  geklaert(): string | null {
+    return this.geklaertFuer.value;
+  }
+
+  private geklaertSetzen(kennung: string | null): void {
+    if (this.geklaertFuer.value !== kennung) this.geklaertFuer.next(kennung);
+  }
+
+  /** Nach dem Widerruf gilt die Person nicht mehr als geklaert: kein Angebot ohne Einwilligung (#587). */
   widerrufen(): Observable<void> {
-    return this.http.delete<void>(this.apiUrl);
+    return this.http.delete<void>(this.apiUrl).pipe(tap(() => this.geklaertSetzen(null)));
   }
 
   /** Einmal beim App-Start aufrufen; weitere Aufrufe tun nichts. */
@@ -111,10 +130,21 @@ export class Art9EinwilligungService implements OnDestroy {
       .pipe(
         map((info) => (info?.isAuthenticated ? info.userId : null)),
         distinctUntilChanged(),
+        tap((kennung) => {
+          this.kennung = kennung;
+          this.geklaertSetzen(null); // abgemeldet oder andere Person: neu klaeren
+        }),
         filter((kennung): kennung is string => !!kennung),
         // Scheitert die Abfrage, nicht umleiten: Das Backend sperrt trotzdem, und der
         // Interceptor fuehrt dann hin.
-        switchMap(() => this.stand().pipe(catchError(() => of(null)))),
+        switchMap((kennung) =>
+          this.stand().pipe(
+            catchError(() => of(null)),
+            tap((stand) => {
+              if (!stand || stand.eingewilligt) this.geklaertSetzen(kennung);
+            }),
+          ),
+        ),
         filter((stand): stand is Art9EinwilligungStand => !!stand && !stand.eingewilligt),
         // Laeuft gerade eine Navigation (etwa zurueck an die Stelle vor dem Anmelden),
         // erst ihr Ende abwarten, damit der Rueckweg dorthin fuehrt.

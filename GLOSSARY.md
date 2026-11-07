@@ -418,11 +418,15 @@ Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suche
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Willkommen**:
-Das Fenster beim ersten Besuch: ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, gleichwertig mit „Später“. Ob es gezeigt wurde, merkt sich nur der Browser; ein zweiter Besuch zeigt es nicht mehr.
+Das gelbe Band beim ersten Besuch, über dem Inhalt von Startseite und Treffern, kein Fenster (#587): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Mitmachen“ bietet erst ein Band auf Beitragen oder Fangkorb an (#587, gestaffelt).
 
 **Rundgang**:
-Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Mitmachen“ wird nach der ersten Anmeldung einmal angeboten und zeigt Beitragen, Einwerfen, Fangkorb und Meine Beiträge. Beide lassen sich über Hilfe und Menü jederzeit wieder starten. Angeboten, nie erzwungen.
+Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Mitmachen“ zeigt Beitragen, Einwerfen, Fangkorb und Meine Beiträge; nach der Art.-9-Einwilligung trägt „Beitragen“ im Kopf einen Neu-Punkt, und wer zum ersten Mal auf Beitragen oder Fangkorb ankommt, bekommt dort im Band „Kurz zeigen, wie Beitragen geht?“ angeboten; der Rundgang beginnt dann beim Einwerfen. Beides bleibt, bis die Person darauf reagiert. Beide lassen sich über Hilfe und Menü jederzeit wieder starten. Angeboten, nie erzwungen.
 _Avoid_: Tour, Onboarding, Tutorial
+
+**Neu-Punkt**:
+Der gelbe Punkt an „Beitragen“ im Kopf (Desktop und Handy): Er erscheint nach der Art.-9-Einwilligung und bleibt, bis die Person den Rundgang „Mitmachen“ beantwortet hat (gestartet oder abgelehnt, #587). Kein eigener Vermerk im Browser; er folgt dem Vermerk von „Mitmachen“.
+_Avoid_: Badge, Benachrichtigungspunkt
 
 **Punkte**:
 Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte. Ein Konto ohne geltende Art.-9-Einwilligung (nie erteilt oder widerrufen) hat keine Punkte, wie ein Startkonto (#559).

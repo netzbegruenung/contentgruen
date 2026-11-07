@@ -96,6 +96,58 @@ describe('Art9EinwilligungService', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  it('meldet die Person als geklaert, sobald sie eingewilligt hat (#587)', () => {
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+    expect(service.geklaert()).toBeNull();
+
+    http.expectOne(ADRESSE).flush(stand(true));
+
+    expect(service.geklaert()).toBe('kim');
+  });
+
+  it('meldet ohne Einwilligung erst nach dem Einwilligen geklaert (#587)', () => {
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+    http.expectOne(ADRESSE).flush(stand(false));
+    expect(service.geklaert()).toBeNull();
+
+    service.einwilligen('2026-11-05-b').subscribe();
+    http.expectOne({ method: 'POST', url: ADRESSE }).flush(null);
+
+    expect(service.geklaert()).toBe('kim');
+  });
+
+  it('vergisst die Klaerung beim Abmelden (#587)', () => {
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+    http.expectOne(ADRESSE).flush(stand(true));
+
+    anmeldung.next({ isAuthenticated: false, userId: null, userName: null, claims: null });
+
+    expect(service.geklaert()).toBeNull();
+  });
+
+  it('vergisst die Klaerung nach dem Widerruf (#587)', () => {
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+    http.expectOne(ADRESSE).flush(stand(true));
+
+    service.widerrufen().subscribe();
+    http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
+
+    expect(service.geklaert()).toBeNull();
+  });
+
+  it('meldet geklaert, wenn der Stand nicht kommt (#587)', () => {
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+
+    http.expectOne(ADRESSE).flush(null, { status: 500, statusText: 'Fehler' });
+
+    expect(service.geklaert()).toBe('kim');
+  });
+
   it('fragt einmal je Person, auch wenn die Anmeldedaten zweimal kommen', () => {
     service.starten();
     anmeldung.next(angemeldet('kim'));

@@ -84,6 +84,22 @@ describe('MobileHeaderComponent', () => {
     expect(titel().textContent!.trim()).toBe('Gut gesagt');
   }));
 
+  it('zeigt am Beitragen-Knopf einen Neu-Punkt, solange Mitmachen offen ist (#587)', () => {
+    const komponente = fixture.componentInstance;
+    komponente.userInfo = { isAuthenticated: true, userId: 'u1', userName: 'Kim', claims: null };
+    komponente.showContributeButton = true;
+    komponente.beitragenNeu = true;
+    fixture.detectChanges();
+    const knopf: HTMLElement = fixture.nativeElement.querySelector('.contribute-button');
+    expect(knopf.querySelector('.neu-punkt')).not.toBeNull();
+    expect(knopf.getAttribute('aria-label')).toBe('Beitragen, neu');
+
+    komponente.beitragenNeu = false;
+    fixture.detectChanges();
+    expect(knopf.querySelector('.neu-punkt')).toBeNull();
+    expect(knopf.getAttribute('aria-label')).toBe('Beitragen');
+  });
+
   it('gibt den Pfeil an den NavigationService weiter', fakeAsync(() => {
     oeffnen('/fangkorb');
 
