@@ -106,7 +106,7 @@ class TestDateiLesen:
             "## Aussage: Das E-Auto ist schlechter fürs Klima.\n"
             "### Kommentar: Über sein Leben gerechnet ist das E-Auto klimafreundlicher\n"
             "- kurz: Kurz.\n"
-            "- mittel: Mittel.\n"
+            "- mittel: Die Mittelfassung.\n"
             "- herkunft: https://example.org/e-auto | Studie zur Klimabilanz\n"
             "- herkunft: <https://example.org/zwei>\n"
             "- herkunft: [Bericht](https://example.org/drei) aus 2024\n"
@@ -136,7 +136,7 @@ class TestDateiLesen:
             "## 2.1 „Eine Aussage in Anführungszeichen“\n"
             "### (a)\n"
             "**Titel**: Doppelpunkt hinter dem Fettdruck\n\n"
-            "**Mittel**: Text.\n\n"
+            "**Mittel**: Text der Mittelfassung.\n\n"
             "#### Quellen\n"
             "**Herkunft**: https://de.wikipedia.org/wiki/Rotmilan_(Art) – Artikel.\n"
             "Herkunft: [Bericht](https://example.org/a_(b)) aus 2024\n"
@@ -147,7 +147,10 @@ class TestDateiLesen:
 
         assert fehler == []
         assert k.aussage == "Eine Aussage in Anführungszeichen"
-        assert (k.titel, k.mittel) == ("Doppelpunkt hinter dem Fettdruck", "Text.")
+        assert (k.titel, k.mittel) == (
+            "Doppelpunkt hinter dem Fettdruck",
+            "Text der Mittelfassung.",
+        )
         assert [(h.link, h.beschreibung) for h in k.herkuenfte] == [
             ("https://de.wikipedia.org/wiki/Rotmilan_(Art)", "Artikel."),
             ("https://example.org/a_(b)", "Bericht aus 2024"),
@@ -191,6 +194,56 @@ class TestDateiLesen:
         kommentare, fehler = skript.datei_lesen(pfad)
 
         assert fehler == [] and len(kommentare) == 1
+
+    def test_mittel_mindestens_zehn_zeichen_wie_im_formular(self, skript, tmp_path):
+        pfad = _datei(
+            tmp_path,
+            "## Aussage: Eine Aussage mit genug Zeichen\n"
+            "### Kommentar: Ein Titel mit Haltung\n"
+            "Mittel: Zu kurz.\n",
+        )
+
+        gut, (f,) = skript.datei_lesen(pfad)
+
+        assert gut == [] and "mindestens 10" in f.grund
+
+    def test_leerer_titel_laesst_den_aus_der_ueberschrift(self, skript, tmp_path):
+        pfad = _datei(
+            tmp_path,
+            "## Aussage: Eine Aussage mit genug Zeichen\n"
+            "### Kommentar: Titel aus der Überschrift\n"
+            "**Titel:**\n"
+            "Mittel: Die Mittelfassung.\n",
+        )
+
+        (k,), _ = skript.datei_lesen(pfad)
+
+        assert k.titel == "Titel aus der Überschrift"
+
+    def test_uebergangenes_wird_als_hinweis_gemeldet(self, skript, tmp_path):
+        pfad = _datei(
+            tmp_path,
+            "## 1.1 „Erkannte Aussage mit genug Zeichen“\n"
+            "### (a)\n"
+            "Titel: Ein Titel mit Haltung\n"
+            "Mittel: Die Mittelfassung.\n"
+            "\n"
+            "Ein zweiter Absatz, der verloren ginge.\n"
+            "geprüft: ja\n"
+            "Hinweis Gegenlesen: bleibt still.\n"
+            "---\n"
+            "## 1.2 Aussage ohne Anführungszeichen\n"
+            "### (a)\n"
+            "Titel: Fällt sonst still weg\n",
+        )
+        hinweise = []
+
+        gut, fehler = skript.datei_lesen(pfad, hinweise)
+
+        assert len(gut) == 1 and fehler == []
+        assert [h.zeile for h in hinweise] == [6, 11]
+        assert "gehoert zu keinem Feld" in hinweise[0].grund
+        assert "Zeile 10 ist keine erkannte Aussage" in hinweise[1].grund
 
     def test_anfrage_wie_das_formular(self, skript, tmp_path):
         (k, _), _ = skript.datei_lesen(_datei(tmp_path, ENTWURF))
@@ -257,6 +310,8 @@ class Speicher:
         self.entfernt = []
         # ID -> (Typ, Titel) der Beitraege, die die Ansicht zeigt.
         self.beitraege = {}
+        # ID -> (Typ, Titel) der gesperrten; die Ansicht zeigt sie nicht.
+        self.gesperrt = {}
 
     def kommentar_anlegen(self, daten):
         if self.fehler:
@@ -279,8 +334,14 @@ class Speicher:
         typ, titel = self.beitraege[beitrag_id]
         return {"id": beitrag_id, "content_type": typ, "title": titel}
 
+    def gesperrte(self):
+        return [
+            {"id": kennung, "content_type": typ, "title": titel}
+            for kennung, (typ, titel) in self.gesperrt.items()
+        ]
+
     def entfernen(self, typ, beitrag_id):
-        if beitrag_id not in self.beitraege:
+        if beitrag_id not in self.beitraege and beitrag_id not in self.gesperrt:
             raise self.skript.ApiFehler(404, "Content not found or already deleted")
         self.entfernt.append((typ, beitrag_id))
 
@@ -293,8 +354,21 @@ class TestImportieren:
     def test_trockenlauf_ruft_nichts_auf(self, skript, tmp_path):
         bericht = skript.importieren(_kommentare(skript, tmp_path), None)
 
-        assert [z for z, _ in bericht.angelegt] == [14, 25]
+        assert [z for z, _ in bericht.erledigt] == [14, 25]
         assert bericht.fehlgeschlagen == [] and bericht.uebersprungen == []
+
+    def test_trockenlauf_zeigt_aussage_fassungen_und_herkuenfte(self, skript, tmp_path):
+        bericht = skript.importieren(_kommentare(skript, tmp_path), None)
+
+        (_, erster), (_, zweiter) = bericht.erledigt
+        assert erster.splitlines() == [
+            "wuerde angelegt: Wer Vögel schützen will, fängt bei Glasscheiben an",
+            "    Aussage: Windräder töten die Vögel!",
+            "    Fassungen: kurz (15 Zeichen), mittel (14 Zeichen)",
+            "    Herkunft: https://example.org/voegel – Übersicht der Gefahren für Vögel.",
+        ]
+        assert "    Fassungen: mittel (12 Zeichen), lang (26 Zeichen)" in zweiter
+        assert zweiter.count("    Herkunft: https://example.org/") == 2
 
     def test_anlegen_und_vorhandene_aussage_nennen(self, skript, tmp_path):
         speicher = Speicher(
@@ -319,8 +393,8 @@ class TestImportieren:
         )
 
         assert len(speicher.angelegt) == 2
-        assert bericht.angelegt[0][1].startswith("angelegt als k1 an Aussage a1:")
-        assert "an vorhandene Aussage: Windräder töten Vögel" in bericht.angelegt[1][1]
+        assert bericht.erledigt[0][1].startswith("angelegt als k1 an Aussage a1:")
+        assert "an vorhandene Aussage: Windräder töten Vögel" in bericht.erledigt[1][1]
 
     def test_dublette_wird_gemeldet_nicht_uebergangen(self, skript, tmp_path):
         speicher = Speicher(
@@ -339,7 +413,7 @@ class TestImportieren:
         )
 
         assert "trotz_dublette_von" not in speicher.angelegt[0]
-        assert bericht.angelegt == []
+        assert bericht.erledigt == []
         ((zeile, grund),) = bericht.uebersprungen
         assert zeile == 14 and "aehnlicher Kommentar schon da (alt: Schon da)" in grund
 
@@ -361,7 +435,9 @@ class TestImportieren:
                     "id": "alt",
                     "verknuepft": False,
                     "dublette": True,
-                    "vorhanden_titel": "Aus dem ersten Lauf",
+                    "vorhanden_titel": (
+                        "Wer Vögel schützen will, fängt bei Glasscheiben an"
+                    ),
                     "vorhanden_eigen": True,
                 },
                 {"id": "alt", "statement_id": "a1", "verknuepft": True},
@@ -376,10 +452,33 @@ class TestImportieren:
         assert "vorhanden_nehmen" not in erster
         assert zweiter["vorhanden_nehmen"] == "alt"
         assert "trotz_dublette_von" not in zweiter
-        assert bericht.angelegt == [] and bericht.fehlgeschlagen == []
+        assert bericht.erledigt == [] and bericht.fehlgeschlagen == []
         ((_, grund),) = bericht.uebersprungen
-        assert "eigener aehnlicher Kommentar schon da" in grund
+        assert "eigener Kommentar mit gleichem Titel schon da" in grund
         assert "an Aussage a1 gehaengt" in grund
+
+    def test_nur_aehnlicher_eigener_wird_nicht_umgehaengt(self, skript, tmp_path):
+        # Unter dem eigenen Konto kann ein aelterer, nur aehnlicher Kommentar zu
+        # einer anderen Aussage gehoeren; er wird gemeldet, nicht angehaengt.
+        speicher = Speicher(
+            skript,
+            antworten=[
+                {
+                    "id": "alt",
+                    "verknuepft": False,
+                    "vorhanden": {"titel": "Ein anderer Titel", "eigen": True},
+                }
+            ],
+        )
+
+        bericht = skript.importieren(
+            _kommentare(skript, tmp_path)[:1], speicher, ausfuehren=True
+        )
+
+        assert len(speicher.angelegt) == 1
+        assert "vorhanden_nehmen" not in speicher.angelegt[0]
+        ((_, grund),) = bericht.uebersprungen
+        assert "aehnlicher Kommentar schon da (alt: Ein anderer Titel)" in grund
 
     def test_stundenlimit_beendet_den_lauf(self, skript, tmp_path):
         limit = skript.ApiFehler(429, "Rate limit exceeded")
@@ -412,7 +511,7 @@ class TestImportieren:
         )
 
         assert gewartet == [skript.WARTEN_NACH_LIMIT]
-        assert len(bericht.angelegt) == 1
+        assert len(bericht.erledigt) == 1
 
     def test_aelterer_dienst_ohne_cc0_kennung(self, skript, tmp_path):
         speicher = Speicher(
@@ -433,7 +532,7 @@ class TestImportieren:
         # Einmal abgelehnt, danach fuer alle ohne Kennung und so gemeldet.
         assert [d["cc0_wortlaut"] for d in speicher.angelegt] == [None, None]
         assert all(
-            notiz.endswith("(ohne CC0-Kennung)") for _, notiz in bericht.angelegt
+            notiz.endswith("(ohne CC0-Kennung)") for _, notiz in bericht.erledigt
         )
 
     def test_abgelehnter_haelt_den_rest_nicht_auf(self, skript, tmp_path):
@@ -444,7 +543,7 @@ class TestImportieren:
         )
 
         assert [z for z, _ in bericht.fehlgeschlagen] == [14]
-        assert [z for z, _ in bericht.angelegt] == [25]
+        assert [z for z, _ in bericht.erledigt] == [25]
 
     def test_ohne_anmeldung_bricht_ab(self, skript, tmp_path):
         speicher = Speicher(skript, fehler=[skript.ApiFehler(401, "nicht angemeldet")])
@@ -454,40 +553,71 @@ class TestImportieren:
 
 
 class TestEntfernen:
-    def _eintraege(self, skript):
+    def _beitraege(self, skript):
         return [
-            skript.Eintrag(1, "commentary", "id-1"),
-            skript.Eintrag(2, "post", "id-2"),
+            skript.ZuEntfernen(1, "commentary", "id-1"),
+            skript.ZuEntfernen(2, "post", "id-2"),
         ]
 
     def test_trockenlauf_zeigt_titel_und_entfernt_nichts(self, skript):
         speicher = Speicher(skript)
         speicher.beitraege = {"id-1": ("commentary", "Ein alter Kommentar")}
 
-        bericht = skript.entfernen(self._eintraege(skript), speicher)
+        bericht = skript.entfernen(self._beitraege(skript), speicher)
 
         assert speicher.entfernt == []
-        assert bericht.angelegt == [
+        assert bericht.erledigt == [
             (1, "wuerde entfernt: commentary id-1 „Ein alter Kommentar“")
         ]
-        assert bericht.uebersprungen == [(2, "nicht gefunden oder gesperrt: post id-2")]
+        assert bericht.uebersprungen == [
+            (
+                2,
+                "nicht gefunden (weder sichtbar noch gesperrt), nicht entfernt: post id-2",
+            )
+        ]
+
+    def test_gesperrte_mit_titel_und_typpruefung(self, skript):
+        speicher = Speicher(skript)
+        speicher.gesperrt = {
+            "id-1": ("commentary", "Gesperrter Kommentar"),
+            "id-2": ("commentary", "Falscher Typ"),
+        }
+
+        trocken = skript.entfernen(self._beitraege(skript), speicher)
+        bericht = skript.entfernen(self._beitraege(skript), speicher, ausfuehren=True)
+
+        assert trocken.erledigt == [
+            (1, "wuerde entfernt: commentary id-1 (gesperrt) „Gesperrter Kommentar“")
+        ]
+        assert speicher.entfernt == [("commentary", "id-1")]
+        assert bericht.erledigt == [
+            (1, "entfernt: commentary id-1 (gesperrt) „Gesperrter Kommentar“")
+        ]
+        assert bericht.fehlgeschlagen == [
+            (2, "Typ passt nicht, der Beitrag ist commentary: post id-2")
+        ]
 
     def test_entfernen_und_fehlende_melden(self, skript):
         speicher = Speicher(skript)
         speicher.beitraege = {"id-1": ("commentary", "x")}
 
-        bericht = skript.entfernen(self._eintraege(skript), speicher, ausfuehren=True)
+        bericht = skript.entfernen(self._beitraege(skript), speicher, ausfuehren=True)
 
+        # Was weder sichtbar noch gesperrt ist, wird nie entfernt.
         assert speicher.entfernt == [("commentary", "id-1")]
+        assert bericht.erledigt == [(1, "entfernt: commentary id-1 „x“")]
         assert bericht.uebersprungen == [
-            (2, "nicht gefunden oder schon entfernt: post id-2")
+            (
+                2,
+                "nicht gefunden (weder sichtbar noch gesperrt), nicht entfernt: post id-2",
+            )
         ]
 
     def test_typ_muss_zum_beitrag_passen(self, skript):
         speicher = Speicher(skript)
         speicher.beitraege = {"id-1": ("commentary", "x"), "id-2": ("commentary", "y")}
 
-        bericht = skript.entfernen(self._eintraege(skript), speicher, ausfuehren=True)
+        bericht = skript.entfernen(self._beitraege(skript), speicher, ausfuehren=True)
 
         assert speicher.entfernt == [("commentary", "id-1")]
         assert bericht.fehlgeschlagen == [
@@ -586,10 +716,37 @@ class TestSitzung:
 
         assert bff._kopfzeilen()["Cookie"] == cookie
 
-    @pytest.mark.parametrize("eingabe", ["", "  ", "a\nb", "a\rb"])
+    @pytest.mark.parametrize("eingabe", ["", "  ", "a\nb", "a\rb", "wert…"])
     def test_leer_oder_mit_umbruch_abgelehnt(self, skript, eingabe):
         with pytest.raises(skript.ApiFehler):
             skript.BffBestand("https://x.example.org").sitzung_nutzen(eingabe)
+
+    def test_folgt_keiner_weiterleitung(self, skript):
+        # urllib kopierte sonst das Cookie auf die neue Adresse.
+        bff = skript.BffBestand("https://gutgesagt.example.org")
+        bff.sitzung_nutzen("geheimer-wert")
+        handler = next(
+            h
+            for h in bff._oeffner.handlers
+            if isinstance(h, skript._KeineWeiterleitung)
+        )
+        anfrage = skript.urllib.request.Request(
+            "https://gutgesagt.example.org/api/user-info", headers=bff._kopfzeilen()
+        )
+
+        with pytest.raises(skript.urllib.error.HTTPError) as fehler:
+            handler.redirect_request(
+                anfrage, None, 302, "Found", {}, "http://anderswo.example.org/login"
+            )
+
+        assert fehler.value.code == 302
+        assert "anderswo.example.org" in str(fehler.value.reason)
+        assert "geheimer-wert" not in str(fehler.value.reason)
+        assert not any(
+            isinstance(h, skript.urllib.request.HTTPRedirectHandler)
+            and not isinstance(h, skript._KeineWeiterleitung)
+            for h in bff._oeffner.handlers
+        )
 
     def test_passwort_nur_verschluesselt(self, skript, tmp_path):
         assert (

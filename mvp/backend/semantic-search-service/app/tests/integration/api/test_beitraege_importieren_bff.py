@@ -213,7 +213,7 @@ def test_import_dann_dubletten_dann_entfernen(
     assert f"an Aussage {aussage_id} gehaengt" in ausgabe.out
     assert sitzung_datei.read_text() not in ausgabe.out + ausgabe.err
 
-    # Entfernen ohne Admin: Abbruch vor dem ersten Eintrag, nichts entfernt.
+    # Entfernen ohne Admin: Abbruch vor dem ersten Beitrag, nichts entfernt.
     liste = tmp_path / "entfernen.txt"
     liste.write_text(f"commentary {a_id}\ncommentary {b_id}\n", encoding="utf-8")
     assert (
@@ -234,13 +234,19 @@ def test_import_dann_dubletten_dann_entfernen(
         def wer(self):
             return {"userId": "user-002", "isAdmin": True}
 
-    # Trockenlauf: je Eintrag eine Zeile, nichts entfernt. Titel und Typ liest
-    # er aus /content/beitrag (#300); die Formatierung pruefen die Unit-Tests,
-    # weil ein Dev-Stack von vor #300 die Adresse nicht kennt.
+    # Trockenlauf: je Beitrag eine Zeile, nichts entfernt. Titel und Typ liest
+    # er aus /content/beitrag (#300). Ein Dev-Stack von vor #300 kennt die
+    # Adresse nicht; dann findet das Skript die Beitraege nicht und entfernt sie
+    # bewusst nicht (und /moderation/gesperrt antwortet dort mit 500); der Rest
+    # des Tests hat dort nichts zu pruefen.
+    pfade = requests.get(f"{SUCHDIENST_URL}/openapi.json", timeout=10).json()["paths"]
+    if "/api/v1/content/beitrag/{beitrag_id}" not in pfade:
+        pytest.skip("Dev-Stack ohne /api/v1/content/beitrag (vor #300)")
     trocken = [str(liste), "--entfernen", *mit_sitzung[1:], "--adresse"]
     assert skript.main([*trocken, SUCHDIENST_URL], AlsAdmin) == 0
     ausgabe = capsys.readouterr().out
     assert a_id in ausgabe and b_id in ausgabe
+    assert "wuerden entfernt: 2" in ausgabe
     assert _kommentar(sitzung, b_id).status_code == 200
 
     assert (

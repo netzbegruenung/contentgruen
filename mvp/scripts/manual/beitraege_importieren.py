@@ -55,6 +55,8 @@ from urllib.parse import urlsplit
 # Grenzen wie im Dienst (dtos/commentary.py, domain/models/commentary.py).
 TITEL_MIN, TITEL_MAX = 3, 120
 KURZ_MAX = 280
+# Mindestlaenge der Mittelfassung wie im Formular (add-commentary.component.ts).
+MITTEL_MIN = 10
 MITTEL_MAX = 500
 LANG_MAX = 2000
 AUSSAGE_MIN, AUSSAGE_MAX = 10, 1000
@@ -100,7 +102,7 @@ class Kommentar:
 
 @dataclass(frozen=True)
 class Fehler:
-    """Ein Eintrag der Datei, der nicht angelegt oder entfernt werden kann, und warum."""
+    """Eine Zeile der Datei, die nicht angelegt oder entfernt werden kann, und warum."""
 
     zeile: int
     grund: str
@@ -140,6 +142,13 @@ _PRUEFVERMERK = re.compile(r"\s*\bgeprüft:.*$", re.I | re.S)
 _ANFUEHRUNG = {"„": "“", "“": "”", '"': '"', "»": "«", "«": "»", "‚": "‘"}
 # Felder, deren Wert auf Folgezeilen weitergeht (bis zur Leerzeile).
 _MEHRZEILIG = ("kurz", "mittel", "lang")
+# Eine "##"-Ueberschrift, die wie eine Aussage nummeriert ist ("## 1.6 …"), aber
+# nicht als Aussage erkannt wurde: Ihre Kommentare fielen sonst still weg.
+_NUMMERIERT = re.compile(r"^##\s+\d")
+# Zeilen im Kommentar, die bewusst nicht uebernommen werden: Pruefvermerke,
+# Hinweise zum Gegenlesen, Trennlinien. Andere uebergangene Zeilen meldet das
+# Skript als Hinweis.
+_VERMERK = re.compile(r"^\s*(?:geprüft\b|hinweis\b[^:]*:|-{3,}\s*$)", re.I)
 
 
 def _ohne_anfuehrung(text: str) -> str:
@@ -172,7 +181,9 @@ def _herkunft(wert: str) -> Optional[Herkunft]:
     return Herkunft(link, beschreibung or None)
 
 
-def datei_lesen(pfad: Path) -> Tuple[List[Kommentar], List[Fehler]]:
+def datei_lesen(
+    pfad: Path, hinweise: Optional[List[Fehler]] = None
+) -> Tuple[List[Kommentar], List[Fehler]]:
     """
     Die Kommentare der Datei und was an ihnen nicht stimmt.
 
@@ -181,7 +192,15 @@ def datei_lesen(pfad: Path) -> Tuple[List[Kommentar], List[Fehler]]:
     Mittel, Lang, Herkunft (mehrfach), Zweck, Stil. Alles andere (Einleitung,
     ``#``-Bloecke, Pruefvermerke, Hinweise) wird uebergangen. Ein Kommentar mit
     Fehler kommt nicht in die erste Liste.
+
+    In ``hinweise`` (falls angegeben) landet, was uebergangen wurde und
+    vielleicht zum Bestand gehoeren sollte: ``###``-Kommentare unter einer
+    nummerierten, aber nicht erkannten ``##``-Ueberschrift und Textzeilen im
+    Kommentar, die zu keinem Feld gehoeren (ausser Vermerken und Trennlinien).
     """
+    if hinweise is None:
+        hinweise = []
+    unerkannt: Optional[int] = None
     text = Path(pfad).read_text(encoding="utf-8-sig")
     kommentare: List[Kommentar] = []
     aussage: Optional[str] = None
@@ -198,6 +217,7 @@ def datei_lesen(pfad: Path) -> Tuple[List[Kommentar], List[Fehler]]:
                     treffer.group("nummeriert") or treffer.group("benannt")
                 )
                 aktuell = None
+                unerkannt = None
                 continue
             treffer = _KOMMENTAR.match(zeile.strip())
             if treffer and aussage is not None:
@@ -207,9 +227,18 @@ def datei_lesen(pfad: Path) -> Tuple[List[Kommentar], List[Fehler]]:
                     aktuell.titel = benannt.group("titel").strip()
                 kommentare.append(aktuell)
                 continue
+            if treffer and unerkannt is not None:
+                hinweise.append(
+                    Fehler(
+                        nummer,
+                        f"Kommentar uebergangen: die Ueberschrift in Zeile {unerkannt} "
+                        "ist keine erkannte Aussage (## 1.1 „…“ oder ## Aussage: …)",
+                    )
+                )
             # Eine andere Ueberschrift beendet Aussage und Kommentar.
             if zeile.startswith("## ") or zeile.startswith("# "):
                 aussage = None
+                unerkannt = nummer if _NUMMERIERT.match(zeile) else None
             aktuell = None
             continue
         if aktuell is None:
@@ -235,14 +264,23 @@ def datei_lesen(pfad: Path) -> Tuple[List[Kommentar], List[Fehler]]:
                 else:
                     aktuell.herkuenfte.append(herkunft)
                 continue
-            setattr(aktuell, name, wert or None)
+            # Ein leeres "Titel:" laesst den Titel aus "### Kommentar: …" stehen.
+            if wert or name != "titel":
+                setattr(aktuell, name, wert or None)
             if name in _MEHRZEILIG:
                 offenes_feld = name
             continue
         if offenes_feld:
             bisher = getattr(aktuell, offenes_feld) or ""
             setattr(aktuell, offenes_feld, f"{bisher}\n{zeile.strip()}".strip())
-        # Sonst: Vermerk zum Gegenlesen, gehoert nicht zum Kommentar.
+        elif not _VERMERK.match(zeile):
+            hinweise.append(
+                Fehler(
+                    nummer,
+                    "Zeile uebergangen, gehoert zu keinem Feld (Absatz nach einer "
+                    "Leerzeile oder umbrochene Herkunft?)",
+                )
+            )
 
     gut, fehler = [], []
     for kommentar in kommentare:
@@ -269,8 +307,13 @@ def _pruefen(k: Kommentar) -> List[str]:
         gruende.append(
             f"Titel hat {len(titel)} Zeichen, erlaubt {TITEL_MIN}-{TITEL_MAX} in einer Zeile"
         )
-    if not (k.mittel or "").strip():
+    mittel = (k.mittel or "").strip()
+    if not mittel:
         gruende.append("keine Mittelfassung")
+    elif len(mittel) < MITTEL_MIN:
+        gruende.append(
+            f"Mittelfassung hat {len(mittel)} Zeichen, mindestens {MITTEL_MIN} wie im Formular"
+        )
     for name, wert, grenze in (
         ("Kurzfassung", k.kurz, KURZ_MAX),
         ("Mittelfassung", k.mittel, MITTEL_MAX),
@@ -289,6 +332,27 @@ def _pruefen(k: Kommentar) -> List[str]:
     ).strip().lower() != "eigene_leute":
         gruende.append("Stil bissig geht nur beim Zweck eigene_leute")
     return gruende
+
+
+def vorschau(k: Kommentar) -> str:
+    """Was der Trockenlauf je Kommentar zeigt: Titel, Aussage, Fassungen, Herkuenfte."""
+    fassungen = [
+        f"{name} ({len(wert.strip())} Zeichen)"
+        for name, wert in (("kurz", k.kurz), ("mittel", k.mittel), ("lang", k.lang))
+        if wert and wert.strip()
+    ]
+    zeilen = [
+        f"wuerde angelegt: {k.titel}",
+        f"    Aussage: {k.aussage.strip()}",
+        f"    Fassungen: {', '.join(fassungen)}",
+    ]
+    if k.zweck or k.stil:
+        zeilen.append(f"    Zweck: {k.zweck or '-'}, Stil: {k.stil or '-'}")
+    zeilen += [
+        f"    Herkunft: {h.link}" + (f" – {h.beschreibung}" if h.beschreibung else "")
+        for h in k.herkuenfte
+    ] or ["    Herkunft: keine"]
+    return "\n".join(zeilen)
 
 
 def anfrage(k: Kommentar, cc0_wortlaut: Optional[str] = CC0_WORTLAUT) -> Dict:
@@ -321,17 +385,17 @@ def anfrage(k: Kommentar, cc0_wortlaut: Optional[str] = CC0_WORTLAUT) -> Dict:
 
 
 @dataclass(frozen=True)
-class Eintrag:
-    """Ein Beitrag, der entfernt werden soll."""
+class ZuEntfernen:
+    """Ein Beitrag, der entfernt werden soll: Zeile der Liste, Typ und ID."""
 
     zeile: int
     typ: str
     id: str
 
 
-def liste_lesen(pfad: Path) -> Tuple[List[Eintrag], List[Fehler]]:
+def liste_lesen(pfad: Path) -> Tuple[List[ZuEntfernen], List[Fehler]]:
     """Je Zeile ``<typ> <id>``; Leerzeilen und alles ab ``#`` zaehlen nicht."""
-    eintraege, fehler = [], []
+    beitraege, fehler = [], []
     text = Path(pfad).read_text(encoding="utf-8-sig")
     for nummer, zeile in enumerate(text.splitlines(), start=1):
         teile = zeile.split("#", 1)[0].split()
@@ -353,8 +417,8 @@ def liste_lesen(pfad: Path) -> Tuple[List[Eintrag], List[Fehler]]:
         except ValueError:
             fehler.append(Fehler(nummer, f"{kennung!r} ist keine ID"))
             continue
-        eintraege.append(Eintrag(nummer, typ, kennung))
-    return eintraege, fehler
+        beitraege.append(ZuEntfernen(nummer, typ, kennung))
+    return beitraege, fehler
 
 
 # --- Ablauf ---------------------------------------------------------------
@@ -385,14 +449,17 @@ class Bestand(Protocol):
 
     def ansehen(self, beitrag_id: str) -> Optional[Dict]: ...
 
+    def gesperrte(self) -> List[Dict]: ...
+
     def entfernen(self, typ: str, beitrag_id: str) -> None: ...
 
 
 @dataclass
 class Bericht:
-    """Was mit jedem Eintrag geschah; ``angelegt`` traegt je Eintrag eine Notiz."""
+    """Was mit jeder Zeile geschah: angelegt bzw. entfernt (oder im Trockenlauf
+    vorgesehen), uebersprungen, fehlgeschlagen; je Zeilennummer eine Notiz."""
 
-    angelegt: List[Tuple[int, str]] = field(default_factory=list)
+    erledigt: List[Tuple[int, str]] = field(default_factory=list)
     uebersprungen: List[Tuple[int, str]] = field(default_factory=list)
     fehlgeschlagen: List[Tuple[int, str]] = field(default_factory=list)
 
@@ -430,6 +497,12 @@ def _vorhanden(antwort: Dict) -> Optional[Dict]:
     return None
 
 
+def _aus_frueherem_lauf(vorhanden: Dict, k: Kommentar) -> bool:
+    """Eigener vorhandener Kommentar mit demselben Titel: aus einem frueheren Lauf."""
+    titel = (vorhanden.get("titel") or "").strip()
+    return bool(vorhanden.get("eigen")) and titel == (k.titel or "").strip()
+
+
 def importieren(
     kommentare: List[Kommentar],
     bestand: Optional[Bestand],
@@ -441,9 +514,10 @@ def importieren(
 
     Ist schon ein sehr aehnlicher Kommentar da, legt der Server nichts an; das
     wird als uebersprungen gemeldet, nie mit ``trotz_dublette_von`` uebergangen.
-    Ist der vorhandene vom selben Konto (etwa aus einem frueheren Lauf), haengt
-    ein zweiter Aufruf mit ``vorhanden_nehmen`` ihn an die Aussage, wie im
-    Formular "den eigenen nehmen". Ein abgelehnter Kommentar haelt den Rest nicht
+    Ist der vorhandene vom selben Konto und mit demselben Titel (ein frueherer
+    Lauf dieser Datei), haengt ein zweiter Aufruf mit ``vorhanden_nehmen`` ihn an
+    die Aussage, wie im Formular "den eigenen nehmen". Einen nur aehnlichen
+    eigenen Kommentar haengt das Skript nicht um; es meldet ihn. Ein abgelehnter Kommentar haelt den Rest nicht
     auf; ohne gueltige Anmeldung (401/403) bricht der Lauf mit ``ApiFehler`` ab.
     Bleibt das Rate-Limit nach den Versuchen (100 je Stunde erreicht), endet der
     Lauf, und die uebrigen stehen als nicht versucht im Bericht.
@@ -453,10 +527,12 @@ def importieren(
 
     def anlegen(k: Kommentar, **zusatz) -> Dict:
         nonlocal cc0
+
+        def aufruf() -> Dict:
+            return bestand.kommentar_anlegen({**anfrage(k, cc0), **zusatz})
+
         try:
-            return _mit_wartezeit(
-                lambda: bestand.kommentar_anlegen({**anfrage(k, cc0), **zusatz}), warten
-            )
+            return _mit_wartezeit(aufruf, warten)
         except ApiFehler as fehler:
             if cc0 is None or CC0_UNBEKANNT not in str(fehler):
                 raise
@@ -466,23 +542,21 @@ def importieren(
                 file=sys.stderr,
             )
             cc0 = None
-            return _mit_wartezeit(
-                lambda: bestand.kommentar_anlegen({**anfrage(k, cc0), **zusatz}), warten
-            )
+            return _mit_wartezeit(aufruf, warten)
 
-    for nummer, k in enumerate(kommentare):
+    for index, k in enumerate(kommentare):
         if not ausfuehren:
-            bericht.angelegt.append((k.zeile, f"wuerde angelegt: {k.titel}"))
+            bericht.erledigt.append((k.zeile, vorschau(k)))
             continue
         try:
             antwort = anlegen(k)
             vorhanden = _vorhanden(antwort)
-            if vorhanden and vorhanden.get("eigen"):
+            if vorhanden and _aus_frueherem_lauf(vorhanden, k):
                 genommen = anlegen(k, vorhanden_nehmen=antwort.get("id"))
                 bericht.uebersprungen.append(
                     (
                         k.zeile,
-                        f"eigener aehnlicher Kommentar schon da ({antwort.get('id')}: "
+                        f"eigener Kommentar mit gleichem Titel schon da ({antwort.get('id')}: "
                         f"{vorhanden.get('titel')}), nicht neu angelegt"
                         + (
                             f", an Aussage {genommen.get('statement_id')} gehaengt"
@@ -501,7 +575,7 @@ def importieren(
             if _anmelden_noetig(fehler):
                 raise
             if fehler.status == 429:
-                for rest in kommentare[nummer:]:
+                for rest in kommentare[index:]:
                     bericht.fehlgeschlagen.append(
                         (
                             rest.zeile,
@@ -538,44 +612,54 @@ def importieren(
             notiz += " (ohne CC0-Kennung)"
         if (antwort.get("statement_text") or "").strip() != k.aussage.strip():
             notiz += f" (an vorhandene Aussage: {antwort.get('statement_text')})"
-        bericht.angelegt.append((k.zeile, notiz))
+        bericht.erledigt.append((k.zeile, notiz))
     return bericht
 
 
 def entfernen(
-    eintraege: List[Eintrag], bestand: Bestand, ausfuehren: bool = False
+    beitraege: List[ZuEntfernen], bestand: Bestand, ausfuehren: bool = False
 ) -> Bericht:
     """
-    Je Eintrag erst ansehen: Passt der Typ nicht zum Beitrag, bleibt er stehen (der
-    Server nimmt den Typ nur fuers Log und entfernte sonst, was die ID trifft).
-    Im Trockenlauf den Titel zeigen, sonst den Beitrag entfernen.
-
-    Gesperrte Beitraege zeigt die Ansicht nicht; sie stehen im Trockenlauf als
-    "nicht gefunden oder gesperrt" da und lassen sich trotzdem entfernen.
+    Je Beitrag erst ansehen, gesperrte in der Admin-Liste der gesperrten. Passt der
+    Typ nicht zum Beitrag, bleibt er stehen (der Server nimmt den Typ nur fuers
+    Log und entfernte sonst, was die ID trifft). Was weder sichtbar noch gesperrt
+    ist (geloescht oder nie da), wird nie entfernt. Im Trockenlauf den Titel
+    zeigen, sonst den Beitrag entfernen; der Titel steht auch dann dabei.
     """
     bericht = Bericht()
-    for e in eintraege:
+    gesperrte: Optional[Dict[str, Dict]] = None
+    for e in beitraege:
         try:
             beitrag = bestand.ansehen(e.id)
-            typ = beitrag.get("content_type") if beitrag else None
-            if typ and typ != e.typ:
+            zustand = ""
+            if beitrag is None:
+                if gesperrte is None:
+                    gesperrte = {str(b.get("id")): b for b in bestand.gesperrte()}
+                beitrag = gesperrte.get(e.id)
+                zustand = " (gesperrt)"
+            if beitrag is None:
+                bericht.uebersprungen.append(
+                    (
+                        e.zeile,
+                        "nicht gefunden (weder sichtbar noch gesperrt), nicht "
+                        f"entfernt: {e.typ} {e.id}",
+                    )
+                )
+                continue
+            typ = beitrag.get("content_type")
+            if typ != e.typ:
                 bericht.fehlgeschlagen.append(
                     (e.zeile, f"Typ passt nicht, der Beitrag ist {typ}: {e.typ} {e.id}")
                 )
                 continue
+            beschreibung = (
+                f"{e.typ} {e.id}{zustand} „{beitrag.get('title') or '(ohne Titel)'}“"
+            )
             if not ausfuehren:
-                if beitrag is None:
-                    bericht.uebersprungen.append(
-                        (e.zeile, f"nicht gefunden oder gesperrt: {e.typ} {e.id}")
-                    )
-                else:
-                    titel = beitrag.get("title") or "(ohne Titel)"
-                    bericht.angelegt.append(
-                        (e.zeile, f"wuerde entfernt: {e.typ} {e.id} „{titel}“")
-                    )
+                bericht.erledigt.append((e.zeile, f"wuerde entfernt: {beschreibung}"))
                 continue
             bestand.entfernen(e.typ, e.id)
-            bericht.angelegt.append((e.zeile, f"entfernt: {e.typ} {e.id}"))
+            bericht.erledigt.append((e.zeile, f"entfernt: {beschreibung}"))
         except ApiFehler as fehler:
             if _anmelden_noetig(fehler):
                 raise
@@ -591,6 +675,23 @@ def entfernen(
 # --- BFF ------------------------------------------------------------------
 
 
+class _KeineWeiterleitung(urllib.request.HTTPRedirectHandler):
+    """
+    Folgt keiner Weiterleitung. urllib kopierte sonst die Kopfzeilen, auch das
+    Cookie, auf die neue Adresse, selbst zu einem anderen Host oder ueber http.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise urllib.error.HTTPError(
+            req.full_url,
+            code,
+            f"Weiterleitung nach {urlsplit(newurl).netloc or newurl}, nicht gefolgt: "
+            "--adresse auf die Adresse setzen, die direkt antwortet",
+            headers,
+            None,
+        )
+
+
 class BffBestand:
     """
     Der Bestand ueber das BFF, angemeldet mit der Sitzung eines Browsers oder,
@@ -603,7 +704,8 @@ class BffBestand:
         self.timeout = timeout
         self._cookie: Optional[str] = None
         self._oeffner = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
+            urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()),
+            _KeineWeiterleitung(),
         )
 
     def _kopfzeilen(self) -> Dict[str, str]:
@@ -650,6 +752,12 @@ class BffBestand:
             raise ApiFehler(None, "Die Sitzung ist leer")
         if any(ord(z) < 32 for z in cookie):
             raise ApiFehler(None, "Die Sitzung enthaelt Zeilenumbrueche oder Steuerzeichen")
+        if not cookie.isascii():
+            raise ApiFehler(
+                None,
+                "Die Sitzung enthaelt Zeichen ausserhalb von ASCII (etwa „…“): "
+                "Wert vollstaendig kopiert?",
+            )
         if "=" not in cookie.split(";")[0]:
             cookie = f"{SITZUNGS_COOKIE}={cookie}"
         self._cookie = cookie
@@ -710,6 +818,19 @@ class BffBestand:
                 return None
             raise
 
+    def gesperrte(self) -> List[Dict]:
+        """Alle gesperrten Beitraege mit Typ und Titel (Admin-Liste der Moderation)."""
+        try:
+            antwort = self._anfrage("GET", "/api/v1/moderation/gesperrt")
+        except ApiFehler as fehler:
+            if fehler.status == 403:
+                raise ApiFehler(403, "Entfernen braucht ein Admin-Konto") from None
+            raise
+        beitraege = antwort.get("beitraege")
+        if not isinstance(beitraege, list):
+            raise ApiFehler(None, "Antwort der gesperrten Beitraege unerwartet")
+        return beitraege
+
     def entfernen(self, typ: str, beitrag_id: str) -> None:
         try:
             self._anfrage("DELETE", f"/api/v1/moderation/content/{typ}/{beitrag_id}")
@@ -734,11 +855,16 @@ def _fehlertext(fehler: "urllib.error.HTTPError") -> str:
 
 
 def _ausgeben(
-    bericht: Bericht, fehler: List[Fehler], ausfuehren: bool, was: str
+    bericht: Bericht,
+    fehler: List[Fehler],
+    ausfuehren: bool,
+    was: str,
+    hinweise: Optional[List[Fehler]] = None,
 ) -> None:
     ausgabe = (
         [(f.zeile, f"Fehler: {f.grund}") for f in fehler]
-        + list(bericht.angelegt)
+        + [(h.zeile, f"Hinweis: {h.grund}") for h in hinweise or []]
+        + list(bericht.erledigt)
         + [(z, f"uebersprungen, {t}") for z, t in bericht.uebersprungen]
         + [(z, f"Fehler: {t}") for z, t in bericht.fehlgeschlagen]
     )
@@ -746,9 +872,10 @@ def _ausgeben(
         print(f"Zeile {zeile}: {text}")
     print(
         f"{'' if ausfuehren else 'Trockenlauf, '}"
-        f"{was if ausfuehren else 'wuerden ' + was}: {len(bericht.angelegt)}, "
+        f"{was if ausfuehren else 'wuerden ' + was}: {len(bericht.erledigt)}, "
         f"uebersprungen: {len(bericht.uebersprungen)}, "
         f"Fehler: {len(fehler) + len(bericht.fehlgeschlagen)}"
+        + (f", Hinweise: {len(hinweise)}" if hinweise else "")
     )
     if not ausfuehren:
         print("Nichts geschrieben; mit --ausfuehren wird geschrieben.")
@@ -824,11 +951,12 @@ def main(
         print(f"Abgebrochen: {unpassend}", file=sys.stderr)
         return 2
 
+    hinweise: List[Fehler] = []
     try:
         if args.entfernen:
-            eintraege, fehler = liste_lesen(args.datei)
+            beitraege, fehler = liste_lesen(args.datei)
         else:
-            kommentare, fehler = datei_lesen(args.datei)
+            kommentare, fehler = datei_lesen(args.datei, hinweise)
     except (OSError, UnicodeDecodeError, DateiUnlesbar) as e:
         print(f"Datei nicht lesbar: {e}", file=sys.stderr)
         return 2
@@ -855,7 +983,7 @@ def main(
             if args.entfernen and not wer.get("isAdmin"):
                 raise ApiFehler(403, "Entfernen braucht ein Admin-Konto")
         if args.entfernen:
-            bericht = entfernen(eintraege, bestand, ausfuehren=args.ausfuehren)
+            bericht = entfernen(beitraege, bestand, ausfuehren=args.ausfuehren)
             was = "entfernt"
         else:
             bericht = importieren(kommentare, bestand, ausfuehren=args.ausfuehren)
@@ -864,7 +992,7 @@ def main(
         print(f"Abgebrochen: {e}", file=sys.stderr)
         return 2
 
-    _ausgeben(bericht, fehler, args.ausfuehren, was)
+    _ausgeben(bericht, fehler, args.ausfuehren, was, hinweise)
     return 1 if fehler or bericht.fehlgeschlagen else 0
 
 
