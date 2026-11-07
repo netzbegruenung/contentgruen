@@ -515,7 +515,7 @@ Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt,
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
 **Startbestand**:
-Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start unter Startkonten schreibt, damit Gut gesagt nicht leer beginnt. Er wird wie jeder Beitrag angelegt, über das Formular oder das Importskript aus einer Datei.
+Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start schreibt, damit Gut gesagt nicht leer beginnt. Er wird wie jeder Beitrag angelegt, über das Formular oder das Importskript aus einer Datei.
 _Avoid_: Seed, Grundbestand, Demo-Inhalt
 
 **Startkonto**:

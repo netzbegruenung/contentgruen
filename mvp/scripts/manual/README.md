@@ -35,7 +35,7 @@ Exit-Codes in `mvp/SCRIPTS.md`; Beispiellisten `einwuerfe_beispiel.csv` und
 
 `beitraege_importieren.py <datei> [--sitzung-datei <datei> | --email <konto>] [--adresse <url>] [--ausfuehren]` –
 **schreibend mit `--ausfuehren`.** Legt Kommentare samt Aussage und Herkunft aus einer
-Markdown-Datei an (Startbestand, unter einem Startkonto). Mit `--entfernen` ist die Datei
+Markdown-Datei an (Startbestand), unter dem angemeldeten Konto. Mit `--entfernen` ist die Datei
 eine Liste `<typ> <id>` und die Beitraege werden endgueltig entfernt (Admin-Konto). Ohne
 `--ausfuehren` ein Trockenlauf. Angemeldet mit dem Sitzungs-Cookie des Browsers (Test,
 Produktion), lokal mit `--email`. Nur Standardbibliothek. Aufruf und Dateiformat in

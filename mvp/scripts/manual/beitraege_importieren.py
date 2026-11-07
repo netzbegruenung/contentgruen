@@ -6,8 +6,8 @@ Import: liest eine Markdown-Datei mit Aussagen und je Aussage einem oder mehrere
 Kommentaren und legt jeden Kommentar ueber dieselbe API an wie das
 Kommentar-Formular, als Antwort auf seine Aussage und mit seinen Herkuenften
 (``POST /api/v1/commentary/addCommentary``). Die Aussage legt der Server an oder
-findet die vorhandene; eine vorhandene Herkunft nimmt er wieder. Fuer den
-Startbestand schreibt ein Startkonto.
+findet die vorhandene; eine vorhandene Herkunft nimmt er wieder. Autor ist das
+angemeldete Konto.
 
 Entfernen (``--entfernen``): liest je Zeile ``<typ> <id>`` und entfernt den
 Beitrag endgueltig ueber die Admin-API

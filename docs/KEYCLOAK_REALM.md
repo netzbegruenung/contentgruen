@@ -231,7 +231,7 @@ und die E2E-Tests haben kein Keycloak und melden sich mit
 
 Was ohne Direktanmeldung nicht mehr geht: `mvp/scripts/manual/einwuerfe_importieren.py`
 meldet sich mit Mail und Passwort an der BFF an, also nur über die Direktanmeldung. Einen
-Import unter einem Startkonto deshalb vor dem Umzug laufen lassen. `beitraege_importieren.py`
+Import deshalb vor dem Umzug laufen lassen. `beitraege_importieren.py`
 nimmt stattdessen die Sitzung eines Browsers (`mvp/SCRIPTS.md`) und geht auch danach.
 
 ## Konfiguration der App

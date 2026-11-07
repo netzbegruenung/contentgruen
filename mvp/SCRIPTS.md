@@ -238,9 +238,9 @@ BFF selbst; Standard ist das lokale BFF `http://localhost:5054`. Getestet in
 Legt Kommentare aus einer Markdown-Datei an, je Kommentar ein Aufruf derselben API wie im
 Kommentar-Formular (`/api/v1/commentary/addCommentary`): mit Titel, Fassungen und Herkunft,
 als Antwort auf seine Aussage. Die Aussage legt der Server an oder nimmt eine vorhandene,
-sehr ähnliche; eine vorhandene Herkunft nimmt er wieder. Gedacht für den Startbestand unter
-einem Startkonto (`GLOSSARY.md`), das vorher einmal in der App in die Art.-9-Einwilligung
-eingewilligt hat. Als CC0-Kennung schickt das Skript die des Kommentar-Formulars
+sehr ähnliche; eine vorhandene Herkunft nimmt er wieder. Gedacht für den Startbestand
+(`GLOSSARY.md`); Autor ist das angemeldete Konto, das vorher einmal in der App in die
+Art.-9-Einwilligung eingewilligt haben muss. Als CC0-Kennung schickt das Skript die des Kommentar-Formulars
 (`docs/CC0_HINWEIS_WORTLAUTE.md`): Wer mit `--ausfuehren` importiert, stellt die Texte unter
 CC0 wie beim Absenden im Formular. Kennt der Dienst die Kennung noch nicht (ältere Version),
 legt es ohne Kennung an und sagt das.
@@ -248,7 +248,7 @@ legt es ohne Kennung an und sagt das.
 **Anmeldung.** Auf Test und Produktion meldet man sich nur über Keycloak im Browser an;
 das Skript nimmt deshalb die Sitzung des Browsers:
 
-1. In Gut gesagt mit dem Konto anmelden, das schreiben soll (Startkonto bzw. Admin).
+1. In Gut gesagt mit dem Konto anmelden, das schreiben soll (beim Entfernen ein Admin).
 2. Entwicklertools öffnen (F12), „Web-Speicher“ (Firefox) bzw. „Anwendung“ (Chrome) →
    „Cookies“ → Adresse von Gut gesagt → Zeile `GutGesagtAuthCookie`, den Wert kopieren.
 3. Den Wert in eine Datei schreiben, die nur man selbst lesen kann, und sie mit
@@ -324,7 +324,7 @@ Stimmen und Varianten-Verknüpfungen des Beitrags gehen mit.
 
 **Usage:**
 ```bash
-# Erst prüfen (ohne Server), dann mit der Sitzung des Startkontos anlegen.
+# Erst prüfen (ohne Server), dann mit der Sitzung des schreibenden Kontos anlegen.
 python3 scripts/manual/beitraege_importieren.py bestand.md
 python3 scripts/manual/beitraege_importieren.py bestand.md --sitzung-datei ~/sitzung.txt \
   --adresse https://gutgesagt-test.netzbegruenung.de --ausfuehren
