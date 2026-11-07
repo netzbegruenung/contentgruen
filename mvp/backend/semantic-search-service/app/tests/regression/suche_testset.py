@@ -15,21 +15,31 @@ Felder:
 - dieselbe_behauptung: Die Suchanfrage ist dieselbe Behauptung wie eine erwartete Aussage
   (Paar-Label gleich nach den Regeln in MESSSET.md). Nur diese Faelle zaehlen fuer die
   Zerfaserung: Sie sollten auf der vorhandenen Aussage landen statt eine neue anzulegen.
-- quelle: seed = Aussage aus mvp/data/seed/v1.0 woertlich, dev = Suchanfrage aus der
-  Entwicklungsumgebung (Messset), eigen = fuer das Suchtestset formuliert.
+- quelle: seed = Aussage aus mvp/data/seed/v1.0 woertlich, start = Aussage aus dem
+  Startbestand woertlich (STARTBESTAND), dev = Suchanfrage aus der Entwicklungsumgebung
+  (Messset), eigen = fuer das Suchtestset formuliert.
+- nur_mit: Der Fall wird nur gemessen, wenn diese Aussagen im Bestand stehen. Fuer Faelle
+  ohne Erwartung, die nur an einem Bestand etwas aussagen (Verneinung einer Aussage des
+  Startbestands, fremde Themen neben ihr); am Seed zaehlen sie dann nicht.
+- nur_ohne: Der Fall wird nur gemessen, wenn keine dieser Aussagen im Bestand steht. Fuer
+  Faelle "fremd", deren Thema der Startbestand hat (der Wolf ist am Seed fremd, am
+  Startbestand nicht).
 
 Keine echten Personen, keine Personendaten, keine Eingaben aus Produktion. Die erwarteten
-Aussagen stammen heute aus dem Seed (Testbestand); nach dem Startbestand (#288) kommen
-Faelle zu dessen Aussagen dazu. Faelle, deren Aussagen im gemessenen Bestand fehlen,
-ueberspringt die Messung und nennt sie.
+Aussagen stammen aus dem Seed (Testbestand, S01 bis S42) und aus dem Startbestand (#288,
+ab S43). Faelle, deren Aussagen im gemessenen Bestand fehlen, ueberspringt die Messung und
+nennt sie: Am Seed zaehlen die Faelle zum Startbestand nicht mit, am Startbestand die zu
+den zwei Seed-Aussagen, die er nicht hat.
 
 Neue Faelle ans Ende ihres Abschnitts, IDs fortlaufend; eine ID wechselt nie den Text.
 """
 
 from typing import NamedTuple, Tuple
 
+from utils.text_normalisierung import text_normalisiert
+
 FORMEN = ("stichwort", "satz")
-QUELLEN = ("seed", "dev", "eigen")
+QUELLEN = ("seed", "start", "dev", "eigen")
 PHAENOMENE = (
     "woertlich",  # Text der Aussage
     "umformulierung",  # dieselbe Behauptung in anderen Worten
@@ -51,6 +61,8 @@ class Fall(NamedTuple):
     erwartet: Tuple[str, ...]
     dieselbe_behauptung: bool
     quelle: str
+    nur_mit: Tuple[str, ...] = ()
+    nur_ohne: Tuple[str, ...] = ()
 
 
 # Aussagen des Seeds (mvp/data/seed/v1.0), woertlich.
@@ -68,6 +80,44 @@ EU = "Die EU ist ein bürokratisches Monster, das uns nur schadet!"
 EAUTO = "E-Autos sind auch nicht besser für die Umwelt!"
 TEMPO = "Ein Tempolimit bringt doch nichts fürs Klima!"
 VERBRENNER = "Das Verbrenner-Aus killt unsere Autoindustrie!"
+
+SEED = (
+    VOEGEL, UNZUVERLAESSIG, TEUER, ATOM, HEIZUNG, NEUBAU, VERBOT,
+    FLEISCH, LAND, GENDERN, EU, EAUTO, TEMPO, VERBRENNER,
+)  # fmt: skip
+
+# Aussagen des Startbestands (#288), woertlich, soweit sie nicht schon oben stehen. Die
+# uebrigen zwoelf Aussagen des Startbestands sind die des Seeds (ohne UNZUVERLAESSIG und
+# TEUER); STARTBESTAND fuehrt alle 30.
+DUNKELFLAUTE = (
+    "Erneuerbare sind total unzuverlässig, bei Dunkelflaute gibt es keinen Strom."
+)
+CHINA = "Deutschland allein kann das Klima nicht retten, schau dir China an."
+WOHLSTAND = "Klimaschutz kostet uns Wohlstand und Arbeitsplätze."
+CO2PREIS = "Der CO2-Preis macht Heizen und Tanken für normale Leute unbezahlbar."
+BALKON = "Balkonsolar lohnt sich nicht."
+MIETER = "Die Energiewende bezahlen am Ende die Mieter."
+TICKET = "Das Deutschlandticket ist zu teuer und nützt auf dem Dorf nichts."
+LANDWIRTE = "Die Grünen behandeln Landwirte wie Kriminelle."
+BIO = "Bio ist nur was für Reiche."
+WOLF = "Der Wolf gehört nicht nach Deutschland."
+INSEKTEN = "Am Insektensterben sind nicht die Pestizide schuld."
+AKADEMIKER = "Die Grünen machen Politik nur für Akademiker in der Stadt."
+RENTE = "Die Rente ist nicht mehr sicher, und ihr gebt das Geld fürs Klima aus."
+BUERGERGELD = "Mit Bürgergeld lohnt sich Arbeiten nicht mehr."
+FLUECHTLINGE = "Flüchtlinge wollen gar nicht arbeiten."
+MIGRANTEN = "Migranten machen unsere Städte unsicher."
+KLIMAKLEBER = "Klimakleber schaden dem Klimaschutz mehr, als sie nützen."
+MEINUNG = "Man darf ja gar nichts mehr sagen."
+
+STARTBESTAND = (
+    VOEGEL, DUNKELFLAUTE, ATOM, CHINA, WOHLSTAND,
+    HEIZUNG, NEUBAU, CO2PREIS, BALKON, MIETER,
+    EAUTO, VERBRENNER, TEMPO, TICKET, LAND,
+    FLEISCH, LANDWIRTE, BIO, WOLF, INSEKTEN,
+    VERBOT, AKADEMIKER, RENTE, EU, BUERGERGELD,
+    FLUECHTLINGE, MIGRANTEN, GENDERN, KLIMAKLEBER, MEINUNG,
+)  # fmt: skip
 
 KEINE: Tuple[str, ...] = ()
 
@@ -113,11 +163,94 @@ FAELLE = tuple(Fall(*f) for f in (
     ("S35", "Ein Tempolimit schützt das Klima", "satz", "verneinung", KEINE, False, "eigen"),
     ("S36", "Das Verbrennerverbot zerstört die deutsche Autoindustrie", "satz", "umformulierung", (VERBRENNER,), True, "eigen"),
     ("S37", "Verbrenner-Aus Arbeitsplätze", "stichwort", "schlagwort", (VERBRENNER,), False, "eigen"),
-    # Themen ohne Aussage im Testbestand
-    ("S38", "Der Wolf gehört nicht nach Deutschland", "satz", "fremd", KEINE, False, "eigen"),
-    ("S39", "Die Rente ist nicht mehr sicher", "satz", "fremd", KEINE, False, "eigen"),
+    # Themen ohne Aussage im Testbestand; Wolf, Rente und Deutschlandticket hat der
+    # Startbestand (nur_ohne), dort zaehlen S76 ff.
+    ("S38", "Der Wolf gehört nicht nach Deutschland", "satz", "fremd", KEINE, False, "eigen", KEINE, (WOLF,)),
+    ("S39", "Die Rente ist nicht mehr sicher", "satz", "fremd", KEINE, False, "eigen", KEINE, (RENTE,)),
     ("S40", "Mülltrennung bringt nichts, am Ende wird eh alles verbrannt", "satz", "fremd", KEINE, False, "eigen"),
     ("S41", "Radwege", "stichwort", "fremd", KEINE, False, "eigen"),
-    ("S42", "Das Deutschlandticket ist zu teuer", "satz", "fremd", KEINE, False, "eigen"),
+    ("S42", "Das Deutschlandticket ist zu teuer", "satz", "fremd", KEINE, False, "eigen", KEINE, (TICKET,)),
+    # Startbestand (#288): Klima und Energie
+    ("S43", "Erneuerbare sind total unzuverlässig, bei Dunkelflaute gibt es keinen Strom", "satz", "woertlich", (DUNKELFLAUTE,), True, "start"),
+    ("S44", "Dunkelflaute Blackout", "stichwort", "schlagwort", (DUNKELFLAUTE,), False, "eigen"),
+    ("S45", "Erneurbare sind unzuverlässig, bei Flaute gibts keinen Strom", "satz", "tippfehler", (DUNKELFLAUTE,), True, "eigen"),
+    ("S46", "Wenn kein Wind weht und die Sonne nicht scheint, gehen bei uns die Lichter aus", "satz", "umgangssprache", (DUNKELFLAUTE,), True, "eigen"),
+    ("S47", "Deutschland allein kann das Klima nicht retten, schau dir China an", "satz", "woertlich", (CHINA,), True, "start"),
+    ("S48", "Deutschland kann die Welt nicht alleine retten, China stößt viel mehr aus", "satz", "umformulierung", (CHINA,), True, "eigen"),
+    ("S49", "China CO2", "stichwort", "schlagwort", (CHINA,), False, "eigen"),
+    ("S50", "Was bringt unser Klimaschutz, wenn China jede Woche ein Kohlekraftwerk baut", "satz", "verwandt", (CHINA,), False, "eigen"),
+    ("S51", "Klimaschutz kostet uns unseren Wohlstand und unsere Jobs", "satz", "umformulierung", (WOHLSTAND,), True, "eigen"),
+    ("S52", "Klimaschutz vernichtet Arbeitsplätze", "satz", "verwandt", (WOHLSTAND,), False, "eigen"),
+    ("S53", "Klimaschutz Wirtschaft Jobs", "stichwort", "schlagwort", (WOHLSTAND,), False, "eigen"),
+    # Startbestand: Wohnen und Heizen
+    ("S54", "Der CO2-Preis macht Heizen und Tanken für normale Leute unbezahlbar", "satz", "woertlich", (CO2PREIS,), True, "start"),
+    ("S55", "Wegen dem CO2 Preis kann sich keiner mehr Sprit und Heizöl leisten", "satz", "umgangssprache", (CO2PREIS,), True, "eigen"),
+    ("S56", "CO2-Steuer", "stichwort", "schlagwort", (CO2PREIS,), False, "eigen"),
+    ("S57", "Wird Tanken durch den CO2-Preis noch teurer?", "satz", "frage", (CO2PREIS,), False, "eigen"),
+    ("S58", "Ein Balkonkraftwerk lohnt sich nicht", "satz", "umformulierung", (BALKON,), True, "eigen"),
+    ("S59", "Balkonkraftwerk", "stichwort", "schlagwort", (BALKON,), False, "eigen"),
+    ("S60", "Lohnt sich ein Balkonkraftwerk?", "satz", "frage", (BALKON,), False, "eigen"),
+    ("S61", "Balkonsolar lont sich nich", "satz", "tippfehler", (BALKON,), True, "eigen"),
+    ("S62", "Balkonsolar lohnt sich", "satz", "verneinung", KEINE, False, "eigen", (BALKON,)),
+    ("S63", "Die Mieter zahlen am Ende die Energiewende", "satz", "umformulierung", (MIETER,), True, "eigen"),
+    ("S64", "Heizungstausch Mieterhöhung", "stichwort", "schlagwort", (MIETER,), False, "eigen"),
+    ("S65", "Die Sanierung zahlen dann wieder wir Mieter mit höherer Miete", "satz", "verwandt", (MIETER,), False, "eigen"),
+    ("S66", "Die Mietpreisbremse funktioniert nicht", "satz", "fremd", KEINE, False, "eigen", (MIETER,)),
+    # Startbestand: Verkehr und Land
+    ("S67", "Das Deutschlandticket ist zu teuer und nützt auf dem Dorf nichts", "satz", "woertlich", (TICKET,), True, "start"),
+    ("S68", "Deutschlandticket Dorf", "stichwort", "schlagwort", (TICKET,), False, "eigen"),
+    ("S69", "Was soll ich mit dem Deutschlandticket, bei uns fährt eh kein Bus", "satz", "umgangssprache", (TICKET,), False, "eigen"),
+    ("S70", "Die Bahn ist immer zu spät", "satz", "fremd", KEINE, False, "eigen", (TICKET,)),
+    ("S71", "Die Grünen machen nur Politik für Studierte aus der Stadt", "satz", "umformulierung", (AKADEMIKER, LAND), True, "eigen"),
+    ("S72", "Akademikerpartei", "stichwort", "schlagwort", (AKADEMIKER,), False, "eigen"),
+    ("S73", "Grün wählen doch nur Lehrer und Studenten", "satz", "umgangssprache", (AKADEMIKER,), False, "eigen"),
+    # Startbestand: Landwirtschaft und Ernährung
+    ("S74", "Die Grünen behandeln Bauern wie Verbrecher", "satz", "umformulierung", (LANDWIRTE,), True, "eigen"),
+    ("S75", "Bauernproteste", "stichwort", "schlagwort", (LANDWIRTE,), False, "eigen"),
+    ("S76", "Wölfe haben in Deutschland nichts verloren", "satz", "umformulierung", (WOLF,), True, "eigen"),
+    ("S77", "Wolf Weidetiere", "stichwort", "schlagwort", (WOLF,), False, "eigen"),
+    ("S78", "Der Wolf reißt unsere Schafe, der muss weg", "satz", "umgangssprache", (WOLF,), False, "eigen"),
+    ("S79", "Bio ist nur was für Reiche", "satz", "woertlich", (BIO,), True, "start"),
+    ("S80", "Bio können sich nur Reiche leisten", "satz", "umformulierung", (BIO,), True, "eigen"),
+    ("S81", "Bio zu teuer", "stichwort", "schlagwort", (BIO,), False, "eigen"),
+    ("S82", "Bio ist für alle bezahlbar", "satz", "verneinung", KEINE, False, "eigen", (BIO,)),
+    ("S83", "Am Insektensterben sind nicht die Pestizide schuld", "satz", "woertlich", (INSEKTEN,), True, "start"),
+    ("S84", "Insektensterben Glyphosat", "stichwort", "schlagwort", (INSEKTEN,), False, "eigen"),
+    ("S85", "Die Bienen sterben wegen der Varroamilbe, nicht wegen Pflanzenschutzmitteln", "satz", "verwandt", (INSEKTEN,), False, "eigen"),
+    ("S86", "Pestizide sind schuld am Insektensterben", "satz", "verneinung", KEINE, False, "eigen", (INSEKTEN,)),
+    # Startbestand: Soziales, Wirtschaft, Staat
+    ("S87", "Für die Rente ist kein Geld da, aber fürs Klima schon", "satz", "umformulierung", (RENTE,), True, "eigen"),
+    ("S88", "Rente Klimaschutz", "stichwort", "schlagwort", (RENTE,), False, "eigen"),
+    ("S89", "Die Schuldenbremse muss bleiben", "satz", "fremd", KEINE, False, "eigen", (RENTE,)),
+    ("S90", "Mit Bürgergeld lohnt sich Arbeiten nicht mehr", "satz", "woertlich", (BUERGERGELD,), True, "start"),
+    ("S91", "Wer arbeitet, ist der Dumme, das Bürgergeld gibts fürs Nichtstun", "satz", "umgangssprache", (BUERGERGELD,), True, "eigen"),
+    ("S92", "Bürgergeld", "stichwort", "schlagwort", (BUERGERGELD,), False, "eigen"),
+    ("S93", "Mit Bürgergled lohnt sich Arbeit nicht mehr", "satz", "tippfehler", (BUERGERGELD,), True, "eigen"),
+    # Startbestand: Gesellschaft und Migration
+    ("S94", "Flüchtlinge haben keinen Bock zu arbeiten", "satz", "umgangssprache", (FLUECHTLINGE,), True, "eigen"),
+    ("S95", "Geflüchtete Arbeit", "stichwort", "schlagwort", (FLUECHTLINGE,), False, "eigen"),
+    ("S96", "Flüchtlinge wollen arbeiten, dürfen aber oft nicht", "satz", "verneinung", KEINE, False, "eigen", (FLUECHTLINGE,)),
+    ("S97", "Ausländer machen unsere Städte unsicher", "satz", "umformulierung", (MIGRANTEN,), True, "eigen"),
+    ("S98", "Migration Kriminalität", "stichwort", "schlagwort", (MIGRANTEN,), False, "eigen"),
+    ("S99", "Seit so viele Flüchtlinge da sind, traut man sich abends nicht mehr raus", "satz", "verwandt", (MIGRANTEN,), False, "eigen"),
+    ("S100", "Klimakleber schaden dem Klimaschutz mehr, als sie nützen", "satz", "woertlich", (KLIMAKLEBER,), True, "start"),
+    ("S101", "Klimakleber", "stichwort", "schlagwort", (KLIMAKLEBER,), False, "eigen"),
+    ("S102", "Die Klebeaktionen der Letzten Generation schaden dem Klimaschutz nur", "satz", "umformulierung", (KLIMAKLEBER,), True, "eigen"),
+    ("S103", "Man darf ja gar nichts mehr sagen", "satz", "woertlich", (MEINUNG,), True, "start"),
+    ("S104", "In diesem Land darf man seine Meinung nicht mehr sagen", "satz", "umformulierung", (MEINUNG,), True, "eigen"),
+    ("S105", "Meinungsfreiheit", "stichwort", "schlagwort", (MEINUNG,), False, "eigen"),
+    ("S106", "Cancel Culture", "stichwort", "umgangssprache", (MEINUNG,), False, "eigen"),
 ))
 # fmt: on
+
+
+def am_seed_gemessen(fall: Fall) -> bool:
+    """
+    Zaehlt der Fall am Seed mit (wie gemessen() in suche_messen.py)? Die Faelle zum
+    Startbestand nicht: So bleibt das Soll des naechtlichen Laufs, der am Seed misst.
+    """
+    seed = {text_normalisiert(t) for t in SEED}
+    benoetigt = {text_normalisiert(t) for t in fall.erwartet + fall.nur_mit}
+    return benoetigt <= seed and not seed & {
+        text_normalisiert(t) for t in fall.nur_ohne
+    }

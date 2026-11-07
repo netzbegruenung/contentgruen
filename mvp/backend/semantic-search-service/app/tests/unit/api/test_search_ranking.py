@@ -6,9 +6,10 @@ so it can be refactored safely later (see docs/ROADMAP.md, rung 1). They do not
 assert what the ranking *should* be -- they lock in what it *currently is*:
 
 - combined score formula:  statement_score * 0.7 + reply_relevance * 0.3
-- inclusion threshold:     combined_score must be STRICTLY > 0.8
-- direct-match penalty:    direct hits are weighted * 0.7 (and therefore can never
-                           clear the 0.8 threshold, since max cosine is 1.0)
+- inclusion threshold:     combined_score must be STRICTLY > MINIMUM_SCORE_THRESHOLD
+                           (0.82 since #568)
+- direct-match penalty:    direct hits are weighted * 0.7 for the ranking; the threshold
+                           checks their raw score
 - final ordering:          results sorted by score, descending, then truncated to `limit`
 
 The search router is exercised through a real FastAPI app, but mounted standalone
@@ -30,6 +31,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.v1.search import router as search_router
+from services.search.search_orchestrator import (
+    MINIMUM_SCORE_THRESHOLD,
+    compute_combined_score,
+)
 from dependencies import (
     get_statement_service,
     get_commentary_service,
@@ -260,7 +265,7 @@ class TestSearchRanking:
         sugg_a, sugg_b, sugg_c = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
         # Intentionally returned out of score order (C, A, B) to prove the endpoint sorts.
         statements = [
-            # C: 0.85*0.7 + 0.20*0.3 = 0.655  -> below 0.8, filtered out
+            # C: 0.85*0.7 + 0.20*0.3 = 0.655  -> below the threshold, filtered out
             _statement_result(
                 0.85, [_reply(ContentType.COMMENTARY, 0.20, sugg_c)], "C"
             ),
@@ -385,13 +390,17 @@ class TestSearchRanking:
         data = resp.json()
         assert data["commentary_search_results"][0]["user_vote"] is None
 
-    def test_threshold_is_strictly_greater_than_080(self, search_client):
-        """A combined score of exactly 0.8 is excluded (filter is `> 0.8`, not `>=`)."""
+    @pytest.mark.parametrize(
+        "score, anzahl",
+        [(MINIMUM_SCORE_THRESHOLD, 0), (MINIMUM_SCORE_THRESHOLD + 0.005, 1)],
+    )
+    def test_threshold_is_strict(self, search_client, score, anzahl):
+        """A combined score of exactly MINIMUM_SCORE_THRESHOLD is excluded (filter is
+        `>`, not `>=`); just above it is kept."""
         sugg = uuid.uuid4()
-        # 0.80*0.7 + 0.80*0.3 = 0.80 exactly -> excluded
         statements = [
             _statement_result(
-                0.80, [_reply(ContentType.COMMENTARY, 0.80, sugg)], "edge"
+                score, [_reply(ContentType.COMMENTARY, score, sugg)], "edge"
             )
         ]
         client = search_client(statement_results=statements)
@@ -399,7 +408,10 @@ class TestSearchRanking:
         resp = client.post(SEARCH_URL, json={"query_text": "edge", "limit": 10})
 
         assert resp.status_code == 200
-        assert resp.json()["commentary_search_results_count"] == 0
+        assert (
+            compute_combined_score(score, score) > MINIMUM_SCORE_THRESHOLD
+        ) == anzahl
+        assert resp.json()["commentary_search_results_count"] == anzahl
 
     def test_generictext_uses_same_formula(self, search_client):
         """Generic-text reply suggestions are scored and surfaced identically."""
@@ -422,9 +434,9 @@ class TestSearchRanking:
     def test_direct_match_above_threshold_is_kept(self, search_client):
         """
         Der Schwellwert prueft den Rohscore, nicht den mit DIRECT_MATCH_PENALTY
-        gedaempften Wert. Vorher wurde 0.9 * 0.7 = 0.63 gegen 0.8 geprueft und der
-        Treffer verworfen; da die Penalty konstant 0.7 ist, haette der Rohscore
-        ueber 1.143 liegen muessen - fuer eine Kosinus-Aehnlichkeit unerreichbar.
+        gedaempften Wert. Bis August 2026 wurde 0.9 * 0.7 = 0.63 gegen die damalige Schwelle
+        0.8 geprueft und der Treffer verworfen; der Rohscore haette ueber 1.143
+        liegen muessen - fuer eine Kosinus-Aehnlichkeit unerreichbar.
         Der Zweig konnte dadurch nie etwas liefern.
         """
         hit = _commentary_search_hit(score=0.90)
@@ -439,8 +451,8 @@ class TestSearchRanking:
         assert data["commentary_search_results"][0]["score"] == pytest.approx(0.63)
 
     def test_direct_match_at_threshold_is_dropped(self, search_client):
-        """Der Vergleich bleibt strikt: ein Rohscore von genau 0.8 faellt heraus."""
-        edge = _commentary_search_hit(score=0.80)
+        """Der Vergleich bleibt strikt: ein Rohscore genau auf der Schwelle faellt heraus."""
+        edge = _commentary_search_hit(score=MINIMUM_SCORE_THRESHOLD)
         client = search_client(statement_results=[], direct_commentaries=[edge])
 
         resp = client.post(SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10})
