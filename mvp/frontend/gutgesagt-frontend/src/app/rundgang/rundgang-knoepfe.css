@@ -10,15 +10,15 @@
 }
 
 .rundgang-knopf.voll {
-    background: var(--primary-dark);
+    background: var(--primary-fill);
     color: white;
-    border: 2px solid var(--primary-dark);
+    border: 2px solid var(--linie-tanne);
 }
 
 .rundgang-knopf.umriss {
-    background: white;
+    background: var(--bg-card);
     color: var(--primary-dark);
-    border: 2px solid var(--primary-dark);
+    border: 2px solid var(--linie-tanne);
 }
 
 .rundgang-knopf.text {

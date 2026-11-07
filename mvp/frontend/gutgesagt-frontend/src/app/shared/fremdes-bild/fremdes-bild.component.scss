@@ -17,7 +17,7 @@ img {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 }
@@ -34,7 +34,7 @@ img {
   min-height: var(--fremdes-bild-hoehe, 96px);
   margin: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px dashed var(--primary-dark);
+  border: 1px dashed var(--linie-tanne);
   border-radius: inherit;
   background: var(--einwurf-grund);
   color: var(--primary-dark);
@@ -47,7 +47,7 @@ img {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 }

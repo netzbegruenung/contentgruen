@@ -52,12 +52,12 @@
   }
 
   &:hover:not(.active-button) {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: var(--overlay-faint);
   }
 }
 
 .stimme-knopf.active-button {
-  background-color: var(--primary-dark) !important;
+  background-color: var(--primary-fill) !important;
   color: white !important;
 }
 
@@ -94,7 +94,7 @@
 
   &.copy-success {
     @include animations.copy-success-animation;
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primary-fill) !important;
     color: white !important;
   }
 }

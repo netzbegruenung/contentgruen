@@ -33,7 +33,7 @@
     margin: 8px 0 16px;
     font-size: 15px;
     font-weight: normal;
-    color: var(--text-secondary, #555);
+    color: var(--text-secondary);
   }
 }
 
@@ -70,7 +70,7 @@
 .beispiel-zeile {
   margin: 8px 0 0;
   font-size: 0.9rem;
-  color: var(--text-secondary, #555);
+  color: var(--text-secondary);
 
   @media (max-width: 599px) {
     font-size: 0.85rem;
@@ -79,7 +79,7 @@
 }
 
 .beispiel-link {
-  color: var(--primary-main, #008939);
+  color: var(--primary-main);
   text-decoration: underline;
   cursor: pointer;
   font-weight: 500;
@@ -112,9 +112,9 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  border: 2px solid var(--primary-dark);
+  border: 2px solid var(--linie-tanne);
   border-radius: 12px;
-  background: #fff;
+  background: var(--bg-card);
   color: var(--text-primary);
   text-decoration: none;
   transition: box-shadow var(--transition-fast, 0.2s);
@@ -125,7 +125,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 

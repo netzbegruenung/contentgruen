@@ -1,9 +1,9 @@
 .dubletten-hinweis {
   margin: 12px 0 0;
   padding: 12px 16px;
-  border-left: 4px solid #f57c00;
+  border-left: 4px solid var(--warning-edge);
   border-radius: 4px;
-  background: #fff3e0;
+  background: var(--warning-bg);
 }
 
 .dubletten-hinweis p {
@@ -27,7 +27,7 @@
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 }
@@ -47,5 +47,5 @@
 
 .entscheidungs-fehler {
   margin-top: 8px;
-  color: var(--error-color, #d32f2f);
+  color: var(--error-color);
 }

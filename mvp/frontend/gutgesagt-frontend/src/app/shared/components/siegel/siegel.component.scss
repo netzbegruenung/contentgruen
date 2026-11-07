@@ -45,7 +45,7 @@ svg {
   width: 25%;
   height: 25%;
   pointer-events: none;
-  background: var(--primary-light, #8abd24);
+  background: var(--primary-light);
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
   animation: siegel-funke 0.8s ease-out forwards;
 }

@@ -70,7 +70,7 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
         z-index: 50;
         margin: 0;
         padding: 12px 16px;
-        background: white;
+        background: var(--bg-card);
         border-top: 1px solid var(--divider-color);
         box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.06);
       }
@@ -84,9 +84,9 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
         flex-basis: 100%;
         margin: 0;
         padding: 8px 12px;
-        border-left: 4px solid var(--error-color, #d32f2f);
+        border-left: 4px solid var(--error-color);
         border-radius: 4px;
-        background: rgba(211, 47, 47, 0.08);
+        background: var(--error-tint);
         font-size: 0.9rem;
       }
 

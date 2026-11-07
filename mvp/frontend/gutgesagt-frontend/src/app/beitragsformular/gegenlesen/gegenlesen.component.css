@@ -1,9 +1,9 @@
 .gegenlesen {
   margin-top: 16px;
   padding: 12px 16px;
-  border: 1px solid var(--border-color, #dcdcdc);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: var(--bg-surface, #fff);
+  background: var(--bg-surface);
 }
 
 .gegenlesen-kopf {

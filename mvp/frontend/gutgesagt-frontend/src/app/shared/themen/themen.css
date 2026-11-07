@@ -6,7 +6,7 @@
 }
 
 .thema-chip {
-  border: 1px solid var(--primary-dark);
+  border: 1px solid var(--linie-tanne);
   border-radius: var(--border-radius-medium);
   background: transparent;
   color: var(--primary-dark);
@@ -17,7 +17,7 @@
 }
 
 .thema-chip.gewaehlt {
-  background: var(--primary-dark);
+  background: var(--primary-fill);
   color: var(--bg-surface);
 }
 
@@ -27,7 +27,7 @@
 }
 
 .thema-chip:focus-visible {
-  outline: 2px solid var(--primary-dark);
+  outline: 2px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
 

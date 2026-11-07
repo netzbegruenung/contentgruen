@@ -117,6 +117,16 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --primary-main: #008939;
   --primary-light: #8abd24;
   --primary-dark: #005437;
+  // Flaechen in Tanne (Knoepfe, Leisten, Snackbar). Im Hellen gleich --primary-dark; im
+  // Dunkeln bleibt sie gruen, waehrend --primary-dark als Schrift- und Linienfarbe heller wird (#588).
+  --primary-fill: #005437;
+  // Kleine Markierungen (Fokusring, aktiver Reiter, Ladekreis) und gruene Linien (Kachelrand,
+  // Randstrich). Im Hellen die frueheren Gruentoene; im Dunkeln Markierungen in Grashalm,
+  // Linien neutral, damit Gruen dort nur noch Knopf-Fuellung und kleiner Akzent ist (#588).
+  --akzent-tanne: #005437;
+  --akzent-klee: #008939;
+  --linie-tanne: #005437;
+  --linie-klee: #008939;
 
   // Accent colors
   --accent-main: #8abd24;
@@ -133,6 +143,12 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --text-secondary: rgba(0, 0, 0, 0.60);
   --text-disabled: rgba(0, 0, 0, 0.38);
   --text-hint: rgba(0, 0, 0, 0.38);
+  // Feste Grauwerte aus den Komponenten (#588); im Hellen genau die frueheren Werte
+  --text-strong: #333;
+  --text-body: #4a4a4a;
+  --text-muted: #666;
+  --text-subtle: #757575;
+  --text-faint: #999;
 
   // Spacing system (8px grid)
   --spacing-xs: 4px;
@@ -163,25 +179,51 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --error-bg: #ffebee;
   --error-color: #c62828;
   --error-border: #f44336;
+  --error-strong: #b00020; // Fehlertexte unter Formularen
+  --error-main: #d32f2f;
+  --error-tint: rgba(211, 47, 47, 0.08);
   --success-bg: #e8f5e9;
   --success-color: var(--primary-dark);
   --success-border: var(--primary-main);
   --warning-bg: #fff3e0;
   --warning-color: #e65100;
   --warning-border: #ff9800;
+  --warning-edge: #f57c00; // Randstrich der Hinweiskaesten (Dublette, Antwort auf)
+  --warning-text: #8a5300;
+  --warning-tint: rgba(255, 152, 0, 0.08);
+  --hint-bg: #fff3cd; // Gelber Hinweis (Anmeldung, Dubletten-Dialog)
+  --hint-bg-start: #fff9e6;
+  --hint-border: #ffc107;
+  --hint-line: #ffe082;
+  --hint-text: #856404;
   --info-bg: #e3f2fd;
   --info-color: #0d47a1;
   --info-border: #2196f3;
+  --info-accent: #1976d2;
+  --info-text: #1565c0;
+  --info-bg-end: #f3f9ff;
+  --info-tint: rgba(33, 150, 243, 0.08);
+  --success-faint: #f1f8f4;
+  // Trend im Admin-Dashboard; im Hellen die frueheren Farbnamen (#588)
+  --trend-steigt: green;
+  --trend-faellt: red;
+  --trend-gleich: orange;
 
   // Content type colors
   --commentary-bg: #e6f0d2; // Light green for commentary
   --generictext-bg: #e3f2fd; // Light blue for generic text
   --image-bg: #ede7f6; // Light violet for images
   --post-bg: #fde3cf; // Apricot for social-media posts
+  // Zweite Verlaufsfarbe der Beitragstyp-Kacheln in "Beitragen"
+  --commentary-bg-end: rgb(220, 235, 195);
+  --generictext-bg-end: rgb(212, 234, 251);
+  --image-bg-end: rgb(225, 215, 240);
+  --post-bg-end: rgb(250, 214, 188);
   --statement-bg: #f5f5f5; // Light gray: statements, Einwuerfe ohne Beitrag
   --kartenliste-bg: #f4f4f2; // Grund unter Kartenlisten, damit Karten als Karten lesbar sind
   --such-band: #f6ff7c; // Gelbes Band hinter der Suche auf der Startseite; bewusst nicht Sonne (#512)
-  --rundgang-gelb: var(--such-band); // Band im Willkommen, Rahmen des Lichtkegels, Hilfe-Kasten (#389)
+  --rundgang-gelb: var(--such-band); // Band im Willkommen, Hilfe-Kasten (#389)
+  --rundgang-kegel: var(--rundgang-gelb); // Rahmen des Lichtkegels; im Dunkeln heller als das Band (#588)
   --rundgang-balken: #ecefd0; // Fortschrittsbalken im Rundgang, noch offene Schritte
   --rundgang-schleier: rgba(0, 25, 15, 0.55); // Abdunklung um den Lichtkegel
   --rundgang-fokus: #0ba1dd; // Fokusring der Rundgang-Knoepfe, hebt sich von Gelb und Tanne ab
@@ -193,17 +235,199 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --hover-bg: #f5f5f5;
   --selected-bg: #e6f0d2; // Keep for backward compatibility
   --auswahl-grund: rgba(0, 84, 55, 0.07); // Tanne-Hauch: gewaehlter Ansichts-Umschalter, aktiver Admin-Link
+  --primary-tint-faint: rgba(0, 137, 57, 0.04); // Klee-Hauch: Zeile "Antwort auf" in der Karte
+  --primary-tint: rgba(0, 137, 57, 0.08);
+  --primary-tint-strong: rgba(0, 137, 57, 0.1);
+  --primary-line: rgba(0, 137, 57, 0.3);
+  --overlay-faint: rgba(0, 0, 0, 0.04); // Schleier fuer Hover und Wert-Chips
+  --overlay-light: rgba(0, 0, 0, 0.09);
+  --line-faint: rgba(0, 0, 0, 0.08);
+  --line-light: rgba(0, 0, 0, 0.12);
+  --line-soft: rgba(0, 0, 0, 0.16);
+  --line-medium: rgba(0, 0, 0, 0.24);
   --disabled-bg: #f5f5f5;
   --disabled-color: rgba(0, 0, 0, 0.38);
 
   // Surface colors
   --surface-variant: #fafafa;
   --surface-elevated: white;
+  --surface-muted: #f5f5f5;
+  --surface-pressed: #f0f0f0;
+  --surface-glaze: rgba(255, 255, 255, 0.85); // Milchglas ueber farbigen Baendern
 
   // Transitions
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-standard: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Dunkelmodus (#588): folgt der Einstellung des Geraets (prefers-color-scheme), ohne
+// eigenen Schalter. Flaechen neutral Anthrazit, Gruen nur als Akzent (Knoepfe, Links,
+// Siegel), keine gruen getoenten Flaechen. Knoepfe in Klee statt Tanne, damit sie sich
+// vom dunklen Grund abheben; Schrift hellgrau, Grashalm nur fuer kleine Markierungen.
+$gutgesagt-dark-primary: mat.m2-define-palette($gutgesagt-green-palette, 500, 300, 700);
+$gutgesagt-dark-theme: mat.m2-define-dark-theme((
+  color: (
+    primary: $gutgesagt-dark-primary,
+    accent: $gutgesagt-accent,
+    warn: $gutgesagt-warn,
+  ),
+));
+
+@media (prefers-color-scheme: dark) {
+  @include mat.all-component-colors($gutgesagt-dark-theme);
+
+  :root {
+    color-scheme: dark;
+
+    // Schrift, Ueberschriften und Links hellgrau statt Grashalm ("zu limonig", 07.11.);
+    // Gruen bleibt Knopf-Fuellung (Klee) und kleine Markierung (Grashalm).
+    --primary-main: #e0e0e0;
+    --primary-dark: #ececec;
+    --primary-fill: #008939;
+    --akzent-tanne: #8abd24;
+    --akzent-klee: #8abd24;
+    --linie-tanne: #5c5c5c;
+    --linie-klee: #5c5c5c;
+
+    --accent-light: #3a3a3a; // neutral: Themen-Marken sind Flaechen, kein Akzent
+
+    --bg-main: #1c1c1c;
+    --bg-card: #262626;
+    --bg-surface: #262626;
+    --surface-elevated: #2c2c2c;
+    --surface-variant: #2a2a2a;
+    --surface-muted: #2e2e2e;
+    --surface-pressed: #353535;
+    --surface-glaze: rgba(38, 38, 38, 0.85);
+
+    --text-primary: rgba(255, 255, 255, 0.87);
+    --text-secondary: rgba(255, 255, 255, 0.66);
+    --text-disabled: rgba(255, 255, 255, 0.38);
+    --text-hint: rgba(255, 255, 255, 0.5);
+    --text-strong: #e6e6e6;
+    --text-body: #d0d0d0;
+    --text-muted: #b3b3b3;
+    --text-subtle: #a8a8a8;
+    --text-faint: #9e9e9e;
+
+    --error-bg: #3a2526;
+    --error-color: #ff8a80;
+    --error-border: #ef5350;
+    --error-strong: #ff8a80;
+    --error-main: #ff8a80;
+    --error-tint: rgba(239, 83, 80, 0.14);
+    --success-bg: #2e2e2e;
+    --success-faint: #2a2a2a;
+    --warning-bg: #3a2f1c;
+    --warning-color: #ffb74d;
+    --warning-border: #ffa726;
+    --warning-edge: #f5a03a;
+    --warning-text: #ffcc80;
+    --warning-tint: rgba(255, 167, 38, 0.14);
+    --hint-bg: #39331f;
+    --hint-bg-start: #312c1c;
+    --hint-border: #d9a91a;
+    --hint-line: #6e5c1f;
+    --hint-text: #ffe08a;
+    --info-bg: #1f2b38;
+    --info-bg-end: #1b2530;
+    --info-color: #90caf9;
+    --info-border: #42a5f5;
+    --info-accent: #64b5f6;
+    --info-text: #90caf9;
+    --info-tint: rgba(66, 165, 245, 0.14);
+    --trend-steigt: #8abd24;
+    --trend-faellt: var(--error-main);
+    --trend-gleich: var(--warning-color);
+
+    // Beitragstypen: dunkle, fast neutrale Baender; unterscheidbar bleiben sie ueber das Symbol
+    --commentary-bg: #303030;
+    --commentary-bg-end: #383838;
+    --generictext-bg: #2b3138;
+    --generictext-bg-end: #323a43;
+    --image-bg: #32302d;
+    --image-bg-end: #3a3834;
+    --post-bg: #372f29;
+    --post-bg-end: #40372f;
+    --statement-bg: #2c2c2c;
+    --kartenliste-bg: #171717;
+    --einwurf-grund: #2a2926;
+
+    // Such-Band: helleres Anthrazit statt Leuchtgelb; nur der Rahmen des Lichtkegels bleibt gelb
+    --such-band: #303030;
+    --rundgang-kegel: #d8e05a;
+    --rundgang-balken: #3d3d3d;
+    --rundgang-schleier: rgba(0, 0, 0, 0.65);
+    --rundgang-fokus: #4fc3f7;
+
+    --divider-color: #3a3a3a;
+    --border-color: #4d4d4d;
+    --hover-bg: #2e2e2e;
+    --selected-bg: #353535;
+    --auswahl-grund: rgba(255, 255, 255, 0.08);
+    --disabled-bg: #2e2e2e;
+    --disabled-color: rgba(255, 255, 255, 0.38);
+
+    --primary-tint-faint: rgba(255, 255, 255, 0.04);
+    --primary-tint: rgba(255, 255, 255, 0.07);
+    --primary-tint-strong: rgba(255, 255, 255, 0.09);
+    --primary-line: rgba(138, 189, 36, 0.4);
+    --overlay-faint: rgba(255, 255, 255, 0.05);
+    --overlay-light: rgba(255, 255, 255, 0.1);
+    --line-faint: rgba(255, 255, 255, 0.1);
+    --line-light: rgba(255, 255, 255, 0.14);
+    --line-soft: rgba(255, 255, 255, 0.18);
+    --line-medium: rgba(255, 255, 255, 0.26);
+
+    // Material-Flaechen auf die eigenen Grautoene statt Materials #424242/#303030
+    --mat-app-background-color: var(--bg-main);
+    --mat-sidenav-content-background-color: var(--bg-main);
+    --mat-card-elevated-container-color: var(--bg-card);
+    --mat-card-outlined-container-color: var(--bg-card);
+    --mat-card-filled-container-color: var(--bg-card);
+    --mat-dialog-container-color: var(--bg-card);
+    --mat-table-background-color: var(--bg-card);
+    --mat-paginator-container-background-color: var(--bg-card);
+    --mat-expansion-container-background-color: var(--bg-card);
+    --mat-bottom-sheet-container-background-color: var(--bg-card);
+    --mat-sidenav-container-background-color: var(--bg-card);
+    --mat-stepper-container-color: var(--bg-card);
+    --mat-datepicker-calendar-container-background-color: var(--surface-elevated);
+    --mat-menu-container-color: var(--surface-elevated);
+    --mat-select-panel-background-color: var(--surface-elevated);
+    --mat-autocomplete-background-color: var(--surface-elevated);
+    --mat-button-toggle-background-color: var(--bg-card);
+    --mat-button-toggle-selected-state-background-color: var(--selected-bg);
+    --mat-button-protected-container-color: var(--surface-elevated);
+    --mat-option-selected-state-label-text-color: var(--primary-dark);
+    --mat-form-field-outlined-focus-label-text-color: var(--primary-dark);
+    --mat-form-field-filled-focus-label-text-color: var(--primary-dark);
+    --mat-form-field-focus-select-arrow-color: var(--primary-dark);
+    --mat-select-focused-arrow-color: var(--primary-dark);
+  }
+
+  // Klee als Schrift erreicht auf Anthrazit kein AA: Text-Knoepfe, Icons und Reiter hellgrau
+  .mat-mdc-button.mat-primary,
+  .mat-mdc-outlined-button.mat-primary {
+    --mat-button-text-label-text-color: var(--primary-dark);
+    --mat-button-outlined-label-text-color: var(--primary-dark);
+  }
+
+  html .mat-mdc-icon-button.mat-primary {
+    --mat-icon-button-icon-color: var(--primary-dark);
+  }
+
+  .mat-icon.mat-primary {
+    --mat-icon-color: var(--primary-dark);
+  }
+
+  .mat-mdc-tab-group,
+  .mat-mdc-tab-nav-bar {
+    --mat-tab-active-label-text-color: var(--primary-dark);
+    --mat-tab-active-focus-label-text-color: var(--primary-dark);
+    --mat-tab-active-hover-label-text-color: var(--primary-dark);
+  }
 }
 
 // Dialogtitel wie die Seitentitel: GrueneType in Tanne, Groesse der mobilen h2.
@@ -226,12 +450,12 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
 
 // Utility classes for common patterns
 .gutgesagt-primary-bg {
-  background-color: var(--primary-dark) !important;
+  background-color: var(--primary-fill) !important;
   color: white !important;
 }
 
 .gutgesagt-primary-dark-bg {
-  background-color: var(--primary-dark) !important;
+  background-color: var(--primary-fill) !important;
   color: white !important;
 }
 
@@ -248,12 +472,12 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
 // Material button customizations
 .mat-mdc-raised-button {
   &.gutgesagt-primary {
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primary-fill) !important;
     color: white !important;
   }
 
   &.gutgesagt-primary-dark {
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primary-fill) !important;
     color: white !important;
   }
 

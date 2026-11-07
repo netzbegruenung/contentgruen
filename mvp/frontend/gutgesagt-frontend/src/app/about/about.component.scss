@@ -82,7 +82,7 @@
       height: 150px;
       border-radius: 50%;
       object-fit: cover;
-      border: 3px solid var(--primary-main);
+      border: 3px solid var(--linie-klee);
 
       @media (max-width: 768px) {
         width: 120px;
@@ -143,9 +143,9 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background: var(--primary-dark);
-      border: 2px solid white;
-      box-shadow: 0 0 0 2px var(--primary-dark);
+      background: var(--primary-fill);
+      border: 2px solid var(--bg-card);
+      box-shadow: 0 0 0 2px var(--akzent-tanne);
       transform: translateX(-5px);
     }
 
@@ -202,11 +202,11 @@
   }
 
   .secondary-button {
-    background-color: #f5f5f5;
-    color: #333;
+    background-color: var(--surface-muted);
+    color: var(--text-strong);
 
     &:hover {
-      background-color: #e0e0e0;
+      background-color: var(--divider-color);
     }
   }
 
@@ -224,6 +224,11 @@
 a {
   color: var(--primary-main);
   text-decoration: none;
+
+  // Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588)
+  @media (prefers-color-scheme: dark) {
+    text-decoration: underline;
+  }
 
   &:hover {
     text-decoration: underline;

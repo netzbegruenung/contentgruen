@@ -4,7 +4,7 @@
   justify-content: space-between;
   height: 56px;
   padding: 0 4px;
-  background-color: white;
+  background-color: var(--bg-card);
   border-bottom: 1px solid var(--divider-color);
   position: sticky;
   top: 0;
@@ -92,7 +92,7 @@
 }
 
 .contribute-button {
-  color: rgba(0, 0, 0, 0.87); /* Standard Material Design icon color */
+  color: var(--text-primary); /* Standard Material Design icon color */
 }
 
 .mobile-header-avatar-container {

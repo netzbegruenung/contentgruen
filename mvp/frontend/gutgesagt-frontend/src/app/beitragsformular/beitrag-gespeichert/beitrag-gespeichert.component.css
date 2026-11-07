@@ -42,16 +42,16 @@
 }
 
 .primaer {
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primary-fill) !important;
     color: white !important;
 }
 
 .gespeichert-warnung {
     margin: 0;
     padding: 12px 16px;
-    border-left: 4px solid #f57c00;
+    border-left: 4px solid var(--warning-edge);
     border-radius: 4px;
-    background: #fff3e0;
+    background: var(--warning-bg);
 }
 
 .gespeichert-label {

@@ -2,7 +2,7 @@
     display: block;
     overflow: hidden;
     border-radius: var(--border-radius-large);
-    background: white;
+    background: var(--bg-card);
 }
 
 .band {

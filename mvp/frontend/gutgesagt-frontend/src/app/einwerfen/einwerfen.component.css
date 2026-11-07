@@ -36,7 +36,7 @@
 /* Vorbelegung aus dem Teilen: abgesetzt, bis die Person sie uebernimmt oder aendert. */
 .vorbelegt textarea {
     font-style: italic;
-    color: var(--text-secondary, #4a4a4a);
+    color: var(--text-secondary);
 }
 
 .vorbelegung-hinweis {
@@ -91,20 +91,20 @@
 
 .einwurf-rueckmeldung .erfolg {
     margin: 0;
-    color: var(--text-secondary, #4a4a4a);
+    color: var(--text-secondary);
 }
 
 .einwurf-rueckmeldung .fehler {
     margin: 0;
-    color: #b3261e;
+    color: var(--error-strong);
 }
 
 .einwurf-fussnote {
     margin-top: var(--spacing-lg, 24px);
     padding-top: var(--spacing-md, 16px);
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-top: 1px solid var(--line-faint);
     font-size: 14px;
-    color: var(--text-secondary, #4a4a4a);
+    color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {

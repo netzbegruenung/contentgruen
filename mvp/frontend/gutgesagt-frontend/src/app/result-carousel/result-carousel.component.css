@@ -28,7 +28,7 @@
   box-shadow: inset 0 3px 6px 0 rgba(0, 0, 0, 0.12),
               inset 0 2px 4px 0 rgba(0, 0, 0, 0.15),
               inset 0 1px 2px 0 rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--line-faint);
 }
 
 .result-container::-webkit-scrollbar {
@@ -57,7 +57,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: var(--primary-dark);
+  background-color: var(--primary-fill);
   color: white;
   border: none;
   cursor: pointer;

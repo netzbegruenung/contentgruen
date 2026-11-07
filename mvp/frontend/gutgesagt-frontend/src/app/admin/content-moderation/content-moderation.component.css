@@ -30,7 +30,7 @@
 }
 
 .filter-section mat-button-toggle-group {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--divider-color);
   border-radius: 4px;
 }
 
@@ -48,8 +48,8 @@
 }
 
 .status-pending {
-  background-color: #fff3e0;
-  color: #e65100;
+  background-color: var(--warning-bg);
+  color: var(--warning-color);
 }
 
 .status-reviewed {
@@ -58,13 +58,13 @@
 }
 
 .status-dismissed {
-  background-color: #e3f2fd;
-  color: #1565c0;
+  background-color: var(--info-bg);
+  color: var(--info-text);
 }
 
 .status-gesperrt {
-  background-color: #ffebee;
-  color: #c62828;
+  background-color: var(--error-bg);
+  color: var(--error-color);
 }
 
 .gesperrte-liste {
@@ -78,7 +78,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 4px;
 }
 
@@ -99,7 +99,7 @@
 }
 
 .widerspruch-offen {
-  color: #b00020;
+  color: var(--error-strong);
 }
 
 .gesperrt-aktionen {
@@ -109,7 +109,7 @@
 }
 
 .not-reviewed {
-  color: #999;
+  color: var(--text-faint);
   font-style: italic;
 }
 
@@ -123,12 +123,12 @@
 }
 
 .loading p, .error p {
-  color: #666;
+  color: var(--text-muted);
   margin: 0;
 }
 
 .error {
-  color: #d32f2f;
+  color: var(--error-main);
 }
 
 .error mat-icon {
@@ -147,12 +147,12 @@
 }
 
 .empty-state h2 {
-  color: #333;
+  color: var(--text-strong);
   margin: 0 0 8px 0;
 }
 
 .empty-state p {
-  color: #666;
+  color: var(--text-muted);
 }
 
 .reports-table {
@@ -164,8 +164,8 @@ table {
 }
 
 .content-type-badge {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background-color: var(--info-bg);
+  color: var(--info-accent);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -178,7 +178,7 @@ table {
 }
 
 .reason-cell .description {
-  color: #666;
+  color: var(--text-muted);
   font-size: 13px;
   margin: 0;
   max-width: 300px;
@@ -188,7 +188,7 @@ table {
 }
 
 .anonymous {
-  color: #999;
+  color: var(--text-faint);
   font-style: italic;
 }
 
@@ -197,7 +197,7 @@ table {
 }
 
 .melder-angabe.guter-glaube {
-  color: #666;
+  color: var(--text-muted);
 }
 
 .action-buttons {
@@ -218,7 +218,7 @@ table {
 }
 
 .report-row:hover {
-  background-color: #f5f5f5;
+  background-color: var(--surface-muted);
 }
 
 .expanded-row {
@@ -230,20 +230,20 @@ table {
 }
 
 .content-display {
-  background-color: #f9f9f9;
-  border-left: 3px solid #1976d2;
+  background-color: var(--surface-variant);
+  border-left: 3px solid var(--info-accent);
 }
 
 .content-display h3 {
   margin: 0 0 16px 0;
-  color: #333;
+  color: var(--text-strong);
   font-size: 16px;
 }
 
 .content-info {
   margin-bottom: 12px;
   padding: 8px 12px;
-  background-color: #e3f2fd;
+  background-color: var(--info-bg);
   border-radius: 4px;
 }
 
@@ -253,16 +253,16 @@ table {
 }
 
 .content-id code {
-  background-color: white;
+  background-color: var(--bg-card);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
   font-size: 12px;
-  color: #1976d2;
+  color: var(--info-accent);
 }
 
 .content-wrapper {
-  background-color: white;
+  background-color: var(--bg-card);
   padding: 16px;
   border-radius: 4px;
 }
@@ -273,16 +273,16 @@ table {
 }
 
 .content-item strong {
-  color: #1976d2;
+  color: var(--info-accent);
   margin-right: 8px;
 }
 
 .text-section {
   margin: 16px 0;
   padding: 12px;
-  background-color: #fafafa;
+  background-color: var(--surface-variant);
   border-radius: 4px;
-  border-left: 3px solid #e0e0e0;
+  border-left: 3px solid var(--divider-color);
 }
 
 .text-section p strong {
@@ -293,7 +293,7 @@ table {
 
 .text-content {
   padding: 8px;
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 3px;
   line-height: 1.8;
   white-space: pre-wrap;
@@ -302,13 +302,13 @@ table {
 
 .statement-text {
   font-style: italic;
-  border-left: 3px solid var(--primary-dark);
-  background-color: #f1f8f4;
+  border-left: 3px solid var(--linie-tanne);
+  background-color: var(--success-faint);
 }
 
 .metadata {
   margin-top: 8px;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .metadata small {
@@ -319,10 +319,10 @@ table {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #ff9800;
+  color: var(--warning-border);
   padding: 16px;
-  background-color: #fff3e0;
-  border-left: 3px solid #ff9800;
+  background-color: var(--warning-bg);
+  border-left: 3px solid var(--warning-border);
 }
 
 .content-not-found mat-icon {

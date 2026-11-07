@@ -13,7 +13,7 @@
 }
 
 .last-updated {
-  color: #666;
+  color: var(--text-muted);
   font-size: 14px;
   margin: 0;
 }
@@ -21,11 +21,11 @@
 .loading, .error {
   text-align: center;
   padding: 40px;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .error {
-  color: #d32f2f;
+  color: var(--error-main);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,7 +57,7 @@
 }
 
 .metric-card mat-icon {
-  color: #666;
+  color: var(--text-muted);
 }
 
 .metric-card .info-icon {
@@ -65,13 +65,13 @@
   font-size: 20px;
   width: 20px;
   height: 20px;
-  color: #999;
+  color: var(--text-faint);
   cursor: help;
   transition: color 0.2s;
 }
 
 .metric-card .info-icon:hover {
-  color: #1976d2;
+  color: var(--info-accent);
 }
 
 .metric-value {
@@ -89,12 +89,12 @@
 }
 
 .metric-value .current {
-  color: #333;
+  color: var(--text-strong);
 }
 
 .metric-value .label {
   font-size: 14px;
-  color: #666;
+  color: var(--text-muted);
   font-weight: normal;
 }
 
@@ -115,7 +115,7 @@
   display: flex;
   gap: 12px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-muted);
   margin: 8px 0;
 }
 
@@ -131,7 +131,7 @@
   gap: 16px;
   margin: 12px 0;
   padding: 12px;
-  background-color: #f5f5f5;
+  background-color: var(--surface-muted);
   border-radius: 4px;
 }
 
@@ -143,14 +143,14 @@
 
 .weekly-comparison .week-value .label {
   font-size: 12px;
-  color: #666;
+  color: var(--text-muted);
   font-weight: normal;
 }
 
 .weekly-comparison .week-value .value {
   font-size: 20px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-strong);
 }
 
 @media (max-width: 768px) {

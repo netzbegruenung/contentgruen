@@ -9,7 +9,7 @@
   align-items: center;
   gap: 16px;
   padding: 32px 0;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-secondary);
 }
 
 /*
@@ -21,7 +21,7 @@
 }
 
 .einwurf-stand {
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-secondary);
   font-style: italic;
 }
 
@@ -29,15 +29,15 @@
 .fremde-saetze {
   margin: 0 0 16px;
   padding: 8px 12px;
-  border-left: 3px solid var(--primary-light, #dcebc3);
+  border-left: 3px solid var(--primary-light);
   border-radius: 4px;
-  background: var(--surface-variant, #eef2e6);
+  background: var(--surface-variant);
 }
 
 .fremde-saetze-titel {
   margin: 0 0 4px;
   font-size: 13px;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-secondary);
 }
 
 .fremde-saetze ul {
@@ -57,7 +57,7 @@
   margin-left: 6px;
   font-family: monospace;
   font-size: 12px;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-secondary);
 }
 
 .satz-feld {
@@ -72,7 +72,7 @@
 }
 
 .fehler {
-  color: var(--error-color, #b00020);
+  color: var(--error-color);
 }
 
 /* Schrift kommt aus der globalen .submit-hint, siehe styles.css. */
@@ -84,7 +84,7 @@
 .spaeter-hinweis {
   margin: 8px 0 0;
   font-size: 13px;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-secondary);
 }
 
 .einwurf-kopf {
@@ -106,7 +106,7 @@
 .typ {
   display: block;
   padding: 8px 12px 8px 4px;
-  border: 1px solid rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--line-soft);
   border-radius: 12px;
 }
 
@@ -136,14 +136,14 @@
   margin-top: 2px;
   font-size: 13px;
   line-height: 1.4;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-secondary);
 }
 
 /* Typwahl eines Einwurfs, der schon mit einem Beitrag verknuepft ist */
 .schon-verknuepft {
   margin: 0 0 12px;
   padding: 10px 14px;
-  border-left: 4px solid var(--primary-main);
+  border-left: 4px solid var(--linie-klee);
   border-radius: 4px;
   background: var(--commentary-bg);
 }
@@ -160,6 +160,6 @@
 }
 
 .text-link:focus-visible {
-  outline: 2px solid var(--primary-dark);
+  outline: 2px solid var(--akzent-tanne);
   outline-offset: 2px;
 }

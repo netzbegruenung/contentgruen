@@ -197,11 +197,11 @@ main * {
 
 .help-text {
     margin-top: 10px;
-    background-color: #f0f0f0;
+    background-color: var(--surface-pressed);
     padding: 10px;
     border-radius: var(--border-radius-medium);
     font-size: 14px;
-    color: #333;
+    color: var(--text-strong);
 }
 
 .help-icon {
@@ -232,7 +232,7 @@ main * {
     /* Derselbe Schatten wie die runden Icon-Knoepfe daneben */
     box-shadow: var(--elevation-1);
     border-radius: 50%;
-    background-color: white;
+    background-color: var(--bg-card);
     transition: transform var(--transition-standard), opacity var(--transition-standard);
     flex-shrink: 0;
 }
@@ -486,6 +486,13 @@ main * {
 .mobile-menu-about a {
     color: var(--primary-main);
     text-decoration: none;
+}
+
+/* Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588) */
+@media (prefers-color-scheme: dark) {
+    .mobile-menu-about a {
+        text-decoration: underline;
+    }
 }
 
 .mobile-menu-about a:hover {
