@@ -11,7 +11,7 @@
     z-index: 1101;
     border-radius: 12px;
     pointer-events: none;
-    box-shadow: 0 0 0 4px var(--rundgang-gelb), 0 0 0 9999px var(--rundgang-schleier);
+    box-shadow: 0 0 0 4px var(--rundgang-kegel), 0 0 0 9999px var(--rundgang-schleier);
     transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease;
 }
 
