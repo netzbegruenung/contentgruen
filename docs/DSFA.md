@@ -56,13 +56,14 @@ Die DSFA muss stehen, **bevor die Punkte eingeschaltet werden**, nicht erst vor 
 wie `docs/VISION.md:134` es vorsieht: Schon der eigene Punktestand ist eine Bewertung von
 Personen. Das ist eine Empfehlung; ändern sollte VISION erst, wer die DSFA übernimmt.
 Neu zu prüfen ist sie vor Ausbaustufe 2 (Grünes Netz), weil dann lit. b anders aussehen kann.
-Für den Grundbetrieb ohne Punkte trifft sicher nur das zweite Kriterium zu (Abschnitt 8.1).
+Für den Grundbetrieb ohne Punkte trifft sicher nur WP-248-Kriterium 4 (vertrauliche Daten) zu
+(Abschnitt 8.1).
 
 ## 3. Die drei wichtigsten Risiken und die Maßnahmen
 
 | Risiko | Maßnahmen | Rest |
 |---|---|---|
-| **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:423-424`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete. Vorschlag zusätzlich: keine Linkvorschau für Ranglisten und eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | gering |
+| **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:489-490`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete. Vorschlag zusätzlich: keine Linkvorschau für Ranglisten und eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | gering |
 | **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Mit einem Schlüssel aus der Konfiguration könnte, wer Datenbank und Schlüssel hat, für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | **Umgesetzt** (PR #476, BanSe/todo#266): Entdoppelung über Prüfwerte statt Protokoll, und beide Schlüssel liegen nur im Speicher, nach dem Muster des Tagesschlüssels der Besucher (`ss/utils/besucher_pseudonym.py:45-73`): Prüfwerte mit einem eigenen Tagesschlüssel, Paar-Prüfwerte mit einem Fensterschlüssel, der je 7 Tage wechselt und den vorigen einen Block lang zum Vergleich behält (`ss/services/entdoppelung.py:10-30,54-86` (#476)). Kein Bezug mehr zu `SEMANTIC_SEARCH_ACTOR_HASH_SECRET`. Nach einem Neustart beginnt ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | gering |
 | **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug, keine Punkte fürs Bewerten (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md:9-19`). | gering bis mittel; in der Acht-Wochen-Bilanz ansehen |
 
@@ -155,17 +156,18 @@ Erledigt:
 
 ## 8. Übrige Verarbeitungen des Dienstes (#374)
 
-Abschnitt 1 bis 7 prüfen Punkte, Quests und Ranglisten. Dieser Abschnitt nimmt alles auf, was
-`main` sonst verarbeitet, mit Belegen als `Datei:Zeile`.
+Abschnitt 1 bis 7 prüfen Punkte, Quests und Ranglisten. Dieser Abschnitt nimmt alles auf, was `main`
+sonst verarbeitet, mit Belegen als `Datei:Zeile`.
 
 **Ergebnis:** Art. 9 betrifft den Kern: Schon ein Konto, ein Beitrag, eine Stimme oder ein Einwurf
 kann auf eine politische Meinung schließen lassen (`DSE:1081-1084`); Rechtsgrundlage der Mitwirkung
 ist die Art.-9-Einwilligung (`A9:3-6`, `DSE:1094-1122`). Empfohlen wird eine DSFA für die ganze
-Plattform (8.1). Mit den Maßnahmen aus 8.2 und 8.3 ist das Restrisiko gering bis mittel, eine
-Konsultation nach Art. 36 nicht nötig. Drei Lücken tragen den Schluss noch nicht: Konto und
-Anzeigename entstehen vor der Einwilligung (V1), das Tagespseudonym angemeldeter Personen ist mit
-dem Schlüssel aus der Konfiguration nachrechenbar (V7), Anwendungsprotokolle haben in Produktion
-keine Frist (V16).
+Plattform (8.1). Drei Lücken sind offen: Konto und Anzeigename entstehen vor der Einwilligung (V1),
+das Tagespseudonym angemeldeter Personen ist mit dem Schlüssel aus der Konfiguration nachrechenbar,
+falls er gesetzt ist (V7), Anwendungsprotokolle haben in Produktion keine Frist (V16). **Erst wenn
+diese drei geschlossen sind** und die Maßnahmen aus 8.2 und 8.3 stehen, ist das Restrisiko gering
+bis mittel und eine Konsultation nach Art. 36 nicht nötig; bis dahin liegt es bei R2 und R5 bei
+mittel.
 
 ### 8.1 Schwellwert für den Grundbetrieb ohne Punkte
 
@@ -175,37 +177,37 @@ hier für den Grundbetrieb neben dem Stand mit Punkten:
 | Kriterium | Grundbetrieb | mit Punkten |
 |---|---|---|
 | 1 Bewerten, Einstufen | nein | **ja**: Punkte stufen Personen nach ihrem Verhalten ein (`ss/services/punkte_service.py:1-7`) |
-| 3 Systematische Überwachung | nein: Suchereignisse und Nutzung ohne Kennung oder mit Tagespseudonym (V7, V9) | nein |
+| 3 Systematische Überwachung | **offen**: Nutzung ohne Kennung (V9), Suchereignisse mit Tagespseudonym; das der Angemeldeten ist nachrechenbar, falls der Schlüssel gesetzt ist (V7); nein, sobald V7 umgestellt ist | wie links |
 | 4 Vertrauliche oder höchstpersönliche Daten | **ja**: politische Meinung (`DSE:1081-1084`) | **ja** |
 | 5 Umfangreich | nein (Ausbaustufe 1) | nein |
 | 6 Abgleich von Datensätzen | nein | teilweise: Nutzung, Stimmen und Beiträge fließen in den Punktestand |
 | 7 Schutzbedürftige Betroffene | **offen**: eine Altersgrenze für Konten steht nirgends | wie links |
 | 2, 8, 9 | nein | nein |
 
-**Schluss:** Für den Grundbetrieb ist die Pflicht grenzwertig; Art. 35 Abs. 3 und die
-DSK-Mussliste ändern daran nichts (Abschnitt 2). Ein begründetes Verwerfen wäre möglich, aber angreifbar:
-Die Plattform sammelt genau die Daten, die Art. 9 schützt, und die Punkte sind gebaut und nur
-abgeschaltet (`ss/core/config.py:238-244`). Die Datenschutzbeauftragte ist zu beteiligen
-(Art. 35 Abs. 2).
+**Schluss:** Für den Grundbetrieb ist die Pflicht grenzwertig, solange Kriterium 3 offen ist; Art.
+35 Abs. 3 und die DSK-Mussliste ändern daran nichts (Abschnitt 2). Ein begründetes Verwerfen wäre
+möglich, aber angreifbar: Die Plattform sammelt genau die Daten, die Art. 9 schützt, und die Punkte
+sind gebaut und nur abgeschaltet (`ss/core/config.py:238-244`). Die Datenschutzbeauftragte ist zu
+beteiligen (Art. 35 Abs. 2).
 
 ### 8.2 Die Verarbeitungen (Art. 35 Abs. 7 lit. a)
 
 Je Verarbeitung: Zweck, Rechtsgrundlage, Daten, Frist, wer es sieht, Risiko, Maßnahmen. Wo die
-Datenschutzerklärung eine Rechtsgrundlage nennt, ist das der heutige Stand; geprüft hat ihn
-niemand juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich und stehen unter
-„Für alle: Empfänger und Ort“.
+Datenschutzerklärung eine Rechtsgrundlage nennt, ist das der heutige Stand; geprüft hat ihn niemand
+juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich und stehen unter „Für alle:
+Empfänger und Ort“.
 
 #### Für alle: Empfänger und Ort
 
-- verdigado eG als Auftragsverarbeiterin, Hetzner als Unterauftragsverarbeiterin, Rechenzentrum
-  in Deutschland; sonst keine Empfänger (`DSE:66-75`). **Offen:** ob der AV-Vertrag Gut gesagt
-  abdeckt (#506, `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md:38-45`).
+- verdigado eG als Auftragsverarbeiterin, Hetzner als Unterauftragsverarbeiterin, Rechenzentrum in
+  Deutschland; sonst keine Empfänger (`DSE:66-75`). **Offen:** ob der AV-Vertrag Gut gesagt abdeckt
+  (#506, `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md:38-45`).
 - Keine Übermittlung außerhalb der EU, kein KI-Anbieter (`DSE:1048-1051`, `CLAUDE.md`, Abschnitt
   „Datenschutz — keine KI-Anbieter“). Ausnahme: Bilder von fremden Servern lädt der Browser erst
   nach Klick (`DSE:996-1022`).
-- Mails (Bestätigung einer Meldung, Entscheidung) gehen über einen SMTP-Server aus der
-  Konfiguration (`ss/core/config.py:196-198`); welcher das in Produktion ist, steht nicht im Repo
-  (**offen**, gehört zur AV-Frage).
+- Mails (Bestätigung einer Meldung, Entscheidung) gehen über einen SMTP-Server aus der Konfiguration
+  (`ss/core/config.py:196-198`); welcher das in Produktion ist, steht nicht im Repo (**offen**,
+  gehört zur AV-Frage).
 - Admins sehen Kennungen, Meldungen samt Name und E-Mail-Adresse, Sperren und Muster-Hinweise
   (`DSE:268-269`, `DSE:720`, `DSE:759-760`, `DSE:631-632`).
 
@@ -217,13 +219,14 @@ niemand juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich u
 - **Daten:** Kennung, E-Mail-Adresse und Name im verschlüsselten Cookie (`DSE:117-127`); in der
   Datenbank nur Kennung und Anzeigename (`ss/infrastructure/database/models.py:654-675`). Konto im
   eigenen Realm (ADR 0006).
-- **Frist:** Cookie 14 Tage nach letzter Nutzung (`DSE:137-139`); Anzeigename bis zur
-  Kontolöschung (`DSE:300`); nie benutzte Konten aus Einladungen etwa 33 Tage (`LK:164`).
+- **Frist:** Cookie 14 Tage nach letzter Nutzung (`DSE:137-139`); Anzeigename bis zur Kontolöschung
+  (`DSE:300`); nie benutzte Konten aus Einladungen etwa 33 Tage (`LK:164`).
 - **Risiko:** Schon das Konto verrät die Nähe zu einer politischen Richtung (`DSE:1081-1083`). Der
-  Anzeigename wird bei jeder angemeldeten Anfrage abgelegt, auch **vor und ohne Art.-9-Einwilligung**
-  (`ss/main.py:282-283`, `ss/dependencies.py:464-476`); die Einwilligung kommt erst nach der ersten
-  Anmeldung (`A9:10-14`). Für Mitglieder der Netzbegrünung käme lit. d in Frage, für Konten aus
-  Einladungen nicht (Abschnitt 4, „Lücke vor der Einwilligung“).
+  Anzeigename kommt mit jeder angemeldeten Anfrage an und wird bei der ersten und nach jeder
+  Änderung abgelegt, auch **vor und ohne Art.-9-Einwilligung** (`ss/main.py:282-283`,
+  `ss/dependencies.py:464-476`, `ss/services/anzeigename_service.py:74-89`); die Einwilligung kommt
+  erst nach der ersten Anmeldung (`A9:10-14`). Für Mitglieder der Netzbegrünung käme lit. d in
+  Frage, für Konten aus Einladungen nicht (Abschnitt 4, „Lücke vor der Einwilligung“).
 - **Maßnahmen:** Besucher sehen weder Anzeigename noch Kennung (`DSE:263-266`); nur Vorname und
   Initial (`DSE:125-127`); E-Mail-Adresse und voller Name nicht in der Plattform (`DSE:123-124`);
   Einladung ohne Zuordnung zum Konto (ADR 0006:9).
@@ -235,12 +238,12 @@ niemand juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich u
 - **Daten:** Kennung, Zeitpunkt, Kennung des Wortlauts, Zeitpunkt des Widerrufs
   (`ss/infrastructure/database/models.py:715-721`).
 - **Frist:** bis zur Kontolöschung, auch widerrufene (`DSE:1123-1125`, `LK:102-103`).
-- **Risiko:** Die Zeile selbst belegt die Mitwirkung. Die Prüfung unterscheidet nicht nach
-  Wortlaut (`A9:68-72`): Nennt ein neuer Wortlaut neue Zwecke, gilt eine alte Einwilligung still
-  für sie mit.
+- **Risiko:** Die Zeile selbst belegt die Mitwirkung. Die Prüfung unterscheidet nicht nach Wortlaut
+  (`A9:68-72`): Nennt ein neuer Wortlaut neue Zwecke, gilt eine alte Einwilligung still für sie mit.
 - **Maßnahmen:** eigenes Häkchen, nicht vorbelegt, getrennt von den Nutzungsbedingungen
-  (`A9:12-14`); Widerruf im Profilmenü (`A9:40-45`); ohne Einwilligung sind schreibende Endpunkte
-  gesperrt, die Liste ist durch einen Test abgesichert (`A9:17-27`).
+  (`A9:12-14`); Widerruf im Profilmenü (`A9:40-45`); ohne Einwilligung sind die Endpunkte gesperrt,
+  die Mitwirkung speichern (Beitragen, Einwerfen, Bewerten); Melden, Feedback und Löschen bleiben
+  offen; die Liste ist durch einen Test abgesichert (`A9:17-27`).
 
 #### V3 Beiträge, Herkunft, Änderungsverlauf
 
@@ -262,13 +265,13 @@ niemand juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich u
 #### V4 Einwürfe und Sätze im Fangkorb
 
 - **Zweck:** Rohmaterial sammeln, aus dem Beiträge werden (`DSE:840`).
-- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. b, lit. f für die Herkunft (`DSE:841-843`); Art. 9
-  Abs. 2 lit. a (`A9:22-23`).
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. b, lit. f für die Herkunft (`DSE:841-843`); Art. 9 Abs. 2
+  lit. a (`A9:22-23`).
 - **Daten:** Hinweis, Link, Zeitpunkt, Weg, Kennung der einwerfenden Person und der Personen mit
   Sätzen (`DSE:814-822`).
 - **Frist:** 365 Tage nach der letzten Arbeit, ausformulierte solange der Beitrag (`LK:155-156`).
-- **Risiko:** Alle Mitwirkenden sehen, wer was eingeworfen hat (`DSE:825-831`). Links zeigen oft
-  auf Profile Dritter (`DSE:835-837`).
+- **Risiko:** Alle Mitwirkenden sehen, wer was eingeworfen hat (`DSE:825-831`). Links zeigen oft auf
+  Profile Dritter (`DSE:835-837`).
 - **Maßnahmen:** nur angemeldet erreichbar (`DSE:828`); Kennungen nur für Admins (`DSE:831-832`);
   bei Kontolöschung Platzhalter je Satz (`LK:108-120`).
 
@@ -279,10 +282,10 @@ niemand juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich u
 - **Daten:** Kennung, Beitrag, Richtung, Zeitpunkt (`ss/repositories/vote_repository.py:41-47`).
 - **Frist:** solange der Beitrag besteht, oder bis zur Rücknahme bzw. Kontolöschung (`LK:160`,
   `DSE:670-673`).
-- **Risiko:** Eine Stimme zu einem politischen Text ist eine Meinungsäußerung. Bei kleinen
-  Zählern ließe sich eine einzelne Stimme erraten.
-- **Maßnahmen:** andere sehen nur Summen (`DSE:663`). Eine Mindestzahl, ab der Stimmen in die
-  Güte eingehen, ist vorgeschlagen, aber nicht gebaut (#427, Kommentar in #374, M5) – **offen**.
+- **Risiko:** Eine Stimme zu einem politischen Text ist eine Meinungsäußerung. Bei kleinen Zählern
+  ließe sich eine einzelne Stimme erraten.
+- **Maßnahmen:** andere sehen nur Summen (`DSE:663`). Eine Mindestzahl, ab der Stimmen in die Güte
+  eingehen, ist vorgeschlagen, aber nicht gebaut (#427, Kommentar in #374, M5) – **offen**.
 
 #### V6 Suchanfragen als Aussage
 
@@ -313,15 +316,17 @@ niemand juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich u
 - **Risiko:** Bei Besuchern liegt der Tagesschlüssel nur im Speicher
   (`ss/utils/besucher_pseudonym.py:15-22`). **Bei Angemeldeten nicht:** Ihr Pseudonym ist ein HMAC
   über Kennung und Datum mit dem Schlüssel `SEMANTIC_SEARCH_ACTOR_HASH_SECRET` aus der Konfiguration
-  (`ss/services/search_tracking_service.py:51-62,82-87`, `ss/core/config.py:263-268`). Wer Datenbank
-  und Konfiguration hat, kann für eine bekannte Kennung 90 Tage lang ausrechnen, an welchen Tagen
-  sie wie oft gesucht hat und wie oft ohne Treffer (`LK:316-317` nennt das „tageweise
-  nachrechenbar“). An einem ruhigen Tag mit einer neuen Aussage aus einer Suche ohne Treffer
-  könnte das auf den Suchtext dieser Person führen. Die Datenschutzerklärung sagt nur, dass die
-  Kennung „nicht zurückrechenbar“ sei (`DSE:427-428`), nicht, dass sie nachrechenbar ist.
-- **Maßnahmen:** nur der Tag, keine Uhrzeit (`LK:322-325`); zufällige ID und Mischen
-  abgeschlossener Tage (`LK:331-345`). Vorschlag: Schlüssel der Angemeldeten wie bei Besuchern nur
-  im Speicher (Abschnitt 9, Punkt 3).
+  (`ss/services/search_tracking_service.py:51-62,82-87`, `ss/core/config.py:263-268`); nur wenn er
+  nicht gesetzt ist, gilt ein Zufallsschlüssel je Prozess. Ob er in Produktion gesetzt ist, steht
+  nicht im Repo (**offen**); die Konfiguration empfiehlt es (`ss/core/config.py:264-265`). Ist er
+  gesetzt, kann, wer Datenbank und Konfiguration hat, für eine bekannte Kennung 90 Tage lang
+  ausrechnen, an welchen Tagen sie wie oft gesucht hat und wie oft ohne Treffer (`LK:316-317` nennt
+  das „tageweise nachrechenbar“). An einem ruhigen Tag mit einer neuen Aussage aus einer Suche ohne
+  Treffer könnte das auf den Suchtext dieser Person führen. Die Datenschutzerklärung sagt nur, dass
+  die Kennung „nicht zurückrechenbar“ sei (`DSE:427-428`), nicht, dass sie nachrechenbar ist.
+- **Maßnahmen:** nur der Tag, keine Uhrzeit (`LK:322-325`); zufällige ID und Mischen abgeschlossener
+  Tage (`LK:331-345`). Vorschlag: Schlüssel der Angemeldeten wie bei Besuchern nur im Speicher
+  (Abschnitt 9, Punkt 3).
 
 #### V8 Suchen ohne Treffer
 
@@ -346,8 +351,9 @@ niemand juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich u
 - **Risiko:** gering. Der Vermerk „erste Kopie“ zeigt, dass mehrere Kopien am selben Tag von
   derselben Person kamen, nicht von wem (`DSE:537-541`). Besucher haben nicht eingewilligt, ihre
   Kopie bildet trotzdem einen Prüfwert aus dem Besuchermerkmal (`DSE:544-547`).
-- **Maßnahmen:** Schlüssel des Prüfwerts nur im Speicher, täglich neu (`ss/services/entdoppelung.py:10-20`);
-  ohne Einwilligung kein Prüfwert (`A9:28-36`); Startkonten gar nicht gezählt (`DSE:558-559`).
+- **Maßnahmen:** Schlüssel des Prüfwerts nur im Speicher, täglich neu
+  (`ss/services/entdoppelung.py:10-20`); angemeldete Konten ohne Einwilligung bekommen keinen
+  Prüfwert (`A9:28-36`); Startkonten gar nicht gezählt (`DSE:558-559`).
 
 #### V10 Rückmeldung zur Nutzung
 
@@ -411,7 +417,7 @@ niemand juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich u
   E-Mail-Adresse und Passwort-Hash im Realm (`DSE:154-157`).
 - **Frist:** Einladung keine (ohne Personenbezug); nie benutzte Konten etwa 33 Tage (`LK:164`).
 - **Risiko:** Bei einem persönlichen Link lässt sich die Kontoanlage über Zeitpunkte zuordnen
-  (ADR 0006:22, `DSE:162-165`); eine Einladung für eine Gruppe verriete sonst die Zugehörigkeit.
+  (`DSE:162-165`, `LK:278-281`); eine Einladung für eine Gruppe verriete sonst die Zugehörigkeit.
 - **Maßnahmen:** keine Zuordnung von Einladung und Konto (ADR 0006:9); Notiz ohne Namen
   (`LK:273-275`).
 
@@ -444,10 +450,10 @@ oder Kennung nur gekürzt im Arbeitsspeicher, höchstens etwa 16 Minuten, mit Sc
 
 #### Geplant, nicht gebaut
 
-Ranglisten, Quests, Level, Meilenstein-Abzeichen, Krone und Wochenthema
-(`docs/VISION.md:99-103`, #351, #564). Sie machen sichtbar, wer wie aktiv ist, und brauchen ein
-eigenes Opt-in (`docs/VISION.md:101`, Abschnitt 3 Risiko 1). Abschnitt 1 bis 7 prüft sie als
-Plan; vor dem Bau ist die Prüfung zu wiederholen; `docs/VISION.md:134` legt die DSFA vor die Ranglisten, Abschnitt 2
+Ranglisten, Quests, Level, Meilenstein-Abzeichen, Krone und Wochenthema (`docs/VISION.md:99-103`,
+#351, #564). Sie machen sichtbar, wer wie aktiv ist, und brauchen ein eigenes Opt-in
+(`docs/VISION.md:101`, Abschnitt 3 Risiko 1). Abschnitt 1 bis 7 prüft sie als Plan; vor dem Bau ist
+die Prüfung zu wiederholen; `docs/VISION.md:134` legt die DSFA vor die Ranglisten, Abschnitt 2
 empfiehlt sie schon vor dem Einschalten der Punkte.
 
 ### 8.3 Risiken über alle Verarbeitungen (Art. 35 Abs. 7 lit. c, d)
@@ -455,14 +461,14 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 | # | Risiko | Maßnahmen | Rest |
 |---|---|---|---|
 | R1 | **Politische Haltung wird sichtbar**: Anzeigename an Beiträgen, Einwürfen und Sätzen für alle Angemeldeten, darunter Nicht-Mitglieder (V1, V3, V4) | nur Angemeldete, nur Vorname und Initial, Kennung nur für Admins; Einwilligung vor dem Beitragen (V2) | gering |
-| R2 | **Zuordnung pseudonymer Daten**: Tagespseudonym der Angemeldeten nachrechenbar (V7), Uhrzeiten im vorgelagerten Webserver (V16) | Tag statt Uhrzeit, Mischen, Schlüssel der Besucher nur im Speicher; für Angemeldete **offen** | mittel, bis V7 umgestellt ist |
+| R2 | **Zuordnung pseudonymer Daten**: Tagespseudonym der Angemeldeten nachrechenbar, falls der Schlüssel gesetzt ist (V7), Uhrzeiten im vorgelagerten Webserver (V16) | Tag statt Uhrzeit, Mischen, Schlüssel der Besucher nur im Speicher; für Angemeldete **offen** | mittel, bis V7 umgestellt ist |
 | R3 | **Daten Dritter** in Beiträgen, Einwürfen und Suchtexten, auch deren politische Zuordnung (V3, V4, V6) | Hinweise im Formular und in der Erklärung; Melden; Einzelfall-Löschung | mittel, hinnehmbar |
 | R4 | **Datenpanne oder Zugriff durch Admins**: Kennungen, Meldungen mit Name und E-Mail-Adresse, Muster-Hinweise | Fristen (`LK:150-164`), Kennungen nur gekürzt im Log, keine Weitergabe (`DSE:74-75`); Rollen und Zugriffskonzept stehen nicht im Repo (**offen**) | gering bis mittel |
 | R5 | **Unbefristete Protokolle** mit Altbestand aus Suchtexten und Kennungen (V16) | Ziel 14 Tage (`LK:511-519`), nicht ausgerollt | mittel, bis ausgerollt |
 | R6 | **Löschung von Hand, nie an echten Daten erprobt** (`LK:3-13`, `DSE:1161-1163`) | Skript getestet gegen Testdaten (`LK:531-532`); Backup und Protokoll beim ersten Lauf | gering bis mittel |
 | R7 | **Scoring und Zweckentfremdung** durch Punkte (V11) | Abschnitt 3 | gering bis mittel |
 
-## 9. Offene Entscheidungen für Sebastian
+## 9. Offene Entscheidungen für den Maintainer
 
 1. **Umfang:** diese DSFA für die ganze Plattform führen (Abschnitt 1 bis 9), statt den Grundbetrieb
    begründet herauszunehmen? Empfehlung: ja.
@@ -471,11 +477,10 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 3. **Tagespseudonym der Angemeldeten** (V7): Schlüssel nur im Speicher wie bei Besuchern? Preis:
    Nach einem Neustart zählt eine Person am selben Tag doppelt. Empfehlung: ja.
 4. **Frist für Protokolle** (V16): 14 Tage für Anwendung und Frontend-nginx am Host ausrollen
-   (`LK:511-519`) und den Altbestand mit Suchtexten und Kennungen löschen. Infrastruktur, also bei
-   dir.
-5. **Formales:** Wer übernimmt die DSFA (Vorstand mit Datenschutzbeauftragter, Art. 35 Abs. 2),
-   und wo steht das Verzeichnis der Verarbeitungstätigkeiten? Im Repo gibt es keins.
+   (`LK:511-519`) und den Altbestand mit Suchtexten und Kennungen löschen. Das ist Betrieb am Host,
+   nicht Code.
+5. **Formales:** Wer übernimmt die DSFA (Vorstand mit Datenschutzbeauftragter, Art. 35 Abs. 2), und
+   wo steht das Verzeichnis der Verarbeitungstätigkeiten? Im Repo gibt es keins.
 6. **Fragen an die Datenschutzbeauftragte:** Lücke aus Abschnitt 4, Meldungen ohne Einwilligung
-   (V12) und Altersgrenze (WP 248 Kriterium 7) zu
-   `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md` hinzufügen (vorbereitet als Abschnitt 6, Frage 5)?
-   Empfehlung: ja, gebündelt mit Frage 1 dort.
+   (V12) und Altersgrenze (WP 248 Kriterium 7) zu `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md` hinzufügen
+   (vorbereitet als Abschnitt 6, Frage 5)? Empfehlung: ja, gebündelt mit Frage 1 dort.
