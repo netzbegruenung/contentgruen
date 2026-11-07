@@ -48,7 +48,7 @@ td {
 }
 
 tr.inaktiv td {
-  color: var(--text-faint);
+  color: var(--text-subtle);
 }
 
 .unsichtbar {

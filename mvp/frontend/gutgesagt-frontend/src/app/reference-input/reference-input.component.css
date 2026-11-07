@@ -240,6 +240,14 @@
     color: white;
 }
 
+/* Im Dunkeln sind Blau und Orange heller: dunkle Schrift statt Weiss (#588) */
+@media (prefers-color-scheme: dark) {
+    .reference-badge,
+    .reference-badge.pending {
+        color: var(--bg-main);
+    }
+}
+
 .reference-count {
     margin-top: var(--spacing-xs);
     font-size: 12px;

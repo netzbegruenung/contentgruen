@@ -696,8 +696,8 @@ body.cdk-global-scrollblock {
 
 /* Success Snackbar Styling for Contribution Feedback */
 .mat-mdc-snack-bar-container.success-snackbar {
-    --mdc-snackbar-container-color: var(--primary-fill);
-    --mdc-snackbar-supporting-text-color: white;
+    --mat-snack-bar-container-color: var(--primary-fill);
+    --mat-snack-bar-supporting-text-color: white;
     --mat-snack-bar-button-color: white;
 }
 

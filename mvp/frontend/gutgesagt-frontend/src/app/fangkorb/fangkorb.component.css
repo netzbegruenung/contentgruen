@@ -129,6 +129,13 @@
   font-weight: 500;
 }
 
+/* Im Dunkeln sind --primary-light und --primary-dark beide Grashalm: Schrift waere unsichtbar (#588) */
+@media (prefers-color-scheme: dark) {
+  .filter-chip.aktiv {
+    background: var(--selected-bg);
+  }
+}
+
 .filter-chip:focus-visible {
   outline: 2px solid var(--primary-dark);
   outline-offset: 2px;
