@@ -62,7 +62,8 @@ TOLERANZ_FAELLE = 1
 # Tor fuer Roadmap-Stufe 3 (docs/VISION.md, "Testset vor Stellschrauben"): Mindestwerte
 # bei der Schwelle von heute, unabhaengig vom Soll. Recall@10: Bei so vielen Faellen mit
 # Erwartung steht eine passende Antwort unter den ersten 10. Praezision: so viel des
-# Angezeigten passt. Vorlaeufig am Seed gesetzt, mit dem Startbestand neu (#568).
+# Angezeigten passt. Am Seed gesetzt; am Entwurf des Startbestands bewertet und belassen
+# (#568, SUCHTESTSET.md: dort ist die Praezision bei zwei Kommentaren je Aussage begrenzt).
 # Liegt unter dem Soll abzueglich Toleranz, sonst waere ein erlaubter Ausreisser rot.
 TOR_STUFE_3: Dict[str, float] = {
     "recall_bei_10": 0.80,
@@ -71,7 +72,8 @@ TOR_STUFE_3: Dict[str, float] = {
 
 # Untere Grenze fuer aehnliche Aussagen: Anteil der Faelle mit Erwartung, bei denen eine
 # erwartete Aussage unter den aehnlichen Aussagen ist (AEHNLICHE_ANZAHL ab AEHNLICHE_AB
-# in suche_messen.py, wie im Beitragsformular). Vorlaeufig am Seed gesetzt (#568).
+# in suche_messen.py, wie im Beitragsformular). Am Seed gesetzt, am Entwurf des
+# Startbestands bestaetigt (76 %, #568).
 UNTERE_GRENZE_AEHNLICHE = 0.70
 
 

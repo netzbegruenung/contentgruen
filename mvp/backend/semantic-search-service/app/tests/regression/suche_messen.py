@@ -73,9 +73,9 @@ BESTAND_PASST_NICHT = 2
 AEHNLICHE_ANZAHL = 3
 AEHNLICHE_AB = 0.885
 
-VORLAEUFIG = (
-    "Vorläufig: gemessen am Testbestand (Seed). Nach dem Startbestand (#288) einmal neu "
-    "messen, siehe SUCHTESTSET.md."
+HINWEIS = (
+    "Bewertet am Seed und am Entwurf des Startbestands, lokal (SUCHTESTSET.md). Nach "
+    "dem Import des Startbestands auf Produktion (#288) einmal zur Kontrolle messen."
 )
 
 EINORDNUNGEN = ("treffer", "fehltreffer", "keine")
@@ -105,6 +105,9 @@ class FallMessung(NamedTuple):
     # Die aehnlichen Aussagen zur Suchanfrage (AEHNLICHE_ANZAHL, ab AEHNLICHE_AB), je
     # Aussage: ist sie eine erwartete? Unabhaengig von der Schwelle der Suche.
     aehnliche: Tuple[bool, ...] = ()
+    # Aussagen aus fall.nur_ohne, die im gemessenen Bestand stehen: Der Fall ist dort
+    # nicht fremd und zaehlt nicht mit. (Fehlt eine aus fall.nur_mit, steht sie in fehlt.)
+    ausgeschlossen: Tuple[str, ...] = ()
 
 
 class Auswertung(NamedTuple):
@@ -174,8 +177,11 @@ def passend_unter(gezeigt: Sequence[AngezeigterBeitrag], k: int) -> bool:
 
 
 def gemessen(messungen: Iterable[FallMessung]) -> List[FallMessung]:
-    """Nur Faelle, deren erwartete Aussagen alle im Bestand sind."""
-    return [m for m in messungen if not m.fehlt]
+    """
+    Nur Faelle, deren erwartete Aussagen (und die aus nur_mit) alle im Bestand sind und
+    keine aus nur_ohne.
+    """
+    return [m for m in messungen if not m.fehlt and not m.ausgeschlossen]
 
 
 def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
@@ -301,7 +307,7 @@ def tabellen(
     aktuell = schwelle_heute() if aktuell is None else aktuell
     faelle = gemessen(messungen)
     zeilen = [
-        VORLAEUFIG,
+        HINWEIS,
         "",
         f"{len(faelle)} von {len(messungen)} Fällen gemessen, je Beitragstyp höchstens "
         f"{k} Beiträge, Schwelle der Suche heute {aktuell}.",
@@ -360,6 +366,15 @@ def tabellen(
     if fehlend:
         zeilen += ["", "Nicht gemessen (Aussage fehlt im Bestand):"]
         zeilen += [f"- {m.fall.id}: {', '.join(m.fehlt)}" for m in fehlend]
+    ausgeschlossen = [m for m in messungen if m.ausgeschlossen and not m.fehlt]
+    if ausgeschlossen:
+        zeilen += [
+            "",
+            "Nicht gemessen (nicht fremd, der Bestand hat eine Aussage dazu):",
+        ]
+        zeilen += [
+            f"- {m.fall.id}: {', '.join(m.ausgeschlossen)}" for m in ausgeschlossen
+        ]
     return "\n".join(zeilen)
 
 
@@ -406,7 +421,7 @@ def als_json(
     """
     heute = schwelle_heute()
     return {
-        "hinweis": VORLAEUFIG,
+        "hinweis": HINWEIS,
         "umgebung": umgebung or {},
         "k": k,
         "schwelle_heute": heute,
@@ -424,6 +439,7 @@ def als_json(
                 "erwartet": list(m.fall.erwartet),
                 "dieselbe_behauptung": m.fall.dieselbe_behauptung,
                 "fehlt": list(m.fehlt),
+                "ausgeschlossen": list(m.ausgeschlossen),
                 "landet_auf_erwarteter": m.landet_auf_erwarteter,
                 "aehnliche": list(m.aehnliche),
                 "einordnung": {
@@ -503,6 +519,7 @@ class _Erwartung(NamedTuple):
     aussage_ids: frozenset
     beitrag_ids: frozenset
     fehlt: Tuple[str, ...]
+    ausgeschlossen: Tuple[str, ...] = ()
 
 
 async def _aussage_im_bestand(dienste: Dienste, text: str):
@@ -520,18 +537,31 @@ async def _aussage_im_bestand(dienste: Dienste, text: str):
 
 
 async def _erwartung(dienste: Dienste, fall: Fall, cache: dict) -> _Erwartung:
-    """Die erwarteten Aussagen im Bestand: ihre IDs und die ihrer Beitraege."""
-    aussage_ids, beitrag_ids, fehlt = set(), set(), []
-    for text in fall.erwartet:
+    """
+    Die erwarteten Aussagen im Bestand: ihre IDs und die ihrer Beitraege. Dazu, welche
+    aus erwartet und nur_mit fehlen und welche aus nur_ohne im Bestand stehen.
+    """
+
+    async def im_bestand(text: str):
         if text not in cache:
             cache[text] = await _aussage_im_bestand(dienste, text)
-        aussage = cache[text]
+        return cache[text]
+
+    aussage_ids, beitrag_ids, fehlt = set(), set(), []
+    for text in fall.erwartet:
+        aussage = await im_bestand(text)
         if aussage is None:
             fehlt.append(text)
             continue
         aussage_ids.add(str(aussage.id))
         beitrag_ids.update(str(r.id) for r in aussage.replysuggestions)
-    return _Erwartung(frozenset(aussage_ids), frozenset(beitrag_ids), tuple(fehlt))
+    fehlt += [t for t in fall.nur_mit if await im_bestand(t) is None]
+    ausgeschlossen = tuple(
+        [t for t in fall.nur_ohne if await im_bestand(t) is not None]
+    )
+    return _Erwartung(
+        frozenset(aussage_ids), frozenset(beitrag_ids), tuple(fehlt), ausgeschlossen
+    )
 
 
 def angezeigte_beitraege(
@@ -620,6 +650,7 @@ async def fall_messen(
         erwartung.fehlt,
         landet,
         tuple(str(a.id) in erwartung.aussage_ids for a in aehnliche),
+        erwartung.ausgeschlossen,
     )
 
 

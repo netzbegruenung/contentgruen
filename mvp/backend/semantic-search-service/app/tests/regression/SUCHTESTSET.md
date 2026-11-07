@@ -14,7 +14,7 @@ dieselbe Aussage oder nicht.
 | `seed_laden.py` | lädt den Seed in eine leere Sammlung, ohne den Dienst (nächtlicher Lauf) |
 | `nachtlauf.py` | misst am Seed und vergleicht mit dem Soll (nächtlicher Lauf) |
 | `../unit/test_nachtlauf.py` | Soll, Toleranz, Tor und untere Grenze ohne Stack (in CI) |
-| `../unit/test_suche_testset_aufbau.py` | Aufbau, Bezug zum Seed und Auswertung ohne Stack (in CI) |
+| `../unit/test_suche_testset_aufbau.py` | Aufbau, Bezug zu Seed und Startbestand, Auswertung ohne Stack (in CI) |
 
 ## Messen
 
@@ -24,8 +24,8 @@ Gegen den Bestand, mit dem der Dienst läuft, im Container des Semantic-Search-S
 python -m tests.regression.suche_messen
 ```
 
-Das ist auch der Befehl zum Neu-Messen nach dem Startbestand (#288). Lokal gegen den
-Dev-Stack:
+Das ist auch der Befehl für die Kontrollmessung nach dem Import des Startbestands auf
+Produktion (#288). Lokal gegen den Dev-Stack:
 
 ```bash
 cd mvp/backend/semantic-search-service/app
@@ -80,32 +80,40 @@ so wie er im Dienst mit dieser Schwelle liefe.
   unter den Suchen ohne Treffer. Ob eine Suchanfrage auf einer Aussage landet, prüft
   dieselbe Dublettenprüfung wie beim Anlegen (`vorhandene_finden`); sie hängt nicht davon
   ab, ob die Aussage Antworten hat. Der Anteil „insgesamt“ gilt deshalb auch für Aussagen
-  ohne Antwort. **Grenze:** Am Seed hat jede erwartete Aussage Antworten, solche
-  Suchanfragen haben also fast immer Treffer; „0 unter den Suchen ohne Treffer“ ist dort
-  kein Befund. Wie viele Aussagen im Bestand aus Suchen ohne Treffer zerfasert sind,
-  braucht echte Suchen und Aussagen ohne Antwort, also den Startbestand.
+  ohne Antwort. **Grenze:** Am Seed und am Startbestand hat jede erwartete Aussage
+  Antworten, solche Suchanfragen haben also fast immer Treffer; „0 unter den Suchen ohne
+  Treffer“ ist dort kein Befund. Wie viele Aussagen im Bestand aus Suchen ohne Treffer
+  zerfasert sind, zeigen erst echte Suchen auf Produktion (siehe Ergebnis am
+  Startbestand, Zerfaserung).
 - **Ähnliche Aussagen:** dieselbe Abfrage wie die Vorschläge im Beitragsformular
   (höchstens 3 gepflegte Aussagen, ab 0,885; `AEHNLICHE_ANZAHL`, `AEHNLICHE_AB`). Gezählt
   wird, bei wie vielen Fällen mit Erwartung eine erwartete Aussage darunter ist, und bei
   wie vielen Fällen ohne Erwartung trotzdem eine erscheint. Unabhängig von der Schwelle
   der Suche.
-- **Fremd und Verneinung** sind auf den Testbestand bezogen: „fremd“ heißt, der Seed hat
-  keine Aussage dazu. Nach dem Startbestand vor dem Messen prüfen, ob er Aussagen zu
-  diesen Themen hat; sonst zählen echte Treffer als Fehltreffer.
+- **Fremd und Verneinung** hängen am Bestand: „fremd“ heißt, der gemessene Bestand hat
+  keine Aussage dazu. Hat der Startbestand eine (Wolf, Rente, Deutschlandticket), steht
+  sie im Fall unter `nur_ohne`, und der Fall zählt dort nicht. Fälle ohne Erwartung, die
+  nur am Startbestand etwas aussagen (Verneinung seiner Aussagen, fremde Themen neben
+  ihnen), nennen unter `nur_mit` die Aussage, ohne die sie nicht zählen. Kommen Aussagen
+  zu einem Thema dazu, vor dem Messen die Fälle „fremd“ prüfen; sonst zählen echte
+  Treffer als Fehltreffer.
 - Fälle, deren erwartete Aussage im gemessenen Bestand fehlt, zählen nicht mit; die
-  Ausgabe nennt sie. Heute stammen alle erwarteten Aussagen aus dem Seed (Testbestand).
+  Ausgabe nennt sie. S01 bis S42 erwarten Aussagen des Seeds, ab S43 des Startbestands
+  (`STARTBESTAND` in `suche_testset.py`). Zwölf Aussagen hat der Startbestand mit dem
+  Seed gemeinsam; am Seed zählen die Fälle zum Startbestand nicht mit, am Startbestand
+  die vier zu den zwei Seed-Aussagen, die ihm fehlen (S06 bis S09). So bleibt das Soll
+  des nächtlichen Laufs, wenn Fälle zum Startbestand dazukommen (ein Unit-Test prüft das).
 - Keine Personendaten, keine Eingaben aus Produktion: Suchanfragen sind selbst
   formuliert oder stammen aus dem Seed bzw. dem Messset.
 
-## Ergebnis am Testbestand (vorläufig)
+## Ergebnis am Testbestand (Seed)
 
-**Vorläufig:** gemessen am 05.11.2026 gegen den Seed im Dev-Stack mit
+Gemessen am 05.11.2026 gegen den Seed im Dev-Stack mit
 `intfloat/multilingual-e5-base`, 42 Fälle (33 mit Erwartung, 9 ohne), mit dem Stemmer
 vor #392 (Unterschiede danach unter „Stemmer“). Der Seed hat 14
 Aussagen mit Antworten, jede Antwort hängt an einer Aussage, und er ist klein und
-geschrieben, um gefunden zu werden. Nach dem Startbestand (#288) kommen Fälle zu dessen
-Aussagen dazu (auch zu Aussagen ohne Antwort) und die Fälle „fremd“ werden geprüft;
-dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
+geschrieben, um gefunden zu werden. Die Bewertung der Schwelle steht unter „Ergebnis am
+Startbestand“; die Zeile der Schwelle von heute ist hier das Soll des nächtlichen Laufs.
 
 | Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|---|---|
@@ -118,8 +126,8 @@ dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
 | 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 0.76 | 0.76 | 12 / 15 |
 | 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
-- **Schwelle 0,8 bleibt (vorläufig).** Es gibt keinen klaren Knick, nur einen Tausch:
-  Darunter kommt ein Treffer dazu, und die Fälle ohne passende Aussage zeigen fast
+- **Schwelle 0,8 bleibt** (am Startbestand bestätigt, siehe unten). Es gibt keinen
+  klaren Knick, nur einen Tausch: Darunter kommt ein Treffer dazu, und die Fälle ohne passende Aussage zeigen fast
   immer etwas; darüber gehen ein bis zwei Treffer verloren, dafür steigt die Präzision
   (0,82: 27 statt 29 Treffer, Präzision 0,50 statt 0,32). Für Gut gesagt zählt zuerst,
   dass eine passende Antwort erscheint; am kleinen Seed trägt das keine Verschiebung.
@@ -127,8 +135,7 @@ dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
   Treffer nur über ihn („Heizungsverbot“, „Fleischverbot“, „Bürokratiemonster“, die
   Gurken, die Dunkelflaute in Worten); zugleich sind 125 der 136 direkt angezeigten
   Beiträge unpassend, und bei S09 steht ein unpassender direkter Kommentar vor der
-  passenden Hintergrundinfo. Ob eine eigene Schwelle für den direkten Weg trägt, zeigt
-  erst der Startbestand.
+  passenden Hintergrundinfo. Am Startbestand rettet er bei 0,8 nichts (unten).
 - **Verneinungen** (4 Fälle) sind alle Fehltreffer: Das Gegenteil einer Aussage liegt bei
   0,89 bis 0,98 und damit weit über jeder Schwelle. Das löst keine Schwelle, sondern eine
   bessere Trennung von Widersprüchen (#387).
@@ -158,6 +165,81 @@ dann wird einmal mit dem Befehl oben neu gemessen und die Schwelle neu bewertet.
   Erwartung zeigen trotzdem eine, darunter alle 4 Verneinungen. Die untere Grenze 0,885
   hält also das Gegenteil einer Aussage nicht fern, das kann nur #387.
 
+## Ergebnis am Startbestand (Entwurf, lokal)
+
+Gemessen am 07.11.2026 am **Entwurf des Startbestands** (#288: 30 Aussagen, je zwei
+Kommentare, 60 insgesamt), eingespielt mit `mvp/scripts/manual/beitraege_importieren.py`
+in einen eigenen, leeren lokalen Stack ohne Seed; nicht auf Test oder Produktion.
+Modell `intfloat/multilingual-e5-base`, NLI-Stufe im Schattenbetrieb (Standard),
+106 Fälle, davon 99 gemessen (86 mit Erwartung, 13 ohne); nicht gemessen S06 bis S09
+(Seed-Aussagen, die dem Startbestand fehlen) und S38, S39, S42 (nicht fremd). Weicht der
+importierte Startbestand auf Produktion vom Entwurf ab, ändern sich einzelne Fälle; dort
+reicht eine Kontrollmessung mit dem Befehl oben.
+
+| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.76 | 81/86 | 5 | 0 | 0/13 / 13 | 0.18 | 0.99 | 1.00 | 1.00 | 0 / 0 |
+| 0.78 | 80/86 | 5 | 1 | 1/13 / 12 | 0.19 | 0.98 | 0.99 | 0.99 | 0 / 3 |
+| 0.79 | 80/86 | 5 | 1 | 1/13 / 12 | 0.19 | 0.98 | 0.99 | 0.99 | 0 / 27 |
+| **0.80** | 80/86 | 5 | 1 | 1/13 / 12 | 0.22 | 0.98 | 0.99 | 0.99 | 0 / 65 |
+| 0.81 | 79/86 | 5 | 2 | 1/13 / 12 | 0.27 | 0.97 | 0.98 | 0.98 | 1 / 97 |
+| 0.82 | 78/86 | 4 | 4 | 3/13 / 10 | 0.34 | 0.94 | 0.95 | 0.95 | 4 / 94 |
+| 0.83 | 77/86 | 5 | 4 | 3/13 / 10 | 0.40 | 0.94 | 0.95 | 0.95 | 7 / 69 |
+| 0.84 | 73/86 | 5 | 8 | 3/13 / 10 | 0.45 | 0.88 | 0.90 | 0.90 | 7 / 29 |
+| 0.86 | 67/86 | 3 | 16 | 3/13 / 10 | 0.49 | 0.79 | 0.80 | 0.80 | 2 / 6 |
+
+- **Schwelle 0,8 bleibt, „vorläufig“ entfällt.** Bei 0,8 erscheint in 80 von 86 Fällen
+  die passende Antwort zuerst, in 85 unter den ersten zehn. 0,82 kostet drei Treffer
+  (S26 „Genderzwang“, S72 „Akademikerpartei“, S29 die Gurken; dann ohne Ergebnis) und
+  gewinnt einen (S46); zwei fremde Themen zeigen dann nichts mehr (S70, S89). Wer kurze
+  Schlagwörter tippt, bekäme bei 0,82 öfter „Hier fehlt eine Antwort“, obwohl es eine
+  gibt. Für Gut gesagt zählt zuerst, dass eine passende Antwort erscheint.
+- **Präzision oberhalb 0,8:** 0,82 hebt sie von 0,22 auf 0,34, 0,84 auf 0,45 (bei 73
+  statt 80 Treffern). Sie ist am Startbestand nach oben begrenzt: Je Aussage gibt es
+  zwei Kommentare, die Ergebnisseite zeigt bis zu zehn; bei 0,8 stehen im Median zehn
+  Kommentare auf der Seite, bei 0,82 vier. Gemessen mit der Pronomen-Stoppliste aus
+  #392; der Tausch Treffer gegen Präzision ist derselbe wie am Seed, nur mit mehr
+  Treffern auf jeder Stufe.
+- **Direkter Weg:** Bei 0,8 zeigt er 65 Beiträge, keiner passt, und keiner steht an
+  erster Stelle; er rettet keinen Treffer. Ab 0,81 fallen Aussagetreffer weg und er
+  füllt die Plätze, bei 0,82 mit vier passenden (ohne ihn 75 statt 78 Treffer). Am
+  Startbestand hängt jeder Kommentar an einer Aussage, ein Beitrag ohne Aussage ist dort
+  nicht dabei; am Seed rettete er fünf Treffer. Er bleibt, eine eigene Schwelle trägt
+  das Set nicht.
+- **Tor für Roadmap-Stufe 3:** Recall@10 0,99 (Tor 0,80), Präzision 0,22 (Tor 0,25).
+  Die Präzision liegt am Startbestand unter dem Tor, weil sie dort nach oben begrenzt
+  ist (siehe oben), nicht weil Unpassendes vor Passendem steht. Tor und Grenze bleiben
+  am Seed gesetzt, der nächtliche Lauf misst nur dort.
+- **Verneinungen** (8) sind alle Fehltreffer, wie am Seed; **fremde Themen** zeigen in 4
+  von 5 Fällen etwas (Mülltrennung, Mietpreisbremse, Bahn, Schuldenbremse). Beides löst
+  keine Schwelle unter 0,86 (#387).
+- **Ähnliche Aussagen:** bei 65 von 86 Fällen mit Erwartung (76 %) eine erwartete
+  Aussage darunter, über der unteren Grenze von 70 %; 9 von 13 Fällen ohne Erwartung
+  zeigen trotzdem eine.
+
+**Zerfaserung:**
+
+- **Suchanfragen:** 31 von 41 Suchanfragen, die dieselbe Behauptung wie eine Aussage des
+  Startbestands sind, landen nicht auf ihr; die zehn, die landen, sind alle wörtlich.
+  Keine Umformulierung, kein Tippfehler und keine Umgangssprache landet. Mit der
+  NLI-Stufe „an“ (#387) landen 6 der 31 (S32, S36, S51, S61, S74, S97), 25 bleiben.
+- **Aussagen ohne Antwort:** Einmal-Versuch am selben Stack über den Suchendpunkt: Vier
+  Suchen zu Themen ohne Aussage legten je eine Aussage ohne Antwort an (Radwege,
+  Grundsteuer, Handys an Schulen, Homeoffice), dann je drei Suchen mit derselben
+  Behauptung in anderen Worten. 6 von 12 landen, alle mit fast gleichem Wortlaut
+  („Die Grundsteuer ist nicht gerecht“, „Home Office macht faul“); die übrigen sechs
+  legen eine weitere Aussage an. Die Dublettenprüfung achtet nicht auf Antworten, Aussagen
+  ohne Antwort zerfasern also wie die mit Antwort.
+- **Im Bestand:** Der Bericht der NLI-Stufe (`dieselbe_bericht.py`) findet unter den 30
+  Aussagen kein Paar mit derselben Behauptung. Nah beieinander liegen „Die Grünen
+  interessieren sich nur für Großstädte …“ und „Die Grünen machen Politik nur für
+  Akademiker in der Stadt“: S24 (Land) zeigt zuerst die Antworten auf die zweite.
+- **Anteil aus Suchen ohne Treffer:** Im Startbestand hat jede Aussage Antworten; welcher
+  Anteil der Aussagen aus Suchen ohne Treffer dieselbe Behauptung wie eine andere ist,
+  zeigt erst eine Zählung auf Produktion nach einigen Wochen Suchen. Am Startbestand sind
+  2 der 99 gemessenen Suchen ohne Treffer, keine davon dieselbe Behauptung wie eine
+  Aussage.
+
 ## Nächtlicher Lauf
 
 `.woodpecker/nacht.yaml` (#391) misst jede Nacht und auf Anstoß das Messset und das
@@ -185,6 +267,7 @@ Geprüft wird bei der Schwelle von heute (Werte in `nachtlauf.py`):
 - **Untere Grenze für ähnliche Aussagen:** Bei mindestens 70 % der Fälle mit Erwartung
   ist eine erwartete Aussage unter den ähnlichen Aussagen. Am Seed heute 76 %.
 
-Tor und Grenze sind vorläufig am Seed gesetzt, so dass ein erlaubter Ausreißer von einem
-Fall nicht rot wird; mit dem Startbestand (#568) werden sie neu bewertet. Der Lauf misst
+Tor und Grenze sind am Seed gesetzt, so dass ein erlaubter Ausreißer von einem Fall
+nicht rot wird. Am Entwurf des Startbestands (#568) hält die Grenze (76 %), die
+Präzision liegt dort strukturbedingt unter dem Tor (siehe oben); beide bleiben. Der Lauf misst
 immer am Seed, nie am Bestand von Test oder Produktion.

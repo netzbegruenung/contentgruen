@@ -26,7 +26,7 @@ from tests.regression.suche_messen import (
     AngezeigterBeitrag,
     FallMessung,
 )
-from tests.regression.suche_testset import FAELLE, Fall
+from tests.regression.suche_testset import FAELLE, Fall, am_seed_gemessen
 
 A = "Windräder töten die Vögel!"
 SCHWELLE = 0.8
@@ -161,11 +161,15 @@ class TestPruefen:
         assert all(0 < wert <= 1 for wert in TOR_STUFE_3.values())
 
     def test_soll_kennt_jeden_fall_des_suchtestsets(self):
-        """Ein neuer Fall ohne nachgezogenes Soll faellt im PR auf, nicht erst nachts."""
-        assert SOLL["gemessen"] == len(FAELLE)
-        assert SOLL["dieselbe_behauptung"] == sum(f.dieselbe_behauptung for f in FAELLE)
+        """Ein neuer Fall ohne nachgezogenes Soll faellt im PR auf, nicht erst nachts.
+        Gemessen wird am Seed; die Faelle zum Startbestand zaehlen dort nicht."""
+        am_seed = [f for f in FAELLE if am_seed_gemessen(f)]
+        assert SOLL["gemessen"] == len(am_seed)
+        assert SOLL["dieselbe_behauptung"] == sum(
+            f.dieselbe_behauptung for f in am_seed
+        )
         assert SOLL["treffer"] + SOLL["fehltreffer"] + SOLL["keine"] == sum(
-            1 for f in FAELLE if f.erwartet
+            1 for f in am_seed if f.erwartet
         )
 
 
