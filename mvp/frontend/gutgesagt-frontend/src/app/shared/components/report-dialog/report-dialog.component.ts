@@ -49,7 +49,8 @@ export const MELDER_EMAIL_MAX = 254;
   styleUrls: ['./report-dialog.component.css']
 })
 export class ReportDialogComponent {
-  selectedReason: MeldegrundWert = 'spam';
+  /** Nicht vorbelegt (#581): Den Meldegrund waehlt die Person selbst. */
+  selectedReason: MeldegrundWert | null = null;
   description: string = '';
   melderName = '';
   melderEmail = '';
@@ -88,21 +89,52 @@ export class ReportDialogComponent {
   }
 
   get begruendungPflicht(): boolean {
-    return brauchtBegruendung(this.selectedReason);
+    return this.selectedReason !== null && brauchtBegruendung(this.selectedReason);
+  }
+
+  /**
+   * Was zum Melden noch fehlt, in der Reihenfolge der Felder. Der Dialog nennt es
+   * neben dem ausgegrauten „Melden“ (#581), weil Checkbox und Felder auf kleinen
+   * Bildschirmen unter dem Falz liegen.
+   */
+  get fehlendeAngaben(): string[] {
+    const fehlt: string[] = [];
+    if (this.selectedReason === null) {
+      fehlt.push('ein Grund');
+    }
+    if (this.begruendungPflicht && this.description.trim() === '') {
+      fehlt.push('die Begründung, warum der Beitrag rechtswidrig ist');
+    }
+    if (this.emailUngueltig) {
+      fehlt.push('eine gültige E-Mail-Adresse (oder das Feld leer lassen)');
+    }
+    if (!this.guterGlaube) {
+      fehlt.push('deine Erklärung guten Glaubens');
+    }
+    return fehlt;
+  }
+
+  get fehltHinweis(): string {
+    const fehlt = this.fehlendeAngaben;
+    if (fehlt.length === 0) {
+      return '';
+    }
+    if (fehlt.length === 1) {
+      return `Zum Melden fehlt noch: ${fehlt[0]}.`;
+    }
+    const letzte = fehlt[fehlt.length - 1];
+    const davor = fehlt.slice(0, -1).join(', ');
+    // Endet die vorletzte Angabe mit einem Nebensatz („…, warum … ist“), schliesst ein Komma ihn.
+    const komma = fehlt[fehlt.length - 2].includes(',') ? ',' : '';
+    return `Zum Melden fehlt noch: ${davor}${komma} und ${letzte}.`;
   }
 
   get kannMelden(): boolean {
-    return (
-      !this.submitting &&
-      !!this.selectedReason &&
-      this.guterGlaube &&
-      !this.emailUngueltig &&
-      (!this.begruendungPflicht || this.description.trim() !== '')
-    );
+    return !this.submitting && this.fehlendeAngaben.length === 0;
   }
 
   submitReport() {
-    if (!this.kannMelden) {
+    if (!this.kannMelden || this.selectedReason === null) {
       return;
     }
     this.submitting = true;
