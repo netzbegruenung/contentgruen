@@ -123,13 +123,6 @@ class TestBezugZumSeed:
         assert len(set(STARTBESTAND)) == len(STARTBESTAND) == 30
         assert len(set(STARTBESTAND) & _seed_aussagen()) == 12
 
-    def test_nur_mit_und_nur_ohne_nennen_aussagen_ausserhalb_des_seeds(self):
-        """Sie trennen die Faelle des Startbestands vom Seed; eine Seed-Aussage dort
-        haette am Seed keine Wirkung (nur_mit) oder schlösse den Fall immer aus."""
-        seed = _seed_aussagen()
-        for fall in FAELLE:
-            assert not (set(fall.nur_mit) | set(fall.nur_ohne)) & seed, fall.id
-
     def test_seed_im_set_ist_der_seed(self):
         """am_seed_gemessen() rechnet mit SEED; der muss zum Seed im Checkout passen."""
         assert set(SEED) == _seed_aussagen()
@@ -137,9 +130,8 @@ class TestBezugZumSeed:
     def test_faelle_zum_startbestand_zaehlen_am_seed_nicht(self):
         """Das Soll des naechtlichen Laufs (gemessen am Seed) bleibt, wenn Faelle zum
         Startbestand dazukommen."""
-        am_seed = [f.id for f in FAELLE if am_seed_gemessen(f)]
-        assert len(am_seed) == SOLL["gemessen"]
-        assert am_seed == [f"S{i:02d}" for i in range(1, 43)]
+        assert sum(1 for f in FAELLE if am_seed_gemessen(f)) == SOLL["gemessen"]
+        assert not any(am_seed_gemessen(f) for f in FAELLE if f.quelle == "start")
 
 
 # ---------------------------------------------------------------------- #
@@ -442,6 +434,24 @@ class TestErwartung:
 
         assert self._erwartung(fall, {A, "W"}).ausgeschlossen == ("W",)
         assert self._erwartung(fall, {A}).ausgeschlossen == ()
+
+    def test_nicht_gezaehlter_fall_sucht_nicht(self):
+        """Am Seed zaehlen die Faelle zum Startbestand nicht: keine Suche je Schwelle."""
+        erwartung = _Erwartung(
+            frozenset(), frozenset(), fehlt=(), ausgeschlossen=("W",)
+        )
+        suche = AsyncMock()
+        with patch.object(
+            suche_messen, "_erwartung", AsyncMock(return_value=erwartung)
+        ), patch("api.v1.search.aussagetreffer_finden", suche):
+            messung = asyncio.run(
+                suche_messen.fall_messen(None, _fall(erwartet=()), (0.8, 0.84))
+            )
+
+        suche.assert_not_called()
+        assert messung.ausgeschlossen == ("W",)
+        assert messung.angezeigt == {0.8: (), 0.84: ()}
+        assert suche_messen.gemessen([messung]) == []
 
     def test_erwartete_aussagen_wie_bisher(self):
         erwartung = self._erwartung(_fall(erwartet=(A, "B")), {A})

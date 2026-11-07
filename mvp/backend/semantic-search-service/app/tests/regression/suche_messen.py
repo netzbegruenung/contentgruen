@@ -65,7 +65,7 @@ RECALL_BEI = (5, 10)
 # Recall je Phaenomen: das groesste k aus RECALL_BEI (wie das Tor fuer Roadmap-Stufe 3).
 RECALL_JE_PHAENOMEN = max(RECALL_BEI)
 # Exit-Code, wenn kein Fall mit Erwartung gemessen wurde: Der Bestand passt nicht zum
-# Set (leere oder falsche Sammlung, Startbestand ohne passende Faelle).
+# Set (leere oder falsche Sammlung, ein Bestand ohne Aussagen aus Seed oder Startbestand).
 BESTAND_PASST_NICHT = 2
 # Aehnliche Aussagen wie die Vorschlaege im Beitragsformular (statement.service.ts:
 # VORSCHLAG_ANZAHL, Settings.aussage_vorschlag_schwelle): hoechstens so viele gepflegte
@@ -613,6 +613,17 @@ async def fall_messen(
     from services.search.search_orchestrator import SearchOrchestrator
 
     erwartung = await _erwartung(dienste, fall, {} if cache is None else cache)
+    if erwartung.fehlt or erwartung.ausgeschlossen:
+        # Zaehlt nicht mit (gemessen()): keine Suche. Am Seed sind das die Faelle zum
+        # Startbestand, im naechtlichen Lauf mehr als die Haelfte.
+        return FallMessung(
+            fall,
+            {s: () for s in schwellen},
+            erwartung.fehlt,
+            None,
+            (),
+            erwartung.ausgeschlossen,
+        )
     aussagetreffer, polaritaet = await aussagetreffer_finden(
         dienste.statement_service, fall.anfrage
     )
@@ -656,7 +667,8 @@ async def fall_messen(
 
 KEIN_FALL_GEMESSEN = (
     "Kein Fall mit Erwartung gemessen: Der Bestand passt nicht zum Suchtestset "
-    "(leere oder falsche Sammlung, oder Faelle fuer den Startbestand fehlen). "
+    "(leere oder falsche Sammlung, oder ein Bestand ohne die Aussagen aus Seed oder "
+    "Startbestand, siehe 'Nicht gemessen'). "
     "Die Zahlen oben sind nicht aussagekraeftig."
 )
 

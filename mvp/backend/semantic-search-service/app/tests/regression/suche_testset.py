@@ -36,6 +36,8 @@ Neue Faelle ans Ende ihres Abschnitts, IDs fortlaufend; eine ID wechselt nie den
 
 from typing import NamedTuple, Tuple
 
+from utils.text_normalisierung import text_normalisiert
+
 FORMEN = ("stichwort", "satz")
 QUELLEN = ("seed", "start", "dev", "eigen")
 PHAENOMENE = (
@@ -247,6 +249,8 @@ def am_seed_gemessen(fall: Fall) -> bool:
     Zaehlt der Fall am Seed mit (wie gemessen() in suche_messen.py)? Die Faelle zum
     Startbestand nicht: So bleibt das Soll des naechtlichen Laufs, der am Seed misst.
     """
-    return set(fall.erwartet + fall.nur_mit) <= set(SEED) and not (
-        set(fall.nur_ohne) & set(SEED)
-    )
+    seed = {text_normalisiert(t) for t in SEED}
+    benoetigt = {text_normalisiert(t) for t in fall.erwartet + fall.nur_mit}
+    return benoetigt <= seed and not seed & {
+        text_normalisiert(t) for t in fall.nur_ohne
+    }

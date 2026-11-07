@@ -212,7 +212,8 @@ reicht eine Kontrollmessung mit dem Befehl oben.
   am Seed gesetzt, der nächtliche Lauf misst nur dort.
 - **Verneinungen** (8) sind alle Fehltreffer, wie am Seed; **fremde Themen** zeigen in 4
   von 5 Fällen etwas (Mülltrennung, Mietpreisbremse, Bahn, Schuldenbremse). Beides löst
-  keine Schwelle unter 0,86 (#387).
+  keine gemessene Schwelle: Auch bei 0,86 zeigen 10 der 13 Fälle ohne Erwartung etwas
+  (#387).
 - **Ähnliche Aussagen:** bei 65 von 86 Fällen mit Erwartung (76 %) eine erwartete
   Aussage darunter, über der unteren Grenze von 70 %; 9 von 13 Fällen ohne Erwartung
   zeigen trotzdem eine.
