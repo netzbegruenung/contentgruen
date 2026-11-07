@@ -172,7 +172,8 @@ model), so the run is not a required status.
   production. No secret and no report step (there is no pull request to comment on): a red
   run is visible in Woodpecker.
 - **When a pull request must trigger the run:** if it changes the embedding model,
-  a threshold (`core/config.py`, `MINIMUM_SCORE_THRESHOLD`, `VORSCHLAG_MIN_AEHNLICHKEIT`),
+  a threshold (`MINIMUM_SCORE_THRESHOLD` in `services/search/search_orchestrator.py`,
+  `aussage_vorschlag_schwelle` in `core/config.py`),
   the stemmer, the normalisation (`utils/text_normalisierung.py`), the search pipeline, the
   seed, the Messset or the Suchtestset. Run it with "Run pipeline" on the pull-request
   branch (not on `main`: there a manual run also builds every image, `build.yaml`) and name

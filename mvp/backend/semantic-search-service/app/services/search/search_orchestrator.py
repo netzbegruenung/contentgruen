@@ -259,9 +259,9 @@ class SearchOrchestrator:
                     continue
 
                 # Der Schwellwert entscheidet ueber die Aufnahme und prueft deshalb
-                # den Rohscore. Frueher lief der Vergleich gegen den bereits mit
-                # DIRECT_MATCH_PENALTY gedaempften Wert - bei einer Penalty von 0.7
-                # und einer Schwelle von 0.8 haette der Rohscore ueber 1.143 liegen
+                # den Rohscore. Bis August 2026 lief der Vergleich gegen den bereits
+                # mit DIRECT_MATCH_PENALTY gedaempften Wert; mit der damaligen
+                # Schwelle 0.8 haette der Rohscore ueber 0.8 / 0.7 = 1.143 liegen
                 # muessen, was eine Kosinus-Aehnlichkeit nie erreicht. Der Zweig
                 # konnte dadurch nie etwas liefern.
                 if content_result.score <= self._schwelle:
