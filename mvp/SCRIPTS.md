@@ -263,15 +263,22 @@ Das Skript gibt das Cookie nirgends aus; es zeigt nur, als wer es angemeldet ist
 (`/api/user-info`). Im lokalen Dev-Stack geht stattdessen `--email` mit Passwort
 (Direktanmeldung, auf Test und Produktion aus).
 
+- Weiterleitungen folgt das Skript nicht (sonst ginge das Cookie an die neue Adresse);
+  antwortet `--adresse` mit einer Weiterleitung, bricht es mit deren Ziel ab.
 - **Ohne `--ausfuehren` ein Trockenlauf:** prüft Pflichtfelder und Längen lokal (Titel
-  3–120 Zeichen in einer Zeile, Mittel Pflicht bis 500, Kurz bis 280, Lang bis 2000, Aussage
-  10–1000, Herkunft mit http(s)-Link) und zeigt, was angelegt würde; ohne Server und
-  Passwort.
+  3–120 Zeichen in einer Zeile, Mittel Pflicht mit 10–500 wie im Formular, Kurz bis 280, Lang
+  bis 2000, Aussage 10–1000, Herkunft mit http(s)-Link) und zeigt je Kommentar, was angelegt
+  würde: Titel, Aussage, gefundene Fassungen mit Länge, Zweck/Stil und jede Herkunft; ohne
+  Server und Passwort. Als „Hinweis“ meldet er, was übergangen wurde und vielleicht dazugehört:
+  `###`-Kommentare unter einer nummerierten `##`-Überschrift, die keine erkannte Aussage ist,
+  und Textzeilen im Kommentar, die zu keinem Feld gehören (Vermerke ab `geprüft:`,
+  `Hinweis …:` und Trennlinien `---` ausgenommen). Hinweise ändern den Exit-Code nicht.
 - Ist schon ein sehr ähnlicher Kommentar da, legt der Server nichts an; das Skript meldet ihn
   als übersprungen und übergeht die Dublettenprüfung nicht. Ist der vorhandene vom selben
-  Konto (etwa aus einem früheren Lauf), hängt das Skript ihn an die Aussage, wie „den eigenen
-  nehmen“ im Formular. Ein zweiter Lauf mit derselben Datei legt also nichts doppelt an und
-  holt fehlende Verknüpfungen nach.
+  Konto und hat denselben Titel (ein früherer Lauf dieser Datei), hängt das Skript ihn an die
+  Aussage, wie „den eigenen nehmen“ im Formular. Ein zweiter Lauf mit derselben Datei legt also
+  nichts doppelt an und holt fehlende Verknüpfungen nach. Einen nur ähnlichen eigenen
+  Kommentar (anderer Titel, etwa zu einer anderen Aussage) hängt es nicht um, es meldet ihn.
 - Je angelegtem Kommentar nennt die Ausgabe seine ID und die der Aussage; hängt er an einer
   schon vorhandenen Aussage mit anderem Wortlaut, steht deren Text dabei.
 - Der Dienst nimmt höchstens 10 Kommentare je Minute und 100 je Stunde und Konto an; bei
@@ -295,8 +302,9 @@ Das Skript gibt das Cookie nirgends aus; es zeigt nur, als wer es angemeldet ist
   `Kurz:`, `Mittel:`, `Lang:`, `Herkunft:` (mehrfach; auch `Zweite Herkunft (…):`),
   optional `Zweck:` (`kommentarspalte`, `eigene_leute`) und `Stil:` (`sachlich`,
   `humorvoll`, `persoenlich`, `brueckenbauend`, `bissig`). Kurz, Mittel und Lang gehen auf
-  den Folgezeilen weiter bis zur nächsten Leerzeile; jede Zeile wird ein eigener Absatz
-  (Zeilenumbruch), also nicht von Hand umbrechen. `####`-Überschriften im Kommentar zählen
+  den Folgezeilen weiter bis zur nächsten Leerzeile; jede Zeile bleibt eine eigene Zeile im
+  Text (Zeilenumbruch, wie im Formular), also nicht von Hand umbrechen. Die Karte zeigt die
+  Umbrüche derzeit nicht, der kopierte Text behält sie. `####`-Überschriften im Kommentar zählen
   nicht.
 - Herkunft: `URL – Beschreibung` oder `URL | Beschreibung` (Link auch als `<URL>` oder
   `[Text](URL)`); ein Vermerk ab `geprüft:` und Zeilen darunter, die kein Feld sind, werden
@@ -314,13 +322,16 @@ Stimmen und Varianten-Verknüpfungen des Beitrags gehen mit.
 - Datei: je Zeile `<typ> <id>`, Typ `commentary`, `generic_text`, `post` oder `image`;
   Leerzeilen und alles ab `#` zählen nicht.
 - Angemeldet wie beim Import, mit einem Admin-Konto; ohne Admin bricht es vor dem ersten
-  Eintrag ab.
-- Ohne `--ausfuehren` zeigt es je Eintrag den Titel. Gesperrte Beiträge zeigt die
-  Ansicht nicht, sie stehen dann als „nicht gefunden oder gesperrt“ da und lassen sich
-  trotzdem entfernen.
+  Beitrag ab.
+- Ohne `--ausfuehren` zeigt es je Beitrag Typ, ID und Titel; mit `--ausfuehren` steht der
+  Titel ebenso beim entfernten Beitrag. Gesperrte Beiträge zeigt die Ansicht nicht, ihren
+  Titel holt das Skript aus der Admin-Liste der gesperrten (`/api/v1/moderation/gesperrt`)
+  und markiert sie „(gesperrt)“.
 - Passt der Typ in der Liste nicht zum Beitrag (der Server nimmt den Typ nur fürs Log), bleibt
-  der Eintrag stehen und wird als Fehler gemeldet.
-- Schon entfernte oder nie vorhandene Beiträge werden als übersprungen gemeldet.
+  der Beitrag stehen und wird als Fehler gemeldet.
+- Was weder sichtbar noch gesperrt ist (schon entfernt, gelöscht oder nie
+  da), wird nie entfernt, nur als übersprungen gemeldet. Die Ansicht `/api/v1/content/beitrag`
+  gibt es ab v0.8.1; auf einem älteren Stand findet das Skript nichts und entfernt nichts.
 
 **Usage:**
 ```bash
@@ -341,7 +352,7 @@ python3 scripts/manual/beitraege_importieren.py bestand.md --email test.user@exa
 Getestet in `tests/unit/services/test_beitraege_importieren_skript.py` (Lesen, Import,
 Entfernen) und `tests/integration/api/test_beitraege_importieren_bff.py` (gegen den
 Dev-Stack, auch mit Sitzungs-Cookie; das Entfernen als Admin dort direkt am Suchdienst mit
-den Admin-Kopfzeilen des BFF).
+den Admin-Kopfzeilen des BFF; auf einem Dev-Stack vor v0.8.1 übersprungen).
 
 ## Utility Scripts (`scripts/utils/`)
 
