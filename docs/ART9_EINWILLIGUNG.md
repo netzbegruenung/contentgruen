@@ -97,7 +97,7 @@ Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“
   `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung.component.spec.ts`
   (Wortlaut mit Suffix, Auszug aus dem Text) und
   `mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.spec.ts`.
-- **DSFA:** `docs/DSFA_PUNKTE.md`, Abschnitt 3 Risiko 1 (Opt-in für die Sichtbarkeit),
+- **DSFA:** `docs/DSFA.md`, Abschnitt 3 Risiko 1 (Opt-in für die Sichtbarkeit),
   Abschnitt 4 (Zwecke, die der Wortlaut nennen muss, Kennung), Abschnitt 5 (Folgen des
   Widerrufs), Abschnitt 7 (Stand mit Kennung).
 - **Glossar:** `GLOSSARY.md`, „Art.-9-Einwilligung“ (Zwecke, Kennungsformat), „Level“
@@ -130,4 +130,4 @@ Wortlaut vom Backend.
 | Kennung | Stand | gültig |
 |---------|-------|--------|
 | `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | nie produktiv: von `2026-11-05-b` abgelöst, bevor #489 in einem Release war |
-| `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA_PUNKTE.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 (Datum nach dem Ausrollen eintragen) |

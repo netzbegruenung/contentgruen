@@ -101,6 +101,7 @@ nur wenig:
 | Keycloak realm „Gut gesagt“ (#429) | `docs/KEYCLOAK_REALM.md` |
 | Deletion of personal data | `docs/LOESCHKONZEPT.md` |
 | Art. 9 consent (own checkbox after first login, wording, withdrawal, #489) | `docs/ART9_EINWILLIGUNG.md` |
+| Data protection impact assessment (draft, Art. 35 GDPR), processing by processing | `docs/DSFA.md` |
 | Current state | `STATUS.md` (Lageseite); planning is on the Forgejo milestones |
 | Purpose and limits of the product | `docs/VISION.md` |
 

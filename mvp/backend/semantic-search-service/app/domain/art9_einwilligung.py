@@ -40,7 +40,7 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
             "bis ich es lösche oder mein Konto löschen lasse. Was bis zum Widerruf "
             "geschehen ist, bleibt rechtmäßig."
         ),
-        # Variante B (#559): nennt die Zwecke aus docs/DSFA_PUNKTE.md Abschnitt 4:
+        # Variante B (#559): nennt die Zwecke aus docs/DSFA.md Abschnitt 4:
         # Punkte, Level, Quests und Meilenstein-Abzeichen (fuer andere Angemeldete nur
         # mit gesonderter Zustimmung), Freischaltungen und die Muster-Hinweise. Zweiter
         # Wortlaut vom selben Tag, deshalb mit Suffix. Vor dem Merge noch zweimal
