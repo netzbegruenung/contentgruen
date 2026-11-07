@@ -102,6 +102,23 @@ describe('SiegelComponent', () => {
     expect(farbtonHoch).toBeGreaterThan(120); // Grün
   });
 
+  it('endet im Dunkelmodus in Klee, damit das Siegel sich vom dunklen Grund abhebt (#588)', () => {
+    spyOn(window, 'matchMedia').and.callFake(
+      (abfrage: string) =>
+        ({
+          matches: abfrage.includes('dark'),
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList,
+    );
+    fixture = TestBed.createComponent(SiegelComponent);
+
+    zeige(10);
+
+    const blase = (fixture.nativeElement as HTMLElement).querySelector('.siegel-blase-gruppe')!;
+    expect(aufgeloest(blase.getAttribute('fill')!)).toBe(aufgeloest('#008939'));
+  });
+
   it('begrenzt eine Güte über 10 auf 10', () => {
     zeige(14);
     expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 10 von 10');

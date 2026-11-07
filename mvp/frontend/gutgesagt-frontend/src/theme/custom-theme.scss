@@ -197,6 +197,10 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --info-bg-end: #f3f9ff;
   --info-tint: rgba(33, 150, 243, 0.08);
   --success-faint: #f1f8f4;
+  // Trend im Admin-Dashboard; im Hellen die frueheren Farbnamen (#588)
+  --trend-steigt: green;
+  --trend-faellt: red;
+  --trend-gleich: orange;
 
   // Content type colors
   --commentary-bg: #e6f0d2; // Light green for commentary
@@ -273,7 +277,7 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --primary-dark: #8abd24;
     --primary-fill: #008939;
 
-    --accent-light: #4f6b17;
+    --accent-light: #3a3a3a; // neutral: Themen-Marken sind Flaechen, kein Akzent
 
     --bg-main: #1c1c1c;
     --bg-card: #262626;
@@ -320,6 +324,9 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --info-accent: #64b5f6;
     --info-text: #90caf9;
     --info-tint: rgba(66, 165, 245, 0.14);
+    --trend-steigt: var(--primary-dark);
+    --trend-faellt: var(--error-main);
+    --trend-gleich: var(--warning-color);
 
     // Beitragstypen: dunkle, fast neutrale Baender; unterscheidbar bleiben sie ueber das Symbol
     --commentary-bg: #303030;

@@ -76,9 +76,10 @@ export class MvpDashboardComponent implements OnInit, OnDestroy {
 
   getTrendColor(trend: string): string {
     switch (trend) {
-      case 'increasing': return 'green';
-      case 'decreasing': return 'red';
-      default: return 'orange';
+      // Theme-Variablen statt fester Farben, damit der Trend auch im Dunkelmodus lesbar ist (#588)
+      case 'increasing': return 'var(--trend-steigt)';
+      case 'decreasing': return 'var(--trend-faellt)';
+      default: return 'var(--trend-gleich)';
     }
   }
 }

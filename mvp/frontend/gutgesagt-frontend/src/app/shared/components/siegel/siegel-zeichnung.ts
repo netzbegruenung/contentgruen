@@ -35,6 +35,11 @@ const GRAU: Hsl = [80, 6, 58];
 const GELB: Hsl = [46, 90, 46];
 /** Tannengrün der Seite, `--primary-dark` = #005437 in `src/theme/custom-theme.scss`. */
 const TANNENGRUEN: Hsl = [159.3, 100, 16.5];
+/**
+ * Klee (#008939) als oberes Ende im Dunkelmodus (#588): Tannengrün hebt sich vom dunklen
+ * Kartengrund (#262626) kaum ab (1,7:1), Klee erreicht die 3:1 für Grafiken.
+ */
+const KLEE: Hsl = [145, 100, 26.9];
 /** Anteil der Güte-Skala, an dem das Siegel ganz gelb ist. */
 const GELB_BEI = 0.4;
 
@@ -43,11 +48,13 @@ const mische = (von: Hsl, nach: Hsl, t: number): Hsl =>
 
 /**
  * Farbe des Siegels: Grau über Gelb nach Tannengrün, nie Rot (der Farbton bleibt zwischen
- * Gelb und Grün). Güte 10 ist das Tannengrün der Seite, in dem auch das Logo steht.
+ * Gelb und Grün). Güte 10 ist das Tannengrün der Seite, in dem auch das Logo steht; im
+ * Dunkelmodus (`dunkel`) endet die Skala in Klee.
  */
-export function siegelFarbe(guete: number | null): string {
+export function siegelFarbe(guete: number | null, dunkel = false): string {
   const t = (normierteGuete(guete) ?? 0) / HOECHSTE_GUETE;
-  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, TANNENGRUEN, (t - GELB_BEI) / (1 - GELB_BEI));
+  const gruen = dunkel ? KLEE : TANNENGRUEN;
+  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, gruen, (t - GELB_BEI) / (1 - GELB_BEI));
   return `hsl(${runde(h)} ${runde(s)}% ${runde(l)}%)`;
 }
 

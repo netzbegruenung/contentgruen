@@ -57,14 +57,26 @@ export class SiegelComponent implements OnChanges, OnDestroy {
   funken: { dx: number; dy: number }[] = [];
   private funkenTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  /** Dunkelmodus des Geräts (#588): Das Siegel endet dann in Klee statt Tannengrün. */
+  private dunkel = false;
+  private readonly dunkelAbfrage: MediaQueryList | null =
+    typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  private readonly dunkelGeaendert = (e: MediaQueryListEvent): void => {
+    this.dunkel = e.matches;
+    this.cdr.markForCheck();
+  };
+
+  constructor(private readonly cdr: ChangeDetectorRef) {
+    this.dunkel = this.dunkelAbfrage?.matches ?? false;
+    this.dunkelAbfrage?.addEventListener?.('change', this.dunkelGeaendert);
+  }
 
   get winkel(): number {
     return siegelWinkel(this.guete);
   }
 
   get farbe(): string {
-    return siegelFarbe(this.guete);
+    return siegelFarbe(this.guete, this.dunkel);
   }
 
   get text(): string {
@@ -81,6 +93,7 @@ export class SiegelComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.funkenTimer) clearTimeout(this.funkenTimer);
+    this.dunkelAbfrage?.removeEventListener?.('change', this.dunkelGeaendert);
   }
 
   private funkeln(): void {
