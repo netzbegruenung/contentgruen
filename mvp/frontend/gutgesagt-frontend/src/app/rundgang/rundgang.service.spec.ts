@@ -1,8 +1,9 @@
 import { DestroyRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogState } from '@angular/material/dialog';
 import { BehaviorSubject, Subject } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { RundgangService } from './rundgang.service';
 import { BEISPIEL_AUSSAGE, MITMACHEN_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
@@ -39,7 +40,16 @@ describe('RundgangService', () => {
     }) as never);
     router.navigateByUrl.and.resolveTo(true);
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
-    dialog.open.and.returnValue({ afterClosed: () => geschlossen } as never);
+    // Wie Material: close() startet nur die Animation, afterClosed kommt danach (geschlossen.next).
+    dialog.open.and.callFake((() => {
+      let zustand = MatDialogState.OPEN;
+      geschlossen.pipe(take(1)).subscribe(() => (zustand = MatDialogState.CLOSED));
+      return {
+        afterClosed: () => geschlossen.pipe(take(1)),
+        close: () => (zustand = MatDialogState.CLOSING),
+        getState: () => zustand,
+      };
+    }) as never);
 
     TestBed.configureTestingModule({
       providers: [
@@ -221,6 +231,98 @@ describe('RundgangService', () => {
       service.beenden();
       expect(dialog.open).toHaveBeenCalledTimes(2);
       expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('legt sich nicht über einen Rundgang, der noch zu seinem ersten Schritt lädt (#585)', async () => {
+      userInfo.next(angemeldet);
+      navigiert('/search?code=abc'); // etwa nach der Rückkehr von der Anmeldung
+      geschlossen.next('starten'); // Willkommen: Rundgang Antwort finden
+      expect(router.navigateByUrl).toHaveBeenCalled();
+      navigiert('/search'); // die Navigation des ersten Schritts endet
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+
+      await new Promise((fertig) => setTimeout(fertig));
+      expect(service.aktiv()?.index).toBe(0);
+      await service.weiter(); // Schritt 2 auf den Treffern
+      navigiert(`/result?searchQuery=${BEISPIEL_AUSSAGE}`);
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+
+      service.beenden();
+      expect(dialog.open).toHaveBeenCalledTimes(2);
+      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('kommt auch nach, wenn der Rundgang schon beim Laden des ersten Schritts beendet wird', async () => {
+      userInfo.next(angemeldet);
+      navigiert('/search?code=abc');
+      geschlossen.next('starten');
+      service.beenden();
+      await new Promise((fertig) => setTimeout(fertig));
+      expect(service.aktiv()).toBeNull();
+      expect(dialog.open).toHaveBeenCalledTimes(2);
+      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('schließt ein offenes Angebot, wenn ein Rundgang startet, und bietet es danach wieder an (#585)', async () => {
+      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
+      navigiert('/search');
+      userInfo.next(angemeldet);
+      expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
+      const fenster = dialog.open.calls.mostRecent().returnValue;
+
+      await service.starten('antwort-finden'); // etwa über Hilfe
+      expect(fenster.getState()).toBe(MatDialogState.CLOSING);
+      expect(service.aktiv()?.rundgang.id).toBe('antwort-finden');
+      service.beenden(); // noch während der Animation: kein zweites Fenster daneben
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+
+      geschlossen.next(undefined); // Animation vorbei
+      expect(localStorage.getItem(MITMACHEN_SCHLUESSEL)).toBeNull();
+      expect(dialog.open).toHaveBeenCalledTimes(2);
+      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('lässt die Wahl eines Fensters, das schon schließt, stehen', async () => {
+      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
+      navigiert('/search');
+      userInfo.next(angemeldet);
+      const fenster = dialog.open.calls.mostRecent().returnValue;
+      fenster.close('starten'); // Klick auf „Rundgang starten“, Animation läuft
+      const schliessen = spyOn(fenster, 'close');
+
+      await service.starten('antwort-finden');
+      expect(schliessen).not.toHaveBeenCalled();
+    });
+
+    it('zeigt das Willkommen nicht, während ein Rundgang zur Startseite führt, und auch nicht danach (#585)', async () => {
+      navigiert('/einladung/abc');
+      await service.starten('antwort-finden');
+      navigiert('/search');
+      expect(dialog.open).not.toHaveBeenCalled();
+
+      service.beenden();
+      navigiert(`/result?searchQuery=${BEISPIEL_AUSSAGE}`);
+      expect(dialog.open).not.toHaveBeenCalled();
+      // Entfällt nur für diesen Besuch
+      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBeNull();
+    });
+
+    it('merkt ein Willkommen, das ein anderer Rundgang ablöst, nicht als gesehen (#585)', async () => {
+      navigiert('/search');
+      expect(angebotDaten()).toBe(WILLKOMMEN);
+
+      await service.starten('mitmachen');
+      geschlossen.next(undefined);
+      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBeNull();
+      expect(service.aktiv()?.rundgang.id).toBe('mitmachen');
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+    });
+
+    it('merkt ein Willkommen als gesehen, wenn dessen eigener Rundgang startet', async () => {
+      navigiert('/search');
+      await service.starten('antwort-finden');
+      geschlossen.next(undefined);
+      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBe('1');
     });
 
     it('startet mit „Rundgang starten“ den Rundgang Mitmachen', () => {
