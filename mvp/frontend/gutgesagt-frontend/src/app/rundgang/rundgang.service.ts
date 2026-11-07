@@ -1,7 +1,7 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialog';
 import { filter, take } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { AngebotDialogComponent, AngebotWahl, angebotOeffnen } from './angebot-dialog.component';
@@ -37,8 +37,13 @@ export class RundgangService {
   /** Der laufende Rundgang mit dem aktuellen Schritt, sonst null. */
   readonly aktiv = this.stand.asReadonly();
 
-  /** Das offene Angebot; ein startender Rundgang schließt es (#585). */
+  /**
+   * Das offene Angebot, bis es ganz geschlossen ist (auch während der Animation, damit
+   * kein zweites daneben aufgeht); ein startender Rundgang schließt es (#585).
+   */
   private offenesAngebot: MatDialogRef<AngebotDialogComponent, AngebotWahl> | null = null;
+  /** Ein Mitmachen-Angebot, das ein anderer Rundgang geschlossen hat, gilt nicht als gesehen. */
+  private mitmachenAbgeloest = false;
   /**
    * Läuft ab dem Start, nicht erst ab dem ersten Schritt: Solange dessen Seite lädt, ist
    * `aktiv()` noch leer, und das Ende der Navigation darf kein Angebot darüberlegen (#585).
@@ -59,6 +64,8 @@ export class RundgangService {
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         filter((e) => WILLKOMMEN_SEITEN.some((s) => e.urlAfterRedirects.startsWith(s))),
+        // Nicht über einen Rundgang, der gerade zu seiner Seite führt (#585)
+        filter(() => !this.laeuft),
         take(1),
         takeUntilDestroyed(destroyRef),
       )
@@ -92,10 +99,17 @@ export class RundgangService {
   starten(id: RundgangId): Promise<void> {
     this.mitmachenAusstehend = this.mitmachenAusstehend && id !== 'mitmachen';
     this.laeuft = true;
-    // Höchstens eins: Angebot oder Rundgang. Das Schließen zählt wie „Später“.
+    // Höchstens eins: Angebot oder Rundgang (#585). Ein Fenster, das schon schließt,
+    // behält die Wahl der Person; close() würde sie überschreiben.
     const offen = this.offenesAngebot;
-    this.offenesAngebot = null; // Material meldet das Schließen erst nach der Animation
-    offen?.close();
+    if (offen?.getState() === MatDialogState.OPEN) {
+      const angebot = offen.componentInstance.angebot;
+      if (angebot.schluessel === MITMACHEN_ANGEBOT.schluessel && id !== 'mitmachen') {
+        this.mitmachenAbgeloest = true;
+        this.mitmachenAusstehend = true;
+      }
+      offen.close();
+    }
     return this.zuSchritt(RUNDGAENGE[id], 0);
   }
 
@@ -164,9 +178,13 @@ export class RundgangService {
     this.offenesAngebot = ref;
     ref.afterClosed().subscribe((wahl) => {
       if (this.offenesAngebot === ref) this.offenesAngebot = null;
-      // Auch Escape, „Später“ und das Schließen durch einen startenden Rundgang zählen
-      // als gesehen: Das Angebot kommt nicht wieder.
-      merken(angebot.schluessel);
+      // Auch Escape und „Später“ zählen als gesehen: Das Angebot kommt nicht wieder.
+      // Schließt ein anderer Rundgang das Mitmachen-Angebot, kommt es nach dessen Ende.
+      if (angebot === MITMACHEN_ANGEBOT && this.mitmachenAbgeloest) {
+        this.mitmachenAbgeloest = false;
+      } else {
+        merken(angebot.schluessel);
+      }
       if (wahl === 'starten') {
         void this.starten(angebot.rundgang);
       } else {
