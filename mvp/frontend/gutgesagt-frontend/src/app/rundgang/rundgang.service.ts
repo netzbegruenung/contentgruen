@@ -1,10 +1,10 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { filter, take } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
-import { angebotOeffnen } from './angebot-dialog.component';
+import { AngebotDialogComponent, AngebotWahl, angebotOeffnen } from './angebot-dialog.component';
 import { Angebot, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
 import { gesehen, merken } from './rundgang-merker';
 
@@ -37,7 +37,13 @@ export class RundgangService {
   /** Der laufende Rundgang mit dem aktuellen Schritt, sonst null. */
   readonly aktiv = this.stand.asReadonly();
 
-  private angebotOffen = false;
+  /** Das offene Angebot; ein startender Rundgang schließt es (#585). */
+  private offenesAngebot: MatDialogRef<AngebotDialogComponent, AngebotWahl> | null = null;
+  /**
+   * Läuft ab dem Start, nicht erst ab dem ersten Schritt: Solange dessen Seite lädt, ist
+   * `aktiv()` noch leer, und das Ende der Navigation darf kein Angebot darüberlegen (#585).
+   */
+  private laeuft = false;
   /** Zaehlt Schrittwechsel; ein ueberholter Wechsel setzt nach dem Laden nichts mehr. */
   private wechsel = 0;
   private mitmachenAusstehend = false;
@@ -73,7 +79,7 @@ export class RundgangService {
       .subscribe(() => {
         this.ersteSeiteDa = true;
         // Das Willkommen-Abo oben hat schon reagiert, falls es diese Seite war
-        if (!this.angebotOffen) this.naechstesAngebot();
+        if (!this.offenesAngebot) this.naechstesAngebot();
       });
 
     this.auth.userInfo$.pipe(takeUntilDestroyed(destroyRef)).subscribe((info) => {
@@ -85,6 +91,11 @@ export class RundgangService {
 
   starten(id: RundgangId): Promise<void> {
     this.mitmachenAusstehend = this.mitmachenAusstehend && id !== 'mitmachen';
+    this.laeuft = true;
+    // Höchstens eins: Angebot oder Rundgang. Das Schließen zählt wie „Später“.
+    const offen = this.offenesAngebot;
+    this.offenesAngebot = null; // Material meldet das Schließen erst nach der Animation
+    offen?.close();
     return this.zuSchritt(RUNDGAENGE[id], 0);
   }
 
@@ -107,7 +118,8 @@ export class RundgangService {
 
   beenden(): void {
     this.wechsel++; // ein Schritt, dessen Seite noch laedt, erscheint nicht mehr
-    if (!this.stand()) return;
+    if (!this.laeuft) return;
+    this.laeuft = false;
     this.stand.set(null);
     this.naechstesAngebot();
   }
@@ -133,7 +145,7 @@ export class RundgangService {
     if (gesehen(MITMACHEN_ANGEBOT.schluessel)) return;
     // Nicht über ein anderes Angebot oder einen laufenden Rundgang legen; danach.
     const ruhigeSeite = OHNE_ANGEBOT.some((s) => this.router.url.startsWith(s));
-    if (this.angebotOffen || this.stand() || !this.ersteSeiteDa || ruhigeSeite) {
+    if (this.offenesAngebot || this.laeuft || !this.ersteSeiteDa || ruhigeSeite) {
       this.mitmachenAusstehend = true;
       return;
     }
@@ -148,18 +160,18 @@ export class RundgangService {
   }
 
   private anbieten(angebot: Angebot): void {
-    this.angebotOffen = true;
-    angebotOeffnen(this.dialog, angebot)
-      .afterClosed()
-      .subscribe((wahl) => {
-        this.angebotOffen = false;
-        // Auch Escape und „Später“ zählen als gesehen: Das Angebot kommt nicht wieder.
-        merken(angebot.schluessel);
-        if (wahl === 'starten') {
-          void this.starten(angebot.rundgang);
-        } else {
-          this.naechstesAngebot();
-        }
-      });
+    const ref = angebotOeffnen(this.dialog, angebot);
+    this.offenesAngebot = ref;
+    ref.afterClosed().subscribe((wahl) => {
+      if (this.offenesAngebot === ref) this.offenesAngebot = null;
+      // Auch Escape, „Später“ und das Schließen durch einen startenden Rundgang zählen
+      // als gesehen: Das Angebot kommt nicht wieder.
+      merken(angebot.schluessel);
+      if (wahl === 'starten') {
+        void this.starten(angebot.rundgang);
+      } else {
+        this.naechstesAngebot();
+      }
+    });
   }
 }

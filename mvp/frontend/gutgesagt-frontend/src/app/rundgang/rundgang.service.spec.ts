@@ -39,7 +39,10 @@ describe('RundgangService', () => {
     }) as never);
     router.navigateByUrl.and.resolveTo(true);
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
-    dialog.open.and.returnValue({ afterClosed: () => geschlossen } as never);
+    dialog.open.and.returnValue({
+      afterClosed: () => geschlossen,
+      close: (wahl?: string) => geschlossen.next(wahl),
+    } as never);
 
     TestBed.configureTestingModule({
       providers: [
@@ -221,6 +224,49 @@ describe('RundgangService', () => {
       service.beenden();
       expect(dialog.open).toHaveBeenCalledTimes(2);
       expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('legt sich nicht über einen Rundgang, der noch zu seinem ersten Schritt lädt (#585)', async () => {
+      userInfo.next(angemeldet);
+      navigiert('/search?code=abc'); // etwa nach der Rückkehr von der Anmeldung
+      geschlossen.next('starten'); // Willkommen: Rundgang Antwort finden
+      expect(router.navigateByUrl).toHaveBeenCalled();
+      navigiert('/search'); // die Navigation des ersten Schritts endet
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+
+      await new Promise((fertig) => setTimeout(fertig));
+      expect(service.aktiv()?.index).toBe(0);
+      await service.weiter(); // Schritt 2 auf den Treffern
+      navigiert(`/result?searchQuery=${BEISPIEL_AUSSAGE}`);
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+
+      service.beenden();
+      expect(dialog.open).toHaveBeenCalledTimes(2);
+      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('kommt auch nach, wenn der Rundgang schon beim Laden des ersten Schritts beendet wird', async () => {
+      userInfo.next(angemeldet);
+      navigiert('/search?code=abc');
+      geschlossen.next('starten');
+      service.beenden();
+      await new Promise((fertig) => setTimeout(fertig));
+      expect(service.aktiv()).toBeNull();
+      expect(dialog.open).toHaveBeenCalledTimes(2);
+      expect(angebotDaten(1)).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('schließt ein offenes Angebot, wenn ein Rundgang startet (#585)', async () => {
+      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
+      navigiert('/search');
+      userInfo.next(angemeldet);
+      expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
+
+      await service.starten('antwort-finden'); // etwa über Hilfe
+      expect(service.aktiv()?.rundgang.id).toBe('antwort-finden');
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      service.beenden();
+      expect(dialog.open).toHaveBeenCalledTimes(1); // gesehen, kommt nicht wieder
     });
 
     it('startet mit „Rundgang starten“ den Rundgang Mitmachen', () => {
