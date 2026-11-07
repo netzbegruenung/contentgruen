@@ -28,13 +28,13 @@ Muster-Hinweis; Ausbaustufe steht in
   verworfen wird (`ss/services/entdoppelung.py:1-30` (#476)), wirkt ab dem Einspielen auf
   „Diese Woche oft genutzt“. Ausgeschaltet bis zum Ende dieser DSFA: ein Punktestand, den nur die
   Person selbst sieht und der nicht gespeichert, sondern bei jedem Abruf berechnet wird
-  (`ss/services/punkte_service.py:1-7` (#476), `ss/api/v1/usage.py:349-375` (#476));
+  (`ss/services/punkte_service.py:1-7` (#476), `ss/api/v1/usage.py:389-415` (#476));
   Muster-Hinweise für Admins, wenn zwei Konten sich innerhalb von 7 Tagen gegenseitig nutzen
   (`ss/services/muster_hinweise_service.py:1-24` (#476)).
 - **Geplant, nicht gebaut:** Ranglisten (die ersten 10 und der eigene Platz, nur für Angemeldete,
   nur mit Zustimmung), Quests, Meilenstein-Abzeichen, Krone, Wochenthema
   (`docs/VISION.md:99-103`).
-- **Fristen** (`docs/LOESCHKONZEPT.md:160-162` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
+- **Fristen** (`docs/LOESCHKONZEPT.md:161-163` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
   Muster-Hinweis 56 Tage und mit dem Konto gelöscht
   (`mvp/scripts/manual/person_loeschen.sql:55` (#476)).
 
@@ -64,7 +64,7 @@ Für den Grundbetrieb ohne Punkte trifft sicher nur WP-248-Kriterium 4 (vertraul
 | Risiko | Maßnahmen | Rest |
 |---|---|---|
 | **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:489-490`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete. Vorschlag zusätzlich: keine Linkvorschau für Ranglisten und eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | gering |
-| **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Mit einem Schlüssel aus der Konfiguration könnte, wer Datenbank und Schlüssel hat, für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | **Umgesetzt** (PR #476, BanSe/todo#266): Entdoppelung über Prüfwerte statt Protokoll, und beide Schlüssel liegen nur im Speicher, nach dem Muster des Tagesschlüssels der Besucher (`ss/utils/besucher_pseudonym.py:45-73`): Prüfwerte mit einem eigenen Tagesschlüssel, Paar-Prüfwerte mit einem Fensterschlüssel, der je 7 Tage wechselt und den vorigen einen Block lang zum Vergleich behält (`ss/services/entdoppelung.py:10-30,54-86` (#476)). Kein Bezug mehr zu `SEMANTIC_SEARCH_ACTOR_HASH_SECRET`. Nach einem Neustart beginnt ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | gering |
+| **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Mit einem Schlüssel aus der Konfiguration könnte, wer Datenbank und Schlüssel hat, für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | **Umgesetzt** (PR #476): Entdoppelung über Prüfwerte statt Protokoll, und beide Schlüssel liegen nur im Speicher, nach dem Muster des Tagesschlüssels der Besucher (`ss/utils/besucher_pseudonym.py:45-73`): Prüfwerte mit einem eigenen Tagesschlüssel, Paar-Prüfwerte mit einem Fensterschlüssel, der je 7 Tage wechselt und den vorigen einen Block lang zum Vergleich behält (`ss/services/entdoppelung.py:10-30,54-86` (#476)). Kein Bezug mehr zu `SEMANTIC_SEARCH_ACTOR_HASH_SECRET`. Nach einem Neustart beginnt ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | gering |
 | **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug, keine Punkte fürs Bewerten (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md:9-19`). | gering bis mittel; in der Acht-Wochen-Bilanz ansehen |
 
 Mit diesen Maßnahmen ist das Restrisiko gering bis mittel. Die Aufsichtsbehörde muss deshalb
@@ -128,7 +128,7 @@ Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
 1. Ist eine DSFA nach Art. 35 Abs. 1 nötig, und genügt dieser Umfang (Abschnitt 2)?
 2. Trägt Art. 9 Abs. 2 lit. a in zwei Stufen, auch für die Muster-Hinweise (Abschnitt 4)?
 3. Trägt Art. 6 Abs. 1 lit. f den Prüfwert der Besucher (Abschnitt 4, mit #495)?
-4. Erledigt: Der Schlüssel der Prüfwerte liegt nur im Speicher (Risiko 2, BanSe/todo#266).
+4. Erledigt: Der Schlüssel der Prüfwerte liegt nur im Speicher (Risiko 2, PR #476).
 5. Ist eine DSFA auch für den Grundbetrieb ohne Punkte zu führen, und genügt Abschnitt 8 dafür?
    Wie wird die Lücke vor der Einwilligung geschlossen (Abschnitt 4), trägt Art. 6 Abs. 1 lit. c
    Meldungen angemeldeter Personen ohne Einwilligung (V12), und gibt es eine Altersgrenze für
@@ -192,7 +192,10 @@ beteiligen (Art. 35 Abs. 2).
 
 ### 8.2 Die Verarbeitungen (Art. 35 Abs. 7 lit. a)
 
-Je Verarbeitung: Zweck, Rechtsgrundlage, Daten, Frist, wer es sieht, Risiko, Maßnahmen. Wo die
+Je Verarbeitung: Zweck, Rechtsgrundlage, Daten, Frist, wer es sieht, Risiko, Maßnahmen. Ohne
+Personenbezug und deshalb nicht einzeln aufgeführt sind die Tabellen `usage_tracking`,
+`nutzung_je_fassung`, `suchen_je_tag`, `varianten` und `aussage_themen` (Zähler bzw. IDs ohne
+Kennung; `ss/infrastructure/database/models.py:37,96,287,373,391`, `LK:364-390`). Wo die
 Datenschutzerklärung eine Rechtsgrundlage nennt, ist das der heutige Stand; geprüft hat ihn niemand
 juristisch (#296). **Empfänger** sind bei allen Verarbeitungen gleich und stehen unter „Für alle:
 Empfänger und Ort“.
@@ -427,7 +430,8 @@ Empfänger und Ort“.
 - **Daten:** vorgelagerter Webserver mit voller IP (`DSE:863-867`); Anwendung ohne Suchtext und mit
   gekürzter Kennung (`DSE:896-899`, `LK:398-406`).
 - **Frist:** vorgelagerter Webserver 14 Tage (`DSE:872-873`); Anwendung und Frontend-nginx **keine**
-  (`DSE:889-891`, `DSE:910-911`). Ziel 14 Tage, noch nicht ausgerollt (`LK:511-519`).
+  (`DSE:889-891`, `DSE:910-911`). Ziel 14 Tage, laut Löschkonzept noch nicht ausgerollt (`LK:511-519`,
+  Stand 30.10.2026; ob es inzwischen am Host steht, ist nicht im Repo belegt; #485, #336).
 - **Risiko:** Altbestand vor #275 und #284 trägt Suchtexte und Kennungen im Klartext (`DSE:902-905`,
   `LK:491-498`). Der vorgelagerte Webserver protokolliert je Suche eine Zeile mit IP und Uhrzeit,
   die sich mit der Aussage aus der Suche verbinden lässt (`LK:502-507`, **offen**). Das
@@ -447,6 +451,44 @@ Empfänger und Ort“.
 Rate-Limits für Suche, Meldungen, Feedback, Einladungen und Gegenlesen verarbeiten die IP-Adresse
 oder Kennung nur gekürzt im Arbeitsspeicher, höchstens etwa 16 Minuten, mit Schlüssel je Neustart
 (`DSE:175-180`, `DSE:344-348`, `DSE:398-403`, `DSE:712-717`, `DSE:793-796`). Risiko gering.
+
+#### V19 Zugang von Hand (Beta-Zugang)
+
+- **Zweck, Rechtsgrundlage:** Anmeldung für einzelne Personen ohne Netzbegrünung-Konto, ohne den
+  Identitätsdienst; Art. 6 Abs. 1 lit. b (`DSE:198-209`).
+- **Daten:** E-Mail-Adresse, Anzeigename, Kennung und Prüfsumme des Passworts in einer
+  Konfigurationsdatei auf dem Server (`DSE:201-205`, `LK:20`, `LK:55-56`); für Fehlversuche ein
+  Zähler im Speicher, 15 Minuten (`DSE:215-217`).
+- **Frist:** bis zur Entfernung von Hand, keine automatische Löschung (`DSE:210-212`); der Weg steht
+  im Löschkonzept (`LK:55-56`, `LK:133`).
+- **Risiko:** Wer die Konfigurationsdatei lesen kann, sieht Adressen und Passwort-Prüfsummen. Wer
+  Zugriff darauf hat, steht nicht im Repo (**offen**, R4).
+- **Maßnahmen:** Passwort nur als Prüfsumme (`DSE:203-204`); Sperre nach Fehlversuchen
+  (`DSE:215-217`).
+
+#### V20 Gegenlesen, Sprachhinweis, Kürzungsvorschlag
+
+- **Zweck, Rechtsgrundlage:** dem Schreibenden Anmerkungen, Sprachhinweis und Kürzungsvorschlag zeigen;
+  Art. 6 Abs. 1 lit. b (`DSE:320-361`).
+- **Daten:** Titel, Text und die Aussage, auf die geantwortet wird, gehen an den eigenen Server, ohne
+  KI und ohne externen Dienst; gespeichert wird nichts, nur ein flüchtiger Zähler gegen Überlastung
+  (`DSE:320-361`).
+- **Frist:** keine Speicherung; der Zähler höchstens etwa elf Minuten (`DSE:320-361`).
+- **Risiko:** gering. Die Entwürfe können politische Haltung enthalten, werden aber nicht abgelegt.
+  Die Funktionen sind auch ohne Art.-9-Einwilligung offen (`A9:17-27`).
+- **Maßnahmen:** keine Speicherung (`DSE:320-361`).
+
+#### V21 Speicherung auf dem Gerät
+
+- **Zweck, Rechtsgrundlage:** Anmeldung und Bedienkomfort; § 25 TDDDG (`DSE:924-993`).
+- **Daten im Browser:** Anmelde-Cookie (V1) und zwei kurzlebige Cookies im Anmeldevorgang;
+  nur bis zum Tabschluss Rücksprungseite, Filter im Fangkorb und ein geteilter Link; dauerhaft die
+  Wahl des Profilbilds und zwei Vermerke „schon gesehen“; ein Service Worker, der nichts speichert
+  (`DSE:924-993`).
+- **Frist:** Cookie 14 Tage nach letzter Nutzung, sonst bis der Browser die Websitedaten löscht.
+- **Risiko:** gering. Keine Kennung zum Wiedererkennen; die alte Sitzungskennung wird beim nächsten
+  Aufruf entfernt (`DSE:951-958`). Ob § 25 Abs. 2 TDDDG die Ausnahme für alle Einträge trägt, ist
+  nicht geprüft (**offen**, Frage an die Datenschutzbeauftragte).
 
 #### Geplant, nicht gebaut
 
@@ -477,8 +519,8 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 3. **Tagespseudonym der Angemeldeten** (V7): Schlüssel nur im Speicher wie bei Besuchern? Preis:
    Nach einem Neustart zählt eine Person am selben Tag doppelt. Empfehlung: ja.
 4. **Frist für Protokolle** (V16): 14 Tage für Anwendung und Frontend-nginx am Host ausrollen
-   (`LK:511-519`) und den Altbestand mit Suchtexten und Kennungen löschen. Das ist Betrieb am Host,
-   nicht Code.
+   (`LK:511-519`, Stand 30.10.2026; Tickets #485 und #336) und den Altbestand mit Suchtexten und
+   Kennungen löschen. Das ist Betrieb am Host, nicht Code.
 5. **Formales:** Wer übernimmt die DSFA (Vorstand mit Datenschutzbeauftragter, Art. 35 Abs. 2), und
    wo steht das Verzeichnis der Verarbeitungstätigkeiten? Im Repo gibt es keins.
 6. **Fragen an die Datenschutzbeauftragte:** Lücke aus Abschnitt 4, Meldungen ohne Einwilligung
