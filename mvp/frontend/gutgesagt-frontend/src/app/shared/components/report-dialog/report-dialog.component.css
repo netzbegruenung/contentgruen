@@ -46,13 +46,33 @@ button mat-spinner {
   margin: -12px 0 12px;
 }
 
+/* Abstand nach oben: Der zweizeilige Hinweis unter der E-Mail-Adresse ragt sonst hinein (#581). */
 .guter-glaube {
   display: block;
-  margin-bottom: 12px;
+  margin: 12px 0;
 }
 
 .hinweis {
   color: #666;
   font-size: 13px;
   line-height: 1.4;
+}
+
+/* Der Hinweis, was zum Melden fehlt (#581): eine eigene Zeile ueber den Knoepfen. */
+.aktionen {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.fehlt-hinweis {
+  flex: 1 0 100%;
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.fehlt-hinweis:empty {
+  display: none;
 }

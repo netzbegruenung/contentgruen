@@ -7,6 +7,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ReportDialogComponent, meldeDialogOeffnen } from './report-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { ERFUNDENES_MELDEN } from '../../schreibregeln';
+import { MeldegrundWert } from '../../meldegruende';
 import { environment } from '../../../../environments/environment';
 
 const URL = `${environment.baseUrl}/api/v1/moderation/report`;
@@ -54,6 +55,17 @@ describe('ReportDialogComponent', () => {
     await fixture.whenStable();
   }
 
+  async function grundWaehlen(grund: MeldegrundWert = 'spam') {
+    fixture.componentInstance.selectedReason = grund;
+    fixture.detectChanges();
+    await fixture.whenStable();
+  }
+
+  /** Der Hinweis neben „Melden“, was noch fehlt (#581); leer, wenn nichts fehlt. */
+  function fehltHinweis(): string {
+    return element().querySelector('[data-testid="melden-fehlt"]')?.textContent?.trim() ?? '';
+  }
+
   function meldenKnopf(): HTMLButtonElement {
     return element().querySelector('[data-testid="melden-senden"]') as HTMLButtonElement;
   }
@@ -77,6 +89,44 @@ describe('ReportDialogComponent', () => {
       const felder = Array.from(element().querySelectorAll('mat-form-field'));
       expect(felder.length).toBeGreaterThan(0);
       felder.forEach((f) => expect(f.classList).toContain('mat-form-field-appearance-outline'));
+    });
+  });
+
+  // #581: Am Desktop war „Melden“ stumm ausgegraut, die Checkbox lag unter dem Falz und
+  // der Grund war mit „Spam“ vorbelegt.
+  describe('wenn etwas fehlt', () => {
+    it('wählt keinen Grund vor', () => {
+      expect(fixture.componentInstance.selectedReason).toBeNull();
+      expect(element().querySelector('mat-select')!.getAttribute('aria-required')).toBe('true');
+    });
+
+    it('sagt neben dem ausgegrauten „Melden“, was fehlt', () => {
+      expect(meldenKnopf().disabled).toBeTrue();
+      expect(fehltHinweis()).toBe('Zum Melden fehlen noch: ein Grund und deine Erklärung guten Glaubens.');
+    });
+
+    it('nennt nur, was noch fehlt, und verschwindet, wenn alles da ist', async () => {
+      await grundWaehlen();
+      expect(fehltHinweis()).toBe('Zum Melden fehlt noch: deine Erklärung guten Glaubens.');
+
+      await gutenGlaubenErklaeren();
+      expect(meldenKnopf().disabled).toBeFalse();
+      expect(element().querySelector('[data-testid="melden-fehlt"]')).toBeNull();
+    });
+
+    it('nennt die Begründung bei „Rechtswidriger Inhalt“ und eine ungültige E-Mail-Adresse', async () => {
+      await grundWaehlen('illegal_content');
+      await eingeben('input[name="melder_email"]', 'anna@');
+      await gutenGlaubenErklaeren();
+      // Wie die Fehlermeldung am Feld erst nach dem Verlassen, nicht bei jedem Zeichen.
+      expect(fehltHinweis()).toBe('Zum Melden fehlt noch: die Begründung, warum der Beitrag rechtswidrig ist.');
+
+      element().querySelector('input[name="melder_email"]')!.dispatchEvent(new Event('blur'));
+      fixture.detectChanges();
+
+      expect(fehltHinweis()).toBe(
+        'Zum Melden fehlen noch: die Begründung, warum der Beitrag rechtswidrig ist, und eine gültige E-Mail-Adresse (oder das Feld leer lassen).',
+      );
     });
   });
 
@@ -126,6 +176,7 @@ describe('ReportDialogComponent', () => {
   });
 
   it('meldet erst, wenn die Person ihren guten Glauben erklärt hat', async () => {
+    await grundWaehlen();
     expect(meldenKnopf().disabled).toBeTrue();
 
     await gutenGlaubenErklaeren();
@@ -156,6 +207,7 @@ describe('ReportDialogComponent', () => {
   });
 
   it('schickt ohne Name und E-Mail-Adresse keine mit', async () => {
+    await grundWaehlen();
     await gutenGlaubenErklaeren();
 
     await melden();
@@ -168,14 +220,18 @@ describe('ReportDialogComponent', () => {
   });
 
   it('meldet erst, wenn die Person ihren guten Glauben erklärt hat, und sagt warum', async () => {
+    await grundWaehlen();
     expect(element().textContent).toContain('Ohne diese Erklärung lässt sich nicht melden.');
+    expect(fehltHinweis()).toContain('deine Erklärung guten Glaubens');
 
     await gutenGlaubenErklaeren();
 
     expect(element().textContent).not.toContain('Ohne diese Erklärung lässt sich nicht melden.');
+    expect(fehltHinweis()).toBe('');
   });
 
   it('prüft die E-Mail-Adresse wie der Suchdienst, etwa ohne .local', async () => {
+    await grundWaehlen();
     await gutenGlaubenErklaeren();
     await eingeben('input[name="melder_email"]', 'anna@rechner.local');
 
@@ -183,6 +239,7 @@ describe('ReportDialogComponent', () => {
   });
 
   it('meldet nicht mit einer E-Mail-Adresse, die keine ist, und sagt es nach dem Verlassen des Feldes', async () => {
+    await grundWaehlen();
     await gutenGlaubenErklaeren();
     await eingeben('input[name="melder_email"]', 'anna@');
 
@@ -200,6 +257,7 @@ describe('ReportDialogComponent', () => {
 
   it('bittet bei 422 darum, die Angaben zu prüfen, und schreibt keine Antwort ins Log', async () => {
     const log = spyOn(console, 'error');
+    await grundWaehlen();
     await eingeben('input[name="melder_email"]', 'anna@beispiel.org');
     await gutenGlaubenErklaeren();
     await melden();
@@ -215,6 +273,7 @@ describe('ReportDialogComponent', () => {
   });
 
   it('bestätigt den Eingang in der App und bleibt offen, bis die Person schließt', async () => {
+    await grundWaehlen();
     await gutenGlaubenErklaeren();
     await melden();
 
@@ -229,6 +288,7 @@ describe('ReportDialogComponent', () => {
   });
 
   it('sagt nach dem Eingang, dass Bestätigung und Entscheidung per E-Mail kommen, wenn eine Adresse dasteht', async () => {
+    await grundWaehlen();
     await eingeben('input[name="melder_email"]', 'anna@example.org');
     await gutenGlaubenErklaeren();
     await melden();
