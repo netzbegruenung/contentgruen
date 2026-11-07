@@ -41,14 +41,13 @@ describe('RundgangService', () => {
     router.navigateByUrl.and.resolveTo(true);
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     // Wie Material: close() startet nur die Animation, afterClosed kommt danach (geschlossen.next).
-    dialog.open.and.callFake(((_komponente: unknown, konfig: { data: unknown }) => {
+    dialog.open.and.callFake((() => {
       let zustand = MatDialogState.OPEN;
       geschlossen.pipe(take(1)).subscribe(() => (zustand = MatDialogState.CLOSED));
       return {
         afterClosed: () => geschlossen.pipe(take(1)),
         close: () => (zustand = MatDialogState.CLOSING),
         getState: () => zustand,
-        componentInstance: { angebot: konfig.data },
       };
     }) as never);
 
@@ -295,11 +294,35 @@ describe('RundgangService', () => {
       expect(schliessen).not.toHaveBeenCalled();
     });
 
-    it('zeigt das Willkommen nicht, während ein Rundgang zur Startseite führt', async () => {
+    it('zeigt das Willkommen nicht, während ein Rundgang zur Startseite führt, und auch nicht danach (#585)', async () => {
       navigiert('/einladung/abc');
       await service.starten('antwort-finden');
       navigiert('/search');
       expect(dialog.open).not.toHaveBeenCalled();
+
+      service.beenden();
+      navigiert(`/result?searchQuery=${BEISPIEL_AUSSAGE}`);
+      expect(dialog.open).not.toHaveBeenCalled();
+      // Entfällt nur für diesen Besuch
+      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBeNull();
+    });
+
+    it('merkt ein Willkommen, das ein anderer Rundgang ablöst, nicht als gesehen (#585)', async () => {
+      navigiert('/search');
+      expect(angebotDaten()).toBe(WILLKOMMEN);
+
+      await service.starten('mitmachen');
+      geschlossen.next(undefined);
+      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBeNull();
+      expect(service.aktiv()?.rundgang.id).toBe('mitmachen');
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+    });
+
+    it('merkt ein Willkommen als gesehen, wenn dessen eigener Rundgang startet', async () => {
+      navigiert('/search');
+      await service.starten('antwort-finden');
+      geschlossen.next(undefined);
+      expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBe('1');
     });
 
     it('startet mit „Rundgang starten“ den Rundgang Mitmachen', () => {

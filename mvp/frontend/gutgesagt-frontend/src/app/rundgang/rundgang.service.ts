@@ -13,6 +13,13 @@ export interface RundgangStand {
   index: number;
 }
 
+/** Ein offenes Angebot; abgelöst heißt: Ein anderer Rundgang hat es geschlossen. */
+interface OffenesAngebot {
+  ref: MatDialogRef<AngebotDialogComponent, AngebotWahl>;
+  angebot: Angebot;
+  abgeloest: boolean;
+}
+
 /**
  * Seiten, auf denen das Willkommen beim ersten Besuch erscheint: Startseite und
  * Treffer. Nicht auf Einladung, Anmeldung oder Rechtstexten, wo es den Weg verstellte.
@@ -41,9 +48,7 @@ export class RundgangService {
    * Das offene Angebot, bis es ganz geschlossen ist (auch während der Animation, damit
    * kein zweites daneben aufgeht); ein startender Rundgang schließt es (#585).
    */
-  private offenesAngebot: MatDialogRef<AngebotDialogComponent, AngebotWahl> | null = null;
-  /** Ein Mitmachen-Angebot, das ein anderer Rundgang geschlossen hat, gilt nicht als gesehen. */
-  private mitmachenAbgeloest = false;
+  private offenesAngebot: OffenesAngebot | null = null;
   /**
    * Läuft ab dem Start, nicht erst ab dem ersten Schritt: Solange dessen Seite lädt, ist
    * `aktiv()` noch leer, und das Ende der Navigation darf kein Angebot darüberlegen (#585).
@@ -64,13 +69,13 @@ export class RundgangService {
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         filter((e) => WILLKOMMEN_SEITEN.some((s) => e.urlAfterRedirects.startsWith(s))),
-        // Nicht über einen Rundgang, der gerade zu seiner Seite führt (#585)
-        filter(() => !this.laeuft),
         take(1),
         takeUntilDestroyed(destroyRef),
       )
       .subscribe(() => {
-        if (!gesehen(WILLKOMMEN.schluessel)) {
+        // Führt ein Rundgang hierher, entfällt das Willkommen für diesen Besuch: nicht
+        // darüber und nicht danach mit dem Rundgang, den die Person gerade kennt (#585).
+        if (!this.laeuft && !gesehen(WILLKOMMEN.schluessel)) {
           this.anbieten(WILLKOMMEN);
         }
       });
@@ -102,13 +107,12 @@ export class RundgangService {
     // Höchstens eins: Angebot oder Rundgang (#585). Ein Fenster, das schon schließt,
     // behält die Wahl der Person; close() würde sie überschreiben.
     const offen = this.offenesAngebot;
-    if (offen?.getState() === MatDialogState.OPEN) {
-      const angebot = offen.componentInstance.angebot;
-      if (angebot.schluessel === MITMACHEN_ANGEBOT.schluessel && id !== 'mitmachen') {
-        this.mitmachenAbgeloest = true;
-        this.mitmachenAusstehend = true;
+    if (offen?.ref.getState() === MatDialogState.OPEN) {
+      if (offen.angebot.rundgang !== id) {
+        offen.abgeloest = true;
+        if (offen.angebot === MITMACHEN_ANGEBOT) this.mitmachenAusstehend = true;
       }
-      offen.close();
+      offen.ref.close();
     }
     return this.zuSchritt(RUNDGAENGE[id], 0);
   }
@@ -174,17 +178,13 @@ export class RundgangService {
   }
 
   private anbieten(angebot: Angebot): void {
-    const ref = angebotOeffnen(this.dialog, angebot);
-    this.offenesAngebot = ref;
-    ref.afterClosed().subscribe((wahl) => {
-      if (this.offenesAngebot === ref) this.offenesAngebot = null;
+    const offen: OffenesAngebot = { ref: angebotOeffnen(this.dialog, angebot), angebot, abgeloest: false };
+    this.offenesAngebot = offen;
+    offen.ref.afterClosed().subscribe((wahl) => {
+      if (this.offenesAngebot === offen) this.offenesAngebot = null;
       // Auch Escape und „Später“ zählen als gesehen: Das Angebot kommt nicht wieder.
-      // Schließt ein anderer Rundgang das Mitmachen-Angebot, kommt es nach dessen Ende.
-      if (angebot === MITMACHEN_ANGEBOT && this.mitmachenAbgeloest) {
-        this.mitmachenAbgeloest = false;
-      } else {
-        merken(angebot.schluessel);
-      }
+      // Ein abgelöstes gilt nicht als gesehen; Mitmachen kommt nach dem Rundgang wieder.
+      if (!offen.abgeloest) merken(angebot.schluessel);
       if (wahl === 'starten') {
         void this.starten(angebot.rundgang);
       } else {
