@@ -13,6 +13,7 @@
           {{ reason.label }}
         </mat-option>
       </mat-select>
+      <mat-error>Bitte wähle einen Grund.</mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
@@ -54,9 +55,13 @@
     <mat-checkbox data-testid="melden-guter-glaube"
                   [(ngModel)]="guterGlaube"
                   required
+                  aria-describedby="guter-glaube-hinweis"
                   class="guter-glaube">
       Ich bin in gutem Glauben davon überzeugt, dass meine Angaben richtig und vollständig sind.
     </mat-checkbox>
+    <p id="guter-glaube-hinweis" class="hinweis" *ngIf="!guterGlaube">
+      Ohne diese Erklärung lässt sich nicht melden.
+    </p>
 
     <p class="hinweis">
       Name und E-Mail-Adresse sehen nur Admins. Mehr dazu in der
@@ -80,7 +85,7 @@
   <div mat-dialog-actions align="end" *ngIf="!submitted" class="aktionen">
     <!-- Steht bei den Knoepfen, damit es ohne Scrollen zu sehen ist (#581). -->
     <p class="fehlt-hinweis" aria-live="polite">
-      <span *ngIf="!submitting && fehltHinweis" id="melden-fehlt" data-testid="melden-fehlt">{{ fehltHinweis }}</span>
+      <span *ngIf="fehltHinweis as hinweis" id="melden-fehlt" data-testid="melden-fehlt">{{ hinweis }}</span>
     </p>
     <button mat-button (click)="close(false)" [disabled]="submitting">
       Abbrechen

@@ -13,6 +13,12 @@ import { ModerationService } from '../../../services/moderation.service';
 import { MELDEGRUENDE, MeldegrundWert, brauchtBegruendung } from '../../meldegruende';
 import { istEmailAdresse } from '../../email-adresse';
 
+interface FehlendeAngabe {
+  text: string;
+  /** Endet mit einem Nebensatz, den vor „und“ ein Komma schliesst. */
+  endetMitNebensatz?: boolean;
+}
+
 export interface ReportDialogData {
   contentId: string;
   contentType: string;
@@ -95,46 +101,49 @@ export class ReportDialogComponent {
   /**
    * Was zum Melden noch fehlt, in der Reihenfolge der Felder. Der Dialog nennt es
    * neben dem ausgegrauten „Melden“ (#581), weil Checkbox und Felder auf kleinen
-   * Bildschirmen unter dem Falz liegen.
+   * Bildschirmen unter dem Falz liegen. Fuer den Hinweis zaehlt die E-Mail-Adresse
+   * erst nach dem Verlassen des Feldes, wie ihre Fehlermeldung; fuer den Knopf sofort.
    */
-  get fehlendeAngaben(): string[] {
-    const fehlt: string[] = [];
+  private fehlendeAngaben(fuerHinweis: boolean): FehlendeAngabe[] {
+    const fehlt: FehlendeAngabe[] = [];
     if (this.selectedReason === null) {
-      fehlt.push('ein Grund');
+      fehlt.push({ text: 'ein Grund' });
     }
     if (this.begruendungPflicht && this.description.trim() === '') {
-      fehlt.push('die Begründung, warum der Beitrag rechtswidrig ist');
+      fehlt.push({ text: 'die Begründung, warum der Beitrag rechtswidrig ist', endetMitNebensatz: true });
     }
-    if (this.emailUngueltig) {
-      fehlt.push('eine gültige E-Mail-Adresse (oder das Feld leer lassen)');
+    if (fuerHinweis ? this.emailFehlerZeigen : this.emailUngueltig) {
+      fehlt.push({ text: 'eine gültige E-Mail-Adresse (oder das Feld leer lassen)' });
     }
     if (!this.guterGlaube) {
-      fehlt.push('deine Erklärung guten Glaubens');
+      fehlt.push({ text: 'deine Erklärung guten Glaubens' });
     }
     return fehlt;
   }
 
+  /** Der Hinweis neben „Melden“; leer, wenn nichts fehlt oder gerade gesendet wird. */
   get fehltHinweis(): string {
-    const fehlt = this.fehlendeAngaben;
+    const fehlt = this.submitting ? [] : this.fehlendeAngaben(true);
     if (fehlt.length === 0) {
       return '';
     }
     if (fehlt.length === 1) {
-      return `Zum Melden fehlt noch: ${fehlt[0]}.`;
+      return `Zum Melden fehlt noch: ${fehlt[0].text}.`;
     }
-    const letzte = fehlt[fehlt.length - 1];
-    const davor = fehlt.slice(0, -1).join(', ');
-    // Endet die vorletzte Angabe mit einem Nebensatz („…, warum … ist“), schliesst ein Komma ihn.
-    const komma = fehlt[fehlt.length - 2].includes(',') ? ',' : '';
-    return `Zum Melden fehlt noch: ${davor}${komma} und ${letzte}.`;
+    const davor = fehlt.slice(0, -1);
+    // Ein Nebensatz („…, warum … ist“) vor „und“ wird mit einem Komma geschlossen.
+    const komma = davor[davor.length - 1].endetMitNebensatz ? ',' : '';
+    const liste = `${davor.map((a) => a.text).join(', ')}${komma} und ${fehlt[fehlt.length - 1].text}`;
+    return `Zum Melden fehlen noch: ${liste}.`;
   }
 
   get kannMelden(): boolean {
-    return !this.submitting && this.fehlendeAngaben.length === 0;
+    return !this.submitting && this.fehlendeAngaben(false).length === 0;
   }
 
   submitReport() {
-    if (!this.kannMelden || this.selectedReason === null) {
+    const grund = this.selectedReason;
+    if (!this.kannMelden || grund === null) {
       return;
     }
     this.submitting = true;
@@ -144,7 +153,7 @@ export class ReportDialogComponent {
     this.moderationService.reportContent({
       contentId: this.data.contentId,
       contentType: this.data.contentType,
-      reason: this.selectedReason,
+      reason: grund,
       description: this.description || undefined,
       melderName: this.melderName.trim() || null,
       melderEmail,

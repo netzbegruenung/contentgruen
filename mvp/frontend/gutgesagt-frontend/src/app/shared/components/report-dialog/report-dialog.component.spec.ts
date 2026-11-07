@@ -102,7 +102,7 @@ describe('ReportDialogComponent', () => {
 
     it('sagt neben dem ausgegrauten „Melden“, was fehlt', () => {
       expect(meldenKnopf().disabled).toBeTrue();
-      expect(fehltHinweis()).toBe('Zum Melden fehlt noch: ein Grund und deine Erklärung guten Glaubens.');
+      expect(fehltHinweis()).toBe('Zum Melden fehlen noch: ein Grund und deine Erklärung guten Glaubens.');
     });
 
     it('nennt nur, was noch fehlt, und verschwindet, wenn alles da ist', async () => {
@@ -118,9 +118,14 @@ describe('ReportDialogComponent', () => {
       await grundWaehlen('illegal_content');
       await eingeben('input[name="melder_email"]', 'anna@');
       await gutenGlaubenErklaeren();
+      // Wie die Fehlermeldung am Feld erst nach dem Verlassen, nicht bei jedem Zeichen.
+      expect(fehltHinweis()).toBe('Zum Melden fehlt noch: die Begründung, warum der Beitrag rechtswidrig ist.');
+
+      element().querySelector('input[name="melder_email"]')!.dispatchEvent(new Event('blur'));
+      fixture.detectChanges();
 
       expect(fehltHinweis()).toBe(
-        'Zum Melden fehlt noch: die Begründung, warum der Beitrag rechtswidrig ist, und eine gültige E-Mail-Adresse (oder das Feld leer lassen).',
+        'Zum Melden fehlen noch: die Begründung, warum der Beitrag rechtswidrig ist, und eine gültige E-Mail-Adresse (oder das Feld leer lassen).',
       );
     });
   });
@@ -216,10 +221,12 @@ describe('ReportDialogComponent', () => {
 
   it('meldet erst, wenn die Person ihren guten Glauben erklärt hat, und sagt warum', async () => {
     await grundWaehlen();
+    expect(element().textContent).toContain('Ohne diese Erklärung lässt sich nicht melden.');
     expect(fehltHinweis()).toContain('deine Erklärung guten Glaubens');
 
     await gutenGlaubenErklaeren();
 
+    expect(element().textContent).not.toContain('Ohne diese Erklärung lässt sich nicht melden.');
     expect(fehltHinweis()).toBe('');
   });
 
