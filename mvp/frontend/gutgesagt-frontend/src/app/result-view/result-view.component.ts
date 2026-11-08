@@ -31,6 +31,7 @@ import { typBeschreibung } from '../shared/content-type-registry';
 import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
+import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 
 // Dialog configuration constants
 /** Die Abschnitte der Ergebnisseite: am Handy je ein Tab. */
@@ -60,6 +61,20 @@ export function themenDerTreffer(antwort: SearchResponse): Thema[] {
     }
   }
   return [...gesehen.values()];
+}
+
+/**
+ * Die Aussagen, deren Beitraege als Treffer dastehen, und die Aussage der Suche selbst:
+ * "Nicht dabei?" schlaegt sie nicht noch einmal als aehnliche Aussage vor.
+ */
+export function aussagenDerTreffer(antwort: SearchResponse): string[] {
+  const alle: BaseSearchResult[] = [
+    ...(antwort.commentary_search_results ?? []),
+    ...(antwort.generictext_search_results ?? []),
+    ...(antwort.post_search_results ?? []),
+  ];
+  const ids = alle.map((treffer) => treffer.statement_id);
+  return [...new Set([antwort.statement_id, ...ids].filter((id): id is string => !!id))];
 }
 
 /** Die Suchantwort mit nur den Treffern zum Thema, Zaehler passend dazu. */
@@ -100,7 +115,8 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     MatChipsModule,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
-    ThemenFilterComponent
+    ThemenFilterComponent,
+    NichtDabeiComponent
   ],
   templateUrl: './result-view.component.html',
   styleUrls: ['./result-view.component.css'],
@@ -141,6 +157,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   angezeigt: SearchResponse | null = null;
   themenDerTreffer: Thema[] = [];
   aktivesThema: string | null = null;
+  aussagenDerTreffer: string[] = [];
 
   // Erklaerzeile je Tab, derselbe Satz wie auf der Beitragen-Seite
   readonly kommentarErklaerung = typBeschreibung('commentary');
@@ -204,6 +221,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         // Eine neue Suche beginnt ohne Filter.
         this.aktivesThema = null;
         this.themenDerTreffer = response ? themenDerTreffer(response) : [];
+        this.aussagenDerTreffer = response ? aussagenDerTreffer(response) : [];
         this.anzeigen();
       });
 

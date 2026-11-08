@@ -607,3 +607,34 @@ mat-sidenav-content {
 .mobile-themen-filter {
   padding: var(--spacing-xs) var(--page-margin);
 }
+
+/* "Nicht dabei?" (#362): Satz und Knopf zum Neu-Anlegen, links in der Hinweisbox */
+.neu-anlegen-satz {
+  margin: 0;
+}
+
+.neu-anlegen-knopf {
+  display: flex;
+}
+
+.nicht-dabei-unten {
+  margin-top: var(--spacing-lg);
+}
+
+.mobile-ergaenzen app-nicht-dabei,
+.mobile-empty-state app-nicht-dabei {
+  align-self: stretch;
+}
+
+.unified-empty-state app-nicht-dabei {
+  margin-bottom: 1.5rem;
+}
+
+.unified-empty-state app-nicht-dabei .action-buttons-top {
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
+
+.mobile-empty-state app-nicht-dabei .mobile-action-buttons {
+  max-width: none;
+}
