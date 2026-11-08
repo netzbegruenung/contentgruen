@@ -699,12 +699,16 @@ class _KeineWeiterleitung(urllib.request.HTTPRedirectHandler):
 
 def _frontend_statt_bff(adresse: str, pfad: str) -> str:
     """Meldung, wenn --adresse HTML statt JSON liefert, meist die Frontend-Adresse."""
+    host = urlsplit(adresse).hostname or ""
+    if host.startswith("bff."):
+        return f"Antwort von {pfad} ist HTML statt JSON: stimmt --adresse (BFF)?"
     meldung = (
         f"Antwort von {pfad} ist HTML statt JSON: --adresse zeigt offenbar aufs "
         "Frontend, das Skript braucht das BFF"
     )
-    host = urlsplit(adresse).hostname or ""
-    if host and not host.startswith("bff."):
+    if host in ("localhost", "127.0.0.1"):
+        meldung += " (im Dev-Stack http://localhost:5054)"
+    elif host:
         meldung += f" (vermutlich https://bff.{host})"
     return meldung
 
@@ -748,7 +752,7 @@ class BffBestand:
             raise ApiFehler(None, f"{self.adresse} nicht erreichbar: {fehler}") from None
         # Das Frontend liefert fuer jeden unbekannten Pfad seine Seite mit 200 aus,
         # auch fuer /api/...; den Inhalt nie ausgeben.
-        if art == "text/html" or text.lstrip().startswith("<"):
+        if text.strip() and (art == "text/html" or text.lstrip().startswith("<")):
             raise ApiFehler(None, _frontend_statt_bff(self.adresse, pfad))
         try:
             antwort = json.loads(text) if text else {}

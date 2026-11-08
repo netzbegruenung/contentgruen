@@ -228,8 +228,8 @@ python3 scripts/manual/einwuerfe_importieren.py liste.csv --email konto@example.
   --adresse https://gutgesagt-test.netzbegruenung.de
 ```
 
-`--adresse` ist die Adresse des Frontends (es leitet `/api` ans BFF weiter) oder des
-BFF selbst; Standard ist das lokale BFF `http://localhost:5054`. Getestet in
+`--adresse` ist die Adresse des BFF (auf Test und Produktion leitet das Frontend `/api`
+nicht weiter, im Dev-Stack schon); Standard ist das lokale BFF `http://localhost:5054`. Getestet in
 `tests/unit/services/test_einwuerfe_importieren_skript.py` (Lesen, Import) und
 `tests/integration/api/test_einwuerfe_importieren_bff.py` (gegen den Dev-Stack).
 
@@ -257,7 +257,7 @@ das Skript nimmt deshalb die Sitzung des Browsers:
 3. Die Zeile in eine Datei schreiben, die nur man selbst lesen kann, und sie mit
    `--sitzung-datei <datei>` angeben (oder sie in `GUTGESAGT_SITZUNG` legen).
 
-`--adresse` ist die Adresse des BFF, nicht des Frontends. Das Frontend antwortet auf
+`--adresse` ist auf Test und Produktion die Adresse des BFF, nicht des Frontends. Das Frontend antwortet dort auf
 `/api/...` mit seiner Seite (HTML, Status 200); dann bricht das Skript mit einem Hinweis auf
 die BFF-Adresse ab, ohne die Antwort auszugeben.
 
