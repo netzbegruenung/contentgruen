@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { BehaviorSubject, of, throwError } from 'rxjs';
@@ -31,6 +31,7 @@ describe('NichtDabeiComponent', () => {
   let fixture: ComponentFixture<GastgeberComponent>;
   let statementService: jasmine.SpyObj<StatementService>;
   let nutzer: BehaviorSubject<UserInfo | null>;
+  let logger: jasmine.SpyObj<LoggingService>;
 
   const ANGEMELDET: UserInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Test', claims: null };
 
@@ -38,13 +39,14 @@ describe('NichtDabeiComponent', () => {
     statementService = jasmine.createSpyObj('StatementService', ['aussageVorschlaege']);
     statementService.aussageVorschlaege.and.returnValue(of([AEHNLICH, ZWEITE]));
     nutzer = new BehaviorSubject<UserInfo | null>(angemeldet);
+    logger = jasmine.createSpyObj('LoggingService', ['warn', 'error', 'debug']);
     TestBed.configureTestingModule({
       imports: [GastgeberComponent],
       providers: [
         provideRouter([]),
         { provide: StatementService, useValue: statementService },
         { provide: AuthService, useValue: { userInfo$: nutzer.asObservable() } },
-        { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn', 'error', 'debug']) },
+        { provide: LoggingService, useValue: logger },
       ],
     });
     fixture = TestBed.createComponent(GastgeberComponent);
@@ -103,7 +105,6 @@ describe('NichtDabeiComponent', () => {
   });
 
   it('fragt bei zu kurzem Suchtext nicht nach', () => {
-    statementService = jasmine.createSpyObj('StatementService', ['aussageVorschlaege']);
     const seite = starten();
     statementService.aussageVorschlaege.calls.reset();
     fixture.componentInstance.suchtext = ' a ';
@@ -122,5 +123,25 @@ describe('NichtDabeiComponent', () => {
     expect(seite.querySelector('.aehnliche')).toBeNull();
     expect(seite.querySelector('.nicht-dabei-titel')?.textContent).toContain('Nicht dabei?');
     expect(seite.querySelector('button.neu')).toBeTruthy();
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('zeigt ohne Treffer den Titel nur ueber einer Liste', () => {
+    const seite = starten({ isAuthenticated: false, userId: null, userName: null, claims: null });
+    const komponente = fixture.debugElement.children[0].componentInstance as NichtDabeiComponent;
+    komponente.titelNurMitListe = true;
+    fixture.debugElement.children[0].injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+
+    expect(seite.querySelector('.nicht-dabei-titel')).toBeNull();
+    expect(seite.querySelector('section')?.getAttribute('aria-labelledby')).toBeNull();
+    expect(seite.querySelector('button.neu')).toBeTruthy();
+  });
+
+  it('vergibt je Instanz eigene IDs', () => {
+    const seite = starten();
+    const titel = seite.querySelector('.nicht-dabei-titel')!;
+    expect(titel.id).toMatch(/^nicht-dabei-titel-\d+$/);
+    expect(seite.querySelector('section')?.getAttribute('aria-labelledby')).toBe(titel.id);
   });
 });

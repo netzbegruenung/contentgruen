@@ -36,7 +36,7 @@
 
 <!-- "Nicht dabei?": neu anlegen, mit der Aussage dieser Suche (#362) -->
 <ng-template #neuAnlegen>
-    <p class="neu-anlegen-satz">Noch nicht drin? Leg die Aussage neu an und schreib einen Kommentar dazu.</p>
+    <p class="neu-anlegen-satz">Schreib selbst einen Kommentar zu deiner Aussage.</p>
     <div class="neu-anlegen-knopf">
         <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
             <mat-icon>add</mat-icon> Neu anlegen
@@ -124,7 +124,7 @@
                     <ng-container *ngTemplateOutlet="neuAnlegen"></ng-container>
                 </ng-container>
                 <ng-container *ngIf="currentSection === 'generictext'">
-                    <p class="neu-anlegen-satz">Noch nicht drin? Ergänze eine Hintergrundinfo.</p>
+                    <p class="neu-anlegen-satz">Ergänze selbst eine Hintergrundinfo.</p>
                     <div class="neu-anlegen-knopf">
                         <button mat-raised-button class="gutgesagt-primary-dark"
                                 (click)="navigateToContribute('generictext')">
@@ -138,8 +138,8 @@
         <!-- Mobile Empty State when no results in any category -->
         <div *ngIf="!hatTreffer" class="mobile-empty-state">
             <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
-            <app-nicht-dabei [suchtext]="searchQuery">
-                <p class="neu-anlegen-satz">Leg die Aussage neu an und schreib den ersten Kommentar dazu.</p>
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [titelNurMitListe]="true">
+                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
                 <div class="mobile-action-buttons">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
                         <mat-icon>add</mat-icon> Neu anlegen
@@ -161,8 +161,8 @@
         <div class="unified-empty-state">
             <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
 
-            <app-nicht-dabei [suchtext]="searchQuery">
-                <p class="neu-anlegen-satz">Leg die Aussage neu an und schreib den ersten Kommentar dazu.</p>
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [titelNurMitListe]="true">
+                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
                 <div class="action-buttons-top">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
                         <mat-icon>add</mat-icon> Neu anlegen

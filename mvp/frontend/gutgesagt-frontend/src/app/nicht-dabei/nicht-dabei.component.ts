@@ -19,6 +19,9 @@ import { StatementSearchResult } from '../services/dtos/statementDtos';
 import { LoggingService } from '../services/logging.service';
 import { SUCHTEXT_PARAM } from '../shared/formular-adresse';
 
+/** Fortlaufende Nummer fuer eindeutige IDs je Instanz (aria-labelledby). */
+let naechsteNummer = 0;
+
 /**
  * "Nicht dabei?" auf der Ergebnisseite, ohne Treffer und unter den Treffern: Die
  * Suche soll nie in einer Sackgasse enden (#362, docs/VISION.md "Lieber keine
@@ -47,6 +50,15 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
 
   /** IDs der Aussagen, deren Beitraege schon als Treffer angezeigt werden. */
   @Input() bekannteAussagen: readonly string[] = [];
+
+  /**
+   * Ohne Treffer steht "Nicht dabei?" nur ueber einer Liste: Sonst folgte auf
+   * "noch nichts drin" eine Frage ohne Auswahl (etwa fuer Besucher).
+   */
+  @Input() titelNurMitListe = false;
+
+  readonly titelId = `nicht-dabei-titel-${++naechsteNummer}`;
+  readonly listenId = `aehnliche-titel-${naechsteNummer}`;
 
   private geladen: StatementSearchResult[] = [];
   private readonly suchtext$ = new BehaviorSubject<string>('');
@@ -94,6 +106,10 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
   /** Die aehnlichen Aussagen ohne die, die schon als Treffer dastehen. */
   get aehnliche(): StatementSearchResult[] {
     return this.geladen.filter((aussage) => !this.bekannteAussagen.includes(aussage.id));
+  }
+
+  get titelZeigen(): boolean {
+    return !this.titelNurMitListe || this.aehnliche.length > 0;
   }
 
   /** Query-Parameter, um nach einer Aussage zu suchen. */

@@ -537,9 +537,9 @@ describe('ResultViewComponent: Nicht dabei?', () => {
     },
   };
 
-  function oeffnen(mobil: boolean, mitTreffer: boolean): HTMLElement {
+  function oeffnen(mobil: boolean, mitTreffer: boolean, vorschlaege = [SCHON_DA, AEHNLICH]): HTMLElement {
     statementService = jasmine.createSpyObj('StatementService', ['aussageVorschlaege']);
-    statementService.aussageVorschlaege.and.returnValue(of([SCHON_DA, AEHNLICH]));
+    statementService.aussageVorschlaege.and.returnValue(of(vorschlaege));
     TestBed.configureTestingModule({
       imports: [ResultViewComponent],
       providers: [
@@ -585,6 +585,11 @@ describe('ResultViewComponent: Nicht dabei?', () => {
     expect(seite.querySelector('.unified-empty-state app-nicht-dabei')?.textContent).toContain('Nicht dabei?');
     expect(statementService.aussageVorschlaege).toHaveBeenCalledWith('waermepumpe teuer');
     expect(aehnliche(seite)).toEqual(['Wärmepumpen sind zu teuer', 'Wärmepumpen lohnen sich nicht']);
+  });
+
+  it('bietet ohne Treffer die Aussage der Suche nicht als aehnliche an (sonst Schleife)', () => {
+    const seite = oeffnen(false, false, [{ ...AEHNLICH, id: AUSSAGE_ID, text: 'waermepumpe teuer' }, AEHNLICH]);
+    expect(aehnliche(seite)).toEqual(['Wärmepumpen lohnen sich nicht']);
   });
 
   it('fuehrt ohne Treffer mit "Neu anlegen" ins Kommentarformular, Aussage vorbelegt', fakeAsync(() => {

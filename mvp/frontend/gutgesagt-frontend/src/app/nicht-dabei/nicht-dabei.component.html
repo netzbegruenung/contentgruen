@@ -1,9 +1,9 @@
-<section class="nicht-dabei hinweis-box" aria-labelledby="nicht-dabei-titel">
-    <h3 id="nicht-dabei-titel" class="nicht-dabei-titel">Nicht dabei?</h3>
+<section class="nicht-dabei hinweis-box" [attr.aria-labelledby]="titelZeigen ? titelId : null">
+    <h2 *ngIf="titelZeigen" [id]="titelId" class="nicht-dabei-titel">Nicht dabei?</h2>
 
     <ng-container *ngIf="aehnliche.length">
-        <p class="aehnliche-titel" id="aehnliche-titel">Ähnliche Aussagen</p>
-        <ul class="aehnliche" aria-labelledby="aehnliche-titel">
+        <p class="aehnliche-titel" [id]="listenId">Ähnliche Aussagen</p>
+        <ul class="aehnliche" [attr.aria-labelledby]="listenId">
             <li *ngFor="let aussage of aehnliche">
                 <a class="aehnliche-aussage" [routerLink]="['/result']" [queryParams]="sucheNach(aussage)">
                     <span class="aussage-text">{{ aussage.text }}</span>
