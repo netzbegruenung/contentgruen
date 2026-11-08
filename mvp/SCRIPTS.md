@@ -249,11 +249,17 @@ legt es ohne Kennung an und sagt das.
 das Skript nimmt deshalb die Sitzung des Browsers:
 
 1. In Gut gesagt mit dem Konto anmelden, das schreiben soll (beim Entfernen ein Admin).
-2. Entwicklertools öffnen (F12), „Web-Speicher“ (Firefox) bzw. „Anwendung“ (Chrome) →
-   „Cookies“ → Adresse von Gut gesagt → Zeile `GutGesagtAuthCookie`, den Wert kopieren.
-3. Den Wert in eine Datei schreiben, die nur man selbst lesen kann, und sie mit
-   `--sitzung-datei <datei>` angeben (oder den Wert in `GUTGESAGT_SITZUNG` legen). Statt des
-   Werts geht auch die ganze Cookie-Zeile einer Anfrage aus dem Netzwerk-Reiter.
+2. Entwicklertools öffnen (F12), Reiter „Netzwerkanalyse“ (Firefox) bzw. „Netzwerk“ (Chrome),
+   Seite neu laden, eine Anfrage an den BFF-Host wählen (Produktion
+   `bff.gutgesagt.netzbegruenung.de`) und unter den Anfrage-Kopfzeilen die ganze Zeile
+   `Cookie` kopieren. Das Cookie `GutGesagtAuthCookie` gehört zum BFF-Host: unter „Cookies“
+   der Frontend-Adresse im Web-Speicher steht es nicht. Nur der Wert des Cookies geht auch.
+3. Die Zeile in eine Datei schreiben, die nur man selbst lesen kann, und sie mit
+   `--sitzung-datei <datei>` angeben (oder sie in `GUTGESAGT_SITZUNG` legen).
+
+`--adresse` ist die Adresse des BFF, nicht des Frontends. Das Frontend antwortet auf
+`/api/...` mit seiner Seite (HTML, Status 200); dann bricht das Skript mit einem Hinweis auf
+die BFF-Adresse ab, ohne die Antwort auszugeben.
 
 Das Cookie ist HttpOnly und gilt 14 Tage nach der letzten Anfrage, gleitend
 (`BFF/Program.cs`, `AddCookie`). Das BFF führt keine Sitzungen auf dem Server: Abmelden im
@@ -336,14 +342,15 @@ Stimmen und Varianten-Verknüpfungen des Beitrags gehen mit.
 **Usage:**
 ```bash
 # Erst prüfen (ohne Server), dann mit der Sitzung des schreibenden Kontos anlegen.
+# --adresse: der BFF-Host (hier Produktion; auf Test der BFF-Host des Testsystems).
 python3 scripts/manual/beitraege_importieren.py bestand.md
 python3 scripts/manual/beitraege_importieren.py bestand.md --sitzung-datei ~/sitzung.txt \
-  --adresse https://gutgesagt-test.netzbegruenung.de --ausfuehren
+  --adresse https://bff.gutgesagt.netzbegruenung.de --ausfuehren
 # Entfernen mit der Sitzung eines Admins: erst Titel ansehen, dann entfernen.
 python3 scripts/manual/beitraege_importieren.py entfernen.txt --entfernen \
-  --sitzung-datei ~/sitzung-admin.txt --adresse https://gutgesagt-test.netzbegruenung.de
+  --sitzung-datei ~/sitzung-admin.txt --adresse https://bff.gutgesagt.netzbegruenung.de
 python3 scripts/manual/beitraege_importieren.py entfernen.txt --entfernen \
-  --sitzung-datei ~/sitzung-admin.txt --adresse https://gutgesagt-test.netzbegruenung.de --ausfuehren
+  --sitzung-datei ~/sitzung-admin.txt --adresse https://bff.gutgesagt.netzbegruenung.de --ausfuehren
 rm ~/sitzung.txt ~/sitzung-admin.txt
 # Lokaler Dev-Stack: Direktanmeldung
 python3 scripts/manual/beitraege_importieren.py bestand.md --email test.user@example.com --ausfuehren
