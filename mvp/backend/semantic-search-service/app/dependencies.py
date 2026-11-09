@@ -108,6 +108,16 @@ def initialize_services() -> None:
     # NLI-Stufe (#387): das Modell im Hintergrund laden, damit die erste Suche nicht
     # darauf wartet. Ohne Modell gilt die Schwelle, der Start scheitert nicht daran.
     statement_service_instance.nli_vorladen()
+    # Die Polaritaet der Suche (#574) nutzt dasselbe Modell; ist die NLI-Stufe aus,
+    # laedt es hier, sonst wartete die Suche vergeblich auf ein nie geladenes Modell.
+    if (
+        settings_instance.suche_polaritaet_nli != "aus"
+        and settings_instance.dieselbe_aussage_nli == "aus"
+    ):
+        from core.config import NLI_MODELL
+        from services.dieselbe_behauptung.nli_modell import nli_modell
+
+        nli_modell(NLI_MODELL).vorladen()
 
     global commentary_service_instance
     commentary_service_instance = CommentaryService(settings=settings_instance)
@@ -275,6 +285,34 @@ def get_gegenlesen_service() -> GegenlesenService:
             statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
         )
     return _gegenlesen_service
+
+
+_guete_service = None
+
+
+def get_guete_service():
+    """
+    Einmal je Prozess (#427): haelt das Gegenlesen je Titel und Text im Speicher vor
+    und teilt sich Sprachmodell und Stimmen-Tabelle mit Gegenlesen und Abstimmen.
+    """
+    global _guete_service
+    if _guete_service is None:
+        from domain.guete import Guetegewichte
+        from repositories.vote_repository import VoteRepository
+        from services.guete_service import GueteService
+
+        einstellungen = get_settings()
+        _guete_service = GueteService(
+            get_gegenlesen_service(),
+            VoteRepository(),
+            einstellungen.startkonto_kennungen(),
+            Guetegewichte(
+                stimmen_ab=einstellungen.guete_stimmen_ab,
+                stimmen_gewicht_max=einstellungen.guete_stimmen_gewicht_max,
+                stimmen_halbwert=einstellungen.guete_stimmen_halbwert,
+            ),
+        )
+    return _guete_service
 
 
 def get_spracherkennung() -> Spracherkennung:

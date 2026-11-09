@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from '@angular/core';
 import { typBeschreibung } from '../shared/content-type-registry';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -17,6 +17,15 @@ import { takeUntil } from 'rxjs/operators';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 
+/** ``adresse`` so, wie der Browser sie als ``img.src`` fuehrt; unlesbar bleibt sie, wie sie ist. */
+function aufgeloest(adresse: string): string {
+  try {
+    return new URL(adresse, location.href).href;
+  } catch {
+    return adresse;
+  }
+}
+
 @Component({
   selector: 'app-add-image',
   standalone: true,
@@ -31,7 +40,7 @@ import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprac
   templateUrl: './add-image.component.html',
   styleUrls: ['./add-image.component.scss'],
 })
-export class AddImageComponent implements OnDestroy {
+export class AddImageComponent implements AfterViewInit, OnDestroy {
   /** Der Satz zum Typ aus der Registry, wie auf /contribute. */
   readonly typBeschreibung = typBeschreibung('image');
 
@@ -39,6 +48,17 @@ export class AddImageComponent implements OnDestroy {
   @Output() cancel = new EventEmitter<void>();
 
   private destroy$ = new Subject<void>();
+
+  /** Die Vorschau; dort laedt das Bild, und dort merkt man, ob es sich laden laesst (#619). */
+  @ViewChild('vorschau', { static: true }) private vorschau?: ElementRef<HTMLElement>;
+
+  /**
+   * Die Vorschau konnte das Bild unter der eingegebenen URL nicht laden. Dann steht unter
+   * dem Feld ein Hinweis, und die Vorschau zeigt kein kaputtes Bild. Speichern bleibt
+   * moeglich: lenken, nicht sperren.
+   */
+  bildLadefehler = false;
+  private bildUrl = '';
 
   imageForm: FormGroup;
   previewResult: ImageSearchResult | null = null;
@@ -73,11 +93,35 @@ export class AddImageComponent implements OnDestroy {
     });
 
     this.imageForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((values) => {
+      // Neue URL, neuer Versuch: der alte Ladefehler gilt nicht mehr.
+      if ((values.image_url || '') !== this.bildUrl) {
+        this.bildUrl = values.image_url || '';
+        this.bildLadefehler = false;
+      }
       this.updatePreview(values);
     });
 
     this.updatePreview(this.imageForm.value);
   }
+
+  ngAfterViewInit(): void {
+    // Das error-Ereignis eines Bildes steigt nicht auf; in der Capture-Phase kommt es hier an.
+    // Ein fremdes Bild laedt erst auf Klick in der Vorschau (#447), der Hinweis also auch.
+    this.vorschau?.nativeElement.addEventListener('error', this.beimLadefehler, true);
+  }
+
+  private readonly beimLadefehler = (ereignis: Event): void => {
+    const bild = ereignis.target;
+    if (!(bild instanceof HTMLImageElement) || !this.bildUrl || this.bildLadefehler) {
+      return;
+    }
+    // Nur der Fehler zur aktuellen URL zaehlt, nicht ein verspaeteter zur vorigen.
+    if (bild.src !== aufgeloest(this.bildUrl)) {
+      return;
+    }
+    this.bildLadefehler = true;
+    this.updatePreview(this.imageForm.value);
+  };
 
   updatePreview(values: any): void {
     this.previewResult = {
@@ -89,7 +133,7 @@ export class AddImageComponent implements OnDestroy {
         id: 'preview',
         title: values.title || 'Titel eingeben...',
         text: values.caption || 'Bildunterschrift eingeben...',
-        image_url: values.image_url || '',
+        image_url: this.bildLadefehler ? '' : values.image_url || '',
         references: [],
         created: new Date().toISOString(),
         last_modified: new Date().toISOString(),
@@ -167,6 +211,7 @@ export class AddImageComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.vorschau?.nativeElement.removeEventListener('error', this.beimLadefehler, true);
     this.destroy$.next();
     this.destroy$.complete();
   }

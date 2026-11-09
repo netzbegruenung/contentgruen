@@ -103,11 +103,29 @@ describe('AddPostComponent', () => {
 
   it('schickt nichts, solange ein Pflichtfeld fehlt', () => {
     const senden = spyOn(TestBed.inject(PostService), 'addPost');
-    component.postForm.patchValue({ ...WERTE, author: '' });
+    component.postForm.patchValue({ ...WERTE, url: '' });
 
     component.speichern();
 
     expect(senden).not.toHaveBeenCalled();
+  });
+
+  it('speichert ohne "Gepostet von" und schickt dann kein Konto (#618)', () => {
+    const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-2' }));
+    component.postForm.patchValue({ ...WERTE, author: '  ' });
+
+    component.speichern();
+
+    expect(senden).toHaveBeenCalledOnceWith({
+      post: jasmine.objectContaining({ author: null }),
+    });
+  });
+
+  it('zeigt bei "Gepostet von" keinen Hinweis, nur "(optional)" (#618)', () => {
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Gepostet von (optional)');
+    expect(fixture.nativeElement.textContent).not.toContain('Nur bei Organisationen');
   });
 
   it('nimmt nur Links mit http oder https', () => {

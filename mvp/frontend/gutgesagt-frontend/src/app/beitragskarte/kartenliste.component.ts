@@ -6,9 +6,12 @@ import { KartenDaten, KartenVariante } from './karten-daten';
 
 /**
  * Beitragskarten auf hellgrauem Grund. Voll untereinander: mobil (bis 599 px)
- * zeigen Startseite und Suche diese Liste statt des Karussells. Kompakt als Album
+ * zeigen Startseite und Suche diese Liste statt des Karussells. Mit raster stehen
+ * volle Karten ab 600 px nebeneinander in Spalten zu 450 px, so viele die Breite
+ * hergibt (Treffer der Suche am Desktop, #602). Kompakt als Album
  * (Meine Beitraege): Raster direkt auf dem Seitengrund, 2 Spalten, 3 ab 600 px,
- * 4 ab 960 px. Jede Karte ist so hoch, wie ihr Inhalt es verlangt.
+ * 4 ab 960 px. Untereinander ist jede Karte so hoch, wie ihr Inhalt es verlangt;
+ * in Spalten oder im Album sind die Karten einer Reihe gleich hoch.
  */
 @Component({
   selector: 'app-kartenliste',
@@ -16,7 +19,11 @@ import { KartenDaten, KartenVariante } from './karten-daten';
   imports: [CommonModule, BeitragskarteComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul class="kartenliste" [class.kartenliste--raster]="variante === 'kompakt'">
+    <ul
+      class="kartenliste"
+      [class.kartenliste--raster]="variante === 'kompakt'"
+      [class.kartenliste--spalten]="raster && variante === 'voll'"
+    >
       <li *ngFor="let karte of daten; trackBy: nachId">
         <app-beitragskarte [daten]="karte" [variante]="variante" (angetippt)="angetippt.emit($event)">
         </app-beitragskarte>
@@ -47,6 +54,14 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         .kartenliste--raster {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
+
+        .kartenliste--spalten {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(0, 450px));
+          gap: 24px;
+          padding: 24px;
+          border-radius: var(--border-radius-medium);
+        }
       }
 
       @media (min-width: 960px) {
@@ -60,6 +75,8 @@ import { KartenDaten, KartenVariante } from './karten-daten';
 export class KartenlisteComponent {
   @Input() daten: KartenDaten[] = [];
   @Input() variante: KartenVariante = 'voll';
+  /** Volle Karten ab 600 px in Spalten statt untereinander. */
+  @Input() raster = false;
 
   /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */
   @Output() angetippt = new EventEmitter<KartenDaten>();

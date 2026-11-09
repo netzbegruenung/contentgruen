@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
-import { signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RundgangComponent, ZIEL_WARTEZEIT_MS } from './rundgang.component';
 import { RundgangService, RundgangStand } from './rundgang.service';
 import { Rundgang } from './rundgang-daten';
@@ -13,6 +14,26 @@ const PROBE: Rundgang = {
     { titel: 'Zweiter', text: { desktop: 'Text breit', mobil: 'Text schmal' }, ziel: '#probe-fehlt, #probe-zwei' },
     { titel: 'Dritter', text: 'Ohne Ziel', ziel: '#gibt-es-nicht' },
   ],
+};
+
+/** Ein Suchfeld wie app-search: OnPush, Wert über ngModel. */
+@Component({
+  selector: 'app-probe-suche',
+  standalone: true,
+  imports: [FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<div id="probe-feld" style="position:absolute;left:40px;top:300px;width:200px;height:40px">
+    <input [(ngModel)]="suche" name="suche"></div>`,
+})
+class ProbeSucheComponent {
+  suche = '';
+}
+
+/** Ein Schritt, der ein Beispiel in das Feld im Ziel schreibt. */
+const MIT_BEISPIEL: Rundgang = {
+  id: 'antwort-finden',
+  name: 'Rundgang mit Beispiel',
+  schritte: [{ titel: 'Eingeben', text: 'Mit Beispiel', ziel: '#probe-feld', vorbelegen: 'Ein Beispiel' }],
 };
 
 class FakeRundgangService {
@@ -58,7 +79,8 @@ describe('RundgangComponent', () => {
     seite.innerHTML = `
       <button id="ausloeser">Hilfe</button>
       <div id="probe-eins" style="position:absolute;left:40px;top:60px;width:200px;height:40px">eins</div>
-      <div id="probe-zwei" style="position:absolute;left:300px;top:200px;width:120px;height:30px">zwei</div>`;
+      <div id="probe-zwei" style="position:absolute;left:300px;top:200px;width:120px;height:30px">zwei</div>
+      <div id="probe-feld" style="position:absolute;left:40px;top:300px;width:200px;height:40px"><input></div>`;
     document.body.appendChild(seite);
     ausloeser = seite.querySelector('#ausloeser') as HTMLButtonElement;
   });
@@ -130,6 +152,46 @@ describe('RundgangComponent', () => {
       expect(kegel()).toBeNull();
       expect(fixture.nativeElement.querySelector('.schleier')).not.toBeNull();
       flush(200); // sucht das fehlende Ziel noch eine Weile nach
+    }));
+
+    it('füllt ein leeres Eingabefeld im Ziel mit dem Beispiel, wie beim Tippen (#601)', fakeAsync(() => {
+      const feld = seite.querySelector('#probe-feld input') as HTMLInputElement;
+      const getippt = jasmine.createSpy('input');
+      feld.addEventListener('input', getippt);
+      service.aktiv.set({ rundgang: MIT_BEISPIEL, index: 0 });
+      fixture.detectChanges();
+      tick();
+      expect(feld.value).toBe('Ein Beispiel');
+      expect(getippt).toHaveBeenCalledTimes(1);
+      flush();
+    }));
+
+    it('übergibt das Beispiel an ngModel eines OnPush-Suchfelds, auch direkt nach dem Laden', fakeAsync(() => {
+      seite.querySelector('#probe-feld')!.remove();
+      const suche = TestBed.createComponent(ProbeSucheComponent);
+      document.body.appendChild(suche.nativeElement);
+      // Rundgang startet, bevor das Feld seine erste Änderungserkennung hatte
+      service.aktiv.set({ rundgang: MIT_BEISPIEL, index: 0 });
+      fixture.detectChanges();
+      suche.detectChanges();
+      tick();
+      suche.detectChanges();
+      tick();
+      const feld = suche.nativeElement.querySelector('input') as HTMLInputElement;
+      expect(suche.componentInstance.suche).toBe('Ein Beispiel');
+      expect(feld.value).toBe('Ein Beispiel');
+      suche.nativeElement.remove();
+      flush();
+    }));
+
+    it('lässt stehen, was schon im Eingabefeld steht', fakeAsync(() => {
+      const feld = seite.querySelector('#probe-feld input') as HTMLInputElement;
+      feld.value = 'Eigener Text';
+      service.aktiv.set({ rundgang: MIT_BEISPIEL, index: 0 });
+      fixture.detectChanges();
+      tick();
+      expect(feld.value).toBe('Eigener Text');
+      flush();
     }));
 
     it('beschriftet den letzten Schritt mit „Fertig“, den ersten ohne „Zurück“', fakeAsync(() => {

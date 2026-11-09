@@ -35,6 +35,8 @@ export interface BeitragGespeichert {
   aussage: { id: string; text: string };
   /** false: Aussage angegeben, aber nicht verknuepft - der Beitrag steht trotzdem. */
   verknuepft: boolean;
+  /** Die Aussage wurde beim Speichern neu angelegt (laut Server, #617); fehlt sonst. */
+  aussageNeu?: boolean;
   /** Die gewaehlten Themen galten nicht (themenHinweisNachSpeichern); fehlt sonst. */
   themenHinweis?: string;
 }
@@ -44,6 +46,8 @@ export interface GespeichertZustand {
   aussage?: { id: string; text: string };
   /** false: Aussage angegeben, aber nicht verknuepft. */
   verknuepft?: boolean;
+  /** Die Aussage wurde beim Speichern neu angelegt: Marke "neu" an "Antwort auf" (#617). */
+  aussageNeu?: boolean;
   /** Die gewaehlten Themen der neuen Aussage galten nicht: der Satz dazu (#455). */
   themenHinweis?: string;
   /** Nur Fangkorb: false, wenn der Einwurf nicht mit dem Beitrag verknuepft wurde. */

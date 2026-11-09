@@ -258,6 +258,56 @@ reicht eine Kontrollmessung mit dem Befehl oben.
   7 der 99 gemessenen Suchen ohne Treffer (bei 0,8: 2), keine davon dieselbe Behauptung
   wie eine Aussage.
 
+## Polarität mit NLI (#574)
+
+Gemessen am 09.11.2026 am selben Entwurf des Startbestands (lokal, eigene Sammlung, ohne
+Seed), mit `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=an` wie auf Produktion, ohne Bestätiger (er
+ändert nur die Zerfaserung, nicht die Treffer). Vorher: Wortlisten
+(`SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI=aus`); nachher: `an`, Gegenteil heißt Widerspruch in
+beiden Richtungen ab 0,9 (Standard). Nachmessen: diese Variablen vor den Befehl oben.
+
+| bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Verneinung: Fehltreffer / keine | Aussagetreffer je Suche: Median / 95. Perzentil |
+|---|---|---|---|---|---|---|---|
+| Wortlisten | 78/86 | 4 | 4 | 3/13 / 10 | 0.34 | 8 / 0 | 84 / 144 ms |
+| NLI, beide Richtungen ab 0,9 | 77/86 | 5 | 4 | 5/13 / 8 | 0.34 | 6 / 2 | 364–539 / 694–1390 ms¹ |
+| NLI, eine Richtung ab 0,5 (verworfen) | 74/86 | 6 | 6 | 7/13 / 6 | 0.38 | 4 / 4 | 364 / 694 ms |
+
+¹ Beide NLI-Zeilen rechnen dieselben Urteile (dieselben Paare, nur die Grenze ist anders);
+die Spanne sind die beiden Läufe, die VM war mit anderen Läufen geteilt.
+
+D11 und D15 aus dem Messset entsprechen in der Suche S21 („Die Grünen sind keine
+Verbotspartei“) und S62 („Balkonsolar lohnt sich“): Beide Aussagen bestraft das Modell (1,00 /
+0,99 und 0,99 / 0,98), beide Fälle zeigen danach aber eine andere, nur thematisch nahe Aussage.
+
+- **Das Modell erkennt sieben der acht Verneinungen** als Widerspruch in beiden Richtungen
+  zur Aussage, deren Gegenteil sie sind (0,98 bis 1,00); S96 widerspricht nur in einer
+  Richtung (0,87 und 0,27) und bleibt vorn. Die Wortlisten erkennen keine davon: Die
+  Suchanfrage hat meist kein Verneinungswort und gilt als neutral. Die Aussage fällt weg,
+  aber bei fünf Fällen rückt etwas anderes auf den ersten Platz: eine andere, nur thematisch
+  nahe Aussage (S21, S35, S62) oder ein direkter Treffer, der schon vorher auf der Seite
+  stand (S05, S18). Das ist keine Frage der Polarität mehr, sondern der Schwelle (wie bei
+  den fremden Themen).
+- **Die Antworten des Gegenteils** kamen ohne weitere Regel über den direkten Weg zurück
+  (bei S05, S18, S35, S62, S82, S86 stand danach eine Antwort auf das Gegenteil vorn). Deshalb
+  schließt ein Widerspruch nach dem Modell auch die Antworten der Aussage vom direkten Weg
+  aus; bei den Wortlisten bleibt es wie bisher.
+- **Beide Richtungen statt einer:** Mit „eine Richtung ab 0,5“ fallen vier passende Treffer
+  heraus (S02 „Windkraftanlagen bringen massenhaft Vögel um“, S16, S73, S76): Das Modell liest
+  Umgangssprache in einer Richtung als Widerspruch (S02: 0,99 hin, 0,53 zurück). Mit beiden
+  Richtungen bleibt davon nur **S73** („Grün wählen doch nur Lehrer und Studenten“ zu „Die
+  Grünen machen Politik nur für Akademiker“, 1,00 und 0,99). Die Grenzen sind an diesem Set
+  gewählt, die Wirkung ist also eher zu optimistisch.
+- **Fragen und Schlagwörter** prüft das Modell nicht (Fragezeichen oder Verb vorn, unter drei
+  Wörtern): Im ersten Lauf ohne diese Regel fielen S37, S44, S64 („Dunkelflaute Blackout“)
+  und S60 („Lohnt sich ein Balkonkraftwerk?“) heraus.
+- **Laufzeit:** Das Modell urteilt je Suche über bis zu fünf Aussagen in beide Richtungen,
+  das kostet auf der Dev-VM rund 0,3 bis 0,45 s mehr im Median (zwei Läufe mit denselben
+  Urteilen, die VM war geteilt). Auf der Ziel-VM nachmessen, bevor `an` gilt.
+- **Ergebnis:** Zwei von acht Verneinungen zeigen nichts mehr, zwei Fälle ohne Erwartung mehr
+  zeigen richtig nichts, ein passender Treffer geht verloren, die Präzision bleibt. Der
+  Standard bleibt `schatten`; im Log steht dann, wie oft Wortlisten und Modell bei echten
+  Suchen auseinanderliegen.
+
 ## Nächtlicher Lauf
 
 `.woodpecker/nacht.yaml` (#391) misst jede Nacht und auf Anstoß das Messset und das

@@ -33,6 +33,7 @@ from services.art9_einwilligung_service import get_art9_einwilligung_service
 from services.usage_tracking_service import get_usage_service
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
+from services.guete_service import guete_ergaenzen
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from domain.models.commentary import Fassung
 from domain.models.content_type import ContentType
@@ -505,10 +506,15 @@ async def oft_genutzt(
         # danach wieder dazu. Die Antwort je Typ: dtos/beitragstypen.py; ein Typ
         # ohne Eintrag bekommt die allgemeine Auswahl.
         antworten = fuer_aufrufer(
-            [
-                ANTWORT_JE_TYP.get(e["result_type"], BeitragResponse).model_validate(e)
-                for e in angereichert
-            ],
+            # Vor fuer_aufrufer: Die Guete laesst die Stimme des Autors aus (#427).
+            await guete_ergaenzen(
+                [
+                    ANTWORT_JE_TYP.get(
+                        e["result_type"], BeitragResponse
+                    ).model_validate(e)
+                    for e in angereichert
+                ]
+            ),
             aufrufer,
         )
         varianten_ergaenzen(antworten, varianten)

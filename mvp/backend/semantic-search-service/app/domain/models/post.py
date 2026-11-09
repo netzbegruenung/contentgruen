@@ -23,7 +23,7 @@ class Post(BaseContent):
         Short title/headline for the post.
     platform: str
         Source platform of the post (e.g. "mastodon", "bluesky", "x").
-    author: str
+    author: Optional[str]
         Handle/name of the post's original author on the source platform
         (distinct from the Gut gesagt user who imported it).
     url: Optional[str]
@@ -45,7 +45,10 @@ class Post(BaseContent):
         ),
     )
     platform: str = Field(..., description="Source platform of the post")
-    author: str = Field(..., description="Original author handle on the platform")
+    # Optional (#618): leer, wenn kein Konto genannt werden soll.
+    author: Optional[str] = Field(
+        default=None, description="Original author handle on the platform, if public"
+    )
     url: Optional[str] = None
     engagement: int = 0
 

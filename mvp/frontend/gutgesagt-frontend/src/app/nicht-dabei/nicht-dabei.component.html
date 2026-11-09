@@ -1,14 +1,21 @@
 <section class="nicht-dabei hinweis-box" [attr.aria-labelledby]="titelZeigen ? titelId : null">
-    <h2 *ngIf="titelZeigen" [id]="titelId" class="nicht-dabei-titel">Nicht dabei?</h2>
+    <h2 *ngIf="titelZeigen" [id]="titelId" class="nicht-dabei-titel">{{ titel }}</h2>
 
     <ng-container *ngIf="aehnliche.length">
         <p class="aehnliche-titel" [id]="listenId">Ähnliche Aussagen</p>
         <ul class="aehnliche" [attr.aria-labelledby]="listenId">
-            <li *ngFor="let aussage of aehnliche">
+            <li *ngFor="let aussage of aehnliche" class="aehnliche-eintrag">
                 <a class="aehnliche-aussage" [routerLink]="['/result']" [queryParams]="sucheNach(aussage)">
                     <span class="aussage-text">{{ aussage.text }}</span>
                     <span class="passt-vielleicht">passt vielleicht</span>
+                    <!-- Echte Zahl der verknuepften Antworten; ohne Antworten keine Zahl (#617) -->
+                    <span *ngIf="ohneTreffer && aussage.replysuggestions_count > 0" class="antworten-zahl">
+                        {{ antwortenText(aussage.replysuggestions_count) }}
+                    </span>
                 </a>
+                <!-- Ohne Treffer: erst fuer die aehnliche Aussage anbieten, dann fuer die eigene Formulierung (#617) -->
+                <a *ngIf="ohneTreffer" class="selbst-beantworten" [routerLink]="kommentarPfad" [queryParams]="antwortAuf(aussage)"
+                   [attr.aria-label]="'Selbst beantworten: ' + aussage.text">Selbst beantworten</a>
             </li>
         </ul>
     </ng-container>

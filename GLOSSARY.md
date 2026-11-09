@@ -118,7 +118,7 @@ Wenn dieselbe Behauptung als mehrere Aussagen im Bestand liegt, etwa weil eine S
 _Avoid_: Fragmentierung, Dubletten (Dubletten sind gleiche Beiträge)
 
 **NLI-Stufe**:
-Die zweite Stufe der Prüfung, ob ein neuer Text dieselbe Aussage ist wie eine vorhandene (#387): Die Einbettung sucht wenige ähnliche Aussagen als Kandidaten, ein lokales NLI-Modell prüft je Paar, ob beide Texte einander folgern und keiner dem anderen widerspricht. Fragen gegen Behauptungen und Texte mit anderen Quantoren („manche“, „alle“, „nie“) prüft es nicht, sie bleiben getrennt. Bei einer Übernahme bleibt der Wortlaut der vorhandenen Aussage. Im **Schattenbetrieb** entscheidet weiter die Ähnlichkeitsschwelle, die NLI-Stufe urteilt nur mit und wird gezählt, bis die Auswertung die Umstellung trägt. Ist das Modell nicht verfügbar, gilt die Schwelle. Dasselbe Modell filtert die Vorschläge im Feld „Antwort auf“: Eine Aussage, die dem Getippten widerspricht, wird nicht vorgeschlagen.
+Die zweite Stufe der Prüfung, ob ein neuer Text dieselbe Aussage ist wie eine vorhandene (#387): Die Einbettung sucht wenige ähnliche Aussagen als Kandidaten, ein lokales NLI-Modell prüft je Paar, ob beide Texte einander folgern und keiner dem anderen widerspricht. Fragen gegen Behauptungen und Texte mit anderen Quantoren („manche“, „alle“, „nie“) prüft es nicht, sie bleiben getrennt. Bei einer Übernahme bleibt der Wortlaut der vorhandenen Aussage. Im **Schattenbetrieb** entscheidet weiter die Ähnlichkeitsschwelle, die NLI-Stufe urteilt nur mit und wird gezählt, bis die Auswertung die Umstellung trägt. Ist das Modell nicht verfügbar, gilt die Schwelle. Dasselbe Modell filtert die Vorschläge im Feld „Antwort auf“: Eine Aussage, die dem Getippten widerspricht, wird nicht vorgeschlagen. In der Suche kann es die Polaritätsstrafe übernehmen (#574, schaltbar): Eine Aussage, die einer Suchanfrage in beiden Richtungen widerspricht, rückt nach hinten, und ihre Antworten zeigt die Suche nicht; Fragen und Schlagwörter prüft es dort nicht.
 _Avoid_: Paraphrasen-Erkennung, KI-Prüfung (es erzeugt keinen Text)
 
 **Bestätiger**:
@@ -325,7 +325,7 @@ Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fass
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:
-Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
+Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen, auf der Karte dasselbe Gegenlesen ohne die Aussage (ohne die Regel zu übernommenen Schlüsselwörtern, denn ein Beitrag kann auf mehrere Aussagen antworten). Stimmen anderer zählen erst ab einer Mindestzahl verschiedener Stimmender, ohne Startkonten und ohne die eigene Stimme; ihr Anteil an der Güte wächst mit ihrer Zahl, bleibt aber begrenzt. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
@@ -421,7 +421,7 @@ Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suche
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Willkommen**:
-Das gelbe Band beim ersten Besuch, über dem Inhalt von Startseite und Treffern, kein Fenster (#587): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Mitmachen“ bietet erst ein Band auf Beitragen oder Fangkorb an (#587, gestaffelt).
+Das gelbe Band beim ersten Besuch, über dem Inhalt der Startseite, kein Fenster (#587; seit #599 nicht mehr über den Treffern): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Mitmachen“ bietet erst ein Band auf Beitragen oder Fangkorb an (#587, gestaffelt).
 
 **Rundgang**:
 Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Mitmachen“ zeigt Beitragen, Einwerfen, Fangkorb und Meine Beiträge; nach der Art.-9-Einwilligung trägt „Beitragen“ im Kopf einen Neu-Punkt, und wer zum ersten Mal auf Beitragen oder Fangkorb ankommt, bekommt dort im Band „Kurz zeigen, wie Beitragen geht?“ angeboten; der Rundgang beginnt dann beim Einwerfen. Beides bleibt, bis die Person darauf reagiert. Beide lassen sich über Hilfe und Menü jederzeit wieder starten. Angeboten, nie erzwungen.
@@ -520,6 +520,10 @@ _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 **Einlösung**:
 Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt, auch wenn es zur Adresse schon ein Konto gibt oder die Adresse einen Tippfehler hat; nur wenn Keycloak das Konto nicht anlegen konnte, wird sie zurückgenommen. Die Zahl erlaubter Einlösungen begrenzt eine Einladung.
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
+
+**Startbeispiel**:
+Die Aussage hinter „Beispiel probieren“ auf der Startseite; der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
+_Avoid_: Beispielsuche, Demo-Aussage
 
 **Startbestand**:
 Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start schreibt, damit Gut gesagt nicht leer beginnt. Er wird wie jeder Beitrag angelegt, über das Formular oder das Importskript aus einer Datei.

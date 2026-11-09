@@ -235,6 +235,32 @@ a {
   }
 }
 
+// Beispielsiegel unter „Bewerten“ (#427): umbrechend, damit sie auch mobil passen
+.siegel-absatz {
+  margin: var(--spacing-xs, 4px) 0;
+}
+
+.siegel-beispiele {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.8rem;
+  }
+
+  app-siegel {
+    width: 28px;
+  }
+}
+
 // Mobile responsive adjustments
 @media (max-width: 599px) {
   .content-section {

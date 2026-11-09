@@ -5,7 +5,8 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from './rundgang.service';
-import { BEISPIEL_AUSSAGE, MITMACHEN_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
+import { MITMACHEN_ANGEBOT, RUNDGAENGE, WILLKOMMEN } from './rundgang-daten';
+import { STARTBEISPIEL } from '../shared/startbeispiel';
 import { MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
 
 describe('RundgangService', () => {
@@ -102,12 +103,12 @@ describe('RundgangService', () => {
       expect(zweiter.band()).toBe(WILLKOMMEN);
     });
 
-    it('steht nur auf Startseite und Treffern, nicht auf Formularen, Einwilligung oder Rechtstexten', () => {
-      for (const seite of ['/einladung/abc', '/login', '/einwilligung?returnUrl=%2Fsearch', '/datenschutz', '/contribute']) {
+    it('steht nur auf der Startseite, nicht über Treffern, Formularen, Einwilligung oder Rechtstexten (#599)', () => {
+      for (const seite of ['/result?searchQuery=x', '/einladung/abc', '/login', '/einwilligung?returnUrl=%2Fsearch', '/datenschutz', '/contribute']) {
         navigiert(seite);
         expect(service.band()).withContext(seite).toBeNull();
       }
-      navigiert('/result?searchQuery=x');
+      navigiert('/search');
       expect(service.band()).toBe(WILLKOMMEN);
     });
 
@@ -162,7 +163,7 @@ describe('RundgangService', () => {
     });
 
     it('steht nicht neben einem Rundgang, auch nicht, solange dessen erster Schritt lädt (#585)', async () => {
-      navigiert('/result?searchQuery=x');
+      navigiert('/search?von=teilen'); // Startseite, aber nicht genau die Adresse des ersten Schritts
       expect(service.band()).toBe(WILLKOMMEN);
       router.navigateByUrl.and.returnValue(new Promise(() => undefined));
       void service.starten('antwort-finden'); // erster Schritt auf /search, lädt noch
@@ -190,9 +191,17 @@ describe('RundgangService', () => {
       expect(service.aktiv()?.index).toBe(0);
       await weiter;
       expect(router.navigateByUrl).toHaveBeenCalledWith(
-        jasmine.objectContaining({ pfad: '/result', query: { searchQuery: BEISPIEL_AUSSAGE } }) as never,
+        jasmine.objectContaining({ pfad: '/result', query: { searchQuery: STARTBEISPIEL } }) as never,
       );
       expect(service.aktiv()?.index).toBe(1);
+    });
+
+    it('füllt in Schritt 1 das Startbeispiel vor, das die Treffer-Schritte suchen (#601)', () => {
+      const schritte = RUNDGAENGE['antwort-finden'].schritte;
+      expect(schritte[0].vorbelegen).toBe(STARTBEISPIEL);
+      for (const schritt of schritte.slice(1, 4)) {
+        expect(schritt.seite?.query).toEqual({ searchQuery: STARTBEISPIEL });
+      }
     });
 
     it('blättert zurück, aber nicht vor den ersten Schritt', async () => {

@@ -86,3 +86,41 @@ describe('CommentarySearchResultsComponent: Klick auf Hinzufuegen', () => {
     expect(router.url).toBe('/workflow/add-commentary?searchQuery=Waermepumpen%20sind%20zu%20teuer');
   }));
 });
+
+/** Ein Begriff fuer dieselbe Handlung (#599): oben nur ein Link "Selbst beantworten". */
+describe('CommentarySearchResultsComponent: Beschriftung', () => {
+  let fixture: ComponentFixture<CommentarySearchResultsComponent>;
+
+  function antwort(anzahl: number): SearchResponse {
+    return {
+      query_was_newly_added_as_statement: false,
+      statement_id: '11111111-2222-4333-8444-555555555555',
+      statement_text: 'Atomkraft ist günstig',
+      commentary_search_results_count: anzahl,
+      commentary_search_results: [],
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+    };
+  }
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [CommentarySearchResultsComponent],
+      providers: [provideRouter(ohneWaechter(routes)), provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+    fixture = TestBed.createComponent(CommentarySearchResultsComponent);
+  });
+
+  for (const [fall, anzahl, minimal] of [['mit Treffern', 2, false], ['ohne Kommentare, mit anderen Treffern', 0, true]] as const) {
+    it(`zeigt ${fall} einen Link "Selbst beantworten" und keinen Knopf`, () => {
+      fixture.componentRef.setInput('searchResponse', antwort(anzahl));
+      fixture.componentRef.setInput('showMinimalEmptyState', minimal);
+      fixture.detectChanges();
+
+      const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('button'));
+      expect(knoepfe.map((k) => k.textContent!.trim())).toEqual(['Selbst beantworten']);
+      expect(knoepfe[0].classList).toContain('ergaenzen-link');
+      expect(fixture.nativeElement.textContent).not.toContain('Fertigen Kommentar hinzufügen');
+    });
+  }
+});

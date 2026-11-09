@@ -30,6 +30,7 @@ from domain.models.content_type import ContentType
 from core.config import Settings
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
+from services.guete_service import als_responses_mit_guete, guete_ergaenzen
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.content.base_content_service import BaseContentService
@@ -187,10 +188,13 @@ async def get_recent_content(
         # Je Eintrag das Response-DTO seines Typs; result_type gehoert nicht zum
         # Beitrag und kommt danach wieder dazu.
         antworten = fuer_aufrufer(
-            [
-                NEUESTE.get(e["result_type"], BeitragResponse).model_validate(e)
-                for e in angereichert
-            ],
+            # Vor fuer_aufrufer: Die Guete laesst die Stimme des Autors aus (#427).
+            await guete_ergaenzen(
+                [
+                    NEUESTE.get(e["result_type"], BeitragResponse).model_validate(e)
+                    for e in angereichert
+                ]
+            ),
             aufrufer,
         )
         varianten_ergaenzen(antworten, varianten)
@@ -330,7 +334,9 @@ async def beitrag_ansehen(
         [mit_nutzung] = get_usage_service().enrich_content_with_usage(
             [beitrag.model_dump()]
         )
-        [antwort] = als_responses(ANTWORT_JE_TYP[typ], [mit_nutzung], aufrufer)
+        [antwort] = await als_responses_mit_guete(
+            ANTWORT_JE_TYP[typ], [mit_nutzung], aufrufer
+        )
         # get_user_vote faengt Datenbankfehler selbst ab: ohne Stimme bleibt die Seite.
         stimme = (
             voting_service.get_user_vote(aufrufer.kennung, beitrag_id)
