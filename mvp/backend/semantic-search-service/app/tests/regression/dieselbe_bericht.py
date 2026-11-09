@@ -24,6 +24,10 @@ import sys
 from typing import List, NamedTuple, Optional, Sequence
 
 SEITE = 200
+# Wie stufe.WEG_NLI und stufe.WEG_BESTAETIGER; hier ohne Import, weil das Modul erst nach
+# dem Start der Dienste die Konfiguration laedt (gleiche Werte prueft ein Unit-Test).
+WEG_NLI = "nli"
+WEG_BESTAETIGER = "bestaetiger"
 
 
 class Paar(NamedTuple):
@@ -33,7 +37,7 @@ class Paar(NamedTuple):
     b_text: str
     score: float
     folgerung: float
-    weg: str = "nli"
+    weg: str = WEG_NLI
 
 
 class Modelle(NamedTuple):
@@ -70,12 +74,20 @@ def modelle_laden(settings) -> Modelle:
 
 
 def weg_beschreiben(settings, mit_bestaetiger: bool) -> str:
-    """Welcher Weg aktiv war, mit den Schaltern aus der Umgebung."""
+    """Welcher Weg aktiv war, mit den Schaltern aus der Umgebung. Bei
+    dieselbe_aussage_nli = aus misst der Bericht trotzdem, der Dienst urteilt dann aber
+    gar nicht mit NLI: Das steht dabei."""
     weg = "erstes Modell und Bestaetiger" if mit_bestaetiger else "nur erstes Modell"
     schalter = "true" if settings.nli_bestaetiger else "false"
+    hinweis = (
+        "; der Dienst prueft so nicht (NLI-Stufe aus)"
+        if settings.dieselbe_aussage_nli == "aus"
+        else ""
+    )
     return (
         f"Weg: {weg}; SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI="
         f"{settings.dieselbe_aussage_nli}, SEMANTIC_SEARCH_NLI_BESTAETIGER={schalter}"
+        f"{hinweis}"
     )
 
 
@@ -116,9 +128,7 @@ async def paare_finden(
             k = d.kandidat
             schluessel = frozenset({str(aussage.id), str(k.id)})
             vorher = gefunden.get(schluessel)
-            if vorher is None or (
-                vorher.weg != stufe.WEG_NLI and d.weg == stufe.WEG_NLI
-            ):
+            if vorher is None or (vorher.weg != WEG_NLI and d.weg == WEG_NLI):
                 gefunden[schluessel] = Paar(
                     str(aussage.id),
                     aussage.text,
@@ -135,15 +145,18 @@ def ausgabe(
     anzahl: int, paare: Sequence[Paar], weg: str, mit_paaren: bool
 ) -> List[str]:
     """Die Zeilen des Berichts. Die erste beginnt mit "<n> sichtbare Aussagen" (darauf
-    greift nli-messen im Ausroll-Skript) und nennt den aktiven Weg."""
-    ueber_bestaetiger = sum(1 for p in paare if p.weg != "nli")
+    greift nli-messen im Ausroll-Skript) und nennt den aktiven Weg. "Ueber den
+    Bestaetiger" zaehlt wie im Dienst nur Paare, fuer die das erste Modell bei keiner der
+    beiden Aussagen einen Partner fand - nicht alles, was der Bestaetiger allein retten
+    wuerde."""
+    ueber_bestaetiger = sum(1 for p in paare if p.weg == WEG_BESTAETIGER)
     zeilen = [
         f"{anzahl} sichtbare Aussagen, {len(paare)} Paare waeren nach der NLI-Stufe "
         f"dieselbe Aussage, davon {ueber_bestaetiger} ueber den Bestaetiger ({weg})."
     ]
     if mit_paaren:
         for p in sorted(paare, key=lambda p: -p.folgerung):
-            markierung = "" if p.weg == "nli" else " [Bestaetiger]"
+            markierung = " [Bestaetiger]" if p.weg == WEG_BESTAETIGER else ""
             zeilen.append(
                 f"- {p.score:.3f} / {p.folgerung:.3f}{markierung}: „{p.a_text}“ "
                 f"({p.a_id}) = „{p.b_text}“ ({p.b_id})"

@@ -110,7 +110,9 @@ class TestBerichtWieDerDienst:
     ):
         """Bericht und Dienst teilen die Entscheidung: Je Aussage findet der Dienst
         das Paar, das der Bericht zeigt - ueber das erste Modell und ueber den
-        Bestaetiger. Die Attrappen urteilen je Paar, nicht je Kandidat."""
+        Bestaetiger. Die Attrappen urteilen je Paar, nicht je Kandidat. Gleichheit gilt
+        hier, weil jede Aussage hoechstens einen Partner hat: Der Bericht zaehlt alle
+        Paare, der Dienst nimmt davon den staerksten."""
         buerger = (
             "Mit Bürgergeld hat man mehr als mit Arbeit",
             "Bürgergeld lohnt sich mehr als Arbeit",
@@ -143,9 +145,56 @@ class TestBerichtWieDerDienst:
         assert vom_dienst == im_bericht
         assert len(im_bericht) == 2, "ein Paar je Weg, die Frage bleibt allein"
 
+    @pytest.mark.asyncio
+    async def test_paar_aus_beiden_wegen_zaehlt_ueber_das_erste_modell(
+        self, settings, repository_factory
+    ):
+        """Findet eine Richtung das Paar nur ueber den Bestaetiger, die andere ueber
+        das erste Modell, zaehlt es einmal und auf dem Weg des ersten Modells."""
+        a = _treffer("Mit Bürgergeld hat man mehr als mit Arbeit", 0.93)
+        b = _treffer("Bürgergeld lohnt sich mehr als Arbeit", 0.93)
+
+        class RichtungsNli(AttrappenNli):
+            async def urteile(self, paare, warte_hoechstens=None):
+                return [self.nach_kandidat.get(p, NEUTRAL) for p in paare]
+
+        # a -> b knapp (Bestaetiger), b -> a sicher (erstes Modell)
+        nli = RichtungsNli({(a.text, b.text): KNAPP, (b.text, a.text): DIESELBE})
+        bestaetiger = RichtungsNli({(a.text, b.text): DIESELBE})
+        service = _service(
+            settings.model_copy(update={"nli_bestaetiger": True}),
+            repository_factory,
+            [a, b],
+            nli,
+            bestaetiger,
+        )
+
+        _, paare = await dieselbe_bericht.paare_finden(
+            service, Modelle(nli, bestaetiger)
+        )
+
+        assert [p.weg for p in paare] == ["nli"]
+        assert paare[0].a_id == str(b.id)
+
 
 @pytest.mark.unit
 class TestModelleUndAusgabe:
+    def test_wege_wie_in_der_stufe(self):
+        from services.dieselbe_behauptung import stufe
+
+        assert dieselbe_bericht.WEG_NLI == stufe.WEG_NLI
+        assert dieselbe_bericht.WEG_BESTAETIGER == stufe.WEG_BESTAETIGER
+
+    def test_weg_bei_nli_aus_sagt_dass_der_dienst_nicht_prueft(self, settings):
+        weg = dieselbe_bericht.weg_beschreiben(
+            settings.model_copy(update={"dieselbe_aussage_nli": "aus"}), False
+        )
+
+        assert "der Dienst prueft so nicht" in weg
+        assert "prueft so nicht" not in dieselbe_bericht.weg_beschreiben(
+            settings, False
+        )
+
     def test_bestaetiger_nur_mit_schalter(self, settings, monkeypatch):
         from services.dieselbe_behauptung import nli_modell as modul
 
