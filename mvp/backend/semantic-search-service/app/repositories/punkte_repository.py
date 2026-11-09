@@ -1,6 +1,7 @@
 """
-Abfragen fuer die Punkte (#352): Zustimmung anderer zu Beitraegen und ausformulierte
-Einwuerfe. Was daraus wird, steht in services/punkte_service.py.
+Abfragen fuer die Punkte (#352) und die Meilensteine (#351): Zustimmung anderer zu
+Beitraegen und ausformulierte Einwuerfe. Was daraus wird, steht in
+services/punkte_service.py und services/meilensteine_service.py.
 """
 
 import uuid
@@ -71,6 +72,54 @@ class PunkteRepository:
         abfrage = select(tag, func.count()).group_by(tag)
         with self.db.get_session() as session:
             return {t: n for t, n in session.execute(abfrage)}
+
+    def einwuerfe_ausformuliert_von(self, user_id: str) -> int:
+        """
+        Wie viele Einwuerfe die Person als Ausformulierer mit einem nicht gesperrten
+        Beitrag verknuepft hat, je Einwurf einmal (Meilensteine, #351). Eigene Einwuerfe
+        zaehlen mit: Ausformulieren ist dieselbe Arbeit, wer auch immer eingeworfen hat.
+        """
+        abfrage = select(func.count(func.distinct(AusformuliertIn.raw_input_id))).where(
+            AusformuliertIn.created_by == user_id,
+            ~self._gesperrt(),
+        )
+        with self.db.get_session() as session:
+            return session.execute(abfrage).scalar_one()
+
+    def eigene_einwuerfe_von_anderen_ausformuliert(
+        self, user_id: str, ausgenommen: Set[str]
+    ) -> int:
+        """
+        Wie viele Einwuerfe der Person jemand anderes mit einem nicht gesperrten
+        Beitrag verknuepft hat (Meilensteine, #351). Verknuepfungen der Person selbst
+        und der ausgenommenen Kennungen (Startkonten) zaehlen nicht.
+        """
+        bedingungen = [
+            Einwurf.submitted_by == user_id,
+            AusformuliertIn.created_by != user_id,
+            ~self._gesperrt(),
+        ]
+        if ausgenommen:
+            bedingungen.append(AusformuliertIn.created_by.notin_(sorted(ausgenommen)))
+        abfrage = (
+            select(func.count(func.distinct(AusformuliertIn.raw_input_id)))
+            .join(Einwurf, Einwurf.id == AusformuliertIn.raw_input_id)
+            .where(*bedingungen)
+        )
+        with self.db.get_session() as session:
+            return session.execute(abfrage).scalar_one()
+
+    @staticmethod
+    def _gesperrt():
+        """Der verknuepfte Beitrag hat eine Sperre, die nicht aufgehoben ist."""
+        return (
+            select(Sperre.content_id)
+            .where(
+                Sperre.content_id == AusformuliertIn.content_id,
+                Sperre.aufgehoben_am.is_(None),
+            )
+            .exists()
+        )
 
 
 _repository: Optional[PunkteRepository] = None

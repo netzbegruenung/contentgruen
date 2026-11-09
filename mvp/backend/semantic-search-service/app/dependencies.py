@@ -53,6 +53,7 @@ from services.gegenlesen.gegenlesen_service import (
 from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from services.loeschfristen_service import LoeschfristenService
 from services.muster_hinweise_service import MusterHinweiseService
+from services.meilensteine_service import MeilensteineService
 from services.punkte_service import PunkteService
 from services.spracherkennung.spracherkennung import SPRACHERKENNUNG, Spracherkennung
 from services.moderation_service import ModerationService
@@ -194,17 +195,14 @@ def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
 
 
-def get_punkte_service(
-    settings: Settings = Depends(get_settings),
-) -> PunkteService:
+def _sichtbare_beitraege(settings: Settings):
+    """Die sichtbaren Beitraege einer Person, fuer Punkte und Meilensteine."""
     from domain.content_registry import BEITRAGSTYPEN_WERTE
     from repositories.aggregated.content_repository import ContentRepository
-    from repositories.punkte_repository import get_punkte_repository
-    from repositories.usage_tracking_repository import get_usage_repository
 
     async def sichtbare_beitraege(user_id: str):
         # get_by_author laesst gesperrte und geloeschte Beitraege aus: Sie verlieren
-        # ihre Punkte (#352).
+        # ihre Punkte (#352) und zaehlen nicht fuer Meilensteine (#351).
         return await ContentRepository(settings).get_by_author(
             # Alle Beitraege der Person, wie get_user_statistics.
             user_id,
@@ -213,8 +211,34 @@ def get_punkte_service(
             content_types=BEITRAGSTYPEN_WERTE,
         )
 
+    return sichtbare_beitraege
+
+
+def get_punkte_service(
+    settings: Settings = Depends(get_settings),
+) -> PunkteService:
+    from repositories.punkte_repository import get_punkte_repository
+    from repositories.usage_tracking_repository import get_usage_repository
+
     return PunkteService(
-        sichtbare_beitraege, get_usage_repository(), get_punkte_repository(), settings
+        _sichtbare_beitraege(settings),
+        get_usage_repository(),
+        get_punkte_repository(),
+        settings,
+    )
+
+
+def get_meilensteine_service(
+    settings: Settings = Depends(get_settings),
+) -> MeilensteineService:
+    from repositories.punkte_repository import get_punkte_repository
+    from repositories.usage_tracking_repository import get_usage_repository
+
+    return MeilensteineService(
+        _sichtbare_beitraege(settings),
+        get_usage_repository(),
+        get_punkte_repository(),
+        settings,
     )
 
 
