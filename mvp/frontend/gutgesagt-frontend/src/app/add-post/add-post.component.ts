@@ -21,6 +21,15 @@ import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.c
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import {
+  AntwortAuf,
+  AntwortAufComponent,
+  OHNE_AUSSAGE,
+  zuKurz,
+} from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { alsGespeichert, aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
+import { ThemenWahl } from '../beitragsformular/themen-wahl';
+import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 
 /**
  * Wie beim Bild: Der Post-Titel beschreibt, er folgt der Behauptungsregel fuer
@@ -41,9 +50,10 @@ export const SPEICHERN_FEHLGESCHLAGEN =
  *
  * Der Link fuehrt zum Post selbst; die Plattform folgt ihm, bis die Person sie
  * selbst waehlt. Ein eigenes Herkunft-Feld hat das Formular nicht: Der Link ist
- * der Post selbst (Fachfrage in #338). Posts antworten auf keine Aussage und
- * kennen keine Dublettenpruefung. Nach dem Speichern meldet `success` die ID; wohin es
- * weitergeht, entscheidet der Workflow.
+ * der Post selbst (Fachfrage in #338). Wie Kommentar und Hintergrundinfo kann ein
+ * Post auf eine Aussage antworten (optional, #619); eine Dublettenpruefung kennt er
+ * nicht. Nach dem Speichern meldet `success` ID, Aussage und ob verknuepft wurde;
+ * wohin es weitergeht, entscheidet der Workflow.
  */
 @Component({
   standalone: true,
@@ -58,6 +68,8 @@ export const SPEICHERN_FEHLGESCHLAGEN =
     MatSelectModule,
     BeitragskarteComponent,
     FormularHilfeComponent,
+    AntwortAufComponent,
+    ThemenAuswahlComponent,
     GegenlesenComponent,
     SprachhinweisComponent,
     FormularLeisteComponent,
@@ -77,6 +89,11 @@ export class AddPostComponent implements OnChanges {
   @Output() success = new EventEmitter<BeitragGespeichert>();
 
   readonly postForm: FormGroup;
+  /** Die Themen einer neuen Aussage (#455). */
+  readonly themenWahl: ThemenWahl;
+
+  /** Was im Antwort-auf-Block gilt. */
+  aussage: AntwortAuf = OHNE_AUSSAGE;
 
   speichert = false;
   fehler: string | null = null;
@@ -85,7 +102,7 @@ export class AddPostComponent implements OnChanges {
   /** Gesetzt, sobald der Post gespeichert ist. */
   responseId = '';
 
-  private vorschauCache?: { werte: unknown; karte: KartenDaten };
+  private vorschauCache?: { werte: unknown; aussage: string; karte: KartenDaten };
 
   constructor(
     fb: FormBuilder,
@@ -98,7 +115,9 @@ export class AddPostComponent implements OnChanges {
       author: ['', [Validators.maxLength(AUTOR_MAX)]],
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
+      themen: [[] as string[]],
     });
+    this.themenWahl = new ThemenWahl(this.postForm.get('themen')!);
     // Die Plattform folgt dem Link, bis die Person sie selbst waehlt.
     this.postForm
       .get('url')!
@@ -123,6 +142,21 @@ export class AddPostComponent implements OnChanges {
     plattform.setValue(plattformAusUrl(url) ?? '');
   }
 
+  /** Was im Antwort-auf-Block gilt; die Themen passen sich an (ThemenWahl). */
+  aussageSetzen(aussage: AntwortAuf): void {
+    this.aussage = aussage;
+    this.themenWahl.anAussageAnpassen(aussage);
+  }
+
+  get zeigtThemen(): boolean {
+    return this.themenWahl.zeigtFuer(this.aussage);
+  }
+
+  /** Aussage ohne Auswahl mit 1-9 Zeichen: Speichern bleibt gesperrt, leer ist erlaubt. */
+  get aussageZuKurz(): boolean {
+    return !this.aussage.id && zuKurz(this.aussage.text);
+  }
+
   get titelLaenge(): number {
     return this.postForm.get('title')?.value?.length ?? 0;
   }
@@ -138,7 +172,7 @@ export class AddPostComponent implements OnChanges {
   get vorschauKarte(): KartenDaten {
     const werte = this.postForm.value;
     const cache = this.vorschauCache;
-    if (cache && cache.werte === werte) {
+    if (cache && cache.werte === werte && cache.aussage === this.aussage.text) {
       return cache.karte;
     }
     const karte = ausSuchergebnis({
@@ -153,16 +187,20 @@ export class AddPostComponent implements OnChanges {
         original_author: 'Du',
       },
       score: 1,
-      statement_text: '',
+      statement_text: this.aussage.text,
       statement_similarity_score: 0,
       reply_relevance: 0,
     } as any);
-    this.vorschauCache = { werte, karte: { ...karte, nutzung: null, erstellt: '', autorName: 'Du' } };
+    this.vorschauCache = {
+      werte,
+      aussage: this.aussage.text,
+      karte: { ...karte, nutzung: null, erstellt: '', autorName: 'Du' },
+    };
     return this.vorschauCache.karte;
   }
 
   speichern(): void {
-    if (this.postForm.invalid) {
+    if (this.postForm.invalid || this.aussageZuKurz) {
       this.postForm.markAllAsTouched();
       return;
     }
@@ -174,7 +212,8 @@ export class AddPostComponent implements OnChanges {
     this.fehler = null;
     this.validierung = null;
 
-    const { url, platform, author, text } = this.postForm.value;
+    const { url, platform, author, text, themen } = this.postForm.value;
+    const aussage = aussageFuerAnfrage(this.aussage, themen ?? []);
     const request: AddPostRequest = {
       post: {
         // Ein Titel ist eine Zeile: eingefuegte Umbrueche werden zu Leerzeichen.
@@ -186,13 +225,14 @@ export class AddPostComponent implements OnChanges {
         author: (author ?? '').trim() || null,
         url: url.trim(),
       },
+      ...aussage,
     };
 
     this.postService.addPost(request).subscribe({
       next: (antwort) => {
         this.speichert = false;
         this.responseId = antwort.id;
-        this.success.emit({ id: antwort.id, aussage: { id: '', text: '' }, verknuepft: true });
+        this.success.emit(alsGespeichert(antwort.id, this.aussage, aussage, antwort));
       },
       error: (error: Error) => {
         // Die Eingaben bleiben stehen; der Knopf speichert dasselbe noch einmal.

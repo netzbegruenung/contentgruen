@@ -91,6 +91,8 @@ def typ_dienst():
     service.add = AsyncMock(side_effect=lambda entry: entry.id)
     app.dependency_overrides[get_image_service] = lambda: service
     app.dependency_overrides[get_post_service] = lambda: service
+    # Ohne Aussage in der Anfrage wird nichts verknuepft (#619); der Dienst muss nur da sein.
+    app.dependency_overrides[get_statement_service] = lambda: MagicMock()
     return service
 
 

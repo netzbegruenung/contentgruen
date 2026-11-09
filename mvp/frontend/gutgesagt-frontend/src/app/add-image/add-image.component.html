@@ -1,131 +1,76 @@
-<div class="add-image-container">
-    <!-- Content Type Indicator -->
-    <div class="content-type-indicator">
-        <div class="content-type-badge">
-            <span class="content-type-icon">🖼️</span>
-            <p class="content-type-description">{{ typBeschreibung }}</p>
-        </div>
-    </div>
+<div class="add-image-container formular-bereich" [style.--typ-farbe]="typFarbe">
+    <app-formular-hilfe typ="image"></app-formular-hilfe>
 
-    <!-- Two-column layout -->
     <div class="content-wrapper">
         <div class="form-column">
+            <form [formGroup]="imageForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
+                <app-antwort-auf (aussageChange)="aussageSetzen($event)"></app-antwort-auf>
 
-            <!-- Form -->
-            <form *ngIf="!imageLoading && !imageSaved && !imageError"
-                  [formGroup]="imageForm"
-                  (ngSubmit)="saveImageForm()">
+                <mat-form-field appearance="outline" class="formular-feld" subscriptSizing="dynamic">
+                    <mat-label>Bild-URL</mat-label>
+                    <input matInput id="image_url" formControlName="image_url" type="url" required
+                           placeholder="https://example.com/bild.jpg" />
+                    <mat-error *ngIf="imageForm.get('image_url')?.hasError('required')">Der Link zum Bild fehlt.</mat-error>
+                    <mat-error *ngIf="imageForm.get('image_url')?.hasError('pattern')">Bitte einen Link mit http:// oder https:// eintragen.</mat-error>
+                    <mat-hint *ngIf="bildLadefehler" class="bild-ladefehler" role="alert">
+                        <mat-icon aria-hidden="true">broken_image</mat-icon>
+                        Das Bild lässt sich nicht laden – prüf den Link.
+                    </mat-hint>
+                </mat-form-field>
 
-                <div class="form-fields">
+                <mat-form-field appearance="outline" class="formular-feld">
+                    <mat-label>Titel</mat-label>
+                    <!-- Eine Zeile; Enter bricht nicht um -->
+                    <textarea matInput id="title" formControlName="title" required
+                              [attr.maxlength]="titelMax" placeholder="Was zeigt das Bild?"
+                              cdkTextareaAutosize cdkAutosizeMinRows="1" cdkAutosizeMaxRows="4"
+                              (keydown.enter)="$event.preventDefault()"></textarea>
+                    <mat-hint align="end">{{ titelLaenge }} / {{ titelMax }}</mat-hint>
+                    <mat-error *ngIf="imageForm.get('title')?.hasError('required')">Der Titel fehlt.</mat-error>
+                    <mat-error *ngIf="imageForm.get('title')?.hasError('minlength')">Mindestens 3 Zeichen.</mat-error>
+                    <mat-error *ngIf="imageForm.get('title')?.hasError('maxlength')">Höchstens {{ titelMax }} Zeichen.</mat-error>
+                </mat-form-field>
 
-                    <div class="form-group">
-                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                            <mat-label>Bild-URL</mat-label>
-                            <input matInput formControlName="image_url" type="url"
-                                   placeholder="https://example.com/bild.jpg" />
-                            <mat-error *ngIf="imageForm.get('image_url')?.hasError('required')">
-                                Bild-URL ist erforderlich
-                            </mat-error>
-                            <mat-error *ngIf="imageForm.get('image_url')?.hasError('pattern')">
-                                Bitte eine gültige URL eingeben (https://...)
-                            </mat-error>
-                            <mat-hint *ngIf="bildLadefehler" class="bild-ladefehler" role="alert">
-                                <mat-icon aria-hidden="true">broken_image</mat-icon>
-                                Das Bild lässt sich nicht laden – prüf den Link.
-                            </mat-hint>
-                        </mat-form-field>
-                    </div>
+                <mat-form-field appearance="outline" class="formular-feld">
+                    <mat-label>Bildunterschrift</mat-label>
+                    <textarea matInput id="text" formControlName="caption" required
+                              [attr.maxlength]="textMax" placeholder="Worum geht es? In eigenen Worten"
+                              cdkTextareaAutosize cdkAutosizeMinRows="4" cdkAutosizeMaxRows="16"></textarea>
+                    <mat-hint align="end">{{ textLaenge }} / {{ textMax }}</mat-hint>
+                    <mat-error *ngIf="imageForm.get('caption')?.hasError('required')">Die Unterschrift fehlt.</mat-error>
+                    <mat-error *ngIf="imageForm.get('caption')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
+                    <mat-error *ngIf="imageForm.get('caption')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
+                </mat-form-field>
 
-                    <div class="form-group">
-                        <mat-form-field appearance="outline">
-                            <mat-label>Titel</mat-label>
-                            <input matInput #titleInput maxlength="200" formControlName="title" type="text"
-                                   placeholder="Was zeigt das Bild?" />
-                            <mat-hint align="end">{{ titleInput.value.length }}/200</mat-hint>
-                            <mat-error *ngIf="imageForm.get('title')?.hasError('required')">
-                                Titel ist erforderlich
-                            </mat-error>
-                            <mat-error *ngIf="imageForm.get('title')?.hasError('minlength')">
-                                Titel muss mindestens 3 Zeichen lang sein
-                            </mat-error>
-                        </mat-form-field>
-                    </div>
-
-                    <div class="form-group">
-                        <mat-form-field appearance="outline">
-                            <mat-label>Bildunterschrift</mat-label>
-                            <textarea matInput #captionInput maxlength="2000" rows="5"
-                                      placeholder="Worum geht es?"
-                                      formControlName="caption"></textarea>
-                            <mat-hint align="end">{{ captionInput.value.length }}/2000</mat-hint>
-                            <mat-error *ngIf="imageForm.get('caption')?.hasError('required')">
-                                Bildunterschrift ist erforderlich
-                            </mat-error>
-                            <mat-error *ngIf="imageForm.get('caption')?.hasError('minlength')">
-                                Bildunterschrift muss mindestens 10 Zeichen lang sein
-                            </mat-error>
-                        </mat-form-field>
+                <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
+                <div *ngIf="zeigtThemen" class="optionale-angaben">
+                    <div class="themen-feld">
+                        <span class="feld-beschriftung">Themen der neuen Aussage</span>
+                        <app-themen-auswahl [themen]="themenWahl.liste" [gewaehlt]="imageForm.value.themen"
+                                            beschriftung="Themen der neuen Aussage"
+                                            (gewaehltChange)="themenWahl.setzen($event)"></app-themen-auswahl>
                     </div>
                 </div>
 
                 <app-sprachhinweis [titel]="imageForm.value.title" [text]="imageForm.value.caption"></app-sprachhinweis>
                 <p appCc0Hinweis></p>
-                <div class="form-actions">
-                    <button mat-stroked-button type="button" (click)="navigateBack()" class="cancel-btn">
-                        <mat-icon>close</mat-icon>
-                        Abbrechen
+
+                <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
+
+                <app-formular-leiste *ngIf="!responseId"
+                                     [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : null">
+                    <button mat-raised-button type="submit" class="submit-btn"
+                            [disabled]="speichert || imageForm.invalid || aussageZuKurz">
+                        <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
+                        {{ fehler && !validierung ? 'Erneut versuchen' : 'Bild speichern' }}
                     </button>
-                    <button mat-raised-button color="primary" type="submit"
-                            [disabled]="!imageForm.valid"
-                            class="submit-btn">
-                        <mat-icon>save</mat-icon>
-                        Bild speichern
-                    </button>
-                </div>
+                </app-formular-leiste>
             </form>
-
-            <!-- Loading State -->
-            <div *ngIf="imageLoading" class="state-container loading-state">
-                <mat-spinner diameter="50"></mat-spinner>
-                <h3>Bild wird gespeichert...</h3>
-                <p>Bitte warten Sie einen Moment</p>
-            </div>
-
-            <!-- Success State -->
-            <div *ngIf="imageSaved && responseId" class="state-container success-state">
-                <mat-icon class="success-icon">check_circle</mat-icon>
-                <h3>Bild erfolgreich gespeichert!</h3>
-                <p>Dein Bild wurde erfolgreich hinzugefügt und kann nun von anderen genutzt werden.</p>
-                <div class="action-buttons">
-                    <button mat-stroked-button color="primary" (click)="reset()">
-                        <mat-icon>add</mat-icon>
-                        Weiteres Bild hinzufügen
-                    </button>
-                </div>
-            </div>
-
-            <!-- Error State -->
-            <div *ngIf="imageError" class="state-container error-state">
-                <mat-icon class="error-icon">error</mat-icon>
-                <h3>Speichern fehlgeschlagen</h3>
-                <p class="error-message">{{ imageError }}</p>
-                <div class="action-buttons">
-                    <button mat-raised-button color="primary" (click)="erneutVersuchen()">
-                        <mat-icon>refresh</mat-icon>
-                        Erneut versuchen
-                    </button>
-                    <button mat-button (click)="navigateBack()">
-                        Abbrechen
-                    </button>
-                </div>
-            </div>
         </div>
 
-        <!-- Preview Column -->
-        <div class="preview-column">
+        <section class="preview-column" aria-labelledby="vorschau-titel">
             <div class="preview-header">
-                <h3>Vorschau</h3>
-                <mat-icon matTooltip="So wird dein Bild in den Suchergebnissen angezeigt">info</mat-icon>
+                <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <div class="preview-content" #vorschau>
                 <!-- Mobil steht die Vorschau unter dem Formular: der Hinweis auch hier, wo man "Bild laden" tippt -->
@@ -133,9 +78,10 @@
                     <mat-icon aria-hidden="true">broken_image</mat-icon>
                     Das Bild lässt sich nicht laden – prüf den Link.
                 </p>
-                <app-beitragskarte *ngIf="vorschauKarte as karte" [daten]="karte" [vorschau]="true">
-                </app-beitragskarte>
+                <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
             </div>
-        </div>
+            <app-gegenlesen [titel]="imageForm.value.title" [text]="imageForm.value.caption" [aussage]="aussage.text"
+                            [titelIstBehauptung]="false"></app-gegenlesen>
+        </section>
     </div>
 </div>

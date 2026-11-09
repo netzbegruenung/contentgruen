@@ -171,6 +171,12 @@ export const routes: Routes = [
         data: { parent: gespeichertEltern, typ: 'post' }
     },
     {
+        path: 'workflow/add-image/gespeichert/:id',
+        loadComponent: () => import('./beitragsformular/beitrag-gespeichert/beitrag-gespeichert.component').then(m => m.BeitragGespeichertComponent),
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
+        data: { parent: gespeichertEltern, typ: 'image' }
+    },
+    {
         path: 'workflow/add-image',
         loadComponent: () => import('./add-image-workflow/add-image-workflow.component').then(m => m.AddImageWorkflowComponent),
         canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],

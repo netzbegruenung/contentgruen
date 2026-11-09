@@ -4,20 +4,23 @@ from typing import List
 
 from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.post import Post
+from dtos.antwort_auf import AntwortAufAnfrage, AntwortAufErgebnis
 from dtos.beitrag import PostResponse, PostTreffer
 
 
 ### AddPost ###
 
 
-class AddPostRequest(BaseModel):
+class AddPostRequest(AntwortAufAnfrage):
+    # Worauf der Post antwortet (statement_id, statement_text, themen): optional,
+    # wie beim Kommentar (#619, dtos/antwort_auf.py).
     post: Post
     # Kennung des CC0-Hinweises, den die Person beim Speichern gesehen hat (#431,
     # domain/cc0_hinweis.py).
     cc0_wortlaut: Cc0Wortlaut = None
 
 
-class AddPostResponse(BaseModel):
+class AddPostResponse(AntwortAufErgebnis):
     id: UUID
 
 

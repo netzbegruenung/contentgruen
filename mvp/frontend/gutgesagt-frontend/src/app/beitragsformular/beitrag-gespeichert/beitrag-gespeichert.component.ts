@@ -27,9 +27,9 @@ import {
 import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
 
 /** Beitragstypen, fuer die es die Ergebnisseite gibt. */
-export type GespeichertTyp = Extract<FormularTyp, 'commentary' | 'generictext' | 'post'>;
+export type GespeichertTyp = FormularTyp;
 
-/** Die Saetze der Seite je Typ - der Kommentar, die Hintergrundinfo, der Post. */
+/** Die Saetze der Seite je Typ - der Kommentar, die Hintergrundinfo, der Post, das Bild. */
 const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; nichtLadbar: string }> = {
   commentary: {
     gespeichert: 'Dein Kommentar ist gespeichert.',
@@ -45,6 +45,11 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
     gespeichert: 'Dein Post ist gespeichert.',
     nochEiner: 'Noch einen Post',
     nichtLadbar: 'Er lässt sich gerade nicht anzeigen – unter „Meine Beiträge“ findest du ihn.',
+  },
+  image: {
+    gespeichert: 'Dein Bild ist gespeichert.',
+    nochEiner: 'Noch ein Bild',
+    nichtLadbar: 'Es lässt sich gerade nicht anzeigen – unter „Meine Beiträge“ findest du es.',
   },
 };
 
