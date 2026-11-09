@@ -15,7 +15,7 @@ import { StatementSearchResult } from '../services/dtos/statementDtos';
   imports: [NichtDabeiComponent],
   template: `
     <app-nicht-dabei [suchtext]="suchtext" [bekannteAussagen]="bekannt">
-      <button class="neu">Neu anlegen</button>
+      <button class="neu">Selbst beantworten</button>
     </app-nicht-dabei>
   `,
 })
@@ -65,7 +65,7 @@ describe('NichtDabeiComponent', () => {
     expect(seite.querySelector('.aehnliche-titel')?.textContent).toContain('Ähnliche Aussagen');
     expect(aehnliche(seite)).toEqual(['Wärmepumpen lohnen sich nicht', 'Heizen mit Strom ist teuer']);
     expect(seite.querySelectorAll('.passt-vielleicht').length).toBe(2);
-    expect(seite.querySelector('button.neu')?.textContent).toContain('Neu anlegen');
+    expect(seite.querySelector('button.neu')?.textContent).toContain('Selbst beantworten');
     expect(statementService.aussageVorschlaege).toHaveBeenCalledOnceWith('Wärmepumpen sind zu teuer');
   });
 
@@ -87,7 +87,7 @@ describe('NichtDabeiComponent', () => {
 
     expect(statementService.aussageVorschlaege).not.toHaveBeenCalled();
     expect(seite.querySelector('.aehnliche')).toBeNull();
-    expect(seite.querySelector('button.neu')).withContext('Neu anlegen bleibt').toBeTruthy();
+    expect(seite.querySelector('button.neu')).withContext('Selbst beantworten bleibt').toBeTruthy();
   });
 
   it('fragt nach dem Anmelden nach und bei neuem Suchtext neu', () => {

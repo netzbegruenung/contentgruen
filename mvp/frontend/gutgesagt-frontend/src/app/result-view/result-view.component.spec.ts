@@ -130,7 +130,7 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     const oben: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen-kopf button');
     const unten: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen button');
     expect(oben.textContent).toContain('Eigenen Kommentar ergänzen');
-    expect(unten.textContent).toContain('Neu anlegen');
+    expect(unten.textContent).toContain('Selbst beantworten');
     expect(fixture.nativeElement.querySelector('.mobile-ergaenzen app-nicht-dabei').textContent).toContain('Nicht dabei?');
     expect(fixture.nativeElement.querySelector('.mobile-empty-state')).toBeNull();
 
@@ -592,10 +592,10 @@ describe('ResultViewComponent: Nicht dabei?', () => {
     expect(aehnliche(seite)).toEqual(['Wärmepumpen lohnen sich nicht']);
   });
 
-  it('fuehrt ohne Treffer mit "Neu anlegen" ins Kommentarformular, Aussage vorbelegt', fakeAsync(() => {
+  it('fuehrt ohne Treffer mit "Selbst beantworten" ins Kommentarformular, Aussage vorbelegt', fakeAsync(() => {
     const seite = oeffnen(true, false);
     const knopf = seite.querySelector<HTMLButtonElement>('.mobile-empty-state app-nicht-dabei .mobile-action-buttons button')!;
-    expect(knopf.textContent).toContain('Neu anlegen');
+    expect(knopf.textContent).toContain('Selbst beantworten');
 
     knopf.click();
     tick();
