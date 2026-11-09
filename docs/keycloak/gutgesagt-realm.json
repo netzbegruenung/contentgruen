@@ -28,7 +28,7 @@
   "localizationTexts": {
     "de": {
       "termsTitle": "Nutzungsbedingungen",
-      "termsText": "<p>Für Gut gesagt gelten die <a href=\"https://gutgesagt.netzbegruenung.de/nutzungsbedingungen\" target=\"_blank\" rel=\"noopener\">Nutzungsbedingungen</a> (Stand: 2. November 2026). Mit „Annehmen“ stimmst du ihnen zu.</p>"
+      "termsText": "<p>Für Gut gesagt gelten die <a href=\"https://gutgesagt.netzbegruenung.de/nutzungsbedingungen\" target=\"_blank\" rel=\"noopener\">Nutzungsbedingungen</a> (Stand: 2. November 2026). Das Wichtigste in Kürze:</p><ul><li>Deine Beiträge gibst du beim Absenden frei (CC0). Alle dürfen sie weiterverwenden, auch ohne deinen Namen.</li><li>Stell nur ein, was von dir stammt oder was du einstellen darfst.</li><li>Beiträge, die gegen die Regeln verstoßen, sperren wir.</li></ul><p>Mit „Annehmen“ stimmst du den Nutzungsbedingungen zu. Mit „Ablehnen“ wirst du nicht angemeldet. Lesen und Suchen gehen auch ohne Konto.</p>"
     }
   },
   "clients": [
