@@ -1,0 +1,67 @@
+/* Grund und Balken aus .hinweis-box (styles.css); links ausgerichtet, auch im Leerzustand */
+:host {
+    display: block;
+    text-align: left;
+}
+
+.nicht-dabei {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.nicht-dabei-titel {
+    margin: 0;
+    font-size: 1rem;
+    font-family: PTSans-bold, Roboto, sans-serif;
+    color: var(--text-primary);
+}
+
+.aehnliche-titel {
+    color: var(--text-secondary);
+}
+
+.aehnliche {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* Wie die Vorschlaege im Feld "Antwort auf" */
+.aehnliche-aussage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--divider-color);
+    border-radius: 8px;
+    background: var(--statement-bg);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.aehnliche-aussage:hover {
+    border-color: var(--primary-dark);
+}
+
+.aehnliche-aussage:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
+}
+
+.aussage-text {
+    flex: 1 1 12rem;
+    overflow-wrap: anywhere;
+}
+
+.passt-vielleicht {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}

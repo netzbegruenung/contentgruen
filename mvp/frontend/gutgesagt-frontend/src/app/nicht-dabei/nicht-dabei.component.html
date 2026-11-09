@@ -1,0 +1,18 @@
+<section class="nicht-dabei hinweis-box" [attr.aria-labelledby]="titelZeigen ? titelId : null">
+    <h2 *ngIf="titelZeigen" [id]="titelId" class="nicht-dabei-titel">Nicht dabei?</h2>
+
+    <ng-container *ngIf="aehnliche.length">
+        <p class="aehnliche-titel" [id]="listenId">Ähnliche Aussagen</p>
+        <ul class="aehnliche" [attr.aria-labelledby]="listenId">
+            <li *ngFor="let aussage of aehnliche">
+                <a class="aehnliche-aussage" [routerLink]="['/result']" [queryParams]="sucheNach(aussage)">
+                    <span class="aussage-text">{{ aussage.text }}</span>
+                    <span class="passt-vielleicht">passt vielleicht</span>
+                </a>
+            </li>
+        </ul>
+    </ng-container>
+
+    <!-- Selbst beantworten: die Ergebnisseite reicht Satz und Knopf herein -->
+    <ng-content></ng-content>
+</section>

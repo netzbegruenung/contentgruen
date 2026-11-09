@@ -34,6 +34,16 @@
                        (aktivChange)="nachThemaFiltern($event)"></app-themen-filter>
 </ng-template>
 
+<!-- "Nicht dabei?": neu anlegen, mit der Aussage dieser Suche (#362) -->
+<ng-template #neuAnlegen>
+    <p class="neu-anlegen-satz">Schreib selbst einen Kommentar zu deiner Aussage.</p>
+    <div class="neu-anlegen-knopf">
+        <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
+            <mat-icon>add</mat-icon> Selbst beantworten
+        </button>
+    </div>
+</ng-template>
+
 <!-- Mobile view: Tab navigation and current section -->
 <div class="mobile-results-wrapper"
      *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
@@ -109,30 +119,36 @@
         <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab; ein Post antwortet auf
              keine Aussage, im Post-Tab bleibt es beim Kommentar (Fachfrage im PR) -->
         <div *ngIf="hatTreffer" class="mobile-ergaenzen">
-            <p class="mobile-ergaenzen-frage">Nichts Passendes dabei?</p>
-            <button *ngIf="currentSection !== 'generictext'" mat-raised-button class="gutgesagt-primary-dark"
-                    (click)="navigateToContribute('commentary')">
-                <mat-icon>add</mat-icon> Kommentar ergänzen
-            </button>
-            <button *ngIf="currentSection === 'generictext'" mat-raised-button class="gutgesagt-primary-dark"
-                    (click)="navigateToContribute('generictext')">
-                <mat-icon>add</mat-icon> Hintergrundinfo ergänzen
-            </button>
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer">
+                <ng-container *ngIf="currentSection !== 'generictext'">
+                    <ng-container *ngTemplateOutlet="neuAnlegen"></ng-container>
+                </ng-container>
+                <ng-container *ngIf="currentSection === 'generictext'">
+                    <p class="neu-anlegen-satz">Ergänze selbst eine Hintergrundinfo.</p>
+                    <div class="neu-anlegen-knopf">
+                        <button mat-raised-button class="gutgesagt-primary-dark"
+                                (click)="navigateToContribute('generictext')">
+                            <mat-icon>add</mat-icon> Hintergrundinfo ergänzen
+                        </button>
+                    </div>
+                </ng-container>
+            </app-nicht-dabei>
         </div>
 
         <!-- Mobile Empty State when no results in any category -->
         <div *ngIf="!hatTreffer" class="mobile-empty-state">
-            <p class="search-query-info">Zu „{{searchQuery}}“ haben wir noch keine passenden Inhalte</p>
-            <h3>Hilf der Community!</h3>
-            <div class="mobile-action-buttons">
-                <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                    <mat-icon>add</mat-icon> Kommentar hinzufügen
-                </button>
-                <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('generictext')">
-                    <mat-icon>add</mat-icon> Hintergrund hinzufügen
-                </button>
-            </div>
-            <mat-icon class="empty-icon">volunteer_activism</mat-icon>
+            <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [titelNurMitListe]="true">
+                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
+                <div class="mobile-action-buttons">
+                    <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
+                        <mat-icon>add</mat-icon> Selbst beantworten
+                    </button>
+                    <button mat-stroked-button (click)="navigateToContribute('generictext')">
+                        <mat-icon>add</mat-icon> Hintergrundinfo hinzufügen
+                    </button>
+                </div>
+            </app-nicht-dabei>
         </div>
     </div>
 </div>
@@ -143,19 +159,19 @@
     <!-- Unified Empty State when both searches return no results -->
     <section class="content-section" *ngIf="!hatTreffer">
         <div class="unified-empty-state">
-            <p class="search-query-info">Zu „{{searchQuery}}“ haben wir noch keine passenden Inhalte</p>
-            <h2>Hilf der Community und teile dein Wissen!</h2>
+            <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
 
-            <div class="action-buttons-top">
-                <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                    💬 Fertigen Kommentar hinzufügen
-                </button>
-                <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('generictext')">
-                    📄 Hintergrundinfo hinzufügen
-                </button>
-            </div>
-
-            <mat-icon class="empty-icon">volunteer_activism</mat-icon>
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [titelNurMitListe]="true">
+                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
+                <div class="action-buttons-top">
+                    <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
+                        <mat-icon>add</mat-icon> Selbst beantworten
+                    </button>
+                    <button mat-stroked-button (click)="navigateToContribute('generictext')">
+                        📄 Hintergrundinfo hinzufügen
+                    </button>
+                </div>
+            </app-nicht-dabei>
 
             <div class="suggestions">
                 <p><strong>Tipps für deine Suche:</strong></p>
@@ -228,6 +244,13 @@
                 <app-result-carousel [daten]="postKarten"></app-result-carousel>
             </section>
         </ng-container>
+
+        <!-- Unter allen Treffern: aehnliche Aussagen und neu anlegen -->
+        <section class="content-section nicht-dabei-unten">
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer">
+                <ng-container *ngTemplateOutlet="neuAnlegen"></ng-container>
+            </app-nicht-dabei>
+        </section>
 
     </ng-container>
 </div>

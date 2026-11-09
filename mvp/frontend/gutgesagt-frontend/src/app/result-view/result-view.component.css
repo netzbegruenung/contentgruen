@@ -351,10 +351,6 @@ mat-sidenav-content {
   gap: var(--spacing-md);
 }
 
-.mobile-empty-state h3 {
-  color: var(--primary-dark);
-  margin: 0;
-}
 
 .mobile-empty-state .search-query-info {
   color: var(--text-secondary);
@@ -362,13 +358,6 @@ mat-sidenav-content {
   margin: 0;
 }
 
-.mobile-empty-state .empty-icon {
-  font-size: 64px;
-  width: 64px;
-  height: 64px;
-  color: var(--primary-light);
-  opacity: 0.5;
-}
 
 .mobile-action-buttons {
   display: flex;
@@ -407,20 +396,7 @@ mat-sidenav-content {
   margin: 0 auto;
 }
 
-.unified-empty-state .empty-icon {
-  font-size: 64px;
-  height: 64px;
-  width: 64px;
-  color: var(--text-secondary);
-  margin: 0 auto 1.5rem;
-  opacity: 0.5;
-}
 
-.unified-empty-state h2 {
-  color: var(--text-primary);
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-}
 
 .unified-empty-state .search-query-info {
   color: var(--text-secondary);
@@ -577,10 +553,6 @@ mat-sidenav-content {
   padding: var(--spacing-lg) var(--page-margin, 16px);
 }
 
-.mobile-ergaenzen-frage {
-  margin: 0;
-  color: var(--text-secondary);
-}
 
 /* Zugeklappter Rat ueber den Treffern; Grund und Balken aus .hinweis-box */
 .keine-antwort-noetig summary {
@@ -606,4 +578,35 @@ mat-sidenav-content {
 /* Filter nach Thema (#363) */
 .mobile-themen-filter {
   padding: var(--spacing-xs) var(--page-margin);
+}
+
+/* "Nicht dabei?" (#362): Satz und Knopf zum Neu-Anlegen, links in der Hinweisbox */
+.neu-anlegen-satz {
+  margin: 0;
+}
+
+.neu-anlegen-knopf {
+  display: flex;
+}
+
+.nicht-dabei-unten {
+  margin-top: var(--spacing-lg);
+}
+
+.mobile-ergaenzen app-nicht-dabei,
+.mobile-empty-state app-nicht-dabei {
+  align-self: stretch;
+}
+
+.unified-empty-state app-nicht-dabei {
+  margin-bottom: 1.5rem;
+}
+
+.unified-empty-state app-nicht-dabei .action-buttons-top {
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
+
+.mobile-empty-state app-nicht-dabei .mobile-action-buttons {
+  max-width: none;
 }

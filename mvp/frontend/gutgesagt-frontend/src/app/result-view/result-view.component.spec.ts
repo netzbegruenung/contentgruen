@@ -7,7 +7,9 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
-import { ResultViewComponent } from './result-view.component';
+import { ResultViewComponent, aussagenDerTreffer } from './result-view.component';
+import { AuthService } from '../auth/auth.service';
+import { StatementService } from '../services/statement.service';
 import { routes } from '../app.routes';
 import { ohneWaechter } from '../testing/routen-ohne-waechter';
 import { StateManagementService } from '../services/state-management.service';
@@ -128,7 +130,8 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     const oben: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen-kopf button');
     const unten: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen button');
     expect(oben.textContent).toContain('Eigenen Kommentar ergänzen');
-    expect(unten.textContent).toContain('Kommentar ergänzen');
+    expect(unten.textContent).toContain('Selbst beantworten');
+    expect(fixture.nativeElement.querySelector('.mobile-ergaenzen app-nicht-dabei').textContent).toContain('Nicht dabei?');
     expect(fixture.nativeElement.querySelector('.mobile-empty-state')).toBeNull();
 
     unten.click();
@@ -502,5 +505,140 @@ describe('ResultViewComponent: Filter nach Thema', () => {
 
     expect(fixture.componentInstance.aktivesThema).toBeNull();
     expect(fixture.componentInstance.kommentarKarten.map((k) => k.id)).toEqual(['k-9']);
+  });
+});
+
+/**
+ * "Nicht dabei?" (#362): Ohne Treffer und unter den Treffern stehen aehnliche
+ * Aussagen und der Weg zum Neu-Anlegen; die Suche endet nie in einer Sackgasse.
+ */
+describe('ResultViewComponent: Nicht dabei?', () => {
+  const AUSSAGE_ID = '11111111-2222-4333-8444-555555555555';
+  const TREFFER_AUSSAGE = '22222222-2222-4333-8444-555555555555';
+  const AEHNLICH = { id: '33333333-2222-4333-8444-555555555555', text: 'Wärmepumpen lohnen sich nicht', replysuggestions_count: 2, score: 0.9 };
+  const SCHON_DA = { id: TREFFER_AUSSAGE, text: 'Wärmepumpen sind zu teuer', replysuggestions_count: 2, score: 0.95 };
+
+  let fixture: ComponentFixture<ResultViewComponent>;
+  let router: Router;
+  let statementService: jasmine.SpyObj<StatementService>;
+
+  const KOMMENTAR = {
+    score: 0.9,
+    statement_id: TREFFER_AUSSAGE,
+    statement_text: 'Wärmepumpen sind zu teuer',
+    statement_similarity_score: 0.9,
+    reply_relevance: 0.8,
+    commentary_result: {
+      id: 'k-1',
+      content_type: 'commentary',
+      title: 'Ein Kommentar',
+      text: 'Gefoerdert wird bis zu 70 Prozent.',
+      references: [],
+    },
+  };
+
+  function oeffnen(mobil: boolean, mitTreffer: boolean, vorschlaege = [SCHON_DA, AEHNLICH]): HTMLElement {
+    statementService = jasmine.createSpyObj('StatementService', ['aussageVorschlaege']);
+    statementService.aussageVorschlaege.and.returnValue(of(vorschlaege));
+    TestBed.configureTestingModule({
+      imports: [ResultViewComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter(ohneWaechter(routes)),
+        { provide: StatementService, useValue: statementService },
+        {
+          provide: BreakpointObserver,
+          useValue: { observe: (query: string[]) => of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }) },
+        },
+      ],
+    });
+    router = TestBed.inject(Router);
+    TestBed.inject(AuthService).setUserInfo({ isAuthenticated: true, userId: 'u-1', userName: 'Test', claims: null });
+    TestBed.inject(StateManagementService).setSearchResults({
+      query_was_newly_added_as_statement: true,
+      statement_id: AUSSAGE_ID,
+      statement_text: 'waermepumpe teuer',
+      commentary_search_results_count: mitTreffer ? 1 : 0,
+      commentary_search_results: mitTreffer ? [KOMMENTAR as any] : [],
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+    });
+    fixture = TestBed.createComponent(ResultViewComponent);
+    fixture.detectChanges();
+    // ngOnInit liest searchQuery aus der (hier leeren) Adresse; der Text kommt danach.
+    fixture.componentInstance.searchQuery = 'waermepumpe teuer';
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  function aehnliche(seite: HTMLElement): string[] {
+    return Array.from(seite.querySelectorAll('.aehnliche-aussage .aussage-text')).map((e) => (e.textContent ?? '').trim());
+  }
+
+  it('sagt ohne Treffer, dass noch nichts drin ist, und zeigt aehnliche Aussagen', () => {
+    const seite = oeffnen(false, false);
+
+    expect(seite.querySelector('.unified-empty-state .search-query-info')?.textContent)
+      .toContain('Zu „waermepumpe teuer“ ist noch nichts drin.');
+    expect(seite.querySelector('.unified-empty-state app-nicht-dabei')?.textContent).toContain('Nicht dabei?');
+    expect(statementService.aussageVorschlaege).toHaveBeenCalledWith('waermepumpe teuer');
+    expect(aehnliche(seite)).toEqual(['Wärmepumpen sind zu teuer', 'Wärmepumpen lohnen sich nicht']);
+  });
+
+  it('bietet ohne Treffer die Aussage der Suche nicht als aehnliche an (sonst Schleife)', () => {
+    const seite = oeffnen(false, false, [{ ...AEHNLICH, id: AUSSAGE_ID, text: 'waermepumpe teuer' }, AEHNLICH]);
+    expect(aehnliche(seite)).toEqual(['Wärmepumpen lohnen sich nicht']);
+  });
+
+  it('fuehrt ohne Treffer mit "Selbst beantworten" ins Kommentarformular, Aussage vorbelegt', fakeAsync(() => {
+    const seite = oeffnen(true, false);
+    const knopf = seite.querySelector<HTMLButtonElement>('.mobile-empty-state app-nicht-dabei .mobile-action-buttons button')!;
+    expect(knopf.textContent).toContain('Selbst beantworten');
+
+    knopf.click();
+    tick();
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+  }));
+
+  it('zeigt am Desktop unter den Treffern "Nicht dabei?" ohne die Aussage der Treffer', fakeAsync(() => {
+    const seite = oeffnen(false, true);
+    const unten = seite.querySelector<HTMLElement>('.nicht-dabei-unten')!;
+
+    expect(seite.querySelector('.unified-empty-state')).toBeNull();
+    expect(unten.textContent).toContain('Nicht dabei?');
+    expect(aehnliche(unten)).toEqual(['Wärmepumpen lohnen sich nicht']);
+
+    unten.querySelector<HTMLButtonElement>('.neu-anlegen-knopf button')!.click();
+    tick();
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+  }));
+
+  it('sucht mit einem Klick auf eine aehnliche Aussage nach ihr', fakeAsync(() => {
+    const seite = oeffnen(false, true);
+
+    seite.querySelector<HTMLAnchorElement>('.nicht-dabei-unten .aehnliche-aussage')!.click();
+    tick();
+    expect(router.url).toBe('/result?searchQuery=W%C3%A4rmepumpen%20lohnen%20sich%20nicht');
+  }));
+});
+
+describe('aussagenDerTreffer', () => {
+  it('sammelt die Aussagen der Treffer und der Suche, jede einmal, ohne leere', () => {
+    const treffer = (statement_id: string | null) => ({ score: 1, statement_text: '', statement_id }) as any;
+    expect(
+      aussagenDerTreffer({
+        query_was_newly_added_as_statement: false,
+        statement_id: 'a',
+        statement_text: '',
+        commentary_search_results_count: 2,
+        commentary_search_results: [treffer('b'), treffer(null)],
+        generictext_search_results_count: 1,
+        generictext_search_results: [treffer('b')],
+        post_search_results_count: 1,
+        post_search_results: [treffer('c')],
+      }),
+    ).toEqual(['a', 'b', 'c']);
   });
 });
