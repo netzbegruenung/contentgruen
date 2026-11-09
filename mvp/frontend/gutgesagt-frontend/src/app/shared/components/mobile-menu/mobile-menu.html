@@ -20,32 +20,39 @@
     </div>
 
     <!-- Erster Eintrag, fuer An- und Abgemeldete gleich: der Weg nach Hause -->
-    <button mat-button (click)="onHomeClick()" class="mobile-menu-item mobile-menu-start">
+    <!-- Die aktuelle Seite ist hervorgehoben und traegt aria-current (#644) -->
+    <button mat-button (click)="onHomeClick()" class="mobile-menu-item mobile-menu-start"
+            [class.aktiv]="aktiv(pfade.SEARCH)" [attr.aria-current]="aktiv(pfade.SEARCH) ? 'page' : null">
         <mat-icon>home</mat-icon>
         Startseite
     </button>
 
     <div class="mobile-menu-user-info" *ngIf="userInfo?.isAuthenticated; else notLoggedInMenu">
-        <button mat-raised-button color="primary" (click)="onContributeClick()" class="mobile-menu-item mobile-menu-beitragen">
+        <button mat-raised-button color="primary" (click)="onContributeClick()" class="mobile-menu-item mobile-menu-beitragen"
+                [class.aktiv]="aktiv(pfade.CONTRIBUTE)" [attr.aria-current]="aktiv(pfade.CONTRIBUTE) ? 'page' : null">
             <mat-icon>add</mat-icon>
             Beitragen
         </button>
         <!-- Unter Beitragen, wie die Abschnitte auf /contribute: dieselben Namen, dieselbe Reihenfolge -->
         <div class="mobile-menu-gruppe" role="group" aria-label="Beitragen">
-            <button mat-button (click)="onEinwerfenClick()" class="mobile-menu-item mobile-menu-einwerfen">
-                <span class="menu-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+            <button mat-button (click)="onEinwerfenClick()" class="mobile-menu-item mobile-menu-einwerfen"
+                    [class.aktiv]="aktiv(pfade.RAW_INPUT)" [attr.aria-current]="aktiv(pfade.RAW_INPUT) ? 'page' : null">
+                <mat-icon aria-hidden="true">{{ menueIcons.einwerfen }}</mat-icon>
                 {{ einwerfenTitel }}
             </button>
-            <button mat-button (click)="onFangkorbClick()" class="mobile-menu-item mobile-menu-fangkorb">
-                <span class="menu-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
+            <button mat-button (click)="onFangkorbClick()" class="mobile-menu-item mobile-menu-fangkorb"
+                    [class.aktiv]="aktiv(pfade.RAW_INPUT_LIST)" [attr.aria-current]="aktiv(pfade.RAW_INPUT_LIST) ? 'page' : null">
+                <mat-icon aria-hidden="true">{{ menueIcons.fangkorb }}</mat-icon>
                 Fangkorb
             </button>
-            <a mat-button [routerLink]="hierFehltEineAntwortPfad" (click)="close()" class="mobile-menu-item mobile-menu-fehlt-antwort">
+            <a mat-button [routerLink]="hierFehltEineAntwortPfad" (click)="close()" class="mobile-menu-item mobile-menu-fehlt-antwort"
+               [class.aktiv]="aktiv(hierFehltEineAntwortPfad)" [attr.aria-current]="aktiv(hierFehltEineAntwortPfad) ? 'page' : null">
                 <mat-icon>contact_support</mat-icon>
                 Hier fehlt eine Antwort
             </a>
-            <button mat-button (click)="onMeineBeitraegeClick()" class="mobile-menu-item mobile-menu-beitraege">
-                <span class="menu-emoji" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
+            <button mat-button (click)="onMeineBeitraegeClick()" class="mobile-menu-item mobile-menu-beitraege"
+                    [class.aktiv]="aktiv(pfade.MEINE_BEITRAEGE)" [attr.aria-current]="aktiv(pfade.MEINE_BEITRAEGE) ? 'page' : null">
+                <mat-icon aria-hidden="true">{{ menueIcons.meineBeitraege }}</mat-icon>
                 Meine Beiträge
             </button>
         </div>
@@ -57,9 +64,10 @@
             <mat-icon>face</mat-icon>
             Profilbild wählen
         </button>
-        <a mat-button routerLink="/einwilligung" (click)="close()" class="mobile-menu-item mobile-menu-einwilligung">
-            <mat-icon>fact_check</mat-icon>
-            Einwilligung
+        <a mat-button routerLink="/einwilligung" (click)="close()" class="mobile-menu-item mobile-menu-einwilligung"
+           [class.aktiv]="aktiv('/einwilligung')" [attr.aria-current]="aktiv('/einwilligung') ? 'page' : null">
+            <mat-icon>privacy_tip</mat-icon>
+            {{ datenschutzEinstellungen }}
         </a>
         <button mat-button (click)="onLogoutClick()" class="mobile-menu-item">
             <mat-icon>logout</mat-icon>
@@ -84,16 +92,20 @@
             Hilfe
         </button>
 
-        <!-- Rundgaenge wieder aufrufen (#389); Mitmachen nur fuer Angemeldete -->
-        <button mat-button (click)="onRundgangClick('antwort-finden')" class="mobile-menu-item mobile-menu-rundgang">
-            <mat-icon>tour</mat-icon>
-            Rundgang starten
-        </button>
-        <button mat-button *ngIf="userInfo?.isAuthenticated" (click)="onRundgangClick('mitmachen')"
-                class="mobile-menu-item mobile-menu-rundgang-mitmachen">
-            <mat-icon>tour</mat-icon>
-            Rundgang Mitmachen
-        </button>
+        <!-- Rundgaenge wieder aufrufen (#389); Selbst beitragen nur fuer Angemeldete.
+             Name, Schrittzahl und je ein eigenes Icon wie in der Hilfe (#644). -->
+        <div class="mobile-menu-gruppe" role="group" aria-labelledby="menue-rundgaenge">
+            <span class="mobile-menu-gruppentitel" id="menue-rundgaenge">Rundgang</span>
+            <button mat-button (click)="onRundgangClick('antwort-finden')" class="mobile-menu-item mobile-menu-rundgang">
+                <mat-icon>travel_explore</mat-icon>
+                {{ antwortFinden }}
+            </button>
+            <button mat-button *ngIf="userInfo?.isAuthenticated" (click)="onRundgangClick('mitmachen')"
+                    class="mobile-menu-item mobile-menu-rundgang-mitmachen">
+                <mat-icon>edit_note</mat-icon>
+                {{ selbstBeitragen }}
+            </button>
+        </div>
 
         <button mat-button (click)="onFeedbackClick()" class="mobile-menu-item mobile-menu-feedback">
             <mat-icon>feedback</mat-icon>
@@ -101,17 +113,20 @@
         </button>
 
         <!-- Rechtstexte: der Footer ist mobil schmal, hier sind sie einen Tipp entfernt. -->
-        <a mat-button routerLink="/impressum" (click)="close()" class="mobile-menu-item legal-impressum">
+        <a mat-button routerLink="/impressum" (click)="close()" class="mobile-menu-item legal-impressum"
+           [class.aktiv]="aktiv('/impressum')" [attr.aria-current]="aktiv('/impressum') ? 'page' : null">
             <mat-icon>info</mat-icon>
             Impressum
         </a>
 
-        <a mat-button routerLink="/datenschutz" (click)="close()" class="mobile-menu-item legal-datenschutz">
+        <a mat-button routerLink="/datenschutz" (click)="close()" class="mobile-menu-item legal-datenschutz"
+           [class.aktiv]="aktiv('/datenschutz')" [attr.aria-current]="aktiv('/datenschutz') ? 'page' : null">
             <mat-icon>privacy_tip</mat-icon>
             Datenschutz
         </a>
 
-        <a mat-button routerLink="/nutzungsbedingungen" (click)="close()" class="mobile-menu-item legal-nutzungsbedingungen">
+        <a mat-button routerLink="/nutzungsbedingungen" (click)="close()" class="mobile-menu-item legal-nutzungsbedingungen"
+           [class.aktiv]="aktiv('/nutzungsbedingungen')" [attr.aria-current]="aktiv('/nutzungsbedingungen') ? 'page' : null">
             <mat-icon>gavel</mat-icon>
             Nutzungsbedingungen
         </a>

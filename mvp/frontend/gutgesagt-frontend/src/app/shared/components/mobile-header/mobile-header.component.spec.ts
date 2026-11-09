@@ -103,12 +103,43 @@ describe('MobileHeaderComponent', () => {
     fixture.detectChanges();
     const knopf: HTMLElement = fixture.nativeElement.querySelector('.contribute-button');
     expect(knopf.querySelector('.neu-punkt')).not.toBeNull();
-    expect(knopf.getAttribute('aria-label')).toBe('Beitragen, neu');
+    expect(knopf.getAttribute('aria-label')).toBe('Beitragen. Neu: so geht Beitragen');
 
     komponente.beitragenNeu = false;
     fixture.detectChanges();
     expect(knopf.querySelector('.neu-punkt')).toBeNull();
     expect(knopf.getAttribute('aria-label')).toBe('Beitragen');
+  });
+
+  // R58 (#644): Anonym wirkte der graue Avatar wie ein Konto, "+" fuehrte nur zur Anmeldung
+  it('zeigt anonym einen Text-Knopf "Anmelden" statt Avatar und ohne "+"', () => {
+    const komponente = fixture.componentInstance;
+    komponente.userInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
+    komponente.showContributeButton = true;
+    fixture.detectChanges();
+    const anmelden = spyOn(komponente.login, 'emit');
+
+    const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.anmelden-knopf');
+    expect(knopf.textContent!.trim()).toBe('Anmelden');
+    expect(fixture.nativeElement.querySelector('.mobile-header-avatar-container')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.contribute-button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.menu-button')).not.toBeNull();
+
+    knopf.click();
+    expect(anmelden).toHaveBeenCalled();
+  });
+
+  it('zeigt angemeldet Avatar und "+", keinen Anmelden-Knopf', () => {
+    const komponente = fixture.componentInstance;
+    komponente.userInfo = { isAuthenticated: true, userId: 'u1', userName: 'Kim', claims: null };
+    komponente.showContributeButton = true;
+    fixture.detectChanges();
+    const menue = spyOn(komponente.openMenu, 'emit');
+
+    expect(fixture.nativeElement.querySelector('.anmelden-knopf')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.contribute-button')).not.toBeNull();
+    (fixture.nativeElement.querySelector('.mobile-header-avatar-container') as HTMLButtonElement).click();
+    expect(menue).toHaveBeenCalled();
   });
 
   it('gibt den Pfeil an den NavigationService weiter', fakeAsync(() => {
@@ -176,6 +207,24 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
       expect(rechteck('.mobile-header-title').right).toBeLessThanOrEqual(rechteck('.mobile-header-actions').left);
     });
   }
+
+  it('zeigt anonym "Anmelden" und Menue vollstaendig neben einem langen Titel (#644)', () => {
+    const komponente = fixture.componentInstance;
+    fixture.detectChanges();
+    komponente.userInfo = { isAuthenticated: false } as any;
+    komponente.pageTitle = 'Hier fehlt eine Antwort';
+    komponente.showBackButton = true;
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    const kopf = rechteck('.mobile-header');
+
+    for (const selektor of ['.anmelden-knopf', '.menu-button']) {
+      const r = rechteck(selektor);
+      expect(r.width).withContext(`${selektor} Breite`).toBeGreaterThan(0);
+      expect(r.right).withContext(`${selektor} rechts`).toBeLessThanOrEqual(kopf.right);
+    }
+    expect(rechteck('.mobile-header-title').right).toBeLessThanOrEqual(rechteck('.mobile-header-actions').left);
+  });
 
   // A8 aus dem Design-Audit (#512): "Suchergebnisse" und "Hier fehlt eine Antwort"
   // waren abgeschnitten. Lange Titel werden kleiner und duerfen zweizeilig stehen.

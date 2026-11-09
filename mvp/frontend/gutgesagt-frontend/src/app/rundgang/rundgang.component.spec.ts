@@ -9,6 +9,7 @@ import { Rundgang } from './rundgang-daten';
 const PROBE: Rundgang = {
   id: 'antwort-finden',
   name: 'Rundgang Probe',
+  titel: 'Probe',
   schritte: [
     { titel: 'Erster', text: 'Text eins', ziel: '#probe-eins' },
     { titel: 'Zweiter', text: { desktop: 'Text breit', mobil: 'Text schmal' }, ziel: '#probe-fehlt, #probe-zwei' },
@@ -33,6 +34,7 @@ class ProbeSucheComponent {
 const MIT_BEISPIEL: Rundgang = {
   id: 'antwort-finden',
   name: 'Rundgang mit Beispiel',
+  titel: 'mit Beispiel',
   schritte: [{ titel: 'Eingeben', text: 'Mit Beispiel', ziel: '#probe-feld', vorbelegen: 'Ein Beispiel' }],
 };
 

@@ -20,7 +20,7 @@ export const EINWERFEN_TITEL = 'Schnell einwerfen';
 
 /**
  * Die Icons entlang der Kette, an jeder Stelle gleich: Startseite, Beitragen-Seite,
- * Einwurf-Formular, Fangkorb-Kopf, Profilmenue und Menue. `verfassen` steht auch fuer
+ * Einwurf-Formular und Fangkorb-Kopf. Die Menues nehmen MENUE_ICONS (#644). `verfassen` steht auch fuer
  * Ausformulieren. `meineBeitraege` ist kein Kettenschritt, steht aber in derselben
  * Gruppe (Beitragen-Seite, Menue, Profilmenue) und deshalb hier. Die Beitragstypen
  * behalten ihre Icons.
@@ -32,6 +32,23 @@ export const KETTEN_ICONS = {
   verfassen: '🖋️',
   meineBeitraege: '🗃️',
 } as const;
+
+/**
+ * Dieselben Eintraege als Material-Icons fuer Profilmenue und Menue: Dort stehen sie
+ * zwischen Linien-Icons (Startseite, Hilfe, Abmelden), und gemischt mit Emojis wirkte
+ * das Menue unruhig (#644).
+ */
+export const MENUE_ICONS = {
+  einwerfen: 'move_to_inbox',
+  fangkorb: 'shopping_basket',
+  meineBeitraege: 'inventory_2',
+} as const;
+
+/**
+ * Was im Menue zur Seite /einwilligung fuehrt: Die Person stellt dort ein, was sie
+ * erlaubt; „Einwilligung“ allein war Fachsprache (#644).
+ */
+export const DATENSCHUTZ_EINSTELLUNGEN = 'Datenschutz-Einstellungen';
 
 /**
  * Fuer Angemeldete, solange die Plattform jung ist: Wer jetzt etwas eintraegt,

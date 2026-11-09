@@ -421,14 +421,14 @@ Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suche
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Willkommen**:
-Das gelbe Band beim ersten Besuch, über dem Inhalt der Startseite, kein Fenster (#587; seit #599 nicht mehr über den Treffern): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Mitmachen“ bietet erst ein Band auf Beitragen oder Fangkorb an (#587, gestaffelt).
+Das gelbe Band beim ersten Besuch, über dem Inhalt der Startseite, kein Fenster (#587; seit #599 nicht mehr über den Treffern): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Selbst beitragen“ bietet erst ein Band auf Beitragen an (#587, gestaffelt; seit #644 nicht mehr im Fangkorb).
 
 **Rundgang**:
-Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Mitmachen“ zeigt Beitragen, Einwerfen, Fangkorb und Meine Beiträge; nach der Art.-9-Einwilligung trägt „Beitragen“ im Kopf einen Neu-Punkt, und wer zum ersten Mal auf Beitragen oder Fangkorb ankommt, bekommt dort im Band „Kurz zeigen, wie Beitragen geht?“ angeboten; der Rundgang beginnt dann beim Einwerfen. Beides bleibt, bis die Person darauf reagiert. Beide lassen sich über Hilfe und Menü jederzeit wieder starten. Angeboten, nie erzwungen.
+Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Selbst beitragen“ (bis #644 „Mitmachen“) zeigt Beitragen, Einwerfen, Fangkorb und Meine Beiträge; nach der Art.-9-Einwilligung trägt „Beitragen“ im Kopf einen Neu-Punkt, und wer zum ersten Mal auf Beitragen ankommt, bekommt dort im Band „Kurz zeigen, wie Beitragen geht?“ angeboten; der Rundgang beginnt dann beim Einwerfen. Beides bleibt, bis die Person darauf reagiert. Beide lassen sich über Hilfe und Menü jederzeit wieder starten; dort stehen sie mit Schrittzahl, etwa „Antwort finden (5 Schritte)“. Angeboten, nie erzwungen.
 _Avoid_: Tour, Onboarding, Tutorial
 
 **Neu-Punkt**:
-Der gelbe Punkt an „Beitragen“ im Kopf (Desktop und Handy): Er erscheint nach der Art.-9-Einwilligung und bleibt, bis die Person den Rundgang „Mitmachen“ beantwortet hat (gestartet oder abgelehnt, #587). Kein eigener Vermerk im Browser; er folgt dem Vermerk von „Mitmachen“.
+Der gelbe Punkt an „Beitragen“ im Kopf (Desktop und Handy): Er erscheint nach der Art.-9-Einwilligung und bleibt, bis die Person den Rundgang „Selbst beitragen“ beantwortet hat (gestartet oder abgelehnt, #587). Sein Tooltip sagt „Neu: so geht Beitragen“ (#644). Kein eigener Vermerk im Browser; er folgt dem Vermerk des Rundgangs.
 _Avoid_: Badge, Benachrichtigungspunkt
 
 **Punkte**:

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, AfterViewInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, AfterViewInit, inject } from '@angular/core';
 import { SearchComponent } from '../search/search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,6 +13,14 @@ import { ContentRefreshService } from '../services/content-refresh.service';
 import { typLabel } from '../shared/content-type-registry';
 import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { STARTBEISPIEL } from '../shared/startbeispiel';
+import { AuthService } from '../auth/auth.service';
+import { map } from 'rxjs/operators';
+
+/**
+ * Am Desktop mit Maus springt der Fokus beim Laden ins Suchfeld; auf Touch-Geraeten
+ * nicht, sonst klappte sofort die Tastatur auf (#644).
+ */
+export const AUTOFOKUS_MEDIEN = '(min-width: 960px) and (hover: hover) and (pointer: fine)';
 
 @Component({
   selector: 'app-search-view',
@@ -36,6 +44,9 @@ export class SearchViewComponent implements AfterViewInit {
   readonly fangkorbKurz = FANGKORB_KURZ;
   readonly kettenIcons = KETTEN_ICONS;
   readonly startbeispiel = STARTBEISPIEL;
+  readonly autofokus = typeof window !== 'undefined' && !!window.matchMedia?.(AUTOFOKUS_MEDIEN).matches;
+  /** Erst wenn feststeht, dass niemand angemeldet ist: kein Aufblitzen fuer Angemeldete. */
+  readonly anonym$ = inject(AuthService).userInfo$.pipe(map((info) => info?.isAuthenticated === false));
 
   constructor(
     private navigationService: NavigationService,

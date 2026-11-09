@@ -58,14 +58,23 @@
     margin-right: var(--spacing-sm);
 }
 
-/* Ketten-Icons (Emoji) auf derselben Flaeche wie die mat-icons daneben */
-.mobile-menu-item .menu-emoji {
-    display: inline-block;
-    width: 24px;
-    margin-right: var(--spacing-sm);
-    font-size: 20px;
-    line-height: 1;
-    text-align: center;
+/* Die aktuelle Seite (#644): getoent und mit Balken links, nicht nur per Farbe */
+.mobile-menu-item.aktiv:not(.mobile-menu-beitragen) {
+    background-color: var(--bg-main);
+    box-shadow: inset 3px 0 0 var(--primary-dark);
+    font-weight: 600;
+}
+
+.mobile-menu-item.mobile-menu-beitragen.aktiv {
+    box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--primary-dark);
+}
+
+/* Ueberschrift einer Gruppe ohne eigenen Knopf (Rundgang) */
+.mobile-menu-gruppentitel {
+    padding: 0 var(--spacing-sm);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
 }
 
 /* Die Eintraege unter Beitragen, eingerueckt wie eine Untergruppe */

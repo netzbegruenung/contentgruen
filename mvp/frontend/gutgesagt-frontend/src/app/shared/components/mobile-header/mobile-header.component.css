@@ -107,7 +107,16 @@
 .mobile-header-avatar-container {
   width: 48px;
   height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
   cursor: pointer;
+}
+
+.mobile-header-avatar-container:focus-visible {
+  outline: 2px solid var(--akzent-tanne);
+  outline-offset: 2px;
 }
 
 .mobile-header-avatar {
@@ -118,18 +127,14 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
-.mobile-header-avatar:active {
+.mobile-header-avatar-container:active .mobile-header-avatar {
   opacity: 0.8;
 }
 
-.mobile-header-avatar.anonymous-avatar-icon {
-  width: 48px;
-  height: 48px;
-  opacity: 0.7;
-  filter: grayscale(100%);
-  object-fit: contain;
-  background-color: transparent;
-  box-shadow: none;
+/* Anonym: Text statt Avatar-Platzhalter (#644) */
+.anmelden-knopf {
+  color: var(--primary-dark);
+  font-weight: 500;
 }
 
 .menu-button {

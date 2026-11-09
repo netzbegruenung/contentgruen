@@ -14,7 +14,7 @@
     <div class="such-band-inhalt">
         <p class="such-erklaerung">Post reinkopieren – Antwort finden – Verwenden!</p>
 
-        <app-search class="start-suche"></app-search>
+        <app-search class="start-suche" feldId="suche" [autofokus]="autofokus"></app-search>
 
         <p class="beispiel-zeile">
             Beispiel probieren:
@@ -25,12 +25,12 @@
 </section>
 
 <!-- Zwei Wege zum Mitmachen. Beide Ziele sind geschuetzt; ohne Anmeldung leitet
-     der AuthGuard zum Login und danach zurueck. -->
+     der AuthGuard zum Login und danach zurueck. Anonym sagt "mit Konto" das vorher (#644). -->
 <section class="start-kacheln" aria-label="Mitmachen">
     <a class="start-kachel" routerLink="/einwerfen">
         <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
         <span class="kachel-text">
-            <span class="kachel-titel">Einwerfen</span>
+            <span class="kachel-titel">Einwerfen@if (anonym$ | async) {<span class="kachel-konto">mit Konto</span>}</span>
             <span class="kachel-satz">{{ fangkorbKurz }}</span>
         </span>
         <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
@@ -39,7 +39,7 @@
     <a class="start-kachel" routerLink="/contribute">
         <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
         <span class="kachel-text">
-            <span class="kachel-titel">Beitrag verfassen</span>
+            <span class="kachel-titel">Beitrag verfassen@if (anonym$ | async) {<span class="kachel-konto">mit Konto</span>}</span>
             <span class="kachel-satz">Ausgearbeitet und direkt verwendbar: {{ typLabel('commentary') }}, {{ typLabel('generictext') }} oder {{ typLabel('image') }}.</span>
         </span>
         <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>

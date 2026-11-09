@@ -161,6 +161,19 @@
   }
 }
 
+// Anonym: kleiner Hinweis neben dem Titel, dass es ein Konto braucht (#644)
+.kachel-konto {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--bg-main);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
 .kachel-satz {
   font-size: 14px;
   line-height: 1.4;

@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, ChangeDetectionStrategy, OnDestroy, ViewChild } from '@angular/core';
 import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SearchService } from '../services/search.service';
@@ -7,6 +7,8 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
+/** Was ins Suchfeld gehoert, als Beschriftung des Feldes (#644). */
+export const SUCHFELD_NAME = 'Was hast du gelesen? Text oder Post einfügen';
 
 @Component({
   selector: 'app-search',
@@ -16,9 +18,18 @@ import { takeUntil } from 'rxjs/operators';
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.css'],
 })
-export class SearchComponent implements OnDestroy {
+export class SearchComponent implements AfterViewInit, OnDestroy {
   @Input() searchQuery: string = '';
   @Input() compactMode: boolean = false; // Enable compact mode on result view
+  /**
+   * Fokus beim Laden ins Feld. Nur der Start setzt es, und nur am Desktop: Mobil
+   * sprang sonst gleich die Tastatur auf (#644).
+   */
+  @Input() autofokus = false;
+  /** Ziel des Skip-Links „Zur Suche“ im Kopf; nur das Feld auf dem Start traegt es. */
+  @Input() feldId: string | null = null;
+  @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
+  readonly feldName = SUCHFELD_NAME;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -27,6 +38,12 @@ export class SearchComponent implements OnDestroy {
     private searchService: SearchService,
     private router: Router
   ) { }
+
+  ngAfterViewInit(): void {
+    if (this.autofokus) {
+      this.feld?.nativeElement.focus({ preventScroll: true });
+    }
+  }
 
   onSearch(): void {
     this.performSearch(this.searchQuery);
