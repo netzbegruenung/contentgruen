@@ -26,8 +26,8 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
    * sprang sonst gleich die Tastatur auf (#644).
    */
   @Input() autofokus = false;
-  /** Ziel des Skip-Links „Zur Suche“ im Kopf; nur das Feld auf dem Start traegt es. */
-  @Input() feldId: string | null = null;
+  /** Ziel des Skip-Links „Zur Suche“ im Kopf; nur das Feld auf dem Start traegt es (leer: eigene Kennung von Material). */
+  @Input() feldId = '';
   @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
   readonly feldName = SUCHFELD_NAME;
   private destroy$ = new Subject<void>();

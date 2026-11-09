@@ -83,6 +83,11 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
     this.showContributeButton = config.showContributeButton;
   }
 
+  /** Auf /login und /login/managed steht kein Anmelden-Knopf im Kopf (#644). */
+  get aufAnmeldung(): boolean {
+    return this.currentRoute.startsWith('/login');
+  }
+
   goBack(): void {
     // Ziel kommt aus data.parent der aktiven Route (siehe NavigationService)
     this.navigationService.goBack();

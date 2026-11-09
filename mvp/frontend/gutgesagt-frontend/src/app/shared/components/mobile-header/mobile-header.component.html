@@ -60,7 +60,8 @@
       </button>
     </ng-container>
     <ng-template #anmeldenKnopf>
-      <button mat-button type="button" class="anmelden-knopf" (click)="login.emit()">Anmelden</button>
+      <!-- Auf der Anmeldeseite selbst nicht: Dort fuehrte der Knopf nur auf sich selbst -->
+      <button *ngIf="!aufAnmeldung" mat-button type="button" class="anmelden-knopf" (click)="login.emit()">Anmelden</button>
     </ng-template>
 
     <button

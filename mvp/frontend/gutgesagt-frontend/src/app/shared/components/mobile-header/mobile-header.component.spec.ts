@@ -20,6 +20,7 @@ describe('MobileHeaderComponent', () => {
         provideRouter([
           { path: 'search', component: LeerComponent },
           { path: 'fangkorb', component: LeerComponent },
+          { path: 'login', component: LeerComponent },
           { path: 'workflow/add-commentary', component: LeerComponent },
         ]),
         { provide: NavigationService, useValue: navigation },
@@ -128,6 +129,13 @@ describe('MobileHeaderComponent', () => {
     knopf.click();
     expect(anmelden).toHaveBeenCalled();
   });
+
+  it('zeigt auf der Anmeldeseite keinen Anmelden-Knopf im Kopf', fakeAsync(() => {
+    fixture.componentInstance.userInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
+    oeffnen('/login');
+    expect(fixture.nativeElement.querySelector('.anmelden-knopf')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.mobile-header-avatar-container')).toBeNull();
+  }));
 
   it('zeigt angemeldet Avatar und "+", keinen Anmelden-Knopf', () => {
     const komponente = fixture.componentInstance;
