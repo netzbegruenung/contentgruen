@@ -78,23 +78,28 @@
     height: 48px;
     border-radius: 10px;
     background: var(--surface-variant);
+    box-shadow: inset 0 0 0 1px var(--border-color);
     font-size: 26px;
     line-height: 1;
 }
 
 .commentary-card .typ-icon {
+    box-shadow: none;
     background: linear-gradient(135deg, var(--commentary-bg) 0%, var(--commentary-bg-end) 100%);
 }
 
 .generictext-card .typ-icon {
+    box-shadow: none;
     background: linear-gradient(135deg, var(--generictext-bg) 0%, var(--generictext-bg-end) 100%);
 }
 
 .image-card .typ-icon {
+    box-shadow: none;
     background: linear-gradient(135deg, var(--image-bg) 0%, var(--image-bg-end) 100%);
 }
 
 .post-card .typ-icon {
+    box-shadow: none;
     background: linear-gradient(135deg, var(--post-bg) 0%, var(--post-bg-end) 100%);
 }
 

@@ -201,6 +201,16 @@ describe('Art9EinwilligungService', () => {
     expect(text.startsWith(wortlautErsterSatz(text))).toBeTrue();
   });
 
+  // Kopie des aktuellen Wortlauts 2026-11-05-b (domain/art9_einwilligung.py), Anfang und
+  // zweiter Satz: Aendert sich der Wortlaut, zeigt dieser Test, ob der Schnitt noch passt.
+  it('wortlautErsterSatz schneidet den aktuellen Wortlaut nach dem Art.-9-Satz', () => {
+    const ersterSatz =
+      'Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung verarbeitet, auch wenn sich daraus ' +
+      'auf meine politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO).';
+    const text = ersterSatz + ' Das betrifft Beiträge, Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere.';
+    expect(wortlautErsterSatz(text)).toBe(ersterSatz);
+  });
+
   it('wortlautErsterSatz gibt ohne Satzende oder bei zu langem ersten Satz den ganzen Text', () => {
     expect(wortlautErsterSatz('Nur ein Satz ohne Folgesatz.')).toBe('Nur ein Satz ohne Folgesatz.');
     const lang = 'a'.repeat(WORTLAUT_LABEL_MAX + 1) + '. Zweiter Satz.';

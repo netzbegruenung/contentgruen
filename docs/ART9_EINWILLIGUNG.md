@@ -11,7 +11,8 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   (`GET /api/v1/art9-einwilligung`) und führt ohne Einwilligung auf `/einwilligung`. Das gilt
   für jede Kontoart (Netzbegrünung-Login, Konto aus einer Einladung, Beta-Zugang). Dort steht
   der Wortlaut an einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht
-  angehakt: als Label der erste Satz, der ganze Wortlaut aufklappbar darunter (#620). „Ohne Einwilligung weiter“ führt zurück; die Person kann suchen und lesen.
+  angehakt: als Label der erste Satz, der ganze Wortlaut aufklappbar darunter (#620).
+  „Ohne Einwilligung weiter“ führt zurück; die Person kann suchen und lesen.
 - **Speichern:** Tabelle `art9_einwilligungen`, je Einwilligung eine Zeile mit Kennung der
   Person, Zeitpunkt und Kennung des gezeigten Wortlauts. Es gilt die jüngste Zeile.
 - **Sperren:** Ohne geltende Einwilligung antworten die Endpunkte, die mit Personenbezug etwas

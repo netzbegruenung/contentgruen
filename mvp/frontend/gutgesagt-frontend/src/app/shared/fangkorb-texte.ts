@@ -20,9 +20,9 @@ export const EINWERFEN_TITEL = 'Schnell einwerfen';
 
 /**
  * Die Icons entlang der Kette, an jeder Stelle gleich: Startseite, Beitragen-Seite,
- * Einwurf-Formular, Fangkorb-Kopf, Header und Menue. `verfassen` steht auch fuer
+ * Einwurf-Formular, Fangkorb-Kopf, Profilmenue und Menue. `verfassen` steht auch fuer
  * Ausformulieren. `meineBeitraege` ist kein Kettenschritt, steht aber in derselben
- * Gruppe (Beitragen-Seite, Menue, Desktop-Kopf) und deshalb hier. Die Beitragstypen
+ * Gruppe (Beitragen-Seite, Menue, Profilmenue) und deshalb hier. Die Beitragstypen
  * behalten ihre Icons.
  */
 export const KETTEN_ICONS = {

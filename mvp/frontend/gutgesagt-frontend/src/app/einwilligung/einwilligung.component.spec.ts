@@ -94,6 +94,8 @@ describe('EinwilligungComponent', () => {
       expect(aufklapp.open).toBeFalse();
       expect(aufklapp.querySelector('summary')!.textContent!.trim()).toBe('Ganzen Wortlaut lesen');
       expect(aufklapp.querySelector('.wortlaut-voll')!.textContent!.trim()).toBe(lang.text);
+      const eingabe = el().querySelector('mat-checkbox input[type=checkbox]') as HTMLInputElement;
+      expect(eingabe.getAttribute('aria-describedby')).toBe('einwilligung-wortlaut-voll');
     });
 
     it('zeigt einen Wortlaut aus einem Satz ganz am Haekchen, ohne Aufklapper', () => {

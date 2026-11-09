@@ -21,14 +21,16 @@
       </p>
       <!--
         Am Haekchen nur der erste Satz des Wortlauts, unveraendert; der ganze Wortlaut steht
-        aufklappbar direkt darunter (#620). Der Text selbst kommt weiter vom Backend.
+        aufklappbar direkt darunter (#620). Der Text selbst kommt weiter vom Backend; der
+        Volltext beschreibt das Haekchen auch fuer Screenreader (aria-describedby), auch zugeklappt.
       -->
-      <mat-checkbox name="angehakt" [(ngModel)]="angehakt" class="haekchen">
+      <mat-checkbox name="angehakt" [(ngModel)]="angehakt" class="haekchen"
+        [aria-describedby]="labelSatz !== stand.aktueller_wortlaut.text ? 'einwilligung-wortlaut-voll' : ''">
         {{ labelSatz }}
       </mat-checkbox>
       <details class="wortlaut-aufklapp" *ngIf="labelSatz !== stand.aktueller_wortlaut.text">
         <summary>Ganzen Wortlaut lesen</summary>
-        <p class="wortlaut-voll">{{ stand.aktueller_wortlaut.text }}</p>
+        <p class="wortlaut-voll" id="einwilligung-wortlaut-voll">{{ stand.aktueller_wortlaut.text }}</p>
       </details>
       <p class="fussnote">
         Mehr dazu in der <a routerLink="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
