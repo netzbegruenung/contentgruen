@@ -39,9 +39,11 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     const usageTrackingSpy = jasmine.createSpyObj('UsageTrackingService', [
       'trackContentUsage',
       'gepostetAngeboten',
+      'gepostetBekannt',
       'gepostetMelden',
     ]);
     usageTrackingSpy.gepostetAngeboten.and.returnValue(of(false));
+    usageTrackingSpy.gepostetBekannt.and.returnValue(null);
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['getUserInfo', 'login']);
     authServiceSpy.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' });
 
@@ -505,14 +507,57 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       snackBar.open.and.returnValue({ onAction: () => aktion.asObservable() } as any);
     });
 
-    it('fragt nach dem Kopieren, wenn der Server die Rückmeldung anbietet', () => {
-      usage.gepostetAngeboten.and.returnValue(of(true));
+    it('bestätigt sofort und fragt, sobald der Server die Rückmeldung anbietet', () => {
+      const antwort = new Subject<boolean>();
+      usage.gepostetAngeboten.and.returnValue(antwort.asObservable());
 
       component.kopieren();
 
+      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
       expect(usage.gepostetAngeboten).toHaveBeenCalledWith('test-user');
+      antwort.next(true);
       expect(snackBar.open).toHaveBeenCalledWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
       expect(usage.gepostetMelden).not.toHaveBeenCalled();
+    });
+
+    it('fragt sofort, wenn das Angebot schon bekannt ist', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+    });
+
+    it('fragt den Server nicht, wenn schon feststeht, dass nichts angeboten wird', () => {
+      usage.gepostetBekannt.and.returnValue(false);
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+    });
+
+    it('dankt nicht, wenn der Server die Rückmeldung inzwischen nicht mehr anbietet', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+      usage.gepostetMelden.and.returnValue(of('nicht_angeboten' as const));
+      component.kopieren();
+      snackBar.open.calls.reset();
+
+      aktion.next();
+
+      expect(usage.gepostetMelden).toHaveBeenCalledWith('test-user');
+      expect(snackBar.open).not.toHaveBeenCalled();
+    });
+
+    it('dankt ohne Zahl, wenn das Zählen scheitert', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+      usage.gepostetMelden.and.returnValue(of(null));
+      component.kopieren();
+
+      aktion.next();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Danke! Zählen hat gerade nicht geklappt.', 'Schließen', { duration: 5000 });
     });
 
     it('zählt erst mit „Ja, gepostet“ und dankt mit der echten Zahl der Woche', () => {
@@ -524,7 +569,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       expect(usage.gepostetMelden).toHaveBeenCalledTimes(1);
       expect(snackBar.open).toHaveBeenCalledWith(
-        'Danke! Diese Woche haben 7 Menschen öffentlich gekontert, du bist dabei.',
+        'Danke! Diese Woche haben 7 Menschen gemeldet, dass sie öffentlich gekontert haben. Du bist dabei.',
         'Schließen',
         { duration: 5000 },
       );

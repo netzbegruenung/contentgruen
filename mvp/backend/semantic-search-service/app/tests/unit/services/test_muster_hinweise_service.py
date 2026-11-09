@@ -50,3 +50,20 @@ async def test_pruefwerte_verwerfen_im_takt_laeuft_nach_fehler_weiter():
     task.cancel()
 
     assert nutzung.vergangene_tage_verwerfen.call_count >= 2
+
+
+@pytest.mark.asyncio
+async def test_pruefwerte_verwerfen_im_takt_verdichtet_gepostet_auch_nach_fehler():
+    """Die Pruefwerte "Ja, gepostet" (#643) gehen nach ihrer Woche auch ohne neue Meldung."""
+    nutzung = Mock()
+    nutzung.vergangene_tage_verwerfen = Mock(return_value=0)
+    gepostet = Mock(side_effect=[RuntimeError("weg"), None, None])
+
+    task = asyncio.create_task(
+        pruefwerte_verwerfen_im_takt(nutzung, takt_sekunden=0, gepostet=gepostet)
+    )
+    while gepostet.call_count < 2:
+        await asyncio.sleep(0.01)
+    task.cancel()
+
+    assert nutzung.vergangene_tage_verwerfen.call_count >= 2

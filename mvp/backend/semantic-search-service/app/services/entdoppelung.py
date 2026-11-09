@@ -36,7 +36,7 @@ import secrets
 import threading
 import uuid
 from datetime import date, datetime, timezone
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from core.logging import get_logger
 from repositories.usage_tracking_repository import UsageTrackingRepository
@@ -138,12 +138,17 @@ def paar_pruefwerte_im_fenster(nutzende: str, autor: str, tag: date) -> List[str
 
 
 async def pruefwerte_verwerfen_im_takt(
-    nutzung: UsageTrackingRepository, takt_sekunden: Optional[float] = None
+    nutzung: UsageTrackingRepository,
+    takt_sekunden: Optional[float] = None,
+    gepostet: Optional[Callable[[], None]] = None,
 ) -> None:
     """
     Hintergrund-Task: verwirft die Pruefwerte vergangener Tage sofort und dann nach
     jedem Tageswechsel (UTC), bis er abgebrochen wird. Laeuft unabhaengig von Punkten
     und Usage-Cleanup: Die Entdoppelung wirkt immer.
+
+    ``gepostet``: verdichtet die Pruefwerte "Ja, gepostet" vergangener Wochen (#643),
+    unabhaengig vom Schalter, damit sie auch ohne neue Meldung nach ihrer Woche weg sind.
     """
     while True:
         try:
@@ -153,6 +158,14 @@ async def pruefwerte_verwerfen_im_takt(
             logger.error(
                 f"Error discarding check values: {type(e).__name__}", exc_info=True
             )
+        if gepostet is not None:
+            try:
+                await asyncio.to_thread(gepostet)
+            except Exception as e:
+                logger.error(
+                    f"Error condensing Gepostet check values: {type(e).__name__}",
+                    exc_info=True,
+                )
         await asyncio.sleep(
             sekunden_bis_mitternacht() + 1 if takt_sekunden is None else takt_sekunden
         )

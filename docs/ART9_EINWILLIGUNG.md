@@ -21,7 +21,8 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   `/einwilligung` und danach zurück führt, und bleibt sonst auf der Seite, damit kein Text im
   Formular verloren geht.
   Gesperrt: Beiträge anlegen und ändern, Herkunft anlegen, Einwurf und Satz, einen Einwurf
-  ausformulieren, Stimmen abgeben. Offen bleiben Lesen, Suchen, Löschen, einen Einwurf
+  ausformulieren, Stimmen abgeben, „Ja, gepostet“ nach dem Kopieren melden und erfragen, ob es
+  angeboten wird (#643). Offen bleiben Lesen, Suchen, Löschen, einen Einwurf
   verwerfen, Melden, Feedback, Gegenlesen, Sprachhinweis, Kürzungsvorschlag und Widerspruch
   gegen eine Sperre. Die Liste prüft `tests/unit/api/test_art9_einwilligung_api.py`
   (`GESPERRT`, `OFFEN`): Ein neuer schreibender Endpunkt fällt dort auf, bis er in einer der

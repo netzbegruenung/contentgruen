@@ -50,6 +50,9 @@ export interface AbzeichenSichtbarkeit {
   aktueller_wortlaut: { kennung: string; text: string; mehr_dazu: string };
 }
 
+/** Ergebnis von gepostetMelden, wenn der Server die Rückmeldung nicht (mehr) anbietet. */
+export const GEPOSTET_NICHT_ANGEBOTEN = 'nicht_angeboten' as const;
+
 /** Antwort von GET/POST /users/me/gepostet (#643). */
 export interface GepostetAntwort {
   /** Verschiedene Personen, die diese Kalenderwoche „Ja, gepostet“ gemeldet haben. */
@@ -282,13 +285,27 @@ export class UsageTrackingService {
   }
 
   /**
+   * Ob „Ja, gepostet“ schon sicher angeboten wird; null, solange der Server nicht
+   * gefragt wurde. Synchron, damit die Snackbar nach dem Kopieren sofort kommt.
+   */
+  gepostetBekannt(kennung: string): boolean | null {
+    return this.gepostetStand.get(kennung) ?? null;
+  }
+
+  /**
    * „Ja, gepostet“ melden (#643): Der Server zählt die Person einmal je
    * Kalenderwoche. Liefert die Zahl der Personen dieser Woche, bei einem Fehler null.
+   * Ein 403 (Einwilligung widerrufen) oder 404 (Schalter aus) heißt: nicht mehr
+   * angeboten; dann vergisst der Dienst das gemerkte Ja und liefert NICHT_ANGEBOTEN.
    */
-  gepostetMelden(): Observable<number | null> {
+  gepostetMelden(kennung: string): Observable<number | null | typeof GEPOSTET_NICHT_ANGEBOTEN> {
     return this.http.post<GepostetAntwort>(`${this.apiUrl}/users/me/gepostet`, {}).pipe(
       map((antwort) => antwort.personen_diese_woche),
       catchError((error) => {
+        if (error?.status === 403 || error?.status === 404) {
+          this.gepostetStand.delete(kennung);
+          return of(GEPOSTET_NICHT_ANGEBOTEN);
+        }
         this.loggingService.error('Gepostet nicht gemeldet', error);
         return of(null);
       }),

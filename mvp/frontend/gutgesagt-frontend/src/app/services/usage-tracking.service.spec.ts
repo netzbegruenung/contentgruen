@@ -195,8 +195,8 @@ describe('UsageTrackingService', () => {
     });
 
     it('meldet per POST und liefert die Zahl der Woche', () => {
-      let ergebnis: number | null | undefined;
-      service.gepostetMelden().subscribe((zahl) => (ergebnis = zahl));
+      let ergebnis: unknown;
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
 
       const anfrage = http.expectOne(GEPOSTET);
       expect(anfrage.request.method).toBe('POST');
@@ -205,9 +205,23 @@ describe('UsageTrackingService', () => {
       expect(ergebnis).toBe(7);
     });
 
+    it('vergisst nach einem 403 beim Melden das gemerkte Angebot', () => {
+      service.gepostetAngeboten('kim-1').subscribe();
+      http.expectOne(GEPOSTET).flush({ personen_diese_woche: 1 });
+      expect(service.gepostetBekannt('kim-1')).toBeTrue();
+      let ergebnis: unknown;
+
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
+      http.expectOne(GEPOSTET).flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+      expect(ergebnis).toBe('nicht_angeboten');
+      expect(service.gepostetBekannt('kim-1')).toBeNull();
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
     it('liefert null, wenn das Melden scheitert', () => {
-      let ergebnis: number | null | undefined;
-      service.gepostetMelden().subscribe((zahl) => (ergebnis = zahl));
+      let ergebnis: unknown;
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
 
       http.expectOne(GEPOSTET).flush('kaputt', { status: 500, statusText: 'Server Error' });
 

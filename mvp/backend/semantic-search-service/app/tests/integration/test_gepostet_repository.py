@@ -54,6 +54,25 @@ class TestGepostet:
         assert repo.wochen(VORIGE, DIESE) == {VORIGE: 2}
         assert _zeilen(datenbank, "gepostet_pruefwerte") == 0
 
+    def test_taeglicher_lauf_verdichtet_ohne_neue_meldung(
+        self, datenbank
+    ):  # noqa: F811
+        repo = GepostetRepository(datenbank)
+        repo.melden("a" * 64, VORIGE)
+        repo.melden("b" * 64, DIESE)
+
+        repo.vergangene_wochen_verdichten(heute=date(2026, 11, 11))
+
+        assert _zeilen(datenbank, "gepostet_pruefwerte") == 1
+        with datenbank.get_session() as c:
+            assert (
+                c.execute(
+                    text("SELECT personen FROM gepostet_wochen WHERE woche = :w"),
+                    {"w": VORIGE},
+                ).scalar()
+                == 1
+            )
+
     def test_wochen_ab_von(self, datenbank):  # noqa: F811
         repo = GepostetRepository(datenbank)
         repo.melden("a" * 64, date(2026, 10, 26))

@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import GepostetPruefwert, GepostetWoche
+from utils.utc_tag import heute_utc, wochenbeginn
 
 # Loeschen und Zaehlen in einer Anweisung: Die Zeilensperren des DELETE verhindern,
 # dass zwei gleichzeitige Laeufe dieselbe Woche zweimal hochzaehlen.
@@ -45,6 +46,11 @@ class GepostetRepository:
             .select_from(GepostetPruefwert)
             .where(GepostetPruefwert.woche == woche)
         ).scalar_one()
+
+    def vergangene_wochen_verdichten(self, heute: Optional[date] = None) -> None:
+        """Fuer den taeglichen Task (services/entdoppelung.py): alles vor dieser Woche verdichten."""
+        with self.db.get_session() as session:
+            self._verdichten(session, wochenbeginn(heute or heute_utc()))
 
     def melden(self, pruefwert: str, woche: date) -> int:
         """

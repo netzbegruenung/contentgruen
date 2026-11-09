@@ -10,13 +10,16 @@ export const JA_GEPOSTET = 'Ja, gepostet';
 export const GEPOSTET_FRAGE_MS = 8000;
 export const GEPOSTET_NICHT_GEZAEHLT = 'Danke! Zählen hat gerade nicht geklappt.';
 
-/** Der Dank nach „Ja, gepostet“; ``personen`` schließt die Person selbst ein. */
+/**
+ * Der Dank nach „Ja, gepostet“; ``personen`` schließt die Person selbst ein. Die Zahl
+ * ist eine Selbstauskunft, deshalb „gemeldet“.
+ */
 export function gepostetDank(personen: number | null): string {
   if (personen === null) {
     return GEPOSTET_NICHT_GEZAEHLT;
   }
   if (personen <= 1) {
-    return 'Danke! Du bist diese Woche die erste Person, die öffentlich kontert.';
+    return 'Danke! Du bist diese Woche die erste Person, die meldet, dass sie öffentlich kontert.';
   }
-  return `Danke! Diese Woche haben ${personen} Menschen öffentlich gekontert, du bist dabei.`;
+  return `Danke! Diese Woche haben ${personen} Menschen gemeldet, dass sie öffentlich gekontert haben. Du bist dabei.`;
 }

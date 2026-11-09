@@ -20,11 +20,11 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime, switchMap } from 'rxjs/operators';
+import { debounceTime, switchMap, take } from 'rxjs/operators';
 
 import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
-import { UsageTrackingService } from '../../services/usage-tracking.service';
+import { GEPOSTET_NICHT_ANGEBOTEN, UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
 import { HAND_UMRISS } from '../../shared/marke/hand';
@@ -233,17 +233,40 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
       return;
     }
-    this.usageTrackingService.gepostetAngeboten(kennung).subscribe((angeboten) => {
-      if (!angeboten) {
-        this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
-        return;
-      }
-      this.snackBar
-        .open(KOPIERT_GEPOSTET_FRAGE, JA_GEPOSTET, { duration: GEPOSTET_FRAGE_MS })
-        .onAction()
-        .pipe(switchMap(() => this.usageTrackingService.gepostetMelden()))
-        .subscribe((personen) => this.snackBar.open(gepostetDank(personen), 'Schließen', { duration: 5000 }));
-    });
+    if (this.usageTrackingService.gepostetBekannt(kennung)) {
+      this.gepostetFragen(kennung);
+      return;
+    }
+    // Noch unbekannt oder nicht angeboten: sofort die gewohnte Bestätigung; kommt vom
+    // Server ein Ja, ersetzt die Frage sie (eine neue Snackbar schließt die alte).
+    this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
+    if (this.usageTrackingService.gepostetBekannt(kennung) === false) {
+      return;
+    }
+    this.usageTrackingService
+      .gepostetAngeboten(kennung)
+      .pipe(take(1))
+      .subscribe((angeboten) => {
+        if (angeboten) {
+          this.gepostetFragen(kennung);
+        }
+      });
+  }
+
+  private gepostetFragen(kennung: string): void {
+    this.snackBar
+      .open(KOPIERT_GEPOSTET_FRAGE, JA_GEPOSTET, { duration: GEPOSTET_FRAGE_MS })
+      .onAction()
+      .pipe(
+        take(1),
+        switchMap(() => this.usageTrackingService.gepostetMelden(kennung)),
+      )
+      .subscribe((personen) => {
+        if (personen === GEPOSTET_NICHT_ANGEBOTEN) {
+          return;
+        }
+        this.snackBar.open(gepostetDank(personen), 'Schließen', { duration: 5000 });
+      });
   }
 
   beitragOeffnen(): void {
