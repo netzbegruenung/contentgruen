@@ -390,10 +390,20 @@ def get_beitrag_aendern_service(
     repository: IContentRepository = Depends(get_content_repository),
 ) -> BeitragAendernService:
     """Ueber das aggregierte Repository, wie das Loeschen (#299)."""
+    from repositories.vote_repository import VoteRepository
+
     return BeitragAendernService(
         repository,
         get_reference_service().herkunft_id,
         get_content_report_repository().hat_offene_meldung,
+        # Stimmen verfallen bei anderer Behauptung (#427); ohne StatementService
+        # (Start noch nicht durch) entscheidet niemand, die Stimmen bleiben.
+        gleiche_behauptung=(
+            statement_service_instance.gleiche_behauptung
+            if statement_service_instance is not None
+            else None
+        ),
+        stimmen_loeschen=VoteRepository().loeschen_fuer_beitrag,
     )
 
 

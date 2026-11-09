@@ -83,12 +83,16 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         pass
 
     @abstractmethod
-    async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
+    async def get(
+        self, item_id: uuid.UUID, eintrag_modell: Optional[Type[Any]] = None
+    ) -> TContentDbEntry:
         """
         Retrieve a specific content item by its ID.
 
         Args:
             item_id: Unique identifier of the content item
+            eintrag_modell: liest den Payload mit diesem Modell statt dem des
+                Repositorys, etwa den Titel ueber das aggregierte (#427)
 
         Returns:
             The content item
