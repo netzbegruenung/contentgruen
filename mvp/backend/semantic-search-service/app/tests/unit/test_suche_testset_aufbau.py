@@ -525,6 +525,41 @@ class TestErwartung:
         assert als_json([messung], (0.8,))["faelle"][0]["einordnung"] == {}
         assert suche_messen.gemessen([messung]) == []
 
+    def test_fall_messen_misst_mit_dem_ersatz_und_nennt_ihn(self):
+        """fall_messen sucht mit der Erwartung des Ersatzes und reicht weiter, welche
+        Aussagen er ersetzt (Ausgabe "Mit Ersatz gemessen", JSON ersatz_fuer)."""
+        fall = _fall(erwartet=("Seed",), dieselbe=True)._replace(
+            ersatz=Ersatz((A,), False, "verwandt")
+        )
+        aussagen = {A: SimpleNamespace(id="id-A", replysuggestions=[])}
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        dienste = SimpleNamespace(
+            statement_service=SimpleNamespace(
+                search_filtered=AsyncMock(return_value=[SimpleNamespace(id="id-A")]),
+                vorhandene_finden=AsyncMock(),
+            ),
+            specs=[],
+            reference_service=None,
+        )
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand), patch(
+            "api.v1.search.aussagetreffer_finden",
+            AsyncMock(return_value=([], None)),
+        ), patch("api.v1.search.treffer_sammeln", AsyncMock()), patch(
+            "services.search.search_orchestrator.SearchOrchestrator"
+        ), patch.object(
+            suche_messen, "angezeigte_beitraege", return_value=(_k(True),)
+        ):
+            messung = asyncio.run(suche_messen.fall_messen(dienste, fall, (0.8,)))
+
+        assert messung.ersatz_fuer == ("Seed",)
+        assert (messung.fall.erwartet, messung.fall.phaenomen) == ((A,), "verwandt")
+        assert messung.fehlt == ()
+        # Ersatz ist nicht dieselbe Behauptung: keine Pruefung, ob die Anfrage landet.
+        assert messung.landet_auf_erwarteter is None
+        dienste.statement_service.vorhandene_finden.assert_not_called()
+        assert messung.aehnliche == (True,)
+        assert suche_messen.gemessen([messung]) == [messung]
+
     def test_fehlt_eine_erwartete_aussage_gilt_der_ersatz(self):
         fall = _fall(erwartet=("Seed",), dieselbe=True)._replace(
             ersatz=Ersatz((A,), False, "verwandt")
