@@ -111,6 +111,17 @@ class StatementDbEntry(Statement, BaseContentDbEntry):
     replysuggestions_count: int
 
 
+class AntwortKurz(BaseModel):
+    """
+    Eine weitere Antwort zu einer Aussage, wie die Beitragsseite sie auflistet
+    (#603): nur ID, Typ und Titel. Ohne Titel (Altbestand) der Anfang des Texts.
+    """
+
+    id: uuid.UUID
+    content_type: ContentType
+    titel: str
+
+
 class StatementSearchResult(StatementDbEntry, BaseContentSearchResult):
     """
     Representing a statement with score and additional result metadata
