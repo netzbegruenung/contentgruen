@@ -16,6 +16,10 @@ bei jeder Suche neu zu laden.
 
 Je Prozess gibt es ein Modell je Name (nli_modell()): Auch das Seeding baut einen eigenen
 StatementService und soll dasselbe, schon vorgeladene Modell nutzen statt eines zweiten.
+
+Dieselbe Klasse laedt auch den Bestaetiger (NLI_BESTAETIGER_MODELL). Sein Repo bringt nur
+den langsamen Tokenizer mit, der sentencepiece braucht; den schnellen mit demselben
+Vokabular gibt es im Basismodell (tokenizer_name).
 """
 
 import asyncio
@@ -37,6 +41,10 @@ MAX_TOKEN = 512
 # wird in der Ereignisschleife, nicht in einem Thread: Wartende belegen so keinen Thread
 # des gemeinsamen Executors, den auch andere asyncio.to_thread-Nutzer brauchen.
 NACHFRAGEN_ALLE = 0.05
+# Immer nur ein Modell zugleich laden: from_pretrained ist nicht threadsicher (zwei
+# gleichzeitige Ladevorgaenge liessen Gewichte auf dem meta-Geraet zurueck, jedes Urteil
+# scheiterte dann), und die Spitzen beim Laden addieren sich so nicht.
+_LADE_SPERRE = threading.Lock()
 
 
 class NliPruefer(Protocol):
@@ -55,8 +63,9 @@ class NliPruefer(Protocol):
 
 
 class NliModell:
-    def __init__(self, modell_name: str):
+    def __init__(self, modell_name: str, tokenizer_name: Optional[str] = None):
         self._modell_name = modell_name
+        self._tokenizer_name = tokenizer_name or modell_name
         self._sperre = threading.Lock()
         self._tokenizer = None
         self._modell = None
@@ -80,10 +89,11 @@ class NliModell:
                 AutoTokenizer,
             )
 
-            tokenizer = AutoTokenizer.from_pretrained(self._modell_name)
-            modell = AutoModelForSequenceClassification.from_pretrained(
-                self._modell_name, torch_dtype=torch.float32
-            ).eval()
+            with _LADE_SPERRE:
+                tokenizer = AutoTokenizer.from_pretrained(self._tokenizer_name)
+                modell = AutoModelForSequenceClassification.from_pretrained(
+                    self._modell_name, torch_dtype=torch.float32
+                ).eval()
             nach_name = {
                 name.lower(): idx for idx, name in modell.config.id2label.items()
             }
@@ -205,13 +215,14 @@ class NliModell:
             self._sperre.release()
 
 
-_MODELLE: Dict[str, NliModell] = {}
+_MODELLE: Dict[Tuple[str, Optional[str]], NliModell] = {}
 _MODELLE_SPERRE = threading.Lock()
 
 
-def nli_modell(modell_name: str) -> NliModell:
+def nli_modell(modell_name: str, tokenizer_name: Optional[str] = None) -> NliModell:
     """Das eine NliModell dieses Prozesses fuer modell_name (Dienst, Seeding, Bericht)."""
     with _MODELLE_SPERRE:
-        if modell_name not in _MODELLE:
-            _MODELLE[modell_name] = NliModell(modell_name)
-        return _MODELLE[modell_name]
+        schluessel = (modell_name, tokenizer_name)
+        if schluessel not in _MODELLE:
+            _MODELLE[schluessel] = NliModell(modell_name, tokenizer_name)
+        return _MODELLE[schluessel]

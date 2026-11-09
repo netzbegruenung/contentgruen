@@ -60,6 +60,8 @@ nano .env
 | `SEMANTIC_SEARCH_QDRANT_URL` | Qdrant endpoint | `http://localhost:6333` |
 | `SEMANTIC_SEARCH_QDRANT_COLLECTION` | Qdrant collection name | `content_collection` |
 | `SEMANTIC_SEARCH_EMBEDDING_THREADS` | Torch threads for computing embeddings (integer, at least 1; leave unset rather than empty), set once at startup for the whole process. Limits CPU contention on a busy host (#480); whether and which value production uses is the maintainer's call | unset (one per visible core) |
+| `SEMANTIC_SEARCH_NLI_BESTAETIGER` | Second NLI model (Bestätiger) for the same-Aussage check, only with the NLI-Stufe on (`schatten` or `an`). Up to ~2.2 GB more RAM; check the host before switching it on (`docs/DEPLOYMENT.md`) | `false` |
+| `SEMANTIC_SEARCH_NLI_BESTAETIGER_VETO_AB` | Veto of the first NLI model on the Bestätiger path: it must entail both directions at least this much (`tests/regression/MESSSET.md`) | `0.1` |
 | `SEMANTIC_SEARCH_APP_DATABASE_URL` | App database connection string | localhost:5433 |
 | `SEMANTIC_SEARCH_LOG_LEVEL` | Logging level (DEBUG, INFO, etc.) | INFO |
 | `SEMANTIC_SEARCH_KEYCLOAK_URL`, `…_KEYCLOAK_ADMIN_CLIENT_ID`, `…_KEYCLOAK_ADMIN_CLIENT_SECRET` | Keycloak admin API for redeeming Einladungen; without them Einladungen can only be managed. Set only together with the BFF switch to the new realm (`docs/KEYCLOAK_REALM.md`, order) | unset |

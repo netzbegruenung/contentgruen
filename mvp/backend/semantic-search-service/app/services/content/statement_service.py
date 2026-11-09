@@ -1,4 +1,6 @@
 import asyncio
+import threading
+import time
 import contextlib
 import datetime
 from collections import defaultdict
@@ -9,7 +11,12 @@ import logging
 
 from pydantic import ValidationError
 
-from core.config import NLI_MODELL, Settings
+from core.config import (
+    NLI_BESTAETIGER_MODELL,
+    NLI_BESTAETIGER_TOKENIZER,
+    NLI_MODELL,
+    Settings,
+)
 from services.content.base_content_service import (
     BaseContentService,
     Dublettenpruefung,
@@ -68,6 +75,7 @@ class StatementService(
         repository_factory: Optional[IRepositoryFactory] = None,
         nli: Optional[NliPruefer] = None,
         nli_warten: bool = False,
+        bestaetiger: Optional[NliPruefer] = None,
     ):
         # Use provided factory or default to QdrantRepositoryFactory
         if repository_factory is None:
@@ -91,6 +99,14 @@ class StatementService(
         if nli is None and settings.dieselbe_aussage_nli != "aus":
             nli = nli_modell(NLI_MODELL)
         self._nli: Optional[NliPruefer] = nli
+        # Der Bestaetiger (nli_bestaetiger): zweites Modell, nur mit NLI-Stufe.
+        if (
+            bestaetiger is None
+            and settings.nli_bestaetiger
+            and settings.dieselbe_aussage_nli != "aus"
+        ):
+            bestaetiger = nli_modell(NLI_BESTAETIGER_MODELL, NLI_BESTAETIGER_TOKENIZER)
+        self._bestaetiger: Optional[NliPruefer] = bestaetiger if nli else None
         # nli_warten: auf das Modell warten statt nach DIESELBE_WARTET_HOECHSTENS die
         # Schwelle gelten zu lassen - fuer das Seeding, bei dem niemand auf die Antwort
         # wartet und sonst die ersten Aussagen waehrend des Ladens nach der Schwelle
@@ -112,13 +128,29 @@ class StatementService(
         )
 
     def nli_vorladen(self) -> None:
-        """Das NLI-Modell im Hintergrund laden, wenn die NLI-Stufe es braucht."""
-        if isinstance(self._nli, NliModell):
-            self._nli.vorladen()
+        """Die NLI-Modelle im Hintergrund laden, wenn die NLI-Stufe sie braucht: den
+        Bestaetiger erst nach dem ersten Modell, damit sich die Spitzen beim Laden
+        nicht addieren."""
+        modelle = [
+            m for m in (self._nli, self._bestaetiger) if isinstance(m, NliModell)
+        ]
+        if not modelle:
+            return
+
+        def laden():
+            for modell in modelle:
+                modell.laden_abwarten()
+
+        threading.Thread(target=laden, name="nli-vorladen", daemon=True).start()
 
     async def nli_laden_abwarten(self) -> bool:
         """Warten, bis das NLI-Modell geladen ist; True, wenn es bereitsteht. Fuer
         Messskripte, die gleich nach dem Start fragen und sonst die Schwelle messen."""
+        if isinstance(self._bestaetiger, NliModell):
+            if not await asyncio.to_thread(self._bestaetiger.laden_abwarten):
+                logger.warning(
+                    "Bestaetiger nicht geladen: Es urteilt nur das erste Modell."
+                )
         if isinstance(self._nli, NliModell):
             return await asyncio.to_thread(self._nli.laden_abwarten)
         return self._nli is not None
@@ -291,24 +323,37 @@ class StatementService(
     ) -> List[BaseContentSearchResult]:
         """Die Treffer, die das Modell pruefen soll: ab nli_kandidaten_ab, die
         Vorpruefungen bestanden (regel.nli_darf_pruefen), hoechstens
-        nli_kandidaten_hoechstens."""
-        kandidaten = [
+        nli_kandidaten_hoechstens; mit Bestaetiger dazu hoechstens ebenso viele, die
+        nur regel.bestaetiger_darf_pruefen bestehen."""
+        hoechstens = self.settings.nli_kandidaten_hoechstens
+        ab_untergrenze = [
             k
             for k in treffer
-            if k.score is not None
-            and k.score >= self.settings.nli_kandidaten_ab
-            and regel.nli_darf_pruefen(text, k.text)
+            if k.score is not None and k.score >= self.settings.nli_kandidaten_ab
         ]
-        return kandidaten[: self.settings.nli_kandidaten_hoechstens]
+        kandidaten = [k for k in ab_untergrenze if regel.nli_darf_pruefen(text, k.text)]
+        if self._bestaetiger is None:
+            return kandidaten[:hoechstens]
+        # Paare, die nur der Bestaetiger pruefen darf ("kein"), kommen dazu, ohne
+        # einem Kandidaten der Regel oben den Platz zu nehmen.
+        nur_bestaetiger = [
+            k
+            for k in ab_untergrenze
+            if regel.bestaetiger_darf_pruefen(text, k.text)
+            and not regel.nli_darf_pruefen(text, k.text)
+        ]
+        return kandidaten[:hoechstens] + nur_bestaetiger[:hoechstens]
 
     async def _nli_entscheiden(
         self, text: str, treffer: List[BaseContentSearchResult]
     ) -> Optional[Dublettenpruefung]:
         """
         Die Entscheidung der NLI-Stufe: der Kandidat mit der staerksten beidseitigen
-        Folgerung, der dieselbe Behauptung ist (regel.entscheiden), sonst keiner.
-        None, wenn das Modell nicht urteilen konnte - dann gilt die Schwelle.
+        Folgerung, der dieselbe Behauptung ist (regel.entscheiden); ist es keiner, mit
+        Bestaetiger der, den er bestaetigt (_bestaetigen); sonst keiner. None, wenn das
+        erste Modell nicht urteilen konnte - dann gilt die Schwelle.
         """
+        beginn = time.monotonic()
         aehnlichster = treffer[0] if treffer else None
         kandidaten = self._nli_kandidaten(text, treffer)
         if not kandidaten:
@@ -334,8 +379,66 @@ class StatementService(
                 widerspruch_unter=self.settings.nli_widerspruch_unter,
             )
         ]
-        vorhanden = max(dieselben, key=lambda paar: paar[0])[1] if dieselben else None
+        if dieselben:
+            vorhanden = max(dieselben, key=lambda paar: paar[0])[1]
+        else:
+            # Beide Modelle zusammen warten hoechstens DIESELBE_WARTET_HOECHSTENS.
+            rest = (
+                None
+                if self._nli_warten
+                else max(0.0, DIESELBE_WARTET_HOECHSTENS - (time.monotonic() - beginn))
+            )
+            vorhanden = await self._bestaetigen(text, kandidaten, urteile, rest)
         return Dublettenpruefung(vorhanden=vorhanden, aehnlichster=aehnlichster)
+
+    async def _bestaetigen(
+        self,
+        text: str,
+        kandidaten: List[BaseContentSearchResult],
+        urteile: List[regel.Urteil],
+        warte_hoechstens: Optional[float] = None,
+    ) -> Optional[BaseContentSearchResult]:
+        """
+        Der zweite Weg (regel.bestaetigt): Der Bestaetiger urteilt nur ueber die
+        Kandidaten im unsicheren Band des ersten Modells (regel.braucht_bestaetiger);
+        dieselbe ist der mit der staerksten beidseitigen Folgerung des Bestaetigers.
+        None ohne Bestaetiger, ohne Kandidat im Band oder wenn er nicht urteilen konnte -
+        dann bleibt es bei der Entscheidung des ersten Modells.
+        """
+        if self._bestaetiger is None:
+            return None
+        s = self.settings
+        band = [
+            (k, u)
+            for k, u in zip(kandidaten, urteile)
+            if regel.braucht_bestaetiger(
+                u, s.nli_widerspruch_unter, s.nli_bestaetiger_veto_ab
+            )
+        ]
+        if not band:
+            return None
+        bestaetigungen = await self._bestaetiger.urteile(
+            [(text, k.text) for k, _ in band],
+            warte_hoechstens=warte_hoechstens,
+        )
+        if bestaetigungen is None:
+            return None
+        bestaetigte = [
+            (b.folgerung, k)
+            for (k, u), b in zip(band, bestaetigungen)
+            if regel.bestaetigt(
+                text,
+                k.text,
+                k.score,
+                u,
+                b,
+                kandidaten_ab=s.nli_kandidaten_ab,
+                folgerung_ab=s.nli_folgerung_ab,
+                widerspruch_unter=s.nli_widerspruch_unter,
+                veto_folgerung_ab=s.nli_bestaetiger_veto_ab,
+            )
+        ]
+        return max(bestaetigte, key=lambda paar: paar[0])[1] if bestaetigte else None
 
     def _schatten_starten(
         self,

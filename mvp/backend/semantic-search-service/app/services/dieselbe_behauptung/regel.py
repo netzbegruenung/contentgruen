@@ -18,6 +18,12 @@ Zwei Vorpruefungen per Regel kommen davor, weil das Modell diese Faelle nicht tr
   Gleichwertige Umformungen mit anderem Quantor ("immer unpuenktlich" / "nie
   puenktlich") bleiben getrennt - lieber eine Aussage zu viel als eine falsche
   Zusammenfuehrung.
+
+Der Bestaetiger (zweites NLI-Modell, nli_bestaetiger in core/config.py) rettet Paare,
+die das erste Modell knapp verfehlt: Das zweite Modell folgert beidseitig und
+widerspricht nicht, und das erste widerspricht nicht und folgert wenigstens schwach
+(Veto). Auf diesem Weg zaehlt "kein" nicht als Quantor (KEIN_WOERTER): Die Verneinung
+erkennen beide Modelle als Widerspruch, und das Veto faengt sie ab.
 """
 
 import re
@@ -74,6 +80,11 @@ QUANTOREN = frozenset(
         "wenigen",
     }
 )
+
+# Auf dem Weg ueber den Bestaetiger kein Quantor (S55, S94 im Suchtestset): Ob "keiner
+# kann sich Sprit leisten" dieselbe Behauptung ist wie "Sprit ist unbezahlbar", urteilen
+# dort zwei Modelle, eins davon mit Veto.
+KEIN_WOERTER = frozenset({"kein", "keine", "keinem", "keinen", "keiner"})
 
 # Finite Verben, die an erster Stelle eine Entscheidungsfrage einleiten ("Sind
 # Waermepumpen im Altbau sinnvoll"): Suchanfragen kommen oft ohne Fragezeichen. Nur
@@ -191,11 +202,30 @@ def nli_darf_pruefen(text: str, kandidat: str) -> bool:
     )
 
 
+def bestaetiger_darf_pruefen(text: str, kandidat: str) -> bool:
+    """Die Vorpruefungen fuer den Weg ueber den Bestaetiger: wie nli_darf_pruefen,
+    aber ohne KEIN_WOERTER unter den Quantoren."""
+    return ist_frage(text) == ist_frage(kandidat) and (
+        quantoren(text) - KEIN_WOERTER == quantoren(kandidat) - KEIN_WOERTER
+    )
+
+
 def ist_dieselbe_behauptung(
     urteil: Urteil, folgerung_ab: float, widerspruch_unter: float
 ) -> bool:
     """Beide Richtungen folgern mit mindestens folgerung_ab, keine widerspricht."""
     return urteil.folgerung >= folgerung_ab and urteil.widerspruch < widerspruch_unter
+
+
+def braucht_bestaetiger(
+    urteil: Urteil, widerspruch_unter: float, veto_folgerung_ab: float
+) -> bool:
+    """Das unsichere Band: Das erste Modell widerspricht nicht und folgert in beiden
+    Richtungen mindestens veto_folgerung_ab. Nur dann rechnet der Bestaetiger; sonst
+    kann er am Ergebnis nichts aendern (Veto)."""
+    return (
+        urteil.widerspruch < widerspruch_unter and urteil.folgerung >= veto_folgerung_ab
+    )
 
 
 def widerspricht(urteil: Urteil, widerspruch_ab: float) -> bool:
@@ -228,3 +258,31 @@ def entscheiden(
     return urteil is not None and ist_dieselbe_behauptung(
         urteil, folgerung_ab, widerspruch_unter
     )
+
+
+def bestaetigt(
+    text: str,
+    kandidat: str,
+    score: float,
+    urteil: Optional[Urteil],
+    bestaetigung: Optional[Urteil],
+    *,
+    kandidaten_ab: float,
+    folgerung_ab: float,
+    widerspruch_unter: float,
+    veto_folgerung_ab: float,
+) -> bool:
+    """
+    Der zweite Weg zu derselben Behauptung, neben entscheiden(): Der Kandidat liegt ueber
+    der Untergrenze, besteht die Vorpruefungen des Bestaetigers, das erste Modell
+    (urteil) liegt im unsicheren Band (braucht_bestaetiger), und das zweite Modell
+    (bestaetigung) sieht dieselbe Behauptung mit denselben Schwellen. Ohne eins der
+    beiden Urteile: nicht dieselbe.
+    """
+    if urteil is None or bestaetigung is None:
+        return False
+    if score < kandidaten_ab or not bestaetiger_darf_pruefen(text, kandidat):
+        return False
+    return braucht_bestaetiger(
+        urteil, widerspruch_unter, veto_folgerung_ab
+    ) and ist_dieselbe_behauptung(bestaetigung, folgerung_ab, widerspruch_unter)

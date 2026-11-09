@@ -26,9 +26,17 @@ RUN python -c "from transformers import AutoModelForSequenceClassification, Auto
     AutoTokenizer.from_pretrained(name); AutoModelForSequenceClassification.from_pretrained(name); \
     print('NLI model pre-downloaded successfully')"
 
+# Der Bestaetiger (core/config.py NLI_BESTAETIGER_MODELL, rund 2,2 GB), auch wenn
+# nli_bestaetiger aus ist: Einschalten soll keinen neuen Build brauchen. Der Tokenizer
+# kommt aus dem Basismodell (schneller Tokenizer, ohne sentencepiece).
+RUN python -c "from transformers import AutoModelForSequenceClassification, AutoTokenizer; \
+    AutoTokenizer.from_pretrained('FacebookAI/xlm-roberta-large'); \
+    AutoModelForSequenceClassification.from_pretrained('joeddav/xlm-roberta-large-xnli'); \
+    print('NLI confirmer model pre-downloaded successfully')"
+
 # Ab hier nur noch die eingebauten Modelle: Ohne Offline-Modus fragt der Dienst bei
 # jedem Start huggingface.co an (Startzeit, Datenverkehr in die USA) und koennte eine
-# neuere Modellrevision ziehen als die, die der Nachtlauf misst. Erst nach den beiden
+# neuere Modellrevision ziehen als die, die der Nachtlauf misst. Erst nach den
 # Vorlade-Schritten, damit der Build die Modelle noch herunterladen kann (#578).
 # Ein neues Modell gehoert oben in einen Vorlade-Schritt (docs/CI.md, "Model cache").
 ENV HF_HUB_OFFLINE=1

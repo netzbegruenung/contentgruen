@@ -24,6 +24,8 @@ DIESELBE = Urteil(Richtung(0.99, 0.0), Richtung(0.98, 0.01))
 EINSEITIG = Urteil(Richtung(0.99, 0.0), Richtung(0.40, 0.01))
 WIDERSPRUCH = Urteil(Richtung(0.01, 0.97), Richtung(0.02, 0.95))
 NEUTRAL = Urteil(Richtung(0.10, 0.10), Richtung(0.10, 0.10))
+# Knapp unter tau, kein Widerspruch: das unsichere Band fuer den Bestaetiger.
+KNAPP = Urteil(Richtung(0.93, 0.01), Richtung(0.60, 0.02))
 
 
 @pytest.mark.unit
@@ -122,6 +124,63 @@ class TestRegel:
             kandidaten_ab=0.85,
             folgerung_ab=0.95,
             widerspruch_unter=0.05,
+        )
+
+    def test_bestaetiger_zaehlt_kein_nicht_als_quantor(self):
+        """S55 im Suchtestset: kein zaehlt nur auf dem Weg ueber den Bestaetiger
+        nicht; andere Quantoren trennen dort weiter."""
+        text, kandidat = (
+            "Bald kann sich keiner mehr Sprit leisten",
+            "Sprit ist zu teuer",
+        )
+        assert not regel.nli_darf_pruefen(text, kandidat)
+        assert regel.bestaetiger_darf_pruefen(text, kandidat)
+        assert not regel.bestaetiger_darf_pruefen(
+            "Manche Windräder töten Vögel", "Windräder töten Vögel"
+        )
+        assert not regel.bestaetiger_darf_pruefen(
+            "Lohnt sich Balkonsolar?", "Balkonsolar lohnt sich"
+        )
+
+    @pytest.mark.parametrize(
+        "erstes, bestaetigung, erwartet",
+        [
+            (KNAPP, DIESELBE, True),
+            (KNAPP, EINSEITIG, False),
+            # Veto: Das erste Modell widerspricht oder folgert kaum.
+            (Urteil(Richtung(0.90, 0.06), Richtung(0.90, 0.0)), DIESELBE, False),
+            (Urteil(Richtung(0.05, 0.0), Richtung(0.99, 0.0)), DIESELBE, False),
+            (KNAPP, None, False),
+            (None, DIESELBE, False),
+        ],
+    )
+    def test_bestaetigt(self, erstes, bestaetigung, erwartet):
+        assert (
+            regel.bestaetigt(
+                "Bürgergeld lohnt sich mehr als Arbeit",
+                "Mit Bürgergeld hat man mehr als mit Arbeit",
+                0.93,
+                erstes,
+                bestaetigung,
+                kandidaten_ab=0.85,
+                folgerung_ab=0.95,
+                widerspruch_unter=0.05,
+                veto_folgerung_ab=0.1,
+            )
+            is erwartet
+        )
+
+    def test_bestaetigt_nicht_unter_der_untergrenze(self):
+        assert not regel.bestaetigt(
+            "Windkraft bringt Vögel um",
+            "Windräder töten Vögel",
+            0.84,
+            KNAPP,
+            DIESELBE,
+            kandidaten_ab=0.85,
+            folgerung_ab=0.95,
+            widerspruch_unter=0.05,
+            veto_folgerung_ab=0.1,
         )
 
 
@@ -510,6 +569,179 @@ class TestNliStufeImStatementService:
         assert (
             await service.ohne_widerspruch("Windräder töten Vögel", treffer) == treffer
         )
+
+
+@pytest.mark.unit
+class TestBestaetigerImStatementService:
+    @pytest.fixture
+    def baue(self, test_settings, repository_factory):
+        def bauen(nli, bestaetiger, modus="an"):
+            settings = test_settings.model_copy(update={"dieselbe_aussage_nli": modus})
+            return StatementService(
+                settings,
+                repository_factory=repository_factory,
+                nli=nli,
+                bestaetiger=bestaetiger,
+            )
+
+        return bauen
+
+    @pytest.mark.asyncio
+    async def test_bestaetiger_rettet_knappes_urteil(self, baue):
+        vorhanden = _treffer("Mit Bürgergeld hat man mehr als mit Arbeit", 0.93)
+        bestaetiger = AttrappenNli({vorhanden.text: DIESELBE})
+        service = baue(AttrappenNli({vorhanden.text: KNAPP}), bestaetiger)
+        service._repository.search = AsyncMock(return_value=[vorhanden])
+
+        neu, statement_id, _ = await _anlegen(
+            service, "Bürgergeld lohnt sich mehr als Arbeit"
+        )
+
+        assert neu is False
+        assert statement_id == vorhanden.id
+
+    @pytest.mark.asyncio
+    async def test_bestaetiger_rechnet_nur_im_unsicheren_band(self, baue):
+        knapp = _treffer("Mit Bürgergeld hat man mehr als mit Arbeit", 0.95)
+        gegenteil = _treffer("Arbeit lohnt sich mehr als Bürgergeld", 0.94)
+        fremd = _treffer("Das Bürgergeld ist zu niedrig", 0.93)
+        bestaetiger = AttrappenNli()
+        service = baue(
+            AttrappenNli({knapp.text: KNAPP, gegenteil.text: WIDERSPRUCH}),
+            bestaetiger,
+        )
+        service._repository.search = AsyncMock(return_value=[knapp, gegenteil, fremd])
+
+        neu, _, _ = await _anlegen(service, "Bürgergeld lohnt sich mehr als Arbeit")
+
+        assert neu is True, "der Bestaetiger urteilt NEUTRAL"
+        assert [[b for _, b in aufruf] for aufruf in bestaetiger.aufrufe] == [
+            [knapp.text]
+        ]
+        assert bestaetiger.gewartet is not None, "auch er wartet nur begrenzt"
+
+    @pytest.mark.asyncio
+    async def test_bestaetiger_ruht_wenn_das_erste_modell_entscheidet(self, baue):
+        vorhanden = _treffer("Windräder töten Vögel", 0.93)
+        bestaetiger = AttrappenNli()
+        service = baue(AttrappenNli({vorhanden.text: DIESELBE}), bestaetiger)
+        service._repository.search = AsyncMock(return_value=[vorhanden])
+
+        neu, _, _ = await _anlegen(service, "Windkraft bringt Vögel um")
+
+        assert neu is False
+        assert bestaetiger.aufrufe == []
+
+    @pytest.mark.asyncio
+    async def test_ohne_bestaetiger_bleibt_es_beim_ersten_modell(self, baue):
+        vorhanden = _treffer("Mit Bürgergeld hat man mehr als mit Arbeit", 0.93)
+        service = baue(
+            AttrappenNli({vorhanden.text: KNAPP}), AttrappenNli(verfuegbar=False)
+        )
+        service._repository.search = AsyncMock(return_value=[vorhanden])
+
+        neu, _, _ = await _anlegen(service, "Bürgergeld lohnt sich mehr als Arbeit")
+
+        assert neu is True
+
+    @pytest.mark.asyncio
+    async def test_kein_nur_mit_bestaetiger_geprueft(self, baue, test_settings):
+        """S55: Mit Bestaetiger sieht auch das erste Modell Paare, die sich nur in
+        kein unterscheiden; landen koennen sie nur ueber den Bestaetiger."""
+        vorhanden = _treffer("Sprit ist zu teuer", 0.92)
+        erstes = AttrappenNli({vorhanden.text: DIESELBE})
+        service = baue(erstes, AttrappenNli())
+        service._repository.search = AsyncMock(return_value=[vorhanden])
+
+        neu, _, _ = await _anlegen(service, "Bald kann sich keiner mehr Sprit leisten")
+
+        assert neu is True, "die Regel des ersten Modells trennt kein weiter"
+        assert len(erstes.aufrufe) == 1
+
+    @pytest.mark.asyncio
+    async def test_kein_landet_ueber_den_bestaetiger(self, baue):
+        """S55: Das erste Modell folgert knapp, der Bestaetiger sicher."""
+        vorhanden = _treffer("Sprit ist zu teuer", 0.92)
+        service = baue(
+            AttrappenNli({vorhanden.text: KNAPP}),
+            AttrappenNli({vorhanden.text: DIESELBE}),
+        )
+        service._repository.search = AsyncMock(return_value=[vorhanden])
+
+        neu, statement_id, _ = await _anlegen(
+            service, "Bald kann sich keiner mehr Sprit leisten"
+        )
+
+        assert neu is False
+        assert statement_id == vorhanden.id
+
+    @pytest.mark.asyncio
+    async def test_kein_kandidaten_nehmen_der_regel_keinen_platz(
+        self, baue, test_settings
+    ):
+        """Kandidaten nur fuer den Bestaetiger ("kein") kommen hinter die der Regel:
+        Die bisherige Regel sieht dieselben Kandidaten wie ohne Bestaetiger."""
+        n = test_settings.nli_kandidaten_hoechstens
+        kein = [_treffer(f"Keiner kann sich Sprit leisten {i}", 0.97) for i in range(n)]
+        andere = [_treffer(f"Sprit ist teuer {i}", 0.95 - i * 0.01) for i in range(n)]
+        richtig = andere[-1]
+        erstes = AttrappenNli({richtig.text: DIESELBE})
+        service = baue(erstes, AttrappenNli())
+        service._repository.search = AsyncMock(return_value=kein + andere)
+
+        neu, statement_id, _ = await _anlegen(service, "Sprit ist zu teuer")
+
+        assert (neu, statement_id) == (False, richtig.id)
+        assert [b for _, b in erstes.aufrufe[0]] == [t.text for t in andere + kein]
+
+    @pytest.mark.asyncio
+    async def test_schatten_zaehlt_mit_bestaetiger(self, baue):
+        vorhanden = _treffer("Mit Bürgergeld hat man mehr als mit Arbeit", 0.93)
+        service = baue(
+            AttrappenNli({vorhanden.text: KNAPP}),
+            AttrappenNli({vorhanden.text: DIESELBE}),
+            modus="schatten",
+        )
+        service._repository.search = AsyncMock(return_value=[vorhanden])
+
+        neu, _, _ = await _anlegen(service, "Bürgergeld lohnt sich mehr als Arbeit")
+        await asyncio.gather(*service._schatten_tasks)
+
+        assert neu is True, "im Schatten entscheidet die Schwelle"
+        assert service.schattenprotokoll.zaehler == {"nur_nli": 1}
+
+    def test_schalter_aus_laedt_keinen_bestaetiger(
+        self, test_settings, repository_factory
+    ):
+        settings = test_settings.model_copy(
+            update={"dieselbe_aussage_nli": "schatten", "nli_bestaetiger": False}
+        )
+        service = StatementService(settings, repository_factory=repository_factory)
+
+        assert service._bestaetiger is None
+
+    def test_schalter_an_teilt_einen_bestaetiger(
+        self, test_settings, repository_factory
+    ):
+        settings = test_settings.model_copy(
+            update={"dieselbe_aussage_nli": "schatten", "nli_bestaetiger": True}
+        )
+        dienst = StatementService(settings, repository_factory=repository_factory)
+        seeding = StatementService(
+            settings, repository_factory=repository_factory, nli_warten=True
+        )
+
+        assert dienst._bestaetiger is not None
+        assert seeding._bestaetiger is dienst._bestaetiger
+        assert dienst._bestaetiger is not dienst._nli
+
+    def test_nli_aus_laedt_keinen_bestaetiger(self, test_settings, repository_factory):
+        settings = test_settings.model_copy(
+            update={"dieselbe_aussage_nli": "aus", "nli_bestaetiger": True}
+        )
+        service = StatementService(settings, repository_factory=repository_factory)
+
+        assert service._bestaetiger is None
 
 
 @pytest.mark.unit
