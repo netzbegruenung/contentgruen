@@ -50,3 +50,35 @@ export function themenHinweisNachSpeichern(
   const hinweis = themenHinweis(anfrage.themen, antwort.themen ?? []);
   return hinweis ? { themenHinweis: hinweis } : {};
 }
+
+/** Was das Backend nach dem Speichern zur Aussage meldet (Post, Bild, #619; wie Hintergrundinfo). */
+export interface AussageInAntwort {
+  /** Die Aussage, an der der Beitrag jetzt haengt; fehlt ohne Aussage oder wenn das Verknuepfen scheiterte. */
+  statement_id?: string | null;
+  /** Ihr Text; bei Text-Anfragen kann das eine schon vorhandene, aehnliche Aussage sein. */
+  statement_text?: string | null;
+  themen?: Thema[];
+  /** false: Aussage angegeben, aber nicht verknuepft - der Beitrag steht trotzdem. */
+  verknuepft?: boolean;
+}
+
+/**
+ * Das Ergebnis fuer die Ergebnisseite. Wurde eine Aussage mitgeschickt, gilt sie nur
+ * als verknuepft, wenn das Backend es bestaetigt; dann ist es die tatsaechlich
+ * verknuepfte Aussage. Sonst bleibt die eingegebene stehen, damit die Seite sagen kann,
+ * woran es nicht haengt.
+ */
+export function alsGespeichert(
+  id: string,
+  eingegeben: AntwortAuf,
+  anfrage: AussageInAnfrage,
+  antwort: AussageInAntwort,
+): { id: string; aussage: AntwortAuf; verknuepft: boolean; themenHinweis?: string } {
+  const aussageGeschickt = !!(anfrage.statement_id || anfrage.statement_text);
+  const verknuepft = !aussageGeschickt || antwort.verknuepft === true;
+  const aussage =
+    aussageGeschickt && verknuepft && antwort.statement_id
+      ? { id: antwort.statement_id, text: antwort.statement_text ?? eingegeben.text }
+      : eingegeben;
+  return { id, aussage, verknuepft, ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft) };
+}

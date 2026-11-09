@@ -1,96 +1,53 @@
+@use '../shared/styles/contribution-form' as contribution;
+@use '../shared/styles/breakpoints' as bp;
+
+@include contribution.contribution-form-styles;
+
 .add-image-container {
-  padding: 16px;
+  @include contribution.contribution-container;
 }
 
-.content-type-indicator {
-  margin-bottom: 24px;
+// Bezug zur Karte, die hier entsteht: ein schmaler Streifen in der Farbe ihres Bands
+.formular-bereich {
+  border-top: 5px solid var(--typ-farbe, transparent);
 }
 
-.content-type-badge {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+app-formular-hilfe {
+  display: block;
 
-.content-type-icon {
-  font-size: 32px;
-}
-
-.content-type-description {
-  margin: 0;
-  color: var(--text-subtle);
-  font-size: 14px;
-}
-
-.content-wrapper {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
+  @include bp.mobile-only {
+    padding: 12px 16px 0;
   }
 }
 
-.form-column {
-  flex: 1;
-  min-width: 0;
-}
-
-.preview-column {
-  flex: 1;
-  min-width: 280px;
-  position: sticky;
-  top: 16px;
-
-  // Mobil blendet mobile-common.css die Vorschau aus. Beim Bild bleibt sie stehen: Nur dort
-  // laedt das Bild, und nur so merkt man, dass die URL nicht stimmt (#619).
-  @media (max-width: 768px) {
-    display: block;
-    position: static;
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-.preview-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-
-  h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-  }
-}
-
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-group {
+.beitrag-formular {
   display: flex;
   flex-direction: column;
   gap: 4px;
-
-  mat-form-field {
-    width: 100%;
-  }
 }
 
-// Am Desktop steht die Vorschau neben dem Feld; dort reicht der Hinweis am Feld.
-.bild-ladefehler.vorschau-ladefehler {
-  display: none;
-  margin: 0 0 8px;
-  font-size: 14px;
+.formular-feld {
+  width: 100%;
+}
 
-  @media (max-width: 768px) {
-    display: flex;
-  }
+.submit-hint {
+  margin: 8px 0 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.knopf-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.speicher-fehler {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border-left: 4px solid var(--error-color);
+  border-radius: 4px;
+  background: var(--error-tint);
 }
 
 .bild-ladefehler {
@@ -106,65 +63,14 @@
   }
 }
 
-// Schrift und Farbe kommen aus der globalen .submit-hint (styles.css).
-.submit-hint {
-  margin: 24px 0 12px;
-}
+// Steht die Vorschau neben dem Feld, reicht der Hinweis am Feld. Darunter rutscht sie
+// ab 1024 px (contribution-form, preview-column); dann auch hier, wo man "Bild laden" tippt.
+.bild-ladefehler.vorschau-ladefehler {
+  display: none;
+  margin: 0 0 8px;
+  font-size: 14px;
 
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-  justify-content: flex-end;
-
-  // Mobil stehen die Knoepfe untereinander: Speichern zuerst, Abbrechen darunter (#619).
-  @media (max-width: 768px) {
-    flex-direction: column-reverse;
+  @media (max-width: 1024px) {
+    display: flex;
   }
-}
-
-.submit-hint + .form-actions {
-  margin-top: 0;
-}
-
-.state-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 32px 16px;
-  text-align: center;
-  gap: 12px;
-}
-
-.loading-state {
-  color: var(--text-body);
-}
-
-.success-state {
-  .success-icon {
-    font-size: 48px;
-    height: 48px;
-    width: 48px;
-    color: var(--primary-dark);
-  }
-}
-
-.error-state {
-  .error-icon {
-    font-size: 48px;
-    height: 48px;
-    width: 48px;
-    color: var(--error-main);
-  }
-}
-
-.error-message {
-  color: var(--error-main);
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
 }

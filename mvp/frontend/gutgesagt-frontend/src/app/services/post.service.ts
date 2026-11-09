@@ -4,9 +4,11 @@ import { Observable } from 'rxjs';
 import { mitCc0Wortlaut } from '../shared/consent-hinweis';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
+import type { AussageInAnfrage, AussageInAntwort } from '../beitragsformular/aussage-fuer-anfrage';
 import { PostResult } from './dtos/searchDtos';
 
-export interface AddPostRequest {
+/** Worauf der Post antwortet (statement_id, statement_text, themen) ist optional (#619). */
+export interface AddPostRequest extends AussageInAnfrage {
   post: {
     title: string;
     text: string;
@@ -18,7 +20,8 @@ export interface AddPostRequest {
   };
 }
 
-export interface AddPostResponse {
+/** Die ID und woran der Post jetzt haengt (#619). */
+export interface AddPostResponse extends AussageInAntwort {
   id: string;
 }
 

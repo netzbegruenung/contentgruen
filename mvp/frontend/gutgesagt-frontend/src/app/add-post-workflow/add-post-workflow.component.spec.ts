@@ -53,8 +53,19 @@ describe('AddPostWorkflowComponent', () => {
     expect(uebergabe.mitBeitragVerknuepfen).not.toHaveBeenCalled();
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-post', 'gespeichert', 'p-1'], {
       queryParams: {},
-      state: {},
+      state: { verknuepft: true },
       replaceUrl: true,
+    });
+  });
+
+  it('gibt der Ergebnisseite mit, auf welche Aussage der Post antwortet (#619)', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate');
+
+    component.onSuccess({ id: 'p-1', aussage: { id: 'a-1', text: 'Solar lohnt sich nicht' }, verknuepft: true });
+
+    expect(navigieren.calls.mostRecent().args[1]?.state).toEqual({
+      aussage: { id: 'a-1', text: 'Solar lohnt sich nicht' },
+      verknuepft: true,
     });
   });
 
@@ -69,7 +80,7 @@ describe('AddPostWorkflowComponent', () => {
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('e-1', 'p-1', 'post');
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-post', 'gespeichert', 'p-1'], {
       queryParams: { [EINWURF_PARAM]: 'e-1' },
-      state: { einwurfVerknuepft: true },
+      state: { verknuepft: true, einwurfVerknuepft: true },
       replaceUrl: true,
     });
   });

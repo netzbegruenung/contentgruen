@@ -9,6 +9,8 @@
     <div class="content-wrapper">
         <div class="form-column">
             <form [formGroup]="postForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
+                <app-antwort-auf (aussageChange)="aussageSetzen($event)"></app-antwort-auf>
+
                 <mat-form-field appearance="outline" class="formular-feld">
                     <mat-label>Link zum Post</mat-label>
                     <input matInput id="url" formControlName="url" type="url" required
@@ -59,6 +61,16 @@
                     <mat-error *ngIf="postForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
 
+                <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
+                <div *ngIf="zeigtThemen" class="optionale-angaben">
+                    <div class="themen-feld">
+                        <span class="feld-beschriftung">Themen der neuen Aussage</span>
+                        <app-themen-auswahl [themen]="themenWahl.liste" [gewaehlt]="postForm.value.themen"
+                                            beschriftung="Themen der neuen Aussage"
+                                            (gewaehltChange)="themenWahl.setzen($event)"></app-themen-auswahl>
+                    </div>
+                </div>
+
                 <app-sprachhinweis [titel]="postForm.value.title" [text]="postForm.value.text"></app-sprachhinweis>
                 <p appCc0Hinweis></p>
 
@@ -67,7 +79,7 @@
                 <app-formular-leiste *ngIf="!responseId"
                                      [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : null">
                     <button mat-raised-button type="submit" class="submit-btn"
-                            [disabled]="speichert || postForm.invalid">
+                            [disabled]="speichert || postForm.invalid || aussageZuKurz">
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
                         {{ fehler && !validierung ? 'Erneut versuchen' : 'Post speichern' }}
                     </button>
@@ -80,7 +92,8 @@
                 <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
-            <app-gegenlesen [titel]="postForm.value.title" [text]="postForm.value.text" [titelIstBehauptung]="false"></app-gegenlesen>
+            <app-gegenlesen [titel]="postForm.value.title" [text]="postForm.value.text" [aussage]="aussage.text"
+                            [titelIstBehauptung]="false"></app-gegenlesen>
         </section>
     </div>
 </div>
