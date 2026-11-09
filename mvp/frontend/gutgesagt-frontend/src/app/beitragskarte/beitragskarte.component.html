@@ -230,7 +230,7 @@
 
             <!-- Platzhalter "[Hier …]" als Feld zum Ausfuellen (#640, R38) -->
             <p #textElement class="karte-text" *ngIf="angezeigterText"
-               [class.aufgeklappt]="textAufgeklappt"><ng-container *ngFor="let stueck of textStueckeAnzeige"><mark *ngIf="stueck.luecke; else stueckText" class="vorlagen-luecke"><span class="cdk-visually-hidden">Lücke zum Ausfüllen: </span>{{ stueck.text }}</mark><ng-template #stueckText>{{ stueck.text }}</ng-template></ng-container></p>
+               [class.aufgeklappt]="textAufgeklappt"><ng-container *ngFor="let stueck of textStueckeAnzeige"><mark *ngIf="stueck.luecke; else stueckText" class="vorlagen-luecke">{{ stueck.text }}</mark><ng-template #stueckText>{{ stueck.text }}</ng-template></ng-container></p>
             <button type="button" class="mehr-knopf" *ngIf="textGekuerzt || textAufgeklappt"
                     [attr.aria-expanded]="textAufgeklappt"
                     (click)="textUmschalten()">{{ textAufgeklappt ? 'weniger' : 'mehr' }}</button>

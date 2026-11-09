@@ -31,8 +31,6 @@ const OHNE_KONTEXT: Kontext = { aussage: null, weitere: [] };
 
 export const NICHT_VERFUEGBAR = 'Dieser Beitrag ist nicht verfügbar.';
 export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
-// Die Beitragsseite war der erste Ort dafuer; Specs und Aufrufer importieren von hier.
-export { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink };
 
 /**
  * Ein Beitrag unter seiner eigenen Adresse, /beitrag/:id (#300), fuer alle
