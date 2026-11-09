@@ -86,7 +86,11 @@ the NLI-Stufe loads an NLI model (mDeBERTa-v3-base-xnli, fp32) in the background
 up to about 2 GB at the peak while loading (measured on the dev VM, `python -m
 tests.regression.nli_messen --zeit`), and the image grows by about 0.55 GB. If the container has
 a memory limit, raise it accordingly; `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=aus` skips the model
-and restores the rule before #387.
+and restores the rule before #387. The image also carries a second NLI model, the Bestätiger
+(`joeddav/xlm-roberta-large-xnli`, fp32, about 2.2 GB on disk, so the image grows by about that
+much). It is only loaded with `SEMANTIC_SEARCH_NLI_BESTAETIGER=true` (default off, and never with
+the NLI-Stufe `aus`): then plan for up to about 2.2 GB more RAM (measured locally: peak +1.4 to
++1.6 GB). Check the free memory of the host before switching it on.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:

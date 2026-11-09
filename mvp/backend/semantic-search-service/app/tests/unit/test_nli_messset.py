@@ -12,11 +12,14 @@ import pytest
 
 from core.config import Settings
 from tests.regression.aehnlichkeit_messen import fingerabdruck, gemessen
+from tests.regression.nli_bestaetiger_gemessen import NLI_BESTAETIGER_GEMESSEN
 from tests.regression.nli_gemessen import NLI_GEMESSEN
 from tests.regression.nli_messen import (
+    BEKANNT_FALSCH_MIT_BESTAETIGER,
     HARTE_FAELLE,
     NLI_PAARE,
     auswertung,
+    bestaetigung,
     entscheidung_nli,
     urteil,
 )
@@ -24,9 +27,10 @@ from tests.regression.nli_messen import (
 SETTINGS = Settings()
 
 
-def test_jedes_aussage_paar_ist_gemessen():
-    assert set(NLI_GEMESSEN) == {p.id for p in NLI_PAARE}
-    veraltet = [p.id for p in NLI_PAARE if NLI_GEMESSEN[p.id][4] != fingerabdruck(p)]
+@pytest.mark.parametrize("messung", [NLI_GEMESSEN, NLI_BESTAETIGER_GEMESSEN])
+def test_jedes_aussage_paar_ist_gemessen(messung):
+    assert set(messung) == {p.id for p in NLI_PAARE}
+    veraltet = [p.id for p in NLI_PAARE if messung[p.id][4] != fingerabdruck(p)]
     assert not veraltet
 
 
@@ -71,3 +75,45 @@ def test_messset_md_zeigt_die_gespeicherte_messung():
     doku = Path(__file__).parents[1] / "regression" / "MESSSET.md"
     urteile = {p.id: urteil(p.id) for p in NLI_PAARE}
     assert auswertung(urteile, SETTINGS) in doku.read_text(encoding="utf-8")
+
+
+def _mit_bestaetiger(paar):
+    return entscheidung_nli(paar, urteil(paar.id), SETTINGS, bestaetigung(paar.id))
+
+
+def test_bestaetiger_fuehrt_nur_die_bekannten_falsch_zusammen():
+    """Mit Bestaetiger: keine falsche Zusammenfuehrung im Test-Teil, im Train-Teil nur
+    die benannten (MESSSET.md, Bestaetiger)."""
+    falsch = [p for p in NLI_PAARE if p.label != "gleich" and _mit_bestaetiger(p)]
+    assert sorted(p.id for p in falsch) == sorted(BEKANNT_FALSCH_MIT_BESTAETIGER)
+    assert all(p.teil == "train" for p in falsch)
+
+
+@pytest.mark.parametrize("paar_id", HARTE_FAELLE)
+def test_bestaetiger_trennt_gegenteile_und_fragen(paar_id):
+    paar = next(p for p in NLI_PAARE if p.id == paar_id)
+    assert not _mit_bestaetiger(paar)
+
+
+def test_bestaetiger_erkennt_mehr_gleiche():
+    def erkannt(teil, mit):
+        return sum(
+            (
+                _mit_bestaetiger(p)
+                if mit
+                else entscheidung_nli(p, urteil(p.id), SETTINGS)
+            )
+            for p in NLI_PAARE
+            if p.label == "gleich" and p.teil == teil
+        )
+
+    assert erkannt("test", True) > erkannt("test", False)
+
+
+def test_messset_md_zeigt_die_messung_mit_bestaetiger():
+    doku = Path(__file__).parents[1] / "regression" / "MESSSET.md"
+    urteile = {p.id: urteil(p.id) for p in NLI_PAARE}
+    bestaetigungen = {p.id: bestaetigung(p.id) for p in NLI_PAARE}
+    assert auswertung(urteile, SETTINGS, bestaetigungen) in doku.read_text(
+        encoding="utf-8"
+    )

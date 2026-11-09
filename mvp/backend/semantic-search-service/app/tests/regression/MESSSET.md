@@ -10,7 +10,7 @@ entschieden hat: Ist der Kandidat dieselbe Behauptung wie der Bestandstext?
 | `aehnlichkeit_gemessen.py` | Scores und Entscheidung je Paar (erzeugt, nicht von Hand ändern) |
 | `aehnlichkeit_messen.py` | misst und gibt die Auswertung je Paar-Label aus |
 | `test_aehnlichkeit_messset.py` | Regressionstest mit Modell (langsam, nicht in der PR-CI, jede Nacht in `.woodpecker/nacht.yaml`) |
-| `nli_messen.py`, `nli_gemessen.py` | NLI-Stufe (#387): Urteile je Aussagepaar, Auswertung, Antwortzeit |
+| `nli_messen.py`, `nli_gemessen.py`, `nli_bestaetiger_gemessen.py` | NLI-Stufe (#387): Urteile je Aussagepaar (erstes Modell und Bestätiger), Auswertung, Antwortzeit |
 | `test_nli_messset.py`, `../unit/test_nli_messset.py` | NLI-Stufe mit Modell (langsam) bzw. über die gespeicherten Urteile (in CI) |
 | `../unit/test_aehnlichkeit_messset_aufbau.py` | Aufbau, Umfang und Split ohne Modell (in CI) |
 
@@ -278,3 +278,61 @@ gleich, aber nicht erkannt (44): C01, C04, C05, C08, C09, C10, C11, C12, C13, WI
   Last, Median aus 5 Läufen): 1 Kandidat 176 ms, 5 Kandidaten 507 ms, 10 Kandidaten
   1241 ms; Laden 2,5 s, Speicher bis zu rund 2 GB zusätzlich (höchster Stand beim Laden,
   ohne torch). Auf der Ziel-VM neu messen.
+
+### Bestätiger (zweites NLI-Modell)
+
+Schalter `nli_bestaetiger` (`SEMANTIC_SEARCH_NLI_BESTAETIGER`, Standard aus). Gemessen am
+09.11.2026 mit `joeddav/xlm-roberta-large-xnli` (MIT laut Model Card, fp32; Tokenizer aus
+`FacebookAI/xlm-roberta-large`). Selbst identische Texte folgert das erste Modell nur mit
+0,84–0,92 (A01, A02, A04), der Bestätiger mit über 0,99; allein führt er aber
+„Es stimmt nicht, dass …“ und ähnliche Paare zusammen (AK06). Deshalb hat das erste Modell
+ein Veto.
+
+**Regel** (`regel.bestaetigt`, zusätzlich zu `regel.entscheiden`): Der Kandidat liegt über
+der Untergrenze, das erste Modell widerspricht in keiner Richtung (κ) und folgert in beiden
+mindestens `nli_bestaetiger_veto_ab` = 0,1, und der Bestätiger sieht mit τ und κ dieselbe
+Behauptung. Nur in diesem Band rechnet der Bestätiger; landet schon ein Kandidat nach der
+Regel oben, rechnet er nicht. Auf diesem Weg zählt „kein“ nicht als Quantor
+(`regel.KEIN_WOERTER`), die anderen Quantoren und Fragen trennen weiter.
+
+Ergebnis (zweite Ausgabe von `nli_messen.py`, ein Unit-Test prüft sie hier):
+
+```text
+
+aussage (NLI ab Score 0.85, tau 0.95, kappa 0.05, mit Bestaetiger (Veto ab 0.1)):
+
+| Label | Paare (train/test) | dieselbe heute | dieselbe mit NLI train | dieselbe mit NLI test | nicht vorgeschlagen (Widerspruch) |
+|---|---|---|---|---|---|
+| gleich | 119 (89/30) | 50 | 69/89 | 26/30 | 4/119 |
+| widerspricht | 151 (104/47) | 31 | 1/104 | 0/47 | 148/151 |
+| verwandt | 131 (94/37) | 28 | 1/94 | 0/37 | 15/124 |
+| fremd | 39 (29/10) | 0 | 0/29 | 0/10 | 0/0 |
+
+suche (NLI ab Score 0.85, tau 0.95, kappa 0.05, mit Bestaetiger (Veto ab 0.1)):
+
+| Label | Paare (train/test) | dieselbe heute | dieselbe mit NLI train | dieselbe mit NLI test | nicht vorgeschlagen (Widerspruch) |
+|---|---|---|---|---|---|
+| gleich | 3 (3/0) | 3 | 3/3 | 0/0 | 0/3 |
+| verwandt | 3 (3/0) | 0 | 0/3 | 0/0 | 0/3 |
+| fremd | 1 (1/0) | 0 | 0/1 | 0/0 | 0/0 |
+
+Andere Behauptung als dieselbe: TL13, IN05
+gleich, nur mit der Schwelle erkannt (2): WA03, NV12
+gleich, aber nicht erkannt (24): C01, C05, C08, C09, C10, C11, C12, C13, WI02, WI03, EA03, EE02, AT02, DB01, DB02, SP03, RW03, GN02, WS02, IN01, WA02, WA03, NV12, WO02
+```
+
+- **Erkannt:** 98 statt 78 von 122 *gleich*-Paaren, im Test-Teil 26 statt 20 von 30; neu
+  vor allem Tippfehler knapp unter τ (FB01, AK01, FW01) und Umformulierungen (HZ01–HZ03,
+  LR01, LR03). Im Test-Teil keine falsche Zusammenführung.
+- **Preis:** zwei falsche Zusammenführungen von 325 *widerspricht*-, *verwandt*- und
+  *fremd*-Paaren, beide im Train-Teil (`BEKANNT_FALSCH_MIT_BESTAETIGER`): TL13 „Nicht nichts
+  bringt ein Tempolimit fürs Klima“ (doppelte Verneinung, *widerspricht*) und IN05
+  „Pestizide sind mitschuld“ / „… schuld“ (*verwandt*). D11, B09 und D15 bleiben getrennt.
+- **Gewählt** am Messset und am Suchtestset zusammen (Analyse vom 09.11.2026): Die Wirkung
+  ist eher zu optimistisch. τ 0,90 ohne zweites Modell erkannte weniger und führte TL12
+  („Tempolimit schadet dem Klima“ / „bringt nichts“) zusammen.
+- **Antwortzeit und Speicher** (`--zeit`, 2 Threads, gleicher Host wie oben): 1 Kandidat
+  351 ms, 5 Kandidaten 1147 ms, 10 Kandidaten 2083 ms; Laden 2,4 s, Speicher in einem
+  eigenen Prozess bis zu rund 1,6 GB zusätzlich (Modelldatei 2,2 GB). Weil er nur im
+  unsicheren Band rechnet, urteilt er im Suchtestset bei 12 von 99 Suchen über je einen
+  Kandidaten (`SUCHTESTSET.md`, Zerfaserung). Auf der Ziel-VM neu messen.

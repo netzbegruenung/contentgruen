@@ -25,6 +25,11 @@ EMBEDDING_VEKTOR = "e5_base"
 # Cross-Encoder mit XNLI-Training, MIT-Lizenz, nur fp32. Die Schwellen nli_* in Settings
 # sind dafuer gemessen (tests/regression/MESSSET.md); das Dockerfile laedt es vor.
 NLI_MODELL = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
+# Der Bestaetiger (nli_bestaetiger in Settings): zweites NLI-Modell, MIT-Lizenz (Model
+# Card), fp32, rund 2,2 GB RAM. Tokenizer aus dem Basismodell (gleiches Vokabular, aber
+# als schneller Tokenizer, ohne sentencepiece). Das Dockerfile laedt beide vor.
+NLI_BESTAETIGER_MODELL = "joeddav/xlm-roberta-large-xnli"
+NLI_BESTAETIGER_TOKENIZER = "FacebookAI/xlm-roberta-large"
 # aus: nur die Einbettung entscheidet (Regel vor #387). schatten: Die Einbettung
 # entscheidet, die NLI-Stufe urteilt im Hintergrund mit und wird nur gezaehlt.
 # an: Die NLI-Stufe entscheidet ueber dieselbe Aussage.
@@ -149,6 +154,14 @@ class Settings(BaseSettings):
     # widerspricht mit dieser Wahrscheinlichkeit oder mehr.
     nli_folgerung_ab: float = Field(default=0.95, ge=0.0, le=1.0)
     nli_widerspruch_unter: float = Field(default=0.05, ge=0.0, le=1.0)
+    # Bestaetiger: Ein Kandidat wird auch dann dieselbe Aussage, wenn das zweite Modell
+    # (NLI_BESTAETIGER_MODELL) mit tau und kappa dieselbe Behauptung sieht und das erste
+    # nicht widerspricht (kappa) und beidseitig mindestens nli_bestaetiger_veto_ab
+    # folgert (regel.bestaetigt). Gerechnet wird nur in diesem Band. Aus, solange die
+    # Ziel-VM die rund 2,2 GB zusaetzlich nicht nachweislich hat; wirkt nur, wenn die
+    # NLI-Stufe nicht aus ist. Gemessen in tests/regression/MESSSET.md und SUCHTESTSET.md.
+    nli_bestaetiger: bool = False
+    nli_bestaetiger_veto_ab: float = Field(default=0.1, ge=0.0, le=1.0)
     # CPU-Threads: wie die Einbettung (embedding_threads); torch.set_num_threads gilt
     # prozessweit, ein eigener Wert fuer das NLI-Modell braeche die Einbettung.
     # Kommentar-Dublette: passage/passage-Einbettung, >= Schwelle.

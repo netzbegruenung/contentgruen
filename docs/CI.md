@@ -148,7 +148,7 @@ model), so the run is not a required status.
   public, no registry login), which downloads the model at build time. The code
   measured is the checkout; pip only installs what `requirements.txt` changed.
   `HF_HUB_OFFLINE=1` keeps the run on the model revision baked into the image instead of
-  whatever the hub serves that night. The image itself sets it too, after the two preload
+  whatever the hub serves that night. The image itself sets it too, after the preload
   steps of its Dockerfile, so production and the dev stack never ask the hub either (#578);
   the step's `environment` overrides the image. A pull request that switches to another
   model adds a preload step for it to the Dockerfile and sets `HF_HUB_OFFLINE` to `"0"` in

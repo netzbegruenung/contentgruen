@@ -226,6 +226,17 @@ reicht eine Kontrollmessung mit dem Befehl oben.
   Startbestands sind, landen nicht auf ihr; die zehn, die landen, sind alle wörtlich.
   Keine Umformulierung, kein Tippfehler und keine Umgangssprache landet. Mit der
   NLI-Stufe „an“ (#387) landen 6 der 31 (S32, S36, S51, S61, S74, S97), 25 bleiben.
+  Mit dem **Bestätiger** dazu (`SEMANTIC_SEARCH_NLI_BESTAETIGER=true`, gemessen am
+  09.11.2026 am selben Entwurf, nur die 30 Aussagen ohne Kommentare) landen weitere 10
+  (S04, S14, S24, S27, S55, S58, S63, S80, S93, S94), **15 bleiben**. Keine der 99
+  gemessenen Suchen landet dabei auf einer falschen Aussage, auch die Fälle ohne Erwartung
+  nicht. Die 15 sind vor allem Umgangssprache, Bilder und Umschreibungen (S02 „Windkraftanlagen
+  bringen Vögel um“) und einseitige Folgerungen (S45). `vorhandene_finden` braucht im Median
+  gleich lang (250 ms), im 95. Perzentil 900 statt 630 ms: Der Bestätiger urteilt bei 12 der
+  99 Suchen über je einen Kandidaten. Das Soll des nächtlichen Laufs bleibt, er misst mit der
+  Voreinstellung (Schattenbetrieb, Bestätiger aus).
+  Nachmessen: `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=an SEMANTIC_SEARCH_NLI_BESTAETIGER=true`
+  vor den Befehl oben (`suche_messen --faelle`).
   Zu Deutschlandticket und Insektensterben gibt es nur den wörtlichen Fall; Fälle mit
   derselben Behauptung in anderen Worten kommen mit der Kontrollmessung dazu.
 - **Aussagen ohne Antwort:** Einmal-Versuch am selben Stack über den Suchendpunkt: Vier

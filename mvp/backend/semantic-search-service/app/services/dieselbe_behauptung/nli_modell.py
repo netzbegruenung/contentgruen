@@ -16,6 +16,10 @@ bei jeder Suche neu zu laden.
 
 Je Prozess gibt es ein Modell je Name (nli_modell()): Auch das Seeding baut einen eigenen
 StatementService und soll dasselbe, schon vorgeladene Modell nutzen statt eines zweiten.
+
+Dieselbe Klasse laedt auch den Bestaetiger (NLI_BESTAETIGER_MODELL). Sein Repo bringt nur
+den langsamen Tokenizer mit, der sentencepiece braucht; den schnellen mit demselben
+Vokabular gibt es im Basismodell (tokenizer_name).
 """
 
 import asyncio
@@ -55,8 +59,9 @@ class NliPruefer(Protocol):
 
 
 class NliModell:
-    def __init__(self, modell_name: str):
+    def __init__(self, modell_name: str, tokenizer_name: Optional[str] = None):
         self._modell_name = modell_name
+        self._tokenizer_name = tokenizer_name or modell_name
         self._sperre = threading.Lock()
         self._tokenizer = None
         self._modell = None
@@ -80,7 +85,7 @@ class NliModell:
                 AutoTokenizer,
             )
 
-            tokenizer = AutoTokenizer.from_pretrained(self._modell_name)
+            tokenizer = AutoTokenizer.from_pretrained(self._tokenizer_name)
             modell = AutoModelForSequenceClassification.from_pretrained(
                 self._modell_name, torch_dtype=torch.float32
             ).eval()
@@ -209,9 +214,9 @@ _MODELLE: Dict[str, NliModell] = {}
 _MODELLE_SPERRE = threading.Lock()
 
 
-def nli_modell(modell_name: str) -> NliModell:
+def nli_modell(modell_name: str, tokenizer_name: Optional[str] = None) -> NliModell:
     """Das eine NliModell dieses Prozesses fuer modell_name (Dienst, Seeding, Bericht)."""
     with _MODELLE_SPERRE:
         if modell_name not in _MODELLE:
-            _MODELLE[modell_name] = NliModell(modell_name)
+            _MODELLE[modell_name] = NliModell(modell_name, tokenizer_name)
         return _MODELLE[modell_name]

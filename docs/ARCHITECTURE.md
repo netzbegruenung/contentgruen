@@ -263,6 +263,11 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
   the model also drops contradicting Aussagen from the "Antwort auf" suggestions; ~1.2 GB extra
   RAM, threads as `SEMANTIC_SEARCH_EMBEDDING_THREADS`. Thresholds `SEMANTIC_SEARCH_NLI_*` and
   `SEMANTIC_SEARCH_AUSSAGE_VORSCHLAG_*`, measured in `tests/regression/MESSSET.md`.
+- `SEMANTIC_SEARCH_NLI_BESTAETIGER` - Bestätiger, a second NLI model for the same-Aussage check
+  (`true`/`false`, default `false`; no effect with the NLI-Stufe `aus`). It only judges
+  candidates the first model barely misses without contradicting, and the first model keeps a
+  veto (`SEMANTIC_SEARCH_NLI_BESTAETIGER_VETO_AB`, default 0.1). Up to ~2.2 GB extra RAM.
+  Measured in `tests/regression/MESSSET.md` and `SUCHTESTSET.md` (Zerfaserung).
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts
