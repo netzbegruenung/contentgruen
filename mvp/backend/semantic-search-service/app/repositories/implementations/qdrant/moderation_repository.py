@@ -14,6 +14,7 @@ from domain.models.content_status import (
 )
 from domain.models.content_type import ContentType
 from repositories.interfaces.moderation_repository import IModerationRepository
+from utils.antwort_ids import FELD_ANTWORT_IDS, antwort_ids
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 
 logger = logging.getLogger(__name__)
@@ -169,6 +170,7 @@ class QdrantModerationRepository(IModerationRepository):
                     payload={
                         "replysuggestions": json.dumps(uebrig, default=str),
                         "replysuggestions_count": len(uebrig),
+                        FELD_ANTWORT_IDS: antwort_ids(uebrig),
                     },
                     points=[punkt.id],
                 )

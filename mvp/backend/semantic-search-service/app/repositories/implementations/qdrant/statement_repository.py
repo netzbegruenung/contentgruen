@@ -12,12 +12,33 @@ from repositories.implementations.qdrant.base_repository import (
     nur_sichtbar_bedingungen,
 )
 from repositories.interfaces.statement_repository import IStatementRepository
-from domain.models.statement import StatementDbEntry, StatementSearchResult
+from domain.models.statement import (
+    AntwortKurz,
+    StatementDbEntry,
+    StatementSearchResult,
+)
+from utils.antwort_ids import FELD_ANTWORT_IDS
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_type import ContentType
 from domain.models.content_status import AUSGEBLENDET_WERTE
 
 logger = logging.getLogger(__name__)
+
+# Wie viele Aussagen zu einem Beitrag zu_antwort hoechstens liest. Ein Beitrag
+# antwortet meist auf eine, selten auf wenige Aussagen.
+AUSSAGEN_JE_ANTWORT_HOECHSTENS = 20
+
+# Beitragstypen, die als weitere Antwort aufgelistet werden; Aussagen und Herkunft
+# sind keine Beitraege (ADR 0002).
+_BEITRAGSTYPEN = frozenset(
+    {
+        ContentType.COMMENTARY.value,
+        ContentType.GENERIC_TEXT.value,
+        ContentType.POST.value,
+        ContentType.IMAGE.value,
+    }
+)
+_TITEL_OHNE_TITEL_HOECHSTENS = 120
 
 
 def _unbeantwortete_suchanfrage(
@@ -239,6 +260,77 @@ class StatementRepository(
                 vorschlag.id in sichtbar for vorschlag in aussage.replysuggestions
             )
         ]
+
+    async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
+        """
+        Sichtbare Aussagen, auf die der Beitrag antwortet (#603): eine gefilterte
+        Abfrage ueber das Payload-Feld antwort_ids (Keyword-Index), kein Scan.
+        Aussagen aus der Zeit vor dem Feld findet sie erst nach dem Nachtrag
+        (scripts/manual/antwort_ids_nachtragen.py).
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+        punkte, _ = await self._shared_manager.async_client.scroll(
+            collection_name=self._shared_manager.collection_name,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="content_type", match=MatchValue(value=self.content_type)
+                    ),
+                    FieldCondition(
+                        key=FELD_ANTWORT_IDS, match=MatchValue(value=str(beitrag_id))
+                    ),
+                    *nur_sichtbar_bedingungen(),
+                ]
+            ),
+            limit=AUSSAGEN_JE_ANTWORT_HOECHSTENS,
+            with_payload=True,
+            with_vectors=False,
+        )
+        aussagen: List[StatementDbEntry] = []
+        for punkt in punkte:
+            payload = dict(punkt.payload or {})
+            payload["id"] = str(punkt.id)
+            try:
+                aussagen.append(
+                    self.content_db_entry_model_class.model_validate(payload)
+                )
+            except ValidationError as fehler:
+                logger.warning(
+                    f"zu_antwort: Punkt {punkt.id} uebersprungen, "
+                    f"Payload ungueltig ({fehler.error_count()} Fehler)"
+                )
+        return aussagen
+
+    async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
+        """
+        Die Beitraege unter den IDs, die weder gesperrt noch geloescht sind, mit Typ
+        und Titel, in der Reihenfolge der IDs (#603). Ein Abruf fuer alle; Sperren
+        und Loeschen lassen den Antwortvorschlag an der Aussage stehen (ohne_kommentar).
+        """
+        if not ids:
+            return []
+        punkte = await self._shared_manager.async_client.retrieve(
+            collection_name=self._shared_manager.collection_name,
+            ids=[str(i) for i in ids],
+            with_payload=["content_type", "status", "title", "text"],
+            with_vectors=False,
+        )
+        gefunden = {}
+        for punkt in punkte:
+            payload = punkt.payload or {}
+            typ = payload.get("content_type")
+            if typ not in _BEITRAGSTYPEN or payload.get("status") in AUSGEBLENDET_WERTE:
+                continue
+            titel = (payload.get("title") or "").strip() or (
+                (payload.get("text") or "").strip()[:_TITEL_OHNE_TITEL_HOECHSTENS]
+            )
+            if not titel:
+                continue
+            gefunden[uuid.UUID(str(punkt.id))] = AntwortKurz(
+                id=uuid.UUID(str(punkt.id)), content_type=typ, titel=titel
+            )
+        return [gefunden[i] for i in ids if i in gefunden]
 
     async def _sichtbare_kommentare(self, ids: Set[uuid.UUID]) -> Set[uuid.UUID]:
         """Welche der IDs einen Kommentar bezeichnen, der weder gesperrt noch geloescht ist."""

@@ -10,11 +10,20 @@ import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausEinzelansicht } from '../beitragskarte/karten-daten';
-import { ContentService } from '../services/content.service';
+import { AussageKurz, ContentService, WeitereAntwort } from '../services/content.service';
+import { BeitragKontextComponent } from './beitrag-kontext.component';
 import { LoggingService } from '../services/logging.service';
 import { ROUTES } from '../shared/constants/app.constants';
 
 type Zustand = 'laedt' | 'da' | 'nichtDa' | 'stoerung';
+
+/** Die Aussage und weitere Antworten unter der Karte (#603). */
+interface Kontext {
+  aussage: AussageKurz | null;
+  weitere: WeitereAntwort[];
+}
+
+const OHNE_KONTEXT: Kontext = { aussage: null, weitere: [] };
 
 export const NICHT_VERFUEGBAR = 'Dieser Beitrag ist nicht verfügbar.';
 export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
@@ -27,11 +36,21 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
  * Mit Abstimmen wie in der Suche (Entscheidung @BanSe 03.11.): Der Endpunkt liefert
  * die eigene Stimme mit (user_vote), sonst zeigte die Karte eine falsche.
  * Gesperrte und geloeschte Beitraege gibt es hier fuer niemanden (404).
+ *
+ * Unter der Karte die Aussage, auf die der Beitrag antwortet, und weitere Antworten
+ * zu ihr (#603, app-beitrag-kontext); der Endpunkt liefert beides mit.
  */
 @Component({
   selector: 'app-beitrag-ansicht',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatProgressSpinnerModule, BeitragskarteComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    BeitragskarteComponent,
+    BeitragKontextComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="beitrag-ansicht">
@@ -46,6 +65,8 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
         <p class="hinweis" role="status">{{ zustand === 'nichtDa' ? nichtVerfuegbar : nichtAnzeigbar }}</p>
         <a mat-stroked-button class="zur-suche" [routerLink]="suche">Zur Suche</a>
       </ng-container>
+      <app-beitrag-kontext *ngIf="karte" [aussage]="kontext.aussage"
+                           [weitere]="kontext.weitere"></app-beitrag-kontext>
     </div>
   `,
   styles: [
@@ -80,6 +101,7 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
 export class BeitragAnsichtComponent implements OnInit {
   zustand: Zustand = 'laedt';
   karte: KartenDaten | null = null;
+  kontext: Kontext = OHNE_KONTEXT;
 
   readonly nichtVerfuegbar = NICHT_VERFUEGBAR;
   readonly nichtAnzeigbar = NICHT_ANZEIGBAR;
@@ -105,23 +127,28 @@ export class BeitragAnsichtComponent implements OnInit {
         switchMap((id) => this.laden(id)),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(({ zustand, karte }) => {
+      .subscribe(({ zustand, karte, kontext }) => {
         this.zustand = zustand;
         this.karte = karte;
+        this.kontext = kontext;
         this.cdr.markForCheck();
       });
   }
 
-  private laden(id: string): Observable<{ zustand: Zustand; karte: KartenDaten | null }> {
+  private laden(id: string): Observable<{ zustand: Zustand; karte: KartenDaten | null; kontext: Kontext }> {
     return this.contentService.beitragLaden(id).pipe(
-      map((beitrag) => ({ zustand: 'da' as Zustand, karte: ausEinzelansicht(beitrag) })),
+      map((beitrag) => ({
+        zustand: 'da' as Zustand,
+        karte: ausEinzelansicht(beitrag),
+        kontext: { aussage: beitrag.aussage ?? null, weitere: beitrag.weitere_antworten ?? [] },
+      })),
       catchError((fehler: HttpErrorResponse) => {
         // 404 ist erwartbar (alter Link, gesperrt, geloescht), 422 eine ID, die keine ist.
         if (fehler?.status === 404 || fehler?.status === 422) {
-          return of({ zustand: 'nichtDa' as Zustand, karte: null });
+          return of({ zustand: 'nichtDa' as Zustand, karte: null, kontext: OHNE_KONTEXT });
         }
         this.logger.warn('Beitrag zur Adresse nicht ladbar', fehler);
-        return of({ zustand: 'stoerung' as Zustand, karte: null });
+        return of({ zustand: 'stoerung' as Zustand, karte: null, kontext: OHNE_KONTEXT });
       }),
     );
   }

@@ -5,7 +5,7 @@ from typing import AbstractSet, List
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
 )
-from domain.models.statement import StatementDbEntry, StatementSearchResult
+from domain.models.statement import AntwortKurz, StatementDbEntry, StatementSearchResult
 
 
 class IStatementRepository(
@@ -87,5 +87,21 @@ class IStatementRepository(
         Visible statements without a visible Kommentar among their reply
         suggestions, leaving out search queries nobody has answered yet (as
         count_curated). Blocked or deleted Kommentare do not count as an answer.
+        """
+        pass
+
+    @abstractmethod
+    async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
+        """
+        Visible statements the Beitrag answers (#603): those with the Beitrag among
+        their reply suggestions, found through the payload field antwort_ids.
+        """
+        pass
+
+    @abstractmethod
+    async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
+        """
+        Of the given reply-suggestion IDs, the Beitraege that are neither blocked
+        nor deleted, with ID, type and Titel, in the given order (#603).
         """
         pass

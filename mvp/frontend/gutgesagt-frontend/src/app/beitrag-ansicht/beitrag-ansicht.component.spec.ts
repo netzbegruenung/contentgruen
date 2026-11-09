@@ -126,4 +126,30 @@ describe('BeitragAnsichtComponent', () => {
       expect(link.getAttribute('href')).toBe('/search');
     });
   });
+
+  describe('Aussage und weitere Antworten (#603)', () => {
+    function kontext(): HTMLElement | null {
+      return fixture.nativeElement.querySelector('app-beitrag-kontext');
+    }
+
+    it('gibt Aussage und weitere Antworten aus der Antwort weiter', async () => {
+      const aussage = { id: 'a-1', text: 'Wärmepumpen funktionieren nur im Neubau!' };
+      const weitere = [{ id: 'b-2', content_type: 'commentary', titel: 'Altbau geht' }];
+      await oeffnen(of(beitrag({ aussage, weitere_antworten: weitere })));
+      expect(fixture.componentInstance.kontext).toEqual({ aussage, weitere });
+      expect(kontext()?.textContent).toContain('Wärmepumpen funktionieren nur im Neubau!');
+      expect(kontext()?.textContent).toContain('Altbau geht');
+    });
+
+    it('kommt ohne die Felder aus (aelteres Backend)', async () => {
+      await oeffnen(of(beitrag()));
+      expect(fixture.componentInstance.kontext).toEqual({ aussage: null, weitere: [] });
+    });
+
+    it('fehlt ohne Beitrag', async () => {
+      await oeffnen(fehler(404));
+      fixture.detectChanges();
+      expect(kontext()).toBeNull();
+    });
+  });
 });
