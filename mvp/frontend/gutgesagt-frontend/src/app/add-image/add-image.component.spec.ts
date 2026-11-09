@@ -186,4 +186,39 @@ describe('AddImageComponent', () => {
     const beschriftungen = Array.from(el.querySelectorAll('mat-label')).map((l) => l.textContent?.trim());
     expect(beschriftungen).toEqual(['Bild-URL', 'Titel', 'Bildunterschrift']);
   });
+
+  it('zeigt den Ladefehler auch in der Vorschau, wo man mobil "Bild laden" tippt (#619)', () => {
+    fixture.componentInstance.imageForm.patchValue({ image_url: 'https://example.org/weg.png' });
+    const bild = document.createElement('img');
+    bild.setAttribute('src', 'https://example.org/weg.png');
+    fixture.nativeElement.querySelector('.preview-content').appendChild(bild);
+    bild.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.preview-content .vorschau-ladefehler')?.textContent).toContain(
+      'Das Bild lässt sich nicht laden',
+    );
+  });
+});
+
+describe('AddImageComponent mit der echten Vorschau-Karte (#619)', () => {
+  it('bemerkt den Ladefehler des Bildes, das die Karte zur eingegebenen URL zeigt', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AddImageComponent, BrowserAnimationsModule],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(AddImageComponent);
+    fixture.detectChanges();
+
+    // Eine Adresse auf dem eigenen Server laedt ohne Klick (#447) und scheitert hier.
+    fixture.componentInstance.imageForm.patchValue({ image_url: '/assets/gibt-es-nicht-619.png' });
+    fixture.detectChanges();
+    const bild: HTMLImageElement = fixture.nativeElement.querySelector('.preview-content app-fremdes-bild img');
+    expect(bild).withContext('die Karte zeigt das Bild').not.toBeNull();
+    bild.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.bild-ladefehler')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.preview-content app-fremdes-bild img')).toBeNull();
+  });
 });

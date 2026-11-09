@@ -82,6 +82,17 @@
   }
 }
 
+// Am Desktop steht die Vorschau neben dem Feld; dort reicht der Hinweis am Feld.
+.bild-ladefehler.vorschau-ladefehler {
+  display: none;
+  margin: 0 0 8px;
+  font-size: 14px;
+
+  @media (max-width: 768px) {
+    display: flex;
+  }
+}
+
 .bild-ladefehler {
   display: inline-flex;
   align-items: center;

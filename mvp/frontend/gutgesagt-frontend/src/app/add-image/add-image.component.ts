@@ -17,6 +17,15 @@ import { takeUntil } from 'rxjs/operators';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 
+/** ``adresse`` so, wie der Browser sie als ``img.src`` fuehrt; unlesbar bleibt sie, wie sie ist. */
+function aufgeloest(adresse: string): string {
+  try {
+    return new URL(adresse, location.href).href;
+  } catch {
+    return adresse;
+  }
+}
+
 @Component({
   selector: 'app-add-image',
   standalone: true,
@@ -107,7 +116,7 @@ export class AddImageComponent implements AfterViewInit, OnDestroy {
       return;
     }
     // Nur der Fehler zur aktuellen URL zaehlt, nicht ein verspaeteter zur vorigen.
-    if (bild.src !== new URL(this.bildUrl, location.href).href) {
+    if (bild.src !== aufgeloest(this.bildUrl)) {
       return;
     }
     this.bildLadefehler = true;

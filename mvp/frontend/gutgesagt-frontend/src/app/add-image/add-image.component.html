@@ -19,7 +19,7 @@
                 <div class="form-fields">
 
                     <div class="form-group">
-                        <mat-form-field appearance="outline">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
                             <mat-label>Bild-URL</mat-label>
                             <input matInput formControlName="image_url" type="url"
                                    placeholder="https://example.com/bild.jpg" />
@@ -128,6 +128,11 @@
                 <mat-icon matTooltip="So wird dein Bild in den Suchergebnissen angezeigt">info</mat-icon>
             </div>
             <div class="preview-content" #vorschau>
+                <!-- Mobil steht die Vorschau unter dem Formular: der Hinweis auch hier, wo man "Bild laden" tippt -->
+                <p *ngIf="bildLadefehler" class="bild-ladefehler vorschau-ladefehler">
+                    <mat-icon aria-hidden="true">broken_image</mat-icon>
+                    Das Bild lässt sich nicht laden – prüf den Link.
+                </p>
                 <app-beitragskarte *ngIf="vorschauKarte as karte" [daten]="karte" [vorschau]="true">
                 </app-beitragskarte>
             </div>
