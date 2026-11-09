@@ -315,7 +315,7 @@ class QdrantBaseRepository(
     async def get(
         self,
         item_id: uuid.UUID,
-        eintrag_modell: Optional[Type[BaseContentDbEntry]] = None,
+        eintrag_modell: Optional[Type[Any]] = None,
     ) -> TContentDbEntry:
         """
         Async implementation of get. eintrag_modell ersetzt das Modell des Repositorys

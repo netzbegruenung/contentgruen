@@ -30,6 +30,8 @@ pytestmark = pytest.mark.unit
 ALT = "Wärmepumpe lohnt sich auch im Altbau"
 DIESELBE = Urteil(Richtung(0.99, 0.0), Richtung(0.98, 0.01))
 WIDERSPRUCH = Urteil(Richtung(0.01, 0.97), Richtung(0.02, 0.95))
+# Knapp unter tau, kein Widerspruch: das unsichere Band fuer den Bestaetiger.
+KNAPP = Urteil(Richtung(0.93, 0.01), Richtung(0.60, 0.02))
 
 
 class Nli:
@@ -41,6 +43,7 @@ class Nli:
 
     async def urteile(self, paare, warte_hoechstens=None):
         self.paare += list(paare)
+        self.gewartet = warte_hoechstens
         return None if self.urteil is None else [self.urteil for _ in paare]
 
 
@@ -107,6 +110,40 @@ class TestGleicheBehauptung:
         )
         assert gleich is None
 
+    async def test_bestaetiger_rettet_knappe_umformulierung(self, test_settings):
+        gleich = await fassung.gleiche_behauptung(
+            ALT,
+            "Auch im Altbau rechnet sich die Wärmepumpe",
+            Nli(KNAPP),
+            Nli(DIESELBE),
+            test_settings,
+            _aehnlich(0.95),
+        )
+        assert gleich is True
+
+    async def test_bestaetiger_ohne_urteil_niemand_entscheidet(self, test_settings):
+        """Fuer Aussagen heisst das "keine dieselbe"; hier wuerde es Stimmen loeschen."""
+        gleich = await fassung.gleiche_behauptung(
+            ALT,
+            "Auch im Altbau rechnet sich die Wärmepumpe",
+            Nli(KNAPP),
+            Nli(None),
+            test_settings,
+            _aehnlich(0.95),
+        )
+        assert gleich is None
+
+    async def test_bestaetiger_verneint_andere_behauptung(self, test_settings):
+        gleich = await fassung.gleiche_behauptung(
+            ALT,
+            "Auch im Altbau rechnet sich die Wärmepumpe",
+            Nli(KNAPP),
+            Nli(WIDERSPRUCH),
+            test_settings,
+            _aehnlich(0.95),
+        )
+        assert gleich is False
+
 
 @pytest.mark.asyncio
 class TestImStatementService:
@@ -130,6 +167,14 @@ class TestImStatementService:
         dienst = self._dienst(test_settings, repository_factory, modus, nli)
         assert await dienst.gleiche_behauptung(ALT, "Wärmepumpe lohnt nicht") is None
         assert nli.paare == []
+
+    async def test_wartet_begrenzt_wie_bei_aussagen(
+        self, test_settings, repository_factory
+    ):
+        nli = Nli(DIESELBE)
+        dienst = self._dienst(test_settings, repository_factory, "an", nli)
+        await dienst.gleiche_behauptung(ALT, "Auch im Altbau lohnt sich die Wärmepumpe")
+        assert nli.gewartet == 3.0
 
     async def test_fehler_entscheidet_niemand(self, test_settings, repository_factory):
         dienst = self._dienst(test_settings, repository_factory, "an", Nli(DIESELBE))
@@ -218,6 +263,48 @@ class TestStimmenBeimAendern:
         ergebnis = await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, _aenderung(neu))
         assert ergebnis is AenderErgebnis.GEAENDERT
         assert speicher.get_data()[BEITRAG_ID]["title"] == neu
+
+    async def test_hintergrundinfo_ebenso(self, test_settings, speicher):
+        speicher.add_test_data("generic_text", [_beitrag("generic_text", title=ALT)])
+        gleich = AsyncMock(return_value=False)
+        loeschen = Mock(return_value=1)
+        service = _aendern_service(test_settings, speicher, gleich, loeschen)
+        neu = "Wärmepumpe lohnt sich im Altbau nicht"
+        await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, _aenderung(neu))
+        gleich.assert_awaited_once_with(ALT, neu)
+        loeschen.assert_called_once()
+
+    async def test_pruefung_wirft_aenderung_steht_stimmen_bleiben(
+        self, test_settings, speicher
+    ):
+        speicher.add_test_data("commentary", [_beitrag(title=ALT)])
+        loeschen = Mock()
+        service = _aendern_service(
+            test_settings, speicher, AsyncMock(side_effect=RuntimeError()), loeschen
+        )
+        neu = "Wärmepumpe lohnt sich im Altbau nicht"
+        ergebnis = await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, _aenderung(neu))
+        assert ergebnis is AenderErgebnis.GEAENDERT
+        loeschen.assert_not_called()
+
+    async def test_alter_titel_nicht_lesbar_stimmen_bleiben(
+        self, test_settings, speicher
+    ):
+        speicher.add_test_data("commentary", [_beitrag(title=ALT)])
+        gleich = AsyncMock(return_value=False)
+        loeschen = Mock()
+        service = _aendern_service(test_settings, speicher, gleich, loeschen)
+        echtes_get = service.repository.get
+
+        async def get(beitrag_id, eintrag_modell=None):
+            if eintrag_modell is not None:
+                raise RuntimeError()
+            return await echtes_get(beitrag_id)
+
+        service.repository.get = get
+        await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, _aenderung("Anderes"))
+        gleich.assert_not_awaited()
+        loeschen.assert_not_called()
 
     async def test_nicht_autor_prueft_nichts(self, test_settings, speicher):
         speicher.add_test_data("commentary", [_beitrag(title=ALT)])

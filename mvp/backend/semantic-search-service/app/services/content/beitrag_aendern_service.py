@@ -227,7 +227,11 @@ class BeitragAendernService:
             return
         if text_normalisiert(alter_titel) == text_normalisiert(neuer_titel):
             return
-        gleich = await self.gleiche_behauptung(alter_titel, neuer_titel)
+        try:
+            gleich = await self.gleiche_behauptung(alter_titel, neuer_titel)
+        except Exception as e:
+            logger.warning(f"Pruefung der Behauptung gescheitert: {type(e).__name__}")
+            return
         if gleich is not False:
             return
         try:
