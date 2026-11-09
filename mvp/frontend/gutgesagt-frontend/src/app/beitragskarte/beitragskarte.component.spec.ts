@@ -110,7 +110,7 @@ describe('BeitragskarteComponent', () => {
         { provide: MatSnackBar, useValue: snackBar },
         { provide: AuthService, useValue: authServiceSpy },
         { provide: Clipboard, useValue: jasmine.createSpyObj('Clipboard', ['copy']) },
-        { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']) },
+        { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', { trackContentUsage: undefined, gepostetBekannt: false }) },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['error', 'debug', 'info', 'warn']) },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
         provideRouter([]),
