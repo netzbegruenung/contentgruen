@@ -267,6 +267,22 @@ Empfänger und Ort“.
 - **Maßnahmen:** Kennung nur für Admins und den eigenen Browser (`DSE:267-270`); Anonymisierung mit
   Platzhalter (`LK:121-131`); Einzelfall-Löschung, wenn der Text die Person erkennbar macht
   (`DSE:307-308`); Gegenlesen speichert nichts (`DSE:326-328`).
+- **„Gepostet von“ am Post (#622, Stand 09.11.2026 noch nicht gemergt):**
+  - *Zweck:* zeigen, woher ein Post stammt.
+  - *Daten:* Kontoname des ursprünglichen Posters auf der anderen Plattform („@konto“), Freitext
+    im Qdrant-Payload (`ss/domain/models/post.py:26,49-50` auf #622); ist es das Konto einer Person, sind es Daten
+    Dritter, oft mit politischer Zuordnung.
+  - *Rechtsgrundlage (Vorschlag, nicht juristisch geprüft, #296):* Art. 6 Abs. 1 lit. f;
+    berechtigtes Interesse an der Herkunft, abgewogen gegen die Person, die ihr Konto
+    öffentlich gepostet hat. Für eine Person, die nicht öffentlich auftritt, trägt die Abwägung
+    nicht; Art. 9 Abs. 2 lit. e greift nur, wenn sie ihre Haltung selbst öffentlich gemacht hat. Die
+    Erklärung nennt lit. f ohne diesen Vorbehalt; danach in #296 ausdrücklich fragen.
+  - *Wer es sieht:* alle, auch Besucher (`PostResponse.author`, `ss/dtos/beitrag.py:96-98` auf #622).
+  - *Frist:* wie der Post (keine, solange die Plattform läuft); nicht anonymisiert, wenn das
+    Konto der einstellenden Person gelöscht wird.
+  - *Minimierung:* Feld freiwillig, leer wird `null` gesendet (#622); Melden und
+    Einzelfall-Löschung wie oben (Entscheidung Maintainer 09.11.2026: keine Bitte, nur bestimmte
+    Konten einzutragen). Art. 14 (Information der Person) bleibt wie bei R3 **offen**.
 
 #### V4 Einwürfe und Sätze im Fangkorb
 
@@ -397,6 +413,13 @@ Empfänger und Ort“.
 - **Frist:** Paar-Prüfwert 7 Tage, Muster-Hinweis 56 Tage (`LK:162-163`).
 - **Risiko und Maßnahmen:** Abschnitt 3 (Sichtbarkeit, Nutzungsnetz, Zweckentfremdung),
   Rechtsgrundlage Abschnitt 4. Schalter `punkte_aktiv`, Standard aus (`ss/core/config.py:238-244`).
+- **Meilensteine, nur für die Person selbst (#615, Stand 09.11.2026 noch nicht gemergt):** hinter
+  demselben Schalter (ohne `punkte_aktiv` 404, `ss/api/v1/usage.py:450-451` auf #615), gleiche Rechtsgrundlage, nicht gespeichert, bei jedem Abruf berechnet
+  (`ss/services/meilensteine_service.py`). Neu gegenüber den Punkten: gezählt wird auch, wie viele
+  Einwürfe anderer die Person ausformuliert hat (Ausformulierer an der Verknüpfung,
+  `ss/infrastructure/database/models.py:577`, V4), nicht nur
+  ihre eigenen Einwürfe, die andere ausformuliert haben. Die Daten liegen schon in V4; neu ist nur
+  die Zählung je Person, und die sieht nur sie selbst. Die Erklärung nennt das unter „Punkte“.
 
 #### V12 Meldungen
 
@@ -523,7 +546,7 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 |---|---|---|---|
 | R1 | **Politische Haltung wird sichtbar**: Anzeigename an Beiträgen, Einwürfen und Sätzen für alle Angemeldeten, darunter Nicht-Mitglieder (V1, V3, V4) | nur Angemeldete, nur Vorname und Initial, Kennung nur für Admins; Einwilligung vor dem Beitragen (V2) | gering |
 | R2 | **Zuordnung pseudonymer Daten**: Tagespseudonym der Angemeldeten nachrechenbar, falls der Schlüssel gesetzt ist (V7), Uhrzeiten im vorgelagerten Webserver (V16) | Tag statt Uhrzeit, Mischen, Schlüssel der Besucher nur im Speicher; für Angemeldete **offen** | mittel, bis V7 umgestellt ist |
-| R3 | **Daten Dritter** in Beiträgen, Einwürfen und Suchtexten, auch deren politische Zuordnung (V3, V4, V6) | Hinweise im Formular und in der Erklärung; Melden; Einzelfall-Löschung | mittel, hinnehmbar |
+| R3 | **Daten Dritter** in Beiträgen, Einwürfen und Suchtexten, auch deren politische Zuordnung (V3, V4, V6), darunter „Gepostet von“ am Post | Hinweise im Formular und in der Erklärung; „Gepostet von“ freiwillig; Melden; Einzelfall-Löschung | mittel, hinnehmbar |
 | R4 | **Datenpanne oder Zugriff durch Admins**: Kennungen, Meldungen mit Name und E-Mail-Adresse, Muster-Hinweise | Fristen (`LK:150-164`), Kennungen nur gekürzt im Log, keine Weitergabe (`DSE:74-75`); Rollen und Zugriffskonzept stehen nicht im Repo (**offen**) | gering bis mittel |
 | R5 | **Unbefristete Protokolle** mit Altbestand aus Suchtexten und Kennungen (V16) | Ziel 14 Tage (`LK:511-519`), nicht ausgerollt | mittel, bis ausgerollt |
 | R6 | **Löschung von Hand, nie an echten Daten erprobt** (`LK:3-13`, `DSE:1161-1163`) | Skript getestet gegen Testdaten (`LK:531-532`); Backup und Protokoll beim ersten Lauf | gering bis mittel |
