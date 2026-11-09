@@ -5,12 +5,42 @@
 
 .haekchen {
   display: block;
-  margin: 16px 0;
+  margin: 16px 0 4px;
 }
 
-/* Der Wortlaut ist lang: umbrechen statt in einer Zeile neben dem Haekchen. */
+/*
+ * Der erste Satz kann zwei, drei Zeilen lang sein: umbrechen und das Haekchen oben an der
+ * ersten Zeile ausrichten statt senkrecht mittig daneben (#620).
+ */
+.haekchen ::ng-deep .mdc-form-field {
+  align-items: flex-start;
+}
+
 .haekchen ::ng-deep label {
+  padding-top: 10px;
   white-space: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  font-weight: 500;
+}
+
+/* Aufklappbarer Volltext, eingerueckt auf die Hoehe des Label-Texts (Haekchen 40 px) */
+.wortlaut-aufklapp {
+  margin: 0 0 16px 40px;
+}
+
+.wortlaut-aufklapp summary {
+  cursor: pointer;
+  color: var(--primary-main);
+  font-size: 14px;
+  padding: 4px 0;
+}
+
+.wortlaut-voll {
+  margin: 8px 0 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--border-color);
+  font-size: 14px;
   line-height: 1.5;
 }
 

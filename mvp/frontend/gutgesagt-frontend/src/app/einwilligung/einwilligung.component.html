@@ -19,9 +19,17 @@
         Gut gesagt nur mit deiner ausdrücklichen Einwilligung verarbeiten. Ohne sie kannst du suchen und lesen, aber nichts
         beitragen und nichts bewerten.
       </p>
+      <!--
+        Am Haekchen nur der erste Satz des Wortlauts, unveraendert; der ganze Wortlaut steht
+        aufklappbar direkt darunter (#620). Der Text selbst kommt weiter vom Backend.
+      -->
       <mat-checkbox name="angehakt" [(ngModel)]="angehakt" class="haekchen">
-        {{ stand.aktueller_wortlaut.text }}
+        {{ labelSatz }}
       </mat-checkbox>
+      <details class="wortlaut-aufklapp" *ngIf="labelSatz !== stand.aktueller_wortlaut.text">
+        <summary>Ganzen Wortlaut lesen</summary>
+        <p class="wortlaut-voll">{{ stand.aktueller_wortlaut.text }}</p>
+      </details>
       <p class="fussnote">
         Mehr dazu in der <a routerLink="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
       </p>

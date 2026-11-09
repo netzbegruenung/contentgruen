@@ -35,8 +35,8 @@ export const KETTEN_ICONS = {
 
 /**
  * Fuer Angemeldete, solange die Plattform jung ist: Wer jetzt etwas eintraegt,
- * setzt die Massstaebe mit. Steht unter dem Fangkorb-Kopf und ueber der
- * Typ-Auswahl auf der Beitragen-Seite.
+ * setzt die Massstaebe mit. Steht unter dem Fangkorb-Kopf und auf der
+ * Beitragen-Seite unter den Typen (#620).
  */
 export const ERSTNUTZER_SATZ =
   'Gut gesagt ist neu. Alles, was du hier einträgst, prägt mit, was hier Standard wird. Also: kein Scheiß.';

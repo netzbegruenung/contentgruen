@@ -80,7 +80,21 @@
                             alt="Profilbild"
                             class="profile-avatar" />
                     </button>
+                    <!--
+                        Schnell einwerfen und Fangkorb stehen hier statt als zwei unbeschriftete
+                        Symbole im Kopf (#620); auf der Beitragen-Seite gibt es sie ausserdem.
+                    -->
                     <mat-menu #profilmenue="matMenu">
+                        <button mat-menu-item type="button" class="profilmenue-eintrag"
+                            (click)="navigateToEinwerfenView()" data-testid="einwerfen-eintrag">
+                            <span class="profilmenue-emoji mat-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+                            <span>Schnell einwerfen</span>
+                        </button>
+                        <button mat-menu-item type="button" class="profilmenue-eintrag"
+                            (click)="navigateToFangkorbView()" data-testid="fangkorb-eintrag">
+                            <span class="profilmenue-emoji mat-icon" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
+                            <span>Fangkorb</span>
+                        </button>
                         <button mat-menu-item type="button" class="profilmenue-eintrag"
                             (click)="navigateToMeineBeitraege()">
                             <span class="profilmenue-emoji mat-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
@@ -101,21 +115,12 @@
                     </mat-menu>
 
                     <!--
-                        Desktop-Kopf in einer Zeile mit zwei Stilen: Textlinks (Admin,
-                        Hier fehlt eine Antwort) und runde Icon-Knoepfe a 44 px; dazu der
-                        eine Primaerknopf. Abmelden steht nur im Profilmenue, Fangkorb und
-                        Feedback sind Icon-Knoepfe mit Text fuer Screenreader (#512).
+                        Desktop-Kopf in einer Zeile: beschriftete Textlinks (Admin, Hier fehlt
+                        eine Antwort, Feedback, Hilfe, Start) und der eine Primaerknopf.
+                        Abmelden, Schnell einwerfen und Fangkorb stehen im Profilmenue
+                        (#512, #620).
                     -->
                     <ng-container *ngIf="userInfo?.isAuthenticated">
-                        <button mat-icon-button type="button"
-                            (click)="navigateToFangkorbView()"
-                            class="mat-elevation-z1"
-                            matTooltip="Fangkorb"
-                            data-testid="fangkorb-knopf">
-                            <span class="header-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
-                            <span class="cdk-visually-hidden">Fangkorb</span>
-                        </button>
-
                         <!-- Unter 1200 px werden die Textlinks zu runden Icon-Knoepfen, der
                              Text bleibt fuer Screenreader (kopf-text). -->
                         <a class="header-link" *ngIf="userInfo?.isAdmin" routerLink="/admin/dashboard" matTooltip="Admin"
@@ -143,18 +148,6 @@
                             Anmelden
                         </button>
                     </ng-container>
-
-                    <!-- Schnell einwerfen: der Fangkorb lebt davon, immer einen Klick
-                         entfernt zu sein - deshalb ein eigener Knopf statt eines Wegs
-                         durch die Beitragsauswahl. -->
-                    <button mat-icon-button
-                        *ngIf="userInfo?.isAuthenticated"
-                        (click)="navigateToEinwerfenView()"
-                        class="mat-elevation-z1"
-                        matTooltip="Schnell einwerfen"
-                        aria-label="Schnell einwerfen">
-                        <span class="header-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
-                    </button>
 
                     <!-- Feedback und Hilfe als Textlinks wie "Hier fehlt eine Antwort": Drei runde
                          Symbole ohne Beschriftung waren nicht zu deuten (#599); unter 1200 px
