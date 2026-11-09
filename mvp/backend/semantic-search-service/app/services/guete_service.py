@@ -9,8 +9,9 @@ Arbeitsspeicher je Titel und Text zwischengehalten.
 
 Gezählt werden die Stimmen anderer: ohne Startkonten (#352) und ohne die Stimme der
 Person, die den Beitrag geschrieben hat; dieselben Summen zeigen die Zähler an den
-Stimm-Knöpfen („andere sehen nur Summen“, Datenschutzerklärung). Einzelne Stimmen
-oder Kennungen gehen nie hinaus.
+Stimm-Knöpfen („andere sehen nur Summen“, Datenschutzerklärung), aber erst ab
+derselben Mindestzahl wie die Güte (DSFA M5); darunter bleiben sie leer. Einzelne
+Stimmen oder Kennungen gehen nie hinaus.
 
 Fehlt das Sprachmodell oder antwortet die Datenbank nicht, bleibt die Karte ohne
 Güte bzw. ohne Zähler; die Antwort scheitert daran nicht.
@@ -148,7 +149,10 @@ class GueteService:
             objekt.guete = guete.wert
             objekt.guete_erfuellt = erfuellt
             objekt.guete_stimmen_zaehlen = guete.stimmen_zaehlen
-            if stimmen is not None:
+            # Zaehler erst ab derselben Mindestzahl wie die Guete (M5, Entscheidung
+            # 09.11.): Darunter geht keine Zahl hinaus, sonst liesse sich eine einzelne
+            # Stimme ablesen. Durchgesetzt hier, nicht erst im Frontend.
+            if stimmen is not None and guete.stimmen_zaehlen:
                 objekt.stimmen_hilfreich = hilfreich
                 objekt.stimmen_nicht_hilfreich = nicht_hilfreich
         return objekte

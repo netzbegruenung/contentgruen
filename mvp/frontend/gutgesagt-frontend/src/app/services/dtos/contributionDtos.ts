@@ -55,7 +55,7 @@ export interface ContentResult {
     guete_erfuellt?: string[];
     /** Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl). */
     guete_stimmen_zaehlen?: boolean;
-    /** Zaehler an den Stimm-Knoepfen (Summen ohne Startkonten); null = unbekannt. */
+    /** Zaehler an den Stimm-Knoepfen (Stimmen anderer); null unter der Mindestzahl oder unbekannt. */
     stimmen_hilfreich?: number | null;
     stimmen_nicht_hilfreich?: number | null;
 }

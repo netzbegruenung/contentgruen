@@ -72,7 +72,8 @@ def test_kriterienanteil_und_erfuellte_kriterien():
     # Die Schlüsselwörter brauchen die Aussage; die Karte behauptet sie nicht.
     assert "schluesselwoerter" not in beitrag.guete_erfuellt
     assert beitrag.guete_stimmen_zaehlen is False
-    assert (beitrag.stimmen_hilfreich, beitrag.stimmen_nicht_hilfreich) == (0, 0)
+    # Unter der Mindestzahl keine Zähler, auch nicht 0 (M5).
+    assert getattr(beitrag, "stimmen_hilfreich", None) is None
 
 
 def test_post_ohne_verneinungsregel():
@@ -99,8 +100,34 @@ def test_eigene_stimme_zaehlt_weder_fuer_die_guete_noch_im_zaehler():
     # Zwei fremde Stimmen: unter der Mindestzahl, die Güte bleibt beim Kriterienanteil.
     assert beitrag.guete_stimmen_zaehlen is False
     assert beitrag.guete == 8
-    # Sonst verriete der Zähler neben "zählen noch nicht" die Stimme der Autorin.
-    assert beitrag.stimmen_hilfreich == 2
+    # Unter der Mindestzahl verrät die API keine Zahl.
+    assert getattr(beitrag, "stimmen_hilfreich", None) is None
+
+
+def test_zaehler_erst_ab_der_mindestzahl_ohne_autorin():
+    beitrag = _beitrag()
+    stimmen = {
+        str(beitrag.id): [
+            (AUTORIN, "like"),
+            ("a", "like"),
+            ("b", "like"),
+            ("c", "dislike"),
+        ],
+    }
+    service, _ = _service(stimmen=stimmen)
+    service.ergaenzen([beitrag])
+    assert beitrag.guete_stimmen_zaehlen is True
+    assert (beitrag.stimmen_hilfreich, beitrag.stimmen_nicht_hilfreich) == (2, 1)
+
+
+@pytest.mark.parametrize("anzahl", [1, 2])
+def test_unter_der_mindestzahl_keine_zahl_in_der_antwort(anzahl):
+    beitrag = _beitrag()
+    stimmen = {str(beitrag.id): [(k, "dislike") for k in "xyz"[:anzahl]]}
+    service, _ = _service(stimmen=stimmen)
+    service.ergaenzen([beitrag])
+    assert getattr(beitrag, "stimmen_hilfreich", None) is None
+    assert getattr(beitrag, "stimmen_nicht_hilfreich", None) is None
 
 
 def test_ab_der_mindestzahl_heben_stimmen_die_guete():

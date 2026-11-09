@@ -15,7 +15,7 @@
                 (click)="toggleLike()">
             <svg class="stimm-hand" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path [attr.d]="HAND_UMRISS" fill="currentColor"/></svg>
         </button>
-        <!-- Zaehler (#427): Summe ohne Startkonten; vorgelesen steht er im Namen des Knopfs -->
+        <!-- Zaehler (#427): Summe der Stimmen anderer, erst ab der Mindestzahl; vorgelesen steht er im Namen des Knopfs -->
         <span class="stimm-zahl" *ngIf="zahlHilfreich !== null" aria-hidden="true">{{ zahlHilfreich }}</span>
         <button mat-icon-button type="button" class="stimme-knopf"
                 [class.active-button]="isDisliked"

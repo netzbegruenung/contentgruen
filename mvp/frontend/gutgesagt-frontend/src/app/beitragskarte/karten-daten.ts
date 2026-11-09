@@ -54,7 +54,7 @@ export interface KartenGuete {
   erfuellt: string[];
   /** Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl). */
   stimmenZaehlen: boolean;
-  /** Zaehler an den Stimm-Knoepfen; null = unbekannt, dann ohne Zahl. */
+  /** Zaehler an den Stimm-Knoepfen; null = unter der Mindestzahl oder unbekannt, dann ohne Zahl. */
   hilfreich: number | null;
   nichtHilfreich: number | null;
 }

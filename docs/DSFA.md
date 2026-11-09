@@ -278,21 +278,33 @@ Empfänger und Ort“.
 - **Maßnahmen:** nur angemeldet erreichbar (`DSE:828`); Kennungen nur für Admins (`DSE:831-832`);
   bei Kontolöschung Platzhalter je Satz (`LK:108-120`).
 
-#### V5 Bewertungen (Stimmen)
+#### V5 Bewertungen (Stimmen), Güte und Siegel
 
-- **Zweck:** Beiträge nach Brauchbarkeit sortieren (`DSE:668`).
+- **Zweck:** Beiträge nach Brauchbarkeit sortieren (`DSE:668`) und ihre Güte im Siegel zeigen
+  (#427, `DSE:663-665`).
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. b (`DSE:669`); Art. 9 Abs. 2 lit. a (`A9:22-23`).
 - **Daten:** Kennung, Beitrag, Richtung, Zeitpunkt (`ss/repositories/vote_repository.py:41-47`).
+  Die Güte und die Zähler werden bei jedem Abruf aus diesen Zeilen und dem Gegenlesen berechnet
+  und nicht gespeichert (`ss/services/guete_service.py`, `ss/domain/guete.py`); das Ergebnis des
+  Gegenlesens liegt nur im Arbeitsspeicher.
+- **Empfänger:** alle, die einen Beitrag sehen, auch Besucher: Güte, Siegel und, ab der
+  Mindestzahl, die Summen „hilfreich“/„nicht hilfreich“. Einzelstimmen und Kennungen sehen nur
+  Admins in der Datenbank, nicht über die Oberfläche.
 - **Frist:** solange der Beitrag besteht, oder bis zur Rücknahme bzw. Kontolöschung (`LK:160`,
   `DSE:670-673`).
 - **Risiko:** Eine Stimme zu einem politischen Text ist eine Meinungsäußerung. Bei kleinen Zählern
-  ließe sich eine einzelne Stimme erraten.
-- **Maßnahmen:** andere sehen nur Summen (`DSE:663`), an den Stimm-Knöpfen als Zähler ohne
-  Startkonten (#427). Stimmen gehen erst ab einer Mindestzahl verschiedener Stimmender in die Güte
-  ein, Standard 3 (`SEMANTIC_SEARCH_GUETE_STIMMEN_AB`, `ss/domain/guete.py`; #427, M5); die Güte
-  wird bei jedem Abruf berechnet und nicht gespeichert. **Offen:** Die Zähler selbst zeigen auch
-  kleine Summen; ob sie erst ab einer Mindestzahl erscheinen, ist nicht entschieden (Fachfrage in
-  #427).
+  oder aus einer Änderung der Güte ließe sich eine einzelne Stimme erraten, besonders wer die
+  Seite vor und nach einer Stimme vergleicht (R8).
+- **Maßnahmen (M5, Entscheidung des Maintainers vom 09.11.2026 in #427):** Gezählt werden nur
+  Stimmen anderer, ohne Startkonten und ohne die Stimme der schreibenden Person. Erst ab drei
+  verschiedenen Stimmenden (`SEMANTIC_SEARCH_GUETE_STIMMEN_AB`, Standard 3) gehen Stimmen in die
+  Güte ein und liefert die Schnittstelle die Summen; darunter enthält die Antwort keine Zahl, nicht
+  einmal 0, durchgesetzt im Dienst und nicht erst in der Oberfläche. Das Gewicht der Stimmen in der
+  Güte ist gedeckelt (`SEMANTIC_SEARCH_GUETE_STIMMEN_GEWICHT_MAX`), damit sich eine Güte nicht
+  allein durch Absprachen bewegen lässt. Die Erklärung am Siegel nennt nur erfüllte Kriterien,
+  keine Anmerkungen des Gegenlesens.
+- **Restrisiko:** Ab der Schwelle kann, wer eine Seite unmittelbar vor und nach einer Stimme
+  sieht, die Richtung dieser einen Stimme ablesen; die Person dahinter bleibt verborgen. Gering.
 
 #### V6 Suchanfragen als Aussage
 
@@ -513,6 +525,7 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 | R5 | **Unbefristete Protokolle** mit Altbestand aus Suchtexten und Kennungen (V16) | Ziel 14 Tage (`LK:511-519`), nicht ausgerollt | mittel, bis ausgerollt |
 | R6 | **Löschung von Hand, nie an echten Daten erprobt** (`LK:3-13`, `DSE:1161-1163`) | Skript getestet gegen Testdaten (`LK:531-532`); Backup und Protokoll beim ersten Lauf | gering bis mittel |
 | R7 | **Scoring und Zweckentfremdung** durch Punkte (V11) | Abschnitt 3 | gering bis mittel |
+| R8 | **Rückschluss auf einzelne Stimmen** über kleine Zähler oder die Güte (V5) | M5: Summen und Stimmenanteil der Güte erst ab drei verschiedenen Stimmenden, darunter keine Zahl in der Antwort; ohne Startkonten und eigene Stimme; Gewicht der Stimmen gedeckelt (#427) | gering |
 
 ## 9. Offene Entscheidungen für den Maintainer
 

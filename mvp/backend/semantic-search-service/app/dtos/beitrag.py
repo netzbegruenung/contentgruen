@@ -74,7 +74,8 @@ class BeitragResponse(BaseModel):
     guete_erfuellt: List[str] = []
     # Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl, DSFA M5).
     guete_stimmen_zaehlen: bool = False
-    # Die Zaehler an den Stimm-Knoepfen: Summen ohne Startkonten; None = unbekannt.
+    # Die Zaehler an den Stimm-Knoepfen: Summen der Stimmen anderer ohne Startkonten,
+    # erst ab der Mindestzahl (DSFA M5); None = darunter oder unbekannt.
     stimmen_hilfreich: Optional[int] = None
     stimmen_nicht_hilfreich: Optional[int] = None
 

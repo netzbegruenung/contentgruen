@@ -44,8 +44,9 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
         guete: 6,
         guete_erfuellt: ['verneinung', 'satzlaenge'],
         guete_stimmen_zaehlen: false,
-        stimmen_hilfreich: 2,
-        stimmen_nicht_hilfreich: 0,
+        // Unter der Mindestzahl liefert der Server keine Zähler (M5).
+        stimmen_hilfreich: null,
+        stimmen_nicht_hilfreich: null,
         ...felder,
       },
       ...rest,
@@ -101,8 +102,8 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
         wert: 6,
         erfuellt: ['verneinung', 'satzlaenge'],
         stimmenZaehlen: false,
-        hilfreich: 2,
-        nichtHilfreich: 0,
+        hilfreich: null,
+        nichtHilfreich: null,
       });
     });
 
@@ -160,7 +161,7 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       zeigen();
       votingService.setLike.and.returnValue(of({} as any));
       contentService.beitragLaden.and.returnValue(
-        of(paket({ guete: 7, guete_stimmen_zaehlen: true, stimmen_hilfreich: 3 }).commentary_result),
+        of(paket({ guete: 7, guete_stimmen_zaehlen: true, stimmen_hilfreich: 3, stimmen_nicht_hilfreich: 0 }).commentary_result),
       );
 
       aktionen().toggleLike();
@@ -187,45 +188,57 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
   });
 
   describe('Stimm-Zähler', () => {
-    it('stehen neben den Knöpfen und im unsichtbaren Namen', () => {
-      zeigen();
-      expect(zahlen()).toEqual(['2', '0']);
+    const AB_SCHWELLE = { guete_stimmen_zaehlen: true, stimmen_hilfreich: 3, stimmen_nicht_hilfreich: 1 };
+
+    it('stehen ab der Mindestzahl neben den Knöpfen und im unsichtbaren Namen', () => {
+      zeigen(ausSuchergebnis(paket(AB_SCHWELLE)));
+      expect(zahlen()).toEqual(['3', '1']);
       const knoepfe = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf') as NodeListOf<HTMLElement>);
       expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual([
-        'Hilfreich, 2 Stimmen',
-        'Nicht hilfreich, 0 Stimmen',
+        'Hilfreich, 3 Stimmen',
+        'Nicht hilfreich, 1 Stimme',
       ]);
     });
 
-    it('rechnen die eigene Stimme sofort ein und nehmen sie beim Wechsel wieder heraus', fakeAsync(() => {
-      zeigen(ausSuchergebnis(paket({}, { user_vote: 'like' })));
-      expect(zahlen()).toEqual(['2', '0']);
-      votingService.setDislike.and.returnValue(of({} as any));
-      contentService.beitragLaden.and.returnValue(throwError(() => ({ status: 500 })));
-
-      aktionen().toggleDislike();
-      fixture.detectChanges();
-
-      expect(zahlen()).toEqual(['1', '1']);
-      tick(50);
-    }));
-
-    it('am eigenen Beitrag ohne die eigene Stimme, wie der Server zählt', fakeAsync(() => {
-      zeigen(ausSuchergebnis(paket({ ist_eigener_beitrag: true })));
+    it('unter der Mindestzahl ohne Zahl, auch nach der eigenen Stimme', fakeAsync(() => {
+      zeigen();
+      expect(zahlen()).toEqual([]);
       votingService.setLike.and.returnValue(of({} as any));
       contentService.beitragLaden.and.returnValue(throwError(() => ({ status: 500 })));
 
       aktionen().toggleLike();
       fixture.detectChanges();
 
-      expect(zahlen()).toEqual(['2', '0']);
+      expect(zahlen()).toEqual([]);
+      const knoepfe = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf') as NodeListOf<HTMLElement>);
+      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Hilfreich', 'Nicht hilfreich']);
       tick(50);
     }));
 
-    it('ohne bekannte Zahl ohne Zähler', () => {
-      zeigen(ausSuchergebnis(paket({ stimmen_hilfreich: null, stimmen_nicht_hilfreich: null })));
-      expect(zahlen()).toEqual([]);
-    });
+    it('rechnen die eigene Stimme sofort ein und nehmen sie beim Wechsel wieder heraus', fakeAsync(() => {
+      zeigen(ausSuchergebnis(paket(AB_SCHWELLE, { user_vote: 'like' })));
+      expect(zahlen()).toEqual(['3', '1']);
+      votingService.setDislike.and.returnValue(of({} as any));
+      contentService.beitragLaden.and.returnValue(throwError(() => ({ status: 500 })));
+
+      aktionen().toggleDislike();
+      fixture.detectChanges();
+
+      expect(zahlen()).toEqual(['2', '2']);
+      tick(50);
+    }));
+
+    it('am eigenen Beitrag ohne die eigene Stimme, wie der Server zählt', fakeAsync(() => {
+      zeigen(ausSuchergebnis(paket({ ...AB_SCHWELLE, ist_eigener_beitrag: true })));
+      votingService.setLike.and.returnValue(of({} as any));
+      contentService.beitragLaden.and.returnValue(throwError(() => ({ status: 500 })));
+
+      aktionen().toggleLike();
+      fixture.detectChanges();
+
+      expect(zahlen()).toEqual(['3', '1']);
+      tick(50);
+    }));
   });
 
   describe('Erklärung', () => {

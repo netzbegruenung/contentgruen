@@ -78,7 +78,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() ansichtVerlinkt = true;
   /**
    * Zaehler an den Stimm-Knoepfen (#427), wie der Server sie zuletzt gemeldet hat;
-   * null = unbekannt, dann ohne Zahl. Die eigene Stimme rechnet die Leiste sofort ein.
+   * null = unter der Mindestzahl (der Server schickt dann keine, DSFA M5) oder
+   * unbekannt, dann ohne Zahl. Die eigene Stimme rechnet die Leiste sofort ein.
    */
   @Input() hilfreich: number | null = null;
   @Input() nichtHilfreich: number | null = null;
