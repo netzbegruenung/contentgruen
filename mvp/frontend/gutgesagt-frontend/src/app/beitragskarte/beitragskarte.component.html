@@ -58,7 +58,7 @@
                     [matMenuTriggerFor]="siegelMenue"
                     [attr.aria-label]="siegelBeschriftung"
                     (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
-                <app-siegel [guete]="g.wert"></app-siegel>
+                <app-siegel [guete]="g.wert" [glanz]="glanz" [krone]="krone"></app-siegel>
             </button>
             <mat-menu #siegelMenue="matMenu" class="siegel-menue" xPosition="before">
                 <!-- Ein Menuepunkt ohne Aktion: Screenreader lesen den Text vor, statt ein leeres Menue anzusagen -->
@@ -69,6 +69,9 @@
                         <li *ngFor="let kriterium of e.kriterien"><mat-icon aria-hidden="true">check</mat-icon>{{ kriterium }}</li>
                     </ul>
                     <p class="siegel-erklaerung-text">{{ e.stimmen }} Wie oft er genutzt wird, zählt nicht hinein.</p>
+                    <!-- Glanz und Krone (#351): eigene Abzeichen, keine Stufen der Guete -->
+                    <p class="siegel-erklaerung-text" *ngIf="glanz">{{ GLANZ_TEXT }}</p>
+                    <p class="siegel-erklaerung-text" *ngIf="krone">{{ KRONE_TEXT }}</p>
                 </div>
             </mat-menu>
             <span class="badge badge-neu" *ngIf="istVoll && istNeu"

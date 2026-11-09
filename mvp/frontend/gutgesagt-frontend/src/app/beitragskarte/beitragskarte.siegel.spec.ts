@@ -249,4 +249,63 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       expect(siegelErklaerung(null, [], false).ueberschrift).toBe('Neu: noch keine Güte');
     });
   });
+
+  describe('Glanz und Krone (#351)', () => {
+    function alsBesucher(): void {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      (auth as any).userInfo$.next(null);
+    }
+
+    it('ohne viel Nutzung und ohne Abzeichen weder Glanz noch Krone', () => {
+      zeigen(ausSuchergebnis(paket({ usage_count: 24, autor_name: 'Kim G.' })));
+
+      expect(siegel()!.glanz).toBeFalse();
+      expect(siegel()!.krone).toBeFalse();
+    });
+
+    it('Glanz ab 25 Nutzungen, erklärt im Menü und für Screenreader', () => {
+      zeigen(ausSuchergebnis(paket({ usage_count: 25 })));
+
+      expect(siegel()!.glanz).toBeTrue();
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.siegel-knopf');
+      expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz. Erklärung öffnen');
+      expect(fixture.componentInstance.GLANZ_TEXT).toContain('25');
+    });
+
+    it('Glanz auch für Besucher: Er betrifft keine Person', () => {
+      alsBesucher();
+      zeigen(ausSuchergebnis(paket({ usage_count: 30 })));
+
+      expect(siegel()!.glanz).toBeTrue();
+    });
+
+    it('Krone ab 5 Meilensteinen der Autorin, die der Server mitschickt', () => {
+      zeigen(ausSuchergebnis(paket({ autor_name: 'Kim G.', autor_abzeichen: 5 })));
+
+      expect(siegel()!.krone).toBeTrue();
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.siegel-knopf');
+      expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Krone. Erklärung öffnen');
+    });
+
+    it('keine Krone unter 5 Meilensteinen', () => {
+      zeigen(ausSuchergebnis(paket({ autor_name: 'Kim G.', autor_abzeichen: 4 })));
+
+      expect(siegel()!.krone).toBeFalse();
+    });
+
+    it('keine Krone ohne Anmeldung, auch wenn ein Abzeichen mitkäme', () => {
+      alsBesucher();
+      zeigen(ausSuchergebnis(paket({ autor_name: 'Kim G.', autor_abzeichen: 7 })));
+
+      expect(siegel()!.krone).toBeFalse();
+    });
+
+    it('beide zusammen', () => {
+      zeigen(ausSuchergebnis(paket({ usage_count: 40, autor_name: 'Kim G.', autor_abzeichen: 6 })));
+
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.siegel-knopf');
+      expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz und mit Krone. Erklärung öffnen');
+    });
+  });
 });

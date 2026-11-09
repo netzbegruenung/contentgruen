@@ -49,12 +49,24 @@
           ist und wie andere ihn bewerten. Neue Beiträge ohne Daten bekommen ein graues,
           waagrechtes Siegel. Mit steigender Güte dreht sich der Daumen nach oben und wird
           über Gelb grün. Wie oft ein Beitrag genutzt wird, zählt nicht hinein.
+          Zwei Abzeichen kommen dazu, unabhängig von der Güte: Glanz, wenn ein Beitrag oft
+          genutzt wurde, und eine Krone für Menschen mit vielen Meilensteinen, die das
+          erlaubt haben. Die Krone sehen nur Angemeldete.
         </p>
         <!-- Beispielsiegel von neu bis Güte 10 (#427, Entscheidung in PR #441) -->
-        <ul class="siegel-beispiele" aria-label="Beispielsiegel von neu bis Güte 10">
+        <ul class="siegel-beispiele" aria-label="Beispielsiegel von neu bis Güte 10, dazu Glanz und Krone">
           <li *ngFor="let guete of beispielGueten">
             <app-siegel [guete]="guete"></app-siegel>
             <span aria-hidden="true">{{ guete === null ? 'neu' : guete }}</span>
+          </li>
+          <!-- Glanz und Krone (#351) als Beispiel, bei einer mittleren Guete -->
+          <li>
+            <app-siegel [guete]="7" [glanz]="true"></app-siegel>
+            <span aria-hidden="true">Glanz</span>
+          </li>
+          <li>
+            <app-siegel [guete]="7" [krone]="true"></app-siegel>
+            <span aria-hidden="true">Krone</span>
           </li>
         </ul>
       </li>

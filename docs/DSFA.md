@@ -560,7 +560,10 @@ unten unter „Geplant, nicht gebaut“.
   Meilensteine nur im Arbeitsspeicher, alle 15 Minuten neu berechnet
   (`ss/services/abzeichen_service.py`).
 - **Empfänger:** andere Angemeldete, an Beiträgen der Person neben dem Anzeigenamen
-  (`ss/services/beitrag_fuer_aufrufer.py`); Besucher nie.
+  (`ss/services/beitrag_fuer_aufrufer.py`); Besucher nie. Ab 5 erreichten Meilensteinen
+  trägt das Siegel ihrer Beiträge außerdem eine Krone; sie kommt aus derselben Zahl, für
+  dieselben Empfänger, mit derselben Zustimmung (Frontend, `siegel-auszeichnung.ts`). Glanz am
+  Siegel betrifft den Beitrag, nicht die Person, und folgt dem Zähler der Karte, den alle sehen.
 - **Frist:** Antworten solange das Konto besteht, mit ihm gelöscht (`LK` Schritt 2,
   `mvp/scripts/manual/person_loeschen.sql`); die Zahl hat keine Speicherung.
 - **Risiko:** Das Abzeichen zeigt, dass und wie viel jemand mitmacht; unter den Angemeldeten

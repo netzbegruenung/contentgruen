@@ -130,8 +130,12 @@ describe('AboutComponent', () => {
     const beispiele = Array.from(seite.querySelectorAll('.siegel-beispiele app-siegel svg')).map((svg) =>
       svg.getAttribute('aria-label'),
     );
-    expect(beispiele.length).toBe(11);
+    expect(beispiele.length).toBe(13);
     expect(beispiele[0]).toBe('Siegel: neu, noch keine Güte');
     expect(beispiele[10]).toBe('Siegel: Güte 10 von 10');
+    // Glanz und Krone als Beispiel (#351)
+    expect(seite.querySelectorAll('.siegel-beispiele .siegel-glanz').length).toBe(1);
+    expect(seite.querySelectorAll('.siegel-beispiele .siegel-krone').length).toBe(1);
+    expect(seite.querySelector('.siegel-absatz')!.textContent).toContain('Die Krone sehen nur Angemeldete.');
   });
 });
