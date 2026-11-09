@@ -153,8 +153,8 @@ describe('AntwortAufComponent', () => {
     expect(component.feldZustand).toBe('zu-kurz');
 
     tippen('Windräder töten Vögel');
-    // Tippen allein legt nichts an und behauptet es auch nicht
-    expect(hinweis().textContent).toContain('Nimm eine vorhandene Aussage oder lege sie neu an.');
+    // Tippen allein legt nichts an und behauptet es auch nicht; ohne Vorschlaege keine Wahl nennen
+    expect(hinweis().textContent).toContain('Lege sie neu an – oder lass das Feld leer.');
     expect(hinweis().textContent).not.toContain('Wird als neue Aussage angelegt');
     expect(component.feldZustand).toBe('ohne-wahl');
     expect(gemeldet[gemeldet.length - 1].neuGewaehlt).toBeUndefined();
@@ -186,6 +186,14 @@ describe('AntwortAufComponent', () => {
     adresse({ id: 'a-1', text: VORSCHLAG.text });
     expect(sprachhinweis().text).withContext('vorhandene Aussage').toBe('');
     flush();
+  }));
+
+  it('nennt die Wahl erst, wenn vorhandene Aussagen dastehen (#617)', fakeAsync(() => {
+    tippen('Wärmepumpen teuer');
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+
+    expect(seite().querySelector('mat-hint')!.textContent).toContain('Nimm eine vorhandene Aussage oder lege sie neu an.');
   }));
 
   it('sucht auch fuer den Text aus der Adresse vorhandene Aussagen (#617)', fakeAsync(() => {

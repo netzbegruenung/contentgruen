@@ -257,6 +257,16 @@ describe('BeitragGespeichertComponent', () => {
       expect(navigation.navigateToResult).toHaveBeenCalledOnceWith('Wärmepumpen sind zu teuer');
     });
 
+    it('laesst "Zur Aussage" weg, wenn "Zurueck zur Suche" dorthin fuehrt', async () => {
+      await oeffnen(
+        { von: 'suche', suche: 'Wärmepumpen sind zu teuer' },
+        { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true },
+      );
+
+      expect(seite().querySelector('.zur-aussage')).toBeNull();
+      expect(seite().querySelector('.zur-suche')).toBeTruthy();
+    });
+
     it('bietet "Zur Aussage" nicht an, wenn nicht verknuepft', async () => {
       await oeffnen({}, { aussage: { id: '', text: 'Wärmepumpen sind zu teuer' }, verknuepft: false });
 

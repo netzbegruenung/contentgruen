@@ -196,6 +196,18 @@ export class BeitragGespeichertComponent implements OnInit {
     this.router.navigate([FORMULAR_PFAD[this.typ]]);
   }
 
+  /**
+   * "Zur Aussage" nur mit Aussage, und nicht, wenn "Zurueck zur Suche" schon genau
+   * dorthin fuehrt.
+   */
+  get zurAussageZeigen(): boolean {
+    if (!this.aussageKopf) {
+      return false;
+    }
+    const suche = this.route.snapshot.queryParamMap.get(SUCHE_PARAM)?.trim();
+    return !(this.herkunft === 'suche' && suche && suche === this.zustand.aussage?.text.trim());
+  }
+
   /** Die Suche nach der Aussage: dort stehen alle Antworten auf sie (#617). */
   zurAussage(): void {
     const text = this.zustand.aussage?.text;

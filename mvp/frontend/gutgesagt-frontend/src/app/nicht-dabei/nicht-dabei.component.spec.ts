@@ -129,7 +129,7 @@ describe('NichtDabeiComponent', () => {
   it('zeigt ohne Treffer den Titel nur ueber einer Liste', () => {
     const seite = starten({ isAuthenticated: false, userId: null, userName: null, claims: null });
     const komponente = fixture.debugElement.children[0].componentInstance as NichtDabeiComponent;
-    komponente.titelNurMitListe = true;
+    komponente.ohneTreffer = true;
     fixture.debugElement.children[0].injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
 
@@ -138,8 +138,17 @@ describe('NichtDabeiComponent', () => {
     expect(seite.querySelector('button.neu')).toBeTruthy();
   });
 
-  it('nennt die Zahl der Antworten an der aehnlichen Aussage (#617)', () => {
+  function ohneTreffer(): void {
+    const komponente = fixture.debugElement.children[0].componentInstance as NichtDabeiComponent;
+    komponente.ohneTreffer = true;
+    fixture.debugElement.children[0].injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+  }
+
+  it('nennt ohne Treffer die Zahl der Antworten an der aehnlichen Aussage (#617)', () => {
     const seite = starten();
+    expect(seite.querySelector('.antworten-zahl')).withContext('mit Treffern nicht').toBeNull();
+    ohneTreffer();
     const zahlen = Array.from(seite.querySelectorAll('.antworten-zahl')).map((e) => (e.textContent ?? '').trim());
     expect(zahlen).toEqual(['2 Antworten', '1 Antwort']);
   });
@@ -149,14 +158,17 @@ describe('NichtDabeiComponent', () => {
       useValue: { aussageVorschlaege: () => of([{ ...AEHNLICH, replysuggestions_count: 0 }]) },
     });
     const seite = starten();
+    ohneTreffer();
     expect(seite.querySelector('.antworten-zahl')).toBeNull();
     expect(seite.querySelector('.passt-vielleicht')).toBeTruthy();
   });
 
-  it('bietet "Selbst beantworten" zuerst fuer die aehnliche Aussage an (#617)', () => {
+  it('bietet ohne Treffer "Selbst beantworten" zuerst fuer die aehnliche Aussage an (#617)', () => {
     const MIT_ID = { ...AEHNLICH, id: '11111111-2222-4333-8444-555555555555' };
     TestBed.overrideProvider(StatementService, { useValue: { aussageVorschlaege: () => of([MIT_ID]) } });
     const seite = starten();
+    expect(seite.querySelector('.aehnliche .selbst-beantworten')).withContext('mit Treffern nicht').toBeNull();
+    ohneTreffer();
 
     const link = seite.querySelector<HTMLAnchorElement>('.aehnliche .selbst-beantworten')!;
     expect(link.textContent).toContain('Selbst beantworten');
@@ -170,7 +182,7 @@ describe('NichtDabeiComponent', () => {
   it('fragt ohne Treffer "Meintest du …?" statt "Nicht dabei?" (#617)', () => {
     const seite = starten();
     const komponente = fixture.debugElement.children[0].componentInstance as NichtDabeiComponent;
-    komponente.titelNurMitListe = true;
+    komponente.ohneTreffer = true;
     fixture.debugElement.children[0].injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
 

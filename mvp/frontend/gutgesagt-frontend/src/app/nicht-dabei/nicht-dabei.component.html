@@ -9,12 +9,12 @@
                     <span class="aussage-text">{{ aussage.text }}</span>
                     <span class="passt-vielleicht">passt vielleicht</span>
                     <!-- Echte Zahl der verknuepften Antworten; ohne Antworten keine Zahl (#617) -->
-                    <span *ngIf="aussage.replysuggestions_count > 0" class="antworten-zahl">
+                    <span *ngIf="ohneTreffer && aussage.replysuggestions_count > 0" class="antworten-zahl">
                         {{ antwortenText(aussage.replysuggestions_count) }}
                     </span>
                 </a>
-                <!-- Erst fuer die aehnliche Aussage anbieten, dann fuer die eigene Formulierung (#617) -->
-                <a class="selbst-beantworten" [routerLink]="kommentarPfad" [queryParams]="antwortAuf(aussage)"
+                <!-- Ohne Treffer: erst fuer die aehnliche Aussage anbieten, dann fuer die eigene Formulierung (#617) -->
+                <a *ngIf="ohneTreffer" class="selbst-beantworten" [routerLink]="kommentarPfad" [queryParams]="antwortAuf(aussage)"
                    [attr.aria-label]="'Selbst beantworten: ' + aussage.text">Selbst beantworten</a>
             </li>
         </ul>

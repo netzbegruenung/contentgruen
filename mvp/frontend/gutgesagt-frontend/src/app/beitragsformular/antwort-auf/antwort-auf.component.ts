@@ -111,8 +111,9 @@ export class AntwortAufComponent implements OnInit, OnChanges {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((text) => this.aussageChange.emit({ id: '', text: text.trim() }));
 
-    // Auch fuer den Text aus der Adresse ("Selbst beantworten" ohne ID) suchen:
-    // Dann kommen ebenfalls vorhandene Aussagen zuerst (#617).
+    // Auch fuer einen Text aus der Adresse ohne ID suchen (etwa wenn die Suche ihre
+    // Anfrage nicht als Aussage anlegen konnte): Dann kommen ebenfalls vorhandene
+    // Aussagen zuerst (#617).
     merge(this.feld.valueChanges, this.ausAdresse$)
       .pipe(
         map((text) => text.trim()),
