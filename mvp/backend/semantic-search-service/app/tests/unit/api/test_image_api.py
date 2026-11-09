@@ -52,6 +52,8 @@ BILD_FELDER = {
     "usage_count",
     "autor_name",
     "ist_eigener_beitrag",
+    # Meilenstein-Abzeichen der Autorin (#351), nur mit Zustimmung, sonst null.
+    "autor_abzeichen",
     "original_author",
 }
 

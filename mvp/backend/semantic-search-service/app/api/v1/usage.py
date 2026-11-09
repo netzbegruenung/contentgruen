@@ -4,7 +4,7 @@ API endpoints for usage tracking functionality.
 
 import asyncio
 import logging
-from fastapi import APIRouter, HTTPException, Depends, Header, Request
+from fastapi import APIRouter, HTTPException, Depends, Header, Request, Response
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 import uuid
@@ -30,6 +30,12 @@ from utils.rate_limiter import RateLimiter
 from services.entdoppelung import pruefwert
 from utils.aufrufer import ANONYM
 from services.meilensteine_service import MeilensteineService
+from services.abzeichen_service import AbzeichenService, get_abzeichen_service
+from domain.abzeichen_sichtbarkeit import (
+    AKTUELLER_WORTLAUT as SICHTBARKEIT_WORTLAUT,
+    WORTLAUTE as SICHTBARKEIT_WORTLAUTE,
+    UnbekannterWortlaut,
+)
 from services.punkte_service import PunkteService
 from services.art9_einwilligung_service import get_art9_einwilligung_service
 from services.usage_tracking_service import get_usage_service
@@ -116,6 +122,24 @@ class MeilensteineResponse(BaseModel):
     """Die eigenen Meilensteine; leer fuer Startkonten und ohne Art.-9-Einwilligung."""
 
     meilensteine: list[MeilensteinResponse]
+
+
+class SichtbarkeitWortlaut(BaseModel):
+    kennung: str
+    text: str
+
+
+class AbzeichenSichtbarkeitResponse(BaseModel):
+    """Ob die Person gefragt wurde und was sie geantwortet hat (#351)."""
+
+    gefragt: bool
+    zeigen: Optional[bool]
+    aktueller_wortlaut: SichtbarkeitWortlaut
+
+
+class AbzeichenSichtbarkeitRequest(BaseModel):
+    zeigen: bool
+    wortlaut: str
 
 
 class TrendingContentResponse(BaseModel):
@@ -470,6 +494,69 @@ async def eigene_meilensteine(
             for m in meilensteine
         ]
     )
+
+
+def _abzeichen_dienst(
+    settings: Settings = Depends(get_settings),
+) -> AbzeichenService:
+    """Ohne beide Schalter 404: Sichtbare Abzeichen gibt es dann nicht (#351)."""
+    dienst = get_abzeichen_service()
+    if not settings.abzeichen_sichtbar or dienst is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    return dienst
+
+
+@router.get(
+    "/users/me/abzeichen-sichtbarkeit", response_model=AbzeichenSichtbarkeitResponse
+)
+async def abzeichen_sichtbarkeit(
+    current_user: str = Depends(require_user),
+    dienst: AbzeichenService = Depends(_abzeichen_dienst),
+):
+    """
+    Die Antwort der Person auf die Frage, ob andere Angemeldete ihre
+    Meilenstein-Abzeichen sehen (#351, GLOSSARY.md "Zustimmung zur Sichtbarkeit").
+    """
+    try:
+        antwort = await asyncio.to_thread(dienst.sichtbarkeit, current_user)
+    except Exception as e:
+        logger.error(
+            f"Sichtbarkeit fuer {log_pseudonym(current_user)} nicht gelesen: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return AbzeichenSichtbarkeitResponse(
+        gefragt=antwort is not None,
+        zeigen=antwort.zeigen if antwort else None,
+        aktueller_wortlaut=SichtbarkeitWortlaut(
+            kennung=SICHTBARKEIT_WORTLAUT,
+            text=SICHTBARKEIT_WORTLAUTE[SICHTBARKEIT_WORTLAUT],
+        ),
+    )
+
+
+@router.put("/users/me/abzeichen-sichtbarkeit", status_code=204)
+async def abzeichen_sichtbarkeit_antworten(
+    request: AbzeichenSichtbarkeitRequest,
+    current_user: str = Depends(require_user),
+    dienst: AbzeichenService = Depends(_abzeichen_dienst),
+):
+    """
+    Ja oder Nein zur Sichtbarkeit, jederzeit aenderbar. Ein Nein nimmt das Abzeichen
+    sofort weg. Ohne Art.-9-Einwilligung offen wie jedes Zuruecknehmen; ein Ja zeigt
+    dann nichts, weil es ohne sie keine Meilensteine gibt.
+    """
+    try:
+        await dienst.antworten(current_user, request.zeigen, request.wortlaut)
+    except UnbekannterWortlaut:
+        raise HTTPException(status_code=422, detail="Unbekannter Wortlaut")
+    except Exception as e:
+        logger.error(
+            f"Sichtbarkeit fuer {log_pseudonym(current_user)} nicht gespeichert: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return Response(status_code=204)
 
 
 @router.post("/users/me/besuch", response_model=BesuchResponse)

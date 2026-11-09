@@ -725,6 +725,35 @@ class Art9EinwilligungZeile(Base):
     )
 
 
+class AbzeichenSichtbarkeitZeile(Base):
+    """
+    Eine Antwort auf die Frage, ob andere Angemeldete die Meilenstein-Abzeichen der
+    Person an ihrem Anzeigenamen sehen (#351, GLOSSARY.md "Zustimmung zur
+    Sichtbarkeit"). Es gilt die juengste Zeile der Kennung; ``zeigen`` ist die
+    Antwort, ``wortlaut`` die Kennung der Frage (domain/abzeichen_sichtbarkeit.py).
+
+    Auch ein Nein ist eine Zeile, damit die App nicht erneut fragt. Jede Aenderung ist
+    eine neue Zeile: So bleibt belegt, wann die Person zugestimmt und wann sie
+    zurueckgenommen hat (Art. 7 Abs. 1 DSGVO).
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-09-351-abzeichen-sichtbarkeit.sql dokumentiert
+    das Schema. Loeschen: docs/LOESCHKONZEPT.md, Schritt 2.
+    """
+
+    __tablename__ = "abzeichen_sichtbarkeit"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(255), nullable=False)
+    zeigen = Column(Boolean, nullable=False)
+    wortlaut = Column(String(64), nullable=False)
+    beantwortet_am = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_abzeichen_sichtbarkeit_user", "user_id", "beantwortet_am"),
+    )
+
+
 class MigrationsprotokollZeile(Base):
     """
     Welche Migration aus postgres-app/migrations eingespielt ist, eine Zeile je Datei.

@@ -245,6 +245,11 @@ class Settings(BaseSettings):
     def startkonto_kennungen(self) -> frozenset:
         return frozenset(u.strip() for u in self.startkonten.split(",") if u.strip())
 
+    @property
+    def abzeichen_sichtbar(self) -> bool:
+        """Beide Schalter an: ohne Punkte gibt es auch keine sichtbaren Abzeichen."""
+        return self.punkte_aktiv and self.abzeichen_sichtbar_aktiv
+
     def ist_startkonto(self, user_id: Optional[str]) -> bool:
         return bool(user_id) and user_id in self.startkonto_kennungen()
 
@@ -255,6 +260,11 @@ class Settings(BaseSettings):
     # schaltet die Punkte (/api/v1/usage/users/me/punkte) und die Muster-Hinweise
     # fuer Admins; Entdoppelung und Startkonten wirken immer.
     punkte_aktiv: bool = False
+    # Meilenstein-Abzeichen am Anzeigenamen, die andere Angemeldete sehen (#351).
+    # Standard aus und nur zusammen mit punkte_aktiv: Wie die Punkte haengen sie an
+    # der DSFA (docs/DSFA.md), zusaetzlich an der Zustimmung zur Sichtbarkeit, die
+    # jede Person selbst gibt (domain/abzeichen_sichtbarkeit.py).
+    abzeichen_sichtbar_aktiv: bool = False
     # Gewichte und Deckel der drei Stufen (domain/punkte.py): Tun klein und je Tag
     # gedeckelt, Quests mehr, Wirkung bei anderen am meisten.
     punkte_nutzung: int = Field(default=10, ge=0)

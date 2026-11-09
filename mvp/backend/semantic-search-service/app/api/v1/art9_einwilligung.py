@@ -19,6 +19,7 @@ from domain.art9_einwilligung import (
     WORTLAUTE,
 )
 from services import art9_einwilligung_service
+from services.abzeichen_service import get_abzeichen_service
 from services.art9_einwilligung_service import UnbekannterWortlaut
 
 logger = get_logger(__name__)
@@ -99,4 +100,8 @@ def widerrufen(user_id: str = Depends(require_user)) -> Response:
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    # Ohne Einwilligung keine Meilensteine: das sichtbare Abzeichen sofort weg (#351).
+    abzeichen = get_abzeichen_service()
+    if abzeichen is not None:
+        abzeichen.vergessen(user_id)
     return Response(status_code=204)
