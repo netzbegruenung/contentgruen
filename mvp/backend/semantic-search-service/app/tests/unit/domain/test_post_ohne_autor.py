@@ -1,4 +1,4 @@
-"""#618: „Gepostet von“ ist optional, nur bei Organisationen oder öffentlichen Konten."""
+"""#618: „Gepostet von“ ist optional."""
 
 from domain.models.post import Post
 from dtos.beitrag import PostResponse

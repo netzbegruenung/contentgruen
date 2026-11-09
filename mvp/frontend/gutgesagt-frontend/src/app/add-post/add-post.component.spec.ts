@@ -121,10 +121,11 @@ describe('AddPostComponent', () => {
     });
   });
 
-  it('weist bei "Gepostet von" auf Organisationen und oeffentliche Konten hin (#618)', () => {
+  it('zeigt bei "Gepostet von" keinen Hinweis, nur "(optional)" (#618)', () => {
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Nur bei Organisationen oder öffentlichen Konten');
+    expect(fixture.nativeElement.textContent).toContain('Gepostet von (optional)');
+    expect(fixture.nativeElement.textContent).not.toContain('Nur bei Organisationen');
   });
 
   it('nimmt nur Links mit http oder https', () => {

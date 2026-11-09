@@ -45,7 +45,7 @@ class Post(BaseContent):
         ),
     )
     platform: str = Field(..., description="Source platform of the post")
-    # Optional (#618): nur bei Organisationen oder oeffentlichen Konten angeben.
+    # Optional (#618): leer, wenn kein Konto genannt werden soll.
     author: Optional[str] = Field(
         default=None, description="Original author handle on the platform, if public"
     )
