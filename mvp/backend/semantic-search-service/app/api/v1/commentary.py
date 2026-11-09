@@ -219,6 +219,7 @@ async def add_commentary(
         # erkennt, wenn er dort schon haengt.
         statement_id = None
         statement_text = None
+        aussage_neu = False
         themen: List[str] = []
         # Ohne Dublette und ohne Aussage gibt es nichts zu verknuepfen: True. Bei einer
         # Dublette nur True, wenn der genommene vorhandene jetzt an der Aussage haengt -
@@ -229,7 +230,7 @@ async def add_commentary(
         )
         if aussage_mitgeschickt and (dublette is None or dublette.genommen):
             try:
-                statement_id, statement_text = (
+                statement_id, statement_text, aussage_neu = (
                     await statement_service.beitrag_als_antwort_verknuepfen(
                         beitrag_id=commentary_id,
                         content_type=ContentType.COMMENTARY,
@@ -263,6 +264,7 @@ async def add_commentary(
             id=commentary_id,
             statement_id=statement_id,
             statement_text=statement_text,
+            aussage_neu=aussage_neu,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
             vorhanden=VorhandenDto.aus(dublette),
