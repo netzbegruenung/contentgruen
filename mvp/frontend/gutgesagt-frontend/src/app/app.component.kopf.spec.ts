@@ -123,6 +123,19 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(anmelden.calls.count() + anmeldenMitZiel.calls.count()).toBe(1);
     });
 
+    // #620: Das Logo ist der Weg zur Startseite, "Start" im Kopf entfaellt
+    it('fuehrt mit dem Logo "Startseite" zur Startseite; die Ueberschrift nennt nur die Seite', () => {
+      const link = kopf().querySelector('a.logo-link') as HTMLAnchorElement;
+      expect(link.getAttribute('aria-label')).toBe('Startseite');
+      expect(link.querySelector('img')!.getAttribute('alt')).toBe('');
+      expect(kopf().querySelector('h1 a')).toBeNull();
+      expect(kopf().querySelector('[data-testid="start-knopf"]')).toBeNull();
+
+      link.click();
+
+      expect(navigation.navigateHome).toHaveBeenCalledTimes(1);
+    });
+
     it('sieht den Knopf Feedback und oeffnet damit das Formular', () => {
       const knopf = kopf().querySelector('[data-testid="feedback-knopf"]') as HTMLElement;
       expect(knopf.textContent).toContain('Feedback');
@@ -264,9 +277,10 @@ describe('AppComponent - Desktop-Kopf', () => {
     });
 
     // #599: drei runde Symbole ohne Beschriftung waren nicht zu deuten
-    it('beschriftet Feedback, Hilfe und Start als Textlinks mit Symbol fuer schmale Kopfzeilen', () => {
+    it('beschriftet Feedback und Hilfe als Textlinks mit Symbol fuer schmale Kopfzeilen, ohne "Start" (#620)', () => {
       const textlinks = Array.from(kopf().querySelectorAll('button.header-link'));
-      expect(textlinks.map((k) => k.querySelector('.kopf-text')!.textContent!.trim())).toEqual(['Feedback', 'Hilfe', 'Start']);
+      expect(textlinks.map((k) => k.querySelector('.kopf-text')!.textContent!.trim())).toEqual(['Feedback', 'Hilfe']);
+      expect(kopf().querySelector('[data-testid="start-knopf"]')).toBeNull();
       for (const k of textlinks) {
         expect(k.querySelector('mat-icon')!.getAttribute('aria-hidden')).toBe('true');
       }

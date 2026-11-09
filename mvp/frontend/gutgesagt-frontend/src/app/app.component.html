@@ -39,21 +39,25 @@
                 <div class="component-box" *ngIf="!isMobile && !isTablet">
                     <div class="header" [class.header--titel-lang]="titelLang">
                 <div class="left-header-box">
-                    <h1 class="desktop-header-title" [class.desktop-header-title--lang]="titelLang">
-                        <button mat-icon-button
-                                *ngIf="showBackButton"
-                                (click)="zurueck()"
-                                class="mat-elevation-z1 back-button-header"
-                                aria-label="Zurück">
-                            <mat-icon>arrow_back</mat-icon>
-                        </button>
-                        <!--
-                            Kein Link: Das Logo davor ist Schmuck ohne eigenen Namen
-                            (alt=""), der Text nennt die Seite, auf der man ist
-                            ("Fangkorb"), nicht die Marke. Zur Startseite fuehrt "Start"
-                            rechts im Kopf.
-                        -->
+                    <button mat-icon-button
+                            *ngIf="showBackButton"
+                            (click)="zurueck()"
+                            class="mat-elevation-z1 back-button-header"
+                            aria-label="Zurück">
+                        <mat-icon>arrow_back</mat-icon>
+                    </button>
+                    <!--
+                        Das Logo ist der Weg zur Startseite (#620, statt "Start" rechts im
+                        Kopf); zugaenglicher Name "Startseite". Es steht vor der
+                        Ueberschrift, nicht darin, damit sie weiter nur die Seite nennt
+                        ("Fangkorb"). Ueber den NavigationService statt per routerLink:
+                        Die Destillier-Ansicht soll erst ihren Satz speichern duerfen.
+                    -->
+                    <a class="logo-link" href="/" aria-label="Startseite" data-testid="logo-startseite"
+                       (click)="$event.preventDefault(); zurStartseite()">
                         <img class="kopf-logo" src="marke/logo.svg" alt="" width="44" height="44">
+                    </a>
+                    <h1 class="desktop-header-title" [class.desktop-header-title--lang]="titelLang">
                         {{ pageTitle }}
                     </h1>
                 </div>
@@ -116,7 +120,7 @@
 
                     <!--
                         Desktop-Kopf in einer Zeile: beschriftete Textlinks (Admin, Hier fehlt
-                        eine Antwort, Feedback, Hilfe, Start) und der eine Primaerknopf.
+                        eine Antwort, Feedback, Hilfe) und der eine Primaerknopf.
                         Abmelden, Schnell einwerfen und Fangkorb stehen im Profilmenue
                         (#512, #620).
                     -->
@@ -172,20 +176,6 @@
                         Beide Knoepfe gibt es mobil im eigenen Kopf (app-mobile-header).
                     -->
 
-                    <!--
-                        Der Weg zur Startseite auf Desktop; mobil leistet das der
-                        erste Menueeintrag, dort waere ein weiterer Knopf im engen
-                        Kopf einer zu viel.
-
-                        Ueber den NavigationService statt per routerLink: Die
-                        Destillier-Ansicht soll auch hier erst ihren Satz speichern
-                        duerfen, bevor die Seite verlassen wird.
-                    -->
-                    <button type="button" class="header-link" (click)="zurStartseite()"
-                        matTooltip="Start" [matTooltipDisabled]="!kopfSchmal" data-testid="start-knopf">
-                        <mat-icon class="kopf-icon" aria-hidden="true">home</mat-icon>
-                        <span class="kopf-text">Start</span>
-                    </button>
                 </div>
             </div>
         </div>
