@@ -29,11 +29,11 @@
                             <mat-error *ngIf="imageForm.get('image_url')?.hasError('pattern')">
                                 Bitte eine gültige URL eingeben (https://...)
                             </mat-error>
+                            <mat-hint *ngIf="bildLadefehler" class="bild-ladefehler" role="alert">
+                                <mat-icon aria-hidden="true">broken_image</mat-icon>
+                                Das Bild lässt sich nicht laden – prüf den Link.
+                            </mat-hint>
                         </mat-form-field>
-                        <p *ngIf="bildLadefehler" class="bild-ladefehler" role="alert">
-                            <mat-icon aria-hidden="true">broken_image</mat-icon>
-                            Das Bild lässt sich nicht laden – prüf den Link.
-                        </p>
                     </div>
 
                     <div class="form-group">

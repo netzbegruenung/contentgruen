@@ -43,9 +43,13 @@
   position: sticky;
   top: 16px;
 
+  // Mobil blendet mobile-common.css die Vorschau aus. Beim Bild bleibt sie stehen: Nur dort
+  // laedt das Bild, und nur so merkt man, dass die URL nicht stimmt (#619).
   @media (max-width: 768px) {
+    display: block;
     position: static;
     width: 100%;
+    min-width: 0;
   }
 }
 
@@ -79,12 +83,10 @@
 }
 
 .bild-ladefehler {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 8px;
+  gap: 4px;
   color: var(--warning-color);
-  font-size: 14px;
 
   mat-icon {
     font-size: 18px;
