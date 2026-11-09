@@ -404,11 +404,6 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return `${this.nutzung ?? 0}×`;
   }
 
-  /** Der Zaehler im Kopf der Karte, beschriftet wie in Meine Beitraege: "3× genutzt" (#599). */
-  get nutzungBeschriftung(): string {
-    return `${this.nutzungAnzeige} genutzt`;
-  }
-
   /** Anriss im Album: der Text unter dem Titel; ohne Titel steht er schon im Titelfeld. */
   get anriss(): string | null {
     return this.daten.titel ? this.daten.text : null;

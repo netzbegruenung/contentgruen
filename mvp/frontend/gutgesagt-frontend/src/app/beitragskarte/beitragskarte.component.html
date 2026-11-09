@@ -59,10 +59,11 @@
             </span>
             <span class="badge badge-beliebt" *ngIf="istVoll && istBeliebt"
                   matTooltip="Beliebt" matTooltipPosition="left">🔥</span>
-            <!-- Beschriftet statt nur "1×": das Kuerzel allein war nicht verstaendlich (#599) -->
+            <!-- Beschriftet statt nur "1×": das Kuerzel allein war nicht verstaendlich (#599).
+                 Unter 600 px bleibt "genutzt" nur fuer Screenreader, sonst kuerzte es den Titel. -->
             <span class="badge badge-nutzung badge-nutzung--beschriftet" *ngIf="nutzung !== null"
                   [class.nutzung-animiert]="nutzungAnimiert"
-                  matTooltip="So oft kopiert oder geteilt" matTooltipPosition="left">{{ nutzungBeschriftung }}</span>
+                  matTooltip="So oft kopiert oder geteilt" matTooltipPosition="left">{{ nutzungAnzeige }}<span class="nutzung-wort"> genutzt</span></span>
         </div>
     </header>
 
