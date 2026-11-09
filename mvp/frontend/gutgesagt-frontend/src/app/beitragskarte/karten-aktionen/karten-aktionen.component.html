@@ -74,6 +74,12 @@
     </button>
 
     <mat-menu #menue="matMenu">
+        <!-- Zum Teilen ganz oben (#640, R48); nicht auf der Beitragsseite, dort steht der Knopf unter der Karte -->
+        <button mat-menu-item type="button" class="link-kopieren" *ngIf="ansichtVerlinkt && inhaltId && !vorschau"
+                (click)="linkKopieren()">
+            <mat-icon>link</mat-icon>
+            <span>Link kopieren</span>
+        </button>
         <button mat-menu-item type="button" *ngIf="kannAlsVorlage" (click)="alsVorlageNehmen()">
             <mat-icon>call_split</mat-icon>
             <span>Als Vorlage nehmen</span>
