@@ -5,6 +5,7 @@
  * Gestaltung und Texte nach Variante B des Klickdummys (Entscheidung 02.11.2026).
  */
 
+import { STARTBEISPIEL } from '../shared/startbeispiel';
 import { MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
 
 /** Ein Wert, der sich zwischen breitem Kopf (Desktop) und mobilem Kopf unterscheidet. */
@@ -28,6 +29,11 @@ export interface RundgangSchritt {
   ziel: string;
   /** Seite, auf der das Ziel steht; ohne Angabe bleibt der Rundgang, wo er ist. */
   seite?: { pfad: string; query?: Record<string, string> };
+  /**
+   * Text, den der Schritt in das Eingabefeld im Ziel schreibt, wenn es leer ist: ein
+   * Beispiel zum Ausprobieren. Was jemand schon eingetippt hat, bleibt stehen.
+   */
+  vorbelegen?: string;
 }
 
 export type RundgangId = 'antwort-finden' | 'mitmachen';
@@ -57,9 +63,6 @@ export interface Angebot {
   /** Erster Schritt des Rundgangs, wenn er aus dem Band startet. */
   ab: number;
 }
-
-/** Dieselbe Aussage wie „Beispiel probieren“ auf der Startseite. */
-export const BEISPIEL_AUSSAGE = 'Windräder töten die Vögel!';
 
 export const WILLKOMMEN: Angebot = {
   rundgang: 'antwort-finden',
@@ -95,9 +98,13 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
     schritte: [
       {
         titel: 'Aussage eingeben',
-        text: 'Kopiere einen Post hier hinein oder tippe die Aussage ein, auf die du antworten willst.',
+        text:
+          'Kopiere einen Post hier hinein oder tippe die Aussage ein, auf die du antworten willst. ' +
+          `Probier’s mit „${STARTBEISPIEL}“: Die nächsten Schritte zeigen die Treffer dazu.`,
         ziel: 'app-search.start-suche .search-field',
         seite: { pfad: '/search' },
+        // Dieselbe Aussage suchen die Schritte 2 bis 4 (#601)
+        vorbelegen: STARTBEISPIEL,
       },
       {
         titel: 'Passende Treffer',
@@ -105,7 +112,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
           'Hier stehen Kommentare, die auf deine Aussage antworten. Mit Kurz, Mittel und Lang ' +
           'wählst du die Fassung.',
         ziel: 'app-beitragskarte',
-        seite: { pfad: '/result', query: { searchQuery: BEISPIEL_AUSSAGE } },
+        seite: { pfad: '/result', query: { searchQuery: STARTBEISPIEL } },
       },
       {
         titel: 'Kommentar kopieren',
@@ -113,7 +120,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
           '„Kopieren“ legt den Kommentar in deine Zwischenablage. Dann musst du ihn nur noch unter dem ' +
           'Post einfügen.',
         ziel: 'app-beitragskarte .kopieren-knopf',
-        seite: { pfad: '/result', query: { searchQuery: BEISPIEL_AUSSAGE } },
+        seite: { pfad: '/result', query: { searchQuery: STARTBEISPIEL } },
       },
       {
         titel: 'Abstimmen',
@@ -121,7 +128,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
           'War der Kommentar hilfreich? Angemeldet zeigt deine Stimme anderen, welche Kommentare gut ' +
           'ankommen.',
         ziel: 'app-beitragskarte .stimmen',
-        seite: { pfad: '/result', query: { searchQuery: BEISPIEL_AUSSAGE } },
+        seite: { pfad: '/result', query: { searchQuery: STARTBEISPIEL } },
       },
       {
         titel: 'Jederzeit wieder',

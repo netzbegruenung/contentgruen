@@ -15,6 +15,13 @@ const PROBE: Rundgang = {
   ],
 };
 
+/** Ein Schritt, der ein Beispiel in das Feld im Ziel schreibt. */
+const MIT_BEISPIEL: Rundgang = {
+  id: 'antwort-finden',
+  name: 'Rundgang mit Beispiel',
+  schritte: [{ titel: 'Eingeben', text: 'Mit Beispiel', ziel: '#probe-feld', vorbelegen: 'Ein Beispiel' }],
+};
+
 class FakeRundgangService {
   readonly aktiv = signal<RundgangStand | null>(null);
   weiter = jasmine.createSpy('weiter').and.callFake(() => {
@@ -58,7 +65,8 @@ describe('RundgangComponent', () => {
     seite.innerHTML = `
       <button id="ausloeser">Hilfe</button>
       <div id="probe-eins" style="position:absolute;left:40px;top:60px;width:200px;height:40px">eins</div>
-      <div id="probe-zwei" style="position:absolute;left:300px;top:200px;width:120px;height:30px">zwei</div>`;
+      <div id="probe-zwei" style="position:absolute;left:300px;top:200px;width:120px;height:30px">zwei</div>
+      <div id="probe-feld" style="position:absolute;left:40px;top:300px;width:200px;height:40px"><input></div>`;
     document.body.appendChild(seite);
     ausloeser = seite.querySelector('#ausloeser') as HTMLButtonElement;
   });
@@ -130,6 +138,28 @@ describe('RundgangComponent', () => {
       expect(kegel()).toBeNull();
       expect(fixture.nativeElement.querySelector('.schleier')).not.toBeNull();
       flush(200); // sucht das fehlende Ziel noch eine Weile nach
+    }));
+
+    it('füllt ein leeres Eingabefeld im Ziel mit dem Beispiel, wie beim Tippen (#601)', fakeAsync(() => {
+      const feld = seite.querySelector('#probe-feld input') as HTMLInputElement;
+      const getippt = jasmine.createSpy('input');
+      feld.addEventListener('input', getippt);
+      service.aktiv.set({ rundgang: MIT_BEISPIEL, index: 0 });
+      fixture.detectChanges();
+      tick();
+      expect(feld.value).toBe('Ein Beispiel');
+      expect(getippt).toHaveBeenCalledTimes(1);
+      flush();
+    }));
+
+    it('lässt stehen, was schon im Eingabefeld steht', fakeAsync(() => {
+      const feld = seite.querySelector('#probe-feld input') as HTMLInputElement;
+      feld.value = 'Eigener Text';
+      service.aktiv.set({ rundgang: MIT_BEISPIEL, index: 0 });
+      fixture.detectChanges();
+      tick();
+      expect(feld.value).toBe('Eigener Text');
+      flush();
     }));
 
     it('beschriftet den letzten Schritt mit „Fertig“, den ersten ohne „Zurück“', fakeAsync(() => {

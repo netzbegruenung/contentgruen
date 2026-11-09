@@ -521,6 +521,10 @@ _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt, auch wenn es zur Adresse schon ein Konto gibt oder die Adresse einen Tippfehler hat; nur wenn Keycloak das Konto nicht anlegen konnte, wird sie zurückgenommen. Die Zahl erlaubter Einlösungen begrenzt eine Einladung.
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
+**Startbeispiel**:
+Die Aussage hinter „Beispiel probieren“ auf der Startseite; der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und im Seed, damit die Suche sicher Kommentare findet.
+_Avoid_: Beispielsuche, Demo-Aussage
+
 **Startbestand**:
 Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start schreibt, damit Gut gesagt nicht leer beginnt. Er wird wie jeder Beitrag angelegt, über das Formular oder das Importskript aus einer Datei.
 _Avoid_: Seed, Grundbestand, Demo-Inhalt
