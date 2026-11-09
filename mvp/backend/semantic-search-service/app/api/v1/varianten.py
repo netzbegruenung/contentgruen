@@ -27,6 +27,7 @@ from repositories.varianten_repository import (
     VariantenRepository,
     get_varianten_repository,
 )
+from services.guete_service import guete_ergaenzen
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from services.content.reference_service import ReferenceService
 from services.oft_genutzt_service import BeitragLaden, sichtbaren_beitrag_laden
@@ -93,10 +94,15 @@ async def varianten(
 
         angereichert = get_usage_service().enrich_content_with_usage(eintraege)
         antworten = fuer_aufrufer(
-            [
-                ANTWORT_JE_TYP.get(e["result_type"], BeitragResponse).model_validate(e)
-                for e in angereichert
-            ],
+            # Vor fuer_aufrufer: Die Guete laesst die Stimme des Autors aus (#427).
+            await guete_ergaenzen(
+                [
+                    ANTWORT_JE_TYP.get(
+                        e["result_type"], BeitragResponse
+                    ).model_validate(e)
+                    for e in angereichert
+                ]
+            ),
             aufrufer,
         )
         varianten_ergaenzen(antworten, repository)

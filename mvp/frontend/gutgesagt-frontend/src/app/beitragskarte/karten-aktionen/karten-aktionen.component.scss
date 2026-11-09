@@ -20,8 +20,18 @@
 
 .stimmen {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
   justify-self: start;
+}
+
+// Zaehler neben dem Knopf (#427): schlicht, damit er nicht mit dem Siegel konkurriert
+.stimm-zahl {
+  min-width: 1ch;
+  margin-left: calc(-1 * var(--spacing-sm) + 2px);
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .stimme-knopf,

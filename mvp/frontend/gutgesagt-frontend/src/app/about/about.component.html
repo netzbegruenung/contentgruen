@@ -44,6 +44,19 @@
       <li>
         <strong>Bewerten:</strong> Angemeldet gibst du Beiträgen deine Stimme. So sieht man,
         welche Antworten gut ankommen.
+        <p class="siegel-absatz">
+          Das Siegel zeigt die Güte eines Beitrags: wie gut er nach festen Regeln formuliert
+          ist und wie andere ihn bewerten. Neue Beiträge ohne Daten bekommen ein graues,
+          waagrechtes Siegel. Mit steigender Güte dreht sich der Daumen nach oben und wird
+          über Gelb grün. Wie oft ein Beitrag genutzt wird, zählt nicht hinein.
+        </p>
+        <!-- Beispielsiegel von neu bis Güte 10 (#427, Entscheidung in PR #441) -->
+        <ul class="siegel-beispiele" aria-label="Beispielsiegel von neu bis Güte 10">
+          <li *ngFor="let guete of beispielGueten">
+            <app-siegel [guete]="guete"></app-siegel>
+            <span aria-hidden="true">{{ guete === null ? 'neu' : guete }}</span>
+          </li>
+        </ul>
       </li>
       <li>
         <strong>Neue Beiträge in drei Schritten:</strong> Jeder Schritt kann von einer anderen

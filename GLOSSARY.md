@@ -325,7 +325,7 @@ Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fass
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:
-Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
+Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen, auf der Karte dasselbe Gegenlesen ohne die Aussage (ohne die Regel zu übernommenen Schlüsselwörtern, denn ein Beitrag kann auf mehrere Aussagen antworten). Stimmen anderer zählen erst ab einer Mindestzahl verschiedener Stimmender, ohne Startkonten und ohne die eigene Stimme; ihr Anteil an der Güte wächst mit ihrer Zahl, bleibt aber begrenzt. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
