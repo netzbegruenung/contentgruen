@@ -120,7 +120,7 @@ Drei Kennzahlen, ohne feste Zielwerte: Personen pro Tag, die suchen, im Wochenmi
 
 1. Einwürfe aus gesammeltem Material vorbereiten, per Skript, mit Link als Herkunft (#341, #288).
 2. Schreibwochenende im Gründungsteam: die 10 bis 15 häufigsten Aussagen mit je zwei Kommentaren (einer für die Kommentarspalte, einer sachlich mit Herkunft) und einige Posts.
-3. Nutzertest mit drei bis fünf Personen auf diesem Bestand, mobil zuerst, mit mindestens einer Person mit wenig Digitalerfahrung und einer außerhalb des akademischen Milieus. Bis dahin nur Qualität und Launch-Blocker.
+3. Nutzertest mit drei bis fünf Personen auf diesem Bestand, mobil zuerst, mit mindestens einer Person mit wenig Digitalerfahrung und einer außerhalb des akademischen Milieus ([`NUTZERTEST.md`](./NUTZERTEST.md)). Bis dahin nur Qualität und Launch-Blocker.
 4. Was den Launch blockiert, beheben.
 5. Launch in der Netzbegrünung.
 6. Eine Woche später ein Schreibsprint in der Netzbegrünung, mit „Hier fehlt eine Antwort“ und Rückmeldung zur Nutzung.
