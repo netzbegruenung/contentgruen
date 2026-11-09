@@ -50,8 +50,8 @@
                         <!--
                             Kein Link: Das Logo davor ist Schmuck ohne eigenen Namen
                             (alt=""), der Text nennt die Seite, auf der man ist
-                            ("Fangkorb"), nicht die Marke. Zur Startseite fuehrt der
-                            Haus-Knopf rechts im Kopf.
+                            ("Fangkorb"), nicht die Marke. Zur Startseite fuehrt "Start"
+                            rechts im Kopf.
                         -->
                         <img class="kopf-logo" src="marke/logo.svg" alt="" width="44" height="44">
                         {{ pageTitle }}
@@ -59,27 +59,19 @@
                 </div>
 
                 <div class="right-header-box">
-                    <!-- User info - to the left of avatar without login link -->
-                    <ng-container *ngIf="userInfo?.isAuthenticated; else notLoggedIn">
-                        <span class="user-info-compact">
-                            <span class="welcome-text">Hallo </span>
-                            <span class="text-bold">{{ userInfo?.userName }}</span>
-                        </span>
-                    </ng-container>
-                    <ng-template #notLoggedIn>
-                        <span class="user-info-compact">
-                            <span class="desktop-login-text">Nicht angemeldet</span>
-                        </span>
-                    </ng-template>
+                    <!-- Anonym nur "Anmelden": kein "Nicht angemeldet", kein Avatar-Platzhalter (#599) -->
+                    <span class="user-info-compact" *ngIf="userInfo?.isAuthenticated">
+                        <span class="welcome-text">Hallo </span>
+                        <span class="text-bold">{{ userInfo?.userName }}</span>
+                    </span>
 
                     <!--
                         Angemeldet oeffnet der Avatar ein kleines Profilmenue wie mobil
                         (Meine Beitraege, Abmelden); frueher wuerfelte ein Klick ein
-                        neues Bild. Ohne Anmeldung ist er nur ein Bild: Der Weg zum
-                        Anmelden ist der Knopf daneben, nicht ein zweiter ueber den
-                        Avatar (#343).
+                        neues Bild. Ohne Anmeldung gibt es ihn nicht: Der Weg zum
+                        Anmelden ist der Knopf daneben (#343, #599).
                     -->
-                    <button *ngIf="userInfo?.isAuthenticated; else avatarBesucher"
+                    <button *ngIf="userInfo?.isAuthenticated"
                         type="button"
                         class="avatar-container avatar-klickbar"
                         [matMenuTriggerFor]="profilmenue"
@@ -88,13 +80,6 @@
                             alt="Profilbild"
                             class="profile-avatar" />
                     </button>
-                    <ng-template #avatarBesucher>
-                        <div class="avatar-container">
-                            <img src="/icons/Profile_avatar_placeholder_large.png"
-                                alt="Nicht angemeldet"
-                                class="profile-avatar anonymous-avatar-icon" />
-                        </div>
-                    </ng-template>
                     <mat-menu #profilmenue="matMenu">
                         <button mat-menu-item type="button" class="profilmenue-eintrag"
                             (click)="navigateToMeineBeitraege()">
@@ -171,15 +156,19 @@
                         <span class="header-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
                     </button>
 
-                    <button mat-icon-button type="button" (click)="openFeedbackDialog()" class="mat-elevation-z1"
-                        matTooltip="Feedback" data-testid="feedback-knopf">
-                        <mat-icon aria-hidden="true">feedback</mat-icon>
-                        <span class="cdk-visually-hidden">Feedback</span>
+                    <!-- Feedback und Hilfe als Textlinks wie "Hier fehlt eine Antwort": Drei runde
+                         Symbole ohne Beschriftung waren nicht zu deuten (#599); unter 1200 px
+                         werden sie wie die anderen Textlinks zu runden Icon-Knoepfen. -->
+                    <button type="button" class="header-link" (click)="openFeedbackDialog()"
+                        matTooltip="Feedback" [matTooltipDisabled]="!kopfSchmal" data-testid="feedback-knopf">
+                        <mat-icon class="kopf-icon" aria-hidden="true">feedback</mat-icon>
+                        <span class="kopf-text">Feedback</span>
                     </button>
 
-                    <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button hilfe-knopf"
-                        aria-label="Hilfe öffnen">
-                        <mat-icon>help_outline</mat-icon>
+                    <button type="button" class="header-link hilfe-knopf" (click)="openHelpDialog()"
+                        matTooltip="Hilfe" [matTooltipDisabled]="!kopfSchmal">
+                        <mat-icon class="kopf-icon" aria-hidden="true">help_outline</mat-icon>
+                        <span class="kopf-text">Hilfe</span>
                     </button>
 
                     <!--
@@ -199,9 +188,10 @@
                         Destillier-Ansicht soll auch hier erst ihren Satz speichern
                         duerfen, bevor die Seite verlassen wird.
                     -->
-                    <button mat-icon-button (click)="zurStartseite()" class="mat-elevation-z1"
-                        aria-label="Zur Startseite">
-                        <mat-icon>home</mat-icon>
+                    <button type="button" class="header-link" (click)="zurStartseite()"
+                        matTooltip="Start" [matTooltipDisabled]="!kopfSchmal" data-testid="start-knopf">
+                        <mat-icon class="kopf-icon" aria-hidden="true">home</mat-icon>
+                        <span class="kopf-text">Start</span>
                     </button>
                 </div>
             </div>

@@ -88,7 +88,7 @@ describe('AppComponent - Anonymous User Functionality', () => {
       expect(navigationService.navigateToLogin).not.toHaveBeenCalled();
     });
 
-    it('should show "Du bist nicht angemeldet" for anonymous users', () => {
+    it('zeigt anonym im Kopf nur "Anmelden", ohne "Nicht angemeldet" und Avatar-Platzhalter (#599)', () => {
       userInfoSubject.next({
         isAuthenticated: false,
         userId: null,
@@ -97,11 +97,10 @@ describe('AppComponent - Anonymous User Functionality', () => {
       });
       fixture.detectChanges();
 
-      const compiled = fixture.nativeElement;
-      const desktopLoginText = compiled.querySelector('.desktop-login-text');
-      if (desktopLoginText) {
-        expect(desktopLoginText.textContent).toContain('Du bist nicht angemeldet');
-      }
+      const compiled: HTMLElement = fixture.nativeElement;
+      expect(compiled.textContent).not.toContain('Nicht angemeldet');
+      expect(compiled.querySelector('.right-header-box .avatar-container')).toBeNull();
+      expect(compiled.querySelector('.right-header-box .user-info-compact')).toBeNull();
       expect(compiled.textContent).toContain('Anmelden');
     });
 

@@ -1,3 +1,5 @@
+import { FORMULAR_PFAD } from '../shared/formular-adresse';
+
 /**
  * Wohin es nach dem Anmelden zurueckgeht. Liegt im sessionStorage, weil der Weg ueber
  * die Login-Seiten und Keycloak die Adresse nicht immer mitnimmt. Das ist an die
@@ -39,4 +41,15 @@ export function rueckkehrzielLoeschen(): void {
   } catch {
     // Ohne Zugriff auf den Storage liegt dort auch nichts zum Loeschen.
   }
+}
+
+/**
+ * Der Satz über der Login-Auswahl, der sagt, wozu die Anmeldung nötig ist (#600): nur für
+ * die Formulare, die auf eine Aussage antworten, also das Ziel von „Selbst beantworten“.
+ * Für andere Ziele, auch nach Klick auf „Anmelden“ im Kopf, steht kein Satz.
+ */
+export function anmeldegrund(ziel: string): string | null {
+  const pfad = ziel.split(/[?#]/)[0];
+  const antwortFormulare = [FORMULAR_PFAD.commentary, FORMULAR_PFAD.generictext];
+  return antwortFormulare.includes(pfad) ? 'Zum Beantworten melde dich an.' : null;
 }

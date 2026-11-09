@@ -222,7 +222,7 @@ describe('BeitragskarteComponent', () => {
 
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
 
@@ -289,9 +289,10 @@ describe('BeitragskarteComponent', () => {
       expect(fixture.nativeElement.querySelector('.autor-abzeichen')).toBeNull();
     });
 
-    it('zeigt ohne Herkunft einen Hinweis und sonst die Adressen', () => {
+    it('zeigt ohne Herkunft keine Zeile und sonst die Adressen (#599)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result')));
-      expect(element('.quellen-leer').textContent).toContain('Keine Herkunft hinterlegt');
+      expect(element('.karte-quellen')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Keine Herkunft');
 
       zeigen(
         ausSuchergebnis(
@@ -342,7 +343,7 @@ describe('BeitragskarteComponent', () => {
       aktionen().kopierenMitHerkunft();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('3× genutzt');
       tick(600);
     }));
   });
@@ -566,7 +567,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('3× genutzt');
       tick(600);
     }));
 
@@ -584,7 +585,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
 
@@ -595,7 +596,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
   });
@@ -674,6 +675,19 @@ describe('BeitragskarteComponent', () => {
       expect(details.textContent).toContain('Suchübereinstimmung: 90%');
       expect(details.textContent).toContain('Antwortqualität: 85%');
       expect(element('.statement-zeile').getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('zeigt die Aussage als Kontextzeile vor Titel und Text (#599)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+      const statement = element('.statement');
+      const kopf = element('.karte-kopf');
+      expect(statement.compareDocumentPosition(kopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('zeigt die Nutzung beschriftet in der Meta-Zeile statt als Kreis im Kopf (#599)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 1 })));
+      expect(element('.karte-kopf .badge-nutzung')).toBeNull();
+      expect(element('.karte-meta').textContent).toContain('1× genutzt');
     });
 
     it('zeigt ohne Aussage keinen Aufklapper', () => {

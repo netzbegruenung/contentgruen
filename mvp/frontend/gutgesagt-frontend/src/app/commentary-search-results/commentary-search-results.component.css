@@ -24,8 +24,23 @@
     text-align: right;
 }
 
-.action-call-button {
-    margin-left: 10px;
+/* Derselbe Textlink wie mobil ueber den Treffern (result-view, .ergaenzen-link) */
+.ergaenzen-link {
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--primary-dark);
+    font: inherit;
+    font-size: 1rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.ergaenzen-link:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
 }
 
 /* Removed .dark-green-button - using global styles */
