@@ -58,6 +58,8 @@ export class LoginComponent {
             email: ['', [Validators.required, Validators.email]],
             password: ['', [Validators.required, Validators.minLength(6)]]
         });
+        // Wer die Eingaben aendert, hat die Meldung gelesen; sie gilt bis dahin (#645).
+        this.loginForm.valueChanges.subscribe(() => (this.errorMessage = null));
     }
 
     onLogin() {

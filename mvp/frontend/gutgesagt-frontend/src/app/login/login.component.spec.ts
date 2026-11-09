@@ -90,6 +90,14 @@ describe('LoginComponent', () => {
       expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
     });
 
+    it('nimmt die Meldung zurück, sobald die Eingaben sich ändern', () => {
+      anmeldenMitFehler();
+      component.loginForm.get('password')!.setValue('anders123');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    });
+
     it('nennt bei "Passwort vergessen?" dieselbe Mail wie "So bekommst du ein Konto"', () => {
       const hinweis = (fixture.nativeElement as HTMLElement).querySelector('.passwort-vergessen')!;
       const link = hinweis.querySelector('a')!;

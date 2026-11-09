@@ -26,11 +26,11 @@ describe('MeineBeitraegeComponent', () => {
   let sheetErgebnis: Observable<unknown>;
   let kennung: string | null;
   let nutzungsstatistik: UserUsageStats | null;
-  /** Was "Hier fehlt eine Antwort" liefert; Standard: nichts offen. */
-  let offeneLaden: jasmine.Spy;
+  /** Was "Hier fehlt eine Antwort" liefert; Standard: keine. */
+  let unbeantworteteLaden: jasmine.Spy;
 
   beforeEach(() => {
-    offeneLaden = jasmine.createSpy('unbeantworteteAussagen').and.returnValue(of([]));
+    unbeantworteteLaden = jasmine.createSpy('unbeantworteteAussagen').and.returnValue(of([]));
     sheetErgebnis = of(undefined);
     kennung = null;
     nutzungsstatistik = null;
@@ -69,7 +69,7 @@ describe('MeineBeitraegeComponent', () => {
         },
         { provide: EinwurfService, useValue: { eigeneLaden } },
         { provide: SperrnachrichtService, useValue: { meine: () => of([]) } },
-        { provide: StatementService, useValue: { unbeantworteteAussagen: offeneLaden } },
+        { provide: StatementService, useValue: { unbeantworteteAussagen: unbeantworteteLaden } },
         {
           provide: AuthService,
           // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.
@@ -458,51 +458,51 @@ describe('MeineBeitraegeComponent', () => {
   });
 
   describe('erster Schritt im leeren Zustand (#645)', () => {
-    function offene(n: number) {
+    function unbeantwortete(n: number) {
       return Array.from({ length: n }, (_, i) => ({
         statement_id: `a-${i + 1}`,
-        statement_text: `Offene Aussage ${i + 1}`,
+        statement_text: `Unbeantwortete Aussage ${i + 1}`,
         personen_ohne_treffer: 0,
         themen: [],
       }));
     }
 
     function eintraege(): HTMLElement[] {
-      return Array.from(fixture.nativeElement.querySelectorAll('[data-testid="offene-aussage"]'));
+      return Array.from(fixture.nativeElement.querySelectorAll('[data-testid="unbeantwortete-aussage"]'));
     }
 
-    it('zeigt die ersten drei offenen Aussagen mit "Antworten" ins Kommentarformular', async () => {
-      offeneLaden.and.returnValue(of(offene(5)));
+    it('zeigt die ersten drei unbeantworteten Aussagen mit "Antworten" ins Kommentarformular', async () => {
+      unbeantworteteLaden.and.returnValue(of(unbeantwortete(5)));
       await erstellen([]);
 
-      expect(text('.erster-schritt h2')).toBe('Fang mit einer offenen Aussage an');
-      expect(eintraege().map((e) => e.querySelector('.offene-aussage-text')!.textContent!.trim())).toEqual([
-        'Offene Aussage 1',
-        'Offene Aussage 2',
-        'Offene Aussage 3',
+      expect(text('.erster-schritt h2')).toBe('Fang mit einer unbeantworteten Aussage an');
+      expect(eintraege().map((e) => e.querySelector('.unbeantwortete-aussage-text')!.textContent!.trim())).toEqual([
+        'Unbeantwortete Aussage 1',
+        'Unbeantwortete Aussage 2',
+        'Unbeantwortete Aussage 3',
       ]);
       const antworten = eintraege()[0].querySelector('a.antworten') as HTMLAnchorElement;
       expect(antworten.textContent!.trim()).toBe('Antworten');
       expect(antworten.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1&von=hier-fehlt-eine-antwort');
       expect(
-        (fixture.nativeElement.querySelector('.alle-offenen') as HTMLAnchorElement).getAttribute('href'),
+        (fixture.nativeElement.querySelector('.alle-unbeantworteten') as HTMLAnchorElement).getAttribute('href'),
       ).toBe('/hier-fehlt-eine-antwort');
       // "Beitragen" bleibt als zweiter Weg.
       expect(fixture.nativeElement.querySelector('.beitraege-leer-knopf')).not.toBeNull();
     });
 
-    it('zeigt ohne offene Aussagen oder bei einem Ladefehler nur "Beitragen"', async () => {
-      offeneLaden.and.returnValue(throwError(() => new Error('weg')));
+    it('zeigt ohne unbeantwortete Aussagen oder bei einem Ladefehler nur "Beitragen"', async () => {
+      unbeantworteteLaden.and.returnValue(throwError(() => new Error('weg')));
       await erstellen([]);
 
       expect(fixture.nativeElement.querySelector('.erster-schritt')).toBeNull();
       expect(fixture.nativeElement.querySelector('.beitraege-leer-knopf')).not.toBeNull();
     });
 
-    it('fragt mit eigenen Beiträgen nicht nach offenen Aussagen', async () => {
+    it('fragt mit eigenen Beiträgen nicht nach unbeantworteten Aussagen', async () => {
       await erstellen([beitrag()]);
 
-      expect(offeneLaden).not.toHaveBeenCalled();
+      expect(unbeantworteteLaden).not.toHaveBeenCalled();
     });
   });
 

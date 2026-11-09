@@ -14,7 +14,7 @@
   color: var(--text-secondary);
 }
 
-/* Leerer Zustand: offene Aussagen als erster Schritt (#645) */
+/* Leerer Zustand: unbeantwortete Aussagen als erster Schritt (#645) */
 .erster-schritt {
   margin: var(--spacing-md) 0;
 }
@@ -23,13 +23,13 @@
   font-size: 18px;
 }
 
-.offene-aussagen {
+.unbeantwortete-aussagen {
   list-style: none;
   margin: 0 0 12px;
   padding: 0;
 }
 
-.offene-aussage {
+.unbeantwortete-aussage {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -39,13 +39,13 @@
   border-bottom: 1px solid var(--disabled-bg);
 }
 
-.offene-aussage-text {
+.unbeantwortete-aussage-text {
   flex: 1 1 240px;
   margin: 0;
   font-weight: 500;
 }
 
-.alle-offenen {
+.alle-unbeantworteten {
   display: inline-block;
   margin-bottom: var(--spacing-md);
   color: var(--primary-dark);

@@ -28,7 +28,7 @@ import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
 import { beantwortenParams } from '../hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 
-/** So viele offene Aussagen zeigt der leere Zustand als ersten Schritt (#645). */
+/** So viele unbeantwortete Aussagen zeigt der leere Zustand als ersten Schritt (#645). */
 export const ERSTE_SCHRITTE = 3;
 
 /** Die beiden Tabs: eigene Beitraege und "Meine Einwuerfe". */
@@ -87,8 +87,8 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   isLoading = true;
   totalUsageCount = 0;
   nutzungsstatistik: UserUsageStats | null = null;
-  /** Ohne eigene Beitraege: die ersten offenen Aussagen aus "Hier fehlt eine Antwort" (#645). */
-  offeneAussagen: UnbeantworteteAussage[] = [];
+  /** Ohne eigene Beitraege: die ersten unbeantworteten Aussagen aus "Hier fehlt eine Antwort" (#645). */
+  unbeantworteteAussagen: UnbeantworteteAussage[] = [];
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   readonly beantwortenParams = beantwortenParams;
@@ -144,24 +144,24 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
       this.calculateTotalUsage(data.results);
       this.isLoading = false;
       if (this.totalRecords === 0) {
-        this.offeneAussagenLaden();
+        this.unbeantworteteLaden();
       }
       this.cdr.markForCheck();
     });
   }
 
   /**
-   * Der erste Schritt im leeren Zustand: offene Aussagen zum direkten Antworten, in der
+   * Der erste Schritt im leeren Zustand: unbeantwortete Aussagen zum direkten Antworten, in der
    * Reihenfolge von "Hier fehlt eine Antwort". Scheitert das Laden, bleibt nur "Beitragen".
    */
-  private offeneAussagenLaden(): void {
-    this.statementService.unbeantworteteAussagen().subscribe({
+  private unbeantworteteLaden(): void {
+    this.statementService.unbeantworteteAussagen().pipe(takeUntil(this.destroy$)).subscribe({
       next: (aussagen) => {
-        this.offeneAussagen = aussagen.slice(0, ERSTE_SCHRITTE);
+        this.unbeantworteteAussagen = aussagen.slice(0, ERSTE_SCHRITTE);
         this.cdr.markForCheck();
       },
       error: () => {
-        this.offeneAussagen = [];
+        this.unbeantworteteAussagen = [];
         this.cdr.markForCheck();
       },
     });
