@@ -63,12 +63,14 @@
 <div class="mobile-results-wrapper"
      *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
 
-    <div class="mobile-gefunden-zu" *ngIf="hatTreffer && erkannt">
-        <ng-container *ngTemplateOutlet="gefundenZu"></ng-container>
+    <!-- Mobil in einer Zeile mit "Selbst beantworten", damit der Kopf nicht waechst (#642) -->
+    <div class="mobile-gefunden-zu gefunden-zu" *ngIf="hatTreffer && erkannt as aussage">
+        <p class="gefunden-zu-satz">Gefunden zu: <em class="gefunden-zu-aussage">„{{ aussage.text }}“</em></p>
     </div>
 
     <!-- Dezent unter dem Suchband, derselbe Wortlaut wie der Knopf unter den Treffern (#599) -->
     <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
+        <button *ngIf="erkannt" type="button" class="ergaenzen-link nicht-gemeint" (click)="zuAnderenAussagen()">Nicht gemeint?</button>
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
             Selbst beantworten
         </button>

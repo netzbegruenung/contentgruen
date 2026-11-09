@@ -747,7 +747,9 @@ describe('ResultViewComponent: Gefunden zu', () => {
       expect(bloecke.length).withContext('genau ein Block').toBe(1);
       expect(bloecke[0].querySelector('.gefunden-zu-satz')?.textContent?.replace(/\s+/g, ' ').trim())
         .toBe(`Gefunden zu: „${ERKANNT}“`);
-      expect(bloecke[0].querySelector('button.nicht-gemeint')?.textContent?.trim()).toBe('Nicht gemeint?');
+      const nichtGemeint = seite.querySelectorAll('button.nicht-gemeint');
+      expect(nichtGemeint.length).toBe(1);
+      expect(nichtGemeint[0].textContent?.trim()).toBe('Nicht gemeint?');
       // Der Block steht vor der ersten Karte.
       const ersteKarte = seite.querySelector('app-kartenliste')!;
       expect(bloecke[0].compareDocumentPosition(ersteKarte) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

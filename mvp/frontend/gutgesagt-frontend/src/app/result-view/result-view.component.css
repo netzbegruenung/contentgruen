@@ -524,6 +524,7 @@ mat-sidenav-content {
 .mobile-ergaenzen-kopf {
   display: flex;
   justify-content: flex-end;
+  gap: var(--spacing-md);
   padding: 0 var(--page-margin, 16px);
 }
 
@@ -659,6 +660,11 @@ mat-sidenav-content {
 
 .mobile-gefunden-zu {
   padding: var(--spacing-xs) var(--page-margin, 16px) 0;
+}
+
+/* "Nicht gemeint?" links, "Selbst beantworten" rechts in derselben Zeile */
+.mobile-ergaenzen-kopf .nicht-gemeint {
+  margin-right: auto;
 }
 
 .mobile-gefunden-zu .gefunden-zu-satz {
