@@ -152,6 +152,8 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       expect(erklaerung.textContent).toContain('Kurze Sätze');
       expect(erklaerung.textContent).toContain('zählen, sobald genug zusammenkommen');
       expect(angetippt).not.toHaveBeenCalled();
+      // Kein leeres Menü für Screenreader: die Erklärung ist der eine Menüpunkt.
+      expect(erklaerung.getAttribute('role')).toBe('menuitem');
     });
 
     it('steigt nach einer Stimme, wenn der Server eine höhere Güte meldet', fakeAsync(() => {
@@ -205,6 +207,18 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       fixture.detectChanges();
 
       expect(zahlen()).toEqual(['1', '1']);
+      tick(50);
+    }));
+
+    it('am eigenen Beitrag ohne die eigene Stimme, wie der Server zählt', fakeAsync(() => {
+      zeigen(ausSuchergebnis(paket({ ist_eigener_beitrag: true })));
+      votingService.setLike.and.returnValue(of({} as any));
+      contentService.beitragLaden.and.returnValue(throwError(() => ({ status: 500 })));
+
+      aktionen().toggleLike();
+      fixture.detectChanges();
+
+      expect(zahlen()).toEqual(['2', '0']);
       tick(50);
     }));
 

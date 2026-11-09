@@ -22,7 +22,8 @@
                 <app-siegel [guete]="g.wert"></app-siegel>
             </button>
             <mat-menu #siegelMenue="matMenu" class="siegel-menue" xPosition="before">
-                <div class="siegel-erklaerung" *ngIf="erklaerung as e" (click)="$event.stopPropagation()">
+                <!-- Ein Menuepunkt ohne Aktion: Screenreader lesen den Text vor, statt ein leeres Menue anzusagen -->
+                <div mat-menu-item disableRipple class="siegel-erklaerung" *ngIf="erklaerung as e" (click)="$event.stopPropagation()">
                     <p class="siegel-erklaerung-kopf">{{ e.ueberschrift }}</p>
                     <p class="siegel-erklaerung-text">Das Siegel zeigt, wie gut der Beitrag nach festen Regeln formuliert ist und wie andere ihn bewerten.</p>
                     <ul *ngIf="e.kriterien.length" class="siegel-kriterien">
@@ -267,6 +268,7 @@
                 [ansichtVerlinkt]="ansichtVerlinkt"
                 [hilfreich]="guete?.hilfreich ?? null"
                 [nichtHilfreich]="guete?.nichtHilfreich ?? null"
+                [eigeneStimmeImZaehler]="!istEigen"
                 (likeToggled)="gueteNachladen()"
                 (dislikeToggled)="gueteNachladen()"
                 (kopiert)="nutzungHochzaehlen()">

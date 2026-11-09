@@ -11,8 +11,7 @@ from dtos.contribution import (
     GetContributionsOfUserResponse,
     MeinBeitragResponse,
 )
-from services.beitrag_fuer_aufrufer import Aufrufer
-from services.guete_service import als_responses_mit_guete
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from domain.content_registry import BEITRAGSTYPEN_WERTE
 from services.usage_tracking_service import get_usage_service
 from core.config import Settings
@@ -108,9 +107,9 @@ async def search_content(
 
         # Nur eigene Beitraege: das Kennzeichen ist immer gesetzt, die Kennung bleibt
         # wie ueberall nur Admins; Bearbeitungshistorie geht nicht nach aussen (#385).
-        results = await als_responses_mit_guete(
-            MeinBeitragResponse, mit_nutzung, aufrufer
-        )
+        # Ohne Guete: Meine Beitraege zeigt kompakte Karten, die kein Siegel tragen
+        # (#427); das Gegenlesen fuer bis zu 100 Beitraege waere verschenkt.
+        results = als_responses(MeinBeitragResponse, mit_nutzung, aufrufer)
         response: GetContributionsOfUserResponse = GetContributionsOfUserResponse(
             results_count=len(results),
             results=results,

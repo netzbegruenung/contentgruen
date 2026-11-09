@@ -89,7 +89,7 @@ def test_startkonten_gehen_an_die_abfrage():
     assert repository.stimmen_je_beitrag.call_args.args[1] == frozenset({START})
 
 
-def test_eigene_stimme_zaehlt_nicht_fuer_die_guete_aber_im_zaehler():
+def test_eigene_stimme_zaehlt_weder_fuer_die_guete_noch_im_zaehler():
     beitrag = _beitrag()
     stimmen = {
         str(beitrag.id): [(AUTORIN, "like"), ("a", "like"), ("b", "like")],
@@ -99,7 +99,8 @@ def test_eigene_stimme_zaehlt_nicht_fuer_die_guete_aber_im_zaehler():
     # Zwei fremde Stimmen: unter der Mindestzahl, die Güte bleibt beim Kriterienanteil.
     assert beitrag.guete_stimmen_zaehlen is False
     assert beitrag.guete == 8
-    assert beitrag.stimmen_hilfreich == 3
+    # Sonst verriete der Zähler neben "zählen noch nicht" die Stimme der Autorin.
+    assert beitrag.stimmen_hilfreich == 2
 
 
 def test_ab_der_mindestzahl_heben_stimmen_die_guete():
@@ -126,6 +127,20 @@ def test_ohne_sprachmodell_neu():
     [beitrag] = service.ergaenzen([_beitrag()])
     assert beitrag.guete is None
     assert beitrag.guete_erfuellt == []
+
+
+def test_scheitert_das_gegenlesen_an_einem_text_bleibt_nur_diese_karte_neu():
+    def lesen(titel, *_, **__):
+        if titel == "kaputt":
+            raise ValueError()
+        return Gegengelesen(guete=9, anmerkungen=[])
+
+    gegenlesen = MagicMock()
+    gegenlesen.gegenlesen.side_effect = lesen
+    service, _ = _service(gegenlesen)
+    kaputt, heil = service.ergaenzen([_beitrag(title="kaputt"), _beitrag()])
+    assert kaputt.guete is None
+    assert heil.guete == 9
 
 
 def test_gegenlesen_wird_je_text_zwischengehalten():

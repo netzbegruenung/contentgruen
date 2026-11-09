@@ -82,6 +82,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    */
   @Input() hilfreich: number | null = null;
   @Input() nichtHilfreich: number | null = null;
+  /** Aus am eigenen Beitrag: Die Zaehler zeigen nur Stimmen anderer (#427). */
+  @Input() eigeneStimmeImZaehler = true;
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();
@@ -160,8 +162,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private zahl(gemeldet: number | null, richtung: 'like' | 'dislike'): number | null {
-    if (gemeldet === null) {
-      return null;
+    if (gemeldet === null || !this.eigeneStimmeImZaehler) {
+      return gemeldet;
     }
     const jetzt = this.angezeigt === richtung ? 1 : 0;
     const drin = this.stimmeImZaehler === richtung ? 1 : 0;

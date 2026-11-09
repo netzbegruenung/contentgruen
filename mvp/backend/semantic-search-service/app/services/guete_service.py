@@ -8,9 +8,9 @@ die Aussage kennt. Das Ergebnis des Gegenlesens wird nicht gespeichert, nur im
 Arbeitsspeicher je Titel und Text zwischengehalten.
 
 Gezählt werden die Stimmen anderer: ohne Startkonten (#352) und ohne die Stimme der
-Person, die den Beitrag geschrieben hat. Die Zähler an den Stimm-Knöpfen zeigen die
-Summen ohne Startkonten, wie die Datenschutzerklärung sie nennt („andere sehen nur
-Summen“). Einzelne Stimmen oder Kennungen gehen nie hinaus.
+Person, die den Beitrag geschrieben hat; dieselben Summen zeigen die Zähler an den
+Stimm-Knöpfen („andere sehen nur Summen“, Datenschutzerklärung). Einzelne Stimmen
+oder Kennungen gehen nie hinaus.
 
 Fehlt das Sprachmodell oder antwortet die Datenbank nicht, bleibt die Karte ohne
 Güte bzw. ohne Zähler; die Antwort scheitert daran nicht.
@@ -81,6 +81,15 @@ class GueteService:
                 self._modell_fehlt_geloggt = True
                 logger.error("Guete ohne Gegenlesen: %s", type(fehler).__name__)
             return None, []
+        except Exception as fehler:
+            # Ein einzelner Text, an dem das Gegenlesen scheitert: nur diese Karte
+            # bleibt ohne Kriterienanteil, die anderen der Antwort nicht.
+            logger.error(
+                "Gegenlesen fuer die Guete gescheitert: %s",
+                type(fehler).__name__,
+                exc_info=True,
+            )
+            return None, []
         if ergebnis.guete is None:
             kriterien: Kriterien = (None, [])
         else:
@@ -107,7 +116,7 @@ class GueteService:
     def ergaenzen(self, objekte: Sequence[Any]) -> Sequence[Any]:
         """
         Setzt an jedem Beitrag ``guete``, ``guete_erfuellt``, ``guete_stimmen_zaehlen``
-        und die Zähler ``stimmen_hilfreich``/``stimmen_nicht_hilfreich``.
+        und die Zähler ``stimmen_hilfreich``/``stimmen_nicht_hilfreich`` (Stimmen anderer).
 
         Vor ``fuer_aufrufer`` aufrufen: Danach ist ``original_author`` für alle außer
         Admins geleert, und die eigene Stimme ließe sich nicht mehr auslassen.
@@ -122,18 +131,19 @@ class GueteService:
                 getattr(objekt, "text", None) or "",
                 _typ(objekt) not in _BESCHREIBENDE_TITEL,
             )
+            # Nur Stimmen anderer, fuer Guete wie Zaehler: Zaehlten die Zaehler die
+            # eigene Stimme mit, verrieten sie neben "Stimmen zaehlen noch nicht",
+            # wie die genannte Person ueber ihren Beitrag gestimmt hat.
             hilfreich = nicht_hilfreich = 0
-            fremd_hilfreich = fremd_nicht = 0
             autor = getattr(objekt, "original_author", None)
             for kennung, richtung in (stimmen or {}).get(str(objekt.id), []):
+                if kennung == autor:
+                    continue
                 ja = richtung == VoteType.LIKE.value
                 hilfreich += ja
                 nicht_hilfreich += not ja
-                if kennung != autor:
-                    fremd_hilfreich += ja
-                    fremd_nicht += not ja
             guete = guete_berechnen(
-                kriterien, fremd_hilfreich, fremd_nicht, self._gewichte
+                kriterien, hilfreich, nicht_hilfreich, self._gewichte
             )
             objekt.guete = guete.wert
             objekt.guete_erfuellt = erfuellt

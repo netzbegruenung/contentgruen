@@ -149,9 +149,16 @@
   }
 }
 
-.siegel-erklaerung {
+// Als Menuepunkt (fuer Screenreader) gestaltet wie ein Textfeld: mehrzeilig, kein Hover.
+.siegel-erklaerung.mat-mdc-menu-item {
+  display: block;
+  height: auto;
+  min-height: 0;
+  cursor: default;
+  white-space: normal;
   max-width: 280px;
   padding: 4px 16px 8px;
+  background: none;
   font-size: 14px;
   line-height: 1.4;
 }
