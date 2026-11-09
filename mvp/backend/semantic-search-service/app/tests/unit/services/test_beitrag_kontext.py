@@ -130,3 +130,12 @@ class TestKontextLaden:
                 {"id": str(a), "content_type": "commentary", "titel": "T"}
             ],
         }
+
+
+@pytest.mark.unit
+def test_beitragstypen_der_weiteren_antworten_wie_in_der_registry():
+    # statement_repository importiert die Registry nicht (sie zieht die Dienstschicht nach).
+    from domain.content_registry import BEITRAGSTYPEN_WERTE
+    from repositories.implementations.qdrant.statement_repository import _BEITRAGSTYPEN
+
+    assert sorted(_BEITRAGSTYPEN) == BEITRAGSTYPEN_WERTE

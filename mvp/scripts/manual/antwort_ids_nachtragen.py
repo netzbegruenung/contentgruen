@@ -23,7 +23,10 @@ Auf Test/Prod liegt kein Repo-Checkout - Skript herunterladen, dann ausfuehren:
     docker exec -i gutgesagt-semantic-search python - --ausfuehren \
         < antwort_ids_nachtragen.py
 
-Idempotent: ein zweiter Lauf mit --ausfuehren meldet nachzutragen = 0. Geschrieben
+In ruhiger Zeit laufen lassen und danach einmal wiederholen: Kommt waehrend des
+Laufs eine Antwort dazu, kann der erste Lauf ihr Feld mit dem alten Stand schreiben;
+der zweite repariert das. Idempotent: ein zweiter Lauf mit --ausfuehren meldet
+sonst nachzutragen = 0. Geschrieben
 wird mit set_payload nur dieses eine Feld. Die Ausgabe enthaelt nur Zaehler, keine
 Texte und keine IDs.
 """

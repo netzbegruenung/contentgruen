@@ -29,7 +29,10 @@ logger = logging.getLogger(__name__)
 AUSSAGEN_JE_ANTWORT_HOECHSTENS = 20
 
 # Beitragstypen, die als weitere Antwort aufgelistet werden; Aussagen und Herkunft
-# sind keine Beitraege (ADR 0002).
+# sind keine Beitraege (ADR 0002). Dieselbe Menge wie BEITRAGSTYPEN_WERTE in
+# domain/content_registry.py; nicht von dort importiert, weil die Registry die
+# Dienstschicht nachzieht und das Repository nicht von ihr abhaengen soll. Ein
+# Unit-Test haelt beide gleich.
 _BEITRAGSTYPEN = frozenset(
     {
         ContentType.COMMENTARY.value,

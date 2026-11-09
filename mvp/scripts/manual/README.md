@@ -61,8 +61,10 @@ semantic-search-Container, mit dessen Qdrant-Umgebung:
 - `antwort_ids_nachtragen.py` – traegt das Payload-Feld `antwort_ids` fuer Aussagen
   nach (IDs ihrer Antworten, Rueckwaertssuche Beitrag → Aussage fuer die Beitragsseite,
   #603) und legt den Keyword-Index an. Ohne `--ausfuehren` wird nur gezaehlt;
-  idempotent. Einmal nach dem Ausrollen der Version laufen lassen, die das Feld
-  schreibt: Bis dahin zeigt die Beitragsseite zu aelteren Beitraegen keine Aussage.
+  idempotent. Nach dem Ausrollen der Version laufen lassen, die das Feld schreibt,
+  in ruhiger Zeit, und danach einmal wiederholen (`nachzutragen: 0`): Eine Antwort, die
+  waehrend des Laufs dazukommt, kann der erste Lauf mit altem Stand ueberschreiben. Bis
+  dahin zeigt die Beitragsseite zu aelteren Beitraegen keine Aussage.
 
 Auf Test/Prod liegt kein Repo-Checkout; die Skripte werden heruntergeladen:
 

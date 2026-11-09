@@ -269,7 +269,8 @@ async def beitrag_aendern(
 
 
 # response_model=None: Ein Union-Modell liesse Pydantic den Typ raten; die Antwort ist
-# schon das DTO ihres Typs (die Feldauswahl), dazu nur die eigene Stimme.
+# das DTO ihres Typs (die Feldauswahl), dazu die eigene Stimme und (#603) aussage und
+# weitere_antworten (services/beitrag_kontext.py). Deshalb stehen sie nicht in OpenAPI.
 @router.get("/beitrag/{beitrag_id}", response_model=None)
 async def beitrag_ansehen(
     beitrag_id: uuid.UUID,

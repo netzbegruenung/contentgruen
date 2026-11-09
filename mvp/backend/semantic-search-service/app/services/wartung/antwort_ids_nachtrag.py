@@ -11,6 +11,11 @@ passt - ein zweiter Lauf schreibt nichts. set_payload aendert nur dieses eine Fe
 Antworten, Status und Vektoren bleiben unberuehrt. Ohne ausfuehren=True wird nur
 gezaehlt.
 
+Haengt waehrend des Laufs jemand eine Antwort an, kann der Nachtrag das Feld dieser
+Aussage mit dem Stand von vorher ueberschreiben (gelesen, dann seitenweise
+geschrieben). Deshalb in ruhiger Zeit laufen lassen und danach einmal wiederholen:
+Der zweite Lauf meldet nachzutragen = 0 oder repariert genau solche Aussagen.
+
 Aufruf: scripts/manual/antwort_ids_nachtragen.py
 """
 
