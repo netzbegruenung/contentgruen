@@ -627,6 +627,7 @@ async def _erwartung_mit_ersatz(
     ersetzt = fall._replace(
         erwartet=fall.ersatz.erwartet,
         dieselbe_behauptung=fall.ersatz.dieselbe_behauptung,
+        phaenomen=fall.ersatz.phaenomen or fall.phaenomen,
         ersatz=None,
     )
     erwartung_ersatz = await _erwartung(dienste, ersetzt, cache)
@@ -698,6 +699,7 @@ async def fall_messen(
             None,
             (),
             erwartung.ausgeschlossen,
+            ersatz_fuer=ersatz_fuer,
         )
     beginn = time.perf_counter()
     aussagetreffer, polaritaet = await aussagetreffer_finden(

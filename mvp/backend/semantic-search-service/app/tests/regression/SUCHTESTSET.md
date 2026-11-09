@@ -97,8 +97,8 @@ so wie er im Dienst mit dieser Schwelle liefe.
   ihnen), nennen unter `nur_mit` die Aussage, ohne die sie nicht zählen. Kommen Aussagen
   zu einem Thema dazu, vor dem Messen die Fälle „fremd“ prüfen; sonst zählen echte
   Treffer als Fehltreffer.
-- Fälle, deren erwartete Aussage im gemessenen Bestand fehlt, zählen nicht mit; die
-  Ausgabe nennt sie. S01 bis S42 erwarten Aussagen des Seeds, ab S43 des Startbestands
+- Fälle, deren erwartete Aussage im gemessenen Bestand fehlt, zählen nicht mit (außer
+  mit Ersatz, siehe unten); die Ausgabe nennt sie. S01 bis S42 erwarten Aussagen des Seeds, ab S43 des Startbestands
   (`STARTBESTAND` in `suche_testset.py`). Zwölf Aussagen hat der Startbestand mit dem
   Seed gemeinsam; am Seed zählen die Fälle zum Startbestand nicht mit. So bleibt das Soll
   des nächtlichen Laufs, wenn Fälle zum Startbestand dazukommen (ein Unit-Test prüft das).
@@ -107,7 +107,7 @@ so wie er im Dienst mit dieser Schwelle liefe.
   #606): S06 bis S08 erwarten die Dunkelflaute-Aussage, S09 („Ökostrom ist viel zu teuer“)
   die Atomkraft-Aussage, deren Antworten die Kosten von Sonne und Wind gegen neue
   Atomkraftwerke stellen. S09 ist dort nicht dieselbe Behauptung und zählt nicht für die
-  Zerfaserung, S06 schon. Die Ausgabe nennt die Fälle unter „Mit Ersatz gemessen“; am
+  Zerfaserung, S06 schon; unter den Phänomenen zählt S09 dort als „verwandt“. Die Ausgabe nennt die Fälle unter „Mit Ersatz gemessen“; am
   Seed gilt weiter die ursprüngliche Erwartung. Ein Unit-Test prüft, dass jeder Fall zu
   einer Seed-Aussage, die dem Startbestand fehlt, einen Ersatz hat.
 - Keine Personendaten, keine Eingaben aus Produktion: Suchanfragen sind selbst
@@ -274,7 +274,9 @@ der Startbestand nicht, und die Messung überspringt solche Fälle. Seit #606 z�
 mit ihrem Ersatz. Gemessen am 09.11.2026 lokal am freigegebenen Startbestand (dieselbe
 Datei wie beim Import auf Produktion, 30 Aussagen, 60 Kommentare, eingespielt mit
 `beitraege_importieren.py` in einen eigenen, leeren Stack), mit
-`SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=an` wie auf Produktion, Bestätiger aus:
+`SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=an` wie auf Produktion, Bestätiger aus. Beide Zeilen
+sind frisch gemessen; die Zeile „vorher“ gleicht bei 0,82 der Messung am Entwurf oben (die
+NLI-Stufe ändert nur die Zerfaserung):
 
 | bei 0,82 | gemessen | Treffer | Fehltreffer | keine | Präzision | Recall@10 | Zerfaserung | ähnliche Aussagen |
 |---|---|---|---|---|---|---|---|---|

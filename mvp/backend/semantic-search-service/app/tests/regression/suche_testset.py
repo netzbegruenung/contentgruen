@@ -26,7 +26,8 @@ Felder:
   Startbestand nicht).
 - ersatz: Erwartung fuer einen Bestand, dem eine Aussage aus erwartet fehlt (Ersatz). Fuer
   Faelle zu den zwei Seed-Aussagen, die der Startbestand nicht hat (S06 bis S09): Dort
-  passen die Antworten einer anderen Aussage, und dieselbe_behauptung kann anders sein.
+  passen die Antworten einer anderen Aussage; dieselbe_behauptung und phaenomen koennen
+  dort anders sein.
   Fehlt auch eine Aussage aus ersatz, zaehlt der Fall nicht mit.
 
 Keine echten Personen, keine Personendaten, keine Eingaben aus Produktion. Die erwarteten
@@ -62,6 +63,7 @@ class Ersatz(NamedTuple):
 
     erwartet: Tuple[str, ...]
     dieselbe_behauptung: bool
+    phaenomen: Optional[str] = None  # None = wie im Fall
 
 
 class Fall(NamedTuple):
@@ -147,7 +149,7 @@ FAELLE = tuple(Fall(*f) for f in (
     ("S06", "Erneuerbare sind unzuverläsig", "satz", "tippfehler", (UNZUVERLAESSIG,), True, "eigen", KEINE, KEINE, Ersatz((DUNKELFLAUTE,), True)),
     ("S07", "Dunkelflaute", "stichwort", "schlagwort", (UNZUVERLAESSIG,), False, "eigen", KEINE, KEINE, Ersatz((DUNKELFLAUTE,), False)),
     ("S08", "Wenn kein Wind weht und keine Sonne scheint, gibt es keinen Strom", "satz", "verwandt", (UNZUVERLAESSIG,), False, "eigen", KEINE, KEINE, Ersatz((DUNKELFLAUTE,), False)),
-    ("S09", "Ökostrom ist viel zu teuer", "satz", "umformulierung", (TEUER,), True, "eigen", KEINE, KEINE, Ersatz((ATOM,), False)),
+    ("S09", "Ökostrom ist viel zu teuer", "satz", "umformulierung", (TEUER,), True, "eigen", KEINE, KEINE, Ersatz((ATOM,), False, "verwandt")),
     ("S10", "Atomkraft", "stichwort", "schlagwort", (ATOM,), False, "eigen"),
     ("S11", "Wir sollten wieder Atomkraftwerke bauen statt Windräder", "satz", "verwandt", (ATOM,), False, "eigen"),
     ("S12", "Heizungsverbot", "stichwort", "schlagwort", (HEIZUNG,), False, "eigen"),

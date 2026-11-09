@@ -527,7 +527,7 @@ class TestErwartung:
 
     def test_fehlt_eine_erwartete_aussage_gilt_der_ersatz(self):
         fall = _fall(erwartet=("Seed",), dieselbe=True)._replace(
-            ersatz=Ersatz((A,), False)
+            ersatz=Ersatz((A,), False, "verwandt")
         )
         aussagen = {A: SimpleNamespace(id="id-A", replysuggestions=[])}
         im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
@@ -542,6 +542,7 @@ class TestErwartung:
             False,
         )
         assert (erwartung.aussage_ids, erwartung.fehlt) == (frozenset({"id-A"}), ())
+        assert gemessen_als.phaenomen == "verwandt"
 
     @pytest.mark.parametrize(
         "bestand, erwartet_gemessen, fehlt",
