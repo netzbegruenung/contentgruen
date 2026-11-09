@@ -4,7 +4,7 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import { KartenAktionenComponent } from './karten-aktionen.component';
 import { AuthService } from '../../auth/auth.service';
@@ -36,7 +36,12 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     const loggingSpy = jasmine.createSpyObj('LoggingService', ['logInteraction', 'logError', 'error', 'debug', 'info', 'warn']);
     const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
     const clipboardSpy = jasmine.createSpyObj('Clipboard', ['copy']);
-    const usageTrackingSpy = jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']);
+    const usageTrackingSpy = jasmine.createSpyObj('UsageTrackingService', [
+      'trackContentUsage',
+      'gepostetAngeboten',
+      'gepostetMelden',
+    ]);
+    usageTrackingSpy.gepostetAngeboten.and.returnValue(of(false));
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['getUserInfo', 'login']);
     authServiceSpy.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' });
 
@@ -487,6 +492,58 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.openReportDialog();
 
       expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ contentId: INHALT_ID, contentType: 'commentary' });
+    });
+  });
+
+  describe('Rückmeldung „Gepostet?“ (#643)', () => {
+    let usage: jasmine.SpyObj<UsageTrackingService>;
+    let aktion: Subject<void>;
+
+    beforeEach(() => {
+      usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      aktion = new Subject<void>();
+      snackBar.open.and.returnValue({ onAction: () => aktion.asObservable() } as any);
+    });
+
+    it('fragt nach dem Kopieren, wenn der Server die Rückmeldung anbietet', () => {
+      usage.gepostetAngeboten.and.returnValue(of(true));
+
+      component.kopieren();
+
+      expect(usage.gepostetAngeboten).toHaveBeenCalledWith('test-user');
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
+      expect(usage.gepostetMelden).not.toHaveBeenCalled();
+    });
+
+    it('zählt erst mit „Ja, gepostet“ und dankt mit der echten Zahl der Woche', () => {
+      usage.gepostetAngeboten.and.returnValue(of(true));
+      usage.gepostetMelden.and.returnValue(of(7));
+      component.kopieren();
+
+      aktion.next();
+
+      expect(usage.gepostetMelden).toHaveBeenCalledTimes(1);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Danke! Diese Woche haben 7 Menschen öffentlich gekontert, du bist dabei.',
+        'Schließen',
+        { duration: 5000 },
+      );
+    });
+
+    it('bleibt ohne Angebot bei „Erfolgreich kopiert!“', () => {
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(usage.gepostetMelden).not.toHaveBeenCalled();
+    });
+
+    it('fragt Besucher nicht und fragt auch den Server nicht', () => {
+      (TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>).getUserInfo.and.returnValue(null);
+
+      component.kopieren();
+
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
     });
   });
 

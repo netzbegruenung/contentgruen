@@ -25,6 +25,7 @@ from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 from services.anzeigename_service import get_anzeigename_service
 from services.bilanz_service import BilanzService
+from services.gepostet_service import GepostetService, get_gepostet_service
 from services.metrics_service import get_metrics_service
 from services.muster_hinweise_service import MUSTER_FRIST_TAGE, MusterHinweiseService
 from services.suchen_ohne_treffer_service import (
@@ -443,6 +444,49 @@ def get_bilanz(
     except Exception as e:
         logger.error(f"Error fetching Bilanz: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+
+class GepostetWocheResponse(BaseModel):
+    woche: date = Field(description="Montag der Kalenderwoche (UTC)")
+    personen: int
+
+
+class GepostetResponse(BaseModel):
+    aktiv: bool
+    woechentlich: List[GepostetWocheResponse]
+
+
+@router.get("/gepostet", response_model=GepostetResponse)
+async def get_gepostet(
+    wochen: int = Query(
+        8,
+        ge=1,
+        le=52,
+        description="Zeitraum in Kalenderwochen, die laufende eingeschlossen",
+    ),
+    admin_user: str = Depends(require_admin),
+    settings: Settings = Depends(get_settings),
+    dienst: GepostetService = Depends(get_gepostet_service),
+):
+    """
+    Der Nordstern (#643): je Kalenderwoche, wie viele verschiedene Personen nach dem
+    Kopieren "Ja, gepostet" gemeldet haben. Nur Zahlen, keine Kennungen
+    (services/gepostet_service.py). Ohne ``gepostet_aktiv`` entstehen keine Meldungen;
+    ``aktiv`` sagt das.
+    """
+    if not settings.gepostet_aktiv:
+        return GepostetResponse(aktiv=False, woechentlich=[])
+    try:
+        zeilen = await asyncio.to_thread(dienst.wochen, wochen)
+    except Exception as e:
+        logger.error(f"Error fetching Gepostet: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    return GepostetResponse(
+        aktiv=True,
+        woechentlich=[
+            GepostetWocheResponse(woche=z.woche, personen=z.personen) for z in zeilen
+        ],
+    )
 
 
 @router.get("/suchen-ohne-treffer", response_model=SuchenOhneTrefferResponse)

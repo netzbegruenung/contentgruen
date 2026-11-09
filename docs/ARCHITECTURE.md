@@ -111,7 +111,7 @@ listens on 5432 inside the container.
 
 ### PostgreSQL
 - **Purpose**: Application data — votes, usage tracking, search tracking, moderation reports,
-  Sperren with Sperrgrund and Widerspruch (`sperren`), and per person the usage last shown in the Rückmeldung (`gesehene_nutzung`); for the entdoppelte Nutzung the check values of the current day (`nutzung_heute`, HMAC only), the pair check values of the last seven days (`muster_pruefwerte`, HMAC only) and the Muster-Hinweise for admins (`muster_hinweise`, #352).
+  Sperren with Sperrgrund and Widerspruch (`sperren`), and per person the usage last shown in the Rückmeldung (`gesehene_nutzung`); for the entdoppelte Nutzung the check values of the current day (`nutzung_heute`, HMAC only), the pair check values of the last seven days (`muster_pruefwerte`, HMAC only) and the Muster-Hinweise for admins (`muster_hinweise`, #352); for „Ja, gepostet“ after copying the check values of the current calendar week (`gepostet_pruefwerte`, HMAC only) and one number per past week (`gepostet_wochen`, #643, switch `SEMANTIC_SEARCH_GEPOSTET_AKTIV`, default off).
   Content and its vector embeddings live in Qdrant, not in PostgreSQL.
 - **Image**: `postgres:16-alpine` (service `postgres-app`, container `gutgesagt-app-postgres`)
 - **Access**:

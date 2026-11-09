@@ -20,7 +20,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, switchMap } from 'rxjs/operators';
 
 import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
@@ -32,6 +32,13 @@ import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
 import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
+import {
+  GEPOSTET_FRAGE_MS,
+  JA_GEPOSTET,
+  KOPIERT,
+  KOPIERT_GEPOSTET_FRAGE,
+  gepostetDank,
+} from './gepostet-texte';
 
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
@@ -198,7 +205,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.clipboard.copy(text);
-    this.snackBar.open('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+    this.kopiertMelden();
 
     this.copyAnimationActive = true;
     setTimeout(() => {
@@ -211,6 +218,32 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       this.kopiert.emit();
     }
     this.cdr.markForCheck();
+  }
+
+  /**
+   * Nach dem Kopieren: angemeldet, mit Einwilligung und eingeschalteter Rückmeldung
+   * „Kopiert. Gepostet? [Ja, gepostet]“ (#643), sonst wie bisher nur „Erfolgreich
+   * kopiert!“. Ein Klick auf „Ja, gepostet“ zählt die Person einmal je Woche als
+   * öffentlich gekontert; welcher Beitrag, erfährt der Server dabei nicht.
+   */
+  private kopiertMelden(): void {
+    const person = this.authService.getUserInfo();
+    const kennung = person?.isAuthenticated ? person.userId : null;
+    if (!kennung) {
+      this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
+      return;
+    }
+    this.usageTrackingService.gepostetAngeboten(kennung).subscribe((angeboten) => {
+      if (!angeboten) {
+        this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
+        return;
+      }
+      this.snackBar
+        .open(KOPIERT_GEPOSTET_FRAGE, JA_GEPOSTET, { duration: GEPOSTET_FRAGE_MS })
+        .onAction()
+        .pipe(switchMap(() => this.usageTrackingService.gepostetMelden()))
+        .subscribe((personen) => this.snackBar.open(gepostetDank(personen), 'Schließen', { duration: 5000 }));
+    });
   }
 
   beitragOeffnen(): void {

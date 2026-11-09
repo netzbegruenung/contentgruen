@@ -32,6 +32,7 @@ ADMIN_ONLY_PATHS = [
     "/api/v1/metrics/usage-trend",
     "/api/v1/metrics/helpful-rate",
     "/api/v1/metrics/bilanz",
+    "/api/v1/metrics/gepostet",
 ]
 
 

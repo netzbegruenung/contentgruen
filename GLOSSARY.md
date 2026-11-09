@@ -312,6 +312,10 @@ _Avoid_: Hash, Fingerabdruck
 **Paar-Prüfwert**:
 Der Prüfwert der Muster-Hinweise für „ein Konto hat einen Beitrag eines anderen Kontos genutzt“: aus den Kennungen beider Konten mit dem Fensterschlüssel berechnet, ohne Beitrag und Datum, weil er das Fenster von sieben Tagen überdauern muss. Er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung; nach einem Neustart beginnt ein Muster neu. Er entsteht nur, wenn beide Konten eine Art.-9-Einwilligung haben (#559). Wie der Prüfwert lässt er sich auch mit Datenbank und Konfiguration nicht nachrechnen.
 
+**Öffentlich gekontert**:
+Was eine angemeldete Person nach dem Kopieren mit „Ja, gepostet“ meldet: Sie hat den Text öffentlich als Antwort gepostet. Gezählt wird je Kalenderwoche jede Person einmal, nicht jeder Klick, und ohne den Beitrag; das ist der Nordstern (verschiedene Menschen je Woche, die öffentlich kontern). Gemerkt wird dafür bis Wochenende nur ein Prüfwert aus der Kennung mit einem Wochenschlüssel im Arbeitsspeicher, danach nur die Zahl der Woche. Nur mit Art.-9-Einwilligung, ohne Startkonten, hinter einem Schalter (#643). Den Link zum eigenen Post fragt Gut gesagt nicht ab.
+_Avoid_: geteilt (das ist Nutzung), Conversion
+
 **Oft genutzt**:
 Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde, gezählt als entdoppelte Nutzung. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
 _Avoid_: Trending, Trend, beliebt, Top-Beiträge

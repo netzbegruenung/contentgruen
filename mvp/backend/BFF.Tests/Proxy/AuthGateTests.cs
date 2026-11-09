@@ -40,6 +40,8 @@ public class AuthGateTests
     [InlineData("/api/v1/usage/users/me/usage-stats")]
     [InlineData("/api/v1/usage/users/me/besuch")]
     [InlineData("/api/v1/usage/users/me/meilensteine")]
+    [InlineData("/api/v1/usage/users/me/gepostet")]
+    [InlineData("/api/v1/metrics/gepostet")]
     [InlineData("/api/v1/metrics/mvp-dashboard")]
     [InlineData("/api/v1/metrics/helpful-rate")]
     public void ProtectedPath_IsNotAnonymousAllowed(string path)
