@@ -18,13 +18,14 @@
     [retryAction]="retrySearch">
 </app-error-message>
 
-<!-- Ueber den Treffern, zugeklappt: nicht auf jede Aussage antworten (docs/VISION.md).
+<!-- Unter den Treffern, ruhig und offen: nicht auf jede Aussage antworten (docs/VISION.md, #602).
      Gemeint ist Melden auf der Plattform der Aussage, nicht die Meldung eines Beitrags hier. -->
 <ng-template #keineAntwortNoetig>
-    <details class="keine-antwort-noetig hinweis-box">
-        <summary>Nicht jede Aussage braucht eine Antwort</summary>
-        <p>Jede Antwort macht die Aussage sichtbarer. Kleine Accounts mit wenig Reichweite lieber auf der Plattform melden, statt zu antworten.</p>
-    </details>
+    <p class="keine-antwort-noetig">
+        <mat-icon aria-hidden="true">info_outline</mat-icon>
+        <span><strong>Nicht jede Aussage braucht eine Antwort.</strong>
+            Jede Antwort macht die Aussage sichtbarer. Kleine Accounts mit wenig Reichweite lieber auf der Plattform melden, statt zu antworten.</span>
+    </p>
 </ng-template>
 
 <!-- Filter nach Thema, nur mit Themen an den Treffern; eine neue Suche setzt ihn zurueck -->
@@ -53,10 +54,6 @@
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
             + Eigenen Kommentar ergänzen
         </button>
-    </div>
-
-    <div class="mobile-keine-antwort-noetig" *ngIf="hatTreffer">
-        <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
     </div>
 
     <div class="mobile-themen-filter" *ngIf="themenDerTreffer.length">
@@ -135,6 +132,10 @@
             </app-nicht-dabei>
         </div>
 
+        <div *ngIf="hatTreffer" class="mobile-keine-antwort-noetig">
+            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+        </div>
+
         <!-- Mobile Empty State when no results in any category -->
         <div *ngIf="!hatTreffer" class="mobile-empty-state">
             <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
@@ -187,10 +188,6 @@
     <!-- Show individual sections only when at least one has results -->
     <ng-container *ngIf="hatTreffer">
 
-        <div class="content-section">
-            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
-        </div>
-
         <div class="content-section" *ngIf="themenDerTreffer.length">
             <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
         </div>
@@ -206,12 +203,9 @@
             </app-commentary-search-results>
         </section>
 
-        <!-- Commentary Carousel - Full Width -->
-        <section class="carousel-section">
-            <app-result-carousel
-                *ngIf="searchResponse.commentary_search_results_count > 0"
-                [daten]="kommentarKarten">
-            </app-result-carousel>
+        <!-- Treffer als Raster untereinander wie mobil; Karussell nur bei "Neueste Inhalte" (#602) -->
+        <section class="content-section treffer-raster" *ngIf="searchResponse.commentary_search_results_count > 0">
+            <app-kartenliste [daten]="kommentarKarten" [raster]="true"></app-kartenliste>
         </section>
 
         <!-- Generic Text Search Results Header/Info -->
@@ -225,12 +219,8 @@
             </app-generictext-search-results>
         </section>
 
-        <!-- Generic Text Carousel - Full Width -->
-        <section class="carousel-section">
-            <app-result-carousel
-                *ngIf="searchResponse.generictext_search_results_count > 0"
-                [daten]="hintergrundKarten">
-            </app-result-carousel>
+        <section class="content-section treffer-raster" *ngIf="searchResponse.generictext_search_results_count > 0">
+            <app-kartenliste [daten]="hintergrundKarten" [raster]="true"></app-kartenliste>
         </section>
 
         <!-- Posts: nur mit Treffern, ergaenzt wird ueber die Beitragen-Seite -->
@@ -240,8 +230,8 @@
                 <p class="typ-erklaerung">{{ postErklaerung }}</p>
                 <p class="post-anzahl">{{ searchResponse.post_search_results_count }} {{ searchResponse.post_search_results_count === 1 ? 'passender Post' : 'passende Posts' }} gefunden.</p>
             </section>
-            <section class="carousel-section">
-                <app-result-carousel [daten]="postKarten"></app-result-carousel>
+            <section class="content-section treffer-raster">
+                <app-kartenliste [daten]="postKarten" [raster]="true"></app-kartenliste>
             </section>
         </ng-container>
 
@@ -251,6 +241,10 @@
                 <ng-container *ngTemplateOutlet="neuAnlegen"></ng-container>
             </app-nicht-dabei>
         </section>
+
+        <div class="content-section">
+            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+        </div>
 
     </ng-container>
 </div>
