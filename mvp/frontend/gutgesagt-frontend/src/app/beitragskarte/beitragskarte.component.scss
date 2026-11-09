@@ -153,6 +153,15 @@
   font-weight: 700;
 }
 
+// Mit Beschriftung eine Pille statt des Kreises
+.badge.badge-nutzung--beschriftet {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 18px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .badge-icon {
   width: 18px;
   height: 18px;
@@ -422,10 +431,6 @@
     padding: 0;
     list-style: none;
   }
-}
-
-.quellen-leer {
-  margin: 0;
 }
 
 .quelle {

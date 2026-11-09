@@ -16,10 +16,8 @@
                 <span class="result-count-number">{{ searchResponse.commentary_search_results_count }}</span> passende fertige Kommentare gefunden.
             </div>
             <div class="action-call">
-                Hilf der Community:
-                <button mat-raised-button class="action-call-button gutgesagt-primary-dark" (click)="navigateToContributeView()">
-                    💬 Fertigen Kommentar hinzufügen
-                </button>
+                <!-- Oben nur ein Link; der Knopf "Selbst beantworten" steht unter den Treffern (#599) -->
+                <button type="button" class="ergaenzen-link" (click)="navigateToContributeView()">Selbst beantworten</button>
             </div>
         </div>
     </div>
@@ -33,10 +31,7 @@
                     Keine passenden fertigen Kommentare gefunden.
                 </div>
                 <div class="action-call">
-                    Hilf der Community:
-                    <button mat-raised-button class="action-call-button gutgesagt-primary-dark" (click)="navigateToContributeView()">
-                        💬 Fertigen Kommentar hinzufügen
-                    </button>
+                    <button type="button" class="ergaenzen-link" (click)="navigateToContributeView()">Selbst beantworten</button>
                 </div>
             </div>
         </div>
@@ -48,7 +43,7 @@
 
             <div class="action-section">
                 <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContributeView()">
-                    💬 Jetzt fertigen Kommentar hinzufügen
+                    <mat-icon>add</mat-icon> Selbst beantworten
                 </button>
             </div>
 

@@ -68,7 +68,8 @@ export const WILLKOMMEN: Angebot = {
   satz:
     'Gut gesagt ist eine Tauschbörse für bewährte Argumente. Der Rundgang zeigt dir in fünf Schritten, ' +
     'wie du zu einer Aussage aus dem Netz eine erprobte Antwort findest.',
-  seiten: ['/search', '/result'],
+  // Nur die Startseite: über den Treffern schob das Band mobil Suchfeld und Treffer weg (#599)
+  seiten: ['/search'],
   ja: 'Rundgang starten',
   nein: 'Ausblenden',
   ab: 0,
