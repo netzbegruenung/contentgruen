@@ -19,29 +19,37 @@
   font-weight: 500;
 }
 
-.aussage-fuss {
+/* Antworten direkt unter der Aussage, die Nachfrage daneben (#645) */
+.aussage-aktionen {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 8px 16px;
+  margin-bottom: 8px;
 }
 
 .gesucht {
   font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.selbst-beantworten {
-  margin-left: auto;
+  font-weight: 600;
+  color: var(--primary-dark);
 }
 
 .vorab {
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-lg, 24px);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--disabled-bg);
 }
 
-.vorab h2 {
+.vorab-titel {
   font-size: 18px;
+  font-weight: 600;
+  color: var(--primary-dark);
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.vorab[open] .vorab-titel {
+  margin-bottom: 8px;
 }
 
 .vorab-feld {

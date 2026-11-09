@@ -89,7 +89,7 @@ describe('HierFehltEineAntwortComponent', () => {
     expect(zeilen[1].textContent).toContain('Windräder sind hässlich');
   });
 
-  it('markiert, wonach ohne Treffer gesucht wurde, mit der Zahl der Personen', () => {
+  it('markiert, wonach ohne Treffer gesucht wurde, mit der Zahl der Personen, sonst ohne Zahl (#645)', () => {
     liefern([
       { statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 3 },
       { statement_id: 'a-2', statement_text: 'Windräder sind hässlich', personen_ohne_treffer: 0 },
@@ -100,6 +100,7 @@ describe('HierFehltEineAntwortComponent', () => {
       'Danach wurde ohne Treffer gesucht: 3 Personen',
     );
     expect(ohneKommentar.querySelector('.gesucht')).toBeNull();
+    expect(ohneKommentar.textContent).not.toMatch(/\d/);
   });
 
   it('zeigt eine einzelne Person im Singular', () => {
@@ -110,12 +111,26 @@ describe('HierFehltEineAntwortComponent', () => {
     );
   });
 
-  it('"Selbst beantworten" führt ins Kommentarformular mit gesetzter Aussage', () => {
+  it('"Antworten" ist der Hauptknopf direkt unter der Aussage und führt ins Kommentarformular (#645)', () => {
     liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 0 }]);
 
-    const knopf = aussagen()[0].querySelector('a.selbst-beantworten') as HTMLAnchorElement;
-    expect(knopf.textContent).toContain('Selbst beantworten');
+    const zeile = aussagen()[0];
+    const knopf = zeile.querySelector('a.antworten') as HTMLAnchorElement;
+    expect(knopf.textContent?.trim()).toBe('Antworten');
+    expect(knopf.classList).toContain('dark-green-button');
     expect(knopf.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1&von=hier-fehlt-eine-antwort');
+    // Der Knopf folgt direkt auf den Text, und Screenreader hören, worauf er antwortet.
+    expect(knopf.closest('.aussage-aktionen')!.previousElementSibling!.classList).toContain('aussage-text');
+    const text = element().querySelector('#' + knopf.getAttribute('aria-describedby'));
+    expect(text?.textContent).toContain('Wärmepumpen sind zu teuer');
+  });
+
+  it('klappt "Aussage vorab anlegen" erst auf Wunsch auf (#645)', () => {
+    liefern([]);
+
+    const vorab = element().querySelector('details.vorab') as HTMLDetailsElement;
+    expect(vorab.open).toBeFalse();
+    expect(vorab.querySelector('summary')?.textContent?.trim()).toBe('Aussage vorab anlegen');
   });
 
   it('sagt, wenn gerade nichts fehlt', () => {

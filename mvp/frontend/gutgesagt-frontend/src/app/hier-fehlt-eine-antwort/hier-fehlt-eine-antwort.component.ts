@@ -52,6 +52,27 @@ export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean):
   return antwort.statement_was_new || !mitThemen ? anfang : `${anfang} ${themenDerAussage(antwort.themen)}`;
 }
 
+/**
+ * Query-Parameter fuer "Antworten": das Kommentarformular mit dieser Aussage; ?von=
+ * fuehrt die Pfeile nach "Hier fehlt eine Antwort" zurueck. Auch "Meine Beitraege"
+ * nutzt das fuer seinen leeren Zustand.
+ */
+export function beantwortenParams(aussage: Pick<UnbeantworteteAussage, 'statement_id'>): Record<string, string> {
+  return { [AUSSAGE_PARAM]: aussage.statement_id, [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT };
+}
+
+/**
+ * Der Marker zur Nachfrage; leer bei 0, dann zeigt die Seite keine Zahl (#645). Der
+ * Wortlaut steht so in der Datenschutzerklaerung ("Hier fehlt eine Antwort") und
+ * aendert sich nur mit ihr.
+ */
+export function gesuchtMarker(personen: number): string {
+  if (personen <= 0) {
+    return '';
+  }
+  return `Danach wurde ohne Treffer gesucht: ${personen} ${personen === 1 ? 'Person' : 'Personen'}`;
+}
+
 @Component({
   selector: 'app-hier-fehlt-eine-antwort',
   standalone: true,
@@ -130,18 +151,14 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Query-Parameter fuer "Selbst beantworten": das Kommentarformular mit dieser
-   * Aussage; ?von= fuehrt die Pfeile hierher zurueck.
-   */
-  beantwortenParams(aussage: UnbeantworteteAussage): Record<string, string> {
-    return { [AUSSAGE_PARAM]: aussage.statement_id, [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT };
-  }
+  readonly beantwortenParams = beantwortenParams;
 
-  /** Der Marker an einer Aussage, nach der ohne Treffer gesucht wurde, mit Personenzahl. */
+  /**
+   * Der Marker an einer Aussage, nach der ohne Treffer gesucht wurde. Er nennt Personen,
+   * nicht Suchen: Wie oft gesucht wurde, sehen nur Admins (UnbeantworteteAussage).
+   */
   gesuchtMarker(aussage: UnbeantworteteAussage): string {
-    const n = aussage.personen_ohne_treffer;
-    return `Danach wurde ohne Treffer gesucht: ${n} ${n === 1 ? 'Person' : 'Personen'}`;
+    return gesuchtMarker(aussage.personen_ohne_treffer);
   }
 
   get anlegbar(): boolean {

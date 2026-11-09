@@ -4,7 +4,7 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
 import { MeineBeitraegeComponent } from './meine-beitraege.component';
@@ -15,6 +15,7 @@ import { BeitragSheetComponent, GEAENDERT, GELOESCHT } from '../beitragskarte/be
 import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
 import { NavigationService } from '../services/navigation.service';
+import { StatementService } from '../services/statement.service';
 
 describe('MeineBeitraegeComponent', () => {
   let fixture: ComponentFixture<MeineBeitraegeComponent>;
@@ -25,8 +26,11 @@ describe('MeineBeitraegeComponent', () => {
   let sheetErgebnis: Observable<unknown>;
   let kennung: string | null;
   let nutzungsstatistik: UserUsageStats | null;
+  /** Was "Hier fehlt eine Antwort" liefert; Standard: nichts offen. */
+  let offeneLaden: jasmine.Spy;
 
   beforeEach(() => {
+    offeneLaden = jasmine.createSpy('unbeantworteteAussagen').and.returnValue(of([]));
     sheetErgebnis = of(undefined);
     kennung = null;
     nutzungsstatistik = null;
@@ -65,6 +69,7 @@ describe('MeineBeitraegeComponent', () => {
         },
         { provide: EinwurfService, useValue: { eigeneLaden } },
         { provide: SperrnachrichtService, useValue: { meine: () => of([]) } },
+        { provide: StatementService, useValue: { unbeantworteteAussagen: offeneLaden } },
         {
           provide: AuthService,
           // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.
@@ -450,6 +455,55 @@ describe('MeineBeitraegeComponent', () => {
 
     expect(text('.beitraege-leer')).toBe('Du hast noch keine Beiträge.');
     expect(karten().length).toBe(0);
+  });
+
+  describe('erster Schritt im leeren Zustand (#645)', () => {
+    function offene(n: number) {
+      return Array.from({ length: n }, (_, i) => ({
+        statement_id: `a-${i + 1}`,
+        statement_text: `Offene Aussage ${i + 1}`,
+        personen_ohne_treffer: 0,
+        themen: [],
+      }));
+    }
+
+    function eintraege(): HTMLElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('[data-testid="offene-aussage"]'));
+    }
+
+    it('zeigt die ersten drei offenen Aussagen mit "Antworten" ins Kommentarformular', async () => {
+      offeneLaden.and.returnValue(of(offene(5)));
+      await erstellen([]);
+
+      expect(text('.erster-schritt h2')).toBe('Fang mit einer offenen Aussage an');
+      expect(eintraege().map((e) => e.querySelector('.offene-aussage-text')!.textContent!.trim())).toEqual([
+        'Offene Aussage 1',
+        'Offene Aussage 2',
+        'Offene Aussage 3',
+      ]);
+      const antworten = eintraege()[0].querySelector('a.antworten') as HTMLAnchorElement;
+      expect(antworten.textContent!.trim()).toBe('Antworten');
+      expect(antworten.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1&von=hier-fehlt-eine-antwort');
+      expect(
+        (fixture.nativeElement.querySelector('.alle-offenen') as HTMLAnchorElement).getAttribute('href'),
+      ).toBe('/hier-fehlt-eine-antwort');
+      // "Beitragen" bleibt als zweiter Weg.
+      expect(fixture.nativeElement.querySelector('.beitraege-leer-knopf')).not.toBeNull();
+    });
+
+    it('zeigt ohne offene Aussagen oder bei einem Ladefehler nur "Beitragen"', async () => {
+      offeneLaden.and.returnValue(throwError(() => new Error('weg')));
+      await erstellen([]);
+
+      expect(fixture.nativeElement.querySelector('.erster-schritt')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.beitraege-leer-knopf')).not.toBeNull();
+    });
+
+    it('fragt mit eigenen Beiträgen nicht nach offenen Aussagen', async () => {
+      await erstellen([beitrag()]);
+
+      expect(offeneLaden).not.toHaveBeenCalled();
+    });
   });
 
   // Design-Audit C8 (#512): Der leere Zustand war nur ein Satz, ohne Weg weiter.

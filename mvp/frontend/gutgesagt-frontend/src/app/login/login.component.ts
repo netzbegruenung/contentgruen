@@ -5,7 +5,11 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../auth/auth.service';
 import { rueckkehrzielLesen, rueckkehrzielLoeschen, rueckkehrzielMerken } from './rueckkehrziel';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
+import { ORGANISATION } from '../shared/organisation';
 
+
+/** Fehlerschluessel am Passwortfeld nach falschen Zugangsdaten (#645). */
+const ANMELDEFEHLER = 'anmeldung';
 
 @Component({
     selector: 'app-login',
@@ -17,6 +21,10 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 export class LoginComponent {
     loginForm: FormGroup;
     errorMessage: string | null = null;
+    /** Dieselbe Adresse wie unter "So bekommst du ein Konto" auf /login (#645). */
+    readonly gutgesagtMail = ORGANISATION.gutgesagtMail;
+    readonly passwortVergessenLink =
+        `mailto:${ORGANISATION.gutgesagtMail}?subject=${encodeURIComponent('Passwort vergessen')}`;
     isLoading = false;
     returnUrl: string = '/';
 
@@ -53,12 +61,15 @@ export class LoginComponent {
     }
 
     onLogin() {
+        // Nimmt die Markierung vom letzten Fehlversuch zurueck (ANMELDEFEHLER)
+        this.loginForm.get('password')?.updateValueAndValidity();
         if (this.loginForm.invalid) {
             this.loginForm.markAllAsTouched();
             return;
         }
 
         this.isLoading = true;
+        this.errorMessage = null;
 
         // Gut gesagt managed login
         const { email, password } = this.loginForm.value;
@@ -74,13 +85,15 @@ export class LoginComponent {
                 rueckkehrzielLoeschen();
                 this.router.navigateByUrl(this.returnUrl);
             },
-            error: (err) => {
+            error: () => {
                 this.isLoading = false;
-                this.errorMessage = 'Ungültige E-Mail-Adresse oder Passwort';
-                this.snackBar.open('Anmeldung fehlgeschlagen. Bitte überprüfe deine Eingaben.', 'OK', {
-                    duration: 5000,
-                    panelClass: ['error-snackbar']
-                });
+                // Nur diese Meldung am Feld; die Snackbar dazu sagte dasselbe ein zweites Mal (#645).
+                this.errorMessage = 'E-Mail-Adresse oder Passwort stimmt nicht.';
+                // Das Passwortfeld steht dann in Fehlerfarbe und mit aria-invalid; die
+                // Meldung selbst steht einmal darunter, nicht noch im mat-error.
+                const passwort = this.loginForm.get('password');
+                passwort?.setErrors({ [ANMELDEFEHLER]: true });
+                passwort?.markAsTouched();
             },
         });
     }

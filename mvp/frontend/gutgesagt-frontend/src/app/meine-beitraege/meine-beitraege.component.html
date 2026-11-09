@@ -28,6 +28,20 @@
         <div *ngIf="!isLoading">
             <ng-container *ngIf="!karten.length">
                 <p class="beitraege-leer">Du hast noch keine Beiträge.</p>
+                <!-- Ein konkreter erster Schritt statt nur "Beitragen" (#645) -->
+                <section *ngIf="offeneAussagen.length" class="erster-schritt" aria-labelledby="erster-schritt-titel">
+                    <h2 id="erster-schritt-titel">Fang mit einer offenen Aussage an</h2>
+                    <ul class="offene-aussagen">
+                        <li *ngFor="let aussage of offeneAussagen" class="offene-aussage" data-testid="offene-aussage">
+                            <p class="offene-aussage-text" [id]="'offen-' + aussage.statement_id">{{ aussage.statement_text }}</p>
+                            <a mat-stroked-button class="antworten"
+                               [routerLink]="kommentarFormular"
+                               [queryParams]="beantwortenParams(aussage)"
+                               [attr.aria-describedby]="'offen-' + aussage.statement_id">Antworten</a>
+                        </li>
+                    </ul>
+                    <a class="alle-offenen" [routerLink]="hierFehltEineAntwortPfad">Alle in „Hier fehlt eine Antwort“</a>
+                </section>
                 <button mat-raised-button type="button" class="dark-green-button beitraege-leer-knopf"
                         (click)="zumBeitragen()">Beitragen</button>
             </ng-container>

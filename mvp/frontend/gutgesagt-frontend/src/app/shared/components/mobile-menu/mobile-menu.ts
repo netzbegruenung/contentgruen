@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { UserInfo } from '../../../auth/auth.service';
 import { EINWERFEN_TITEL, KETTEN_ICONS } from '../../fangkorb-texte';
 import { ROUTES } from '../../constants/app.constants';
@@ -17,7 +17,8 @@ import { RundgangId } from '../../../rundgang/rundgang-daten';
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
-    RouterLink
+    RouterLink,
+    RouterLinkActive
   ],
   templateUrl: './mobile-menu.html',
   styleUrl: './mobile-menu.css'
