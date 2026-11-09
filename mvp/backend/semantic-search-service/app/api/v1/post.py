@@ -8,7 +8,9 @@ from uuid import UUID
 
 from dependencies import (
     get_aufrufer,
+    get_aussage_themen_service,
     get_post_service,
+    get_statement_service,
     require_art9_einwilligung,
 )
 from dtos.post import (
@@ -25,9 +27,17 @@ from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from dtos.beitrag import PostResponse, PostTreffer
+from domain.models.content_type import ContentType
+from services.antwort_auf import als_antwort_verknuepfen
+from services.aussage_themen_service import AussageThemenService
+from services.content.statement_service import StatementService
 from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 router = APIRouter()
+
+# Gewicht der Verknuepfung, wenn die Person die Aussage selbst nennt (#619); wie
+# beim Kommentar (api/v1/commentary.py). Gerankt wird je Beitragstyp.
+POST_RELEVANZ = 1.0
 logger = logging.getLogger(__name__)
 
 
@@ -100,6 +110,8 @@ async def search_post(
 async def add_post(
     request: AddPostRequest,
     post_service: BaseContentService = Depends(get_post_service),
+    statement_service: StatementService = Depends(get_statement_service),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
     x_user: str = Header(...),
 ) -> AddPostResponse:
     try:
@@ -127,7 +139,18 @@ async def add_post(
             entry.text = entry.title
 
         post_id = await post_service.add(entry)
-        return AddPostResponse(id=post_id)
+        # Mit Aussage haengt der Post danach als Antwort an ihr (#619); scheitert das,
+        # bleibt er gespeichert, und verknuepft ist False.
+        antwort_auf = await als_antwort_verknuepfen(
+            request,
+            post_id,
+            ContentType.POST,
+            POST_RELEVANZ,
+            x_user,
+            statement_service,
+            themen_service,
+        )
+        return AddPostResponse(id=post_id, **antwort_auf.model_dump())
 
     except HTTPException:
         raise
