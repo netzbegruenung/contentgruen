@@ -34,7 +34,7 @@ Verglichen werden die Wochen 5 bis 8 nach dem öffentlichen Launch mit der Basis
 
 ## Signale und Konsequenzen
 
-Jedes Signal führt zu einer von drei Konsequenzen: **weiter**, **umbauen** oder **einstellen**. Treffen mehrere Signale zu, gilt die strengste Konsequenz. Treffen mehrere Umbau-Signale zu, gilt diese Reihenfolge: erst Bestand (K3), dann Passung (H), dann Bekanntheit (K1).
+Jedes Signal führt zu einer von zwei Konsequenzen: **weiter** oder **umbauen**. Einstellen ist keine Konsequenz der Bilanz (Entscheidung Maintainer, 09.11.2026). Trifft ein Umbau-Signal zu, wird umgebaut. Treffen mehrere zu, gilt diese Reihenfolge: erst Bestand (K3), dann Passung (H), dann Bekanntheit (K1).
 
 ### Weiter
 
@@ -52,14 +52,6 @@ Jedes Signal führt zu einer von drei Konsequenzen: **weiter**, **umbauen** oder
 
 Nach einem Umbau ziehen wir acht Wochen später erneut Bilanz, mit denselben Regeln.
 
-### Einstellen
-
-| Signal | Konsequenz |
-|---|---|
-| Alle drei zugleich: K1 unter der Basislinie, H unter der Hälfte der Basislinie, und höchstens eines der fünf Gespräche sagt, Gut gesagt habe geholfen | Erst eine Umbaurunde von acht Wochen, mit dem Schwerpunkt, den die Gespräche nennen. Gilt das Signal danach wieder: Gut gesagt einstellen. |
-
-Einstellen heißt: keine neuen Funktionen, keine Werbung, die Anmeldung schließen. Der Bestand steht unter CC0 und bleibt als Datei abrufbar. Den Betrieb beenden wir mit Vorlauf und sagen es vorher in der Netzbegrünung an. Löschen nach `docs/LOESCHKONZEPT.md`.
-
 ## Gespräche
 
 Nach acht Wochen führt der Maintainer fünf kurze Gespräche mit Aktiven, je etwa 15 Minuten. Notiert wird ohne Namen.
@@ -69,8 +61,6 @@ Nach acht Wochen führt der Maintainer fünf kurze Gespräche mit Aktiven, je et
 3. Hast du eine Antwort kopiert oder geteilt? Wenn nein: Was hat gefehlt?
 4. Wonach hast du gesucht und nichts gefunden?
 5. Würdest du Gut gesagt jemandem empfehlen? Warum (nicht)?
-
-Frage 2 entscheidet, ob ein Gespräch „hat geholfen“ zählt.
 
 ## Was die Zahlen verfälschen kann
 
