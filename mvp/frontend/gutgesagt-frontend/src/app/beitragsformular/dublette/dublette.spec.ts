@@ -1,4 +1,4 @@
-import { DublettenTexte, Vorhanden, dublettenHinweis, dublettenKurzhinweis, offeneEntscheidung, vorhandenAus } from './dublette';
+import { DublettenTexte, Vorhanden, dublettenHinweis, offeneEntscheidung, vorhandenAus } from './dublette';
 
 const TEXTE: DublettenTexte = {
   eigenHinweis: 'Hast du schon gespeichert.',
@@ -60,10 +60,4 @@ describe('Dublette', () => {
     });
   });
 
-  describe('dublettenKurzhinweis', () => {
-    it('ein Satz: eigen oder von jemand anderem, ohne den Weg ueber die Karte', () => {
-      expect(dublettenKurzhinweis(vorhanden({ eigen: true }), TEXTE)).toBe(TEXTE.eigenHinweis);
-      expect(dublettenKurzhinweis(vorhanden(), TEXTE)).toBe(TEXTE.fremdHinweis);
-    });
-  });
 });

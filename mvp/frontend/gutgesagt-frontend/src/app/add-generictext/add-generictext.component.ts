@@ -38,7 +38,7 @@ import {
   DublettenTexte,
   Vorhanden as VorhandenBeitrag,
   dublettenHinweis,
-  dublettenKurzhinweis,
+  DUBLETTE_LEISTENHINWEIS,
   offeneEntscheidung,
   vorhandenAus,
 } from '../beitragsformular/dublette/dublette';
@@ -220,7 +220,7 @@ export class AddGenerictextComponent implements OnChanges {
 
   /** Ein Satz in der Leiste am Handy, solange die Entscheidung offen ist (#616). */
   get dublettenLeistenHinweis(): string | null {
-    return this.offeneEntscheidung ? dublettenKurzhinweis(this.vorhanden!, DUBLETTEN_TEXTE) : null;
+    return this.offeneEntscheidung ? DUBLETTE_LEISTENHINWEIS : null;
   }
 
   /** Der Link dahinter: zur Wahl im Kasten, ohne Wahl den vorhandenen ansehen. */
@@ -233,7 +233,11 @@ export class AddGenerictextComponent implements OnChanges {
 
   dublettenLeistenAktionAusfuehren(): void {
     if (this.kannZustimmen || this.kannNehmen) {
-      this.dublettenKasten?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const kasten = this.dublettenKasten?.nativeElement;
+      const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      kasten?.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'center' });
+      // Fokus mitnehmen, sonst steht er mit Tastatur oder Screenreader weiter in der Leiste
+      kasten?.querySelector<HTMLButtonElement>('.dublette-entscheidung button:not([disabled])')?.focus({ preventScroll: true });
     } else {
       this.vorhandenAnsehen();
     }

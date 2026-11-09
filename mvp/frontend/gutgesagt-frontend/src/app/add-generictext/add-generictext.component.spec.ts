@@ -431,7 +431,7 @@ describe('AddGenerictextComponent', () => {
       expect(erfolg).not.toHaveBeenCalled();
       expect(component.responseId).toBe('');
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo von jemand anderem.');
-      expect(seite().querySelector('app-formular-leiste .leiste-hinweis')!.textContent).toContain('sehr ähnliche Hintergrundinfo');
+      expect(seite().querySelector('app-formular-leiste .leiste-hinweis')!.textContent).toContain('Etwas sehr Ähnliches gibt es schon.');
       expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
 
       expect(component.vorhanden!.aussage).toBeNull();

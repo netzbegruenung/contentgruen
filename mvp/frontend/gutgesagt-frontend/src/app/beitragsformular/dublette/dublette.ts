@@ -91,7 +91,8 @@ export function dublettenHinweis(
   return mitAussage ? `${texte.fremdHinweis} ${texte.fremdZuordnen}` : texte.fremdHinweis;
 }
 
-/** Ein Satz fuer die Leiste am Handy, solange die Entscheidung offen ist: wessen der vorhandene ist. */
-export function dublettenKurzhinweis(vorhanden: Vorhanden<unknown>, texte: DublettenTexte): string {
-  return vorhanden.eigen ? texte.eigenHinweis : texte.fremdHinweis;
-}
+/**
+ * Der Satz in der Leiste am Handy, solange die Entscheidung offen ist: nur ein
+ * Verweis auf den Kasten, der den Hinweis selbst traegt und ansagt (#616).
+ */
+export const DUBLETTE_LEISTENHINWEIS = 'Etwas sehr Ähnliches gibt es schon.';

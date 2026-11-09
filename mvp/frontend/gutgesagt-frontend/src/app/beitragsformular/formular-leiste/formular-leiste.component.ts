@@ -35,7 +35,8 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
         {{ fehler }}
         <button *ngIf="aktion" type="button" class="leiste-aktion" (click)="aktionGeklickt.emit()">{{ aktion }}</button>
       </p>
-      <p *ngIf="!fehler && hinweis" class="leiste-meldung leiste-hinweis" role="status">
+      <!-- Ohne role="status": der Kasten im Formular sagt den Hinweis schon an -->
+      <p *ngIf="!fehler && hinweis" class="leiste-meldung leiste-hinweis">
         {{ hinweis }}
         <button *ngIf="aktion" type="button" class="leiste-aktion" (click)="aktionGeklickt.emit()">{{ aktion }}</button>
       </p>
@@ -135,6 +136,8 @@ export class FormularLeisteComponent implements OnInit, AfterViewInit, OnDestroy
         ausschnitt.addEventListener('resize', this.ausschnittGeaendert);
         ausschnitt.addEventListener('scroll', this.ausschnittGeaendert);
       });
+      // Entsteht die Leiste bei schon offener Tastatur, gleich richtig stehen
+      this.ueberTastaturSetzen();
     }
     const element = this.leiste?.nativeElement;
     if (!element || typeof ResizeObserver === 'undefined') {

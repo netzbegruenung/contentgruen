@@ -83,7 +83,8 @@ describe('FormularLeisteComponent', () => {
 
     const hinweis: HTMLElement = fixture.nativeElement.querySelector('.leiste-hinweis');
     expect(hinweis.textContent).toContain('Diesen Kommentar hast du schon gespeichert.');
-    expect(hinweis.getAttribute('role')).toBe('status');
+    // Ohne role: der Kasten im Formular sagt den Hinweis an
+    expect(hinweis.getAttribute('role')).toBeNull();
     expect(fixture.nativeElement.querySelector('.leiste-fehler')).toBeNull();
 
     fixture.componentRef.setInput('fehler', 'Speichern hat nicht geklappt.');
@@ -91,5 +92,29 @@ describe('FormularLeisteComponent', () => {
     expect(fixture.nativeElement.querySelector('.leiste-hinweis')).toBeNull();
     expect(fixture.nativeElement.querySelector('.leiste-fehler')).toBeTruthy();
     fixture.destroy();
+  });
+
+  it('rueckt bei einem visualViewport-Resize ueber die Tastatur und raeumt die Listener weg', () => {
+    const lauscher = new Map<string, () => void>();
+    const ausschnitt = {
+      height: 844,
+      offsetTop: 0,
+      addEventListener: jasmine.createSpy('add').and.callFake((typ: string, f: () => void) => lauscher.set(typ, f)),
+      removeEventListener: jasmine.createSpy('remove'),
+    };
+    spyOnProperty(window, 'visualViewport', 'get').and.returnValue(ausschnitt as unknown as VisualViewport);
+    spyOnProperty(window, 'innerHeight', 'get').and.returnValue(844);
+    const fixture = TestBed.createComponent(FormularLeisteComponent);
+    fixture.detectChanges();
+    const leiste: HTMLElement = fixture.nativeElement.querySelector('.leiste');
+    expect(leiste.style.getPropertyValue('--leiste-ueber-tastatur')).toBe('0px');
+
+    ausschnitt.height = 500;
+    lauscher.get('resize')!();
+    expect(leiste.style.getPropertyValue('--leiste-ueber-tastatur')).toBe('344px');
+
+    fixture.destroy();
+    expect(ausschnitt.removeEventListener).toHaveBeenCalledWith('resize', lauscher.get('resize'));
+    expect(ausschnitt.removeEventListener).toHaveBeenCalledWith('scroll', lauscher.get('scroll'));
   });
 });
