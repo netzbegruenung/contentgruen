@@ -40,7 +40,7 @@ export function beitragsLink(id: string, origin: string = window.location.origin
  *
  * Unter der Karte "Link kopieren" (#603), zum Teilen der Adresse. "Antwort auf"
  * und weitere Antworten zur Aussage fehlen noch: Der Endpunkt liefert die Aussage
- * nicht mit, und die Verknuepfung liegt nur an der Aussage (siehe PR zu #603).
+ * nicht mit, und die Verknuepfung liegt nur an der Aussage (offen in #603).
  */
 @Component({
   selector: 'app-beitrag-ansicht',
@@ -90,6 +90,7 @@ export function beitragsLink(id: string, origin: string = window.location.origin
         justify-content: center;
         width: 100%;
       }
+
       .laedt {
         padding: 24px 0;
       }
