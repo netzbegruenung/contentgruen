@@ -126,10 +126,10 @@ describe('AntwortAufComponent', () => {
     knopf.click();
     fixture.detectChanges();
 
-    expect(gemeldet[gemeldet.length - 1]).toEqual({ id: '', text: 'Windräder machen Lärm' });
+    expect(gemeldet[gemeldet.length - 1]).toEqual({ id: '', text: 'Windräder machen Lärm', neuGewaehlt: true });
     expect(seite().querySelector('.karte--kopf .karte-titel')!.textContent).toContain('Windräder machen Lärm');
     expect(seite().querySelector('.neu-marke')!.textContent).toContain('neu');
-    expect(component.wert).toEqual({ id: '', text: 'Windräder machen Lärm' });
+    expect(component.wert).toEqual({ id: '', text: 'Windräder machen Lärm', neuGewaehlt: true });
   }));
 
   it('steht unter den Vorschlaegen und kennzeichnet eine vorhandene Aussage nicht als neu', fakeAsync(() => {
@@ -145,7 +145,7 @@ describe('AntwortAufComponent', () => {
     expect(seite().querySelector('.neu-marke')).toBeNull();
   }));
 
-  it('sagt unter dem Feld, was beim Speichern passiert: zu kurz oder neue Aussage', () => {
+  it('sagt unter dem Feld: zu kurz, oder bis zur Wahl vorhandene nehmen oder neu anlegen (#617)', () => {
     tippen('Windrad');
     const hinweis = () => seite().querySelector('mat-hint')!;
     expect(hinweis().textContent).toContain('Mindestens 10 Zeichen – oder leer lassen.');
@@ -153,8 +153,11 @@ describe('AntwortAufComponent', () => {
     expect(component.feldZustand).toBe('zu-kurz');
 
     tippen('Windräder töten Vögel');
-    expect(hinweis().textContent).toContain('Wird als neue Aussage angelegt.');
-    expect(component.feldZustand).toBe('neu');
+    // Tippen allein legt nichts an und behauptet es auch nicht
+    expect(hinweis().textContent).toContain('Nimm eine vorhandene Aussage oder lege sie neu an.');
+    expect(hinweis().textContent).not.toContain('Wird als neue Aussage angelegt');
+    expect(component.feldZustand).toBe('ohne-wahl');
+    expect(gemeldet[gemeldet.length - 1].neuGewaehlt).toBeUndefined();
 
     tippen('');
     expect(hinweis().textContent).toContain('Die Aussage, auf die du reagierst');
@@ -183,6 +186,16 @@ describe('AntwortAufComponent', () => {
     adresse({ id: 'a-1', text: VORSCHLAG.text });
     expect(sprachhinweis().text).withContext('vorhandene Aussage').toBe('');
     flush();
+  }));
+
+  it('sucht auch fuer den Text aus der Adresse vorhandene Aussagen (#617)', fakeAsync(() => {
+    adresse({ id: '', text: 'Tempo 130 bringt nix' });
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+
+    expect(statementService.aussageVorschlaege).toHaveBeenCalledOnceWith('Tempo 130 bringt nix');
+    expect(seite().querySelectorAll('.vorschlag').length).toBe(1);
+    expect(seite().querySelector('.neue-aussage')).toBeTruthy();
   }));
 
   it('bietet einen zu kurzen Text nicht als neue Aussage an', fakeAsync(() => {

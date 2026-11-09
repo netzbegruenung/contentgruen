@@ -14,7 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
-import { of } from 'rxjs';
+import { ReplaySubject, merge, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 
 import { SHARED_IMPORTS } from '../../shared/shared-imports';
@@ -29,6 +29,11 @@ import { SprachhinweisComponent } from '../../shared/components/sprachhinweis/sp
 export interface AntwortAuf {
   id: string;
   text: string;
+  /**
+   * Der Text ist ausdruecklich als neue Aussage gewaehlt ("Als neue Aussage anlegen"),
+   * nicht nur getippt. Erst dann gibt es die Themenwahl (#617).
+   */
+  neuGewaehlt?: boolean;
 }
 
 export const OHNE_AUSSAGE: AntwortAuf = { id: '', text: '' };
@@ -51,8 +56,11 @@ export { AUSSAGE_MAX_ZEICHEN } from '../../services/statement.service';
  * sie als Kopf-Karte da und laesst sich entfernen. Sonst ist es ein freies,
  * optionales Feld: Beim Tippen schlaegt es passende vorhandene Aussagen vor, und
  * darunter steht immer die Wahl, den getippten Text als neue Aussage zu nehmen.
- * Angelegt wird hier nichts; was gilt, meldet `aussageChange`, und aufgeloest
- * wird erst beim Speichern im Backend.
+ * Angelegt wird hier nichts, auch nicht beim Tippen; was gilt, meldet
+ * `aussageChange`, und aufgeloest wird erst beim Speichern im Backend. Wer nur
+ * tippt und speichert, bekommt die Aussage zum Text: eine vorhandene, wenn es
+ * dieselbe schon gibt, sonst eine neue. Deshalb fragt der Hinweis bis zur Wahl
+ * nach (#617).
  */
 @Component({
   standalone: true,
@@ -89,6 +97,8 @@ export class AntwortAufComponent implements OnInit, OnChanges {
   vorschlaege: StatementSearchResult[] = [];
   /** Der Text, fuer den die Vorschlaege gesucht wurden - erst dann gibt es "neu anlegen". */
   gesuchtFuer: string | null = null;
+  /** Text aus der Adresse, ohne ID; er setzt das Feld ohne Ereignis, gesucht wird trotzdem. */
+  private readonly ausAdresse$ = new ReplaySubject<string>(1);
 
   constructor(
     private statementService: StatementService,
@@ -101,7 +111,9 @@ export class AntwortAufComponent implements OnInit, OnChanges {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((text) => this.aussageChange.emit({ id: '', text: text.trim() }));
 
-    this.feld.valueChanges
+    // Auch fuer den Text aus der Adresse ("Selbst beantworten" ohne ID) suchen:
+    // Dann kommen ebenfalls vorhandene Aussagen zuerst (#617).
+    merge(this.feld.valueChanges, this.ausAdresse$)
       .pipe(
         map((text) => text.trim()),
         debounceTime(VORSCHLAG_VERZOEGERUNG_MS),
@@ -136,13 +148,17 @@ export class AntwortAufComponent implements OnInit, OnChanges {
         this.gewaehltSetzen(null);
         this.feld.setValue(text ?? '', { emitEvent: false });
         this.vorschlaege = [];
+        this.ausAdresse$.next(text ?? '');
       }
     }
   }
 
   /** Was beim Speichern gilt. */
   get wert(): AntwortAuf {
-    return this.gewaehlt ?? { id: '', text: this.feld.value.trim() };
+    if (this.gewaehlt) {
+      return this.gewaehltNeu ? { ...this.gewaehlt, neuGewaehlt: true } : this.gewaehlt;
+    }
+    return { id: '', text: this.feld.value.trim() };
   }
 
   /** Der getippte Text, solange er sich als neue Aussage anbietet. */
@@ -152,15 +168,16 @@ export class AntwortAufComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Was mit dem Feld beim Speichern passiert: nichts (leer), zu kurz (1-9 Zeichen,
-   * Speichern gesperrt) oder als neue Aussage angelegt (Text ohne Auswahl).
+   * Der Stand des Felds: leer, zu kurz (1-9 Zeichen, Speichern gesperrt) oder ein
+   * Text ohne Wahl. Dann steht noch nicht fest, ob es eine vorhandene oder eine
+   * neue Aussage wird; der Hinweis bittet um die Wahl (#617).
    */
-  get feldZustand(): 'leer' | 'zu-kurz' | 'neu' {
+  get feldZustand(): 'leer' | 'zu-kurz' | 'ohne-wahl' {
     const text = this.feld.value.trim();
     if (!text) {
       return 'leer';
     }
-    return zuKurz(text) ? 'zu-kurz' : 'neu';
+    return zuKurz(text) ? 'zu-kurz' : 'ohne-wahl';
   }
 
   /**
@@ -171,7 +188,7 @@ export class AntwortAufComponent implements OnInit, OnChanges {
     if (this.gewaehlt) {
       return this.gewaehltNeu ? this.gewaehlt.text : '';
     }
-    return this.feldZustand === 'neu' ? this.feld.value.trim() : '';
+    return this.feldZustand === 'ohne-wahl' ? this.feld.value.trim() : '';
   }
 
   /** Den getippten Text als neue Aussage nehmen - angelegt wird sie beim Speichern. */
@@ -184,7 +201,7 @@ export class AntwortAufComponent implements OnInit, OnChanges {
     this.vorschlaege = [];
     this.gesuchtFuer = null;
     this.feld.setValue('', { emitEvent: false });
-    this.aussageChange.emit({ id: '', text });
+    this.aussageChange.emit({ id: '', text, neuGewaehlt: true });
   }
 
   waehlen(aussage: { id: string; text: string }): void {
