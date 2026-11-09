@@ -4,7 +4,7 @@ import { AuthService } from '../auth/auth.service';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { rueckkehrzielLesen, rueckkehrzielMerken } from './rueckkehrziel';
+import { anmeldegrund, rueckkehrzielLesen, rueckkehrzielMerken } from './rueckkehrziel';
 import { ORGANISATION } from '../shared/organisation';
 
 interface AuthModes {
@@ -26,6 +26,8 @@ export class LoginSelectorComponent implements OnInit {
   };
   isLoading = true;
   returnUrl: string = '/';
+  /** Wozu die Anmeldung nötig ist, aus dem Ziel; null zeigt keinen Satz (#600). */
+  anmeldegrund: string | null = null;
   isRegistrationInfoExpanded = false;
   readonly gutgesagtMail = ORGANISATION.gutgesagtMail;
 
@@ -45,6 +47,7 @@ export class LoginSelectorComponent implements OnInit {
       // No query parameter, or a login URL to ignore: fall back to the stored target
       this.returnUrl = rueckkehrzielLesen() || '/';
     }
+    this.anmeldegrund = anmeldegrund(this.returnUrl);
   }
 
   ngOnInit(): void {
@@ -58,7 +61,7 @@ export class LoginSelectorComponent implements OnInit {
           this.authModes = modes;
           this.isLoading = false;
 
-          // Always show both options - no auto-redirect
+          // No auto-redirect; only the enabled login options are shown (#600)
           // This ensures users always see the registration information
         },
         error: (err) => {
