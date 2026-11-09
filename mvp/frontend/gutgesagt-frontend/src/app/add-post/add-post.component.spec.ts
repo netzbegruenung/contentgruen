@@ -175,7 +175,7 @@ describe('AddPostComponent', () => {
     it('schickt eine neue Aussage per Text mit ihren Themen', () => {
       const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-1', verknuepft: true }));
       component.postForm.patchValue({ ...WERTE, themen: ['klima'] });
-      component.aussageSetzen({ id: '', text: 'Solar lohnt sich nicht' });
+      component.aussageSetzen({ id: '', text: 'Solar lohnt sich nicht', neuGewaehlt: true });
 
       component.speichern();
 

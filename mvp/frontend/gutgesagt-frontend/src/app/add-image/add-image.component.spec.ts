@@ -148,7 +148,7 @@ describe('AddImageComponent', () => {
     it('schickt eine neue Aussage per Text mit ihren Themen', () => {
       const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(of({ id: 'b-1', verknuepft: true }));
       component.imageForm.patchValue({ ...WERTE, themen: ['energie-heizen'] });
-      component.aussageSetzen({ id: '', text: 'Solar lohnt sich nicht' });
+      component.aussageSetzen({ id: '', text: 'Solar lohnt sich nicht', neuGewaehlt: true });
 
       component.speichern();
 

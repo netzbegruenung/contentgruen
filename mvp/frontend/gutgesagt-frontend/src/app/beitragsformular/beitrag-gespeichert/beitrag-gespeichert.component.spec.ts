@@ -131,7 +131,7 @@ describe('BeitragGespeichertComponent', () => {
     expect(seite().textContent).toContain('Dein Bild ist gespeichert.');
     expect(seite().querySelector('.gespeichert-karte')!.textContent).toContain('Solardach auf der Grundschule');
     expect(seite().textContent).toContain('Solar lohnt sich nicht');
-    expect(knoepfe()).toEqual(['Noch ein Bild', 'Meine Beiträge']);
+    expect(knoepfe()).toEqual(['Noch ein Bild', 'Zur Aussage', 'Link kopieren', 'Meine Beiträge']);
     (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-image']);
   });
