@@ -114,7 +114,7 @@ Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antri
 
 ## Erfolg messen
 
-Drei Kennzahlen, ohne feste Zielwerte: Personen pro Tag, die suchen, im Wochenmittel (das Tagespseudonym wechselt täglich, Personen über eine Woche sind nicht zählbar); Nutzungen pro Woche; Anteil der Suchen ohne Treffer. Der interne Launch liefert die Basislinie; acht Wochen nach dem öffentlichen Launch wird Bilanz gezogen, mit vorher festgelegten Signalen und Konsequenzen (#417). Admins sehen die Kennzahlen je Woche im Dashboard unter „Bilanz“.
+Drei Kennzahlen, ohne feste Zielwerte: Personen pro Tag, die suchen, im Wochenmittel (das Tagespseudonym wechselt täglich, Personen über eine Woche sind nicht zählbar); Nutzungen pro Woche; Anteil der Suchen ohne Treffer. Der interne Launch liefert die Basislinie; acht Wochen nach dem öffentlichen Launch wird Bilanz gezogen, mit vorher festgelegten Signalen und Konsequenzen (#417, [`BILANZ.md`](./BILANZ.md)). Admins sehen die Kennzahlen je Woche im Dashboard unter „Bilanz“.
 
 ## Weg zum Launch
 
