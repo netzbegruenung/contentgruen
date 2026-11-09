@@ -627,8 +627,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   /** Was Screenreader am Siegel hoeren: die Guete, Glanz und Krone, und dass sich eine Erklaerung oeffnet. */
   get siegelBeschriftung(): string {
-    const abzeichen = [this.glanz ? 'mit Glanz' : '', this.krone ? 'mit Krone' : ''].filter(Boolean).join(' und ');
-    return `${siegelText(this.guete?.wert ?? null)}${abzeichen ? ', ' + abzeichen : ''}. Erklärung öffnen`;
+    return `${siegelText(this.guete?.wert ?? null, this.glanz, this.krone)}. Erklärung öffnen`;
   }
 
   get erklaerung(): SiegelErklaerung | null {

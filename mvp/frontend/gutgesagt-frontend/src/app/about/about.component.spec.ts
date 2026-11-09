@@ -135,6 +135,8 @@ describe('AboutComponent', () => {
     expect(beispiele[10]).toBe('Siegel: Güte 10 von 10');
     // Glanz und Krone als Beispiel (#351)
     expect(seite.querySelectorAll('.siegel-beispiele .siegel-glanz').length).toBe(1);
+    expect(beispiele[11]).toBe('Siegel: Güte 7 von 10, mit Glanz');
+    expect(beispiele[12]).toBe('Siegel: Güte 7 von 10, mit Krone');
     expect(seite.querySelectorAll('.siegel-beispiele .siegel-krone').length).toBe(1);
     expect(seite.querySelector('.siegel-absatz')!.textContent).toContain('Die Krone sehen nur Angemeldete.');
   });

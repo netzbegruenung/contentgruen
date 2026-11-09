@@ -59,7 +59,10 @@ export function siegelFarbe(guete: number | null, dunkel = false): string {
 }
 
 /** Was Screenreader über das Siegel sagen. */
-export function siegelText(guete: number | null): string {
+export function siegelText(guete: number | null, glanz = false, krone = false): string {
   const g = normierteGuete(guete);
-  return g === null ? 'Siegel: neu, noch keine Güte' : `Siegel: Güte ${g} von ${HOECHSTE_GUETE}`;
+  const text = g === null ? 'Siegel: neu, noch keine Güte' : `Siegel: Güte ${g} von ${HOECHSTE_GUETE}`;
+  // Glanz und Krone (#351): eigene Abzeichen, gehören in dieselbe Beschriftung.
+  const abzeichen = [glanz ? 'Glanz' : '', krone ? 'Krone' : ''].filter(Boolean).join(' und ');
+  return abzeichen ? `${text}, mit ${abzeichen}` : text;
 }

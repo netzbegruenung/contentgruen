@@ -271,6 +271,12 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.siegel-knopf');
       expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz. Erklärung öffnen');
       expect(fixture.componentInstance.GLANZ_TEXT).toContain('25');
+
+      knopf.click();
+      fixture.detectChanges();
+      const menue = document.querySelector('.siegel-menue')!.textContent!;
+      expect(menue).toContain('Glanz: Der Beitrag wurde mindestens 25-mal genutzt.');
+      expect(menue).not.toContain('Krone:');
     });
 
     it('Glanz auch für Besucher: Er betrifft keine Person', () => {
@@ -305,7 +311,10 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       zeigen(ausSuchergebnis(paket({ usage_count: 40, autor_name: 'Kim G.', autor_abzeichen: 6 })));
 
       const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.siegel-knopf');
-      expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz und mit Krone. Erklärung öffnen');
+      expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz und Krone. Erklärung öffnen');
+      expect(fixture.nativeElement.querySelector('app-siegel svg').getAttribute('aria-label')).toBe(
+        'Siegel: Güte 6 von 10, mit Glanz und Krone',
+      );
     });
   });
 });
