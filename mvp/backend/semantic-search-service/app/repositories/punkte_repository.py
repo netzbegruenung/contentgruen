@@ -73,15 +73,25 @@ class PunkteRepository:
         with self.db.get_session() as session:
             return {t: n for t, n in session.execute(abfrage)}
 
-    def einwuerfe_ausformuliert_von(self, user_id: str) -> int:
+    def einwuerfe_ausformuliert_von(self, user_id: str, ausgenommen: Set[str]) -> int:
         """
-        Wie viele Einwuerfe die Person als Ausformulierer mit einem nicht gesperrten
-        Beitrag verknuepft hat, je Einwurf einmal (Meilensteine, #351). Eigene Einwuerfe
-        zaehlen mit: Ausformulieren ist dieselbe Arbeit, wer auch immer eingeworfen hat.
+        Wie viele Einwuerfe anderer die Person als Ausformulierer mit einem nicht
+        gesperrten Beitrag verknuepft hat, je Einwurf einmal (Meilensteine, #351).
+        Eigene Einwuerfe und die der ausgenommenen Kennungen (Startkonten) zaehlen
+        nicht: Sonst liesse sich der Meilenstein mit selbst eingeworfenen Einwuerfen
+        und einer Verknuepfung mit irgendeinem vorhandenen Beitrag erklicken.
         """
-        abfrage = select(func.count(func.distinct(AusformuliertIn.raw_input_id))).where(
+        bedingungen = [
             AusformuliertIn.created_by == user_id,
+            Einwurf.submitted_by != user_id,
             ~self._gesperrt(),
+        ]
+        if ausgenommen:
+            bedingungen.append(Einwurf.submitted_by.notin_(sorted(ausgenommen)))
+        abfrage = (
+            select(func.count(func.distinct(AusformuliertIn.raw_input_id)))
+            .join(Einwurf, Einwurf.id == AusformuliertIn.raw_input_id)
+            .where(*bedingungen)
         )
         with self.db.get_session() as session:
             return session.execute(abfrage).scalar_one()

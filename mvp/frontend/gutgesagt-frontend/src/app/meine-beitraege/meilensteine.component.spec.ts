@@ -53,6 +53,6 @@ describe('MeilensteineComponent (#351)', () => {
     const element = erstellen([meilenstein({ erreicht: true, stand: 1 }), meilenstein({ kennung: 'x', schwelle: 10, stand: 2 })]);
 
     const versteckt = Array.from(element.querySelectorAll('.visually-hidden')).map((e) => e.textContent?.trim());
-    expect(versteckt).toEqual([', erreicht', ', noch nicht erreicht:']);
+    expect(versteckt).toEqual([', erreicht', ', noch nicht erreicht: 2 von 10']);
   });
 });

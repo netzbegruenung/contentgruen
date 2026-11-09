@@ -14,8 +14,13 @@ Woher die Zahlen kommen:
   eigene Kopien und Kopien von Startkonten zaehlen dort schon nicht.
 - Zustimmung: Zustimmungen anderer zu den sichtbaren Beitraegen, ohne eigene und ohne
   die von Startkonten. Ablehnung bringt keinen Meilenstein.
-- Unterstuetzungsarbeit: Einwuerfe, die die Person ausformuliert hat, und eigene
-  Einwuerfe, die andere ausformuliert haben, je mit nicht gesperrtem Beitrag.
+- Unterstuetzungsarbeit: Einwuerfe anderer, die die Person ausformuliert hat, und
+  eigene Einwuerfe, die andere ausformuliert haben, je mit nicht gesperrtem Beitrag
+  und ohne Startkonten auf der anderen Seite.
+
+Weil nichts gespeichert wird, kann ein erreichter Meilenstein wieder verschwinden,
+etwa wenn ein Beitrag gesperrt oder geloescht wird; das ist der Preis dafuer, dass es
+keine Tabelle mit Meilensteinen und keine Frist dafuer gibt.
 
 Ein Startkonto hat keine Meilensteine, ein Konto ohne geltende Art.-9-Einwilligung
 auch nicht: Deren Wortlaut nennt die Meilenstein-Abzeichen als Zweck (#559). Gefragt
@@ -31,10 +36,12 @@ from services.art9_einwilligung_service import get_art9_einwilligung_service
 from services.punkte_service import NutzungsQuelle, SichtbareBeitraege
 
 
-class StimmenUndEinwuerfe(Protocol):
+class MeilensteinQuellen(Protocol):
     def zustimmungen(self, content_ids: List, ausgenommen: Set[str]) -> int: ...
 
-    def einwuerfe_ausformuliert_von(self, user_id: str) -> int: ...
+    def einwuerfe_ausformuliert_von(
+        self, user_id: str, ausgenommen: Set[str]
+    ) -> int: ...
 
     def eigene_einwuerfe_von_anderen_ausformuliert(
         self, user_id: str, ausgenommen: Set[str]
@@ -46,7 +53,7 @@ class MeilensteineService:
         self,
         sichtbare_beitraege: SichtbareBeitraege,
         nutzung: NutzungsQuelle,
-        stimmen_und_einwuerfe: StimmenUndEinwuerfe,
+        stimmen_und_einwuerfe: MeilensteinQuellen,
         settings: Settings,
         eingewilligt: Optional[Callable[[str], bool]] = None,
     ):
@@ -80,7 +87,7 @@ class MeilensteineService:
             quelle.zustimmungen, ids, {user_id} | startkonten
         )
         ausformuliert = await asyncio.to_thread(
-            quelle.einwuerfe_ausformuliert_von, user_id
+            quelle.einwuerfe_ausformuliert_von, user_id, startkonten
         )
         eingeworfen = await asyncio.to_thread(
             quelle.eigene_einwuerfe_von_anderen_ausformuliert, user_id, startkonten

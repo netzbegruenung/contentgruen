@@ -122,12 +122,15 @@ class TestMeilensteinQuellen:
     ):
         repo = PunkteRepository(datenbank)
         _einwurf(datenbank, "bo-2", [self.AM, self.AM], ausformulierer="kim-1")
+        _einwurf(datenbank, "ali-3", [self.AM], ausformulierer="kim-1")
         _einwurf(datenbank, "kim-1", [self.AM], ausformulierer="kim-1")
+        _einwurf(datenbank, "start-9", [self.AM], ausformulierer="kim-1")
         _einwurf(datenbank, "bo-2", [self.AM], ausformulierer="kim-1", gesperrt=True)
         _einwurf(datenbank, "bo-2", [self.AM], ausformulierer="ali-3")
 
-        assert repo.einwuerfe_ausformuliert_von("kim-1") == 2
-        assert repo.einwuerfe_ausformuliert_von("niemand") == 0
+        assert repo.einwuerfe_ausformuliert_von("kim-1", {"start-9"}) == 2
+        assert repo.einwuerfe_ausformuliert_von("kim-1", set()) == 3
+        assert repo.einwuerfe_ausformuliert_von("niemand", set()) == 0
 
     def test_eigene_einwuerfe_von_anderen_ausformuliert(self, datenbank):  # noqa: F811
         repo = PunkteRepository(datenbank)

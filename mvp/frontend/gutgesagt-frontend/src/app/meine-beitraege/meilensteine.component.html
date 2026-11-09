@@ -16,7 +16,8 @@
             <span class="meilenstein-name">{{ meilenstein.name }}</span>
             <span *ngIf="meilenstein.erreicht" class="visually-hidden">, erreicht</span>
             <span *ngIf="!meilenstein.erreicht" class="meilenstein-stand">
-                <span class="visually-hidden">, noch nicht erreicht: </span>{{ meilenstein.stand }}/{{ meilenstein.schwelle }}
+                <span class="visually-hidden">, noch nicht erreicht: {{ meilenstein.stand }} von {{ meilenstein.schwelle }}</span>
+                <span aria-hidden="true">{{ meilenstein.stand }}/{{ meilenstein.schwelle }}</span>
             </span>
         </li>
     </ul>

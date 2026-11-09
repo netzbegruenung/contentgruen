@@ -43,8 +43,9 @@ class _Quellen:
         self.zustimmungen_ausgenommen = ausgenommen
         return self.zustimmungen_zahl if content_ids else 0
 
-    def einwuerfe_ausformuliert_von(self, user_id: str) -> int:
+    def einwuerfe_ausformuliert_von(self, user_id: str, ausgenommen) -> int:
         self.ausformuliert_von = user_id
+        self.ausformuliert_ausgenommen = ausgenommen
         return self.ausformuliert
 
     def eigene_einwuerfe_von_anderen_ausformuliert(self, user_id, ausgenommen) -> int:
@@ -98,6 +99,7 @@ async def test_unterstuetzungsarbeit_ohne_startkonten():
     assert meilensteine["ausformuliert-10"].erreicht
     assert meilensteine["eingeworfen-10"].stand == 2
     assert quellen.ausformuliert_von == KIM
+    assert quellen.ausformuliert_ausgenommen == {START}
     assert quellen.eingeworfen_ausgenommen == {START}
 
 
