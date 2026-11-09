@@ -100,9 +100,16 @@ so wie er im Dienst mit dieser Schwelle liefe.
 - Fälle, deren erwartete Aussage im gemessenen Bestand fehlt, zählen nicht mit; die
   Ausgabe nennt sie. S01 bis S42 erwarten Aussagen des Seeds, ab S43 des Startbestands
   (`STARTBESTAND` in `suche_testset.py`). Zwölf Aussagen hat der Startbestand mit dem
-  Seed gemeinsam; am Seed zählen die Fälle zum Startbestand nicht mit, am Startbestand
-  die vier zu den zwei Seed-Aussagen, die ihm fehlen (S06 bis S09). So bleibt das Soll
+  Seed gemeinsam; am Seed zählen die Fälle zum Startbestand nicht mit. So bleibt das Soll
   des nächtlichen Laufs, wenn Fälle zum Startbestand dazukommen (ein Unit-Test prüft das).
+- **Ersatz:** Die vier Fälle zu den zwei Seed-Aussagen, die dem Startbestand fehlen
+  (S06 bis S09), zählen dort mit einer Ersatz-Erwartung (`ersatz` in `suche_testset.py`,
+  #606): S06 bis S08 erwarten die Dunkelflaute-Aussage, S09 („Ökostrom ist viel zu teuer“)
+  die Atomkraft-Aussage, deren Antworten die Kosten von Sonne und Wind gegen neue
+  Atomkraftwerke stellen. S09 ist dort nicht dieselbe Behauptung und zählt nicht für die
+  Zerfaserung, S06 schon. Die Ausgabe nennt die Fälle unter „Mit Ersatz gemessen“; am
+  Seed gilt weiter die ursprüngliche Erwartung. Ein Unit-Test prüft, dass jeder Fall zu
+  einer Seed-Aussage, die dem Startbestand fehlt, einen Ersatz hat.
 - Keine Personendaten, keine Eingaben aus Produktion: Suchanfragen sind selbst
   formuliert oder stammen aus dem Seed bzw. dem Messset.
 
@@ -176,7 +183,8 @@ Modell `intfloat/multilingual-e5-base`, NLI-Stufe im Schattenbetrieb (Standard),
 106 Fälle, davon 99 gemessen (86 mit Erwartung, 13 ohne); nicht gemessen S06 bis S09
 (Seed-Aussagen, die dem Startbestand fehlen) und S38, S39, S42 (nicht fremd). Weicht der
 importierte Startbestand auf Produktion vom Entwurf ab, ändern sich einzelne Fälle; dort
-reicht eine Kontrollmessung mit dem Befehl oben.
+reicht eine Kontrollmessung mit dem Befehl oben. S06 bis S09 zählen seit #606 mit ihrem
+Ersatz mit (Regeln, „Ersatz“; Messung unten).
 
 | Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|---|---|
@@ -257,6 +265,29 @@ reicht eine Kontrollmessung mit dem Befehl oben.
   Zählung auf Produktion nach einigen Wochen Suchen. Am Startbestand sind bei 0,82
   7 der 99 gemessenen Suchen ohne Treffer (bei 0,8: 2), keine davon dieselbe Behauptung
   wie eine Aussage.
+
+## S06 bis S09 am Startbestand (#606)
+
+In der Kontrollmessung auf Produktion (09.11.2026) fehlten S06 bis S09: Ihre erwarteten
+Seed-Aussagen („Erneuerbare Energien sind total unzuverlässig!“, „… sind zu teuer!“) hat
+der Startbestand nicht, und die Messung überspringt solche Fälle. Seit #606 zählen sie dort
+mit ihrem Ersatz. Gemessen am 09.11.2026 lokal am freigegebenen Startbestand (dieselbe
+Datei wie beim Import auf Produktion, 30 Aussagen, 60 Kommentare, eingespielt mit
+`beitraege_importieren.py` in einen eigenen, leeren Stack), mit
+`SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=an` wie auf Produktion, Bestätiger aus:
+
+| bei 0,82 | gemessen | Treffer | Fehltreffer | keine | Präzision | Recall@10 | Zerfaserung | ähnliche Aussagen |
+|---|---|---|---|---|---|---|---|---|
+| vorher | 99 von 106 | 78/86 | 4 | 4 | 0.34 | 0.95 | 25/41 | 65/86 |
+| mit Ersatz | 103 von 106 | 82/90 | 4 | 4 | 0.34 | 0.96 | 26/42 | 65/90 |
+
+- Alle vier sind bei 0,82 Treffer: S06 (0,918), S07 (0,990) und S08 (0,888) zeigen zuerst
+  eine Antwort zur Dunkelflaute-Aussage, S09 eine zur Atomkraft-Aussage, knapp über der
+  Schwelle (0,826); erst bei 0,86 fällt S09 auf „keine“.
+- S06 landet nicht auf der Dunkelflaute-Aussage (Zerfaserung 26 statt 25 von 42 bzw.
+  41). Keiner der vier zeigt eine erwartete Aussage unter den ähnlichen Aussagen
+  (65 von 90).
+- Nicht gemessen bleiben S38, S39 und S42 (am Startbestand nicht fremd).
 
 ## Polarität mit NLI (#574)
 

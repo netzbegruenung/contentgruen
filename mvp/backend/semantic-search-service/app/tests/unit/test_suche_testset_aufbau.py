@@ -45,6 +45,7 @@ from tests.regression.suche_testset import (
     QUELLEN,
     SEED,
     STARTBESTAND,
+    Ersatz,
     Fall,
     am_seed_gemessen,
 )
@@ -105,7 +106,29 @@ class TestBezugZumSeed:
         """Gemessen wird am Seed und am Startbestand; sonst misst das Set ins Leere."""
         bekannt = _seed_aussagen() | set(STARTBESTAND)
         texte = {t for f in FAELLE for t in f.erwartet + f.nur_mit + f.nur_ohne}
+        texte |= {t for f in FAELLE if f.ersatz for t in f.ersatz.erwartet}
         assert texte - bekannt == set()
+
+    def test_faelle_zum_seed_zaehlen_auch_am_startbestand(self):
+        """Fehlt dem Startbestand eine erwartete Seed-Aussage, misst der Fall dort mit
+        seinem Ersatz (S06 bis S09, #606); sonst fehlte er in der Kontrollmessung."""
+        start = {text_normalisiert(t) for t in STARTBESTAND}
+        luecke = []
+        for fall in FAELLE:
+            erwartet = {text_normalisiert(t) for t in fall.erwartet}
+            if not erwartet or erwartet <= start:
+                continue
+            ersatz = fall.ersatz.erwartet if fall.ersatz else ()
+            if not ersatz or not {text_normalisiert(t) for t in ersatz} <= start:
+                luecke.append(fall.id)
+        assert luecke == []
+
+    def test_ersatz_nur_bei_faellen_mit_erwartung(self):
+        for fall in FAELLE:
+            if fall.ersatz:
+                assert fall.erwartet and fall.ersatz.erwartet, fall.id
+                if fall.ersatz.dieselbe_behauptung:
+                    assert fall.form == "satz", fall.id
 
     def test_woertliche_faelle_sind_seed_aussagen(self):
         seed = {text_normalisiert(t) for t in _seed_aussagen()}
@@ -360,6 +383,16 @@ class TestAuswertung:
         assert "- X05: " in text.split("Aussage fehlt im Bestand")[1]
         assert "- X06: " in text.split("der Bestand hat eine Aussage dazu")[1]
 
+    def test_ausgabe_nennt_faelle_mit_ersatz(self):
+        mit_ersatz = _m(_fall("X07"), {0.8: (_k(True),)})._replace(
+            ersatz_fuer=("Seed",)
+        )
+        text = tabellen([mit_ersatz], (0.8,), aktuell=0.8)
+        assert f"- X07: Seed -> {A}" in text.split("Mit Ersatz gemessen")[1]
+        with patch.object(suche_messen, "schwelle_heute", return_value=0.8):
+            daten = als_json([mit_ersatz], (0.8,))
+        assert daten["faelle"][0]["ersatz_fuer"] == ["Seed"]
+
     def test_faelle_text_und_json(self):
         messungen = self._messungen()
 
@@ -491,6 +524,48 @@ class TestErwartung:
         assert messung.angezeigt == {}
         assert als_json([messung], (0.8,))["faelle"][0]["einordnung"] == {}
         assert suche_messen.gemessen([messung]) == []
+
+    def test_fehlt_eine_erwartete_aussage_gilt_der_ersatz(self):
+        fall = _fall(erwartet=("Seed",), dieselbe=True)._replace(
+            ersatz=Ersatz((A,), False)
+        )
+        aussagen = {A: SimpleNamespace(id="id-A", replysuggestions=[])}
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand):
+            gemessen_als, erwartung, ersatz_fuer = asyncio.run(
+                suche_messen._erwartung_mit_ersatz(None, fall, {})
+            )
+
+        assert ersatz_fuer == ("Seed",)
+        assert (gemessen_als.erwartet, gemessen_als.dieselbe_behauptung) == (
+            (A,),
+            False,
+        )
+        assert (erwartung.aussage_ids, erwartung.fehlt) == (frozenset({"id-A"}), ())
+
+    @pytest.mark.parametrize(
+        "bestand, erwartet_gemessen, fehlt",
+        [({"Seed", A}, ("Seed",), ()), (set(), ("Seed",), ("Seed",))],
+        ids=["erwartete-da-kein-ersatz", "ersatz-fehlt-auch"],
+    )
+    def test_ersatz_nur_wenn_noetig_und_vorhanden(
+        self, bestand, erwartet_gemessen, fehlt
+    ):
+        fall = _fall(erwartet=("Seed",))._replace(ersatz=Ersatz((A,), False))
+        aussagen = {
+            t: SimpleNamespace(id=f"id-{t}", replysuggestions=[]) for t in bestand
+        }
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand):
+            gemessen_als, erwartung, ersatz_fuer = asyncio.run(
+                suche_messen._erwartung_mit_ersatz(None, fall, {})
+            )
+
+        assert (gemessen_als.erwartet, erwartung.fehlt, ersatz_fuer) == (
+            erwartet_gemessen,
+            fehlt,
+            (),
+        )
 
     def test_erwartete_aussagen_wie_bisher(self):
         erwartung = self._erwartung(_fall(erwartet=(A, "B")), {A})
