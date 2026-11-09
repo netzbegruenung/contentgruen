@@ -176,6 +176,10 @@ _Avoid_: Fassung (eine Länge eines Kommentars), Version
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
 
+**Lücke**:
+Die Stelle in eckigen Klammern im Text eines Beitrags, „[Hier …]“, die die Person vor dem Posten selbst füllt, etwa mit einem eigenen Erlebnis (Schreibregel: eigene Erlebnisse nur als Platzhalter). Die Karte hebt sie als Feld hervor, und nach dem Kopieren erinnert der Hinweis daran, sie auszufüllen. Andere eckige Klammern wie „[1]“ sind keine Lücke.
+_Avoid_: Vorlagen-Lücke, Leerstelle
+
 **Schreibhilfe**:
 Ein Kniff, mit dem ein Text besser ankommt, etwa der Küchenzuruf („Was würdest du in einem Satz durch die Küche rufen?“) als Leitfrage für die Kurzfassung, der Aufhänger vor der Begründung, die Lesenden als Hauptfigur oder Zahlen, die in den Alltag übersetzt sind. Anders als eine Schreibregel ist sie ein Angebot.
 _Avoid_: Tipp, Trick
