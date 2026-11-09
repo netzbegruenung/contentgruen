@@ -7,13 +7,15 @@ from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from domain.models.content_status import (
-    AUSGEBLENDET_WERTE,
     FELD_GELOESCHT_AM,
     FELD_STATUS_VOR_SPERRE,
     ContentStatus,
     zustand_aus_altwert,
 )
 from domain.models.content_type import ContentType
+from repositories.implementations.qdrant.antwortzahl import (
+    sichtbare_antworten_zaehlen,
+)
 from repositories.interfaces.moderation_repository import IModerationRepository
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 
@@ -146,7 +148,7 @@ class QdrantModerationRepository(IModerationRepository):
                 scroll_filter=_nur("content_type", ContentType.STATEMENT.value),
                 limit=AUSSAGEN_JE_SEITE,
                 offset=offset,
-                with_payload=True,
+                with_payload=["replysuggestions", "replysuggestions_count"],
                 with_vectors=False,
             )
             if not punkte:
@@ -170,19 +172,9 @@ class QdrantModerationRepository(IModerationRepository):
             offset = naechster
 
     async def _sichtbare_zaehlen(self, vorschlaege: List[Dict[str, Any]]) -> int:
-        """
-        Wie viele der Antwortvorschlaege auf einen sichtbaren Beitrag zeigen (#631):
-        die Zahl "N Antworten". Gesperrte, geloeschte und nicht mehr vorhandene
-        Beitraege zaehlen nicht; Altwerte von vor #214 gelten wie ueberall als
-        sichtbar. Eine Abfrage je Aussage, nur der Status.
-        """
-        ids = list(dict.fromkeys(str(v.get("id")) for v in vorschlaege))
-        zustaende = await self.zustaende_laden(ids)
-        return sum(
-            1
-            for beitrag_id in ids
-            if beitrag_id in zustaende
-            and zustand_aus_altwert(zustaende[beitrag_id]) not in AUSGEBLENDET_WERTE
+        """Die Antwortzahl zu diesen Vorschlaegen (antwortzahl.py)."""
+        return await sichtbare_antworten_zaehlen(
+            self._client, self._collection, (v.get("id") for v in vorschlaege)
         )
 
     async def aus_aussagen_entfernen(self, beitrag_id: str) -> int:

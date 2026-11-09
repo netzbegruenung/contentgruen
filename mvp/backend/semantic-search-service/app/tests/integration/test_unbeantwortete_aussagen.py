@@ -17,6 +17,7 @@ from domain.models.statement import Statement
 from services.content.commentary_service import CommentaryService
 from services.content.statement_service import StatementService
 
+from tests.integration.beitrag_helfer import sichtbarer_beitrag
 from tests.integration.conftest import requires_qdrant
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
@@ -160,8 +161,9 @@ async def test_ohne_kommentar_laesst_unbeantwortete_suchanfragen_weg(
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    hintergrund = await sichtbarer_beitrag(statement_service, ContentType.GENERIC_TEXT)
     await _verknuepfen(
-        statement_service, angenommen, uuid.uuid4(), ContentType.GENERIC_TEXT
+        statement_service, angenommen, hintergrund, ContentType.GENERIC_TEXT
     )
 
     ids = await _ohne_kommentar(statement_service)

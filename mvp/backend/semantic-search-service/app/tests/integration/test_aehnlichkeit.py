@@ -24,6 +24,7 @@ from services.content.generic_text_service import GenericTextService
 from services.content.statement_service import StatementService
 from services.orchestration.content_orchestrator import DataProcessor
 from services.wartung.text_normalisiert_nachtrag import nachtragen
+from tests.integration.beitrag_helfer import sichtbarer_beitrag
 from tests.integration.conftest import requires_qdrant
 from tests.regression.aehnlichkeit_paare import (
     GLAS,
@@ -170,8 +171,9 @@ async def test_altbestand_ohne_feld_ueber_vektortreffer_und_nachtrag(
     manager = real_embeddings_manager
     _, totgeburt, _ = await _aussage(statement_service, "E-Autos sind eine Totgeburt!")
     await _aussage(statement_service, "E-Autos sind auch nicht besser für die Umwelt")
+    antwort = await sichtbarer_beitrag(statement_service, ContentType.COMMENTARY)
     await statement_service.beitrag_als_antwort_verknuepfen(
-        uuid.uuid4(), ContentType.COMMENTARY, 1.0, "person-1", totgeburt
+        antwort, ContentType.COMMENTARY, 1.0, "person-1", totgeburt
     )
     # Altbestand nachstellen: Punkt ohne Normalform
     manager.client.delete_payload(

@@ -1,4 +1,4 @@
-from typing import AbstractSet, List, Optional, Set
+from typing import AbstractSet, Iterable, List, Optional, Set
 import asyncio
 import logging
 import uuid
@@ -11,6 +11,7 @@ from repositories.implementations.qdrant.base_repository import (
     QdrantBaseRepository,
     nur_sichtbar_bedingungen,
 )
+from repositories.implementations.qdrant.antwortzahl import sichtbare_antworten_zaehlen
 from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from domain.models.content_origin import ContentOrigin
@@ -239,6 +240,12 @@ class StatementRepository(
                 vorschlag.id in sichtbar for vorschlag in aussage.replysuggestions
             )
         ]
+
+    async def sichtbare_antworten_zaehlen(self, ids: Iterable[uuid.UUID]) -> int:
+        """Die Antwortzahl zu diesen Antwortvorschlaegen (antwortzahl.py, #631)."""
+        return await sichtbare_antworten_zaehlen(
+            self._shared_manager.async_client, self._shared_manager.collection_name, ids
+        )
 
     async def _sichtbare_kommentare(self, ids: Set[uuid.UUID]) -> Set[uuid.UUID]:
         """Welche der IDs einen Kommentar bezeichnen, der weder gesperrt noch geloescht ist."""

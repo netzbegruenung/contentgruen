@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import uuid
-from typing import AbstractSet, List
+from typing import AbstractSet, Iterable, List
 
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
@@ -31,6 +31,14 @@ class IStatementRepository(
 
         Returns:
             List of statement search results that meet the criteria
+        """
+        pass
+
+    @abstractmethod
+    async def sichtbare_antworten_zaehlen(self, ids: Iterable[uuid.UUID]) -> int:
+        """
+        Wie viele der Beitraege zu diesen IDs die Suche findet: die Antwortzahl
+        (replysuggestions_count) einer Aussage mit diesen Antwortvorschlaegen (#631).
         """
         pass
 
