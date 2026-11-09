@@ -267,6 +267,9 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
   (`true`/`false`, default `false`; no effect with the NLI-Stufe `aus`). It only judges
   candidates the first model barely misses without contradicting, and the first model keeps a
   veto (`SEMANTIC_SEARCH_NLI_BESTAETIGER_VETO_AB`, default 0.1). Up to ~2.2 GB extra RAM.
+  Both models together wait at most the same 3 s for their locks as the first model alone;
+  each computes with `SEMANTIC_SEARCH_EMBEDDING_THREADS`, so two searches can use both models
+  at once. The Bestätiger is preloaded after the first model, not in parallel.
   Measured in `tests/regression/MESSSET.md` and `SUCHTESTSET.md` (Zerfaserung).
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 

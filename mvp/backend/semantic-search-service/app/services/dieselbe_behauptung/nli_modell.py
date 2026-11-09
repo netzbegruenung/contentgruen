@@ -41,6 +41,10 @@ MAX_TOKEN = 512
 # wird in der Ereignisschleife, nicht in einem Thread: Wartende belegen so keinen Thread
 # des gemeinsamen Executors, den auch andere asyncio.to_thread-Nutzer brauchen.
 NACHFRAGEN_ALLE = 0.05
+# Immer nur ein Modell zugleich laden: from_pretrained ist nicht threadsicher (zwei
+# gleichzeitige Ladevorgaenge liessen Gewichte auf dem meta-Geraet zurueck, jedes Urteil
+# scheiterte dann), und die Spitzen beim Laden addieren sich so nicht.
+_LADE_SPERRE = threading.Lock()
 
 
 class NliPruefer(Protocol):
@@ -85,10 +89,11 @@ class NliModell:
                 AutoTokenizer,
             )
 
-            tokenizer = AutoTokenizer.from_pretrained(self._tokenizer_name)
-            modell = AutoModelForSequenceClassification.from_pretrained(
-                self._modell_name, torch_dtype=torch.float32
-            ).eval()
+            with _LADE_SPERRE:
+                tokenizer = AutoTokenizer.from_pretrained(self._tokenizer_name)
+                modell = AutoModelForSequenceClassification.from_pretrained(
+                    self._modell_name, torch_dtype=torch.float32
+                ).eval()
             nach_name = {
                 name.lower(): idx for idx, name in modell.config.id2label.items()
             }
@@ -210,13 +215,14 @@ class NliModell:
             self._sperre.release()
 
 
-_MODELLE: Dict[str, NliModell] = {}
+_MODELLE: Dict[Tuple[str, Optional[str]], NliModell] = {}
 _MODELLE_SPERRE = threading.Lock()
 
 
 def nli_modell(modell_name: str, tokenizer_name: Optional[str] = None) -> NliModell:
     """Das eine NliModell dieses Prozesses fuer modell_name (Dienst, Seeding, Bericht)."""
     with _MODELLE_SPERRE:
-        if modell_name not in _MODELLE:
-            _MODELLE[modell_name] = NliModell(modell_name, tokenizer_name)
-        return _MODELLE[modell_name]
+        schluessel = (modell_name, tokenizer_name)
+        if schluessel not in _MODELLE:
+            _MODELLE[schluessel] = NliModell(modell_name, tokenizer_name)
+        return _MODELLE[schluessel]

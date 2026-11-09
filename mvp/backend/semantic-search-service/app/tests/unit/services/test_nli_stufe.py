@@ -658,6 +658,58 @@ class TestBestaetigerImStatementService:
         assert neu is True, "die Regel des ersten Modells trennt kein weiter"
         assert len(erstes.aufrufe) == 1
 
+    @pytest.mark.asyncio
+    async def test_kein_landet_ueber_den_bestaetiger(self, baue):
+        """S55: Das erste Modell folgert knapp, der Bestaetiger sicher."""
+        vorhanden = _treffer("Sprit ist zu teuer", 0.92)
+        service = baue(
+            AttrappenNli({vorhanden.text: KNAPP}),
+            AttrappenNli({vorhanden.text: DIESELBE}),
+        )
+        service._repository.search = AsyncMock(return_value=[vorhanden])
+
+        neu, statement_id, _ = await _anlegen(
+            service, "Bald kann sich keiner mehr Sprit leisten"
+        )
+
+        assert neu is False
+        assert statement_id == vorhanden.id
+
+    @pytest.mark.asyncio
+    async def test_kein_kandidaten_nehmen_der_regel_keinen_platz(
+        self, baue, test_settings
+    ):
+        """Kandidaten nur fuer den Bestaetiger ("kein") kommen hinter die der Regel:
+        Die bisherige Regel sieht dieselben Kandidaten wie ohne Bestaetiger."""
+        n = test_settings.nli_kandidaten_hoechstens
+        kein = [_treffer(f"Keiner kann sich Sprit leisten {i}", 0.97) for i in range(n)]
+        andere = [_treffer(f"Sprit ist teuer {i}", 0.95 - i * 0.01) for i in range(n)]
+        richtig = andere[-1]
+        erstes = AttrappenNli({richtig.text: DIESELBE})
+        service = baue(erstes, AttrappenNli())
+        service._repository.search = AsyncMock(return_value=kein + andere)
+
+        neu, statement_id, _ = await _anlegen(service, "Sprit ist zu teuer")
+
+        assert (neu, statement_id) == (False, richtig.id)
+        assert [b for _, b in erstes.aufrufe[0]] == [t.text for t in andere + kein]
+
+    @pytest.mark.asyncio
+    async def test_schatten_zaehlt_mit_bestaetiger(self, baue):
+        vorhanden = _treffer("Mit Bürgergeld hat man mehr als mit Arbeit", 0.93)
+        service = baue(
+            AttrappenNli({vorhanden.text: KNAPP}),
+            AttrappenNli({vorhanden.text: DIESELBE}),
+            modus="schatten",
+        )
+        service._repository.search = AsyncMock(return_value=[vorhanden])
+
+        neu, _, _ = await _anlegen(service, "Bürgergeld lohnt sich mehr als Arbeit")
+        await asyncio.gather(*service._schatten_tasks)
+
+        assert neu is True, "im Schatten entscheidet die Schwelle"
+        assert service.schattenprotokoll.zaehler == {"nur_nli": 1}
+
     def test_schalter_aus_laedt_keinen_bestaetiger(
         self, test_settings, repository_factory
     ):

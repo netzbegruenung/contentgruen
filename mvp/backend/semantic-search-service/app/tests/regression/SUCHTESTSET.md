@@ -232,7 +232,7 @@ reicht eine Kontrollmessung mit dem Befehl oben.
   gemessenen Suchen landet dabei auf einer falschen Aussage, auch die Fälle ohne Erwartung
   nicht. Die 15 sind vor allem Umgangssprache, Bilder und Umschreibungen (S02 „Windkraftanlagen
   bringen Vögel um“) und einseitige Folgerungen (S45). `vorhandene_finden` braucht im Median
-  gleich lang (250 ms), im 95. Perzentil 900 statt 630 ms: Der Bestätiger urteilt bei 12 der
+  283 statt 257 ms, im 95. Perzentil 890 statt 690 ms: Der Bestätiger urteilt bei 12 der
   99 Suchen über je einen Kandidaten. Das Soll des nächtlichen Laufs bleibt, er misst mit der
   Voreinstellung (Schattenbetrieb, Bestätiger aus).
   Nachmessen: `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=an SEMANTIC_SEARCH_NLI_BESTAETIGER=true`

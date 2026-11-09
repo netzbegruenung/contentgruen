@@ -1,7 +1,7 @@
 """
 Regressionstest NLI-Stufe (#387): Faellt ein Modell- oder Bibliothekswechsel auf die
-Urteile am Messset, schlaegt das hier an. Laedt das NLI-Modell (~1,2 GB RAM) und den Bestaetiger (~2,2 GB); deshalb
-langsam markiert und nicht in CI. Die Regel ueber die gespeicherten Urteile prueft
+Urteile am Messset, schlaegt das hier an. Laedt das NLI-Modell (~1,2 GB RAM) und den
+Bestaetiger (~2,2 GB); deshalb langsam markiert und nicht in CI. Die Regel ueber die gespeicherten Urteile prueft
 tests/unit/test_nli_messset.py.
 
     cd mvp/backend/semantic-search-service/app

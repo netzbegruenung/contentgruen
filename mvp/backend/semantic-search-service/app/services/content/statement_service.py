@@ -1,4 +1,6 @@
 import asyncio
+import threading
+import time
 import contextlib
 import datetime
 from collections import defaultdict
@@ -126,16 +128,29 @@ class StatementService(
         )
 
     def nli_vorladen(self) -> None:
-        """Die NLI-Modelle im Hintergrund laden, wenn die NLI-Stufe sie braucht."""
-        for modell in (self._nli, self._bestaetiger):
-            if isinstance(modell, NliModell):
-                modell.vorladen()
+        """Die NLI-Modelle im Hintergrund laden, wenn die NLI-Stufe sie braucht: den
+        Bestaetiger erst nach dem ersten Modell, damit sich die Spitzen beim Laden
+        nicht addieren."""
+        modelle = [
+            m for m in (self._nli, self._bestaetiger) if isinstance(m, NliModell)
+        ]
+        if not modelle:
+            return
+
+        def laden():
+            for modell in modelle:
+                modell.laden_abwarten()
+
+        threading.Thread(target=laden, name="nli-vorladen", daemon=True).start()
 
     async def nli_laden_abwarten(self) -> bool:
         """Warten, bis das NLI-Modell geladen ist; True, wenn es bereitsteht. Fuer
         Messskripte, die gleich nach dem Start fragen und sonst die Schwelle messen."""
         if isinstance(self._bestaetiger, NliModell):
-            await asyncio.to_thread(self._bestaetiger.laden_abwarten)
+            if not await asyncio.to_thread(self._bestaetiger.laden_abwarten):
+                logger.warning(
+                    "Bestaetiger nicht geladen: Es urteilt nur das erste Modell."
+                )
         if isinstance(self._nli, NliModell):
             return await asyncio.to_thread(self._nli.laden_abwarten)
         return self._nli is not None
@@ -307,21 +322,27 @@ class StatementService(
         self, text: str, treffer: List[BaseContentSearchResult]
     ) -> List[BaseContentSearchResult]:
         """Die Treffer, die das Modell pruefen soll: ab nli_kandidaten_ab, die
-        Vorpruefungen bestanden (regel.nli_darf_pruefen, mit Bestaetiger
-        regel.bestaetiger_darf_pruefen), hoechstens nli_kandidaten_hoechstens."""
-        darf = (
-            regel.nli_darf_pruefen
-            if self._bestaetiger is None
-            else regel.bestaetiger_darf_pruefen
-        )
-        kandidaten = [
+        Vorpruefungen bestanden (regel.nli_darf_pruefen), hoechstens
+        nli_kandidaten_hoechstens; mit Bestaetiger dazu hoechstens ebenso viele, die
+        nur regel.bestaetiger_darf_pruefen bestehen."""
+        hoechstens = self.settings.nli_kandidaten_hoechstens
+        ab_untergrenze = [
             k
             for k in treffer
-            if k.score is not None
-            and k.score >= self.settings.nli_kandidaten_ab
-            and darf(text, k.text)
+            if k.score is not None and k.score >= self.settings.nli_kandidaten_ab
         ]
-        return kandidaten[: self.settings.nli_kandidaten_hoechstens]
+        kandidaten = [k for k in ab_untergrenze if regel.nli_darf_pruefen(text, k.text)]
+        if self._bestaetiger is None:
+            return kandidaten[:hoechstens]
+        # Paare, die nur der Bestaetiger pruefen darf ("kein"), kommen dazu, ohne
+        # einem Kandidaten der Regel oben den Platz zu nehmen.
+        nur_bestaetiger = [
+            k
+            for k in ab_untergrenze
+            if regel.bestaetiger_darf_pruefen(text, k.text)
+            and not regel.nli_darf_pruefen(text, k.text)
+        ]
+        return kandidaten[:hoechstens] + nur_bestaetiger[:hoechstens]
 
     async def _nli_entscheiden(
         self, text: str, treffer: List[BaseContentSearchResult]
@@ -332,6 +353,7 @@ class StatementService(
         Bestaetiger der, den er bestaetigt (_bestaetigen); sonst keiner. None, wenn das
         erste Modell nicht urteilen konnte - dann gilt die Schwelle.
         """
+        beginn = time.monotonic()
         aehnlichster = treffer[0] if treffer else None
         kandidaten = self._nli_kandidaten(text, treffer)
         if not kandidaten:
@@ -360,7 +382,13 @@ class StatementService(
         if dieselben:
             vorhanden = max(dieselben, key=lambda paar: paar[0])[1]
         else:
-            vorhanden = await self._bestaetigen(text, kandidaten, urteile)
+            # Beide Modelle zusammen warten hoechstens DIESELBE_WARTET_HOECHSTENS.
+            rest = (
+                None
+                if self._nli_warten
+                else max(0.0, DIESELBE_WARTET_HOECHSTENS - (time.monotonic() - beginn))
+            )
+            vorhanden = await self._bestaetigen(text, kandidaten, urteile, rest)
         return Dublettenpruefung(vorhanden=vorhanden, aehnlichster=aehnlichster)
 
     async def _bestaetigen(
@@ -368,6 +396,7 @@ class StatementService(
         text: str,
         kandidaten: List[BaseContentSearchResult],
         urteile: List[regel.Urteil],
+        warte_hoechstens: Optional[float] = None,
     ) -> Optional[BaseContentSearchResult]:
         """
         Der zweite Weg (regel.bestaetigt): Der Bestaetiger urteilt nur ueber die
@@ -382,8 +411,7 @@ class StatementService(
         band = [
             (k, u)
             for k, u in zip(kandidaten, urteile)
-            if regel.bestaetiger_darf_pruefen(text, k.text)
-            and regel.braucht_bestaetiger(
+            if regel.braucht_bestaetiger(
                 u, s.nli_widerspruch_unter, s.nli_bestaetiger_veto_ab
             )
         ]
@@ -391,7 +419,7 @@ class StatementService(
             return None
         bestaetigungen = await self._bestaetiger.urteile(
             [(text, k.text) for k, _ in band],
-            warte_hoechstens=None if self._nli_warten else DIESELBE_WARTET_HOECHSTENS,
+            warte_hoechstens=warte_hoechstens,
         )
         if bestaetigungen is None:
             return None
