@@ -23,12 +23,13 @@ from services.content.base_content_service import (
 )
 from services.dieselbe_behauptung.nli_modell import NliModell, NliPruefer, nli_modell
 from services.dieselbe_behauptung.schatten import Schattenprotokoll
-from services.dieselbe_behauptung import regel, stufe
+from services.dieselbe_behauptung import fassung, regel, stufe
 from repositories.interfaces.statement_repository import (
     IStatementRepository,
 )
 from repositories.interfaces.repository_factory import IRepositoryFactory
 from domain.models.statement import (
+    AntwortKurz,
     Statement,
     StatementDbEntry,
     StatementSearchResult,
@@ -241,6 +242,14 @@ class StatementService(
         """
         return await self._repository.ohne_kommentar()
 
+    async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
+        """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
+        return await self._repository.zu_antwort(beitrag_id)
+
+    async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
+        """Die sichtbaren Beitraege unter den IDs, mit Typ und Titel (#603)."""
+        return await self._repository.sichtbare_antworten(ids)
+
     async def vorab_anlegen(
         self, text: str, author: str
     ) -> tuple[bool, uuid.UUID, str]:
@@ -374,6 +383,48 @@ class StatementService(
         # Referenz halten: asyncio haelt Tasks nur schwach.
         self._schatten_tasks.add(task)
         task.add_done_callback(self._schatten_tasks.discard)
+
+    async def gleiche_behauptung(self, alt: str, neu: str) -> Optional[bool]:
+        """
+        Ob eine geaenderte Fassung dieselbe Behauptung trifft wie die alte (#427,
+        fassung.gleiche_behauptung, dieselbe Entscheidung wie fuer Aussagen). Nur mit
+        dieselbe_aussage_nli = an und verfuegbarem Modell; sonst None, ebenso wenn das
+        Modell nicht rechtzeitig urteilt oder etwas scheitert: Dann entscheidet
+        niemand, und die Stimmen bleiben (Regel vor #427).
+        """
+        if self._nli is None or self.settings.dieselbe_aussage_nli != "an":
+            return None
+        try:
+            return await fassung.gleiche_behauptung(
+                alt,
+                neu,
+                self._nli,
+                self._bestaetiger,
+                self.settings,
+                self._aehnlichkeit,
+                warte_hoechstens=(
+                    None if self._nli_warten else DIESELBE_WARTET_HOECHSTENS
+                ),
+            )
+        except Exception as e:
+            logger.warning(
+                "Pruefung der geaenderten Fassung gescheitert (%s)", type(e).__name__
+            )
+            return None
+
+    async def _aehnlichkeit(self, alt: str, neu: str) -> float:
+        """query/query-Aehnlichkeit wie bei den Kandidaten der Pruefung auf dieselbe
+        Aussage; die Vektoren sind normiert, das Skalarprodukt ist der Kosinus."""
+        from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
+
+        einbettung = get_embeddings_manager()
+
+        def rechnen() -> float:
+            a = einbettung.encode_text(alt, content_type="statement")
+            b = einbettung.encode_text(neu, content_type="statement")
+            return float(sum(x * y for x, y in zip(a, b)))
+
+        return await asyncio.to_thread(rechnen)
 
     async def ohne_widerspruch(
         self,
@@ -587,7 +638,7 @@ class StatementService(
         author: str,
         statement_id: Optional[uuid.UUID] = None,
         statement_text: Optional[str] = None,
-    ) -> Optional[Tuple[uuid.UUID, str]]:
+    ) -> Optional[Tuple[uuid.UUID, str, bool]]:
         """
         Einen gerade gespeicherten Beitrag als Antwort an seine Aussage haengen.
 
@@ -598,7 +649,9 @@ class StatementService(
 
         Returns:
         - ID und Text der tatsaechlich verknuepften Aussage (mit Text kann das eine
-          schon vorhandene, sehr aehnliche sein), oder None ohne Aussage.
+          schon vorhandene, sehr aehnliche sein) und ob sie eben neu angelegt wurde
+          (fuer die Marke "neu" auf der Seite "Gespeichert", #617), oder None ohne
+          Aussage.
 
         Raises:
         - AussageNichtGefunden, wenn die Aussage zur ID nicht existiert; sonst, was
@@ -608,8 +661,9 @@ class StatementService(
         if statement_id is None and not text:
             return None
 
+        neu = False
         if statement_id is None:
-            _, statement_id, aussage_text = await self.add_statement(
+            neu, statement_id, aussage_text = await self.add_statement(
                 Statement(text=text, replysuggestions=[]),
                 author,
                 NEW_CONTENT_STATUS,
@@ -624,4 +678,4 @@ class StatementService(
             content_type=content_type,
             relevance=relevance,
         )
-        return statement_id, aussage_text
+        return statement_id, aussage_text, neu

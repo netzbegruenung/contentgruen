@@ -67,6 +67,8 @@ describe('AppComponent - Desktop-Kopf', () => {
     navigation = jasmine.createSpyObj('NavigationService', [
       'navigateToMeineBeitraege',
       'navigateToContribute',
+      'navigateToEinwerfen',
+      'navigateToFangkorb',
       'navigateHome',
       'goBack',
     ]);
@@ -121,6 +123,19 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(anmelden.calls.count() + anmeldenMitZiel.calls.count()).toBe(1);
     });
 
+    // #620: Das Logo ist der Weg zur Startseite, "Start" im Kopf entfaellt
+    it('fuehrt mit dem Logo "Startseite" zur Startseite; die Ueberschrift nennt nur die Seite', () => {
+      const link = kopf().querySelector('a.logo-link') as HTMLAnchorElement;
+      expect(link.getAttribute('aria-label')).toBe('Startseite');
+      expect(link.querySelector('img')!.getAttribute('alt')).toBe('');
+      expect(kopf().querySelector('h1 a')).toBeNull();
+      expect(kopf().querySelector('[data-testid="start-knopf"]')).toBeNull();
+
+      link.click();
+
+      expect(navigation.navigateHome).toHaveBeenCalledTimes(1);
+    });
+
     it('sieht den Knopf Feedback und oeffnet damit das Formular', () => {
       const knopf = kopf().querySelector('[data-testid="feedback-knopf"]') as HTMLElement;
       expect(knopf.textContent).toContain('Feedback');
@@ -138,6 +153,16 @@ describe('AppComponent - Desktop-Kopf', () => {
       return Array.from(document.querySelectorAll('.profilmenue-eintrag')) as HTMLElement[];
     }
 
+    function eintrag(text: string): HTMLElement {
+      return profilmenue().find((e) => e.textContent?.includes(text))!;
+    }
+
+    async function menueOeffnen(): Promise<void> {
+      avatar().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+    }
+
     it('Klick auf den Avatar oeffnet das Profilmenue und wuerfelt kein neues Bild', async () => {
       const vorher = fixture.componentInstance.selectedProfilePictureUrl;
 
@@ -150,6 +175,8 @@ describe('AppComponent - Desktop-Kopf', () => {
       await fixture.whenStable();
 
       expect(profilmenue().map((e) => e.textContent?.trim())).toEqual([
+        jasmine.stringContaining('Schnell einwerfen'),
+        jasmine.stringContaining('Fangkorb'),
         jasmine.stringContaining('Meine Beiträge'),
         jasmine.stringContaining('Profilbild wählen'),
         jasmine.stringContaining('Einwilligung'),
@@ -168,9 +195,20 @@ describe('AppComponent - Desktop-Kopf', () => {
       await fixture.whenStable();
 
       expect(document.activeElement).toBe(profilmenue()[0]);
-      profilmenue()[0].click();
+      eintrag('Meine Beiträge').click();
 
       expect(navigation.navigateToMeineBeitraege).toHaveBeenCalledTimes(1);
+    });
+
+    // #620: statt zweier unbeschrifteter Symbole im Kopf
+    it('fuehrt ueber das Profilmenue zu Schnell einwerfen und in den Fangkorb', async () => {
+      await menueOeffnen();
+      eintrag('Schnell einwerfen').click();
+      expect(navigation.navigateToEinwerfen).toHaveBeenCalledTimes(1);
+
+      await menueOeffnen();
+      eintrag('Fangkorb').click();
+      expect(navigation.navigateToFangkorb).toHaveBeenCalledTimes(1);
     });
 
     it('meldet ueber das Profilmenue ab', async () => {
@@ -179,7 +217,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      profilmenue()[3].click();
+      eintrag('Abmelden').click();
 
       expect(auth.logout).toHaveBeenCalledTimes(1);
     });
@@ -189,7 +227,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      profilmenue()[2].click();
+      eintrag('Einwilligung').click();
 
       expect(router.navigate).toHaveBeenCalledWith(['/einwilligung']);
     });
@@ -199,7 +237,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      profilmenue()[1].click();
+      eintrag('Profilbild wählen').click();
 
       expect(dialog.open).toHaveBeenCalledWith(ProfilbildDialogComponent, jasmine.anything());
     });
@@ -223,8 +261,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(links.length).toBe(0);
     });
 
-    // Design-Audit A1/B4 (#512): Abmelden nur im Profilmenue, Fangkorb und Feedback
-    // als runde Icon-Knoepfe mit Text fuer Screenreader.
+    // Design-Audit A1/B4 (#512): Abmelden nur im Profilmenue.
     it('hat Abmelden nur im Profilmenue, nicht als eigenen Link im Kopf', () => {
       const abmelden = Array.from(kopf().querySelectorAll('button, a, [role="button"]')).filter((e) =>
         e.textContent?.includes('Abmelden')
@@ -232,17 +269,18 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(abmelden.length).toBe(0);
     });
 
-    it('zeigt Fangkorb als runden Icon-Knopf mit Namen fuer Screenreader', () => {
-      const knopf = kopf().querySelector('[data-testid="fangkorb-knopf"]') as HTMLElement;
-      expect(knopf.tagName).toBe('BUTTON');
-      expect(knopf.hasAttribute('mat-icon-button')).toBeTrue();
-      expect(knopf.querySelector('.cdk-visually-hidden')?.textContent?.trim()).toBe('Fangkorb');
+    // #620: Der Kopf hatte angemeldet acht Elemente, zwei davon unbeschriftete Symbole
+    it('hat keine unbeschrifteten Symbol-Knoepfe fuer Fangkorb und Einwerfen mehr', () => {
+      expect(kopf().querySelector('[data-testid="fangkorb-knopf"]')).toBeNull();
+      expect(kopf().querySelector('[aria-label="Schnell einwerfen"]')).toBeNull();
+      expect(kopf().querySelectorAll('button[mat-icon-button]:not(.back-button-header)').length).toBe(0);
     });
 
     // #599: drei runde Symbole ohne Beschriftung waren nicht zu deuten
-    it('beschriftet Feedback, Hilfe und Start als Textlinks mit Symbol fuer schmale Kopfzeilen', () => {
+    it('beschriftet Feedback und Hilfe als Textlinks mit Symbol fuer schmale Kopfzeilen, ohne "Start" (#620)', () => {
       const textlinks = Array.from(kopf().querySelectorAll('button.header-link'));
-      expect(textlinks.map((k) => k.querySelector('.kopf-text')!.textContent!.trim())).toEqual(['Feedback', 'Hilfe', 'Start']);
+      expect(textlinks.map((k) => k.querySelector('.kopf-text')!.textContent!.trim())).toEqual(['Feedback', 'Hilfe']);
+      expect(kopf().querySelector('[data-testid="start-knopf"]')).toBeNull();
       for (const k of textlinks) {
         expect(k.querySelector('mat-icon')!.getAttribute('aria-hidden')).toBe('true');
       }
@@ -266,15 +304,6 @@ describe('AppComponent - Desktop-Kopf', () => {
       )!;
       expect(link.querySelector('.kopf-text')!.textContent!.trim()).toBe('Hier fehlt eine Antwort');
       expect(link.querySelector('mat-icon')!.getAttribute('aria-hidden')).toBe('true');
-    });
-
-    it('fuehrt mit dem Fangkorb-Knopf in den Fangkorb', () => {
-      const komponente = fixture.componentInstance;
-      const fangkorb = spyOn(komponente, 'navigateToFangkorbView');
-
-      (kopf().querySelector('[data-testid="fangkorb-knopf"]') as HTMLElement).click();
-
-      expect(fangkorb).toHaveBeenCalledTimes(1);
     });
 
     it('sieht den Knopf Feedback ebenfalls', () => {

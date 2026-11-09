@@ -12,7 +12,7 @@
     </p>
 
     <div *ngIf="aussageKopf as aussage" class="gespeichert-aussage">
-        <p class="gespeichert-label">Antwort auf</p>
+        <p class="gespeichert-label">Antwort auf <span *ngIf="zustand.aussageNeu" class="neu-marke">neu</span></p>
         <app-beitragskarte class="aussage-karte" variante="kopf" [daten]="aussage"></app-beitragskarte>
     </div>
     <!-- Die gewaehlten Themen der neuen Aussage galten nicht (#455), Satz wie in "Hier fehlt eine Antwort" -->
@@ -50,6 +50,14 @@
         </button>
         <button *ngSwitchDefault mat-raised-button type="button" class="primaer noch-einer" (click)="nochEiner()">
             {{ texte.nochEiner }}
+        </button>
+
+        <!-- Weiter zur Aussage und ihren Treffern, und den Beitrag teilen (#617) -->
+        <button *ngIf="zurAussageZeigen" mat-stroked-button type="button" class="zur-aussage" (click)="zurAussage()">
+            Zur Aussage
+        </button>
+        <button *ngIf="karte" mat-stroked-button type="button" class="link-kopieren" (click)="linkKopieren()">
+            Link kopieren
         </button>
 
         <a mat-stroked-button class="meine-beitraege" routerLink="/contributions">Meine Beiträge</a>

@@ -184,6 +184,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     const zustand: GespeichertZustand = {
       aussage: ergebnis.aussage.text ? ergebnis.aussage : undefined,
       verknuepft: ergebnis.verknuepft,
+      ...(ergebnis.aussageNeu ? { aussageNeu: true } : {}),
       ...(ergebnis.themenHinweis ? { themenHinweis: ergebnis.themenHinweis } : {}),
     };
 

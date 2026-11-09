@@ -17,6 +17,7 @@ from dependencies import (
     get_post_service,
     get_settings,
     get_reference_service,
+    get_statement_service,
     get_voting_service,
 )
 from dtos.content import (
@@ -30,7 +31,9 @@ from domain.models.content_type import ContentType
 from core.config import Settings
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
+from services.guete_service import als_responses_mit_guete, guete_ergaenzen
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
+from services.beitrag_kontext import BeitragKontext, kontext_laden
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.content.base_content_service import BaseContentService
 from dtos.beitrag import (
@@ -41,6 +44,7 @@ from dtos.beitrag import (
 )
 from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
+from services.content.statement_service import StatementService
 from services.voting_service import VotingService
 from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
@@ -187,10 +191,13 @@ async def get_recent_content(
         # Je Eintrag das Response-DTO seines Typs; result_type gehoert nicht zum
         # Beitrag und kommt danach wieder dazu.
         antworten = fuer_aufrufer(
-            [
-                NEUESTE.get(e["result_type"], BeitragResponse).model_validate(e)
-                for e in angereichert
-            ],
+            # Vor fuer_aufrufer: Die Guete laesst die Stimme des Autors aus (#427).
+            await guete_ergaenzen(
+                [
+                    NEUESTE.get(e["result_type"], BeitragResponse).model_validate(e)
+                    for e in angereichert
+                ]
+            ),
             aufrufer,
         )
         varianten_ergaenzen(antworten, varianten)
@@ -266,7 +273,8 @@ async def beitrag_aendern(
 
 
 # response_model=None: Ein Union-Modell liesse Pydantic den Typ raten; die Antwort ist
-# schon das DTO ihres Typs (die Feldauswahl), dazu nur die eigene Stimme.
+# das DTO ihres Typs (die Feldauswahl), dazu die eigene Stimme und (#603) aussage und
+# weitere_antworten (services/beitrag_kontext.py). Deshalb stehen sie nicht in OpenAPI.
 @router.get("/beitrag/{beitrag_id}", response_model=None)
 async def beitrag_ansehen(
     beitrag_id: uuid.UUID,
@@ -278,6 +286,7 @@ async def beitrag_ansehen(
     reference_service: ReferenceService = Depends(get_reference_service),
     aufrufer: Aufrufer = Depends(get_aufrufer),
     voting_service: VotingService = Depends(get_voting_service),
+    statement_service: StatementService = Depends(get_statement_service),
 ) -> Dict[str, Any]:
     """
     Ein Beitrag jedes Typs unter seiner eigenen Adresse (/beitrag/:id, #300).
@@ -293,6 +302,11 @@ async def beitrag_ansehen(
 
     user_vote ist die Stimme der angemeldeten Person wie in der Suche, damit die
     Seite das Abstimmen anbietet (Entscheidung @BanSe 03.11.); ohne Anmeldung None.
+
+    aussage und weitere_antworten (#603): die Aussage, auf die der Beitrag
+    antwortet (ID, Text), und bis zu fuenf weitere sichtbare Antworten zu ihr (ID,
+    Typ, Titel); ohne Aussage None und []. Scheitert das Nachschlagen, bleibt die
+    Seite mit dem Beitrag allein (services/beitrag_kontext.py).
     """
     nicht_da = HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
     dienste = {
@@ -330,17 +344,29 @@ async def beitrag_ansehen(
         [mit_nutzung] = get_usage_service().enrich_content_with_usage(
             [beitrag.model_dump()]
         )
-        [antwort] = als_responses(ANTWORT_JE_TYP[typ], [mit_nutzung], aufrufer)
+        [antwort] = await als_responses_mit_guete(
+            ANTWORT_JE_TYP[typ], [mit_nutzung], aufrufer
+        )
         # get_user_vote faengt Datenbankfehler selbst ab: ohne Stimme bleibt die Seite.
         stimme = (
             voting_service.get_user_vote(aufrufer.kennung, beitrag_id)
             if aufrufer.angemeldet
             else None
         )
-        return {**antwort.model_dump(mode="json"), "user_vote": stimme}
     except Exception as e:
         logger.error(f"Error in /beitrag: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+    try:
+        kontext = await kontext_laden(beitrag_id, statement_service)
+    except Exception as e:
+        logger.warning(f"Kontext zu /beitrag nicht ladbar: {type(e).__name__}")
+        kontext = BeitragKontext()
+    return {
+        **antwort.model_dump(mode="json"),
+        "user_vote": stimme,
+        **kontext.als_json(),
+    }
 
 
 @router.delete("/{beitrag_id}", status_code=204)

@@ -275,6 +275,14 @@ class Settings(BaseSettings):
     punkte_quest: int = Field(default=4, ge=0)
     punkte_deckel_quests_je_tag: int = Field(default=8, ge=0)
 
+    # Guete eines Beitrags (#427, domain/guete.py): Stimmen anderer zaehlen erst ab
+    # so vielen verschiedenen Stimmenden (DSFA, Massnahme M5), ihr Gewicht waechst mit
+    # ihrer Zahl bis hoechstens zum Anteil ``guete_stimmen_gewicht_max``; beim
+    # Halbwert ist die Haelfte davon erreicht. Der Rest kommt aus dem Gegenlesen.
+    guete_stimmen_ab: int = Field(default=3, ge=1)
+    guete_stimmen_gewicht_max: float = Field(default=0.6, ge=0, le=1)
+    guete_stimmen_halbwert: int = Field(default=5, ge=1)
+
     # Rate-Limit am Zaehl-Endpunkt (POST /usage/content/{id}/usage, #352): so viele
     # Kopien je Person (Besucher: je Adresse) im Fenster. Die Entdoppelung schuetzt
     # Punkte und "oft genutzt", nicht den Zaehler der Karte, der jede Kopie zaehlt.

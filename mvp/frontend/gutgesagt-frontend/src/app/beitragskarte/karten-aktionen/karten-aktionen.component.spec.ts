@@ -558,7 +558,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
       expect(knoepfe.map((k) => k.querySelector('svg')!.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
-      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Gefällt mir', 'Gefällt mir nicht']);
+      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Hilfreich', 'Nicht hilfreich']);
     });
   });
 

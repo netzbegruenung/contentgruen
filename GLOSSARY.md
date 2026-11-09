@@ -317,7 +317,7 @@ Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach 
 _Avoid_: Trending, Trend, beliebt, Top-Beiträge
 
 **Stimme**:
-Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung.
+Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung. Sie gilt der Behauptung im Titel: Ändert die Autorin den Titel so, dass er nach der NLI-Stufe etwas anderes behauptet, verfallen die Stimmen; kleine Korrekturen und Änderungen nur am Text lassen sie stehen.
 _Avoid_: Vote, Like, Daumen
 
 **Siegel**:
@@ -325,7 +325,7 @@ Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fass
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:
-Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
+Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen, auf der Karte dasselbe Gegenlesen ohne die Aussage (ohne die Regel zu übernommenen Schlüsselwörtern, denn ein Beitrag kann auf mehrere Aussagen antworten). Stimmen anderer zählen erst ab einer Mindestzahl verschiedener Stimmender, ohne Startkonten und ohne die eigene Stimme; ihr Anteil an der Güte wächst mit ihrer Zahl, bleibt aber begrenzt. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
@@ -524,6 +524,10 @@ _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 **Einlösung**:
 Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt, auch wenn es zur Adresse schon ein Konto gibt oder die Adresse einen Tippfehler hat; nur wenn Keycloak das Konto nicht anlegen konnte, wird sie zurückgenommen. Die Zahl erlaubter Einlösungen begrenzt eine Einladung.
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
+
+**Startbeispiel**:
+Die Aussage hinter „Beispiel probieren“ auf der Startseite; der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
+_Avoid_: Beispielsuche, Demo-Aussage
 
 **Startbestand**:
 Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start schreibt, damit Gut gesagt nicht leer beginnt. Er wird wie jeder Beitrag angelegt, über das Formular oder das Importskript aus einer Datei.

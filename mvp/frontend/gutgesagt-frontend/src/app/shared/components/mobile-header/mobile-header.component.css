@@ -37,6 +37,15 @@
   height: 32px;
 }
 
+.logo-link {
+  border-radius: 8px;
+}
+
+.logo-link:focus-visible {
+  outline: 2px solid var(--akzent-tanne);
+  outline-offset: -2px;
+}
+
 /*
  * min-width: 0, damit der Titel schrumpfen darf. Ohne das ist die Mindestbreite
  * eines Flex-Elements seine Textbreite: Ein langer Titel ("Beitrag verfassen")

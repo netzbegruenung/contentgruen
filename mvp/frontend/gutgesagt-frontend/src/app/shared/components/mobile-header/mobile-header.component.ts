@@ -84,6 +84,12 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
     this.navigationService.goBack();
   }
 
+  /** Logo: zur Startseite ueber den NavigationService, damit offene Saetze gespeichert werden (#620). */
+  startseite(event: Event): void {
+    event.preventDefault();
+    void this.navigationService.navigateHome();
+  }
+
   openMobileMenu(): void {
     this.openMenu.emit();
   }

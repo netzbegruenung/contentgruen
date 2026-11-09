@@ -166,6 +166,29 @@ def art9_einwilligung_ohne_datenbank(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def guete_ohne_datenbank(monkeypatch):
+    """
+    Lesende Antworten ergaenzen an Beitraegen die Guete (#427). Ohne diesen Ersatz
+    baute der erste Aufruf das echte VoteRepository (siehe
+    anzeigenamen_ohne_datenbank) und luede das Sprachmodell. Der Ersatz kennt keine
+    Stimmen und keinen Kriterienanteil: Karten sind "neu". Tests, die mehr brauchen,
+    stellen ``guete_ohne_datenbank.stimmen_je_beitrag.return_value`` ein.
+    """
+    import dependencies
+    from services.gegenlesen.gegenlesen_service import Gegengelesen
+    from services.guete_service import GueteService
+
+    gegenlesen = MagicMock()
+    gegenlesen.gegenlesen.return_value = Gegengelesen(guete=None, anmerkungen=[])
+    repository = MagicMock()
+    repository.stimmen_je_beitrag.return_value = {}
+    monkeypatch.setattr(
+        dependencies, "_guete_service", GueteService(gegenlesen, repository)
+    )
+    yield repository
+
+
+@pytest.fixture(autouse=True)
 def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
     """
     Jede Suche meldet sich bei der Kennzahl "Suchen ohne Treffer", und ein

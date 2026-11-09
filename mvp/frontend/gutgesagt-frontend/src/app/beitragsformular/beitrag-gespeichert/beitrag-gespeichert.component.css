@@ -73,3 +73,14 @@
         min-height: 48px;
     }
 }
+
+/* Wie im Feld "Antwort auf": die Aussage entstand eben beim Speichern (#617) */
+.neu-marke {
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--primary-fill);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+}

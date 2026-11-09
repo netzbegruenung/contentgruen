@@ -6,7 +6,13 @@ import { BehaviorSubject, Subject } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
-import { Art9EinwilligungService, Art9EinwilligungStand, wortlautDatum } from './art9-einwilligung.service';
+import {
+  Art9EinwilligungService,
+  Art9EinwilligungStand,
+  WORTLAUT_LABEL_MAX,
+  wortlautDatum,
+  wortlautErsterSatz,
+} from './art9-einwilligung.service';
 
 /** Nach dem Anmelden ohne Art.-9-Einwilligung auf /einwilligung fuehren (#489). */
 describe('Art9EinwilligungService', () => {
@@ -182,6 +188,33 @@ describe('Art9EinwilligungService', () => {
     expect(wortlautDatum('2026-11-05-b')).toBe('2026-11-05');
     expect(wortlautDatum('kein-datum')).toBeNull();
     expect(wortlautDatum(null)).toBeNull();
+  });
+
+  // #620: Label am Haekchen ist der erste Satz, unveraendert; "Abs. 2 lit. a" trennt nicht
+  it('wortlautErsterSatz nimmt den ersten Satz unveraendert und trennt nicht an Abkuerzungen', () => {
+    const text =
+      'Ich willige ausdrücklich ein, dass X meine Mitwirkung verarbeitet (Art. 9 Abs. 2 lit. a DSGVO). ' +
+      'Das betrifft Beiträge. Ich kann widerrufen.';
+    expect(wortlautErsterSatz(text)).toBe(
+      'Ich willige ausdrücklich ein, dass X meine Mitwirkung verarbeitet (Art. 9 Abs. 2 lit. a DSGVO).',
+    );
+    expect(text.startsWith(wortlautErsterSatz(text))).toBeTrue();
+  });
+
+  // Kopie des aktuellen Wortlauts 2026-11-05-b (domain/art9_einwilligung.py), Anfang und
+  // zweiter Satz: Aendert sich der Wortlaut, zeigt dieser Test, ob der Schnitt noch passt.
+  it('wortlautErsterSatz schneidet den aktuellen Wortlaut nach dem Art.-9-Satz', () => {
+    const ersterSatz =
+      'Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung verarbeitet, auch wenn sich daraus ' +
+      'auf meine politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO).';
+    const text = ersterSatz + ' Das betrifft Beiträge, Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere.';
+    expect(wortlautErsterSatz(text)).toBe(ersterSatz);
+  });
+
+  it('wortlautErsterSatz gibt ohne Satzende oder bei zu langem ersten Satz den ganzen Text', () => {
+    expect(wortlautErsterSatz('Nur ein Satz ohne Folgesatz.')).toBe('Nur ein Satz ohne Folgesatz.');
+    const lang = 'a'.repeat(WORTLAUT_LABEL_MAX + 1) + '. Zweiter Satz.';
+    expect(wortlautErsterSatz(lang)).toBe(lang);
   });
 
   it('einwilligen schickt die Kennung, widerrufen loescht', () => {

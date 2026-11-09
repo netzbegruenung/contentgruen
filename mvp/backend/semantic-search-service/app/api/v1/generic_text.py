@@ -211,6 +211,7 @@ async def add_generic_text(
         # Dublette True nur, wenn die genommene jetzt an der Aussage haengt.
         statement_id = None
         statement_text = None
+        aussage_neu = False
         themen: List[str] = []
         verknuepft = dublette is None
         aussage_mitgeschickt = bool(
@@ -218,7 +219,7 @@ async def add_generic_text(
         )
         if aussage_mitgeschickt and (dublette is None or dublette.genommen):
             try:
-                statement_id, statement_text = (
+                statement_id, statement_text, aussage_neu = (
                     await statement_service.beitrag_als_antwort_verknuepfen(
                         beitrag_id=generic_text_id,
                         content_type=ContentType.GENERIC_TEXT,
@@ -252,6 +253,7 @@ async def add_generic_text(
             id=generic_text_id,
             statement_id=statement_id,
             statement_text=statement_text,
+            aussage_neu=aussage_neu,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
             vorhanden=VorhandenDto.aus(dublette),

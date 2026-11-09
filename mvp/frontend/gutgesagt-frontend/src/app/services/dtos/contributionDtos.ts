@@ -54,4 +54,13 @@ export interface ContentResult {
     nutzung_je_fassung?: NutzungJeFassung | null;
     /** Herkunftsangaben; Adresse und Beschreibung loest der Endpunkt auf. */
     references?: ContentReference[];
+    /** Guete fuer das Siegel (#427): 1-10, null = "neu". */
+    guete?: number | null;
+    /** Die Kriterien des Gegenlesens, die der Beitrag erfuellt (nur die erfuellten). */
+    guete_erfuellt?: string[];
+    /** Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl). */
+    guete_stimmen_zaehlen?: boolean;
+    /** Zaehler an den Stimm-Knoepfen (Stimmen anderer); null unter der Mindestzahl oder unbekannt. */
+    stimmen_hilfreich?: number | null;
+    stimmen_nicht_hilfreich?: number | null;
 }

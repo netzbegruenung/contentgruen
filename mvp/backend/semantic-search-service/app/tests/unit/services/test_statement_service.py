@@ -286,7 +286,7 @@ class TestAntwortVerknuepfen:
         )
 
         # ID und Text der tatsaechlich verknuepften Aussage, nicht der mitgeschickte Text
-        assert ergebnis == (statement_id, "Die gespeicherte Aussage")
+        assert ergebnis == (statement_id, "Die gespeicherte Aussage", False)
         service.add_statement.assert_not_awaited()
         service.add_statementreplysuggestion_to_statement.assert_awaited_once_with(
             statement_id=statement_id,
@@ -314,7 +314,8 @@ class TestAntwortVerknuepfen:
             " Waermepumpen sind zu teuer ",
         )
 
-        assert ergebnis == (statement_id, "Waermepumpen sind viel zu teuer")
+        # Eine vorhandene: nicht neu angelegt (#617)
+        assert ergebnis == (statement_id, "Waermepumpen sind viel zu teuer", False)
         statement, autor, status, herkunft = service.add_statement.call_args.args
         assert statement.text == "Waermepumpen sind zu teuer"
         assert autor == "person-1"

@@ -325,6 +325,34 @@ def get_gegenlesen_service() -> GegenlesenService:
     return _gegenlesen_service
 
 
+_guete_service = None
+
+
+def get_guete_service():
+    """
+    Einmal je Prozess (#427): haelt das Gegenlesen je Titel und Text im Speicher vor
+    und teilt sich Sprachmodell und Stimmen-Tabelle mit Gegenlesen und Abstimmen.
+    """
+    global _guete_service
+    if _guete_service is None:
+        from domain.guete import Guetegewichte
+        from repositories.vote_repository import VoteRepository
+        from services.guete_service import GueteService
+
+        einstellungen = get_settings()
+        _guete_service = GueteService(
+            get_gegenlesen_service(),
+            VoteRepository(),
+            einstellungen.startkonto_kennungen(),
+            Guetegewichte(
+                stimmen_ab=einstellungen.guete_stimmen_ab,
+                stimmen_gewicht_max=einstellungen.guete_stimmen_gewicht_max,
+                stimmen_halbwert=einstellungen.guete_stimmen_halbwert,
+            ),
+        )
+    return _guete_service
+
+
 def get_spracherkennung() -> Spracherkennung:
     """Eine Instanz je Prozess; der Start lädt Lingua vor (main.py)."""
     return SPRACHERKENNUNG
@@ -400,10 +428,20 @@ def get_beitrag_aendern_service(
     repository: IContentRepository = Depends(get_content_repository),
 ) -> BeitragAendernService:
     """Ueber das aggregierte Repository, wie das Loeschen (#299)."""
+    from repositories.vote_repository import VoteRepository
+
     return BeitragAendernService(
         repository,
         get_reference_service().herkunft_id,
         get_content_report_repository().hat_offene_meldung,
+        # Stimmen verfallen bei anderer Behauptung (#427); ohne StatementService
+        # (Start noch nicht durch) entscheidet niemand, die Stimmen bleiben.
+        gleiche_behauptung=(
+            statement_service_instance.gleiche_behauptung
+            if statement_service_instance is not None
+            else None
+        ),
+        stimmen_loeschen=VoteRepository().loeschen_fuer_beitrag,
     )
 
 

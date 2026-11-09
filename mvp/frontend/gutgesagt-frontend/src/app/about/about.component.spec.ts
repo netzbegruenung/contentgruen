@@ -124,4 +124,14 @@ describe('AboutComponent', () => {
 
     expect(dialog.open).toHaveBeenCalled();
   });
+
+  it('erklärt unter „Bewerten“ das Siegel mit Beispielen von neu bis Güte 10 (#427)', () => {
+    expect(seite.querySelector('.siegel-absatz')!.textContent).toContain('Das Siegel zeigt die Güte eines Beitrags');
+    const beispiele = Array.from(seite.querySelectorAll('.siegel-beispiele app-siegel svg')).map((svg) =>
+      svg.getAttribute('aria-label'),
+    );
+    expect(beispiele.length).toBe(11);
+    expect(beispiele[0]).toBe('Siegel: neu, noch keine Güte');
+    expect(beispiele[10]).toBe('Siegel: Güte 10 von 10');
+  });
 });
