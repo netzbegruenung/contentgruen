@@ -582,9 +582,16 @@ describe('ResultViewComponent: Nicht dabei?', () => {
 
     expect(seite.querySelector('.unified-empty-state .search-query-info')?.textContent)
       .toContain('Zu „waermepumpe teuer“ ist noch nichts drin.');
-    expect(seite.querySelector('.unified-empty-state app-nicht-dabei')?.textContent).toContain('Nicht dabei?');
+    expect(seite.querySelector('.unified-empty-state app-nicht-dabei')?.textContent).toContain('Meintest du …?');
     expect(statementService.aussageVorschlaege).toHaveBeenCalledWith('waermepumpe teuer');
     expect(aehnliche(seite)).toEqual(['Wärmepumpen sind zu teuer', 'Wärmepumpen lohnen sich nicht']);
+  });
+
+  it('gibt ohne Treffer einen Suchtipp, der zur Suche nach Aussagen passt (#617)', () => {
+    const seite = oeffnen(false, false);
+    const tipp = seite.querySelector('.unified-empty-state .such-tipp')?.textContent ?? '';
+    expect(tipp).toContain('Gib die Aussage so ein, wie du sie gehört hast.');
+    expect(seite.textContent).not.toContain('Formuliere eine konkrete Frage');
   });
 
   it('bietet ohne Treffer die Aussage der Suche nicht als aehnliche an (sonst Schleife)', () => {

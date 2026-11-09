@@ -138,6 +138,45 @@ describe('NichtDabeiComponent', () => {
     expect(seite.querySelector('button.neu')).toBeTruthy();
   });
 
+  it('nennt die Zahl der Antworten an der aehnlichen Aussage (#617)', () => {
+    const seite = starten();
+    const zahlen = Array.from(seite.querySelectorAll('.antworten-zahl')).map((e) => (e.textContent ?? '').trim());
+    expect(zahlen).toEqual(['2 Antworten', '1 Antwort']);
+  });
+
+  it('zeigt ohne Antworten keine Zahl', () => {
+    TestBed.overrideProvider(StatementService, {
+      useValue: { aussageVorschlaege: () => of([{ ...AEHNLICH, replysuggestions_count: 0 }]) },
+    });
+    const seite = starten();
+    expect(seite.querySelector('.antworten-zahl')).toBeNull();
+    expect(seite.querySelector('.passt-vielleicht')).toBeTruthy();
+  });
+
+  it('bietet "Selbst beantworten" zuerst fuer die aehnliche Aussage an (#617)', () => {
+    const MIT_ID = { ...AEHNLICH, id: '11111111-2222-4333-8444-555555555555' };
+    TestBed.overrideProvider(StatementService, { useValue: { aussageVorschlaege: () => of([MIT_ID]) } });
+    const seite = starten();
+
+    const link = seite.querySelector<HTMLAnchorElement>('.aehnliche .selbst-beantworten')!;
+    expect(link.textContent).toContain('Selbst beantworten');
+    expect(link.getAttribute('href')).toBe('/workflow/add-commentary?aussage=11111111-2222-4333-8444-555555555555');
+    expect(link.getAttribute('aria-label')).toBe('Selbst beantworten: Wärmepumpen lohnen sich nicht');
+    // Vor dem Knopf fuer die eigene Formulierung
+    const alle = Array.from(seite.querySelectorAll('.selbst-beantworten, button.neu'));
+    expect(alle[0]).toBe(link);
+  });
+
+  it('fragt ohne Treffer "Meintest du …?" statt "Nicht dabei?" (#617)', () => {
+    const seite = starten();
+    const komponente = fixture.debugElement.children[0].componentInstance as NichtDabeiComponent;
+    komponente.titelNurMitListe = true;
+    fixture.debugElement.children[0].injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+
+    expect(seite.querySelector('.nicht-dabei-titel')?.textContent).toContain('Meintest du …?');
+  });
+
   it('vergibt je Instanz eigene IDs', () => {
     const seite = starten();
     const titel = seite.querySelector('.nicht-dabei-titel')!;

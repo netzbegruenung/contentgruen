@@ -17,7 +17,7 @@ import { AuthService } from '../auth/auth.service';
 import { AUSSAGE_MIN_ZEICHEN, StatementService } from '../services/statement.service';
 import { StatementSearchResult } from '../services/dtos/statementDtos';
 import { LoggingService } from '../services/logging.service';
-import { SUCHTEXT_PARAM } from '../shared/formular-adresse';
+import { FORMULAR_PFAD, SUCHTEXT_PARAM, aussageParameter } from '../shared/formular-adresse';
 
 /** Fortlaufende Nummer fuer eindeutige IDs je Instanz (aria-labelledby). */
 let naechsteNummer = 0;
@@ -30,7 +30,9 @@ let naechsteNummer = 0;
  * Zeigt bis zu drei aehnliche Aussagen, markiert "passt vielleicht" - dieselbe
  * Auswahl wie die Vorschlaege im Feld "Antwort auf" (gepflegte Aussagen ab der
  * unteren Grenze, ohne Widerspruch). Ein Klick sucht nach der Aussage. Aussagen,
- * deren Beitraege schon als Treffer dastehen, fallen weg.
+ * deren Beitraege schon als Treffer dastehen, fallen weg. Jede sagt, wie viele
+ * Antworten sie hat, und bietet "Selbst beantworten" fuer sich an - vor dem Knopf
+ * fuer die eigene Formulierung, damit keine doppelte Aussage entsteht (#617).
  *
  * Nur fuer Angemeldete: Der Endpunkt der Aussagen ist nicht anonym erreichbar, ein
  * 401 fuehrte Besucher auf /login. Ohne Anmeldung oder wenn nichts ladbar ist,
@@ -57,6 +59,7 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
    */
   @Input() titelNurMitListe = false;
 
+  readonly kommentarPfad = FORMULAR_PFAD.commentary;
   readonly titelId = `nicht-dabei-titel-${++naechsteNummer}`;
   readonly listenId = `aehnliche-titel-${naechsteNummer}`;
 
@@ -110,6 +113,23 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
 
   get titelZeigen(): boolean {
     return !this.titelNurMitListe || this.aehnliche.length > 0;
+  }
+
+  /**
+   * Ohne Treffer fragt "Nicht dabei?" nach etwas, das gar nicht dasteht; dann
+   * "Meintest du …?" ueber den aehnlichen Aussagen (#617).
+   */
+  get titel(): string {
+    return this.titelNurMitListe ? 'Meintest du …?' : 'Nicht dabei?';
+  }
+
+  antwortenText(anzahl: number): string {
+    return anzahl === 1 ? '1 Antwort' : `${anzahl} Antworten`;
+  }
+
+  /** Query-Parameter, um im Kommentarformular auf diese Aussage zu antworten. */
+  antwortAuf(aussage: StatementSearchResult): Record<string, string> {
+    return aussageParameter(aussage.id, aussage.text);
   }
 
   /** Query-Parameter, um nach einer Aussage zu suchen. */
