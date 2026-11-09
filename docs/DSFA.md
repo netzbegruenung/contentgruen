@@ -31,8 +31,11 @@ Muster-Hinweis; Ausbaustufe steht in
   (`ss/services/punkte_service.py:1-7` (#476), `ss/api/v1/usage.py:389-415` (#476));
   Muster-Hinweise für Admins, wenn zwei Konten sich innerhalb von 7 Tagen gegenseitig nutzen
   (`ss/services/muster_hinweise_service.py:1-24` (#476)).
+- **Gebaut (#351), hinter demselben Schalter:** Meilensteine, die nur die Person selbst in
+  „Meine Beiträge“ sieht, bei jedem Abruf aus denselben Zählern berechnet und nicht gespeichert,
+  ohne Startkonten und nur mit Art.-9-Einwilligung (`ss/services/meilensteine_service.py`).
 - **Geplant, nicht gebaut:** Ranglisten (die ersten 10 und der eigene Platz, nur für Angemeldete,
-  nur mit Zustimmung), Quests, Meilenstein-Abzeichen, Krone, Wochenthema
+  nur mit Zustimmung), Quests, Meilenstein-Abzeichen am Anzeigenamen, Krone, Wochenthema
   (`docs/VISION.md:99-103`).
 - **Fristen** (`docs/LOESCHKONZEPT.md:161-163` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
   Muster-Hinweis 56 Tage und mit dem Konto gelöscht
@@ -508,7 +511,7 @@ oder Kennung nur gekürzt im Arbeitsspeicher, höchstens etwa 16 Minuten, mit Sc
 
 #### Geplant, nicht gebaut
 
-Ranglisten, Quests, Level, Meilenstein-Abzeichen, Krone und Wochenthema (`docs/VISION.md:99-103`,
+Ranglisten, Quests, Level, Meilenstein-Abzeichen am Anzeigenamen, Krone und Wochenthema (`docs/VISION.md:99-103`,
 #351, #564). Sie machen sichtbar, wer wie aktiv ist, und brauchen ein eigenes Opt-in
 (`docs/VISION.md:101`, Abschnitt 3 Risiko 1). Abschnitt 1 bis 7 prüft sie als Plan; vor dem Bau ist
 die Prüfung zu wiederholen; `docs/VISION.md:134` legt die DSFA vor die Ranglisten, Abschnitt 2

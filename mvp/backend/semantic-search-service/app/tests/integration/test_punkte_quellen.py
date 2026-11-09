@@ -32,7 +32,11 @@ def _stimme(datenbank, von: str, beitrag: uuid.UUID, art: str) -> None:  # noqa:
 
 
 def _einwurf(
-    datenbank, von: str, verknuepft_am: list, gesperrt: bool = False  # noqa: F811
+    datenbank,  # noqa: F811
+    von: str,
+    verknuepft_am: list,
+    gesperrt: bool = False,
+    ausformulierer: str = "ausformuliererin",
 ) -> None:
     with datenbank.get_session() as s:
         einwurf = Einwurf(content="Fundstueck", submitted_by=von, status="done")
@@ -44,7 +48,7 @@ def _einwurf(
                 AusformuliertIn(
                     raw_input_id=einwurf.id,
                     content_id=beitrag,
-                    created_by="ausformuliererin",
+                    created_by=ausformulierer,
                     created_at=am,
                 )
             )
@@ -106,6 +110,40 @@ class TestPunkteQuellen:
         _einwurf(datenbank, "kim-1", [montag], gesperrt=True)
 
         assert repo.einwuerfe_ausformuliert_je_tag("kim-1", bis=SPAETER) == {}
+
+
+class TestMeilensteinQuellen:
+    """Unterstuetzungsarbeit fuer Meilensteine (#351)."""
+
+    AM = datetime(2026, 10, 26, 9, tzinfo=timezone.utc)
+
+    def test_einwuerfe_ausformuliert_von_je_einwurf_einmal(
+        self, datenbank  # noqa: F811
+    ):
+        repo = PunkteRepository(datenbank)
+        _einwurf(datenbank, "bo-2", [self.AM, self.AM], ausformulierer="kim-1")
+        _einwurf(datenbank, "ali-3", [self.AM], ausformulierer="kim-1")
+        _einwurf(datenbank, "kim-1", [self.AM], ausformulierer="kim-1")
+        _einwurf(datenbank, "start-9", [self.AM], ausformulierer="kim-1")
+        _einwurf(datenbank, "bo-2", [self.AM], ausformulierer="kim-1", gesperrt=True)
+        _einwurf(datenbank, "bo-2", [self.AM], ausformulierer="ali-3")
+
+        assert repo.einwuerfe_ausformuliert_von("kim-1", {"start-9"}) == 2
+        assert repo.einwuerfe_ausformuliert_von("kim-1", set()) == 3
+        assert repo.einwuerfe_ausformuliert_von("niemand", set()) == 0
+
+    def test_eigene_einwuerfe_von_anderen_ausformuliert(self, datenbank):  # noqa: F811
+        repo = PunkteRepository(datenbank)
+        _einwurf(datenbank, "kim-1", [self.AM, self.AM], ausformulierer="bo-2")
+        _einwurf(datenbank, "kim-1", [self.AM], ausformulierer="kim-1")
+        _einwurf(datenbank, "kim-1", [self.AM], ausformulierer="start-9")
+        _einwurf(datenbank, "kim-1", [self.AM], ausformulierer="bo-2", gesperrt=True)
+        _einwurf(datenbank, "bo-2", [self.AM], ausformulierer="ali-3")
+
+        assert (
+            repo.eigene_einwuerfe_von_anderen_ausformuliert("kim-1", {"start-9"}) == 1
+        )
+        assert repo.eigene_einwuerfe_von_anderen_ausformuliert("kim-1", set()) == 2
 
 
 class TestStimmenVonStartkonten:

@@ -115,6 +115,42 @@ describe('UsageTrackingService', () => {
     });
   });
 
+  describe('eigene Meilensteine (#351)', () => {
+    const MEILENSTEINE = `${environment.baseUrl}/api/v1/usage/users/me/meilensteine`;
+    const EINER = { kennung: 'nutzung-1', name: 'Erste Nutzung durch andere', art: 'wirkung', schwelle: 1, stand: 2, erreicht: true };
+
+    it('fragt ohne Kennung im Pfad und liefert die Liste', () => {
+      let ergebnis: unknown;
+      service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+
+      const anfrage = http.expectOne(MEILENSTEINE);
+      expect(anfrage.request.method).toBe('GET');
+      anfrage.flush({ meilensteine: [EINER] });
+
+      expect(ergebnis).toEqual([EINER]);
+    });
+
+    it('liefert bei ausgeschalteten Punkten (404) still eine leere Liste', () => {
+      let ergebnis: unknown;
+      service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+
+      http.expectOne(MEILENSTEINE).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toEqual([]);
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('liefert bei einem Fehler eine leere Liste und protokolliert ihn', () => {
+      let ergebnis: unknown;
+      service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+
+      http.expectOne(MEILENSTEINE).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toEqual([]);
+      expect(TestBed.inject(LoggingService).error).toHaveBeenCalled();
+    });
+  });
+
   describe('Diese Woche oft genutzt', () => {
     const OFT_GENUTZT = `${environment.baseUrl}/api/v1/usage/trending/woche`;
 

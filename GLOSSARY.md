@@ -464,7 +464,7 @@ Was eine Person mit ihren Punkten erreicht, in aufsteigender Folge; ein höheres
 _Avoid_: Rang
 
 **Meilenstein**:
-Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; dafür gibt es ein Abzeichen, das am Anzeigenamen nur steht, wenn die Person gesondert zustimmt, es anderen zu zeigen, und dann nur für Angemeldete.
+Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; dafür gibt es ein Abzeichen, das am Anzeigenamen nur steht, wenn die Person gesondert zustimmt, es anderen zu zeigen, und dann nur für Angemeldete. Die Meilensteine (#351): erste Nutzung durch andere, 10, 50 und 100 Nutzungen (entdoppelt wie für Punkte), erste Zustimmung anderer, und für Unterstützungsarbeit 10 ausformulierte Einwürfe anderer und 10 eigene Einwürfe, die andere ausformuliert haben. Gezählt wird nur mit nicht gesperrten Beiträgen; Startkonten zählen auf keiner Seite mit (weder ihre Nutzung, Stimmen und Einwürfe noch ihr Ausformulieren), und ein Startkonto und ein Konto ohne Art.-9-Einwilligung haben keine. Meilensteine werden nicht gespeichert: Wird ein Beitrag gesperrt oder gelöscht, kann ein erreichter wieder verschwinden. Bisher sieht die Person sie nur selbst in „Meine Beiträge“, wie die Punkte nur bei eingeschalteten Punkten; das Abzeichen am Anzeigenamen kommt mit der Zustimmung zur Sichtbarkeit.
 _Avoid_: Achievement, Badge, Erfolg
 
 **Meine Einwürfe**:
