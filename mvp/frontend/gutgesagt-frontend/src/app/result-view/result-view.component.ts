@@ -8,7 +8,6 @@ import { SearchService } from '../services/search.service';
 import { SearchResponse, GenerictextResult } from '../services/dtos/searchDtos';
 import { CommentarySearchResultsComponent } from '../commentary-search-results/commentary-search-results.component';
 import { GenerictextSearchResultsComponent } from '../generictext-search-results/generictext-search-results.component';
-import { ResultCarouselComponent } from '../result-carousel/result-carousel.component';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { SearchComponent } from '../search/search.component';
@@ -104,7 +103,6 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     CommonModule,
     CommentarySearchResultsComponent,
     GenerictextSearchResultsComponent,
-    ResultCarouselComponent,
     KartenlisteComponent,
     SearchComponent,
     MatTooltipModule,

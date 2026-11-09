@@ -112,7 +112,7 @@ export class AddPostComponent implements OnChanges {
     this.postForm = fb.group({
       url: ['', [Validators.required, Validators.pattern(/^https?:\/\/\S+$/)]],
       platform: ['' as Plattform | '', Validators.required],
-      author: ['', [Validators.required, Validators.maxLength(AUTOR_MAX)]],
+      author: ['', [Validators.maxLength(AUTOR_MAX)]],
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
       themen: [[] as string[]],
@@ -221,7 +221,8 @@ export class AddPostComponent implements OnChanges {
         text,
         // Gespeichert wird der Name, wie die Karte ihn zeigt.
         platform: plattformName(platform),
-        author: author.trim(),
+        // Optional (#618): leer bleibt leer, damit kein Konto Dritter erfunden wird.
+        author: (author ?? '').trim() || null,
         url: url.trim(),
       },
       ...aussage,

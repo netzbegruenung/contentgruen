@@ -177,6 +177,13 @@ export class RundgangComponent implements OnDestroy {
     const schritt = s.rundgang.schritte[s.index];
     const ziel = await this.zielFinden(schritt.ziel, lauf);
     if (lauf !== this.lauf) return; // inzwischen weitergeklickt
+    if (ziel && schritt.vorbelegen) {
+      // Erst nach dem ersten Schreiben von ngModel (asynchron nach dem Laden der Seite),
+      // sonst überschriebe es das Beispiel im Feld mit dem leeren Modell
+      await new Promise((weiter) => setTimeout(weiter));
+      if (lauf !== this.lauf) return;
+      vorbelegen(ziel, schritt.vorbelegen);
+    }
     this.ziel = ziel;
     this.stand.set(s);
     // Den Schritt liest der Screenreader beim Fokus der Blase (Name und Beschreibung);
@@ -289,4 +296,17 @@ export function sichtbaresElement(selektor: string): HTMLElement | null {
     if (r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden') return el;
   }
   return null;
+}
+
+/**
+ * Schreibt den Text in das Eingabefeld im Ziel, wenn es leer ist. Über das
+ * input-Ereignis, wie beim Tippen: So übernimmt Angular (ngModel) den Wert.
+ */
+export function vorbelegen(ziel: HTMLElement, text: string): void {
+  const feld = ziel.matches('input, textarea')
+    ? (ziel as HTMLInputElement)
+    : ziel.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea');
+  if (!feld || feld.value.trim()) return;
+  feld.value = text;
+  feld.dispatchEvent(new Event('input', { bubbles: true }));
 }

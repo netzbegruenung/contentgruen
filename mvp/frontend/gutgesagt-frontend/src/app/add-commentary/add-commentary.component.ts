@@ -602,6 +602,7 @@ export class AddCommentaryComponent implements OnChanges {
       id: string;
       statement_id?: string | null;
       statement_text?: string | null;
+      aussage_neu?: boolean;
       verknuepft?: boolean;
       themen?: Thema[];
     },
@@ -612,7 +613,15 @@ export class AddCommentaryComponent implements OnChanges {
       aussageGeschickt && verknuepft && antwort.statement_id
         ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
         : this.aussage;
-    return { id: antwort.id, aussage, verknuepft, ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft) };
+    // Nur, was der Server sagt: Auch ein als neu gewaehlter Text kann eine vorhandene treffen.
+    const aussageNeu = aussageGeschickt && verknuepft && antwort.aussage_neu === true;
+    return {
+      id: antwort.id,
+      aussage,
+      verknuepft,
+      ...(aussageNeu ? { aussageNeu } : {}),
+      ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft),
+    };
   }
 
   /** Kurz und Lang nur, wenn sie Text haben: Leere zeigte die Karte als Reiter ohne Inhalt. */

@@ -48,6 +48,8 @@ export interface AddGenericTextResponse {
     statement_id?: string | null;
     /** Text der tatsaechlich verknuepften Aussage (kann eine vorhandene, aehnliche sein). */
     statement_text?: string | null;
+    /** true: Die Aussage kam per Text und wurde eben neu angelegt (Marke "neu" auf "Gespeichert", #617). */
+    aussage_neu?: boolean;
     /** Kam die Aussage per Text mit Themen: die Themen, die sie jetzt hat (#455); sonst leer. */
     themen?: Thema[];
     /**

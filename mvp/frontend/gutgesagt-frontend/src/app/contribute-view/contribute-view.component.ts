@@ -14,8 +14,8 @@ import {
 import { FORMULAR_PFAD, FormularTyp, SUCHTEXT_PARAM, aussageParameter, istFormularTyp } from '../shared/formular-adresse';
 
 /**
- * Die Beitragen-Seite: nur Uebersicht, auf Desktop und Handy gleich - die Kette
- * Einwerfen, Weiterarbeiten, Verfassen. Die Formulare sind eigene Seiten unter
+ * Die Beitragen-Seite: nur Uebersicht, auf Desktop und Handy gleich - erst Verfassen,
+ * dann Einwerfen und Weiterarbeiten (#620). Die Formulare sind eigene Seiten unter
  * /workflow/add-*; hier wird keins eingebettet.
  */
 @Component({

@@ -76,6 +76,11 @@ class NliModell:
     def verfuegbar(self) -> bool:
         return not self._kaputt
 
+    @property
+    def geladen(self) -> bool:
+        """Das Modell steht bereit; ein None aus urteile() heisst dann: Sperre belegt."""
+        return self._modell is not None and not self._kaputt
+
     def _laden(self) -> bool:
         """Unter self._sperre aufrufen. True, wenn das Modell bereitsteht."""
         if self._modell is not None:

@@ -39,47 +39,43 @@
                 <div class="component-box" *ngIf="!isMobile && !isTablet">
                     <div class="header" [class.header--titel-lang]="titelLang">
                 <div class="left-header-box">
-                    <h1 class="desktop-header-title" [class.desktop-header-title--lang]="titelLang">
-                        <button mat-icon-button
-                                *ngIf="showBackButton"
-                                (click)="zurueck()"
-                                class="mat-elevation-z1 back-button-header"
-                                aria-label="Zurück">
-                            <mat-icon>arrow_back</mat-icon>
-                        </button>
-                        <!--
-                            Kein Link: Das Logo davor ist Schmuck ohne eigenen Namen
-                            (alt=""), der Text nennt die Seite, auf der man ist
-                            ("Fangkorb"), nicht die Marke. Zur Startseite fuehrt der
-                            Haus-Knopf rechts im Kopf.
-                        -->
+                    <button mat-icon-button
+                            *ngIf="showBackButton"
+                            (click)="zurueck()"
+                            class="mat-elevation-z1 back-button-header"
+                            aria-label="Zurück">
+                        <mat-icon>arrow_back</mat-icon>
+                    </button>
+                    <!--
+                        Das Logo ist der Weg zur Startseite (#620, statt "Start" rechts im
+                        Kopf); zugaenglicher Name "Startseite". Es steht vor der
+                        Ueberschrift, nicht darin, damit sie weiter nur die Seite nennt
+                        ("Fangkorb"). Ueber den NavigationService statt per routerLink:
+                        Die Destillier-Ansicht soll erst ihren Satz speichern duerfen.
+                    -->
+                    <a class="logo-link" href="/" aria-label="Startseite" data-testid="logo-startseite"
+                       (click)="$event.preventDefault(); zurStartseite()">
                         <img class="kopf-logo" src="marke/logo.svg" alt="" width="44" height="44">
+                    </a>
+                    <h1 class="desktop-header-title" [class.desktop-header-title--lang]="titelLang">
                         {{ pageTitle }}
                     </h1>
                 </div>
 
                 <div class="right-header-box">
-                    <!-- User info - to the left of avatar without login link -->
-                    <ng-container *ngIf="userInfo?.isAuthenticated; else notLoggedIn">
-                        <span class="user-info-compact">
-                            <span class="welcome-text">Hallo </span>
-                            <span class="text-bold">{{ userInfo?.userName }}</span>
-                        </span>
-                    </ng-container>
-                    <ng-template #notLoggedIn>
-                        <span class="user-info-compact">
-                            <span class="desktop-login-text">Nicht angemeldet</span>
-                        </span>
-                    </ng-template>
+                    <!-- Anonym nur "Anmelden": kein "Nicht angemeldet", kein Avatar-Platzhalter (#599) -->
+                    <span class="user-info-compact" *ngIf="userInfo?.isAuthenticated">
+                        <span class="welcome-text">Hallo </span>
+                        <span class="text-bold">{{ userInfo?.userName }}</span>
+                    </span>
 
                     <!--
                         Angemeldet oeffnet der Avatar ein kleines Profilmenue wie mobil
-                        (Meine Beitraege, Abmelden); frueher wuerfelte ein Klick ein
-                        neues Bild. Ohne Anmeldung ist er nur ein Bild: Der Weg zum
-                        Anmelden ist der Knopf daneben, nicht ein zweiter ueber den
-                        Avatar (#343).
+                        (Einwerfen, Fangkorb, Meine Beitraege ... Abmelden); frueher wuerfelte ein Klick ein
+                        neues Bild. Ohne Anmeldung gibt es ihn nicht: Der Weg zum
+                        Anmelden ist der Knopf daneben (#343, #599).
                     -->
-                    <button *ngIf="userInfo?.isAuthenticated; else avatarBesucher"
+                    <button *ngIf="userInfo?.isAuthenticated"
                         type="button"
                         class="avatar-container avatar-klickbar"
                         [matMenuTriggerFor]="profilmenue"
@@ -88,14 +84,21 @@
                             alt="Profilbild"
                             class="profile-avatar" />
                     </button>
-                    <ng-template #avatarBesucher>
-                        <div class="avatar-container">
-                            <img src="/icons/Profile_avatar_placeholder_large.png"
-                                alt="Nicht angemeldet"
-                                class="profile-avatar anonymous-avatar-icon" />
-                        </div>
-                    </ng-template>
+                    <!--
+                        Schnell einwerfen und Fangkorb stehen hier statt als zwei unbeschriftete
+                        Symbole im Kopf (#620); auf der Beitragen-Seite gibt es sie ausserdem.
+                    -->
                     <mat-menu #profilmenue="matMenu">
+                        <button mat-menu-item type="button" class="profilmenue-eintrag"
+                            (click)="navigateToEinwerfenView()" data-testid="einwerfen-eintrag">
+                            <span class="profilmenue-emoji mat-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+                            <span>Schnell einwerfen</span>
+                        </button>
+                        <button mat-menu-item type="button" class="profilmenue-eintrag"
+                            (click)="navigateToFangkorbView()" data-testid="fangkorb-eintrag">
+                            <span class="profilmenue-emoji mat-icon" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
+                            <span>Fangkorb</span>
+                        </button>
                         <button mat-menu-item type="button" class="profilmenue-eintrag"
                             (click)="navigateToMeineBeitraege()">
                             <span class="profilmenue-emoji mat-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
@@ -116,21 +119,12 @@
                     </mat-menu>
 
                     <!--
-                        Desktop-Kopf in einer Zeile mit zwei Stilen: Textlinks (Admin,
-                        Hier fehlt eine Antwort) und runde Icon-Knoepfe a 44 px; dazu der
-                        eine Primaerknopf. Abmelden steht nur im Profilmenue, Fangkorb und
-                        Feedback sind Icon-Knoepfe mit Text fuer Screenreader (#512).
+                        Desktop-Kopf in einer Zeile: beschriftete Textlinks (Admin, Hier fehlt
+                        eine Antwort, Feedback, Hilfe) und der eine Primaerknopf.
+                        Abmelden, Schnell einwerfen und Fangkorb stehen im Profilmenue
+                        (#512, #620).
                     -->
                     <ng-container *ngIf="userInfo?.isAuthenticated">
-                        <button mat-icon-button type="button"
-                            (click)="navigateToFangkorbView()"
-                            class="mat-elevation-z1"
-                            matTooltip="Fangkorb"
-                            data-testid="fangkorb-knopf">
-                            <span class="header-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
-                            <span class="cdk-visually-hidden">Fangkorb</span>
-                        </button>
-
                         <!-- Unter 1200 px werden die Textlinks zu runden Icon-Knoepfen, der
                              Text bleibt fuer Screenreader (kopf-text). -->
                         <a class="header-link" *ngIf="userInfo?.isAdmin" routerLink="/admin/dashboard" matTooltip="Admin"
@@ -159,27 +153,19 @@
                         </button>
                     </ng-container>
 
-                    <!-- Schnell einwerfen: der Fangkorb lebt davon, immer einen Klick
-                         entfernt zu sein - deshalb ein eigener Knopf statt eines Wegs
-                         durch die Beitragsauswahl. -->
-                    <button mat-icon-button
-                        *ngIf="userInfo?.isAuthenticated"
-                        (click)="navigateToEinwerfenView()"
-                        class="mat-elevation-z1"
-                        matTooltip="Schnell einwerfen"
-                        aria-label="Schnell einwerfen">
-                        <span class="header-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+                    <!-- Feedback und Hilfe als Textlinks wie "Hier fehlt eine Antwort": Drei runde
+                         Symbole ohne Beschriftung waren nicht zu deuten (#599); unter 1200 px
+                         werden sie wie die anderen Textlinks zu runden Icon-Knoepfen. -->
+                    <button type="button" class="header-link" (click)="openFeedbackDialog()"
+                        matTooltip="Feedback" [matTooltipDisabled]="!kopfSchmal" data-testid="feedback-knopf">
+                        <mat-icon class="kopf-icon" aria-hidden="true">feedback</mat-icon>
+                        <span class="kopf-text">Feedback</span>
                     </button>
 
-                    <button mat-icon-button type="button" (click)="openFeedbackDialog()" class="mat-elevation-z1"
-                        matTooltip="Feedback" data-testid="feedback-knopf">
-                        <mat-icon aria-hidden="true">feedback</mat-icon>
-                        <span class="cdk-visually-hidden">Feedback</span>
-                    </button>
-
-                    <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button hilfe-knopf"
-                        aria-label="Hilfe öffnen">
-                        <mat-icon>help_outline</mat-icon>
+                    <button type="button" class="header-link hilfe-knopf" (click)="openHelpDialog()"
+                        matTooltip="Hilfe" [matTooltipDisabled]="!kopfSchmal">
+                        <mat-icon class="kopf-icon" aria-hidden="true">help_outline</mat-icon>
+                        <span class="kopf-text">Hilfe</span>
                     </button>
 
                     <!--
@@ -190,19 +176,6 @@
                         Beide Knoepfe gibt es mobil im eigenen Kopf (app-mobile-header).
                     -->
 
-                    <!--
-                        Der Weg zur Startseite auf Desktop; mobil leistet das der
-                        erste Menueeintrag, dort waere ein weiterer Knopf im engen
-                        Kopf einer zu viel.
-
-                        Ueber den NavigationService statt per routerLink: Die
-                        Destillier-Ansicht soll auch hier erst ihren Satz speichern
-                        duerfen, bevor die Seite verlassen wird.
-                    -->
-                    <button mat-icon-button (click)="zurStartseite()" class="mat-elevation-z1"
-                        aria-label="Zur Startseite">
-                        <mat-icon>home</mat-icon>
-                    </button>
                 </div>
             </div>
         </div>

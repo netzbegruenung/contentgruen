@@ -15,7 +15,7 @@ export interface AddPostRequest extends AussageInAnfrage {
     /** Der Name der Plattform, wie die Karte ihn zeigt (etwa "Instagram"). */
     platform: string;
     /** Wer den Post auf der Plattform veroeffentlicht hat - nicht der Autor in Gut gesagt. */
-    author: string;
+    author?: string | null;
     url: string;
   };
 }

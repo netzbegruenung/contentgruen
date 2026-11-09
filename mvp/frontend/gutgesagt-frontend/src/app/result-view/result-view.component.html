@@ -18,13 +18,14 @@
     [retryAction]="retrySearch">
 </app-error-message>
 
-<!-- Ueber den Treffern, zugeklappt: nicht auf jede Aussage antworten (docs/VISION.md).
+<!-- Unter den Treffern, ruhig und offen: nicht auf jede Aussage antworten (docs/VISION.md, #602).
      Gemeint ist Melden auf der Plattform der Aussage, nicht die Meldung eines Beitrags hier. -->
 <ng-template #keineAntwortNoetig>
-    <details class="keine-antwort-noetig hinweis-box">
-        <summary>Nicht jede Aussage braucht eine Antwort</summary>
-        <p>Jede Antwort macht die Aussage sichtbarer. Kleine Accounts mit wenig Reichweite lieber auf der Plattform melden, statt zu antworten.</p>
-    </details>
+    <p class="keine-antwort-noetig">
+        <mat-icon aria-hidden="true">info_outline</mat-icon>
+        <span><strong>Nicht jede Aussage braucht eine Antwort.</strong>
+            Jede Antwort macht die Aussage sichtbarer. Kleine Accounts mit wenig Reichweite lieber auf der Plattform melden, statt zu antworten.</span>
+    </p>
 </ng-template>
 
 <!-- Filter nach Thema, nur mit Themen an den Treffern; eine neue Suche setzt ihn zurueck -->
@@ -48,22 +49,19 @@
 <div class="mobile-results-wrapper"
      *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
 
-    <!-- Dezent unter dem Suchband: auch mit Treffern eine eigene Antwort ergaenzen -->
+    <!-- Dezent unter dem Suchband, derselbe Wortlaut wie der Knopf unter den Treffern (#599) -->
     <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
-            + Eigenen Kommentar ergänzen
+            Selbst beantworten
         </button>
-    </div>
-
-    <div class="mobile-keine-antwort-noetig" *ngIf="hatTreffer">
-        <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
     </div>
 
     <div class="mobile-themen-filter" *ngIf="themenDerTreffer.length">
         <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
     </div>
 
-    <!-- Tab Bar Navigation -->
+    <!-- Hintergrund auch mit 0 Treffern in normaler Farbe und waehlbar; der Inhalt sagt
+         dann, dass noch nichts da ist, und unten steht der Knopf zum Ergaenzen (#599) -->
     <div class="mobile-tab-bar" *ngIf="hatTreffer">
         <button class="tab-button"
                 [class.active]="currentSection === 'commentary'"
@@ -78,14 +76,11 @@
         </button>
         <button class="tab-button"
                 [class.active]="currentSection === 'generictext'"
-                [disabled]="!hasGenerictextResults"
                 (click)="switchToSection('generictext')"
                 aria-label="Hintergrundinfos anzeigen">
             <span class="tab-icon">📄</span>
             <span class="tab-label">Hintergrund</span>
-            <span class="tab-count" *ngIf="searchResponse.generictext_search_results_count > 0">
-                ({{searchResponse.generictext_search_results_count}})
-            </span>
+            <span class="tab-count">({{searchResponse.generictext_search_results_count}})</span>
         </button>
         <!-- Posts nur mit Treffern: sonst bliebe ein dritter, leerer Tab -->
         <button *ngIf="hasPostResults" class="tab-button tab-post"
@@ -109,6 +104,10 @@
         <div *ngIf="currentSection === 'generictext' && hasGenerictextResults" class="mobile-section">
             <p class="typ-erklaerung">{{ hintergrundErklaerung }}</p>
             <app-kartenliste [daten]="hintergrundKarten"></app-kartenliste>
+        </div>
+
+        <div *ngIf="currentSection === 'generictext' && !hasGenerictextResults && hatTreffer" class="mobile-section">
+            <p class="reiter-leer">Zu dieser Aussage gibt es noch keine Hintergrundinfo. Ergänze die erste.</p>
         </div>
 
         <div *ngIf="currentSection === 'post' && hasPostResults" class="mobile-section">
@@ -135,10 +134,14 @@
             </app-nicht-dabei>
         </div>
 
+        <div *ngIf="hatTreffer" class="mobile-keine-antwort-noetig">
+            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+        </div>
+
         <!-- Mobile Empty State when no results in any category -->
         <div *ngIf="!hatTreffer" class="mobile-empty-state">
             <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
-            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [titelNurMitListe]="true">
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [ohneTreffer]="true">
                 <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
                 <div class="mobile-action-buttons">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
@@ -161,7 +164,7 @@
         <div class="unified-empty-state">
             <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
 
-            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [titelNurMitListe]="true">
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [ohneTreffer]="true">
                 <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
                 <div class="action-buttons-top">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
@@ -174,22 +177,14 @@
             </app-nicht-dabei>
 
             <div class="suggestions">
-                <p><strong>Tipps für deine Suche:</strong></p>
-                <ul>
-                    <li>Versuche andere Schlagwörter</li>
-                    <li>Formuliere eine konkrete Frage</li>
-                    <li>Nutze weniger spezifische Begriffe</li>
-                </ul>
+                <!-- Gesucht wird nach Aussagen: ein Tipp, der dazu passt (#617, offen aus #362) -->
+                <p class="such-tipp"><strong>Tipp:</strong> Gib die Aussage so ein, wie du sie gehört hast.</p>
             </div>
         </div>
     </section>
 
     <!-- Show individual sections only when at least one has results -->
     <ng-container *ngIf="hatTreffer">
-
-        <div class="content-section">
-            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
-        </div>
 
         <div class="content-section" *ngIf="themenDerTreffer.length">
             <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
@@ -206,12 +201,9 @@
             </app-commentary-search-results>
         </section>
 
-        <!-- Commentary Carousel - Full Width -->
-        <section class="carousel-section">
-            <app-result-carousel
-                *ngIf="searchResponse.commentary_search_results_count > 0"
-                [daten]="kommentarKarten">
-            </app-result-carousel>
+        <!-- Treffer als Raster untereinander wie mobil; Karussell nur bei "Neueste Inhalte" (#602) -->
+        <section class="content-section" *ngIf="searchResponse.commentary_search_results_count > 0">
+            <app-kartenliste [daten]="kommentarKarten" [raster]="true"></app-kartenliste>
         </section>
 
         <!-- Generic Text Search Results Header/Info -->
@@ -225,12 +217,8 @@
             </app-generictext-search-results>
         </section>
 
-        <!-- Generic Text Carousel - Full Width -->
-        <section class="carousel-section">
-            <app-result-carousel
-                *ngIf="searchResponse.generictext_search_results_count > 0"
-                [daten]="hintergrundKarten">
-            </app-result-carousel>
+        <section class="content-section" *ngIf="searchResponse.generictext_search_results_count > 0">
+            <app-kartenliste [daten]="hintergrundKarten" [raster]="true"></app-kartenliste>
         </section>
 
         <!-- Posts: nur mit Treffern, ergaenzt wird ueber die Beitragen-Seite -->
@@ -240,8 +228,8 @@
                 <p class="typ-erklaerung">{{ postErklaerung }}</p>
                 <p class="post-anzahl">{{ searchResponse.post_search_results_count }} {{ searchResponse.post_search_results_count === 1 ? 'passender Post' : 'passende Posts' }} gefunden.</p>
             </section>
-            <section class="carousel-section">
-                <app-result-carousel [daten]="postKarten"></app-result-carousel>
+            <section class="content-section">
+                <app-kartenliste [daten]="postKarten" [raster]="true"></app-kartenliste>
             </section>
         </ng-container>
 
@@ -251,6 +239,10 @@
                 <ng-container *ngTemplateOutlet="neuAnlegen"></ng-container>
             </app-nicht-dabei>
         </section>
+
+        <div class="content-section">
+            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+        </div>
 
     </ng-container>
 </div>

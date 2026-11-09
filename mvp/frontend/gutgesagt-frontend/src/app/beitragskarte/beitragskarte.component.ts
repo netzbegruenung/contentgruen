@@ -400,6 +400,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /** Text des Nutzungs-Badges fuer alle Varianten, "3×"; unbekannt zaehlt als 0. */
+  /** Die Nutzung in der Meta-Zeile, nicht in der Vorschau: Dort gibt es noch keine (#599). */
+  get nutzungInMeta(): boolean {
+    return this.nutzung !== null && !this.vorschau;
+  }
+
   get nutzungAnzeige(): string {
     return `${this.nutzung ?? 0}×`;
   }

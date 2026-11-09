@@ -1,4 +1,6 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -51,6 +53,11 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
   },
 };
 
+/** Die oeffentliche Adresse eines Beitrags (#300). */
+export function beitragLink(id: string, origin: string = window.location.origin): string {
+  return `${origin}/beitrag/${encodeURIComponent(id)}`;
+}
+
 export const EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT =
   'Der Einwurf ließ sich nicht mit dem Beitrag verknüpfen – er steht im Fangkorb weiter unter „Ausformulieren“.';
 
@@ -88,6 +95,8 @@ export class BeitragGespeichertComponent implements OnInit {
   einwurfEigen: boolean | null = null;
   readonly zustand: GespeichertZustand;
   readonly aussageKopf: KartenDaten | null;
+  /** Die ID aus der Adresse, fuer "Link kopieren". */
+  private beitragId = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -97,6 +106,8 @@ export class BeitragGespeichertComponent implements OnInit {
     private uebergabe: DestillierUebergabeService,
     private einwurfService: EinwurfService,
     private logger: LoggingService,
+    private clipboard: Clipboard,
+    private snackBar: MatSnackBar,
   ) {
     // Der State haengt an der laufenden Navigation; nach dem Neuladen gibt es keinen.
     this.zustand = (this.router.getCurrentNavigation()?.extras.state as GespeichertZustand | undefined) ?? {};
@@ -131,7 +142,8 @@ export class BeitragGespeichertComponent implements OnInit {
         switchMap((params) => {
           this.laedt = true;
           this.nichtLadbar = false;
-          return this.laden(params.get('id') ?? '');
+          this.beitragId = params.get('id') ?? '';
+          return this.laden(this.beitragId);
         }),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -187,6 +199,35 @@ export class BeitragGespeichertComponent implements OnInit {
 
   nochEiner(): void {
     this.router.navigate([FORMULAR_PFAD[this.typ]]);
+  }
+
+  /**
+   * "Zur Aussage" nur mit Aussage, und nicht, wenn "Zurueck zur Suche" schon genau
+   * dorthin fuehrt.
+   */
+  get zurAussageZeigen(): boolean {
+    if (!this.aussageKopf) {
+      return false;
+    }
+    const suche = this.route.snapshot.queryParamMap.get(SUCHE_PARAM)?.trim();
+    return !(this.herkunft === 'suche' && suche && suche === this.zustand.aussage?.text.trim());
+  }
+
+  /** Die Suche nach der Aussage: dort stehen alle Antworten auf sie (#617). */
+  zurAussage(): void {
+    const text = this.zustand.aussage?.text;
+    if (text) {
+      this.navigationService.navigateToResult(text);
+    }
+  }
+
+  /** Die eigene Adresse des Beitrags (/beitrag/:id, oeffentlich) zum Teilen. */
+  linkKopieren(): void {
+    if (!this.beitragId) {
+      return;
+    }
+    const kopiert = this.clipboard.copy(beitragLink(this.beitragId));
+    this.snackBar.open(kopiert ? 'Link kopiert.' : 'Kopieren hat nicht geklappt.', undefined, { duration: 3000 });
   }
 
   /**

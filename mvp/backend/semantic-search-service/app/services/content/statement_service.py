@@ -1,6 +1,5 @@
 import asyncio
 import threading
-import time
 import contextlib
 import datetime
 from collections import defaultdict
@@ -24,7 +23,7 @@ from services.content.base_content_service import (
 )
 from services.dieselbe_behauptung.nli_modell import NliModell, NliPruefer, nli_modell
 from services.dieselbe_behauptung.schatten import Schattenprotokoll
-from services.dieselbe_behauptung import regel
+from services.dieselbe_behauptung import regel, stufe
 from repositories.interfaces.statement_repository import (
     IStatementRepository,
 )
@@ -318,127 +317,33 @@ class StatementService(
             self._schatten_starten(text, treffer, heute)
         return heute
 
-    def _nli_kandidaten(
-        self, text: str, treffer: List[BaseContentSearchResult]
-    ) -> List[BaseContentSearchResult]:
-        """Die Treffer, die das Modell pruefen soll: ab nli_kandidaten_ab, die
-        Vorpruefungen bestanden (regel.nli_darf_pruefen), hoechstens
-        nli_kandidaten_hoechstens; mit Bestaetiger dazu hoechstens ebenso viele, die
-        nur regel.bestaetiger_darf_pruefen bestehen."""
-        hoechstens = self.settings.nli_kandidaten_hoechstens
-        ab_untergrenze = [
-            k
-            for k in treffer
-            if k.score is not None and k.score >= self.settings.nli_kandidaten_ab
-        ]
-        kandidaten = [k for k in ab_untergrenze if regel.nli_darf_pruefen(text, k.text)]
-        if self._bestaetiger is None:
-            return kandidaten[:hoechstens]
-        # Paare, die nur der Bestaetiger pruefen darf ("kein"), kommen dazu, ohne
-        # einem Kandidaten der Regel oben den Platz zu nehmen.
-        nur_bestaetiger = [
-            k
-            for k in ab_untergrenze
-            if regel.bestaetiger_darf_pruefen(text, k.text)
-            and not regel.nli_darf_pruefen(text, k.text)
-        ]
-        return kandidaten[:hoechstens] + nur_bestaetiger[:hoechstens]
-
     async def _nli_entscheiden(
         self, text: str, treffer: List[BaseContentSearchResult]
     ) -> Optional[Dublettenpruefung]:
         """
-        Die Entscheidung der NLI-Stufe: der Kandidat mit der staerksten beidseitigen
-        Folgerung, der dieselbe Behauptung ist (regel.entscheiden); ist es keiner, mit
-        Bestaetiger der, den er bestaetigt (_bestaetigen); sonst keiner. None, wenn das
-        erste Modell nicht urteilen konnte - dann gilt die Schwelle.
+        Die Entscheidung der NLI-Stufe (stufe.dieselben_finden, dieselbe Funktion wie im
+        Bericht ueber den Bestand): der Kandidat mit der staerksten beidseitigen
+        Folgerung, der dieselbe Behauptung ist; ist es keiner, mit Bestaetiger der, den
+        er bestaetigt; sonst keiner. None, wenn das erste Modell nicht urteilen konnte -
+        dann gilt die Schwelle.
         """
-        beginn = time.monotonic()
         aehnlichster = treffer[0] if treffer else None
-        kandidaten = self._nli_kandidaten(text, treffer)
-        if not kandidaten:
-            return Dublettenpruefung(vorhanden=None, aehnlichster=aehnlichster)
-        # Begrenzt warten: Ist das Modell belegt oder laedt noch, gilt die Schwelle,
-        # statt dass alle Suchen hintereinander auf die Sperre warten.
-        urteile = await self._nli.urteile(
-            [(text, k.text) for k in kandidaten],
+        # Begrenzt warten (beide Modelle zusammen): Ist das Modell belegt oder laedt
+        # noch, gilt die Schwelle, statt dass alle Suchen hintereinander auf die
+        # Sperre warten.
+        dieselben = await stufe.dieselben_finden(
+            text,
+            treffer,
+            self._nli,
+            self._bestaetiger,
+            self.settings,
             warte_hoechstens=None if self._nli_warten else DIESELBE_WARTET_HOECHSTENS,
         )
-        if urteile is None:
+        if dieselben is None:
             return None
-        dieselben = [
-            (u.folgerung, k)
-            for k, u in zip(kandidaten, urteile)
-            if regel.entscheiden(
-                text,
-                k.text,
-                k.score,
-                u,
-                kandidaten_ab=self.settings.nli_kandidaten_ab,
-                folgerung_ab=self.settings.nli_folgerung_ab,
-                widerspruch_unter=self.settings.nli_widerspruch_unter,
-            )
-        ]
-        if dieselben:
-            vorhanden = max(dieselben, key=lambda paar: paar[0])[1]
-        else:
-            # Beide Modelle zusammen warten hoechstens DIESELBE_WARTET_HOECHSTENS.
-            rest = (
-                None
-                if self._nli_warten
-                else max(0.0, DIESELBE_WARTET_HOECHSTENS - (time.monotonic() - beginn))
-            )
-            vorhanden = await self._bestaetigen(text, kandidaten, urteile, rest)
-        return Dublettenpruefung(vorhanden=vorhanden, aehnlichster=aehnlichster)
-
-    async def _bestaetigen(
-        self,
-        text: str,
-        kandidaten: List[BaseContentSearchResult],
-        urteile: List[regel.Urteil],
-        warte_hoechstens: Optional[float] = None,
-    ) -> Optional[BaseContentSearchResult]:
-        """
-        Der zweite Weg (regel.bestaetigt): Der Bestaetiger urteilt nur ueber die
-        Kandidaten im unsicheren Band des ersten Modells (regel.braucht_bestaetiger);
-        dieselbe ist der mit der staerksten beidseitigen Folgerung des Bestaetigers.
-        None ohne Bestaetiger, ohne Kandidat im Band oder wenn er nicht urteilen konnte -
-        dann bleibt es bei der Entscheidung des ersten Modells.
-        """
-        if self._bestaetiger is None:
-            return None
-        s = self.settings
-        band = [
-            (k, u)
-            for k, u in zip(kandidaten, urteile)
-            if regel.braucht_bestaetiger(
-                u, s.nli_widerspruch_unter, s.nli_bestaetiger_veto_ab
-            )
-        ]
-        if not band:
-            return None
-        bestaetigungen = await self._bestaetiger.urteile(
-            [(text, k.text) for k, _ in band],
-            warte_hoechstens=warte_hoechstens,
+        return Dublettenpruefung(
+            vorhanden=stufe.staerkste(dieselben), aehnlichster=aehnlichster
         )
-        if bestaetigungen is None:
-            return None
-        bestaetigte = [
-            (b.folgerung, k)
-            for (k, u), b in zip(band, bestaetigungen)
-            if regel.bestaetigt(
-                text,
-                k.text,
-                k.score,
-                u,
-                b,
-                kandidaten_ab=s.nli_kandidaten_ab,
-                folgerung_ab=s.nli_folgerung_ab,
-                widerspruch_unter=s.nli_widerspruch_unter,
-                veto_folgerung_ab=s.nli_bestaetiger_veto_ab,
-            )
-        ]
-        return max(bestaetigte, key=lambda paar: paar[0])[1] if bestaetigte else None
 
     def _schatten_starten(
         self,
@@ -682,7 +587,7 @@ class StatementService(
         author: str,
         statement_id: Optional[uuid.UUID] = None,
         statement_text: Optional[str] = None,
-    ) -> Optional[Tuple[uuid.UUID, str]]:
+    ) -> Optional[Tuple[uuid.UUID, str, bool]]:
         """
         Einen gerade gespeicherten Beitrag als Antwort an seine Aussage haengen.
 
@@ -693,7 +598,9 @@ class StatementService(
 
         Returns:
         - ID und Text der tatsaechlich verknuepften Aussage (mit Text kann das eine
-          schon vorhandene, sehr aehnliche sein), oder None ohne Aussage.
+          schon vorhandene, sehr aehnliche sein) und ob sie eben neu angelegt wurde
+          (fuer die Marke "neu" auf der Seite "Gespeichert", #617), oder None ohne
+          Aussage.
 
         Raises:
         - AussageNichtGefunden, wenn die Aussage zur ID nicht existiert; sonst, was
@@ -703,8 +610,9 @@ class StatementService(
         if statement_id is None and not text:
             return None
 
+        neu = False
         if statement_id is None:
-            _, statement_id, aussage_text = await self.add_statement(
+            neu, statement_id, aussage_text = await self.add_statement(
                 Statement(text=text, replysuggestions=[]),
                 author,
                 NEW_CONTENT_STATUS,
@@ -719,4 +627,4 @@ class StatementService(
             content_type=content_type,
             relevance=relevance,
         )
-        return statement_id, aussage_text
+        return statement_id, aussage_text, neu

@@ -554,18 +554,42 @@ mat-sidenav-content {
 }
 
 
-/* Zugeklappter Rat ueber den Treffern; Grund und Balken aus .hinweis-box */
-.keine-antwort-noetig summary {
-  cursor: pointer;
-  font-family: PTSans-bold, Roboto, sans-serif;
+/* Rat unter den Treffern, ruhig (#602): kleine graue Zeile mit Info-Symbol,
+   ohne Kasten und Balken, damit er nicht mit den Treffern konkurriert */
+.keine-antwort-noetig {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  max-width: 60rem;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
-.keine-antwort-noetig[open] summary {
-  margin-bottom: var(--spacing-xs);
+.keine-antwort-noetig mat-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 18px;
+  margin-top: 1px;
+}
+
+.keine-antwort-noetig strong {
+  font-family: PTSans-bold, Roboto, sans-serif;
+  font-weight: normal;
 }
 
 .mobile-keine-antwort-noetig {
-  padding: var(--spacing-xs) var(--page-margin);
+  padding: 0 var(--page-margin) var(--spacing-lg);
+}
+
+/* Leerer Reiter: ein Satz statt einer leeren Flaeche (#599) */
+.mobile-section .reiter-leer {
+  margin: 0;
+  padding: var(--spacing-md);
+  color: var(--text-primary);
 }
 
 /* Mobil: was der Beitragstyp des offenen Tabs ist; Grundregel in styles.css */
