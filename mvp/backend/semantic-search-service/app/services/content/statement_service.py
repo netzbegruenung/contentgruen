@@ -611,7 +611,13 @@ class StatementService(
         )
 
         statement_db_entry.replysuggestions.append(statement_replysuggestion)
-        statement_db_entry.replysuggestions_count += 1
+        # Neu zaehlen statt +1: nur sichtbare Antworten (#631), und eine Zahl, die
+        # ein gleichzeitiges Sperren verfaelscht hat, stimmt danach wieder.
+        statement_db_entry.replysuggestions_count = (
+            await self._repository.sichtbare_antworten_zaehlen(
+                vorschlag.id for vorschlag in statement_db_entry.replysuggestions
+            )
+        )
 
         await self.update_statement(statement_db_entry)
 

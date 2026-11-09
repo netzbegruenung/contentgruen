@@ -61,3 +61,36 @@ async def antwortvorschlaege(post_service, post_id):
     )
     await orchestrator.collect_statement_based([aussage], limit=5, polarity_metadata={})
     return [r.post_result.id for r in orchestrator.results_for(ContentType.POST)]
+
+
+async def sichtbarer_beitrag(statement_service, content_type: ContentType) -> uuid.UUID:
+    """
+    Einen sichtbaren Beitrag als nackten Qdrant-Punkt anlegen, auf den eine Aussage
+    verweisen kann: Die Antwortzahl zaehlt nur Beitraege, die es gibt (#631).
+    """
+    from qdrant_client.models import PointStruct
+
+    from core.config import EMBEDDING_VEKTOR
+    from utils.text_normalisierung import FELD_TEXT_NORMALISIERT, text_normalisiert
+
+    manager = statement_service._repository._shared_manager
+    sammlung = await manager.async_client.get_collection(manager.collection_name)
+    groesse = sammlung.config.params.vectors[EMBEDDING_VEKTOR].size
+    beitrag_id = uuid.uuid4()
+    await manager.async_client.upsert(
+        collection_name=manager.collection_name,
+        points=[
+            PointStruct(
+                id=str(beitrag_id),
+                vector={EMBEDDING_VEKTOR: [0.3] * groesse},
+                payload={
+                    "content_type": content_type.value,
+                    "text": TEXT,
+                    FELD_TEXT_NORMALISIERT: text_normalisiert(TEXT),
+                    "status": ContentStatus.VISIBLE.value,
+                },
+            )
+        ],
+        wait=True,
+    )
+    return beitrag_id
