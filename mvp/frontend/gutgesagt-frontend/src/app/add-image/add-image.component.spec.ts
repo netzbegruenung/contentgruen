@@ -119,4 +119,71 @@ describe('AddImageComponent', () => {
       'Ein Bild mit Unterschrift, das für sich spricht.',
     );
   });
+
+  describe('Ladefehler der Bild-URL (#619)', () => {
+    /** Ein Bild in der Vorschau, wie es die Karte zur URL zeigt, und sein Ladefehler. */
+    function ladefehlerInVorschau(src: string): void {
+      const bild = document.createElement('img');
+      bild.setAttribute('src', src);
+      fixture.nativeElement.querySelector('.preview-content').appendChild(bild);
+      bild.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+    }
+
+    function hinweis(): HTMLElement | null {
+      return fixture.nativeElement.querySelector('.bild-ladefehler');
+    }
+
+    it('meldet unter dem Feld, dass sich das Bild nicht laden laesst, und zeigt kein kaputtes Bild', () => {
+      const component = fixture.componentInstance;
+      component.imageForm.patchValue({ image_url: 'https://example.org/weg.png' });
+      fixture.detectChanges();
+      expect(hinweis()).toBeNull();
+
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(hinweis()?.textContent).toContain('Das Bild lässt sich nicht laden – prüf den Link.');
+      expect(component.previewResult?.image_result?.image_url).toBe('');
+    });
+
+    it('nimmt den Hinweis zurueck, sobald die URL sich aendert', () => {
+      const component = fixture.componentInstance;
+      component.imageForm.patchValue({ image_url: 'https://example.org/weg.png' });
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      component.imageForm.patchValue({ image_url: 'https://example.org/da.png' });
+      fixture.detectChanges();
+
+      expect(hinweis()).toBeNull();
+      expect(component.previewResult?.image_result?.image_url).toBe('https://example.org/da.png');
+    });
+
+    it('ueberhoert einen verspaeteten Fehler zur vorigen URL', () => {
+      fixture.componentInstance.imageForm.patchValue({ image_url: 'https://example.org/da.png' });
+
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(hinweis()).toBeNull();
+    });
+
+    it('sperrt das Speichern nicht', () => {
+      const component = fixture.componentInstance;
+      component.imageForm.patchValue({
+        title: 'Solardach in Freiburg',
+        image_url: 'https://example.org/weg.png',
+        caption: 'Solarmodule auf dem Dach der Grundschule.',
+      });
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(fixture.nativeElement.querySelector('.submit-btn').disabled).toBeFalse();
+    });
+  });
+
+  it('beschriftet jedes Feld nur einmal und nennt den Titel der Seite nicht noch einmal (#619)', () => {
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.input-label')).toBeNull();
+    expect(el.textContent).not.toContain('Bild hinzufügen');
+    const beschriftungen = Array.from(el.querySelectorAll('mat-label')).map((l) => l.textContent?.trim());
+    expect(beschriftungen).toEqual(['Bild-URL', 'Titel', 'Bildunterschrift']);
+  });
 });

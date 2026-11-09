@@ -16,12 +16,6 @@
   font-size: 32px;
 }
 
-.content-type-title {
-  margin: 0 0 4px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
 .content-type-description {
   margin: 0;
   color: var(--text-subtle);
@@ -68,18 +62,6 @@
   }
 }
 
-.form-section {
-  margin-bottom: 16px;
-}
-
-.section-header {
-  h3 {
-    margin: 0 0 8px;
-    font-size: 16px;
-    font-weight: 600;
-  }
-}
-
 .form-fields {
   display: flex;
   flex-direction: column;
@@ -96,10 +78,19 @@
   }
 }
 
-.input-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-body);
+.bild-ladefehler {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  color: var(--warning-color);
+  font-size: 14px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
 }
 
 // Schrift und Farbe kommen aus der globalen .submit-hint (styles.css).
@@ -112,6 +103,11 @@
   gap: 12px;
   margin-top: 24px;
   justify-content: flex-end;
+
+  // Mobil stehen die Knoepfe untereinander: Speichern zuerst, Abbrechen darunter (#619).
+  @media (max-width: 768px) {
+    flex-direction: column-reverse;
+  }
 }
 
 .submit-hint + .form-actions {
