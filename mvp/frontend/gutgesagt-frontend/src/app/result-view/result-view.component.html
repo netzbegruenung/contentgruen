@@ -48,10 +48,10 @@
 <div class="mobile-results-wrapper"
      *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
 
-    <!-- Dezent unter dem Suchband: auch mit Treffern eine eigene Antwort ergaenzen -->
+    <!-- Dezent unter dem Suchband, derselbe Wortlaut wie der Knopf unter den Treffern (#599) -->
     <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
-            + Eigenen Kommentar ergänzen
+            Selbst beantworten
         </button>
     </div>
 
@@ -63,7 +63,8 @@
         <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
     </div>
 
-    <!-- Tab Bar Navigation -->
+    <!-- Hintergrund auch mit 0 Treffern in normaler Farbe und waehlbar; der Inhalt sagt
+         dann, dass noch nichts da ist, und unten steht der Knopf zum Ergaenzen (#599) -->
     <div class="mobile-tab-bar" *ngIf="hatTreffer">
         <button class="tab-button"
                 [class.active]="currentSection === 'commentary'"
@@ -78,14 +79,11 @@
         </button>
         <button class="tab-button"
                 [class.active]="currentSection === 'generictext'"
-                [disabled]="!hasGenerictextResults"
                 (click)="switchToSection('generictext')"
                 aria-label="Hintergrundinfos anzeigen">
             <span class="tab-icon">📄</span>
             <span class="tab-label">Hintergrund</span>
-            <span class="tab-count" *ngIf="searchResponse.generictext_search_results_count > 0">
-                ({{searchResponse.generictext_search_results_count}})
-            </span>
+            <span class="tab-count">({{searchResponse.generictext_search_results_count}})</span>
         </button>
         <!-- Posts nur mit Treffern: sonst bliebe ein dritter, leerer Tab -->
         <button *ngIf="hasPostResults" class="tab-button tab-post"
@@ -109,6 +107,10 @@
         <div *ngIf="currentSection === 'generictext' && hasGenerictextResults" class="mobile-section">
             <p class="typ-erklaerung">{{ hintergrundErklaerung }}</p>
             <app-kartenliste [daten]="hintergrundKarten"></app-kartenliste>
+        </div>
+
+        <div *ngIf="currentSection === 'generictext' && !hasGenerictextResults && hatTreffer" class="mobile-section">
+            <p class="reiter-leer">Zu dieser Aussage gibt es noch keine Hintergrundinfo. Ergänze die erste.</p>
         </div>
 
         <div *ngIf="currentSection === 'post' && hasPostResults" class="mobile-section">

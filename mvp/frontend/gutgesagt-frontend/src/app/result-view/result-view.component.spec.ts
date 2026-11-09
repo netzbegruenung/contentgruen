@@ -129,7 +129,7 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
 
     const oben: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen-kopf button');
     const unten: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen button');
-    expect(oben.textContent).toContain('Eigenen Kommentar ergänzen');
+    expect(oben.textContent!.trim()).toBe('Selbst beantworten');
     expect(unten.textContent).toContain('Selbst beantworten');
     expect(fixture.nativeElement.querySelector('.mobile-ergaenzen app-nicht-dabei').textContent).toContain('Nicht dabei?');
     expect(fixture.nativeElement.querySelector('.mobile-empty-state')).toBeNull();
@@ -142,6 +142,25 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     komponente.currentSection = 'generictext';
     fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-ergaenzen button').textContent).toContain('Hintergrundinfo ergänzen');
+  }));
+
+  it('zeigt am Handy den leeren Reiter Hintergrund (0) waehlbar, mit einem Satz zum Ergaenzen (#599)', fakeAsync(() => {
+    oeffnen(true, AUSSAGE_ID);
+    const komponente = fixture.componentInstance;
+    komponente.hasCommentaryResults = true;
+    komponente.currentSection = 'commentary';
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+
+    const reiter: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('.mobile-tab-bar .tab-button'));
+    const hintergrund = reiter.find((r) => r.textContent!.includes('Hintergrund'))!;
+    expect(hintergrund.disabled).toBeFalse();
+    expect(hintergrund.textContent).toContain('(0)');
+
+    hintergrund.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.reiter-leer').textContent).toContain('noch keine Hintergrundinfo');
     expect(fixture.nativeElement.querySelector('.mobile-ergaenzen button').textContent).toContain('Hintergrundinfo ergänzen');
   }));
 

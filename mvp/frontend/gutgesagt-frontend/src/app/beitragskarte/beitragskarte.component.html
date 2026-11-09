@@ -4,6 +4,45 @@
          [attr.aria-label]="antippbar ? beschriftung : null"
          (click)="antippen()" (keyup.enter)="antippen()">
 
+    <!-- Zuerst, worauf der Beitrag antwortet, dann Titel und Text: sonst lasen sich
+         Kurzfassung und Aussage wie zwei gleichrangige Saetze (#599) -->
+    <ng-container *ngIf="istVoll">
+        <div class="statement" *ngIf="daten.statement as statement">
+            <div class="statement-zeile" role="button" tabindex="0"
+                 [attr.aria-expanded]="statementOffen"
+                 (click)="statementUmschalten()"
+                 (keydown.enter)="statementUmschalten()"
+                 (keydown.space)="$event.preventDefault(); statementUmschalten()">
+                <mat-icon class="statement-icon">subdirectory_arrow_left</mat-icon>
+                <span class="statement-label">Antwort auf:</span>
+                <span class="statement-vorschau" *ngIf="!statementOffen">„{{ statement.text }}“</span>
+                <mat-icon class="statement-pfeil" [class.offen]="statementOffen">expand_more</mat-icon>
+            </div>
+
+            <div class="statement-details" *ngIf="statementOffen" @expandCollapse>
+                <p class="statement-text">„{{ statement.text }}“</p>
+                <div class="statement-werte">
+                    <span class="statement-wert"
+                          matTooltip="Semantische Ähnlichkeit: Wie gut passt diese gefundene Aussage zu deiner Suchanfrage?"
+                          matTooltipPosition="above" matTooltipShowDelay="500" [matTooltipTouchGestures]="'on'">
+                        <mat-icon>manage_search</mat-icon>
+                        Suchübereinstimmung: {{ statement.aehnlichkeit }}%
+                    </span>
+                    <span class="statement-wert"
+                          matTooltip="Antwortqualität: Wie gut ist dieser Beitrag als Antwort auf diese Aussage bewertet?"
+                          matTooltipPosition="above" matTooltipShowDelay="500" [matTooltipTouchGestures]="'on'">
+                        <mat-icon>verified</mat-icon>
+                        Antwortqualität: {{ statement.antwortqualitaet }}%
+                    </span>
+                </div>
+                <p class="statement-hinweis">
+                    <mat-icon>info</mat-icon>
+                    Tippe auf die Werte für mehr Details
+                </p>
+            </div>
+        </div>
+    </ng-container>
+
     <header class="karte-kopf" *ngIf="!einwurfAngaben" [class.karte-kopf--bild]="kopfBild">
         <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf; fremde Bilder erst auf Klick (#447) -->
         <app-fremdes-bild *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || daten.text || ''" [mitSymbol]="false"></app-fremdes-bild>
@@ -20,9 +59,8 @@
             </span>
             <span class="badge badge-beliebt" *ngIf="istVoll && istBeliebt"
                   matTooltip="Beliebt" matTooltipPosition="left">🔥</span>
-            <span class="badge badge-nutzung" *ngIf="nutzung !== null"
-                  [class.nutzung-animiert]="nutzungAnimiert"
-                  matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
+            <!-- Die Nutzung steht beschriftet in der Meta-Zeile unten ("1× genutzt", #599):
+                 Als Kreis "1×" war sie nicht zu deuten, als Pille hier kuerzte sie den Titel. -->
         </div>
     </header>
 
@@ -124,47 +162,12 @@
                       [attr.aria-label]="daten.nutzungLetzte7Tage + ' davon in den letzten 7 Tagen'"
                       matTooltip="In den letzten 7 Tagen" matTooltipPosition="above">+{{ daten.nutzungLetzte7Tage }}</span>
                 <span class="badge badge-nutzung" [class.ungenutzt]="!nutzung"
-                      matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
+                      matTooltip="So oft kopiert oder geteilt" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
             </span>
         </footer>
     </ng-container>
 
     <ng-container *ngIf="istVoll">
-        <div class="statement" *ngIf="daten.statement as statement">
-            <div class="statement-zeile" role="button" tabindex="0"
-                 [attr.aria-expanded]="statementOffen"
-                 (click)="statementUmschalten()"
-                 (keydown.enter)="statementUmschalten()"
-                 (keydown.space)="$event.preventDefault(); statementUmschalten()">
-                <mat-icon class="statement-icon">subdirectory_arrow_left</mat-icon>
-                <span class="statement-label">Antwort auf:</span>
-                <span class="statement-vorschau" *ngIf="!statementOffen">„{{ statement.text }}“</span>
-                <mat-icon class="statement-pfeil" [class.offen]="statementOffen">expand_more</mat-icon>
-            </div>
-
-            <div class="statement-details" *ngIf="statementOffen" @expandCollapse>
-                <p class="statement-text">„{{ statement.text }}“</p>
-                <div class="statement-werte">
-                    <span class="statement-wert"
-                          matTooltip="Semantische Ähnlichkeit: Wie gut passt diese gefundene Aussage zu deiner Suchanfrage?"
-                          matTooltipPosition="above" matTooltipShowDelay="500" [matTooltipTouchGestures]="'on'">
-                        <mat-icon>manage_search</mat-icon>
-                        Suchübereinstimmung: {{ statement.aehnlichkeit }}%
-                    </span>
-                    <span class="statement-wert"
-                          matTooltip="Antwortqualität: Wie gut ist dieser Beitrag als Antwort auf diese Aussage bewertet?"
-                          matTooltipPosition="above" matTooltipShowDelay="500" [matTooltipTouchGestures]="'on'">
-                        <mat-icon>verified</mat-icon>
-                        Antwortqualität: {{ statement.antwortqualitaet }}%
-                    </span>
-                </div>
-                <p class="statement-hinweis">
-                    <mat-icon>info</mat-icon>
-                    Tippe auf die Werte für mehr Details
-                </p>
-            </div>
-        </div>
-
         <div class="karte-inhalt">
             <ng-container *ngTemplateOutlet="angaben"></ng-container>
 
@@ -213,9 +216,9 @@
                 <span>{{ daten.extra?.engagement }}</span>
             </div>
 
-            <div class="karte-quellen" *ngIf="zeigtQuellen">
-                <p class="quellen-leer" *ngIf="!daten.quellen.length">Keine Herkunft hinterlegt</p>
-                <ul *ngIf="daten.quellen.length">
+            <!-- Ohne Herkunft keine Zeile: "Keine Herkunft hinterlegt" las sich wie ein Mangel (#599) -->
+            <div class="karte-quellen" *ngIf="zeigtQuellen && daten.quellen.length">
+                <ul>
                     <li class="quelle" *ngFor="let quelle of daten.quellen; let i = index">
                         <span class="quelle-icon" aria-hidden="true">📚</span>
                         <a *ngIf="quelle.url; else ohneAdresse" class="quelle-link" [href]="quelle.url"
@@ -256,8 +259,8 @@
                (click)="$event.stopPropagation()">
                 <mat-icon aria-hidden="true">call_split</mat-icon>{{ varianten }}
             </a>
-            <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter. -->
-            <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container></p>
+            <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter, dazu die Nutzung (#599). -->
+            <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt || nutzungInMeta"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container><ng-container *ngIf="nutzungInMeta"><ng-container *ngIf="zeigtAutor || daten.erstellt"> · </ng-container><span class="karte-nutzung" [class.nutzung-animiert]="nutzungAnimiert">{{ nutzungAnzeige }} genutzt</span></ng-container></p>
         </footer>
     </ng-container>
 

@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { of } from 'rxjs';
-import { RecentContentComponent, TEASER_ANZAHL } from './recent-content.component';
+import { MOBIL_ANZAHL, RecentContentComponent, TEASER_ANZAHL } from './recent-content.component';
 import { ContentService } from '../services/content.service';
 import { LoggingService } from '../services/logging.service';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
@@ -90,6 +90,20 @@ describe('RecentContentComponent', () => {
     expect(alle('app-kartenliste').length).toBe(1);
     expect(alle('app-result-carousel').length).toBe(0);
     expect(alle('app-beitragskarte').length).toBe(3);
+  });
+
+  it('zeigt mobil hoechstens die neuesten drei Karten (#599)', () => {
+    mobil = true;
+    erstellen(eintraege(5));
+
+    expect(MOBIL_ANZAHL).toBe(3);
+    expect(alle('app-beitragskarte').length).toBe(3);
+  });
+
+  it('zeigt ab 600 px alle fuenf im Karussell', () => {
+    erstellen(eintraege(5));
+
+    expect(alle('app-beitragskarte').length).toBe(5);
   });
 
   it('zeigt ab 600 px das Karussell', () => {

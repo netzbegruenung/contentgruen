@@ -128,6 +128,15 @@ main * {
     display: none;
 }
 
+/* Textlinks, die etwas oeffnen statt zu navigieren, sind Knoepfe: ohne Knopf-Optik (#599) */
+button.header-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+}
+
 /* Lange Titel ("Hintergrundinfo verfassen") eine Stufe kleiner, damit sie in eine Zeile passen */
 .desktop-header-title--lang {
     font-size: var(--font-size-h2-tablet);
@@ -156,8 +165,13 @@ main * {
         color: var(--text-primary);
     }
 
-    .header-link .kopf-icon {
+    .header-link .kopf-icon,
+    button.header-link .kopf-icon {
         display: inline-block;
+    }
+
+    button.header-link {
+        background: var(--bg-card);
     }
 
     /* Nur noch fuer Screenreader, wie .cdk-visually-hidden */
@@ -237,32 +251,8 @@ main * {
     flex-shrink: 0;
 }
 
-.profile-avatar.anonymous-avatar-icon {
-    background-color: transparent;
-    box-shadow: none;
-    object-fit: contain;
-}
-
 .avatar-klickbar .profile-avatar:hover {
     transform: scale(1.05);
-}
-
-.anonymous-avatar-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #9e9e9e;
-    border: none;
-    overflow: hidden;
-    padding: 0;
-}
-
-.anonymous-avatar-icon mat-icon {
-    font-size: 32px;
-    width: 32px;
-    height: 32px;
-    line-height: 1;
-    color: white;
 }
 
 /* Mobile styles */
@@ -289,12 +279,6 @@ main * {
     .profile-avatar {
         width: var(--avatar-size-mobile);
         height: var(--avatar-size-mobile);
-    }
-
-    .anonymous-avatar-icon mat-icon {
-        font-size: 28px;
-        width: 28px;
-        height: 28px;
     }
 
     /* Show login status text on mobile, but smaller */
@@ -371,10 +355,6 @@ main * {
         display: inline;
     }
 
-    .desktop-login-text {
-        display: none;
-    }
-
     .mobile-only {
         display: block;
     }
@@ -385,10 +365,6 @@ main * {
 }
 
 @media (min-width: 769px) {
-    .desktop-login-text {
-        display: inline;
-    }
-
     .mobile-only {
         display: none;
     }

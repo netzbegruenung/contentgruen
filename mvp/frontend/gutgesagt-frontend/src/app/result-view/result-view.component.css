@@ -568,6 +568,13 @@ mat-sidenav-content {
   padding: var(--spacing-xs) var(--page-margin);
 }
 
+/* Leerer Reiter: ein Satz statt einer leeren Flaeche (#599) */
+.mobile-section .reiter-leer {
+  margin: 0;
+  padding: var(--spacing-md);
+  color: var(--text-primary);
+}
+
 /* Mobil: was der Beitragstyp des offenen Tabs ist; Grundregel in styles.css */
 .mobile-section .typ-erklaerung {
   margin: 0;
