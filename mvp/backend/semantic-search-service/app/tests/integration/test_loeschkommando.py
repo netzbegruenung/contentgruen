@@ -19,6 +19,7 @@ from sqlalchemy import text
 
 from api.v1.einwurf import _einwuerfe_fuer_aufrufer
 from infrastructure.database.models import (
+    AbzeichenSichtbarkeitZeile,
     Art9EinwilligungZeile,
     Base,
     ContentReport,
@@ -260,6 +261,14 @@ def spuren(datenbank, einwuerfe):
                 user_id=PERSON,
                 wortlaut="2026-11-05",
                 eingewilligt_am=datetime.now(timezone.utc),
+            )
+        )
+        s.add(
+            AbzeichenSichtbarkeitZeile(
+                user_id=PERSON,
+                zeigen=True,
+                wortlaut="2026-11-09",
+                beantwortet_am=datetime.now(timezone.utc),
             )
         )
         # Muster-Hinweise (#352): einer mit der Person, einer ohne sie.

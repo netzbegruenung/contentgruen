@@ -16,6 +16,7 @@ from domain.models.content_type import ContentType
 from domain.models.statement import Statement
 from services.content.statement_service import StatementService
 
+from tests.integration.beitrag_helfer import sichtbarer_beitrag
 from tests.integration.conftest import requires_qdrant
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
@@ -71,8 +72,9 @@ async def test_beantwortete_suchanfrage_gilt_als_kuratiert(statement_service):
         ContentOrigin.SEARCH_QUERY,
     )
 
+    beitrag_id = await sichtbarer_beitrag(statement_service, ContentType.COMMENTARY)
     await statement_service.beitrag_als_antwort_verknuepfen(
-        uuid.uuid4(), ContentType.COMMENTARY, 1.0, "person-1", suchanfrage
+        beitrag_id, ContentType.COMMENTARY, 1.0, "person-1", suchanfrage
     )
 
     treffer = await statement_service.search_filtered(
@@ -82,7 +84,7 @@ async def test_beantwortete_suchanfrage_gilt_als_kuratiert(statement_service):
 
 
 async def test_verknuepfen_per_text_und_ohne_dublette(statement_service):
-    beitrag_id = uuid.uuid4()
+    beitrag_id = await sichtbarer_beitrag(statement_service, ContentType.COMMENTARY)
 
     erste = await statement_service.beitrag_als_antwort_verknuepfen(
         beitrag_id,
@@ -120,7 +122,10 @@ async def test_parallele_verknuepfungen_derselben_aussage(statement_service):
         "person-1",
         ContentOrigin.MANUALLY_CREATED,
     )
-    beitraege = [uuid.uuid4() for _ in range(5)]
+    beitraege = [
+        await sichtbarer_beitrag(statement_service, ContentType.COMMENTARY)
+        for _ in range(5)
+    ]
 
     await asyncio.gather(
         *(

@@ -468,6 +468,9 @@ class ModerationService:
                 gesperrt_von=gesperrt_von,
                 autor=_autor(beitrag),
             )
+        # Auch bei schon bestehender Sperre: So holt erneutes Sperren eine
+        # gescheiterte Zahl nach.
+        await self._antwortzahl_nachziehen(content_id)
 
         adressen: List[MelderAdresse] = []
         updated_count = self.report_repo.update_reports_by_content_id(
@@ -508,6 +511,7 @@ class ModerationService:
 
         if beitrag.get("status") == ContentStatus.BLOCKED.value:
             await self.moderation_repo.entsperren(beitrag)
+        await self._antwortzahl_nachziehen(content_id)
         await asyncio.to_thread(
             self._sperre_repository().aufheben,
             UUID(content_id),
@@ -516,6 +520,24 @@ class ModerationService:
         )
         logger.info(f"Content {content_id} entsperrt")
         return True
+
+    async def _antwortzahl_nachziehen(self, content_id: str) -> None:
+        """
+        Die Antwortzahl der Aussagen, die auf den Beitrag verweisen, nach Sperren
+        oder Entsperren neu zaehlen (#631). Scheitert das, bleibt die Sperre oder
+        Entsperrung trotzdem bestehen: Die Zahl ist Anzeige, die Moderation nicht.
+        Erneutes Sperren oder Entsperren zieht sie nach.
+        """
+        try:
+            geaendert = await self.moderation_repo.antwortzahl_nachziehen(content_id)
+        except Exception as e:
+            logger.error(
+                f"Recounting replies for statements of {content_id} failed: "
+                f"{type(e).__name__}",
+                exc_info=True,
+            )
+            return
+        logger.info(f"Reply count of {geaendert} statements updated for {content_id}")
 
     async def gesperrte_beitraege(
         self, limit: int = GESPERRTE_HOECHSTENS

@@ -52,6 +52,8 @@ BILD_FELDER = {
     "usage_count",
     "autor_name",
     "ist_eigener_beitrag",
+    # Meilenstein-Abzeichen der Autorin (#351), nur mit Zustimmung, sonst null.
+    "autor_abzeichen",
     "original_author",
     # Fuer das Siegel und die Stimm-Knoepfe (#427): Guete und Summen, keine Kennungen.
     "guete",

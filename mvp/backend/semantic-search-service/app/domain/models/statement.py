@@ -105,7 +105,10 @@ class StatementDbEntry(Statement, BaseContentDbEntry):
     Attributes:
     -----------
     replysuggestions_count: int
-        Number of reply suggestions for the statement
+        Number of reply suggestions pointing to a visible content item ("N Antworten").
+        Blocked or deleted replies keep their entry in replysuggestions but do not
+        count (#631); moderation recounts on block and unblock
+        (repositories/implementations/qdrant/moderation_repository.py).
     """
 
     replysuggestions_count: int

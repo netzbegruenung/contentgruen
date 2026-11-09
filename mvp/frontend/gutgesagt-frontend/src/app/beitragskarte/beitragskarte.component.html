@@ -283,7 +283,7 @@
                 <mat-icon aria-hidden="true">call_split</mat-icon>{{ varianten }}
             </a>
             <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter, dazu die Nutzung (#599). -->
-            <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt || nutzungInMeta"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container><ng-container *ngIf="nutzungInMeta"><ng-container *ngIf="zeigtAutor || daten.erstellt"> · </ng-container><span class="karte-nutzung" [class.nutzung-animiert]="nutzungAnimiert">{{ nutzungAnzeige }} genutzt</span></ng-container></p>
+            <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt || nutzungInMeta"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}<span *ngIf="autorAbzeichen as abzeichen" class="autor-abzeichen" [attr.title]="abzeichenText(abzeichen)"><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M6 .8l1.5 3.3 3.6.4-2.7 2.4.8 3.6L6 8.7 2.8 10.5l.8-3.6L.9 4.5l3.6-.4z" fill="currentColor"></path></svg><span aria-hidden="true">{{ abzeichen }}</span><span class="cdk-visually-hidden">, {{ abzeichenText(abzeichen) }}</span></span></ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container><ng-container *ngIf="nutzungInMeta"><ng-container *ngIf="zeigtAutor || daten.erstellt"> · </ng-container><span class="karte-nutzung" [class.nutzung-animiert]="nutzungAnimiert">{{ nutzungAnzeige }} genutzt</span></ng-container></p>
         </footer>
     </ng-container>
 

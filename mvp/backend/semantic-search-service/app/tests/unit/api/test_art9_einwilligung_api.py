@@ -155,6 +155,20 @@ class TestWiderrufen:
         assert antwort.status_code == 204
         repository.widerrufen.assert_called_once_with("user-001")
 
+    def test_delete_nimmt_das_sichtbare_abzeichen_sofort_weg(
+        self, client, repository, monkeypatch
+    ):
+        """Ohne Einwilligung keine Meilensteine, also auch kein Abzeichen (#351)."""
+        from unittest.mock import Mock
+
+        from services import abzeichen_service
+
+        dienst = Mock()
+        monkeypatch.setattr(abzeichen_service, "_service", dienst)
+
+        assert client.delete(BASIS, headers=PERSON).status_code == 204
+        dienst.zuruecknehmen.assert_called_once_with("user-001")
+
     def test_delete_ohne_anmeldung_401(self, client, repository):
         assert client.delete(BASIS).status_code == 401
         repository.widerrufen.assert_not_called()
@@ -253,6 +267,9 @@ GESPERRT = {
 # suchen per POST, ohne Personenbezug, nur fuer Admins, Zuruecknehmen und Melden.
 # Ein neuer schreibender Endpunkt gehoert in GESPERRT (mit Sperre) oder hierher.
 OFFEN = {
+    # Zustimmung zur Sichtbarkeit der Abzeichen (#351): Ein Nein ist Zuruecknehmen,
+    # ein Ja zeigt ohne Einwilligung nichts (keine Meilensteine).
+    ("PUT", "/api/v1/usage/users/me/abzeichen-sichtbarkeit"),
     # Die Einwilligung selbst
     ("POST", "/api/v1/art9-einwilligung"),
     # Suchen und Lesen per POST

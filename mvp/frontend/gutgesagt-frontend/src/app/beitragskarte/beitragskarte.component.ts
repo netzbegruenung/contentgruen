@@ -528,6 +528,18 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.daten.autorName || 'Mitglied';
   }
 
+  /**
+   * Das Meilenstein-Abzeichen am Anzeigenamen (#351): Der Server setzt es nur fuer
+   * Angemeldete und nur mit Zustimmung der Person; ohne Autorzeile auch kein Abzeichen.
+   */
+  get autorAbzeichen(): number | null {
+    return this.zeigtAutor && this.daten.autorAbzeichen ? this.daten.autorAbzeichen : null;
+  }
+
+  abzeichenText(anzahl: number): string {
+    return anzahl === 1 ? '1 Meilenstein erreicht' : `${anzahl} Meilensteine erreicht`;
+  }
+
   get postHerkunft(): string {
     return [this.daten.extra?.postAutor, this.daten.extra?.plattform].filter(Boolean).join(' · ');
   }
