@@ -240,7 +240,7 @@ describe('AppComponent - Desktop-Kopf', () => {
     });
 
     // #599: drei runde Symbole ohne Beschriftung waren nicht zu deuten
-    it('beschriftet Feedback, Hilfe und Start als Textlinks, das Symbol nur unter 1200 px', () => {
+    it('beschriftet Feedback, Hilfe und Start als Textlinks mit Symbol fuer schmale Kopfzeilen', () => {
       const textlinks = Array.from(kopf().querySelectorAll('button.header-link'));
       expect(textlinks.map((k) => k.querySelector('.kopf-text')!.textContent!.trim())).toEqual(['Feedback', 'Hilfe', 'Start']);
       for (const k of textlinks) {

@@ -222,7 +222,7 @@ describe('BeitragskarteComponent', () => {
 
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2× genutzt');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
 
@@ -319,7 +319,7 @@ describe('BeitragskarteComponent', () => {
       aktionen().kopierenMitHerkunft();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('3× genutzt');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('3× genutzt');
       tick(600);
     }));
   });
@@ -543,7 +543,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('3× genutzt');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('3× genutzt');
       tick(600);
     }));
 
@@ -561,7 +561,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2× genutzt');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
 
@@ -572,7 +572,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2× genutzt');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
   });
@@ -658,6 +658,12 @@ describe('BeitragskarteComponent', () => {
       const statement = element('.statement');
       const kopf = element('.karte-kopf');
       expect(statement.compareDocumentPosition(kopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('zeigt die Nutzung beschriftet in der Meta-Zeile statt als Kreis im Kopf (#599)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 1 })));
+      expect(element('.karte-kopf .badge-nutzung')).toBeNull();
+      expect(element('.karte-meta').textContent).toContain('1× genutzt');
     });
 
     it('zeigt ohne Aussage keinen Aufklapper', () => {

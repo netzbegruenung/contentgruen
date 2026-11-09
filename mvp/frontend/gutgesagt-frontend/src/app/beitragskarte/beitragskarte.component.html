@@ -59,11 +59,8 @@
             </span>
             <span class="badge badge-beliebt" *ngIf="istVoll && istBeliebt"
                   matTooltip="Beliebt" matTooltipPosition="left">🔥</span>
-            <!-- Beschriftet statt nur "1×": das Kuerzel allein war nicht verstaendlich (#599).
-                 Unter 600 px bleibt "genutzt" nur fuer Screenreader, sonst kuerzte es den Titel. -->
-            <span class="badge badge-nutzung badge-nutzung--beschriftet" *ngIf="nutzung !== null"
-                  [class.nutzung-animiert]="nutzungAnimiert"
-                  matTooltip="So oft kopiert oder geteilt" matTooltipPosition="left">{{ nutzungAnzeige }}<span class="nutzung-wort"> genutzt</span></span>
+            <!-- Die Nutzung steht beschriftet in der Meta-Zeile unten ("1× genutzt", #599):
+                 Als Kreis "1×" war sie nicht zu deuten, als Pille hier kuerzte sie den Titel. -->
         </div>
     </header>
 
@@ -165,7 +162,7 @@
                       [attr.aria-label]="daten.nutzungLetzte7Tage + ' davon in den letzten 7 Tagen'"
                       matTooltip="In den letzten 7 Tagen" matTooltipPosition="above">+{{ daten.nutzungLetzte7Tage }}</span>
                 <span class="badge badge-nutzung" [class.ungenutzt]="!nutzung"
-                      matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
+                      matTooltip="So oft kopiert oder geteilt" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
             </span>
         </footer>
     </ng-container>
@@ -262,8 +259,8 @@
                (click)="$event.stopPropagation()">
                 <mat-icon aria-hidden="true">call_split</mat-icon>{{ varianten }}
             </a>
-            <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter. -->
-            <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container></p>
+            <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter, dazu die Nutzung (#599). -->
+            <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt || nutzungInMeta"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container><ng-container *ngIf="nutzungInMeta"><ng-container *ngIf="zeigtAutor || daten.erstellt"> · </ng-container><span class="karte-nutzung" [class.nutzung-animiert]="nutzungAnimiert">{{ nutzungAnzeige }} genutzt</span></ng-container></p>
         </footer>
     </ng-container>
 

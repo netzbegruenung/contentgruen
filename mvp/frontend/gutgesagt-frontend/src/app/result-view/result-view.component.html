@@ -63,16 +63,19 @@
         <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
     </div>
 
-    <!-- Reiter auch mit 0 Treffern in normaler Farbe und waehlbar; der Inhalt sagt
+    <!-- Hintergrund auch mit 0 Treffern in normaler Farbe und waehlbar; der Inhalt sagt
          dann, dass noch nichts da ist, und unten steht der Knopf zum Ergaenzen (#599) -->
     <div class="mobile-tab-bar" *ngIf="hatTreffer">
         <button class="tab-button"
                 [class.active]="currentSection === 'commentary'"
+                [disabled]="!hasCommentaryResults"
                 (click)="switchToSection('commentary')"
                 aria-label="Kommentare anzeigen">
             <span class="tab-icon">💬</span>
             <span class="tab-label">Kommentare</span>
-            <span class="tab-count">({{searchResponse.commentary_search_results_count}})</span>
+            <span class="tab-count" *ngIf="searchResponse.commentary_search_results_count > 0">
+                ({{searchResponse.commentary_search_results_count}})
+            </span>
         </button>
         <button class="tab-button"
                 [class.active]="currentSection === 'generictext'"
@@ -104,10 +107,6 @@
         <div *ngIf="currentSection === 'generictext' && hasGenerictextResults" class="mobile-section">
             <p class="typ-erklaerung">{{ hintergrundErklaerung }}</p>
             <app-kartenliste [daten]="hintergrundKarten"></app-kartenliste>
-        </div>
-
-        <div *ngIf="currentSection === 'commentary' && !hasCommentaryResults && hatTreffer" class="mobile-section">
-            <p class="reiter-leer">Zu dieser Aussage gibt es noch keinen Kommentar. Schreib den ersten.</p>
         </div>
 
         <div *ngIf="currentSection === 'generictext' && !hasGenerictextResults && hatTreffer" class="mobile-section">

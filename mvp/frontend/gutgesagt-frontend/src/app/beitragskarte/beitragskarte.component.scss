@@ -153,33 +153,10 @@
   font-weight: 700;
 }
 
-// Mit Beschriftung eine Pille statt des Kreises
-.badge.badge-nutzung--beschriftet {
-  width: auto;
-  min-width: 36px;
-  padding: 0 10px;
-  box-sizing: border-box;
-  border-radius: 18px;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-// Mobil wieder der kleine Kreis: "genutzt" nur fuer Screenreader, der Titel behaelt die Breite
-@media (max-width: 599px) {
-  .badge.badge-nutzung--beschriftet {
-    min-width: 28px;
-    padding: 0 6px;
-    font-size: 11px;
-  }
-
-  .nutzung-wort {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
+// Nutzung in der Meta-Zeile; inline-block, damit sie beim Hochzaehlen kurz waechst
+.karte-nutzung {
+  display: inline-block;
+  transition: transform 0.2s ease;
 }
 
 .badge-icon {
