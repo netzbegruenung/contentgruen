@@ -43,6 +43,34 @@ def _payload(speicher, beitrag_id=BEITRAG_ID) -> dict:
     return speicher.get_data()[beitrag_id]
 
 
+def _kommentar(speicher, status: str = "visible") -> str:
+    """Ein weiterer Kommentar im Speicher; gibt seine Kennung zurueck."""
+    beitrag_id = str(uuid.uuid4())
+    speicher.add_test_data(
+        "commentary",
+        [{**create_base_content_fields(), "id": beitrag_id, "status": status}],
+    )
+    return beitrag_id
+
+
+def _aussage(speicher, antworten, zahl=None) -> str:
+    """Eine Aussage mit diesen Antwortvorschlaegen; gibt ihre Kennung zurueck."""
+    aussage_id = str(uuid.uuid4())
+    speicher.add_test_data(
+        "statement",
+        [
+            {
+                **create_base_content_fields(),
+                "id": aussage_id,
+                "text": "Eine Aussage",
+                "replysuggestions": json.dumps([{"id": a} for a in antworten]),
+                "replysuggestions_count": len(antworten) if zahl is None else zahl,
+            }
+        ],
+    )
+    return aussage_id
+
+
 @pytest.mark.unit
 @pytest.mark.asyncio
 class TestLaden:
@@ -162,7 +190,7 @@ class TestEntfernen:
 class TestAusAussagenEntfernen:
     async def test_entfernt_verweis_aus_aussage(self, repo, speicher):
         aussage_id = str(uuid.uuid4())
-        andere_antwort = str(uuid.uuid4())
+        andere_antwort = _kommentar(speicher)
         speicher.add_test_data(
             "statement",
             [
@@ -185,6 +213,20 @@ class TestAusAussagenEntfernen:
         assert aussage["replysuggestions_count"] == 1
         assert aussage["text"] == "Eine Aussage"
 
+    async def test_zaehlt_nur_sichtbare_uebrige(self, repo, speicher):
+        """Ein gesperrter oder verschwundener Rest zaehlt nicht mit (#631)."""
+        sichtbar = _kommentar(speicher)
+        gesperrt = _kommentar(speicher, status="blocked")
+        aussage_id = _aussage(
+            speicher, [BEITRAG_ID, sichtbar, gesperrt, str(uuid.uuid4())], zahl=3
+        )
+
+        await repo.aus_aussagen_entfernen(BEITRAG_ID)
+
+        aussage = _payload(speicher, aussage_id)
+        assert len(json.loads(aussage["replysuggestions"])) == 3
+        assert aussage["replysuggestions_count"] == 1
+
     async def test_aussage_ohne_verweis_bleibt_unveraendert(self, repo, speicher):
         aussage_id = str(uuid.uuid4())
         speicher.add_test_data(
@@ -199,5 +241,45 @@ class TestAusAussagenEntfernen:
         )
 
         assert await repo.aus_aussagen_entfernen(BEITRAG_ID) == 0
+
+        speicher.async_client.set_payload.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestAntwortzahlNachziehen:
+    """Die Zahl "N Antworten" folgt der Sichtbarkeit, der Verweis bleibt (#631)."""
+
+    async def test_sperren_senkt_zahl_und_entsperren_hebt_sie(self, repo, speicher):
+        andere = _kommentar(speicher)
+        aussage_id = _aussage(speicher, [BEITRAG_ID, andere])
+
+        await repo.sperren(await repo.laden(BEITRAG_ID))
+        assert await repo.antwortzahl_nachziehen(BEITRAG_ID) == 1
+        assert _payload(speicher, aussage_id)["replysuggestions_count"] == 1
+        # Der Verweis bleibt, damit Entsperren nichts wiederherstellen muss.
+        verweise = json.loads(_payload(speicher, aussage_id)["replysuggestions"])
+        assert [v["id"] for v in verweise] == [BEITRAG_ID, andere]
+
+        await repo.entsperren(await repo.laden(BEITRAG_ID))
+        assert await repo.antwortzahl_nachziehen(BEITRAG_ID) == 1
+        assert _payload(speicher, aussage_id)["replysuggestions_count"] == 2
+
+    async def test_altwert_zaehlt_als_sichtbar(self, repo, speicher):
+        """Wie ueberall: Altwerte von vor #214 und fehlender Status gelten als sichtbar."""
+        alt = _kommentar(speicher, status="approved")
+        ohne = _kommentar(speicher)
+        del _payload(speicher, ohne)["status"]
+        aussage_id = _aussage(speicher, [BEITRAG_ID, alt, ohne], zahl=0)
+
+        await repo.antwortzahl_nachziehen(BEITRAG_ID)
+
+        assert _payload(speicher, aussage_id)["replysuggestions_count"] == 3
+
+    async def test_stimmt_die_zahl_schreibt_es_nichts(self, repo, speicher):
+        _aussage(speicher, [BEITRAG_ID])
+        _aussage(speicher, [_kommentar(speicher)], zahl=5)
+
+        assert await repo.antwortzahl_nachziehen(BEITRAG_ID) == 0
 
         speicher.async_client.set_payload.assert_not_called()

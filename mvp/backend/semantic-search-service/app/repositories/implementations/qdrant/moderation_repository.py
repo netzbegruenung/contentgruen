@@ -7,6 +7,7 @@ from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from domain.models.content_status import (
+    AUSGEBLENDET_WERTE,
     FELD_GELOESCHT_AM,
     FELD_STATUS_VOR_SPERRE,
     ContentStatus,
@@ -18,7 +19,8 @@ from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 
 logger = logging.getLogger(__name__)
 
-# Wie viele Aussagen aus_aussagen_entfernen je Scroll-Seite holt.
+# Wie viele Aussagen aus_aussagen_entfernen und antwortzahl_nachziehen je
+# Scroll-Seite holen.
 AUSSAGEN_JE_SEITE = 100
 # Wie viele geloeschte Beitraege geloeschte_laden je Scroll-Seite holt.
 GELOESCHTE_JE_SEITE = 100
@@ -131,10 +133,13 @@ class QdrantModerationRepository(IModerationRepository):
     async def entfernen(self, beitrag_id: str) -> bool:
         return await self._manager.delete_by_id(beitrag_id)
 
-    async def aus_aussagen_entfernen(self, beitrag_id: str) -> int:
+    async def _aussagen_mit(self, beitrag_id: str):
+        """
+        Je Aussage, deren Antwortvorschlaege auf den Beitrag verweisen: Punkt und
+        Vorschlaege. Die Vorschlaege stehen als JSON-Text im Payload, Qdrant kann
+        nicht danach filtern; deshalb alle Aussagen seitenweise.
+        """
         offset = None
-        geaendert = 0
-
         while True:
             punkte, naechster = await self._client.scroll(
                 collection_name=self._collection,
@@ -157,31 +162,62 @@ class QdrantModerationRepository(IModerationRepository):
                             f"Failed to parse replysuggestions for statement {punkt.id}"
                         )
                         continue
-
-                uebrig = [v for v in vorschlaege if str(v.get("id")) != beitrag_id]
-                if len(uebrig) == len(vorschlaege):
-                    continue
-
-                # Nur die zwei Felder schreiben: Ein upsert des ganzen Punkts
-                # braeuchte den Vektor, den der Scroll nicht mitliefert.
-                await self._client.set_payload(
-                    collection_name=self._collection,
-                    payload={
-                        "replysuggestions": json.dumps(uebrig, default=str),
-                        "replysuggestions_count": len(uebrig),
-                    },
-                    points=[punkt.id],
-                )
-                geaendert += 1
-                logger.debug(
-                    f"Removed orphaned reply suggestion from statement {punkt.id} "
-                    f"({len(vorschlaege)} -> {len(uebrig)} suggestions)"
-                )
+                if any(str(v.get("id")) == beitrag_id for v in vorschlaege):
+                    yield punkt, vorschlaege
 
             if naechster is None:
                 break
             offset = naechster
 
+    async def _sichtbare_zaehlen(self, vorschlaege: List[Dict[str, Any]]) -> int:
+        """
+        Wie viele der Antwortvorschlaege auf einen sichtbaren Beitrag zeigen (#631):
+        die Zahl "N Antworten". Gesperrte, geloeschte und nicht mehr vorhandene
+        Beitraege zaehlen nicht; Altwerte von vor #214 gelten wie ueberall als
+        sichtbar. Eine Abfrage je Aussage, nur der Status.
+        """
+        ids = list(dict.fromkeys(str(v.get("id")) for v in vorschlaege))
+        zustaende = await self.zustaende_laden(ids)
+        return sum(
+            1
+            for beitrag_id in ids
+            if beitrag_id in zustaende
+            and zustand_aus_altwert(zustaende[beitrag_id]) not in AUSGEBLENDET_WERTE
+        )
+
+    async def aus_aussagen_entfernen(self, beitrag_id: str) -> int:
+        geaendert = 0
+        async for punkt, vorschlaege in self._aussagen_mit(beitrag_id):
+            uebrig = [v for v in vorschlaege if str(v.get("id")) != beitrag_id]
+            # Nur die zwei Felder schreiben: Ein upsert des ganzen Punkts
+            # braeuchte den Vektor, den der Scroll nicht mitliefert.
+            await self._client.set_payload(
+                collection_name=self._collection,
+                payload={
+                    "replysuggestions": json.dumps(uebrig, default=str),
+                    "replysuggestions_count": await self._sichtbare_zaehlen(uebrig),
+                },
+                points=[punkt.id],
+            )
+            geaendert += 1
+            logger.debug(
+                f"Removed orphaned reply suggestion from statement {punkt.id} "
+                f"({len(vorschlaege)} -> {len(uebrig)} suggestions)"
+            )
+        return geaendert
+
+    async def antwortzahl_nachziehen(self, beitrag_id: str) -> int:
+        geaendert = 0
+        async for punkt, vorschlaege in self._aussagen_mit(beitrag_id):
+            zahl = await self._sichtbare_zaehlen(vorschlaege)
+            if (punkt.payload or {}).get("replysuggestions_count") == zahl:
+                continue
+            await self._client.set_payload(
+                collection_name=self._collection,
+                payload={"replysuggestions_count": zahl},
+                points=[punkt.id],
+            )
+            geaendert += 1
         return geaendert
 
 
