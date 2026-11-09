@@ -267,13 +267,14 @@ Empfänger und Ort“.
 - **„Gepostet von“ am Post (#622, Stand 09.11.2026 noch nicht gemergt):**
   - *Zweck:* zeigen, woher ein Post stammt.
   - *Daten:* Kontoname des ursprünglichen Posters auf der anderen Plattform („@konto“), Freitext
-    im Qdrant-Payload (`ss/domain/models/post.py`); ist es das Konto einer Person, sind es Daten
+    im Qdrant-Payload (`ss/domain/models/post.py:26,49-50` auf #622); ist es das Konto einer Person, sind es Daten
     Dritter, oft mit politischer Zuordnung.
   - *Rechtsgrundlage (Vorschlag, nicht juristisch geprüft, #296):* Art. 6 Abs. 1 lit. f;
     berechtigtes Interesse an der Herkunft, abgewogen gegen die Person, die ihr Konto
     öffentlich gepostet hat. Für eine Person, die nicht öffentlich auftritt, trägt die Abwägung
-    nicht; Art. 9 Abs. 2 lit. e greift nur, wenn sie ihre Haltung selbst öffentlich gemacht hat.
-  - *Wer es sieht:* alle, auch Besucher (`PostResponse.author`, `ss/dtos/beitrag.py`).
+    nicht; Art. 9 Abs. 2 lit. e greift nur, wenn sie ihre Haltung selbst öffentlich gemacht hat. Die
+    Erklärung nennt lit. f ohne diesen Vorbehalt; danach in #296 ausdrücklich fragen.
+  - *Wer es sieht:* alle, auch Besucher (`PostResponse.author`, `ss/dtos/beitrag.py:96-98` auf #622).
   - *Frist:* wie der Post (keine, solange die Plattform läuft); nicht anonymisiert, wenn das
     Konto der einstellenden Person gelöscht wird.
   - *Minimierung:* Feld freiwillig, leer wird `null` gesendet (#622); die Erklärung bittet,
@@ -394,9 +395,10 @@ Empfänger und Ort“.
 - **Risiko und Maßnahmen:** Abschnitt 3 (Sichtbarkeit, Nutzungsnetz, Zweckentfremdung),
   Rechtsgrundlage Abschnitt 4. Schalter `punkte_aktiv`, Standard aus (`ss/core/config.py:238-244`).
 - **Meilensteine, nur für die Person selbst (#615, Stand 09.11.2026 noch nicht gemergt):** hinter
-  demselben Schalter, gleiche Rechtsgrundlage, nicht gespeichert, bei jedem Abruf berechnet
+  demselben Schalter (ohne `punkte_aktiv` 404, `ss/api/v1/usage.py:450-451` auf #615), gleiche Rechtsgrundlage, nicht gespeichert, bei jedem Abruf berechnet
   (`ss/services/meilensteine_service.py`). Neu gegenüber den Punkten: gezählt wird auch, wie viele
-  Einwürfe anderer die Person ausformuliert hat (Ausformulierer an der Verknüpfung, `raw_input_content_links.created_by`, V4), nicht nur
+  Einwürfe anderer die Person ausformuliert hat (Ausformulierer an der Verknüpfung,
+  `ss/infrastructure/database/models.py:577`, V4), nicht nur
   ihre eigenen Einwürfe, die andere ausformuliert haben. Die Daten liegen schon in V4; neu ist nur
   die Zählung je Person, und die sieht nur sie selbst. Die Erklärung nennt das unter „Punkte“.
 
