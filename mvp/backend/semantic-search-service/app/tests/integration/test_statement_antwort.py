@@ -99,8 +99,10 @@ async def test_verknuepfen_per_text_und_ohne_dublette(statement_service):
         statement_text="Klimaschutz zerstört Arbeitsplätze",
     )
 
-    assert erste == zweite
-    statement_id, statement_text = erste
+    # Die erste legt die Aussage an, die zweite findet dieselbe (#617: Marke "neu").
+    assert erste[:2] == zweite[:2]
+    assert (erste[2], zweite[2]) == (True, False)
+    statement_id, statement_text, _ = erste
     assert statement_text == "Klimaschutz zerstört Arbeitsplätze"
     aussage = await statement_service.get(statement_id)
     assert [r.id for r in aussage.replysuggestions] == [beitrag_id]

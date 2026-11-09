@@ -97,6 +97,7 @@ class TestAddCommentaryAntwort:
             "id": str(commentary_id),
             "statement_id": None,
             "statement_text": None,
+            "aussage_neu": False,
             "verknuepft": True,
             "vorhanden": None,
             "themen": [],
@@ -129,6 +130,7 @@ class TestAddCommentaryAntwort:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Waermepumpen sind zu teuer",
+            False,
         )
 
         resp = TestClient(app).post(
@@ -155,6 +157,7 @@ class TestAddCommentaryAntwort:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Waermepumpen sind viel zu teuer!",
+            False,
         )
 
         resp = TestClient(app).post(
@@ -166,9 +169,27 @@ class TestAddCommentaryAntwort:
         assert resp.status_code == 200
         assert resp.json()["statement_id"] == str(statement_id)
         assert resp.json()["statement_text"] == "Waermepumpen sind viel zu teuer!"
+        assert resp.json()["aussage_neu"] is False
         aufruf = statement_service.beitrag_als_antwort_verknuepfen.call_args.kwargs
         assert aufruf["statement_text"] == "Waermepumpen sind zu teuer"
         assert aufruf["statement_id"] is None
+
+    def test_neu_angelegte_aussage_meldet_aussage_neu(self, dienste):
+        _, statement_service = dienste
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            uuid.uuid4(),
+            "Waermepumpen sind zu teuer",
+            True,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text="Waermepumpen sind zu teuer"),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["aussage_neu"] is True
 
     def test_verschwundene_aussage_ist_warning_ohne_traceback(self, dienste, caplog):
         import logging
@@ -223,6 +244,7 @@ class TestAddCommentaryAntwort:
             "id": str(commentary_id),
             "statement_id": None,
             "statement_text": None,
+            "aussage_neu": False,
             "verknuepft": False,
             "vorhanden": None,
             "themen": [],
@@ -256,6 +278,7 @@ class TestAddCommentaryAntwort:
             "id": str(vorhanden),
             "statement_id": None,
             "statement_text": None,
+            "aussage_neu": False,
             "verknuepft": False,
             "vorhanden": {"titel": VORHANDEN_TITEL, "eigen": True},
             "themen": [],
@@ -291,6 +314,7 @@ class TestAddCommentaryAntwort:
             "id": str(vorhanden),
             "statement_id": None,
             "statement_text": None,
+            "aussage_neu": False,
             "verknuepft": False,
             "vorhanden": {"titel": VORHANDEN_TITEL, "eigen": True},
             "themen": [],
@@ -304,6 +328,7 @@ class TestAddCommentaryAntwort:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Waermepumpen sind zu teuer",
+            False,
         )
 
         resp = TestClient(app).post(
@@ -319,6 +344,7 @@ class TestAddCommentaryAntwort:
             "id": str(vorhanden),
             "statement_id": str(statement_id),
             "statement_text": "Waermepumpen sind zu teuer",
+            "aussage_neu": False,
             "verknuepft": True,
             "vorhanden": {"titel": VORHANDEN_TITEL, "eigen": True},
             "themen": [],
@@ -430,6 +456,7 @@ class TestAddCommentaryAntwort:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Waermepumpen sind zu teuer",
+            False,
         )
 
         resp = TestClient(app).post(
@@ -467,6 +494,7 @@ class TestAddCommentaryAntwort:
             "id": str(vorhanden),
             "statement_id": None,
             "statement_text": None,
+            "aussage_neu": False,
             "verknuepft": False,
             "vorhanden": {"titel": VORHANDEN_TITEL, "eigen": False},
             "themen": [],
@@ -643,6 +671,7 @@ class TestAddCommentaryAntwort:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Waermepumpen sind zu teuer",
+            False,
         )
 
         resp = TestClient(app).post(
@@ -712,6 +741,7 @@ class TestThemenDerAussage:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             self.AUSSAGE,
+            False,
         )
 
         resp = TestClient(app).post(
@@ -735,6 +765,7 @@ class TestThemenDerAussage:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             vorhanden,
             "Waermepumpen sind viel zu teuer!",
+            False,
         )
         themen_service.bestand[vorhanden] = ["klima"]
 
@@ -755,6 +786,7 @@ class TestThemenDerAussage:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             self.AUSSAGE,
+            False,
         )
 
         resp = TestClient(app).post(
@@ -772,6 +804,7 @@ class TestThemenDerAussage:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             uuid.uuid4(),
             self.AUSSAGE,
+            False,
         )
 
         resp = TestClient(app).post(
@@ -790,6 +823,7 @@ class TestThemenDerAussage:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             self.AUSSAGE,
+            False,
         )
         themen_service.ergaenzen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
 
@@ -832,6 +866,7 @@ class TestThemenDerAussage:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             self.AUSSAGE,
+            False,
         )
 
         resp = TestClient(app).post(

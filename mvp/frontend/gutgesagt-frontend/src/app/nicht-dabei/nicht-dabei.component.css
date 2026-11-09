@@ -30,6 +30,13 @@
     list-style: none;
 }
 
+.aehnliche-eintrag {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
 /* Wie die Vorschlaege im Feld "Antwort auf" */
 .aehnliche-aussage {
     display: flex;
@@ -44,6 +51,7 @@
     background: var(--statement-bg);
     color: var(--text-primary);
     text-decoration: none;
+    align-self: stretch;
 }
 
 .aehnliche-aussage:hover {
@@ -64,4 +72,27 @@
     font-size: 0.8rem;
     color: var(--text-secondary);
     white-space: nowrap;
+}
+
+.antworten-zahl {
+    font-size: 0.8rem;
+    font-family: PTSans-bold, Roboto, sans-serif;
+    color: var(--primary-dark);
+    white-space: nowrap;
+}
+
+/* Textlink unter der Aussage, Ziel mindestens 44 px hoch */
+.selbst-beantworten {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 4px;
+    color: var(--primary-dark);
+    font-size: 0.9rem;
+    text-decoration: underline;
+}
+
+.selbst-beantworten:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
 }

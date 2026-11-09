@@ -587,7 +587,7 @@ class StatementService(
         author: str,
         statement_id: Optional[uuid.UUID] = None,
         statement_text: Optional[str] = None,
-    ) -> Optional[Tuple[uuid.UUID, str]]:
+    ) -> Optional[Tuple[uuid.UUID, str, bool]]:
         """
         Einen gerade gespeicherten Beitrag als Antwort an seine Aussage haengen.
 
@@ -598,7 +598,9 @@ class StatementService(
 
         Returns:
         - ID und Text der tatsaechlich verknuepften Aussage (mit Text kann das eine
-          schon vorhandene, sehr aehnliche sein), oder None ohne Aussage.
+          schon vorhandene, sehr aehnliche sein) und ob sie eben neu angelegt wurde
+          (fuer die Marke "neu" auf der Seite "Gespeichert", #617), oder None ohne
+          Aussage.
 
         Raises:
         - AussageNichtGefunden, wenn die Aussage zur ID nicht existiert; sonst, was
@@ -608,8 +610,9 @@ class StatementService(
         if statement_id is None and not text:
             return None
 
+        neu = False
         if statement_id is None:
-            _, statement_id, aussage_text = await self.add_statement(
+            neu, statement_id, aussage_text = await self.add_statement(
                 Statement(text=text, replysuggestions=[]),
                 author,
                 NEW_CONTENT_STATUS,
@@ -624,4 +627,4 @@ class StatementService(
             content_type=content_type,
             relevance=relevance,
         )
-        return statement_id, aussage_text
+        return statement_id, aussage_text, neu
