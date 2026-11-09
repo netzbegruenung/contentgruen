@@ -241,3 +241,12 @@ describe('AddImageComponent mit der echten Vorschau-Karte', () => {
     expect(fixture.nativeElement.querySelector('.preview-content app-fremdes-bild img')).toBeNull();
   });
 });
+
+describe('Formularhilfe Bild (#619)', () => {
+  it('nennt Privatpersonen nur ohne ihr Einverständnis als Ausschluss', async () => {
+    const { FORMULAR_HILFE } = await import('../beitragsformular/formular-hilfe/formular-hilfe-texte');
+    expect(FORMULAR_HILFE.image?.istNicht).toContain(
+      'Bilder, an denen du keine Rechte hast oder auf denen Privatpersonen ohne ihr Einverständnis erkennbar sind',
+    );
+  });
+});

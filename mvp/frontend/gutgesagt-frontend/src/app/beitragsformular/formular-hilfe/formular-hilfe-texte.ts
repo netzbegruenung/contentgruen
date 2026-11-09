@@ -60,7 +60,7 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
     antwort: 'Ein Bild, das man so teilen kann, mit einer Unterschrift in eigenen Worten.',
     ist: ['Spricht für sich, auch ohne langen Text', 'Mit einer öffentlich erreichbaren Bild-URL'],
     istNicht: [
-      'Bilder, an denen du keine Rechte hast oder auf denen Privatpersonen erkennbar sind',
+      'Bilder, an denen du keine Rechte hast oder auf denen Privatpersonen ohne ihr Einverständnis erkennbar sind',
       'Eine Unterschrift von woanders übernehmen – schreib sie in eigenen Worten (CC0)',
     ],
     schreibregeln: true,
