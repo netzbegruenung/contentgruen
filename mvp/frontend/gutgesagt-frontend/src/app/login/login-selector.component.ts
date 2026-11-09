@@ -66,8 +66,8 @@ export class LoginSelectorComponent implements OnInit {
         },
         error: (err) => {
           console.error('Failed to fetch auth modes:', err);
-          // Default to Gut gesagt login on error
-          this.authModes.managedAuthEnabled = true;
+          // Unknown modes: offer both ways instead of hiding the one this environment uses (#600)
+          this.authModes = { keycloakEnabled: true, managedAuthEnabled: true };
           this.isLoading = false;
         }
       });

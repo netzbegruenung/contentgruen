@@ -148,6 +148,16 @@ describe('LoginSelectorComponent', () => {
       expect(el.querySelector('.disabled-notice')?.textContent).toContain('Anmelden ist gerade nicht möglich');
     });
 
+    it('zeigt beide Wege, wenn die Modi nicht zu laden sind, statt einen toten Weg', () => {
+      http = TestBed.inject(HttpTestingController);
+      http.expectOne(r => r.url.endsWith('/api/auth/modes')).flush('x', { status: 500, statusText: 'err' });
+      fixture.detectChanges();
+      const el: HTMLElement = fixture.nativeElement;
+
+      expect(el.querySelector('.keycloak-button')).not.toBeNull();
+      expect(el.querySelector('.gutgesagt-button')).not.toBeNull();
+    });
+
     it('nennt den Netzbegrünung-Login ohne Keycloak und SSO', () => {
       const el = modes(true, false);
       const text = el.textContent ?? '';

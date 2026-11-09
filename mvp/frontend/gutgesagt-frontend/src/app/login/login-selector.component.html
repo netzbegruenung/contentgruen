@@ -1,6 +1,6 @@
 <div class="component-box">
 
-    <p class="anmeldegrund" *ngIf="anmeldegrund">{{ anmeldegrund }}</p>
+    <h2 class="anmeldegrund" *ngIf="anmeldegrund">{{ anmeldegrund }}</h2>
 
     <div class="registration-info-container">
         <mat-accordion>
@@ -81,7 +81,7 @@
                 </p>
             </div>
 
-            <p class="disabled-notice" *ngIf="!authModes.keycloakEnabled && !authModes.managedAuthEnabled">
+            <p class="disabled-notice" role="status" *ngIf="!authModes.keycloakEnabled && !authModes.managedAuthEnabled">
                 <mat-icon class="notice-icon">info_outline</mat-icon>
                 Anmelden ist gerade nicht möglich. Versuch es bitte später noch einmal.
             </p>
