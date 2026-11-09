@@ -177,7 +177,13 @@ export class RundgangComponent implements OnDestroy {
     const schritt = s.rundgang.schritte[s.index];
     const ziel = await this.zielFinden(schritt.ziel, lauf);
     if (lauf !== this.lauf) return; // inzwischen weitergeklickt
-    if (ziel && schritt.vorbelegen) vorbelegen(ziel, schritt.vorbelegen);
+    if (ziel && schritt.vorbelegen) {
+      // Erst nach dem ersten Schreiben von ngModel (asynchron nach dem Laden der Seite),
+      // sonst überschriebe es das Beispiel im Feld mit dem leeren Modell
+      await new Promise((weiter) => setTimeout(weiter));
+      if (lauf !== this.lauf) return;
+      vorbelegen(ziel, schritt.vorbelegen);
+    }
     this.ziel = ziel;
     this.stand.set(s);
     // Den Schritt liest der Screenreader beim Fokus der Blase (Name und Beschreibung);

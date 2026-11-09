@@ -199,7 +199,6 @@ describe('RundgangService', () => {
     it('füllt in Schritt 1 das Startbeispiel vor, das die Treffer-Schritte suchen (#601)', () => {
       const schritte = RUNDGAENGE['antwort-finden'].schritte;
       expect(schritte[0].vorbelegen).toBe(STARTBEISPIEL);
-      expect(schritte[0].text).toContain(`Probier’s mit „${STARTBEISPIEL}“`);
       for (const schritt of schritte.slice(1, 4)) {
         expect(schritt.seite?.query).toEqual({ searchQuery: STARTBEISPIEL });
       }

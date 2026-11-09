@@ -522,7 +522,7 @@ Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt,
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
 **Startbeispiel**:
-Die Aussage hinter „Beispiel probieren“ auf der Startseite; der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und im Seed, damit die Suche sicher Kommentare findet.
+Die Aussage hinter „Beispiel probieren“ auf der Startseite; der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
 _Avoid_: Beispielsuche, Demo-Aussage
 
 **Startbestand**:
