@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { Subject, forkJoin } from 'rxjs';
@@ -35,6 +35,8 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
   /** Nach einem Nein erneut gefragt ("Anderen zeigen"): Zustimmen nur mit dem Wortlaut vor Augen. */
   frageOffen = false;
   fehler = false;
+  /** Nach einer Antwort verschwinden die Knöpfe der Frage; der Fokus geht hierher. */
+  @ViewChild('aendernKnopf', { read: ElementRef }) aendernKnopf?: ElementRef<HTMLElement>;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -108,7 +110,10 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
         } else {
           this.fehler = true;
         }
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+        if (ok) {
+          this.aendernKnopf?.nativeElement.focus();
+        }
       });
   }
 }

@@ -204,9 +204,10 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✅ Check value and pattern note cleanup tasks started")
 
-        # Meilenstein-Abzeichen am Anzeigenamen (#351): der Dienst immer, damit die
-        # Frage nach der Sichtbarkeit beantwortet werden kann; das Rechnen im Takt
-        # nur mit beiden Schaltern (services/abzeichen_service.py).
+        # Meilenstein-Abzeichen am Anzeigenamen (#351): der Dienst immer, damit ein
+        # Widerruf der Art.-9-Einwilligung ein frueheres Ja auch bei ausgeschalteten
+        # Abzeichen zuruecknimmt; Frage und Rechnen im Takt nur mit beiden Schaltern
+        # (services/abzeichen_service.py).
         abzeichen = abzeichen_service_bauen(settings)
         abzeichen_service_setzen(abzeichen)
         if settings.abzeichen_sichtbar:

@@ -100,8 +100,16 @@ def widerrufen(user_id: str = Depends(require_user)) -> Response:
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
-    # Ohne Einwilligung keine Meilensteine: das sichtbare Abzeichen sofort weg (#351).
+    # Ohne Einwilligung keine Meilensteine: das sichtbare Abzeichen sofort weg, und ein
+    # frueheres Ja gilt nicht ueber eine neue Einwilligung hinweg (#351).
     abzeichen = get_abzeichen_service()
     if abzeichen is not None:
-        abzeichen.vergessen(user_id)
+        try:
+            abzeichen.zuruecknehmen(user_id)
+        except Exception as e:
+            logger.error(
+                f"Zustimmung zur Sichtbarkeit von {log_pseudonym(user_id)} nicht zurueckgenommen: {type(e).__name__}",
+                exc_info=True,
+            )
+            raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
     return Response(status_code=204)

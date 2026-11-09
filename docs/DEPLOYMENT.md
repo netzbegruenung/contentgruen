@@ -113,6 +113,9 @@ from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two 
   counts (the report rate limit relies on the same header).
 - **One uvicorn worker.** The daily key lives in the memory of the process. With several
   workers a visitor would count once per worker; a restart counts visitors again on that day.
+  The milestone badges (#351, `services/abzeichen_service.py`) live there too: with several
+  workers a "no" to visibility or a withdrawn Art. 9 consent would take effect only in one
+  process and stay visible in the others for up to 15 minutes.
 
 ### 🔑 Login (Keycloak)
 

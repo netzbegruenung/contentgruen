@@ -19,8 +19,10 @@ AKTUELLER_WORTLAUT = "2026-11-09"
 WORTLAUTE: Dict[str, str] = {
     "2026-11-09": (
         "Sollen andere Angemeldete an deinem Namen sehen, wie viele Meilensteine du "
-        "erreicht hast? Das Abzeichen verrät, dass du bei Gut gesagt mitmachst. "
-        "Besucher ohne Anmeldung sehen es nie. Du kannst das jederzeit ändern."
+        "erreicht hast? Das Abzeichen verrät, dass und wie viel du bei Gut gesagt "
+        "mitmachst. Angemeldet sind nicht nur Mitglieder, und ein Screenshot kann es "
+        "weitertragen. Besucher ohne Anmeldung sehen es nie. Du kannst das jederzeit "
+        "unter „Meine Beiträge“ ändern; mehr in der Datenschutzerklärung unter „Punkte“."
     ),
 }
 

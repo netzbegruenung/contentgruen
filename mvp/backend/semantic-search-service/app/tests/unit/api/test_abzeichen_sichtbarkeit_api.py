@@ -1,7 +1,7 @@
 """
 Die Frage nach der Sichtbarkeit der Meilenstein-Abzeichen (#351): nur mit beiden
-Schaltern, nur fuer die angemeldete Person selbst, Speichern nur mit
-Art.-9-Einwilligung.
+Schaltern, nur fuer die angemeldete Person selbst. Antworten geht auch ohne
+Art.-9-Einwilligung (ein Nein ist Zuruecknehmen; ein Ja zeigt dann nichts).
 """
 
 import datetime

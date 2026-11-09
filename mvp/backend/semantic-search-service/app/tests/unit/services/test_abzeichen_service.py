@@ -175,3 +175,42 @@ async def test_fehler_beim_rechnen_kostet_nur_das_abzeichen():
     await dienst.antworten("kim-1", True, WORTLAUT)
 
     assert dienst.abzeichen(["kim-1"]) == {}
+
+
+async def test_widerruf_der_art9_einwilligung_nimmt_das_ja_zurueck():
+    """Nach einer neuen Art.-9-Einwilligung erscheint das Abzeichen nicht ohne neue Frage."""
+    repo = _Repo()
+    dienst = _service(repo, {"kim-1": 2})
+    await dienst.antworten("kim-1", True, WORTLAUT)
+
+    dienst.zuruecknehmen("kim-1")
+
+    assert dienst.abzeichen(["kim-1"]) == {}
+    assert repo.antworten_je["kim-1"] is False
+
+
+async def test_widerruf_ohne_frueheres_ja_schreibt_nichts():
+    repo = _Repo()
+    dienst = _service(repo)
+
+    dienst.zuruecknehmen("kim-1")
+
+    assert "kim-1" not in repo.antworten_je
+
+
+async def test_im_takt_uebersteht_einen_fehler():
+    from services.abzeichen_service import abzeichen_im_takt
+
+    aufrufe = []
+
+    class _Dienst:
+        async def alle_aktualisieren(self):
+            aufrufe.append(1)
+            if len(aufrufe) == 1:
+                raise RuntimeError("weg")
+            raise asyncio.CancelledError
+
+    with pytest.raises(asyncio.CancelledError):
+        await abzeichen_im_takt(_Dienst(), takt_sekunden=0)
+
+    assert len(aufrufe) == 2

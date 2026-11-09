@@ -148,6 +148,9 @@ Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
 Offen:
 
 - DSFA übernommen (Abschnitt 6).
+- Für die Abzeichen am Anzeigenamen zusätzlich (zweiter Schalter `abzeichen_sichtbar_aktiv`):
+  Frage 6 beantwortet, Wortlaut der Frage nach der Sichtbarkeit und Absatz der
+  Datenschutzerklärung freigegeben (8.2, V22).
 
 Erledigt:
 
@@ -523,8 +526,12 @@ unten unter „Geplant, nicht gebaut“.
   zwei gleichwertige Knöpfe, nichts vorbelegt; Nein und Widerruf der Art.-9-Einwilligung
   nehmen das Abzeichen sofort weg; gezeigt wird nur eine Zahl, keine Einzelheiten; nur für
   Angemeldete; zwei Schalter, Standard aus (`abzeichen_sichtbar_aktiv` und `punkte_aktiv`).
-- **Rest:** gering, wie Risiko 1. **Offen:** dieselbe Frage an die Datenschutzbeauftragte wie
-  für die Punkte (Abschnitt 6); ein Satz in der Datenschutzerklärung, Abschnitt „Punkte“.
+- **Widerruf:** Ein Widerruf der Art.-9-Einwilligung nimmt das Abzeichen sofort weg und hält
+  ein früheres Ja als Nein fest; nach einer neuen Art.-9-Einwilligung erscheint es erst nach
+  einem neuen Ja.
+- **Rest:** gering, wie Risiko 1. **Offen:** Frage 6 an die Datenschutzbeauftragte
+  (Abschnitt 6). Die Datenschutzerklärung beschreibt das Abzeichen im Abschnitt „Punkte“
+  (Absatz „Abzeichen an deinem Namen“, Fachfrage in PR #634).
 
 #### Geplant, nicht gebaut
 

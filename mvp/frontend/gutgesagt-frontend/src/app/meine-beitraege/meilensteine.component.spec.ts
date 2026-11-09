@@ -132,6 +132,18 @@ describe('MeilensteineComponent (#351)', () => {
       expect(element.querySelector('.sichtbarkeit-frage')?.textContent).toContain(WORTLAUT.text);
     });
 
+    it('setzt nach der Antwort den Fokus auf "Nicht mehr zeigen" und sagt den Stand an', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], NIE_GEFRAGT);
+      document.body.appendChild(element);
+
+      knopf(element, 'Ja, zeigen').click();
+      fixture.detectChanges();
+
+      expect(document.activeElement?.textContent).toContain('Nicht mehr zeigen');
+      expect(element.querySelector('[role="status"]')?.textContent).toContain('für Angemeldete sichtbar');
+      element.remove();
+    });
+
     it('meldet einen Fehler und bleibt bei der alten Antwort', () => {
       const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], NIE_GEFRAGT);
       speichern.and.returnValue(of(false));

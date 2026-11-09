@@ -70,5 +70,8 @@ EXPOSE 8000
 # je Suchtext (services/search/search_query_statement.py) leben im Prozessspeicher.
 # Mit --workers N haette jeder Prozess eigene Zaehler und Sperren - die Limits
 # wuerden sich ver-N-fachen, und gleichzeitige gleiche Suchen koennten wieder
-# doppelte Aussagen anlegen. Wer skaliert, braucht dafuer einen geteilten Speicher.
+# doppelte Aussagen anlegen. Ebenso die Meilenstein-Abzeichen
+# (services/abzeichen_service.py): Ein Nein oder ein Widerruf wirkte sonst nur im
+# Prozess, der die Anfrage bekam, in den anderen bis zu 15 Minuten nicht.
+# Wer skaliert, braucht dafuer einen geteilten Speicher.
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

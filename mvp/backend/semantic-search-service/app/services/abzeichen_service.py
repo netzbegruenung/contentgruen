@@ -75,6 +75,19 @@ class AbzeichenService:
             # Speichern das alte Ja gelesen hat, schreibt dann nichts mehr.
             self.vergessen(user_id)
 
+    def zuruecknehmen(self, user_id: str) -> None:
+        """
+        Beim Widerruf der Art.-9-Einwilligung: Abzeichen sofort weg und ein frueheres Ja
+        als Nein festhalten. Sonst erschiene das Abzeichen nach einer neuen
+        Art.-9-Einwilligung ohne neue Frage wieder. Synchron (Endpunkt im Threadpool);
+        wer nie zugestimmt hat, bekommt keine Zeile.
+        """
+        self.vergessen(user_id)
+        antwort = self._repository.lesen(user_id)
+        if antwort is not None and antwort.zeigen:
+            self._repository.antworten(user_id, False, antwort.wortlaut)
+        self.vergessen(user_id)
+
     def vergessen(self, user_id: str) -> None:
         """Das Abzeichen sofort wegnehmen (Nein, Widerruf der Art.-9-Einwilligung)."""
         self._abzeichen.pop(user_id, None)

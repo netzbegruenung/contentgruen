@@ -167,7 +167,7 @@ class TestWiderrufen:
         monkeypatch.setattr(abzeichen_service, "_service", dienst)
 
         assert client.delete(BASIS, headers=PERSON).status_code == 204
-        dienst.vergessen.assert_called_once_with("user-001")
+        dienst.zuruecknehmen.assert_called_once_with("user-001")
 
     def test_delete_ohne_anmeldung_401(self, client, repository):
         assert client.delete(BASIS).status_code == 401

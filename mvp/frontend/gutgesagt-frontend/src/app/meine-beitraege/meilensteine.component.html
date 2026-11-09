@@ -33,10 +33,13 @@
             <button mat-stroked-button type="button" [disabled]="speichert" (click)="antworten(false)">Nein, nur für mich</button>
         </div>
     </div>
-    <p *ngIf="sichtbarkeit?.gefragt && !frageOffen" class="sichtbarkeit-stand">
-        Abzeichen an deinem Namen: {{ sichtbar ? 'für Angemeldete sichtbar' : 'nur für dich' }}.
-        <button mat-button type="button" class="sichtbarkeit-aendern" [disabled]="speichert"
-                (click)="aendern()">{{ sichtbar ? 'Nicht mehr zeigen' : 'Anderen zeigen' }}</button>
-    </p>
-    <p *ngIf="fehler" class="sichtbarkeit-fehler" role="alert">Das hat nicht geklappt. Bitte versuch es noch einmal.</p>
+    <!-- Immer da, damit Screenreader den neuen Stand nach einer Antwort ansagen -->
+    <div role="status" class="sichtbarkeit-status">
+        <p *ngIf="sichtbarkeit?.gefragt && !frageOffen" class="sichtbarkeit-stand">
+            Abzeichen an deinem Namen: {{ sichtbar ? 'für Angemeldete sichtbar' : 'nur für dich' }}.
+            <button #aendernKnopf mat-button type="button" class="sichtbarkeit-aendern" [disabled]="speichert"
+                    (click)="aendern()">{{ sichtbar ? 'Nicht mehr zeigen' : 'Anderen zeigen' }}</button>
+        </p>
+        <p *ngIf="fehler" class="sichtbarkeit-fehler">Das hat nicht geklappt. Bitte versuch es noch einmal.</p>
+    </div>
 </section>

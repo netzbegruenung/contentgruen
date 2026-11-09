@@ -35,7 +35,10 @@ class AbzeichenSichtbarkeitRepository:
                     AbzeichenSichtbarkeitZeile.beantwortet_am,
                 )
                 .where(AbzeichenSichtbarkeitZeile.user_id == user_id)
-                .order_by(AbzeichenSichtbarkeitZeile.beantwortet_am.desc())
+                .order_by(
+                    AbzeichenSichtbarkeitZeile.beantwortet_am.desc(),
+                    AbzeichenSichtbarkeitZeile.id.desc(),
+                )
                 .limit(1)
             ).first()
             if zeile is None:
@@ -77,7 +80,11 @@ class AbzeichenSichtbarkeitRepository:
                 func.row_number()
                 .over(
                     partition_by=AbzeichenSichtbarkeitZeile.user_id,
-                    order_by=AbzeichenSichtbarkeitZeile.beantwortet_am.desc(),
+                    # Bei gleichem Zeitpunkt wie in lesen(): beide Abfragen einig.
+                    order_by=(
+                        AbzeichenSichtbarkeitZeile.beantwortet_am.desc(),
+                        AbzeichenSichtbarkeitZeile.id.desc(),
+                    ),
                 )
                 .label("rang"),
             )
