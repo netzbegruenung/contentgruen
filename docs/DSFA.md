@@ -310,7 +310,10 @@ Empfänger und Ort“.
   Mindestzahl, die Summen „hilfreich“/„nicht hilfreich“. Einzelstimmen und Kennungen sehen nur
   Admins in der Datenbank, nicht über die Oberfläche.
 - **Frist:** solange der Beitrag besteht, oder bis zur Rücknahme bzw. Kontolöschung (`LK:160`,
-  `DSE:670-673`).
+  `DSE:670-673`). Trifft ein geänderter Titel nach der NLI-Stufe eine andere Behauptung, werden
+  die Stimmen zum Beitrag gelöscht (#427, `ss/services/content/beitrag_aendern_service.py`);
+  eine Stimme gilt damit nie für eine Aussage, der die Person nicht zugestimmt hat. Ohne
+  Entscheidung der Stufe (nicht `an`, kein Modell, keine Antwort) bleiben sie.
 - **Risiko:** Eine Stimme zu einem politischen Text ist eine Meinungsäußerung. Bei kleinen Zählern
   oder aus einer Änderung der Güte ließe sich eine einzelne Stimme erraten, besonders wer die
   Seite vor und nach einer Stimme vergleicht (R8).

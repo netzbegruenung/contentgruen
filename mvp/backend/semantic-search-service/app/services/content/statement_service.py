@@ -23,7 +23,7 @@ from services.content.base_content_service import (
 )
 from services.dieselbe_behauptung.nli_modell import NliModell, NliPruefer, nli_modell
 from services.dieselbe_behauptung.schatten import Schattenprotokoll
-from services.dieselbe_behauptung import regel, stufe
+from services.dieselbe_behauptung import fassung, regel, stufe
 from repositories.interfaces.statement_repository import (
     IStatementRepository,
 )
@@ -383,6 +383,48 @@ class StatementService(
         # Referenz halten: asyncio haelt Tasks nur schwach.
         self._schatten_tasks.add(task)
         task.add_done_callback(self._schatten_tasks.discard)
+
+    async def gleiche_behauptung(self, alt: str, neu: str) -> Optional[bool]:
+        """
+        Ob eine geaenderte Fassung dieselbe Behauptung trifft wie die alte (#427,
+        fassung.gleiche_behauptung, dieselbe Entscheidung wie fuer Aussagen). Nur mit
+        dieselbe_aussage_nli = an und verfuegbarem Modell; sonst None, ebenso wenn das
+        Modell nicht rechtzeitig urteilt oder etwas scheitert: Dann entscheidet
+        niemand, und die Stimmen bleiben (Regel vor #427).
+        """
+        if self._nli is None or self.settings.dieselbe_aussage_nli != "an":
+            return None
+        try:
+            return await fassung.gleiche_behauptung(
+                alt,
+                neu,
+                self._nli,
+                self._bestaetiger,
+                self.settings,
+                self._aehnlichkeit,
+                warte_hoechstens=(
+                    None if self._nli_warten else DIESELBE_WARTET_HOECHSTENS
+                ),
+            )
+        except Exception as e:
+            logger.warning(
+                "Pruefung der geaenderten Fassung gescheitert (%s)", type(e).__name__
+            )
+            return None
+
+    async def _aehnlichkeit(self, alt: str, neu: str) -> float:
+        """query/query-Aehnlichkeit wie bei den Kandidaten der Pruefung auf dieselbe
+        Aussage; die Vektoren sind normiert, das Skalarprodukt ist der Kosinus."""
+        from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
+
+        einbettung = get_embeddings_manager()
+
+        def rechnen() -> float:
+            a = einbettung.encode_text(alt, content_type="statement")
+            b = einbettung.encode_text(neu, content_type="statement")
+            return float(sum(x * y for x, y in zip(a, b)))
+
+        return await asyncio.to_thread(rechnen)
 
     async def ohne_widerspruch(
         self,
