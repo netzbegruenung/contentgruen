@@ -116,8 +116,8 @@
             <app-kartenliste [daten]="postKarten"></app-kartenliste>
         </div>
 
-        <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab; ein Post antwortet auf
-             keine Aussage, im Post-Tab bleibt es beim Kommentar (Fachfrage im PR) -->
+        <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab; im Post-Tab bleibt es beim
+             Kommentar (Fachfrage im PR). Einen Post mit Aussage gibt es seit #619, ohne Einstieg von hier. -->
         <div *ngIf="hatTreffer" class="mobile-ergaenzen">
             <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer">
                 <ng-container *ngIf="currentSection !== 'generictext'">

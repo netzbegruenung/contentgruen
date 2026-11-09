@@ -63,13 +63,14 @@ app-formular-hilfe {
   }
 }
 
-// Am Desktop steht die Vorschau neben dem Feld; dort reicht der Hinweis am Feld.
+// Steht die Vorschau neben dem Feld, reicht der Hinweis am Feld. Darunter rutscht sie
+// ab 1024 px (contribution-form, preview-column); dann auch hier, wo man "Bild laden" tippt.
 .bild-ladefehler.vorschau-ladefehler {
   display: none;
   margin: 0 0 8px;
   font-size: 14px;
 
-  @include bp.mobile-only {
+  @media (max-width: 1024px) {
     display: flex;
   }
 }

@@ -11,7 +11,7 @@
                     <input matInput id="image_url" formControlName="image_url" type="url" required
                            placeholder="https://example.com/bild.jpg" />
                     <mat-error *ngIf="imageForm.get('image_url')?.hasError('required')">Der Link zum Bild fehlt.</mat-error>
-                    <mat-error *ngIf="imageForm.get('image_url')?.hasError('pattern')">Bitte einen Link mit https://… eintragen.</mat-error>
+                    <mat-error *ngIf="imageForm.get('image_url')?.hasError('pattern')">Bitte einen Link mit http:// oder https:// eintragen.</mat-error>
                     <mat-hint *ngIf="bildLadefehler" class="bild-ladefehler" role="alert">
                         <mat-icon aria-hidden="true">broken_image</mat-icon>
                         Das Bild lässt sich nicht laden – prüf den Link.
