@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     # Only needed for the type annotation on the lazily-built Post service; imported
     # under TYPE_CHECKING to avoid pulling the registry/service graph at module load.
     from services.content.base_content_service import BaseContentService
+    from services.abzeichen_service import AbzeichenService
 from core.config import settings, Settings
 from utils.rate_limiter import RateLimiter
 from services.orchestration.content_orchestrator import ContentOrchestrator
@@ -235,6 +236,19 @@ def get_punkte_service(
         get_usage_repository(),
         get_punkte_repository(),
         settings,
+    )
+
+
+def abzeichen_service_bauen(settings: Settings) -> "AbzeichenService":
+    """Fuer main.py: der Dienst der sichtbaren Abzeichen, mit den Meilensteinen (#351)."""
+    from repositories.abzeichen_sichtbarkeit_repository import (
+        get_abzeichen_sichtbarkeit_repository,
+    )
+    from services.abzeichen_service import AbzeichenService
+
+    meilensteine = get_meilensteine_service(settings)
+    return AbzeichenService(
+        get_abzeichen_sichtbarkeit_repository(), meilensteine.meilensteine, settings
     )
 
 

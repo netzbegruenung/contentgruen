@@ -57,6 +57,7 @@ from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
 from dependencies import (
+    abzeichen_service_bauen,
     get_feedback_service,
     get_loeschfristen_service,
     get_muster_hinweise_service,
@@ -66,6 +67,7 @@ from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_t
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
 from repositories.usage_tracking_repository import get_usage_repository
 from services.entdoppelung import pruefwerte_verwerfen_im_takt
+from services.abzeichen_service import abzeichen_im_takt, abzeichen_service_setzen
 from services.muster_hinweise_service import (
     loeschen_im_takt as muster_hinweise_loeschen_im_takt,
 )
@@ -202,6 +204,18 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✅ Check value and pattern note cleanup tasks started")
 
+        # Meilenstein-Abzeichen am Anzeigenamen (#351): der Dienst immer, damit ein
+        # Widerruf der Art.-9-Einwilligung ein frueheres Ja auch bei ausgeschalteten
+        # Abzeichen zuruecknimmt; Frage und Rechnen im Takt nur mit beiden Schaltern
+        # (services/abzeichen_service.py).
+        abzeichen = abzeichen_service_bauen(settings)
+        abzeichen_service_setzen(abzeichen)
+        if settings.abzeichen_sichtbar:
+            app.state.abzeichen_rechnen = asyncio.create_task(
+                abzeichen_im_takt(abzeichen)
+            )
+            logger.info("✅ Milestone badge task started")
+
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
         )
@@ -222,6 +236,7 @@ async def lifespan(app: FastAPI):
                 "loeschfristen",
                 "pruefwerte_verwerfen",
                 "muster_hinweise_loeschen",
+                "abzeichen_rechnen",
             ):
                 task = getattr(app.state, name, None)
                 if task is not None:

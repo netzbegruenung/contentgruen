@@ -65,6 +65,9 @@ class BeitragResponse(BaseModel):
     autor_name: Optional[str] = None
     # Ob die aufrufende Person den Beitrag gespeichert hat; nur angemeldet, sonst None.
     ist_eigener_beitrag: Optional[bool] = None
+    # Zahl der erreichten Meilensteine der Autorin (#351); nur angemeldet, nur wenn
+    # sie der Sichtbarkeit zugestimmt hat und beide Schalter an sind, sonst None.
+    autor_abzeichen: Optional[int] = None
     # Die Kennung des Autors, nur fuer Admins (Moderation), sonst None.
     original_author: Optional[str] = None
     # Die Guete fuer das Siegel (#427, services/guete_service.py): 1-10, None = "neu".

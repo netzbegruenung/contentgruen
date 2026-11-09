@@ -277,6 +277,30 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-meta')).toBeTruthy();
     });
 
+    it('zeigt das Meilenstein-Abzeichen am Namen, wenn der Server es liefert (#351)', () => {
+      const daten = ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim G.', autor_abzeichen: 3 }));
+      zeigen(daten);
+
+      const abzeichen = element('.autor-abzeichen');
+      expect(abzeichen.textContent).toContain('3');
+      expect(abzeichen.getAttribute('title')).toBe('3 Meilensteine erreicht');
+      expect(element('.karte-meta').textContent).toContain('Von: Kim G.');
+    });
+
+    it('zeigt ohne Abzeichen vom Server keins (#351)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim G.' })));
+
+      expect(fixture.nativeElement.querySelector('.autor-abzeichen')).toBeNull();
+    });
+
+    it('zeigt ohne Anmeldung kein Abzeichen, auch wenn eins mitkaeme (#351)', () => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      zeigen(ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim G.', autor_abzeichen: 3 })));
+
+      expect(fixture.nativeElement.querySelector('.autor-abzeichen')).toBeNull();
+    });
+
     it('zeigt ohne Herkunft keine Zeile und sonst die Adressen (#599)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result')));
       expect(element('.karte-quellen')).toBeNull();

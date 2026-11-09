@@ -58,3 +58,52 @@
 .meilenstein-stand {
   font-variant-numeric: tabular-nums;
 }
+
+.sichtbarkeit-frage {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.sichtbarkeit-frage p {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.sichtbarkeit-mehr {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.sichtbarkeit-mehr summary {
+  cursor: pointer;
+  color: var(--primary-dark);
+}
+
+.sichtbarkeit-mehr p {
+  margin: 4px 0 0;
+}
+
+.sichtbarkeit-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sichtbarkeit-stand {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.sichtbarkeit-aendern {
+  margin-left: 4px;
+}
+
+.sichtbarkeit-fehler {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--error-strong);
+}

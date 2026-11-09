@@ -3,11 +3,9 @@ Die Meilensteine einer Person (GLOSSARY.md "Meilenstein", ADR 0004, #351).
 
 Wie die Punkte (services/punkte_service.py) werden sie bei jedem Abruf aus dem Bestand
 berechnet und nicht gespeichert; gesperrte und endgueltig entfernte Beitraege fallen
-damit von selbst heraus. Gezeigt werden sie nur der Person selbst, in "Meine Beitraege".
-Ein Abzeichen am Anzeigenamen, das andere sehen, braucht eine eigene Zustimmung zur
-Sichtbarkeit (docs/VISION.md "Meilensteine", ADR 0004 "Ranglisten nur mit Zustimmung",
-docs/DSFA.md Abschnitt 3 Risiko 1); die gibt es noch nicht, deshalb hier auch kein
-Abzeichen fuer andere.
+damit von selbst heraus. Die Person sieht sie in "Meine Beitraege". Das Abzeichen am
+Anzeigenamen fuer andere Angemeldete braucht die Zustimmung zur Sichtbarkeit und steht
+in services/abzeichen_service.py (ADR 0004, docs/DSFA.md 8.2 V22).
 
 Woher die Zahlen kommen:
 - Nutzung: die entdoppelte Nutzung der sichtbaren Beitraege, wie bei den Punkten;

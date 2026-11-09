@@ -54,4 +54,5 @@ DELETE FROM gesehene_nutzung WHERE user_id            = :'uid';
 -- ganz, ohne die Person ist er keiner mehr.
 DELETE FROM muster_hinweise WHERE konto_a = :'uid' OR konto_b = :'uid';
 DELETE FROM art9_einwilligungen WHERE user_id         = :'uid';
+DELETE FROM abzeichen_sichtbarkeit WHERE user_id      = :'uid';
 COMMIT;

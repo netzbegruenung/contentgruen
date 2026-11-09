@@ -29,6 +29,11 @@ export interface BaseContentResult {
     original_author?: string | null;
     /** Anzeigename des Autors ("Anna B."); nur fuer Angemeldete, sonst null. */
     autor_name?: string | null;
+    /**
+     * Zahl der erreichten Meilensteine der Autorin (#351); nur fuer Angemeldete und nur,
+     * wenn sie der Sichtbarkeit zugestimmt hat, sonst null.
+     */
+    autor_abzeichen?: number | null;
     /** Ob die angemeldete Person den Beitrag gespeichert hat; ohne Anmeldung null. */
     ist_eigener_beitrag?: boolean | null;
     status: ContentStatus;

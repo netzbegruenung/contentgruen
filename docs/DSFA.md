@@ -31,11 +31,14 @@ Muster-Hinweis; Ausbaustufe steht in
   (`ss/services/punkte_service.py:1-7` (#476), `ss/api/v1/usage.py:389-415` (#476));
   Muster-Hinweise für Admins, wenn zwei Konten sich innerhalb von 7 Tagen gegenseitig nutzen
   (`ss/services/muster_hinweise_service.py:1-24` (#476)).
-- **Gebaut (#351), hinter demselben Schalter:** Meilensteine, die nur die Person selbst in
+- **Gebaut (#351), hinter demselben Schalter:** Meilensteine, die die Person selbst in
   „Meine Beiträge“ sieht, bei jedem Abruf aus denselben Zählern berechnet und nicht gespeichert,
   ohne Startkonten und nur mit Art.-9-Einwilligung (`ss/services/meilensteine_service.py`).
+  Dazu, hinter einem zweiten Schalter (`abzeichen_sichtbar_aktiv`, Standard aus), das
+  Abzeichen am Anzeigenamen für andere Angemeldete mit eigener Zustimmung; geprüft in
+  Abschnitt 8.2, V22.
 - **Geplant, nicht gebaut:** Ranglisten (die ersten 10 und der eigene Platz, nur für Angemeldete,
-  nur mit Zustimmung), Quests, Meilenstein-Abzeichen am Anzeigenamen, Krone, Wochenthema
+  nur mit Zustimmung), Quests, Krone, Wochenthema
   (`docs/VISION.md:99-103`).
 - **Fristen** (`docs/LOESCHKONZEPT.md:161-163` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
   Muster-Hinweis 56 Tage und mit dem Konto gelöscht
@@ -86,7 +89,8 @@ nicht konsultiert werden (Art. 36).
    Tag ablöst, bevor er in einem Release war. Für die Muster-Hinweise
    reicht Art. 6 Abs. 1 lit. f allein nicht, weil sie Art. 9-Daten betreffen.
 2. **Beim ersten Punkt** fragt die App nach dem Opt-in aus Risiko 1, das ist eine eigene
-   Einwilligung für die Sichtbarkeit.
+   Einwilligung für die Sichtbarkeit. Für Meilenstein-Abzeichen gebaut (#351): gefragt ab dem
+   ersten erreichten Meilenstein, `GLOSSARY.md` „Zustimmung zur Sichtbarkeit“, V22.
 
 **Warum nicht lit. d** (politisch ausgerichtete Organisation): Die Norm deckt nur Mitglieder und
 Personen mit regelmäßigem Kontakt und keine Offenlegung „nach außen“. Beta-Zugänge und
@@ -136,12 +140,17 @@ Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
    Wie wird die Lücke vor der Einwilligung geschlossen (Abschnitt 4), trägt Art. 6 Abs. 1 lit. c
    Meldungen angemeldeter Personen ohne Einwilligung (V12), und gibt es eine Altersgrenze für
    Konten (WP 248 Kriterium 7)?
+6. Trägt die gesonderte Einwilligung das Meilenstein-Abzeichen am Anzeigenamen, und genügt die
+   Zahl der erreichten Meilensteine als einzige Angabe (8.2, V22, #351)?
 
 ## 7. Vor dem Einschalten der Punkte
 
 Offen:
 
 - DSFA übernommen (Abschnitt 6).
+- Für die Abzeichen am Anzeigenamen zusätzlich (zweiter Schalter `abzeichen_sichtbar_aktiv`):
+  Frage 6 beantwortet, Wortlaut der Frage nach der Sichtbarkeit und Absatz der
+  Datenschutzerklärung freigegeben (8.2, V22).
 
 Erledigt:
 
@@ -535,9 +544,42 @@ oder Kennung nur gekürzt im Arbeitsspeicher, höchstens etwa 16 Minuten, mit Sc
   Aufruf entfernt (`DSE:951-958`). Ob § 25 Abs. 2 TDDDG die Ausnahme für alle Einträge trägt, ist
   nicht geprüft (**offen**, Frage an die Datenschutzbeauftragte).
 
+#### V22 Meilenstein-Abzeichen am Anzeigenamen (gebaut, ausgeschaltet; #351)
+
+Wiederholte Prüfung von Risiko 1 (Abschnitt 3) für diesen einen Teil, vor dem Bau verlangt
+unten unter „Geplant, nicht gebaut“.
+
+- **Zweck:** Anerkennung durch andere sichtbar machen (`docs/VISION.md` „Meilensteine“).
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a, eine eigene Einwilligung
+  neben der Art.-9-Einwilligung (`ss/domain/abzeichen_sichtbarkeit.py`, Wortlaut `2026-11-09-b`: kurze Frage, die
+  Hinweise auf Nicht-Mitglieder, Screenshots und die Datenschutzerklärung aufklappbar unter
+  „Mehr dazu“ direkt darunter).
+  Ohne Art.-9-Einwilligung keine Meilensteine und damit kein Abzeichen.
+- **Daten:** je Antwort eine Zeile mit Kennung, Ja/Nein, Wortlaut und Zeitpunkt
+  (`abzeichen_sichtbarkeit`, Nachweis nach Art. 7 Abs. 1); die Zahl der erreichten
+  Meilensteine nur im Arbeitsspeicher, alle 15 Minuten neu berechnet
+  (`ss/services/abzeichen_service.py`).
+- **Empfänger:** andere Angemeldete, an Beiträgen der Person neben dem Anzeigenamen
+  (`ss/services/beitrag_fuer_aufrufer.py`); Besucher nie.
+- **Frist:** Antworten solange das Konto besteht, mit ihm gelöscht (`LK` Schritt 2,
+  `mvp/scripts/manual/person_loeschen.sql`); die Zahl hat keine Speicherung.
+- **Risiko:** Das Abzeichen zeigt, dass und wie viel jemand mitmacht; unter den Angemeldeten
+  sind Nicht-Mitglieder, Screenshots können nach außen gehen. Mehr als der Anzeigename am
+  Beitrag verrät es nur in der Menge: Schon der Name am Beitrag zeigt die Mitwirkung (R1).
+- **Maßnahmen:** gesonderte Einwilligung, einmal gefragt ab dem ersten erreichten Meilenstein,
+  zwei gleichwertige Knöpfe, nichts vorbelegt; Nein und Widerruf der Art.-9-Einwilligung
+  nehmen das Abzeichen sofort weg; gezeigt wird nur eine Zahl, keine Einzelheiten; nur für
+  Angemeldete; zwei Schalter, Standard aus (`abzeichen_sichtbar_aktiv` und `punkte_aktiv`).
+- **Widerruf:** Ein Widerruf der Art.-9-Einwilligung nimmt das Abzeichen sofort weg und hält
+  ein früheres Ja als Nein fest; nach einer neuen Art.-9-Einwilligung erscheint es erst nach
+  einem neuen Ja.
+- **Rest:** gering, wie Risiko 1. **Offen:** Frage 6 an die Datenschutzbeauftragte
+  (Abschnitt 6). Die Datenschutzerklärung beschreibt das Abzeichen im Abschnitt „Punkte“
+  (Absatz „Abzeichen an deinem Namen“, Fachfrage in PR #634).
+
 #### Geplant, nicht gebaut
 
-Ranglisten, Quests, Level, Meilenstein-Abzeichen am Anzeigenamen, Krone und Wochenthema (`docs/VISION.md:99-103`,
+Ranglisten, Quests, Level, Krone und Wochenthema (`docs/VISION.md:99-103`,
 #351, #564). Sie machen sichtbar, wer wie aktiv ist, und brauchen ein eigenes Opt-in
 (`docs/VISION.md:101`, Abschnitt 3 Risiko 1). Abschnitt 1 bis 7 prüft sie als Plan; vor dem Bau ist
 die Prüfung zu wiederholen; `docs/VISION.md:134` legt die DSFA vor die Ranglisten, Abschnitt 2
