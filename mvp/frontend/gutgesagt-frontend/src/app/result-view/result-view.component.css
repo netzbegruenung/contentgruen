@@ -554,7 +554,7 @@ mat-sidenav-content {
 }
 
 
-/* Ruhiger Hinweis unter den Treffern (#602): kleine graue Zeile mit Info-Symbol,
+/* Rat unter den Treffern, ruhig (#602): kleine graue Zeile mit Info-Symbol,
    ohne Kasten und Balken, damit er nicht mit den Treffern konkurriert */
 .keine-antwort-noetig {
   display: flex;

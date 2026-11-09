@@ -204,7 +204,7 @@
         </section>
 
         <!-- Treffer als Raster untereinander wie mobil; Karussell nur bei "Neueste Inhalte" (#602) -->
-        <section class="content-section treffer-raster" *ngIf="searchResponse.commentary_search_results_count > 0">
+        <section class="content-section" *ngIf="searchResponse.commentary_search_results_count > 0">
             <app-kartenliste [daten]="kommentarKarten" [raster]="true"></app-kartenliste>
         </section>
 
@@ -219,7 +219,7 @@
             </app-generictext-search-results>
         </section>
 
-        <section class="content-section treffer-raster" *ngIf="searchResponse.generictext_search_results_count > 0">
+        <section class="content-section" *ngIf="searchResponse.generictext_search_results_count > 0">
             <app-kartenliste [daten]="hintergrundKarten" [raster]="true"></app-kartenliste>
         </section>
 
@@ -230,7 +230,7 @@
                 <p class="typ-erklaerung">{{ postErklaerung }}</p>
                 <p class="post-anzahl">{{ searchResponse.post_search_results_count }} {{ searchResponse.post_search_results_count === 1 ? 'passender Post' : 'passende Posts' }} gefunden.</p>
             </section>
-            <section class="content-section treffer-raster">
+            <section class="content-section">
                 <app-kartenliste [daten]="postKarten" [raster]="true"></app-kartenliste>
             </section>
         </ng-container>

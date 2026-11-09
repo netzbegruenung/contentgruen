@@ -10,7 +10,8 @@ import { KartenDaten, KartenVariante } from './karten-daten';
  * volle Karten ab 600 px nebeneinander in Spalten zu 450 px, so viele die Breite
  * hergibt (Treffer der Suche am Desktop, #602). Kompakt als Album
  * (Meine Beitraege): Raster direkt auf dem Seitengrund, 2 Spalten, 3 ab 600 px,
- * 4 ab 960 px. Jede Karte ist so hoch, wie ihr Inhalt es verlangt.
+ * 4 ab 960 px. Untereinander ist jede Karte so hoch, wie ihr Inhalt es verlangt;
+ * in Spalten oder im Album sind die Karten einer Reihe gleich hoch.
  */
 @Component({
   selector: 'app-kartenliste',
@@ -53,9 +54,7 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         .kartenliste--raster {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
-      }
 
-      @media (min-width: 600px) {
         .kartenliste--spalten {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(0, 450px));
