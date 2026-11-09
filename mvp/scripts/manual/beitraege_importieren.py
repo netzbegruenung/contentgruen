@@ -25,9 +25,11 @@ Anmeldung, zwei Wege:
   "Cookies" der Frontend-Adresse steht es nicht. Verlaesslich so: In Gut gesagt
   mit dem Konto anmelden, das schreiben soll, Entwicklertools oeffnen (F12),
   Reiter "Netzwerkanalyse" (Firefox) bzw. "Netzwerk" (Chrome), die Seite neu
-  laden, eine Anfrage an den BFF-Host waehlen und unter den Anfrage-Kopfzeilen
-  die ganze Zeile ``Cookie`` kopieren (``name=wert; …``; nur der Wert von
-  ``GutGesagtAuthCookie`` geht auch). Sie in eine Datei schreiben, die nur man
+  laden, eine GET-Anfrage (nicht OPTIONS) an den BFF-Host waehlen und unter
+  "Anfrage-Kopfzeilen" (Firefox) bzw. "Anfrage-Header" (Chrome) per Rechtsklick
+  auf ``Cookie`` den Wert kopieren (``name=wert; …``; nur der Wert von
+  ``GutGesagtAuthCookie`` geht auch). Beim Markieren mit der Maus kopiert Chrome
+  Name und Wert oft auf zwei Zeilen; dann fehlt der Wert. Sie in eine Datei schreiben, die nur man
   selbst lesen kann, und ``--sitzung-datei <datei>`` angeben (oder sie in die
   Umgebungsvariable ``GUTGESAGT_SITZUNG`` legen). Nie als Argument auf der
   Kommandozeile: Das stuende in der Shell-Historie. ``--adresse`` ist ebenfalls

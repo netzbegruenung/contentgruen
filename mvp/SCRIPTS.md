@@ -250,9 +250,10 @@ das Skript nimmt deshalb die Sitzung des Browsers:
 
 1. In Gut gesagt mit dem Konto anmelden, das schreiben soll (beim Entfernen ein Admin).
 2. Entwicklertools öffnen (F12), Reiter „Netzwerkanalyse“ (Firefox) bzw. „Netzwerk“ (Chrome),
-   Seite neu laden, eine Anfrage an den BFF-Host wählen (Produktion
-   `bff.gutgesagt.netzbegruenung.de`) und unter den Anfrage-Kopfzeilen die ganze Zeile
-   `Cookie` kopieren. Das Cookie `GutGesagtAuthCookie` gehört zum BFF-Host: unter „Cookies“
+   Seite neu laden, eine GET-Anfrage (nicht OPTIONS) an den BFF-Host wählen (Produktion
+   `bff.gutgesagt.netzbegruenung.de`) und unter „Anfrage-Kopfzeilen“ (Firefox) bzw.
+   „Anfrage-Header“ (Chrome) per Rechtsklick auf `Cookie` den Wert kopieren. Mit der Maus
+   markiert, kopiert Chrome Name und Wert oft auf zwei Zeilen; dann fehlt der Wert. Das Cookie `GutGesagtAuthCookie` gehört zum BFF-Host: unter „Cookies“
    der Frontend-Adresse im Web-Speicher steht es nicht. Nur der Wert des Cookies geht auch.
 3. Die Zeile in eine Datei schreiben, die nur man selbst lesen kann, und sie mit
    `--sitzung-datei <datei>` angeben (oder sie in `GUTGESAGT_SITZUNG` legen).
