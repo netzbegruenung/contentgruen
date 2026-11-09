@@ -38,6 +38,15 @@ export interface BaseContentResult {
     usage_count?: number;
     /** Wie viele Beitraege auf diesem beruhen (#356); nur Kommentar und Hintergrundinfo. */
     varianten?: number;
+    /** Guete fuer das Siegel (#427): 1-10, null = "neu". */
+    guete?: number | null;
+    /** Die Kriterien des Gegenlesens, die der Beitrag erfuellt (nur die erfuellten). */
+    guete_erfuellt?: string[];
+    /** Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl). */
+    guete_stimmen_zaehlen?: boolean;
+    /** Zaehler an den Stimm-Knoepfen (Summen ohne Startkonten); null = unbekannt. */
+    stimmen_hilfreich?: number | null;
+    stimmen_nicht_hilfreich?: number | null;
 }
 
 /**

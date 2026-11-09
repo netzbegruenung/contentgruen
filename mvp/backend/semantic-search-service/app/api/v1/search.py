@@ -34,6 +34,7 @@ from dependencies import (
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
 from services.beitrag_fuer_aufrufer import Aufrufer
+from services.guete_service import guete_ergaenzen
 from services.voting_service import VotingService
 from services.aussage_themen_service import AussageThemenService
 from services.search_tracking_service import (
@@ -283,6 +284,8 @@ async def search_by_text(
         orchestrator.enrich_with_usage()
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)
+        # Vor fuer_aufrufer: Die Guete laesst die Stimme des Autors aus (#427).
+        await guete_ergaenzen(orchestrator.inhalte())
         orchestrator.fuer_aufrufer(aufrufer)
         orchestrator.varianten_ergaenzen(varianten)
         try:

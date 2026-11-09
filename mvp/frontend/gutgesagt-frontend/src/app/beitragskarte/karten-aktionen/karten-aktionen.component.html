@@ -10,21 +10,24 @@
                 [attr.aria-pressed]="isLiked"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
-                aria-label="Gefällt mir"
-                matTooltip="Gefällt mir" matTooltipPosition="above"
+                [attr.aria-label]="beschriftung('Hilfreich', zahlHilfreich)"
+                matTooltip="Hilfreich" matTooltipPosition="above"
                 (click)="toggleLike()">
             <svg class="stimm-hand" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path [attr.d]="HAND_UMRISS" fill="currentColor"/></svg>
         </button>
+        <!-- Zaehler (#427): Summe ohne Startkonten; vorgelesen steht er im Namen des Knopfs -->
+        <span class="stimm-zahl" *ngIf="zahlHilfreich !== null" aria-hidden="true">{{ zahlHilfreich }}</span>
         <button mat-icon-button type="button" class="stimme-knopf"
                 [class.active-button]="isDisliked"
                 [attr.aria-pressed]="isDisliked"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
-                aria-label="Gefällt mir nicht"
-                matTooltip="Gefällt mir nicht" matTooltipPosition="above"
+                [attr.aria-label]="beschriftung('Nicht hilfreich', zahlNichtHilfreich)"
+                matTooltip="Nicht hilfreich" matTooltipPosition="above"
                 (click)="toggleDislike()">
             <svg class="stimm-hand runter" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path [attr.d]="HAND_UMRISS" fill="currentColor"/></svg>
         </button>
+        <span class="stimm-zahl" *ngIf="zahlNichtHilfreich !== null" aria-hidden="true">{{ zahlNichtHilfreich }}</span>
     </div>
 
     <!-- Kopieren und die Wahl daneben teilen sich die mittlere Spalte -->

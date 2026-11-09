@@ -277,6 +277,34 @@ def get_gegenlesen_service() -> GegenlesenService:
     return _gegenlesen_service
 
 
+_guete_service = None
+
+
+def get_guete_service():
+    """
+    Einmal je Prozess (#427): haelt das Gegenlesen je Titel und Text im Speicher vor
+    und teilt sich Sprachmodell und Stimmen-Tabelle mit Gegenlesen und Abstimmen.
+    """
+    global _guete_service
+    if _guete_service is None:
+        from domain.guete import Guetegewichte
+        from repositories.vote_repository import VoteRepository
+        from services.guete_service import GueteService
+
+        einstellungen = get_settings()
+        _guete_service = GueteService(
+            get_gegenlesen_service(),
+            VoteRepository(),
+            einstellungen.startkonto_kennungen(),
+            Guetegewichte(
+                stimmen_ab=einstellungen.guete_stimmen_ab,
+                stimmen_gewicht_max=einstellungen.guete_stimmen_gewicht_max,
+                stimmen_halbwert=einstellungen.guete_stimmen_halbwert,
+            ),
+        )
+    return _guete_service
+
+
 def get_spracherkennung() -> Spracherkennung:
     """Eine Instanz je Prozess; der Start lädt Lingua vor (main.py)."""
     return SPRACHERKENNUNG

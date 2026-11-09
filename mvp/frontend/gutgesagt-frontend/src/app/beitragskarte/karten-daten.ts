@@ -46,6 +46,38 @@ export interface KartenStatement {
   antwortqualitaet: number;
 }
 
+/** Was das Siegel einer Karte zeigt und erklaert (#427, GLOSSARY.md "Siegel", "Guete"). */
+export interface KartenGuete {
+  /** 1-10; null = "neu", ohne Daten. */
+  wert: number | null;
+  /** Die erfuellten Kriterien des Gegenlesens (Arten wie in gegenlesen.service.ts). */
+  erfuellt: string[];
+  /** Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl). */
+  stimmenZaehlen: boolean;
+  /** Zaehler an den Stimm-Knoepfen; null = unbekannt, dann ohne Zahl. */
+  hilfreich: number | null;
+  nichtHilfreich: number | null;
+}
+
+/** Siegel und Zaehler aus einem Beitrag der Antwort; ohne Feld `guete` (alte Antwort) undefined. */
+type GueteFelder = Pick<
+  BaseContentResult,
+  'guete' | 'guete_erfuellt' | 'guete_stimmen_zaehlen' | 'stimmen_hilfreich' | 'stimmen_nicht_hilfreich'
+>;
+
+export function gueteAus(inhalt: GueteFelder): KartenGuete | undefined {
+  if (inhalt.guete === undefined) {
+    return undefined;
+  }
+  return {
+    wert: inhalt.guete ?? null,
+    erfuellt: inhalt.guete_erfuellt ?? [],
+    stimmenZaehlen: inhalt.guete_stimmen_zaehlen ?? false,
+    hilfreich: inhalt.stimmen_hilfreich ?? null,
+    nichtHilfreich: inhalt.stimmen_nicht_hilfreich ?? null,
+  };
+}
+
 /** Felder, die nur ein Typ hat. */
 export interface KartenExtra {
   kurz?: string;
@@ -129,6 +161,8 @@ export interface KartenDaten {
   bildUrl?: string;
   statement?: KartenStatement;
   stimme?: 'like' | 'dislike';
+  /** Siegel und Stimm-Zaehler (#427); fehlt = unbekannt, dann kein Siegel. */
+  guete?: KartenGuete;
   extra?: KartenExtra;
   einwurfAngaben?: EinwurfAngaben;
 }
@@ -161,6 +195,7 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
     bildUrl: inhalt['image_url'] || undefined,
     statement: statement(paket),
     stimme: paket.user_vote === 'like' || paket.user_vote === 'dislike' ? paket.user_vote : undefined,
+    guete: gueteAus(inhalt),
     extra: extra(typ, inhalt),
   };
 }
@@ -276,6 +311,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     nutzungJeFassung: typ === 'commentary' ? (eintrag.nutzung_je_fassung ?? undefined) : undefined,
     quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
+    guete: gueteAus(eintrag),
     // Nur die Fassungen des Kommentars (#355); Post-Angaben zeigt Meine Beitraege nicht.
     extra: typ === 'commentary' ? extra(typ, eintrag as Record<string, any>) : undefined,
   };

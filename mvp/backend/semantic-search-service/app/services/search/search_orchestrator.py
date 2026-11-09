@@ -349,6 +349,15 @@ class SearchOrchestrator:
         for result in treffer:
             result.themen = themen_dtos(themen.get(result.statement_id, ()))
 
+    def inhalte(self) -> List:
+        """Die Beitraege aller Treffer, als Response-DTOs."""
+        return [
+            getattr(result, spec.result_field)
+            for spec in self._specs.values()
+            for result in self._results[spec.content_type]
+            if getattr(result, spec.result_field)
+        ]
+
     def fuer_aufrufer(self, aufrufer: Aufrufer) -> None:
         """
         Anzeigename, ``ist_eigener_beitrag`` und die Kennung nur fuer Admins, aus

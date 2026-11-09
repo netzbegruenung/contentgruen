@@ -287,8 +287,12 @@ Empfänger und Ort“.
   `DSE:670-673`).
 - **Risiko:** Eine Stimme zu einem politischen Text ist eine Meinungsäußerung. Bei kleinen Zählern
   ließe sich eine einzelne Stimme erraten.
-- **Maßnahmen:** andere sehen nur Summen (`DSE:663`). Eine Mindestzahl, ab der Stimmen in die Güte
-  eingehen, ist vorgeschlagen, aber nicht gebaut (#427, Kommentar in #374, M5) – **offen**.
+- **Maßnahmen:** andere sehen nur Summen (`DSE:663`), an den Stimm-Knöpfen als Zähler ohne
+  Startkonten (#427). Stimmen gehen erst ab einer Mindestzahl verschiedener Stimmender in die Güte
+  ein, Standard 3 (`SEMANTIC_SEARCH_GUETE_STIMMEN_AB`, `ss/domain/guete.py`; #427, M5); die Güte
+  wird bei jedem Abruf berechnet und nicht gespeichert. **Offen:** Die Zähler selbst zeigen auch
+  kleine Summen; ob sie erst ab einer Mindestzahl erscheinen, ist nicht entschieden (Fachfrage in
+  #427).
 
 #### V6 Suchanfragen als Aussage
 

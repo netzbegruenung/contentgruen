@@ -67,6 +67,16 @@ class BeitragResponse(BaseModel):
     ist_eigener_beitrag: Optional[bool] = None
     # Die Kennung des Autors, nur fuer Admins (Moderation), sonst None.
     original_author: Optional[str] = None
+    # Die Guete fuer das Siegel (#427, services/guete_service.py): 1-10, None = "neu".
+    guete: Optional[int] = None
+    # Die Kriterien des Gegenlesens, die der Beitrag erfuellt (Arten wie dort); nur
+    # die erfuellten, die Anmerkungen selbst sieht nur die schreibende Person (#358).
+    guete_erfuellt: List[str] = []
+    # Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl, DSFA M5).
+    guete_stimmen_zaehlen: bool = False
+    # Die Zaehler an den Stimm-Knoepfen: Summen ohne Startkonten; None = unbekannt.
+    stimmen_hilfreich: Optional[int] = None
+    stimmen_nicht_hilfreich: Optional[int] = None
 
 
 class KommentarResponse(BeitragResponse):

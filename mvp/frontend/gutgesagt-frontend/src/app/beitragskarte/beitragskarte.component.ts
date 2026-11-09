@@ -5,6 +5,7 @@ import {
   DestroyRef,
   ElementRef,
   EventEmitter,
+  Injector,
   Input,
   NgZone,
   OnChanges,
@@ -29,8 +30,10 @@ import {
   EinwurfAktion,
   EinwurfAngaben,
   EinwurfSatz,
+  KartenGuete,
   NICHT_SICHTBAR,
   STUFEN,
+  gueteAus,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
 import { herkunftText, tragtHerkunftsangaben } from './herkunft-text';
@@ -41,6 +44,10 @@ import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { FASSUNGEN, FASSUNG_LABEL, Fassung } from '../shared/fassung';
 import { STIL_LABEL, ZWECK_LABEL } from '../shared/zweck-stil';
 import { FremdesBildComponent } from '../shared/fremdes-bild/fremdes-bild.component';
+import { SiegelComponent } from '../shared/components/siegel/siegel.component';
+import { SiegelErklaerung, siegelErklaerung } from '../shared/components/siegel/siegel-erklaerung';
+import { siegelText } from '../shared/components/siegel/siegel-zeichnung';
+import { ContentService } from '../services/content.service';
 
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
@@ -94,6 +101,7 @@ function nutzungsZeile(label: string, nutzung: number, zuwachs: number): Nutzung
     RelativeTimePipe,
     KartenAktionenComponent,
     FremdesBildComponent,
+    SiegelComponent,
     RouterLink,
   ],
   templateUrl: './beitragskarte.component.html',
@@ -132,6 +140,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Output() aktion = new EventEmitter<EinwurfAktion>();
 
   nutzung: number | null = null;
+  /** Siegel und Stimm-Zaehler (#427); nach einer Stimme neu geladen. */
+  guete: KartenGuete | undefined;
   nutzungAnimiert = false;
   istNeu = false;
   istBeliebt = false;
@@ -142,6 +152,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   textGekuerzt = false;
 
   private textElement?: HTMLElement;
+  private readonly destroyRef: DestroyRef;
   private beobachter?: ResizeObserver;
 
   constructor(
@@ -149,7 +160,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     private zone: NgZone,
     private authService: AuthService,
     destroyRef: DestroyRef,
+    private injector: Injector,
   ) {
+    this.destroyRef = destroyRef;
     // Die Karte steht oft schon, bevor /api/user-info beantwortet ist. Ohne dieses
     // Abonnement blieben die Getter bei dem, was beim ersten Zeichnen galt: kein
     // "Von: Du" am eigenen Beitrag, kein Verwerfen am eigenen Einwurf - und die
@@ -213,6 +226,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['daten'] && this.daten) {
       this.nutzung = this.daten.nutzung;
+      this.guete = this.daten.guete;
       this.istNeu = this.stundenSeit(this.daten.erstellt) < NEU_STUNDEN;
       this.istBeliebt = (this.nutzung ?? 0) >= BELIEBT_AB;
       this.statementOffen = false;
@@ -575,6 +589,41 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       this.textGekuerzt = gekuerzt;
       this.cdr.markForCheck();
     }
+  }
+
+  /** Was Screenreader am Siegel hoeren: die Guete und dass sich eine Erklaerung oeffnet. */
+  get siegelBeschriftung(): string {
+    return `${siegelText(this.guete?.wert ?? null)}. Erklärung öffnen`;
+  }
+
+  get erklaerung(): SiegelErklaerung | null {
+    return this.guete ? siegelErklaerung(this.guete.wert, this.guete.erfuellt, this.guete.stimmenZaehlen) : null;
+  }
+
+  /**
+   * Nach einer Stimme Guete und Zaehler frisch vom Server (#427): Steigt die Guete,
+   * dreht das Siegel mit Funken hoch. Scheitert das Laden, bleibt die alte Anzeige.
+   * Den Dienst holt die Karte erst hier, Karten ohne Abstimmen brauchen ihn nicht.
+   */
+  gueteNachladen(): void {
+    if (this.guete === undefined || this.vorschau) {
+      return;
+    }
+    const id = this.daten.id;
+    this.injector
+      .get(ContentService)
+      .beitragLaden(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (beitrag) => {
+          const neu = gueteAus(beitrag);
+          if (neu && this.daten.id === id) {
+            this.guete = neu;
+            this.cdr.markForCheck();
+          }
+        },
+        error: () => undefined,
+      });
   }
 
   private stundenSeit(zeitpunkt: string): number {
