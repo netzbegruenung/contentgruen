@@ -20,14 +20,21 @@ Dateiformat und Exit-Codes: ``mvp/SCRIPTS.md``.
 Anmeldung, zwei Wege:
 
 - Test und Produktion (Anmeldung nur ueber Keycloak im Browser): die Sitzung des
-  Browsers mitgeben. In Gut gesagt mit dem Konto anmelden, das schreiben soll,
-  Entwicklertools oeffnen (F12), unter "Web-Speicher" (Firefox) bzw. "Anwendung"
-  (Chrome) bei "Cookies" die Adresse von Gut gesagt waehlen und den Wert des
-  Cookies ``GutGesagtAuthCookie`` kopieren. Ihn in eine Datei schreiben, die nur
-  man selbst lesen kann, und ``--sitzung-datei <datei>`` angeben (oder ihn in
-  die Umgebungsvariable ``GUTGESAGT_SITZUNG`` legen). Statt des Werts geht auch
-  die ganze Cookie-Zeile einer Anfrage (``name=wert; …``). Nie als Argument auf
-  der Kommandozeile: Das stuende in der Shell-Historie.
+  Browsers mitgeben. Das Cookie ``GutGesagtAuthCookie`` gehoert zum BFF-Host
+  (Produktion ``bff.gutgesagt.netzbegruenung.de``), nicht zum Frontend: unter
+  "Cookies" der Frontend-Adresse steht es nicht. Verlaesslich so: In Gut gesagt
+  mit dem Konto anmelden, das schreiben soll, Entwicklertools oeffnen (F12),
+  Reiter "Netzwerkanalyse" (Firefox) bzw. "Netzwerk" (Chrome), die Seite neu
+  laden, eine GET-Anfrage (nicht OPTIONS) an den BFF-Host waehlen und unter
+  "Anfrage-Kopfzeilen" (Firefox) bzw. "Anfrage-Header" (Chrome) per Rechtsklick
+  auf ``Cookie`` den Wert kopieren (``name=wert; …``; nur der Wert von
+  ``GutGesagtAuthCookie`` geht auch). Beim Markieren mit der Maus kopiert Chrome
+  Name und Wert oft auf zwei Zeilen; dann fehlt der Wert. Sie in eine Datei schreiben, die nur man
+  selbst lesen kann, und ``--sitzung-datei <datei>`` angeben (oder sie in die
+  Umgebungsvariable ``GUTGESAGT_SITZUNG`` legen). Nie als Argument auf der
+  Kommandozeile: Das stuende in der Shell-Historie. ``--adresse`` ist ebenfalls
+  der BFF-Host; das Frontend antwortet auf ``/api/...`` mit seiner Seite (HTML),
+  dann bricht das Skript ab.
   Das Cookie gilt wie im Browser bis zu 14 Tage nach der letzten Anfrage, auch
   nach dem Abmelden im Browser (das BFF fuehrt keine Sitzungen auf dem Server);
   die Datei deshalb danach loeschen. Das Skript gibt das Cookie nirgends aus.
@@ -692,6 +699,22 @@ class _KeineWeiterleitung(urllib.request.HTTPRedirectHandler):
         )
 
 
+def _frontend_statt_bff(adresse: str, pfad: str) -> str:
+    """Meldung, wenn --adresse HTML statt JSON liefert, meist die Frontend-Adresse."""
+    host = urlsplit(adresse).hostname or ""
+    if host.startswith("bff."):
+        return f"Antwort von {pfad} ist HTML statt JSON: stimmt --adresse (BFF)?"
+    meldung = (
+        f"Antwort von {pfad} ist HTML statt JSON: --adresse zeigt offenbar aufs "
+        "Frontend, das Skript braucht das BFF"
+    )
+    if host in ("localhost", "127.0.0.1"):
+        meldung += " (im Dev-Stack http://localhost:5054)"
+    elif host:
+        meldung += f" (vermutlich https://bff.{host})"
+    return meldung
+
+
 class BffBestand:
     """
     Der Bestand ueber das BFF, angemeldet mit der Sitzung eines Browsers oder,
@@ -723,11 +746,16 @@ class BffBestand:
         )
         try:
             with self._oeffner.open(anfrage, timeout=self.timeout) as antwort:
-                text = antwort.read().decode("utf-8")
+                art = antwort.headers.get_content_type()
+                text = antwort.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as fehler:
             raise ApiFehler(fehler.code, _fehlertext(fehler)) from None
         except (urllib.error.URLError, OSError) as fehler:
             raise ApiFehler(None, f"{self.adresse} nicht erreichbar: {fehler}") from None
+        # Das Frontend liefert fuer jeden unbekannten Pfad seine Seite mit 200 aus,
+        # auch fuer /api/...; den Inhalt nie ausgeben.
+        if text.strip() and (art == "text/html" or text.lstrip().startswith("<")):
+            raise ApiFehler(None, _frontend_statt_bff(self.adresse, pfad))
         try:
             antwort = json.loads(text) if text else {}
         except ValueError:
@@ -923,7 +951,8 @@ def main(
     parser.add_argument(
         "--adresse",
         default="http://localhost:5054",
-        help="Adresse von BFF oder Frontend (Standard: %(default)s)",
+        help="Adresse des BFF, nicht des Frontends, etwa "
+        "https://bff.gutgesagt.netzbegruenung.de (Standard: %(default)s)",
     )
     parser.add_argument(
         "--ausfuehren",

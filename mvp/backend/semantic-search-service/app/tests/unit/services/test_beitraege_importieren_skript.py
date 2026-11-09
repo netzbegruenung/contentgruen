@@ -755,3 +755,152 @@ class TestSitzung:
             )
             == 2
         )
+
+
+class _Antwort:
+    """Antwort von urllib: Kopfzeilen mit Content-Type und ein Rumpf."""
+
+    def __init__(self, art, rumpf):
+        self.headers = _kopf(art)
+        self._rumpf = rumpf.encode("utf-8")
+
+    def read(self):
+        return self._rumpf
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+def _kopf(art):
+    from email.message import Message
+
+    kopf = Message()
+    kopf["Content-Type"] = art
+    return kopf
+
+
+def _bff_mit_antwort(skript, adresse, art, rumpf):
+    bff = skript.BffBestand(adresse)
+    bff.sitzung_nutzen("geheimer-wert")
+    bff._oeffner.open = lambda anfrage, timeout: _Antwort(art, rumpf)
+    return bff
+
+
+class TestFrontendStattBff:
+    # Das Frontend liefert auf /api/... seine Seite mit 200 aus (Import 08.11.).
+    SEITE = "<!doctype html><html><body>geheimer-wert</body></html>"
+
+    def test_html_bricht_mit_hinweis_auf_bff_ab(self, skript):
+        bff = _bff_mit_antwort(
+            skript,
+            "https://gutgesagt.example.org",
+            "text/html; charset=utf-8",
+            self.SEITE,
+        )
+
+        with pytest.raises(skript.ApiFehler) as fehler:
+            bff.wer()
+
+        meldung = str(fehler.value)
+        assert "Frontend" in meldung
+        assert "https://bff.gutgesagt.example.org" in meldung
+        assert "geheimer-wert" not in meldung
+
+    def test_html_mit_falschem_content_type_erkannt(self, skript):
+        bff = _bff_mit_antwort(
+            skript,
+            "https://gutgesagt.example.org",
+            "application/octet-stream",
+            self.SEITE,
+        )
+
+        with pytest.raises(skript.ApiFehler, match="Frontend"):
+            bff.wer()
+
+    def test_auf_bff_host_kein_vorschlag(self, skript):
+        bff = _bff_mit_antwort(
+            skript, "https://bff.gutgesagt.example.org", "text/html", self.SEITE
+        )
+
+        with pytest.raises(skript.ApiFehler) as fehler:
+            bff.wer()
+
+        meldung = str(fehler.value)
+        assert "vermutlich" not in meldung
+        assert "Frontend" not in meldung
+        assert "--adresse" in meldung
+
+    def test_lokal_vorschlag_dev_stack(self, skript):
+        bff = _bff_mit_antwort(skript, "http://localhost:4200", "text/html", self.SEITE)
+
+        with pytest.raises(skript.ApiFehler) as fehler:
+            bff.wer()
+
+        assert "http://localhost:5054" in str(fehler.value)
+        assert "bff.localhost" not in str(fehler.value)
+
+    def test_leerer_rumpf_mit_html_art_gilt_als_erfolg(self, skript):
+        # 204 ohne Rumpf, aber ein Proxy setzt text/html: kein Fehlalarm.
+        bff = _bff_mit_antwort(
+            skript, "https://bff.gutgesagt.example.org", "text/html", ""
+        )
+
+        assert bff._anfrage("DELETE", "/api/v1/x") == {}
+
+    def test_http_fehler_mit_html_gibt_rumpf_nicht_aus(self, skript):
+        import io
+        import urllib.error
+
+        bff = skript.BffBestand("https://bff.gutgesagt.example.org")
+        bff.sitzung_nutzen("geheimer-wert")
+
+        def oeffnen(anfrage, timeout):
+            raise urllib.error.HTTPError(
+                anfrage.full_url,
+                502,
+                "Bad Gateway",
+                _kopf("text/html"),
+                io.BytesIO(self.SEITE.encode("utf-8")),
+            )
+
+        bff._oeffner.open = oeffnen
+
+        with pytest.raises(skript.ApiFehler) as fehler:
+            bff.wer()
+
+        assert "502" in str(fehler.value)
+        assert "geheimer-wert" not in str(fehler.value)
+
+    def test_json_geht_durch(self, skript):
+        bff = _bff_mit_antwort(
+            skript,
+            "https://bff.gutgesagt.example.org",
+            "application/json; charset=utf-8",
+            '{"userName": "Startkonto 1"}',
+        )
+
+        assert bff.wer() == {"userName": "Startkonto 1"}
+
+    def test_main_meldet_frontend_ohne_cookie(
+        self, skript, tmp_path, capsys, monkeypatch
+    ):
+        monkeypatch.setenv("GUTGESAGT_SITZUNG", "geheimer-wert")
+
+        def bauen(adresse):
+            bff = skript.BffBestand(adresse)
+            bff._oeffner.open = lambda anfrage, timeout: _Antwort(
+                "text/html", self.SEITE
+            )
+            return bff
+
+        aufruf = [str(_datei(tmp_path, ENTWURF)), "--ausfuehren"]
+        aufruf += ["--adresse", "https://gutgesagt.example.org"]
+
+        assert skript.main(aufruf, bauen) == 2
+
+        ausgabe = capsys.readouterr()
+        assert "bff.gutgesagt.example.org" in ausgabe.err
+        assert "geheimer-wert" not in ausgabe.out + ausgabe.err
