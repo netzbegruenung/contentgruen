@@ -425,7 +425,7 @@ Empfänger und Ort“.
 - **Frist:** Paar-Prüfwert 7 Tage, Muster-Hinweis 56 Tage (`LK:162-163`).
 - **Risiko und Maßnahmen:** Abschnitt 3 (Sichtbarkeit, Nutzungsnetz, Zweckentfremdung),
   Rechtsgrundlage Abschnitt 4. Schalter `punkte_aktiv`, Standard aus (`ss/core/config.py:238-244`).
-- **Meilensteine, nur für die Person selbst (#615, Stand 09.11.2026 noch nicht gemergt):** hinter
+- **Meilensteine, nur für die Person selbst (#615, gemergt am 09.11.2026):** hinter
   demselben Schalter (ohne `punkte_aktiv` 404, `ss/api/v1/usage.py:450-451` auf #615), gleiche Rechtsgrundlage, nicht gespeichert, bei jedem Abruf berechnet
   (`ss/services/meilensteine_service.py`). Neu gegenüber den Punkten: gezählt wird auch, wie viele
   Einwürfe anderer die Person ausformuliert hat (Ausformulierer an der Verknüpfung,
