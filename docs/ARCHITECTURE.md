@@ -270,6 +270,7 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
   Both models together wait at most the same 3 s for their locks as the first model alone;
   each computes with `SEMANTIC_SEARCH_EMBEDDING_THREADS`, so two searches can use both models
   at once. The Bestätiger is preloaded after the first model, not in parallel.
+  Measured in `tests/regression/MESSSET.md` and `SUCHTESTSET.md` (Zerfaserung).
 - `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI` - polarity penalty of the search (#574): `aus` (word
   lists in `utils/negation_detector.py`), `schatten` (default: word lists decide, the NLI model
   judges in the background, only counters in the log) or `an` (the first NLI model decides: an
@@ -277,8 +278,8 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
   `SEMANTIC_SEARCH_SUCHE_POLARITAET_WIDERSPRUCH_AB`, default 0.9, is penalised and its answers
   do not come back via the direct path). Questions, keyword queries (under three words) and an
   unavailable or busy model (2 s) fall back to the word lists. Same model object as the
-  NLI-Stufe, no extra RAM; measured in `tests/regression/SUCHTESTSET.md`.
-  Measured in `tests/regression/MESSSET.md` and `SUCHTESTSET.md` (Zerfaserung).
+  NLI-Stufe, so no extra RAM while the NLI-Stufe is not `aus` (otherwise this switch loads the
+  model itself); measured in `tests/regression/SUCHTESTSET.md`.
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts

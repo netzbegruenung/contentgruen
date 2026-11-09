@@ -233,6 +233,18 @@ class TestAusUndSchatten:
         assert polaritaet.zaehler == {"uebersprungen": 1}
 
     @pytest.mark.asyncio
+    async def test_schatten_wartet_nicht_und_zaehlt_belegt(self):
+        nli = AttrappenNli(verfuegbar=False)
+        nli.geladen = True  # geladen, aber die Sperre ist nicht frei
+        polaritaet = NliPolaritaet(nli, "schatten", 0.5)
+
+        await _gewichten(polaritaet, _treffer())
+        await asyncio.gather(*polaritaet._schatten_tasks)
+
+        assert nli.gewartet == polaritaet_nli.SCHATTEN_WARTET_HOECHSTENS == 0
+        assert polaritaet.zaehler == {"belegt": 1}
+
+    @pytest.mark.asyncio
     async def test_schatten_ohne_modell_wird_gezaehlt(self):
         polaritaet = NliPolaritaet(AttrappenNli(verfuegbar=False), "schatten", 0.5)
 

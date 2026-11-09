@@ -85,17 +85,22 @@ the NLI-Stufe loads an NLI model (mDeBERTa-v3-base-xnli, fp32) in the background
 (`SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI`, default `schatten`): about 1.2 GB more RAM in use and
 up to about 2 GB at the peak while loading (measured on the dev VM, `python -m
 tests.regression.nli_messen --zeit`), and the image grows by about 0.55 GB. If the container has
-a memory limit, raise it accordingly; `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=aus` skips the model
-and restores the rule before #387. The image also carries a second NLI model, the Bestätiger
+a memory limit, raise it accordingly; `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=aus` together with
+`SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI=aus` (#574, below) skips the model and restores the rule
+before #387. The image also carries a second NLI model, the Bestätiger
 (`joeddav/xlm-roberta-large-xnli`, fp32, about 2.2 GB on disk, so the image grows by about that
 much). It is only loaded with `SEMANTIC_SEARCH_NLI_BESTAETIGER=true` (default off, and never with
 the NLI-Stufe `aus`): then plan for up to about 2.2 GB more RAM (measured locally: peak +1.4 to
 +1.6 GB). Check the free memory of the host before switching it on. The polarity penalty of the search
-(#574, `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI`, default `schatten`) uses the same first NLI model
-and no extra memory; it loads the model even with the NLI-Stufe `aus`, unless it is `aus`
-itself. In `schatten` each search with a full sentence adds one background judgement (CPU, the
-search does not wait), in `an` the search waits for it (about +0.3 to 0.4 s per search on the
-dev VM). Measure on the target VM with `tests/regression/suche_messen` before switching to `an`.
+(#574, `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI`, default `schatten`) uses the same first NLI model,
+so no extra memory while the NLI-Stufe is on; with the NLI-Stufe `aus` it loads the model
+itself (about 1.2 GB) unless it is `aus` too. In `schatten` each search with a full sentence
+adds one background judgement of about 0.3 to 0.45 s CPU: the search itself does not wait, and
+the judgement is skipped (counted as `belegt`) when the model is busy, but while it runs, the
+NLI-Stufe and the "Antwort auf" filter of other requests wait for it (up to their 3 s and 2 s),
+so under load they fall back to the threshold more often. In `an` the search waits for the
+judgement (on the shared dev VM median +0.3 to 0.45 s, 95th percentile up to 1.4 s instead of
+0.14 s). Measure on the target VM with `tests/regression/suche_messen` before switching to `an`.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:

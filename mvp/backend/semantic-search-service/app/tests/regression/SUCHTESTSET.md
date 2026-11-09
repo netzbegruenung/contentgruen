@@ -269,8 +269,15 @@ beiden Richtungen ab 0,9 (Standard). Nachmessen: diese Variablen vor den Befehl 
 | bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Verneinung: Fehltreffer / keine | Aussagetreffer je Suche: Median / 95. Perzentil |
 |---|---|---|---|---|---|---|---|
 | Wortlisten | 78/86 | 4 | 4 | 3/13 / 10 | 0.34 | 8 / 0 | 84 / 144 ms |
-| NLI, beide Richtungen ab 0,9 | 77/86 | 5 | 4 | 5/13 / 8 | 0.34 | 6 / 2 | 364–539 / 694–1390 ms |
+| NLI, beide Richtungen ab 0,9 | 77/86 | 5 | 4 | 5/13 / 8 | 0.34 | 6 / 2 | 364–539 / 694–1390 ms¹ |
 | NLI, eine Richtung ab 0,5 (verworfen) | 74/86 | 6 | 6 | 7/13 / 6 | 0.38 | 4 / 4 | 364 / 694 ms |
+
+¹ Beide NLI-Zeilen rechnen dieselben Urteile (dieselben Paare, nur die Grenze ist anders);
+die Spanne sind die beiden Läufe, die VM war mit anderen Läufen geteilt.
+
+D11 und D15 aus dem Messset entsprechen in der Suche S21 („Die Grünen sind keine
+Verbotspartei“) und S62 („Balkonsolar lohnt sich“): Beide Aussagen bestraft das Modell (1,00 /
+0,99 und 0,99 / 0,98), beide Fälle zeigen danach aber eine andere, nur thematisch nahe Aussage.
 
 - **Das Modell erkennt sieben der acht Verneinungen** als Widerspruch in beiden Richtungen
   zur Aussage, deren Gegenteil sie sind (0,98 bis 1,00); S96 widerspricht nur in einer

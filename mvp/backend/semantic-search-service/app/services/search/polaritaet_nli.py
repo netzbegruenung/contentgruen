@@ -47,6 +47,11 @@ T = TypeVar("T", bound=HasScore)
 
 # So lange wartet eine Suche hoechstens auf das Modell (Sekunden), danach gilt die Regel.
 SUCHE_WARTET_HOECHSTENS = 2.0
+# Der Schattenbetrieb wartet gar nicht: Ist das Modell belegt (NLI-Stufe, Filter der
+# Vorschlaege, eine andere Suche), zaehlt er "belegt", statt die Sperre zu belegen und
+# andere warten zu lassen. Haelt er sie, warten andere trotzdem bis zum Ende seines
+# Urteils (docs/DEPLOYMENT.md).
+SCHATTEN_WARTET_HOECHSTENS = 0.0
 # Strafe bei Widerspruch: wie die Regel (calculate_polarity_penalty), mit der
 # Widerspruchswahrscheinlichkeit als Sicherheit; 0,5 ergibt 0,65, 0,99 ergibt 0,31.
 STRAFE_JE_WIDERSPRUCH = 0.7
@@ -59,7 +64,9 @@ MINDESTENS_WOERTER = 3
 # - beide_strafe / beide_keine: Regel und Modell stimmen ueberein.
 # - nur_regel: Die Regel straft, das Modell sieht keinen Widerspruch.
 # - nur_nli: Das Modell sieht einen Widerspruch, die Regel straft nicht.
-# - ohne_modell: Das Modell konnte nicht urteilen (je Suche gezaehlt).
+# - ohne_modell: Das Modell ist nicht geladen oder scheitert (je Suche gezaehlt).
+# - belegt: Das Modell urteilte gerade fuer etwas anderes (je Suche gezaehlt; auch ein
+#   gescheitertes Urteil eines geladenen Modells, das dann als WARNING im Log steht).
 # - uebersprungen: Ein anderes Urteil lief noch (je Suche gezaehlt).
 ARTEN = (
     "beide_strafe",
@@ -67,6 +74,7 @@ ARTEN = (
     "nur_regel",
     "nur_nli",
     "ohne_modell",
+    "belegt",
     "uebersprungen",
 )
 
@@ -167,14 +175,17 @@ class NliPolaritaet:
         return treffer, metadaten
 
     async def _urteile(
-        self, query_text: str, texte: List[str]
+        self,
+        query_text: str,
+        texte: List[str],
+        warte_hoechstens: float = SUCHE_WARTET_HOECHSTENS,
     ) -> Optional[List[float]]:
         """Je Text die schwaechere Widerspruchswahrscheinlichkeit beider Richtungen;
         None, wenn das Modell nicht urteilen kann oder scheitert."""
         try:
             urteile = await self._nli.urteile(
                 [(query_text, text) for text in texte],
-                warte_hoechstens=SUCHE_WARTET_HOECHSTENS,
+                warte_hoechstens=warte_hoechstens,
             )
         except Exception as e:
             logger.warning("NLI-Polaritaet gescheitert (%s)", type(e).__name__)
@@ -207,9 +218,13 @@ class NliPolaritaet:
 
         async def urteilen():
             try:
-                urteile = await self._urteile(query_text, texte)
+                urteile = await self._urteile(
+                    query_text, texte, SCHATTEN_WARTET_HOECHSTENS
+                )
                 if urteile is None:
-                    self.zaehlen("ohne_modell")
+                    # Geladen und nicht kaputt heisst: Die Sperre war nicht frei.
+                    geladen = getattr(self._nli, "geladen", False)
+                    self.zaehlen("belegt" if geladen else "ohne_modell")
                     return
                 for straft, widerspruch in zip(regel_straft, urteile):
                     nli = widerspruch >= self._widerspruch_ab
