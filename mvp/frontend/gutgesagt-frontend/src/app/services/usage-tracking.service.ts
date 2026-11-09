@@ -42,6 +42,13 @@ export interface Meilenstein {
   erreicht: boolean;
 }
 
+/** Die Antwort auf die Frage, ob andere Angemeldete die Abzeichen sehen (#351). */
+export interface AbzeichenSichtbarkeit {
+  gefragt: boolean;
+  zeigen: boolean | null;
+  aktueller_wortlaut: { kennung: string; text: string };
+}
+
 export interface BesuchResponse {
   nutzung_seit_letztem_besuch: number;
 }
@@ -219,6 +226,35 @@ export class UsageTrackingService {
             this.loggingService.error('Eigene Meilensteine nicht geladen', error);
           }
           return of([]);
+        })
+      );
+  }
+
+  /**
+   * Ob andere Angemeldete die eigenen Meilenstein-Abzeichen sehen (#351). Ohne die
+   * Schalter antwortet der Server 404; dann und bei jedem Fehler null, und die Seite
+   * fragt nicht.
+   */
+  getAbzeichenSichtbarkeit(): Observable<AbzeichenSichtbarkeit | null> {
+    return this.http.get<AbzeichenSichtbarkeit>(`${this.apiUrl}/users/me/abzeichen-sichtbarkeit`).pipe(
+      catchError((error) => {
+        if (error?.status !== 404) {
+          this.loggingService.error('Sichtbarkeit der Abzeichen nicht geladen', error);
+        }
+        return of(null);
+      })
+    );
+  }
+
+  /** Ja oder Nein zur Sichtbarkeit speichern; true, wenn es geklappt hat. */
+  setAbzeichenSichtbarkeit(zeigen: boolean, wortlaut: string): Observable<boolean> {
+    return this.http
+      .put(`${this.apiUrl}/users/me/abzeichen-sichtbarkeit`, { zeigen, wortlaut })
+      .pipe(
+        map(() => true),
+        catchError((error) => {
+          this.loggingService.error('Sichtbarkeit der Abzeichen nicht gespeichert', error);
+          return of(false);
         })
       );
   }

@@ -61,7 +61,7 @@ describe('MeineBeitraegeComponent', () => {
         { provide: MeineBeitraegeService, useValue: { meineBeitraege } },
         {
           provide: UsageTrackingService,
-          useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik), getEigeneMeilensteine: () => of([]) },
+          useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik), getEigeneMeilensteine: () => of([]), getAbzeichenSichtbarkeit: () => of(null) },
         },
         { provide: EinwurfService, useValue: { eigeneLaden } },
         { provide: SperrnachrichtService, useValue: { meine: () => of([]) } },

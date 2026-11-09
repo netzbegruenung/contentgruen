@@ -514,6 +514,21 @@
   color: var(--text-secondary);
 }
 
+/* Meilenstein-Abzeichen am Anzeigenamen (#351) */
+.autor-abzeichen {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--primary-tint);
+  color: var(--akzent-tanne);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  vertical-align: baseline;
+}
+
 @include bp.mobile-only {
   .karte {
     --text-zeilen: 8;

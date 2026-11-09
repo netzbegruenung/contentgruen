@@ -117,6 +117,11 @@ export interface KartenDaten {
   eigen?: boolean | null;
   /** Anzeigename ("Anna B."); null ohne Anmeldung oder ohne gespeicherten Namen. */
   autorName: string | null;
+  /**
+   * Meilenstein-Abzeichen am Anzeigenamen (#351): Zahl der erreichten Meilensteine,
+   * nur wenn die Person der Sichtbarkeit zugestimmt hat; fehlt = kein Abzeichen.
+   */
+  autorAbzeichen?: number | null;
   /** Verwendungen; null = unbekannt, dann kein Badge. */
   nutzung: number | null;
   /** Wie viele Beitraege auf diesem beruhen ("N Varianten", #356); fehlt = keine. */
@@ -155,6 +160,7 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
     autor: inhalt.original_author || null,
     eigen: inhalt.ist_eigener_beitrag ?? null,
     autorName: inhalt.autor_name ?? null,
+    autorAbzeichen: inhalt.autor_abzeichen ?? null,
     nutzung: inhalt.usage_count ?? 0,
     varianten: inhalt.varianten ?? 0,
     quellen: (inhalt.references ?? []).map(quelle),
@@ -271,6 +277,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     autor: eintrag.original_author || null,
     eigen: eintrag.ist_eigener_beitrag ?? null,
     autorName: eintrag.autor_name ?? null,
+    autorAbzeichen: eintrag.autor_abzeichen ?? null,
     nutzung: eintrag.usage_count ?? 0,
     nutzungLetzte7Tage: eintrag.nutzung_letzte_7_tage ?? 0,
     nutzungJeFassung: typ === 'commentary' ? (eintrag.nutzung_je_fassung ?? undefined) : undefined,

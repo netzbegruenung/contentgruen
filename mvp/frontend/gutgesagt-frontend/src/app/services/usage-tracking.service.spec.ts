@@ -151,6 +151,51 @@ describe('UsageTrackingService', () => {
     });
   });
 
+  describe('Sichtbarkeit der Abzeichen (#351)', () => {
+    const SICHTBARKEIT = `${environment.baseUrl}/api/v1/usage/users/me/abzeichen-sichtbarkeit`;
+
+    it('liest die Antwort', () => {
+      let ergebnis: unknown;
+      service.getAbzeichenSichtbarkeit().subscribe((stand) => (ergebnis = stand));
+      const stand = { gefragt: false, zeigen: null, aktueller_wortlaut: { kennung: '2026-11-09', text: 'x' } };
+
+      http.expectOne(SICHTBARKEIT).flush(stand);
+
+      expect(ergebnis).toEqual(stand);
+    });
+
+    it('liefert ohne Schalter (404) still null', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getAbzeichenSichtbarkeit().subscribe((stand) => (ergebnis = stand));
+
+      http.expectOne(SICHTBARKEIT).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toBeNull();
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('speichert per PUT mit Antwort und Wortlaut', () => {
+      let ergebnis: unknown;
+      service.setAbzeichenSichtbarkeit(true, '2026-11-09').subscribe((ok) => (ergebnis = ok));
+
+      const anfrage = http.expectOne(SICHTBARKEIT);
+      expect(anfrage.request.method).toBe('PUT');
+      expect(anfrage.request.body).toEqual({ zeigen: true, wortlaut: '2026-11-09' });
+      anfrage.flush(null, { status: 204, statusText: 'No Content' });
+
+      expect(ergebnis).toBeTrue();
+    });
+
+    it('liefert false, wenn das Speichern scheitert', () => {
+      let ergebnis: unknown;
+      service.setAbzeichenSichtbarkeit(false, '2026-11-09').subscribe((ok) => (ergebnis = ok));
+
+      http.expectOne(SICHTBARKEIT).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toBeFalse();
+    });
+  });
+
   describe('Diese Woche oft genutzt', () => {
     const OFT_GENUTZT = `${environment.baseUrl}/api/v1/usage/trending/woche`;
 
