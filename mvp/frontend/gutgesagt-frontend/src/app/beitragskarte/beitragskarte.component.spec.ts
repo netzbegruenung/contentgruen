@@ -317,42 +317,49 @@ describe('BeitragskarteComponent', () => {
     });
   });
 
-  describe('Kopieren mit Herkunft', () => {
-    it('gibt der Leiste ohne Herkunft keinen Text mit Herkunft', () => {
+  describe('Kopieren mit Herkunft (#641)', () => {
+    const MIT_HERKUNFT = { references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }] };
+
+    it('hat ohne Herkunft nur den Knopf, keine zweite Variante', () => {
       zeigen(ausSuchergebnis(paket('commentary_result')));
 
-      expect(aktionen().kopierTextMitHerkunft).toBe('');
-      expect(element('.kopier-wahl-knopf')).toBeNull();
+      expect(aktionen().kopierText).toBe('Test text');
+      expect(aktionen().zweiteKopie).toBeNull();
+      expect(aktionen().kopierHinweis).toBe('Kopiert den Text');
     });
 
-    it('haengt die Herkunft an die angezeigte Fassung an', () => {
-      zeigen(
-        ausSuchergebnis(
-          paket('commentary_result', {
-            short_text: 'Kurzfassung',
-            references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }],
-          }),
-        ),
-      );
+    it('kopiert am Kommentar den Text der angezeigten Fassung, mit Herkunft steht im Menue', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', ...MIT_HERKUNFT })));
       component.fassungWaehlen('kurz');
       fixture.detectChanges();
 
       expect(aktionen().kopierText).toBe('Kurzfassung');
-      expect(aktionen().kopierTextMitHerkunft).toBe('Kurzfassung\n\nHerkunft: https://example.org/studie');
-      expect(element('.kopier-wahl-knopf')).not.toBeNull();
+      expect(aktionen().zweiteKopie).toEqual({
+        text: 'Kurzfassung\n\nHerkunft: https://example.org/studie',
+        wort: 'Mit Herkunft kopieren',
+      });
+      expect(aktionen().kopierHinweis).toBe('Kopiert den Text');
     });
 
-    it('zaehlt auch Text + Herkunft als Nutzung an der Karte', fakeAsync(() => {
-      zeigen(
-        ausSuchergebnis(
-          paket('commentary_result', {
-            usage_count: 2,
-            references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }],
-          }),
-        ),
-      );
+    it('kopiert an der Hintergrundinfo Text samt Herkunft, nur Text steht im Menue', () => {
+      zeigen(ausSuchergebnis(paket('generictext_result', { content_type: 'generictext', ...MIT_HERKUNFT })));
 
-      aktionen().kopierenMitHerkunft();
+      expect(aktionen().kopierText).toBe('Test text\n\nHerkunft: https://example.org/studie');
+      expect(aktionen().zweiteKopie).toEqual({ text: 'Test text', wort: 'Nur Text kopieren' });
+      expect(aktionen().kopierHinweis).toBe('Kopiert Text und Herkunft');
+    });
+
+    it('kopiert an der Hintergrundinfo ohne Herkunft nur den Text', () => {
+      zeigen(ausSuchergebnis(paket('generictext_result', { content_type: 'generictext' })));
+
+      expect(aktionen().kopierText).toBe('Test text');
+      expect(aktionen().zweiteKopie).toBeNull();
+    });
+
+    it('zaehlt auch die zweite Variante als Nutzung an der Karte', fakeAsync(() => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 2, ...MIT_HERKUNFT })));
+
+      aktionen().zweiteKopieren();
       fixture.detectChanges();
 
       expect(element('.karte-nutzung').textContent!.trim()).toBe('3× genutzt');
@@ -383,6 +390,18 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-stil')?.textContent).toContain('brückenbauend');
     });
 
+    it('zeigt den Stil als Chip, der beim Antippen erklaert, was er bewirkt (#641)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
+      const chip = element<HTMLButtonElement>('button.karte-stil');
+
+      expect(chip.getAttribute('aria-label')).toBe('Stil: brückenbauend, Erklärung öffnen');
+      expect(getComputedStyle(chip).fontStyle).toBe('normal');
+      chip.click();
+      fixture.detectChanges();
+
+      expect(document.querySelector('.stil-erklaerung')?.textContent!.trim()).toBe('brückenbauend: holt Unentschiedene ab');
+    });
+
     it('zeigt Markierung und Stil auch in der kompakten Karte (Meine Beitraege)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'humorvoll' })), {
         variante: 'kompakt',
@@ -390,6 +409,8 @@ describe('BeitragskarteComponent', () => {
 
       expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
       expect(element('.album-inhalt .karte-stil')?.textContent).toContain('humorvoll');
+      // Die kompakte Karte ist als Ganzes antippbar: dort kein eigener Knopf
+      expect(element('.album-inhalt button.karte-stil')).toBeNull();
     });
 
     describe('Markierung fuer die eigenen Leute (Variante D, Tanne)', () => {
@@ -460,6 +481,8 @@ describe('BeitragskarteComponent', () => {
     it('meldet beim Kopieren die angezeigte Fassung', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
 
+      component.fassungWaehlen('mittel');
+      fixture.detectChanges();
       aktionen().kopieren();
       component.fassungWaehlen('kurz');
       fixture.detectChanges();
@@ -712,22 +735,55 @@ describe('BeitragskarteComponent', () => {
   describe('Text', () => {
     it('wechselt zwischen Kurz, Standard und Lang und kopiert die angezeigte Fassung', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
-      expect(element('.karte-text').textContent!.trim()).toBe('Test text');
+      expect(element('.karte-text').textContent!.trim()).toBe('Kurzfassung');
 
-      component.fassungWaehlen('kurz');
+      component.fassungWaehlen('lang');
       fixture.detectChanges();
 
-      expect(element('.karte-text').textContent!.trim()).toBe('Kurzfassung');
-      expect(aktionen().kopierText).toBe('Kurzfassung');
+      expect(element('.karte-text').textContent!.trim()).toBe('Langfassung');
+      expect(aktionen().kopierText).toBe('Langfassung');
     });
 
-    it('beschriftet den Umschalter mit Kurz, Mittel und Lang', () => {
+    it('beschriftet die Reiter mit Fassung und Zeichenzahl (#641)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+      const knoepfe = Array.from(fixture.nativeElement.querySelectorAll('.textlaenge mat-button-toggle')) as HTMLElement[];
+
+      expect(knoepfe.map((knopf) => knopf.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+        'Kurz · 11',
+        'Mittel · 9',
+        'Lang · 11',
+      ]);
+      expect(knoepfe[0].querySelector('button')!.getAttribute('aria-label')).toBe('Kurz, 11 Zeichen');
+    });
+
+    it('zeigt nur die vorhandenen Fassungen als Reiter', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { long_text: 'Langfassung' })));
       const beschriftungen = Array.from(fixture.nativeElement.querySelectorAll('.textlaenge mat-button-toggle')).map(
-        (knopf) => (knopf as HTMLElement).textContent!.trim(),
+        (knopf) => (knopf as HTMLElement).textContent!.replace(/\s+/g, ' ').trim(),
       );
 
-      expect(beschriftungen).toEqual(['Kurz', 'Mittel', 'Lang']);
+      expect(beschriftungen).toEqual(['Mittel · 9', 'Lang · 11']);
+    });
+
+    it('waehlt die kuerzeste Fassung vor, die auf X passt (#641)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+      expect(component.angezeigteFassung).toBe('kurz');
+      expect(element('.textlaenge .mat-button-toggle-checked').textContent).toContain('Kurz');
+
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(200), long_text: 'L'.repeat(900) })));
+      expect(component.angezeigteFassung).toBe('mittel');
+
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), long_text: 'L'.repeat(900) })));
+      expect(component.angezeigteFassung).toBe('mittel');
+    });
+
+    it('setzt die Marke "passt auf X/Bluesky" nur, wenn die angezeigte Fassung passt', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), short_text: 'Kurzfassung' })));
+      expect(element('.fassung-marke')?.textContent).toContain('passt auf X/Bluesky');
+
+      component.fassungWaehlen('mittel');
+      fixture.detectChanges();
+      expect(element('.fassung-marke')).toBeNull();
     });
 
     it('zeichnet die gewaehlte Fassung wie die Tabs: Tanne-Text auf Tanne-Hauch (#512)', () => {
