@@ -1,7 +1,7 @@
-import { DublettenTexte, Vorhanden, dublettenHinweis, offeneEntscheidung, vorhandenAus } from './dublette';
+import { DublettenTexte, Vorhanden, dublettenHinweis, dublettenKurzhinweis, offeneEntscheidung, vorhandenAus } from './dublette';
 
 const TEXTE: DublettenTexte = {
-  hinweis: 'Gibt es schon.',
+  eigenHinweis: 'Hast du schon gespeichert.',
   fremdHinweis: 'Gibt es schon von jemand anderem.',
   fremdZuordnen: 'Später über die Karte zuordnen.',
   zugestimmt: 'Zugestimmt.',
@@ -44,10 +44,11 @@ describe('Dublette', () => {
   });
 
   describe('dublettenHinweis', () => {
-    it('vor der Wahl: fremd mit Aussage nennt den anderen Weg, sonst der kurze Hinweis', () => {
+    it('vor der Wahl: fremd nennt jemand anderen, mit Aussage auch den anderen Weg; eigen sagt es', () => {
       expect(dublettenHinweis(vorhanden(), TEXTE, true)).toBe(`${TEXTE.fremdHinweis} ${TEXTE.fremdZuordnen}`);
-      expect(dublettenHinweis(vorhanden(), TEXTE, false)).toBe(TEXTE.hinweis);
-      expect(dublettenHinweis(vorhanden({ eigen: true }), TEXTE, true)).toBe(TEXTE.hinweis);
+      expect(dublettenHinweis(vorhanden(), TEXTE, false)).toBe(TEXTE.fremdHinweis);
+      expect(dublettenHinweis(vorhanden({ eigen: true }), TEXTE, true)).toBe(TEXTE.eigenHinweis);
+      expect(dublettenHinweis(vorhanden({ eigen: true }), TEXTE, false)).toBe(TEXTE.eigenHinweis);
     });
 
     it('nach der Wahl: zugestimmt, genommen oder verknuepft', () => {
@@ -56,6 +57,13 @@ describe('Dublette', () => {
       expect(dublettenHinweis(vorhanden({ eigen: true, gewaehlt: 'genommen', aussage: 'A' }), TEXTE, true)).toBe(
         'Verknüpft mit A.',
       );
+    });
+  });
+
+  describe('dublettenKurzhinweis', () => {
+    it('ein Satz: eigen oder von jemand anderem, ohne den Weg ueber die Karte', () => {
+      expect(dublettenKurzhinweis(vorhanden({ eigen: true }), TEXTE)).toBe(TEXTE.eigenHinweis);
+      expect(dublettenKurzhinweis(vorhanden(), TEXTE)).toBe(TEXTE.fremdHinweis);
     });
   });
 });

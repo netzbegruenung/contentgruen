@@ -106,8 +106,9 @@ test('Verfassen: Aufbau und Bedienung des Kommentarformulars', async ({ page, bi
     expect.soft(lage.unten).toBe(lage.fenster);
     test.info().annotations.push({ type: 'Leistenhoehe', description: `${lage.hoehe}px` });
     await bild('10-leiste');
+    // Beim Tippen bleibt die Leiste stehen, ueber der Tastatur (#616)
     await page.locator('textarea#text').focus();
-    await expect.soft(leiste).toBeHidden();
+    await expect.soft(leiste).toBeVisible();
     await bild('11-leiste-beim-tippen');
     await page.locator('textarea#text').blur();
   });

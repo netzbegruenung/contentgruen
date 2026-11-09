@@ -8,8 +8,9 @@ import { Vorhanden, offeneEntscheidung } from './dublette';
 /**
  * Der Hinweis auf eine Dublette im Kommentar- und im Hintergrundinfo-Formular: der
  * vorhandene Beitrag mit Titel und "Ansehen", darunter, solange die Person nicht
- * entschieden hat, ihre Wahl - einem fremden zustimmen, den eigenen nehmen oder
- * trotzdem speichern. Was die Knoepfe tun, entscheidet das Formular.
+ * entschieden hat, ihre Wahl - einem fremden zustimmen oder den eigenen nehmen.
+ * Trotzdem speichern ist in diesem Stand der Hauptknopf des Formulars (#616), damit
+ * es nicht zwei Speichern-Knoepfe gibt. Was die Knoepfe tun, entscheidet das Formular.
  */
 @Component({
   standalone: true,
@@ -38,7 +39,6 @@ export class DublettenHinweisComponent {
   @Output() ansehen = new EventEmitter<void>();
   @Output() zustimmen = new EventEmitter<void>();
   @Output() nehmen = new EventEmitter<void>();
-  @Output() trotzdem = new EventEmitter<void>();
 
   get offeneEntscheidung(): boolean {
     return offeneEntscheidung(this.vorhanden);

@@ -10,7 +10,7 @@ import { Subject, of, throwError } from 'rxjs';
 
 import {
   AddGenerictextComponent,
-  DUBLETTE_HINWEIS,
+  DUBLETTE_EIGEN_HINWEIS,
   GENOMMEN_HINWEIS,
   NEHMEN_FEHLGESCHLAGEN,
   SPEICHERN_FEHLGESCHLAGEN,
@@ -430,8 +430,8 @@ describe('AddGenerictextComponent', () => {
 
       expect(erfolg).not.toHaveBeenCalled();
       expect(component.responseId).toBe('');
-      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo.');
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain('sehr ähnliche Hintergrundinfo');
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo von jemand anderem.');
+      expect(seite().querySelector('app-formular-leiste .leiste-hinweis')!.textContent).toContain('sehr ähnliche Hintergrundinfo');
       expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
 
       expect(component.vorhanden!.aussage).toBeNull();
@@ -474,7 +474,7 @@ describe('AddGenerictextComponent', () => {
       expect(erfolg).not.toHaveBeenCalled();
       expect(component.responseId).toBe('');
       expect(component.vorhanden!.aussage).toBeNull();
-      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(DUBLETTE_HINWEIS);
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(DUBLETTE_EIGEN_HINWEIS);
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).not.toContain('verknüpft');
       expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
       expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
@@ -858,7 +858,7 @@ describe('AddGenerictextComponent', () => {
       fixture.detectChanges();
 
       const status = seite().querySelector('.dubletten-hinweis [role="status"]')!;
-      expect(status.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo.');
+      expect(status.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo von jemand anderem.');
       expect(status.querySelector('.dublette-zustimmen, .dublette-trotzdem')).toBeNull();
     }));
 
@@ -874,7 +874,7 @@ describe('AddGenerictextComponent', () => {
       flush();
       fixture.detectChanges();
 
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler, app-formular-leiste .leiste-hinweis')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
 
@@ -892,7 +892,7 @@ describe('AddGenerictextComponent', () => {
 
       expect(component.vorhanden).toBeNull();
       expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler, app-formular-leiste .leiste-hinweis')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
   });

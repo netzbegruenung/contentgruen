@@ -598,12 +598,12 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       fixture.detectChanges();
     });
 
-    it('zeigt die Leiste unveraendert, aber ohne Reaktion auf Zeiger und Fokus', () => {
+    it('zeigt die Leiste sichtbar gesperrt, ohne Reaktion auf Zeiger und Fokus (#616)', () => {
       const leiste: HTMLElement = fixture.nativeElement.querySelector('.aktionen');
       const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('button'));
 
       expect(getComputedStyle(leiste).pointerEvents).toBe('none');
-      expect(getComputedStyle(leiste).opacity).toBe('1');
+      expect(Number(getComputedStyle(leiste).opacity)).toBeLessThan(1);
       expect(knoepfe.length).toBe(4);
       knoepfe.forEach((knopf) => {
         expect(knopf.getAttribute('aria-disabled')).toBe('true');

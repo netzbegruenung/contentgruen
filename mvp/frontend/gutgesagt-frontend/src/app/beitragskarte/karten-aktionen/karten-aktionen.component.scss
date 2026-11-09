@@ -5,9 +5,12 @@
   display: block;
 }
 
-// Vorschau: sichtbar wie in der Suche, aber ohne Reaktion. Nicht ausgegraut.
+// Vorschau: an derselben Stelle wie in der Suche, aber sichtbar gesperrt - aktive
+// Knoepfe verleiten in der Vorschau zum Klicken (#616).
 :host(.ist-vorschau) .aktionen {
   pointer-events: none;
+  opacity: 0.4;
+  filter: grayscale(1);
 }
 
 .aktionen {

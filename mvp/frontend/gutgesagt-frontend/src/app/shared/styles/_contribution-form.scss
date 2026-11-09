@@ -788,6 +788,15 @@
   }
 }
 
+// Fester Abstand zwischen den Feldern (#616): Hinweis- und Fehlerzeilen unter einem
+// Feld stossen sonst an die Beschriftung des naechsten.
+@mixin feld-abstand {
+  .beitrag-formular .formular-feld,
+  .beitrag-formular app-antwort-auf {
+    margin-bottom: 12px;
+  }
+}
+
 // Export all mixins as a single include
 @mixin contribution-form-styles {
   @include content-type-indicator;
@@ -803,4 +812,5 @@
   @include material-overrides;
   @include references-section;
   @include optionale-angaben;
+  @include feld-abstand;
 }

@@ -140,8 +140,12 @@
 }
 
 .badge-neu {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 18px;
   background: var(--primary-fill);
   color: white;
+  font-size: 13px;
 }
 
 .badge-beliebt {
@@ -151,12 +155,6 @@
 .badge-nutzung {
   font-size: 14px;
   font-weight: 700;
-}
-
-.badge-icon {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
 }
 
 .nutzung-animiert {
@@ -537,10 +535,10 @@
     font-size: 16px;
   }
 
-  .badge-icon {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
+  .badge-neu {
+    width: auto;
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .statement-zeile {
