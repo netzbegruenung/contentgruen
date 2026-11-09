@@ -47,7 +47,9 @@ def test_nie_gefragt(dienst):
     body = antwort.json()
     assert body["gefragt"] is False
     assert body["zeigen"] is None
-    assert body["aktueller_wortlaut"]["kennung"] == "2026-11-09"
+    assert body["aktueller_wortlaut"]["kennung"] == "2026-11-09-b"
+    assert body["aktueller_wortlaut"]["text"].startswith("Sollen andere Angemeldete")
+    assert "Screenshot" in body["aktueller_wortlaut"]["mehr_dazu"]
     dienst.sichtbarkeit.assert_called_once_with("kim-1")
 
 

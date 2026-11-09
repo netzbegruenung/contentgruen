@@ -157,7 +157,7 @@ describe('UsageTrackingService', () => {
     it('liest die Antwort', () => {
       let ergebnis: unknown;
       service.getAbzeichenSichtbarkeit().subscribe((stand) => (ergebnis = stand));
-      const stand = { gefragt: false, zeigen: null, aktueller_wortlaut: { kennung: '2026-11-09', text: 'x' } };
+      const stand = { gefragt: false, zeigen: null, aktueller_wortlaut: { kennung: '2026-11-09-b', text: 'x', mehr_dazu: 'y' } };
 
       http.expectOne(SICHTBARKEIT).flush(stand);
 

@@ -14,8 +14,10 @@ aendert, legt eine neue Kennung an und laesst die alte stehen.
 
 from typing import Dict
 
-AKTUELLER_WORTLAUT = "2026-11-09"
+AKTUELLER_WORTLAUT = "2026-11-09-b"
 
+# Die Frage selbst, kurz. Was eine informierte Einwilligung ausserdem braucht, steht je
+# Kennung in MEHR_DAZU und erscheint aufklappbar direkt unter der Frage.
 WORTLAUTE: Dict[str, str] = {
     "2026-11-09": (
         "Sollen andere Angemeldete an deinem Namen sehen, wie viele Meilensteine du "
@@ -23,6 +25,22 @@ WORTLAUTE: Dict[str, str] = {
         "mitmachst. Angemeldet sind nicht nur Mitglieder, und ein Screenshot kann es "
         "weitertragen. Besucher ohne Anmeldung sehen es nie. Du kannst das jederzeit "
         "unter „Meine Beiträge“ ändern; mehr in der Datenschutzerklärung unter „Punkte“."
+    ),
+    # Gekuerzt nach Entscheidung des Maintainers (09.11.2026); die Hinweise stehen
+    # jetzt unter "Mehr dazu".
+    "2026-11-09-b": (
+        "Sollen andere Angemeldete an deinem Namen sehen, wie viele Meilensteine du "
+        "erreicht hast? Besucher sehen es nie. Du kannst das jederzeit unter "
+        "„Meine Beiträge“ ändern."
+    ),
+}
+
+MEHR_DAZU: Dict[str, str] = {
+    "2026-11-09": "",
+    "2026-11-09-b": (
+        "Das Abzeichen verrät, dass und wie viel du bei Gut gesagt mitmachst. "
+        "Angemeldet sind nicht nur Mitglieder, und ein Screenshot kann es weitertragen. "
+        "Mehr in der Datenschutzerklärung unter „Punkte“."
     ),
 }
 

@@ -28,6 +28,12 @@
     <!-- Zustimmung zur Sichtbarkeit: einmal fragen, zwei gleichwertige Knoepfe, nichts vorbelegt (#351) -->
     <div *ngIf="fragen" class="sichtbarkeit-frage" role="group" aria-labelledby="sichtbarkeit-text">
         <p id="sichtbarkeit-text">{{ sichtbarkeit?.aktueller_wortlaut?.text }}</p>
+        <!-- Aufklappbar, damit die Frage kurz bleibt und die Einwilligung trotzdem informiert ist -->
+        <details *ngIf="sichtbarkeit?.aktueller_wortlaut?.mehr_dazu" class="sichtbarkeit-mehr">
+            <summary>Mehr dazu</summary>
+            <p>{{ sichtbarkeit?.aktueller_wortlaut?.mehr_dazu }}
+                <a routerLink="/datenschutz" target="_blank" rel="noopener">Zur Datenschutzerklärung</a></p>
+        </details>
         <div class="sichtbarkeit-knoepfe">
             <button mat-stroked-button type="button" [disabled]="speichert" (click)="antworten(true)">Ja, zeigen</button>
             <button mat-stroked-button type="button" [disabled]="speichert" (click)="antworten(false)">Nein, nur für mich</button>

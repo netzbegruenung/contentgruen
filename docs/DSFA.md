@@ -509,7 +509,9 @@ unten unter „Geplant, nicht gebaut“.
 
 - **Zweck:** Anerkennung durch andere sichtbar machen (`docs/VISION.md` „Meilensteine“).
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a, eine eigene Einwilligung
-  neben der Art.-9-Einwilligung (`ss/domain/abzeichen_sichtbarkeit.py`, Wortlaut `2026-11-09`).
+  neben der Art.-9-Einwilligung (`ss/domain/abzeichen_sichtbarkeit.py`, Wortlaut `2026-11-09-b`: kurze Frage, die
+  Hinweise auf Nicht-Mitglieder, Screenshots und die Datenschutzerklärung aufklappbar unter
+  „Mehr dazu“ direkt darunter).
   Ohne Art.-9-Einwilligung keine Meilensteine und damit kein Abzeichen.
 - **Daten:** je Antwort eine Zeile mit Kennung, Ja/Nein, Wortlaut und Zeitpunkt
   (`abzeichen_sichtbarkeit`, Nachweis nach Art. 7 Abs. 1); die Zahl der erreichten

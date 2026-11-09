@@ -43,7 +43,9 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   ohne neue Frage wieder erscheint (`AbzeichenService.zuruecknehmen`). Die Antwort zur
   Sichtbarkeit (`PUT /api/v1/usage/users/me/abzeichen-sichtbarkeit`) geht auch ohne
   Einwilligung, weil ein Nein ein Zurücknehmen ist (`OFFEN` in
-  `tests/unit/api/test_art9_einwilligung_api.py`).
+  `tests/unit/api/test_art9_einwilligung_api.py`). Die Zustimmung zur Sichtbarkeit hat
+  eigene Wortlaute mit Kennung (`domain/abzeichen_sichtbarkeit.py`, aktuell `2026-11-09-b`:
+  kurze Frage, Hinweise unter „Mehr dazu“); wie hier bleibt jede frühere Kennung bekannt.
 - **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Einwilligung“). Die Zeile bekommt
   den Zeitpunkt des Widerrufs und bleibt stehen, als Nachweis, dass die Verarbeitung bis dahin
   auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Schon Gespeichertes

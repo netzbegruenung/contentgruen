@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Observable, of } from 'rxjs';
 
 import { MeilensteineComponent } from './meilensteine.component';
@@ -17,6 +18,7 @@ describe('MeilensteineComponent (#351)', () => {
     TestBed.configureTestingModule({
       imports: [MeilensteineComponent],
       providers: [
+        provideRouter([]),
         {
           provide: UsageTrackingService,
           useValue: {
@@ -68,7 +70,11 @@ describe('MeilensteineComponent (#351)', () => {
   });
 
   describe('Zustimmung zur Sichtbarkeit', () => {
-    const WORTLAUT = { kennung: '2026-11-09', text: 'Sollen andere Angemeldete an deinem Namen sehen …?' };
+    const WORTLAUT = {
+      kennung: '2026-11-09-b',
+      text: 'Sollen andere Angemeldete an deinem Namen sehen …?',
+      mehr_dazu: 'Angemeldet sind nicht nur Mitglieder, und ein Screenshot kann es weitertragen.',
+    };
     const NIE_GEFRAGT: AbzeichenSichtbarkeit = { gefragt: false, zeigen: null, aktueller_wortlaut: WORTLAUT };
 
     function knopf(element: HTMLElement, text: string): HTMLButtonElement {
@@ -85,6 +91,17 @@ describe('MeilensteineComponent (#351)', () => {
       const knoepfe = Array.from(frage!.querySelectorAll('button'));
       expect(knoepfe.map((b) => b.textContent?.trim())).toEqual(['Ja, zeigen', 'Nein, nur für mich']);
       expect(knoepfe[0].className).toEqual(knoepfe[1].className);
+    });
+
+    it('zeigt die Hinweise aufklappbar unter "Mehr dazu", mit Link zur Datenschutzerklärung', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], NIE_GEFRAGT);
+
+      const mehr = element.querySelector<HTMLDetailsElement>('.sichtbarkeit-frage details');
+      expect(mehr).not.toBeNull();
+      expect(mehr!.open).toBeFalse();
+      expect(mehr!.querySelector('summary')?.textContent).toContain('Mehr dazu');
+      expect(mehr!.textContent).toContain('Screenshot');
+      expect(mehr!.querySelector('a')?.getAttribute('href')).toBe('/datenschutz');
     });
 
     it('fragt nicht, solange kein Meilenstein erreicht ist', () => {
@@ -106,7 +123,7 @@ describe('MeilensteineComponent (#351)', () => {
       knopf(element, 'Ja, zeigen').click();
       fixture.detectChanges();
 
-      expect(speichern).toHaveBeenCalledWith(true, '2026-11-09');
+      expect(speichern).toHaveBeenCalledWith(true, '2026-11-09-b');
       expect(element.querySelector('.sichtbarkeit-frage')).toBeNull();
       expect(element.textContent).toContain('Andere Angemeldete sehen an deinem Namen');
       expect(element.querySelector('.sichtbarkeit-stand')?.textContent).toContain('für Angemeldete sichtbar');
@@ -118,7 +135,7 @@ describe('MeilensteineComponent (#351)', () => {
       knopf(element, 'Nicht mehr zeigen').click();
       fixture.detectChanges();
 
-      expect(speichern).toHaveBeenCalledWith(false, '2026-11-09');
+      expect(speichern).toHaveBeenCalledWith(false, '2026-11-09-b');
       expect(element.textContent).toContain('Nur du siehst deine Meilensteine.');
     });
 

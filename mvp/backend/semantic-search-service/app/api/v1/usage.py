@@ -33,6 +33,7 @@ from services.meilensteine_service import MeilensteineService
 from services.abzeichen_service import AbzeichenService, get_abzeichen_service
 from domain.abzeichen_sichtbarkeit import (
     AKTUELLER_WORTLAUT as SICHTBARKEIT_WORTLAUT,
+    MEHR_DAZU as SICHTBARKEIT_MEHR_DAZU,
     WORTLAUTE as SICHTBARKEIT_WORTLAUTE,
     UnbekannterWortlaut,
 )
@@ -127,6 +128,8 @@ class MeilensteineResponse(BaseModel):
 class SichtbarkeitWortlaut(BaseModel):
     kennung: str
     text: str
+    # Aufklappbar unter der Frage: was die Einwilligung ausserdem wissen muss.
+    mehr_dazu: str
 
 
 class AbzeichenSichtbarkeitResponse(BaseModel):
@@ -531,6 +534,7 @@ async def abzeichen_sichtbarkeit(
         aktueller_wortlaut=SichtbarkeitWortlaut(
             kennung=SICHTBARKEIT_WORTLAUT,
             text=SICHTBARKEIT_WORTLAUTE[SICHTBARKEIT_WORTLAUT],
+            mehr_dazu=SICHTBARKEIT_MEHR_DAZU[SICHTBARKEIT_WORTLAUT],
         ),
     )
 

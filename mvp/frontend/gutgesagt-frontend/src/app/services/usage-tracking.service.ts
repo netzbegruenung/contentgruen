@@ -46,7 +46,8 @@ export interface Meilenstein {
 export interface AbzeichenSichtbarkeit {
   gefragt: boolean;
   zeigen: boolean | null;
-  aktueller_wortlaut: { kennung: string; text: string };
+  /** Die Frage (text) und, aufklappbar darunter, was die Einwilligung außerdem wissen muss. */
+  aktueller_wortlaut: { kennung: string; text: string; mehr_dazu: string };
 }
 
 export interface BesuchResponse {

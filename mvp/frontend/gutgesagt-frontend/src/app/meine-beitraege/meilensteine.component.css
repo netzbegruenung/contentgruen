@@ -71,6 +71,21 @@
   font-size: 14px;
 }
 
+.sichtbarkeit-mehr {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.sichtbarkeit-mehr summary {
+  cursor: pointer;
+  color: var(--primary-dark);
+}
+
+.sichtbarkeit-mehr p {
+  margin: 4px 0 0;
+}
+
 .sichtbarkeit-knoepfe {
   display: flex;
   flex-wrap: wrap;

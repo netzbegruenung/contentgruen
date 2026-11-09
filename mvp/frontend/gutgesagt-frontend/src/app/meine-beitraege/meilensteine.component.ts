@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
+import { RouterLink } from '@angular/router';
 import { Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -23,7 +24,7 @@ import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../ser
 @Component({
   selector: 'app-meilensteine',
   standalone: true,
-  imports: [CommonModule, MatButtonModule],
+  imports: [CommonModule, MatButtonModule, RouterLink],
   templateUrl: './meilensteine.component.html',
   styleUrls: ['./meilensteine.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
