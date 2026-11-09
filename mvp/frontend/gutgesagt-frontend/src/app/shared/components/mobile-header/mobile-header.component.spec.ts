@@ -12,7 +12,7 @@ describe('MobileHeaderComponent', () => {
   let navigation: jasmine.SpyObj<NavigationService>;
 
   beforeEach(async () => {
-    navigation = jasmine.createSpyObj('NavigationService', ['goBack']);
+    navigation = jasmine.createSpyObj('NavigationService', ['goBack', 'navigateHome']);
 
     await TestBed.configureTestingModule({
       imports: [MobileHeaderComponent],
@@ -43,8 +43,8 @@ describe('MobileHeaderComponent', () => {
 
   /**
    * Mobil steht im Kopf der Name der aktuellen Seite, nicht die Marke - deshalb
-   * ist er kein Link. Zur Startseite fuehrt hier der erste Menueeintrag; den
-   * Titel-Link gibt es nur im Desktop-Kopf, wo "Gut gesagt" steht.
+   * ist er kein Link. Zur Startseite fuehren das Logo links und der erste
+   * Menueeintrag (#620).
    */
   it('laesst den Titel reinen Text, auch abseits der Startseite', fakeAsync(() => {
     oeffnen('/fangkorb');
@@ -53,13 +53,24 @@ describe('MobileHeaderComponent', () => {
     expect(titel().textContent!.trim()).toBe('Fangkorb');
   }));
 
-  it('zeigt ohne Pfeil links das Logo, als Bild ohne eigenen Namen (#416)', fakeAsync(() => {
+  it('zeigt ohne Pfeil links das Logo als Link "Startseite", das Bild ohne eigenen Namen (#416, #620)', fakeAsync(() => {
     oeffnen('/search');
 
-    const logo: HTMLImageElement = fixture.nativeElement.querySelector('.mobile-header-left img.kopf-logo');
-    expect(logo).not.toBeNull();
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.mobile-header-left a.logo-link');
+    expect(link.getAttribute('aria-label')).toBe('Startseite');
+    expect(link.getAttribute('href')).toBe('/');
+    const logo = link.querySelector('img.kopf-logo') as HTMLImageElement;
     expect(logo.getAttribute('src')).toBe('marke/logo.svg');
     expect(logo.getAttribute('alt')).toBe('');
+  }));
+
+  it('fuehrt mit dem Logo ueber den NavigationService zur Startseite', fakeAsync(() => {
+    oeffnen('/search');
+    navigation.navigateHome.and.resolveTo();
+
+    fixture.nativeElement.querySelector('a.logo-link').click();
+
+    expect(navigation.navigateHome).toHaveBeenCalledTimes(1);
   }));
 
   it('zeigt mit Pfeil kein Logo, der Pfeil steht an seiner Stelle', fakeAsync(() => {

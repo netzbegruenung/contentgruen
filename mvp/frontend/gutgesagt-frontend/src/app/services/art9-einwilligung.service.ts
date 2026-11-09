@@ -40,6 +40,24 @@ export function wortlautDatum(kennung: string | null | undefined): string | null
   return datum ? datum[0] : null;
 }
 
+/** Laenger als das ist der erste Satz kein kurzes Label mehr; dann steht der ganze Wortlaut am Haekchen. */
+export const WORTLAUT_LABEL_MAX = 300;
+
+/**
+ * Der erste Satz des Wortlauts, unveraendert, als Label am Haekchen (#620); der ganze
+ * Wortlaut steht aufklappbar darunter. Ein Satz endet an ., ! oder ?, wenn danach ein
+ * Grossbuchstabe oder ein Anfuehrungszeichen kommt: "Abs. 2" und "lit. a" trennen also
+ * nicht. Ohne solches Satzende oder bei einem zu langen ersten Satz der ganze Text.
+ */
+export function wortlautErsterSatz(text: string): string {
+  const ende = text.match(/[.!?](?=\s+[A-ZÄÖÜ„"])/);
+  if (!ende || ende.index === undefined) {
+    return text;
+  }
+  const satz = text.slice(0, ende.index + 1);
+  return satz.length <= WORTLAUT_LABEL_MAX ? satz : text;
+}
+
 /** Ob ein HTTP-Fehler die fehlende Art.-9-Einwilligung meldet (403 mit Kennzeichen). */
 export function einwilligungFehlt(fehler: { status?: number; error?: any } | null | undefined): boolean {
   return fehler?.status === 403 && fehler?.error?.detail === ART9_EINWILLIGUNG_FEHLT;

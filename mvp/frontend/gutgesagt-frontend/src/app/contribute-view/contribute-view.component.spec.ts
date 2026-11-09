@@ -47,11 +47,20 @@ describe('ContributeViewComponent', () => {
   describe('Kette', () => {
     beforeEach(() => erstellen());
 
-    it('zeigt Einwerfen, Fangkorb und die vier Typen als Zeilen', () => {
+    // #620: Verfassen zuerst, mobil lag "Kommentar" sonst erst nach 1,2 Bildschirmhoehen
+    it('zeigt zuerst die vier Typen, dann Einwerfen, Fangkorb und Meine Beitraege', () => {
       expect(zeilen().map((zeile) => zeile.querySelector('.typ-titel')!.textContent!.trim()))
-        .toEqual(['Schnell einwerfen', 'Fangkorb', 'Meine Beiträge', 'Kommentar', 'Hintergrundinfo', 'Bild', 'Post']);
-      expect(fixture.nativeElement.querySelector('.einleitung .erstnutzer-satz').textContent)
-        .toContain('Gut gesagt ist neu.');
+        .toEqual(['Kommentar', 'Hintergrundinfo', 'Bild', 'Post', 'Schnell einwerfen', 'Fangkorb', 'Meine Beiträge']);
+    });
+
+    it('stellt den Erstnutzer-Satz unter die Typen, nicht davor', () => {
+      const satz: HTMLElement = fixture.nativeElement.querySelector('.verfassen-abschnitt .erstnutzer-satz');
+      expect(satz.textContent).toContain('Gut gesagt ist neu.');
+      expect(satz.previousElementSibling!.matches('nav.typ-liste')).toBeTrue();
+    });
+
+    it('nutzt einen Kartenstil fuer alle Zeilen', () => {
+      expect(fixture.nativeElement.querySelector('.rahmen-kachel')).toBeNull();
     });
 
     it('bettet kein Formular und kein Akkordeon ein', () => {
@@ -61,13 +70,14 @@ describe('ContributeViewComponent', () => {
         .toBeNull();
     });
 
-    it('gliedert die Kette in Einwerfen, Weiterarbeiten und Verfassen', () => {
+    it('gliedert die Seite in Verfassen, Einwerfen und Weiterarbeiten mit Abschnittsueberschriften', () => {
       const ueberschriften: HTMLElement[] = Array.from(
         fixture.nativeElement.querySelectorAll('.typ-zwischenueberschrift'),
       );
-      const [einwerfen, weiterarbeiten, verfassen] = ueberschriften;
+      const [verfassen, einwerfen, weiterarbeiten] = ueberschriften;
 
-      expect(ueberschriften.map((u) => u.textContent!.trim())).toEqual(['Einwerfen', 'Weiterarbeiten', 'Verfassen']);
+      expect(ueberschriften.map((u) => u.textContent!.trim())).toEqual(['Verfassen', 'Einwerfen', 'Weiterarbeiten']);
+      expect(ueberschriften.every((u) => u.tagName === 'H2')).toBeTrue();
       expect(einwerfen.nextElementSibling!.classList).toContain('einwerfen-block');
       expect(weiterarbeiten.nextElementSibling!.classList).toContain('fangkorb-block');
       expect(weiterarbeiten.nextElementSibling!.nextElementSibling!.classList).toContain('beitraege-block');
@@ -76,18 +86,19 @@ describe('ContributeViewComponent', () => {
     });
 
     it('fuehrt mit der Einwerfen-Zeile zum Formular, mit der Fangkorb-Zeile zur Liste', () => {
-      zeilen()[0].click();
+      const [, , , , einwerfen, fangkorb, beitraege] = zeilen();
+      einwerfen.click();
       expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
 
-      zeilen()[1].click();
+      fangkorb.click();
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
 
-      zeilen()[2].click();
+      beitraege.click();
       expect(router.navigate).toHaveBeenCalledWith(['/contributions']);
     });
 
     it('oeffnet mit einer Typ-Zeile die Formularseite des Typs', () => {
-      const [, , , kommentar, hintergrund, bild, post] = zeilen();
+      const [kommentar, hintergrund, bild, post] = zeilen();
 
       kommentar.click();
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-commentary']);

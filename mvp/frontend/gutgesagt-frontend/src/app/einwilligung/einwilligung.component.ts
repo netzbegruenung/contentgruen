@@ -10,6 +10,7 @@ import {
   Art9EinwilligungStand,
   EINWILLIGUNG_PFAD,
   wortlautDatum,
+  wortlautErsterSatz,
 } from '../services/art9-einwilligung.service';
 import { ROUTES } from '../shared/constants/app.constants';
 
@@ -42,6 +43,11 @@ export class EinwilligungComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
   ) {}
+
+  /** Label am Haekchen: der erste Satz des aktuellen Wortlauts, unveraendert (#620). */
+  get labelSatz(): string {
+    return this.stand ? wortlautErsterSatz(this.stand.aktueller_wortlaut.text) : '';
+  }
 
   /** Stand-Datum des Wortlauts, dem die Person zugestimmt hat (Kennung ggf. mit Suffix). */
   get wortlautVom(): string | null {
