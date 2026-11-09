@@ -90,7 +90,12 @@ and restores the rule before #387. The image also carries a second NLI model, th
 (`joeddav/xlm-roberta-large-xnli`, fp32, about 2.2 GB on disk, so the image grows by about that
 much). It is only loaded with `SEMANTIC_SEARCH_NLI_BESTAETIGER=true` (default off, and never with
 the NLI-Stufe `aus`): then plan for up to about 2.2 GB more RAM (measured locally: peak +1.4 to
-+1.6 GB). Check the free memory of the host before switching it on.
++1.6 GB). Check the free memory of the host before switching it on. The polarity penalty of the search
+(#574, `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI`, default `schatten`) uses the same first NLI model
+and no extra memory; it loads the model even with the NLI-Stufe `aus`, unless it is `aus`
+itself. In `schatten` each search with a full sentence adds one background judgement (CPU, the
+search does not wait), in `an` the search waits for it (about +0.3 to 0.4 s per search on the
+dev VM). Measure on the target VM with `tests/regression/suche_messen` before switching to `an`.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:

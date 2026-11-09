@@ -27,7 +27,9 @@ daraus ohne Stack; --json schreibt alles als Datei.
 import argparse
 import asyncio
 import json
+import statistics
 import sys
+import time
 from datetime import date
 from typing import (
     TYPE_CHECKING,
@@ -108,6 +110,10 @@ class FallMessung(NamedTuple):
     # Aussagen aus fall.nur_ohne, die im gemessenen Bestand stehen: Der Fall ist dort
     # nicht fremd und zaehlt nicht mit. (Fehlt eine aus fall.nur_mit, steht sie in fehlt.)
     ausgeschlossen: Tuple[str, ...] = ()
+    # Wie lange aussagetreffer_finden fuer diesen Fall brauchte (Millisekunden):
+    # Einbettung, Aussagesuche, Polaritaet (Wortlisten oder NLI-Modell, #574) und
+    # Schlagwoerter. None, wenn der Fall nicht gemessen wurde.
+    aussagetreffer_ms: Optional[float] = None
 
 
 class Auswertung(NamedTuple):
@@ -294,6 +300,21 @@ def aehnliche_aussagen(messungen: Iterable[FallMessung]) -> AehnlicheAussagen:
 # ---------------------------------------------------------------------- #
 
 
+def laufzeit(messungen: Iterable[FallMessung]) -> Optional[Tuple[float, float]]:
+    """Median und 95. Perzentil von aussagetreffer_ms ueber die gemessenen Faelle."""
+    werte = sorted(m.aussagetreffer_ms for m in messungen if m.aussagetreffer_ms)
+    if not werte:
+        return None
+    p95 = werte[min(len(werte) - 1, round(0.95 * (len(werte) - 1)))]
+    return statistics.median(werte), p95
+
+
+def polaritaet_modus() -> str:
+    from core.config import settings
+
+    return f"Polarität mit NLI: {settings.suche_polaritaet_nli}"
+
+
 def _anteil(wert: Optional[float]) -> str:
     return "–" if wert is None else f"{wert:.2f}"
 
@@ -362,6 +383,14 @@ def tabellen(
         f"Fällen mit Erwartung; {a.ohne_mit_vorschlag} von {a.ohne_erwartung} Fällen "
         "ohne Erwartung zeigen trotzdem eine.",
     ]
+    dauer = laufzeit(messungen)
+    if dauer:
+        zeilen += [
+            "",
+            "Laufzeit der Aussagetreffer je Suche (Einbettung, Aussagesuche, Polarität, "
+            f"Schlagwörter): Median {dauer[0]:.0f} ms, 95. Perzentil {dauer[1]:.0f} ms "
+            f"({polaritaet_modus()}).",
+        ]
     fehlend = [m for m in messungen if m.fehlt]
     if fehlend:
         zeilen += ["", "Nicht gemessen (Aussage fehlt im Bestand):"]
@@ -442,6 +471,7 @@ def als_json(
                 "ausgeschlossen": list(m.ausgeschlossen),
                 "landet_auf_erwarteter": m.landet_auf_erwarteter,
                 "aehnliche": list(m.aehnliche),
+                "aussagetreffer_ms": m.aussagetreffer_ms,
                 "einordnung": {
                     f"{s:.2f}": einordnen(m.fall, kandidaten)
                     for s, kandidaten in sorted(m.angezeigt.items())
@@ -494,6 +524,10 @@ async def dienste_starten() -> Dienste:
     # Die NLI-Stufe laedt im Hintergrund; ohne Warten mischt die Messung bis dahin die
     # Schwelle ein (#387).
     await get_statement_service().nli_laden_abwarten()
+    # Ebenso das Modell der Polaritaet (#574), falls die NLI-Stufe aus ist.
+    from services.search.polaritaet_nli import get_nli_polaritaet
+
+    await get_nli_polaritaet().laden_abwarten()
     return Dienste(
         statement_service=get_statement_service(),
         specs=suchspezifikationen(
@@ -625,9 +659,11 @@ async def fall_messen(
             (),
             erwartung.ausgeschlossen,
         )
+    beginn = time.perf_counter()
     aussagetreffer, polaritaet = await aussagetreffer_finden(
         dienste.statement_service, fall.anfrage
     )
+    dauer_ms = (time.perf_counter() - beginn) * 1000
 
     angezeigt = {}
     for schwelle in schwellen:
@@ -663,6 +699,7 @@ async def fall_messen(
         landet,
         tuple(str(a.id) in erwartung.aussage_ids for a in aehnliche),
         erwartung.ausgeschlossen,
+        dauer_ms,
     )
 
 
@@ -751,6 +788,7 @@ def umgebung() -> dict:
         "modell": EMBEDDING_MODELL,
         "sammlung": settings.qdrant_collection,
         "dubletten_schwelle": settings.statement_similarity_threshold,
+        "suche_polaritaet_nli": settings.suche_polaritaet_nli,
     }
 
 
