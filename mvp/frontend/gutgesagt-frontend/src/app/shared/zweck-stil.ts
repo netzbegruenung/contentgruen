@@ -34,7 +34,7 @@ export const STIL_ERKLAERUNG: Record<Stil, string> = {
   humorvoll: 'nimmt mit einem Augenzwinkern die Schärfe raus',
   persoenlich: 'erzählt aus eigenem Erleben',
   brueckenbauend: 'holt Unentschiedene ab',
-  bissig: 'spitz und zugespitzt, nur für die eigenen Leute',
+  bissig: 'zugespitzt, nur für die eigenen Leute',
 };
 
 /** "Bissig" gibt es nur beim Zweck "Für die eigenen Leute". */

@@ -88,7 +88,7 @@ Bedarf erkennt Gut gesagt nur aus eigenen Signalen: Suchen ohne Treffer, „Hier
 - Teilen-Knöpfe auf der Ergebnisseite („Ergebnis teilen“) und an jeder Karte (Link auf die Beitragsansicht); mobil das Teilen-Menü, am Desktop Link kopieren. Mastodon ist ein Ziel neben anderen.
 - Linkvorschau für Beitragsansichten und Ergebnisseiten („Antworten auf: …“).
 - Eine Karte teilen zählt als Nutzung; eine Ergebnisseite teilen und geteilte Links öffnen zählt nicht.
-- Kopieren bleibt Text ohne Link auf Gut gesagt, wahlweise „Text“ oder „Text + Herkunft“.
+- Kopieren bleibt Text ohne Link auf Gut gesagt, an der Hintergrundinfo samt Herkunft, sonst nur der Text; die andere Variante steht im ⋮-Menü.
 - Datenschutz: Referrer-Policy `strict-origin`; wer geteilte Links öffnet, wird nicht protokolliert, weder in der App noch im vorgelagerten Webserver (#336).
 
 ## Motivation

@@ -43,7 +43,7 @@ import { AuthService } from '../auth/auth.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { FASSUNGEN, FASSUNG_LABEL, Fassung } from '../shared/fassung';
 import { STIL_ERKLAERUNG, STIL_LABEL, ZWECK_LABEL } from '../shared/zweck-stil';
-import { KURZFASSUNG_MAX } from '../shared/beitrag-grenzen';
+import { PLATTFORM_GRENZE } from '../shared/beitrag-grenzen';
 import { FremdesBildComponent } from '../shared/fremdes-bild/fremdes-bild.component';
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 import { SiegelErklaerung, siegelErklaerung } from '../shared/components/siegel/siegel-erklaerung';
@@ -55,9 +55,6 @@ const BELIEBT_AB = 5;
 
 /** So viele Saetze stehen in der Einwurf-Karte; der Rest wird nur gezaehlt. */
 const SAETZE_SICHTBAR = 3;
-
-/** Bis hierhin passt ein Text auf X und Bluesky, wie im Formular ("passt auf X/Bluesky"). */
-const PLATTFORM_GRENZE = KURZFASSUNG_MAX;
 
 /** Ein Reiter der Fassungen (#641): Name und Zeichenzahl, damit man vor dem Antippen sieht, wie lang sie ist. */
 interface FassungsReiter {
@@ -242,7 +239,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       this.istNeu = this.stundenSeit(this.daten.erstellt) < NEU_STUNDEN;
       this.istBeliebt = (this.nutzung ?? 0) >= BELIEBT_AB;
       this.statementOffen = false;
-      this.gewaehlteFassung = this.vorgewaehlteFassung;
+      // Die Formular-Vorschau bekommt bei jedem Tastendruck neue Daten: dort bleibt die
+      // gewaehlte Fassung stehen (anfangs Mittel), sonst spraenge sie beim Tippen auf Kurz.
+      if (!this.vorschau || changes['daten'].firstChange) {
+        this.gewaehlteFassung = this.vorschau ? 'mittel' : this.vorgewaehlteFassung;
+      }
       this.textAufgeklappt = false;
     }
   }
@@ -575,7 +576,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       : { text: this.textMitHerkunft, wort: 'Mit Herkunft kopieren' };
   }
 
-  /** Tooltip und vorgelesener Name des Knopfs: was er kopiert. */
+  /** Tooltip des Knopfs (vorgelesen als Beschreibung): was er kopiert. */
   get kopierHinweis(): string {
     if (this.daten.typ === 'image') {
       return 'Kopiert die Bildunterschrift';
@@ -645,6 +646,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   statementUmschalten(): void {
     this.statementOffen = !this.statementOffen;
     this.cdr.markForCheck();
+  }
+
+  /** Reiter bleiben beim Neuzeichnen erhalten, sonst verloere die Tastatur den Fokus. */
+  reiterSchluessel(_: number, reiter: FassungsReiter): Fassung {
+    return reiter.fassung;
   }
 
   fassungWaehlen(fassung: Fassung): void {

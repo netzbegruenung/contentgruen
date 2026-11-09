@@ -196,7 +196,7 @@
                                          [value]="angezeigteFassung"
                                          [hideSingleSelectionIndicator]="true"
                                          (change)="fassungWaehlen($event.value)">
-                    <mat-button-toggle *ngFor="let reiter of fassungsReiter" [value]="reiter.fassung"
+                    <mat-button-toggle *ngFor="let reiter of fassungsReiter; trackBy: reiterSchluessel" [value]="reiter.fassung"
                                        [aria-label]="reiter.vorgelesen">
                         <span aria-hidden="true">{{ reiter.label }}<span class="reiter-zeichen"> · {{ reiter.zeichen }}</span></span>
                     </mat-button-toggle>

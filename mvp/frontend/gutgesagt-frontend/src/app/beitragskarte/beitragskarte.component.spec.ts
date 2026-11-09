@@ -356,6 +356,23 @@ describe('BeitragskarteComponent', () => {
       expect(aktionen().zweiteKopie).toBeNull();
     });
 
+    it('bietet am Post den Link als zweite Variante an', () => {
+      zeigen(ausSuchergebnis(postPaket()));
+
+      expect(aktionen().kopierText).toBe('Erneuerbare Energien konsequent ausbauen');
+      expect(aktionen().zweiteKopie).toEqual({
+        text: 'Erneuerbare Energien konsequent ausbauen\n\nHerkunft: https://social.example/posts/1',
+        wort: 'Mit Herkunft kopieren',
+      });
+    });
+
+    it('sagt am Bild, dass der Knopf die Bildunterschrift kopiert', () => {
+      zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', image_url: 'https://example.org/dach.jpg', text: 'Solardach' })));
+
+      expect(aktionen().kopierHinweis).toBe('Kopiert die Bildunterschrift');
+      expect(aktionen().zweiteKopie).toBeNull();
+    });
+
     it('zaehlt auch die zweite Variante als Nutzung an der Karte', fakeAsync(() => {
       zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 2, ...MIT_HERKUNFT })));
 
@@ -409,8 +426,9 @@ describe('BeitragskarteComponent', () => {
 
       expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
       expect(element('.album-inhalt .karte-stil')?.textContent).toContain('humorvoll');
-      // Die kompakte Karte ist als Ganzes antippbar: dort kein eigener Knopf
+      // Die kompakte Karte ist als Ganzes antippbar: dort kein eigener Knopf, die Erklaerung als title
       expect(element('.album-inhalt button.karte-stil')).toBeNull();
+      expect(element('.album-inhalt .karte-stil').getAttribute('title')).toBe('humorvoll: nimmt mit einem Augenzwinkern die Schärfe raus');
     });
 
     describe('Markierung fuer die eigenen Leute (Variante D, Tanne)', () => {
@@ -775,6 +793,31 @@ describe('BeitragskarteComponent', () => {
 
       zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), long_text: 'L'.repeat(900) })));
       expect(component.angezeigteFassung).toBe('mittel');
+    });
+
+    it('bleibt in der Formular-Vorschau beim Tippen bei der gewaehlten Fassung', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung' })), { vorschau: true });
+      expect(component.angezeigteFassung).toBe('mittel');
+
+      component.fassungWaehlen('kurz');
+      fixture.componentRef.setInput('daten', ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', text: 'Neuer Text' })));
+      fixture.detectChanges();
+      expect(component.angezeigteFassung).toBe('kurz');
+
+      component.fassungWaehlen('mittel');
+      fixture.componentRef.setInput('daten', ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', text: 'Neuer Text 2' })));
+      fixture.detectChanges();
+      expect(component.angezeigteFassung).toBe('mittel');
+    });
+
+    it('behaelt die Reiter beim Wechsel der Fassung, damit der Fokus bleibt', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+      const vorher = element('.textlaenge mat-button-toggle');
+
+      component.fassungWaehlen('lang');
+      fixture.detectChanges();
+
+      expect(element('.textlaenge mat-button-toggle')).toBe(vorher);
     });
 
     it('setzt die Marke "passt auf X/Bluesky" nur, wenn die angezeigte Fassung passt', () => {
