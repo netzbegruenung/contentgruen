@@ -21,7 +21,7 @@ H ist eine Hilfskennzahl. Sie trennt „niemand kommt“ von „wer kommt, finde
 
 - Gemessen im internen Launch: je Kennzahl der Median der Wochen 2 bis 4.
 - Woche 1 zählt nicht. Neugier und Schreibsprint verzerren sie.
-- Der Maintainer trägt die Basislinie in Woche 4 in #348 ein. Später geht das nicht mehr: Die Einzelzeilen sind nach 90 Tagen gelöscht.
+- Der Maintainer trägt die Basislinie gleich nach Ende von Woche 4 in #348 ein, spätestens vor Tag 90. Später geht das nicht mehr: Die Einzelzeilen sind nach 90 Tagen gelöscht.
 
 ## Wann ein Signal gilt
 
@@ -29,25 +29,26 @@ Verglichen werden die Wochen 5 bis 8 nach dem öffentlichen Launch mit der Basis
 
 1. **Zwei Wochen hintereinander.** Ein Wert zählt erst, wenn er in zwei aufeinanderfolgenden Wochen auftritt. Bei wenigen Aktiven schwanken die Zahlen stark.
 2. **Genug Suchen.** K3 und H zählen nur in Wochen mit mindestens 30 Suchen. Darunter sagt ein Anteil zu wenig.
-3. **Die Gespräche stützen es.** Mindestens drei der fünf Gespräche (unten) passen zum Signal. Sonst gilt es als offen und wird in #348 so vermerkt.
+3. **Die Gespräche stützen es.** Mindestens drei der fünf Gespräche (unten) passen zum Signal. Sonst gilt es als offen: Wir machen vorerst weiter wie bisher, vermerken es in #348 und ziehen vier Wochen später erneut Bilanz. Für „weiter“ braucht es keine Gespräche.
+4. **Zu wenige Suchen.** Haben zwei oder mehr der Wochen 5 bis 8 weniger als 30 Suchen, gilt das Signal „zu wenig bekannt“ (unten).
 
 ## Signale und Konsequenzen
 
-Jedes Signal führt zu einer von drei Konsequenzen: **weiter**, **umbauen** oder **einstellen**. Treffen mehrere Signale zu, gilt die strengste Konsequenz. Beim Umbauen kommt das Signal mit dem größten Abstand zur Schwelle zuerst.
+Jedes Signal führt zu einer von drei Konsequenzen: **weiter**, **umbauen** oder **einstellen**. Treffen mehrere Signale zu, gilt die strengste Konsequenz. Treffen mehrere Umbau-Signale zu, gilt diese Reihenfolge: erst Bestand (K3), dann Passung (H), dann Bekanntheit (K1).
 
 ### Weiter
 
 | Signal | Konsequenz |
 |---|---|
-| K1 mindestens doppelt so hoch wie die Basislinie, K3 höchstens 50 % und höchstens 15 Prozentpunkte über der Basislinie, H mindestens halb so hoch wie die Basislinie | Weiter nach Roadmap. Jetzt feste Zielwerte setzen, relativ zu den Wochen 5 bis 8. |
+| In denselben zwei aufeinanderfolgenden Wochen: K1 mindestens doppelt so hoch wie die Basislinie, K3 höchstens 50 % und weniger als 15 Prozentpunkte über der Basislinie, H mindestens halb so hoch wie die Basislinie | Weiter nach Roadmap. Jetzt feste Zielwerte setzen, relativ zu den Wochen 5 bis 8. |
 
 ### Umbauen
 
 | Signal | Woran es liegt | Konsequenz |
 |---|---|---|
 | K3 über 50 % oder mindestens 15 Prozentpunkte über der Basislinie | Der Bestand ist zu klein | Schwerpunkt Bestand: Schreibsprint auf die Liste „Suchen ohne Treffer“. Neue Funktionen warten. |
-| K1 gleich oder höher als die Basislinie, aber H unter der Hälfte der Basislinie | Die Antworten passen nicht | In den Gesprächen nachfragen. Schwellen der Suche mit dem Testset prüfen. |
-| K1 nicht mindestens doppelt so hoch wie die Basislinie, oder in den Wochen 5 bis 8 unter der Hälfte der Wochen 1 bis 2 | Gut gesagt ist zu wenig bekannt | Anlässe und Werbung in der Netzbegrünung. Am Werkzeug ändert sich nichts. |
+| K1 gleich oder höher als die Basislinie, aber H unter der Hälfte der Basislinie | Die Antworten passen nicht | In den Gesprächen nachfragen. Schwellen der Suche mit dem Suchtestset prüfen. |
+| K1 nicht mindestens doppelt so hoch wie die Basislinie, oder K1 in den Wochen 5 bis 8 unter der Hälfte der Wochen 1 bis 2 nach dem öffentlichen Launch (die Neugier am Start ist schnell verflogen) | Gut gesagt ist zu wenig bekannt | Anlässe und Werbung in der Netzbegrünung. Am Werkzeug ändert sich nichts. |
 
 Nach einem Umbau ziehen wir acht Wochen später erneut Bilanz, mit denselben Regeln.
 
@@ -73,14 +74,14 @@ Frage 2 entscheidet, ob ein Gespräch „hat geholfen“ zählt.
 
 ## Was die Zahlen verfälschen kann
 
-- **Methodenbruch bei K1.** Kommen das Server-Pseudonym (#444) oder die neuen Kennungen aus #429 zwischen den beiden Launches, ändert sich die Zählung. Dann messen wir die Basislinie neu oder vermerken den Bruch in #348.
-- **Kopien eigener Beiträge.** Ob sie in K2 mitzählen, klärt #444. Für den Vergleich ist das egal, solange es in beiden Phasen gleich bleibt.
+- **Die Zählweise von K1 ändert sich.** Kommen das Server-Pseudonym (#444) oder die neuen Kennungen aus #429 zwischen den beiden Launches, zählt K1 anders. Dann messen wir die Basislinie neu oder vermerken den Bruch in #348.
+- **Kopien eigener Beiträge.** Ob die Zählung heute auch Kopien eigener Beiträge erfasst (das wäre keine Nutzung im Sinne des Glossars), klärt #444. Für den Vergleich ist das egal, solange es in beiden Phasen gleich bleibt.
 - **Annahmen.** Der öffentliche Launch erreicht deutlich mehr Personen als der interne; darauf beruht der Faktor 2 bei K1. Die interne Phase dauert mindestens vier Wochen.
 
 ## Ablauf
 
 | Wann | Wer | Was |
 |---|---|---|
-| Woche 4 nach dem internen Launch | Maintainer | Basislinie in #348 eintragen |
+| Gleich nach Woche 4 des internen Launchs | Maintainer | Basislinie in #348 eintragen |
 | Wochen 5 bis 8 nach dem öffentlichen Launch | Maintainer | Kennzahlen je Woche im Dashboard ablesen |
 | Woche 8 nach dem öffentlichen Launch | Maintainer | Fünf Gespräche führen, dann die Bilanz als Kommentar in #348: Werte, geltende Signale, Konsequenz |
