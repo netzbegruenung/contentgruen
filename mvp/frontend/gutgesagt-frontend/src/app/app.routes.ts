@@ -8,6 +8,7 @@ import {
     vonHierFehltEineAntwort,
 } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { ROUTES } from './shared/constants/app.constants';
+import { ohneSuchtextZumStart } from './result-view/ohne-suchtext.guard';
 import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
 /**
@@ -66,7 +67,9 @@ export const routes: Routes = [
     {
         path: 'result',
         loadComponent: () => import('./result-view/result-view.component').then(m => m.ResultViewComponent),
-        canActivate: [PublicGuard],
+        canActivate: [PublicGuard, ohneSuchtextZumStart],
+        // Auch /result?searchQuery=x -> /result ohne Text geht auf den Start (#642).
+        runGuardsAndResolvers: 'paramsOrQueryParamsChange',
         data: { parent: '/search' }
     },
     {
