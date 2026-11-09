@@ -9,4 +9,4 @@
  * ändert, nimmt eine andere Aussage aus STARTBESTAND und SEED in
  * tests/regression/suche_testset.py.
  */
-export const STARTBEISPIEL = 'Die Grünen sind eine Verbotspartei!';
+export const STARTBEISPIEL = 'Windräder töten die Vögel!';
