@@ -1,5 +1,6 @@
 import {
   RUECKKEHRZIEL_SCHLUESSEL,
+  anmeldegrund,
   rueckkehrzielLesen,
   rueckkehrzielLoeschen,
   rueckkehrzielMerken,
@@ -60,5 +61,24 @@ describe('Rueckkehrziel nach dem Anmelden', () => {
     expect(() => rueckkehrzielLoeschen()).not.toThrow();
     // Der afterEach raeumt mit removeItem auf; der Spy wuerde dort sonst werfen.
     spione.forEach((spion) => spion.and.callThrough());
+  });
+});
+
+describe('Anmeldegrund ueber der Login-Auswahl (#600)', () => {
+  it('nennt fuer die Antwortformulare aus "Selbst beantworten" den Grund', () => {
+    for (const ziel of [
+      '/workflow/add-commentary?aussage=f6efb534-ee3a-4969-b8b8-2f1f9b9bb95d',
+      '/workflow/add-commentary',
+      '/workflow/add-generictext?q=Tempolimit',
+    ]) {
+      expect(anmeldegrund(ziel)).withContext(ziel).toBe('Zum Beantworten melde dich an.');
+    }
+  });
+
+  it('nennt keinen Grund fuer andere Ziele, auch nicht nach "Anmelden" im Kopf', () => {
+    for (const ziel of ['/', '/result?searchQuery=x', '/contribute', '/workflow/add-image',
+                        '/workflow/add-commentary/gespeichert/1', '/workflow/add-commentary-x']) {
+      expect(anmeldegrund(ziel)).withContext(ziel).toBeNull();
+    }
   });
 });

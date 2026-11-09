@@ -39,6 +39,18 @@
     margin-bottom: 30px;
 }
 
+/* Wozu die Anmeldung noetig ist, ueber allem anderen (#600) */
+.anmeldegrund {
+    max-width: 1000px;
+    margin: 4px auto 0;
+    padding: 0 20px;
+    color: var(--primary-dark);
+    line-height: 1.3;
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+}
+
 /* Registration Information Styles */
 .registration-info-container {
     max-width: 1000px;
@@ -182,21 +194,8 @@
     transition: transform 0.2s ease;
 }
 
-.login-option-card:hover:not(.disabled-option) {
+.login-option-card:hover {
     transform: translateY(-2px);
-}
-
-.login-option-card.disabled-option {
-    opacity: 0.7;
-    background: var(--surface-muted);
-}
-
-.login-option-card.disabled-option .login-option-button {
-    cursor: not-allowed;
-}
-
-.login-option-card.disabled-option .login-description {
-    opacity: 0.6;
 }
 
 .disabled-notice {
@@ -235,12 +234,6 @@
 .gutgesagt-button {
     background: var(--primary-fill);
     color: white;
-}
-
-.keycloak-button:disabled,
-.gutgesagt-button:disabled {
-    background: var(--disabled-bg);
-    color: var(--disabled-color);
 }
 
 .login-icon {
@@ -315,6 +308,11 @@
     .registration-info-container {
         padding: 0;
         margin: 15px auto 20px;
+    }
+
+    .anmeldegrund {
+        padding: 0;
+        font-size: 18px;
     }
 
     .registration-expansion-panel .mat-expansion-panel-header {
