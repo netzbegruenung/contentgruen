@@ -36,6 +36,8 @@ from domain.models.content_status import (
     ContentStatus,
 )
 from domain.models.content_origin import ContentOrigin
+from domain.models.content_type import ContentType
+from utils.antwort_ids import FELD_ANTWORT_IDS, antwort_ids
 from utils.data_utils import DataSource
 from utils.text_normalisierung import (
     FELD_TEXT_NORMALISIERT,
@@ -409,6 +411,12 @@ class QdrantBaseRepository(
             # Normalform fuer den exakten Abgleich der Dublettenpruefung.
             if upsert_content_type in TYPEN_MIT_TEXT_NORMALISIERT:
                 data_dict[FELD_TEXT_NORMALISIERT] = text_normalisiert(text)
+
+            # Rueckwaertssuche Beitrag -> Aussage (#603, utils/antwort_ids.py).
+            if upsert_content_type == ContentType.STATEMENT.value:
+                data_dict[FELD_ANTWORT_IDS] = antwort_ids(
+                    data_dict.get("replysuggestions")
+                )
 
             # Upsert to Qdrant
             await self._shared_manager.upsert_batch(

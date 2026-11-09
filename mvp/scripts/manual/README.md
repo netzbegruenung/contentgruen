@@ -43,7 +43,7 @@ Produktion), lokal mit `--email`. Nur Standardbibliothek. Aufruf und Dateiformat
 
 ## Bestand in Qdrant (im semantic-search-Container)
 
-Diese beiden Skripte laufen nicht gegen die HTTP-API, sondern per stdin im
+Diese Skripte laufen nicht gegen die HTTP-API, sondern per stdin im
 semantic-search-Container, mit dessen Qdrant-Umgebung:
 
 - `bestand_pruefen.py` – **nur lesend**. Zaehlt Punkte je Typ und Herkunft,
@@ -58,6 +58,13 @@ semantic-search-Container, mit dessen Qdrant-Umgebung:
   jeder Version, die einen weiteren Typ aufnimmt (zuletzt Hintergrundinfos, #301):
   Bis dahin findet die Pruefung aeltere Beitraege dieses Typs nur ueber die
   Einbettung, eine nur klein geschriebene Kopie also nicht.
+- `antwort_ids_nachtragen.py` – traegt das Payload-Feld `antwort_ids` fuer Aussagen
+  nach (IDs ihrer Antworten, Rueckwaertssuche Beitrag → Aussage fuer die Beitragsseite,
+  #603) und legt den Keyword-Index an. Ohne `--ausfuehren` wird nur gezaehlt;
+  idempotent. Nach dem Ausrollen der Version laufen lassen, die das Feld schreibt,
+  in ruhiger Zeit, und danach einmal wiederholen (`nachzutragen: 0`): Eine Antwort, die
+  waehrend des Laufs dazukommt, kann der erste Lauf mit altem Stand ueberschreiben. Bis
+  dahin zeigt die Beitragsseite zu aelteren Beitraegen keine Aussage.
 
 Auf Test/Prod liegt kein Repo-Checkout; die Skripte werden heruntergeladen:
 
@@ -68,11 +75,15 @@ docker exec -i gutgesagt-semantic-search python - < bestand_pruefen.py
 curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
 docker exec -i gutgesagt-semantic-search python - < text_normalisiert_nachtragen.py
 docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisiert_nachtragen.py
+
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/antwort_ids_nachtragen.py
+docker exec -i gutgesagt-semantic-search python - < antwort_ids_nachtragen.py
+docker exec -i gutgesagt-semantic-search python - --ausfuehren < antwort_ids_nachtragen.py
 ```
 
 `bestand_pruefen.py` nutzt nur qdrant_client und die Standardbibliothek und laeuft
-auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` braucht den
-ausgerollten neuen Stand.
+auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` und
+`antwort_ids_nachtragen.py` brauchen den ausgerollten neuen Stand.
 
 ## Vektor benennen (im semantic-search-Container)
 

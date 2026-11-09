@@ -29,6 +29,7 @@ from repositories.interfaces.statement_repository import (
 )
 from repositories.interfaces.repository_factory import IRepositoryFactory
 from domain.models.statement import (
+    AntwortKurz,
     Statement,
     StatementDbEntry,
     StatementSearchResult,
@@ -240,6 +241,14 @@ class StatementService(
         Grundlage von "Hier fehlt eine Antwort" (StatementRepository.ohne_kommentar).
         """
         return await self._repository.ohne_kommentar()
+
+    async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
+        """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
+        return await self._repository.zu_antwort(beitrag_id)
+
+    async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
+        """Die sichtbaren Beitraege unter den IDs, mit Typ und Titel (#603)."""
+        return await self._repository.sichtbare_antworten(ids)
 
     async def vorab_anlegen(
         self, text: str, author: str
