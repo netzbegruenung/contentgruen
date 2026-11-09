@@ -12,7 +12,7 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { typLabel } from '../shared/content-type-registry';
 import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
-import { BEISPIEL_AUSSAGE } from '../rundgang/rundgang-daten';
+import { STARTBEISPIEL } from '../shared/startbeispiel';
 
 @Component({
   selector: 'app-search-view',
@@ -35,6 +35,7 @@ export class SearchViewComponent implements AfterViewInit {
   readonly typLabel = typLabel;
   readonly fangkorbKurz = FANGKORB_KURZ;
   readonly kettenIcons = KETTEN_ICONS;
+  readonly startbeispiel = STARTBEISPIEL;
 
   constructor(
     private navigationService: NavigationService,
@@ -102,8 +103,8 @@ export class SearchViewComponent implements AfterViewInit {
   }
 
   performExampleSearch(): void {
-    // Dieselbe Aussage durchsucht der Rundgang „Antwort finden“ (#389)
-    const exampleQuery = BEISPIEL_AUSSAGE;
+    // Dieselbe Aussage durchsucht der Rundgang „Antwort finden“ (#389, #601)
+    const exampleQuery = STARTBEISPIEL;
     this.logger.debug('Performing example search:', exampleQuery);
     this.navigationService.navigateToResult(exampleQuery);
   }
