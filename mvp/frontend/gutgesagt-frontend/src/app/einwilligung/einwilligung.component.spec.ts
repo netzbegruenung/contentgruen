@@ -78,6 +78,33 @@ describe('EinwilligungComponent', () => {
       expect(knopf('Einwilligen und weiter').disabled).toBeTrue();
     });
 
+    // #620: ein Satz am Haekchen, der ganze Wortlaut aufklappbar darunter, Text unveraendert
+    it('zeigt am Haekchen den ersten Satz und den ganzen Wortlaut aufklappbar darunter', () => {
+      const lang = {
+        kennung: '2026-11-05-b',
+        text: 'Ich willige ausdrücklich ein (Art. 9 Abs. 2 lit. a DSGVO). Das betrifft Beiträge. Ich kann widerrufen.',
+      };
+      starten();
+      standLiefern(stand({ aktueller_wortlaut: lang }));
+
+      expect(el().querySelector('mat-checkbox')!.textContent!.trim()).toBe(
+        'Ich willige ausdrücklich ein (Art. 9 Abs. 2 lit. a DSGVO).',
+      );
+      const aufklapp = el().querySelector('details.wortlaut-aufklapp') as HTMLDetailsElement;
+      expect(aufklapp.open).toBeFalse();
+      expect(aufklapp.querySelector('summary')!.textContent!.trim()).toBe('Ganzen Wortlaut lesen');
+      expect(aufklapp.querySelector('.wortlaut-voll')!.textContent!.trim()).toBe(lang.text);
+      const eingabe = el().querySelector('mat-checkbox input[type=checkbox]') as HTMLInputElement;
+      expect(eingabe.getAttribute('aria-describedby')).toBe('einwilligung-wortlaut-voll');
+    });
+
+    it('zeigt einen Wortlaut aus einem Satz ganz am Haekchen, ohne Aufklapper', () => {
+      starten();
+      standLiefern(stand());
+
+      expect(el().querySelector('details.wortlaut-aufklapp')).toBeNull();
+    });
+
     it('ohne Haekchen geht nichts ans Backend', () => {
       starten();
       standLiefern(stand());

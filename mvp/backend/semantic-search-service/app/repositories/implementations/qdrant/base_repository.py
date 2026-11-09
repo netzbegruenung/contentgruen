@@ -314,9 +314,14 @@ class QdrantBaseRepository(
             {**erster.payload, "id": str(erster.id), "score": 1.0}
         )
 
-    async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
+    async def get(
+        self,
+        item_id: uuid.UUID,
+        eintrag_modell: Optional[Type[Any]] = None,
+    ) -> TContentDbEntry:
         """
-        Async implementation of get.
+        Async implementation of get. eintrag_modell ersetzt das Modell des Repositorys
+        beim Lesen des Payloads (wie bei get_by_author).
 
         "Nicht gefunden" und "anderer Inhaltstyp unter dieser ID" sind erwartbar
         (geloeschte Aussage, veralteter Link) und werden als ValueError gemeldet -
@@ -357,7 +362,9 @@ class QdrantBaseRepository(
             raise ValueError(meldung)
 
         try:
-            entry = self.content_db_entry_model_class.model_validate(result)
+            entry = (
+                eintrag_modell or self.content_db_entry_model_class
+            ).model_validate(result)
         except Exception as e:
             logger.error(
                 f"Failed to read item {item_id}: {type(e).__name__}", exc_info=True

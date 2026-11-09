@@ -14,6 +14,7 @@ from dependencies import (
     get_beitrag_laden,
     get_content_repository,
     get_aufrufer,
+    get_meilensteine_service,
     get_muster_hinweise_service,
     get_nutzung_rate_limiter,
     get_punkte_service,
@@ -28,11 +29,13 @@ from utils.device_category import derive_device_category
 from utils.rate_limiter import RateLimiter
 from services.entdoppelung import pruefwert
 from utils.aufrufer import ANONYM
+from services.meilensteine_service import MeilensteineService
 from services.punkte_service import PunkteService
 from services.art9_einwilligung_service import get_art9_einwilligung_service
 from services.usage_tracking_service import get_usage_service
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
+from services.guete_service import guete_ergaenzen
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from domain.models.commentary import Fassung
 from domain.models.content_type import ContentType
@@ -97,6 +100,23 @@ class PunkteResponse(BaseModel):
     quests: int
     wirkung: int
     gesamt: int
+
+
+class MeilensteinResponse(BaseModel):
+    """Ein Meilenstein mit Stand (#351); ``erreicht`` ab ``stand >= schwelle``."""
+
+    kennung: str
+    name: str
+    art: str
+    schwelle: int
+    stand: int
+    erreicht: bool
+
+
+class MeilensteineResponse(BaseModel):
+    """Die eigenen Meilensteine; leer fuer Startkonten und ohne Art.-9-Einwilligung."""
+
+    meilensteine: list[MeilensteinResponse]
 
 
 class TrendingContentResponse(BaseModel):
@@ -414,6 +434,45 @@ async def eigene_punkte(
     )
 
 
+@router.get("/users/me/meilensteine", response_model=MeilensteineResponse)
+async def eigene_meilensteine(
+    current_user: str = Depends(require_user),
+    settings: Settings = Depends(get_settings),
+    service: MeilensteineService = Depends(get_meilensteine_service),
+):
+    """
+    Die Meilensteine der angemeldeten Person (#351), fuer "Meine Beitraege". Nur die
+    Person selbst sieht sie; ein Abzeichen fuer andere braucht eine eigene Zustimmung
+    zur Sichtbarkeit, die es noch nicht gibt (ADR 0004).
+
+    Wie die Punkte hinter ``punkte_aktiv`` (sonst 404): Beide stuetzen sich auf
+    dieselbe Einwilligung und dieselbe DSFA. Die Person kommt aus ``X-User``.
+    """
+    if not settings.punkte_aktiv:
+        raise HTTPException(status_code=404, detail="Not found")
+    try:
+        meilensteine = await service.meilensteine(current_user)
+    except Exception as e:
+        logger.error(
+            f"Meilensteine fuer {log_pseudonym(current_user)} nicht berechnet: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return MeilensteineResponse(
+        meilensteine=[
+            MeilensteinResponse(
+                kennung=m.kennung,
+                name=m.name,
+                art=m.art,
+                schwelle=m.schwelle,
+                stand=m.stand,
+                erreicht=m.erreicht,
+            )
+            for m in meilensteine
+        ]
+    )
+
+
 @router.post("/users/me/besuch", response_model=BesuchResponse)
 async def besuch(
     current_user: str = Depends(require_user),
@@ -505,10 +564,15 @@ async def oft_genutzt(
         # danach wieder dazu. Die Antwort je Typ: dtos/beitragstypen.py; ein Typ
         # ohne Eintrag bekommt die allgemeine Auswahl.
         antworten = fuer_aufrufer(
-            [
-                ANTWORT_JE_TYP.get(e["result_type"], BeitragResponse).model_validate(e)
-                for e in angereichert
-            ],
+            # Vor fuer_aufrufer: Die Guete laesst die Stimme des Autors aus (#427).
+            await guete_ergaenzen(
+                [
+                    ANTWORT_JE_TYP.get(
+                        e["result_type"], BeitragResponse
+                    ).model_validate(e)
+                    for e in angereichert
+                ]
+            ),
             aufrufer,
         )
         varianten_ergaenzen(antworten, varianten)

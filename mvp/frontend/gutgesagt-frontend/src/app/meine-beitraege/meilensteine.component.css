@@ -1,0 +1,60 @@
+.meilensteine {
+  margin-bottom: var(--spacing-md);
+}
+
+.meilensteine h2 {
+  font-size: 1.1rem;
+  margin: 0 0 4px;
+}
+
+.meilensteine-zahl {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+.meilensteine-hinweis {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.meilensteine-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meilenstein {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.meilenstein.erreicht {
+  border-color: var(--akzent-tanne);
+  background: var(--primary-tint);
+  color: var(--text-primary);
+}
+
+.meilenstein-zeichen {
+  flex: none;
+}
+
+.meilenstein.erreicht .meilenstein-zeichen {
+  color: var(--akzent-tanne);
+}
+
+.meilenstein-stand {
+  font-variant-numeric: tabular-nums;
+}

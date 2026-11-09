@@ -29,6 +29,27 @@ test('Besucher: von der Startseite suchen und zurueck', async ({ page }) => {
   await expect(page).toHaveURL(/\/search$/);
 });
 
+test('Besucher: das Startbeispiel zeigt Treffer (#601)', async ({ page }) => {
+  await page.goto('/search');
+  const beispiel = page.locator('.beispiel-link');
+  const text = (await beispiel.textContent())!.trim().replace(/^„|“$/g, '');
+  await beispiel.click();
+  await page.waitForURL(/\/result\?/);
+  expect(new URL(page.url()).searchParams.get('searchQuery')).toBe(text);
+  await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });
+});
+
+test('Besucher: Rundgang füllt das Startbeispiel vor, Schritt 2 zeigt Treffer (#601)', async ({ page }) => {
+  await page.goto('/search');
+  const text = (await page.locator('.beispiel-link').textContent())!.trim().replace(/^„|“$/g, '');
+  await page.getByRole('button', { name: 'Rundgang starten' }).click();
+  await expect(page.locator('.blase h3')).toHaveText('Aussage eingeben');
+  await expect(page.locator('app-search.start-suche input[name="searchQuery"]')).toHaveValue(text);
+  await page.locator('.blase .weiter').click();
+  await expect(page.locator('.blase h3')).toHaveText('Passende Treffer', { timeout: 45_000 });
+  await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });
+});
+
 test('Besucher: 401 der Suche fuehrt nicht zur Anmeldung', async ({ page }) => {
   // Die Suche ist oeffentlich (PublicEndpoints): Ein 401 zeigt einen Fehler, statt umzuleiten.
   await page.route('**/api/v1/search/searchByText**', (anfrage) => anfrage.fulfill({ status: 401, json: {} }));

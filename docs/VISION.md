@@ -114,13 +114,13 @@ Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antri
 
 ## Erfolg messen
 
-Drei Kennzahlen, ohne feste Zielwerte: Personen pro Tag, die suchen, im Wochenmittel (das Tagespseudonym wechselt täglich, Personen über eine Woche sind nicht zählbar); Nutzungen pro Woche; Anteil der Suchen ohne Treffer. Der interne Launch liefert die Basislinie; acht Wochen nach dem öffentlichen Launch wird Bilanz gezogen, mit vorher festgelegten Signalen und Konsequenzen (#417). Admins sehen die Kennzahlen je Woche im Dashboard unter „Bilanz“.
+Drei Kennzahlen, ohne feste Zielwerte: Personen pro Tag, die suchen, im Wochenmittel (das Tagespseudonym wechselt täglich, Personen über eine Woche sind nicht zählbar); Nutzungen pro Woche; Anteil der Suchen ohne Treffer. Der interne Launch liefert die Basislinie; acht Wochen nach dem öffentlichen Launch wird Bilanz gezogen, mit vorher festgelegten Signalen und Konsequenzen (#417, [`BILANZ.md`](./BILANZ.md)). Admins sehen die Kennzahlen je Woche im Dashboard unter „Bilanz“.
 
 ## Weg zum Launch
 
 1. Einwürfe aus gesammeltem Material vorbereiten, per Skript, mit Link als Herkunft (#341, #288).
 2. Schreibwochenende im Gründungsteam: die 10 bis 15 häufigsten Aussagen mit je zwei Kommentaren (einer für die Kommentarspalte, einer sachlich mit Herkunft) und einige Posts.
-3. Nutzertest mit drei bis fünf Personen auf diesem Bestand, mobil zuerst, mit mindestens einer Person mit wenig Digitalerfahrung und einer außerhalb des akademischen Milieus. Bis dahin nur Qualität und Launch-Blocker.
+3. Nutzertest mit drei bis fünf Personen auf diesem Bestand, mobil zuerst, mit mindestens einer Person mit wenig Digitalerfahrung und einer außerhalb des akademischen Milieus ([`NUTZERTEST.md`](./NUTZERTEST.md)). Bis dahin nur Qualität und Launch-Blocker.
 4. Was den Launch blockiert, beheben.
 5. Launch in der Netzbegrünung.
 6. Eine Woche später ein Schreibsprint in der Netzbegrünung, mit „Hier fehlt eine Antwort“ und Rückmeldung zur Nutzung.

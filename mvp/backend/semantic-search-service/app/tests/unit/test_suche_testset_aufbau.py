@@ -7,6 +7,7 @@ Gemessen gegen einen Stack wird mit `python -m tests.regression.suche_messen`
 
 import asyncio
 import json
+import re
 import uuid
 from collections import Counter
 from pathlib import Path
@@ -130,6 +131,44 @@ class TestBezugZumSeed:
         """Das Soll des naechtlichen Laufs (gemessen am Seed) bleibt, wenn Faelle zum
         Startbestand dazukommen; die Zahl gegen das Soll prueft test_nachtlauf.py."""
         assert not any(am_seed_gemessen(f) for f in FAELLE if f.quelle == "start")
+
+
+@pytest.mark.skipif(REPO_WURZEL is None, reason="Frontend und Seed nicht im Checkout")
+class TestStartbeispiel:
+    """
+    Das Startbeispiel (#601) hinter „Beispiel probieren“ und im Rundgang steht im
+    Frontend (shared/startbeispiel.ts). Ist es woertlich eine Aussage mit Kommentaren,
+    findet die Suche diese Aussage mit Score um 1 (gleicher Text, gleiche Einbettung)
+    und zeigt ihre Kommentare; eine neue Aussage legt sie nicht an. Ob der Bestand der
+    Instanz die Aussage wirklich hat, prueft dieser Test nicht: am Seed (Dev-Stack,
+    naechtlicher Lauf) ja, auf Produktion nach dem Import des Startbestands (#288).
+    """
+
+    @staticmethod
+    def _startbeispiel() -> str:
+        ts = (
+            REPO_WURZEL
+            / "mvp/frontend/gutgesagt-frontend/src/app/shared/startbeispiel.ts"
+        ).read_text(encoding="utf-8")
+        treffer = re.findall(r"export const STARTBEISPIEL = '([^']+)';", ts)
+        assert len(treffer) == 1, "STARTBEISPIEL nicht gefunden"
+        return treffer[0]
+
+    def test_startbeispiel_ist_aussage_des_startbestands(self):
+        start = {text_normalisiert(t) for t in STARTBESTAND}
+        assert text_normalisiert(self._startbeispiel()) in start
+
+    def test_startbeispiel_hat_im_seed_kommentare(self):
+        """So zeigt es auch im Dev-Stack und in den E2E-Tests Treffer."""
+        beispiel = text_normalisiert(self._startbeispiel())
+        kommentare = [
+            k
+            for datei in sorted(SEED_V1.glob("statements_with_commentaries/*.json"))
+            for eintrag in json.loads(datei.read_text(encoding="utf-8"))
+            if text_normalisiert(eintrag["statement"]) == beispiel
+            for k in eintrag.get("commentaries", [])
+        ]
+        assert kommentare
 
 
 # ---------------------------------------------------------------------- #

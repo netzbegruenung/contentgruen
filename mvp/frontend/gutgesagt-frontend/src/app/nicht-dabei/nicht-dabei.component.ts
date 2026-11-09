@@ -17,7 +17,7 @@ import { AuthService } from '../auth/auth.service';
 import { AUSSAGE_MIN_ZEICHEN, StatementService } from '../services/statement.service';
 import { StatementSearchResult } from '../services/dtos/statementDtos';
 import { LoggingService } from '../services/logging.service';
-import { SUCHTEXT_PARAM } from '../shared/formular-adresse';
+import { FORMULAR_PFAD, SUCHTEXT_PARAM, aussageParameter } from '../shared/formular-adresse';
 
 /** Fortlaufende Nummer fuer eindeutige IDs je Instanz (aria-labelledby). */
 let naechsteNummer = 0;
@@ -30,7 +30,9 @@ let naechsteNummer = 0;
  * Zeigt bis zu drei aehnliche Aussagen, markiert "passt vielleicht" - dieselbe
  * Auswahl wie die Vorschlaege im Feld "Antwort auf" (gepflegte Aussagen ab der
  * unteren Grenze, ohne Widerspruch). Ein Klick sucht nach der Aussage. Aussagen,
- * deren Beitraege schon als Treffer dastehen, fallen weg.
+ * deren Beitraege schon als Treffer dastehen, fallen weg. Ohne Treffer sagt jede,
+ * wie viele Antworten sie hat, und bietet "Selbst beantworten" fuer sich an - vor
+ * dem Knopf fuer die eigene Formulierung, damit keine doppelte Aussage entsteht (#617).
  *
  * Nur fuer Angemeldete: Der Endpunkt der Aussagen ist nicht anonym erreichbar, ein
  * 401 fuehrte Besucher auf /login. Ohne Anmeldung oder wenn nichts ladbar ist,
@@ -52,11 +54,14 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
   @Input() bekannteAussagen: readonly string[] = [];
 
   /**
-   * Ohne Treffer steht "Nicht dabei?" nur ueber einer Liste: Sonst folgte auf
-   * "noch nichts drin" eine Frage ohne Auswahl (etwa fuer Besucher).
+   * Die Suche hat keine Treffer. Dann steht der Titel nur ueber einer Liste (sonst
+   * folgte auf "noch nichts drin" eine Frage ohne Auswahl, etwa fuer Besucher), er
+   * lautet "Meintest du …?", und jede aehnliche Aussage nennt ihre Antworten und
+   * bietet "Selbst beantworten" fuer sich an (#617).
    */
-  @Input() titelNurMitListe = false;
+  @Input() ohneTreffer = false;
 
+  readonly kommentarPfad = FORMULAR_PFAD.commentary;
   readonly titelId = `nicht-dabei-titel-${++naechsteNummer}`;
   readonly listenId = `aehnliche-titel-${naechsteNummer}`;
 
@@ -109,7 +114,24 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
   }
 
   get titelZeigen(): boolean {
-    return !this.titelNurMitListe || this.aehnliche.length > 0;
+    return !this.ohneTreffer || this.aehnliche.length > 0;
+  }
+
+  /**
+   * Ohne Treffer fragt "Nicht dabei?" nach etwas, das gar nicht dasteht; dann
+   * "Meintest du …?" ueber den aehnlichen Aussagen (#617).
+   */
+  get titel(): string {
+    return this.ohneTreffer ? 'Meintest du …?' : 'Nicht dabei?';
+  }
+
+  antwortenText(anzahl: number): string {
+    return anzahl === 1 ? '1 Antwort' : `${anzahl} Antworten`;
+  }
+
+  /** Query-Parameter, um im Kommentarformular auf diese Aussage zu antworten. */
+  antwortAuf(aussage: StatementSearchResult): Record<string, string> {
+    return aussageParameter(aussage.id, aussage.text);
   }
 
   /** Query-Parameter, um nach einer Aussage zu suchen. */

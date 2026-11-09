@@ -228,6 +228,36 @@ class VoteRepository:
 
             return counts
 
+    def stimmen_je_beitrag(
+        self, content_ids: Iterable[uuid.UUID], ausgenommen: Iterable[str] = ()
+    ) -> Dict[str, List[Tuple[str, str]]]:
+        """
+        Je Beitrag die Stimmen als (Kennung, Richtung), aus einer Abfrage fuer alle,
+        ohne die Stimmen ausgenommener Kennungen (Startkonten, #352). Fuer die Guete
+        (#427), die zusaetzlich die Stimme der schreibenden Person auslaesst; die
+        Kennungen verlassen den Dienst nicht.
+        """
+        ids = sorted({str(c) for c in content_ids})
+        if not ids:
+            return {}
+        query, werte = ohne_ausgenommene(
+            f"""
+        SELECT content_id, user_id, vote_type
+        FROM votes
+        WHERE content_id IN :ids AND {OHNE_AUSGENOMMENE}
+        """,
+            ausgenommen,
+            ids=ids,
+        )
+        query = query.bindparams(bindparam("ids", expanding=True))
+        ergebnis: Dict[str, List[Tuple[str, str]]] = {}
+        with self.db.get_session() as session:
+            for row in session.execute(query, werte):
+                ergebnis.setdefault(str(row.content_id), []).append(
+                    (row.user_id, row.vote_type)
+                )
+        return ergebnis
+
     def get_content_score(
         self, content_id: uuid.UUID, ausgenommen: Iterable[str] = ()
     ) -> float:

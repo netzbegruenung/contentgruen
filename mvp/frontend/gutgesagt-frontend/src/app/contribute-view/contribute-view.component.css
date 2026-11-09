@@ -1,50 +1,21 @@
-.einleitung p {
-    margin: 0;
-}
-
-/* Optik aus der globalen .hinweis-box (styles.css) */
-.einleitung .erstnutzer-satz {
-    margin-bottom: 12px;
-}
-
-/* Typen als kompakte Zeilen, am Handy alle auf einem Bildschirm */
+/*
+ * Drei Abschnitte, ein Kartenstil (#620): jede Zeile weiss mit feinem Rand; die Typfarbe
+ * steckt nur noch in der Kachel hinter dem Symbol. Am Handy alles untereinander, am Desktop
+ * zweispaltig, damit die rechte Haelfte nicht leer bleibt.
+ */
 .typ-zeilen {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--spacing-lg);
     max-width: 600px;
     padding: var(--spacing-md) var(--page-margin);
 }
 
-.typ-zeile {
+.typ-abschnitt {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 12px;
-    width: 100%;
-    min-height: 48px;
-    padding: 16px 20px;
-    border: none;
-    border-radius: 12px;
-    font: inherit;
-    text-align: left;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.typ-zeile:active {
-    transform: scale(0.98);
-}
-
-/*
- * Einwerfen und Fangkorb: weiss mit Rand wie die Startseiten-Kacheln statt
- * Typfarbe. Das Padding ist um die 2 px Rand kleiner, damit die Kacheln so hoch
- * bleiben wie die Typzeilen darunter.
- */
-.rahmen-kachel {
-    padding: 14px 18px;
-    border: 2px solid var(--linie-tanne);
-    background: var(--bg-card);
+    min-width: 0;
 }
 
 .typ-liste {
@@ -53,22 +24,43 @@
     gap: 12px;
 }
 
-/*
- * Wie die Einleitung ("Waehle, was ..."), eine Stufe kleiner. Mehr Luft nach oben
- * als nach unten, damit die Ueberschrift zu ihrem Abschnitt gehoert.
- */
+/* Abschnittsueberschrift: Hausschrift wie h2, eine Stufe unter dem Seitentitel */
 .typ-zwischenueberschrift {
-    margin: 8px 0 -4px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.4;
-    letter-spacing: normal;
-    color: var(--text-primary);
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--primary-dark);
 }
 
-.typ-zwischenueberschrift:first-child {
-    margin-top: 0;
+/* Optik aus der globalen .hinweis-box (styles.css) */
+.erstnutzer-satz {
+    margin: 0;
+}
+
+.typ-zeile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-card);
+    font: inherit;
+    text-align: left;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.typ-zeile:hover {
+    border-color: var(--linie-tanne);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.typ-zeile:active {
+    transform: scale(0.98);
 }
 
 .typ-zeile:focus-visible {
@@ -76,10 +68,39 @@
     outline-offset: 2px;
 }
 
+/* Kachel hinter dem Symbol; ohne Typfarbe neutral */
 .typ-icon {
+    display: flex;
     flex-shrink: 0;
-    font-size: 32px;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: var(--surface-variant);
+    box-shadow: inset 0 0 0 1px var(--border-color);
+    font-size: 26px;
     line-height: 1;
+}
+
+.commentary-card .typ-icon {
+    box-shadow: none;
+    background: linear-gradient(135deg, var(--commentary-bg) 0%, var(--commentary-bg-end) 100%);
+}
+
+.generictext-card .typ-icon {
+    box-shadow: none;
+    background: linear-gradient(135deg, var(--generictext-bg) 0%, var(--generictext-bg-end) 100%);
+}
+
+.image-card .typ-icon {
+    box-shadow: none;
+    background: linear-gradient(135deg, var(--image-bg) 0%, var(--image-bg-end) 100%);
+}
+
+.post-card .typ-icon {
+    box-shadow: none;
+    background: linear-gradient(135deg, var(--post-bg) 0%, var(--post-bg-end) 100%);
 }
 
 .typ-text {
@@ -106,21 +127,44 @@
     color: var(--primary-dark);
 }
 
+@media (min-width: 900px) {
+    .typ-zeilen {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        /* wie der Abstand der Typen, damit beide Spalten fluchten */
+        column-gap: 12px;
+        max-width: 960px;
+    }
+
+    /* Verfassen ueber beide Spalten, die vier Typen zwei mal zwei */
+    .verfassen-abschnitt {
+        grid-column: 1 / -1;
+    }
+
+    .verfassen-abschnitt .typ-liste {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 @media (max-width: 599px) {
     .typ-zeilen {
+        gap: 20px;
         padding-top: 12px;
     }
 
     .typ-zeile {
-        padding: 12px 16px;
-    }
-
-    .rahmen-kachel {
-        padding: 10px 14px;
+        padding: 10px 12px;
     }
 
     .typ-icon {
-        font-size: 28px;
+        width: 40px;
+        height: 40px;
+        font-size: 22px;
+    }
+
+    .typ-zwischenueberschrift {
+        font-size: 20px;
     }
 
     .typ-titel {
@@ -130,20 +174,4 @@
     .typ-satz {
         font-size: 13px;
     }
-}
-
-.commentary-card {
-    background: linear-gradient(135deg, var(--commentary-bg) 0%, var(--commentary-bg-end) 100%);
-}
-
-.generictext-card {
-    background: linear-gradient(135deg, var(--generictext-bg) 0%, var(--generictext-bg-end) 100%);
-}
-
-.image-card {
-    background: linear-gradient(135deg, var(--image-bg) 0%, var(--image-bg-end) 100%);
-}
-
-.post-card {
-    background: linear-gradient(135deg, var(--post-bg) 0%, var(--post-bg-end) 100%);
 }

@@ -76,6 +76,15 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() fassung: Fassung | null = null;
   /** Der Menueeintrag "Beitrag öffnen"; aus auf der eigenen Adresse selbst. */
   @Input() ansichtVerlinkt = true;
+  /**
+   * Zaehler an den Stimm-Knoepfen (#427), wie der Server sie zuletzt gemeldet hat;
+   * null = unter der Mindestzahl (der Server schickt dann keine, DSFA M5) oder
+   * unbekannt, dann ohne Zahl. Die eigene Stimme rechnet die Leiste sofort ein.
+   */
+  @Input() hilfreich: number | null = null;
+  @Input() nichtHilfreich: number | null = null;
+  /** Aus am eigenen Beitrag: Die Zaehler zeigen nur Stimmen anderer (#427). */
+  @Input() eigeneStimmeImZaehler = true;
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();
@@ -100,6 +109,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    * Dislike.
    */
   private ausgang: Stimme | undefined;
+  /** Die eigene Stimme, die in den zuletzt gemeldeten Zaehlern schon steckt. */
+  private stimmeImZaehler: Stimme = null;
   private abgleich = new Subject<void>();
   private abonniert = false;
 
@@ -128,7 +139,36 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['stimme'] || changes['inhaltId']) {
       this.initializeVoteState();
+      this.stimmeImZaehler = this.stimme ?? null;
+    } else if (changes['hilfreich'] || changes['nichtHilfreich']) {
+      // Frisch geladen nach einer abgeglichenen Stimme: Die angezeigte steckt jetzt drin.
+      this.stimmeImZaehler = this.angezeigt;
     }
+  }
+
+  get zahlHilfreich(): number | null {
+    return this.zahl(this.hilfreich, 'like');
+  }
+
+  get zahlNichtHilfreich(): number | null {
+    return this.zahl(this.nichtHilfreich, 'dislike');
+  }
+
+  /** Der unsichtbare Name eines Stimm-Knopfs, mit Zaehler, sofern bekannt. */
+  beschriftung(name: string, zahl: number | null): string {
+    if (zahl === null) {
+      return name;
+    }
+    return `${name}, ${zahl} ${zahl === 1 ? 'Stimme' : 'Stimmen'}`;
+  }
+
+  private zahl(gemeldet: number | null, richtung: 'like' | 'dislike'): number | null {
+    if (gemeldet === null || !this.eigeneStimmeImZaehler) {
+      return gemeldet;
+    }
+    const jetzt = this.angezeigt === richtung ? 1 : 0;
+    const drin = this.stimmeImZaehler === richtung ? 1 : 0;
+    return Math.max(0, gemeldet + jetzt - drin);
   }
 
   ngOnDestroy(): void {

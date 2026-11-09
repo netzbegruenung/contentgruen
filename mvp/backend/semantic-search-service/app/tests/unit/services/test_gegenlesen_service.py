@@ -319,6 +319,14 @@ class TestPassiv:
 
         assert anmerkung(ergebnis, "passiv").woerter == ["wird verabschiedet"]
 
+    def test_hinweis_ohne_festes_beispiel(self, service):
+        # #618: kein festes "Die Regierung beschließt …", das zu keinem Beitrag passt.
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt", text="Die Halle wird gebaut.", aussage=""
+        )
+
+        assert "Regierung" not in anmerkung(ergebnis, "passiv").text
+
     def test_futur_ist_kein_passiv(self, service):
         ergebnis = service.gegenlesen(
             titel="Klimaschutz schafft Arbeit",
@@ -378,6 +386,17 @@ class TestLangeKomposita:
         assert anmerkung(ergebnis, "kompositum").text.startswith(
             f"Lange Wörter: „{wort}“. "
         )
+
+    @pytest.mark.parametrize(
+        "wort", ["Bürgerenergie-Genossenschaften", "Klima-Schutz-Programm"]
+    )
+    def test_wort_mit_bindestrich_ist_nicht_lang(self, service, wort):
+        # #618: Der Bindestrich gliedert das Wort schon.
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt", text=f"Die {wort} helfen.", aussage=""
+        )
+
+        assert "kompositum" not in arten(ergebnis)
 
 
 class TestGuete:

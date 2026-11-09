@@ -317,7 +317,7 @@ Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach 
 _Avoid_: Trending, Trend, beliebt, Top-Beiträge
 
 **Stimme**:
-Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung.
+Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung. Sie gilt der Behauptung im Titel: Ändert die Autorin den Titel so, dass er nach der NLI-Stufe etwas anderes behauptet, verfallen die Stimmen; kleine Korrekturen und Änderungen nur am Text lassen sie stehen.
 _Avoid_: Vote, Like, Daumen
 
 **Siegel**:
@@ -325,7 +325,7 @@ Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fass
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:
-Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
+Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen, auf der Karte dasselbe Gegenlesen ohne die Aussage (ohne die Regel zu übernommenen Schlüsselwörtern, denn ein Beitrag kann auf mehrere Aussagen antworten). Stimmen anderer zählen erst ab einer Mindestzahl verschiedener Stimmender, ohne Startkonten und ohne die eigene Stimme; ihr Anteil an der Güte wächst mit ihrer Zahl, bleibt aber begrenzt. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
@@ -464,7 +464,7 @@ Was eine Person mit ihren Punkten erreicht, in aufsteigender Folge; ein höheres
 _Avoid_: Rang
 
 **Meilenstein**:
-Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; dafür gibt es ein Abzeichen, das am Anzeigenamen nur steht, wenn die Person gesondert zustimmt, es anderen zu zeigen, und dann nur für Angemeldete.
+Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; dafür gibt es ein Abzeichen, das am Anzeigenamen nur steht, wenn die Person gesondert zustimmt, es anderen zu zeigen, und dann nur für Angemeldete. Die Meilensteine (#351): erste Nutzung durch andere, 10, 50 und 100 Nutzungen (entdoppelt wie für Punkte), erste Zustimmung anderer, und für Unterstützungsarbeit 10 ausformulierte Einwürfe anderer und 10 eigene Einwürfe, die andere ausformuliert haben. Gezählt wird nur mit nicht gesperrten Beiträgen; Startkonten zählen auf keiner Seite mit (weder ihre Nutzung, Stimmen und Einwürfe noch ihr Ausformulieren), und ein Startkonto und ein Konto ohne Art.-9-Einwilligung haben keine. Meilensteine werden nicht gespeichert: Wird ein Beitrag gesperrt oder gelöscht, kann ein erreichter wieder verschwinden. Bisher sieht die Person sie nur selbst in „Meine Beiträge“, wie die Punkte nur bei eingeschalteten Punkten; das Abzeichen am Anzeigenamen kommt mit der Zustimmung zur Sichtbarkeit.
 _Avoid_: Achievement, Badge, Erfolg
 
 **Meine Einwürfe**:
@@ -520,6 +520,10 @@ _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 **Einlösung**:
 Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt, auch wenn es zur Adresse schon ein Konto gibt oder die Adresse einen Tippfehler hat; nur wenn Keycloak das Konto nicht anlegen konnte, wird sie zurückgenommen. Die Zahl erlaubter Einlösungen begrenzt eine Einladung.
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
+
+**Startbeispiel**:
+Die Aussage hinter „Beispiel probieren“ auf der Startseite; der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
+_Avoid_: Beispielsuche, Demo-Aussage
 
 **Startbestand**:
 Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start schreibt, damit Gut gesagt nicht leer beginnt. Er wird wie jeder Beitrag angelegt, über das Formular oder das Importskript aus einer Datei.

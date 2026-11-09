@@ -33,7 +33,7 @@ main * {
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: 12px;
     height: var(--header-height-desktop);
     flex-shrink: 0;
 }
@@ -57,6 +57,18 @@ main * {
     width: 44px;
     height: 44px;
     flex-shrink: 0;
+}
+
+/* Logo als Link zur Startseite (#620) */
+.logo-link {
+    display: block;
+    flex-shrink: 0;
+    border-radius: 8px;
+}
+
+.logo-link:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
 }
 
 .back-button-header {
@@ -487,10 +499,4 @@ mat-sidenav-content {
     font-size: 20px;
     line-height: 24px;
     text-align: center;
-}
-
-/* Ketten-Icon (Emoji) im runden Header-Knopf, so gross wie ein mat-icon */
-.header-emoji {
-    font-size: 20px;
-    line-height: 1;
 }

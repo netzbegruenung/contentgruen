@@ -393,6 +393,18 @@ describe('AddGenerictextComponent', () => {
       });
     }));
 
+    it('meldet eine neu angelegte Aussage nur, wenn der Server es sagt (#617)', fakeAsync(() => {
+      speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, aussage_neu: true });
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      tippeAussage('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ aussageNeu: true }));
+    }));
+
     it('behandelt ein fehlendes verknuepft wie false, wenn eine Aussage mitging', fakeAsync(() => {
       speichernMit({});
       const erfolg = spyOn(component.success, 'emit');
@@ -911,6 +923,13 @@ describe('AddGenerictextComponent', () => {
       fixture.detectChanges();
     }
 
+    /** Wie "Als neue Aussage anlegen" im Antwort-auf-Block: erst dann gibt es Themen (#617). */
+    function alsNeueAussage(text: string): void {
+      aussageAusAdresse(text);
+      component.aussageSetzen({ id: '', text, neuGewaehlt: true });
+      fixture.detectChanges();
+    }
+
     function auswahl(): HTMLElement | null {
       return seite().querySelector('.optionale-angaben app-themen-auswahl');
     }
@@ -925,7 +944,11 @@ describe('AddGenerictextComponent', () => {
       themenLaden();
       expect(auswahl()).toBeNull();
 
+      // Nur getippt (oder aus der Adresse): noch keine Themen, darunter stehen erst vorhandene (#617)
       aussageAusAdresse('Wärmepumpen sind zu teuer');
+      expect(auswahl()).toBeNull();
+
+      alsNeueAussage('Wärmepumpen sind zu teuer');
 
       expect(auswahl()).toBeTruthy();
       // Wie in „Hier fehlt eine Antwort“.
@@ -947,7 +970,7 @@ describe('AddGenerictextComponent', () => {
         .expectOne(`${environment.baseUrl}/api/v1/statement/themen`)
         .flush('weg', { status: 503, statusText: 'Service Unavailable' });
 
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
 
       expect(auswahl()).toBeNull();
     });
@@ -955,7 +978,7 @@ describe('AddGenerictextComponent', () => {
     it('schickt die gewaehlten Themen mit dem Text der Aussage', fakeAsync(() => {
       const hinzufuegen = speichernMit();
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
 
       thema('Energie und Heizen').click();
@@ -973,7 +996,7 @@ describe('AddGenerictextComponent', () => {
 
     it('laesst hoechstens zwei Themen waehlen', () => {
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
 
       thema('Klima').click();
       fixture.detectChanges();
@@ -986,7 +1009,7 @@ describe('AddGenerictextComponent', () => {
     it('schickt ohne Wahl keine Themen', fakeAsync(() => {
       const hinzufuegen = speichernMit();
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
 
       component.speichern();
@@ -998,7 +1021,7 @@ describe('AddGenerictextComponent', () => {
     it('schickt zu einer gewaehlten Aussage keine Themen: Sie behaelt ihre', fakeAsync(() => {
       const hinzufuegen = speichernMit({ statement_id: ID, verknuepft: true });
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       thema('Klima').click();
       aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
       ausfuellen();
@@ -1022,7 +1045,7 @@ describe('AddGenerictextComponent', () => {
       });
       const erfolg = spyOn(component.success, 'emit');
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
       thema('Soziales').click();
 
@@ -1036,7 +1059,7 @@ describe('AddGenerictextComponent', () => {
       speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, themen: [] });
       const erfolg = spyOn(component.success, 'emit');
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
       thema('Soziales').click();
 
@@ -1050,7 +1073,7 @@ describe('AddGenerictextComponent', () => {
       speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, themen: [THEMEN[2]] });
       const erfolg = spyOn(component.success, 'emit');
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
       thema('Soziales').click();
 
@@ -1062,7 +1085,7 @@ describe('AddGenerictextComponent', () => {
 
     it('zaehlen fuers Zuruecksetzen als Eingabe und werden mit geleert', () => {
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       thema('Klima').click();
       dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
 

@@ -125,6 +125,72 @@
   gap: 6px;
 }
 
+// Siegel (#427): sieht nicht nach Knopf aus - kein Rahmen, kein Hintergrund -, ist fuer
+// Tastatur und Screenreader aber einer, weil Antippen die Erklaerung oeffnet.
+.siegel-knopf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: help;
+  border-radius: 8px;
+
+  app-siegel {
+    width: 30px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-main);
+    outline-offset: 2px;
+  }
+}
+
+// Als Menuepunkt (fuer Screenreader) gestaltet wie ein Textfeld: mehrzeilig, kein Hover.
+.siegel-erklaerung.mat-mdc-menu-item {
+  display: block;
+  height: auto;
+  min-height: 0;
+  cursor: default;
+  white-space: normal;
+  max-width: 280px;
+  padding: 4px 16px 8px;
+  background: none;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.siegel-erklaerung-kopf {
+  margin: 4px 0;
+  font-weight: 700;
+}
+
+.siegel-erklaerung-text {
+  margin: 4px 0;
+}
+
+.siegel-kriterien {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: var(--primary-main);
+  }
+}
+
 .badge {
   display: flex;
   align-items: center;
