@@ -30,6 +30,10 @@ Entschieden mit der Punktezählung (PR #476, BanSe/todo#266): Besucher werden ü
 
 Ranglisten erscheinen nur bei Personen, die ausdrücklich zugestimmt haben. Die Zustimmung ist freiwillig, nichts ist vorbelegt, und sie lässt sich jederzeit widerrufen. Meilenstein-Abzeichen, die anderen sichtbar sind, brauchen ebenfalls eine gesonderte Zustimmung. Grund: Schon die Teilnahme an einer Rangliste verrät eine politische Haltung (DSGVO Art. 9), und Ranglisten zeigen anderen nur den Anzeigenamen. Die Entscheidung steht in `docs/VISION.md` und `docs/DSFA.md`. Der Satz in Consequences unten ist entsprechend ersetzt.
 
+## Abzeichen am Anzeigenamen (Ergänzung 09.11.2026, #351)
+
+Die gesonderte Zustimmung für sichtbare Meilenstein-Abzeichen ist gebaut, als eigene Einwilligung neben der Art.-9-Einwilligung (GLOSSARY.md „Zustimmung zur Sichtbarkeit“): einmal gefragt ab dem ersten erreichten Meilenstein, zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit änderbar, ein Nein wirkt sofort. Andere sehen nur die Zahl der erreichten Meilensteine neben dem Anzeigenamen, nur Angemeldete. Die Zahl wird nicht gespeichert, sondern im Arbeitsspeicher alle 15 Minuten neu berechnet, weil sie an jeder Karte jeder Suche hängt. Eine Wartezeit wie bei den Punkten fürs Tun gilt nicht: Die Meilensteine der Wirkung entstehen aus Nutzung und Zustimmung anderer, nicht aus dem eigenen Speichern. Wie die Punkte bleibt alles hinter Schaltern aus, bis die DSFA beschlossen ist (`docs/DSFA.md`).
+
 ## Considered Options
 
 - Punkte für jede Tätigkeit in voller Höhe (Schreiben, Einwerfen, Bewerten): am einfachsten, belohnt aber Menge statt Qualität. Übernommen ist nur die gedeckelte Form (siehe „Drei Stufen“).
