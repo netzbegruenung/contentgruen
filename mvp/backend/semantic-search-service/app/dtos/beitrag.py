@@ -95,7 +95,7 @@ class PostResponse(BeitragResponse):
     title: str
     platform: str
     # Das Konto auf der Plattform ("@name"), oeffentlich am Post - keine Kennung.
-    author: str
+    author: Optional[str] = None
     url: Optional[str] = None
     engagement: int = 0
 

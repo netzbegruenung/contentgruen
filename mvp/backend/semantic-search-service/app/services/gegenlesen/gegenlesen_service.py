@@ -354,8 +354,8 @@ class GegenlesenService:
             art="passiv",
             stelle=gefunden[0][0],
             text=(
-                f"Passiv: {_aufzaehlen(woerter)}. Sag, wer handelt: "
-                "„Die Regierung beschließt …“ statt „… wird beschlossen“."
+                f"Passiv: {_aufzaehlen(woerter)}. Sag, wer handelt, "
+                "dann liest es sich klarer."
             ),
             woerter=woerter,
         )
@@ -366,6 +366,12 @@ class GegenlesenService:
             for token in satz:
                 if token.pos_ not in _NOMEN or len(token.text) < (
                     KOMPOSITUM_AB_ZEICHEN
+                ):
+                    continue
+                # Mit Bindestrich ist ein Wort schon gegliedert ("Klima-Schutz-Gesetz",
+                # #618); jeder Teil zählt dann für sich.
+                if "-" in token.text and all(
+                    len(teil) < KOMPOSITUM_AB_ZEICHEN for teil in token.text.split("-")
                 ):
                     continue
                 # Lang ist lang, auch wenn CharSplit unsicher ist; die Zerlegung

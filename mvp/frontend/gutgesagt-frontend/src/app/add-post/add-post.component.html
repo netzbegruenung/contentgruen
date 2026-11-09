@@ -29,10 +29,10 @@
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="formular-feld">
-                        <mat-label>Gepostet von</mat-label>
-                        <input matInput id="author" formControlName="author" type="text" required
+                        <mat-label>Gepostet von (optional)</mat-label>
+                        <input matInput id="author" formControlName="author" type="text"
                                [attr.maxlength]="autorMax" placeholder="@konto" />
-                        <mat-error *ngIf="postForm.get('author')?.hasError('required')">Wer hat ihn gepostet?</mat-error>
+                        <mat-hint>Nur bei Organisationen oder öffentlichen Konten</mat-hint>
                     </mat-form-field>
                 </div>
 
