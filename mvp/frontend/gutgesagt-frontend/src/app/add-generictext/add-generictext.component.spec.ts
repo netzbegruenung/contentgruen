@@ -393,6 +393,18 @@ describe('AddGenerictextComponent', () => {
       });
     }));
 
+    it('meldet eine neu angelegte Aussage nur, wenn der Server es sagt (#617)', fakeAsync(() => {
+      speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, aussage_neu: true });
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      tippeAussage('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ aussageNeu: true }));
+    }));
+
     it('behandelt ein fehlendes verknuepft wie false, wenn eine Aussage mitging', fakeAsync(() => {
       speichernMit({});
       const erfolg = spyOn(component.success, 'emit');
