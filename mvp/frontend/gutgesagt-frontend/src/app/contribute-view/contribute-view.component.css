@@ -126,7 +126,8 @@
     .typ-zeilen {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        column-gap: var(--spacing-lg);
+        /* wie der Abstand der Typen, damit beide Spalten fluchten */
+        column-gap: 12px;
         max-width: 960px;
     }
 

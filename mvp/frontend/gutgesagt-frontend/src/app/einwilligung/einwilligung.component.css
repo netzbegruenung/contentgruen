@@ -19,6 +19,7 @@
 .haekchen ::ng-deep label {
   padding-top: 10px;
   white-space: normal;
+  font-size: 15px;
   line-height: 1.5;
   letter-spacing: normal;
   font-weight: 500;
