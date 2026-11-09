@@ -1,10 +1,13 @@
+import { Clipboard } from '@angular/cdk/clipboard';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, of } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
@@ -27,6 +30,13 @@ const OHNE_KONTEXT: Kontext = { aussage: null, weitere: [] };
 
 export const NICHT_VERFUEGBAR = 'Dieser Beitrag ist nicht verfügbar.';
 export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
+export const LINK_KOPIERT = 'Link kopiert.';
+export const LINK_NICHT_KOPIERT = 'Kopieren hat nicht geklappt.';
+
+/** Die Adresse, unter der andere den Beitrag oeffnen (#603), ohne Query und Anker. */
+export function beitragsLink(id: string, origin: string = window.location.origin): string {
+  return `${origin}${ROUTES.BEITRAG}/${encodeURIComponent(id)}`;
+}
 
 /**
  * Ein Beitrag unter seiner eigenen Adresse, /beitrag/:id (#300), fuer alle
@@ -37,8 +47,9 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
  * die eigene Stimme mit (user_vote), sonst zeigte die Karte eine falsche.
  * Gesperrte und geloeschte Beitraege gibt es hier fuer niemanden (404).
  *
- * Unter der Karte die Aussage, auf die der Beitrag antwortet, und weitere Antworten
- * zu ihr (#603, app-beitrag-kontext); der Endpunkt liefert beides mit.
+ * Unter der Karte "Link kopieren" zum Teilen der Adresse, die Aussage, auf die der
+ * Beitrag antwortet, und weitere Antworten zu ihr (#603, app-beitrag-kontext); der
+ * Endpunkt liefert Aussage und Antworten mit.
  */
 @Component({
   selector: 'app-beitrag-ansicht',
@@ -47,6 +58,7 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
     CommonModule,
     RouterLink,
     MatButtonModule,
+    MatIconModule,
     MatProgressSpinnerModule,
     BeitragskarteComponent,
     BeitragKontextComponent,
@@ -60,13 +72,19 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
 
       <app-beitragskarte *ngIf="karte as karte" [daten]="karte" variante="voll"
                          [ansichtVerlinkt]="false"></app-beitragskarte>
+      <app-beitrag-kontext *ngIf="karte" [aussage]="kontext.aussage"
+                           [weitere]="kontext.weitere"></app-beitrag-kontext>
+      <div *ngIf="karte" class="weiter">
+        <button mat-stroked-button type="button" class="link-kopieren" (click)="linkKopieren()">
+          <mat-icon aria-hidden="true">link</mat-icon>
+          Link kopieren
+        </button>
+      </div>
 
       <ng-container *ngIf="zustand === 'nichtDa' || zustand === 'stoerung'">
         <p class="hinweis" role="status">{{ zustand === 'nichtDa' ? nichtVerfuegbar : nichtAnzeigbar }}</p>
         <a mat-stroked-button class="zur-suche" [routerLink]="suche">Zur Suche</a>
       </ng-container>
-      <app-beitrag-kontext *ngIf="karte" [aussage]="kontext.aussage"
-                           [weitere]="kontext.weitere"></app-beitrag-kontext>
     </div>
   `,
   styles: [
@@ -83,6 +101,12 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
 
       app-beitragskarte {
         display: block;
+        width: 100%;
+      }
+
+      .weiter {
+        display: flex;
+        justify-content: center;
         width: 100%;
       }
 
@@ -106,6 +130,7 @@ export class BeitragAnsichtComponent implements OnInit {
   readonly nichtVerfuegbar = NICHT_VERFUEGBAR;
   readonly nichtAnzeigbar = NICHT_ANZEIGBAR;
   readonly suche = ROUTES.SEARCH;
+  private id = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -113,13 +138,16 @@ export class BeitragAnsichtComponent implements OnInit {
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
     private destroyRef: DestroyRef,
+    private clipboard: Clipboard,
+    private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit(): void {
     this.route.paramMap
       .pipe(
         map((params) => params.get('id') ?? ''),
-        tap(() => {
+        tap((id) => {
+          this.id = id;
           this.zustand = 'laedt';
           this.karte = null;
           this.cdr.markForCheck();
@@ -133,6 +161,15 @@ export class BeitragAnsichtComponent implements OnInit {
         this.kontext = kontext;
         this.cdr.markForCheck();
       });
+  }
+
+  /** Kopiert die Adresse des Beitrags; zaehlt nicht als Nutzung, das tut nur Kopieren des Textes. */
+  linkKopieren(): void {
+    if (!this.id) {
+      return;
+    }
+    const kopiert = this.clipboard.copy(beitragsLink(this.id));
+    this.snackBar.open(kopiert ? LINK_KOPIERT : LINK_NICHT_KOPIERT, undefined, { duration: 3000 });
   }
 
   private laden(id: string): Observable<{ zustand: Zustand; karte: KartenDaten | null; kontext: Kontext }> {
