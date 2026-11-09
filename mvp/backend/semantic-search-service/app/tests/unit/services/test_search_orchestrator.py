@@ -17,6 +17,7 @@ from domain.models.content_type import ContentType
 from domain.models.image import ImageSearchResult
 from domain.models.post import PostSearchResult
 from dtos.search import PostSearchResult as PostSearchResultDto
+from services.polarity_filter_service import PolarityFilterResult
 from services.search.search_orchestrator import (
     ContentTypeSearchSpec,
     SearchOrchestrator,
@@ -125,6 +126,68 @@ async def test_schwelle_entscheidet_ueber_die_aufnahme(schwelle, erwartet):
     ueber_aussage = [t for t in treffer if t.statement_id is not None]
     assert len(ueber_aussage) == (0 if schwelle is None else 1)
     assert [t.post_result.title for t in treffer if t.statement_id is None] == erwartet
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "ausschliessen, erwartet",
+    [(False, ["antwort", "fremd"]), (True, ["fremd"])],
+    ids=["ohne-widerspruch", "widerspruch-nach-nli"],
+)
+async def test_antworten_einer_widersprechenden_aussage_kommen_nicht_direkt(
+    ausschliessen, erwartet
+):
+    """
+    #574: Straft das NLI-Modell eine Aussage als Gegenteil der Suchanfrage, kommen
+    ihre Antworten auch nicht ueber den direkten Weg zurueck; andere direkte Treffer
+    bleiben.
+    """
+    antwort, fremd = _post(), _post()
+    antwort.title, fremd.title = "antwort", "fremd"
+    antwort.score, fremd.score = 0.9, 0.88
+    service = MagicMock()
+    service.get = AsyncMock(return_value=antwort)
+    aussage = SimpleNamespace(
+        id=uuid.uuid4(),
+        text="Windräder töten Vögel",
+        score=0.3,  # gestraft: ueber die Aussage faellt die Antwort weg
+        replysuggestions=[
+            SimpleNamespace(id=antwort.id, content_type=ContentType.POST, relevance=1)
+        ],
+    )
+    polaritaet = {
+        aussage.id: PolarityFilterResult(
+            original_score=0.95,
+            adjusted_score=0.3,
+            polarity_penalty_applied=0.32,
+            polarity_mismatch_detected=True,
+            query_polarity="nli",
+            result_polarity="widerspruch",
+            explanation="",
+            antworten_ausschliessen=ausschliessen,
+        )
+    }
+    orchestrator = SearchOrchestrator(
+        specs=[
+            ContentTypeSearchSpec(
+                ContentType.POST, service, PostSearchResultDto, "post_result"
+            )
+        ],
+        reference_service=None,
+        usage_service=None,
+        voting_service=None,
+    )
+
+    await orchestrator.collect_statement_based([aussage], 10, polaritaet)
+    with patch(
+        "services.search.search_orchestrator.BaseContentService.search_batch",
+        AsyncMock(return_value=[[antwort, fremd]]),
+    ):
+        await orchestrator.collect_direct("Windräder schützen Vögel", 10)
+
+    treffer = orchestrator.results_for(ContentType.POST)
+    assert [t.post_result.title for t in treffer] == erwartet
 
 
 @pytest.mark.unit

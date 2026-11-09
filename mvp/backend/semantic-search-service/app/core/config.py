@@ -316,6 +316,16 @@ class Settings(BaseSettings):
     enable_polarity_filtering: bool = (
         True  # Enable negation detection and polarity filtering
     )
+    # Polaritaetsstrafe der Suche mit dem NLI-Modell statt der Wortlisten (#574,
+    # services/search/polaritaet_nli.py). aus: Wortlisten. schatten: Wortlisten
+    # entscheiden, das Modell urteilt im Hintergrund mit und wird gezaehlt. an: Das Modell
+    # straft Aussagen, die der Suchanfrage in beiden Richtungen mit mindestens
+    # suche_polaritaet_widerspruch_ab widersprechen, und laesst ihre Antworten auch
+    # direkt nicht zu; Fragen, Schlagwoerter und ohne Modell: die Wortlisten.
+    # Dasselbe Modell wie die NLI-Stufe (NLI_MODELL), kein zweites im Speicher.
+    # Gemessen in tests/regression/SUCHTESTSET.md (Abschnitt Polaritaet mit NLI).
+    suche_polaritaet_nli: NliModus = "schatten"
+    suche_polaritaet_widerspruch_ab: float = Field(default=0.9, ge=0.0, le=1.0)
 
     # Keyword overlap boosting configuration
     enable_keyword_overlap_boost: bool = (

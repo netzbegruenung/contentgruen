@@ -50,6 +50,7 @@ from services.search.search_query_statement import (
 from utils.besucher_pseudonym import anschluss_pruefwert, besucher_merkmal
 from utils.client_identity import derive_client_key
 from services.polarity_filter_service import get_polarity_filter_service
+from services.search.polaritaet_nli import get_nli_polaritaet
 from services.keyword_overlap_service import get_keyword_overlap_service
 from dtos.search import (
     CommentarySearchResult,
@@ -80,8 +81,8 @@ router = APIRouter()
 async def aussagetreffer_finden(statement_service: StatementService, query_text: str):
     """
     Die Aussagen mit Antworten, die zur Suchanfrage passen, gewichtet mit
-    Polaritaetsfilter und Schlagwort-Ueberlappung. Liefert die Treffer und die
-    Polaritaets-Metadaten je Aussage. Eigene Funktion, damit das Suchtestset
+    Polaritaetsstrafe (Wortlisten oder NLI-Modell, #574) und Schlagwort-Ueberlappung.
+    Liefert die Treffer und die Polaritaets-Metadaten je Aussage. Eigene Funktion, damit das Suchtestset
     (tests/regression/suche_messen.py) genau so sucht und gewichtet wie die Suche.
     """
     # Query most similar statements that do contain replysuggestions from the statement index
@@ -97,12 +98,12 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
     polarity_filter = get_polarity_filter_service(
         enable_filtering=settings.enable_polarity_filtering
     )
-    statement_index_results, polarity_metadata = (
-        polarity_filter.analyze_and_filter_statement_results(
-            query_text=query_text,
-            statement_results=statement_index_results,
-            get_text_fn=lambda r: r.text,
-        )
+    # Wortlisten oder das NLI-Modell, je nach suche_polaritaet_nli (#574).
+    statement_index_results, polarity_metadata = await get_nli_polaritaet().gewichten(
+        polarity_filter,
+        query_text,
+        statement_index_results,
+        lambda r: r.text,
     )
     logger.debug(
         f"📊 After polarity filtering: {len(statement_index_results)} statement results"

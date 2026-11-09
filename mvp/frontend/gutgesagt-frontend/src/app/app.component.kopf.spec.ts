@@ -99,17 +99,15 @@ describe('AppComponent - Desktop-Kopf', () => {
   describe('Besucher', () => {
     beforeEach(() => starten(BESUCHER));
 
-    it('hat genau einen Weg zum Anmelden: den Knopf, nicht den Avatar', () => {
+    it('hat genau einen Weg zum Anmelden: den Knopf, und keinen Avatar (#599)', () => {
       const anmelden = Array.from(kopf().querySelectorAll('button, [role="button"]')).filter(
         (e) => e.textContent?.includes('Anmelden') || e.getAttribute('aria-label') === 'Anmelden'
       );
       expect(anmelden.length).toBe(1);
       expect(anmelden[0].tagName).toBe('BUTTON');
 
-      expect(avatar().getAttribute('role')).toBeNull();
-      expect(avatar().getAttribute('tabindex')).toBeNull();
-      avatar().click();
-      expect(router.navigate).not.toHaveBeenCalled();
+      expect(avatar()).toBeNull();
+      expect(kopf().textContent).not.toContain('Nicht angemeldet');
     });
 
     it('meldet nur ueber einen Klick im Kopf an, egal wie das Element beschriftet ist', () => {
@@ -234,15 +232,19 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(abmelden.length).toBe(0);
     });
 
-    it('zeigt Fangkorb und Feedback als runde Icon-Knoepfe mit Namen fuer Screenreader', () => {
-      for (const [testid, name] of [
-        ['fangkorb-knopf', 'Fangkorb'],
-        ['feedback-knopf', 'Feedback'],
-      ]) {
-        const knopf = kopf().querySelector(`[data-testid="${testid}"]`) as HTMLElement;
-        expect(knopf.tagName).withContext(testid).toBe('BUTTON');
-        expect(knopf.hasAttribute('mat-icon-button')).withContext(testid).toBeTrue();
-        expect(knopf.querySelector('.cdk-visually-hidden')?.textContent?.trim()).withContext(testid).toBe(name);
+    it('zeigt Fangkorb als runden Icon-Knopf mit Namen fuer Screenreader', () => {
+      const knopf = kopf().querySelector('[data-testid="fangkorb-knopf"]') as HTMLElement;
+      expect(knopf.tagName).toBe('BUTTON');
+      expect(knopf.hasAttribute('mat-icon-button')).toBeTrue();
+      expect(knopf.querySelector('.cdk-visually-hidden')?.textContent?.trim()).toBe('Fangkorb');
+    });
+
+    // #599: drei runde Symbole ohne Beschriftung waren nicht zu deuten
+    it('beschriftet Feedback, Hilfe und Start als Textlinks mit Symbol fuer schmale Kopfzeilen', () => {
+      const textlinks = Array.from(kopf().querySelectorAll('button.header-link'));
+      expect(textlinks.map((k) => k.querySelector('.kopf-text')!.textContent!.trim())).toEqual(['Feedback', 'Hilfe', 'Start']);
+      for (const k of textlinks) {
+        expect(k.querySelector('mat-icon')!.getAttribute('aria-hidden')).toBe('true');
       }
     });
 

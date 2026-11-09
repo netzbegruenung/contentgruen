@@ -85,7 +85,7 @@ test('Verfassen: Aufbau und Bedienung des Kommentarformulars', async ({ page, bi
   await test.step('Vorschau ohne Neu-Zeichen, 0× und Info-Icon', async () => {
     await page.locator('.preview-column').scrollIntoViewIfNeeded();
     await expect.soft(page.locator('.preview-column .badge-neu')).toHaveCount(0);
-    await expect.soft(page.locator('.preview-column .badge-nutzung')).toHaveCount(0);
+    await expect.soft(page.locator('.preview-column .karte-nutzung')).toHaveCount(0);
     await expect.soft(page.locator('.preview-header mat-icon')).toHaveCount(0);
     await expect.soft(page.locator('.preview-column .karte-meta')).toHaveText('Von: Du');
     await bild('09-vorschau');

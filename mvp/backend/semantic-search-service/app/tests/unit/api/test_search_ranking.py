@@ -31,6 +31,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.v1.search import router as search_router
+from services.search.polaritaet_nli import NliPolaritaet
 from services.search.search_orchestrator import (
     MINIMUM_SCORE_THRESHOLD,
     compute_combined_score,
@@ -155,6 +156,11 @@ def search_client():
     no-ops so they neither filter nor reorder results.
     """
     patches = [
+        # Die NLI-Polaritaet (#574) ohne Modell: nur die (durchgereichte) Regel.
+        patch(
+            "api.v1.search.get_nli_polaritaet",
+            return_value=NliPolaritaet(None, "aus", 0.9),
+        ),
         patch(
             "api.v1.search.get_polarity_filter_service",
             return_value=_passthrough_polarity(),

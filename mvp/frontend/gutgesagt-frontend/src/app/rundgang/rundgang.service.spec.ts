@@ -102,12 +102,12 @@ describe('RundgangService', () => {
       expect(zweiter.band()).toBe(WILLKOMMEN);
     });
 
-    it('steht nur auf Startseite und Treffern, nicht auf Formularen, Einwilligung oder Rechtstexten', () => {
-      for (const seite of ['/einladung/abc', '/login', '/einwilligung?returnUrl=%2Fsearch', '/datenschutz', '/contribute']) {
+    it('steht nur auf der Startseite, nicht über Treffern, Formularen, Einwilligung oder Rechtstexten (#599)', () => {
+      for (const seite of ['/result?searchQuery=x', '/einladung/abc', '/login', '/einwilligung?returnUrl=%2Fsearch', '/datenschutz', '/contribute']) {
         navigiert(seite);
         expect(service.band()).withContext(seite).toBeNull();
       }
-      navigiert('/result?searchQuery=x');
+      navigiert('/search');
       expect(service.band()).toBe(WILLKOMMEN);
     });
 
@@ -162,7 +162,7 @@ describe('RundgangService', () => {
     });
 
     it('steht nicht neben einem Rundgang, auch nicht, solange dessen erster Schritt lädt (#585)', async () => {
-      navigiert('/result?searchQuery=x');
+      navigiert('/search?von=teilen'); // Startseite, aber nicht genau die Adresse des ersten Schritts
       expect(service.band()).toBe(WILLKOMMEN);
       router.navigateByUrl.and.returnValue(new Promise(() => undefined));
       void service.starten('antwort-finden'); // erster Schritt auf /search, lädt noch

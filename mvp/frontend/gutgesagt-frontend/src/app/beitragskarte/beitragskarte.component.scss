@@ -219,6 +219,12 @@
   font-weight: 700;
 }
 
+// Nutzung in der Meta-Zeile; inline-block, damit sie beim Hochzaehlen kurz waechst
+.karte-nutzung {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
 .badge-icon {
   width: 18px;
   height: 18px;
@@ -488,10 +494,6 @@
     padding: 0;
     list-style: none;
   }
-}
-
-.quellen-leer {
-  margin: 0;
 }
 
 .quelle {

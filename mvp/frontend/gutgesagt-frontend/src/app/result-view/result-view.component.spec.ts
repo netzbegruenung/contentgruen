@@ -129,7 +129,7 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
 
     const oben: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen-kopf button');
     const unten: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen button');
-    expect(oben.textContent).toContain('Eigenen Kommentar ergänzen');
+    expect(oben.textContent!.trim()).toBe('Selbst beantworten');
     expect(unten.textContent).toContain('Selbst beantworten');
     expect(fixture.nativeElement.querySelector('.mobile-ergaenzen app-nicht-dabei').textContent).toContain('Nicht dabei?');
     expect(fixture.nativeElement.querySelector('.mobile-empty-state')).toBeNull();
@@ -142,6 +142,25 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     komponente.currentSection = 'generictext';
     fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-ergaenzen button').textContent).toContain('Hintergrundinfo ergänzen');
+  }));
+
+  it('zeigt am Handy den leeren Reiter Hintergrund (0) waehlbar, mit einem Satz zum Ergaenzen (#599)', fakeAsync(() => {
+    oeffnen(true, AUSSAGE_ID);
+    const komponente = fixture.componentInstance;
+    komponente.hasCommentaryResults = true;
+    komponente.currentSection = 'commentary';
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+
+    const reiter: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('.mobile-tab-bar .tab-button'));
+    const hintergrund = reiter.find((r) => r.textContent!.includes('Hintergrund'))!;
+    expect(hintergrund.disabled).toBeFalse();
+    expect(hintergrund.textContent).toContain('(0)');
+
+    hintergrund.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.reiter-leer').textContent).toContain('noch keine Hintergrundinfo');
     expect(fixture.nativeElement.querySelector('.mobile-ergaenzen button').textContent).toContain('Hintergrundinfo ergänzen');
   }));
 
@@ -315,16 +334,21 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
     return Array.from(seite.querySelectorAll('.typ-erklaerung')).map((e) => (e.textContent ?? '').trim());
   }
 
-  function pruefeRat(seite: HTMLElement): void {
-    const raete = seite.querySelectorAll<HTMLDetailsElement>('details.keine-antwort-noetig');
+  /** Der Rat ist ein ruhiger, offener Hinweis unter den Treffern, kein Aufklapper (#602). */
+  function pruefeRat(seite: HTMLElement): HTMLElement {
+    const raete = seite.querySelectorAll<HTMLElement>('.keine-antwort-noetig');
     expect(raete.length).withContext('genau ein Rat').toBe(1);
     const rat = raete[0];
-    expect(rat.open).withContext('standardmaessig zugeklappt').toBeFalse();
-    expect(rat.querySelector('summary')?.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
+    expect(rat.querySelector('details, summary')).withContext('kein Aufklapper').toBeNull();
+    expect(rat.classList).withContext('kein Hinweiskasten').not.toContain('hinweis-box');
+    expect(rat.querySelector('mat-icon')).withContext('Info-Symbol').toBeTruthy();
+    expect(rat.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
     expect(rat.textContent).withContext('Melden auf der Plattform, nicht hier').toContain('auf der Plattform melden');
+    return rat;
+  }
 
-    rat.querySelector('summary')!.click();
-    expect(rat.open).withContext('laesst sich aufklappen').toBeTrue();
+  function steht(vorher: Element, nachher: Element): boolean {
+    return (vorher.compareDocumentPosition(nachher) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
   }
 
   it('erklaert am Desktop beide Beitragstypen unter ihren Ueberschriften', () => {
@@ -341,16 +365,21 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
     expect(seite.querySelector('.post-ergebnisse h2 + .typ-erklaerung')?.textContent).toContain(POST_SATZ);
   });
 
-  it('zeigt am Desktop ueber den Treffern den zugeklappten Rat', () => {
+  it('zeigt am Desktop unter den Treffern den ruhigen Rat', () => {
     const seite = oeffnen(false, 2, 0);
-    pruefeRat(seite);
+    const rat = pruefeRat(seite);
     // Auch der Abschnitt ohne Treffer erklaert seinen Typ.
     expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ, HINTERGRUND_SATZ]);
-    const rat = seite.querySelector('details.keine-antwort-noetig')!;
-    const ersterAbschnitt = seite.querySelector('app-commentary-search-results')!;
-    expect(rat.compareDocumentPosition(ersterAbschnitt) & Node.DOCUMENT_POSITION_FOLLOWING)
-      .withContext('Rat steht vor den Treffern').toBeTruthy();
+    expect(steht(seite.querySelector('app-kartenliste')!, rat)).withContext('Rat steht nach den Treffern').toBeTrue();
+    expect(steht(seite.querySelector('.nicht-dabei-unten')!, rat)).withContext('und nach "Nicht dabei?"').toBeTrue();
     expect(rat.closest('section')).withContext('kein eigener Abschnitt ohne Ueberschrift').toBeNull();
+  });
+
+  it('zeigt die Treffer am Desktop als Raster statt im Karussell', () => {
+    const seite = oeffnen(false, 2, 1, 1);
+    expect(seite.querySelector('app-result-carousel')).withContext('kein Karussell').toBeNull();
+    const listen = seite.querySelectorAll('app-kartenliste ul.kartenliste--spalten');
+    expect(listen.length).withContext('je Beitragstyp ein Raster').toBe(3);
   });
 
   it('erklaert am Handy den Beitragstyp des offenen Tabs', () => {
@@ -371,12 +400,11 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
     expect(erklaerungen(seite)).toEqual([POST_SATZ]);
   });
 
-  it('zeigt am Handy ueber den Tabs den zugeklappten Rat', () => {
+  it('zeigt am Handy unter den Treffern den ruhigen Rat', () => {
     const seite = oeffnen(true, 0, 1);
-    pruefeRat(seite);
-    const rat = seite.querySelector('details.keine-antwort-noetig')!;
-    expect(rat.compareDocumentPosition(seite.querySelector('.mobile-tab-bar')!) & Node.DOCUMENT_POSITION_FOLLOWING)
-      .withContext('Rat steht vor den Tabs').toBeTruthy();
+    const rat = pruefeRat(seite);
+    expect(steht(seite.querySelector('.mobile-section')!, rat)).withContext('Rat steht nach den Treffern').toBeTrue();
+    expect(steht(seite.querySelector('.mobile-ergaenzen')!, rat)).withContext('und nach "Nicht dabei?"').toBeTrue();
   });
 
   for (const mobil of [false, true]) {
@@ -388,7 +416,7 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
   for (const mobil of [false, true]) {
     it(`laesst die Seite ohne Treffer unveraendert (${mobil ? 'Handy' : 'Desktop'})`, () => {
       const seite = oeffnen(mobil, 0, 0);
-      expect(seite.querySelector('details.keine-antwort-noetig')).toBeNull();
+      expect(seite.querySelector('.keine-antwort-noetig')).toBeNull();
       expect(erklaerungen(seite)).toEqual([]);
     });
   }

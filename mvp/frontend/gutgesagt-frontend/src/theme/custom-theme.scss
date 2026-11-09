@@ -92,7 +92,8 @@ $gutgesagt-typography: mat.m2-define-typography-config(
   $body-1: mat.m2-define-typography-level(16px, 24px, 400, 'PTSans, Roboto, sans-serif', 0.03125em),
   $body-2: mat.m2-define-typography-level(14px, 20px, 400, 'PTSans, Roboto, sans-serif', 0.01786em),
   $caption: mat.m2-define-typography-level(12px, 20px, 400, 'PTSans, Roboto, sans-serif', 0.03333em),
-  $button: mat.m2-define-typography-level(14px, 14px, 500, 'PTSans-bold, Roboto, sans-serif', 0.08929em),
+  // Knoepfe mit normaler Laufweite: die Material-Sperrung (0.08929em) machte lange Beschriftungen unruhig (#599)
+  $button: mat.m2-define-typography-level(14px, 14px, 500, 'PTSans-bold, Roboto, sans-serif', 0.01em),
   $overline: mat.m2-define-typography-level(10px, 16px, 400, 'PTSans, Roboto, sans-serif', 0.15em),
 );
 
