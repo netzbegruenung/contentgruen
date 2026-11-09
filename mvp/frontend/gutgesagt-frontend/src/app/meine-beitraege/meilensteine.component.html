@@ -1,0 +1,23 @@
+<section *ngIf="meilensteine.length" class="meilensteine" aria-labelledby="meilensteine-titel">
+    <h2 id="meilensteine-titel">Meilensteine <span class="meilensteine-zahl">{{ erreichte }} von {{ meilensteine.length }}</span></h2>
+    <p class="meilensteine-hinweis">Nur du siehst deine Meilensteine.</p>
+    <ul class="meilensteine-liste">
+        <li *ngFor="let meilenstein of meilensteine" class="meilenstein" [class.erreicht]="meilenstein.erreicht">
+            <svg class="meilenstein-zeichen" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <ng-container *ngIf="meilenstein.erreicht; else offen">
+                    <circle cx="8" cy="8" r="8" fill="currentColor"></circle>
+                    <path d="M4.5 8.2l2.3 2.3 4.7-4.9" fill="none" stroke="var(--bg-card)" stroke-width="1.8"
+                          stroke-linecap="round" stroke-linejoin="round"></path>
+                </ng-container>
+                <ng-template #offen>
+                    <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+                </ng-template>
+            </svg>
+            <span class="meilenstein-name">{{ meilenstein.name }}</span>
+            <span *ngIf="meilenstein.erreicht" class="visually-hidden">, erreicht</span>
+            <span *ngIf="!meilenstein.erreicht" class="meilenstein-stand">
+                <span class="visually-hidden">, noch nicht erreicht: </span>{{ meilenstein.stand }}/{{ meilenstein.schwelle }}
+            </span>
+        </li>
+    </ul>
+</section>

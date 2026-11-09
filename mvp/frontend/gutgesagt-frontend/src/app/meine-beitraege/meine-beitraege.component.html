@@ -15,6 +15,9 @@
         <!-- Gesperrte eigene Beitraege stehen nicht im Album, nur hier (#448) -->
         <app-sperrnachrichten></app-sperrnachrichten>
 
+        <!-- Nur fuer die Person selbst; ohne Meilensteine (Punkte aus, keine Einwilligung) leer (#351) -->
+        <app-meilensteine></app-meilensteine>
+
         <div *ngIf="isLoading">
             <p>Lade eigene Beiträge …</p>
             <div class="loading-container">

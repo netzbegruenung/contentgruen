@@ -19,6 +19,7 @@ import { istAenderbar } from '../beitragskarte/beitrag-aendern-dialog.component'
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
 import { SperrnachrichtenComponent } from './sperrnachrichten.component';
+import { MeilensteineComponent } from './meilensteine.component';
 import { tabMitTasteWaehlen } from '../shared/tab-tasten';
 import { MatButtonModule } from '@angular/material/button';
 import { ROUTES } from '../shared/constants/app.constants';
@@ -50,7 +51,8 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     MatButtonModule,
     KartenlisteComponent,
     MeineEinwuerfeComponent,
-    SperrnachrichtenComponent
+    SperrnachrichtenComponent,
+    MeilensteineComponent
   ],
   templateUrl: './meine-beitraege.component.html',
   styleUrls: ['../shared/tabs.css', './meine-beitraege.component.css'],

@@ -31,6 +31,17 @@ export interface UserUsageStats {
   }>;
 }
 
+/** Ein Meilenstein mit Stand (#351); siehe GLOSSARY.md „Meilenstein“. */
+export interface Meilenstein {
+  kennung: string;
+  name: string;
+  /** „wirkung“ (Nutzung, Zustimmung) oder „unterstuetzung“ (Einwürfe). */
+  art: 'wirkung' | 'unterstuetzung';
+  schwelle: number;
+  stand: number;
+  erreicht: boolean;
+}
+
 export interface BesuchResponse {
   nutzung_seit_letztem_besuch: number;
 }
@@ -189,6 +200,25 @@ export class UsageTrackingService {
         catchError(error => {
           this.loggingService.error('Eigene Nutzungsstatistik nicht geladen', error);
           return of(null);
+        })
+      );
+  }
+
+  /**
+   * Die eigenen Meilensteine (#351), nur für die Person selbst. Solange die Punkte
+   * ausgeschaltet sind, antwortet der Server 404; dann und bei jedem anderen Fehler
+   * eine leere Liste, und „Meine Beiträge“ zeigt keine Meilensteine.
+   */
+  getEigeneMeilensteine(): Observable<Meilenstein[]> {
+    return this.http
+      .get<{ meilensteine: Meilenstein[] }>(`${this.apiUrl}/users/me/meilensteine`)
+      .pipe(
+        map((antwort) => antwort.meilensteine ?? []),
+        catchError((error) => {
+          if (error?.status !== 404) {
+            this.loggingService.error('Eigene Meilensteine nicht geladen', error);
+          }
+          return of([]);
         })
       );
   }
