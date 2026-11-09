@@ -277,9 +277,9 @@ Empfänger und Ort“.
   - *Wer es sieht:* alle, auch Besucher (`PostResponse.author`, `ss/dtos/beitrag.py:96-98` auf #622).
   - *Frist:* wie der Post (keine, solange die Plattform läuft); nicht anonymisiert, wenn das
     Konto der einstellenden Person gelöscht wird.
-  - *Minimierung:* Feld freiwillig, leer wird `null` gesendet (#622); die Erklärung bittet,
-    nur Konten von Organisationen oder öffentlich auftretenden Menschen einzutragen; Melden und
-    Einzelfall-Löschung wie oben. Art. 14 (Information der Person) bleibt wie bei R3 **offen**.
+  - *Minimierung:* Feld freiwillig, leer wird `null` gesendet (#622); Melden und
+    Einzelfall-Löschung wie oben (Entscheidung Maintainer 09.11.2026: keine Bitte, nur bestimmte
+    Konten einzutragen). Art. 14 (Information der Person) bleibt wie bei R3 **offen**.
 
 #### V4 Einwürfe und Sätze im Fangkorb
 
