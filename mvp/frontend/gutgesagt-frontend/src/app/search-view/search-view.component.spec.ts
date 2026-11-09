@@ -99,6 +99,9 @@ describe('SearchViewComponent', () => {
       TestBed.inject(AuthService).setUserInfo({ isAuthenticated: false, userId: null, userName: null, claims: null });
       fixture.detectChanges();
       expect(hinweise()).toEqual(['mit Konto', 'mit Konto']);
+      // Im zugaenglichen Namen getrennt vom Titel, nicht "Einwerfenmit Konto"
+      const titel = fixture.nativeElement.querySelector('.start-kachel .kachel-titel') as HTMLElement;
+      expect(titel.textContent!.replace(/\s+/g, ' ').trim()).toBe('Einwerfen mit Konto');
     });
 
     it('fehlt angemeldet und solange die Anmeldung noch nicht geklaert ist', () => {

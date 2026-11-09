@@ -46,7 +46,8 @@
              class="mobile-header-avatar">
       </button>
 
-      <!-- Beitragen; "Meine Beitraege" steht im Menue -->
+      <!-- Beitragen; "Meine Beitraege" steht im Menue. Den Neu-Punkt erklaert der Tooltip,
+           fuer Screenreader als Beschreibung (#644) -->
       <button
         *ngIf="showContributeButton"
         mat-icon-button
@@ -54,7 +55,7 @@
         class="contribute-button"
         [matTooltip]="neuHinweis"
         [matTooltipDisabled]="!beitragenNeu"
-        [attr.aria-label]="beitragenNeu ? 'Beitragen. ' + neuHinweis : 'Beitragen'">
+        aria-label="Beitragen">
         <mat-icon>add</mat-icon>
         <span *ngIf="beitragenNeu" class="neu-punkt" aria-hidden="true"></span>
       </button>

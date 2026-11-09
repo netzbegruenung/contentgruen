@@ -33,6 +33,13 @@
     gap: var(--spacing-sm);
 }
 
+/* Die lange Beschriftung (#644) passt so auch bei 360 px ganz ins Feld */
+@media (max-width: 389px) {
+    .label {
+        font-size: 14px;
+    }
+}
+
 .mat-mdc-form-field {
     width: 100%;
 }

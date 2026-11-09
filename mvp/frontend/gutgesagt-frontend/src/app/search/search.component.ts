@@ -9,6 +9,8 @@ import { takeUntil } from 'rxjs/operators';
 
 /** Was ins Suchfeld gehoert, als Beschriftung des Feldes (#644). */
 export const SUCHFELD_NAME = 'Was hast du gelesen? Text oder Post einfügen';
+/** Kurz fuer das kompakte Feld ueber den Treffern: Daneben steht der Such-Knopf (#644). */
+export const SUCHFELD_NAME_KOMPAKT = 'Text oder Post einfügen';
 
 @Component({
   selector: 'app-search',
@@ -29,7 +31,9 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
   /** Ziel des Skip-Links „Zur Suche“ im Kopf; nur das Feld auf dem Start traegt es (leer: eigene Kennung von Material). */
   @Input() feldId = '';
   @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
-  readonly feldName = SUCHFELD_NAME;
+  get feldName(): string {
+    return this.compactMode ? SUCHFELD_NAME_KOMPAKT : SUCHFELD_NAME;
+  }
   private destroy$ = new Subject<void>();
 
   constructor(

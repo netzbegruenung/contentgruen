@@ -29,7 +29,7 @@ import { RouteConfigService } from './shared/services/route-config.service';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { DATENSCHUTZ_EINSTELLUNGEN, MENUE_ICONS } from './shared/fangkorb-texte';
+import { MENUE_ICONS } from './shared/fangkorb-texte';
 import { ROUTES } from './shared/constants/app.constants';
 import { RundgangComponent } from './rundgang/rundgang.component';
 import { RundgangBandComponent } from './rundgang/rundgang-band.component';
@@ -66,7 +66,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   title = 'Gut gesagt';
   readonly menueIcons = MENUE_ICONS;
-  readonly datenschutzEinstellungen = DATENSCHUTZ_EINSTELLUNGEN;
   readonly neuHinweis = NEU_HINWEIS;
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   pageTitle: string = 'Gut gesagt';

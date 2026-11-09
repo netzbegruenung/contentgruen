@@ -175,13 +175,14 @@ describe('MobileMenuComponent', () => {
     expect(schliessen).toHaveBeenCalled();
   });
 
-  it('bietet Angemeldeten die Art.-9-Einwilligung als "Datenschutz-Einstellungen" an (#489, #644)', () => {
+  // Der Name bleibt "Einwilligung": Wortlaut und Datenschutzerklaerung nennen ihn als Widerrufsweg (#644)
+  it('bietet Angemeldeten die Art.-9-Einwilligung an (#489)', () => {
     component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
     fixture.detectChanges();
 
     const eintrag = link('.mobile-menu-einwilligung');
     expect(eintrag?.getAttribute('href')).toBe('/einwilligung');
-    expect(eintrag?.textContent!.trim()).toContain('Datenschutz-Einstellungen');
+    expect(eintrag?.textContent!.trim()).toContain('Einwilligung');
   });
 
   // R61 (#644): Emojis und Linien-Icons standen gemischt

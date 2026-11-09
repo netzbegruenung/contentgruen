@@ -104,7 +104,7 @@ describe('MobileHeaderComponent', () => {
     fixture.detectChanges();
     const knopf: HTMLElement = fixture.nativeElement.querySelector('.contribute-button');
     expect(knopf.querySelector('.neu-punkt')).not.toBeNull();
-    expect(knopf.getAttribute('aria-label')).toBe('Beitragen. Neu: so geht Beitragen');
+    expect(knopf.getAttribute('aria-label')).toBe('Beitragen');
 
     komponente.beitragenNeu = false;
     fixture.detectChanges();

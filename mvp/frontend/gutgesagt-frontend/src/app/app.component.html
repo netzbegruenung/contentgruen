@@ -33,7 +33,6 @@
                     [selectedProfilePictureUrl]="selectedProfilePictureUrl"
                     (openMenu)="toggleMobileMenu()"
                     (login)="login()"
-                    (loginToContribute)="loginWithReturnUrl('/contribute')"
                     [beitragenNeu]="rundgang.beitragenNeu()"
                     (logout)="logout()"
                     (contribute)="navigateToContributeView()">
@@ -113,8 +112,8 @@
                             <span>Profilbild wählen</span>
                         </button>
                         <button mat-menu-item type="button" class="profilmenue-eintrag" (click)="navigateToEinwilligung()">
-                            <mat-icon>privacy_tip</mat-icon>
-                            <span>{{ datenschutzEinstellungen }}</span>
+                            <mat-icon>fact_check</mat-icon>
+                            <span>Einwilligung</span>
                         </button>
                         <button mat-menu-item type="button" class="profilmenue-eintrag" (click)="logout()">
                             <mat-icon>logout</mat-icon>
@@ -147,9 +146,9 @@
                                 [matTooltip]="neuHinweis" [matTooltipDisabled]="!rundgang.beitragenNeu()">
                             <mat-icon>add</mat-icon> <span class="beitragen-text">Beitragen</span>
                             <!-- Neu-Punkt, bis Mitmachen beantwortet ist (#587); was er heisst,
-                                 sagt der Tooltip (#644) -->
+                                 sagt der Tooltip, fuer Screenreader als Beschreibung (#644) -->
                             @if (rundgang.beitragenNeu()) {
-                                <span class="neu-punkt" aria-hidden="true"></span><span class="visually-hidden">. {{ neuHinweis }}</span>
+                                <span class="neu-punkt" aria-hidden="true"></span>
                             }
                         </button>
                     </ng-container>

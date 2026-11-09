@@ -44,6 +44,12 @@ describe('SearchComponent', () => {
     expect(feld.querySelector('input')!.hasAttribute('required')).toBeFalse();
   });
 
+  it('nimmt ueber den Treffern (compactMode) die kurze Beschriftung', () => {
+    fixture.componentRef.setInput('compactMode', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('mat-label').textContent.trim()).toBe('Text oder Post einfügen');
+  });
+
   // R55 (#644): Fokus nur, wenn der Start es verlangt
   it('fokussiert das Feld nur mit autofokus', () => {
     expect(document.activeElement).not.toBe(fixture.nativeElement.querySelector('input'));

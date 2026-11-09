@@ -33,7 +33,6 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
   readonly neuHinweis = NEU_HINWEIS;
   @Output() openMenu = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
-  @Output() loginToContribute = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
   @Output() contribute = new EventEmitter<void>();
 
@@ -108,12 +107,9 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
     this.openMobileMenu();
   }
 
+  /** "+" gibt es nur angemeldet (#644). */
   onContributeClick(): void {
-    if (this.userInfo?.isAuthenticated) {
-      this.contribute.emit();
-    } else {
-      this.loginToContribute.emit();
-    }
+    this.contribute.emit();
   }
 
   ngOnDestroy(): void {

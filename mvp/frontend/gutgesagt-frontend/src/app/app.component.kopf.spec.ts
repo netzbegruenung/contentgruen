@@ -182,7 +182,7 @@ describe('AppComponent - Desktop-Kopf', () => {
         jasmine.stringContaining('Fangkorb'),
         jasmine.stringContaining('Meine Beiträge'),
         jasmine.stringContaining('Profilbild wählen'),
-        jasmine.stringContaining('Datenschutz-Einstellungen'),
+        jasmine.stringContaining('Einwilligung'),
         jasmine.stringContaining('Abmelden'),
       ]);
       expect(navigation.navigateToMeineBeitraege).not.toHaveBeenCalled();
@@ -230,7 +230,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      eintrag('Datenschutz-Einstellungen').click();
+      eintrag('Einwilligung').click();
 
       expect(router.navigate).toHaveBeenCalledWith(['/einwilligung']);
     });
@@ -353,7 +353,6 @@ describe('AppComponent - Desktop-Kopf', () => {
       const knopf = fixture.nativeElement.querySelector('.beitragen-knopf') as HTMLElement;
 
       expect(knopf.querySelector('.neu-punkt')).not.toBeNull();
-      expect(knopf.querySelector('.visually-hidden')!.textContent).toContain('Neu: so geht Beitragen');
       const tooltip = fixture.debugElement.query(By.css('.beitragen-knopf')).injector.get(MatTooltip);
       expect(tooltip.message).toBe('Neu: so geht Beitragen');
       expect(tooltip.disabled).toBeFalse();

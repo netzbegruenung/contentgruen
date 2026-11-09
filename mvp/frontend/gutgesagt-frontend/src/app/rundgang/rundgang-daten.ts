@@ -61,7 +61,7 @@ export const NEU_HINWEIS = 'Neu: so geht Beitragen';
 
 /**
  * Das Band, das einen Rundgang anbietet (#587): Willkommen auf Startseite und
- * Treffern, Mitmachen, sobald jemand zum ersten Mal auf Beitragen oder Fangkorb ankommt.
+ * Treffern, Mitmachen, sobald jemand zum ersten Mal auf Beitragen ankommt (seit #644 nicht im Fangkorb).
  */
 export interface Angebot {
   rundgang: RundgangId;
