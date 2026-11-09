@@ -10,6 +10,7 @@ import { PostService } from '../services/post.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
 
@@ -126,5 +127,72 @@ describe('AddPostComponent', () => {
     expect(component.fehler).toBe(SPEICHERN_FEHLGESCHLAGEN);
     expect(component.postForm.value.title).toBe(WERTE.title);
     expect(component.speichert).toBeFalse();
+  });
+
+  describe('Antwort auf (optional, #619)', () => {
+    it('zeigt den Antwort-auf-Block über dem Link', () => {
+      const block = fixture.nativeElement.querySelector('form app-antwort-auf');
+      const link = fixture.nativeElement.querySelector('#url');
+
+      expect(block).not.toBeNull();
+      expect(block.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('schickt eine gewählte Aussage per ID mit und meldet die verknüpfte', () => {
+      const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(
+        of({ id: 'p-1', statement_id: 'a-1', statement_text: 'Solar lohnt sich nicht', verknuepft: true }),
+      );
+      let gemeldet: BeitragGespeichert | undefined;
+      component.success.subscribe((ergebnis) => (gemeldet = ergebnis));
+      component.postForm.patchValue(WERTE);
+      component.aussageSetzen({ id: 'a-1', text: 'Solar lohnt sich nicht' });
+
+      component.speichern();
+
+      expect(senden.calls.mostRecent().args[0].statement_id).toBe('a-1');
+      expect(senden.calls.mostRecent().args[0].statement_text).toBeUndefined();
+      expect(gemeldet).toEqual({ id: 'p-1', aussage: { id: 'a-1', text: 'Solar lohnt sich nicht' }, verknuepft: true });
+    });
+
+    it('schickt eine neue Aussage per Text mit ihren Themen', () => {
+      const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-1', verknuepft: true }));
+      component.postForm.patchValue({ ...WERTE, themen: ['klima'] });
+      component.aussageSetzen({ id: '', text: 'Solar lohnt sich nicht' });
+
+      component.speichern();
+
+      expect(senden.calls.mostRecent().args[0]).toEqual(
+        jasmine.objectContaining({ statement_text: 'Solar lohnt sich nicht', themen: ['klima'] }),
+      );
+    });
+
+    it('meldet nicht verknüpft, wenn das Backend die Aussage nicht anhängen konnte', () => {
+      spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-1', verknuepft: false }));
+      let gemeldet: BeitragGespeichert | undefined;
+      component.success.subscribe((ergebnis) => (gemeldet = ergebnis));
+      component.postForm.patchValue(WERTE);
+      component.aussageSetzen({ id: 'a-weg', text: 'Gibt es nicht mehr' });
+
+      component.speichern();
+
+      expect(gemeldet?.verknuepft).toBeFalse();
+      expect(gemeldet?.aussage.text).toBe('Gibt es nicht mehr');
+    });
+
+    it('sperrt Speichern bei einer Aussage unter 10 Zeichen, leer ist erlaubt', () => {
+      const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-1' }));
+      component.postForm.patchValue(WERTE);
+      component.aussageSetzen({ id: '', text: 'zu kurz' });
+      fixture.detectChanges();
+
+      expect((fixture.nativeElement.querySelector('.submit-btn') as HTMLButtonElement).disabled).toBeTrue();
+      component.speichern();
+      expect(senden).not.toHaveBeenCalled();
+
+      component.aussageSetzen(OHNE_AUSSAGE);
+      component.speichern();
+      expect(senden).toHaveBeenCalled();
+      expect(senden.calls.mostRecent().args[0].statement_text).toBeUndefined();
+    });
   });
 });

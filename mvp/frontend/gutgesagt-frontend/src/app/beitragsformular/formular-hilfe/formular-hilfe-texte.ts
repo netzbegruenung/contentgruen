@@ -17,7 +17,6 @@ export interface FormularHilfe {
 
 /**
  * Hier gepflegt, damit Formular und spaetere Stellen nicht auseinanderlaufen.
- * Bild hat (noch) keine.
  */
 export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
   commentary: {
@@ -52,6 +51,17 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
     istNicht: [
       'Material, aus dem erst ein Beitrag werden soll (→ einwerfen)',
       'Den Post abschreiben – beschreib in eigenen Worten, worum es geht (CC0)',
+    ],
+    schreibregeln: true,
+  },
+  image: {
+    zeile: 'Ein Bild mit Unterschrift, das für sich spricht.',
+    frage: 'Was ist ein Bild?',
+    antwort: 'Ein Bild, das man so teilen kann, mit einer Unterschrift in eigenen Worten.',
+    ist: ['Spricht für sich, auch ohne langen Text', 'Mit einer öffentlich erreichbaren Bild-URL'],
+    istNicht: [
+      'Bilder, an denen du keine Rechte hast oder auf denen Privatpersonen erkennbar sind',
+      'Eine Unterschrift von woanders übernehmen – schreib sie in eigenen Worten (CC0)',
     ],
     schreibregeln: true,
   },

@@ -1,28 +1,34 @@
-import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 
-import { AddImageComponent } from './add-image.component';
+import { AddImageComponent, SPEICHERN_FEHLGESCHLAGEN } from './add-image.component';
 import { ImageService } from '../services/image.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
+import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { typBeschreibung } from '../shared/content-type-registry';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
 
+const WERTE = {
+  image_url: 'https://example.org/dach.jpg',
+  title: 'Solardach auf der Grundschule',
+  caption: 'Die Stadt hat alle Schuldächer mit Solarmodulen belegt.',
+};
+
 describe('AddImageComponent', () => {
   let fixture: ComponentFixture<AddImageComponent>;
+  let component: AddImageComponent;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AddImageComponent, BrowserAnimationsModule],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([])
-      ]
+      imports: [AddImageComponent, NoopAnimationsModule],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     })
       .overrideComponent(AddImageComponent, {
         remove: { imports: [BeitragskarteComponent] },
@@ -31,92 +37,207 @@ describe('AddImageComponent', () => {
       .compileComponents();
 
     fixture = TestBed.createComponent(AddImageComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('zeigt über dem Absende-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
+  function element<T extends HTMLElement = HTMLElement>(selektor: string): T | null {
+    return fixture.nativeElement.querySelector(selektor);
+  }
+
+  it('zeigt über dem Speichern-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
     erwarteCc0Hinweis(fixture.nativeElement);
   });
 
-  it('gibt Titel und Bildunterschrift dem Sprachhinweis über dem CC0-Hinweis (#405)', () => {
-    fixture.componentInstance.imageForm.patchValue({
-      title: 'Solardach in Freiburg',
-      caption: 'Solarmodule auf dem Dach der Grundschule.',
-    });
+  it('gibt Titel und Unterschrift dem Sprachhinweis über dem CC0-Hinweis (#405)', () => {
+    component.imageForm.patchValue(WERTE);
     fixture.detectChanges();
 
-    erwarteSprachhinweisZumBeitrag(fixture.debugElement, 'Solardach in Freiburg', 'Solarmodule auf dem Dach der Grundschule.');
+    erwarteSprachhinweisZumBeitrag(fixture.debugElement, WERTE.title, WERTE.caption);
   });
 
-  it('behaelt nach gescheitertem Speichern die Eingaben und sendet sie mit Erneut versuchen noch einmal', fakeAsync(() => {
-    const component = fixture.componentInstance;
-    const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValues(
-      throwError(() => ({ status: 500 })),
-      of({ id: 'b-1' } as any),
-    );
-    const werte = {
-      title: 'Solardach in Freiburg',
-      image_url: 'https://example.org/bild.jpg',
-      caption: 'Eine ausreichend lange Beschriftung.',
-    };
-    component.imageForm.patchValue(werte);
-
-    component.saveImageForm();
-    fixture.detectChanges();
-    const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.error-state button');
-    expect(knopf.textContent).toContain('Erneut versuchen');
-
-    knopf.click();
-    fixture.detectChanges();
-
-    expect(senden).toHaveBeenCalledTimes(2);
-    expect(senden.calls.mostRecent().args[0].image).toEqual({
-      title: werte.title,
-      image_url: werte.image_url,
-      text: werte.caption,
+  describe('dieselben Bausteine wie die anderen Formulare (#619)', () => {
+    it('zeigt die Formularhilfe mit dem Satz aus der Registry', () => {
+      expect(element('app-formular-hilfe')?.textContent).toContain(typBeschreibung('image'));
     });
-    expect(component.imageForm.value.title).toBe(werte.title);
-    flush();
-  }));
+
+    it('hat "Antwort auf" über der Bild-URL, Gegenlesen neben der Vorschau und die Formular-Leiste', () => {
+      const block = element('form app-antwort-auf')!;
+      expect(block).not.toBeNull();
+      expect(block.compareDocumentPosition(element('#image_url')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(element('.preview-column app-gegenlesen')).not.toBeNull();
+      expect(element('app-formular-leiste .submit-btn')).not.toBeNull();
+    });
+
+    it('beschriftet jedes Feld einmal und hat keinen eigenen Abbrechen-Knopf', () => {
+      const beschriftungen = Array.from(fixture.nativeElement.querySelectorAll('form > mat-form-field mat-label')).map(
+        (l: any) => l.textContent.trim(),
+      );
+      expect(beschriftungen).toEqual(['Bild-URL', 'Titel', 'Bildunterschrift']);
+      expect(fixture.nativeElement.textContent).not.toContain('Abbrechen');
+    });
+  });
+
+  it('speichert erst mit einer selbst geschriebenen Unterschrift (ADR 0003)', () => {
+    const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(of({ id: 'b-1' }));
+    component.imageForm.patchValue({ ...WERTE, caption: '' });
+    fixture.detectChanges();
+
+    expect(element<HTMLButtonElement>('.submit-btn')!.disabled).toBeTrue();
+    component.speichern();
+    expect(senden).not.toHaveBeenCalled();
+  });
 
   it('bietet keinen KI-Vorschlag fuer die Unterschrift an (#393)', () => {
     const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('form button'));
-
-    expect(knoepfe.length).toBeGreaterThan(0);
     for (const knopf of knoepfe) {
       expect(knopf.textContent).not.toMatch(/KI|Vorschlag/);
       expect(knopf.querySelector('mat-icon')?.textContent?.trim()).not.toBe('auto_awesome');
     }
   });
 
-  it('speichert erst mit einer selbst geschriebenen Unterschrift', () => {
-    const component = fixture.componentInstance;
-    const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(
-      of({ id: 'b-1' } as any),
-    );
-    component.imageForm.patchValue({
-      title: 'Solardach in Freiburg',
-      image_url: 'https://example.org/bild.jpg',
+  it('speichert Titel einzeilig und meldet ID ohne Aussage', () => {
+    const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(of({ id: 'b-1', verknuepft: true }));
+    let gemeldet: BeitragGespeichert | undefined;
+    component.success.subscribe((ergebnis) => (gemeldet = ergebnis));
+    component.imageForm.patchValue({ ...WERTE, title: 'Solardach\nauf der Grundschule' });
+
+    component.speichern();
+
+    expect(senden).toHaveBeenCalledOnceWith({
+      image: { title: 'Solardach auf der Grundschule', image_url: WERTE.image_url, text: WERTE.caption },
     });
-    fixture.detectChanges();
-    const speichern: HTMLButtonElement = fixture.nativeElement.querySelector('.submit-btn');
-
-    expect(speichern.disabled).toBeTrue();
-    component.saveImageForm();
-    expect(senden).not.toHaveBeenCalled();
-
-    component.imageForm.patchValue({ caption: 'Solarmodule auf dem Dach der Grundschule.' });
-    fixture.detectChanges();
-    expect(speichern.disabled).toBeFalse();
-    component.saveImageForm();
-    expect(senden.calls.mostRecent().args[0].image.text).toBe(
-      'Solarmodule auf dem Dach der Grundschule.',
-    );
+    expect(gemeldet).toEqual({ id: 'b-1', aussage: OHNE_AUSSAGE, verknuepft: true });
   });
 
-  it('beschreibt den Typ mit dem Satz aus der Registry', () => {
-    expect(fixture.nativeElement.querySelector('.content-type-description').textContent.trim()).toBe(
-      'Ein Bild mit Unterschrift, das für sich spricht.',
+  it('behaelt nach gescheitertem Speichern die Eingaben und speichert mit "Erneut versuchen" dasselbe', () => {
+    const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValues(
+      throwError(() => ({ status: 500 })),
+      of({ id: 'b-1' }),
     );
+    component.imageForm.patchValue(WERTE);
+
+    component.speichern();
+    fixture.detectChanges();
+
+    expect(component.fehler).toBe(SPEICHERN_FEHLGESCHLAGEN);
+    expect(element('.submit-btn')!.textContent).toContain('Erneut versuchen');
+    expect(component.imageForm.value.title).toBe(WERTE.title);
+
+    element<HTMLButtonElement>('.submit-btn')!.click();
+    expect(senden).toHaveBeenCalledTimes(2);
+    expect(senden.calls.mostRecent().args[0].image.title).toBe(WERTE.title);
+  });
+
+  describe('Antwort auf (optional, #619)', () => {
+    it('schickt eine gewählte Aussage per ID mit und meldet die verknüpfte', () => {
+      const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(
+        of({ id: 'b-1', statement_id: 'a-1', statement_text: 'Solar lohnt sich nicht!', verknuepft: true }),
+      );
+      let gemeldet: BeitragGespeichert | undefined;
+      component.success.subscribe((ergebnis) => (gemeldet = ergebnis));
+      component.imageForm.patchValue(WERTE);
+      component.aussageSetzen({ id: 'a-1', text: 'Solar lohnt sich nicht' });
+
+      component.speichern();
+
+      expect(senden.calls.mostRecent().args[0].statement_id).toBe('a-1');
+      expect(gemeldet).toEqual({ id: 'b-1', aussage: { id: 'a-1', text: 'Solar lohnt sich nicht!' }, verknuepft: true });
+    });
+
+    it('schickt eine neue Aussage per Text mit ihren Themen', () => {
+      const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(of({ id: 'b-1', verknuepft: true }));
+      component.imageForm.patchValue({ ...WERTE, themen: ['energie-heizen'] });
+      component.aussageSetzen({ id: '', text: 'Solar lohnt sich nicht' });
+
+      component.speichern();
+
+      expect(senden.calls.mostRecent().args[0]).toEqual(
+        jasmine.objectContaining({ statement_text: 'Solar lohnt sich nicht', themen: ['energie-heizen'] }),
+      );
+    });
+
+    it('sperrt Speichern bei einer Aussage unter 10 Zeichen', () => {
+      const senden = spyOn(TestBed.inject(ImageService), 'addImage');
+      component.imageForm.patchValue(WERTE);
+      component.aussageSetzen({ id: '', text: 'zu kurz' });
+      fixture.detectChanges();
+
+      expect(element<HTMLButtonElement>('.submit-btn')!.disabled).toBeTrue();
+      component.speichern();
+      expect(senden).not.toHaveBeenCalled();
+    });
+
+    it('zeigt die Aussage in der Vorschau-Karte und gibt sie dem Gegenlesen', () => {
+      component.aussageSetzen({ id: '', text: 'Solar lohnt sich nicht' });
+
+      expect(component.vorschauKarte.statement?.text).toBe('Solar lohnt sich nicht');
+      fixture.detectChanges();
+      expect(fixture.debugElement.query((d) => d.name === 'app-gegenlesen').componentInstance.aussage).toBe(
+        'Solar lohnt sich nicht',
+      );
+    });
+  });
+
+  describe('Ladefehler der Bild-URL', () => {
+    function ladefehlerInVorschau(src: string): void {
+      const bild = document.createElement('img');
+      bild.setAttribute('src', src);
+      element('.preview-content')!.appendChild(bild);
+      bild.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+    }
+
+    it('meldet am Feld, dass sich das Bild nicht laden laesst, und zeigt kein kaputtes Bild', () => {
+      component.imageForm.patchValue({ image_url: 'https://example.org/weg.png' });
+      fixture.detectChanges();
+      expect(element('.bild-ladefehler')).toBeNull();
+
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(element('mat-form-field .bild-ladefehler')?.textContent).toContain('Das Bild lässt sich nicht laden – prüf den Link.');
+      expect(element('.preview-content .vorschau-ladefehler')).not.toBeNull();
+      expect(component.vorschauKarte.bildUrl).toBeUndefined();
+    });
+
+    it('nimmt den Hinweis zurueck, sobald die URL sich aendert, und ueberhoert verspaetete Fehler', () => {
+      component.imageForm.patchValue({ image_url: 'https://example.org/weg.png' });
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      component.imageForm.patchValue({ image_url: 'https://example.org/da.png' });
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(element('.bild-ladefehler')).toBeNull();
+      expect(component.vorschauKarte.bildUrl).toBe('https://example.org/da.png');
+    });
+
+    it('sperrt das Speichern nicht', () => {
+      component.imageForm.patchValue({ ...WERTE, image_url: 'https://example.org/weg.png' });
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(element<HTMLButtonElement>('.submit-btn')!.disabled).toBeFalse();
+    });
+  });
+});
+
+describe('AddImageComponent mit der echten Vorschau-Karte', () => {
+  it('bemerkt den Ladefehler des Bildes, das die Karte zur eingegebenen URL zeigt', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AddImageComponent, NoopAnimationsModule],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(AddImageComponent);
+    fixture.detectChanges();
+
+    // Eine Adresse auf dem eigenen Server laedt ohne Klick (#447) und scheitert hier.
+    fixture.componentInstance.imageForm.patchValue({ image_url: location.origin + '/assets/gibt-es-nicht-619.png' });
+    fixture.detectChanges();
+    const bild: HTMLImageElement = fixture.nativeElement.querySelector('.preview-content app-fremdes-bild img');
+    expect(bild).withContext('die Karte zeigt das Bild').not.toBeNull();
+    bild.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('mat-form-field .bild-ladefehler')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.preview-content app-fremdes-bild img')).toBeNull();
   });
 });

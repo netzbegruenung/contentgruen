@@ -7,6 +7,7 @@ import { GespeichertZustand, gespeichertEltern } from './gespeichert-adresse';
 import { CommentaryService } from '../../services/commentary.service';
 import { GenericTextService } from '../../services/generic-text.service';
 import { PostService } from '../../services/post.service';
+import { ImageService } from '../../services/image.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { Einwurf, EinwurfService } from '../../services/einwurf.service';
@@ -19,6 +20,7 @@ describe('BeitragGespeichertComponent', () => {
   let fixture: ComponentFixture<BeitragGespeichertComponent>;
   let commentaryService: jasmine.SpyObj<CommentaryService>;
   let postService: jasmine.SpyObj<PostService>;
+  let imageService: jasmine.SpyObj<ImageService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
   let navigation: jasmine.SpyObj<NavigationService>;
   let einwurfService: jasmine.SpyObj<EinwurfService>;
@@ -42,6 +44,10 @@ describe('BeitragGespeichertComponent', () => {
         : throwError(() => new Error('404')),
     );
     postService = jasmine.createSpyObj('PostService', ['getPostById']);
+    imageService = jasmine.createSpyObj('ImageService', ['getImageById']);
+    imageService.getImageById.and.returnValue(
+      of({ id: 'k-1', title: 'Solardach auf der Grundschule', text: 'Unterschrift', content_type: 'image', image_url: '/assets/dach.jpg' } as any),
+    );
     postService.getPostById.and.returnValue(
       of({ id: 'k-1', title: 'Ein Reel zur Wärmepumpe', text: 'Text', content_type: 'post', platform: 'Instagram', author: '@konto' } as any),
     );
@@ -57,6 +63,7 @@ describe('BeitragGespeichertComponent', () => {
         { provide: CommentaryService, useValue: commentaryService },
         { provide: GenericTextService, useValue: jasmine.createSpyObj('GenericTextService', ['getGenericTextById']) },
         { provide: PostService, useValue: postService },
+        { provide: ImageService, useValue: imageService },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn']) },
         { provide: DestillierUebergabeService, useValue: uebergabe },
         { provide: NavigationService, useValue: navigation },
@@ -111,6 +118,19 @@ describe('BeitragGespeichertComponent', () => {
     expect(knoepfe()).toEqual(['Noch einen Post', 'Meine Beiträge']);
     (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-post']);
+  });
+
+  it('zeigt das gespeicherte Bild und bietet noch eins an (#619)', async () => {
+    await oeffnen({}, { aussage: { id: 'a-1', text: 'Solar lohnt sich nicht' }, verknuepft: true }, true, 'image');
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    expect(imageService.getImageById).toHaveBeenCalledOnceWith('k-1');
+    expect(seite().textContent).toContain('Dein Bild ist gespeichert.');
+    expect(seite().querySelector('.gespeichert-karte')!.textContent).toContain('Solardach auf der Grundschule');
+    expect(seite().textContent).toContain('Solar lohnt sich nicht');
+    expect(knoepfe()).toEqual(['Noch ein Bild', 'Meine Beiträge']);
+    (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
+    expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-image']);
   });
 
   describe('Knoepfe je Herkunft', () => {
