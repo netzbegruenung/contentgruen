@@ -119,4 +119,106 @@ describe('AddImageComponent', () => {
       'Ein Bild mit Unterschrift, das für sich spricht.',
     );
   });
+
+  describe('Ladefehler der Bild-URL (#619)', () => {
+    /** Ein Bild in der Vorschau, wie es die Karte zur URL zeigt, und sein Ladefehler. */
+    function ladefehlerInVorschau(src: string): void {
+      const bild = document.createElement('img');
+      bild.setAttribute('src', src);
+      fixture.nativeElement.querySelector('.preview-content').appendChild(bild);
+      bild.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+    }
+
+    function hinweis(): HTMLElement | null {
+      return fixture.nativeElement.querySelector('.bild-ladefehler');
+    }
+
+    it('meldet unter dem Feld, dass sich das Bild nicht laden laesst, und zeigt kein kaputtes Bild', () => {
+      const component = fixture.componentInstance;
+      component.imageForm.patchValue({ image_url: 'https://example.org/weg.png' });
+      fixture.detectChanges();
+      expect(hinweis()).toBeNull();
+
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(hinweis()?.textContent).toContain('Das Bild lässt sich nicht laden – prüf den Link.');
+      expect(component.previewResult?.image_result?.image_url).toBe('');
+    });
+
+    it('nimmt den Hinweis zurueck, sobald die URL sich aendert', () => {
+      const component = fixture.componentInstance;
+      component.imageForm.patchValue({ image_url: 'https://example.org/weg.png' });
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      component.imageForm.patchValue({ image_url: 'https://example.org/da.png' });
+      fixture.detectChanges();
+
+      expect(hinweis()).toBeNull();
+      expect(component.previewResult?.image_result?.image_url).toBe('https://example.org/da.png');
+    });
+
+    it('ueberhoert einen verspaeteten Fehler zur vorigen URL', () => {
+      fixture.componentInstance.imageForm.patchValue({ image_url: 'https://example.org/da.png' });
+
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(hinweis()).toBeNull();
+    });
+
+    it('sperrt das Speichern nicht', () => {
+      const component = fixture.componentInstance;
+      component.imageForm.patchValue({
+        title: 'Solardach in Freiburg',
+        image_url: 'https://example.org/weg.png',
+        caption: 'Solarmodule auf dem Dach der Grundschule.',
+      });
+      ladefehlerInVorschau('https://example.org/weg.png');
+
+      expect(fixture.nativeElement.querySelector('.submit-btn').disabled).toBeFalse();
+    });
+  });
+
+  it('beschriftet jedes Feld nur einmal und nennt den Titel der Seite nicht noch einmal (#619)', () => {
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.input-label')).toBeNull();
+    expect(el.textContent).not.toContain('Bild hinzufügen');
+    const beschriftungen = Array.from(el.querySelectorAll('mat-label')).map((l) => l.textContent?.trim());
+    expect(beschriftungen).toEqual(['Bild-URL', 'Titel', 'Bildunterschrift']);
+  });
+
+  it('zeigt den Ladefehler auch in der Vorschau, wo man mobil "Bild laden" tippt (#619)', () => {
+    fixture.componentInstance.imageForm.patchValue({ image_url: 'https://example.org/weg.png' });
+    const bild = document.createElement('img');
+    bild.setAttribute('src', 'https://example.org/weg.png');
+    fixture.nativeElement.querySelector('.preview-content').appendChild(bild);
+    bild.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.preview-content .vorschau-ladefehler')?.textContent).toContain(
+      'Das Bild lässt sich nicht laden',
+    );
+  });
+});
+
+describe('AddImageComponent mit der echten Vorschau-Karte (#619)', () => {
+  it('bemerkt den Ladefehler des Bildes, das die Karte zur eingegebenen URL zeigt', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AddImageComponent, BrowserAnimationsModule],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(AddImageComponent);
+    fixture.detectChanges();
+
+    // Eine Adresse auf dem eigenen Server laedt ohne Klick (#447) und scheitert hier.
+    fixture.componentInstance.imageForm.patchValue({ image_url: '/assets/gibt-es-nicht-619.png' });
+    fixture.detectChanges();
+    const bild: HTMLImageElement = fixture.nativeElement.querySelector('.preview-content app-fremdes-bild img');
+    expect(bild).withContext('die Karte zeigt das Bild').not.toBeNull();
+    bild.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.bild-ladefehler')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.preview-content app-fremdes-bild img')).toBeNull();
+  });
 });

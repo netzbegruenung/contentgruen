@@ -147,6 +147,7 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
   Die Zustimmung von Personen, die nur bewerten, hängt ebenfalls an ihr. Die
   Art.-9-Einwilligung (D-N15) hängt seit #489 nicht mehr daran: Die App fragt selbst, mit
   eigenem Häkchen; ihr Wortlaut ist vorläufig und offen für #296 (P11).
+  Der Zustimmungstext der Pflichtaktion selbst ist vorläufig und offen für #296 (P12, #491).
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
   Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
   dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.

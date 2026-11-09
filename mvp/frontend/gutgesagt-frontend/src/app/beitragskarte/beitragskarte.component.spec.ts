@@ -186,6 +186,18 @@ describe('BeitragskarteComponent', () => {
       expect(element('.kopieren-knopf').textContent).toContain('Bildunterschrift kopieren');
     });
 
+    it('nimmt in der Vorschau keinen Platzhalter als Alternativtext (#619)', () => {
+      zeigen(
+        ausSuchergebnis(
+          paket('image_result', { content_type: 'image', image_url: '/assets/dach.jpg', text: 'Bildunterschrift eingeben...' }),
+        ),
+        { vorschau: true },
+      );
+
+      // Eigenes Bild: laedt ohne Klick; neben dem Formular ist es Schmuck, die Angaben stehen daneben.
+      expect(element<HTMLImageElement>('.karte-bild img').alt).toBe('');
+    });
+
     it('zeigt den Anzeigenamen und ohne Namen "Mitglied" - nie die Kennung', () => {
       const daten = ausSuchergebnis(paket('commentary_result'));
       zeigen(daten);

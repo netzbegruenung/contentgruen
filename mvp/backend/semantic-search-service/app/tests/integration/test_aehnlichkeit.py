@@ -406,7 +406,7 @@ async def test_dublette_mit_anderer_aussage_wird_dort_verknuepft(
             kommentar, ContentType.COMMENTARY, 1.0, "person-2", statement_text=text
         )
     # zweimal dieselbe Aussage: die Verknuepfung erkennt es
-    statement_id, _ = await statement_service.beitrag_als_antwort_verknuepfen(
+    statement_id, _, _ = await statement_service.beitrag_als_antwort_verknuepfen(
         kommentar,
         ContentType.COMMENTARY,
         1.0,

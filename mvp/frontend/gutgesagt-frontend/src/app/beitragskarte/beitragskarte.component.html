@@ -212,7 +212,7 @@
             <p class="post-herkunft" *ngIf="postHerkunft">{{ postHerkunft }}</p>
 
             <div class="karte-bild" *ngIf="daten.bildUrl">
-                <app-fremdes-bild [src]="daten.bildUrl" [alt]="daten.text || daten.titel || ''"></app-fremdes-bild>
+                <app-fremdes-bild [src]="daten.bildUrl" [alt]="vorschau ? '' : daten.text || daten.titel || ''"></app-fremdes-bild>
             </div>
 
             <p #textElement class="karte-text" *ngIf="angezeigterText"

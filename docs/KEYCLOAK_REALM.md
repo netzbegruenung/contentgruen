@@ -65,8 +65,10 @@ jemand zugestimmt hat, sagt nur dieses Datum.
 Bei einem neuen Stand der Nutzungsbedingungen deshalb Vorlage und Realm nachziehen: in der
 Vorlage `termsText` (der Test schlägt sonst fehl), im laufenden Realm *Realm settings →
 Localization → Realm overrides → de → termsText*; ein erneuter Import ändert einen bestehenden
-Realm nicht. Den Zustimmungssatz „Mit „Annehmen“ stimmst du ihnen zu.“ prüft die Juristin mit
-#296. Die ausdrückliche Einwilligung nach Art. 9 DSGVO als eigenes Häkchen ist in der Vorlage
+Realm nicht. Der Text nennt nach dem Link in drei Punkten das Wichtigste (CC0, eigene Texte,
+Sperren) und sagt, was „Annehmen“ und „Ablehnen“ bewirken (#491). Der Wortlaut ist vorläufig, bis
+die Prüfung mit #296 durch ist (Lückenliste P12); danach wird er nur in der Vorlage und im Realm
+ersetzt. Die ausdrückliche Einwilligung nach Art. 9 DSGVO als eigenes Häkchen ist in der Vorlage
 noch nicht enthalten (Folgeticket).
 
 Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semantic-Service bei

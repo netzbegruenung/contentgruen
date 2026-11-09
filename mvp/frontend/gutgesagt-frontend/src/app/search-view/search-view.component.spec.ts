@@ -6,6 +6,8 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { SearchViewComponent } from './search-view.component';
 import { FANGKORB_KURZ } from '../shared/fangkorb-texte';
+import { STARTBEISPIEL } from '../shared/startbeispiel';
+import { NavigationService } from '../services/navigation.service';
 
 describe('SearchViewComponent', () => {
   let component: SearchViewComponent;
@@ -61,6 +63,16 @@ describe('SearchViewComponent', () => {
     expect(band.querySelector('.such-erklaerung')!.textContent).toContain('Post reinkopieren – Antwort finden – Verwenden!');
     expect(band.querySelector('app-search')).toBeTruthy();
     expect(band.textContent).toContain('Beispiel probieren');
+  });
+
+  it('zeigt als Beispiel das Startbeispiel und sucht genau danach (#601)', () => {
+    const navigation = TestBed.inject(NavigationService);
+    spyOn(navigation, 'navigateToResult');
+    const link: HTMLElement = fixture.nativeElement.querySelector('.beispiel-link');
+
+    expect(link.textContent!.trim()).toBe(`„${STARTBEISPIEL}“`);
+    link.click();
+    expect(navigation.navigateToResult).toHaveBeenCalledWith(STARTBEISPIEL);
   });
 
   it('fuehrt mit zwei Kacheln zum Einwerfen und zum Verfassen', () => {

@@ -16,12 +16,6 @@
   font-size: 32px;
 }
 
-.content-type-title {
-  margin: 0 0 4px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
 .content-type-description {
   margin: 0;
   color: var(--text-subtle);
@@ -49,9 +43,13 @@
   position: sticky;
   top: 16px;
 
+  // Mobil blendet mobile-common.css die Vorschau aus. Beim Bild bleibt sie stehen: Nur dort
+  // laedt das Bild, und nur so merkt man, dass die URL nicht stimmt (#619).
   @media (max-width: 768px) {
+    display: block;
     position: static;
     width: 100%;
+    min-width: 0;
   }
 }
 
@@ -63,18 +61,6 @@
 
   h3 {
     margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-  }
-}
-
-.form-section {
-  margin-bottom: 16px;
-}
-
-.section-header {
-  h3 {
-    margin: 0 0 8px;
     font-size: 16px;
     font-weight: 600;
   }
@@ -96,10 +82,28 @@
   }
 }
 
-.input-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-body);
+// Am Desktop steht die Vorschau neben dem Feld; dort reicht der Hinweis am Feld.
+.bild-ladefehler.vorschau-ladefehler {
+  display: none;
+  margin: 0 0 8px;
+  font-size: 14px;
+
+  @media (max-width: 768px) {
+    display: flex;
+  }
+}
+
+.bild-ladefehler {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--warning-color);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
 }
 
 // Schrift und Farbe kommen aus der globalen .submit-hint (styles.css).
@@ -112,6 +116,11 @@
   gap: 12px;
   margin-top: 24px;
   justify-content: flex-end;
+
+  // Mobil stehen die Knoepfe untereinander: Speichern zuerst, Abbrechen darunter (#619).
+  @media (max-width: 768px) {
+    flex-direction: column-reverse;
+  }
 }
 
 .submit-hint + .form-actions {
