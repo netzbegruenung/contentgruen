@@ -9,6 +9,6 @@
     </ng-container>
     <p class="hier-fehlt">
         <a class="hier-fehlt-link" [routerLink]="hierFehltEineAntwort">Hier fehlt eine Antwort</a>:
-        Aussagen, die noch auf eine Antwort warten.
+        Aussagen, die noch auf eine Antwort warten<ng-container *ngIf="!angemeldet"> (zum Mitmachen anmelden)</ng-container>.
     </p>
 </section>

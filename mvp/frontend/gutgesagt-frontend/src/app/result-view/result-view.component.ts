@@ -99,7 +99,8 @@ function aussageSchluessel(treffer: BaseSearchResult): string | null {
  * gefunden wurden; bei Gleichstand die des Treffers mit dem hoechsten Score. Sie
  * steht einmal ueber den Treffern ("Gefunden zu: ..."), die Karten zeigen ihren
  * Antwort-auf-Kopf dann nur noch, wenn er davon abweicht. null, wenn kein Treffer
- * ueber eine Aussage kam (nur direkte Treffer).
+ * ueber eine Aussage kam (nur direkte Treffer) oder die gewaehlte weder den
+ * obersten Treffer noch die Mehrheit traegt.
  */
 export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null {
   const alle: BaseSearchResult[] = [
@@ -126,6 +127,12 @@ export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null
     }
   }
   let gewaehlt: { aussage: ErkannteAussage; anzahl: number; bester: number } | null = null;
+  let mitAussage = 0;
+  let hoechster = -Infinity;
+  for (const eintrag of je.values()) {
+    mitAussage += eintrag.anzahl;
+    hoechster = Math.max(hoechster, eintrag.bester);
+  }
   for (const eintrag of je.values()) {
     if (
       !gewaehlt ||
@@ -135,7 +142,12 @@ export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null
       gewaehlt = eintrag;
     }
   }
-  return gewaehlt?.aussage ?? null;
+  // Nur, wenn die Zeile fuer die Treffer steht: Sie traegt den obersten Treffer
+  // oder die Mehrheit. Verteilt auf viele Aussagen sagte "Gefunden zu" zu wenig.
+  if (!gewaehlt || (gewaehlt.bester < hoechster && gewaehlt.anzahl * 2 <= mitAussage)) {
+    return null;
+  }
+  return gewaehlt.aussage;
 }
 
 /** Ob ein Treffer ueber genau die erkannte Aussage gefunden wurde. */
@@ -230,6 +242,11 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   aussagenDerTreffer: string[] = [];
   /** Einmal ueber den Treffern (#642); aus allen Treffern, nicht nur denen zum Thema. */
   erkannt: ErkannteAussage | null = null;
+  /**
+   * Wie viele andere aehnliche Aussagen "Nicht dabei?" zeigt. "Nicht gemeint?" steht
+   * nur, wenn es dort welche gibt; sonst fuehrte der Link in einen leeren Kasten.
+   */
+  andereAussagen = 0;
 
   // Erklaerzeile je Tab, derselbe Satz wie auf der Beitragen-Seite
   readonly kommentarErklaerung = typBeschreibung('commentary');
@@ -362,8 +379,17 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     if (!ziel) {
       return;
     }
-    ziel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    ziel.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'start' });
     ziel.focus({ preventScroll: true });
+  }
+
+  andereAussagenGeladen(anzahl: number): void {
+    // Nach der laufenden Pruefung: Der Link steht im Template vor "Nicht dabei?".
+    Promise.resolve().then(() => {
+      this.andereAussagen = anzahl;
+      this.cdr.markForCheck();
+    });
   }
 
   ngOnDestroy(): void {

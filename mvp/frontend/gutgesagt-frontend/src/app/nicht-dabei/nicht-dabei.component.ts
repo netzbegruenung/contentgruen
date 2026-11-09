@@ -3,9 +3,11 @@ import {
   ChangeDetectorRef,
   Component,
   DestroyRef,
+  EventEmitter,
   Input,
   OnChanges,
   OnInit,
+  Output,
   SimpleChanges,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -61,6 +63,12 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
    */
   @Input() ohneTreffer = false;
 
+  /**
+   * Wie viele aehnliche Aussagen dastehen, nach jedem Laden und jeder Aenderung der
+   * bekannten Aussagen; die Ergebnisseite zeigt "Nicht gemeint?" nur mit welchen (#642).
+   */
+  @Output() aehnlicheAnzahl = new EventEmitter<number>();
+
   readonly kommentarPfad = FORMULAR_PFAD.commentary;
   readonly titelId = `nicht-dabei-titel-${++naechsteNummer}`;
   readonly listenId = `aehnliche-titel-${naechsteNummer}`;
@@ -98,6 +106,7 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
       )
       .subscribe((aussagen) => {
         this.geladen = aussagen;
+        this.aehnlicheAnzahl.emit(this.aehnliche.length);
         this.cdr.markForCheck();
       });
   }
@@ -105,6 +114,9 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['suchtext']) {
       this.suchtext$.next((this.suchtext ?? '').trim());
+    }
+    if (changes['bekannteAussagen'] && !changes['bekannteAussagen'].firstChange) {
+      this.aehnlicheAnzahl.emit(this.aehnliche.length);
     }
   }
 

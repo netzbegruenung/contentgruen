@@ -689,6 +689,7 @@ describe('ResultViewComponent: Gefunden zu', () => {
   const ANDERE = 'Tempolimit ist Bevormundung';
 
   let fixture: ComponentFixture<ResultViewComponent>;
+  const AEHNLICH = { id: '55555555-2222-4333-8444-555555555555', text: 'Tempo 130 reicht doch', replysuggestions_count: 1, score: 0.8 };
 
   function kommentar(id: string, statementId: string | null, statementText: string, score: number): any {
     return {
@@ -701,19 +702,26 @@ describe('ResultViewComponent: Gefunden zu', () => {
     };
   }
 
-  function oeffnen(mobil: boolean, kommentare: any[]): HTMLElement {
+  /** Angemeldet mit aehnlichen Aussagen (Standard) oder als Besucher ohne. */
+  async function oeffnen(mobil: boolean, kommentare: any[], aehnliche: any[] | null = [AEHNLICH]): Promise<HTMLElement> {
+    const statementService = jasmine.createSpyObj('StatementService', ['aussageVorschlaege']);
+    statementService.aussageVorschlaege.and.returnValue(of(aehnliche ?? []));
     TestBed.configureTestingModule({
       imports: [ResultViewComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter(ohneWaechter(routes)),
+        { provide: StatementService, useValue: statementService },
         {
           provide: BreakpointObserver,
           useValue: { observe: (query: string[]) => of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }) },
         },
       ],
     });
+    if (aehnliche) {
+      TestBed.inject(AuthService).setUserInfo({ isAuthenticated: true, userId: 'u-1', userName: 'Test', claims: null });
+    }
     TestBed.inject(StateManagementService).setSearchResults({
       query_was_newly_added_as_statement: true,
       statement_id: '11111111-2222-4333-8444-555555555555',
@@ -728,6 +736,9 @@ describe('ResultViewComponent: Gefunden zu', () => {
     fixture.componentInstance.searchQuery = 'tempolimit bringt nichts';
     fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
+    // Die Zahl der aehnlichen Aussagen kommt nach der Pruefung an (Promise).
+    await fixture.whenStable();
+    fixture.detectChanges();
     return fixture.nativeElement;
   }
 
@@ -741,8 +752,8 @@ describe('ResultViewComponent: Gefunden zu', () => {
   for (const mobil of [false, true]) {
     const wo = mobil ? 'Handy' : 'Desktop';
 
-    it(`zeigt die erkannte Aussage einmal ueber den Treffern (${wo})`, () => {
-      const seite = oeffnen(mobil, TREFFER());
+    it(`zeigt die erkannte Aussage einmal ueber den Treffern (${wo})`, async () => {
+      const seite = await oeffnen(mobil, TREFFER());
       const bloecke = seite.querySelectorAll('.gefunden-zu');
       expect(bloecke.length).withContext('genau ein Block').toBe(1);
       expect(bloecke[0].querySelector('.gefunden-zu-satz')?.textContent?.replace(/\s+/g, ' ').trim())
@@ -755,16 +766,16 @@ describe('ResultViewComponent: Gefunden zu', () => {
       expect(bloecke[0].compareDocumentPosition(ersteKarte) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
-    it(`zeigt den Antwort-auf-Kopf nur an Karten mit abweichender Aussage (${wo})`, () => {
-      const seite = oeffnen(mobil, TREFFER());
+    it(`zeigt den Antwort-auf-Kopf nur an Karten mit abweichender Aussage (${wo})`, async () => {
+      const seite = await oeffnen(mobil, TREFFER());
       const vorschauen = Array.from(seite.querySelectorAll('.statement-vorschau')).map((e) => e.textContent!.trim());
       expect(vorschauen).toEqual([`„${ANDERE}“`]);
       const karten = fixture.componentInstance.kommentarKarten;
       expect(karten.map((k) => k.statement?.text ?? null)).toEqual([null, ANDERE, null, null]);
     });
 
-    it(`fuehrt mit "Nicht gemeint?" zu "Nicht dabei?" unter den Treffern (${wo})`, () => {
-      const seite = oeffnen(mobil, TREFFER());
+    it(`fuehrt mit "Nicht gemeint?" zu "Nicht dabei?" unter den Treffern (${wo})`, async () => {
+      const seite = await oeffnen(mobil, TREFFER());
       const ziel = seite.querySelector<HTMLElement>('#nicht-dabei-unten')!;
       expect(ziel).withContext('Anker unter den Treffern').toBeTruthy();
       expect(ziel.querySelector('app-nicht-dabei')).toBeTruthy();
@@ -775,17 +786,23 @@ describe('ResultViewComponent: Gefunden zu', () => {
       expect(scroll).toHaveBeenCalled();
       expect(document.activeElement).toBe(ziel);
     });
+
+    it(`zeigt "Nicht gemeint?" nicht, wenn "Nicht dabei?" keine anderen Aussagen hat (${wo})`, async () => {
+      const seite = await oeffnen(mobil, TREFFER(), null);
+      expect(seite.querySelector('.gefunden-zu')).toBeTruthy();
+      expect(seite.querySelector('button.nicht-gemeint')).toBeNull();
+    });
   }
 
-  it('zeigt keinen Block, wenn kein Treffer ueber eine Aussage kam', () => {
-    const seite = oeffnen(false, [kommentar('k-4', null, '', 0.5)]);
+  it('zeigt keinen Block, wenn kein Treffer ueber eine Aussage kam', async () => {
+    const seite = await oeffnen(false, [kommentar('k-4', null, '', 0.5)]);
     expect(seite.querySelector('.gefunden-zu')).toBeNull();
   });
 
-  it('sagt unter den Treffern "zu dieser Aussage", nicht "zu deiner Aussage" (R49)', () => {
-    const seite = oeffnen(false, TREFFER());
+  it('sagt unter den Treffern "zu dieser Aussage", nicht "zu deiner Aussage" (R49)', async () => {
+    const seite = await oeffnen(false, TREFFER());
     expect(seite.querySelector('.nicht-dabei-unten .neu-anlegen-satz')?.textContent?.trim())
-      .toBe('Schreib selbst eine Antwort zu dieser Aussage.');
+      .toBe('Schreib selbst einen Kommentar zu dieser Aussage.');
     expect(seite.textContent).not.toContain('zu deiner Aussage');
   });
 });
@@ -825,7 +842,7 @@ describe('ResultViewComponent: ohne Treffer', () => {
       const leer = seite.querySelector(bereich)!;
       expect(leer.querySelector('app-oft-gesucht')).withContext('Anschluss statt Sackgasse').toBeTruthy();
       expect(leer.querySelector('.hier-fehlt-link')?.getAttribute('href')).toBe('/hier-fehlt-eine-antwort');
-      expect(leer.querySelector('.neu-anlegen-satz')?.textContent?.trim()).toBe('Schreib die erste Antwort zu dieser Aussage.');
+      expect(leer.querySelector('.neu-anlegen-satz')?.textContent?.trim()).toBe('Schreib den ersten Kommentar zu dieser Aussage.');
       expect(seite.querySelector('.gefunden-zu')).toBeNull();
     });
   }
@@ -855,6 +872,18 @@ describe('erkannteAussage', () => {
 
   it('erkennt Aussagen ohne ID an ihrem Text', () => {
     expect(erkannteAussage(antwort([treffer(null, ' A ', 0.9), treffer(null, 'A', 0.5)]))).toEqual({ id: null, text: 'A' });
+  });
+
+  it('gibt null, wenn die Aussage weder den obersten Treffer noch die Mehrheit traegt', () => {
+    // b hat zwei Treffer, aber a den obersten; von vier Treffern ist b keine Mehrheit.
+    expect(
+      erkannteAussage(antwort([treffer('a', 'A', 0.95), treffer('b', 'B', 0.8), treffer('b', 'B', 0.7), treffer('c', 'C', 0.6)])),
+    ).toBeNull();
+  });
+
+  it('nimmt eine Aussage mit Mehrheit auch ohne den obersten Treffer', () => {
+    expect(erkannteAussage(antwort([treffer('a', 'A', 0.95), treffer('b', 'B', 0.8), treffer('b', 'B', 0.7)])))
+      .toEqual({ id: 'b', text: 'B' });
   });
 
   it('gibt null, wenn nur direkte Treffer ohne Aussage da sind', () => {

@@ -9,6 +9,7 @@ import {
 } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { ROUTES } from './shared/constants/app.constants';
 import { ohneSuchtextZumStart } from './result-view/ohne-suchtext.guard';
+import { SUCHTEXT_PARAM } from './shared/formular-adresse';
 import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
 /**
@@ -69,7 +70,8 @@ export const routes: Routes = [
         loadComponent: () => import('./result-view/result-view.component').then(m => m.ResultViewComponent),
         canActivate: [PublicGuard, ohneSuchtextZumStart],
         // Auch /result?searchQuery=x -> /result ohne Text geht auf den Start (#642).
-        runGuardsAndResolvers: 'paramsOrQueryParamsChange',
+        // Nur dann: Sonst liefe auch PublicGuard bei jeder neuen Suche erneut (check-session).
+        runGuardsAndResolvers: (_von, nach) => !nach.queryParamMap.get(SUCHTEXT_PARAM)?.trim(),
         data: { parent: '/search' }
     },
     {

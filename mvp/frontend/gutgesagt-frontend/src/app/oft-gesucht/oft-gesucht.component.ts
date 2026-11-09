@@ -10,7 +10,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Observable, forkJoin, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
+import { AuthService } from '../auth/auth.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { AussageKurz, ContentService } from '../services/content.service';
 import { ROUTES } from '../shared/constants/app.constants';
@@ -25,16 +26,38 @@ const HOECHSTENS_BEITRAEGE = 6;
 /** Woher die Aussagen kommen: oft genutzte Beitraege dieser Woche, sonst die neuesten. */
 export type OftGesuchtQuelle = 'oft-genutzt' | 'neueste';
 
+/** Der Titel sagt, woher die Aussagen kommen - keine Suchstatistik, die es nicht gibt. */
 export const OFT_GESUCHT_TITEL: Record<OftGesuchtQuelle, string> = {
-  'oft-genutzt': 'Oft gesucht',
+  'oft-genutzt': 'Beliebte Aussagen',
   neueste: 'Zuletzt beantwortet',
 };
 
+interface Kandidaten {
+  quelle: OftGesuchtQuelle;
+  aussagen: AussageKurz[];
+}
+
 /**
- * Bis zu drei Aussagen, jede einmal, ohne die der eigenen Suche. Gross- und
+ * Einmal je Sitzung geladen: Jede Suche ohne Treffer baut die Komponente neu, und die
+ * Beitraege nachzuladen ist teuer (bis zu 1 + 6 Abrufe je Quelle). Ein Fehler wird
+ * nicht gemerkt, der naechste Versuch laedt neu.
+ */
+let zwischengespeichert: Observable<Kandidaten> | null = null;
+
+/** Nur fuer Tests: den Zwischenspeicher leeren. */
+export function oftGesuchtVergessen(): void {
+  zwischengespeichert = null;
+}
+
+/**
+ * Bis zu drei (bzw. ``hoechstens``) Aussagen, jede einmal, ohne die der eigenen Suche. Gross- und
  * Kleinschreibung und Leerraum am Rand zaehlen nicht.
  */
-export function aussagenAuswaehlen(aussagen: (AussageKurz | null | undefined)[], suchtext: string): AussageKurz[] {
+export function aussagenAuswaehlen(
+  aussagen: (AussageKurz | null | undefined)[],
+  suchtext: string,
+  hoechstens = OFT_GESUCHT_ANZAHL,
+): AussageKurz[] {
   const gleich = (text: string) => text.trim().toLocaleLowerCase('de');
   const gesehen = new Set<string>([gleich(suchtext)]);
   const gewaehlt: AussageKurz[] = [];
@@ -45,7 +68,7 @@ export function aussagenAuswaehlen(aussagen: (AussageKurz | null | undefined)[],
     }
     gesehen.add(gleich(text));
     gewaehlt.push({ id: aussage.id, text });
-    if (gewaehlt.length === OFT_GESUCHT_ANZAHL) {
+    if (gewaehlt.length === hoechstens) {
       break;
     }
   }
@@ -53,14 +76,15 @@ export function aussagenAuswaehlen(aussagen: (AussageKurz | null | undefined)[],
 }
 
 /**
- * "Oft gesucht" auf der Ergebnisseite ohne Treffer (#642, R51): Auch wer nichts
- * gefunden hat und kein Konto hat, bekommt einen Weg weiter - drei beliebte
- * Aussagen als Suche und den Link "Hier fehlt eine Antwort".
+ * "Oft gesucht" (Ticket) auf der Ergebnisseite ohne Treffer (#642, R51): Auch wer
+ * nichts gefunden hat und kein Konto hat, bekommt einen Weg weiter - drei beliebte
+ * Aussagen als Suche und den Link "Hier fehlt eine Antwort". Der Titel heisst nach
+ * der Quelle, denn Suchen werden nicht gezaehlt.
  *
  * Beliebt heisst: die Aussagen, auf die die oft genutzten Beitraege dieser Woche
  * antworten (dieselbe Auswahl wie "Diese Woche oft genutzt" auf dem Start). Gibt es
  * die nicht, die Aussagen der neuesten Beitraege, dann mit dem Titel "Zuletzt
- * beantwortet". Beide Endpunkte und die Beitragsadresse sind auch fuer Besucher
+ * beantwortet". Geladen wird je Sitzung einmal. Beide Endpunkte und die Beitragsadresse sind auch fuer Besucher
  * offen. Kommt nichts, bleibt nur der Link.
  */
 @Component({
@@ -76,6 +100,8 @@ export class OftGesuchtComponent implements OnInit {
   @Input() suchtext = '';
 
   aussagen: AussageKurz[] = [];
+  /** Besucher landen bei "Hier fehlt eine Antwort" auf der Anmeldung; der Link sagt das. */
+  angemeldet = false;
   quelle: OftGesuchtQuelle = 'oft-genutzt';
 
   readonly ergebnisse = ROUTES.RESULT;
@@ -84,6 +110,7 @@ export class OftGesuchtComponent implements OnInit {
   constructor(
     private usage: UsageTrackingService,
     private content: ContentService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private destroyRef: DestroyRef,
   ) {}
@@ -93,8 +120,26 @@ export class OftGesuchtComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.ausBeitraegen(this.usage.getOftGenutzt().pipe(map((a) => a.results ?? [])))
-      .pipe(
+    this.authService.userInfo$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((info) => {
+        this.angemeldet = !!info?.isAuthenticated;
+        this.cdr.markForCheck();
+      });
+
+    this.kandidaten()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ quelle, aussagen }) => {
+        this.quelle = quelle;
+        this.aussagen = aussagenAuswaehlen(aussagen, this.suchtext);
+        this.cdr.markForCheck();
+      });
+  }
+
+  /** Aussagen der oft genutzten Beitraege, sonst der neuesten; je Sitzung einmal. */
+  private kandidaten(): Observable<Kandidaten> {
+    if (!zwischengespeichert) {
+      zwischengespeichert = this.ausBeitraegen(this.usage.getOftGenutzt().pipe(map((a) => a.results ?? []))).pipe(
         switchMap((oft) =>
           oft.length
             ? of({ quelle: 'oft-genutzt' as const, aussagen: oft })
@@ -102,13 +147,14 @@ export class OftGesuchtComponent implements OnInit {
                 this.content.getRecentContent(HOECHSTENS_BEITRAEGE).pipe(map((a) => a.results ?? [])),
               ).pipe(map((aussagen) => ({ quelle: 'neueste' as const, aussagen }))),
         ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(({ quelle, aussagen }) => {
-        this.quelle = quelle;
-        this.aussagen = aussagen;
-        this.cdr.markForCheck();
-      });
+        catchError((fehler) => {
+          zwischengespeichert = null;
+          throw fehler;
+        }),
+        shareReplay(1),
+      );
+    }
+    return zwischengespeichert;
   }
 
   /** Query-Parameter, um nach einer Aussage zu suchen. */
@@ -135,7 +181,7 @@ export class OftGesuchtComponent implements OnInit {
               catchError(() => of(null)),
             ),
           ),
-        ).pipe(map((aussagen) => aussagenAuswaehlen(aussagen, this.suchtext)));
+        ).pipe(map((aussagen) => aussagenAuswaehlen(aussagen, '', HOECHSTENS_BEITRAEGE)));
       }),
     );
   }

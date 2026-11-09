@@ -2,7 +2,10 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { Router, provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 
-import { OftGesuchtComponent, aussagenAuswaehlen } from './oft-gesucht.component';
+import { OftGesuchtComponent, aussagenAuswaehlen, oftGesuchtVergessen } from './oft-gesucht.component';
+import { AuthService } from '../auth/auth.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { BeitragAnsicht, ContentService } from '../services/content.service';
 import { routes } from '../app.routes';
@@ -35,6 +38,7 @@ describe('OftGesuchtComponent', () => {
     Array.from(seite.querySelectorAll('.oft-gesucht-aussage')).map((a) => a.textContent!.trim());
 
   beforeEach(() => {
+    oftGesuchtVergessen();
     usage = jasmine.createSpyObj('UsageTrackingService', ['getOftGenutzt']);
     content = jasmine.createSpyObj('ContentService', ['getRecentContent', 'beitragLaden']);
     aussageJeBeitrag = {
@@ -51,6 +55,8 @@ describe('OftGesuchtComponent', () => {
       imports: [OftGesuchtComponent],
       providers: [
         provideRouter(ohneWaechter(routes)),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: UsageTrackingService, useValue: usage },
         { provide: ContentService, useValue: content },
       ],
@@ -62,7 +68,7 @@ describe('OftGesuchtComponent', () => {
     const ids = ['k-1', 'k-2', 'k-4', 'k-5', 'k-6', 'k-3', 'k-7', 'k-8'];
     const seite = erstellen(of({ results: ids.map((id) => ({ id })) }));
 
-    expect(seite.querySelector('.oft-gesucht-titel')?.textContent?.trim()).toBe('Oft gesucht');
+    expect(seite.querySelector('.oft-gesucht-titel')?.textContent?.trim()).toBe('Beliebte Aussagen');
     // Nur die ersten sechs Beitraege werden nachgeladen; k-6 ist die eigene Suche.
     expect(aussagen(seite)).toEqual(['„Windräder töten die Vögel!“', '„Wärmepumpen sind zu teuer“']);
     expect(content.beitragLaden).toHaveBeenCalledTimes(6);
@@ -82,6 +88,28 @@ describe('OftGesuchtComponent', () => {
     expect(seite.querySelector('.oft-gesucht-titel')).toBeNull();
     expect(seite.querySelector('.oft-gesucht-liste')).toBeNull();
     expect(seite.querySelector('.hier-fehlt-link')?.textContent?.trim()).toBe('Hier fehlt eine Antwort');
+  });
+
+  it('laedt je Sitzung nur einmal', () => {
+    erstellen(of({ results: [{ id: 'k-3' }] }));
+    fixture.destroy();
+    const zweite = TestBed.createComponent(OftGesuchtComponent);
+    zweite.componentRef.setInput('suchtext', 'etwas anderes');
+    zweite.detectChanges();
+    expect(usage.getOftGenutzt).toHaveBeenCalledTimes(1);
+    expect(content.beitragLaden).toHaveBeenCalledTimes(1);
+    expect(zweite.nativeElement.querySelector('.oft-gesucht-aussage')?.textContent?.trim()).toBe('„Wärmepumpen sind zu teuer“');
+  });
+
+  it('sagt Besuchern, dass "Hier fehlt eine Antwort" eine Anmeldung braucht', () => {
+    const seite = erstellen(of({ results: [] }));
+    expect(seite.querySelector('.hier-fehlt')?.textContent).toContain('(zum Mitmachen anmelden)');
+  });
+
+  it('laesst den Hinweis fuer Angemeldete weg', () => {
+    TestBed.inject(AuthService).setUserInfo({ isAuthenticated: true, userId: 'u-1', userName: 'Test', claims: null });
+    const seite = erstellen(of({ results: [] }));
+    expect(seite.querySelector('.hier-fehlt')?.textContent).not.toContain('anmelden');
   });
 
   it('bleibt bei einem Fehler der Liste beim Link', () => {

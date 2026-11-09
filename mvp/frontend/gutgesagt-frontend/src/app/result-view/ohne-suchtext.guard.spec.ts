@@ -12,13 +12,20 @@ class LeerComponent {}
 /** /result ohne Suchtext geht auf den Start (#642, R50). */
 describe('ohneSuchtextZumStart', () => {
   let router: Router;
+  let waechterLaeufe: number;
 
   beforeEach(() => {
+    waechterLaeufe = 0;
     TestBed.configureTestingModule({
       providers: [
         provideRouter([
           { path: 'search', component: LeerComponent },
-          { path: 'result', component: LeerComponent, canActivate: [ohneSuchtextZumStart], runGuardsAndResolvers: 'paramsOrQueryParamsChange' },
+          {
+            path: 'result',
+            component: LeerComponent,
+            canActivate: [ohneSuchtextZumStart, () => { waechterLaeufe++; return true; }],
+            runGuardsAndResolvers: routes.find((r) => r.path === 'result')!.runGuardsAndResolvers,
+          },
         ]),
       ],
     });
@@ -49,6 +56,13 @@ describe('ohneSuchtextZumStart', () => {
   it('haengt in der echten Routentabelle an /result', () => {
     const result = routes.find((r) => r.path === 'result');
     expect(result?.canActivate).toContain(ohneSuchtextZumStart);
-    expect(result?.runGuardsAndResolvers).toBe('paramsOrQueryParamsChange');
+  });
+
+  it('laesst die Waechter bei einer neuen Suche mit Text nicht erneut laufen (kein check-session je Suche)', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/result?searchQuery=Tempolimit');
+    await harness.navigateByUrl('/result?searchQuery=Windkraft');
+    expect(router.url).toBe('/result?searchQuery=Windkraft');
+    expect(waechterLaeufe).toBe(1);
   });
 });
