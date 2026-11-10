@@ -140,6 +140,11 @@ main * {
     display: none;
 }
 
+/* Die Seite, auf der man ist: dicker unterstrichen, schmal gefuellt (#645) */
+.header-link--aktiv {
+    text-decoration-thickness: 3px;
+}
+
 /* Textlinks, die etwas oeffnen statt zu navigieren, sind Knoepfe: ohne Knopf-Optik (#599) */
 button.header-link {
     padding: 0;
@@ -175,6 +180,10 @@ button.header-link {
         background: var(--bg-card);
         box-shadow: var(--elevation-1);
         color: var(--text-primary);
+    }
+
+    .header-link--aktiv {
+        background: var(--accent-light);
     }
 
     .header-link .kopf-icon,

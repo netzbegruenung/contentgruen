@@ -95,18 +95,12 @@ export class RouteConfigService {
           showContributeButton: false
         };
 
+      // Auswahl und Direktanmeldung heissen beide "Anmelden" (#645, vorher "Gut gesagt – Login")
       case ROUTES.LOGIN:
-      case '/login':
       case '/login-selector':
-        return {
-          pageTitle: PAGE_TITLES.LOGIN,
-          showBackButton: true,
-          showContributeButton: false
-        };
-
       case '/login/managed':
         return {
-          pageTitle: 'Gut gesagt – Login',
+          pageTitle: PAGE_TITLES.LOGIN,
           showBackButton: true,
           showContributeButton: false
         };

@@ -15,7 +15,7 @@ import { StatementSearchResult } from '../services/dtos/statementDtos';
   imports: [NichtDabeiComponent],
   template: `
     <app-nicht-dabei [suchtext]="suchtext" [bekannteAussagen]="bekannt">
-      <button class="neu">Selbst beantworten</button>
+      <button class="neu">Antworten</button>
     </app-nicht-dabei>
   `,
 })
@@ -65,7 +65,7 @@ describe('NichtDabeiComponent', () => {
     expect(seite.querySelector('.aehnliche-titel')?.textContent).toContain('Ähnliche Aussagen');
     expect(aehnliche(seite)).toEqual(['Wärmepumpen lohnen sich nicht', 'Heizen mit Strom ist teuer']);
     expect(seite.querySelectorAll('.passt-vielleicht').length).toBe(2);
-    expect(seite.querySelector('button.neu')?.textContent).toContain('Selbst beantworten');
+    expect(seite.querySelector('button.neu')?.textContent).toContain('Antworten');
     expect(statementService.aussageVorschlaege).toHaveBeenCalledOnceWith('Wärmepumpen sind zu teuer');
   });
 
@@ -87,7 +87,7 @@ describe('NichtDabeiComponent', () => {
 
     expect(statementService.aussageVorschlaege).not.toHaveBeenCalled();
     expect(seite.querySelector('.aehnliche')).toBeNull();
-    expect(seite.querySelector('button.neu')).withContext('Selbst beantworten bleibt').toBeTruthy();
+    expect(seite.querySelector('button.neu')).withContext('Antworten bleibt').toBeTruthy();
   });
 
   it('fragt nach dem Anmelden nach und bei neuem Suchtext neu', () => {
@@ -163,7 +163,7 @@ describe('NichtDabeiComponent', () => {
     expect(seite.querySelector('.passt-vielleicht')).toBeTruthy();
   });
 
-  it('bietet ohne Treffer "Selbst beantworten" zuerst fuer die aehnliche Aussage an (#617)', () => {
+  it('bietet ohne Treffer "Antworten" zuerst fuer die aehnliche Aussage an (#617)', () => {
     const MIT_ID = { ...AEHNLICH, id: '11111111-2222-4333-8444-555555555555' };
     TestBed.overrideProvider(StatementService, { useValue: { aussageVorschlaege: () => of([MIT_ID]) } });
     const seite = starten();
@@ -171,9 +171,9 @@ describe('NichtDabeiComponent', () => {
     ohneTreffer();
 
     const link = seite.querySelector<HTMLAnchorElement>('.aehnliche .selbst-beantworten')!;
-    expect(link.textContent).toContain('Selbst beantworten');
+    expect(link.textContent).toContain('Antworten');
     expect(link.getAttribute('href')).toBe('/workflow/add-commentary?aussage=11111111-2222-4333-8444-555555555555');
-    expect(link.getAttribute('aria-label')).toBe('Selbst beantworten: Wärmepumpen lohnen sich nicht');
+    expect(link.getAttribute('aria-label')).toBe('Antworten: Wärmepumpen lohnen sich nicht');
     // Vor dem Knopf fuer die eigene Formulierung
     const alle = Array.from(seite.querySelectorAll('.selbst-beantworten, button.neu'));
     expect(alle[0]).toBe(link);

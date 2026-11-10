@@ -16,8 +16,8 @@
                 <span class="result-count-number">{{ searchResponse.commentary_search_results_count }}</span> passende fertige Kommentare gefunden.
             </div>
             <div class="action-call">
-                <!-- Oben nur ein Link; der Knopf "Selbst beantworten" steht unter den Treffern (#599) -->
-                <button type="button" class="ergaenzen-link" (click)="navigateToContributeView()">Selbst beantworten</button>
+                <!-- Oben nur ein Link; der Knopf "Antworten" steht unter den Treffern (#599) -->
+                <button type="button" class="ergaenzen-link" (click)="navigateToContributeView()">Antworten</button>
             </div>
         </div>
     </div>
@@ -31,7 +31,7 @@
                     Keine passenden fertigen Kommentare gefunden.
                 </div>
                 <div class="action-call">
-                    <button type="button" class="ergaenzen-link" (click)="navigateToContributeView()">Selbst beantworten</button>
+                    <button type="button" class="ergaenzen-link" (click)="navigateToContributeView()">Antworten</button>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@
 
             <div class="action-section">
                 <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContributeView()">
-                    <mat-icon>add</mat-icon> Selbst beantworten
+                    <mat-icon>add</mat-icon> Antworten
                 </button>
             </div>
 

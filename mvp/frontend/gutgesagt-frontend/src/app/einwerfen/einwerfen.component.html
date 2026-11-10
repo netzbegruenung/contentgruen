@@ -82,12 +82,6 @@
                 <mat-spinner *ngIf="wirdGespeichert" diameter="20" class="knopf-spinner"></mat-spinner>
                 Einwerfen
             </button>
-
-            <button mat-raised-button type="button" class="gutgesagt-primary-dark fangkorb-knopf"
-                    (click)="zumFangkorb()">
-                <span class="knopf-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
-                Fangkorb ansehen
-            </button>
         </div>
 
         <div class="einwurf-rueckmeldung" role="status" aria-live="polite">
@@ -99,6 +93,13 @@
         </div>
 
     </form>
+
+    <!-- Nebenweg als Text-Link unter dem Formular: "Einwerfen" bleibt der einzige Knopf (#645) -->
+    <p class="fangkorb-weg">
+        <a class="fangkorb-link" [routerLink]="fangkorbPfad">
+            <span class="knopf-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>Fangkorb ansehen
+        </a>
+    </p>
 
     <div class="einwurf-fussnote">
         <p>

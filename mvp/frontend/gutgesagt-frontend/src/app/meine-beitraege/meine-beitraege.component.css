@@ -14,6 +14,44 @@
   color: var(--text-secondary);
 }
 
+/* Leerer Zustand: unbeantwortete Aussagen als erster Schritt (#645) */
+.erster-schritt {
+  margin: var(--spacing-md) 0;
+}
+
+.erster-schritt h2 {
+  font-size: 18px;
+}
+
+.unbeantwortete-aussagen {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.unbeantwortete-aussage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--disabled-bg);
+}
+
+.unbeantwortete-aussage-text {
+  flex: 1 1 240px;
+  margin: 0;
+  font-weight: 500;
+}
+
+.alle-unbeantworteten {
+  display: inline-block;
+  margin-bottom: var(--spacing-md);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
 /* Tabs: shared/tabs.css. Hier ohne Zaehler, der Name wird notfalls gekuerzt. */
 .tabs {
   margin-bottom: var(--spacing-md);

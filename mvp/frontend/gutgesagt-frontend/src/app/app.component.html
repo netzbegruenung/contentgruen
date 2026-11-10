@@ -136,7 +136,9 @@
                             <span class="kopf-text">Admin</span>
                         </a>
 
+                        <!-- Auf der Seite selbst als aktiv markiert (aria-current, #645) -->
                         <a class="header-link" [routerLink]="hierFehltEineAntwortPfad" matTooltip="Hier fehlt eine Antwort"
+                           routerLinkActive="header-link--aktiv" ariaCurrentWhenActive="page"
                            [matTooltipDisabled]="!kopfSchmal">
                             <mat-icon class="kopf-icon" aria-hidden="true">contact_support</mat-icon>
                             <span class="kopf-text">Hier fehlt eine Antwort</span>
@@ -152,7 +154,7 @@
                             }
                         </button>
                     </ng-container>
-                    <ng-container *ngIf="!userInfo?.isAuthenticated">
+                    <ng-container *ngIf="!userInfo?.isAuthenticated && !aufAnmeldeseite">
                         <button mat-raised-button class="dark-green-button" (click)="login()">
                             Anmelden
                         </button>

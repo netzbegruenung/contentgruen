@@ -10,6 +10,12 @@ describe('RouteConfigService', () => {
     service = TestBed.inject(RouteConfigService);
   });
 
+  it('nennt Anmeldeauswahl und Direktanmeldung "Anmelden" (#645)', () => {
+    expect(service.getRouteConfig('/login').pageTitle).toBe('Anmelden');
+    expect(service.getRouteConfig('/login/managed').pageTitle).toBe('Anmelden');
+    expect(service.getRouteConfig('/login/managed?returnUrl=%2Fcontribute').pageTitle).toBe('Anmelden');
+  });
+
   it('nennt die Destillier-Ansicht im Schritt Typwahl "Ausformulieren"', () => {
     expect(service.getRouteConfig('/destillieren/id-1').pageTitle).toBe('Destillieren');
     expect(service.getRouteConfig('/destillieren/id-1?schritt=typwahl').pageTitle).toBe(
