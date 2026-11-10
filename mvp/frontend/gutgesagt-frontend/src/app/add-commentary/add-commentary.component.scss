@@ -105,14 +105,35 @@ app-formular-hilfe {
   gap: 6px;
 }
 
-// Am Handy untereinander, damit beide Beschriftungen ganz lesbar bleiben.
+// Gewaehlt ist gruen mit Haekchen, nicht grau: grau liest sich als gesperrt (#616).
+// Am Handy zwei gleich breite Segmente, die Beschriftung bricht im Segment um.
 .zweck-wahl {
-  flex-wrap: wrap;
   align-self: flex-start;
 
+  ::ng-deep .mat-button-toggle-checked {
+    --mat-minimal-pseudo-checkbox-selected-checkmark-color: white;
+    background: var(--primary-fill);
+    color: white;
+  }
+
   ::ng-deep .mat-button-toggle-checked .mat-button-toggle-button {
-    color: var(--primary-dark);
+    color: white;
     font-weight: 600;
+  }
+
+  @include bp.mobile-only {
+    align-self: stretch;
+
+    ::ng-deep .mat-button-toggle {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    ::ng-deep .mat-button-toggle-label-content {
+      padding: 6px 8px;
+      line-height: 1.3;
+      white-space: normal;
+    }
   }
 }
 

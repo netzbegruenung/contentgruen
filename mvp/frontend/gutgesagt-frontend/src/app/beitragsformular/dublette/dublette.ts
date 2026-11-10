@@ -27,9 +27,9 @@ export interface Vorhanden<Anfrage> {
 
 /** Die Hinweise zur Dublette eines Beitragstyps. */
 export interface DublettenTexte {
-  /** Es gibt schon einen sehr aehnlichen Beitrag. */
-  hinweis: string;
-  /** ... von jemand anderem: der wird nicht mit der eigenen Aussage verknuepft. */
+  /** Den sehr aehnlichen Beitrag hat die Person selbst schon gespeichert (#616). */
+  eigenHinweis: string;
+  /** Es gibt schon einen sehr aehnlichen von jemand anderem. */
   fremdHinweis: string;
   /** ... die Absicht geht nicht verloren, nur ueber einen anderen Weg. */
   fremdZuordnen: string;
@@ -70,8 +70,9 @@ export function offeneEntscheidung(vorhanden: Vorhanden<unknown> | null): boolea
 }
 
 /**
- * Der Hinweis zur Dublette: nach der Wahl, was gilt; davor, ob es einen gibt und -
- * wenn er fremd ist und eine Aussage mitkam -, dass er sich ihr spaeter zuordnen laesst.
+ * Der Hinweis zur Dublette: nach der Wahl, was gilt; davor, wessen der vorhandene
+ * ist und - wenn er fremd ist und eine Aussage mitkam -, dass er sich ihr spaeter
+ * zuordnen laesst.
  */
 export function dublettenHinweis(
   vorhanden: Vorhanden<unknown> | null,
@@ -84,5 +85,14 @@ export function dublettenHinweis(
   if (vorhanden?.gewaehlt === 'genommen') {
     return vorhanden.aussage ? texte.verknuepft(vorhanden.aussage) : texte.genommen;
   }
-  return vorhanden && !vorhanden.eigen && mitAussage ? `${texte.fremdHinweis} ${texte.fremdZuordnen}` : texte.hinweis;
+  if (vorhanden?.eigen) {
+    return texte.eigenHinweis;
+  }
+  return mitAussage ? `${texte.fremdHinweis} ${texte.fremdZuordnen}` : texte.fremdHinweis;
 }
+
+/**
+ * Der Satz in der Leiste am Handy, solange die Entscheidung offen ist: nur ein
+ * Verweis auf den Kasten, der den Hinweis selbst traegt und ansagt (#616).
+ */
+export const DUBLETTE_LEISTENHINWEIS = 'Etwas sehr Ähnliches gibt es schon.';

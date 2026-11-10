@@ -14,7 +14,7 @@
 
     <div class="content-wrapper">
         <div class="form-column">
-            <form [formGroup]="commentaryForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
+            <form [formGroup]="commentaryForm" (ngSubmit)="absendenGeklickt()" class="beitrag-formular" novalidate>
                 <app-antwort-auf [aussage]="aussageAusAdresse" [hinweis]="aussageHinweis"
                                  (aussageChange)="aussageSetzen($event)">
                 </app-antwort-auf>
@@ -76,8 +76,7 @@
                     <div class="zweck-feld">
                         <span class="feld-beschriftung" id="zweck-beschriftung">Zweck</span>
                         <mat-button-toggle-group formControlName="zweck" class="zweck-wahl"
-                                                 aria-labelledby="zweck-beschriftung"
-                                                 [hideSingleSelectionIndicator]="true">
+                                                 aria-labelledby="zweck-beschriftung">
                             <mat-button-toggle *ngFor="let zweck of zwecke" [value]="zweck">{{ zweckLabel[zweck] }}</mat-button-toggle>
                         </mat-button-toggle-group>
                     </div>
@@ -120,15 +119,16 @@
                                        [kannZustimmen]="kannZustimmen" [kannNehmen]="kannNehmen" nehmenText="Vorhandenen nehmen"
                                        [beschaeftigt]="beschaeftigt" [nehmenGesperrt]="aussageZuKurz" [nimmt]="nimmt"
                                        [fehler]="entscheidungsFehler" (ansehen)="vorhandenAnsehen()" (zustimmen)="zustimmen()"
-                                       (nehmen)="nehmen()" (trotzdem)="trotzdemSpeichern()"></app-dubletten-hinweis>
+                                       (nehmen)="nehmen()"></app-dubletten-hinweis>
 
                 <app-formular-leiste *ngIf="!responseId"
-                                     [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : offeneEntscheidung ? dublettenHinweis : null"
-                                     [aktion]="!fehler && offeneEntscheidung ? 'Ansehen' : null" (aktionGeklickt)="vorhandenAnsehen()">
-                    <button mat-raised-button type="submit" class="submit-btn"
+                                     [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : null"
+                                     [hinweis]="dublettenLeistenHinweis"
+                                     [aktion]="dublettenLeistenAktion" (aktionGeklickt)="dublettenLeistenAktionAusfuehren()">
+                    <button mat-raised-button type="submit" class="submit-btn" [class.dublette-trotzdem]="offeneEntscheidung"
                             [disabled]="beschaeftigt || commentaryForm.invalid || aussageZuKurz">
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
-                        {{ fehler && !validierung ? 'Erneut versuchen' : 'Kommentar speichern' }}
+                        {{ fehler && !validierung ? 'Erneut versuchen' : offeneEntscheidung ? 'Trotzdem speichern' : 'Kommentar speichern' }}
                     </button>
                 </app-formular-leiste>
             </form>

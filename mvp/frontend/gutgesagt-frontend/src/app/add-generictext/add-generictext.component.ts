@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -38,6 +38,7 @@ import {
   DublettenTexte,
   Vorhanden as VorhandenBeitrag,
   dublettenHinweis,
+  DUBLETTE_LEISTENHINWEIS,
   offeneEntscheidung,
   vorhandenAus,
 } from '../beitragsformular/dublette/dublette';
@@ -53,7 +54,8 @@ export const TEXT_MAX = HINTERGRUNDINFO_TEXT_MAX;
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';
 
-export const DUBLETTE_HINWEIS = 'Es gibt schon eine sehr ähnliche Hintergrundinfo.';
+/** Die eigene Dublette: Das hat die Person schon gespeichert (#616). */
+export const DUBLETTE_EIGEN_HINWEIS = 'Diese Hintergrundinfo hast du schon gespeichert.';
 
 /** Dublette von jemand anderem: die wird nicht mit der eigenen Aussage verknüpft. */
 export const DUBLETTE_FREMD_HINWEIS = 'Es gibt schon eine sehr ähnliche Hintergrundinfo von jemand anderem.';
@@ -86,7 +88,7 @@ export type Vorhanden = VorhandenBeitrag<AddGenericTextRequest>;
 
 /** Die Hinweise zur Dublette, fuer den gemeinsamen Baustein. */
 export const DUBLETTEN_TEXTE: DublettenTexte = {
-  hinweis: DUBLETTE_HINWEIS,
+  eigenHinweis: DUBLETTE_EIGEN_HINWEIS,
   fremdHinweis: DUBLETTE_FREMD_HINWEIS,
   fremdZuordnen: DUBLETTE_FREMD_ZUORDNEN,
   zugestimmt: ZUGESTIMMT_HINWEIS,
@@ -161,6 +163,8 @@ export class AddGenerictextComponent implements OnChanges {
 
   @ViewChild(ReferenceInputComponent) referenceInput?: ReferenceInputComponent;
   @ViewChild(AntwortAufComponent) antwortAuf?: AntwortAufComponent;
+  /** Der Kasten mit der Wahl zur Dublette; die Leiste am Handy springt dorthin. */
+  @ViewChild(DublettenHinweisComponent, { read: ElementRef }) dublettenKasten?: ElementRef<HTMLElement>;
 
   readonly generictextForm: FormGroup;
 
@@ -212,6 +216,40 @@ export class AddGenerictextComponent implements OnChanges {
 
   get dublettenHinweis(): string {
     return dublettenHinweis(this.vorhanden, DUBLETTEN_TEXTE, this.mitAussage);
+  }
+
+  /** Ein Satz in der Leiste am Handy, solange die Entscheidung offen ist (#616). */
+  get dublettenLeistenHinweis(): string | null {
+    return this.offeneEntscheidung ? DUBLETTE_LEISTENHINWEIS : null;
+  }
+
+  /** Der Link dahinter: zur Wahl im Kasten, ohne Wahl den vorhandenen ansehen. */
+  get dublettenLeistenAktion(): string | null {
+    if (this.fehler || !this.offeneEntscheidung) {
+      return null;
+    }
+    return this.kannZustimmen || this.kannNehmen ? 'Zur Auswahl' : 'Ansehen';
+  }
+
+  dublettenLeistenAktionAusfuehren(): void {
+    if (this.kannZustimmen || this.kannNehmen) {
+      const kasten = this.dublettenKasten?.nativeElement;
+      const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      kasten?.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'center' });
+      // Fokus mitnehmen, sonst steht er mit Tastatur oder Screenreader weiter in der Leiste
+      kasten?.querySelector<HTMLButtonElement>('.dublette-entscheidung button:not([disabled])')?.focus({ preventScroll: true });
+    } else {
+      this.vorhandenAnsehen();
+    }
+  }
+
+  /** Mit offener Entscheidung heisst der Hauptknopf "Trotzdem speichern" und tut das (#616). */
+  absendenGeklickt(): void {
+    if (this.offeneEntscheidung) {
+      this.trotzdemSpeichern();
+    } else {
+      this.speichern();
+    }
   }
 
   private vorschauCache?: { titel: string; text: string; quellen: unknown; aussage: string; karte: KartenDaten };

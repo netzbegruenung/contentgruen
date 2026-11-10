@@ -222,8 +222,12 @@
 }
 
 .badge-neu {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 18px;
   background: var(--primary-fill);
   color: white;
+  font-size: 13px;
 }
 
 .badge-beliebt {
@@ -239,12 +243,6 @@
 .karte-nutzung {
   display: inline-block;
   transition: transform 0.2s ease;
-}
-
-.badge-icon {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
 }
 
 .nutzung-animiert {
@@ -741,10 +739,10 @@
     font-size: 16px;
   }
 
-  .badge-icon {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
+  .badge-neu {
+    width: auto;
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .statement-zeile {

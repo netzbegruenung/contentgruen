@@ -10,7 +10,7 @@ import { Subject, of, throwError } from 'rxjs';
 
 import {
   AddCommentaryComponent,
-  DUBLETTE_HINWEIS,
+  DUBLETTE_EIGEN_HINWEIS,
   GENOMMEN_HINWEIS,
   NEHMEN_FEHLGESCHLAGEN,
   VORHANDEN_WEG,
@@ -479,8 +479,8 @@ describe('AddCommentaryComponent', () => {
 
       expect(erfolg).not.toHaveBeenCalled();
       expect(component.responseId).toBe('');
-      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar.');
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain('sehr ähnlichen Kommentar');
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar von jemand anderem.');
+      expect(seite().querySelector('app-formular-leiste .leiste-hinweis')!.textContent).toContain('Etwas sehr Ähnliches gibt es schon.');
       expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
 
       expect(component.vorhanden!.aussage).toBeNull();
@@ -523,7 +523,7 @@ describe('AddCommentaryComponent', () => {
       expect(erfolg).not.toHaveBeenCalled();
       expect(component.responseId).toBe('');
       expect(component.vorhanden!.aussage).toBeNull();
-      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(DUBLETTE_HINWEIS);
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(DUBLETTE_EIGEN_HINWEIS);
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).not.toContain('verknüpft');
       expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
       expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
@@ -906,7 +906,7 @@ describe('AddCommentaryComponent', () => {
       fixture.detectChanges();
 
       const status = seite().querySelector('.dubletten-hinweis [role="status"]')!;
-      expect(status.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar.');
+      expect(status.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar von jemand anderem.');
       expect(status.querySelector('.dublette-zustimmen, .dublette-trotzdem')).toBeNull();
     }));
 
@@ -922,8 +922,51 @@ describe('AddCommentaryComponent', () => {
       flush();
       fixture.detectChanges();
 
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler, app-formular-leiste .leiste-hinweis')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
+    }));
+
+    it('Leiste: mit Wahl springt "Zur Auswahl" zum Kasten und nimmt den Fokus mit (#616)', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', vorhanden: {}, verknuepft: false });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const aktion = seite().querySelector('app-formular-leiste .leiste-aktion') as HTMLButtonElement;
+      expect(aktion.textContent!.trim()).toBe('Zur Auswahl');
+      expect(seite().querySelector('app-formular-leiste .leiste-hinweis')!.getAttribute('role')).toBeNull();
+      const scroll = spyOn(component.dublettenKasten!.nativeElement, 'scrollIntoView');
+      aktion.click();
+
+      expect(scroll).toHaveBeenCalled();
+      expect(document.activeElement).toBe(seite().querySelector('.dublette-zustimmen'));
+    }));
+
+    it('Leiste: ohne Wahl (eigene, ohne Aussage) heisst der Link "Ansehen" und oeffnet den vorhandenen', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false });
+      const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const aktion = seite().querySelector('app-formular-leiste .leiste-aktion') as HTMLButtonElement;
+      expect(aktion.textContent!.trim()).toBe('Ansehen');
+      aktion.click();
+      expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
+    }));
+
+    it('Hauptknopf heisst bei offener Entscheidung "Trotzdem speichern"', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.submit-btn')!.textContent).toContain('Trotzdem speichern');
+      // Kein zweiter Trotzdem-Knopf im Kasten
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).not.toContain('Trotzdem speichern');
     }));
 
     it('verschwindet mit Zuruecksetzen, auch der Link in der Leiste', fakeAsync(() => {
@@ -940,7 +983,7 @@ describe('AddCommentaryComponent', () => {
 
       expect(component.vorhanden).toBeNull();
       expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler, app-formular-leiste .leiste-hinweis')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
   });

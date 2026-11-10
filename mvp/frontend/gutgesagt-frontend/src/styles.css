@@ -711,10 +711,15 @@ body.cdk-global-scrollblock {
 }
 
 /* Beitragsformular mit fester Leiste (app-formular-leiste): am Handy unten Platz
-   frei halten, damit Vorschau und Fusszeile nicht darunter verschwinden. */
+   frei halten, damit Vorschau und Fusszeile nicht darunter verschwinden. Das
+   scroll-padding haelt fokussierte Felder und Sprungziele ueber der Leiste (#616). */
 @media (max-width: 599px) {
     body.hat-feste-leiste {
         padding-bottom: var(--feste-leiste-hoehe, 73px);
+    }
+
+    html:has(> body.hat-feste-leiste) {
+        scroll-padding-bottom: calc(var(--feste-leiste-hoehe, 73px) + 16px);
     }
 }
 
