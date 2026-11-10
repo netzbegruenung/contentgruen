@@ -114,6 +114,9 @@ class FallMessung(NamedTuple):
     # Einbettung, Aussagesuche, Polaritaet (Wortlisten oder NLI-Modell, #574) und
     # Schlagwoerter. None, wenn der Fall nicht gemessen wurde.
     aussagetreffer_ms: Optional[float] = None
+    # Mit dem Ersatz gemessen (fall.ersatz, #606): Dem Bestand fehlen diese Aussagen aus
+    # dem urspruenglichen erwartet; fall traegt dann die Erwartung des Ersatzes.
+    ersatz_fuer: Tuple[str, ...] = ()
 
 
 class Auswertung(NamedTuple):
@@ -395,6 +398,16 @@ def tabellen(
     if fehlend:
         zeilen += ["", "Nicht gemessen (Aussage fehlt im Bestand):"]
         zeilen += [f"- {m.fall.id}: {', '.join(m.fehlt)}" for m in fehlend]
+    mit_ersatz = [m for m in gemessen(messungen) if m.ersatz_fuer]
+    if mit_ersatz:
+        zeilen += [
+            "",
+            "Mit Ersatz gemessen (Aussage fehlt im Bestand, erwartet statt ihrer):",
+        ]
+        zeilen += [
+            f"- {m.fall.id}: {', '.join(m.ersatz_fuer)} -> {', '.join(m.fall.erwartet)}"
+            for m in mit_ersatz
+        ]
     ausgeschlossen = [m for m in messungen if m.ausgeschlossen and not m.fehlt]
     if ausgeschlossen:
         zeilen += [
@@ -468,6 +481,7 @@ def als_json(
                 "erwartet": list(m.fall.erwartet),
                 "dieselbe_behauptung": m.fall.dieselbe_behauptung,
                 "fehlt": list(m.fehlt),
+                "ersatz_fuer": list(m.ersatz_fuer),
                 "ausgeschlossen": list(m.ausgeschlossen),
                 "landet_auf_erwarteter": m.landet_auf_erwarteter,
                 "aehnliche": list(m.aehnliche),
@@ -598,6 +612,31 @@ async def _erwartung(dienste: Dienste, fall: Fall, cache: dict) -> _Erwartung:
     )
 
 
+async def _erwartung_mit_ersatz(
+    dienste: Dienste, fall: Fall, cache: dict
+) -> Tuple[Fall, _Erwartung, Tuple[str, ...]]:
+    """
+    Wie _erwartung; fehlt eine Aussage aus erwartet und hat der Fall einen Ersatz, gilt
+    dessen Erwartung (der Fall wird mit ihr gemessen und ausgewertet). Zurueck kommen
+    der gemessene Fall, seine Erwartung und die ersetzten Aussagen (leer ohne Ersatz).
+    """
+    erwartung = await _erwartung(dienste, fall, cache)
+    fehlt_erwartet = tuple(t for t in erwartung.fehlt if t in fall.erwartet)
+    if not fehlt_erwartet or fall.ersatz is None:
+        return fall, erwartung, ()
+    ersetzt = fall._replace(
+        erwartet=fall.ersatz.erwartet,
+        dieselbe_behauptung=fall.ersatz.dieselbe_behauptung,
+        phaenomen=fall.ersatz.phaenomen or fall.phaenomen,
+        ersatz=None,
+    )
+    erwartung_ersatz = await _erwartung(dienste, ersetzt, cache)
+    if erwartung_ersatz.fehlt:
+        # Auch der Ersatz fehlt: Der Fall zaehlt nicht, genannt wird das Original.
+        return fall, erwartung, ()
+    return ersetzt, erwartung_ersatz, fehlt_erwartet
+
+
 def angezeigte_beitraege(
     orchestrator: "SearchOrchestrator",
     specs: Sequence["ContentTypeSearchSpec"],
@@ -646,7 +685,9 @@ async def fall_messen(
     from api.v1.search import aussagetreffer_finden, treffer_sammeln
     from services.search.search_orchestrator import SearchOrchestrator
 
-    erwartung = await _erwartung(dienste, fall, {} if cache is None else cache)
+    fall, erwartung, ersatz_fuer = await _erwartung_mit_ersatz(
+        dienste, fall, {} if cache is None else cache
+    )
     if erwartung.fehlt or erwartung.ausgeschlossen:
         # Zaehlt nicht mit (gemessen()): keine Suche. Am Seed sind das die Faelle zum
         # Startbestand, im naechtlichen Lauf mehr als die Haelfte. Ohne Eintrag je
@@ -658,6 +699,7 @@ async def fall_messen(
             None,
             (),
             erwartung.ausgeschlossen,
+            ersatz_fuer=ersatz_fuer,
         )
     beginn = time.perf_counter()
     aussagetreffer, polaritaet = await aussagetreffer_finden(
@@ -700,6 +742,7 @@ async def fall_messen(
         tuple(str(a.id) in erwartung.aussage_ids for a in aehnliche),
         erwartung.ausgeschlossen,
         dauer_ms,
+        ersatz_fuer,
     )
 
 

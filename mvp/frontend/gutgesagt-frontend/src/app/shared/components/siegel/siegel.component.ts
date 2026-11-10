@@ -80,7 +80,7 @@ export class SiegelComponent implements OnChanges, OnDestroy {
   }
 
   get text(): string {
-    return siegelText(this.guete);
+    return siegelText(this.guete, this.glanz, this.krone);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
