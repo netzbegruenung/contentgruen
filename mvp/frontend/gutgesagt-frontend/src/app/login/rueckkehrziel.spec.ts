@@ -65,7 +65,7 @@ describe('Rueckkehrziel nach dem Anmelden', () => {
 });
 
 describe('Anmeldegrund ueber der Login-Auswahl (#600)', () => {
-  it('nennt fuer die Antwortformulare aus "Selbst beantworten" den Grund', () => {
+  it('nennt fuer die Antwortformulare aus "Antworten" den Grund', () => {
     for (const ziel of [
       '/workflow/add-commentary?aussage=f6efb534-ee3a-4969-b8b8-2f1f9b9bb95d',
       '/workflow/add-commentary',

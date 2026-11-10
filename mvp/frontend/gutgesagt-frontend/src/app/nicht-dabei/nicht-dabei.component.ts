@@ -31,7 +31,7 @@ let naechsteNummer = 0;
  * Auswahl wie die Vorschlaege im Feld "Antwort auf" (gepflegte Aussagen ab der
  * unteren Grenze, ohne Widerspruch). Ein Klick sucht nach der Aussage. Aussagen,
  * deren Beitraege schon als Treffer dastehen, fallen weg. Ohne Treffer sagt jede,
- * wie viele Antworten sie hat, und bietet "Selbst beantworten" fuer sich an - vor
+ * wie viele Antworten sie hat, und bietet "Antworten" fuer sich an - vor
  * dem Knopf fuer die eigene Formulierung, damit keine doppelte Aussage entsteht (#617).
  *
  * Nur fuer Angemeldete: Der Endpunkt der Aussagen ist nicht anonym erreichbar, ein
@@ -57,7 +57,7 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
    * Die Suche hat keine Treffer. Dann steht der Titel nur ueber einer Liste (sonst
    * folgte auf "noch nichts drin" eine Frage ohne Auswahl, etwa fuer Besucher), er
    * lautet "Meintest du …?", und jede aehnliche Aussage nennt ihre Antworten und
-   * bietet "Selbst beantworten" fuer sich an (#617).
+   * bietet "Antworten" fuer sich an (#617).
    */
   @Input() ohneTreffer = false;
 

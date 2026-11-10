@@ -15,11 +15,11 @@
                 </a>
                 <!-- Ohne Treffer: erst fuer die aehnliche Aussage anbieten, dann fuer die eigene Formulierung (#617) -->
                 <a *ngIf="ohneTreffer" class="selbst-beantworten" [routerLink]="kommentarPfad" [queryParams]="antwortAuf(aussage)"
-                   [attr.aria-label]="'Selbst beantworten: ' + aussage.text">Selbst beantworten</a>
+                   [attr.aria-label]="'Antworten: ' + aussage.text">Antworten</a>
             </li>
         </ul>
     </ng-container>
 
-    <!-- Selbst beantworten: die Ergebnisseite reicht Satz und Knopf herein -->
+    <!-- Antworten: die Ergebnisseite reicht Satz und Knopf herein -->
     <ng-content></ng-content>
 </section>

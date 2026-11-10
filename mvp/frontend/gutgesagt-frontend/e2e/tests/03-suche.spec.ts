@@ -21,7 +21,7 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
     const unterListe = page.locator('.mobile-ergaenzen button, .mobile-action-buttons button').first();
     await expect.soft(unterListe).toBeVisible();
     if (await unterSuchband.isVisible()) {
-      await expect.soft(unterSuchband).toHaveText(/Selbst beantworten/);
+      await expect.soft(unterSuchband).toHaveText(/Antworten/);
     }
     await unterListe.scrollIntoViewIfNeeded();
     await bild('30c-suche-ergaenzen-360');
