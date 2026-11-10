@@ -117,6 +117,16 @@ class FallMessung(NamedTuple):
     # Mit dem Ersatz gemessen (fall.ersatz, #606): Dem Bestand fehlen diese Aussagen aus
     # dem urspruenglichen erwartet; fall traegt dann die Erwartung des Ersatzes.
     ersatz_fuer: Tuple[str, ...] = ()
+    # Nur bei dieselbe_behauptung und NLI-Stufe "an": Hat vorhandene_finden ohne Urteil
+    # eines Modells entschieden? RUECKFALL_SCHWELLE: Das erste Modell urteilte nicht
+    # (nicht rechtzeitig frei, DIESELBE_WARTET_HOECHSTENS, oder nicht verfuegbar), es
+    # galt die Schwelle. RUECKFALL_OHNE_BESTAETIGER: ebenso der Bestaetiger, es galt nur
+    # das erste Modell. Leer: kein Rueckfall.
+    rueckfall: str = ""
+
+
+RUECKFALL_SCHWELLE = "schwelle"
+RUECKFALL_OHNE_BESTAETIGER = "ohne_bestaetiger"
 
 
 class Auswertung(NamedTuple):
@@ -147,6 +157,12 @@ class Zerfaserung(NamedTuple):
     ohne_treffer: int  # alle gemessenen Faelle ohne angezeigten Beitrag
     ohne_treffer_dieselbe: int  # davon dieselbe_behauptung
     ohne_treffer_neu: int  # davon landen nicht auf der erwarteten Aussage
+
+
+class Rueckfaelle(NamedTuple):
+    geprueft: int  # gemessene Faelle mit dieselbe_behauptung (vorhandene_finden)
+    schwelle: Tuple[str, ...]  # Fall-IDs mit RUECKFALL_SCHWELLE
+    ohne_bestaetiger: Tuple[str, ...]  # Fall-IDs mit RUECKFALL_OHNE_BESTAETIGER
 
 
 class AehnlicheAussagen(NamedTuple):
@@ -281,6 +297,22 @@ def zerfaserung(messungen: Iterable[FallMessung], schwelle: float) -> Zerfaserun
     )
 
 
+def rueckfaelle(messungen: Iterable[FallMessung]) -> Rueckfaelle:
+    """In welchen gemessenen Faellen vorhandene_finden ohne Urteil eines NLI-Modells
+    entschied (FallMessung.rueckfall). Solche Faelle verfaelschen die Zerfaserung still
+    in Richtung Schwelle bzw. ohne Bestaetiger."""
+    dieselbe = [m for m in gemessen(messungen) if m.landet_auf_erwarteter is not None]
+    return Rueckfaelle(
+        geprueft=len(dieselbe),
+        schwelle=tuple(
+            m.fall.id for m in dieselbe if m.rueckfall == RUECKFALL_SCHWELLE
+        ),
+        ohne_bestaetiger=tuple(
+            m.fall.id for m in dieselbe if m.rueckfall == RUECKFALL_OHNE_BESTAETIGER
+        ),
+    )
+
+
 def aehnliche_aussagen(messungen: Iterable[FallMessung]) -> AehnlicheAussagen:
     """
     Untere Grenze fuer aehnliche Aussagen: Bei wie vielen Faellen mit Erwartung ist eine
@@ -318,6 +350,32 @@ def polaritaet_modus() -> str:
     return f"Polarität mit NLI: {settings.suche_polaritaet_nli}"
 
 
+def zuordnung_weg(settings=None) -> dict:
+    """
+    Der Weg der Pruefung auf dieselbe Aussage, mit dem dieser Prozess misst: der Modus
+    der NLI-Stufe und ob der Bestaetiger mitentscheidet. Aus der geladenen Konfiguration
+    (core.config.settings, aus der auch der StatementService der Messung entsteht);
+    der Bestaetiger wirkt wie dort nur, wenn die NLI-Stufe nicht aus ist. Die Zerfaserung
+    haengt davon ab (SUCHTESTSET.md, Zerfaserung).
+    """
+    if settings is None:
+        from core.config import settings
+    modus = settings.dieselbe_aussage_nli
+    return {
+        "dieselbe_aussage_nli": modus,
+        "nli_bestaetiger": bool(settings.nli_bestaetiger and modus != "aus"),
+    }
+
+
+def zuordnung_text(weg: Optional[dict] = None) -> str:
+    weg = zuordnung_weg() if weg is None else weg
+    bestaetiger = "an" if weg["nli_bestaetiger"] else "aus"
+    return (
+        f"Zuordnung (dieselbe Aussage): NLI-Stufe {weg['dieselbe_aussage_nli']}, "
+        f"Bestätiger {bestaetiger}."
+    )
+
+
 def _anteil(wert: Optional[float]) -> str:
     return "–" if wert is None else f"{wert:.2f}"
 
@@ -335,6 +393,7 @@ def tabellen(
         "",
         f"{len(faelle)} von {len(messungen)} Fällen gemessen, je Beitragstyp höchstens "
         f"{k} Beiträge, Schwelle der Suche heute {aktuell}.",
+        zuordnung_text(),
         "",
         "| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer "
         "| Präzision | "
@@ -378,6 +437,19 @@ def tabellen(
         f"Behauptung wie eine vorhandene Aussage, davon landen {z.ohne_treffer_neu} "
         "nicht auf ihr.",
     ]
+    r = rueckfaelle(messungen)
+    if r.schwelle or r.ohne_bestaetiger:
+        zeilen += ["", f"Ohne NLI-Urteil entschieden (von {r.geprueft} Prüfungen):"]
+        if r.schwelle:
+            zeilen.append(
+                f"- {len(r.schwelle)} auf die Schwelle zurückgefallen, das NLI-Modell "
+                f"war nicht rechtzeitig frei: {', '.join(r.schwelle)}"
+            )
+        if r.ohne_bestaetiger:
+            zeilen.append(
+                f"- {len(r.ohne_bestaetiger)} ohne Bestätiger, er war nicht "
+                f"rechtzeitig frei: {', '.join(r.ohne_bestaetiger)}"
+            )
     a = aehnliche_aussagen(messungen)
     zeilen += [
         "",
@@ -470,6 +542,7 @@ def als_json(
         "auswertung": [auswerten(messungen, s)._asdict() for s in schwellen],
         "je_phaenomen": je_phaenomen(messungen, heute),
         "zerfaserung": zerfaserung(messungen, heute)._asdict(),
+        "rueckfaelle": rueckfaelle(messungen)._asdict(),
         "aehnliche_aussagen": aehnliche_aussagen(messungen)._asdict(),
         "faelle": [
             {
@@ -484,6 +557,7 @@ def als_json(
                 "ersatz_fuer": list(m.ersatz_fuer),
                 "ausgeschlossen": list(m.ausgeschlossen),
                 "landet_auf_erwarteter": m.landet_auf_erwarteter,
+                "rueckfall": m.rueckfall,
                 "aehnliche": list(m.aehnliche),
                 "aussagetreffer_ms": m.aussagetreffer_ms,
                 "einordnung": {
@@ -505,10 +579,67 @@ def als_json(
 # ---------------------------------------------------------------------- #
 
 
+class UrteileZaehlen:
+    """
+    Reicht urteile() an ein NLI-Modell durch und zaehlt, wie oft es kein Urteil gab
+    (None: nicht rechtzeitig frei oder nicht verfuegbar). Der Dienst faellt dann still
+    zurueck (StatementService._nli_entscheiden, stufe.dieselben_finden); die Messung
+    setzt den Zaehler vor ihre Modelle, ohne das Verhalten zu aendern.
+    """
+
+    def __init__(self, pruefer):
+        self._pruefer = pruefer
+        self.ohne_urteil = 0
+
+    async def urteile(self, paare, warte_hoechstens=None):
+        urteile = await self._pruefer.urteile(paare, warte_hoechstens=warte_hoechstens)
+        if urteile is None:
+            self.ohne_urteil += 1
+        return urteile
+
+    def __getattr__(self, name):
+        return getattr(self._pruefer, name)
+
+
+class NliZaehler(NamedTuple):
+    """Die Zaehler vor dem ersten Modell und dem Bestaetiger des StatementService (je
+    None, wenn er keins hat)."""
+
+    nli: Optional[UrteileZaehlen]
+    bestaetiger: Optional[UrteileZaehlen]
+
+    @classmethod
+    def einsetzen(cls, statement_service) -> "NliZaehler":
+        """Setzt die Zaehler vor die Modelle des StatementService (Attribute _nli und
+        _bestaetiger, siehe dessen __init__)."""
+        zaehler = []
+        for attribut in ("_nli", "_bestaetiger"):
+            modell = getattr(statement_service, attribut)
+            z = None if modell is None else UrteileZaehlen(modell)
+            if z is not None:
+                setattr(statement_service, attribut, z)
+            zaehler.append(z)
+        return cls(*zaehler)
+
+    def stand(self) -> Tuple[int, int]:
+        return tuple(0 if z is None else z.ohne_urteil for z in self)
+
+    def rueckfall_seit(self, vorher: Tuple[int, int]) -> str:
+        """Der Rueckfall seit dem Stand vorher (FallMessung.rueckfall)."""
+        nli, bestaetiger = self.stand()
+        if nli > vorher[0]:
+            return RUECKFALL_SCHWELLE
+        if bestaetiger > vorher[1]:
+            return RUECKFALL_OHNE_BESTAETIGER
+        return ""
+
+
 class Dienste(NamedTuple):
     statement_service: "StatementService"
     specs: List["ContentTypeSearchSpec"]
     reference_service: object
+    # Zaehlt Rueckfaelle in vorhandene_finden (FallMessung.rueckfall).
+    zaehler: Optional[NliZaehler] = None
 
 
 async def dienste_starten() -> Dienste:
@@ -544,6 +675,7 @@ async def dienste_starten() -> Dienste:
     await get_nli_polaritaet().laden_abwarten()
     return Dienste(
         statement_service=get_statement_service(),
+        zaehler=NliZaehler.einsetzen(get_statement_service()),
         specs=suchspezifikationen(
             get_commentary_service(),
             get_generic_text_service(),
@@ -724,9 +856,13 @@ async def fall_messen(
         )
 
     landet = None
+    rueckfall = ""
     if fall.dieselbe_behauptung:
+        vorher = dienste.zaehler.stand() if dienste.zaehler else None
         vorhanden = await dienste.statement_service.vorhandene_finden(fall.anfrage)
         landet = vorhanden is not None and str(vorhanden.id) in erwartung.aussage_ids
+        if dienste.zaehler:
+            rueckfall = dienste.zaehler.rueckfall_seit(vorher)
     # Dieselbe Abfrage wie die Vorschlaege im Beitragsformular (aussageVorschlaege).
     aehnliche = await dienste.statement_service.search_filtered(
         fall.anfrage,
@@ -743,6 +879,7 @@ async def fall_messen(
         erwartung.ausgeschlossen,
         dauer_ms,
         ersatz_fuer,
+        rueckfall,
     )
 
 
@@ -832,6 +969,7 @@ def umgebung() -> dict:
         "sammlung": settings.qdrant_collection,
         "dubletten_schwelle": settings.statement_similarity_threshold,
         "suche_polaritaet_nli": settings.suche_polaritaet_nli,
+        **zuordnung_weg(settings),
     }
 
 

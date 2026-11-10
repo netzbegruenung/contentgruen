@@ -38,11 +38,37 @@ immer), `--k` (Beiträge je Beitragstyp, Standard 10 wie im Frontend), `--faelle
 Fall mit erstem angezeigtem und erstem passendem Beitrag), `--json PFAD` (die ganze
 Messung als Datei, für Vergleiche und Folgetickets: je Fall Suchanfrage, Phänomen,
 Erwartung, Einordnung und angezeigte Beiträge je Schwelle, dazu Auswertung, Phänomene,
-Zerfaserung sowie Modell, Sammlung, Dublettenschwelle und Datum).
+Zerfaserung und Rückfälle sowie Modell, Sammlung, Dublettenschwelle, Weg der Zuordnung
+und Datum).
 
 Exit-Code 0 nach einer Messung; 2, wenn kein Fall mit Erwartung gemessen wurde (leere
 oder falsche Sammlung, oder ein Bestand ohne passende Fälle). Die Zahlen sind dann nicht
 aussagekräftig, etwa für den nächtlichen Lauf (#391).
+
+**Weg der Zuordnung:** Die Zerfaserung hängt davon ab, wie `vorhandene_finden`
+entscheidet. Die Ausgabe nennt es unter der Kopfzeile („Zuordnung (dieselbe Aussage):
+NLI-Stufe …, Bestätiger …“, im JSON unter `umgebung`), aus der Konfiguration des
+Messprozesses. Gemessen wird mit den Variablen des Containers, also wie der Dienst
+entscheidet. Wer den Bestätiger für die Messung abschaltet
+(`SEMANTIC_SEARCH_NLI_BESTAETIGER=false`, spart rund 2,2 GB RAM), misst einen anderen
+Weg und vergleicht mit dessen Soll. Soll am Startbestand (Abschnitte unten):
+
+| NLI-Stufe | Bestätiger | Zerfaserung |
+|---|---|---|
+| schatten oder aus | – | 31/41 (ohne Ersatz) |
+| an | aus | 26/42 (mit Ersatz; ohne Ersatz 25/41) |
+| an | an | 15/41 (ohne Ersatz; mit Ersatz nicht gemessen, erwartet 15 oder 16/42) |
+
+Die Kontrollmessungen auf Produktion vom 09.11.2026 (15/41) und 10.11.2026 (26/42)
+passen zu den Zeilen „an, an“ und „an, aus“; welcher Weg es war, stand damals nicht in
+der Ausgabe.
+
+**Rückfälle:** Ist das NLI-Modell nicht innerhalb von `DIESELBE_WARTET_HOECHSTENS`
+(3 s) frei, etwa weil die Polarität es gerade nutzt, entscheidet `vorhandene_finden`
+still nach der Schwelle; ist der Bestätiger nicht rechtzeitig frei, allein das erste
+Modell. Die Messung zählt beides (Zeile „Ohne NLI-Urteil entschieden“ mit den
+Fall-IDs, im JSON `rueckfaelle` und je Fall `rueckfall`). Steht dort ein Fall, kann die
+Zerfaserung dieses Laufs zu hoch sein; nachmessen, bevor man sie vergleicht.
 
 Das Skript lädt das Einbettungsmodell (etwa 1,5 GB RAM) und liest den Bestand nur;
 einzige Ausnahme ist der Start der Einbettung, der wie im Dienst eine fehlende Sammlung
