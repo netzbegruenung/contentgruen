@@ -409,6 +409,10 @@ async def aehnliche_aussagen(
         derive_client_key(http_request)
     ):
         raise HTTPException(status_code=429, detail="Too many requests")
+    # Bewusst ueber search_statements, damit die Auswahl dieselbe bleibt wie fuer
+    # Angemeldete. Alle Filter stehen hier fest (nur_kuratiert, vorschlaege), auch
+    # fuer Admins; test_aehnliche_aussagen_api.py haelt das je Rolle fest. Wer
+    # search_statements um Felder erweitert, prueft, was sie hier anonym bewirken.
     return await search_statements(
         SearchStatementByTextRequest(
             query_text=request.query_text,

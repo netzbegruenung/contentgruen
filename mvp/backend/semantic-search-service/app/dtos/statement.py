@@ -280,6 +280,14 @@ class AehnlicheAussagenRequest(BaseModel):
     query_text: str = Field(..., min_length=1, max_length=AUSSAGE_MAX_ZEICHEN)
     limit: int = Field(default=3, ge=1, le=5)
 
+    @field_validator("query_text")
+    @classmethod
+    def nicht_nur_leerraum(cls, wert: str) -> str:
+        # Nur Leerraum kostete eine Embedding-Suche fuer nichts.
+        if not wert.strip():
+            raise ValueError("query_text darf nicht nur aus Leerraum bestehen")
+        return wert
+
 
 class StatementSearchResponse(BaseModel):
     results: List[AussageTreffer]

@@ -43,9 +43,16 @@ def statement_service(monkeypatch):
 
 @pytest.mark.api
 class TestAehnlicheAussagen:
-    def test_besucher_bekommen_die_vorschlags_auswahl(self, statement_service):
+    @pytest.mark.parametrize(
+        "headers",
+        [ANONYM, {"X-User": "nutzer-1"}, {"X-User": "admin-1", "X-Is-Admin": "true"}],
+        ids=["besucher", "angemeldet", "admin"],
+    )
+    def test_jede_rolle_bekommt_nur_die_vorschlags_auswahl(
+        self, statement_service, headers
+    ):
         resp = TestClient(app).post(
-            URL, json={"query_text": "waermepumpe"}, headers=ANONYM
+            URL, json={"query_text": "waermepumpe"}, headers=headers
         )
 
         assert resp.status_code == 200
@@ -68,9 +75,11 @@ class TestAehnlicheAussagen:
         )
         assert resp.status_code == 422
 
-    def test_leerer_text_abgelehnt(self, statement_service):
-        resp = TestClient(app).post(URL, json={"query_text": ""}, headers=ANONYM)
+    @pytest.mark.parametrize("text", ["", "   "])
+    def test_leerer_text_abgelehnt(self, statement_service, text):
+        resp = TestClient(app).post(URL, json={"query_text": text}, headers=ANONYM)
         assert resp.status_code == 422
+        statement_service.search_filtered.assert_not_awaited()
 
     def test_rate_limit_je_adresse(self, statement_service, monkeypatch):
         monkeypatch.setattr(
