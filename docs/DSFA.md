@@ -503,7 +503,7 @@ Empfänger und Ort“.
 
 #### V18 Flüchtige Zähler gegen Missbrauch
 
-Rate-Limits für Suche, Meldungen, Feedback, Einladungen und Gegenlesen verarbeiten die IP-Adresse
+Rate-Limits für Suche (samt ähnlichen Aussagen unter „Nicht dabei?“, #642), Meldungen, Feedback, Einladungen und Gegenlesen verarbeiten die IP-Adresse
 oder Kennung nur gekürzt im Arbeitsspeicher, höchstens etwa 16 Minuten, mit Schlüssel je Neustart
 (`DSE:175-180`, `DSE:344-348`, `DSE:398-403`, `DSE:712-717`, `DSE:793-796`). Risiko gering.
 

@@ -1,7 +1,7 @@
 import uuid
 from typing import FrozenSet, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request
 from pydantic import ValidationError
 
 from dependencies import (
@@ -15,6 +15,7 @@ from dependencies import (
     require_user,
 )
 from dtos.statement import (
+    AehnlicheAussagenRequest,
     AddReplysuggestionToStatementRequest,
     AddReplysuggestionToStatementResponse,
     AddStatementRequest,
@@ -60,6 +61,8 @@ from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenServi
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from domain.themen import NACH_SCHLUESSEL, THEMEN, ThemaUngueltig
 from core.fehler import INTERNER_FEHLER
+from utils.client_identity import derive_client_key
+from utils.rate_limiter import aehnliche_aussagen_rate_limiter
 
 logger = get_logger(__name__)
 
@@ -386,6 +389,41 @@ async def search_statements(
     except Exception as e:
         logger.error(f"Error in /searchStatements: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+
+# "Nicht dabei?" auf der Ergebnisseite (#642): aehnliche Aussagen, auch fuer Besucher
+# (EndpointPolicy.cs). Dieselbe Auswahl wie die Vorschlaege fuer Angemeldete
+# (vorschlaege, nur gepflegte Aussagen, ohne Widerspruch); Anzeigenamen und Kennungen
+# blendet fuer_aufrufer fuer Besucher aus. Rate-Limit je Adresse wie die Suchaussage.
+@router.post("/aehnliche", response_model=StatementSearchResponse)
+async def aehnliche_aussagen(
+    request: AehnlicheAussagenRequest,
+    http_request: Request,
+    statement_service: StatementService = Depends(get_statement_service),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
+    ),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+) -> StatementSearchResponse:
+    if await aehnliche_aussagen_rate_limiter.is_rate_limited(
+        derive_client_key(http_request)
+    ):
+        raise HTTPException(status_code=429, detail="Too many requests")
+    # Bewusst ueber search_statements, damit die Auswahl dieselbe bleibt wie fuer
+    # Angemeldete. Alle Filter stehen hier fest (nur_kuratiert, vorschlaege), auch
+    # fuer Admins; test_aehnliche_aussagen_api.py haelt das je Rolle fest. Wer
+    # search_statements um Felder erweitert, prueft, was sie hier anonym bewirken.
+    return await search_statements(
+        SearchStatementByTextRequest(
+            query_text=request.query_text,
+            limit=request.limit,
+            nur_kuratiert=True,
+            vorschlaege=True,
+        ),
+        statement_service,
+        suchen_ohne_treffer,
+        aufrufer,
+    )
 
 
 # Adds a new statement to the statement_index

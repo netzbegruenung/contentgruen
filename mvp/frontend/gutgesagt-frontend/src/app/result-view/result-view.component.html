@@ -35,9 +35,23 @@
                        (aktivChange)="nachThemaFiltern($event)"></app-themen-filter>
 </ng-template>
 
+<!-- Einmal ueber den Treffern: als welche Aussage die Suche verstanden wurde (#642, R40).
+     "Nicht gemeint?" fuehrt zu "Nicht dabei?" mit den anderen aehnlichen Aussagen. -->
+<ng-template #gefundenZu>
+    <div class="gefunden-zu" *ngIf="erkannt as aussage">
+        <p class="gefunden-zu-satz">Gefunden zu: <em class="gefunden-zu-aussage">„{{ aussage.text }}“</em></p>
+        <button *ngIf="andereAussagen > 0" type="button" class="ergaenzen-link nicht-gemeint" (click)="zuAnderenAussagen()">Nicht gemeint?</button>
+    </div>
+</ng-template>
+
+<!-- Ohne Treffer: beliebte Aussagen und "Hier fehlt eine Antwort", keine Sackgasse (#642, R51) -->
+<ng-template #oftGesucht>
+    <app-oft-gesucht [suchtext]="searchQuery"></app-oft-gesucht>
+</ng-template>
+
 <!-- "Nicht dabei?": neu anlegen, mit der Aussage dieser Suche (#362) -->
 <ng-template #neuAnlegen>
-    <p class="neu-anlegen-satz">Schreib selbst einen Kommentar zu deiner Aussage.</p>
+    <p class="neu-anlegen-satz">Schreib selbst einen Kommentar zu dieser Aussage.</p>
     <div class="neu-anlegen-knopf">
         <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
             <mat-icon>add</mat-icon> Antworten
@@ -49,8 +63,14 @@
 <div class="mobile-results-wrapper"
      *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
 
+    <!-- Mobil in einer Zeile mit "Antworten", damit der Kopf nicht waechst (#642) -->
+    <div class="mobile-gefunden-zu gefunden-zu" *ngIf="hatTreffer && erkannt as aussage">
+        <p class="gefunden-zu-satz">Gefunden zu: <em class="gefunden-zu-aussage">„{{ aussage.text }}“</em></p>
+    </div>
+
     <!-- Dezent unter dem Suchband, derselbe Wortlaut wie der Knopf unter den Treffern (#599) -->
     <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
+        <button *ngIf="erkannt && andereAussagen > 0" type="button" class="ergaenzen-link nicht-gemeint" (click)="zuAnderenAussagen()">Nicht gemeint?</button>
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
             Antworten
         </button>
@@ -117,8 +137,9 @@
 
         <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab; im Post-Tab bleibt es beim
              Kommentar (Fachfrage im PR). Einen Post mit Aussage gibt es seit #619, ohne Einstieg von hier. -->
-        <div *ngIf="hatTreffer" class="mobile-ergaenzen">
-            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer">
+        <div *ngIf="hatTreffer" class="mobile-ergaenzen" [id]="nichtDabeiAnker" tabindex="-1">
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer"
+                             (aehnlicheAnzahl)="andereAussagenGeladen($event)">
                 <ng-container *ngIf="currentSection !== 'generictext'">
                     <ng-container *ngTemplateOutlet="neuAnlegen"></ng-container>
                 </ng-container>
@@ -142,7 +163,7 @@
         <div *ngIf="!hatTreffer" class="mobile-empty-state">
             <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
             <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [ohneTreffer]="true">
-                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
+                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu dieser Aussage.</p>
                 <div class="mobile-action-buttons">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
                         <mat-icon>add</mat-icon> Antworten
@@ -152,6 +173,7 @@
                     </button>
                 </div>
             </app-nicht-dabei>
+            <ng-container *ngTemplateOutlet="oftGesucht"></ng-container>
         </div>
     </div>
 </div>
@@ -165,7 +187,7 @@
             <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
 
             <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [ohneTreffer]="true">
-                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
+                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu dieser Aussage.</p>
                 <div class="action-buttons-top">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
                         <mat-icon>add</mat-icon> Antworten
@@ -180,11 +202,17 @@
                 <!-- Gesucht wird nach Aussagen: ein Tipp, der dazu passt (#617, offen aus #362) -->
                 <p class="such-tipp"><strong>Tipp:</strong> Gib die Aussage so ein, wie du sie gehört hast.</p>
             </div>
+
+            <ng-container *ngTemplateOutlet="oftGesucht"></ng-container>
         </div>
     </section>
 
     <!-- Show individual sections only when at least one has results -->
     <ng-container *ngIf="hatTreffer">
+
+        <div class="content-section" *ngIf="erkannt">
+            <ng-container *ngTemplateOutlet="gefundenZu"></ng-container>
+        </div>
 
         <div class="content-section" *ngIf="themenDerTreffer.length">
             <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
@@ -234,8 +262,9 @@
         </ng-container>
 
         <!-- Unter allen Treffern: aehnliche Aussagen und neu anlegen -->
-        <section class="content-section nicht-dabei-unten">
-            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer">
+        <section class="content-section nicht-dabei-unten" [id]="nichtDabeiAnker" tabindex="-1">
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer"
+                             (aehnlicheAnzahl)="andereAussagenGeladen($event)">
                 <ng-container *ngTemplateOutlet="neuAnlegen"></ng-container>
             </app-nicht-dabei>
         </section>

@@ -524,6 +524,7 @@ mat-sidenav-content {
 .mobile-ergaenzen-kopf {
   display: flex;
   justify-content: flex-end;
+  gap: var(--spacing-md);
   padding: 0 var(--page-margin, 16px);
 }
 
@@ -633,4 +634,45 @@ mat-sidenav-content {
 
 .mobile-empty-state app-nicht-dabei .mobile-action-buttons {
   max-width: none;
+}
+
+/* Erkannte Aussage einmal ueber den Treffern (#642, R40): ein ruhiger Satz,
+   die Aussage selbst kursiv wie bisher an den Karten, "Nicht gemeint?" als Link */
+.gefunden-zu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--spacing-md);
+  row-gap: 0;
+}
+
+.gefunden-zu-satz {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.gefunden-zu-aussage {
+  font-family: PTSans-bold, Roboto, sans-serif;
+}
+
+.mobile-gefunden-zu {
+  padding: var(--spacing-xs) var(--page-margin, 16px) 0;
+}
+
+/* "Nicht gemeint?" links, "Antworten" rechts in derselben Zeile */
+.mobile-ergaenzen-kopf .nicht-gemeint {
+  margin-right: auto;
+}
+
+.mobile-gefunden-zu .gefunden-zu-satz {
+  font-size: 1rem;
+}
+
+/* Ziel von "Nicht gemeint?": kein Fokusrahmen um den ganzen Abschnitt */
+.nicht-dabei-unten:focus,
+.mobile-ergaenzen:focus {
+  outline: none;
 }

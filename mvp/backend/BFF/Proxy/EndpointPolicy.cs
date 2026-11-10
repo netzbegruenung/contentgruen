@@ -43,6 +43,10 @@ public static class EndpointPolicy
         // die auch Besucher in der Suche sehen. Nur lesen; Speichern laeuft ueber die
         // Formulare und bleibt hinter dem Gate.
         "/api/v1/varianten/",
+        // Aehnliche Aussagen unter "Nicht dabei?" auf der Ergebnisseite (#642), auch fuer
+        // Besucher. Nur dieser Pfad, nur lesend; /searchStatements und Anlegen bleiben
+        // hinter dem Gate.
+        "/api/v1/statement/aehnliche",
         // Nur dieser eine Metrics-Endpunkt, nicht das ganze Praefix: /getMetrics
         // liefert Bestandszaehler fuer die Startseite, die uebrigen sechs sind
         // Kennzahlen fuer Admins und im Backend admin-only. Der frueher hier stehende

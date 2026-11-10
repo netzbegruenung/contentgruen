@@ -13,7 +13,8 @@
     <div *ngIf="searchResponse && searchResponse.commentary_search_results_count > 0">
         <div class="result-info">
             <div class="result-count">
-                <span class="result-count-number">{{ searchResponse.commentary_search_results_count }}</span> passende fertige Kommentare gefunden.
+                <span class="result-count-number">{{ searchResponse.commentary_search_results_count }}</span>
+                {{ searchResponse.commentary_search_results_count === 1 ? 'passender fertiger Kommentar' : 'passende fertige Kommentare' }} gefunden.
             </div>
             <div class="action-call">
                 <!-- Oben nur ein Link; der Knopf "Antworten" steht unter den Treffern (#599) -->

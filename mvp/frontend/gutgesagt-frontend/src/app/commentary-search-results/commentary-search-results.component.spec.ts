@@ -124,3 +124,33 @@ describe('CommentarySearchResultsComponent: Beschriftung', () => {
     });
   }
 });
+
+/** Singular und Plural im Zaehler (#642, R66). */
+describe('CommentarySearchResultsComponent: Zaehler', () => {
+  let fixture: ComponentFixture<CommentarySearchResultsComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [CommentarySearchResultsComponent],
+      providers: [provideRouter(ohneWaechter(routes)), provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+    fixture = TestBed.createComponent(CommentarySearchResultsComponent);
+  });
+
+  for (const [anzahl, text] of [[1, '1 passender fertiger Kommentar gefunden.'], [2, '2 passende fertige Kommentare gefunden.']] as const) {
+    it(`sagt bei ${anzahl} Treffer(n) "${text}"`, () => {
+      fixture.componentRef.setInput('searchResponse', {
+        query_was_newly_added_as_statement: false,
+        statement_id: null,
+        statement_text: 'Atomkraft ist günstig',
+        commentary_search_results_count: anzahl,
+        commentary_search_results: [],
+        generictext_search_results_count: 0,
+        generictext_search_results: [],
+      });
+      fixture.detectChanges();
+      const zaehler = (fixture.nativeElement.querySelector('.result-count')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+      expect(zaehler).toBe(text);
+    });
+  }
+});

@@ -3,17 +3,18 @@ import {
   ChangeDetectorRef,
   Component,
   DestroyRef,
+  EventEmitter,
   Input,
   OnChanges,
   OnInit,
+  Output,
   SimpleChanges,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { BehaviorSubject, combineLatest, of } from 'rxjs';
-import { catchError, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
-import { AuthService } from '../auth/auth.service';
+import { BehaviorSubject, of } from 'rxjs';
+import { catchError, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { AUSSAGE_MIN_ZEICHEN, StatementService } from '../services/statement.service';
 import { StatementSearchResult } from '../services/dtos/statementDtos';
 import { LoggingService } from '../services/logging.service';
@@ -34,9 +35,9 @@ let naechsteNummer = 0;
  * wie viele Antworten sie hat, und bietet "Antworten" fuer sich an - vor
  * dem Knopf fuer die eigene Formulierung, damit keine doppelte Aussage entsteht (#617).
  *
- * Nur fuer Angemeldete: Der Endpunkt der Aussagen ist nicht anonym erreichbar, ein
- * 401 fuehrte Besucher auf /login. Ohne Anmeldung oder wenn nichts ladbar ist,
- * bleibt nur der Weg zum Neu-Anlegen, den die Ergebnisseite als Inhalt hineinreicht.
+ * Auch fuer Besucher (#642): eigener oeffentlicher Endpunkt /statement/aehnliche,
+ * dieselbe Auswahl wie fuer Angemeldete. Ist nichts ladbar, bleibt nur der Weg zum
+ * Neu-Anlegen, den die Ergebnisseite als Inhalt hineinreicht.
  */
 @Component({
   selector: 'app-nicht-dabei',
@@ -61,6 +62,12 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
    */
   @Input() ohneTreffer = false;
 
+  /**
+   * Wie viele aehnliche Aussagen dastehen, nach jedem Laden und jeder Aenderung der
+   * bekannten Aussagen; die Ergebnisseite zeigt "Nicht gemeint?" nur mit welchen (#642).
+   */
+  @Output() aehnlicheAnzahl = new EventEmitter<number>();
+
   readonly kommentarPfad = FORMULAR_PFAD.commentary;
   readonly titelId = `nicht-dabei-titel-${++naechsteNummer}`;
   readonly listenId = `aehnliche-titel-${naechsteNummer}`;
@@ -70,23 +77,19 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
 
   constructor(
     private statementService: StatementService,
-    private authService: AuthService,
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
     private destroyRef: DestroyRef,
   ) {}
 
   ngOnInit(): void {
-    const angemeldet$ = this.authService.userInfo$.pipe(
-      map((info) => !!info?.isAuthenticated),
-      distinctUntilChanged(),
-    );
-    combineLatest([this.suchtext$.pipe(distinctUntilChanged()), angemeldet$])
+    this.suchtext$
       .pipe(
-        switchMap(([text, angemeldet]) =>
-          !angemeldet || text.length < AUSSAGE_MIN_ZEICHEN
+        distinctUntilChanged(),
+        switchMap((text) =>
+          text.length < AUSSAGE_MIN_ZEICHEN
             ? of([] as StatementSearchResult[])
-            : this.statementService.aussageVorschlaege(text).pipe(
+            : this.statementService.aehnlicheAussagen(text).pipe(
                 catchError((error) => {
                   // Ohne aehnliche Aussagen bleibt das Neu-Anlegen.
                   this.logger.warn('Aehnliche Aussagen nicht ladbar', error);
@@ -98,6 +101,7 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
       )
       .subscribe((aussagen) => {
         this.geladen = aussagen;
+        this.aehnlicheAnzahl.emit(this.aehnliche.length);
         this.cdr.markForCheck();
       });
   }
@@ -105,6 +109,9 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['suchtext']) {
       this.suchtext$.next((this.suchtext ?? '').trim());
+    }
+    if (changes['bekannteAussagen'] && !changes['bekannteAussagen'].firstChange) {
+      this.aehnlicheAnzahl.emit(this.aehnliche.length);
     }
   }
 

@@ -270,6 +270,25 @@ class SearchStatementByTextRequest(BaseModel):
     # TODO: Add a field to specify the search type (content, statement, reply_suggestion, reply_suggestion_candidate)
 
 
+class AehnlicheAussagenRequest(BaseModel):
+    """
+    Aehnliche Aussagen zu einem Suchtext, fuer "Nicht dabei?" auf der Ergebnisseite
+    (#642). Auch ohne Anmeldung; Auswahl wie die Vorschlaege im Feld "Antwort auf"
+    (``vorschlaege``, nur gepflegte Aussagen), deshalb keine weiteren Filter.
+    """
+
+    query_text: str = Field(..., min_length=1, max_length=AUSSAGE_MAX_ZEICHEN)
+    limit: int = Field(default=3, ge=1, le=5)
+
+    @field_validator("query_text")
+    @classmethod
+    def nicht_nur_leerraum(cls, wert: str) -> str:
+        # Nur Leerraum kostete eine Embedding-Suche fuer nichts.
+        if not wert.strip():
+            raise ValueError("query_text darf nicht nur aus Leerraum bestehen")
+        return wert
+
+
 class StatementSearchResponse(BaseModel):
     results: List[AussageTreffer]
 

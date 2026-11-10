@@ -31,8 +31,11 @@ import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
+import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
 
-// Dialog configuration constants
+/** Anker von "Nicht dabei?" unter den Treffern, Ziel von "Nicht gemeint?" (#642). */
+export const NICHT_DABEI_ANKER = 'nicht-dabei-unten';
+
 /** Die Abschnitte der Ergebnisseite: am Handy je ein Tab. */
 type Ergebnisabschnitt = 'commentary' | 'generictext' | 'post';
 
@@ -76,6 +79,86 @@ export function aussagenDerTreffer(antwort: SearchResponse): string[] {
   return [...new Set([antwort.statement_id, ...ids].filter((id): id is string => !!id))];
 }
 
+/** Die Aussage, als die die Suche verstanden wurde: ID (falls bekannt) und Text. */
+export interface ErkannteAussage {
+  id: string | null;
+  text: string;
+}
+
+/** Schluessel einer Aussage an einem Treffer: die ID, sonst der Text; null ohne Aussage. */
+function aussageSchluessel(treffer: BaseSearchResult): string | null {
+  const text = treffer.statement_text?.trim();
+  if (!text) {
+    return null;
+  }
+  return treffer.statement_id || `text:${text}`;
+}
+
+/**
+ * Die erkannte Aussage (#642, R40): die Aussage, ueber die die meisten Treffer
+ * gefunden wurden; bei Gleichstand die des Treffers mit dem hoechsten Score. Sie
+ * steht einmal ueber den Treffern ("Gefunden zu: ..."), die Karten zeigen ihren
+ * Antwort-auf-Kopf dann nur noch, wenn er davon abweicht. null, wenn kein Treffer
+ * ueber eine Aussage kam (nur direkte Treffer) oder die gewaehlte weder den
+ * obersten Treffer noch die Mehrheit traegt.
+ */
+export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null {
+  const alle: BaseSearchResult[] = [
+    ...(antwort.commentary_search_results ?? []),
+    ...(antwort.generictext_search_results ?? []),
+    ...(antwort.post_search_results ?? []),
+  ];
+  const je = new Map<string, { aussage: ErkannteAussage; anzahl: number; bester: number }>();
+  for (const treffer of alle) {
+    const schluessel = aussageSchluessel(treffer);
+    if (!schluessel) {
+      continue;
+    }
+    const eintrag = je.get(schluessel);
+    if (eintrag) {
+      eintrag.anzahl += 1;
+      eintrag.bester = Math.max(eintrag.bester, treffer.score ?? 0);
+    } else {
+      je.set(schluessel, {
+        aussage: { id: treffer.statement_id || null, text: treffer.statement_text!.trim() },
+        anzahl: 1,
+        bester: treffer.score ?? 0,
+      });
+    }
+  }
+  let gewaehlt: { aussage: ErkannteAussage; anzahl: number; bester: number } | null = null;
+  let mitAussage = 0;
+  let hoechster = -Infinity;
+  for (const eintrag of je.values()) {
+    mitAussage += eintrag.anzahl;
+    hoechster = Math.max(hoechster, eintrag.bester);
+  }
+  for (const eintrag of je.values()) {
+    if (
+      !gewaehlt ||
+      eintrag.anzahl > gewaehlt.anzahl ||
+      (eintrag.anzahl === gewaehlt.anzahl && eintrag.bester > gewaehlt.bester)
+    ) {
+      gewaehlt = eintrag;
+    }
+  }
+  // Nur, wenn die Zeile fuer die Treffer steht: Sie traegt den obersten Treffer
+  // oder die Mehrheit. Verteilt auf viele Aussagen sagte "Gefunden zu" zu wenig.
+  if (!gewaehlt || (gewaehlt.bester < hoechster && gewaehlt.anzahl * 2 <= mitAussage)) {
+    return null;
+  }
+  return gewaehlt.aussage;
+}
+
+/** Ob ein Treffer ueber genau die erkannte Aussage gefunden wurde. */
+export function zurErkanntenAussage(treffer: BaseSearchResult, erkannt: ErkannteAussage | null): boolean {
+  if (!erkannt) {
+    return false;
+  }
+  const schluessel = aussageSchluessel(treffer);
+  return schluessel !== null && schluessel === (erkannt.id || `text:${erkannt.text}`);
+}
+
 /** Die Suchantwort mit nur den Treffern zum Thema, Zaehler passend dazu. */
 export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null): SearchResponse {
   if (thema === null) {
@@ -114,7 +197,8 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
-    NichtDabeiComponent
+    NichtDabeiComponent,
+    OftGesuchtComponent
   ],
   templateUrl: './result-view.component.html',
   styleUrls: ['./result-view.component.css'],
@@ -156,11 +240,19 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   themenDerTreffer: Thema[] = [];
   aktivesThema: string | null = null;
   aussagenDerTreffer: string[] = [];
+  /** Einmal ueber den Treffern (#642); aus allen Treffern, nicht nur denen zum Thema. */
+  erkannt: ErkannteAussage | null = null;
+  /**
+   * Wie viele andere aehnliche Aussagen "Nicht dabei?" zeigt. "Nicht gemeint?" steht
+   * nur, wenn es dort welche gibt; sonst fuehrte der Link in einen leeren Kasten.
+   */
+  andereAussagen = 0;
 
   // Erklaerzeile je Tab, derselbe Satz wie auf der Beitragen-Seite
   readonly kommentarErklaerung = typBeschreibung('commentary');
   readonly hintergrundErklaerung = typBeschreibung('generictext');
   readonly postErklaerung = typBeschreibung('post');
+  readonly nichtDabeiAnker = NICHT_DABEI_ANKER;
 
   // User authentication
   userInfo: UserInfo | null = null;
@@ -220,11 +312,13 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         this.aktivesThema = null;
         this.themenDerTreffer = response ? themenDerTreffer(response) : [];
         this.aussagenDerTreffer = response ? aussagenDerTreffer(response) : [];
+        this.erkannt = response ? erkannteAussage(response) : null;
         this.anzeigen();
       });
 
     // Listen to query parameters and fetch results
     this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
+      // Ohne Suchtext kommt man nicht hierher: ohneSuchtextZumStart (#642, R50).
       this.searchQuery = params['searchQuery'] || '';
       if (this.searchQuery) {
         this.performSearch();
@@ -245,10 +339,10 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     if (response) {
       this.hasCommentaryResults = response.commentary_search_results_count > 0;
       this.hasGenerictextResults = response.generictext_search_results_count > 0;
-      this.kommentarKarten = (response.commentary_search_results ?? []).map((paket) => ausSuchergebnis(paket));
-      this.hintergrundKarten = (response.generictext_search_results ?? []).map((paket) => ausSuchergebnis(paket));
+      this.kommentarKarten = (response.commentary_search_results ?? []).map((paket) => this.karte(paket));
+      this.hintergrundKarten = (response.generictext_search_results ?? []).map((paket) => this.karte(paket));
       this.hasPostResults = (response.post_search_results_count ?? 0) > 0;
-      this.postKarten = (response.post_search_results ?? []).map((paket) => ausSuchergebnis(paket));
+      this.postKarten = (response.post_search_results ?? []).map((paket) => this.karte(paket));
 
       // Der erste Abschnitt mit Treffern: Kommentar, dann Hintergrundinfo, dann Post
       if (this.hasCommentaryResults) {
@@ -260,6 +354,42 @@ export class ResultViewComponent implements OnInit, OnDestroy {
       }
     }
     this.cdr.markForCheck();
+  }
+
+  /**
+   * Die Karte zu einem Treffer. Kam er ueber die erkannte Aussage, steht die schon
+   * einmal ueber den Treffern: Die Karte laesst ihren Antwort-auf-Kopf dann weg und
+   * zeigt ihn nur, wenn er abweicht (#642, R40).
+   */
+  private karte(paket: BaseSearchResult & Record<string, any>): KartenDaten {
+    const karte = ausSuchergebnis(paket);
+    if (karte.statement && zurErkanntenAussage(paket, this.erkannt)) {
+      const { statement: _statement, ...ohne } = karte;
+      return ohne;
+    }
+    return karte;
+  }
+
+  /**
+   * "Nicht gemeint?": zu "Nicht dabei?" unter den Treffern, wo die anderen
+   * aehnlichen Aussagen stehen, und den Fokus dorthin setzen.
+   */
+  zuAnderenAussagen(): void {
+    const ziel = document.getElementById(NICHT_DABEI_ANKER);
+    if (!ziel) {
+      return;
+    }
+    const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    ziel.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'start' });
+    ziel.focus({ preventScroll: true });
+  }
+
+  andereAussagenGeladen(anzahl: number): void {
+    // Nach der laufenden Pruefung: Der Link steht im Template vor "Nicht dabei?".
+    Promise.resolve().then(() => {
+      this.andereAussagen = anzahl;
+      this.cdr.markForCheck();
+    });
   }
 
   ngOnDestroy(): void {

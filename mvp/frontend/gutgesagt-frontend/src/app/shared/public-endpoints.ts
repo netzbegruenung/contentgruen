@@ -41,7 +41,8 @@ export class PublicEndpoints {
     '/api/v1/feedback/senden',    // Feedback auch von Besuchern (#343)
     '/api/v1/einladungen/pruefen',   // Einladung oeffnen, noch ohne Konto (#429)
     '/api/v1/einladungen/einloesen',
-    '/api/v1/varianten/'             // "N Varianten" auch fuer Besucher (#356)
+    '/api/v1/varianten/',            // "N Varianten" auch fuer Besucher (#356)
+    '/api/v1/statement/aehnliche'    // "Nicht dabei?" auch fuer Besucher (#642)
   ];
 
   /**

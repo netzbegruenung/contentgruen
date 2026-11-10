@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  text-align: left;
+}
+
+.oft-gesucht {
+  max-width: 40rem;
+  margin: var(--spacing-lg) auto 0;
+}
+
+.oft-gesucht-titel {
+  margin: 0 0 var(--spacing-xs);
+  font-size: 1.1rem;
+}
+
+.oft-gesucht-liste {
+  margin: 0 0 var(--spacing-md);
+  padding: 0;
+  list-style: none;
+}
+
+.oft-gesucht-liste li + li {
+  margin-top: var(--spacing-xs);
+}
+
+.oft-gesucht-aussage,
+.hier-fehlt-link {
+  color: var(--primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.oft-gesucht-aussage {
+  display: inline-block;
+  min-height: 24px;
+  padding: 2px 0;
+}
+
+.oft-gesucht-aussage:focus-visible,
+.hier-fehlt-link:focus-visible {
+  outline: 2px solid var(--akzent-tanne);
+  outline-offset: 2px;
+}
+
+.hier-fehlt {
+  margin: 0;
+  color: var(--text-secondary);
+}

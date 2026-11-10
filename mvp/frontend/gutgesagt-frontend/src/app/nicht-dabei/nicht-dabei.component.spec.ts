@@ -36,8 +36,8 @@ describe('NichtDabeiComponent', () => {
   const ANGEMELDET: UserInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Test', claims: null };
 
   function starten(angemeldet: UserInfo | null = ANGEMELDET): HTMLElement {
-    statementService = jasmine.createSpyObj('StatementService', ['aussageVorschlaege']);
-    statementService.aussageVorschlaege.and.returnValue(of([AEHNLICH, ZWEITE]));
+    statementService = jasmine.createSpyObj('StatementService', ['aehnlicheAussagen']);
+    statementService.aehnlicheAussagen.and.returnValue(of([AEHNLICH, ZWEITE]));
     nutzer = new BehaviorSubject<UserInfo | null>(angemeldet);
     logger = jasmine.createSpyObj('LoggingService', ['warn', 'error', 'debug']);
     TestBed.configureTestingModule({
@@ -66,7 +66,7 @@ describe('NichtDabeiComponent', () => {
     expect(aehnliche(seite)).toEqual(['Wärmepumpen lohnen sich nicht', 'Heizen mit Strom ist teuer']);
     expect(seite.querySelectorAll('.passt-vielleicht').length).toBe(2);
     expect(seite.querySelector('button.neu')?.textContent).toContain('Antworten');
-    expect(statementService.aussageVorschlaege).toHaveBeenCalledOnceWith('Wärmepumpen sind zu teuer');
+    expect(statementService.aehnlicheAussagen).toHaveBeenCalledOnceWith('Wärmepumpen sind zu teuer');
   });
 
   it('verlinkt jede aehnliche Aussage auf die Suche nach ihr', () => {
@@ -82,41 +82,50 @@ describe('NichtDabeiComponent', () => {
     expect(aehnliche(seite)).toEqual(['Heizen mit Strom ist teuer']);
   });
 
-  it('fragt fuer Besucher nicht nach (der Endpunkt waere 401 und fuehrte auf /login)', () => {
+  it('fragt auch fuer Besucher nach (oeffentlicher Endpunkt, #642)', () => {
     const seite = starten({ isAuthenticated: false, userId: null, userName: null, claims: null });
 
-    expect(statementService.aussageVorschlaege).not.toHaveBeenCalled();
-    expect(seite.querySelector('.aehnliche')).toBeNull();
-    expect(seite.querySelector('button.neu')).withContext('Antworten bleibt').toBeTruthy();
+    expect(statementService.aehnlicheAussagen).toHaveBeenCalledOnceWith('Wärmepumpen sind zu teuer');
+    expect(aehnliche(seite)).toEqual(['Wärmepumpen lohnen sich nicht', 'Heizen mit Strom ist teuer']);
   });
 
-  it('fragt nach dem Anmelden nach und bei neuem Suchtext neu', () => {
+  it('fragt bei neuem Suchtext neu, nicht beim Anmelden', () => {
     starten(null);
-    expect(statementService.aussageVorschlaege).not.toHaveBeenCalled();
+    expect(statementService.aehnlicheAussagen).toHaveBeenCalledTimes(1);
 
     nutzer.next(ANGEMELDET);
     fixture.detectChanges();
-    expect(statementService.aussageVorschlaege).toHaveBeenCalledTimes(1);
+    expect(statementService.aehnlicheAussagen).toHaveBeenCalledTimes(1);
 
     fixture.componentInstance.suchtext = 'Tempolimit bringt nichts';
     fixture.detectChanges();
-    expect(statementService.aussageVorschlaege).toHaveBeenCalledTimes(2);
-    expect(statementService.aussageVorschlaege.calls.mostRecent().args[0]).toBe('Tempolimit bringt nichts');
+    expect(statementService.aehnlicheAussagen).toHaveBeenCalledTimes(2);
+    expect(statementService.aehnlicheAussagen.calls.mostRecent().args[0]).toBe('Tempolimit bringt nichts');
+  });
+
+  it('meldet die Zahl der aehnlichen Aussagen ohne die bekannten', () => {
+    starten();
+    const komponente = fixture.debugElement.children[0].componentInstance as NichtDabeiComponent;
+    const gemeldet: number[] = [];
+    komponente.aehnlicheAnzahl.subscribe((n) => gemeldet.push(n));
+    fixture.componentInstance.bekannt = ['a-1'];
+    fixture.detectChanges();
+    expect(gemeldet).toEqual([1]);
   });
 
   it('fragt bei zu kurzem Suchtext nicht nach', () => {
     const seite = starten();
-    statementService.aussageVorschlaege.calls.reset();
+    statementService.aehnlicheAussagen.calls.reset();
     fixture.componentInstance.suchtext = ' a ';
     fixture.detectChanges();
 
-    expect(statementService.aussageVorschlaege).not.toHaveBeenCalled();
+    expect(statementService.aehnlicheAussagen).not.toHaveBeenCalled();
     expect(seite.querySelector('.aehnliche')).toBeNull();
   });
 
   it('bleibt ohne Liste nutzbar, wenn die aehnlichen Aussagen nicht ladbar sind', () => {
     TestBed.overrideProvider(StatementService, {
-      useValue: { aussageVorschlaege: () => throwError(() => new Error('500')) },
+      useValue: { aehnlicheAussagen: () => throwError(() => new Error('500')) },
     });
     const seite = starten();
 
@@ -127,7 +136,8 @@ describe('NichtDabeiComponent', () => {
   });
 
   it('zeigt ohne Treffer den Titel nur ueber einer Liste', () => {
-    const seite = starten({ isAuthenticated: false, userId: null, userName: null, claims: null });
+    TestBed.overrideProvider(StatementService, { useValue: { aehnlicheAussagen: () => of([]) } });
+    const seite = starten();
     const komponente = fixture.debugElement.children[0].componentInstance as NichtDabeiComponent;
     komponente.ohneTreffer = true;
     fixture.debugElement.children[0].injector.get(ChangeDetectorRef).markForCheck();
@@ -155,7 +165,7 @@ describe('NichtDabeiComponent', () => {
 
   it('zeigt ohne Antworten keine Zahl', () => {
     TestBed.overrideProvider(StatementService, {
-      useValue: { aussageVorschlaege: () => of([{ ...AEHNLICH, replysuggestions_count: 0 }]) },
+      useValue: { aehnlicheAussagen: () => of([{ ...AEHNLICH, replysuggestions_count: 0 }]) },
     });
     const seite = starten();
     ohneTreffer();
@@ -165,7 +175,7 @@ describe('NichtDabeiComponent', () => {
 
   it('bietet ohne Treffer "Antworten" zuerst fuer die aehnliche Aussage an (#617)', () => {
     const MIT_ID = { ...AEHNLICH, id: '11111111-2222-4333-8444-555555555555' };
-    TestBed.overrideProvider(StatementService, { useValue: { aussageVorschlaege: () => of([MIT_ID]) } });
+    TestBed.overrideProvider(StatementService, { useValue: { aehnlicheAussagen: () => of([MIT_ID]) } });
     const seite = starten();
     expect(seite.querySelector('.aehnliche .selbst-beantworten')).withContext('mit Treffern nicht').toBeNull();
     ohneTreffer();

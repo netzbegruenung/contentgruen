@@ -1,0 +1,14 @@
+<section class="oft-gesucht" [attr.aria-labelledby]="aussagen.length ? 'oft-gesucht-titel' : null">
+    <ng-container *ngIf="aussagen.length">
+        <h2 id="oft-gesucht-titel" class="oft-gesucht-titel">{{ titel }}</h2>
+        <ul class="oft-gesucht-liste">
+            <li *ngFor="let aussage of aussagen">
+                <a class="oft-gesucht-aussage" [routerLink]="ergebnisse" [queryParams]="sucheNach(aussage)">„{{ aussage.text }}“</a>
+            </li>
+        </ul>
+    </ng-container>
+    <p class="hier-fehlt">
+        <a class="hier-fehlt-link" [routerLink]="hierFehltEineAntwort">Hier fehlt eine Antwort</a>:
+        Aussagen, die noch auf eine Antwort warten<ng-container *ngIf="!angemeldet"> (zum Mitmachen anmelden)</ng-container>.
+    </p>
+</section>
