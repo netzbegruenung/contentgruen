@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       bff: ${{ steps.filter.outputs.bff }}
@@ -33,9 +34,31 @@ jobs:
       postgres_app: ${{ steps.filter.outputs.postgres_app }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # On main, compare with the last successful build run, not only with the previous push:
+      # a cancelled (cancel-in-progress) or failed run would otherwise lose its image for good
+      # (10.11.: three merges within 13 s, the BFF change of #649 never got a :main image;
+      # the frontend stayed behind after a failed build). Pull requests keep the default base.
+      - name: Base for the path filter
+        id: base
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh run list -R "$GITHUB_REPOSITORY" --workflow build.yml --branch main --event push \
+            --status success --limit 1 --json headSha --jq '.[0].headSha // empty' || true)
+          if [ -n "$sha" ] && git cat-file -e "$sha^{commit}" 2>/dev/null; then
+            echo "Base: last successful build $sha"
+          else
+            sha="${{ github.event.before }}"
+            echo "Base: previous push $sha (no successful build found)"
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ steps.base.outputs.sha }}
           filters: |
             frontend:
               - 'mvp/frontend/**'
