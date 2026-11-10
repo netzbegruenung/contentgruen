@@ -67,6 +67,7 @@ from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_t
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
 from repositories.usage_tracking_repository import get_usage_repository
 from services.entdoppelung import pruefwerte_verwerfen_im_takt
+from repositories.gepostet_repository import get_gepostet_repository
 from services.abzeichen_service import abzeichen_im_takt, abzeichen_service_setzen
 from services.muster_hinweise_service import (
     loeschen_im_takt as muster_hinweise_loeschen_im_takt,
@@ -197,7 +198,10 @@ async def lifespan(app: FastAPI):
         # Pruefwerte der Entdoppelung nach ihrem Tag verwerfen (#352), unabhaengig
         # von Punkten und Usage-Cleanup (services/entdoppelung.py).
         app.state.pruefwerte_verwerfen = asyncio.create_task(
-            pruefwerte_verwerfen_im_takt(get_usage_repository())
+            pruefwerte_verwerfen_im_takt(
+                get_usage_repository(),
+                gepostet=get_gepostet_repository().vergangene_wochen_verdichten,
+            )
         )
         # Paar-Pruefwerte nach dem Fenster verwerfen und alte Muster-Hinweise
         # loeschen (#352, services/muster_hinweise_service.py).

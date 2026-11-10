@@ -291,6 +291,10 @@ GESPERRT = {
     ("PUT", "/api/v1/rawinput/{einwurf_id}/draft"),
     ("PUT", "/api/v1/voting/content/{content_id}/like"),
     ("PUT", "/api/v1/voting/content/{content_id}/dislike"),
+    # "Ja, gepostet" (#643): oeffentlich gekontert zu haben verraet die politische
+    # Meinung; GET mit, damit das Frontend den Knopf nur mit Einwilligung zeigt.
+    ("GET", "/api/v1/usage/users/me/gepostet"),
+    ("POST", "/api/v1/usage/users/me/gepostet"),
 }
 
 
@@ -383,5 +387,6 @@ def test_jeder_schreibende_endpunkt_ist_entschieden():
         for methode in route.methods & {"POST", "PUT", "PATCH"}
     }
 
-    assert schreibend == GESPERRT | OFFEN
+    # GESPERRT nennt auch lesende Endpunkte mit Sperre (GET gepostet, #643).
+    assert schreibend == {e for e in GESPERRT | OFFEN if e[0] != "GET"}
     assert not GESPERRT & OFFEN

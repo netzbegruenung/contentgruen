@@ -198,6 +198,38 @@ class MusterPruefwert(Base):
     __table_args__ = (Index("idx_muster_pruefwerte_tag", "tag"),)
 
 
+class GepostetPruefwert(Base):
+    """
+    Wer in der laufenden Kalenderwoche "Ja, gepostet" gemeldet hat (#643), als
+    Pruefwert: ein HMAC ueber die Kennung mit einem Wochenschluessel nur im Speicher
+    (services/gepostet_service.py). Ohne ihn verraet ein Wert die Person nicht, auch
+    nicht mit Datenbank und Konfiguration. Zeilen vergangener Wochen werden zur Zahl
+    in ``gepostet_wochen`` verdichtet und geloescht; welcher Beitrag kopiert wurde,
+    steht nirgends.
+    """
+
+    __tablename__ = "gepostet_pruefwerte"
+
+    pruefwert = Column(String(64), primary_key=True)
+    # Der Montag der Kalenderwoche (UTC).
+    woche = Column(Date, nullable=False)
+
+    __table_args__ = (Index("idx_gepostet_pruefwerte_woche", "woche"),)
+
+
+class GepostetWoche(Base):
+    """
+    Je vergangener Kalenderwoche die Zahl der verschiedenen Personen, die "Ja,
+    gepostet" gemeldet haben (#643, der Nordstern in docs/VISION.md). Nur eine Zahl,
+    keine Kennung, kein Pruefwert.
+    """
+
+    __tablename__ = "gepostet_wochen"
+
+    woche = Column(Date, primary_key=True)
+    personen = Column(Integer, nullable=False)
+
+
 class MusterHinweisZeile(Base):
     """
     Ein auffaelliges Muster fuer Admins (ADR 0004, #352): zwei Konten, die innerhalb

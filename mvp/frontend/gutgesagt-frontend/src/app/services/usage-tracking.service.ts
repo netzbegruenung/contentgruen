@@ -50,6 +50,15 @@ export interface AbzeichenSichtbarkeit {
   aktueller_wortlaut: { kennung: string; text: string; mehr_dazu: string };
 }
 
+/** Ergebnis von gepostetMelden, wenn der Server die Rückmeldung nicht (mehr) anbietet. */
+export const GEPOSTET_NICHT_ANGEBOTEN = 'nicht_angeboten' as const;
+
+/** Antwort von GET/POST /users/me/gepostet (#643). */
+export interface GepostetAntwort {
+  /** Verschiedene Personen, die diese Kalenderwoche „Ja, gepostet“ gemeldet haben. */
+  personen_diese_woche: number;
+}
+
 export interface BesuchResponse {
   nutzung_seit_letztem_besuch: number;
 }
@@ -81,6 +90,9 @@ export class UsageTrackingService {
    * Doppelzaehlen eines Doppeltipps (siehe trackContentUsage).
    */
   private recentCopies = new Map<string, number>();
+
+  /** Je Kennung, ob „Ja, gepostet“ angeboten wird, soweit schon sicher bekannt (#643). */
+  private gepostetStand = new Map<string, boolean>();
 
   constructor(
     private http: HttpClient,
@@ -244,6 +256,59 @@ export class UsageTrackingService {
         }
         return of(null);
       })
+    );
+  }
+
+  /**
+   * Ob nach dem Kopieren „Ja, gepostet“ angeboten wird (#643): nur mit Schalter am
+   * Server, angemeldet und mit Art.-9-Einwilligung (sonst 404, 401 oder 403). Ein Ja
+   * und ein 404 (Schalter aus, Startkonto) gelten je Kennung bis zum Neuladen; ein 403
+   * wird nicht gemerkt, die Einwilligung kann inzwischen da sein.
+   */
+  gepostetAngeboten(kennung: string): Observable<boolean> {
+    const gemerkt = this.gepostetStand.get(kennung);
+    if (gemerkt !== undefined) {
+      return of(gemerkt);
+    }
+    return this.http.get<GepostetAntwort>(`${this.apiUrl}/users/me/gepostet`).pipe(
+      map(() => true),
+      tap(() => this.gepostetStand.set(kennung, true)),
+      catchError((error) => {
+        if (error?.status === 404) {
+          this.gepostetStand.set(kennung, false);
+        } else if (error?.status !== 401 && error?.status !== 403) {
+          this.loggingService.error('Gepostet-Stand nicht geladen', error);
+        }
+        return of(false);
+      }),
+    );
+  }
+
+  /**
+   * Ob „Ja, gepostet“ schon sicher angeboten wird; null, solange der Server nicht
+   * gefragt wurde. Synchron, damit die Snackbar nach dem Kopieren sofort kommt.
+   */
+  gepostetBekannt(kennung: string): boolean | null {
+    return this.gepostetStand.get(kennung) ?? null;
+  }
+
+  /**
+   * „Ja, gepostet“ melden (#643): Der Server zählt die Person einmal je
+   * Kalenderwoche. Liefert die Zahl der Personen dieser Woche, bei einem Fehler null.
+   * Ein 403 (Einwilligung widerrufen) oder 404 (Schalter aus) heißt: nicht mehr
+   * angeboten; dann vergisst der Dienst das gemerkte Ja und liefert NICHT_ANGEBOTEN.
+   */
+  gepostetMelden(kennung: string): Observable<number | null | typeof GEPOSTET_NICHT_ANGEBOTEN> {
+    return this.http.post<GepostetAntwort>(`${this.apiUrl}/users/me/gepostet`, {}).pipe(
+      map((antwort) => antwort.personen_diese_woche),
+      catchError((error) => {
+        if (error?.status === 403 || error?.status === 404) {
+          this.gepostetStand.delete(kennung);
+          return of(GEPOSTET_NICHT_ANGEBOTEN);
+        }
+        this.loggingService.error('Gepostet nicht gemeldet', error);
+        return of(null);
+      }),
     );
   }
 

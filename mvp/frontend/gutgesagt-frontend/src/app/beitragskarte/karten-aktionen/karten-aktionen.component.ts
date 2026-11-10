@@ -20,11 +20,11 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, switchMap, take } from 'rxjs/operators';
 
 import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
-import { UsageTrackingService } from '../../services/usage-tracking.service';
+import { GEPOSTET_NICHT_ANGEBOTEN, UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
 import { ROUTES } from '../../shared/constants/app.constants';
@@ -33,6 +33,7 @@ import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage'
 import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
 import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../../shared/beitrags-link';
 import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
+import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
 
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
@@ -206,12 +207,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.clipboard.copy(text);
-    // Mit Platzhalter "[Hier …]" erinnert der Hinweis ans Ausfuellen (#640, R38) und bleibt laenger stehen.
-    if (hatLuecke(text)) {
-      this.snackBar.open(KOPIERT_MIT_LUECKE, 'OK', { duration: 6000 });
-    } else {
-      this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
-    }
+    this.kopiertMelden(text);
 
     this.copyAnimationActive = true;
     setTimeout(() => {
@@ -224,6 +220,63 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       this.kopiert.emit();
     }
     this.cdr.markForCheck();
+  }
+
+  /**
+   * Nach dem Kopieren: angemeldet, mit Einwilligung und eingeschalteter Rückmeldung
+   * „Kopiert. Gepostet? [Ja, gepostet]“ (#643), sonst wie bisher nur „Erfolgreich
+   * kopiert!“. Ein Klick auf „Ja, gepostet“ zählt die Person einmal je Woche als
+   * öffentlich gekontert; welcher Beitrag, erfährt der Server dabei nicht.
+   *
+   * Hat der Text noch eine Lücke „[Hier …]“ (#640), bleibt es beim Hinweis aufs
+   * Ausfüllen: Gepostet sein kann der Text dann noch nicht.
+   */
+  private kopiertMelden(text: string): void {
+    if (hatLuecke(text)) {
+      // Mit Platzhalter "[Hier …]" erinnert der Hinweis ans Ausfuellen (#640, R38) und bleibt laenger stehen.
+      this.snackBar.open(KOPIERT_MIT_LUECKE, 'OK', { duration: 6000 });
+      return;
+    }
+    const person = this.authService.getUserInfo();
+    const kennung = person?.isAuthenticated ? person.userId : null;
+    if (!kennung) {
+      this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
+      return;
+    }
+    if (this.usageTrackingService.gepostetBekannt(kennung)) {
+      this.gepostetFragen(kennung);
+      return;
+    }
+    // Noch unbekannt oder nicht angeboten: sofort die gewohnte Bestätigung; kommt vom
+    // Server ein Ja, ersetzt die Frage sie (eine neue Snackbar schließt die alte).
+    this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
+    if (this.usageTrackingService.gepostetBekannt(kennung) === false) {
+      return;
+    }
+    this.usageTrackingService
+      .gepostetAngeboten(kennung)
+      .pipe(take(1))
+      .subscribe((angeboten) => {
+        if (angeboten) {
+          this.gepostetFragen(kennung);
+        }
+      });
+  }
+
+  private gepostetFragen(kennung: string): void {
+    this.snackBar
+      .open(KOPIERT_GEPOSTET_FRAGE, JA_GEPOSTET, { duration: GEPOSTET_FRAGE_MS })
+      .onAction()
+      .pipe(
+        take(1),
+        switchMap(() => this.usageTrackingService.gepostetMelden(kennung)),
+      )
+      .subscribe((personen) => {
+        if (personen === GEPOSTET_NICHT_ANGEBOTEN) {
+          return;
+        }
+        this.snackBar.open(gepostetDank(personen), 'Schließen', { duration: 5000 });
+      });
   }
 
   /** Die Adresse des Beitrags zum Teilen (#640, R48); zaehlt nicht als Nutzung, wie auf der Beitragsseite. */

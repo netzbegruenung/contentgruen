@@ -88,7 +88,7 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
         { provide: MatSnackBar, useValue: jasmine.createSpyObj('MatSnackBar', ['open']) },
         { provide: AuthService, useValue: auth },
         { provide: Clipboard, useValue: jasmine.createSpyObj('Clipboard', ['copy']) },
-        { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']) },
+        { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', { trackContentUsage: undefined, gepostetBekannt: false }) },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['error', 'debug', 'info', 'warn']) },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
         provideRouter([]),

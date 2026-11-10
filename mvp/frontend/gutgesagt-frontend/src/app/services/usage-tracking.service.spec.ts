@@ -151,6 +151,84 @@ describe('UsageTrackingService', () => {
     });
   });
 
+  describe('Rückmeldung „Gepostet?“ (#643)', () => {
+    const GEPOSTET = `${environment.baseUrl}/api/v1/usage/users/me/gepostet`;
+
+    function angeboten(kennung = 'kim-1'): boolean | undefined {
+      let ergebnis: boolean | undefined;
+      service.gepostetAngeboten(kennung).subscribe((ja) => (ergebnis = ja));
+      return ergebnis;
+    }
+
+    it('bietet an, wenn der Server 200 antwortet, und fragt fuer dieselbe Kennung nicht noch einmal', () => {
+      let ergebnis: boolean | undefined;
+      service.gepostetAngeboten('kim-1').subscribe((ja) => (ergebnis = ja));
+      const anfrage = http.expectOne(GEPOSTET);
+      expect(anfrage.request.method).toBe('GET');
+      anfrage.flush({ personen_diese_woche: 3 });
+
+      expect(ergebnis).toBeTrue();
+      expect(angeboten()).toBeTrue();
+      http.expectNone(GEPOSTET);
+    });
+
+    it('merkt sich ein 404 (Schalter aus) still', () => {
+      let ergebnis: boolean | undefined;
+      service.gepostetAngeboten('kim-1').subscribe((ja) => (ergebnis = ja));
+      http.expectOne(GEPOSTET).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toBeFalse();
+      expect(angeboten()).toBeFalse();
+      http.expectNone(GEPOSTET);
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('fragt nach einem 403 (ohne Einwilligung) beim naechsten Mal wieder', () => {
+      let ergebnis: boolean | undefined;
+      service.gepostetAngeboten('kim-1').subscribe((ja) => (ergebnis = ja));
+      http.expectOne(GEPOSTET).flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+      expect(ergebnis).toBeFalse();
+      service.gepostetAngeboten('kim-1').subscribe();
+      http.expectOne(GEPOSTET).flush({ personen_diese_woche: 0 });
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('meldet per POST und liefert die Zahl der Woche', () => {
+      let ergebnis: unknown;
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
+
+      const anfrage = http.expectOne(GEPOSTET);
+      expect(anfrage.request.method).toBe('POST');
+      anfrage.flush({ personen_diese_woche: 7 });
+
+      expect(ergebnis).toBe(7);
+    });
+
+    it('vergisst nach einem 403 beim Melden das gemerkte Angebot', () => {
+      service.gepostetAngeboten('kim-1').subscribe();
+      http.expectOne(GEPOSTET).flush({ personen_diese_woche: 1 });
+      expect(service.gepostetBekannt('kim-1')).toBeTrue();
+      let ergebnis: unknown;
+
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
+      http.expectOne(GEPOSTET).flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+      expect(ergebnis).toBe('nicht_angeboten');
+      expect(service.gepostetBekannt('kim-1')).toBeNull();
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('liefert null, wenn das Melden scheitert', () => {
+      let ergebnis: unknown;
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
+
+      http.expectOne(GEPOSTET).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toBeNull();
+    });
+  });
+
   describe('Sichtbarkeit der Abzeichen (#351)', () => {
     const SICHTBARKEIT = `${environment.baseUrl}/api/v1/usage/users/me/abzeichen-sichtbarkeit`;
 

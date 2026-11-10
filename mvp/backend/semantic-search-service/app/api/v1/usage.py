@@ -21,6 +21,7 @@ from dependencies import (
     get_settings,
     get_current_user_optional,
     get_reference_service,
+    require_art9_einwilligung,
     require_user,
 )
 from utils.besucher_pseudonym import besucher_merkmal
@@ -38,6 +39,7 @@ from domain.abzeichen_sichtbarkeit import (
     UnbekannterWortlaut,
 )
 from services.punkte_service import PunkteService
+from services.gepostet_service import GepostetService, get_gepostet_service
 from services.art9_einwilligung_service import get_art9_einwilligung_service
 from services.usage_tracking_service import get_usage_service
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
@@ -144,6 +146,12 @@ class AbzeichenSichtbarkeitResponse(BaseModel):
 class AbzeichenSichtbarkeitRequest(BaseModel):
     zeigen: bool
     wortlaut: str
+
+
+class GepostetResponse(BaseModel):
+    """Wie viele verschiedene Personen diese Kalenderwoche "Ja, gepostet" gemeldet haben (#643)."""
+
+    personen_diese_woche: int
 
 
 class TrendingContentResponse(BaseModel):
@@ -585,6 +593,65 @@ async def besuch(
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def _gepostet_dienst(
+    current_user: str = Depends(require_user),
+    settings: Settings = Depends(get_settings),
+) -> GepostetService:
+    """
+    Ohne ``gepostet_aktiv`` und fuer Startkonten 404: Die Rueckmeldung gibt es dann
+    nicht (#643). Vor der Art.-9-Pruefung, damit ein ausgeschalteter Schalter die
+    Datenbank nicht fragt.
+    """
+    if not settings.gepostet_aktiv or settings.ist_startkonto(current_user):
+        raise HTTPException(status_code=404, detail="Not found")
+    return get_gepostet_service()
+
+
+@router.get("/users/me/gepostet", response_model=GepostetResponse)
+async def gepostet_stand(
+    current_user: str = Depends(require_user),
+    dienst: GepostetService = Depends(_gepostet_dienst),
+    _einwilligung: None = Depends(require_art9_einwilligung),
+):
+    """
+    Ob die Rueckmeldung "Gepostet?" angeboten wird (200) und wie viele Personen diese
+    Woche gemeldet haben. 404 ohne Schalter, 403 ohne Art.-9-Einwilligung; das
+    Frontend zeigt "Ja, gepostet" nur nach einer 200.
+    """
+    try:
+        anzahl = await asyncio.to_thread(dienst.diese_woche)
+    except Exception as e:
+        logger.error(
+            f"Gepostet-Stand fuer {log_pseudonym(current_user)} nicht gelesen: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return GepostetResponse(personen_diese_woche=anzahl)
+
+
+@router.post("/users/me/gepostet", response_model=GepostetResponse)
+async def gepostet_melden(
+    current_user: str = Depends(require_user),
+    dienst: GepostetService = Depends(_gepostet_dienst),
+    _einwilligung: None = Depends(require_art9_einwilligung),
+):
+    """
+    "Ja, gepostet" nach dem Kopieren (#643): zaehlt die Person einmal je
+    Kalenderwoche als "oeffentlich gekontert", ohne Beitrag und ohne festzuhalten,
+    wer es war (services/gepostet_service.py). Ein zweiter Klick in derselben Woche
+    aendert die Zahl nicht. Die Person kommt aus ``X-User``, nicht aus dem Pfad (#284).
+    """
+    try:
+        anzahl = await asyncio.to_thread(dienst.melden, current_user)
+    except Exception as e:
+        logger.error(
+            f"Gepostet von {log_pseudonym(current_user)} nicht gemerkt: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return GepostetResponse(personen_diese_woche=anzahl)
 
 
 @router.get("/trending", response_model=TrendingContentResponse)

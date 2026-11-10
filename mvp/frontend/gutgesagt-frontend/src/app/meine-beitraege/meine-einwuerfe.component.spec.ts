@@ -80,7 +80,7 @@ describe('MeineEinwuerfeComponent', () => {
         { provide: Clipboard, useValue: jasmine.createSpyObj('Clipboard', ['copy']) },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['error', 'debug', 'info', 'warn']) },
         { provide: VotingService, useValue: jasmine.createSpyObj('VotingService', ['setLike']) },
-        { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']) },
+        { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', { trackContentUsage: undefined, gepostetBekannt: false }) },
       ],
     }).compileComponents();
 

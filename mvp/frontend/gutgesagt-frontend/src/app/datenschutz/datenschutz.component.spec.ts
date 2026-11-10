@@ -52,6 +52,19 @@ describe('DatenschutzComponent', () => {
     });
   });
 
+  describe('Rückmeldung „Ja, gepostet“ (#643)', () => {
+    it('nennt Prüfwert statt Kennung, kein Beitrag, Wochenfrist, lit. f und die Art.-9-Einwilligung', () => {
+      const text = abschnitt('Rückmeldung „Ja, gepostet“');
+
+      expect(text).toContain('nur einen Prüfwert');
+      expect(text).toContain('welchen Beitrag du gepostet hast, speichern wir nicht');
+      expect(text).toContain('bis kurz nach Ende der Kalenderwoche');
+      expect(text).toContain('Widerrufst du sie, erscheint die Frage nicht mehr');
+      expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
+      expect(text).toContain('Artikel 9 Absatz 2 Buchstabe a DSGVO');
+    });
+  });
+
   describe('Rückmeldung zur Nutzung (#349)', () => {
     it('nennt die gespeicherte Zahl ohne Zeitpunkt, lit. f und die Frist bis zur Kontolöschung', () => {
       const text = abschnitt('Rückmeldung zur Nutzung deiner Beiträge');

@@ -6,7 +6,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import { KartenAktionenComponent } from './karten-aktionen.component';
 import { AuthService } from '../../auth/auth.service';
@@ -38,7 +38,14 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     const loggingSpy = jasmine.createSpyObj('LoggingService', ['logInteraction', 'logError', 'error', 'debug', 'info', 'warn']);
     const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
     const clipboardSpy = jasmine.createSpyObj('Clipboard', ['copy']);
-    const usageTrackingSpy = jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']);
+    const usageTrackingSpy = jasmine.createSpyObj('UsageTrackingService', [
+      'trackContentUsage',
+      'gepostetAngeboten',
+      'gepostetBekannt',
+      'gepostetMelden',
+    ]);
+    usageTrackingSpy.gepostetAngeboten.and.returnValue(of(false));
+    usageTrackingSpy.gepostetBekannt.and.returnValue(null);
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['getUserInfo', 'login']);
     authServiceSpy.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' });
 
@@ -513,6 +520,111 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.openReportDialog();
 
       expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ contentId: INHALT_ID, contentType: 'commentary' });
+    });
+  });
+
+  describe('Rückmeldung „Gepostet?“ (#643)', () => {
+    let usage: jasmine.SpyObj<UsageTrackingService>;
+    let aktion: Subject<void>;
+
+    beforeEach(() => {
+      usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      aktion = new Subject<void>();
+      snackBar.open.and.returnValue({ onAction: () => aktion.asObservable() } as any);
+    });
+
+    it('bestätigt sofort und fragt, sobald der Server die Rückmeldung anbietet', () => {
+      const antwort = new Subject<boolean>();
+      usage.gepostetAngeboten.and.returnValue(antwort.asObservable());
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(usage.gepostetAngeboten).toHaveBeenCalledWith('test-user');
+      antwort.next(true);
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
+      expect(usage.gepostetMelden).not.toHaveBeenCalled();
+    });
+
+    it('fragt sofort, wenn das Angebot schon bekannt ist', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+    });
+
+    it('fragt den Server nicht, wenn schon feststeht, dass nichts angeboten wird', () => {
+      usage.gepostetBekannt.and.returnValue(false);
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+    });
+
+    it('dankt nicht, wenn der Server die Rückmeldung inzwischen nicht mehr anbietet', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+      usage.gepostetMelden.and.returnValue(of('nicht_angeboten' as const));
+      component.kopieren();
+      snackBar.open.calls.reset();
+
+      aktion.next();
+
+      expect(usage.gepostetMelden).toHaveBeenCalledWith('test-user');
+      expect(snackBar.open).not.toHaveBeenCalled();
+    });
+
+    it('dankt ohne Zahl, wenn das Zählen scheitert', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+      usage.gepostetMelden.and.returnValue(of(null));
+      component.kopieren();
+
+      aktion.next();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Danke! Zählen hat gerade nicht geklappt.', 'Schließen', { duration: 5000 });
+    });
+
+    it('zählt erst mit „Ja, gepostet“ und dankt mit der echten Zahl der Woche', () => {
+      usage.gepostetAngeboten.and.returnValue(of(true));
+      usage.gepostetMelden.and.returnValue(of(7));
+      component.kopieren();
+
+      aktion.next();
+
+      expect(usage.gepostetMelden).toHaveBeenCalledTimes(1);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Danke! Diese Woche haben 7 Menschen gemeldet, dass sie öffentlich gekontert haben. Du bist dabei.',
+        'Schließen',
+        { duration: 5000 },
+      );
+    });
+
+    it('bleibt ohne Angebot bei „Erfolgreich kopiert!“', () => {
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(usage.gepostetMelden).not.toHaveBeenCalled();
+    });
+
+    it('bleibt bei einer Lücke beim Hinweis aufs Ausfüllen und fragt nicht (#640)', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+      component.kopierText = 'Gut. [Hier ein eigenes Erlebnis: …] Ende.';
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+    });
+
+    it('fragt Besucher nicht und fragt auch den Server nicht', () => {
+      (TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>).getUserInfo.and.returnValue(null);
+
+      component.kopieren();
+
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
     });
   });
 

@@ -406,6 +406,35 @@ Empfänger und Ort“.
   (`ss/services/entdoppelung.py:10-20`); angemeldete Konten ohne Einwilligung bekommen keinen
   Prüfwert (`A9:28-36`); Startkonten gar nicht gezählt (`DSE:558-559`).
 
+#### V9a Rückmeldung „Ja, gepostet“ (#643)
+
+- **Stand:** gebaut; Schalter `gepostet_aktiv`, im Code Standard aus. **Intern an** (Entscheidung
+  des Maintainers vom 10.11.2026), **vor dem öffentlichen Start neu prüfen.**
+- **Zweck:** messen, wie viele verschiedene Menschen je Woche öffentlich kontern (Nordstern,
+  `docs/VISION.md`); der Person danken. Die Person meldet nach dem Kopieren mit einem Klick
+  „Ja, gepostet“; das ist eine Selbstauskunft, ein Link zum Post wird nicht abgefragt.
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f für die Zählung, dazu Art. 9 Abs. 2 lit. a über die
+  Art.-9-Einwilligung (Wortlaut 2026-11-05-b). Begründung: Gespeichert wird keine Kennung, nur
+  ein Prüfwert, der sich ohne den Wochenschlüssel im Arbeitsspeicher nicht auf die Person
+  zurückführen lässt, und nach Wochenende nur die Zahl der Woche; das berechtigte Interesse
+  (Wirkung des Angebots messen) überwiegt bei diesem Umfang. Der Klick selbst lässt aber auf
+  politische Aktivität schließen, deshalb zählt nur, wer eingewilligt hat. Der Wortlaut nennt
+  „meine Mitwirkung … für den Betrieb der Plattform“, nicht ausdrücklich diese Meldung.
+  **Offen:** Vor dem öffentlichen Start klären, ob der Wortlaut sie ausdrücklich nennen muss
+  (dann ein neuer Wortlaut, `docs/ART9_EINWILLIGUNG.md`).
+- **Daten:** je Person und Kalenderwoche (UTC, ab Montag) ein Prüfwert, HMAC über die Kennung mit
+  einem Wochenschlüssel nur im Arbeitsspeicher (`ss/services/gepostet_service.py`), mit dem
+  Montag der Woche (`gepostet_pruefwerte`); kein Beitrag, kein Zeitpunkt. Nach Wochenende nur die
+  Zahl der Personen je Woche (`gepostet_wochen`).
+- **Frist:** Prüfwert bis kurz nach Wochenende, verdichtet beim ersten täglichen Lauf danach
+  (`docs/LOESCHKONZEPT.md`); die Zahl je Woche ohne Personenbezug unbefristet.
+- **Risiko:** gering. Auch mit Datenbank und Konfiguration lässt sich ein Prüfwert nicht
+  nachrechnen; die Person sieht nur die Gesamtzahl der Woche, Admins nur die Zahl je Woche.
+  Nach einem Neustart zählt eine erneute Meldung derselben Woche doppelt (zu hoch, nie zu
+  niedrig).
+- **Maßnahmen:** nur angemeldet und mit geltender Art.-9-Einwilligung (sonst 403), keine
+  Startkonten, Schalter, keine Weitergabe; der Prüfwert ändert sich jede Woche.
+
 #### V10 Rückmeldung zur Nutzung
 
 - **Zweck:** Mitwirkenden zeigen, dass ihre Beiträge helfen (`DSE:589`).

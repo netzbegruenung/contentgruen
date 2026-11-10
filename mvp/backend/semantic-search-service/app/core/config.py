@@ -265,6 +265,12 @@ class Settings(BaseSettings):
     # der DSFA (docs/DSFA.md), zusaetzlich an der Zustimmung zur Sichtbarkeit, die
     # jede Person selbst gibt (domain/abzeichen_sichtbarkeit.py).
     abzeichen_sichtbar_aktiv: bool = False
+    # Rueckmeldung "Gepostet?" nach dem Kopieren (#643): Angemeldete mit
+    # Art.-9-Einwilligung melden mit einem Klick, dass sie oeffentlich gekontert haben;
+    # gezaehlt wird je Person und Kalenderwoche einmal (services/gepostet_service.py).
+    # Standard aus, unabhaengig von punkte_aktiv: eine eigene Verarbeitung, die erst
+    # mit Satz in DSFA und Datenschutzerklaerung eingeschaltet wird.
+    gepostet_aktiv: bool = False
     # Gewichte und Deckel der drei Stufen (domain/punkte.py): Tun klein und je Tag
     # gedeckelt, Quests mehr, Wirkung bei anderen am meisten.
     punkte_nutzung: int = Field(default=10, ge=0)
