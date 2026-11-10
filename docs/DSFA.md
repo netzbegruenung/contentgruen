@@ -276,7 +276,7 @@ Empfänger und Ort“.
 - **Maßnahmen:** Kennung nur für Admins und den eigenen Browser (`DSE:267-270`); Anonymisierung mit
   Platzhalter (`LK:121-131`); Einzelfall-Löschung, wenn der Text die Person erkennbar macht
   (`DSE:307-308`); Gegenlesen speichert nichts (`DSE:326-328`).
-- **„Gepostet von“ am Post (#622, Stand 09.11.2026 noch nicht gemergt):**
+- **„Gepostet von“ am Post (#622, gemergt am 09.11.2026):**
   - *Zweck:* zeigen, woher ein Post stammt.
   - *Daten:* Kontoname des ursprünglichen Posters auf der anderen Plattform („@konto“), Freitext
     im Qdrant-Payload (`ss/domain/models/post.py:26,49-50` auf #622); ist es das Konto einer Person, sind es Daten
@@ -425,8 +425,8 @@ Empfänger und Ort“.
 - **Frist:** Paar-Prüfwert 7 Tage, Muster-Hinweis 56 Tage (`LK:162-163`).
 - **Risiko und Maßnahmen:** Abschnitt 3 (Sichtbarkeit, Nutzungsnetz, Zweckentfremdung),
   Rechtsgrundlage Abschnitt 4. Schalter `punkte_aktiv`, Standard aus (`ss/core/config.py:238-244`).
-- **Meilensteine, nur für die Person selbst (#615, Stand 09.11.2026 noch nicht gemergt):** hinter
-  demselben Schalter (ohne `punkte_aktiv` 404, `ss/api/v1/usage.py:450-451` auf #615), gleiche Rechtsgrundlage, nicht gespeichert, bei jedem Abruf berechnet
+- **Meilensteine, nur für die Person selbst (#615, gemergt am 09.11.2026):** hinter
+  demselben Schalter (ohne `punkte_aktiv` 404, `ss/api/v1/usage.py:478-479`), gleiche Rechtsgrundlage, nicht gespeichert, bei jedem Abruf berechnet
   (`ss/services/meilensteine_service.py`). Neu gegenüber den Punkten: gezählt wird auch, wie viele
   Einwürfe anderer die Person ausformuliert hat (Ausformulierer an der Verknüpfung,
   `ss/infrastructure/database/models.py:577`, V4), nicht nur
