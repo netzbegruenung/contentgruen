@@ -41,6 +41,8 @@ ABWEICHUNG = 1
 # und der Schwelle von heute (0,82, #568), dieselben Zahlen wie in SUCHTESTSET.md (ein Unit-Test
 # vergleicht). Aendert sich eine Zahl gewollt (Modell, Schwelle, Stemmer, Normalisierung,
 # neue Faelle), wird sie hier und in SUCHTESTSET.md im selben PR nachgezogen.
+# S06 bis S09 zaehlen am Seed mit ihrer urspruenglichen Erwartung; ihr Ersatz (#606) gilt
+# nur an einem Bestand ohne diese Seed-Aussagen (Startbestand) und aendert das Soll nicht.
 SOLL: Dict[str, int] = {
     "gemessen": 42,
     "treffer": 27,

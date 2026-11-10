@@ -24,17 +24,22 @@ Felder:
 - nur_ohne: Der Fall wird nur gemessen, wenn keine dieser Aussagen im Bestand steht. Fuer
   Faelle "fremd", deren Thema der Startbestand hat (der Wolf ist am Seed fremd, am
   Startbestand nicht).
+- ersatz: Erwartung fuer einen Bestand, dem eine Aussage aus erwartet fehlt (Ersatz). Fuer
+  Faelle zu den zwei Seed-Aussagen, die der Startbestand nicht hat (S06 bis S09): Dort
+  passen die Antworten einer anderen Aussage; dieselbe_behauptung und phaenomen koennen
+  dort anders sein.
+  Fehlt auch eine Aussage aus ersatz, zaehlt der Fall nicht mit.
 
 Keine echten Personen, keine Personendaten, keine Eingaben aus Produktion. Die erwarteten
 Aussagen stammen aus dem Seed (Testbestand, S01 bis S42) und aus dem Startbestand (#288,
 ab S43). Faelle, deren Aussagen im gemessenen Bestand fehlen, ueberspringt die Messung und
-nennt sie: Am Seed zaehlen die Faelle zum Startbestand nicht mit, am Startbestand die zu
-den zwei Seed-Aussagen, die er nicht hat.
+nennt sie: Am Seed zaehlen die Faelle zum Startbestand nicht mit. Die Faelle zu den zwei
+Seed-Aussagen, die der Startbestand nicht hat, zaehlen dort mit ihrem Ersatz (#606).
 
 Neue Faelle ans Ende ihres Abschnitts, IDs fortlaufend; eine ID wechselt nie den Text.
 """
 
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Optional, Tuple
 
 from utils.text_normalisierung import text_normalisiert
 
@@ -53,6 +58,14 @@ PHAENOMENE = (
 )
 
 
+class Ersatz(NamedTuple):
+    """Erwartung eines Falls fuer einen Bestand, dem eine Aussage aus erwartet fehlt."""
+
+    erwartet: Tuple[str, ...]
+    dieselbe_behauptung: bool
+    phaenomen: Optional[str] = None  # None = wie im Fall
+
+
 class Fall(NamedTuple):
     id: str
     anfrage: str
@@ -63,6 +76,7 @@ class Fall(NamedTuple):
     quelle: str
     nur_mit: Tuple[str, ...] = ()
     nur_ohne: Tuple[str, ...] = ()
+    ersatz: Optional[Ersatz] = None
 
 
 # Aussagen des Seeds (mvp/data/seed/v1.0), woertlich.
@@ -129,10 +143,13 @@ FAELLE = tuple(Fall(*f) for f in (
     ("S03", "windrad vögel", "stichwort", "schlagwort", (VOEGEL,), False, "eigen"),
     ("S04", "Windräder töten die Vögle", "satz", "tippfehler", (VOEGEL,), True, "eigen"),
     ("S05", "Windräder schützen Vögel", "satz", "verneinung", KEINE, False, "eigen"),
-    ("S06", "Erneuerbare sind unzuverläsig", "satz", "tippfehler", (UNZUVERLAESSIG,), True, "eigen"),
-    ("S07", "Dunkelflaute", "stichwort", "schlagwort", (UNZUVERLAESSIG,), False, "eigen"),
-    ("S08", "Wenn kein Wind weht und keine Sonne scheint, gibt es keinen Strom", "satz", "verwandt", (UNZUVERLAESSIG,), False, "eigen"),
-    ("S09", "Ökostrom ist viel zu teuer", "satz", "umformulierung", (TEUER,), True, "eigen"),
+    # S06 bis S09: Der Startbestand hat UNZUVERLAESSIG und TEUER nicht; dort passen die
+    # Antworten zu DUNKELFLAUTE bzw. die zu ATOM (Kosten: Sonne und Wind guenstiger als
+    # neue Atomkraftwerke). "Ökostrom ist zu teuer" ist eine andere Behauptung als ATOM.
+    ("S06", "Erneuerbare sind unzuverläsig", "satz", "tippfehler", (UNZUVERLAESSIG,), True, "eigen", KEINE, KEINE, Ersatz((DUNKELFLAUTE,), True)),
+    ("S07", "Dunkelflaute", "stichwort", "schlagwort", (UNZUVERLAESSIG,), False, "eigen", KEINE, KEINE, Ersatz((DUNKELFLAUTE,), False)),
+    ("S08", "Wenn kein Wind weht und keine Sonne scheint, gibt es keinen Strom", "satz", "verwandt", (UNZUVERLAESSIG,), False, "eigen", KEINE, KEINE, Ersatz((DUNKELFLAUTE,), False)),
+    ("S09", "Ökostrom ist viel zu teuer", "satz", "umformulierung", (TEUER,), True, "eigen", KEINE, KEINE, Ersatz((ATOM,), False, "verwandt")),
     ("S10", "Atomkraft", "stichwort", "schlagwort", (ATOM,), False, "eigen"),
     ("S11", "Wir sollten wieder Atomkraftwerke bauen statt Windräder", "satz", "verwandt", (ATOM,), False, "eigen"),
     ("S12", "Heizungsverbot", "stichwort", "schlagwort", (HEIZUNG,), False, "eigen"),
