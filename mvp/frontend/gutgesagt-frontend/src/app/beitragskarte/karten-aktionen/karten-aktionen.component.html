@@ -14,7 +14,7 @@
                 [attr.aria-label]="beschriftung('Hilfreich', zahlHilfreich)"
                 matTooltip="Hilfreich" matTooltipPosition="above"
                 (click)="toggleLike()">
-            <mat-icon class="stimm-icon" aria-hidden="true">thumb_up_off_alt</mat-icon>
+            <mat-icon aria-hidden="true">thumb_up_off_alt</mat-icon>
         </button>
         <!-- Zaehler (#427): Summe der Stimmen anderer, erst ab der Mindestzahl; vorgelesen steht er im Namen des Knopfs -->
         <span class="stimm-zahl" *ngIf="zahlHilfreich !== null" aria-hidden="true">{{ zahlHilfreich }}</span>
@@ -26,7 +26,7 @@
                 [attr.aria-label]="beschriftung('Nicht hilfreich', zahlNichtHilfreich)"
                 matTooltip="Nicht hilfreich" matTooltipPosition="above"
                 (click)="toggleDislike()">
-            <mat-icon class="stimm-icon" aria-hidden="true">thumb_down_off_alt</mat-icon>
+            <mat-icon aria-hidden="true">thumb_down_off_alt</mat-icon>
         </button>
         <span class="stimm-zahl" *ngIf="zahlNichtHilfreich !== null" aria-hidden="true">{{ zahlNichtHilfreich }}</span>
     </div>
