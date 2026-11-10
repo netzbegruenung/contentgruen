@@ -54,7 +54,7 @@
     <p class="neu-anlegen-satz">Schreib selbst einen Kommentar zu dieser Aussage.</p>
     <div class="neu-anlegen-knopf">
         <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-            <mat-icon>add</mat-icon> Selbst beantworten
+            <mat-icon>add</mat-icon> Antworten
         </button>
     </div>
 </ng-template>
@@ -63,7 +63,7 @@
 <div class="mobile-results-wrapper"
      *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
 
-    <!-- Mobil in einer Zeile mit "Selbst beantworten", damit der Kopf nicht waechst (#642) -->
+    <!-- Mobil in einer Zeile mit "Antworten", damit der Kopf nicht waechst (#642) -->
     <div class="mobile-gefunden-zu gefunden-zu" *ngIf="hatTreffer && erkannt as aussage">
         <p class="gefunden-zu-satz">Gefunden zu: <em class="gefunden-zu-aussage">„{{ aussage.text }}“</em></p>
     </div>
@@ -72,7 +72,7 @@
     <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
         <button *ngIf="erkannt && andereAussagen > 0" type="button" class="ergaenzen-link nicht-gemeint" (click)="zuAnderenAussagen()">Nicht gemeint?</button>
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
-            Selbst beantworten
+            Antworten
         </button>
     </div>
 
@@ -166,7 +166,7 @@
                 <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu dieser Aussage.</p>
                 <div class="mobile-action-buttons">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                        <mat-icon>add</mat-icon> Selbst beantworten
+                        <mat-icon>add</mat-icon> Antworten
                     </button>
                     <button mat-stroked-button (click)="navigateToContribute('generictext')">
                         <mat-icon>add</mat-icon> Hintergrundinfo hinzufügen
@@ -190,7 +190,7 @@
                 <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu dieser Aussage.</p>
                 <div class="action-buttons-top">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                        <mat-icon>add</mat-icon> Selbst beantworten
+                        <mat-icon>add</mat-icon> Antworten
                     </button>
                     <button mat-stroked-button (click)="navigateToContribute('generictext')">
                         📄 Hintergrundinfo hinzufügen

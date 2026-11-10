@@ -45,7 +45,7 @@ export function rueckkehrzielLoeschen(): void {
 
 /**
  * Der Satz über der Login-Auswahl, der sagt, wozu die Anmeldung nötig ist (#600): nur für
- * die Formulare, die auf eine Aussage antworten, also das Ziel von „Selbst beantworten“.
+ * die Formulare, die auf eine Aussage antworten, also das Ziel von „Antworten“.
  * Für andere Ziele, auch nach Klick auf „Anmelden“ im Kopf, steht kein Satz.
  */
 export function anmeldegrund(ziel: string): string | null {

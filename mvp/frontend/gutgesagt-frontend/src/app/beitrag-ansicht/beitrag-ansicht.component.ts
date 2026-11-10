@@ -17,6 +17,7 @@ import { AussageKurz, ContentService, WeitereAntwort } from '../services/content
 import { BeitragKontextComponent } from './beitrag-kontext.component';
 import { LoggingService } from '../services/logging.service';
 import { ROUTES } from '../shared/constants/app.constants';
+import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../shared/beitrags-link';
 
 type Zustand = 'laedt' | 'da' | 'nichtDa' | 'stoerung';
 
@@ -30,13 +31,6 @@ const OHNE_KONTEXT: Kontext = { aussage: null, weitere: [] };
 
 export const NICHT_VERFUEGBAR = 'Dieser Beitrag ist nicht verfügbar.';
 export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
-export const LINK_KOPIERT = 'Link kopiert.';
-export const LINK_NICHT_KOPIERT = 'Kopieren hat nicht geklappt.';
-
-/** Die Adresse, unter der andere den Beitrag oeffnen (#603), ohne Query und Anker. */
-export function beitragsLink(id: string, origin: string = window.location.origin): string {
-  return `${origin}${ROUTES.BEITRAG}/${encodeURIComponent(id)}`;
-}
 
 /**
  * Ein Beitrag unter seiner eigenen Adresse, /beitrag/:id (#300), fuer alle

@@ -3,7 +3,8 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLinkActive } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { AppComponent } from './app.component';
@@ -146,8 +147,39 @@ describe('AppComponent - Desktop-Kopf', () => {
     });
   });
 
+  describe('auf der Anmeldeseite (#645)', () => {
+    function aufSeite(url: string) {
+      (Object.getOwnPropertyDescriptor(router, 'url')!.get as jasmine.Spy).and.returnValue(url);
+      starten(BESUCHER);
+    }
+
+    function anmeldenKnopf(): Element | undefined {
+      return Array.from(kopf().querySelectorAll('button')).find((e) => e.textContent?.trim() === 'Anmelden');
+    }
+
+    it('blendet den Kopfknopf "Anmelden" auf /login und /login/managed aus', () => {
+      aufSeite('/login/managed?returnUrl=%2Fcontribute');
+      expect(anmeldenKnopf()).toBeUndefined();
+      expect(kopf().querySelector('h1')!.textContent!.trim()).toBe('Anmelden');
+    });
+
+    it('zeigt ihn auf anderen Seiten weiter', () => {
+      aufSeite('/hier-fehlt-eine-antwort');
+      expect(anmeldenKnopf()).toBeDefined();
+    });
+  });
+
   describe('Angemeldet', () => {
     beforeEach(() => starten(ANGEMELDET));
+
+    it('markiert den Kopf-Link "Hier fehlt eine Antwort" auf seiner Seite mit aria-current (#645)', () => {
+      const link = fixture.debugElement
+        .queryAll(By.css('a.header-link'))
+        .find((e) => (e.nativeElement as HTMLElement).textContent?.includes('Hier fehlt eine Antwort'))!;
+      const aktiv = link.injector.get(RouterLinkActive);
+
+      expect(aktiv.ariaCurrentWhenActive).toBe('page');
+    });
 
     function profilmenue(): HTMLElement[] {
       return Array.from(document.querySelectorAll('.profilmenue-eintrag')) as HTMLElement[];

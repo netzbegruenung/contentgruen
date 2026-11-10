@@ -7,3 +7,4 @@ rohling -> Einwurf
 duplikat -> Dublette
 grün-intern -> (entfällt: alles ist für alle sichtbar)
 entwurfssatz -> Satz
+selbst beantworten -> Antworten

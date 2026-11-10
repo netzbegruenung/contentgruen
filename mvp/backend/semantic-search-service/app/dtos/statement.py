@@ -174,7 +174,7 @@ class ThemenTestsetResponse(BaseModel):
 
 class UnbeantworteteAussageDto(BaseModel):
     """
-    Eine unbeantwortete Aussage: ID (fuer "Selbst beantworten") und Text, dazu wie
+    Eine unbeantwortete Aussage: ID (fuer "Antworten") und Text, dazu wie
     viele Personen ohne Treffer danach gesucht haben (0: nur ohne Kommentar); wie
     oft gesucht wurde, sehen nur Admins.
     """

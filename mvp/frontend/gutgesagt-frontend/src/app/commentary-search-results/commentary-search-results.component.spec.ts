@@ -87,7 +87,7 @@ describe('CommentarySearchResultsComponent: Klick auf Hinzufuegen', () => {
   }));
 });
 
-/** Ein Begriff fuer dieselbe Handlung (#599): oben nur ein Link "Selbst beantworten". */
+/** Ein Begriff fuer dieselbe Handlung (#599): oben nur ein Link "Antworten". */
 describe('CommentarySearchResultsComponent: Beschriftung', () => {
   let fixture: ComponentFixture<CommentarySearchResultsComponent>;
 
@@ -112,13 +112,13 @@ describe('CommentarySearchResultsComponent: Beschriftung', () => {
   });
 
   for (const [fall, anzahl, minimal] of [['mit Treffern', 2, false], ['ohne Kommentare, mit anderen Treffern', 0, true]] as const) {
-    it(`zeigt ${fall} einen Link "Selbst beantworten" und keinen Knopf`, () => {
+    it(`zeigt ${fall} einen Link "Antworten" und keinen Knopf`, () => {
       fixture.componentRef.setInput('searchResponse', antwort(anzahl));
       fixture.componentRef.setInput('showMinimalEmptyState', minimal);
       fixture.detectChanges();
 
       const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('button'));
-      expect(knoepfe.map((k) => k.textContent!.trim())).toEqual(['Selbst beantworten']);
+      expect(knoepfe.map((k) => k.textContent!.trim())).toEqual(['Antworten']);
       expect(knoepfe[0].classList).toContain('ergaenzen-link');
       expect(fixture.nativeElement.textContent).not.toContain('Fertigen Kommentar hinzufügen');
     });

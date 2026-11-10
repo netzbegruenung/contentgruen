@@ -154,13 +154,19 @@ describe('SiegelComponent', () => {
     }
   });
 
-  it('lässt Winkel, Farbe und Screenreader-Text der Güte von Glanz und Krone unberührt', () => {
+  it('lässt Winkel, Farbe und den Text der Güte von Glanz und Krone unberührt; Glanz und Krone hängen nur an (#351)', () => {
     for (const guete of [null, 3, 6, 8, 10]) {
       zeige(guete, { glanz: false, krone: false });
-      const ohne = [winkel(), farbe(), svg().getAttribute('aria-label')];
+      const ohne = [winkel(), farbe()];
+      const text = svg().getAttribute('aria-label');
       zeige(guete, { glanz: true, krone: true });
-      expect([winkel(), farbe(), svg().getAttribute('aria-label')]).withContext(`Güte ${guete}`).toEqual(ohne);
+      expect([winkel(), farbe()]).withContext(`Güte ${guete}`).toEqual(ohne);
+      expect(svg().getAttribute('aria-label')).withContext(`Güte ${guete}`).toBe(`${text}, mit Glanz und Krone`);
     }
+    zeige(6, { glanz: true, krone: false });
+    expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz');
+    zeige(6, { glanz: false, krone: true });
+    expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Krone');
   });
 
   it('legt das Sichtfeld eng an die Zeichnung, die Krone ragt darüber hinaus', () => {
