@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from domain.models.content_type import ContentType
+from services.content.statement_service import StatementService
 from tests.regression import suche_messen
 from tests.regression.aehnlichkeit_messen import VORSCHLAG_SCHWELLE
 from tests.regression.suche_messen import (
@@ -24,9 +25,12 @@ from tests.regression.suche_messen import (
     AEHNLICHE_ANZAHL,
     BESTAND_PASST_NICHT,
     HINWEIS,
+    RUECKFALL_OHNE_BESTAETIGER,
+    RUECKFALL_SCHWELLE,
     AehnlicheAussagen,
     AngezeigterBeitrag,
     FallMessung,
+    NliZaehler,
     _Erwartung,
     aehnliche_aussagen,
     als_json,
@@ -35,8 +39,18 @@ from tests.regression.suche_messen import (
     einordnen,
     faelle_text,
     je_phaenomen,
+    rueckfaelle,
     tabellen,
     zerfaserung,
+    zuordnung_text,
+    zuordnung_weg,
+)
+from tests.unit.services.test_nli_stufe import (
+    DIESELBE as NLI_DIESELBE,
+    KNAPP as NLI_KNAPP,
+    WIDERSPRUCH as NLI_WIDERSPRUCH,
+    AttrappenNli,
+    _treffer as _nli_treffer,
 )
 from tests.regression.suche_testset import (
     FAELLE,
@@ -609,6 +623,186 @@ class TestErwartung:
         assert erwartung.aussage_ids == frozenset({f"id-{A}"})
         assert erwartung.beitrag_ids == frozenset({"k"})
         assert erwartung.fehlt == ("B",)
+
+
+class TestWegUndRueckfall:
+    """Die Ausgabe nennt, womit die Zuordnung gemessen wurde (NLI-Stufe, Bestaetiger),
+    und in welchen Faellen vorhandene_finden ohne NLI-Urteil entschied: Zwei Messungen
+    am selben Bestand sind sonst nicht vergleichbar (Zerfaserung 15 gegen 26)."""
+
+    @pytest.mark.parametrize(
+        "modus, schalter, bestaetiger",
+        [
+            ("an", True, True),
+            ("an", False, False),
+            ("schatten", True, False),
+            ("aus", True, False),
+        ],
+    )
+    def test_weg_wie_der_statement_service(
+        self, test_settings, repository_factory, modus, schalter, bestaetiger
+    ):
+        """Bestaetiger "an" heisst: Der StatementService der Messung hat einen, und
+        vorhandene_finden fragt ihn (nur bei "an"). Gegen den echten Konstruktor, damit
+        beide Regeln gleich bleiben (laedt kein Modell)."""
+        settings = test_settings.model_copy(
+            update={"dieselbe_aussage_nli": modus, "nli_bestaetiger": schalter}
+        )
+        service = StatementService(settings, repository_factory=repository_factory)
+
+        weg = zuordnung_weg(settings)
+
+        assert weg == {"dieselbe_aussage_nli": modus, "nli_bestaetiger": bestaetiger}
+        assert weg["nli_bestaetiger"] == (
+            service._bestaetiger is not None and modus == "an"
+        )
+        text = zuordnung_text(weg)
+        if modus == "an":
+            assert text.endswith(f"Bestätiger {'an' if bestaetiger else 'aus'}.")
+        else:
+            assert "es gilt die Schwelle" in text and "Bestätiger aus" not in text
+
+    def test_umgebung_nennt_den_weg(self):
+        assert set(zuordnung_weg()) <= set(suche_messen.umgebung())
+
+    def test_tabellen_nennen_weg_und_rueckfaelle(self):
+        weg = {"dieselbe_aussage_nli": "an", "nli_bestaetiger": True}
+        messungen = [
+            _m(_fall("X01", dieselbe=True), {0.8: ()}, landet=False)._replace(
+                rueckfall=RUECKFALL_SCHWELLE
+            ),
+            _m(_fall("X02", dieselbe=True), {0.8: ()}, landet=True)._replace(
+                rueckfall=RUECKFALL_OHNE_BESTAETIGER
+            ),
+            _m(_fall("X03", dieselbe=True), {0.8: ()}, landet=True),
+        ]
+        with patch.object(suche_messen, "zuordnung_weg", return_value=weg):
+            text = tabellen(messungen, (0.8,), aktuell=0.8)
+
+        assert zuordnung_text(weg) in text.split("\n\n")[1]
+        assert rueckfaelle(messungen) == suche_messen.Rueckfaelle(3, ("X01",), ("X02",))
+        assert "Ohne NLI-Urteil entschieden (von 3 Prüfungen):" in text
+        assert "- 1 auf die Schwelle zurückgefallen" in text
+        assert text.split("- 1 auf die Schwelle")[1].split("\n")[0].endswith("X01")
+        assert "- 1 ohne Bestätiger" in text
+        with patch.object(suche_messen, "schwelle_heute", return_value=0.8):
+            daten = als_json(messungen, (0.8,))
+        assert daten["rueckfaelle"]["schwelle"] == ("X01",)
+        assert [f["rueckfall"] for f in daten["faelle"]] == [
+            RUECKFALL_SCHWELLE,
+            RUECKFALL_OHNE_BESTAETIGER,
+            "",
+        ]
+
+    def test_ohne_rueckfall_keine_zeile(self):
+        text = tabellen(
+            [_m(_fall("X01", dieselbe=True), {0.8: ()}, landet=True)],
+            (0.8,),
+            aktuell=0.8,
+        )
+        assert "Ohne NLI-Urteil" not in text
+
+    @staticmethod
+    def _service(test_settings, repository_factory, nli, bestaetiger=None):
+        settings = test_settings.model_copy(update={"dieselbe_aussage_nli": "an"})
+        service = StatementService(
+            settings,
+            repository_factory=repository_factory,
+            nli=nli,
+            bestaetiger=bestaetiger,
+        )
+        kandidat = _nli_treffer("Windräder töten Vögel", 0.93)
+        service._repository.finde_normalisiert_gleich = AsyncMock(return_value=None)
+        service._repository.search = AsyncMock(return_value=[kandidat])
+        return service
+
+    @pytest.mark.parametrize(
+        "erstes, zweites, rueckfall",
+        [
+            (None, None, RUECKFALL_SCHWELLE),
+            (NLI_KNAPP, None, RUECKFALL_OHNE_BESTAETIGER),
+            (NLI_KNAPP, NLI_DIESELBE, ""),
+            # Kein unsicheres Band: Der (belegte) Bestaetiger wird nie gefragt.
+            (NLI_WIDERSPRUCH, None, ""),
+        ],
+        ids=[
+            "erstes-belegt",
+            "bestaetiger-belegt",
+            "beide-urteilen",
+            "ohne-band-kein-bestaetiger",
+        ],
+    )
+    def test_zaehler_erkennt_den_rueckfall_im_statement_service(
+        self, test_settings, repository_factory, erstes, zweites, rueckfall
+    ):
+        """Gegen den echten StatementService: Ein Modell ohne Urteil (None, wie bei
+        belegter Sperre nach DIESELBE_WARTET_HOECHSTENS) ist ein Rueckfall; das
+        Ergebnis von vorhandene_finden aendert der Zaehler nicht."""
+
+        def modell(urteil):
+            return AttrappenNli(
+                {"Windräder töten Vögel": urteil}, verfuegbar=urteil is not None
+            )
+
+        service = self._service(
+            test_settings, repository_factory, modell(erstes), modell(zweites)
+        )
+        ohne_zaehler = self._service(
+            test_settings, repository_factory, modell(erstes), modell(zweites)
+        )
+        ohne_zaehler._repository.search = service._repository.search
+        zaehler = NliZaehler.einsetzen(service)
+
+        vorher = zaehler.stand()
+        gefunden = asyncio.run(service.vorhandene_finden("Windkraft bringt Vögel um"))
+
+        assert zaehler.rueckfall_seit(vorher) == rueckfall
+        assert gefunden == asyncio.run(
+            ohne_zaehler.vorhandene_finden("Windkraft bringt Vögel um")
+        )
+
+    def test_ohne_modelle_kein_zaehler(self, test_settings, repository_factory):
+        settings = test_settings.model_copy(update={"dieselbe_aussage_nli": "aus"})
+        service = StatementService(settings, repository_factory=repository_factory)
+
+        zaehler = NliZaehler.einsetzen(service)
+
+        assert zaehler == NliZaehler(None, None)
+        assert zaehler.rueckfall_seit(zaehler.stand()) == ""
+
+    def test_fall_messen_traegt_den_rueckfall_ein(self):
+        fall = _fall(dieselbe=True)
+        aussagen = {A: SimpleNamespace(id="id-A", replysuggestions=[])}
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        nli = AttrappenNli(verfuegbar=False)
+
+        async def vorhandene_finden(_text):
+            await dienste.statement_service._nli.urteile([("a", "b")])
+            return None
+
+        dienste = SimpleNamespace(
+            statement_service=SimpleNamespace(
+                _nli=nli,
+                _bestaetiger=None,
+                search_filtered=AsyncMock(return_value=[]),
+                vorhandene_finden=vorhandene_finden,
+            ),
+            specs=[],
+            reference_service=None,
+        )
+        dienste.zaehler = NliZaehler.einsetzen(dienste.statement_service)
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand), patch(
+            "api.v1.search.aussagetreffer_finden",
+            AsyncMock(return_value=([], None)),
+        ), patch("api.v1.search.treffer_sammeln", AsyncMock()), patch(
+            "services.search.search_orchestrator.SearchOrchestrator"
+        ), patch.object(
+            suche_messen, "angezeigte_beitraege", return_value=()
+        ):
+            messung = asyncio.run(suche_messen.fall_messen(dienste, fall, (0.8,)))
+
+        assert messung.landet_auf_erwarteter is False
+        assert messung.rueckfall == RUECKFALL_SCHWELLE
 
 
 class TestDoku:
