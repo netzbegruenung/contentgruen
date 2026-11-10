@@ -481,6 +481,20 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
     });
 
+    it('meldet "Erfolgreich kopiert!" ohne Luecke', () => {
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+    });
+
+    it('erinnert mit Platzhalter ans Ausfuellen der Luecke (#640, R38)', () => {
+      component.kopierText = 'Gut. [Hier ein eigenes Erlebnis: …] Ende.';
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
+    });
+
     it('oeffnet den Melde-Dialog mit ID und Typ', () => {
       const dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
 
@@ -519,6 +533,35 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.beitragOeffnen();
 
       expect(router.navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Link kopieren (#640, R48)', () => {
+    function menueEintraege(): HTMLElement[] {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+      return Array.from(document.querySelectorAll<HTMLElement>('.mat-mdc-menu-panel .mat-mdc-menu-item'));
+    }
+
+    it('steht ganz oben im Menue und kopiert die Adresse des Beitrags, ohne als Nutzung zu zaehlen', () => {
+      const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+      const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      clipboard.copy.and.returnValue(true);
+
+      const erster = menueEintraege()[0];
+      expect(erster.classList).toContain('link-kopieren');
+      erster.click();
+
+      expect(clipboard.copy).toHaveBeenCalledWith(`${window.location.origin}/beitrag/${INHALT_ID}`);
+      expect(snackBar.open).toHaveBeenCalledWith('Link kopiert.', undefined, { duration: 3000 });
+      expect(usage.trackContentUsage).not.toHaveBeenCalled();
+    });
+
+    it('fehlt auf der Beitragsseite selbst', () => {
+      fixture.componentRef.setInput('ansichtVerlinkt', false);
+
+      expect(menueEintraege().some((e) => e.classList.contains('link-kopieren'))).toBeFalse();
     });
   });
 
