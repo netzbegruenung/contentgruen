@@ -93,7 +93,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   vorbefuellung: Vorbefuellung | null = null;
   /** Aus der Suche geoeffnet (?aussage= oder ?searchQuery=); dann mit der Anfrage, soweit bekannt. */
   private ausSuche: { anfrage: string | null } | null = null;
-  /** Ueber "Selbst beantworten" aus "Hier fehlt eine Antwort" geoeffnet (?von=). */
+  /** Ueber "Antworten" aus "Hier fehlt eine Antwort" geoeffnet (?von=). */
   private ausHierFehltEineAntwort = false;
 
   constructor(

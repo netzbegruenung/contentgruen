@@ -111,6 +111,18 @@ describe('EinwerfenComponent', () => {
       expect(kopf.textContent).toContain(FANGKORB_BESCHREIBUNG);
     });
 
+    it('führt mit einem Text-Link unter dem Formular in den Fangkorb; "Einwerfen" bleibt der einzige Knopf (#645)', () => {
+      const seite: HTMLElement = fixture.nativeElement;
+      const link = seite.querySelector('a.fangkorb-link') as HTMLAnchorElement;
+
+      expect(link.textContent?.trim()).toContain('Fangkorb ansehen');
+      expect(link.getAttribute('href')).toBe('/fangkorb');
+      expect(link.closest('form')).toBeNull();
+      const knoepfe = Array.from(seite.querySelectorAll('.einwurf-aktionen button'));
+      expect(knoepfe.length).toBe(1);
+      expect(knoepfe[0].textContent).toContain('Einwerfen');
+    });
+
     it('laesst das Hinweis-Feld mit dem Text wachsen, von zwei bis acht Zeilen', () => {
       const feld: HTMLTextAreaElement = fixture.nativeElement.querySelector('#einwurf-hinweis');
 

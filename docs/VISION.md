@@ -108,7 +108,7 @@ Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antri
 ## Suche und Struktur
 
 - **Testset vor Stellschrauben.** Ein kleines Set aus Suchanfragen und erwarteten Treffern misst, wie oft die Suche richtig und falsch trifft; danach werden Schwellen eingestellt. Dasselbe Set ist das Tor für Roadmap-Stufe 3.
-- **Lieber keine Antwort als eine falsche.** Bei null Treffern zeigt die Seite höchstens drei ähnliche Aussagen, markiert als „passt vielleicht“, dazu wie viele Personen schon danach gesucht haben, „Selbst beantworten“ und den Weg zu „Hier fehlt eine Antwort“.
+- **Lieber keine Antwort als eine falsche.** Bei null Treffern zeigt die Seite höchstens drei ähnliche Aussagen, markiert als „passt vielleicht“, dazu wie viele Personen schon danach gesucht haben, „Antworten“ und den Weg zu „Hier fehlt eine Antwort“.
 - **Themen** aus einer festen, kurzen Liste (per PR gepflegt), ein bis zwei je Aussage; keine freien Tags. Ab Roadmap-Stufe 3 schlägt eine Automatik Themen vor.
 - Die Ergebnisseite erklärt in je einer Zeile, was ein Kommentar und was eine Hintergrundinfo ist. Keine Autovervollständigung: Die Suche ist auf ganze Sätze ausgelegt.
 
