@@ -76,6 +76,8 @@ export const PAGE_TITLES = {
   IMPRESSUM: 'Impressum',
   DATENSCHUTZ: 'Datenschutz',
   NUTZUNGSBEDINGUNGEN: 'Nutzungsbedingungen',
+  // Wie der Menuepunkt (DATENSCHUTZ_EINSTELLUNGEN in fangkorb-texte.ts, #644)
+  EINWILLIGUNG: 'Datenschutz-Einstellungen',
   UEBER: 'Über Gut gesagt',
   EINLADUNG: 'Einladung',
   ADMIN: 'Admin'

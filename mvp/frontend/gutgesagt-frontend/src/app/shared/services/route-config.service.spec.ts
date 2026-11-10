@@ -55,6 +55,7 @@ describe('RouteConfigService', () => {
       '/impressum': 'Impressum',
       '/datenschutz': 'Datenschutz',
       '/nutzungsbedingungen': 'Nutzungsbedingungen',
+      '/einwilligung': 'Datenschutz-Einstellungen',
       '/about': 'Über Gut gesagt',
       '/einladung?code=abc': 'Einladung',
       '/admin/dashboard': 'Admin',

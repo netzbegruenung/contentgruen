@@ -572,7 +572,7 @@ describe('DatenschutzComponent', () => {
     it('Art.-9-Einwilligung: Widerruf im Profilmenü, Folgen und Dauer bis zur Kontolöschung (#557)', () => {
       const text = abschnitt('Rückschlüsse auf deine politische Haltung');
 
-      expect(text).toContain('Widerrufen kannst du jederzeit im Profilmenü unter „Einwilligung“');
+      expect(text).toContain('Widerrufen kannst du jederzeit im Profilmenü unter „Datenschutz-Einstellungen“');
       expect(text).toContain('Was du schon gespeichert hast, bleibt, bis du es löschst oder dein Konto löschen lässt');
       expect(text).toContain('was bis zum Widerruf geschehen ist, bleibt rechtmäßig');
       expect(text).toContain('Deine Einwilligungen, auch widerrufene, bleiben bis zur Löschung deines Kontos');

@@ -7,7 +7,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { UserInfo } from '../../../auth/auth.service';
-import { EINWERFEN_TITEL, MENUE_ICONS } from '../../fangkorb-texte';
+import { DATENSCHUTZ_EINSTELLUNGEN, EINWERFEN_TITEL, MENUE_ICONS } from '../../fangkorb-texte';
 import { ROUTES } from '../../constants/app.constants';
 import { RundgangId, rundgangBeschriftung } from '../../../rundgang/rundgang-daten';
 
@@ -26,6 +26,7 @@ import { RundgangId, rundgangBeschriftung } from '../../../rundgang/rundgang-dat
 })
 export class MobileMenuComponent {
   readonly menueIcons = MENUE_ICONS;
+  readonly datenschutzEinstellungen = DATENSCHUTZ_EINSTELLUNGEN;
   readonly pfade = ROUTES;
   readonly antwortFinden = rundgangBeschriftung('antwort-finden');
   readonly selbstBeitragen = rundgangBeschriftung('mitmachen');

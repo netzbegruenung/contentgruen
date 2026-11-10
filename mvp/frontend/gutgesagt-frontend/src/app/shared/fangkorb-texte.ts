@@ -45,6 +45,14 @@ export const MENUE_ICONS = {
 } as const;
 
 /**
+ * Wie der Menuepunkt zur Seite /einwilligung heisst, in Profilmenue, Menue und Kopf der
+ * Seite: Die Person stellt dort ein, was sie erlaubt; „Einwilligung“ allein war
+ * Fachsprache (#644). Der Art.-9-Wortlaut und die Datenschutzerklaerung nennen ihn als
+ * Widerrufsweg und muessen mitziehen (docs/ART9_EINWILLIGUNG.md).
+ */
+export const DATENSCHUTZ_EINSTELLUNGEN = 'Datenschutz-Einstellungen';
+
+/**
  * Fuer Angemeldete, solange die Plattform jung ist: Wer jetzt etwas eintraegt,
  * setzt die Massstaebe mit. Steht unter dem Fangkorb-Kopf und auf der
  * Beitragen-Seite unter den Typen (#620).

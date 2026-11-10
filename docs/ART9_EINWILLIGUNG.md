@@ -47,7 +47,7 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   `tests/unit/api/test_art9_einwilligung_api.py`). Die Zustimmung zur Sichtbarkeit hat
   eigene Wortlaute mit Kennung (`domain/abzeichen_sichtbarkeit.py`, aktuell `2026-11-09-b`:
   kurze Frage, Hinweise unter „Mehr dazu“); wie hier bleibt jede frühere Kennung bekannt.
-- **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Einwilligung“). Die Zeile bekommt
+- **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Datenschutz-Einstellungen“, bis #644 „Einwilligung“; Seitentitel ebenso). Die Zeile bekommt
   den Zeitpunkt des Widerrufs und bleibt stehen, als Nachweis, dass die Verarbeitung bis dahin
   auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Schon Gespeichertes
   bleibt, bis die Person es löscht oder ihr Konto löschen lässt (Löschkonzept). Eine neue
@@ -75,7 +75,14 @@ Stand-Datum; ein zweiter Wortlaut vom selben Tag bekommt ein Suffix (`-b`, `-c` 
    Produktiv-Deploy.
 
 Eine Einwilligung zu einem älteren Wortlaut gilt weiter. Ob ein geänderter Wortlaut eine neue
-Einwilligung verlangt, ist beim Ändern zu entscheiden; heute fragt die App nicht erneut.
+Einwilligung verlangt, ist beim Ändern zu entscheiden; heute fragt die App nicht erneut: Das
+Backend meldet `eingewilligt`, sobald eine geltende Zeile da ist, gleich zu welcher Kennung, und
+das Frontend führt nur ohne Einwilligung auf `/einwilligung` (Tests
+`test_einwilligung_zum_vorigen_wortlaut_gilt_ohne_neue_frage` und die Spec „laesst in Ruhe, wer
+einem aelteren Wortlaut …“). Eine neue Kennung ohne neue Frage ist richtig, wenn die Änderung
+redaktionell ist: gleiche Zwecke, gleiche Datenarten, gleiche Folgen des Widerrufs, etwa ein
+neuer Name des Menüpunkts (`2026-11-10`, #644; ein Test sichert, dass sich gegenüber
+`2026-11-05-b` nur dieser Name ändert).
 Die Prüfung der Einwilligung (`Art9EinwilligungService.eingewilligt`) unterscheidet heute nicht
 nach Wortlaut: Eine Einwilligung zu `2026-11-05` zählt also auch für Punkte, obwohl erst
 `2026-11-05-b` sie nennt. Das ist vertretbar, weil `2026-11-05` nie produktiv war (#559). Nennt
@@ -131,8 +138,9 @@ Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“
   unverändert, der ganze Wortlaut aufklappbar direkt darunter (#620); den Satz schneidet
   `wortlautErsterSatz` in `art9-einwilligung.service.ts` ab. Ein neuer Wortlaut braucht
   deshalb einen ersten Satz, der für sich die Einwilligung ausdrückt.
-- **Profilmenü:** Der Wortlaut nennt den Widerruf „im Profilmenü unter „Einwilligung““; der
-  Eintrag steht in `mvp/frontend/gutgesagt-frontend/src/app/app.component.html` und
+- **Profilmenü:** Der Wortlaut nennt den Widerruf „im Profilmenü unter
+  „Datenschutz-Einstellungen““ (bis `2026-11-05-b`: „Einwilligung“); der Name steht als
+  `DATENSCHUTZ_EINSTELLUNGEN` in `src/app/shared/fangkorb-texte.ts`, der Eintrag in `mvp/frontend/gutgesagt-frontend/src/app/app.component.html` und
   `mvp/frontend/gutgesagt-frontend/src/app/shared/components/mobile-menu/mobile-menu.html`.
 
 Ohne Änderung zieht die E2E-Anmeldung mit
@@ -144,4 +152,5 @@ Wortlaut vom Backend.
 | Kennung | Stand | gültig |
 |---------|-------|--------|
 | `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | nie produktiv: von `2026-11-05-b` abgelöst, bevor #489 in einem Release war |
-| `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 bis zum Produktiv-Deploy von #644 (Daten nach dem Ausrollen eintragen); wer zugestimmt hat, bleibt eingewilligt |
+| `2026-11-10` | redaktionell (#644): wortgleich mit `2026-11-05-b` bis auf den Widerrufsweg „im Profilmenü unter „Datenschutz-Einstellungen““ statt „Einwilligung“, weil der Menüpunkt umbenannt ist; gleiche Zwecke, deshalb keine neue Frage | seit dem Produktiv-Deploy von #644 (Datum nach dem Ausrollen eintragen) |

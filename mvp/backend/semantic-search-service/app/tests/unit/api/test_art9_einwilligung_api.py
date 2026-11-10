@@ -77,6 +77,18 @@ class TestStand:
         assert stand["wortlaut"] == "2026-11-05"
         assert stand["eingewilligt_am"].startswith("2026-11-05T09:30")
 
+    def test_einwilligung_zum_vorigen_wortlaut_gilt_ohne_neue_frage(
+        self, client, repository
+    ):
+        """#644: Wer 2026-11-05-b zugestimmt hat, bleibt eingewilligt; das Frontend fragt nur ohne Einwilligung."""
+        repository.lesen.return_value = Art9Einwilligung("2026-11-05-b", AM, None)
+
+        stand = client.get(BASIS, headers=PERSON).json()
+
+        assert stand["eingewilligt"] is True
+        assert stand["wortlaut"] == "2026-11-05-b"
+        assert stand["aktueller_wortlaut"]["kennung"] == "2026-11-10"
+
     def test_get_widerrufen_nicht_eingewilligt_wortlaut_bleibt(
         self, client, repository
     ):
@@ -91,10 +103,10 @@ class TestStand:
 
 class TestWortlaute:
     def test_aktueller_wortlaut_nennt_punkte_und_muster_hinweise(self):
-        """Wortlaut vom 05.11.2026, Variante B (#559): die Zwecke aus DSFA Abschnitt 4."""
+        """Wortlaut vom 10.11.2026 (#644): die Zwecke aus DSFA Abschnitt 4 wie 2026-11-05-b."""
         text = WORTLAUTE[AKTUELLER_WORTLAUT]
 
-        assert AKTUELLER_WORTLAUT == "2026-11-05-b"
+        assert AKTUELLER_WORTLAUT == "2026-11-10"
         assert (
             "ein Punktestand, ein Level, Quests und Meilenstein-Abzeichen, die nur ich "
             "sehe, solange ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen"
@@ -102,10 +114,29 @@ class TestWortlaute:
         assert "neue Aktionen, die ein höheres Level freischaltet" in text
         assert "wenn zwei Konten sich auffällig oft gegenseitig nutzen" in text
 
+    def test_aktueller_wortlaut_nennt_den_menuepunkt_datenschutz_einstellungen(self):
+        """Der Widerrufsweg heisst wie der Menuepunkt (#644)."""
+        assert (
+            "im Profilmenü unter „Datenschutz-Einstellungen“ widerrufen"
+            in WORTLAUTE[AKTUELLER_WORTLAUT]
+        )
+
+    def test_neuer_wortlaut_aendert_nur_den_namen_des_widerrufswegs(self):
+        """
+        Redaktionell (#644): 2026-11-10 ist 2026-11-05-b bis auf den Namen des
+        Menuepunkts. Deshalb fragt die App niemanden neu; aendert sich mehr, gilt das
+        nicht mehr (docs/ART9_EINWILLIGUNG.md, „Wortlaut ändern“).
+        """
+        vorher = WORTLAUTE["2026-11-05-b"].replace(
+            "„Einwilligung“", "„Datenschutz-Einstellungen“"
+        )
+        assert WORTLAUTE["2026-11-10"] == vorher
+
     def test_frueherer_wortlaut_bleibt_bekannt(self):
         """Eine gespeicherte Kennung behaelt ihren Text (docs/ART9_EINWILLIGUNG.md)."""
         assert "2026-11-05" in WORTLAUTE
         assert "Punktestand" not in WORTLAUTE["2026-11-05"]
+        assert "„Einwilligung“" in WORTLAUTE["2026-11-05-b"]
 
     def test_kennungen_passen_in_die_spalte(self):
         assert all(len(kennung) <= WORTLAUT_KENNUNG_MAX for kennung in WORTLAUTE)

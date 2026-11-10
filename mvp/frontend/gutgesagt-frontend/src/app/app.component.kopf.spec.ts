@@ -182,7 +182,7 @@ describe('AppComponent - Desktop-Kopf', () => {
         jasmine.stringContaining('Fangkorb'),
         jasmine.stringContaining('Meine Beiträge'),
         jasmine.stringContaining('Profilbild wählen'),
-        jasmine.stringContaining('Einwilligung'),
+        jasmine.stringContaining('Datenschutz-Einstellungen'),
         jasmine.stringContaining('Abmelden'),
       ]);
       expect(navigation.navigateToMeineBeitraege).not.toHaveBeenCalled();
@@ -230,7 +230,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      eintrag('Einwilligung').click();
+      eintrag('Datenschutz-Einstellungen').click();
 
       expect(router.navigate).toHaveBeenCalledWith(['/einwilligung']);
     });

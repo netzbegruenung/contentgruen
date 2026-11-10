@@ -67,7 +67,7 @@
         <a mat-button routerLink="/einwilligung" (click)="close()" class="mobile-menu-item mobile-menu-einwilligung"
            [class.aktiv]="aktiv('/einwilligung')" [attr.aria-current]="aktiv('/einwilligung') ? 'page' : null">
             <mat-icon>fact_check</mat-icon>
-            Einwilligung
+            {{ datenschutzEinstellungen }}
         </a>
         <button mat-button (click)="onLogoutClick()" class="mobile-menu-item">
             <mat-icon>logout</mat-icon>
