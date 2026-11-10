@@ -45,10 +45,13 @@ from tests.regression.suche_messen import (
     zuordnung_text,
     zuordnung_weg,
 )
-from tests.unit.services.test_nli_stufe import DIESELBE as NLI_DIESELBE
-from tests.unit.services.test_nli_stufe import KNAPP as NLI_KNAPP
-from tests.unit.services.test_nli_stufe import AttrappenNli
-from tests.unit.services.test_nli_stufe import _treffer as _nli_treffer
+from tests.unit.services.test_nli_stufe import (
+    DIESELBE as NLI_DIESELBE,
+    KNAPP as NLI_KNAPP,
+    WIDERSPRUCH as NLI_WIDERSPRUCH,
+    AttrappenNli,
+    _treffer as _nli_treffer,
+)
 from tests.regression.suche_testset import (
     FAELLE,
     FORMEN,
@@ -632,16 +635,16 @@ class TestWegUndRueckfall:
         [
             ("an", True, True),
             ("an", False, False),
-            ("schatten", True, True),
+            ("schatten", True, False),
             ("aus", True, False),
         ],
     )
     def test_weg_wie_der_statement_service(
         self, test_settings, repository_factory, modus, schalter, bestaetiger
     ):
-        """Bestaetiger "an" heisst: Der StatementService der Messung hat einen. Gegen
-        den echten Konstruktor, damit beide Regeln gleich bleiben (laedt kein Modell).
-        """
+        """Bestaetiger "an" heisst: Der StatementService der Messung hat einen, und
+        vorhandene_finden fragt ihn (nur bei "an"). Gegen den echten Konstruktor, damit
+        beide Regeln gleich bleiben (laedt kein Modell)."""
         settings = test_settings.model_copy(
             update={"dieselbe_aussage_nli": modus, "nli_bestaetiger": schalter}
         )
@@ -650,11 +653,14 @@ class TestWegUndRueckfall:
         weg = zuordnung_weg(settings)
 
         assert weg == {"dieselbe_aussage_nli": modus, "nli_bestaetiger": bestaetiger}
-        assert weg["nli_bestaetiger"] == (service._bestaetiger is not None)
-        assert zuordnung_text(weg) == (
-            f"Zuordnung (dieselbe Aussage): NLI-Stufe {modus}, "
-            f"Bestätiger {'an' if bestaetiger else 'aus'}."
+        assert weg["nli_bestaetiger"] == (
+            service._bestaetiger is not None and modus == "an"
         )
+        text = zuordnung_text(weg)
+        if modus == "an":
+            assert text.endswith(f"Bestätiger {'an' if bestaetiger else 'aus'}.")
+        else:
+            assert "es gilt die Schwelle" in text and "Bestätiger aus" not in text
 
     def test_umgebung_nennt_den_weg(self):
         assert set(zuordnung_weg()) <= set(suche_messen.umgebung())
@@ -716,8 +722,15 @@ class TestWegUndRueckfall:
             (None, None, RUECKFALL_SCHWELLE),
             (NLI_KNAPP, None, RUECKFALL_OHNE_BESTAETIGER),
             (NLI_KNAPP, NLI_DIESELBE, ""),
+            # Kein unsicheres Band: Der (belegte) Bestaetiger wird nie gefragt.
+            (NLI_WIDERSPRUCH, None, ""),
         ],
-        ids=["erstes-belegt", "bestaetiger-belegt", "beide-urteilen"],
+        ids=[
+            "erstes-belegt",
+            "bestaetiger-belegt",
+            "beide-urteilen",
+            "ohne-band-kein-bestaetiger",
+        ],
     )
     def test_zaehler_erkennt_den_rueckfall_im_statement_service(
         self, test_settings, repository_factory, erstes, zweites, rueckfall

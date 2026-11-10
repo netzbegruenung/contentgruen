@@ -355,7 +355,8 @@ def zuordnung_weg(settings=None) -> dict:
     Der Weg der Pruefung auf dieselbe Aussage, mit dem dieser Prozess misst: der Modus
     der NLI-Stufe und ob der Bestaetiger mitentscheidet. Aus der geladenen Konfiguration
     (core.config.settings, aus der auch der StatementService der Messung entsteht);
-    der Bestaetiger wirkt wie dort nur, wenn die NLI-Stufe nicht aus ist. Die Zerfaserung
+    vorhandene_finden fragt NLI und Bestaetiger nur bei "an"; bei "schatten" und "aus"
+    gilt dort die Schwelle, der Bestaetiger wirkt also nur mit "an". Die Zerfaserung
     haengt davon ab (SUCHTESTSET.md, Zerfaserung).
     """
     if settings is None:
@@ -363,17 +364,20 @@ def zuordnung_weg(settings=None) -> dict:
     modus = settings.dieselbe_aussage_nli
     return {
         "dieselbe_aussage_nli": modus,
-        "nli_bestaetiger": bool(settings.nli_bestaetiger and modus != "aus"),
+        "nli_bestaetiger": bool(settings.nli_bestaetiger and modus == "an"),
     }
 
 
 def zuordnung_text(weg: Optional[dict] = None) -> str:
     weg = zuordnung_weg() if weg is None else weg
+    modus = weg["dieselbe_aussage_nli"]
+    if modus != "an":
+        return (
+            f"Zuordnung (dieselbe Aussage): NLI-Stufe {modus}, es gilt die Schwelle "
+            "(ohne NLI und Bestätiger)."
+        )
     bestaetiger = "an" if weg["nli_bestaetiger"] else "aus"
-    return (
-        f"Zuordnung (dieselbe Aussage): NLI-Stufe {weg['dieselbe_aussage_nli']}, "
-        f"Bestätiger {bestaetiger}."
-    )
+    return f"Zuordnung (dieselbe Aussage): NLI-Stufe an, Bestätiger {bestaetiger}."
 
 
 def _anteil(wert: Optional[float]) -> str:
@@ -443,12 +447,12 @@ def tabellen(
         if r.schwelle:
             zeilen.append(
                 f"- {len(r.schwelle)} auf die Schwelle zurückgefallen, das NLI-Modell "
-                f"war nicht rechtzeitig frei: {', '.join(r.schwelle)}"
+                f"war nicht rechtzeitig frei oder nicht verfügbar: {', '.join(r.schwelle)}"
             )
         if r.ohne_bestaetiger:
             zeilen.append(
                 f"- {len(r.ohne_bestaetiger)} ohne Bestätiger, er war nicht "
-                f"rechtzeitig frei: {', '.join(r.ohne_bestaetiger)}"
+                f"rechtzeitig frei oder nicht verfügbar: {', '.join(r.ohne_bestaetiger)}"
             )
     a = aehnliche_aussagen(messungen)
     zeilen += [

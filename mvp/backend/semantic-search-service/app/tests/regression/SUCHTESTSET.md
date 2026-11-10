@@ -50,14 +50,15 @@ entscheidet. Die Ausgabe nennt es unter der Kopfzeile („Zuordnung (dieselbe Au
 NLI-Stufe …, Bestätiger …“, im JSON unter `umgebung`), aus der Konfiguration des
 Messprozesses. Gemessen wird mit den Variablen des Containers, also wie der Dienst
 entscheidet. Wer den Bestätiger für die Messung abschaltet
-(`SEMANTIC_SEARCH_NLI_BESTAETIGER=false`, spart rund 2,2 GB RAM), misst einen anderen
-Weg und vergleicht mit dessen Soll. Soll am Startbestand (Abschnitte unten):
+(`SEMANTIC_SEARCH_NLI_BESTAETIGER=false`, spart rund 2,2 GB RAM laut `core/config.py`), misst einen anderen
+Weg und vergleicht mit dessen Soll. Soll am Startbestand (lokal gemessen, Abschnitte
+unten):
 
 | NLI-Stufe | Bestätiger | Zerfaserung |
 |---|---|---|
-| schatten oder aus | – | 31/41 (ohne Ersatz) |
-| an | aus | 26/42 (mit Ersatz; ohne Ersatz 25/41) |
-| an | an | 15/41 (ohne Ersatz; mit Ersatz nicht gemessen, erwartet 15 oder 16/42) |
+| schatten oder aus | – (wirkt nicht) | 31/41 (am Entwurf, ohne Ersatz) |
+| an | aus | 26/42 (freigegebener Startbestand, mit Ersatz; ohne Ersatz 25/41) |
+| an | an | 15/41 (am Entwurf, ohne Ersatz; mit Ersatz nicht gemessen, erwartet 15 oder 16/42) |
 
 Die Kontrollmessungen auf Produktion vom 09.11.2026 (15/41) und 10.11.2026 (26/42)
 passen zu den Zeilen „an, an“ und „an, aus“; welcher Weg es war, stand damals nicht in
