@@ -58,7 +58,8 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('nur einen Prüfwert');
       expect(text).toContain('welchen Beitrag du gepostet hast, speichern wir nicht');
-      expect(text).toContain('bis zum Ende der Kalenderwoche');
+      expect(text).toContain('bis kurz nach Ende der Kalenderwoche');
+      expect(text).toContain('Widerrufst du sie, erscheint die Frage nicht mehr');
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
       expect(text).toContain('Artikel 9 Absatz 2 Buchstabe a DSGVO');
     });

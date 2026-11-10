@@ -425,7 +425,7 @@ Empfänger und Ort“.
   einem Wochenschlüssel nur im Arbeitsspeicher (`ss/services/gepostet_service.py`), mit dem
   Montag der Woche (`gepostet_pruefwerte`); kein Beitrag, kein Zeitpunkt. Nach Wochenende nur die
   Zahl der Personen je Woche (`gepostet_wochen`).
-- **Frist:** Prüfwert bis Wochenende, verdichtet beim ersten täglichen Lauf danach
+- **Frist:** Prüfwert bis kurz nach Wochenende, verdichtet beim ersten täglichen Lauf danach
   (`docs/LOESCHKONZEPT.md`); die Zahl je Woche ohne Personenbezug unbefristet.
 - **Risiko:** gering. Auch mit Datenbank und Konfiguration lässt sich ein Prüfwert nicht
   nachrechnen; die Person sieht nur die Gesamtzahl der Woche, Admins nur die Zahl je Woche.
