@@ -83,7 +83,7 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('alle angemeldeten Mitwirkenden');
       expect(text).toContain('„Hier fehlt eine Antwort“');
-      expect(text).toContain('Danach wurde ohne Treffer gesucht: n Personen');
+      expect(text).toContain('n Personen suchten das ohne Treffer');
       expect(text).toContain('die Zahl der Suchen sehen sie nicht');
       expect(text).toContain('Administratorinnen und Administratoren, zusätzlich mit der Zahl der Suchen');
     });

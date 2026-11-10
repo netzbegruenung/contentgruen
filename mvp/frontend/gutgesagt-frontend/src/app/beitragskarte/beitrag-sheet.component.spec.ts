@@ -14,6 +14,7 @@ import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
+import { provideRouter } from '@angular/router';
 
 describe('BeitragSheetComponent', () => {
   let fixture: ComponentFixture<BeitragSheetComponent>;
@@ -62,6 +63,7 @@ describe('BeitragSheetComponent', () => {
         { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', { trackContentUsage: undefined, gepostetBekannt: false }) },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['error', 'debug', 'info', 'warn']) },
         { provide: MatDialog, useValue: dialog },
+        provideRouter([]),
       ],
     });
   });

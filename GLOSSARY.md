@@ -176,6 +176,10 @@ _Avoid_: Fassung (eine Länge eines Kommentars), Version
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
 
+**Lücke**:
+Die Stelle in eckigen Klammern im Text eines Beitrags, „[Hier …]“, die die Person vor dem Posten selbst füllt, etwa mit einem eigenen Erlebnis (Schreibregel: eigene Erlebnisse nur als Platzhalter). Die Karte hebt sie als Feld hervor, und nach dem Kopieren erinnert der Hinweis daran, sie auszufüllen. Andere eckige Klammern wie „[1]“ sind keine Lücke.
+_Avoid_: Vorlagen-Lücke, Leerstelle
+
 **Schreibhilfe**:
 Ein Kniff, mit dem ein Text besser ankommt, etwa der Küchenzuruf („Was würdest du in einem Satz durch die Küche rufen?“) als Leitfrage für die Kurzfassung, der Aufhänger vor der Begründung, die Lesenden als Hauptfigur oder Zahlen, die in den Alltag übersetzt sind. Anders als eine Schreibregel ist sie ein Angebot.
 _Avoid_: Tipp, Trick
@@ -325,7 +329,7 @@ Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qu
 _Avoid_: Vote, Like, Daumen
 
 **Siegel**:
-Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb tannengrün. Nach unten zeigt es nie, rot wird es nie. Glanz und Krone sind eigene Abzeichen am Siegel, keine Stufen der Güte, und können bei jeder Güte auftreten: Glanz heißt, der Beitrag hat viel Wirkung; die Krone zeichnet die Person aus. Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, die dieselbe Hand einfarbig als Umriss zeigen.
+Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb tannengrün. Nach unten zeigt es nie, rot wird es nie. Glanz und Krone sind eigene Abzeichen am Siegel, keine Stufen der Güte, und können bei jeder Güte auftreten: Glanz heißt, der Beitrag hat viel Wirkung (ab 25 Nutzungen am Zähler der Karte, auch für Besucher); die Krone zeichnet die Person aus (ab 5 erreichten Meilensteinen, nur für Angemeldete und nur mit ihrer Zustimmung zur Sichtbarkeit, #351). Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, die dieselbe Hand einfarbig als Umriss zeigen.
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:

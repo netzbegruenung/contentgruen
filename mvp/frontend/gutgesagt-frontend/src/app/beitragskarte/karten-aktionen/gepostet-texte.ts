@@ -3,7 +3,6 @@
  * Der Dank nennt eine echte Zahl: verschiedene Personen dieser Kalenderwoche, wie der
  * Server sie gezählt hat (CODING_STANDARDS.md „Visible numbers are real“).
  */
-export const KOPIERT = 'Erfolgreich kopiert!';
 export const KOPIERT_GEPOSTET_FRAGE = 'Kopiert. Gepostet?';
 export const JA_GEPOSTET = 'Ja, gepostet';
 /** So lange bleibt die Frage stehen: Zeit, den Knopf zu lesen und zu treffen. */

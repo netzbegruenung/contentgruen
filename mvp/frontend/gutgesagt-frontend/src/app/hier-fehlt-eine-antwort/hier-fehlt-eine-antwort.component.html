@@ -14,7 +14,15 @@
     <ng-container *ngIf="aussagen">
         <ul *ngIf="aussagen.length > 0; else leer" class="aussagen">
             <li *ngFor="let aussage of aussagen" class="aussage" data-testid="unbeantwortete-aussage">
-                <p class="aussage-text">{{ aussage.statement_text }}</p>
+                <p class="aussage-text" [id]="'aussage-' + aussage.statement_id">{{ aussage.statement_text }}</p>
+                <!-- Antworten als Hauptknopf direkt am Eintrag, daneben die Nachfrage, nur wenn es sie gibt (#645) -->
+                <div class="aussage-aktionen">
+                    <a mat-raised-button class="dark-green-button antworten"
+                       [routerLink]="kommentarFormular"
+                       [queryParams]="beantwortenParams(aussage)"
+                       [attr.aria-describedby]="'aussage-' + aussage.statement_id">Antworten</a>
+                    <span *ngIf="aussage.personen_ohne_treffer > 0" class="gesucht">{{ gesuchtMarker(aussage) }}</span>
+                </div>
                 <div class="aussage-themen" *ngIf="themen.length">
                     <span *ngFor="let thema of aussage.themen" class="thema-marke">{{ thema.name }}</span>
                     <button type="button" class="themen-umschalter"
@@ -29,12 +37,6 @@
                                         (gewaehltChange)="themenSetzen(aussage, $event)"></app-themen-auswahl>
                     <p *ngIf="themenFehler" class="hinweis" role="alert">{{ themenFehler }}</p>
                 </div>
-                <div class="aussage-fuss">
-                    <span *ngIf="aussage.personen_ohne_treffer > 0" class="gesucht">{{ gesuchtMarker(aussage) }}</span>
-                    <a mat-stroked-button class="selbst-beantworten"
-                       [routerLink]="kommentarFormular"
-                       [queryParams]="beantwortenParams(aussage)">Selbst beantworten</a>
-                </div>
             </li>
         </ul>
         <ng-template #leer>
@@ -42,8 +44,9 @@
         </ng-template>
     </ng-container>
 
-    <section class="vorab" aria-labelledby="vorab-titel">
-        <h2 id="vorab-titel">Aussage vorab anlegen</h2>
+    <!-- Zugeklappt unter der Liste: Die Liste ist die Hauptsache dieser Seite (#645) -->
+    <details class="vorab">
+        <summary class="vorab-titel">Aussage vorab anlegen</summary>
         <p class="hinweis">
             Absehbar, dass bald jemand eine Antwort auf etwas braucht? Leg die Aussage an,
             dann steht sie hier, bis jemand sie beantwortet.
@@ -66,5 +69,5 @@
                 [disabled]="!anlegbar"
                 (click)="anlegen()">Aussage anlegen</button>
         <p *ngIf="meldung" class="meldung" role="status">{{ meldung }}</p>
-    </section>
+    </details>
 </div>

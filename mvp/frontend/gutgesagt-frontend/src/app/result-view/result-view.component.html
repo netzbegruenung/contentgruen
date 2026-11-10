@@ -40,7 +40,7 @@
     <p class="neu-anlegen-satz">Schreib selbst einen Kommentar zu deiner Aussage.</p>
     <div class="neu-anlegen-knopf">
         <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-            <mat-icon>add</mat-icon> Selbst beantworten
+            <mat-icon>add</mat-icon> Antworten
         </button>
     </div>
 </ng-template>
@@ -52,7 +52,7 @@
     <!-- Dezent unter dem Suchband, derselbe Wortlaut wie der Knopf unter den Treffern (#599) -->
     <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
-            Selbst beantworten
+            Antworten
         </button>
     </div>
 
@@ -145,7 +145,7 @@
                 <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
                 <div class="mobile-action-buttons">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                        <mat-icon>add</mat-icon> Selbst beantworten
+                        <mat-icon>add</mat-icon> Antworten
                     </button>
                     <button mat-stroked-button (click)="navigateToContribute('generictext')">
                         <mat-icon>add</mat-icon> Hintergrundinfo hinzufügen
@@ -168,7 +168,7 @@
                 <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu deiner Aussage.</p>
                 <div class="action-buttons-top">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                        <mat-icon>add</mat-icon> Selbst beantworten
+                        <mat-icon>add</mat-icon> Antworten
                     </button>
                     <button mat-stroked-button (click)="navigateToContribute('generictext')">
                         📄 Hintergrundinfo hinzufügen

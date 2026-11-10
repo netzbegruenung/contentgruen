@@ -5,7 +5,7 @@ import { filter, takeUntil } from 'rxjs/operators';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MEINE_TAB_PARAM } from '../services/navigation.service';
 import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
@@ -23,6 +23,13 @@ import { MeilensteineComponent } from './meilensteine.component';
 import { tabMitTasteWaehlen } from '../shared/tab-tasten';
 import { MatButtonModule } from '@angular/material/button';
 import { ROUTES } from '../shared/constants/app.constants';
+import { StatementService } from '../services/statement.service';
+import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
+import { beantwortenParams } from '../hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component';
+import { FORMULAR_PFAD } from '../shared/formular-adresse';
+
+/** So viele unbeantwortete Aussagen zeigt der leere Zustand als ersten Schritt (#645). */
+export const ERSTE_SCHRITTE = 3;
 
 /** Die beiden Tabs: eigene Beitraege und "Meine Einwuerfe". */
 export type MeineTab = 'beitraege' | 'einwuerfe';
@@ -49,6 +56,7 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     MatPaginator,
     MatProgressSpinnerModule,
     MatButtonModule,
+    RouterLink,
     KartenlisteComponent,
     MeineEinwuerfeComponent,
     SperrnachrichtenComponent,
@@ -79,6 +87,11 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   isLoading = true;
   totalUsageCount = 0;
   nutzungsstatistik: UserUsageStats | null = null;
+  /** Ohne eigene Beitraege: die ersten unbeantworteten Aussagen aus "Hier fehlt eine Antwort" (#645). */
+  unbeantworteteAussagen: UnbeantworteteAussage[] = [];
+  readonly kommentarFormular = FORMULAR_PFAD.commentary;
+  readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
+  readonly beantwortenParams = beantwortenParams;
 
   constructor(
     private meineBeitraegeService: MeineBeitraegeService,
@@ -89,6 +102,7 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private breakpointObserver: BreakpointObserver,
     private bottomSheet: MatBottomSheet,
+    private statementService: StatementService,
   ) { }
 
   ngOnInit() {
@@ -129,7 +143,27 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
       this.totalRecords = data.total_records_count;
       this.calculateTotalUsage(data.results);
       this.isLoading = false;
+      if (this.totalRecords === 0) {
+        this.unbeantworteteLaden();
+      }
       this.cdr.markForCheck();
+    });
+  }
+
+  /**
+   * Der erste Schritt im leeren Zustand: unbeantwortete Aussagen zum direkten Antworten, in der
+   * Reihenfolge von "Hier fehlt eine Antwort". Scheitert das Laden, bleibt nur "Beitragen".
+   */
+  private unbeantworteteLaden(): void {
+    this.statementService.unbeantworteteAussagen().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (aussagen) => {
+        this.unbeantworteteAussagen = aussagen.slice(0, ERSTE_SCHRITTE);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.unbeantworteteAussagen = [];
+        this.cdr.markForCheck();
+      },
     });
   }
 

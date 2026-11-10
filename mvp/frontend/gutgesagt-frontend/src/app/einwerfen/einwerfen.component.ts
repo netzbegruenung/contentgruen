@@ -21,7 +21,8 @@ import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { ROUTES } from '../shared/constants/app.constants';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject, of, timer } from 'rxjs';
 import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
@@ -89,7 +90,7 @@ export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
 @Component({
   selector: 'app-einwerfen',
   standalone: true,
-  imports: [...SHARED_IMPORTS, CommonModule, TextFieldModule, Cc0HinweisComponent],
+  imports: [...SHARED_IMPORTS, CommonModule, RouterLink, TextFieldModule, Cc0HinweisComponent],
   templateUrl: './einwerfen.component.html',
   styleUrls: ['./einwerfen.component.css'],
 })
@@ -98,6 +99,7 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
 
   readonly hinweisLimit = HINWEIS_LIMIT;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
+  readonly fangkorbPfad = ROUTES.RAW_INPUT_LIST;
   readonly kettenIcons = KETTEN_ICONS;
 
   einwurfForm: FormGroup;
@@ -123,7 +125,6 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
     private einwurfService: EinwurfService,
     private logger: LoggingService,
     private navigationService: NavigationService,
-    private router: Router,
     private bottomSheet: MatBottomSheet,
   ) {
     this.einwurfForm = this.fb.group({
@@ -305,9 +306,6 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
     });
   }
 
-  zumFangkorb(): void {
-    this.router.navigate(['/fangkorb']);
-  }
 
   zurueckZurStartseite(): void {
     this.navigationService.navigateToStart();

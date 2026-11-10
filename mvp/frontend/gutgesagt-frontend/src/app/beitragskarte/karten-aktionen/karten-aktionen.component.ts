@@ -32,13 +32,9 @@ import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
 import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
-import {
-  GEPOSTET_FRAGE_MS,
-  JA_GEPOSTET,
-  KOPIERT,
-  KOPIERT_GEPOSTET_FRAGE,
-  gepostetDank,
-} from './gepostet-texte';
+import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../../shared/beitrags-link';
+import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
+import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
 
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
@@ -205,7 +201,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.clipboard.copy(text);
-    this.kopiertMelden();
+    this.kopiertMelden(text);
 
     this.copyAnimationActive = true;
     setTimeout(() => {
@@ -225,8 +221,16 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    * „Kopiert. Gepostet? [Ja, gepostet]“ (#643), sonst wie bisher nur „Erfolgreich
    * kopiert!“. Ein Klick auf „Ja, gepostet“ zählt die Person einmal je Woche als
    * öffentlich gekontert; welcher Beitrag, erfährt der Server dabei nicht.
+   *
+   * Hat der Text noch eine Lücke „[Hier …]“ (#640), bleibt es beim Hinweis aufs
+   * Ausfüllen: Gepostet sein kann der Text dann noch nicht.
    */
-  private kopiertMelden(): void {
+  private kopiertMelden(text: string): void {
+    if (hatLuecke(text)) {
+      // Mit Platzhalter "[Hier …]" erinnert der Hinweis ans Ausfuellen (#640, R38) und bleibt laenger stehen.
+      this.snackBar.open(KOPIERT_MIT_LUECKE, 'OK', { duration: 6000 });
+      return;
+    }
     const person = this.authService.getUserInfo();
     const kennung = person?.isAuthenticated ? person.userId : null;
     if (!kennung) {
@@ -267,6 +271,15 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
         }
         this.snackBar.open(gepostetDank(personen), 'Schließen', { duration: 5000 });
       });
+  }
+
+  /** Die Adresse des Beitrags zum Teilen (#640, R48); zaehlt nicht als Nutzung, wie auf der Beitragsseite. */
+  linkKopieren(): void {
+    if (this.vorschau || !this.inhaltId) {
+      return;
+    }
+    const kopiert = this.clipboard.copy(beitragsLink(this.inhaltId));
+    this.snackBar.open(kopiert ? LINK_KOPIERT : LINK_NICHT_KOPIERT, undefined, { duration: 3000 });
   }
 
   beitragOeffnen(): void {

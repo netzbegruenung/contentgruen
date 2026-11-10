@@ -31,12 +31,13 @@ import {
   EinwurfAngaben,
   EinwurfSatz,
   KartenGuete,
+  KartenQuelle,
   NICHT_SICHTBAR,
   STUFEN,
   gueteAus,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
-import { herkunftText, tragtHerkunftsangaben } from './herkunft-text';
+import { herkunftDomain, herkunftText, tragtHerkunftsangaben } from './herkunft-text';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
@@ -47,7 +48,10 @@ import { FremdesBildComponent } from '../shared/fremdes-bild/fremdes-bild.compon
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 import { SiegelErklaerung, siegelErklaerung } from '../shared/components/siegel/siegel-erklaerung';
 import { siegelText } from '../shared/components/siegel/siegel-zeichnung';
+import { GLANZ_TEXT, KRONE_TEXT, hatGlanz, hatKrone } from '../shared/components/siegel/siegel-auszeichnung';
 import { ContentService } from '../services/content.service';
+import { ROUTES } from '../shared/constants/app.constants';
+import { TextStueck, textStuecke } from '../shared/vorlagen-luecke';
 
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
@@ -152,6 +156,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   textGekuerzt = false;
 
   private textElement?: HTMLElement;
+  private stueckeFuer: string | null = null;
+  private stuecke: TextStueck[] = [];
   private readonly destroyRef: DestroyRef;
   private beobachter?: ResizeObserver;
 
@@ -413,12 +419,16 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.istKompakt ? (this.daten.bildUrl ?? null) : null;
   }
 
-  /** Text des Nutzungs-Badges fuer alle Varianten, "3×"; unbekannt zaehlt als 0. */
-  /** Die Nutzung in der Meta-Zeile, nicht in der Vorschau: Dort gibt es noch keine (#599). */
+  /**
+   * Die Nutzung in der Meta-Zeile, nicht in der Vorschau: Dort gibt es noch keine (#599).
+   * Erst ab 1 (#640, R44): "0× genutzt" las sich wie "will keiner", gerade zum Start.
+   * Das Album in Meine Beitraege zeigt dem Autor weiter auch "0×".
+   */
   get nutzungInMeta(): boolean {
-    return this.nutzung !== null && !this.vorschau;
+    return (this.nutzung ?? 0) >= 1 && !this.vorschau;
   }
 
+  /** Text des Nutzungs-Badges fuer alle Varianten, "3×"; unbekannt zaehlt als 0. */
   get nutzungAnzeige(): string {
     return `${this.nutzung ?? 0}×`;
   }
@@ -503,6 +513,33 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.daten.text ?? '';
   }
 
+  /** Der angezeigte Text in Stuecken, Platzhalter "[Hier …]" als eigene (#640, R38). */
+  get textStueckeAnzeige(): TextStueck[] {
+    const text = this.angezeigterText;
+    if (text !== this.stueckeFuer) {
+      this.stueckeFuer = text;
+      this.stuecke = textStuecke(text);
+    }
+    return this.stuecke;
+  }
+
+  /**
+   * Suchuebereinstimmung und Antwortqualitaet nur fuer Admins (#640, R39): Fuer
+   * Nutzer:innen widersprachen sie dem Siegel, und die Uebereinstimmung lag ueber 100 %.
+   */
+  get zeigtWerte(): boolean {
+    return this.istAdmin;
+  }
+
+  /** Der Titel fuehrt zur Beitragsseite (#640, R48); nicht auf ihr selbst und nicht in der Vorschau. */
+  get titelVerlinkt(): boolean {
+    return this.istVoll && this.ansichtVerlinkt && !this.vorschau && !!this.daten.id && !!this.titelAnzeige;
+  }
+
+  get beitragAdresse(): string[] {
+    return [ROUTES.BEITRAG, this.daten.id];
+  }
+
   get kopierText(): string {
     return this.angezeigterText;
   }
@@ -542,6 +579,16 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get postHerkunft(): string {
     return [this.daten.extra?.postAutor, this.daten.extra?.plattform].filter(Boolean).join(' · ');
+  }
+
+  /** Die Herkunft als Domain ("lfu.bayern.de", #640, R47). */
+  quellenDomain(url: string): string {
+    return herkunftDomain(url);
+  }
+
+  /** Im Tooltip die volle Adresse, mit Beschreibung davor, wenn es eine gibt. */
+  quellenTooltip(quelle: KartenQuelle): string {
+    return quelle.beschreibung ? `${quelle.beschreibung} – ${quelle.url}` : (quelle.url ?? '');
   }
 
   /** Eine UUID ohne Adresse zeigt die Vorschau als "Herkunft n" statt als Kennung. */
@@ -608,9 +655,25 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     }
   }
 
-  /** Was Screenreader am Siegel hoeren: die Guete und dass sich eine Erklaerung oeffnet. */
+  readonly GLANZ_TEXT = GLANZ_TEXT;
+  readonly KRONE_TEXT = KRONE_TEXT;
+
+  /** Glanz am Siegel (#351): der Beitrag hat viel Wirkung; betrifft keine Person, auch fuer Besucher. */
+  get glanz(): boolean {
+    return hatGlanz(this.nutzung);
+  }
+
+  /**
+   * Krone am Siegel (#351): zeichnet die Person aus. Nur ueber das Abzeichen am Namen,
+   * das der Server allein Angemeldeten und nur mit Zustimmung der Autorin schickt.
+   */
+  get krone(): boolean {
+    return hatKrone(this.autorAbzeichen);
+  }
+
+  /** Was Screenreader am Siegel hoeren: die Guete, Glanz und Krone, und dass sich eine Erklaerung oeffnet. */
   get siegelBeschriftung(): string {
-    return `${siegelText(this.guete?.wert ?? null)}. Erklärung öffnen`;
+    return `${siegelText(this.guete?.wert ?? null, this.glanz, this.krone)}. Erklärung öffnen`;
   }
 
   get erklaerung(): SiegelErklaerung | null {

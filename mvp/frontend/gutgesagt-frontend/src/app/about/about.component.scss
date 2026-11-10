@@ -245,7 +245,8 @@ a {
   flex-wrap: wrap;
   gap: 8px 12px;
   margin: 4px 0 0;
-  padding: 0;
+  /* Platz fuer die Krone, die ueber das Siegel hinausragt (#351) */
+  padding: 8px 0 0;
   list-style: none;
 
   li {

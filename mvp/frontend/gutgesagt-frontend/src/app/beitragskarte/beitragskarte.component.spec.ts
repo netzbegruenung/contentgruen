@@ -315,6 +315,82 @@ describe('BeitragskarteComponent', () => {
       );
       expect(element<HTMLAnchorElement>('.quelle-link').getAttribute('href')).toBe('https://example.org/studie');
     });
+
+    it('zeigt die Herkunft als Domain, die volle Adresse im Tooltip (#640, R47)', () => {
+      const url = 'https://www.lfu.bayern.de/natur/vogelschutzwarte/vogelschlag/index.htm';
+      zeigen(
+        ausSuchergebnis(
+          paket('commentary_result', {
+            references: [{ reference_id: 'r-1', created: '', reference_text: url }],
+          }),
+        ),
+      );
+
+      const link = element<HTMLAnchorElement>('.quelle-link');
+      expect(link.textContent!.trim()).toBe('lfu.bayern.de');
+      expect(link.getAttribute('href')).toBe(url);
+      expect(element('.quelle').textContent).toContain('Herkunft:');
+      expect(component.quellenTooltip(component.daten.quellen[0])).toContain(url);
+      expect(fixture.nativeElement.textContent).not.toContain('vogelschlag');
+    });
+  });
+
+  describe('Titel als Link (#640, R48)', () => {
+    function titelLink(): HTMLAnchorElement | null {
+      return element<HTMLAnchorElement>('.karte-titel a.titel-link');
+    }
+
+    it('verlinkt den Titel auf die Beitragsseite', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      expect(titelLink()!.getAttribute('href')).toBe('/beitrag/test-id');
+      expect(titelLink()!.textContent!.trim()).toBe('Test Title');
+    });
+
+    it('verlinkt nicht auf der Beitragsseite selbst und nicht in der Vorschau', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { ansichtVerlinkt: false });
+      expect(titelLink()).toBeNull();
+      expect(element('.karte-titel').textContent!.trim()).toBe('Test Title');
+
+      zeigen(ausSuchergebnis(paket('commentary_result')), { vorschau: true });
+      expect(titelLink()).toBeNull();
+    });
+
+    it('verlinkt kompakte Karten nicht, die sind als Ganzes antippbar', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { variante: 'kompakt' });
+
+      expect(element('a.titel-link')).toBeNull();
+    });
+  });
+
+  describe('Lücke in der Vorlage (#640, R38)', () => {
+    const MIT_LUECKE = 'Vögel und Klima. [Hier ein eigenes Erlebnis: Windpark in deiner Gegend] Deshalb ja.';
+
+    it('hebt den Platzhalter als Feld hervor', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: MIT_LUECKE })));
+
+      const luecken = fixture.nativeElement.querySelectorAll('.karte-text mark.vorlagen-luecke');
+      expect(luecken.length).toBe(1);
+      expect(luecken[0].textContent).toContain('[Hier ein eigenes Erlebnis: Windpark in deiner Gegend]');
+      expect(element('.karte-text').textContent).toContain('Vögel und Klima. ');
+      expect(element('.karte-text').textContent).toContain(' Deshalb ja.');
+    });
+
+    it('kopiert den Text unveraendert und erinnert an die Luecke', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: MIT_LUECKE })));
+
+      element<HTMLButtonElement>('.kopieren-knopf').click();
+
+      expect(TestBed.inject(Clipboard).copy).toHaveBeenCalledWith(MIT_LUECKE);
+      expect(snackBar.open.calls.mostRecent().args[0]).toBe('Kopiert – füll noch die Lücke in [ ] aus.');
+    });
+
+    it('markiert ohne Platzhalter nichts', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: 'Siehe [1] und [sic].' })));
+
+      expect(element('.vorlagen-luecke')).toBeNull();
+      expect(element('.karte-text').textContent).toBe('Siehe [1] und [sic].');
+    });
   });
 
   describe('Kopieren mit Herkunft', () => {
@@ -674,7 +750,39 @@ describe('BeitragskarteComponent', () => {
   });
 
   describe('Statement', () => {
-    it('zeigt die Aussage zugeklappt und klappt sie im Fluss auf', () => {
+    function alsAdmin(): void {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user', isAdmin: true } as UserInfo);
+    }
+
+    it('zeigt Nutzer:innen die Aussage ganz, ohne Aufklapper und ohne Prozentwerte (#640, R39)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', {}, { statement_similarity_score: 1.13 })));
+
+      const zeile = element('.statement-zeile');
+      expect(zeile.classList).toContain('statement-zeile--fest');
+      expect(zeile.getAttribute('role')).toBeNull();
+      expect(zeile.getAttribute('aria-expanded')).toBeNull();
+      expect(element('.statement-pfeil')).toBeNull();
+      expect(element('.statement-vorschau').textContent).toContain('Test statement');
+      expect(getComputedStyle(element('.statement-vorschau')).whiteSpace).toBe('normal');
+
+      zeile.click();
+      fixture.detectChanges();
+      expect(element('.statement-details')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('%');
+    });
+
+    it('zeigt die Aussage ohne Anmeldung ebenso ohne Werte', () => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      expect(element('.statement-zeile--fest')).not.toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Suchübereinstimmung');
+    });
+
+    it('zeigt Admins die Aussage zugeklappt und klappt sie mit den Werten im Fluss auf', () => {
+      alsAdmin();
       zeigen(ausSuchergebnis(paket('commentary_result')));
       expect(element('.statement-vorschau').textContent).toContain('Test statement');
       expect(element('.statement-details')).toBeNull();
@@ -695,6 +803,17 @@ describe('BeitragskarteComponent', () => {
       const kopf = element('.karte-kopf');
       expect(statement.compareDocumentPosition(kopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
+
+    it('zeigt "0× genutzt" nicht, erst ab 1 (#640, R44)', fakeAsync(() => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 0 })));
+      expect(element('.karte-nutzung')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('genutzt');
+
+      element<HTMLButtonElement>('.kopieren-knopf').click();
+      fixture.detectChanges();
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('1× genutzt');
+      tick(600);
+    }));
 
     it('zeigt die Nutzung beschriftet in der Meta-Zeile statt als Kreis im Kopf (#599)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 1 })));
