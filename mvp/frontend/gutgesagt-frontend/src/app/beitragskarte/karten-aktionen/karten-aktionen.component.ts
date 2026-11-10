@@ -27,7 +27,6 @@ import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
-import { HAND_UMRISS } from '../../shared/marke/hand';
 import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
@@ -103,7 +102,6 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   isDisliked = false;
   isVoting = false;
   copyAnimationActive = false;
-  readonly HAND_UMRISS = HAND_UMRISS;
 
   /**
    * Die Stimme, wie sie vor dem ersten Tippen seit dem letzten Abgleich stand;
