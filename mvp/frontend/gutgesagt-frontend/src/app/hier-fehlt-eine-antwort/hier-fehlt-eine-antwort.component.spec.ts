@@ -97,7 +97,7 @@ describe('HierFehltEineAntwortComponent', () => {
 
     const [gesucht, ohneKommentar] = aussagen();
     expect(gesucht.querySelector('.gesucht')?.textContent?.trim()).toBe(
-      'Danach wurde ohne Treffer gesucht: 3 Personen',
+      '3 Personen suchten das ohne Treffer',
     );
     expect(ohneKommentar.querySelector('.gesucht')).toBeNull();
     expect(ohneKommentar.textContent).not.toMatch(/\d/);
@@ -107,7 +107,7 @@ describe('HierFehltEineAntwortComponent', () => {
     liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 1 }]);
 
     expect(aussagen()[0].querySelector('.gesucht')?.textContent?.trim()).toBe(
-      'Danach wurde ohne Treffer gesucht: 1 Person',
+      '1 Person suchte das ohne Treffer',
     );
   });
 

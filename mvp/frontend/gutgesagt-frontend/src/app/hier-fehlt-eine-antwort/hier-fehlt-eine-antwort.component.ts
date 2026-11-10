@@ -62,15 +62,15 @@ export function beantwortenParams(aussage: Pick<UnbeantworteteAussage, 'statemen
 }
 
 /**
- * Der Marker zur Nachfrage; leer bei 0, dann zeigt die Seite keine Zahl (#645). Der
- * Wortlaut steht so in der Datenschutzerklaerung ("Hier fehlt eine Antwort") und
- * aendert sich nur mit ihr.
+ * Der Marker zur Nachfrage, kurz (#645): Personen, nicht Suchen; leer bei 0, dann zeigt
+ * die Seite keine Zahl. Der Wortlaut steht so in der Datenschutzerklaerung ("Hier fehlt
+ * eine Antwort") und aendert sich nur mit ihr.
  */
 export function gesuchtMarker(personen: number): string {
   if (personen <= 0) {
     return '';
   }
-  return `Danach wurde ohne Treffer gesucht: ${personen} ${personen === 1 ? 'Person' : 'Personen'}`;
+  return personen === 1 ? '1 Person suchte das ohne Treffer' : `${personen} Personen suchten das ohne Treffer`;
 }
 
 @Component({
