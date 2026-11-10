@@ -47,6 +47,7 @@ import { FremdesBildComponent } from '../shared/fremdes-bild/fremdes-bild.compon
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 import { SiegelErklaerung, siegelErklaerung } from '../shared/components/siegel/siegel-erklaerung';
 import { siegelText } from '../shared/components/siegel/siegel-zeichnung';
+import { GLANZ_TEXT, KRONE_TEXT, hatGlanz, hatKrone } from '../shared/components/siegel/siegel-auszeichnung';
 import { ContentService } from '../services/content.service';
 
 const NEU_STUNDEN = 24;
@@ -608,9 +609,25 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     }
   }
 
-  /** Was Screenreader am Siegel hoeren: die Guete und dass sich eine Erklaerung oeffnet. */
+  readonly GLANZ_TEXT = GLANZ_TEXT;
+  readonly KRONE_TEXT = KRONE_TEXT;
+
+  /** Glanz am Siegel (#351): der Beitrag hat viel Wirkung; betrifft keine Person, auch fuer Besucher. */
+  get glanz(): boolean {
+    return hatGlanz(this.nutzung);
+  }
+
+  /**
+   * Krone am Siegel (#351): zeichnet die Person aus. Nur ueber das Abzeichen am Namen,
+   * das der Server allein Angemeldeten und nur mit Zustimmung der Autorin schickt.
+   */
+  get krone(): boolean {
+    return hatKrone(this.autorAbzeichen);
+  }
+
+  /** Was Screenreader am Siegel hoeren: die Guete, Glanz und Krone, und dass sich eine Erklaerung oeffnet. */
   get siegelBeschriftung(): string {
-    return `${siegelText(this.guete?.wert ?? null)}. Erklärung öffnen`;
+    return `${siegelText(this.guete?.wert ?? null, this.glanz, this.krone)}. Erklärung öffnen`;
   }
 
   get erklaerung(): SiegelErklaerung | null {
