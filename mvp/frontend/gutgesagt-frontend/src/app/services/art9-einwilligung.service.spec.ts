@@ -102,6 +102,20 @@ describe('Art9EinwilligungService', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  // #644: Ein neuer Wortlaut (2026-11-10) fragt niemanden neu, der einem frueheren zugestimmt hat
+  it('laesst in Ruhe, wer einem aelteren Wortlaut als dem aktuellen zugestimmt hat', () => {
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+
+    http.expectOne(ADRESSE).flush({
+      ...stand(true),
+      wortlaut: '2026-11-05-b',
+      aktueller_wortlaut: { kennung: '2026-11-10', text: '…' },
+    });
+
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
   it('meldet die Person als geklaert, sobald sie eingewilligt hat (#587)', () => {
     service.starten();
     anmeldung.next(angemeldet('kim'));
@@ -201,7 +215,7 @@ describe('Art9EinwilligungService', () => {
     expect(text.startsWith(wortlautErsterSatz(text))).toBeTrue();
   });
 
-  // Kopie des aktuellen Wortlauts 2026-11-05-b (domain/art9_einwilligung.py), Anfang und
+  // Kopie des aktuellen Wortlauts 2026-11-10 (domain/art9_einwilligung.py), Anfang und
   // zweiter Satz: Aendert sich der Wortlaut, zeigt dieser Test, ob der Schnitt noch passt.
   it('wortlautErsterSatz schneidet den aktuellen Wortlaut nach dem Art.-9-Satz', () => {
     const ersterSatz =

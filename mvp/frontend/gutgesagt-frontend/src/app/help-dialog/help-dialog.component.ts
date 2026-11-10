@@ -9,7 +9,7 @@ import { CONTENT_TYPE_REGISTRY } from '../shared/content-type-registry';
 import { ERFUNDENES_MELDEN, NICHT_JEDE_AUSSAGE, SCHREIBREGELN } from '../shared/schreibregeln';
 import { AuthService } from '../auth/auth.service';
 import { RundgangService } from '../rundgang/rundgang.service';
-import { RundgangId } from '../rundgang/rundgang-daten';
+import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
 
 @Component({
   selector: 'app-help-dialog',
@@ -35,6 +35,9 @@ export class HelpDialogComponent {
   readonly schreibregeln = SCHREIBREGELN;
   readonly nichtJedeAussage = NICHT_JEDE_AUSSAGE;
   readonly erfundenesMelden = ERFUNDENES_MELDEN;
+
+  readonly antwortFinden = rundgangBeschriftung('antwort-finden');
+  readonly selbstBeitragen = rundgangBeschriftung('mitmachen');
 
   private readonly rundgang = inject(RundgangService);
   readonly angemeldet = !!inject(AuthService).getUserInfo()?.isAuthenticated;

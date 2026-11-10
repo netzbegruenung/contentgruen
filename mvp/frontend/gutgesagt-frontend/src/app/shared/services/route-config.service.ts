@@ -112,6 +112,8 @@ export class RouteConfigService {
         return { ...defaultConfig, pageTitle: PAGE_TITLES.DATENSCHUTZ };
       case '/nutzungsbedingungen':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.NUTZUNGSBEDINGUNGEN };
+      case '/einwilligung':
+        return { ...defaultConfig, pageTitle: PAGE_TITLES.EINWILLIGUNG };
       case '/about':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.UEBER };
       case '/einladung':

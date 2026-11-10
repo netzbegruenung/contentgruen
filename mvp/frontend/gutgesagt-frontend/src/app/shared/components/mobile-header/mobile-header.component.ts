@@ -3,10 +3,12 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, NavigationEnd } from '@angular/router';
 import { NavigationService } from '../../../services/navigation.service';
 import { RouteConfigService } from '../../services/route-config.service';
 import { UserInfo } from '../../../auth/auth.service';
+import { NEU_HINWEIS } from '../../../rundgang/rundgang-daten';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 
@@ -17,7 +19,8 @@ import { takeUntil, filter } from 'rxjs/operators';
     CommonModule,
     MatButtonModule,
     MatIconModule,
-    MatMenuModule
+    MatMenuModule,
+    MatTooltipModule
   ],
   templateUrl: './mobile-header.component.html',
   styleUrls: ['./mobile-header.component.css']
@@ -27,9 +30,9 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
   @Input() selectedProfilePictureUrl: string = '';
   /** Neu-Punkt an „Beitragen“, bis Mitmachen beantwortet ist (#587). */
   @Input() beitragenNeu = false;
+  readonly neuHinweis = NEU_HINWEIS;
   @Output() openMenu = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
-  @Output() loginToContribute = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
   @Output() contribute = new EventEmitter<void>();
 
@@ -79,6 +82,11 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
     this.showContributeButton = config.showContributeButton;
   }
 
+  /** Auf /login und /login/managed steht kein Anmelden-Knopf im Kopf (#644). */
+  get aufAnmeldung(): boolean {
+    return this.currentRoute.startsWith('/login');
+  }
+
   goBack(): void {
     // Ziel kommt aus data.parent der aktiven Route (siehe NavigationService)
     this.navigationService.goBack();
@@ -94,24 +102,14 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
     this.openMenu.emit();
   }
 
+  /** Der Avatar gibt es nur angemeldet; er oeffnet das Menue (#644). */
   openUserMenu(): void {
-    // Quick user menu for avatar click
-    // Could open a small menu with logout/profile options
-    if (this.userInfo?.isAuthenticated) {
-      // For now, just emit logout event
-      // In future, could show a small menu
-      this.openMobileMenu();
-    } else {
-      this.login.emit();
-    }
+    this.openMobileMenu();
   }
 
+  /** "+" gibt es nur angemeldet (#644). */
   onContributeClick(): void {
-    if (this.userInfo?.isAuthenticated) {
-      this.contribute.emit();
-    } else {
-      this.loginToContribute.emit();
-    }
+    this.contribute.emit();
   }
 
   ngOnDestroy(): void {

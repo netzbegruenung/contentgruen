@@ -65,11 +65,35 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
             "habe, bleibt, bis ich es lösche oder mein Konto löschen lasse. Was "
             "bis zum Widerruf geschehen ist, bleibt rechtmäßig."
         ),
+        # Redaktionell (#644): Der Menuepunkt heisst jetzt „Datenschutz-Einstellungen“;
+        # nur der Name des Widerrufswegs ist neu, Zwecke und Folgen sind wortgleich mit
+        # 2026-11-05-b. Neue Kennung, weil 2026-11-05-b schon in v0.8.1 war. Wer
+        # 2026-11-05-b zugestimmt hat, wird nicht neu gefragt (docs/ART9_EINWILLIGUNG.md).
+        "2026-11-10": (
+            "Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung "
+            "verarbeitet, auch wenn sich daraus auf meine politische Meinung "
+            "schließen lässt (Art. 9 Abs. 2 lit. a DSGVO). Das betrifft Beiträge, "
+            "Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere, "
+            "und meinen Anzeigenamen daran. Beiträge sind für alle sichtbar, mein "
+            "Anzeigename nur für Angemeldete. Gut gesagt nutzt meine Mitwirkung "
+            "nur für den Betrieb der Plattform. Dazu gehören ein Punktestand, ein "
+            "Level, Quests und Meilenstein-Abzeichen, die nur ich sehe, solange "
+            "ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen; "
+            "neue Aktionen, die ein höheres Level freischaltet; und ein Hinweis an "
+            "die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. "
+            "Gut gesagt wertet meine Mitwirkung nicht nach politischer Haltung aus "
+            "und gibt sie nicht an Dritte weiter. Ich kann die Einwilligung "
+            "jederzeit im Profilmenü unter „Datenschutz-Einstellungen“ widerrufen. "
+            "Danach kann "
+            "ich nichts mehr beitragen oder bewerten; was ich schon gespeichert "
+            "habe, bleibt, bis ich es lösche oder mein Konto löschen lasse. Was "
+            "bis zum Widerruf geschehen ist, bleibt rechtmäßig."
+        ),
     }
 )
 
 # Der Wortlaut, den die App heute zeigt.
-AKTUELLER_WORTLAUT = "2026-11-05-b"
+AKTUELLER_WORTLAUT = "2026-11-10"
 
 
 def bekannter_wortlaut(kennung: str) -> bool:

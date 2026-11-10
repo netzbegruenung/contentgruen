@@ -36,6 +36,38 @@ describe('SearchComponent', () => {
     fixture.detectChanges();
   });
 
+  // R56 (#644): Auf einer Seite mit nur einem Feld war der Pflichtstern Formularsprache
+  it('beschriftet das Feld ohne Pflichtstern', () => {
+    const feld: HTMLElement = fixture.nativeElement.querySelector('mat-form-field');
+    expect(feld.querySelector('mat-label')!.textContent!.trim()).toBe('Was hast du gelesen? Text oder Post einfügen');
+    expect(feld.querySelector('.mat-mdc-form-field-required-marker')).toBeNull();
+    expect(feld.querySelector('input')!.hasAttribute('required')).toBeFalse();
+  });
+
+  it('nimmt ueber den Treffern (compactMode) die kurze Beschriftung', () => {
+    fixture.componentRef.setInput('compactMode', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('mat-label').textContent.trim()).toBe('Text oder Post einfügen');
+  });
+
+  // R55 (#644): Fokus nur, wenn der Start es verlangt
+  it('fokussiert das Feld nur mit autofokus', () => {
+    expect(document.activeElement).not.toBe(fixture.nativeElement.querySelector('input'));
+
+    const mitFokus = TestBed.createComponent(SearchComponent);
+    mitFokus.componentRef.setInput('autofokus', true);
+    mitFokus.componentRef.setInput('feldId', 'suche');
+    document.body.appendChild(mitFokus.nativeElement);
+    try {
+      mitFokus.detectChanges();
+      const input = mitFokus.nativeElement.querySelector('input') as HTMLInputElement;
+      expect(input.id).toBe('suche');
+      expect(document.activeElement).toBe(input);
+    } finally {
+      mitFokus.nativeElement.remove();
+    }
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });

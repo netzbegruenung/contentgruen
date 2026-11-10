@@ -29,12 +29,12 @@ import { RouteConfigService } from './shared/services/route-config.service';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { KETTEN_ICONS } from './shared/fangkorb-texte';
+import { DATENSCHUTZ_EINSTELLUNGEN, MENUE_ICONS } from './shared/fangkorb-texte';
 import { ROUTES } from './shared/constants/app.constants';
 import { RundgangComponent } from './rundgang/rundgang.component';
 import { RundgangBandComponent } from './rundgang/rundgang-band.component';
 import { RundgangService } from './rundgang/rundgang.service';
-import { RundgangId } from './rundgang/rundgang-daten';
+import { NEU_HINWEIS, RundgangId } from './rundgang/rundgang-daten';
 
 @Component({
   selector: 'app-root',
@@ -66,10 +66,14 @@ export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
   title = 'Gut gesagt';
-  readonly kettenIcons = KETTEN_ICONS;
+  readonly menueIcons = MENUE_ICONS;
+  readonly datenschutzEinstellungen = DATENSCHUTZ_EINSTELLUNGEN;
+  readonly neuHinweis = NEU_HINWEIS;
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
+  /** Auf dem Start steht der Skip-Link „Zur Suche“ (#644). */
+  aufStart = false;
   /** Auf /login* fehlt der Kopfknopf "Anmelden": Man ist schon da (#645). */
   aufAnmeldeseite = false;
   private destroy$ = new Subject<void>();
@@ -274,7 +278,14 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Skip-Link: Fokus ins Suchfeld, ohne die Adresse um #suche zu ergaenzen. */
+  zurSuche(event: Event): void {
+    event.preventDefault();
+    document.getElementById('suche')?.focus();
+  }
+
   private updatePageTitle(url: string): void {
+    this.aufStart = url.split(/[?#]/)[0] === '/search';
     const config = this.routeConfigService.getRouteConfig(url);
     this.pageTitle = config.pageTitle;
     this.showBackButton = config.showBackButton;

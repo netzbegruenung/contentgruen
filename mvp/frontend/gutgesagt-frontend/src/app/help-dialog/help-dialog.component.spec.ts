@@ -91,7 +91,7 @@ describe('HelpDialogComponent', () => {
     it('schliesst erst die Hilfe und startet dann den Rundgang Antwort finden', () => {
       const ref = TestBed.inject(MatDialogRef);
       const knopf = fixture.nativeElement.querySelector('.rundgang-starten') as HTMLButtonElement;
-      expect(knopf.textContent!.trim()).toBe('Rundgang starten');
+      expect(knopf.textContent!.trim()).toBe('Antwort finden (5 Schritte)');
       knopf.click();
 
       expect(ref.close).toHaveBeenCalled();
@@ -99,15 +99,31 @@ describe('HelpDialogComponent', () => {
       expect(fixture.nativeElement.querySelector('.rundgang-mitmachen')).toBeNull();
     });
 
-    it('bietet Angemeldeten auch den Rundgang Mitmachen an', () => {
+    it('bietet Angemeldeten auch den Rundgang Selbst beitragen an, mit Schrittzahl (#644)', () => {
       angemeldet = true;
       fixture = TestBed.createComponent(HelpDialogComponent);
       fixture.detectChanges();
 
-      (fixture.nativeElement.querySelector('.rundgang-mitmachen') as HTMLButtonElement).click();
+      const knopf = fixture.nativeElement.querySelector('.rundgang-mitmachen') as HTMLButtonElement;
+      expect(knopf.textContent!.trim()).toBe('Selbst beitragen (4 Schritte)');
+      knopf.click();
 
       expect(rundgang.starten).toHaveBeenCalledWith('mitmachen');
     });
+  });
+
+  // R60 (#644): Einstieg ohne Versalien und ohne Fachbegriffe wie "Datenbank"
+  it('beginnt mit Menschen statt mit "KEIN KI-Generator" und erklaert die Suche ohne Fachbegriffe', () => {
+    const inhalt: string = fixture.nativeElement.querySelector('mat-dialog-content').textContent;
+    expect(fixture.nativeElement.querySelector('.hilfe-einstieg').textContent).toContain(
+      'Alles hier haben Menschen geschrieben und erprobt.',
+    );
+    expect(fixture.nativeElement.querySelector('.hilfe-suche').textContent).toContain(
+      'Gib ein, was du gelesen hast – du bekommst Antworten darauf, keine ähnlichen Texte',
+    );
+    expect(inhalt).not.toContain('KEIN');
+    expect(inhalt).not.toContain('Aussage-Antwort Zuordnung');
+    expect(inhalt).not.toContain('in der Datenbank, indem');
   });
 
   it('nennt die sechs Schreibregeln', () => {

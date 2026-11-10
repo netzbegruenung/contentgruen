@@ -31,32 +31,39 @@
   <h2 class="mobile-header-title" [class.mobile-header-title--lang]="titelLang"><span class="mobile-header-title-text">{{ pageTitle }}</span></h2>
 
   <div class="mobile-header-actions">
-    <!-- Avatar with Material icon fallback for anonymous users -->
-    <div class="mobile-header-avatar-container"
-         (click)="openUserMenu()"
-         role="button"
-         tabindex="0"
-         [attr.aria-label]="userInfo?.isAuthenticated ? 'Profilmenü öffnen' : 'Anmelden'">
-      <img *ngIf="userInfo?.isAuthenticated"
-           [src]="selectedProfilePictureUrl"
-           alt="Profilbild"
-           class="mobile-header-avatar">
-      <img *ngIf="!userInfo?.isAuthenticated"
-           src="/icons/Profile_avatar_placeholder_large.png"
-           alt="Nicht angemeldet"
-           class="mobile-header-avatar anonymous-avatar-icon">
-    </div>
+    <!--
+      Angemeldet: Avatar (oeffnet das Menue) und Beitragen. Anonym nur ein Text-Knopf
+      "Anmelden": Ein grauer Avatar wirkte wie ein Konto, und "+" fuehrte doch nur zur
+      Anmeldung (#644, wie am Desktop seit #599).
+    -->
+    <ng-container *ngIf="userInfo?.isAuthenticated; else anmeldenKnopf">
+      <button type="button"
+              class="mobile-header-avatar-container"
+              (click)="openUserMenu()"
+              aria-label="Profilmenü öffnen">
+        <img [src]="selectedProfilePictureUrl"
+             alt=""
+             class="mobile-header-avatar">
+      </button>
 
-    <!-- Beitragen; "Meine Beitraege" steht im Menue -->
-    <button
-      *ngIf="showContributeButton"
-      mat-icon-button
-      (click)="onContributeClick()"
-      class="contribute-button"
-      [attr.aria-label]="userInfo?.isAuthenticated ? (beitragenNeu ? 'Beitragen, neu' : 'Beitragen') : 'Anmelden zum Beitragen'">
-      <mat-icon>add</mat-icon>
-      <span *ngIf="beitragenNeu" class="neu-punkt" aria-hidden="true"></span>
-    </button>
+      <!-- Beitragen; "Meine Beitraege" steht im Menue. Den Neu-Punkt erklaert der Tooltip,
+           fuer Screenreader als Beschreibung (#644) -->
+      <button
+        *ngIf="showContributeButton"
+        mat-icon-button
+        (click)="onContributeClick()"
+        class="contribute-button"
+        [matTooltip]="neuHinweis"
+        [matTooltipDisabled]="!beitragenNeu"
+        aria-label="Beitragen">
+        <mat-icon>add</mat-icon>
+        <span *ngIf="beitragenNeu" class="neu-punkt" aria-hidden="true"></span>
+      </button>
+    </ng-container>
+    <ng-template #anmeldenKnopf>
+      <!-- Auf der Anmeldeseite selbst nicht: Dort fuehrte der Knopf nur auf sich selbst -->
+      <button *ngIf="!aufAnmeldung" mat-button type="button" class="anmelden-knopf" (click)="login.emit()">Anmelden</button>
+    </ng-template>
 
     <button
       mat-icon-button

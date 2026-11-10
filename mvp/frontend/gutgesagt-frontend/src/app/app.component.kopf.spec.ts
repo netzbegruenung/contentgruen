@@ -19,6 +19,8 @@ import {
 } from './services/profilbild.service';
 import { ProfilbildDialogComponent } from './shared/profilbild/profilbild-dialog.component';
 import { RUECKKEHRZIEL_SCHLUESSEL } from './login/rueckkehrziel';
+import { RundgangService } from './rundgang/rundgang.service';
+import { MatTooltip } from '@angular/material/tooltip';
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
@@ -211,7 +213,7 @@ describe('AppComponent - Desktop-Kopf', () => {
         jasmine.stringContaining('Fangkorb'),
         jasmine.stringContaining('Meine Beiträge'),
         jasmine.stringContaining('Profilbild wählen'),
-        jasmine.stringContaining('Einwilligung'),
+        jasmine.stringContaining('Datenschutz-Einstellungen'),
         jasmine.stringContaining('Abmelden'),
       ]);
       expect(navigation.navigateToMeineBeitraege).not.toHaveBeenCalled();
@@ -259,7 +261,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      eintrag('Einwilligung').click();
+      eintrag('Datenschutz-Einstellungen').click();
 
       expect(router.navigate).toHaveBeenCalledWith(['/einwilligung']);
     });
@@ -342,6 +344,49 @@ describe('AppComponent - Desktop-Kopf', () => {
       (kopf().querySelector('[data-testid="feedback-knopf"]') as HTMLElement).click();
 
       expect(dialog.open).toHaveBeenCalledWith(FeedbackDialogComponent, jasmine.anything());
+    });
+  });
+
+  // R55 (#644): Nach 4x Tab stand der Fokus auf "Hilfe", nicht im Suchfeld
+  describe('Skip-Link "Zur Suche"', () => {
+    beforeEach(() => starten(BESUCHER));
+
+    it('steht auf dem Start als erstes fokussierbares Element', () => {
+      const erstes = fixture.nativeElement.querySelector('a[href], button') as HTMLElement;
+      expect(erstes.textContent!.trim()).toBe('Zur Suche');
+      expect(erstes.getAttribute('href')).toBe('#suche');
+    });
+
+    it('setzt den Fokus ins Suchfeld, ohne die Adresse zu aendern', () => {
+      const feld = document.createElement('input');
+      feld.id = 'suche';
+      document.body.appendChild(feld);
+      try {
+        const link = fixture.nativeElement.querySelector('[data-testid="skip-link"]') as HTMLAnchorElement;
+        const klick = new MouseEvent('click', { cancelable: true, bubbles: true });
+        link.dispatchEvent(klick);
+
+        expect(document.activeElement).toBe(feld);
+        expect(klick.defaultPrevented).toBeTrue();
+      } finally {
+        feld.remove();
+      }
+    });
+  });
+
+  // R59 (#644): Der gelbe Punkt an "Beitragen" stand ohne Erklaerung da
+  describe('Neu-Punkt an Beitragen', () => {
+    beforeEach(() => starten(ANGEMELDET));
+
+    it('erklaert den Punkt per Tooltip und fuer Screenreader', () => {
+      (TestBed.inject(RundgangService) as any).mitmachenOffen.set(true);
+      fixture.detectChanges();
+      const knopf = fixture.nativeElement.querySelector('.beitragen-knopf') as HTMLElement;
+
+      expect(knopf.querySelector('.neu-punkt')).not.toBeNull();
+      const tooltip = fixture.debugElement.query(By.css('.beitragen-knopf')).injector.get(MatTooltip);
+      expect(tooltip.message).toBe('Neu: so geht Beitragen');
+      expect(tooltip.disabled).toBeFalse();
     });
   });
 

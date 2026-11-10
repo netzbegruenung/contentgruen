@@ -8,6 +8,9 @@ import { SearchViewComponent } from './search-view.component';
 import { FANGKORB_KURZ } from '../shared/fangkorb-texte';
 import { STARTBEISPIEL } from '../shared/startbeispiel';
 import { NavigationService } from '../services/navigation.service';
+import { AuthService } from '../auth/auth.service';
+import { SearchComponent } from '../search/search.component';
+import { By } from '@angular/platform-browser';
 
 describe('SearchViewComponent', () => {
   let component: SearchViewComponent;
@@ -82,6 +85,38 @@ describe('SearchViewComponent', () => {
 
     expect(kacheln.map((kachel) => kachel.getAttribute('href'))).toEqual(['/einwerfen', '/contribute']);
     expect(kacheln[0].textContent).toContain(FANGKORB_KURZ);
+  });
+
+  // R57 (#644): Anonym fuehrten die Kacheln kommentarlos auf die Anmeldung
+  describe('Hinweis "mit Konto" an den Kacheln', () => {
+    function hinweise(): string[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('.start-kachel .kachel-konto')).map(
+        (e) => (e as HTMLElement).textContent!.trim(),
+      );
+    }
+
+    it('steht anonym an beiden Kacheln', () => {
+      TestBed.inject(AuthService).setUserInfo({ isAuthenticated: false, userId: null, userName: null, claims: null });
+      fixture.detectChanges();
+      expect(hinweise()).toEqual(['mit Konto', 'mit Konto']);
+      // Im zugaenglichen Namen getrennt vom Titel, nicht "Einwerfenmit Konto"
+      const titel = fixture.nativeElement.querySelector('.start-kachel .kachel-titel') as HTMLElement;
+      expect(titel.textContent!.replace(/\s+/g, ' ').trim()).toBe('Einwerfen mit Konto');
+    });
+
+    it('fehlt angemeldet und solange die Anmeldung noch nicht geklaert ist', () => {
+      expect(hinweise()).toEqual([]);
+      TestBed.inject(AuthService).setUserInfo({ isAuthenticated: true, userId: 'u1', userName: 'Kim', claims: null });
+      fixture.detectChanges();
+      expect(hinweise()).toEqual([]);
+    });
+  });
+
+  // R55 (#644): Ziel des Skip-Links und Autofokus nur am Desktop mit Maus
+  it('gibt dem Suchfeld das Ziel des Skip-Links und den Autofokus nur passend zum Geraet', () => {
+    const suche = fixture.debugElement.query(By.directive(SearchComponent)).componentInstance as SearchComponent;
+    expect(suche.feldId).toBe('suche');
+    expect(suche.autofokus).toBe(window.matchMedia('(min-width: 960px) and (hover: hover) and (pointer: fine)').matches);
   });
 
   it('zeigt keine Statistik-Kacheln und fragt keine Metriken ab', () => {

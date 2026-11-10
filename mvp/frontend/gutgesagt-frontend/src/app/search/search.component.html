@@ -1,12 +1,11 @@
 <div class="search-container" [class.compact-mode]="compactMode">
     <form (ngSubmit)="onSearch()" class="search-form" [class.search-form-compact]="compactMode">
         <mat-form-field appearance="outline" class="search-field">
+            <!-- Ohne Pflichtstern: Auf einer Seite mit nur einem Feld war er Formularsprache (#644) -->
             <mat-label>
-                <span class="label">
-                    Aussage, Post, Text oder Schlagwort
-                </span>
+                <span class="label">{{ feldName }}</span>
             </mat-label>
-            <input matInput [(ngModel)]="searchQuery" name="searchQuery" required>
+            <input matInput #feld [id]="feldId" [(ngModel)]="searchQuery" name="searchQuery">
             <!-- Search button as suffix icon on mobile in compact mode -->
             <button mat-icon-button matSuffix type="submit" class="mobile-search-button"
                     *ngIf="compactMode"

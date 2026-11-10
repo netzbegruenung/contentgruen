@@ -11,34 +11,35 @@
         <div>
             <h3 id="rundgang-kasten-titel">Lieber zeigen lassen?</h3>
             <div class="rundgang-kasten-knoepfe">
+                <!-- Name und Schrittzahl sagen vorher, was der Rundgang zeigt (#644) -->
                 <button type="button" class="rundgang-knopf umriss rundgang-starten"
-                        (click)="rundgangStarten('antwort-finden')">Rundgang starten</button>
+                        (click)="rundgangStarten('antwort-finden')">{{ antwortFinden }}</button>
                 @if (angemeldet) {
                     <button type="button" class="rundgang-knopf umriss rundgang-mitmachen"
-                            (click)="rundgangStarten('mitmachen')">Rundgang Mitmachen</button>
+                            (click)="rundgangStarten('mitmachen')">{{ selbstBeitragen }}</button>
                 }
             </div>
         </div>
     </section>
 
-    <p>
-        Das hier ist KEIN KI-Generator! <br>
-        Gut gesagt ist eine Tauschbörse für bewährte Argumente. Alles was du hier findest, wurde von anderen Grünen in echten Diskussionen erprobt und geteilt.
+    <!-- Einstieg ohne Versalien und ohne Abgrenzung: was es ist, nicht was es nicht ist (#644) -->
+    <p class="hilfe-einstieg">
+        Alles hier haben Menschen geschrieben und erprobt.
+        Gut gesagt ist eine Tauschbörse für bewährte Argumente aus echten Diskussionen.
     </p>
 
     <h3>So funktioniert Gut gesagt</h3>
 
     <ul>
-        <li>🔍 Suche nach Inhalten in der Datenbank, indem du Text oder Schlagwörter eingibst</li>
+        <li>🔍 Füge einen Post ein oder tippe eine Aussage oder ein Schlagwort</li>
         <li>📄 Finde so passende fertige Kommentare und Hintergrundinfos und nutze diese für deine Argumentation</li>
         <li>✒️ Erstelle eigene fertige Kommentare oder Hintergrundinfos und teile dein Wissen mit anderen grünen
             Mitgliedern</li>
     </ul>
 
-    <p>
-        Die Suche funktioniert über eine Aussage-Antwort Zuordnung: Du kannst so z.B. direkt einen Social-Media-Post eingeben,
-        auf den du antworten möchtest - und findest nicht einfach Inhalte, die ähnlich zu deinem Eingabe-Post sind, sondern
-        passende Antworten darauf!
+    <p class="hilfe-suche">
+        Gib ein, was du gelesen hast – du bekommst Antworten darauf, keine ähnlichen Texte.
+        Du kannst also direkt den Post einfügen, auf den du antworten willst.
     </p>
 
     <!-- Die Saetze stehen in der Registry, wie bei der Typwahl auf der Beitragen-Seite -->

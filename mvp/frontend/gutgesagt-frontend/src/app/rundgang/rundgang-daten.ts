@@ -42,12 +42,26 @@ export interface Rundgang {
   id: RundgangId;
   /** Name für Screenreader, etwa „Rundgang Antwort finden“. */
   name: string;
+  /** Kurzname in Hilfe und Menü, etwa „Antwort finden“ (#644). */
+  titel: string;
   schritte: RundgangSchritt[];
 }
 
 /**
+ * Wie Hilfe und Menü einen Rundgang nennen: Kurzname und Schrittzahl, damit man vorher
+ * sieht, was er zeigt und wie lang er ist (#644).
+ */
+export function rundgangBeschriftung(id: RundgangId): string {
+  const r = RUNDGAENGE[id];
+  return `${r.titel} (${r.schritte.length} Schritte)`;
+}
+
+/** Was der Neu-Punkt an „Beitragen“ bedeutet, als Tooltip und für Screenreader (#644). */
+export const NEU_HINWEIS = 'Neu: so geht Beitragen';
+
+/**
  * Das Band, das einen Rundgang anbietet (#587): Willkommen auf Startseite und
- * Treffern, Mitmachen, sobald jemand zum ersten Mal auf Beitragen oder Fangkorb ankommt.
+ * Treffern, Mitmachen, sobald jemand zum ersten Mal auf Beitragen ankommt (seit #644 nicht im Fangkorb).
  */
 export interface Angebot {
   rundgang: RundgangId;
@@ -86,7 +100,9 @@ export const MITMACHEN_ANGEBOT: Angebot = {
   // Wer hier ist, hat „Beitragen“ schon gefunden: Der Rundgang beginnt beim Einwerfen.
   // Nicht auf /einwerfen: Das ist ein Formular (oft per Teilen schon gefüllt), und der
   // Rundgang spielt auf /contribute; „Zeig mir’s“ würde den Einwurf verwerfen.
-  seiten: ['/contribute', '/fangkorb'],
+  // Nur auf Beitragen: Im Fangkorb stand es zusaetzlich und sagte dasselbe wie der
+  // Neu-Punkt im Kopf (#644).
+  seiten: ['/contribute'],
   ja: 'Zeig mir’s',
   nein: 'Nein danke',
   ab: 1,
@@ -96,6 +112,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
   'antwort-finden': {
     id: 'antwort-finden',
     name: 'Rundgang Antwort finden',
+    titel: 'Antwort finden',
     schritte: [
       {
         titel: 'Aussage eingeben',
@@ -144,7 +161,8 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
   },
   mitmachen: {
     id: 'mitmachen',
-    name: 'Rundgang Mitmachen',
+    name: 'Rundgang Selbst beitragen',
+    titel: 'Selbst beitragen',
     schritte: [
       {
         titel: 'Beitragen',

@@ -1,13 +1,15 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { UserInfo } from '../../../auth/auth.service';
-import { EINWERFEN_TITEL, KETTEN_ICONS } from '../../fangkorb-texte';
+import { DATENSCHUTZ_EINSTELLUNGEN, EINWERFEN_TITEL, MENUE_ICONS } from '../../fangkorb-texte';
 import { ROUTES } from '../../constants/app.constants';
-import { RundgangId } from '../../../rundgang/rundgang-daten';
+import { RundgangId, rundgangBeschriftung } from '../../../rundgang/rundgang-daten';
 
 @Component({
   selector: 'app-mobile-menu',
@@ -17,14 +19,17 @@ import { RundgangId } from '../../../rundgang/rundgang-daten';
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
-    RouterLink,
-    RouterLinkActive
+    RouterLink
   ],
   templateUrl: './mobile-menu.html',
   styleUrl: './mobile-menu.css'
 })
 export class MobileMenuComponent {
-  readonly kettenIcons = KETTEN_ICONS;
+  readonly menueIcons = MENUE_ICONS;
+  readonly datenschutzEinstellungen = DATENSCHUTZ_EINSTELLUNGEN;
+  readonly pfade = ROUTES;
+  readonly antwortFinden = rundgangBeschriftung('antwort-finden');
+  readonly selbstBeitragen = rundgangBeschriftung('mitmachen');
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   readonly einwerfenTitel = EINWERFEN_TITEL;
   @Input() userInfo: UserInfo | null = null;
@@ -43,6 +48,25 @@ export class MobileMenuComponent {
   @Output() help = new EventEmitter<void>();
   @Output() feedback = new EventEmitter<void>();
   @Output() rundgang = new EventEmitter<RundgangId>();
+
+  private readonly router = inject(Router);
+  /** Pfad der aktuellen Seite ohne Query und Fragment, fuer die Hervorhebung (#644). */
+  private pfad = this.ohneQuery(this.router.url);
+
+  constructor() {
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd), takeUntilDestroyed())
+      .subscribe((e) => (this.pfad = this.ohneQuery(e.urlAfterRedirects)));
+  }
+
+  /** Ist das die Seite, auf der man gerade ist? Unterseiten zaehlen mit. */
+  aktiv(ziel: string): boolean {
+    return this.pfad === ziel || this.pfad.startsWith(ziel + '/');
+  }
+
+  private ohneQuery(url: string): string {
+    return url.split(/[?#]/)[0];
+  }
 
   close(): void {
     this.closeMenu.emit();

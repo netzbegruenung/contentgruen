@@ -241,7 +241,7 @@ export const routes: Routes = [
     },
     {
         // Art.-9-Einwilligung (#489): einwilligen nach dem ersten Anmelden, spaeter
-        // Stand ansehen und widerrufen (Profilmenue "Einwilligung").
+        // Stand ansehen und widerrufen (Profilmenue "Datenschutz-Einstellungen", #644).
         path: 'einwilligung',
         loadComponent: () => import('./einwilligung/einwilligung.component').then(m => m.EinwilligungComponent),
         canActivate: [AuthGuard],

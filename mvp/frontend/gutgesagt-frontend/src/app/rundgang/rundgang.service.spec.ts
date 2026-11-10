@@ -256,12 +256,10 @@ describe('RundgangService', () => {
       expect(service.beitragenNeu()).toBeTrue();
     });
 
-    it('bietet Mitmachen auf Beitragen und Fangkorb an, bis die Person reagiert', () => {
+    it('bietet Mitmachen auf Beitragen an, bis die Person reagiert', () => {
       angemeldetGeklaert();
-      for (const seite of ['/contribute', '/fangkorb']) {
-        navigiert(seite);
-        expect(service.band()).withContext(seite).toBe(MITMACHEN_ANGEBOT);
-      }
+      navigiert('/contribute');
+      expect(service.band()).toBe(MITMACHEN_ANGEBOT);
       service.bandBeantworten(false);
       expect(localStorage.getItem(MITMACHEN_SCHLUESSEL)).toBe('1');
       expect(service.band()).toBeNull();
@@ -285,13 +283,12 @@ describe('RundgangService', () => {
       expect(service.beitragenNeu()).toBeTrue();
     });
 
-    it('startet „Zeig mir’s“ auch vom Fangkorb aus beim Einwerfen', async () => {
+    // R59 (#644): Im Fangkorb stand das Band zusaetzlich; der Neu-Punkt im Kopf sagt dasselbe
+    it('steht nicht im Fangkorb, der Neu-Punkt bleibt', () => {
       angemeldetGeklaert();
       navigiert('/fangkorb');
-      service.bandBeantworten(true);
-      await new Promise((fertig) => setTimeout(fertig)); // erst die Seite, dann der Schritt
-      expect(router.navigateByUrl).toHaveBeenCalled();
-      expect(service.aktiv()?.rundgang.schritte[service.aktiv()!.index].titel).toBe('Einwerfen');
+      expect(service.band()).toBeNull();
+      expect(service.beitragenNeu()).toBeTrue();
     });
 
     it('nimmt Band und Neu-Punkt nach dem Widerruf der Einwilligung weg', () => {
