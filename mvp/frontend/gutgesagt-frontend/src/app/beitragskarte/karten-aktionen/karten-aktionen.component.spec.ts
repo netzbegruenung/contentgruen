@@ -448,7 +448,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(document.querySelector('.zweite-kopie')).toBeNull();
     });
 
-    it('zeigt die zweite Variante als ersten Eintrag im ⋮-Menue (#641)', () => {
+    it('zeigt die zweite Variante oben im ⋮-Menue, direkt nach "Link kopieren" (#641, #640)', () => {
       fixture.componentRef.setInput('zweiteKopie', { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' });
       fixture.detectChanges();
 
@@ -456,7 +456,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       fixture.detectChanges();
 
       const eintraege = Array.from(document.querySelectorAll('.mat-mdc-menu-item-text')).map((eintrag) => eintrag.textContent!.trim());
-      expect(eintraege[0]).toBe('Mit Herkunft kopieren');
+      expect(eintraege.slice(0, 2)).toEqual(['Link kopieren', 'Mit Herkunft kopieren']);
       expect(fixture.nativeElement.querySelectorAll('.kopieren button').length).toBe(1);
     });
 
@@ -491,6 +491,20 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       expect(clipboard.copy).toHaveBeenCalledWith('Test text');
       expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
+    });
+
+    it('meldet "Erfolgreich kopiert!" ohne Luecke', () => {
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+    });
+
+    it('erinnert mit Platzhalter ans Ausfuellen der Luecke (#640, R38)', () => {
+      component.kopierText = 'Gut. [Hier ein eigenes Erlebnis: …] Ende.';
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
     });
 
     it('oeffnet den Melde-Dialog mit ID und Typ', () => {
@@ -531,6 +545,35 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.beitragOeffnen();
 
       expect(router.navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Link kopieren (#640, R48)', () => {
+    function menueEintraege(): HTMLElement[] {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+      return Array.from(document.querySelectorAll<HTMLElement>('.mat-mdc-menu-panel .mat-mdc-menu-item'));
+    }
+
+    it('steht ganz oben im Menue und kopiert die Adresse des Beitrags, ohne als Nutzung zu zaehlen', () => {
+      const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+      const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      clipboard.copy.and.returnValue(true);
+
+      const erster = menueEintraege()[0];
+      expect(erster.classList).toContain('link-kopieren');
+      erster.click();
+
+      expect(clipboard.copy).toHaveBeenCalledWith(`${window.location.origin}/beitrag/${INHALT_ID}`);
+      expect(snackBar.open).toHaveBeenCalledWith('Link kopiert.', undefined, { duration: 3000 });
+      expect(usage.trackContentUsage).not.toHaveBeenCalled();
+    });
+
+    it('fehlt auf der Beitragsseite selbst', () => {
+      fixture.componentRef.setInput('ansichtVerlinkt', false);
+
+      expect(menueEintraege().some((e) => e.classList.contains('link-kopieren'))).toBeFalse();
     });
   });
 

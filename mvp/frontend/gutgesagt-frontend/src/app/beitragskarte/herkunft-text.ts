@@ -37,3 +37,16 @@ function herkunftZeilen(daten: KartenDaten): string[] {
 function nichtLeer(werte: (string | undefined)[]): string[] {
   return werte.map((wert) => wert?.trim() ?? '').filter(Boolean);
 }
+
+/**
+ * Die Domain einer Herkunftsadresse fuer die Karte ("lfu.bayern.de" statt der ganzen
+ * Adresse, #640, R47), ohne "www.". Laesst sich die Adresse nicht lesen, bleibt sie, wie sie ist.
+ */
+export function herkunftDomain(url: string): string {
+  try {
+    const host = new URL(url).hostname;
+    return host ? host.replace(/^www\./i, '') : url;
+  } catch {
+    return url;
+  }
+}

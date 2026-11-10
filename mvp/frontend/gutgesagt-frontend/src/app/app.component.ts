@@ -9,7 +9,7 @@ import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
@@ -52,6 +52,7 @@ import { RundgangId } from './rundgang/rundgang-daten';
     FormsModule,
     RouterOutlet,
     RouterLink,
+    RouterLinkActive,
     FooterComponent,
     MobileMenuComponent,
     MobileHeaderComponent,
@@ -69,6 +70,8 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
+  /** Auf /login* fehlt der Kopfknopf "Anmelden": Man ist schon da (#645). */
+  aufAnmeldeseite = false;
   private destroy$ = new Subject<void>();
   isMobile: boolean = false;
   isTablet: boolean = false;
@@ -275,6 +278,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const config = this.routeConfigService.getRouteConfig(url);
     this.pageTitle = config.pageTitle;
     this.showBackButton = config.showBackButton;
+    this.aufAnmeldeseite = url.split(/[?#]/)[0].startsWith(ROUTES.LOGIN);
     this.logger.debug(`Updated page title to: ${this.pageTitle}, showBackButton: ${this.showBackButton}`);
   }
 

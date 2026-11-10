@@ -17,7 +17,7 @@ export const VON_PARAM = 'von';
 export const SUCHE_PARAM = 'suche';
 
 /**
- * ?von=hier-fehlt-eine-antwort: Das Formular kam ueber "Selbst beantworten" von
+ * ?von=hier-fehlt-eine-antwort: Das Formular kam ueber "Antworten" von
  * "Hier fehlt eine Antwort". Es gilt nicht als aus der Suche (sonst zeigte die
  * Ergebnisseite die letzte, fremde Suchanfrage), und die Pfeile fuehren dorthin zurueck.
  */

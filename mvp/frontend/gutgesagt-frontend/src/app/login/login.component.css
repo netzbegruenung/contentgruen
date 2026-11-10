@@ -14,6 +14,18 @@
     max-width: 600px;
 }
 
+/* Die Meldung zu falschen Zugangsdaten steht direkt unter dem Passwortfeld (#645). */
+.anmeldefehler {
+    margin: -8px 0 16px;
+    text-align: left;
+    color: var(--error-strong);
+}
+
+.passwort-vergessen {
+    margin-top: 24px;
+    color: var(--text-secondary);
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
     .login-box {

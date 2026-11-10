@@ -60,18 +60,19 @@
     min-height: 48px;
 }
 
-/*
- * Wie der Primaergriff auf der Fangkorb-Karte und "Kopieren" auf der vollen Karte:
- * gefuellt, dunkelgruen (Farbe aus .gutgesagt-primary-dark), 40 px, Emoji davor.
- * Niedriger als "Einwerfen" (48 px) - das bleibt die Hauptsache dieser Seite.
- */
-.fangkorb-knopf {
+/* Der Weg in den Fangkorb ist ein Text-Link, kein zweiter Knopf (#645) */
+.fangkorb-weg {
+    margin: var(--spacing-md, 16px) 0 0;
+}
+
+.fangkorb-link {
     display: inline-flex;
     align-items: center;
-    min-width: 180px;
-    height: 40px;
-    padding: 0 24px;
+    min-height: 44px;
+    color: var(--primary-dark);
     font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .knopf-emoji {

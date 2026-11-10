@@ -31,6 +31,8 @@ import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
 import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
+import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../../shared/beitrags-link';
+import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
 
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
@@ -204,7 +206,12 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.clipboard.copy(text);
-    this.snackBar.open('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+    // Mit Platzhalter "[Hier …]" erinnert der Hinweis ans Ausfuellen (#640, R38) und bleibt laenger stehen.
+    if (hatLuecke(text)) {
+      this.snackBar.open(KOPIERT_MIT_LUECKE, 'OK', { duration: 6000 });
+    } else {
+      this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
+    }
 
     this.copyAnimationActive = true;
     setTimeout(() => {
@@ -217,6 +224,15 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       this.kopiert.emit();
     }
     this.cdr.markForCheck();
+  }
+
+  /** Die Adresse des Beitrags zum Teilen (#640, R48); zaehlt nicht als Nutzung, wie auf der Beitragsseite. */
+  linkKopieren(): void {
+    if (this.vorschau || !this.inhaltId) {
+      return;
+    }
+    const kopiert = this.clipboard.copy(beitragsLink(this.inhaltId));
+    this.snackBar.open(kopiert ? LINK_KOPIERT : LINK_NICHT_KOPIERT, undefined, { duration: 3000 });
   }
 
   beitragOeffnen(): void {

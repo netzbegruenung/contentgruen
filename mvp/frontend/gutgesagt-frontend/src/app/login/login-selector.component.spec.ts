@@ -167,7 +167,7 @@ describe('LoginSelectorComponent', () => {
       expect(text).toContain('So bekommst du ein Konto');
     });
 
-    it('zeigt ohne Ziel aus "Selbst beantworten" keinen Grund', () => {
+    it('zeigt ohne Ziel aus "Antworten" keinen Grund', () => {
       const el = modes(true, false);
 
       expect(el.querySelector('.anmeldegrund')).toBeNull();
@@ -175,7 +175,7 @@ describe('LoginSelectorComponent', () => {
   });
 });
 
-describe('LoginSelectorComponent nach "Selbst beantworten" (#600)', () => {
+describe('LoginSelectorComponent nach "Antworten" (#600)', () => {
   afterEach(() => sessionStorage.removeItem('loginReturnUrl'));
 
   it('sagt oben, wozu die Anmeldung nötig ist', async () => {

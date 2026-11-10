@@ -5,12 +5,8 @@ import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import {
-  BeitragAnsichtComponent,
-  LINK_KOPIERT,
-  LINK_NICHT_KOPIERT,
-  beitragsLink,
-} from './beitrag-ansicht.component';
+import { BeitragAnsichtComponent } from './beitrag-ansicht.component';
+import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../shared/beitrags-link';
 import { BeitragAnsicht, ContentService } from '../services/content.service';
 import { LoggingService } from '../services/logging.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';

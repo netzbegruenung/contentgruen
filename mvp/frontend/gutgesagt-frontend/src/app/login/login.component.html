@@ -13,11 +13,17 @@
             <mat-form-field class="full-width" appearance="outline">
                 <mat-label>Passwort</mat-label>
                 <input matInput type="password" formControlName="password"
-                       autocomplete="current-password" aria-label="Passwort" />
-                <mat-error *ngIf="loginForm.get('password')?.invalid">
+                       autocomplete="current-password" aria-label="Passwort"
+                       [aria-describedby]="errorMessage ? 'anmeldefehler' : ''" />
+                <mat-error *ngIf="loginForm.get('password')?.invalid && getErrorMessage('password')">
                     {{ getErrorMessage('password') }}
                 </mat-error>
             </mat-form-field>
+
+            <!-- Die eine Meldung zu falschen Zugangsdaten, direkt am Feld; keine Snackbar dazu (#645) -->
+            <p *ngIf="errorMessage" id="anmeldefehler" class="anmeldefehler" role="alert">
+                {{ errorMessage }}
+            </p>
 
             <div class="button-container">
                 <button mat-raised-button class="dark-green-button" type="submit"
@@ -27,9 +33,10 @@
                 </button>
             </div>
 
-            <div *ngIf="errorMessage" class="error">
-                {{ errorMessage }}
-            </div>
+            <p class="passwort-vergessen">
+                Passwort vergessen? Schreib an
+                <a [href]="passwortVergessenLink">{{ gutgesagtMail }}</a>.
+            </p>
         </form>
     </div>
 </div>
