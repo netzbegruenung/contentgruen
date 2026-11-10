@@ -277,6 +277,7 @@ OFFEN = {
     ("POST", "/api/v1/post/searchPost"),
     ("POST", "/api/v1/reference/search"),
     ("POST", "/api/v1/statement/searchStatements"),
+    ("POST", "/api/v1/statement/aehnliche"),  # "Nicht dabei?", nur lesend (#642)
     ("POST", "/api/v1/statement/getStatementsOfTopic"),
     ("POST", "/api/v1/statement/getStatementsOfCategory"),
     ("POST", "/api/v1/rawinput/gleicherLink"),

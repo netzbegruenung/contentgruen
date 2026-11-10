@@ -68,7 +68,7 @@ describe('OftGesuchtComponent', () => {
     const ids = ['k-1', 'k-2', 'k-4', 'k-5', 'k-6', 'k-3', 'k-7', 'k-8'];
     const seite = erstellen(of({ results: ids.map((id) => ({ id })) }));
 
-    expect(seite.querySelector('.oft-gesucht-titel')?.textContent?.trim()).toBe('Beliebte Aussagen');
+    expect(seite.querySelector('.oft-gesucht-titel')?.textContent?.trim()).toBe('Diese Woche viel beantwortet');
     // Nur die ersten sechs Beitraege werden nachgeladen; k-6 ist die eigene Suche.
     expect(aussagen(seite)).toEqual(['„Windräder töten die Vögel!“', '„Wärmepumpen sind zu teuer“']);
     expect(content.beitragLaden).toHaveBeenCalledTimes(6);

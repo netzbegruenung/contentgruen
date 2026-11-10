@@ -77,6 +77,7 @@ from services.loeschfristen_service import (
 )
 from utils.rate_limiter import (
     aufraeumen_im_takt,
+    aehnliche_aussagen_rate_limiter,
     einladung_pruefen_rate_limiter,
     einladung_rate_limiter,
     feedback_rate_limiter,
@@ -145,6 +146,7 @@ async def lifespan(app: FastAPI):
             aufraeumen_im_takt(
                 [
                     report_rate_limiter,
+                    aehnliche_aussagen_rate_limiter,
                     search_query_statement_rate_limiter,
                     feedback_rate_limiter,
                     einladung_rate_limiter,

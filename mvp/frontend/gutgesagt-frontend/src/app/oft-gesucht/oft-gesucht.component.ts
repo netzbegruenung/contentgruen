@@ -28,7 +28,7 @@ export type OftGesuchtQuelle = 'oft-genutzt' | 'neueste';
 
 /** Der Titel sagt, woher die Aussagen kommen - keine Suchstatistik, die es nicht gibt. */
 export const OFT_GESUCHT_TITEL: Record<OftGesuchtQuelle, string> = {
-  'oft-genutzt': 'Beliebte Aussagen',
+  'oft-genutzt': 'Diese Woche viel beantwortet',
   neueste: 'Zuletzt beantwortet',
 };
 

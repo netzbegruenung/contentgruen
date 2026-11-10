@@ -36,6 +36,7 @@ export const VORSCHLAG_ANZAHL = 3;
 })
 export class StatementService {
   private searchStatementsApiUrl = `${environment.baseUrl}/api/v1/statement/searchStatements`;
+  private aehnlicheApiUrl = `${environment.baseUrl}/api/v1/statement/aehnliche`;
   private getStatementByIdApiUrl = `${environment.baseUrl}/api/v1/statement/getById`;
   private unbeantwortetApiUrl = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
   private vorabApiUrl = `${environment.baseUrl}/api/v1/statement/vorab`;
@@ -81,6 +82,17 @@ export class StatementService {
       nur_kuratiert: true,
       vorschlaege: true,
     }).pipe(map((antwort) => antwort.results));
+  }
+
+  /**
+   * Aehnliche Aussagen fuer "Nicht dabei?" auf der Ergebnisseite (#642): dieselbe
+   * Auswahl wie aussageVorschlaege, aber auch fuer Besucher erreichbar (eigener,
+   * oeffentlicher Endpunkt mit Rate-Limit je Adresse).
+   */
+  aehnlicheAussagen(text: string): Observable<StatementSearchResult[]> {
+    return this.http
+      .post<StatementSearchResponse>(this.aehnlicheApiUrl, { query_text: text, limit: VORSCHLAG_ANZAHL }, nurLesend())
+      .pipe(map((antwort) => antwort.results));
   }
 
   getStatementById(statementId: string): Observable<GetStatementByIdResponse> {

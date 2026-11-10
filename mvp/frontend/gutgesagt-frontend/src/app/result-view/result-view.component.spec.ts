@@ -566,8 +566,8 @@ describe('ResultViewComponent: Nicht dabei?', () => {
   };
 
   function oeffnen(mobil: boolean, mitTreffer: boolean, vorschlaege = [SCHON_DA, AEHNLICH]): HTMLElement {
-    statementService = jasmine.createSpyObj('StatementService', ['aussageVorschlaege']);
-    statementService.aussageVorschlaege.and.returnValue(of(vorschlaege));
+    statementService = jasmine.createSpyObj('StatementService', ['aehnlicheAussagen']);
+    statementService.aehnlicheAussagen.and.returnValue(of(vorschlaege));
     TestBed.configureTestingModule({
       imports: [ResultViewComponent],
       providers: [
@@ -611,7 +611,7 @@ describe('ResultViewComponent: Nicht dabei?', () => {
     expect(seite.querySelector('.unified-empty-state .search-query-info')?.textContent)
       .toContain('Zu „waermepumpe teuer“ ist noch nichts drin.');
     expect(seite.querySelector('.unified-empty-state app-nicht-dabei')?.textContent).toContain('Meintest du …?');
-    expect(statementService.aussageVorschlaege).toHaveBeenCalledWith('waermepumpe teuer');
+    expect(statementService.aehnlicheAussagen).toHaveBeenCalledWith('waermepumpe teuer');
     expect(aehnliche(seite)).toEqual(['Wärmepumpen sind zu teuer', 'Wärmepumpen lohnen sich nicht']);
   });
 
@@ -704,8 +704,8 @@ describe('ResultViewComponent: Gefunden zu', () => {
 
   /** Angemeldet mit aehnlichen Aussagen (Standard) oder als Besucher ohne. */
   async function oeffnen(mobil: boolean, kommentare: any[], aehnliche: any[] | null = [AEHNLICH]): Promise<HTMLElement> {
-    const statementService = jasmine.createSpyObj('StatementService', ['aussageVorschlaege']);
-    statementService.aussageVorschlaege.and.returnValue(of(aehnliche ?? []));
+    const statementService = jasmine.createSpyObj('StatementService', ['aehnlicheAussagen']);
+    statementService.aehnlicheAussagen.and.returnValue(of(aehnliche ?? []));
     TestBed.configureTestingModule({
       imports: [ResultViewComponent],
       providers: [
