@@ -36,14 +36,15 @@ import {
   STUFEN,
   gueteAus,
 } from './karten-daten';
-import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
+import { KartenAktionenComponent, KopierVariante } from './karten-aktionen/karten-aktionen.component';
 import { herkunftDomain, herkunftText, tragtHerkunftsangaben } from './herkunft-text';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { FASSUNGEN, FASSUNG_LABEL, Fassung } from '../shared/fassung';
-import { STIL_LABEL, ZWECK_LABEL } from '../shared/zweck-stil';
+import { STIL_ERKLAERUNG, STIL_LABEL, ZWECK_LABEL } from '../shared/zweck-stil';
+import { PLATTFORM_GRENZE } from '../shared/beitrag-grenzen';
 import { FremdesBildComponent } from '../shared/fremdes-bild/fremdes-bild.component';
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 import { SiegelErklaerung, siegelErklaerung } from '../shared/components/siegel/siegel-erklaerung';
@@ -58,6 +59,14 @@ const BELIEBT_AB = 5;
 
 /** So viele Saetze stehen in der Einwurf-Karte; der Rest wird nur gezaehlt. */
 const SAETZE_SICHTBAR = 3;
+
+/** Ein Reiter der Fassungen (#641): Name und Zeichenzahl, damit man vor dem Antippen sieht, wie lang sie ist. */
+interface FassungsReiter {
+  fassung: Fassung;
+  label: string;
+  zeichen: number;
+  vorgelesen: string;
+}
 
 /** Eine Zeile "Nutzung je Fassung" in Meine Beitraege; `vorgelesen` fuer Screenreader statt "3×". */
 interface NutzungsZeile {
@@ -150,7 +159,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   istNeu = false;
   istBeliebt = false;
   statementOffen = false;
-  /** Der gewaehlte Reiter; ohne Text in dieser Fassung zeigt die Karte Mittel. */
+  /** Der gewaehlte Reiter; vorgewaehlt die kuerzeste Fassung, die auf X passt (#641). */
   gewaehlteFassung: Fassung = 'mittel';
   textAufgeklappt = false;
   textGekuerzt = false;
@@ -236,7 +245,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       this.istNeu = this.stundenSeit(this.daten.erstellt) < NEU_STUNDEN;
       this.istBeliebt = (this.nutzung ?? 0) >= BELIEBT_AB;
       this.statementOffen = false;
-      this.gewaehlteFassung = 'mittel';
+      // Die Formular-Vorschau bekommt bei jedem Tastendruck neue Daten: dort bleibt die
+      // gewaehlte Fassung stehen (anfangs Mittel), sonst spraenge sie beim Tippen auf Kurz.
+      if (!this.vorschau || changes['daten'].firstChange) {
+        this.gewaehlteFassung = this.vorschau ? 'mittel' : this.vorgewaehlteFassung;
+      }
       this.textAufgeklappt = false;
     }
   }
@@ -452,6 +465,12 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return stil ? STIL_LABEL[stil] : null;
   }
 
+  /** Die Erklaerung am Stil-Chip (#641), etwa "brückenbauend: holt Unentschiedene ab". */
+  get stilErklaerung(): string | null {
+    const stil = this.daten.extra?.stil;
+    return stil ? `${STIL_LABEL[stil]}: ${STIL_ERKLAERUNG[stil]}` : null;
+  }
+
   /** Die Markierung fuer Beitraege fuer die eigenen Leute; Kommentarspalte ist der Standard und bleibt unmarkiert. */
   get eigeneLeuteAnzeige(): string | null {
     return this.daten.extra?.fuerEigeneLeute ? ZWECK_LABEL.eigene_leute : null;
@@ -459,6 +478,42 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get hatKurzOderLang(): boolean {
     return !!(this.daten.extra?.kurz || this.daten.extra?.lang);
+  }
+
+  /** Die Reiter der vorhandenen Fassungen mit Zeichenzahl ("Kurz · 180", #641). */
+  get fassungsReiter(): FassungsReiter[] {
+    return FASSUNGEN.filter((fassung) => this.fassungsText(fassung)).map((fassung) => {
+      const zeichen = this.fassungsText(fassung).length;
+      const label = FASSUNG_LABEL[fassung];
+      return { fassung, label, zeichen, vorgelesen: `${label}, ${zeichen} Zeichen` };
+    });
+  }
+
+  /** Die Marke "passt auf X/Bluesky" unter den Reitern, wie im Formular; nur wenn es stimmt. */
+  get passtAufX(): boolean {
+    return this.angezeigterText.length > 0 && this.angezeigterText.length <= PLATTFORM_GRENZE;
+  }
+
+  /**
+   * Vorgewaehlt ist die kuerzeste Fassung, die auf X passt (#641); passt keine, Mittel,
+   * der Haupttext. Ohne Kurz und Lang ist das immer Mittel.
+   */
+  get vorgewaehlteFassung(): Fassung {
+    const passend = FASSUNGEN.find((fassung) => {
+      const text = this.fassungsText(fassung);
+      return text && text.length <= PLATTFORM_GRENZE;
+    });
+    return passend ?? 'mittel';
+  }
+
+  private fassungsText(fassung: Fassung): string {
+    if (fassung === 'kurz') {
+      return this.daten.extra?.kurz ?? '';
+    }
+    if (fassung === 'lang') {
+      return this.daten.extra?.lang ?? '';
+    }
+    return this.daten.text ?? '';
   }
 
   /** Die angezeigte Fassung: die gewaehlte, wenn sie Text hat, sonst Mittel. */
@@ -540,14 +595,41 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return [ROUTES.BEITRAG, this.daten.id];
   }
 
+  /**
+   * Was der Knopf "Kopieren" kopiert (#641): bei der Hintergrundinfo Text samt Herkunft,
+   * sonst den Text der angezeigten Fassung. Die andere Variante steht im ⋮-Menue.
+   */
   get kopierText(): string {
-    return this.angezeigterText;
+    return this.kopiertMitHerkunft ? this.textMitHerkunft : this.angezeigterText;
   }
 
-  /** Die angezeigte Fassung samt Herkunft; leer ohne Herkunft, dann bietet die Leiste keine Wahl an. */
-  get kopierTextMitHerkunft(): string {
+  /** Die zweite Variante fuers ⋮-Menue; null ohne Herkunft, dann gibt es nur eine. */
+  get zweiteKopie(): KopierVariante | null {
+    if (!this.textMitHerkunft) {
+      return null;
+    }
+    return this.kopiertMitHerkunft
+      ? { text: this.angezeigterText, wort: 'Nur Text kopieren' }
+      : { text: this.textMitHerkunft, wort: 'Mit Herkunft kopieren' };
+  }
+
+  /** Tooltip des Knopfs (vorgelesen als Beschreibung): was er kopiert. */
+  get kopierHinweis(): string {
+    if (this.daten.typ === 'image') {
+      return 'Kopiert die Bildunterschrift';
+    }
+    return this.kopiertMitHerkunft ? 'Kopiert Text und Herkunft' : 'Kopiert den Text';
+  }
+
+  /** Die Hintergrundinfo lebt von ihrer Herkunft; Kommentar und Post postet man meist ohne. */
+  private get kopiertMitHerkunft(): boolean {
+    return this.daten.typ === 'generictext' && !!this.textMitHerkunft;
+  }
+
+  /** Die angezeigte Fassung samt Herkunft; leer ohne Herkunft. */
+  private get textMitHerkunft(): string {
     const herkunft = herkunftText(this.daten);
-    return herkunft && this.kopierText ? `${this.kopierText}\n\n${herkunft}` : '';
+    return herkunft && this.angezeigterText ? `${this.angezeigterText}\n\n${herkunft}` : '';
   }
 
   get kopierBeschriftung(): string {
@@ -611,6 +693,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   statementUmschalten(): void {
     this.statementOffen = !this.statementOffen;
     this.cdr.markForCheck();
+  }
+
+  /** Reiter bleiben beim Neuzeichnen erhalten, sonst verloere die Tastatur den Fokus. */
+  reiterSchluessel(_: number, reiter: FassungsReiter): Fassung {
+    return reiter.fassung;
   }
 
   fassungWaehlen(fassung: Fassung): void {

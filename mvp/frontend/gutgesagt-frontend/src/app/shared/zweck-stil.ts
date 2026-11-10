@@ -25,6 +25,18 @@ export const STIL_LABEL: Record<Stil, string> = {
   bissig: 'bissig',
 };
 
+/**
+ * Was ein Stil beim Lesen bewirkt, als Erklaerung am Stil-Chip der Karte (#641):
+ * Wer eine Antwort aussucht, waehlt oft nach der Tonlage.
+ */
+export const STIL_ERKLAERUNG: Record<Stil, string> = {
+  sachlich: 'bleibt bei den Fakten, ohne Spitzen',
+  humorvoll: 'nimmt mit einem Augenzwinkern die Schärfe raus',
+  persoenlich: 'erzählt aus eigenem Erleben',
+  brueckenbauend: 'holt Unentschiedene ab',
+  bissig: 'zugespitzt, nur für die eigenen Leute',
+};
+
 /** "Bissig" gibt es nur beim Zweck "Für die eigenen Leute". */
 export function stileFuer(zweck: Zweck): Stil[] {
   const stile = Object.keys(STIL_LABEL) as Stil[];

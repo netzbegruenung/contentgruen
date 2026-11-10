@@ -14,5 +14,7 @@ export const KOMMENTAR_TEXT_MAX = 500;
 export const HINTERGRUNDINFO_TEXT_MAX = 2000;
 /** Fassung Kurz eines Kommentars (#355): passt auf X und Bluesky, wie im Backend (dtos/commentary.py). */
 export const KURZFASSUNG_MAX = 280;
+/** Bis hierhin passt ein Text auf X und Bluesky ("passt auf X/Bluesky" in Formular und Karte). */
+export const PLATTFORM_GRENZE = KURZFASSUNG_MAX;
 /** Fassung Lang eines Kommentars (#355): Platz fuer Begruendung und Herkunft. */
 export const LANGFASSUNG_MAX = 2000;

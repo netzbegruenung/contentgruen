@@ -498,8 +498,74 @@
   font-size: 16px;
 }
 
+// Stil als Chip (#641): sichtbar als Angabe, nicht als graue Kursivschrift.
 .karte-stil {
-  font-style: italic;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 8px;
+  border: 1px solid var(--divider-color);
+  border-radius: var(--border-radius-large);
+  background: var(--auswahl-grund);
+  color: var(--primary-dark);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.karte-stil--knopf {
+  cursor: pointer;
+  // Tippflaeche groesser als der Chip, ohne ihn aufzublaehen
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -8px -4px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-main);
+    outline-offset: 2px;
+  }
+}
+
+.stil-info {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.stil-erklaerung.mat-mdc-menu-item {
+  display: block;
+  height: auto;
+  min-height: 0;
+  cursor: default;
+  white-space: normal;
+  max-width: 280px;
+  padding: 8px 16px;
+  background: none;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+// Unter den Fassungs-Reitern, wie der Hinweis im Formular (#641)
+.fassung-marke {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  .angabe-icon {
+    color: var(--primary-main);
+  }
+}
+
+.reiter-zeichen {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
 }
 
 .post-herkunft {

@@ -1,5 +1,5 @@
-Die Hand in Logo, Favicon, Siegel und Stimm-Knöpfen von Gut gesagt ist das Emoji
-"Thumbs up" aus Fluent Emoji (Fassungen Flat und High Contrast), verändert.
+Die Hand in Logo, Favicon und Siegel von Gut gesagt ist das Emoji
+"Thumbs up" aus Fluent Emoji (Fassung Flat), verändert.
 daumen.svg (Willkommen und Rundgang, #389) ist die Fassung Flat unverändert,
 Datei assets/Thumbs up/Default/Flat/thumbs_up_flat_default.svg.
 Quelle: https://github.com/microsoft/fluentui-emoji

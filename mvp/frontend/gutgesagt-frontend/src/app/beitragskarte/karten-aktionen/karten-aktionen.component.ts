@@ -27,7 +27,6 @@ import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
-import { HAND_UMRISS } from '../../shared/marke/hand';
 import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
@@ -39,8 +38,8 @@ import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-lu
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
  * Menue der Weg zur eigenen Adresse des Beitrags (/beitrag/:id, #300) und,
  * angemeldet, als Vorlage nehmen (#356).
- * Hat der Beitrag eine Herkunft, steht neben "Kopieren" die Wahl "Text" oder
- * "Text + Herkunft".
+ * Hat der Beitrag eine Herkunft, steht die zweite Kopier-Variante (mit oder ohne
+ * Herkunft) im Menue; welche der Knopf kopiert, entscheidet die Karte (#641).
  *
  * Abstimmen ist optimistisch mit Entprellung und Ruecknahme, dazu 401/403/429-Behandlung
  * (urspruenglich aus BaseResultItemComponent). Die Leiste sitzt in einer eigenen
@@ -52,6 +51,12 @@ import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-lu
  * die Vorschau soll zeigen, wie der Beitrag aussehen wird.
  */
 type Stimme = 'like' | 'dislike' | null;
+
+/** Eine zweite Art zu kopieren, als Eintrag im ⋮-Menue (#641). */
+export interface KopierVariante {
+  text: string;
+  wort: string;
+}
 
 @Component({
   selector: 'app-karten-aktionen',
@@ -68,8 +73,10 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() typ: string | null = null;
   @Input() kopierText = '';
   @Input() kopierBeschriftung = 'Kopieren';
-  /** Text samt Herkunft fuer die Wahl "Text + Herkunft"; leer = keine Herkunft, keine Wahl. */
-  @Input() kopierTextMitHerkunft = '';
+  /** Was der Knopf kopiert, als Tooltip (MatTooltip haengt ihn als Beschreibung an); leer = keiner. */
+  @Input() kopierHinweis = '';
+  /** Die andere Variante (mit oder ohne Herkunft) im Menue; null = es gibt nur eine. */
+  @Input() zweiteKopie: KopierVariante | null = null;
   @Input() stimme?: 'like' | 'dislike';
   @Input() vorschau = false;
   /** Aus beim eigenen Beitrag (Album-Sheet in Meine Beitraege); Kopieren und Melden bleiben. */
@@ -97,7 +104,6 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   isDisliked = false;
   isVoting = false;
   copyAnimationActive = false;
-  readonly HAND_UMRISS = HAND_UMRISS;
 
   /**
    * Die Stimme, wie sie vor dem ersten Tippen seit dem letzten Abgleich stand;
@@ -185,14 +191,14 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.umschalten(this.isDisliked ? null : 'dislike');
   }
 
-  /** Der Standard: der Text allein. */
+  /** Was die Karte als Standard vorgibt. */
   kopieren(): void {
     this.inZwischenablage(this.kopierText);
   }
 
-  /** Die Wahl "Text + Herkunft"; zaehlt wie Kopieren als Nutzung. */
-  kopierenMitHerkunft(): void {
-    this.inZwischenablage(this.kopierTextMitHerkunft);
+  /** Die zweite Variante aus dem Menue; zaehlt wie Kopieren als Nutzung. */
+  zweiteKopieren(): void {
+    this.inZwischenablage(this.zweiteKopie?.text ?? '');
   }
 
   private inZwischenablage(text: string): void {

@@ -6,11 +6,11 @@ export function tragtHerkunftsangaben(typ: string | null): boolean {
 }
 
 /**
- * Die Herkunft eines Beitrags als Text zum Anhaengen beim Kopieren ("Text + Herkunft").
+ * Die Herkunft eines Beitrags als Text zum Anhaengen beim Kopieren ("Mit Herkunft kopieren", #641).
  *
  * Gemeint ist die eigentliche Herkunft, nie ein Link auf Gut gesagt. Kommentar und
  * Hintergrundinfo bringen ihre Herkunftsangaben mit, beim Post ersetzt der Link die
- * Herkunft (GLOSSARY.md). Leer, wenn es keine gibt; dann bietet die Karte keine Wahl an.
+ * Herkunft (GLOSSARY.md). Leer, wenn es keine gibt; dann gibt es nur eine Kopier-Variante.
  */
 export function herkunftText(daten: KartenDaten): string {
   const zeilen = herkunftZeilen(daten);

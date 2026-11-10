@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, SimpleChange } from '@angular/core';
 import { Clipboard } from '@angular/cdk/clipboard';
+import { By } from '@angular/platform-browser';
+import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
@@ -437,43 +439,53 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(kopiert).toHaveBeenCalled();
     });
 
-    it('bietet ohne Herkunft keine Wahl an', () => {
+    it('hat keinen Pfeil neben Kopieren, ohne zweite Variante auch keinen Menueeintrag (#641)', () => {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.querySelector('.kopier-wahl-knopf')).toBeNull();
+      expect(fixture.nativeElement.querySelectorAll('.kopieren button').length).toBe(1);
+      expect(document.querySelector('.zweite-kopie')).toBeNull();
     });
 
-    it('bietet mit Herkunft die Wahl zwischen Text und Text + Herkunft an', () => {
-      fixture.componentRef.setInput('kopierTextMitHerkunft', 'Test text\n\nHerkunft: https://example.org');
+    it('zeigt die zweite Variante oben im ⋮-Menue, direkt nach "Link kopieren" (#641, #640)', () => {
+      fixture.componentRef.setInput('zweiteKopie', { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' });
       fixture.detectChanges();
 
-      fixture.nativeElement.querySelector('.kopier-wahl-knopf').click();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
       fixture.detectChanges();
 
-      const eintraege = Array.from(document.querySelectorAll('.kopier-wahl-eintrag .mat-mdc-menu-item-text')).map((eintrag) =>
-        eintrag.textContent!.trim(),
-      );
-      expect(eintraege).toEqual(['Text', 'Text + Herkunft']);
+      const eintraege = Array.from(document.querySelectorAll('.mat-mdc-menu-item-text')).map((eintrag) => eintrag.textContent!.trim());
+      expect(eintraege.slice(0, 2)).toEqual(['Link kopieren', 'Mit Herkunft kopieren']);
+      expect(fixture.nativeElement.querySelectorAll('.kopieren button').length).toBe(1);
     });
 
-    it('kopiert mit Herkunft den Text samt Herkunft und zaehlt auch das als Nutzung', () => {
+    it('sagt im Tooltip, was der Knopf kopiert (#641)', () => {
+      fixture.componentRef.setInput('kopierHinweis', 'Kopiert Text und Herkunft');
+      fixture.detectChanges();
+
+      const tooltip = fixture.debugElement.query(By.css('.kopieren-knopf')).injector.get(MatTooltip);
+      expect(tooltip.message).toBe('Kopiert Text und Herkunft');
+    });
+
+    it('kopiert die zweite Variante und zaehlt auch das als Nutzung', () => {
       const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
       const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
       const kopiert = jasmine.createSpy('kopiert');
       component.kopiert.subscribe(kopiert);
-      component.kopierTextMitHerkunft = 'Test text\n\nHerkunft: https://example.org';
+      component.zweiteKopie = { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' };
 
-      component.kopierenMitHerkunft();
+      component.zweiteKopieren();
 
       expect(clipboard.copy).toHaveBeenCalledWith('Test text\n\nHerkunft: https://example.org');
       expect(usage.trackContentUsage).toHaveBeenCalledWith(INHALT_ID, undefined);
       expect(kopiert).toHaveBeenCalled();
     });
 
-    it('kopiert ueber die Wahl "Text" nur den Text, auch wenn es eine Herkunft gibt', () => {
+    it('kopiert ueber den Knopf den Standardtext, auch wenn es eine zweite Variante gibt', () => {
       const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
       const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
-      component.kopierTextMitHerkunft = 'Test text\n\nHerkunft: https://example.org';
+      component.zweiteKopie = { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' };
 
       component.kopieren();
 
@@ -583,24 +595,24 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     });
   });
 
-  describe('Stimm-Knöpfe als Umriss-Hand (#416)', () => {
-    it('zeigt die Hand einfarbig als Umriss, hoch und runter gedreht, statt der Material-Icons', () => {
+  describe('Stimm-Knöpfe mit Material-Umriss-Daumen (#641)', () => {
+    it('zeigt schlanke Umriss-Daumen hoch und runter im Kreis-Knopf, nicht die Hand des Siegels', () => {
       fixture.detectChanges();
 
       const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
-      const haende = knoepfe.map((k) => k.querySelector<SVGElement>('svg.stimm-hand'));
-      expect(haende.every((h) => h !== null)).toBeTrue();
-      expect(haende.map((h) => h!.querySelector('path')!.getAttribute('fill'))).toEqual(['currentColor', 'currentColor']);
-      expect(haende[0]!.classList).not.toContain('runter');
-      expect(haende[1]!.classList).toContain('runter');
-      expect(knoepfe.some((k) => k.querySelector('mat-icon'))).toBeFalse();
+      expect(knoepfe.map((k) => k.querySelector('mat-icon')!.textContent!.trim())).toEqual([
+        'thumb_up_off_alt',
+        'thumb_down_off_alt',
+      ]);
+      expect(knoepfe.every((k) => k.hasAttribute('mat-icon-button'))).toBeTrue();
+      expect(knoepfe.some((k) => k.querySelector('svg path'))).toBeFalse();
     });
 
-    it('verbirgt die Hand vor Screenreadern, der Knopf behält seinen Namen', () => {
+    it('verbirgt die Daumen vor Screenreadern, der Knopf behält seinen Namen', () => {
       fixture.detectChanges();
 
       const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
-      expect(knoepfe.map((k) => k.querySelector('svg')!.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
+      expect(knoepfe.map((k) => k.querySelector('mat-icon')!.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
       expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Hilfreich', 'Nicht hilfreich']);
     });
   });
@@ -655,17 +667,14 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       });
     });
 
-    it('kopiert auch mit Herkunft nicht und zaehlt keine Nutzung', () => {
+    it('kopiert auch die zweite Variante nicht und zaehlt keine Nutzung', () => {
       const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
       const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
-      fixture.componentRef.setInput('kopierTextMitHerkunft', 'Test text\n\nHerkunft: https://example.org');
+      fixture.componentRef.setInput('zweiteKopie', { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' });
       fixture.detectChanges();
 
-      const wahl: HTMLButtonElement = fixture.nativeElement.querySelector('.kopier-wahl-knopf');
-      component.kopierenMitHerkunft();
+      component.zweiteKopieren();
 
-      expect(wahl.getAttribute('aria-disabled')).toBe('true');
-      expect(wahl.getAttribute('tabindex')).toBe('-1');
       expect(clipboard.copy).not.toHaveBeenCalled();
       expect(usage.trackContentUsage).not.toHaveBeenCalled();
     });

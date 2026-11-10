@@ -185,7 +185,7 @@
     <ng-container *ngIf="istKompakt">
         <div class="album-inhalt">
             <h3 class="karte-titel">{{ titelAnzeige }}</h3>
-            <ng-container *ngTemplateOutlet="angaben"></ng-container>
+            <ng-container *ngTemplateOutlet="angaben; context: { antippbar: false }"></ng-container>
             <p class="album-anriss" *ngIf="anriss as anriss">{{ anriss }}</p>
         </div>
         <footer class="album-fuss">
@@ -203,17 +203,24 @@
 
     <ng-container *ngIf="istVoll">
         <div class="karte-inhalt">
-            <ng-container *ngTemplateOutlet="angaben"></ng-container>
+            <ng-container *ngTemplateOutlet="angaben; context: { antippbar: true }"></ng-container>
 
-            <mat-button-toggle-group *ngIf="hatKurzOderLang" class="textlaenge"
-                                     aria-label="Fassung"
-                                     [value]="gewaehlteFassung"
-                                     [hideSingleSelectionIndicator]="true"
-                                     (change)="fassungWaehlen($event.value)">
-                <mat-button-toggle value="kurz" *ngIf="daten.extra?.kurz">Kurz</mat-button-toggle>
-                <mat-button-toggle value="mittel">Mittel</mat-button-toggle>
-                <mat-button-toggle value="lang" *ngIf="daten.extra?.lang">Lang</mat-button-toggle>
-            </mat-button-toggle-group>
+            <!-- Reiter mit Zeichenzahl, darunter die Marke wie im Formular (#641); bei nur einer Fassung keine Reiter -->
+            <ng-container *ngIf="hatKurzOderLang">
+                <mat-button-toggle-group class="textlaenge"
+                                         aria-label="Fassung"
+                                         [value]="angezeigteFassung"
+                                         [hideSingleSelectionIndicator]="true"
+                                         (change)="fassungWaehlen($event.value)">
+                    <mat-button-toggle *ngFor="let reiter of fassungsReiter; trackBy: reiterSchluessel" [value]="reiter.fassung"
+                                       [aria-label]="reiter.vorgelesen">
+                        <span aria-hidden="true">{{ reiter.label }}<span class="reiter-zeichen"> · {{ reiter.zeichen }}</span></span>
+                    </mat-button-toggle>
+                </mat-button-toggle-group>
+                <p class="fassung-marke" *ngIf="passtAufX">
+                    <mat-icon class="angabe-icon" aria-hidden="true">check</mat-icon>passt auf X/Bluesky
+                </p>
+            </ng-container>
 
             <!-- Meine Beitraege: Nutzung und Zuwachs der letzten 7 Tage je Fassung -->
             <ul class="nutzung-je-fassung" *ngIf="nutzungJeFassung as zeilen" aria-label="Nutzung je Fassung">
@@ -282,7 +289,8 @@
                 [typ]="daten.typ"
                 [kopierText]="kopierText"
                 [kopierBeschriftung]="kopierBeschriftung"
-                [kopierTextMitHerkunft]="kopierTextMitHerkunft"
+                [kopierHinweis]="kopierHinweis"
+                [zweiteKopie]="zweiteKopie"
                 [stimme]="daten.stimme"
                 [vorschau]="vorschau"
                 [abstimmenSichtbar]="abstimmenSichtbar"
@@ -308,12 +316,26 @@
 
     <!-- Am Kommentar (#357), in der vollen und der kompakten Karte: Markierung fuer
          die eigenen Leute und der Stil -->
-    <ng-template #angaben>
+    <!-- Der Stil als Chip (#641): Antippen zeigt, was er bewirkt. In der kompakten Karte,
+         die als Ganzes antippbar ist, nur als Etikett ohne eigenen Knopf. -->
+    <ng-template #angaben let-antippbar="antippbar">
         <p class="karte-angaben" *ngIf="eigeneLeuteAnzeige || stilAnzeige">
             <span class="karte-eigene-leute" *ngIf="eigeneLeuteAnzeige as eigene">
                 <mat-icon class="angabe-icon" aria-hidden="true">groups</mat-icon>{{ eigene }}
             </span>
-            <span class="karte-stil" *ngIf="stilAnzeige as stil"><span class="cdk-visually-hidden">Stil: </span>{{ stil }}</span>
+            <ng-container *ngIf="stilAnzeige as stil">
+                <!-- Wie das Siegel: Antippen oeffnet die Erklaerung, auch am Handy -->
+                <button *ngIf="antippbar; else stilEtikett" type="button" class="karte-stil karte-stil--knopf"
+                        [matMenuTriggerFor]="stilMenue"
+                        [attr.aria-label]="'Stil: ' + stil + ', Erklärung öffnen'"
+                        (click)="$event.stopPropagation()">{{ stil }}<mat-icon class="stil-info" aria-hidden="true">info_outline</mat-icon></button>
+                <mat-menu #stilMenue="matMenu" class="stil-menue">
+                    <div mat-menu-item disableRipple class="stil-erklaerung" (click)="$event.stopPropagation()">{{ stilErklaerung }}</div>
+                </mat-menu>
+                <ng-template #stilEtikett>
+                    <span class="karte-stil" [attr.title]="stilErklaerung"><span class="cdk-visually-hidden">Stil: </span>{{ stil }}</span>
+                </ng-template>
+            </ng-container>
         </p>
     </ng-template>
 </article>

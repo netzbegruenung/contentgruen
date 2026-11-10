@@ -3,7 +3,8 @@
     Ein [attr.aria-disabled] am Knopf ueberschreibt MatButton mit seiner Host-Bindung.
 -->
 <div class="aktionen" [attr.aria-disabled]="vorschau || null">
-    <!-- Einfarbige Umriss-Hand, damit sich die Knöpfe vom farbigen Siegel abheben (#416) -->
+    <!-- Schlanke Material-Umriss-Daumen im Kreis-Knopf (#641, entschieden 10.11.): heben sich vom Siegel ab,
+         der Daumen in der Sprechblase bleibt dem Siegel vorbehalten -->
     <div class="stimmen" *ngIf="abstimmenSichtbar">
         <button mat-icon-button type="button" class="stimme-knopf"
                 [class.active-button]="isLiked"
@@ -13,7 +14,7 @@
                 [attr.aria-label]="beschriftung('Hilfreich', zahlHilfreich)"
                 matTooltip="Hilfreich" matTooltipPosition="above"
                 (click)="toggleLike()">
-            <svg class="stimm-hand" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path [attr.d]="HAND_UMRISS" fill="currentColor"/></svg>
+            <mat-icon aria-hidden="true">thumb_up_off_alt</mat-icon>
         </button>
         <!-- Zaehler (#427): Summe der Stimmen anderer, erst ab der Mindestzahl; vorgelesen steht er im Namen des Knopfs -->
         <span class="stimm-zahl" *ngIf="zahlHilfreich !== null" aria-hidden="true">{{ zahlHilfreich }}</span>
@@ -25,43 +26,22 @@
                 [attr.aria-label]="beschriftung('Nicht hilfreich', zahlNichtHilfreich)"
                 matTooltip="Nicht hilfreich" matTooltipPosition="above"
                 (click)="toggleDislike()">
-            <svg class="stimm-hand runter" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path [attr.d]="HAND_UMRISS" fill="currentColor"/></svg>
+            <mat-icon aria-hidden="true">thumb_down_off_alt</mat-icon>
         </button>
         <span class="stimm-zahl" *ngIf="zahlNichtHilfreich !== null" aria-hidden="true">{{ zahlNichtHilfreich }}</span>
     </div>
 
-    <!-- Kopieren und die Wahl daneben teilen sich die mittlere Spalte -->
+    <!-- Ein Knopf ohne Pfeil daneben (#641): Was er kopiert, sagt der Tooltip (auch als Beschreibung vorgelesen); die andere Variante steht im ⋮-Menue -->
     <div class="kopieren">
         <button mat-raised-button type="button" class="gutgesagt-primary-dark kopieren-knopf"
                 [class.copy-success]="copyAnimationActive"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
+                [matTooltip]="kopierHinweis" matTooltipPosition="above" matTooltipShowDelay="500"
                 (click)="kopieren()">
             <mat-icon>content_copy</mat-icon>
             <span>{{ kopierBeschriftung }}</span>
         </button>
-
-        <!-- Die Wahl gibt es nur, wenn der Beitrag eine Herkunft hat -->
-        <ng-container *ngIf="kopierTextMitHerkunft">
-            <button mat-icon-button type="button" class="kopier-wahl-knopf"
-                    [matMenuTriggerFor]="kopierWahl"
-                    [aria-disabled]="vorschau"
-                    [tabIndex]="vorschau ? -1 : undefined"
-                    aria-label="Text oder Text + Herkunft"
-                    matTooltip="Text oder Text + Herkunft" matTooltipPosition="above">
-                <mat-icon>arrow_drop_down</mat-icon>
-            </button>
-            <mat-menu #kopierWahl="matMenu">
-                <button mat-menu-item type="button" class="kopier-wahl-eintrag" (click)="kopieren()">
-                    <mat-icon>content_copy</mat-icon>
-                    <span>Text</span>
-                </button>
-                <button mat-menu-item type="button" class="kopier-wahl-eintrag" (click)="kopierenMitHerkunft()">
-                    <mat-icon>library_books</mat-icon>
-                    <span>Text + Herkunft</span>
-                </button>
-            </mat-menu>
-        </ng-container>
     </div>
 
     <button mat-icon-button type="button" class="menue-knopf"
@@ -79,6 +59,10 @@
                 (click)="linkKopieren()">
             <mat-icon>link</mat-icon>
             <span>Link kopieren</span>
+        </button>
+        <button mat-menu-item type="button" class="zweite-kopie" *ngIf="zweiteKopie as zweite" (click)="zweiteKopieren()">
+            <mat-icon>content_copy</mat-icon>
+            <span>{{ zweite.wort }}</span>
         </button>
         <button mat-menu-item type="button" *ngIf="kannAlsVorlage" (click)="alsVorlageNehmen()">
             <mat-icon>call_split</mat-icon>
