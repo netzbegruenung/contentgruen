@@ -19,7 +19,7 @@ mirror (`.github/workflows/`) still build them too and publish the tags the envi
 | `lint` | same | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
 | `unit` | same | `check.sh --schritt unit`: Python unit tests and `scripts/tests/` |
 | `integration` | same | `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below |
-| `frontend` | `node:22` | Chromium from Debian (`scripts/ci-chromium.sh`), `npm ci`, `check.sh --schritt frontend` |
+| `frontend` | `node:22` | Chromium from Debian (`scripts/ci-chromium.sh`), `npm ci`, `check.sh --schritt frontend` (Karma tests, then `ng build --configuration production` for the budgets of the image build) |
 | `bff` | `mcr.microsoft.com/dotnet/sdk:9.0` (BFF Dockerfile) | `check.sh --schritt bff` with `CHECK_OHNE_DOCKER=1` |
 | `ci-bericht` | `python:3.13-slim` | red pull-request runs only, see below |
 

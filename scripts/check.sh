@@ -1,6 +1,6 @@
 #!/bin/bash
 # Full check for a working tree: retired words, Python lint + format + unit tests (and scripts/tests/),
-# frontend tests, BFF tests. The same command for people, agents and CI. Runs from any directory.
+# frontend tests and production build (budgets), BFF tests. The same command for people, agents and CI. Runs from any directory.
 # Images: the BFF SDK image is the one of mvp/backend/BFF/Dockerfile (scripts/tests/test_woodpecker_ci.py).
 # Frontend tests need a Chrome/Chromium: set CHROME_BIN, otherwise the Playwright Chromium is used if present.
 # --integration: also run app/tests/integration against Qdrant (QDRANT_URL, default localhost:6333) and
@@ -23,6 +23,7 @@ INTEGRATION=
 SCHRITT=
 GEAENDERT=
 INCLUDE=()
+NUR_SPECS=
 SCHRITTE="retired-words lint unit integration frontend bff"
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -30,7 +31,7 @@ while [ $# -gt 0 ]; do
     --schritt)
       SCHRITT=$2; shift
       case " $SCHRITTE " in *" $SCHRITT "*) ;; *) echo "Unknown step: $SCHRITT (one of: $SCHRITTE)" >&2; exit 2 ;; esac ;;
-    --include) INCLUDE+=(--include "$2"); shift; SCHRITT=frontend ;;
+    --include) INCLUDE+=(--include "$2"); shift; SCHRITT=frontend; NUR_SPECS=1 ;;
     --geaendert) GEAENDERT=1 ;;
     *) echo "Unknown option: $1 (usage: check.sh [--integration] [--schritt <name>] [--include <pfad>] [--geaendert])" >&2; exit 2 ;;
   esac
@@ -85,6 +86,15 @@ if laeuft frontend; then
   kurz 'Executed [0-9]+ of [0-9]+.*(SUCCESS|FAILED)|ERROR' 2 <"$log"
   [ "$status" -eq 0 ] || [ -n "$CHECK_VOLL" ] || { echo "-- ng test exit $status, last lines:"; tail -n 15 "$log"; }
   rm -f "$log"; test "$status" -eq 0
+  # The image build (Dockerfile) runs `ng build --configuration production`, whose budgets ng test
+  # does not check: an exceeded budget stopped the :main images after merge (10.11.). Not with
+  # --include; with --geaendert it runs, a changed stylesheet is what exceeds a budget.
+  if [ -z "$NUR_SPECS" ]; then
+    echo "== Frontend build (production)"; log=$(mktemp); status=0
+    npx ng build gutgesagt-frontend --configuration production --progress=false >"$log" 2>&1 || status=$?
+    [ "$status" -eq 0 ] && [ -z "$CHECK_VOLL" ] && echo "build ok" || cat "$log"
+    rm -f "$log"; test "$status" -eq 0
+  fi
 fi
 
 if laeuft bff; then
