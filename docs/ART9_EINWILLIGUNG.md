@@ -139,8 +139,10 @@ Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“
   `wortlautErsterSatz` in `art9-einwilligung.service.ts` ab. Ein neuer Wortlaut braucht
   deshalb einen ersten Satz, der für sich die Einwilligung ausdrückt.
 - **Profilmenü:** Der Wortlaut nennt den Widerruf „im Profilmenü unter
-  „Datenschutz-Einstellungen““ (bis `2026-11-05-b`: „Einwilligung“); der Name steht als
-  `DATENSCHUTZ_EINSTELLUNGEN` in `src/app/shared/fangkorb-texte.ts`, der Eintrag in `mvp/frontend/gutgesagt-frontend/src/app/app.component.html` und
+  „Datenschutz-Einstellungen““ (bis #644 „Einwilligung“); der Name steht als
+  `DATENSCHUTZ_EINSTELLUNGEN` in `mvp/frontend/gutgesagt-frontend/src/app/shared/fangkorb-texte.ts`
+  (auch Seitentitel von `/einwilligung`; die Karte darauf heißt weiter „Einwilligung“, so
+  finden auch Personen mit dem Wortlaut `2026-11-05-b` den Widerruf), der Eintrag in `mvp/frontend/gutgesagt-frontend/src/app/app.component.html` und
   `mvp/frontend/gutgesagt-frontend/src/app/shared/components/mobile-menu/mobile-menu.html`.
 
 Ohne Änderung zieht die E2E-Anmeldung mit
