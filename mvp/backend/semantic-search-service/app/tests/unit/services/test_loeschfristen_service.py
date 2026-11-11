@@ -56,8 +56,20 @@ def sperren():
 
 
 @pytest.fixture
-def service(meldungen, einwuerfe, beitraege, moderation, sperren):
-    return LoeschfristenService(meldungen, einwuerfe, beitraege, moderation, sperren)
+def suchereignisse():
+    return Mock(**{"verdichten_vor.return_value": 0})
+
+
+@pytest.fixture
+def service(meldungen, einwuerfe, beitraege, moderation, sperren, suchereignisse):
+    return LoeschfristenService(
+        meldungen,
+        einwuerfe,
+        beitraege,
+        moderation,
+        sperren,
+        suchereignisse=suchereignisse,
+    )
 
 
 def test_fristen_wie_im_loeschkonzept():
@@ -70,6 +82,36 @@ def test_fristen_wie_im_loeschkonzept():
 
 
 class TestPostgres:
+    async def test_suchereignisse_abgeschlossener_tage_werden_verdichtet(
+        self, service, suchereignisse
+    ):
+        """Das Tagespseudonym bleibt nur bis zum Lauf nach Mitternacht (#495)."""
+        await service.fristen_anwenden(HEUTE)
+
+        suchereignisse.verdichten_vor.assert_called_once_with(
+            datetime(2026, 10, 29, tzinfo=timezone.utc)
+        )
+
+    async def test_fehler_beim_verdichten_haelt_die_anderen_nicht_auf(
+        self, service, suchereignisse, meldungen
+    ):
+        suchereignisse.verdichten_vor.side_effect = RuntimeError("db weg")
+
+        await service.fristen_anwenden(HEUTE)
+
+        meldungen.bearbeitete_loeschen_vor.assert_called_once()
+
+    async def test_ohne_suchereignisse_kein_verdichten(
+        self, meldungen, einwuerfe, beitraege, moderation, sperren
+    ):
+        service = LoeschfristenService(
+            meldungen, einwuerfe, beitraege, moderation, sperren
+        )
+
+        await service.fristen_anwenden(HEUTE)
+
+        meldungen.bearbeitete_loeschen_vor.assert_called_once()
+
     async def test_meldungen_bearbeitet_vor_180_tagen(self, service, meldungen):
         await service.fristen_anwenden(HEUTE)
 

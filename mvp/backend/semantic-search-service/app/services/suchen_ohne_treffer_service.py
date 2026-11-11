@@ -24,15 +24,13 @@ Tagespseudonym (SearchTrackingService), und das hat Grenzen:
   Merkmal gibt es bewusst nicht;
 - wer sich am selben Tag anmeldet, zaehlt danach unter der Nutzerkennung als
   weitere Person; Besucher und Konto zu verbinden waere neuer Personenbezug;
-- Besucher erkennt der Server an Anschluss und User-Agent (#446). Wer das Netz
-  wechselt, ist eine neue Person. Je Anschluss und Aussage zaehlt am Tag aber
-  hoechstens ein Besucher als Person (#496): Den User-Agent bestimmt der Browser,
-  ein Wechsel allein brachte sonst eine Aussage ueber die Schwelle. Mehrere
-  Besucher hinter demselben Anschluss (Buero, Familie) zaehlen deshalb als eine;
-  fehlt die Adresse ganz (X-Real-IP nicht gesetzt), teilen sich alle Besucher
-  einen Anschluss und erreichen die Schwelle allein nie.
+- Besucher erkennt der Server an ihrem Anschluss allein (#446, seit #495 ohne
+  User-Agent). Wer das Netz wechselt, ist eine neue Person; mehrere Besucher
+  hinter demselben Anschluss (Buero, Familie) zaehlen als eine, auch mit
+  verschiedenen Browsern. Fehlt die Adresse ganz (X-Real-IP nicht gesetzt), teilen
+  sich alle Besucher einen Anschluss und erreichen die Schwelle allein nie.
 
-Welche Personen und Anschluesse eine Aussage heute schon gezaehlt haben, haelt
+Welche Personen eine Aussage heute schon gezaehlt haben, haelt
 PersonenDesTages nur im Speicher und nur fuer den laufenden UTC-Tag; um Mitternacht verwirft
 loeschen_im_takt die Merkliste. In der Datenbank landet nur die Zahl. Nach einem
 Neustart am selben Tag kann eine Person deshalb ein zweites Mal zaehlen; das ist
@@ -57,7 +55,7 @@ import hashlib
 import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import FrozenSet, List, Optional, Set, Tuple
+from typing import FrozenSet, List, Optional, Set
 
 from core.logging import get_logger
 from domain.models.content_status import ContentStatus
@@ -75,9 +73,8 @@ WOCHEN_MAX = AUFBEWAHRUNG_WOCHEN
 MINDESTANZAHL = 2
 LIMIT_STANDARD = 20
 LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
-# Obergrenze der Merkliste: Eintraege je Tag, einer je (Person, Aussage) und bei
-# Besuchern einer je (Anschluss, Aussage); je Eintrag 32 Bytes plus Verwaltung des
-# Sets, zusammen gut 10 MB.
+# Obergrenze der Merkliste: Eintraege je Tag, einer je (Person, Aussage); je
+# Eintrag 32 Bytes plus Verwaltung des Sets, zusammen gut 10 MB.
 MERKLISTE_MAX = 100_000
 
 
@@ -118,12 +115,12 @@ def _kennung(pseudonym: str, statement_id: uuid.UUID) -> bytes:
 class PersonenDesTages:
     """
     Merkt sich fuer den laufenden UTC-Tag, welche Personen zu welcher Aussage schon
-    gezaehlt sind, als SHA-256 ueber (Tagespseudonym, Aussage), bei Besuchern
-    zusaetzlich ueber (Anschluss-Pruefwert, Aussage). Der Hash haelt nur
-    Pseudonym und Aussage-ID aus Logs und Fehlermeldungen heraus; wer den Speicher
-    des Prozesses auslesen kann, kann ihn mit search_events abgleichen. Der Schutz
-    liegt darin, dass nichts davon gespeichert wird und die Liste mit dem Tag
-    verfaellt.
+    gezaehlt sind, als SHA-256 ueber (Tagespseudonym, Aussage). Bei Besuchern steht
+    das Tagespseudonym fuer ihren Anschluss, also zaehlt je Anschluss und Aussage
+    hoechstens einer. Der Hash haelt nur Pseudonym und Aussage-ID aus Logs und
+    Fehlermeldungen heraus; wer den Speicher des Prozesses auslesen kann, kann ihn
+    mit den Suchereignissen des laufenden Tages abgleichen. Der Schutz liegt darin,
+    dass nichts davon gespeichert wird und die Liste mit dem Tag verfaellt.
     """
 
     def __init__(self, obergrenze: int = MERKLISTE_MAX):
@@ -131,51 +128,23 @@ class PersonenDesTages:
         self._gezaehlt: Set[bytes] = set()
         self._obergrenze = obergrenze
 
-    def neu(
-        self,
-        pseudonym: str,
-        statement_id: uuid.UUID,
-        tag: date,
-        anschluss_pruefwert: Optional[str] = None,
-    ) -> bool:
+    def neu(self, pseudonym: str, statement_id: uuid.UUID, tag: date) -> bool:
         """
-        True, wenn die Person die Aussage an diesem Tag noch nicht gezaehlt hat und,
-        bei Besuchern, auch niemand vom selben Anschluss (anschluss_pruefwert, #496).
+        True, wenn die Person die Aussage an diesem Tag noch nicht gezaehlt hat.
         Ist die Merkliste voll, False: lieber eine Person zu wenig als eine zu viel.
         """
         if tag != self._tag:
             self._tag = tag
             self._gezaehlt = set()
-        kennungen = self._kennungen(pseudonym, statement_id, anschluss_pruefwert)
-        if (
-            any(k in self._gezaehlt for k in kennungen)
-            or len(self._gezaehlt) + len(kennungen) > self._obergrenze
-        ):
+        kennung = _kennung(pseudonym, statement_id)
+        if kennung in self._gezaehlt or len(self._gezaehlt) >= self._obergrenze:
             return False
-        self._gezaehlt.update(kennungen)
+        self._gezaehlt.add(kennung)
         return True
 
-    def vergessen(
-        self,
-        pseudonym: str,
-        statement_id: uuid.UUID,
-        anschluss_pruefwert: Optional[str] = None,
-    ) -> None:
+    def vergessen(self, pseudonym: str, statement_id: uuid.UUID) -> None:
         """Eine Person wieder streichen, deren Zaehlung nicht geschrieben wurde."""
-        self._gezaehlt.difference_update(
-            self._kennungen(pseudonym, statement_id, anschluss_pruefwert)
-        )
-
-    @staticmethod
-    def _kennungen(
-        pseudonym: str, statement_id: uuid.UUID, anschluss_pruefwert: Optional[str]
-    ) -> Tuple[bytes, ...]:
-        if anschluss_pruefwert is None:
-            return (_kennung(pseudonym, statement_id),)
-        return (
-            _kennung(pseudonym, statement_id),
-            _kennung(anschluss_pruefwert, statement_id),
-        )
+        self._gezaehlt.discard(_kennung(pseudonym, statement_id))
 
     def verwerfen_vor(self, tag: date) -> None:
         """Die Merkliste vergessen, wenn sie zu einem frueheren Tag gehoert."""
@@ -237,7 +206,6 @@ class SuchenOhneTrefferService:
         treffer: int,
         pseudonym: Optional[str],
         heute: Optional[date] = None,
-        anschluss_pruefwert: Optional[str] = None,
     ) -> None:
         """
         Eine Suche zaehlen, wenn sie keinen Beitrag fand, und die suchende Person,
@@ -245,10 +213,9 @@ class SuchenOhneTrefferService:
 
         pseudonym ist das Tagespseudonym aus SearchTrackingService und heute der
         Tag, zu dem es gehoert. Ohne Pseudonym zaehlt die Suche, aber keine
-        Person. anschluss_pruefwert ist bei Besuchern ihr Anschluss-Pruefwert
-        (utils/besucher_pseudonym.py): Je Anschluss und Aussage zaehlt am Tag
-        hoechstens eine Person, sonst machte ein Wechsel des User-Agents allein aus
-        einer Person zwei (#496). Angemeldete haben keinen.
+        Person. Das Pseudonym eines Besuchers steht fuer seinen Anschluss
+        (utils/besucher_pseudonym.py), also zaehlt je Anschluss und Aussage am Tag
+        hoechstens ein Besucher.
         Ohne Aussage (das Rate-Limit hat das Anlegen ausgelassen) gibt es nichts,
         woran sich zaehlen liesse; die Suche faellt dann aus der Kennzahl.
         Datenbankfehler gehen an den Aufrufer.
@@ -257,7 +224,7 @@ class SuchenOhneTrefferService:
             return
         tag = heute or heute_utc()
         neue_person = pseudonym is not None and self._personen.neu(
-            pseudonym, statement_id, tag, anschluss_pruefwert
+            pseudonym, statement_id, tag
         )
         try:
             self._repository.zaehlen(statement_id, wochenbeginn(tag), neue_person)
@@ -265,7 +232,7 @@ class SuchenOhneTrefferService:
             # Nicht geschrieben, also auch nicht gezaehlt: die naechste Suche der
             # Person soll sie nachtragen koennen.
             if neue_person:
-                self._personen.vergessen(pseudonym, statement_id, anschluss_pruefwert)
+                self._personen.vergessen(pseudonym, statement_id)
             raise
 
     async def haeufigste(

@@ -2,16 +2,18 @@
 Repository for search event tracking.
 Handles database operations for search analytics.
 
-Suchereignisse bleiben search_event_retention_days Tage als Einzelzeilen. Aeltere
-Tage werden zu Tageszaehlern der Suchen verdichtet (suchen_je_tag: Tag, Zahl der
-Suchen, Zahl der Personen), ohne Tagespseudonym (#289). Die Zaehlungen je Zeitraum
-unten addieren diese Tageszaehler und stimmen so auch ueber die Frist hinaus.
+Suchereignisse bleiben nur fuer den laufenden UTC-Tag als Einzelzeilen. Ist ein
+Tag abgeschlossen, werden sie zu seinem Tageszaehler der Suchen verdichtet
+(suchen_je_tag: Tag, Zahl der Suchen, der Suchen ohne Treffer und der Personen),
+ohne Tagespseudonym (#289; seit #495 am Tagesende statt nach 90 Tagen, ausgeloest
+von services/loeschfristen_service.py). Die Zaehlungen je Zeitraum unten addieren
+diese Tageszaehler zu den Einzelzeilen des laufenden Tages.
 
-Jede Suche schreibt ihr Suchereignis in einer eigenen Transaktion. Damit ergaeben
-die Systemspalte xmin und die physische Lage der Zeilen (ctid, pg_dump) die
-Reihenfolge der Suchen eines Tages. Derselbe Job schreibt deshalb jeden
-abgeschlossenen Tag in zufaelliger Reihenfolge und in einer Transaktion neu
-(#337).
+Jede Suche schreibt ihr Suchereignis in einer eigenen Transaktion; xmin und die
+physische Lage der Zeilen (ctid, pg_dump) ergeben deshalb die Reihenfolge der
+Suchen des laufenden Tages. Bis #495 schrieb der Bereinigungsjob jeden
+abgeschlossenen Tag gemischt neu (#337); seit abgeschlossene Tage gar keine
+Einzelzeilen mehr haben, gibt es nichts mehr zu mischen.
 """
 
 import logging
@@ -44,9 +46,11 @@ class Tageswert:
 
 # Verdichtet in einer Anweisung: Was DELETE entfernt, landet im selben Schritt im
 # Tageszaehler. grenze ist Mitternacht UTC und Suchereignisse tragen nur den Tag,
-# also wird ein Tag immer ganz verdichtet. Einen Konflikt gibt es nur, wenn ein
-# schon verdichteter Tag spaeter noch Suchereignisse bekommt; neue tragen aber
-# immer den laufenden Tag. Fuer diesen Fall addiert ON CONFLICT, statt Zeilen zu
+# also wird ein Tag immer ganz verdichtet. personen zaehlt die verschiedenen
+# Tagespseudonyme des Tages; das ist die einzige Stelle, an der sie noch zaehlbar
+# sind. Einen Konflikt gibt es nur, wenn ein schon verdichteter Tag spaeter noch
+# Suchereignisse bekommt (eine Suche kurz vor Mitternacht, deren Zeile erst nach
+# dem Lauf eingeht). Fuer diesen Fall addiert ON CONFLICT, statt Zeilen zu
 # verlieren; personen kann dann eine Person doppelt zaehlen. Ein ohne_treffer, das
 # ein vor #467 verdichteter Tag nicht kennt (NULL), bleibt dabei unbekannt.
 _VERDICHTEN = text(
@@ -68,31 +72,6 @@ _VERDICHTEN = text(
             ohne_treffer = suchen_je_tag.ohne_treffer + EXCLUDED.ohne_treffer
     )
     SELECT count(*) FROM weg
-    """
-)
-
-
-# Mischt in einer Anweisung, also einer Transaktion: Alle neu geschriebenen Zeilen
-# tragen dasselbe xmin, und eingefuegt wird in zufaelliger Reihenfolge, die damit
-# auch die physische Lage bestimmt. Gemischt werden bei jedem Lauf alle
-# abgeschlossenen Tage, nicht nur die noch ungemischten: Woran man einen
-# gemischten Tag erkennen koennte, traegt auch ein ungemischter (ein xmin hat ein
-# Tag auch nach dem Neuschreiben der Tabelle in #275 oder nach dem Einspielen
-# eines Dumps). So mischt der Lauf beim Start des Dienstes auch diese Tage.
-_MISCHEN = text(
-    """
-    WITH weg AS (
-        DELETE FROM search_events
-        WHERE timestamp < :heute
-        RETURNING id, actor_hash, results_count, timestamp
-    ), neu AS (
-        INSERT INTO search_events (id, actor_hash, results_count, timestamp)
-        SELECT id, actor_hash, results_count, timestamp
-        FROM weg
-        ORDER BY random()
-        RETURNING 1
-    )
-    SELECT count(*) FROM neu
     """
 )
 
@@ -238,63 +217,70 @@ class SearchTrackingRepository:
 
     def get_searches_per_user(self, days: int = 7) -> Dict[str, Any]:
         """
-        Get search statistics per active actor.
+        Suchen je aktiver Person und Tag.
 
-        Counted per actor-day rather than per person: the pseudonym rotates daily,
-        so an actor searching on three days of the window contributes three entries.
+        Gezaehlt je Personentag, nicht je Person: Das Pseudonym wechselt taeglich,
+        wer an drei Tagen des Zeitraums sucht, zaehlt dreimal. Abgeschlossene Tage
+        kommen aus den Tageszaehlern (Suchen und Personen), der laufende aus den
+        Einzelzeilen; einen Median gibt es seit #495 nicht mehr, denn dafuer
+        braeuchte es die Suchen je Pseudonym ueber das Tagesende hinaus.
 
         Args:
             days: Number of days to analyze
 
         Returns:
-            Dict with average, median, and distribution stats
+            Dict with average, total_users (Personentage) and total_searches
         """
+        leer = {"average": 0.0, "total_users": 0, "total_searches": 0}
         try:
             start_date = datetime.utcnow() - timedelta(days=days)
-
+            end_date = datetime.utcnow()
+            zeitraum = and_(
+                SearchEvent.timestamp >= start_date,
+                SearchEvent.timestamp <= end_date,
+            )
+            personen = (
+                select(func.count(distinct(SearchEvent.actor_hash)))
+                .where(zeitraum)
+                .scalar_subquery()
+            )
+            suchen = (
+                select(func.count())
+                .where(and_(zeitraum, SearchEvent.actor_hash.isnot(None)))
+                .scalar_subquery()
+            )
+            erster, letzter = _tage_im_zeitraum(start_date, end_date)
+            im_zeitraum = and_(
+                SuchenJeTagZeile.tag >= erster, SuchenJeTagZeile.tag <= letzter
+            )
+            tage_personen = (
+                select(func.coalesce(func.sum(SuchenJeTagZeile.personen), 0))
+                .where(im_zeitraum)
+                .scalar_subquery()
+            )
+            tage_suchen = (
+                select(func.coalesce(func.sum(SuchenJeTagZeile.suchen), 0))
+                .where(im_zeitraum)
+                .scalar_subquery()
+            )
             with self.db.get_session() as session:
-                actor_searches = (
-                    session.query(
-                        SearchEvent.actor_hash,
-                        func.count().label("search_count"),
-                    )
-                    .filter(
-                        and_(
-                            SearchEvent.timestamp >= start_date,
-                            SearchEvent.actor_hash.isnot(None),
-                        )
-                    )
-                    .group_by(SearchEvent.actor_hash)
-                    .all()
-                )
-
-                all_counts = [count for _, count in actor_searches]
-
-                if not all_counts:
-                    return {
-                        "average": 0.0,
-                        "median": 0,
-                        "total_users": 0,
-                        "total_searches": 0,
-                    }
-
-                all_counts.sort()
-                total_users = len(all_counts)
-                total_searches = sum(all_counts)
-                average = total_searches / total_users if total_users > 0 else 0
-                median = all_counts[len(all_counts) // 2] if all_counts else 0
-
-                return {
-                    "average": round(average, 2),
-                    "median": median,
-                    "total_users": total_users,
-                    "total_searches": total_searches,
-                }
+                # Eine Anweisung, also ein Snapshot (siehe _mit_tageszaehlern).
+                zeile = session.execute(
+                    select(personen + tage_personen, suchen + tage_suchen)
+                ).one()
+            total_users, total_searches = int(zeile[0] or 0), int(zeile[1] or 0)
+            if total_users == 0:
+                return leer
+            return {
+                "average": round(total_searches / total_users, 2),
+                "total_users": total_users,
+                "total_searches": total_searches,
+            }
         except Exception as e:
             logger.error(
                 f"Error getting searches per user: {type(e).__name__}", exc_info=True
             )
-            return {"average": 0.0, "median": 0, "total_users": 0, "total_searches": 0}
+            return leer
 
     def get_search_count_by_period(
         self, start_date: datetime, end_date: Optional[datetime] = None
@@ -392,69 +378,33 @@ class SearchTrackingRepository:
         )
         return session.execute(select(einzelzeilen + tageszaehler)).scalar() or 0
 
-    def verdichte_alte_suchereignisse(
-        self, days_to_keep: int, heute: Optional[date] = None
-    ) -> int:
+    def verdichten_vor(self, grenze: datetime) -> int:
         """
-        Suchereignisse vor der Frist zu Tageszaehlern verdichten.
+        Suchereignisse vor grenze zu Tageszaehlern verdichten.
 
-        Wirft bei Datenbankfehlern, anders als die Lesemethoden hier: Der
-        Bereinigungsjob soll einen gescheiterten Lauf als Fehler loggen, nicht als
-        "nichts zu tun".
+        Der Aufrufer (services/loeschfristen_service.py) gibt Mitternacht UTC des
+        laufenden Tages, so werden alle abgeschlossenen Tage verdichtet: je Tag
+        Zahl der Suchen, der Suchen ohne Treffer und der Personen (verschiedene
+        Tagespseudonyme); die Einzelzeilen samt Pseudonym werden geloescht. Ein
+        erster Lauf verdichtet auch alle aelteren Tage, die bis #495 noch 90 Tage
+        als Einzelzeilen blieben.
 
-        Tage, die mehr als days_to_keep Tage vor heute (UTC) liegen, werden je Tag
-        zu Zahl der Suchen und Zahl der Personen (verschiedene Tagespseudonyme)
-        zusammengefasst; die Einzelzeilen samt Pseudonym werden geloescht.
+        Wirft bei Datenbankfehlern, anders als die Lesemethoden hier: Der Lauf soll
+        einen Fehler als Fehler loggen, nicht als "nichts zu tun".
 
         Args:
-            days_to_keep: Tage, die als Einzelzeilen bleiben (vor heute)
-            heute: Bezugstag, Standard heute in UTC
+            grenze: Zeitpunkt; Suchereignisse davor werden verdichtet
 
         Returns:
             int: Zahl der geloeschten Suchereignisse
         """
-        heute = heute or datetime.now(timezone.utc).date()
-        grenze = datetime.combine(
-            heute - timedelta(days=days_to_keep), time.min, tzinfo=timezone.utc
-        )
         with self.db.get_session() as session:
             geloescht = session.execute(_VERDICHTEN, {"grenze": grenze}).scalar() or 0
             session.commit()
-        logger.info(f"Compacted {geloescht} old search events into day counters")
+        logger.info(
+            f"Compacted {geloescht} search events of closed days into day counters"
+        )
         return geloescht
-
-    def mische_abgeschlossene_tage(self, heute: Optional[date] = None) -> int:
-        """
-        Suchereignisse abgeschlossener Tage in zufaelliger Reihenfolge neu schreiben.
-
-        Wirft bei Datenbankfehlern wie verdichte_alte_suchereignisse.
-
-        Danach tragen die Zeilen eines Tages alle dieselbe Transaktion (xmin) und
-        liegen in zufaelliger Reihenfolge (ctid, pg_dump). Der laufende Tag bleibt,
-        wie er ist. Ein Suchereignis eines abgeschlossenen Tages, das erst waehrend
-        des Laufs eingeht (Suche kurz vor Mitternacht), sieht die Anweisung nicht:
-        Es bleibt erhalten und wird beim naechsten Lauf mitgemischt. Jeder Lauf mischt alle abgeschlossenen Tage neu, auch schon
-        gemischte; das sind hoechstens die Tage der Frist, aeltere verdichtet
-        verdichte_alte_suchereignisse vorher.
-
-        Args:
-            heute: Bezugstag, Standard heute in UTC; Tage davor sind abgeschlossen
-
-        Returns:
-            int: Zahl der neu geschriebenen Suchereignisse
-        """
-        heute = heute or datetime.now(timezone.utc).date()
-        with self.db.get_session() as session:
-            gemischt = (
-                session.execute(
-                    _MISCHEN,
-                    {"heute": datetime.combine(heute, time.min, tzinfo=timezone.utc)},
-                ).scalar()
-                or 0
-            )
-            session.commit()
-        logger.info(f"Rewrote {gemischt} search events of closed days in random order")
-        return gemischt
 
 
 # Global repository instance

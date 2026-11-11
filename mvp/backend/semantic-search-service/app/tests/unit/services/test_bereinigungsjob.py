@@ -9,7 +9,6 @@ Defaults zurueck.
 
 from unittest.mock import Mock, patch
 import pytest
-from pydantic import ValidationError
 
 from api.v1.usage import CleanupStatusResponse
 from core.config import Settings
@@ -26,11 +25,7 @@ def settings_from_env(monkeypatch):
         monkeypatch.setattr(bereinigungsjob, "settings", Settings())
 
     monkeypatch.setattr(bereinigungsjob, "_bereinigungsjob", None)
-    with patch.object(
-        bereinigungsjob, "get_usage_service", return_value=Mock()
-    ), patch.object(
-        bereinigungsjob, "get_search_tracking_repository", return_value=Mock()
-    ):
+    with patch.object(bereinigungsjob, "get_usage_service", return_value=Mock()):
         yield build
 
 
@@ -51,33 +46,15 @@ class TestBereinigungsjobSettings:
 
         assert service.retention_days == 7
 
-    def test_get_bereinigungsjob_search_retention_from_env(self, settings_from_env):
-        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
-
-        service = bereinigungsjob.get_bereinigungsjob()
-
-        assert service.search_event_retention_days == 120
-
-    def test_search_retention_default_is_90_days(self, settings_from_env):
-        settings_from_env()
-
-        service = bereinigungsjob.get_bereinigungsjob()
-
-        assert service.search_event_retention_days == 90
-
-    @pytest.mark.parametrize("tage", ["89", "0", "-1"])
-    def test_search_retention_unter_90_tagen_abgelehnt(self, settings_from_env, tage):
-        with pytest.raises(ValidationError):
-            settings_from_env(SEARCH_EVENT_RETENTION_DAYS=tage)
-
-    def test_get_status_nennt_frist_der_suchereignisse(self, settings_from_env):
+    def test_get_status_ohne_frist_der_suchereignisse(self, settings_from_env):
+        """Suchereignisse verdichtet seit #495 der Task der Loeschfristen am Tagesende."""
         settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
 
         status = bereinigungsjob.get_bereinigungsjob().get_status()
 
-        # Ueber das Antwortmodell von GET /usage/cleanup/status, das unbekannte
-        # Felder verwerfen wuerde.
-        assert CleanupStatusResponse(**status).search_event_retention_days == 120
+        assert "search_event_retention_days" not in status
+        # Ueber das Antwortmodell von GET /usage/cleanup/status.
+        assert CleanupStatusResponse(**status).retention_days == 90
 
     def test_bereinigungsjob_starten_zur_eingestellten_zeit(self, settings_from_env):
         settings_from_env(CLEANUP_HOUR="4", CLEANUP_MINUTE="15")
@@ -128,68 +105,14 @@ class TestBereinigungsjobSettings:
         assert bereinigungsjob._bereinigungsjob is None
 
 
-class TestBereinigungsjobSuchereignisse:
-    """Der Bereinigungsjob verdichtet alte Suchereignisse zu Tageszaehlern (#289)."""
+class TestBereinigungsjobOhneSuchereignisse:
+    """Suchereignisse fasst der Bereinigungsjob seit #495 nicht mehr an."""
 
-    def test_cleanup_old_data_verdichtet_suchereignisse_mit_frist(
-        self, settings_from_env
-    ):
-        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
-        service = bereinigungsjob.get_bereinigungsjob()
-
-        service.cleanup_old_data()
-
-        service.search_repository.verdichte_alte_suchereignisse.assert_called_once_with(
-            120
-        )
-
-    def test_cleanup_old_data_mischt_abgeschlossene_tage_nach_dem_verdichten(
-        self, settings_from_env
-    ):
-        """Erst verdichten, dann mischen: Was verdichtet wird, muss nicht mehr
-        gemischt werden (#337)."""
-        service = bereinigungsjob.get_bereinigungsjob()
-        repository = service.search_repository
-
-        service.cleanup_old_data()
-
-        aufrufe = [name for name, _, _ in repository.method_calls]
-        assert aufrufe.index("verdichte_alte_suchereignisse") < aufrufe.index(
-            "mische_abgeschlossene_tage"
-        )
-
-    def test_cleanup_old_data_mischt_auch_bei_fehler_des_verdichtens(
-        self, settings_from_env
-    ):
-        service = bereinigungsjob.get_bereinigungsjob()
-        service.search_repository.verdichte_alte_suchereignisse.side_effect = (
-            RuntimeError("db weg")
-        )
-
-        service.cleanup_old_data()
-
-        service.search_repository.mische_abgeschlossene_tage.assert_called_once_with()
-
-    def test_cleanup_old_data_nutzung_bleibt_bei_fehler_des_mischens(
-        self, settings_from_env
-    ):
-        service = bereinigungsjob.get_bereinigungsjob()
-        service.search_repository.mische_abgeschlossene_tage.side_effect = RuntimeError(
-            "db weg"
-        )
-        service.usage_service.cleanup_old_events.return_value = 4
-
-        assert service.cleanup_old_data() == 4
-
-    def test_cleanup_old_data_nutzung_bleibt_bei_fehler_der_suchereignisse(
-        self, settings_from_env
-    ):
+    def test_cleanup_old_data_loescht_nur_nutzungsereignisse(self, settings_from_env):
         settings_from_env(USAGE_RETENTION_DAYS="60")
         service = bereinigungsjob.get_bereinigungsjob()
-        service.search_repository.verdichte_alte_suchereignisse.side_effect = (
-            RuntimeError("db weg")
-        )
         service.usage_service.cleanup_old_events.return_value = 4
 
         assert service.cleanup_old_data() == 4
         service.usage_service.cleanup_old_events.assert_called_once_with(60)
+        assert not hasattr(service, "search_repository")

@@ -1,12 +1,12 @@
 """
-Loeschfristen fuer Meldungen, Einwuerfe, Sperren, geloeschte Beitraege und deren Stimmen (#421)
-und fuer nie benutzte Konten aus Einladungen (#538).
+Loeschfristen fuer Meldungen, Einwuerfe, Sperren, geloeschte Beitraege und deren Stimmen (#421),
+fuer nie benutzte Konten aus Einladungen (#538) und fuer das Tagespseudonym an
+Suchereignissen (#495).
 
 Fachliche Quelle der Fristen ist docs/LOESCHKONZEPT.md ("Fristen"); im Code stehen
 ihre Zahlen hier und nur hier, damit die Datenschutzerklaerung sie zitieren kann.
 Andere Fristen stehen bei ihrer Datenart: Feedback in services/feedback_service.py, Suchen ohne Treffer in
-services/suchen_ohne_treffer_service.py, Nutzungs- und Suchereignisse in
-core/config.py.
+services/suchen_ohne_treffer_service.py, Nutzungsereignisse in core/config.py.
 
 - Meldungen: bearbeitete und abgewiesene MELDUNG_NACH_BEARBEITUNG_TAGE nach der
   Bearbeitung. Sechs Monate, weil so lange eine Entscheidung nach Art. 20 Abs. 1 DSA
@@ -31,6 +31,12 @@ core/config.py.
   es sich anders ueberlegt; einen Monat lang kommt sie noch ueber "Passwort vergessen"
   hinein. Was "nie benutzt" heisst: KeycloakKonten.nie_benutzte_loeschen. Ohne Zugang
   zur Keycloak-Admin-Schnittstelle (Dev-Stack) entfaellt die Frist.
+- Suchereignisse (#495): Ist ein UTC-Tag abgeschlossen, werden seine Suchereignisse
+  zum Tageszaehler der Suchen verdichtet (SearchTrackingRepository.verdichten_vor):
+  Zahl der Suchen, der Suchen ohne Treffer und der Personen, kein Tagespseudonym.
+  Das Pseudonym lebt so hoechstens bis zum naechsten Lauf nach Mitternacht. Der
+  erste Lauf verdichtet auch die Tage, die bis dahin 90 Tage als Einzelzeilen
+  blieben.
 - Stimmen haben keine eigene Frist: Aus ihnen entsteht die Guete eines Beitrags, sie
   leben so lange wie er und gehen mit ihm.
 
@@ -49,6 +55,7 @@ from domain.models.content_status import FELD_GELOESCHT_AM
 from repositories.content_report_repository import ContentReportRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
 from repositories.einwurf_repository import EinwurfRepository
+from repositories.search_tracking_repository import SearchTrackingRepository
 from repositories.sperre_repository import SperreRepository
 from services.moderation_service import ModerationService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
@@ -84,6 +91,7 @@ class LoeschfristenService:
         moderation: ModerationService,
         sperren: SperreRepository,
         konten: Optional[INieBenutzteKonten] = None,
+        suchereignisse: Optional[SearchTrackingRepository] = None,
     ):
         self._meldungen = meldungen
         self._einwuerfe = einwuerfe
@@ -91,6 +99,7 @@ class LoeschfristenService:
         self._moderation = moderation
         self._sperren = sperren
         self._konten = konten
+        self._suchereignisse = suchereignisse
 
     async def fristen_anwenden(self, heute: Optional[date] = None) -> None:
         """
@@ -98,6 +107,13 @@ class LoeschfristenService:
         nicht auf; der naechste Lauf holt nach, was liegen blieb.
         """
         heute = heute or heute_utc()
+        if self._suchereignisse is not None:
+            # Zuerst: das Pseudonym soll so kurz wie moeglich nach Mitternacht weg sein.
+            await self._frist_anwenden(
+                self._suchereignisse.verdichten_vor,
+                _grenze(heute, 0),
+                "search events of closed days (compacted into day counters)",
+            )
         await self._frist_anwenden(
             self._meldungen.bearbeitete_loeschen_vor,
             _grenze(heute, MELDUNG_NACH_BEARBEITUNG_TAGE),

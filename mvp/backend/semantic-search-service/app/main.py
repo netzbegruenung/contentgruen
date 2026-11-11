@@ -132,7 +132,7 @@ async def lifespan(app: FastAPI):
         initialize_services()
         logger.info("✅ Content services initialized")
 
-        # Der taegliche Bereinigungsjob (Fristen der Nutzungs- und Suchereignisse)
+        # Der taegliche Bereinigungsjob (Frist der Nutzungsereignisse)
         logger.info("Starting Bereinigungsjob...")
         bereinigungsjob_starten()
         logger.info("✅ Bereinigungsjob started")
@@ -188,7 +188,8 @@ async def lifespan(app: FastAPI):
             _spracherkennung_vorladen()
         )
 
-        # Loeschfristen fuer Meldungen, Einwuerfe und geloeschte Beitraege, ebenso
+        # Loeschfristen fuer Meldungen, Einwuerfe, geloeschte Beitraege und das
+        # Tagespseudonym an Suchereignissen (am Tagesende verdichtet), ebenso
         # unabhaengig vom Bereinigungsjob (services/loeschfristen_service.py).
         app.state.loeschfristen = asyncio.create_task(
             loeschfristen_im_takt(get_loeschfristen_service())
