@@ -102,6 +102,7 @@ nur wenig:
 | Deletion of personal data | `docs/LOESCHKONZEPT.md` |
 | Art. 9 consent (own checkbox after first login, wording, withdrawal, #489) | `docs/ART9_EINWILLIGUNG.md` |
 | Data protection impact assessment (draft, Art. 35 GDPR), processing by processing | `docs/DSFA.md` |
+| Record of processing activities (draft, Art. 30 GDPR) | `docs/VERARBEITUNGSVERZEICHNIS.md` |
 | Current state | `STATUS.md` (Lageseite); planning is on the Forgejo milestones |
 | Purpose and limits of the product | `docs/VISION.md` |
 

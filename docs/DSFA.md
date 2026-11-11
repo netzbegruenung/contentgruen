@@ -7,13 +7,18 @@
 > stehen als **offen** da.
 
 Abschnitte 1 bis 7 prüfen Punkte, Quests und Ranglisten, Abschnitte 8 und 9 alle übrigen
-Verarbeitungen des Dienstes (#374).
+Verarbeitungen des Dienstes (#374). Das Verzeichnis der Verarbeitungstätigkeiten (Art. 30)
+steht in [`docs/VERARBEITUNGSVERZEICHNIS.md`](./VERARBEITUNGSVERZEICHNIS.md) und verweist je
+Tätigkeit hierher.
 
-Abschnitte 1 bis 7: Stand 05.11.2026; Code `main` @ `cdb7ec64` und #476 (gemergt),
-Datenschutzerklärung nach #499. Abschnitte 8 und 9: Stand 07.11.2026, Code `main` @ `c2c9bbe5`
-(einen Tag `v0.8.1` gibt es noch nicht, der letzte ist `v0.8.0`). Nachgezogen am 11.11.2026:
-V7, V8, 8.1 (Kriterium 3), R2 und Abschnitt 9 Punkt 3 für das Tagespseudonym ohne User-Agent und das Verdichten der Suchereignisse
-am Tagesende (Vorprüfung zu #495, P1).
+**Stand 12.11.2026:** Code `main` @ `c4a95e9c`, letzter Tag `v0.8.3`; eingearbeitet sind
+#622, #643 und #655 (Tagespseudonym ohne User-Agent, Suchereignisse am Tagesende zu
+Tageszählern verdichtet). Neu an diesem Stand: Risikomethode nach DSK-Kurzpapier Nr. 18
+(8.4), Verhältnismäßigkeit des Grundbetriebs (8.5), Widerruf der Art.-9-Einwilligung (V2, R9)
+und die Liste der offenen Fakten (8.6).
+Fundstellen mit Zeilennummer zeigen auf den Stand, an dem sie geprüft wurden: in Abschnitt 1
+bis 7 auf `cdb7ec64` mit #476 (Datenschutzerklärung nach #499), in Abschnitt 8 und 9 auf
+`c2c9bbe5`. Was danach dazukam, steht ohne Zeile mit seinem Ticket.
 `ss/` = `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), in
 Abschnitt 1 bis 7 zitiert mit dem Titel ihres Abschnitts, in Abschnitt 8 und 9 mit Zeile
@@ -71,12 +76,13 @@ Für den Grundbetrieb ohne Punkte trifft sicher nur WP-248-Kriterium 4 (vertraul
 
 | Risiko | Maßnahmen | Rest |
 |---|---|---|
-| **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:489-490`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete. Vorschlag zusätzlich: keine Linkvorschau für Ranglisten und eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | gering |
-| **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Mit einem Schlüssel aus der Konfiguration könnte, wer Datenbank und Schlüssel hat, für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | **Umgesetzt** (PR #476): Entdoppelung über Prüfwerte statt Protokoll, und beide Schlüssel liegen nur im Speicher, nach dem Muster des Tagesschlüssels der Besucher (`ss/utils/besucher_pseudonym.py:45-73`): Prüfwerte mit einem eigenen Tagesschlüssel, Paar-Prüfwerte mit einem Fensterschlüssel, der je 7 Tage wechselt und den vorigen einen Block lang zum Vergleich behält (`ss/services/entdoppelung.py:10-30,54-86` (#476)). Kein Bezug mehr zu `SEMANTIC_SEARCH_ACTOR_HASH_SECRET`. Nach einem Neustart beginnt ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | gering |
-| **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug, keine Punkte fürs Bewerten (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md:9-19`). | gering bis mittel; in der Acht-Wochen-Bilanz ansehen |
+| **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:489-490`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete. Vorschlag zusätzlich: keine Linkvorschau für Ranglisten und eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | geringes Risiko (8.4) |
+| **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Mit einem Schlüssel aus der Konfiguration könnte, wer Datenbank und Schlüssel hat, für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | **Umgesetzt** (PR #476): Entdoppelung über Prüfwerte statt Protokoll, und beide Schlüssel liegen nur im Speicher, nach dem Muster des Tagesschlüssels der Besucher (`ss/utils/besucher_pseudonym.py:45-73`): Prüfwerte mit einem eigenen Tagesschlüssel, Paar-Prüfwerte mit einem Fensterschlüssel, der je 7 Tage wechselt und den vorigen einen Block lang zum Vergleich behält (`ss/services/entdoppelung.py:10-30,54-86` (#476)). Kein Bezug mehr zu `SEMANTIC_SEARCH_ACTOR_HASH_SECRET`. Nach einem Neustart beginnt ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | geringes Risiko (8.4) |
+| **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug, keine Punkte fürs Bewerten (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md:9-19`). | Risiko (mittlere Klasse, 8.4); in der Acht-Wochen-Bilanz ansehen |
 
-Mit diesen Maßnahmen ist das Restrisiko gering bis mittel. Die Aufsichtsbehörde muss deshalb
-nicht konsultiert werden (Art. 36).
+Eingestuft nach DSK-Kurzpapier Nr. 18 (Methode in 8.4): Mit diesen Maßnahmen bleibt für die
+Punkte höchstens die mittlere Klasse „Risiko“ (Risiko 3), kein hohes Risiko. Die
+Aufsichtsbehörde muss deshalb nicht konsultiert werden (Art. 36 Abs. 1).
 
 ## 4. Rechtsgrundlage
 
@@ -129,15 +135,20 @@ Punkte werden beim Abruf berechnet, nicht gespeichert (`ss/services/punkte_servi
 zurücknimmt, verschwindet sofort aus Ranglisten und Abzeichen; die eigenen Punkte sieht die
 Person weiter. Nach dem Widerruf der Login-Einwilligung kann die Person nichts mehr beitragen und
 nichts bewerten, ihre Punkte sind 0, und ihre Kopien zählen nur noch am Zähler der Karte, ohne
-Prüfwert und ohne Meldung für Muster-Hinweise (#559); Gespeichertes bleibt, bis sie es löscht
-oder ihr Konto löschen lässt (#489, `docs/ART9_EINWILLIGUNG.md`). Geht das Konto, gehen die
-Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
+Prüfwert und ohne Meldung für Muster-Hinweise (#559). Was sie gespeichert hat, bleibt heute an
+ihrem Konto, bis sie es löscht oder ihr Konto löschen lässt (#489, `docs/ART9_EINWILLIGUNG.md`);
+das trägt voraussichtlich nicht, Bewertung und Maßnahme in V2 und R9. Geht das Konto, gehen die
+Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus. Notwendigkeit und
+Verhältnismäßigkeit des Grundbetriebs ohne Punkte: 8.5.
 
 ## 6. Fragen an Vorstand und Datenschutzbeauftragte
 
-1. Ist eine DSFA nach Art. 35 Abs. 1 nötig, und genügt dieser Umfang (Abschnitt 2)?
+1. Ist eine DSFA nach Art. 35 Abs. 1 nötig, und genügt dieser Umfang (Abschnitt 2)? Tragen die
+   Methode und die Einstufung in 8.4?
 2. Trägt Art. 9 Abs. 2 lit. a in zwei Stufen, auch für die Muster-Hinweise (Abschnitt 4)?
-3. Trägt Art. 6 Abs. 1 lit. f den Prüfwert der Besucher (Abschnitt 4, mit #495)?
+3. Trägt Art. 6 Abs. 1 lit. f den Prüfwert und das Tagespseudonym der Besucher, und ist das
+   Auswerten der Adresse ohne User-Agent schon ein Zugriff nach § 25 Abs. 1 TDDDG (Abschnitt 4, V7,
+   #495)?
 4. Erledigt: Der Schlüssel der Prüfwerte liegt nur im Speicher (Risiko 2, PR #476).
 5. Ist eine DSFA auch für den Grundbetrieb ohne Punkte zu führen, und genügt Abschnitt 8 dafür?
    Wie wird die Lücke vor der Einwilligung geschlossen (Abschnitt 4), trägt Art. 6 Abs. 1 lit. c
@@ -145,6 +156,9 @@ Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
    Konten (WP 248 Kriterium 7)?
 6. Trägt die gesonderte Einwilligung das Meilenstein-Abzeichen am Anzeigenamen, und genügt die
    Zahl der erreichten Meilensteine als einzige Angabe (8.2, V22, #351)?
+7. Widerruf der Art.-9-Einwilligung (V2, R9): Ist ohne Antrag zu löschen oder zu anonymisieren,
+   oder erst auf Antrag? Genügt die Anonymisierung wie bei der Kontolöschung? Muss der Wortlaut
+   den Verein als Verantwortlichen nennen statt „Gut gesagt“?
 
 ## 7. Vor dem Einschalten der Punkte
 
@@ -177,12 +191,14 @@ sonst verarbeitet, mit Belegen als `Datei:Zeile`.
 **Ergebnis:** Art. 9 betrifft den Kern: Schon ein Konto, ein Beitrag, eine Stimme oder ein Einwurf
 kann auf eine politische Meinung schließen lassen (`DSE:1081-1084`); Rechtsgrundlage der Mitwirkung
 ist die Art.-9-Einwilligung (`A9:3-6`, `DSE:1094-1122`). Empfohlen wird eine DSFA für die ganze
-Plattform (8.1). Drei Lücken sind offen: Konto und Anzeigename entstehen vor der Einwilligung (V1),
-das Tagespseudonym angemeldeter Personen ist mit dem Schlüssel aus der Konfiguration nachrechenbar,
-falls er gesetzt ist (V7; seit der Umstellung zu #495 nur noch für den laufenden Tag), Anwendungsprotokolle haben in Produktion keine Frist (V16). **Erst wenn
-diese drei geschlossen sind** und die Maßnahmen aus 8.2 und 8.3 stehen, ist das Restrisiko gering
-bis mittel und eine Konsultation nach Art. 36 nicht nötig; bis dahin liegt es bei R2 bei gering
-bis mittel und bei R5 bei mittel.
+Plattform (8.1). Vier Lücken sind offen: Konto und Anzeigename entstehen vor der Einwilligung (V1);
+nach einem Widerruf der Einwilligung bleibt das Gespeicherte an der Person (V2, R9); das
+Tagespseudonym angemeldeter Personen ist am laufenden Tag mit dem Schlüssel aus der Konfiguration
+nachrechenbar, falls er gesetzt ist (V7); Anwendungsprotokolle haben in Produktion keine Frist
+(V16). Nach der Methode in 8.4 liegt der Grundbetrieb heute in der mittleren Klasse „Risiko“
+(R2, R3, R4, R5, R9), kein Einzelrisiko ist hoch; eine Konsultation nach Art. 36 ist deshalb nicht
+nötig. **Erst wenn die vier Lücken geschlossen sind**, die Maßnahmen aus 8.2 und 8.3 stehen
+und die offenen Fakten (8.6) belegt sind, bleibt außer den Daten Dritter (R3) nur geringes Risiko.
 
 ### 8.1 Schwellwert für den Grundbetrieb ohne Punkte
 
@@ -218,14 +234,21 @@ Empfänger und Ort“.
 #### Für alle: Empfänger und Ort
 
 - verdigado eG als Auftragsverarbeiterin, Hetzner als Unterauftragsverarbeiterin, Rechenzentrum in
-  Deutschland; sonst keine Empfänger (`DSE:66-75`). **Offen:** ob der AV-Vertrag Gut gesagt abdeckt
-  (#506, `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md:38-45`).
+  Deutschland; sonst keine Empfänger (`DSE:66-75`). **Offen (8.6, F1):** ob es einen
+  AV-Vertrag nach Art. 28 Abs. 3 gibt, der Gut gesagt mit Zweck, Datenarten (auch politische
+  Meinung, Art. 9) und Kategorien der Betroffenen erfasst, und ob Hetzner als
+  Unterauftragsverarbeiterin genehmigt ist oder nur Räume, Strom und Netz stellt
+  (#506, `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md:38-45`). Die Datenschutzerklärung sagt, es gebe
+  den Vertrag; belegt ist er im Repo nicht. Ohne ihn fehlt die Grundlage für alle Verarbeitungen
+  bei verdigado, auch für die Art.-9-Daten.
 - Keine Übermittlung außerhalb der EU, kein KI-Anbieter (`DSE:1048-1051`, `CLAUDE.md`, Abschnitt
   „Datenschutz — keine KI-Anbieter“). Ausnahme: Bilder von fremden Servern lädt der Browser erst
   nach Klick (`DSE:996-1022`).
 - Mails (Bestätigung einer Meldung, Entscheidung) gehen über einen SMTP-Server aus der Konfiguration
-  (`ss/core/config.py:196-198`); welcher das in Produktion ist, steht nicht im Repo (**offen**,
-  gehört zur AV-Frage).
+  (`ss/core/config.py:196-198`, auf `c4a95e9c` Zeile 209-214, Standard STARTTLS); welcher das in
+  Produktion ist und wer ihn betreibt, steht nicht im Repo (**offen**, 8.6, F2; gehört zur
+  AV-Frage). Dasselbe gilt für den Mailversand des Anmeldedienstes (Einladung, Passwort), den die
+  Datenschutzerklärung verdigado zuordnet (`DSE:66-75`).
 - Admins sehen Kennungen, Meldungen samt Name und E-Mail-Adresse, Sperren und Muster-Hinweise
   (`DSE:268-269`, `DSE:720`, `DSE:759-760`, `DSE:631-632`).
 
@@ -262,6 +285,29 @@ Empfänger und Ort“.
   (`A9:12-14`); Widerruf im Profilmenü (`A9:40-45`); ohne Einwilligung sind die Endpunkte gesperrt,
   die Mitwirkung speichern (Beitragen, Einwerfen, Bewerten); Melden, Feedback und Löschen bleiben
   offen; die Liste ist durch einen Test abgesichert (`A9:17-27`).
+- **Widerruf, heute:** Der Widerruf setzt nur den Zeitpunkt an der Zeile
+  (`ss/repositories/art9_einwilligung_repository.py`, `widerrufen`) und nimmt das
+  Meilenstein-Abzeichen weg (`ss/api/v1/art9_einwilligung.py`, V22). Beiträge, Einwürfe, Sätze und
+  Stimmen bleiben mit Kennung und Anzeigenamen stehen, bis die Person sie selbst löscht oder ihr
+  Konto löschen lässt; so sagen es auch der Wortlaut (`ss/domain/art9_einwilligung.py`: „was ich
+  schon gespeichert habe, bleibt, bis ich es lösche“) und `A9` („Widerrufen“). Der Wortlaut nennt
+  als Verantwortlichen nur „Gut gesagt“, nicht den Verein (dazu Abschnitt 6, Frage 7).
+- **Widerruf, Bewertung (Vorschlag, nicht juristisch geprüft, #296):** Nach Art. 7 Abs. 3 wirkt
+  der Widerruf für die Zukunft. Fehlt danach eine andere Rechtsgrundlage, sind die Daten nach
+  Art. 17 Abs. 1 lit. b zu löschen, und zwar auch ohne Antrag; still auf eine andere
+  Rechtsgrundlage auszuweichen, ist nicht zulässig (EDSA-Leitlinien 05/2020 zur Einwilligung,
+  Rn. 117 bis 120). Als andere Ausnahme nach Art. 9 Abs. 2 käme nur lit. e in Betracht
+  („offensichtlich öffentlich gemacht“). Sie setzt voraus, dass die Person ihre Daten bewusst
+  einer unbegrenzten Zahl von Personen zugänglich gemacht hat (EuGH C-252/21); der Anzeigename ist
+  aber nur für Angemeldete sichtbar, Stimmen sind gar nicht sichtbar. Also trägt „Gespeichertes
+  bleibt“ voraussichtlich nicht.
+- **Widerruf, Maßnahme (offen, R9):** Der Widerruf löst dieselbe Anonymisierung aus wie die
+  Kontolöschung für Beiträge, Einwürfe und Sätze (`LK` Schritt 3, Platzhalter statt Kennung) und
+  löscht die Stimmen; das Konto selbst und die Zeile der Einwilligung als Nachweis (Art. 7
+  Abs. 1) bleiben. Dazu gehören ein neuer Wortlaut und der Widerrufstext der
+  Datenschutzerklärung; die Produktänderung ist noch nicht gebaut. Alternative: Löschen erst auf
+  Antrag, schwächer, weil die Leitlinien eine Pflicht ohne Antrag sehen; das entscheidet die
+  Datenschutzbeauftragte (Abschnitt 6, Frage 7).
 
 #### V3 Beiträge, Herkunft, Änderungsverlauf
 
@@ -362,6 +408,22 @@ Empfänger und Ort“.
 - **Zweck:** Personen pro Tag zählen, die suchen (`DSE:448-449`).
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f (`DSE:450-452`). Für Besucher **offen** mit § 25 TDDDG
   (#495, `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md:18-36`).
+- **§ 25 TDDDG für das Tagespseudonym der Besucher (Vorschlag, nicht juristisch geprüft, #296):**
+  Der EDSA legt Art. 5 Abs. 3 der ePrivacy-Richtlinie weit aus: Auch IP-Adressen und Header wie
+  der User-Agent können erfasst sein, wenn sie zum Wiedererkennen ausgewertet werden
+  (Leitlinien 2/2023, Rn. 42 f. und 55). Die DSK-Orientierungshilfe Digitale Dienste beschreibt
+  Fingerprinting als serverseitige Bildung eines möglichst eindeutigen und langlebigen Werts.
+  Das Tagespseudonym ist beides nicht: Es steht für einen Anschluss (IPv6: das /64, der Host-Teil
+  geht nicht ein), mehrere Geräte dahinter zählen als einer; der Schlüssel wechselt täglich und
+  liegt nur im Speicher, die Zeilen werden am Tagesende verdichtet (#655). Seit #655 geht auch der
+  User-Agent nicht mehr ein, also kein Merkmal des Geräts
+  (`ss/utils/besucher_pseudonym.py`). Die Geräteklasse an der Nutzung (V9) liest den User-Agent
+  weiter, schreibt aber nur eine von vier groben Klassen (`ss/utils/device_category.py`). Ergebnis:
+  Lit. f trägt, die Eingriffstiefe ist gering; ob schon das Auswerten der Adresse ein Zugriff im
+  Sinne von § 25 Abs. 1 ist, bleibt eine Frage an die Datenschutzbeauftragte (Abschnitt 6,
+  Frage 3). Für das Pseudonym an anonymen Meldungen (V12) läge, falls § 25 greift, Abs. 2 Nr. 2
+  näher, weil die Meldung von der Person ausgeht. Für Besucher bleibt geringes Risiko; R2 betrifft
+  die Angemeldeten.
 - **Daten:** Tag, Trefferzahl, Tagespseudonym; kein Suchtext, keine Kennung
   (`ss/infrastructure/database/models.py:226-264`).
 - **Frist:** Einzelzeilen nur bis zum Ende ihres UTC-Tages; kurz nach Mitternacht verdichtet der
@@ -535,7 +597,11 @@ Empfänger und Ort“.
 - **Daten, Frist:** Datenbanken; 7 Tages- und 4 Wochenstände (`mvp/scripts/backup/backup.sh:28-29`),
   Gelöschtes bis zu 28 Tage (`DSE:1031-1034`).
 - **Maßnahmen:** nach jeder Wiederherstellung den Löschlauf wiederholen (`DSE:1037-1039`).
-  **Offen:** ob die Sicherungen verschlüsselt sind; das steht nicht im Repo.
+  **Offen (8.6, F3):** ob die Sicherungen verschlüsselt sind. Das Skript selbst verschlüsselt
+  nicht: Es legt den PostgreSQL-Dump als SQL-Text und den Qdrant-Snapshot im Verzeichnis
+  `/opt/gutgesagt-backups` auf demselben Host ab (`mvp/scripts/backup/backup.sh`, auf
+  `c4a95e9c`). Ob der Datenträger verschlüsselt ist, ob die Sicherungen den Host verlassen und
+  wer sie lesen kann, steht nicht im Repo.
 
 #### V18 Flüchtige Zähler gegen Missbrauch
 
@@ -629,14 +695,121 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 
 | # | Risiko | Maßnahmen | Rest |
 |---|---|---|---|
-| R1 | **Politische Haltung wird sichtbar**: Anzeigename an Beiträgen, Einwürfen und Sätzen für alle Angemeldeten, darunter Nicht-Mitglieder (V1, V3, V4) | nur Angemeldete, nur Vorname und Initial, Kennung nur für Admins; Einwilligung vor dem Beitragen (V2) | gering |
-| R2 | **Zuordnung pseudonymer Daten**: Tagespseudonym der Angemeldeten am laufenden Tag nachrechenbar, falls der Schlüssel gesetzt ist (V7), Uhrzeiten im vorgelagerten Webserver (V16) | Tag statt Uhrzeit, Verdichten am Tagesende, Schlüssel der Besucher nur im Speicher, Besucher ohne User-Agent; für Angemeldete am laufenden Tag **offen** | gering bis mittel, bis V7 umgestellt ist |
-| R3 | **Daten Dritter** in Beiträgen, Einwürfen und Suchtexten, auch deren politische Zuordnung (V3, V4, V6), darunter „Gepostet von“ am Post | Hinweise im Formular und in der Erklärung; „Gepostet von“ freiwillig; Melden; Einzelfall-Löschung | mittel, hinnehmbar |
-| R4 | **Datenpanne oder Zugriff durch Admins**: Kennungen, Meldungen mit Name und E-Mail-Adresse, Muster-Hinweise | Fristen (`LK:150-164`), Kennungen nur gekürzt im Log, keine Weitergabe (`DSE:74-75`); Rollen und Zugriffskonzept stehen nicht im Repo (**offen**) | gering bis mittel |
-| R5 | **Unbefristete Protokolle** mit Altbestand aus Suchtexten und Kennungen (V16) | Ziel 14 Tage (`LK:511-519`), nicht ausgerollt | mittel, bis ausgerollt |
-| R6 | **Löschung von Hand, nie an echten Daten erprobt** (`LK:3-13`, `DSE:1161-1163`) | Skript getestet gegen Testdaten (`LK:531-532`); Backup und Protokoll beim ersten Lauf | gering bis mittel |
-| R7 | **Scoring und Zweckentfremdung** durch Punkte (V11) | Abschnitt 3 | gering bis mittel |
-| R8 | **Rückschluss auf einzelne Stimmen** über kleine Zähler oder die Güte (V5) | M5: Summen und Stimmenanteil der Güte erst ab drei verschiedenen Stimmenden, darunter keine Zahl in der Antwort; ohne Startkonten und eigene Stimme; Gewicht der Stimmen gedeckelt (#427) | gering |
+| R1 | **Politische Haltung wird sichtbar**: Anzeigename an Beiträgen, Einwürfen und Sätzen für alle Angemeldeten, darunter Nicht-Mitglieder (V1, V3, V4) | nur Angemeldete, nur Vorname und Initial, Kennung nur für Admins; Einwilligung vor dem Beitragen (V2) | geringes Risiko |
+| R2 | **Zuordnung pseudonymer Daten**: Tagespseudonym der Angemeldeten am laufenden Tag nachrechenbar, falls der Schlüssel gesetzt ist (V7), Uhrzeiten im vorgelagerten Webserver (V16) | Tag statt Uhrzeit, Verdichten am Tagesende, Schlüssel der Besucher nur im Speicher, Besucher ohne User-Agent; für Angemeldete am laufenden Tag **offen** | Risiko; geringes Risiko, sobald V7 umgestellt ist |
+| R3 | **Daten Dritter** in Beiträgen, Einwürfen und Suchtexten, auch deren politische Zuordnung (V3, V4, V6), darunter „Gepostet von“ am Post | Hinweise im Formular und in der Erklärung; „Gepostet von“ freiwillig; Melden; Einzelfall-Löschung | Risiko, hinnehmbar |
+| R4 | **Datenpanne oder Zugriff durch Admins**: Kennungen, Meldungen mit Name und E-Mail-Adresse, Muster-Hinweise | Fristen (`LK:150-164`), Kennungen nur gekürzt im Log, keine Weitergabe (`DSE:74-75`); Rollen und Zugriffskonzept, AV-Vertrag und Verschlüsselung der Sicherungen stehen nicht im Repo (**offen**, 8.6) | Risiko, bis die Fakten aus 8.6 belegt sind |
+| R5 | **Unbefristete Protokolle** mit Altbestand aus Suchtexten und Kennungen (V16) | Ziel 14 Tage (`LK:511-519`), nicht ausgerollt | Risiko, bis ausgerollt |
+| R6 | **Löschung von Hand, nie an echten Daten erprobt** (`LK:3-13`, `DSE:1161-1163`) | Skript getestet gegen Testdaten (`LK:531-532`); Backup und Protokoll beim ersten Lauf | Risiko; geringes Risiko nach dem ersten belegten Lauf |
+| R7 | **Scoring und Zweckentfremdung** durch Punkte (V11) | Abschnitt 3 | Risiko (wie Risiko 3) |
+| R8 | **Rückschluss auf einzelne Stimmen** über kleine Zähler oder die Güte (V5) | M5: Summen und Stimmenanteil der Güte erst ab drei verschiedenen Stimmenden, darunter keine Zahl in der Antwort; ohne Startkonten und eigene Stimme; Gewicht der Stimmen gedeckelt (#427) | geringes Risiko |
+| R9 | **Widerruf ohne Folgen für Gespeichertes**: Beiträge, Einwürfe, Sätze und Stimmen bleiben nach dem Widerruf der Art.-9-Einwilligung mit Kennung und Anzeigenamen (V2) | heute keine; Vorschlag: Widerruf löst die Anonymisierung wie bei der Kontolöschung aus und löscht die Stimmen (V2, **offen**) | Risiko; geringes Risiko, sobald gebaut |
+
+### 8.4 Risikomethode und Einstufung (DSK-Kurzpapier Nr. 18)
+
+Bis zum 11.11.2026 stufte diese DSFA mit „gering“, „gering bis mittel“ und „mittel“ ohne
+benannte Methode ein. Ab hier gilt das Kurzpapier Nr. 18 der Datenschutzkonferenz („Risiko
+für die Rechte und Freiheiten natürlicher Personen“):
+
+- Je Risiko werden **Eintrittswahrscheinlichkeit** und **Schwere des möglichen Schadens** für
+  die betroffenen Personen geschätzt, je in vier Stufen: geringfügig, überschaubar,
+  substanziell, groß.
+- Aus beiden ergibt sich eine von drei **Risikoklassen**: geringes Risiko, Risiko, hohes Risiko.
+- **Gesamtrisiko** der Verarbeitung ist grundsätzlich die höchste Klasse der Einzelrisiken.
+- Bleibt nach den Maßnahmen ein hohes Risiko, ist die Aufsichtsbehörde vorher zu konsultieren
+  (Art. 36 Abs. 1).
+
+Matrix, wie sie hier angewendet wird (Zeilen Schwere, Spalten Wahrscheinlichkeit). Die
+Zuordnung der Felder folgt der Abbildung im Kurzpapier; vor der Übernahme am Original
+abgleichen.
+
+| Schwere \ Wahrscheinlichkeit | geringfügig | überschaubar | substanziell | groß |
+|---|---|---|---|---|
+| **groß** | Risiko | hoch | hoch | hoch |
+| **substanziell** | gering | Risiko | hoch | hoch |
+| **überschaubar** | gering | gering | Risiko | hoch |
+| **geringfügig** | gering | gering | gering | Risiko |
+
+Die alte Skala bildet sich so ab: „gering“ → geringes Risiko, „mittel“ → Risiko; „gering bis
+mittel“ ist je Risiko unten neu entschieden. Die Schätzungen sind die der Verfasser dieses
+Entwurfs; sie zu bestätigen oder zu ändern, ist Teil der Beratung (Abschnitt 6, Frage 1).
+
+| Risiko | Wahrscheinlichkeit | Schwere | Klasse heute | nach den offenen Maßnahmen |
+|---|---|---|---|---|
+| 1 Sichtbarkeit der Aktivität (Punkte, Abschnitt 3) | geringfügig: nur mit Opt-in | substanziell: politische Meinung | gering | gering |
+| 2 Netz der Nutzung (Abschnitt 3) | geringfügig: Schlüssel nur im Speicher | überschaubar | gering | gering |
+| 3 Zweckentfremdung, Druck (Abschnitt 3, R7) | überschaubar: keine technische Sperre gegen interne Auswertung | substanziell: Auswahl für Ämter oder Listen | **Risiko** | Risiko (Bilanz nach acht Wochen) |
+| R1 Haltung sichtbar | überschaubar | überschaubar: Vorname und Initial, nur Angemeldete | gering | gering |
+| R2 Zuordnung pseudonymer Daten | überschaubar: braucht Datenbank und Konfiguration, nur der laufende Tag | substanziell: kann auf einen Suchtext führen | **Risiko** | gering (V7 umgestellt) |
+| R3 Daten Dritter | substanziell: Beiträge nennen oft Dritte | überschaubar: öffentliche Äußerungen, Melden möglich | **Risiko** | Risiko, hinnehmbar |
+| R4 Datenpanne, Zugriff durch Admins | überschaubar, solange 8.6 offen ist | substanziell: Art.-9-Daten, Name und E-Mail in Meldungen | **Risiko** | gering (8.6 belegt, Zugriff geregelt) |
+| R5 Protokolle ohne Frist | überschaubar | substanziell: Altbestand mit Suchtexten und Kennungen | **Risiko** | gering (14 Tage ausgerollt, Altbestand gelöscht) |
+| R6 Löschung von Hand | überschaubar: nie an echten Daten gelaufen | substanziell: Art.-9-Daten bleiben | **Risiko** | gering (erster Lauf belegt) |
+| R8 Rückschluss auf Stimmen | geringfügig: Schwelle drei | überschaubar | gering | gering |
+| R9 Widerruf ohne Folgen | substanziell: jeder Widerruf | überschaubar: nur Angemeldete sehen den Namen, Löschen von Hand möglich | **Risiko** | gering (Anonymisierung beim Widerruf) |
+
+**Gesamtrisiko heute: Risiko (mittlere Klasse).** Kein Einzelrisiko ist hoch, eine Konsultation
+nach Art. 36 ist nicht nötig. Nach den offenen Maßnahmen bleibt Risiko bei Risiko 3 und R3;
+beide sind hinnehmbar, Risiko 3 nur, solange die Punkte aus sind oder die Bilanz nichts
+anderes zeigt. Sind die Punkte an, gilt dieselbe Einstufung; neu zu prüfen ist sie vor den
+Ranglisten und vor Ausbaustufe 2 (Abschnitt 2).
+
+### 8.5 Notwendigkeit und Verhältnismäßigkeit des Grundbetriebs (Art. 35 Abs. 7 lit. b)
+
+Abschnitt 5 prüft das für die Punkte. Für den Grundbetrieb ohne Punkte:
+
+- **Zweck:** Argumente für die politische Auseinandersetzung sammeln, durchsuchbar machen und
+  verbessern (`docs/VISION.md`, `DSE:1081-1084`). Ein legitimer Zweck des Vereins; ohne Konto
+  und Zuordnung von Beiträgen, Stimmen und Meldungen lässt er sich nicht erreichen, ohne Namen
+  und Kennungen lässt sich weder Doppelstimmen verhindern noch Missbrauch abwehren
+  (LK „Stimmen“, V12).
+- **Erforderlichkeit, Datenminimierung (Art. 5 Abs. 1 lit. c):**
+  - Suchen und Lesen ohne Konto (`DSE` „Was diese Erklärung abdeckt“).
+  - In der Datenbank nur Kennung und Anzeigename, kein Name, keine E-Mail-Adresse; gezeigt
+    werden Vorname und Initial (V1).
+  - Suchtexte ohne Autor und Pseudonym (V6); Suchereignisse nur mit Tag und seit #655 am
+    Tagesende zu Zählern verdichtet (V7).
+  - Nutzung ohne Kennung, Prüfwerte mit Schlüsseln nur im Speicher (V9, V9a, V11).
+  - Summen der Stimmen erst ab drei Stimmenden (V5); Rate-Limits nur flüchtig (V18).
+  - Kein KI-Anbieter, keine Übermittlung außerhalb der EU („Für alle“).
+- **Speicherbegrenzung (Art. 5 Abs. 1 lit. e):** Fristen je Datenart in LK „Fristen“, gelöscht
+  von einem täglichen Task. Ohne Frist und begründet: Beiträge (Zweck ist der Bestand, bei
+  Kontolöschung anonymisiert), offene Meldungen und aktive Sperren (laufende Arbeit), der
+  Anzeigename (solange das Konto besteht). Ohne Frist und **nicht** begründet: die Protokolle
+  der Anwendung und des Frontend-nginx (V16, R5).
+- **Angemessenheit:** Mitwirkung, aus der eine politische Meinung folgt, nur mit ausdrücklicher
+  Einwilligung (V2), die Sperre ist durch einen Test abgesichert. Unter den Angemeldeten sind
+  Nicht-Mitglieder; deshalb sehen auch Angemeldete keine Kennungen, und Besucher sehen keine
+  Namen (R1). Wo die Lücken unten offen sind, fällt die Abwägung noch nicht für die Verarbeitung
+  aus.
+- **Rechte der Betroffenen (Art. 12 bis 22):** Information in der Datenschutzerklärung, in
+  Abschnitten je Verarbeitung. Auskunft und Löschung auf Anfrage an die Kontaktadresse, von Hand
+  nach dem Löschkonzept (`DSE` „Deine Rechte“, LK „Ablauf“); selbst kann die Person eigene
+  Beiträge löschen und die Einwilligung widerrufen. Widerspruch nach Art. 21 steht in der
+  Erklärung. **Offen:** Einen Export für die Datenübertragbarkeit (Art. 20) gibt es im Code
+  nicht; die Erklärung nennt das Recht. Ob Art. 20 hier greift und wie eine Anfrage bedient
+  wird, steht nicht im Repo.
+- **Auftragsverarbeitung, Drittland:** Keine Übermittlung außerhalb der EU. Der AV-Vertrag ist
+  nicht belegt (8.6, F1).
+
+**Ergebnis:** Der Grundbetrieb ist im Kern notwendig und verhältnismäßig. Nicht verhältnismäßig
+sind heute vier Punkte, die Maßnahmen dazu stehen in Abschnitt 9: Anzeigename vor der
+Einwilligung (V1), Widerruf ohne Folgen (V2, R9), nachrechenbares Tagespseudonym der
+Angemeldeten (V7), Protokolle ohne Frist (V16).
+
+### 8.6 Offene Fakten
+
+Diese Angaben stehen nicht im Repo. Die DSFA erfindet sie nicht; wer sie belegt, trägt sie hier
+und an den genannten Stellen nach.
+
+| # | Offen | Warum es zählt | Stellen |
+|---|---|---|---|
+| F1 | **AV-Vertrag** mit verdigado: gibt es ihn, erfasst er Gut gesagt mit Zweck, Datenarten (auch Art. 9) und Betroffenen (Art. 28 Abs. 3), und ist Hetzner Unterauftragsverarbeiterin oder nur Rechenzentrum ohne Zugriff? | Ohne Vertrag fehlt die Grundlage für die Verarbeitung bei verdigado, und die Aussage der Datenschutzerklärung stimmt nicht. | „Für alle“, R4, #506 |
+| F2 | **SMTP-Server** in Produktion: welcher, wer betreibt ihn, ist er vom AV-Vertrag erfasst? Ebenso der Mailversand des Anmeldedienstes. | Mails tragen E-Mail-Adresse und Anlass (Meldung, Entscheidung). | „Für alle“ |
+| F3 | **Verschlüsselung der Sicherungen**: Datenträger, Ablage außerhalb des Hosts, Zugriff. Das Skript selbst verschlüsselt nicht. | Sicherungen halten alles bis zu 28 Tage, auch Gelöschtes. | V17, R4 |
+| F4 | **Rollen und Zugriff**: wer Admin ist (Admin-Claim aus dem Realm oder Liste `admin_users` in der Konfiguration, `docs/ARCHITECTURE.md`), wer Zugang zu Host, Datenbank, Konfiguration und der Datei der Beta-Zugänge hat, wie Zugänge vergeben und entzogen werden. | Admins sehen Kennungen, Meldungen mit Name und E-Mail-Adresse, Muster-Hinweise. | R4, V19 |
+| F5 | **Schlüssel des Tagespseudonyms** der Angemeldeten (`SEMANTIC_SEARCH_ACTOR_HASH_SECRET`): in Produktion gesetzt? | Davon hängt ab, ob das Pseudonym am laufenden Tag nachrechenbar ist. | V7, R2 |
+| F6 | **Frist der Protokolle** am Host: 14 Tage ausgerollt, Altbestand gelöscht? Laut Löschkonzept Stand 30.10.2026 nicht. | Speicherbegrenzung, Altbestand mit Suchtexten. | V16, R5, #485, #336 |
 
 ## 9. Offene Entscheidungen für den Maintainer
 
@@ -650,8 +823,15 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 4. **Frist für Protokolle** (V16): 14 Tage für Anwendung und Frontend-nginx am Host ausrollen
    (`LK:511-519`, Stand 30.10.2026; Tickets #485 und #336) und den Altbestand mit Suchtexten und
    Kennungen löschen. Das ist Betrieb am Host, nicht Code.
-5. **Formales:** Wer übernimmt die DSFA (Vorstand mit Datenschutzbeauftragter, Art. 35 Abs. 2), und
-   wo steht das Verzeichnis der Verarbeitungstätigkeiten? Im Repo gibt es keins.
+5. **Formales:** Wer übernimmt die DSFA (Vorstand mit Datenschutzbeauftragter, Art. 35 Abs. 2)?
+   Das Verzeichnis der Verarbeitungstätigkeiten steht als Entwurf in
+   `docs/VERARBEITUNGSVERZEICHNIS.md`; führen muss es der Verein (Art. 30 Abs. 1).
 6. **Fragen an die Datenschutzbeauftragte:** Lücke aus Abschnitt 4, Meldungen ohne Einwilligung
    (V12) und Altersgrenze (WP 248 Kriterium 7) zu `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md` hinzufügen
    (vorbereitet als Abschnitt 6, Frage 5)? Empfehlung: ja, gebündelt mit Frage 1 dort.
+7. **Widerruf der Art.-9-Einwilligung** (V2, R9): Widerruf löst die Anonymisierung von Beiträgen,
+   Einwürfen und Sätzen wie bei der Kontolöschung aus und löscht die Stimmen; dazu ein neuer
+   Wortlaut und der Widerrufstext der Datenschutzerklärung. Empfehlung: ja, als eigenes Ticket,
+   nach Frage 7 an die Datenschutzbeauftragte.
+8. **Offene Fakten** (8.6): F1 bis F6 belegen, vor allem den AV-Vertrag (F1), bevor Art.-9-Daten
+   echter Personen verarbeitet werden.

@@ -1,8 +1,11 @@
 # Löschkonzept (Art. 17 DSGVO)
 
-> **Vorsorge, keine erprobte Prozedur.** Es gibt heute keine Nutzer und keine
-> erhaltenswerten Daten. Die Anlage hat keinen Codepfad, der eine Person löscht,
-> außer dem Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“);
+> **Noch keine erprobte Prozedur.** Produktion läuft, mit Anmeldung über die Netzbegrünung
+> und mit Beta-Zugängen (`docs/DEPLOYMENT.md`, `STATUS.md`); spätestens mit dem internen Start
+> (`v0.9.0`) legen echte Personen Konten, Beiträge, Stimmen und Meldungen an, auch Daten nach
+> Art. 9. Ab dann ist jedes Löschverlangen zu erfüllen, und dieses Konzept ist der Weg dafür.
+> Wie viele Konten und Daten es in Produktion schon gibt, steht nicht im Repo (**offen**).
+> Die Anlage hat keinen Codepfad, der eine Person löscht, außer dem Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“);
 > was hier sonst steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
 > Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
 > zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), der
