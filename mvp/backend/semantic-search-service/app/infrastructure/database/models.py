@@ -272,10 +272,12 @@ class SearchEvent(Base):
 
     id is a random UUID, not a sequence: a running number would give the order of
     the searches of a day, which lines up with the order of the statements they
-    created (#275). For the same reason the daily cleanup job rewrites the rows
-    of each closed day in random order in one transaction, so neither xmin nor
-    the physical row order (ctid, pg_dump) gives that order any more (#337, see
-    SearchTrackingRepository.mische_abgeschlossene_tage).
+    created (#275). xmin and the physical row order still give that order for the
+    running day; closed days have no rows here at all since #495.
+
+    Rows live only for the running UTC day: once a day is closed, the
+    Loeschfristen task compacts them into SuchenJeTagZeile and deletes them with
+    their pseudonym (#495, SearchTrackingRepository.verdichten_vor).
     """
 
     __tablename__ = "search_events"
@@ -303,13 +305,13 @@ class SearchEvent(Base):
 
 
 class SuchenJeTagZeile(Base):
-    """Tageszaehler der Suchen: was von Suchereignissen nach ihrer Frist bleibt.
+    """Tageszaehler der Suchen: was von Suchereignissen eines abgeschlossenen Tages bleibt.
 
-    Der Bereinigungsjob verdichtet Suchereignisse, die aelter als
-    search_event_retention_days sind, zu einer Zeile je UTC-Tag und loescht die
-    Einzelzeilen (#289). suchen zaehlt die Suchereignisse des Tages, personen die
+    Der Task der Loeschfristen verdichtet die Suchereignisse jedes abgeschlossenen
+    UTC-Tages zu einer Zeile und loescht die Einzelzeilen (#289; bis #495 erst nach
+    90 Tagen). suchen zaehlt die Suchereignisse des Tages, personen die
     verschiedenen Tagespseudonyme; die Pseudonyme selbst stehen nicht hier. Siehe
-    SearchTrackingRepository.verdichte_alte_suchereignisse.
+    SearchTrackingRepository.verdichten_vor.
 
     ohne_treffer zaehlt die Suchen des Tages ohne Treffer, fuer den Anteil in der
     Bilanz (#467). Leer bei Tagen, die vor #467 verdichtet wurden: Der Wert ist

@@ -426,15 +426,17 @@
       </p>
       <p>
         Diese Messung ist <strong>nicht anonym, sondern pseudonym</strong>. Pseudonym heißt:
-        An den gespeicherten Zeilen steht kein Name, aber ein Wert, der dieselbe Person
-        oder dasselbe Gerät über mehrere Vorgänge hinweg wiedererkennbar macht. Das ist
+        An den gespeicherten Zeilen steht kein Name, aber ein Wert, der über mehrere Vorgänge
+        hinweg wiedererkennbar macht, dass sie vom selben Konto oder, ohne Anmeldung, vom
+        selben Anschluss kommen. Das ist
         weniger als ein Name, aber mehr als anonym — deshalb steht es hier.
       </p>
 
       <h3>Suchvorgänge</h3>
       <p>
         Zu jeder Suche speichern wir den Tag (keine Uhrzeit), die Zahl der Treffer und ein
-        <strong>täglich wechselndes Pseudonym</strong>. Bist du angemeldet, wird dieses
+        <strong>täglich wechselndes Pseudonym</strong>, dieses nur bis zum Ende des Tages
+        (siehe „Dauer“). Bist du angemeldet, wird dieses
         Pseudonym aus dem heutigen Datum und deiner Kennung berechnet, und zwar so, dass sich
         die Kennung daraus nicht zurückrechnen lässt. Weil das Datum eingeht, entsteht jeden
         Tag ein neues Pseudonym: <strong>Wir können Suchverhalten nicht über Tagesgrenzen
@@ -443,16 +445,20 @@
       </p>
       <p>
         Bist du nicht angemeldet, legen wir dafür <strong>nichts in deinem Browser
-        ab</strong>. Der Server berechnet das Pseudonym stattdessen aus dem heutigen Datum,
-        deiner IP-Adresse (bei IPv6 nur aus ihrem vorderen Teil, der deinen Anschluss
-        bezeichnet) und der Bezeichnung deines Browsers, die jeder Browser bei jedem Aufruf
-        ohnehin mitschickt (User-Agent). Dazu verwendet er einen geheimen Schlüssel, den er
+        ab</strong>. Der Server berechnet das Pseudonym stattdessen nur aus dem heutigen Datum
+        und deiner IP-Adresse (bei IPv6 nur aus ihrem vorderen Teil, der deinen Anschluss
+        bezeichnet). <strong>Die Bezeichnung deines Browsers (User-Agent) und andere Merkmale
+        deines Geräts gehen nicht ein.</strong> Wer ohne Anmeldung über denselben Anschluss
+        sucht, etwa im selben Haushalt oder Büro, hat deshalb an einem Tag dasselbe Pseudonym;
+        im Mobilfunknetz teilen sich oft viele Menschen eine Adresse, sie alle haben dann
+        dasselbe Pseudonym.
+        Dazu verwendet er einen geheimen Schlüssel, den er
         <strong>jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends
         speichert</strong>. Mit der ersten Suche eines neuen Tages ersetzt er ihn durch einen
         neuen; der alte ist dann weg. Deshalb kann auch niemand, der die gespeicherten Daten
         hat, das Pseudonym auf deine IP-Adresse zurückführen oder Pseudonyme verschiedener
-        Tage einander zuordnen. IP-Adresse und User-Agent werden dabei weder gespeichert noch
-        protokolliert. Davon unabhängig hält der vorgelagerte Webserver beides für kurze Zeit
+        Tage einander zuordnen. Die IP-Adresse wird dabei weder gespeichert noch protokolliert.
+        Davon unabhängig hält der vorgelagerte Webserver sie und den User-Agent für kurze Zeit
         in seinen Zugriffsprotokollen fest (siehe „Protokolldateien“).
       </p>
       <p>
@@ -461,10 +467,13 @@
         <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO — unser
         berechtigtes Interesse an einer belastbaren Reichweitenmessung für die
         Weiterentwicklung.<br>
-        <strong>Dauer:</strong> Die einzelnen Zeilen löschen wir <strong>nach 90 Tagen
-        automatisch</strong>. Danach bleibt je Tag nur, wie oft gesucht wurde, wie oft davon
-        ohne Treffer und von wie vielen verschiedenen Pseudonymen, ohne die Pseudonyme
-        selbst.
+        <strong>Dauer:</strong> Die einzelnen Zeilen mit dem Pseudonym löschen wir
+        <strong>automatisch nach Ablauf ihres Tages</strong>, kurz nach Mitternacht (UTC, in
+        Deutschland 1 bzw. 2 Uhr nachts), und wenige Minuten später noch einmal für Suchen,
+        die kurz vor Mitternacht begannen; scheitert das wegen einer Störung, versuchen wir es
+        stündlich erneut. Danach bleibt je Tag nur, wie oft gesucht wurde,
+        wie oft davon ohne Treffer und von wie vielen verschiedenen Pseudonymen, ohne die
+        Pseudonyme selbst.
       </p>
 
       <h3>Suchen ohne Treffer</h3>
@@ -480,18 +489,19 @@
         Um Personen zu unterscheiden, nutzen wir das oben beschriebene tägliche Pseudonym,
         aber nur im Arbeitsspeicher des Servers und nur für den laufenden Tag: Dort merken
         wir uns einen aus Pseudonym und Eintrag berechneten Prüfwert, damit wiederholte
-        Suchen derselben Person nicht als weitere Personen zählen. Zusätzlich merken wir uns
-        bei Suchen ohne Anmeldung einen aus deinem Anschluss (IP-Adresse, bei IPv6 ihr
-        vorderer Teil) und dem Eintrag berechneten Prüfwert, damit je Anschluss höchstens eine
-        Person zählt. Diese Merkliste wird nicht gespeichert und um Mitternacht (UTC, in
+        Suchen derselben Person nicht als weitere Personen zählen. Weil das Pseudonym ohne
+        Anmeldung nur aus deinem Anschluss entsteht, zählt dabei je Anschluss höchstens eine
+        Person. Diese Merkliste wird nicht gespeichert und um Mitternacht (UTC, in
         Deutschland 1 bzw. 2 Uhr nachts) verworfen.
       </p>
       <p>
         „Person“ heißt hier deshalb: dasselbe Pseudonym am selben Tag, ohne Anmeldung
-        höchstens eine je Anschluss. Als weitere Person zählt dieselbe Person, wenn sie
+        höchstens eine je Anschluss. Gespeichert wird je Woche die Summe der Personen der
+        einzelnen Tage; ein Pseudonym, das über einen Tag hinaus bleibt, brauchen wir dafür
+        nicht. Als weitere Person zählt dieselbe Person, wenn sie
         <strong>an einem anderen Tag</strong> sucht (das Pseudonym wechselt täglich), wenn
-        sie sich <strong>im Laufe des Tages anmeldet</strong> (vorher gehen IP-Adresse und
-        Browser ein, danach ihre Kennung; beides zu verknüpfen wäre ein neuer Bezug zu ihrer
+        sie sich <strong>im Laufe des Tages anmeldet</strong> (vorher geht ihr Anschluss
+        ein, danach ihre Kennung; beides zu verknüpfen wäre ein neuer Bezug zu ihrer
         Person), wenn sie ein <strong>anderes Netz</strong> nutzt (etwa vom WLAN ins
         Mobilfunknetz wechselt) und wenn der <strong>Server neu startet</strong> (Merkliste
         und Tagesschlüssel gehen dabei verloren). Umgekehrt zählen Personen, die ohne
@@ -548,14 +558,14 @@
         wir an jedem Vorgang zusätzlich fest, <strong>ob es an diesem Tag die erste Kopie
         dieses Beitrags durch dieselbe Person war</strong>, und zählen diese ersten Kopien je
         Beitrag. Aus diesem Vermerk lässt sich deshalb ablesen, dass mehrere Vorgänge an
-        einem Beitrag am selben Tag von derselben Person (ohne Anmeldung: vom selben Anschluss
-        mit demselben Browser) kamen, aber nicht, von wem.
+        einem Beitrag am selben Tag von derselben Person (ohne Anmeldung: vom selben Anschluss)
+        kamen, aber nicht, von wem.
       </p>
       <p>
         Um die erste Kopie zu erkennen, speichern wir <strong>bis zum Ende des Tages einen
         Prüfwert</strong>: einen Kurzwert, berechnet aus deiner Kennung (ohne Anmeldung aus
-        deiner IP-Adresse, bei IPv6 nur ihrem vorderen Teil, und der Bezeichnung deines
-        Browsers, wie bei den Suchvorgängen), dem Beitrag und dem Datum. Der Server bildet ihn
+        deiner IP-Adresse, bei IPv6 nur ihrem vorderen Teil, wie bei den Suchvorgängen), dem
+        Beitrag und dem Datum. Der Server bildet ihn
         mit einem geheimen Schlüssel, den er <strong>jeden Tag neu zufällig erzeugt, nur im
         Arbeitsspeicher hält und nirgends speichert</strong>. Auch wer die gespeicherten Daten
         hat, kann deshalb einen Prüfwert weder auf dich noch auf den Beitrag zurückführen.
@@ -1305,7 +1315,7 @@
     </section>
 
     <div class="update-notice">
-      <p><strong>Stand:</strong> 10. November 2026</p>
+      <p><strong>Stand:</strong> 11. November 2026</p>
     </div>
   </div>
 </div>

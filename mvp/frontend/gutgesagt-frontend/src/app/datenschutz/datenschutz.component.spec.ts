@@ -430,12 +430,14 @@ describe('DatenschutzComponent', () => {
     });
   });
 
-  describe('Suchvorgänge (#239, #289)', () => {
-    it('nennt den Tag statt eines Zeitpunkts und die Frist von 90 Tagen mit Tageszähler', () => {
+  describe('Suchvorgänge (#239, #289, #495)', () => {
+    it('nennt den Tag statt eines Zeitpunkts und das Ende des Tages als Frist mit Tageszähler', () => {
       const text = abschnitt('Suchvorgänge');
 
       expect(text).toContain('den Tag (keine Uhrzeit)');
-      expect(text).toContain('nach 90 Tagen automatisch');
+      expect(text).toContain('dieses nur bis zum Ende des Tages');
+      expect(text).toContain('automatisch nach Ablauf ihres Tages');
+      expect(text).not.toContain('nach 90 Tagen');
       expect(text).toContain(
         'je Tag nur, wie oft gesucht wurde, wie oft davon ohne Treffer und von wie vielen verschiedenen Pseudonymen',
       );
@@ -444,14 +446,18 @@ describe('DatenschutzComponent', () => {
   });
 
   describe('Tagespseudonym statt Kennung im Browser (#446)', () => {
-    it('Suchvorgänge: Besucher über IP-Adresse, User-Agent und einen täglich neuen, nicht gespeicherten Schlüssel', () => {
+    it('Suchvorgänge: Besucher über die IP-Adresse allein und einen täglich neuen, nicht gespeicherten Schlüssel', () => {
       const text = abschnitt('Suchvorgänge');
 
       expect(text).toContain('nichts in deinem Browser ab');
-      expect(text).toContain('deiner IP-Adresse');
-      expect(text).toContain('(User-Agent)');
+      expect(text).toContain('nur aus dem heutigen Datum und deiner IP-Adresse');
+      // #495: kein User-Agent mehr im Pseudonym.
+      expect(text).toContain('Die Bezeichnung deines Browsers (User-Agent) und andere Merkmale deines Geräts gehen nicht ein.');
+      expect(text).toContain('hat deshalb an einem Tag dasselbe Pseudonym');
+      expect(text).toContain('im Mobilfunknetz teilen sich oft viele Menschen eine Adresse');
+      expect(text).toContain('wenige Minuten später noch einmal');
       expect(text).toContain('jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends speichert');
-      expect(text).toContain('IP-Adresse und User-Agent werden dabei weder gespeichert noch protokolliert');
+      expect(text).toContain('Die IP-Adresse wird dabei weder gespeichert noch protokolliert');
       expect(text).not.toContain('Sitzungskennung');
       // Der Schlüssel wechselt mit der ersten Suche des neuen Tages, nicht um Mitternacht.
       expect(text).toContain('Mit der ersten Suche eines neuen Tages ersetzt er ihn');
@@ -465,9 +471,11 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Suchen ohne Treffer');
 
       expect(text).toContain('anderes Netz');
-      // #496: der Anschluss-Prüfwert; ein anderer Browser am selben Anschluss zählt nicht mehr neu.
-      expect(text).toContain('aus deinem Anschluss');
+      // #495: das Pseudonym selbst steht für den Anschluss; ein anderer Browser zählt nicht neu.
+      expect(text).toContain('nur aus deinem Anschluss entsteht');
       expect(text).toContain('je Anschluss höchstens eine Person');
+      expect(text).not.toContain('Zusätzlich merken wir uns');
+      expect(text).toContain('Summe der Personen der einzelnen Tage');
       expect(text).toContain('als eine, auch mit verschiedenen Browsern');
       expect(text).not.toContain('anderen Browser</strong>');
       expect(text).not.toContain('anderen Browser oder');
@@ -479,6 +487,10 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('nicht ablesen, welches Konto einen Beitrag verwendet hat');
       expect(text).not.toContain('höchstens 30 Tage');
+      // #495: der Prüfwert ohne Anmeldung nur aus dem Anschluss.
+      expect(text).toContain('(ohne Anmeldung: vom selben Anschluss)');
+      expect(text).not.toContain('mit demselben Browser');
+      expect(text).not.toContain('und der Bezeichnung deines');
     });
 
     it('Meldungen: ohne Konto das Tagespseudonym, nur bis zum Abschluss', () => {

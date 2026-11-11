@@ -304,9 +304,10 @@ class Settings(BaseSettings):
     # pseudonym space and inflates the DAU count for that day.
     actor_hash_secret: Optional[str] = None
 
-    # Der taegliche Bereinigungsjob (services/cleanup/bereinigungsjob.py) mit den
-    # Fristen der Nutzungs- und der Suchereignisse und dem Mischen abgeschlossener
-    # Tage; ein Schalter fuer alles. Der fruehere Name ENABLE_USAGE_CLEANUP gilt
+    # Der taegliche Bereinigungsjob (services/cleanup/bereinigungsjob.py) mit der
+    # Frist der Nutzungsereignisse. Suchereignisse verdichtet er nicht mehr: Das
+    # geschieht am Tagesende ohne Schalter (services/loeschfristen_service.py, #495).
+    # Der fruehere Name ENABLE_USAGE_CLEANUP gilt
     # weiter, damit ein abgeschalteter Job nach dem Umbenennen nicht still wieder
     # loescht; der neue Name geht vor.
     enable_bereinigungsjob: bool = Field(
@@ -317,14 +318,6 @@ class Settings(BaseSettings):
         ),
     )
     usage_retention_days: int = 90
-    # Frist der Suchereignisse (#289). Aeltere Tage verdichtet der Bereinigungsjob
-    # zu Tageszaehlern ohne Pseudonym. 90 wie bei den Nutzungsereignissen: deckt die
-    # laengste Auswertung ueber Einzelzeilen (searches-per-user, hoechstens 90 Tage).
-    # Darum auch die Untergrenze: Kuerzer zaehlte searches-per-user still zu wenig,
-    # und ein negativer Wert verdichtete den laufenden Tag (Personen doppelt).
-    # Laeuft im selben Job: enable_bereinigungsjob=false schaltet auch diese Frist ab,
-    # ebenso das Mischen abgeschlossener Tage (#337).
-    search_event_retention_days: int = Field(default=90, ge=90)
     cleanup_hour: int = 2  # 2 AM
     cleanup_minute: int = 0
 

@@ -92,11 +92,11 @@ class SearchesPerUserResponse(BaseModel):
 
     total_users counts active user-days, not distinct people: search events carry a
     pseudonym that rotates daily, so nobody can be followed across the window.
+    No median since #495: closed days keep only counters, not searches per pseudonym.
     """
 
     period_days: int
     average: float
-    median: int
     total_users: int
     total_searches: int
 
@@ -312,7 +312,7 @@ async def get_searches_per_user(
         days: Number of days to analyze (default: 7)
 
     Returns:
-        SearchesPerUserResponse with average, median, and distribution stats
+        SearchesPerUserResponse with average and totals
     """
     try:
         metrics_service = get_metrics_service()

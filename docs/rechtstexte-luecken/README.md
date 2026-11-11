@@ -180,6 +180,8 @@ Die Verarbeitung ist kleiner geworden, aber nicht verschwunden. Zu beschreiben b
   an die Nutzenden und gehört ausdrücklich hinein, nicht nur implizit.
 - **Rechtsgrundlage und Löschfrist** — Rechtsgrundlage offen (D-M6). Löschfrist seit
   #289: 90 Tage als Einzelzeilen, danach nur Tageszähler; im Text seit #222.
+  **Nachtrag #495 (11.11.2026):** Einzelzeilen mit Pseudonym nur noch bis zum Ende ihres
+  Tages, danach nur Tageszähler; Pseudonym der Besucher ohne User-Agent.
 
 Ob die Angabe damit unter Art. 13 DSGVO überhaupt noch pflichtig ist, hängt daran,
 ob man das Tagespseudonym als personenbezogen einstuft. Die ehrlichere Variante ist,
