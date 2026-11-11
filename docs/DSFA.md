@@ -13,7 +13,7 @@ Abschnitte 1 bis 7: Stand 05.11.2026; Code `main` @ `cdb7ec64` und #476 (gemergt
 Datenschutzerklärung nach #499. Abschnitte 8 und 9: Stand 07.11.2026, Code `main` @ `c2c9bbe5`
 (einen Tag `v0.8.1` gibt es noch nicht, der letzte ist `v0.8.0`). Nachgezogen am 11.11.2026:
 V7, V8, 8.1 (Kriterium 3), R2 und Abschnitt 9 Punkt 3 für das Tagespseudonym ohne User-Agent und das Verdichten der Suchereignisse
-am Tagesende (Vorprüfung zu #495, P1).
+am Tagesende (Vorprüfung zu #495, P1; #655, gemergt am 11.11.2026).
 `ss/` = `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), in
 Abschnitt 1 bis 7 zitiert mit dem Titel ihres Abschnitts, in Abschnitt 8 und 9 mit Zeile
