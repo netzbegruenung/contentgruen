@@ -89,11 +89,36 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
             "habe, bleibt, bis ich es lösche oder mein Konto löschen lasse. Was "
             "bis zum Widerruf geschehen ist, bleibt rechtmäßig."
         ),
+        # Folgen des Widerrufs (juristische Vorpruefung vom 12.11.2026, Art. 17 Abs. 1
+        # lit. b DSGVO): Der Widerruf loescht die Bewertungen
+        # (Art9EinwilligungService.widerrufen). Zwecke und Datenarten wie 2026-11-10;
+        # die Aenderung wirkt nur zugunsten der Person, deshalb keine neue Frage
+        # (docs/ART9_EINWILLIGUNG.md).
+        "2026-11-12": (
+            "Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung "
+            "verarbeitet, auch wenn sich daraus auf meine politische Meinung "
+            "schließen lässt (Art. 9 Abs. 2 lit. a DSGVO). Das betrifft Beiträge, "
+            "Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere, "
+            "und meinen Anzeigenamen daran. Beiträge sind für alle sichtbar, mein "
+            "Anzeigename nur für Angemeldete. Gut gesagt nutzt meine Mitwirkung "
+            "nur für den Betrieb der Plattform. Dazu gehören ein Punktestand, ein "
+            "Level, Quests und Meilenstein-Abzeichen, die nur ich sehe, solange "
+            "ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen; "
+            "neue Aktionen, die ein höheres Level freischaltet; und ein Hinweis an "
+            "die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. "
+            "Gut gesagt wertet meine Mitwirkung nicht nach politischer Haltung aus "
+            "und gibt sie nicht an Dritte weiter. Ich kann die Einwilligung "
+            "jederzeit im Profilmenü unter „Datenschutz-Einstellungen“ widerrufen. "
+            "Danach kann ich nichts mehr beitragen oder bewerten, und meine "
+            "Bewertungen werden gelöscht. Was ich sonst gespeichert habe, bleibt, "
+            "bis ich es lösche oder mein Konto löschen lasse. Was bis zum Widerruf "
+            "geschehen ist, bleibt rechtmäßig."
+        ),
     }
 )
 
 # Der Wortlaut, den die App heute zeigt.
-AKTUELLER_WORTLAUT = "2026-11-10"
+AKTUELLER_WORTLAUT = "2026-11-12"
 
 
 def bekannter_wortlaut(kennung: str) -> bool:

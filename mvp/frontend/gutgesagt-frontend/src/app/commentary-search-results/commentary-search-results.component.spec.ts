@@ -69,12 +69,12 @@ describe('CommentarySearchResultsComponent: Klick auf Hinzufuegen', () => {
     tick();
   }
 
-  it('fuehrt ins Formular mit der Aussage-ID', fakeAsync(() => {
+  it('fuehrt ins Formular mit der Aussage-ID und ihrem Text (falls getById sie nicht ausliefert)', fakeAsync(() => {
     fixture.componentRef.setInput('searchResponse', antwort(AUSSAGE_ID));
 
     klicken();
 
-    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=Waermepumpen%20sind%20zu%20teuer`);
   }));
 
   it('faellt ohne gueltige ID auf den Text der Aussage zurueck', fakeAsync(() => {

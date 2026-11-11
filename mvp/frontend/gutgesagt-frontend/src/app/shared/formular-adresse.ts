@@ -55,3 +55,15 @@ export function aussageParameter(aussageId: string | null | undefined, text: str
   const suchtext = text?.trim();
   return suchtext ? { [SUCHTEXT_PARAM]: suchtext } : {};
 }
+
+/**
+ * Wie aussageParameter, aber mit dem Text auch neben der ID: fuer die Aussage
+ * einer eigenen Suche. Ist sie eine unbeantwortete Suchanfrage unter der Schwelle,
+ * liefert getById sie Nicht-Admins nicht aus (#436); das Formular nimmt dann den
+ * Text, und beim Speichern findet das Backend dieselbe Aussage wieder
+ * (StatementService.aussageAusAdresse).
+ */
+export function aussageParameterMitText(aussageId: string | null | undefined, text: string | null | undefined): Params {
+  const suchtext = text?.trim();
+  return { ...aussageParameter(aussageId, text), ...(suchtext ? { [SUCHTEXT_PARAM]: suchtext } : {}) };
+}

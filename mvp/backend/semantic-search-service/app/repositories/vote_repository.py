@@ -130,6 +130,15 @@ class VoteRepository:
             )
             return result.rowcount
 
+    def loeschen_fuer_person(self, user_id: str) -> int:
+        """Alle Stimmen einer Person loeschen (Widerruf der Art.-9-Einwilligung)."""
+        with self.db.get_session() as session:
+            result = session.execute(
+                text("DELETE FROM votes WHERE user_id = :user_id"),
+                {"user_id": user_id},
+            )
+            return result.rowcount
+
     def get_user_vote(self, user_id: str, content_id: uuid.UUID) -> Optional[Vote]:
         """Get a user's vote for a specific content item."""
         query = """

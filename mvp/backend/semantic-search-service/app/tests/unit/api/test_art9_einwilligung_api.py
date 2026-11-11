@@ -43,6 +43,21 @@ def repository(art9_einwilligung_ohne_datenbank):
     return art9_einwilligung_ohne_datenbank
 
 
+@pytest.fixture
+def stimmen(repository, monkeypatch):
+    """Die Stimmen der Person, die der Widerruf loescht; ersetzt die Datenbank."""
+    from unittest.mock import MagicMock
+
+    import services.art9_einwilligung_service as modul
+
+    ersatz = MagicMock()
+    ersatz.loeschen_fuer_person.return_value = 3
+    monkeypatch.setattr(
+        modul, "_service", modul.Art9EinwilligungService(repository, ersatz)
+    )
+    return ersatz
+
+
 class TestStand:
     def test_get_ohne_anmeldung_401(self, client):
         assert client.get(BASIS).status_code == 401
@@ -87,7 +102,7 @@ class TestStand:
 
         assert stand["eingewilligt"] is True
         assert stand["wortlaut"] == "2026-11-05-b"
-        assert stand["aktueller_wortlaut"]["kennung"] == "2026-11-10"
+        assert stand["aktueller_wortlaut"]["kennung"] == "2026-11-12"
 
     def test_get_widerrufen_nicht_eingewilligt_wortlaut_bleibt(
         self, client, repository
@@ -103,10 +118,10 @@ class TestStand:
 
 class TestWortlaute:
     def test_aktueller_wortlaut_nennt_punkte_und_muster_hinweise(self):
-        """Wortlaut vom 10.11.2026 (#644): die Zwecke aus DSFA Abschnitt 4 wie 2026-11-05-b."""
+        """Wortlaut vom 12.11.2026: die Zwecke aus DSFA Abschnitt 4 wie 2026-11-05-b."""
         text = WORTLAUTE[AKTUELLER_WORTLAUT]
 
-        assert AKTUELLER_WORTLAUT == "2026-11-10"
+        assert AKTUELLER_WORTLAUT == "2026-11-12"
         assert (
             "ein Punktestand, ein Level, Quests und Meilenstein-Abzeichen, die nur ich "
             "sehe, solange ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen"
@@ -131,6 +146,21 @@ class TestWortlaute:
             "„Einwilligung“", "„Datenschutz-Einstellungen“"
         )
         assert WORTLAUTE["2026-11-10"] == vorher
+
+    def test_wortlaut_vom_12_11_aendert_nur_die_folgen_des_widerrufs(self):
+        """
+        Juristische Vorpruefung vom 12.11.2026: Der Widerruf loescht die Bewertungen
+        (Art9EinwilligungService.widerrufen). Sonst wortgleich mit 2026-11-10, also
+        keine neuen Zwecke; der Wortlaut verspricht nicht mehr, als der Code tut.
+        """
+        vorher = WORTLAUTE["2026-11-10"].replace(
+            "Danach kann ich nichts mehr beitragen oder bewerten; was ich schon "
+            "gespeichert habe, bleibt,",
+            "Danach kann ich nichts mehr beitragen oder bewerten, und meine "
+            "Bewertungen werden gelöscht. Was ich sonst gespeichert habe, bleibt,",
+        )
+        assert WORTLAUTE["2026-11-12"] == vorher
+        assert "meine Bewertungen werden gelöscht" in WORTLAUTE[AKTUELLER_WORTLAUT]
 
     def test_frueherer_wortlaut_bleibt_bekannt(self):
         """Eine gespeicherte Kennung behaelt ihren Text (docs/ART9_EINWILLIGUNG.md)."""
@@ -200,9 +230,38 @@ class TestWiderrufen:
         assert client.delete(BASIS, headers=PERSON).status_code == 204
         dienst.zuruecknehmen.assert_called_once_with("user-001")
 
-    def test_delete_ohne_anmeldung_401(self, client, repository):
+    def test_delete_ohne_anmeldung_401(self, client, repository, stimmen):
         assert client.delete(BASIS).status_code == 401
         repository.widerrufen.assert_not_called()
+        stimmen.loeschen_fuer_person.assert_not_called()
+
+    def test_delete_loescht_die_stimmen_der_person(self, client, repository, stimmen):
+        """Nach dem Widerruf fehlt die Rechtsgrundlage (Art. 17 Abs. 1 lit. b DSGVO)."""
+        assert client.delete(BASIS, headers=PERSON).status_code == 204
+        stimmen.loeschen_fuer_person.assert_called_once_with("user-001")
+
+    def test_delete_widerruft_vor_dem_loeschen(self, client, repository, stimmen):
+        """Erst sperren, dann loeschen: Danach kommt keine neue Stimme mehr dazu."""
+        from unittest.mock import Mock
+
+        reihenfolge = Mock()
+        reihenfolge.attach_mock(repository.widerrufen, "widerrufen")
+        reihenfolge.attach_mock(stimmen.loeschen_fuer_person, "loeschen")
+
+        client.delete(BASIS, headers=PERSON)
+
+        assert [c[0] for c in reihenfolge.mock_calls] == ["widerrufen", "loeschen"]
+
+    def test_delete_fehler_beim_loeschen_gibt_500(self, client, repository, stimmen):
+        """Der Widerruf steht dann; ein neuer Aufruf loescht erneut."""
+        stimmen.loeschen_fuer_person.side_effect = RuntimeError("Datenbank weg")
+
+        antwort = TestClient(client.app, raise_server_exceptions=False).delete(
+            BASIS, headers=PERSON
+        )
+
+        assert antwort.status_code == 500
+        repository.widerrufen.assert_called_once_with("user-001")
 
 
 @pytest.fixture
