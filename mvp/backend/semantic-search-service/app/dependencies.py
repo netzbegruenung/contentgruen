@@ -392,6 +392,8 @@ def get_loeschfristen_service() -> LoeschfristenService:
         get_sperre_repository(),
         # Ohne Zugang zur Keycloak-Admin-Schnittstelle bleiben Konten im Realm unberuehrt.
         _keycloak_konten(),
+        # Suchereignisse abgeschlossener Tage zu Tageszaehlern verdichten (#495).
+        get_search_tracking_repository(),
     )
 
 

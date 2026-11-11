@@ -289,13 +289,13 @@ curl -X POST http://127.0.0.1:8000/api/v1/search/searchByText \
 ```
 
 Anonymous requests need no session header (#446): the service recognises a visitor by a daily
-pseudonym built from `X-Real-IP` (set by nginx; without it the peer address) and `User-Agent`.
-Two visitors are simulated by sending different values:
+pseudonym built from `X-Real-IP` alone (set by nginx; without it the peer address; the
+`User-Agent` does not count since #495). Two visitors are simulated by sending different addresses:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/search/searchByText \
   -H "Content-Type: application/json" \
-  -H "X-Real-IP: 198.51.100.7" -H "User-Agent: Beispielbrowser" \
+  -H "X-Real-IP: 198.51.100.7" \
   -d '{"query_text": "Solarenergie macht unsere Umwelt kaputt", "limit": 3}'
 ```
 

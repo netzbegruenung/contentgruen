@@ -68,10 +68,12 @@ def muster():
     return Mock()
 
 
-def zaehlen(client, user=None, agent=None):
+def zaehlen(client, user=None, agent=None, adresse=None):
     kopf = {"X-User": user} if user else {}
     if agent:
         kopf["User-Agent"] = agent
+    if adresse:
+        kopf["X-Real-IP"] = adresse
     return client.post(
         f"/api/v1/usage/content/{BEITRAG_ID}/usage", json={}, headers=kopf
     )
@@ -125,10 +127,11 @@ class TestEntdoppelung:
         assert erster and erster == zweiter
 
     def test_besucher_bekommt_pruefwert_des_tagespseudonyms(self, client, dienst):
-        """Ohne Sitzungskennung (#446): Besucher unterscheidet das Besuchermerkmal."""
-        zaehlen(client, "anonymous", agent="Browser A")
-        zaehlen(client, "anonymous", agent="Browser A")
-        zaehlen(client, "anonymous", agent="Browser B")
+        """Ohne Sitzungskennung (#446): Besucher unterscheidet das Besuchermerkmal,
+        also der Anschluss; der User-Agent geht nicht ein (#495)."""
+        zaehlen(client, "anonymous", agent="Browser A", adresse="198.51.100.5")
+        zaehlen(client, "anonymous", agent="Browser B", adresse="198.51.100.5")
+        zaehlen(client, "anonymous", agent="Browser A", adresse="198.51.100.6")
 
         pruefwerte = [
             c.kwargs["pruefwert"] for c in dienst.track_content_usage.call_args_list

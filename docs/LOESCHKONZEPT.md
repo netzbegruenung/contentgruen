@@ -152,6 +152,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Datenart | Frist | Gerechnet ab |
 |---|---|---|
 | Meldungen (`content_reports`), bearbeitet oder abgewiesen | 180 Tage | Bearbeitung (`reviewed_at`; ohne sie, im Altbestand, der Eingang) |
+| Suchereignisse (`search_events`) samt Tagespseudonym | bis zum Ende ihres UTC-Tages | dann zum Tageszähler der Suchen verdichtet, ohne Pseudonym (#495, `SearchTrackingRepository.verdichten_vor`; Einzelheiten unter „Was nicht gelöscht wird“) |
 | Tagespseudonym an anonymen Meldungen (`reported_by_session_id`, `besucher:…`) | bis zum Abschluss der Meldung | Bearbeiten oder Abweisen ersetzt es durch einen Zufallswert (`anon:…`), angemeldete Meldungen verlieren den Wert (#446, `repositories/content_report_repository.py`) |
 | Meldungen, offen | keine | — sie sind Arbeit und bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird (dann bearbeitet, Frist wie oben) |
 | Einwürfe (`raw_inputs`), die in keinem Beitrag ausformuliert sind, samt Sätzen | 365 Tage | letzte Arbeit daran: Einwerfen oder zuletzt gespeicherter Satz |
@@ -319,8 +320,9 @@ und der Ablauf oben erfasst die Tabelle nicht.
 - **`search_events`** trägt seit der Migration vom 19.08.2026 (unten) nur `actor_hash`,
   ein täglich rotierendes HMAC-SHA256 über Kennung + UTC-Datum
   (`services/search_tracking_service.py`, `tagespseudonym`).
-  Ohne Geheimnis nicht umkehrbar, mit Geheimnis nur tageweise nachrechenbar: Löschen
-  auf Antrag ist unmöglich und mangels Personenbezug auch nicht geschuldet.
+  Ohne Geheimnis nicht umkehrbar, mit Geheimnis nur für den laufenden Tag nachrechenbar
+  (ältere Tage tragen kein Pseudonym mehr, siehe Frist): Löschen auf Antrag ist unmöglich
+  und mangels Personenbezug auch nicht geschuldet.
   **Vorher prüfen, ob die Zielumgebung migriert ist** — auf einem Stand ohne
   `actor_hash` stehen dort Suchanfrage im Klartext, Kennung und IP-Hash, und dann ist
   `DELETE FROM search_events WHERE user_id = …` sehr wohl nötig
@@ -343,40 +345,41 @@ und der Ablauf oben erfasst die Tabelle nicht.
   Auch die physische Reihenfolge der Zeilen (`SELECT` ohne `ORDER BY`, `ctid`, die
   Reihenfolge in `pg_dump`) und die Systemspalte `xmin` folgen dem Einfügen: Jede Suche
   schreibt ihr Suchereignis in einer eigenen Transaktion, deren Nummer mit jeder Suche
-  steigt. Seit #337 schreibt der tägliche Bereinigungsjob deshalb jeden abgeschlossenen
-  Tag in zufälliger Reihenfolge und in einer Transaktion neu
-  (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
-  abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
-  und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
-  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=false`
-  entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
-  ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
-  eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
-  Mitternacht): Ihre Zeile trägt bis zum nächsten Lauf ein eigenes `xmin` und ist damit
-  als eine der letzten Suchen ihres Tages erkennbar; verloren geht dabei nichts. Die
-  alten Zeilenversionen und ihre Einträge im Index auf `timestamp` stehen physisch in
-  der Datei, bis ein `VACUUM` ihren Platz freigibt (nur mit Werkzeugen lesbar, die Seiten
-  roh auslesen); in Backups und im WAL, bis diese herausrotiert sind.
-  **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
-  (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
-  `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
-  verdichtet der tägliche Bereinigungsjob (`services/cleanup/bereinigungsjob.py`,
-  derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
-  Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
-  `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=true` (Standard; der frühere Name
-  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP` gilt weiter); abgeschaltet gilt auch diese
-  Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
-  Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
+  steigt. Das gilt seit der Umstellung zu #495 nur noch für den laufenden Tag, denn
+  abgeschlossene Tage haben keine Einzelzeilen mehr (siehe Frist). Von #337 bis dahin schrieb
+  der Bereinigungsjob jeden abgeschlossenen Tag gemischt neu; das entfällt. Die alten
+  Zeilenversionen und ihre Einträge im Index auf `timestamp` stehen physisch in der Datei,
+  bis ein `VACUUM` ihren Platz freigibt (nur mit Werkzeugen lesbar, die Seiten roh auslesen);
+  in Backups und im WAL, bis diese herausrotiert sind.
+  **Frist:** Suchereignisse bleiben nur bis zum Ende ihres UTC-Tages als Einzelzeilen
+  (#495). Den Tag danach verdichtet der tägliche Task der Löschfristen
+  (`services/loeschfristen_service.py`, `SearchTrackingRepository.verdichten_vor`) zu
+  einem Tageszähler und löscht die Einzelzeilen samt Pseudonym und `id` (#289). Er läuft
+  beim Start des Dienstes, täglich und kurz nach Mitternacht (UTC) und hängt wie die
+  übrigen Fristen nicht am abschaltbaren Bereinigungsjob. Der erste Lauf nach dem Update
+  verdichtet auch alle älteren Tage, die bis dahin 90 Tage als Einzelzeilen blieben; eine
+  Migration braucht es dafür nicht, das Schema bleibt. `SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`
+  gibt es nicht mehr; ist sie noch gesetzt, wird sie nicht beachtet. Scheitert ein Lauf,
+  folgt der nächste nach einer Stunde. Geht eine Suche kurz vor Mitternacht erst nach dem
+  Lauf ein, holt sie ein zweiter Lauf fünf Minuten später ab (`NACHZUEGLER_SEKUNDEN`) und
+  addiert sie zum Tageszähler (die Personen dieses Tages können dabei eine Person doppelt
+  zählen). `GET /metrics/searches-per-user` rechnet seitdem aus den Tageszählern (Suchen je
+  Personentag) und liefert keinen Median mehr. Physisch verschwinden die gelöschten Zeilen
+  erst, wenn PostgreSQL den Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu
+  28 Tage weiter.
 - **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen,
   die Zahl der Suchen ohne Treffer (seit #467, für die Bilanz) und die Zahl der Personen
-  (verschiedene Tagespseudonyme), kein Pseudonym: nichts, was sich einer Person zuordnen
-  ließe. Keine Frist.
+  (verschiedene Tagespseudonyme, beim Verdichten gezählt; Besucher je Anschluss), kein
+  Pseudonym: nichts, was sich einer Person zuordnen ließe. Keine Frist. Aus ihm kommen für
+  abgeschlossene Tage die Personen pro Tag und ihr Wochenmittel in der Bilanz.
 - **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche, Anzahl der Suchen
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
-  zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events`) eine Aussage
-  heute schon gezählt haben, liegt nur im Arbeitsspeicher (als SHA-256-Prüfwert) und wird
-  um Mitternacht (UTC) verworfen; bei Besuchern ebenso ein Prüfwert aus Anschluss-Prüfwert
-  (Anschluss mit dem Tagesschlüssel) und Aussage, damit je Anschluss höchstens eine Person zählt (#496). Wochen älter als acht löscht ein täglicher Task von
+  zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events` am laufenden Tag)
+  eine Aussage heute schon gezählt haben, liegt nur im Arbeitsspeicher (als SHA-256-Prüfwert)
+  und wird um Mitternacht (UTC) verworfen. Weil das Tagespseudonym eines Besuchers nur noch
+  aus dem Anschluss entsteht, zählt je Anschluss und Aussage höchstens eine Person; den
+  Anschluss-Prüfwert aus #496 braucht es dafür nicht mehr. Die Personen einer Woche sind die
+  Summe der Personen je Tag, ein Pseudonym über Tagesgrenzen gibt es auch hier nicht. Wochen älter als acht löscht ein täglicher Task von
   selbst (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
 - **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
   Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen

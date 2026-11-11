@@ -3,9 +3,10 @@ Service layer for search tracking functionality.
 Provides business logic for tracking and analyzing search behavior.
 
 No personally identifiable data is persisted. Callers hand in the user id or, for
-visitors, the Besuchermerkmal (address and User-Agent, utils/besucher_pseudonym.py);
+visitors, the Besuchermerkmal (their Anschluss, utils/besucher_pseudonym.py);
 this layer turns it into a daily rotating pseudonym, and only that pseudonym
-reaches the database.
+reaches the database, for the running day only: once a day is closed, its search
+events become day counters without pseudonym (SearchTrackingRepository.verdichten_vor).
 
 A search event carries only its UTC day, not the time of day. A search can
 create a new statement (services/search/search_query_statement.py) whose creation
@@ -159,7 +160,7 @@ class SearchTrackingService:
             days: Number of days to analyze
 
         Returns:
-            Dict with average, median, and distribution stats
+            Dict with average and totals
         """
         return self.repository.get_searches_per_user(days)
 

@@ -77,8 +77,8 @@ needs a reason that names what is missing.
 Repositories, migrations and SQL scripts that only show their behaviour in a real
 database are tested in `tests/integration/` against PostgreSQL: migrations and
 `init.sql` against the model (`test_migrationen.py`), the timestamp of a
-Suchereignis (`test_suchereignisse.py`), the shuffled rewrite of closed days
-(`test_suchereignisse_mischen.py`), "Suchen ohne Treffer"
+Suchereignis (`test_suchereignisse.py`), compacting closed days into day counters
+(`test_suchereignisse_tageszaehler.py`), "Suchen ohne Treffer"
 (`test_suchen_ohne_treffer.py`), the Rückmeldung on usage (`test_rueckmeldung_nutzung.py`),
 the deletion command (`test_loeschkommando.py`), Meldungen with each Meldegrund
 (`test_meldegrund.py`), the Angaben nach Art. 16 DSA at a Meldung
@@ -90,7 +90,6 @@ part needs a running Qdrant).
 # from mvp/backend/semantic-search-service/app
 pytest tests/integration/test_migrationen.py tests/integration/test_suchereignisse.py \
        tests/integration/test_suchereignisse_tageszaehler.py \
-       tests/integration/test_suchereignisse_mischen.py \
        tests/integration/test_suchen_ohne_treffer.py tests/integration/test_rueckmeldung_nutzung.py \
        tests/integration/test_loeschkommando.py tests/integration/test_meldegrund.py \
        tests/integration/test_meldung_angaben.py tests/integration/test_sperren_postgres.py tests/integration/test_loeschfristen.py

@@ -56,8 +56,20 @@ def sperren():
 
 
 @pytest.fixture
-def service(meldungen, einwuerfe, beitraege, moderation, sperren):
-    return LoeschfristenService(meldungen, einwuerfe, beitraege, moderation, sperren)
+def suchereignisse():
+    return Mock(**{"verdichten_vor.return_value": 0})
+
+
+@pytest.fixture
+def service(meldungen, einwuerfe, beitraege, moderation, sperren, suchereignisse):
+    return LoeschfristenService(
+        meldungen,
+        einwuerfe,
+        beitraege,
+        moderation,
+        sperren,
+        suchereignisse=suchereignisse,
+    )
 
 
 def test_fristen_wie_im_loeschkonzept():
@@ -70,6 +82,42 @@ def test_fristen_wie_im_loeschkonzept():
 
 
 class TestPostgres:
+    async def test_suchereignisse_abgeschlossener_tage_werden_verdichtet(
+        self, service, suchereignisse
+    ):
+        """Das Tagespseudonym bleibt nur bis zum Lauf nach Mitternacht (#495)."""
+        await service.fristen_anwenden(HEUTE)
+
+        suchereignisse.verdichten_vor.assert_called_once_with(
+            datetime(2026, 10, 29, tzinfo=timezone.utc)
+        )
+
+    async def test_fehler_beim_verdichten_haelt_die_anderen_nicht_auf(
+        self, service, suchereignisse, meldungen
+    ):
+        suchereignisse.verdichten_vor.side_effect = RuntimeError("db weg")
+
+        await service.fristen_anwenden(HEUTE)
+
+        meldungen.bearbeitete_loeschen_vor.assert_called_once()
+        assert service.verdichten_offen is True
+
+    async def test_gelungenes_verdichten_ist_nicht_offen(self, service):
+        await service.fristen_anwenden(HEUTE)
+
+        assert service.verdichten_offen is False
+
+    async def test_ohne_suchereignisse_kein_verdichten(
+        self, meldungen, einwuerfe, beitraege, moderation, sperren
+    ):
+        service = LoeschfristenService(
+            meldungen, einwuerfe, beitraege, moderation, sperren
+        )
+
+        await service.fristen_anwenden(HEUTE)
+
+        meldungen.bearbeitete_loeschen_vor.assert_called_once()
+
     async def test_meldungen_bearbeitet_vor_180_tagen(self, service, meldungen):
         await service.fristen_anwenden(HEUTE)
 
@@ -195,3 +243,41 @@ class TestTakt:
                 await loeschen_im_takt(service, takt_sekunden=5)
 
         assert service.fristen_anwenden.await_count == 2
+
+    async def test_loeschen_im_takt_holt_gescheitertes_verdichten_nach_einer_stunde_nach(
+        self,
+    ):
+        """Sonst ueberlebte das Tagespseudonym bis zur naechsten Mitternacht (#495)."""
+        service = Mock(verdichten_offen=True)
+        service.fristen_anwenden = AsyncMock()
+        schlafen = AsyncMock(side_effect=asyncio.CancelledError())
+
+        with patch("services.loeschfristen_service.asyncio.sleep", schlafen), patch(
+            "services.loeschfristen_service.sekunden_bis_mitternacht",
+            return_value=20 * 60 * 60,
+        ):
+            with pytest.raises(asyncio.CancelledError):
+                await loeschen_im_takt(service)
+
+        schlafen.assert_awaited_once_with(60 * 60)
+
+    async def test_loeschen_im_takt_zweiter_lauf_kurz_nach_mitternacht(self):
+        """Nachzuegler des Vortags verlieren ihr Pseudonym Minuten spaeter (#495)."""
+        service = Mock(verdichten_offen=False)
+        service.fristen_anwenden = AsyncMock()
+        schlafen = AsyncMock(side_effect=[None, asyncio.CancelledError()])
+
+        with patch("services.loeschfristen_service.asyncio.sleep", schlafen), patch(
+            "services.loeschfristen_service.sekunden_bis_mitternacht",
+            # erster Lauf 00:00:01, zweiter 00:05:01
+            side_effect=[24 * 60 * 60 - 1, 24 * 60 * 60 - 301],
+        ):
+            with pytest.raises(asyncio.CancelledError):
+                await loeschen_im_takt(service)
+
+        assert service.fristen_anwenden.await_count == 2
+        # danach wieder bis kurz nach der naechsten Mitternacht
+        assert [c.args[0] for c in schlafen.await_args_list] == [
+            5 * 60,
+            24 * 60 * 60 - 300,
+        ]

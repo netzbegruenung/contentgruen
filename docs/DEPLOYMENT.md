@@ -103,11 +103,14 @@ judgement (on the shared dev VM median +0.3 to 0.45 s, 95th percentile up to 1.4
 0.14 s). Measure on the target VM with `tests/regression/suche_messen` before switching to `an`.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
-from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:
+from the client address alone (IPv6: its /64; the User-Agent no longer counts since #495,
+`utils/besucher_pseudonym.py`). Search events keep this pseudonym only for the running UTC day;
+the Löschfristen task compacts closed days into day counters at midnight UTC and at start,
+independent of `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB`. Two preconditions:
 
 - **`X-Real-IP` reaches the semantic service.** nginx sets it, YARP in the BFF passes it on
   (`IdentityHeaderTransformTests` checks that it is not stripped). Without it the service only
-  sees its peer, and all visitors with the same User-Agent count as one person. The header is
+  sees its peer, and all visitors count as one person. The header is
   only trustworthy while the BFF and the semantic service are reachable through nginx alone;
   a client that reaches them directly can choose its own address and inflate the person
   counts (the report rate limit relies on the same header).
