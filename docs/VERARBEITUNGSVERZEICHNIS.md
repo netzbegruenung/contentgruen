@@ -26,9 +26,14 @@ nur gelegentlich.
   Vorstand nach § 26 BGB. Anschrift, Registereintrag und Kontakt wie im Impressum und in der
   Datenschutzerklärung, Abschnitt „Verantwortlicher“ (Angaben aus
   `mvp/frontend/gutgesagt-frontend/src/app/shared/legal-entity.ts`).
+  **Bewusste Lücke:** Dieses Verzeichnis liegt in einem öffentlichen Repository und nennt deshalb
+  weder Namen noch Kontaktdaten. In der Fassung, die der Verein führt und der Aufsicht auf
+  Anfrage vorlegt (Art. 30 Abs. 4), trägt er Name und Kontakt des Verantwortlichen und des
+  Datenschutzbeauftragten selbst ein.
 - **Gemeinsam Verantwortliche, Vertreter (Art. 27):** keine.
 - **Datenschutzbeauftragter:** benannt; Kontakt wie in der Datenschutzerklärung, Abschnitt
-  „Datenschutzbeauftragter“.
+  „Datenschutzbeauftragter“ (Angabe `DSB_KONTAKT` in
+  `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.ts`).
 - **Empfänger, für alle Tätigkeiten gleich:**
   - verdigado eG als Auftragsverarbeiterin für Server, Anmeldedienst und Mailversand des
     Anmeldedienstes; laut Datenschutzerklärung mit der Hetzner Online GmbH als
@@ -45,7 +50,7 @@ nur gelegentlich.
     liegen“, `CLAUDE.md` „Datenschutz — keine KI-Anbieter“).
 - **Übermittlung in Drittländer (lit. e):** keine (DSE „Keine Übermittlung außerhalb der EU“).
   Bilder von fremden Servern lädt der Browser der Person erst nach Klick (DSE „Bilder von fremden
-  Servern“).
+  Servern“, T11).
 - **Technische und organisatorische Maßnahmen (lit. g, Art. 32 Abs. 1):** je Tätigkeit unter
   „TOM“ mit Verweis auf die Maßnahmen der DSFA. Für alle gelten:
   - Pseudonymisierung: In der Datenbank steht die Kennung des Kontos, kein Name und keine
@@ -84,7 +89,8 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Empfänger:** wie oben; der Anzeigename ist für andere Angemeldete sichtbar, nicht für
   Besucher.
 - **Fristen:** LK „Fristen“ (nie benutzte Konten aus Einladungen) und „Ablauf“
-  (Kontolöschung); Anmelde-Cookie 14 Tage nach letzter Nutzung (DSE „Anmelde-Cookie“).
+  (Kontolöschung); LK „Fristen außerhalb des täglichen Tasks“: Anmelde-Cookie 14 Tage nach
+  letzter Nutzung, Beta-Zugänge bis von Hand entfernt.
 - **TOM:** DSFA V1, V15, V19, V21. **Offen:** Anzeigename entsteht vor der
   Art.-9-Einwilligung (DSFA V1, Abschnitt 4).
 
@@ -98,8 +104,8 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Daten:** Kennung, Zeitpunkt, Kennung des Wortlauts, Zeitpunkt des Widerrufs; je Antwort zur
   Sichtbarkeit Kennung, Ja/Nein, Wortlaut, Zeitpunkt.
 - **Empfänger:** wie oben, nur Admins in der Datenbank.
-- **Fristen:** solange das Konto besteht, auch widerrufene (LK „Fristen“, Schritt 2 im
-  „Ablauf“).
+- **Fristen:** solange das Konto besteht, auch widerrufene (LK „Ablauf“, Schritt 2; für die
+  Abzeichen auch LK „Fristen“).
 - **TOM:** DSFA V2, V22. **Offen:** Ein Widerruf löst heute weder Löschen noch Anonymisieren aus
   (DSFA V2, R9).
 
@@ -119,7 +125,9 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Empfänger:** Beiträge für alle, auch Besucher; der Anzeigename daran nur für Angemeldete;
   Einwürfe nur für Angemeldete; wegen CC0 darf jede Person Beiträge weiterverwenden.
 - **Fristen:** LK „Fristen“ (gelöschte Beiträge, Einwürfe) und LK „Zwei Wege, einen Beitrag zu
-  löschen“; Beiträge ohne Frist, bei Kontolöschung anonymisiert (LK „Ablauf“, Schritt 3).
+  löschen“; Beiträge ohne Frist. Bei Kontolöschung werden Beiträge anonymisiert (LK „Ablauf“,
+  Schritt 3), Sätze an fremden Einwürfen bekommen einen Platzhalter, eigene Einwürfe werden
+  gelöscht (Schritt 2).
 - **TOM:** DSFA V3, V4, V20. **Offen:** Information der Dritten nach Art. 14 (DSFA V3, R3).
 
 ### T4 Bewertungen und Güte
@@ -164,9 +172,10 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Empfänger:** Zähler an der Karte für alle; die Rückmeldung nur für die Person; Zahlen je
   Woche für Admins.
 - **Fristen:** LK „Fristen“ (Prüfwerte, „Ja, gepostet“); Nutzungsereignisse 90 Tage als
-  Einzelzeilen, danach nur Zähler je Beitrag (DSE „Verwendung von Beiträgen“,
-  `usage_retention_days` in derselben Datei; im Löschkonzept steht diese Frist nicht);
-  Zahl für die Rückmeldung bis zur Kontolöschung (LK „Ablauf“).
+  Einzelzeilen, danach nur Zähler je Beitrag (LK „Fristen außerhalb des täglichen Tasks“;
+  `usage_retention_days` in `mvp/backend/semantic-search-service/app/core/config.py`, wirkt
+  über den abschaltbaren Bereinigungsjob, Standard an; DSE „Verwendung von Beiträgen“); Zahl
+  für die Rückmeldung bis zur Kontolöschung (LK „Ablauf“, Schritt 2).
 - **TOM:** DSFA V9, V9a, V10. „Ja, gepostet“ hinter dem Schalter `gepostet_aktiv`.
 
 ### T7 Punkte, Meilensteine, Abzeichen und Muster-Hinweise (gebaut, ausgeschaltet)
@@ -216,15 +225,31 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f (DSE „Protokolldateien“); Sicherungen teilen die
   Rechtsgrundlage der gesicherten Daten und dienen Art. 32 Abs. 1 lit. c.
 - **Betroffene:** alle, die die Plattform aufrufen.
-- **Daten:** im vorgelagerten Webserver volle IP-Adresse, Uhrzeit, Anfrage; in der Anwendung
-  gekürzte Kennung ohne Suchtext; für Rate-Limits gekürzte Adresse oder Kennung nur im
+- **Daten:** im vorgelagerten Webserver volle IP-Adresse, Zeitpunkt, aufgerufene Adresse,
+  verweisende Seite, Angaben zu Browser und Betriebssystem (User-Agent); im Webserver der
+  Anwendung Zeitpunkt, aufgerufene Seite ohne Suchtext, Ergebnis und User-Agent, ohne die
+  IP-Adresse der Person und ohne verweisende Seite, für Suchen keine Zeile (DSE „Zugriffe
+  innerhalb der Anwendung“); in den Protokollen der Anwendung gekürzte Kennung ohne Suchtext; für Rate-Limits gekürzte Adresse oder Kennung nur im
   Arbeitsspeicher; in Sicherungen alle Datenbanken.
 - **Empfänger:** wie oben (Betrieb bei der Auftragsverarbeiterin).
-- **Fristen:** vorgelagerter Webserver 14 Tage, Rate-Limits höchstens etwa 16 Minuten,
-  Sicherungen bis zu 28 Tage (DSE „Protokolldateien“, „Sicherungskopien“; LK „Was nicht gelöscht
-  wird“). **Offen:** Protokolle der Anwendung und des Frontend-nginx haben in Produktion keine
+- **Fristen:** LK „Fristen außerhalb des täglichen Tasks“: vorgelagerter Webserver 14 Tage,
+  Rate-Limits höchstens etwa 16 Minuten, Sicherungen bis zu 28 Tage. **Offen:** Protokolle der Anwendung und des Frontend-nginx haben in Produktion keine
   Frist (DSFA V16, 8.6, F6; #485, #336).
 - **TOM:** DSFA V16, V17, V18. **Offen:** Verschlüsselung der Sicherungen (DSFA 8.6, F3).
+
+### T11 Bilder von fremden Servern
+
+- **Zweck:** ein Bild zeigen, das in einem Beitrag über eine Adresse eingebunden ist.
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f (DSE „Bilder von fremden Servern“).
+- **Betroffene:** alle, die ein solches Bild laden, angemeldet oder nicht.
+- **Daten:** IP-Adresse und Angaben zum Browser, die der Browser beim Laden an den fremden
+  Server schickt; bei Gut gesagt wird der Klick nicht gespeichert.
+- **Empfänger:** der Betreiber des fremden Servers, den die einstellende Person eingetragen hat;
+  welcher, steht vorher nicht fest. Der Browser der Person spricht ihn direkt an; dass er außerhalb
+  der EU sitzt, ist nicht ausgeschlossen (lit. e oben).
+- **Fristen:** bei Gut gesagt keine Speicherung; beim fremden Server unbekannt.
+- **TOM:** Platzhalter „Bild laden“, das Bild lädt erst nach Klick und nur für dieses eine Bild;
+  der Klick wird nicht gemerkt (DSE „Bilder von fremden Servern“).
 
 ## Offen
 

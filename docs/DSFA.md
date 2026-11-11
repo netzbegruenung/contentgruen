@@ -18,7 +18,8 @@ Tageszählern verdichtet). Neu an diesem Stand: Risikomethode nach DSK-Kurzpapie
 und die Liste der offenen Fakten (8.6).
 Fundstellen mit Zeilennummer zeigen auf den Stand, an dem sie geprüft wurden: in Abschnitt 1
 bis 7 auf `cdb7ec64` mit #476 (Datenschutzerklärung nach #499), in Abschnitt 8 und 9 auf
-`c2c9bbe5`. Was danach dazukam, steht ohne Zeile mit seinem Ticket.
+`c2c9bbe5`, auch die Zeilen `LK:` laut `c2c9bbe5` (`git show c2c9bbe5:docs/LOESCHKONZEPT.md`).
+Was danach dazukam, steht ohne Zeile mit seinem Ticket.
 `ss/` = `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), in
 Abschnitt 1 bis 7 zitiert mit dem Titel ihres Abschnitts, in Abschnitt 8 und 9 mit Zeile
@@ -81,8 +82,9 @@ Für den Grundbetrieb ohne Punkte trifft sicher nur WP-248-Kriterium 4 (vertraul
 | **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug, keine Punkte fürs Bewerten (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md:9-19`). | Risiko (mittlere Klasse, 8.4); in der Acht-Wochen-Bilanz ansehen |
 
 Eingestuft nach DSK-Kurzpapier Nr. 18 (Methode in 8.4): Mit diesen Maßnahmen bleibt für die
-Punkte höchstens die mittlere Klasse „Risiko“ (Risiko 3), kein hohes Risiko. Die
-Aufsichtsbehörde muss deshalb nicht konsultiert werden (Art. 36 Abs. 1).
+Punkte selbst höchstens die mittlere Klasse „Risiko“ (Risiko 3). Ob die Aufsichtsbehörde
+konsultiert werden muss (Art. 36 Abs. 1), entscheidet das Gesamtrisiko der Plattform; das
+steht in 8.4 und hängt heute am Widerruf (R9) und an den offenen Fakten (8.6).
 
 ## 4. Rechtsgrundlage
 
@@ -158,7 +160,8 @@ Verhältnismäßigkeit des Grundbetriebs ohne Punkte: 8.5.
    Zahl der erreichten Meilensteine als einzige Angabe (8.2, V22, #351)?
 7. Widerruf der Art.-9-Einwilligung (V2, R9): Ist ohne Antrag zu löschen oder zu anonymisieren,
    oder erst auf Antrag? Genügt die Anonymisierung wie bei der Kontolöschung? Muss der Wortlaut
-   den Verein als Verantwortlichen nennen statt „Gut gesagt“?
+   den Verein als Verantwortlichen nennen statt „Gut gesagt“? Ist die Maßnahme zum Start nicht
+   live: Ist vorher die Aufsichtsbehörde zu konsultieren (Art. 36, 8.4)?
 
 ## 7. Vor dem Einschalten der Punkte
 
@@ -195,9 +198,10 @@ Plattform (8.1). Vier Lücken sind offen: Konto und Anzeigename entstehen vor de
 nach einem Widerruf der Einwilligung bleibt das Gespeicherte an der Person (V2, R9); das
 Tagespseudonym angemeldeter Personen ist am laufenden Tag mit dem Schlüssel aus der Konfiguration
 nachrechenbar, falls er gesetzt ist (V7); Anwendungsprotokolle haben in Produktion keine Frist
-(V16). Nach der Methode in 8.4 liegt der Grundbetrieb heute in der mittleren Klasse „Risiko“
-(R2, R3, R4, R5, R9), kein Einzelrisiko ist hoch; eine Konsultation nach Art. 36 ist deshalb nicht
-nötig. **Erst wenn die vier Lücken geschlossen sind**, die Maßnahmen aus 8.2 und 8.3 stehen
+(V16). Nach der Methode in 8.4 ist R9 heute **hoch**, R2, R3, R4, R5 und R6 liegen in der
+mittleren Klasse „Risiko“. Die Maßnahme zu R9 (Anonymisieren und Löschen beim Widerruf) ist vor
+dem Start geplant; eine Konsultation nach Art. 36 entfällt nur, wenn sie vor dem Start live ist
+und die offenen Fakten R4 nicht auf hoch heben (Folgerung in 8.4). **Erst wenn die vier Lücken geschlossen sind**, die Maßnahmen aus 8.2 und 8.3 stehen
 und die offenen Fakten (8.6) belegt sind, bleibt außer den Daten Dritter (R3) nur geringes Risiko.
 
 ### 8.1 Schwellwert für den Grundbetrieb ohne Punkte
@@ -296,16 +300,17 @@ Empfänger und Ort“.
   der Widerruf für die Zukunft. Fehlt danach eine andere Rechtsgrundlage, sind die Daten nach
   Art. 17 Abs. 1 lit. b zu löschen, und zwar auch ohne Antrag; still auf eine andere
   Rechtsgrundlage auszuweichen, ist nicht zulässig (EDSA-Leitlinien 05/2020 zur Einwilligung,
-  Rn. 117 bis 120). Als andere Ausnahme nach Art. 9 Abs. 2 käme nur lit. e in Betracht
+  Rn. 117 bis 120; Randnummer am Original prüfen). Als andere Ausnahme nach Art. 9 Abs. 2 käme nur lit. e in Betracht
   („offensichtlich öffentlich gemacht“). Sie setzt voraus, dass die Person ihre Daten bewusst
   einer unbegrenzten Zahl von Personen zugänglich gemacht hat (EuGH C-252/21); der Anzeigename ist
   aber nur für Angemeldete sichtbar, Stimmen sind gar nicht sichtbar. Also trägt „Gespeichertes
   bleibt“ voraussichtlich nicht.
-- **Widerruf, Maßnahme (offen, R9):** Der Widerruf löst dieselbe Anonymisierung aus wie die
-  Kontolöschung für Beiträge, Einwürfe und Sätze (`LK` Schritt 3, Platzhalter statt Kennung) und
-  löscht die Stimmen; das Konto selbst und die Zeile der Einwilligung als Nachweis (Art. 7
-  Abs. 1) bleiben. Dazu gehören ein neuer Wortlaut und der Widerrufstext der
-  Datenschutzerklärung; die Produktänderung ist noch nicht gebaut. Alternative: Löschen erst auf
+- **Widerruf, Maßnahme (offen, R9):** Der Widerruf wirkt wie die Kontolöschung für die
+  Mitwirkung: Beiträge anonymisieren (`LK` „Ablauf“, Schritt 3), Sätze an fremden Einwürfen mit
+  Platzhalter versehen, eigene Einwürfe und Stimmen löschen (Schritt 2); das Konto selbst und
+  die Zeile der Einwilligung als Nachweis (Art. 7 Abs. 1) bleiben. Dazu gehören ein neuer
+  Wortlaut und der Widerrufstext der Datenschutzerklärung. Gebaut ist das auf `c4a95e9c` noch
+  nicht; geplant ist es vor dem Start in einem eigenen PR. Alternative: Löschen erst auf
   Antrag, schwächer, weil die Leitlinien eine Pflicht ohne Antrag sehen; das entscheidet die
   Datenschutzbeauftragte (Abschnitt 6, Frage 7).
 
@@ -411,7 +416,7 @@ Empfänger und Ort“.
 - **§ 25 TDDDG für das Tagespseudonym der Besucher (Vorschlag, nicht juristisch geprüft, #296):**
   Der EDSA legt Art. 5 Abs. 3 der ePrivacy-Richtlinie weit aus: Auch IP-Adressen und Header wie
   der User-Agent können erfasst sein, wenn sie zum Wiedererkennen ausgewertet werden
-  (Leitlinien 2/2023, Rn. 42 f. und 55). Die DSK-Orientierungshilfe Digitale Dienste beschreibt
+  (Leitlinien 2/2023, Rn. 42 f. und 55; Randnummer am Original prüfen). Die DSK-Orientierungshilfe Digitale Dienste beschreibt
   Fingerprinting als serverseitige Bildung eines möglichst eindeutigen und langlebigen Werts.
   Das Tagespseudonym ist beides nicht: Es steht für einen Anschluss (IPv6: das /64, der Host-Teil
   geht nicht ein), mehrere Geräte dahinter zählen als einer; der Schlüssel wechselt täglich und
@@ -698,12 +703,12 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 | R1 | **Politische Haltung wird sichtbar**: Anzeigename an Beiträgen, Einwürfen und Sätzen für alle Angemeldeten, darunter Nicht-Mitglieder (V1, V3, V4) | nur Angemeldete, nur Vorname und Initial, Kennung nur für Admins; Einwilligung vor dem Beitragen (V2) | geringes Risiko |
 | R2 | **Zuordnung pseudonymer Daten**: Tagespseudonym der Angemeldeten am laufenden Tag nachrechenbar, falls der Schlüssel gesetzt ist (V7), Uhrzeiten im vorgelagerten Webserver (V16) | Tag statt Uhrzeit, Verdichten am Tagesende, Schlüssel der Besucher nur im Speicher, Besucher ohne User-Agent; für Angemeldete am laufenden Tag **offen** | Risiko; geringes Risiko, sobald V7 umgestellt ist |
 | R3 | **Daten Dritter** in Beiträgen, Einwürfen und Suchtexten, auch deren politische Zuordnung (V3, V4, V6), darunter „Gepostet von“ am Post | Hinweise im Formular und in der Erklärung; „Gepostet von“ freiwillig; Melden; Einzelfall-Löschung | Risiko, hinnehmbar |
-| R4 | **Datenpanne oder Zugriff durch Admins**: Kennungen, Meldungen mit Name und E-Mail-Adresse, Muster-Hinweise | Fristen (`LK:150-164`), Kennungen nur gekürzt im Log, keine Weitergabe (`DSE:74-75`); Rollen und Zugriffskonzept, AV-Vertrag und Verschlüsselung der Sicherungen stehen nicht im Repo (**offen**, 8.6) | Risiko, bis die Fakten aus 8.6 belegt sind |
+| R4 | **Datenpanne oder Zugriff durch Admins**: Kennungen, Meldungen mit Name und E-Mail-Adresse, Muster-Hinweise | Fristen (`LK:150-164`), Kennungen nur gekürzt im Log, keine Weitergabe (`DSE:74-75`); Rollen und Zugriffskonzept, AV-Vertrag und Verschlüsselung der Sicherungen stehen nicht im Repo (**offen**, 8.6) | Risiko unter Vorbehalt von 8.6; **hoch**, wenn es keinen AV-Vertrag gibt oder die Sicherungen unverschlüsselt auf demselben Host liegen |
 | R5 | **Unbefristete Protokolle** mit Altbestand aus Suchtexten und Kennungen (V16) | Ziel 14 Tage (`LK:511-519`), nicht ausgerollt | Risiko, bis ausgerollt |
 | R6 | **Löschung von Hand, nie an echten Daten erprobt** (`LK:3-13`, `DSE:1161-1163`) | Skript getestet gegen Testdaten (`LK:531-532`); Backup und Protokoll beim ersten Lauf | Risiko; geringes Risiko nach dem ersten belegten Lauf |
 | R7 | **Scoring und Zweckentfremdung** durch Punkte (V11) | Abschnitt 3 | Risiko (wie Risiko 3) |
 | R8 | **Rückschluss auf einzelne Stimmen** über kleine Zähler oder die Güte (V5) | M5: Summen und Stimmenanteil der Güte erst ab drei verschiedenen Stimmenden, darunter keine Zahl in der Antwort; ohne Startkonten und eigene Stimme; Gewicht der Stimmen gedeckelt (#427) | geringes Risiko |
-| R9 | **Widerruf ohne Folgen für Gespeichertes**: Beiträge, Einwürfe, Sätze und Stimmen bleiben nach dem Widerruf der Art.-9-Einwilligung mit Kennung und Anzeigenamen (V2) | heute keine; Vorschlag: Widerruf löst die Anonymisierung wie bei der Kontolöschung aus und löscht die Stimmen (V2, **offen**) | Risiko; geringes Risiko, sobald gebaut |
+| R9 | **Widerruf ohne Folgen für Gespeichertes**: Beiträge, Einwürfe, Sätze und Stimmen bleiben nach dem Widerruf der Art.-9-Einwilligung mit Kennung und Anzeigenamen (V2) | heute keine; Maßnahme R9: Widerruf wirkt wie die Kontolöschung für die Mitwirkung (V2), vor dem Start geplant | **hoch** heute; nach Maßnahme R9 (vor dem Start) geringes Risiko |
 
 ### 8.4 Risikomethode und Einstufung (DSK-Kurzpapier Nr. 18)
 
@@ -742,14 +747,19 @@ Entwurfs; sie zu bestätigen oder zu ändern, ist Teil der Beratung (Abschnitt 6
 | R1 Haltung sichtbar | überschaubar | überschaubar: Vorname und Initial, nur Angemeldete | gering | gering |
 | R2 Zuordnung pseudonymer Daten | überschaubar: braucht Datenbank und Konfiguration, nur der laufende Tag | substanziell: kann auf einen Suchtext führen | **Risiko** | gering (V7 umgestellt) |
 | R3 Daten Dritter | substanziell: Beiträge nennen oft Dritte | überschaubar: öffentliche Äußerungen, Melden möglich | **Risiko** | Risiko, hinnehmbar |
-| R4 Datenpanne, Zugriff durch Admins | überschaubar, solange 8.6 offen ist | substanziell: Art.-9-Daten, Name und E-Mail in Meldungen | **Risiko** | gering (8.6 belegt, Zugriff geregelt) |
+| R4 Datenpanne, Zugriff durch Admins | überschaubar, unter Vorbehalt von 8.6; substanziell, wenn es keinen AV-Vertrag gibt oder die Sicherungen unverschlüsselt auf demselben Host liegen | substanziell: Art.-9-Daten, Name und E-Mail in Meldungen | **Risiko**, im genannten Fall **hoch** | gering (8.6 belegt, Zugriff geregelt) |
 | R5 Protokolle ohne Frist | überschaubar | substanziell: Altbestand mit Suchtexten und Kennungen | **Risiko** | gering (14 Tage ausgerollt, Altbestand gelöscht) |
 | R6 Löschung von Hand | überschaubar: nie an echten Daten gelaufen | substanziell: Art.-9-Daten bleiben | **Risiko** | gering (erster Lauf belegt) |
 | R8 Rückschluss auf Stimmen | geringfügig: Schwelle drei | überschaubar | gering | gering |
-| R9 Widerruf ohne Folgen | substanziell: jeder Widerruf | überschaubar: nur Angemeldete sehen den Namen, Löschen von Hand möglich | **Risiko** | gering (Anonymisierung beim Widerruf) |
+| R9 Widerruf ohne Folgen | groß: tritt bei jedem Widerruf sicher ein | substanziell: Art.-9-Daten bleiben ohne Rechtsgrundlage, wie bei R6 | **hoch** | gering nach Maßnahme R9 (vor dem Start): Wahrscheinlichkeit geringfügig |
 
-**Gesamtrisiko heute: Risiko (mittlere Klasse).** Kein Einzelrisiko ist hoch, eine Konsultation
-nach Art. 36 ist nicht nötig. Nach den offenen Maßnahmen bleibt Risiko bei Risiko 3 und R3;
+**Gesamtrisiko heute: hoch**, wegen R9. **Folgerung zu Art. 36:** Heute hoch, nach Maßnahme R9
+(vor dem Start) Risiko (mittlere Klasse). Eine vorherige Konsultation der Aufsichtsbehörde nach
+Art. 36 Abs. 1 entfällt nur, wenn die Maßnahme R9 vor dem Start live ist und die offenen Fakten
+F1 bis F6 (8.6) R4 nicht auf hoch heben, also ein AV-Vertrag besteht und die Sicherungen nicht
+unverschlüsselt auf demselben Host liegen. Ist die Maßnahme zum Start nicht live, ist die
+Konsultation eine Frage an die Datenschutzbeauftragte (Abschnitt 6, Frage 7).
+Nach den offenen Maßnahmen bleibt Risiko bei Risiko 3 und R3;
 beide sind hinnehmbar, Risiko 3 nur, solange die Punkte aus sind oder die Bilanz nichts
 anderes zeigt. Sind die Punkte an, gilt dieselbe Einstufung; neu zu prüfen ist sie vor den
 Ranglisten und vor Ausbaustufe 2 (Abschnitt 2).
@@ -829,9 +839,10 @@ und an den genannten Stellen nach.
 6. **Fragen an die Datenschutzbeauftragte:** Lücke aus Abschnitt 4, Meldungen ohne Einwilligung
    (V12) und Altersgrenze (WP 248 Kriterium 7) zu `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md` hinzufügen
    (vorbereitet als Abschnitt 6, Frage 5)? Empfehlung: ja, gebündelt mit Frage 1 dort.
-7. **Widerruf der Art.-9-Einwilligung** (V2, R9): Widerruf löst die Anonymisierung von Beiträgen,
-   Einwürfen und Sätzen wie bei der Kontolöschung aus und löscht die Stimmen; dazu ein neuer
-   Wortlaut und der Widerrufstext der Datenschutzerklärung. Empfehlung: ja, als eigenes Ticket,
-   nach Frage 7 an die Datenschutzbeauftragte.
+7. **Widerruf der Art.-9-Einwilligung** (V2, R9): Widerruf wirkt wie die Kontolöschung für die
+   Mitwirkung (Beiträge anonymisieren, Sätze an fremden Einwürfen mit Platzhalter, eigene Einwürfe
+   und Stimmen löschen); dazu ein neuer
+   Wortlaut und der Widerrufstext der Datenschutzerklärung. Empfehlung: ja, vor dem Start (eigener
+   PR geplant); ohne sie ist R9 hoch (8.4).
 8. **Offene Fakten** (8.6): F1 bis F6 belegen, vor allem den AV-Vertrag (F1), bevor Art.-9-Daten
    echter Personen verarbeitet werden.

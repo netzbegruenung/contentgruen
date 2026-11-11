@@ -5,8 +5,11 @@
 > (`v0.9.0`) legen echte Personen Konten, Beiträge, Stimmen und Meldungen an, auch Daten nach
 > Art. 9. Ab dann ist jedes Löschverlangen zu erfüllen, und dieses Konzept ist der Weg dafür.
 > Wie viele Konten und Daten es in Produktion schon gibt, steht nicht im Repo (**offen**).
-> Die Anlage hat keinen Codepfad, der eine Person löscht, außer dem Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“);
-> was hier sonst steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
+> Ein Codepfad, der eine Person mit Konto löscht, fehlt. Es gibt nur drei Teilwege: das
+> Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“), „Angaben löschen“ für
+> Meldende (`POST /api/v1/moderation/melder/angaben-loeschen`, unter „Fristen“, Meldungen) und
+> das automatische Löschen nie benutzter Konten aus Einladungen (#538, unter „Fristen“). Was
+> hier sonst steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
 > Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
 > zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), der
 > Qdrant-Teil gegen eine Collection im Speicher und gegen einen echten Qdrant
@@ -243,6 +246,22 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   benutzt“ heißt, steht unter „Einladungen“.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
   eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
+
+### Fristen außerhalb des täglichen Tasks
+
+Diese Fristen setzt nicht der Task oben, sondern die Anwendung, der Browser oder der Betrieb am
+Host. Sie stehen hier, damit alle Fristen an einer Stelle stehen (Pflegeregel im
+Verzeichnis der Verarbeitungstätigkeiten).
+
+| Datenart | Frist | Wer löscht, Beleg |
+|---|---|---|
+| Nutzungsereignisse (`usage_events`), Einzelzeilen | 90 Tage, danach nur Zähler je Beitrag | abschaltbarer Bereinigungsjob (`SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB`, Standard an), `usage_retention_days` in `core/config.py`; Datenschutzerklärung „Verwendung von Beiträgen“ |
+| Anmelde-Cookie | 14 Tage nach letzter Nutzung | Browser und BFF; Datenschutzerklärung „Anmelde-Cookie“ |
+| Zugriffsprotokolle des vorgelagerten Webservers | 14 Tage | Betrieb am Host; Datenschutzerklärung „Protokolldateien“ |
+| Zugriffsprotokolle des Webservers der Anwendung, Protokolle der Anwendung | **keine**; Ziel 14 Tage, noch nicht ausgerollt | Betrieb am Host; unter „Was nicht gelöscht wird“ (#485, #336) |
+| Zähler der Rate-Limits | höchstens etwa 16 Minuten, nur im Arbeitsspeicher | Anwendung; Datenschutzerklärung zu Suche, Meldungen, Feedback, Einladungen, Gegenlesen |
+| Sicherungskopien | bis zu 28 Tage (7 Tages-, 4 Wochenstände) | `mvp/scripts/backup/backup.sh`; unter „Was nicht gelöscht wird“ |
+| Beta-Zugänge (`managed-users.json`) | bis von Hand entfernt | Schritt 4 im „Ablauf“; Datenschutzerklärung „Zugang, den wir selbst anlegen“ |
 
 ## Feedback
 
