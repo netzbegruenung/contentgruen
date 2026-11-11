@@ -50,10 +50,11 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   kurze Frage, Hinweise unter „Mehr dazu“); wie hier bleibt jede frühere Kennung bekannt.
 - **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Datenschutz-Einstellungen“, bis #644 „Einwilligung“; Seitentitel ebenso). Die Zeile bekommt
   den Zeitpunkt des Widerrufs und bleibt stehen, als Nachweis, dass die Verarbeitung bis dahin
-  auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Danach löscht der
-  Widerruf alle Stimmen der Person (`Art9EinwilligungService.widerrufen`, Art. 17 Abs. 1 lit. b
-  DSGVO, juristische Vorprüfung vom 12.11.2026); scheitert das, antwortet er mit 500, und ein
-  erneuter Widerruf löscht noch einmal. Beiträge, Einwürfe und Sätze bleiben, bis die Person sie
+  auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. In derselben
+  Transaktion löscht der Widerruf alle Stimmen der Person (`Art9EinwilligungService.widerrufen`,
+  Art. 17 Abs. 1 lit. b DSGVO, juristische Vorprüfung vom 12.11.2026); scheitert das, gilt auch
+  der Widerruf nicht, die Antwort ist 500, und die Person kann über die Seite erneut widerrufen.
+  Das Abzeichen nimmt der Endpunkt vorher und unabhängig davon zurück. Beiträge, Einwürfe und Sätze bleiben, bis die Person sie
   löscht oder ihr Konto löschen lässt (Löschkonzept). **Offen:** Nach derselben Vorprüfung müssten
   auch sie beim Widerruf ihren Bezug zur Person verlieren wie bei der Kontolöschung; das ist nicht
   gebaut, und der Wortlaut verspricht es deshalb nicht. Eine neue

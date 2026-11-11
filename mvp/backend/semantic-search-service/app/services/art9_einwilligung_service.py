@@ -8,7 +8,7 @@ anlegen, Einwurf und Satz, Ausformulieren eines Einwurfs, Stimmen. Lesen, Suchen
 Loeschen, Verwerfen, Melden und Feedback bleiben offen; die Liste steht an den Endpunkten,
 ``tests/unit/api/test_art9_einwilligung_api.py`` prueft sie.
 
-Ein Widerruf loescht danach die Stimmen der Person: Fuer sie fehlt dann die
+Ein Widerruf loescht in derselben Transaktion die Stimmen der Person: Fuer sie fehlt dann die
 Rechtsgrundlage (Art. 17 Abs. 1 lit. b DSGVO, juristische Vorpruefung vom
 12.11.2026). Beitraege, Einwuerfe und Saetze bleiben bis zur eigenen Loeschung oder
 zur Kontoloeschung (docs/ART9_EINWILLIGUNG.md, offen).
@@ -34,7 +34,7 @@ class UnbekannterWortlaut(ValueError):
 
 
 class StimmenDerPerson(Protocol):
-    def loeschen_fuer_person(self, user_id: str) -> int: ...
+    def loeschen_fuer_person(self, user_id: str, session=None) -> int: ...
 
 
 class Art9EinwilligungService:
@@ -61,13 +61,21 @@ class Art9EinwilligungService:
 
     def widerrufen(self, user_id: str) -> None:
         """
-        Erst den Widerruf vermerken, dann die Stimmen loeschen: Ab dem Vermerk sperrt
-        require_art9_einwilligung neue Stimmen. Scheitert das Loeschen, steht der
-        Widerruf, und ein erneuter Widerruf loescht noch einmal.
+        Widerruf vermerken und die Stimmen loeschen, in einer Transaktion (beide
+        Repositories nutzen die globale AppDatabase): Scheitert das Loeschen, gilt
+        auch der Widerruf nicht, die Person bleibt eingewilligt und kann ihn ueber
+        die Oberflaeche wiederholen.
         """
-        self._repository.widerrufen(user_id)
-        if self._stimmen is not None:
-            self._stimmen.loeschen_fuer_person(user_id)
+        stimmen = self._stimmen
+        if stimmen is None:
+            self._repository.widerrufen(user_id)
+            return
+        self._repository.widerrufen(
+            user_id,
+            im_selben_zug=lambda session: stimmen.loeschen_fuer_person(
+                user_id, session=session
+            ),
+        )
 
 
 _service: Optional[Art9EinwilligungService] = None

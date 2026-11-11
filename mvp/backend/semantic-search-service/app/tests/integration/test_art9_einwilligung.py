@@ -149,6 +149,21 @@ class TestDienst:
         assert uebrig == ["andere-person"]
         assert not dienst.eingewilligt(PERSON)
 
+    def test_bei_loeschfehler_kein_vermerk(self, repository, datenbank):
+        """Eine Transaktion: Scheitert das Loeschen, gilt die Einwilligung weiter."""
+        from unittest.mock import MagicMock
+
+        stimmen = MagicMock()
+        stimmen.loeschen_fuer_person.side_effect = RuntimeError("Datenbank weg")
+        dienst = Art9EinwilligungService(repository, stimmen)
+        dienst.einwilligen(PERSON, "2026-11-05")
+
+        with pytest.raises(RuntimeError):
+            dienst.widerrufen(PERSON)
+
+        assert dienst.eingewilligt(PERSON)
+        assert repository.lesen(PERSON).widerrufen_am is None
+
     def test_unbekannter_wortlaut_speichert_nichts(self, repository):
         dienst = Art9EinwilligungService(repository)
 

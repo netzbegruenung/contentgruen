@@ -214,7 +214,8 @@ class TestWiderrufen:
         antwort = client.delete(BASIS, headers=PERSON)
 
         assert antwort.status_code == 204
-        repository.widerrufen.assert_called_once_with("user-001")
+        repository.widerrufen.assert_called_once()
+        assert repository.widerrufen.call_args.args == ("user-001",)
 
     def test_delete_nimmt_das_sichtbare_abzeichen_sofort_weg(
         self, client, repository, monkeypatch
@@ -235,25 +236,28 @@ class TestWiderrufen:
         repository.widerrufen.assert_not_called()
         stimmen.loeschen_fuer_person.assert_not_called()
 
-    def test_delete_loescht_die_stimmen_der_person(self, client, repository, stimmen):
-        """Nach dem Widerruf fehlt die Rechtsgrundlage (Art. 17 Abs. 1 lit. b DSGVO)."""
+    def test_delete_loescht_die_stimmen_in_der_transaktion_des_widerrufs(
+        self, client, repository, stimmen
+    ):
+        """
+        Nach dem Widerruf fehlt die Rechtsgrundlage (Art. 17 Abs. 1 lit. b DSGVO).
+        Geloescht wird in der Sitzung des Vermerks; ob ein Fehler beide zuruecknimmt,
+        prueft tests/integration/test_art9_einwilligung.py gegen PostgreSQL.
+        """
+        sitzung = object()
+        repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
+            im_selben_zug(sitzung)
+        )
+
         assert client.delete(BASIS, headers=PERSON).status_code == 204
-        stimmen.loeschen_fuer_person.assert_called_once_with("user-001")
-
-    def test_delete_widerruft_vor_dem_loeschen(self, client, repository, stimmen):
-        """Erst sperren, dann loeschen: Danach kommt keine neue Stimme mehr dazu."""
-        from unittest.mock import Mock
-
-        reihenfolge = Mock()
-        reihenfolge.attach_mock(repository.widerrufen, "widerrufen")
-        reihenfolge.attach_mock(stimmen.loeschen_fuer_person, "loeschen")
-
-        client.delete(BASIS, headers=PERSON)
-
-        assert [c[0] for c in reihenfolge.mock_calls] == ["widerrufen", "loeschen"]
+        stimmen.loeschen_fuer_person.assert_called_once_with(
+            "user-001", session=sitzung
+        )
 
     def test_delete_fehler_beim_loeschen_gibt_500(self, client, repository, stimmen):
-        """Der Widerruf steht dann; ein neuer Aufruf loescht erneut."""
+        repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
+            im_selben_zug(object())
+        )
         stimmen.loeschen_fuer_person.side_effect = RuntimeError("Datenbank weg")
 
         antwort = TestClient(client.app, raise_server_exceptions=False).delete(
@@ -261,7 +265,42 @@ class TestWiderrufen:
         )
 
         assert antwort.status_code == 500
-        repository.widerrufen.assert_called_once_with("user-001")
+
+    def test_abzeichen_trotz_loeschfehler_zurueckgenommen(
+        self, client, repository, stimmen, monkeypatch
+    ):
+        from unittest.mock import Mock
+
+        from services import abzeichen_service
+
+        dienst = Mock()
+        monkeypatch.setattr(abzeichen_service, "_service", dienst)
+        repository.widerrufen.side_effect = RuntimeError("Datenbank weg")
+
+        antwort = TestClient(client.app, raise_server_exceptions=False).delete(
+            BASIS, headers=PERSON
+        )
+
+        assert antwort.status_code == 500
+        dienst.zuruecknehmen.assert_called_once_with("user-001")
+
+    def test_widerruf_trotz_abzeichenfehler_vermerkt(
+        self, client, repository, stimmen, monkeypatch
+    ):
+        from unittest.mock import Mock
+
+        from services import abzeichen_service
+
+        dienst = Mock()
+        dienst.zuruecknehmen.side_effect = RuntimeError("weg")
+        monkeypatch.setattr(abzeichen_service, "_service", dienst)
+
+        antwort = TestClient(client.app, raise_server_exceptions=False).delete(
+            BASIS, headers=PERSON
+        )
+
+        assert antwort.status_code == 500
+        repository.widerrufen.assert_called_once()
 
 
 @pytest.fixture

@@ -19,6 +19,7 @@ from dependencies import (
     get_reference_service,
     get_statement_service,
     get_voting_service,
+    require_admin,
 )
 from dtos.content import (
     ContentGetAllResponse,
@@ -72,8 +73,12 @@ logger = logging.getLogger(__name__)
 NEUESTE = {"commentary": KommentarResponse, "generictext": HintergrundinfoResponse}
 
 
-# Retrieves all content from the index
-@router.get("/getAll")
+# Der ganze Inhaltsbestand ueber alle Typen, seitenweise. Nur fuer Admins: Das
+# Repository liest ohne Inhaltstyp und blendet nur Gesperrtes und Geloeschtes aus,
+# also auch unbeantwortete Suchanfragen unter der Schwelle (#436) und jeden Typ, der
+# nicht oeffentlich ist. Frontend und BFF rufen den Endpunkt nicht auf (juristische
+# Vorpruefung vom 12.11.2026, P6; test_content_get_all_nur_admins.py).
+@router.get("/getAll", dependencies=[Depends(require_admin)])
 async def get_all(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),

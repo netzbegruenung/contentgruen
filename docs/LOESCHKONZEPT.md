@@ -239,7 +239,10 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   UTC-Tagen ab dem Anlegen, der tägliche Lauf löscht also 33 bis 35 Tage danach. Was „nie
   benutzt“ heißt, steht unter „Einladungen“.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
-  eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
+  eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag, oder bis die Person
+  ihre Art.-9-Einwilligung widerruft. Weil Güte, Stimmenzähler und die Punkte anderer (Zustimmung
+  zu ihren Beiträgen) beim Abruf aus `votes` berechnet werden, sinken sie nach einem Widerruf
+  sofort; gespeichert ist davon nichts, das nachgezogen werden müsste.
 
 ## Feedback
 

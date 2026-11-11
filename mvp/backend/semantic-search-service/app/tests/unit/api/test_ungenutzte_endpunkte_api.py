@@ -2,8 +2,8 @@
 Ausgebaute Endpunkte ohne Aufrufer in Frontend und BFF (#272): die Wurzel-Stubs
 der Router ("This is a test endpoint"), die Suche je Typ fuer Kommentar und
 Hintergrundinfo, ``generic_text/getAll`` und ``content/searchContent``. Gesucht
-wird ueber ``/api/v1/search/searchByText``, gelistet ueber ``content/getAll``
-und ``content/recent``.
+wird ueber ``/api/v1/search/searchByText``, gelistet ueber ``content/recent``;
+``content/getAll`` bleibt fuer Admins (test_content_get_all_nur_admins.py).
 
 Festgehalten, damit niemand einen davon als Regression zurueckholt: Jeder weitere
 Weg zu Beitraegen muss die Antwort-Allowlist (dtos/beitrag.py) eigens bekommen.

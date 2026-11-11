@@ -5,9 +5,10 @@ Kennung (#489).
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Callable, Optional
 
 from sqlalchemy import func, insert, select, update
+from sqlalchemy.orm import Session
 
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import Art9EinwilligungZeile
@@ -60,8 +61,18 @@ class Art9EinwilligungRepository:
                 )
             )
 
-    def widerrufen(self, user_id: str) -> None:
-        """Setzt den Zeitpunkt des Widerrufs an jeder noch geltenden Zeile."""
+    def widerrufen(
+        self,
+        user_id: str,
+        im_selben_zug: Optional[Callable[[Session], None]] = None,
+    ) -> None:
+        """
+        Setzt den Zeitpunkt des Widerrufs an jeder noch geltenden Zeile.
+
+        ``im_selben_zug`` laeuft danach in derselben Transaktion (das Loeschen der
+        Stimmen, Art9EinwilligungService.widerrufen): Scheitert es, gilt auch der
+        Widerruf nicht, und die Person kann ihn wiederholen.
+        """
         with self.db.get_session() as session:
             session.execute(
                 update(Art9EinwilligungZeile)
@@ -71,6 +82,8 @@ class Art9EinwilligungRepository:
                 )
                 .values(widerrufen_am=func.now())
             )
+            if im_selben_zug is not None:
+                im_selben_zug(session)
 
     @staticmethod
     def _juengste(session, user_id: str):
