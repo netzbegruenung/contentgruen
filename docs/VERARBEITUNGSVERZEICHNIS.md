@@ -106,8 +106,9 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Empfänger:** wie oben, nur Admins in der Datenbank.
 - **Fristen:** solange das Konto besteht, auch widerrufene (LK „Ablauf“, Schritt 2; für die
   Abzeichen auch LK „Fristen“).
-- **TOM:** DSFA V2, V22. **Offen:** Ein Widerruf löst heute weder Löschen noch Anonymisieren aus
-  (DSFA V2, R9).
+- **TOM:** DSFA V2, V22. Mit #658 löscht ein Widerruf die Stimmen der Person (T4).
+  **Offen:** Beiträge, Einwürfe und Sätze behalten nach dem Widerruf ihren Personenbezug
+  (DSFA V2, R9, Maßnahme R9b).
 
 ### T3 Beiträge, Einwürfe und Gegenlesen
 
@@ -138,7 +139,8 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Daten:** Kennung, Beitrag, Richtung, Zeitpunkt; Güte und Summen nicht gespeichert.
 - **Empfänger:** Summen und Güte für alle ab drei Stimmenden; Einzelstimmen nur Admins in der
   Datenbank.
-- **Fristen:** LK „Fristen“ (Stimmen).
+- **Fristen:** LK „Fristen“ (Stimmen); mit #658 zusätzlich sofort beim Widerruf der
+  Art.-9-Einwilligung.
 - **TOM:** DSFA V5 (M5), R8.
 
 ### T5 Suche und Messung der Suche
@@ -255,4 +257,4 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 
 Gesammelt in DSFA 8.6: AV-Vertrag (F1), SMTP-Server (F2), Verschlüsselung der Sicherungen (F3),
 Rollen und Zugriff (F4), Schlüssel des Tagespseudonyms (F5), Frist der Protokolle (F6). Dazu
-die Lücken aus DSFA 8.5: Anzeigename vor der Einwilligung (T1), Widerruf ohne Folgen (T2).
+die Lücken aus DSFA 8.5: Anzeigename vor der Einwilligung (T1), Widerruf ohne volle Folgen (T2, nach #658 nur Stimmen gelöscht).
