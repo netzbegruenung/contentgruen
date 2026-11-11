@@ -287,7 +287,7 @@ Empfänger und Ort“.
     öffentlich gepostet hat. Für eine Person, die nicht öffentlich auftritt, trägt die Abwägung
     nicht; Art. 9 Abs. 2 lit. e greift nur, wenn sie ihre Haltung selbst öffentlich gemacht hat. Die
     Erklärung nennt lit. f ohne diesen Vorbehalt; danach in #296 ausdrücklich fragen.
-  - *Wer es sieht:* alle, auch Besucher (`PostResponse.author`, `ss/dtos/beitrag.py:108-112`).
+  - *Wer es sieht:* alle, auch Besucher (`PostResponse.author`, `ss/dtos/beitrag.py:111-112`).
   - *Frist:* wie der Post (keine, solange die Plattform läuft); nicht anonymisiert, wenn das
     Konto der einstellenden Person gelöscht wird.
   - *Minimierung:* Feld freiwillig, leer wird `null` gesendet (#622); Melden und
@@ -414,7 +414,7 @@ Empfänger und Ort“.
   `docs/VISION.md`); der Person danken. Die Person meldet nach dem Kopieren mit einem Klick
   „Ja, gepostet“; das ist eine Selbstauskunft, ein Link zum Post wird nicht abgefragt.
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f für die Zählung, dazu Art. 9 Abs. 2 lit. a über die
-  Art.-9-Einwilligung (Wortlaut 2026-11-05-b). Begründung: Gespeichert wird keine Kennung, nur
+  Art.-9-Einwilligung (Wortlaut 2026-11-05-b bzw. redaktionell 2026-11-10). Begründung: Gespeichert wird keine Kennung, nur
   ein Prüfwert, der sich ohne den Wochenschlüssel im Arbeitsspeicher nicht auf die Person
   zurückführen lässt, und nach Wochenende nur die Zahl der Woche; das berechtigte Interesse
   (Wirkung des Angebots messen) überwiegt bei diesem Umfang. Der Klick selbst lässt aber auf
