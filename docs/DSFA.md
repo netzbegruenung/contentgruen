@@ -351,7 +351,7 @@ Empfänger und Ort“.
 - **Risiko:** Suchtexte können Namen, Orte oder Angaben über die suchende Person oder Dritte
   enthalten und werden sichtbar, sobald jemand antwortet oder zwei Personen ohne Treffer danach
   suchten (`DSE:370-374`). Über den Anlagezeitpunkt ließe sich eine Aussage einem Suchereignis
-  zuordnen; dagegen trägt das Suchereignis nur den Tag (`LK:322-325`). Zur Zuordnung über das
+  zuordnen; dagegen trägt das Suchereignis nur den Tag (`LK:330-332`). Zur Zuordnung über das
   Tagespseudonym siehe V7.
 - **Maßnahmen:** kein Autor, kein Pseudonym an der Aussage (`DSE:377-379`); Warnhinweis
   (`DSE:382-384`); Rate-Limit ohne Speicherung der Adresse (`DSE:398-403`); keine Suchtexte in
@@ -359,11 +359,12 @@ Empfänger und Ort“.
 
 #### V7 Suchereignisse
 
-- **Zweck:** Personen pro Tag zählen, die suchen (`DSE:448-449`).
-- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f (`DSE:450-452`). Für Besucher **offen** mit § 25 TDDDG
+- **Zweck:** Personen pro Tag zählen, die suchen (`DSE:464-465`).
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f (`DSE:466-468`). Für Besucher **offen** mit § 25 TDDDG
   (#495, `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md:18-36`).
 - **Daten:** Tag, Trefferzahl, Tagespseudonym; kein Suchtext, keine Kennung
-  (`ss/infrastructure/database/models.py:226-264`).
+  (`ss/infrastructure/database/models.py:258-304`), verdichtet in `suchen_je_tag`
+  (`ss/infrastructure/database/models.py:307-326`).
 - **Frist:** Einzelzeilen nur bis zum Ende ihres UTC-Tages; kurz nach Mitternacht verdichtet der
   Task der Löschfristen sie zu Tageszählern ohne Pseudonym, ohne Schalter
   (`ss/services/loeschfristen_service.py`, `SearchTrackingRepository.verdichten_vor`, LK „Was nicht
@@ -372,15 +373,15 @@ Empfänger und Ort“.
   nur noch der Anschluss, ohne User-Agent (`ss/utils/besucher_pseudonym.py`); weniger Merkmale des
   Geräts, weniger Nähe zu einem Fingerabdruck (§ 25 TDDDG). **Bei Angemeldeten nicht:** Ihr Pseudonym ist ein HMAC
   über Kennung und Datum mit dem Schlüssel `SEMANTIC_SEARCH_ACTOR_HASH_SECRET` aus der Konfiguration
-  (`ss/services/search_tracking_service.py:51-62,82-87`, `ss/core/config.py:263-268`); nur wenn er
+  (`ss/services/search_tracking_service.py:52-63,77-88`, `ss/core/config.py:300-305`); nur wenn er
   nicht gesetzt ist, gilt ein Zufallsschlüssel je Prozess. Ob er in Produktion gesetzt ist, steht
-  nicht im Repo (**offen**); die Konfiguration empfiehlt es (`ss/core/config.py:264-265`). Ist er
+  nicht im Repo (**offen**); die Konfiguration empfiehlt es (`ss/core/config.py:301-302`). Ist er
   gesetzt, kann, wer Datenbank und Konfiguration hat, für eine bekannte Kennung ausrechnen, ob und
-  wie oft sie am laufenden Tag gesucht hat und wie oft ohne Treffer (vor der Umstellung zu #495: 90 Tage lang) (`LK:316-317` nennt
-  das „tageweise nachrechenbar“). An einem ruhigen Tag mit einer neuen Aussage aus einer Suche ohne
+  wie oft sie am laufenden Tag gesucht hat und wie oft ohne Treffer (vor der Umstellung zu #495: 90 Tage lang) (`LK:323` nennt
+  das „nur für den laufenden Tag nachrechenbar“). An einem ruhigen Tag mit einer neuen Aussage aus einer Suche ohne
   Treffer könnte das auf den Suchtext dieser Person führen. Die Datenschutzerklärung sagt nur, dass
-  die Kennung „nicht zurückrechenbar“ sei (`DSE:427-428`), nicht, dass sie nachrechenbar ist.
-- **Maßnahmen:** nur der Tag, keine Uhrzeit (`LK:322-325`); zufällige ID; abgeschlossene Tage nur
+  sich die Kennung „nicht zurückrechnen“ lasse (`DSE:439-440`), nicht, dass sie nachrechenbar ist.
+- **Maßnahmen:** nur der Tag, keine Uhrzeit (`LK:330-332`); zufällige ID; abgeschlossene Tage nur
   noch als Zähler, deshalb auch kein Mischen mehr. Personen pro Tag werden beim Verdichten gezählt,
   die Bilanz bleibt so möglich. Vorschlag: Schlüssel der Angemeldeten wie bei Besuchern nur im Speicher
   (Abschnitt 9, Punkt 3).
@@ -404,8 +405,8 @@ Empfänger und Ort“.
   ersten Kopie des Tages, ohne Kennung (`ss/infrastructure/database/models.py:107-153`); ältere
   Zeilen noch mit Sitzungskennung (`ss/infrastructure/database/models.py:139-142`). Prüfwert für die
   entdoppelte Nutzung in `nutzung_heute` (`ss/infrastructure/database/models.py:165-181`).
-- **Frist:** Einzelzeilen 90 Tage, danach nur Zähler je Beitrag (`ss/core/config.py:282`,
-  `DSE:564-568`); Prüfwert bis Tagesende (`LK:161`).
+- **Frist:** Einzelzeilen 90 Tage, danach nur Zähler je Beitrag (`ss/core/config.py:320`,
+  `DSE:585-589`); Prüfwert bis Tagesende (`LK:161`).
 - **Risiko:** gering. Der Vermerk „erste Kopie“ zeigt, dass mehrere Kopien am selben Tag von
   derselben Person kamen, nicht von wem (`DSE:537-541`). Besucher haben nicht eingewilligt, ihre
   Kopie bildet trotzdem einen Prüfwert aus dem Besuchermerkmal (`DSE:544-547`).
