@@ -68,6 +68,9 @@ GELOESCHTER_BEITRAG_TAGE = 30
 SPERRE_NACH_AUFHEBUNG_TAGE = 180
 NIE_BENUTZTES_KONTO_TAGE = 30
 LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
+# Scheitert das Verdichten der Suchereignisse, versucht der Task es nach dieser Zeit
+# erneut statt erst um Mitternacht: Das Pseudonym soll den Tag nicht lange ueberleben.
+VERDICHTEN_NACHHOLEN_SEKUNDEN = 60 * 60
 
 
 def _grenze(heute: date, tage: int) -> datetime:
@@ -100,6 +103,8 @@ class LoeschfristenService:
         self._sperren = sperren
         self._konten = konten
         self._suchereignisse = suchereignisse
+        # True, wenn der letzte Lauf Suchereignisse nicht verdichten konnte.
+        self.verdichten_offen = False
 
     async def fristen_anwenden(self, heute: Optional[date] = None) -> None:
         """
@@ -109,7 +114,7 @@ class LoeschfristenService:
         heute = heute or heute_utc()
         if self._suchereignisse is not None:
             # Zuerst: das Pseudonym soll so kurz wie moeglich nach Mitternacht weg sein.
-            await self._frist_anwenden(
+            self.verdichten_offen = not await self._frist_anwenden(
                 self._suchereignisse.verdichten_vor,
                 _grenze(heute, 0),
                 "search events of closed days (compacted into day counters)",
@@ -144,13 +149,18 @@ class LoeschfristenService:
             )
 
     @staticmethod
-    async def _frist_anwenden(loeschen_vor, grenze: datetime, was: str) -> None:
-        """Eine Frist in PostgreSQL oder im Realm anwenden; ein Fehler wird nur protokolliert."""
+    async def _frist_anwenden(loeschen_vor, grenze: datetime, was: str) -> bool:
+        """Eine Frist in PostgreSQL oder im Realm anwenden; ein Fehler wird nur protokolliert.
+
+        True, wenn sie angewendet wurde.
+        """
         try:
             n = await asyncio.to_thread(loeschen_vor, grenze)
             logger.info(f"Deleted {n} {was} past their Loeschfrist")
+            return True
         except Exception as e:
             logger.error(f"Error deleting old {was}: {type(e).__name__}", exc_info=True)
+            return False
 
     async def _geloeschte_beitraege(self, heute: date) -> None:
         grenze = heute - timedelta(days=GELOESCHTER_BEITRAG_TAGE)
@@ -189,7 +199,8 @@ async def loeschen_im_takt(
 ) -> None:
     """
     Hintergrund-Task: wendet die Fristen sofort und dann taeglich an, spaetestens
-    aber um Mitternacht (UTC), bis er abgebrochen wird.
+    aber um Mitternacht (UTC), bis er abgebrochen wird. Konnten Suchereignisse nicht
+    verdichtet werden, schon nach VERDICHTEN_NACHHOLEN_SEKUNDEN wieder.
     """
     while True:
         try:
@@ -198,4 +209,7 @@ async def loeschen_im_takt(
             logger.error(
                 f"Error applying Loeschfristen: {type(e).__name__}", exc_info=True
             )
-        await asyncio.sleep(min(takt_sekunden, sekunden_bis_mitternacht() + 1))
+        warten = min(takt_sekunden, sekunden_bis_mitternacht() + 1)
+        if getattr(service, "verdichten_offen", False) is True:
+            warten = min(warten, VERDICHTEN_NACHHOLEN_SEKUNDEN)
+        await asyncio.sleep(warten)

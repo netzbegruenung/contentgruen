@@ -100,6 +100,12 @@ class TestPostgres:
         await service.fristen_anwenden(HEUTE)
 
         meldungen.bearbeitete_loeschen_vor.assert_called_once()
+        assert service.verdichten_offen is True
+
+    async def test_gelungenes_verdichten_ist_nicht_offen(self, service):
+        await service.fristen_anwenden(HEUTE)
+
+        assert service.verdichten_offen is False
 
     async def test_ohne_suchereignisse_kein_verdichten(
         self, meldungen, einwuerfe, beitraege, moderation, sperren
@@ -237,3 +243,20 @@ class TestTakt:
                 await loeschen_im_takt(service, takt_sekunden=5)
 
         assert service.fristen_anwenden.await_count == 2
+
+    async def test_loeschen_im_takt_holt_gescheitertes_verdichten_nach_einer_stunde_nach(
+        self,
+    ):
+        """Sonst ueberlebte das Tagespseudonym bis zur naechsten Mitternacht (#495)."""
+        service = Mock(verdichten_offen=True)
+        service.fristen_anwenden = AsyncMock()
+        schlafen = AsyncMock(side_effect=asyncio.CancelledError())
+
+        with patch("services.loeschfristen_service.asyncio.sleep", schlafen), patch(
+            "services.loeschfristen_service.sekunden_bis_mitternacht",
+            return_value=20 * 60 * 60,
+        ):
+            with pytest.raises(asyncio.CancelledError):
+                await loeschen_im_takt(service)
+
+        schlafen.assert_awaited_once_with(60 * 60)

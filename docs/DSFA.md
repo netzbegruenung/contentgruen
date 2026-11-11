@@ -12,7 +12,7 @@ Verarbeitungen des Dienstes (#374).
 Abschnitte 1 bis 7: Stand 05.11.2026; Code `main` @ `cdb7ec64` und #476 (gemergt),
 Datenschutzerklärung nach #499. Abschnitte 8 und 9: Stand 07.11.2026, Code `main` @ `c2c9bbe5`
 (einen Tag `v0.8.1` gibt es noch nicht, der letzte ist `v0.8.0`). Nachgezogen am 11.11.2026:
-V7, V8, 8.1 und R2 für das Tagespseudonym ohne User-Agent und das Verdichten der Suchereignisse
+V7, V8, 8.1 (Kriterium 3), R2 und Abschnitt 9 Punkt 3 für das Tagespseudonym ohne User-Agent und das Verdichten der Suchereignisse
 am Tagesende (Vorprüfung zu #495, P1).
 `ss/` = `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), in
@@ -181,8 +181,8 @@ Plattform (8.1). Drei Lücken sind offen: Konto und Anzeigename entstehen vor de
 das Tagespseudonym angemeldeter Personen ist mit dem Schlüssel aus der Konfiguration nachrechenbar,
 falls er gesetzt ist (V7; seit der Umstellung zu #495 nur noch für den laufenden Tag), Anwendungsprotokolle haben in Produktion keine Frist (V16). **Erst wenn
 diese drei geschlossen sind** und die Maßnahmen aus 8.2 und 8.3 stehen, ist das Restrisiko gering
-bis mittel und eine Konsultation nach Art. 36 nicht nötig; bis dahin liegt es bei R2 und R5 bei
-mittel.
+bis mittel und eine Konsultation nach Art. 36 nicht nötig; bis dahin liegt es bei R2 bei gering
+bis mittel und bei R5 bei mittel.
 
 ### 8.1 Schwellwert für den Grundbetrieb ohne Punkte
 

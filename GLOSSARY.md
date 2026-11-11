@@ -409,7 +409,7 @@ Der geheime Schlüssel der Paar-Prüfwerte. Er entsteht je Block von sieben Tage
 _Avoid_: Wochenschlüssel, Salt, Secret
 
 **Anschluss**:
-Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er ist das Besuchermerkmal und geht in das Rate-Limit ein; Kennzahlen, die Personen zählen, zählen je Anschluss höchstens einen Besucher am Tag.
+Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er ist das Besuchermerkmal und geht in das Rate-Limit ein; Kennzahlen, die Personen zählen, zählen je Anschluss höchstens einen Besucher am Tag (außer nach einem Neustart, der den Tagesschlüssel verwirft).
 _Avoid_: IP, Netz
 
 **Anschluss-Prüfwert**:

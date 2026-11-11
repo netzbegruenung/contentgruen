@@ -28,8 +28,11 @@ jeder Anfrage außer der Suche fest (Datenschutzerklärung, „Protokolldateien�
 
 **Frage:** Darf der Server das Pseudonym ohne Einwilligung bilden? Strittig war vor allem, ob
 schon das Auswerten des User-Agents unter § 25 TDDDG fällt (EDSA-Leitlinien 2/2023 Rn. 43, 54–55
-dafür, DSK-OH Digitale Dienste Rn. 23–25 dagegen); das entfällt. Zu klären bleibt, ob das Bilden
-aus der IP-Adresse allein § 25 TDDDG berührt.
+dafür, DSK-OH Digitale Dienste Rn. 23–25 dagegen); für das Pseudonym entfällt das. Für die
+Geräteklasse der Nutzungsereignisse liest der Server den User-Agent weiter und verdichtet ihn sofort
+zu einer von vier Klassen (Datenschutzerklärung, „Verwendung von Beiträgen“); das ist nicht Teil
+des Pseudonyms. Zu klären bleibt, ob das Bilden des Pseudonyms aus der IP-Adresse allein § 25
+TDDDG berührt.
 
 **Empfehlung:** Ja: § 25 TDDDG ist nach der DSK-Auslegung nicht berührt, und Art. 6 Abs. 1
 lit. f trägt, weil sich Pseudonyme verschiedener Tage auch mit Datenbank und Konfiguration nicht

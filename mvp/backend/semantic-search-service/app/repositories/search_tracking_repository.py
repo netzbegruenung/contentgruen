@@ -244,11 +244,8 @@ class SearchTrackingRepository:
                 .where(zeitraum)
                 .scalar_subquery()
             )
-            suchen = (
-                select(func.count())
-                .where(and_(zeitraum, SearchEvent.actor_hash.isnot(None)))
-                .scalar_subquery()
-            )
+            # Alle Suchen wie im Tageszaehler, auch Altbestand ohne Pseudonym.
+            suchen = select(func.count()).where(zeitraum).scalar_subquery()
             erster, letzter = _tage_im_zeitraum(start_date, end_date)
             im_zeitraum = and_(
                 SuchenJeTagZeile.tag >= erster, SuchenJeTagZeile.tag <= letzter
