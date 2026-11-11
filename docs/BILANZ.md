@@ -64,7 +64,7 @@ Nach acht Wochen führt der Maintainer fünf kurze Gespräche mit Aktiven, je et
 
 ## Was die Zahlen verfälschen kann
 
-- **Die Zählweise von K1 ändert sich.** Kommen das Server-Pseudonym (#444) oder die neuen Kennungen aus #429 zwischen den beiden Launches, zählt K1 anders. Dann messen wir die Basislinie neu oder vermerken den Bruch in #348.
+- **Die Zählweise von K1 ändert sich.** Kommen das Server-Pseudonym (#444) oder die neuen Kennungen aus #429 zwischen den beiden Launches, zählt K1 anders. Dann messen wir die Basislinie neu oder vermerken den Bruch in #348. Ebenso seit #495: Besucher zählen je Anschluss, nicht mehr je Anschluss und Browser; K1 kann dadurch kleiner ausfallen.
 - **Kopien eigener Beiträge.** Ob die Zählung heute auch Kopien eigener Beiträge erfasst (das wäre keine Nutzung im Sinne des Glossars), klärt #444. Für den Vergleich ist das egal, solange es in beiden Phasen gleich bleibt.
 - **Annahmen.** Der öffentliche Launch erreicht deutlich mehr Personen als der interne; darauf beruht der Faktor 2 bei K1. Die interne Phase dauert mindestens vier Wochen.
 

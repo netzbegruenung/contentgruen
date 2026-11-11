@@ -17,17 +17,19 @@ kann, und die Folgenabschätzung dazu vor dem Start (Entwurf in #374).
 
 ## 2. Tagespseudonym der Besucher und § 25 TDDDG (#495, P1)
 
-**Sachverhalt:** Der Server bildet aus IP-Adresse (IPv6: /64), User-Agent und Tag mit einem
-täglich neuen Schlüssel ein Pseudonym. Schlüssel, Adresse und User-Agent liegen dafür nur im
-Arbeitsspeicher; im Browser wird für das Pseudonym nichts gespeichert oder ausgelesen. Das
-Pseudonym selbst wird gespeichert: an Suchereignissen bis zu ihrer Frist (Standard 90 Tage) und
-an anonymen Meldungen, bis sie abgeschlossen sind. Unabhängig davon halten die
-Zugriffsprotokolle des vorgelagerten Webservers Adresse, User-Agent und Uhrzeit jeder Anfrage
-außer der Suche fest (Datenschutzerklärung, „Protokolldateien“).
+**Sachverhalt:** Der Server bildet aus IP-Adresse (IPv6: /64) und Tag mit einem täglich neuen
+Schlüssel ein Pseudonym. Schlüssel und Adresse liegen dafür nur im Arbeitsspeicher; im Browser
+wird für das Pseudonym nichts gespeichert oder ausgelesen. Den User-Agent nimmt der Server seit
+der Vorprüfung zu #495 nicht mehr auf (Entscheidung Maintainer, 11.11.2026). Das Pseudonym selbst
+wird gespeichert: an Suchereignissen nur bis zum Ende ihres Tages (danach bleiben Tageszähler ohne
+Pseudonym; vorher 90 Tage) und an anonymen Meldungen, bis sie abgeschlossen sind. Unabhängig
+davon halten die Zugriffsprotokolle des vorgelagerten Webservers Adresse, User-Agent und Uhrzeit
+jeder Anfrage außer der Suche fest (Datenschutzerklärung, „Protokolldateien“).
 
-**Frage:** Darf der Server das Pseudonym ohne Einwilligung bilden? Strittig ist, ob schon das
-Auswerten des User-Agents unter § 25 TDDDG fällt (EDSA-Leitlinien 2/2023 Rn. 43, 54–55 dafür,
-DSK-OH Digitale Dienste Rn. 23–25 dagegen).
+**Frage:** Darf der Server das Pseudonym ohne Einwilligung bilden? Strittig war vor allem, ob
+schon das Auswerten des User-Agents unter § 25 TDDDG fällt (EDSA-Leitlinien 2/2023 Rn. 43, 54–55
+dafür, DSK-OH Digitale Dienste Rn. 23–25 dagegen); das entfällt. Zu klären bleibt, ob das Bilden
+aus der IP-Adresse allein § 25 TDDDG berührt.
 
 **Empfehlung:** Ja: § 25 TDDDG ist nach der DSK-Auslegung nicht berührt, und Art. 6 Abs. 1
 lit. f trägt, weil sich Pseudonyme verschiedener Tage auch mit Datenbank und Konfiguration nicht

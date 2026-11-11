@@ -11,7 +11,9 @@ Verarbeitungen des Dienstes (#374).
 
 Abschnitte 1 bis 7: Stand 05.11.2026; Code `main` @ `cdb7ec64` und #476 (gemergt),
 Datenschutzerklärung nach #499. Abschnitte 8 und 9: Stand 07.11.2026, Code `main` @ `c2c9bbe5`
-(einen Tag `v0.8.1` gibt es noch nicht, der letzte ist `v0.8.0`).
+(einen Tag `v0.8.1` gibt es noch nicht, der letzte ist `v0.8.0`). Nachgezogen am 11.11.2026:
+V7, V8, 8.1 und R2 für das Tagespseudonym ohne User-Agent und das Verdichten der Suchereignisse
+am Tagesende (Vorprüfung zu #495, P1).
 `ss/` = `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), in
 Abschnitt 1 bis 7 zitiert mit dem Titel ihres Abschnitts, in Abschnitt 8 und 9 mit Zeile
@@ -177,7 +179,7 @@ kann auf eine politische Meinung schließen lassen (`DSE:1081-1084`); Rechtsgrun
 ist die Art.-9-Einwilligung (`A9:3-6`, `DSE:1094-1122`). Empfohlen wird eine DSFA für die ganze
 Plattform (8.1). Drei Lücken sind offen: Konto und Anzeigename entstehen vor der Einwilligung (V1),
 das Tagespseudonym angemeldeter Personen ist mit dem Schlüssel aus der Konfiguration nachrechenbar,
-falls er gesetzt ist (V7), Anwendungsprotokolle haben in Produktion keine Frist (V16). **Erst wenn
+falls er gesetzt ist (V7; seit der Umstellung zu #495 nur noch für den laufenden Tag), Anwendungsprotokolle haben in Produktion keine Frist (V16). **Erst wenn
 diese drei geschlossen sind** und die Maßnahmen aus 8.2 und 8.3 stehen, ist das Restrisiko gering
 bis mittel und eine Konsultation nach Art. 36 nicht nötig; bis dahin liegt es bei R2 und R5 bei
 mittel.
@@ -190,7 +192,7 @@ hier für den Grundbetrieb neben dem Stand mit Punkten:
 | Kriterium | Grundbetrieb | mit Punkten |
 |---|---|---|
 | 1 Bewerten, Einstufen | nein | **ja**: Punkte stufen Personen nach ihrem Verhalten ein (`ss/services/punkte_service.py:1-7`) |
-| 3 Systematische Überwachung | **offen**: Nutzung ohne Kennung (V9), Suchereignisse mit Tagespseudonym; das der Angemeldeten ist nachrechenbar, falls der Schlüssel gesetzt ist (V7); nein, sobald V7 umgestellt ist | wie links |
+| 3 Systematische Überwachung | **offen**: Nutzung ohne Kennung (V9), Suchereignisse mit Tagespseudonym nur am laufenden Tag; das der Angemeldeten ist bis dahin nachrechenbar, falls der Schlüssel gesetzt ist (V7); nein, sobald V7 umgestellt ist | wie links |
 | 4 Vertrauliche oder höchstpersönliche Daten | **ja**: politische Meinung (`DSE:1081-1084`) | **ja** |
 | 5 Umfangreich | nein (Ausbaustufe 1) | nein |
 | 6 Abgleich von Datensätzen | nein | teilweise: Nutzung, Stimmen und Beiträge fließen in den Punktestand |
@@ -362,28 +364,33 @@ Empfänger und Ort“.
   (#495, `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md:18-36`).
 - **Daten:** Tag, Trefferzahl, Tagespseudonym; kein Suchtext, keine Kennung
   (`ss/infrastructure/database/models.py:226-264`).
-- **Frist:** Einzelzeilen 90 Tage, danach nur Tageszähler ohne Pseudonym (`ss/core/config.py:290`,
-  `LK:354-367`).
-- **Risiko:** Bei Besuchern liegt der Tagesschlüssel nur im Speicher
-  (`ss/utils/besucher_pseudonym.py:15-22`). **Bei Angemeldeten nicht:** Ihr Pseudonym ist ein HMAC
+- **Frist:** Einzelzeilen nur bis zum Ende ihres UTC-Tages; kurz nach Mitternacht verdichtet der
+  Task der Löschfristen sie zu Tageszählern ohne Pseudonym, ohne Schalter
+  (`ss/services/loeschfristen_service.py`, `SearchTrackingRepository.verdichten_vor`, LK „Was nicht
+  gelöscht wird“). Vor der Umstellung zu #495 blieben sie 90 Tage.
+- **Risiko:** Bei Besuchern liegt der Tagesschlüssel nur im Speicher, und das Besuchermerkmal ist
+  nur noch der Anschluss, ohne User-Agent (`ss/utils/besucher_pseudonym.py`); weniger Merkmale des
+  Geräts, weniger Nähe zu einem Fingerabdruck (§ 25 TDDDG). **Bei Angemeldeten nicht:** Ihr Pseudonym ist ein HMAC
   über Kennung und Datum mit dem Schlüssel `SEMANTIC_SEARCH_ACTOR_HASH_SECRET` aus der Konfiguration
   (`ss/services/search_tracking_service.py:51-62,82-87`, `ss/core/config.py:263-268`); nur wenn er
   nicht gesetzt ist, gilt ein Zufallsschlüssel je Prozess. Ob er in Produktion gesetzt ist, steht
   nicht im Repo (**offen**); die Konfiguration empfiehlt es (`ss/core/config.py:264-265`). Ist er
-  gesetzt, kann, wer Datenbank und Konfiguration hat, für eine bekannte Kennung 90 Tage lang
-  ausrechnen, an welchen Tagen sie wie oft gesucht hat und wie oft ohne Treffer (`LK:316-317` nennt
+  gesetzt, kann, wer Datenbank und Konfiguration hat, für eine bekannte Kennung ausrechnen, ob und
+  wie oft sie am laufenden Tag gesucht hat und wie oft ohne Treffer (vor der Umstellung zu #495: 90 Tage lang) (`LK:316-317` nennt
   das „tageweise nachrechenbar“). An einem ruhigen Tag mit einer neuen Aussage aus einer Suche ohne
   Treffer könnte das auf den Suchtext dieser Person führen. Die Datenschutzerklärung sagt nur, dass
   die Kennung „nicht zurückrechenbar“ sei (`DSE:427-428`), nicht, dass sie nachrechenbar ist.
-- **Maßnahmen:** nur der Tag, keine Uhrzeit (`LK:322-325`); zufällige ID und Mischen abgeschlossener
-  Tage (`LK:331-345`). Vorschlag: Schlüssel der Angemeldeten wie bei Besuchern nur im Speicher
+- **Maßnahmen:** nur der Tag, keine Uhrzeit (`LK:322-325`); zufällige ID; abgeschlossene Tage nur
+  noch als Zähler, deshalb auch kein Mischen mehr. Personen pro Tag werden beim Verdichten gezählt,
+  die Bilanz bleibt so möglich. Vorschlag: Schlüssel der Angemeldeten wie bei Besuchern nur im Speicher
   (Abschnitt 9, Punkt 3).
 
 #### V8 Suchen ohne Treffer
 
 - **Zweck:** erkennen, wo Antworten fehlen (`DSE:513-514`).
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f (`DSE:515-516`).
-- **Daten:** je Aussage und Woche Zahl der Suchen und Personen, kein Pseudonym (`LK:368-374`).
+- **Daten:** je Aussage und Woche Zahl der Suchen und Personen (Summe der Personen je Tag, Besucher
+  je Anschluss), kein Pseudonym (`LK:368-374`).
 - **Frist:** acht Wochen (`DSE:517-518`).
 - **Risiko:** gering; der Zähler „n Personen“ ist für alle Angemeldeten sichtbar (`DSE:497-500`).
 - **Maßnahmen:** Merkliste nur im Speicher bis Mitternacht (`DSE:469-476`); erst ab zwei Personen
@@ -623,7 +630,7 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 | # | Risiko | Maßnahmen | Rest |
 |---|---|---|---|
 | R1 | **Politische Haltung wird sichtbar**: Anzeigename an Beiträgen, Einwürfen und Sätzen für alle Angemeldeten, darunter Nicht-Mitglieder (V1, V3, V4) | nur Angemeldete, nur Vorname und Initial, Kennung nur für Admins; Einwilligung vor dem Beitragen (V2) | gering |
-| R2 | **Zuordnung pseudonymer Daten**: Tagespseudonym der Angemeldeten nachrechenbar, falls der Schlüssel gesetzt ist (V7), Uhrzeiten im vorgelagerten Webserver (V16) | Tag statt Uhrzeit, Mischen, Schlüssel der Besucher nur im Speicher; für Angemeldete **offen** | mittel, bis V7 umgestellt ist |
+| R2 | **Zuordnung pseudonymer Daten**: Tagespseudonym der Angemeldeten am laufenden Tag nachrechenbar, falls der Schlüssel gesetzt ist (V7), Uhrzeiten im vorgelagerten Webserver (V16) | Tag statt Uhrzeit, Verdichten am Tagesende, Schlüssel der Besucher nur im Speicher, Besucher ohne User-Agent; für Angemeldete am laufenden Tag **offen** | gering bis mittel, bis V7 umgestellt ist |
 | R3 | **Daten Dritter** in Beiträgen, Einwürfen und Suchtexten, auch deren politische Zuordnung (V3, V4, V6), darunter „Gepostet von“ am Post | Hinweise im Formular und in der Erklärung; „Gepostet von“ freiwillig; Melden; Einzelfall-Löschung | mittel, hinnehmbar |
 | R4 | **Datenpanne oder Zugriff durch Admins**: Kennungen, Meldungen mit Name und E-Mail-Adresse, Muster-Hinweise | Fristen (`LK:150-164`), Kennungen nur gekürzt im Log, keine Weitergabe (`DSE:74-75`); Rollen und Zugriffskonzept stehen nicht im Repo (**offen**) | gering bis mittel |
 | R5 | **Unbefristete Protokolle** mit Altbestand aus Suchtexten und Kennungen (V16) | Ziel 14 Tage (`LK:511-519`), nicht ausgerollt | mittel, bis ausgerollt |
@@ -638,7 +645,8 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 2. **Lücke vor der Einwilligung** (Abschnitt 4): Anzeigename erst nach der Einwilligung speichern
    (Weg 2)? Empfehlung: ja, als eigenes Ticket.
 3. **Tagespseudonym der Angemeldeten** (V7): Schlüssel nur im Speicher wie bei Besuchern? Preis:
-   Nach einem Neustart zählt eine Person am selben Tag doppelt. Empfehlung: ja.
+   Nach einem Neustart zählt eine Person am selben Tag doppelt. Empfehlung: ja. Seit dem Verdichten
+   am Tagesende (Umstellung zu #495) betrifft es nur noch den laufenden Tag.
 4. **Frist für Protokolle** (V16): 14 Tage für Anwendung und Frontend-nginx am Host ausrollen
    (`LK:511-519`, Stand 30.10.2026; Tickets #485 und #336) und den Altbestand mit Suchtexten und
    Kennungen löschen. Das ist Betrieb am Host, nicht Code.

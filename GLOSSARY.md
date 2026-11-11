@@ -381,27 +381,27 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Suche ohne Treffer**:
-Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen. Unterschieden werden die Personen über ihr Tagespseudonym, deshalb zählt dieselbe Person an zwei Tagen zweimal. Je Anschluss und Aussage zählt am Tag höchstens ein Besucher als Person, damit ein Wechsel des User-Agents allein keine zweite Person ergibt; mehrere Besucher hinter demselben Anschluss zählen deshalb als eine.
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen. Unterschieden werden die Personen über ihr Tagespseudonym, nur am selben Tag und nur im Arbeitsspeicher; gespeichert wird je Woche die Summe der Personen der einzelnen Tage. Dieselbe Person zählt an zwei Tagen deshalb zweimal, ein Pseudonym über Tagesgrenzen braucht es nicht. Weil das Tagespseudonym eines Besuchers für seinen Anschluss steht, zählt je Anschluss und Aussage am Tag höchstens ein Besucher als Person; mehrere Besucher hinter demselben Anschluss zählen als eine, auch mit verschiedenen Browsern.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit noch eine fortlaufende Nummer, die die Reihenfolge der Suchen eines Tages verriete. Über Uhrzeit oder Nummer lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat (nur wer die Datenbank selbst liest, sieht die Reihenfolge der Zeilen des laufenden Tages; der tägliche Bereinigungsjob schreibt jeden abgeschlossenen Tag gemischt neu, solange er eingeschaltet ist). Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit noch eine fortlaufende Nummer, die die Reihenfolge der Suchen eines Tages verriete. Über Uhrzeit oder Nummer lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat (nur wer die Datenbank selbst liest, sieht die Reihenfolge der Zeilen des laufenden Tages). Es besteht nur bis zum Ende seines Tages: Kurz nach Mitternacht (UTC) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter, ohne Schalter (#495; bis dahin nach 90 Tagen).
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tageszähler der Suchen**:
-Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die Zahl der Suchen, die Zahl der Suchen ohne Treffer und die Zahl der Personen, aber kein Tagespseudonym. Tage, die vor dieser Spalte verdichtet wurden, kennen die Suchen ohne Treffer nicht. Kennzahlen über längere Zeiträume zählen ihn mit.
+Was von den Suchereignissen eines Tages bleibt, sobald er abgeschlossen ist: das Datum, die Zahl der Suchen, die Zahl der Suchen ohne Treffer und die Zahl der Personen (verschiedene Tagespseudonyme, beim Verdichten gezählt), aber kein Tagespseudonym. Tage, die vor dieser Spalte verdichtet wurden, kennen die Suchen ohne Treffer nicht. Kennzahlen über mehrere Tage zählen ihn mit; Personen pro Tag und ihr Wochenmittel kommen für abgeschlossene Tage nur aus ihm. Wie sich die Suchen eines Tages auf die Personen verteilen (etwa ein Median), weiß er nicht.
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
-Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme; bei Suchen ohne Treffer zählt je Anschluss höchstens ein Besucher.
+Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen des laufenden Tages statt einer Kennung (danach bleibt nur der Tageszähler der Suchen) und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme, bei Besuchern also Anschlüsse.
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Besuchermerkmal**:
-Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei IPv6 nur ihr vorderer Teil, der den Anschluss bezeichnet) und der User-Agent des Browsers. Es existiert nur während einer Anfrage und wird weder gespeichert noch protokolliert. Wer am selben Anschluss denselben Browser nutzt, hat dasselbe Besuchermerkmal.
+Woraus der Server das Tagespseudonym eines Besuchers bildet: der Anschluss, also die IP-Adresse (bei IPv6 nur ihr vorderer Teil), sonst nichts. Den User-Agent nimmt es seit #495 nicht mehr auf, damit das Pseudonym möglichst wenig über das Gerät trägt. Es existiert nur während einer Anfrage und wird weder gespeichert noch protokolliert. Alle Besucher am selben Anschluss haben dasselbe Besuchermerkmal, auch mit verschiedenen Browsern oder Geräten.
 _Avoid_: Fingerprint
 
 **Tagesschlüssel**:
-Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen. Die Prüfwerte der entdoppelten Nutzung bildet ein zweiter, davon unabhängiger Tagesschlüssel, der beim ersten Prüfwert eines neuen Tages wechselt.
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet. Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen. Die Prüfwerte der entdoppelten Nutzung bildet ein zweiter, davon unabhängiger Tagesschlüssel, der beim ersten Prüfwert eines neuen Tages wechselt.
 _Avoid_: Salt, Secret
 
 **Fensterschlüssel**:
@@ -409,11 +409,11 @@ Der geheime Schlüssel der Paar-Prüfwerte. Er entsteht je Block von sieben Tage
 _Avoid_: Wochenschlüssel, Salt, Secret
 
 **Anschluss**:
-Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein und begrenzt bei Suchen ohne Treffer die Personen: je Anschluss und Aussage höchstens eine am Tag.
+Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er ist das Besuchermerkmal und geht in das Rate-Limit ein; Kennzahlen, die Personen zählen, zählen je Anschluss höchstens einen Besucher am Tag.
 _Avoid_: IP, Netz
 
 **Anschluss-Prüfwert**:
-Ein Wert, der bei Suchen ohne Treffer den Anschluss eines Besuchers an einem Tag wiedererkennbar macht: aus dem Anschluss allein (ohne User-Agent) und dem Datum mit dem Tagesschlüssel berechnet. Kein Tagespseudonym, denn er steht für einen Anschluss, nicht für eine Person. Er liegt nur im Arbeitsspeicher, in der Merkliste des Tages, und wird um Mitternacht verworfen; gespeichert oder protokolliert wird er nie. Angemeldete haben keinen.
+Nur noch historisch: der Wert, der seit #496 bis zur Umstellung für #495 (November 2026) bei Suchen ohne Treffer den Anschluss eines Besuchers neben seinem Tagespseudonym wiedererkennbar machte, weil das Tagespseudonym damals auch den User-Agent enthielt. Seit das Besuchermerkmal nur noch der Anschluss ist, leistet das Tagespseudonym dasselbe; den Anschluss-Prüfwert gibt es nicht mehr. Gespeichert wurde er nie.
 _Avoid_: Anschluss-Pseudonym, Anschluss-Tagespseudonym
 
 **Sitzungskennung**:
@@ -488,7 +488,7 @@ Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unt
 _Avoid_: Usage Stats, Nutzerstatistik
 
 **Bilanz**:
-Der Abgleich der Kennzahlen nach dem öffentlichen Launch mit der Basislinie aus dem internen Launch (#417). Admins sehen die Kennzahlen dafür je Kalenderwoche: Personen pro Tag, die suchen (Wochenmittel der Tagespseudonyme), Nutzungen pro Woche, Anteil der Suchen ohne Treffer und Nutzungen je Suche. Feste Zielwerte gibt es nicht; ein Signal ist eine Abweichung von der Basislinie.
+Der Abgleich der Kennzahlen nach dem öffentlichen Launch mit der Basislinie aus dem internen Launch (#417). Admins sehen die Kennzahlen dafür je Kalenderwoche: Personen pro Tag, die suchen (Wochenmittel der Personen aus den Tageszählern der Suchen), Nutzungen pro Woche, Anteil der Suchen ohne Treffer und Nutzungen je Suche. Feste Zielwerte gibt es nicht; ein Signal ist eine Abweichung von der Basislinie.
 _Avoid_: Zielerreichung, KPI, MVP-Ziele
 
 **Basislinie**:
