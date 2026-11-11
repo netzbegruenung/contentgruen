@@ -280,14 +280,14 @@ Empfänger und Ort“.
 - **„Gepostet von“ am Post (#622, gemergt am 09.11.2026):**
   - *Zweck:* zeigen, woher ein Post stammt.
   - *Daten:* Kontoname des ursprünglichen Posters auf der anderen Plattform („@konto“), Freitext
-    im Qdrant-Payload (`ss/domain/models/post.py:26,49-50` auf #622); ist es das Konto einer Person, sind es Daten
+    im Qdrant-Payload (`ss/domain/models/post.py:26,49-50`); ist es das Konto einer Person, sind es Daten
     Dritter, oft mit politischer Zuordnung.
   - *Rechtsgrundlage (Vorschlag, nicht juristisch geprüft, #296):* Art. 6 Abs. 1 lit. f;
     berechtigtes Interesse an der Herkunft, abgewogen gegen die Person, die ihr Konto
     öffentlich gepostet hat. Für eine Person, die nicht öffentlich auftritt, trägt die Abwägung
     nicht; Art. 9 Abs. 2 lit. e greift nur, wenn sie ihre Haltung selbst öffentlich gemacht hat. Die
     Erklärung nennt lit. f ohne diesen Vorbehalt; danach in #296 ausdrücklich fragen.
-  - *Wer es sieht:* alle, auch Besucher (`PostResponse.author`, `ss/dtos/beitrag.py:96-98` auf #622).
+  - *Wer es sieht:* alle, auch Besucher (`PostResponse.author`, `ss/dtos/beitrag.py:108-112`).
   - *Frist:* wie der Post (keine, solange die Plattform läuft); nicht anonymisiert, wenn das
     Konto der einstellenden Person gelöscht wird.
   - *Minimierung:* Feld freiwillig, leer wird `null` gesendet (#622); Melden und
@@ -408,7 +408,7 @@ Empfänger und Ort“.
 
 #### V9a Rückmeldung „Ja, gepostet“ (#643)
 
-- **Stand:** gebaut; Schalter `gepostet_aktiv`, im Code Standard aus. **Intern an** (Entscheidung
+- **Stand:** gebaut (#651, gemergt am 10.11.2026); Schalter `gepostet_aktiv`, im Code Standard aus. **Intern an** (Entscheidung
   des Maintainers vom 10.11.2026), **vor dem öffentlichen Start neu prüfen.**
 - **Zweck:** messen, wie viele verschiedene Menschen je Woche öffentlich kontern (Nordstern,
   `docs/VISION.md`); der Person danken. Die Person meldet nach dem Kopieren mit einem Klick
