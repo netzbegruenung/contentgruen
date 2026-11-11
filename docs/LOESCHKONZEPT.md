@@ -359,9 +359,10 @@ und der Ablauf oben erfasst die Tabelle nicht.
   übrigen Fristen nicht am abschaltbaren Bereinigungsjob. Der erste Lauf nach dem Update
   verdichtet auch alle älteren Tage, die bis dahin 90 Tage als Einzelzeilen blieben; eine
   Migration braucht es dafür nicht, das Schema bleibt. `SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`
-  gibt es nicht mehr; ist sie noch gesetzt, wird sie nicht beachtet. Geht eine Suche kurz vor
-  Mitternacht erst nach dem Lauf ein, bleibt ihre Zeile bis zum nächsten Lauf und wird dann
-  zum Tageszähler addiert (die Personen dieses Tages können dabei eine Person doppelt
+  gibt es nicht mehr; ist sie noch gesetzt, wird sie nicht beachtet. Scheitert ein Lauf,
+  folgt der nächste nach einer Stunde. Geht eine Suche kurz vor Mitternacht erst nach dem
+  Lauf ein, holt sie ein zweiter Lauf fünf Minuten später ab (`NACHZUEGLER_SEKUNDEN`) und
+  addiert sie zum Tageszähler (die Personen dieses Tages können dabei eine Person doppelt
   zählen). `GET /metrics/searches-per-user` rechnet seitdem aus den Tageszählern (Suchen je
   Personentag) und liefert keinen Median mehr. Physisch verschwinden die gelöschten Zeilen
   erst, wenn PostgreSQL den Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu

@@ -71,6 +71,11 @@ LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
 # Scheitert das Verdichten der Suchereignisse, versucht der Task es nach dieser Zeit
 # erneut statt erst um Mitternacht: Das Pseudonym soll den Tag nicht lange ueberleben.
 VERDICHTEN_NACHHOLEN_SEKUNDEN = 60 * 60
+# Ein Lauf in den ersten NACHZUEGLER_SEKUNDEN eines Tages bekommt nach so vielen
+# Sekunden einen zweiten: Eine Suche kurz vor Mitternacht, deren Suchereignis erst
+# nach dem ersten Lauf eingeht, behielte ihr Pseudonym sonst bis zur naechsten Mitternacht.
+NACHZUEGLER_SEKUNDEN = 5 * 60
+TAG_SEKUNDEN = 24 * 60 * 60
 
 
 def _grenze(heute: date, tage: int) -> datetime:
@@ -200,7 +205,8 @@ async def loeschen_im_takt(
     """
     Hintergrund-Task: wendet die Fristen sofort und dann taeglich an, spaetestens
     aber um Mitternacht (UTC), bis er abgebrochen wird. Konnten Suchereignisse nicht
-    verdichtet werden, schon nach VERDICHTEN_NACHHOLEN_SEKUNDEN wieder.
+    verdichtet werden, schon nach VERDICHTEN_NACHHOLEN_SEKUNDEN wieder; ein Lauf kurz
+    nach Mitternacht bekommt nach NACHZUEGLER_SEKUNDEN einen zweiten.
     """
     while True:
         try:
@@ -209,7 +215,11 @@ async def loeschen_im_takt(
             logger.error(
                 f"Error applying Loeschfristen: {type(e).__name__}", exc_info=True
             )
-        warten = min(takt_sekunden, sekunden_bis_mitternacht() + 1)
+        bis_mitternacht = sekunden_bis_mitternacht()
+        warten = min(takt_sekunden, bis_mitternacht + 1)
+        if TAG_SEKUNDEN - bis_mitternacht < NACHZUEGLER_SEKUNDEN:
+            # Der Lauf lag kurz nach Mitternacht: Nachzuegler des Vortags einsammeln.
+            warten = min(warten, NACHZUEGLER_SEKUNDEN)
         if getattr(service, "verdichten_offen", False) is True:
             warten = min(warten, VERDICHTEN_NACHHOLEN_SEKUNDEN)
         await asyncio.sleep(warten)

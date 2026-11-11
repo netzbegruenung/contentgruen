@@ -426,8 +426,9 @@
       </p>
       <p>
         Diese Messung ist <strong>nicht anonym, sondern pseudonym</strong>. Pseudonym heißt:
-        An den gespeicherten Zeilen steht kein Name, aber ein Wert, der dieselbe Person
-        oder dasselbe Gerät über mehrere Vorgänge hinweg wiedererkennbar macht. Das ist
+        An den gespeicherten Zeilen steht kein Name, aber ein Wert, der über mehrere Vorgänge
+        hinweg wiedererkennbar macht, dass sie vom selben Konto oder, ohne Anmeldung, vom
+        selben Anschluss kommen. Das ist
         weniger als ein Name, aber mehr als anonym — deshalb steht es hier.
       </p>
 
@@ -448,7 +449,9 @@
         und deiner IP-Adresse (bei IPv6 nur aus ihrem vorderen Teil, der deinen Anschluss
         bezeichnet). <strong>Die Bezeichnung deines Browsers (User-Agent) und andere Merkmale
         deines Geräts gehen nicht ein.</strong> Wer ohne Anmeldung über denselben Anschluss
-        sucht, etwa im selben Haushalt oder Büro, hat deshalb an einem Tag dasselbe Pseudonym.
+        sucht, etwa im selben Haushalt oder Büro, hat deshalb an einem Tag dasselbe Pseudonym;
+        im Mobilfunknetz teilen sich oft viele Menschen eine Adresse, sie alle haben dann
+        dasselbe Pseudonym.
         Dazu verwendet er einen geheimen Schlüssel, den er
         <strong>jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends
         speichert</strong>. Mit der ersten Suche eines neuen Tages ersetzt er ihn durch einen
@@ -466,7 +469,8 @@
         Weiterentwicklung.<br>
         <strong>Dauer:</strong> Die einzelnen Zeilen mit dem Pseudonym löschen wir
         <strong>automatisch nach Ablauf ihres Tages</strong>, kurz nach Mitternacht (UTC, in
-        Deutschland 1 bzw. 2 Uhr nachts); scheitert das wegen einer Störung, versuchen wir es
+        Deutschland 1 bzw. 2 Uhr nachts), und wenige Minuten später noch einmal für Suchen,
+        die kurz vor Mitternacht begannen; scheitert das wegen einer Störung, versuchen wir es
         stündlich erneut. Danach bleibt je Tag nur, wie oft gesucht wurde,
         wie oft davon ohne Treffer und von wie vielen verschiedenen Pseudonymen, ohne die
         Pseudonyme selbst.

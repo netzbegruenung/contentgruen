@@ -454,6 +454,8 @@ describe('DatenschutzComponent', () => {
       // #495: kein User-Agent mehr im Pseudonym.
       expect(text).toContain('Die Bezeichnung deines Browsers (User-Agent) und andere Merkmale deines Geräts gehen nicht ein.');
       expect(text).toContain('hat deshalb an einem Tag dasselbe Pseudonym');
+      expect(text).toContain('im Mobilfunknetz teilen sich oft viele Menschen eine Adresse');
+      expect(text).toContain('wenige Minuten später noch einmal');
       expect(text).toContain('jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends speichert');
       expect(text).toContain('Die IP-Adresse wird dabei weder gespeichert noch protokolliert');
       expect(text).not.toContain('Sitzungskennung');

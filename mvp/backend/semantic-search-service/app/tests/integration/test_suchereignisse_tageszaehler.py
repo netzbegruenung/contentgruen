@@ -145,6 +145,18 @@ class TestVerdichtenVor:
 
         assert _tageszaehler(db) == [(GESTERN, 2, 2)]
 
+    def test_verdichten_vor_nachzuegler_derselben_person_zaehlt_doppelt(self, db):
+        """Bekannter, dokumentierter Doppelzaehler: Dieselbe Person vor und nach dem
+        Lauf ergibt zwei Personen, weil der Tageszaehler kein Pseudonym mehr kennt."""
+        _suche(db, GESTERN, PERSON_A)
+        repository = suchtracking_repository(db)
+        repository.verdichten_vor(MITTERNACHT)
+        _suche(db, GESTERN, PERSON_A)
+
+        repository.verdichten_vor(MITTERNACHT)
+
+        assert _tageszaehler(db) == [(GESTERN, 2, 2)]
+
 
 class TestKennzahlenMitTageszaehlern:
     """Personen und Suchen eines Zeitraums: Tageszaehler plus Einzelzeilen."""

@@ -260,3 +260,24 @@ class TestTakt:
                 await loeschen_im_takt(service)
 
         schlafen.assert_awaited_once_with(60 * 60)
+
+    async def test_loeschen_im_takt_zweiter_lauf_kurz_nach_mitternacht(self):
+        """Nachzuegler des Vortags verlieren ihr Pseudonym Minuten spaeter (#495)."""
+        service = Mock(verdichten_offen=False)
+        service.fristen_anwenden = AsyncMock()
+        schlafen = AsyncMock(side_effect=[None, asyncio.CancelledError()])
+
+        with patch("services.loeschfristen_service.asyncio.sleep", schlafen), patch(
+            "services.loeschfristen_service.sekunden_bis_mitternacht",
+            # erster Lauf 00:00:01, zweiter 00:05:01
+            side_effect=[24 * 60 * 60 - 1, 24 * 60 * 60 - 301],
+        ):
+            with pytest.raises(asyncio.CancelledError):
+                await loeschen_im_takt(service)
+
+        assert service.fristen_anwenden.await_count == 2
+        # danach wieder bis kurz nach der naechsten Mitternacht
+        assert [c.args[0] for c in schlafen.await_args_list] == [
+            5 * 60,
+            24 * 60 * 60 - 300,
+        ]
