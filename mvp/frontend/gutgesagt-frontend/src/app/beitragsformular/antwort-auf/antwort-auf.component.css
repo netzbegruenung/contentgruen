@@ -135,7 +135,11 @@
     font-weight: 600;
 }
 
-.vorschlag-text {
+/* Lange Woerter und Links brechen um, statt den Knopf und das Formular zu sprengen
+   (Designrunde 12.11.: bei 360 px wurde das Formular 714 px breit). */
+.vorschlag-text,
+.neue-aussage-text {
+    min-width: 0;
     overflow-wrap: anywhere;
 }
 

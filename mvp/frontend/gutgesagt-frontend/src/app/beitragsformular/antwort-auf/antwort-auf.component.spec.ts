@@ -132,6 +132,21 @@ describe('AntwortAufComponent', () => {
     expect(component.wert).toEqual({ id: '', text: 'Windräder machen Lärm', neuGewaehlt: true });
   }));
 
+  it('bricht einen Link oder ein langes Wort im Angebot "neu anlegen" um, statt ueberzulaufen', fakeAsync(() => {
+    // Designrunde 12.11.: bei 360 px Breite sprengte ein eingefuegter Link das Formular.
+    statementService.aussageVorschlaege.and.returnValue(of([]));
+    seite().style.display = 'block';
+    seite().style.width = '328px';
+    tippen('Siehe https://www.example.org/ein/sehr/langer/pfad/ohne/umbruch?parameter=wert&noch=mehr');
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+
+    const knopf: HTMLButtonElement = seite().querySelector('.neue-aussage')!;
+    expect(knopf.getBoundingClientRect().width).toBeLessThanOrEqual(328);
+    expect(knopf.scrollWidth).withContext('Text ragt aus dem Knopf').toBeLessThanOrEqual(knopf.clientWidth);
+    expect(seite().scrollWidth).withContext('Block wird breiter als die Seite').toBeLessThanOrEqual(328);
+  }));
+
   it('steht unter den Vorschlaegen und kennzeichnet eine vorhandene Aussage nicht als neu', fakeAsync(() => {
     tippen('Wärmepumpen teuer');
     tick(VORSCHLAG_VERZOEGERUNG_MS);

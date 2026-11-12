@@ -106,7 +106,10 @@ app-formular-hilfe {
 }
 
 // Gewaehlt ist gruen mit Haekchen, nicht grau: grau liest sich als gesperrt (#616).
-// Am Handy zwei gleich breite Segmente, die Beschriftung bricht im Segment um.
+// Am Handy zwei Segmente ueber die volle Breite, die Beschriftung bricht im Segment um.
+// Kein Segment wird schmaler als sein laengstes Wort samt Haekchen: Bei 360 px schnitt
+// das gewaehlte Segment sonst "Kommentarspalten" ab (Designrunde 12.11.). Dann ist das
+// andere Segment etwas schmaler, "Für die eigenen Leute" bricht in mehr Zeilen um.
 .zweck-wahl {
   align-self: flex-start;
 
@@ -126,7 +129,7 @@ app-formular-hilfe {
 
     ::ng-deep .mat-button-toggle {
       flex: 1 1 0;
-      min-width: 0;
+      min-width: min-content;
     }
 
     ::ng-deep .mat-button-toggle-label-content {
