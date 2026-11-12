@@ -19,7 +19,11 @@ function kontrast(vorne: string, hinten: string): number {
   return (hell + 0.05) / (dunkel + 0.05);
 }
 
-/** Schriftfarbe und die erste deckende Hintergrundfarbe darunter (Element oder Vorfahr). */
+/**
+ * Schriftfarbe und die erste deckende Hintergrundfarbe darunter (Element oder Vorfahr).
+ * Nur fuer deckende Hintergruende und sRGB-Ausgabe (`rgb(...)`) gedacht: Halbtransparente
+ * Flaechen, Verlaeufe, Bilder und andere Farbraeume misst sie nicht richtig.
+ */
 async function farben(page: Page, selektor: string): Promise<{ vorne: string; hinten: string }> {
   return page.locator(selektor).first().evaluate((element) => {
     let ebene: Element | null = element;
@@ -38,21 +42,31 @@ async function farben(page: Page, selektor: string): Promise<{ vorne: string; hi
 
 for (const modus of ['light', 'dark'] as const) {
   test.describe(`Darstellung 360 px, ${modus}`, () => {
-    test.use({ colorScheme: modus });
+    // Ohne Animation: Material blendet das Haekchen ein, gemessen wird nicht mitten im Uebergang.
+    test.use({ colorScheme: modus, reducedMotion: 'reduce' });
 
     test('Kommentarformular: Zweck-Umschalter schneidet nichts ab', async ({ page }) => {
       await page.goto('/workflow/add-commentary');
-      const knoepfe = page.locator('.zweck-wahl .mat-button-toggle-button');
+      const gruppe = page.locator('.zweck-wahl');
+      const segmente = gruppe.locator('mat-button-toggle');
+      const knoepfe = gruppe.locator('.mat-button-toggle-button');
       await expect(knoepfe).toHaveCount(2);
       // Beide Zustaende: Das gewaehlte Segment bekommt das Haekchen und damit weniger Platz.
       for (const gewaehlt of [0, 1]) {
         await knoepfe.nth(gewaehlt).click();
+        await expect(segmente.nth(gewaehlt)).toHaveClass(/mat-button-toggle-checked/);
+        // Die Gruppe schneidet mit overflow: hidden ab; ein zu breites rechtes Segment
+        // faellt nur am rechten Rand auf, nicht an scrollWidth.
+        const rechterRand = (await gruppe.boundingBox())!.x + (await gruppe.boundingBox())!.width;
         for (const knopf of await knoepfe.all()) {
+          const name = `${await knopf.textContent()}`.trim();
           const { breit, sichtbar } = await knopf.evaluate((element) => ({
             breit: element.scrollWidth,
             sichtbar: element.clientWidth,
           }));
-          expect.soft(breit, `${await knopf.textContent()}`).toBeLessThanOrEqual(sichtbar);
+          expect.soft(breit, name).toBeLessThanOrEqual(sichtbar);
+          const box = (await knopf.boundingBox())!;
+          expect.soft(box.x + box.width, `${name}: rechter Rand`).toBeLessThanOrEqual(rechterRand + 0.5);
         }
       }
     });
