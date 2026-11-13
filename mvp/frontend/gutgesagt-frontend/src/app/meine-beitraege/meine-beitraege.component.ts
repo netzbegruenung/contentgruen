@@ -28,6 +28,7 @@ import { StatementService } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
 import { beantwortenParams } from '../hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
+import { AussagekarteComponent } from '../shared/aussagekarte/aussagekarte.component';
 
 /** So viele unbeantwortete Aussagen zeigt der leere Zustand als ersten Schritt (#645). */
 export const ERSTE_SCHRITTE = 3;
@@ -62,10 +63,11 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     MeineEinwuerfeComponent,
     SperrnachrichtenComponent,
     MeilensteineComponent,
-    PunkteComponent
+    PunkteComponent,
+    AussagekarteComponent
   ],
   templateUrl: './meine-beitraege.component.html',
-  styleUrls: ['../shared/tabs.css', './meine-beitraege.component.css'],
+  styleUrls: ['../shared/tabs.css', '../shared/aussagekarte/aussagekarten.css', './meine-beitraege.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Hier und nicht in app.config.ts: dort zoege der Import den Paginator samt
   // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.

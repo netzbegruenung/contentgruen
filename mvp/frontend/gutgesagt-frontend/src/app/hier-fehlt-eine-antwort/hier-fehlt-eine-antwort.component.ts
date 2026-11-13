@@ -23,6 +23,7 @@ import {
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
+import { AussagekarteComponent } from '../shared/aussagekarte/aussagekarte.component';
 
 /**
  * "Hier fehlt eine Antwort": Mitwirkende sehen die unbeantworteten Aussagen (ohne
@@ -86,9 +87,10 @@ export function gesuchtMarker(personen: number): string {
     ThemenFilterComponent,
     Cc0HinweisComponent,
     SprachhinweisComponent,
+    AussagekarteComponent,
   ],
   templateUrl: './hier-fehlt-eine-antwort.component.html',
-  styleUrls: ['./hier-fehlt-eine-antwort.component.css'],
+  styleUrls: ['../shared/aussagekarte/aussagekarten.css', './hier-fehlt-eine-antwort.component.css'],
 })
 export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   readonly kommentarFormular = FORMULAR_PFAD.commentary;

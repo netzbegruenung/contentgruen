@@ -119,8 +119,8 @@ describe('HierFehltEineAntwortComponent', () => {
     expect(knopf.textContent?.trim()).toBe('Antworten');
     expect(knopf.classList).toContain('dark-green-button');
     expect(knopf.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1&von=hier-fehlt-eine-antwort');
-    // Der Knopf folgt direkt auf den Text, und Screenreader hören, worauf er antwortet.
-    expect(knopf.closest('.aussage-aktionen')!.previousElementSibling!.classList).toContain('aussage-text');
+    // Der Knopf steht im Fuss der Aussagekarte, und Screenreader hören, worauf er antwortet.
+    expect(knopf.closest('app-aussagekarte .aussagekarte-fuss')).not.toBeNull();
     const text = element().querySelector('#' + knopf.getAttribute('aria-describedby'));
     expect(text?.textContent).toContain('Wärmepumpen sind zu teuer');
   });

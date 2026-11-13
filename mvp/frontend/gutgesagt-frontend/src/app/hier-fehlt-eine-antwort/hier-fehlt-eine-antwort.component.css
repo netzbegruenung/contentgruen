@@ -3,37 +3,6 @@
   color: var(--text-secondary);
 }
 
-.aussagen {
-  list-style: none;
-  margin: var(--spacing-md) 0;
-  padding: 0;
-}
-
-.aussage {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--disabled-bg);
-}
-
-.aussage-text {
-  margin: 0 0 8px;
-  font-weight: 500;
-}
-
-/* Antworten direkt unter der Aussage, die Nachfrage daneben (#645) */
-.aussage-aktionen {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 16px;
-  margin-bottom: 8px;
-}
-
-.gesucht {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--primary-dark);
-}
-
 .vorab {
   margin-top: var(--spacing-lg, 24px);
   padding-top: var(--spacing-md);
