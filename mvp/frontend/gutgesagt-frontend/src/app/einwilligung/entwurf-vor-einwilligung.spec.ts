@@ -1,28 +1,23 @@
 import {
+  ALTER_ENTWURF_PRAEFIX,
   ENTWURF_HOECHSTENS_MS,
-  ENTWURF_PRAEFIX,
   entwuerfeAufraeumen,
   entwuerfeLoeschen,
+  entwurfDa,
   entwurfHolen,
   entwurfSichern,
-  kontoPruefwert,
 } from './entwurf-vor-einwilligung';
 
-/** Begonnene Eingabe waehrend der Einwilligung (UX-Review B4, Review zu #670). */
+/** Begonnene Eingabe waehrend der Einwilligung, nur im Arbeitsspeicher (UX-Review B4, PR #670). */
 describe('entwurf-vor-einwilligung', () => {
   afterEach(() => entwuerfeLoeschen());
 
-  it('legt ab und gibt einmal zurueck', () => {
+  it('legt ab und gibt einmal zurueck, ohne den Browser-Speicher zu beruehren', () => {
+    const setItem = spyOn(Storage.prototype, 'setItem').and.callThrough();
     entwurfSichern('/einwerfen', { hinweis: 'x' }, 'kim', 1000);
+    expect(setItem).not.toHaveBeenCalled();
     expect(entwurfHolen('/einwerfen', 'kim', 2000)).toEqual({ hinweis: 'x' });
     expect(entwurfHolen('/einwerfen', 'kim', 2000)).toBeUndefined();
-  });
-
-  it('legt nicht die Kennung ab, nur einen Pruefwert', () => {
-    entwurfSichern('/einwerfen', 'x', 'kennung-kim', 1000);
-    const roh = sessionStorage.getItem(ENTWURF_PRAEFIX + '/einwerfen')!;
-    expect(roh).not.toContain('kennung-kim');
-    expect(JSON.parse(roh).konto).toBe(kontoPruefwert('kennung-kim'));
   });
 
   it('verwendet nach einer Stunde nichts mehr', () => {
@@ -33,38 +28,37 @@ describe('entwurf-vor-einwilligung', () => {
   it('gibt den Entwurf eines anderen Kontos nicht heraus', () => {
     entwurfSichern('/einwerfen', 'von kim', 'kim', 1000);
     expect(entwurfHolen('/einwerfen', 'alex', 2000)).toBeUndefined();
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + '/einwerfen')).toBeNull();
+    expect(entwurfDa('/einwerfen')).toBeFalse();
   });
 
   it('raeumt beim Ablegen abgelaufene Entwuerfe auf', () => {
     entwurfSichern('/alt', 'alt', 'kim', 0);
     entwurfSichern('/neu', 'neu', 'kim', ENTWURF_HOECHSTENS_MS + 1);
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + '/alt')).toBeNull();
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + '/neu')).not.toBeNull();
+    expect(entwurfDa('/alt')).toBeFalse();
+    expect(entwurfDa('/neu')).toBeTrue();
   });
 
-  it('raeumt beim App-Start abgelaufene und fremde auf, laesst eigene', () => {
+  it('raeumt abgelaufene und fremde auf, laesst eigene, und alte Eintraege im sessionStorage gehen', () => {
+    entwurfSichern('/alt', 'alt', 'kim', 0);
     entwurfSichern('/kim', 'von kim', 'kim', 1000);
     entwurfSichern('/alex', 'von alex', 'alex', 1000);
-    sessionStorage.setItem(ENTWURF_PRAEFIX + '/alt', JSON.stringify({ zeit: 0, konto: kontoPruefwert('kim'), werte: 'alt' }));
+    sessionStorage.setItem(ALTER_ENTWURF_PRAEFIX + '/einwerfen', '{}');
 
     entwuerfeAufraeumen('kim', ENTWURF_HOECHSTENS_MS + 500);
 
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + '/kim')).not.toBeNull();
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + '/alex')).toBeNull();
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + '/alt')).toBeNull();
+    expect(entwurfDa('/kim')).toBeTrue();
+    expect(entwurfDa('/alex')).toBeFalse();
+    expect(entwurfDa('/alt')).toBeFalse();
+    expect(sessionStorage.getItem(ALTER_ENTWURF_PRAEFIX + '/einwerfen')).toBeNull();
   });
 
-  it('loescht alle Entwuerfe, aber nichts anderes', () => {
+  it('loescht alle Entwuerfe', () => {
     entwurfSichern('/a', 'eins', 'kim');
     entwurfSichern('/b', 'zwei', 'kim');
-    sessionStorage.setItem('anderes', '1');
 
     entwuerfeLoeschen();
 
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + '/a')).toBeNull();
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + '/b')).toBeNull();
-    expect(sessionStorage.getItem('anderes')).toBe('1');
-    sessionStorage.removeItem('anderes');
+    expect(entwurfDa('/a')).toBeFalse();
+    expect(entwurfDa('/b')).toBeFalse();
   });
 });

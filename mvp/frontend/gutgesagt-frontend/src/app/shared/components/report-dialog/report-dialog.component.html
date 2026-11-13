@@ -82,11 +82,16 @@
 
   <div mat-dialog-content *ngIf="submitted" class="success-message" role="status" tabindex="-1" #bestaetigung>
     <mat-icon class="success-icon">check_circle</mat-icon>
-    <p>Deine Meldung ist eingegangen.</p>
-    <p class="sub-message">
-      Menschen aus unserem Team prüfen sie.
-      <ng-container *ngIf="mitEmail">Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.</ng-container>
-    </p>
+    <!-- Doppelmeldung: nichts Neues angelegt, keine Mail (Review zu #670) -->
+    <p *ngIf="schonGemeldet" data-testid="schon-gemeldet">Du hast diesen Beitrag schon gemeldet.</p>
+    <ng-container *ngIf="!schonGemeldet">
+      <p>Deine Meldung ist eingegangen.</p>
+      <p class="sub-message">
+        Menschen aus unserem Team prüfen sie.
+        <ng-container *ngIf="mitEmail">Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.</ng-container>
+        <ng-container *ngIf="kontoOhneMail">An dein Konto können wir keine Mail schicken; die Meldung ist trotzdem eingegangen.</ng-container>
+      </p>
+    </ng-container>
   </div>
 
   <div mat-dialog-actions align="end" *ngIf="!submitted" class="aktionen">

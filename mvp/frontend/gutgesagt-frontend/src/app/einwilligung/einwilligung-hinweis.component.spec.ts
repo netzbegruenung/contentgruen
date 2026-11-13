@@ -2,12 +2,18 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { FormControl, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { ENTWURF_PRAEFIX, EinwilligungHinweisComponent } from './einwilligung-hinweis.component';
+import { EinwilligungHinweisComponent } from './einwilligung-hinweis.component';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
-import { ENTWURF_HOECHSTENS_MS } from './entwurf-vor-einwilligung';
+import {
+  ENTWURF_HOECHSTENS_MS,
+  entwuerfeLoeschen,
+  entwurfDa,
+  entwurfHolen,
+  entwurfSichern,
+} from './entwurf-vor-einwilligung';
 
 function ablegen(werte: unknown, zeit = Date.now()): void {
-  sessionStorage.setItem(ENTWURF_PRAEFIX + '/einwerfen?von=fangkorb', JSON.stringify({ zeit, konto: null, werte }));
+  entwurfSichern('/einwerfen?von=fangkorb', werte, null, zeit);
 }
 
 /** UX-Review B4: Hinweis mit „Einwilligen“ über dem Formular, die Eingabe übersteht den Umweg. */
@@ -29,7 +35,7 @@ describe('EinwilligungHinweisComponent', () => {
   }
 
   beforeEach(() => {
-    sessionStorage.removeItem(ENTWURF_PRAEFIX + ADRESSE);
+    entwuerfeLoeschen();
     router = { url: ADRESSE, navigate: jasmine.createSpy('navigate') };
     TestBed.configureTestingModule({
       imports: [EinwilligungHinweisComponent],
@@ -39,7 +45,7 @@ describe('EinwilligungHinweisComponent', () => {
     formular = new FormGroup({ link: new FormControl(''), hinweis: new FormControl('') });
   });
 
-  afterEach(() => sessionStorage.removeItem(ENTWURF_PRAEFIX + ADRESSE));
+  afterEach(() => entwuerfeLoeschen());
 
   it('zeigt nichts, solange die Einwilligung da oder unbekannt ist', () => {
     erstellen();
@@ -74,9 +80,9 @@ describe('EinwilligungHinweisComponent', () => {
 
     (kasten()!.querySelector('button') as HTMLButtonElement).click();
 
-    const abgelegt = JSON.parse(sessionStorage.getItem(ENTWURF_PRAEFIX + ADRESSE)!);
-    expect(abgelegt.werte).toEqual({ link: 'https://example.org/a', hinweis: 'Schon getippt' });
-    expect(typeof abgelegt.zeit).toBe('number');
+    expect(entwurfHolen(ADRESSE, null)).toEqual({ link: 'https://example.org/a', hinweis: 'Schon getippt' });
+    // Nichts im Browser-Speicher (Entscheidung Maintainer 13.11.2026)
+    expect(Object.keys(sessionStorage).some((k) => k.startsWith('gutgesagt-entwurf'))).toBeFalse();
     expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], { queryParams: { returnUrl: ADRESSE } });
   });
 
@@ -87,7 +93,7 @@ describe('EinwilligungHinweisComponent', () => {
     erstellen();
 
     expect(formular.value).toEqual({ link: 'https://vorbelegt.example/', hinweis: 'Schon getippt' });
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + ADRESSE)).toBeNull();
+    expect(entwurfDa(ADRESSE)).toBeFalse();
   });
 
   it('setzt auch den Wert eines einzelnen Felds wieder ein (Satz beim Destillieren)', () => {
@@ -110,13 +116,13 @@ describe('EinwilligungHinweisComponent', () => {
     expect(router.navigate).toHaveBeenCalled();
   });
   // Review zu #670: Entwuerfe von vor der Einwilligung liegen nicht laenger als noetig
-  it('verwirft einen Entwurf, der aelter als eine Stunde ist, und einen ohne Zeitpunkt', () => {
+  it('verwirft einen Entwurf, der aelter als eine Stunde ist, und den eines anderen Kontos', () => {
     ablegen({ link: '', hinweis: 'Von gestern' }, Date.now() - ENTWURF_HOECHSTENS_MS - 1000);
     erstellen();
     expect(formular.value.hinweis).toBe('');
-    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + ADRESSE)).toBeNull();
+    expect(entwurfDa(ADRESSE)).toBeFalse();
 
-    sessionStorage.setItem(ENTWURF_PRAEFIX + ADRESSE, JSON.stringify({ link: '', hinweis: 'Altes Format' }));
+    entwurfSichern(ADRESSE, { link: '', hinweis: 'Von einem anderen Konto' }, 'alex');
     fixture.destroy();
     erstellen();
     expect(formular.value.hinweis).toBe('');

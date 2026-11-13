@@ -98,6 +98,7 @@ class TestStand:
                 "kennung": AKTUELLER_WORTLAUT,
                 "text": WORTLAUTE[AKTUELLER_WORTLAUT],
             },
+            "ohne_wortlaut": None,
         }
         repository.lesen.assert_called_once_with("user-001")
 
@@ -141,6 +142,41 @@ class TestStand:
         assert stand["eingewilligt"] is False
         assert stand["wortlaut"] == "2026-11-05"
         assert stand["widerrufen_am"].startswith("2026-11-06T09:30")
+
+
+class TestOhneEinwilligung:
+    """UX-Review B2: "Ohne Einwilligung weiter" am Konto statt im Browser."""
+
+    def test_stand_liefert_den_wortlaut_des_ohne(self, client, repository):
+        repository.lesen.return_value = None
+        repository.ohne_lesen.return_value = "2026-11-13"
+
+        stand = client.get(BASIS, headers=PERSON).json()
+
+        assert stand["ohne_wortlaut"] == "2026-11-13"
+        repository.ohne_lesen.assert_called_once_with("user-001")
+
+    def test_ohne_merken(self, client, repository):
+        antwort = client.post(
+            f"{BASIS}/ohne", json={"wortlaut": "2026-11-13"}, headers=PERSON
+        )
+
+        assert antwort.status_code == 204
+        repository.ohne_merken.assert_called_once_with("user-001", "2026-11-13")
+
+    def test_ohne_unbekannter_wortlaut_422(self, client, repository):
+        antwort = client.post(
+            f"{BASIS}/ohne", json={"wortlaut": "1999-01-01"}, headers=PERSON
+        )
+
+        assert antwort.status_code == 422
+        repository.ohne_merken.assert_not_called()
+
+    def test_ohne_nur_angemeldet(self, client):
+        assert (
+            client.post(f"{BASIS}/ohne", json={"wortlaut": "2026-11-13"}).status_code
+            == 401
+        )
 
 
 class TestWortlaute:
@@ -521,8 +557,9 @@ OFFEN = {
     # Zustimmung zur Sichtbarkeit der Abzeichen (#351): Ein Nein ist Zuruecknehmen,
     # ein Ja zeigt ohne Einwilligung nichts (keine Meilensteine).
     ("PUT", "/api/v1/usage/users/me/abzeichen-sichtbarkeit"),
-    # Die Einwilligung selbst
+    # Die Einwilligung selbst und "ohne Einwilligung weiter" (B2)
     ("POST", "/api/v1/art9-einwilligung"),
+    ("POST", "/api/v1/art9-einwilligung/ohne"),
     # Suchen und Lesen per POST
     ("POST", "/api/v1/search/searchByText"),
     ("POST", "/api/v1/post/searchPost"),

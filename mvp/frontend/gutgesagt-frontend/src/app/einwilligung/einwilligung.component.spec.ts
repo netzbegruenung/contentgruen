@@ -74,7 +74,11 @@ describe('EinwilligungComponent', () => {
     return treffer as HTMLButtonElement;
   }
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // "Ohne Einwilligung weiter" geht als POST an den Server (B2); nur der eigene Test prueft ihn.
+    http.match({ method: 'POST', url: `${URL}/ohne` }).forEach((r) => r.flush(null, { status: 204, statusText: 'No Content' }));
+    http.verify();
+  });
 
   describe('Frage', () => {
     it('zeigt den Wortlaut vom Backend am Haekchen, nicht angehakt', () => {
@@ -171,12 +175,15 @@ describe('EinwilligungComponent', () => {
     // UX-Review B2: wer bewusst ohne weitergeht, wird nicht bei jedem Start wieder hergefuehrt
     it('ohne Einwilligung weiter merkt sich die Entscheidung mit dem gezeigten Wortlaut', () => {
       starten('/einwerfen');
-      const merken = spyOn(TestBed.inject(Art9EinwilligungService), 'ohneMerken');
       standLiefern(stand());
 
       knopf('Ohne Einwilligung weiter').click();
 
-      expect(merken).toHaveBeenCalledWith(WORTLAUT.kennung);
+      // Am Konto, nicht im Browser (Entscheidung Maintainer 13.11.2026)
+      const anfrage = http.expectOne({ method: 'POST', url: `${URL}/ohne` });
+      expect(anfrage.request.body).toEqual({ wortlaut: WORTLAUT.kennung });
+      anfrage.flush(null, { status: 204, statusText: 'No Content' });
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
     });
 
     it('ohne Einwilligung öffnet sich die Hilfe danach nicht wieder (Parameter hilfe fällt weg)', () => {

@@ -214,12 +214,48 @@ public class IdentityHeaderTransformTests
 
     private const string ReportPath = "/api/v1/moderation/report";
 
-    private static ClaimsPrincipal UserWithEmail(string claimType) =>
-        new ClaimsPrincipal(new ClaimsIdentity(new[]
+    private static ClaimsPrincipal UserWithEmail(string claimType, string? verified = "true", bool managed = false)
+    {
+        var claims = new List<Claim>
         {
             new Claim("sub", "echte-kennung"),
             new Claim(claimType, "test.user@example.com")
-        }, "TestAuth"));
+        };
+        if (verified is not null)
+        {
+            claims.Add(new Claim("email_verified", verified));
+        }
+        if (managed)
+        {
+            claims.Add(new Claim(BFF.Controllers.AuthController.AuthMethodClaim, BFF.Controllers.AuthController.AuthMethodManaged));
+        }
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("false")]
+    public void Apply_UnverifiedEmailOnReport_SetsNoEmail(string? verified)
+    {
+        // Nur eine bestaetigte Adresse (Review zu #670); ohne Header schickt der
+        // Suchdienst keine Mail und meldet mit_email=false.
+        var proxyRequest = new HttpRequestMessage();
+
+        IdentityHeaderTransform.Apply(proxyRequest, UserWithEmail(ClaimTypes.Email, verified), ReportPath, NoAllowlist, Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.EmailHeader));
+    }
+
+    [Fact]
+    public void Apply_ManagedLoginOnReport_SetsEmailWithoutVerifiedClaim()
+    {
+        var proxyRequest = new HttpRequestMessage();
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest, UserWithEmail(ClaimTypes.Email, verified: null, managed: true), ReportPath, NoAllowlist, Logger);
+
+        Assert.Equal(new[] { "test.user%40example.com" }, ValuesOf(proxyRequest, IdentityHeaderTransform.EmailHeader));
+    }
 
     [Theory]
     [InlineData(ClaimTypes.Email)]

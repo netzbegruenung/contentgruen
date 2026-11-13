@@ -365,7 +365,24 @@ describe('ReportDialogComponent', () => {
 
       http.expectOne(URL).flush({ success: true, message: '', mit_email: false });
       fixture.detectChanges();
-      expect(element().querySelector('[role="status"]')!.textContent).not.toContain('per E-Mail');
+      const status = element().querySelector('[role="status"]')!.textContent!;
+      expect(status).not.toContain('per E-Mail');
+      expect(status).toContain('An dein Konto können wir keine Mail schicken; die Meldung ist trotzdem eingegangen.');
+    });
+
+    it('sagt bei einer Doppelmeldung, dass der Beitrag schon gemeldet ist, und verspricht keine Mail', async () => {
+      await haekchenSetzen();
+      await grundWaehlen();
+      await gutenGlaubenErklaeren();
+
+      await melden();
+
+      http.expectOne(URL).flush({ success: true, message: '', mit_email: false, schon_gemeldet: true });
+      fixture.detectChanges();
+      const status = element().querySelector('[role="status"]')!.textContent!;
+      expect(status).toContain('Du hast diesen Beitrag schon gemeldet.');
+      expect(status).not.toContain('per E-Mail');
+      expect(status).not.toContain('keine Mail schicken');
     });
 
     it('schickt ohne Haekchen keine Bitte um Mail', async () => {

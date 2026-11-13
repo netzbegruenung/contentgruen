@@ -136,6 +136,8 @@ class ReportContentResponse(BaseModel):
     # richtet der Dialog seine Zusage einer Mail (Review zu #670): Fuer Angemeldete
     # kann sie fehlen, etwa ohne Adresse im Konto.
     mit_email: bool = False
+    # Doppelmeldung derselben Person zum selben Beitrag: nichts neu angelegt, keine Mail.
+    schon_gemeldet: bool = False
 
 
 class PendingReportsResponse(BaseModel):
@@ -392,7 +394,8 @@ async def report_content(
 
         if success:
             return ReportContentResponse(
-                mit_email=melder_email is not None,
+                mit_email=success.mit_email,
+                schon_gemeldet=not success.neu,
                 success=True,
                 message="Content reported successfully. We will review it shortly.",
             )

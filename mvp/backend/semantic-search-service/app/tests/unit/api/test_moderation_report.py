@@ -19,7 +19,12 @@ from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_moderation_service, get_settings
 from domain.models.meldegrund import MELDEGRUENDE
-from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX, MelderAngaben
+from domain.models.meldung import (
+    MELDER_EMAIL_MAX,
+    MELDER_NAME_MAX,
+    MelderAngaben,
+    MeldungErgebnis,
+)
 from utils import client_identity
 from utils.rate_limiter import RateLimiter
 
@@ -43,7 +48,14 @@ def service():
     """ModerationService-Mock: Inhalt existiert, Meldung gelingt."""
     mock = Mock()
     mock.content_exists = AsyncMock(return_value=True)
-    mock.report_content = AsyncMock(return_value=True)
+
+    async def melden(*args, **kwargs):
+        # Wie der Dienst: neu angelegt, mit Adresse, wenn eine mitkam
+        return MeldungErgebnis(
+            erfolg=True, neu=True, mit_email=kwargs["melder"].email is not None
+        )
+
+    mock.report_content = AsyncMock(side_effect=melden)
     return mock
 
 
@@ -556,3 +568,21 @@ class TestKontoAdresseFuerAngemeldete:
 
         assert antwort.status_code == 200
         assert antwort.json()["mit_email"] is erwartet
+
+    def test_doppelmeldung_sagt_schon_gemeldet_und_verspricht_keine_mail(
+        self, client, service
+    ):
+        """Review zu #670: Bei einer Doppelmeldung entsteht nichts, also auch keine Mail."""
+        service.report_content = AsyncMock(
+            return_value=MeldungErgebnis(erfolg=True, neu=False, mit_email=False)
+        )
+
+        antwort = client.post(
+            REPORT_URL,
+            json=_payload(bestaetigung_an_konto=True),
+            headers=self.ANGEMELDET,
+        )
+
+        assert antwort.status_code == 200
+        assert antwort.json()["mit_email"] is False
+        assert antwort.json()["schon_gemeldet"] is True

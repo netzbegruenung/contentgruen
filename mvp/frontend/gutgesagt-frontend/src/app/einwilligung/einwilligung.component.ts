@@ -132,7 +132,8 @@ export class EinwilligungComponent implements OnInit {
    */
   ohneEinwilligung(): void {
     if (this.stand) {
-      this.einwilligung.ohneMerken(this.stand.aktueller_wortlaut.kennung);
+      // Am Konto (B2); scheitert es, fragt die App beim naechsten Start eben noch einmal.
+      this.einwilligung.ohneMerken(this.stand.aktueller_wortlaut.kennung).subscribe({ error: () => undefined });
     }
     this.weiter(true);
   }

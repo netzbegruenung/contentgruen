@@ -78,6 +78,10 @@ export class ReportDialogComponent {
   submitted = false;
   /** Ob die abgeschickte Meldung eine E-Mail-Adresse trug: davon haengt die Bestaetigung ab. */
   mitEmail = false;
+  /** Doppelmeldung: Die Person hat diesen Beitrag schon gemeldet, nichts Neues angelegt. */
+  schonGemeldet = false;
+  /** Angemeldet mit Haekchen, aber der Suchdienst hat keine Adresse (etwa keine bestaetigte im Konto). */
+  kontoOhneMail = false;
   /** Erst nach dem Verlassen des Feldes zeigt der Dialog, dass die Adresse nicht stimmt. */
   emailVerlassen = false;
   error: string | null = null;
@@ -192,6 +196,8 @@ export class ReportDialogComponent {
         // Die Zusage einer Mail richtet sich nach dem, was der Suchdienst gespeichert hat:
         // Fuer Angemeldete kann die Adresse fehlen (Sitzung abgelaufen, keine im Konto).
         this.mitEmail = antwort?.mit_email ?? (melderEmail !== null || anKonto);
+        this.schonGemeldet = antwort?.schon_gemeldet === true;
+        this.kontoOhneMail = anKonto && !this.mitEmail && !this.schonGemeldet;
       },
       error: (error) => {
         this.submitting = false;

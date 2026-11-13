@@ -1,14 +1,17 @@
 /**
- * Eine begonnene Formulareingabe, solange die Person einwilligt (UX-Review B4): im
- * sessionStorage unter Praefix plus Adresse der Seite, mit Zeitpunkt und einem Pruefwert
- * des Kontos. Nur dieser Tab, nichts geht an den Server.
+ * Eine begonnene Formulareingabe, solange die Person einwilligt (UX-Review B4): nur im
+ * Arbeitsspeicher, nicht im Browser-Speicher (Entscheidung Maintainer 13.11.2026, bis
+ * Paragraf 25 TDDDG geprueft ist). /einwilligung ist eine Route der App, der Entwurf
+ * uebersteht also den Weg dorthin und zurueck; ein Neuladen nicht.
  *
- * Nach ENTWURF_HOECHSTENS_MS wird ein Entwurf nicht mehr verwendet. Geloescht wird er,
- * sobald er wieder im Formular steht, beim naechsten Ablegen eines Entwurfs und beim
- * App-Start (abgelaufene und die eines anderen Kontos), beim Abmelden und Kontowechsel
- * (Art9EinwilligungService.starten), spaetestens wenn der Tab schliesst.
+ * Je Adresse der Seite ein Entwurf mit Zeitpunkt und einem Pruefwert des Kontos. Nach
+ * ENTWURF_HOECHSTENS_MS wird er nicht mehr verwendet; weg ist er, sobald er wieder im
+ * Formular steht, beim Abmelden und Kontowechsel (Art9EinwilligungService.starten),
+ * spaetestens beim Neuladen.
  */
-export const ENTWURF_PRAEFIX = 'gutgesagt-entwurf-vor-einwilligung:';
+
+/** Frueher lagen Entwuerfe im sessionStorage unter diesem Praefix; die App raeumt sie einmal weg. */
+export const ALTER_ENTWURF_PRAEFIX = 'gutgesagt-entwurf-vor-einwilligung:';
 
 /** Laenger dauert der Umweg ueber die Einwilligung nicht; ein aelterer Entwurf faellt weg. */
 export const ENTWURF_HOECHSTENS_MS = 60 * 60 * 1000;
@@ -20,7 +23,9 @@ interface Entwurf {
   werte: unknown;
 }
 
-/** FNV-1a wie im Profilbild-Dienst: klein, ohne Abhaengigkeit, nicht umkehrbar gemeint. */
+const entwuerfe = new Map<string, Entwurf>();
+
+/** FNV-1a wie im Profilbild-Dienst: klein, ohne Abhaengigkeit. */
 export function kontoPruefwert(kennung: string | null | undefined): number | null {
   if (!kennung) return null;
   let wert = 0x811c9dc5;
@@ -31,81 +36,58 @@ export function kontoPruefwert(kennung: string | null | undefined): number | nul
   return wert >>> 0;
 }
 
-function lesen(schluessel: string): Partial<Entwurf> | null {
-  try {
-    const wert = JSON.parse(sessionStorage.getItem(schluessel) ?? 'null');
-    return wert && typeof wert === 'object' ? wert : null;
-  } catch {
-    return null;
-  }
+function abgelaufen(entwurf: Entwurf, jetzt: number): boolean {
+  return jetzt - entwurf.zeit > ENTWURF_HOECHSTENS_MS || jetzt < entwurf.zeit;
 }
 
-function abgelaufen(entwurf: Partial<Entwurf> | null, jetzt: number): boolean {
-  return (
-    !entwurf ||
-    typeof entwurf.zeit !== 'number' ||
-    jetzt - entwurf.zeit > ENTWURF_HOECHSTENS_MS ||
-    jetzt < entwurf.zeit
-  );
-}
-
-function alleSchluessel(): string[] {
-  const schluessel: string[] = [];
+/** Alte Entwuerfe aus dem sessionStorage (vor der Umstellung) wegraeumen. */
+function alteEintraegeWeg(): void {
   try {
+    const schluessel: string[] = [];
     for (let i = 0; i < sessionStorage.length; i++) {
       const k = sessionStorage.key(i);
-      if (k?.startsWith(ENTWURF_PRAEFIX)) schluessel.push(k);
+      if (k?.startsWith(ALTER_ENTWURF_PRAEFIX)) schluessel.push(k);
     }
+    schluessel.forEach((k) => sessionStorage.removeItem(k));
   } catch {
-    // Ohne Speicher gibt es auch keine Entwuerfe.
-  }
-  return schluessel;
-}
-
-function entfernen(schluessel: string): void {
-  try {
-    sessionStorage.removeItem(schluessel);
-  } catch {
-    // Ohne Speicher nichts zu entfernen.
+    // Ohne Speicher gibt es auch keine alten Eintraege.
   }
 }
 
 /**
- * Abgelaufene Entwuerfe weg, und mit ``kennung`` auch die eines anderen Kontos. Beim
- * App-Start und vor jedem neuen Entwurf.
+ * Abgelaufene Entwuerfe weg, und mit ``kennung`` auch die eines anderen Kontos; dazu
+ * alte Eintraege im sessionStorage. Beim App-Start, beim Anmelden und vor jedem neuen Entwurf.
  */
 export function entwuerfeAufraeumen(kennung: string | null = null, jetzt = Date.now()): void {
+  alteEintraegeWeg();
   const konto = kontoPruefwert(kennung);
-  for (const schluessel of alleSchluessel()) {
-    const entwurf = lesen(schluessel);
-    const fremd = konto !== null && entwurf?.konto !== konto;
-    if (abgelaufen(entwurf, jetzt) || fremd) entfernen(schluessel);
+  for (const [adresse, entwurf] of entwuerfe) {
+    if (abgelaufen(entwurf, jetzt) || (konto !== null && entwurf.konto !== konto)) entwuerfe.delete(adresse);
   }
 }
 
 export function entwurfSichern(adresse: string, werte: unknown, kennung: string | null, jetzt = Date.now()): void {
   entwuerfeAufraeumen(null, jetzt);
-  try {
-    const entwurf: Entwurf = { zeit: jetzt, konto: kontoPruefwert(kennung), werte };
-    sessionStorage.setItem(ENTWURF_PRAEFIX + adresse, JSON.stringify(entwurf));
-  } catch {
-    // Ohne Speicher geht nur die Eingabe verloren; der Weg zur Einwilligung klappt.
-  }
+  entwuerfe.set(adresse, { zeit: jetzt, konto: kontoPruefwert(kennung), werte });
 }
 
 /**
- * Der Entwurf zu dieser Adresse, einmal: Gelesen wird er geloescht. Zu alt, von einem
- * anderen Konto oder kaputt: undefined.
+ * Der Entwurf zu dieser Adresse, einmal: Gelesen wird er geloescht. Zu alt oder von
+ * einem anderen Konto: undefined.
  */
 export function entwurfHolen(adresse: string, kennung: string | null, jetzt = Date.now()): unknown {
-  const schluessel = ENTWURF_PRAEFIX + adresse;
-  const entwurf = lesen(schluessel);
-  entfernen(schluessel);
+  const entwurf = entwuerfe.get(adresse);
+  entwuerfe.delete(adresse);
   if (!entwurf || abgelaufen(entwurf, jetzt) || entwurf.konto !== kontoPruefwert(kennung)) return undefined;
   return entwurf.werte;
 }
 
+/** Ob zu dieser Adresse ein Entwurf liegt (fuer Tests und Pruefungen). */
+export function entwurfDa(adresse: string): boolean {
+  return entwuerfe.has(adresse);
+}
+
 /** Alle Entwuerfe weg, etwa beim Abmelden oder Kontowechsel. */
 export function entwuerfeLoeschen(): void {
-  alleSchluessel().forEach(entfernen);
+  entwuerfe.clear();
 }

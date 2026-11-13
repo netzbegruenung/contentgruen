@@ -105,11 +105,11 @@ public static class IdentityHeaderTransform
                 SetSingleValue(proxyRequest, DisplayNameHeader, Uri.EscapeDataString(anzeigename));
             }
 
-            // Die Adresse selbst steht in keinem Log.
-            var adresse = user.FindFirst(ClaimTypes.Email)?.Value ?? user.FindFirst("email")?.Value;
-            if (!string.IsNullOrWhiteSpace(adresse) && EndpointPolicy.Matches(KontoAdressePfade, path))
+            // Die Adresse selbst steht in keinem Log. Nur eine bestaetigte (Review zu #670).
+            var adresse = BestaetigteAdresse(user);
+            if (adresse is not null && EndpointPolicy.Matches(KontoAdressePfade, path))
             {
-                SetSingleValue(proxyRequest, EmailHeader, Uri.EscapeDataString(adresse.Trim()));
+                SetSingleValue(proxyRequest, EmailHeader, Uri.EscapeDataString(adresse));
             }
 
             if (AdminPolicy.IsAdmin(user, adminUserIds))
@@ -131,6 +131,28 @@ public static class IdentityHeaderTransform
         {
             logger.LogWarning("No user identifier found for protected endpoint: {Path}", path);
         }
+    }
+
+    /// <summary>
+    /// Die E-Mail-Adresse des Kontos, wenn sie bestaetigt ist: beim Identitaetsdienst mit
+    /// <c>email_verified=true</c>, bei der Direktanmeldung immer (die Adresse ist dort der
+    /// Benutzername, mit dem die Person sich eben angemeldet hat, und legt ein Admin an).
+    /// Sonst null: Der Suchdienst schickt dann keine Mail, und der Dialog sagt das.
+    /// </summary>
+    public static string? BestaetigteAdresse(ClaimsPrincipal user)
+    {
+        var adresse = user.FindFirst(ClaimTypes.Email)?.Value ?? user.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(adresse))
+        {
+            return null;
+        }
+        var direkt = string.Equals(
+            user.FindFirst(BFF.Controllers.AuthController.AuthMethodClaim)?.Value,
+            BFF.Controllers.AuthController.AuthMethodManaged,
+            StringComparison.Ordinal);
+        var bestaetigt = string.Equals(
+            user.FindFirst("email_verified")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+        return direkt || bestaetigt ? adresse.Trim() : null;
     }
 
     /// <summary>

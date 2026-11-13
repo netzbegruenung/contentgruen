@@ -38,6 +38,8 @@ export interface ReportContentResponse {
   message: string;
   /** Ob an der Meldung eine Adresse fuer Bestaetigung und Entscheidung steht (fehlt bei aelterem Backend). */
   mit_email?: boolean;
+  /** Doppelmeldung derselben Person: nichts neu angelegt (Review zu #670). */
+  schon_gemeldet?: boolean;
 }
 
 export interface ContentReport {

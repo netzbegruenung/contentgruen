@@ -31,6 +31,7 @@ import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { entwurfSichern } from '../einwilligung/entwurf-vor-einwilligung';
 import { einwilligungFehlt } from '../services/art9-einwilligung.service';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
@@ -316,6 +317,14 @@ export class DestillierenComponent implements OnInit, OnDestroy {
    * navigiert dann nicht.
    */
   private readonly satzSichernVorZurueck = async (): Promise<void> => {
+    // Ohne Einwilligung gaebe es nur ein 403, und Pfeil oder Haus warteten darauf: sofort
+    // weiter, den Satz in den Entwurf im Arbeitsspeicher, damit er nach einer
+    // Einwilligung wieder dasteht (Review zu #670).
+    if (this.einwilligungZustand.wert === 'fehlt') {
+      const satz = this.satz.value.trim();
+      if (satz) entwurfSichern(this.router.url, this.satz.value, this.einwilligungZustand.kennung);
+      return;
+    }
     this.arbeitet = true;
     this.fehler = null;
     try {

@@ -7,12 +7,16 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
 
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from domain.art9_einwilligung import geltender_wortlaut
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import Art9EinwilligungZeile
+from infrastructure.database.models import (
+    Art9EinwilligungZeile,
+    Art9OhneEinwilligungZeile,
+)
 
 
 @dataclass(frozen=True)
@@ -68,6 +72,37 @@ class Art9EinwilligungRepository:
             session.execute(
                 insert(Art9EinwilligungZeile).values(
                     user_id=user_id, wortlaut=wortlaut, eingewilligt_am=func.now()
+                )
+            )
+            # Eine Einwilligung hebt "ohne Einwilligung weiter" auf (B2).
+            session.execute(
+                delete(Art9OhneEinwilligungZeile).where(
+                    Art9OhneEinwilligungZeile.user_id == user_id
+                )
+            )
+
+    def ohne_lesen(self, user_id: str) -> Optional[str]:
+        """Der Wortlaut, zu dem die Person ohne Einwilligung weiterging, sonst None."""
+        with self.db.get_session() as session:
+            return session.execute(
+                select(Art9OhneEinwilligungZeile.wortlaut).where(
+                    Art9OhneEinwilligungZeile.user_id == user_id
+                )
+            ).scalar_one_or_none()
+
+    def ohne_merken(self, user_id: str, wortlaut: str) -> None:
+        """
+        "Ohne Einwilligung weiter" zu diesem Wortlaut festhalten (B2); eine fruehere
+        Entscheidung wird ersetzt, je Kennung bleibt eine Zeile.
+        """
+        with self.db.get_session() as session:
+            anweisung = pg_insert(Art9OhneEinwilligungZeile).values(
+                user_id=user_id, wortlaut=wortlaut, entschieden_am=func.now()
+            )
+            session.execute(
+                anweisung.on_conflict_do_update(
+                    index_elements=[Art9OhneEinwilligungZeile.user_id],
+                    set_={"wortlaut": wortlaut, "entschieden_am": func.now()},
                 )
             )
 

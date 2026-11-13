@@ -76,6 +76,19 @@ class Art9EinwilligungService:
             raise WortlautGiltNicht(wortlaut)
         self._repository.einwilligen(user_id, wortlaut)
 
+    def ohne(self, user_id: str) -> Optional[str]:
+        """Wortlaut, zu dem die Person bewusst ohne Einwilligung weiterging (B2), sonst None."""
+        return self._repository.ohne_lesen(user_id)
+
+    def ohne_merken(self, user_id: str, wortlaut: str) -> None:
+        """
+        "Ohne Einwilligung weiter" am Konto festhalten (B2), damit die App nicht bei
+        jedem Start wieder fragt. Nur zu einem bekannten Wortlaut.
+        """
+        if not bekannter_wortlaut(wortlaut):
+            raise UnbekannterWortlaut(wortlaut)
+        self._repository.ohne_merken(user_id, wortlaut)
+
     def widerrufen(self, user_id: str) -> None:
         """
         Widerruf vermerken, die Stimmen loeschen und einen Loeschauftrag anlegen, in

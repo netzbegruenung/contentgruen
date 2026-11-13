@@ -7,9 +7,8 @@ import { map } from 'rxjs/operators';
 
 import { zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
-import { ENTWURF_PRAEFIX, entwurfHolen, entwurfSichern as entwurfAblegen } from './entwurf-vor-einwilligung';
+import { entwurfHolen, entwurfSichern as entwurfAblegen } from './entwurf-vor-einwilligung';
 
-export { ENTWURF_PRAEFIX };
 
 export const EINWILLIGUNG_HINWEIS_TITEL = 'Zum Beitragen brauchst du deine Einwilligung.';
 export const EINWILLIGUNG_HINWEIS_TEXT =
@@ -20,8 +19,8 @@ export const EINWILLIGUNG_HINWEIS_KNOPF = 'Einwilligen';
  * Der Hinweiskasten über einem Formular, wenn die Art.-9-Einwilligung fehlt (UX-Review
  * B4): erklärt, warum hier nichts gespeichert wird, und führt mit „Einwilligen“ auf
  * /einwilligung und danach zurück. Die bis dahin getippte Eingabe von ``formular``
- * legt er in den sessionStorage und setzt sie beim Zurückkommen wieder ein; ohne
- * Speicher geht nur die Eingabe verloren, der Weg klappt trotzdem.
+ * hält er im Arbeitsspeicher (entwurf-vor-einwilligung.ts) und setzt sie beim
+ * Zurückkommen wieder ein; nur ein Neuladen dazwischen verliert sie.
  *
  * Solange der Kasten auf der Seite ist, zeigt der Interceptor bei einem 403 keinen
  * zweiten Hinweis als Snackbar; die Formulare zeigen dann auch keine Fehlermeldung.

@@ -18,26 +18,28 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   „Ohne Einwilligung weiter“ führt zurück; die Person kann suchen und lesen.
 - **Nicht drängen (UX-Review B2):** Wer „Ohne Einwilligung weiter“ gewählt oder widerrufen
   hat, wird nicht bei jedem App-Start wieder auf `/einwilligung` geführt. Den Widerruf kennt
-  das Backend (`widerrufen_am`); das „ohne“ merkt sich nur der Browser
-  (`localStorage`, Schlüssel `gutgesagt-art9-ohne`: nur die Kennung des Wortlauts, der da
-  galt, keine Angabe über die Person; ohne Speicher nur der laufende Besuch), am Server
-  entsteht dafür nichts. Eine Einwilligung löscht den Vermerk. Der Vermerk gilt für den
-  Browser, nicht für ein Konto: Meldet sich dort ein zweites Konto zum ersten Mal an, fragt
-  die App es nicht von selbst, der Hinweis kommt beim Beitragen. Ausnahme: Wer einem früheren Wortlaut
-  zugestimmt hat, der nicht mehr zählt, wird zum neuen einmal gefragt.
+  das Backend (`widerrufen_am`), das „ohne“ steht am Konto: Tabelle `art9_ohne_einwilligung`,
+  je Kennung höchstens eine Zeile mit dem Wortlaut, der da galt, und dem Zeitpunkt
+  (`POST /api/v1/art9-einwilligung/ohne`, im Stand als `ohne_wortlaut`). Im Browser liegt
+  dafür nichts (Entscheidung Maintainer, 13.11.2026, bis § 25 TDDDG geprüft ist); einen
+  älteren Eintrag `gutgesagt-art9-ohne` im localStorage räumt die App einmal weg. Eine
+  Einwilligung löscht die Zeile, ein Widerruf lässt sie stehen (dann gilt ohnehin
+  „widerrufen“); sie geht mit dem Konto (`person_loeschen.sql`), mit dem Löschablauf eines
+  Löschauftrags und zieht beim Umstellen der Kennungen mit. Ausnahme: Wer einem früheren
+  Wortlaut zugestimmt hat, der nicht mehr zählt, wird zum neuen einmal gefragt.
   Erst beim Beitragen zeigen die Formulare (Einwerfen, Satz beim Destillieren, Kommentar,
   Hintergrundinfo, Bild, Post, auch beim Ausformulieren) über dem Formular einen Hinweis mit
-  „Einwilligen“ (`EinwilligungHinweisComponent`); eine schon begonnene Eingabe liegt so lange
-  im `sessionStorage` und steht nach der Rückkehr wieder im Formular
-  (`entwurf-vor-einwilligung.ts`, mit Zeitpunkt und einem Prüfwert des Kontos statt der
-  Kennung): Nach einer Stunde wird er nicht mehr verwendet; gelöscht wird er beim
-  Zurückkommen, beim nächsten Öffnen von Gut gesagt (abgelaufene und die eines anderen
-  Kontos), beim Abmelden und Kontowechsel, spätestens wenn der Tab schließt. Wer trotzdem
-  absendet, bekommt den Kasten in den Blick geholt; den Fokus nimmt er nur, wenn er nicht
-  in einem Eingabefeld steht, und Speichern im Hintergrund holt ihn nie (Destillieren
-  speichert ohne Einwilligung im Hintergrund gar nicht). Auf `/einwilligung` selbst zeigt
-  ein später 403 keine Snackbar. Die Einträge im Browser
-  fehlen noch in der Datenschutzerklärung (`docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N16.md`).
+  „Einwilligen“ (`EinwilligungHinweisComponent`). Eine schon begonnene Eingabe hält die App
+  nur im Arbeitsspeicher (`entwurf-vor-einwilligung.ts`, mit Zeitpunkt und einem Prüfwert
+  des Kontos statt der Kennung): Sie übersteht den Weg über `/einwilligung` und zurück, nicht
+  aber ein Neuladen; nach einer Stunde wird sie nicht mehr verwendet, beim Abmelden und
+  Kontowechsel ist sie weg. Pfeil und Haus in Destillieren warten ohne Einwilligung nicht auf
+  ein 403, sondern legen den Satz dorthin. Wer trotzdem absendet, bekommt den Kasten in den
+  Blick geholt; den Fokus nimmt er nur, wenn er nicht in einem Eingabefeld steht, und
+  Speichern im Hintergrund holt ihn nie (Destillieren speichert ohne Einwilligung im
+  Hintergrund gar nicht). Auf `/einwilligung` selbst zeigt ein später 403 keine Snackbar.
+  Wird der Tab wieder sichtbar, holt die App den Stand neu, damit eine Einwilligung aus
+  einem anderen Tab ankommt.
 - **Widerruf mit Rückfrage (UX-Review B3):** „Einwilligung widerrufen“ und „Frühere
   Einwilligung widerrufen“ fragen erst nach und nennen die Folgen (Bewertungen gelöscht,
   Löschauftrag binnen sieben Tagen); widerrufen wird nur mit „Widerrufen“.
@@ -99,7 +101,7 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   schreibt oder `mvp/scripts/manual/einwuerfe_importieren.py` bzw. `beitraege_importieren.py`
   unter ihm läuft (`mvp/SCRIPTS.md`).
   Verwerfen eines Einwurfs bleibt ohne Einwilligung offen, wie Löschen.
-- **Löschen und Umstellen:** Die Zeile geht mit dem Konto (`docs/LOESCHKONZEPT.md`, Schritt 2)
+- **Löschen und Umstellen:** Die Zeile (und die in `art9_ohne_einwilligung`) geht mit dem Konto (`docs/LOESCHKONZEPT.md`, Schritt 2)
   und zieht beim Umstellen der Kennungen mit (`services/wartung/kennungen_umstellen.py`).
 
 ## Wortlaut ändern

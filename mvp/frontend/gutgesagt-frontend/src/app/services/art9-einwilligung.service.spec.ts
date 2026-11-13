@@ -9,7 +9,7 @@ import { AuthService, UserInfo } from '../auth/auth.service';
 import {
   Art9EinwilligungService,
   Art9EinwilligungStand,
-  OHNE_EINWILLIGUNG_SCHLUESSEL,
+  ALTER_OHNE_SCHLUESSEL,
   WORTLAUT_LABEL_MAX,
   einwilligungFehlt,
   wortlautDatum,
@@ -43,7 +43,7 @@ describe('Art9EinwilligungService', () => {
   });
 
   beforeEach(() => {
-    localStorage.removeItem(OHNE_EINWILLIGUNG_SCHLUESSEL);
+    localStorage.removeItem(ALTER_OHNE_SCHLUESSEL);
     anmeldung = new BehaviorSubject<UserInfo | null>(null);
     router = {
       url: '/fangkorb',
@@ -66,7 +66,7 @@ describe('Art9EinwilligungService', () => {
   afterEach(() => {
     service.ngOnDestroy();
     http.verify();
-    localStorage.removeItem(OHNE_EINWILLIGUNG_SCHLUESSEL);
+    localStorage.removeItem(ALTER_OHNE_SCHLUESSEL);
   });
 
   it('fragt fuer Besucher nicht', () => {
@@ -281,44 +281,45 @@ describe('Art9EinwilligungService', () => {
       expect(router.navigate).not.toHaveBeenCalled();
     });
 
-    it('leitet nicht mehr um, wer ohne Einwilligung weitergegangen ist, auch nach einem Neustart', () => {
+    it('leitet nicht um, wer laut Server ohne Einwilligung weitergegangen ist', () => {
       service.starten();
       anmeldung.next(angemeldet('kim'));
-      http.expectOne(ADRESSE).flush(stand(false));
-      expect(router.navigate).toHaveBeenCalledTimes(1);
 
-      service.ohneMerken('2026-11-05-b');
-      // Neustart der App: ein frischer Dienst, derselbe Browser
-      service.ngOnDestroy();
-      anmeldung.next(null);
-      service.starten();
-      anmeldung.next(angemeldet('kim'));
-      http.expectOne(ADRESSE).flush(stand(false));
+      http.expectOne(ADRESSE).flush({ ...stand(false), ohne_wortlaut: '2026-11-05-b' });
 
-      expect(router.navigate).toHaveBeenCalledTimes(1);
-      expect(localStorage.getItem(OHNE_EINWILLIGUNG_SCHLUESSEL)).toBe('2026-11-05-b');
+      expect(router.navigate).not.toHaveBeenCalled();
     });
 
-    it('vergisst das Ohne nach einer Einwilligung', () => {
-      service.starten();
-      anmeldung.next(angemeldet('kim'));
-      http.expectOne(ADRESSE).flush(stand(false));
-      service.ohneMerken('2026-11-05-b');
+    it('merkt sich "ohne" am Konto per POST, nicht im Browser', () => {
+      const setItem = spyOn(Storage.prototype, 'setItem').and.callThrough();
 
-      service.einwilligen('2026-11-05-b').subscribe();
-      http.expectOne({ method: 'POST', url: ADRESSE }).flush(null);
+      service.ohneMerken('2026-11-05-b').subscribe();
 
-      expect(localStorage.getItem(OHNE_EINWILLIGUNG_SCHLUESSEL)).toBeNull();
+      const anfrage = http.expectOne({ method: 'POST', url: `${ADRESSE}/ohne` });
+      expect(anfrage.request.body).toEqual({ wortlaut: '2026-11-05-b' });
+      anfrage.flush(null);
+      expect(setItem).not.toHaveBeenCalled();
     });
 
-    it('merkt sich das Ohne im Besuch, wenn der Speicher gesperrt ist', () => {
-      spyOn(Storage.prototype, 'setItem').and.throwError('gesperrt');
-      service.ohneMerken('2026-11-05-b');
+    it('raeumt einen alten Eintrag im localStorage beim Start weg', () => {
+      localStorage.setItem(ALTER_OHNE_SCHLUESSEL, '2026-11-05-b');
+
+      service.starten();
+
+      expect(localStorage.getItem(ALTER_OHNE_SCHLUESSEL)).toBeNull();
+    });
+
+    it('holt den Stand neu, wenn der Tab wieder sichtbar wird (Einwilligung aus einem anderen Tab)', () => {
+      const zustand = TestBed.inject(Art9EinwilligungZustand);
       service.starten();
       anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush({ ...stand(false), ohne_wortlaut: '2026-11-05-b' });
+      expect(zustand.wert).toBe('fehlt');
 
-      http.expectOne(ADRESSE).flush(stand(false));
+      document.dispatchEvent(new Event('visibilitychange'));
+      http.expectOne(ADRESSE).flush(stand(true));
 
+      expect(zustand.wert).toBe('eingewilligt');
       expect(router.navigate).not.toHaveBeenCalled();
     });
 
@@ -343,10 +344,10 @@ describe('Art9EinwilligungService', () => {
 
     it('zurEinwilligungUmleiten: erstes Mal ja, nach Entscheidung nein, neuer Wortlaut nach frueherer Einwilligung einmal ja', () => {
       const neu = stand(false);
-      expect(zurEinwilligungUmleiten(neu, null)).toBeTrue();
-      expect(zurEinwilligungUmleiten(neu, '2026-11-05-b')).toBeFalse();
-      expect(zurEinwilligungUmleiten(stand(true), null)).toBeFalse();
-      expect(zurEinwilligungUmleiten(widerrufen(), null)).toBeFalse();
+      expect(zurEinwilligungUmleiten(neu)).toBeTrue();
+      expect(zurEinwilligungUmleiten({ ...neu, ohne_wortlaut: '2026-11-05-b' })).toBeFalse();
+      expect(zurEinwilligungUmleiten(stand(true))).toBeFalse();
+      expect(zurEinwilligungUmleiten(widerrufen())).toBeFalse();
 
       const frueher: Art9EinwilligungStand = {
         ...stand(false),
@@ -355,13 +356,12 @@ describe('Art9EinwilligungService', () => {
         aktueller_wortlaut: { kennung: '2026-11-13', text: '…' },
       };
       // Frueher schon einmal ohne weiter (zu einem aelteren Wortlaut): zum neuen trotzdem fragen
-      expect(zurEinwilligungUmleiten(frueher, '2026-11-10')).toBeTrue();
+      expect(zurEinwilligungUmleiten({ ...frueher, ohne_wortlaut: '2026-11-10' })).toBeTrue();
       // Zum aktuellen schon ohne weiter: nicht noch einmal
-      expect(zurEinwilligungUmleiten(frueher, '2026-11-13')).toBeFalse();
+      expect(zurEinwilligungUmleiten({ ...frueher, ohne_wortlaut: '2026-11-13' })).toBeFalse();
     });
   });
 
-  // Review zu #670: Beitragstext von vor der Einwilligung nicht ueber Abmelden und Kontowechsel
   it('raeumt Entwuerfe beim App-Start auf und loescht sie beim Abmelden und Kontowechsel', () => {
     entwurfSichern('/einwerfen', 'von kim', 'kim');
     entwurfSichern('/fangkorb', 'von alex', 'alex');
