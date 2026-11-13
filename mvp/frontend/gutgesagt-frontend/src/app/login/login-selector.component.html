@@ -26,6 +26,13 @@
                             </div>
                         </div>
                         <div class="registration-option">
+                            <mat-icon class="option-icon">link</mat-icon>
+                            <div class="option-text">
+                                <strong>Einladung</strong>
+                                <p>Hast du eine Einladung bekommen, als Link oder QR-Code? Dann legst du dein Konto selbst an, mit deiner Mail-Adresse: <a href="/einladung" class="einladung-link" (click)="zurEinladung($event)">Einladungslink einfügen</a>.</p>
+                            </div>
+                        </div>
+                        <div class="registration-option">
                             <mat-icon class="option-icon">email</mat-icon>
                             <div class="option-text">
                                 <strong>Beta-Zugang für Grüne Mitglieder</strong>
@@ -87,6 +94,16 @@
             </p>
 
         </div>
+    </div>
+
+
+    <!-- Der Weg fuer Personen ohne Konto mit Einladung, sichtbar ohne Aufklappen (Persona-Test BDK) -->
+    <div class="einladung-weg">
+        <p class="einladung-frage">Noch kein Konto, aber eine Einladung bekommen?</p>
+        <a mat-stroked-button href="/einladung" class="einladung-knopf" (click)="zurEinladung($event)">
+            <mat-icon>link</mat-icon>
+            Einladung einlösen
+        </a>
     </div>
 
 
