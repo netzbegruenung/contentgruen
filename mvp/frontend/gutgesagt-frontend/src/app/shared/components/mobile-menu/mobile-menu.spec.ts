@@ -3,6 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import { LeerComponent } from '../../../testing/routen-ohne-waechter';
 
 import { MobileMenuComponent } from './mobile-menu';
+import { FarbschemaService } from '../../../services/farbschema.service';
 import { HILFE_PARAM, MITMACHEN_HINWEIS } from '../../../help-dialog/help-dialog.component';
 
 describe('MobileMenuComponent', () => {
@@ -30,6 +31,26 @@ describe('MobileMenuComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  // Der Dienst ist ersetzt: Ein echtes Umschalten setzte data-theme am Testdokument
+  it('schaltet hell/dunkel um, beschriftet nach Zustand und laesst das Menue offen', () => {
+    const farbschema = TestBed.inject(FarbschemaService);
+    let dunkel = false;
+    spyOn(farbschema, 'dunkel').and.callFake(() => dunkel);
+    const umschalten = spyOn(farbschema, 'umschalten').and.callFake(() => (dunkel = !dunkel));
+    const schliessen = spyOn(component.closeMenu, 'emit');
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    const knopf = () => fixture.nativeElement.querySelector('.mobile-menu-farbschema') as HTMLButtonElement;
+    expect(knopf().textContent).toContain('Dunkel anzeigen');
+    knopf().click();
+    fixture.detectChanges();
+
+    expect(umschalten).toHaveBeenCalledTimes(1);
+    expect(knopf().textContent).toContain('Hell anzeigen');
+    expect(schliessen).not.toHaveBeenCalled();
   });
 
   it('bietet Feedback auch ohne Anmeldung an und schliesst danach das Menue', () => {

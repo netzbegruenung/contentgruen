@@ -31,6 +31,7 @@ Einzelne Specs: `npx playwright test tests/04-fangkorb.spec.ts`, ein Projekt:
 | `E2E_BASE_URL` | `http://127.0.0.1:8080` | Gegen einen anderen Stand, z. B. `ng serve` mit Proxy |
 | `E2E_EMAIL`, `E2E_PASSWORT` | Testkonto aus `mvp/config/managed-users.example.json` (`tests/konto.ts`) | Anmeldung über `/api/auth/login/managed` |
 | `E2E_SCREENSHOTS` | `e2e/screenshots/` | Ablage der benannten Screenshots |
+| `E2E_DIST` | – | Pfad zu `dist/.../browser` nach `ng build --configuration production`: `13-dunkel-ohne-aufblitzen` prüft dann den Dunkelmodus vor dem Laden des Stylesheets, ohne Stack (alles gemockt); sonst übersprungen |
 
 ## Was man wissen muss
 

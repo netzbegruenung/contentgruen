@@ -166,9 +166,9 @@
 }
 
 // Anonym: kleiner Hinweis neben dem Titel, dass es ein Konto braucht (#644). Reicht der Platz
-// neben dem laengeren Titel "Beitrag verfassen" nicht, rutscht er in beiden Kacheln unter den
+// neben dem laengeren Titel ("Einwerfen") nicht, rutscht er in beiden Kacheln unter den
 // Titel, nicht nur in einer (Designrunde 12.11.). Die Schwellen sind die Breite von
-// "Beitrag verfassen" samt Marke, je Schriftgroesse des Titels, mit etwas Luft.
+// "Einwerfen" samt Marke, je Schriftgroesse des Titels (18/16 px), mit etwas Luft.
 .kachel-konto {
   display: inline-block;
   margin-left: 6px;
@@ -181,7 +181,7 @@
   vertical-align: middle;
 }
 
-@container (max-width: 209.98px) {
+@container (max-width: 155.98px) {
   .kachel-konto {
     display: table;
     margin: 2px 0 0;
@@ -189,7 +189,7 @@
 }
 
 @media (max-width: 599px) {
-  @container (min-width: 192px) {
+  @container (min-width: 146px) {
     .kachel-konto {
       display: inline-block;
       margin: 0 0 0 6px;

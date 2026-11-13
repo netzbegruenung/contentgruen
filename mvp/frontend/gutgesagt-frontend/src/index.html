@@ -14,12 +14,13 @@
   <link rel="icon" type="image/png" sizes="64x64" href="marke/favicon-64.png">
   <link rel="icon" type="image/png" sizes="32x32" href="marke/favicon-32.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <!-- Hell und dunkel nach Geraeteeinstellung (#588); Erweiterungen wie Dark Reader
-       erkennen daran das eigene dunkle Thema. -->
+  <!-- Hell oder dunkel (#588): eigene Wahl aus dem Umschalter, sonst die Geraeteeinstellung.
+       color-scheme meldet beides, damit Erweiterungen wie Dark Reader das eigene dunkle
+       Thema erkennen. Die Farbe der Browserleiste setzen Skript und FarbschemaService. -->
   <meta name="color-scheme" content="light dark">
-  <!-- Farbschema vor dem ersten Bild setzen, damit nichts aufblitzt: eigene Wahl aus dem
-       Umschalter, sonst die Geraeteeinstellung. Gleiche Logik und gleicher Schluessel wie
-       FarbschemaService; ohne Speicher gilt das Geraet. -->
+  <meta name="theme-color" content="#008939">
+  <!-- Farbschema vor dem ersten Bild setzen: data-theme am <html>, gleiche Logik und gleicher
+       Schluessel wie FarbschemaService; ohne Speicher gilt das Geraet. -->
   <script>
     (function () {
       var schema = null;
@@ -30,10 +31,30 @@
         schema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       }
       document.documentElement.setAttribute('data-theme', schema);
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', schema === 'dark' ? '#1e1f1e' : '#008939');
     })();
   </script>
-  <meta name="theme-color" content="#008939" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1c1c1c" media="(prefers-color-scheme: dark)">
+  <!-- Grundflaechen der Dunkel-Palette, bis das volle Stylesheet geladen ist: Der Build
+       inlined nur das kritische CSS, das zur Build-Zeit zum <html> ohne data-theme passt,
+       und laedt den Rest nachtraeglich. Ohne diese Zeilen blitzt die Seite dunkel hell auf.
+       Werte wie im Block html[data-theme='dark'] in theme/custom-theme.scss (Palette n2);
+       sobald das Stylesheet da ist, gelten dessen Werte (es steht danach). -->
+  <style>
+    html[data-theme='dark'] {
+      color-scheme: dark;
+      --bg-main: #1e1f1e;
+      --bg-card: #282a29;
+      --bg-surface: #282a29;
+      --text-primary: rgba(255, 255, 255, 0.87);
+      background: var(--bg-main);
+      color: var(--text-primary);
+    }
+
+    html[data-theme='dark'] body {
+      background: var(--bg-main);
+      color: var(--text-primary);
+    }
+  </style>
   <link rel="apple-touch-icon" href="marke/icon-192.png">
 </head>
 <body>

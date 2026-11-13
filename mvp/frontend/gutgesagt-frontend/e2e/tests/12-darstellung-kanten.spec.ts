@@ -105,6 +105,32 @@ for (const modus of ['light', 'dark'] as const) {
           expect(Math.abs((await element.boundingBox())!.x - soll)).toBeLessThanOrEqual(1);
         });
       }
+
+      // Einzelansicht gegen eine gemockte Antwort: Das Dev-Backend kennt die Route nicht immer
+      test('Beitrag-Ansicht: Karte 450 px breit, linke Kante wie die Kopfzeile', async ({ page }) => {
+        await page.route('**/api/v1/content/beitrag/**', (anfrage) =>
+          anfrage.fulfill({
+            json: {
+              id: 'e2e-ansicht',
+              content_type: 'commentary',
+              title: 'Windräder schützen das Klima',
+              text: 'Jede Kilowattstunde aus Wind ersetzt Strom aus Kohle.',
+              references: [],
+              created_at: '2025-09-01T00:00:00Z',
+            },
+          }),
+        );
+        await page.goto('/beitrag/e2e-ansicht');
+        const karte = page.locator('.beitrag-ansicht app-beitragskarte');
+        await expect(karte).toBeVisible();
+        const soll = await page.evaluate(() => {
+          const main = document.querySelector('main')!.getBoundingClientRect();
+          return main.left + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--page-margin'));
+        });
+        const box = (await karte.boundingBox())!;
+        expect(Math.abs(box.x - soll)).toBeLessThanOrEqual(1);
+        expect(box.width).toBeLessThanOrEqual(450.5);
+      });
     });
 
     test.describe('390 px', () => {
@@ -131,6 +157,8 @@ for (const modus of ['light', 'dark'] as const) {
           await page.goto('/search');
           const kacheln = page.locator('.start-kachel');
           await expect(kacheln.locator('.kachel-konto')).toHaveCount(2);
+          // Breiten haengen an der Schrift: erst messen, wenn sie geladen ist
+          await page.evaluate(() => document.fonts.ready.then(() => undefined));
           const lagen = await kacheln.evaluateAll((alle) =>
             alle.map((kachel) => {
               const titel = kachel.querySelector('.kachel-titel')!.getBoundingClientRect();
@@ -147,7 +175,8 @@ for (const modus of ['light', 'dark'] as const) {
 }
 
 test.describe('Umschalter hell/dunkel', () => {
-  test.use({ ...DESKTOP, colorScheme: 'light' });
+  // Ohne Service Worker: Er koennte eine alte index.html ohne das Farbschema-Skript ausliefern
+  test.use({ ...DESKTOP, colorScheme: 'light', serviceWorkers: 'block' });
 
   test('schaltet um, merkt sich die Wahl und gilt nach dem Neuladen ohne Aufblitzen', async ({ page }) => {
     await page.goto('/search');
@@ -158,8 +187,17 @@ test.describe('Umschalter hell/dunkel', () => {
     await knopf.click();
     await expect(html).toHaveAttribute('data-theme', 'dark');
     await expect(knopf).toHaveAttribute('aria-pressed', 'true');
-    const grund = await page.locator('body').evaluate(() => getComputedStyle(document.querySelector('main')!).backgroundColor);
-    expect(grund).toBe('rgb(40, 42, 41)');
+    // main traegt --bg-card der Dunkel-Palette (Wert aus dem Theme, nicht fest im Test)
+    const { grund, karte } = await page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = 'var(--bg-card)';
+      document.body.appendChild(probe);
+      const karte = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return { grund: getComputedStyle(document.querySelector('main')!).backgroundColor, karte };
+    });
+    expect(grund).toBe(karte);
+    expect(grund).not.toBe('rgb(255, 255, 255)');
 
     // Ohne die Skripte der App: Das Attribut setzt schon das Skript in index.html, vor dem ersten Bild
     await page.route('**/*.js', (anfrage) => anfrage.abort());
