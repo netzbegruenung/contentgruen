@@ -31,6 +31,7 @@ import {
   alleTreffer,
   ansichtBauen,
   anzahlJeTyp,
+  anzahlSichtbar,
   aufklappSchluessel,
   aussageSchluessel,
   gruppieren,
@@ -221,7 +222,16 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     return karte;
   };
   ansicht: AnsichtGruppe[] = [];
+  /** Treffer je Typ, die ohne Aufklappen dastehen; danach richten sich die Chips. */
   anzahl: Record<TrefferTyp, number> = anzahlJeTyp(null);
+  /** Alle Treffer je Typ, auch die weniger passenden: fuer den Leerzustand. */
+  private anzahlAlle: Record<TrefferTyp, number> = anzahlJeTyp(null);
+  /** Gruppen, die ohne Aufklappen dastehen, und die weniger passenden darunter. */
+  hauptGruppen: AnsichtGruppe[] = [];
+  weitereGruppen: AnsichtGruppe[] = [];
+  weitereAnzahl = 0;
+  /** "Weitere, weniger passende Treffer" aufgeklappt; jede neue Suche beginnt zu. */
+  weitereOffen = false;
   chips: TypChip[] = [];
   /** Gewaehlter Typ; gilt fuer die Sitzung (sessionStorage). */
   typFilter: TypFilter = typFilterLesen();
@@ -268,6 +278,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         this.aktivesThema = null;
         this.aufgeklappt.clear();
         this.alternativenOffen = false;
+        this.weitereOffen = false;
         // Alternativen und Ansage gehoeren zur vorigen Suche; "Nicht dabei?" meldet neu.
         this.alternativen = [];
         this.ansage = '';
@@ -296,8 +307,9 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   private anzeigen(): void {
     const response = this.antwort ? nachThemaGefiltert(this.antwort, this.aktivesThema) : null;
     this.angezeigt = response;
-    this.anzahl = anzahlJeTyp(response);
+    this.anzahlAlle = anzahlJeTyp(response);
     this.gruppen = response ? gruppieren(response, erkannterSchluessel(this.erkannt), this.karteZu) : [];
+    this.anzahl = anzahlSichtbar(this.gruppen);
     const gesamt = TREFFER_TYPEN.reduce((summe, typ) => summe + this.anzahl[typ], 0);
     this.chips = [
       { filter: 'alle' as TypFilter, name: 'Alle', anzahl: gesamt },
@@ -317,6 +329,9 @@ export class ResultViewComponent implements OnInit, OnDestroy {
 
   private ansichtAktualisieren(): void {
     this.ansicht = ansichtBauen(this.gruppen, this.wirksamerFilter, this.aufgeklappt);
+    this.hauptGruppen = this.ansicht.filter((g) => !g.weniger);
+    this.weitereGruppen = this.ansicht.filter((g) => g.weniger);
+    this.weitereAnzahl = this.weitereGruppen.reduce((summe, g) => summe + g.anzahl, 0);
     this.cdr.markForCheck();
   }
 
@@ -331,7 +346,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
 
   /** Irgendein Treffer, gleich welchen Typs. */
   get hatTreffer(): boolean {
-    return TREFFER_TYPEN.some((typ) => this.anzahl[typ] > 0);
+    return TREFFER_TYPEN.some((typ) => this.anzahlAlle[typ] > 0);
   }
 
   /** Chip gewaehlt: nur noch dieser Typ (oder alle); gilt fuer die Sitzung. */

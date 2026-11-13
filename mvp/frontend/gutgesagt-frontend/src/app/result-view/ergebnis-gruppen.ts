@@ -147,6 +147,12 @@ export interface AnsichtBlock {
 export interface AnsichtGruppe {
   schluessel: string;
   art: GruppenArt;
+  /**
+   * Weniger passend: Es gibt eine erkannte Aussage, und diese Gruppe ist eine andere
+   * (aehnliche Aussage oder direkte Treffer). Steht eingeklappt unter "Weitere,
+   * weniger passende Treffer" und zaehlt nicht in den Chips.
+   */
+  weniger: boolean;
   text: string | null;
   id: string;
   anzahl: number;
@@ -190,6 +196,7 @@ export function ansichtBauen(
       ansicht.push({
         schluessel: gruppe.schluessel,
         art: gruppe.art,
+        weniger: istWeniger(gruppe, gruppen),
         text: gruppe.text,
         id: `ergebnis-gruppe-${nr}`,
         anzahl: bloecke.reduce((summe, block) => summe + block.alle, 0),
@@ -198,6 +205,31 @@ export function ansichtBauen(
     }
   });
   return ansicht;
+}
+
+/**
+ * Ob eine Gruppe "weniger passend" ist: Es gibt eine erkannte Aussage, und die Gruppe
+ * ist eine andere. Eine Mindest-Aehnlichkeit trennt das nicht: Die Suche liefert nur
+ * gewichtete Werte, und auch die rohe Aehnlichkeit liegt fuer Aussagen gleicher
+ * Satzform ("Die Gruenen wollen uns ... verbieten") im Band, das der Dienst fuer
+ * passende Aussagen misst (aussage_vorschlag_schwelle). Siehe PR #671.
+ */
+export function istWeniger(gruppe: ErgebnisGruppe, gruppen: readonly ErgebnisGruppe[]): boolean {
+  return gruppe.art !== 'erkannt' && gruppen.some((g) => g.art === 'erkannt');
+}
+
+/** Treffer je Typ, die ohne Aufklappen dastehen: ohne die weniger passenden Gruppen. */
+export function anzahlSichtbar(gruppen: readonly ErgebnisGruppe[]): Record<TrefferTyp, number> {
+  const anzahl = { commentary: 0, generictext: 0, image: 0, post: 0 };
+  for (const gruppe of gruppen) {
+    if (istWeniger(gruppe, gruppen)) {
+      continue;
+    }
+    for (const typ of TREFFER_TYPEN) {
+      anzahl[typ] += gruppe.je[typ].length;
+    }
+  }
+  return anzahl;
 }
 
 export function blockId(gruppenNr: number, typ: TrefferTyp): string {
