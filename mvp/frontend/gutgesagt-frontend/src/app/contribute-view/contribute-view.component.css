@@ -1,8 +1,8 @@
 /*
- * Drei Abschnitte, ein Kartenstil (#620): jede Zeile weiss mit feinem Rand; die Typfarbe
+ * Zwei Abschnitte, ein Kartenstil (#620): jede Zeile weiss mit feinem Rand; die Typfarbe
  * steckt nur noch in der Kachel hinter dem Symbol. Am Handy alles untereinander, am Desktop
- * zweispaltig, damit die rechte Haelfte nicht leer bleibt. Ohne eigene Hoechstbreite: so breit
- * wie Kopf und Rundgang-Band darueber, die Kanten fluchten (Designrunde 12.11.).
+ * die Kette in einer Reihe und die Typen zweispaltig. Ohne eigene Hoechstbreite: so breit wie
+ * Kopf und Rundgang-Band darueber, die Kanten fluchten (Designrunde 12.11.).
  */
 .typ-zeilen {
     display: flex;
@@ -128,18 +128,13 @@
 }
 
 @media (min-width: 900px) {
-    .typ-zeilen {
+    /* Einwerfen, Fangkorb, Meine Beitraege nebeneinander: der Weg vom Rohen zum Ergebnis */
+    .ketten-liste {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        /* wie der Abstand der Typen, damit beide Spalten fluchten */
-        column-gap: 12px;
+        grid-template-columns: repeat(3, 1fr);
     }
 
-    /* Verfassen ueber beide Spalten, die vier Typen zwei mal zwei */
-    .verfassen-abschnitt {
-        grid-column: 1 / -1;
-    }
-
+    /* Die vier Typen zwei mal zwei */
     .verfassen-abschnitt .typ-liste {
         display: grid;
         grid-template-columns: 1fr 1fr;

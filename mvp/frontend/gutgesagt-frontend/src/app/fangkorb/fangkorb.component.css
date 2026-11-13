@@ -124,16 +124,10 @@
 
 .filter-chip.aktiv {
   border-color: var(--akzent-tanne);
-  background: var(--primary-light);
+  /* im Dunkeln neutral: --primary-light und --primary-dark sind dort beide hell (#588) */
+  background: var(--filter-aktiv-grund);
   color: var(--primary-dark);
   font-weight: 500;
-}
-
-/* Im Dunkeln sind --primary-light und --primary-dark beide Grashalm: Schrift waere unsichtbar (#588) */
-@media (prefers-color-scheme: dark) {
-  .filter-chip.aktiv {
-    background: var(--selected-bg);
-  }
 }
 
 .filter-chip:focus-visible {
@@ -167,16 +161,14 @@
   color: var(--text-secondary);
 }
 
-/* Ab Tablet: Tabs, Filter und Liste in derselben 720er-Spalte; die Filter brechen
-   um, statt seitlich zu scrollen, wenn Platz ist (#512). */
+/* Ab Tablet: Tabs, Filter und Liste in derselben Lesespalte, linksbuendig im Seitenrahmen
+   (Designrunde 12.11.); die Filter brechen um, statt seitlich zu scrollen (#512). */
 @media (min-width: 600px) {
   .guidance,
   .filterleiste,
   .karten,
   .fangkorb-mehr {
-    max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: var(--lesespalte);
   }
 
   .filterleiste,

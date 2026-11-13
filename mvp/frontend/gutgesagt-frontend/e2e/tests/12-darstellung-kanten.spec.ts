@@ -3,9 +3,10 @@ import { farben, kontrast } from './darstellung';
 import { expect, test } from './fixtures';
 
 /**
- * Kanten und Fluchten auf 360, 390 und 1280 px, hell und dunkel: Kann-Befunde der
- * Designrunde vom 12.11. Liest nur. Die Suche nutzt das Beispiel der Startseite, zu dem
- * der Seed schon eine Aussage hat.
+ * Kanten und Fluchten auf 360, 390, 1280 und 1440 px, hell und dunkel, und der Umschalter
+ * hell/dunkel: Befunde der Designrunde vom 12.11. Liest nur (der Umschalter schreibt nur in
+ * den localStorage des Browsers). Die Suche nutzt das Beispiel der Startseite, zu dem der Seed
+ * schon eine Aussage hat.
  */
 
 /** Linke und rechte Kante in px, gerundet. */
@@ -58,12 +59,52 @@ for (const modus of ['light', 'dark'] as const) {
         expect(await kanten(band)).toEqual([kachelnLinks, kachelnRechts]);
       });
 
+      test('Beitrag verfassen: erst die Kette in einer Reihe, darunter die Typen', async ({ page }) => {
+        await page.goto('/contribute');
+        const kette = page.locator('.ketten-liste .typ-zeile');
+        await expect(kette).toHaveCount(3);
+        const oben = await Promise.all((await kette.all()).map(async (z) => Math.round((await z.boundingBox())!.y)));
+        expect(new Set(oben).size).toBe(1);
+        const ersterTyp = (await page.locator('.commentary-card').boundingBox())!;
+        expect(ersterTyp.y).toBeGreaterThan(oben[0]);
+      });
+
       test('Versionskennung im Fuß ist lesbar (AA)', async ({ page }) => {
         await page.goto('/search');
         await expect(page.locator('.build-kennung')).toBeVisible();
         const { vorne, hinten } = await farben(page, '.build-kennung');
         expect(kontrast(vorne, hinten)).toBeGreaterThanOrEqual(4.5);
       });
+    });
+
+    test.describe('1440 px', () => {
+      test.use({ ...DESKTOP, viewport: { width: 1440, height: 900 } });
+
+      // Seitenrahmen (styles.css): Der Inhalt beginnt --page-margin rechts vom Rand von <main>,
+      // wie die Kopfzeile. Gemessen wird der aeussere Kasten des Inhalts.
+      for (const [name, pfad, inhalt] of [
+        ['Kommentarformular', '/workflow/add-commentary', '.workflow-container > *'],
+        ['Einwerfen', '/einwerfen', '.einwurf-container > *'],
+        ['Datenschutz', '/datenschutz', '.content-section h2'],
+        ['Beitrag verfassen', '/contribute', '.typ-zeile'],
+      ] as const) {
+        test(`${name}: linke Kante wie die Kopfzeile`, async ({ page }) => {
+          await page.goto(pfad);
+          const element = page.locator(inhalt).first();
+          await expect(element).toBeVisible();
+          const soll = await page.evaluate(() => {
+            const main = document.querySelector('main')!.getBoundingClientRect();
+            return main.left + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--page-margin'));
+          });
+          // Linkeste sichtbare Teil der Kopfzeile (Zurueck-Pfeil oder Logo)
+          const kopfLinks = await page.locator('.header').evaluate((kopf) =>
+            Math.min(...[...kopf.querySelectorAll('button, a, img')].map((e) => e.getBoundingClientRect())
+              .filter((r) => r.width > 0).map((r) => r.left)),
+          );
+          expect(Math.abs(kopfLinks - soll)).toBeLessThanOrEqual(1);
+          expect(Math.abs((await element.boundingBox())!.x - soll)).toBeLessThanOrEqual(1);
+        });
+      }
     });
 
     test.describe('390 px', () => {
@@ -82,22 +123,52 @@ for (const modus of ['light', 'dark'] as const) {
       });
     });
 
-    test.describe('360 px, anonym', () => {
-      test.use({ storageState: ANONYM });
+    for (const breite of [360, 1280]) {
+      test.describe(`${breite} px, anonym`, () => {
+        test.use({ storageState: ANONYM, ...(breite > 360 ? DESKTOP : {}), viewport: { width: breite, height: 900 } });
 
-      test('Startseite: Marke „mit Konto“ steht in beiden Kacheln gleich', async ({ page }) => {
-        await page.goto('/search');
-        const kacheln = page.locator('.start-kachel');
-        await expect(kacheln.locator('.kachel-konto')).toHaveCount(2);
-        const lagen = await kacheln.evaluateAll((alle) =>
-          alle.map((kachel) => {
-            const titel = kachel.querySelector('.kachel-titel')!.getBoundingClientRect();
-            const marke = kachel.querySelector('.kachel-konto')!.getBoundingClientRect();
-            return Math.round(marke.top - titel.top);
-          }),
-        );
-        expect(lagen[0]).toBe(lagen[1]);
+        test('Startseite: Marke „mit Konto“ steht in beiden Kacheln neben dem Titel', async ({ page }) => {
+          await page.goto('/search');
+          const kacheln = page.locator('.start-kachel');
+          await expect(kacheln.locator('.kachel-konto')).toHaveCount(2);
+          const lagen = await kacheln.evaluateAll((alle) =>
+            alle.map((kachel) => {
+              const titel = kachel.querySelector('.kachel-titel')!.getBoundingClientRect();
+              const marke = kachel.querySelector('.kachel-konto')!.getBoundingClientRect();
+              return { abstand: Math.round(marke.top - titel.top), daneben: marke.left > titel.left + 40 };
+            }),
+          );
+          expect(lagen[0]).toEqual(lagen[1]);
+          expect(lagen[0].daneben).toBe(true);
+        });
       });
-    });
+    }
   });
 }
+
+test.describe('Umschalter hell/dunkel', () => {
+  test.use({ ...DESKTOP, colorScheme: 'light' });
+
+  test('schaltet um, merkt sich die Wahl und gilt nach dem Neuladen ohne Aufblitzen', async ({ page }) => {
+    await page.goto('/search');
+    const html = page.locator('html');
+    await expect(html).toHaveAttribute('data-theme', 'light');
+    const knopf = page.getByRole('button', { name: 'Dunkles Farbschema' });
+    await expect(knopf).toHaveAttribute('aria-pressed', 'false');
+    await knopf.click();
+    await expect(html).toHaveAttribute('data-theme', 'dark');
+    await expect(knopf).toHaveAttribute('aria-pressed', 'true');
+    const grund = await page.locator('body').evaluate(() => getComputedStyle(document.querySelector('main')!).backgroundColor);
+    expect(grund).toBe('rgb(40, 42, 41)');
+
+    // Ohne die Skripte der App: Das Attribut setzt schon das Skript in index.html, vor dem ersten Bild
+    await page.route('**/*.js', (anfrage) => anfrage.abort());
+    await page.reload();
+    await expect(html).toHaveAttribute('data-theme', 'dark');
+    await page.unroute('**/*.js');
+    await page.reload();
+
+    await page.getByRole('button', { name: 'Dunkles Farbschema' }).click();
+    await expect(html).toHaveAttribute('data-theme', 'light');
+  });
+});

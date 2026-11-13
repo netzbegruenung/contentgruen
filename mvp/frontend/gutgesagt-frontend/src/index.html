@@ -17,6 +17,21 @@
   <!-- Hell und dunkel nach Geraeteeinstellung (#588); Erweiterungen wie Dark Reader
        erkennen daran das eigene dunkle Thema. -->
   <meta name="color-scheme" content="light dark">
+  <!-- Farbschema vor dem ersten Bild setzen, damit nichts aufblitzt: eigene Wahl aus dem
+       Umschalter, sonst die Geraeteeinstellung. Gleiche Logik und gleicher Schluessel wie
+       FarbschemaService; ohne Speicher gilt das Geraet. -->
+  <script>
+    (function () {
+      var schema = null;
+      try {
+        schema = localStorage.getItem('gutgesagt-farbschema');
+      } catch (e) {}
+      if (schema !== 'light' && schema !== 'dark') {
+        schema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', schema);
+    })();
+  </script>
   <meta name="theme-color" content="#008939" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1c1c1c" media="(prefers-color-scheme: dark)">
   <link rel="apple-touch-icon" href="marke/icon-192.png">

@@ -61,7 +61,7 @@
   }
 
   @media (max-width: 768px) {
-    padding: 1rem var(--page-margin-mobile);
+    padding: 1rem var(--page-margin);
 
     h2 {
       margin-bottom: 1rem;
@@ -223,12 +223,8 @@
 
 a {
   color: var(--primary-main);
-  text-decoration: none;
-
   // Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588)
-  @media (prefers-color-scheme: dark) {
-    text-decoration: underline;
-  }
+  text-decoration: var(--link-unterstrich);
 
   &:hover {
     text-decoration: underline;

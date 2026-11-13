@@ -107,6 +107,12 @@
             </button>
         </div>
 
+        <!-- Hell/dunkel wie der Umschalter im Desktop-Kopf; das Menue bleibt dabei offen -->
+        <button mat-button type="button" (click)="farbschema.umschalten()" class="mobile-menu-item mobile-menu-farbschema">
+            <mat-icon aria-hidden="true">{{ farbschema.dunkel() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+            {{ farbschema.dunkel() ? 'Hell anzeigen' : 'Dunkel anzeigen' }}
+        </button>
+
         <button mat-button (click)="onFeedbackClick()" class="mobile-menu-item mobile-menu-feedback">
             <mat-icon>feedback</mat-icon>
             Feedback

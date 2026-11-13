@@ -22,13 +22,15 @@
   }
 }
 
+// Seitenrahmen wie alle Seiten (styles.css); der Text behaelt seine Zeilenlaenge (900 px),
+// steht aber linksbuendig im Rahmen statt mittig
 .content-section {
+  box-sizing: content-box;
   padding: 2rem var(--page-margin);
   max-width: 900px;
-  margin: 0 auto;
 
   @media (max-width: 768px) {
-    padding: 1.5rem var(--page-margin-mobile);
+    padding: 1.5rem var(--page-margin);
   }
 }
 
@@ -105,12 +107,8 @@
 
   a {
     color: var(--primary-dark);
-    text-decoration: none;
-
     // Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588)
-    @media (prefers-color-scheme: dark) {
-      text-decoration: underline;
-    }
+    text-decoration: var(--link-unterstrich);
 
     &:hover {
       text-decoration: underline;

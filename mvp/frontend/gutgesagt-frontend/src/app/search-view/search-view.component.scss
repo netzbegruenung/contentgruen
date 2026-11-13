@@ -131,6 +131,7 @@
   }
 
   @media (max-width: 599px) {
+    gap: 10px;
     padding: 12px 16px;
   }
 }
@@ -150,6 +151,8 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  // Fuer die Marke "mit Konto": Beide Kacheln sind gleich breit, die Abfrage greift in beiden.
+  container-type: inline-size;
 }
 
 .kachel-titel {
@@ -162,19 +165,36 @@
   }
 }
 
-// Anonym: kleiner Hinweis unter dem Titel, dass es ein Konto braucht (#644). Immer in eigener
-// Zeile: Neben dem Titel passte er je nach Breite bei einer Kachel und bei der anderen nicht
-// (Designrunde 12.11.).
+// Anonym: kleiner Hinweis neben dem Titel, dass es ein Konto braucht (#644). Reicht der Platz
+// neben dem laengeren Titel "Beitrag verfassen" nicht, rutscht er in beiden Kacheln unter den
+// Titel, nicht nur in einer (Designrunde 12.11.). Die Schwellen sind die Breite von
+// "Beitrag verfassen" samt Marke, je Schriftgroesse des Titels, mit etwas Luft.
 .kachel-konto {
-  display: table;
-  margin-top: 2px;
-  padding: 1px 8px;
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
   border-radius: 999px;
   background: var(--bg-main);
   font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
   vertical-align: middle;
+}
+
+@container (max-width: 209.98px) {
+  .kachel-konto {
+    display: table;
+    margin: 2px 0 0;
+  }
+}
+
+@media (max-width: 599px) {
+  @container (min-width: 192px) {
+    .kachel-konto {
+      display: inline-block;
+      margin: 0 0 0 6px;
+    }
+  }
 }
 
 .kachel-satz {

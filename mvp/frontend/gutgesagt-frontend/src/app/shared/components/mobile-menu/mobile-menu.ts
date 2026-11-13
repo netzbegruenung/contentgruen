@@ -10,6 +10,7 @@ import { UserInfo } from '../../../auth/auth.service';
 import { DATENSCHUTZ_EINSTELLUNGEN, EINWERFEN_TITEL, MENUE_ICONS } from '../../fangkorb-texte';
 import { ROUTES } from '../../constants/app.constants';
 import { RundgangId, rundgangBeschriftung } from '../../../rundgang/rundgang-daten';
+import { FarbschemaService } from '../../../services/farbschema.service';
 
 @Component({
   selector: 'app-mobile-menu',
@@ -32,6 +33,7 @@ export class MobileMenuComponent {
   readonly selbstBeitragen = rundgangBeschriftung('mitmachen');
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   readonly einwerfenTitel = EINWERFEN_TITEL;
+  readonly farbschema = inject(FarbschemaService);
   @Input() userInfo: UserInfo | null = null;
   @Input() selectedProfilePictureUrl: string = '';
 
