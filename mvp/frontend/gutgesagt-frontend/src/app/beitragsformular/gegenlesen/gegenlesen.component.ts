@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap } from 'rxjs/operators';
 
 import { SiegelComponent } from '../../shared/components/siegel/siegel.component';
 import { GEGENLESEN_VERZOEGERUNG_MS, Gegengelesen, GegenlesenService } from './gegenlesen.service';
@@ -17,6 +17,24 @@ interface Eingabe {
 }
 
 const NOCH_LEER: Gegengelesen = { guete: null, anmerkungen: [] };
+
+/**
+ * So lange nach dem letzten Ergebnis und der letzten Eingabe wartet die Ansage fuer
+ * Screenreader: Sonst meldete sie sich bei jeder Tipp-Pause von einer Sekunde.
+ */
+export const ANSAGE_PAUSE_MS = 1500;
+
+/** Die Zahl der Anmerkungen in Worten; leer, solange nichts gegengelesen ist. */
+export function zusammenfassung(ergebnis: Gegengelesen): string {
+  if (ergebnis.guete === null) {
+    return '';
+  }
+  const anzahl = ergebnis.anmerkungen.length;
+  if (!anzahl) {
+    return 'Nichts aufgefallen';
+  }
+  return anzahl === 1 ? '1 Anmerkung' : `${anzahl} Anmerkungen`;
+}
 
 /** Zu viele Anfragen: Das letzte Ergebnis bleibt stehen, statt dass der Block verschwindet. */
 const ZU_VIELE = 'zu-viele';
@@ -44,13 +62,45 @@ export class GegenlesenComponent implements OnChanges {
   @Input() aussage: string | null = '';
   /** Kommentar und Hintergrundinfo behaupten im Titel; ein Post-Titel beschreibt, ohne Verneinungsregel. */
   @Input() titelIstBehauptung = true;
+  /**
+   * Kompakt direkt unter dem Textfeld, wenn das Formular einspaltig ist: eine Zeile mit
+   * Siegel und Zahl der Anmerkungen, aufklappbar. Sonst neben der Vorschau, ganz offen.
+   */
+  @Input() kompakt = false;
 
   ergebnis: Gegengelesen = NOCH_LEER;
   verfuegbar = true;
+  /** Kompakt: ob die Anmerkungen aufgeklappt sind. */
+  offen = false;
+  /** Was die Live-Region ansagt: nur die Zahl, entprellt (ANSAGE_PAUSE_MS). */
+  ansage = '';
 
   private readonly eingabe = new Subject<Eingabe>();
+  /** Jede Eingabe (null) und jedes Ergebnis (die Zahl) schiebt die Ansage auf. */
+  private readonly ansageTakt = new Subject<string | null>();
+
+  get istGut(): boolean {
+    return this.ergebnis.guete !== null && !this.ergebnis.anmerkungen.length;
+  }
+
+  /** Die kompakte Zeile: die Zahl, oder vor dem ersten Gegenlesen eine Einladung. */
+  get zeile(): string {
+    return zusammenfassung(this.ergebnis) || 'liest mit, sobald du schreibst';
+  }
 
   constructor(service: GegenlesenService, cdr: ChangeDetectorRef) {
+    this.ansageTakt
+      .pipe(
+        debounceTime(ANSAGE_PAUSE_MS),
+        filter((text): text is string => text !== null),
+        distinctUntilChanged(),
+        takeUntilDestroyed(inject(DestroyRef)),
+      )
+      .subscribe((text) => {
+        this.ansage = text;
+        cdr.markForCheck();
+      });
+
     this.eingabe
       .pipe(
         debounceTime(GEGENLESEN_VERZOEGERUNG_MS),
@@ -80,12 +130,16 @@ export class GegenlesenComponent implements OnChanges {
       .subscribe((ergebnis) => {
         if (ergebnis === ZU_VIELE) return;
         this.verfuegbar = ergebnis !== null;
-        if (ergebnis) this.ergebnis = ergebnis;
+        if (ergebnis) {
+          this.ergebnis = ergebnis;
+          this.ansageTakt.next(zusammenfassung(ergebnis));
+        }
         cdr.markForCheck();
       });
   }
 
   ngOnChanges(): void {
+    this.ansageTakt.next(null);
     this.eingabe.next({
       titel: this.titel ?? '',
       text: this.text ?? '',

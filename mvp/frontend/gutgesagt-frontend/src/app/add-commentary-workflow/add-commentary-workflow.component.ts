@@ -17,10 +17,12 @@ import { AUSSAGE_PARAM, SUCHTEXT_PARAM, gespeichertPfad } from '../shared/formul
 import { StateManagementService } from '../services/state-management.service';
 import {
   BeitragGespeichert,
+  GESUCHT_PARAM,
   GespeichertZustand,
   SUCHE_PARAM,
   VON_HIER_FEHLT_EINE_ANTWORT,
   VON_PARAM,
+  gesuchtAus,
   vonHierFehltEineAntwort,
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import {
@@ -94,6 +96,8 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   private ausSuche: { anfrage: string | null } | null = null;
   /** Ueber "Antworten" aus "Hier fehlt eine Antwort" geoeffnet (?von=). */
   private ausHierFehltEineAntwort = false;
+  /** Wie viele Personen ohne Treffer gesucht haben (?gesucht=); 0, wenn unbekannt. */
+  private gesucht = 0;
 
   constructor(
     private router: Router,
@@ -160,8 +164,14 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     }
   }
 
+  /** Die Nachfrage aus "Hier fehlt eine Antwort" fuer "Luecke zu" auf der Ergebnisseite. */
+  private gesuchtParam(): Record<string, string> {
+    return this.gesucht > 0 ? { [GESUCHT_PARAM]: String(this.gesucht) } : {};
+  }
+
   private herkunftMerken(params: ParamMap): void {
     this.ausHierFehltEineAntwort = vonHierFehltEineAntwort(params);
+    this.gesucht = this.ausHierFehltEineAntwort ? gesuchtAus(params) : 0;
     if (this.ausHierFehltEineAntwort || (!params.get(AUSSAGE_PARAM) && !params.get(SUCHTEXT_PARAM))) {
       this.ausSuche = null;
       return;
@@ -198,7 +208,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     const queryParams = this.ausSuche
       ? { [VON_PARAM]: 'suche', ...(this.ausSuche.anfrage ? { [SUCHE_PARAM]: this.ausSuche.anfrage } : {}) }
       : this.ausHierFehltEineAntwort
-        ? { [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT }
+        ? { [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT, ...this.gesuchtParam() }
         : {};
     this.zurErgebnisseite(ergebnis.id, queryParams, zustand);
   }

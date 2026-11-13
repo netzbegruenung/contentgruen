@@ -147,6 +147,16 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    */
   @Input() stufeZeigen = false;
   /**
+   * Ebene der Titel-Ueberschrift. Standard h3; die Ergebnisseite nimmt h4, weil dort
+   * Gruppe (h2) und Typ (h3) darueberstehen.
+   */
+  @Input() titelEbene: 3 | 4 = 3;
+  /**
+   * Die Zeile "Antwort auf:" ueber dem Titel. Aus, wo die Seite die Aussage schon
+   * nennt (Gruppen der Ergebnisseite); Admins behalten den Aufklapper mit den Werten.
+   */
+  @Input() antwortAufZeigen = true;
+  /**
    * Einwurf-Karte quer (Fangkorb am Desktop): Meta-Zeile links, Griff und ⋮ rechts in
    * einer Zeile, statt Griff mittig und Meta darunter. Spart Hoehe in breiten Listen.
    */
@@ -447,6 +457,15 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    */
   get nutzungInMeta(): boolean {
     return (this.nutzung ?? 0) >= 1 && !this.vorschau;
+  }
+
+  /**
+   * Die Nutzung im Fuss der kompakten Karte, ausgeschrieben statt nur "3×": in Meine
+   * Beitraege soll man ohne Tooltip lesen koennen, was die Zahl heisst.
+   */
+  get albumNutzung(): string {
+    const nutzung = this.nutzung ?? 0;
+    return nutzung ? `${nutzung}× genutzt` : 'Noch nicht genutzt';
   }
 
   /** Text des Nutzungs-Badges fuer alle Varianten, "3×"; unbekannt zaehlt als 0. */

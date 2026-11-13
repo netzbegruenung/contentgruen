@@ -68,6 +68,12 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
    */
   @Output() aehnlicheAnzahl = new EventEmitter<number>();
 
+  /**
+   * Dieselben aehnlichen Aussagen als Liste, zu denselben Zeitpunkten; das Kopfband der
+   * Ergebnisseite bietet die ersten unter "Nicht gemeint?" an, ohne sie neu zu laden.
+   */
+  @Output() aehnlicheGeladen = new EventEmitter<StatementSearchResult[]>();
+
   readonly kommentarPfad = FORMULAR_PFAD.commentary;
   readonly titelId = `nicht-dabei-titel-${++naechsteNummer}`;
   readonly listenId = `aehnliche-titel-${naechsteNummer}`;
@@ -101,7 +107,7 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
       )
       .subscribe((aussagen) => {
         this.geladen = aussagen;
-        this.aehnlicheAnzahl.emit(this.aehnliche.length);
+        this.melden();
         this.cdr.markForCheck();
       });
   }
@@ -111,8 +117,14 @@ export class NichtDabeiComponent implements OnInit, OnChanges {
       this.suchtext$.next((this.suchtext ?? '').trim());
     }
     if (changes['bekannteAussagen'] && !changes['bekannteAussagen'].firstChange) {
-      this.aehnlicheAnzahl.emit(this.aehnliche.length);
+      this.melden();
     }
+  }
+
+  private melden(): void {
+    const aehnliche = this.aehnliche;
+    this.aehnlicheAnzahl.emit(aehnliche.length);
+    this.aehnlicheGeladen.emit(aehnliche);
   }
 
   /** Die aehnlichen Aussagen ohne die, die schon als Treffer dastehen. */

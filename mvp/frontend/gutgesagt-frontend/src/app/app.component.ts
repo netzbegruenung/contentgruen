@@ -20,6 +20,7 @@ import { ProfilbildService } from './services/profilbild.service';
 import { rueckkehrzielLesen, rueckkehrzielLoeschen } from './login/rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
 import { hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog/help-dialog.component';
+import { hinweisNachAnmeldung } from './auth/nach-anmeldung';
 import { feedbackDialogOeffnen } from './shared/feedback/feedback-dialog.component';
 import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
@@ -119,6 +120,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.logger.debug('AppComponent created');
     // Nach der Anmeldung aus der Hilfe dorthin zurück; dort startet dann Selbst beitragen
     hilfeNachAnmeldung(this.destroyRef);
+    // Nach der Anmeldung zum Abstimmen: ein Satz, dass es jetzt geht
+    hinweisNachAnmeldung(this.destroyRef);
   }
 
   ngOnInit() {

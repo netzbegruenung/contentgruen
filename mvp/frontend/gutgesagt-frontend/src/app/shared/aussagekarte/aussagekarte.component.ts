@@ -32,14 +32,20 @@ import { MatIconModule } from '@angular/material/icon';
 /**
  * Merkt sich ein Ergebnis je statement_id, etwa die Query-Parameter von "Antworten":
  * Ein neues Objekt bei jedem Durchlauf liesse OnPush in der Karte ins Leere laufen.
+ * Haengt das Ergebnis noch an mehr als der ID (etwa der Nachfrage), nennt `schluessel`
+ * das mit, sonst bliebe nach dem Nachladen der alte Wert stehen.
  */
-export function jeAussage<A extends { statement_id: string }, E>(bilden: (aussage: A) => E): (aussage: A) => E {
+export function jeAussage<A extends { statement_id: string }, E>(
+  bilden: (aussage: A) => E,
+  schluessel: (aussage: A) => string = (aussage) => aussage.statement_id,
+): (aussage: A) => E {
   const gemerkt = new Map<string, E>();
   return (aussage) => {
-    let wert = gemerkt.get(aussage.statement_id);
+    const s = schluessel(aussage);
+    let wert = gemerkt.get(s);
     if (wert === undefined) {
       wert = bilden(aussage);
-      gemerkt.set(aussage.statement_id, wert);
+      gemerkt.set(s, wert);
     }
     return wert;
   };
