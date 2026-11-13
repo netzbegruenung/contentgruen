@@ -25,6 +25,7 @@ from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
 from core.config import Settings
 from dependencies import get_settings
 from services.entdoppelung import pruefwert
+from domain.art9_einwilligung import AKTUELLER_WORTLAUT
 from repositories.art9_einwilligung_repository import Art9Einwilligung
 
 BEITRAG_ID = "11111111-1111-4111-8111-111111111111"
@@ -221,7 +222,7 @@ class TestArt9Einwilligung:
             None
             if kennung == AUTORIN
             else Art9Einwilligung(
-                wortlaut="2026-11-05",
+                wortlaut=AKTUELLER_WORTLAUT,
                 eingewilligt_am=datetime(2026, 11, 5, tzinfo=timezone.utc),
                 widerrufen_am=None,
             )

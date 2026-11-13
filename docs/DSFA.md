@@ -20,7 +20,8 @@ Fundstellen mit Zeilennummer zeigen auf den Stand, an dem sie geprüft wurden: i
 bis 7 auf `cdb7ec64` mit #476 (Datenschutzerklärung nach #499), in V6, V7 und V9 auf
 `c4a95e9c` (nach #655, nachgezogen mit #656), sonst in Abschnitt 8 und 9 auf `c2c9bbe5`, auch
 die Zeilen `LK:` laut `c2c9bbe5` (`git show c2c9bbe5:docs/LOESCHKONZEPT.md`).
-Was danach dazukam, steht ohne Zeile mit seinem Ticket.
+Was danach dazukam, steht ohne Zeile mit seinem Ticket. Nachgetragen: der Löschauftrag beim
+Widerruf (R9b als Löschauftrag, #661; V2, R9, 8.4).
 `ss/` = `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), in
 Abschnitt 1 bis 7 zitiert mit dem Titel ihres Abschnitts, in Abschnitt 8 und 9 mit Zeile
@@ -85,7 +86,7 @@ Für den Grundbetrieb ohne Punkte trifft sicher nur WP-248-Kriterium 4 (vertraul
 Eingestuft nach DSK-Kurzpapier Nr. 18 (Methode in 8.4): Mit diesen Maßnahmen bleibt für die
 Punkte selbst höchstens die mittlere Klasse „Risiko“ (Risiko 3). Ob die Aufsichtsbehörde
 konsultiert werden muss (Art. 36 Abs. 1), entscheidet das Gesamtrisiko der Plattform; das
-steht in 8.4 und hängt heute am Widerruf (R9) und an den offenen Fakten (8.6).
+steht in 8.4 und hängt heute an den offenen Fakten (8.6) und an Frage 7 zum Widerruf (R9).
 
 ## 4. Rechtsgrundlage
 
@@ -139,9 +140,9 @@ zurücknimmt, verschwindet sofort aus Ranglisten und Abzeichen; die eigenen Punk
 Person weiter. Nach dem Widerruf der Login-Einwilligung kann die Person nichts mehr beitragen und
 nichts bewerten, ihre Punkte sind 0, und ihre Kopien zählen nur noch am Zähler der Karte, ohne
 Prüfwert und ohne Meldung für Muster-Hinweise (#559). Mit #658 (Wortlaut `2026-11-12`) werden
-beim Widerruf ihre Bewertungen gelöscht; Beiträge, Einwürfe und Sätze bleiben an ihrem Konto, bis
-sie sie löscht oder ihr Konto löschen lässt (#489, `docs/ART9_EINWILLIGUNG.md`). Für diesen Rest
-trägt das voraussichtlich nicht, Bewertung und Maßnahmen in V2 und R9. Geht das Konto, gehen die
+beim Widerruf ihre Bewertungen gelöscht; für Beiträge, Einwürfe und Sätze legt der Widerruf seit
+#661 einen Löschauftrag an, den ein Admin binnen sieben Tagen ausführt; bis dahin bleiben sie an
+ihrem Konto (#489, `docs/ART9_EINWILLIGUNG.md`). Bewertung und Maßnahmen in V2 und R9. Geht das Konto, gehen die
 Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus. Notwendigkeit und
 Verhältnismäßigkeit des Grundbetriebs ohne Punkte: 8.5.
 
@@ -162,9 +163,10 @@ Verhältnismäßigkeit des Grundbetriebs ohne Punkte: 8.5.
    Zahl der erreichten Meilensteine als einzige Angabe (8.2, V22, #351)?
 7. Widerruf der Art.-9-Einwilligung (V2, R9): Ist ohne Antrag zu löschen oder zu anonymisieren,
    oder erst auf Antrag? Genügt die Anonymisierung wie bei der Kontolöschung? Muss der Wortlaut
-   den Verein als Verantwortlichen nennen statt „Gut gesagt“? #658 löscht beim Widerruf nur die
-   Stimmen: Ist ohne R9b (Anonymisieren von Beiträgen, Einwürfen und Sätzen) vor dem Start die
-   Aufsichtsbehörde zu konsultieren (Art. 36, 8.4)?
+   den Verein als Verantwortlichen nennen statt „Gut gesagt“? #658 löscht beim Widerruf die
+   Stimmen, #661 legt für Beiträge, Einwürfe und Sätze einen Löschauftrag an, den ein Admin binnen
+   sieben Tagen ausführt (R9b): Genügen Frist und Ausführung von Hand, oder ist ohne den
+   vollautomatischen Ablauf vor dem Start die Aufsichtsbehörde zu konsultieren (Art. 36, 8.4)?
 
 ## 7. Vor dem Einschalten der Punkte
 
@@ -198,14 +200,15 @@ sonst verarbeitet, mit Belegen als `Datei:Zeile`.
 kann auf eine politische Meinung schließen lassen (`DSE:1081-1084`); Rechtsgrundlage der Mitwirkung
 ist die Art.-9-Einwilligung (`A9:3-6`, `DSE:1094-1122`). Empfohlen wird eine DSFA für die ganze
 Plattform (8.1). Vier Lücken sind offen: Konto und Anzeigename entstehen vor der Einwilligung (V1);
-nach einem Widerruf der Einwilligung bleiben Beiträge, Einwürfe und Sätze an der Person, nur die
-Stimmen löscht #658 (V2, R9); das
+nach einem Widerruf der Einwilligung bleiben Beiträge, Einwürfe und Sätze an der Person, bis ein
+Admin den Löschauftrag ausführt, höchstens sieben Tage (#658 löscht die Stimmen sofort, #661 legt
+den Auftrag an; V2, R9); das
 Tagespseudonym angemeldeter Personen ist am laufenden Tag mit dem Schlüssel aus der Konfiguration
 nachrechenbar, falls er gesetzt ist (V7); Anwendungsprotokolle haben in Produktion keine Frist
-(V16). Nach der Methode in 8.4 ist R9 **hoch, auch nach #658**; R2, R3, R4, R5 und R6 liegen
-in der mittleren Klasse „Risiko“. Solange Beiträge, Einwürfe und Sätze beim Widerruf nicht
-anonymisiert werden (Maßnahme R9b), ist die Konsultation nach Art. 36 eine Frage an die
-Datenschutzbeauftragte (Frage 7; Folgerung in 8.4). **Erst wenn die vier Lücken geschlossen
+(V16). Nach der Methode in 8.4 liegt R9 mit dem Löschauftrag (#661) in der mittleren Klasse
+„Risiko“, ebenso R2, R3, R4, R5 und R6. Ob die Ausführung von Hand binnen sieben Tagen genügt oder
+erst der vollautomatische Ablauf, ist eine Frage an die Datenschutzbeauftragte (Frage 7;
+Folgerung in 8.4). **Erst wenn die vier Lücken geschlossen
 sind**, die Maßnahmen aus 8.2 und 8.3 stehen
 und die offenen Fakten (8.6) belegt sind, bleibt außer den Daten Dritter (R3) nur geringes Risiko.
 
@@ -294,20 +297,24 @@ Empfänger und Ort“.
   (`A9:12-14`); Widerruf im Profilmenü (`A9:40-45`); ohne Einwilligung sind die Endpunkte gesperrt,
   die Mitwirkung speichern (Beitragen, Einwerfen, Bewerten); Melden, Feedback und Löschen bleiben
   offen; die Liste ist durch einen Test abgesichert (`A9:17-27`).
-- **Widerruf, heute:** Auf `c4a95e9c` setzt der Widerruf nur den Zeitpunkt an der Zeile
+- **Widerruf, heute:** Der Widerruf setzt den Zeitpunkt an der Zeile
   (`ss/repositories/art9_einwilligung_repository.py`, `widerrufen`) und nimmt das
-  Meilenstein-Abzeichen weg (`ss/api/v1/art9_einwilligung.py`, V22); alles andere bleibt.
-  **Mit #658** (offen, Head `b90c8ec2`) löscht der Widerruf danach alle Stimmen der Person
-  (`Art9EinwilligungService.widerrufen`, `VoteRepository.loeschen_fuer_person`). Vermerk und
-  Löschen laufen ohne gemeinsame Transaktion: Scheitert das Löschen, steht der Widerruf, die API
-  antwortet mit 500, und ein erneuter Widerruf löscht noch einmal. Beiträge, Einwürfe und Sätze
-  behalten Kennung und Anzeigenamen, bis die Person sie selbst löscht oder ihr Konto löschen
-  lässt; die Kontolöschung ist ein Ablauf von Hand (LK „Ablauf“), kein Code der App. So sagt es
-  der neue Wortlaut `2026-11-12` (`ss/domain/art9_einwilligung.py` auf #658): „Danach kann ich
-  nichts mehr beitragen oder bewerten, und meine Bewertungen werden gelöscht. Was ich sonst
-  gespeichert habe, bleibt, bis ich es lösche oder mein Konto löschen lasse. Was bis zum
-  Widerruf geschehen ist, bleibt rechtmäßig.“ Der Wortlaut nennt als Verantwortlichen nur
-  „Gut gesagt“, nicht den Verein (dazu Abschnitt 6, Frage 7).
+  Meilenstein-Abzeichen weg (`ss/api/v1/art9_einwilligung.py`, V22). In derselben Transaktion
+  löscht er alle Stimmen der Person (#658, `Art9EinwilligungService.widerrufen`,
+  `VoteRepository.loeschen_fuer_person`) und legt einen Löschauftrag an (#661,
+  `LoeschauftragRepository.anlegen`): Kennung, Zeitpunkt, Frist sieben Tage, je Person höchstens
+  ein offener. Scheitert eins davon, gilt der Widerruf nicht, die API antwortet mit 500, und die
+  Person kann erneut widerrufen. Ein Admin führt den Auftrag unter „Moderation“, „Löschaufträge“
+  aus (`ss/services/loeschauftrag_service.py`); bis dahin behalten Beiträge, Einwürfe und Sätze
+  Kennung und Anzeigenamen (LK „Löschauftrag nach dem Widerruf“). Was die Person nach einer neuen
+  Einwilligung beiträgt, bleibt; ohne neue Einwilligung erfasst der Auftrag alles (Entscheidung
+  Maintainer, 13.11.2026). Der Wortlaut `2026-11-13`
+  (`ss/domain/art9_einwilligung.py`) sagt das: „Innerhalb von sieben Tagen werden auch meine
+  Beiträge, Einwürfe und Sätze von mir gelöst: […] Was ich nach einer neuen Einwilligung
+  beitrage, bleibt davon unberührt. Mein Konto bleibt.“ Wer einem früheren Wortlaut zugestimmt
+  hat, wird neu gefragt, weil die Folgen des Widerrufs weiter gehen (`docs/ART9_EINWILLIGUNG.md`,
+  „Wortlaut ändern“). Der Wortlaut nennt als
+  Verantwortlichen nur „Gut gesagt“, nicht den Verein (dazu Abschnitt 6, Frage 7).
 - **Widerruf, Bewertung (Vorschlag, nicht juristisch geprüft, #296):** Nach Art. 7 Abs. 3 wirkt
   der Widerruf für die Zukunft. Fehlt danach eine andere Rechtsgrundlage, sind die Daten nach
   Art. 17 Abs. 1 lit. b zu löschen, und zwar auch ohne Antrag; still auf eine andere
@@ -328,13 +335,15 @@ Empfänger und Ort“.
   Zuordnung von Beiträgen, Einwürfen und Sätzen zur Person (Kennung, Anzeigename) die
   Art.-9-Grundlage weg; der Text selbst darf als CC0-Beitrag ohne Personenbezug bleiben.
 - **Widerruf, Maßnahmen (R9):**
-  - **R9a, Stimmen löschen:** #658, Teilumsetzung vor dem Start (Wortlaut `2026-11-12`).
-  - **R9b, Mitwirkung anonymisieren (offen, nicht gebaut):** Der Widerruf wirkt für die
-    Mitwirkung wie die Kontolöschung: Beiträge anonymisieren (`LK` „Ablauf“, Schritt 3), Sätze an
-    fremden Einwürfen mit Platzhalter versehen, eigene Einwürfe löschen (Schritt 2); das Konto
-    und die Zeile der Einwilligung als Nachweis (Art. 7 Abs. 1) bleiben. Braucht Code in der App
-    (heute ist das ein Ablauf von Hand), einen neuen Wortlaut und den Widerrufstext der
-    Datenschutzerklärung.
+  - **R9a, Stimmen löschen:** gebaut (#658, in `v0.8.5`; Wortlaut `2026-11-12`).
+  - **R9b, Mitwirkung anonymisieren:** gebaut als Löschauftrag (#661). Der Widerruf wirkt für
+    die Mitwirkung wie die Kontolöschung: Beiträge anonymisieren (`LK` „Ablauf“, Schritt 3), Sätze
+    an fremden Einwürfen mit Platzhalter versehen, eigene Einwürfe löschen (Schritt 2); das Konto
+    und die Zeile der Einwilligung als Nachweis (Art. 7 Abs. 1) bleiben. Der Widerruf legt den
+    Auftrag an, ein Admin führt ihn binnen sieben Tagen mit einem Knopf aus; überfällige stehen
+    hervorgehoben (LK „Löschauftrag nach dem Widerruf“). Datenschutzerklärung und Wortlaut
+    (`2026-11-13`) sind angepasst; **offen** ist der vollautomatische Ablauf ohne Admin (nach
+    dem Freeze).
   - Alternative zu R9b: Löschen erst auf
   Antrag, schwächer, weil die Leitlinien eine Pflicht ohne Antrag sehen; das entscheidet die
   Datenschutzbeauftragte (Abschnitt 6, Frage 7).
@@ -734,7 +743,7 @@ empfiehlt sie schon vor dem Einschalten der Punkte.
 | R6 | **Löschung von Hand, nie an echten Daten erprobt** (`LK:3-13`, `DSE:1161-1163`) | Skript getestet gegen Testdaten (`LK:531-532`); Backup und Protokoll beim ersten Lauf | Risiko; geringes Risiko nach dem ersten belegten Lauf |
 | R7 | **Scoring und Zweckentfremdung** durch Punkte (V11) | Abschnitt 3 | Risiko (wie Risiko 3) |
 | R8 | **Rückschluss auf einzelne Stimmen** über kleine Zähler oder die Güte (V5) | M5: Summen und Stimmenanteil der Güte erst ab drei verschiedenen Stimmenden, darunter keine Zahl in der Antwort; ohne Startkonten und eigene Stimme; Gewicht der Stimmen gedeckelt (#427) | geringes Risiko |
-| R9 | **Widerruf ohne volle Folgen**: Beiträge, Einwürfe, Sätze (und ohne #658 auch Stimmen) bleiben nach dem Widerruf der Art.-9-Einwilligung mit Kennung und Anzeigenamen (V2) | R9a (#658): Stimmen werden beim Widerruf gelöscht; R9b: Beiträge, Einwürfe und Sätze anonymisieren wie bei der Kontolöschung (V2), offen | **hoch** heute und nach #658; geringes Risiko erst mit R9b |
+| R9 | **Widerruf ohne volle Folgen**: Beiträge, Einwürfe, Sätze (und ohne #658 auch Stimmen) bleiben nach dem Widerruf der Art.-9-Einwilligung mit Kennung und Anzeigenamen (V2) | R9a (#658, gebaut): Stimmen werden beim Widerruf gelöscht; R9b (#661, gebaut als Löschauftrag): ein Admin anonymisiert Beiträge, Einwürfe und Sätze wie bei der Kontolöschung binnen sieben Tagen (V2) | Risiko; geringes Risiko, wenn der Ablauf ohne Admin läuft |
 
 ### 8.4 Risikomethode und Einstufung (DSK-Kurzpapier Nr. 18)
 
@@ -777,17 +786,14 @@ Entwurfs; sie zu bestätigen oder zu ändern, ist Teil der Beratung (Abschnitt 6
 | R5 Protokolle ohne Frist | überschaubar | substanziell: Altbestand mit Suchtexten und Kennungen | **Risiko** | gering (14 Tage ausgerollt, Altbestand gelöscht) |
 | R6 Löschung von Hand | überschaubar: nie an echten Daten gelaufen | substanziell: Art.-9-Daten bleiben | **Risiko** | gering (erster Lauf belegt) |
 | R8 Rückschluss auf Stimmen | geringfügig: Schwelle drei | überschaubar | gering | gering |
-| R9 Widerruf ohne volle Folgen | groß: tritt bei jedem Widerruf sicher ein, auch nach #658, weil Beiträge, Einwürfe und Sätze bleiben | substanziell: die Zuordnung politischer Beiträge zur Person bleibt ohne Rechtsgrundlage (wie R6), für alle Angemeldeten sichtbar; #658 nimmt nur die nicht sichtbaren Stimmen weg | **hoch**, nach #658 weiter **hoch** | gering erst mit R9b: Wahrscheinlichkeit geringfügig |
+| R9 Widerruf ohne volle Folgen | überschaubar: mit dem Löschauftrag (#661) bleibt die Zuordnung bis zur Ausführung, höchstens sieben Tage, länger nur, wenn ein Admin die Frist versäumt (überfällige hervorgehoben) | substanziell: in dieser Zeit bleibt die Zuordnung politischer Beiträge zur Person ohne Rechtsgrundlage (wie R6), für alle Angemeldeten sichtbar | **Risiko** (vor #661 **hoch**) | gering, wenn der Ablauf ohne Admin läuft: Wahrscheinlichkeit geringfügig |
 
-**Gesamtrisiko heute: hoch**, wegen R9, **und nach #658 weiter hoch**: #658 löscht die
-Stimmen (R9a), aber Beiträge, Einwürfe und Sätze bleiben nach dem Widerruf der Person
-zugeordnet. **Folgerung zu Art. 36:** Solange R9b (Anonymisieren von Beiträgen, Einwürfen und
-Sätzen beim Widerruf) nicht live ist, bleibt nach den Maßnahmen ein hohes Risiko. Ob deshalb vor
-dem Start die Aufsichtsbehörde nach Art. 36 Abs. 1 zu konsultieren ist, oder ob Löschen auf
-Antrag genügt und R9 damit sinkt, ist Frage 7 an die Datenschutzbeauftragte. Entfallen kann
-die Konsultation nur, wenn R9b vor dem Start live ist (dann R9 gering, Gesamtrisiko „Risiko“)
-und die offenen Fakten F1 bis F6 (8.6) R4 nicht auf hoch heben, also ein AV-Vertrag besteht und
-die Sicherungen nicht unverschlüsselt auf demselben Host liegen.
+**Gesamtrisiko heute: Risiko**, unter dem Vorbehalt der offenen Fakten (8.6): Mit dem
+Löschauftrag (#661) liegt R9 in der mittleren Klasse, vorher war es **hoch**. **Folgerung zu
+Art. 36:** Nach den Maßnahmen bleibt kein hohes Risiko, solange die offenen Fakten F1 bis F6 (8.6)
+R4 nicht auf hoch heben, also ein AV-Vertrag besteht und die Sicherungen nicht unverschlüsselt auf
+demselben Host liegen. Ob die Ausführung von Hand binnen sieben Tagen dafür genügt oder erst der
+vollautomatische Ablauf, ist Frage 7 an die Datenschutzbeauftragte.
 Nach den offenen Maßnahmen bleibt Risiko bei Risiko 3 und R3;
 beide sind hinnehmbar, Risiko 3 nur, solange die Punkte aus sind oder die Bilanz nichts
 anderes zeigt. Sind die Punkte an, gilt dieselbe Einstufung; neu zu prüfen ist sie vor den
@@ -833,7 +839,7 @@ Abschnitt 5 prüft das für die Punkte. Für den Grundbetrieb ohne Punkte:
 
 **Ergebnis:** Der Grundbetrieb ist im Kern notwendig und verhältnismäßig. Nicht verhältnismäßig
 sind heute vier Punkte, die Maßnahmen dazu stehen in Abschnitt 9: Anzeigename vor der
-Einwilligung (V1), Widerruf ohne volle Folgen (V2, R9; #658 löscht nur die Stimmen), nachrechenbares Tagespseudonym der
+Einwilligung (V1), Widerruf ohne volle Folgen (V2, R9; mit dem Löschauftrag aus #661 nur noch bis zur Ausführung, höchstens sieben Tage), nachrechenbares Tagespseudonym der
 Angemeldeten (V7), Protokolle ohne Frist (V16).
 
 ### 8.6 Offene Fakten
@@ -868,10 +874,10 @@ und an den genannten Stellen nach.
 6. **Fragen an die Datenschutzbeauftragte:** Lücke aus Abschnitt 4, Meldungen ohne Einwilligung
    (V12) und Altersgrenze (WP 248 Kriterium 7) zu `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md` hinzufügen
    (vorbereitet als Abschnitt 6, Frage 5)? Empfehlung: ja, gebündelt mit Frage 1 dort.
-7. **Widerruf der Art.-9-Einwilligung** (V2, R9): Stimmen löschen ist mit #658 auf dem Weg
-   (R9a). Offen ist R9b: Beiträge anonymisieren, Sätze an fremden Einwürfen mit Platzhalter,
-   eigene Einwürfe löschen, als Code der App statt Ablauf von Hand; dazu ein neuer Wortlaut und
-   der Widerrufstext der Datenschutzerklärung. Empfehlung: als eigenes Ticket vor dem Start; ohne
-   R9b bleibt R9 hoch und Art. 36 Frage 7 (8.4).
+7. **Widerruf der Art.-9-Einwilligung** (V2, R9): Stimmen löschen ist gebaut (R9a, #658), R9b
+   als Löschauftrag (#661): Der Widerruf legt ihn an, ein Admin führt binnen sieben Tagen den
+   Löschablauf aus; der Widerrufstext der Datenschutzerklärung und der Wortlaut `2026-11-13` sind
+   angepasst. Offen ist der vollautomatische Ablauf nach dem Freeze, mit dem R9 gering wird.
+   Empfehlung: eigenes Ticket.
 8. **Offene Fakten** (8.6): F1 bis F6 belegen, vor allem den AV-Vertrag (F1), bevor Art.-9-Daten
    echter Personen verarbeitet werden.

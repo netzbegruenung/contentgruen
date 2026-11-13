@@ -788,6 +788,41 @@ class AbzeichenSichtbarkeitZeile(Base):
     )
 
 
+class LoeschauftragZeile(Base):
+    """
+    Ein Loeschauftrag nach dem Widerruf der Art.-9-Einwilligung (GLOSSARY.md
+    "Loeschauftrag"): wessen Mitwirkung den Personenbezug verliert, seit wann, bis
+    wann (``frist``, sieben Tage nach dem Anlegen) und wann ein Admin den Loeschablauf
+    ausgefuehrt hat (services/loeschauftrag_service.py).
+
+    Je Person hoechstens ein offener Auftrag (Index ``idx_loeschauftraege_offen``):
+    Ein zweiter Widerruf legt keinen zweiten an. Erledigte gehen nach ihrer Frist
+    (services/loeschfristen_service.py), offene bleiben, bis ein Admin sie ausfuehrt.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-13-loeschauftraege.sql dokumentiert das Schema.
+    Loeschen: docs/LOESCHKONZEPT.md, Schritt 2 und "Fristen".
+    """
+
+    __tablename__ = "loeschauftraege"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(255), nullable=False)
+    angelegt_am = Column(DateTime(timezone=True), nullable=False)
+    frist = Column(DateTime(timezone=True), nullable=False)
+    erledigt_am = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index(
+            "idx_loeschauftraege_offen",
+            "user_id",
+            unique=True,
+            postgresql_where=text("erledigt_am IS NULL"),
+        ),
+        Index("idx_loeschauftraege_erledigt_am", "erledigt_am"),
+    )
+
+
 class MigrationsprotokollZeile(Base):
     """
     Welche Migration aus postgres-app/migrations eingespielt ist, eine Zeile je Datei.
