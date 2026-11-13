@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -26,6 +26,7 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
 import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { AussageInAnfrage, aussageFuerAnfrage, themenHinweisNachSpeichern } from '../beitragsformular/aussage-fuer-anfrage';
@@ -203,6 +204,7 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
   ],
 })
 export class AddCommentaryComponent implements OnChanges {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('commentary');
   readonly titelMax = TITEL_MAX;
@@ -623,6 +625,7 @@ export class AddCommentaryComponent implements OnChanges {
         // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
         if (einwilligungFehlt(error)) {
           this.fehler = null;
+          this.einwilligungZustand.hinweisZeigen();
           return;
         }
         // Bei 422 sagt das Backend, was nicht passt - das ist hilfreicher als "nicht geklappt".

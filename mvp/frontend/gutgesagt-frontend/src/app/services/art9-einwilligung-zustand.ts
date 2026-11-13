@@ -25,6 +25,11 @@ export class Art9EinwilligungZustand {
   private readonly stand = new BehaviorSubject<Art9Zustand>('unbekannt');
   readonly zustand$ = this.stand.asObservable().pipe(distinctUntilChanged());
   private hinweise = 0;
+  /**
+   * Kennung der angemeldeten Person (setzt Art9EinwilligungService.starten), fuer den
+   * Pruefwert an Entwuerfen; null ohne Anmeldung.
+   */
+  kennung: string | null = null;
   private readonly inDenBlick = new Subject<void>();
   /** Ein 403 kam, waehrend ein Hinweiskasten auf der Seite ist: Er soll sich zeigen. */
   readonly hinweisInDenBlick$ = this.inDenBlick.asObservable();

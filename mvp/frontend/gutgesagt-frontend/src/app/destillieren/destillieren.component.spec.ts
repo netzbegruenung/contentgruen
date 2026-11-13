@@ -13,6 +13,7 @@ import { FILTER_SCHLUESSEL, filterLaden } from '../fangkorb/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
   return {
@@ -176,6 +177,42 @@ describe('DestillierenComponent', () => {
 
       tick(1);
       expect(einwurfService.satzSpeichern).toHaveBeenCalledOnceWith('id-1', 'Erster Satz');
+      fixture.destroy();
+    }));
+
+    // Re-Review zu #670: ohne Einwilligung kein Autosave, und ein 403 im Hintergrund holt
+    // weder den Hinweiskasten noch nimmt es der Person den Fokus aus dem Feld
+    it('schickt ohne Einwilligung keinen Autosave und kein Speichern beim Verlassen', async () => {
+      await erstellen('id-1');
+      TestBed.inject(Art9EinwilligungZustand).setzen('fehlt');
+      component.satz.setValue('Mein Satz', { emitEvent: false });
+
+      component.onBlur();
+      fixture.destroy();
+
+      expect(einwurfService.satzSpeichern).not.toHaveBeenCalled();
+      expect(einwurfService.satzSpeichernKeepalive).not.toHaveBeenCalled();
+    });
+
+    it('laesst den Fokus im Feld, wenn ein Autosave mit 403 scheitert', fakeAsync(() => {
+      einwurfService.satzSpeichern.and.returnValue(
+        throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })),
+      );
+      erstellen('id-1');
+      tick();
+      fixture.detectChanges();
+      const gezeigt = spyOn(TestBed.inject(Art9EinwilligungZustand), 'hinweisZeigen');
+      const feld = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('#satz')!;
+      feld.focus();
+
+      component.satz.setValue('Erster Satz');
+      tick(AUTOSAVE_VERZOEGERUNG_MS);
+      tick();
+
+      expect(einwurfService.satzSpeichern).toHaveBeenCalled();
+      expect(gezeigt).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(feld);
+      expect(component.fehler).toBeNull();
       fixture.destroy();
     }));
 

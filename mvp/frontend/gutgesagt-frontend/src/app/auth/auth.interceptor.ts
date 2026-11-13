@@ -37,14 +37,15 @@ export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
       // Erst nach dem Fehlerzweig des Aufrufers: Oeffnet der selbst einen Hinweis,
       // ersetzte der sonst diesen, und der Knopf waere weg.
       // Hat die Seite einen eigenen Hinweiskasten (Formulare, B4), zeigt der den
-      // Hinweis; ein zweiter als Snackbar waere doppelt.
+      // Hinweis; ein zweiter als Snackbar waere doppelt. In den Blick holen ihn die
+      // Formulare selbst, nur bei einer Aktion der Person, nie beim Speichern im
+      // Hintergrund (Review zu #670).
       // Auf /einwilligung selbst (und was sie verlinkt) keine Snackbar: Ein spaeter 403,
       // etwa der Satz beim Verlassen von Destillieren, laege sonst ueber ihren Knoepfen,
       // und sein "Einwilligen" fuehrte nirgendwohin (Review zu #670).
       const einwilligungHier = einwilligungFehlt(error) && ohneEinwilligungsUmleitung(router.url ?? '/');
       if (einwilligungFehlt(error)) {
         einwilligungZustand.setzen('fehlt');
-        if (einwilligungZustand.hinweisDa && !einwilligungHier) einwilligungZustand.hinweisZeigen();
       }
       if (einwilligungFehlt(error) && !einwilligungZustand.hinweisDa && !einwilligungHier) {
         setTimeout(() =>

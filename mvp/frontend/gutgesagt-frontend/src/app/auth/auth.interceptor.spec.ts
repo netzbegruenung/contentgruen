@@ -178,7 +178,9 @@ describe('AuthInterceptor', () => {
     abmelden();
   }));
 
-  it('holt einen vorhandenen Hinweiskasten bei einem 403 in den Blick', fakeAsync(() => {
+  // Re-Review zu #670: In den Blick holen nur die Formulare bei einer Aktion der Person,
+  // nie der Interceptor (sonst sprang der Fokus beim Autosave in Destillieren weg)
+  it('holt den Hinweiskasten bei einem 403 nicht selbst in den Blick', fakeAsync(() => {
     const zustand = TestBed.inject(Art9EinwilligungZustand);
     const abmelden = zustand.hinweisAnmelden();
     const gezeigt = spyOn(zustand, 'hinweisZeigen');
@@ -187,7 +189,7 @@ describe('AuthInterceptor', () => {
     httpMock.expectOne('/api/v1/einwuerfe').flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
     tick();
 
-    expect(gezeigt).toHaveBeenCalledTimes(1);
+    expect(gezeigt).not.toHaveBeenCalled();
     abmelden();
   }));
 

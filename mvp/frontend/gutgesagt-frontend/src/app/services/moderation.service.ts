@@ -36,6 +36,8 @@ export interface NeueMeldung {
 export interface ReportContentResponse {
   success: boolean;
   message: string;
+  /** Ob an der Meldung eine Adresse fuer Bestaetigung und Entscheidung steht (fehlt bei aelterem Backend). */
+  mit_email?: boolean;
 }
 
 export interface ContentReport {

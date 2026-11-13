@@ -7,7 +7,7 @@ import { catchError, distinctUntilChanged, filter, map, switchMap, take, tap } f
 import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
-import { entwuerfeLoeschen } from '../einwilligung/entwurf-vor-einwilligung';
+import { entwuerfeAufraeumen, entwuerfeLoeschen } from '../einwilligung/entwurf-vor-einwilligung';
 
 /**
  * Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum, ein zweiter
@@ -244,8 +244,12 @@ export class Art9EinwilligungService implements OnDestroy {
           // Abmelden oder anderes Konto: begonnene Eingaben von vor der Einwilligung weg.
           // Nicht beim ersten Wert (null beim App-Start), sonst ginge ein Entwurf ueber ein
           // Neuladen verloren.
+          // Sonst (App-Start, Anmelden): abgelaufene und die eines anderen Kontos weg,
+          // auch nach einem Neuladen, das die vorige Kennung nicht mehr kennt.
           if (this.kennung !== null && this.kennung !== kennung) entwuerfeLoeschen();
+          else entwuerfeAufraeumen(kennung);
           this.kennung = kennung;
+          this.zustand.kennung = kennung;
           this.geklaertSetzen(null); // abgemeldet oder andere Person: neu klaeren
           this.zustand.setzen('unbekannt');
         }),

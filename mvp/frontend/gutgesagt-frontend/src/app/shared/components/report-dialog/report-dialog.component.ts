@@ -1,4 +1,5 @@
-import { Component, ElementRef, Inject, ViewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Inject, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -24,6 +25,13 @@ export interface ReportDialogData {
   contentId: string;
   contentType: string;
 }
+
+/**
+ * Ob das Haekchen „Bestaetigung und Entscheidung per Mail an mein Konto“ vorausgewaehlt
+ * ist. Vorerst nein (Datenschutz durch Voreinstellung, Art. 25 Abs. 2 DSGVO), bis der
+ * Maintainer entschieden hat; umstellen nur hier.
+ */
+export const MELDEN_AN_KONTO_VORAUSGEWAEHLT = false;
 
 // Grenzen wie im Suchdienst (api/v1/moderation.py: MELDER_NAME_MAX, MELDER_EMAIL_MAX).
 export const MELDER_NAME_MAX = 200;
@@ -83,10 +91,13 @@ export class ReportDialogComponent {
   readonly reasons = MELDEGRUENDE;
   readonly nameMax = MELDER_NAME_MAX;
   readonly emailMax = MELDER_EMAIL_MAX;
-  /** Angemeldet: kein Namens- und kein Adressfeld, die Meldung haengt am Konto. */
-  readonly angemeldet: boolean;
-  /** Angemeldet: Bestaetigung und Entscheidung per Mail an das Konto; vorausgewaehlt. */
-  bestaetigungAnKonto = true;
+  /**
+   * Angemeldet: kein Namens- und kein Adressfeld, die Meldung haengt am Konto. Folgt der
+   * Anmeldung, auch wenn sie erst nach dem Oeffnen feststeht (Review zu #670).
+   */
+  angemeldet = false;
+  /** Angemeldet: Bestaetigung und Entscheidung per Mail an das Konto. */
+  bestaetigungAnKonto = MELDEN_AN_KONTO_VORAUSGEWAEHLT;
 
   constructor(
     public dialogRef: MatDialogRef<ReportDialogComponent>,
@@ -94,7 +105,9 @@ export class ReportDialogComponent {
     private moderationService: ModerationService,
     authService: AuthService,
   ) {
-    this.angemeldet = !!authService.getUserInfo()?.isAuthenticated;
+    authService.userInfo$
+      .pipe(takeUntilDestroyed(inject(DestroyRef)))
+      .subscribe((info) => (this.angemeldet = !!info?.isAuthenticated));
   }
 
   get emailUngueltig(): boolean {
@@ -173,10 +186,12 @@ export class ReportDialogComponent {
       guterGlaube: true,
       ...(anKonto ? { bestaetigungAnKonto: true } : {}),
     }).subscribe({
-      next: () => {
+      next: (antwort) => {
         this.submitting = false;
         this.submitted = true;
-        this.mitEmail = melderEmail !== null || anKonto;
+        // Die Zusage einer Mail richtet sich nach dem, was der Suchdienst gespeichert hat:
+        // Fuer Angemeldete kann die Adresse fehlen (Sitzung abgelaufen, keine im Konto).
+        this.mitEmail = antwort?.mit_email ?? (melderEmail !== null || anKonto);
       },
       error: (error) => {
         this.submitting = false;

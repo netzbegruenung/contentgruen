@@ -362,21 +362,23 @@ describe('Art9EinwilligungService', () => {
   });
 
   // Review zu #670: Beitragstext von vor der Einwilligung nicht ueber Abmelden und Kontowechsel
-  it('loescht begonnene Eingaben beim Abmelden und Kontowechsel, nicht beim App-Start', () => {
-    entwurfSichern('/einwerfen', 'vor dem Start');
+  it('raeumt Entwuerfe beim App-Start auf und loescht sie beim Abmelden und Kontowechsel', () => {
+    entwurfSichern('/einwerfen', 'von kim', 'kim');
+    entwurfSichern('/fangkorb', 'von alex', 'alex');
     service.starten();
     anmeldung.next(angemeldet('kim'));
     http.expectOne(ADRESSE).flush(stand(true));
-    expect(entwurfHolen('/einwerfen')).toBe('vor dem Start');
+    expect(entwurfHolen('/fangkorb', 'alex')).toBeUndefined();
+    expect(entwurfHolen('/einwerfen', 'kim')).toBe('von kim');
 
-    entwurfSichern('/einwerfen', 'von kim');
+    entwurfSichern('/einwerfen', 'von kim', 'kim');
     anmeldung.next(angemeldet('alex'));
     http.expectOne(ADRESSE).flush(stand(true));
-    expect(entwurfHolen('/einwerfen')).toBeUndefined();
+    expect(entwurfHolen('/einwerfen', 'kim')).toBeUndefined();
 
-    entwurfSichern('/einwerfen', 'von alex');
+    entwurfSichern('/einwerfen', 'von alex', 'alex');
     anmeldung.next(null);
-    expect(entwurfHolen('/einwerfen')).toBeUndefined();
+    expect(entwurfHolen('/einwerfen', 'alex')).toBeUndefined();
   });
 
   it('einwilligungFehlt erkennt nur 403 mit Kennzeichen', () => {

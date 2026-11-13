@@ -7,7 +7,7 @@ import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { ENTWURF_HOECHSTENS_MS } from './entwurf-vor-einwilligung';
 
 function ablegen(werte: unknown, zeit = Date.now()): void {
-  sessionStorage.setItem(ENTWURF_PRAEFIX + '/einwerfen?von=fangkorb', JSON.stringify({ zeit, werte }));
+  sessionStorage.setItem(ENTWURF_PRAEFIX + '/einwerfen?von=fangkorb', JSON.stringify({ zeit, konto: null, werte }));
 }
 
 /** UX-Review B4: Hinweis mit „Einwilligen“ über dem Formular, die Eingabe übersteht den Umweg. */
@@ -135,5 +135,19 @@ describe('EinwilligungHinweisComponent', () => {
 
     expect(scroll).toHaveBeenCalled();
     expect(document.activeElement).toBe(kastenElement);
+  }));
+  it('nimmt den Fokus nicht, solange er in einem Eingabefeld steht', fakeAsync(() => {
+    zustand.setzen('fehlt');
+    erstellen();
+    const feld = document.createElement('textarea');
+    document.body.appendChild(feld);
+    feld.focus();
+    kasten()!.scrollIntoView = jasmine.createSpy('scrollIntoView');
+
+    zustand.hinweisZeigen();
+    tick();
+
+    expect(document.activeElement).toBe(feld);
+    feld.remove();
   }));
 });

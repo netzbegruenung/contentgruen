@@ -25,8 +25,11 @@ export const EINWILLIGUNG_HINWEIS_KNOPF = 'Einwilligen';
  *
  * Solange der Kasten auf der Seite ist, zeigt der Interceptor bei einem 403 keinen
  * zweiten Hinweis als Snackbar; die Formulare zeigen dann auch keine Fehlermeldung.
- * Stattdessen holt der Kasten sich in den Blick und nimmt den Fokus (Review zu #670):
- * Auf langen Formularen steht er sonst ausser Sicht, und Absenden taete scheinbar nichts.
+ * Stattdessen holt der Kasten sich in den Blick, wenn eine Aktion der Person (Absenden,
+ * Weiter) an der fehlenden Einwilligung scheitert (Review zu #670): Auf langen
+ * Formularen steht er sonst ausser Sicht, und Absenden taete scheinbar nichts. Den Fokus
+ * nimmt er nur, wenn er nicht in einem Eingabefeld steht; Speichern im Hintergrund
+ * holt ihn nie (``hinweisZeigen`` rufen nur die Formulare bei einer Aktion).
  */
 @Component({
   selector: 'app-einwilligung-hinweis',
@@ -100,7 +103,7 @@ export class EinwilligungHinweisComponent implements OnInit, OnDestroy {
         const kasten = this.host.nativeElement.querySelector<HTMLElement>('.einwilligung-hinweis');
         if (!kasten) return;
         kasten.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
-        kasten.focus({ preventScroll: true });
+        if (!imEingabefeld()) kasten.focus({ preventScroll: true });
       }),
     );
   }
@@ -110,18 +113,22 @@ export class EinwilligungHinweisComponent implements OnInit, OnDestroy {
     zurEinwilligungFuehren(this.router);
   }
 
+  private get kennung(): string | null {
+    return this.zustand.kennung;
+  }
+
   private get adresse(): string {
     return this.router.url ?? '/';
   }
 
   private entwurfSichern(): void {
-    if (this.formular) entwurfAblegen(this.adresse, this.formular.getRawValue());
+    if (this.formular) entwurfAblegen(this.adresse, this.formular.getRawValue(), this.kennung);
   }
 
   /** Nur nicht leere Werte: Was die Seite selbst vorbelegt hat, bleibt sonst stehen. */
   private entwurfEinsetzen(): void {
     if (!this.formular) return;
-    const gelesen = entwurfHolen(this.adresse);
+    const gelesen = entwurfHolen(this.adresse, this.kennung);
     if (gelesen === undefined) return;
     if (gelesen !== null && typeof gelesen === 'object' && !Array.isArray(gelesen)) {
       const nichtLeer = Object.fromEntries(
@@ -132,6 +139,13 @@ export class EinwilligungHinweisComponent implements OnInit, OnDestroy {
       this.formular.setValue(gelesen);
     }
   }
+}
+
+/** Steht der Fokus gerade in einem Feld, in das die Person tippt? */
+function imEingabefeld(): boolean {
+  const el = document.activeElement as HTMLElement | null;
+  if (!el) return false;
+  return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
 }
 
 function leer(wert: unknown): boolean {

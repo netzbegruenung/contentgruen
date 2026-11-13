@@ -239,17 +239,27 @@ describe('UsageTrackingService', () => {
       neu.flush(STAND);
     });
 
-    it('fragt ohne lesbaren Status die Endpunkte selbst und merkt sich deren 404', () => {
+    it('fragt ohne Status-Endpunkt (404) die Endpunkte selbst, merkt sich deren 404 und fragt den Status nicht gleich wieder', () => {
       service.getEigenePunkte().subscribe();
       http.expectOne(STATUS).flush('weg', weg);
       http.expectOne(PUNKTE).flush('weg', weg);
 
       let punkte: unknown = 'unberuehrt';
       service.getEigenePunkte().subscribe((p) => (punkte = p));
-      // Ein gescheiterter Status gilt nicht weiter
-      status(true, true);
+      http.expectNone(STATUS);
       http.expectNone(PUNKTE);
       expect(punkte).toBeNull();
+    });
+
+    it('fragt nach einem anderen Fehler des Status beim naechsten Abruf wieder', () => {
+      service.getEigeneMeilensteine().subscribe();
+      http.expectOne(STATUS).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });
+      http.expectOne(MEILENSTEINE).flush({ meilensteine: [] });
+
+      service.getEigeneMeilensteine().subscribe();
+      status(false, false);
+      http.expectNone(MEILENSTEINE);
+      expect().nothing();
     });
 
     // Review zu #670: "laedt selbst nach" - ein eingeschalteter Schalter kommt ohne Neuladen an

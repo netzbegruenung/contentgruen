@@ -519,3 +519,40 @@ class TestKontoAdresseFuerAngemeldete:
         )
 
         assert self._melder(service).email == "test.user@example.com"
+
+    def test_angemeldet_name_aus_dem_koerper_zaehlt_nicht(self, client, service):
+        client.post(
+            REPORT_URL, json=_payload(melder_name="Kim K."), headers=self.ANGEMELDET
+        )
+
+        assert self._melder(service).name is None
+
+    def test_angemeldet_ungueltige_angaben_im_koerper_sind_kein_422(
+        self, client, service
+    ):
+        antwort = client.post(
+            REPORT_URL,
+            json=_payload(melder_email="keine-adresse", melder_name="X" * 500),
+            headers=self.ANGEMELDET,
+        )
+
+        assert antwort.status_code == 200
+        assert self._melder(service) == MelderAngaben(guter_glaube=True)
+
+    @pytest.mark.parametrize(
+        "koerper, kopf, erwartet",
+        [
+            ({"bestaetigung_an_konto": True}, ANGEMELDET, True),
+            ({}, ANGEMELDET, False),
+            ({"bestaetigung_an_konto": True}, {"X-User": "user-1"}, False),
+            ({"melder_email": "test.user@example.com"}, {}, True),
+            ({}, {}, False),
+        ],
+    )
+    def test_antwort_sagt_ob_eine_adresse_gespeichert_ist(
+        self, client, koerper, kopf, erwartet
+    ):
+        antwort = client.post(REPORT_URL, json=_payload(**koerper), headers=kopf)
+
+        assert antwort.status_code == 200
+        assert antwort.json()["mit_email"] is erwartet

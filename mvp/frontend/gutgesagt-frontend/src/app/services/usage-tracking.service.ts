@@ -176,14 +176,16 @@ export class UsageTrackingService {
    * einmal von ``GET /punkte/status`` (ohne Anmeldung lesbar), geteilt fuer punkte,
    * meilensteine und abzeichen-sichtbarkeit. So fragt die App diese nur bei eingeschaltetem
    * Schalter und laeuft nicht auf ihr 404. Gilt SCHALTER_AUS_MERKEN_MS und bis zum
-   * naechsten Wechsel der Anmeldung; ein gescheiterter Abruf gilt nicht weiter.
+   * naechsten Wechsel der Anmeldung; ein 404 ebenso, ein anderer Fehler nicht.
    */
   punkteStatus(): Observable<PunkteStatus> {
     if (!this.status$ || !noch(this.statusSeit)) {
       this.statusSeit = Date.now();
       this.status$ = this.http.get<PunkteStatus>(`${this.apiUrl}/punkte/status`).pipe(
-        catchError(() => {
-          this.status$ = undefined;
+        catchError((error) => {
+          // Ein 404 (aelteres Backend ohne den Endpunkt) gilt wie der Status selbst
+          // SCHALTER_AUS_MERKEN_MS; ein anderer Fehler nicht, dann fragt der naechste Abruf.
+          if (error?.status !== 404) this.status$ = undefined;
           return of(STATUS_UNBEKANNT);
         }),
         shareReplay(1),

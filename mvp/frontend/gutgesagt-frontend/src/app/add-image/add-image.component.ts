@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -17,6 +17,7 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
 import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
@@ -80,6 +81,7 @@ function aufgeloest(adresse: string): string {
   ],
 })
 export class AddImageComponent implements AfterViewInit, OnDestroy {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('image');
   readonly titelMax = TITEL_MAX;
@@ -252,6 +254,7 @@ export class AddImageComponent implements AfterViewInit, OnDestroy {
         // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
         if (einwilligungFehlt(error)) {
           this.fehler = null;
+          this.einwilligungZustand.hinweisZeigen();
           return;
         }
         this.validierung = validierungsMeldung(error);
