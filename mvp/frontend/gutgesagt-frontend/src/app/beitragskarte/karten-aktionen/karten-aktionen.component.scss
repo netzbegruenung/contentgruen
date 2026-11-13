@@ -82,8 +82,9 @@
 
 .kopieren-knopf {
   min-width: 180px;
-  height: 40px;
+  height: 44px;
   padding: 0 24px;
+  font-size: 16px;
   font-weight: 600;
 
   mat-icon {
@@ -122,12 +123,14 @@
     gap: 0;
   }
 
+  // Lesbar statt 12 px: Kopieren ist der Hauptgriff der Karte (Nutzerfuehrung 13.11.).
+  // Ohne Mindestbreite (B7): neben Teilen nimmt er den Rest der Leiste.
   .kopieren-knopf {
     min-width: 0;
     max-width: 100%;
-    height: 36px;
+    height: 44px;
     padding: 0 12px;
-    font-size: 12px;
+    font-size: 15px;
     overflow: hidden;
 
     // Ist der Platz knapp (360 px, "Bildunterschrift kopieren"), kuerzt das Wort mit "…"
@@ -140,6 +143,10 @@
 
     mat-icon {
       flex-shrink: 0;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-right: 6px;
     }
 
     .kopieren-wort {
@@ -147,13 +154,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      margin-right: 4px;
     }
   }
 }

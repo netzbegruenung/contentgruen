@@ -60,6 +60,8 @@
                     <mat-error *ngIf="postForm.get('text')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
                     <mat-error *ngIf="postForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
+                <!-- Einspaltig direkt unter dem Feld, damit man es beim Tippen sieht (Nutzerfuehrung 13.11.) -->
+                <app-gegenlesen *ngIf="einspaltig()" [kompakt]="true" [titel]="postForm.value.title" [text]="postForm.value.text" [aussage]="aussage.text" [titelIstBehauptung]="false"></app-gegenlesen>
 
                 <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
                 <div *ngIf="zeigtThemen" class="optionale-angaben">
@@ -92,7 +94,7 @@
                 <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
-            <app-gegenlesen [titel]="postForm.value.title" [text]="postForm.value.text" [aussage]="aussage.text"
+            <app-gegenlesen *ngIf="!einspaltig()" [titel]="postForm.value.title" [text]="postForm.value.text" [aussage]="aussage.text"
                             [titelIstBehauptung]="false"></app-gegenlesen>
         </section>
     </div>

@@ -44,6 +44,7 @@ def _aussage(statement_id, text, tag):
 def _service(ohne_kommentar=(), gesucht=(), themen=None):
     statement_service = Mock(spec=StatementService)
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
+    statement_service.mit_kommentar = AsyncMock(return_value=set())
     suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(return_value=list(gesucht))
     themen_service = Mock(spec=AussageThemenService)
@@ -116,6 +117,25 @@ async def test_gesuchte_aussage_ohne_kommentar_erscheint_nur_einmal():
     assert liste == [UnbeantworteteAussage(A, "Windräder sind hässlich", 2)]
 
 
+async def test_gesuchte_aussage_mit_kommentar_verschwindet():
+    """Wer geantwortet hat, sieht die Luecke zu; die Suchen ohne Treffer zaehlen weiter."""
+    service = _service(
+        gesucht=[
+            SucheOhneTreffer(A, "Das Bürgergeld ist höher als der Mindestlohn", 4, 2),
+            SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 3, 2),
+        ],
+    )
+    service._statement_service.mit_kommentar = AsyncMock(
+        side_effect=lambda ids: set(ids) & {A}
+    )
+
+    liste = await service.liste()
+
+    assert [a.statement_id for a in liste] == [B]
+    gefragt = service._statement_service.mit_kommentar.call_args.args[0]
+    assert set(gefragt) == {A, B}
+
+
 async def test_liste_ist_begrenzt():
     service = _service(
         ohne_kommentar=[_aussage(C, "c", 2), _aussage(D, "d", 1)],
@@ -174,3 +194,18 @@ async def test_filter_wird_vor_der_begrenzung_angewandt():
     liste = await service.liste(limit=1, thema="klima")
 
     assert [a.statement_id for a in liste] == [C]
+
+
+async def test_ohne_themen_gleiche_auswahl_ohne_nachschlagen():
+    """Fuer "Seit deinem letzten Besuch" wird nur gezaehlt (Nutzerfuehrung 13.11.)."""
+    service = _service(
+        ohne_kommentar=[_aussage(A, "Windräder sind hässlich", 20)],
+        gesucht=[SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 7, 4)],
+        themen={A: ["natur-umwelt"]},
+    )
+
+    liste = await service.liste(mit_themen=False)
+
+    assert [a.statement_id for a in liste] == [B, A]
+    assert all(a.themen == () for a in liste)
+    service._themen.themen_von.assert_not_called()

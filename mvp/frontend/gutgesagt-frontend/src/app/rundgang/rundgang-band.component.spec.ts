@@ -30,6 +30,7 @@ describe('RundgangBandComponent', () => {
   });
 
   it('zeigt Titel und Satz des Angebots, benannt nach dem Titel', () => {
+    fixture.componentRef.setInput('ort', 'start');
     band.set(WILLKOMMEN);
     fixture.detectChanges();
     const aside = el().querySelector('aside')!;
@@ -53,11 +54,34 @@ describe('RundgangBandComponent', () => {
   });
 
   it('startet den Rundgang oder blendet sich aus', () => {
+    fixture.componentRef.setInput('ort', 'start');
     band.set(WILLKOMMEN);
     fixture.detectChanges();
     knopf('Rundgang starten').click();
     expect(rundgang.bandBeantworten).toHaveBeenCalledWith(true);
     knopf('Ausblenden').click();
     expect(rundgang.bandBeantworten).toHaveBeenCalledWith(false);
+  });
+
+  describe('Ort (Nutzerfuehrung 13.11.)', () => {
+    it('zeigt das Willkommen nur unter dem Suchfeld, nicht ueber dem Inhalt', () => {
+      band.set(WILLKOMMEN);
+      fixture.detectChanges();
+      expect(el().querySelector('aside')).toBeNull();
+
+      fixture.componentRef.setInput('ort', 'start');
+      fixture.detectChanges();
+      expect(el().querySelector('aside h2')?.textContent).toContain(WILLKOMMEN.titel);
+    });
+
+    it('zeigt Mitmachen weiter ueber dem Inhalt und nicht auf der Startseite', () => {
+      band.set(MITMACHEN_ANGEBOT);
+      fixture.detectChanges();
+      expect(el().querySelector('aside')).not.toBeNull();
+
+      fixture.componentRef.setInput('ort', 'start');
+      fixture.detectChanges();
+      expect(el().querySelector('aside')).toBeNull();
+    });
   });
 });

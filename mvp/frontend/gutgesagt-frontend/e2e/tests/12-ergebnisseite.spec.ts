@@ -147,7 +147,7 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
       const bilder = page.locator('.typ-chip', { hasText: 'Bilder' });
       await bilder.click();
       await expect(bilder).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.locator('.typ-ansage')).toHaveText('Nur Bilder, 1 Treffer');
+      await expect(page.locator('.typ-ansage')).toHaveText('Nur Bilder, 1 Treffer, 1 weitere eingeklappt');
       const typen = await page.locator('.typ-block').evaluateAll((bloecke) => bloecke.map((b) => b.getAttribute('data-typ')));
       expect(typen).toEqual(['image']);
       await bild(`ergebnis-${name}-nur-bilder`);

@@ -1,7 +1,11 @@
 <div class="gespeichert">
     <div class="gespeichert-kopf" role="status">
         <mat-icon class="gespeichert-icon" aria-hidden="true">check_circle</mat-icon>
-        <p class="gespeichert-satz">{{ texte.gespeichert }}</p>
+        <!-- Aus "Hier fehlt eine Antwort": die Luecke ist zu, mit der Nachfrage (Nutzerfuehrung 13.11.) -->
+        <p *ngIf="lueckeZu; else allgemein" class="gespeichert-satz luecke-zu">
+            <strong class="luecke-zu-titel">{{ lueckeZuTitel }}</strong> {{ lueckeZuSatz }}
+        </p>
+        <ng-template #allgemein><p class="gespeichert-satz">{{ texte.gespeichert }}</p></ng-template>
     </div>
 
     <p *ngIf="zustand.verknuepft === false" class="gespeichert-warnung verknuepfung-fehlgeschlagen" role="alert">
@@ -48,9 +52,17 @@
                 (click)="zurueckZurSuche()">
             Zurück zur Suche
         </button>
-        <button *ngSwitchDefault mat-raised-button type="button" class="primaer noch-einer" (click)="nochEiner()">
-            {{ texte.nochEiner }}
-        </button>
+        <ng-container *ngSwitchDefault>
+            <button *ngIf="lueckeZu; else nochEinerKnopf" mat-raised-button type="button" class="primaer naechste-luecke"
+                    (click)="naechsteLuecke()">
+                {{ naechsteLueckeText }}
+            </button>
+            <ng-template #nochEinerKnopf>
+                <button mat-raised-button type="button" class="primaer noch-einer" (click)="nochEiner()">
+                    {{ texte.nochEiner }}
+                </button>
+            </ng-template>
+        </ng-container>
 
         <!-- Weiter zur Aussage und ihren Treffern, und den Beitrag teilen (#617) -->
         <button *ngIf="zurAussageZeigen" mat-stroked-button type="button" class="zur-aussage" (click)="zurAussage()">
