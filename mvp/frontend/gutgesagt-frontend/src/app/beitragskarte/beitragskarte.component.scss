@@ -884,6 +884,13 @@
     font-size: 15px;
     font-weight: 700;
     color: var(--text-primary);
+
+    // Ohne Nutzung lesbar, aber ruhig
+    &.ungenutzt {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
   }
 }
 

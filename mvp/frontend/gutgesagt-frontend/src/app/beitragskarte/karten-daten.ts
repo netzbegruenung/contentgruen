@@ -566,7 +566,10 @@ export function hinweisTitel(inhalt: string | null | undefined, url: string | nu
   let text = inhalt?.trim();
   const marke = SEITENTITEL_MARKE.trim();
   if (text?.startsWith(marke)) {
-    text = text.slice(marke.length).trim();
+    // Seitentitel vorn, der Rest des geteilten Texts mit Strich dahinter: Die Karte
+    // zeigt den Titel in einer Zeile, ein Zeilenumbruch fiele dort weg.
+    const [titel, ...rest] = text.slice(marke.length).split('\n');
+    text = [titel.trim(), rest.join(' ').trim()].filter(Boolean).join(' – ');
   }
   return text && text !== url ? text : null;
 }

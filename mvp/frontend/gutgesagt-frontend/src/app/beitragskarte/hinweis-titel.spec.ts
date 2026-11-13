@@ -8,10 +8,10 @@ describe('hinweisTitel', () => {
     expect(SEITENTITEL_MARKE).toBe(SEITENTITEL_PRAEFIX);
   });
 
-  it('trennt „Seitentitel:“ ab und laesst den Rest stehen', () => {
+  it('trennt „Seitentitel:“ ab und setzt den Rest mit Strich dahinter', () => {
     const geteilt = hinweisVorschlag({ titel: 'Windkraft: Neue Studie', text: 'Schau mal, das passt', url: null } as any);
 
-    expect(hinweisTitel(geteilt)).toBe('Windkraft: Neue Studie\nSchau mal, das passt');
+    expect(hinweisTitel(geteilt)).toBe('Windkraft: Neue Studie – Schau mal, das passt');
     expect(hinweisTitel('Seitentitel:   Nur der Titel ')).toBe('Nur der Titel');
   });
 

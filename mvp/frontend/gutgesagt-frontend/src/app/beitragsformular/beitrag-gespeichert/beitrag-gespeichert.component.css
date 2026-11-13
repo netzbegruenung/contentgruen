@@ -24,6 +24,14 @@
     font-weight: 500;
 }
 
+.gespeichert-kopf:has(.luecke-zu) {
+    align-items: flex-start;
+}
+
+.luecke-zu {
+    margin: 0;
+}
+
 .luecke-zu-titel {
     display: block;
     font-family: GrueneType, Roboto, sans-serif;
