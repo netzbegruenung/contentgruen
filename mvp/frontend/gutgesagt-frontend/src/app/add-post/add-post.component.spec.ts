@@ -168,7 +168,8 @@ describe('AddPostComponent', () => {
       component.speichern();
 
       expect(senden.calls.mostRecent().args[0].statement_id).toBe('a-1');
-      expect(senden.calls.mostRecent().args[0].statement_text).toBeUndefined();
+      // Der Text geht mit (Vormoderation: verborgene Suchanfrage, aussageFuerAnfrage).
+      expect(senden.calls.mostRecent().args[0].statement_text).toBe('Solar lohnt sich nicht');
       expect(gemeldet).toEqual({ id: 'p-1', aussage: { id: 'a-1', text: 'Solar lohnt sich nicht' }, verknuepft: true });
     });
 
