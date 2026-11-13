@@ -28,7 +28,8 @@
                                 [attr.tabindex]="filter.tab === tab.wert ? 0 : -1"
                                 (click)="tabWaehlen(tab.wert)">
                             <span class="tab-wort">{{ tab.name }}</span>
-                            <span class="tab-zahl">{{ zaehler[tab.wert] }}</span>
+                            <!-- Ohne geladene Einwuerfe nach einem Fehler waere 0 falsch: dann ein Strich -->
+                            <span class="tab-zahl">{{ zaehlerUnbekannt ? '–' : zaehler[tab.wert] }}</span>
                         </button>
                     </div>
 

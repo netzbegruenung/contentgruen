@@ -239,6 +239,35 @@ describe('MeineEinwuerfeComponent', () => {
     expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.einwuerfe-inhalt'));
   });
 
+  it('zeigt nach dem Blaettern waehrend eines Versuchs die neue Seite, auch wenn der alte spaet antwortet', fakeAsync(() => {
+    const seiteZwei = new Subject<EinwurfSeite>();
+    const seiteDrei = new Subject<EinwurfSeite>();
+    const drei = einwurf({ id: 'e-drei' });
+    einwurfService.eigeneLaden.and.returnValues(
+      of(antwort([offen], 100)),
+      throwError(() => ({ status: 503 })),
+      seiteZwei,
+      seiteDrei,
+    );
+    anzeigen();
+    const komponente = fixture.componentInstance;
+    komponente.onPageChange({ pageIndex: 1, pageSize: 24, length: 100 }); // Seite 2 scheitert
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('button.erneut-versuchen') as HTMLButtonElement).click(); // Versuch A
+    komponente.onPageChange({ pageIndex: 2, pageSize: 24, length: 100 }); // Seite 3: Anfrage B
+
+    seiteDrei.next(antwort([drei], 100));
+    seiteZwei.next(antwort([offen], 100)); // A antwortet nach B: zaehlt nicht mehr
+    seiteZwei.error({ status: 503 });
+    fixture.detectChanges();
+
+    expect(einwurfService.eigeneLaden.calls.mostRecent().args).toEqual([3, 24]);
+    expect(komponente.karten.map((karte) => karte.id)).toEqual(['e-drei']);
+    expect(komponente.ladefehler).toBeFalse();
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1] * 2);
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(4);
+  }));
+
   it('versucht es auf Knopfdruck sofort, auf derselben Seite', fakeAsync(() => {
     einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), of(antwort([offen])));
     anzeigen();

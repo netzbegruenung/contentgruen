@@ -4,8 +4,8 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { takeUntil, timeout } from 'rxjs/operators';
 
 import { EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
@@ -13,7 +13,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { EinwurfAktion, KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 import { EinwurfAktionenService } from '../fangkorb/einwurf-aktionen.service';
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
-import { LadeWiederholung } from '../shared/lade-wiederholung';
+import { LADE_TIMEOUT_MS, LadeWiederholung } from '../shared/lade-wiederholung';
 
 /**
  * Meine Einwuerfe: was aus den eigenen Einwuerfen geworden ist.
@@ -53,6 +53,8 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   /** Nach einem Ladefehler versucht die Liste es selbst wieder, wie der Fangkorb. */
   private wiederholung = new LadeWiederholung(this.destroy$);
+  /** Die laufende Ladeanfrage; ein neues laden() beendet sie. */
+  private ladeAbo: Subscription | null = null;
 
   constructor(
     private einwurfService: EinwurfService,
@@ -75,6 +77,7 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.ladeAbo?.unsubscribe();
     this.wiederholung.abbrechen();
     this.destroy$.next();
     this.destroy$.complete();
@@ -85,6 +88,9 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
    * stehen, waehrend der naechste Versuch laeuft; nie "bitte neu laden".
    */
   laden(): void {
+    // Nur die neueste Anfrage zaehlt: Eine aeltere (z. B. vor dem Blaettern) darf
+    // weder die Liste ueberschreiben noch einen Versuch planen.
+    this.ladeAbo?.unsubscribe();
     this.wiederholung.abbrechen();
     if (this.ladefehler) {
       this.erneutLaedt = true;
@@ -92,13 +98,15 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
       this.isLoading = true;
     }
     this.cdr.markForCheck();
-    this.einwurfService
+    this.ladeAbo = this.einwurfService
       .eigeneLaden(this.pageIndex + 1, this.pageSize)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(timeout({ first: LADE_TIMEOUT_MS }), takeUntil(this.destroy$))
       .subscribe({
         next: (daten) => {
           const nachFehler = this.ladefehler;
-          const fokusAmKnopf = !!document.activeElement?.classList.contains('erneut-versuchen');
+          const aktiv = document.activeElement;
+          const fokusAmKnopf =
+            !!aktiv && this.host.nativeElement.contains(aktiv) && aktiv.classList.contains('erneut-versuchen');
           this.karten = daten.results.map(ausEinwurf);
           this.gesamt = daten.total_records_count;
           this.isLoading = false;

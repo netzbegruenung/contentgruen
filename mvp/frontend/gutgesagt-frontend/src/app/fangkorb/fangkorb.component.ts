@@ -12,8 +12,8 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { takeUntil, timeout } from 'rxjs/operators';
 
 import { EinwurfAktionenService } from './einwurf-aktionen.service';
 
@@ -25,7 +25,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
 import { TabAusrichtung, tabMitTasteWaehlen } from '../shared/tab-tasten';
-import { LadeWiederholung } from '../shared/lade-wiederholung';
+import { LADE_TIMEOUT_MS, LadeWiederholung } from '../shared/lade-wiederholung';
 import {
   FangkorbFilter,
   FangkorbTab,
@@ -107,6 +107,8 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   /** Nach einem Ladefehler: der naechste Versuch, selbst geplant. */
   private wiederholung = new LadeWiederholung(this.destroy$);
+  /** Die laufende Ladeanfrage; ein neues laden() beendet sie. */
+  private ladeAbo: Subscription | null = null;
 
   constructor(
     private einwurfService: EinwurfService,
@@ -134,6 +136,9 @@ export class FangkorbComponent implements OnInit, OnDestroy {
    * naechste Versuch laeuft; der Spinner kommt nur, solange noch nichts gescheitert ist.
    */
   laden(): void {
+    // Nur die neueste Anfrage zaehlt: Eine aeltere (z. B. vor dem Blaettern) darf
+    // weder die Liste ueberschreiben noch einen Versuch planen.
+    this.ladeAbo?.unsubscribe();
     this.wiederholung.abbrechen();
     if (this.ladefehler) {
       this.erneutLaedt = true;
@@ -141,9 +146,9 @@ export class FangkorbComponent implements OnInit, OnDestroy {
       this.isLoading = true;
     }
     this.cdr.markForCheck();
-    this.einwurfService
+    this.ladeAbo = this.einwurfService
       .fangkorbLaden(1, LADE_GROESSE)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(timeout({ first: LADE_TIMEOUT_MS }), takeUntil(this.destroy$))
       .subscribe({
         next: (daten) => {
           const nachFehler = this.ladefehler;
@@ -192,6 +197,11 @@ export class FangkorbComponent implements OnInit, OnDestroy {
 
   tabWaehlen(tab: FangkorbTab): void {
     this.filterSetzen({ ...this.filter, tab });
+  }
+
+  /** Nach einem Ladefehler ohne geladene Einwuerfe ist keine Zahl bekannt. */
+  get zaehlerUnbekannt(): boolean {
+    return this.ladefehler && !this.einwuerfe.length;
   }
 
   /** In der Seitenleiste stehen die Tabs untereinander, sonst nebeneinander. */
@@ -288,8 +298,10 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     this.router.navigate(['/einwerfen'], { queryParams: { von: 'fangkorb' } });
   }
 
+  /** Ob der Fokus auf dem eigenen Knopf "Erneut versuchen" steht, nicht auf einem fremden. */
   private fokusAmErneutKnopf(): boolean {
-    return !!document.activeElement?.classList.contains('erneut-versuchen');
+    const aktiv = document.activeElement;
+    return !!aktiv && this.host.nativeElement.contains(aktiv) && aktiv.classList.contains('erneut-versuchen');
   }
 
   /** Der Knopf verschwindet mit dem Erfolg; der Fokus geht in den Bereich des Tabs. */
@@ -299,6 +311,7 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.ladeAbo?.unsubscribe();
     this.wiederholung.abbrechen();
     this.destroy$.next();
     this.destroy$.complete();

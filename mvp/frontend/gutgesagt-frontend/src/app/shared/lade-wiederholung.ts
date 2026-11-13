@@ -8,6 +8,12 @@ import { filter, takeUntil } from 'rxjs/operators';
 export const WIEDERHOLUNG_MS: readonly number[] = [2000, 5000, 15000, 30000, 60000];
 
 /**
+ * So lange darf ein Ladeversuch dauern. Danach gilt er als gescheitert (ohne Status,
+ * also wiederholbar): Eine haengende Anfrage soll die Wiederholung nicht blockieren.
+ */
+export const LADE_TIMEOUT_MS = 20000;
+
+/**
  * Ob sich ein neuer Versuch von selbst lohnt: ohne Antwort (Netz weg, Status 0 oder
  * kein HTTP-Fehler), Timeout (408), gebremst (429) oder Serverfehler (5xx). Andere
  * 4xx aendern sich nicht durch Warten; dort bleibt nur der Knopf.
@@ -27,7 +33,8 @@ export function lohntWiederholung(fehler: unknown): boolean {
  * (``online``) oder der Tab wieder sichtbar wird. Endet mit ``ende$`` (dem destroy$
  * der Seite).
  *
- * Gebrauch: vor jedem Laden ``abbrechen()``, nach Erfolg ``erfolg()``, nach einem
+ * Gebrauch: vor jedem Laden ``abbrechen()`` (und die vorige Anfrage beenden), die
+ * Anfrage mit ``timeout({ first: LADE_TIMEOUT_MS })``, nach Erfolg ``erfolg()``, nach einem
  * Fehler ``fehlgeschlagen(fehler, () => this.laden())``.
  */
 export class LadeWiederholung {
@@ -64,7 +71,9 @@ export class LadeWiederholung {
     this.offen = null;
   }
 
+  /** Nach Erfolg: Zaehler zurueck und nichts mehr geplant. */
   erfolg(): void {
     this.fehlversuche = 0;
+    this.abbrechen();
   }
 }

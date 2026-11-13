@@ -6,11 +6,11 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
+import { BehaviorSubject, NEVER, Subject, of, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { LADE_GROESSE, FangkorbComponent, SEITENLEISTE_MEDIEN } from './fangkorb.component';
-import { WIEDERHOLUNG_MS } from '../shared/lade-wiederholung';
+import { LADE_TIMEOUT_MS, WIEDERHOLUNG_MS } from '../shared/lade-wiederholung';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -749,6 +749,51 @@ describe('FangkorbComponent', () => {
           expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
         }));
       }
+
+      it('gibt eine haengende Anfrage nach LADE_TIMEOUT_MS auf und versucht es weiter', fakeAsync(() => {
+        einwurfService.fangkorbLaden.and.returnValues(NEVER, of(antwort(jeTab())));
+        fixture = TestBed.createComponent(FangkorbComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+        expect(component.isLoading).toBeTrue();
+
+        tick(LADE_TIMEOUT_MS);
+        fixture.detectChanges();
+        expect(component.ladefehler).toBeTrue();
+        expect(component.versuchtWeiter).toBeTrue();
+
+        tick(WIEDERHOLUNG_MS[0]);
+        fixture.detectChanges();
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
+        expect(karten().length).toBe(1);
+      }));
+
+      it('zeigt nach einem Fehler ohne geladene Einwuerfe einen Strich statt 0', () => {
+        scheitertErstDann('fehler');
+
+        expect(zaehler('Destillieren')).toBe('–');
+        expect(zaehler('Ausformulieren')).toBe('–');
+      });
+
+      it('beachtet nur die neueste Anfrage und plant nach Erfolg nichts mehr', fakeAsync(() => {
+        const erster = new Subject<ReturnType<typeof antwort>>();
+        const zweiter = new Subject<ReturnType<typeof antwort>>();
+        einwurfService.fangkorbLaden.and.returnValues(throwError(() => ({ status: 503 })), erster, zweiter);
+        fixture = TestBed.createComponent(FangkorbComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+
+        klicken(fehlerknopf()); // Versuch A laeuft
+        component.laden(); // z. B. nach dem Verwerfen: Versuch B
+        zweiter.next(antwort(jeTab()));
+        erster.error({ status: 503 }); // A scheitert spaet: darf nichts mehr planen
+        fixture.detectChanges();
+
+        expect(component.ladefehler).toBeFalse();
+        tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1] * 2);
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(3);
+        expect(karten().length).toBe(1);
+      }));
 
       it('laedt bei online ohne offenen Fehler nicht nach', () => {
         erstellen(jeTab());
