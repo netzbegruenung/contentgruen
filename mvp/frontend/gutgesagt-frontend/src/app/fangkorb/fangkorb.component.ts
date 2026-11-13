@@ -7,10 +7,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Subject } from 'rxjs';
+import { Subject, Subscription, timer } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { EinwurfAktionenService } from './einwurf-aktionen.service';
@@ -22,7 +23,7 @@ import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
-import { tabMitTasteWaehlen } from '../shared/tab-tasten';
+import { TabAusrichtung, tabMitTasteWaehlen } from '../shared/tab-tasten';
 import {
   FangkorbFilter,
   FangkorbTab,
@@ -39,6 +40,21 @@ import {
  * im Fangkorb, sagt die Liste das dazu.
  */
 export const LADE_GROESSE = 100;
+
+/**
+ * Ab dieser Breite steht der Fangkorb in zwei Spalten: links die Seitenleiste mit
+ * Einwerfen, Arbeitslisten (senkrecht) und Filtern, rechts die Liste mit queren
+ * Karten. Darunter bleibt alles wie am Handy. Eine Quelle fuer Layout und
+ * Tastatur: Das CSS haengt an der Klasse, die dieser Wert setzt.
+ */
+export const SEITENLEISTE_MEDIEN = '(min-width: 1024px)';
+
+/**
+ * Nach einem Ladefehler versucht der Fangkorb es selbst wieder, erst schnell, dann
+ * seltener; der letzte Abstand gilt fuer alle weiteren Versuche. Niemand muss die
+ * Seite neu laden.
+ */
+export const WIEDERHOLUNG_MS: readonly number[] = [2000, 5000, 15000, 30000, 60000];
 
 /**
  * Der Fangkorb: zwei Tabs, die Arbeitslisten, benannt nach der naechsten Arbeit,
@@ -81,8 +97,15 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   filter: FangkorbFilter = filterLaden();
   isLoading = true;
   ladefehler = false;
+  /** Nach einem Ladefehler: ein neuer Versuch laeuft gerade. */
+  erneutLaedt = false;
+  /** Breit genug fuer die Seitenleiste (SEITENLEISTE_MEDIEN). */
+  seitenleiste = false;
 
   private destroy$ = new Subject<void>();
+  /** Wie viele Versuche seit dem letzten Erfolg gescheitert sind. */
+  private fehlversuche = 0;
+  private wiederholung: Subscription | null = null;
 
   constructor(
     private einwurfService: EinwurfService,
@@ -90,15 +113,32 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
     private einwurfAktionen: EinwurfAktionenService,
+    private breakpoints: BreakpointObserver,
   ) {}
 
   ngOnInit(): void {
+    this.breakpoints
+      .observe(SEITENLEISTE_MEDIEN)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((stand) => {
+        this.seitenleiste = stand.matches;
+        this.cdr.markForCheck();
+      });
     this.laden();
   }
 
+  /**
+   * Laedt den Fangkorb. Nach einem Fehler bleibt die Meldung stehen, waehrend der
+   * naechste Versuch laeuft; der Spinner kommt nur, solange noch nichts gescheitert ist.
+   */
   laden(): void {
-    this.isLoading = true;
-    this.ladefehler = false;
+    this.wiederholungAbbrechen();
+    if (this.ladefehler) {
+      this.erneutLaedt = true;
+    } else {
+      this.isLoading = true;
+    }
+    this.cdr.markForCheck();
     this.einwurfService
       .fangkorbLaden(1, LADE_GROESSE)
       .pipe(takeUntil(this.destroy$))
@@ -107,15 +147,25 @@ export class FangkorbComponent implements OnInit, OnDestroy {
           this.einwuerfe = daten.results;
           this.gesamt = daten.total_records_count;
           this.isLoading = false;
+          this.ladefehler = false;
+          this.erneutLaedt = false;
+          this.fehlversuche = 0;
           this.filtern();
         },
         error: (error) => {
           this.logger.error('Fangkorb konnte nicht geladen werden', error);
           this.isLoading = false;
           this.ladefehler = true;
+          this.erneutLaedt = false;
+          this.wiederholungPlanen();
           this.cdr.markForCheck();
         },
       });
+  }
+
+  /** "Erneut versuchen": sofort, statt auf den geplanten Versuch zu warten. */
+  erneutVersuchen(): void {
+    this.laden();
   }
 
   // Tabs
@@ -124,10 +174,18 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     this.filterSetzen({ ...this.filter, tab });
   }
 
-  /** Pfeiltasten, Pos1 und Ende waehlen den Tab und setzen den Fokus mit. */
+  /** In der Seitenleiste stehen die Tabs untereinander, sonst nebeneinander. */
+  get tabAusrichtung(): TabAusrichtung {
+    return this.seitenleiste ? 'vertical' : 'horizontal';
+  }
+
+  /**
+   * Pfeiltasten (nebeneinander links/rechts, untereinander hoch/runter), Pos1 und
+   * Ende waehlen den Tab und setzen den Fokus mit.
+   */
   tabTaste(event: KeyboardEvent): void {
     const jetzt = TABS.findIndex((eintrag) => eintrag.wert === this.filter.tab);
-    tabMitTasteWaehlen(event, jetzt, TABS.length, (ziel) => this.tabWaehlen(TABS[ziel].wert));
+    tabMitTasteWaehlen(event, jetzt, TABS.length, (ziel) => this.tabWaehlen(TABS[ziel].wert), this.tabAusrichtung);
   }
 
   /** Die Zeile im leeren Tab: erst gar nichts da, dann die Chips, dann der Tab. */
@@ -211,8 +269,22 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.wiederholungAbbrechen();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private wiederholungPlanen(): void {
+    const abstand = WIEDERHOLUNG_MS[Math.min(this.fehlversuche, WIEDERHOLUNG_MS.length - 1)];
+    this.fehlversuche++;
+    this.wiederholung = timer(abstand)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.laden());
+  }
+
+  private wiederholungAbbrechen(): void {
+    this.wiederholung?.unsubscribe();
+    this.wiederholung = null;
   }
 
   private filterSetzen(filter: FangkorbFilter): void {

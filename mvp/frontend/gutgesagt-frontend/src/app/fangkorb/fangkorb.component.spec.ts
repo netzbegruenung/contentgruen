@@ -1,13 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { Clipboard } from '@angular/cdk/clipboard';
+import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { BehaviorSubject, of, throwError } from 'rxjs';
+import { map } from 'rxjs/operators';
 
-import { LADE_GROESSE, FangkorbComponent } from './fangkorb.component';
+import { LADE_GROESSE, FangkorbComponent, SEITENLEISTE_MEDIEN, WIEDERHOLUNG_MS } from './fangkorb.component';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -84,6 +86,9 @@ describe('FangkorbComponent', () => {
   let clipboard: jasmine.SpyObj<Clipboard>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
   let nutzer: UserInfo;
+  /** Ob SEITENLEISTE_MEDIEN passt; standardmaessig nicht (Handy-Layout). */
+  let breit$: BehaviorSubject<boolean>;
+  let beobachteteMedien: string[];
 
   function erstellen(results: Einwurf[], gesamt?: number): void {
     einwurfService.fangkorbLaden.and.returnValue(of(antwort(results, gesamt)));
@@ -130,6 +135,8 @@ describe('FangkorbComponent', () => {
     clipboard = jasmine.createSpyObj('Clipboard', ['copy']);
     clipboard.copy.and.returnValue(true);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+    breit$ = new BehaviorSubject(false);
+    beobachteteMedien = [];
 
     await TestBed.configureTestingModule({
       imports: [FangkorbComponent, NoopAnimationsModule],
@@ -138,6 +145,15 @@ describe('FangkorbComponent', () => {
         { provide: EinwurfService, useValue: einwurfService },
         { provide: Clipboard, useValue: clipboard },
         { provide: MatSnackBar, useValue: snackBar },
+        {
+          provide: BreakpointObserver,
+          useValue: {
+            observe: (medien: string) => {
+              beobachteteMedien.push(medien);
+              return breit$.pipe(map((matches): BreakpointState => ({ matches, breakpoints: { [medien]: matches } })));
+            },
+          },
+        },
         {
           provide: AuthService,
           useValue: {
@@ -314,6 +330,71 @@ describe('FangkorbComponent', () => {
       expect(component.filter.tab).toBe('destillieren');
     });
 
+    it('sagt nebeneinander aria-orientation horizontal und laesst Pfeil runter durch', () => {
+      erstellen(jeTab());
+      const ereignis = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true });
+
+      tabs()[0].parentElement!.dispatchEvent(ereignis);
+
+      expect(tabs()[0].parentElement!.getAttribute('aria-orientation')).toBe('horizontal');
+      expect(ereignis.defaultPrevented).toBeFalse();
+      expect(component.filter.tab).toBe('destillieren');
+    });
+
+    describe('in der Seitenleiste', () => {
+      beforeEach(() => breit$.next(true));
+
+      it('steht senkrecht und sagt das mit aria-orientation', () => {
+        erstellen(jeTab());
+
+        expect(tabs()[0].parentElement!.getAttribute('aria-orientation')).toBe('vertical');
+      });
+
+      it('wechselt mit Pfeil runter und hoch, Pos1 und Ende und nimmt den Fokus mit', () => {
+        erstellen(jeTab());
+
+        taste('ArrowDown');
+        expect(component.filter.tab).toBe('ausformulieren');
+        expect(document.activeElement).toBe(tabs()[1]);
+
+        taste('ArrowDown');
+        expect(component.filter.tab).toBe('destillieren');
+        expect(document.activeElement).toBe(tabs()[0]);
+
+        taste('ArrowUp');
+        expect(component.filter.tab).toBe('ausformulieren');
+
+        taste('Home');
+        expect(component.filter.tab).toBe('destillieren');
+
+        taste('End');
+        expect(component.filter.tab).toBe('ausformulieren');
+        expect(document.activeElement).toBe(tabs()[1]);
+      });
+
+      it('laesst Pfeil rechts und links durch', () => {
+        erstellen(jeTab());
+        for (const key of ['ArrowRight', 'ArrowLeft']) {
+          const ereignis = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+
+          tabs()[0].parentElement!.dispatchEvent(ereignis);
+
+          expect(ereignis.defaultPrevented).withContext(key).toBeFalse();
+          expect(component.filter.tab).withContext(key).toBe('destillieren');
+        }
+      });
+
+      it('richtet sich nach der Breite, wenn sie sich aendert', () => {
+        erstellen(jeTab());
+        breit$.next(false);
+        fixture.detectChanges();
+
+        expect(tabs()[0].parentElement!.getAttribute('aria-orientation')).toBe('horizontal');
+        taste('ArrowRight');
+        expect(component.filter.tab).toBe('ausformulieren');
+      });
+    });
+
     it('kuerzt bei 320 px keinen Tab-Namen', async () => {
       erstellen(jeTab());
       // TestBed haengt die Komponente ins Dokument; gemessen wird mit ihrem CSS, den
@@ -337,6 +418,73 @@ describe('FangkorbComponent', () => {
         expect(wort.clientWidth).withContext(wort.textContent!).toBeGreaterThan(0);
         expect(wort.scrollWidth).withContext(wort.textContent!).toBeLessThanOrEqual(wort.clientWidth);
       }
+    });
+  });
+
+  describe('Layout', () => {
+    function rechteck(selektor: string): DOMRect {
+      return (fixture.nativeElement.querySelector(selektor) as HTMLElement).getBoundingClientRect();
+    }
+
+    function breiteSetzen(px: number): void {
+      const host: HTMLElement = fixture.nativeElement;
+      host.style.display = 'block';
+      host.style.width = `${px}px`;
+    }
+
+    it('beobachtet die Breite ab 1024 px', () => {
+      erstellen(jeTab());
+
+      expect(SEITENLEISTE_MEDIEN).toBe('(min-width: 1024px)');
+      expect(beobachteteMedien).toContain(SEITENLEISTE_MEDIEN);
+    });
+
+    it('stellt am Handy die Steuerung ueber die Liste, mit schwebendem Knopf und hochkanten Karten', () => {
+      erstellen(jeTab());
+      breiteSetzen(390);
+
+      expect(fixture.nativeElement.querySelector('.fangkorb--seitenleiste')).toBeNull();
+      expect(rechteck('.steuerung').bottom).toBeLessThanOrEqual(rechteck('.liste').top);
+      expect(fixture.nativeElement.querySelector('button.einwerfen-fab')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('button.einwerfen-knopf')).toBeNull();
+      expect(kartenKomponenten().map((karte) => karte.quer)).toEqual([false]);
+    });
+
+    it('stellt ab 1024 px die Seitenleiste links neben die Liste, mit queren Karten', () => {
+      breit$.next(true);
+      erstellen(jeTab());
+      breiteSetzen(1280);
+
+      expect(fixture.nativeElement.querySelector('.fangkorb--seitenleiste')).toBeTruthy();
+      const leiste = rechteck('.steuerung');
+      const liste = rechteck('.liste');
+      expect(leiste.right).toBeLessThanOrEqual(liste.left);
+      expect(leiste.width).toBeGreaterThan(200);
+      expect(leiste.width).toBeLessThan(240);
+      expect(liste.top).toBeLessThan(leiste.bottom);
+      // Die Tabs untereinander, die Filter darunter
+      const [erster, zweiter] = Array.from(fixture.nativeElement.querySelectorAll('[role="tab"]') as NodeListOf<HTMLElement>).map(
+        (tab) => tab.getBoundingClientRect(),
+      );
+      expect(zweiter.top).toBeGreaterThanOrEqual(erster.bottom);
+      expect(rechteck('.filterleiste').top).toBeGreaterThanOrEqual(zweiter.bottom);
+      expect(kartenKomponenten().map((karte) => karte.quer)).toEqual([true]);
+      expect(karten()[0].classList).toContain('karte--quer');
+    });
+
+    it('legt Einwerfen am Desktop als Knopf in die Seitenleiste statt schwebend', () => {
+      breit$.next(true);
+      erstellen([]);
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.steuerung button.einwerfen-knopf');
+
+      expect(fixture.nativeElement.querySelector('button.einwerfen-fab')).toBeNull();
+      expect(knopf.textContent).toContain('Etwas einwerfen');
+
+      klicken(knopf);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen'], {
+        queryParams: { von: 'fangkorb' },
+      });
     });
   });
 
@@ -437,7 +585,84 @@ describe('FangkorbComponent', () => {
       fixture.detectChanges();
 
       expect(fixture.componentInstance.ladefehler).toBeTrue();
-      expect(fixture.nativeElement.textContent).toContain('konnte nicht geladen werden');
+      expect(fixture.nativeElement.textContent).toContain('konnte gerade nicht geladen werden');
+      // Grundsatz: Oberflaechen laden selbst nach, niemand soll die Seite neu laden.
+      expect(fixture.nativeElement.textContent).not.toMatch(/neu ?lad/i);
+    });
+
+    describe('nach einem Ladefehler', () => {
+      function fehlerknopf(): HTMLButtonElement {
+        return fixture.nativeElement.querySelector('button.erneut-versuchen');
+      }
+
+      function scheitertErstDann(...folge: Array<'fehler' | Einwurf[]>): void {
+        einwurfService.fangkorbLaden.and.returnValues(
+          ...folge.map((schritt) => (schritt === 'fehler' ? throwError(() => new Error('weg')) : of(antwort(schritt)))),
+        );
+        fixture = TestBed.createComponent(FangkorbComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+      }
+
+      it('versucht es selbst wieder und zeigt danach die Liste', fakeAsync(() => {
+        scheitertErstDann('fehler', jeTab());
+        expect(component.ladefehler).toBeTrue();
+        expect(fehlerknopf().textContent!.trim()).toBe('Erneut versuchen');
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(1);
+
+        tick(WIEDERHOLUNG_MS[0] - 1);
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(1);
+        tick(1);
+        fixture.detectChanges();
+
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
+        expect(component.ladefehler).toBeFalse();
+        expect(fehlerknopf()).toBeNull();
+        expect(karten().length).toBe(1);
+      }));
+
+      it('wartet nach jedem Fehlschlag laenger, hoechstens den letzten Abstand', fakeAsync(() => {
+        const fehler = WIEDERHOLUNG_MS.map(() => 'fehler' as const);
+        scheitertErstDann(...fehler, 'fehler', jeTab());
+
+        for (const abstand of WIEDERHOLUNG_MS) {
+          const vorher = einwurfService.fangkorbLaden.calls.count();
+          tick(abstand - 1);
+          expect(einwurfService.fangkorbLaden.calls.count()).withContext(`vor ${abstand} ms`).toBe(vorher);
+          tick(1);
+          expect(einwurfService.fangkorbLaden.calls.count()).withContext(`nach ${abstand} ms`).toBe(vorher + 1);
+        }
+        // Danach bleibt es beim letzten Abstand.
+        tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
+        fixture.detectChanges();
+        expect(component.ladefehler).toBeFalse();
+        expect(karten().length).toBe(1);
+      }));
+
+      it('versucht es auf Knopfdruck sofort und verwirft den geplanten Versuch', fakeAsync(() => {
+        scheitertErstDann('fehler', 'fehler', jeTab());
+
+        klicken(fehlerknopf());
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
+        // Zweiter Fehlschlag: die Meldung bleibt, der naechste Versuch kommt nach dem zweiten Abstand.
+        expect(component.ladefehler).toBeTrue();
+        tick(WIEDERHOLUNG_MS[0]);
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
+        tick(WIEDERHOLUNG_MS[1] - WIEDERHOLUNG_MS[0]);
+        fixture.detectChanges();
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(3);
+        expect(karten().length).toBe(1);
+      }));
+
+      it('hoert auf, wenn die Seite verlassen wird', fakeAsync(() => {
+        scheitertErstDann('fehler', jeTab());
+
+        fixture.destroy();
+        tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
+
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(1);
+        discardPeriodicTasks();
+      }));
     });
 
     it('sagt dazu, dass nur die letzten Einwuerfe geladen sind und die Zaehler nur die meinen', () => {
