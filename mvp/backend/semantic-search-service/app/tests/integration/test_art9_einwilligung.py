@@ -10,6 +10,7 @@ import uuid
 import pytest
 from sqlalchemy import text
 
+from domain.art9_einwilligung import AKTUELLER_WORTLAUT
 from infrastructure.database.models import Art9EinwilligungZeile, Base
 from repositories.art9_einwilligung_repository import Art9EinwilligungRepository
 from repositories.vote_repository import VoteRepository
@@ -114,7 +115,7 @@ class TestDienst:
         dienst = Art9EinwilligungService(repository)
         assert not dienst.eingewilligt(PERSON)
 
-        dienst.einwilligen(PERSON, "2026-11-05")
+        dienst.einwilligen(PERSON, AKTUELLER_WORTLAUT)
         assert dienst.eingewilligt(PERSON)
 
         dienst.widerrufen(PERSON)
@@ -140,7 +141,7 @@ class TestDienst:
                     {"p": person, "i": inhalt, "a": art},
                 )
         dienst = Art9EinwilligungService(repository, stimmen)
-        dienst.einwilligen(PERSON, "2026-11-05")
+        dienst.einwilligen(PERSON, AKTUELLER_WORTLAUT)
 
         dienst.widerrufen(PERSON)
 
@@ -156,13 +157,30 @@ class TestDienst:
         stimmen = MagicMock()
         stimmen.loeschen_fuer_person.side_effect = RuntimeError("Datenbank weg")
         dienst = Art9EinwilligungService(repository, stimmen)
-        dienst.einwilligen(PERSON, "2026-11-05")
+        dienst.einwilligen(PERSON, AKTUELLER_WORTLAUT)
 
         with pytest.raises(RuntimeError):
             dienst.widerrufen(PERSON)
 
         assert dienst.eingewilligt(PERSON)
         assert repository.lesen(PERSON).widerrufen_am is None
+
+    def test_frueherer_wortlaut_zaehlt_nicht_bis_zur_neuen_einwilligung(
+        self, repository
+    ):
+        """2026-11-13: Wer einem frueheren Wortlaut zugestimmt hat, wird neu gefragt."""
+        dienst = Art9EinwilligungService(repository)
+        dienst.einwilligen(PERSON, "2026-11-12")
+        assert not dienst.eingewilligt(PERSON)
+        assert repository.lesen(PERSON).gilt
+
+        dienst.einwilligen(PERSON, AKTUELLER_WORTLAUT)
+
+        assert dienst.eingewilligt(PERSON)
+        assert _zeilen(repository.db) == [
+            ("2026-11-12", False),
+            (AKTUELLER_WORTLAUT, False),
+        ]
 
     def test_unbekannter_wortlaut_speichert_nichts(self, repository):
         dienst = Art9EinwilligungService(repository)

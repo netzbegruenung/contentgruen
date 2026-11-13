@@ -614,6 +614,8 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Dafür legen wir einen Löschauftrag an: deine Kennung, der Zeitpunkt deines Widerrufs und die Frist');
       expect(text).toContain('Einen erledigten Löschauftrag löschen wir ein Jahr nach der Erledigung, mit deinem Konto sofort');
       expect(text).toContain('Dein Konto bleibt');
+      // Neue Einwilligung vor der Ausfuehrung (Entscheidung Maintainer, 13.11.2026)
+      expect(text).toContain('was du danach beiträgst, erfasst ein noch offener Löschauftrag nicht');
       expect(abschnitt('Beiträge, die du einstellst')).toContain('Widerrufst du deine Art.-9-Einwilligung, ersetzen wir deine Kennung ebenso, innerhalb von sieben Tagen');
       expect(abschnitt('Einwürfe in den Fangkorb')).toContain('Widerrufst du deine Art.-9-Einwilligung, tun wir dasselbe innerhalb von sieben Tagen');
     });

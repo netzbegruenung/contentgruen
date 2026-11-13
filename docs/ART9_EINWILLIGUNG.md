@@ -60,11 +60,10 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   zeigen ihre Beiträge „ehemalige Person“, ihre Einwürfe sind gelöscht und ihre Sätze an fremden
   Einwürfen tragen einen Platzhalter; Konto, Anzeigename und diese Zeile bleiben
   (`docs/LOESCHKONZEPT.md`, „Löschauftrag nach dem Widerruf“, DSFA R9b). Bis dahin bleiben
-  Beiträge, Einwürfe und Sätze an der Person. **Offen:** Der Wortlaut `2026-11-12` sagt noch,
-  das übrige Gespeicherte bleibe bis zur eigenen Löschung oder Kontolöschung; das stimmt nicht
-  mehr, ein neuer Wortlaut braucht ein eigenes Ticket. Willigt die Person vor der Ausführung neu
-  ein, bleibt der Auftrag offen und erfasst beim Ausführen auch, was sie danach beiträgt; die
-  Liste der Admins zeigt dann „Neu eingewilligt am …“ (**offen**, Entscheidung Maintainer). Eine neue
+  Beiträge, Einwürfe und Sätze an der Person. Willigt die Person vor der Ausführung neu ein,
+  bleibt der Auftrag offen, erfasst beim Ausführen aber nur, was bis zum Widerruf angelegt war;
+  was sie danach beiträgt, bleibt an ihr (Entscheidung Maintainer, 13.11.2026). Die Liste der
+  Admins zeigt dann „Neu eingewilligt am …“. Eine neue
   Einwilligung ist eine neue Zeile; die früheren bleiben. Jede Prüfung fragt die Datenbank,
   damit ein Widerruf und das Löschkommando sofort wirken.
 - **Startkonten und Import:** Auch ein Startkonto willigt einmal in der App ein, bevor es
@@ -88,20 +87,25 @@ Stand-Datum; ein zweiter Wortlaut vom selben Tag bekommt ein Suffix (`-b`, `-c` 
 3. Unten in der Tabelle eine Zeile ergänzen, beim vorigen Wortlaut das „bis“-Datum nach dem
    Produktiv-Deploy.
 
-Eine Einwilligung zu einem älteren Wortlaut gilt weiter. Ob ein geänderter Wortlaut eine neue
-Einwilligung verlangt, ist beim Ändern zu entscheiden; heute fragt die App nicht erneut: Das
-Backend meldet `eingewilligt`, sobald eine geltende Zeile da ist, gleich zu welcher Kennung, und
-das Frontend führt nur ohne Einwilligung auf `/einwilligung` (Tests
-`test_einwilligung_zum_vorigen_wortlaut_gilt_ohne_neue_frage` und die Spec „laesst in Ruhe, wer
-einem aelteren Wortlaut …“). Eine neue Kennung ohne neue Frage ist richtig, wenn die Änderung
-redaktionell ist: gleiche Zwecke, gleiche Datenarten, gleiche Folgen des Widerrufs, etwa ein
-neuer Name des Menüpunkts (`2026-11-10`, #644; ein Test sichert, dass sich gegenüber
-`2026-11-05-b` nur dieser Name ändert).
-Die Prüfung der Einwilligung (`Art9EinwilligungService.eingewilligt`) unterscheidet heute nicht
-nach Wortlaut: Eine Einwilligung zu `2026-11-05` zählt also auch für Punkte, obwohl erst
-`2026-11-05-b` sie nennt. Das ist vertretbar, weil `2026-11-05` nie produktiv war (#559). Nennt
-ein künftiger Wortlaut neue Zwecke, muss die Prüfung für diese Zwecke die Kennung
-berücksichtigen oder die App neu fragen.
+Ob ein geänderter Wortlaut eine neue Einwilligung verlangt, ist beim Ändern zu entscheiden; das
+regelt `GELTENDE_WORTLAUTE` in derselben Datei. Nur eine nicht widerrufene Einwilligung zu einer
+dieser Kennungen zählt (`Art9Einwilligung.zaehlt`): Dann meldet das Backend `eingewilligt`, und
+`Art9EinwilligungService.eingewilligt` gibt frei. Eine Einwilligung zu einer anderen Kennung
+bleibt als Nachweis stehen und kann widerrufen werden (der Widerruf legt dann auch den
+Löschauftrag an), zählt aber nicht: Das Backend meldet `eingewilligt: false`, das Frontend führt
+beim nächsten Besuch auf `/einwilligung`, und dort steht ein Hinweis auf den früheren Wortlaut
+mit dem Knopf „Frühere Einwilligung widerrufen“. Bis dahin ist gesperrt wie ohne Einwilligung.
+Tests: `test_einwilligung_zu_frueherem_wortlaut_fragt_neu`, `test_frueherer_wortlaut_gesperrt`,
+`test_nur_der_aktuelle_wortlaut_zaehlt` und die Spec „fragt neu, wer einem frueheren Wortlaut
+zugestimmt hat …“.
+
+- **Ohne neue Frage** (neue Kennung zu `GELTENDE_WORTLAUTE` hinzufügen): wenn die Änderung
+  redaktionell ist oder nur zugunsten der Person wirkt: gleiche Zwecke, gleiche Datenarten, keine
+  weiter gehenden Folgen des Widerrufs, etwa ein neuer Name des Menüpunkts (`2026-11-10`, #644)
+  oder das Löschen der Bewertungen (`2026-11-12`). Bis `2026-11-12` zählte jede Kennung.
+- **Mit neuer Frage** (`GELTENDE_WORTLAUTE` nur mit der neuen Kennung): neue Zwecke, neue
+  Datenarten oder weiter gehende Folgen des Widerrufs. So bei `2026-11-13` (Löschauftrag,
+  Entscheidung Maintainer, 13.11.2026).
 
 ## Wortlaut ändern: diese Stellen mitziehen
 
@@ -115,13 +119,14 @@ Ticket (`CODING_STANDARDS.md`, „Legal texts change through their own ticket“
   `WORTLAUT_KENNUNG_MAX` Zeichen (Spalte `art9_einwilligungen.wortlaut`).
 - **Diese Datei:** Tabelle „Wortlaute“ unten, Abschnitt „Wortlaut ändern“ (Prüfung nach Kennung).
 - **Prüfung der Einwilligung:** `Art9EinwilligungService.eingewilligt` in
-  `mvp/backend/semantic-search-service/app/services/art9_einwilligung_service.py` unterscheidet
-  nicht nach Kennung; ihre Aufrufer setzen voraus, dass der Wortlaut ihren Zweck nennt:
-  `punkte_service.py` (Punkte), `muster_hinweise_service.py` (Muster-Hinweise) und
-  `api/v1/usage.py` (`_eingewilligt`). Nennt ein neuer Wortlaut neue Zwecke, hier ansetzen.
+  `mvp/backend/semantic-search-service/app/services/art9_einwilligung_service.py` zählt nur
+  Einwilligungen zu `GELTENDE_WORTLAUTE` (`Art9Einwilligung.zaehlt`); ihre Aufrufer setzen
+  voraus, dass diese Wortlaute ihren Zweck nennen: `punkte_service.py` (Punkte),
+  `muster_hinweise_service.py` (Muster-Hinweise) und `api/v1/usage.py` (`_eingewilligt`).
 - **Backend-Tests:** `TestWortlaute` in
   `mvp/backend/semantic-search-service/app/tests/unit/api/test_art9_einwilligung_api.py`
-  (aktuelle Kennung, zitierte Zwecke, Kennungsformat, Spaltenlänge).
+  (aktuelle Kennung, geltende Kennungen, zitierte Zwecke, Wortgleichheit mit dem Vorgänger,
+  Kennungsformat, Spaltenlänge) und `TestStand` (neue Frage bei früherem Wortlaut).
 - **Frontend:** `wortlautDatum` in
   `mvp/frontend/gutgesagt-frontend/src/app/services/art9-einwilligung.service.ts` liest das
   Stand-Datum aus der Kennung (nur das führende `JJJJ-MM-TT`, ein Suffix fällt weg); das
@@ -170,4 +175,5 @@ Wortlaut vom Backend.
 | `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | nie produktiv: von `2026-11-05-b` abgelöst, bevor #489 in einem Release war |
 | `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 bis zum Produktiv-Deploy von #644 (Daten nach dem Ausrollen eintragen); wer zugestimmt hat, bleibt eingewilligt |
 | `2026-11-10` | redaktionell (#644): wortgleich mit `2026-11-05-b` bis auf den Widerrufsweg „im Profilmenü unter „Datenschutz-Einstellungen““ statt „Einwilligung“, weil der Menüpunkt umbenannt ist; gleiche Zwecke, deshalb keine neue Frage | seit dem Produktiv-Deploy von #644 bis zum Produktiv-Deploy des Wortlauts `2026-11-12` (Daten nach dem Ausrollen eintragen) |
-| `2026-11-12` | Folgen des Widerrufs nach der juristischen Vorprüfung vom 12.11.2026: Die Bewertungen werden gelöscht, das Übrige bleibt bis zur eigenen Löschung oder Kontolöschung; sonst wortgleich mit `2026-11-10` (ein Test sichert das). Keine neuen Zwecke, und die Änderung wirkt nur zugunsten der Person, deshalb keine neue Frage | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) |
+| `2026-11-12` | Folgen des Widerrufs nach der juristischen Vorprüfung vom 12.11.2026: Die Bewertungen werden gelöscht, das Übrige bleibt bis zur eigenen Löschung oder Kontolöschung; sonst wortgleich mit `2026-11-10` (ein Test sichert das). Keine neuen Zwecke, und die Änderung wirkt nur zugunsten der Person, deshalb keine neue Frage | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) bis zum Produktiv-Deploy von `2026-11-13` |
+| `2026-11-13` | Löschauftrag nach dem Widerruf (#661, Entscheidung Maintainer, 13.11.2026): Binnen sieben Tagen zeigen Beiträge „ehemalige Person“, Einwürfe werden gelöscht, Sätze an fremden Einwürfen bleiben ohne Namen; was nach einer neuen Einwilligung beigetragen wird, bleibt unberührt; sonst wortgleich mit `2026-11-12` (ein Test sichert das). Neue Frage, weil die Folgen des Widerrufs weiter gehen: Nur dieser Wortlaut steht in `GELTENDE_WORTLAUTE`, wer einem früheren zugestimmt hat, wird beim nächsten Besuch neu gefragt | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) |

@@ -63,7 +63,7 @@ class Art9EinwilligungService:
 
     def eingewilligt(self, user_id: str) -> bool:
         einwilligung = self._repository.lesen(user_id)
-        return einwilligung is not None and einwilligung.gilt
+        return einwilligung is not None and einwilligung.zaehlt
 
     def einwilligen(self, user_id: str, wortlaut: str) -> None:
         if not bekannter_wortlaut(wortlaut):

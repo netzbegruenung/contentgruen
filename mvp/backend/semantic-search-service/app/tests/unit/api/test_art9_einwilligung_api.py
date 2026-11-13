@@ -18,8 +18,10 @@ from api.v1.art9_einwilligung import router as art9_router
 from dependencies import ART9_EINWILLIGUNG_FEHLT, require_art9_einwilligung
 from domain.art9_einwilligung import (
     AKTUELLER_WORTLAUT,
+    GELTENDE_WORTLAUTE,
     WORTLAUTE,
     WORTLAUT_KENNUNG_MAX,
+    geltender_wortlaut,
 )
 from repositories.art9_einwilligung_repository import Art9Einwilligung
 
@@ -100,25 +102,34 @@ class TestStand:
         repository.lesen.assert_called_once_with("user-001")
 
     def test_get_eingewilligt_mit_zeitpunkt_und_wortlaut(self, client, repository):
-        repository.lesen.return_value = Art9Einwilligung("2026-11-05", AM, None)
+        repository.lesen.return_value = Art9Einwilligung("2026-11-13", AM, None)
 
         stand = client.get(BASIS, headers=PERSON).json()
 
         assert stand["eingewilligt"] is True
-        assert stand["wortlaut"] == "2026-11-05"
+        assert stand["wortlaut"] == "2026-11-13"
         assert stand["eingewilligt_am"].startswith("2026-11-05T09:30")
 
-    def test_einwilligung_zum_vorigen_wortlaut_gilt_ohne_neue_frage(
-        self, client, repository
+    @pytest.mark.parametrize(
+        "frueher", ["2026-11-05", "2026-11-05-b", "2026-11-10", "2026-11-12"]
+    )
+    def test_einwilligung_zu_frueherem_wortlaut_fragt_neu(
+        self, client, repository, frueher
     ):
-        """#644: Wer 2026-11-05-b zugestimmt hat, bleibt eingewilligt; das Frontend fragt nur ohne Einwilligung."""
-        repository.lesen.return_value = Art9Einwilligung("2026-11-05-b", AM, None)
+        """
+        2026-11-13 (Entscheidung Maintainer, 13.11.2026): Die Folgen des Widerrufs gehen
+        weiter, deshalb zaehlt nur eine Einwilligung zu ihm. Wer einem frueheren
+        Wortlaut zugestimmt hat, ist nicht eingewilligt, ohne widerrufen zu haben; das
+        Frontend fragt neu.
+        """
+        repository.lesen.return_value = Art9Einwilligung(frueher, AM, None)
 
         stand = client.get(BASIS, headers=PERSON).json()
 
-        assert stand["eingewilligt"] is True
-        assert stand["wortlaut"] == "2026-11-05-b"
-        assert stand["aktueller_wortlaut"]["kennung"] == "2026-11-12"
+        assert stand["eingewilligt"] is False
+        assert stand["wortlaut"] == frueher
+        assert stand["widerrufen_am"] is None
+        assert stand["aktueller_wortlaut"]["kennung"] == "2026-11-13"
 
     def test_get_widerrufen_nicht_eingewilligt_wortlaut_bleibt(
         self, client, repository
@@ -137,7 +148,7 @@ class TestWortlaute:
         """Wortlaut vom 12.11.2026: die Zwecke aus DSFA Abschnitt 4 wie 2026-11-05-b."""
         text = WORTLAUTE[AKTUELLER_WORTLAUT]
 
-        assert AKTUELLER_WORTLAUT == "2026-11-12"
+        assert AKTUELLER_WORTLAUT == "2026-11-13"
         assert (
             "ein Punktestand, ein Level, Quests und Meilenstein-Abzeichen, die nur ich "
             "sehe, solange ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen"
@@ -177,6 +188,33 @@ class TestWortlaute:
         )
         assert WORTLAUTE["2026-11-12"] == vorher
         assert "meine Bewertungen werden gelöscht" in WORTLAUTE[AKTUELLER_WORTLAUT]
+
+    def test_wortlaut_vom_13_11_aendert_nur_die_folgen_des_widerrufs(self):
+        """
+        Loeschauftrag nach dem Widerruf (Entscheidung Maintainer, 13.11.2026): Sonst
+        wortgleich mit 2026-11-12; die neuen Folgen stehen im Text.
+        """
+        vorher = WORTLAUTE["2026-11-12"].replace(
+            "Was ich sonst gespeichert habe, bleibt, bis ich es lösche oder mein "
+            "Konto löschen lasse. ",
+            "Innerhalb von sieben Tagen werden auch meine Beiträge, Einwürfe und "
+            "Sätze von mir gelöst: Meine Beiträge bleiben stehen und zeigen "
+            "„ehemalige Person“ statt meines Namens, meine Einwürfe werden gelöscht, "
+            "und meine Sätze an Einwürfen anderer bleiben ohne meinen Namen. Was ich "
+            "nach einer neuen Einwilligung beitrage, bleibt davon unberührt. Mein "
+            "Konto bleibt. ",
+        )
+        assert WORTLAUTE["2026-11-13"] == vorher
+        assert AKTUELLER_WORTLAUT == "2026-11-13"
+
+    def test_nur_der_aktuelle_wortlaut_zaehlt(self):
+        """Fruehere Einwilligungen zaehlen nicht (GELTENDE_WORTLAUTE, 13.11.2026)."""
+        assert GELTENDE_WORTLAUTE == {AKTUELLER_WORTLAUT}
+        assert all(k in WORTLAUTE for k in GELTENDE_WORTLAUTE)
+        assert not geltender_wortlaut("2026-11-12")
+        assert Art9Einwilligung(AKTUELLER_WORTLAUT, AM, None).zaehlt
+        assert not Art9Einwilligung("2026-11-12", AM, None).zaehlt
+        assert not Art9Einwilligung(AKTUELLER_WORTLAUT, AM, SPAETER).zaehlt
 
     def test_frueherer_wortlaut_bleibt_bekannt(self):
         """Eine gespeicherte Kennung behaelt ihren Text (docs/ART9_EINWILLIGUNG.md)."""
@@ -419,9 +457,20 @@ class TestSperre:
         gesperrt_client.post(
             BASIS, headers=PERSON, json={"wortlaut": AKTUELLER_WORTLAUT}
         )
-        repository.lesen.return_value = Art9Einwilligung("2026-11-05", SPAETER, None)
+        repository.lesen.return_value = Art9Einwilligung(
+            AKTUELLER_WORTLAUT, SPAETER, None
+        )
 
         assert gesperrt_client.post("/speichern", headers=PERSON).status_code == 200
+
+    def test_frueherer_wortlaut_gesperrt(self, gesperrt_client, repository):
+        """Nicht widerrufen, aber zu 2026-11-12: gesperrt, bis die Person neu einwilligt."""
+        repository.lesen.return_value = Art9Einwilligung("2026-11-12", AM, None)
+
+        antwort = gesperrt_client.post("/speichern", headers=PERSON)
+
+        assert antwort.status_code == 403
+        assert antwort.json() == {"detail": ART9_EINWILLIGUNG_FEHLT}
 
     def test_datenbankfehler_500_ohne_durchlassen(self, gesperrt_client, repository):
         repository.lesen.side_effect = RuntimeError("weg")

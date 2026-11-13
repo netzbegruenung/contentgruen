@@ -306,12 +306,14 @@ Empfänger und Ort“.
   ein offener. Scheitert eins davon, gilt der Widerruf nicht, die API antwortet mit 500, und die
   Person kann erneut widerrufen. Ein Admin führt den Auftrag unter „Moderation“, „Löschaufträge“
   aus (`ss/services/loeschauftrag_service.py`); bis dahin behalten Beiträge, Einwürfe und Sätze
-  Kennung und Anzeigenamen (LK „Löschauftrag nach dem Widerruf“). Der Wortlaut `2026-11-12`
-  (`ss/domain/art9_einwilligung.py`) sagt noch: „Danach kann ich nichts mehr beitragen oder
-  bewerten, und meine Bewertungen werden gelöscht. Was ich sonst gespeichert habe, bleibt, bis
-  ich es lösche oder mein Konto löschen lasse. Was bis zum Widerruf geschehen ist, bleibt
-  rechtmäßig.“ Das stimmt mit #661 nicht mehr; ein neuer Wortlaut ist **offen** (eigenes Ticket),
-  die Datenschutzerklärung beschreibt den Löschauftrag schon. Der Wortlaut nennt als
+  Kennung und Anzeigenamen (LK „Löschauftrag nach dem Widerruf“). Erfasst wird nur, was bis zum
+  Widerruf angelegt war; was die Person nach einer neuen Einwilligung beiträgt, bleibt
+  (Entscheidung Maintainer, 13.11.2026). Der Wortlaut `2026-11-13`
+  (`ss/domain/art9_einwilligung.py`) sagt das: „Innerhalb von sieben Tagen werden auch meine
+  Beiträge, Einwürfe und Sätze von mir gelöst: […] Was ich nach einer neuen Einwilligung
+  beitrage, bleibt davon unberührt. Mein Konto bleibt.“ Wer einem früheren Wortlaut zugestimmt
+  hat, wird neu gefragt, weil die Folgen des Widerrufs weiter gehen (`docs/ART9_EINWILLIGUNG.md`,
+  „Wortlaut ändern“). Der Wortlaut nennt als
   Verantwortlichen nur „Gut gesagt“, nicht den Verein (dazu Abschnitt 6, Frage 7).
 - **Widerruf, Bewertung (Vorschlag, nicht juristisch geprüft, #296):** Nach Art. 7 Abs. 3 wirkt
   der Widerruf für die Zukunft. Fehlt danach eine andere Rechtsgrundlage, sind die Daten nach
@@ -339,8 +341,9 @@ Empfänger und Ort“.
     an fremden Einwürfen mit Platzhalter versehen, eigene Einwürfe löschen (Schritt 2); das Konto
     und die Zeile der Einwilligung als Nachweis (Art. 7 Abs. 1) bleiben. Der Widerruf legt den
     Auftrag an, ein Admin führt ihn binnen sieben Tagen mit einem Knopf aus; überfällige stehen
-    hervorgehoben (LK „Löschauftrag nach dem Widerruf“). Die Datenschutzerklärung ist angepasst;
-    **offen** sind ein neuer Wortlaut und der vollautomatische Ablauf ohne Admin (nach dem Freeze).
+    hervorgehoben (LK „Löschauftrag nach dem Widerruf“). Datenschutzerklärung und Wortlaut
+    (`2026-11-13`) sind angepasst; **offen** ist der vollautomatische Ablauf ohne Admin (nach
+    dem Freeze).
   - Alternative zu R9b: Löschen erst auf
   Antrag, schwächer, weil die Leitlinien eine Pflicht ohne Antrag sehen; das entscheidet die
   Datenschutzbeauftragte (Abschnitt 6, Frage 7).
@@ -873,8 +876,8 @@ und an den genannten Stellen nach.
    (vorbereitet als Abschnitt 6, Frage 5)? Empfehlung: ja, gebündelt mit Frage 1 dort.
 7. **Widerruf der Art.-9-Einwilligung** (V2, R9): Stimmen löschen ist gebaut (R9a, #658), R9b
    als Löschauftrag (#661): Der Widerruf legt ihn an, ein Admin führt binnen sieben Tagen den
-   Löschablauf aus; der Widerrufstext der Datenschutzerklärung ist angepasst. Offen sind ein
-   neuer Wortlaut (der jetzige sagt, das übrige Gespeicherte bleibe) und der vollautomatische
-   Ablauf nach dem Freeze, mit dem R9 gering wird. Empfehlung: beides als eigene Tickets.
+   Löschablauf aus; der Widerrufstext der Datenschutzerklärung und der Wortlaut `2026-11-13` sind
+   angepasst. Offen ist der vollautomatische Ablauf nach dem Freeze, mit dem R9 gering wird.
+   Empfehlung: eigenes Ticket.
 8. **Offene Fakten** (8.6): F1 bis F6 belegen, vor allem den AV-Vertrag (F1), bevor Art.-9-Daten
    echter Personen verarbeitet werden.

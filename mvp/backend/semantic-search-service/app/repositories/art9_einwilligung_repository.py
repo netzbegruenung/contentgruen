@@ -10,6 +10,7 @@ from typing import Callable, Optional
 from sqlalchemy import func, insert, select, update
 from sqlalchemy.orm import Session
 
+from domain.art9_einwilligung import geltender_wortlaut
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import Art9EinwilligungZeile
 
@@ -22,7 +23,16 @@ class Art9Einwilligung:
 
     @property
     def gilt(self) -> bool:
+        """Nicht widerrufen: Die Einwilligung traegt, was bis heute geschehen ist."""
         return self.widerrufen_am is None
+
+    @property
+    def zaehlt(self) -> bool:
+        """
+        Nicht widerrufen und zu einem Wortlaut, der heute zaehlt
+        (GELTENDE_WORTLAUTE): Nur dann ist frei, was die Einwilligung verlangt.
+        """
+        return self.gilt and geltender_wortlaut(self.wortlaut)
 
 
 class Art9EinwilligungRepository:

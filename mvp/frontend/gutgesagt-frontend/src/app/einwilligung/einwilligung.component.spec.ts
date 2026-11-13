@@ -183,6 +183,7 @@ describe('EinwilligungComponent', () => {
       expect(text).toContain('Innerhalb von sieben Tagen zeigen deine Beiträge dann „ehemalige Person“');
       expect(text).toContain('deine Einwürfe werden gelöscht');
       expect(text).toContain('Dein Konto bleibt.');
+      expect(text).toContain('Was du nach einer neuen Einwilligung beiträgst, bleibt davon unberührt.');
       expect(text).not.toContain('bleibt, bis du es löschst');
     });
 
@@ -212,6 +213,23 @@ describe('EinwilligungComponent', () => {
       standLiefern(stand());
 
       expect(el().querySelector('.hinweis')).toBeNull();
+      expect(el().textContent).not.toContain('Frühere Einwilligung widerrufen');
+    });
+
+    // 2026-11-13: Nur der aktuelle Wortlaut zaehlt; eine fruehere Einwilligung fragt neu
+    it('fragt neu, wer einem frueheren Wortlaut zugestimmt hat, und laesst ihn widerrufen', () => {
+      starten(null);
+      standLiefern(stand({ wortlaut: '2026-11-12', eingewilligt_am: '2026-11-12T09:30:00Z' }));
+
+      expect(el().querySelector('mat-checkbox')).not.toBeNull();
+      expect(el().querySelector('.hinweis')?.textContent).toContain('12.11.2026 einem früheren Wortlaut zugestimmt');
+
+      knopf('Frühere Einwilligung widerrufen').click();
+      http.expectOne({ method: 'DELETE', url: URL }).flush(null, { status: 204, statusText: 'No Content' });
+      standLiefern(stand({ wortlaut: '2026-11-12', eingewilligt_am: '2026-11-12T09:30:00Z', widerrufen_am: '2026-11-13T09:30:00Z' }));
+
+      expect(el().querySelector('.hinweis')?.textContent).toContain('13.11.2026 widerrufen');
+      expect(el().textContent).not.toContain('Frühere Einwilligung widerrufen');
     });
   });
 

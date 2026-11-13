@@ -54,6 +54,16 @@ export class EinwilligungComponent implements OnInit {
     return wortlautDatum(this.stand?.wortlaut);
   }
 
+  /**
+   * Eingewilligt zu einem frueheren Wortlaut und nicht widerrufen: Das Backend meldet
+   * dann nicht eingewilligt (nur der aktuelle Wortlaut zaehlt, seit 2026-11-13), die
+   * Einwilligung bleibt aber widerrufbar.
+   */
+  get fruehereEinwilligung(): boolean {
+    const s = this.stand;
+    return !!s && !s.eingewilligt && !!s.wortlaut && !s.widerrufen_am;
+  }
+
   ngOnInit(): void {
     this.laden();
   }
@@ -87,7 +97,8 @@ export class EinwilligungComponent implements OnInit {
   }
 
   widerrufenKlick(): void {
-    if (this.zustand !== 'eingewilligt') {
+    const erlaubt = this.zustand === 'eingewilligt' || (this.zustand === 'frage' && this.fruehereEinwilligung);
+    if (!erlaubt) {
       return;
     }
     this.zustand = 'widerruft';

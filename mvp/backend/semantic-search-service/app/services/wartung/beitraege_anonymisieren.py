@@ -15,10 +15,15 @@ Idempotent: Ein zweiter Lauf findet nichts mehr, was die Kennung traegt. Ohne
 ausfuehren=True wird nur gesucht. Der Bericht nennt Typ und Text jedes Treffers -
 fuer die Einzelfallpruefung, ob ein Text die Person selbst erkennbar macht.
 
+Mit ``angelegt_bis`` (Loeschauftrag nach dem Widerruf) nur Beitraege, deren
+``created`` nicht spaeter liegt; spaetere bleiben, wie sie sind, und stehen im
+Bericht unter ``behalten``. Ein Beitrag ohne lesbares ``created`` zaehlt als frueher.
+
 Aufruf: scripts/manual/beitraege_anonymisieren.py
 """
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
 from qdrant_client import QdrantClient
@@ -54,6 +59,32 @@ class Treffer:
 class AnonymisierungBericht:
     ausgefuehrt: bool
     treffer: List[Treffer] = field(default_factory=list)
+    # Punkte mit der Kennung, aber nach ``angelegt_bis`` angelegt: unberuehrt
+    behalten: List[Union[int, str]] = field(default_factory=list)
+
+
+def _angelegt(payload: Dict[str, Any]) -> Optional[datetime]:
+    wert = payload.get("created")
+    if isinstance(wert, datetime):
+        zeitpunkt = wert
+    elif isinstance(wert, str) and wert:
+        try:
+            zeitpunkt = datetime.fromisoformat(wert.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    else:
+        return None
+    # Gespeichert wird in UTC, aeltere Punkte ohne Zeitzone.
+    if zeitpunkt.tzinfo is None:
+        zeitpunkt = zeitpunkt.replace(tzinfo=timezone.utc)
+    return zeitpunkt
+
+
+def _spaeter(payload: Dict[str, Any], angelegt_bis: Optional[datetime]) -> bool:
+    if angelegt_bis is None:
+        return False
+    angelegt = _angelegt(payload)
+    return angelegt is not None and angelegt > angelegt_bis
 
 
 def _geaenderte_felder(payload: Dict[str, Any], kennung: str) -> Dict[str, Any]:
@@ -78,7 +109,11 @@ def _geaenderte_felder(payload: Dict[str, Any], kennung: str) -> Dict[str, Any]:
 
 
 def anonymisieren(
-    client: QdrantClient, collection: str, kennung: str, ausfuehren: bool = False
+    client: QdrantClient,
+    collection: str,
+    kennung: str,
+    ausfuehren: bool = False,
+    angelegt_bis: Optional[datetime] = None,
 ) -> AnonymisierungBericht:
     # Eine leere Kennung oder der Platzhalter selbst bezeichnet niemanden; ein
     # Tippfehler im Aufruf soll nicht still alle anonymen Felder umschreiben oder
@@ -114,6 +149,9 @@ def anonymisieren(
             payload = punkt.payload or {}
             neu = _geaenderte_felder(payload, kennung)
             if not neu:
+                continue
+            if _spaeter(payload, angelegt_bis):
+                bericht.behalten.append(punkt.id)
                 continue
             bericht.treffer.append(
                 Treffer(punkt.id, payload.get("content_type"), payload.get("text"))

@@ -8,6 +8,7 @@ Qdrant: tests/integration/test_beitraege_anonymisieren_qdrant.py.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 import pytest
 from qdrant_client import QdrantClient
@@ -142,6 +143,40 @@ class TestAnonymisieren:
 
         assert _kennungen(_gelesen(client, 3)) == {EHEMALIGE_PERSON_KENNUNG}
         assert _kennungen(_gelesen(client, 1)) == {EHEMALIGE_PERSON_KENNUNG}
+
+    def test_nur_beitraege_bis_zum_stichtag(self, client):
+        """
+        Loeschauftrag nach neuer Einwilligung (Entscheidung Maintainer, 13.11.2026):
+        Was nach dem Widerruf angelegt ist, bleibt und steht unter ``behalten``.
+        """
+        widerruf = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
+        client.set_payload(COLLECTION, {"created": "2026-11-10T11:59:00"}, points=[1])
+        client.set_payload(
+            COLLECTION, {"created": "2026-11-12T08:00:00+00:00"}, points=[2]
+        )
+
+        bericht = anonymisieren(
+            client, COLLECTION, PERSON, ausfuehren=True, angelegt_bis=widerruf
+        )
+
+        assert [p.id for p in bericht.treffer] == [1]
+        assert bericht.behalten == [2]
+        assert _kennungen(_gelesen(client, 1)) == {EHEMALIGE_PERSON_KENNUNG}
+        assert PERSON in _kennungen(_gelesen(client, 2))
+
+    def test_ohne_lesbares_created_zaehlt_der_beitrag_als_frueher(self, client):
+        client.set_payload(COLLECTION, {"created": "kein Datum"}, points=[1])
+
+        bericht = anonymisieren(
+            client,
+            COLLECTION,
+            PERSON,
+            ausfuehren=True,
+            angelegt_bis=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        )
+
+        assert sorted(p.id for p in bericht.treffer) == [1, 2]
+        assert bericht.behalten == []
 
     @pytest.mark.parametrize(
         "kennung",

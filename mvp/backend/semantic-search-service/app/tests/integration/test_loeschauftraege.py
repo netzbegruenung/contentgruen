@@ -33,6 +33,8 @@ from tests.integration.test_loeschkommando import (  # noqa: F401 (Fixtures)
     SATZ_DER_PERSON,
     _anzeigenamen,
     _destilled_by,
+    _einwurf,
+    _satz,
     _saetze,
     datenbank,
     einwuerfe,
@@ -66,7 +68,7 @@ class TestWiderruf:
         )
 
     def test_widerruf_legt_einen_auftrag_mit_frist_an(self, dienst, auftraege):
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
 
         dienst.widerrufen(PERSON)
 
@@ -78,9 +80,9 @@ class TestWiderruf:
     def test_zweiter_widerruf_kein_zweiter_offener_auftrag(
         self, dienst, auftraege, datenbank
     ):
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
         dienst.widerrufen(PERSON)
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
 
         dienst.widerrufen(PERSON)
 
@@ -89,11 +91,11 @@ class TestWiderruf:
     def test_nach_erledigtem_auftrag_neuer_widerruf_neuer_auftrag(
         self, dienst, auftraege, datenbank, einwuerfe
     ):
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
         dienst.widerrufen(PERSON)
         (erster,) = auftraege.offene()
         auftraege.ausfuehren(erster)
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
 
         dienst.widerrufen(PERSON)
 
@@ -109,7 +111,7 @@ class TestWiderruf:
     def test_wiederholter_widerruf_nach_erledigtem_auftrag_legt_keinen_neuen_an(
         self, dienst, auftraege, datenbank, einwuerfe
     ):
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
         dienst.widerrufen(PERSON)
         (erster,) = auftraege.offene()
         auftraege.ausfuehren(erster)
@@ -121,12 +123,12 @@ class TestWiderruf:
     def test_liste_zeigt_eine_neue_einwilligung_nach_dem_widerruf(
         self, dienst, auftraege
     ):
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
         dienst.widerrufen(PERSON)
         (vorher,) = auftraege.offene()
         assert vorher.neu_eingewilligt_am is None
 
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
 
         (nachher,) = auftraege.offene()
         assert nachher.neu_eingewilligt_am is not None
@@ -142,7 +144,7 @@ class TestWiderruf:
         dienst = Art9EinwilligungService(
             Art9EinwilligungRepository(datenbank), stimmen, kaputt
         )
-        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.einwilligen(PERSON, "2026-11-13")
 
         with pytest.raises(RuntimeError):
             dienst.widerrufen(PERSON)
@@ -207,6 +209,7 @@ class TestAusfuehren:
                 content_id=beitrag,
                 created_by=PERSON,
                 draft_id=satz.id,
+                created_at=auftrag.stichtag - timedelta(hours=1),
             )
             sperre = Sperre(
                 content_id=beitrag,
@@ -227,6 +230,52 @@ class TestAusfuehren:
             sperre = s.get(Sperre, sperre_id)
             assert (sperre.autor, sperre.widerspruch) == (None, None)
             assert sperre.gesperrt_von == ANDERE
+
+    def test_nach_dem_widerruf_angelegtes_bleibt(
+        self, datenbank, einwuerfe, auftraege, auftrag
+    ):
+        """
+        Neue Einwilligung vor der Ausfuehrung (Entscheidung Maintainer, 13.11.2026):
+        Der Auftrag erfasst nur, was bis zum Widerruf angelegt war. Einwurf, Satz und
+        Verknuepfung von danach behalten die Kennung, ebenso die Sperre an einem
+        Beitrag von danach (``beitraege_behalten``).
+        """
+        spaeter_beitrag = uuid.uuid4()
+        with datenbank.get_session() as s:
+            neu_eigen = _einwurf(s, von=PERSON)
+            neu_fremd = _einwurf(s, von=ANDERE, destilled_by=PERSON)
+            _satz(s, neu_fremd, PERSON, "Ein Satz nach der neuen Einwilligung")
+            link = AusformuliertIn(
+                raw_input_id=neu_fremd, content_id=spaeter_beitrag, created_by=PERSON
+            )
+            sperre = Sperre(
+                content_id=spaeter_beitrag,
+                sperrgrund="unterstellung",
+                begruendung="Unterstellt Bosheit.",
+                gesperrt_von=ANDERE,
+                autor=PERSON,
+            )
+            s.add_all([link, sperre])
+            s.flush()
+            link_id, sperre_id = link.id, sperre.id
+
+        bericht = auftraege.ausfuehren(
+            auftrag, beitraege_behalten=[str(spaeter_beitrag)]
+        )
+
+        # Was vor dem Widerruf da war, geht wie sonst.
+        assert (bericht.einwuerfe, bericht.saetze) == (1, 1)
+        assert EinwurfRepository(datenbank).get_by_id(einwuerfe.eigen) is None
+        assert _saetze(datenbank, einwuerfe.fremd)[SATZ_DER_PERSON] != PERSON
+        # Was danach kam, bleibt an der Person.
+        assert EinwurfRepository(datenbank).get_by_id(neu_eigen) is not None
+        assert _saetze(datenbank, neu_fremd) == {
+            "Ein Satz nach der neuen Einwilligung": PERSON
+        }
+        assert _destilled_by(datenbank, neu_fremd) == PERSON
+        with datenbank.get_session() as s:
+            assert s.get(AusformuliertIn, link_id).created_by == PERSON
+            assert s.get(Sperre, sperre_id).autor == PERSON
 
     def test_auftrag_erledigt_und_zweiter_lauf_aendert_nichts(
         self, datenbank, einwuerfe, auftraege, auftrag
@@ -260,6 +309,47 @@ class TestAusfuehren:
         assert EinwurfRepository(datenbank).get_by_id(einwuerfe.eigen) is not None
         assert _saetze(datenbank, einwuerfe.fremd)[SATZ_DER_PERSON] == PERSON
         assert [a.id for a in auftraege.offene()] == [auftrag.id]
+
+
+class TestStichtag:
+    @pytest.fixture
+    def dienst(self, datenbank, auftraege):
+        return Art9EinwilligungService(
+            Art9EinwilligungRepository(datenbank), VoteRepository(datenbank), auftraege
+        )
+
+    def test_stichtag_ist_der_widerruf(self, dienst, auftraege):
+        dienst.einwilligen(PERSON, "2026-11-13")
+        dienst.widerrufen(PERSON)
+        (offen,) = auftraege.offene()
+
+        auftrag = auftraege.laden(offen.id)
+
+        # Widerruf und Auftrag in einer Transaktion: derselbe Zeitpunkt.
+        assert auftrag.widerrufen_am == auftrag.angelegt_am
+        assert auftrag.stichtag == auftrag.angelegt_am
+
+    def test_erneuter_widerruf_verschiebt_den_stichtag(self, dienst, auftraege):
+        """Ein offener Auftrag je Person: Er erfasst auch, was zwischen zwei Widerrufen kam."""
+        dienst.einwilligen(PERSON, "2026-11-13")
+        dienst.widerrufen(PERSON)
+        dienst.einwilligen(PERSON, "2026-11-13")
+        dienst.widerrufen(PERSON)
+        (offen,) = auftraege.offene()
+
+        auftrag = auftraege.laden(offen.id)
+
+        assert auftrag.stichtag > auftrag.angelegt_am
+        assert auftrag.stichtag == auftrag.widerrufen_am
+
+    def test_ohne_widerruf_seit_dem_anlegen_das_anlegen(self, auftraege):
+        auftraege.anlegen(PERSON)
+        (offen,) = auftraege.offene()
+
+        auftrag = auftraege.laden(offen.id)
+
+        assert auftrag.widerrufen_am is None
+        assert auftrag.stichtag == auftrag.angelegt_am
 
 
 class TestFrist:

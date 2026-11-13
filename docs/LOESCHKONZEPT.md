@@ -160,13 +160,14 @@ Zeitpunkt und Frist, sieben Tage später (Tabelle `loeschauftraege`,
 Einwilligung widerrufen wurde; je Person höchstens einen offenen, ein zweiter Widerruf legt
 keinen zweiten an. Wer vor diesem Stand widerrufen und seither nicht neu eingewilligt hat,
 bekommt den Auftrag beim Einspielen der Migration (`2026-11-13-loeschauftraege.sql`): angelegt
-zum Zeitpunkt des Widerrufs, Frist sieben Tage ab dem Einspielen. Beim Umstellen der Kennungen
+zum Zeitpunkt des Widerrufs, Frist sieben Tage ab dem Einspielen (entschieden 13.11.2026). Beim Umstellen der Kennungen
 zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
 
 Admins sehen offene Aufträge unter „Moderation“, „Löschaufträge“, mit der frühesten Frist
 zuerst; überfällige stehen hervorgehoben, die Zahl offener steht am Umschalter. Liste und
 Zahl laden selbst nach. Hat die Person nach dem Widerruf neu eingewilligt, steht „Neu
-eingewilligt am …“ daneben; was dann gilt, ist **offen** (Entscheidung Maintainer). Überfällige
+eingewilligt am …“ daneben; der Auftrag bleibt, erfasst aber nur, was bis zum Widerruf angelegt
+war (Entscheidung Maintainer, 13.11.2026, unten „Stichtag“). Überfällige
 meldet der tägliche Löschfrist-Task zusätzlich als WARNING im Log, nur mit ihrer Zahl. „Löschablauf ausführen“ (`POST /api/v1/moderation/loeschauftraege/{id}/ausfuehren`)
 macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwirkung:
 
@@ -177,6 +178,17 @@ macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwir
   `raw_input_content_links.created_by` leer, an Sperren ihrer Beiträge `autor` und
   `widerspruch` leer, Platzhalter ohne Satz abräumen (`LoeschauftragRepository.ausfuehren`).
   In derselben Transaktion bekommt der Auftrag den Zeitpunkt der Ausführung.
+- **Stichtag:** der jüngste Widerruf der Person seit dem Anlegen des Auftrags
+  (`art9_einwilligungen.widerrufen_am`, `Loeschauftrag.stichtag`; ohne ihn `angelegt_am`, das
+  beim Widerruf derselbe Zeitpunkt ist und beim Backfill der Zeitpunkt des Widerrufs). Widerruft
+  die Person nach einer neuen Einwilligung erneut, bleibt es bei einem Auftrag, und der Stichtag
+  rückt mit. Erfasst wird nur, was bis zum Stichtag angelegt war: Beiträge nach `created` im
+  Qdrant-Payload (ohne lesbares `created` zählt ein Beitrag als früher), Einwürfe und
+  Verknüpfungen nach `created_at`, Sätze nach `updated_at` (einen Zeitpunkt des Anlegens hat ein
+  Satz nicht; wer ihn nach einer neuen Einwilligung neu speichert, hat ihn unter ihr beigetragen).
+  An Sperren geht der Autor, außer an Beiträgen, die nach dem Stichtag angelegt sind und deshalb
+  in Qdrant an der Person bleiben. Ein früherer Beitrag bleibt als Ganzes anonymisiert, auch wenn
+  die Person ihn nach der neuen Einwilligung noch geändert hat.
 
 Was **bleibt**: das Konto, der Anzeigename in `users`, die Einwilligungen samt Widerruf als
 Nachweis (Art. 7 Abs. 1), Meldungen der Person und Muster-Hinweise (beide gehen mit ihrer
@@ -212,7 +224,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Zahl je Woche „Ja, gepostet“ (`gepostet_wochen`) | keine | — nur eine Zahl je Woche, ohne Personenbezug |
 | Muster-Hinweise (`muster_hinweise`) | 56 Tage (8 Wochen) | letzter Tag mit gegenseitiger Nutzung (`letzter_tag`) |
 | Löschaufträge (`loeschauftraege`), offen | keine | — sie sind Arbeit und bleiben, bis ein Admin den Löschablauf ausführt (Frist dafür: sieben Tage ab dem Widerruf, unter „Löschauftrag nach dem Widerruf“) |
-| Löschaufträge, erledigt | 365 Tage | Ausführung (`erledigt_am`); mit dem Konto sofort (Schritt 2) |
+| Löschaufträge, erledigt | 365 Tage (entschieden 13.11.2026) | Ausführung (`erledigt_am`); mit dem Konto sofort (Schritt 2) |
 | Zustimmung zur Sichtbarkeit der Abzeichen (`abzeichen_sichtbarkeit`) | solange das Konto besteht | — Nachweis der Zustimmung (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Meilenstein-Abzeichen am Anzeigenamen (#351) | keine Speicherung | — nur im Arbeitsspeicher, alle 15 Minuten neu berechnet, nach einem Neustart leer; nach dem Löschkommando (Schritt 2) höchstens noch bis zum nächsten Lauf |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |

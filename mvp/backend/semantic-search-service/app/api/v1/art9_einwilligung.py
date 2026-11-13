@@ -61,7 +61,9 @@ def stand(user_id: str = Depends(require_user)) -> StandResponse:
         )
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
     return StandResponse(
-        eingewilligt=einwilligung is not None and einwilligung.gilt,
+        # Nur eine Einwilligung zu einem geltenden Wortlaut; zu einem frueheren
+        # fragt die App neu (domain/art9_einwilligung.py, GELTENDE_WORTLAUTE).
+        eingewilligt=einwilligung is not None and einwilligung.zaehlt,
         wortlaut=einwilligung.wortlaut if einwilligung else None,
         eingewilligt_am=einwilligung.eingewilligt_am if einwilligung else None,
         widerrufen_am=einwilligung.widerrufen_am if einwilligung else None,

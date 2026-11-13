@@ -21,6 +21,7 @@ from repositories.loeschauftrag_repository import (
 )
 from services import loeschauftrag_service as modul
 from services.loeschauftrag_service import (
+    AnonymisierteBeitraege,
     AuftragErledigt,
     AuftragUnbekannt,
     LoeschauftragService,
@@ -55,7 +56,7 @@ def repository():
 
 @pytest.fixture
 def qdrant():
-    return MagicMock(return_value=3)
+    return MagicMock(return_value=AnonymisierteBeitraege(3))
 
 
 @pytest.fixture
@@ -100,8 +101,10 @@ class TestDienst:
 
     def test_ausfuehren_erst_qdrant_dann_postgres(self, dienst, repository, qdrant):
         reihenfolge = []
-        qdrant.side_effect = lambda kennung: reihenfolge.append("qdrant") or 3
-        repository.ausfuehren.side_effect = lambda auftrag: (
+        qdrant.side_effect = lambda kennung, stichtag: (
+            reihenfolge.append("qdrant") or AnonymisierteBeitraege(3)
+        )
+        repository.ausfuehren.side_effect = lambda auftrag, **_: (
             reihenfolge.append("postgres") or PostgresBericht(einwuerfe=2, saetze=1)
         )
         repository.laden.return_value = _auftrag()
@@ -109,8 +112,28 @@ class TestDienst:
         ergebnis = dienst.ausfuehren(ID)
 
         assert reihenfolge == ["qdrant", "postgres"]
-        qdrant.assert_called_once_with("person-1")
+        qdrant.assert_called_once_with("person-1", _auftrag().angelegt_am)
         assert (ergebnis.beitraege, ergebnis.einwuerfe, ergebnis.saetze) == (3, 2, 1)
+
+    def test_nur_bis_zum_widerruf(self, dienst, repository, qdrant):
+        """
+        Neue Einwilligung vor der Ausfuehrung (Entscheidung Maintainer, 13.11.2026):
+        Stichtag ist der juengste Widerruf; spaetere Beitraege bleiben, auch ihre
+        Sperren.
+        """
+        widerruf = JETZT - timedelta(hours=5)
+        repository.laden.return_value = Loeschauftrag(
+            **{**vars(_auftrag(tage_alt=2)), "widerrufen_am": widerruf}
+        )
+        spaeter = uuid.UUID("00000000-0000-0000-0000-0000000000aa")
+        qdrant.return_value = AnonymisierteBeitraege(1, [spaeter])
+
+        dienst.ausfuehren(ID)
+
+        qdrant.assert_called_once_with("person-1", widerruf)
+        (auftrag,), kwargs = repository.ausfuehren.call_args
+        assert auftrag.stichtag == widerruf
+        assert kwargs["beitraege_behalten"] == [str(spaeter)]
 
     def test_scheitert_qdrant_bleibt_der_auftrag_offen(
         self, dienst, repository, qdrant
