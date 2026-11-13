@@ -46,7 +46,7 @@ Einzelne Specs: `npx playwright test tests/04-fangkorb.spec.ts`, ein Projekt:
 - **Dubletten:** Ab dem zweiten Lauf gleicht ein neuer Kommentar dem aus dem Vorlauf. Die
   Specs wählen dann „Trotzdem speichern“ (`aufErgebnisWarten`) und vermerken das im Report.
 - **Nächster Einwurf:** Die Reihenfolge kommt vom Server (eigene zuerst, dann die neuesten).
-  Liegen im Fangkorb andere offene Einwürfe, stellt `04-fangkorb` sie mit „Später“ (ohne Satz,
+  Liegen im Fangkorb andere offene Einwürfe, stellt `04-fangkorb` sie mit „Nächster Einwurf“ (ohne Satz,
   also ohne sie zu ändern) für die Runde zurück, bis die Runde im Fangkorb endet.
 - **Browser:** Playwright sucht Chromium unter `~/.cache/ms-playwright`; die Version in
   `package.json` muss zum installierten Browser passen.

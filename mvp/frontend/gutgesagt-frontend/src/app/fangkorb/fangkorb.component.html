@@ -77,7 +77,7 @@
             </div>
 
             <ng-container *ngIf="!isLoading && !ladefehler">
-                <p *ngIf="!sichtbar.length" class="fangkorb-leer">{{ leerText }}</p>
+                <p *ngIf="!sichtbar.length" class="fangkorb-leer">{{ leerText }}<ng-container *ngIf="leerVerweis as verweis">&ngsp;<button type="button" class="leer-verweis" (click)="tabWaehlen(verweis.tab)">{{ verweis.text }}</button></ng-container></p>
 
                 <ul *ngIf="karten.length" class="karten">
                     <li *ngFor="let karte of karten; trackBy: nachKarte">

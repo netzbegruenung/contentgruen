@@ -27,10 +27,13 @@ import {
   FangkorbFilter,
   FangkorbTab,
   TABS,
+  LEER_GEFISCHT,
+  andererTab,
   filterLaden,
   filterSpeichern,
   passtZumFilter,
   passtZumTab,
+  wartenImTab,
 } from './fangkorb-filter';
 
 /**
@@ -138,7 +141,23 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     if (!this.gefiltert.length) {
       return 'Keine Einwürfe für diese Filter.';
     }
+    if (this.leerVerweis) {
+      return LEER_GEFISCHT;
+    }
     return TABS.find((eintrag) => eintrag.wert === this.filter.tab)!.leer;
+  }
+
+  /**
+   * Leer ist nur dieser Tab, im anderen wartet etwas (unter denselben Chips): Dann zeigt
+   * ein Satz dorthin, etwa „Beim Ausformulieren warten 2 Einwürfe.“
+   */
+  get leerVerweis(): { tab: FangkorbTab; text: string } | null {
+    if (this.sichtbar.length || !this.gefiltert.length) {
+      return null;
+    }
+    const anderer = andererTab(this.filter.tab);
+    const anzahl = this.zaehler[anderer];
+    return anzahl > 0 ? { tab: anderer, text: wartenImTab(anderer, anzahl) } : null;
   }
 
   // Filter

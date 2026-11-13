@@ -177,7 +177,6 @@ export class ModerationService {
   ): Observable<PendingReportsResponse> {
     // Add cache-busting timestamp to prevent browser caching
     const timestamp = new Date().getTime();
-    console.log(`[ModerationService] getReports called, status: ${status}, timestamp:`, timestamp);
 
     return this.http.get<PendingReportsResponse>(
       `${this.baseUrl}/reports?status=${status}&limit=${limit}&offset=${offset}&_t=${timestamp}`,

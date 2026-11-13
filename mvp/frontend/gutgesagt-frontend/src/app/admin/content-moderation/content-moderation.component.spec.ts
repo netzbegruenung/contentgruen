@@ -7,7 +7,9 @@ import { ContentReport, ModerationService, PendingReportsResponse } from '../../
 import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
-import { NACHLADEN_MS } from './loeschauftraege.component';
+import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { throwError } from 'rxjs';
 
 function sperre(overrides: Partial<SperreFuerAdmins> = {}): SperreFuerAdmins {
   return {
@@ -120,7 +122,8 @@ describe('ContentModerationComponent', () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(moderation.sperren).toHaveBeenCalledWith('beitrag-1', 'unterstellung', 'Unterstellt Bosheit.');
-    expect(moderation.getReports).toHaveBeenCalledTimes(2);
+    // Die Liste fragt mit der Ansicht allein; die Zahl der offenen (ZuTunService) mit Grenze.
+    expect(moderation.getReports.calls.allArgs().filter((args) => args.length === 1).length).toBe(2);
   });
 
   it('sperrt nicht, wenn der Dialog abgebrochen wird', () => {
@@ -367,5 +370,93 @@ describe('ContentModerationComponent', () => {
       expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
       fixture.destroy();
     });
+  });
+  describe('lädt selbst nach (Grundsatz 13.11.2026)', () => {
+    it('hat keinen Knopf „Aktualisieren“ mehr, auch nicht in der Meldungsliste', () => {
+      mitMeldungen([meldung()]);
+
+      expect(knopf('Aktualisieren')).toBeUndefined();
+    });
+
+    it('lädt still nach: ohne Spinner, aufgeklappte Zeilen bleiben offen', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      fixture.componentInstance.toggleExpand(meldung());
+      const neu = new Subject<PendingReportsResponse>();
+      moderation.getReports.and.returnValue(neu);
+
+      tick(NACHLADEN_MS);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.loading')).toBeNull();
+      expect(fixture.componentInstance.isExpanded(meldung())).toBeTrue();
+
+      neu.next({ total: 2, reports: [meldung(), meldung({ id: 'report-2' })] });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.reports.length).toBe(2);
+      expect(fixture.componentInstance.isExpanded(meldung())).toBeTrue();
+      fixture.destroy();
+    }));
+
+    it('lässt bei einem Fehler im Nachladen die Liste stehen und sagt, dass es neu versucht', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      moderation.getReports.and.returnValue(throwError(() => new Error('weg')));
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.reports-table')).not.toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Aktualisieren gerade nicht möglich, neuer Versuch in Kürze');
+      fixture.destroy();
+    }));
+
+    it('ersetzt „Fehler beim Laden“ durch Spinner und neuen Versuch', () => {
+      moderation.getReports.and.returnValue(throwError(() => new Error('weg')));
+      fixture = TestBed.createComponent(ContentModerationComponent);
+      fixture.detectChanges();
+
+      const fehler: HTMLElement = fixture.nativeElement.querySelector('.error');
+      expect(fehler.querySelector('mat-spinner')).not.toBeNull();
+      expect(fehler.textContent).toContain('Meldungen gerade nicht erreichbar, neuer Versuch in Kürze');
+      fixture.destroy();
+    });
+
+    it('zeigt die Zahl offener Meldungen am Umschalter „Offen“', () => {
+      moderation.getReports.and.callFake(((status: string) =>
+        of({ total: 2, reports: status === 'pending' ? [meldung(), meldung({ id: 'report-2' })] : [] })) as any);
+      fixture = TestBed.createComponent(ContentModerationComponent);
+      fixture.detectChanges();
+
+      const umschalter = Array.from(fixture.nativeElement.querySelectorAll('mat-button-toggle')) as HTMLElement[];
+      const offen = umschalter.find((u) => u.textContent?.includes('Offen'))!;
+      expect(offen.querySelector('[aria-label]')?.getAttribute('aria-label')).toBe('Offen, 2 Meldungen');
+      fixture.destroy();
+    });
+  });
+
+  it('beschriftet den Knopf zum Aufklappen, statt nur ein Pfeil-Symbol zu zeigen', () => {
+    mitMeldungen([meldung()]);
+    const auf: HTMLButtonElement = fixture.nativeElement.querySelector('td button[mat-icon-button]');
+
+    expect(auf.getAttribute('aria-label')).toBe('Beitrag aufklappen');
+    expect(auf.getAttribute('aria-expanded')).toBe('false');
+    auf.click();
+    fixture.detectChanges();
+    expect(auf.getAttribute('aria-label')).toBe('Beitrag zuklappen');
+    expect(auf.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('öffnet die Ansicht aus der Adresse, etwa aus „Zu tun“', () => {
+    TestBed.overrideProvider(ActivatedRoute, {
+      useValue: {
+        snapshot: { queryParamMap: convertToParamMap({ ansicht: 'loeschauftraege' }) },
+        queryParamMap: of(convertToParamMap({ ansicht: 'loeschauftraege' })),
+      },
+    });
+    mitMeldungen([]);
+
+    expect(fixture.componentInstance.selectedStatus).toBe('loeschauftraege');
+    expect(fixture.nativeElement.querySelector('app-loeschauftraege')).not.toBeNull();
+    fixture.destroy();
   });
 });

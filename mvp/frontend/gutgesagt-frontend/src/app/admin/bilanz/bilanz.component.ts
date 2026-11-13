@@ -1,5 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { selbstNachladen } from '../../shared/selbst-nachladen';
+import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,7 +17,7 @@ import { BilanzResponse, BilanzWoche } from '../../services/dtos/metricsDtos';
 @Component({
   selector: 'app-bilanz',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatFormFieldModule, MatSelectModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, MatFormFieldModule, MatSelectModule, NachladeHinweisComponent],
   templateUrl: './bilanz.component.html',
   styleUrls: ['./bilanz.component.css'],
 })
@@ -28,10 +30,14 @@ export class BilanzComponent implements OnInit, OnDestroy {
   fehler = false;
   private anfrage?: Subscription;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private metricsService: MetricsService) {}
 
+  /** Laedt selbst nach, solange der Reiter sichtbar ist; still, ohne die Tabelle zu leeren. */
   ngOnInit() {
     this.laden();
+    selbstNachladen(() => this.laden(true), this.destroyRef);
   }
 
   ngOnDestroy() {
@@ -43,16 +49,24 @@ export class BilanzComponent implements OnInit, OnDestroy {
     this.laden();
   }
 
-  private laden() {
+  private laden(still = false) {
     // Nur die Antwort zum gewaehlten Zeitraum zaehlt: eine aeltere, die spaeter
     // ankommt, darf die Tabelle nicht ueberschreiben.
     this.anfrage?.unsubscribe();
-    this.fehler = false;
+    if (!still) {
+      this.fehler = false;
+    }
     this.anfrage = this.metricsService.getBilanz(this.wochen).subscribe({
-      next: (daten) => (this.daten = daten),
+      next: (daten) => {
+        this.daten = daten;
+        this.fehler = false;
+      },
       error: () => {
-        // Keine Tabelle eines anderen Zeitraums neben der Fehlermeldung.
-        this.daten = null;
+        // Keine Tabelle eines anderen Zeitraums neben der Fehlermeldung; beim stillen
+        // Nachladen ist es derselbe Zeitraum, die Tabelle bleibt stehen.
+        if (!still) {
+          this.daten = null;
+        }
         this.fehler = true;
       },
     });

@@ -36,7 +36,7 @@
     </form>
     <p *ngIf="anlegenFehler" class="warnung" role="alert">Die Einladung konnte nicht angelegt werden.</p>
 
-    <p *ngIf="fehler" class="hinweis" role="alert">Die Einladungen konnten nicht geladen werden.</p>
+    <app-nachlade-hinweis [fehler]="fehler" [geladen]="einladungen !== null" was="Einladungen"></app-nachlade-hinweis>
     <p *ngIf="schaltenFehler" class="warnung" role="alert">Die Einladung konnte nicht umgeschaltet werden.</p>
     <p class="unsichtbar" role="status">{{ kopiert ? 'Link kopiert' : '' }}</p>
     <p *ngIf="kopierenFehler" class="warnung" role="alert">

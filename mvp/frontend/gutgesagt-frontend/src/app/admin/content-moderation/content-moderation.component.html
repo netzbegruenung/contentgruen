@@ -1,14 +1,7 @@
 <div class="moderation-container">
+  <!-- Kein Knopf „Aktualisieren“ mehr: Die Liste lädt selbst nach (Grundsatz 13.11.2026) -->
   <div class="header">
     <h2>Moderation</h2>
-    <button
-      *ngIf="!laedtSelbst"
-      mat-raised-button
-      color="primary"
-      (click)="loadReports()">
-      <mat-icon>refresh</mat-icon>
-      Aktualisieren
-    </button>
   </div>
 
   <!-- Status Filter -->
@@ -19,7 +12,8 @@
       appearance="standard">
       <mat-button-toggle value="pending">
         <mat-icon>pending</mat-icon>
-        Offen
+        <span [matBadge]="offeneMeldungen || null" matBadgeOverlap="false" matBadgeColor="warn"
+              [attr.aria-label]="offeneMeldungen ? 'Offen, ' + offeneMeldungen + ' Meldungen' : null">Offen</span>
       </mat-button-toggle>
       <mat-button-toggle value="reviewed">
         <mat-icon>check_circle</mat-icon>
@@ -55,9 +49,15 @@
     <p>Lade...</p>
   </div>
 
-  <div *ngIf="error && !loading" class="error">
-    <mat-icon>error</mat-icon>
+  <!-- Kein „bitte neu laden“: Der nächste Versuch kommt von selbst -->
+  <div *ngIf="error && !loading" class="error" role="status">
+    <mat-spinner diameter="32"></mat-spinner>
     <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="nachladefehler && !error && !loading && !laedtSelbst" class="nachladefehler" role="status">
+    <mat-spinner diameter="16"></mat-spinner>
+    <span>Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …</span>
   </div>
 
   <ng-container *ngIf="selectedStatus === 'gesperrt' && !loading && !error">
@@ -114,7 +114,7 @@
 
   <app-meldungen-einer-person *ngIf="selectedStatus === 'person'"></app-meldungen-einer-person>
   <app-loeschauftraege *ngIf="selectedStatus === 'loeschauftraege'"
-                       (anzahl)="offeneLoeschauftraege = $event"></app-loeschauftraege>
+                       (anzahl)="loeschauftraegeGezaehlt($event)"></app-loeschauftraege>
 
   <div *ngIf="selectedStatus !== 'gesperrt' && !laedtSelbst && !loading && !error && reports.length === 0" class="empty-state">
     <mat-icon class="large-icon">check_circle</mat-icon>
@@ -128,7 +128,9 @@
       <ng-container matColumnDef="expand">
         <th mat-header-cell *matHeaderCellDef></th>
         <td mat-cell *matCellDef="let report">
-          <button mat-icon-button (click)="toggleExpand(report); $event.stopPropagation()">
+          <button mat-icon-button type="button" (click)="toggleExpand(report); $event.stopPropagation()"
+                  [attr.aria-label]="isExpanded(report) ? 'Beitrag zuklappen' : 'Beitrag aufklappen'"
+                  [attr.aria-expanded]="isExpanded(report)">
             <mat-icon>{{ isExpanded(report) ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
         </td>

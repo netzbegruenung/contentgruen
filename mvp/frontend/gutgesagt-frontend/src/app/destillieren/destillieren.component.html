@@ -3,9 +3,14 @@
         <mat-spinner diameter="40"></mat-spinner>
     </div>
 
-    <div *ngIf="!laedt && allesDestilliert" class="zustand alles-destilliert">
-        <p>Alles destilliert.</p>
-        <a mat-stroked-button color="primary" routerLink="/fangkorb">Zurück zum Fangkorb</a>
+    <!-- Nichts mehr zu destillieren: ein Satz zeigt, ob beim Ausformulieren etwas wartet -->
+    <div *ngIf="!laedt && allesDestilliert" class="zustand alles-destilliert" role="status">
+        <p>{{ leerGefischt }} {{ wartetBeimAusformulieren }}</p>
+        <button *ngIf="zumAusformulierenAnzahl; else zurueckZumFangkorb" mat-raised-button color="primary"
+                type="button" class="zum-ausformulieren" (click)="zumAusformulieren()">Zum Ausformulieren</button>
+        <ng-template #zurueckZumFangkorb>
+            <a mat-stroked-button color="primary" routerLink="/fangkorb">Zurück zum Fangkorb</a>
+        </ng-template>
     </div>
 
     <div *ngIf="!laedt && !einwurf && fehler" class="zustand ladefehler">
@@ -58,8 +63,9 @@
             <div class="knoepfe">
                 <button mat-raised-button color="primary" type="button" class="weiter"
                         [disabled]="!kannWeiter" (click)="weiter()">Ausformulieren</button>
-                <button mat-stroked-button type="button" class="spaeter"
-                        [disabled]="arbeitet" (click)="spaeter()">Später</button>
+                <!-- Satz gemerkt oder uebersprungen: weiter mit dem naechsten, ohne Umweg ueber den Fangkorb -->
+                <button mat-stroked-button type="button" class="spaeter naechster-einwurf"
+                        [disabled]="arbeitet" (click)="spaeter()">Nächster Einwurf</button>
                 <button *ngIf="darfVerwerfen" mat-button color="warn" type="button"
                         class="verwerfen" [disabled]="arbeitet" (click)="verwerfen()">Einwurf verwerfen</button>
             </div>

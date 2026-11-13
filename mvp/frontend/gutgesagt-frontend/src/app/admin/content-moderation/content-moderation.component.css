@@ -23,10 +23,47 @@
   overflow-x: auto;
 }
 
+/*
+ * Mobil brechen die Umschalter um, statt rechts abgeschnitten zu werden ("Abgewi…"):
+ * jeder mit eigenem Rand, damit erkennbar bleibt, wo einer endet.
+ */
 @media (max-width: 599px) {
   .filter-section {
     justify-content: flex-start;
+    overflow-x: visible;
   }
+
+  .filter-section mat-button-toggle-group {
+    flex-wrap: wrap;
+    gap: 8px;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .filter-section mat-button-toggle,
+  .filter-section mat-button-toggle + mat-button-toggle {
+    border: 1px solid var(--divider-color);
+    border-radius: 18px;
+    overflow: visible;
+  }
+
+  .filter-section mat-button-toggle.mat-button-toggle-checked {
+    border-color: var(--akzent-tanne);
+  }
+}
+
+.nachladefehler {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.error mat-spinner {
+  margin: 0 auto 12px;
 }
 
 .filter-section mat-button-toggle-group {

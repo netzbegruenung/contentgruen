@@ -116,7 +116,9 @@ describe('DestillierenComponent', () => {
       'naechsterOffenerEinwurf',
       'zurueckstellen',
       'rundeBeginnen',
+      'fangkorbLaden',
     ]);
+    einwurfService.fangkorbLaden.and.returnValue(of({ results: [], results_count: 0, total_records_count: 0 }));
     einwurfService.satzSpeichern.and.callFake((id: string, sentence: string) =>
       of({ raw_input_id: id, sentence, updated_at: null }),
     );
@@ -214,7 +216,8 @@ describe('DestillierenComponent', () => {
       await erstellen('id-1', einwurf({ ist_eigener_einwurf: false }));
 
       expect(knopf('verwerfen')).toBeNull();
-      expect(knopf('spaeter')!.textContent!.trim()).toBe('Später');
+      // Destillieren als Serie: weiter mit dem naechsten, ohne Umweg ueber den Fangkorb
+      expect(knopf('spaeter')!.textContent!.trim()).toBe('Nächster Einwurf');
     });
 
     it('zeigt Admins Verwerfen auch beim fremden Einwurf', async () => {
@@ -408,15 +411,43 @@ describe('DestillierenComponent', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb'], { replaceUrl: true });
     });
 
-    it('sagt "Alles destilliert", wenn nichts mehr offen ist', async () => {
+    it('sagt "Leer gefischt" und dass auch beim Ausformulieren nichts wartet', async () => {
       einwurfService.naechsterOffenerEinwurf.and.returnValue(of(null));
 
       await erstellen(null);
       fixture.detectChanges();
 
-      expect(text()).toContain('Alles destilliert');
+      expect(text()).toContain('Leer gefischt. Beim Ausformulieren wartet auch nichts.');
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/fangkorb"]');
       expect(link).toBeTruthy();
+      expect(knopf('zum-ausformulieren')).toBeNull();
+    });
+
+    it('zeigt im leeren Zustand, wie viele beim Ausformulieren warten, und fuehrt dorthin', async () => {
+      einwurfService.naechsterOffenerEinwurf.and.returnValue(of(null));
+      const mitSatz = (id: string) =>
+        einwurf({
+          id,
+          status: 'in_progress',
+          drafts: [{ id: `s-${id}`, user_id: 'bob', sentence: 'Ein Satz', updated_at: '2026-09-13T12:00:00Z' }],
+        });
+      einwurfService.fangkorbLaden.and.returnValue(
+        of({
+          // Zwei destillierte zaehlen; offene, verworfene und ausformulierte nicht.
+          results: [mitSatz('a'), mitSatz('b'), einwurf({ id: 'roh' }), einwurf({ id: 'weg', status: 'discarded' })],
+          results_count: 4,
+          total_records_count: 4,
+        }),
+      );
+
+      await erstellen(null);
+      fixture.detectChanges();
+
+      expect(text()).toContain('Leer gefischt. Beim Ausformulieren warten 2 Einwürfe.');
+      knopf('zum-ausformulieren')!.click();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+      expect(JSON.parse(sessionStorage.getItem(FILTER_SCHLUESSEL)!).tab).toBe('ausformulieren');
     });
 
     it('springt aus dem Ablauf in den Tab der Handlung, ohne Halt in der History', async () => {

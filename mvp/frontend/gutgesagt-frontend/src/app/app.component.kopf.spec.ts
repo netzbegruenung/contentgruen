@@ -21,6 +21,7 @@ import { ProfilbildDialogComponent } from './shared/profilbild/profilbild-dialog
 import { RUECKKEHRZIEL_SCHLUESSEL } from './login/rueckkehrziel';
 import { RundgangService } from './rundgang/rundgang.service';
 import { MatTooltip } from '@angular/material/tooltip';
+import { ZuTunService } from './services/zu-tun.service';
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
@@ -446,6 +447,21 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(() => starten(ANGEMELDET)).not.toThrow();
       expect(router.navigateByUrl).not.toHaveBeenCalled();
       spione.forEach((spion) => spion.and.callThrough());
+    });
+  });
+  // Nutzerfuehrung 13.11.2026: offene Meldungen sieht man schon im Kopf.
+  describe('Admin', () => {
+    it('zeigt am Admin-Link die Zahl offener Meldungen', () => {
+      TestBed.overrideProvider(ZuTunService, {
+        useValue: { meldungen$: of({ daten: { anzahl: 3, mehr: false, aelteste: null }, fehler: false }) },
+      });
+      starten({ ...ANGEMELDET, isAdmin: true });
+
+      const admin = (Array.from(kopf().querySelectorAll('a.header-link')) as HTMLElement[]).find((a) =>
+        a.textContent?.includes('Admin'),
+      )!;
+      expect(admin.querySelector('.zahl')!.textContent!.trim()).toBe('3');
+      expect(admin.textContent).toContain('3 offene Meldungen');
     });
   });
 });

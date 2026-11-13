@@ -9,8 +9,13 @@ import { SuchenOhneTrefferComponent } from '../suchen-ohne-treffer/suchen-ohne-t
 import { MusterHinweiseComponent } from '../muster-hinweise/muster-hinweise.component';
 import { FeedbackListeComponent } from '../feedback-liste/feedback-liste.component';
 import { EinladungenComponent } from '../einladungen/einladungen.component';
-import { interval, Subscription } from 'rxjs';
-import { startWith, switchMap } from 'rxjs/operators';
+import { Subscription, merge, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { nachladeAnlaesse } from '../../shared/selbst-nachladen';
+import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
+
+/** Die Kennzahlen aendern sich langsam: alle fuenf Minuten und beim Zurueckkehren auf den Reiter. */
+export const KENNZAHLEN_NACHLADEN_MS = 5 * 60 * 1000;
 
 @Component({
   selector: 'app-mvp-dashboard',
@@ -24,7 +29,8 @@ import { startWith, switchMap } from 'rxjs/operators';
     SuchenOhneTrefferComponent,
     MusterHinweiseComponent,
     FeedbackListeComponent,
-    EinladungenComponent
+    EinladungenComponent,
+    NachladeHinweisComponent
   ],
   templateUrl: './mvp-dashboard.component.html',
   styleUrls: ['./mvp-dashboard.component.css']
@@ -39,23 +45,28 @@ export class MvpDashboardComponent implements OnInit, OnDestroy {
   constructor(private metricsService: MetricsService) {}
 
   ngOnInit() {
-    // Auto-refresh every 5 minutes
-    this.refreshSubscription = interval(5 * 60 * 1000)
+    // Laedt selbst nach (nachladeAnlaesse). Der Fehler bleibt im inneren Strom: Frueher
+    // beendete ein einziger Fehler das Nachladen fuer immer.
+    this.refreshSubscription = merge(of(undefined), nachladeAnlaesse(KENNZAHLEN_NACHLADEN_MS))
       .pipe(
-        startWith(0),
-        switchMap(() => this.metricsService.getMVPDashboard())
+        switchMap(() =>
+          this.metricsService.getMVPDashboard().pipe(
+            map((data): MVPMetrics | null => data),
+            catchError((err) => {
+              console.error('Error loading MVP metrics:', err);
+              return of(null);
+            })
+          )
+        )
       )
-      .subscribe({
-        next: (data) => {
+      .subscribe((data) => {
+        this.loading = false;
+        if (data) {
           this.metrics = data;
-          this.loading = false;
           this.error = null;
           this.lastUpdated = new Date();
-        },
-        error: (err) => {
-          this.error = 'Fehler beim Laden der Metriken';
-          this.loading = false;
-          console.error('Error loading MVP metrics:', err);
+        } else {
+          this.error = 'Kennzahlen gerade nicht erreichbar';
         }
       });
   }

@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { selbstNachladen } from '../../shared/selbst-nachladen';
+import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MetricsService } from '../../services/metrics.service';
@@ -12,7 +14,7 @@ import { MusterHinweis, MusterHinweiseResponse } from '../../services/dtos/metri
 @Component({
   selector: 'app-muster-hinweise',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, NachladeHinweisComponent],
   templateUrl: './muster-hinweise.component.html',
   styleUrls: ['./muster-hinweise.component.css'],
 })
@@ -20,11 +22,22 @@ export class MusterHinweiseComponent implements OnInit {
   daten: MusterHinweiseResponse | null = null;
   fehler = false;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private metricsService: MetricsService) {}
 
+  /** Laedt selbst nach, solange der Reiter sichtbar ist; ein Fehler laesst den Stand stehen. */
   ngOnInit() {
+    this.laden();
+    selbstNachladen(() => this.laden(), this.destroyRef);
+  }
+
+  private laden() {
     this.metricsService.getMusterHinweise().subscribe({
-      next: (daten) => (this.daten = daten),
+      next: (daten) => {
+        this.daten = daten;
+        this.fehler = false;
+      },
       error: () => (this.fehler = true),
     });
   }

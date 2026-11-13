@@ -7,6 +7,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { UserInfo } from '../../../auth/auth.service';
+import { OffeneMeldungenZahlComponent } from '../offene-meldungen-zahl/offene-meldungen-zahl.component';
 import { DATENSCHUTZ_EINSTELLUNGEN, EINWERFEN_TITEL, MENUE_ICONS } from '../../fangkorb-texte';
 import { ROUTES } from '../../constants/app.constants';
 import { RundgangId, rundgangBeschriftung } from '../../../rundgang/rundgang-daten';
@@ -19,7 +20,8 @@ import { RundgangId, rundgangBeschriftung } from '../../../rundgang/rundgang-dat
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
-    RouterLink
+    RouterLink,
+    OffeneMeldungenZahlComponent
   ],
   templateUrl: './mobile-menu.html',
   styleUrl: './mobile-menu.css'

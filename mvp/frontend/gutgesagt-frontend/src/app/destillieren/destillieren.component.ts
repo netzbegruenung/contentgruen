@@ -21,7 +21,15 @@ import {
   TAB_PARAM,
 } from './destillier-uebergabe.service';
 import { EINWURF_PARAM } from './einwurf-adresse';
-import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../fangkorb/fangkorb-filter';
+import {
+  FangkorbTab,
+  LEER_GEFISCHT,
+  passtZumTab,
+  tabAus,
+  tabMerken,
+  verworfenEinblenden,
+  wartenImTab,
+} from '../fangkorb/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -54,7 +62,11 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
  * Der Ablauf muss am Handy unterbrechbar sein: Der Satz wird verzoegert beim
  * Tippen, beim Verlassen des Felds, bei jedem Knopf und beim Wegwechseln der App
  * (keepalive) serverseitig gespeichert. Ohne ID in der Adresse oeffnet sich der
- * naechste offene Einwurf ohne eigenen Satz, sonst "Alles destilliert".
+ * naechste offene Einwurf ohne eigenen Satz, sonst "Leer gefischt." mit dem Hinweis,
+ * wie viele Einwuerfe beim Ausformulieren warten.
+ *
+ * "Naechster Einwurf" (frueher "Spaeter") merkt den Satz oder ueberspringt den
+ * Einwurf und oeffnet gleich den naechsten: Destillieren als Serie.
  */
 @Component({
   selector: 'app-destillieren',
@@ -78,7 +90,10 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   laedt = true;
   arbeitet = false;
   allesDestilliert = false;
+  /** Im leeren Zustand: wie viele Einwuerfe beim Ausformulieren warten; null, solange unbekannt. */
+  zumAusformulierenAnzahl: number | null = null;
   fehler: string | null = null;
+  readonly leerGefischt = LEER_GEFISCHT;
 
   private zuletztGespeichert = '';
   private destroy$ = new Subject<void>();
@@ -337,6 +352,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.typ = 'commentary';
     this.arbeitet = false;
     this.allesDestilliert = false;
+    this.zumAusformulierenAnzahl = null;
     this.fehler = null;
     this.laedt = true;
 
@@ -401,12 +417,44 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         }
         this.laedt = false;
         this.allesDestilliert = true;
+        this.ausformulierenZaehlen();
       },
       error: (error) => {
         this.logger.error('Fangkorb konnte nicht geladen werden', error);
         this.laedt = false;
         this.fehler = 'Der Fangkorb konnte nicht geladen werden.';
       },
+    });
+  }
+
+  /** Der Satz zum anderen Tab im leeren Zustand; ohne Zahl (noch nicht geladen) keiner. */
+  get wartetBeimAusformulieren(): string {
+    const anzahl = this.zumAusformulierenAnzahl;
+    if (anzahl === null) {
+      return '';
+    }
+    return anzahl > 0 ? wartenImTab('ausformulieren', anzahl) : 'Beim Ausformulieren wartet auch nichts.';
+  }
+
+  /** Aus dem leeren Zustand in den Tab "Ausformulieren" des Fangkorbs. */
+  zumAusformulieren(): void {
+    tabMerken('ausformulieren');
+    this.router.navigate(['/fangkorb']);
+  }
+
+  /**
+   * Zaehlt fuer den leeren Zustand, was beim Ausformulieren wartet: wie der Tab im
+   * Fangkorb (eine Seite zu 100 wie naechsterOffenerEinwurf), ohne Chips, Verworfenes
+   * nicht. Scheitert das, bleibt es beim Satz ohne Zahl.
+   */
+  private ausformulierenZaehlen(): void {
+    this.einwurfService.fangkorbLaden(1, 100).subscribe({
+      next: (daten) => {
+        this.zumAusformulierenAnzahl = daten.results.filter((einwurf) =>
+          passtZumTab(einwurf, 'ausformulieren', false),
+        ).length;
+      },
+      error: (error) => this.logger.warn('Fangkorb konnte nicht gezaehlt werden', error),
     });
   }
 

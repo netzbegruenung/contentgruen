@@ -160,6 +160,23 @@
   padding: 24px 0;
 }
 
+/* Aus dem leeren Tab in den anderen: ein Textlink, kein Knopf */
+.leer-verweis {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-dark);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.leer-verweis:focus-visible {
+  outline: 2px solid var(--akzent-tanne);
+  outline-offset: 2px;
+}
+
 .fangkorb-leer,
 .fangkorb-fehler,
 .fangkorb-mehr {

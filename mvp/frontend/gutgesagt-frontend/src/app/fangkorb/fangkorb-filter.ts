@@ -30,6 +30,24 @@ export const TABS: ReadonlyArray<{ wert: FangkorbTab; name: string; leer: string
   { wert: 'ausformulieren', name: 'Ausformulieren', leer: 'Nichts auszuformulieren.' },
 ];
 
+/** Der Anfang im leeren Tab, wenn im anderen noch etwas wartet. */
+export const LEER_GEFISCHT = 'Leer gefischt.';
+
+/** Der jeweils andere Tab: Destillieren und Ausformulieren zeigen aufeinander. */
+export function andererTab(tab: FangkorbTab): FangkorbTab {
+  return tab === 'destillieren' ? 'ausformulieren' : 'destillieren';
+}
+
+/**
+ * Der Satz, der aus einem leeren Tab in den anderen zeigt: „Beim Ausformulieren
+ * warten 2 Einwürfe.“ Gezaehlt werden Einwuerfe, nicht Saetze: Ein Einwurf kann
+ * mehrere Saetze haben und wird einmal ausformuliert.
+ */
+export function wartenImTab(tab: FangkorbTab, anzahl: number): string {
+  const name = TABS.find((eintrag) => eintrag.wert === tab)!.name;
+  return anzahl === 1 ? `Beim ${name} wartet 1 Einwurf.` : `Beim ${name} warten ${anzahl} Einwürfe.`;
+}
+
 /**
  * Wo der Fangkorb nach dem Ausformulieren aufgeht, wenn "Naechster Einwurf" keinen
  * offenen mehr findet: in der Arbeitsliste, aus der der Einwurf kam, denn dort kann

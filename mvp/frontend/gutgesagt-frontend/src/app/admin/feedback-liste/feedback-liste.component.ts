@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { selbstNachladen } from '../../shared/selbst-nachladen';
+import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
@@ -37,6 +39,7 @@ const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
     MatDialogModule,
     MatIconModule,
     MatSnackBarModule,
+    NachladeHinweisComponent,
   ],
   templateUrl: './feedback-liste.component.html',
   styleUrls: ['./feedback-liste.component.css'],
@@ -55,8 +58,12 @@ export class FeedbackListeComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {}
 
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Laedt selbst nach, solange der Reiter sichtbar ist (still, ohne die Liste zu leeren). */
   ngOnInit() {
     this.laden();
+    selbstNachladen(() => this.laden(true), this.destroyRef);
   }
 
   filtern(erledigt: boolean) {
@@ -94,12 +101,24 @@ export class FeedbackListeComponent implements OnInit {
     return `${tag}.${monat}.${jahr}`;
   }
 
-  private laden() {
-    this.daten = null;
-    this.fehler = false;
-    this.feedbackService.liste(this.erledigt).subscribe({
-      next: (daten) => (this.daten = daten),
-      error: () => (this.fehler = true),
+  /** ``still``: Die Liste bleibt stehen, bis die Antwort da ist; ein Fehler laesst sie stehen. */
+  private laden(still = false) {
+    if (!still) {
+      this.daten = null;
+      this.fehler = false;
+    }
+    const erledigt = this.erledigt;
+    this.feedbackService.liste(erledigt).subscribe({
+      next: (daten) => {
+        // Eine Antwort fuer den anderen Filter kommt zu spaet und zaehlt nicht.
+        if (erledigt !== this.erledigt) return;
+        this.daten = daten;
+        this.fehler = false;
+      },
+      error: () => {
+        if (erledigt !== this.erledigt) return;
+        this.fehler = true;
+      },
     });
   }
 
