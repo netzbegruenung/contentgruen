@@ -67,11 +67,13 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   `tests/unit/api/test_usage_eigene_kopie.py`). Gefragt wird je Kopie; ist die Einwilligung
   nicht lesbar, gilt sie als nicht erteilt und die Kopie zählt trotzdem. Paar-Prüfwerte und
   Hinweise von vor einem Widerruf gehen mit ihren Fristen (`docs/LOESCHKONZEPT.md`).
-- **Punkte:** Ein Konto ohne geltende Einwilligung (nie erteilt oder widerrufen) hat keine
-  Punkte; `GET /api/v1/usage/users/me/punkte` liefert dann 0 in jeder Stufe, wie bei einem
-  Startkonto (#559, F559-1, `PunkteService.punkte`). Gefragt wird je Abruf.
-- **Meilensteine und Abzeichen (#351):** Ohne geltende Einwilligung keine Meilensteine und kein
-  Abzeichen am Anzeigenamen. Ein Widerruf nimmt das Abzeichen sofort weg und hält ein
+- **Punkte und Meilensteine:** gehören seit dem Wortlaut `2026-11-13` nicht mehr zu dieser
+  Einwilligung, sondern hängen an der eigenen, freiwilligen Einwilligung „Punkte und
+  Meilensteine“ (#668, Entscheidung Maintainer 13.11.2026); ohne sie kann die Person genauso
+  beitragen und bewerten. Bis #668 gemergt ist, prüft der Code dafür noch diese Einwilligung
+  (`PunkteService.punkte`, #559, F559-1: ohne sie 0 in jeder Stufe, gefragt je Abruf); das ist
+  folgenlos, solange der Schalter `punkte_aktiv` aus ist.
+- **Abzeichen (#351):** Ohne geltende Einwilligung kein Abzeichen am Anzeigenamen. Ein Widerruf nimmt das Abzeichen sofort weg und hält ein
   früheres Ja zur Sichtbarkeit als Nein fest, damit es nach einer neuen Einwilligung nicht
   ohne neue Frage wieder erscheint (`AbzeichenService.zuruecknehmen`). Die Antwort zur
   Sichtbarkeit (`PUT /api/v1/usage/users/me/abzeichen-sichtbarkeit`) geht auch ohne
