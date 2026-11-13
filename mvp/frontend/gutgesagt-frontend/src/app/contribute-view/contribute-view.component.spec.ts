@@ -47,10 +47,10 @@ describe('ContributeViewComponent', () => {
   describe('Kette', () => {
     beforeEach(() => erstellen());
 
-    // #620: Verfassen zuerst, mobil lag "Kommentar" sonst erst nach 1,2 Bildschirmhoehen
-    it('zeigt zuerst die vier Typen, dann Einwerfen, Fangkorb und Meine Beitraege', () => {
+    // Designrunde 12.11.: erst der Weg vom Rohen zum Ergebnis, dann die Typen (vorher #620 umgekehrt)
+    it('zeigt zuerst Einwerfen, Fangkorb und Meine Beitraege, dann die vier Typen', () => {
       expect(zeilen().map((zeile) => zeile.querySelector('.typ-titel')!.textContent!.trim()))
-        .toEqual(['Kommentar', 'Hintergrundinfo', 'Bild', 'Post', 'Schnell einwerfen', 'Fangkorb', 'Meine Beiträge']);
+        .toEqual(['Schnell einwerfen', 'Fangkorb', 'Meine Beiträge', 'Kommentar', 'Hintergrundinfo', 'Bild', 'Post']);
     });
 
     it('stellt den Erstnutzer-Satz unter die Typen, nicht davor', () => {
@@ -70,23 +70,23 @@ describe('ContributeViewComponent', () => {
         .toBeNull();
     });
 
-    it('gliedert die Seite in Verfassen, Einwerfen und Weiterarbeiten mit Abschnittsueberschriften', () => {
+    it('gliedert die Seite in Kette und Verfassen mit Abschnittsueberschriften', () => {
       const ueberschriften: HTMLElement[] = Array.from(
         fixture.nativeElement.querySelectorAll('.typ-zwischenueberschrift'),
       );
-      const [verfassen, einwerfen, weiterarbeiten] = ueberschriften;
+      const [kette, verfassen] = ueberschriften;
 
-      expect(ueberschriften.map((u) => u.textContent!.trim())).toEqual(['Verfassen', 'Einwerfen', 'Weiterarbeiten']);
+      expect(ueberschriften.map((u) => u.textContent!.trim())).toEqual(['Einwerfen und weiterarbeiten', 'Direkt verfassen']);
       expect(ueberschriften.every((u) => u.tagName === 'H2')).toBeTrue();
-      expect(einwerfen.nextElementSibling!.classList).toContain('einwerfen-block');
-      expect(weiterarbeiten.nextElementSibling!.classList).toContain('fangkorb-block');
-      expect(weiterarbeiten.nextElementSibling!.nextElementSibling!.classList).toContain('beitraege-block');
+      const ketteZeilen = Array.from(kette.nextElementSibling!.querySelectorAll('button.typ-zeile'));
+      const bloecke = ['einwerfen-block', 'fangkorb-block', 'beitraege-block'];
+      expect(ketteZeilen.map((z) => bloecke.find((k) => z.classList.contains(k)))).toEqual(bloecke);
       expect(verfassen.nextElementSibling!.matches('nav.typ-liste')).toBeTrue();
       expect(verfassen.nextElementSibling!.querySelectorAll('button.typ-zeile').length).toBe(4);
     });
 
     it('fuehrt mit der Einwerfen-Zeile zum Formular, mit der Fangkorb-Zeile zur Liste', () => {
-      const [, , , , einwerfen, fangkorb, beitraege] = zeilen();
+      const [einwerfen, fangkorb, beitraege] = zeilen();
       einwerfen.click();
       expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
 
@@ -98,7 +98,7 @@ describe('ContributeViewComponent', () => {
     });
 
     it('oeffnet mit einer Typ-Zeile die Formularseite des Typs', () => {
-      const [kommentar, hintergrund, bild, post] = zeilen();
+      const [, , , kommentar, hintergrund, bild, post] = zeilen();
 
       kommentar.click();
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-commentary']);

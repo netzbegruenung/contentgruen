@@ -47,16 +47,10 @@
 
 .footer a {
     color: var(--primary-dark);
-    text-decoration: none;
+    text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
     cursor: pointer;
 }
 
-/* Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588) */
-@media (prefers-color-scheme: dark) {
-    .footer a {
-        text-decoration: underline;
-    }
-}
 
 .footer a:hover {
     text-decoration: underline;

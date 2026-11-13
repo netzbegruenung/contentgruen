@@ -156,18 +156,12 @@
 
 .registration-option .email-link {
     color: var(--primary-dark);
-    text-decoration: none;
+    text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
     font-weight: 500;
     border-bottom: 1px dotted var(--linie-klee);
     transition: all 0.2s ease;
 }
 
-/* Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588) */
-@media (prefers-color-scheme: dark) {
-    .registration-option .email-link {
-        text-decoration: underline;
-    }
-}
 
 .registration-option .email-link:hover {
     color: var(--primary-dark);

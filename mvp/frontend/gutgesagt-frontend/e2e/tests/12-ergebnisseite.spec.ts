@@ -83,18 +83,25 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
     test(`Kopfband, Chips, Gruppen und Bilder (${name})`, async ({ page, bild }) => {
       await oeffnen(page);
 
-      // Chips: nur Typen mit Treffern, mit Zahl, "Alle" gewaehlt
+      // Chips: nur Typen mit Treffern, mit Zahl, "Alle" gewaehlt; gezaehlt wird nur, was
+      // ohne Aufklappen dasteht (die erkannte Aussage)
       const chips = page.locator('.typ-chip');
-      await expect(chips).toHaveText([/Alle\s*10/, /Kommentare\s*6/, /Hintergrundinfos\s*1/, /Bilder\s*2/, /Posts\s*1/]);
+      await expect(chips).toHaveText([/Alle\s*7/, /Kommentare\s*4/, /Hintergrundinfos\s*1/, /Bilder\s*1/, /Posts\s*1/]);
       await expect(chips.first()).toHaveAttribute('aria-pressed', 'true');
 
-      // Gruppen: erkannte zuerst, aehnliche, direkte Treffer zuletzt; je eine h2
+      // Gruppen: erkannte offen; andere Aussage und direkte Treffer eingeklappt darunter.
       // Der Kopf der erkannten Gruppe nennt die Aussage nur fuer Screenreader (visually-hidden).
+      await expect(page.locator('.gruppe > h2 .gruppe-label')).toHaveText([`Zu dieser Aussage: „${ERKANNT.text}“`]);
+      const weitere = page.locator('.weitere-umschalter');
+      await expect(weitere).toContainText('Weitere, weniger passende Treffer (3)');
+      await weitere.click();
+      await expect(weitere).toHaveAttribute('aria-expanded', 'true');
       await expect(page.locator('.gruppe > h2 .gruppe-label')).toHaveText([
         `Zu dieser Aussage: „${ERKANNT.text}“`,
-        'Zu einer ähnlichen Aussage:',
+        'Zu einer anderen Aussage:',
         'Passt zu deinem Suchtext',
       ]);
+      await weitere.click();
       // Kartentitel unter Gruppe (h2) und Typ (h3) als h4
       await expect(page.locator('.typ-block h3.karte-titel')).toHaveCount(0);
       // Keine doppelte Antwort-auf-Zeile an den Karten
@@ -140,9 +147,9 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
       const bilder = page.locator('.typ-chip', { hasText: 'Bilder' });
       await bilder.click();
       await expect(bilder).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.locator('.typ-ansage')).toHaveText('Nur Bilder, 2 Treffer');
+      await expect(page.locator('.typ-ansage')).toHaveText('Nur Bilder, 1 Treffer');
       const typen = await page.locator('.typ-block').evaluateAll((bloecke) => bloecke.map((b) => b.getAttribute('data-typ')));
-      expect(typen).toEqual(['image', 'image']);
+      expect(typen).toEqual(['image']);
       await bild(`ergebnis-${name}-nur-bilder`);
 
       await page.reload();

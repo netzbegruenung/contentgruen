@@ -197,15 +197,9 @@ mat-sidenav-content {
 
 .mobile-menu-about a {
   color: var(--primary-dark);
-  text-decoration: none;
+  text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
 }
 
-/* Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588) */
-@media (prefers-color-scheme: dark) {
-    .mobile-menu-about a {
-        text-decoration: underline;
-    }
-}
 
 .mobile-menu-about a:hover {
   text-decoration: underline;
@@ -697,6 +691,38 @@ mat-sidenav-content {
   background: var(--surface-variant);
   font-size: 13px;
   color: var(--text-primary);
+}
+
+/* Weniger passende Treffer: eingeklappt unter den Gruppen */
+.weitere {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.weitere-umschalter {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 16px 0 8px;
+  border: 1px solid var(--text-subtle);
+  border-radius: 22px;
+  background: none;
+  font: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.weitere-umschalter:hover {
+  background: var(--primary-tint);
+}
+
+.weitere-liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 /* Typ in der Gruppe: kleine Ueberschrift, Erklaerung nur beim ersten Vorkommen */

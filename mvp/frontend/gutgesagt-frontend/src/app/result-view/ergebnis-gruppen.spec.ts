@@ -3,7 +3,9 @@ import {
   TYPFILTER_SCHLUESSEL,
   ansichtBauen,
   anzahlJeTyp,
+  anzahlSichtbar,
   aufklappSchluessel,
+  istWeniger,
   gruppieren,
   typFilterLesen,
   typFilterMerken,
@@ -72,6 +74,31 @@ describe('ergebnis-gruppen', () => {
         post: 0,
       });
       expect(anzahlJeTyp(null)).toEqual({ commentary: 0, generictext: 0, image: 0, post: 0 });
+    });
+  });
+
+  describe('weniger passende Gruppen', () => {
+    const daten = () =>
+      antwort({
+        k: [
+          treffer('commentary_result', 'k-1', 'a', 'A', 0.9),
+          treffer('commentary_result', 'k-2', 'b', 'B', 0.95),
+          treffer('commentary_result', 'k-3', null, '', 0.6),
+        ],
+        b: [treffer('image_result', 'b-1', 'a', 'A', 0.8)],
+      });
+
+    it('sind mit erkannter Aussage alle anderen, gezaehlt wird nur die erkannte', () => {
+      const gruppen = gruppieren(daten(), 'a');
+      expect(gruppen.map((g) => istWeniger(g, gruppen))).toEqual([false, true, true]);
+      expect(anzahlSichtbar(gruppen)).toEqual({ commentary: 1, generictext: 0, image: 1, post: 0 });
+      expect(ansichtBauen(gruppen, 'alle', new Set()).map((g) => g.weniger)).toEqual([false, true, true]);
+    });
+
+    it('gibt es ohne erkannte Aussage nicht', () => {
+      const gruppen = gruppieren(daten(), null);
+      expect(gruppen.some((g) => istWeniger(g, gruppen))).toBeFalse();
+      expect(anzahlSichtbar(gruppen)).toEqual({ commentary: 3, generictext: 0, image: 1, post: 0 });
     });
   });
 
