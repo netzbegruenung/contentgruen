@@ -142,6 +142,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   /** Durchgereicht an app-karten-aktionen: "Beitrag öffnen" im Menue; aus auf /beitrag/:id selbst. */
   @Input() ansichtVerlinkt = true;
   /**
+   * Der Knopf "Teilen" (B7); ohne Angabe wie ansichtVerlinkt. Die Beitragsseite schaltet ihn
+   * ausdruecklich ein: Dort teilt die Karte mit der angezeigten Fassung und zaehlt selbst.
+   */
+  @Input() teilbar: boolean | undefined = undefined;
+  /**
    * Einwurf-Karte: die Stufe als Wort in der Meta-Zeile statt des Einwerfers. Fuer
    * "Meine Einwuerfe", wo alle Karten die eigenen sind und die Stufe die Rueckmeldung ist.
    */
@@ -661,6 +666,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get kopierBeschriftung(): string {
     return this.daten.typ === 'image' ? 'Bildunterschrift kopieren' : 'Kopieren';
+  }
+
+  /** Am Handy sichtbar statt des langen Worts (Entscheidung 14.11.); null, wo es kurz genug ist. */
+  get kopierKurz(): string | null {
+    return this.daten.typ === 'image' ? 'Kopieren' : null;
   }
 
   /**
