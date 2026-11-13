@@ -232,20 +232,13 @@
 
 .reference-badge {
     background: var(--info-border);
-    color: white;
+    /* im Dunkeln dunkel: Blau und Orange sind dort heller (#588) */
+    color: var(--referenz-marke-schrift);
 }
 
 .reference-badge.pending {
     background: var(--warning-border);
-    color: white;
-}
-
-/* Im Dunkeln sind Blau und Orange heller: dunkle Schrift statt Weiss (#588) */
-@media (prefers-color-scheme: dark) {
-    .reference-badge,
-    .reference-badge.pending {
-        color: var(--bg-main);
-    }
+    color: var(--referenz-marke-schrift);
 }
 
 .reference-count {

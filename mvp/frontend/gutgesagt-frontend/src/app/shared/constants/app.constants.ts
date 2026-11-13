@@ -52,7 +52,7 @@ export const CONTENT_ICONS = {
 export const PAGE_TITLES = {
   HOME: 'Gut gesagt',
   SEARCH_RESULTS: 'Suchergebnisse',
-  CONTRIBUTE: 'Beitrag verfassen',
+  CONTRIBUTE: 'Beitragen', // wie der Knopf im Kopf (GLOSSARY: Beitragen ist die Seite, Verfassen ein Weg darauf)
   MEINE_BEITRAEGE: 'Meine Beiträge',
   RAW_INPUT: EINWERFEN_TITEL,
   RAW_INPUT_LIST: 'Fangkorb',

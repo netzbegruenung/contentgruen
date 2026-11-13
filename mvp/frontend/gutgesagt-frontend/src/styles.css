@@ -193,9 +193,15 @@ body {
 /* Layout System - Separation of Concerns */
 /* ========================================= */
 
-/* Layout variables */
+/* Layout variables
+ * Seitenrahmen: Jede Seite hat links und rechts --page-margin Rand zum Rand von <main>
+ * (hoechstens 1400 px breit), wie Kopf und Fuss; die Werte fallen mit der Breite (unten).
+ * Schmalere Spalten (Formularfelder, Fliesstext) stehen linksbuendig im Rahmen und werden
+ * hoechstens --lesespalte breit; die Raender der Seite bleiben gleich (Designrunde 12.11.).
+ * Nur die Blaetter-Knoepfe der Karussells liegen auf dem Rand. */
 :root {
     --page-margin: 100px;
+    --lesespalte: 720px;
     --page-margin-tablet: 50px;
     --page-margin-mobile: 24px;
     --section-gap: 40px;
@@ -356,12 +362,25 @@ a:hover {
 }
 
 /* Im Dunkeln haben Links keine eigene Farbe mehr (hellgrau wie Text): unterstrichen,
-   damit sie ohne Farbe erkennbar sind (#588). Links mit Klasse sind Kacheln oder
-   Knoepfe und regeln das selbst. */
-@media (prefers-color-scheme: dark) {
-    a:not([class]) {
-        text-decoration: underline;
-    }
+   damit sie ohne Farbe erkennbar sind (#588, Token --link-unterstrich). Links mit Klasse
+   sind Kacheln oder Knoepfe und regeln das selbst. */
+a:not([class]):not(:hover) {
+    text-decoration: var(--link-unterstrich);
+}
+
+/* Klee-Knoepfe auf farbigen Baendern (Such-Band, Willkommen/Rundgang): Rand aus dem Token
+   --knopf-rand-auf-band, hell durchsichtig, im Dunkeln hell (Entscheidung 13.11.). Beim
+   Suchen-Knopf vor Materials Schatten, damit Hover und Druck ihre Hoehe behalten. Der
+   Fokusrahmen (outline) liegt ausserhalb und bleibt sichtbar. */
+.such-band .search-button-container button {
+    --mat-button-protected-container-elevation-shadow: 0 0 0 2px var(--knopf-rand-auf-band), var(--elevation-2);
+    --mat-button-protected-hover-container-elevation-shadow: 0 0 0 2px var(--knopf-rand-auf-band), var(--elevation-4);
+    --mat-button-protected-focus-container-elevation-shadow: 0 0 0 2px var(--knopf-rand-auf-band), var(--elevation-2);
+    --mat-button-protected-pressed-container-elevation-shadow: 0 0 0 2px var(--knopf-rand-auf-band), var(--elevation-8);
+}
+
+app-rundgang-band .rundgang-knopf.voll {
+    box-shadow: 0 0 0 2px var(--knopf-rand-auf-band);
 }
 
 /* Additional elevation utilities */
@@ -732,12 +751,14 @@ body.cdk-global-scrollblock {
 
 .neu-punkt {
     position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 12px;
-    height: 12px;
+    top: -5px;
+    right: -5px;
+    /* Groesser und mit hellem Aussenring: gelb auf Gruen allein war zu schwach (UX-Review B19) */
+    width: 14px;
+    height: 14px;
     border: 2px solid var(--primary-fill);
     border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--bg-card);
     /* Kegel statt Band: Das Band ist im Dunkelmodus Anthrazit, der Punkt bleibt gelb (#591) */
     background: var(--rundgang-kegel);
     pointer-events: none;
