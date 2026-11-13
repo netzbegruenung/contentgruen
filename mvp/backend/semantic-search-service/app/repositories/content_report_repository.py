@@ -106,6 +106,10 @@ def _von_melder(suche: MelderSuche):
     return and_(*bedingungen)
 
 
+class MeldungNichtOffen(Exception):
+    """Die Meldung ist schon bearbeitet oder abgewiesen; abweisen geht nur bei offenen."""
+
+
 class ContentReportRepository:
     """Repository for managing content report data."""
 
@@ -365,9 +369,14 @@ class ContentReportRepository:
         resolution_notes: Optional[str] = None,
         *,
         melder_adressen: Optional[List[MelderAdresse]] = None,
+        nur_offene: bool = False,
     ) -> Optional[ContentReport]:
         """
         Update the status of a content report.
+
+        Mit ``nur_offene`` nur eine offene Meldung: Sonst wuerde etwa ein Abweisen aus einem
+        veralteten Fenster eine schon bearbeitete Meldung (Beitrag gesperrt) zu "abgewiesen"
+        umschreiben. Dann ``MeldungNichtOffen``.
 
         Args:
             report_id: UUID of the report
@@ -389,6 +398,8 @@ class ContentReportRepository:
                     .first()
                 )
                 if report:
+                    if nur_offene and report.status != "pending":
+                        raise MeldungNichtOffen(str(report_id))
                     adressen = _offene_adressen_merken([report])
                     report.status = status
                     _melder_pseudonym_loeschen(report)
@@ -404,6 +415,8 @@ class ContentReportRepository:
                 else:
                     logger.warning(f"Report {report_id} not found")
                     return None
+        except MeldungNichtOffen:
+            raise
         except Exception as e:
             logger.error(
                 f"Error updating report status: {type(e).__name__}", exc_info=True

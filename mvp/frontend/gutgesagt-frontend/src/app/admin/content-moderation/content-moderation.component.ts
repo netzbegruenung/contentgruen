@@ -25,7 +25,7 @@ import { kurzeKennung } from './kennung';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 import { LoeschauftraegeComponent } from './loeschauftraege.component';
 import { MELDUNGEN_GRENZE, ZuTunService } from '../../services/zu-tun.service';
-import { EMPTY, Observable, merge } from 'rxjs';
+import { EMPTY, Observable, Subject, merge } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { NACHLADEN_MS, SITZUNG_ABGELAUFEN, ohneRechte, selbstNachladen } from '../../shared/selbst-nachladen';
 import { RouterLink } from '@angular/router';
@@ -36,6 +36,9 @@ type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'pers
 /** Die Ansichten, die eine Meldungsliste zeigen. */
 type Meldungsansicht = 'pending' | 'reviewed' | 'dismissed' | 'all';
 const ANSICHTEN: readonly Ansicht[] = ['pending', 'reviewed', 'dismissed', 'all', 'gesperrt', 'person', 'loeschauftraege'];
+
+/** Snackbar, wenn eine Aktion eine inzwischen erledigte Meldung träfe. */
+export const MELDUNG_ERLEDIGT = 'Die Meldung ist inzwischen erledigt.';
 
 /** Query-Parameter mit der gewählten Ansicht, etwa aus der Zeile „Zu tun“. */
 export const ANSICHT_PARAM = 'ansicht';
@@ -150,7 +153,7 @@ export class ContentModerationComponent implements OnInit {
       next: () => (this.sitzungAbgelaufen = false),
       // Nach 401/403 hört das Nachladen auf; statt „neuer Versuch“ der Weg zur Anmeldung.
       error: (fehler) => (this.sitzungAbgelaufen = ohneRechte(fehler)),
-    }, { ms: NACHLADEN_MS, aufhoerenBei: ohneRechte });
+    }, { ms: NACHLADEN_MS, aufhoerenBei: ohneRechte, anstoss$: this.wiederanlauf$ });
   }
 
   /** Für trackBy: Zeilen bleiben beim Nachladen dieselben DOM-Knoten, der Fokus bleibt. */
@@ -164,6 +167,12 @@ export class ContentModerationComponent implements OnInit {
 
   /** Nach 401/403 beim Nachladen: Es wird nicht weiter gefragt, der Link führt zur Anmeldung. */
   sitzungAbgelaufen = false;
+
+  /**
+   * Startet das nach 401/403 gestoppte Nachladen wieder, sobald ausdrücklich geladen wird
+   * (loadReports, auch nach einer Aktion). Ohne Stopp feuert es nicht: kein doppeltes Laden.
+   */
+  private readonly wiederanlauf$ = new Subject<void>();
   readonly sitzungAbgelaufenText = SITZUNG_ABGELAUFEN;
 
   /** Wohin es nach dem Anmelden zurückgeht. */
@@ -201,6 +210,9 @@ export class ContentModerationComponent implements OnInit {
     this.loading = true;
     this.error = null;
     this.expandedReports.clear(); // Reset expanded rows on refresh
+    if (this.sitzungAbgelaufen) {
+      this.wiederanlauf$.next();
+    }
     // Antworten einer Ansicht, die inzwischen verlassen ist, verwerfen: Sonst zeigt
     // etwa „Nach Person“ den Fehler einer alten Liste (#494). Ebenso Antworten, die ein
     // neueres Laden oder eine Aktion überholt hat.
@@ -217,7 +229,7 @@ export class ContentModerationComponent implements OnInit {
         error: (error) => {
           console.error('Error loading blocked content:', error);
           if (verlassen()) return;
-          this.ladefehler(false, 'Gesperrte Beiträge gerade nicht erreichbar, neuer Versuch in Kürze …');
+          this.ladefehler(false, 'Gesperrte Beiträge gerade nicht erreichbar, neuer Versuch in Kürze …', error);
         }
       });
       return;
@@ -235,7 +247,7 @@ export class ContentModerationComponent implements OnInit {
       error: (error) => {
         console.error('Error loading reports:', error);
         if (verlassen()) return;
-        this.ladefehler(false, 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …');
+        this.ladefehler(false, 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …', error);
       }
     });
   }
@@ -319,6 +331,9 @@ export class ContentModerationComponent implements OnInit {
    * neue warten auf „N neue Meldungen“. Weg sind erledigte erst beim nächsten Laden.
    */
   private stillUebernehmen(neu: ContentReport[]) {
+    // „erledigt“ nur, wo es sicher stimmt: in „Offen“ und unter der Grenze. Sonst kann eine
+    // fehlende Zeile auch nur hinter der Grenze liegen; dann fällt sie erst bei „neue anzeigen“ weg.
+    const sicher = this.selectedStatus === 'pending' && neu.length < MELDUNGEN_GRENZE;
     if (!this.reports.length) {
       // Nichts steht unter dem Zeiger: gleich alles zeigen.
       this.reports = [...neu];
@@ -334,11 +349,15 @@ export class ContentModerationComponent implements OnInit {
         this.erledigt.delete(meldung.id);
         return neuerStand;
       }
-      this.erledigt.add(meldung.id);
+      if (sicher) {
+        this.erledigt.add(meldung.id);
+      }
       return meldung;
     });
     const neue = neu.filter((meldung) => !bekannt.has(meldung.id));
-    this.wartendeListe = neue.length ? [...neu] : null;
+    // Fehlende ohne „erledigt“ (siehe oben) verschwinden leise mit „neue anzeigen“.
+    const fehlenUnmarkiert = !sicher && this.reports.some((meldung) => !frisch.has(meldung.id));
+    this.wartendeListe = neue.length || fehlenUnmarkiert ? [...neu] : null;
     this.neueMeldungen = neue.length;
   }
 
@@ -369,11 +388,21 @@ export class ContentModerationComponent implements OnInit {
     this.loading = false;
     this.error = null;
     this.nachladefehler = false;
+    this.sitzungAbgelaufen = false;
   }
 
-  /** Steht eine Liste, bleibt sie beim Fehler stehen; sonst ersetzt der Hinweis sie bis zum nächsten Versuch. */
-  private ladefehler(leise: boolean, text: string) {
+  /**
+   * Steht eine Liste, bleibt sie beim Fehler stehen; sonst ersetzt der Hinweis sie bis zum nächsten
+   * Versuch. Bei 401/403 kein „neuer Versuch“ samt Spinner, sondern nur der Link zur Anmeldung.
+   */
+  private ladefehler(leise: boolean, text: string, fehler?: unknown) {
     this.loading = false;
+    if (ohneRechte(fehler)) {
+      this.sitzungAbgelaufen = true;
+      this.error = null;
+      this.nachladefehler = false;
+      return;
+    }
     if (leise) {
       this.nachladefehler = true;
     } else {
@@ -454,6 +483,7 @@ export class ContentModerationComponent implements OnInit {
 
   /** Sperren nur mit Sperrgrund und Begründung (#448); beides fragt der Dialog ab. */
   sperren(report: ContentReport) {
+    if (this.erledigtMelden(report)) return;
     const daten: SperrenDialogDaten = {
       art: 'sperren',
       titel: this.beitragsTitel(report.content ?? { id: report.content_id }),
@@ -466,6 +496,8 @@ export class ContentModerationComponent implements OnInit {
         if (!ergebnis?.sperrgrund) {
           return;
         }
+        // Während der Dialog offen war, kann die Meldung erledigt worden sein.
+        if (this.erledigtMelden(report)) return;
         this.generation++; // ein stilles Nachladen von vorher zählt nicht mehr
         this.moderationService.sperren(report.content_id, ergebnis.sperrgrund, ergebnis.begruendung).subscribe({
           next: () => {
@@ -516,8 +548,12 @@ export class ContentModerationComponent implements OnInit {
 
   /** Lädt die gesperrten Beiträge nur, um die offenen Widersprüche am Umschalter zu zählen. */
   private offeneWiderspruecheZaehlen() {
+    const generation = this.generation;
     this.moderationService.getGesperrte().subscribe({
-      next: (response) => (this.offeneWidersprueche = zaehleOffene(response.beitraege)),
+      next: (response) => {
+        // Überholt ein Laden oder eine Aktion die Zählung, zählt deren Stand.
+        if (generation === this.generation) this.offeneWidersprueche = zaehleOffene(response.beitraege);
+      },
       error: (error) => console.error('Error counting Widersprüche:', error)
     });
   }
@@ -550,6 +586,7 @@ export class ContentModerationComponent implements OnInit {
    * dazu ein Satz. Sie geht als notes an den Suchdienst und bleibt intern an der Meldung.
    */
   dismissReport(report: ContentReport) {
+    if (this.erledigtMelden(report)) return;
     const daten: AbweisenDialogDaten = {
       titel: this.beitragsTitel(report.content ?? { id: report.content_id }),
       meldegrund: this.getReasonLabel(report.reason),
@@ -565,7 +602,18 @@ export class ContentModerationComponent implements OnInit {
       });
   }
 
+  /** Eine erledigte Meldung (ausgegraut) bekommt keine Aktion mehr; das sagt eine Snackbar. */
+  private erledigtMelden(report: ContentReport): boolean {
+    if (!this.istErledigt(report)) {
+      return false;
+    }
+    this.snackBar.open(MELDUNG_ERLEDIGT, 'OK', { duration: 5000 });
+    return true;
+  }
+
   private abweisen(report: ContentReport, begruendung: string) {
+    // Während der Dialog offen war, kann die Meldung erledigt worden sein.
+    if (this.erledigtMelden(report)) return;
     this.generation++;
     this.moderationService.dismissReport(report.id, begruendung).subscribe({
       next: (response) => {
@@ -573,7 +621,12 @@ export class ContentModerationComponent implements OnInit {
         this.nachAktion(); // Reload to remove from list
       },
       error: (error) => {
-        this.snackBar.open('Fehler beim Abweisen der Meldung', 'OK', { duration: 3000 });
+        // 409: inzwischen bearbeitet oder abgewiesen (etwa aus einem anderen Fenster).
+        const text = error?.status === 409 ? MELDUNG_ERLEDIGT : 'Fehler beim Abweisen der Meldung';
+        this.snackBar.open(text, 'OK', { duration: 5000 });
+        if (error?.status === 409) {
+          this.nachAktion();
+        }
         console.error('Error dismissing report:', error);
       }
     });

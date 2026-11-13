@@ -34,7 +34,7 @@ from dependencies import (
 from utils.rate_limiter import report_rate_limiter
 from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
-from repositories.content_report_repository import melder_pseudonym
+from repositories.content_report_repository import MeldungNichtOffen, melder_pseudonym
 
 logger = get_logger(__name__)
 
@@ -602,6 +602,10 @@ async def delete_content(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+# Kennzeichen fuer das Frontend: Die Meldung ist nicht mehr offen.
+MELDUNG_NICHT_OFFEN = "meldung_nicht_offen"
+
+
 # Admin Endpoint - Dismiss Report
 @router.put("/reports/{report_id}/dismiss", response_model=DismissReportResponse)
 async def dismiss_report(
@@ -629,6 +633,9 @@ async def dismiss_report(
         else:
             raise HTTPException(status_code=404, detail="Report not found")
 
+    except MeldungNichtOffen:
+        # Schon bearbeitet oder abgewiesen, etwa aus einem veralteten Fenster.
+        raise HTTPException(status_code=409, detail=MELDUNG_NICHT_OFFEN)
     except HTTPException:
         raise
     except Exception as e:

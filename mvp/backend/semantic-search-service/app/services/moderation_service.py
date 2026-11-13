@@ -11,6 +11,7 @@ from uuid import UUID
 
 from repositories.content_report_repository import (
     ContentReportRepository,
+    MeldungNichtOffen,
     get_content_report_repository,
 )
 from repositories.implementations.qdrant.moderation_repository import (
@@ -800,6 +801,7 @@ class ModerationService:
                 reviewed_by=dismissed_by,
                 resolution_notes=notes or "Report dismissed",
                 melder_adressen=adressen,
+                nur_offene=True,
             )
             if updated_report:
                 logger.info(f"Report {report_id} dismissed")
@@ -812,6 +814,8 @@ class ModerationService:
             else:
                 logger.warning(f"Report {report_id} not found")
                 return False
+        except MeldungNichtOffen:
+            raise
         except ValueError as e:
             logger.error("Invalid report_id format")
             return False

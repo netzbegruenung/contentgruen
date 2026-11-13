@@ -89,7 +89,8 @@ describe('LoeschauftraegeComponent', () => {
       expect(zeilen.length).toBe(1);
       const text = zeilen[0].textContent!;
       expect(text).toContain('Anna B.');
-      expect(text).toContain('(person-1)');
+      // Die volle Kennung steht aufklappbar daneben.
+      expect(zeilen[0].querySelector('.kennung-voll code')!.textContent).toBe('person-1');
       expect(text).toContain('Widerrufen am');
       expect(text).toContain('Frist bis');
       expect(zeilen[0].classList).not.toContain('ueberfaellig');
@@ -129,12 +130,17 @@ describe('LoeschauftraegeComponent', () => {
       expect(element().querySelector('[data-testid="neu-eingewilligt"]')).toBeNull();
     });
 
-    it('zeigt ohne Anzeigenamen die Kennung', () => {
-      moderation.getLoeschauftraege.and.returnValue(of(antwort([auftrag({ anzeigename: null })])));
+    it('zeigt ohne Anzeigenamen die Kennung, eine lange kurz als „Person …“', () => {
+      moderation.getLoeschauftraege.and.returnValue(of(antwort([
+        auftrag({ anzeigename: null }),
+        auftrag({ id: 'auftrag-2', anzeigename: null, user_id: '7c1e0b2a-1111-4222-8333-944455556666' }),
+      ])));
 
       starten();
 
-      expect(element().querySelector('.person')!.textContent!.trim()).toBe('person-1');
+      const namen = Array.from(element().querySelectorAll('.person strong')).map((e) => e.textContent!.trim());
+      expect(namen[0]).toBe('person-1');
+      expect(namen[1]).toMatch(/^Person [0-9a-f]{8}$/);
     });
 
     it('sagt, wenn nichts offen ist', () => {

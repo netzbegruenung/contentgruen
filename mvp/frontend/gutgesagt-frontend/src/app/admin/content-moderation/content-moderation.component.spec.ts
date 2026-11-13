@@ -7,6 +7,9 @@ import { ContentReport, ModerationService, PendingReportsResponse } from '../../
 import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
+import { kurzeKennung } from './kennung';
+import { MELDUNG_ERLEDIGT } from './content-moderation.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
 // Ausserhalb von /admin (wie im Testlauf) fragt der ZuTunService alle 120 s.
 import { KOPF_NACHLADEN_MS } from '../../services/zu-tun.service';
@@ -465,7 +468,8 @@ describe('ContentModerationComponent', () => {
       expect(zeilen[0].textContent).toContain('erledigt');
       const knoepfe = Array.from(zeilen[0].querySelectorAll('.action-buttons button')) as HTMLButtonElement[];
       expect(knoepfe.length).toBeGreaterThan(0);
-      expect(knoepfe.every((k) => k.disabled)).toBeTrue();
+      // Gesperrt, aber fokussierbar (disabledInteractive): aria-disabled statt disabled
+      expect(knoepfe.every((k) => k.getAttribute('aria-disabled') === 'true')).toBeTrue();
       expect(zeilen[1].classList).not.toContain('erledigt');
 
       // Weg erst beim nächsten ausdrücklichen Laden; die aufgeklappte Zeile auch.
@@ -512,6 +516,142 @@ describe('ContentModerationComponent', () => {
       expect(moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length).toBe(anfragen);
       fixture.destroy();
     }));
+
+    it('kürzt bei 328 px den Hinweis mit Auslassungszeichen; der Knopf bleibt ganz, die Zeile 40 px hoch', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      document.body.appendChild(fixture.nativeElement);
+      fixture.componentInstance.nachladefehler = true;
+      fixture.componentInstance.neueMeldungen = 1;
+      fixture.detectChanges();
+
+      const zeile = fixture.nativeElement.querySelector('.statuszeile') as HTMLElement;
+      zeile.style.width = '328px';
+      const knopf = zeile.querySelector('.neue-meldungen') as HTMLElement;
+      const text = zeile.querySelector('.nachladefehler-text.lang') as HTMLElement;
+
+      expect(zeile.getBoundingClientRect().height).toBe(40);
+      expect(knopf.getBoundingClientRect().right).toBeLessThanOrEqual(zeile.getBoundingClientRect().right + 0.5);
+      expect(knopf.scrollWidth).toBeLessThanOrEqual(knopf.clientWidth + 1);
+      expect(getComputedStyle(text).textOverflow).toBe('ellipsis');
+      expect(text.scrollWidth).toBeGreaterThan(text.clientWidth);
+      fixture.destroy();
+    }));
+
+    it('läuft nach 401 wieder an, sobald ausdrücklich geladen wird', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      moderation.getReports.and.returnValue(throwError(() => ({ status: 401 })));
+      document.dispatchEvent(new Event('visibilitychange'));
+      fixture.detectChanges();
+      expect(fixture.componentInstance.sitzungAbgelaufen).toBeTrue();
+
+      // Wieder angemeldet: Ein ausdrückliches Laden klappt und setzt das Nachladen fort.
+      moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung()] }));
+      fixture.componentInstance.loadReports();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.sitzungAbgelaufen).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.sitzung-abgelaufen')).toBeNull();
+
+      const vorher = moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length;
+      tick(NACHLADEN_MS);
+      expect(moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length).toBe(vorher + 1);
+      fixture.destroy();
+    }));
+
+    it('zeigt bei 403 auf ein ausdrückliches Laden nur den Link, ohne „neuer Versuch“ und ohne „Keine Meldungen“', () => {
+      moderation.getReports.and.returnValue(throwError(() => ({ status: 403 })));
+      fixture = TestBed.createComponent(ContentModerationComponent);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.sitzung-abgelaufen').textContent.trim()).toBe('Sitzung abgelaufen – Anmelden');
+      expect(fixture.nativeElement.querySelector('.error')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('neuer Versuch');
+      expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
+      fixture.destroy();
+    });
+
+    it('markiert in anderen Ansichten nichts als erledigt; Fehlendes geht leise mit „neue anzeigen“', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([]);
+      moderation.getReports.and.returnValue(of({ total: 2, reports: [meldung({ id: 'a', status: 'reviewed' }), meldung({ id: 'b', status: 'reviewed' })] }));
+      fixture.componentInstance.onStatusFilterChange('reviewed');
+      fixture.detectChanges();
+
+      moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung({ id: 'b', status: 'reviewed' })] }));
+      document.dispatchEvent(new Event('visibilitychange'));
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.erledigt.size).toBe(0);
+      expect(fixture.componentInstance.reports.map((r) => r.id)).toEqual(['a', 'b']);
+      fixture.componentInstance.neueZeigen();
+      expect(fixture.componentInstance.reports.map((r) => r.id)).toEqual(['b']);
+      fixture.destroy();
+    }));
+
+    it('markiert an der 100er-Grenze nichts als erledigt: die Zeile kann nur dahinter liegen', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung({ id: 'alt' })]);
+      const hundert = Array.from({ length: 100 }, (_, i) => meldung({ id: 'neu-' + i }));
+      moderation.getReports.and.returnValue(of({ total: 100, reports: hundert }));
+
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      expect(fixture.componentInstance.erledigt.size).toBe(0);
+      expect(fixture.componentInstance.neueMeldungen).toBe(100);
+      fixture.destroy();
+    }));
+
+    it('bricht Abweisen und Sperren ab, wenn die Meldung erledigt wurde, während der Dialog offen war', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      const snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+      TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
+      const dialogZu = new Subject<any>();
+      dialog.open.and.returnValue({ afterClosed: () => dialogZu } as any);
+      mitMeldungen([meldung(), meldung({ id: 'report-2' })]);
+
+      fixture.componentInstance.dismissReport(meldung());
+      moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung({ id: 'report-2' })] }));
+      document.dispatchEvent(new Event('visibilitychange'));
+      dialogZu.next('Kein Verstoß gegen die Nutzungsbedingungen');
+
+      expect(moderation.dismissReport).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledWith(MELDUNG_ERLEDIGT, 'OK', jasmine.anything());
+
+      const sperrDialog = new Subject<any>();
+      dialog.open.and.returnValue({ afterClosed: () => sperrDialog } as any);
+      fixture.componentInstance.sperren(meldung({ id: 'report-2' }));
+      fixture.componentInstance.erledigt.add('report-2');
+      sperrDialog.next({ sperrgrund: 'unterstellung', begruendung: 'x' });
+      expect(moderation.sperren).not.toHaveBeenCalled();
+      fixture.destroy();
+    }));
+
+    it('meldet 409 beim Abweisen als „inzwischen erledigt“ und lädt neu', () => {
+      const snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+      TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
+      moderation.dismissReport.and.returnValue(throwError(() => ({ status: 409 })));
+      dialog.open.and.returnValue({ afterClosed: () => of('Doppelte Meldung, schon entschieden') } as any);
+      mitMeldungen([meldung()]);
+      const vorher = moderation.getReports.calls.count();
+
+      fixture.componentInstance.dismissReport(meldung());
+
+      expect(snackBar.open).toHaveBeenCalledWith(MELDUNG_ERLEDIGT, 'OK', jasmine.anything());
+      expect(moderation.getReports.calls.count()).toBeGreaterThan(vorher);
+    });
+
+    it('verwirft eine Widerspruchszählung, die ein Laden überholt hat', () => {
+      const alt = new Subject<any>();
+      moderation.getGesperrte.and.returnValue(alt);
+      mitMeldungen([]);
+      moderation.getGesperrte.and.returnValue(of({ total: 0, beitraege: [] }));
+      fixture.componentInstance.onStatusFilterChange('gesperrt');
+
+      alt.next({ total: 1, beitraege: [{ id: 'x', content_type: 'commentary', status: 'blocked', sperre: sperre({ widerspruch_offen: true }) }] });
+
+      expect(fixture.componentInstance.offeneWidersprueche).toBe(0);
+    });
 
     it('fragt in „Nach Person“ beim Nachladen nichts', fakeAsync(() => {
       spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
@@ -618,7 +758,8 @@ describe('ContentModerationComponent', () => {
       mitMeldungen([meldung({ reported_by_user_id: 'f3a9c1d2-7b4e-4c55-9a10-2e8d6b0c7f11', reported_by_session_id: null })]);
 
       const melder: HTMLElement = fixture.nativeElement.querySelector('.reporter-cell span');
-      expect(melder.textContent!.trim()).toBe('Person f3a9');
+      expect(melder.textContent!.trim()).toBe(kurzeKennung('f3a9c1d2-7b4e-4c55-9a10-2e8d6b0c7f11'));
+      expect(melder.textContent!.trim()).toMatch(/^Person [0-9a-f]{8}$/);
       expect(melder.getAttribute('title')).toBe('f3a9c1d2-7b4e-4c55-9a10-2e8d6b0c7f11');
     });
 

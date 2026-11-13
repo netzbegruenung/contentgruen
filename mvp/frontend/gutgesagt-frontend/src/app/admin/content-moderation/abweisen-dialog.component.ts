@@ -6,7 +6,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
-import { BEGRUENDUNG_MAX } from './sperren-dialog.component';
 
 /** Die festen Gründe fürs Abweisen; „Anderer Grund“ verlangt einen eigenen Satz. */
 export const ABWEISUNGSGRUENDE: readonly string[] = [
@@ -18,6 +17,9 @@ export const ABWEISUNGSGRUENDE: readonly string[] = [
 ];
 
 export const ANDERER_GRUND = 'Anderer Grund';
+
+/** Höchstlänge der ganzen Begründung: Sie steht als notes in der Adresse (Logs, Grenze der URL-Länge). */
+export const ABWEISUNG_MAX = 500;
 
 export interface AbweisenDialogDaten {
   /** Titel oder Anfang des gemeldeten Beitrags. */
@@ -92,9 +94,9 @@ export class AbweisenDialogComponent {
     @Inject(MAT_DIALOG_DATA) public daten: AbweisenDialogDaten,
   ) {}
 
-  /** Höchstlänge der ganzen Begründung (Grund und Satz), wie beim Sperren. */
+  /** Was für den eigenen Satz bleibt: ABWEISUNG_MAX abzüglich Grund und „: “. */
   get maxLaenge(): number {
-    return BEGRUENDUNG_MAX - (this.grund?.length ?? 0) - 2;
+    return ABWEISUNG_MAX - (this.grund?.length ?? 0) - 2;
   }
 
   /** Ein Grund ist Pflicht; bei „Anderer Grund“ auch der Satz. */

@@ -68,11 +68,40 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.nachladefehler mat-spinner {
+  flex-shrink: 0;
+}
+
+/* Der Text weicht, nie der Knopf: mit Auslassungszeichen statt abgeschnitten */
+.nachladefehler-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.nachladefehler-text.kurz {
+  display: none;
+}
+
+.statuszeile .neue-meldungen {
+  flex-shrink: 0;
+}
+
+@media (max-width: 599px) {
+  .nachladefehler-text.lang {
+    display: none;
+  }
+
+  .nachladefehler-text.kurz {
+    display: inline;
+  }
 }
 
 .sitzung-abgelaufen {
@@ -80,9 +109,13 @@
   font-weight: 700;
 }
 
-/* Beim Nachladen nicht mehr offen: ausgegraut, Knöpfe gesperrt */
+/* Beim Nachladen nicht mehr offen: abgesetzt über Farbe statt Deckkraft (Kontrast AA), Knöpfe gesperrt */
 tr.erledigt {
-  opacity: 0.55;
+  background-color: var(--hover-bg);
+}
+
+tr.erledigt td {
+  color: var(--text-secondary);
 }
 
 .status-erledigt {
@@ -450,7 +483,6 @@ table {
     box-sizing: border-box;
   }
 
-  .reports-table thead,
   .reports-table tr.mat-mdc-header-row {
     display: none;
   }
@@ -481,6 +513,11 @@ table {
     height: auto;
   }
 
+  /* Die eingeklappte Detailzeile nimmt keinen Platz */
+  .reports-table tr.expanded-row td.mat-mdc-cell {
+    padding: 0;
+  }
+
   .gesperrter-beitrag {
     flex-direction: column;
     align-items: stretch;
@@ -491,4 +528,10 @@ table {
     flex-wrap: wrap;
     align-items: flex-start;
   }
+}
+
+.kennung {
+  margin: 2px 0;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
 }

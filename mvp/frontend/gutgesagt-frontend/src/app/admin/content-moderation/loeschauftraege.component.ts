@@ -9,6 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { filter } from 'rxjs';
 import { Loeschauftrag, LoeschauftragAusgefuehrt, ModerationService } from '../../services/moderation.service';
 import { ZuTunService } from '../../services/zu-tun.service';
+import { kurzeKennung } from './kennung';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -64,8 +65,8 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
         data-testid="loeschauftrag"
       >
         <div class="person">
-          <strong>{{ a.anzeigename || a.user_id }}</strong>
-          <span *ngIf="a.anzeigename"> ({{ a.user_id }})</span>
+          <strong [title]="a.user_id">{{ a.anzeigename || kurzeKennung(a.user_id) }}</strong>
+          <details class="kennung-voll"><summary>Kennung</summary><code>{{ a.user_id }}</code></details>
         </div>
         <div>Widerrufen am {{ datum(a.widerrufen_am) }}</div>
         <div *ngIf="a.neu_eingewilligt_am" class="neu-eingewilligt" data-testid="neu-eingewilligt">
@@ -106,9 +107,12 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
     .auftrag.ueberfaellig .frist { color: var(--error-color); font-weight: 700; }
     .frist, .neu-eingewilligt { display: flex; align-items: center; gap: 4px; }
     .im-knopf { display: inline-block; margin-right: 8px; vertical-align: middle; }
+    .kennung-voll { font-size: 0.8125rem; color: var(--text-secondary); overflow-wrap: anywhere; }
   `],
 })
 export class LoeschauftraegeComponent implements OnInit {
+  readonly kurzeKennung = kurzeKennung;
+
   /** Zahl der offenen Aufträge nach jedem Laden, für die Zahl am Umschalter. */
   @Output() anzahl = new EventEmitter<number>();
 

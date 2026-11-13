@@ -65,7 +65,9 @@
     <ng-template #statusSonst>
       <span *ngIf="nachladefehler && !error && !loading" class="nachladefehler">
         <mat-spinner diameter="16"></mat-spinner>
-        <span>Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …</span>
+        <!-- Mobil der kurze Text: Er passt neben „1 neue Meldung anzeigen“ -->
+        <span class="nachladefehler-text lang">Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …</span>
+        <span class="nachladefehler-text kurz">Nicht aktuell, neuer Versuch …</span>
       </span>
       <button *ngIf="neueMeldungen && selectedStatus !== 'gesperrt'" mat-stroked-button type="button"
               class="neue-meldungen" (click)="neueZeigen()">
@@ -137,7 +139,7 @@
   <app-loeschauftraege *ngIf="selectedStatus === 'loeschauftraege'"
                        (anzahl)="loeschauftraegeGezaehlt($event)"></app-loeschauftraege>
 
-  <div *ngIf="selectedStatus !== 'gesperrt' && !laedtSelbst && !loading && !error && reports.length === 0" class="empty-state">
+  <div *ngIf="selectedStatus !== 'gesperrt' && !laedtSelbst && !loading && !error && !sitzungAbgelaufen && reports.length === 0" class="empty-state">
     <mat-icon class="large-icon">check_circle</mat-icon>
     <h2>Keine Meldungen</h2>
     <p>In dieser Ansicht gibt es keine Meldungen.</p>
@@ -236,7 +238,7 @@
             <button
               *ngIf="report.content && !istGesperrt(report)"
               mat-raised-button
-              [disabled]="istErledigt(report)"
+              [disabled]="istErledigt(report)" disabledInteractive
               color="warn"
               (click)="sperren(report); $event.stopPropagation()"
               matTooltip="Beitrag aus Suche und Ansicht nehmen">
@@ -246,7 +248,7 @@
             <button
               *ngIf="istGesperrt(report)"
               mat-button
-              [disabled]="istErledigt(report)"
+              [disabled]="istErledigt(report)" disabledInteractive
               (click)="entsperren(report.content_id); $event.stopPropagation()"
               matTooltip="Sperre aufheben, Beitrag wieder sichtbar machen">
               <mat-icon>lock_open</mat-icon>
@@ -255,7 +257,7 @@
             <button
               *ngIf="report.status === 'pending'"
               mat-button
-              [disabled]="istErledigt(report)"
+              [disabled]="istErledigt(report)" disabledInteractive
               (click)="dismissReport(report); $event.stopPropagation()"
               matTooltip="Meldung abweisen, Beitrag bleibt sichtbar">
               <mat-icon>close</mat-icon>
@@ -273,6 +275,8 @@
               <h3>Gemeldeter Beitrag:</h3>
               <div class="content-info">
                 <p class="content-id"><strong>Beitrags-ID:</strong> <code>{{ report.content_id }}</code></p>
+                <p *ngIf="report.reported_by_user_id" class="kennung"><strong>Kennung der meldenden Person:</strong> <code>{{ report.reported_by_user_id }}</code></p>
+                <p *ngIf="report.reviewed_by" class="kennung"><strong>Kennung der bearbeitenden Person:</strong> <code>{{ report.reviewed_by }}</code></p>
                 <p *ngIf="report.status !== 'pending'" class="entscheidung-begruendung">
                   <strong>Begründung der Entscheidung:</strong> {{ entscheidungsBegruendung(report) }}
                 </p>

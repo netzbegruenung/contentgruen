@@ -136,7 +136,9 @@ export function nachladeStrom<T>(holen: () => Observable<T>, optionen: NachladeO
     };
     document.addEventListener('visibilitychange', beiSichtbarkeit);
     const anstoss = (optionen.anstoss$ ?? EMPTY).subscribe(() => {
+      // Ein Anstoss von aussen beginnt frisch: kein Stopp, keine verlaengerte Pause.
       gestoppt = false;
+      fehlversuche = 0;
       los();
     });
 

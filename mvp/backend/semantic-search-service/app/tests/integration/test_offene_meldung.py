@@ -55,3 +55,20 @@ def test_hat_offene_meldung_nur_solange_sie_offen_ist(meldungen):
     )
 
     assert meldungen.hat_offene_meldung(beitrag_id) is False
+
+
+def test_abweisen_mit_nur_offene_aendert_eine_bearbeitete_meldung_nicht(meldungen):
+    """Review zu #673: Abweisen aus einem veralteten Fenster schreibt "bearbeitet" nicht um."""
+    from repositories.content_report_repository import MeldungNichtOffen
+
+    beitrag_id = uuid.uuid4()
+    _melden(meldungen, beitrag_id)
+    meldung = meldungen.get_reports_by_content_id(beitrag_id)[0]
+    meldungen.update_report_status(meldung.id, "reviewed", reviewed_by="admin-1")
+
+    with pytest.raises(MeldungNichtOffen):
+        meldungen.update_report_status(
+            meldung.id, "dismissed", reviewed_by="admin-2", nur_offene=True
+        )
+
+    assert meldungen.get_reports_by_content_id(beitrag_id)[0].status == "reviewed"
