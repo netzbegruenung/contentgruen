@@ -122,10 +122,11 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('nur unserem Moderationsteam (unseren Administratorinnen und Administratoren)');
       expect(text).toContain('mindestens zwei verschiedene Personen innerhalb von vier Wochen');
       // Vormoderation (13.11.2026): erst nach Prüfung, auch nicht über eine gleichlautende Aussage.
-      expect(text).toContain('Für alle sichtbar wird er erst nach Prüfung durch das Moderationsteam');
+      expect(text).toContain('Ein freigegebener Eintrag ist für alle sichtbar, solange in den letzten vier Wochen');
+      expect(text).toContain('dauerhaft, sobald jemand einen Beitrag als Antwort darauf eingestellt hat');
       expect(text).toContain('Dafür entsteht eine eigene Aussage mit dem Wortlaut dieser Person');
       // Keine Ausnahme für den Bestand (Entscheidung des Maintainers vom 13.11.2026).
-      expect(text).toContain('Auch Einträge, die vor Einführung dieser Prüfung im November 2026 schon für alle sichtbar waren, sind es erst nach dieser Prüfung wieder');
+      expect(text).toContain('nur wegen der Zahl der Suchen sichtbar waren, sind es erst nach dieser Prüfung wieder; hatte schon jemand darauf geantwortet, bleiben sie sichtbar');
       expect(text).toContain('Gib nichts in das Suchfeld ein, was nicht öffentlich werden soll');
     });
   });
