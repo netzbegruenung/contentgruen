@@ -44,7 +44,7 @@ for (const modus of ['light', 'dark'] as const) {
         expect(Math.abs(links - rechts)).toBeLessThanOrEqual(1);
       });
 
-      test('Beitrag verfassen: Rundgang-Band fluchtet mit Kopf und Kacheln', async ({ page }) => {
+      test('Beitragen: Rundgang-Band fluchtet mit Kopf und Kacheln', async ({ page }) => {
         // Das Angebot erscheint nur, solange es nicht beantwortet ist.
         await page.addInitScript(() => localStorage.removeItem('gutgesagt-mitmachen-angeboten'));
         await page.goto('/contribute');
@@ -59,7 +59,7 @@ for (const modus of ['light', 'dark'] as const) {
         expect(await kanten(band)).toEqual([kachelnLinks, kachelnRechts]);
       });
 
-      test('Beitrag verfassen: erst die Kette in einer Reihe, darunter die Typen', async ({ page }) => {
+      test('Beitragen: erst die Kette in einer Reihe, darunter die Typen', async ({ page }) => {
         await page.goto('/contribute');
         const kette = page.locator('.ketten-liste .typ-zeile');
         await expect(kette).toHaveCount(3);
@@ -86,7 +86,7 @@ for (const modus of ['light', 'dark'] as const) {
         ['Kommentarformular', '/workflow/add-commentary', '.workflow-container > *'],
         ['Einwerfen', '/einwerfen', '.einwurf-container > *'],
         ['Datenschutz', '/datenschutz', '.content-section h2'],
-        ['Beitrag verfassen', '/contribute', '.typ-zeile'],
+        ['Beitragen', '/contribute', '.typ-zeile'],
       ] as const) {
         test(`${name}: linke Kante wie die Kopfzeile`, async ({ page }) => {
           await page.goto(pfad);

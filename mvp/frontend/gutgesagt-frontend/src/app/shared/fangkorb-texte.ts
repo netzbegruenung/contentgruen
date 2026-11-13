@@ -58,7 +58,7 @@ export const DATENSCHUTZ_EINSTELLUNGEN = 'Datenschutz-Einstellungen';
  * Beitragen-Seite unter den Typen (#620).
  */
 export const ERSTNUTZER_SATZ =
-  'Gut gesagt ist neu. Alles, was du hier einträgst, prägt mit, was hier Standard wird. Also: kein Scheiß.';
+  'Gut gesagt ist neu. Was du hier einträgst, wird zum Standard. Also lieber gründlich als schnell.';
 
 /**
  * Was beim Verwerfen schiefging, im Fangkorb und in der Destillier-Ansicht gleich:

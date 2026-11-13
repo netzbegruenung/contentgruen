@@ -36,9 +36,11 @@
     </div>
 </div>
 
-<!-- Einwerfen als schwebender Knopf: immer erreichbar, ohne Platz im Kopf -->
-<button mat-fab type="button" class="einwerfen-fab" aria-label="Etwas einwerfen" (click)="zumEinwerfen()">
-    <mat-icon aria-hidden="true">add</mat-icon>
+<!-- Einwerfen als schwebender Knopf: immer erreichbar, ohne Platz im Kopf. Beschriftet und mit
+     eigenem Symbol: Ein zweites "+" neben dem "+" (Beitragen) im Kopf hiess etwas anderes (UX-Review B15). -->
+<button mat-fab extended type="button" class="einwerfen-fab" (click)="zumEinwerfen()">
+    <mat-icon aria-hidden="true">move_to_inbox</mat-icon>
+    Einwerfen
 </button>
 
 <div class="component-box fangkorb">

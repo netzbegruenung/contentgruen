@@ -213,6 +213,9 @@ describe('FangkorbComponent', () => {
     it('fuehrt mit dem schwebenden Knopf zum Einwerfen und zeigt die Erklaerung erst auf Tipp', () => {
       erstellen([]);
       const fab: HTMLButtonElement = fixture.nativeElement.querySelector('button.einwerfen-fab');
+      // Beschriftet, kein zweites "+" neben Beitragen im Kopf (UX-Review B15)
+      expect(fab.textContent).toContain('Einwerfen');
+      expect(fab.textContent).not.toContain('add');
 
       expect(fixture.nativeElement.querySelector('.erklaerung')).toBeNull();
       klicken(fixture.nativeElement.querySelector('.erklaerung-umschalter'));
