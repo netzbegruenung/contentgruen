@@ -37,6 +37,7 @@ import {
   kommentarVorlageLaden,
 } from '../beitragsformular/vorlage';
 import { NACH_DEM_AUSFORMULIEREN } from '../fangkorb/fangkorb-filter';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 
 /** Den vorhandenen Kommentar aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
 export const EINWURF_MIT_VORHANDENEM_VERKNUEPFT = 'Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';
@@ -67,6 +68,7 @@ export const AUSSAGE_NICHT_VERFUEGBAR =
 export class AddCommentaryWorkflowComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private commentaryService = inject(CommentaryService);
+  private meilensteinHinweis = inject(MeilensteinHinweisService);
   /**
    * "Als Vorlage nehmen" (#356): das Original aus ?vorlage=. Ist es nicht ladbar
    * (gesperrt, geloescht, alter Link), bleibt das Formular leer und nutzbar; ein
@@ -225,7 +227,8 @@ export class AddCommentaryWorkflowComponent implements OnInit {
           .subscribe(() => this.onVorhandenGewaehlt(kommentarId));
         return;
       }
-      this.snackBar.open(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', { duration: 5000 });
+      // Mit einem neuen Meilenstein in einer Snackbar, sonst verdraengt einer den anderen (#351).
+      this.meilensteinHinweis.bestaetigen(EINWURF_MIT_VORHANDENEM_VERKNUEPFT);
       this.uebergabe.zumNaechsten(einwurfId, NACH_DEM_AUSFORMULIEREN);
     });
   }

@@ -44,7 +44,8 @@ describe('MeilensteinHinweisService (#351)', () => {
 
   beforeEach(() => {
     kennung = 'kim-1';
-    localStorage.removeItem(SCHLUESSEL);
+    // Ein angelegter, leerer Merker: Ohne Eintrag merkt der erste Abruf still alles.
+    localStorage.setItem(SCHLUESSEL, '[]');
   });
   afterEach(() => localStorage.removeItem(SCHLUESSEL));
 
@@ -88,6 +89,7 @@ describe('MeilensteinHinweisService (#351)', () => {
 
   it('merkt je Konto: ein anderes Konto im selben Browser bekommt seinen Hinweis', fakeAsync(() => {
     localStorage.setItem(SCHLUESSEL, JSON.stringify(['einwurf-1']));
+    localStorage.setItem(merkerSchluessel('bo-2'), '[]');
     meilensteine = [meilenstein('einwurf-1', true)];
     kennung = 'bo-2';
     const hinweis = dienst();
@@ -111,6 +113,73 @@ describe('MeilensteinHinweisService (#351)', () => {
     tick(SAMMELN_MS);
 
     expect(snackBar.open).not.toHaveBeenCalled();
+  }));
+
+  it('neuer Browser ohne Eintrag: merkt still alles schon Erreichte, nennt nur später Neues', fakeAsync(() => {
+    localStorage.removeItem(SCHLUESSEL);
+    meilensteine = [meilenstein('einwurf-1', true), meilenstein('nutzung-1', false)];
+    const hinweis = dienst();
+
+    hinweis.pruefen();
+    tick(SAMMELN_MS);
+    expect(snackBar.open).not.toHaveBeenCalled();
+    expect(gesehen()).toEqual(['einwurf-1']);
+
+    meilensteine = [meilenstein('einwurf-1', true), meilenstein('nutzung-1', true, 'Erstmals genutzt')];
+    hinweis.pruefen();
+    tick(SAMMELN_MS);
+    expect(snackBar.open).toHaveBeenCalledOnceWith('Meilenstein erreicht: Erstmals genutzt', 'Ansehen', jasmine.any(Object));
+  }));
+
+  it('Ab- und Anmelden nennt nichts erneut', fakeAsync(() => {
+    meilensteine = [meilenstein('einwurf-1', true)];
+    const hinweis = dienst();
+    hinweis.pruefen();
+    tick(SAMMELN_MS);
+    expect(snackBar.open).toHaveBeenCalledTimes(1);
+
+    // Abmelden entfernt den Merker (AuthService.logout), das Anmelden fragt wieder.
+    localStorage.removeItem(SCHLUESSEL);
+    hinweis.neueErreichte().subscribe((neu) => expect(neu).toEqual([]));
+    hinweis.pruefen();
+    tick(SAMMELN_MS);
+
+    expect(snackBar.open).toHaveBeenCalledTimes(1);
+  }));
+
+  it('ohne Meilensteine (Punkte aus, keine Einwilligung) schreibt es nichts', fakeAsync(() => {
+    localStorage.removeItem(SCHLUESSEL);
+    meilensteine = [];
+
+    dienst().pruefen();
+    tick(SAMMELN_MS);
+
+    expect(localStorage.getItem(SCHLUESSEL)).toBeNull();
+  }));
+
+  it('führt eine Bestätigung und einen neuen Meilenstein in einer Snackbar zusammen', fakeAsync(() => {
+    meilensteine = [meilenstein('ausformuliert-1', true, 'Erster fremder Einwurf ausformuliert')];
+    const hinweis = dienst();
+
+    hinweis.bestaetigen('Der Einwurf ist verknüpft.');
+    hinweis.pruefen();
+    tick(SAMMELN_MS);
+
+    expect(snackBar.open).toHaveBeenCalledOnceWith(
+      'Der Einwurf ist verknüpft. Meilenstein erreicht: Erster fremder Einwurf ausformuliert',
+      'Ansehen',
+      jasmine.any(Object),
+    );
+  }));
+
+  it('zeigt die Bestätigung allein, wenn nichts neu ist', fakeAsync(() => {
+    meilensteine = [];
+    const hinweis = dienst();
+
+    hinweis.bestaetigen('Der Einwurf ist verknüpft.');
+    tick(SAMMELN_MS);
+
+    expect(snackBar.open).toHaveBeenCalledOnceWith('Der Einwurf ist verknüpft.', 'OK', { duration: 5000 });
   }));
 
   it('führt mit "Ansehen" zu Meine Beiträge', fakeAsync(() => {

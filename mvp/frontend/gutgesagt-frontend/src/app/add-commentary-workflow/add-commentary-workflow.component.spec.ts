@@ -16,6 +16,7 @@ import { environment } from '../../environments/environment';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { VORLAGE_NICHT_VERFUEGBAR } from '../beitragsformular/vorlage';
 
 describe('AddCommentaryWorkflowComponent', () => {
@@ -167,13 +168,15 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
   it('verknuepft nach der Wahl den Einwurf mit dem vorhandenen Kommentar und geht zum naechsten', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate');
-    const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+    // Die Bestaetigung geht ueber den Meilenstein-Hinweis: mit einem neuen Meilenstein
+    // in derselben Snackbar (#351).
+    const meldung = spyOn(TestBed.inject(MeilensteinHinweisService), 'bestaetigen');
 
     component.onVorhandenGewaehlt('k-alt');
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
     expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
-    expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', jasmine.anything());
+    expect(meldung).toHaveBeenCalledOnceWith(EINWURF_MIT_VORHANDENEM_VERKNUEPFT);
     // Keine Ergebnisseite: gespeichert wurde nichts.
     expect(navigieren).not.toHaveBeenCalled();
   });

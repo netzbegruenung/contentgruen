@@ -120,8 +120,8 @@ MEILENSTEINE: Tuple[Meilensteinart, ...] = (
         name="Erster Beitrag hält",
         untertitel="Gut Ding will Weile haben",
         beschreibung=(
-            "Dein erster Beitrag steht seit drei Tagen, und niemand musste ihn "
-            "sperren. Klingt nach wenig, ist fürs Internet aber eine Leistung."
+            "Dein erster Beitrag ist drei Tage alt und steht noch. Klingt nach "
+            "wenig, ist fürs Internet aber eine Leistung."
         ),
         bild=_bild("sanduhr.svg"),
         art=WEG,

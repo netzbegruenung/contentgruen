@@ -119,6 +119,12 @@ describe('MeilensteineComponent (#351)', () => {
     expect(weitere.querySelectorAll('.meilenstein').length).toBe(2);
   });
 
+  it('schreibt ohne Meilensteine (Punkte aus, keine Einwilligung, Widerruf) keinen Merker', () => {
+    erstellen([]);
+
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
+  });
+
   it('sagt, dass nur die Person selbst sie sieht', () => {
     const element = erstellen([meilenstein({})]);
 
@@ -185,6 +191,21 @@ describe('MeilensteineComponent (#351)', () => {
       const marken = element.querySelectorAll('.meilenstein-wegmarke');
       expect(marken.length).toBe(1);
       expect(marken[0].textContent).toContain('zählt nicht fürs Abzeichen');
+    });
+
+    it('nennt bei sichtbarem Abzeichen die Zahl, die andere sehen', () => {
+      const element = erstellen(
+        [meilenstein({ kennung: 'einwurf-1', art: 'weg', erreicht: true, stand: 1 }), meilenstein({ erreicht: true, stand: 1 })],
+        { ...NIE_GEFRAGT, gefragt: true, zeigen: true },
+      );
+
+      expect(element.querySelector('h2')?.textContent).toContain('2 von 2 · Am Namen: 1');
+    });
+
+    it('nennt die Zahl am Namen nicht, solange nur du sie siehst', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], { ...NIE_GEFRAGT, gefragt: true, zeigen: false });
+
+      expect(element.querySelector('h2')?.textContent).not.toContain('Am Namen');
     });
 
     it('fragt nicht, solange kein Meilenstein erreicht ist', () => {

@@ -16,6 +16,17 @@ describe('Meilenstein-Merker (#351)', () => {
     expect(schluessel).not.toBe(merkerSchluessel('bo-2'));
   });
 
+  it('schreibt nichts ohne Meilensteine und nichts, wenn nichts Erreichtes neu ist', () => {
+    gesehenMerken('kim-1', []);
+    expect(localStorage.getItem(merkerSchluessel('kim-1'))).toBeNull();
+
+    gesehenMerken('kim-1', [offen]);
+    expect(localStorage.getItem(merkerSchluessel('kim-1'))).toBe('[]'); // einmal angelegt
+    const setzen = spyOn(Storage.prototype, 'setItem').and.callThrough();
+    gesehenMerken('kim-1', [offen]);
+    expect(setzen).not.toHaveBeenCalled();
+  });
+
   it('merkt nur erreichte, je Konto getrennt, und entfernt sie wieder', () => {
     gesehenMerken('kim-1', [erreicht, offen]);
 

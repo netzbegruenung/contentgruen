@@ -20,34 +20,55 @@ export function merkerSchluessel(kennung: string): string {
   return MEILENSTEINE_GESEHEN_PRAEFIX + wert.toString(16).padStart(8, '0');
 }
 
+/** Der Merker eines Kontos: die angezeigten Kennungen und ob es schon einen Eintrag gibt. */
+export interface Merker {
+  gesehen: Set<string>;
+  vorhanden: boolean;
+}
+
 /**
- * Die schon angezeigten Kennungen, oder null ohne Konto oder ohne Speicher (privates
- * Fenster, gesperrt). Ohne Speicher gibt es keinen Hinweis: Er käme sonst jedes Mal.
+ * Der Merker, oder null ohne Konto oder ohne Speicher (privates Fenster, gesperrt).
+ * Ohne Speicher gibt es keinen Hinweis: Er käme sonst jedes Mal.
  */
-export function gesehenLesen(kennung: string | null): Set<string> | null {
+export function merkerLesen(kennung: string | null): Merker | null {
   if (!kennung) {
     return null;
   }
   try {
     const roh = localStorage.getItem(merkerSchluessel(kennung));
     const liste: unknown = roh ? JSON.parse(roh) : [];
-    return new Set(Array.isArray(liste) ? liste.filter((k): k is string => typeof k === 'string') : []);
+    const gesehen = new Set(Array.isArray(liste) ? liste.filter((k): k is string => typeof k === 'string') : []);
+    return { gesehen, vorhanden: roh !== null };
   } catch {
     return null;
   }
 }
 
-/** Diese Meilensteine als angezeigt merken; ohne Konto oder Speicher passiert nichts. */
+/** Die schon angezeigten Kennungen, oder null ohne Konto oder ohne Speicher. */
+export function gesehenLesen(kennung: string | null): Set<string> | null {
+  return merkerLesen(kennung)?.gesehen ?? null;
+}
+
+/**
+ * Diese Meilensteine als angezeigt merken. Geschrieben wird nur, wenn es Meilensteine
+ * gibt (also Punkte an und eingewilligt) und dabei etwas Erreichtes neu ist, oder
+ * einmal zum Anlegen des Eintrags: Ohne Eintrag gilt alles schon Erreichte still als
+ * gesehen (merkerAnlegen). Ohne Konto oder Speicher passiert nichts.
+ */
 export function gesehenMerken(kennung: string | null, meilensteine: Meilenstein[]): void {
-  const gesehen = gesehenLesen(kennung);
-  if (!gesehen || !kennung) {
+  const merker = merkerLesen(kennung);
+  if (!merker || !kennung || !meilensteine.length) {
     return;
   }
-  meilensteine.filter((m) => m.erreicht).forEach((m) => gesehen.add(m.kennung));
+  const neu = meilensteine.filter((m) => m.erreicht && !merker.gesehen.has(m.kennung));
+  if (!neu.length && merker.vorhanden) {
+    return;
+  }
+  neu.forEach((m) => merker.gesehen.add(m.kennung));
   try {
-    localStorage.setItem(merkerSchluessel(kennung), JSON.stringify([...gesehen]));
+    localStorage.setItem(merkerSchluessel(kennung), JSON.stringify([...merker.gesehen]));
   } catch {
-    // Ohne Speicher kein Merker; der Hinweis bleibt dann ganz aus (gesehenLesen).
+    // Ohne Speicher kein Merker; der Hinweis bleibt dann ganz aus (merkerLesen).
   }
 }
 

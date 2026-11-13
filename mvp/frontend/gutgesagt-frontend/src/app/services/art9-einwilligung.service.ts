@@ -167,6 +167,8 @@ export class Art9EinwilligungService implements OnDestroy {
             catchError(() => of(null)),
             tap((stand) => {
               if (!stand || stand.eingewilligt) this.geklaertSetzen(kennung);
+              // Ohne Einwilligung keine Meilensteine: ein alter Merker in diesem Browser geht (#351).
+              if (stand && !stand.eingewilligt) merkerEntfernen(kennung);
             }),
           ),
         ),

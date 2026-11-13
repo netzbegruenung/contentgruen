@@ -80,6 +80,27 @@ describe('Art9EinwilligungService', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], { queryParams: { returnUrl: '/fangkorb' } });
   });
 
+  it('raeumt beim Start ohne Einwilligung den Merker der Meilensteine in diesem Browser auf (#351)', () => {
+    localStorage.setItem(merkerSchluessel('kim'), '["einwurf-1"]');
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+
+    http.expectOne(ADRESSE).flush(stand(false));
+
+    expect(localStorage.getItem(merkerSchluessel('kim'))).toBeNull();
+  });
+
+  it('laesst den Merker mit Einwilligung stehen', () => {
+    localStorage.setItem(merkerSchluessel('kim'), '["einwurf-1"]');
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+
+    http.expectOne(ADRESSE).flush(stand(true));
+
+    expect(localStorage.getItem(merkerSchluessel('kim'))).toBe('["einwurf-1"]');
+    localStorage.removeItem(merkerSchluessel('kim'));
+  });
+
   it('wartet eine laufende Navigation ab, damit der Rueckweg dorthin fuehrt', () => {
     router.url = '/login';
     router.getCurrentNavigation.and.returnValue({});

@@ -1,5 +1,5 @@
 <section *ngIf="meilensteine.length" class="meilensteine" aria-labelledby="meilensteine-titel">
-    <h2 id="meilensteine-titel">Meilensteine <span class="meilensteine-zahl">{{ erreichte }} von {{ meilensteine.length }}</span></h2>
+    <h2 id="meilensteine-titel">Meilensteine <span class="meilensteine-zahl">{{ erreichte }} von {{ meilensteine.length }}<ng-container *ngIf="sichtbar"> · Am Namen: {{ erreichteFuersAbzeichen }}</ng-container></span></h2>
     <p class="meilensteine-hinweis">
         <ng-container *ngIf="!sichtbar">Nur du siehst deine Meilensteine.</ng-container>
         <ng-container *ngIf="sichtbar">Andere Angemeldete sehen an deinem Namen, wie viele Meilensteine du erreicht hast; Wegmarken zählen dabei nicht.</ng-container>

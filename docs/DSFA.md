@@ -574,8 +574,8 @@ Empfänger und Ort“.
 - **Wegmarken, Texte und Bilder (#351, gebaut, ausgeschaltet):** vier neue Meilensteine aus gespeicherten Daten,
   die schon unter die Art.-9-Einwilligung fallen: erster Einwurf (eigene, nicht verworfene
   Einwürfe, V4), erster fremder Einwurf ausformuliert (dieselbe Zählung wie oben, Schwelle 1),
-  erster Beitrag, der drei Tage ohne Sperre steht (Alter der sichtbaren Beiträge, Wartezeit wie bei
-  den Punkten), erster Kommentar, den eine sichtbare Aussage als Antwort führt (Payload
+  erster Beitrag, der heute sichtbar und mindestens drei Tage alt ist (Alter der sichtbaren
+  Beiträge, Regel wie bei den Punkten), erster Kommentar, den eine sichtbare Aussage als Antwort führt (Payload
   `antwort_ids` in Qdrant). Keine neue Speicherung, kein zeitliches Muster, keine Suchen, Kopien,
   Meldungen oder Anmeldetage. Drei davon sind Wegmarken: nur für die Person, nicht in der Zahl am
   Namen und nicht für die Krone (V22 unverändert). Der Hinweis beim Erreichen (nach dem eigenen

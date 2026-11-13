@@ -7,7 +7,7 @@ import { debounceTime, map, switchMap } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 import { ROUTES } from '../shared/constants/app.constants';
-import { gesehenLesen, gesehenMerken } from './meilenstein-merker';
+import { gesehenMerken, merkerLesen } from './meilenstein-merker';
 
 /** So lange steht der Hinweis, wenn niemand ihn wegtippt; wie die Rückmeldung (#349). */
 const ANZEIGEDAUER_MS = 8000;
@@ -29,7 +29,9 @@ export function meilensteinText(neu: Meilenstein[]): string {
  * Meilenstein neu erreicht wurde (#351).
  *
  * Was schon angezeigt wurde, merkt sich nur der Browser je Konto
- * (meilenstein-merker.ts), und zwar erst, wenn es wirklich angezeigt wurde: kein
+ * (meilenstein-merker.ts), und zwar erst, wenn es wirklich angezeigt wurde. Gibt es
+ * noch keinen Eintrag (neuer Browser, nach dem Abmelden), gilt alles schon Erreichte
+ * still als gesehen: Genannt wird nur, was danach neu dazukommt. Kein
  * Server-Eintrag, keine Mail, kein Push. Kein Countdown, keine Serie, keine
  * Erinnerung; wer „Meine Beiträge“ öffnet, hat alles gesehen. Ohne eingeschaltete
  * Punkte liefert der Server keine Meilensteine, dann passiert hier nichts.
@@ -38,6 +40,8 @@ export function meilensteinText(neu: Meilenstein[]): string {
 export class MeilensteinHinweisService implements OnDestroy {
   private anstoesse = new Subject<void>();
   private abo: Subscription;
+  /** Eine Bestätigung, die mit einem Meilenstein in eine Snackbar zusammengeht. */
+  private bestaetigung: { text: string; aktion: string; dauer: number } | null = null;
 
   constructor(
     private usageTrackingService: UsageTrackingService,
@@ -52,9 +56,14 @@ export class MeilensteinHinweisService implements OnDestroy {
         switchMap(() => this.neueErreichte()),
       )
       .subscribe((neu) => {
+        const bestaetigung = this.bestaetigung;
+        this.bestaetigung = null;
         if (neu.length) {
-          this.zeigen(meilensteinText(neu));
+          const meilenstein = meilensteinText(neu);
+          this.zeigen(bestaetigung ? `${bestaetigung.text} ${meilenstein}` : meilenstein);
           this.merken(neu);
+        } else if (bestaetigung) {
+          this.snackBar.open(bestaetigung.text, bestaetigung.aktion, { duration: bestaetigung.dauer });
         }
       });
   }
@@ -69,13 +78,22 @@ export class MeilensteinHinweisService implements OnDestroy {
    * ohne Anfrage.
    */
   neueErreichte(): Observable<Meilenstein[]> {
-    if (!gesehenLesen(this.authService.getCurrentUserId())) {
+    if (!merkerLesen(this.authService.getCurrentUserId())) {
       return of([]);
     }
     return this.usageTrackingService.getEigeneMeilensteine().pipe(
       map((meilensteine) => {
-        const gesehen = gesehenLesen(this.authService.getCurrentUserId());
-        return gesehen ? meilensteine.filter((m) => m.erreicht && !gesehen.has(m.kennung)) : [];
+        const kennung = this.authService.getCurrentUserId();
+        const merker = merkerLesen(kennung);
+        if (!merker) {
+          return [];
+        }
+        if (!merker.vorhanden) {
+          // Erster Abruf in diesem Browser: still anlegen, nichts nennen.
+          gesehenMerken(kennung, meilensteine);
+          return [];
+        }
+        return meilensteine.filter((m) => m.erreicht && !merker.gesehen.has(m.kennung));
       }),
     );
   }
@@ -87,6 +105,15 @@ export class MeilensteinHinweisService implements OnDestroy {
 
   /** Nach einer gespeicherten Handlung aufrufen; Aufrufe kurz hintereinander zählen einmal. */
   pruefen(): void {
+    this.anstoesse.next();
+  }
+
+  /**
+   * Eine Bestätigung zeigen; ist dabei ein Meilenstein neu, in derselben Snackbar,
+   * damit der Hinweis die Bestätigung nicht verdrängt.
+   */
+  bestaetigen(text: string, aktion = 'OK', dauer = 5000): void {
+    this.bestaetigung = { text, aktion, dauer };
     this.anstoesse.next();
   }
 

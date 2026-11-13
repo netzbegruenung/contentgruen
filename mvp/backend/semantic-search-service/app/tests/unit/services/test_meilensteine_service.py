@@ -179,7 +179,7 @@ async def test_beitrag_haelt_erst_nach_drei_tagen():
     assert meilensteine["beitrag-gehalten-1"].erreicht
 
 
-async def test_erster_widerspruch_nur_kommentare_die_eine_aussage_fuehrt():
+async def test_erste_gegenrede_nur_kommentare_die_eine_aussage_fuehrt():
     kommentar = _beitrag(typ="commentary")
     ohne_aussage = _beitrag(typ="commentary")
     post = _beitrag(typ="post")
