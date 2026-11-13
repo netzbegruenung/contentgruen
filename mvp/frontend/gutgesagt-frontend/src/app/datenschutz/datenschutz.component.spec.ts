@@ -124,6 +124,8 @@ describe('DatenschutzComponent', () => {
       // Vormoderation (13.11.2026): erst nach Prüfung, auch nicht über eine gleichlautende Aussage.
       expect(text).toContain('Für alle sichtbar wird er erst nach Prüfung durch das Moderationsteam');
       expect(text).toContain('Dafür entsteht eine eigene Aussage mit dem Wortlaut dieser Person');
+      // Keine Ausnahme für den Bestand (Entscheidung des Maintainers vom 13.11.2026).
+      expect(text).toContain('Auch Einträge, die vor Einführung dieser Prüfung im November 2026 schon für alle sichtbar waren, sind es erst nach dieser Prüfung wieder');
       expect(text).toContain('Gib nichts in das Suchfeld ein, was nicht öffentlich werden soll');
     });
   });
