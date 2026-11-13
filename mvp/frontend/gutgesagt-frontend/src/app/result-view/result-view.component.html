@@ -72,9 +72,16 @@
 
         <!-- Kopfband: als welche Aussage die Suche verstanden wurde (#642, R40). "Nicht gemeint?"
              bietet die aehnlichen Aussagen aus "Nicht dabei?" an; am Handy erst aufgeklappt. -->
-        <section class="kopfband" *ngIf="erkannt as aussage" aria-labelledby="kopfband-aussage">
-            <p class="kopfband-label">Deine Suche passt zur Aussage</p>
+        <section class="kopfband" *ngIf="erkannt as aussage; else teilenOhneKopfband" aria-labelledby="kopfband-aussage">
+            <div class="kopfband-kopf">
+                <p class="kopfband-label">Deine Suche passt zur Aussage</p>
+                <!-- Am Desktop rechts neben dem Label, am Handy unter der Aussage: sonst truege er Label und Aussage auseinander -->
+                <ng-container *ngIf="!isMobile" [ngTemplateOutlet]="ergebnisTeilenKnopf"></ng-container>
+            </div>
             <p class="kopfband-aussage" id="kopfband-aussage">„{{ aussage.text }}“</p>
+            <div class="kopfband-teilen" *ngIf="isMobile">
+                <ng-container *ngTemplateOutlet="ergebnisTeilenKnopf"></ng-container>
+            </div>
             <div class="kopfband-alternativen" *ngIf="alternativen.length">
                 <button *ngIf="isMobile; else frageText" type="button" class="kopfband-frage kopfband-umschalter"
                         [attr.aria-expanded]="alternativenOffen" aria-controls="kopfband-liste"
@@ -91,6 +98,20 @@
                 </ul>
             </div>
         </section>
+
+        <!-- "Ergebnis teilen" (B7, docs/VISION.md): im Kopfband, ohne erkannte Aussage oben ueber den Treffern -->
+        <ng-template #teilenOhneKopfband>
+            <div class="ergebnis-teilen-leiste">
+                <ng-container *ngTemplateOutlet="ergebnisTeilenKnopf"></ng-container>
+            </div>
+        </ng-template>
+        <ng-template #ergebnisTeilenKnopf>
+            <button mat-stroked-button type="button" class="ergebnis-teilen"
+                    [attr.aria-label]="ergebnisTeilenBeschriftung" (click)="ergebnisTeilen()">
+                <mat-icon aria-hidden="true">share</mat-icon>
+                Ergebnis teilen
+            </button>
+        </ng-template>
 
         <app-themen-filter *ngIf="themenDerTreffer.length" class="themen-filter-leiste"
                            [themen]="themenDerTreffer" [aktiv]="aktivesThema"
