@@ -22,6 +22,9 @@ describe('beantwortenParams und "Lücke zu" (Nutzerfuehrung 13.11.)', () => {
     expect(gesuchtAus(convertToParamMap({ gesucht: 'viele' }))).toBe(0);
     expect(gesuchtAus(convertToParamMap({ gesucht: '-1' }))).toBe(0);
     expect(gesuchtAus(convertToParamMap({}))).toBe(0);
+    expect(gesuchtAus(convertToParamMap({ gesucht: '3abc' }))).toBe(0);
+    expect(gesuchtAus(convertToParamMap({ gesucht: '123456' }))).toBe(0);
+    expect(gesuchtAus(convertToParamMap({ gesucht: '99999' }))).toBe(99999);
   });
 
   it('formuliert den Satz je nach Zahl', () => {

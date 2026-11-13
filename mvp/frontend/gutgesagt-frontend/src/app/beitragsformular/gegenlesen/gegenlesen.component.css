@@ -79,6 +79,12 @@ h4 {
   font-weight: 600;
 }
 
+.gegenlesen-pfeil {
+  flex: none;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 .gegenlesen-zeile.gut .gegenlesen-zeile-text {
   color: var(--primary-dark);
 }

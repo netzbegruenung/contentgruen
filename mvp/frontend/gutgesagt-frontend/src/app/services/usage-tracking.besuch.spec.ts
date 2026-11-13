@@ -36,6 +36,16 @@ describe('UsageTrackingService.nutzungSeitLetztemBesuch$', () => {
     http.expectNone(ADRESSE);
   });
 
+  it('vergisst die alte Zahl, sobald ein neuer Besuch gemeldet wird (Kontowechsel)', () => {
+    service.besuchMelden().subscribe();
+    http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 4 });
+
+    service.besuchMelden().subscribe();
+    expect(service.nutzungSeitLetztemBesuch$.value).toBeNull();
+    http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 0 });
+    expect(service.nutzungSeitLetztemBesuch$.value).toBe(0);
+  });
+
   it('bleibt bei einem Fehler null', () => {
     service.besuchMelden().subscribe();
     http.expectOne(ADRESSE).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });

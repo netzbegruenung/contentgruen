@@ -7,14 +7,15 @@ import { distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { ROUTES } from '../shared/constants/app.constants';
-import { SeitLetztemBesuchService } from './seit-letztem-besuch.service';
+import { NeuesArt, SeitLetztemBesuchService } from './seit-letztem-besuch.service';
+import { lueckenWarten } from '../shared/luecke-texte';
 
 /** Ein Link im Block: was neu ist und wohin es fuehrt. */
 export interface NeuesEintrag {
   text: string;
   ziel: string;
-  /** Fuer Tests und Styles. */
-  art: 'nutzung' | 'einwuerfe' | 'aussagen';
+  /** Fuer Tests und Styles, und welcher Link nach dem Klick verschwindet. */
+  art: NeuesArt;
 }
 
 /** Hoechstens drei Links, je nur, wenn die Zahl groesser 0 ist. */
@@ -38,7 +39,7 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
     liste.push({
       art: 'aussagen',
       ziel: ROUTES.HIER_FEHLT_EINE_ANTWORT,
-      text: aussagen === 1 ? '1 neue Lücke' : `${aussagen} neue Lücken`,
+      text: lueckenWarten(aussagen),
     });
   }
   return liste;
@@ -62,7 +63,8 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
           <h2 id="seit-besuch-titel" class="seit-besuch-titel">Seit deinem letzten Besuch</h2>
           <ul class="seit-besuch-liste">
             @for (eintrag of eintraege; track eintrag.art) {
-              <li><a [routerLink]="eintrag.ziel" [class]="'seit-besuch-link ' + eintrag.art">{{ eintrag.text }}</a></li>
+              <li><a [routerLink]="eintrag.ziel" [class]="'seit-besuch-link ' + eintrag.art"
+                     (click)="neues.erledigen(eintrag.art)">{{ eintrag.text }}</a></li>
             }
           </ul>
         </nav>
@@ -73,15 +75,18 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
 })
 export class SeitLetztemBesuchComponent {
   private readonly usage = inject(UsageTrackingService);
-  private readonly neues = inject(SeitLetztemBesuchService);
+  protected readonly neues = inject(SeitLetztemBesuchService);
 
+  /** Je Konto: Wechselt die Kennung, rechnet der Dienst neu und vergisst die Klicks. */
   readonly eintraege$: Observable<NeuesEintrag[]> = inject(AuthService).userInfo$.pipe(
-    map((info) => info?.isAuthenticated === true),
+    map((info) => (info?.isAuthenticated && info.userId ? info.userId : null)),
     distinctUntilChanged(),
-    switchMap((angemeldet) =>
-      angemeldet
-        ? combineLatest([this.usage.nutzungSeitLetztemBesuch$, this.neues.stand()]).pipe(
-            map(([nutzung, stand]) => neuesListe(nutzung, stand.einwuerfe, stand.aussagen)),
+    switchMap((kennung) =>
+      kennung
+        ? combineLatest([this.usage.nutzungSeitLetztemBesuch$, this.neues.stand(kennung), this.neues.erledigt$]).pipe(
+            map(([nutzung, stand, erledigt]) =>
+              neuesListe(nutzung, stand.einwuerfe, stand.aussagen).filter((e) => !erledigt.has(e.art)),
+            ),
           )
         : of([]),
     ),

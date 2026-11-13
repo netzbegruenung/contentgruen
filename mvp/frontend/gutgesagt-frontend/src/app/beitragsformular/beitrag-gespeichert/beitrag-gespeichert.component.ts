@@ -28,6 +28,7 @@ import {
   vonHierFehltEineAntwort,
 } from './gespeichert-adresse';
 import { ROUTES } from '../../shared/constants/app.constants';
+import { LUECKE_ZU, NAECHSTE_LUECKE } from '../../shared/luecke-texte';
 import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
 
 /** Beitragstypen, fuer die es die Ergebnisseite gibt. */
@@ -86,6 +87,8 @@ export class BeitragGespeichertComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   readonly einwurfNichtVerknuepft = EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT;
+  readonly lueckeZuTitel = LUECKE_ZU;
+  readonly naechsteLueckeText = NAECHSTE_LUECKE;
 
   typ: GespeichertTyp = 'commentary';
   herkunft: Herkunft = 'frei';

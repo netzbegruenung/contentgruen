@@ -374,6 +374,8 @@ export class UsageTrackingService {
    * @returns Observable mit der Zahl, bei einem Fehler null
    */
   besuchMelden(): Observable<number | null> {
+    // Ein neuer Besuch (auch nach einem Kontowechsel): Die alte Zahl gilt nicht mehr.
+    this.nutzungSeitLetztemBesuch$.next(null);
     return this.http.post<BesuchResponse>(`${this.apiUrl}/users/me/besuch`, {})
       .pipe(
         map(antwort => antwort.nutzung_seit_letztem_besuch),

@@ -1,54 +1,32 @@
 import { Injectable } from '@angular/core';
-import { Observable, forkJoin, of } from 'rxjs';
+import { BehaviorSubject, Observable, forkJoin, of } from 'rxjs';
 import { catchError, map, shareReplay } from 'rxjs/operators';
 
 import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { StatementService } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
+import { besuchMerkerLesen, besuchMerkerSchreiben } from './besuch-merker';
 
-/** Was der Browser vom letzten Besuch der Startseite weiss: Zeitpunkt und offene Aussagen. */
-export const LETZTER_BESUCH_SCHLUESSEL = 'gutgesagt-letzter-besuch';
+/**
+ * So viele Einwuerfe sieht die Startseite an. Die neuesten kommen zuerst (eigene davor),
+ * mehr Neues seit dem letzten Besuch zaehlt sie nicht.
+ */
+export const EINWUERFE_HOECHSTENS = 25;
 
-/** So viele Einwuerfe sieht die Startseite an; mehr Neues zaehlt sie nicht. */
-const EINWUERFE_HOECHSTENS = 100;
-
-interface Merker {
-  /** ISO-Zeitpunkt des letzten Besuchs. */
-  zeit: string;
-  /** IDs der Aussagen, die damals in „Hier fehlt eine Antwort“ standen. */
-  aussagen: string[];
-}
-
-/** Neues seit dem letzten Besuch, ohne die Nutzung (die kommt aus der Rueckmeldung). */
+/** Was die Startseite meldet, ohne die Nutzung (die kommt aus der Rueckmeldung). */
 export interface SeitLetztemBesuch {
+  /** Neue Einwuerfe anderer seit dem letzten Besuch, die noch Arbeit sind. */
   einwuerfe: number;
+  /**
+   * Wie viele Aussagen in „Hier fehlt eine Antwort“ warten; nur, wenn seitdem eine
+   * dazugekommen ist, sonst 0. Die Liste traegt kein Anlagedatum, deshalb nennt die
+   * Startseite die wartenden, nicht „neue“.
+   */
   aussagen: number;
 }
 
-export function merkerLesen(): Merker | null {
-  try {
-    const roh = localStorage.getItem(LETZTER_BESUCH_SCHLUESSEL);
-    if (!roh) {
-      return null;
-    }
-    const wert: unknown = JSON.parse(roh);
-    const merker = wert as Partial<Merker>;
-    if (typeof merker?.zeit !== 'string' || Number.isNaN(Date.parse(merker.zeit)) || !Array.isArray(merker.aussagen)) {
-      return null;
-    }
-    return { zeit: merker.zeit, aussagen: merker.aussagen.filter((id): id is string => typeof id === 'string') };
-  } catch {
-    return null;
-  }
-}
-
-function merkerSchreiben(merker: Merker): void {
-  try {
-    localStorage.setItem(LETZTER_BESUCH_SCHLUESSEL, JSON.stringify(merker));
-  } catch {
-    // Ohne Speicher (privates Fenster) gibt es eben nichts „seit dem letzten Besuch“.
-  }
-}
+/** Ein Link, der nach dem Klick fuer diesen App-Start verschwindet. */
+export type NeuesArt = 'nutzung' | 'einwuerfe' | 'aussagen';
 
 /** Neue Einwuerfe anderer, die noch Arbeit sind (offen oder destilliert). */
 export function neueEinwuerfe(einwuerfe: Einwurf[], seit: string): number {
@@ -61,36 +39,49 @@ export function neueEinwuerfe(einwuerfe: Einwurf[], seit: string): number {
   ).length;
 }
 
-/** Aussagen in „Hier fehlt eine Antwort“, die beim letzten Besuch noch nicht dort standen. */
-export function neueAussagen(aussagen: UnbeantworteteAussage[], damals: string[]): number {
+/** Ob in „Hier fehlt eine Antwort“ eine Aussage steht, die beim letzten Besuch nicht dort stand. */
+export function aussageDazu(aussagen: UnbeantworteteAussage[], damals: string[]): boolean {
   const bekannt = new Set(damals);
-  return aussagen.filter((a) => !bekannt.has(a.statement_id)).length;
+  return aussagen.some((a) => !bekannt.has(a.statement_id));
 }
 
 /**
  * „Seit deinem letzten Besuch“ auf der Startseite (Nutzerfuehrung 13.11.): neue Einwuerfe
- * im Fangkorb und neue Aussagen in „Hier fehlt eine Antwort“. Nur vorhandene Abrufe, kein
- * neuer Server-Zweck: Wann der letzte Besuch war und welche Aussagen damals offen waren,
- * merkt sich allein der Browser. Beim ersten Besuch (kein Merker, privates Fenster) ist
- * nichts neu. Berechnet wird einmal je App-Start; danach bleibt der Stand stehen, bis
- * die App neu startet. Nichts verfaellt und nichts zaehlt rueckwaerts.
+ * im Fangkorb und wartende Aussagen in „Hier fehlt eine Antwort“. Nur vorhandene Abrufe
+ * (je App-Start und Konto einmal Fangkorb und unbeantwortete Aussagen), kein neuer
+ * Server-Zweck: Wann der letzte Besuch war und welche Aussagen damals offen waren, merkt
+ * sich allein der Browser, je Konto (besuch-merker.ts). Beim ersten Besuch (kein Merker,
+ * privates Fenster) ist nichts neu. Danach bleibt der Stand bis zum naechsten App-Start
+ * oder Kontowechsel stehen; nichts verfaellt und nichts zaehlt rueckwaerts.
  */
 @Injectable({ providedIn: 'root' })
 export class SeitLetztemBesuchService {
+  private kennung: string | null = null;
   private stand$?: Observable<SeitLetztemBesuch>;
+  /** Links, die in diesem App-Start schon angeklickt wurden. */
+  readonly erledigt$ = new BehaviorSubject<ReadonlySet<NeuesArt>>(new Set());
 
   constructor(
     private einwurfService: EinwurfService,
     private statementService: StatementService,
   ) {}
 
-  stand(): Observable<SeitLetztemBesuch> {
-    this.stand$ ??= this.berechnen().pipe(shareReplay(1));
+  stand(kennung: string): Observable<SeitLetztemBesuch> {
+    if (kennung !== this.kennung || !this.stand$) {
+      this.kennung = kennung;
+      this.erledigt$.next(new Set());
+      this.stand$ = this.berechnen(kennung).pipe(shareReplay(1));
+    }
     return this.stand$;
   }
 
-  private berechnen(): Observable<SeitLetztemBesuch> {
-    const vorher = merkerLesen();
+  /** Nach dem Klick auf einen Link: Er verschwindet, die Sache ist gesehen. */
+  erledigen(art: NeuesArt): void {
+    this.erledigt$.next(new Set([...this.erledigt$.value, art]));
+  }
+
+  private berechnen(kennung: string): Observable<SeitLetztemBesuch> {
+    const vorher = besuchMerkerLesen(kennung);
     return forkJoin({
       einwuerfe: this.einwurfService.fangkorbLaden(1, EINWUERFE_HOECHSTENS).pipe(
         map((seite) => seite.results),
@@ -99,10 +90,11 @@ export class SeitLetztemBesuchService {
       aussagen: this.statementService.unbeantworteteAussagen().pipe(catchError(() => of(null))),
     }).pipe(
       map(({ einwuerfe, aussagen }) => {
-        merkerSchreiben({
-          zeit: new Date().toISOString(),
-          // Liess sich die Liste nicht laden, bleibt der alte Stand, sonst waere beim
-          // naechsten Mal alles neu.
+        const jetzt = new Date().toISOString();
+        // Was sich nicht laden liess, behaelt den alten Stand, sonst gaelte es beim
+        // naechsten Mal als gesehen (Fangkorb) oder alles als neu (Aussagen).
+        besuchMerkerSchreiben(kennung, {
+          zeit: einwuerfe ? jetzt : (vorher?.zeit ?? jetzt),
           aussagen: aussagen ? aussagen.map((a) => a.statement_id) : (vorher?.aussagen ?? []),
         });
         if (!vorher) {
@@ -110,7 +102,7 @@ export class SeitLetztemBesuchService {
         }
         return {
           einwuerfe: einwuerfe ? neueEinwuerfe(einwuerfe, vorher.zeit) : 0,
-          aussagen: aussagen ? neueAussagen(aussagen, vorher.aussagen) : 0,
+          aussagen: aussagen && aussageDazu(aussagen, vorher.aussagen) ? aussagen.length : 0,
         };
       }),
     );

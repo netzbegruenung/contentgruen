@@ -35,10 +35,10 @@ export function vonHierFehltEineAntwort(params: { get(name: string): string | nu
  */
 export const GESUCHT_PARAM = 'gesucht';
 
-/** Die Zahl aus ?gesucht=; 0 ohne Angabe oder bei Unsinn. */
+/** Die Zahl aus ?gesucht=: nur eine bis fuenf Ziffern, sonst 0. */
 export function gesuchtAus(params: { get(name: string): string | null }): number {
-  const zahl = Number.parseInt(params.get(GESUCHT_PARAM) ?? '', 10);
-  return Number.isFinite(zahl) && zahl > 0 ? zahl : 0;
+  const roh = params.get(GESUCHT_PARAM) ?? '';
+  return /^\d{1,5}$/.test(roh) ? Number(roh) : 0;
 }
 
 /** Der Satz unter "Luecke zu.", je nachdem, wie viele Personen gesucht haben. */
