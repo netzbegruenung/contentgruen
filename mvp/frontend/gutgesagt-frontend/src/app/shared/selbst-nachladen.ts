@@ -21,6 +21,15 @@ export function stillerKontext(): HttpContext {
   return new HttpContext().set(STILLE_ABFRAGE, true);
 }
 
+/** Der Hinweis nach 401/403, als Link auf die Anmeldung. */
+export const SITZUNG_ABGELAUFEN = 'Sitzung abgelaufen – Anmelden';
+
+/** Nach 401/403 (Sitzung abgelaufen, keine Admin-Rechte) hilft nur neues Anmelden; Nachladen hoert auf. */
+export function ohneRechte(fehler: unknown): boolean {
+  const status = (fehler as { status?: unknown } | null)?.status;
+  return status === 401 || status === 403;
+}
+
 /** Ergebnis eines Laufs: Daten oder der Fehler. */
 export type Lauf<T> = { daten: T; fehler: null } | { daten: null; fehler: unknown };
 
@@ -29,9 +38,12 @@ export interface NachladeOptionen {
   ms?: number | (() => number);
   /** Gleich beim Abonnieren laden, nicht erst beim ersten Anlass. */
   sofort?: boolean;
-  /** Ein Fehler, nach dem nicht weiter gefragt wird (etwa 401/403). */
+  /**
+   * Ein Fehler, nach dem nicht weiter gefragt wird (etwa 401/403): kein Takt, kein Laden beim
+   * Sichtbarwerden. Erst ein Anstoss von aussen (``anstoss$``) startet wieder.
+   */
   aufhoerenBei?: (fehler: unknown) => boolean;
-  /** Anstoesse von aussen, etwa nach einer Handlung: sofort laden. */
+  /** Anstoesse von aussen, etwa nach einer Handlung: sofort laden, auch nach einem Stopp. */
   anstoss$?: Observable<unknown>;
 }
 
@@ -56,7 +68,10 @@ export function nachladeStrom<T>(holen: () => Observable<T>, optionen: NachladeO
     let wecker: ReturnType<typeof setTimeout> | null = null;
     let laeuft = false;
     let nochmal = false;
+    /** Abgemeldet (Teardown): endgueltig. */
     let aus = false;
+    /** Nach einem Fehler laut ``aufhoerenBei``: bis zum naechsten Anstoss von aussen. */
+    let gestoppt = false;
     let lauf: Subscription | null = null;
 
     const takt = () => (typeof optionen.ms === 'function' ? optionen.ms() : optionen.ms ?? NACHLADEN_MS);
@@ -64,7 +79,7 @@ export function nachladeStrom<T>(holen: () => Observable<T>, optionen: NachladeO
     const planen = () => {
       if (wecker !== null) clearTimeout(wecker);
       wecker = null;
-      if (aus) return;
+      if (aus || gestoppt) return;
       const warten = takt() * 2 ** Math.min(fehlversuche, BACKOFF_STUFEN);
       wecker = setTimeout(() => {
         wecker = null;
@@ -74,7 +89,7 @@ export function nachladeStrom<T>(holen: () => Observable<T>, optionen: NachladeO
     };
 
     const los = () => {
-      if (aus) return;
+      if (aus || gestoppt) return;
       if (laeuft) {
         nochmal = true;
         return;
@@ -87,7 +102,7 @@ export function nachladeStrom<T>(holen: () => Observable<T>, optionen: NachladeO
           finalize(() => {
             laeuft = false;
             if (aus) return;
-            if (nochmal) {
+            if (nochmal && !gestoppt) {
               nochmal = false;
               los();
             } else {
@@ -103,7 +118,8 @@ export function nachladeStrom<T>(holen: () => Observable<T>, optionen: NachladeO
           error: (fehler) => {
             fehlversuche++;
             if (optionen.aufhoerenBei?.(fehler)) {
-              aus = true;
+              gestoppt = true;
+              nochmal = false;
             }
             abonnent.next({ daten: null, fehler });
           },
@@ -119,7 +135,10 @@ export function nachladeStrom<T>(holen: () => Observable<T>, optionen: NachladeO
       }
     };
     document.addEventListener('visibilitychange', beiSichtbarkeit);
-    const anstoss = (optionen.anstoss$ ?? EMPTY).subscribe(() => los());
+    const anstoss = (optionen.anstoss$ ?? EMPTY).subscribe(() => {
+      gestoppt = false;
+      los();
+    });
 
     if (optionen.sofort) {
       los();
@@ -145,9 +164,10 @@ export function selbstNachladen<T>(
   holen: () => Observable<T>,
   destroyRef: DestroyRef,
   folgen: { next: (daten: T) => void; error?: (fehler: unknown) => void },
-  ms: number | (() => number) = NACHLADEN_MS,
+  takt: number | (() => number) | Omit<NachladeOptionen, 'sofort'> = NACHLADEN_MS,
 ): void {
-  const abo = nachladeStrom(holen, { ms }).subscribe((lauf) => {
+  const optionen = typeof takt === 'object' ? takt : { ms: takt };
+  const abo = nachladeStrom(holen, optionen).subscribe((lauf) => {
     if (lauf.fehler === null) {
       folgen.next(lauf.daten as T);
     } else {

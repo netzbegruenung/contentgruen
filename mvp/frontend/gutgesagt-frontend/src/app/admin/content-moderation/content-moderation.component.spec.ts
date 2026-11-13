@@ -10,7 +10,7 @@ import { SperrenDialogErgebnis } from './sperren-dialog.component';
 import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
 // Ausserhalb von /admin (wie im Testlauf) fragt der ZuTunService alle 120 s.
 import { KOPF_NACHLADEN_MS } from '../../services/zu-tun.service';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { throwError } from 'rxjs';
 
 function sperre(overrides: Partial<SperreFuerAdmins> = {}): SperreFuerAdmins {
@@ -78,7 +78,7 @@ describe('ContentModerationComponent', () => {
 
     TestBed.configureTestingModule({
       imports: [ContentModerationComponent, NoopAnimationsModule],
-      providers: [{ provide: ModerationService, useValue: moderation }]
+      providers: [provideRouter([]), { provide: ModerationService, useValue: moderation }]
     });
     // Die Komponente importiert MatDialogModule selbst; deshalb hier überschreiben.
     TestBed.overrideProvider(MatDialog, { useValue: dialog });
@@ -125,7 +125,7 @@ describe('ContentModerationComponent', () => {
     expect(dialog.open).toHaveBeenCalled();
     expect(moderation.sperren).toHaveBeenCalledWith('beitrag-1', 'unterstellung', 'Unterstellt Bosheit.');
     // Die Liste fragt mit Ansicht und Grenze; die Zahl der offenen (ZuTunService) zusätzlich still.
-    expect(moderation.getReports.calls.allArgs().filter((args) => args.length === 2).length).toBe(2);
+    expect(moderation.getReports.calls.allArgs().filter((args) => args[3] !== true).length).toBe(2);
   });
 
   it('sperrt nicht, wenn der Dialog abgebrochen wird', () => {
@@ -421,6 +421,94 @@ describe('ContentModerationComponent', () => {
       document.dispatchEvent(new Event('visibilitychange'));
 
       expect(moderation.getGesperrte).toHaveBeenCalledOnceWith(true);
+      fixture.destroy();
+    }));
+
+    it('verwirft ein stilles Nachladen, das eine Aktion überholt hat (umgekehrte Antwortreihenfolge)', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      moderation.dismissReport.and.returnValue(of({}));
+      mitMeldungen([meldung(), meldung({ id: 'report-2' })]);
+      const alt = new Subject<PendingReportsResponse>();
+      moderation.getReports.and.returnValue(alt);
+
+      // Das stille Nachladen geht los, antwortet aber erst nach der Aktion.
+      document.dispatchEvent(new Event('visibilitychange'));
+      moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung({ id: 'report-2' })] }));
+      fixture.componentInstance.dismissReport(meldung());
+      fixture.detectChanges();
+      expect(fixture.componentInstance.reports.map((r) => r.id)).toEqual(['report-2']);
+
+      alt.next({ total: 2, reports: [meldung(), meldung({ id: 'report-2' })] });
+      alt.complete();
+      fixture.detectChanges();
+
+      // Die abgewiesene erscheint nicht wieder als „neu“, und ZuTun bekommt nicht den alten Stand.
+      expect(fixture.componentInstance.reports.map((r) => r.id)).toEqual(['report-2']);
+      expect(fixture.componentInstance.neueMeldungen).toBe(0);
+      expect(fixture.componentInstance.offeneMeldungen).toBe(1);
+      fixture.destroy();
+    }));
+
+    it('lässt eine beim Nachladen erledigte Meldung ausgegraut mit gesperrten Knöpfen stehen', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung(), meldung({ id: 'report-2' })]);
+      fixture.componentInstance.toggleExpand(meldung());
+      moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung({ id: 'report-2' })] }));
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      fixture.detectChanges();
+
+      const zeilen = Array.from(fixture.nativeElement.querySelectorAll('tr.report-row')) as HTMLElement[];
+      expect(zeilen.length).toBe(2);
+      expect(zeilen[0].classList).toContain('erledigt');
+      expect(zeilen[0].textContent).toContain('erledigt');
+      const knoepfe = Array.from(zeilen[0].querySelectorAll('.action-buttons button')) as HTMLButtonElement[];
+      expect(knoepfe.length).toBeGreaterThan(0);
+      expect(knoepfe.every((k) => k.disabled)).toBeTrue();
+      expect(zeilen[1].classList).not.toContain('erledigt');
+
+      // Weg erst beim nächsten ausdrücklichen Laden; die aufgeklappte Zeile auch.
+      fixture.componentInstance.loadReports();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelectorAll('tr.report-row').length).toBe(1);
+      expect(fixture.componentInstance.isExpanded(meldung())).toBeFalse();
+      fixture.destroy();
+    }));
+
+    it('hält die Statuszeile immer frei, damit Hinweise die Zeilen nicht verschieben', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      const zeile = fixture.nativeElement.querySelector('.statuszeile') as HTMLElement;
+      expect(zeile).not.toBeNull();
+
+      moderation.getReports.and.returnValue(of({ total: 2, reports: [meldung({ id: 'report-neu' }), meldung()] }));
+      document.dispatchEvent(new Event('visibilitychange'));
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.statuszeile')).toBe(zeile);
+      expect(zeile.querySelector('.neue-meldungen')).not.toBeNull();
+      fixture.destroy();
+    }));
+
+    it('zeigt nach 401 beim Nachladen „Sitzung abgelaufen – Anmelden“ und fragt nicht weiter', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      moderation.getReports.and.returnValue(throwError(() => ({ status: 401 })));
+      moderation.getGesperrte.and.returnValue(of({ total: 0, beitraege: [] }));
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      fixture.detectChanges();
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.sitzung-abgelaufen');
+      expect(link.textContent!.trim()).toBe('Sitzung abgelaufen – Anmelden');
+      expect(link.getAttribute('href')).toContain('/login');
+      expect(fixture.nativeElement.textContent).not.toContain('neuer Versuch in Kürze');
+
+      // Das stille Nachladen der Moderation fragt nicht weiter; erkennbar an ihrer stillen
+      // Zählung der Widersprüche (getGesperrte(true)), die nur sie stellt.
+      const anfragen = moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length;
+      tick(NACHLADEN_MS * 8);
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length).toBe(anfragen);
       fixture.destroy();
     }));
 

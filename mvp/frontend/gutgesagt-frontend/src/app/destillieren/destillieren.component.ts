@@ -304,6 +304,11 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         // aus ist - fuer diese Sitzung wird er eingeschaltet, sonst ist der
         // Einwurf nach dem Verwerfen scheinbar spurlos weg.
         verworfenEinblenden();
+        // In der Serie beim Ausformulieren bleibt es dort, wie bei "Naechster Einwurf".
+        if (this.inAusformulierReihe) {
+          this.uebergabe.zumNaechstenAusformulieren(einwurf.id);
+          return;
+        }
         this.uebergabe.zumNaechsten(einwurf.id, this.tabDesEinwurfs);
       },
       error: (error) => {
@@ -397,7 +402,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   }
 
   /** Die Ansicht laeuft in der Serie beim Ausformulieren (``?reihe=ausformulieren``). */
-  private get inAusformulierReihe(): boolean {
+  get inAusformulierReihe(): boolean {
     return this.route.snapshot?.queryParamMap?.get(REIHE_PARAM) === 'ausformulieren';
   }
 

@@ -121,6 +121,22 @@ describe('selbst nachladen', () => {
     abo.unsubscribe();
   }));
 
+  it('startet nach einem Stopp wieder, wenn von aussen angestossen wird', fakeAsync(() => {
+    const anstoss$ = new Subject<void>();
+    const holen = jasmine.createSpy('holen').and.returnValue(throwError(() => ({ status: 401 })));
+    const abo = nachladeStrom(holen, { sofort: true, anstoss$, aufhoerenBei: () => true }).subscribe();
+    tick(NACHLADEN_MS * 4);
+    expect(holen).toHaveBeenCalledTimes(1);
+
+    holen.and.returnValue(of(1));
+    anstoss$.next();
+    expect(holen).toHaveBeenCalledTimes(2);
+    // Danach wieder im Takt
+    tick(NACHLADEN_MS);
+    expect(holen).toHaveBeenCalledTimes(3);
+    abo.unsubscribe();
+  }));
+
   it('hoert mit dem Ende der Seite auf', fakeAsync(() => {
     const holen = jasmine.createSpy('holen').and.returnValue(of(1));
     const { ref, zerstoeren } = zerstoerbar();

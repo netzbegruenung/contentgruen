@@ -96,6 +96,9 @@
                 <button mat-raised-button color="primary" type="button" class="formular-oeffnen"
                         (click)="formularOeffnen()">Formular öffnen</button>
                 <button mat-button type="button" class="zurueck" (click)="zurueckZumSatz()">Zurück</button>
+                <!-- Serie beim Ausformulieren: weiter, ohne diesen Einwurf auszuformulieren -->
+                <button *ngIf="inAusformulierReihe" mat-stroked-button type="button" class="spaeter naechster-einwurf"
+                        [disabled]="arbeitet" (click)="spaeter()">Nächster Einwurf</button>
             </div>
         </section>
     </ng-container>

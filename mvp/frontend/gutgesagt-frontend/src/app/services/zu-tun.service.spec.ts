@@ -132,6 +132,31 @@ describe('ZuTunService', () => {
     abo.unsubscribe();
   }));
 
+  it('fragt nach Ablauf der Speisung wieder selbst', fakeAsync(() => {
+    const abo = dienst.meldungen$.subscribe();
+    dienst.meldungenGespeist([meldung('a', '2026-11-12T09:00:00Z')]);
+    tick(NACHLADEN_MS + 5_000);
+    expect(moderation.getReports).toHaveBeenCalledTimes(1);
+
+    // Der naechste Takt nach Ablauf fragt wieder.
+    tick(KOPF_NACHLADEN_MS);
+    expect(moderation.getReports).toHaveBeenCalledTimes(2);
+    abo.unsubscribe();
+  }));
+
+  it('meldet 401 als abgelaufen und fragt nach einem Anstoss wieder', fakeAsync(() => {
+    moderation.getReports.and.returnValue(throwError(() => ({ status: 401 })));
+    let stand: Stand<OffeneMeldungen> | undefined;
+    const abo = dienst.meldungen$.subscribe((s) => (stand = s));
+    expect(stand!.abgelaufen).toBeTrue();
+
+    moderation.getReports.and.returnValue(of({ total: 0, reports: [] }));
+    dienst.aktualisieren();
+    expect(moderation.getReports).toHaveBeenCalledTimes(2);
+    expect(stand).toEqual({ daten: { anzahl: 0, mehr: false, aelteste: null }, fehler: false });
+    abo.unsubscribe();
+  }));
+
   it('liefert die Liste der Loeschauftraege aus derselben Abfrage wie die Zahl', () => {
     const abos = [dienst.loeschauftraege$.subscribe(), dienst.loeschauftraegeAntwort$.subscribe()];
 

@@ -25,7 +25,8 @@ import { LoeschauftraegeComponent } from './loeschauftraege.component';
 import { MELDUNGEN_GRENZE, ZuTunService } from '../../services/zu-tun.service';
 import { EMPTY, Observable, merge } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { selbstNachladen } from '../../shared/selbst-nachladen';
+import { NACHLADEN_MS, SITZUNG_ABGELAUFEN, ohneRechte, selbstNachladen } from '../../shared/selbst-nachladen';
+import { RouterLink } from '@angular/router';
 
 // 'person': Meldungen einer Person nach Name oder E-Mail-Adresse (#494).
 // 'loeschauftraege': Löschaufträge nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b).
@@ -57,7 +58,8 @@ function ansichtAus(wert: string | null): Ansicht | null {
     MatButtonToggleModule,
     MatBadgeModule,
     MeldungenEinerPersonComponent,
-    LoeschauftraegeComponent
+    LoeschauftraegeComponent,
+    RouterLink
   ],
   templateUrl: './content-moderation.component.html',
   styleUrls: ['./content-moderation.component.css'],
@@ -142,7 +144,11 @@ export class ContentModerationComponent implements OnInit {
     if (this.selectedStatus !== 'gesperrt') {
       this.offeneWiderspruecheZaehlen();
     }
-    selbstNachladen(() => this.stillesNachladen(), this.destroyRef, { next: () => undefined });
+    selbstNachladen(() => this.stillesNachladen(), this.destroyRef, {
+      next: () => (this.sitzungAbgelaufen = false),
+      // Nach 401/403 hört das Nachladen auf; statt „neuer Versuch“ der Weg zur Anmeldung.
+      error: (fehler) => (this.sitzungAbgelaufen = ohneRechte(fehler)),
+    }, { ms: NACHLADEN_MS, aufhoerenBei: ohneRechte });
   }
 
   /** Für trackBy: Zeilen bleiben beim Nachladen dieselben DOM-Knoten, der Fokus bleibt. */
@@ -154,10 +160,34 @@ export class ContentModerationComponent implements OnInit {
     return this.selectedStatus === 'person' || this.selectedStatus === 'loeschauftraege';
   }
 
+  /** Nach 401/403 beim Nachladen: Es wird nicht weiter gefragt, der Link führt zur Anmeldung. */
+  sitzungAbgelaufen = false;
+  readonly sitzungAbgelaufenText = SITZUNG_ABGELAUFEN;
+
+  /** Wohin es nach dem Anmelden zurückgeht. */
+  adresse(): string {
+    return window.location.pathname + window.location.search;
+  }
+
+  /**
+   * Zählt bei jedem ausdrücklichen Laden und jeder Aktion hoch. Ein stilles Nachladen, das
+   * vorher losging, kommt mit altem Stand zurück und wird verworfen (auch fürs Speisen).
+   */
+  private generation = 0;
+
+  /** Meldungen, die beim stillen Nachladen fehlten: ausgegraut stehen lassen bis zum nächsten Laden. */
+  readonly erledigt = new Set<string>();
+
+  istErledigt(meldung: ContentReport): boolean {
+    return this.erledigt.has(meldung.id);
+  }
+
   /** Lädt die Liste der gewählten Ansicht neu, mit Spinner; aufgeklappte Zeilen klappen zu. */
   loadReports() {
+    const generation = ++this.generation;
     this.wartendeListe = null;
     this.neueMeldungen = 0;
+    this.erledigt.clear();
     if (this.laedtSelbst) {
       // Die Suche lädt selbst, erst wenn Angaben eingegeben sind; die Löschaufträge
       // kommen aus dem ZuTunService.
@@ -170,9 +200,10 @@ export class ContentModerationComponent implements OnInit {
     this.error = null;
     this.expandedReports.clear(); // Reset expanded rows on refresh
     // Antworten einer Ansicht, die inzwischen verlassen ist, verwerfen: Sonst zeigt
-    // etwa „Nach Person“ den Fehler einer alten Liste (#494).
+    // etwa „Nach Person“ den Fehler einer alten Liste (#494). Ebenso Antworten, die ein
+    // neueres Laden oder eine Aktion überholt hat.
     const ansicht = this.selectedStatus;
-    const verlassen = () => this.selectedStatus !== ansicht;
+    const verlassen = () => this.selectedStatus !== ansicht || this.generation !== generation;
 
     if (ansicht === 'gesperrt') {
       this.moderationService.getGesperrte().subscribe({
@@ -220,7 +251,9 @@ export class ContentModerationComponent implements OnInit {
     }
     // Ohne Fehler steht eine Liste; nach einem Fehler bleibt dessen Hinweis bis zum Erfolg.
     const leise = !this.error;
-    const verlassen = () => this.selectedStatus !== ansicht;
+    // Überholt ein ausdrückliches Laden oder eine Aktion diesen Lauf, zählt seine Antwort nicht.
+    const generation = this.generation;
+    const verlassen = () => this.selectedStatus !== ansicht || this.generation !== generation;
 
     if (ansicht === 'gesperrt') {
       return this.moderationService.getGesperrte(true).pipe(
@@ -252,7 +285,9 @@ export class ContentModerationComponent implements OnInit {
     );
     // Die Zahl am Umschalter „Gesperrt“ steht in keiner Meldungsliste: hier mitzählen.
     const widersprueche = this.moderationService.getGesperrte(true).pipe(
-      tap((response) => (this.offeneWidersprueche = zaehleOffene(response.beitraege))),
+      tap((response) => {
+        if (!verlassen()) this.offeneWidersprueche = zaehleOffene(response.beitraege);
+      }),
       catchError(() => EMPTY)
     );
     return merge(liste, widersprueche);
@@ -264,32 +299,56 @@ export class ContentModerationComponent implements OnInit {
 
   /** Die angekündigten neuen Meldungen einfügen, in der Reihenfolge des Dienstes. */
   neueZeigen() {
-    if (this.wartendeListe) {
-      this.reports = this.wartendeListe;
-    }
+    this.reports = this.wartendeListe ?? this.reports.filter((meldung) => !this.erledigt.has(meldung.id));
     this.wartendeListe = null;
     this.neueMeldungen = 0;
+    this.erledigtAufraeumen();
+  }
+
+  /** Erledigte fallen weg, ihre aufgeklappten Zeilen auch. */
+  private erledigtAufraeumen() {
+    this.erledigt.forEach((id) => this.expandedReports.delete(id));
+    this.erledigt.clear();
   }
 
   /**
    * Übernimmt eine nachgeladene Liste, ohne Zeilen zu verschieben: bekannte Meldungen bekommen
-   * ihren neuen Stand, erledigte fallen weg, neue warten auf „N neue Meldungen“.
+   * ihren neuen Stand, fehlende bleiben ausgegraut als „erledigt“ stehen (Knöpfe gesperrt),
+   * neue warten auf „N neue Meldungen“. Weg sind erledigte erst beim nächsten Laden.
    */
   private stillUebernehmen(neu: ContentReport[]) {
-    const frisch = new Map(neu.map((meldung) => [meldung.id, meldung]));
-    const bekannt = new Set(this.reports.map((meldung) => meldung.id));
-    const bleiben = this.reports.filter((meldung) => frisch.has(meldung.id)).map((meldung) => frisch.get(meldung.id)!);
-    const neue = neu.filter((meldung) => !bekannt.has(meldung.id));
-    if (!bleiben.length) {
+    if (!this.reports.length) {
       // Nichts steht unter dem Zeiger: gleich alles zeigen.
       this.reports = [...neu];
       this.wartendeListe = null;
       this.neueMeldungen = 0;
       return;
     }
-    this.reports = bleiben;
+    const frisch = new Map(neu.map((meldung) => [meldung.id, meldung]));
+    const bekannt = new Set(this.reports.map((meldung) => meldung.id));
+    this.reports = this.reports.map((meldung) => {
+      const neuerStand = frisch.get(meldung.id);
+      if (neuerStand) {
+        this.erledigt.delete(meldung.id);
+        return neuerStand;
+      }
+      this.erledigt.add(meldung.id);
+      return meldung;
+    });
+    const neue = neu.filter((meldung) => !bekannt.has(meldung.id));
     this.wartendeListe = neue.length ? [...neu] : null;
     this.neueMeldungen = neue.length;
+  }
+
+  /**
+   * Nach einer Aktion: neu laden. Steht „Offen“, speist die Liste den ZuTunService; sonst
+   * muss die Zahl der offenen eigens nachgezogen werden.
+   */
+  private nachAktion() {
+    this.loadReports();
+    if (this.selectedStatus !== 'pending') {
+      this.zuTun.aktualisieren();
+    }
   }
 
   private gesperrteUebernehmen(beitraege: GemeldeterBeitrag[]) {
@@ -370,11 +429,11 @@ export class ContentModerationComponent implements OnInit {
         if (!ergebnis?.sperrgrund) {
           return;
         }
+        this.generation++; // ein stilles Nachladen von vorher zählt nicht mehr
         this.moderationService.sperren(report.content_id, ergebnis.sperrgrund, ergebnis.begruendung).subscribe({
           next: () => {
             this.snackBar.open('Beitrag gesperrt', 'OK', { duration: 3000 });
-            this.loadReports();
-            this.zuTun.aktualisieren();
+            this.nachAktion();
           },
           error: (error) => {
             const text = error?.status === 409 ? 'Der Beitrag ist schon gesperrt' : 'Fehler beim Sperren des Beitrags';
@@ -399,6 +458,7 @@ export class ContentModerationComponent implements OnInit {
         if (!ergebnis) {
           return;
         }
+        this.generation++;
         this.moderationService.sperreBestaetigen(sperre.id, ergebnis.begruendung).subscribe({
           next: () => {
             this.snackBar.open('Sperre bestätigt', 'OK', { duration: 3000 });
@@ -430,11 +490,11 @@ export class ContentModerationComponent implements OnInit {
   }
 
   entsperren(contentId: string) {
+    this.generation++;
     this.moderationService.entsperren(contentId).subscribe({
       next: () => {
         this.snackBar.open('Sperre aufgehoben', 'OK', { duration: 3000 });
-        this.loadReports();
-        this.zuTun.aktualisieren();
+        this.nachAktion();
       },
       error: (error) => {
         this.snackBar.open('Fehler beim Entsperren des Beitrags', 'OK', { duration: 3000 });
@@ -444,11 +504,11 @@ export class ContentModerationComponent implements OnInit {
   }
 
   dismissReport(report: ContentReport) {
+    this.generation++;
     this.moderationService.dismissReport(report.id, 'Dismissed by admin').subscribe({
       next: (response) => {
         this.snackBar.open('Meldung abgewiesen', 'OK', { duration: 3000 });
-        this.loadReports(); // Reload to remove from list
-        this.zuTun.aktualisieren();
+        this.nachAktion(); // Reload to remove from list
       },
       error: (error) => {
         this.snackBar.open('Fehler beim Abweisen der Meldung', 'OK', { duration: 3000 });

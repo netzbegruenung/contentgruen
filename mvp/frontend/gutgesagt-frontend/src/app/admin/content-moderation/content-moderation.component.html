@@ -55,16 +55,23 @@
     <p>{{ error }}</p>
   </div>
 
-  <div *ngIf="nachladefehler && !error && !loading && !laedtSelbst" class="nachladefehler" role="status">
-    <mat-spinner diameter="16"></mat-spinner>
-    <span>Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …</span>
-  </div>
-
-  <!-- Neue Meldungen rutschen nicht unter den Zeiger: angekündigt, eingefügt erst auf Klick -->
-  <div *ngIf="neueMeldungen && !laedtSelbst && selectedStatus !== 'gesperrt'" class="neue-meldungen" role="status">
-    <button mat-stroked-button type="button" (click)="neueZeigen()">
-      {{ neueMeldungen === 1 ? '1 neue Meldung anzeigen' : neueMeldungen + ' neue Meldungen anzeigen' }}
-    </button>
+  <!--
+    Statuszeile mit fester Höhe, immer reserviert: Hinweise und „N neue Meldungen“ schieben die
+    Zeilen nicht unter den Zeiger (sonst träfe ein Klick plötzlich „Abweisen“).
+  -->
+  <div *ngIf="!laedtSelbst" class="statuszeile" role="status">
+    <a *ngIf="sitzungAbgelaufen; else statusSonst" class="sitzung-abgelaufen" routerLink="/login"
+       [queryParams]="{ returnUrl: adresse() }">{{ sitzungAbgelaufenText }}</a>
+    <ng-template #statusSonst>
+      <span *ngIf="nachladefehler && !error && !loading" class="nachladefehler">
+        <mat-spinner diameter="16"></mat-spinner>
+        <span>Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …</span>
+      </span>
+      <button *ngIf="neueMeldungen && selectedStatus !== 'gesperrt'" mat-stroked-button type="button"
+              class="neue-meldungen" (click)="neueZeigen()">
+        {{ neueMeldungen === 1 ? '1 neue Meldung anzeigen' : neueMeldungen + ' neue Meldungen anzeigen' }}
+      </button>
+    </ng-template>
   </div>
 
   <ng-container *ngIf="selectedStatus === 'gesperrt' && !loading && !error">
@@ -216,10 +223,13 @@
         <th mat-header-cell *matHeaderCellDef>Aktionen</th>
         <td mat-cell *matCellDef="let report">
           <div class="action-buttons">
+            <!-- Beim Nachladen nicht mehr offen: steht ausgegraut, bis die Liste neu geladen wird -->
+            <span *ngIf="istErledigt(report)" class="status-badge status-erledigt">erledigt</span>
             <span *ngIf="istGesperrt(report)" class="status-badge status-gesperrt">Gesperrt</span>
             <button
               *ngIf="report.content && !istGesperrt(report)"
               mat-raised-button
+              [disabled]="istErledigt(report)"
               color="warn"
               (click)="sperren(report); $event.stopPropagation()"
               matTooltip="Beitrag aus Suche und Ansicht nehmen">
@@ -229,6 +239,7 @@
             <button
               *ngIf="istGesperrt(report)"
               mat-button
+              [disabled]="istErledigt(report)"
               (click)="entsperren(report.content_id); $event.stopPropagation()"
               matTooltip="Sperre aufheben, Beitrag wieder sichtbar machen">
               <mat-icon>lock_open</mat-icon>
@@ -237,6 +248,7 @@
             <button
               *ngIf="report.status === 'pending'"
               mat-button
+              [disabled]="istErledigt(report)"
               (click)="dismissReport(report); $event.stopPropagation()"
               matTooltip="Meldung abweisen, Beitrag bleibt sichtbar">
               <mat-icon>close</mat-icon>
@@ -323,7 +335,7 @@
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="report-row" (click)="toggleExpand(row)"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="report-row" [class.erledigt]="istErledigt(row)" (click)="toggleExpand(row)"></tr>
       <tr mat-row *matRowDef="let row; columns: ['expandedContent']" class="expanded-row"></tr>
     </table>
   </div>

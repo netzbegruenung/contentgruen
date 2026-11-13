@@ -457,6 +457,27 @@ describe('DestillierenComponent', () => {
         expect(JSON.parse(sessionStorage.getItem(FILTER_SCHLUESSEL)!).tab).toBe('destillieren');
       });
 
+      it('bleibt nach dem Verwerfen in der Serie', async () => {
+        queryParams = convertToParamMap({ reihe: 'ausformulieren' });
+        await erstellen('id-1', einwurf({ own_draft: 'Mein Satz' }));
+
+        knopf('verwerfen')!.click();
+
+        expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledWith('id-1');
+        expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
+      });
+
+      it('zeigt in der Typwahl "Naechster Einwurf", solange die Serie laeuft', async () => {
+        queryParams = convertToParamMap({ reihe: 'ausformulieren', schritt: 'typwahl' });
+        await erstellen('id-1', einwurf({ own_draft: 'Mein Satz' }));
+        fixture.detectChanges();
+
+        expect(component.schritt).toBe('typwahl');
+        knopf('naechster-einwurf')!.click();
+
+        expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledWith('id-1');
+      });
+
       it('bleibt bei "Naechster Einwurf" in der Serie', async () => {
         queryParams = convertToParamMap({ reihe: 'ausformulieren' });
         await erstellen('id-1', einwurf({ own_draft: 'Mein Satz' }));

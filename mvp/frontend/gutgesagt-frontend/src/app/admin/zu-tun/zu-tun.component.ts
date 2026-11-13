@@ -7,6 +7,7 @@ import { combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { OffeneLoeschauftraege, OffeneMeldungen, Stand, ZuTunService, wartetSeit } from '../../services/zu-tun.service';
+import { SITZUNG_ABGELAUFEN } from '../../shared/selbst-nachladen';
 
 /** Adresse der Moderation mit gewaehlter Ansicht (ContentModerationComponent liest ``ansicht``). */
 export const MODERATION_PFAD = '/admin/moderation';
@@ -33,7 +34,12 @@ interface Ansicht {
       <section class="zu-tun" aria-labelledby="zu-tun-titel" data-testid="zu-tun">
         <h2 id="zu-tun-titel" class="titel">Zu tun</h2>
 
-        @if (nichtsZuTun(a)) {
+        @if (abgelaufen(a)) {
+          <!-- Nach 401/403 fragt niemand weiter: kein endloses „neuer Versuch“, sondern der Weg zurück -->
+          <p class="punkt" role="status" data-testid="zu-tun-abgelaufen">
+            <a routerLink="/login" [queryParams]="{ returnUrl: adresse() }">{{ sitzungAbgelaufen }}</a>
+          </p>
+        } @else if (nichtsZuTun(a)) {
           <p class="punkt ruhig" data-testid="zu-tun-nichts">Nichts zu tun. Keine Meldungen, keine Löschaufträge.</p>
         } @else {
           <p class="punkt" data-testid="zu-tun-meldungen">
@@ -69,7 +75,7 @@ interface Ansicht {
           </p>
         }
 
-        @if (veraltet(a)) {
+        @if (veraltet(a) && !abgelaufen(a)) {
           <p class="punkt ruhig klein" role="status">
             <mat-spinner diameter="14" aria-hidden="true"></mat-spinner>
             <span>Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …</span>
@@ -149,6 +155,18 @@ export class ZuTunComponent {
   readonly ansicht$ = combineLatest([this.zuTun.meldungen$, this.zuTun.loeschauftraege$]).pipe(
     map(([meldungen, loeschauftraege]): Ansicht => ({ meldungen, loeschauftraege })),
   );
+
+  readonly sitzungAbgelaufen = SITZUNG_ABGELAUFEN;
+
+  /** 401/403: Die Abfragen haben aufgehört, nur neues Anmelden hilft. */
+  abgelaufen(a: Ansicht): boolean {
+    return !!a.meldungen.abgelaufen || !!a.loeschauftraege.abgelaufen;
+  }
+
+  /** Wohin es nach dem Anmelden zurückgeht. */
+  adresse(): string {
+    return window.location.pathname + window.location.search;
+  }
 
   nichtsZuTun(a: Ansicht): boolean {
     return a.meldungen.daten?.anzahl === 0 && a.loeschauftraege.daten?.anzahl === 0;

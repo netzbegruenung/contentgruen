@@ -74,6 +74,17 @@ describe('ZuTunComponent', () => {
     expect(text(punkt('zu-tun-meldungen'))).toBe('100 oder mehr offene Meldungen');
   });
 
+  it('zeigt nach 401/403 „Sitzung abgelaufen – Anmelden“ statt „neuer Versuch“', () => {
+    meldungen$.next({ daten: { anzahl: 1, mehr: false, aelteste: null }, fehler: true, abgelaufen: true });
+    loeschauftraege$.next({ daten: null, fehler: true, abgelaufen: true });
+    fixture.detectChanges();
+
+    const link: HTMLAnchorElement = punkt('zu-tun-abgelaufen').querySelector('a')!;
+    expect(link.textContent!.trim()).toBe('Sitzung abgelaufen – Anmelden');
+    expect(link.getAttribute('href')).toContain('/login?returnUrl=');
+    expect(text(fixture.nativeElement)).not.toContain('neuer Versuch');
+  });
+
   it('sagt bei einem Fehler, dass es von selbst neu versucht, statt „bitte neu laden“', () => {
     meldungen$.next({ daten: null, fehler: true });
     loeschauftraege$.next({ daten: { anzahl: 1, ueberfaellig: 0 }, fehler: true });

@@ -3,7 +3,7 @@ import { EMPTY, Observable, Subject, merge } from 'rxjs';
 import { map, scan, shareReplay } from 'rxjs/operators';
 
 import { ContentReport, LoeschauftraegeResponse, ModerationService } from './moderation.service';
-import { NACHLADEN_MS, nachladeStrom } from '../shared/selbst-nachladen';
+import { NACHLADEN_MS, nachladeStrom, ohneRechte } from '../shared/selbst-nachladen';
 
 /** So viele offene Meldungen fragt die Zahl hoechstens ab (Grenze des Endpunkts). */
 export const MELDUNGEN_GRENZE = 100;
@@ -16,11 +16,8 @@ export function zuTunTakt(): number {
   return window.location.pathname.startsWith('/admin') ? NACHLADEN_MS : KOPF_NACHLADEN_MS;
 }
 
-/** Nach 401/403 (Sitzung abgelaufen, keine Admin-Rechte) fragt niemand weiter, bis zur naechsten Anmeldung. */
-export function ohneRechte(fehler: unknown): boolean {
-  const status = (fehler as { status?: unknown } | null)?.status;
-  return status === 401 || status === 403;
-}
+/** Nach 401/403 fragt niemand weiter, bis ein Anstoss (``aktualisieren``) oder die naechste Anmeldung kommt. */
+export { ohneRechte };
 
 /** Offene Meldungen: wie viele und seit wann die aelteste wartet. */
 export interface OffeneMeldungen {
@@ -45,6 +42,14 @@ export interface OffeneLoeschauftraege {
 export interface Stand<T> {
   daten: T | null;
   fehler: boolean;
+  /** Der letzte Fehler war 401/403: Es wird nicht weiter gefragt, anmelden hilft. */
+  abgelaufen?: boolean;
+}
+
+function standAus<T>(lauf: { daten: T | null; fehler: unknown }): Stand<T> {
+  return lauf.fehler === null
+    ? { daten: lauf.daten, fehler: false }
+    : { daten: null, fehler: true, ...(ohneRechte(lauf.fehler) ? { abgelaufen: true } : {}) };
 }
 
 /** Offene Meldungen aus einer Liste offener Meldungen, wie der Endpunkt sie liefert. */
@@ -57,7 +62,7 @@ export function offeneMeldungen(meldungen: ContentReport[]): OffeneMeldungen {
 }
 
 function letzterStand<T>(vorher: Stand<T>, jetzt: Stand<T>): Stand<T> {
-  return jetzt.fehler ? { daten: vorher.daten, fehler: true } : jetzt;
+  return jetzt.fehler ? { ...jetzt, daten: vorher.daten } : jetzt;
 }
 
 /**
@@ -92,7 +97,7 @@ export class ZuTunService {
             ? EMPTY
             : moderation.getReports('pending', MELDUNGEN_GRENZE, 0, true).pipe(map((antwort) => offeneMeldungen(antwort.reports))),
         optionen,
-      ).pipe(map((lauf): Stand<OffeneMeldungen> => ({ daten: lauf.daten, fehler: lauf.fehler !== null }))),
+      ).pipe(map((lauf) => standAus<OffeneMeldungen>(lauf))),
       this.gespeist$.pipe(map((daten): Stand<OffeneMeldungen> => ({ daten, fehler: false }))),
     ).pipe(
       scan(letzterStand<OffeneMeldungen>, { daten: null, fehler: false } as Stand<OffeneMeldungen>),
@@ -100,7 +105,7 @@ export class ZuTunService {
     );
 
     this.loeschauftraegeAntwort$ = nachladeStrom(() => moderation.getLoeschauftraege(true), optionen).pipe(
-      map((lauf): Stand<LoeschauftraegeResponse> => ({ daten: lauf.daten, fehler: lauf.fehler !== null })),
+      map((lauf) => standAus<LoeschauftraegeResponse>(lauf)),
       scan(letzterStand<LoeschauftraegeResponse>, { daten: null, fehler: false } as Stand<LoeschauftraegeResponse>),
       shareReplay({ bufferSize: 1, refCount: true }),
     );
@@ -114,6 +119,7 @@ export class ZuTunService {
             }
           : null,
         fehler: stand.fehler,
+        ...(stand.abgelaufen ? { abgelaufen: true } : {}),
       })),
     );
   }
