@@ -14,6 +14,12 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
     timeout: 45_000,
   });
   await bild('30-suche');
+  // Hat die Suche Treffer zu einer erkannten Aussage ("Gefunden zu"), waehlt "Antworten"
+  // diese vor, nicht die eigene Aussage der Suche - auch wenn ein Vorlauf sie lieferte.
+  const gefundenZu = page.locator('.mobile-gefunden-zu .gefunden-zu-aussage');
+  const erwartet = (await gefundenZu.isVisible())
+    ? (await gefundenZu.textContent())!.trim().replace(/^„|“$/g, '')
+    : aussageKern;
 
   await test.step('Beitrag ergaenzen', async () => {
     // Mobil mit Treffern: dezent unter dem Suchband und unter der Liste; ohne Treffer im Leerzustand.
@@ -34,7 +40,7 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
     const vorbelegt = page.locator('.gewaehlt-karte .karte-titel').or(page.locator('.antwort-eingabe')).first();
     await expect
       .poll(() => vorbelegt.evaluate((el) => (el instanceof HTMLTextAreaElement ? el.value : (el.textContent ?? '')).trim()))
-      .toContain(aussageKern);
+      .toContain(erwartet);
     await bild('31-formular-vorbelegt');
   });
 
@@ -46,8 +52,11 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
     );
     const id = await speichernUndErgebnis(page);
     test.info().annotations.push({ type: 'Kommentar-ID', description: id });
-    await expect.soft(page.locator('.gespeichert-aussage')).toContainText(aussageKern);
-    expect.soft(await ergebnisKnoepfe(page)).toEqual(['Zurück zur Suche', 'Meine Beiträge']);
+    await expect.soft(page.locator('.gespeichert-aussage')).toContainText(erwartet);
+    // Je nach Aussage stehen dazwischen weitere ("Zur Aussage", "Link kopieren").
+    const knoepfe = await ergebnisKnoepfe(page);
+    expect.soft(knoepfe[0]).toBe('Zurück zur Suche');
+    expect.soft(knoepfe.at(-1)).toBe('Meine Beiträge');
     await bild('32-ergebnis-suche');
 
     await page.locator('.zur-suche').click();
