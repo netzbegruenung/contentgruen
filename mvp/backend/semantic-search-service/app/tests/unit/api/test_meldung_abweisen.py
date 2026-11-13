@@ -62,6 +62,21 @@ def test_abweisen_nimmt_die_begruendung_aus_dem_query_parameter():
 
 
 @pytest.mark.unit
+def test_abweisen_lehnt_eine_begruendung_ueber_500_zeichen_ab():
+    service = Mock()
+    service.dismiss_report = AsyncMock(return_value=True)
+
+    antwort = _client(service).put(
+        f"/api/v1/moderation/reports/{REPORT_ID}/dismiss",
+        params={"notes": "x" * 501},
+        headers=ADMIN,
+    )
+
+    assert antwort.status_code == 422
+    service.dismiss_report.assert_not_awaited()
+
+
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_der_dienst_weist_nur_offene_ab_und_reicht_den_konflikt_durch():
     report_repo = MagicMock()

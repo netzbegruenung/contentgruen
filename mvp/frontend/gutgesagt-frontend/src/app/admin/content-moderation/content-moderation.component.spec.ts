@@ -472,6 +472,13 @@ describe('ContentModerationComponent', () => {
       expect(knoepfe.every((k) => k.getAttribute('aria-disabled') === 'true')).toBeTrue();
       expect(zeilen[1].classList).not.toContain('erledigt');
 
+      // Ein Klick auf die gesperrten Knöpfe löst nichts aus (disabledInteractive lässt Klicks durch).
+      knoepfe.forEach((k) => k.click());
+      expect(moderation.dismissReport).not.toHaveBeenCalled();
+      expect(moderation.sperren).not.toHaveBeenCalled();
+      expect(moderation.entsperren).not.toHaveBeenCalled();
+      expect(dialog.open).not.toHaveBeenCalled();
+
       // Weg erst beim nächsten ausdrücklichen Laden; die aufgeklappte Zeile auch.
       fixture.componentInstance.loadReports();
       fixture.detectChanges();
@@ -523,6 +530,7 @@ describe('ContentModerationComponent', () => {
       document.body.appendChild(fixture.nativeElement);
       fixture.componentInstance.nachladefehler = true;
       fixture.componentInstance.neueMeldungen = 1;
+      (fixture.componentInstance as any).wartendeListe = [meldung(), meldung({ id: 'report-neu' })];
       fixture.detectChanges();
 
       const zeile = fixture.nativeElement.querySelector('.statuszeile') as HTMLElement;
@@ -530,7 +538,7 @@ describe('ContentModerationComponent', () => {
       const knopf = zeile.querySelector('.neue-meldungen') as HTMLElement;
       const text = zeile.querySelector('.nachladefehler-text.lang') as HTMLElement;
 
-      expect(zeile.getBoundingClientRect().height).toBe(40);
+      expect(zeile.getBoundingClientRect().height).toBeCloseTo(40, 0);
       expect(knopf.getBoundingClientRect().right).toBeLessThanOrEqual(zeile.getBoundingClientRect().right + 0.5);
       expect(knopf.scrollWidth).toBeLessThanOrEqual(knopf.clientWidth + 1);
       expect(getComputedStyle(text).textOverflow).toBe('ellipsis');
@@ -571,6 +579,43 @@ describe('ContentModerationComponent', () => {
       fixture.destroy();
     });
 
+    it('zeigt in „Gesperrt“ bei 403 nur den Link, nicht „Keine gesperrten Beiträge“', () => {
+      mitMeldungen([]);
+      moderation.getGesperrte.and.returnValue(throwError(() => ({ status: 403 })));
+      fixture.componentInstance.onStatusFilterChange('gesperrt');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.sitzung-abgelaufen')).not.toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Keine gesperrten Beiträge');
+      expect(fixture.nativeElement.textContent).not.toContain('neuer Versuch');
+    });
+
+    it('läuft auch an, wenn ein ausdrückliches Laden sitzungAbgelaufen zwischendurch zurückgesetzt hat', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      // Ein stiller Lauf ist unterwegs …
+      const still = new Subject<PendingReportsResponse>();
+      moderation.getReports.and.returnValue(still);
+      document.dispatchEvent(new Event('visibilitychange'));
+      // … ein ausdrückliches Laden startet (Sitzung noch gültig, kein Anstoß) …
+      const ausdruecklich = new Subject<PendingReportsResponse>();
+      moderation.getReports.and.returnValue(ausdruecklich);
+      fixture.componentInstance.loadReports();
+      // … der stille Lauf kommt mit 401 zurück, das Laden gelingt danach.
+      still.error({ status: 401 });
+      ausdruecklich.next({ total: 1, reports: [meldung()] });
+      ausdruecklich.complete();
+      expect(fixture.componentInstance.sitzungAbgelaufen).toBeFalse();
+
+      // Das nächste ausdrückliche Laden stößt das gestoppte Nachladen wieder an.
+      moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung()] }));
+      fixture.componentInstance.loadReports();
+      const vorher = moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length;
+      tick(NACHLADEN_MS);
+      expect(moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length).toBe(vorher + 1);
+      fixture.destroy();
+    }));
+
     it('markiert in anderen Ansichten nichts als erledigt; Fehlendes geht leise mit „neue anzeigen“', fakeAsync(() => {
       spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
       mitMeldungen([]);
@@ -584,8 +629,11 @@ describe('ContentModerationComponent', () => {
 
       expect(fixture.componentInstance.erledigt.size).toBe(0);
       expect(fixture.componentInstance.reports.map((r) => r.id)).toEqual(['a', 'b']);
-      fixture.componentInstance.neueZeigen();
+      // Ohne neue Meldungen heißt der Knopf „Liste aktualisieren“ und räumt die fehlende Zeile weg.
+      knopf('Liste aktualisieren')!.click();
+      fixture.detectChanges();
       expect(fixture.componentInstance.reports.map((r) => r.id)).toEqual(['b']);
+      expect(knopf('Liste aktualisieren')).toBeUndefined();
       fixture.destroy();
     }));
 

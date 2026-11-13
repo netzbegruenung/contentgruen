@@ -101,7 +101,9 @@ export class AbweisenDialogComponent {
 
   /** Ein Grund ist Pflicht; bei „Anderer Grund“ auch der Satz. */
   get vollstaendig(): boolean {
-    return !!this.grund && (this.grund !== ANDERER_GRUND || !!this.satz.trim());
+    const satz = this.satz.trim();
+    // maxlength kürzt nicht, was vor der Wahl des Grunds schon getippt war: hier mitprüfen.
+    return !!this.grund && (this.grund !== ANDERER_GRUND || !!satz) && satz.length <= this.maxLaenge;
   }
 
   /** Schließt mit der Begründung, wie sie als notes an das Backend geht. */

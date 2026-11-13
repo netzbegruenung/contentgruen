@@ -150,9 +150,17 @@ export class ContentModerationComponent implements OnInit {
       this.offeneWiderspruecheZaehlen();
     }
     selbstNachladen(() => this.stillesNachladen(), this.destroyRef, {
-      next: () => (this.sitzungAbgelaufen = false),
+      next: () => {
+        this.sitzungAbgelaufen = false;
+        this.nachladenGestoppt = false;
+      },
       // Nach 401/403 hört das Nachladen auf; statt „neuer Versuch“ der Weg zur Anmeldung.
-      error: (fehler) => (this.sitzungAbgelaufen = ohneRechte(fehler)),
+      // Ob es gestoppt ist, merkt sich ein eigenes Flag: sitzungAbgelaufen setzt auch ein
+      // ausdrückliches Laden zurück, das Nachladen bliebe dann unbemerkt stehen.
+      error: (fehler) => {
+        this.nachladenGestoppt = ohneRechte(fehler);
+        if (this.nachladenGestoppt) this.sitzungAbgelaufen = true;
+      },
     }, { ms: NACHLADEN_MS, aufhoerenBei: ohneRechte, anstoss$: this.wiederanlauf$ });
   }
 
@@ -173,6 +181,13 @@ export class ContentModerationComponent implements OnInit {
    * (loadReports, auch nach einer Aktion). Ohne Stopp feuert es nicht: kein doppeltes Laden.
    */
   private readonly wiederanlauf$ = new Subject<void>();
+  /** Das stille Nachladen ist nach 401/403 gestoppt (nachladeStrom, aufhoerenBei). */
+  private nachladenGestoppt = false;
+
+  /** Eine nachgeladene Liste wartet auf „neue anzeigen“ bzw. „Liste aktualisieren“. */
+  get listeWartet(): boolean {
+    return this.wartendeListe !== null;
+  }
   readonly sitzungAbgelaufenText = SITZUNG_ABGELAUFEN;
 
   /** Wohin es nach dem Anmelden zurückgeht. */
@@ -210,7 +225,8 @@ export class ContentModerationComponent implements OnInit {
     this.loading = true;
     this.error = null;
     this.expandedReports.clear(); // Reset expanded rows on refresh
-    if (this.sitzungAbgelaufen) {
+    if (this.nachladenGestoppt) {
+      this.nachladenGestoppt = false;
       this.wiederanlauf$.next();
     }
     // Antworten einer Ansicht, die inzwischen verlassen ist, verwerfen: Sonst zeigt
@@ -277,8 +293,8 @@ export class ContentModerationComponent implements OnInit {
             this.gesperrteUebernehmen(response.beitraege);
             this.geladen();
           },
-          error: () => {
-            if (!verlassen()) this.ladefehler(leise, 'Gesperrte Beiträge gerade nicht erreichbar, neuer Versuch in Kürze …');
+          error: (e) => {
+            if (!verlassen()) this.ladefehler(leise, 'Gesperrte Beiträge gerade nicht erreichbar, neuer Versuch in Kürze …', e);
           },
         })
       );
@@ -292,8 +308,8 @@ export class ContentModerationComponent implements OnInit {
           this.meldungenGeladen(ansicht, response.reports);
           this.geladen();
         },
-        error: () => {
-          if (!verlassen()) this.ladefehler(leise, 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …');
+        error: (e) => {
+          if (!verlassen()) this.ladefehler(leise, 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …', e);
         },
       })
     );
@@ -565,6 +581,12 @@ export class ContentModerationComponent implements OnInit {
 
   getSperrgrundLabel(sperrgrund: string): string {
     return sperrgrundLabel(sperrgrund);
+  }
+
+  /** Entsperren aus einer Meldungszeile: nicht für eine erledigte (gesperrt dargestellte) Zeile. */
+  meldungEntsperren(report: ContentReport) {
+    if (this.erledigtMelden(report)) return;
+    this.entsperren(report.content_id);
   }
 
   entsperren(contentId: string) {

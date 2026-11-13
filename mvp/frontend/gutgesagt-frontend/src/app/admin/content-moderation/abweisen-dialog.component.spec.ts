@@ -71,6 +71,17 @@ describe('AbweisenDialogComponent', () => {
     expect(fixture.nativeElement.querySelector('textarea').getAttribute('maxlength')).toBe(String(c.maxLaenge));
   });
 
+  it('lässt einen vorher getippten, zu langen Satz nach der Wahl des Grunds nicht durch', () => {
+    const fixture = erzeugen();
+    const c = fixture.componentInstance;
+    c.satz = 'x'.repeat(490);
+    c.grund = 'Zulässige Meinungsäußerung';
+    fixture.detectChanges();
+
+    expect(c.vollstaendig).toBeFalse();
+    expect(abweisknopf(fixture).disabled).toBeTrue();
+  });
+
   it('sagt ohne Mail-Adresse, dass niemand benachrichtigt wird', () => {
     const fixture = erzeugen({ titel: 'T', meldegrund: 'Spam', mitMail: false });
 

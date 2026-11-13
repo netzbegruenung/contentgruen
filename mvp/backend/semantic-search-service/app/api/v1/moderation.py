@@ -610,7 +610,8 @@ MELDUNG_NICHT_OFFEN = "meldung_nicht_offen"
 @router.put("/reports/{report_id}/dismiss", response_model=DismissReportResponse)
 async def dismiss_report(
     report_id: str,
-    notes: Optional[str] = None,
+    # Die Begruendung steht in der Adresse (Logs, Grenze der URL-Laenge): hoechstens 500 Zeichen.
+    notes: Optional[str] = Query(None, max_length=500),
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
     moderation_service: ModerationService = Depends(get_moderation_service),

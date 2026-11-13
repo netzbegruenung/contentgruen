@@ -69,14 +69,15 @@
         <span class="nachladefehler-text lang">Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …</span>
         <span class="nachladefehler-text kurz">Nicht aktuell, neuer Versuch …</span>
       </span>
-      <button *ngIf="neueMeldungen && selectedStatus !== 'gesperrt'" mat-stroked-button type="button"
+      <!-- Auch ohne neue Meldungen, wenn erledigte (nicht markierte) Zeilen weg sollen -->
+      <button *ngIf="listeWartet && selectedStatus !== 'gesperrt'" mat-stroked-button type="button"
               class="neue-meldungen" (click)="neueZeigen()">
-        {{ neueMeldungen === 1 ? '1 neue Meldung anzeigen' : neueMeldungen + ' neue Meldungen anzeigen' }}
+        {{ neueMeldungen === 0 ? 'Liste aktualisieren' : neueMeldungen === 1 ? '1 neue Meldung anzeigen' : neueMeldungen + ' neue Meldungen anzeigen' }}
       </button>
     </ng-template>
   </div>
 
-  <ng-container *ngIf="selectedStatus === 'gesperrt' && !loading && !error">
+  <ng-container *ngIf="selectedStatus === 'gesperrt' && !loading && !error && !sitzungAbgelaufen">
     <div *ngIf="gesperrte.length === 0" class="empty-state">
       <mat-icon class="large-icon">check_circle</mat-icon>
       <h2>Keine gesperrten Beiträge</h2>
@@ -249,7 +250,7 @@
               *ngIf="istGesperrt(report)"
               mat-button
               [disabled]="istErledigt(report)" disabledInteractive
-              (click)="entsperren(report.content_id); $event.stopPropagation()"
+              (click)="meldungEntsperren(report); $event.stopPropagation()"
               matTooltip="Sperre aufheben, Beitrag wieder sichtbar machen">
               <mat-icon>lock_open</mat-icon>
               Entsperren
