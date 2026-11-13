@@ -9,6 +9,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 
 import { ResultViewComponent, aussagenDerTreffer, erkannteAussage } from './result-view.component';
 import { TYPFILTER_SCHLUESSEL } from './ergebnis-gruppen';
+import { By } from '@angular/platform-browser';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { AuthService } from '../auth/auth.service';
 import { StatementService } from '../services/statement.service';
 import { routes } from '../app.routes';
@@ -814,6 +816,35 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     chip(seite, 'Kommentare').click();
     fixture.detectChanges();
     expect(gruppen()[1].querySelector('app-beitragskarte')).toBe(karteDerAnderen);
+  });
+
+  it('behaelt die gewaehlte Fassung einer Karte ueber den Themenfilter hinweg', async () => {
+    const mitThema = (id: string, thema: { schluessel: string; name: string }) => {
+      const t = erkannt('commentary', id, 0.9);
+      t.themen = [thema];
+      Object.assign(t.commentary_result, { short_text: 'Kurz', long_text: 'Eine lange Fassung' });
+      return t;
+    };
+    const seite = await oeffnen(false, antwort({
+      k: [mitThema('k-1', { schluessel: 'klima', name: 'Klima' }), mitThema('k-2', { schluessel: 'verkehr', name: 'Verkehr' })],
+    }));
+    const karte = () =>
+      fixture.debugElement
+        .queryAll(By.directive(BeitragskarteComponent))
+        .map((d) => d.componentInstance as BeitragskarteComponent)
+        .find((k) => k.daten.id === 'k-1')!;
+    const vorher = karte();
+    vorher.fassungWaehlen('lang');
+    const thema = (name: string) =>
+      Array.from(seite.querySelectorAll<HTMLButtonElement>('app-themen-filter button')).find((b) => text(b) === name)!;
+
+    thema('Klima').click();
+    fixture.detectChanges();
+    thema('Alle Themen').click();
+    fixture.detectChanges();
+
+    expect(karte()).withContext('dieselbe Karte').toBe(vorher);
+    expect(karte().gewaehlteFassung).toBe('lang');
   });
 
   it('setzt die Kartentitel unter Gruppe (h2) und Typ (h3) als h4 und behaelt die Aussage fuer Admins', async () => {

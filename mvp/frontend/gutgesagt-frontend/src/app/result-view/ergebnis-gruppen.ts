@@ -83,11 +83,18 @@ export interface ErgebnisGruppe {
 
 const OHNE_AUSSAGE = 'ohne';
 
+/** Macht aus einem Treffer die Karte; die Ergebnisseite reicht einen Zwischenspeicher je Suchantwort. */
+export type KarteZu = (treffer: BaseSearchResult) => KartenDaten;
+
 /**
  * Die Treffer nach Aussage gruppiert: die erkannte Aussage zuerst, dann die anderen
  * nach ihrem besten Treffer, die direkten Treffer zuletzt.
  */
-export function gruppieren(antwort: SearchResponse, erkannterSchluessel: string | null): ErgebnisGruppe[] {
+export function gruppieren(
+  antwort: SearchResponse,
+  erkannterSchluessel: string | null,
+  karteZu: KarteZu = ausSuchergebnis,
+): ErgebnisGruppe[] {
   const gruppen = new Map<string, ErgebnisGruppe>();
   for (const typ of TREFFER_TYPEN) {
     for (const treffer of trefferDesTyps(antwort, typ)) {
@@ -106,7 +113,7 @@ export function gruppieren(antwort: SearchResponse, erkannterSchluessel: string 
       gruppe.bester = Math.max(gruppe.bester, treffer.score ?? 0);
       // Die Aussage bleibt an der Karte (Admins sehen dort die Werte); die Zeile
       // "Antwort auf:" blendet die Seite aus, weil die Gruppe sie nennt.
-      gruppe.je[typ].push(ausSuchergebnis(treffer));
+      gruppe.je[typ].push(karteZu(treffer));
     }
   }
   const rang: Record<GruppenArt, number> = { erkannt: 0, aehnlich: 1, aussage: 1, ohne: 2 };

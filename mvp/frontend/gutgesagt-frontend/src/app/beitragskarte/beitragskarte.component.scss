@@ -100,8 +100,6 @@
 
 .karte-titel {
   display: -webkit-box;
-  // Als h4 (Ergebnisseite) ohne die Laufweite der globalen h4
-  letter-spacing: normal;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--titel-zeilen);
   overflow: hidden;
@@ -113,6 +111,11 @@
   line-height: 1.3;
   color: var(--text-primary);
   overflow-wrap: anywhere;
+}
+
+// Als h4 (Ergebnisseite) ohne die Laufweite der globalen h4
+h4.karte-titel {
+  letter-spacing: normal;
 }
 
 // Der Titel als Link zur Beitragsseite (#640, R48): sieht aus wie der Titel, unterstrichen erst beim Zeigen

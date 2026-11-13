@@ -19,6 +19,7 @@ import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
+import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { StatementSearchResult } from '../services/dtos/statementDtos';
 import {
   AnsichtGruppe,
@@ -205,6 +206,20 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   // Einmal je Suchantwort und Wahl umgerechnet, nicht im Template: neue Objekte bei
   // jeder Change Detection setzten die Karten zurueck (Kurz/Lang, Aufklapper).
   private gruppen: ErgebnisGruppe[] = [];
+  /**
+   * Karten je Treffer, einmal je Suchantwort gebaut: Der Themenfilter gruppiert neu,
+   * die Karten bleiben dieselben Objekte, und die Beitragskarte setzt Fassung,
+   * Aufklapper und Nutzung nicht zurueck (ngOnChanges bei neuen Daten).
+   */
+  private karten = new WeakMap<BaseSearchResult, KartenDaten>();
+  private readonly karteZu = (treffer: BaseSearchResult): KartenDaten => {
+    let karte = this.karten.get(treffer);
+    if (!karte) {
+      karte = ausSuchergebnis(treffer);
+      this.karten.set(treffer, karte);
+    }
+    return karte;
+  };
   ansicht: AnsichtGruppe[] = [];
   anzahl: Record<TrefferTyp, number> = anzahlJeTyp(null);
   chips: TypChip[] = [];
@@ -248,6 +263,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(response => {
         this.antwort = response;
+        this.karten = new WeakMap();
         // Eine neue Suche beginnt ohne Themenfilter und zugeklappt; die Typwahl bleibt.
         this.aktivesThema = null;
         this.aufgeklappt.clear();
@@ -281,7 +297,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     const response = this.antwort ? nachThemaGefiltert(this.antwort, this.aktivesThema) : null;
     this.angezeigt = response;
     this.anzahl = anzahlJeTyp(response);
-    this.gruppen = response ? gruppieren(response, erkannterSchluessel(this.erkannt)) : [];
+    this.gruppen = response ? gruppieren(response, erkannterSchluessel(this.erkannt), this.karteZu) : [];
     const gesamt = TREFFER_TYPEN.reduce((summe, typ) => summe + this.anzahl[typ], 0);
     this.chips = [
       { filter: 'alle' as TypFilter, name: 'Alle', anzahl: gesamt },
