@@ -71,6 +71,13 @@ describe('SearchComponent', () => {
       expect(link.getAttribute('href')).toBe(`/datenschutz#${SUCHANFRAGEN_ABSCHNITT}`);
     });
 
+    it('ist per aria-describedby mit dem Suchfeld verbunden', () => {
+      const feld = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+      const id = hinweis().id;
+      expect(id).toBeTruthy();
+      expect(feld.getAttribute('aria-describedby')).toBe(id);
+    });
+
     it('steht auch über den Treffern (compactMode)', () => {
       fixture.componentRef.setInput('compactMode', true);
       fixture.detectChanges();

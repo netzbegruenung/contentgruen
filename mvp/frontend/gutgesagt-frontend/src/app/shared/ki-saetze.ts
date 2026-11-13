@@ -4,7 +4,8 @@
  * einer anderen „keine KI“.
  *
  * Stand im Code: Die Suche rechnet mit einem Einbettungsmodell (EMBEDDING_MODELL) und
- * einem NLI-Modell (NLI_MODELL, core/config.py), beide lokal; sie liefern Zahlen, keinen
+ * zwei NLI-Modellen (NLI_MODELL und der zuschaltbare Bestätiger NLI_BESTAETIGER_MODELL,
+ * core/config.py), alle lokal; sie liefern Zahlen, keinen
  * Text (ADR 0005). Gegenlesen, Kürzungsvorschlag und Spracherkennung arbeiten mit festen
  * Regeln und kleinen lokalen Sprachwerkzeugen. Einen Textgenerator gibt es nicht.
  *

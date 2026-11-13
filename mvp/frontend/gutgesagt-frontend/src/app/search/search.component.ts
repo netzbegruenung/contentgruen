@@ -21,6 +21,8 @@ export const SUCHHINWEIS =
   'Prüfung durch das Moderationsteam für alle sichtbar werden.';
 /** Sprungmarke des Abschnitts „Deine Suchanfragen“ in der Datenschutzerklärung. */
 export const SUCHANFRAGEN_ABSCHNITT = 'suchanfragen';
+/** Zaehler fuer eindeutige Kennungen des Hinweises, falls mehrere Suchfelder zugleich da sind. */
+let naechsterHinweis = 0;
 
 @Component({
   selector: 'app-search',
@@ -43,6 +45,8 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
   @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
   readonly suchhinweis = SUCHHINWEIS;
   readonly suchanfragenAbschnitt = SUCHANFRAGEN_ABSCHNITT;
+  /** Screenreader lesen den Hinweis mit dem Feld vor (aria-describedby). */
+  readonly hinweisId = `such-hinweis-${naechsterHinweis++}`;
   get feldName(): string {
     return this.compactMode ? SUCHFELD_NAME_KOMPAKT : SUCHFELD_NAME;
   }
