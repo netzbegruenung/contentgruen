@@ -25,7 +25,8 @@ import { KartenDaten, KartenVariante } from './karten-daten';
       [class.kartenliste--spalten]="raster && variante === 'voll'"
     >
       <li *ngFor="let karte of daten; trackBy: nachId">
-        <app-beitragskarte [daten]="karte" [variante]="variante" (angetippt)="angetippt.emit($event)">
+        <app-beitragskarte [daten]="karte" [variante]="variante" [titelEbene]="titelEbene"
+                           [antwortAufZeigen]="antwortAufZeigen" (angetippt)="angetippt.emit($event)">
         </app-beitragskarte>
       </li>
     </ul>
@@ -79,6 +80,10 @@ export class KartenlisteComponent {
   @Input() variante: KartenVariante = 'voll';
   /** Volle Karten ab 600 px in Spalten statt untereinander. */
   @Input() raster = false;
+  /** Durchgereicht an die Karten: Ebene der Titel-Ueberschrift (Standard h3). */
+  @Input() titelEbene: 3 | 4 = 3;
+  /** Durchgereicht an die Karten: Zeile "Antwort auf:" (aus, wo die Seite die Aussage nennt). */
+  @Input() antwortAufZeigen = true;
 
   /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */
   @Output() angetippt = new EventEmitter<KartenDaten>();
