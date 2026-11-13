@@ -262,7 +262,15 @@ export class Art9EinwilligungService implements OnDestroy {
     this.sichtbarAbo = fromEvent(document, 'visibilitychange')
       .pipe(
         filter(() => document.visibilityState === 'visible' && !!this.kennung),
-        switchMap(() => this.stand().pipe(catchError(() => of(null)))),
+        // Die Kennung beim Abfragen festhalten: Kommt die Antwort nach einem Kontowechsel
+        // an, gehoert sie zur vorigen Person und wird verworfen (Review zu #670).
+        switchMap(() => {
+          const fuer = this.kennung;
+          return this.stand().pipe(
+            catchError(() => of(null)),
+            map((stand) => (stand && fuer === this.kennung ? stand : null)),
+          );
+        }),
       )
       .subscribe((stand) => {
         if (!stand) return;

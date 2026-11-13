@@ -323,6 +323,22 @@ describe('Art9EinwilligungService', () => {
       expect(router.navigate).not.toHaveBeenCalled();
     });
 
+    it('verwirft einen Stand aus dem Tab-Wechsel, der nach einem Kontowechsel ankommt', () => {
+      const zustand = TestBed.inject(Art9EinwilligungZustand);
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(true));
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      const alt = http.expectOne(ADRESSE);
+      anmeldung.next(angemeldet('alex'));
+      http.expectOne(ADRESSE).flush(stand(false));
+      alt.flush(stand(true));
+
+      expect(zustand.wert).toBe('fehlt');
+      expect(service.geklaert()).toBeNull();
+    });
+
     it('nimmt die Klaerung zurueck, wenn ein anderer Tab widerrufen hat', () => {
       service.starten();
       anmeldung.next(angemeldet('kim'));

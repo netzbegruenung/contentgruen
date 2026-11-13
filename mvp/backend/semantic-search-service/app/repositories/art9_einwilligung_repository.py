@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
 
-from sqlalchemy import String, delete, func, insert, literal, select, update
+from sqlalchemy import String, delete, func, insert, literal, select, text, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -39,6 +39,20 @@ class Art9Einwilligung:
         return self.gilt and geltender_wortlaut(self.wortlaut)
 
 
+# Schluessel der Advisory-Sperre je Person fuer Einwilligen und "ohne Einwilligung
+# weiter" (eigener Raum neben SPERRE_THEMEN = 363). Unter READ COMMITTED saehe sonst
+# ein gleichzeitiges "ohne" die noch nicht festgeschriebene Einwilligung nicht, und
+# am Ende stuenden beide nebeneinander (Review zu #670).
+SPERRE_ART9 = 489
+
+
+def _sperren(session: Session, user_id: str) -> None:
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(:sperre, hashtext(:kennung))"),
+        {"sperre": SPERRE_ART9, "kennung": user_id},
+    )
+
+
 class Art9EinwilligungRepository:
     def __init__(self, db: Optional[AppDatabase] = None):
         """``db``: eine AppDatabase; ohne Angabe die globale."""
@@ -62,6 +76,7 @@ class Art9EinwilligungRepository:
         Einwilligung zu diesem Wortlaut, bleibt es bei ihr (doppeltes Absenden).
         """
         with self.db.get_session() as session:
+            _sperren(session, user_id)
             juengste = self._juengste(session, user_id)
             if (
                 juengste is not None
@@ -96,7 +111,8 @@ class Art9EinwilligungRepository:
         Entscheidung wird ersetzt, je Kennung bleibt eine Zeile.
 
         Nur, wenn keine geltende Einwilligung besteht, in einer Anweisung
-        (INSERT ... SELECT ... WHERE NOT EXISTS): Kommt "ohne" nach einer Einwilligung an,
+        (INSERT ... SELECT ... WHERE NOT EXISTS) unter der Advisory-Sperre der Person,
+        die auch ``einwilligen`` nimmt: Kommt "ohne" nach einer Einwilligung an,
         etwa aus einem zweiten Tab, bleibt es ohne Wirkung (Review zu #670). Gibt zurueck,
         ob etwas geschrieben wurde.
         """
@@ -115,6 +131,9 @@ class Art9EinwilligungRepository:
             func.now(),
         ).where(~geltend)
         with self.db.get_session() as session:
+            # Dieselbe Sperre wie beim Einwilligen: Wer zuerst kommt, ist fertig, bevor
+            # der andere prueft (Review zu #670).
+            _sperren(session, user_id)
             anweisung = pg_insert(Art9OhneEinwilligungZeile).from_select(
                 ["user_id", "wortlaut", "entschieden_am"], quelle
             )

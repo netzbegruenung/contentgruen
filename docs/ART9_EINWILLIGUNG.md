@@ -25,8 +25,9 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   älteren Eintrag `gutgesagt-art9-ohne` im localStorage räumt die App einmal weg. Eine
   Einwilligung löscht die Zeile, ein Widerruf lässt sie stehen (dann gilt ohnehin
   „widerrufen“); solange eine geltende Einwilligung besteht, schreibt `/ohne` nichts (in
-  derselben Anweisung geprüft, falls „ohne“ etwa aus einem zweiten Tab nach der Einwilligung
-  ankommt); sie geht mit dem Konto (`person_loeschen.sql`), mit dem Löschablauf eines
+  derselben Anweisung geprüft, unter einer Advisory-Sperre je Person, die auch das Einwilligen
+  nimmt: Kommt „ohne“ aus einem zweiten Tab gleichzeitig mit der Einwilligung, wartet es auf
+  sie und schreibt dann nichts; `SPERRE_ART9` in `art9_einwilligung_repository.py`); sie geht mit dem Konto (`person_loeschen.sql`), mit dem Löschablauf eines
   Löschauftrags und zieht beim Umstellen der Kennungen mit. Ausnahme: Wer einem früheren
   Wortlaut zugestimmt hat, der nicht mehr zählt, wird zum neuen einmal gefragt.
   Erst beim Beitragen zeigen die Formulare (Einwerfen, Satz beim Destillieren, Kommentar,

@@ -85,3 +85,54 @@ def test_ohne_nach_einwilligung_zu_frueherem_wortlaut_wirkt(repository):
 
     assert repository.ohne_merken(PERSON, "2026-11-13") is True
     assert repository.ohne_lesen(PERSON) == "2026-11-13"
+
+
+def test_ohne_wartet_auf_eine_gleichzeitige_einwilligung(repository, wegwerf_schema):
+    """
+    Review zu #670: Tab A willigt ein, Tab B schickt gleichzeitig "ohne". Unter READ
+    COMMITTED saehe B die noch offene Einwilligung nicht; die Advisory-Sperre je Person
+    laesst B warten, bis A festgeschrieben ist, und dann schreibt B nichts.
+    """
+    import threading
+    from datetime import datetime, timezone
+
+    from sqlalchemy import text
+
+    from repositories.art9_einwilligung_repository import SPERRE_ART9
+
+    ergebnis = {}
+
+    def ohne():
+        try:
+            ergebnis["wert"] = repository.ohne_merken(PERSON, "2026-11-13")
+        except Exception as e:  # noqa: BLE001 (der Test prueft den Fehler)
+            ergebnis["fehler"] = e
+
+    a = wegwerf_schema.sessions()
+    try:
+        # A wie einwilligen: Sperre nehmen und die Einwilligung schreiben, noch offen
+        a.execute(
+            text("SELECT pg_advisory_xact_lock(:sperre, hashtext(:kennung))"),
+            {"sperre": SPERRE_ART9, "kennung": PERSON},
+        )
+        a.add(
+            Art9EinwilligungZeile(
+                user_id=PERSON,
+                wortlaut="2026-11-13",
+                eingewilligt_am=datetime.now(timezone.utc),
+            )
+        )
+        a.flush()
+        faden = threading.Thread(target=ohne, daemon=True)
+        faden.start()
+        faden.join(timeout=1.5)
+        assert faden.is_alive(), "ohne_merken wartet nicht auf die Sperre"
+        a.commit()
+    finally:
+        a.close()
+    faden.join(timeout=10)
+
+    assert not faden.is_alive()
+    assert "fehler" not in ergebnis
+    assert ergebnis["wert"] is False
+    assert repository.ohne_lesen(PERSON) is None
