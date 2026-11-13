@@ -39,8 +39,7 @@ interface Ansicht {
           <p class="punkt" data-testid="zu-tun-meldungen">
             @if (a.meldungen.daten; as m) {
               @if (m.anzahl > 0) {
-                <a [routerLink]="moderationPfad" [queryParams]="{ ansicht: 'pending' }">
-                  {{ meldungenText(m) }}</a>@if (m.aelteste && !m.mehr) {<span>, älteste {{ alter(m.aelteste) }}</span>}
+                <span><a [routerLink]="moderationPfad" [queryParams]="{ ansicht: 'pending' }">{{ meldungenText(m) }}</a>@if (m.aelteste && !m.mehr) {<span>, älteste {{ alter(m.aelteste) }}</span>}</span>
               } @else {
                 <span class="ruhig">Keine offenen Meldungen</span>
               }

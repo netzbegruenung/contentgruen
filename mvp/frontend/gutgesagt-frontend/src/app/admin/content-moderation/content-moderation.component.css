@@ -33,7 +33,8 @@
     overflow-x: visible;
   }
 
-  .filter-section mat-button-toggle-group {
+  /* Doppelte Klasse: schlaegt die Randregel weiter unten, die fuer breite Fenster gilt */
+  .filter-section mat-button-toggle-group.mat-button-toggle-group {
     flex-wrap: wrap;
     gap: 8px;
     border: none;
