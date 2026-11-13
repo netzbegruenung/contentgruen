@@ -1,12 +1,11 @@
 """
 Vormoderation unbeantworteter Suchanfragen (Entscheidung des Maintainers vom
 13.11.2026) gegen ein echtes PostgreSQL: Entscheidungen speichern und ersetzen,
-die Auswahl fuer Nicht-Admins aus Schwelle und Freigabe, und der Nachtrag der
-Migration (Bestand ueber der Schwelle bleibt sichtbar, nur einmal).
+die Auswahl fuer Nicht-Admins aus Schwelle und Freigabe, und dass die Migration
+nichts freigibt (auch der Bestand geht durch die Vormoderation).
 """
 
 import uuid
-from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -97,27 +96,14 @@ def _service(db: Datenbank) -> SuchenOhneTrefferService:
     return SuchenOhneTrefferService(zaehler, aussagen, PersonenDesTages(), freigaben)
 
 
-class TestNachtrag:
-    def test_bestand_ueber_der_schwelle_bleibt_sichtbar(self, db):
+class TestKeinNachtrag:
+    def test_bestand_ueber_der_schwelle_bleibt_ungeprueft(self, db):
         _zaehlen(db, A, WOCHE, 2)
-        _zaehlen(db, B, WOCHE, 1)
-        _zaehlen(db, C, WOCHE - timedelta(weeks=4), 5)
-        _zaehlen(db, D, WOCHE - timedelta(weeks=3), 1)
-        _zaehlen(db, D, WOCHE, 1)
 
         postgres.migration(db, MIGRATION)
-
-        # B unter der Schwelle, C ausserhalb der vier Wochen; D ueber zwei Wochen.
-        assert _freigaben(db) == {A: True, D: True}
-
-    def test_zweiter_lauf_gibt_nichts_neu_frei(self, db):
-        _zaehlen(db, A, WOCHE, 2)
-        postgres.migration(db, MIGRATION)
-        _zaehlen(db, B, WOCHE, 3)
-
         postgres.migration(db, MIGRATION)
 
-        assert _freigaben(db) == {A: True}
+        assert _freigaben(db) == {}
 
 
 @pytest.mark.asyncio

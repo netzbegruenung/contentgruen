@@ -11,13 +11,8 @@
 -- Neue Datenbanken brauchen dieses Skript nicht: create_all legt die Tabelle beim
 -- Start an, auch in bestehenden Datenbanken, vor dem Einspielen der Migrationen.
 --
--- Vorhandene Daten: Was beim Einspielen schon fuer alle sichtbar war, bleibt es.
--- Jede Aussage, nach der in der laufenden und den drei Wochen davor (UTC) mindestens
--- zwei Personen ohne Treffer gesucht haben, gilt als freigegeben; dieselbe Schwelle
--- wie MINDESTANZAHL und WOCHEN_STANDARD im Dienst. Darunter sind auch Aussagen, die
--- nicht aus einer Suchanfrage stammen; fuer sie hat die Zeile keine Wirkung. Der
--- Nachtrag laeuft nur auf einer leeren Tabelle, ein zweiter Lauf gibt also nichts
--- frei, was inzwischen ueber die Schwelle gekommen ist.
+-- Vorhandene Daten: kein Nachtrag. Auch was beim Einspielen schon ueber der
+-- Schwelle lag, sehen Nicht-Admins erst nach Freigabe durch das Moderationsteam.
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
@@ -29,14 +24,5 @@ CREATE TABLE IF NOT EXISTS suchanfrage_freigaben (
     entschieden_am TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
     PRIMARY KEY (statement_id)
 );
-
-INSERT INTO suchanfrage_freigaben (statement_id, freigegeben)
-SELECT statement_id, true
-FROM suchen_ohne_treffer
-WHERE woche >= (date_trunc('week', now() AT TIME ZONE 'UTC'))::date - 21
-  AND NOT EXISTS (SELECT 1 FROM suchanfrage_freigaben)
-GROUP BY statement_id
-HAVING sum(personen) >= 2
-ON CONFLICT (statement_id) DO NOTHING;
 
 COMMIT;
