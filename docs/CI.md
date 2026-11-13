@@ -19,8 +19,9 @@ mirror (`.github/workflows/`) still build them too and publish the tags the envi
 | `lint` | same | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
 | `unit` | same | `check.sh --schritt unit`: Python unit tests and `scripts/tests/`, each with four pytest-xdist workers (`CHECK_WORKER`) |
 | `integration` | same | `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below, serially |
-| `frontend` | `node:22` | Chromium from Debian (`scripts/ci-chromium.sh`), `npm ci`, `check.sh --schritt frontend` (Karma tests) |
-| `frontend-build` | `node:22` | `npm ci`, `check.sh --schritt frontend-build` (`ng build --configuration production`, for the budgets of the image build) |
+| `frontend-installieren` | `node:22` | `npm ci` in the frontend directory, once for the two steps below |
+| `frontend` | same | after `frontend-installieren`: Chromium from Debian (`scripts/ci-chromium.sh`), `check.sh --schritt frontend` (Karma tests) |
+| `frontend-build` | same | after `frontend-installieren`: `check.sh --schritt frontend-build` (`ng build --configuration production`, for the budgets of the image build) |
 | `bff` | `mcr.microsoft.com/dotnet/sdk:9.0` (BFF Dockerfile) | `check.sh --schritt bff` with `CHECK_OHNE_DOCKER=1` |
 | `ci-bericht` | `python:3.13-slim` | red pull-request runs only, see below |
 
@@ -48,8 +49,8 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
   the BFF. When raising a version, change all of them.
 - **One source for commands.** Each step calls `check.sh --schritt <name>`, one pipeline step
   per step of `check.sh` (the test compares the names). Only the preparation a working tree
-  already has locally stays in `ci.yaml`: the venv (`python-installieren`), `npm ci` and
-  Chromium for the frontend. `CHECK_VOLL=1`
+  already has locally stays in `ci.yaml`: the venv (`python-installieren`), `npm ci`
+  (`frontend-installieren`) and Chromium for the frontend. `CHECK_VOLL=1`
   makes `check.sh` print the full output instead of its summary lines.
 - **No path filter on the workflow.** A skipped workflow reports no status, and the
   required status then blocks the pull request. Filters only per step, and only so that
@@ -62,9 +63,11 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 **Run time.** The steps without `depends_on` run side by side, so the longest chain sets the
 duration. Two choices keep chains short without caches or volumes on the runner:
 
-- `frontend` and `frontend-build` are two steps, each with its own `npm ci`: the build (about
-  15 s locally, more on the runner) then runs next to the Karma tests instead of after them,
-  for the price of a second `npm ci` and its CPU on the runner.
+- `frontend` and `frontend-build` are two steps after one `npm ci` (`frontend-installieren`):
+  the build runs next to Chromium's installation and the Karma tests instead of after them.
+  Steps share the workspace, so only one step may run `npm ci` there; a second one would
+  delete `node_modules` under the other step (`scripts/tests/test_woodpecker_ci.py` checks it).
+  Angular's build cache is off in CI (`CI` set), the two builders share no files.
 - The unit step runs pytest with four xdist workers (`-n`; `CHECK_WORKER=0` runs serially).
   Every worker collects the tests itself, so parametrized test IDs must not contain random
   values such as `uuid4()`, otherwise xdist aborts with "Different tests were collected".
@@ -320,7 +323,8 @@ locally only when the pipeline is red and you need the full output.
 since the branch left `origin/main` (`CHECK_BASE`) reach, the working tree included; for the
 frontend only the specs of the changed components and services and the specs that import them.
 The production build (`frontend-build`) runs for every frontend change except one touching only
-specs, `tsconfig.spec.json` or `e2e/`, which the build does not read.
+specs or `tsconfig.spec.json`, which the build does not read; `e2e/` (Playwright against the dev
+stack) runs neither Karma nor the build.
 `integration` runs when migrations, repositories or Python modules the integration tests import
 directly or indirectly changed, without `--integration`, and then needs Qdrant and PostgreSQL like
 `--schritt integration`. It prints the chosen steps and why (`scripts/geaendert.py`, tests in

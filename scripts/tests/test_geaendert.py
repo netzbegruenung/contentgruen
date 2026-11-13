@@ -4,6 +4,7 @@ check.sh --geaendert: welche Schritte eine Aenderung braucht (scripts/geaendert.
 Jeder Test legt einen kleinen Baum mit den Pfaden des Repos unter tmp_path an.
 """
 
+import os
 import re
 import subprocess
 
@@ -46,11 +47,10 @@ def test_waehlen_reine_frontend_aenderung_nur_frontend(baum):
     [
         f"{FE}/src/app/a/a.component.spec.ts",
         f"{FE}/tsconfig.spec.json",
-        f"{FE}/e2e/tests/rundgang.spec.ts",
     ],
 )
 def test_waehlen_nur_testdateien_des_frontends_ohne_production_build(baum, pfad):
-    # Specs und e2e/ liest der Production-Build nicht (tsconfig.app.json geht von main.ts aus)
+    # Specs liest der Production-Build nicht (tsconfig.app.json geht von main.ts aus)
     wurzel = baum(
         {
             f"{FE}/src/app/a/a.component.ts": "export class A {}\n",
@@ -401,3 +401,42 @@ def test_check_sh_geaendert_mit_eigener_schrittwahl_abgelehnt(optionen):
 
     assert lauf.returncode == 2
     assert "--geaendert chooses the steps itself" in lauf.stderr
+
+
+@pytest.mark.parametrize(
+    "pfad", [f"{FE}/e2e/tests/rundgang.spec.ts", f"{FE}/e2e/playwright.config.ts"]
+)
+def test_waehlen_e2e_weder_karma_noch_build(baum, pfad):
+    # e2e/ ist Playwright gegen den Dev-Stack mit eigenem package.json
+    assert geaendert.waehlen([pfad], baum({})).schritte == ["retired-words"]
+
+
+@pytest.mark.parametrize(
+    "optionen, gebaut, getestet",
+    [
+        (["--schritt", "frontend"], False, True),
+        (["--include", "src/app/a"], False, True),
+        (["--schritt", "frontend-build"], True, False),
+    ],
+)
+def test_check_sh_production_build_nur_im_eigenen_schritt(
+    tmp_path, optionen, gebaut, getestet
+):
+    # npx als Attrappe: protokolliert nur, was check.sh aufruft
+    protokoll = tmp_path / "npx.log"
+    npx = tmp_path / "npx"
+    npx.write_text(f'#!/bin/sh\necho "$@" >> {protokoll}\n')
+    npx.chmod(0o755)
+    umgebung = {**os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}"}
+
+    lauf = subprocess.run(
+        ["bash", str(geaendert.WURZEL / "scripts" / "check.sh"), *optionen],
+        capture_output=True,
+        text=True,
+        env=umgebung,
+    )
+
+    assert lauf.returncode == 0, lauf.stdout + lauf.stderr
+    aufrufe = protokoll.read_text()
+    assert ("ng build" in aufrufe) is gebaut
+    assert ("ng test" in aufrufe) is getestet

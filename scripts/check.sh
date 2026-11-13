@@ -82,8 +82,12 @@ if laeuft integration; then
   test "${PIPESTATUS[0]}" -eq 0
 fi
 
-# environment.ts is gitignored; tests and build need it
-frontend_umgebung() { cd "$FE"; [ -f src/environments/environment.ts ] || cp src/environments/environment.ts.template src/environments/environment.ts; }
+# environment.ts is gitignored; tests and build need it. Copy and rename: in CI both steps run at
+# once in one workspace, neither may read a half-written file.
+frontend_umgebung() {
+  cd "$FE"; local ziel=src/environments/environment.ts
+  [ -f "$ziel" ] || { cp "$ziel.template" "$ziel.$$" && mv -f "$ziel.$$" "$ziel"; }
+}
 if laeuft frontend; then
   echo "== Frontend"; frontend_umgebung
   # A run that fails before Karma starts (no node_modules, no browser) prints no summary line: then the tail.

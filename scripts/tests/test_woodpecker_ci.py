@@ -73,6 +73,7 @@ def test_ci_hat_keinen_pfadfilter_auf_workflow_ebene():
         ("retired-words", NODE),
         ("frontend", NODE),
         ("frontend-build", NODE),
+        ("frontend-installieren", NODE),
         ("bff", from_zeile("mvp/backend/BFF/Dockerfile", "build")),
     ],
 )
@@ -262,3 +263,15 @@ def test_check_sh_nutzt_lokal_dasselbe_bff_image():
     assert re.findall(r"mcr\.microsoft\.com/dotnet/sdk\S*", check) == [
         SCHRITTE["bff"]["image"]
     ]
+
+
+def test_frontend_schritte_teilen_ein_npm_ci():
+    # Die Schritte teilen den Workspace: ein zweites npm ci loeschte node_modules des anderen.
+    mit_npm_ci = [
+        name
+        for name, s in SCHRITTE.items()
+        if any("npm ci" in b for b in s.get("commands", []))
+    ]
+    assert mit_npm_ci == ["frontend-installieren"]
+    for name in ("frontend", "frontend-build"):
+        assert SCHRITTE[name]["depends_on"] == ["frontend-installieren"]

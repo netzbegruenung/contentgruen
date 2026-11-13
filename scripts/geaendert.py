@@ -32,9 +32,9 @@ PYTHON = ["lint", "unit"]
 PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]
 FRONTEND = ["frontend", "frontend-build"]
 # Frontend-Dateien, die nur die Karma-Tests lesen, nicht der Production-Build
-# (tsconfig.app.json schliesst *.spec.ts aus; e2e/ ist Playwright gegen den Dev-Stack)
+# (tsconfig.app.json geht von src/main.ts aus und liest keine *.spec.ts)
 NUR_FRONTEND_TESTS = (".spec.ts",)
-NUR_FRONTEND_TESTS_PFADE = (FE + "/e2e/", FE + "/tsconfig.spec.json")
+NUR_FRONTEND_TESTS_PFADE = (FE + "/tsconfig.spec.json",)
 
 # Pfad-Praefix -> Schritte; der erste passende Eintrag gilt. Was keiner trifft und keine
 # Doku ist, waehlt alles. Python-Module, die die Integrationstests importieren, waehlen
@@ -42,6 +42,8 @@ NUR_FRONTEND_TESTS_PFADE = (FE + "/e2e/", FE + "/tsconfig.spec.json")
 REGELN = [
     ("scripts/", ALLES),
     (".woodpecker/", ALLES),
+    # Playwright gegen den Dev-Stack, eigenes package.json; weder Karma noch Build lesen es
+    (FE + "/e2e/", []),
     (FE + "/", FRONTEND),
     (PY + "/requirements.txt", PYTHON_MIT_DIENSTEN),
     (PY + "/app/repositories/", PYTHON_MIT_DIENSTEN),
@@ -205,7 +207,7 @@ def _doku(pfad: str) -> bool:
 
 
 def _regel(pfad: str):
-    if pfad.endswith(NUR_FRONTEND_TESTS) and pfad.startswith(FE + "/"):
+    if pfad.endswith(NUR_FRONTEND_TESTS) and pfad.startswith(FE + "/src/"):
         return ["frontend"]
     if pfad.startswith(NUR_FRONTEND_TESTS_PFADE):
         return ["frontend"]
