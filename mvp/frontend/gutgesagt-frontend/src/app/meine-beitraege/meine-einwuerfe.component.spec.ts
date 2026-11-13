@@ -5,7 +5,7 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
 import { WIEDERHOLUNG_MS } from '../shared/lade-wiederholung';
@@ -179,7 +179,7 @@ describe('MeineEinwuerfeComponent', () => {
     anzeigen();
 
     expect(texte('.einwuerfe-fehler p')).toEqual([
-      'Deine Einwürfe konnten gerade nicht geladen werden. Gleich kommt ein neuer Versuch.',
+      'Deine Einwürfe konnten gerade nicht geladen werden. Die Seite versucht es weiter.',
     ]);
     expect(texte('.einwuerfe-fehler')[0]).not.toMatch(/neu ?lad/i);
     expect(texte('button.erneut-versuchen')).toEqual(['Erneut versuchen']);
@@ -196,6 +196,48 @@ describe('MeineEinwuerfeComponent', () => {
     expect(texte('.einwuerfe-fehler')).toEqual([]);
     expect(fixture.nativeElement.querySelectorAll('article.karte--einwurf').length).toBe(1);
   }));
+
+  it('hoert beim Verlassen auf', fakeAsync(() => {
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), of(antwort([offen])));
+    anzeigen();
+
+    fixture.destroy();
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
+
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(1);
+  }));
+
+  it('wiederholt bei 403 nicht von selbst, bietet aber den Knopf', fakeAsync(() => {
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 403 })), of(antwort([offen])));
+    anzeigen();
+
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1] * 2);
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(1);
+    expect(texte('.einwuerfe-fehler p')).toEqual(['Deine Einwürfe konnten gerade nicht geladen werden.']);
+    expect(texte('button.erneut-versuchen')).toEqual(['Erneut versuchen']);
+  }));
+
+  it('sagt den ersten Fehler und die Rueckkehr in der Live-Region an und setzt den Fokus in die Liste', () => {
+    const zweiter = new Subject<EinwurfSeite>();
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), zweiter.asObservable());
+    anzeigen();
+    expect(texte('[role="status"]')).toEqual(['Deine Einwürfe konnten gerade nicht geladen werden.']);
+    const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('button.erneut-versuchen');
+
+    knopf.focus();
+    knopf.click();
+    fixture.detectChanges();
+    expect(texte('.einwuerfe-fehler p')).toEqual(['Deine Einwürfe konnten gerade nicht geladen werden. Neuer Versuch läuft …']);
+    expect(knopf.getAttribute('aria-disabled')).toBe('true');
+    knopf.click();
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(2);
+
+    zweiter.next(antwort([offen]));
+    fixture.detectChanges();
+
+    expect(texte('[role="status"]')).toEqual(['Deine Einwürfe wieder geladen.']);
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.einwuerfe-inhalt'));
+  });
 
   it('versucht es auf Knopfdruck sofort, auf derselben Seite', fakeAsync(() => {
     einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), of(antwort([offen])));

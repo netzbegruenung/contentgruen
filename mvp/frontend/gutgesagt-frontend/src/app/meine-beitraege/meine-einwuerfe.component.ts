@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
@@ -43,6 +43,10 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
   ladefehler = false;
   /** Nach einem Ladefehler: ein neuer Versuch laeuft gerade. */
   erneutLaedt = false;
+  /** Nach einem Ladefehler: Die Liste versucht es von selbst weiter (lohntWiederholung). */
+  versuchtWeiter = false;
+  /** Live-Region: nur der erste Fehler und die Rueckkehr, nicht jeder Versuch. */
+  ansage = '';
   /** Bis 599 px zeigt der Paginator nur Bereich und Pfeile, ohne Seitengroesse. */
   istMobil = false;
 
@@ -56,6 +60,7 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
     private logger: LoggingService,
     private breakpointObserver: BreakpointObserver,
     private cdr: ChangeDetectorRef,
+    private host: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit(): void {
@@ -92,27 +97,43 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (daten) => {
+          const nachFehler = this.ladefehler;
+          const fokusAmKnopf = !!document.activeElement?.classList.contains('erneut-versuchen');
           this.karten = daten.results.map(ausEinwurf);
           this.gesamt = daten.total_records_count;
           this.isLoading = false;
           this.ladefehler = false;
           this.erneutLaedt = false;
           this.wiederholung.erfolg();
+          if (nachFehler) {
+            this.ansage = 'Deine Einwürfe wieder geladen.';
+          }
           this.cdr.markForCheck();
+          if (fokusAmKnopf) {
+            // Der Knopf verschwindet mit dem Erfolg; der Fokus geht in die Liste.
+            this.cdr.detectChanges();
+            this.host.nativeElement.querySelector<HTMLElement>('.einwuerfe-inhalt')?.focus();
+          }
         },
         error: (error) => {
           this.logger.error('Eigene Einwürfe konnten nicht geladen werden', error);
+          if (!this.ladefehler) {
+            this.ansage = 'Deine Einwürfe konnten gerade nicht geladen werden.';
+          }
           this.isLoading = false;
           this.ladefehler = true;
           this.erneutLaedt = false;
-          this.wiederholung.planen(() => this.laden());
+          this.versuchtWeiter = this.wiederholung.fehlgeschlagen(error, () => this.laden());
           this.cdr.markForCheck();
         },
       });
   }
 
-  /** "Erneut versuchen": sofort, statt auf den geplanten Versuch zu warten. */
+  /** "Erneut versuchen": sofort; waehrend ein Versuch laeuft (aria-disabled), nichts. */
   erneutVersuchen(): void {
+    if (this.erneutLaedt) {
+      return;
+    }
     this.laden();
   }
 

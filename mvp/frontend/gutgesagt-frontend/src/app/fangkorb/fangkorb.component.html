@@ -78,8 +78,11 @@
     </div>
 
     <div class="liste">
+        <!-- Live-Region, immer im DOM: sagt den ersten Ladefehler und die Rueckkehr an -->
+        <div class="visually-hidden" role="status">{{ ansage }}</div>
+
         <!-- Je Tab ein Bereich wie in "Meine Beitraege"; die Liste steht nur im gewaehlten -->
-        <div *ngFor="let tab of tabs" [id]="'fangkorb-bereich-' + tab.wert" role="tabpanel"
+        <div *ngFor="let tab of tabs" [id]="'fangkorb-bereich-' + tab.wert" role="tabpanel" tabindex="-1"
              [attr.aria-labelledby]="'fangkorb-tab-' + tab.wert" [hidden]="filter.tab !== tab.wert">
             <ng-container *ngIf="filter.tab === tab.wert">
                 <div *ngIf="isLoading" class="fangkorb-laedt">
@@ -88,14 +91,16 @@
                 </div>
 
                 <!-- Nie "neu laden": Der Fangkorb versucht es selbst wieder (LadeWiederholung),
-                     der Knopf zieht den naechsten Versuch vor. -->
-                <div *ngIf="!isLoading && ladefehler" class="fangkorb-fehler" role="status">
+                     der Knopf zieht den naechsten Versuch vor. Angesagt wird ueber die
+                     Live-Region oben, nicht hier: sonst kaeme jeder Versuch einzeln. -->
+                <div *ngIf="!isLoading && ladefehler" class="fangkorb-fehler">
                     <p>
                         ⚠️ Der Fangkorb konnte gerade nicht geladen werden.
-                        {{ erneutLaedt ? 'Neuer Versuch läuft …' : 'Gleich kommt ein neuer Versuch.' }}
+                        <ng-container *ngIf="erneutLaedt">Neuer Versuch läuft …</ng-container>
+                        <ng-container *ngIf="!erneutLaedt && versuchtWeiter">Die Seite versucht es weiter.</ng-container>
                     </p>
                     <button mat-stroked-button type="button" class="erneut-versuchen"
-                            [disabled]="erneutLaedt" (click)="erneutVersuchen()">Erneut versuchen</button>
+                            [attr.aria-disabled]="erneutLaedt" (click)="erneutVersuchen()">Erneut versuchen</button>
                 </div>
 
                 <ng-container *ngIf="!isLoading && !ladefehler">

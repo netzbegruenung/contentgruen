@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
@@ -6,7 +6,7 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { LADE_GROESSE, FangkorbComponent, SEITENLEISTE_MEDIEN } from './fangkorb.component';
@@ -461,7 +461,7 @@ describe('FangkorbComponent', () => {
       const liste = rechteck('.liste');
       expect(leiste.right).toBeLessThanOrEqual(liste.left);
       expect(leiste.width).toBeGreaterThan(200);
-      expect(leiste.width).toBeLessThan(240);
+      expect(leiste.width).toBeLessThanOrEqual(240);
       expect(liste.top).toBeLessThan(leiste.bottom);
       // Die Tabs untereinander, die Filter darunter
       const [erster, zweiter] = Array.from(fixture.nativeElement.querySelectorAll('[role="tab"]') as NodeListOf<HTMLElement>).map(
@@ -598,7 +598,7 @@ describe('FangkorbComponent', () => {
 
       function scheitertErstDann(...folge: Array<'fehler' | Einwurf[]>): void {
         einwurfService.fangkorbLaden.and.returnValues(
-          ...folge.map((schritt) => (schritt === 'fehler' ? throwError(() => new Error('weg')) : of(antwort(schritt)))),
+          ...folge.map((schritt) => (schritt === 'fehler' ? throwError(() => ({ status: 503 })) : of(antwort(schritt)))),
         );
         fixture = TestBed.createComponent(FangkorbComponent);
         component = fixture.componentInstance;
@@ -662,8 +662,101 @@ describe('FangkorbComponent', () => {
         tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
 
         expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(1);
-        discardPeriodicTasks();
       }));
+
+      it('sagt in der Live-Region nur den ersten Fehler und die Rueckkehr an', fakeAsync(() => {
+        scheitertErstDann('fehler', 'fehler', jeTab());
+        const region = (): HTMLElement => fixture.nativeElement.querySelector('.liste > [role="status"]');
+        expect(region().textContent!.trim()).toBe('Der Fangkorb konnte gerade nicht geladen werden.');
+        // Die Meldung mit Knopf steht ausserhalb der Region: der Wechseltext je Versuch wird nicht angesagt
+        expect(region().contains(fehlerknopf())).toBeFalse();
+        expect(fixture.nativeElement.querySelector('.fangkorb-fehler').closest('[role="status"]')).toBeNull();
+
+        tick(WIEDERHOLUNG_MS[0]);
+        fixture.detectChanges();
+        expect(region().textContent!.trim()).toBe('Der Fangkorb konnte gerade nicht geladen werden.');
+
+        tick(WIEDERHOLUNG_MS[1]);
+        fixture.detectChanges();
+        expect(region().textContent!.trim()).toBe('Fangkorb wieder geladen.');
+      }));
+
+      it('steht mit der Live-Region schon ohne Fehler im DOM, leer', () => {
+        erstellen(jeTab());
+        const region: HTMLElement = fixture.nativeElement.querySelector('.liste > [role="status"]');
+
+        expect(region).toBeTruthy();
+        expect(region.textContent!.trim()).toBe('');
+      });
+
+      it('zeigt waehrend eines Versuchs "Neuer Versuch läuft", der Knopf bleibt fokussierbar und tut nichts', () => {
+        const zweiter = new Subject<ReturnType<typeof antwort>>();
+        einwurfService.fangkorbLaden.and.returnValues(throwError(() => ({ status: 503 })), zweiter.asObservable());
+        fixture = TestBed.createComponent(FangkorbComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector('.fangkorb-fehler p').textContent).toContain('Die Seite versucht es weiter.');
+
+        fehlerknopf().focus();
+        klicken(fehlerknopf());
+
+        expect(component.erneutLaedt).toBeTrue();
+        expect(fixture.nativeElement.querySelector('.fangkorb-fehler p').textContent).toContain('Neuer Versuch läuft …');
+        expect(fehlerknopf().disabled).toBeFalse();
+        expect(fehlerknopf().getAttribute('aria-disabled')).toBe('true');
+        expect(document.activeElement).toBe(fehlerknopf());
+        klicken(fehlerknopf());
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
+
+        zweiter.next(antwort(jeTab()));
+        fixture.detectChanges();
+
+        expect(component.erneutLaedt).toBeFalse();
+        expect(fehlerknopf()).toBeNull();
+        // Der Knopf ist weg; der Fokus steht im Bereich des Tabs
+        expect(document.activeElement).toBe(fixture.nativeElement.querySelector('#fangkorb-bereich-destillieren'));
+      });
+
+      it('wiederholt bei 400 nicht von selbst, bietet aber den Knopf', fakeAsync(() => {
+        einwurfService.fangkorbLaden.and.returnValues(throwError(() => ({ status: 400 })), of(antwort(jeTab())));
+        fixture = TestBed.createComponent(FangkorbComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+
+        tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1] * 2);
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(1);
+        expect(fixture.nativeElement.querySelector('.fangkorb-fehler p').textContent).not.toContain('versucht es weiter');
+
+        klicken(fehlerknopf());
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
+        expect(karten().length).toBe(1);
+      }));
+
+      for (const [anlass, ausloesen] of [
+        ['das Netz zurueckkommt', () => window.dispatchEvent(new Event('online'))],
+        ['der Tab wieder sichtbar wird', () => document.dispatchEvent(new Event('visibilitychange'))],
+      ] as const) {
+        it(`versucht es sofort, wenn ${anlass}`, fakeAsync(() => {
+          scheitertErstDann('fehler', jeTab());
+
+          ausloesen();
+          fixture.detectChanges();
+
+          expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
+          expect(karten().length).toBe(1);
+          // Der geplante Versuch faellt weg
+          tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
+          expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
+        }));
+      }
+
+      it('laedt bei online ohne offenen Fehler nicht nach', () => {
+        erstellen(jeTab());
+
+        window.dispatchEvent(new Event('online'));
+
+        expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(1);
+      });
     });
 
     it('sagt dazu, dass nur die letzten Einwuerfe geladen sind und die Zaehler nur die meinen', () => {

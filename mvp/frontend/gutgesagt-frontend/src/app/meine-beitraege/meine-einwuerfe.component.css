@@ -24,6 +24,11 @@
   margin: 0 0 12px;
 }
 
+.erneut-versuchen[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 /* Wie im Fangkorb: die Einwurf-Karten untereinander auf dem Kartengrund */
 .karten {
   display: flex;

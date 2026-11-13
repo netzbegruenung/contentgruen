@@ -46,36 +46,45 @@ async function beispielFangkorb(page: Page): Promise<void> {
   });
 }
 
-test('Fangkorb mit Seitenleiste und queren Karten', async ({ page, bild }) => {
-  await beispielFangkorb(page);
-  await page.goto('/fangkorb');
-  const tabliste = page.getByRole('tablist', { name: 'Arbeitslisten im Fangkorb' });
-  await expect(tabliste).toHaveAttribute('aria-orientation', 'vertical');
-  await page.getByRole('tab', { name: /Destillieren/ }).click();
-  await expect(page.locator('article.karte--quer')).toHaveCount(3);
+/** Die kleinste Breite mit Seitenleiste, die Stichprobenbreite und einmal dunkel. */
+const FAELLE = [
+  { breite: 1024, schema: 'light' as const },
+  { breite: 1280, schema: 'light' as const },
+  { breite: 1280, schema: 'dark' as const },
+];
 
-  // Seitenleiste links neben der Liste, Einwerfen als Knopf darin, kein schwebender
-  const leiste = (await page.locator('.steuerung').boundingBox())!;
-  const liste = (await page.locator('.liste').boundingBox())!;
-  expect(leiste.x + leiste.width).toBeLessThanOrEqual(liste.x);
-  await expect(page.locator('.steuerung').getByRole('button', { name: 'Etwas einwerfen' })).toBeVisible();
-  await expect(page.locator('.einwerfen-fab')).toHaveCount(0);
+for (const { breite, schema } of FAELLE) {
+  test(`Fangkorb mit Seitenleiste und queren Karten, ${breite} px ${schema === 'dark' ? 'dunkel' : 'hell'}`, async ({ page, bild }) => {
+    await page.setViewportSize({ width: breite, height: 900 });
+    await page.emulateMedia({ colorScheme: schema });
+    await beispielFangkorb(page);
+    await page.goto('/fangkorb');
+    const tabliste = page.getByRole('tablist', { name: 'Arbeitslisten im Fangkorb' });
+    await expect(tabliste).toHaveAttribute('aria-orientation', 'vertical');
+    await page.getByRole('tab', { name: /Destillieren/ }).click();
+    await expect(page.locator('article.karte--quer')).toHaveCount(3);
 
-  // Quer: Meta-Zeile links neben dem Griff
-  const karte = page.locator('article.karte--quer').first();
-  const meta = (await karte.locator('.einwurf-meta').boundingBox())!;
-  const griff = (await karte.locator('.einwurf-primaer').boundingBox())!;
-  expect(meta.x + meta.width).toBeLessThanOrEqual(griff.x);
+    // Seitenleiste links neben der Liste, Einwerfen als Knopf darin, kein schwebender
+    const leiste = (await page.locator('.steuerung').boundingBox())!;
+    const liste = (await page.locator('.liste').boundingBox())!;
+    expect(leiste.x + leiste.width).toBeLessThanOrEqual(liste.x);
+    await expect(page.locator('.steuerung').getByRole('button', { name: 'Etwas einwerfen' })).toBeVisible();
+    await expect(page.locator('.einwerfen-fab')).toHaveCount(0);
 
-  // Pfeil runter waehlt die naechste Arbeitsliste
-  await page.getByRole('tab', { name: /Destillieren/ }).focus();
-  await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('tab', { name: /Ausformulieren/ })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('tab', { name: /Ausformulieren/ })).toBeFocused();
-  await expect(page.locator('article.karte--quer')).toHaveCount(2);
+    // Quer: Meta-Zeile links neben dem Griff
+    const karte = page.locator('article.karte--quer').first();
+    const meta = (await karte.locator('.einwurf-meta').boundingBox())!;
+    const griff = (await karte.locator('.einwurf-primaer').boundingBox())!;
+    expect(meta.x + meta.width).toBeLessThanOrEqual(griff.x);
 
-  expect.soft(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
-  await bild('16-fangkorb-seitenleiste', true);
-  // Naechster Lauf beginnt wieder beim Destillieren (der Tab steht in der Sitzung)
-  await page.getByRole('tab', { name: /Destillieren/ }).click();
-});
+    // Pfeil runter waehlt die naechste Arbeitsliste
+    await page.getByRole('tab', { name: /Destillieren/ }).focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByRole('tab', { name: /Ausformulieren/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab', { name: /Ausformulieren/ })).toBeFocused();
+    await expect(page.locator('article.karte--quer')).toHaveCount(2);
+
+    expect.soft(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    await bild(`16-fangkorb-seitenleiste-${breite}-${schema === 'dark' ? 'dunkel' : 'hell'}`, true);
+  });
+}

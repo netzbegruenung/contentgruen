@@ -210,15 +210,15 @@
  */
 .fangkorb--seitenleiste {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 15rem) minmax(0, 1fr);
   column-gap: 32px;
   align-items: start;
   padding-bottom: 32px;
 }
 
+/* Nicht sticky: main hat overflow: hidden, daran haengt position: sticky und wirkt
+   nicht. Das zu aendern waere ein Eingriff in den Seitenrahmen. */
 .fangkorb--seitenleiste .steuerung {
-  position: sticky;
-  top: 16px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -294,4 +294,9 @@
 .fangkorb--seitenleiste .fangkorb-leer,
 .fangkorb--seitenleiste .fangkorb-fehler {
   padding-top: 8px;
+}
+
+.erneut-versuchen[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: progress;
 }

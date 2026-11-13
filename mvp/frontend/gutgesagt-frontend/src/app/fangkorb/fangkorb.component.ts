@@ -4,6 +4,7 @@ import {
   OnDestroy,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -93,6 +94,13 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   ladefehler = false;
   /** Nach einem Ladefehler: ein neuer Versuch laeuft gerade. */
   erneutLaedt = false;
+  /** Nach einem Ladefehler: Die Seite versucht es von selbst weiter (lohntWiederholung). */
+  versuchtWeiter = false;
+  /**
+   * Was die Live-Region ansagt: nur der erste Fehler und die Rueckkehr, nicht jeder
+   * Versuch dazwischen. Die Region steht immer im DOM, damit Screenreader sie kennen.
+   */
+  ansage = '';
   /** Breit genug fuer die Seitenleiste (SEITENLEISTE_MEDIEN). */
   seitenleiste = false;
 
@@ -107,6 +115,7 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private einwurfAktionen: EinwurfAktionenService,
     private breakpoints: BreakpointObserver,
+    private host: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit(): void {
@@ -137,27 +146,45 @@ export class FangkorbComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (daten) => {
+          const nachFehler = this.ladefehler;
+          const fokusAmKnopf = this.fokusAmErneutKnopf();
           this.einwuerfe = daten.results;
           this.gesamt = daten.total_records_count;
           this.isLoading = false;
           this.ladefehler = false;
           this.erneutLaedt = false;
           this.wiederholung.erfolg();
+          if (nachFehler) {
+            this.ansage = 'Fangkorb wieder geladen.';
+          }
           this.filtern();
+          if (fokusAmKnopf) {
+            this.fokusInDieListe();
+          }
         },
         error: (error) => {
           this.logger.error('Fangkorb konnte nicht geladen werden', error);
+          if (!this.ladefehler) {
+            this.ansage = 'Der Fangkorb konnte gerade nicht geladen werden.';
+          }
           this.isLoading = false;
           this.ladefehler = true;
           this.erneutLaedt = false;
-          this.wiederholung.planen(() => this.laden());
+          this.versuchtWeiter = this.wiederholung.fehlgeschlagen(error, () => this.laden());
           this.cdr.markForCheck();
         },
       });
   }
 
-  /** "Erneut versuchen": sofort, statt auf den geplanten Versuch zu warten. */
+  /**
+   * "Erneut versuchen": sofort, statt auf den geplanten Versuch zu warten. Waehrend
+   * ein Versuch laeuft, ist der Knopf nur aria-disabled (er behaelt den Fokus) und
+   * tut nichts.
+   */
   erneutVersuchen(): void {
+    if (this.erneutLaedt) {
+      return;
+    }
     this.laden();
   }
 
@@ -259,6 +286,16 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   /** Mit ?von=fangkorb: Der Pfeil auf /einwerfen fuehrt dann hierher zurueck (app.routes.ts). */
   zumEinwerfen(): void {
     this.router.navigate(['/einwerfen'], { queryParams: { von: 'fangkorb' } });
+  }
+
+  private fokusAmErneutKnopf(): boolean {
+    return !!document.activeElement?.classList.contains('erneut-versuchen');
+  }
+
+  /** Der Knopf verschwindet mit dem Erfolg; der Fokus geht in den Bereich des Tabs. */
+  private fokusInDieListe(): void {
+    this.cdr.detectChanges();
+    this.host.nativeElement.querySelector<HTMLElement>(`#fangkorb-bereich-${this.filter.tab}`)?.focus();
   }
 
   ngOnDestroy(): void {
