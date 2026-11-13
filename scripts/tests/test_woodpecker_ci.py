@@ -543,6 +543,26 @@ def test_ci_yaml_nutzt_die_images_aus_ci_image():
         assert image == f"{repo}:latest"
 
 
+def test_ci_image_wartet_auf_ci_und_build():
+    # Nie zugleich mit den schweren Schritten; optional, weil ein Cron-Lauf beide nicht hat.
+    assert CI_IMAGE["depends_on"] == [
+        {"name": "ci", "optional": True},
+        {"name": "build", "optional": True},
+    ]
+
+
+def test_dockerfile_ci_schreibt_wohin_das_skript_liest():
+    # Ein Tippfehler hier ergaebe stillen Dauer-Rueckfall ohne rotes Signal.
+    skript = INSTALLIEREN.read_text()
+    assert "CI_DIR=${CI_IMAGE_DIR:-/opt/ci}" in skript
+    assert '"$CI_DIR/$1.sha256"' in skript
+    assert '"$CI_DIR/node_modules"' in skript
+    assert "--pruefsumme python > /opt/ci/python.sha256" in STUFEN["ci-python"]["text"]
+    node = STUFEN["ci-node"]["text"]
+    assert "--pruefsumme frontend > /opt/ci/frontend.sha256" in node
+    assert "node_modules /opt/ci/node_modules" in node
+
+
 def test_ci_image_wie_die_image_builds():
     # Plugin, Registry und Secrets wie build.yaml; nur die Build-Schritte sehen das Secret.
     build = yaml.safe_load((WURZEL / ".woodpecker" / "build.yaml").read_text())
@@ -570,11 +590,13 @@ def test_ci_image_wie_die_image_builds():
 def test_ci_image_tags_latest_und_pruefsumme():
     befehle = CI_IMAGE_SCHRITTE["ci-image-tags"]["commands"]
     for art, quelle in (("python", "python"), ("node", "frontend")):
-        assert f"printf 'latest\\n' > .ci-tags-{art}" in befehle
-        assert (
-            f"sh scripts/ci-installieren.sh --pruefsumme {quelle} | cut -c1-12"
-            f" >> .ci-tags-{art}" in befehle
-        )
+        summe = f"sh scripts/ci-installieren.sh --pruefsumme {quelle} > .ci-summe-{art}"
+        tags = [
+            f"printf 'latest\\n' > .ci-tags-{art}",
+            f"cut -c1-12 .ci-summe-{art} >> .ci-tags-{art}",
+        ]
+        # Keine Pipe hinter der Pruefsumme: ihr Fehler machte den Schritt sonst nicht rot.
+        assert befehle.index(summe) < befehle.index(tags[0]) < befehle.index(tags[1])
 
 
 def test_ci_image_baut_die_beiden_images_nacheinander():
@@ -583,7 +605,8 @@ def test_ci_image_baut_die_beiden_images_nacheinander():
         "ci-image-tags",
         {"name": "ci-python", "optional": True},
     ]
-    assert node["when"][0]["status"] == ["success", "failure"]
+    # Nicht nach rotem ci-image-tags: dann fehlte die Tag-Datei.
+    assert "status" not in node["when"][0]
 
 
 @pytest.mark.parametrize("ziel", list(CI_IMAGE_ZIELE))

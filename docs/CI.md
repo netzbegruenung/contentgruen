@@ -151,14 +151,16 @@ from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `requirements.t
 and 0.8 GB (Node) compressed in the registry; the Node image shares its base layers with
 `node:22`.
 
-- **Every run checks the image.** The image keeps the checksum under `/opt/ci/`.
+- **Every run checks the image** (in the installation step). The image keeps the checksum under `/opt/ci/`.
   `scripts/ci-installieren.sh` compares it with the checkout. If it matches, the venv is
   created with `--system-site-packages` and pip does nothing (2 s instead of about 85 s
   locally, about 2 min in CI), and `node_modules` becomes a link to `/opt/ci/node_modules`.
   If it does not match (a pull request changes `requirements.txt` or `package-lock.json`, or
   the image is behind), the step installs as without an image: pip only installs what differs
   from the packages in the image (13 s locally for one changed pin), `npm ci --prefer-offline`
-  takes what it can from the npm cache of the image. In the plain `python:3.13-slim` and
+  takes what it can from the npm cache of the image. Known price: a package that the pull
+  request removes from `requirements.txt` is still importable from the image until it is
+  rebuilt; the service image would then fail on the import, the CI not. In the plain `python:3.13-slim` and
   `node:22` images there is no checksum and everything is installed. No pull request turns
   red because the image is old.
 - **Models without offline mode.** Unlike the service image, the CI image does not set
@@ -171,8 +173,11 @@ and 0.8 GB (Node) compressed in the registry; the Node image shares its base lay
   `scripts/ci-installieren.sh`, for Node also `scripts/ci-chromium.sh`, and the workflow),
   weekly by the cron job `ci-image` (new versions within the `>=` ranges of
   `requirements.txt`, new model revisions, security updates of `python:3.13-slim`), and
-  with "Run pipeline" on `main`. The two images are built one after the other, never at
-  once. No `depends_on: [ci]`: a cron run has no `ci`.
+  with "Run pipeline" on `main`. The workflow waits for `ci` and `build` (both optional:
+  a cron run has neither, and `build` drops out when no image step matches), so it never
+  builds next to the heavy steps; if `ci` is red on `main`, it does not build and the next
+  cron run catches up. The two images are built one after the other; `ci-node` does not
+  build after a red step before it.
 - The build context is the repository root, cut down by `Dockerfile.ci.dockerignore` to the
   files the Dockerfile copies (`scripts/tests/test_woodpecker_ci.py` keeps both lists and
   the path filters equal).

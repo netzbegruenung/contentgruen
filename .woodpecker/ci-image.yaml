@@ -5,8 +5,11 @@
 # "CI images").
 # Nach einem Push auf main, der aendert, was das Image enthaelt (Pfadfilter je Schritt), dazu
 # woechentlich per Cron-Job "ci-image" (neue Paketversionen aus den >=-Bereichen, Modell-
-# revisionen, Sicherheitsupdates des Basis-Images) und manuell auf main. Kein depends_on
-# auf ci: Ein Cron-Lauf hat kein ci.
+# revisionen, Sicherheitsupdates des Basis-Images) und manuell auf main. Erst nach ci und
+# build, nie zugleich mit ihnen auf dem geteilten Runner; beide optional: Ein Cron-Lauf hat
+# keines von beiden, und build faellt weg, wenn kein Image-Schritt passt (Woodpecker
+# verwirft fehlende optionale Abhaengigkeiten, eine fehlende Pflicht-Abhaengigkeit verwirft
+# den Workflow).
 # Secrets registry_user/registry_token wie in build.yaml, zusaetzlich fuer das Event "Cron".
 when:
   - event: push
@@ -15,6 +18,12 @@ when:
     cron: ci-image
   - event: manual
     branch: main
+
+depends_on:
+  - name: ci
+    optional: true
+  - name: build
+    optional: true
 
 steps:
   # Schreibt die Tags je Image nach .ci-tags-<art>, die Build-Schritte lesen sie. Pfadfilter:
@@ -34,10 +43,13 @@ steps:
             - scripts/ci-chromium.sh
             - .woodpecker/ci-image.yaml
     commands:
+      # Erst in eine Datei, dann kuerzen: In einer Pipe ginge ein Fehler der Pruefsumme unter.
+      - sh scripts/ci-installieren.sh --pruefsumme python > .ci-summe-python
+      - sh scripts/ci-installieren.sh --pruefsumme frontend > .ci-summe-node
       - printf 'latest\n' > .ci-tags-python
-      - sh scripts/ci-installieren.sh --pruefsumme python | cut -c1-12 >> .ci-tags-python
+      - cut -c1-12 .ci-summe-python >> .ci-tags-python
       - printf 'latest\n' > .ci-tags-node
-      - sh scripts/ci-installieren.sh --pruefsumme frontend | cut -c1-12 >> .ci-tags-node
+      - cut -c1-12 .ci-summe-node >> .ci-tags-node
       - cat .ci-tags-python .ci-tags-node
 
   - name: ci-python
@@ -65,7 +77,9 @@ steps:
             - .woodpecker/ci-image.yaml
 
   # Nach ci-python, nie zugleich: Der Runner ist geteilt (docs/CI.md, "Staggered steps").
-  # Optional, weil der Pfadfilter ci-python weglassen kann; auch nach rotem ci-python.
+  # Optional, weil der Pfadfilter ci-python weglassen kann. Nach einem roten Schritt davor
+  # baut ci-node nicht (Standard status: success): Ein status: failure liesse es auch nach
+  # rotem ci-image-tags ohne Tag-Datei laufen. Der naechste Cron-Lauf holt es nach.
   - name: ci-node
     image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
     depends_on:
@@ -94,4 +108,3 @@ steps:
             - scripts/ci-installieren.sh
             - scripts/ci-chromium.sh
             - .woodpecker/ci-image.yaml
-        status: [success, failure]
