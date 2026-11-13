@@ -16,6 +16,9 @@ import { StatementService } from '../services/statement.service';
 import { routes } from '../app.routes';
 import { ohneWaechter } from '../testing/routen-ohne-waechter';
 import { StateManagementService } from '../services/state-management.service';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { TEILEN_LINK_KOPIERT, TEILEN_NAVIGATOR, TeilenNavigator } from '../shared/teilen.service';
 
 /** Die Karten, wie sie dastehen, ueber alle Gruppen und Typen. */
 function kartenIds(komponente: ResultViewComponent): string[] {
@@ -617,7 +620,10 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
 
   let fixture: ComponentFixture<ResultViewComponent>;
   let router: Router;
+  /** Das Teilen-Menue des Geraets; ohne share wie am Desktop ohne Web Share API. */
+  let nav: TeilenNavigator;
 
+  beforeEach(() => (nav = {}));
   beforeEach(() => sessionStorage.removeItem(TYPFILTER_SCHLUESSEL));
   afterEach(() => sessionStorage.removeItem(TYPFILTER_SCHLUESSEL));
 
@@ -631,6 +637,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
         provideHttpClientTesting(),
         provideRouter(ohneWaechter(routes)),
         { provide: StatementService, useValue: statementService },
+        { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
         {
           provide: BreakpointObserver,
           useValue: { observe: (query: string[]) => of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }) },
@@ -890,6 +897,60 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     const seite = await oeffnen(false, antwort({ k: [direkt('commentary', 'k-1', 0.6)] }));
     expect(seite.querySelector('.kopfband')).toBeNull();
     expect(texte(seite, '.gruppe > h2 .gruppe-label')).toEqual(['Passt zu deinem Suchtext']);
+  });
+
+  describe('Ergebnis teilen (B7)', () => {
+    const LINK = `${window.location.origin}/result?searchQuery=windraeder%20voegel`;
+
+    it('steht im Kopfband, mit der erkannten Aussage im Namen', async () => {
+      const seite = await oeffnen(true, GEMISCHT());
+      const knopf = seite.querySelector<HTMLButtonElement>('.kopfband .ergebnis-teilen')!;
+      expect(knopf.tagName).toBe('BUTTON');
+      expect(text(knopf)).toContain('Ergebnis teilen');
+      expect(knopf.getAttribute('aria-label')).toBe(`Ergebnis teilen: Antworten auf „${ERKANNT}“`);
+      expect(seite.querySelector('.ergebnis-teilen-leiste')).toBeNull();
+    });
+
+    it('oeffnet mobil das Teilen-Menue mit dem Link auf die Suche und zaehlt keine Nutzung', async () => {
+      const seite = await oeffnen(true, GEMISCHT());
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+
+      seite.querySelector<HTMLButtonElement>('.ergebnis-teilen')!.click();
+      await fixture.whenStable();
+
+      expect(nav.share).toHaveBeenCalledOnceWith({ url: LINK, text: `Antworten auf: „${ERKANNT}“` });
+      TestBed.inject(HttpTestingController).expectNone((r) => r.url.includes('/usage'));
+    });
+
+    it('kopiert am Desktop den Link und sagt es', async () => {
+      await oeffnen(false, GEMISCHT());
+      const kopieren = spyOn(TestBed.inject(Clipboard), 'copy').and.returnValue(true);
+      const snack = spyOn(TestBed.inject(MatSnackBar), 'open');
+
+      await fixture.componentInstance.ergebnisTeilen();
+
+      expect(kopieren).toHaveBeenCalledOnceWith(LINK);
+      expect(snack.calls.mostRecent().args[0]).toBe(TEILEN_LINK_KOPIERT);
+    });
+
+    it('meldet nichts, wenn das Teilen abgebrochen wird', async () => {
+      await oeffnen(true, GEMISCHT());
+      nav.share = jasmine.createSpy('share').and.rejectWith(new DOMException('abgebrochen', 'AbortError'));
+      const kopieren = spyOn(TestBed.inject(Clipboard), 'copy');
+      const snack = spyOn(TestBed.inject(MatSnackBar), 'open');
+
+      await fixture.componentInstance.ergebnisTeilen();
+
+      expect(kopieren).not.toHaveBeenCalled();
+      expect(snack).not.toHaveBeenCalled();
+    });
+
+    it('steht ohne erkannte Aussage oben ueber den Treffern und nennt den Suchtext', async () => {
+      const seite = await oeffnen(false, antwort({ k: [direkt('commentary', 'k-1', 0.6)] }));
+      const knopf = seite.querySelector<HTMLButtonElement>('.ergebnis-teilen-leiste .ergebnis-teilen')!;
+      expect(knopf.getAttribute('aria-label')).toBe('Ergebnis teilen: Antworten auf „windraeder voegel“');
+      expect(knopf.compareDocumentPosition(seite.querySelector('.typ-chips')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
   });
 
   it('nennt ohne erkannte Aussage jede Aussage in ihrer Gruppe', async () => {

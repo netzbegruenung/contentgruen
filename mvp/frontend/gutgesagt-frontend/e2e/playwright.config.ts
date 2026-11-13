@@ -37,8 +37,13 @@ export default defineConfig({
       testMatch: /12-ergebnisseite\.spec\.ts/,
     },
     {
+      // Teilen (B7) mit gemocktem /api (route.fulfill): ohne Sitzung, je 390 und 1280 px im Spec.
+      name: 'teilen',
+      testMatch: /13-teilen\.spec\.ts/,
+    },
+    {
       name: 'mobil-360',
-      testIgnore: /(stichproben|besucher|fangkorb-desktop|12-ergebnisseite)\.spec\.ts/,
+      testIgnore: /(stichproben|besucher|fangkorb-desktop|12-ergebnisseite|13-teilen)\.spec\.ts/,
       dependencies: ['setup'],
       use: {
         ...devices['Pixel 5'],

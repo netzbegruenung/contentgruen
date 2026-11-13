@@ -454,6 +454,29 @@ mat-sidenav-content {
   border-radius: var(--border-radius-medium, 10px);
 }
 
+.kopfband-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs) var(--spacing-md);
+}
+
+.kopfband-teilen {
+  margin-top: var(--spacing-sm);
+}
+
+.ergebnis-teilen-leiste {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Ziel mindestens 44 px (B7) */
+.ergebnis-teilen {
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
 .kopfband-label {
   margin: 0;
   font-size: 14px;

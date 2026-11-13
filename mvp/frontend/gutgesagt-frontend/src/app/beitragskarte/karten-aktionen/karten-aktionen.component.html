@@ -44,22 +44,29 @@
         </button>
     </div>
 
-    <button mat-icon-button type="button" class="menue-knopf"
-            [matMenuTriggerFor]="menue"
-            [aria-disabled]="vorschau"
-            [tabIndex]="vorschau ? -1 : undefined"
-            aria-label="Mehr Optionen"
-            matTooltip="Mehr Optionen" matTooltipPosition="above">
-        <mat-icon>more_vert</mat-icon>
-    </button>
+    <div class="rechts">
+        <!-- Teilen (B7, docs/VISION.md): mobil das Teilen-Menue des Geraets, sonst Link kopieren.
+             Nicht auf der Beitragsseite, dort steht der Knopf unter der Karte. -->
+        <button mat-icon-button type="button" class="teilen-knopf" *ngIf="ansichtVerlinkt"
+                [aria-disabled]="vorschau"
+                [tabIndex]="vorschau ? -1 : undefined"
+                [attr.aria-label]="teilenBeschriftung"
+                matTooltip="Teilen" matTooltipPosition="above"
+                (click)="teilen()">
+            <mat-icon aria-hidden="true">share</mat-icon>
+        </button>
+        <button mat-icon-button type="button" class="menue-knopf"
+                [matMenuTriggerFor]="menue"
+                [aria-disabled]="vorschau"
+                [tabIndex]="vorschau ? -1 : undefined"
+                aria-label="Mehr Optionen"
+                matTooltip="Mehr Optionen" matTooltipPosition="above">
+            <mat-icon>more_vert</mat-icon>
+        </button>
+    </div>
 
     <mat-menu #menue="matMenu">
-        <!-- Zum Teilen ganz oben (#640, R48); nicht auf der Beitragsseite, dort steht der Knopf unter der Karte -->
-        <button mat-menu-item type="button" class="link-kopieren" *ngIf="ansichtVerlinkt && inhaltId && !vorschau"
-                (click)="linkKopieren()">
-            <mat-icon>link</mat-icon>
-            <span>Link kopieren</span>
-        </button>
+        <!-- "Link kopieren" (#640, R48) ist im Knopf "Teilen" aufgegangen: Ohne Teilen-Menue kopiert er den Link -->
         <button mat-menu-item type="button" class="zweite-kopie" *ngIf="zweiteKopie as zweite" (click)="zweiteKopieren()">
             <mat-icon>content_copy</mat-icon>
             <span>{{ zweite.wort }}</span>

@@ -21,6 +21,7 @@ import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { StatementSearchResult } from '../services/dtos/statementDtos';
+import { TeilenService, sucheLink } from '../shared/teilen.service';
 import {
   AnsichtGruppe,
   ErgebnisGruppe,
@@ -243,7 +244,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private breakpointObserver: BreakpointObserver,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private teilenService: TeilenService,
   ) {
     this.searchQuery$ = this.stateService.searchQuery$;
     this.searchResponse$ = this.stateService.searchResults$;
@@ -369,6 +371,30 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     Promise.resolve().then(() => {
       this.alternativen = aussagen.slice(0, ALTERNATIVEN_IM_KOPFBAND);
       this.cdr.markForCheck();
+    });
+  }
+
+  /** Wovon das geteilte Ergebnis handelt: die erkannte Aussage, sonst der Suchtext. */
+  private get geteilteAussage(): string {
+    return (this.erkannt?.text || this.searchQuery).trim();
+  }
+
+  get ergebnisTeilenBeschriftung(): string {
+    return `Ergebnis teilen: Antworten auf „${this.geteilteAussage}“`;
+  }
+
+  /**
+   * "Ergebnis teilen" (B7, docs/VISION.md): der Link auf diese Suche, mobil ueber das
+   * Teilen-Menue, sonst in die Zwischenablage. Zaehlt nicht als Nutzung, es ist keine
+   * Karte (VISION: "eine Ergebnisseite teilen ... zaehlt nicht").
+   */
+  async ergebnisTeilen(): Promise<void> {
+    if (!this.searchQuery.trim()) {
+      return;
+    }
+    await this.teilenService.teilen({
+      url: sucheLink(this.searchQuery),
+      text: `Antworten auf: „${this.geteilteAussage}“`,
     });
   }
 

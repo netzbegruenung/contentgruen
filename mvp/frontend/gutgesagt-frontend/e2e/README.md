@@ -5,7 +5,9 @@ einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort
 Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz
 sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seiten und ohne
 Umleitung bei einem 401 der Suche), den Aufruf eines Beitrags per Direktlink und die Darstellung bei
-360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur). Nicht in CI: Die Tests brauchen den vollen Stack.
+360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur). Teilen (`13-teilen`, Projekt `teilen`: Karte, Beitragsseite, „Ergebnis teilen“, mobil mit
+nachgebautem `navigator.share`, am Desktop Zwischenablage) mockt jede Anfrage an `/api`
+(`route.fulfill`) und braucht nur ein `ng serve` über `E2E_BASE_URL`. Nicht in CI: Die Tests brauchen den vollen Stack.
 
 ## Starten
 

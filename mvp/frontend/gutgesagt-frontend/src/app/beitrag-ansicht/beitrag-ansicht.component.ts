@@ -1,4 +1,3 @@
-import { Clipboard } from '@angular/cdk/clipboard';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -7,7 +6,6 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, of } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
@@ -17,7 +15,9 @@ import { AussageKurz, ContentService, WeitereAntwort } from '../services/content
 import { BeitragKontextComponent } from './beitrag-kontext.component';
 import { LoggingService } from '../services/logging.service';
 import { ROUTES } from '../shared/constants/app.constants';
-import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../shared/beitrags-link';
+import { beitragsLink } from '../shared/beitrags-link';
+import { TeilenService, hatGeteilt } from '../shared/teilen.service';
+import { UsageTrackingService } from '../services/usage-tracking.service';
 
 type Zustand = 'laedt' | 'da' | 'nichtDa' | 'stoerung';
 
@@ -41,7 +41,7 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
  * die eigene Stimme mit (user_vote), sonst zeigte die Karte eine falsche.
  * Gesperrte und geloeschte Beitraege gibt es hier fuer niemanden (404).
  *
- * Unter der Karte "Link kopieren" zum Teilen der Adresse, die Aussage, auf die der
+ * Unter der Karte "Teilen" (B7, vorher "Link kopieren"), die Aussage, auf die der
  * Beitrag antwortet, und weitere Antworten zu ihr (#603, app-beitrag-kontext); der
  * Endpunkt liefert Aussage und Antworten mit.
  */
@@ -69,9 +69,9 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
       <app-beitrag-kontext *ngIf="karte" [aussage]="kontext.aussage"
                            [weitere]="kontext.weitere"></app-beitrag-kontext>
       <div *ngIf="karte" class="weiter">
-        <button mat-stroked-button type="button" class="link-kopieren" (click)="linkKopieren()">
-          <mat-icon aria-hidden="true">link</mat-icon>
-          Link kopieren
+        <button mat-stroked-button type="button" class="teilen" (click)="teilen()">
+          <mat-icon aria-hidden="true">share</mat-icon>
+          Teilen
         </button>
       </div>
 
@@ -132,8 +132,8 @@ export class BeitragAnsichtComponent implements OnInit {
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
     private destroyRef: DestroyRef,
-    private clipboard: Clipboard,
-    private snackBar: MatSnackBar,
+    private teilenService: TeilenService,
+    private usageTracking: UsageTrackingService,
   ) {}
 
   ngOnInit(): void {
@@ -157,13 +157,23 @@ export class BeitragAnsichtComponent implements OnInit {
       });
   }
 
-  /** Kopiert die Adresse des Beitrags; zaehlt nicht als Nutzung, das tut nur Kopieren des Textes. */
-  linkKopieren(): void {
-    if (!this.id) {
+  /**
+   * Teilt den Beitrag (B7): mobil das Teilen-Menue mit Text und Link, sonst den Link in
+   * die Zwischenablage. Zaehlt wie Teilen an der Karte als Nutzung (docs/VISION.md,
+   * Teilen); ein Abbruch zaehlt nicht.
+   */
+  async teilen(): Promise<void> {
+    if (!this.id || !this.karte) {
       return;
     }
-    const kopiert = this.clipboard.copy(beitragsLink(this.id));
-    this.snackBar.open(kopiert ? LINK_KOPIERT : LINK_NICHT_KOPIERT, undefined, { duration: 3000 });
+    const ergebnis = await this.teilenService.teilen({
+      url: beitragsLink(this.id),
+      text: this.karte.text ?? undefined,
+      titel: this.karte.titel ?? undefined,
+    });
+    if (hatGeteilt(ergebnis)) {
+      this.usageTracking.trackContentUsage(this.id);
+    }
   }
 
   private laden(id: string): Observable<{ zustand: Zustand; karte: KartenDaten | null; kontext: Kontext }> {

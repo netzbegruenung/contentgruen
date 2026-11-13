@@ -38,6 +38,7 @@
 }
 
 .stimme-knopf,
+.teilen-knopf,
 .menue-knopf {
   width: 40px;
   height: 40px;
@@ -64,8 +65,12 @@
   color: white !important;
 }
 
-.menue-knopf {
+// Teilen und ⋮ rechts nebeneinander; der Kopieren-Knopf bleibt in der Mitte der Hauptknopf
+.rechts {
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .kopieren {
@@ -96,6 +101,17 @@
   .aktionen {
     gap: var(--spacing-sm);
     padding: var(--spacing-sm);
+  }
+
+  // Ziele am Handy mindestens 44 px (B7); die Stimm-Knoepfe bleiben, wie sie sind
+  .teilen-knopf,
+  .menue-knopf {
+    width: 44px;
+    height: 44px;
+  }
+
+  .rechts {
+    gap: 0;
   }
 
   .kopieren-knopf {

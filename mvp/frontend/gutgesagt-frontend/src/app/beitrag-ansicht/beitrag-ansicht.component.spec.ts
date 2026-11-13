@@ -3,10 +3,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 
-import { Clipboard } from '@angular/cdk/clipboard';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { BeitragAnsichtComponent } from './beitrag-ansicht.component';
-import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../shared/beitrags-link';
+import { beitragsLink } from '../shared/beitrags-link';
+import { TeilenService } from '../shared/teilen.service';
+import { UsageTrackingService } from '../services/usage-tracking.service';
 import { BeitragAnsicht, ContentService } from '../services/content.service';
 import { LoggingService } from '../services/logging.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -16,8 +16,8 @@ describe('BeitragAnsichtComponent', () => {
   let fixture: ComponentFixture<BeitragAnsichtComponent>;
   let contentService: jasmine.SpyObj<ContentService>;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
-  let clipboard: jasmine.SpyObj<Clipboard>;
-  let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let teilenService: jasmine.SpyObj<TeilenService>;
+  let usage: jasmine.SpyObj<UsageTrackingService>;
 
   function beitrag(felder: Partial<BeitragAnsicht> = {}): BeitragAnsicht {
     return {
@@ -35,9 +35,9 @@ describe('BeitragAnsichtComponent', () => {
     contentService = jasmine.createSpyObj('ContentService', ['beitragLaden']);
     contentService.beitragLaden.and.returnValue(antwort);
     params = new BehaviorSubject(convertToParamMap({ id }));
-    clipboard = jasmine.createSpyObj('Clipboard', ['copy']);
-    clipboard.copy.and.returnValue(true);
-    snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+    teilenService = jasmine.createSpyObj('TeilenService', ['teilen']);
+    teilenService.teilen.and.resolveTo('geteilt');
+    usage = jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']);
 
     await TestBed.configureTestingModule({
       imports: [BeitragAnsichtComponent],
@@ -45,8 +45,8 @@ describe('BeitragAnsichtComponent', () => {
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: params.asObservable() } },
         { provide: ContentService, useValue: contentService },
-        { provide: Clipboard, useValue: clipboard },
-        { provide: MatSnackBar, useValue: snackBar },
+        { provide: TeilenService, useValue: teilenService },
+        { provide: UsageTrackingService, useValue: usage },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn', 'error']) },
       ],
     })
@@ -137,35 +137,49 @@ describe('BeitragAnsichtComponent', () => {
     });
   });
 
-  describe('Link kopieren (#603)', () => {
+  describe('Teilen (B7, vorher Link kopieren #603)', () => {
     function knopf(): HTMLButtonElement | null {
-      return fixture.nativeElement.querySelector('button.link-kopieren');
+      return fixture.nativeElement.querySelector('button.teilen');
     }
 
     it('baut die Adresse aus Origin und ID', () => {
       expect(beitragsLink('b-1', 'https://gutgesagt.example')).toBe('https://gutgesagt.example/beitrag/b-1');
     });
 
-    it('kopiert die Adresse des Beitrags und sagt es', async () => {
+    it('teilt Text, Titel und Adresse des Beitrags und zaehlt das als Nutzung', async () => {
       await oeffnen(of(beitrag()), 'b-7');
       knopf()!.click();
-      expect(clipboard.copy).toHaveBeenCalledWith(beitragsLink('b-7'));
-      expect(snackBar.open).toHaveBeenCalledWith(LINK_KOPIERT, undefined, jasmine.anything());
+      await fixture.whenStable();
+      expect(teilenService.teilen).toHaveBeenCalledWith({
+        url: beitragsLink('b-7'),
+        text: 'Text',
+        titel: 'Wärmepumpe lohnt sich auch im Altbau',
+      });
+      expect(usage.trackContentUsage).toHaveBeenCalledOnceWith('b-7');
     });
 
-    it('sagt, wenn das Kopieren nicht geklappt hat', async () => {
+    it('zaehlt auch den kopierten Link als Nutzung (Desktop)', async () => {
+      teilenService.teilen.and.resolveTo('kopiert');
+      await oeffnen(of(beitrag()), 'b-7');
+      await fixture.componentInstance.teilen();
+      expect(usage.trackContentUsage).toHaveBeenCalledOnceWith('b-7');
+    });
+
+    it('zaehlt nach Abbruch oder Fehlschlag nicht', async () => {
       await oeffnen(of(beitrag()));
-      clipboard.copy.and.returnValue(false);
-      knopf()!.click();
-      expect(snackBar.open).toHaveBeenCalledWith(LINK_NICHT_KOPIERT, undefined, jasmine.anything());
+      teilenService.teilen.and.resolveTo('abgebrochen');
+      await fixture.componentInstance.teilen();
+      teilenService.teilen.and.resolveTo('fehlgeschlagen');
+      await fixture.componentInstance.teilen();
+      expect(usage.trackContentUsage).not.toHaveBeenCalled();
     });
 
-    it('kopiert nach einem Wechsel die neue Adresse', async () => {
+    it('teilt nach einem Wechsel die neue Adresse', async () => {
       await oeffnen(of(beitrag()), 'b-1');
       params.next(convertToParamMap({ id: 'b-2' }));
       fixture.detectChanges();
       knopf()!.click();
-      expect(clipboard.copy).toHaveBeenCalledWith(beitragsLink('b-2'));
+      expect(teilenService.teilen).toHaveBeenCalledWith(jasmine.objectContaining({ url: beitragsLink('b-2') }));
     });
 
     it('fehlt ohne Beitrag', async () => {

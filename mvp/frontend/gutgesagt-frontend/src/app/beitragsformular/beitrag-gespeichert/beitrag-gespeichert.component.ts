@@ -1,6 +1,4 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
-import { Clipboard } from '@angular/cdk/clipboard';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -25,6 +23,7 @@ import {
   herkunftAus,
 } from './gespeichert-adresse';
 import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
+import { TeilenService } from '../../shared/teilen.service';
 
 /** Beitragstypen, fuer die es die Ergebnisseite gibt. */
 export type GespeichertTyp = FormularTyp;
@@ -95,7 +94,7 @@ export class BeitragGespeichertComponent implements OnInit {
   einwurfEigen: boolean | null = null;
   readonly zustand: GespeichertZustand;
   readonly aussageKopf: KartenDaten | null;
-  /** Die ID aus der Adresse, fuer "Link kopieren". */
+  /** Die ID aus der Adresse, fuer "Teilen". */
   private beitragId = '';
 
   constructor(
@@ -106,8 +105,7 @@ export class BeitragGespeichertComponent implements OnInit {
     private uebergabe: DestillierUebergabeService,
     private einwurfService: EinwurfService,
     private logger: LoggingService,
-    private clipboard: Clipboard,
-    private snackBar: MatSnackBar,
+    private teilenService: TeilenService,
   ) {
     // Der State haengt an der laufenden Navigation; nach dem Neuladen gibt es keinen.
     this.zustand = (this.router.getCurrentNavigation()?.extras.state as GespeichertZustand | undefined) ?? {};
@@ -221,13 +219,20 @@ export class BeitragGespeichertComponent implements OnInit {
     }
   }
 
-  /** Die eigene Adresse des Beitrags (/beitrag/:id, oeffentlich) zum Teilen. */
-  linkKopieren(): void {
+  /**
+   * Den eigenen neuen Beitrag teilen (B7, vorher "Link kopieren", #617): mobil das
+   * Teilen-Menue mit Text und Link auf die Beitragsseite (/beitrag/:id, oeffentlich),
+   * sonst der Link in die Zwischenablage. Keine Nutzung: Es ist der eigene Beitrag.
+   */
+  async teilen(): Promise<void> {
     if (!this.beitragId) {
       return;
     }
-    const kopiert = this.clipboard.copy(beitragLink(this.beitragId));
-    this.snackBar.open(kopiert ? 'Link kopiert.' : 'Kopieren hat nicht geklappt.', undefined, { duration: 3000 });
+    await this.teilenService.teilen({
+      url: beitragLink(this.beitragId),
+      text: this.karte?.text ?? undefined,
+      titel: this.karte?.titel ?? undefined,
+    });
   }
 
   /**
