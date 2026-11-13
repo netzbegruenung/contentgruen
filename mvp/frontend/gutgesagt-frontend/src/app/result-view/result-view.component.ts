@@ -428,13 +428,23 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: per ID, wo
-   * die Suchantwort sie liefert, sonst mit dem Suchtext.
+   * Ins Formular des Typs, als Antwort auf die erkannte Aussage, wo es eine mit ID gibt,
+   * sonst auf die Aussage der Suche per ID, sonst mit dem Suchtext. Die erkannte zuerst:
+   * Legt die Suche eine eigene Aussage an (dieselbe Behauptung in anderen Worten),
+   * liefert getById sie Nicht-Admins nicht aus (#436), und die Antwort landete an einer
+   * Fast-Dublette statt an der Aussage, die das Kopfband nennt (#680).
    */
   navigateToContribute(typ: 'commentary' | 'generictext'): void {
     const { searchResults, loading } = this.stateService.currentState;
     // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
-    const ausAntwort = !loading && istAussageId(searchResults?.statement_id) ? searchResults!.statement_id : null;
+    const erkannt = this.erkannt?.id;
+    const ausAntwort = loading
+      ? null
+      : istAussageId(erkannt)
+        ? erkannt
+        : istAussageId(searchResults?.statement_id)
+          ? searchResults!.statement_id
+          : null;
     this.router.navigate([FORMULAR_PFAD[typ]], {
       queryParams: aussageParameterMitText(ausAntwort, this.searchQuery),
     });

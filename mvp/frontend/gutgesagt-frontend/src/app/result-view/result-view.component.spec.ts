@@ -409,9 +409,11 @@ describe('ResultViewComponent: Nicht dabei?', () => {
     expect(unten.textContent).toContain('Nicht dabei?');
     expect(aehnliche(unten)).toEqual(['Wärmepumpen lohnen sich nicht']);
 
+    // "Schreib selbst einen Kommentar zu dieser Aussage": die der Treffer, nicht die
+    // der Suche (getById liefert eine eigene Suchanfrage Nicht-Admins nicht aus, #436).
     unten.querySelector<HTMLButtonElement>('.neu-anlegen-knopf button')!.click();
     tick();
-    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${TREFFER_AUSSAGE}&searchQuery=waermepumpe%20teuer`);
   }));
 
   it('sucht mit einem Klick auf eine aehnliche Aussage nach ihr', fakeAsync(() => {
@@ -1028,6 +1030,32 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     unten().click();
     expect(navigieren.calls.mostRecent().args[0]).toEqual(['/workflow/add-generictext']);
   }));
+
+  for (const mobil of [false, true]) {
+    it(`antwortet mit "Antworten" auf die erkannte Aussage, nicht auf die der Suche (${mobil ? 'Handy' : 'Desktop'})`, async () => {
+      // Die Suche hat eine eigene Aussage angelegt (11111111-...), die getById Nicht-Admins
+      // nicht ausliefert (#436); gefunden wurde ueber die erkannte (#680).
+      const seite = await oeffnen(mobil, GEMISCHT());
+      const navigieren = spyOn(router, 'navigate').and.resolveTo(true);
+      const erwartet = [['/workflow/add-commentary'], { queryParams: { aussage: ERKANNT_ID, searchQuery: 'windraeder voegel' } }];
+
+      seite.querySelector<HTMLButtonElement>('.typ-leiste .ergaenzen-link')!.click();
+      expect(navigieren.calls.mostRecent().args).toEqual(erwartet as any);
+      seite.querySelector<HTMLButtonElement>('.nicht-dabei-unten .neu-anlegen-knopf button')!.click();
+      expect(navigieren.calls.mostRecent().args).toEqual(erwartet as any);
+    });
+  }
+
+  it('antwortet ohne erkannte Aussage auf die der Suche', async () => {
+    await oeffnen(false, antwort({ k: [direkt('commentary', 'k-1', 0.6)] }));
+    const navigieren = spyOn(router, 'navigate').and.resolveTo(true);
+
+    fixture.componentInstance.navigateToContribute('generictext');
+
+    expect(navigieren).toHaveBeenCalledWith(['/workflow/add-generictext'], {
+      queryParams: { aussage: '11111111-2222-4333-8444-555555555555', searchQuery: 'windraeder voegel' },
+    });
+  });
 
   it('zeigt unter den Treffern "Nicht dabei?" und danach den ruhigen Rat', async () => {
     const seite = await oeffnen(true, GEMISCHT());
