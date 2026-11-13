@@ -1,7 +1,10 @@
 .einwurf-container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: var(--spacing-lg, 24px);
+    /* Seitenrahmen wie alle Seiten (styles.css), das Formular linksbuendig als Lesespalte */
+    padding: var(--spacing-lg, 24px) var(--page-margin);
+}
+
+.einwurf-container > * {
+    max-width: var(--lesespalte);
 }
 
 .einwurf-kopf {
@@ -137,7 +140,7 @@
 
 @media (max-width: 768px) {
     .einwurf-container {
-        padding: var(--spacing-md, 16px);
+        padding: var(--spacing-md, 16px) var(--page-margin);
     }
 
     .einwurf-aktionen button {

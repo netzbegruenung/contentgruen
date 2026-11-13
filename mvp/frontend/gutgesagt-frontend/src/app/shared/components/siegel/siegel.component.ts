@@ -6,9 +6,11 @@ import {
   OnChanges,
   OnDestroy,
   SimpleChanges,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+import { FarbschemaService } from '../../../services/farbschema.service';
 import { HAND, SCHATTEN } from '../../marke/hand';
 import { normierteGuete, siegelFarbe, siegelText, siegelWinkel } from './siegel-zeichnung';
 
@@ -57,26 +59,17 @@ export class SiegelComponent implements OnChanges, OnDestroy {
   funken: { dx: number; dy: number }[] = [];
   private funkenTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Dunkelmodus des Geräts (#588): Das Siegel endet dann in Klee statt Tannengrün. */
-  private dunkel = false;
-  private readonly dunkelAbfrage: MediaQueryList | null =
-    typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
-  private readonly dunkelGeaendert = (e: MediaQueryListEvent): void => {
-    this.dunkel = e.matches;
-    this.cdr.markForCheck();
-  };
+  /** Dunkelmodus (#588): Das Siegel endet dann in Klee statt Tannengrün. Ein Signal, OnPush zeichnet bei Wechsel neu. */
+  private readonly farbschema = inject(FarbschemaService);
 
-  constructor(private readonly cdr: ChangeDetectorRef) {
-    this.dunkel = this.dunkelAbfrage?.matches ?? false;
-    this.dunkelAbfrage?.addEventListener?.('change', this.dunkelGeaendert);
-  }
+  constructor(private readonly cdr: ChangeDetectorRef) {}
 
   get winkel(): number {
     return siegelWinkel(this.guete);
   }
 
   get farbe(): string {
-    return siegelFarbe(this.guete, this.dunkel);
+    return siegelFarbe(this.guete, this.farbschema.dunkel());
   }
 
   get text(): string {
@@ -93,7 +86,6 @@ export class SiegelComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.funkenTimer) clearTimeout(this.funkenTimer);
-    this.dunkelAbfrage?.removeEventListener?.('change', this.dunkelGeaendert);
   }
 
   private funkeln(): void {

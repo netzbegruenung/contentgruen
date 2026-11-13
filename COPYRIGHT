@@ -25,3 +25,12 @@ The stemmer in mvp/backend/semantic-search-service/app/utils/german_stemmer.py f
 the CISTEM reference implementation (https://github.com/LeonieWeissweiler/CISTEM),
 Copyright (c) 2017 Leonie Weißweiler, used under the MIT License, modified. The license
 text is in mvp/backend/semantic-search-service/app/utils/CISTEM-LIZENZ.txt.
+
+The fonts in mvp/frontend/gutgesagt-frontend/public/fonts/ include Roboto
+(roboto-latin.woff2, roboto-latin-ext.woff2; https://github.com/googlefonts/roboto-classic),
+Copyright 2011 The Roboto Project Authors, used under the SIL Open Font License 1.1,
+unmodified, and Material Icons (material-icons.woff2;
+https://github.com/google/material-design-icons), Copyright 2018 Google, Inc., used under
+the Apache License 2.0, unmodified. The license texts are in
+mvp/frontend/gutgesagt-frontend/public/fonts/ROBOTO-LIZENZ.txt and
+mvp/frontend/gutgesagt-frontend/public/fonts/MATERIAL-ICONS-LIZENZ.txt.
