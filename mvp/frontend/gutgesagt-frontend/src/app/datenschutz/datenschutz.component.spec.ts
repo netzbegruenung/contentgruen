@@ -3,7 +3,6 @@ import { provideRouter } from '@angular/router';
 
 import { abschnitt as abschnittIn, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
-import { LETZTER_BESUCH_AN } from '../shared/geraetespeicher-schalter';
 
 /**
  * Die Datenschutzerklaerung beschreibt, was die App tut (#222). Geprueft wird der Text,
@@ -712,27 +711,6 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Für das Einbinden und damit für die Übermittlung deiner IP-Adresse an den fremden Server sind wir mitverantwortlich');
       expect(text).toContain('was der fremde Server danach mit den Daten macht, verantwortet sein Betreiber');
       expect(ganzerText()).not.toContain('Diesen Abruf richtet dein Browser aus, nicht wir');
-    });
-  });
-
-  describe('„Seit deinem letzten Besuch“ (Schalter, Entscheidung 13.11.)', () => {
-    it('nennt den Merker nicht, solange er ausgeschaltet ist', () => {
-      expect(seite.querySelector('.letzter-besuch')).toBeNull();
-      expect(ganzerText()).not.toContain('wann du die Startseite zuletzt geöffnet hast');
-    });
-
-    it('nennt ihn mit eingeschaltetem Merker', async () => {
-      TestBed.resetTestingModule();
-      await TestBed.configureTestingModule({
-        imports: [DatenschutzComponent],
-        providers: [provideRouter([]), { provide: LETZTER_BESUCH_AN, useValue: true }],
-      }).compileComponents();
-      const fixture = TestBed.createComponent(DatenschutzComponent);
-      fixture.detectChanges();
-      const absatz = normalisiert((fixture.nativeElement as HTMLElement).querySelector('.letzter-besuch')!.textContent);
-
-      expect(absatz).toContain('wann du die Startseite zuletzt geöffnet hast');
-      expect(absatz).toContain('bis du dich abmeldest oder deine Art.-9-Einwilligung widerrufst');
     });
   });
 });

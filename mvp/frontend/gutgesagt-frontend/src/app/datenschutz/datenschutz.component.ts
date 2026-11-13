@@ -1,10 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterModule } from '@angular/router';
 import { LEGAL_ENTITY } from '../shared/legal-entity';
-import { LETZTER_BESUCH_AN } from '../shared/geraetespeicher-schalter';
 
 @Component({
   selector: 'app-datenschutz',
@@ -21,8 +20,6 @@ import { LETZTER_BESUCH_AN } from '../shared/geraetespeicher-schalter';
 export class DatenschutzComponent {
   readonly VEREIN = LEGAL_ENTITY;
   readonly KONTAKT_MAIL = LEGAL_ENTITY.KONTAKT_MAIL;
-  /** Der Absatz zu „Seit deinem letzten Besuch“ steht nur da, wenn der Merker an ist. */
-  readonly letzterBesuchAktiv = inject(LETZTER_BESUCH_AN);
 
   // Der Datenschutzbeauftragte ist ueber die Vereinsadresse erreichbar, nicht privat.
   readonly DSB_KONTAKT = `Sven Seeberg, erreichbar über ${LEGAL_ENTITY.KONTAKT_MAIL}`;

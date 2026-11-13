@@ -76,6 +76,10 @@ export interface GepostetAntwort {
 
 export interface BesuchResponse {
   nutzung_seit_letztem_besuch: number;
+  /** Einwürfe anderer seit dem zuletzt gesehenen Stand (Zählerstand, kein Zeitpunkt). */
+  neue_einwuerfe?: number;
+  /** Wie viele Aussagen „Hier fehlt eine Antwort“ gerade zeigt; kein Stand, nicht „neu“. */
+  unbeantwortete_aussagen?: number;
 }
 
 export interface TrendingContent {
@@ -359,11 +363,11 @@ export class UsageTrackingService {
   }
 
   /**
-   * Die Zahl aus dem letzten besuchMelden dieses App-Starts; null, solange keine da ist.
+   * Die Antwort des letzten besuchMelden dieses App-Starts; null, solange keine da ist.
    * Die Startseite zeigt sie in „Seit deinem letzten Besuch“, ohne selbst zu fragen:
-   * Eine zweite Frage schriebe den gezeigten Stand fort und ergaebe 0.
+   * Eine zweite Frage schriebe die gesehenen Stände fort und ergaebe 0.
    */
-  readonly nutzungSeitLetztemBesuch$ = new BehaviorSubject<number | null>(null);
+  readonly besuchStand$ = new BehaviorSubject<BesuchResponse | null>(null);
 
   /**
    * Meldet einen Besuch der angemeldeten Person und liefert, wie oft ihre Beitraege
@@ -374,12 +378,12 @@ export class UsageTrackingService {
    * @returns Observable mit der Zahl, bei einem Fehler null
    */
   besuchMelden(): Observable<number | null> {
-    // Ein neuer Besuch (auch nach einem Kontowechsel): Die alte Zahl gilt nicht mehr.
-    this.nutzungSeitLetztemBesuch$.next(null);
+    // Ein neuer Besuch (auch nach einem Kontowechsel): Der alte Stand gilt nicht mehr.
+    this.besuchStand$.next(null);
     return this.http.post<BesuchResponse>(`${this.apiUrl}/users/me/besuch`, {})
       .pipe(
+        tap(antwort => this.besuchStand$.next(antwort)),
         map(antwort => antwort.nutzung_seit_letztem_besuch),
-        tap(anzahl => this.nutzungSeitLetztemBesuch$.next(anzahl)),
         catchError(error => {
           this.loggingService.error('Besuch nicht gemeldet', error);
           return of(null);

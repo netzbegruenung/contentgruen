@@ -181,7 +181,7 @@ Die Stelle in eckigen Klammern im Text eines Beitrags, „[Hier …]“, die die
 _Avoid_: Lücke (das ist eine unbeantwortete Aussage), Vorlagen-Lücke, Leerstelle
 
 **Lücke**:
-Eine Aussage in „Hier fehlt eine Antwort“, auf die noch keine Antwort passt. Wer sie beantwortet, schließt die Lücke: Die Ergebnisseite sagt dann „Lücke zu“ mit der Zahl der Personen, die ohne Treffer danach gesucht haben, und bietet die nächste an. Die Startseite nennt Angemeldeten, wie viele Lücken warten, wenn seit dem letzten Besuch eine dazugekommen ist. Im Code steht das Wort nur in `shared/luecke-texte.ts`. Bis 13.11. hieß so der Platzhalter.
+Eine Aussage in „Hier fehlt eine Antwort“, auf die noch keine Antwort passt. Wer sie beantwortet, schließt die Lücke: Die Ergebnisseite sagt dann „Lücke zu“ mit der Zahl der Personen, die ohne Treffer danach gesucht haben, und bietet die nächste an. Die Startseite nennt Angemeldeten unter „Seit deinem letzten Besuch“, wie viele Lücken warten. Im Code steht das Wort nur in `shared/luecke-texte.ts`. Bis 13.11. hieß so der Platzhalter.
 _Avoid_: Platzhalter (das ist die Stelle „[Hier …]“ im Text), offene Frage
 
 **Schreibhilfe**:
@@ -433,7 +433,7 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:
-Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Auf der Startseite steht für Angemeldete dazu eine Zeile „Seit deinem letzten Besuch“ mit höchstens drei Links: neue Nutzungen (dieselbe Zahl), neue Einwürfe anderer im Fangkorb und, wenn in „Hier fehlt eine Antwort“ eine Aussage dazugekommen ist, wie viele dort warten; ohne Neues steht sie nicht da. Wann der letzte Besuch der Startseite war und welche Aussagen damals offen waren, merkt sich nur der Browser, je Konto, bis zum Abmelden oder zum Widerruf der Art.-9-Einwilligung. Bis zur Prüfung nach § 25 TDDDG ist diese Zeile ausgeschaltet (`shared/geraetespeicher-schalter.ts`): ohne Schalter kein Merker, kein Abruf und kein Absatz in der Datenschutzerklärung. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Auf der Startseite steht für Angemeldete dazu eine Zeile „Seit deinem letzten Besuch“ mit höchstens drei Links: neue Nutzungen (dieselbe Zahl), neue Einwürfe anderer im Fangkorb und wie viele Lücken in „Hier fehlt eine Antwort“ warten; ohne Neues steht sie nicht da. Auch die Einwürfe sind ein Zählerstand am Konto wie die Nutzung, kein Zeitpunkt, und nichts davon liegt im Browser.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Willkommen**:

@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
-import { besuchMerkerEntfernen } from '../seit-letztem-besuch/besuch-merker';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 export interface UserInfo {
@@ -62,8 +61,6 @@ export class AuthService {
   }
 
   logout() {
-    // Der Merker „Seit deinem letzten Besuch“ gehoert zum Konto (Nutzerfuehrung 13.11.).
-    besuchMerkerEntfernen(this.getCurrentUserId());
     // Use the API logout endpoint which properly handles both Keycloak and managed users
     this.http.post(`${environment.baseUrl}/api/auth/logout`, {}, {
       withCredentials: true

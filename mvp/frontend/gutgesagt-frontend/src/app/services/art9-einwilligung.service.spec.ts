@@ -49,7 +49,7 @@ describe('Art9EinwilligungService', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: { userInfo$: anmeldung.asObservable(), getCurrentUserId: () => anmeldung.value?.userId ?? null } },
+        { provide: AuthService, useValue: { userInfo$: anmeldung.asObservable() } },
         { provide: Router, useValue: router },
       ],
     });

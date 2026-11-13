@@ -19,12 +19,19 @@ from dependencies import (
     get_nutzung_rate_limiter,
     get_punkte_service,
     get_settings,
+    get_unbeantwortete_aussagen_service,
     get_current_user_optional,
     get_reference_service,
     require_art9_einwilligung,
     require_user,
 )
 from utils.besucher_pseudonym import besucher_merkmal
+from repositories.einwurf_repository import EinwurfRepository, get_einwurf_repository
+from repositories.gesehene_nutzung_repository import (
+    GeseheneNutzungRepository,
+    get_gesehene_nutzung_repository,
+)
+from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 from utils.client_identity import derive_client_key
 from utils.device_category import derive_device_category
 from utils.rate_limiter import RateLimiter
@@ -97,9 +104,17 @@ class UserUsageStatsResponse(BaseModel):
 
 
 class BesuchResponse(BaseModel):
-    """Antwort auf einen Besuch: Grundlage der Rueckmeldung beim Anmelden."""
+    """
+    Antwort auf einen Besuch: Grundlage der Rueckmeldung beim Anmelden und von "Seit
+    deinem letzten Besuch" auf der Startseite. Alles Zaehlerstaende, kein Zeitpunkt.
+    """
 
     nutzung_seit_letztem_besuch: int
+    # Einwuerfe anderer seit dem zuletzt gesehenen Stand; nie negativ.
+    neue_einwuerfe: int = 0
+    # Wie viele Aussagen "Hier fehlt eine Antwort" gerade zeigt (hoechstens deren
+    # Grenze); kein Stand, deshalb nennt die Startseite sie nicht "neu".
+    unbeantwortete_aussagen: int = 0
 
 
 class PunkteResponse(BaseModel):
@@ -581,6 +596,11 @@ async def abzeichen_sichtbarkeit_antworten(
 @router.post("/users/me/besuch", response_model=BesuchResponse)
 async def besuch(
     current_user: str = Depends(require_user),
+    einwuerfe: EinwurfRepository = Depends(get_einwurf_repository),
+    gesehen: GeseheneNutzungRepository = Depends(get_gesehene_nutzung_repository),
+    unbeantwortete: UnbeantworteteAussagenService = Depends(
+        get_unbeantwortete_aussagen_service
+    ),
 ):
     """
     Ein Besuch der angemeldeten Person: wie oft ihre Beitraege seitdem genutzt
@@ -592,13 +612,53 @@ async def besuch(
     """
     try:
         anzahl = await get_usage_service().nutzung_seit_letztem_besuch(current_user)
-        return BesuchResponse(nutzung_seit_letztem_besuch=anzahl)
     except Exception as e:
         logger.error(
             f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
+    return BesuchResponse(
+        nutzung_seit_letztem_besuch=anzahl,
+        neue_einwuerfe=await _neue_einwuerfe(current_user, einwuerfe, gesehen),
+        unbeantwortete_aussagen=await _unbeantwortete_aussagen(unbeantwortete),
+    )
+
+
+async def _neue_einwuerfe(
+    person: str, einwuerfe: EinwurfRepository, gesehen: GeseheneNutzungRepository
+) -> int:
+    """
+    Neue Einwuerfe anderer seit dem letzten Besuch, als Zaehlerstand wie die Nutzung.
+    Scheitert das, bleibt es bei 0: Die Rueckmeldung zur Nutzung soll daran nicht
+    haengen.
+    """
+    try:
+        jetzt = await asyncio.to_thread(einwuerfe.count_von_anderen, person)
+        return max(
+            0,
+            await asyncio.to_thread(
+                gesehen.neue_einwuerfe_seit_letztem_besuch, person, jetzt
+            ),
+        )
+    except Exception as e:
+        logger.warning(
+            f"Neue Einwuerfe fuer {log_pseudonym(person)} nicht gezaehlt: {type(e).__name__}"
+        )
+        return 0
+
+
+async def _unbeantwortete_aussagen(dienst: UnbeantworteteAussagenService) -> int:
+    """
+    Wie viele Aussagen "Hier fehlt eine Antwort" zeigt: dieselbe Liste und damit
+    dieselbe Sichtbarkeit (auch die der Vormoderation, sobald es sie gibt). Bei einem
+    Fehler 0.
+    """
+    try:
+        return len(await dienst.liste())
+    except Exception as e:
+        logger.warning(f"Unbeantwortete Aussagen nicht gezaehlt: {type(e).__name__}")
+        return 0
 
 
 def _gepostet_dienst(

@@ -9,7 +9,6 @@ import { UsageTrackingService } from '../services/usage-tracking.service';
 import { ROUTES } from '../shared/constants/app.constants';
 import { NeuesArt, SeitLetztemBesuchService } from './seit-letztem-besuch.service';
 import { lueckenWarten } from '../shared/luecke-texte';
-import { LETZTER_BESUCH_AN } from '../shared/geraetespeicher-schalter';
 
 /** Ein Link im Block: was neu ist und wohin es fuehrt. */
 export interface NeuesEintrag {
@@ -49,8 +48,8 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
 /**
  * „Seit deinem letzten Besuch“ auf der Startseite, nur fuer Angemeldete (Nutzerfuehrung
  * 13.11.): eine ruhige Zeile mit hoechstens drei Links. Ohne Neues steht nichts da. Kein
- * roter Zaehler, nichts, das verfaellt. Die Nutzung kommt aus der Rueckmeldung beim
- * App-Start (RueckmeldungService), Fangkorb und Aussagen aus SeitLetztemBesuchService.
+ * roter Zaehler, nichts, das verfaellt. Alle Zahlen stammen aus der Antwort des Besuchs
+ * beim App-Start (RueckmeldungService), ohne eigenen Abruf.
  */
 @Component({
   selector: 'app-seit-letztem-besuch',
@@ -78,22 +77,26 @@ export class SeitLetztemBesuchComponent {
   private readonly usage = inject(UsageTrackingService);
   protected readonly neues = inject(SeitLetztemBesuchService);
 
-  /**
-   * Je Konto: Wechselt die Kennung, rechnet der Dienst neu und vergisst die Klicks. Bei
-   * ausgeschaltetem Merker (LETZTER_BESUCH_AN) gibt es den Abschnitt nicht: kein Abruf,
-   * kein Zugriff auf den Browser-Speicher.
-   */
-  readonly eintraege$: Observable<NeuesEintrag[]> = !inject(LETZTER_BESUCH_AN) ? of([]) : inject(AuthService).userInfo$.pipe(
+  /** Je Konto: Wechselt die Kennung, kommt ein neuer Besuch und die Klicks gelten nicht mehr. */
+  readonly eintraege$: Observable<NeuesEintrag[]> = inject(AuthService).userInfo$.pipe(
     map((info) => (info?.isAuthenticated && info.userId ? info.userId : null)),
     distinctUntilChanged(),
-    switchMap((kennung) =>
-      kennung
-        ? combineLatest([this.usage.nutzungSeitLetztemBesuch$, this.neues.stand(kennung), this.neues.erledigt$]).pipe(
-            map(([nutzung, stand, erledigt]) =>
-              neuesListe(nutzung, stand.einwuerfe, stand.aussagen).filter((e) => !erledigt.has(e.art)),
-            ),
-          )
-        : of([]),
-    ),
+    switchMap((kennung) => {
+      if (!kennung) {
+        return of([]);
+      }
+      this.neues.fuer(kennung);
+      return combineLatest([this.usage.besuchStand$, this.neues.erledigt$]).pipe(
+        map(([stand, erledigt]) =>
+          stand
+            ? neuesListe(
+                stand.nutzung_seit_letztem_besuch,
+                stand.neue_einwuerfe ?? 0,
+                stand.unbeantwortete_aussagen ?? 0,
+              ).filter((e) => !erledigt.has(e.art))
+            : [],
+        ),
+      );
+    }),
   );
 }
