@@ -63,6 +63,10 @@
   color: var(--text-secondary);
 }
 
+.neue-meldungen {
+  margin: 0 0 12px;
+}
+
 .error mat-spinner {
   margin: 0 auto 12px;
 }

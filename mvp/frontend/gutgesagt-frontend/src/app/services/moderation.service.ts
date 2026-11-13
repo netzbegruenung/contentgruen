@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { MeldegrundWert } from '../shared/meldegruende';
 import { SperrgrundWert } from '../shared/sperrgruende';
+import { stillerKontext } from '../shared/selbst-nachladen';
 
 export interface ReportContentRequest {
   content_id: string;
@@ -173,7 +174,8 @@ export class ModerationService {
   getReports(
     status: 'pending' | 'reviewed' | 'dismissed' | 'all' = 'pending',
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
+    still = false
   ): Observable<PendingReportsResponse> {
     // Add cache-busting timestamp to prevent browser caching
     const timestamp = new Date().getTime();
@@ -184,7 +186,8 @@ export class ModerationService {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        }
+        },
+        context: still ? stillerKontext() : undefined
       }
     );
   }
@@ -208,13 +211,16 @@ export class ModerationService {
     return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/entsperren`, {});
   }
 
-  getGesperrte(): Observable<GesperrteResponse> {
-    return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`);
+  /** ``still``: Hintergrund-Abfrage, frisch statt aus dem Cache, ohne Umleitung bei 401 (STILLE_ABFRAGE). */
+  getGesperrte(still = false): Observable<GesperrteResponse> {
+    return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`, { context: still ? stillerKontext() : undefined });
   }
 
   /** Offene Löschaufträge, die mit der frühesten Frist zuerst. */
-  getLoeschauftraege(): Observable<LoeschauftraegeResponse> {
-    return this.http.get<LoeschauftraegeResponse>(`${this.baseUrl}/loeschauftraege`);
+  getLoeschauftraege(still = false): Observable<LoeschauftraegeResponse> {
+    return this.http.get<LoeschauftraegeResponse>(`${this.baseUrl}/loeschauftraege`, {
+      context: still ? stillerKontext() : undefined,
+    });
   }
 
   /**

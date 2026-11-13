@@ -8,6 +8,8 @@ import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
 import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
+// Ausserhalb von /admin (wie im Testlauf) fragt der ZuTunService alle 120 s.
+import { KOPF_NACHLADEN_MS } from '../../services/zu-tun.service';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { throwError } from 'rxjs';
 
@@ -122,8 +124,8 @@ describe('ContentModerationComponent', () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(moderation.sperren).toHaveBeenCalledWith('beitrag-1', 'unterstellung', 'Unterstellt Bosheit.');
-    // Die Liste fragt mit der Ansicht allein; die Zahl der offenen (ZuTunService) mit Grenze.
-    expect(moderation.getReports.calls.allArgs().filter((args) => args.length === 1).length).toBe(2);
+    // Die Liste fragt mit Ansicht und Grenze; die Zahl der offenen (ZuTunService) zusätzlich still.
+    expect(moderation.getReports.calls.allArgs().filter((args) => args.length === 2).length).toBe(2);
   });
 
   it('sperrt nicht, wenn der Dialog abgebrochen wird', () => {
@@ -343,11 +345,11 @@ describe('ContentModerationComponent', () => {
       expect(fixture.componentInstance.offeneLoeschauftraege).toBe(0);
 
       moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [auftrag] }));
-      tick(NACHLADEN_MS);
+      tick(KOPF_NACHLADEN_MS);
       expect(fixture.componentInstance.offeneLoeschauftraege).toBe(1);
 
       sichtbarkeit = 'hidden';
-      tick(NACHLADEN_MS);
+      tick(KOPF_NACHLADEN_MS);
       expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
 
       sichtbarkeit = 'visible';
@@ -355,7 +357,7 @@ describe('ContentModerationComponent', () => {
       expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(3);
 
       fixture.destroy();
-      tick(NACHLADEN_MS);
+      tick(KOPF_NACHLADEN_MS);
       expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(3);
     }));
 
@@ -372,6 +374,71 @@ describe('ContentModerationComponent', () => {
     });
   });
   describe('lädt selbst nach (Grundsatz 13.11.2026)', () => {
+    it('behält beim Nachladen Zeilen und Fokus: ein fokussierter Knopf bleibt fokussiert', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      document.body.appendChild(fixture.nativeElement);
+      const abweisen = knopf('Abweisen')!;
+      abweisen.focus();
+      expect(document.activeElement).toBe(abweisen);
+
+      // Neue Objekte mit denselben Kennungen, wie sie der Dienst liefert
+      moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung({ description: 'neu geladen' })] }));
+      document.dispatchEvent(new Event('visibilitychange'));
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('neu geladen');
+      expect(knopf('Abweisen')).toBe(abweisen);
+      expect(document.activeElement).toBe(abweisen);
+      fixture.destroy();
+    }));
+
+    it('schiebt neue Meldungen nicht unter den Zeiger, sondern kündigt sie an', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([meldung()]);
+      moderation.getReports.and.returnValue(of({ total: 2, reports: [meldung({ id: 'report-neu' }), meldung()] }));
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.reports.map((r) => r.id)).toEqual(['report-1']);
+      const ankuendigung = knopf('neue Meldung')!;
+      expect(ankuendigung.textContent!.trim()).toBe('1 neue Meldung anzeigen');
+
+      ankuendigung.click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.reports.map((r) => r.id)).toEqual(['report-neu', 'report-1']);
+      expect(knopf('neue Meldung')).toBeUndefined();
+      fixture.destroy();
+    }));
+
+    it('fragt in „Gesperrt“ die Widersprüche nicht extra, sie stehen in den Daten', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([]);
+      fixture.componentInstance.onStatusFilterChange('gesperrt');
+      moderation.getGesperrte.calls.reset();
+
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      expect(moderation.getGesperrte).toHaveBeenCalledOnceWith(true);
+      fixture.destroy();
+    }));
+
+    it('fragt in „Nach Person“ beim Nachladen nichts', fakeAsync(() => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      mitMeldungen([]);
+      fixture.componentInstance.onStatusFilterChange('person');
+      moderation.getGesperrte.calls.reset();
+      moderation.getReports.calls.reset();
+
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      expect(moderation.getGesperrte).not.toHaveBeenCalled();
+      // Nur die Zahl am Kopf (ZuTunService) fragt, still.
+      expect(moderation.getReports.calls.allArgs().every((args) => args[3] === true)).toBeTrue();
+      fixture.destroy();
+    }));
+
     it('hat keinen Knopf „Aktualisieren“ mehr, auch nicht in der Meldungsliste', () => {
       mitMeldungen([meldung()]);
 
@@ -392,7 +459,9 @@ describe('ContentModerationComponent', () => {
 
       neu.next({ total: 2, reports: [meldung(), meldung({ id: 'report-2' })] });
       fixture.detectChanges();
-      expect(fixture.componentInstance.reports.length).toBe(2);
+      // Die neue wird angekündigt, nicht eingeschoben.
+      expect(fixture.componentInstance.reports.length).toBe(1);
+      expect(fixture.componentInstance.neueMeldungen).toBe(1);
       expect(fixture.componentInstance.isExpanded(meldung())).toBeTrue();
       fixture.destroy();
     }));

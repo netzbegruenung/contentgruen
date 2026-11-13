@@ -2,7 +2,15 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Subscription, of, throwError } from 'rxjs';
 
 import { ContentReport, Loeschauftrag, ModerationService } from './moderation.service';
-import { MELDUNGEN_GRENZE, OffeneLoeschauftraege, OffeneMeldungen, Stand, ZuTunService, wartetSeit } from './zu-tun.service';
+import {
+  KOPF_NACHLADEN_MS,
+  MELDUNGEN_GRENZE,
+  OffeneLoeschauftraege,
+  OffeneMeldungen,
+  Stand,
+  ZuTunService,
+  wartetSeit,
+} from './zu-tun.service';
 import { NACHLADEN_MS } from '../shared/selbst-nachladen';
 
 function meldung(id: string, created: string): ContentReport {
@@ -53,7 +61,9 @@ describe('ZuTunService', () => {
     let stand: Stand<OffeneMeldungen> | undefined;
     const abo = dienst.meldungen$.subscribe((s) => (stand = s));
 
-    expect(moderation.getReports).toHaveBeenCalledWith('pending', MELDUNGEN_GRENZE);
+    // Still: frisch statt aus dem Cache, kein Sprung auf /login bei 401.
+    expect(moderation.getReports).toHaveBeenCalledWith('pending', MELDUNGEN_GRENZE, 0, true);
+    expect(moderation.getLoeschauftraege).not.toHaveBeenCalled();
     expect(stand).toEqual({ daten: { anzahl: 2, mehr: false, aelteste: '2026-11-10T09:00:00Z' }, fehler: false });
     abo.unsubscribe();
   });
@@ -73,26 +83,61 @@ describe('ZuTunService', () => {
     abos.forEach((abo) => abo.unsubscribe());
   });
 
-  it('laedt im Takt nach, solange sichtbar, und behaelt bei einem Fehler den letzten Stand', fakeAsync(() => {
+  it('laedt ausserhalb von /admin alle 120 s nach und behaelt bei einem Fehler den letzten Stand', fakeAsync(() => {
     const staende: Stand<OffeneMeldungen>[] = [];
     const abo: Subscription = dienst.meldungen$.subscribe((s) => staende.push(s));
 
     moderation.getReports.and.returnValue(throwError(() => new Error('weg')));
     tick(NACHLADEN_MS);
+    expect(moderation.getReports).toHaveBeenCalledTimes(1);
+    tick(KOPF_NACHLADEN_MS - NACHLADEN_MS);
     expect(staende[staende.length - 1]).toEqual({
       daten: { anzahl: 2, mehr: false, aelteste: '2026-11-10T09:00:00Z' },
       fehler: true,
     });
 
     sichtbarkeit = 'hidden';
-    tick(NACHLADEN_MS);
+    tick(KOPF_NACHLADEN_MS * 4);
     expect(moderation.getReports).toHaveBeenCalledTimes(2);
 
     abo.unsubscribe();
     sichtbarkeit = 'visible';
-    tick(NACHLADEN_MS);
+    tick(KOPF_NACHLADEN_MS * 4);
     expect(moderation.getReports).toHaveBeenCalledTimes(2);
   }));
+
+  it('hoert nach 401 auf zu fragen, bis zur naechsten Anmeldung (neues Abonnement)', fakeAsync(() => {
+    moderation.getReports.and.returnValue(throwError(() => ({ status: 401 })));
+    let abo = dienst.meldungen$.subscribe();
+
+    tick(KOPF_NACHLADEN_MS * 4);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(moderation.getReports).toHaveBeenCalledTimes(1);
+    abo.unsubscribe();
+
+    moderation.getReports.and.returnValue(of({ total: 0, reports: [] }));
+    abo = dienst.meldungen$.subscribe();
+    expect(moderation.getReports).toHaveBeenCalledTimes(2);
+    abo.unsubscribe();
+  }));
+
+  it('fragt nicht selbst, solange die Moderation die offenen Meldungen speist', fakeAsync(() => {
+    let stand: Stand<OffeneMeldungen> | undefined;
+    const abo = dienst.meldungen$.subscribe((s) => (stand = s));
+    dienst.meldungenGespeist([meldung('a', '2026-11-12T09:00:00Z')]);
+    expect(stand!.daten!.anzahl).toBe(1);
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(moderation.getReports).toHaveBeenCalledTimes(1);
+    abo.unsubscribe();
+  }));
+
+  it('liefert die Liste der Loeschauftraege aus derselben Abfrage wie die Zahl', () => {
+    const abos = [dienst.loeschauftraege$.subscribe(), dienst.loeschauftraegeAntwort$.subscribe()];
+
+    expect(moderation.getLoeschauftraege).toHaveBeenCalledOnceWith(true);
+    abos.forEach((abo) => abo.unsubscribe());
+  });
 
   it('fragt nach einer Handlung sofort neu', () => {
     const abo = dienst.meldungen$.subscribe();

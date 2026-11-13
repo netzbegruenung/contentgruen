@@ -160,9 +160,9 @@ export class BeitragGespeichertComponent implements OnInit {
       });
   }
 
-  /** Fangkorb: der naechste offene Einwurf; ist keiner offen, der Fangkorb. */
+  /** Fangkorb: der naechste Einwurf zum Ausformulieren; ist keiner mehr da, "Leer gefischt". */
   naechsterEinwurf(): void {
-    this.uebergabe.zumNaechsten(this.einwurfId ?? '', NACH_DEM_AUSFORMULIEREN);
+    this.uebergabe.zumNaechstenAusformulieren(this.einwurfId ?? '');
   }
 
   /**

@@ -30,16 +30,21 @@ export class SuchenOhneTrefferComponent implements OnInit {
   /** Laedt selbst nach, solange der Reiter sichtbar ist; ein Fehler laesst den Stand stehen. */
   ngOnInit() {
     this.laden();
-    selbstNachladen(() => this.laden(), this.destroyRef);
+    selbstNachladen(() => this.metricsService.getSuchenOhneTreffer(true), this.destroyRef, {
+      next: (daten) => this.uebernehmen(daten),
+      error: () => (this.fehler = true),
+    });
   }
 
   private laden() {
     this.metricsService.getSuchenOhneTreffer().subscribe({
-      next: (daten) => {
-        this.daten = daten;
-        this.fehler = false;
-      },
+      next: (daten) => this.uebernehmen(daten),
       error: () => (this.fehler = true),
     });
+  }
+
+  private uebernehmen(daten: SuchenOhneTrefferResponse) {
+    this.daten = daten;
+    this.fehler = false;
   }
 }

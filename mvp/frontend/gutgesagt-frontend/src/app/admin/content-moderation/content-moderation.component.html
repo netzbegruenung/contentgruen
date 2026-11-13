@@ -60,13 +60,20 @@
     <span>Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …</span>
   </div>
 
+  <!-- Neue Meldungen rutschen nicht unter den Zeiger: angekündigt, eingefügt erst auf Klick -->
+  <div *ngIf="neueMeldungen && !laedtSelbst && selectedStatus !== 'gesperrt'" class="neue-meldungen" role="status">
+    <button mat-stroked-button type="button" (click)="neueZeigen()">
+      {{ neueMeldungen === 1 ? '1 neue Meldung anzeigen' : neueMeldungen + ' neue Meldungen anzeigen' }}
+    </button>
+  </div>
+
   <ng-container *ngIf="selectedStatus === 'gesperrt' && !loading && !error">
     <div *ngIf="gesperrte.length === 0" class="empty-state">
       <mat-icon class="large-icon">check_circle</mat-icon>
       <h2>Keine gesperrten Beiträge</h2>
     </div>
     <div *ngIf="gesperrte.length > 0" class="gesperrte-liste">
-      <div *ngFor="let beitrag of gesperrte" class="gesperrter-beitrag mat-elevation-z2">
+      <div *ngFor="let beitrag of gesperrte; trackBy: nachBeitragsId" class="gesperrter-beitrag mat-elevation-z2">
         <span class="content-type-badge">{{ getContentTypeLabel(beitrag['content_type']) }}</span>
         <div class="gesperrter-text">
           <strong>{{ beitragsTitel(beitrag) }}</strong>
@@ -123,7 +130,7 @@
   </div>
 
   <div *ngIf="selectedStatus !== 'gesperrt' && !laedtSelbst && !loading && !error && reports.length > 0" class="reports-table">
-    <table mat-table [dataSource]="reports" class="mat-elevation-z2" multiTemplateDataRows>
+    <table mat-table [dataSource]="reports" [trackBy]="nachId" class="mat-elevation-z2" multiTemplateDataRows>
       <!-- Expand Column -->
       <ng-container matColumnDef="expand">
         <th mat-header-cell *matHeaderCellDef></th>

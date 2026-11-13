@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PublicEndpoints } from '../shared/public-endpoints';
 import { einwilligungFehlt, zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
+import { STILLE_ABFRAGE } from '../shared/selbst-nachladen';
 
 export const EINWILLIGUNG_FEHLT_HINWEIS = 'Zum Beitragen und Bewerten brauchst du deine Einwilligung.';
 const HINWEIS_DAUER_MS = 10000;
@@ -22,8 +23,10 @@ export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   return next(modifiedRequest).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
-        // Check if the request is for a public endpoint
-        if (!PublicEndpoints.isPublicEndpoint(req.url)) {
+        // Check if the request is for a public endpoint. Hintergrund-Abfragen (Nachladen,
+        // Zahl am Admin-Link) leiten nie um: Sonst risse eine abgelaufene Sitzung die
+        // Person mitten beim Tippen auf /login.
+        if (!PublicEndpoints.isPublicEndpoint(req.url) && !req.context.get(STILLE_ABFRAGE)) {
           // Redirect to login with current URL as return URL for protected endpoints
           const currentUrl = window.location.pathname + window.location.search;
           router.navigate(['/login'], { queryParams: { returnUrl: currentUrl } });

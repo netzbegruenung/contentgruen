@@ -45,7 +45,7 @@ interface Ansicht {
               }
             } @else {
               <mat-spinner diameter="16" aria-hidden="true"></mat-spinner>
-              <span>{{ a.meldungen.fehler ? 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …' : 'Lade Meldungen …' }}</span>
+              <span role="status">{{ a.meldungen.fehler ? 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …' : 'Lade Meldungen …' }}</span>
             }
           </p>
 
@@ -64,7 +64,7 @@ interface Ansicht {
               }
             } @else {
               <mat-spinner diameter="16" aria-hidden="true"></mat-spinner>
-              <span>{{ a.loeschauftraege.fehler ? 'Löschaufträge gerade nicht erreichbar, neuer Versuch in Kürze …' : 'Lade Löschaufträge …' }}</span>
+              <span role="status">{{ a.loeschauftraege.fehler ? 'Löschaufträge gerade nicht erreichbar, neuer Versuch in Kürze …' : 'Lade Löschaufträge …' }}</span>
             }
           </p>
         }

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { stillerKontext } from '../selbst-nachladen';
 
 // Grenzen wie im Backend (services/feedback_service.py: TEXT_MAX, KONTAKT_MAX,
 // AUFBEWAHRUNG_TAGE). Das Formular nennt die Frist, bevor gesendet wird.
@@ -41,9 +42,9 @@ export class FeedbackService {
   }
 
   /** Nur das offene (erledigt = false) oder nur das erledigte Feedback. */
-  liste(erledigt: boolean): Observable<FeedbackListe> {
+  liste(erledigt: boolean, still = false): Observable<FeedbackListe> {
     const params = new HttpParams().set('erledigt', String(erledigt));
-    return this.http.get<FeedbackListe>(this.baseUrl, { params });
+    return this.http.get<FeedbackListe>(this.baseUrl, { params, context: still ? stillerKontext() : undefined });
   }
 
   erledigtSetzen(id: string, erledigt: boolean): Observable<FeedbackEintrag> {

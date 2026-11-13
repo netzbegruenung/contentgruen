@@ -9,9 +9,8 @@ import { SuchenOhneTrefferComponent } from '../suchen-ohne-treffer/suchen-ohne-t
 import { MusterHinweiseComponent } from '../muster-hinweise/muster-hinweise.component';
 import { FeedbackListeComponent } from '../feedback-liste/feedback-liste.component';
 import { EinladungenComponent } from '../einladungen/einladungen.component';
-import { Subscription, merge, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
-import { nachladeAnlaesse } from '../../shared/selbst-nachladen';
+import { Subscription } from 'rxjs';
+import { nachladeStrom } from '../../shared/selbst-nachladen';
 import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
 
 /** Die Kennzahlen aendern sich langsam: alle fuenf Minuten und beim Zurueckkehren auf den Reiter. */
@@ -47,28 +46,20 @@ export class MvpDashboardComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Laedt selbst nach (nachladeAnlaesse). Der Fehler bleibt im inneren Strom: Frueher
     // beendete ein einziger Fehler das Nachladen fuer immer.
-    this.refreshSubscription = merge(of(undefined), nachladeAnlaesse(KENNZAHLEN_NACHLADEN_MS))
-      .pipe(
-        switchMap(() =>
-          this.metricsService.getMVPDashboard().pipe(
-            map((data): MVPMetrics | null => data),
-            catchError((err) => {
-              console.error('Error loading MVP metrics:', err);
-              return of(null);
-            })
-          )
-        )
-      )
-      .subscribe((data) => {
-        this.loading = false;
-        if (data) {
-          this.metrics = data;
-          this.error = null;
-          this.lastUpdated = new Date();
-        } else {
-          this.error = 'Kennzahlen gerade nicht erreichbar';
-        }
-      });
+    this.refreshSubscription = nachladeStrom(() => this.metricsService.getMVPDashboard(true), {
+      sofort: true,
+      ms: KENNZAHLEN_NACHLADEN_MS,
+    }).subscribe((lauf) => {
+      this.loading = false;
+      if (lauf.fehler === null) {
+        this.metrics = lauf.daten;
+        this.error = null;
+        this.lastUpdated = new Date();
+      } else {
+        console.error('Error loading MVP metrics:', lauf.fehler);
+        this.error = 'Kennzahlen gerade nicht erreichbar';
+      }
+    });
   }
 
   ngOnDestroy() {

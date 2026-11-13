@@ -1,4 +1,5 @@
-import { Component, EventEmitter, HostListener, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -7,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { filter } from 'rxjs';
 import { Loeschauftrag, LoeschauftragAusgefuehrt, ModerationService } from '../../services/moderation.service';
+import { ZuTunService } from '../../services/zu-tun.service';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -15,8 +17,6 @@ import {
 /** Kennzeichen des Backends (api/v1/loeschauftraege.py): Stand während der Ausführung geändert. */
 export const STAND_GEAENDERT = 'loeschauftrag_stand_geaendert';
 
-/** So oft lädt die Liste nach, solange der Reiter sichtbar ist. */
-export const NACHLADEN_MS = 30_000;
 
 const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Löschablauf ausführen?',
@@ -31,8 +31,9 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
 /**
  * Löschaufträge nach dem Widerruf der Art.-9-Einwilligung (Glossar „Löschauftrag“, DSFA R9b).
  * Ein Admin führt binnen der Frist den Löschablauf aus; überfällige stehen hervorgehoben oben.
- * Die Liste lädt selbst nach: beim Zurückkehren auf den Reiter und alle NACHLADEN_MS, solange er
- * sichtbar ist. Niemand muss die Seite neu laden.
+ * Die Liste lädt selbst nach: Sie kommt aus dem ZuTunService (nachladeStrom), den auch die Zahl
+ * am Umschalter und „Zu tun“ nutzen, also ohne eigenen Takt und ohne doppelte Anfragen.
+ * Niemand muss die Seite neu laden.
  */
 @Component({
   selector: 'app-loeschauftraege',
@@ -107,7 +108,7 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
     .im-knopf { display: inline-block; margin-right: 8px; vertical-align: middle; }
   `],
 })
-export class LoeschauftraegeComponent implements OnInit, OnDestroy {
+export class LoeschauftraegeComponent implements OnInit {
   /** Zahl der offenen Aufträge nach jedem Laden, für die Zahl am Umschalter. */
   @Output() anzahl = new EventEmitter<number>();
 
@@ -117,8 +118,8 @@ export class LoeschauftraegeComponent implements OnInit, OnDestroy {
   fehler = false;
   /** Kennung des Auftrags, der gerade ausgeführt wird. */
   ausfuehrend: string | null = null;
-  private laedtGerade = false;
-  private takt: ReturnType<typeof setInterval> | null = null;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly zuTun = inject(ZuTunService);
 
   constructor(
     private moderation: ModerationService,
@@ -127,26 +128,14 @@ export class LoeschauftraegeComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.laden();
-    this.takt = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        this.laden();
+    this.zuTun.loeschauftraegeAntwort$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((stand) => {
+      this.fehler = stand.fehler;
+      if (stand.daten) {
+        this.fristTage = stand.daten.frist_tage;
+        this.auftraege = stand.daten.auftraege;
+        this.anzahl.emit(stand.daten.auftraege.length);
       }
-    }, NACHLADEN_MS);
-  }
-
-  ngOnDestroy(): void {
-    if (this.takt !== null) {
-      clearInterval(this.takt);
-    }
-  }
-
-  /** Zurück auf dem Reiter: sofort nachladen, statt bis zum nächsten Takt zu warten. */
-  @HostListener('document:visibilitychange')
-  sichtbarkeitGeaendert(): void {
-    if (document.visibilityState === 'visible') {
-      this.laden();
-    }
+    });
   }
 
   ausfuehren(auftrag: Loeschauftrag): void {
@@ -193,24 +182,9 @@ export class LoeschauftraegeComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Nach dem Löschablauf: Liste, Zahl und „Zu tun“ sofort neu holen. */
   private laden(): void {
-    if (this.laedtGerade) {
-      return;
-    }
-    this.laedtGerade = true;
-    this.moderation.getLoeschauftraege().subscribe({
-      next: (antwort) => {
-        this.laedtGerade = false;
-        this.fehler = false;
-        this.fristTage = antwort.frist_tage;
-        this.auftraege = antwort.auftraege;
-        this.anzahl.emit(antwort.auftraege.length);
-      },
-      error: () => {
-        this.laedtGerade = false;
-        this.fehler = true;
-      },
-    });
+    this.zuTun.aktualisieren();
   }
 }
 

@@ -1,9 +1,11 @@
-import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Subject, of, throwError } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { LoeschauftraegeComponent, NACHLADEN_MS } from './loeschauftraege.component';
+import { LoeschauftraegeComponent } from './loeschauftraege.component';
+// Die Liste kommt aus dem ZuTunService; ausserhalb von /admin (wie hier im Testlauf) fragt er alle 120 s.
+import { KOPF_NACHLADEN_MS as NACHLADEN_MS } from '../../services/zu-tun.service';
 import { Loeschauftrag, LoeschauftraegeResponse, ModerationService } from '../../services/moderation.service';
 
 function auftrag(overrides: Partial<Loeschauftrag> = {}): Loeschauftrag {
@@ -176,7 +178,7 @@ describe('LoeschauftraegeComponent', () => {
       tick(NACHLADEN_MS);
       expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
 
-      discardPeriodicTasks();
+      fixture.destroy();
     }));
 
     it('lädt sofort nach, wenn der Reiter wieder sichtbar wird', fakeAsync(() => {
@@ -186,7 +188,7 @@ describe('LoeschauftraegeComponent', () => {
       document.dispatchEvent(new Event('visibilitychange'));
 
       expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
-      discardPeriodicTasks();
+      fixture.destroy();
     }));
 
     it('holt nach einem Ladefehler die Liste im nächsten Takt selbst', fakeAsync(() => {
@@ -194,11 +196,12 @@ describe('LoeschauftraegeComponent', () => {
       starten();
       moderation.getLoeschauftraege.and.returnValue(of(antwort([auftrag()])));
 
-      tick(NACHLADEN_MS);
+      // Nach einem Fehler wartet der naechste Versuch doppelt so lang.
+      tick(NACHLADEN_MS * 2);
       fixture.detectChanges();
 
       expect(element().querySelectorAll('[data-testid="loeschauftrag"]').length).toBe(1);
-      discardPeriodicTasks();
+      fixture.destroy();
     }));
 
     it('hört beim Verlassen auf nachzuladen', fakeAsync(() => {

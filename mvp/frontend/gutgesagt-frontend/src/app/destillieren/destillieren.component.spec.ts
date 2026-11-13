@@ -117,13 +117,14 @@ describe('DestillierenComponent', () => {
       'zurueckstellen',
       'rundeBeginnen',
       'fangkorbLaden',
+      'naechsterZumAusformulieren',
     ]);
     einwurfService.fangkorbLaden.and.returnValue(of({ results: [], results_count: 0, total_records_count: 0 }));
     einwurfService.satzSpeichern.and.callFake((id: string, sentence: string) =>
       of({ raw_input_id: id, sentence, updated_at: null }),
     );
     einwurfService.updateStatus.and.returnValue(of(einwurf({ status: 'discarded' })));
-    uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
+    uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten', 'zumNaechstenAusformulieren']);
   });
 
   afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
@@ -421,6 +422,50 @@ describe('DestillierenComponent', () => {
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/fangkorb"]');
       expect(link).toBeTruthy();
       expect(knopf('zum-ausformulieren')).toBeNull();
+    });
+
+    describe('Serie beim Ausformulieren (Entscheidung 13.11.2026)', () => {
+      beforeEach(() => {
+        queryParams = convertToParamMap({ nach: 'id-vorher', reihe: 'ausformulieren' });
+      });
+
+      it('oeffnet den naechsten Einwurf zum Ausformulieren gleich in der Typwahl', async () => {
+        einwurfService.naechsterZumAusformulieren.and.returnValue(of(einwurf({ id: 'id-2', own_draft: 'Satz' })));
+
+        await erstellen(null);
+
+        expect(einwurfService.naechsterZumAusformulieren).toHaveBeenCalledWith('id-vorher');
+        expect(einwurfService.naechsterOffenerEinwurf).not.toHaveBeenCalled();
+        expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-2'], {
+          queryParams: { schritt: 'typwahl', reihe: 'ausformulieren' },
+          replaceUrl: true,
+        });
+      });
+
+      it('sagt "Leer gefischt" und zeigt auf das Destillieren, wenn keiner mehr wartet', async () => {
+        einwurfService.naechsterZumAusformulieren.and.returnValue(of(null));
+        einwurfService.fangkorbLaden.and.returnValue(
+          of({ results: [einwurf({ id: 'roh' })], results_count: 1, total_records_count: 1 }),
+        );
+
+        await erstellen(null);
+        fixture.detectChanges();
+
+        expect(text()).toContain('Leer gefischt. Beim Destillieren wartet 1 Einwurf.');
+        knopf('zum-destillieren')!.click();
+        expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+        expect(JSON.parse(sessionStorage.getItem(FILTER_SCHLUESSEL)!).tab).toBe('destillieren');
+      });
+
+      it('bleibt bei "Naechster Einwurf" in der Serie', async () => {
+        queryParams = convertToParamMap({ reihe: 'ausformulieren' });
+        await erstellen('id-1', einwurf({ own_draft: 'Mein Satz' }));
+
+        knopf('spaeter')!.click();
+
+        expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledWith('id-1');
+        expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
+      });
     });
 
     it('zeigt im leeren Zustand, wie viele beim Ausformulieren warten, und fuehrt dorthin', async () => {

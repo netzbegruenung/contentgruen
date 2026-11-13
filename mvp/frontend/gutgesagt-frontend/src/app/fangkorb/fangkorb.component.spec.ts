@@ -409,7 +409,7 @@ describe('FangkorbComponent', () => {
       klicken(tabKnopf('Ausformulieren'));
 
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
-        'Leer gefischt. Beim Destillieren wartet 1 Einwurf.',
+        'Leer gefischt. Beim Destillieren wartet 1 Einwurf – zum Destillieren',
       );
     });
 
@@ -433,7 +433,7 @@ describe('FangkorbComponent', () => {
       klicken(tabKnopf('Destillieren'));
 
       const verweis: HTMLButtonElement = fixture.nativeElement.querySelector('.leer-verweis');
-      expect(verweis.textContent!.trim()).toBe('Beim Ausformulieren warten 2 Einwürfe.');
+      expect(verweis.textContent!.trim()).toBe('Beim Ausformulieren warten 2 Einwürfe – zum Ausformulieren');
       klicken(verweis);
 
       expect(component.filter.tab).toBe('ausformulieren');
@@ -444,7 +444,7 @@ describe('FangkorbComponent', () => {
       erstellen([einwurf({ id: 'satz', status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] })]);
 
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
-        'Leer gefischt. Beim Ausformulieren wartet 1 Einwurf.',
+        'Leer gefischt. Beim Ausformulieren wartet 1 Einwurf – zum Ausformulieren',
       );
     });
   });

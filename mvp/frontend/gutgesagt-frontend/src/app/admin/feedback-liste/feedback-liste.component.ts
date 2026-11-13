@@ -63,7 +63,21 @@ export class FeedbackListeComponent implements OnInit {
   /** Laedt selbst nach, solange der Reiter sichtbar ist (still, ohne die Liste zu leeren). */
   ngOnInit() {
     this.laden();
-    selbstNachladen(() => this.laden(true), this.destroyRef);
+    // Still, ohne die Liste zu leeren; eine Antwort fuer den anderen Filter zaehlt nicht.
+    selbstNachladen(
+      () => {
+        const erledigt = this.erledigt;
+        return this.feedbackService.liste(erledigt, true).pipe(filter(() => erledigt === this.erledigt));
+      },
+      this.destroyRef,
+      {
+        next: (daten) => {
+          this.daten = daten;
+          this.fehler = false;
+        },
+        error: () => (this.fehler = true),
+      }
+    );
   }
 
   filtern(erledigt: boolean) {
@@ -101,12 +115,9 @@ export class FeedbackListeComponent implements OnInit {
     return `${tag}.${monat}.${jahr}`;
   }
 
-  /** ``still``: Die Liste bleibt stehen, bis die Antwort da ist; ein Fehler laesst sie stehen. */
-  private laden(still = false) {
-    if (!still) {
-      this.daten = null;
-      this.fehler = false;
-    }
+  private laden() {
+    this.daten = null;
+    this.fehler = false;
     const erledigt = this.erledigt;
     this.feedbackService.liste(erledigt).subscribe({
       next: (daten) => {

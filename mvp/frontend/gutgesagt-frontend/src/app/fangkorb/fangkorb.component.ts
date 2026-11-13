@@ -33,6 +33,7 @@ import {
   filterSpeichern,
   passtZumFilter,
   passtZumTab,
+  tabName,
   wartenImTab,
 } from './fangkorb-filter';
 
@@ -157,7 +158,9 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     }
     const anderer = andererTab(this.filter.tab);
     const anzahl = this.zaehler[anderer];
-    return anzahl > 0 ? { tab: anderer, text: wartenImTab(anderer, anzahl) } : null;
+    // Der Link sagt, wohin er fuehrt: „Beim Ausformulieren warten 2 Einwürfe – zum Ausformulieren“.
+    const text = `${wartenImTab(anderer, anzahl).replace(/\.$/, '')} – zum ${tabName(anderer)}`;
+    return anzahl > 0 ? { tab: anderer, text } : null;
   }
 
   // Filter

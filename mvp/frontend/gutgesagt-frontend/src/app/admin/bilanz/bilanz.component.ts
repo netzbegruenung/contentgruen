@@ -6,7 +6,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { Subscription } from 'rxjs';
+import { EMPTY, Subscription } from 'rxjs';
+import { filter, finalize } from 'rxjs/operators';
 import { MetricsService } from '../../services/metrics.service';
 import { BilanzResponse, BilanzWoche } from '../../services/dtos/metricsDtos';
 
@@ -37,7 +38,23 @@ export class BilanzComponent implements OnInit, OnDestroy {
   /** Laedt selbst nach, solange der Reiter sichtbar ist; still, ohne die Tabelle zu leeren. */
   ngOnInit() {
     this.laden();
-    selbstNachladen(() => this.laden(true), this.destroyRef);
+    // Still: bricht keine laufende Anfrage nach einem Zeitraumwechsel ab, und eine Antwort
+    // zu einem inzwischen gewechselten Zeitraum zaehlt nicht.
+    selbstNachladen(
+      () => {
+        if (this.anfrageLaeuft) return EMPTY;
+        const wochen = this.wochen;
+        return this.metricsService.getBilanz(wochen, true).pipe(filter(() => wochen === this.wochen && !this.anfrageLaeuft));
+      },
+      this.destroyRef,
+      {
+        next: (daten) => {
+          this.daten = daten;
+          this.fehler = false;
+        },
+        error: () => (this.fehler = true),
+      }
+    );
   }
 
   ngOnDestroy() {
@@ -49,24 +66,23 @@ export class BilanzComponent implements OnInit, OnDestroy {
     this.laden();
   }
 
-  private laden(still = false) {
+  /** Eine Anfrage nach Zeitraumwahl oder beim Start laeuft; das stille Nachladen wartet. */
+  private anfrageLaeuft = false;
+
+  private laden() {
     // Nur die Antwort zum gewaehlten Zeitraum zaehlt: eine aeltere, die spaeter
     // ankommt, darf die Tabelle nicht ueberschreiben.
     this.anfrage?.unsubscribe();
-    if (!still) {
-      this.fehler = false;
-    }
-    this.anfrage = this.metricsService.getBilanz(this.wochen).subscribe({
+    this.fehler = false;
+    this.anfrageLaeuft = true;
+    this.anfrage = this.metricsService.getBilanz(this.wochen).pipe(finalize(() => (this.anfrageLaeuft = false))).subscribe({
       next: (daten) => {
         this.daten = daten;
         this.fehler = false;
       },
       error: () => {
-        // Keine Tabelle eines anderen Zeitraums neben der Fehlermeldung; beim stillen
-        // Nachladen ist es derselbe Zeitraum, die Tabelle bleibt stehen.
-        if (!still) {
-          this.daten = null;
-        }
+        // Keine Tabelle eines anderen Zeitraums neben der Fehlermeldung.
+        this.daten = null;
         this.fehler = true;
       },
     });

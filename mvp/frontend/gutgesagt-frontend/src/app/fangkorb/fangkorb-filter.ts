@@ -33,6 +33,11 @@ export const TABS: ReadonlyArray<{ wert: FangkorbTab; name: string; leer: string
 /** Der Anfang im leeren Tab, wenn im anderen noch etwas wartet. */
 export const LEER_GEFISCHT = 'Leer gefischt.';
 
+/** Der Name eines Tabs, wie er im Fangkorb steht. */
+export function tabName(tab: FangkorbTab): string {
+  return TABS.find((eintrag) => eintrag.wert === tab)!.name;
+}
+
 /** Der jeweils andere Tab: Destillieren und Ausformulieren zeigen aufeinander. */
 export function andererTab(tab: FangkorbTab): FangkorbTab {
   return tab === 'destillieren' ? 'ausformulieren' : 'destillieren';
@@ -44,7 +49,7 @@ export function andererTab(tab: FangkorbTab): FangkorbTab {
  * mehrere Saetze haben und wird einmal ausformuliert.
  */
 export function wartenImTab(tab: FangkorbTab, anzahl: number): string {
-  const name = TABS.find((eintrag) => eintrag.wert === tab)!.name;
+  const name = tabName(tab);
   return anzahl === 1 ? `Beim ${name} wartet 1 Einwurf.` : `Beim ${name} warten ${anzahl} Einwürfe.`;
 }
 

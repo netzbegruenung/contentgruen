@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { stillerKontext } from '../selbst-nachladen';
 
 // Grenzen wie im Backend (services/einladung_service.py).
 export const EINLADUNG_NOTIZ_MAX = 200;
@@ -43,8 +44,9 @@ export class EinladungService {
 
   constructor(private http: HttpClient) {}
 
-  liste(): Observable<EinladungListe> {
-    return this.http.get<EinladungListe>(this.baseUrl);
+  /** ``still``: Hintergrund-Abfrage (STILLE_ABFRAGE). */
+  liste(still = false): Observable<EinladungListe> {
+    return this.http.get<EinladungListe>(this.baseUrl, { context: still ? stillerKontext() : undefined });
   }
 
   anlegen(notiz: string, erlaubteEinloesungen: number, gueltigBis: string): Observable<Einladung> {

@@ -36,7 +36,6 @@ import {
   VorlageAusAdresse,
   kommentarVorlageLaden,
 } from '../beitragsformular/vorlage';
-import { NACH_DEM_AUSFORMULIEREN } from '../fangkorb/fangkorb-filter';
 
 /** Den vorhandenen Kommentar aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
 export const EINWURF_MIT_VORHANDENEM_VERKNUEPFT = 'Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';
@@ -226,7 +225,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
         return;
       }
       this.snackBar.open(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', { duration: 5000 });
-      this.uebergabe.zumNaechsten(einwurfId, NACH_DEM_AUSFORMULIEREN);
+      this.uebergabe.zumNaechstenAusformulieren(einwurfId);
     });
   }
 

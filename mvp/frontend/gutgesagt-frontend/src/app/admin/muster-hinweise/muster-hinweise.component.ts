@@ -29,17 +29,22 @@ export class MusterHinweiseComponent implements OnInit {
   /** Laedt selbst nach, solange der Reiter sichtbar ist; ein Fehler laesst den Stand stehen. */
   ngOnInit() {
     this.laden();
-    selbstNachladen(() => this.laden(), this.destroyRef);
+    selbstNachladen(() => this.metricsService.getMusterHinweise(true), this.destroyRef, {
+      next: (daten) => this.uebernehmen(daten),
+      error: () => (this.fehler = true),
+    });
   }
 
   private laden() {
     this.metricsService.getMusterHinweise().subscribe({
-      next: (daten) => {
-        this.daten = daten;
-        this.fehler = false;
-      },
+      next: (daten) => this.uebernehmen(daten),
       error: () => (this.fehler = true),
     });
+  }
+
+  private uebernehmen(daten: MusterHinweiseResponse) {
+    this.daten = daten;
+    this.fehler = false;
   }
 
   /** Anzeigename mit Kennung; Admins sehen die Kennung (Glossar „Kennung“). */

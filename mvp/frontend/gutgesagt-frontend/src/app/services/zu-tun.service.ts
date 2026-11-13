@@ -1,12 +1,26 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject, merge, of } from 'rxjs';
-import { catchError, map, scan, shareReplay, switchMap } from 'rxjs/operators';
+import { EMPTY, Observable, Subject, merge } from 'rxjs';
+import { map, scan, shareReplay } from 'rxjs/operators';
 
-import { ModerationService } from './moderation.service';
-import { nachladeAnlaesse } from '../shared/selbst-nachladen';
+import { ContentReport, LoeschauftraegeResponse, ModerationService } from './moderation.service';
+import { NACHLADEN_MS, nachladeStrom } from '../shared/selbst-nachladen';
 
 /** So viele offene Meldungen fragt die Zahl hoechstens ab (Grenze des Endpunkts). */
 export const MELDUNGEN_GRENZE = 100;
+
+/** Takt der Zahl am Admin-Link ausserhalb des Admin-Bereichs; im Admin-Bereich NACHLADEN_MS. */
+export const KOPF_NACHLADEN_MS = 120_000;
+
+/** Im Admin-Bereich alle 30 s, sonst alle 120 s: Die Zahl im Kopf soll nicht jede Seite belasten. */
+export function zuTunTakt(): number {
+  return window.location.pathname.startsWith('/admin') ? NACHLADEN_MS : KOPF_NACHLADEN_MS;
+}
+
+/** Nach 401/403 (Sitzung abgelaufen, keine Admin-Rechte) fragt niemand weiter, bis zur naechsten Anmeldung. */
+export function ohneRechte(fehler: unknown): boolean {
+  const status = (fehler as { status?: unknown } | null)?.status;
+  return status === 401 || status === 403;
+}
 
 /** Offene Meldungen: wie viele und seit wann die aelteste wartet. */
 export interface OffeneMeldungen {
@@ -33,60 +47,90 @@ export interface Stand<T> {
   fehler: boolean;
 }
 
+/** Offene Meldungen aus einer Liste offener Meldungen, wie der Endpunkt sie liefert. */
+export function offeneMeldungen(meldungen: ContentReport[]): OffeneMeldungen {
+  return {
+    anzahl: meldungen.length,
+    mehr: meldungen.length >= MELDUNGEN_GRENZE,
+    aelteste: aeltester(meldungen.map((meldung) => meldung.created)),
+  };
+}
+
+function letzterStand<T>(vorher: Stand<T>, jetzt: Stand<T>): Stand<T> {
+  return jetzt.fehler ? { daten: vorher.daten, fehler: true } : jetzt;
+}
+
 /**
- * Was im Admin-Bereich zu tun ist, fuer die Zahl am Admin-Link und die Zeile „Zu tun“.
+ * Was im Admin-Bereich zu tun ist, fuer die Zahl am Admin-Link, die Zeile „Zu tun“, die
+ * Zahlen an den Umschaltern der Moderation und die Liste der Loeschauftraege.
  *
- * Laedt selbst nach (``nachladeAnlaesse``), solange jemand zuhoert, und teilt das
- * Ergebnis: Kopf und Zeile fragen nicht doppelt. Ohne Abonnent fragt niemand; die
- * Zahl abonniert nur, wer Admin ist. Nach einer Handlung (Abweisen, Sperren,
- * Loeschablauf) stoesst ``aktualisieren`` sofort an.
+ * Laedt selbst nach (``nachladeStrom``), solange jemand zuhoert, und teilt das Ergebnis:
+ * Kopf, Zeile und Moderation fragen nicht doppelt. Ohne Abonnent fragt niemand; die
+ * Zahl abonniert nur, wer Admin ist. Alle Abfragen sind still (kein Sprung auf /login),
+ * nach 401/403 hoert sie auf. Zeigt die Moderation die offenen Meldungen ohnehin, speist
+ * sie den Dienst (``meldungenGespeist``), und er fragt solange nicht selbst.
  */
 @Injectable({ providedIn: 'root' })
 export class ZuTunService {
   private readonly anstoss$ = new Subject<void>();
+  private readonly gespeist$ = new Subject<OffeneMeldungen>();
+  /** Bis wann die Moderation die offenen Meldungen liefert (ms seit Epoche). */
+  private gespeistBis = 0;
 
   readonly meldungen$: Observable<Stand<OffeneMeldungen>>;
+  /** Die offenen Loeschauftraege selbst, fuer deren Liste in der Moderation. */
+  readonly loeschauftraegeAntwort$: Observable<Stand<LoeschauftraegeResponse>>;
   readonly loeschauftraege$: Observable<Stand<OffeneLoeschauftraege>>;
 
   constructor(moderation: ModerationService) {
-    this.meldungen$ = this.abfragen(() =>
-      moderation.getReports('pending', MELDUNGEN_GRENZE).pipe(
-        map((antwort) => ({
-          anzahl: antwort.reports.length,
-          mehr: antwort.reports.length >= MELDUNGEN_GRENZE,
-          aelteste: aeltester(antwort.reports.map((meldung) => meldung.created)),
-        })),
-      ),
+    const optionen = { sofort: true, ms: zuTunTakt, aufhoerenBei: ohneRechte, anstoss$: this.anstoss$ };
+
+    this.meldungen$ = merge(
+      nachladeStrom(
+        () =>
+          Date.now() < this.gespeistBis
+            ? EMPTY
+            : moderation.getReports('pending', MELDUNGEN_GRENZE, 0, true).pipe(map((antwort) => offeneMeldungen(antwort.reports))),
+        optionen,
+      ).pipe(map((lauf): Stand<OffeneMeldungen> => ({ daten: lauf.daten, fehler: lauf.fehler !== null }))),
+      this.gespeist$.pipe(map((daten): Stand<OffeneMeldungen> => ({ daten, fehler: false }))),
+    ).pipe(
+      scan(letzterStand<OffeneMeldungen>, { daten: null, fehler: false } as Stand<OffeneMeldungen>),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
-    this.loeschauftraege$ = this.abfragen(() =>
-      moderation.getLoeschauftraege().pipe(
-        map((antwort) => ({
-          anzahl: antwort.auftraege.length,
-          ueberfaellig: antwort.auftraege.filter((auftrag) => auftrag.ueberfaellig).length,
-        })),
-      ),
+
+    this.loeschauftraegeAntwort$ = nachladeStrom(() => moderation.getLoeschauftraege(true), optionen).pipe(
+      map((lauf): Stand<LoeschauftraegeResponse> => ({ daten: lauf.daten, fehler: lauf.fehler !== null })),
+      scan(letzterStand<LoeschauftraegeResponse>, { daten: null, fehler: false } as Stand<LoeschauftraegeResponse>),
+      shareReplay({ bufferSize: 1, refCount: true }),
+    );
+
+    this.loeschauftraege$ = this.loeschauftraegeAntwort$.pipe(
+      map((stand) => ({
+        daten: stand.daten
+          ? {
+              anzahl: stand.daten.auftraege.length,
+              ueberfaellig: stand.daten.auftraege.filter((auftrag) => auftrag.ueberfaellig).length,
+            }
+          : null,
+        fehler: stand.fehler,
+      })),
     );
   }
 
-  /** Sofort neu fragen, etwa nach dem Abweisen einer Meldung. */
+  /** Sofort neu fragen, etwa nach dem Abweisen einer Meldung oder einem Loeschablauf. */
   aktualisieren(): void {
+    this.gespeistBis = 0;
     this.anstoss$.next();
   }
 
-  private abfragen<T>(holen: () => Observable<T>): Observable<Stand<T>> {
-    return merge(of(undefined), nachladeAnlaesse(), this.anstoss$).pipe(
-      switchMap(() =>
-        holen().pipe(
-          map((daten): Stand<T> => ({ daten, fehler: false })),
-          catchError(() => of<Stand<T>>({ daten: null, fehler: true })),
-        ),
-      ),
-      scan((vorher: Stand<T>, jetzt: Stand<T>) => (jetzt.fehler ? { daten: vorher.daten, fehler: true } : jetzt), {
-        daten: null,
-        fehler: false,
-      } as Stand<T>),
-      shareReplay({ bufferSize: 1, refCount: true }),
-    );
+  /**
+   * Die Moderation hat die offenen Meldungen gerade geladen: Sie gelten als Stand, und der
+   * Dienst fragt bis kurz nach ihrem naechsten Nachladen nicht selbst.
+   */
+  meldungenGespeist(meldungen: ContentReport[]): void {
+    this.gespeistBis = Date.now() + NACHLADEN_MS + 5_000;
+    this.gespeist$.next(offeneMeldungen(meldungen));
   }
 }
 

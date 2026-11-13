@@ -3,11 +3,11 @@
         <mat-spinner diameter="40"></mat-spinner>
     </div>
 
-    <!-- Nichts mehr zu destillieren: ein Satz zeigt, ob beim Ausformulieren etwas wartet -->
-    <div *ngIf="!laedt && allesDestilliert" class="zustand alles-destilliert" role="status">
-        <p>{{ leerGefischt }} {{ wartetBeimAusformulieren }}</p>
-        <button *ngIf="zumAusformulierenAnzahl; else zurueckZumFangkorb" mat-raised-button color="primary"
-                type="button" class="zum-ausformulieren" (click)="zumAusformulieren()">Zum Ausformulieren</button>
+    <!-- Leer gefischt: ein Satz zeigt, ob im anderen Tab etwas wartet (Destillieren <-> Ausformulieren) -->
+    <div *ngIf="!laedt && leer" class="zustand leer-gefischt" [ngClass]="'leer-' + leer" role="status">
+        <p>{{ leerGefischtText }} {{ wartetImAnderen }}</p>
+        <button *ngIf="imAnderenAnzahl; else zurueckZumFangkorb" mat-raised-button color="primary"
+                type="button" [ngClass]="'zum-' + anderer" (click)="zumAnderen()">Zum {{ andererName }}</button>
         <ng-template #zurueckZumFangkorb>
             <a mat-stroked-button color="primary" routerLink="/fangkorb">Zurück zum Fangkorb</a>
         </ng-template>

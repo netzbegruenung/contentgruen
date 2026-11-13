@@ -68,18 +68,23 @@ export class EinladungenComponent implements OnInit {
   /** Die Liste laedt selbst nach, solange der Reiter sichtbar ist; das Formular bleibt unberuehrt. */
   ngOnInit() {
     this.laden();
-    selbstNachladen(() => this.laden(), this.destroyRef);
+    selbstNachladen(() => this.einladungService.liste(true), this.destroyRef, {
+      next: (liste) => this.uebernehmen(liste),
+      error: () => (this.fehler = true),
+    });
   }
 
   private laden() {
     this.einladungService.liste().subscribe({
-      next: (liste) => {
-        this.einladungen = liste.einladungen;
-        this.einloesenEingerichtet = liste.einloesen_eingerichtet;
-        this.fehler = false;
-      },
+      next: (liste) => this.uebernehmen(liste),
       error: () => (this.fehler = true),
     });
+  }
+
+  private uebernehmen(liste: { einladungen: Einladung[]; einloesen_eingerichtet: boolean }) {
+    this.einladungen = liste.einladungen;
+    this.einloesenEingerichtet = liste.einloesen_eingerichtet;
+    this.fehler = false;
   }
 
   anlegen() {

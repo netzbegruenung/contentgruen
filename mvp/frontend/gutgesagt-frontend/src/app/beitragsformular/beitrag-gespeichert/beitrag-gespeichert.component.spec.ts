@@ -54,7 +54,7 @@ describe('BeitragGespeichertComponent', () => {
     postService.getPostById.and.returnValue(
       of({ id: 'k-1', title: 'Ein Reel zur Wärmepumpe', text: 'Text', content_type: 'post', platform: 'Instagram', author: '@konto' } as any),
     );
-    uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
+    uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten', 'zumNaechstenAusformulieren']);
     navigation = jasmine.createSpyObj('NavigationService', ['navigateToResult', 'navigateToMeineEinwuerfe']);
     einwurfService = jasmine.createSpyObj('EinwurfService', ['einwurfLaden']);
     einwurfService.einwurfLaden.and.callFake(() => geladenerEinwurf);
@@ -155,7 +155,7 @@ describe('BeitragGespeichertComponent', () => {
       expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Link kopieren', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+      expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('e-1');
 
       // Ausformuliertes liegt in keinem Tab, sondern unter "Meine Einwuerfe" (#508, F1).
       (seite().querySelector('.zu-meinen-einwuerfen') as HTMLButtonElement).click();
@@ -188,7 +188,7 @@ describe('BeitragGespeichertComponent', () => {
 
       expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT);
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+      expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('e-1');
     });
 
     it('Fangkorb: nicht verknuepft fuehrt "Zum Fangkorb" nach Ausformulieren, wo der Einwurf noch liegt', async () => {

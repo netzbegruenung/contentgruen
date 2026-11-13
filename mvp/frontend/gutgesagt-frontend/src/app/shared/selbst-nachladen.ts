@@ -1,35 +1,158 @@
 import { DestroyRef } from '@angular/core';
-import { Observable, fromEvent, merge, timer } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
+import { HttpContext, HttpContextToken } from '@angular/common/http';
+import { EMPTY, Observable, Subscription } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 /** So oft laden Listen nach, solange der Reiter sichtbar ist (Grundsatz 13.11.2026). */
 export const NACHLADEN_MS = 30_000;
+
+/** Nach Fehlern wartet der naechste Versuch laenger: Takt mal 1, 2, 4 (30 → 60 → 120 s). */
+export const BACKOFF_STUFEN = 2;
+
+/**
+ * Markiert eine Anfrage als Hintergrund-Abfrage: Der AuthInterceptor leitet bei 401 dann
+ * nicht auf /login um. Sonst risse ein Nachladen nach abgelaufener Sitzung die Person
+ * mitten beim Tippen aus der Seite.
+ */
+export const STILLE_ABFRAGE = new HttpContextToken<boolean>(() => false);
+
+/** HttpContext fuer eine Hintergrund-Abfrage (``STILLE_ABFRAGE``). */
+export function stillerKontext(): HttpContext {
+  return new HttpContext().set(STILLE_ABFRAGE, true);
+}
+
+/** Ergebnis eines Laufs: Daten oder der Fehler. */
+export type Lauf<T> = { daten: T; fehler: null } | { daten: null; fehler: unknown };
+
+export interface NachladeOptionen {
+  /** Takt in ms; eine Funktion wird vor jedem Planen neu gefragt (etwa je nach Seite). */
+  ms?: number | (() => number);
+  /** Gleich beim Abonnieren laden, nicht erst beim ersten Anlass. */
+  sofort?: boolean;
+  /** Ein Fehler, nach dem nicht weiter gefragt wird (etwa 401/403). */
+  aufhoerenBei?: (fehler: unknown) => boolean;
+  /** Anstoesse von aussen, etwa nach einer Handlung: sofort laden. */
+  anstoss$?: Observable<unknown>;
+}
 
 function sichtbar(): boolean {
   return document.visibilityState === 'visible';
 }
 
 /**
- * Die Anlaesse zum Nachladen: alle ``ms``, solange der Reiter sichtbar ist, und sofort,
- * wenn er wieder sichtbar wird. Der erste Anlass kommt erst nach ``ms`` oder beim
- * Sichtbarwerden; das erste Laden macht die Seite selbst.
+ * Laedt ``holen`` immer wieder, solange abonniert, und meldet jeden Lauf.
  *
- * Oberflaechen laden selbst nach, niemand muss „Aktualisieren“ druecken oder die Seite
- * neu laden. Ein versteckter Reiter fragt nicht: Das spart Anfragen und haelt die
- * Ratenbremse fern.
+ * - Im Takt (``ms``), aber nur, solange der Reiter sichtbar ist; versteckt fragt niemand.
+ * - Beim Sichtbarwerden sofort, danach beginnt der Takt neu.
+ * - Nie zwei Laeufe zugleich: Ein Anlass waehrend eines Laufs wird danach nachgeholt.
+ * - Nach Fehlern laenger warten (``BACKOFF_STUFEN``), nach einem Erfolg wieder im Takt.
+ *
+ * Oberflaechen laden so selbst nach; niemand muss „Aktualisieren“ druecken oder die
+ * Seite neu laden.
  */
-export function nachladeAnlaesse(ms = NACHLADEN_MS): Observable<void> {
-  return merge(
-    timer(ms, ms).pipe(filter(sichtbar)),
-    fromEvent(document, 'visibilitychange').pipe(filter(sichtbar)),
-  ).pipe(map(() => undefined));
+export function nachladeStrom<T>(holen: () => Observable<T>, optionen: NachladeOptionen = {}): Observable<Lauf<T>> {
+  return new Observable<Lauf<T>>((abonnent) => {
+    let fehlversuche = 0;
+    let wecker: ReturnType<typeof setTimeout> | null = null;
+    let laeuft = false;
+    let nochmal = false;
+    let aus = false;
+    let lauf: Subscription | null = null;
+
+    const takt = () => (typeof optionen.ms === 'function' ? optionen.ms() : optionen.ms ?? NACHLADEN_MS);
+
+    const planen = () => {
+      if (wecker !== null) clearTimeout(wecker);
+      wecker = null;
+      if (aus) return;
+      const warten = takt() * 2 ** Math.min(fehlversuche, BACKOFF_STUFEN);
+      wecker = setTimeout(() => {
+        wecker = null;
+        // Versteckt: nichts tun, das Sichtbarwerden laedt und plant neu.
+        if (sichtbar()) los();
+      }, warten);
+    };
+
+    const los = () => {
+      if (aus) return;
+      if (laeuft) {
+        nochmal = true;
+        return;
+      }
+      if (wecker !== null) clearTimeout(wecker);
+      wecker = null;
+      laeuft = true;
+      lauf = holen()
+        .pipe(
+          finalize(() => {
+            laeuft = false;
+            if (aus) return;
+            if (nochmal) {
+              nochmal = false;
+              los();
+            } else {
+              planen();
+            }
+          }),
+        )
+        .subscribe({
+          next: (daten) => {
+            fehlversuche = 0;
+            abonnent.next({ daten, fehler: null });
+          },
+          error: (fehler) => {
+            fehlversuche++;
+            if (optionen.aufhoerenBei?.(fehler)) {
+              aus = true;
+            }
+            abonnent.next({ daten: null, fehler });
+          },
+        });
+    };
+
+    const beiSichtbarkeit = () => {
+      if (sichtbar()) {
+        los();
+      } else if (wecker !== null) {
+        clearTimeout(wecker);
+        wecker = null;
+      }
+    };
+    document.addEventListener('visibilitychange', beiSichtbarkeit);
+    const anstoss = (optionen.anstoss$ ?? EMPTY).subscribe(() => los());
+
+    if (optionen.sofort) {
+      los();
+    } else {
+      planen();
+    }
+
+    return () => {
+      aus = true;
+      if (wecker !== null) clearTimeout(wecker);
+      document.removeEventListener('visibilitychange', beiSichtbarkeit);
+      anstoss.unsubscribe();
+      lauf?.unsubscribe();
+    };
+  });
 }
 
 /**
- * Ruft ``laden`` bei jedem Anlass (``nachladeAnlaesse``) auf, bis ``destroyRef`` endet.
- * Gebrauch im Konstruktor oder in ngOnInit: ``selbstNachladen(() => this.laden(), this.destroyRef)``.
+ * Laedt ``holen`` selbst nach (``nachladeStrom``, ohne sofortigen Lauf: das erste Laden
+ * macht die Seite selbst), bis ``destroyRef`` endet. ``folgen`` bekommt Daten und Fehler.
  */
-export function selbstNachladen(laden: () => void, destroyRef: DestroyRef, ms = NACHLADEN_MS): void {
-  const abo = nachladeAnlaesse(ms).subscribe(() => laden());
+export function selbstNachladen<T>(
+  holen: () => Observable<T>,
+  destroyRef: DestroyRef,
+  folgen: { next: (daten: T) => void; error?: (fehler: unknown) => void },
+  ms: number | (() => number) = NACHLADEN_MS,
+): void {
+  const abo = nachladeStrom(holen, { ms }).subscribe((lauf) => {
+    if (lauf.fehler === null) {
+      folgen.next(lauf.daten as T);
+    } else {
+      folgen.error?.(lauf.fehler);
+    }
+  });
   destroyRef.onDestroy(() => abo.unsubscribe());
 }

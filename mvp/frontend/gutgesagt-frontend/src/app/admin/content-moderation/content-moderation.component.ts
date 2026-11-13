@@ -22,12 +22,16 @@ import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 import { LoeschauftraegeComponent } from './loeschauftraege.component';
-import { ZuTunService } from '../../services/zu-tun.service';
+import { MELDUNGEN_GRENZE, ZuTunService } from '../../services/zu-tun.service';
+import { EMPTY, Observable, merge } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { selbstNachladen } from '../../shared/selbst-nachladen';
 
 // 'person': Meldungen einer Person nach Name oder E-Mail-Adresse (#494).
 // 'loeschauftraege': Löschaufträge nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b).
 type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'person' | 'loeschauftraege';
+/** Die Ansichten, die eine Meldungsliste zeigen. */
+type Meldungsansicht = 'pending' | 'reviewed' | 'dismissed' | 'all';
 const ANSICHTEN: readonly Ansicht[] = ['pending', 'reviewed', 'dismissed', 'all', 'gesperrt', 'person', 'loeschauftraege'];
 
 /** Query-Parameter mit der gewählten Ansicht, etwa aus der Zeile „Zu tun“. */
@@ -114,8 +118,6 @@ export class ContentModerationComponent implements OnInit {
     if (gewuenscht) {
       this.selectedStatus = gewuenscht;
     }
-    this.loadReports();
-    this.offeneWiderspruecheZaehlen();
     // Links aus „Zu tun“ führen auch hierher, wenn die Moderation schon offen ist.
     this.route?.queryParamMap?.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const ansicht = ansichtAus(params.get(ANSICHT_PARAM));
@@ -135,44 +137,38 @@ export class ContentModerationComponent implements OnInit {
         this.offeneLoeschauftraege = stand.daten.anzahl;
       }
     });
-    selbstNachladen(() => this.stillNachladen(), this.destroyRef);
+    // Erst nach den Abos laden: Die offene Liste speist den ZuTunService gleich beim Laden.
+    this.loadReports();
+    if (this.selectedStatus !== 'gesperrt') {
+      this.offeneWiderspruecheZaehlen();
+    }
+    selbstNachladen(() => this.stillesNachladen(), this.destroyRef, { next: () => undefined });
   }
 
-  /** Liste und Zahl der Widersprüche neu holen, ohne Spinner und ohne Zeilen zuzuklappen. */
-  stillNachladen() {
-    this.loadReports(true);
-    this.offeneWiderspruecheZaehlen();
-  }
+  /** Für trackBy: Zeilen bleiben beim Nachladen dieselben DOM-Knoten, der Fokus bleibt. */
+  readonly nachId = (_index: number, meldung: ContentReport) => meldung.id;
+  readonly nachBeitragsId = (_index: number, beitrag: GemeldeterBeitrag): string => beitrag['id'];
 
   /** Ansichten, die selbst laden: die Suche nach Person und die Löschaufträge. */
   get laedtSelbst(): boolean {
     return this.selectedStatus === 'person' || this.selectedStatus === 'loeschauftraege';
   }
 
-  /**
-   * Lädt die Liste der gewählten Ansicht. ``still``: beim Nachladen ohne Spinner, aufgeklappte
-   * Zeilen bleiben offen, und ein Fehler lässt den letzten Stand stehen.
-   */
-  loadReports(still = false) {
-    if (this.selectedStatus === 'person' || this.selectedStatus === 'loeschauftraege') {
+  /** Lädt die Liste der gewählten Ansicht neu, mit Spinner; aufgeklappte Zeilen klappen zu. */
+  loadReports() {
+    this.wartendeListe = null;
+    this.neueMeldungen = 0;
+    if (this.laedtSelbst) {
       // Die Suche lädt selbst, erst wenn Angaben eingegeben sind; die Löschaufträge
-      // laden selbst und laden selbst nach.
+      // kommen aus dem ZuTunService.
       this.loading = false;
       this.error = null;
       this.nachladefehler = false;
       return;
     }
-    if (still && this.loading) {
-      return; // Das erste Laden läuft noch.
-    }
-    // Still und ohne Fehler steht eine Liste; scheitert das Nachladen, bleibt sie stehen.
-    // Nach einem Fehler bleibt dessen Hinweis (mit Spinner) bis zum Erfolg stehen.
-    const leise = still && !this.error;
-    if (!still) {
-      this.loading = true;
-      this.error = null;
-      this.expandedReports.clear(); // Reset expanded rows on refresh
-    }
+    this.loading = true;
+    this.error = null;
+    this.expandedReports.clear(); // Reset expanded rows on refresh
     // Antworten einer Ansicht, die inzwischen verlassen ist, verwerfen: Sonst zeigt
     // etwa „Nach Person“ den Fehler einer alten Liste (#494).
     const ansicht = this.selectedStatus;
@@ -182,33 +178,130 @@ export class ContentModerationComponent implements OnInit {
       this.moderationService.getGesperrte().subscribe({
         next: (response) => {
           if (verlassen()) return;
-          this.gesperrte = nachWiderspruch(response.beitraege);
-          this.offeneWidersprueche = zaehleOffene(response.beitraege);
+          this.gesperrteUebernehmen(response.beitraege);
           this.geladen();
         },
         error: (error) => {
           console.error('Error loading blocked content:', error);
           if (verlassen()) return;
-          this.ladefehler(leise, 'Gesperrte Beiträge gerade nicht erreichbar, neuer Versuch in Kürze …');
+          this.ladefehler(false, 'Gesperrte Beiträge gerade nicht erreichbar, neuer Versuch in Kürze …');
         }
       });
       return;
     }
 
-    this.moderationService.getReports(ansicht).subscribe({
+    this.moderationService.getReports(ansicht as Meldungsansicht, MELDUNGEN_GRENZE).subscribe({
       next: (response) => {
         if (verlassen()) return;
         // Force new array reference for change detection
         this.reports = [...response.reports];
+        this.meldungenGeladen(ansicht, response.reports);
         this.geladen();
         this.updateDisplayedColumns();
       },
       error: (error) => {
         console.error('Error loading reports:', error);
         if (verlassen()) return;
-        this.ladefehler(leise, 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …');
+        this.ladefehler(false, 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …');
       }
     });
+  }
+
+  /**
+   * Ein stilles Nachladen (selbstNachladen): ohne Spinner, aufgeklappte Zeilen bleiben offen,
+   * neue Meldungen werden angekündigt statt oben unter den Zeiger geschoben. Ein Fehler lässt
+   * die Liste stehen und geht an den Takt zurück (längere Pause). Die Ansichten „Person“ und
+   * „Löschaufträge“ fragen hier nichts, „Gesperrt“ zählt die Widersprüche aus seinen Daten.
+   */
+  stillesNachladen(): Observable<unknown> {
+    const ansicht = this.selectedStatus;
+    if (this.loading || this.laedtSelbst) {
+      return EMPTY;
+    }
+    // Ohne Fehler steht eine Liste; nach einem Fehler bleibt dessen Hinweis bis zum Erfolg.
+    const leise = !this.error;
+    const verlassen = () => this.selectedStatus !== ansicht;
+
+    if (ansicht === 'gesperrt') {
+      return this.moderationService.getGesperrte(true).pipe(
+        tap({
+          next: (response) => {
+            if (verlassen()) return;
+            this.gesperrteUebernehmen(response.beitraege);
+            this.geladen();
+          },
+          error: () => {
+            if (!verlassen()) this.ladefehler(leise, 'Gesperrte Beiträge gerade nicht erreichbar, neuer Versuch in Kürze …');
+          },
+        })
+      );
+    }
+
+    const liste = this.moderationService.getReports(ansicht as Meldungsansicht, MELDUNGEN_GRENZE, 0, true).pipe(
+      tap({
+        next: (response) => {
+          if (verlassen()) return;
+          this.stillUebernehmen(response.reports);
+          this.meldungenGeladen(ansicht, response.reports);
+          this.geladen();
+        },
+        error: () => {
+          if (!verlassen()) this.ladefehler(leise, 'Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …');
+        },
+      })
+    );
+    // Die Zahl am Umschalter „Gesperrt“ steht in keiner Meldungsliste: hier mitzählen.
+    const widersprueche = this.moderationService.getGesperrte(true).pipe(
+      tap((response) => (this.offeneWidersprueche = zaehleOffene(response.beitraege))),
+      catchError(() => EMPTY)
+    );
+    return merge(liste, widersprueche);
+  }
+
+  /** Meldungen, die seit dem letzten Stand dazukamen und noch nicht in der Liste stehen. */
+  neueMeldungen = 0;
+  private wartendeListe: ContentReport[] | null = null;
+
+  /** Die angekündigten neuen Meldungen einfügen, in der Reihenfolge des Dienstes. */
+  neueZeigen() {
+    if (this.wartendeListe) {
+      this.reports = this.wartendeListe;
+    }
+    this.wartendeListe = null;
+    this.neueMeldungen = 0;
+  }
+
+  /**
+   * Übernimmt eine nachgeladene Liste, ohne Zeilen zu verschieben: bekannte Meldungen bekommen
+   * ihren neuen Stand, erledigte fallen weg, neue warten auf „N neue Meldungen“.
+   */
+  private stillUebernehmen(neu: ContentReport[]) {
+    const frisch = new Map(neu.map((meldung) => [meldung.id, meldung]));
+    const bekannt = new Set(this.reports.map((meldung) => meldung.id));
+    const bleiben = this.reports.filter((meldung) => frisch.has(meldung.id)).map((meldung) => frisch.get(meldung.id)!);
+    const neue = neu.filter((meldung) => !bekannt.has(meldung.id));
+    if (!bleiben.length) {
+      // Nichts steht unter dem Zeiger: gleich alles zeigen.
+      this.reports = [...neu];
+      this.wartendeListe = null;
+      this.neueMeldungen = 0;
+      return;
+    }
+    this.reports = bleiben;
+    this.wartendeListe = neue.length ? [...neu] : null;
+    this.neueMeldungen = neue.length;
+  }
+
+  private gesperrteUebernehmen(beitraege: GemeldeterBeitrag[]) {
+    this.gesperrte = nachWiderspruch(beitraege);
+    this.offeneWidersprueche = zaehleOffene(beitraege);
+  }
+
+  /** Die offene Liste speist den ZuTunService: Kopf und „Zu tun“ fragen dann nicht doppelt. */
+  private meldungenGeladen(ansicht: Ansicht, meldungen: ContentReport[]) {
+    if (ansicht === 'pending') {
+      this.zuTun.meldungenGespeist(meldungen);
+    }
   }
 
   private geladen() {
@@ -327,12 +420,9 @@ export class ContentModerationComponent implements OnInit {
     });
   }
 
-  /** Die Liste der Löschaufträge hat sich geändert (Ereignis „anzahl“): Zahl und „Zu tun“ nachziehen. */
+  /** Die Liste der Löschaufträge meldet ihre Zahl (Ereignis „anzahl“); sie kommt aus demselben ZuTunService. */
   loeschauftraegeGezaehlt(anzahl: number) {
-    if (anzahl !== this.offeneLoeschauftraege) {
-      this.offeneLoeschauftraege = anzahl;
-      this.zuTun.aktualisieren();
-    }
+    this.offeneLoeschauftraege = anzahl;
   }
 
   getSperrgrundLabel(sperrgrund: string): string {

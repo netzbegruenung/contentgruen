@@ -22,6 +22,7 @@ import { RUECKKEHRZIEL_SCHLUESSEL } from './login/rueckkehrziel';
 import { RundgangService } from './rundgang/rundgang.service';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ZuTunService } from './services/zu-tun.service';
+import { ModerationService } from './services/moderation.service';
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
@@ -451,6 +452,15 @@ describe('AppComponent - Desktop-Kopf', () => {
   });
   // Nutzerfuehrung 13.11.2026: offene Meldungen sieht man schon im Kopf.
   describe('Admin', () => {
+    it('fragt fuer Nicht-Admins nie nach offenen Meldungen', () => {
+      const moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getLoeschauftraege']);
+      TestBed.overrideProvider(ModerationService, { useValue: moderation });
+      starten(ANGEMELDET);
+
+      expect(kopf().querySelector('app-offene-meldungen-zahl')).toBeNull();
+      expect(moderation.getReports).not.toHaveBeenCalled();
+    });
+
     it('zeigt am Admin-Link die Zahl offener Meldungen', () => {
       TestBed.overrideProvider(ZuTunService, {
         useValue: { meldungen$: of({ daten: { anzahl: 3, mehr: false, aelteste: null }, fehler: false }) },

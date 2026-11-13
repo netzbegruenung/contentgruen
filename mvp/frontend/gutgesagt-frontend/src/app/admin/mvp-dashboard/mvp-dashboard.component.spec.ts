@@ -53,7 +53,13 @@ describe('MvpDashboardComponent', () => {
 
     const knoepfe = Array.from(fixture.nativeElement.querySelectorAll('button.info-icon')) as HTMLButtonElement[];
     expect(knoepfe.length).toBe(5);
-    expect(knoepfe.every((knopf) => knopf.getAttribute('aria-label') === 'So wird gezählt')).toBeTrue();
+    expect(knoepfe.map((knopf) => knopf.getAttribute('aria-label'))).toEqual([
+      'So wird gezählt: Aktive Personen pro Tag',
+      'So wird gezählt: Suchen pro Person',
+      'So wird gezählt: Neue Inhalte diese Woche',
+      'So wird gezählt: Nutzungen im Verlauf',
+      'So wird gezählt: Anteil „War hilfreich“',
+    ]);
     expect(knoepfe.every((knopf) => knopf.type === 'button')).toBeTrue();
   });
 
@@ -65,7 +71,8 @@ describe('MvpDashboardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Kennzahlen gerade nicht erreichbar, neuer Versuch in Kürze');
 
     metrics.getMVPDashboard.and.returnValue(of(KENNZAHLEN));
-    tick(KENNZAHLEN_NACHLADEN_MS);
+    // Nach einem Fehler wartet der naechste Versuch doppelt so lang.
+    tick(KENNZAHLEN_NACHLADEN_MS * 2);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.metrics).toEqual(KENNZAHLEN);
