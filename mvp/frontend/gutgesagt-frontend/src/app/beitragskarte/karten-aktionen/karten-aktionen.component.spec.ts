@@ -283,6 +283,18 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         duration: 5000,
       });
     }));
+
+    it('"Anmelden" in der Snackbar meldet mit Anlass Abstimmen an; die Stimme gibt die App nicht ab', fakeAsync(() => {
+      const authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      authService.getUserInfo.and.returnValue(null);
+      snackBar.open.and.returnValue({ onAction: () => of(undefined) } as any);
+
+      component.toggleLike();
+      tick(50);
+
+      expect(authService.login).toHaveBeenCalledWith('abstimmen');
+      expect(votingService.setLike).not.toHaveBeenCalled();
+    }));
   });
 
   describe('Dislike Functionality', () => {

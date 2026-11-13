@@ -43,6 +43,42 @@ describe('LoginSelectorComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  // Persona-Test BDK: Wer eine Einladung hat, findet den Weg ohne Aufklappen
+  describe('Einladung einlösen', () => {
+    it('zeigt den Weg zur Einladung ohne Aufklappen, auch waehrend die Anmeldewege laden', () => {
+      const knopf = fixture.nativeElement.querySelector('.einladung-weg a.einladung-knopf') as HTMLAnchorElement;
+      expect(knopf).toBeTruthy();
+      expect(knopf.textContent).toContain('Einladung einlösen');
+      expect(knopf.getAttribute('href')).toBe('/einladung');
+    });
+
+    it('nennt die Einladung unter "So bekommst du ein Konto"', () => {
+      const optionen = fixture.nativeElement.querySelector('.registration-options') as HTMLElement;
+      expect(optionen.textContent).toContain('Einladung');
+      expect(optionen.querySelector('a.einladung-link')?.getAttribute('href')).toBe('/einladung');
+      // Anders benannt als der Knopf darunter: zwei gleich lautende Links verwirren in der Linkliste von Screenreadern
+      expect(optionen.querySelector('a.einladung-link')?.textContent?.trim()).toBe('Einladungslink einfügen');
+    });
+
+    it('fuehrt im selben Tab ohne Neuladen zu /einladung', () => {
+      const router = TestBed.inject(Router);
+      const klick = new MouseEvent('click', { button: 0, cancelable: true });
+      component.zurEinladung(klick);
+
+      expect(klick.defaultPrevented).toBeTrue();
+      expect(router.navigate).toHaveBeenCalledWith(['/einladung']);
+    });
+
+    it('laesst Strg-Klick dem Browser (neuer Tab)', () => {
+      const router = TestBed.inject(Router);
+      const klick = new MouseEvent('click', { button: 0, ctrlKey: true, cancelable: true });
+      component.zurEinladung(klick);
+
+      expect(klick.defaultPrevented).toBeFalse();
+      expect(router.navigate).not.toHaveBeenCalledWith(['/einladung']);
+    });
+  });
+
   describe('Expandable Registration Info', () => {
     it('should initialize with registration info collapsed', () => {
       expect(component.isRegistrationInfoExpanded).toBeFalsy();
