@@ -569,8 +569,10 @@ Empfänger und Ort“.
   den Punkten), erster Kommentar, den eine sichtbare Aussage als Antwort führt (Payload
   `antwort_ids` in Qdrant). Keine neue Speicherung, kein zeitliches Muster, keine Suchen, Kopien,
   Meldungen oder Anmeldetage. Drei davon sind Wegmarken: nur für die Person, nicht in der Zahl am
-  Namen und nicht für die Krone (V22 unverändert). Der Hinweis beim Erreichen merkt sich die
-  gesehenen Kennungen nur im Browser (localStorage), ohne Server-Eintrag; keine Erinnerungen.
+  Namen und nicht für die Krone (V22 unverändert). Der Hinweis beim Erreichen (nach dem eigenen
+  Tun oder beim Anmelden) merkt sich die gesehenen Kennungen nur im Browser (localStorage), ohne
+  Server-Eintrag; keine Erinnerungen. Ob ein Einwurf der erste ist, liest die Karte nach dem
+  Einwurf aus der Zahl der eigenen Einwürfe (`getOwnRawInputs`, vorhanden).
   Die Erklärung nennt die neue Liste unter „Punkte“.
 
 #### V12 Meldungen

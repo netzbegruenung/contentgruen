@@ -4,8 +4,21 @@
         <ng-container *ngIf="!sichtbar">Nur du siehst deine Meilensteine.</ng-container>
         <ng-container *ngIf="sichtbar">Andere Angemeldete sehen an deinem Namen, wie viele Meilensteine du erreicht hast; Wegmarken zählen dabei nicht.</ng-container>
     </p>
+    <!-- Erreichte und der naechste offene; der Rest aufklappbar, damit die Liste kurz bleibt (UX-Befund B14) -->
     <ul class="meilensteine-liste">
-        <li *ngFor="let meilenstein of meilensteine" class="meilenstein" [class.erreicht]="meilenstein.erreicht">
+        <li *ngFor="let meilenstein of sichtbare" class="meilenstein" [class.erreicht]="meilenstein.erreicht">
+            <ng-container *ngTemplateOutlet="eintrag; context: { $implicit: meilenstein }"></ng-container>
+        </li>
+    </ul>
+    <details *ngIf="weitere.length" class="meilensteine-weitere">
+        <summary>Weitere Meilensteine ({{ weitere.length }})</summary>
+        <ul class="meilensteine-liste">
+            <li *ngFor="let meilenstein of weitere" class="meilenstein">
+                <ng-container *ngTemplateOutlet="eintrag; context: { $implicit: meilenstein }"></ng-container>
+            </li>
+        </ul>
+    </details>
+    <ng-template #eintrag let-meilenstein>
             <!-- Einheitliches Medaillon: erreicht tannengruen, offen grau gestrichelt; das Motiv ist Fluent Emoji (MIT) -->
             <span class="meilenstein-medaillon" aria-hidden="true" [title]="meilenstein.bildnachweis">
                 <svg class="medaillon-rahmen" viewBox="0 0 56 56" width="56" height="56">
@@ -26,8 +39,7 @@
                 <span class="meilenstein-beschreibung">{{ meilenstein.beschreibung }}</span>
                 <span *ngIf="sichtbar && meilenstein.art === 'weg'" class="meilenstein-wegmarke">Wegmarke, zählt nicht fürs Abzeichen</span>
             </span>
-        </li>
-    </ul>
+    </ng-template>
 
     <!-- Zustimmung zur Sichtbarkeit: einmal fragen, zwei gleichwertige Knoepfe, nichts vorbelegt (#351) -->
     <div *ngIf="fragen" class="sichtbarkeit-frage" role="group" aria-labelledby="sichtbarkeit-text">

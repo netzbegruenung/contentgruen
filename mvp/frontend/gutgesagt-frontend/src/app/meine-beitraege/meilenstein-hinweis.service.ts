@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 import { ROUTES } from '../shared/constants/app.constants';
@@ -39,9 +41,14 @@ export function gesehenMerken(meilensteine: Meilenstein[]): void {
   }
 }
 
+/** „Meilenstein erreicht: Erster Einwurf“ oder „2 Meilensteine erreicht“. */
+export function meilensteinText(neu: Meilenstein[]): string {
+  return neu.length === 1 ? `Meilenstein erreicht: ${neu[0].name}` : `${neu.length} Meilensteine erreicht`;
+}
+
 /**
  * Ein kurzer Hinweis direkt nach dem eigenen Tun (Einwerfen, Ausformulieren, einen
- * Kommentar speichern), wenn dabei ein Meilenstein neu erreicht wurde (#351).
+ * Kommentar speichern) oder beim Anmelden, wenn ein Meilenstein neu erreicht wurde (#351).
  *
  * Was schon gezeigt wurde, merkt sich nur der Browser, wie beim Rundgang (#389):
  * kein Server-Eintrag, keine Mail, kein Push. Kein Countdown, keine Serie, keine
@@ -56,27 +63,47 @@ export class MeilensteinHinweisService {
     private router: Router,
   ) {}
 
-  /** Nach einer gespeicherten Handlung aufrufen; Fehler bleiben still. */
-  pruefen(): void {
+  /**
+   * Die neu erreichten, noch nicht gezeigten Meilensteine; sie gelten danach als
+   * gesehen. Ohne Speicher (oder bei Fehlern) eine leere Liste, ohne Anfrage.
+   */
+  neueErreichte(): Observable<Meilenstein[]> {
     if (!gesehenLesen()) {
-      return;
+      return of([]);
     }
-    this.usageTrackingService.getEigeneMeilensteine().subscribe((meilensteine) => {
-      const gesehen = gesehenLesen();
-      if (!gesehen) {
-        return;
+    return this.usageTrackingService.getEigeneMeilensteine().pipe(
+      map((meilensteine) => {
+        const gesehen = gesehenLesen();
+        if (!gesehen) {
+          return [];
+        }
+        const neu = meilensteine.filter((m) => m.erreicht && !gesehen.has(m.kennung));
+        if (neu.length) {
+          gesehenMerken(meilensteine);
+        }
+        return neu;
+      }),
+    );
+  }
+
+  /** Nach einer gespeicherten Handlung aufrufen: ein Hinweis, wenn etwas neu ist. */
+  pruefen(): void {
+    this.neueErreichte().subscribe((neu) => {
+      if (neu.length) {
+        this.zeigen(meilensteinText(neu));
       }
-      const neu = meilensteine.filter((m) => m.erreicht && !gesehen.has(m.kennung));
-      if (!neu.length) {
-        return;
-      }
-      gesehenMerken(meilensteine);
-      const text =
-        neu.length === 1 ? `Meilenstein erreicht: ${neu[0].name}` : `${neu.length} Meilensteine erreicht`;
-      this.snackBar
-        .open(text, 'Ansehen', { duration: ANZEIGEDAUER_MS })
-        .onAction()
-        .subscribe(() => this.router.navigateByUrl(ROUTES.MEINE_BEITRAEGE));
     });
+  }
+
+  /** Ein Hinweis mit „Ansehen“, das zu Meine Beiträge führt. */
+  zeigen(text: string): void {
+    this.snackBar
+      .open(text, 'Ansehen', { duration: ANZEIGEDAUER_MS })
+      .onAction()
+      .subscribe(() => this.ansehen());
+  }
+
+  ansehen(): void {
+    this.router.navigateByUrl(ROUTES.MEINE_BEITRAEGE);
   }
 }

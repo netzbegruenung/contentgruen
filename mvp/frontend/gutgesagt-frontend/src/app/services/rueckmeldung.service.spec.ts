@@ -2,12 +2,14 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from './logging.service';
 import { RueckmeldungService } from './rueckmeldung.service';
+import { Meilenstein } from './usage-tracking.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 
 /**
  * Die Rueckmeldung beim Anmelden (#349): "Seit deinem letzten Besuch wurden deine
@@ -19,6 +21,8 @@ describe('RueckmeldungService', () => {
   let snackBar: jasmine.SpyObj<MatSnackBar>;
   let http: HttpTestingController;
   let service: RueckmeldungService;
+  let neu: Meilenstein[];
+  let hinweis: { neueErreichte: () => Observable<Meilenstein[]>; zeigen: jasmine.Spy };
 
   const angemeldet = (userId: string): UserInfo => ({
     isAuthenticated: true,
@@ -30,12 +34,15 @@ describe('RueckmeldungService', () => {
   beforeEach(() => {
     anmeldung = new BehaviorSubject<UserInfo | null>(null);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+    neu = [];
+    hinweis = { neueErreichte: () => of(neu), zeigen: jasmine.createSpy('zeigen') };
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: { userInfo$: anmeldung.asObservable() } },
         { provide: MatSnackBar, useValue: snackBar },
+        { provide: MeilensteinHinweisService, useValue: hinweis },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['debug', 'info', 'error']) },
       ],
     });
@@ -110,5 +117,33 @@ describe('RueckmeldungService', () => {
     http.expectOne(ADRESSE).flush('kaputt', { status: 500, statusText: 'Server Error' });
 
     expect(snackBar.open).not.toHaveBeenCalled();
+  });
+
+  describe('mit neuem Meilenstein (#351, UX-Befund B6)', () => {
+    const EINER: Meilenstein = {
+      kennung: 'zustimmung-1', name: 'Erste Zustimmung', untertitel: 'Nicht allein', beschreibung: '',
+      bild: '', bildnachweis: '', art: 'wirkung', schwelle: 1, stand: 1, erreicht: true,
+    };
+
+    it('nennt ihn beim Namen hinter der Nutzung, mit "Ansehen"', () => {
+      neu = [EINER];
+      service.starten();
+      anmeldung.next(angemeldet('kim-1'));
+      http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 3 });
+
+      expect(hinweis.zeigen).toHaveBeenCalledOnceWith(
+        'Seit deinem letzten Besuch wurden deine Beiträge 3-mal genutzt. Meilenstein erreicht: Erste Zustimmung',
+      );
+      expect(snackBar.open).not.toHaveBeenCalled();
+    });
+
+    it('nennt ihn auch ohne neue Nutzung', () => {
+      neu = [EINER];
+      service.starten();
+      anmeldung.next(angemeldet('kim-1'));
+      http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 0 });
+
+      expect(hinweis.zeigen).toHaveBeenCalledOnceWith('Meilenstein erreicht: Erste Zustimmung');
+    });
   });
 });

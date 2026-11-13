@@ -90,9 +90,36 @@
     min-height: 24px;
 }
 
-.einwurf-rueckmeldung .erfolg {
-    margin: 0;
+.erfolg-karte {
+    padding: 12px 16px;
+    border: 1px solid var(--akzent-tanne);
+    border-radius: 8px;
+    background: var(--primary-tint);
+}
+
+.erfolg-karte p {
+    margin: 0 0 8px;
+}
+
+.erfolg-titel {
+    font-weight: 500;
+}
+
+.erfolg-text {
     color: var(--text-secondary);
+}
+
+.erfolg-meilenstein {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.erfolg-knoepfe {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .einwurf-rueckmeldung .fehler {

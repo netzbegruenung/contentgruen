@@ -12,7 +12,7 @@
 
         <mat-form-field appearance="outline" class="einwurf-feld">
             <mat-label>Link</mat-label>
-            <input matInput
+            <input matInput #linkFeld
                    id="einwurf-link"
                    type="url"
                    inputmode="url"
@@ -85,10 +85,26 @@
         </div>
 
         <div class="einwurf-rueckmeldung" role="status" aria-live="polite">
-            <p *ngIf="eingeworfen > 0 && !fehler" class="erfolg">
-                ✅ Drin. {{ eingeworfen === 1 ? 'Ein Einwurf' : eingeworfen + ' Einwürfe' }} in dieser Sitzung –
-                die Felder sind wieder frei für den nächsten.
-            </p>
+            <!-- Erfolgskarte (#351): beim ersten Einwurf ausfuehrlich, danach kurz; Meilensteine nur mit eingeschalteten Punkten -->
+            <div *ngIf="erfolg && !fehler" class="erfolg-karte">
+                <p class="erfolg-titel"><span aria-hidden="true">✅</span> Drin.</p>
+                <p *ngIf="erfolg.erster" class="erfolg-text">
+                    Dein erster Einwurf liegt im Fangkorb. Sobald jemand einen Beitrag daraus macht,
+                    steht das unter „Meine Einwürfe“; bis dahin liegt er da und sieht wichtig aus.
+                </p>
+                <p *ngIf="!erfolg.erster" class="erfolg-text">
+                    Liegt im Fangkorb<ng-container *ngIf="eingeworfen > 1">, {{ eingeworfen }} in dieser Sitzung</ng-container>.
+                    Die Felder sind wieder frei.
+                </p>
+                <p *ngIf="erfolg.meilensteine.length" class="erfolg-meilenstein">
+                    <img *ngFor="let m of erfolg.meilensteine" [src]="'/' + m.bild" alt="" width="20" height="20">
+                    {{ meilensteinZeile }}
+                </p>
+                <div class="erfolg-knoepfe">
+                    <button mat-stroked-button type="button" (click)="meineEinwuerfe()">Meine Einwürfe</button>
+                    <button mat-button type="button" (click)="nochEiner()">Noch einen einwerfen</button>
+                </div>
+            </div>
             <p *ngIf="fehler" class="fehler">⚠️ {{ fehler }}</p>
         </div>
 

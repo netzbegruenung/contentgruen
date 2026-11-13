@@ -16,6 +16,7 @@ import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.
 import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
 import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
+import { Meilenstein } from '../services/usage-tracking.service';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 
@@ -42,6 +43,8 @@ describe('EinwerfenComponent', () => {
   let fixture: ComponentFixture<EinwerfenComponent>;
   let einwurfService: jasmine.SpyObj<EinwurfService>;
   let meilensteinHinweis: jasmine.SpyObj<MeilensteinHinweisService>;
+  let eigeneEinwuerfe = 1;
+  let neueMeilensteine: Meilenstein[] = [];
 
   /**
    * Die Vorbelegung passiert in ngOnInit, also muss eine Ablage liegen, bevor die
@@ -54,10 +57,12 @@ describe('EinwerfenComponent', () => {
       sessionStorage.setItem(SHARE_FELDER_SCHLUESSEL, ablage);
     }
 
-    const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen', 'mitGleichemLink']);
+    const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen', 'mitGleichemLink', 'eigeneLaden']);
+    serviceSpy.eigeneLaden.and.returnValue(of({ results_count: 1, results: [], total_records_count: eigeneEinwuerfe }));
     serviceSpy.einwerfen.and.returnValue(of({ id: 'neue-id' }));
     serviceSpy.mitGleichemLink.and.returnValue(of([]));
-    meilensteinHinweis = jasmine.createSpyObj<MeilensteinHinweisService>('MeilensteinHinweisService', ['pruefen']);
+    meilensteinHinweis = jasmine.createSpyObj<MeilensteinHinweisService>('MeilensteinHinweisService', ['neueErreichte']);
+    meilensteinHinweis.neueErreichte.and.returnValue(of(neueMeilensteine));
 
     await TestBed.configureTestingModule({
       imports: [EinwerfenComponent, NoopAnimationsModule],
@@ -153,14 +158,6 @@ describe('EinwerfenComponent', () => {
       });
     });
 
-    it('prueft nach dem Einwurf, ob ein Meilenstein neu erreicht ist (#351)', () => {
-      eingeben('', 'Waermepumpen-Foerderung wurde gekuerzt');
-
-      component.einwerfen();
-
-      expect(meilensteinHinweis.pruefen).toHaveBeenCalledTimes(1);
-    });
-
     it('nimmt einen Link ohne Hinweis an', () => {
       eingeben('https://example.org/post', '');
 
@@ -238,6 +235,81 @@ describe('EinwerfenComponent', () => {
         hinweis: 'nicht verlieren',
       });
       expect(component.eingeworfen).toBe(0);
+    });
+  });
+
+  describe('Erfolgskarte (#351)', () => {
+    const EINWURF_1: Meilenstein = {
+      kennung: 'einwurf-1', name: 'Erster Einwurf', untertitel: 'Fundstück', beschreibung: '',
+      bild: 'meilensteine/korb.svg', bildnachweis: '', art: 'weg', schwelle: 1, stand: 1, erreicht: true,
+    };
+
+    afterEach(() => {
+      eigeneEinwuerfe = 1;
+      neueMeilensteine = [];
+    });
+
+    function karte(): HTMLElement | null {
+      fixture.detectChanges();
+      return (fixture.nativeElement as HTMLElement).querySelector('.erfolg-karte');
+    }
+
+    it('erklaert beim allerersten Einwurf, wo man das Ergebnis sieht', async () => {
+      await erstellen();
+      eingeben('', 'Waermepumpen-Foerderung wurde gekuerzt');
+
+      component.einwerfen();
+
+      expect(einwurfService.eigeneLaden).toHaveBeenCalledWith(1, 1);
+      expect(karte()?.textContent).toContain('Dein erster Einwurf liegt im Fangkorb');
+      expect(karte()?.textContent).toContain('Meine Einwürfe');
+      expect(karte()?.textContent).not.toContain('Meilenstein');
+    });
+
+    it('ist kurz, wenn es nicht der erste Einwurf der Person ist', async () => {
+      eigeneEinwuerfe = 7;
+      await erstellen();
+      eingeben('', 'eins');
+
+      component.einwerfen();
+
+      expect(karte()?.textContent).toContain('Liegt im Fangkorb');
+      expect(karte()?.textContent).not.toContain('erster');
+    });
+
+    it('fragt ab dem zweiten in der Sitzung nicht mehr nach und zaehlt mit', async () => {
+      await erstellen();
+      eingeben('', 'eins');
+      component.einwerfen();
+      eingeben('', 'zwei');
+      component.einwerfen();
+
+      expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(1);
+      expect(karte()?.textContent).toContain('2 in dieser Sitzung');
+    });
+
+    it('nennt mit eingeschalteten Punkten den erreichten Meilenstein', async () => {
+      neueMeilensteine = [EINWURF_1];
+      await erstellen();
+      eingeben('', 'eins');
+
+      component.einwerfen();
+
+      expect(karte()?.querySelector('.erfolg-meilenstein')?.textContent).toContain('Meilenstein erreicht: Erster Einwurf');
+    });
+
+    it('"Noch einen einwerfen" schliesst die Karte und setzt den Fokus ins Link-Feld', async () => {
+      await erstellen();
+      document.body.appendChild(fixture.nativeElement);
+      eingeben('', 'eins');
+      component.einwerfen();
+      const knopf = Array.from(karte()!.querySelectorAll('button')).find((b) => b.textContent?.includes('Noch einen'))!;
+
+      knopf.click();
+
+      expect(karte()).toBeNull();
+      expect(document.activeElement?.id).toBe('einwurf-link');
+      (fixture.nativeElement as HTMLElement).remove();
     });
   });
 

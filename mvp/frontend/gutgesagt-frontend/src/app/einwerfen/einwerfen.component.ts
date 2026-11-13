@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -21,11 +21,12 @@ import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { LoggingService } from '../services/logging.service';
 import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
+import { Meilenstein } from '../services/usage-tracking.service';
 import { NavigationService } from '../services/navigation.service';
 import { RouterLink } from '@angular/router';
 import { ROUTES } from '../shared/constants/app.constants';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
-import { Subject, of, timer } from 'rxjs';
+import { Subject, forkJoin, of, timer } from 'rxjs';
 import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 export const HINWEIS_LIMIT = 5000;
@@ -109,6 +110,14 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
   fehler: string | null = null;
   /** Anzahl der Einwuerfe in dieser Sitzung - das Formular bleibt ja offen. */
   eingeworfen = 0;
+  /**
+   * Die Erfolgskarte nach dem Einwurf: beim allerersten Einwurf der Person die
+   * ausfuehrliche Fassung, sonst die kurze; mit eingeschalteten Punkten dazu neu
+   * erreichte Meilensteine (#351). Ob es der erste ist, sagt die Zahl der eigenen
+   * Einwuerfe aus "Meine Einwuerfe" (vorhandene API, kein neuer Zweck).
+   */
+  erfolg: { erster: boolean; meilensteine: Meilenstein[] } | null = null;
+  @ViewChild('linkFeld') linkFeld?: ElementRef<HTMLInputElement>;
   /**
    * Ob der aktuelle Feldinhalt aus dem Teilen-Menue stammt. Steuert nur den
    * Weg des naechsten Einwurfs und wird danach zurueckgesetzt: das
@@ -288,6 +297,7 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
 
     this.wirdGespeichert = true;
     this.fehler = null;
+    this.erfolg = null;
 
     this.einwurfService.einwerfen(anfrage).subscribe({
       next: () => {
@@ -298,7 +308,7 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
         this.einwurfForm.reset({ link: '', hinweis: '' });
         this.vorbelegung = null;
         this.ausShare = false;
-        this.meilensteinHinweis.pruefen();
+        this.erfolgZeigen();
       },
       error: (error) => {
         this.logger.error('Einwurf fehlgeschlagen', error);
@@ -311,6 +321,35 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
     });
   }
 
+
+  /** Erst nach der Antwort zeigen: sonst springt die Karte von kurz auf ausführlich. */
+  private erfolgZeigen(): void {
+    const erster =
+      this.eingeworfen === 1
+        ? this.einwurfService.eigeneLaden(1, 1).pipe(
+            map((seite) => seite.total_records_count === 1),
+            catchError(() => of(false)),
+          )
+        : of(false);
+    forkJoin({ erster, meilensteine: this.meilensteinHinweis.neueErreichte() })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((stand) => (this.erfolg = stand));
+  }
+
+  /** „Meilenstein erreicht: Erster Einwurf“, bei mehreren alle Namen. */
+  get meilensteinZeile(): string {
+    const namen = (this.erfolg?.meilensteine ?? []).map((m) => m.name);
+    return namen.length === 1 ? `Meilenstein erreicht: ${namen[0]}` : `Meilensteine erreicht: ${namen.join(', ')}`;
+  }
+
+  meineEinwuerfe(): void {
+    this.navigationService.navigateToMeineEinwuerfe();
+  }
+
+  nochEiner(): void {
+    this.erfolg = null;
+    this.linkFeld?.nativeElement.focus();
+  }
 
   zurueckZurStartseite(): void {
     this.navigationService.navigateToStart();

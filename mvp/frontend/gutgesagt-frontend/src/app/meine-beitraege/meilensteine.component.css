@@ -129,6 +129,17 @@
   color: var(--text-secondary);
 }
 
+.meilensteine-weitere {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.meilensteine-weitere summary {
+  cursor: pointer;
+  margin-bottom: 8px;
+  color: var(--primary-dark);
+}
+
 .sichtbarkeit-frage {
   margin-top: 12px;
   padding: 12px 16px;

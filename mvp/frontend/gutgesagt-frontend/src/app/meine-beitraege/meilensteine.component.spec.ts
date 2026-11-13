@@ -93,6 +93,27 @@ describe('MeilensteineComponent (#351)', () => {
     expect(JSON.parse(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)!)).toEqual(['nutzung-1']);
   });
 
+  it('zeigt erreichte und den nächsten offenen, den Rest aufklappbar (B14)', () => {
+    const element = erstellen([
+      meilenstein({ kennung: 'a', stand: 1, erreicht: true }),
+      meilenstein({ kennung: 'b', name: 'Nächster' }),
+      meilenstein({ kennung: 'c', name: 'Später', schwelle: 10 }),
+      meilenstein({ kennung: 'd', stand: 1, erreicht: true }),
+      meilenstein({ kennung: 'e', name: 'Noch später', schwelle: 50 }),
+    ]);
+
+    const oben = Array.from(element.querySelectorAll(':scope .meilensteine > .meilensteine-liste > .meilenstein'));
+    expect(oben.map((e) => e.querySelector('.meilenstein-name')?.textContent?.trim())).toEqual([
+      'Erstmals genutzt',
+      'Nächster',
+      'Erstmals genutzt',
+    ]);
+    const weitere = element.querySelector<HTMLDetailsElement>('details.meilensteine-weitere')!;
+    expect(weitere.open).toBeFalse();
+    expect(weitere.querySelector('summary')?.textContent).toContain('Weitere Meilensteine (2)');
+    expect(weitere.querySelectorAll('.meilenstein').length).toBe(2);
+  });
+
   it('sagt, dass nur die Person selbst sie sieht', () => {
     const element = erstellen([meilenstein({})]);
 

@@ -75,6 +75,18 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
     return this.meilensteine.filter((m) => m.erreicht).length;
   }
 
+  /** Die erreichten und der nächste offene, in der Reihenfolge der Liste. */
+  get sichtbare(): Meilenstein[] {
+    const naechster = this.meilensteine.find((m) => !m.erreicht);
+    return this.meilensteine.filter((m) => m.erreicht || m === naechster);
+  }
+
+  /** Die übrigen offenen, aufklappbar unter „Weitere Meilensteine“. */
+  get weitere(): Meilenstein[] {
+    const sichtbar = new Set(this.sichtbare);
+    return this.meilensteine.filter((m) => !sichtbar.has(m));
+  }
+
   /** Erreichte, die das Abzeichen am Namen zählt: Wegmarken (eigenes Tun) nicht. */
   get erreichteFuersAbzeichen(): number {
     return this.meilensteine.filter((m) => m.erreicht && m.art !== 'weg').length;
