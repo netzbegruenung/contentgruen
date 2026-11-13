@@ -314,9 +314,9 @@ def test_schwere_schritte_warten_auf_ihre_vorbereitung():
 
 
 def test_kette_laeuft_nach_rotem_vorgaenger_weiter():
-    # Sonst fehlten ci-bericht nach einem roten unit alle Ergebnisse dahinter.
-    assert "when" not in SCHRITTE[SCHWER[0]]
-    for name in SCHWER[1:]:
+    # Sonst fehlten ci-bericht nach einem roten unit alle Ergebnisse dahinter, und ein frueh
+    # roter leichter Schritt liesse unit ausfallen (Woodpecker: status success als Standard).
+    for name in SCHWER:
         assert SCHRITTE[name]["when"] == [{"status": ["success", "failure"]}], name
 
 

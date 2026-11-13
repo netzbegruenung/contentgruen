@@ -66,9 +66,11 @@ were cancelled together. So the four heavy steps run one after the other, never 
 the light ones (`retired-words`, `lint`, `bff` and the two installations) run alongside.
 The chain goes shortest first, so a quick failure shows early: `unit` (about half a minute),
 `frontend-build`, `frontend` (Chromium and Karma), `integration` (loads the embedding model,
-the longest). From `frontend-build` on, a step also runs after a red predecessor
-(`status: [success, failure]`), so `ci-bericht` still sees every result; a failed
-installation then makes the steps after it red as well. A run takes longer than with the
+the longest). Each of the four also runs when the run is already red
+(`status: [success, failure]`): Woodpecker's default skips a step once any step has failed,
+so an early red light step would skip `unit`, and a red `unit` would leave `ci-bericht`
+without the results after it. A failed installation therefore makes the heavy steps that
+need it red as well. A run takes longer than with the
 steps in parallel; that is the price of not running the host out of memory.
 `scripts/tests/test_woodpecker_ci.py` checks the chain and the settings below.
 

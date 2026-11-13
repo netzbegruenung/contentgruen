@@ -79,11 +79,14 @@ steps:
   # Die vier schweren Schritte laufen nacheinander, nie zwei zugleich: der Runner ist geteilt,
   # parallel liefen ihm am 13.11. Speicher und Pipelines aus (docs/CI.md, "Staggered steps").
   # Kuerzeste zuerst, damit schnelle Fehler frueh kommen: unit, frontend-build, frontend,
-  # integration. Ab frontend-build laufen sie auch nach einem roten Vorgaenger
-  # (status success/failure), damit ci-bericht trotzdem alle Ergebnisse hat.
+  # integration. Alle laufen auch, wenn der Lauf schon rot ist (status success/failure):
+  # sonst fiele unit nach einem frueh roten leichten Schritt aus, und nach rotem unit
+  # fehlten ci-bericht alle Ergebnisse dahinter.
   - name: unit
     image: python:3.13-slim
     depends_on: [python-installieren]
+    when:
+      - status: [success, failure]
     environment:
       CHECK_VOLL: "1"
       # Lokal 4; zwei Worker brauchen in der CI weniger Speicher neben den anderen Pipelines
