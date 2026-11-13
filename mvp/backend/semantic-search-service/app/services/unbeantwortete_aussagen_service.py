@@ -79,8 +79,16 @@ class UnbeantworteteAussagenService:
         self._themen = themen
 
     async def liste(
-        self, limit: int = LIMIT_STANDARD, thema: Optional[str] = None
+        self,
+        limit: int = LIMIT_STANDARD,
+        thema: Optional[str] = None,
+        mit_themen: bool = True,
     ) -> List[UnbeantworteteAussage]:
+        """
+        ``mit_themen=False`` (nur ohne Thema-Filter): ohne Nachschlagen der Themen,
+        etwa wenn nur gezaehlt wird ("Seit deinem letzten Besuch"); die Eintraege
+        tragen dann keine Themen, Auswahl und Reihenfolge bleiben gleich.
+        """
         gesucht = await self._suchen_ohne_treffer.haeufigste(
             wochen=WOCHEN_STANDARD,
             limit=KANDIDATEN_MIT_FILTER if thema else limit + PUFFER_BEANTWORTETE,
@@ -107,7 +115,11 @@ class UnbeantworteteAussagenService:
         if thema is None:
             # Ohne Filter zaehlen nur die ersten; nur deren Themen nachschlagen.
             kandidaten = kandidaten[:limit]
-        themen = self._themen.themen_von([s for s, _, _ in kandidaten])
+        themen = (
+            self._themen.themen_von([s for s, _, _ in kandidaten])
+            if mit_themen or thema is not None
+            else {}
+        )
         ergebnis = [
             UnbeantworteteAussage(
                 statement_id, text, personen, tuple(themen.get(statement_id, ()))

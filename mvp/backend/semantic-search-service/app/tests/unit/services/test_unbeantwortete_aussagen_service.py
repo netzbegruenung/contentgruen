@@ -211,3 +211,18 @@ async def test_filter_wird_vor_der_begrenzung_angewandt():
     liste = await service.liste(limit=1, thema="klima")
 
     assert [a.statement_id for a in liste] == [C]
+
+
+async def test_ohne_themen_gleiche_auswahl_ohne_nachschlagen():
+    """Fuer "Seit deinem letzten Besuch" wird nur gezaehlt (Nutzerfuehrung 13.11.)."""
+    service = _service(
+        ohne_kommentar=[_aussage(A, "Windräder sind hässlich", 20)],
+        gesucht=[SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 7, 4)],
+        themen={A: ["natur-umwelt"]},
+    )
+
+    liste = await service.liste(mit_themen=False)
+
+    assert [a.statement_id for a in liste] == [B, A]
+    assert all(a.themen == () for a in liste)
+    service._themen.themen_von.assert_not_called()

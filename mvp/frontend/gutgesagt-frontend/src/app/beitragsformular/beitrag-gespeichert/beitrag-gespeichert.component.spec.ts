@@ -221,6 +221,44 @@ describe('BeitragGespeichertComponent', () => {
     });
   });
 
+  describe('Lücke zu (Nutzerfuehrung 13.11.)', () => {
+    const aussage = { aussage: { id: 'a-1', text: 'Windkraft tötet Vögel' }, verknuepft: true };
+
+    it('sagt nach "Hier fehlt eine Antwort" Lücke zu, mit der Nachfrage, und bietet die nächste an', async () => {
+      await oeffnen({ von: 'hier-fehlt-eine-antwort', gesucht: '2' }, aussage);
+      const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+      expect(seite().querySelector('.luecke-zu-titel')!.textContent!.trim()).toBe('Lücke zu.');
+      expect(seite().querySelector('.luecke-zu')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Lücke zu. 2 Personen haben danach gesucht, ab jetzt finden sie was.',
+      );
+      expect(seite().textContent).not.toContain('Dein Kommentar ist gespeichert.');
+      expect(knoepfe()[0]).toBe('Nächste Lücke');
+      expect(knoepfe()).not.toContain('Noch einen Kommentar');
+      (seite().querySelector('.naechste-luecke') as HTMLButtonElement).click();
+      expect(navigieren).toHaveBeenCalledOnceWith(['/hier-fehlt-eine-antwort']);
+    });
+
+    it('spricht bei einer Person im Singular und ohne Zahl allgemein', async () => {
+      await oeffnen({ von: 'hier-fehlt-eine-antwort', gesucht: '1' }, aussage);
+      expect(seite().querySelector('.luecke-zu')!.textContent).toContain('Eine Person hat danach gesucht, ab jetzt findet sie was.');
+
+      TestBed.resetTestingModule();
+      await oeffnen({ von: 'hier-fehlt-eine-antwort' }, aussage);
+      expect(seite().querySelector('.luecke-zu')!.textContent).toContain('Wer danach sucht, findet ab jetzt deine Antwort.');
+    });
+
+    it('bleibt beim allgemeinen Satz, wenn die Verknüpfung scheiterte oder es nicht von dort kam', async () => {
+      await oeffnen({ von: 'hier-fehlt-eine-antwort', gesucht: '3' }, { ...aussage, verknuepft: false });
+      expect(seite().querySelector('.luecke-zu')).toBeNull();
+      expect(knoepfe()).toContain('Noch einen Kommentar');
+
+      TestBed.resetTestingModule();
+      await oeffnen({ gesucht: '3' }, aussage);
+      expect(seite().querySelector('.luecke-zu')).toBeNull();
+    });
+  });
+
   describe('Antwort auf', () => {
     it('zeigt die Aussage aus dem Router-State als Kopf-Karte', async () => {
       await oeffnen({}, { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true });
