@@ -34,7 +34,8 @@ export const NACHLADEN_MS = 30_000;
  * Die Komponente bleibt eingehängt, auch wenn ein anderer Umschalter gewählt ist, damit
  * die Zahl am Umschalter stimmt: Sie lädt beim Einhängen, beim Wechsel auf ihren
  * Umschalter (aktiv), wenn die Seite wieder sichtbar wird, und alle 30 Sekunden, solange
- * die Seite sichtbar ist. Neu laden muss niemand.
+ * die Seite sichtbar ist. Neu laden muss niemand. Ist ihr Umschalter nicht gewählt, holt
+ * sie nur die Zahl, nicht die Liste.
  */
 @Component({
   selector: 'app-suchanfragen-freigeben',
@@ -165,23 +166,37 @@ export class SuchanfragenFreigebenComponent implements OnInit, OnChanges {
   laden(): void {
     // Eine noch laufende Anfrage ersetzen, damit keine ältere Antwort die neuere überschreibt.
     this.laden$?.unsubscribe();
-    this.laden$ = this.service.zuPruefen().subscribe({
-      next: (antwort) => {
-        this.suchanfragen = antwort.suchanfragen.filter((s) => !this.erledigt.has(s.statement_id));
-        this.ladefehler = false;
-        this.anzahlMelden();
-      },
-      error: () => {
-        this.ladefehler = true;
-      },
-    });
+    if (!this.aktiv) {
+      this.laden$ = this.service
+        .anzahl()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (antwort) => this.anzahlMelden(antwort.anzahl),
+          // Die Zahl bleibt dann stehen; der nächste Takt versucht es wieder.
+          error: () => undefined,
+        });
+      return;
+    }
+    this.laden$ = this.service
+      .zuPruefen()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (antwort) => {
+          this.suchanfragen = antwort.suchanfragen.filter((s) => !this.erledigt.has(s.statement_id));
+          this.ladefehler = false;
+          this.anzahlMelden();
+        },
+        error: () => {
+          this.ladefehler = true;
+        },
+      });
   }
 
   entscheiden(suchanfrage: ZuPruefendeSuchanfrage, freigeben: boolean): void {
     const id = suchanfrage.statement_id;
     this.entscheidet.add(id);
     const anfrage = freigeben ? this.service.freigeben(id) : this.service.ablehnen(id);
-    anfrage.subscribe({
+    anfrage.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.erledigt.add(id);
         this.suchanfragen = (this.suchanfragen ?? []).filter((s) => s.statement_id !== id);
@@ -214,8 +229,7 @@ export class SuchanfragenFreigebenComponent implements OnInit, OnChanges {
    * über dieser Komponente, und eine Antwort, die sofort kommt, änderte sie sonst
    * mitten im Durchlauf der Elternkomponente.
    */
-  private anzahlMelden(): void {
-    const anzahl = this.suchanfragen?.length ?? 0;
+  private anzahlMelden(anzahl = this.suchanfragen?.length ?? 0): void {
     Promise.resolve().then(() => this.anzahl.emit(anzahl));
   }
 

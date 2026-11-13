@@ -46,7 +46,7 @@ def _service(ohne_kommentar=(), gesucht=(), themen=None, freigegeben=()):
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
     suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(return_value=list(gesucht))
-    suchen.freigegebene = AsyncMock(return_value=frozenset(freigegeben))
+    suchen.sichtbar_fuer_alle = AsyncMock(return_value=frozenset(freigegeben))
     themen_service = Mock(spec=AussageThemenService)
     themen_service.themen_von = Mock(
         side_effect=lambda ids: {
@@ -195,4 +195,4 @@ async def test_ohne_suchanfragen_werden_freigaben_nicht_abgefragt():
 
     await service.liste()
 
-    service._suchen_ohne_treffer.freigegebene.assert_not_awaited()
+    service._suchen_ohne_treffer.sichtbar_fuer_alle.assert_not_awaited()

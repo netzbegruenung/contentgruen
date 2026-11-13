@@ -37,6 +37,10 @@ class ZuPruefendeSuchanfragenResponse(BaseModel):
     suchanfragen: List[ZuPruefendeSuchanfrage]
 
 
+class ZuPruefendeSuchanfragenAnzahl(BaseModel):
+    anzahl: int
+
+
 class SuchanfrageEntscheidungResponse(BaseModel):
     statement_id: uuid.UUID
     freigegeben: bool
@@ -65,6 +69,23 @@ async def zu_pruefende_suchanfragen(
             for e in eintraege
         ]
     )
+
+
+@router.get("/suchanfragen/anzahl", response_model=ZuPruefendeSuchanfragenAnzahl)
+async def zu_pruefende_suchanfragen_anzahl(
+    admin_user: str = Depends(require_admin),
+    service: SuchenOhneTrefferService = Depends(get_suchen_ohne_treffer_service),
+) -> ZuPruefendeSuchanfragenAnzahl:
+    """Nur die Zahl, fuer den Zaehler am Umschalter (Admin); ohne Texte."""
+    try:
+        anzahl = await service.anzahl_zu_pruefen()
+    except Exception as e:
+        logger.error(
+            f"Error in /moderation/suchanfragen/anzahl: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return ZuPruefendeSuchanfragenAnzahl(anzahl=anzahl)
 
 
 async def _entscheiden(

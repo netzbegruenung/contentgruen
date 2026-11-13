@@ -210,12 +210,13 @@ def suchanfrage_freigaben_ohne_datenbank(monkeypatch):
     Wer Aussagen fuer Nicht-Admins liest, fragt die Freigaben der Vormoderation ab
     (SuchenOhneTrefferService.sichtbar_fuer_alle). Ohne diesen Ersatz baute der erste
     Aufruf das echte Repository (siehe anzeigenamen_ohne_datenbank). Der Ersatz
-    kennt keine Entscheidung.
+    kennt keine Entscheidung: Keine Suchanfrage ist freigegeben.
     """
     import repositories.suchanfrage_freigabe_repository as modul
 
     repository = MagicMock()
     repository.entscheidungen.return_value = {}
+    repository.ist_freigegeben.return_value = False
     monkeypatch.setattr(modul, "_repository", repository)
     yield repository
 

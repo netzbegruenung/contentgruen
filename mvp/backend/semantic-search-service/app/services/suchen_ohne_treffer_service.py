@@ -64,7 +64,7 @@ import hashlib
 import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Dict, FrozenSet, List, Optional, Set
+from typing import FrozenSet, List, Optional, Set
 
 from pydantic import ValidationError
 
@@ -76,7 +76,11 @@ from repositories.implementations.qdrant.statement_repository import (
 from repositories.suchanfrage_freigabe_repository import (
     SuchanfrageFreigabeRepository,
 )
-from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
+from repositories.suchen_ohne_treffer_repository import (
+    FREIGEGEBENE,
+    UNENTSCHIEDENE,
+    SuchenOhneTrefferRepository,
+)
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht, wochenbeginn
 
@@ -227,7 +231,7 @@ class SuchenOhneTrefferService:
         self._repository = repository
         self._statement_service = statement_service
         self._personen = personen
-        # Ohne Repository gilt nichts als freigegeben.
+        # Nur zum Entscheiden gebraucht; gelesen wird ueber die Kennzahl (SQL-Join).
         self._freigaben = freigaben
 
     def erfassen(
@@ -270,9 +274,11 @@ class SuchenOhneTrefferService:
         wochen: int = WOCHEN_STANDARD,
         limit: int = LIMIT_STANDARD,
         heute: Optional[date] = None,
+        freigabe: Optional[str] = None,
     ) -> List[SucheOhneTreffer]:
         """
-        Die haeufigsten Suchanfragen ohne Treffer der letzten Wochen.
+        Die haeufigsten Suchanfragen ohne Treffer der letzten Wochen; mit freigabe nur
+        die so entschiedenen (SuchenOhneTrefferRepository, Vormoderation).
 
         Der Zeitraum umfasst die laufende Woche und die (wochen - 1) davor. Aussagen,
         die es nicht mehr gibt oder die nicht sichtbar sind, fallen heraus; damit
@@ -284,7 +290,7 @@ class SuchenOhneTrefferService:
         offset = 0
         while len(ergebnis) < limit:
             zeilen = self._repository.haeufigste(
-                seit_woche, MINDESTANZAHL, limit, offset
+                seit_woche, MINDESTANZAHL, limit, offset, freigabe
             )
             aussagen = await asyncio.gather(
                 *(self._sichtbare_aussage(statement_id) for statement_id, *_ in zeilen)
@@ -329,30 +335,24 @@ class SuchenOhneTrefferService:
         )
         return frozenset(ids)
 
-    async def _entscheidungen(self) -> Dict[uuid.UUID, bool]:
-        if self._freigaben is None:
-            return {}
-        return await asyncio.to_thread(self._freigaben.entscheidungen)
-
-    async def freigegebene(self) -> FrozenSet[uuid.UUID]:
-        """Alle Aussagen, die ein Admin freigegeben hat, ohne Blick auf die Schwelle."""
-        entscheidungen = await self._entscheidungen()
-        return frozenset(i for i, frei in entscheidungen.items() if frei)
-
     async def sichtbar_fuer_alle(
         self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
     ) -> FrozenSet[uuid.UUID]:
         """
         Die unbeantworteten Suchanfragen, die Nicht-Admins sehen (#436, Vormoderation):
-        ueber der Schwelle (ueber_der_schwelle) und von einem Admin freigegeben.
+        ueber der Schwelle und von einem Admin freigegeben, in einer Abfrage.
         Wie ueber_der_schwelle stehen darin auch Aussagen, die keine Suchanfragen
         sind; fuer sie hat die Menge keine Wirkung (api/v1/statement.py filtert in
         Qdrant nur unbeantwortete Suchanfragen).
         """
-        ueber = await self.ueber_der_schwelle(wochen=wochen, heute=heute)
-        if not ueber:
-            return frozenset()
-        return ueber & await self.freigegebene()
+        seit_woche = _seit_woche(wochen, heute)
+        ids = await asyncio.to_thread(
+            self._repository.ueber_der_schwelle,
+            seit_woche,
+            MINDESTANZAHL,
+            FREIGEGEBENE,
+        )
+        return frozenset(ids)
 
     async def zu_pruefen(
         self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
@@ -362,18 +362,38 @@ class SuchenOhneTrefferService:
         noch kein Admin entschieden hat, die mit den meisten Personen zuerst. Unter
         der Schwelle zeigt die Liste nichts: Admins sehen in der Kennzahl ebenfalls
         erst Eintraege ab MINDESTANZAHL Personen, und sichtbar wuerde darunter ohnehin
-        nichts.
+        nichts. Entschiedene fallen schon in SQL heraus, damit sie keine neuen aus den
+        ersten ZU_PRUEFEN_KANDIDATEN verdraengen.
         """
         kandidaten = await self.haeufigste(
-            wochen=wochen, limit=ZU_PRUEFEN_KANDIDATEN, heute=heute
+            wochen=wochen,
+            limit=ZU_PRUEFEN_KANDIDATEN,
+            heute=heute,
+            freigabe=UNENTSCHIEDENE,
         )
-        entscheidungen = await self._entscheidungen()
-        offen = [
-            k
-            for k in kandidaten
-            if k.unbeantwortete_suchanfrage and k.statement_id not in entscheidungen
-        ]
+        offen = [k for k in kandidaten if k.unbeantwortete_suchanfrage]
         return sorted(offen, key=lambda k: k.personen, reverse=True)
+
+    async def anzahl_zu_pruefen(
+        self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
+    ) -> int:
+        """
+        Wie viele Eintraege zu_pruefen liefern wuerde (ohne dessen Obergrenze), fuer
+        den Zaehler am Umschalter: eine SQL-Abfrage und ein Zaehlaufruf in Qdrant
+        statt einer Abfrage je Aussage.
+        """
+        seit_woche = _seit_woche(wochen, heute)
+        ids = await asyncio.to_thread(
+            self._repository.ueber_der_schwelle,
+            seit_woche,
+            MINDESTANZAHL,
+            UNENTSCHIEDENE,
+        )
+        if not ids:
+            return 0
+        return await self._statement_service.zaehle_unbeantwortete_suchanfragen(
+            frozenset(ids)
+        )
 
     async def entscheiden(self, statement_id: uuid.UUID, freigegeben: bool) -> None:
         """

@@ -35,6 +35,11 @@ export class SuchanfragenFreigabeService {
     return this.http.get<ZuPruefendeSuchanfragenResponse>(this.baseUrl);
   }
 
+  /** Nur die Zahl, für den Zähler am Umschalter; ohne Texte und billiger als die Liste. */
+  anzahl(): Observable<{ anzahl: number }> {
+    return this.http.get<{ anzahl: number }>(`${this.baseUrl}/anzahl`);
+  }
+
   freigeben(statementId: string): Observable<SuchanfrageEntscheidung> {
     return this.http.put<SuchanfrageEntscheidung>(`${this.baseUrl}/${statementId}/freigeben`, {});
   }

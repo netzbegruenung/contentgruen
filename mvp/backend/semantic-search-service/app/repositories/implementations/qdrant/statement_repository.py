@@ -195,6 +195,37 @@ class StatementRepository(
             )
             return 0
 
+    async def zaehle_unbeantwortete_suchanfragen(
+        self, ids: AbstractSet[uuid.UUID]
+    ) -> int:
+        """
+        Wie viele der IDs sichtbare unbeantwortete Suchanfragen sind, mit einem
+        Zaehlaufruf (Zaehler der Vormoderation). Fehler gehen an den Aufrufer.
+        """
+        from qdrant_client.models import (
+            FieldCondition,
+            Filter,
+            HasIdCondition,
+            MatchValue,
+        )
+
+        if not ids:
+            return 0
+        result = await self._shared_manager.async_client.count(
+            collection_name=self._shared_manager.collection_name,
+            count_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="content_type", match=MatchValue(value=self.content_type)
+                    ),
+                    *nur_sichtbar_bedingungen(),
+                    HasIdCondition(has_id=[str(i) for i in sorted(ids)]),
+                    _unbeantwortete_suchanfrage(),
+                ]
+            ),
+        )
+        return result.count
+
     async def get_all_curated(
         self,
         limit: int,

@@ -85,7 +85,8 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('„Hier fehlt eine Antwort“');
       expect(text).toContain('n Personen suchten das ohne Treffer');
       expect(text).toContain('die Zahl der Suchen sehen sie nicht');
-      expect(text).toContain('Administratorinnen und Administratoren, zusätzlich mit der Zahl der Suchen');
+      expect(text).toContain('das Moderationsteam, zusätzlich mit der Zahl der Suchen');
+      expect(text).toContain('erst nach Prüfung durch das Moderationsteam');
     });
 
     it('bezieht die Zwei-Personen-Schwelle auf die Listen, nicht auf die Auffindbarkeit', () => {
@@ -118,8 +119,11 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('kann danach für alle auffindbar werden');
       expect(text).not.toContain('ist danach für alle auffindbar');
-      expect(text).toContain('nur unseren Administratorinnen und Administratoren');
+      expect(text).toContain('nur unserem Moderationsteam (unseren Administratorinnen und Administratoren)');
       expect(text).toContain('mindestens zwei verschiedene Personen innerhalb von vier Wochen');
+      // Vormoderation (13.11.2026): erst nach Prüfung, auch nicht über eine gleichlautende Aussage.
+      expect(text).toContain('Für alle sichtbar wird er erst nach Prüfung durch das Moderationsteam');
+      expect(text).toContain('Dafür entsteht eine eigene Aussage mit dem Wortlaut dieser Person');
       expect(text).toContain('Gib nichts in das Suchfeld ein, was nicht öffentlich werden soll');
     });
   });

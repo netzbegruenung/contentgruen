@@ -41,7 +41,8 @@ describe('SuchanfragenFreigebenComponent', () => {
     gemeldet = [];
     sichtbarkeit = 'visible';
     spyOnProperty(document, 'visibilityState', 'get').and.callFake(() => sichtbarkeit);
-    service = jasmine.createSpyObj('SuchanfragenFreigabeService', ['zuPruefen', 'freigeben', 'ablehnen']);
+    service = jasmine.createSpyObj('SuchanfragenFreigabeService', ['zuPruefen', 'anzahl', 'freigeben', 'ablehnen']);
+    service.anzahl.and.returnValue(of({ anzahl: 5 }));
     service.zuPruefen.and.returnValue(
       of({ suchanfragen: [suchanfrage('a', 'Sind Wärmepumpen laut?', 3), suchanfrage('b', 'Ist Solar teuer?', 1)] }),
     );
@@ -78,14 +79,30 @@ describe('SuchanfragenFreigebenComponent', () => {
     discardPeriodicTasks();
   }));
 
-  it('zeigt die Liste nur, wenn ihr Umschalter gewählt ist, zählt aber trotzdem', fakeAsync(() => {
+  it('holt ohne gewählten Umschalter nur die Zahl, nicht die Liste', fakeAsync(() => {
     erzeugen(false);
     flushMicrotasks();
 
+    expect(service.zuPruefen).not.toHaveBeenCalled();
+    expect(service.anzahl).toHaveBeenCalledTimes(1);
     expect(element().textContent).not.toContain('Sind Wärmepumpen laut?');
-    expect(gemeldet).toEqual([2]);
+    expect(gemeldet).toEqual([5]);
+
+    tick(NACHLADEN_MS);
+    expect(service.anzahl).toHaveBeenCalledTimes(2);
+    expect(service.zuPruefen).not.toHaveBeenCalled();
     discardPeriodicTasks();
   }));
+
+  it('bricht laufende Anfragen beim Aushängen ab', () => {
+    const liste = new Subject<ZuPruefendeSuchanfragenResponse>();
+    service.zuPruefen.and.returnValue(liste);
+    erzeugen();
+
+    fixture.destroy();
+
+    expect(liste.observed).toBeFalse();
+  });
 
   it('gibt frei, nimmt den Eintrag aus der Liste und meldet die neue Anzahl', fakeAsync(() => {
     erzeugen();

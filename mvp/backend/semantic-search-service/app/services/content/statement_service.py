@@ -28,6 +28,9 @@ from repositories.interfaces.statement_repository import (
     IStatementRepository,
 )
 from repositories.interfaces.repository_factory import IRepositoryFactory
+from repositories.suchanfrage_freigabe_repository import (
+    get_suchanfrage_freigabe_repository,
+)
 from domain.models.statement import (
     AntwortKurz,
     Statement,
@@ -60,6 +63,14 @@ def _normalisiert_gleich(
     if not normalform:
         return None
     return next((t for t in treffer if text_normalisiert(t.text) == normalform), None)
+
+
+def _ist_unbeantwortete_suchanfrage(aussage) -> bool:
+    """Aus einer Suche und ohne Antwortvorschlag (wie ist_unbeantwortete_suchanfrage)."""
+    return (
+        aussage.origin is ContentOrigin.SEARCH_QUERY
+        and aussage.replysuggestions_count < 1
+    )
 
 
 class AussageNichtGefunden(ValueError):
@@ -235,6 +246,12 @@ class StatementService(
         """
         return await self._repository.kuratierte()
 
+    async def zaehle_unbeantwortete_suchanfragen(
+        self, ids: AbstractSet[uuid.UUID]
+    ) -> int:
+        """Wie viele der IDs sichtbare unbeantwortete Suchanfragen sind (Vormoderation)."""
+        return await self._repository.zaehle_unbeantwortete_suchanfragen(ids)
+
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
         Sichtbare Aussagen ohne Kommentar, ohne die unbeantworteten Suchanfragen;
@@ -257,8 +274,9 @@ class StatementService(
         Eine Aussage vorab anlegen ("Hier fehlt eine Antwort"), mit der Person als
         Autorin. Gibt es dieselbe schon (add_statement), kommt sie zurueck.
 
-        Ist die vorhandene eine unbeantwortete Suchanfrage, uebernimmt die Person
-        sie: Herkunft und Autor wechseln, und die Aussage erscheint danach wie eine
+        Ist die vorhandene eine unbeantwortete Suchanfrage (das kann nach der
+        Vormoderation nur eine freigegebene sein, add_statement), uebernimmt die
+        Person sie: Herkunft und Autor wechseln, und die Aussage erscheint danach wie eine
         vorab angelegte auf der Seite. Sonst bliebe sie dort unsichtbar, obwohl die
         Person gerade dieselbe Aussage benannt hat. Andere vorhandene Aussagen
         bleiben unveraendert.
@@ -274,10 +292,7 @@ class StatementService(
 
         async with self._verknuepfungs_sperre(statement_id):
             aussage = await self._aussage_laden(statement_id)
-            if (
-                aussage.origin is ContentOrigin.SEARCH_QUERY
-                and aussage.replysuggestions_count == 0
-            ):
+            if _ist_unbeantwortete_suchanfrage(aussage):
                 aussage.origin = ContentOrigin.MANUALLY_CREATED
                 aussage.original_author = author
                 aussage.last_modified_by = author
@@ -492,6 +507,13 @@ class StatementService(
         Suche, Seeding. Bei einer vorhandenen bleibt deren Wortlaut; der neue Text
         wird nicht gespeichert (#387, vgl. #370).
 
+        Vormoderation (Entscheidung des Maintainers vom 13.11.2026): Ausser fuer eine
+        Suche (origin SEARCH_QUERY) gilt eine unbeantwortete Suchanfrage, die kein
+        Admin freigegeben hat (ungeprueft oder abgelehnt), nicht als dieselbe. Sonst
+        machte eine Antwort oder das Vorab-Anlegen sie mit ihrem Wortlaut fuer alle
+        sichtbar, und die Antwort hier verriete ihn. Angelegt wird dann eine neue
+        Aussage mit dem eingegebenen Text; die Suchanfrage bleibt in der Vormoderation.
+
         Pruefen und Schreiben laufen unter einer Sperre je normalisiertem Text, damit
         zwei gleichzeitige Anfragen mit demselben neuen Text nicht zwei Aussagen anlegen.
 
@@ -501,6 +523,16 @@ class StatementService(
         async with self._text_sperre.halten(statement.text):
             pruefung = await self._dieselbe_pruefen(statement.text, schatten=True)
             vorhandene, bester = pruefung.vorhanden, pruefung.aehnlichster
+            if (
+                vorhandene is not None
+                and origin is not ContentOrigin.SEARCH_QUERY
+                and _ist_unbeantwortete_suchanfrage(vorhandene)
+                and not await self._suchanfrage_freigegeben(vorhandene.id)
+            ):
+                logger.debug("Matched search query awaits Vormoderation, adding new")
+                if bester is not None and bester.id == vorhandene.id:
+                    bester = None
+                vorhandene = None
             if vorhandene is not None:
                 # DEBUG: Jede Suche laeuft hier durch; eine INFO-Zeile mit ID und
                 # Uhrzeit je Suche ordnete die Aussage einem Suchereignis zu (#239).
@@ -533,6 +565,22 @@ class StatementService(
                 f"Successfully created new statement with ID {statement_input.id}"
             )
             return True, statement_input.id, statement_input.text
+
+    async def _suchanfrage_freigegeben(self, statement_id: uuid.UUID) -> bool:
+        """
+        Ob ein Admin die Suchanfrage freigegeben hat. Ist die Datenbank nicht
+        erreichbar, gilt sie als nicht freigegeben: lieber eine Aussage doppelt als
+        ein ungepruefter Suchtext sichtbar.
+        """
+        try:
+            return await asyncio.to_thread(
+                get_suchanfrage_freigabe_repository().ist_freigegeben, statement_id
+            )
+        except Exception as e:
+            logger.warning(
+                f"Vormoderation lookup failed ({type(e).__name__}), treating as not approved"
+            )
+            return False
 
     async def update_statement(self, updated_statement: StatementDbEntry) -> uuid.UUID:
 

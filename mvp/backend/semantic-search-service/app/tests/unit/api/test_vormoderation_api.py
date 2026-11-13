@@ -36,6 +36,7 @@ def service():
         ]
     )
     dienst.entscheiden = AsyncMock()
+    dienst.anzahl_zu_pruefen = AsyncMock(return_value=4)
     app.dependency_overrides[get_suchen_ohne_treffer_service] = lambda: dienst
     yield dienst
     app.dependency_overrides.clear()
@@ -61,6 +62,7 @@ class TestVormoderation:
         "methode, pfad",
         [
             ("get", LISTE),
+            ("get", f"{LISTE}/anzahl"),
             ("put", f"{LISTE}/{AUSSAGE}/freigeben"),
             ("put", f"{LISTE}/{AUSSAGE}/ablehnen"),
         ],
@@ -71,6 +73,14 @@ class TestVormoderation:
         assert resp.status_code == 403
         service.zu_pruefen.assert_not_awaited()
         service.entscheiden.assert_not_awaited()
+        service.anzahl_zu_pruefen.assert_not_awaited()
+
+    def test_anzahl_ohne_liste(self, service):
+        resp = TestClient(app).get(f"{LISTE}/anzahl", headers=ADMIN)
+
+        assert resp.status_code == 200
+        assert resp.json() == {"anzahl": 4}
+        service.zu_pruefen.assert_not_awaited()
 
     @pytest.mark.parametrize(
         "aktion, freigegeben", [("freigeben", True), ("ablehnen", False)]

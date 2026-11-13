@@ -71,8 +71,9 @@ describe('ContentModerationComponent', () => {
     moderation.sperreBestaetigen.and.returnValue(of({ success: true, message: '' }));
     moderation.getGesperrte.and.returnValue(of({ total: 0, beitraege: [] }));
     dialog = jasmine.createSpyObj('MatDialog', ['open']);
-    suchanfragen = jasmine.createSpyObj('SuchanfragenFreigabeService', ['zuPruefen', 'freigeben', 'ablehnen']);
+    suchanfragen = jasmine.createSpyObj('SuchanfragenFreigabeService', ['zuPruefen', 'anzahl', 'freigeben', 'ablehnen']);
     suchanfragen.zuPruefen.and.returnValue(of({ suchanfragen: [] }));
+    suchanfragen.anzahl.and.returnValue(of({ anzahl: 0 }));
 
     TestBed.configureTestingModule({
       imports: [ContentModerationComponent, NoopAnimationsModule],
@@ -186,6 +187,7 @@ describe('ContentModerationComponent', () => {
     suchanfragen.zuPruefen.and.returnValue(of({
       suchanfragen: [{ statement_id: 'a-1', statement_text: 'Sind Wärmepumpen laut?', personen_ohne_treffer: 3 }]
     }));
+    suchanfragen.anzahl.and.returnValue(of({ anzahl: 1 }));
     mitMeldungen([meldung()]);
     await fixture.whenStable();
     fixture.detectChanges();

@@ -409,8 +409,9 @@ und der Ablauf oben erfasst die Tabelle nicht.
 - **`suchanfrage_freigaben`** (Vormoderation, Entscheidung des Maintainers vom 13.11.2026)
   trägt je geprüfter unbeantworteter Suchanfrage nur Aussage-ID, ob sie freigegeben oder
   abgelehnt ist, und den Zeitpunkt der Entscheidung, weder Text noch Kennung des Admins:
-  nichts, was sich einer Person zuordnen ließe. Keine Frist; wie die Aussagen selbst wird
-  sie nicht gelöscht (`repositories/suchanfrage_freigabe_repository.py`).
+  nichts, was sich einer Person zuordnen ließe. Keine eigene Frist: Die Zeile bleibt, solange
+  die Aussage besteht, und geht mit ihr, wenn ein Admin sie endgültig entfernt
+  (`ModerationService.delete_content`, `repositories/suchanfrage_freigabe_repository.py`).
 - **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
   Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen
   ließe. Keine Frist. Aussagen werden nicht gelöscht; wird eine gesperrt, bleiben ihre

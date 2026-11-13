@@ -44,28 +44,47 @@ PERSON_A = "a" * 64
 PERSON_B = "b" * 64
 
 
+def _nach_freigabe(ids, freigaben, freigabe):
+    """Wie _freigabe_bedingung im Repository, auf einer Zuordnung ID -> freigegeben."""
+    if freigabe is None:
+        return list(ids)
+    if freigabe == "freigegebene":
+        return [i for i in ids if freigaben.get(i) is True]
+    if freigabe == "entschiedene":
+        return [i for i in ids if i in freigaben]
+    return [i for i in ids if i not in freigaben]
+
+
 class FakeRepository:
-    def __init__(self, haeufigste=None):
+    def __init__(self, haeufigste=None, freigaben=None):
         self.gezaehlt = []
         self.abfragen = []
+        self.freigabe_abfragen = []
         self.geloescht_vor = []
         self._haeufigste = haeufigste or []
+        self._freigaben = freigaben or {}
 
     def zaehlen(self, statement_id, woche, neue_person):
         self.gezaehlt.append((statement_id, woche, neue_person))
 
-    def haeufigste(self, seit_woche, mindestanzahl, limit, offset=0):
+    def haeufigste(self, seit_woche, mindestanzahl, limit, offset=0, freigabe=None):
         self.abfragen.append((seit_woche, mindestanzahl, limit, offset))
-        return self._haeufigste[offset : offset + limit]
+        self.freigabe_abfragen.append(freigabe)
+        erlaubt = set(
+            _nach_freigabe([z[0] for z in self._haeufigste], self._freigaben, freigabe)
+        )
+        zeilen = [z for z in self._haeufigste if z[0] in erlaubt]
+        return zeilen[offset : offset + limit]
 
     def loeschen_vor(self, woche):
         self.geloescht_vor.append(woche)
         return 3
 
-    def ueber_der_schwelle(self, seit_woche, mindestanzahl):
+    def ueber_der_schwelle(self, seit_woche, mindestanzahl, freigabe=None):
         self.abfragen.append((seit_woche, mindestanzahl))
+        self.freigabe_abfragen.append(freigabe)
         self.thread = threading.current_thread()
-        return [AUSSAGE, ANDERE]
+        return _nach_freigabe([AUSSAGE, ANDERE], self._freigaben, freigabe)
 
 
 def _statement_service(aussagen):
@@ -403,13 +422,12 @@ class TestVormoderation:
     @pytest.mark.asyncio
     async def test_sichtbar_fuer_alle_nur_ueber_der_schwelle_und_freigegeben(self):
         # FakeRepository.ueber_der_schwelle liefert AUSSAGE und ANDERE.
-        freigaben = FakeFreigaben({AUSSAGE: True, GELOESCHT: True, ANDERE: False})
+        repo = FakeRepository(freigaben={AUSSAGE: True, GELOESCHT: True, ANDERE: False})
 
-        ergebnis = await _service(
-            FakeRepository(), freigaben=freigaben
-        ).sichtbar_fuer_alle(heute=MITTWOCH)
+        ergebnis = await _service(repo).sichtbar_fuer_alle(heute=MITTWOCH)
 
         assert ergebnis == {AUSSAGE}
+        assert repo.freigabe_abfragen == ["freigegebene"]
 
     @pytest.mark.asyncio
     async def test_ohne_freigaben_ist_nichts_fuer_alle_sichtbar(self):
@@ -437,7 +455,13 @@ class TestVormoderation:
         dritte = uuid.UUID("55555555-5555-5555-5555-555555555555")
         vierte = uuid.UUID("66666666-6666-6666-6666-666666666666")
         repo = FakeRepository(
-            haeufigste=[(AUSSAGE, 9, 2), (ANDERE, 8, 5), (dritte, 7, 3), (vierte, 6, 4)]
+            haeufigste=[
+                (AUSSAGE, 9, 2),
+                (ANDERE, 8, 5),
+                (dritte, 7, 3),
+                (vierte, 6, 4),
+            ],
+            freigaben={vierte: False},
         )
         aussagen = {
             AUSSAGE: ("wenige Personen", SICHTBAR, *SUCHANFRAGE),
@@ -445,16 +469,37 @@ class TestVormoderation:
             dritte: ("viele Personen", SICHTBAR, *SUCHANFRAGE),
             vierte: ("schon entschieden", SICHTBAR, *SUCHANFRAGE),
         }
-        freigaben = FakeFreigaben({vierte: False})
-
-        ergebnis = await _service(repo, aussagen, freigaben=freigaben).zu_pruefen(
-            heute=MITTWOCH
-        )
+        ergebnis = await _service(repo, aussagen).zu_pruefen(heute=MITTWOCH)
 
         assert [(e.statement_id, e.personen) for e in ergebnis] == [
             (dritte, 3),
             (AUSSAGE, 2),
         ]
+        # Entschiedene fallen schon in der Abfrage heraus.
+        assert set(repo.freigabe_abfragen) == {"unentschiedene"}
+
+    @pytest.mark.asyncio
+    async def test_anzahl_zu_pruefen_zaehlt_unentschiedene_in_einem_aufruf(self):
+        repo = FakeRepository(freigaben={ANDERE: True})
+        statement_service = _statement_service({})
+        statement_service.zaehle_unbeantwortete_suchanfragen = AsyncMock(return_value=1)
+        service = SuchenOhneTrefferService(repo, statement_service, PersonenDesTages())
+
+        assert await service.anzahl_zu_pruefen(heute=MITTWOCH) == 1
+        statement_service.zaehle_unbeantwortete_suchanfragen.assert_awaited_once_with(
+            frozenset({AUSSAGE})
+        )
+        statement_service.get.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_anzahl_zu_pruefen_ohne_kandidaten_fragt_qdrant_nicht(self):
+        repo = FakeRepository(freigaben={AUSSAGE: True, ANDERE: False})
+        statement_service = _statement_service({})
+        statement_service.zaehle_unbeantwortete_suchanfragen = AsyncMock()
+        service = SuchenOhneTrefferService(repo, statement_service, PersonenDesTages())
+
+        assert await service.anzahl_zu_pruefen(heute=MITTWOCH) == 0
+        statement_service.zaehle_unbeantwortete_suchanfragen.assert_not_awaited()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("freigegeben", [True, False])

@@ -184,8 +184,10 @@ async def test_ohne_kommentar_laesst_gesperrte_aussagen_weg(
 
 
 async def test_vorab_uebernimmt_gleiche_unbeantwortete_suchanfrage(
-    statement_service,
+    statement_service, suchanfrage_freigaben_ohne_datenbank
 ):
+    # Uebernommen wird nur eine freigegebene (Vormoderation).
+    suchanfrage_freigaben_ohne_datenbank.ist_freigegeben.return_value = True
     suchanfrage = await _anlegen(
         statement_service,
         "Die Grundsteuer steigt wegen der Grünen",
@@ -219,3 +221,148 @@ async def test_vorab_laesst_vorhandene_aussage_einer_person_unveraendert(
     assert not neu
     assert statement_id == vorhanden
     assert (await statement_service.get(vorhanden)).original_author == "person-2"
+
+
+# Vormoderation (Entscheidung des Maintainers vom 13.11.2026): Eine unbeantwortete
+# Suchanfrage, die kein Admin freigegeben hat, wird ueber Schreibwege nicht sichtbar.
+NICHT_FREIGEGEBEN = pytest.mark.parametrize(
+    "entscheidung", [None, False], ids=["ungeprueft", "abgelehnt"]
+)
+
+
+def _entscheidung_setzen(freigaben, suchanfrage, entscheidung):
+    freigaben.ist_freigegeben.side_effect = lambda statement_id: (
+        statement_id == suchanfrage and entscheidung is True
+    )
+
+
+async def _bleibt_in_der_vormoderation(statement_service, suchanfrage, text):
+    aussage = await statement_service.get(suchanfrage)
+    assert aussage.origin is ContentOrigin.SEARCH_QUERY
+    assert aussage.original_author == SEARCH_QUERY_AUTHOR
+    assert aussage.replysuggestions_count == 0
+    assert aussage.text == text
+
+
+@NICHT_FREIGEGEBEN
+async def test_vorab_legt_bei_nicht_freigegebener_suchanfrage_eine_neue_an(
+    statement_service, suchanfrage_freigaben_ohne_datenbank, entscheidung
+):
+    gesucht = "Die Pendlerpauschale fällt wegen der Grünen weg"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(
+        suchanfrage_freigaben_ohne_datenbank, suchanfrage, entscheidung
+    )
+
+    eigener = "die Pendlerpauschale fällt wegen der Grünen weg!"
+    neu, statement_id, text = await statement_service.vorab_anlegen(eigener, "person-1")
+
+    assert neu
+    assert statement_id != suchanfrage
+    assert text == eigener
+    assert (await statement_service.get(statement_id)).original_author == "person-1"
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)
+    assert suchanfrage not in await _ohne_kommentar(statement_service)
+
+
+@NICHT_FREIGEGEBEN
+async def test_antwort_haengt_bei_nicht_freigegebener_suchanfrage_an_eine_neue(
+    statement_service,
+    commentary_service,
+    suchanfrage_freigaben_ohne_datenbank,
+    entscheidung,
+):
+    gesucht = "Das Heizungsgesetz verbietet Kamine"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(
+        suchanfrage_freigaben_ohne_datenbank, suchanfrage, entscheidung
+    )
+
+    # Wie /addStatement aus dem Beitragsformular: die Aussage zum eigenen Text.
+    eigener = "das Heizungsgesetz verbietet Kamine."
+    neu, statement_id, text = await statement_service.add_statement(
+        Statement(text=eigener, replysuggestions=[]),
+        "person-1",
+        ContentStatus.VISIBLE,
+        ContentOrigin.MANUALLY_CREATED,
+    )
+    kommentar = await _kommentar(commentary_service, "Kamine bleiben erlaubt.")
+    await _verknuepfen(
+        statement_service, statement_id, kommentar, ContentType.COMMENTARY
+    )
+
+    assert neu
+    assert statement_id != suchanfrage
+    assert text == eigener
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)
+
+
+async def test_antwort_landet_bei_freigegebener_suchanfrage_wie_bisher(
+    statement_service, suchanfrage_freigaben_ohne_datenbank
+):
+    gesucht = "Windräder machen krank"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(suchanfrage_freigaben_ohne_datenbank, suchanfrage, True)
+
+    neu, statement_id, text = await statement_service.add_statement(
+        Statement(text="windräder machen krank", replysuggestions=[]),
+        "person-1",
+        ContentStatus.VISIBLE,
+        ContentOrigin.MANUALLY_CREATED,
+    )
+
+    assert not neu
+    assert statement_id == suchanfrage
+    assert text == gesucht
+
+
+async def test_eine_suche_landet_weiter_auf_der_nicht_freigegebenen_suchanfrage(
+    statement_service, suchanfrage_freigaben_ohne_datenbank
+):
+    # Sonst zaehlten die Suchen ohne Treffer nicht mehr an derselben Aussage.
+    gesucht = "Tempolimit bringt nichts"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+
+    zweite = await _anlegen(
+        statement_service,
+        "tempolimit bringt nichts",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+
+    assert zweite == suchanfrage
+    suchanfrage_freigaben_ohne_datenbank.ist_freigegeben.assert_not_called()
+
+
+async def test_zaehlt_nur_sichtbare_unbeantwortete_suchanfragen(
+    statement_service, status_setzen
+):
+    # Zaehler am Umschalter der Vormoderation: ein Zaehlaufruf statt einer Abfrage je ID.
+    offen = await _anlegen(
+        statement_service,
+        "Solarpflicht ruiniert Hausbesitzer",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+    gesperrt = await _anlegen(
+        statement_service,
+        "Bürgergeld lockt Zuwanderer an",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+    await status_setzen(gesperrt, ContentStatus.BLOCKED)
+    gepflegt = await _anlegen(statement_service, "Bahnfahren ist zu teuer")
+
+    anzahl = await statement_service.zaehle_unbeantwortete_suchanfragen(
+        frozenset({offen, gesperrt, gepflegt, uuid.uuid4()})
+    )
+
+    assert anzahl == 1

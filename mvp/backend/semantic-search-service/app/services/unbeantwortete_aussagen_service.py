@@ -76,7 +76,7 @@ class UnbeantworteteAussagenService:
             limit=KANDIDATEN_MIT_FILTER if thema else limit,
         )
         if any(g.unbeantwortete_suchanfrage for g in gesucht):
-            freigegeben = await self._suchen_ohne_treffer.freigegebene()
+            freigegeben = await self._suchen_ohne_treffer.sichtbar_fuer_alle()
             gesucht = [
                 g
                 for g in gesucht

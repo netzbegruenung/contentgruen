@@ -381,7 +381,7 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Vormoderation**:
-Die Prüfung einer unbeantworteten Suchanfrage durch Admins, bevor andere sie sehen (Entscheidung des Maintainers vom 13.11.2026). Erreicht eine Aussage aus einer Suchanfrage, auf die noch niemand geantwortet hat, die Schwelle der Suchen ohne Treffer, steht sie in der Moderation unter „Suchanfragen“; Admins geben sie frei oder lehnen sie ab, etwa wenn der Text Namen Dritter enthält. Für alle anderen sichtbar ist sie nur über der Schwelle und freigegeben; eine abgelehnte bleibt unsichtbar. Hat jemand darauf geantwortet, gilt sie wie jede Aussage. „Freigeben“ meint nur diese Entscheidung, nicht den Zustand Sichtbar eines Beitrags.
+Die Prüfung einer unbeantworteten Suchanfrage durch das Moderationsteam (die Admins), bevor andere sie sehen (Entscheidung des Maintainers vom 13.11.2026). Erreicht eine Aussage aus einer Suchanfrage, auf die noch niemand geantwortet hat, die Schwelle der Suchen ohne Treffer, steht sie in der Moderation unter „Suchanfragen“; das Moderationsteam gibt sie frei oder lehnt sie ab, etwa wenn der Text Namen Dritter enthält. Für alle anderen sichtbar ist sie nur über der Schwelle und freigegeben; eine ungeprüfte oder abgelehnte bleibt unsichtbar. Sie gilt dann auch nicht als dieselbe Aussage, wenn jemand den gleichen Text als Aussage anlegt oder beantwortet: Es entsteht eine neue Aussage mit dessen Wortlaut, nur eine weitere Suche landet weiter auf ihr. Eine freigegebene, auf die jemand antwortet, gilt wie jede Aussage. „Freigeben“ meint nur diese Entscheidung, nicht den Zustand Sichtbar eines Beitrags.
 _Avoid_: Offene Aussage, Veröffentlichen
 
 **Suche ohne Treffer**:

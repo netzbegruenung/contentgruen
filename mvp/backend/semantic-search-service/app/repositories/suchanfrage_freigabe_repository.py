@@ -7,7 +7,7 @@ abgelehnt, und wann. Was daraus folgt, steht in services/suchen_ohne_treffer_ser
 import uuid
 from typing import Dict, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import get_app_database
@@ -28,6 +28,25 @@ class SuchanfrageFreigabeRepository:
                 statement_id: bool(freigegeben)
                 for statement_id, freigegeben in session.execute(abfrage).all()
             }
+
+    def ist_freigegeben(self, statement_id: uuid.UUID) -> bool:
+        """Ob ein Admin die Aussage freigegeben hat (ungeprueft und abgelehnt: False)."""
+        abfrage = select(SuchanfrageFreigabe.freigegeben).where(
+            SuchanfrageFreigabe.statement_id == statement_id
+        )
+        with self.db.get_session() as session:
+            return bool(session.execute(abfrage).scalar())
+
+    def loeschen(self, statement_id: uuid.UUID) -> int:
+        """Die Entscheidung zu einer Aussage loeschen, etwa mit der Aussage selbst."""
+        with self.db.get_session() as session:
+            ergebnis = session.execute(
+                delete(SuchanfrageFreigabe).where(
+                    SuchanfrageFreigabe.statement_id == statement_id
+                )
+            )
+            session.commit()
+            return ergebnis.rowcount
 
     def entscheiden(self, statement_id: uuid.UUID, freigegeben: bool) -> None:
         """Freigeben oder ablehnen; eine fruehere Entscheidung wird ersetzt."""
