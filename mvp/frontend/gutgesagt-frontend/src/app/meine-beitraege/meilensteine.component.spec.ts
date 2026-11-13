@@ -6,6 +6,11 @@ import { MeilensteineComponent } from './meilensteine.component';
 import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from './meilenstein-merker';
 import { AuthService } from '../auth/auth.service';
 import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
+import { BehaviorSubject } from 'rxjs';
+import {
+  PunkteEinwilligungService,
+  PunkteEinwilligungStand,
+} from '../shared/punkte-einwilligung/punkte-einwilligung.service';
 
 import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 
@@ -34,6 +39,17 @@ describe('MeilensteineComponent (#351)', () => {
 
   let merkerAktiv = true;
   afterEach(() => (merkerAktiv = true));
+  const WORTLAUT = { kennung: '2026-11-13', text: 'Freiwillig: …' };
+  let einwilligung: BehaviorSubject<PunkteEinwilligungStand | null | undefined>;
+  let ladenAnzahl = 0;
+  beforeEach(() => {
+    einwilligung = new BehaviorSubject<PunkteEinwilligungStand | null | undefined>({
+      eingewilligt: true,
+      wortlaut: '2026-11-13',
+      aktueller_wortlaut: WORTLAUT,
+    });
+    ladenAnzahl = 0;
+  });
 
   function erstellen(meilensteine: Meilenstein[], sichtbarkeit: AbzeichenSichtbarkeit | null = null): HTMLElement {
     speichern = jasmine.createSpy('speichern').and.returnValue(of(true));
@@ -44,9 +60,19 @@ describe('MeilensteineComponent (#351)', () => {
         { provide: AuthService, useValue: { getCurrentUserId: () => 'kim-1' } },
         { provide: MEILENSTEIN_MERKER, useValue: merkerAktiv },
         {
+          provide: PunkteEinwilligungService,
+          useValue: {
+            stand$: einwilligung.asObservable(),
+            laden: () => new BehaviorSubject(einwilligung.value ?? null),
+          },
+        },
+        {
           provide: UsageTrackingService,
           useValue: {
-            getEigeneMeilensteine: () => of(meilensteine),
+            getEigeneMeilensteine: () => {
+              ladenAnzahl += 1;
+              return of(meilensteine);
+            },
             getAbzeichenSichtbarkeit: () => of(sichtbarkeit),
             setAbzeichenSichtbarkeit: speichern,
           },
@@ -135,6 +161,37 @@ describe('MeilensteineComponent (#351)', () => {
     erstellen([]);
 
     expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
+  });
+
+  describe('Einwilligung „Punkte und Meilensteine“ (#351)', () => {
+    it('lädt ohne Einwilligung keine Liste, sondern eine Einladung mit Häkchen', () => {
+      einwilligung.next({ eingewilligt: false, wortlaut: null, aktueller_wortlaut: WORTLAUT });
+      const element = erstellen([]);
+
+      expect(element.querySelector('.meilensteine-einladung')?.textContent).toContain('nur, wenn du sie willst');
+      expect(element.querySelector('app-punkte-einwilligung')).not.toBeNull();
+      expect(element.querySelector('.meilensteine-liste')).toBeNull();
+    });
+
+    it('zeigt ohne eingeschaltete Punkte weder Liste noch Einladung', () => {
+      einwilligung.next(null);
+      const element = erstellen([]);
+
+      expect(element.querySelector('section')).toBeNull();
+    });
+
+    it('lädt nach dem Einwilligen die Meilensteine selbst nach', () => {
+      einwilligung.next({ eingewilligt: false, wortlaut: null, aktueller_wortlaut: WORTLAUT });
+      const element = erstellen([meilenstein({ stand: 1, erreicht: true })]);
+      const vorher = ladenAnzahl;
+
+      einwilligung.next({ eingewilligt: true, wortlaut: '2026-11-13', aktueller_wortlaut: WORTLAUT });
+      fixture.detectChanges();
+
+      expect(ladenAnzahl).toBe(vorher + 1);
+      expect(element.querySelector('.meilensteine-einladung')).toBeNull();
+      expect(element.querySelectorAll('.meilenstein').length).toBe(1);
+    });
   });
 
   it('sagt, dass nur die Person selbst sie sieht', () => {

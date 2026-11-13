@@ -214,3 +214,27 @@ async def test_ohne_wegmarken_fuers_abzeichen_ohne_ihre_abfragen():
     assert _nach_kennung(meilensteine)["zustimmung-1"].erreicht
     assert quellen.gefragt_nach_antworten == []
     assert not hasattr(quellen, "einwuerfe_von")
+
+
+async def test_get_meilensteine_service_fragt_die_einwilligung_punkte(
+    punkte_einwilligung_ohne_datenbank,
+):
+    """Ohne Einwilligung "Punkte und Meilensteine" nichts berechnen, auch keine Wegmarke."""
+    from unittest.mock import AsyncMock, patch
+
+    from dependencies import get_meilensteine_service
+
+    punkte_einwilligung_ohne_datenbank.eingewilligt.return_value = False
+    with patch(
+        "repositories.aggregated.content_repository.ContentRepository"
+    ) as inhalte, patch(
+        "repositories.usage_tracking_repository.get_usage_repository"
+    ), patch(
+        "repositories.punkte_repository.get_punkte_repository"
+    ):
+        inhalte.return_value.get_by_author = AsyncMock(return_value=[])
+
+        assert await get_meilensteine_service(Settings()).meilensteine(KIM) == []
+
+    punkte_einwilligung_ohne_datenbank.eingewilligt.assert_called_once_with(KIM)
+    inhalte.return_value.get_by_author.assert_not_awaited()

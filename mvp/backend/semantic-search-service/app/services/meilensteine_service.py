@@ -24,9 +24,10 @@ Weil nichts gespeichert wird, kann ein erreichter Meilenstein wieder verschwinde
 etwa wenn ein Beitrag gesperrt oder geloescht wird; das ist der Preis dafuer, dass es
 keine Tabelle mit Meilensteinen und keine Frist dafuer gibt.
 
-Ein Startkonto hat keine Meilensteine, ein Konto ohne geltende Art.-9-Einwilligung
-auch nicht: Deren Wortlaut nennt die Meilenstein-Abzeichen als Zweck (#559). Gefragt
-wird je Abruf, damit ein Widerruf sofort wirkt.
+Ein Startkonto hat keine Meilensteine, ein Konto ohne geltende Einwilligung "Punkte
+und Meilensteine" auch nicht (domain/punkte_einwilligung.py, #351): Ohne sie wird
+nichts berechnet, auch keine Wegmarke. Gefragt wird je Abruf, damit ein Widerruf
+sofort wirkt.
 """
 
 import asyncio
@@ -35,7 +36,9 @@ from typing import Any, Awaitable, Callable, List, Optional, Protocol, Set
 
 from core.config import Settings
 from domain.meilensteine import Meilenstein, Meilensteindaten, meilensteine_berechnen
-from services.art9_einwilligung_service import get_art9_einwilligung_service
+from repositories.punkte_einwilligung_repository import (
+    get_punkte_einwilligung_repository,
+)
 from domain.models.content_type import ContentType
 from services.punkte_service import (
     BEITRAG_WARTEZEIT,
@@ -78,9 +81,9 @@ class MeilensteineService:
         self._settings = settings
         self._beantwortet_einer = beantwortet_einer
         self._jetzt = jetzt
-        # Spaet geholt wie in PunkteService, damit Tests den Dienst ersetzen koennen.
+        # Spaet geholt wie in PunkteService, damit Tests das Repository ersetzen koennen.
         self._eingewilligt = eingewilligt or (
-            lambda user_id: get_art9_einwilligung_service().eingewilligt(user_id)
+            lambda user_id: get_punkte_einwilligung_repository().eingewilligt(user_id)
         )
 
     async def meilensteine(

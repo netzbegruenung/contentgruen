@@ -1,0 +1,17 @@
+.punkte-einwilligung {
+  font-size: 14px;
+}
+
+.punkte-einwilligung-stand {
+  margin: 4px 0 0;
+  color: var(--error-strong);
+}
+
+.punkte-einwilligung-stand:empty {
+  display: none;
+}
+
+.punkte-einwilligung-titel {
+  margin: 16px 0 4px;
+  font-size: 1rem;
+}

@@ -187,11 +187,15 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 
 - **Zweck:** Wirkung der Mitwirkung zeigen, Anerkennung sichtbar machen, Punkte gegen Absprachen
   schützen.
-- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art.-9-Einwilligung; Sichtbarkeit der
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a über die eigene, freiwillige
+  Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351), getrennt von der
+  Art.-9-Einwilligung zur Mitwirkung (Kopplungsverbot, Art. 7 Abs. 4); Sichtbarkeit der
   Abzeichen mit gesonderter Zustimmung (T2).
-- **Betroffene:** angemeldete Personen mit Art.-9-Einwilligung, ohne Startkonten.
+- **Betroffene:** angemeldete Personen mit Einwilligung „Punkte und Meilensteine“, ohne
+  Startkonten; Muster-Hinweise nur, wenn beide Konten eingewilligt haben.
 - **Daten:** Punkte und Meilensteine nicht gespeichert, bei jedem Abruf berechnet;
-  Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen.
+  Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen; je Antwort auf die Einwilligung eine
+  Zeile mit Kennung, ja/nein, Wortlaut und Zeitpunkt.
 - **Empfänger:** Punkte nur für die Person; Abzeichen für andere Angemeldete mit Zustimmung;
   Muster-Hinweise nur für Admins.
 - **Fristen:** LK „Fristen“ (Paar-Prüfwerte, Muster-Hinweise, Abzeichen).

@@ -26,6 +26,7 @@ from infrastructure.database.models import (
     GeseheneNutzung,
     LoeschauftragZeile,
     MusterHinweisZeile,
+    PunkteEinwilligungZeile,
     Einwurf,
     AusformuliertIn,
     Satz,
@@ -269,6 +270,15 @@ def spuren(datenbank, einwuerfe):
                 user_id=PERSON,
                 zeigen=True,
                 wortlaut="2026-11-09",
+                beantwortet_am=datetime.now(timezone.utc),
+            )
+        )
+        # Die Einwilligung "Punkte und Meilensteine" (#351).
+        s.add(
+            PunkteEinwilligungZeile(
+                user_id=PERSON,
+                eingewilligt=True,
+                wortlaut="2026-11-13",
                 beantwortet_am=datetime.now(timezone.utc),
             )
         )

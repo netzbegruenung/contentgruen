@@ -1,4 +1,13 @@
-<section *ngIf="meilensteine.length" class="meilensteine" aria-labelledby="meilensteine-titel">
+<!-- Ohne Einwilligung „Punkte und Meilensteine“ (#351) eine kurze Einladung statt der Liste -->
+<section *ngIf="einladen" class="meilensteine meilensteine-einladung" aria-labelledby="meilensteine-einladung-titel">
+    <h2 id="meilensteine-einladung-titel">Meilensteine</h2>
+    <p class="meilensteine-hinweis">
+        Punkte und Meilensteine wie „Erster Einwurf“ gibt es nur, wenn du sie willst. Sie zeigen dir, was du
+        beigetragen hast und wie es wirkt; beitragen und bewerten kannst du genauso ohne.
+    </p>
+    <app-punkte-einwilligung></app-punkte-einwilligung>
+</section>
+<section *ngIf="meilensteine.length && !einladen" class="meilensteine" aria-labelledby="meilensteine-titel">
     <h2 id="meilensteine-titel">Meilensteine <span class="meilensteine-zahl">{{ erreichte }} von {{ meilensteine.length }}<ng-container *ngIf="sichtbar"> · Am Namen: {{ erreichteFuersAbzeichen }}</ng-container></span></h2>
     <p class="meilensteine-hinweis">
         <ng-container *ngIf="!sichtbar">Nur du siehst deine Meilensteine.</ng-container>

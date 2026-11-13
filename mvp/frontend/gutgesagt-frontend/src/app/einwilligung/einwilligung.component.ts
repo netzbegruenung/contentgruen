@@ -13,6 +13,7 @@ import {
   wortlautErsterSatz,
 } from '../services/art9-einwilligung.service';
 import { ROUTES } from '../shared/constants/app.constants';
+import { PunkteEinwilligungComponent } from '../shared/punkte-einwilligung/punkte-einwilligung.component';
 import { HILFE_PARAM } from '../help-dialog/help-dialog.component';
 
 type Zustand = 'laedt' | 'frage' | 'sendet' | 'eingewilligt' | 'widerruft' | 'fehler';
@@ -30,7 +31,7 @@ type Zustand = 'laedt' | 'frage' | 'sendet' | 'eingewilligt' | 'widerruft' | 'fe
 @Component({
   selector: 'app-einwilligung',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MatButtonModule, MatCardModule, MatCheckboxModule],
+  imports: [CommonModule, FormsModule, RouterModule, MatButtonModule, MatCardModule, MatCheckboxModule, PunkteEinwilligungComponent],
   templateUrl: './einwilligung.component.html',
   styleUrls: ['./einwilligung.component.css'],
 })

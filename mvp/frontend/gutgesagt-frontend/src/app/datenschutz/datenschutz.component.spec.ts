@@ -231,9 +231,18 @@ describe('DatenschutzComponent', () => {
     it('Punkte: ohne Einwilligung keine Punkte, kein Paar-Prüfwert, kein Muster-Hinweis (#562)', () => {
       const text = abschnitt('Punkte');
 
-      expect(text).toContain('Ohne diese Einwilligung (nie erteilt oder widerrufen) hat dein Konto keine Punkte');
+      expect(text).toContain('Ohne sie (nie erteilt oder widerrufen) berechnen wir für dein Konto keine Punkte und keine Meilensteine');
       expect(text).toContain('weder ein Paar-Prüfwert noch ein Muster-Hinweis, der es nennt');
-      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung macht, bringen niemandem Punkte');
+      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung zu seiner Mitwirkung macht, bringen niemandem Punkte');
+    });
+
+    it('Punkte: eigene, freiwillige Einwilligung, getrennt von der zur Mitwirkung (#351)', () => {
+      const text = abschnitt('Punkte');
+
+      expect(text).toContain('deine eigene, freiwillige Einwilligung „Punkte und Meilensteine“');
+      expect(text).toContain('nichts ist vorausgewählt');
+      expect(text).toContain('Ohne sie kannst du genauso beitragen und bewerten');
+      expect(text).toContain('jederzeit in den „Datenschutz-Einstellungen“ widerrufen; danach wird nichts mehr berechnet');
       expect(text).not.toContain('Bevor wir Punkte einschalten');
     });
 

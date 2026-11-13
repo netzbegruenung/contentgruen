@@ -9,6 +9,8 @@ import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../ser
 import { AuthService } from '../auth/auth.service';
 import { gesehenMerken } from './meilenstein-merker';
 import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
+import { PunkteEinwilligungComponent } from '../shared/punkte-einwilligung/punkte-einwilligung.component';
+import { PunkteEinwilligungService } from '../shared/punkte-einwilligung/punkte-einwilligung.service';
 
 /**
  * Die eigenen Meilensteine in „Meine Beiträge“ (#351): je einer mit Medaillon (Motiv
@@ -23,13 +25,15 @@ import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
  * Server keine Sichtbarkeit, dann fragt die Seite nicht und die Meilensteine bleiben
  * nur für die Person.
  *
- * Ohne Meilensteine (Punkte ausgeschaltet, Startkonto, keine Art.-9-Einwilligung)
- * zeigt die Komponente nichts.
+ * Meilensteine gibt es nur mit der eigenen, freiwilligen Einwilligung „Punkte und
+ * Meilensteine“ (#351). Fehlt sie, steht hier eine kurze Einladung mit dem Häkchen;
+ * nach dem Haken laden die Meilensteine selbst nach. Ohne eingeschaltete Punkte oder
+ * für ein Startkonto zeigt die Komponente nichts.
  */
 @Component({
   selector: 'app-meilensteine',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, RouterLink],
+  imports: [CommonModule, MatButtonModule, RouterLink, PunkteEinwilligungComponent],
   templateUrl: './meilensteine.component.html',
   styleUrls: ['./meilensteine.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +47,9 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
   fehler = false;
   /** Nach einer Antwort verschwinden die Knöpfe der Frage; der Fokus geht hierher. */
   @ViewChild('aendernKnopf', { read: ElementRef }) aendernKnopf?: ElementRef<HTMLElement>;
+  /** Punkte an, aber (noch) keine Einwilligung „Punkte und Meilensteine“: Einladung zeigen. */
+  einladen = false;
+  private eingewilligt: boolean | null = null;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -50,10 +57,26 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     @Inject(MEILENSTEIN_MERKER) private merkerAktiv: boolean,
+    private punkteEinwilligung: PunkteEinwilligungService,
   ) {}
 
   ngOnInit(): void {
     this.laden();
+    // Die Einwilligung kann hier oder in den Datenschutz-Einstellungen wechseln: Dann
+    // laden die Meilensteine selbst nach, ohne Neuladen der Seite.
+    this.punkteEinwilligung.stand$.pipe(takeUntil(this.destroy$)).subscribe((stand) => {
+      if (stand === undefined) {
+        return;
+      }
+      const eingewilligt = stand?.eingewilligt ?? null;
+      this.einladen = stand !== null && !stand.eingewilligt;
+      if (this.eingewilligt !== null && eingewilligt !== this.eingewilligt) {
+        this.laden();
+      }
+      this.eingewilligt = eingewilligt;
+      this.cdr.markForCheck();
+    });
+    this.punkteEinwilligung.laden().pipe(takeUntil(this.destroy$)).subscribe();
   }
 
   ngOnDestroy(): void {

@@ -788,6 +788,32 @@ class AbzeichenSichtbarkeitZeile(Base):
     )
 
 
+class PunkteEinwilligungZeile(Base):
+    """
+    Eine Antwort auf die Einwilligung "Punkte und Meilensteine" (#351,
+    domain/punkte_einwilligung.py): ``eingewilligt`` ja oder nein, ``wortlaut`` die
+    Kennung des Wortlauts, ``beantwortet_am`` der Zeitpunkt. Es gilt die juengste Zeile
+    der Kennung; ein Widerruf ist eine neue Zeile mit nein, damit belegt bleibt, wann
+    die Person eingewilligt und wann sie widerrufen hat (Art. 7 Abs. 1 DSGVO).
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-13-351-punkte-einwilligung.sql dokumentiert das
+    Schema. Loeschen: docs/LOESCHKONZEPT.md, Schritt 2.
+    """
+
+    __tablename__ = "punkte_einwilligung"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(255), nullable=False)
+    eingewilligt = Column(Boolean, nullable=False)
+    wortlaut = Column(String(64), nullable=False)
+    beantwortet_am = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_punkte_einwilligung_user", "user_id", "beantwortet_am"),
+    )
+
+
 class LoeschauftragZeile(Base):
     """
     Ein Loeschauftrag nach dem Widerruf der Art.-9-Einwilligung (GLOSSARY.md
