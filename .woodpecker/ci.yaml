@@ -1,5 +1,6 @@
 # Was ein PR bestehen muss, wie scripts/check.sh --integration: Retired words, Ruff, Black,
-# Python-Unit- und Integrationstests (Qdrant und PostgreSQL als Dienste), Frontend und BFF.
+# Python-Unit- und Integrationstests (Qdrant und PostgreSQL als Dienste), Frontend-Tests,
+# Frontend-Build (production, Budgets) und BFF.
 # Jeder Schritt ruft check.sh mit --schritt auf, die Befehle stehen also nur dort.
 # Status ci/woodpecker/pr/ci ist Pflicht fuer main. Ist ein PR-Lauf rot, schreibt
 # ci-bericht die roten Schritte in den PR (docs/CI.md).
@@ -88,6 +89,17 @@ steps:
       - sh scripts/ci-protokoll.sh frontend npm ci --prefix mvp/frontend/gutgesagt-frontend --no-audit --no-fund
       - sh scripts/ci-protokoll.sh frontend bash scripts/check.sh --schritt frontend
 
+  # Neben den Tests statt danach: kostet ein zweites npm ci, spart auf dem Frontend-Pfad den
+  # Build (docs/CI.md). Braucht kein Chromium.
+  - name: frontend-build
+    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    depends_on: []
+    environment:
+      CHECK_VOLL: "1"
+    commands:
+      - sh scripts/ci-protokoll.sh frontend-build npm ci --prefix mvp/frontend/gutgesagt-frontend --no-audit --no-fund
+      - sh scripts/ci-protokoll.sh frontend-build bash scripts/check.sh --schritt frontend-build
+
   - name: bff
     image: mcr.microsoft.com/dotnet/sdk:9.0@sha256:840f3b62b9742dde4461a3c31e38ffd34d41d7d33afd39c378cfcfd5dcb82bd5
     depends_on: []
@@ -111,6 +123,7 @@ steps:
       - unit
       - integration
       - frontend
+      - frontend-build
       - bff
     when:
       - event: pull_request
@@ -130,4 +143,5 @@ steps:
         unit
         integration
         frontend
+        frontend-build
         bff

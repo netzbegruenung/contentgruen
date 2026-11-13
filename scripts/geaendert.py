@@ -15,13 +15,26 @@ import sys
 from dataclasses import dataclass, field
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
-SCHRITTE = ["retired-words", "lint", "unit", "integration", "frontend", "bff"]
+SCHRITTE = [
+    "retired-words",
+    "lint",
+    "unit",
+    "integration",
+    "frontend",
+    "frontend-build",
+    "bff",
+]
 FE = "mvp/frontend/gutgesagt-frontend"
 PY = "mvp/backend/semantic-search-service"
 # Steht fuer "wirkt auf alles"; _regel gibt genau diese Liste zurueck, verglichen wird mit is
 ALLES = SCHRITTE[1:]
 PYTHON = ["lint", "unit"]
 PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]
+FRONTEND = ["frontend", "frontend-build"]
+# Frontend-Dateien, die nur die Karma-Tests lesen, nicht der Production-Build
+# (tsconfig.app.json schliesst *.spec.ts aus; e2e/ ist Playwright gegen den Dev-Stack)
+NUR_FRONTEND_TESTS = (".spec.ts",)
+NUR_FRONTEND_TESTS_PFADE = (FE + "/e2e/", FE + "/tsconfig.spec.json")
 
 # Pfad-Praefix -> Schritte; der erste passende Eintrag gilt. Was keiner trifft und keine
 # Doku ist, waehlt alles. Python-Module, die die Integrationstests importieren, waehlen
@@ -29,7 +42,7 @@ PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]
 REGELN = [
     ("scripts/", ALLES),
     (".woodpecker/", ALLES),
-    (FE + "/", ["frontend"]),
+    (FE + "/", FRONTEND),
     (PY + "/requirements.txt", PYTHON_MIT_DIENSTEN),
     (PY + "/app/repositories/", PYTHON_MIT_DIENSTEN),
     (PY + "/app/infrastructure/database/", PYTHON_MIT_DIENSTEN),
@@ -192,6 +205,10 @@ def _doku(pfad: str) -> bool:
 
 
 def _regel(pfad: str):
+    if pfad.endswith(NUR_FRONTEND_TESTS) and pfad.startswith(FE + "/"):
+        return ["frontend"]
+    if pfad.startswith(NUR_FRONTEND_TESTS_PFADE):
+        return ["frontend"]
     for praefix, schritte in REGELN:
         if pfad.startswith(praefix):
             return schritte

@@ -72,6 +72,7 @@ def test_ci_hat_keinen_pfadfilter_auf_workflow_ebene():
         ("ci-bericht", PYTHON),
         ("retired-words", NODE),
         ("frontend", NODE),
+        ("frontend-build", NODE),
         ("bff", from_zeile("mvp/backend/BFF/Dockerfile", "build")),
     ],
 )

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Full check for a working tree: retired words, Python lint + format + unit tests (and scripts/tests/),
-# frontend tests and production build (budgets), BFF tests. The same command for people, agents and CI. Runs from any directory.
+# frontend tests, frontend production build (budgets), BFF tests. The same command for people, agents and CI. Runs from any directory.
 # Images: the BFF SDK image is the one of mvp/backend/BFF/Dockerfile (scripts/tests/test_woodpecker_ci.py).
 # Frontend tests need a Chrome/Chromium: set CHROME_BIN, otherwise the Playwright Chromium is used if present.
 # --integration: also run app/tests/integration against Qdrant (QDRANT_URL, default localhost:6333) and
@@ -8,30 +8,30 @@
 # tests/integration/api/ additionally needs the running dev-stack BFF (GUTGESAGT_BFF_URL, default
 # localhost:5054, `mvp/run-local.sh up`); without it those tests fail in this mode, except in CI (`CI` set),
 # which starts no BFF: there they are skipped.
-# --schritt <name>: run only that step (retired-words, lint, unit, integration, frontend, bff);
+# --schritt <name>: run only that step (retired-words, lint, unit, integration, frontend, frontend-build, bff);
 # the Woodpecker pipeline (.woodpecker/ci.yaml) runs each step this way, see docs/CI.md.
 # --include <pfad>: only the frontend specs under <pfad> (relative to the frontend directory, as for
-# `ng test --include`; repeatable); implies --schritt frontend.
+# `ng test --include`; repeatable); implies --schritt frontend (no production build).
 # --geaendert: only the steps the files changed since the branch left CHECK_BASE (default origin/main)
 # need, the working tree included, and for the frontend only the specs that reach them
 # (scripts/geaendert.py prints the choice and why). Includes integration whenever the changes reach
-# it, without --integration. For checks in between; CI and the check before the merge run everything.
+# it, without --integration. Enough before a push; the full run is the CI's job (docs/CI.md).
 # CHECK_VOLL=1 shows the full output instead of the summary lines; CHECK_OHNE_DOCKER=1 runs the
-# BFF tests with the local dotnet instead of the .NET SDK container.
+# BFF tests with the local dotnet instead of the .NET SDK container. CHECK_WORKER=<n> sets the
+# pytest-xdist workers of the unit step (default 4, 0 runs serially in one process).
 set -e
 INTEGRATION=
 SCHRITT=
 GEAENDERT=
 INCLUDE=()
-NUR_SPECS=
-SCHRITTE="retired-words lint unit integration frontend bff"
+SCHRITTE="retired-words lint unit integration frontend frontend-build bff"
 while [ $# -gt 0 ]; do
   case "$1" in
     --integration) INTEGRATION=1 ;;
     --schritt)
       SCHRITT=$2; shift
       case " $SCHRITTE " in *" $SCHRITT "*) ;; *) echo "Unknown step: $SCHRITT (one of: $SCHRITTE)" >&2; exit 2 ;; esac ;;
-    --include) INCLUDE+=(--include "$2"); shift; SCHRITT=frontend; NUR_SPECS=1 ;;
+    --include) INCLUDE+=(--include "$2"); shift; SCHRITT=frontend ;;
     --geaendert) GEAENDERT=1 ;;
     *) echo "Unknown option: $1 (usage: check.sh [--integration] [--schritt <name>] [--include <pfad>] [--geaendert])" >&2; exit 2 ;;
   esac
@@ -64,8 +64,13 @@ if laeuft lint; then
 fi
 if laeuft unit; then
   echo "== Python unit"
-  ./venv/bin/python -m pytest app/tests/unit/ --ignore=app/tests/unit/services/test_seeding_implementation.py -q 2>&1 | kurz . 2; test "${PIPESTATUS[0]}" -eq 0
-  ./venv/bin/python -m pytest "$ROOT/scripts/tests/" -q 2>&1 | kurz . 2; test "${PIPESTATUS[0]}" -eq 0
+  # In parallel (pytest-xdist): every worker collects on its own, so test IDs must not contain
+  # random values (fixed UUIDs in parametrize). Fixed 4 rather than auto: on a large CI runner
+  # auto starts one worker per core, each importing the app, next to the other steps.
+  # The integration step stays serial: every worker would load the embedding model (#459)
+  # and its torch threads are sized for one process (tests/integration/conftest.py).
+  ./venv/bin/python -m pytest app/tests/unit/ --ignore=app/tests/unit/services/test_seeding_implementation.py -q -n "${CHECK_WORKER:-4}" 2>&1 | kurz . 2; test "${PIPESTATUS[0]}" -eq 0
+  ./venv/bin/python -m pytest "$ROOT/scripts/tests/" -q -n "${CHECK_WORKER:-4}" 2>&1 | kurz . 2; test "${PIPESTATUS[0]}" -eq 0
 fi
 if laeuft integration; then
   echo "== Python integration"
@@ -77,24 +82,25 @@ if laeuft integration; then
   test "${PIPESTATUS[0]}" -eq 0
 fi
 
+# environment.ts is gitignored; tests and build need it
+frontend_umgebung() { cd "$FE"; [ -f src/environments/environment.ts ] || cp src/environments/environment.ts.template src/environments/environment.ts; }
 if laeuft frontend; then
-  echo "== Frontend"; cd "$FE"
-  [ -f src/environments/environment.ts ] || cp src/environments/environment.ts.template src/environments/environment.ts
+  echo "== Frontend"; frontend_umgebung
   # A run that fails before Karma starts (no node_modules, no browser) prints no summary line: then the tail.
   log=$(mktemp); status=0
   npx ng test --watch=false --browsers=ChromeHeadless --progress=false "${INCLUDE[@]}" >"$log" 2>&1 || status=$?
   kurz 'Executed [0-9]+ of [0-9]+.*(SUCCESS|FAILED)|ERROR' 2 <"$log"
   [ "$status" -eq 0 ] || [ -n "$CHECK_VOLL" ] || { echo "-- ng test exit $status, last lines:"; tail -n 15 "$log"; }
   rm -f "$log"; test "$status" -eq 0
-  # The image build (Dockerfile) runs `ng build --configuration production`, whose budgets ng test
-  # does not check: an exceeded budget stopped the :main images after merge (10.11.). Not with
-  # --include; with --geaendert it runs, a changed stylesheet is what exceeds a budget.
-  if [ -z "$NUR_SPECS" ]; then
-    echo "== Frontend build (production)"; log=$(mktemp); status=0
-    npx ng build gutgesagt-frontend --configuration production --progress=false >"$log" 2>&1 || status=$?
-    [ "$status" -eq 0 ] && [ -z "$CHECK_VOLL" ] && echo "build ok" || cat "$log"
-    rm -f "$log"; test "$status" -eq 0
-  fi
+fi
+# The image build (Dockerfile) runs `ng build --configuration production`, whose budgets ng test
+# does not check: an exceeded budget stopped the :main images after merge (10.11.). Own step, so
+# CI runs it next to the tests; not with --include, and with --geaendert not for spec-only changes.
+if laeuft frontend-build; then
+  echo "== Frontend build (production)"; frontend_umgebung; log=$(mktemp); status=0
+  npx ng build gutgesagt-frontend --configuration production --progress=false >"$log" 2>&1 || status=$?
+  [ "$status" -eq 0 ] && [ -z "$CHECK_VOLL" ] && echo "build ok" || cat "$log"
+  rm -f "$log"; test "$status" -eq 0
 fi
 
 if laeuft bff; then

@@ -37,8 +37,44 @@ def test_waehlen_reine_frontend_aenderung_nur_frontend(baum):
 
     auswahl = geaendert.waehlen([f"{FE}/src/app/a/a.component.ts"], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "frontend"]
+    assert auswahl.schritte == ["retired-words", "frontend", "frontend-build"]
     assert auswahl.specs == ["src/app/a/a.component.spec.ts"]
+
+
+@pytest.mark.parametrize(
+    "pfad",
+    [
+        f"{FE}/src/app/a/a.component.spec.ts",
+        f"{FE}/tsconfig.spec.json",
+        f"{FE}/e2e/tests/rundgang.spec.ts",
+    ],
+)
+def test_waehlen_nur_testdateien_des_frontends_ohne_production_build(baum, pfad):
+    # Specs und e2e/ liest der Production-Build nicht (tsconfig.app.json geht von main.ts aus)
+    wurzel = baum(
+        {
+            f"{FE}/src/app/a/a.component.ts": "export class A {}\n",
+            f"{FE}/src/app/a/a.component.spec.ts": "import { A } from './a.component';\n",
+        }
+    )
+
+    auswahl = geaendert.waehlen([pfad], wurzel)
+
+    assert auswahl.schritte == ["retired-words", "frontend"]
+
+
+def test_waehlen_spec_und_komponente_mit_production_build(baum):
+    wurzel = baum(
+        {
+            f"{FE}/src/app/a/a.component.ts": "export class A {}\n",
+            f"{FE}/src/app/a/a.component.spec.ts": "import { A } from './a.component';\n",
+        }
+    )
+    pfade = [f"{FE}/src/app/a/a.component.spec.ts", f"{FE}/src/app/a/a.component.ts"]
+
+    auswahl = geaendert.waehlen(pfade, wurzel)
+
+    assert auswahl.schritte == ["retired-words", "frontend", "frontend-build"]
 
 
 def test_waehlen_frontend_auch_specs_die_ueber_andere_importieren(baum):
@@ -80,7 +116,7 @@ def test_waehlen_frontend_ausserhalb_der_komponenten_alle_specs(baum, pfad):
 
     auswahl = geaendert.waehlen([pfad], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "frontend"]
+    assert auswahl.schritte == ["retired-words", "frontend", "frontend-build"]
     assert auswahl.specs is None
     assert "alle Specs" in auswahl.gruende["frontend"][0]
 
@@ -167,7 +203,7 @@ def test_waehlen_frontend_datei_die_ein_python_test_liest_auch_unit(baum, pfad, 
 
     auswahl = geaendert.waehlen([pfad], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "unit", "frontend"]
+    assert auswahl.schritte == ["retired-words", "unit", "frontend", "frontend-build"]
     assert test in auswahl.gruende["unit"][0]
 
 
@@ -199,7 +235,7 @@ def test_main_gibt_schritte_und_specs_fuer_check_sh_aus(baum, monkeypatch, capsy
 
     ausgabe = capsys.readouterr()
     assert ausgabe.out.splitlines() == [
-        "schritte retired-words frontend",
+        "schritte retired-words frontend frontend-build",
         "spec src/app/a/a.component.spec.ts",
     ]
     assert "2 geaenderte Dateien gegenueber origin/main" in ausgabe.err
