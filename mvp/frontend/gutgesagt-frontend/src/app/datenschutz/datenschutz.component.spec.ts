@@ -599,11 +599,26 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('Widerrufen kannst du jederzeit im Profilmenü unter „Datenschutz-Einstellungen“');
       expect(text).toContain('nichts mehr beitragen und nichts bewerten, und deine Bewertungen löschen wir');
-      expect(text).toContain('Was du sonst gespeichert hast, bleibt, bis du es löschst oder dein Konto löschen lässt');
+      expect(text).not.toContain('Was du sonst gespeichert hast, bleibt, bis du es löschst');
       expect(text).not.toContain('Was du schon gespeichert hast, bleibt');
       expect(text).toContain('was bis zum Widerruf geschehen ist, bleibt rechtmäßig');
       expect(text).toContain('Deine Einwilligungen, auch widerrufene, bleiben bis zur Löschung deines Kontos');
       expect(abschnitt('Deine Rechte')).toContain('deine Einwilligungen samt Widerrufen und die Muster-Hinweise, die dein Konto nennen');
+    });
+
+    it('Art.-9-Einwilligung: der Widerruf legt einen Löschauftrag an, binnen sieben Tagen (DSFA R9b)', () => {
+      const text = abschnitt('Rückschlüsse auf deine politische Haltung');
+
+      expect(text).toContain('Innerhalb von sieben Tagen lösen wir auch deine Beiträge, Einwürfe und Sätze von dir');
+      expect(text).toContain('zeigen statt deines Namens „ehemalige Person“, deine Einwürfe löschen wir');
+      expect(text).toContain('Dafür legen wir einen Löschauftrag an: deine Kennung, der Zeitpunkt deines Widerrufs und die Frist');
+      expect(text).toContain('Einen erledigten Löschauftrag löschen wir ein Jahr nach der Erledigung, mit deinem Konto sofort');
+      expect(text).toContain('Dein Konto bleibt');
+      expect(text).toContain('fragen wir dich beim nächsten Besuch neu; deine frühere Einwilligung zählt dann nicht mehr');
+      // Neue Einwilligung vor der Ausfuehrung (Entscheidung Maintainer, 13.11.2026)
+      expect(text).toContain('was du danach beiträgst, erfasst ein noch offener Löschauftrag nicht');
+      expect(abschnitt('Beiträge, die du einstellst')).toContain('Widerrufst du deine Art.-9-Einwilligung, ersetzen wir deine Kennung ebenso, innerhalb von sieben Tagen');
+      expect(abschnitt('Einwürfe in den Fangkorb')).toContain('Widerrufst du deine Art.-9-Einwilligung, tun wir dasselbe innerhalb von sieben Tagen');
     });
   });
 

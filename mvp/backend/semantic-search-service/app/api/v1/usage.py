@@ -109,6 +109,9 @@ class PunkteResponse(BaseModel):
     quests: int
     wirkung: int
     gesamt: int
+    # False fuer Startkonten und ohne geltende Art.-9-Einwilligung: Das Konto hat
+    # keine Punkte (GLOSSARY.md "Punkte"), das Frontend zeigt dann keinen Stand.
+    sammelt: bool = True
 
 
 class MeilensteinResponse(BaseModel):
@@ -472,7 +475,11 @@ async def eigene_punkte(
         )
         raise HTTPException(status_code=500, detail="Internal server error")
     return PunkteResponse(
-        tun=stand.tun, quests=stand.quests, wirkung=stand.wirkung, gesamt=stand.gesamt
+        tun=stand.tun,
+        quests=stand.quests,
+        wirkung=stand.wirkung,
+        gesamt=stand.gesamt,
+        sammelt=stand.sammelt,
     )
 
 

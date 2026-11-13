@@ -10,6 +10,7 @@ from typing import Callable, Optional
 from sqlalchemy import func, insert, select, update
 from sqlalchemy.orm import Session
 
+from domain.art9_einwilligung import geltender_wortlaut
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import Art9EinwilligungZeile
 
@@ -22,7 +23,16 @@ class Art9Einwilligung:
 
     @property
     def gilt(self) -> bool:
+        """Nicht widerrufen: Die Einwilligung traegt, was bis heute geschehen ist."""
         return self.widerrufen_am is None
+
+    @property
+    def zaehlt(self) -> bool:
+        """
+        Nicht widerrufen und zu einem Wortlaut, der heute zaehlt
+        (GELTENDE_WORTLAUTE): Nur dann ist frei, was die Einwilligung verlangt.
+        """
+        return self.gilt and geltender_wortlaut(self.wortlaut)
 
 
 class Art9EinwilligungRepository:
@@ -64,26 +74,27 @@ class Art9EinwilligungRepository:
     def widerrufen(
         self,
         user_id: str,
-        im_selben_zug: Optional[Callable[[Session], None]] = None,
+        im_selben_zug: Optional[Callable[[Session, bool], None]] = None,
     ) -> None:
         """
         Setzt den Zeitpunkt des Widerrufs an jeder noch geltenden Zeile.
 
         ``im_selben_zug`` laeuft danach in derselben Transaktion (das Loeschen der
-        Stimmen, Art9EinwilligungService.widerrufen): Scheitert es, gilt auch der
-        Widerruf nicht, und die Person kann ihn wiederholen.
+        Stimmen und der Loeschauftrag, Art9EinwilligungService.widerrufen): Scheitert
+        es, gilt auch der Widerruf nicht, und die Person kann ihn wiederholen. Es
+        bekommt die Sitzung und ob eben eine geltende Einwilligung widerrufen wurde.
         """
         with self.db.get_session() as session:
-            session.execute(
+            geaendert = session.execute(
                 update(Art9EinwilligungZeile)
                 .where(
                     Art9EinwilligungZeile.user_id == user_id,
                     Art9EinwilligungZeile.widerrufen_am.is_(None),
                 )
                 .values(widerrufen_am=func.now())
-            )
+            ).rowcount
             if im_selben_zug is not None:
-                im_selben_zug(session)
+                im_selben_zug(session, geaendert > 0)
 
     @staticmethod
     def _juengste(session, user_id: str):

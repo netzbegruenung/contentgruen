@@ -1,7 +1,7 @@
 """
 Loeschfristen fuer Meldungen, Einwuerfe, Sperren, geloeschte Beitraege und deren Stimmen (#421),
-fuer nie benutzte Konten aus Einladungen (#538) und fuer das Tagespseudonym an
-Suchereignissen (#495).
+fuer nie benutzte Konten aus Einladungen (#538), fuer das Tagespseudonym an
+Suchereignissen (#495) und fuer erledigte Loeschauftraege (DSFA R9b).
 
 Fachliche Quelle der Fristen ist docs/LOESCHKONZEPT.md ("Fristen"); im Code stehen
 ihre Zahlen hier und nur hier, damit die Datenschutzerklaerung sie zitieren kann.
@@ -37,6 +37,11 @@ services/suchen_ohne_treffer_service.py, Nutzungsereignisse in core/config.py.
   Das Pseudonym lebt so hoechstens bis zum naechsten Lauf nach Mitternacht. Der
   erste Lauf verdichtet auch die Tage, die bis dahin 90 Tage als Einzelzeilen
   blieben.
+- Loeschauftraege nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b): erledigte
+  ERLEDIGTER_LOESCHAUFTRAG_TAGE nach dem Ausfuehren. So lange laesst sich auf eine
+  Nachfrage oder Beschwerde belegen, wann der Loeschablauf lief; den Widerruf selbst
+  belegt weiter die Zeile der Einwilligung. Offene bleiben: Sie sind Arbeit. Ueberfaellige
+  offene meldet jeder Lauf als WARNING, nur mit ihrer Zahl.
 - Stimmen haben keine eigene Frist: Aus ihnen entsteht die Guete eines Beitrags, sie
   leben so lange wie er und gehen mit ihm.
 
@@ -55,6 +60,7 @@ from domain.models.content_status import FELD_GELOESCHT_AM
 from repositories.content_report_repository import ContentReportRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
 from repositories.einwurf_repository import EinwurfRepository
+from repositories.loeschauftrag_repository import LoeschauftragRepository
 from repositories.search_tracking_repository import SearchTrackingRepository
 from repositories.sperre_repository import SperreRepository
 from services.moderation_service import ModerationService
@@ -67,6 +73,7 @@ EINWURF_OHNE_BEITRAG_TAGE = 365
 GELOESCHTER_BEITRAG_TAGE = 30
 SPERRE_NACH_AUFHEBUNG_TAGE = 180
 NIE_BENUTZTES_KONTO_TAGE = 30
+ERLEDIGTER_LOESCHAUFTRAG_TAGE = 365
 LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
 # Scheitert das Verdichten der Suchereignisse, versucht der Task es nach dieser Zeit
 # erneut statt erst um Mitternacht: Das Pseudonym soll den Tag nicht lange ueberleben.
@@ -100,6 +107,7 @@ class LoeschfristenService:
         sperren: SperreRepository,
         konten: Optional[INieBenutzteKonten] = None,
         suchereignisse: Optional[SearchTrackingRepository] = None,
+        loeschauftraege: Optional[LoeschauftragRepository] = None,
     ):
         self._meldungen = meldungen
         self._einwuerfe = einwuerfe
@@ -108,6 +116,7 @@ class LoeschfristenService:
         self._sperren = sperren
         self._konten = konten
         self._suchereignisse = suchereignisse
+        self._loeschauftraege = loeschauftraege
         # True, wenn der letzte Lauf Suchereignisse nicht verdichten konnte.
         self.verdichten_offen = False
 
@@ -139,6 +148,13 @@ class LoeschfristenService:
             _grenze(heute, SPERRE_NACH_AUFHEBUNG_TAGE),
             "lifted Sperren",
         )
+        if self._loeschauftraege is not None:
+            await self._frist_anwenden(
+                self._loeschauftraege.erledigte_loeschen_vor,
+                _grenze(heute, ERLEDIGTER_LOESCHAUFTRAG_TAGE),
+                "completed Loeschauftraege",
+            )
+            await self._ueberfaellige_melden()
         if self._konten is not None:
             await self._frist_anwenden(
                 self._konten.nie_benutzte_loeschen,
@@ -151,6 +167,24 @@ class LoeschfristenService:
         except Exception as e:
             logger.error(
                 f"Error removing deleted content: {type(e).__name__}", exc_info=True
+            )
+
+    async def _ueberfaellige_melden(self) -> None:
+        """Ueberfaellige offene Loeschauftraege als WARNING, ohne Kennungen."""
+        try:
+            n = await asyncio.to_thread(
+                self._loeschauftraege.ueberfaellige_zaehlen, datetime.now(timezone.utc)
+            )
+        except Exception as e:
+            logger.error(
+                f"Error counting overdue Loeschauftraege: {type(e).__name__}",
+                exc_info=True,
+            )
+            return
+        if n:
+            logger.warning(
+                f"{n} Loeschauftraege past their seven days, run them under "
+                "Moderation > Loeschauftraege"
             )
 
     @staticmethod

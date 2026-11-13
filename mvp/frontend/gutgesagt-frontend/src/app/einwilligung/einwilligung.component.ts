@@ -13,6 +13,7 @@ import {
   wortlautErsterSatz,
 } from '../services/art9-einwilligung.service';
 import { ROUTES } from '../shared/constants/app.constants';
+import { HILFE_PARAM } from '../help-dialog/help-dialog.component';
 
 type Zustand = 'laedt' | 'frage' | 'sendet' | 'eingewilligt' | 'widerruft' | 'fehler';
 
@@ -54,6 +55,19 @@ export class EinwilligungComponent implements OnInit {
     return wortlautDatum(this.stand?.wortlaut);
   }
 
+  /**
+   * Eingewilligt zu einem frueheren Wortlaut und nicht widerrufen: Das Backend meldet
+   * dann nicht eingewilligt (nur der aktuelle Wortlaut zaehlt, seit 2026-11-13), die
+   * Einwilligung bleibt aber widerrufbar.
+   */
+  get fruehereEinwilligung(): boolean {
+    const s = this.stand;
+    return !!s && !s.eingewilligt && !!s.wortlaut && !s.widerrufen_am;
+  }
+
+  /** Beim Einwilligen kam 400: Der Wortlaut hat sich seit dem Laden geaendert. */
+  wortlautGeaendert = false;
+
   ngOnInit(): void {
     this.laden();
   }
@@ -77,20 +91,36 @@ export class EinwilligungComponent implements OnInit {
     this.zustand = 'sendet';
     this.einwilligung.einwilligen(this.stand.aktueller_wortlaut.kennung).subscribe({
       next: () => this.weiter(),
-      error: () => (this.zustand = 'fehler'),
+      error: (fehler) => {
+        if (fehler?.status === 400) {
+          // Der gezeigte Wortlaut gilt nicht mehr (etwa ein Tab von gestern): den aktuellen
+          // selbst laden und darueber sagen, dass er neu zu lesen ist.
+          this.wortlautGeaendert = true;
+          this.laden();
+          return;
+        }
+        this.zustand = 'fehler';
+      },
     });
   }
 
-  /** Ohne Einwilligung weiter: lesen und suchen geht, beitragen und bewerten nicht. */
+  /**
+   * Ohne Einwilligung weiter: lesen und suchen geht, beitragen und bewerten nicht. Kam
+   * die Anmeldung aus der Hilfe (HILFE_PARAM), öffnet sie sich danach nicht wieder: Sie
+   * böte nur Selbst beitragen an, und das geht ohne Einwilligung nicht.
+   */
   ohneEinwilligung(): void {
-    this.weiter();
+    this.weiter(true);
   }
 
   widerrufenKlick(): void {
-    if (this.zustand !== 'eingewilligt') {
+    const erlaubt = this.zustand === 'eingewilligt' || (this.zustand === 'frage' && this.fruehereEinwilligung);
+    if (!erlaubt) {
       return;
     }
-    this.zustand = 'widerruft';
+    // Aus der Frage heraus bleibt die Frage stehen (gesperrt), statt kurz den Block fuer
+    // Eingewilligte zu zeigen.
+    this.zustand = this.zustand === 'frage' ? 'sendet' : 'widerruft';
     this.einwilligung.widerrufen().subscribe({
       next: () => this.laden(),
       error: () => (this.zustand = 'fehler'),
@@ -102,9 +132,16 @@ export class EinwilligungComponent implements OnInit {
   }
 
   /** Zurueck, woher die Person kam; nur Pfade innerhalb der App. */
-  private weiter(): void {
+  private weiter(ohneHilfe = false): void {
     const ziel = this.route.snapshot.queryParamMap.get('returnUrl');
     const sicher = ziel && ziel.startsWith('/') && !ziel.startsWith('//') && !ziel.startsWith(EINWILLIGUNG_PFAD);
-    this.router.navigateByUrl(sicher ? ziel : ROUTES.SEARCH);
+    let url = sicher ? ziel : ROUTES.SEARCH;
+    const baum = this.router.parseUrl(url);
+    if (ohneHilfe && HILFE_PARAM in baum.queryParams) {
+      const { [HILFE_PARAM]: _weg, ...rest } = baum.queryParams;
+      baum.queryParams = rest;
+      url = this.router.serializeUrl(baum);
+    }
+    this.router.navigateByUrl(url);
   }
 }

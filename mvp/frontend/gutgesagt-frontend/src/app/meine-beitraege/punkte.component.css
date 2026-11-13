@@ -1,0 +1,41 @@
+.punkte {
+  margin-bottom: var(--spacing-md);
+}
+
+.punkte h2 {
+  font-size: 1.1rem;
+  margin: 0 0 4px;
+}
+
+.punkte-zahl {
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.punkte-hinweis {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.punkte-stufen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.punkte-wert {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.punkte-platzhalter {
+  margin: 0 0 var(--spacing-md);
+  font-size: 14px;
+  color: var(--text-secondary);
+}

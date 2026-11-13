@@ -5,10 +5,12 @@
 > (`v0.9.0`) legen echte Personen Konten, Beiträge, Stimmen und Meldungen an, auch Daten nach
 > Art. 9. Ab dann ist jedes Löschverlangen zu erfüllen, und dieses Konzept ist der Weg dafür.
 > Wie viele Konten und Daten es in Produktion schon gibt, steht nicht im Repo (**offen**).
-> Ein Codepfad, der eine Person mit Konto löscht, fehlt. Es gibt nur drei Teilwege: das
+> Ein Codepfad, der eine Person mit Konto löscht, fehlt. Es gibt nur vier Teilwege: das
 > Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“), „Angaben löschen“ für
-> Meldende (`POST /api/v1/moderation/melder/angaben-loeschen`, unter „Fristen“, Meldungen) und
-> das automatische Löschen nie benutzter Konten aus Einladungen (#538, unter „Fristen“). Was
+> Meldende (`POST /api/v1/moderation/melder/angaben-loeschen`, unter „Fristen“, Meldungen),
+> den Löschauftrag nach dem Widerruf der Art.-9-Einwilligung (unter „Löschauftrag nach dem
+> Widerruf“) und das automatische Löschen nie benutzter Konten aus Einladungen (#538, unter
+> „Fristen“). Was
 > hier sonst steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
 > Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
 > zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), der
@@ -107,7 +109,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    `users` (Anzeigename), die in `gesehene_nutzung` (Stand der Rückmeldung beim
    Anmelden, nur eine Zahl) und die in `art9_einwilligungen` (jede Art.-9-Einwilligung mit
    Zeitpunkt und Wortlaut, auch widerrufene; #489) und in `abzeichen_sichtbarkeit` (jede
-   Antwort auf die Frage nach der Sichtbarkeit der Abzeichen, auch ein Nein; #351)
+   Antwort auf die Frage nach der Sichtbarkeit der Abzeichen, auch ein Nein; #351) und die in
+   `loeschauftraege` (offene und erledigte Löschaufträge nach einem Widerruf)
    löschen, ebenso jeden Muster-Hinweis
    (`muster_hinweise`, #352), der die Person nennt. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
@@ -147,6 +150,71 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
    (`BFF/Services/ManagedUserService.cs:128`).
 
+## Löschauftrag nach dem Widerruf
+
+Widerruft eine Person ihre Art.-9-Einwilligung, fehlt für die Zuordnung ihrer Beiträge,
+Einwürfe und Sätze die Rechtsgrundlage (DSFA V2, R9; `docs/ART9_EINWILLIGUNG.md`). Der Widerruf
+löscht sofort ihre Stimmen und legt in derselben Transaktion einen **Löschauftrag** an: Kennung,
+Zeitpunkt und Frist, sieben Tage später (Tabelle `loeschauftraege`,
+`Art9EinwilligungService.widerrufen`). Einen Auftrag gibt es nur, wenn dabei eine geltende
+Einwilligung widerrufen wurde; je Person höchstens einen offenen, ein zweiter Widerruf legt
+keinen zweiten an. Wer vor diesem Stand irgendwann widerrufen hat, auch wer seither neu
+eingewilligt hat, bekommt den Auftrag beim Einspielen der Migration
+(`2026-11-13-loeschauftraege.sql`): angelegt zum Zeitpunkt des jüngsten Widerrufs, Frist sieben
+Tage ab dem Einspielen (entschieden 13.11.2026); was nach einer neuen Einwilligung gespeichert
+wurde, schützt die Obergrenze (unten). Beim Umstellen der Kennungen
+zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
+
+Admins sehen offene Aufträge unter „Moderation“, „Löschaufträge“, mit der frühesten Frist
+zuerst; überfällige stehen hervorgehoben, die Zahl offener steht am Umschalter. Liste und
+Zahl laden selbst nach. Hat die Person nach dem Widerruf neu eingewilligt, steht „Neu
+eingewilligt am …“ daneben (die erste Einwilligung nach dem jüngsten Widerruf); der Auftrag
+bleibt, erfasst aber nur, was davor gespeichert wurde (Entscheidung Maintainer,
+13.11.2026, unten „Obergrenze“). „Widerrufen am“ ist der jüngste Widerruf. Überfällige
+meldet der tägliche Löschfrist-Task zusätzlich als WARNING im Log, nur mit ihrer Zahl. „Löschablauf ausführen“ (`POST /api/v1/moderation/loeschauftraege/{id}/ausfuehren`)
+macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwirkung:
+
+- **Qdrant wie Schritt 3:** Beiträge anonymisieren (`services/wartung/beitraege_anonymisieren.py`,
+  dieselbe Logik wie das Skript).
+- **PostgreSQL wie Schritt 2, nur Einwürfe und Sätze:** eigene Einwürfe löschen (samt Sätzen und
+  „ausformuliert in“ daran), Sätze an fremden Einwürfen und `destilled_by` mit Platzhalter,
+  `raw_input_content_links.created_by` leer, an Sperren ihrer Beiträge `autor` und
+  `widerspruch` leer, Platzhalter ohne Satz abräumen (`LoeschauftragRepository.ausfuehren`).
+  In derselben Transaktion bekommt der Auftrag den Zeitpunkt der Ausführung.
+- **Obergrenze:** die früheste Einwilligung nach dem jüngsten Widerruf und nicht vor dem Anlegen
+  des Auftrags, zu irgendeinem Wortlaut (`Loeschauftrag.obergrenze`): Jede gespeicherte
+  Einwilligung galt, als sie gegeben wurde (neu einwilligen geht nur zu einem geltenden Wortlaut),
+  und die Zusage „Was ich nach einer neuen Einwilligung beitrage, bleibt“ hängt nicht daran, ob
+  später ein neuer Wortlaut kommt. Was ab ihr gespeichert ist, bleibt an der Person; gibt es sie
+  nicht oder fehlt eine Zeile mit Widerruf, erfasst der Auftrag alles, auch Nachzügler, die kurz vor dem
+  Widerruf geprüft und erst danach gespeichert wurden (lieber zu viel als zu wenig). Widerruft
+  die Person nach einer neuen Einwilligung erneut, bleibt es bei einem Auftrag, und die
+  Obergrenze fällt weg. Verglichen werden Beiträge nach `created` im Qdrant-Payload (ohne
+  lesbares `created` zählt ein Beitrag als früher, ohne Zeitzone als UTC), Einwürfe und
+  Verknüpfungen nach `created_at`, Sätze nach `updated_at` (einen Zeitpunkt des Anlegens hat ein
+  Satz nicht; wer ihn nach einer neuen Einwilligung neu speichert, hat ihn unter ihr beigetragen).
+  An Sperren geht der Autor, außer an Beiträgen ab der Obergrenze, die in Qdrant an der Person
+  bleiben. Eigene Einwürfe von vor der Obergrenze gehen samt allen Sätzen daran, auch Sätzen der
+  Person von danach. Ein früherer Beitrag bleibt als Ganzes anonymisiert, auch wenn die Person
+  ihn nach der neuen Einwilligung noch geändert hat.
+- **Gleichzeitig widerrufen:** Der PostgreSQL-Teil sperrt die Zeile des Auftrags (`FOR UPDATE`)
+  und liest Widerruf und Obergrenze neu. Haben sie sich seit dem Laden geändert, bricht er ab
+  (409, „erneut ausführen“), der Auftrag bleibt offen, und der nächste Klick nimmt den neuen
+  Stand. Ein Widerruf sperrt den offenen Auftrag ebenso, bevor er einen anlegt: Läuft gerade die
+  Ausführung, wartet er und legt danach einen neuen Auftrag an. Bekannte Grenze, zwei
+  Restfenster von Millisekunden: Ein Schreibzugriff, der die Einwilligung kurz vor dem Widerruf
+  geprüft hat, kann erst nach dem PostgreSQL-Teil gespeichert werden, und ein Beitrag kann
+  zwischen dem Qdrant-Teil und dem PostgreSQL-Teil entstehen. Beides bleibt dann an der Person,
+  obwohl der Auftrag erledigt ist; beim Durchsehen der Texte (Schritt 3) fällt es auf.
+
+Was **bleibt**: das Konto, der Anzeigename in `users`, die Einwilligungen samt Widerruf als
+Nachweis (Art. 7 Abs. 1), Meldungen der Person und Muster-Hinweise (beide gehen mit ihrer
+Frist) sowie `gesehene_nutzung` (nur eine Zahl, ohne Frist, geht mit dem Konto). Erst Qdrant, dann PostgreSQL: Scheitert ein Schritt, bleibt der Auftrag offen,
+und ein zweiter Klick holt nach, was fehlt; beide Teile sind wiederholbar. Danach wie in
+Schritt 3 die Texte durchsehen; macht einer die Person erkennbar, wird er einzeln entfernt. Die
+Beiträge stehen danach nicht mehr in „Meine Beiträge“ der Person, sie kann sie also nicht mehr
+selbst ändern oder löschen. Nach dem Freeze soll der Ablauf ohne Admin laufen (**offen**).
+
 ## Fristen
 
 Ein täglicher Task löscht nach festen Fristen, sofort beim Start des Dienstes, dann
@@ -172,6 +240,8 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Prüfwerte „Ja, gepostet“ (`gepostet_pruefwerte`, #643) | ihre Kalenderwoche | zur Zahl der Woche verdichtet und gelöscht beim ersten täglichen Lauf nach Wochenende (Montag, UTC; derselbe Task wie für `nutzung_heute`, auch bei ausgeschaltetem Schalter), spätestens bei der nächsten Meldung; der Wochenschlüssel liegt nur im Arbeitsspeicher |
 | Zahl je Woche „Ja, gepostet“ (`gepostet_wochen`) | keine | — nur eine Zahl je Woche, ohne Personenbezug |
 | Muster-Hinweise (`muster_hinweise`) | 56 Tage (8 Wochen) | letzter Tag mit gegenseitiger Nutzung (`letzter_tag`) |
+| Löschaufträge (`loeschauftraege`), offen | keine | — sie sind Arbeit und bleiben, bis ein Admin den Löschablauf ausführt (Frist dafür: sieben Tage ab dem Widerruf, unter „Löschauftrag nach dem Widerruf“) |
+| Löschaufträge, erledigt | 365 Tage (entschieden 13.11.2026) | Ausführung (`erledigt_am`); mit dem Konto sofort (Schritt 2) |
 | Zustimmung zur Sichtbarkeit der Abzeichen (`abzeichen_sichtbarkeit`) | solange das Konto besteht | — Nachweis der Zustimmung (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Meilenstein-Abzeichen am Anzeigenamen (#351) | keine Speicherung | — nur im Arbeitsspeicher, alle 15 Minuten neu berechnet, nach einem Neustart leer; nach dem Löschkommando (Schritt 2) höchstens noch bis zum nächsten Lauf |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
@@ -239,6 +309,10 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   (`services/muster_hinweise_service.py`), beide unabhängig vom abschaltbaren Bereinigungsjob.
   Punkte selbst werden nicht gespeichert, sondern bei jedem Abruf berechnet
   (`services/punkte_service.py`); sie brauchen keine Frist.
+- **Löschaufträge:** Ein Jahr nach der Ausführung, damit sich auf eine Nachfrage der Person
+  oder eine Beschwerde belegen lässt, wann der Löschablauf lief. Der Auftrag trägt nur Kennung
+  und drei Zeitpunkte, keinen Inhalt; den Widerruf selbst belegt weiter die Zeile in
+  `art9_einwilligungen`, solange das Konto besteht.
 - **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
   hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
   Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
@@ -578,7 +652,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, abzeichen_sichtbarkeit;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, abzeichen_sichtbarkeit, loeschauftraege;"
 ```
 
 ```bash

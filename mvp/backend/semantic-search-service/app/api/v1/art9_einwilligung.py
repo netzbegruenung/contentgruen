@@ -20,7 +20,7 @@ from domain.art9_einwilligung import (
 )
 from services import art9_einwilligung_service
 from services.abzeichen_service import get_abzeichen_service
-from services.art9_einwilligung_service import UnbekannterWortlaut
+from services.art9_einwilligung_service import UnbekannterWortlaut, WortlautGiltNicht
 
 logger = get_logger(__name__)
 
@@ -61,7 +61,9 @@ def stand(user_id: str = Depends(require_user)) -> StandResponse:
         )
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
     return StandResponse(
-        eingewilligt=einwilligung is not None and einwilligung.gilt,
+        # Nur eine Einwilligung zu einem geltenden Wortlaut; zu einem frueheren
+        # fragt die App neu (domain/art9_einwilligung.py, GELTENDE_WORTLAUTE).
+        eingewilligt=einwilligung is not None and einwilligung.zaehlt,
         wortlaut=einwilligung.wortlaut if einwilligung else None,
         eingewilligt_am=einwilligung.eingewilligt_am if einwilligung else None,
         widerrufen_am=einwilligung.widerrufen_am if einwilligung else None,
@@ -80,6 +82,13 @@ def einwilligen(
     except UnbekannterWortlaut:
         raise HTTPException(
             status_code=422, detail="Unbekannter Wortlaut der Einwilligung"
+        )
+    except WortlautGiltNicht:
+        # Etwa ein Tab von gestern mit dem vorigen Wortlaut: /einwilligung laedt dann
+        # selbst den aktuellen und bittet, ihn zu lesen (domain/art9_einwilligung.py,
+        # GELTENDE_WORTLAUTE).
+        raise HTTPException(
+            status_code=400, detail="Dieser Wortlaut der Einwilligung gilt nicht mehr"
         )
     except Exception as e:
         logger.error(
@@ -106,7 +115,7 @@ def widerrufen(user_id: str = Depends(require_user)) -> Response:
                 f"Zustimmung zur Sichtbarkeit von {log_pseudonym(user_id)} nicht zurueckgenommen: {type(e).__name__}",
                 exc_info=True,
             )
-    # Vermerk und Loeschen der Stimmen in einer Transaktion
+    # Vermerk, Loeschen der Stimmen und Loeschauftrag in einer Transaktion
     # (Art9EinwilligungService.widerrufen): Bei einem Fehler gilt die Einwilligung
     # weiter, und die Person kann erneut widerrufen.
     try:
