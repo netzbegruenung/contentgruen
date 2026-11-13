@@ -97,7 +97,10 @@ steps in parallel; that is the price of not running the host out of memory.
 - `frontend` and `frontend-build` share one `npm ci` (`frontend-installieren`). Steps share
   the workspace, so only one step may run `npm ci` there; a second one would delete
   `node_modules` under the other step (`scripts/tests/test_woodpecker_ci.py` checks it).
-  Angular's build cache is off in CI (`CI` set).
+  Angular switches its build cache off only for `CI=1` or `CI=true`
+  (`@angular/build`, `normalize-cache.js`); Woodpecker sets `CI=woodpecker`, so the cache
+  is on and starts empty in the fresh workspace, except for the copy from the CI image in
+  pull requests (see [Angular cache](#angular-cache)).
 
 **Path filters.** In pull requests a step drops out when every changed file of the pull
 request lies in parts of the repository it does not read. Woodpecker asks Forgejo for the
@@ -143,7 +146,7 @@ registry and secrets as `build.yaml`:
 | Image | Base | Contains | For the steps |
 |---|---|---|---|
 | `gutgesagt-ci-python` | `python:3.13-slim` | the packages of `requirements.txt` system-wide; the models `intfloat/multilingual-e5-base` and `MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7` under `HF_HOME=/opt/ci/huggingface` | `python-installieren`, `lint`, `unit`, `integration` |
-| `gutgesagt-ci-node` | `node:22` (same digest) | Chromium with the wrapper of `scripts/ci-chromium.sh`; `node_modules` from `package-lock.json` under `/opt/ci/node_modules`; the npm cache | `frontend-installieren`, `frontend-build`, `frontend` |
+| `gutgesagt-ci-node` | `node:22` (same digest) | Chromium with the wrapper of `scripts/ci-chromium.sh`; `node_modules` from `package-lock.json` under `/opt/ci/node_modules`; the npm cache; the Angular cache of a build and a test run of the built commit under `/opt/ci/angular-cache` | `frontend-installieren`, `frontend-build`, `frontend` |
 
 Tags: `latest` and the first 12 characters of the checksum of the files the packages come
 from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `requirements.txt`, or
@@ -183,8 +186,36 @@ and 0.8 GB (Node) compressed in the registry; the Node image shares its base lay
   cron run catches up. The two images are built one after the other; `ci-node` does not
   build after a red step before it.
 - The build context is the repository root, cut down by `Dockerfile.ci.dockerignore` to the
-  files the Dockerfile copies (`scripts/tests/test_woodpecker_ci.py` keeps both lists and
-  the path filters equal).
+  files the Dockerfile copies and the frontend sources it mounts for the Angular cache
+  (`scripts/tests/test_woodpecker_ci.py` keeps the lists and the path filters equal).
+
+**Angular cache.** The Node image also carries Angular's cache (`.angular/cache`, 117 MB)
+from `ng build` and `ng test` of the commit it was built from, normally `main`.
+`frontend-installieren` copies it into the workspace in pull-request runs only, and only
+when the image matches the lockfiles; the steps write to the copy, the image stays as it
+is. Push, tag and manual runs build without it, as a clean reference.
+
+| Locally, 2 CPUs, freshly touched checkout | without | with cache | one component changed |
+|---|---|---|---|
+| `frontend-build` | 14.8 s | 12.3 s | 12.5 s |
+| `frontend` (Karma) | 42.4 s | 35.5 s | 37.3 s |
+
+- **Built at the workspace path of Woodpecker**
+  (`/woodpecker/src/git.verdigado.com/Netzbegruenung/gutgesagt`, `ARG CI_WORKSPACE`): the
+  webpack cache of the Karma tests is keyed by absolute paths; copied to another path, the
+  test run saved 3 s instead of 7–15 s. If `ci.yaml` ever sets its own `workspace`, or the
+  repository moves, the argument has to follow (`scripts/tests/test_woodpecker_ci.py` checks
+  the default).
+- The same `ng` calls as `check.sh` in CI (production build; tests without source maps),
+  otherwise the cache keys differ. A red build or red tests do not stop the image; the
+  cache is written anyway.
+- The sources are mounted, not copied, and a frontend change does not rebuild the image:
+  the cache gets fresher with the weekly build. Every week it lags behind `main` more, and
+  the gain shrinks with it; a shorter cron schedule (it rebuilds both images) or a path
+  filter on `mvp/frontend/**` would keep it fresher, at the price of more builds on the
+  shared runner.
+- Pull requests only read it: nothing a pull request writes reaches another run or the
+  image. Release images are built from the Dockerfiles without any cache.
 - The images contain nothing secret and are public like the other images of
   `netzbegruenung-images`, so the pipeline pulls them without a login.
 - `ci.yaml` names `gutgesagt-ci-python:latest` and `gutgesagt-ci-node:latest` with

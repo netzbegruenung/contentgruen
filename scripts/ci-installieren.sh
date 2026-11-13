@@ -9,7 +9,10 @@
 # python:   venv mit --system-site-packages unter mvp/backend/semantic-search-service/venv; die
 #           Pakete liegen im Image systemweit, pip installiert nur, was davon abweicht.
 # frontend: node_modules des Frontends als Verweis auf /opt/ci/node_modules, sonst npm ci
-#           (--prefer-offline: aus dem npm-Cache des Images, was dort schon liegt).
+#           (--prefer-offline: aus dem npm-Cache des Images, was dort schon liegt). In
+#           PR-Laeufen dazu eine Kopie des Angular-Caches aus dem Image (/opt/ci/angular-cache,
+#           gebaut aus main) nach .angular/cache; das Image selbst bleibt unberuehrt. Push,
+#           Tag und manuelle Laeufe bauen ohne ihn (docs/CI.md, "Angular cache").
 # --pruefsumme python|frontend gibt die Pruefsumme aus; Dockerfile.ci schreibt sie so ins Image.
 # --nachpruefen python|frontend: fuer spaetere Schritte (unit, integration, frontend-build,
 #           frontend). Jeder Schritt zieht :latest selbst; wurde dazwischen ein neues Image
@@ -66,6 +69,12 @@ case "${1:-}" in
       rm -rf "$FE/node_modules"
       ln -s "$CI_DIR/node_modules" "$FE/node_modules"
       echo "node_modules aus dem CI-Image, package.json und package-lock.json unveraendert"
+      if [ "${CI_PIPELINE_EVENT:-}" = pull_request ] && [ -d "$CI_DIR/angular-cache" ]; then
+        mkdir -p "$FE/.angular"
+        rm -rf "$FE/.angular/cache"
+        cp -r "$CI_DIR/angular-cache" "$FE/.angular/cache"
+        echo "Angular-Cache aus dem CI-Image kopiert (PR-Lauf)"
+      fi
     else
       grund frontend
       npm ci --prefix "$FE" --prefer-offline --no-audit --no-fund

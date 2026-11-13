@@ -44,3 +44,26 @@ COPY scripts/ci-installieren.sh /opt/ci/src/scripts/
 RUN npm ci --prefix /opt/ci/src/mvp/frontend/gutgesagt-frontend --no-audit --no-fund \
     && mv /opt/ci/src/mvp/frontend/gutgesagt-frontend/node_modules /opt/ci/node_modules \
     && sh /opt/ci/src/scripts/ci-installieren.sh --pruefsumme frontend > /opt/ci/frontend.sha256
+
+# Angular-Cache aus einem Build des Stands, den das Image baut (main), fuer die PR-Laeufe
+# (docs/CI.md, "Angular cache"). Gebaut im Workspace-Pfad von Woodpecker: Der Webpack-Cache
+# der Karma-Tests haengt am absoluten Pfad, an einem anderen Pfad traefe er kaum. Dieselben
+# ng-Aufrufe wie scripts/check.sh in der CI (frontend-build, frontend mit
+# CHECK_OHNE_SOURCEMAPS); scripts/tests/test_woodpecker_ci.py haelt sie gleich. Die Quellen
+# nur eingebunden, nicht kopiert: keine Schicht, und eine Aenderung am Frontend baut das
+# Image nicht neu (frisch wird der Cache mit dem woechentlichen Bau). Rote Tests oder ein
+# roter Build halten das Image nicht auf, der Cache entsteht trotzdem.
+ARG CI_WORKSPACE=/woodpecker/src/git.verdigado.com/Netzbegruenung/gutgesagt
+RUN --mount=type=bind,source=mvp/frontend/gutgesagt-frontend,target=/opt/ci/frontend-quelle \
+    fe=$CI_WORKSPACE/mvp/frontend/gutgesagt-frontend \
+    && mkdir -p "$fe" && cp -r /opt/ci/frontend-quelle/. "$fe" && cd "$fe" \
+    && ln -s /opt/ci/node_modules node_modules \
+    && cp src/environments/environment.ts.template src/environments/environment.ts \
+    && { npx ng build gutgesagt-frontend --configuration production --progress=false >/tmp/ng-build.log 2>&1 \
+         || { echo "ng build rot, Cache trotzdem:"; tail -n 20 /tmp/ng-build.log; }; } \
+    && { CHROME_BIN=/usr/local/bin/chromium-ci npx ng test --watch=false --browsers=ChromeHeadless \
+           --progress=false --source-map=false >/tmp/ng-test.log 2>&1 \
+         || { echo "ng test rot, Cache trotzdem:"; tail -n 20 /tmp/ng-test.log; }; } \
+    && mv .angular/cache /opt/ci/angular-cache \
+    && cd / && rm -rf /woodpecker /tmp/ng-*.log \
+    && du -sm /opt/ci/angular-cache
