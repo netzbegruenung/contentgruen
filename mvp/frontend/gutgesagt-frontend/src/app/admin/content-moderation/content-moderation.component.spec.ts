@@ -631,7 +631,7 @@ describe('ContentModerationComponent', () => {
       const snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
       TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
       moderation.dismissReport.and.returnValue(throwError(() => ({ status: 409 })));
-      dialog.open.and.returnValue({ afterClosed: () => of('Doppelte Meldung, schon entschieden') } as any);
+      dialog.open.and.returnValue({ afterClosed: () => of('Schon entschieden (doppelte Meldung)') } as any);
       mitMeldungen([meldung()]);
       const vorher = moderation.getReports.calls.count();
 
@@ -797,7 +797,7 @@ describe('ContentModerationComponent', () => {
     it('nennt die interne Begründung einer Entscheidung, alte englische Platzhalter als „ohne Begründung“', () => {
       const c = TestBed.createComponent(ContentModerationComponent).componentInstance;
       expect(c.entscheidungsBegruendung(meldung({ status: 'dismissed', resolution_notes: 'Dismissed by admin' }))).toBe('ohne Begründung');
-      expect(c.entscheidungsBegruendung(meldung({ status: 'dismissed', resolution_notes: 'Doppelte Meldung, schon entschieden' }))).toBe('Doppelte Meldung, schon entschieden');
+      expect(c.entscheidungsBegruendung(meldung({ status: 'dismissed', resolution_notes: 'Schon entschieden (doppelte Meldung)' }))).toBe('Schon entschieden (doppelte Meldung)');
     });
   });
 

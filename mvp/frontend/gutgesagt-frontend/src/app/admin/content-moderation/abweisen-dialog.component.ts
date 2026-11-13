@@ -11,8 +11,8 @@ import { MatInputModule } from '@angular/material/input';
 export const ABWEISUNGSGRUENDE: readonly string[] = [
   'Kein Verstoß gegen die Nutzungsbedingungen',
   'Zulässige Meinungsäußerung',
-  'Gemeldetes steht so nicht im Beitrag',
-  'Doppelte Meldung, schon entschieden',
+  'Das Gemeldete steht nicht im Beitrag',
+  'Schon entschieden (doppelte Meldung)',
   'Anderer Grund',
 ];
 
@@ -46,12 +46,12 @@ export interface AbweisenDialogDaten {
       <p class="abweisen-titel">„{{ daten.titel }}“</p>
       <p class="abweisen-meldegrund">Gemeldet als: {{ daten.meldegrund }}</p>
       <p>
-        Der Beitrag bleibt, wie er ist. Abweisen lässt sich nicht rückgängig machen.
+        Der Beitrag bleibt sichtbar. Das Abweisen lässt sich nicht zurücknehmen.
       </p>
       <p class="abweisen-hinweis">
         {{ daten.mitMail
-          ? 'Die meldende Person bekommt die Entscheidung per Mail mit einem festen Text. Die Begründung bleibt intern bei der Meldung.'
-          : 'Die meldende Person hat keine E-Mail-Adresse angegeben. Die Begründung bleibt intern bei der Meldung.' }}
+          ? 'Die meldende Person erfährt per Mail nur, dass abgewiesen wurde. Deine Begründung sieht nur das Moderationsteam.'
+          : 'Ohne E-Mail-Adresse erfährt die meldende Person nichts. Die Begründung sieht nur das Moderationsteam.' }}
       </p>
 
       <mat-form-field appearance="outline" class="volle-breite">
@@ -64,7 +64,7 @@ export interface AbweisenDialogDaten {
       <mat-form-field appearance="outline" class="volle-breite">
         <mat-label>{{ grund === andererGrund ? 'Begründung' : 'Begründung (optional)' }}</mat-label>
         <textarea matInput [(ngModel)]="satz" rows="3" [required]="grund === andererGrund"
-                  [maxlength]="maxLaenge" placeholder="Warum die Meldung nicht greift"></textarea>
+                  [maxlength]="maxLaenge" placeholder="Ein Satz, warum die Meldung nicht zutrifft"></textarea>
         <mat-hint align="end">{{ satz.length }} / {{ maxLaenge }}</mat-hint>
       </mat-form-field>
     </div>

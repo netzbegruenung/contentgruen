@@ -30,8 +30,8 @@ describe('AbweisenDialogComponent', () => {
 
     expect(abweisknopf(fixture).disabled).toBeTrue();
     expect(fixture.nativeElement.textContent).toContain('Gemeldet als: Unangemessener Inhalt');
-    expect(fixture.nativeElement.textContent).toContain('per Mail mit einem festen Text');
-    expect(fixture.nativeElement.textContent).toContain('nicht rückgängig');
+    expect(fixture.nativeElement.textContent).toContain('Die meldende Person erfährt per Mail nur, dass abgewiesen wurde.');
+    expect(fixture.nativeElement.textContent).toContain('Das Abweisen lässt sich nicht zurücknehmen.');
   });
 
   it('schließt mit dem Grund und dem optionalen Satz als Begründung', () => {
@@ -74,6 +74,6 @@ describe('AbweisenDialogComponent', () => {
   it('sagt ohne Mail-Adresse, dass niemand benachrichtigt wird', () => {
     const fixture = erzeugen({ titel: 'T', meldegrund: 'Spam', mitMail: false });
 
-    expect(fixture.nativeElement.textContent).toContain('keine E-Mail-Adresse angegeben');
+    expect(fixture.nativeElement.textContent).toContain('Ohne E-Mail-Adresse erfährt die meldende Person nichts.');
   });
 });
