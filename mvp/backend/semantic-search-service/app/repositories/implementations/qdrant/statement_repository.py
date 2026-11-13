@@ -79,6 +79,17 @@ def _unbeantwortete_suchanfrage(
     )
 
 
+def ist_unbeantwortete_suchanfrage(aussage: StatementDbEntry) -> bool:
+    """
+    Dasselbe Kriterium wie _unbeantwortete_suchanfrage, fuer eine schon gelesene
+    Aussage (getById): aus einer Suchanfrage und ohne Antwortvorschlag.
+    """
+    return (
+        aussage.origin == ContentOrigin.SEARCH_QUERY
+        and aussage.replysuggestions_count < 1
+    )
+
+
 class StatementRepository(
     QdrantBaseRepository[StatementDbEntry, StatementSearchResult],
     IStatementRepository,

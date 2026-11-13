@@ -166,7 +166,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Gelöschte Beiträge (Zustand „gelöscht“, Qdrant) | 30 Tage, dann endgültig entfernt | Tag im Payload-Feld `geloescht_am` |
 | Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
-| Stimmen (`votes`) | solange der Beitrag besteht; trifft ein geänderter Titel eine andere Behauptung (NLI-Stufe, #427), sofort | — gehen mit ihm |
+| Stimmen (`votes`) | solange der Beitrag besteht; trifft ein geänderter Titel eine andere Behauptung (NLI-Stufe, #427), sofort; widerruft die Person ihre Art.-9-Einwilligung, sofort alle ihre Stimmen (`Art9EinwilligungService.widerrufen`) | — gehen mit ihm |
 | Prüfwerte der entdoppelten Nutzung (`nutzung_heute`) | ihr Tag | verworfen beim ersten Lauf nach Mitternacht (UTC) |
 | Paar-Prüfwerte der Muster-Hinweise (`muster_pruefwerte`) | 7 Tage | letzte Nutzung in dieser Richtung (`tag`) |
 | Prüfwerte „Ja, gepostet“ (`gepostet_pruefwerte`, #643) | ihre Kalenderwoche | zur Zahl der Woche verdichtet und gelöscht beim ersten täglichen Lauf nach Wochenende (Montag, UTC; derselbe Task wie für `nutzung_heute`, auch bei ausgeschaltetem Schalter), spätestens bei der nächsten Meldung; der Wochenschlüssel liegt nur im Arbeitsspeicher |
@@ -245,7 +245,10 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   UTC-Tagen ab dem Anlegen, der tägliche Lauf löscht also 33 bis 35 Tage danach. Was „nie
   benutzt“ heißt, steht unter „Einladungen“.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
-  eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
+  eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag, oder bis die Person
+  ihre Art.-9-Einwilligung widerruft. Weil Güte, Stimmenzähler und die Punkte anderer (Zustimmung
+  zu ihren Beiträgen) beim Abruf aus `votes` berechnet werden, sinken sie nach einem Widerruf
+  sofort; gespeichert ist davon nichts, das nachgezogen werden müsste.
 
 ### Fristen außerhalb des täglichen Tasks
 

@@ -44,7 +44,7 @@ public static class IdentityHeaderTransform
     ///
     /// Wer einen neuen Identitaets- oder Rechte-Header einfuehrt, traegt ihn hier ein.
     /// X-Session-Id steht seit #446 auch hier: Die SPA erzeugt keine Sitzungskennung mehr,
-    /// Besucher erkennt der Suchdienst an einem Tagespseudonym aus Adresse und User-Agent.
+    /// Besucher erkennt der Suchdienst an einem Tagespseudonym aus der Adresse (seit #495 ohne User-Agent).
     /// Ein alter Client oder ein direkter Aufruf soll ihn nicht wieder einschleusen.
     /// </summary>
     public static readonly string[] ClientControlledIdentityHeaders =

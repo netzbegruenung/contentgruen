@@ -25,7 +25,7 @@ import { LoggingService } from '../services/logging.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { hilfeOeffnen } from '../help-dialog/help-dialog.component';
-import { FORMULAR_PFAD, aussageParameter, istAussageId } from '../shared/formular-adresse';
+import { FORMULAR_PFAD, aussageParameterMitText, istAussageId } from '../shared/formular-adresse';
 import { typBeschreibung } from '../shared/content-type-registry';
 import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { Thema } from '../services/dtos/themenDtos';
@@ -483,7 +483,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
     const ausAntwort = !loading && istAussageId(searchResults?.statement_id) ? searchResults!.statement_id : null;
     this.router.navigate([FORMULAR_PFAD[typ]], {
-      queryParams: aussageParameter(ausAntwort, this.searchQuery),
+      queryParams: aussageParameterMitText(ausAntwort, this.searchQuery),
     });
   }
 

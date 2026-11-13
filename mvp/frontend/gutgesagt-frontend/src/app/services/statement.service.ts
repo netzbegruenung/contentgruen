@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { tap, map } from 'rxjs/operators';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, tap, map } from 'rxjs/operators';
 import { ParamMap } from '@angular/router';
 import {
   AussageVorabResponse,
@@ -128,15 +128,26 @@ export class StatementService {
    * Mit ?aussage=<id> wird sie geladen. Mit ?searchQuery= steht nur ihr Text fest:
    * Die ID bleibt leer, und angelegt wird nichts - das geschieht erst beim
    * Speichern, im Backend mit der Speicher-Anfrage. Ohne beides ist das Ergebnis leer.
+   *
+   * Stehen beide da (aussageParameterMitText) und kennt getById die ID nicht (404),
+   * gilt der Text: Eine unbeantwortete Suchanfrage unter der Schwelle liefert das
+   * Backend Nicht-Admins nicht aus (#436), wohl aber findet es sie beim Speichern
+   * ueber den Text wieder.
    */
   aussageAusAdresse(params: ParamMap): Observable<GetStatementByIdResponse> {
     const aussageId = params.get(AUSSAGE_PARAM);
-    if (aussageId) {
-      return this.getStatementById(aussageId);
-    }
     // Wie im Backend (statement_text) hoechstens AUSSAGE_MAX_ZEICHEN - eine lange
     // Suchanfrage wuerde sonst beim Speichern abgelehnt.
     const text = (params.get(SUCHTEXT_PARAM)?.trim() ?? '').slice(0, AUSSAGE_MAX_ZEICHEN).trim();
+    if (aussageId) {
+      return this.getStatementById(aussageId).pipe(
+        catchError((error: unknown) =>
+          error instanceof HttpErrorResponse && error.status === 404 && text
+            ? of({ statement_id: '', statement_text: text })
+            : throwError(() => error),
+        ),
+      );
+    }
     return of({ statement_id: '', statement_text: text });
   }
 }

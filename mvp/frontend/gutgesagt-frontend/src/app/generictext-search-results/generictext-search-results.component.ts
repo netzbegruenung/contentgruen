@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { SearchResponse } from '../services/dtos/searchDtos';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { NavigationService } from '../services/navigation.service';
-import { FORMULAR_PFAD, aussageParameter } from '../shared/formular-adresse';
+import { FORMULAR_PFAD, aussageParameterMitText } from '../shared/formular-adresse';
 import { typBeschreibung } from '../shared/content-type-registry';
 
 @Component({
@@ -45,7 +45,7 @@ export class GenerictextSearchResultsComponent {
   /** Ins Formular, als Antwort auf die Aussage dieser Suche - per ID, sonst mit ihrem Text. */
   navigateToContributeView(): void {
     this.router.navigate([FORMULAR_PFAD.generictext], {
-      queryParams: aussageParameter(
+      queryParams: aussageParameterMitText(
         this.searchResponse?.statement_id,
         this.searchResponse?.statement_text || this.searchQuery,
       ),

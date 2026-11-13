@@ -37,6 +37,39 @@ describe('StatementService: Aussage eines Beitragsformulars', () => {
       expect(ergebnis).toEqual({ statement_id: 'a-1', statement_text: 'Text' });
     });
 
+    it('nimmt den Text aus ?searchQuery=, wenn die ID 404 gibt (Suchanfrage unter der Schwelle)', () => {
+      let ergebnis: unknown;
+      service.aussageAusAdresse(convertToParamMap({ aussage: 'a-1', searchQuery: '  Wer zahlt das  ' }))
+        .subscribe((aussage) => (ergebnis = aussage));
+
+      httpMock.expectOne((req) => req.url === getByIdUrl)
+        .flush('Statement not found', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toEqual({ statement_id: '', statement_text: 'Wer zahlt das' });
+    });
+
+    it('meldet den Fehler weiter, wenn die ID 404 gibt und kein Text da ist', () => {
+      let fehler: any;
+      service.aussageAusAdresse(convertToParamMap({ aussage: 'a-1' }))
+        .subscribe({ error: (e) => (fehler = e) });
+
+      httpMock.expectOne((req) => req.url === getByIdUrl)
+        .flush('Statement not found', { status: 404, statusText: 'Not Found' });
+
+      expect(fehler?.status).toBe(404);
+    });
+
+    it('meldet andere Fehler weiter, auch mit Text', () => {
+      let fehler: any;
+      service.aussageAusAdresse(convertToParamMap({ aussage: 'a-1', searchQuery: 'Wer zahlt das' }))
+        .subscribe({ error: (e) => (fehler = e) });
+
+      httpMock.expectOne((req) => req.url === getByIdUrl)
+        .flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(fehler?.status).toBe(500);
+    });
+
     it('kuerzt eine lange ?searchQuery= auf 1000 Zeichen', () => {
       let ergebnis: any;
       service.aussageAusAdresse(convertToParamMap({ searchQuery: 'a'.repeat(1500) }))

@@ -5,11 +5,14 @@ die Zeile mit dem Zeitpunkt des Widerrufs stehen, erneutes Einwilligen ersetzt
 sie. Dazu laeuft die Migration auf einer Datenbank ohne die Tabelle.
 """
 
+import uuid
+
 import pytest
 from sqlalchemy import text
 
 from infrastructure.database.models import Art9EinwilligungZeile, Base
 from repositories.art9_einwilligung_repository import Art9EinwilligungRepository
+from repositories.vote_repository import VoteRepository
 from services.art9_einwilligung_service import (
     Art9EinwilligungService,
     UnbekannterWortlaut,
@@ -116,6 +119,50 @@ class TestDienst:
 
         dienst.widerrufen(PERSON)
         assert not dienst.eingewilligt(PERSON)
+
+    def test_widerruf_loescht_die_stimmen_der_person_und_nur_ihre(
+        self, repository, datenbank
+    ):
+        stimmen = VoteRepository(datenbank)
+        stimmen.create_votes_table()
+        beitrag = str(uuid.uuid4())
+        with datenbank.engine.begin() as c:
+            for person, inhalt, art in [
+                (PERSON, beitrag, "like"),
+                (PERSON, str(uuid.uuid4()), "dislike"),
+                ("andere-person", beitrag, "like"),
+            ]:
+                c.execute(
+                    text(
+                        "INSERT INTO votes (user_id, content_id, vote_type)"
+                        " VALUES (:p, :i, :a)"
+                    ),
+                    {"p": person, "i": inhalt, "a": art},
+                )
+        dienst = Art9EinwilligungService(repository, stimmen)
+        dienst.einwilligen(PERSON, "2026-11-05")
+
+        dienst.widerrufen(PERSON)
+
+        with datenbank.engine.connect() as c:
+            uebrig = c.execute(text("SELECT user_id FROM votes")).scalars().all()
+        assert uebrig == ["andere-person"]
+        assert not dienst.eingewilligt(PERSON)
+
+    def test_bei_loeschfehler_kein_vermerk(self, repository, datenbank):
+        """Eine Transaktion: Scheitert das Loeschen, gilt die Einwilligung weiter."""
+        from unittest.mock import MagicMock
+
+        stimmen = MagicMock()
+        stimmen.loeschen_fuer_person.side_effect = RuntimeError("Datenbank weg")
+        dienst = Art9EinwilligungService(repository, stimmen)
+        dienst.einwilligen(PERSON, "2026-11-05")
+
+        with pytest.raises(RuntimeError):
+            dienst.widerrufen(PERSON)
+
+        assert dienst.eingewilligt(PERSON)
+        assert repository.lesen(PERSON).widerrufen_am is None
 
     def test_unbekannter_wortlaut_speichert_nichts(self, repository):
         dienst = Art9EinwilligungService(repository)

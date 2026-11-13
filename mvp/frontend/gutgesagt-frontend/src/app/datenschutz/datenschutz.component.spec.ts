@@ -598,7 +598,9 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Rückschlüsse auf deine politische Haltung');
 
       expect(text).toContain('Widerrufen kannst du jederzeit im Profilmenü unter „Datenschutz-Einstellungen“');
-      expect(text).toContain('Was du schon gespeichert hast, bleibt, bis du es löschst oder dein Konto löschen lässt');
+      expect(text).toContain('nichts mehr beitragen und nichts bewerten, und deine Bewertungen löschen wir');
+      expect(text).toContain('Was du sonst gespeichert hast, bleibt, bis du es löschst oder dein Konto löschen lässt');
+      expect(text).not.toContain('Was du schon gespeichert hast, bleibt');
       expect(text).toContain('was bis zum Widerruf geschehen ist, bleibt rechtmäßig');
       expect(text).toContain('Deine Einwilligungen, auch widerrufene, bleiben bis zur Löschung deines Kontos');
       expect(abschnitt('Deine Rechte')).toContain('deine Einwilligungen samt Widerrufen und die Muster-Hinweise, die dein Konto nennen');
@@ -687,6 +689,13 @@ describe('DatenschutzComponent', () => {
 
     it('nennt den Klick auch beim Abruf außerhalb der EU', () => {
       expect(abschnitt('Keine Übermittlung außerhalb der EU')).toContain('erst nach deinem Klick auf „Bild laden“');
+    });
+
+    it('nennt die Mitverantwortung für die Übermittlung an den fremden Server (EuGH C-40/17)', () => {
+      const text = abschnitt('Keine Übermittlung außerhalb der EU');
+      expect(text).toContain('Für das Einbinden und damit für die Übermittlung deiner IP-Adresse an den fremden Server sind wir mitverantwortlich');
+      expect(text).toContain('was der fremde Server danach mit den Daten macht, verantwortet sein Betreiber');
+      expect(ganzerText()).not.toContain('Diesen Abruf richtet dein Browser aus, nicht wir');
     });
   });
 });

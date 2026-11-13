@@ -54,6 +54,9 @@ from domain.models.statement import Statement
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
+from repositories.implementations.qdrant.statement_repository import (
+    ist_unbeantwortete_suchanfrage,
+)
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
@@ -131,11 +134,18 @@ async def get_all(
 
 
 # Eine Aussage per ID - fuer Beitragsformulare, die mit ?aussage=<id> geoeffnet
-# werden. Liefert bewusst nur ID und Text, nicht die Antwortvorschlaege.
+# werden. Liefert bewusst nur ID und Text, nicht die Antwortvorschlaege. Fuer
+# Nicht-Admins dieselbe Auswahl wie getAll (#436): Eine unbeantwortete Suchanfrage
+# unter der Schwelle gibt es fuer sie nicht (404, wie eine geloeschte). Das Formular
+# faellt dann auf den Text aus ?searchQuery= zurueck (statement.service.ts).
 @router.get("/getById", response_model=GetStatementByIdResponse)
 async def get_by_id(
     statement_id: uuid.UUID = Query(..., description="ID der Aussage"),
     statement_service: StatementService = Depends(get_statement_service),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
+    ),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> GetStatementByIdResponse:
     try:
         statement = await statement_service.get(statement_id)
@@ -155,6 +165,17 @@ async def get_by_id(
     except Exception as e:
         logger.error(f"Error in /getById: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+    if ist_unbeantwortete_suchanfrage(statement):
+        try:
+            ueber_der_schwelle = await _ueber_der_schwelle_fuer(
+                aufrufer, suchen_ohne_treffer
+            )
+        except Exception as e:
+            logger.error(f"Error in /getById: {type(e).__name__}", exc_info=True)
+            raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+        if ueber_der_schwelle is not None and statement.id not in ueber_der_schwelle:
+            raise HTTPException(status_code=404, detail="Statement not found")
 
     return GetStatementByIdResponse(
         statement_id=statement.id, statement_text=statement.text

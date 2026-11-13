@@ -92,6 +92,23 @@ def einwilligen(
 
 @router.delete("", status_code=204)
 def widerrufen(user_id: str = Depends(require_user)) -> Response:
+    # Ohne Einwilligung keine Meilensteine: das sichtbare Abzeichen sofort weg, und ein
+    # frueheres Ja gilt nicht ueber eine neue Einwilligung hinweg (#351). Zuerst und
+    # unabhaengig vom Widerruf: Scheitert eines von beiden, laeuft das andere trotzdem.
+    abzeichen_fehlgeschlagen = False
+    abzeichen = get_abzeichen_service()
+    if abzeichen is not None:
+        try:
+            abzeichen.zuruecknehmen(user_id)
+        except Exception as e:
+            abzeichen_fehlgeschlagen = True
+            logger.error(
+                f"Zustimmung zur Sichtbarkeit von {log_pseudonym(user_id)} nicht zurueckgenommen: {type(e).__name__}",
+                exc_info=True,
+            )
+    # Vermerk und Loeschen der Stimmen in einer Transaktion
+    # (Art9EinwilligungService.widerrufen): Bei einem Fehler gilt die Einwilligung
+    # weiter, und die Person kann erneut widerrufen.
     try:
         _service().widerrufen(user_id)
     except Exception as e:
@@ -100,16 +117,6 @@ def widerrufen(user_id: str = Depends(require_user)) -> Response:
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
-    # Ohne Einwilligung keine Meilensteine: das sichtbare Abzeichen sofort weg, und ein
-    # frueheres Ja gilt nicht ueber eine neue Einwilligung hinweg (#351).
-    abzeichen = get_abzeichen_service()
-    if abzeichen is not None:
-        try:
-            abzeichen.zuruecknehmen(user_id)
-        except Exception as e:
-            logger.error(
-                f"Zustimmung zur Sichtbarkeit von {log_pseudonym(user_id)} nicht zurueckgenommen: {type(e).__name__}",
-                exc_info=True,
-            )
-            raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    if abzeichen_fehlgeschlagen:
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
     return Response(status_code=204)

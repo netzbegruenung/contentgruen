@@ -98,16 +98,30 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     return knoepfe[nr];
   }
 
-  it('fuehrt am Desktop in beide Formulare', fakeAsync(() => {
+  /**
+   * Wohin der letzte Klick fuehren sollte, ohne wirklich zu navigieren: Die Seite ist
+   * im Test nicht geroutet und saehe sonst ?searchQuery= der Formularadresse als neue
+   * Suche.
+   */
+  function zielMerken(): () => string {
+    const navigieren = spyOn(router, 'navigate').and.resolveTo(true);
+    return () => {
+      const [befehle, extras] = navigieren.calls.mostRecent().args;
+      return router.serializeUrl(router.createUrlTree(befehle, extras));
+    };
+  }
+
+  it('fuehrt am Desktop in beide Formulare, mit ID und Text', fakeAsync(() => {
     oeffnen(false, AUSSAGE_ID);
+    const ziel = zielMerken();
 
     knopf('.action-buttons-top', 0).click();
     tick();
-    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+    expect(ziel()).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
 
     knopf('.action-buttons-top', 1).click();
     tick();
-    expect(router.url).toBe(`/workflow/add-generictext?aussage=${AUSSAGE_ID}`);
+    expect(ziel()).toBe(`/workflow/add-generictext?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
   }));
 
   it('fuehrt am Handy ebenso dorthin', fakeAsync(() => {
@@ -115,11 +129,12 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
 
     knopf('.mobile-action-buttons', 0).click();
     tick();
-    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
   }));
 
   it('bietet am Handy auch mit Treffern das Ergaenzen an, unter dem Suchband und unter der Liste', fakeAsync(() => {
     oeffnen(true, AUSSAGE_ID);
+    const ziel = zielMerken();
     const komponente = fixture.componentInstance;
     komponente.hasCommentaryResults = true;
     komponente.currentSection = 'commentary';
@@ -136,7 +151,7 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
 
     unten.click();
     tick();
-    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+    expect(ziel()).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
 
     komponente.hasGenerictextResults = true;
     komponente.currentSection = 'generictext';
@@ -634,7 +649,7 @@ describe('ResultViewComponent: Nicht dabei?', () => {
 
     knopf.click();
     tick();
-    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
   }));
 
   it('zeigt am Desktop unter den Treffern "Nicht dabei?" ohne die Aussage der Treffer', fakeAsync(() => {
@@ -647,7 +662,7 @@ describe('ResultViewComponent: Nicht dabei?', () => {
 
     unten.querySelector<HTMLButtonElement>('.neu-anlegen-knopf button')!.click();
     tick();
-    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
   }));
 
   it('sucht mit einem Klick auf eine aehnliche Aussage nach ihr', fakeAsync(() => {

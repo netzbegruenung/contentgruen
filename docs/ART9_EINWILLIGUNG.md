@@ -50,8 +50,14 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   kurze Frage, Hinweise unter „Mehr dazu“); wie hier bleibt jede frühere Kennung bekannt.
 - **Widerrufen:** jederzeit unter `/einwilligung` (Profilmenü „Datenschutz-Einstellungen“, bis #644 „Einwilligung“; Seitentitel ebenso). Die Zeile bekommt
   den Zeitpunkt des Widerrufs und bleibt stehen, als Nachweis, dass die Verarbeitung bis dahin
-  auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. Schon Gespeichertes
-  bleibt, bis die Person es löscht oder ihr Konto löschen lässt (Löschkonzept). Eine neue
+  auf der Einwilligung beruhte (Art. 7 Abs. 1); danach ist wieder gesperrt. In derselben
+  Transaktion löscht der Widerruf alle Stimmen der Person (`Art9EinwilligungService.widerrufen`,
+  Art. 17 Abs. 1 lit. b DSGVO, juristische Vorprüfung vom 12.11.2026); scheitert das, gilt auch
+  der Widerruf nicht, die Antwort ist 500, und die Person kann über die Seite erneut widerrufen.
+  Das Abzeichen nimmt der Endpunkt vorher und unabhängig davon zurück. Beiträge, Einwürfe und Sätze bleiben, bis die Person sie
+  löscht oder ihr Konto löschen lässt (Löschkonzept). **Offen:** Nach derselben Vorprüfung müssten
+  auch sie beim Widerruf ihren Bezug zur Person verlieren wie bei der Kontolöschung; das ist nicht
+  gebaut, und der Wortlaut verspricht es deshalb nicht. Eine neue
   Einwilligung ist eine neue Zeile; die früheren bleiben. Jede Prüfung fragt die Datenbank,
   damit ein Widerruf und das Löschkommando sofort wirken.
 - **Startkonten und Import:** Auch ein Startkonto willigt einmal in der App ein, bevor es
@@ -156,4 +162,5 @@ Wortlaut vom Backend.
 |---------|-------|--------|
 | `2026-11-05` | vorläufig, Prüfung mit #296 (Lückenliste P11) | nie produktiv: von `2026-11-05-b` abgelöst, bevor #489 in einem Release war |
 | `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 bis zum Produktiv-Deploy von #644 (Daten nach dem Ausrollen eintragen); wer zugestimmt hat, bleibt eingewilligt |
-| `2026-11-10` | redaktionell (#644): wortgleich mit `2026-11-05-b` bis auf den Widerrufsweg „im Profilmenü unter „Datenschutz-Einstellungen““ statt „Einwilligung“, weil der Menüpunkt umbenannt ist; gleiche Zwecke, deshalb keine neue Frage | seit dem Produktiv-Deploy von #644 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-10` | redaktionell (#644): wortgleich mit `2026-11-05-b` bis auf den Widerrufsweg „im Profilmenü unter „Datenschutz-Einstellungen““ statt „Einwilligung“, weil der Menüpunkt umbenannt ist; gleiche Zwecke, deshalb keine neue Frage | seit dem Produktiv-Deploy von #644 bis zum Produktiv-Deploy des Wortlauts `2026-11-12` (Daten nach dem Ausrollen eintragen) |
+| `2026-11-12` | Folgen des Widerrufs nach der juristischen Vorprüfung vom 12.11.2026: Die Bewertungen werden gelöscht, das Übrige bleibt bis zur eigenen Löschung oder Kontolöschung; sonst wortgleich mit `2026-11-10` (ein Test sichert das). Keine neuen Zwecke, und die Änderung wirkt nur zugunsten der Person, deshalb keine neue Frage | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) |

@@ -208,7 +208,7 @@ ROUTEN = {
     "image/getById": (GET, f"/api/v1/image/getById?image_id={ID}"),
     "image/getAll": (GET, "/api/v1/image/getAll"),
     "content/recent": (GET, "/api/v1/content/recent"),
-    "content/getAll": (GET, "/api/v1/content/getAll"),
+    # content/getAll ist nur fuer Admins (test_content_get_all_nur_admins.py).
     # Die eigene Adresse eines Beitrags (#300); der Typ kommt aus _inhalt.
     "content/beitrag": (GET, f"/api/v1/content/beitrag/{ID}"),
 }
