@@ -427,7 +427,7 @@
   // Ansage fuer Screenreader per CSS: generierter Inhalt landet beim Markieren und
   // Kopieren von Hand nicht in der Zwischenablage, ein versteckter Span schon.
   &::before {
-    content: '' / 'Lücke zum Ausfüllen: ';
+    content: '' / 'Platzhalter zum Ausfüllen: ';
   }
 }
 

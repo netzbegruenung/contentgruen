@@ -511,7 +511,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – füll noch den Platzhalter in [ ] aus.', 'OK', { duration: 6000 });
     });
 
     it('oeffnet den Melde-Dialog mit ID und Typ', () => {
@@ -614,7 +614,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – füll noch den Platzhalter in [ ] aus.', 'OK', { duration: 6000 });
       expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
     });
 

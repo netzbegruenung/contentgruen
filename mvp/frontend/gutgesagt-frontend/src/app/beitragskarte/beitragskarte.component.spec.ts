@@ -382,7 +382,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
 
       expect(TestBed.inject(Clipboard).copy).toHaveBeenCalledWith(MIT_LUECKE);
-      expect(snackBar.open.calls.mostRecent().args[0]).toBe('Kopiert – füll noch die Lücke in [ ] aus.');
+      expect(snackBar.open.calls.mostRecent().args[0]).toBe('Kopiert – füll noch den Platzhalter in [ ] aus.');
     });
 
     it('markiert ohne Platzhalter nichts', () => {

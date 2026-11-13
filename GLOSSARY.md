@@ -176,9 +176,13 @@ _Avoid_: Fassung (eine Länge eines Kommentars), Version
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
 
+**Platzhalter**:
+Die Stelle in eckigen Klammern im Text eines Beitrags, „[Hier …]“, die die Person vor dem Posten selbst füllt, etwa mit einem eigenen Erlebnis (Schreibregel: eigene Erlebnisse nur als Platzhalter). Die Karte hebt ihn als Feld hervor, und nach dem Kopieren erinnert der Hinweis daran, ihn auszufüllen. Andere eckige Klammern wie „[1]“ sind kein Platzhalter. Bis 13.11. hieß er „Lücke“; im Code tragen Datei und Bezeichner (`vorlagen-luecke.ts`, `.vorlagen-luecke`) noch den alten Namen.
+_Avoid_: Lücke (das ist eine unbeantwortete Aussage), Vorlagen-Lücke, Leerstelle
+
 **Lücke**:
-Die Stelle in eckigen Klammern im Text eines Beitrags, „[Hier …]“, die die Person vor dem Posten selbst füllt, etwa mit einem eigenen Erlebnis (Schreibregel: eigene Erlebnisse nur als Platzhalter). Die Karte hebt sie als Feld hervor, und nach dem Kopieren erinnert der Hinweis daran, sie auszufüllen. Andere eckige Klammern wie „[1]“ sind keine Lücke.
-_Avoid_: Vorlagen-Lücke, Leerstelle
+Eine Aussage in „Hier fehlt eine Antwort“, auf die noch keine Antwort passt. Wer sie beantwortet, schließt die Lücke: Die Ergebnisseite sagt dann „Lücke zu“ mit der Zahl der Personen, die ohne Treffer danach gesucht haben, und bietet die nächste an. Die Startseite nennt Angemeldeten, wie viele Lücken warten, wenn seit dem letzten Besuch eine dazugekommen ist. Im Code steht das Wort nur in `shared/luecke-texte.ts`. Bis 13.11. hieß so der Platzhalter.
+_Avoid_: Platzhalter (das ist die Stelle „[Hier …]“ im Text), offene Frage
 
 **Schreibhilfe**:
 Ein Kniff, mit dem ein Text besser ankommt, etwa der Küchenzuruf („Was würdest du in einem Satz durch die Küche rufen?“) als Leitfrage für die Kurzfassung, der Aufhänger vor der Begründung, die Lesenden als Hauptfigur oder Zahlen, die in den Alltag übersetzt sind. Anders als eine Schreibregel ist sie ein Angebot.
