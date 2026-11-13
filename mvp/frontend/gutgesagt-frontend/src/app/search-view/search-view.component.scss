@@ -78,14 +78,15 @@
   }
 }
 
+// Tanne statt Klee: Klee auf dem gelben Band hat nur 4,21:1 (Designrunde 12.11.)
 .beispiel-link {
-  color: var(--primary-main);
+  color: var(--primary-dark);
   text-decoration: underline;
   cursor: pointer;
   font-weight: 500;
 
   &:hover {
-    color: var(--primary-dark);
+    text-decoration-thickness: 2px;
   }
 }
 

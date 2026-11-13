@@ -18,7 +18,8 @@
 
 .thema-chip.gewaehlt {
   background: var(--primary-fill);
-  color: var(--bg-surface);
+  /* Weiss wie der gewaehlte Zweck: --bg-surface ist im Dunkeln dunkelgrau, auf Klee 3,34:1 */
+  color: white;
 }
 
 .thema-chip:disabled {

@@ -187,7 +187,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --success-color: var(--primary-dark);
   --success-border: var(--primary-main);
   --warning-bg: #fff3e0;
-  --warning-color: #e65100;
+  --warning-color: #bf360c; // Schrift auf --warning-bg: 5,1:1 (#e65100 hatte 3,46:1)
   --warning-border: #ff9800;
   --warning-edge: #f57c00; // Randstrich der Hinweiskaesten (Dublette, Antwort auf)
   --warning-text: #8a5300;
