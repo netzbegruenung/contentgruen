@@ -57,12 +57,12 @@ nur wenig:
 
 ## Checks before a PR
 - `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests
-  and `scripts/tests/`, frontend tests, BFF tests in the .NET SDK container). While working:
-  `--geaendert` (only the steps the changes since `origin/main` reach, integration tests included
-  when reached) or `--schritt <name>`; single frontend specs with `--include <pfad>` (implies
-  `--schritt frontend`, not combinable with `--geaendert`). Before opening a PR: the full
-  `--integration` run.
-  Woodpecker runs the same steps on every PR (`docs/CI.md`).
+  and `scripts/tests/`, frontend tests, frontend production build, BFF tests in the .NET SDK
+  container). While working and before a push: `--geaendert` (only the steps the changes since
+  `origin/main` reach, integration tests included when reached) or `--schritt <name>`; single
+  frontend specs with `--include <pfad>` (implies `--schritt frontend`, not combinable with
+  `--geaendert`). The full run is the job of Woodpecker, which runs every step on every PR
+  (`docs/CI.md`); locally only when CI is red and you need the full output.
 - Pre-commit hooks format Python (Black) and run the backend unit tests; a commit can fail once
   after reformatting and pass on the second try. Commit again; `--no-verify` only in emergencies.
 - Replaced names are listed in `scripts/retired-words.txt`; check and pre-commit reject them in
