@@ -5,7 +5,8 @@ einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort
 Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz
 sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seiten und ohne
 Umleitung bei einem 401 der Suche), den Aufruf eines Beitrags per Direktlink und die Darstellung bei
-360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur). Nicht in CI: Die Tests brauchen den vollen Stack.
+360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur) sowie Kanten und
+Fluchten bei 360, 390 und 1280 px (Suchraster, Rundgang-Band, Zweck-Umschalter, Startkacheln, Fuß; liest nur). Nicht in CI: Die Tests brauchen den vollen Stack.
 
 ## Starten
 

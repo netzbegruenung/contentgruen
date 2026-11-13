@@ -162,10 +162,12 @@
   }
 }
 
-// Anonym: kleiner Hinweis neben dem Titel, dass es ein Konto braucht (#644)
+// Anonym: kleiner Hinweis unter dem Titel, dass es ein Konto braucht (#644). Immer in eigener
+// Zeile: Neben dem Titel passte er je nach Breite bei einer Kachel und bei der anderen nicht
+// (Designrunde 12.11.).
 .kachel-konto {
-  display: inline-block;
-  margin-left: 8px;
+  display: table;
+  margin-top: 2px;
   padding: 1px 8px;
   border-radius: 999px;
   background: var(--bg-main);

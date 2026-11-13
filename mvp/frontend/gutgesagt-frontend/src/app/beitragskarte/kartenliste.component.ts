@@ -8,7 +8,7 @@ import { KartenDaten, KartenVariante } from './karten-daten';
  * Beitragskarten auf hellgrauem Grund. Voll untereinander: mobil (bis 599 px)
  * zeigen Startseite und Suche diese Liste statt des Karussells. Mit raster stehen
  * volle Karten ab 600 px nebeneinander in Spalten zu 450 px, so viele die Breite
- * hergibt (Treffer der Suche am Desktop, #602). Kompakt als Album
+ * hergibt, mittig im Rahmen (Treffer der Suche am Desktop, #602). Kompakt als Album
  * (Meine Beitraege): Raster direkt auf dem Seitengrund, 2 Spalten, 3 ab 600 px,
  * 4 ab 960 px. Untereinander ist jede Karte so hoch, wie ihr Inhalt es verlangt;
  * in Spalten oder im Album sind die Karten einer Reihe gleich hoch.
@@ -58,6 +58,8 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         .kartenliste--spalten {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(0, 450px));
+          /* Restbreite gleich auf beide Seiten statt rechts leer (Designrunde 12.11.) */
+          justify-content: center;
           gap: 24px;
           padding: 24px;
           border-radius: var(--border-radius-medium);

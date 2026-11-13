@@ -149,7 +149,8 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --text-body: #4a4a4a;
   --text-muted: #666;
   --text-subtle: #757575;
-  --text-faint: #999;
+  // #767676 statt #999: auf Weiss 4,54:1 statt 2,85:1 (AA, Designrunde 12.11.)
+  --text-faint: #767676;
 
   // Spacing system (8px grid)
   --spacing-xs: 4px;
