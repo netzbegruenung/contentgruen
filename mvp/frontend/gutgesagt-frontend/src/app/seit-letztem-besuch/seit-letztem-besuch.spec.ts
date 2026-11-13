@@ -15,6 +15,7 @@ import { UsageTrackingService } from '../services/usage-tracking.service';
 import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { StatementService } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
+import { LETZTER_BESUCH_AKTIV, LETZTER_BESUCH_AN } from '../shared/geraetespeicher-schalter';
 
 const einwurf = (felder: Partial<Einwurf>): Einwurf =>
   ({ id: 'e', status: 'open', created_at: '2026-11-12T10:00:00Z', ist_eigener_einwurf: false, ...felder }) as Einwurf;
@@ -23,6 +24,10 @@ const aussage = (id: string): UnbeantworteteAussage =>
 const merkerSetzen = (kennung: string, wert: unknown) => localStorage.setItem(besuchSchluessel(kennung), JSON.stringify(wert));
 
 describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
+  it('ist aus bis zur Pruefung nach § 25 TDDDG', () => {
+    expect(LETZTER_BESUCH_AKTIV).toBeFalse();
+  });
+
   afterEach(() => {
     Object.keys(localStorage)
       .filter((k) => k.startsWith(LETZTER_BESUCH_PRAEFIX))
@@ -90,7 +95,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
     let fangkorb: jasmine.Spy;
     let unbeantwortet: jasmine.Spy;
 
-    function dienst(): SeitLetztemBesuchService {
+    function dienst(aktiv = true): SeitLetztemBesuchService {
       fangkorb = jasmine.createSpy('fangkorbLaden').and.returnValue(
         of({ results: [einwurf({ id: 'neu' })], results_count: 1, total_records_count: 1 }),
       );
@@ -99,10 +104,24 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
         providers: [
           { provide: EinwurfService, useValue: { fangkorbLaden: fangkorb } },
           { provide: StatementService, useValue: { unbeantworteteAussagen: unbeantwortet } },
+          { provide: LETZTER_BESUCH_AN, useValue: aktiv },
         ],
       });
       return TestBed.inject(SeitLetztemBesuchService);
     }
+
+    it('ruft bei ausgeschaltetem Merker nichts ab und schreibt nichts in den Browser', () => {
+      spyOn(Storage.prototype, 'setItem').and.callThrough();
+      spyOn(Storage.prototype, 'getItem').and.callThrough();
+      let stand: unknown;
+      dienst(false).stand('kim-1').subscribe((s) => (stand = s));
+
+      expect(stand).toEqual({ einwuerfe: 0, aussagen: 0 });
+      expect(fangkorb).not.toHaveBeenCalled();
+      expect(unbeantwortet).not.toHaveBeenCalled();
+      expect(Storage.prototype.setItem).not.toHaveBeenCalled();
+      expect(Storage.prototype.getItem).not.toHaveBeenCalled();
+    });
 
     it('meldet beim ersten Besuch nichts und merkt sich den Stand je Konto', () => {
       let stand: unknown;
@@ -164,7 +183,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
     let erledigt: BehaviorSubject<ReadonlySet<string>>;
     let erledigen: jasmine.Spy;
 
-    function erstellen(neues = { einwuerfe: 0, aussagen: 0 }) {
+    function erstellen(neues = { einwuerfe: 0, aussagen: 0 }, aktiv = true) {
       info = new BehaviorSubject<UserInfo | null>(null);
       nutzung = new BehaviorSubject<number | null>(null);
       erledigt = new BehaviorSubject<ReadonlySet<string>>(new Set());
@@ -177,6 +196,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
           { provide: AuthService, useValue: { userInfo$: info } },
           { provide: UsageTrackingService, useValue: { nutzungSeitLetztemBesuch$: nutzung } },
           { provide: SeitLetztemBesuchService, useValue: { stand, erledigt$: erledigt, erledigen } },
+          { provide: LETZTER_BESUCH_AN, useValue: aktiv },
         ],
       });
       const fixture = TestBed.createComponent(SeitLetztemBesuchComponent);
@@ -220,6 +240,16 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
 
       expect(erledigen).toHaveBeenCalledOnceWith('einwuerfe');
       expect(links(fixture)).toEqual(['2 Lücken warten auf eine Antwort']);
+    });
+
+    it('erscheint bei ausgeschaltetem Merker nicht und fragt nichts ab', () => {
+      const fixture = erstellen({ einwuerfe: 3, aussagen: 2 }, false);
+      info.next({ isAuthenticated: true, userId: 'kim-1' } as UserInfo);
+      nutzung.next(2);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('nav')).toBeNull();
+      expect(stand).not.toHaveBeenCalled();
     });
 
     it('zeigt ohne Neues nichts', () => {

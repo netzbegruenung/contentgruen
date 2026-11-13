@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, forkJoin, of } from 'rxjs';
 import { catchError, map, shareReplay } from 'rxjs/operators';
 
@@ -6,6 +6,7 @@ import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { StatementService } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
 import { besuchMerkerLesen, besuchMerkerSchreiben } from './besuch-merker';
+import { LETZTER_BESUCH_AN } from '../shared/geraetespeicher-schalter';
 
 /**
  * So viele Einwuerfe sieht die Startseite an. Die neuesten kommen zuerst (eigene davor),
@@ -56,6 +57,8 @@ export function aussageDazu(aussagen: UnbeantworteteAussage[], damals: string[])
  */
 @Injectable({ providedIn: 'root' })
 export class SeitLetztemBesuchService {
+  /** Aus bis zur Pruefung nach § 25 TDDDG: dann weder Abrufe noch Browser-Speicher. */
+  private readonly aktiv = inject(LETZTER_BESUCH_AN);
   private kennung: string | null = null;
   private stand$?: Observable<SeitLetztemBesuch>;
   /** Links, die in diesem App-Start schon angeklickt wurden. */
@@ -67,6 +70,9 @@ export class SeitLetztemBesuchService {
   ) {}
 
   stand(kennung: string): Observable<SeitLetztemBesuch> {
+    if (!this.aktiv) {
+      return of({ einwuerfe: 0, aussagen: 0 });
+    }
     if (kennung !== this.kennung || !this.stand$) {
       this.kennung = kennung;
       this.erledigt$.next(new Set());

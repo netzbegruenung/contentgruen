@@ -9,6 +9,7 @@ import { UsageTrackingService } from '../services/usage-tracking.service';
 import { ROUTES } from '../shared/constants/app.constants';
 import { NeuesArt, SeitLetztemBesuchService } from './seit-letztem-besuch.service';
 import { lueckenWarten } from '../shared/luecke-texte';
+import { LETZTER_BESUCH_AN } from '../shared/geraetespeicher-schalter';
 
 /** Ein Link im Block: was neu ist und wohin es fuehrt. */
 export interface NeuesEintrag {
@@ -77,8 +78,12 @@ export class SeitLetztemBesuchComponent {
   private readonly usage = inject(UsageTrackingService);
   protected readonly neues = inject(SeitLetztemBesuchService);
 
-  /** Je Konto: Wechselt die Kennung, rechnet der Dienst neu und vergisst die Klicks. */
-  readonly eintraege$: Observable<NeuesEintrag[]> = inject(AuthService).userInfo$.pipe(
+  /**
+   * Je Konto: Wechselt die Kennung, rechnet der Dienst neu und vergisst die Klicks. Bei
+   * ausgeschaltetem Merker (LETZTER_BESUCH_AN) gibt es den Abschnitt nicht: kein Abruf,
+   * kein Zugriff auf den Browser-Speicher.
+   */
+  readonly eintraege$: Observable<NeuesEintrag[]> = !inject(LETZTER_BESUCH_AN) ? of([]) : inject(AuthService).userInfo$.pipe(
     map((info) => (info?.isAuthenticated && info.userId ? info.userId : null)),
     distinctUntilChanged(),
     switchMap((kennung) =>
