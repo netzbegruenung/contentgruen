@@ -1,7 +1,7 @@
 # E2E-Tests (Playwright)
 
 Prüfen die wichtigsten Szenarien am Handy gegen den laufenden Dev-Stack: Verfassen eines Kommentars,
-einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort auf“ mit neuer Aussage, aus der Suche ergänzen, die Kette im
+einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort auf“ mit neuer Aussage, aus der Suche ergänzen (mit der erkannten Aussage vorgewählt), aus „Hier fehlt eine Antwort“ antworten (danach verschwindet die Aussage von der Liste; braucht zwei Suchen ohne Treffer, Testkonto und Besucher), die Kette im
 Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz
 sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seiten und ohne
 Umleitung bei einem 401 der Suche), den Aufruf eines Beitrags per Direktlink und die Darstellung bei
@@ -36,7 +36,8 @@ Einzelne Specs: `npx playwright test tests/04-fangkorb.spec.ts`, ein Projekt:
 ## Was man wissen muss
 
 - **Daten:** Die Tests legen echte Einwürfe, Aussagen und Beiträge an, alle mit dem Präfix
-  `[e2e-test]`. Sie bleiben im Dev-Stack liegen; `mvp/run-local.sh wipe` räumt auf.
+  `[e2e-test]`; nur die Suchen ohne Treffer in `14-antwort-verknuepfen` nicht, weil schon das
+  Präfix jede frühere Testaussage zum Treffer machte. Sie bleiben im Dev-Stack liegen; `mvp/run-local.sh wipe` räumt auf.
 - **Reihenfolge:** Ein Worker, nacheinander. Jede Spec legt ihre Daten selbst an, die
   Anmeldung (`anmelden.setup.ts`) läuft vorher einmal. Nacheinander, weil alle Specs mit
   demselben Testkonto am Rate-Limit hängen und `04-fangkorb` andere offene Einwürfe

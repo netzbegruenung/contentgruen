@@ -9,6 +9,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD, aussageParameterMitText } from '../shared/formular-adresse';
+import { aussageZumAntworten } from '../result-view/erkannte-aussage';
 import { typBeschreibung } from '../shared/content-type-registry';
 
 @Component({
@@ -43,11 +44,11 @@ export class CommentarySearchResultsComponent {
     private navigationService: NavigationService
   ) { } // Inject services
 
-  /** Ins Formular, als Antwort auf die Aussage dieser Suche - per ID, sonst mit ihrem Text. */
+  /** Ins Formular, als Antwort auf die erkannte Aussage oder die der Suche (aussageZumAntworten), sonst mit dem Text. */
   navigateToContributeView(): void {
     this.router.navigate([FORMULAR_PFAD.commentary], {
       queryParams: aussageParameterMitText(
-        this.searchResponse?.statement_id,
+        aussageZumAntworten(this.searchResponse),
         this.searchResponse?.statement_text || this.searchQuery,
       ),
     });
