@@ -312,7 +312,7 @@ describe('BeitragGespeichertComponent', () => {
       return seite().querySelector('.gespeichert-knoepfe button.teilen') as HTMLButtonElement;
     }
 
-    it('oeffnet mobil das Teilen-Menue mit Text und eigener Adresse, ohne Nutzung', async () => {
+    it('oeffnet das Teilen-Menue des Geraets mit Text und eigener Adresse, ohne Nutzung', async () => {
       await oeffnen();
       nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
       const kopieren = spyOn(TestBed.inject(Clipboard), 'copy');
@@ -344,7 +344,7 @@ describe('BeitragGespeichertComponent', () => {
 
       await fixture.componentInstance.teilen();
 
-      expect(snack.calls.mostRecent().args[0]).toBe('Kopieren hat nicht geklappt.');
+      expect(snack.calls.mostRecent().args[0]).toBe(`Kopieren hat nicht geklappt. Der Link: ${window.location.origin}/beitrag/k-1`);
     });
 
     it('meldet nichts, wenn das Teilen abgebrochen wird', async () => {

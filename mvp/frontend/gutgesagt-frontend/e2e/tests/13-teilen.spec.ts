@@ -23,6 +23,20 @@ const KOMMENTAR = {
   status: 'visible',
   references: [],
   references_count: 0,
+  // Stimmzaehler sichtbar: die breiteste Kartenleiste (Review zu #675)
+  guete: null,
+  stimmen_hilfreich: 12,
+  stimmen_nicht_hilfreich: 3,
+};
+
+/** Ein Bild: der Kopieren-Knopf heisst hier "Bildunterschrift kopieren", der laengste. */
+const BILD = {
+  ...KOMMENTAR,
+  id: '44444444-2222-4333-8444-555555555555',
+  content_type: 'image',
+  title: 'Vogelschlag an Glas und Windrad im Vergleich',
+  text: 'Vogelschlag im Vergleich',
+  image_url: '/marke/icon-512.png',
 };
 
 const ANTWORT = {
@@ -43,8 +57,18 @@ const ANTWORT = {
   ],
   generictext_search_results_count: 0,
   generictext_search_results: [],
-  image_search_results_count: 0,
-  image_search_results: [],
+  image_search_results_count: 1,
+  image_search_results: [
+    {
+      score: 0.8,
+      statement_id: ERKANNT.id,
+      statement_text: ERKANNT.text,
+      statement_similarity_score: 0.9,
+      reply_relevance: 0.8,
+      themen: [],
+      image_result: BILD,
+    },
+  ],
   post_search_results_count: 0,
   post_search_results: [],
 };
@@ -127,7 +151,8 @@ test.describe('Teilen mobil 390 px', () => {
     await page.getByRole('button', { name: `Ergebnis teilen: Antworten auf „${ERKANNT.text}“` }).click();
     await expect.poll(() => geteilt(page)).toHaveLength(2);
     const ergebnis = (await geteilt(page))[1];
-    expect(ergebnis.url).toMatch(/\/result\?searchQuery=Windr%C3%A4der%20t%C3%B6ten%20V%C3%B6gel$/);
+    // Die erkannte Aussage, nicht der rohe Suchtext (Review zu #675)
+    expect(new URL(ergebnis.url!).searchParams.get('searchQuery')).toBe(ERKANNT.text);
     expect(ergebnis.text).toBe(`Antworten auf: „${ERKANNT.text}“`);
     // Eine Ergebnisseite teilen zaehlt nicht als Nutzung
     expect(nutzungen()).toBe(1);
@@ -145,19 +170,47 @@ test.describe('Teilen mobil 390 px', () => {
     expect(nutzungen()).toBe(0);
   });
 
-  test('Beitragsseite: Teilen unter der Karte', async ({ page, bild }) => {
+  test('Beitragsseite: Teilen an der Karte, zaehlt mit Zaehler', async ({ page, bild }) => {
     const { nutzungen } = await mocken(page);
     await teilenMenue(page);
     await page.goto(`/beitrag/${KOMMENTAR_ID}`);
-    const knopf = page.getByRole('button', { name: 'Teilen', exact: true });
+    const knopf = page.locator('app-beitragskarte').getByRole('button', { name: `Beitrag teilen: „${KOMMENTAR.title}“` });
     await expect(knopf).toBeVisible({ timeout: 45_000 });
-    // In der Karte selbst steht hier kein zweiter Teilen-Knopf
-    await expect(page.locator('app-beitragskarte button.teilen-knopf')).toHaveCount(0);
+    // Kein zweiter Knopf unter der Karte mehr
+    await expect(page.getByRole('button', { name: 'Teilen', exact: true })).toHaveCount(0);
     await bild('teilen-390-beitragsseite');
 
     await knopf.click();
     await expect.poll(() => geteilt(page)).toHaveLength(1);
     await expect.poll(nutzungen).toBe(1);
+    await expect(page.locator('.karte-nutzung')).toContainText('genutzt');
+  });
+});
+
+test.describe('Teilen 360 px', () => {
+  test.use({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
+
+  test('Kartenleiste passt: ⋮ und Teilen liegen in der Karte, mit Stimmzaehlern', async ({ page, bild }) => {
+    await mocken(page);
+    await teilenMenue(page);
+    await sucheOeffnen(page);
+
+    const karten = page.locator('app-beitragskarte');
+    await expect(karten).toHaveCount(2);
+    await expect(karten.first().locator('.stimm-zahl').first()).toHaveText('12');
+    for (let n = 0; n < 2; n++) {
+      const karte = karten.nth(n);
+      await karte.scrollIntoViewIfNeeded();
+      const rahmen = (await karte.locator('article.karte').boundingBox())!;
+      for (const knopf of ['.menue-knopf', '.teilen-knopf', '.kopieren-knopf']) {
+        const box = (await karte.locator(knopf).boundingBox())!;
+        expect(box.x, `${knopf} links in Karte ${n}`).toBeGreaterThanOrEqual(rahmen.x);
+        expect(box.x + box.width, `${knopf} rechts in Karte ${n}`).toBeLessThanOrEqual(rahmen.x + rahmen.width);
+      }
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    await karten.nth(1).scrollIntoViewIfNeeded();
+    await bild('teilen-360-karten');
   });
 });
 

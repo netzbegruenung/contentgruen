@@ -21,7 +21,7 @@ import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { StatementSearchResult } from '../services/dtos/statementDtos';
-import { TeilenService, sucheLink } from '../shared/teilen.service';
+import { TeilenService, sucheLink, suchtextKuerzen } from '../shared/teilen.service';
 import {
   AnsichtGruppe,
   ErgebnisGruppe,
@@ -389,9 +389,14 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Wovon das geteilte Ergebnis handelt: die erkannte Aussage, sonst der Suchtext. */
+  /**
+   * Was geteilt wird, in Link und Text: die erkannte Aussage, nicht der rohe Suchtext.
+   * Der kann ein eingefuegter fremder Post samt Namen sein; ohne erkannte Aussage geht
+   * er deshalb nur gekuerzt mit (B7, Review zu #675).
+   */
   private get geteilteAussage(): string {
-    return (this.erkannt?.text || this.searchQuery).trim();
+    const erkannt = this.erkannt?.text?.trim();
+    return erkannt || suchtextKuerzen(this.searchQuery);
   }
 
   get ergebnisTeilenBeschriftung(): string {
@@ -399,8 +404,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * "Ergebnis teilen" (B7, docs/VISION.md): der Link auf diese Suche, mobil ueber das
-   * Teilen-Menue, sonst in die Zwischenablage. Zaehlt nicht als Nutzung, es ist keine
+   * "Ergebnis teilen" (B7, docs/VISION.md): der Link auf die Suche nach der
+   * erkannten Aussage, ueber das Teilen-Menue, wo das Geraet eines hat, sonst in die Zwischenablage. Zaehlt nicht als Nutzung, es ist keine
    * Karte (VISION: "eine Ergebnisseite teilen ... zaehlt nicht").
    */
   async ergebnisTeilen(): Promise<void> {
@@ -408,7 +413,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
       return;
     }
     await this.teilenService.teilen({
-      url: sucheLink(this.searchQuery),
+      url: sucheLink(this.geteilteAussage),
       text: `Antworten auf: „${this.geteilteAussage}“`,
     });
   }

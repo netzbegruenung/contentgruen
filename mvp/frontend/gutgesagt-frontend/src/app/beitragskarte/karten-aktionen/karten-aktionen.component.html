@@ -40,18 +40,17 @@
                 [matTooltip]="kopierHinweis" matTooltipPosition="above" matTooltipShowDelay="500"
                 (click)="kopieren()">
             <mat-icon>content_copy</mat-icon>
-            <span>{{ kopierBeschriftung }}</span>
+            <span class="kopieren-wort">{{ kopierBeschriftung }}</span>
         </button>
     </div>
 
     <div class="rechts">
-        <!-- Teilen (B7, docs/VISION.md): mobil das Teilen-Menue des Geraets, sonst Link kopieren.
-             Nicht auf der Beitragsseite, dort steht der Knopf unter der Karte. -->
-        <button mat-icon-button type="button" class="teilen-knopf" *ngIf="ansichtVerlinkt"
+        <!-- Teilen (B7, docs/VISION.md): das Teilen-Menue, wo das Geraet eines hat, sonst Link kopieren.
+             Ohne Tooltip: Der Name sagt es schon, sonst kaeme es doppelt an. -->
+        <button mat-icon-button type="button" class="teilen-knopf" *ngIf="teilenSichtbar"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
                 [attr.aria-label]="teilenBeschriftung"
-                matTooltip="Teilen" matTooltipPosition="above"
                 (click)="teilen()">
             <mat-icon aria-hidden="true">share</mat-icon>
         </button>

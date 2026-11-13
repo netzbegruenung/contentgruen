@@ -6,7 +6,10 @@ import { ROUTES } from './constants/app.constants';
 
 /** Rueckmeldung, wenn statt des Teilen-Menues der Link in der Zwischenablage liegt. */
 export const TEILEN_LINK_KOPIERT = 'Link kopiert – füg ihn ein, wo du teilen willst.';
-export const TEILEN_NICHT_KOPIERT = 'Kopieren hat nicht geklappt.';
+/** Scheitert auch das Kopieren, steht der Link zum Abschreiben oder Markieren in der Meldung. */
+export function teilenNichtKopiert(url: string): string {
+  return `Kopieren hat nicht geklappt. Der Link: ${url}`;
+}
 
 /** Was geteilt wird: der Link, dazu ein Text, den das Teilen-Menue mitgibt. */
 export interface TeilenDaten {
@@ -38,6 +41,20 @@ export function sucheLink(suchtext: string, origin: string = window.location.ori
   return `${origin}${ROUTES.RESULT}?searchQuery=${encodeURIComponent(suchtext)}`;
 }
 
+/** Wie lang ein roher Suchtext beim Teilen hoechstens mitgeht ("Ergebnis teilen" ohne erkannte Aussage). */
+export const SUCHTEXT_TEILEN_MAX = 200;
+
+/** Kuerzt einen Suchtext fuers Teilen auf SUCHTEXT_TEILEN_MAX Zeichen, am letzten Wortende davor. */
+export function suchtextKuerzen(suchtext: string, max: number = SUCHTEXT_TEILEN_MAX): string {
+  const text = suchtext.trim().replace(/\s+/g, ' ');
+  if (text.length <= max) {
+    return text;
+  }
+  const schnitt = text.slice(0, max);
+  const wortende = schnitt.lastIndexOf(' ');
+  return (wortende > max / 2 ? schnitt.slice(0, wortende) : schnitt).trimEnd();
+}
+
 /** Ob wirklich geteilt oder kopiert wurde; nur dann zaehlt das Teilen einer Karte als Nutzung. */
 export function hatGeteilt(ergebnis: TeilenErgebnis): boolean {
   return ergebnis === 'geteilt' || ergebnis === 'kopiert';
@@ -49,7 +66,7 @@ export function hatGeteilt(ergebnis: TeilenErgebnis): boolean {
  * Share-Knoepfe fremder Dienste, kein Tracking.
  *
  * Die Rueckmeldung kommt als Snackbar (MatSnackBar sagt sie ueber eine Live-Region an):
- * beim Kopieren, dass der Link bereitliegt, sonst dass es nicht geklappt hat. Nach dem
+ * beim Kopieren, dass der Link bereitliegt, sonst dass es nicht geklappt hat, samt Link. Nach dem
  * Teilen-Menue keine, das Menue selbst war die Rueckmeldung; nach einem Abbruch
  * (AbortError) auch keine.
  */
@@ -90,8 +107,12 @@ export class TeilenService {
   }
 
   private kopieren(url: string): TeilenErgebnis {
-    const kopiert = this.clipboard.copy(url);
-    this.snackBar.open(kopiert ? TEILEN_LINK_KOPIERT : TEILEN_NICHT_KOPIERT, 'OK', { duration: 4000 });
-    return kopiert ? 'kopiert' : 'fehlgeschlagen';
+    if (this.clipboard.copy(url)) {
+      this.snackBar.open(TEILEN_LINK_KOPIERT, 'OK', { duration: 4000 });
+      return 'kopiert';
+    }
+    // Etwa nach NotAllowedError ohne Nutzergeste: der Link zum Selbstkopieren, laenger sichtbar.
+    this.snackBar.open(teilenNichtKopiert(url), 'OK', { duration: 15000 });
+    return 'fehlgeschlagen';
   }
 }

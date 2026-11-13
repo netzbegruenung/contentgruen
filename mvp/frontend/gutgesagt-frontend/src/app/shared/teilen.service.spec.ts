@@ -5,11 +5,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   TEILEN_LINK_KOPIERT,
   TEILEN_NAVIGATOR,
-  TEILEN_NICHT_KOPIERT,
   TeilenNavigator,
   TeilenService,
   hatGeteilt,
   sucheLink,
+  suchtextKuerzen,
+  teilenNichtKopiert,
 } from './teilen.service';
 
 describe('TeilenService (B7)', () => {
@@ -84,11 +85,28 @@ describe('TeilenService (B7)', () => {
     expect(clipboard.copy).toHaveBeenCalledOnceWith(URL);
   });
 
-  it('sagt, wenn auch Kopieren scheitert', async () => {
+  it('nennt den Link zum Selbstkopieren, wenn auch Kopieren scheitert', async () => {
     clipboard.copy.and.returnValue(false);
 
     expect(await service.teilen({ url: URL })).toBe('fehlgeschlagen');
-    expect(snackBar.open).toHaveBeenCalledOnceWith(TEILEN_NICHT_KOPIERT, 'OK', { duration: 4000 });
+    expect(snackBar.open).toHaveBeenCalledOnceWith(`Kopieren hat nicht geklappt. Der Link: ${URL}`, 'OK', { duration: 15000 });
+  });
+
+  it('nennt nach NotAllowedError und gescheitertem Kopieren den Link', async () => {
+    nav.share = jasmine.createSpy('share').and.rejectWith(new DOMException('nein', 'NotAllowedError'));
+    clipboard.copy.and.returnValue(false);
+
+    expect(await service.teilen({ url: URL })).toBe('fehlgeschlagen');
+    expect(snackBar.open).toHaveBeenCalledOnceWith(teilenNichtKopiert(URL), 'OK', { duration: 15000 });
+  });
+
+  it('kuerzt einen langen Suchtext am Wortende, kurze bleiben', () => {
+    expect(suchtextKuerzen('  Windräder   töten Vögel ')).toBe('Windräder töten Vögel');
+    const lang = 'Wort '.repeat(60);
+    const gekuerzt = suchtextKuerzen(lang);
+    expect(gekuerzt.length).toBeLessThanOrEqual(200);
+    expect(gekuerzt.endsWith('Wort')).toBeTrue();
+    expect(suchtextKuerzen('x'.repeat(250)).length).toBe(200);
   });
 
   it('zaehlt nur Geteiltes und Kopiertes als geteilt', () => {

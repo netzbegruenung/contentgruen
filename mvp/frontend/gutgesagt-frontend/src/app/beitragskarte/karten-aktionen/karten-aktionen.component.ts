@@ -85,8 +85,10 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() abstimmenSichtbar = true;
   /** Die angezeigte Fassung eines Kommentars, gezaehlt wird je Fassung (#355); sonst null. */
   @Input() fassung: Fassung | null = null;
-  /** Der Knopf "Teilen" und der Menueeintrag "Beitrag öffnen"; aus auf der eigenen Adresse selbst. */
+  /** Der Menueeintrag "Beitrag öffnen"; aus auf der eigenen Adresse selbst. */
   @Input() ansichtVerlinkt = true;
+  /** Der Knopf "Teilen" (B7); die Karte gibt ansichtVerlinkt weiter, ausser auf der Beitragsseite. */
+  @Input() teilbar = true;
   /** Der Titel des Beitrags: im Namen des Teilen-Knopfs und als Titel im Teilen-Menue. */
   @Input() titel: string | null = null;
   /**
@@ -283,6 +285,10 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       });
   }
 
+  get teilenSichtbar(): boolean {
+    return this.teilbar && !!this.inhaltId;
+  }
+
   /** Der unsichtbare Name des Teilen-Knopfs, mit dem Titel des Beitrags, sofern er einen hat. */
   get teilenBeschriftung(): string {
     const titel = this.titel?.trim();
@@ -291,7 +297,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
 
   /**
    * Teilen (B7): der Text, den auch "Kopieren" nimmt, und der Link auf die Beitragsseite,
-   * mobil ueber das Teilen-Menue, sonst nur der Link in die Zwischenablage. Eine Karte
+   * ueber das Teilen-Menue, wo das Geraet eines hat, sonst nur der Link in die Zwischenablage. Eine Karte
    * teilen zaehlt als Nutzung (docs/VISION.md, Teilen; GLOSSARY.md, Nutzung), ueber
    * denselben Endpunkt wie Kopieren; ein Abbruch zaehlt nicht. Die eigene Nutzung
    * verwirft der Server (api/v1/usage.py).

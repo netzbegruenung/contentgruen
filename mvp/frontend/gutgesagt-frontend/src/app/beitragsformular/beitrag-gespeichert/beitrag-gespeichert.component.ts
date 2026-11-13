@@ -220,8 +220,8 @@ export class BeitragGespeichertComponent implements OnInit {
   }
 
   /**
-   * Den eigenen neuen Beitrag teilen (B7, vorher "Link kopieren", #617): mobil das
-   * Teilen-Menue mit Text und Link auf die Beitragsseite (/beitrag/:id, oeffentlich),
+   * Den eigenen neuen Beitrag teilen (B7, vorher "Link kopieren", #617): das
+   * Teilen-Menue, wo das Geraet eines hat, mit Text und Link auf die Beitragsseite (/beitrag/:id, oeffentlich),
    * sonst der Link in die Zwischenablage. Keine Nutzung: Es ist der eigene Beitrag.
    */
   async teilen(): Promise<void> {

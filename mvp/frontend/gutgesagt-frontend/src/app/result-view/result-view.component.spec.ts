@@ -974,7 +974,8 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
   });
 
   describe('Ergebnis teilen (B7)', () => {
-    const LINK = `${window.location.origin}/result?searchQuery=windraeder%20voegel`;
+    // Mit erkannter Aussage geht sie in den Link, nicht der rohe Suchtext (Review zu #675)
+    const LINK = `${window.location.origin}/result?searchQuery=${encodeURIComponent(ERKANNT)}`;
 
     it('steht im Kopfband, mit der erkannten Aussage im Namen', async () => {
       const seite = await oeffnen(true, GEMISCHT());
@@ -985,7 +986,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
       expect(seite.querySelector('.ergebnis-teilen-leiste')).toBeNull();
     });
 
-    it('oeffnet mobil das Teilen-Menue mit dem Link auf die Suche und zaehlt keine Nutzung', async () => {
+    it('oeffnet das Teilen-Menue mit dem Link auf die erkannte Aussage und zaehlt keine Nutzung', async () => {
       const seite = await oeffnen(true, GEMISCHT());
       nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
 
@@ -1024,6 +1025,21 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
       const knopf = seite.querySelector<HTMLButtonElement>('.ergebnis-teilen-leiste .ergebnis-teilen')!;
       expect(knopf.getAttribute('aria-label')).toBe('Ergebnis teilen: Antworten auf „windraeder voegel“');
       expect(knopf.compareDocumentPosition(seite.querySelector('.typ-chips')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('gibt ohne erkannte Aussage den Suchtext nur gekuerzt weiter', async () => {
+      await oeffnen(true, antwort({ k: [direkt('commentary', 'k-1', 0.6)] }));
+      const eingefuegt = 'Ein langer fremder Post von Erika Musterfrau ' + 'mit sehr vielen Worten '.repeat(20);
+      fixture.componentInstance.searchQuery = eingefuegt;
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+
+      await fixture.componentInstance.ergebnisTeilen();
+
+      const geteilt = (nav.share as jasmine.Spy).calls.mostRecent().args[0] as ShareData;
+      const suchtext = new URL(geteilt.url!).searchParams.get('searchQuery')!;
+      expect(suchtext.length).toBeLessThanOrEqual(200);
+      expect(eingefuegt.startsWith(suchtext)).toBeTrue();
+      expect(geteilt.text).toBe(`Antworten auf: „${suchtext}“`);
     });
   });
 

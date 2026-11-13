@@ -4,7 +4,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Observable, of } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
@@ -15,9 +14,6 @@ import { AussageKurz, ContentService, WeitereAntwort } from '../services/content
 import { BeitragKontextComponent } from './beitrag-kontext.component';
 import { LoggingService } from '../services/logging.service';
 import { ROUTES } from '../shared/constants/app.constants';
-import { beitragsLink } from '../shared/beitrags-link';
-import { TeilenService, hatGeteilt } from '../shared/teilen.service';
-import { UsageTrackingService } from '../services/usage-tracking.service';
 
 type Zustand = 'laedt' | 'da' | 'nichtDa' | 'stoerung';
 
@@ -41,7 +37,8 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
  * die eigene Stimme mit (user_vote), sonst zeigte die Karte eine falsche.
  * Gesperrte und geloeschte Beitraege gibt es hier fuer niemanden (404).
  *
- * Unter der Karte "Teilen" (B7, vorher "Link kopieren"), die Aussage, auf die der
+ * "Teilen" an der Karte selbst (B7, vorher "Link kopieren" unter ihr): so teilt sie die
+ * angezeigte Fassung, zaehlt sie mit und zeigt die neue Nutzung. Unter der Karte die Aussage, auf die der
  * Beitrag antwortet, und weitere Antworten zu ihr (#603, app-beitrag-kontext); der
  * Endpunkt liefert Aussage und Antworten mit.
  */
@@ -52,7 +49,6 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
     CommonModule,
     RouterLink,
     MatButtonModule,
-    MatIconModule,
     MatProgressSpinnerModule,
     BeitragskarteComponent,
     BeitragKontextComponent,
@@ -65,15 +61,9 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
       </div>
 
       <app-beitragskarte *ngIf="karte as karte" [daten]="karte" variante="voll"
-                         [ansichtVerlinkt]="false"></app-beitragskarte>
+                         [ansichtVerlinkt]="false" [teilbar]="true"></app-beitragskarte>
       <app-beitrag-kontext *ngIf="karte" [aussage]="kontext.aussage"
                            [weitere]="kontext.weitere"></app-beitrag-kontext>
-      <div *ngIf="karte" class="weiter">
-        <button mat-stroked-button type="button" class="teilen" (click)="teilen()">
-          <mat-icon aria-hidden="true">share</mat-icon>
-          Teilen
-        </button>
-      </div>
 
       <ng-container *ngIf="zustand === 'nichtDa' || zustand === 'stoerung'">
         <p class="hinweis" role="status">{{ zustand === 'nichtDa' ? nichtVerfuegbar : nichtAnzeigbar }}</p>
@@ -99,12 +89,6 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
         width: 100%;
       }
 
-      .weiter {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-      }
-
       .laedt {
         padding: 24px 0;
       }
@@ -125,7 +109,6 @@ export class BeitragAnsichtComponent implements OnInit {
   readonly nichtVerfuegbar = NICHT_VERFUEGBAR;
   readonly nichtAnzeigbar = NICHT_ANZEIGBAR;
   readonly suche = ROUTES.SEARCH;
-  private id = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -133,8 +116,6 @@ export class BeitragAnsichtComponent implements OnInit {
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
     private destroyRef: DestroyRef,
-    private teilenService: TeilenService,
-    private usageTracking: UsageTrackingService,
   ) {}
 
   ngOnInit(): void {
@@ -142,7 +123,6 @@ export class BeitragAnsichtComponent implements OnInit {
       .pipe(
         map((params) => params.get('id') ?? ''),
         tap((id) => {
-          this.id = id;
           this.zustand = 'laedt';
           this.karte = null;
           this.cdr.markForCheck();
@@ -156,25 +136,6 @@ export class BeitragAnsichtComponent implements OnInit {
         this.kontext = kontext;
         this.cdr.markForCheck();
       });
-  }
-
-  /**
-   * Teilt den Beitrag (B7): mobil das Teilen-Menue mit Text und Link, sonst den Link in
-   * die Zwischenablage. Zaehlt wie Teilen an der Karte als Nutzung (docs/VISION.md,
-   * Teilen); ein Abbruch zaehlt nicht.
-   */
-  async teilen(): Promise<void> {
-    if (!this.id || !this.karte) {
-      return;
-    }
-    const ergebnis = await this.teilenService.teilen({
-      url: beitragsLink(this.id),
-      text: this.karte.text ?? undefined,
-      titel: this.karte.titel ?? undefined,
-    });
-    if (hatGeteilt(ergebnis)) {
-      this.usageTracking.trackContentUsage(this.id);
-    }
   }
 
   private laden(id: string): Observable<{ zustand: Zustand; karte: KartenDaten | null; kontext: Kontext }> {

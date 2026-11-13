@@ -691,7 +691,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(fixture.nativeElement.querySelector('.kopieren .kopieren-knopf')).not.toBeNull();
     });
 
-    it('oeffnet mobil das Teilen-Menue mit Text und Link und zaehlt als Nutzung', async () => {
+    it('oeffnet das Teilen-Menue des Geraets mit Text und Link und zaehlt als Nutzung', async () => {
       nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
       const kopiert = jasmine.createSpy('kopiert');
       component.kopiert.subscribe(kopiert);
@@ -754,14 +754,22 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       await component.teilen();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Kopieren hat nicht geklappt.', 'OK', { duration: 4000 });
+      expect(snackBar.open).toHaveBeenCalledWith(`Kopieren hat nicht geklappt. Der Link: ${LINK}`, 'OK', { duration: 15000 });
       expect(usage.trackContentUsage).not.toHaveBeenCalled();
     });
 
-    it('fehlt auf der Beitragsseite selbst, dort steht der Knopf unter der Karte', () => {
-      fixture.componentRef.setInput('ansichtVerlinkt', false);
-
+    it('fehlt, wenn die Karte ihn nicht teilbar schaltet, und ohne Beitrag', () => {
+      fixture.componentRef.setInput('teilbar', false);
       expect(knopf()).toBeNull();
+
+      fixture.componentRef.setInput('teilbar', true);
+      fixture.componentRef.setInput('inhaltId', '');
+      expect(knopf()).toBeNull();
+    });
+
+    it('hat keinen Tooltip neben dem Namen (sonst doppelte Ansage)', () => {
+      expect(knopf()).not.toBeNull();
+      expect(fixture.debugElement.query(By.css('.teilen-knopf')).injector.get(MatTooltip, null)).toBeNull();
     });
 
     it('tut in der Vorschau nichts', async () => {
