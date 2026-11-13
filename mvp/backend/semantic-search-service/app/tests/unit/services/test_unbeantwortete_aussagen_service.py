@@ -41,12 +41,10 @@ def _aussage(statement_id, text, tag):
     )
 
 
-def _service(ohne_kommentar=(), gesucht=(), themen=None, mit_kommentar=()):
+def _service(ohne_kommentar=(), gesucht=(), themen=None):
     statement_service = Mock(spec=StatementService)
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
-    statement_service.mit_kommentar = AsyncMock(
-        side_effect=lambda ids: set(ids) & set(mit_kommentar)
-    )
+    statement_service.mit_kommentar = AsyncMock(return_value=set())
     suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(return_value=list(gesucht))
     themen_service = Mock(spec=AussageThemenService)
@@ -126,7 +124,9 @@ async def test_gesuchte_aussage_mit_kommentar_verschwindet():
             SucheOhneTreffer(A, "Das Bürgergeld ist höher als der Mindestlohn", 4, 2),
             SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 3, 2),
         ],
-        mit_kommentar={A},
+    )
+    service._statement_service.mit_kommentar = AsyncMock(
+        side_effect=lambda ids: set(ids) & {A}
     )
 
     liste = await service.liste()

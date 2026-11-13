@@ -4,9 +4,10 @@ import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
-from typing import AbstractSet, Dict, Iterable, List, Optional, Set, Tuple
+from typing import AbstractSet, Dict, List, Optional, Tuple
 import uuid
 import logging
+from collections.abc import Iterable, Set
 
 from pydantic import ValidationError
 

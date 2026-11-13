@@ -16,16 +16,20 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.statement import Statement
 from services.content.commentary_service import CommentaryService
-from services.aussage_themen_service import AussageThemenService
 from services.content.statement_service import StatementService
+
+from tests.integration.beitrag_helfer import sichtbarer_beitrag
+from tests.integration.conftest import requires_qdrant
+
+# Fuer den Weg "Hier fehlt eine Antwort" -> gespeichert (UnbeantworteteAussagenService).
+from services.aussage_themen_service import AussageThemenService
 from services.suchen_ohne_treffer_service import (
     SucheOhneTreffer,
     SuchenOhneTrefferService,
 )
-from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
-
-from tests.integration.beitrag_helfer import sichtbarer_beitrag
-from tests.integration.conftest import requires_qdrant
+from services.unbeantwortete_aussagen_service import (
+    UnbeantworteteAussagenService,
+)
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
 
