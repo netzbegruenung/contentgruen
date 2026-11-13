@@ -1,99 +1,129 @@
-<div class="component-box">
-    <div class="guidance">
-        <div class="info-message">
-            <div class="fangkorb-kopf">
-                <!-- Die beiden Arbeitslisten sind die Navigation: was im Tab liegt, sagt der Zaehler.
-                     Tab-Muster nach WAI-ARIA: ein Tab-Stopp, Pfeiltasten wechseln den Tab. -->
-                <div class="tabs" role="tablist" aria-label="Arbeitslisten im Fangkorb" (keydown)="tabTaste($event)">
-                    <button *ngFor="let tab of tabs" type="button" role="tab" class="tab"
-                            [id]="'fangkorb-tab-' + tab.wert"
-                            [attr.aria-controls]="'fangkorb-bereich-' + tab.wert"
-                            [class.aktiv]="filter.tab === tab.wert"
-                            [attr.aria-selected]="filter.tab === tab.wert"
-                            [attr.tabindex]="filter.tab === tab.wert ? 0 : -1"
-                            (click)="tabWaehlen(tab.wert)">
-                        <span class="tab-wort">{{ tab.name }}</span>
-                        <span class="tab-zahl">{{ zaehler[tab.wert] }}</span>
-                    </button>
+<!--
+    Ein Kasten fuer alles. Am Handy steht die Steuerung (Tabs, Filter) ueber der Liste
+    wie bisher; ab SEITENLEISTE_MEDIEN wird sie zur Seitenleiste links, die Liste
+    steht rechts daneben (fangkorb--seitenleiste).
+-->
+<div class="component-box fangkorb" [class.fangkorb--seitenleiste]="seitenleiste">
+    <div class="steuerung">
+        <!-- Am Desktop ein Knopf oben in der Seitenleiste statt des schwebenden -->
+        <button *ngIf="seitenleiste" mat-flat-button type="button" class="einwerfen-knopf"
+                (click)="zumEinwerfen()">
+            <mat-icon aria-hidden="true">add</mat-icon>
+            Etwas einwerfen
+        </button>
+
+        <div class="guidance">
+            <div class="info-message">
+                <div class="fangkorb-kopf">
+                    <!-- Die beiden Arbeitslisten sind die Navigation: was im Tab liegt, sagt der Zaehler.
+                         Tab-Muster nach WAI-ARIA: ein Tab-Stopp, Pfeiltasten wechseln den Tab
+                         (nebeneinander links/rechts, in der Seitenleiste hoch/runter). -->
+                    <div class="tabs" role="tablist" aria-label="Arbeitslisten im Fangkorb"
+                         [attr.aria-orientation]="tabAusrichtung" (keydown)="tabTaste($event)">
+                        <button *ngFor="let tab of tabs" type="button" role="tab" class="tab"
+                                [id]="'fangkorb-tab-' + tab.wert"
+                                [attr.aria-controls]="'fangkorb-bereich-' + tab.wert"
+                                [class.aktiv]="filter.tab === tab.wert"
+                                [attr.aria-selected]="filter.tab === tab.wert"
+                                [attr.tabindex]="filter.tab === tab.wert ? 0 : -1"
+                                (click)="tabWaehlen(tab.wert)">
+                            <span class="tab-wort">{{ tab.name }}</span>
+                            <!-- Ohne geladene Einwuerfe nach einem Fehler waere 0 falsch: dann ein Strich -->
+                            <span class="tab-zahl">{{ zaehlerUnbekannt ? '–' : zaehler[tab.wert] }}</span>
+                        </button>
+                    </div>
+
+                    <app-hilfe-umschalter [(offen)]="erklaerungOffen" steuert="fangkorb-erklaerung"
+                                          beschriftungZu="So funktioniert der Fangkorb">
+                    </app-hilfe-umschalter>
                 </div>
 
-                <app-hilfe-umschalter [(offen)]="erklaerungOffen" steuert="fangkorb-erklaerung"
-                                      beschriftungZu="So funktioniert der Fangkorb">
-                </app-hilfe-umschalter>
-            </div>
-
-            <div *ngIf="erklaerungOffen" id="fangkorb-erklaerung" class="erklaerung">
-                <p class="dreischritt-satz">Jeder Schritt kann von jemand anderem kommen.</p>
-                <ol class="dreiklang" aria-label="So wird aus einem Fund ein Beitrag">
-                    <li><strong>Einwerfen</strong> – {{ fangkorbBeschreibung }}</li>
-                    <li><strong>Destillieren</strong> – in einem Satz sagen, was der Punkt ist.</li>
-                    <li><strong>Ausformulieren</strong> – aus dem Satz einen Beitrag machen.</li>
-                </ol>
-                <p>Alle sehen alles. Tippe auf eine Karte, um weiterzumachen.</p>
+                <div *ngIf="erklaerungOffen" id="fangkorb-erklaerung" class="erklaerung">
+                    <p class="dreischritt-satz">Jeder Schritt kann von jemand anderem kommen.</p>
+                    <ol class="dreiklang" aria-label="So wird aus einem Fund ein Beitrag">
+                        <li><strong>Einwerfen</strong> – {{ fangkorbBeschreibung }}</li>
+                        <li><strong>Destillieren</strong> – in einem Satz sagen, was der Punkt ist.</li>
+                        <li><strong>Ausformulieren</strong> – aus dem Satz einen Beitrag machen.</li>
+                    </ol>
+                    <p>Alle sehen alles. Tippe auf eine Karte, um weiterzumachen.</p>
+                </div>
             </div>
         </div>
 
-    </div>
-</div>
+        <!-- Einwerfen als schwebender Knopf (nur ohne Seitenleiste): immer erreichbar, ohne Platz im
+             Kopf. Beschriftet und mit eigenem Symbol: Ein zweites "+" neben dem "+" (Beitragen) im
+             Kopf hiess etwas anderes (UX-Review B15). -->
+        <button *ngIf="!seitenleiste" mat-fab extended type="button" class="einwerfen-fab"
+                (click)="zumEinwerfen()">
+            <mat-icon aria-hidden="true">move_to_inbox</mat-icon>
+            Einwerfen
+        </button>
 
-<!-- Einwerfen als schwebender Knopf: immer erreichbar, ohne Platz im Kopf. Beschriftet und mit
-     eigenem Symbol: Ein zweites "+" neben dem "+" (Beitragen) im Kopf hiess etwas anderes (UX-Review B15). -->
-<button mat-fab extended type="button" class="einwerfen-fab" (click)="zumEinwerfen()">
-    <mat-icon aria-hidden="true">move_to_inbox</mat-icon>
-    Einwerfen
-</button>
-
-<div class="component-box fangkorb">
-    <!-- Eine Zeile, seitlich scrollbar: erst die eigenen, dann Plattformen -->
-    <div class="filterleiste" role="group" aria-label="Fangkorb filtern">
-        <div class="filtergruppe">
-            <button type="button" class="filter-chip nur-meine"
-                    [class.aktiv]="filter.nurMeine" [attr.aria-pressed]="filter.nurMeine"
-                    (click)="nurMeineUmschalten()">nur meine</button>
-            <!-- Standardmaessig aus: Weggelegtes taucht sonst wieder auf -->
-            <button type="button" class="filter-chip verworfen"
-                    [class.aktiv]="filter.verworfenSichtbar" [attr.aria-pressed]="filter.verworfenSichtbar"
-                    (click)="verworfenUmschalten()">verworfen</button>
-        </div>
-        <span class="filter-trenner" aria-hidden="true"></span>
-        <div class="filtergruppe" role="group" aria-label="Plattformen">
-            <button *ngFor="let plattform of plattformen" type="button"
-                    class="filter-chip plattform-filter"
-                    [class.aktiv]="plattformGewaehlt(plattform.wert)"
-                    [attr.aria-pressed]="plattformGewaehlt(plattform.wert)"
-                    (click)="plattformUmschalten(plattform.wert)">{{ plattform.name }}</button>
+        <!-- Am Handy eine Zeile, seitlich scrollbar: erst die eigenen, dann Plattformen -->
+        <div class="filterleiste" role="group" aria-label="Fangkorb filtern">
+            <div class="filtergruppe">
+                <button type="button" class="filter-chip nur-meine"
+                        [class.aktiv]="filter.nurMeine" [attr.aria-pressed]="filter.nurMeine"
+                        (click)="nurMeineUmschalten()">nur meine</button>
+                <!-- Standardmaessig aus: Weggelegtes taucht sonst wieder auf -->
+                <button type="button" class="filter-chip verworfen"
+                        [class.aktiv]="filter.verworfenSichtbar" [attr.aria-pressed]="filter.verworfenSichtbar"
+                        (click)="verworfenUmschalten()">verworfen</button>
+            </div>
+            <span class="filter-trenner" aria-hidden="true"></span>
+            <div class="filtergruppe" role="group" aria-label="Plattformen">
+                <button *ngFor="let plattform of plattformen" type="button"
+                        class="filter-chip plattform-filter"
+                        [class.aktiv]="plattformGewaehlt(plattform.wert)"
+                        [attr.aria-pressed]="plattformGewaehlt(plattform.wert)"
+                        (click)="plattformUmschalten(plattform.wert)">{{ plattform.name }}</button>
+            </div>
         </div>
     </div>
 
-    <!-- Je Tab ein Bereich wie in "Meine Beitraege"; die Liste steht nur im gewaehlten -->
-    <div *ngFor="let tab of tabs" [id]="'fangkorb-bereich-' + tab.wert" role="tabpanel"
-         [attr.aria-labelledby]="'fangkorb-tab-' + tab.wert" [hidden]="filter.tab !== tab.wert">
-        <ng-container *ngIf="filter.tab === tab.wert">
-            <div *ngIf="isLoading" class="fangkorb-laedt">
-                <p>Lade Fangkorb …</p>
-                <mat-spinner class="mat-spinner-color" diameter="40"></mat-spinner>
-            </div>
+    <div class="liste">
+        <!-- Live-Region, immer im DOM: sagt den ersten Ladefehler und die Rueckkehr an -->
+        <div class="visually-hidden" role="status">{{ ansage }}</div>
 
-            <div *ngIf="!isLoading && ladefehler" class="fangkorb-fehler">
-                <p>⚠️ Der Fangkorb konnte nicht geladen werden. Bitte lade die Seite neu.</p>
-            </div>
+        <!-- Je Tab ein Bereich wie in "Meine Beitraege"; die Liste steht nur im gewaehlten -->
+        <div *ngFor="let tab of tabs" [id]="'fangkorb-bereich-' + tab.wert" role="tabpanel" tabindex="-1"
+             [attr.aria-labelledby]="'fangkorb-tab-' + tab.wert" [hidden]="filter.tab !== tab.wert">
+            <ng-container *ngIf="filter.tab === tab.wert">
+                <div *ngIf="isLoading" class="fangkorb-laedt">
+                    <p>Lade Fangkorb …</p>
+                    <mat-spinner class="mat-spinner-color" diameter="40"></mat-spinner>
+                </div>
 
-            <ng-container *ngIf="!isLoading && !ladefehler">
-                <p *ngIf="!sichtbar.length" class="fangkorb-leer">{{ leerText }}</p>
+                <!-- Nie "neu laden": Der Fangkorb versucht es selbst wieder (LadeWiederholung),
+                     der Knopf zieht den naechsten Versuch vor. Angesagt wird ueber die
+                     Live-Region oben, nicht hier: sonst kaeme jeder Versuch einzeln. -->
+                <div *ngIf="!isLoading && ladefehler" class="fangkorb-fehler">
+                    <p>
+                        ⚠️ Der Fangkorb konnte gerade nicht geladen werden.
+                        <ng-container *ngIf="erneutLaedt">Neuer Versuch läuft …</ng-container>
+                        <ng-container *ngIf="!erneutLaedt && versuchtWeiter">Die Seite versucht es weiter.</ng-container>
+                    </p>
+                    <button mat-stroked-button type="button" class="erneut-versuchen"
+                            [attr.aria-disabled]="erneutLaedt" (click)="erneutVersuchen()">Erneut versuchen</button>
+                </div>
 
-                <ul *ngIf="karten.length" class="karten">
-                    <li *ngFor="let karte of karten; trackBy: nachKarte">
-                        <app-beitragskarte variante="einwurf" [daten]="karte"
-                                           (aktion)="aktionAusfuehren(karte, $event)">
-                        </app-beitragskarte>
-                    </li>
-                </ul>
+                <ng-container *ngIf="!isLoading && !ladefehler">
+                    <p *ngIf="!sichtbar.length" class="fangkorb-leer">{{ leerText }}</p>
 
-                <p *ngIf="gesamt > einwuerfe.length" class="fangkorb-mehr">
-                    Von {{ gesamt }} Einwürfen sind die letzten {{ einwuerfe.length }} geladen –
-                    ältere fehlen, und die Zähler oben zählen nur die geladenen.
-                </p>
+                    <ul *ngIf="karten.length" class="karten">
+                        <li *ngFor="let karte of karten; trackBy: nachKarte">
+                            <app-beitragskarte variante="einwurf" [daten]="karte" [quer]="seitenleiste"
+                                               (aktion)="aktionAusfuehren(karte, $event)">
+                            </app-beitragskarte>
+                        </li>
+                    </ul>
+
+                    <p *ngIf="gesamt > einwuerfe.length" class="fangkorb-mehr">
+                        Von {{ gesamt }} Einwürfen sind die letzten {{ einwuerfe.length }} geladen –
+                        ältere fehlen, und die Zähler {{ seitenleiste ? 'links' : 'oben' }} zählen nur die geladenen.
+                    </p>
+                </ng-container>
             </ng-container>
-        </ng-container>
+        </div>
     </div>
 </div>
