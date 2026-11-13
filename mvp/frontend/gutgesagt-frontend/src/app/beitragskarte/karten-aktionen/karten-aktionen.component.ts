@@ -428,7 +428,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       .open('Bitte melde dich an, um abzustimmen', 'Anmelden', { duration: 5000 })
       .onAction()
       .subscribe(() => {
-        this.authService.login();
+        // Zurueck auf diese Seite samt Suche, dort sagt ein Satz, dass Abstimmen jetzt geht
+        this.authService.login('abstimmen');
       });
   }
 
