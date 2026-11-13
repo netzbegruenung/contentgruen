@@ -129,6 +129,26 @@ describe('EinwilligungComponent', () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen?von=fangkorb');
     });
 
+    it('laedt bei einem veralteten Wortlaut (400) den aktuellen selbst und sagt es darueber', () => {
+      starten();
+      standLiefern(stand());
+      fixture.componentInstance.angehakt = true;
+      fixture.detectChanges();
+
+      knopf('Einwilligen und weiter').click();
+      http.expectOne({ method: 'POST', url: URL }).flush(null, { status: 400, statusText: 'Bad Request' });
+      const neu = { kennung: '2026-11-13', text: 'Ich willige ausdrücklich ein, neu …' };
+      standLiefern(stand({ aktueller_wortlaut: neu }));
+
+      expect(el().querySelector('[data-testid="wortlaut-geaendert"]')?.textContent).toContain(
+        'Der Text hat sich gerade geändert. Bitte lies ihn und stimm neu zu.',
+      );
+      expect(el().textContent).toContain(neu.text);
+      expect(fixture.componentInstance.angehakt).toBeFalse();
+      expect(el().textContent).not.toContain('Noch einmal');
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
     it('ohne Einwilligung weiter speichert nichts', () => {
       starten('/einwerfen');
       standLiefern(stand());

@@ -223,7 +223,7 @@ describe('LoeschauftraegeComponent', () => {
       expect(dialog.open).toHaveBeenCalled();
       // Entscheidung Maintainer, 13.11.2026: was nach einer neuen Einwilligung kam, bleibt
       expect((dialog.open.calls.mostRecent().args[1] as any).data.text).toContain(
-        'soweit sie vor einer neuen Einwilligung entstanden sind; was danach kam, bleibt'
+        'soweit sie vor einer neuen Einwilligung gespeichert wurden; was danach kam, bleibt'
       );
       expect(moderation.loeschauftragAusfuehren).toHaveBeenCalledWith('auftrag-1');
       expect(snackBar.open.calls.mostRecent().args[0]).toBe(

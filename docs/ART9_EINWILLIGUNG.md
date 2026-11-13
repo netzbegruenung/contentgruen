@@ -62,8 +62,8 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   (`docs/LOESCHKONZEPT.md`, „Löschauftrag nach dem Widerruf“, DSFA R9b). Bis dahin bleiben
   Beiträge, Einwürfe und Sätze an der Person. Willigt die Person vor der Ausführung neu ein,
   bleibt der Auftrag offen, erfasst beim Ausführen aber nur, was vor der neuen Einwilligung
-  entstand; was sie danach beiträgt, bleibt an ihr (Entscheidung Maintainer, 13.11.2026). Ohne
-  neue Einwilligung erfasst er alles. Die Liste der Admins zeigt dann „Neu eingewilligt am …“. Eine neue
+  gespeichert wurde, gleich zu welchem Wortlaut sie war; was sie danach beiträgt, bleibt an ihr
+  (Entscheidung Maintainer, 13.11.2026). Ohne neue Einwilligung erfasst er alles. Die Liste der Admins zeigt dann „Neu eingewilligt am …“. Eine neue
   Einwilligung ist eine neue Zeile; die früheren bleiben. Jede Prüfung fragt die Datenbank,
   damit ein Widerruf und das Löschkommando sofort wirken.
 - **Startkonten und Import:** Auch ein Startkonto willigt einmal in der App ein, bevor es

@@ -13,9 +13,10 @@
 -- neu eingewilligt hat, bekommt einen offenen Auftrag, angelegt zum Zeitpunkt des
 -- juengsten Widerrufs, mit Frist sieben Tage ab dem Einspielen (sonst waere er sofort
 -- ueberfaellig); ausser es gibt schon einen offenen oder einen seit diesem Widerruf.
--- Was nach einer neuen Einwilligung entstand, erfasst der Auftrag nicht (Obergrenze,
--- repositories/loeschauftrag_repository.py; Entscheidung Maintainer, 13.11.2026).
--- Ein zweiter Lauf legt nichts an.
+-- Was nach einer neuen Einwilligung gespeichert wurde, gleich zu welchem Wortlaut,
+-- erfasst der Auftrag nicht (Obergrenze, repositories/loeschauftrag_repository.py;
+-- Entscheidung Maintainer, 13.11.2026). Ein zweiter Lauf legt nichts an; ON CONFLICT
+-- faengt einen Widerruf ab, der zwischen Pruefung und Einfuegen einen anlegt.
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
@@ -46,6 +47,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM loeschauftraege AS a
     WHERE a.user_id = w.user_id
       AND (a.erledigt_am IS NULL OR a.angelegt_am >= w.widerrufen_am)
-);
+)
+ON CONFLICT (user_id) WHERE erledigt_am IS NULL DO NOTHING;
 
 COMMIT;

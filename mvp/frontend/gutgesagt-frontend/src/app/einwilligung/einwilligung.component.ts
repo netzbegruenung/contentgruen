@@ -64,6 +64,9 @@ export class EinwilligungComponent implements OnInit {
     return !!s && !s.eingewilligt && !!s.wortlaut && !s.widerrufen_am;
   }
 
+  /** Beim Einwilligen kam 400: Der Wortlaut hat sich seit dem Laden geaendert. */
+  wortlautGeaendert = false;
+
   ngOnInit(): void {
     this.laden();
   }
@@ -87,7 +90,16 @@ export class EinwilligungComponent implements OnInit {
     this.zustand = 'sendet';
     this.einwilligung.einwilligen(this.stand.aktueller_wortlaut.kennung).subscribe({
       next: () => this.weiter(),
-      error: () => (this.zustand = 'fehler'),
+      error: (fehler) => {
+        if (fehler?.status === 400) {
+          // Der gezeigte Wortlaut gilt nicht mehr (etwa ein Tab von gestern): den aktuellen
+          // selbst laden und darueber sagen, dass er neu zu lesen ist.
+          this.wortlautGeaendert = true;
+          this.laden();
+          return;
+        }
+        this.zustand = 'fehler';
+      },
     });
   }
 

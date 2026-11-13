@@ -84,8 +84,9 @@ def einwilligen(
             status_code=422, detail="Unbekannter Wortlaut der Einwilligung"
         )
     except WortlautGiltNicht:
-        # Etwa ein Tab, der noch den vorigen Wortlaut zeigt: neu laden laesst den
-        # aktuellen zeigen (domain/art9_einwilligung.py, GELTENDE_WORTLAUTE).
+        # Etwa ein Tab von gestern mit dem vorigen Wortlaut: /einwilligung laedt dann
+        # selbst den aktuellen und bittet, ihn zu lesen (domain/art9_einwilligung.py,
+        # GELTENDE_WORTLAUTE).
         raise HTTPException(
             status_code=400, detail="Dieser Wortlaut der Einwilligung gilt nicht mehr"
         )

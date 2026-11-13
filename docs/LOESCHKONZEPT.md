@@ -161,15 +161,15 @@ Einwilligung widerrufen wurde; je Person höchstens einen offenen, ein zweiter W
 keinen zweiten an. Wer vor diesem Stand irgendwann widerrufen hat, auch wer seither neu
 eingewilligt hat, bekommt den Auftrag beim Einspielen der Migration
 (`2026-11-13-loeschauftraege.sql`): angelegt zum Zeitpunkt des jüngsten Widerrufs, Frist sieben
-Tage ab dem Einspielen (entschieden 13.11.2026); was nach einer neuen Einwilligung entstand,
-schützt die Obergrenze (unten). Beim Umstellen der Kennungen
+Tage ab dem Einspielen (entschieden 13.11.2026); was nach einer neuen Einwilligung gespeichert
+wurde, schützt die Obergrenze (unten). Beim Umstellen der Kennungen
 zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
 
 Admins sehen offene Aufträge unter „Moderation“, „Löschaufträge“, mit der frühesten Frist
 zuerst; überfällige stehen hervorgehoben, die Zahl offener steht am Umschalter. Liste und
 Zahl laden selbst nach. Hat die Person nach dem Widerruf neu eingewilligt, steht „Neu
-eingewilligt am …“ daneben (die erste Einwilligung zum geltenden Wortlaut nach dem jüngsten
-Widerruf); der Auftrag bleibt, erfasst aber nur, was davor entstand (Entscheidung Maintainer,
+eingewilligt am …“ daneben (die erste Einwilligung nach dem jüngsten Widerruf); der Auftrag
+bleibt, erfasst aber nur, was davor gespeichert wurde (Entscheidung Maintainer,
 13.11.2026, unten „Obergrenze“). „Widerrufen am“ ist der jüngste Widerruf. Überfällige
 meldet der tägliche Löschfrist-Task zusätzlich als WARNING im Log, nur mit ihrer Zahl. „Löschablauf ausführen“ (`POST /api/v1/moderation/loeschauftraege/{id}/ausfuehren`)
 macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwirkung:
@@ -181,9 +181,12 @@ macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwir
   `raw_input_content_links.created_by` leer, an Sperren ihrer Beiträge `autor` und
   `widerspruch` leer, Platzhalter ohne Satz abräumen (`LoeschauftragRepository.ausfuehren`).
   In derselben Transaktion bekommt der Auftrag den Zeitpunkt der Ausführung.
-- **Obergrenze:** die früheste Einwilligung zu einem geltenden Wortlaut (`GELTENDE_WORTLAUTE`)
-  nach dem jüngsten Widerruf (`Loeschauftrag.obergrenze`). Was ab ihr angelegt ist, bleibt an der
-  Person; gibt es sie nicht, erfasst der Auftrag alles, auch Nachzügler, die kurz vor dem
+- **Obergrenze:** die früheste Einwilligung nach dem jüngsten Widerruf und nicht vor dem Anlegen
+  des Auftrags, zu irgendeinem Wortlaut (`Loeschauftrag.obergrenze`): Jede gespeicherte
+  Einwilligung galt, als sie gegeben wurde (neu einwilligen geht nur zu einem geltenden Wortlaut),
+  und die Zusage „Was ich nach einer neuen Einwilligung beitrage, bleibt“ hängt nicht daran, ob
+  später ein neuer Wortlaut kommt. Was ab ihr gespeichert ist, bleibt an der Person; gibt es sie
+  nicht oder fehlt eine Zeile mit Widerruf, erfasst der Auftrag alles, auch Nachzügler, die kurz vor dem
   Widerruf geprüft und erst danach gespeichert wurden (lieber zu viel als zu wenig). Widerruft
   die Person nach einer neuen Einwilligung erneut, bleibt es bei einem Auftrag, und die
   Obergrenze fällt weg. Verglichen werden Beiträge nach `created` im Qdrant-Payload (ohne
@@ -191,14 +194,18 @@ macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwir
   Verknüpfungen nach `created_at`, Sätze nach `updated_at` (einen Zeitpunkt des Anlegens hat ein
   Satz nicht; wer ihn nach einer neuen Einwilligung neu speichert, hat ihn unter ihr beigetragen).
   An Sperren geht der Autor, außer an Beiträgen ab der Obergrenze, die in Qdrant an der Person
-  bleiben. Ein früherer Beitrag bleibt als Ganzes anonymisiert, auch wenn die Person ihn nach der
-  neuen Einwilligung noch geändert hat. Eine Einwilligung zu einem früheren Wortlaut nach dem
-  Widerruf ist keine Obergrenze.
+  bleiben. Eigene Einwürfe von vor der Obergrenze gehen samt allen Sätzen daran, auch Sätzen der
+  Person von danach. Ein früherer Beitrag bleibt als Ganzes anonymisiert, auch wenn die Person
+  ihn nach der neuen Einwilligung noch geändert hat.
 - **Gleichzeitig widerrufen:** Der PostgreSQL-Teil sperrt die Zeile des Auftrags (`FOR UPDATE`)
   und liest Widerruf und Obergrenze neu. Haben sie sich seit dem Laden geändert, bricht er ab
   (409, „erneut ausführen“), der Auftrag bleibt offen, und der nächste Klick nimmt den neuen
   Stand. Ein Widerruf sperrt den offenen Auftrag ebenso, bevor er einen anlegt: Läuft gerade die
-  Ausführung, wartet er und legt danach einen neuen Auftrag an.
+  Ausführung, wartet er und legt danach einen neuen Auftrag an. Bekannte Grenze, zwei
+  Restfenster von Millisekunden: Ein Schreibzugriff, der die Einwilligung kurz vor dem Widerruf
+  geprüft hat, kann erst nach dem PostgreSQL-Teil gespeichert werden, und ein Beitrag kann
+  zwischen dem Qdrant-Teil und dem PostgreSQL-Teil entstehen. Beides bleibt dann an der Person,
+  obwohl der Auftrag erledigt ist; beim Durchsehen der Texte (Schritt 3) fällt es auf.
 
 Was **bleibt**: das Konto, der Anzeigename in `users`, die Einwilligungen samt Widerruf als
 Nachweis (Art. 7 Abs. 1), Meldungen der Person und Muster-Hinweise (beide gehen mit ihrer

@@ -22,7 +22,7 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Löschablauf ausführen?',
   text:
     'Die Beiträge der Person zeigen danach „ehemalige Person“, ihre Einwürfe werden gelöscht, und ihre Sätze an ' +
-    'Einwürfen anderer verlieren ihren Namen, soweit sie vor einer neuen Einwilligung entstanden sind; was danach ' +
+    'Einwürfen anderer verlieren ihren Namen, soweit sie vor einer neuen Einwilligung gespeichert wurden; was danach ' +
     'kam, bleibt. Das lässt sich nicht rückgängig machen. Konto und Anzeigename bleiben.',
   ja: 'Löschablauf ausführen',
   nein: 'Abbrechen',

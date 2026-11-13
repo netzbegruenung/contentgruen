@@ -11,6 +11,9 @@
     </ng-container>
 
     <form *ngIf="stand && (zustand === 'frage' || zustand === 'sendet')" (ngSubmit)="einwilligen()">
+      <p *ngIf="wortlautGeaendert" class="hinweis" role="alert" data-testid="wortlaut-geaendert">
+        Der Text hat sich gerade geändert. Bitte lies ihn und stimm neu zu.
+      </p>
       <p *ngIf="stand.widerrufen_am" class="hinweis" role="status">
         Du hast deine Einwilligung am {{ stand.widerrufen_am | date: 'dd.MM.yyyy' }} widerrufen. Du kannst weiter suchen und lesen.
       </p>
