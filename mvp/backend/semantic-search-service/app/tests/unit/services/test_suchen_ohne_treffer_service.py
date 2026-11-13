@@ -19,6 +19,7 @@ from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from services.content.statement_service import AussageNichtGefunden
 from services.suchen_ohne_treffer_service import (
+    ZU_PRUEFEN_KANDIDATEN,
     KeineUnbeantworteteSuchanfrage,
     PersonenDesTages,
     SuchenOhneTrefferService,
@@ -534,3 +535,49 @@ class TestVormoderation:
 
         with pytest.raises(AussageNichtGefunden):
             await service.entscheiden(GELOESCHT, True)
+
+
+class TestOhneVerborgene:
+    @pytest.mark.asyncio
+    async def test_viele_ungepruefte_schneiden_die_liste_nicht_ab(self):
+        # 60 ungepruefte Suchanfragen mit mehr Personen vor einer gepflegten Aussage:
+        # Mit Limit 50 stand die gepflegte frueher nicht mehr in der Liste.
+        ungepruefte = [uuid.UUID(int=1000 + i) for i in range(60)]
+        gepflegt = uuid.UUID(int=5)
+        frei = uuid.UUID(int=6)
+        repo = FakeRepository(
+            haeufigste=[(i, 9, 5) for i in ungepruefte]
+            + [(gepflegt, 3, 2), (frei, 2, 2)]
+        )
+        repo.ueber_der_schwelle = lambda seit, mind, freigabe=None: [frei]
+        aussagen = {i: ("ungeprueft", SICHTBAR, *SUCHANFRAGE) for i in ungepruefte}
+        aussagen[gepflegt] = ("gepflegt", SICHTBAR)
+        aussagen[frei] = ("freigegeben", SICHTBAR, *SUCHANFRAGE)
+
+        ergebnis = await _service(repo, aussagen).haeufigste(
+            wochen=4, limit=50, heute=MITTWOCH, ohne_verborgene=True
+        )
+
+        assert [e.statement_id for e in ergebnis] == [gepflegt, frei]
+
+    @pytest.mark.asyncio
+    async def test_ohne_den_schalter_bleibt_die_admin_kennzahl_vollstaendig(self):
+        repo = FakeRepository(haeufigste=[(AUSSAGE, 9, 5)])
+        aussagen = {AUSSAGE: ("ungeprueft", SICHTBAR, *SUCHANFRAGE)}
+
+        ergebnis = await _service(repo, aussagen).haeufigste(heute=MITTWOCH)
+
+        assert [e.statement_id for e in ergebnis] == [AUSSAGE]
+
+
+@pytest.mark.asyncio
+async def test_anzahl_zu_pruefen_hoechstens_so_viele_wie_die_liste():
+    repo = FakeRepository()
+    statement_service = _statement_service({})
+    statement_service.zaehle_unbeantwortete_suchanfragen = AsyncMock(return_value=999)
+
+    anzahl = await SuchenOhneTrefferService(
+        repo, statement_service, PersonenDesTages()
+    ).anzahl_zu_pruefen(heute=MITTWOCH)
+
+    assert anzahl == ZU_PRUEFEN_KANDIDATEN

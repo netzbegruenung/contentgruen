@@ -36,7 +36,6 @@ from dtos.statement import (
     SearchStatementByTextRequest,
     StatementSearchResponse,
     StatementGetAllResponse,
-    StatementSource,
     ThemaDto,
     ThemenResponse,
     ThemenTestsetResponse,
@@ -62,7 +61,6 @@ from repositories.implementations.qdrant.statement_repository import (
     ist_unbeantwortete_suchanfrage,
 )
 from domain.models.content_status import NEW_CONTENT_STATUS
-from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
@@ -478,14 +476,9 @@ async def add_statement(
             replysuggestions=request.statement.replysuggestions,
         )
 
-        # Suchanfragen bekommen einen Systemautor: sie fallen automatisch an,
-        # sobald jemand sucht, und sind keine Autorenleistung. Nur der
-        # ausdrueckliche Weg ueber "Beitrag ergaenzen" nennt die Person.
-        author = (
-            SEARCH_QUERY_AUTHOR
-            if request.source is StatementSource.SEARCH_QUERY
-            else x_user
-        )
+        # Nur der ausdrueckliche Weg: Die Person ist Autorin. Suchanfragen legt
+        # allein /searchByText an, mit Systemautor (StatementSource).
+        author = x_user
 
         # Aussagen sind sofort sichtbar.
         statement_was_new, statement_id, statement_text = (

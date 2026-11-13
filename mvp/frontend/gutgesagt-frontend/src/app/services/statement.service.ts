@@ -131,9 +131,9 @@ export class StatementService {
    *
    * Stehen beide da (aussageParameterMitText) und kennt getById die ID nicht (404),
    * gilt der Text: Eine unbeantwortete Suchanfrage unter der Schwelle oder ohne
-   * Freigabe (Vormoderation) liefert das Backend Nicht-Admins nicht aus (#436), wohl
-   * aber findet es sie beim Speichern
-   * ueber den Text wieder.
+   * Freigabe (Vormoderation) liefert das Backend Nicht-Admins nicht aus (#436). Beim
+   * Speichern haengt der Beitrag dann an einer eigenen Aussage mit diesem Text; die
+   * verborgene Suchanfrage findet das Backend dabei nicht als dieselbe.
    */
   aussageAusAdresse(params: ParamMap): Observable<GetStatementByIdResponse> {
     const aussageId = params.get(AUSSAGE_PARAM);

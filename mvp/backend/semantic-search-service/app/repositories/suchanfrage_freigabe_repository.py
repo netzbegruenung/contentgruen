@@ -29,14 +29,6 @@ class SuchanfrageFreigabeRepository:
                 for statement_id, freigegeben in session.execute(abfrage).all()
             }
 
-    def ist_freigegeben(self, statement_id: uuid.UUID) -> bool:
-        """Ob ein Admin die Aussage freigegeben hat (ungeprueft und abgelehnt: False)."""
-        abfrage = select(SuchanfrageFreigabe.freigegeben).where(
-            SuchanfrageFreigabe.statement_id == statement_id
-        )
-        with self.db.get_session() as session:
-            return bool(session.execute(abfrage).scalar())
-
     def loeschen(self, statement_id: uuid.UUID) -> int:
         """Die Entscheidung zu einer Aussage loeschen, etwa mit der Aussage selbst."""
         with self.db.get_session() as session:

@@ -51,15 +51,6 @@ def test_entscheidungen_als_zuordnung(repository, session):
     assert repository.entscheidungen() == {AUSSAGE: True, andere: False}
 
 
-def test_ist_freigegeben_nur_bei_freigabe(repository, session):
-    session.execute.return_value.scalar.return_value = None
-    assert repository.ist_freigegeben(AUSSAGE) is False
-    session.execute.return_value.scalar.return_value = False
-    assert repository.ist_freigegeben(AUSSAGE) is False
-    session.execute.return_value.scalar.return_value = True
-    assert repository.ist_freigegeben(AUSSAGE) is True
-
-
 def test_loeschen_nur_die_zeile_der_aussage(repository, session):
     session.execute.return_value.rowcount = 1
 

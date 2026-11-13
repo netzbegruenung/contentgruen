@@ -36,14 +36,11 @@ export interface StatementSearchResponse {
 // AddStatement
 
 /**
- * Aus welcher Situation heraus ein Statement angelegt wird.
- *
- * 'search_query': jemand hat gesucht - das Statement entsteht nebenbei und
- * bekommt im Backend einen Systemautor, keine Person.
- * 'manually_created': jemand benennt in "Beitrag ergaenzen" ausdruecklich eine
- * Aussage, zu der er antworten will - hier bleibt die Person als Autorin.
+ * Aus welcher Situation heraus ein Statement angelegt wird: nur 'manually_created',
+ * jemand benennt in "Beitrag ergaenzen" ausdruecklich eine Aussage, zu der er
+ * antworten will, und ist ihr Autor. Suchanfragen legt nur die Suche im Backend an.
  */
-export type StatementSource = 'search_query' | 'manually_created';
+export type StatementSource = 'manually_created';
 
 export interface AddStatementRequest {
     statement: {

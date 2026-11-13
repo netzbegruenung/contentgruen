@@ -44,6 +44,8 @@ def client():
 
     statement_service = Mock()
     statement_service.count_curated = AsyncMock(return_value=11)
+    # 15 Aussagen, davon 4 unbeantwortete Suchanfragen (Vormoderation).
+    statement_service.count = AsyncMock(return_value=15)
     commentary_service = Mock()
     commentary_service.count = AsyncMock(return_value=22)
     reference_service = Mock()
@@ -103,7 +105,8 @@ class TestGetMetricsStaysPublic:
 
         assert response.status_code == 200
         body = response.json()
-        assert body["content_count"] == 44
+        # 44 Eintraege ohne die 4 unbeantworteten Suchanfragen.
+        assert body["content_count"] == 40
         assert body["statement_count"] == 11
         assert body["commentary_count"] == 22
         assert body["reference_count"] == 33
@@ -182,6 +185,7 @@ class TestGetMetricsCacheConcurrency:
 
         statement_service = Mock()
         statement_service.count_curated = AsyncMock(return_value=1)
+        statement_service.count = AsyncMock(return_value=1)
         commentary_service = Mock()
         commentary_service.count = AsyncMock(return_value=2)
         reference_service = Mock()

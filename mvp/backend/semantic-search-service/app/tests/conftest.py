@@ -200,6 +200,8 @@ def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
 
     repository = MagicMock()
     repository.haeufigste.return_value = []
+    # Keine Suchanfrage ueber der Schwelle (und damit keine fuer alle sichtbar).
+    repository.ueber_der_schwelle.return_value = []
     monkeypatch.setattr(modul, "_repository", repository)
     yield repository
 
@@ -216,9 +218,22 @@ def suchanfrage_freigaben_ohne_datenbank(monkeypatch):
 
     repository = MagicMock()
     repository.entscheidungen.return_value = {}
-    repository.ist_freigegeben.return_value = False
     monkeypatch.setattr(modul, "_repository", repository)
     yield repository
+
+
+@pytest.fixture
+def sichtbare_suchanfragen(suchen_ohne_treffer_ohne_datenbank):
+    """
+    Die unbeantworteten Suchanfragen, die als ueber der Schwelle und freigegeben
+    gelten (Vormoderation): Ein Test legt IDs hinein. Ohne diese Fixture ist keine
+    sichtbar.
+    """
+    sichtbar = set()
+    suchen_ohne_treffer_ohne_datenbank.ueber_der_schwelle.side_effect = (
+        lambda seit_woche, mindestanzahl, freigabe=None: list(sichtbar)
+    )
+    return sichtbar
 
 
 @pytest.fixture(autouse=True)

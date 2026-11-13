@@ -221,11 +221,18 @@ async def get_metrics(
 
             repository_factory = QdrantRepositoryFactory()
             content_repository = repository_factory.create_content_repository(settings)
-            content_count = await content_repository.count()
+            # Ohne unbeantwortete Suchanfragen, wie statement_count: Sonst verriete
+            # der Zaehler (auch Anonymen) jede neue Suchanfrage (Vormoderation).
+            statement_count = await statement_service.count_curated()
+            content_count = (
+                await content_repository.count()
+                - await statement_service.count()
+                + statement_count
+            )
 
             metrics = GetMetricsResponse(
                 content_count=content_count,
-                statement_count=await statement_service.count_curated(),
+                statement_count=statement_count,
                 commentary_count=await commentary_service.count(),
                 reference_count=await reference_service.count(),
             )

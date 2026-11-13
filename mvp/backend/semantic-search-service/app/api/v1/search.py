@@ -201,13 +201,15 @@ async def _aussage_fuer_aufrufer(
     """
     ID und Text der Aussage zur Suchanfrage, wie die Antwort sie nennt (Vormoderation,
     13.11.2026). Ist sie eine unbeantwortete Suchanfrage, die Nicht-Admins nicht sehen
-    (unter der Schwelle oder nicht freigegeben), bekommen sie weder ihre ID noch
-    ihren Wortlaut, sondern ihren eigenen Suchtext ohne ID: Das Formular braucht
-    keine ID (es faellt auf den Text zurueck), und "Nicht dabei?" schlaegt solche
-    Aussagen ohnehin nicht vor. Eben aus dieser Suche angelegt heisst ungeprueft.
-    Laesst sich das nicht pruefen, wird verborgen.
+    (unter der Schwelle oder nicht freigegeben), gibt es weder ihre ID noch ihren
+    Wortlaut, sondern den eigenen Suchtext ohne ID: Das Formular braucht keine ID
+    (es nimmt den Text), und "Nicht dabei?" schlaegt solche Aussagen ohnehin nicht
+    vor. Das gilt auch fuer Admins: Eine Antwort an eine verborgene Suchanfrage
+    haengt das Backend nicht an (SuchanfrageNichtFreigegeben); Admins sehen sie in
+    der Moderation. Eben aus dieser Suche angelegt heisst ungeprueft. Laesst sich
+    das nicht pruefen, wird verborgen.
     """
-    if statement_id is None or aufrufer.ist_admin:
+    if statement_id is None:
         return statement_id, statement_text
     if not neu:
         try:
@@ -354,7 +356,11 @@ async def search_by_text(
             request.query_text,
         )
         response = SearchResponse(
-            query_was_newly_added_as_statement=statement_was_new,
+            # Verriete Nicht-Admins, ob schon jemand fast gleich gesucht hat
+            # (Vormoderation, P6); das Frontend liest es nicht.
+            query_was_newly_added_as_statement=(
+                statement_was_new if aufrufer.ist_admin else False
+            ),
             statement_id=str(antwort_id) if antwort_id is not None else None,
             statement_text=antwort_text,
             commentary_search_results_count=len(commentary_search_results),

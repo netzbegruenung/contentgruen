@@ -177,22 +177,12 @@ async def test_filter_wird_vor_der_begrenzung_angewandt():
     assert [a.statement_id for a in liste] == [C]
 
 
-async def test_suchanfrage_ohne_antwort_erscheint_erst_nach_freigabe():
-    # Vormoderation (13.11.2026): Ueber der Schwelle allein reicht nicht mehr.
-    gesucht = [
-        SucheOhneTreffer(A, "frei", 5, 3, unbeantwortete_suchanfrage=True),
-        SucheOhneTreffer(B, "ungeprueft", 9, 4, unbeantwortete_suchanfrage=True),
-        SucheOhneTreffer(C, "gepflegt", 4, 2),
-    ]
-
-    liste = await _service(gesucht=gesucht, freigegeben={A}).liste()
-
-    assert [a.statement_id for a in liste] == [A, C]
-
-
-async def test_ohne_suchanfragen_werden_freigaben_nicht_abgefragt():
+async def test_liste_laesst_verborgene_suchanfragen_vor_der_begrenzung_weg():
+    # Vormoderation: Das Weglassen geschieht in haeufigste (ohne_verborgene) vor dem
+    # Limit, damit viele ungepruefte die Liste nicht leer schneiden.
     service = _service(gesucht=[SucheOhneTreffer(C, "gepflegt", 4, 2)])
 
     await service.liste()
 
-    service._suchen_ohne_treffer.sichtbar_fuer_alle.assert_not_awaited()
+    aufruf = service._suchen_ohne_treffer.haeufigste.call_args.kwargs
+    assert aufruf["ohne_verborgene"] is True

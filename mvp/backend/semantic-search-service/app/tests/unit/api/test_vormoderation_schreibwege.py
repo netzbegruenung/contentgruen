@@ -71,9 +71,13 @@ class TestSuchantwort:
             aufrufer, statement_service, suchen, neu, S, "Wortlaut von S", "meine Suche"
         )
 
-    async def test_admin_bekommt_id_und_wortlaut(self):
-        dienste = _dienste(_aussage())
-        assert await self._antwort(ADMIN, False, *dienste) == (S, "Wortlaut von S")
+    @pytest.mark.parametrize(
+        "aufrufer", [ADMIN, MITWIRKENDE], ids=["admin", "mitwirkende"]
+    )
+    async def test_auch_admins_ohne_id_einer_verborgenen(self, aufrufer):
+        # Sonst schickte das Formular die ID, und die Antwort hinge ins Leere.
+        dienste = _dienste(_aussage(), sichtbar=frozenset())
+        assert await self._antwort(aufrufer, False, *dienste) == (None, "meine Suche")
 
     async def test_eben_angelegt_ohne_id(self):
         statement_service, suchen = _dienste(_aussage())

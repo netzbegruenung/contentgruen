@@ -4,7 +4,7 @@ import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
-from typing import AbstractSet, Dict, List, Optional, Tuple
+from typing import AbstractSet, Callable, Dict, FrozenSet, List, Optional, Tuple
 import uuid
 import logging
 
@@ -28,9 +28,6 @@ from repositories.interfaces.statement_repository import (
     IStatementRepository,
 )
 from repositories.interfaces.repository_factory import IRepositoryFactory
-from repositories.suchanfrage_freigabe_repository import (
-    get_suchanfrage_freigabe_repository,
-)
 from domain.models.statement import (
     AntwortKurz,
     Statement,
@@ -300,7 +297,10 @@ class StatementService(
 
         async with self._verknuepfungs_sperre(statement_id):
             aussage = await self._aussage_laden(statement_id)
-            if _ist_unbeantwortete_suchanfrage(aussage):
+            # Unter der Sperre noch einmal: Nur eine sichtbare wird uebernommen.
+            if _ist_unbeantwortete_suchanfrage(
+                aussage
+            ) and await self._suchanfrage_sichtbar(statement_id):
                 aussage.origin = ContentOrigin.MANUALLY_CREATED
                 aussage.original_author = author
                 aussage.last_modified_by = author
@@ -318,7 +318,12 @@ class StatementService(
         """
         return (await self._dieselbe_pruefen(text, schatten=False)).vorhanden
 
-    async def _dieselbe_pruefen(self, text: str, schatten: bool) -> Dublettenpruefung:
+    async def _dieselbe_pruefen(
+        self,
+        text: str,
+        schatten: bool,
+        ausschliessen: Optional[Callable[[BaseContentSearchResult], bool]] = None,
+    ) -> Dublettenpruefung:
         """
         Die Pruefung auf dieselbe Aussage, gemeinsam fuer add_statement und
         vorhandene_finden. Normalisiert gleich zaehlt immer. Sonst je nach
@@ -330,7 +335,12 @@ class StatementService(
           Hintergrund mit und wird nur gezaehlt (Schattenprotokoll).
         - an: die NLI-Stufe entscheidet (_nli_entscheiden).
         """
-        gleich, treffer = await self._dublettenkandidaten(text, praefix="query")
+        if ausschliessen is None:
+            gleich, treffer = await self._dublettenkandidaten(text, praefix="query")
+        else:
+            gleich, treffer = await self._dublettenkandidaten(
+                text, praefix="query", ausschliessen=ausschliessen
+            )
         if gleich is not None:
             return Dublettenpruefung(vorhanden=gleich, aehnlichster=gleich)
         heute = dublette_nach_schwelle(
@@ -517,10 +527,12 @@ class StatementService(
 
         Vormoderation (Entscheidung des Maintainers vom 13.11.2026): Ausser fuer eine
         Suche (origin SEARCH_QUERY) gilt eine unbeantwortete Suchanfrage, die kein
-        Admin freigegeben hat (ungeprueft oder abgelehnt), nicht als dieselbe. Sonst
-        machte eine Antwort oder das Vorab-Anlegen sie mit ihrem Wortlaut fuer alle
-        sichtbar, und die Antwort hier verriete ihn. Angelegt wird dann eine neue
-        Aussage mit dem eingegebenen Text; die Suchanfrage bleibt in der Vormoderation.
+        Admin freigegeben hat oder die unter der Schwelle liegt (verborgen wie beim
+        Lesen, SuchenOhneTrefferService.sichtbar_fuer_alle), nicht als dieselbe: Sie
+        ist schon kein Kandidat, der naechste sichtbare gilt, sonst entsteht eine neue
+        Aussage mit dem eingegebenen Text. Sonst machte eine Antwort oder das
+        Vorab-Anlegen sie mit ihrem Wortlaut fuer alle sichtbar, die Antwort hier
+        verriete ihn, und jeder weitere gleiche Text ergaebe eine weitere Aussage.
 
         Pruefen und Schreiben laufen unter einer Sperre je normalisiertem Text, damit
         zwei gleichzeitige Anfragen mit demselben neuen Text nicht zwei Aussagen anlegen.
@@ -529,18 +541,20 @@ class StatementService(
             - (neu angelegt, ID, Text) - bei einer vorhandenen Aussage deren ID und Text.
         """
         async with self._text_sperre.halten(statement.text):
-            pruefung = await self._dieselbe_pruefen(statement.text, schatten=True)
+            ausschliessen = None
+            if origin is not ContentOrigin.SEARCH_QUERY:
+                sichtbare = await self._sichtbare_suchanfragen()
+
+                def ausschliessen(eintrag) -> bool:
+                    return (
+                        _ist_unbeantwortete_suchanfrage(eintrag)
+                        and eintrag.id not in sichtbare
+                    )
+
+            pruefung = await self._dieselbe_pruefen(
+                statement.text, schatten=True, ausschliessen=ausschliessen
+            )
             vorhandene, bester = pruefung.vorhanden, pruefung.aehnlichster
-            if (
-                vorhandene is not None
-                and origin is not ContentOrigin.SEARCH_QUERY
-                and _ist_unbeantwortete_suchanfrage(vorhandene)
-                and not await self._suchanfrage_freigegeben(vorhandene.id)
-            ):
-                logger.debug("Matched search query awaits Vormoderation, adding new")
-                if bester is not None and bester.id == vorhandene.id:
-                    bester = None
-                vorhandene = None
             if vorhandene is not None:
                 # DEBUG: Jede Suche laeuft hier durch; eine INFO-Zeile mit ID und
                 # Uhrzeit je Suche ordnete die Aussage einem Suchereignis zu (#239).
@@ -574,21 +588,26 @@ class StatementService(
             )
             return True, statement_input.id, statement_input.text
 
-    async def _suchanfrage_freigegeben(self, statement_id: uuid.UUID) -> bool:
+    async def _sichtbare_suchanfragen(self) -> FrozenSet[uuid.UUID]:
         """
-        Ob ein Admin die Suchanfrage freigegeben hat. Ist die Datenbank nicht
-        erreichbar, gilt sie als nicht freigegeben: lieber eine Aussage doppelt als
-        ein ungepruefter Suchtext sichtbar.
+        Die unbeantworteten Suchanfragen, die Nicht-Admins sehen: ueber der Schwelle
+        und freigegeben (wie SuchenOhneTrefferService.sichtbar_fuer_alle). Ist die
+        Datenbank nicht erreichbar, gilt keine als sichtbar: lieber eine Aussage
+        doppelt als ein ungepruefter Suchtext sichtbar.
         """
+        # Spaet importiert: der Dienst der Kennzahl haengt selbst am StatementService.
+        from services.suchen_ohne_treffer_service import sichtbare_suchanfragen
+
         try:
-            return await asyncio.to_thread(
-                get_suchanfrage_freigabe_repository().ist_freigegeben, statement_id
-            )
+            return await asyncio.to_thread(sichtbare_suchanfragen)
         except Exception as e:
             logger.warning(
-                f"Vormoderation lookup failed ({type(e).__name__}), treating as not approved"
+                f"Vormoderation lookup failed ({type(e).__name__}), treating as hidden"
             )
-            return False
+            return frozenset()
+
+    async def _suchanfrage_sichtbar(self, statement_id: uuid.UUID) -> bool:
+        return statement_id in await self._sichtbare_suchanfragen()
 
     async def update_statement(self, updated_statement: StatementDbEntry) -> uuid.UUID:
 
@@ -652,7 +671,7 @@ class StatementService(
         statement_db_entry = await self._aussage_laden(statement_id)
         if _ist_unbeantwortete_suchanfrage(
             statement_db_entry
-        ) and not await self._suchanfrage_freigegeben(statement_id):
+        ) and not await self._suchanfrage_sichtbar(statement_id):
             raise SuchanfrageNichtFreigegeben(str(statement_id))
 
         # Zweimal dieselbe Antwort (etwa ein wiederholter Speicheraufruf) haengt
@@ -737,7 +756,7 @@ class StatementService(
             aussage = await self._aussage_laden(statement_id)
             if _ist_unbeantwortete_suchanfrage(
                 aussage
-            ) and not await self._suchanfrage_freigegeben(statement_id):
+            ) and not await self._suchanfrage_sichtbar(statement_id):
                 # Vormoderation: Die Suchanfrage gibt es fuer den Aufrufer nicht (wie
                 # getById). Mit Text wie add_statement eine eigene Aussage, sonst
                 # "nicht gefunden"; ihr Wortlaut geht nie zurueck.

@@ -127,6 +127,23 @@ def _seit_woche(wochen: int, heute: Optional[date] = None) -> date:
     return wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
 
 
+def sichtbare_suchanfragen(heute: Optional[date] = None) -> FrozenSet[uuid.UUID]:
+    """
+    Synchron und ohne Dienst: die Aussagen ueber der Schwelle, die ein Admin
+    freigegeben hat, wie SuchenOhneTrefferService.sichtbar_fuer_alle. Fuer die
+    Schreibwege des StatementService (Vormoderation), der den Dienst nicht kennt.
+    """
+    from repositories.suchen_ohne_treffer_repository import (
+        get_suchen_ohne_treffer_repository,
+    )
+
+    return frozenset(
+        get_suchen_ohne_treffer_repository().ueber_der_schwelle(
+            _seit_woche(WOCHEN_STANDARD, heute), MINDESTANZAHL, FREIGEGEBENE
+        )
+    )
+
+
 def aufbewahrungsgrenze(heute: Optional[date] = None) -> date:
     """Die aelteste Woche, die bleibt; alles davor wird geloescht."""
     return _seit_woche(AUFBEWAHRUNG_WOCHEN, heute)
@@ -275,16 +292,25 @@ class SuchenOhneTrefferService:
         limit: int = LIMIT_STANDARD,
         heute: Optional[date] = None,
         freigabe: Optional[str] = None,
+        ohne_verborgene: bool = False,
     ) -> List[SucheOhneTreffer]:
         """
         Die haeufigsten Suchanfragen ohne Treffer der letzten Wochen; mit freigabe nur
-        die so entschiedenen (SuchenOhneTrefferRepository, Vormoderation).
+        die so entschiedenen (SuchenOhneTrefferRepository, Vormoderation). Mit
+        ohne_verborgene fallen unbeantwortete Suchanfragen heraus, die Nicht-Admins
+        nicht sehen (sichtbar_fuer_alle), und zwar vor der Begrenzung: Das Nachladen
+        fuellt die Liste mit den naechsten auf ("Hier fehlt eine Antwort").
 
         Der Zeitraum umfasst die laufende Woche und die (wochen - 1) davor. Aussagen,
         die es nicht mehr gibt oder die nicht sichtbar sind, fallen heraus; damit
         die Liste trotzdem bis zu limit Eintraege hat, wird seitenweise nachgeladen.
         """
         seit_woche = _seit_woche(wochen, heute)
+        sichtbar = (
+            await self.sichtbar_fuer_alle(wochen=wochen, heute=heute)
+            if ohne_verborgene
+            else None
+        )
 
         ergebnis: List[SucheOhneTreffer] = []
         offset = 0
@@ -296,16 +322,23 @@ class SuchenOhneTrefferService:
                 *(self._sichtbare_aussage(statement_id) for statement_id, *_ in zeilen)
             )
             for (statement_id, anzahl, personen), aussage in zip(zeilen, aussagen):
-                if aussage is not None:
-                    ergebnis.append(
-                        SucheOhneTreffer(
-                            statement_id,
-                            aussage.text,
-                            anzahl,
-                            personen,
-                            ist_unbeantwortete_suchanfrage(aussage),
-                        )
+                if aussage is None:
+                    continue
+                if (
+                    sichtbar is not None
+                    and ist_unbeantwortete_suchanfrage(aussage)
+                    and statement_id not in sichtbar
+                ):
+                    continue
+                ergebnis.append(
+                    SucheOhneTreffer(
+                        statement_id,
+                        aussage.text,
+                        anzahl,
+                        personen,
+                        ist_unbeantwortete_suchanfrage(aussage),
                     )
+                )
             if len(zeilen) < limit:
                 break
             offset += limit
@@ -378,9 +411,9 @@ class SuchenOhneTrefferService:
         self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
     ) -> int:
         """
-        Wie viele Eintraege zu_pruefen liefern wuerde (ohne dessen Obergrenze), fuer
-        den Zaehler am Umschalter: eine SQL-Abfrage und ein Zaehlaufruf in Qdrant
-        statt einer Abfrage je Aussage.
+        Wie viele Eintraege zu_pruefen liefern wuerde, fuer den Zaehler am
+        Umschalter: eine SQL-Abfrage und ein Zaehlaufruf in Qdrant statt einer
+        Abfrage je Aussage. Hoechstens ZU_PRUEFEN_KANDIDATEN, wie die Liste.
         """
         seit_woche = _seit_woche(wochen, heute)
         ids = await asyncio.to_thread(
@@ -391,9 +424,10 @@ class SuchenOhneTrefferService:
         )
         if not ids:
             return 0
-        return await self._statement_service.zaehle_unbeantwortete_suchanfragen(
+        anzahl = await self._statement_service.zaehle_unbeantwortete_suchanfragen(
             frozenset(ids)
         )
+        return min(anzahl, ZU_PRUEFEN_KANDIDATEN)
 
     async def entscheiden(self, statement_id: uuid.UUID, freigegeben: bool) -> None:
         """

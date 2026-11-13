@@ -65,16 +65,16 @@ async def test_kuratierte_suche_laesst_unbeantwortete_suchanfragen_weg(
 
 
 async def test_beantwortete_suchanfrage_gilt_als_kuratiert(
-    statement_service, suchanfrage_freigaben_ohne_datenbank
+    statement_service, sichtbare_suchanfragen
 ):
-    # Antworten gibt es nur an freigegebenen Suchanfragen (Vormoderation).
-    suchanfrage_freigaben_ohne_datenbank.ist_freigegeben.return_value = True
     suchanfrage = await _anlegen(
         statement_service,
         "Windräder machen Vögel kaputt",
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    # Antworten gibt es nur an sichtbaren Suchanfragen (Vormoderation).
+    sichtbare_suchanfragen.add(suchanfrage)
 
     beitrag_id = await sichtbarer_beitrag(statement_service, ContentType.COMMENTARY)
     await statement_service.beitrag_als_antwort_verknuepfen(

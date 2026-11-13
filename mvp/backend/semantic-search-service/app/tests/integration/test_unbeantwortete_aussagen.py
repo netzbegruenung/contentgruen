@@ -151,7 +151,7 @@ async def test_gesperrter_oder_geloeschter_kommentar_ist_keine_antwort(
 
 
 async def test_ohne_kommentar_laesst_unbeantwortete_suchanfragen_weg(
-    statement_service, suchanfrage_freigaben_ohne_datenbank
+    statement_service, sichtbare_suchanfragen
 ):
     suchanfrage = await _anlegen(
         statement_service,
@@ -166,7 +166,7 @@ async def test_ohne_kommentar_laesst_unbeantwortete_suchanfragen_weg(
         ContentOrigin.SEARCH_QUERY,
     )
     # Antworten gibt es nur an freigegebenen (Vormoderation).
-    _entscheidung_setzen(suchanfrage_freigaben_ohne_datenbank, angenommen, True)
+    _entscheidung_setzen(sichtbare_suchanfragen, angenommen, True)
     hintergrund = await sichtbarer_beitrag(statement_service, ContentType.GENERIC_TEXT)
     await _verknuepfen(
         statement_service, angenommen, hintergrund, ContentType.GENERIC_TEXT
@@ -190,16 +190,16 @@ async def test_ohne_kommentar_laesst_gesperrte_aussagen_weg(
 
 
 async def test_vorab_uebernimmt_gleiche_unbeantwortete_suchanfrage(
-    statement_service, suchanfrage_freigaben_ohne_datenbank
+    statement_service, sichtbare_suchanfragen
 ):
-    # Uebernommen wird nur eine freigegebene (Vormoderation).
-    suchanfrage_freigaben_ohne_datenbank.ist_freigegeben.return_value = True
     suchanfrage = await _anlegen(
         statement_service,
         "Die Grundsteuer steigt wegen der Grünen",
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    # Uebernommen wird nur eine sichtbare (Vormoderation).
+    sichtbare_suchanfragen.add(suchanfrage)
 
     neu, statement_id, _ = await statement_service.vorab_anlegen(
         "Die Grundsteuer steigt wegen der Grünen", "person-1"
@@ -237,9 +237,9 @@ NICHT_FREIGEGEBEN = pytest.mark.parametrize(
 
 
 def _entscheidung_setzen(freigaben, suchanfrage, entscheidung):
-    freigaben.ist_freigegeben.side_effect = lambda statement_id: (
-        statement_id == suchanfrage and entscheidung is True
-    )
+    # Sichtbar ist nur eine freigegebene (die Schwelle gilt im Test als erreicht).
+    if entscheidung is True:
+        freigaben.add(suchanfrage)
 
 
 async def _bleibt_in_der_vormoderation(statement_service, suchanfrage, text):
@@ -252,15 +252,13 @@ async def _bleibt_in_der_vormoderation(statement_service, suchanfrage, text):
 
 @NICHT_FREIGEGEBEN
 async def test_vorab_legt_bei_nicht_freigegebener_suchanfrage_eine_neue_an(
-    statement_service, suchanfrage_freigaben_ohne_datenbank, entscheidung
+    statement_service, sichtbare_suchanfragen, entscheidung
 ):
     gesucht = "Die Pendlerpauschale fällt wegen der Grünen weg"
     suchanfrage = await _anlegen(
         statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
     )
-    _entscheidung_setzen(
-        suchanfrage_freigaben_ohne_datenbank, suchanfrage, entscheidung
-    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, entscheidung)
 
     eigener = "die Pendlerpauschale fällt wegen der Grünen weg!"
     neu, statement_id, text = await statement_service.vorab_anlegen(eigener, "person-1")
@@ -277,16 +275,14 @@ async def test_vorab_legt_bei_nicht_freigegebener_suchanfrage_eine_neue_an(
 async def test_antwort_haengt_bei_nicht_freigegebener_suchanfrage_an_eine_neue(
     statement_service,
     commentary_service,
-    suchanfrage_freigaben_ohne_datenbank,
+    sichtbare_suchanfragen,
     entscheidung,
 ):
     gesucht = "Das Heizungsgesetz verbietet Kamine"
     suchanfrage = await _anlegen(
         statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
     )
-    _entscheidung_setzen(
-        suchanfrage_freigaben_ohne_datenbank, suchanfrage, entscheidung
-    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, entscheidung)
 
     # Wie /addStatement aus dem Beitragsformular: die Aussage zum eigenen Text.
     eigener = "das Heizungsgesetz verbietet Kamine."
@@ -308,13 +304,13 @@ async def test_antwort_haengt_bei_nicht_freigegebener_suchanfrage_an_eine_neue(
 
 
 async def test_antwort_landet_bei_freigegebener_suchanfrage_wie_bisher(
-    statement_service, suchanfrage_freigaben_ohne_datenbank
+    statement_service, sichtbare_suchanfragen
 ):
     gesucht = "Windräder machen krank"
     suchanfrage = await _anlegen(
         statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
     )
-    _entscheidung_setzen(suchanfrage_freigaben_ohne_datenbank, suchanfrage, True)
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, True)
 
     neu, statement_id, text = await statement_service.add_statement(
         Statement(text="windräder machen krank", replysuggestions=[]),
@@ -329,7 +325,7 @@ async def test_antwort_landet_bei_freigegebener_suchanfrage_wie_bisher(
 
 
 async def test_eine_suche_landet_weiter_auf_der_nicht_freigegebenen_suchanfrage(
-    statement_service, suchanfrage_freigaben_ohne_datenbank
+    statement_service, suchen_ohne_treffer_ohne_datenbank
 ):
     # Sonst zaehlten die Suchen ohne Treffer nicht mehr an derselben Aussage.
     gesucht = "Tempolimit bringt nichts"
@@ -345,7 +341,7 @@ async def test_eine_suche_landet_weiter_auf_der_nicht_freigegebenen_suchanfrage(
     )
 
     assert zweite == suchanfrage
-    suchanfrage_freigaben_ohne_datenbank.ist_freigegeben.assert_not_called()
+    suchen_ohne_treffer_ohne_datenbank.ueber_der_schwelle.assert_not_called()
 
 
 async def test_zaehlt_nur_sichtbare_unbeantwortete_suchanfragen(
@@ -378,7 +374,7 @@ async def test_zaehlt_nur_sichtbare_unbeantwortete_suchanfragen(
 async def test_antwort_per_id_an_nicht_freigegebene_suchanfrage_geht_nicht(
     statement_service,
     commentary_service,
-    suchanfrage_freigaben_ohne_datenbank,
+    sichtbare_suchanfragen,
     entscheidung,
 ):
     # addReplysuggestionToStatement mit bekannter ID: abgelehnt, nichts angehaengt.
@@ -386,9 +382,7 @@ async def test_antwort_per_id_an_nicht_freigegebene_suchanfrage_geht_nicht(
     suchanfrage = await _anlegen(
         statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
     )
-    _entscheidung_setzen(
-        suchanfrage_freigaben_ohne_datenbank, suchanfrage, entscheidung
-    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, entscheidung)
     kommentar = await _kommentar(commentary_service, "Grillen bleibt erlaubt.")
 
     with pytest.raises(SuchanfrageNichtFreigegeben):
@@ -403,7 +397,7 @@ async def test_antwort_per_id_an_nicht_freigegebene_suchanfrage_geht_nicht(
 async def test_beitrag_per_id_einer_nicht_freigegebenen_suchanfrage(
     statement_service,
     commentary_service,
-    suchanfrage_freigaben_ohne_datenbank,
+    sichtbare_suchanfragen,
     entscheidung,
 ):
     # Beitragsformular mit ?aussage=<ID>: mit Text eine eigene Aussage, ohne Text
@@ -412,9 +406,7 @@ async def test_beitrag_per_id_einer_nicht_freigegebenen_suchanfrage(
     suchanfrage = await _anlegen(
         statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
     )
-    _entscheidung_setzen(
-        suchanfrage_freigaben_ohne_datenbank, suchanfrage, entscheidung
-    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, entscheidung)
     kommentar = await _kommentar(commentary_service, "Das Ticket bleibt.")
 
     with pytest.raises(AussageNichtGefunden):
@@ -444,7 +436,7 @@ async def test_beitrag_per_id_einer_nicht_freigegebenen_suchanfrage(
 
 
 async def test_antwort_per_id_an_freigegebene_suchanfrage_wie_bisher(
-    statement_service, commentary_service, suchanfrage_freigaben_ohne_datenbank
+    statement_service, commentary_service, sichtbare_suchanfragen
 ):
     suchanfrage = await _anlegen(
         statement_service,
@@ -452,7 +444,7 @@ async def test_antwort_per_id_an_freigegebene_suchanfrage_wie_bisher(
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
-    _entscheidung_setzen(suchanfrage_freigaben_ohne_datenbank, suchanfrage, True)
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, True)
     kommentar = await _kommentar(commentary_service, "Doch, mit Planung.")
 
     await _verknuepfen(
@@ -460,3 +452,25 @@ async def test_antwort_per_id_an_freigegebene_suchanfrage_wie_bisher(
     )
 
     assert (await statement_service.get(suchanfrage)).replysuggestions_count == 1
+
+
+async def test_zweimal_derselbe_text_ergibt_genau_eine_neue_aussage(
+    statement_service, sichtbare_suchanfragen
+):
+    # Die verborgene Suchanfrage ist kein Kandidat; der zweite Aufruf landet auf der
+    # eigenen Aussage des ersten. Sonst entstuende je Aufruf eine weitere, und zweimal
+    # "neu" verriete, dass es eine verborgene Suchanfrage mit diesem Text gibt.
+    gesucht = "Die Grünen wollen das Eigenheim abschaffen"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+
+    erst_neu, erste, _ = await statement_service.vorab_anlegen(gesucht, "person-1")
+    dann_neu, zweite, text = await statement_service.vorab_anlegen(gesucht, "person-2")
+
+    assert erst_neu
+    assert erste != suchanfrage
+    assert not dann_neu
+    assert zweite == erste
+    assert text == gesucht
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)

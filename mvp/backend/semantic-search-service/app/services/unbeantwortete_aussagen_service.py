@@ -71,17 +71,12 @@ class UnbeantworteteAussagenService:
     async def liste(
         self, limit: int = LIMIT_STANDARD, thema: Optional[str] = None
     ) -> List[UnbeantworteteAussage]:
+        # Verborgene Suchanfragen fallen schon vor der Begrenzung heraus.
         gesucht = await self._suchen_ohne_treffer.haeufigste(
             wochen=WOCHEN_STANDARD,
             limit=KANDIDATEN_MIT_FILTER if thema else limit,
+            ohne_verborgene=True,
         )
-        if any(g.unbeantwortete_suchanfrage for g in gesucht):
-            freigegeben = await self._suchen_ohne_treffer.sichtbar_fuer_alle()
-            gesucht = [
-                g
-                for g in gesucht
-                if not g.unbeantwortete_suchanfrage or g.statement_id in freigegeben
-            ]
         gesucht = sorted(gesucht, key=lambda g: g.personen, reverse=True)
         kandidaten = [(g.statement_id, g.text, g.personen) for g in gesucht]
         schon_drin = {statement_id for statement_id, _, _ in kandidaten}
