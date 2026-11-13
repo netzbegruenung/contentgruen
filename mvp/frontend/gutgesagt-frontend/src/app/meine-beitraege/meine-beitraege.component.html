@@ -38,7 +38,8 @@
                         <li *ngFor="let aussage of unbeantworteteAussagen" data-testid="unbeantwortete-aussage">
                             <app-aussagekarte [text]="aussage.statement_text"
                                               [titelId]="'unbeantwortet-' + aussage.statement_id"
-                                              titelKlasse="unbeantwortete-aussage-text"
+                                              [ebene]="3"
+                                              knopf="neben"
                                               [antwortenPfad]="kommentarFormular"
                                               [antwortenParams]="beantwortenParams(aussage)"></app-aussagekarte>
                         </li>

@@ -90,7 +90,7 @@ export function gesuchtMarker(personen: number): string {
     AussagekarteComponent,
   ],
   templateUrl: './hier-fehlt-eine-antwort.component.html',
-  styleUrls: ['../shared/aussagekarte/aussagekarten.css', './hier-fehlt-eine-antwort.component.css'],
+  styleUrls: ['../shared/aussagekarte/aussagekarten.scss', './hier-fehlt-eine-antwort.component.css'],
 })
 export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
@@ -154,6 +154,11 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   }
 
   readonly beantwortenParams = beantwortenParams;
+
+  /** Nach statement_id, damit ein offener Themen-Editor beim Nachladen nicht neu entsteht und den Fokus behaelt. */
+  nachAussage(_index: number, aussage: UnbeantworteteAussage): string {
+    return aussage.statement_id;
+  }
 
   /**
    * Der Marker an einer Aussage, nach der ohne Treffer gesucht wurde. Er nennt Personen,

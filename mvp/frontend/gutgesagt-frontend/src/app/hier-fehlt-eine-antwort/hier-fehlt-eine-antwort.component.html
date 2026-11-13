@@ -14,10 +14,10 @@
     <ng-container *ngIf="aussagen">
         <!-- Inhalte sind Karten: jede Aussage als Aussagekarte, Themen im Koerper der Karte -->
         <ul *ngIf="aussagen.length > 0; else leer" class="aussagen aussagekarten">
-            <li *ngFor="let aussage of aussagen" data-testid="unbeantwortete-aussage">
+            <li *ngFor="let aussage of aussagen; trackBy: nachAussage" data-testid="unbeantwortete-aussage">
                 <app-aussagekarte [text]="aussage.statement_text"
                                   [titelId]="'aussage-' + aussage.statement_id"
-                                  titelKlasse="aussage-text"
+                                  [ebene]="2"
                                   [gesucht]="gesuchtMarker(aussage)"
                                   [antwortenPfad]="kommentarFormular"
                                   [antwortenParams]="beantwortenParams(aussage)">

@@ -476,7 +476,7 @@ describe('MeineBeitraegeComponent', () => {
       await erstellen([]);
 
       expect(text('.erster-schritt h2')).toBe('Fang mit einer unbeantworteten Aussage an');
-      expect(eintraege().map((e) => e.querySelector('.unbeantwortete-aussage-text')!.textContent!.trim())).toEqual([
+      expect(eintraege().map((e) => e.querySelector('.aussagekarte-titel')!.textContent!.trim())).toEqual([
         'Unbeantwortete Aussage 1',
         'Unbeantwortete Aussage 2',
         'Unbeantwortete Aussage 3',

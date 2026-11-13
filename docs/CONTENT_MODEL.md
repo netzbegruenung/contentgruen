@@ -201,7 +201,7 @@ beitragskarte/
 
 Guiding rule: **content appears as cards.** Beiträge and Einwürfe use `app-beitragskarte`;
 unanswered Aussagen use the smaller `app-aussagekarte` (`shared/aussagekarte/`, same header band,
-body and footer, on the same grey ground), so "Hier fehlt eine Antwort" and the empty state of
+body and footer, on the same grey ground; shared shell in `shared/styles/_karte.scss`), so "Hier fehlt eine Antwort" and the empty state of
 "Meine Beiträge" read like the rest. Admin work lists may stay tables.
 
 Same treatment for the add-forms and search-results headers: shared base behavior + a per-type

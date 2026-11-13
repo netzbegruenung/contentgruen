@@ -56,6 +56,7 @@
 }
 
 .themen-umschalter {
+  min-height: 24px; /* Zielgroesse nach WCAG 2.5.8 */
   border: none;
   background: none;
   padding: 2px 0;

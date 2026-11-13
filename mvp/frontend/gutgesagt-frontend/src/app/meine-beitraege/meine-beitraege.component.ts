@@ -67,7 +67,7 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     AussagekarteComponent
   ],
   templateUrl: './meine-beitraege.component.html',
-  styleUrls: ['../shared/tabs.css', '../shared/aussagekarte/aussagekarten.css', './meine-beitraege.component.css'],
+  styleUrls: ['../shared/tabs.css', '../shared/aussagekarte/aussagekarten.scss', './meine-beitraege.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Hier und nicht in app.config.ts: dort zoege der Import den Paginator samt
   // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.
