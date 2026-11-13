@@ -44,6 +44,7 @@ def _aussage(statement_id, text, tag):
 def _service(ohne_kommentar=(), gesucht=(), themen=None):
     statement_service = Mock(spec=StatementService)
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
+    statement_service.mit_kommentar = AsyncMock(return_value=set())
     suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(return_value=list(gesucht))
     themen_service = Mock(spec=AussageThemenService)
@@ -114,6 +115,25 @@ async def test_gesuchte_aussage_ohne_kommentar_erscheint_nur_einmal():
     liste = await service.liste()
 
     assert liste == [UnbeantworteteAussage(A, "Windräder sind hässlich", 2)]
+
+
+async def test_gesuchte_aussage_mit_kommentar_verschwindet():
+    """Wer geantwortet hat, sieht die Luecke zu; die Suchen ohne Treffer zaehlen weiter."""
+    service = _service(
+        gesucht=[
+            SucheOhneTreffer(A, "Das Bürgergeld ist höher als der Mindestlohn", 4, 2),
+            SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 3, 2),
+        ],
+    )
+    service._statement_service.mit_kommentar = AsyncMock(
+        side_effect=lambda ids: set(ids) & {A}
+    )
+
+    liste = await service.liste()
+
+    assert [a.statement_id for a in liste] == [B]
+    gefragt = service._statement_service.mit_kommentar.call_args.args[0]
+    assert set(gefragt) == {A, B}
 
 
 async def test_liste_ist_begrenzt():

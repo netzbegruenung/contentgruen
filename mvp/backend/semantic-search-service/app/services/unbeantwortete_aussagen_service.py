@@ -2,13 +2,21 @@
 "Hier fehlt eine Antwort": die unbeantworteten Aussagen fuer Mitwirkende.
 
 Unbeantwortet ist nach Glossar eine Aussage ohne Kommentar oder eine, nach der
-mindestens zwei Personen ohne Treffer gesucht haben. Die zweite Quelle ist dieselbe
-wie die Admin-Kennzahl (SuchenOhneTrefferService.haeufigste): dieselbe Schwelle,
-nur sichtbare Aussagen. Stammt eine davon aus einer Suchanfrage, ist ihr Text der
-Suchtext der ersten suchenden Person (wie in der Admin-Kennzahl). Mitwirkende sehen
-dazu, wie viele Personen ohne Treffer danach gesucht haben, gezaehlt wie in der
-Kennzahl (Tagespseudonyme, ueber die Wochen summiert), damit Hotspots sichtbar
-werden; die Zahl der Suchen sehen nur Admins.
+mindestens zwei Personen ohne Treffer gesucht haben und die noch keinen Kommentar
+hat. Die zweite Quelle ist dieselbe wie die Admin-Kennzahl
+(SuchenOhneTrefferService.haeufigste): dieselbe Schwelle, nur sichtbare Aussagen.
+Stammt eine davon aus einer Suchanfrage, ist ihr Text der Suchtext der ersten
+suchenden Person (wie in der Admin-Kennzahl). Mitwirkende sehen dazu, wie viele
+Personen ohne Treffer danach gesucht haben, gezaehlt wie in der Kennzahl
+(Tagespseudonyme, ueber die Wochen summiert), damit Hotspots sichtbar werden; die
+Zahl der Suchen sehen nur Admins.
+
+Anders als die Kennzahl laesst die Liste eine Aussage weg, sobald sie einen
+sichtbaren Kommentar hat (StatementService.mit_kommentar): Die Suchen ohne Treffer
+zaehlen ueber Wochen weiter, und wer geantwortet hat, soll die Luecke nicht weiter
+offen sehen. Ein gesperrter oder geloeschter Kommentar zaehlt nicht. Gefiltert wird
+nach dem Limit der Kennzahl; die Liste kann dadurch kuerzer werden, die Aussagen
+ohne Kommentar fuellen sie auf.
 
 Sortiert nach Bedarf: zuerst die Aussagen mit Suchen ohne Treffer, absteigend nach
 der Zahl der Personen (bei gleicher Zahl wie in der Kennzahl), dann die uebrigen
@@ -80,7 +88,14 @@ class UnbeantworteteAussagenService:
             wochen=WOCHEN_STANDARD,
             limit=KANDIDATEN_MIT_FILTER if thema else limit,
         )
-        gesucht = sorted(gesucht, key=lambda g: g.personen, reverse=True)
+        beantwortet = await self._statement_service.mit_kommentar(
+            [g.statement_id for g in gesucht]
+        )
+        gesucht = sorted(
+            (g for g in gesucht if g.statement_id not in beantwortet),
+            key=lambda g: g.personen,
+            reverse=True,
+        )
         kandidaten = [(g.statement_id, g.text, g.personen) for g in gesucht]
         schon_drin = {statement_id for statement_id, _, _ in kandidaten}
 
