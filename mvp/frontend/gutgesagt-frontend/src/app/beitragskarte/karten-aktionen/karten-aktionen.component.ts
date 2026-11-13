@@ -75,6 +75,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() typ: string | null = null;
   @Input() kopierText = '';
   @Input() kopierBeschriftung = 'Kopieren';
+  /** Am Handy statt kopierBeschriftung sichtbar (Bild: "Kopieren"); null = kein Kurzwort. */
+  @Input() kopierKurz: string | null = null;
   /** Was der Knopf kopiert, als Tooltip (MatTooltip haengt ihn als Beschreibung an); leer = keiner. */
   @Input() kopierHinweis = '';
   /** Die andere Variante (mit oder ohne Herkunft) im Menue; null = es gibt nur eine. */

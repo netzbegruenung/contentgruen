@@ -37,10 +37,15 @@
                 [class.copy-success]="copyAnimationActive"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
+                [class.mit-kurzwort]="!!kopierKurz"
+                [attr.aria-label]="kopierKurz ? kopierBeschriftung : null"
                 [matTooltip]="kopierHinweis" matTooltipPosition="above" matTooltipShowDelay="500"
                 (click)="kopieren()">
             <mat-icon>content_copy</mat-icon>
-            <span class="kopieren-wort">{{ kopierBeschriftung }}</span>
+            <!-- Am Handy das Kurzwort, falls es eins gibt (Bild: "Kopieren", Entscheidung 14.11.);
+                 der Name des Knopfs bleibt das lange Wort -->
+            <span class="kopieren-wort kopieren-wort--lang">{{ kopierBeschriftung }}</span>
+            <span class="kopieren-wort kopieren-wort--kurz" *ngIf="kopierKurz">{{ kopierKurz }}</span>
         </button>
     </div>
 

@@ -666,6 +666,29 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     });
   });
 
+  describe('Kurzwort am Kopieren-Knopf (Bild, Entscheidung 14.11.)', () => {
+    it('zeigt das Kurzwort am Handy, der Name bleibt das lange Wort', () => {
+      fixture.componentRef.setInput('kopierBeschriftung', 'Bildunterschrift kopieren');
+      fixture.componentRef.setInput('kopierKurz', 'Kopieren');
+      fixture.detectChanges();
+
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.kopieren-knopf');
+      expect(knopf.classList).toContain('mit-kurzwort');
+      expect(knopf.getAttribute('aria-label')).toBe('Bildunterschrift kopieren');
+      expect(knopf.querySelector('.kopieren-wort--kurz')!.textContent!.trim()).toBe('Kopieren');
+      expect(knopf.querySelector('.kopieren-wort--lang')!.textContent!.trim()).toBe('Bildunterschrift kopieren');
+    });
+
+    it('setzt ohne Kurzwort keinen eigenen Namen', () => {
+      fixture.detectChanges();
+
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.kopieren-knopf');
+      expect(knopf.classList).not.toContain('mit-kurzwort');
+      expect(knopf.hasAttribute('aria-label')).toBeFalse();
+      expect(knopf.querySelector('.kopieren-wort--kurz')).toBeNull();
+    });
+  });
+
   describe('Teilen (B7)', () => {
     const LINK = `${window.location.origin}/beitrag/${INHALT_ID}`;
     let clipboard: jasmine.SpyObj<Clipboard>;

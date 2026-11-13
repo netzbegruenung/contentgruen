@@ -668,6 +668,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.daten.typ === 'image' ? 'Bildunterschrift kopieren' : 'Kopieren';
   }
 
+  /** Am Handy sichtbar statt des langen Worts (Entscheidung 14.11.); null, wo es kurz genug ist. */
+  get kopierKurz(): string | null {
+    return this.daten.typ === 'image' ? 'Kopieren' : null;
+  }
+
   /**
    * "Du" am eigenen Beitrag, sonst der Anzeigename ("Anna B."). Ohne Namen steht
    * "Mitglied" da - nie die Kennung: die ist kein Name und gehoert nicht auf die Karte.

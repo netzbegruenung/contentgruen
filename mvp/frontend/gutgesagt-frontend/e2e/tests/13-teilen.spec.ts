@@ -209,6 +209,20 @@ test.describe('Teilen 360 px', () => {
       }
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+
+    // Kommentarkarte: "Kopieren" ungekuerzt neben den Zaehlern
+    const kommentarWort = karten.first().locator('.kopieren-wort:visible');
+    await expect(kommentarWort).toHaveText('Kopieren');
+    expect(await kommentarWort.evaluate((e) => e.scrollWidth - e.clientWidth), 'Kopieren am Kommentar nicht gekuerzt').toBeLessThanOrEqual(0);
+
+    // Bildkarte: sichtbar nur "Kopieren", ungekuerzt; vorgelesen "Bildunterschrift kopieren" (Entscheidung 14.11.)
+    const bildKopieren = karten.nth(1).getByRole('button', { name: 'Bildunterschrift kopieren' });
+    await expect(bildKopieren).toBeVisible();
+    const sichtbar = bildKopieren.locator('.kopieren-wort:visible');
+    await expect(sichtbar).toHaveCount(1);
+    await expect(sichtbar).toHaveText('Kopieren');
+    expect(await sichtbar.evaluate((e) => e.scrollWidth - e.clientWidth), 'Kurzwort nicht gekuerzt').toBeLessThanOrEqual(0);
+
     await karten.nth(1).scrollIntoViewIfNeeded();
     await bild('teilen-360-karten');
   });
@@ -223,6 +237,9 @@ test.describe('Teilen Desktop 1280 px', () => {
     await ohneTeilenMenue(page);
     await sucheOeffnen(page);
     await bild('teilen-1280-ergebnis');
+
+    // Am Desktop steht am Bild das lange Wort
+    await expect(page.locator('app-beitragskarte').nth(1).locator('.kopieren-wort:visible')).toHaveText('Bildunterschrift kopieren');
 
     await page.locator('app-beitragskarte').first().locator('button.teilen-knopf').click();
     await expect(page.locator('mat-snack-bar-container')).toContainText('Link kopiert – füg ihn ein, wo du teilen willst.');
