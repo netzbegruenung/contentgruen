@@ -25,13 +25,17 @@ import { LoggingService } from '../services/logging.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { hilfeOeffnen } from '../help-dialog/help-dialog.component';
-import { FORMULAR_PFAD, aussageParameterMitText, istAussageId } from '../shared/formular-adresse';
+import { FORMULAR_PFAD, aussageParameterMitText } from '../shared/formular-adresse';
 import { typBeschreibung } from '../shared/content-type-registry';
 import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
+import { ErkannteAussage, aussageZumAntworten, erkannteAussage, zurErkanntenAussage } from './erkannte-aussage';
+
+export { erkannteAussage, zurErkanntenAussage } from './erkannte-aussage';
+export type { ErkannteAussage } from './erkannte-aussage';
 
 /** Anker von "Nicht dabei?" unter den Treffern, Ziel von "Nicht gemeint?" (#642). */
 export const NICHT_DABEI_ANKER = 'nicht-dabei-unten';
@@ -77,86 +81,6 @@ export function aussagenDerTreffer(antwort: SearchResponse): string[] {
   ];
   const ids = alle.map((treffer) => treffer.statement_id);
   return [...new Set([antwort.statement_id, ...ids].filter((id): id is string => !!id))];
-}
-
-/** Die Aussage, als die die Suche verstanden wurde: ID (falls bekannt) und Text. */
-export interface ErkannteAussage {
-  id: string | null;
-  text: string;
-}
-
-/** Schluessel einer Aussage an einem Treffer: die ID, sonst der Text; null ohne Aussage. */
-function aussageSchluessel(treffer: BaseSearchResult): string | null {
-  const text = treffer.statement_text?.trim();
-  if (!text) {
-    return null;
-  }
-  return treffer.statement_id || `text:${text}`;
-}
-
-/**
- * Die erkannte Aussage (#642, R40): die Aussage, ueber die die meisten Treffer
- * gefunden wurden; bei Gleichstand die des Treffers mit dem hoechsten Score. Sie
- * steht einmal ueber den Treffern ("Gefunden zu: ..."), die Karten zeigen ihren
- * Antwort-auf-Kopf dann nur noch, wenn er davon abweicht. null, wenn kein Treffer
- * ueber eine Aussage kam (nur direkte Treffer) oder die gewaehlte weder den
- * obersten Treffer noch die Mehrheit traegt.
- */
-export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null {
-  const alle: BaseSearchResult[] = [
-    ...(antwort.commentary_search_results ?? []),
-    ...(antwort.generictext_search_results ?? []),
-    ...(antwort.post_search_results ?? []),
-  ];
-  const je = new Map<string, { aussage: ErkannteAussage; anzahl: number; bester: number }>();
-  for (const treffer of alle) {
-    const schluessel = aussageSchluessel(treffer);
-    if (!schluessel) {
-      continue;
-    }
-    const eintrag = je.get(schluessel);
-    if (eintrag) {
-      eintrag.anzahl += 1;
-      eintrag.bester = Math.max(eintrag.bester, treffer.score ?? 0);
-    } else {
-      je.set(schluessel, {
-        aussage: { id: treffer.statement_id || null, text: treffer.statement_text!.trim() },
-        anzahl: 1,
-        bester: treffer.score ?? 0,
-      });
-    }
-  }
-  let gewaehlt: { aussage: ErkannteAussage; anzahl: number; bester: number } | null = null;
-  let mitAussage = 0;
-  let hoechster = -Infinity;
-  for (const eintrag of je.values()) {
-    mitAussage += eintrag.anzahl;
-    hoechster = Math.max(hoechster, eintrag.bester);
-  }
-  for (const eintrag of je.values()) {
-    if (
-      !gewaehlt ||
-      eintrag.anzahl > gewaehlt.anzahl ||
-      (eintrag.anzahl === gewaehlt.anzahl && eintrag.bester > gewaehlt.bester)
-    ) {
-      gewaehlt = eintrag;
-    }
-  }
-  // Nur, wenn die Zeile fuer die Treffer steht: Sie traegt den obersten Treffer
-  // oder die Mehrheit. Verteilt auf viele Aussagen sagte "Gefunden zu" zu wenig.
-  if (!gewaehlt || (gewaehlt.bester < hoechster && gewaehlt.anzahl * 2 <= mitAussage)) {
-    return null;
-  }
-  return gewaehlt.aussage;
-}
-
-/** Ob ein Treffer ueber genau die erkannte Aussage gefunden wurde. */
-export function zurErkanntenAussage(treffer: BaseSearchResult, erkannt: ErkannteAussage | null): boolean {
-  if (!erkannt) {
-    return false;
-  }
-  const schluessel = aussageSchluessel(treffer);
-  return schluessel !== null && schluessel === (erkannt.id || `text:${erkannt.text}`);
 }
 
 /** Die Suchantwort mit nur den Treffern zum Thema, Zaehler passend dazu. */
@@ -475,13 +399,13 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: per ID, wo
-   * die Suchantwort sie liefert, sonst mit dem Suchtext.
+   * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: die erkannte
+   * Aussage, sonst die der Suche per ID, sonst der Suchtext (aussageZumAntworten).
    */
   navigateToContribute(typ: 'commentary' | 'generictext'): void {
     const { searchResults, loading } = this.stateService.currentState;
     // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
-    const ausAntwort = !loading && istAussageId(searchResults?.statement_id) ? searchResults!.statement_id : null;
+    const ausAntwort = loading ? null : aussageZumAntworten(searchResults);
     this.router.navigate([FORMULAR_PFAD[typ]], {
       queryParams: aussageParameterMitText(ausAntwort, this.searchQuery),
     });

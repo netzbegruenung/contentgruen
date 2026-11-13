@@ -4,7 +4,7 @@ import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
-from typing import AbstractSet, Dict, List, Optional, Tuple
+from typing import AbstractSet, Dict, Iterable, List, Optional, Set, Tuple
 import uuid
 import logging
 
@@ -241,6 +241,13 @@ class StatementService(
         Grundlage von "Hier fehlt eine Antwort" (StatementRepository.ohne_kommentar).
         """
         return await self._repository.ohne_kommentar()
+
+    async def mit_kommentar(self, ids: Iterable[uuid.UUID]) -> Set[uuid.UUID]:
+        """
+        Welche dieser Aussagen einen sichtbaren Kommentar haben
+        (StatementRepository.mit_kommentar): fuer "Hier fehlt eine Antwort".
+        """
+        return await self._repository.mit_kommentar(ids)
 
     async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
         """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
