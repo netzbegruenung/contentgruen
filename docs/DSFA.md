@@ -426,11 +426,14 @@ Empfänger und Ort“.
 - **Frist:** keine (`DSE:389`).
 - **Risiko:** Suchtexte können Namen, Orte oder Angaben über die suchende Person oder Dritte
   enthalten und werden sichtbar, sobald jemand antwortet oder zwei Personen ohne Treffer danach
-  suchten (`DSE:370-374`). Über den Anlagezeitpunkt ließe sich eine Aussage einem Suchereignis
+  suchten (`DSE:370-374`); seit der Vormoderation (Entscheidung des Maintainers vom 13.11.2026)
+  im zweiten Fall erst nach Freigabe durch Admins. Über den Anlagezeitpunkt ließe sich eine Aussage einem Suchereignis
   zuordnen; dagegen trägt das Suchereignis nur den Tag (`LK:330-332`). Zur Zuordnung über das
   Tagespseudonym siehe V7.
 - **Maßnahmen:** kein Autor, kein Pseudonym an der Aussage (`DSE:377-379`); Warnhinweis
-  (`DSE:382-384`); Rate-Limit ohne Speicherung der Adresse (`DSE:398-403`); keine Suchtexte in
+  (`DSE:382-384`); Vormoderation: Admins geben eine unbeantwortete Suchanfrage über der Schwelle
+  frei oder lehnen sie ab, etwa bei Namen Dritter (`ss/services/suchen_ohne_treffer_service.py`,
+  `sichtbar_fuer_alle`); Rate-Limit ohne Speicherung der Adresse (`DSE:398-403`); keine Suchtexte in
   Protokollen ab INFO (`LK:427-433`).
 
 #### V7 Suchereignisse

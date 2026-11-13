@@ -19,9 +19,11 @@ import { sperrgrundLabel } from '../../shared/sperrgruende';
 import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
+import { SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
 
 // 'person': Meldungen einer Person nach Name oder E-Mail-Adresse (#494).
-type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'person';
+// 'suchanfragen': Suchanfragen freigeben (Vormoderation, 13.11.2026); lädt selbst.
+type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'person' | 'suchanfragen';
 
 @Component({
   selector: 'app-content-moderation',
@@ -38,7 +40,8 @@ type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'pers
     MatTooltipModule,
     MatButtonToggleModule,
     MatBadgeModule,
-    MeldungenEinerPersonComponent
+    MeldungenEinerPersonComponent,
+    SuchanfragenFreigebenComponent
   ],
   templateUrl: './content-moderation.component.html',
   styleUrls: ['./content-moderation.component.css'],
@@ -66,6 +69,8 @@ export class ContentModerationComponent implements OnInit {
   gesperrte: GemeldeterBeitrag[] = [];
   /** Zahl am Umschalter "Gesperrt": Widersprüche, die auf erneute Prüfung warten. */
   offeneWidersprueche = 0;
+  /** Zahl am Umschalter "Suchanfragen": warten auf Freigabe (SuchanfragenFreigebenComponent). */
+  zuPruefendeSuchanfragen = 0;
   loading = true;
   error: string | null = null;
   selectedStatus: Ansicht = 'pending';
@@ -84,8 +89,8 @@ export class ContentModerationComponent implements OnInit {
   }
 
   loadReports() {
-    if (this.selectedStatus === 'person') {
-      // Die Suche lädt selbst, erst wenn Angaben eingegeben sind.
+    if (this.selectedStatus === 'person' || this.selectedStatus === 'suchanfragen') {
+      // Beide laden selbst: die Suche erst, wenn Angaben eingegeben sind.
       this.loading = false;
       this.error = null;
       return;

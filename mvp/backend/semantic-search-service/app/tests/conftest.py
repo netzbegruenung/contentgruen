@@ -205,6 +205,22 @@ def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def suchanfrage_freigaben_ohne_datenbank(monkeypatch):
+    """
+    Wer Aussagen fuer Nicht-Admins liest, fragt die Freigaben der Vormoderation ab
+    (SuchenOhneTrefferService.sichtbar_fuer_alle). Ohne diesen Ersatz baute der erste
+    Aufruf das echte Repository (siehe anzeigenamen_ohne_datenbank). Der Ersatz
+    kennt keine Entscheidung.
+    """
+    import repositories.suchanfrage_freigabe_repository as modul
+
+    repository = MagicMock()
+    repository.entscheidungen.return_value = {}
+    monkeypatch.setattr(modul, "_repository", repository)
+    yield repository
+
+
+@pytest.fixture(autouse=True)
 def varianten_ohne_datenbank(monkeypatch):
     """
     Suche, /content/recent, "Oft genutzt" und das Loeschen fragen die Varianten ab

@@ -373,12 +373,16 @@ Ein neuer Beitrag, der einem vorhandenen desselben Beitragstyps fast gleicht; ei
 _Avoid_: Duplikat, Doppelung
 
 **Unbeantwortete Aussage**:
-Eine Aussage ohne Kommentar oder eine, nach der mindestens zwei Personen ohne Treffer gesucht haben. Mitwirkende sehen sie in „Hier fehlt eine Antwort“ und dürfen dort Aussagen auch vorab anlegen.
+Eine Aussage ohne Kommentar oder eine, nach der mindestens zwei Personen ohne Treffer gesucht haben; stammt sie aus einer noch unbeantworteten Suchanfrage, erst nach Freigabe in der Vormoderation. Mitwirkende sehen sie in „Hier fehlt eine Antwort“ und dürfen dort Aussagen auch vorab anlegen.
 _Avoid_: Offene Aussage (offen ist eine Stufe eines Einwurfs), Wunsch, Anfrage
 
 **Suchanfrage**:
 Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber häufige Suchanfragen ohne Treffer zeigen, welche Aussagen noch Antworten brauchen.
 _Avoid_: Query, Suchbegriff
+
+**Vormoderation**:
+Die Prüfung einer unbeantworteten Suchanfrage durch Admins, bevor andere sie sehen (Entscheidung des Maintainers vom 13.11.2026). Erreicht eine Aussage aus einer Suchanfrage, auf die noch niemand geantwortet hat, die Schwelle der Suchen ohne Treffer, steht sie in der Moderation unter „Suchanfragen“; Admins geben sie frei oder lehnen sie ab, etwa wenn der Text Namen Dritter enthält. Für alle anderen sichtbar ist sie nur über der Schwelle und freigegeben; eine abgelehnte bleibt unsichtbar. Hat jemand darauf geantwortet, gilt sie wie jede Aussage. „Freigeben“ meint nur diese Entscheidung, nicht den Zustand Sichtbar eines Beitrags.
+_Avoid_: Offene Aussage, Veröffentlichen
 
 **Suche ohne Treffer**:
 Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen. Unterschieden werden die Personen über ihr Tagespseudonym, nur am selben Tag und nur im Arbeitsspeicher; gespeichert wird je Woche die Summe der Personen der einzelnen Tage. Dieselbe Person zählt an zwei Tagen deshalb zweimal, ein Pseudonym über Tagesgrenzen braucht es nicht. Weil das Tagespseudonym eines Besuchers für seinen Anschluss steht, zählt je Anschluss und Aussage am Tag höchstens ein Besucher als Person; mehrere Besucher hinter demselben Anschluss zählen als eine, auch mit verschiedenen Browsern.

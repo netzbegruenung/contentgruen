@@ -48,6 +48,15 @@ Wochen vor der Aufbewahrungsgrenze loescht loeschen_im_takt, ein eigener
 Hintergrund-Task aus main.py, taeglich und zusaetzlich um Mitternacht (UTC). Er
 haengt bewusst nicht am Bereinigungsjob, der sich abschalten laesst: Die
 Datenschutzerklaerung sagt die Loeschung nach acht Wochen ohne Bedingung zu. Gerechnet wird in UTC wie bei search_events.
+
+Vormoderation (Entscheidung des Maintainers vom 13.11.2026, P6): Eine unbeantwortete
+Suchanfrage (aus einer Suche und ohne Antwortvorschlag) sehen Nicht-Admins nicht
+schon ueber der Schwelle, sondern erst, wenn ein Admin sie zusaetzlich freigegeben
+hat (sichtbar_fuer_alle). Admins pruefen in der Moderation die Eintraege ueber der
+Schwelle (zu_pruefen) und geben frei oder lehnen ab (entscheiden); abgelehnte
+bleiben fuer Nicht-Admins unsichtbar. Gespeichert wird je Aussage nur die
+Entscheidung und ihr Zeitpunkt (repositories/suchanfrage_freigabe_repository.py).
+Aussagen mit Antwort und alle anderen Aussagen betrifft das nicht.
 """
 
 import asyncio
@@ -55,12 +64,20 @@ import hashlib
 import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import FrozenSet, List, Optional, Set
+from typing import Dict, FrozenSet, List, Optional, Set
+
+from pydantic import ValidationError
 
 from core.logging import get_logger
 from domain.models.content_status import ContentStatus
+from repositories.implementations.qdrant.statement_repository import (
+    ist_unbeantwortete_suchanfrage,
+)
+from repositories.suchanfrage_freigabe_repository import (
+    SuchanfrageFreigabeRepository,
+)
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
-from services.content.statement_service import StatementService
+from services.content.statement_service import AussageNichtGefunden, StatementService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht, wochenbeginn
 
 logger = get_logger(__name__)
@@ -76,6 +93,14 @@ LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
 # Obergrenze der Merkliste: Eintraege je Tag, einer je (Person, Aussage); je
 # Eintrag 32 Bytes plus Verwaltung des Sets, zusammen gut 10 MB.
 MERKLISTE_MAX = 100_000
+# Hoechstens so viele Eintraege der Kennzahl werden fuer die Liste "Suchanfragen
+# freigeben" gelesen; danach fallen Aussagen ohne Suchanfrage und schon
+# entschiedene weg.
+ZU_PRUEFEN_KANDIDATEN = 200
+
+
+class KeineUnbeantworteteSuchanfrage(ValueError):
+    """Freigeben und Ablehnen gibt es nur fuer unbeantwortete Suchanfragen."""
 
 
 @dataclass(frozen=True)
@@ -89,6 +114,8 @@ class SucheOhneTreffer:
     text: str
     anzahl: int
     personen: int
+    # Aus einer Suche und ohne Antwortvorschlag: faellt unter die Vormoderation.
+    unbeantwortete_suchanfrage: bool = False
 
 
 def _seit_woche(wochen: int, heute: Optional[date] = None) -> date:
@@ -195,10 +222,13 @@ class SuchenOhneTrefferService:
         repository: SuchenOhneTrefferRepository,
         statement_service: StatementService,
         personen: PersonenDesTages,
+        freigaben: Optional[SuchanfrageFreigabeRepository] = None,
     ):
         self._repository = repository
         self._statement_service = statement_service
         self._personen = personen
+        # Ohne Repository gilt nichts als freigegeben.
+        self._freigaben = freigaben
 
     def erfassen(
         self,
@@ -262,7 +292,13 @@ class SuchenOhneTrefferService:
             for (statement_id, anzahl, personen), aussage in zip(zeilen, aussagen):
                 if aussage is not None:
                     ergebnis.append(
-                        SucheOhneTreffer(statement_id, aussage.text, anzahl, personen)
+                        SucheOhneTreffer(
+                            statement_id,
+                            aussage.text,
+                            anzahl,
+                            personen,
+                            ist_unbeantwortete_suchanfrage(aussage),
+                        )
                     )
             if len(zeilen) < limit:
                 break
@@ -292,6 +328,71 @@ class SuchenOhneTrefferService:
             self._repository.ueber_der_schwelle, seit_woche, MINDESTANZAHL
         )
         return frozenset(ids)
+
+    async def _entscheidungen(self) -> Dict[uuid.UUID, bool]:
+        if self._freigaben is None:
+            return {}
+        return await asyncio.to_thread(self._freigaben.entscheidungen)
+
+    async def freigegebene(self) -> FrozenSet[uuid.UUID]:
+        """Alle Aussagen, die ein Admin freigegeben hat, ohne Blick auf die Schwelle."""
+        entscheidungen = await self._entscheidungen()
+        return frozenset(i for i, frei in entscheidungen.items() if frei)
+
+    async def sichtbar_fuer_alle(
+        self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
+    ) -> FrozenSet[uuid.UUID]:
+        """
+        Die unbeantworteten Suchanfragen, die Nicht-Admins sehen (#436, Vormoderation):
+        ueber der Schwelle (ueber_der_schwelle) und von einem Admin freigegeben.
+        Wie ueber_der_schwelle stehen darin auch Aussagen, die keine Suchanfragen
+        sind; fuer sie hat die Menge keine Wirkung (api/v1/statement.py filtert in
+        Qdrant nur unbeantwortete Suchanfragen).
+        """
+        ueber = await self.ueber_der_schwelle(wochen=wochen, heute=heute)
+        if not ueber:
+            return frozenset()
+        return ueber & await self.freigegebene()
+
+    async def zu_pruefen(
+        self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
+    ) -> List[SucheOhneTreffer]:
+        """
+        Fuer die Moderation: unbeantwortete Suchanfragen ueber der Schwelle, ueber die
+        noch kein Admin entschieden hat, die mit den meisten Personen zuerst. Unter
+        der Schwelle zeigt die Liste nichts: Admins sehen in der Kennzahl ebenfalls
+        erst Eintraege ab MINDESTANZAHL Personen, und sichtbar wuerde darunter ohnehin
+        nichts.
+        """
+        kandidaten = await self.haeufigste(
+            wochen=wochen, limit=ZU_PRUEFEN_KANDIDATEN, heute=heute
+        )
+        entscheidungen = await self._entscheidungen()
+        offen = [
+            k
+            for k in kandidaten
+            if k.unbeantwortete_suchanfrage and k.statement_id not in entscheidungen
+        ]
+        return sorted(offen, key=lambda k: k.personen, reverse=True)
+
+    async def entscheiden(self, statement_id: uuid.UUID, freigegeben: bool) -> None:
+        """
+        Eine unbeantwortete Suchanfrage freigeben oder ablehnen. Eine spaetere
+        Entscheidung ersetzt die fruehere. AussageNichtGefunden, wenn es die Aussage
+        nicht gibt; KeineUnbeantworteteSuchanfrage fuer jede andere Aussage.
+        """
+        if self._freigaben is None:
+            raise RuntimeError("Vormoderation ohne Repository")
+        try:
+            aussage = await self._statement_service.get(statement_id)
+        except (AussageNichtGefunden, ValidationError):
+            # Nicht lesbar ist kaputt, nicht abwesend (wie getById).
+            raise
+        except ValueError as e:
+            raise AussageNichtGefunden(str(statement_id)) from e
+        if not ist_unbeantwortete_suchanfrage(aussage):
+            raise KeineUnbeantworteteSuchanfrage(str(statement_id))
+        await asyncio.to_thread(self._freigaben.entscheiden, statement_id, freigegeben)
 
     async def _sichtbare_aussage(self, statement_id: uuid.UUID):
         try:

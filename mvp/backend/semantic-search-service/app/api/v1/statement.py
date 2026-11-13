@@ -78,12 +78,13 @@ async def _ueber_der_schwelle_fuer(
     """
     Welche Aussagen aus Suchanfragen ohne Antwort der Aufrufer sehen darf (#436):
     Admins alle (None: kein Filter), alle anderen nur die ueber der Schwelle der
-    Kennzahl "Suchen ohne Treffer", wie in "Hier fehlt eine Antwort". Eine leere
-    Menge heisst dann: nur kuratierte Aussagen, nicht etwa kein Filter.
+    Kennzahl "Suchen ohne Treffer", die ein Admin freigegeben hat (Vormoderation,
+    13.11.2026), wie in "Hier fehlt eine Antwort". Eine leere Menge heisst dann: nur
+    kuratierte Aussagen, nicht etwa kein Filter.
     """
     if aufrufer.ist_admin:
         return None
-    return await suchen_ohne_treffer.ueber_der_schwelle()
+    return await suchen_ohne_treffer.sichtbar_fuer_alle()
 
 
 # Alle Aussagen, seitenweise; was Nicht-Admins sehen: _ueber_der_schwelle_fuer.
@@ -136,7 +137,8 @@ async def get_all(
 # Eine Aussage per ID - fuer Beitragsformulare, die mit ?aussage=<id> geoeffnet
 # werden. Liefert bewusst nur ID und Text, nicht die Antwortvorschlaege. Fuer
 # Nicht-Admins dieselbe Auswahl wie getAll (#436): Eine unbeantwortete Suchanfrage
-# unter der Schwelle gibt es fuer sie nicht (404, wie eine geloeschte). Das Formular
+# unter der Schwelle oder ohne Freigabe gibt es fuer sie nicht (404, wie eine
+# geloeschte). Das Formular
 # faellt dann auf den Text aus ?searchQuery= zurueck (statement.service.ts).
 @router.get("/getById", response_model=GetStatementByIdResponse)
 async def get_by_id(
@@ -185,7 +187,7 @@ async def get_by_id(
 # "Hier fehlt eine Antwort": unbeantwortete Aussagen fuer Mitwirkende. Nur
 # Aussagen, dazu aus der Kennzahl "Suchen ohne Treffer" die Zahl der Personen, nicht
 # die der Suchen; eine Aussage aus einer Suchanfrage erst ab der Schwelle der
-# Kennzahl, nie die einer einzelnen Person
+# Kennzahl und nach Freigabe durch einen Admin, nie die einer einzelnen Person
 # (services/unbeantwortete_aussagen_service.py).
 @router.get("/unbeantwortet", response_model=UnbeantworteteAussagenResponse)
 async def unbeantwortet(

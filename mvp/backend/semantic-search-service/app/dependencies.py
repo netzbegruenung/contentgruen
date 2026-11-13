@@ -38,6 +38,9 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
+from repositories.suchanfrage_freigabe_repository import (
+    get_suchanfrage_freigabe_repository,
+)
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
 from repositories.einladung_repository import get_einladung_repository
@@ -172,6 +175,7 @@ def get_suchen_ohne_treffer_service(
         get_suchen_ohne_treffer_repository(),
         statement_service,
         get_personen_des_tages(),
+        get_suchanfrage_freigabe_repository(),
     )
 
 

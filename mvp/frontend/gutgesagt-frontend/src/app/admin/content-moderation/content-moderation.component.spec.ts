@@ -7,6 +7,7 @@ import { ContentReport, ModerationService, PendingReportsResponse } from '../../
 import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
+import { SuchanfragenFreigabeService } from '../../services/suchanfragen-freigabe.service';
 
 function sperre(overrides: Partial<SperreFuerAdmins> = {}): SperreFuerAdmins {
   return {
@@ -45,6 +46,7 @@ describe('ContentModerationComponent', () => {
   let fixture: ComponentFixture<ContentModerationComponent>;
   let moderation: jasmine.SpyObj<ModerationService>;
   let dialog: jasmine.SpyObj<MatDialog>;
+  let suchanfragen: jasmine.SpyObj<SuchanfragenFreigabeService>;
 
   /** Der Dialog schließt mit diesem Ergebnis; undefined heißt abgebrochen. */
   function dialogErgebnis(ergebnis: SperrenDialogErgebnis | undefined) {
@@ -69,10 +71,15 @@ describe('ContentModerationComponent', () => {
     moderation.sperreBestaetigen.and.returnValue(of({ success: true, message: '' }));
     moderation.getGesperrte.and.returnValue(of({ total: 0, beitraege: [] }));
     dialog = jasmine.createSpyObj('MatDialog', ['open']);
+    suchanfragen = jasmine.createSpyObj('SuchanfragenFreigabeService', ['zuPruefen', 'freigeben', 'ablehnen']);
+    suchanfragen.zuPruefen.and.returnValue(of({ suchanfragen: [] }));
 
     TestBed.configureTestingModule({
       imports: [ContentModerationComponent, NoopAnimationsModule],
-      providers: [{ provide: ModerationService, useValue: moderation }]
+      providers: [
+        { provide: ModerationService, useValue: moderation },
+        { provide: SuchanfragenFreigabeService, useValue: suchanfragen }
+      ]
     });
     // Die Komponente importiert MatDialogModule selbst; deshalb hier überschreiben.
     TestBed.overrideProvider(MatDialog, { useValue: dialog });
@@ -173,6 +180,27 @@ describe('ContentModerationComponent', () => {
     expect(fixture.nativeElement.querySelector('app-meldungen-einer-person')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.reports-table')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
+  });
+
+  it('zählt die Suchanfragen, die auf Freigabe warten, am Umschalter und zeigt sie statt der Meldungen', async () => {
+    suchanfragen.zuPruefen.and.returnValue(of({
+      suchanfragen: [{ statement_id: 'a-1', statement_text: 'Sind Wärmepumpen laut?', personen_ohne_treffer: 3 }]
+    }));
+    mitMeldungen([meldung()]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.zuPruefendeSuchanfragen).toBe(1);
+    expect(fixture.nativeElement.textContent).not.toContain('Sind Wärmepumpen laut?');
+
+    moderation.getReports.calls.reset();
+    fixture.componentInstance.onStatusFilterChange('suchanfragen');
+    fixture.detectChanges();
+
+    expect(moderation.getReports).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Sind Wärmepumpen laut?');
+    expect(fixture.nativeElement.querySelector('.reports-table')).toBeNull();
+    expect(knopf('Aktualisieren')).toBeUndefined();
   });
 
   it('zeigt unter „Nach Person“ keinen Fehler einer Liste, die vorher noch lud (#494)', () => {

@@ -41,11 +41,12 @@ def _aussage(statement_id, text, tag):
     )
 
 
-def _service(ohne_kommentar=(), gesucht=(), themen=None):
+def _service(ohne_kommentar=(), gesucht=(), themen=None, freigegeben=()):
     statement_service = Mock(spec=StatementService)
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
     suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(return_value=list(gesucht))
+    suchen.freigegebene = AsyncMock(return_value=frozenset(freigegeben))
     themen_service = Mock(spec=AussageThemenService)
     themen_service.themen_von = Mock(
         side_effect=lambda ids: {
@@ -174,3 +175,24 @@ async def test_filter_wird_vor_der_begrenzung_angewandt():
     liste = await service.liste(limit=1, thema="klima")
 
     assert [a.statement_id for a in liste] == [C]
+
+
+async def test_suchanfrage_ohne_antwort_erscheint_erst_nach_freigabe():
+    # Vormoderation (13.11.2026): Ueber der Schwelle allein reicht nicht mehr.
+    gesucht = [
+        SucheOhneTreffer(A, "frei", 5, 3, unbeantwortete_suchanfrage=True),
+        SucheOhneTreffer(B, "ungeprueft", 9, 4, unbeantwortete_suchanfrage=True),
+        SucheOhneTreffer(C, "gepflegt", 4, 2),
+    ]
+
+    liste = await _service(gesucht=gesucht, freigegeben={A}).liste()
+
+    assert [a.statement_id for a in liste] == [A, C]
+
+
+async def test_ohne_suchanfragen_werden_freigaben_nicht_abgefragt():
+    service = _service(gesucht=[SucheOhneTreffer(C, "gepflegt", 4, 2)])
+
+    await service.liste()
+
+    service._suchen_ohne_treffer.freigegebene.assert_not_awaited()

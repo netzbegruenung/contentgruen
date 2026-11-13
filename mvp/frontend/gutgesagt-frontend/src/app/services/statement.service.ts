@@ -130,8 +130,9 @@ export class StatementService {
    * Speichern, im Backend mit der Speicher-Anfrage. Ohne beides ist das Ergebnis leer.
    *
    * Stehen beide da (aussageParameterMitText) und kennt getById die ID nicht (404),
-   * gilt der Text: Eine unbeantwortete Suchanfrage unter der Schwelle liefert das
-   * Backend Nicht-Admins nicht aus (#436), wohl aber findet es sie beim Speichern
+   * gilt der Text: Eine unbeantwortete Suchanfrage unter der Schwelle oder ohne
+   * Freigabe (Vormoderation) liefert das Backend Nicht-Admins nicht aus (#436), wohl
+   * aber findet es sie beim Speichern
    * ueber den Text wieder.
    */
   aussageAusAdresse(params: ParamMap): Observable<GetStatementByIdResponse> {

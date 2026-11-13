@@ -65,9 +65,16 @@ export function nurLesend(): { context: HttpContext } {
  * Kontoloeschung (#278), noch fuenf Minuten als angemeldet gelten.
  *
  * "Hier fehlt eine Antwort" ist geteilte Arbeit wie der Fangkorb: Was eben jemand
- * beantwortet hat, soll dort nicht mehr stehen.
+ * beantwortet hat, soll dort nicht mehr stehen. Ebenso die Suchanfragen, die in der
+ * Moderation auf Freigabe warten: Die Liste laedt alle 30 Sekunden nach.
  */
-const NIE_CACHEN = ['/api/v1/rawinput/', '/api/check-session', '/api/user-info', '/api/v1/statement/unbeantwortet'];
+const NIE_CACHEN = [
+  '/api/v1/rawinput/',
+  '/api/check-session',
+  '/api/user-info',
+  '/api/v1/statement/unbeantwortet',
+  '/api/v1/moderation/suchanfragen',
+];
 
 /**
  * Zaehlt Aenderungen. Eine GET-Antwort kommt nur in den Cache, wenn seit ihrer

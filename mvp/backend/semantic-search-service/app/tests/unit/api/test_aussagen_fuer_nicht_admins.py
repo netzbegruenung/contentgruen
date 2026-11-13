@@ -33,7 +33,7 @@ app.include_router(statement_router, prefix="/api/v1/statement")
 @pytest.fixture
 def suchen_ohne_treffer():
     dienst = MagicMock()
-    dienst.ueber_der_schwelle = AsyncMock(return_value=UEBER_DER_SCHWELLE)
+    dienst.sichtbar_fuer_alle = AsyncMock(return_value=UEBER_DER_SCHWELLE)
     app.dependency_overrides[get_suchen_ohne_treffer_service] = lambda: dienst
     yield dienst
     app.dependency_overrides.clear()
@@ -63,7 +63,7 @@ class TestGetAll:
         assert resp.json()["total_records_count"] == 40
         statement_service.get_all.assert_awaited_once_with(limit=5, offset=5)
         statement_service.get_all_curated.assert_not_awaited()
-        suchen_ohne_treffer.ueber_der_schwelle.assert_not_awaited()
+        suchen_ohne_treffer.sichtbar_fuer_alle.assert_not_awaited()
 
     @pytest.mark.parametrize("headers", NICHT_ADMINS, ids=NICHT_ADMIN_IDS)
     def test_nicht_admin_nur_kuratierte_und_ueber_der_schwelle(
@@ -88,7 +88,7 @@ class TestGetAll:
         self, statement_service, suchen_ohne_treffer
     ):
         """Eine leere Menge ist ein Filter (nur kuratierte), nicht etwa keiner."""
-        suchen_ohne_treffer.ueber_der_schwelle.return_value = frozenset()
+        suchen_ohne_treffer.sichtbar_fuer_alle.return_value = frozenset()
 
         resp = TestClient(app).get(GET_ALL_URL, headers=MITWIRKENDE)
 
@@ -110,7 +110,7 @@ class TestGetAll:
     def test_fehler_bei_der_schwelle_gibt_500(
         self, statement_service, suchen_ohne_treffer
     ):
-        suchen_ohne_treffer.ueber_der_schwelle.side_effect = RuntimeError(
+        suchen_ohne_treffer.sichtbar_fuer_alle.side_effect = RuntimeError(
             "Datenbank weg"
         )
 
@@ -130,7 +130,7 @@ class TestSearchStatements:
         assert resp.status_code == 200
         statement_service.search.assert_awaited_once_with("waermepumpe", 5)
         statement_service.search_filtered.assert_not_awaited()
-        suchen_ohne_treffer.ueber_der_schwelle.assert_not_awaited()
+        suchen_ohne_treffer.sichtbar_fuer_alle.assert_not_awaited()
 
     @pytest.mark.parametrize("headers", NICHT_ADMINS, ids=NICHT_ADMIN_IDS)
     def test_nicht_admin_nur_kuratierte_und_ueber_der_schwelle(
@@ -176,7 +176,7 @@ class TestSearchStatements:
         self, statement_service, suchen_ohne_treffer
     ):
         """Eine leere Menge ist ein Filter (nur kuratierte), nicht etwa keiner."""
-        suchen_ohne_treffer.ueber_der_schwelle.return_value = frozenset()
+        suchen_ohne_treffer.sichtbar_fuer_alle.return_value = frozenset()
 
         resp = TestClient(app).post(
             SEARCH_URL, json={"query_text": "waermepumpe", "limit": 5}, headers=BESUCHER
@@ -216,7 +216,7 @@ class TestSearchStatements:
             min_similarity=0.885,
             ueber_der_schwelle=frozenset(),
         )
-        suchen_ohne_treffer.ueber_der_schwelle.assert_not_awaited()
+        suchen_ohne_treffer.sichtbar_fuer_alle.assert_not_awaited()
 
     def test_admin_mit_min_similarity_ohne_kuratiert(self, statement_service):
         resp = TestClient(app).post(

@@ -16,7 +16,10 @@ ohne Kommentar, neueste zuerst. Nach Personen statt nach Suchen, damit die
 Reihenfolge zur gezeigten Zahl passt und die Zahl der Suchen nicht verraet. Aussagen aus
 Suchanfragen, die die Schwelle nicht erreichen und auf die niemand geantwortet hat,
 erscheinen nicht: Sie sind die Suchanfrage einer einzelnen Person
-(StatementRepository.ohne_kommentar).
+(StatementRepository.ohne_kommentar). Eine unbeantwortete Suchanfrage ueber der
+Schwelle erscheint erst, wenn ein Admin sie freigegeben hat (Vormoderation,
+SuchenOhneTrefferService.sichtbar_fuer_alle); andere Aussagen mit Suchen ohne
+Treffer betrifft das nicht.
 
 Jede Aussage traegt ihre Themen (AussageThemenService). Mit einem Thema als Filter
 bleiben nur die Aussagen mit diesem Thema, in derselben Reihenfolge; gefiltert wird
@@ -72,6 +75,13 @@ class UnbeantworteteAussagenService:
             wochen=WOCHEN_STANDARD,
             limit=KANDIDATEN_MIT_FILTER if thema else limit,
         )
+        if any(g.unbeantwortete_suchanfrage for g in gesucht):
+            freigegeben = await self._suchen_ohne_treffer.freigegebene()
+            gesucht = [
+                g
+                for g in gesucht
+                if not g.unbeantwortete_suchanfrage or g.statement_id in freigegeben
+            ]
         gesucht = sorted(gesucht, key=lambda g: g.personen, reverse=True)
         kandidaten = [(g.statement_id, g.text, g.personen) for g in gesucht]
         schon_drin = {statement_id for statement_id, _, _ in kandidaten}

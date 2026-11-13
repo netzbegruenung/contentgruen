@@ -68,7 +68,8 @@ export interface AussageVorabResponse extends AddStatementResponse {
 
 /**
  * Eine unbeantwortete Aussage: ohne Kommentar oder mit Suchen ohne Treffer von
- * mindestens zwei Personen. personen_ohne_treffer zaehlt diese Personen wie die
+ * mindestens zwei Personen (aus einer Suchanfrage erst nach Freigabe durch einen
+ * Admin). personen_ohne_treffer zaehlt diese Personen wie die
  * Kennzahl (Tagespseudonyme); 0 heisst, die Aussage steht nur wegen des fehlenden
  * Kommentars hier. Wie oft gesucht wurde, sehen nur Admins.
  */
