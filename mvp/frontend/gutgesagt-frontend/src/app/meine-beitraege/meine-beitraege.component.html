@@ -34,13 +34,14 @@
                 <!-- Ein konkreter erster Schritt statt nur "Beitragen" (#645) -->
                 <section *ngIf="unbeantworteteAussagen.length" class="erster-schritt" aria-labelledby="erster-schritt-titel">
                     <h2 id="erster-schritt-titel">Fang mit einer unbeantworteten Aussage an</h2>
-                    <ul class="unbeantwortete-aussagen">
-                        <li *ngFor="let aussage of unbeantworteteAussagen" class="unbeantwortete-aussage" data-testid="unbeantwortete-aussage">
-                            <p class="unbeantwortete-aussage-text" [id]="'unbeantwortet-' + aussage.statement_id">{{ aussage.statement_text }}</p>
-                            <a mat-stroked-button class="antworten"
-                               [routerLink]="kommentarFormular"
-                               [queryParams]="beantwortenParams(aussage)"
-                               [attr.aria-describedby]="'unbeantwortet-' + aussage.statement_id">Antworten</a>
+                    <ul class="unbeantwortete-aussagen aussagekarten">
+                        <li *ngFor="let aussage of unbeantworteteAussagen" data-testid="unbeantwortete-aussage">
+                            <app-aussagekarte [text]="aussage.statement_text"
+                                              [titelId]="'unbeantwortet-' + aussage.statement_id"
+                                              [ebene]="3"
+                                              knopf="neben"
+                                              [antwortenPfad]="kommentarFormular"
+                                              [antwortenParams]="beantwortenParams(aussage)"></app-aussagekarte>
                         </li>
                     </ul>
                     <a class="alle-unbeantworteten" [routerLink]="hierFehltEineAntwortPfad">Alle in „Hier fehlt eine Antwort“</a>

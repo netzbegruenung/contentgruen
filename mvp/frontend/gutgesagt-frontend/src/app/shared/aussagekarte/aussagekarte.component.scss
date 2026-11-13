@@ -1,0 +1,78 @@
+@use '../styles/karte';
+
+:host {
+  display: block;
+}
+
+.aussagekarte {
+  @include karte.huelle;
+}
+
+.aussagekarte-kopf {
+  @include karte.kopfband(var(--statement-bg));
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-sm);
+}
+
+.aussagekarte-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 32px;
+  color: var(--primary-dark);
+}
+
+.aussagekarte-art {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+// Wie .karte-titel; zugeklappt hoechstens vier Zeilen, "Ganz lesen" klappt auf
+.aussagekarte-titel {
+  @include karte.titel;
+  margin-top: 2px;
+}
+
+.aussagekarte-titel--zu {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.ganz-lesen {
+  min-height: 24px;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--primary-dark);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.aussagekarte-inhalt {
+  flex: 1;
+  padding: 12px var(--spacing-md) 0;
+}
+
+.aussagekarte-inhalt:empty {
+  padding: 0;
+}
+
+.gesucht {
+  margin: 0 0 var(--spacing-sm);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.aussagekarte-fuss {
+  padding: 12px var(--spacing-md) var(--spacing-md);
+}

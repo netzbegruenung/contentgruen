@@ -1,13 +1,14 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
+import { WIEDERHOLUNG_MS } from '../shared/lade-wiederholung';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { Einwurf, EinwurfService, EinwurfSeite } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
@@ -173,12 +174,114 @@ describe('MeineEinwuerfeComponent', () => {
     expect(texte('.einwuerfe-statistik')).toEqual([]);
   });
 
-  it('sagt, wenn die Liste nicht geladen werden konnte', () => {
+  it('sagt, wenn die Liste nicht geladen werden konnte, ohne "neu laden" und mit Knopf', () => {
     einwurfService.eigeneLaden.and.returnValue(throwError(() => ({ status: 500 })));
     anzeigen();
 
-    expect(texte('.einwuerfe-fehler')).toEqual(['Deine Einwürfe konnten nicht geladen werden. Bitte lade die Seite neu.']);
+    expect(texte('.einwuerfe-fehler p')).toEqual([
+      'Deine Einwürfe konnten gerade nicht geladen werden. Die Seite versucht es weiter.',
+    ]);
+    expect(texte('.einwuerfe-fehler')[0]).not.toMatch(/neu ?lad/i);
+    expect(texte('button.erneut-versuchen')).toEqual(['Erneut versuchen']);
   });
+
+  it('versucht es nach einem Ladefehler selbst wieder', fakeAsync(() => {
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), of(antwort([offen])));
+    anzeigen();
+
+    tick(WIEDERHOLUNG_MS[0]);
+    fixture.detectChanges();
+
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(2);
+    expect(texte('.einwuerfe-fehler')).toEqual([]);
+    expect(fixture.nativeElement.querySelectorAll('article.karte--einwurf').length).toBe(1);
+  }));
+
+  it('hoert beim Verlassen auf', fakeAsync(() => {
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), of(antwort([offen])));
+    anzeigen();
+
+    fixture.destroy();
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
+
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(1);
+  }));
+
+  it('wiederholt bei 403 nicht von selbst, bietet aber den Knopf', fakeAsync(() => {
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 403 })), of(antwort([offen])));
+    anzeigen();
+
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1] * 2);
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(1);
+    expect(texte('.einwuerfe-fehler p')).toEqual(['Deine Einwürfe konnten gerade nicht geladen werden.']);
+    expect(texte('button.erneut-versuchen')).toEqual(['Erneut versuchen']);
+  }));
+
+  it('sagt den ersten Fehler und die Rueckkehr in der Live-Region an und setzt den Fokus in die Liste', () => {
+    const zweiter = new Subject<EinwurfSeite>();
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), zweiter.asObservable());
+    anzeigen();
+    expect(texte('[role="status"]')).toEqual(['Deine Einwürfe konnten gerade nicht geladen werden.']);
+    const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('button.erneut-versuchen');
+
+    knopf.focus();
+    knopf.click();
+    fixture.detectChanges();
+    expect(texte('.einwuerfe-fehler p')).toEqual(['Deine Einwürfe konnten gerade nicht geladen werden. Neuer Versuch läuft …']);
+    expect(knopf.getAttribute('aria-disabled')).toBe('true');
+    knopf.click();
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(2);
+
+    zweiter.next(antwort([offen]));
+    fixture.detectChanges();
+
+    expect(texte('[role="status"]')).toEqual(['Deine Einwürfe wieder geladen.']);
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.einwuerfe-inhalt'));
+  });
+
+  it('zeigt nach dem Blaettern waehrend eines Versuchs die neue Seite, auch wenn der alte spaet antwortet', fakeAsync(() => {
+    const seiteZwei = new Subject<EinwurfSeite>();
+    const seiteDrei = new Subject<EinwurfSeite>();
+    const drei = einwurf({ id: 'e-drei' });
+    einwurfService.eigeneLaden.and.returnValues(
+      of(antwort([offen], 100)),
+      throwError(() => ({ status: 503 })),
+      seiteZwei,
+      seiteDrei,
+    );
+    anzeigen();
+    const komponente = fixture.componentInstance;
+    komponente.onPageChange({ pageIndex: 1, pageSize: 24, length: 100 }); // Seite 2 scheitert
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('button.erneut-versuchen') as HTMLButtonElement).click(); // Versuch A
+    komponente.onPageChange({ pageIndex: 2, pageSize: 24, length: 100 }); // Seite 3: Anfrage B
+
+    seiteDrei.next(antwort([drei], 100));
+    seiteZwei.next(antwort([offen], 100)); // A antwortet nach B: zaehlt nicht mehr
+    seiteZwei.error({ status: 503 });
+    fixture.detectChanges();
+
+    expect(einwurfService.eigeneLaden.calls.mostRecent().args).toEqual([3, 24]);
+    expect(komponente.karten.map((karte) => karte.id)).toEqual(['e-drei']);
+    expect(komponente.ladefehler).toBeFalse();
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1] * 2);
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(4);
+  }));
+
+  it('versucht es auf Knopfdruck sofort, auf derselben Seite', fakeAsync(() => {
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), of(antwort([offen])));
+    anzeigen();
+
+    (fixture.nativeElement.querySelector('button.erneut-versuchen') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(2);
+    expect(einwurfService.eigeneLaden.calls.mostRecent().args).toEqual([1, 24]);
+    expect(texte('.einwuerfe-fehler')).toEqual([]);
+    // Der geplante Versuch faellt weg
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(2);
+  }));
 
   it('blaettert erst ab mehr als einer Seite', () => {
     anzeigen();

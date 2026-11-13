@@ -33,7 +33,7 @@ export default defineConfig({
     },
     {
       name: 'mobil-360',
-      testIgnore: /(stichproben|besucher)\.spec\.ts/,
+      testIgnore: /(stichproben|besucher|fangkorb-desktop)\.spec\.ts/,
       dependencies: ['setup'],
       use: {
         ...devices['Pixel 5'],
@@ -53,6 +53,13 @@ export default defineConfig({
       testMatch: /stichproben\.spec\.ts/,
       dependencies: ['setup'],
       use: { viewport: { width: 960, height: 900 }, storageState: SITZUNG },
+    },
+    {
+      // Fangkorb mit Seitenleiste (ab 1024 px), Beispieldaten im Browser: liest nur.
+      name: 'desktop-1280',
+      testMatch: /fangkorb-desktop\.spec\.ts/,
+      dependencies: ['setup'],
+      use: { viewport: { width: 1280, height: 900 }, storageState: SITZUNG },
     },
   ],
 });

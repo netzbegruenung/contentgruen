@@ -45,7 +45,9 @@ pytest tests/integration/               # Integration tests (Qdrant on :6333, Po
 
 ### Integration Tests as a Gate
 
-One command runs the full check plus the integration suite, from the repository root:
+One command runs the full check plus the integration suite, from the repository root. The
+pipeline runs it on every pull request; before a push `bash scripts/check.sh --geaendert` is
+enough, and includes the integration tests when the changes reach them (`docs/CI.md`):
 
 ```bash
 bash scripts/check.sh --integration
