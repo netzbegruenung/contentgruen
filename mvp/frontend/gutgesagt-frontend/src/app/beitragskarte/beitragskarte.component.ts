@@ -146,6 +146,16 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * "Meine Einwuerfe", wo alle Karten die eigenen sind und die Stufe die Rueckmeldung ist.
    */
   @Input() stufeZeigen = false;
+  /**
+   * Ebene der Titel-Ueberschrift. Standard h3; die Ergebnisseite nimmt h4, weil dort
+   * Gruppe (h2) und Typ (h3) darueberstehen.
+   */
+  @Input() titelEbene: 3 | 4 = 3;
+  /**
+   * Die Zeile "Antwort auf:" ueber dem Titel. Aus, wo die Seite die Aussage schon
+   * nennt (Gruppen der Ergebnisseite); Admins behalten den Aufklapper mit den Werten.
+   */
+  @Input() antwortAufZeigen = true;
 
   /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();

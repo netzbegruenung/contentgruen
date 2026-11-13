@@ -55,7 +55,7 @@ describe('ergebnis-gruppen', () => {
       ]);
       expect(gruppen[0].je.commentary.map((k) => k.id)).toEqual(['k-3']);
       expect(gruppen[0].je.image.map((k) => k.id)).toEqual(['b-1']);
-      expect(gruppen[0].je.commentary[0].statement).withContext('kein Antwort-auf-Kopf').toBeUndefined();
+      expect(gruppen[0].je.commentary[0].statement?.text).withContext('Aussage bleibt fuer die Werte der Admins').toBe('A');
     });
 
     it('nennt ohne erkannte Aussage jede Gruppe neutral', () => {

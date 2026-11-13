@@ -107,11 +107,11 @@
 
         <!-- Je Aussage eine Gruppe: die erkannte zuerst, direkte Treffer zuletzt. Die Gruppe
              nennt die Aussage, die Karten darum keinen eigenen Antwort-auf-Kopf. -->
-        <section class="gruppe" *ngFor="let gruppe of ansicht" [attr.aria-labelledby]="gruppe.id">
+        <section class="gruppe" *ngFor="let gruppe of ansicht; trackBy: nachGruppe" [attr.aria-labelledby]="gruppe.id">
             <h2 class="gruppe-kopf" [class.gruppe-kopf--neben]="gruppe.art === 'aehnlich' || gruppe.art === 'ohne'" [id]="gruppe.id">
                 <mat-icon class="gruppe-icon" aria-hidden="true">{{ gruppe.art === 'ohne' ? 'search' : 'subdirectory_arrow_left' }}</mat-icon>
                 <ng-container [ngSwitch]="gruppe.art">
-                    <span *ngSwitchCase="'erkannt'" class="gruppe-label">Zu dieser Aussage</span>
+                    <span *ngSwitchCase="'erkannt'" class="gruppe-label">Zu dieser Aussage<span class="visually-hidden" *ngIf="gruppe.text">: „{{ gruppe.text }}“</span></span>
                     <span *ngSwitchCase="'aehnlich'" class="gruppe-label">Zu einer ähnlichen Aussage:</span>
                     <span *ngSwitchCase="'aussage'" class="gruppe-label">Zur Aussage:</span>
                     <span *ngSwitchCase="'ohne'" class="gruppe-label">Passt zu deinem Suchtext</span>
@@ -120,10 +120,10 @@
                 <span class="gruppe-zahl">{{ gruppe.anzahl }} <span class="visually-hidden">Treffer</span></span>
             </h2>
 
-            <div class="typ-block" *ngFor="let block of gruppe.bloecke" [id]="block.id" [attr.data-typ]="block.typ">
+            <div class="typ-block" *ngFor="let block of gruppe.bloecke; trackBy: nachTyp" [id]="block.id" [attr.data-typ]="block.typ">
                 <h3 class="typ-ueberschrift" tabindex="-1">{{ block.ueberschrift }}</h3>
                 <p class="typ-erklaerung" *ngIf="block.erklaerung">{{ block.erklaerung }}</p>
-                <app-kartenliste [daten]="block.karten" [raster]="true"></app-kartenliste>
+                <app-kartenliste [daten]="block.karten" [raster]="true" [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
                 <button *ngIf="block.mehrText" type="button" class="alle-zeigen"
                         (click)="alleZeigen(gruppe, block.typ, block.id, block.karten.length)">
                     {{ block.mehrText }}
@@ -142,6 +142,9 @@
                             <mat-icon>add</mat-icon> Antworten
                         </button>
                     </div>
+                    <!-- Ohne Hintergrundinfos unter den Treffern bleibt ein Weg, die erste zu ergaenzen -->
+                    <button *ngIf="anzahl.generictext === 0" type="button" class="ergaenzen-link hintergrund-ergaenzen"
+                            (click)="navigateToContribute('generictext')">Hintergrundinfo ergänzen</button>
                 </ng-container>
                 <ng-template #hintergrundErgaenzen>
                     <p class="neu-anlegen-satz">Ergänze selbst eine Hintergrundinfo.</p>

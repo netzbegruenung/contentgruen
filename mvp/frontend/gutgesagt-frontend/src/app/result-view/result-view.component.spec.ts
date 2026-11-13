@@ -673,7 +673,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
         return (kopie.textContent ?? '').replace(/\s+/g, ' ').trim();
       });
       expect(ueberschriften).toEqual([
-        'Zu dieser Aussage 5 Treffer',
+        `Zu dieser Aussage: „${ERKANNT}“ 5 Treffer`,
         `Zu einer ähnlichen Aussage: „${ANDERE}“ 2 Treffer`,
         'Passt zu deinem Suchtext 1 Treffer',
       ]);
@@ -798,6 +798,56 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     tick();
     expect(router.url).toBe('/result?searchQuery=Windr%C3%A4der%20sind%20zu%20laut');
   }));
+
+  it('behaelt die Karten anderer Gruppen, wenn eine Gruppe aufklappt oder ein Chip wechselt', async () => {
+    // Vier Kommentare zur erkannten Aussage (eine Gruppe mit "Alle 4 … zeigen"), einer zu einer anderen.
+    const viele = [1, 2, 3, 4].map((n) => erkannt('commentary', `k-${n}`, 0.9 - n / 100));
+    const seite = await oeffnen(false, antwort({ k: [...viele, andere('commentary', 'a-1', 0.5)] }));
+    const gruppen = () => seite.querySelectorAll('.gruppe');
+    const karteDerAnderen = gruppen()[1].querySelector('app-beitragskarte')!;
+
+    gruppen()[0].querySelector<HTMLButtonElement>('.alle-zeigen')!.click();
+    fixture.detectChanges();
+    expect(gruppen()[0].querySelectorAll('app-beitragskarte').length).toBe(4);
+    expect(gruppen()[1].querySelector('app-beitragskarte')).withContext('dieselbe Karte, Zustand bleibt').toBe(karteDerAnderen);
+
+    chip(seite, 'Kommentare').click();
+    fixture.detectChanges();
+    expect(gruppen()[1].querySelector('app-beitragskarte')).toBe(karteDerAnderen);
+  });
+
+  it('setzt die Kartentitel unter Gruppe (h2) und Typ (h3) als h4 und behaelt die Aussage fuer Admins', async () => {
+    const seite = await oeffnen(false, GEMISCHT());
+    expect(seite.querySelectorAll('.typ-block h4.karte-titel').length).toBe(seite.querySelectorAll('.typ-block app-beitragskarte').length);
+    expect(seite.querySelector('.typ-block h3.karte-titel')).toBeNull();
+    const karte = fixture.componentInstance.ansicht[0].bloecke[0].karten[0];
+    expect(karte.statement?.text).toBe(ERKANNT);
+  });
+
+  it('bietet "Hintergrundinfo ergänzen" an, wenn unter den Treffern keine Hintergrundinfo ist', fakeAsync(async () => {
+    let seite = await oeffnen(false, antwort({ k: [erkannt('commentary', 'k-1', 0.9)] }));
+    const navigieren = spyOn(router, 'navigate').and.resolveTo(true);
+    const link = seite.querySelector<HTMLButtonElement>('.nicht-dabei-unten .hintergrund-ergaenzen')!;
+    expect(text(link)).toBe('Hintergrundinfo ergänzen');
+    link.click();
+    expect(navigieren.calls.mostRecent().args[0]).toEqual(['/workflow/add-generictext']);
+
+    TestBed.resetTestingModule();
+    seite = await oeffnen(false, GEMISCHT());
+    expect(seite.querySelector('.hintergrund-ergaenzen')).withContext('mit Hintergrundinfos nicht').toBeNull();
+  }));
+
+  it('vergisst Alternativen und Ansage der vorigen Suche', async () => {
+    const seite = await oeffnen(false, GEMISCHT());
+    chip(seite, 'Bilder').click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.ansage).not.toBe('');
+    expect(fixture.componentInstance.alternativen.length).toBe(2);
+
+    TestBed.inject(StateManagementService).setSearchResults(antwort({ k: [erkannt('commentary', 'k-9', 0.9)] }));
+    expect(fixture.componentInstance.ansage).toBe('');
+    expect(fixture.componentInstance.alternativen).toEqual([]);
+  });
 
   it('zeigt "Nicht gemeint?" nicht ohne Alternativen', async () => {
     const seite = await oeffnen(false, GEMISCHT(), []);

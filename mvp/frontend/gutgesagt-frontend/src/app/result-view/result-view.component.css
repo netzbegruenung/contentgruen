@@ -420,6 +420,10 @@ mat-sidenav-content {
   display: flex;
 }
 
+.hintergrund-ergaenzen {
+  align-self: flex-start;
+}
+
 .nicht-dabei-unten {
   margin-top: var(--spacing-lg);
 }
@@ -565,7 +569,7 @@ mat-sidenav-content {
   gap: 6px;
   min-height: 40px;
   padding: 0 14px;
-  border: 1px solid var(--chip-rand);
+  border: 1px solid var(--text-subtle);
   border-radius: 20px;
   background: none;
   font: inherit;
@@ -643,7 +647,7 @@ mat-sidenav-content {
 
 .gruppe-kopf--neben {
   background: var(--primary-tint-faint);
-  border-left-color: var(--gruppe-neben-rand);
+  border-left-color: var(--text-subtle);
 }
 
 .gruppe-icon {
@@ -716,19 +720,5 @@ mat-sidenav-content {
 @media (max-width: 599px) {
   .typ-block app-kartenliste {
     margin: 0 calc(-1 * var(--page-margin));
-  }
-}
-
-/* Farben, die es im Theme nicht gibt: Kontur der Chips und Rand der Nebengruppen,
-   je mit mindestens 3:1 gegen den Grund (WCAG 1.4.11) */
-.ergebnisse {
-  --chip-rand: rgba(0, 0, 0, 0.42);
-  --gruppe-neben-rand: rgba(0, 0, 0, 0.45);
-}
-
-@media (prefers-color-scheme: dark) {
-  .ergebnisse {
-    --chip-rand: rgba(255, 255, 255, 0.45);
-    --gruppe-neben-rand: rgba(255, 255, 255, 0.35);
   }
 }

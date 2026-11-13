@@ -813,6 +813,26 @@ describe('BeitragskarteComponent', () => {
       expect(fixture.nativeElement.textContent).not.toContain('%');
     });
 
+    it('blendet die Zeile "Antwort auf" auf Wunsch aus, Admins behalten den Aufklapper mit den Werten', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { antwortAufZeigen: false });
+      expect(element('.statement')).toBeNull();
+
+      alsAdmin();
+      zeigen(ausSuchergebnis(paket('commentary_result')), { antwortAufZeigen: false });
+      element('.statement-zeile').click();
+      fixture.detectChanges();
+      expect(element('.statement-details').textContent).toContain('Suchübereinstimmung: 90%');
+    });
+
+    it('setzt den Titel als h3, auf Wunsch als h4', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+      expect(element('.karte-titel').tagName).toBe('H3');
+
+      zeigen(ausSuchergebnis(paket('commentary_result')), { titelEbene: 4 });
+      expect(element('.karte-titel').tagName).toBe('H4');
+      expect(element('.karte-titel a.titel-link')).toBeTruthy();
+    });
+
     it('zeigt die Aussage ohne Anmeldung ebenso ohne Werte', () => {
       const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
       auth.getUserInfo.and.returnValue(null);

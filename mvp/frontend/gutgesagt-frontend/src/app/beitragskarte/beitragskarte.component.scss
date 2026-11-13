@@ -100,6 +100,8 @@
 
 .karte-titel {
   display: -webkit-box;
+  // Als h4 (Ergebnisseite) ohne die Laufweite der globalen h4
+  letter-spacing: normal;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--titel-zeilen);
   overflow: hidden;

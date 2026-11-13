@@ -77,7 +77,7 @@ export interface ErgebnisGruppe {
   text: string | null;
   /** Bester Score in der Gruppe, fuer die Reihenfolge. */
   bester: number;
-  /** Karten je Typ, in der Reihenfolge der Suchantwort; ohne Antwort-auf-Kopf. */
+  /** Karten je Typ, in der Reihenfolge der Suchantwort. */
   je: Record<TrefferTyp, KartenDaten[]>;
 }
 
@@ -85,8 +85,7 @@ const OHNE_AUSSAGE = 'ohne';
 
 /**
  * Die Treffer nach Aussage gruppiert: die erkannte Aussage zuerst, dann die anderen
- * nach ihrem besten Treffer, die direkten Treffer zuletzt. Die Gruppe nennt die
- * Aussage, darum tragen die Karten keinen eigenen Antwort-auf-Kopf.
+ * nach ihrem besten Treffer, die direkten Treffer zuletzt.
  */
 export function gruppieren(antwort: SearchResponse, erkannterSchluessel: string | null): ErgebnisGruppe[] {
   const gruppen = new Map<string, ErgebnisGruppe>();
@@ -105,8 +104,9 @@ export function gruppieren(antwort: SearchResponse, erkannterSchluessel: string 
         gruppen.set(schluessel, gruppe);
       }
       gruppe.bester = Math.max(gruppe.bester, treffer.score ?? 0);
-      const { statement: _statement, ...karte } = ausSuchergebnis(treffer);
-      gruppe.je[typ].push(karte);
+      // Die Aussage bleibt an der Karte (Admins sehen dort die Werte); die Zeile
+      // "Antwort auf:" blendet die Seite aus, weil die Gruppe sie nennt.
+      gruppe.je[typ].push(ausSuchergebnis(treffer));
     }
   }
   const rang: Record<GruppenArt, number> = { erkannt: 0, aehnlich: 1, aussage: 1, ohne: 2 };

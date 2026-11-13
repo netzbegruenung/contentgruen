@@ -89,11 +89,14 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
       await expect(chips.first()).toHaveAttribute('aria-pressed', 'true');
 
       // Gruppen: erkannte zuerst, aehnliche, direkte Treffer zuletzt; je eine h2
+      // Der Kopf der erkannten Gruppe nennt die Aussage nur fuer Screenreader (visually-hidden).
       await expect(page.locator('.gruppe > h2 .gruppe-label')).toHaveText([
-        'Zu dieser Aussage',
+        `Zu dieser Aussage: „${ERKANNT.text}“`,
         'Zu einer ähnlichen Aussage:',
         'Passt zu deinem Suchtext',
       ]);
+      // Kartentitel unter Gruppe (h2) und Typ (h3) als h4
+      await expect(page.locator('.typ-block h3.karte-titel')).toHaveCount(0);
       // Keine doppelte Antwort-auf-Zeile an den Karten
       await expect(page.locator('app-beitragskarte .statement-zeile')).toHaveCount(0);
       // Bilder sind sichtbar

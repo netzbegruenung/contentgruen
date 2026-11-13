@@ -252,6 +252,9 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         this.aktivesThema = null;
         this.aufgeklappt.clear();
         this.alternativenOffen = false;
+        // Alternativen und Ansage gehoeren zur vorigen Suche; "Nicht dabei?" meldet neu.
+        this.alternativen = [];
+        this.ansage = '';
         this.themenDerTreffer = response ? themenDerTreffer(response) : [];
         this.aussagenDerTreffer = response ? aussagenDerTreffer(response) : [];
         this.erkannt = response ? erkannteAussage(response) : null;
@@ -299,6 +302,15 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   private ansichtAktualisieren(): void {
     this.ansicht = ansichtBauen(this.gruppen, this.wirksamerFilter, this.aufgeklappt);
     this.cdr.markForCheck();
+  }
+
+  /** Gruppen und Typen behalten ihre Karten, wenn sich Filter oder Aufklappen aendern. */
+  nachGruppe(_index: number, gruppe: AnsichtGruppe): string {
+    return gruppe.schluessel;
+  }
+
+  nachTyp(_index: number, block: { typ: TrefferTyp }): string {
+    return block.typ;
   }
 
   /** Irgendein Treffer, gleich welchen Typs. */
