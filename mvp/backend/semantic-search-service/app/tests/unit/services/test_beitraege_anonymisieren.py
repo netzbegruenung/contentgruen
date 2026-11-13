@@ -8,7 +8,7 @@ Qdrant: tests/integration/test_beitraege_anonymisieren_qdrant.py.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from qdrant_client import QdrantClient
@@ -144,25 +144,45 @@ class TestAnonymisieren:
         assert _kennungen(_gelesen(client, 3)) == {EHEMALIGE_PERSON_KENNUNG}
         assert _kennungen(_gelesen(client, 1)) == {EHEMALIGE_PERSON_KENNUNG}
 
-    def test_nur_beitraege_bis_zum_stichtag(self, client):
+    def test_nur_beitraege_vor_der_obergrenze_genau_an_der_grenze(self, client):
         """
         Loeschauftrag nach neuer Einwilligung (Entscheidung Maintainer, 13.11.2026):
-        Was nach dem Widerruf angelegt ist, bleibt und steht unter ``behalten``.
+        Was ab der neuen Einwilligung angelegt ist, bleibt und steht unter
+        ``behalten``; knapp davor geht.
         """
-        widerruf = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
-        client.set_payload(COLLECTION, {"created": "2026-11-10T11:59:00"}, points=[1])
+        neu = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
         client.set_payload(
-            COLLECTION, {"created": "2026-11-12T08:00:00+00:00"}, points=[2]
+            COLLECTION, {"created": "2026-11-10T11:59:59.999999+00:00"}, points=[1]
         )
+        client.set_payload(COLLECTION, {"created": "2026-11-10T12:00:00Z"}, points=[2])
 
         bericht = anonymisieren(
-            client, COLLECTION, PERSON, ausfuehren=True, angelegt_bis=widerruf
+            client, COLLECTION, PERSON, ausfuehren=True, angelegt_vor=neu
         )
 
         assert [p.id for p in bericht.treffer] == [1]
         assert bericht.behalten == [2]
         assert _kennungen(_gelesen(client, 1)) == {EHEMALIGE_PERSON_KENNUNG}
         assert PERSON in _kennungen(_gelesen(client, 2))
+
+    def test_created_ohne_zeitzone_ist_utc(self, client):
+        """12:30 ohne Zeitzone ist 12:30 UTC, also nach 13:00 MEZ (12:00 UTC)."""
+        neu = datetime(2026, 11, 10, 13, 0, tzinfo=timezone(timedelta(hours=1)))
+        client.set_payload(COLLECTION, {"created": "2026-11-10T11:30:00"}, points=[1])
+        client.set_payload(COLLECTION, {"created": "2026-11-10T12:30:00"}, points=[2])
+
+        bericht = anonymisieren(client, COLLECTION, PERSON, angelegt_vor=neu)
+
+        assert [p.id for p in bericht.treffer] == [1]
+        assert bericht.behalten == [2]
+
+    def test_ohne_obergrenze_alle(self, client):
+        client.set_payload(COLLECTION, {"created": "2099-01-01T00:00:00Z"}, points=[2])
+
+        bericht = anonymisieren(client, COLLECTION, PERSON, angelegt_vor=None)
+
+        assert sorted(p.id for p in bericht.treffer) == [1, 2]
+        assert bericht.behalten == []
 
     def test_ohne_lesbares_created_zaehlt_der_beitrag_als_frueher(self, client):
         client.set_payload(COLLECTION, {"created": "kein Datum"}, points=[1])
@@ -172,9 +192,10 @@ class TestAnonymisieren:
             COLLECTION,
             PERSON,
             ausfuehren=True,
-            angelegt_bis=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            angelegt_vor=datetime(2026, 1, 1, tzinfo=timezone.utc),
         )
 
+        # Punkt 1: unlesbar, Punkt 2: ohne created; beide zaehlen als frueher.
         assert sorted(p.id for p in bericht.treffer) == [1, 2]
         assert bericht.behalten == []
 

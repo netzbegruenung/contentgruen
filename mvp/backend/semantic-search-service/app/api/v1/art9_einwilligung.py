@@ -20,7 +20,7 @@ from domain.art9_einwilligung import (
 )
 from services import art9_einwilligung_service
 from services.abzeichen_service import get_abzeichen_service
-from services.art9_einwilligung_service import UnbekannterWortlaut
+from services.art9_einwilligung_service import UnbekannterWortlaut, WortlautGiltNicht
 
 logger = get_logger(__name__)
 
@@ -82,6 +82,12 @@ def einwilligen(
     except UnbekannterWortlaut:
         raise HTTPException(
             status_code=422, detail="Unbekannter Wortlaut der Einwilligung"
+        )
+    except WortlautGiltNicht:
+        # Etwa ein Tab, der noch den vorigen Wortlaut zeigt: neu laden laesst den
+        # aktuellen zeigen (domain/art9_einwilligung.py, GELTENDE_WORTLAUTE).
+        raise HTTPException(
+            status_code=400, detail="Dieser Wortlaut der Einwilligung gilt nicht mehr"
         )
     except Exception as e:
         logger.error(

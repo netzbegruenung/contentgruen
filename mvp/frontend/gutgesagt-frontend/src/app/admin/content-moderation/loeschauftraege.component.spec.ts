@@ -11,6 +11,7 @@ function auftrag(overrides: Partial<Loeschauftrag> = {}): Loeschauftrag {
     id: 'auftrag-1',
     user_id: 'person-1',
     anzeigename: 'Anna B.',
+    widerrufen_am: '2026-11-10T10:00:00Z',
     angelegt_am: '2026-11-10T10:00:00Z',
     frist: '2026-11-17T10:00:00Z',
     ueberfaellig: false,
@@ -90,6 +91,14 @@ describe('LoeschauftraegeComponent', () => {
       expect(text).toContain('Widerrufen am');
       expect(text).toContain('Frist bis');
       expect(zeilen[0].classList).not.toContain('ueberfaellig');
+    });
+
+    it('zeigt den jüngsten Widerruf, nicht das Anlegen', () => {
+      moderation.getLoeschauftraege.and.returnValue(of(antwort([auftrag({ widerrufen_am: '2026-11-12T10:00:00Z' })])));
+
+      starten();
+
+      expect(element().querySelector('[data-testid="loeschauftrag"]')!.textContent).toContain('Widerrufen am 12.11.2026');
     });
 
     it('hebt überfällige Aufträge hervor', () => {
@@ -212,6 +221,10 @@ describe('LoeschauftraegeComponent', () => {
       fixture.detectChanges();
 
       expect(dialog.open).toHaveBeenCalled();
+      // Entscheidung Maintainer, 13.11.2026: was nach einer neuen Einwilligung kam, bleibt
+      expect((dialog.open.calls.mostRecent().args[1] as any).data.text).toContain(
+        'soweit sie vor einer neuen Einwilligung entstanden sind; was danach kam, bleibt'
+      );
       expect(moderation.loeschauftragAusfuehren).toHaveBeenCalledWith('auftrag-1');
       expect(snackBar.open.calls.mostRecent().args[0]).toBe(
         'Erledigt: 3 Beiträge anonymisiert, 1 Einwurf gelöscht, 2 Sätze ohne Namen.'
@@ -262,6 +275,21 @@ describe('LoeschauftraegeComponent', () => {
 
       const text = snackBar.open.calls.mostRecent().args[0];
       expect(text).toBe('Den Löschauftrag gibt es nicht mehr, etwa nach einer Kontolöschung.');
+      expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
+    });
+
+    it('sagt bei geändertem Stand, dass der Auftrag offen bleibt und erneut auszuführen ist', () => {
+      starten();
+      dialogAntwort(true);
+      moderation.loeschauftragAusfuehren.and.returnValue(
+        throwError(() => ({ status: 409, error: { detail: 'loeschauftrag_stand_geaendert' } }))
+      );
+
+      knopf('Löschablauf ausführen')!.click();
+
+      const text = snackBar.open.calls.mostRecent().args[0];
+      expect(text).toContain('widerrufen oder neu eingewilligt');
+      expect(text).toContain('Bitte erneut ausführen');
       expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
     });
 

@@ -120,10 +120,12 @@ export interface Loeschauftrag {
   /** Kennung der Person; Admins sehen sie (Glossar „Kennung“). */
   user_id: string;
   anzeigename: string | null;
+  /** Jüngster Widerruf; widerruft die Person nach einer neuen Einwilligung erneut, bleibt es ein Auftrag. */
+  widerrufen_am: string;
   angelegt_am: string;
   frist: string;
   ueberfaellig: boolean;
-  /** Neue Einwilligung nach dem Widerruf: wann zuletzt; sonst null. */
+  /** Neue Einwilligung nach dem jüngsten Widerruf; was ab da kam, bleibt. Sonst null. */
   neu_eingewilligt_am: string | null;
 }
 

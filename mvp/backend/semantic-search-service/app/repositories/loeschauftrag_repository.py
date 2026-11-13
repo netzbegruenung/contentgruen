@@ -7,9 +7,11 @@ dieselben Schritte fuer Einwuerfe und Saetze wie das Loeschkommando
 (mvp/scripts/manual/person_loeschen.sql, docs/LOESCHKONZEPT.md Schritt 2), aber ohne
 Konto, Anzeigename, Einwilligung und Meldungen: Das Konto bleibt.
 
-Erfasst wird nur, was bis zum Widerruf angelegt war (``Loeschauftrag.stichtag``);
-was die Person nach einer neuen Einwilligung beitraegt, bleibt unberuehrt
-(Entscheidung Maintainer, 13.11.2026).
+Was die Person nach einer neuen Einwilligung beitraegt, bleibt unberuehrt
+(Entscheidung Maintainer, 13.11.2026): Obergrenze ist die frueheste Einwilligung zu
+einem geltenden Wortlaut nach dem juengsten Widerruf (``Loeschauftrag.obergrenze``).
+Ohne eine solche erfasst der Auftrag alles, auch Nachzuegler, die kurz vor dem
+Widerruf geprueft und erst danach gespeichert wurden.
 """
 
 import uuid
@@ -21,6 +23,7 @@ from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from domain.art9_einwilligung import GELTENDE_WORTLAUTE
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import (
     Art9EinwilligungZeile,
@@ -37,6 +40,10 @@ from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG, EHEMALIGE_PER
 FRIST_TAGE = 7
 
 
+class StandGeaendert(RuntimeError):
+    """Seit dem Laden hat die Person widerrufen oder neu eingewilligt."""
+
+
 @dataclass(frozen=True)
 class Loeschauftrag:
     id: uuid.UUID
@@ -44,17 +51,40 @@ class Loeschauftrag:
     angelegt_am: datetime
     frist: datetime
     erledigt_am: Optional[datetime]
-    # Juengste Einwilligung nach dem Widerruf, falls die Person neu eingewilligt hat
-    neu_eingewilligt_am: Optional[datetime] = None
-    # Juengster Widerruf seit dem Anlegen (``laden``); widerruft die Person nach einer
-    # neuen Einwilligung erneut, bleibt es bei einem offenen Auftrag, der dann auch
-    # das Dazwischen erfasst.
+    # Juengster Widerruf der Person (``offene``, ``laden``); widerruft sie nach einer
+    # neuen Einwilligung erneut, bleibt es bei einem offenen Auftrag.
     widerrufen_am: Optional[datetime] = None
+    # Frueheste Einwilligung zu einem geltenden Wortlaut nach dem juengsten Widerruf:
+    # Was ab da angelegt ist, erfasst der Auftrag nicht. Ohne: alles.
+    obergrenze: Optional[datetime] = None
 
     @property
-    def stichtag(self) -> datetime:
-        """Was bis hierhin angelegt war, erfasst der Auftrag; Spaeteres nicht."""
-        return self.widerrufen_am or self.angelegt_am
+    def neu_eingewilligt_am(self) -> Optional[datetime]:
+        """Fuer die Liste der Admins: die neue Einwilligung, ab der nichts mehr geht."""
+        return self.obergrenze
+
+
+@dataclass(frozen=True)
+class _Stand:
+    widerrufen_am: Optional[datetime]
+    obergrenze: Optional[datetime]
+
+
+def _stand(session: Session, user_id: str) -> _Stand:
+    """Juengster Widerruf und die Obergrenze danach, frisch aus der Datenbank."""
+    widerrufen_am = session.execute(
+        select(func.max(Art9EinwilligungZeile.widerrufen_am)).where(
+            Art9EinwilligungZeile.user_id == user_id
+        )
+    ).scalar_one_or_none()
+    neue = select(func.min(Art9EinwilligungZeile.eingewilligt_am)).where(
+        Art9EinwilligungZeile.user_id == user_id,
+        Art9EinwilligungZeile.wortlaut.in_(sorted(GELTENDE_WORTLAUTE)),
+    )
+    if widerrufen_am is not None:
+        neue = neue.where(Art9EinwilligungZeile.eingewilligt_am > widerrufen_am)
+    obergrenze = session.execute(neue).scalar_one_or_none()
+    return _Stand(widerrufen_am=widerrufen_am, obergrenze=obergrenze)
 
 
 @dataclass(frozen=True)
@@ -77,7 +107,20 @@ class LoeschauftragRepository:
         Einen offenen Auftrag anlegen, Frist FRIST_TAGE ab jetzt. Gibt es schon einen
         offenen, bleibt es bei ihm (Index idx_loeschauftraege_offen). Mit ``session``
         in deren Transaktion (Widerruf), sonst in einer eigenen.
+
+        Den offenen Auftrag sperrt es vorher (FOR UPDATE): Fuehrt ihn ein Admin gerade
+        aus (``ausfuehren`` sperrt ihn ebenso), wartet der Widerruf. Danach ist der
+        Auftrag erledigt, die Sperre findet ihn nicht mehr, und es entsteht ein neuer;
+        so geht ein Widerruf waehrend der Ausfuehrung nicht verloren.
         """
+        sperren = (
+            select(LoeschauftragZeile.id)
+            .where(
+                LoeschauftragZeile.user_id == user_id,
+                LoeschauftragZeile.erledigt_am.is_(None),
+            )
+            .with_for_update()
+        )
         anweisung = (
             insert(LoeschauftragZeile)
             .values(
@@ -92,32 +135,30 @@ class LoeschauftragRepository:
             )
         )
         if session is not None:
+            session.execute(sperren).all()
             session.execute(anweisung)
             return
         with self.db.get_session() as eigene:
+            eigene.execute(sperren).all()
             eigene.execute(anweisung)
 
     def offene(self) -> List[Loeschauftrag]:
         """
-        Offene Auftraege, die mit der fruehesten Frist zuerst. Hat die Person nach dem
-        Widerruf (``angelegt_am``) neu eingewilligt, steht der juengste Zeitpunkt in
-        ``neu_eingewilligt_am``.
+        Offene Auftraege, die mit der fruehesten Frist zuerst, je mit juengstem
+        Widerruf und Obergrenze (eine neue Einwilligung nach diesem Widerruf). Offene
+        Auftraege sind wenige; je Auftrag zwei Abfragen ueber den Index.
         """
-        neu_eingewilligt = (
-            select(func.max(Art9EinwilligungZeile.eingewilligt_am))
-            .where(
-                Art9EinwilligungZeile.user_id == LoeschauftragZeile.user_id,
-                Art9EinwilligungZeile.eingewilligt_am > LoeschauftragZeile.angelegt_am,
-            )
-            .scalar_subquery()
-        )
         with self.db.get_session() as session:
-            zeilen = session.execute(
-                select(LoeschauftragZeile, neu_eingewilligt)
-                .where(LoeschauftragZeile.erledigt_am.is_(None))
-                .order_by(LoeschauftragZeile.frist, LoeschauftragZeile.id)
-            ).all()
-            return [_auftrag(z, neu) for z, neu in zeilen]
+            zeilen = (
+                session.execute(
+                    select(LoeschauftragZeile)
+                    .where(LoeschauftragZeile.erledigt_am.is_(None))
+                    .order_by(LoeschauftragZeile.frist, LoeschauftragZeile.id)
+                )
+                .scalars()
+                .all()
+            )
+            return [_auftrag(z, _stand(session, z.user_id)) for z in zeilen]
 
     def ueberfaellige_zaehlen(self, jetzt: datetime) -> int:
         """Offene Auftraege, deren Frist vor ``jetzt`` lag."""
@@ -132,23 +173,12 @@ class LoeschauftragRepository:
             ).scalar_one()
 
     def laden(self, auftrag_id: uuid.UUID) -> Optional[Loeschauftrag]:
-        """
-        Der Auftrag samt juengstem Widerruf der Person seit dem Anlegen
-        (``widerrufen_am``, daraus ``stichtag``). Der Widerruf und das Anlegen laufen in
-        einer Transaktion, ``now()`` ist dort derselbe Zeitpunkt; der Backfill legt
-        Auftraege zum Zeitpunkt des Widerrufs an.
-        """
+        """Der Auftrag samt juengstem Widerruf und Obergrenze der Person."""
         with self.db.get_session() as session:
             zeile = session.get(LoeschauftragZeile, auftrag_id)
             if zeile is None:
                 return None
-            widerrufen_am = session.execute(
-                select(func.max(Art9EinwilligungZeile.widerrufen_am)).where(
-                    Art9EinwilligungZeile.user_id == zeile.user_id,
-                    Art9EinwilligungZeile.widerrufen_am >= zeile.angelegt_am,
-                )
-            ).scalar_one_or_none()
-            return _auftrag(zeile, widerrufen_am=widerrufen_am)
+            return _auftrag(zeile, _stand(session, zeile.user_id))
 
     def ausfuehren(
         self, auftrag: Loeschauftrag, beitraege_behalten: Iterable[str] = ()
@@ -158,12 +188,18 @@ class LoeschauftragRepository:
         erledigen, in einer Transaktion: Scheitert ein Schritt, bleibt alles wie vorher
         und der Auftrag offen. Wiederholbar: Ein zweiter Lauf findet nichts mehr.
 
-        Nur was bis ``auftrag.stichtag`` angelegt war: Einwuerfe und Verknuepfungen nach
-        ``created_at``, Saetze nach ``updated_at`` (einen Zeitpunkt des Anlegens hat
-        ein Satz nicht; wer ihn nach einer neuen Einwilligung neu speichert, hat ihn
-        unter ihr beigetragen). Sperren haengen am Beitrag: Ihr Autor geht, ausser
-        an den Beitraegen in ``beitraege_behalten`` (nach einer neuen Einwilligung
-        angelegt, in Qdrant nicht anonymisiert).
+        Zuerst sperrt es die Zeile des Auftrags (FOR UPDATE) und liest den Stand neu:
+        Hat die Person seit ``laden`` widerrufen oder neu eingewilligt, passt der
+        Qdrant-Teil nicht mehr zum Stand, und es bricht mit ``StandGeaendert`` ab;
+        der Auftrag bleibt offen, ein zweiter Lauf nimmt den neuen Stand. Ist er
+        schon erledigt (zweiter Klick), aendert es nichts.
+
+        Gibt es eine ``obergrenze``, nur was davor angelegt war: Einwuerfe und
+        Verknuepfungen nach ``created_at``, Saetze nach ``updated_at`` (einen Zeitpunkt
+        des Anlegens hat ein Satz nicht; wer ihn nach einer neuen Einwilligung neu
+        speichert, hat ihn unter ihr beigetragen). Sperren haengen am Beitrag: Ihr
+        Autor geht, ausser an den Beitraegen in ``beitraege_behalten`` (nach der neuen
+        Einwilligung angelegt, in Qdrant nicht anonymisiert).
 
         - Eigene Einwuerfe loeschen; CASCADE nimmt Saetze und "ausformuliert in" daran mit.
         - Saetze an fremden Einwuerfen bleiben, je Satz mit eigenem Platzhalter und
@@ -174,14 +210,27 @@ class LoeschauftragRepository:
         - Platzhalter ohne Satz aus ``users`` abraeumen.
         """
         uid = auftrag.user_id
-        bis = auftrag.stichtag
+        vor = auftrag.obergrenze
         behalten = _uuids(beitraege_behalten)
+
+        def davor(spalte):
+            return [] if vor is None else [spalte < vor]
+
         with self.db.get_session() as session:
+            gesperrt = session.execute(
+                select(LoeschauftragZeile.erledigt_am)
+                .where(LoeschauftragZeile.id == auftrag.id)
+                .with_for_update()
+            ).first()
+            if gesperrt is None or gesperrt.erledigt_am is not None:
+                return PostgresBericht(einwuerfe=0, saetze=0)
+            if _stand(session, uid) != _Stand(auftrag.widerrufen_am, vor):
+                raise StandGeaendert(str(auftrag.id))
             session.execute(
                 update(AusformuliertIn)
                 .where(
                     AusformuliertIn.created_by == uid,
-                    AusformuliertIn.created_at <= bis,
+                    *davor(AusformuliertIn.created_at),
                 )
                 .values(created_by=None)
             )
@@ -191,12 +240,12 @@ class LoeschauftragRepository:
             session.execute(sperren.values(autor=None, widerspruch=None))
             einwuerfe = session.execute(
                 delete(Einwurf).where(
-                    Einwurf.submitted_by == uid, Einwurf.created_at <= bis
+                    Einwurf.submitted_by == uid, *davor(Einwurf.created_at)
                 )
             ).rowcount
             saetze = session.execute(
                 select(Satz.id, Satz.raw_input_id).where(
-                    Satz.user_id == uid, Satz.updated_at <= bis
+                    Satz.user_id == uid, *davor(Satz.updated_at)
                 )
             ).all()
             for satz in saetze:
@@ -213,16 +262,17 @@ class LoeschauftragRepository:
             session.flush()
             # Wer den ersten Satz spaeter geleert hat: ein eigener Platzhalter je Einwurf,
             # ohne Zeile in users (kein Codepfad zeigt einen Namen zu destilled_by).
-            # Nicht an Einwuerfen von nach dem Stichtag und nicht, wo ein Satz der Person
-            # bleibt (nach einer neuen Einwilligung gespeichert).
+            # Nicht an Einwuerfen von nach der Obergrenze und nicht, wo ein Satz der
+            # Person bleibt (nach einer neuen Einwilligung gespeichert).
             session.execute(
                 text(
                     "UPDATE raw_inputs SET destilled_by = :praefix || gen_random_uuid()"
-                    " WHERE destilled_by = :uid AND created_at <= :bis"
+                    " WHERE destilled_by = :uid"
+                    " AND (CAST(:vor AS timestamptz) IS NULL OR created_at < :vor)"
                     " AND NOT EXISTS (SELECT 1 FROM raw_input_drafts AS d"
                     " WHERE d.raw_input_id = raw_inputs.id AND d.user_id = :uid)"
                 ),
-                {"praefix": f"{EHEMALIGE_PERSON_KENNUNG}-", "uid": uid, "bis": bis},
+                {"praefix": f"{EHEMALIGE_PERSON_KENNUNG}-", "uid": uid, "vor": vor},
             )
             session.execute(
                 delete(User).where(
@@ -250,19 +300,15 @@ class LoeschauftragRepository:
             ).rowcount
 
 
-def _auftrag(
-    zeile: LoeschauftragZeile,
-    neu_eingewilligt_am: Optional[datetime] = None,
-    widerrufen_am: Optional[datetime] = None,
-) -> Loeschauftrag:
+def _auftrag(zeile: LoeschauftragZeile, stand: _Stand) -> Loeschauftrag:
     return Loeschauftrag(
         id=zeile.id,
         user_id=zeile.user_id,
         angelegt_am=zeile.angelegt_am,
         frist=zeile.frist,
         erledigt_am=zeile.erledigt_am,
-        neu_eingewilligt_am=neu_eingewilligt_am,
-        widerrufen_am=widerrufen_am,
+        widerrufen_am=stand.widerrufen_am,
+        obergrenze=stand.obergrenze,
     )
 
 

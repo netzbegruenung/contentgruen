@@ -574,7 +574,7 @@ Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht h
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
 **Löschauftrag**:
-Was der Widerruf der Art.-9-Einwilligung anlegt: Ein Admin führt binnen sieben Tagen den Löschablauf für die Person aus. Ihre Beiträge zeigen danach „ehemalige Person“, ihre Einwürfe sind gelöscht, ihre Sätze an Einwürfen anderer tragen einen Platzhalter. Konto, Anzeigename und die Einwilligung als Nachweis bleiben. Erfasst wird nur, was bis zum Widerruf angelegt war; was die Person nach einer neuen Einwilligung beiträgt, bleibt. Je Person gibt es höchstens einen offenen; Admins sehen offene unter „Moderation“, „Löschaufträge“, überfällige hervorgehoben. Ein erledigter Auftrag geht nach seiner Löschfrist.
+Was der Widerruf der Art.-9-Einwilligung anlegt: Ein Admin führt binnen sieben Tagen den Löschablauf für die Person aus. Ihre Beiträge zeigen danach „ehemalige Person“, ihre Einwürfe sind gelöscht, ihre Sätze an Einwürfen anderer tragen einen Platzhalter. Konto, Anzeigename und die Einwilligung als Nachweis bleiben. Was die Person nach einer neuen Einwilligung beiträgt, bleibt; ohne neue Einwilligung erfasst er alles. Je Person gibt es höchstens einen offenen; Admins sehen offene unter „Moderation“, „Löschaufträge“, überfällige hervorgehoben. Ein erledigter Auftrag geht nach seiner Löschfrist.
 _Avoid_: Löschantrag (den stellt eine Person selbst), Löschanfrage, Ticket
 
 **Löschfrist**:

@@ -225,6 +225,12 @@ describe('EinwilligungComponent', () => {
       expect(el().querySelector('.hinweis')?.textContent).toContain('12.11.2026 einem früheren Wortlaut zugestimmt');
 
       knopf('Frühere Einwilligung widerrufen').click();
+      fixture.detectChanges();
+      // Waehrend des Widerrufs: weiter die Frage, gesperrt, nicht der Block fuer Eingewilligte
+      expect(el().querySelector('mat-checkbox')).not.toBeNull();
+      expect(el().textContent).not.toContain('Widerrufst du, kannst du nichts mehr beitragen');
+      expect(knopf('Frühere Einwilligung widerrufen').disabled).toBeTrue();
+      expect(knopf('Einwilligen und weiter').disabled).toBeTrue();
       http.expectOne({ method: 'DELETE', url: URL }).flush(null, { status: 204, statusText: 'No Content' });
       standLiefern(stand({ wortlaut: '2026-11-12', eingewilligt_am: '2026-11-12T09:30:00Z', widerrufen_am: '2026-11-13T09:30:00Z' }));
 

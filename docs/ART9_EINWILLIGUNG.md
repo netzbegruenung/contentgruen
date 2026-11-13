@@ -61,9 +61,9 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   Einwürfen tragen einen Platzhalter; Konto, Anzeigename und diese Zeile bleiben
   (`docs/LOESCHKONZEPT.md`, „Löschauftrag nach dem Widerruf“, DSFA R9b). Bis dahin bleiben
   Beiträge, Einwürfe und Sätze an der Person. Willigt die Person vor der Ausführung neu ein,
-  bleibt der Auftrag offen, erfasst beim Ausführen aber nur, was bis zum Widerruf angelegt war;
-  was sie danach beiträgt, bleibt an ihr (Entscheidung Maintainer, 13.11.2026). Die Liste der
-  Admins zeigt dann „Neu eingewilligt am …“. Eine neue
+  bleibt der Auftrag offen, erfasst beim Ausführen aber nur, was vor der neuen Einwilligung
+  entstand; was sie danach beiträgt, bleibt an ihr (Entscheidung Maintainer, 13.11.2026). Ohne
+  neue Einwilligung erfasst er alles. Die Liste der Admins zeigt dann „Neu eingewilligt am …“. Eine neue
   Einwilligung ist eine neue Zeile; die früheren bleiben. Jede Prüfung fragt die Datenbank,
   damit ein Widerruf und das Löschkommando sofort wirken.
 - **Startkonten und Import:** Auch ein Startkonto willigt einmal in der App ein, bevor es
@@ -92,7 +92,8 @@ regelt `GELTENDE_WORTLAUTE` in derselben Datei. Nur eine nicht widerrufene Einwi
 dieser Kennungen zählt (`Art9Einwilligung.zaehlt`): Dann meldet das Backend `eingewilligt`, und
 `Art9EinwilligungService.eingewilligt` gibt frei. Eine Einwilligung zu einer anderen Kennung
 bleibt als Nachweis stehen und kann widerrufen werden (der Widerruf legt dann auch den
-Löschauftrag an), zählt aber nicht: Das Backend meldet `eingewilligt: false`, das Frontend führt
+Löschauftrag an), zählt aber nicht, und neu einwilligen lässt sich nur zu einer geltenden
+Kennung (sonst 400): Das Backend meldet `eingewilligt: false`, das Frontend führt
 beim nächsten Besuch auf `/einwilligung`, und dort steht ein Hinweis auf den früheren Wortlaut
 mit dem Knopf „Frühere Einwilligung widerrufen“. Bis dahin ist gesperrt wie ohne Einwilligung.
 Tests: `test_einwilligung_zu_frueherem_wortlaut_fragt_neu`, `test_frueherer_wortlaut_gesperrt`,

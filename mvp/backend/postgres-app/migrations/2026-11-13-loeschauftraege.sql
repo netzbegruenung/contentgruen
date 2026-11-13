@@ -9,11 +9,13 @@
 -- Neue Datenbanken brauchen dieses Skript nicht: create_all legt die Tabelle beim
 -- Start an, auch in bestehenden Datenbanken, vor dem Einspielen der Migrationen.
 --
--- Vorhandene Daten: Wer vor diesem Stand widerrufen und seither nicht neu
--- eingewilligt hat, bekommt einen offenen Auftrag, angelegt zum Zeitpunkt des
--- Widerrufs, mit Frist sieben Tage ab dem Einspielen (sonst waere er sofort
--- ueberfaellig); ausser es gibt schon einen seit diesem Widerruf. Ein zweiter Lauf
--- legt deshalb nichts an.
+-- Vorhandene Daten: Wer vor diesem Stand irgendwann widerrufen hat, auch wer danach
+-- neu eingewilligt hat, bekommt einen offenen Auftrag, angelegt zum Zeitpunkt des
+-- juengsten Widerrufs, mit Frist sieben Tage ab dem Einspielen (sonst waere er sofort
+-- ueberfaellig); ausser es gibt schon einen offenen oder einen seit diesem Widerruf.
+-- Was nach einer neuen Einwilligung entstand, erfasst der Auftrag nicht (Obergrenze,
+-- repositories/loeschauftrag_repository.py; Entscheidung Maintainer, 13.11.2026).
+-- Ein zweiter Lauf legt nichts an.
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
@@ -33,17 +35,17 @@ CREATE INDEX IF NOT EXISTS idx_loeschauftraege_erledigt_am
     ON loeschauftraege (erledigt_am);
 
 INSERT INTO loeschauftraege (id, user_id, angelegt_am, frist)
-SELECT gen_random_uuid(), j.user_id, j.widerrufen_am, now() + interval '7 days'
+SELECT gen_random_uuid(), w.user_id, w.widerrufen_am, now() + interval '7 days'
 FROM (
-    SELECT DISTINCT ON (user_id) user_id, widerrufen_am
+    SELECT user_id, max(widerrufen_am) AS widerrufen_am
     FROM art9_einwilligungen
-    ORDER BY user_id, eingewilligt_am DESC
-) AS j
-WHERE j.widerrufen_am IS NOT NULL
-  AND NOT EXISTS (
+    WHERE widerrufen_am IS NOT NULL
+    GROUP BY user_id
+) AS w
+WHERE NOT EXISTS (
     SELECT 1 FROM loeschauftraege AS a
-    WHERE a.user_id = j.user_id
-      AND (a.erledigt_am IS NULL OR a.angelegt_am >= j.widerrufen_am)
-  );
+    WHERE a.user_id = w.user_id
+      AND (a.erledigt_am IS NULL OR a.angelegt_am >= w.widerrufen_am)
+);
 
 COMMIT;

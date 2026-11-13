@@ -316,6 +316,7 @@ describe('ContentModerationComponent', () => {
       id: 'auftrag-1',
       user_id: 'person-1',
       anzeigename: 'Anna B.',
+      widerrufen_am: '2026-11-01T10:00:00Z',
       angelegt_am: '2026-11-01T10:00:00Z',
       frist: '2026-11-08T10:00:00Z',
       ueberfaellig: true,

@@ -101,7 +101,9 @@ export class EinwilligungComponent implements OnInit {
     if (!erlaubt) {
       return;
     }
-    this.zustand = 'widerruft';
+    // Aus der Frage heraus bleibt die Frage stehen (gesperrt), statt kurz den Block fuer
+    // Eingewilligte zu zeigen.
+    this.zustand = this.zustand === 'frage' ? 'sendet' : 'widerruft';
     this.einwilligung.widerrufen().subscribe({
       next: () => this.laden(),
       error: () => (this.zustand = 'fehler'),

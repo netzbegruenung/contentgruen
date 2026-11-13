@@ -9,9 +9,11 @@ Einwuerfe loeschen und Saetze an fremden Einwuerfen mit Platzhalter versehen wie
 Schritt 2 (LoeschauftragRepository.ausfuehren). Das Konto, der Anzeigename und die
 Zeile der Einwilligung als Nachweis (Art. 7 Abs. 1 DSGVO) bleiben.
 
-Erfasst wird nur, was bis zum Widerruf angelegt war (``Loeschauftrag.stichtag``):
 Was die Person nach einer neuen Einwilligung beitraegt, bleibt unberuehrt
-(Entscheidung Maintainer, 13.11.2026).
+(Entscheidung Maintainer, 13.11.2026, ``Loeschauftrag.obergrenze``); ohne neue
+Einwilligung erfasst der Auftrag alles. Hat die Person waehrend der Ausfuehrung
+widerrufen oder neu eingewilligt, bricht der PostgreSQL-Teil mit ``StandGeaendert``
+ab, der Auftrag bleibt offen, und der naechste Klick nimmt den neuen Stand.
 
 Erst Qdrant, dann PostgreSQL samt Vermerk "erledigt": Scheitert ein Schritt, bleibt
 der Auftrag offen, und ein zweiter Klick holt nach, was fehlt; beide Teile sind
@@ -23,10 +25,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable, Dict, Iterable, List, Optional, Sequence, Union
 
-from repositories.loeschauftrag_repository import (
+from repositories.loeschauftrag_repository import (  # noqa: F401 (StandGeaendert)
     FRIST_TAGE,
     Loeschauftrag,
     LoeschauftragRepository,
+    StandGeaendert,
 )
 
 
@@ -43,17 +46,20 @@ class OffenerAuftrag:
     id: uuid.UUID
     user_id: str
     anzeigename: Optional[str]
+    # Juengster Widerruf (ohne Zeile der Einwilligung: das Anlegen)
+    widerrufen_am: datetime
     angelegt_am: datetime
     frist: datetime
     ueberfaellig: bool
-    # Neue Einwilligung nach dem Widerruf; was danach kam, erfasst der Auftrag nicht
+    # Neue Einwilligung nach dem juengsten Widerruf; was ab da kam, erfasst der
+    # Auftrag nicht
     neu_eingewilligt_am: Optional[datetime]
 
 
 @dataclass(frozen=True)
 class AnonymisierteBeitraege:
     anzahl: int
-    # Beitraege der Person nach dem Stichtag (Qdrant-Punktkennungen), unberuehrt
+    # Beitraege der Person ab der Obergrenze (Qdrant-Punktkennungen), unberuehrt
     behalten: Sequence[Union[int, str]] = ()
 
 
@@ -68,12 +74,14 @@ class LoeschauftragService:
     def __init__(
         self,
         repository: LoeschauftragRepository,
-        beitraege_anonymisieren: Callable[[str, datetime], AnonymisierteBeitraege],
+        beitraege_anonymisieren: Callable[
+            [str, Optional[datetime]], AnonymisierteBeitraege
+        ],
         anzeigenamen: Optional[Callable[[Iterable[str]], Dict[str, str]]] = None,
     ):
         """
-        ``beitraege_anonymisieren``: Kennung und Stichtag -> anonymisierte Beitraege
-        (nur bis zum Stichtag angelegte) und die spaeteren, die bleiben.
+        ``beitraege_anonymisieren``: Kennung und Obergrenze -> anonymisierte Beitraege
+        (nur davor angelegte; ohne Obergrenze alle) und die spaeteren, die bleiben.
         ``anzeigenamen``: Kennungen -> Namen fuer die Liste; ohne nur die Kennung.
         """
         self._repository = repository
@@ -97,6 +105,7 @@ class LoeschauftragService:
                 id=a.id,
                 user_id=a.user_id,
                 anzeigename=namen.get(a.user_id),
+                widerrufen_am=a.widerrufen_am or a.angelegt_am,
                 angelegt_am=a.angelegt_am,
                 frist=a.frist,
                 ueberfaellig=a.frist < jetzt,
@@ -111,7 +120,7 @@ class LoeschauftragService:
             raise AuftragUnbekannt(str(auftrag_id))
         if auftrag.erledigt_am is not None:
             raise AuftragErledigt(str(auftrag_id))
-        beitraege = self._beitraege_anonymisieren(auftrag.user_id, auftrag.stichtag)
+        beitraege = self._beitraege_anonymisieren(auftrag.user_id, auftrag.obergrenze)
         bericht = self._repository.ausfuehren(
             auftrag, beitraege_behalten=[str(b) for b in beitraege.behalten]
         )
@@ -136,7 +145,7 @@ def get_loeschauftrag_service() -> LoeschauftragService:
         from services.wartung.beitraege_anonymisieren import anonymisieren
 
         def beitraege_anonymisieren(
-            kennung: str, stichtag: datetime
+            kennung: str, obergrenze: Optional[datetime]
         ) -> AnonymisierteBeitraege:
             manager = get_embeddings_manager()
             bericht = anonymisieren(
@@ -144,7 +153,7 @@ def get_loeschauftrag_service() -> LoeschauftragService:
                 manager.collection_name,
                 kennung,
                 ausfuehren=True,
-                angelegt_bis=stichtag,
+                angelegt_vor=obergrenze,
             )
             return AnonymisierteBeitraege(len(bericht.treffer), bericht.behalten)
 

@@ -16,11 +16,18 @@ from core.fehler import INTERNER_FEHLER
 from core.logging import get_logger, log_pseudonym
 from dependencies import require_admin
 from services import loeschauftrag_service
-from services.loeschauftrag_service import AuftragErledigt, AuftragUnbekannt
+from services.loeschauftrag_service import (
+    AuftragErledigt,
+    AuftragUnbekannt,
+    StandGeaendert,
+)
 
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+# Kennzeichen fuer das Frontend: anders als "schon erledigt" erneut ausfuehren
+STAND_GEAENDERT = "loeschauftrag_stand_geaendert"
 
 
 class OffenerAuftragResponse(BaseModel):
@@ -28,10 +35,13 @@ class OffenerAuftragResponse(BaseModel):
     # Admins sehen die Kennung (Glossar "Kennung"), dazu den Anzeigenamen, falls es ihn gibt
     user_id: str
     anzeigename: Optional[str]
+    # Juengster Widerruf; widerruft die Person nach einer neuen Einwilligung erneut,
+    # bleibt es bei einem offenen Auftrag
+    widerrufen_am: datetime
     angelegt_am: datetime
     frist: datetime
     ueberfaellig: bool
-    # Hat die Person nach dem Widerruf neu eingewilligt: wann zuletzt
+    # Neue Einwilligung nach dem juengsten Widerruf: was ab da kam, bleibt
     neu_eingewilligt_am: Optional[datetime]
 
 
@@ -79,6 +89,10 @@ def ausfuehren(
         raise HTTPException(status_code=404, detail="Löschauftrag nicht gefunden")
     except AuftragErledigt:
         raise HTTPException(status_code=409, detail="Löschauftrag ist schon erledigt")
+    except StandGeaendert:
+        # Widerruf oder neue Einwilligung waehrend der Ausfuehrung: Auftrag offen, der
+        # naechste Klick nimmt den neuen Stand (Qdrant-Teil ist wiederholbar).
+        raise HTTPException(status_code=409, detail=STAND_GEAENDERT)
     except Exception as e:
         logger.error(
             f"Loeschauftrag {auftrag_id} nicht ausgefuehrt: {type(e).__name__}",

@@ -21,7 +21,7 @@ erst nach einem Neustart sehen.
 
 from typing import Optional, Protocol
 
-from domain.art9_einwilligung import bekannter_wortlaut
+from domain.art9_einwilligung import bekannter_wortlaut, geltender_wortlaut
 from repositories.loeschauftrag_repository import get_loeschauftrag_repository
 from repositories.vote_repository import VoteRepository
 from repositories.art9_einwilligung_repository import (
@@ -33,6 +33,10 @@ from repositories.art9_einwilligung_repository import (
 
 class UnbekannterWortlaut(ValueError):
     pass
+
+
+class WortlautGiltNicht(ValueError):
+    """Bekannt, aber nicht in GELTENDE_WORTLAUTE: Eine Einwilligung dazu zaehlte nicht."""
 
 
 class StimmenDerPerson(Protocol):
@@ -68,6 +72,8 @@ class Art9EinwilligungService:
     def einwilligen(self, user_id: str, wortlaut: str) -> None:
         if not bekannter_wortlaut(wortlaut):
             raise UnbekannterWortlaut(wortlaut)
+        if not geltender_wortlaut(wortlaut):
+            raise WortlautGiltNicht(wortlaut)
         self._repository.einwilligen(user_id, wortlaut)
 
     def widerrufen(self, user_id: str) -> None:

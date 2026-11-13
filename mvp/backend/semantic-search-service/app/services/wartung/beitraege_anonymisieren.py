@@ -15,9 +15,10 @@ Idempotent: Ein zweiter Lauf findet nichts mehr, was die Kennung traegt. Ohne
 ausfuehren=True wird nur gesucht. Der Bericht nennt Typ und Text jedes Treffers -
 fuer die Einzelfallpruefung, ob ein Text die Person selbst erkennbar macht.
 
-Mit ``angelegt_bis`` (Loeschauftrag nach dem Widerruf) nur Beitraege, deren
-``created`` nicht spaeter liegt; spaetere bleiben, wie sie sind, und stehen im
-Bericht unter ``behalten``. Ein Beitrag ohne lesbares ``created`` zaehlt als frueher.
+Mit ``angelegt_vor`` (Loeschauftrag nach dem Widerruf: die neue Einwilligung) nur
+Beitraege, deren ``created`` davor liegt; die ab dann angelegten bleiben, wie sie
+sind, und stehen im Bericht unter ``behalten``. Ein Beitrag ohne lesbares
+``created`` zaehlt als frueher, eines ohne Zeitzone als UTC.
 
 Aufruf: scripts/manual/beitraege_anonymisieren.py
 """
@@ -59,7 +60,7 @@ class Treffer:
 class AnonymisierungBericht:
     ausgefuehrt: bool
     treffer: List[Treffer] = field(default_factory=list)
-    # Punkte mit der Kennung, aber nach ``angelegt_bis`` angelegt: unberuehrt
+    # Punkte mit der Kennung, aber ab ``angelegt_vor`` angelegt: unberuehrt
     behalten: List[Union[int, str]] = field(default_factory=list)
 
 
@@ -80,11 +81,11 @@ def _angelegt(payload: Dict[str, Any]) -> Optional[datetime]:
     return zeitpunkt
 
 
-def _spaeter(payload: Dict[str, Any], angelegt_bis: Optional[datetime]) -> bool:
-    if angelegt_bis is None:
+def _spaeter(payload: Dict[str, Any], angelegt_vor: Optional[datetime]) -> bool:
+    if angelegt_vor is None:
         return False
     angelegt = _angelegt(payload)
-    return angelegt is not None and angelegt > angelegt_bis
+    return angelegt is not None and angelegt >= angelegt_vor
 
 
 def _geaenderte_felder(payload: Dict[str, Any], kennung: str) -> Dict[str, Any]:
@@ -113,7 +114,7 @@ def anonymisieren(
     collection: str,
     kennung: str,
     ausfuehren: bool = False,
-    angelegt_bis: Optional[datetime] = None,
+    angelegt_vor: Optional[datetime] = None,
 ) -> AnonymisierungBericht:
     # Eine leere Kennung oder der Platzhalter selbst bezeichnet niemanden; ein
     # Tippfehler im Aufruf soll nicht still alle anonymen Felder umschreiben oder
@@ -150,7 +151,7 @@ def anonymisieren(
             neu = _geaenderte_felder(payload, kennung)
             if not neu:
                 continue
-            if _spaeter(payload, angelegt_bis):
+            if _spaeter(payload, angelegt_vor):
                 bericht.behalten.append(punkt.id)
                 continue
             bericht.treffer.append(

@@ -256,6 +256,16 @@ class TestEinwilligen:
         assert antwort.status_code == 422
         repository.einwilligen.assert_not_called()
 
+    @pytest.mark.parametrize("frueher", ["2026-11-05-b", "2026-11-12"])
+    def test_post_frueherer_wortlaut_400_ohne_speichern(
+        self, client, repository, frueher
+    ):
+        """Nur GELTENDE_WORTLAUTE: eine Einwilligung zu einem frueheren zaehlte nicht."""
+        antwort = client.post(BASIS, headers=PERSON, json={"wortlaut": frueher})
+
+        assert antwort.status_code == 400
+        repository.einwilligen.assert_not_called()
+
     def test_post_ohne_anmeldung_401(self, client, repository):
         antwort = client.post(BASIS, json={"wortlaut": AKTUELLER_WORTLAUT})
 

@@ -170,7 +170,7 @@ class TestDienst:
     ):
         """2026-11-13: Wer einem frueheren Wortlaut zugestimmt hat, wird neu gefragt."""
         dienst = Art9EinwilligungService(repository)
-        dienst.einwilligen(PERSON, "2026-11-12")
+        repository.einwilligen(PERSON, "2026-11-12")
         assert not dienst.eingewilligt(PERSON)
         assert repository.lesen(PERSON).gilt
 

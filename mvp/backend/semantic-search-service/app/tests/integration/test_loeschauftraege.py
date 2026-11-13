@@ -15,6 +15,7 @@ import pytest
 from infrastructure.database.models import (
     Art9EinwilligungZeile,
     AusformuliertIn,
+    Einwurf,
     LoeschauftragZeile,
     Satz,
     Sperre,
@@ -22,7 +23,11 @@ from infrastructure.database.models import (
 )
 from repositories.art9_einwilligung_repository import Art9EinwilligungRepository
 from repositories.einwurf_repository import EinwurfRepository
-from repositories.loeschauftrag_repository import FRIST_TAGE, LoeschauftragRepository
+from repositories.loeschauftrag_repository import (
+    FRIST_TAGE,
+    LoeschauftragRepository,
+    StandGeaendert,
+)
 from repositories.vote_repository import VoteRepository
 from services.art9_einwilligung_service import Art9EinwilligungService
 from tests.integration import postgres
@@ -189,7 +194,7 @@ class TestAusfuehren:
                 )
             )
 
-        auftraege.ausfuehren(auftrag)
+        auftraege.ausfuehren(auftraege.laden(auftrag.id))
 
         assert _anzeigenamen(datenbank, [PERSON]) == {PERSON: "Anna B."}
         assert Art9EinwilligungRepository(datenbank).lesen(PERSON) is not None
@@ -209,7 +214,6 @@ class TestAusfuehren:
                 content_id=beitrag,
                 created_by=PERSON,
                 draft_id=satz.id,
-                created_at=auftrag.stichtag - timedelta(hours=1),
             )
             sperre = Sperre(
                 content_id=beitrag,
@@ -230,52 +234,6 @@ class TestAusfuehren:
             sperre = s.get(Sperre, sperre_id)
             assert (sperre.autor, sperre.widerspruch) == (None, None)
             assert sperre.gesperrt_von == ANDERE
-
-    def test_nach_dem_widerruf_angelegtes_bleibt(
-        self, datenbank, einwuerfe, auftraege, auftrag
-    ):
-        """
-        Neue Einwilligung vor der Ausfuehrung (Entscheidung Maintainer, 13.11.2026):
-        Der Auftrag erfasst nur, was bis zum Widerruf angelegt war. Einwurf, Satz und
-        Verknuepfung von danach behalten die Kennung, ebenso die Sperre an einem
-        Beitrag von danach (``beitraege_behalten``).
-        """
-        spaeter_beitrag = uuid.uuid4()
-        with datenbank.get_session() as s:
-            neu_eigen = _einwurf(s, von=PERSON)
-            neu_fremd = _einwurf(s, von=ANDERE, destilled_by=PERSON)
-            _satz(s, neu_fremd, PERSON, "Ein Satz nach der neuen Einwilligung")
-            link = AusformuliertIn(
-                raw_input_id=neu_fremd, content_id=spaeter_beitrag, created_by=PERSON
-            )
-            sperre = Sperre(
-                content_id=spaeter_beitrag,
-                sperrgrund="unterstellung",
-                begruendung="Unterstellt Bosheit.",
-                gesperrt_von=ANDERE,
-                autor=PERSON,
-            )
-            s.add_all([link, sperre])
-            s.flush()
-            link_id, sperre_id = link.id, sperre.id
-
-        bericht = auftraege.ausfuehren(
-            auftrag, beitraege_behalten=[str(spaeter_beitrag)]
-        )
-
-        # Was vor dem Widerruf da war, geht wie sonst.
-        assert (bericht.einwuerfe, bericht.saetze) == (1, 1)
-        assert EinwurfRepository(datenbank).get_by_id(einwuerfe.eigen) is None
-        assert _saetze(datenbank, einwuerfe.fremd)[SATZ_DER_PERSON] != PERSON
-        # Was danach kam, bleibt an der Person.
-        assert EinwurfRepository(datenbank).get_by_id(neu_eigen) is not None
-        assert _saetze(datenbank, neu_fremd) == {
-            "Ein Satz nach der neuen Einwilligung": PERSON
-        }
-        assert _destilled_by(datenbank, neu_fremd) == PERSON
-        with datenbank.get_session() as s:
-            assert s.get(AusformuliertIn, link_id).created_by == PERSON
-            assert s.get(Sperre, sperre_id).autor == PERSON
 
     def test_auftrag_erledigt_und_zweiter_lauf_aendert_nichts(
         self, datenbank, einwuerfe, auftraege, auftrag
@@ -311,45 +269,193 @@ class TestAusfuehren:
         assert [a.id for a in auftraege.offene()] == [auftrag.id]
 
 
-class TestStichtag:
+WIDERRUF = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
+NEU = WIDERRUF + timedelta(hours=1)
+
+
+def _einwilligung(datenbank, wortlaut, eingewilligt, widerrufen=None):
+    with datenbank.get_session() as s:
+        s.add(
+            Art9EinwilligungZeile(
+                user_id=PERSON,
+                wortlaut=wortlaut,
+                eingewilligt_am=eingewilligt,
+                widerrufen_am=widerrufen,
+            )
+        )
+
+
+def _zeitpunkt(datenbank, einwurf, wann):
+    """Einwurf und Saetze daran auf einen festen Zeitpunkt setzen."""
+    with datenbank.get_session() as s:
+        s.query(Einwurf).filter_by(id=einwurf).update({"created_at": wann})
+        s.query(Satz).filter_by(raw_input_id=einwurf).update({"updated_at": wann})
+
+
+class TestObergrenze:
+    """
+    Neue Einwilligung vor der Ausfuehrung (Entscheidung Maintainer, 13.11.2026): Was ab
+    der fruehesten Einwilligung zum geltenden Wortlaut nach dem juengsten Widerruf
+    angelegt ist, bleibt. Ohne sie erfasst der Auftrag alles, auch Nachzuegler.
+    """
+
     @pytest.fixture
     def dienst(self, datenbank, auftraege):
         return Art9EinwilligungService(
             Art9EinwilligungRepository(datenbank), VoteRepository(datenbank), auftraege
         )
 
-    def test_stichtag_ist_der_widerruf(self, dienst, auftraege):
-        dienst.einwilligen(PERSON, "2026-11-13")
-        dienst.widerrufen(PERSON)
-        (offen,) = auftraege.offene()
-
-        auftrag = auftraege.laden(offen.id)
-
-        # Widerruf und Auftrag in einer Transaktion: derselbe Zeitpunkt.
-        assert auftrag.widerrufen_am == auftrag.angelegt_am
-        assert auftrag.stichtag == auftrag.angelegt_am
-
-    def test_erneuter_widerruf_verschiebt_den_stichtag(self, dienst, auftraege):
-        """Ein offener Auftrag je Person: Er erfasst auch, was zwischen zwei Widerrufen kam."""
-        dienst.einwilligen(PERSON, "2026-11-13")
-        dienst.widerrufen(PERSON)
-        dienst.einwilligen(PERSON, "2026-11-13")
-        dienst.widerrufen(PERSON)
-        (offen,) = auftraege.offene()
-
-        auftrag = auftraege.laden(offen.id)
-
-        assert auftrag.stichtag > auftrag.angelegt_am
-        assert auftrag.stichtag == auftrag.widerrufen_am
-
-    def test_ohne_widerruf_seit_dem_anlegen_das_anlegen(self, auftraege):
+    def _auftrag(self, auftraege):
         auftraege.anlegen(PERSON)
         (offen,) = auftraege.offene()
+        return auftraege.laden(offen.id)
+
+    def test_ab_der_neuen_einwilligung_bleibt_alles_genau_an_der_grenze(
+        self, datenbank, einwuerfe, auftraege
+    ):
+        _einwilligung(datenbank, "2026-11-13", WIDERRUF - timedelta(days=1), WIDERRUF)
+        _einwilligung(datenbank, "2026-11-13", NEU)
+        knapp_davor = NEU - timedelta(microseconds=1)
+        _zeitpunkt(datenbank, einwuerfe.eigen, knapp_davor)
+        _zeitpunkt(datenbank, einwuerfe.fremd, knapp_davor)
+        spaeter_beitrag = uuid.uuid4()
+        with datenbank.get_session() as s:
+            neu_eigen = _einwurf(s, von=PERSON)
+            neu_fremd = _einwurf(s, von=ANDERE, destilled_by=PERSON)
+            _satz(s, neu_fremd, PERSON, "Ein Satz nach der neuen Einwilligung")
+            link = AusformuliertIn(
+                raw_input_id=neu_fremd,
+                content_id=spaeter_beitrag,
+                created_by=PERSON,
+                created_at=NEU,
+            )
+            sperre = Sperre(
+                content_id=spaeter_beitrag,
+                sperrgrund="unterstellung",
+                begruendung="Unterstellt Bosheit.",
+                gesperrt_von=ANDERE,
+                autor=PERSON,
+            )
+            s.add_all([link, sperre])
+            s.flush()
+            link_id, sperre_id = link.id, sperre.id
+        _zeitpunkt(datenbank, neu_eigen, NEU)
+        _zeitpunkt(datenbank, neu_fremd, NEU)
+        auftrag = self._auftrag(auftraege)
+        assert (auftrag.widerrufen_am, auftrag.obergrenze) == (WIDERRUF, NEU)
+
+        bericht = auftraege.ausfuehren(
+            auftrag, beitraege_behalten=[str(spaeter_beitrag)]
+        )
+
+        # Knapp vor der neuen Einwilligung: geht wie sonst.
+        assert (bericht.einwuerfe, bericht.saetze) == (1, 1)
+        assert EinwurfRepository(datenbank).get_by_id(einwuerfe.eigen) is None
+        assert _saetze(datenbank, einwuerfe.fremd)[SATZ_DER_PERSON] != PERSON
+        # Genau ab der neuen Einwilligung: bleibt an der Person.
+        assert EinwurfRepository(datenbank).get_by_id(neu_eigen) is not None
+        assert _saetze(datenbank, neu_fremd) == {
+            "Ein Satz nach der neuen Einwilligung": PERSON
+        }
+        assert _destilled_by(datenbank, neu_fremd) == PERSON
+        with datenbank.get_session() as s:
+            assert s.get(AusformuliertIn, link_id).created_by == PERSON
+            assert s.get(Sperre, sperre_id).autor == PERSON
+
+    def test_nachzuegler_ohne_neue_einwilligung_gehen_mit(
+        self, datenbank, einwuerfe, auftraege
+    ):
+        """Gespeichert nach dem Widerruf (vorher geprueft): ohne neue Einwilligung erfasst."""
+        _einwilligung(datenbank, "2026-11-13", WIDERRUF - timedelta(days=1), WIDERRUF)
+        _zeitpunkt(datenbank, einwuerfe.eigen, WIDERRUF + timedelta(seconds=1))
+        _zeitpunkt(datenbank, einwuerfe.fremd, WIDERRUF + timedelta(seconds=1))
+        auftrag = self._auftrag(auftraege)
+        assert auftrag.obergrenze is None
+
+        bericht = auftraege.ausfuehren(auftrag)
+
+        assert (bericht.einwuerfe, bericht.saetze) == (1, 1)
+        assert EinwurfRepository(datenbank).get_by_id(einwuerfe.eigen) is None
+        assert _saetze(datenbank, einwuerfe.fremd)[SATZ_DER_PERSON] != PERSON
+
+    def test_neue_einwilligung_zum_vorigen_wortlaut_ist_keine_obergrenze(
+        self, datenbank, auftraege
+    ):
+        _einwilligung(datenbank, "2026-11-12", WIDERRUF - timedelta(days=1), WIDERRUF)
+        _einwilligung(datenbank, "2026-11-12", NEU)
+
+        assert self._auftrag(auftraege).obergrenze is None
+
+    def test_einwilligung_vor_dem_juengsten_widerruf_ist_keine_obergrenze(
+        self, dienst, auftraege
+    ):
+        """Zweimal widerrufen: Die Einwilligung dazwischen schuetzt nichts."""
+        dienst.einwilligen(PERSON, "2026-11-13")
+        dienst.widerrufen(PERSON)
+        dienst.einwilligen(PERSON, "2026-11-13")
+        dienst.widerrufen(PERSON)
+        (offen,) = auftraege.offene()
 
         auftrag = auftraege.laden(offen.id)
 
-        assert auftrag.widerrufen_am is None
-        assert auftrag.stichtag == auftrag.angelegt_am
+        assert auftrag.obergrenze is None
+        assert auftrag.neu_eingewilligt_am is None
+        assert auftrag.widerrufen_am > auftrag.angelegt_am
+
+    def test_liste_zeigt_juengsten_widerruf_und_die_neue_einwilligung(
+        self, dienst, auftraege
+    ):
+        dienst.einwilligen(PERSON, "2026-11-13")
+        dienst.widerrufen(PERSON)
+        (vorher,) = auftraege.offene()
+        assert vorher.widerrufen_am == vorher.angelegt_am
+
+        dienst.einwilligen(PERSON, "2026-11-13")
+
+        (nachher,) = auftraege.offene()
+        assert nachher.neu_eingewilligt_am == nachher.obergrenze
+        assert nachher.obergrenze > nachher.widerrufen_am
+
+
+class TestStandWaehrendDerAusfuehrung:
+    @pytest.fixture
+    def dienst(self, datenbank, auftraege):
+        return Art9EinwilligungService(
+            Art9EinwilligungRepository(datenbank), VoteRepository(datenbank), auftraege
+        )
+
+    @pytest.fixture
+    def geladen(self, dienst, auftraege, einwuerfe):
+        dienst.einwilligen(PERSON, "2026-11-13")
+        dienst.widerrufen(PERSON)
+        (offen,) = auftraege.offene()
+        return auftraege.laden(offen.id)
+
+    def test_widerruf_zwischen_laden_und_ausfuehren(
+        self, dienst, auftraege, datenbank, einwuerfe, geladen
+    ):
+        """Neue Einwilligung und erneuter Widerruf: nicht erledigen, neu laden."""
+        dienst.einwilligen(PERSON, "2026-11-13")
+        dienst.widerrufen(PERSON)
+
+        with pytest.raises(StandGeaendert):
+            auftraege.ausfuehren(geladen)
+
+        assert [a.id for a in auftraege.offene()] == [geladen.id]
+        assert EinwurfRepository(datenbank).get_by_id(einwuerfe.eigen) is not None
+        bericht = auftraege.ausfuehren(auftraege.laden(geladen.id))
+        assert bericht.einwuerfe == 1
+        assert auftraege.offene() == []
+
+    def test_neue_einwilligung_zwischen_laden_und_ausfuehren(
+        self, dienst, auftraege, geladen
+    ):
+        dienst.einwilligen(PERSON, "2026-11-13")
+
+        with pytest.raises(StandGeaendert):
+            auftraege.ausfuehren(geladen)
+
+        assert [a.id for a in auftraege.offene()] == [geladen.id]
 
 
 class TestFrist:
@@ -404,50 +510,61 @@ class TestFrist:
 
 def test_migration_legt_auftraege_fuer_fruehere_widerrufe_an(postgres_url):
     """
-    Wer vor diesem Stand widerrufen hat, bekommt einen offenen Auftrag; wer seither neu
-    eingewilligt hat, nicht. Ein zweiter Lauf legt nichts an.
+    Jede Person mit einem frueheren Widerruf bekommt einen offenen Auftrag, angelegt
+    zum juengsten Widerruf, auch wenn sie seither neu eingewilligt hat (Entscheidung
+    Maintainer, 13.11.2026); was nach einer neuen Einwilligung zum geltenden Wortlaut
+    entstand, schuetzt die Obergrenze. Wer nie widerrufen hat, bekommt keinen. Ein
+    zweiter Lauf legt nichts an.
     """
     with postgres.schema(postgres_url, "itest_loeschauftraege") as db:
         Art9EinwilligungZeile.__table__.create(db.engine)
         frueher = datetime(2026, 11, 12, tzinfo=timezone.utc)
+        spaeter = frueher + timedelta(hours=5)
+
+        def zeile(person, wortlaut, eingewilligt, widerrufen=None):
+            return Art9EinwilligungZeile(
+                user_id=person,
+                wortlaut=wortlaut,
+                eingewilligt_am=eingewilligt,
+                widerrufen_am=widerrufen,
+            )
+
+        tag_davor = frueher - timedelta(days=1)
         with db.get_session() as s:
-            for person, widerrufen in [
-                ("widerrufen", frueher),
-                ("eingewilligt", None),
-            ]:
-                s.add(
-                    Art9EinwilligungZeile(
-                        user_id=person,
-                        wortlaut="2026-11-12",
-                        eingewilligt_am=frueher - timedelta(days=1),
-                        widerrufen_am=widerrufen,
-                    )
-                )
-            # Widerrufen und danach neu eingewilligt
-            s.add(
-                Art9EinwilligungZeile(
-                    user_id="neu-eingewilligt",
-                    wortlaut="2026-11-12",
-                    eingewilligt_am=frueher - timedelta(days=1),
-                    widerrufen_am=frueher,
-                )
-            )
-            s.add(
-                Art9EinwilligungZeile(
-                    user_id="neu-eingewilligt",
-                    wortlaut="2026-11-12",
-                    eingewilligt_am=frueher + timedelta(hours=1),
-                )
+            s.add_all(
+                [
+                    zeile("widerrufen", "2026-11-12", tag_davor, frueher),
+                    zeile("eingewilligt", "2026-11-12", tag_davor),
+                    # widerrufen, neu eingewilligt zum vorigen Wortlaut
+                    zeile("neu-alt", "2026-11-12", tag_davor, frueher),
+                    zeile("neu-alt", "2026-11-12", frueher + timedelta(hours=1)),
+                    # zweimal widerrufen, danach zum geltenden Wortlaut eingewilligt
+                    zeile("neu-geltend", "2026-11-12", tag_davor, frueher),
+                    zeile(
+                        "neu-geltend",
+                        "2026-11-12",
+                        frueher + timedelta(hours=1),
+                        spaeter,
+                    ),
+                    zeile("neu-geltend", "2026-11-13", spaeter + timedelta(hours=1)),
+                ]
             )
 
         postgres.migration(db, MIGRATION)
         postgres.migration(db, MIGRATION)
 
-        (auftrag,) = LoeschauftragRepository(db).offene()
-        assert auftrag.user_id == "widerrufen"
-        # "Widerrufen am" in der Liste ist der echte Widerruf; die Frist zaehlt ab jetzt,
+        auftraege = {a.user_id: a for a in LoeschauftragRepository(db).offene()}
+        assert set(auftraege) == {"widerrufen", "neu-alt", "neu-geltend"}
+        # "Widerrufen am" ist der juengste echte Widerruf; die Frist zaehlt ab jetzt,
         # sonst waere der Auftrag sofort ueberfaellig.
-        assert auftrag.angelegt_am == frueher
-        assert auftrag.frist > datetime.now(timezone.utc) + timedelta(
-            days=FRIST_TAGE - 1
-        )
+        assert auftraege["widerrufen"].angelegt_am == frueher
+        assert auftraege["neu-geltend"].angelegt_am == spaeter
+        assert auftraege["neu-geltend"].widerrufen_am == spaeter
+        for auftrag in auftraege.values():
+            assert auftrag.frist > datetime.now(timezone.utc) + timedelta(
+                days=FRIST_TAGE - 1
+            )
+        # Obergrenze nur mit einer Einwilligung zum geltenden Wortlaut danach
+        assert auftraege["widerrufen"].obergrenze is None
+        assert auftraege["neu-alt"].obergrenze is None
+        assert auftraege["neu-geltend"].obergrenze == spaeter + timedelta(hours=1)

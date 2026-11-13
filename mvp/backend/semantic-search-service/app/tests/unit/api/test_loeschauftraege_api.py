@@ -13,11 +13,12 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api.v1.loeschauftraege import router
+from api.v1.loeschauftraege import STAND_GEAENDERT, router
 from repositories.loeschauftrag_repository import (
     FRIST_TAGE,
     Loeschauftrag,
     PostgresBericht,
+    StandGeaendert,
 )
 from services import loeschauftrag_service as modul
 from services.loeschauftrag_service import (
@@ -112,28 +113,34 @@ class TestDienst:
         ergebnis = dienst.ausfuehren(ID)
 
         assert reihenfolge == ["qdrant", "postgres"]
-        qdrant.assert_called_once_with("person-1", _auftrag().angelegt_am)
+        qdrant.assert_called_once_with("person-1", None)
         assert (ergebnis.beitraege, ergebnis.einwuerfe, ergebnis.saetze) == (3, 2, 1)
 
-    def test_nur_bis_zum_widerruf(self, dienst, repository, qdrant):
+    def test_neue_einwilligung_ist_die_obergrenze(self, dienst, repository, qdrant):
         """
         Neue Einwilligung vor der Ausfuehrung (Entscheidung Maintainer, 13.11.2026):
-        Stichtag ist der juengste Widerruf; spaetere Beitraege bleiben, auch ihre
-        Sperren.
+        Was ab ihr angelegt ist, bleibt, auch die Sperren an solchen Beitraegen.
         """
-        widerruf = JETZT - timedelta(hours=5)
+        neu = JETZT - timedelta(hours=5)
         repository.laden.return_value = Loeschauftrag(
-            **{**vars(_auftrag(tage_alt=2)), "widerrufen_am": widerruf}
+            **{**vars(_auftrag(tage_alt=2)), "obergrenze": neu}
         )
         spaeter = uuid.UUID("00000000-0000-0000-0000-0000000000aa")
         qdrant.return_value = AnonymisierteBeitraege(1, [spaeter])
 
         dienst.ausfuehren(ID)
 
-        qdrant.assert_called_once_with("person-1", widerruf)
+        qdrant.assert_called_once_with("person-1", neu)
         (auftrag,), kwargs = repository.ausfuehren.call_args
-        assert auftrag.stichtag == widerruf
+        assert auftrag.obergrenze == neu
         assert kwargs["beitraege_behalten"] == [str(spaeter)]
+
+    def test_ohne_neue_einwilligung_keine_obergrenze(self, dienst, repository, qdrant):
+        repository.laden.return_value = _auftrag()
+
+        dienst.ausfuehren(ID)
+
+        qdrant.assert_called_once_with("person-1", None)
 
     def test_scheitert_qdrant_bleibt_der_auftrag_offen(
         self, dienst, repository, qdrant
@@ -167,7 +174,7 @@ class TestDienst:
     def test_neue_einwilligung_steht_in_der_liste(self, dienst, repository):
         neu = JETZT - timedelta(hours=1)
         repository.offene.return_value = [
-            Loeschauftrag(**{**vars(_auftrag(tage_alt=2)), "neu_eingewilligt_am": neu})
+            Loeschauftrag(**{**vars(_auftrag(tage_alt=2)), "obergrenze": neu})
         ]
 
         (auftrag,) = dienst.offene(JETZT)
@@ -213,6 +220,18 @@ class TestApi:
         assert auftrag["anzeigename"] == "Anna B."
         assert auftrag["ueberfaellig"] is True
         assert auftrag["neu_eingewilligt_am"] is None
+        # Ohne Zeile der Einwilligung: das Anlegen
+        assert auftrag["widerrufen_am"] == auftrag["angelegt_am"]
+
+    def test_liste_zeigt_den_juengsten_widerruf(self, client, repository):
+        juengster = JETZT - timedelta(hours=1)
+        repository.offene.return_value = [
+            Loeschauftrag(**{**vars(_auftrag(tage_alt=3)), "widerrufen_am": juengster})
+        ]
+
+        (auftrag,) = client.get(BASIS, headers=ADMIN).json()["auftraege"]
+
+        assert auftrag["widerrufen_am"].startswith("2026-11-13T11:00")
 
     def test_liste_fehler_500(self, client, repository):
         repository.offene.side_effect = RuntimeError("Datenbank weg")
@@ -226,6 +245,15 @@ class TestApi:
 
         assert antwort.status_code == 200
         assert antwort.json() == {"beitraege": 3, "einwuerfe": 2, "saetze": 1}
+
+    def test_ausfuehren_stand_geaendert_409_mit_kennzeichen(self, client, repository):
+        repository.laden.return_value = _auftrag()
+        repository.ausfuehren.side_effect = StandGeaendert(str(ID))
+
+        antwort = client.post(f"{BASIS}/{ID}/ausfuehren", headers=ADMIN)
+
+        assert antwort.status_code == 409
+        assert antwort.json() == {"detail": STAND_GEAENDERT}
 
     def test_ausfuehren_unbekannt_404(self, client, repository):
         repository.laden.return_value = None

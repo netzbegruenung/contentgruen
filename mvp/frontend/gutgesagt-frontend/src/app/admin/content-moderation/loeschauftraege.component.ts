@@ -12,6 +12,9 @@ import {
   BestaetigungsDialogDaten,
 } from '../../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 
+/** Kennzeichen des Backends (api/v1/loeschauftraege.py): Stand während der Ausführung geändert. */
+export const STAND_GEAENDERT = 'loeschauftrag_stand_geaendert';
+
 /** So oft lädt die Liste nach, solange der Reiter sichtbar ist. */
 export const NACHLADEN_MS = 30_000;
 
@@ -19,7 +22,8 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Löschablauf ausführen?',
   text:
     'Die Beiträge der Person zeigen danach „ehemalige Person“, ihre Einwürfe werden gelöscht, und ihre Sätze an ' +
-    'Einwürfen anderer verlieren ihren Namen. Das lässt sich nicht rückgängig machen. Konto und Anzeigename bleiben.',
+    'Einwürfen anderer verlieren ihren Namen, soweit sie vor einer neuen Einwilligung entstanden sind; was danach ' +
+    'kam, bleibt. Das lässt sich nicht rückgängig machen. Konto und Anzeigename bleiben.',
   ja: 'Löschablauf ausführen',
   nein: 'Abbrechen',
 };
@@ -62,10 +66,10 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
           <strong>{{ a.anzeigename || a.user_id }}</strong>
           <span *ngIf="a.anzeigename"> ({{ a.user_id }})</span>
         </div>
-        <div>Widerrufen am {{ datum(a.angelegt_am) }}</div>
+        <div>Widerrufen am {{ datum(a.widerrufen_am) }}</div>
         <div *ngIf="a.neu_eingewilligt_am" class="neu-eingewilligt" data-testid="neu-eingewilligt">
           <mat-icon aria-hidden="true">info</mat-icon>
-          Neu eingewilligt am {{ datum(a.neu_eingewilligt_am) }}
+          Neu eingewilligt am {{ datum(a.neu_eingewilligt_am) }}: was ab da kam, bleibt
         </div>
         <div class="frist">
           <mat-icon *ngIf="a.ueberfaellig" aria-hidden="true">warning</mat-icon>
@@ -164,7 +168,10 @@ export class LoeschauftraegeComponent implements OnInit, OnDestroy {
           error: (fehler) => {
             this.ausfuehrend = null;
             const text =
-              fehler?.status === 409
+              fehler?.status === 409 && fehler?.error?.detail === STAND_GEAENDERT
+                ? 'Die Person hat währenddessen widerrufen oder neu eingewilligt; der Auftrag bleibt offen. ' +
+                  'Bitte erneut ausführen.'
+                : fehler?.status === 409
                 ? 'Der Löschauftrag ist schon erledigt.'
                 : fehler?.status === 404
                   ? 'Den Löschauftrag gibt es nicht mehr, etwa nach einer Kontolöschung.'

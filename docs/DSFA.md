@@ -306,9 +306,9 @@ Empfänger und Ort“.
   ein offener. Scheitert eins davon, gilt der Widerruf nicht, die API antwortet mit 500, und die
   Person kann erneut widerrufen. Ein Admin führt den Auftrag unter „Moderation“, „Löschaufträge“
   aus (`ss/services/loeschauftrag_service.py`); bis dahin behalten Beiträge, Einwürfe und Sätze
-  Kennung und Anzeigenamen (LK „Löschauftrag nach dem Widerruf“). Erfasst wird nur, was bis zum
-  Widerruf angelegt war; was die Person nach einer neuen Einwilligung beiträgt, bleibt
-  (Entscheidung Maintainer, 13.11.2026). Der Wortlaut `2026-11-13`
+  Kennung und Anzeigenamen (LK „Löschauftrag nach dem Widerruf“). Was die Person nach einer neuen
+  Einwilligung beiträgt, bleibt; ohne neue Einwilligung erfasst der Auftrag alles (Entscheidung
+  Maintainer, 13.11.2026). Der Wortlaut `2026-11-13`
   (`ss/domain/art9_einwilligung.py`) sagt das: „Innerhalb von sieben Tagen werden auch meine
   Beiträge, Einwürfe und Sätze von mir gelöst: […] Was ich nach einer neuen Einwilligung
   beitrage, bleibt davon unberührt. Mein Konto bleibt.“ Wer einem früheren Wortlaut zugestimmt
