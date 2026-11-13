@@ -252,6 +252,9 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    * Ausfüllen: Gepostet sein kann der Text dann noch nicht.
    */
   private kopiertMelden(text: string): void {
+    // Sicherheitsnetz: Seit dem Platzhalter-Dialog kommt hier normalerweise kein Text mit
+    // Luecke an (der Dialog fuellt oder entfernt sie). Bleibt er stehen, falls ein
+    // eingegebener Satz selbst "[Hier …]" enthaelt oder ein Weg am Dialog vorbei kopiert.
     if (hatLuecke(text)) {
       // Mit Platzhalter "[Hier …]" erinnert der Hinweis ans Ausfuellen (#640, R38) und bleibt laenger stehen.
       this.snackBar.open(KOPIERT_MIT_LUECKE, 'OK', { duration: 6000 });

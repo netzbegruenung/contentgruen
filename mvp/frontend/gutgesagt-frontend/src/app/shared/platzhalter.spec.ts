@@ -47,4 +47,25 @@ describe('Platzhalter füllen (Persona-Test Dennis)', () => {
   it('behandelt einen leeren Satz wie keinen', () => {
     expect(platzhalterFuellen(TEXT, ['   '])).toBe('Vögel und Klima. Deshalb ja.');
   });
+
+  it('lässt zwischen zwei Kommas oder Semikolons nur eins stehen', () => {
+    expect(ohnePlatzhalter('Gut, [Hier ein Erlebnis], weiter.')).toBe('Gut, weiter.');
+    expect(ohnePlatzhalter('Gut; [Hier ein Erlebnis]; weiter.')).toBe('Gut; weiter.');
+    expect(ohnePlatzhalter('Gut,[Hier x],weiter.')).toBe('Gut,weiter.');
+  });
+
+  it('schließt eine Klammer direkt hinter dem Rest und nimmt eine leere Klammer ganz weg', () => {
+    expect(ohnePlatzhalter('A (z. B. [Hier x]) b')).toBe('A (z. B.) b');
+    expect(ohnePlatzhalter('A ([Hier x]) b')).toBe('A b');
+    expect(ohnePlatzhalter('A ( [Hier x] ).')).toBe('A.');
+  });
+
+  // Bekanntes Verhalten (vorlagen-luecke.ts, LUECKE): Ein Platzhalter endet an der ersten
+  // schließenden Klammer und reicht nicht über einen Zeilenumbruch.
+  it('erkennt verschachtelte und mehrzeilige Platzhalter nur so weit wie LUECKE', () => {
+    expect(platzhalterIn('A [Hier ein [x] Erlebnis] B')).toEqual([{ hinweis: 'Hier ein [x' }]);
+    expect(ohnePlatzhalter('A [Hier ein [x] Erlebnis] B')).toBe('A Erlebnis] B');
+    expect(platzhalterIn('A [Hier ein\nErlebnis] B')).toEqual([]);
+    expect(ohnePlatzhalter('A [Hier ein\nErlebnis] B')).toBe('A [Hier ein\nErlebnis] B');
+  });
 });

@@ -56,8 +56,13 @@ function aufraeumen(text: string): string {
       // Am Satzanfang (Textanfang, nach Satzende oder Doppelpunkt) faellt ein Satzzeichen
       // direkt nach der Stelle mit weg: "Gut. [Hier …]. Weiter" -> "Gut. Weiter".
       .replace(/(^|[.!?:\n][ \t]*)\u0000[ \t]*[.,;:!?]+[ \t]*/g, '$1')
-      // Mitten im Satz kein Leerzeichen vor dem folgenden Satzzeichen: "Weil [Hier …]." -> "Weil."
-      .replace(/[ \t]*\u0000[ \t]*(?=[.,;:!?])/g, '')
+      // Zwischen zwei Kommas oder Semikolons bleibt eins: "Gut, [Hier …], weiter." -> "Gut, weiter."
+      .replace(/([,;])[ \t]*\u0000[ \t]*[,;]/g, '$1')
+      // Eine Klammer, die nur die Stelle enthielt, faellt ganz weg: "A ([Hier …]) b" -> "A b"
+      .replace(/[ \t]*\([ \t]*\u0000[ \t]*\)/g, '')
+      // Mitten im Satz kein Leerzeichen vor dem folgenden Satzzeichen oder der schliessenden
+      // Klammer: "Weil [Hier …]." -> "Weil.", "(z. B. [Hier …])" -> "(z. B.)"
+      .replace(/[ \t]*\u0000[ \t]*(?=[.,;:!?)])/g, '')
       .replace(/[ \t]+\u0000[ \t]+/g, ' ')
       .replace(/^[ \t]*\u0000[ \t]*/gm, '')
       .replace(/[ \t]*\u0000[ \t]*$/gm, '')
