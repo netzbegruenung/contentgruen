@@ -59,7 +59,7 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
   makes `check.sh` print the full output instead of its summary lines.
 - **No path filter on the workflow.** A skipped workflow reports no status, and the
   required status then blocks the pull request. Filters only per step, and only so that
-  `ci` still reports.
+  `ci` still reports (see [Path filters](#path-filters)).
 - **Events:** `pull_request`, `push` on `main`, `tag` and `manual`. Without `manual`,
   "Run pipeline" in the Woodpecker UI filters the workflow out.
 - The clone step fetches the full history and the target branch (`fetch-target-branch`),
@@ -94,6 +94,42 @@ steps in parallel; that is the price of not running the host out of memory.
   the workspace, so only one step may run `npm ci` there; a second one would delete
   `node_modules` under the other step (`scripts/tests/test_woodpecker_ci.py` checks it).
   Angular's build cache is off in CI (`CI` set).
+
+**Path filters.** In pull requests a step drops out when every changed file of the pull
+request lies in parts of the repository it does not read. Woodpecker asks Forgejo for the
+files of the pull request (the whole diff against the target branch, not only the last
+push) and checks them against `path.exclude`: the step is skipped only if all files match.
+Anything not listed, `.woodpecker/`, `scripts/check.sh` and the other shell scripts, the
+documentation and `mvp/config/` therefore run everything. If Forgejo returns no file list,
+everything runs too (`on_empty`). A push to `main`, tags and manual runs always run every
+step.
+
+| Step | Skipped when only these change |
+|---|---|
+| `frontend-installieren`, `frontend-build`, `frontend` | `mvp/backend/**`, `mvp/scripts/**`, `scripts/**/*.py` |
+| `lint`, `integration` | `mvp/frontend/**`, the BFF (`mvp/backend/BFF/**`, `BFF.Tests/**`, `GutGesagt.sln`) |
+| `bff` | `mvp/frontend/**`, `mvp/backend/semantic-search-service/**`, `mvp/backend/postgres-app/**`, `mvp/scripts/**`, `scripts/**/*.py` |
+| `retired-words`, `python-installieren`, `unit` | never |
+
+- `python-installieren` and `unit` always run: unit tests and `scripts/tests/` also read
+  frontend and BFF files (CSS variables, unused endpoints, profile pictures, ...), so a
+  frontend-only change can turn them red.
+- A step that `when` filters out is not part of the pipeline at all. Woodpecker rejects
+  a pipeline in which a step depends on a missing step, unless the dependency is marked
+  `optional: true` (Woodpecker 3.15 and later). So `integration` depends on `frontend`
+  optionally (without it, it waits for `unit`), and `ci-bericht` lists every filtered
+  step as optional. Skipped steps do not make the run red; `ci-bericht` lists them under
+  "Nicht gelaufen".
+- `scripts/tests/test_woodpecker_ci.py` replays Woodpecker's filtering for typical
+  pull requests and checks that the heavy steps never overlap and no dependency is missing.
+
+**No light runs for WIP pull requests.** A lighter pipeline while the title starts with
+"WIP:" was considered and dropped. Editing the title or a label makes Woodpecker 3.20
+start a run with the event `pull_request_metadata`, and its status context is
+`ci/woodpecker/pull_request_metadata/ci`, not the required `ci/woodpecker/pr/ci`. The
+required status would stay green from the light run, and the full run after removing
+"WIP:" would not be required for the merge. An empty push after removing "WIP:" would
+fix the status but depends on nobody forgetting it.
 
 ## CI report
 

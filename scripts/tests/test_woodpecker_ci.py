@@ -4,7 +4,6 @@ Woodpecker kann kein Dockerfile lesen; die Images stehen deshalb ein zweites Mal
 Pipeline. Diese Tests halten beide Stellen gleich und sichern die Regeln aus docs/CI.md.
 """
 
-import itertools
 import pathlib
 import re
 
@@ -129,7 +128,7 @@ def test_ci_bericht_kennt_alle_schritte_in_pipeline_reihenfolge():
     bericht = SCHRITTE[BERICHT]
 
     assert list(SCHRITTE)[-1] == BERICHT
-    assert bericht["depends_on"] == andere
+    assert namen(bericht["depends_on"]) == andere
     assert bericht["commands"][-1].split()[2:] == andere
 
 
@@ -266,6 +265,11 @@ def test_check_sh_nutzt_lokal_dasselbe_bff_image():
     ]
 
 
+def namen(abhaengigkeiten):
+    """Die Namen in depends_on; Eintraege sind Namen oder {name, optional}."""
+    return [a if isinstance(a, str) else a["name"] for a in abhaengigkeiten]
+
+
 def test_frontend_schritte_teilen_ein_npm_ci():
     # Die Schritte teilen den Workspace: ein zweites npm ci loeschte node_modules des anderen.
     mit_npm_ci = [
@@ -286,45 +290,153 @@ VORBEREITUNG = {
     "frontend": "frontend-installieren",
     "integration": "python-installieren",
 }
+ROT_ODER_GRUEN = ["success", "failure"]
 
 
-def vorfahren(name):
-    """Alle Schritte, auf die ``name`` ueber depends_on direkt oder indirekt wartet."""
+def _muster(glob):
+    """doublestar wie in Woodpecker: ** ueber Verzeichnisse, * innerhalb eines Namens."""
+    teile = re.split(r"(\*\*/|/\*\*$|\*)", glob)
+    ersatz = {"**/": "(?:.*/)?", "/**": "/.*", "*": "[^/]*"}
+    return re.compile("".join(ersatz.get(t, re.escape(t)) for t in teile) + r"\Z")
+
+
+def _bedingung_trifft(bedingung, event, dateien, status):
+    arten = bedingung.get("event")
+    if arten is not None and event not in (
+        [arten] if isinstance(arten, str) else arten
+    ):
+        return False
+    if status not in bedingung.get("status", ["success"]):
+        return False
+    pfad = bedingung.get("path")
+    # Pfadfilter nur bei pull_request und push; leere Dateiliste: on_empty, Standard true
+    if pfad and event in ("pull_request", "push") and dateien:
+        ausnahmen = [_muster(m) for m in pfad.get("exclude", [])]
+        if ausnahmen and all(any(m.match(d) for m in ausnahmen) for d in dateien):
+            return False
+        einschluss = [_muster(m) for m in pfad.get("include", [])]
+        if einschluss and not any(m.match(d) for m in einschluss for d in dateien):
+            return False
+    return True
+
+
+def schritte_im_lauf(event, dateien):
+    """Die Schritte, die Woodpecker in die Pipeline aufnimmt (when ohne status), mit ihren
+    aufgeloesten Abhaengigkeiten; wie compiler/dag.go: fehlt eine Pflicht-Abhaengigkeit,
+    verwirft Woodpecker die Pipeline, eine optionale faellt weg."""
+    drin = {}
+    for name, s in SCHRITTE.items():
+        when = s.get("when") or [{}]
+        if any(
+            _bedingung_trifft(
+                {**b, "status": ROT_ODER_GRUEN}, event, dateien, "success"
+            )
+            for b in when
+        ):
+            drin[name] = s
+    aufgeloest = {}
+    for name, s in drin.items():
+        abh = []
+        for a in s.get("depends_on", []):
+            ziel = a if isinstance(a, str) else a["name"]
+            optional = isinstance(a, dict) and a.get("optional", False)
+            if ziel in drin:
+                abh.append(ziel)
+            else:
+                assert optional, f"{name}: Pflicht-Abhaengigkeit {ziel} fehlt im Lauf"
+        aufgeloest[name] = abh
+    return aufgeloest
+
+
+def vorfahren(lauf, name):
+    """Alle Schritte, auf die ``name`` im Lauf direkt oder indirekt wartet."""
     gesehen = set()
-    offen = list(SCHRITTE[name].get("depends_on", []))
+    offen = list(lauf[name])
     while offen:
         n = offen.pop()
         if n not in gesehen:
             gesehen.add(n)
-            offen.extend(SCHRITTE[n].get("depends_on", []))
+            offen.extend(lauf[n])
     return gesehen
 
 
-def test_schwere_schritte_laufen_als_kette_nacheinander():
-    for vorher, nachher in itertools.pairwise(SCHWER):
-        assert vorher in SCHRITTE[nachher]["depends_on"], nachher
-    for i, a in enumerate(SCHWER):
-        for b in SCHWER[i + 1 :]:
-            assert a in vorfahren(b), (a, b)
+ALLE = set(SCHRITTE)
+FRONTEND_GRUPPE = {"frontend-installieren", "frontend-build", "frontend"}
+PR_LAEUFE = [
+    # (geaenderte Dateien, Schritte, die wegfallen)
+    (
+        ["mvp/frontend/gutgesagt-frontend/src/app/app.component.ts"],
+        {"lint", "integration", "bff"},
+    ),
+    (["mvp/backend/semantic-search-service/app/main.py"], FRONTEND_GRUPPE | {"bff"}),
+    (["mvp/backend/postgres-app/migrations/x.sql"], FRONTEND_GRUPPE | {"bff"}),
+    (["mvp/backend/BFF/Program.cs"], FRONTEND_GRUPPE | {"lint", "integration"}),
+    (["scripts/tests/test_x.py", "scripts/ci_bericht.py"], FRONTEND_GRUPPE | {"bff"}),
+    (
+        ["mvp/frontend/gutgesagt-frontend/src/x.ts", "mvp/backend/BFF/Program.cs"],
+        {"lint", "integration"},
+    ),
+    (
+        [
+            "mvp/frontend/gutgesagt-frontend/src/x.ts",
+            "mvp/backend/semantic-search-service/app/x.py",
+        ],
+        {"bff"},
+    ),
+    # Gemeinsames und Unbekanntes: alles
+    ([".woodpecker/ci.yaml"], set()),
+    (["scripts/check.sh"], set()),
+    (["scripts/ci-chromium.sh"], set()),
+    (["docs/CI.md"], set()),
+    (["mvp/config/x.json"], set()),
+    # Eine Datei ausserhalb aller Ausnahmen genuegt fuer den vollen Lauf
+    (["README.md", "mvp/frontend/gutgesagt-frontend/src/x.ts"], set()),
+    # Forgejo liefert keine Dateiliste: alles (on_empty)
+    ([], set()),
+]
 
 
-def test_schwere_schritte_warten_auf_ihre_vorbereitung():
+@pytest.mark.parametrize("dateien, weg", PR_LAEUFE)
+def test_pfadfilter_bei_pull_request(dateien, weg):
+    assert set(schritte_im_lauf("pull_request", dateien)) == ALLE - weg
+
+
+@pytest.mark.parametrize("event", ["push", "tag", "manual"])
+def test_push_tag_und_manuell_laufen_voll(event):
+    # Auch ein Push, der nur das Frontend aendert: auf main laeuft immer alles.
+    lauf = schritte_im_lauf(event, ["mvp/frontend/gutgesagt-frontend/src/x.ts"])
+    assert set(lauf) == ALLE - {"retired-words", BERICHT}
+
+
+def test_python_installation_und_unit_laufen_immer():
+    # Unit-Tests und scripts/tests/ lesen Frontend- und BFF-Dateien (docs/CI.md).
+    for dateien, _ in PR_LAEUFE:
+        lauf = schritte_im_lauf("pull_request", dateien)
+        assert {"python-installieren", "unit", "retired-words"} <= set(lauf)
+
+
+@pytest.mark.parametrize("dateien", [d for d, _ in PR_LAEUFE])
+def test_schwere_schritte_laufen_in_jeder_auswahl_nacheinander(dateien):
+    lauf = schritte_im_lauf("pull_request", dateien)
+    schwer = [n for n in SCHWER if n in lauf]
+    for i, a in enumerate(schwer):
+        for b in schwer[i + 1 :]:
+            assert a in vorfahren(lauf, b), (a, b)
     for name, vorbereitung in VORBEREITUNG.items():
-        assert vorbereitung in SCHRITTE[name]["depends_on"], name
+        if name in lauf:
+            assert vorbereitung in vorfahren(lauf, name), name
+    # Leichte Schritte warten nie auf die Kette.
+    for name in lauf:
+        if name not in SCHWER and name != BERICHT:
+            assert not vorfahren(lauf, name) & set(SCHWER), name
 
 
 def test_kette_laeuft_nach_rotem_vorgaenger_weiter():
     # Sonst fehlten ci-bericht nach einem roten unit alle Ergebnisse dahinter, und ein frueh
     # roter leichter Schritt liesse unit ausfallen (Woodpecker: status success als Standard).
     for name in SCHWER:
-        assert SCHRITTE[name]["when"] == [{"status": ["success", "failure"]}], name
-
-
-def test_leichte_schritte_warten_nicht_auf_die_kette():
-    for name in SCHRITTE:
-        if name in SCHWER or name == BERICHT:
-            continue
-        assert not vorfahren(name) & set(SCHWER), name
+        for bedingung in SCHRITTE[name]["when"]:
+            assert bedingung["status"] == ROT_ODER_GRUEN, name
 
 
 def test_ci_begrenzt_worker_und_speicher_der_schweren_schritte():

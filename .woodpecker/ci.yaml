@@ -6,7 +6,13 @@
 # ci-bericht die roten Schritte in den PR (docs/CI.md).
 # Images: dieselben wie in den Dockerfiles und docker-compose.dev.yml;
 # scripts/tests/test_woodpecker_ci.py haelt beide Stellen gleich.
-# Kein Pfadfilter hier: ein uebersprungener Workflow meldet keinen Status.
+# Kein Pfadfilter hier: ein uebersprungener Workflow meldet keinen Status. Pfadfilter nur je
+# Schritt und nur fuer pull_request (geaenderte Dateien des PRs gegen die Basis): ein Schritt
+# faellt nur weg, wenn ALLE geaenderten Dateien in Bereichen liegen, die er nicht liest
+# (path.exclude). Alles Unbekannte, .woodpecker/, scripts/check.sh und die Doku laufen voll;
+# liefert Forgejo keine Dateiliste, laeuft alles (on_empty). Push auf main, Tag und manuell
+# laufen immer voll. python-installieren und unit laufen immer: Unit-Tests und scripts/tests/
+# lesen auch Frontend- und BFF-Dateien (docs/CI.md, "Path filters").
 when:
   - event: pull_request
   - event: push
@@ -57,18 +63,48 @@ steps:
   - name: frontend-installieren
     image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
     depends_on: []
+    when:
+      # Nicht, wenn sich nur Backend und Python-Skripte aendern; das Frontend liest nichts davon
+      - event: pull_request
+        path:
+          exclude: &ohne_frontend
+            - mvp/backend/**
+            - mvp/scripts/**
+            - scripts/**/*.py
+      - event: [push, tag, manual]
     commands:
       - sh scripts/ci-protokoll.sh frontend-installieren npm ci --prefix mvp/frontend/gutgesagt-frontend --no-audit --no-fund
 
   - name: lint
     image: python:3.13-slim
     depends_on: [python-installieren]
+    when:
+      # Nicht, wenn sich nur Frontend und BFF aendern; Ruff und Black lesen nur app/
+      - event: pull_request
+        path:
+          exclude: &ohne_python
+            - mvp/frontend/**
+            - mvp/backend/BFF/**
+            - mvp/backend/BFF.Tests/**
+            - mvp/backend/GutGesagt.sln
+      - event: [push, tag, manual]
     commands:
       - sh scripts/ci-protokoll.sh lint bash scripts/check.sh --schritt lint
 
   - name: bff
     image: mcr.microsoft.com/dotnet/sdk:9.0@sha256:840f3b62b9742dde4461a3c31e38ffd34d41d7d33afd39c378cfcfd5dcb82bd5
     depends_on: []
+    when:
+      # Nicht, wenn sich nur Frontend, Python-Dienst und Python-Skripte aendern
+      - event: pull_request
+        path:
+          exclude:
+            - mvp/frontend/**
+            - mvp/backend/semantic-search-service/**
+            - mvp/backend/postgres-app/**
+            - mvp/scripts/**
+            - scripts/**/*.py
+      - event: [push, tag, manual]
     environment:
       CHECK_VOLL: "1"
       # Kein Docker im Runner: dotnet direkt im SDK-Image
@@ -99,7 +135,12 @@ steps:
     image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
     depends_on: [frontend-installieren, unit]
     when:
-      - status: [success, failure]
+      - event: pull_request
+        path:
+          exclude: *ohne_frontend
+        status: [success, failure]
+      - event: [push, tag, manual]
+        status: [success, failure]
     environment:
       CHECK_VOLL: "1"
       # Worker-Threads von @angular/build (Standard min(4, Kerne - 1)), docs/CI.md
@@ -111,7 +152,12 @@ steps:
     image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
     depends_on: [frontend-installieren, frontend-build]
     when:
-      - status: [success, failure]
+      - event: pull_request
+        path:
+          exclude: *ohne_frontend
+        status: [success, failure]
+      - event: [push, tag, manual]
+        status: [success, failure]
     environment:
       CHECK_VOLL: "1"
       CHROME_BIN: /usr/local/bin/chromium-ci
@@ -123,9 +169,19 @@ steps:
 
   - name: integration
     image: python:3.13-slim
-    depends_on: [python-installieren, frontend]
+    # frontend optional: faellt es per Pfadfilter weg, wartet integration auf unit
+    depends_on:
+      - python-installieren
+      - unit
+      - name: frontend
+        optional: true
     when:
-      - status: [success, failure]
+      - event: pull_request
+        path:
+          exclude: *ohne_python
+        status: [success, failure]
+      - event: [push, tag, manual]
+        status: [success, failure]
     environment:
       CHECK_VOLL: "1"
       INTEGRATION_STACK_PFLICHT: "1"
@@ -140,17 +196,24 @@ steps:
   # jeden PR-Lauf ab, bevor ein Schritt laeuft (docs/CI.md).
   - name: ci-bericht
     image: python:3.13-slim
-    # je Schritt eine Zeile, in Pipeline-Reihenfolge (auch in der Argumentliste unten)
+    # je Schritt ein Eintrag, in Pipeline-Reihenfolge (auch in der Argumentliste unten);
+    # optional, was der Pfadfilter weglassen kann: sonst verwirft Woodpecker die Pipeline
     depends_on:
       - retired-words
       - python-installieren
-      - frontend-installieren
-      - lint
-      - bff
+      - name: frontend-installieren
+        optional: true
+      - name: lint
+        optional: true
+      - name: bff
+        optional: true
       - unit
-      - frontend-build
-      - frontend
-      - integration
+      - name: frontend-build
+        optional: true
+      - name: frontend
+        optional: true
+      - name: integration
+        optional: true
     when:
       - event: pull_request
         status: failure
