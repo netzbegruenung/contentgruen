@@ -30,6 +30,7 @@ import {
 import { alsGespeichert, aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
 import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
+import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
 /**
  * Wie beim Bild: Der Post-Titel beschreibt, er folgt der Behauptungsregel fuer
@@ -77,6 +78,8 @@ export const SPEICHERN_FEHLGESCHLAGEN =
   ],
 })
 export class AddPostComponent implements OnChanges {
+  /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
+  readonly einspaltig = einspaltig();
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('post');
   readonly plattformen = PLATTFORMEN;

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
@@ -76,6 +76,12 @@ export interface GepostetAntwort {
 
 export interface BesuchResponse {
   nutzung_seit_letztem_besuch: number;
+  /** Einwürfe anderer seit dem zuletzt gesehenen Stand (Zählerstand, kein Zeitpunkt). */
+  neue_einwuerfe?: number;
+  /** Wie viele Aussagen „Hier fehlt eine Antwort“ gerade zeigt; kein Stand, nicht „neu“. */
+  unbeantwortete_aussagen?: number;
+  /** Die Liste hat ihre Grenze erreicht: Es können mehr warten („50+“). */
+  unbeantwortete_aussagen_mehr?: boolean;
 }
 
 export interface TrendingContent {
@@ -359,6 +365,13 @@ export class UsageTrackingService {
   }
 
   /**
+   * Die Antwort des letzten besuchMelden dieses App-Starts; null, solange keine da ist.
+   * Die Startseite zeigt sie in „Seit deinem letzten Besuch“, ohne selbst zu fragen:
+   * Eine zweite Frage schriebe die gesehenen Stände fort und ergaebe 0.
+   */
+  readonly besuchStand$ = new BehaviorSubject<BesuchResponse | null>(null);
+
+  /**
    * Meldet einen Besuch der angemeldeten Person und liefert, wie oft ihre Beitraege
    * seit dem letzten Besuch genutzt wurden (#349). POST, weil das Backend dabei den
    * gezeigten Stand fortschreibt; die Person kommt wie bei der Nutzungsstatistik
@@ -367,8 +380,11 @@ export class UsageTrackingService {
    * @returns Observable mit der Zahl, bei einem Fehler null
    */
   besuchMelden(): Observable<number | null> {
+    // Ein neuer Besuch (auch nach einem Kontowechsel): Der alte Stand gilt nicht mehr.
+    this.besuchStand$.next(null);
     return this.http.post<BesuchResponse>(`${this.apiUrl}/users/me/besuch`, {})
       .pipe(
+        tap(antwort => this.besuchStand$.next(antwort)),
         map(antwort => antwort.nutzung_seit_letztem_besuch),
         catchError(error => {
           this.loggingService.error('Besuch nicht gemeldet', error);

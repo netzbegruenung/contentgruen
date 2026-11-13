@@ -459,6 +459,15 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return (this.nutzung ?? 0) >= 1 && !this.vorschau;
   }
 
+  /**
+   * Die Nutzung im Fuss der kompakten Karte, ausgeschrieben statt nur "3×": in Meine
+   * Beitraege soll man ohne Tooltip lesen koennen, was die Zahl heisst.
+   */
+  get albumNutzung(): string {
+    const nutzung = this.nutzung ?? 0;
+    return nutzung ? `${nutzung}× genutzt` : 'Noch nicht genutzt';
+  }
+
   /** Text des Nutzungs-Badges fuer alle Varianten, "3×"; unbekannt zaehlt als 0. */
   get nutzungAnzeige(): string {
     return `${this.nutzung ?? 0}×`;
