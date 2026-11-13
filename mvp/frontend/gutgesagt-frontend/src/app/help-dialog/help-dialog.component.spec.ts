@@ -5,7 +5,8 @@ import { Subject } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 
-import { HelpDialogComponent, hilfeOeffnen } from './help-dialog.component';
+import { Router } from '@angular/router';
+import { HILFE_PARAM, HelpDialogComponent, MITMACHEN_HINWEIS, hilfeOeffnen } from './help-dialog.component';
 
 describe('HelpDialogComponent', () => {
   let component: HelpDialogComponent;
@@ -96,7 +97,29 @@ describe('HelpDialogComponent', () => {
 
       expect(ref.close).toHaveBeenCalled();
       expect(rundgang.starten).toHaveBeenCalledWith('antwort-finden');
-      expect(fixture.nativeElement.querySelector('.rundgang-mitmachen')).toBeNull();
+    });
+
+    it('teasert Besuchern Selbst beitragen an: aria-disabled, ohne Wirkung, mit Hinweis', () => {
+      const knopf = fixture.nativeElement.querySelector('.rundgang-mitmachen') as HTMLButtonElement;
+      expect(knopf.textContent!.trim()).toBe('Selbst beitragen (4 Schritte)');
+      expect(knopf.getAttribute('aria-disabled')).toBe('true');
+      expect(knopf.disabled).toBeFalse(); // fokussierbar, der Screenreader liest den Hinweis
+      const hinweis = fixture.nativeElement.querySelector('#' + knopf.getAttribute('aria-describedby')) as HTMLElement;
+      expect(hinweis.textContent).toContain(MITMACHEN_HINWEIS);
+      knopf.click();
+      expect(rundgang.starten).not.toHaveBeenCalled();
+    });
+
+    it('führt Besucher zur Anmeldung und danach zurück in die Hilfe', () => {
+      const router = TestBed.inject(Router);
+      spyOnProperty(router, 'url').and.returnValue('/result?searchQuery=x');
+      const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+      (fixture.nativeElement.querySelector('.rundgang-anmelden') as HTMLButtonElement).click();
+
+      expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/login'], {
+        queryParams: { returnUrl: `/result?searchQuery=x&${HILFE_PARAM}=1` },
+      });
     });
 
     it('bietet Angemeldeten auch den Rundgang Selbst beitragen an, mit Schrittzahl (#644)', () => {
@@ -109,6 +132,8 @@ describe('HelpDialogComponent', () => {
       knopf.click();
 
       expect(rundgang.starten).toHaveBeenCalledWith('mitmachen');
+      expect(knopf.hasAttribute('aria-disabled')).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.rundgang-mitmachen-hinweis')).toBeNull();
     });
   });
 

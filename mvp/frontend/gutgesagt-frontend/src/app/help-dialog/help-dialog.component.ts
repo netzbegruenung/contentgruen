@@ -1,15 +1,25 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgFor } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
-import { Router, RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { combineLatest } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import { CONTENT_TYPE_REGISTRY } from '../shared/content-type-registry';
 import { ERFUNDENES_MELDEN, NICHT_JEDE_AUSSAGE, SCHREIBREGELN } from '../shared/schreibregeln';
 import { AuthService } from '../auth/auth.service';
+import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
+
+/** Rueckkehrziel-Parameter: Nach der Anmeldung aus der Hilfe oeffnet die App sie wieder. */
+export const HILFE_PARAM = 'hilfe';
+
+/** Steht für Besucher unter dem ausgegrauten Rundgang Selbst beitragen. */
+export const MITMACHEN_HINWEIS = 'Nach der Anmeldung zeigen wir dir, wie Beitragen geht.';
 
 @Component({
   selector: 'app-help-dialog',
@@ -38,6 +48,7 @@ export class HelpDialogComponent {
 
   readonly antwortFinden = rundgangBeschriftung('antwort-finden');
   readonly selbstBeitragen = rundgangBeschriftung('mitmachen');
+  readonly mitmachenHinweis = MITMACHEN_HINWEIS;
 
   private readonly rundgang = inject(RundgangService);
   readonly angemeldet = !!inject(AuthService).getUserInfo()?.isAuthenticated;
@@ -54,6 +65,14 @@ export class HelpDialogComponent {
   rundgangStarten(id: RundgangId): void {
     this.dialogRef.afterClosed().subscribe(() => void this.rundgang.starten(id));
     this.dialogRef.close();
+  }
+
+  /** Zur Anmeldung; danach zurück auf diese Seite mit offener Hilfe (hilfeNachAnmeldung). */
+  anmelden(): void {
+    const hier = this.router.parseUrl(this.router.url);
+    hier.queryParams = { ...hier.queryParams, [HILFE_PARAM]: '1' };
+    this.dialogRef.close();
+    this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.serializeUrl(hier) } });
   }
 
   navigateToAbout(): void {
@@ -77,4 +96,31 @@ export function hilfeOeffnen(dialog: MatDialog): MatDialogRef<HelpDialogComponen
     maxHeight: '100%',
     panelClass: 'hilfe-seitenleiste',
   });
+}
+
+/**
+ * Öffnet die Hilfe wieder, wenn die Anmeldung aus ihr kam (Parameter HILFE_PARAM), und
+ * nimmt den Parameter aus der Adresse. Erst, wenn feststeht, wer da ist, und bei
+ * Angemeldeten nach der Art.-9-Einwilligung: Sonst läge die Hilfe über deren Seite.
+ */
+export function hilfeNachAnmeldung(destroyRef: DestroyRef): void {
+  const router = inject(Router);
+  const dialog = inject(MatDialog);
+  const auth = inject(AuthService);
+  const einwilligung = inject(Art9EinwilligungService);
+  const adresse$ = router.events.pipe(
+    filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+    map((e) => router.parseUrl(e.urlAfterRedirects)),
+  );
+  combineLatest([adresse$, auth.userInfo$, einwilligung.geklaert$])
+    .pipe(
+      filter(([adresse, info, geklaert]) =>
+        adresse.queryParamMap.has(HILFE_PARAM) && !!info && (!info.isAuthenticated || geklaert === info.userId),
+      ),
+      takeUntilDestroyed(destroyRef),
+    )
+    .subscribe(() => {
+      void router.navigate([], { queryParams: { [HILFE_PARAM]: null }, queryParamsHandling: 'merge', replaceUrl: true });
+      if (!dialog.openDialogs.some((d) => d.componentInstance instanceof HelpDialogComponent)) hilfeOeffnen(dialog);
+    });
 }

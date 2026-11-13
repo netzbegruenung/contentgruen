@@ -67,6 +67,28 @@
     gap: 8px;
 }
 
+/* Selbst beitragen für Besucher: ausgegraut, aber lesbar (Schrift mit mind. 4,5:1 auf
+   der Karte, hell wie dunkel); der Hinweis darunter in normaler Schrift */
+.rundgang-knopf.umriss.gesperrt {
+    color: var(--text-secondary);
+    border-style: dashed;
+    border-color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.rundgang-mitmachen-hinweis {
+    margin: 8px 0 0;
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.rundgang-mitmachen-hinweis .rundgang-knopf.text {
+    min-height: 0;
+    padding: 0;
+    font-size: inherit;
+}
+
 @media (max-width: 599px) {
     .rundgang-kasten {
         align-items: flex-start;

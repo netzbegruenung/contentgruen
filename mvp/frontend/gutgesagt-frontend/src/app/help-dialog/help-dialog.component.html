@@ -17,8 +17,20 @@
                 @if (angemeldet) {
                     <button type="button" class="rundgang-knopf umriss rundgang-mitmachen"
                             (click)="rundgangStarten('mitmachen')">{{ selbstBeitragen }}</button>
+                } @else {
+                    <!-- Angeteasert: fokussierbar und vorlesbar, aber ohne Wirkung; der Hinweis
+                         darunter sagt, warum, und führt zur Anmeldung (danach zurück in die Hilfe) -->
+                    <button type="button" class="rundgang-knopf umriss rundgang-mitmachen gesperrt"
+                            aria-disabled="true" aria-describedby="rundgang-mitmachen-hinweis">{{ selbstBeitragen }}</button>
                 }
             </div>
+            @if (!angemeldet) {
+                <p id="rundgang-mitmachen-hinweis" class="rundgang-mitmachen-hinweis">
+                    {{ mitmachenHinweis }}
+                    <button type="button" class="rundgang-knopf text rundgang-anmelden"
+                            (click)="anmelden()">Anmelden</button>
+                </p>
+            }
         </div>
     </section>
 
