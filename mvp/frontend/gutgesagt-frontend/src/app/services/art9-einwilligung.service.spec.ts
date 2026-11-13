@@ -102,8 +102,9 @@ describe('Art9EinwilligungService', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  // #644: Ein neuer Wortlaut (2026-11-10) fragt niemanden neu, der einem frueheren zugestimmt hat
-  it('laesst in Ruhe, wer einem aelteren Wortlaut als dem aktuellen zugestimmt hat', () => {
+  // Ob ein frueherer Wortlaut zaehlt, entscheidet das Backend (GELTENDE_WORTLAUTE); das
+  // Frontend folgt nur ``eingewilligt``. #644: 2026-11-10 fragte niemanden neu.
+  it('laesst in Ruhe, wer einem aelteren Wortlaut zugestimmt hat, solange das Backend eingewilligt meldet', () => {
     service.starten();
     anmeldung.next(angemeldet('kim'));
 
@@ -114,6 +115,21 @@ describe('Art9EinwilligungService', () => {
     });
 
     expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  // 2026-11-13: Nur dieser Wortlaut zaehlt; wer einem frueheren zugestimmt hat, wird neu gefragt
+  it('fragt neu, wenn das Backend eine fruehere Einwilligung nicht mehr zaehlt', () => {
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+
+    http.expectOne(ADRESSE).flush({
+      ...stand(false),
+      wortlaut: '2026-11-12',
+      eingewilligt_am: '2026-11-12T09:30:00Z',
+      aktueller_wortlaut: { kennung: '2026-11-13', text: '…' },
+    });
+
+    expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], { queryParams: { returnUrl: '/fangkorb' } });
   });
 
   it('meldet die Person als geklaert, sobald sie eingewilligt hat (#587)', () => {
@@ -215,7 +231,7 @@ describe('Art9EinwilligungService', () => {
     expect(text.startsWith(wortlautErsterSatz(text))).toBeTrue();
   });
 
-  // Kopie des aktuellen Wortlauts 2026-11-12 (domain/art9_einwilligung.py), Anfang und
+  // Kopie des aktuellen Wortlauts 2026-11-13 (domain/art9_einwilligung.py), Anfang und
   // zweiter Satz: Aendert sich der Wortlaut, zeigt dieser Test, ob der Schnitt noch passt.
   it('wortlautErsterSatz schneidet den aktuellen Wortlaut nach dem Art.-9-Satz', () => {
     const ersterSatz =

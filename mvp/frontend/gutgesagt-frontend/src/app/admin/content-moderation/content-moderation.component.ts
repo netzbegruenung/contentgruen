@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,11 +19,21 @@ import { sperrgrundLabel } from '../../shared/sperrgruende';
 import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
+import { LoeschauftraegeComponent, NACHLADEN_MS } from './loeschauftraege.component';
 import { SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
 
 // 'person': Meldungen einer Person nach Name oder E-Mail-Adresse (#494).
+// 'loeschauftraege': Löschaufträge nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b).
 // 'suchanfragen': Suchanfragen freigeben (Vormoderation, 13.11.2026); lädt selbst.
-type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'person' | 'suchanfragen';
+type Ansicht =
+  | 'pending'
+  | 'reviewed'
+  | 'dismissed'
+  | 'all'
+  | 'gesperrt'
+  | 'person'
+  | 'loeschauftraege'
+  | 'suchanfragen';
 
 @Component({
   selector: 'app-content-moderation',
@@ -41,6 +51,7 @@ type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'pers
     MatButtonToggleModule,
     MatBadgeModule,
     MeldungenEinerPersonComponent,
+    LoeschauftraegeComponent,
     SuchanfragenFreigebenComponent
   ],
   templateUrl: './content-moderation.component.html',
@@ -63,12 +74,14 @@ type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'pers
     ])
   ]
 })
-export class ContentModerationComponent implements OnInit {
+export class ContentModerationComponent implements OnInit, OnDestroy {
   reports: ContentReport[] = [];
   // Ansicht "Gesperrt": gesperrte Beiträge, auch ohne Meldung; offene Widersprüche zuerst.
   gesperrte: GemeldeterBeitrag[] = [];
   /** Zahl am Umschalter "Gesperrt": Widersprüche, die auf erneute Prüfung warten. */
   offeneWidersprueche = 0;
+  /** Zahl am Umschalter "Löschaufträge": offene Aufträge. */
+  offeneLoeschauftraege = 0;
   /** Zahl am Umschalter "Suchanfragen": warten auf Freigabe (SuchanfragenFreigebenComponent). */
   zuPruefendeSuchanfragen = 0;
   loading = true;
@@ -76,6 +89,7 @@ export class ContentModerationComponent implements OnInit {
   selectedStatus: Ansicht = 'pending';
   displayedColumns: string[] = ['expand', 'content_type', 'reason', 'reporter', 'created', 'actions'];
   expandedReports = new Set<string>();
+  private zaehlTakt: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private moderationService: ModerationService,
@@ -86,11 +100,47 @@ export class ContentModerationComponent implements OnInit {
   ngOnInit() {
     this.loadReports();
     this.offeneWiderspruecheZaehlen();
+    this.offeneLoeschauftraegeZaehlen();
+    // Die Zahl am Umschalter lädt selbst nach wie die Liste, auch wenn ein anderer Umschalter offen ist.
+    this.zaehlTakt = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        this.offeneLoeschauftraegeZaehlen();
+      }
+    }, NACHLADEN_MS);
+  }
+
+  ngOnDestroy() {
+    if (this.zaehlTakt !== null) {
+      clearInterval(this.zaehlTakt);
+    }
+  }
+
+  /** Zurück auf dem Reiter: die Zahl der Löschaufträge sofort nachladen. */
+  @HostListener('document:visibilitychange')
+  sichtbarkeitGeaendert() {
+    if (document.visibilityState === 'visible') {
+      this.offeneLoeschauftraegeZaehlen();
+    }
+  }
+
+  /** Ansichten, die selbst laden: die Suche nach Person, die Löschaufträge und die Suchanfragen. */
+  get laedtSelbst(): boolean {
+    return (
+      this.selectedStatus === 'person' ||
+      this.selectedStatus === 'loeschauftraege' ||
+      this.selectedStatus === 'suchanfragen'
+    );
   }
 
   loadReports() {
-    if (this.selectedStatus === 'person' || this.selectedStatus === 'suchanfragen') {
-      // Beide laden selbst: die Suche erst, wenn Angaben eingegeben sind.
+    if (
+      this.selectedStatus === 'person' ||
+      this.selectedStatus === 'loeschauftraege' ||
+      this.selectedStatus === 'suchanfragen'
+    ) {
+      // Die Suche lädt selbst, erst wenn Angaben eingegeben sind; Löschaufträge und
+      // Suchanfragen laden selbst und laden selbst nach. Ausgeschrieben statt
+      // laedtSelbst, damit TypeScript die Ansicht unten eingrenzt.
       this.loading = false;
       this.error = null;
       return;
@@ -227,6 +277,20 @@ export class ContentModerationComponent implements OnInit {
     this.moderationService.getGesperrte().subscribe({
       next: (response) => (this.offeneWidersprueche = zaehleOffene(response.beitraege)),
       error: (error) => console.error('Error counting Widersprüche:', error)
+    });
+  }
+
+  /**
+   * Lädt die Löschaufträge nur, um die offenen am Umschalter zu zählen. Ist die Liste offen,
+   * zählt sie selbst (Ereignis „anzahl“); dann fragt der Umschalter nicht doppelt.
+   */
+  private offeneLoeschauftraegeZaehlen() {
+    if (this.selectedStatus === 'loeschauftraege') {
+      return;
+    }
+    this.moderationService.getLoeschauftraege().subscribe({
+      next: (response) => (this.offeneLoeschauftraege = response.auftraege.length),
+      error: (error) => console.error('Error counting Löschaufträge:', error)
     });
   }
 

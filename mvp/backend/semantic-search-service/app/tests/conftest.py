@@ -153,11 +153,12 @@ def art9_einwilligung_ohne_datenbank(monkeypatch):
     setzen ``art9_einwilligung_ohne_datenbank.lesen.return_value = None``.
     """
     import services.art9_einwilligung_service as modul
+    from domain.art9_einwilligung import AKTUELLER_WORTLAUT
     from repositories.art9_einwilligung_repository import Art9Einwilligung
 
     repository = MagicMock()
     repository.lesen.return_value = Art9Einwilligung(
-        wortlaut="2026-11-05",
+        wortlaut=AKTUELLER_WORTLAUT,
         eingewilligt_am=datetime.datetime(2026, 11, 5, tzinfo=datetime.timezone.utc),
         widerrufen_am=None,
     )

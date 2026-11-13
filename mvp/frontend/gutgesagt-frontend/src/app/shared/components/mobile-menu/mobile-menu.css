@@ -69,6 +69,35 @@
     box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--primary-dark);
 }
 
+/* Selbst beitragen für Besucher: ausgegraut, aber lesbar (mind. 4,5:1 hell wie dunkel) */
+.mobile-menu-item.gesperrt {
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.mobile-menu-mitmachen-hinweis {
+    margin: 0 0 var(--spacing-sm);
+    padding: 0 var(--spacing-sm) 0 calc(var(--spacing-sm) + 32px);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.mobile-menu-mitmachen-anmelden {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px; /* Zielgröße Touch */
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--primary-dark);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
 /* Ueberschrift einer Gruppe ohne eigenen Knopf (Rundgang) */
 .mobile-menu-gruppentitel {
     padding: 0 var(--spacing-sm);

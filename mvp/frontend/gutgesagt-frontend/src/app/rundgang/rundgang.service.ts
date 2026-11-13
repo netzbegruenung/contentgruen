@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
@@ -60,6 +60,16 @@ export class RundgangService {
 
   /** Einmal beim Start der App. */
   beobachten(destroyRef: DestroyRef): void {
+    // Zurück (oder Vor) im Browser beendet den Rundgang: Sonst stuende der Schritt auf
+    // der Seite, zu der die Person gerade zurückgeht, etwa „Passende Treffer“ über den
+    // neuesten Inhalten der Startseite. Starten lässt er sich jederzeit über die Hilfe neu.
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationStart => e instanceof NavigationStart && e.navigationTrigger === 'popstate'),
+        takeUntilDestroyed(destroyRef),
+      )
+      .subscribe(() => this.beenden()); // ohne laufenden Rundgang ändert das nichts
+
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),

@@ -48,6 +48,7 @@ JE_SPALTE_EINE = {
     "gesehene_nutzung.user_id": 1,
     "art9_einwilligungen.user_id": 1,
     "abzeichen_sichtbarkeit.user_id": 1,
+    "loeschauftraege.user_id": 1,
     "votes.user_id": 1,
     "raw_inputs.submitted_by": 1,
     "raw_inputs.destilled_by": 1,
@@ -143,6 +144,31 @@ class TestPostgresUmschreiben:
         stimmen = _stimmen(datenbank, NEU)
         assert (beitrag, "dislike") in stimmen
         assert len(stimmen) == 2  # die eine aus spuren dazu
+        assert _kennung_irgendwo(datenbank, PERSON) == []
+
+    def test_offener_loeschauftrag_der_neuen_kennung_gewinnt(self, datenbank, spuren):
+        """Je Person hoechstens ein offener Auftrag: der der alten geht, erledigte ziehen um."""
+        from datetime import datetime, timezone
+
+        from infrastructure.database.models import LoeschauftragZeile
+
+        jetzt = datetime.now(timezone.utc)
+        with datenbank.get_session() as s:
+            # spuren hat schon einen offenen Auftrag der alten Kennung
+            s.add(
+                LoeschauftragZeile(
+                    user_id=PERSON, angelegt_am=jetzt, frist=jetzt, erledigt_am=jetzt
+                )
+            )
+            s.add(LoeschauftragZeile(user_id=NEU, angelegt_am=jetzt, frist=jetzt))
+
+        _umschreiben(datenbank)
+
+        with datenbank.get_session() as s:
+            zeilen = sorted(
+                (z.user_id, z.erledigt_am is None) for z in s.query(LoeschauftragZeile)
+            )
+        assert zeilen == [(NEU, False), (NEU, True)]
         assert _kennung_irgendwo(datenbank, PERSON) == []
 
     def test_satz_beider_kennungen_am_selben_einwurf_bleibt_stehen(

@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, Subject } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -8,6 +8,7 @@ import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
 import { SuchanfragenFreigabeService } from '../../services/suchanfragen-freigabe.service';
+import { NACHLADEN_MS } from './loeschauftraege.component';
 
 function sperre(overrides: Partial<SperreFuerAdmins> = {}): SperreFuerAdmins {
   return {
@@ -65,11 +66,12 @@ describe('ContentModerationComponent', () => {
   }
 
   beforeEach(() => {
-    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport']);
+    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport', 'getLoeschauftraege', 'loeschauftragAusfuehren']);
     moderation.sperren.and.returnValue(of({ success: true, message: '' }));
     moderation.entsperren.and.returnValue(of({ success: true, message: '' }));
     moderation.sperreBestaetigen.and.returnValue(of({ success: true, message: '' }));
     moderation.getGesperrte.and.returnValue(of({ total: 0, beitraege: [] }));
+    moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [] }));
     dialog = jasmine.createSpyObj('MatDialog', ['open']);
     suchanfragen = jasmine.createSpyObj('SuchanfragenFreigabeService', ['zuPruefen', 'anzahl', 'freigeben', 'ablehnen']);
     suchanfragen.zuPruefen.and.returnValue(of({ suchanfragen: [] }));
@@ -183,13 +185,13 @@ describe('ContentModerationComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
   });
 
-  it('zählt die Suchanfragen, die auf Freigabe warten, am Umschalter und zeigt sie statt der Meldungen', async () => {
+  it('zählt die Suchanfragen, die auf Freigabe warten, am Umschalter und zeigt sie statt der Meldungen', fakeAsync(() => {
     suchanfragen.zuPruefen.and.returnValue(of({
       suchanfragen: [{ statement_id: 'a-1', statement_text: 'Sind Wärmepumpen laut?', personen_ohne_treffer: 3 }]
     }));
     suchanfragen.anzahl.and.returnValue(of({ anzahl: 1 }));
     mitMeldungen([meldung()]);
-    await fixture.whenStable();
+    flushMicrotasks();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.zuPruefendeSuchanfragen).toBe(1);
@@ -203,7 +205,8 @@ describe('ContentModerationComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Sind Wärmepumpen laut?');
     expect(fixture.nativeElement.querySelector('.reports-table')).toBeNull();
     expect(knopf('Aktualisieren')).toBeUndefined();
-  });
+    discardPeriodicTasks();
+  }));
 
   it('zeigt unter „Nach Person“ keinen Fehler einer Liste, die vorher noch lud (#494)', () => {
     const liste = new Subject<PendingReportsResponse>();
@@ -337,5 +340,63 @@ describe('ContentModerationComponent', () => {
     const zelle: HTMLElement = fixture.nativeElement.querySelector('.reporter-cell');
     expect(zelle.textContent).toContain('ohne Erklärung guten Glaubens');
     expect(zelle.querySelector('a')).toBeNull();
+  });
+
+  describe('Löschaufträge (DSFA R9b)', () => {
+    const auftrag = {
+      id: 'auftrag-1',
+      user_id: 'person-1',
+      anzeigename: 'Anna B.',
+      widerrufen_am: '2026-11-01T10:00:00Z',
+      angelegt_am: '2026-11-01T10:00:00Z',
+      frist: '2026-11-08T10:00:00Z',
+      ueberfaellig: true,
+      neu_eingewilligt_am: null,
+    };
+
+    it('zählt die offenen Aufträge am Umschalter', () => {
+      moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [auftrag] }));
+      mitMeldungen([]);
+
+      expect(fixture.componentInstance.offeneLoeschauftraege).toBe(1);
+      const umschalter = Array.from(fixture.nativeElement.querySelectorAll('mat-button-toggle')) as HTMLElement[];
+      const loeschauftraege = umschalter.find((u) => u.textContent?.includes('Löschaufträge'))!;
+      expect(loeschauftraege.querySelector('[aria-label]')?.getAttribute('aria-label')).toBe('Löschaufträge, 1 offen');
+    });
+
+    it('lädt die Zahl am Umschalter im Takt nach, solange sichtbar, auch in anderen Ansichten', fakeAsync(() => {
+      let sichtbarkeit: DocumentVisibilityState = 'visible';
+      spyOnProperty(document, 'visibilityState', 'get').and.callFake(() => sichtbarkeit);
+      mitMeldungen([]);
+      expect(fixture.componentInstance.offeneLoeschauftraege).toBe(0);
+
+      moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [auftrag] }));
+      tick(NACHLADEN_MS);
+      expect(fixture.componentInstance.offeneLoeschauftraege).toBe(1);
+
+      sichtbarkeit = 'hidden';
+      tick(NACHLADEN_MS);
+      expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
+
+      sichtbarkeit = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(3);
+
+      fixture.destroy();
+      tick(NACHLADEN_MS);
+      expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(3);
+    }));
+
+    it('zeigt die Liste ohne „Aktualisieren“: sie lädt selbst nach', () => {
+      mitMeldungen([]);
+
+      fixture.componentInstance.onStatusFilterChange('loeschauftraege');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-loeschauftraege')).not.toBeNull();
+      expect(knopf('Aktualisieren')).toBeUndefined();
+      expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
+      fixture.destroy();
+    });
   });
 });

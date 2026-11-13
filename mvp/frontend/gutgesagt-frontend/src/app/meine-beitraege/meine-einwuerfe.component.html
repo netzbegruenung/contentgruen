@@ -3,9 +3,22 @@
     <mat-spinner class="mat-spinner-color" diameter="40"></mat-spinner>
 </div>
 
-<p *ngIf="!isLoading && ladefehler" class="einwuerfe-fehler">Deine Einwürfe konnten nicht geladen werden. Bitte lade die Seite neu.</p>
+<!-- Live-Region, immer im DOM: sagt den ersten Ladefehler und die Rueckkehr an -->
+<div class="visually-hidden" role="status">{{ ansage }}</div>
 
-<ng-container *ngIf="!isLoading && !ladefehler">
+<!-- Nie "neu laden": Die Liste versucht es selbst wieder, der Knopf zieht den Versuch vor -->
+<div *ngIf="!isLoading && ladefehler" class="einwuerfe-fehler">
+    <p>
+        Deine Einwürfe konnten gerade nicht geladen werden.
+        <ng-container *ngIf="erneutLaedt">Neuer Versuch läuft …</ng-container>
+        <ng-container *ngIf="!erneutLaedt && versuchtWeiter">Die Seite versucht es weiter.</ng-container>
+    </p>
+    <button mat-stroked-button type="button" class="erneut-versuchen"
+            [attr.aria-disabled]="erneutLaedt" (click)="erneutVersuchen()">Erneut versuchen</button>
+</div>
+
+<!-- Ziel des Fokus nach einem Ladefehler (tabindex -1) -->
+<div *ngIf="!isLoading && !ladefehler" class="einwuerfe-inhalt" tabindex="-1">
     <p *ngIf="!karten.length" class="einwuerfe-leer">Du hast noch nichts eingeworfen.</p>
 
     <p *ngIf="karten.length" class="einwuerfe-statistik">{{ statistik }}</p>
@@ -17,7 +30,7 @@
             </app-beitragskarte>
         </li>
     </ul>
-</ng-container>
+</div>
 
 <!-- Ausserhalb des Ladezweigs: sonst entsteht der Paginator bei jedem Seitenwechsel neu und steht wieder auf Seite 1 -->
 <mat-paginator *ngIf="gesamt > SEITENGROESSE" [length]="gesamt"

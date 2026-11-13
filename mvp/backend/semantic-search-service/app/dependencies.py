@@ -64,6 +64,7 @@ from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
 from repositories.einwurf_repository import get_einwurf_repository
 from repositories.sperre_repository import get_sperre_repository
+from repositories.loeschauftrag_repository import get_loeschauftrag_repository
 from core.fehler import INTERNER_FEHLER
 from core.logging import get_logger
 
@@ -398,6 +399,8 @@ def get_loeschfristen_service() -> LoeschfristenService:
         _keycloak_konten(),
         # Suchereignisse abgeschlossener Tage zu Tageszaehlern verdichten (#495).
         get_search_tracking_repository(),
+        # Erledigte Loeschauftraege nach dem Widerruf (DSFA R9b).
+        get_loeschauftrag_repository(),
     )
 
 

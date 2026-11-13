@@ -114,6 +114,33 @@ export interface AngabenGeloescht {
   angaben_entfernt: number;
 }
 
+/** Ein offener Löschauftrag nach dem Widerruf der Art.-9-Einwilligung (Glossar „Löschauftrag“). */
+export interface Loeschauftrag {
+  id: string;
+  /** Kennung der Person; Admins sehen sie (Glossar „Kennung“). */
+  user_id: string;
+  anzeigename: string | null;
+  /** Jüngster Widerruf; widerruft die Person nach einer neuen Einwilligung erneut, bleibt es ein Auftrag. */
+  widerrufen_am: string;
+  angelegt_am: string;
+  frist: string;
+  ueberfaellig: boolean;
+  /** Neue Einwilligung nach dem jüngsten Widerruf; was ab da kam, bleibt. Sonst null. */
+  neu_eingewilligt_am: string | null;
+}
+
+export interface LoeschauftraegeResponse {
+  frist_tage: number;
+  auftraege: Loeschauftrag[];
+}
+
+/** Was der Löschablauf geändert hat. */
+export interface LoeschauftragAusgefuehrt {
+  beitraege: number;
+  einwuerfe: number;
+  saetze: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -184,6 +211,19 @@ export class ModerationService {
 
   getGesperrte(): Observable<GesperrteResponse> {
     return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`);
+  }
+
+  /** Offene Löschaufträge, die mit der frühesten Frist zuerst. */
+  getLoeschauftraege(): Observable<LoeschauftraegeResponse> {
+    return this.http.get<LoeschauftraegeResponse>(`${this.baseUrl}/loeschauftraege`);
+  }
+
+  /**
+   * Den Löschablauf für einen Auftrag ausführen: Beiträge anonymisieren, eigene Einwürfe
+   * löschen, Sätze an fremden Einwürfen mit Platzhalter. Danach ist der Auftrag erledigt.
+   */
+  loeschauftragAusfuehren(id: string): Observable<LoeschauftragAusgefuehrt> {
+    return this.http.post<LoeschauftragAusgefuehrt>(`${this.baseUrl}/loeschauftraege/${encodeURIComponent(id)}/ausfuehren`, {});
   }
 
   /**
