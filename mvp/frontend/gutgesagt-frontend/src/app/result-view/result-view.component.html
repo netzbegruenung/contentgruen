@@ -41,7 +41,7 @@
         <div class="unified-empty-state">
             <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
 
-            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer" [ohneTreffer]="true">
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="bekannteAussagen" [ohneTreffer]="true">
                 <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu dieser Aussage.</p>
                 <div class="action-buttons-top">
                     <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
@@ -138,10 +138,12 @@
             <ng-container *ngTemplateOutlet="gruppeTpl; context: { $implicit: gruppe }"></ng-container>
         </ng-container>
 
-        <!-- Weniger passend (andere Aussagen, direkte Treffer): eingeklappt, wenn oben etwas steht -->
+        <!-- Weniger passend (andere Aussagen, direkte Treffer): eingeklappt. Weniger passende gibt
+             es nur neben einer offenen erkannten Gruppe; die Abfrage auf hauptGruppen sichert nur ab,
+             dass ohne sie nichts unerreichbar eingeklappt bleibt. -->
         <section class="weitere" *ngIf="weitereGruppen.length">
             <button *ngIf="hauptGruppen.length" type="button" class="weitere-umschalter"
-                    [attr.aria-expanded]="weitereOffen" aria-controls="weitere-treffer"
+                    [attr.aria-expanded]="weitereOffen" [attr.aria-controls]="weitereOffen ? 'weitere-treffer' : null"
                     (click)="weitereOffen = !weitereOffen">
                 <mat-icon aria-hidden="true">{{ weitereOffen ? 'expand_less' : 'expand_more' }}</mat-icon>
                 Weitere, weniger passende Treffer ({{ weitereAnzahl }})
@@ -155,7 +157,7 @@
 
         <!-- Unter allen Treffern: aehnliche Aussagen und neu anlegen, passend zur Typwahl -->
         <section class="nicht-dabei-unten">
-            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="aussagenDerTreffer"
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="bekannteAussagen"
                              (aehnlicheGeladen)="alternativenGeladen($event)">
                 <ng-container *ngIf="wirksamerFilter !== 'generictext'; else hintergrundErgaenzen">
                     <p class="neu-anlegen-satz">Schreib selbst einen Kommentar zu dieser Aussage.</p>

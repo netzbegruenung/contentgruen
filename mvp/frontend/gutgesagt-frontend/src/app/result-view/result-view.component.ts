@@ -32,6 +32,7 @@ import {
   ansichtBauen,
   anzahlJeTyp,
   anzahlSichtbar,
+  istWeniger,
   aufklappSchluessel,
   aussageSchluessel,
   gruppieren,
@@ -48,12 +49,16 @@ function passtZuThema(treffer: BaseSearchResult, thema: string | null): boolean 
 }
 
 /**
- * Die Themen aller Treffer, jedes einmal, in der Reihenfolge ihres ersten
- * Auftretens. Nur sie stehen im Filter: Ein Thema ohne Treffer liesse die Seite leer.
+ * Die Themen der Treffer, jedes einmal, in der Reihenfolge ihres ersten Auftretens.
+ * Nur sie stehen im Filter: Ein Thema ohne Treffer liesse die Seite leer. Mit
+ * ``nurAussage`` (Schluessel der erkannten Aussage) nur die Themen ihrer Treffer: Ein
+ * Thema nur eingeklappter Treffer liesse die erkannte Gruppe wegfallen und die
+ * weniger passenden offen dastehen.
  */
-export function themenDerTreffer(antwort: SearchResponse): Thema[] {
+export function themenDerTreffer(antwort: SearchResponse, nurAussage: string | null = null): Thema[] {
   const gesehen = new Map<string, Thema>();
-  for (const treffer of alleTreffer(antwort)) {
+  const auswahl = alleTreffer(antwort).filter((t) => nurAussage === null || aussageSchluessel(t) === nurAussage);
+  for (const treffer of auswahl) {
     for (const thema of treffer.themen ?? []) {
       if (!gesehen.has(thema.schluessel)) {
         gesehen.set(thema.schluessel, thema);
@@ -61,15 +66,6 @@ export function themenDerTreffer(antwort: SearchResponse): Thema[] {
     }
   }
   return [...gesehen.values()];
-}
-
-/**
- * Die Aussagen, deren Beitraege als Treffer dastehen, und die Aussage der Suche selbst:
- * "Nicht dabei?" schlaegt sie nicht noch einmal als aehnliche Aussage vor.
- */
-export function aussagenDerTreffer(antwort: SearchResponse): string[] {
-  const ids = alleTreffer(antwort).map((treffer) => treffer.statement_id);
-  return [...new Set([antwort.statement_id, ...ids].filter((id): id is string => !!id))];
 }
 
 /** Die Aussage, als die die Suche verstanden wurde: ID (falls bekannt) und Text. */
@@ -200,7 +196,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   angezeigt: SearchResponse | null = null;
   themenDerTreffer: Thema[] = [];
   aktivesThema: string | null = null;
-  aussagenDerTreffer: string[] = [];
+  bekannteAussagen: string[] = [];
   /** Im Kopfband (#642); aus allen Treffern, nicht nur denen zum Thema. */
   erkannt: ErkannteAussage | null = null;
 
@@ -282,9 +278,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         // Alternativen und Ansage gehoeren zur vorigen Suche; "Nicht dabei?" meldet neu.
         this.alternativen = [];
         this.ansage = '';
-        this.themenDerTreffer = response ? themenDerTreffer(response) : [];
-        this.aussagenDerTreffer = response ? aussagenDerTreffer(response) : [];
         this.erkannt = response ? erkannteAussage(response) : null;
+        this.themenDerTreffer = response ? themenDerTreffer(response, erkannterSchluessel(this.erkannt)) : [];
         this.anzeigen();
       });
 
@@ -310,6 +305,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.anzahlAlle = anzahlJeTyp(response);
     this.gruppen = response ? gruppieren(response, erkannterSchluessel(this.erkannt), this.karteZu) : [];
     this.anzahl = anzahlSichtbar(this.gruppen);
+    this.bekannteAktualisieren();
     const gesamt = TREFFER_TYPEN.reduce((summe, typ) => summe + this.anzahl[typ], 0);
     this.chips = [
       { filter: 'alle' as TypFilter, name: 'Alle', anzahl: gesamt },
@@ -344,6 +340,21 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     return block.typ;
   }
 
+  /**
+   * Aussagen, die "Nicht dabei?" nicht noch einmal vorschlaegt: die Aussage der Suche und
+   * die der offenen Gruppen. Eingeklappte Aussagen bleiben als Alternative unter
+   * "Nicht gemeint?" waehlbar.
+   */
+  private bekannteAktualisieren(): void {
+    const ids = this.gruppen
+      .filter((g) => !istWeniger(g, this.gruppen) && g.art !== 'ohne' && !g.schluessel.startsWith('text:'))
+      .map((g) => g.schluessel);
+    const neu = [...new Set([this.antwort?.statement_id, ...ids].filter((id): id is string => !!id))];
+    if (neu.join('|') !== this.bekannteAussagen.join('|')) {
+      this.bekannteAussagen = neu;
+    }
+  }
+
   /** Irgendein Treffer, gleich welchen Typs. */
   get hatTreffer(): boolean {
     return TREFFER_TYPEN.some((typ) => this.anzahlAlle[typ] > 0);
@@ -356,10 +367,11 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.ansichtAktualisieren();
     const chip = this.chips.find((c) => c.filter === filter);
     const anzahl = chip?.anzahl ?? 0;
+    const eingeklappt = this.weitereAnzahl > 0 ? `, ${this.weitereAnzahl} weitere eingeklappt` : '';
     this.ansage =
-      filter === 'alle'
+      (filter === 'alle'
         ? `Alle Typen, ${anzahl} Treffer`
-        : `Nur ${TYP_NAMEN[filter].mehrzahl}, ${anzahl} Treffer`;
+        : `Nur ${TYP_NAMEN[filter].mehrzahl}, ${anzahl} Treffer`) + eingeklappt;
   }
 
   /**

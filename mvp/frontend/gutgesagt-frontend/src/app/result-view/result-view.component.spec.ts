@@ -7,7 +7,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
-import { ResultViewComponent, aussagenDerTreffer, erkannteAussage } from './result-view.component';
+import { ResultViewComponent, erkannteAussage, themenDerTreffer } from './result-view.component';
 import { TYPFILTER_SCHLUESSEL } from './ergebnis-gruppen';
 import { By } from '@angular/platform-browser';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -423,27 +423,6 @@ describe('ResultViewComponent: Nicht dabei?', () => {
   }));
 });
 
-describe('aussagenDerTreffer', () => {
-  it('sammelt die Aussagen der Treffer und der Suche, jede einmal, ohne leere', () => {
-    const treffer = (statement_id: string | null) => ({ score: 1, statement_text: '', statement_id }) as any;
-    expect(
-      aussagenDerTreffer({
-        query_was_newly_added_as_statement: false,
-        statement_id: 'a',
-        statement_text: '',
-        commentary_search_results_count: 2,
-        commentary_search_results: [treffer('b'), treffer(null)],
-        generictext_search_results_count: 1,
-        generictext_search_results: [treffer('b')],
-        post_search_results_count: 1,
-        post_search_results: [treffer('c')],
-        image_search_results_count: 1,
-        image_search_results: [treffer('d')],
-      }),
-    ).toEqual(['a', 'b', 'd', 'c']);
-  });
-});
-
 /** 0 Treffer: Wortlaut und "Oft gesucht" als Anschluss (#642, R49, R51). */
 describe('ResultViewComponent: ohne Treffer', () => {
   function oeffnen(mobil: boolean): HTMLElement {
@@ -743,7 +722,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     expect(chip(seite, 'Alle').getAttribute('aria-pressed')).toBe('false');
     expect(Array.from(seite.querySelectorAll('.typ-block')).map((b) => b.getAttribute('data-typ'))).toEqual(['image']);
     expect(texte(seite, '.gruppe > h2 .gruppe-zahl')).withContext('Zahl je Gruppe passt zum Filter').toEqual(['1 Treffer']);
-    expect(text(seite.querySelector('.typ-ansage'))).withContext('nur, was ohne Aufklappen dasteht').toBe('Nur Bilder, 1 Treffer');
+    expect(text(seite.querySelector('.typ-ansage'))).withContext('nur, was ohne Aufklappen dasteht').toBe('Nur Bilder, 1 Treffer, 1 weitere eingeklappt');
     expect(text(seite.querySelector('.weitere-umschalter'))).toContain('(1)');
     expect(sessionStorage.getItem(TYPFILTER_SCHLUESSEL)).toBe('image');
 
@@ -754,7 +733,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
 
     chip(seite, 'Alle').click();
     fixture.detectChanges();
-    expect(text(seite.querySelector('.typ-ansage'))).toBe('Alle Typen, 5 Treffer');
+    expect(text(seite.querySelector('.typ-ansage'))).toBe('Alle Typen, 5 Treffer, 3 weitere eingeklappt');
     expect(sessionStorage.getItem(TYPFILTER_SCHLUESSEL)).toBeNull();
   });
 
@@ -930,7 +909,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     expect(texte(seite, '.typ-chip')).withContext('Aufklappen aendert die Chips nicht').toEqual(['Alle 3', 'Kommentare 3']);
   });
 
-  it('klappt nichts ein ohne erkannte Aussage oder wenn oben nichts steht', async () => {
+  it('klappt ohne erkannte Aussage nichts ein; ein gemerkter Typ ohne offene Treffer zeigt alle', async () => {
     let seite = await oeffnen(false, antwort({
       k: [
         treffer('commentary', 'k-1', 'a', 'Aussage A', 0.9),
@@ -942,8 +921,8 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     expect(seite.querySelector('.weitere')).toBeNull();
     expect(seite.querySelectorAll('.gruppe').length).toBe(3);
 
-    // Erkannte Aussage nur mit Bildern; der Bild-Chip fehlt dann in einer Suche, in der ein
-    // gemerkter Kommentar-Filter nur Treffer anderer Aussagen laesst: offen, ohne Knopf.
+    // Erkannte Aussage nur mit Bildern, der einzige Kommentar ist eingeklappt: Der gemerkte
+    // Kommentar-Filter hat keine offenen Treffer, also gilt "Alle"; der Kommentar bleibt eingeklappt.
     TestBed.resetTestingModule();
     sessionStorage.setItem(TYPFILTER_SCHLUESSEL, 'commentary');
     seite = await oeffnen(false, antwort({
@@ -952,6 +931,44 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     }));
     expect(chip(seite, 'Alle').getAttribute('aria-pressed')).withContext('kein sichtbarer Kommentar: alle').toBe('true');
     expect(seite.querySelector('.weitere-umschalter')).not.toBeNull();
+  });
+
+  it('bietet eingeklappte Aussagen unter "Nicht gemeint?" an und nur Themen der offenen Gruppe', async () => {
+    const KLIMA = { schluessel: 'klima', name: 'Klima' };
+    const ERNAEHRUNG = { schluessel: 'ernaehrung', name: 'Ernährung' };
+    const mitThema = (t: any, thema: { schluessel: string; name: string }) => ({ ...t, themen: [thema] });
+    const anderAlsAlternative = { id: ANDERE_ID, text: ANDERE, replysuggestions_count: 2, score: 0.9 };
+    const seite = await oeffnen(false, antwort({
+      k: [
+        mitThema(erkannt('commentary', 'k-1', 0.9), KLIMA),
+        mitThema(erkannt('commentary', 'k-2', 0.85), KLIMA),
+        mitThema(andere('commentary', 'a-1', 0.8), ERNAEHRUNG),
+      ],
+    }), [anderAlsAlternative, ...AEHNLICH]);
+
+    expect(texte(seite, '.kopfband-liste a')).withContext('eingeklappte Aussage waehlbar').toContain(ANDERE);
+    const themen = texte(seite, 'app-themen-filter button');
+    expect(themen).toEqual(['Alle Themen', 'Klima']);
+    expect(themenDerTreffer(antwort({ k: [mitThema(andere('commentary', 'a-1', 0.8), ERNAEHRUNG)] }))
+      .map((t) => t.schluessel)).withContext('ohne erkannte Aussage alle Themen').toEqual(['ernaehrung']);
+
+    Array.from(seite.querySelectorAll<HTMLButtonElement>('app-themen-filter button')).find((b) => text(b) === 'Klima')!.click();
+    fixture.detectChanges();
+    expect(texte(seite, '.gruppe > h2 .gruppe-label')).toEqual([`Zu dieser Aussage: „${ERKANNT}“`]);
+    expect(seite.querySelector('.weitere')).withContext('Ernaehrung faellt mit dem Thema weg').toBeNull();
+  });
+
+  it('sagt bei der Typwahl, wie viele weitere eingeklappt sind, und verknuepft den Knopf nur offen', async () => {
+    const seite = await oeffnen(false, GEMISCHT());
+    chip(seite, 'Kommentare').click();
+    fixture.detectChanges();
+    expect(text(seite.querySelector('.typ-ansage'))).toBe('Nur Kommentare, 2 Treffer, 2 weitere eingeklappt');
+    const knopf = seite.querySelector<HTMLButtonElement>('.weitere-umschalter')!;
+    expect(knopf.getAttribute('aria-controls')).toBeNull();
+    knopf.click();
+    fixture.detectChanges();
+    expect(knopf.getAttribute('aria-controls')).toBe('weitere-treffer');
+    expect(seite.querySelector('#weitere-treffer')).toBeTruthy();
   });
 
   it('zeigt "Nicht gemeint?" nicht ohne Alternativen', async () => {
