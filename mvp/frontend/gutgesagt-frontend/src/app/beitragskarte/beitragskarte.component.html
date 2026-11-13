@@ -140,43 +140,47 @@
             </ul>
         </div>
 
-        <!-- Aktionszeile wie bei der vollen Karte: Griff in der Mitte, ⋮ rechts -->
-        <div class="einwurf-aktion" *ngIf="!istKopf && (primaerAktion || menueEintraege.length)">
-            <button *ngIf="primaerAktion as primaer" type="button" mat-raised-button
-                    class="gutgesagt-primary-dark einwurf-primaer"
-                    (click)="aktionAusloesen(primaer.aktion, $event)">
-                <!-- Das Zeichen der naechsten Stufe: wohin der Griff fuehrt -->
-                <span class="knopf-emoji" *ngIf="primaer.emoji as emoji" aria-hidden="true">{{ emoji }}</span>
-                <mat-icon class="knopf-icon" *ngIf="primaer.icon as icon" aria-hidden="true">{{ icon }}</mat-icon>
-                <span class="knopf-wort">{{ primaer.wort }}</span>
-            </button>
-
-            <button *ngIf="menueEintraege.length" type="button" mat-icon-button class="einwurf-menue"
-                    [matMenuTriggerFor]="einwurfMenue"
-                    aria-label="Mehr zu diesem Einwurf"
-                    (click)="$event.stopPropagation()">
-                <mat-icon>more_vert</mat-icon>
-            </button>
-            <mat-menu #einwurfMenue="matMenu">
-                <button mat-menu-item type="button" *ngFor="let eintrag of menueEintraege"
-                        (click)="aktionAusloesen(eintrag.aktion, $event)">
-                    <mat-icon>{{ eintrag.icon }}</mat-icon>
-                    <span>{{ eintrag.wort }}</span>
+        <!-- Fuss aus Aktion und Meta. Hochkant ohne eigene Box (display: contents);
+             quer eine Zeile: Meta links, Griff und ⋮ rechts (Input quer). -->
+        <div class="einwurf-fuss" *ngIf="!istKopf">
+            <!-- Aktionszeile wie bei der vollen Karte: Griff in der Mitte, ⋮ rechts -->
+            <div class="einwurf-aktion" *ngIf="(primaerAktion || menueEintraege.length)">
+                <button *ngIf="primaerAktion as primaer" type="button" mat-raised-button
+                        class="gutgesagt-primary-dark einwurf-primaer"
+                        (click)="aktionAusloesen(primaer.aktion, $event)">
+                    <!-- Das Zeichen der naechsten Stufe: wohin der Griff fuehrt -->
+                    <span class="knopf-emoji" *ngIf="primaer.emoji as emoji" aria-hidden="true">{{ emoji }}</span>
+                    <mat-icon class="knopf-icon" *ngIf="primaer.icon as icon" aria-hidden="true">{{ icon }}</mat-icon>
+                    <span class="knopf-wort">{{ primaer.wort }}</span>
                 </button>
-            </mat-menu>
-        </div>
 
-        <p class="karte-meta einwurf-meta" *ngIf="!istKopf">
-            <ng-container *ngIf="stufeZeigen">
-                <span class="einwurf-stufe">{{ stufenName }}</span>
-                ·
-            </ng-container>
-            <ng-container *ngIf="zeigtEinwerfer">
-                <span class="einwurf-einwerfer">Von: {{ autorAnzeige }}</span>
-                ·
-            </ng-container>
-            <span class="einwurf-alter">{{ daten.erstellt | relativeTime }}</span>
-        </p>
+                <button *ngIf="menueEintraege.length" type="button" mat-icon-button class="einwurf-menue"
+                        [matMenuTriggerFor]="einwurfMenue"
+                        aria-label="Mehr zu diesem Einwurf"
+                        (click)="$event.stopPropagation()">
+                    <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #einwurfMenue="matMenu">
+                    <button mat-menu-item type="button" *ngFor="let eintrag of menueEintraege"
+                            (click)="aktionAusloesen(eintrag.aktion, $event)">
+                        <mat-icon>{{ eintrag.icon }}</mat-icon>
+                        <span>{{ eintrag.wort }}</span>
+                    </button>
+                </mat-menu>
+            </div>
+
+            <p class="karte-meta einwurf-meta">
+                <ng-container *ngIf="stufeZeigen">
+                    <span class="einwurf-stufe">{{ stufenName }}</span>
+                    ·
+                </ng-container>
+                <ng-container *ngIf="zeigtEinwerfer">
+                    <span class="einwurf-einwerfer">Von: {{ autorAnzeige }}</span>
+                    ·
+                </ng-container>
+                <span class="einwurf-alter">{{ daten.erstellt | relativeTime }}</span>
+            </p>
+        </div>
     </ng-container>
 
     <!-- Kompakt (Album): Kopf nur mit Symbol, Titel und Anriss, im Fuss Datum und Nutzung -->

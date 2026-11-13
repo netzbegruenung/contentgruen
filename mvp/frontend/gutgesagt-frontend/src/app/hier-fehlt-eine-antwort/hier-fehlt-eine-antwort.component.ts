@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,6 +24,8 @@ import {
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
+import { AussagekarteComponent, jeAussage } from '../shared/aussagekarte/aussagekarte.component';
+import { LADE_TIMEOUT_MS, LadeWiederholung } from '../shared/lade-wiederholung';
 
 /**
  * "Hier fehlt eine Antwort": Mitwirkende sehen die unbeantworteten Aussagen (ohne
@@ -86,9 +89,10 @@ export function gesuchtMarker(personen: number): string {
     ThemenFilterComponent,
     Cc0HinweisComponent,
     SprachhinweisComponent,
+    AussagekarteComponent,
   ],
   templateUrl: './hier-fehlt-eine-antwort.component.html',
-  styleUrls: ['./hier-fehlt-eine-antwort.component.css'],
+  styleUrls: ['../shared/aussagekarte/aussagekarten.scss', './hier-fehlt-eine-antwort.component.css'],
 })
 export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
@@ -96,6 +100,12 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
 
   aussagen: UnbeantworteteAussage[] | null = null;
   ladefehler = false;
+  /** Ein Versuch nach einem Ladefehler laeuft gerade (von selbst oder per Knopf). */
+  erneutLaedt = false;
+  /** Nach dem Fehler ist ein weiterer Versuch von selbst geplant (LadeWiederholung). */
+  versuchtWeiter = false;
+  /** Text der Live-Region: Fehler und Wiederherstellung je einmal angesagt, nicht jeder Versuch. */
+  ansage = '';
 
   /** Die feste Themenliste; leer, solange sie nicht geladen ist. */
   themen: Thema[] = [];
@@ -109,6 +119,9 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   neueThemen: string[] = [];
   /** Die laufende Abfrage der Liste; ein neuer Filter bricht sie ab. */
   private ladend?: Subscription;
+  private readonly destroy$ = new Subject<void>();
+  /** Nie "neu laden": nach einem Ladefehler versucht die Seite es selbst wieder. */
+  private readonly wiederholung = new LadeWiederholung(this.destroy$);
   speichert = false;
   meldung = '';
 
@@ -127,6 +140,16 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.ladend?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /** "Erneut versuchen": sofort, statt auf den geplanten Versuch zu warten. */
+  erneutVersuchen(): void {
+    if (this.erneutLaedt) {
+      return;
+    }
+    this.laden();
   }
 
   filtern(thema: string | null): void {
@@ -151,7 +174,13 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
     });
   }
 
-  readonly beantwortenParams = beantwortenParams;
+  /** Je statement_id einmal gebildet: ein neues Objekt bei jedem Durchlauf liesse OnPush in der Karte ins Leere laufen. */
+  readonly beantwortenParams = jeAussage(beantwortenParams);
+
+  /** Nach statement_id, damit ein offener Themen-Editor beim Nachladen nicht neu entsteht und den Fokus behaelt. */
+  nachAussage(_index: number, aussage: UnbeantworteteAussage): string {
+    return aussage.statement_id;
+  }
 
   /**
    * Der Marker an einer Aussage, nach der ohne Treffer gesucht wurde. Er nennt Personen,
@@ -193,12 +222,31 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   }
 
   private laden(): void {
-    this.ladefehler = false;
     // Sonst koennte eine langsame Antwort zum vorigen Filter die aktuelle ueberschreiben.
     this.ladend?.unsubscribe();
-    this.ladend = this.statementService.unbeantworteteAussagen(this.aktivesThema).subscribe({
-      next: (aussagen) => (this.aussagen = aussagen),
-      error: () => (this.ladefehler = true),
-    });
+    this.wiederholung.abbrechen();
+    this.erneutLaedt = this.ladefehler;
+    this.ladend = this.statementService
+      .unbeantworteteAussagen(this.aktivesThema)
+      .pipe(timeout({ first: LADE_TIMEOUT_MS }))
+      .subscribe({
+        next: (aussagen) => {
+          if (this.ladefehler) {
+            this.ansage = 'Die Aussagen sind wieder da.';
+          }
+          this.aussagen = aussagen;
+          this.ladefehler = false;
+          this.erneutLaedt = false;
+          this.wiederholung.erfolg();
+        },
+        error: (fehler) => {
+          if (!this.ladefehler) {
+            this.ansage = 'Die Aussagen konnten gerade nicht geladen werden.';
+          }
+          this.ladefehler = true;
+          this.erneutLaedt = false;
+          this.versuchtWeiter = this.wiederholung.fehlgeschlagen(fehler, () => this.laden());
+        },
+      });
   }
 }
