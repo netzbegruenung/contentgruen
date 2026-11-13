@@ -66,8 +66,17 @@ export function nurLesend(): { context: HttpContext } {
  *
  * "Hier fehlt eine Antwort" ist geteilte Arbeit wie der Fangkorb: Was eben jemand
  * beantwortet hat, soll dort nicht mehr stehen.
+ *
+ * Der eigene Punktestand laedt in „Meine Beitraege“ jede Minute nach (#352); aus dem
+ * Cache kaeme fuenf Minuten lang derselbe Stand.
  */
-const NIE_CACHEN = ['/api/v1/rawinput/', '/api/check-session', '/api/user-info', '/api/v1/statement/unbeantwortet'];
+const NIE_CACHEN = [
+  '/api/v1/rawinput/',
+  '/api/check-session',
+  '/api/user-info',
+  '/api/v1/statement/unbeantwortet',
+  '/api/v1/usage/users/me/punkte',
+];
 
 /**
  * Zaehlt Aenderungen. Eine GET-Antwort kommt nur in den Cache, wenn seit ihrer

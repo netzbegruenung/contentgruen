@@ -129,6 +129,26 @@ describe('EinwilligungComponent', () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen?von=fangkorb');
     });
 
+    it('laedt bei einem veralteten Wortlaut (400) den aktuellen selbst und sagt es darueber', () => {
+      starten();
+      standLiefern(stand());
+      fixture.componentInstance.angehakt = true;
+      fixture.detectChanges();
+
+      knopf('Einwilligen und weiter').click();
+      http.expectOne({ method: 'POST', url: URL }).flush(null, { status: 400, statusText: 'Bad Request' });
+      const neu = { kennung: '2026-11-13', text: 'Ich willige ausdrücklich ein, neu …' };
+      standLiefern(stand({ aktueller_wortlaut: neu }));
+
+      expect(el().querySelector('[data-testid="wortlaut-geaendert"]')?.textContent).toContain(
+        'Der Text hat sich gerade geändert. Bitte lies ihn und stimm neu zu.',
+      );
+      expect(el().textContent).toContain(neu.text);
+      expect(fixture.componentInstance.angehakt).toBeFalse();
+      expect(el().textContent).not.toContain('Noch einmal');
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
     it('ohne Einwilligung weiter speichert nichts', () => {
       starten('/einwerfen');
       standLiefern(stand());
@@ -175,6 +195,18 @@ describe('EinwilligungComponent', () => {
       expect(el().querySelector('.wortlaut')?.textContent).toContain(zweiter.text);
     });
 
+    it('sagt vor dem Widerruf, was mit Beiträgen, Einwürfen und Sätzen geschieht (Löschauftrag)', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+
+      const text = el().textContent!.replace(/\s+/g, ' ');
+      expect(text).toContain('Innerhalb von sieben Tagen zeigen deine Beiträge dann „ehemalige Person“');
+      expect(text).toContain('deine Einwürfe werden gelöscht');
+      expect(text).toContain('Dein Konto bleibt.');
+      expect(text).toContain('Was du nach einer neuen Einwilligung beiträgst, bleibt davon unberührt.');
+      expect(text).not.toContain('bleibt, bis du es löschst');
+    });
+
     it('widerrufen fragt danach erneut, ohne Haekchen', () => {
       starten(null);
       standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
@@ -201,6 +233,29 @@ describe('EinwilligungComponent', () => {
       standLiefern(stand());
 
       expect(el().querySelector('.hinweis')).toBeNull();
+      expect(el().textContent).not.toContain('Frühere Einwilligung widerrufen');
+    });
+
+    // 2026-11-13: Nur der aktuelle Wortlaut zaehlt; eine fruehere Einwilligung fragt neu
+    it('fragt neu, wer einem frueheren Wortlaut zugestimmt hat, und laesst ihn widerrufen', () => {
+      starten(null);
+      standLiefern(stand({ wortlaut: '2026-11-12', eingewilligt_am: '2026-11-12T09:30:00Z' }));
+
+      expect(el().querySelector('mat-checkbox')).not.toBeNull();
+      expect(el().querySelector('.hinweis')?.textContent).toContain('12.11.2026 einem früheren Wortlaut zugestimmt');
+
+      knopf('Frühere Einwilligung widerrufen').click();
+      fixture.detectChanges();
+      // Waehrend des Widerrufs: weiter die Frage, gesperrt, nicht der Block fuer Eingewilligte
+      expect(el().querySelector('mat-checkbox')).not.toBeNull();
+      expect(el().textContent).not.toContain('Widerrufst du, kannst du nichts mehr beitragen');
+      expect(knopf('Frühere Einwilligung widerrufen').disabled).toBeTrue();
+      expect(knopf('Einwilligen und weiter').disabled).toBeTrue();
+      http.expectOne({ method: 'DELETE', url: URL }).flush(null, { status: 204, statusText: 'No Content' });
+      standLiefern(stand({ wortlaut: '2026-11-12', eingewilligt_am: '2026-11-12T09:30:00Z', widerrufen_am: '2026-11-13T09:30:00Z' }));
+
+      expect(el().querySelector('.hinweis')?.textContent).toContain('13.11.2026 widerrufen');
+      expect(el().textContent).not.toContain('Frühere Einwilligung widerrufen');
     });
   });
 

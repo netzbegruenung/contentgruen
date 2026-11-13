@@ -440,7 +440,7 @@ Der gelbe Punkt an „Beitragen“ im Kopf (Desktop und Handy): Er erscheint nac
 _Avoid_: Badge, Benachrichtigungspunkt
 
 **Punkte**:
-Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte. Ein Konto ohne geltende Art.-9-Einwilligung (nie erteilt oder widerrufen) hat keine Punkte, wie ein Startkonto (#559).
+Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte. Ein Konto ohne geltende Art.-9-Einwilligung (nie erteilt oder widerrufen) hat keine Punkte, wie ein Startkonto (#559). Den Punktestand sieht nur die Person selbst, gesamt und je Stufe in „Meine Beiträge“, nur bei eingeschalteten Punkten; er wird nicht gespeichert, sondern bei jedem Abruf berechnet (#352).
 _Avoid_: XP, Score, Karma
 
 **Muster-Hinweis**:
@@ -546,7 +546,7 @@ Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit e
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
 **Art.-9-Einwilligung**:
-Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist (ein zweiter Wortlaut vom selben Tag mit Suffix). Der Wortlaut nennt als Zwecke auch Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, solange sie nicht gesondert zustimmt, sie anderen Angemeldeten zu zeigen), die Freischaltungen eines höheren Levels und Muster-Hinweise (#559). Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten, und sie hat keine eigenen Punkte; kopiert sie einen Beitrag, zählt das am Zähler der Karte, aber ohne Prüfwert und Paar-Prüfwert: Die Kopie bringt der Autorin keine Punkte und ergibt keinen Muster-Hinweis (#559). Widerrufen geht jederzeit im Profilmenü unter „Datenschutz-Einstellungen“ (bis #644 „Einwilligung“); dann werden ihre Bewertungen gelöscht, das übrige Gespeicherte bleibt, bis die Person es löscht oder ihr Konto löschen lässt. Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit der Zustimmung zur Sichtbarkeit (bisher für Abzeichen; Punkte, Level, Quests und Ranglisten bekommen ihre eigene). Ablauf: `docs/ART9_EINWILLIGUNG.md`.
+Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist (ein zweiter Wortlaut vom selben Tag mit Suffix). Der Wortlaut nennt als Zwecke auch Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, solange sie nicht gesondert zustimmt, sie anderen Angemeldeten zu zeigen), die Freischaltungen eines höheren Levels und Muster-Hinweise (#559). Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten, und sie hat keine eigenen Punkte; kopiert sie einen Beitrag, zählt das am Zähler der Karte, aber ohne Prüfwert und Paar-Prüfwert: Die Kopie bringt der Autorin keine Punkte und ergibt keinen Muster-Hinweis (#559). Widerrufen geht jederzeit im Profilmenü unter „Datenschutz-Einstellungen“ (bis #644 „Einwilligung“); dann werden ihre Bewertungen gelöscht, und es entsteht ein Löschauftrag für ihre Beiträge, Einwürfe und Sätze. Eine Einwilligung zählt nur zu einem geltenden Wortlaut; wer einem früheren zugestimmt hat, wird neu gefragt (seit `2026-11-13`). Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit der Zustimmung zur Sichtbarkeit (bisher für Abzeichen; Punkte, Level, Quests und Ranglisten bekommen ihre eigene). Ablauf: `docs/ART9_EINWILLIGUNG.md`.
 _Avoid_: Consent, Opt-in, Datenschutz-Häkchen, Zustimmung (die gilt den Nutzungsbedingungen)
 
 **Besucher**:
@@ -570,8 +570,12 @@ Der Name, unter dem eine Person anderen Mitwirkenden gezeigt wird: Vorname und I
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Ehemalige Person**:
-Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
+Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat oder deren Löschauftrag ausgeführt ist: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
+
+**Löschauftrag**:
+Was der Widerruf der Art.-9-Einwilligung anlegt: Ein Admin führt binnen sieben Tagen den Löschablauf für die Person aus. Ihre Beiträge zeigen danach „ehemalige Person“, ihre Einwürfe sind gelöscht, ihre Sätze an Einwürfen anderer tragen einen Platzhalter. Konto, Anzeigename und die Einwilligung als Nachweis bleiben. Was die Person nach einer neuen Einwilligung beiträgt, bleibt; ohne neue Einwilligung erfasst er alles. Je Person gibt es höchstens einen offenen; Admins sehen offene unter „Moderation“, „Löschaufträge“, überfällige hervorgehoben. Ein erledigter Auftrag geht nach seiner Löschfrist.
+_Avoid_: Löschantrag (den stellt eine Person selbst), Löschanfrage, Ticket
 
 **Löschfrist**:
 Wie lange eine Datenart gespeichert bleibt, bevor ein täglicher Task sie von selbst löscht. Die Fristen stehen im Löschkonzept. Eine Löschfrist ist etwas anderes als das Löschen auf Antrag einer Person.

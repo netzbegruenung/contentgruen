@@ -24,6 +24,7 @@ from infrastructure.database.models import (
     Base,
     ContentReport,
     GeseheneNutzung,
+    LoeschauftragZeile,
     MusterHinweisZeile,
     Einwurf,
     AusformuliertIn,
@@ -269,6 +270,14 @@ def spuren(datenbank, einwuerfe):
                 zeigen=True,
                 wortlaut="2026-11-09",
                 beantwortet_am=datetime.now(timezone.utc),
+            )
+        )
+        # Ein Loeschauftrag nach einem Widerruf (DSFA R9b).
+        s.add(
+            LoeschauftragZeile(
+                user_id=PERSON,
+                angelegt_am=datetime.now(timezone.utc),
+                frist=datetime.now(timezone.utc),
             )
         )
         # Muster-Hinweise (#352): einer mit der Person, einer ohne sie.

@@ -14,6 +14,7 @@ import pytest
 
 from services.loeschfristen_service import (
     EINWURF_OHNE_BEITRAG_TAGE,
+    ERLEDIGTER_LOESCHAUFTRAG_TAGE,
     GELOESCHTER_BEITRAG_TAGE,
     MELDUNG_NACH_BEARBEITUNG_TAGE,
     NIE_BENUTZTES_KONTO_TAGE,
@@ -79,6 +80,67 @@ def test_fristen_wie_im_loeschkonzept():
     assert GELOESCHTER_BEITRAG_TAGE == 30
     assert SPERRE_NACH_AUFHEBUNG_TAGE == 180
     assert NIE_BENUTZTES_KONTO_TAGE == 30
+    assert ERLEDIGTER_LOESCHAUFTRAG_TAGE == 365
+
+
+class TestLoeschauftraege:
+    """Erledigte Loeschauftraege nach dem Widerruf (DSFA R9b)."""
+
+    @pytest.fixture
+    def loeschauftraege(self):
+        return Mock(
+            **{
+                "erledigte_loeschen_vor.return_value": 0,
+                "ueberfaellige_zaehlen.return_value": 0,
+            }
+        )
+
+    @pytest.fixture
+    def service(
+        self, meldungen, einwuerfe, beitraege, moderation, sperren, loeschauftraege
+    ):
+        return LoeschfristenService(
+            meldungen,
+            einwuerfe,
+            beitraege,
+            moderation,
+            sperren,
+            loeschauftraege=loeschauftraege,
+        )
+
+    async def test_erledigt_vor_365_tagen(self, service, loeschauftraege):
+        await service.fristen_anwenden(HEUTE)
+
+        loeschauftraege.erledigte_loeschen_vor.assert_called_once_with(
+            datetime(2025, 10, 29, tzinfo=timezone.utc)
+        )
+
+    async def test_ueberfaellige_als_warning_nur_mit_zahl(
+        self, service, loeschauftraege, caplog
+    ):
+        loeschauftraege.ueberfaellige_zaehlen.return_value = 2
+
+        with caplog.at_level("WARNING"):
+            await service.fristen_anwenden(HEUTE)
+
+        warnungen = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warnungen) == 1
+        assert warnungen[0].getMessage().startswith("2 Loeschauftraege past")
+
+    async def test_keine_warning_ohne_ueberfaellige(self, service, caplog):
+        with caplog.at_level("WARNING"):
+            await service.fristen_anwenden(HEUTE)
+
+        assert not [r for r in caplog.records if r.levelname == "WARNING"]
+
+    async def test_fehler_haelt_die_anderen_nicht_auf(
+        self, service, loeschauftraege, beitraege
+    ):
+        loeschauftraege.erledigte_loeschen_vor.side_effect = RuntimeError("db weg")
+
+        await service.fristen_anwenden(HEUTE)
+
+        beitraege.geloeschte_laden.assert_awaited_once()
 
 
 class TestPostgres:

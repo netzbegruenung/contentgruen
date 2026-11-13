@@ -54,6 +54,19 @@ export class EinwilligungComponent implements OnInit {
     return wortlautDatum(this.stand?.wortlaut);
   }
 
+  /**
+   * Eingewilligt zu einem frueheren Wortlaut und nicht widerrufen: Das Backend meldet
+   * dann nicht eingewilligt (nur der aktuelle Wortlaut zaehlt, seit 2026-11-13), die
+   * Einwilligung bleibt aber widerrufbar.
+   */
+  get fruehereEinwilligung(): boolean {
+    const s = this.stand;
+    return !!s && !s.eingewilligt && !!s.wortlaut && !s.widerrufen_am;
+  }
+
+  /** Beim Einwilligen kam 400: Der Wortlaut hat sich seit dem Laden geaendert. */
+  wortlautGeaendert = false;
+
   ngOnInit(): void {
     this.laden();
   }
@@ -77,7 +90,16 @@ export class EinwilligungComponent implements OnInit {
     this.zustand = 'sendet';
     this.einwilligung.einwilligen(this.stand.aktueller_wortlaut.kennung).subscribe({
       next: () => this.weiter(),
-      error: () => (this.zustand = 'fehler'),
+      error: (fehler) => {
+        if (fehler?.status === 400) {
+          // Der gezeigte Wortlaut gilt nicht mehr (etwa ein Tab von gestern): den aktuellen
+          // selbst laden und darueber sagen, dass er neu zu lesen ist.
+          this.wortlautGeaendert = true;
+          this.laden();
+          return;
+        }
+        this.zustand = 'fehler';
+      },
     });
   }
 
@@ -87,10 +109,13 @@ export class EinwilligungComponent implements OnInit {
   }
 
   widerrufenKlick(): void {
-    if (this.zustand !== 'eingewilligt') {
+    const erlaubt = this.zustand === 'eingewilligt' || (this.zustand === 'frage' && this.fruehereEinwilligung);
+    if (!erlaubt) {
       return;
     }
-    this.zustand = 'widerruft';
+    // Aus der Frage heraus bleibt die Frage stehen (gesperrt), statt kurz den Block fuer
+    // Eingewilligte zu zeigen.
+    this.zustand = this.zustand === 'frage' ? 'sendet' : 'widerruft';
     this.einwilligung.widerrufen().subscribe({
       next: () => this.laden(),
       error: () => (this.zustand = 'fehler'),
