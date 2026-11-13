@@ -151,7 +151,11 @@ from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `requirements.t
 and 0.8 GB (Node) compressed in the registry; the Node image shares its base layers with
 `node:22`.
 
-- **Every run checks the image** (in the installation step). The image keeps the checksum under `/opt/ci/`.
+- **Every run checks the image**, in the installation step and again at the start of
+  `unit`, `integration`, `frontend-build` and `frontend` (`--nachpruefen`): each step pulls
+  `:latest` itself, and an image pushed in between could no longer match. Then pip
+  installs what is missing into the venv, or `npm ci` replaces the link. `lint` does not
+  check again; it runs next to `unit` in the same venv. The image keeps the checksum under `/opt/ci/`.
   `scripts/ci-installieren.sh` compares it with the checkout. If it matches, the venv is
   created with `--system-site-packages` and pip does nothing (2 s instead of about 85 s
   locally, about 2 min in CI), and `node_modules` becomes a link to `/opt/ci/node_modules`.

@@ -11,6 +11,12 @@
 # frontend: node_modules des Frontends als Verweis auf /opt/ci/node_modules, sonst npm ci
 #           (--prefer-offline: aus dem npm-Cache des Images, was dort schon liegt).
 # --pruefsumme python|frontend gibt die Pruefsumme aus; Dockerfile.ci schreibt sie so ins Image.
+# --nachpruefen python|frontend: fuer spaetere Schritte (unit, integration, frontend-build,
+#           frontend). Jeder Schritt zieht :latest selbst; wurde dazwischen ein neues Image
+#           gepusht, passt es vielleicht nicht mehr. Dann pip nachinstallieren bzw. den Verweis
+#           durch npm ci ersetzen. Passt es, kostet das nur die Pruefsumme. Nur in Schritten,
+#           die nie zugleich laufen (die Kette der schweren Schritte), sonst schrieben zwei
+#           Schritte zugleich in venv bzw. node_modules.
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 PY=$ROOT/mvp/backend/semantic-search-service
@@ -64,5 +70,21 @@ case "${1:-}" in
       grund frontend
       npm ci --prefix "$FE" --prefer-offline --no-audit --no-fund
     fi ;;
-  *) echo "Aufruf: ci-installieren.sh python|frontend|--pruefsumme <python|frontend>" >&2; exit 2 ;;
+  --nachpruefen)
+    case "${2:-}" in
+      python)
+        if ! vorinstalliert python; then
+          echo "Image dieses Schritts passt nicht zu requirements.txt: pip prueft nach"
+          "$PY/venv/bin/pip" install -q --no-cache-dir -r "$PY/requirements.txt"
+        fi ;;
+      frontend)
+        # Ein echtes node_modules stammt aus npm ci und haengt nicht am Image.
+        if [ -L "$FE/node_modules" ] && ! vorinstalliert frontend; then
+          echo "Image dieses Schritts passt nicht zu package-lock.json: npm ci statt Verweis"
+          rm -f "$FE/node_modules"
+          npm ci --prefix "$FE" --prefer-offline --no-audit --no-fund
+        fi ;;
+      *) echo "Unbekannt: ${2:-} (python oder frontend)" >&2; exit 2 ;;
+    esac ;;
+  *) echo "Aufruf: ci-installieren.sh python|frontend|--pruefsumme <art>|--nachpruefen <art>" >&2; exit 2 ;;
 esac

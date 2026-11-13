@@ -722,3 +722,54 @@ def test_sonst_installiert_der_schritt_wie_ohne_image(tmp_path, image_alt):
     assert befehle[2] == f"npm ci --prefix {fe} --prefer-offline --no-audit --no-fund"
     assert not (fe / "node_modules").exists()
     assert ("passt nicht" in ausgabe) is image_alt
+
+
+def test_schwere_schritte_pruefen_das_image_ihres_schritts_nach():
+    # Jeder Schritt zieht :latest selbst; ein dazwischen gepushtes Image faengt nachpruefen
+    # ab. Nur die Kette der schweren Schritte: lint liefe zugleich mit unit im selben venv.
+    erwartet = {
+        "unit": "python",
+        "integration": "python",
+        "frontend-build": "frontend",
+        "frontend": "frontend",
+    }
+    for name, s in SCHRITTE.items():
+        befehle = " ".join(s["commands"])
+        if name in erwartet:
+            aufruf = f"ci-installieren.sh --nachpruefen {erwartet[name]}"
+            assert aufruf in befehle, name
+            assert befehle.index(aufruf) < befehle.index("check.sh --schritt"), name
+        else:
+            assert "--nachpruefen" not in befehle, name
+
+
+def test_nachpruefen_ersetzt_den_verweis_nur_bei_neuem_image(tmp_path):
+    skript, image, protokoll, fe = _baum(tmp_path)
+    for art in ("python", "frontend"):
+        (image / f"{art}.sha256").write_text(_lauf(skript, image, "--pruefsumme", art))
+    _lauf(skript, image, "python")
+    _lauf(skript, image, "frontend")
+
+    # Gleiches Image: nichts zu tun
+    _lauf(skript, image, "--nachpruefen", "python")
+    _lauf(skript, image, "--nachpruefen", "frontend")
+    assert len(protokoll.read_text().splitlines()) == 1
+    assert (fe / "node_modules").is_symlink()
+
+    # Ein neues Image kam zwischen den Schritten
+    (image / "python.sha256").write_text("neu\n")
+    (image / "frontend.sha256").write_text("neu\n")
+    _lauf(skript, image, "--nachpruefen", "python")
+    _lauf(skript, image, "--nachpruefen", "frontend")
+    befehle = protokoll.read_text().splitlines()
+    assert befehle[1].startswith("pip install -q --no-cache-dir -r ")
+    assert befehle[2] == f"npm ci --prefix {fe} --prefer-offline --no-audit --no-fund"
+    assert not (fe / "node_modules").is_symlink()
+
+
+def test_nachpruefen_laesst_ein_echtes_node_modules_stehen(tmp_path):
+    skript, image, protokoll, fe = _baum(tmp_path)
+    (fe / "node_modules").mkdir()
+    (image / "frontend.sha256").write_text("anderes\n")
+    _lauf(skript, image, "--nachpruefen", "frontend")
+    assert not protokoll.exists()
