@@ -84,6 +84,9 @@
 }
 
 .mobile-menu-mitmachen-anmelden {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px; /* Zielgröße Touch */
     padding: 0;
     border: 0;
     background: none;

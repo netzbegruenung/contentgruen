@@ -247,6 +247,14 @@ describe('RundgangService', () => {
       expect(service.aktiv()).toBeNull();
     });
 
+    it('zeigt den ersten Schritt nicht, wenn Zurück kommt, während seine Seite lädt', async () => {
+      router.url = '/fangkorb';
+      const start = service.starten('antwort-finden');
+      events.next(new NavigationStart(2, '/fangkorb', 'popstate'));
+      await start;
+      expect(service.aktiv()).toBeNull();
+    });
+
     it('bleibt bei seinen eigenen Seitenwechseln stehen', async () => {
       await service.starten('antwort-finden');
       events.next(new NavigationStart(2, '/result', 'imperative'));

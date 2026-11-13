@@ -1,12 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { Subject } from 'rxjs';
-import { AuthService } from '../auth/auth.service';
+import { BehaviorSubject, Subject } from 'rxjs';
+import { DestroyRef } from '@angular/core';
+import { DefaultUrlSerializer, NavigationEnd, Router } from '@angular/router';
+import { AuthService, UserInfo } from '../auth/auth.service';
+import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 
-import { Router } from '@angular/router';
-import { HILFE_PARAM, HelpDialogComponent, MITMACHEN_HINWEIS, hilfeOeffnen } from './help-dialog.component';
+import { HILFE_PARAM, HelpDialogComponent, MITMACHEN_HINWEIS, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
 
 describe('HelpDialogComponent', () => {
   let component: HelpDialogComponent;
@@ -122,6 +124,16 @@ describe('HelpDialogComponent', () => {
       });
     });
 
+    it('lässt auf der Anmeldung deren Rückkehrziel stehen und schliesst nur die Hilfe', () => {
+      const router = TestBed.inject(Router);
+      spyOnProperty(router, 'url').and.returnValue('/login?returnUrl=%2Ffangkorb');
+      const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+      (fixture.nativeElement.querySelector('.rundgang-anmelden') as HTMLButtonElement).click();
+
+      expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
     it('bietet Angemeldeten auch den Rundgang Selbst beitragen an, mit Schrittzahl (#644)', () => {
       angemeldet = true;
       fixture = TestBed.createComponent(HelpDialogComponent);
@@ -175,5 +187,96 @@ describe('HelpDialogComponent', () => {
     expect(fixture.nativeElement.querySelector('.erfundenes-melden').textContent).toContain(
       '„Erfunden oder sachlich falsch“',
     );
+  });
+});
+
+// Nach der Anmeldung aus Hilfe oder Menü (Parameter HILFE_PARAM) öffnet die App die Hilfe wieder
+describe('hilfeNachAnmeldung', () => {
+  let events: Subject<unknown>;
+  let userInfo: BehaviorSubject<UserInfo | null>;
+  let geklaert: BehaviorSubject<string | null>;
+  let navigate: jasmine.Spy;
+  let dialog: { open: jasmine.Spy; openDialogs: MatDialogRef<unknown>[] };
+  let hooks: Array<() => void>;
+
+  const angemeldet: UserInfo = { isAuthenticated: true, userId: 'u1', userName: 'Test', claims: null };
+  const besucher: UserInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
+
+  beforeEach(() => {
+    events = new Subject();
+    userInfo = new BehaviorSubject<UserInfo | null>(null);
+    geklaert = new BehaviorSubject<string | null>(null);
+    dialog = { open: jasmine.createSpy('open'), openDialogs: [] };
+    dialog.open.and.callFake(() => {
+      const ref = { componentInstance: Object.create(HelpDialogComponent.prototype) } as MatDialogRef<unknown>;
+      dialog.openDialogs.push(ref);
+      return ref;
+    });
+    navigate = jasmine.createSpy('navigate').and.resolveTo(true);
+    const serializer = new DefaultUrlSerializer();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: { events, navigate, parseUrl: (u: string) => serializer.parse(u) } },
+        { provide: MatDialog, useValue: dialog },
+        { provide: AuthService, useValue: { userInfo$: userInfo } },
+        { provide: Art9EinwilligungService, useValue: { geklaert$: geklaert } },
+      ],
+    });
+    hooks = [];
+    const destroyRef = { onDestroy: (h: () => void) => hooks.push(h) } as unknown as DestroyRef;
+    TestBed.runInInjectionContext(() => hilfeNachAnmeldung(destroyRef));
+  });
+
+  afterEach(() => hooks.forEach((h) => h()));
+
+  function navigiert(url: string): void {
+    events.next(new NavigationEnd(1, url, url));
+  }
+
+  it('öffnet nicht vor der Einwilligung, danach schon, und nimmt den Parameter aus der Adresse', () => {
+    navigiert(`/search?${HILFE_PARAM}=1`);
+    userInfo.next(angemeldet);
+    expect(dialog.open).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+
+    geklaert.next('u1');
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith([], {
+      queryParams: { [HILFE_PARAM]: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  });
+
+  it('öffnet keinen zweiten Dialog, wenn erneut etwas kommt', () => {
+    navigiert(`/search?${HILFE_PARAM}=1`);
+    userInfo.next(angemeldet);
+    geklaert.next('u1');
+    userInfo.next({ ...angemeldet });
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+  });
+
+  it('öffnet ohne Parameter nicht', () => {
+    navigiert('/search');
+    userInfo.next(angemeldet);
+    geklaert.next('u1');
+    expect(dialog.open).not.toHaveBeenCalled();
+  });
+
+  it('öffnet für Besucher, sobald feststeht, dass niemand angemeldet ist', () => {
+    navigiert(`/search?${HILFE_PARAM}=1`);
+    expect(dialog.open).not.toHaveBeenCalled();
+    userInfo.next(besucher);
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+  });
+
+  it('ohne Einwilligung weiter: Die Einwilligungsseite streicht den Parameter, die Hilfe bleibt zu', () => {
+    // Ohne Einwilligung ist geklaert$ null; einwilligung.component nimmt HILFE_PARAM aus dem
+    // Rückkehrziel (eigener Test dort), danach kommt die Seite ohne Parameter an
+    userInfo.next(angemeldet);
+    navigiert(`/einwilligung?returnUrl=%2Fsearch%3F${HILFE_PARAM}%3D1`);
+    navigiert('/search');
+    expect(dialog.open).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

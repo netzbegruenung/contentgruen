@@ -83,8 +83,11 @@
     line-height: 1.4;
 }
 
+/* Inline, aber mit 44 px Zielgröße (Touch) */
 .rundgang-mitmachen-hinweis .rundgang-knopf.text {
-    min-height: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     padding: 0;
     font-size: inherit;
 }

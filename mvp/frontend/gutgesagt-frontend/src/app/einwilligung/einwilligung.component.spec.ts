@@ -139,6 +139,27 @@ describe('EinwilligungComponent', () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
     });
 
+    it('ohne Einwilligung öffnet sich die Hilfe danach nicht wieder (Parameter hilfe fällt weg)', () => {
+      starten('/result?searchQuery=x&hilfe=1');
+      standLiefern(stand());
+
+      knopf('Ohne Einwilligung weiter').click();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/result?searchQuery=x');
+    });
+
+    it('mit Einwilligung bleibt der Parameter hilfe, die Hilfe öffnet sich danach', () => {
+      starten('/search?hilfe=1');
+      standLiefern(stand());
+
+      fixture.componentInstance.angehakt = true;
+      fixture.detectChanges();
+      knopf('Einwilligen und weiter').click();
+      http.expectOne({ method: 'POST', url: URL }).flush(null, { status: 204, statusText: 'No Content' });
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/search?hilfe=1');
+    });
+
     it('fuehrt nur innerhalb der App zurueck', () => {
       starten('//fremd.example/');
       standLiefern(stand());

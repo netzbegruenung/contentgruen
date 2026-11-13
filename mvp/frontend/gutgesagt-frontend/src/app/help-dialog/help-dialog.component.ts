@@ -102,6 +102,9 @@ export function hilfeOeffnen(dialog: MatDialog): MatDialogRef<HelpDialogComponen
  * Hilfe und aus dem mobilen Menü.
  */
 export function anmeldenZurHilfe(router: Router): void {
+  // Schon auf der Anmeldung (Hilfe dort geöffnet): deren Rückkehrziel bleibt, wie bei
+  // AppComponent.loginWithReturnUrl
+  if (router.url.startsWith('/login')) return;
   const hier = router.parseUrl(router.url);
   hier.queryParams = { ...hier.queryParams, [HILFE_PARAM]: '1' };
   void router.navigate(['/login'], { queryParams: { returnUrl: router.serializeUrl(hier) } });

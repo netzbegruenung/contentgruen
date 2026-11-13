@@ -25,8 +25,8 @@
                 }
             </div>
             @if (!angemeldet) {
-                <p id="rundgang-mitmachen-hinweis" class="rundgang-mitmachen-hinweis">
-                    {{ mitmachenHinweis }}
+                <p class="rundgang-mitmachen-hinweis">
+                    <span id="rundgang-mitmachen-hinweis">{{ mitmachenHinweis }}</span>
                     <button type="button" class="rundgang-knopf text rundgang-anmelden"
                             (click)="anmelden()">Anmelden</button>
                 </p>
