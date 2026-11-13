@@ -10,3 +10,4 @@
         <li *ngIf="punkte.quests" class="punkte-stufe" data-stufe="quests">Quests: <span class="punkte-wert">{{ punkte.quests }}</span></li>
     </ul>
 </section>
+<p *ngIf="!punkte && platzhalter" class="punkte-platzhalter" role="status">Punkte werden berechnet …</p>

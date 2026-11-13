@@ -1,12 +1,14 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, NgZone, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subject, interval } from 'rxjs';
+import { Subject, interval, timer } from 'rxjs';
 import { filter, switchMap, takeUntil } from 'rxjs/operators';
 
-import { Punktestand, UsageTrackingService } from '../services/usage-tracking.service';
+import { PUNKTE_NICHT_GELADEN, Punktestand, UsageTrackingService } from '../services/usage-tracking.service';
 
 /** So oft lädt die Seite den Punktestand nach, solange sie sichtbar ist. */
 export const PUNKTE_NACHLADEN_MS = 60_000;
+/** Erst nach so langer Wartezeit erscheint der Platzhalter, damit nichts aufblitzt. */
+export const PUNKTE_PLATZHALTER_MS = 1_000;
 
 /**
  * Der eigene Punktestand in „Meine Beiträge“ (#352, ADR 0004): gesamt und je Stufe.
@@ -14,11 +16,13 @@ export const PUNKTE_NACHLADEN_MS = 60_000;
  * später mit eigener Zustimmung.
  *
  * Punkte entstehen vor allem dadurch, dass andere die Beiträge nutzen; die Seite lädt
- * den Stand deshalb selbst nach: beim Zurückkehren in den Tab und, solange die Seite
- * sichtbar ist, jede Minute.
+ * den Stand deshalb selbst nach: beim Zurückkehren in den Tab und, solange der Bereich
+ * sichtbar ist (nicht hinter dem Tab „Meine Einwürfe“), jede Minute. Der Pfad steht
+ * deshalb nicht im Cache (auth/cache.interceptor.ts).
  *
- * Bei ausgeschalteten Punkten (404) oder einem Fehler zeigt die Komponente nichts.
- * Startkonten und Konten ohne Art.-9-Einwilligung bekommen 0 Punkte.
+ * Nichts zu sehen bei ausgeschalteten Punkten (404) und für Konten, die keine Punkte
+ * sammeln (Startkonto, keine Art.-9-Einwilligung). Scheitert ein Nachladen anders,
+ * bleibt der letzte Stand stehen.
  */
 @Component({
   selector: 'app-punkte',
@@ -30,6 +34,9 @@ export const PUNKTE_NACHLADEN_MS = 60_000;
 })
 export class PunkteComponent implements OnInit, OnDestroy {
   punkte: Punktestand | null = null;
+  /** Stand noch unbekannt und schon eine Weile gewartet: Platzhalter zeigen. */
+  platzhalter = false;
+  private bekannt = false;
   private laden$ = new Subject<void>();
   private destroy$ = new Subject<void>();
 
@@ -37,6 +44,7 @@ export class PunkteComponent implements OnInit, OnDestroy {
     private usageTrackingService: UsageTrackingService,
     private cdr: ChangeDetectorRef,
     private zone: NgZone,
+    private host: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit(): void {
@@ -46,20 +54,36 @@ export class PunkteComponent implements OnInit, OnDestroy {
         switchMap(() => this.usageTrackingService.getEigenePunkte()),
         takeUntil(this.destroy$),
       )
-      .subscribe((punkte) => {
-        this.punkte = punkte;
+      .subscribe((antwort) => {
+        if (antwort === PUNKTE_NICHT_GELADEN) {
+          return;
+        }
+        this.punkte = antwort?.sammelt === false ? null : antwort;
+        this.bekannt = true;
+        this.platzhalter = false;
         this.cdr.markForCheck();
       });
-    // Der Takt laeuft ausserhalb der Angular-Zone, sonst wird die Anwendung nie
-    // "stable"; nur das Nachladen selbst laeuft wieder in der Zone.
-    this.zone.runOutsideAngular(() =>
+    // Takte laufen ausserhalb der Angular-Zone, sonst wird die Anwendung nie
+    // "stable"; nur was sie ausloesen, laeuft wieder in der Zone.
+    this.zone.runOutsideAngular(() => {
       interval(PUNKTE_NACHLADEN_MS)
         .pipe(
-          filter(() => document.visibilityState === 'visible'),
+          filter(() => document.visibilityState === 'visible' && !this.verborgen),
           takeUntil(this.destroy$),
         )
-        .subscribe(() => this.zone.run(() => this.laden$.next())),
-    );
+        .subscribe(() => this.zone.run(() => this.laden$.next()));
+      timer(PUNKTE_PLATZHALTER_MS)
+        .pipe(
+          filter(() => !this.bekannt),
+          takeUntil(this.destroy$),
+        )
+        .subscribe(() =>
+          this.zone.run(() => {
+            this.platzhalter = true;
+            this.cdr.markForCheck();
+          }),
+        );
+    });
     this.laden$.next();
   }
 
@@ -74,5 +98,10 @@ export class PunkteComponent implements OnInit, OnDestroy {
     if (document.visibilityState === 'visible') {
       this.laden$.next();
     }
+  }
+
+  /** Hinter einem anderen Tab von „Meine Beiträge“ (`[hidden]`) fragt die Seite nicht nach. */
+  private get verborgen(): boolean {
+    return this.host.nativeElement.closest('[hidden]') !== null;
   }
 }

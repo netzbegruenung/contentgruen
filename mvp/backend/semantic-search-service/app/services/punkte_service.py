@@ -47,6 +47,9 @@ ANNAHME (#352): "drei Tage ohne Sperre" heisst: heute sichtbar und mindestens dr
 Tage alt. Eine Sperre, die vorher schon wieder aufgehoben wurde, zaehlt nicht.
 """
 
+KEINE_PUNKTE = Punktestand(tun=0, quests=0, wirkung=0, sammelt=False)
+"""Startkonto oder keine geltende Einwilligung: kein Punktestand, nicht nur 0."""
+
 SichtbareBeitraege = Callable[[str], Awaitable[List[Any]]]
 """Die sichtbaren Beitraege einer Person (ohne Aussagen und Herkuenfte), mit id und created."""
 
@@ -108,9 +111,9 @@ class PunkteService:
     async def punkte(self, user_id: str) -> Punktestand:
         gewichte = gewichte_aus(self._settings)
         if self._settings.ist_startkonto(user_id):
-            return punkte_berechnen(Wirkungsdaten(), gewichte)
+            return KEINE_PUNKTE
         if not await asyncio.to_thread(self._eingewilligt, user_id):
-            return punkte_berechnen(Wirkungsdaten(), gewichte)
+            return KEINE_PUNKTE
 
         beitraege = await self._sichtbare_beitraege(user_id)
         ids = [b.id for b in beitraege]

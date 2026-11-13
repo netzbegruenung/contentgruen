@@ -50,7 +50,12 @@ export interface Punktestand {
   /** Nutzung und Zustimmung durch andere: der Hauptanteil. */
   wirkung: number;
   gesamt: number;
+  /** false: Startkonto oder keine geltende Art.-9-Einwilligung; dann gibt es keine Punkte. */
+  sammelt: boolean;
 }
+
+/** Ergebnis von getEigenePunkte bei einem Fehler außer 404: Der Stand ist unbekannt. */
+export const PUNKTE_NICHT_GELADEN = 'nicht_geladen' as const;
 
 /** Die Antwort auf die Frage, ob andere Angemeldete die Abzeichen sehen (#351). */
 export interface AbzeichenSichtbarkeit {
@@ -236,16 +241,18 @@ export class UsageTrackingService {
 
   /**
    * Der eigene Punktestand (#352), nur für die Person selbst. Solange die Punkte
-   * ausgeschaltet sind, antwortet der Server 404; dann und bei jedem anderen Fehler
-   * null, und „Meine Beiträge“ zeigt keine Punkte.
+   * ausgeschaltet sind, antwortet der Server 404, dann null: „Meine Beiträge“ zeigt
+   * keine Punkte. Jeder andere Fehler (502, Zeitüberschreitung) heißt nur, dass der
+   * Stand gerade unbekannt ist: PUNKTE_NICHT_GELADEN.
    */
-  getEigenePunkte(): Observable<Punktestand | null> {
+  getEigenePunkte(): Observable<Punktestand | null | typeof PUNKTE_NICHT_GELADEN> {
     return this.http.get<Punktestand>(`${this.apiUrl}/users/me/punkte`).pipe(
       catchError((error) => {
-        if (error?.status !== 404) {
-          this.loggingService.error('Eigene Punkte nicht geladen', error);
+        if (error?.status === 404) {
+          return of(null);
         }
-        return of(null);
+        this.loggingService.error('Eigene Punkte nicht geladen', error);
+        return of(PUNKTE_NICHT_GELADEN);
       })
     );
   }

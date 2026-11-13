@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 
 import { environment } from '../../environments/environment';
-import { UsageTrackingService } from './usage-tracking.service';
+import { PUNKTE_NICHT_GELADEN, UsageTrackingService } from './usage-tracking.service';
 import { LoggingService } from './logging.service';
 
 /**
@@ -153,7 +153,7 @@ describe('UsageTrackingService', () => {
 
   describe('Eigene Punkte (#352)', () => {
     const PUNKTE = `${environment.baseUrl}/api/v1/usage/users/me/punkte`;
-    const STAND = { tun: 2, quests: 0, wirkung: 30, gesamt: 32 };
+    const STAND = { tun: 2, quests: 0, wirkung: 30, gesamt: 32, sammelt: true };
 
     it('holt den eigenen Punktestand', () => {
       let ergebnis: unknown;
@@ -176,13 +176,13 @@ describe('UsageTrackingService', () => {
       expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
     });
 
-    it('liefert bei einem Fehler null und protokolliert ihn', () => {
+    it('meldet einen anderen Fehler als unbekannten Stand und protokolliert ihn', () => {
       let ergebnis: unknown = 'unberuehrt';
       service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
 
-      http.expectOne(PUNKTE).flush('kaputt', { status: 500, statusText: 'Server Error' });
+      http.expectOne(PUNKTE).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });
 
-      expect(ergebnis).toBeNull();
+      expect(ergebnis).toBe(PUNKTE_NICHT_GELADEN);
       expect(TestBed.inject(LoggingService).error).toHaveBeenCalled();
     });
   });
