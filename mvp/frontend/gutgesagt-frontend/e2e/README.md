@@ -7,7 +7,7 @@ sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seite
 Umleitung bei einem 401 der Suche), den Aufruf eines Beitrags per Direktlink und die Darstellung bei
 360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur) sowie Kanten und
 Fluchten bei 360, 390, 1280 und 1440 px (Suchraster, Rundgang-Band, Seitenrahmen, Beitragen-Seite, Zweck-Umschalter,
-Startkacheln, Fuß) samt Umschalter hell/dunkel (liest nur). Nicht in CI: Die Tests brauchen den vollen Stack.
+Startkacheln, Fuß) samt Umschalter hell/dunkel (liest nur). Ohne Stack, alle Antworten gemockt (`einladung-besucher`, auch gegen `ng serve` ohne Backend): Einladung von der Login-Seite einlösen und Rückkehr nach dem Anmelden aus der Daumen-Snackbar. Nicht in CI: Die Tests brauchen den vollen Stack.
 
 ## Starten
 
