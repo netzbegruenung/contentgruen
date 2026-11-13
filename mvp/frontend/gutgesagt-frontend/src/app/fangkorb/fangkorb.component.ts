@@ -4,14 +4,16 @@ import {
   OnDestroy,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { takeUntil, timeout } from 'rxjs/operators';
 
 import { EinwurfAktionenService } from './einwurf-aktionen.service';
 
@@ -22,7 +24,8 @@ import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
-import { tabMitTasteWaehlen } from '../shared/tab-tasten';
+import { TabAusrichtung, tabMitTasteWaehlen } from '../shared/tab-tasten';
+import { LADE_TIMEOUT_MS, LadeWiederholung } from '../shared/lade-wiederholung';
 import {
   FangkorbFilter,
   FangkorbTab,
@@ -39,6 +42,14 @@ import {
  * im Fangkorb, sagt die Liste das dazu.
  */
 export const LADE_GROESSE = 100;
+
+/**
+ * Ab dieser Breite steht der Fangkorb in zwei Spalten: links die Seitenleiste mit
+ * Einwerfen, Arbeitslisten (senkrecht) und Filtern, rechts die Liste mit queren
+ * Karten. Darunter bleibt alles wie am Handy. Eine Quelle fuer Layout und
+ * Tastatur: Das CSS haengt an der Klasse, die dieser Wert setzt.
+ */
+export const SEITENLEISTE_MEDIEN = '(min-width: 1024px)';
 
 /**
  * Der Fangkorb: zwei Tabs, die Arbeitslisten, benannt nach der naechsten Arbeit,
@@ -81,8 +92,23 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   filter: FangkorbFilter = filterLaden();
   isLoading = true;
   ladefehler = false;
+  /** Nach einem Ladefehler: ein neuer Versuch laeuft gerade. */
+  erneutLaedt = false;
+  /** Nach einem Ladefehler: Die Seite versucht es von selbst weiter (lohntWiederholung). */
+  versuchtWeiter = false;
+  /**
+   * Was die Live-Region ansagt: nur der erste Fehler und die Rueckkehr, nicht jeder
+   * Versuch dazwischen. Die Region steht immer im DOM, damit Screenreader sie kennen.
+   */
+  ansage = '';
+  /** Breit genug fuer die Seitenleiste (SEITENLEISTE_MEDIEN). */
+  seitenleiste = false;
 
   private destroy$ = new Subject<void>();
+  /** Nach einem Ladefehler: der naechste Versuch, selbst geplant. */
+  private wiederholung = new LadeWiederholung(this.destroy$);
+  /** Die laufende Ladeanfrage; ein neues laden() beendet sie. */
+  private ladeAbo: Subscription | null = null;
 
   constructor(
     private einwurfService: EinwurfService,
@@ -90,32 +116,81 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
     private einwurfAktionen: EinwurfAktionenService,
+    private breakpoints: BreakpointObserver,
+    private host: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit(): void {
+    this.breakpoints
+      .observe(SEITENLEISTE_MEDIEN)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((stand) => {
+        this.seitenleiste = stand.matches;
+        this.cdr.markForCheck();
+      });
     this.laden();
   }
 
+  /**
+   * Laedt den Fangkorb. Nach einem Fehler bleibt die Meldung stehen, waehrend der
+   * naechste Versuch laeuft; der Spinner kommt nur, solange noch nichts gescheitert ist.
+   */
   laden(): void {
-    this.isLoading = true;
-    this.ladefehler = false;
-    this.einwurfService
+    // Nur die neueste Anfrage zaehlt: Eine aeltere (z. B. vor dem Blaettern) darf
+    // weder die Liste ueberschreiben noch einen Versuch planen.
+    this.ladeAbo?.unsubscribe();
+    this.wiederholung.abbrechen();
+    if (this.ladefehler) {
+      this.erneutLaedt = true;
+    } else {
+      this.isLoading = true;
+    }
+    this.cdr.markForCheck();
+    this.ladeAbo = this.einwurfService
       .fangkorbLaden(1, LADE_GROESSE)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(timeout({ first: LADE_TIMEOUT_MS }), takeUntil(this.destroy$))
       .subscribe({
         next: (daten) => {
+          const nachFehler = this.ladefehler;
+          const fokusAmKnopf = this.fokusAmErneutKnopf();
           this.einwuerfe = daten.results;
           this.gesamt = daten.total_records_count;
           this.isLoading = false;
+          this.ladefehler = false;
+          this.erneutLaedt = false;
+          this.wiederholung.erfolg();
+          if (nachFehler) {
+            this.ansage = 'Fangkorb wieder geladen.';
+          }
           this.filtern();
+          if (fokusAmKnopf) {
+            this.fokusInDieListe();
+          }
         },
         error: (error) => {
           this.logger.error('Fangkorb konnte nicht geladen werden', error);
+          if (!this.ladefehler) {
+            this.ansage = 'Der Fangkorb konnte gerade nicht geladen werden.';
+          }
           this.isLoading = false;
           this.ladefehler = true;
+          this.erneutLaedt = false;
+          this.versuchtWeiter = this.wiederholung.fehlgeschlagen(error, () => this.laden());
           this.cdr.markForCheck();
         },
       });
+  }
+
+  /**
+   * "Erneut versuchen": sofort, statt auf den geplanten Versuch zu warten. Waehrend
+   * ein Versuch laeuft, ist der Knopf nur aria-disabled (er behaelt den Fokus) und
+   * tut nichts.
+   */
+  erneutVersuchen(): void {
+    if (this.erneutLaedt) {
+      return;
+    }
+    this.laden();
   }
 
   // Tabs
@@ -124,10 +199,23 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     this.filterSetzen({ ...this.filter, tab });
   }
 
-  /** Pfeiltasten, Pos1 und Ende waehlen den Tab und setzen den Fokus mit. */
+  /** Nach einem Ladefehler ohne geladene Einwuerfe ist keine Zahl bekannt. */
+  get zaehlerUnbekannt(): boolean {
+    return this.ladefehler && !this.einwuerfe.length;
+  }
+
+  /** In der Seitenleiste stehen die Tabs untereinander, sonst nebeneinander. */
+  get tabAusrichtung(): TabAusrichtung {
+    return this.seitenleiste ? 'vertical' : 'horizontal';
+  }
+
+  /**
+   * Pfeiltasten (nebeneinander links/rechts, untereinander hoch/runter), Pos1 und
+   * Ende waehlen den Tab und setzen den Fokus mit.
+   */
   tabTaste(event: KeyboardEvent): void {
     const jetzt = TABS.findIndex((eintrag) => eintrag.wert === this.filter.tab);
-    tabMitTasteWaehlen(event, jetzt, TABS.length, (ziel) => this.tabWaehlen(TABS[ziel].wert));
+    tabMitTasteWaehlen(event, jetzt, TABS.length, (ziel) => this.tabWaehlen(TABS[ziel].wert), this.tabAusrichtung);
   }
 
   /** Die Zeile im leeren Tab: erst gar nichts da, dann die Chips, dann der Tab. */
@@ -210,7 +298,21 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     this.router.navigate(['/einwerfen'], { queryParams: { von: 'fangkorb' } });
   }
 
+  /** Ob der Fokus auf dem eigenen Knopf "Erneut versuchen" steht, nicht auf einem fremden. */
+  private fokusAmErneutKnopf(): boolean {
+    const aktiv = document.activeElement;
+    return !!aktiv && this.host.nativeElement.contains(aktiv) && aktiv.classList.contains('erneut-versuchen');
+  }
+
+  /** Der Knopf verschwindet mit dem Erfolg; der Fokus geht in den Bereich des Tabs. */
+  private fokusInDieListe(): void {
+    this.cdr.detectChanges();
+    this.host.nativeElement.querySelector<HTMLElement>(`#fangkorb-bereich-${this.filter.tab}`)?.focus();
+  }
+
   ngOnDestroy(): void {
+    this.ladeAbo?.unsubscribe();
+    this.wiederholung.abbrechen();
     this.destroy$.next();
     this.destroy$.complete();
   }
