@@ -28,6 +28,9 @@ def from_zeile(dockerfile, stufe=None):
 
 PYTHON = from_zeile("mvp/backend/semantic-search-service/Dockerfile")
 NODE = from_zeile("mvp/frontend/gutgesagt-frontend/Dockerfile", "build")
+# Die CI-Images bauen auf PYTHON und NODE auf (Dockerfile.ci, unten geprueft).
+CI_PYTHON = "git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python:latest"
+CI_NODE = "git.verdigado.com/netzbegruenung-images/gutgesagt-ci-node:latest"
 
 
 def compose_image(datei, dienst):
@@ -65,20 +68,23 @@ def test_ci_hat_keinen_pfadfilter_auf_workflow_ebene():
 @pytest.mark.parametrize(
     "schritt, quelle",
     [
-        ("python-installieren", PYTHON),
-        ("lint", PYTHON),
-        ("unit", PYTHON),
-        ("integration", PYTHON),
+        ("python-installieren", CI_PYTHON),
+        ("lint", CI_PYTHON),
+        ("unit", CI_PYTHON),
+        ("integration", CI_PYTHON),
+        # Nur Standardbibliothek bzw. git: kein CI-Image noetig
         ("ci-bericht", PYTHON),
         ("retired-words", NODE),
-        ("frontend", NODE),
-        ("frontend-build", NODE),
-        ("frontend-installieren", NODE),
+        ("frontend", CI_NODE),
+        ("frontend-build", CI_NODE),
+        ("frontend-installieren", CI_NODE),
         ("bff", from_zeile("mvp/backend/BFF/Dockerfile", "build")),
     ],
 )
 def test_schritt_nutzt_das_image_aus_dem_dockerfile(schritt, quelle):
     assert SCHRITTE[schritt]["image"] == quelle
+    # :latest wandert mit jedem Build; ohne pull bliebe ein altes CI-Image im Agent.
+    assert SCHRITTE[schritt].get("pull", False) is (quelle in (CI_PYTHON, CI_NODE))
 
 
 @pytest.mark.parametrize(
@@ -529,6 +535,12 @@ def test_ci_image_baut_nach_push_auf_main_woechentlich_und_manuell():
         {"event": "cron", "cron": "ci-image"},
         {"event": "manual", "branch": "main"},
     ]
+
+
+def test_ci_yaml_nutzt_die_images_aus_ci_image():
+    for ziel, image in (("ci-python", CI_PYTHON), ("ci-node", CI_NODE)):
+        repo = CI_IMAGE_SCHRITTE[ziel]["settings"]["repo"]
+        assert image == f"{repo}:latest"
 
 
 def test_ci_image_wie_die_image_builds():

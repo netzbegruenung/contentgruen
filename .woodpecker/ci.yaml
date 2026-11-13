@@ -5,7 +5,9 @@
 # Status ci/woodpecker/pr/ci ist Pflicht fuer main. Ist ein PR-Lauf rot, schreibt
 # ci-bericht die roten Schritte in den PR (docs/CI.md).
 # Images: dieselben wie in den Dockerfiles und docker-compose.dev.yml;
-# scripts/tests/test_woodpecker_ci.py haelt beide Stellen gleich.
+# scripts/tests/test_woodpecker_ci.py haelt beide Stellen gleich. Installations- und schwere
+# Schritte laufen in den CI-Images (Dockerfile.ci, ci-image.yaml), die auf denselben Images
+# aufbauen; passt ein Image nicht zum Checkout, installiert der Schritt wie ohne.
 # Kein Pfadfilter hier: ein uebersprungener Workflow meldet keinen Status. Pfadfilter nur je
 # Schritt und nur fuer pull_request (geaenderte Dateien des PRs gegen die Basis): ein Schritt
 # faellt nur weg, wenn ALLE geaenderten Dateien in Bereichen liegen, die er nicht liest
@@ -54,7 +56,9 @@ steps:
   # venv, und bringt das CI-Image (Dockerfile.ci) die Pakete zu genau dieser requirements.txt
   # schon mit, nur der Verweis darauf; sonst pip wie bisher (scripts/ci-installieren.sh).
   - name: python-installieren
-    image: python:3.13-slim
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python:latest
+    # :latest wandert mit jedem Build (ci-image.yaml); ohne pull bliebe ein altes Image im Agent.
+    pull: true
     depends_on: []
     commands:
       - sh scripts/ci-protokoll.sh python-installieren sh scripts/ci-installieren.sh python
@@ -63,7 +67,8 @@ steps:
   # npm ci loeschte dem anderen Schritt node_modules unter den Fuessen weg. Passt das CI-Image
   # zu package.json und package-lock.json, nur ein Verweis auf dessen node_modules.
   - name: frontend-installieren
-    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-node:latest
+    pull: true
     depends_on: []
     when:
       # Nicht, wenn sich nur Backend und Python-Skripte aendern; das Frontend liest nichts davon
@@ -78,7 +83,8 @@ steps:
       - sh scripts/ci-protokoll.sh frontend-installieren sh scripts/ci-installieren.sh frontend
 
   - name: lint
-    image: python:3.13-slim
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python:latest
+    pull: true
     depends_on: [python-installieren]
     when:
       # Nicht, wenn sich nur Frontend und BFF aendern; Ruff und Black lesen nur app/
@@ -121,7 +127,8 @@ steps:
   # sonst fiele unit nach einem frueh roten leichten Schritt aus, und nach rotem unit
   # fehlten ci-bericht alle Ergebnisse dahinter.
   - name: unit
-    image: python:3.13-slim
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python:latest
+    pull: true
     depends_on: [python-installieren]
     when:
       - status: [success, failure]
@@ -134,7 +141,8 @@ steps:
 
   # Braucht kein Chromium.
   - name: frontend-build
-    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-node:latest
+    pull: true
     depends_on: [frontend-installieren, unit]
     when:
       - event: pull_request
@@ -151,7 +159,8 @@ steps:
       - sh scripts/ci-protokoll.sh frontend-build bash scripts/check.sh --schritt frontend-build
 
   - name: frontend
-    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-node:latest
+    pull: true
     depends_on: [frontend-installieren, frontend-build]
     when:
       - event: pull_request
@@ -170,7 +179,8 @@ steps:
       - sh scripts/ci-protokoll.sh frontend bash scripts/check.sh --schritt frontend
 
   - name: integration
-    image: python:3.13-slim
+    image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python:latest
+    pull: true
     # frontend optional: faellt es per Pfadfilter weg, wartet integration auf unit
     depends_on:
       - python-installieren
