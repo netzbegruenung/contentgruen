@@ -25,6 +25,7 @@ import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.c
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
 import { OffeneMeldungenZahlComponent } from './shared/components/offene-meldungen-zahl/offene-meldungen-zahl.component';
+import { FarbschemaKnopfComponent } from './shared/components/farbschema-knopf/farbschema-knopf.component';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
 import { RouteConfigService } from './shared/services/route-config.service';
 import { Subject } from 'rxjs';
@@ -59,7 +60,8 @@ import { NEU_HINWEIS, RundgangId } from './rundgang/rundgang-daten';
     MobileMenuComponent,
     MobileHeaderComponent,
     RundgangComponent,
-    RundgangBandComponent
+    RundgangBandComponent,
+    FarbschemaKnopfComponent,
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],

@@ -1,12 +1,42 @@
 <!--
-    Erst Verfassen, dann Einwerfen und Weiterarbeiten (#620): Wer auf "Beitragen" tippt, will
-    meist einen Beitrag schreiben; mobil lag "Kommentar" vorher erst bei rund 1,2
-    Bildschirmhoehen. Alle Zeilen in einem Kartenstil, Abschnitte mit echten Ueberschriften,
-    am Desktop zweispaltig.
+    Oben die Kette vom Rohen zum Ergebnis: Einwerfen, Fangkorb, Meine Beitraege; darunter die
+    vier Beitragstypen zum direkten Verfassen. Am Desktop die Kette in einer Reihe und die Typen
+    zweispaltig, mobil alles untereinander in derselben Reihenfolge (Designrunde 12.11., vorher
+    Verfassen zuerst nach #620).
 -->
 <div class="typ-zeilen">
+    <section class="typ-abschnitt ketten-abschnitt">
+        <h2 class="typ-zwischenueberschrift" id="abschnitt-kette">Einwerfen und weiterarbeiten</h2>
+        <nav class="typ-liste ketten-liste" aria-labelledby="abschnitt-kette">
+            <button type="button" class="typ-zeile einwerfen-block" (click)="navigateToEinwerfen()">
+                <span class="typ-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+                <span class="typ-text">
+                    <span class="typ-titel">{{ einwerfenTitel }}</span>
+                    <span class="typ-satz">{{ fangkorbKurz }}</span>
+                </span>
+                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+            </button>
+            <button type="button" class="typ-zeile fangkorb-block" (click)="navigateToFangkorb()">
+                <span class="typ-icon" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
+                <span class="typ-text">
+                    <span class="typ-titel">Fangkorb</span>
+                    <span class="typ-satz">Einwürfe destillieren oder Sätze ausformulieren.</span>
+                </span>
+                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+            </button>
+            <button type="button" class="typ-zeile beitraege-block" (click)="navigateToMeineBeitraege()">
+                <span class="typ-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
+                <span class="typ-text">
+                    <span class="typ-titel">Meine Beiträge</span>
+                    <span class="typ-satz">Was du eingestellt hast und wie oft es genutzt wurde.</span>
+                </span>
+                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+            </button>
+        </nav>
+    </section>
+
     <section class="typ-abschnitt verfassen-abschnitt">
-        <h2 class="typ-zwischenueberschrift" id="abschnitt-verfassen">Verfassen</h2>
+        <h2 class="typ-zwischenueberschrift" id="abschnitt-verfassen">Direkt verfassen</h2>
         <nav class="typ-liste" aria-labelledby="abschnitt-verfassen">
             <button type="button" class="typ-zeile commentary-card" (click)="formularOeffnen('commentary')">
                 <span class="typ-icon" aria-hidden="true">💬</span>
@@ -42,37 +72,5 @@
             </button>
         </nav>
         <p class="hinweis-box erstnutzer-satz">{{ erstnutzerSatz }}</p>
-    </section>
-
-    <section class="typ-abschnitt">
-        <h2 class="typ-zwischenueberschrift" id="abschnitt-einwerfen">Einwerfen</h2>
-        <button type="button" class="typ-zeile einwerfen-block" (click)="navigateToEinwerfen()">
-            <span class="typ-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
-            <span class="typ-text">
-                <span class="typ-titel">{{ einwerfenTitel }}</span>
-                <span class="typ-satz">{{ fangkorbKurz }}</span>
-            </span>
-            <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
-        </button>
-    </section>
-
-    <section class="typ-abschnitt">
-        <h2 class="typ-zwischenueberschrift" id="abschnitt-weiterarbeiten">Weiterarbeiten</h2>
-        <button type="button" class="typ-zeile fangkorb-block" (click)="navigateToFangkorb()">
-            <span class="typ-icon" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
-            <span class="typ-text">
-                <span class="typ-titel">Fangkorb</span>
-                <span class="typ-satz">Einwürfe destillieren oder Sätze ausformulieren.</span>
-            </span>
-            <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
-        </button>
-        <button type="button" class="typ-zeile beitraege-block" (click)="navigateToMeineBeitraege()">
-            <span class="typ-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
-            <span class="typ-text">
-                <span class="typ-titel">Meine Beiträge</span>
-                <span class="typ-satz">Was du eingestellt hast und wie oft es genutzt wurde.</span>
-            </span>
-            <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
-        </button>
     </section>
 </div>

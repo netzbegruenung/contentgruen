@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { SiegelComponent } from './siegel.component';
 import { HAND, SCHATTEN } from '../../marke/hand';
 import { aufgeloest, themaFarbe } from '../../../testing/farben';
+import { FarbschemaService } from '../../../services/farbschema.service';
 
 /** Tannengrün der Seite (`--primary-dark` in `custom-theme.scss`), gelesen aus dem geladenen Theme. */
 function tannengruen(): string {
@@ -103,14 +104,7 @@ describe('SiegelComponent', () => {
   });
 
   it('endet im Dunkelmodus in Klee, damit das Siegel sich vom dunklen Grund abhebt (#588)', () => {
-    spyOn(window, 'matchMedia').and.callFake(
-      (abfrage: string) =>
-        ({
-          matches: abfrage.includes('dark'),
-          addEventListener: () => undefined,
-          removeEventListener: () => undefined,
-        }) as unknown as MediaQueryList,
-    );
+    spyOn(TestBed.inject(FarbschemaService), 'dunkel').and.returnValue(true);
     fixture = TestBed.createComponent(SiegelComponent);
 
     zeige(10);

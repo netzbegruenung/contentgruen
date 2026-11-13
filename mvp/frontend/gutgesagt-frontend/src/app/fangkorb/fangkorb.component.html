@@ -50,10 +50,13 @@
             </div>
         </div>
 
-        <!-- Einwerfen als schwebender Knopf: immer erreichbar, ohne Platz im Kopf -->
-        <button *ngIf="!seitenleiste" mat-fab type="button" class="einwerfen-fab" aria-label="Etwas einwerfen"
+        <!-- Einwerfen als schwebender Knopf (nur ohne Seitenleiste): immer erreichbar, ohne Platz im
+             Kopf. Beschriftet und mit eigenem Symbol: Ein zweites "+" neben dem "+" (Beitragen) im
+             Kopf hiess etwas anderes (UX-Review B15). -->
+        <button *ngIf="!seitenleiste" mat-fab extended type="button" class="einwerfen-fab"
                 (click)="zumEinwerfen()">
-            <mat-icon aria-hidden="true">add</mat-icon>
+            <mat-icon aria-hidden="true">move_to_inbox</mat-icon>
+            Einwerfen
         </button>
 
         <!-- Am Handy eine Zeile, seitlich scrollbar: erst die eigenen, dann Plattformen -->

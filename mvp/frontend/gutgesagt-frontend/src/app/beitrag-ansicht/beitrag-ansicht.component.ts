@@ -88,9 +88,10 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
         flex-direction: column;
         align-items: center;
         gap: 16px;
-        max-width: 450px;
-        margin: 0 auto;
-        padding: 16px;
+        /* Spalte so breit wie die Karte, linksbuendig im Seitenrahmen (styles.css) */
+        max-width: calc(450px + 2 * var(--page-margin));
+        box-sizing: border-box; /* kein globales border-box: sonst kaeme der Rand auf max-width */
+        padding: 16px var(--page-margin);
       }
 
       app-beitragskarte {

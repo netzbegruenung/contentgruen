@@ -132,6 +132,15 @@ app-formular-hilfe {
       min-width: min-content;
     }
 
+    // Beide Segmente sind so hoch wie das hoehere; die Beschriftung steht in beiden mittig,
+    // nicht oben im einzeiligen Segment (Designrunde 12.11.)
+    ::ng-deep .mat-button-toggle-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
     ::ng-deep .mat-button-toggle-label-content {
       padding: 6px 8px;
       line-height: 1.3;
