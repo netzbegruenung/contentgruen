@@ -3,7 +3,7 @@ import asyncio
 import logging
 import uuid
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from core.config import Settings
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
@@ -16,6 +16,7 @@ from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import (
     AntwortKurz,
     StatementDbEntry,
+    StatementReplysuggestion,
     StatementSearchResult,
 )
 from utils.antwort_ids import FELD_ANTWORT_IDS
@@ -43,6 +44,10 @@ _BEITRAGSTYPEN = frozenset(
     }
 )
 _TITEL_OHNE_TITEL_HOECHSTENS = 120
+
+# Die Antwortvorschlaege aus dem Payload einer Aussage (mit_kommentar); ein JSON-Text
+# aus aelteren Punkten loest StatementDbEntry.parse_replysuggestions vorher auf.
+_ANTWORTVORSCHLAEGE = TypeAdapter(List[StatementReplysuggestion])
 
 
 def _unbeantwortete_suchanfrage(
@@ -275,6 +280,56 @@ class StatementRepository(
                 vorschlag.id in sichtbar for vorschlag in aussage.replysuggestions
             )
         ]
+
+    async def mit_kommentar(self, ids: Iterable[uuid.UUID]) -> Set[uuid.UUID]:
+        """
+        Welche dieser Aussagen einen sichtbaren Kommentar unter ihren
+        Antwortvorschlaegen haben: das Gegenstueck zu ohne_kommentar fuer wenige,
+        schon bekannte Aussagen (die Kandidaten aus "Suchen ohne Treffer" in
+        UnbeantworteteAussagenService). Zwei Abrufe per ID, kein Scan; wie dort zaehlt
+        ein gesperrter oder geloeschter Kommentar nicht.
+        """
+        ids = list(dict.fromkeys(ids))
+        if not ids:
+            return set()
+        punkte = await self._shared_manager.async_client.retrieve(
+            collection_name=self._shared_manager.collection_name,
+            ids=[str(i) for i in ids],
+            with_payload=["content_type", "replysuggestions"],
+            with_vectors=False,
+        )
+        kommentare_je_aussage = {}
+        for punkt in punkte:
+            payload = punkt.payload or {}
+            if payload.get("content_type") != self.content_type:
+                continue
+            try:
+                vorschlaege = _ANTWORTVORSCHLAEGE.validate_python(
+                    StatementDbEntry.parse_replysuggestions(
+                        payload.get("replysuggestions") or []
+                    )
+                )
+            except ValueError as fehler:
+                logger.warning(
+                    f"mit_kommentar: Punkt {punkt.id} uebersprungen, "
+                    f"Antwortvorschlaege ungueltig ({type(fehler).__name__})"
+                )
+                continue
+            kommentare_je_aussage[uuid.UUID(str(punkt.id))] = {
+                vorschlag.id
+                for vorschlag in vorschlaege
+                if vorschlag.content_type == ContentType.COMMENTARY
+            }
+        sichtbar = await self._sichtbare_kommentare(
+            set().union(*kommentare_je_aussage.values())
+            if kommentare_je_aussage
+            else set()
+        )
+        return {
+            aussage_id
+            for aussage_id, kommentare in kommentare_je_aussage.items()
+            if kommentare & sichtbar
+        }
 
     async def sichtbare_antworten_zaehlen(self, ids: Iterable[uuid.UUID]) -> int:
         """Die Antwortzahl zu diesen Antwortvorschlaegen (antwortzahl.py, #631)."""
