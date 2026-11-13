@@ -32,6 +32,11 @@ Services: `qdrant` (same version as the compose files and `.github/workflows/tes
 minutes) until both accept connections; the throwaway container of the suite is not used, the runner
 has no Docker socket. There is no BFF either: the tests in `tests/integration/api/`, which need
 the dev-stack BFF, skip in CI (`CI` set) instead of failing, and show up in the `SKIPPED` lines.
+A hanging integration test fails instead of stalling the step: every test session has
+`lock_timeout` 60 s and `statement_timeout` 120 s (`tests/integration/postgres.py`), a test
+running over 5 min dumps the stacks of all threads (`faulthandler_timeout`), and `check.sh` stops
+the whole step after `INTEGRATION_ZEITLIMIT` (default 25 min). Before that, main pipeline 1257
+sat silent for 46 min until it was cancelled.
 The same holds for `test_webserver_protokoll.py`, which starts nginx in a container. The
 app database the code under test would open (`localhost:5433`, the dev stack) does not exist
 in CI either: tests replace the repositories that need it (`tests/conftest.py`), and in unit
