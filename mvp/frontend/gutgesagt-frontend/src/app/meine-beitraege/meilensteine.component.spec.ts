@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { Observable, of } from 'rxjs';
 
 import { MeilensteineComponent } from './meilensteine.component';
+import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from './meilenstein-hinweis.service';
 import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 
 describe('MeilensteineComponent (#351)', () => {
@@ -10,8 +11,23 @@ describe('MeilensteineComponent (#351)', () => {
   let speichern: jasmine.Spy<(zeigen: boolean, wortlaut: string) => Observable<boolean>>;
 
   function meilenstein(felder: Partial<Meilenstein>): Meilenstein {
-    return { kennung: 'nutzung-1', name: 'Erste Nutzung durch andere', art: 'wirkung', schwelle: 1, stand: 0, erreicht: false, ...felder };
+    return {
+      kennung: 'nutzung-1',
+      name: 'Erstmals genutzt',
+      untertitel: 'Ausgeflogen',
+      beschreibung: 'Jemand hat deinen Beitrag mitgenommen.',
+      bild: 'meilensteine/vogel.svg',
+      bildnachweis: 'Motiv: Fluent Emoji, © Microsoft Corporation, MIT-Lizenz',
+      art: 'wirkung',
+      schwelle: 1,
+      stand: 0,
+      erreicht: false,
+      ...felder,
+    };
   }
+
+  beforeEach(() => localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL));
+  afterEach(() => localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL));
 
   function erstellen(meilensteine: Meilenstein[], sichtbarkeit: AbzeichenSichtbarkeit | null = null): HTMLElement {
     speichern = jasmine.createSpy('speichern').and.returnValue(of(true));
@@ -43,17 +59,38 @@ describe('MeilensteineComponent (#351)', () => {
   it('zeigt erreichte als Abzeichen und offene mit Stand', () => {
     const element = erstellen([
       meilenstein({ stand: 3, erreicht: true }),
-      meilenstein({ kennung: 'nutzung-10', name: '10 Nutzungen', schwelle: 10, stand: 3 }),
+      meilenstein({ kennung: 'nutzung-10', name: '10-mal genutzt', schwelle: 10, stand: 3 }),
     ]);
 
     const eintraege = Array.from(element.querySelectorAll('.meilenstein'));
     expect(eintraege.length).toBe(2);
     expect(eintraege[0].classList).toContain('erreicht');
-    expect(eintraege[0].textContent).toContain('Erste Nutzung durch andere');
+    expect(eintraege[0].textContent).toContain('Erstmals genutzt');
     expect(eintraege[0].querySelector('.meilenstein-stand')).toBeNull();
     expect(eintraege[1].classList).not.toContain('erreicht');
     expect(eintraege[1].querySelector('.meilenstein-stand')?.textContent).toContain('3/10');
     expect(element.querySelector('h2')?.textContent).toContain('1 von 2');
+  });
+
+  it('zeigt Namen, Untertitel, Beschreibung und das Motiv im Medaillon', () => {
+    const element = erstellen([meilenstein({ stand: 1, erreicht: true })]);
+
+    const eintrag = element.querySelector('.meilenstein')!;
+    expect(eintrag.querySelector('.meilenstein-name')?.textContent).toContain('Erstmals genutzt');
+    expect(eintrag.querySelector('.meilenstein-untertitel')?.textContent).toContain('Ausgeflogen');
+    expect(eintrag.querySelector('.meilenstein-beschreibung')?.textContent).toContain('mitgenommen');
+    const bild = eintrag.querySelector<HTMLImageElement>('.meilenstein-medaillon img')!;
+    expect(bild.getAttribute('src')).toBe('/meilensteine/vogel.svg');
+    // Schmuck: Name und Zustand stehen als Text daneben.
+    expect(bild.getAttribute('alt')).toBe('');
+    expect(eintrag.querySelector('.meilenstein-medaillon')?.getAttribute('aria-hidden')).toBe('true');
+    expect(eintrag.querySelector('.meilenstein-medaillon')?.getAttribute('title')).toContain('MIT-Lizenz');
+  });
+
+  it('merkt sich die erreichten als gesehen, damit nach dem Einwerfen kein alter Hinweis kommt', () => {
+    erstellen([meilenstein({ stand: 1, erreicht: true }), meilenstein({ kennung: 'nutzung-10', schwelle: 10, stand: 1 })]);
+
+    expect(JSON.parse(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)!)).toEqual(['nutzung-1']);
   });
 
   it('sagt, dass nur die Person selbst sie sieht', () => {
@@ -102,6 +139,26 @@ describe('MeilensteineComponent (#351)', () => {
       expect(mehr!.querySelector('summary')?.textContent).toContain('Mehr dazu');
       expect(mehr!.textContent).toContain('Screenshot');
       expect(mehr!.querySelector('a')?.getAttribute('href')).toBe('/datenschutz');
+    });
+
+    it('fragt nicht, solange nur Wegmarken erreicht sind: Sie zählen nicht fürs Abzeichen', () => {
+      const element = erstellen(
+        [meilenstein({ kennung: 'einwurf-1', art: 'weg', erreicht: true, stand: 1 }), meilenstein({})],
+        NIE_GEFRAGT,
+      );
+
+      expect(element.querySelector('.sichtbarkeit-frage')).toBeNull();
+    });
+
+    it('kennzeichnet Wegmarken, wenn das Abzeichen sichtbar ist', () => {
+      const element = erstellen(
+        [meilenstein({ kennung: 'einwurf-1', art: 'weg', erreicht: true, stand: 1 }), meilenstein({ erreicht: true, stand: 1 })],
+        { ...NIE_GEFRAGT, gefragt: true, zeigen: true },
+      );
+
+      const marken = element.querySelectorAll('.meilenstein-wegmarke');
+      expect(marken.length).toBe(1);
+      expect(marken[0].textContent).toContain('zählt nicht fürs Abzeichen');
     });
 
     it('fragt nicht, solange kein Meilenstein erreicht ist', () => {

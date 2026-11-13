@@ -6,17 +6,20 @@ import { of, throwError } from 'rxjs';
 import { DestillierUebergabeService, Vorbefuellung } from './destillier-uebergabe.service';
 import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 
 describe('DestillierUebergabeService', () => {
   let service: DestillierUebergabeService;
   let einwurfService: jasmine.SpyObj<EinwurfService>;
   let router: jasmine.SpyObj<Router>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let meilensteinHinweis: jasmine.SpyObj<MeilensteinHinweisService>;
 
   beforeEach(() => {
     einwurfService = jasmine.createSpyObj('EinwurfService', ['einwurfLaden', 'updateStatus']);
     router = jasmine.createSpyObj('Router', ['navigate']);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+    meilensteinHinweis = jasmine.createSpyObj<MeilensteinHinweisService>('MeilensteinHinweisService', ['pruefen']);
 
     TestBed.configureTestingModule({
       providers: [
@@ -24,6 +27,7 @@ describe('DestillierUebergabeService', () => {
         { provide: EinwurfService, useValue: einwurfService },
         { provide: Router, useValue: router },
         { provide: MatSnackBar, useValue: snackBar },
+        { provide: MeilensteinHinweisService, useValue: meilensteinHinweis },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['error']) },
       ],
     });
@@ -61,6 +65,8 @@ describe('DestillierUebergabeService', () => {
 
     expect(einwurfService.updateStatus).toHaveBeenCalledWith('id-1', 'processed', 'k-1', 'commentary');
     expect(ergebnisse).toEqual([true, false]);
+    // Nur nach dem geglueckten Verknuepfen ein Blick auf neue Meilensteine (#351).
+    expect(meilensteinHinweis.pruefen).toHaveBeenCalledTimes(1);
     expect(router.navigate).not.toHaveBeenCalled();
     expect(snackBar.open).not.toHaveBeenCalled();
   });

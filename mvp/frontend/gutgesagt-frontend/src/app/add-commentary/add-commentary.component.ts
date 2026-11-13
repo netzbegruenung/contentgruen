@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -12,6 +12,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommentaryService } from '../services/commentary.service';
 import { VotingService } from '../services/voting.service';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { AddCommentaryRequest, AddCommentaryResponse, Commentary } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
@@ -342,6 +343,8 @@ export class AddCommentaryComponent implements OnChanges {
     karte: KartenDaten;
   };
 
+  private meilensteinHinweis = inject(MeilensteinHinweisService);
+
   constructor(
     fb: FormBuilder,
     private commentaryService: CommentaryService,
@@ -612,6 +615,8 @@ export class AddCommentaryComponent implements OnChanges {
         }
         this.responseId = antwort.id;
         this.success.emit(this.ergebnisAus(request, antwort));
+        // Ein Kommentar zu einer Aussage kann die Wegmarke „Erster Widerspruch“ bringen.
+        this.meilensteinHinweis.pruefen();
       },
       error: (error: Error) => {
         // Die Eingaben bleiben stehen; "Erneut versuchen" speichert dasselbe noch einmal.

@@ -31,12 +31,23 @@ export interface UserUsageStats {
   }>;
 }
 
-/** Ein Meilenstein mit Stand (#351); siehe GLOSSARY.md „Meilenstein“. */
+/** Ein Meilenstein mit Stand (#351); siehe GLOSSARY.md „Meilenstein“ und „Wegmarke“. */
 export interface Meilenstein {
   kennung: string;
+  /** Sprechend: wofür es ihn gibt, etwa „Erster Einwurf“. */
   name: string;
-  /** „wirkung“ (Nutzung, Zustimmung) oder „unterstuetzung“ (Einwürfe). */
-  art: 'wirkung' | 'unterstuetzung';
+  /** Klein darunter, eine Redewendung oder Anspielung, etwa „Fundstück“. */
+  untertitel: string;
+  beschreibung: string;
+  /** Pfad unter public/, etwa „meilensteine/korb.svg“ (Fluent Emoji, MIT). */
+  bild: string;
+  /** Wer das Bild gemacht hat, unter welcher Lizenz; je Meilenstein austauschbar. */
+  bildnachweis: string;
+  /**
+   * „wirkung“ (Nutzung, Zustimmung), „unterstuetzung“ (Einwürfe) oder „weg“: eine
+   * Wegmarke, eigenes Tun, die nicht fürs Abzeichen am Namen zählt.
+   */
+  art: 'wirkung' | 'unterstuetzung' | 'weg';
   schwelle: number;
   stand: number;
   erreicht: boolean;

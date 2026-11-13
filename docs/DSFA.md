@@ -562,6 +562,16 @@ Empfänger und Ort“.
   `ss/infrastructure/database/models.py:577`, V4), nicht nur
   ihre eigenen Einwürfe, die andere ausformuliert haben. Die Daten liegen schon in V4; neu ist nur
   die Zählung je Person, und die sieht nur sie selbst. Die Erklärung nennt das unter „Punkte“.
+- **Wegmarken, Texte und Bilder (#351, gebaut, ausgeschaltet):** vier neue Meilensteine aus gespeicherten Daten,
+  die schon unter die Art.-9-Einwilligung fallen: erster Einwurf (eigene, nicht verworfene
+  Einwürfe, V4), erster fremder Einwurf ausformuliert (dieselbe Zählung wie oben, Schwelle 1),
+  erster Beitrag, der drei Tage ohne Sperre steht (Alter der sichtbaren Beiträge, Wartezeit wie bei
+  den Punkten), erster Kommentar, den eine sichtbare Aussage als Antwort führt (Payload
+  `antwort_ids` in Qdrant). Keine neue Speicherung, kein zeitliches Muster, keine Suchen, Kopien,
+  Meldungen oder Anmeldetage. Drei davon sind Wegmarken: nur für die Person, nicht in der Zahl am
+  Namen und nicht für die Krone (V22 unverändert). Der Hinweis beim Erreichen merkt sich die
+  gesehenen Kennungen nur im Browser (localStorage), ohne Server-Eintrag; keine Erinnerungen.
+  Die Erklärung nennt die neue Liste unter „Punkte“.
 
 #### V12 Meldungen
 
@@ -705,7 +715,9 @@ unten unter „Geplant, nicht gebaut“.
   Beitrag verrät es nur in der Menge: Schon der Name am Beitrag zeigt die Mitwirkung (R1).
 - **Maßnahmen:** gesonderte Einwilligung, einmal gefragt ab dem ersten erreichten Meilenstein,
   zwei gleichwertige Knöpfe, nichts vorbelegt; Nein und Widerruf der Art.-9-Einwilligung
-  nehmen das Abzeichen sofort weg; gezeigt wird nur eine Zahl, keine Einzelheiten; nur für
+  nehmen das Abzeichen sofort weg; gezeigt wird nur eine Zahl, keine Einzelheiten, ohne
+  Wegmarken (eigenes Tun, `ss/domain/meilensteine.py`), damit sie Anerkennung durch andere
+  zeigt und nicht die Menge des eigenen Tuns; nur für
   Angemeldete; zwei Schalter, Standard aus (`abzeichen_sichtbar_aktiv` und `punkte_aktiv`).
 - **Widerruf:** Ein Widerruf der Art.-9-Einwilligung nimmt das Abzeichen sofort weg und hält
   ein früheres Ja als Nein fest; nach einer neuen Art.-9-Einwilligung erscheint es erst nach

@@ -1,10 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import { BeitragsTyp, EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { FangkorbTab } from '../fangkorb/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
 import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
@@ -39,6 +40,8 @@ export interface Vorbefuellung {
  */
 @Injectable({ providedIn: 'root' })
 export class DestillierUebergabeService {
+  private meilensteinHinweis = inject(MeilensteinHinweisService);
+
   constructor(
     private einwurfService: EinwurfService,
     private router: Router,
@@ -70,6 +73,8 @@ export class DestillierUebergabeService {
   mitBeitragVerknuepfen(einwurfId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
     return this.einwurfService.updateStatus(einwurfId, 'processed', contentId, typ).pipe(
       map(() => true),
+      // Ein fremder Einwurf kann „Erster fremder Einwurf ausformuliert“ bringen (#351).
+      tap(() => this.meilensteinHinweis.pruefen()),
       catchError((error) => {
         this.logger.error('Einwurf konnte nicht mit dem Beitrag verknuepft werden', error);
         return of(false);

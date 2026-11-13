@@ -15,6 +15,7 @@ import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
 import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 
@@ -40,6 +41,7 @@ describe('EinwerfenComponent', () => {
   let component: EinwerfenComponent;
   let fixture: ComponentFixture<EinwerfenComponent>;
   let einwurfService: jasmine.SpyObj<EinwurfService>;
+  let meilensteinHinweis: jasmine.SpyObj<MeilensteinHinweisService>;
 
   /**
    * Die Vorbelegung passiert in ngOnInit, also muss eine Ablage liegen, bevor die
@@ -55,12 +57,14 @@ describe('EinwerfenComponent', () => {
     const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen', 'mitGleichemLink']);
     serviceSpy.einwerfen.and.returnValue(of({ id: 'neue-id' }));
     serviceSpy.mitGleichemLink.and.returnValue(of([]));
+    meilensteinHinweis = jasmine.createSpyObj<MeilensteinHinweisService>('MeilensteinHinweisService', ['pruefen']);
 
     await TestBed.configureTestingModule({
       imports: [EinwerfenComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
         { provide: EinwurfService, useValue: serviceSpy },
+        { provide: MeilensteinHinweisService, useValue: meilensteinHinweis },
         {
           provide: LoggingService,
           useValue: jasmine.createSpyObj('LoggingService', ['debug', 'error', 'warn']),
@@ -147,6 +151,14 @@ describe('EinwerfenComponent', () => {
       expect(einwurfService.einwerfen).toHaveBeenCalledWith({
         content: 'Waermepumpen-Foerderung wurde gekuerzt',
       });
+    });
+
+    it('prueft nach dem Einwurf, ob ein Meilenstein neu erreicht ist (#351)', () => {
+      eingeben('', 'Waermepumpen-Foerderung wurde gekuerzt');
+
+      component.einwerfen();
+
+      expect(meilensteinHinweis.pruefen).toHaveBeenCalledTimes(1);
     });
 
     it('nimmt einen Link ohne Hinweis an', () => {

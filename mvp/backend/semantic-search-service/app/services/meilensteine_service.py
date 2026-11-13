@@ -15,6 +15,10 @@ Woher die Zahlen kommen:
 - Unterstuetzungsarbeit: Einwuerfe anderer, die die Person ausformuliert hat, und
   eigene Einwuerfe, die andere ausformuliert haben, je mit nicht gesperrtem Beitrag
   und ohne Startkonten auf der anderen Seite.
+- Wegmarken (eigenes Tun, zaehlen nicht fuers Abzeichen): eigene Einwuerfe, die nicht
+  verworfen sind; sichtbare Beitraege, die mindestens BEITRAG_WARTEZEIT alt sind
+  (dieselbe Regel wie fuer die Punkte); sichtbare Kommentare, die eine sichtbare
+  Aussage als Antwort fuehrt.
 
 Weil nichts gespeichert wird, kann ein erreichter Meilenstein wieder verschwinden,
 etwa wenn ein Beitrag gesperrt oder geloescht wird; das ist der Preis dafuer, dass es
@@ -26,12 +30,21 @@ wird je Abruf, damit ein Widerruf sofort wirkt.
 """
 
 import asyncio
-from typing import Callable, List, Optional, Protocol, Set
+from datetime import datetime, timezone
+from typing import Any, Awaitable, Callable, List, Optional, Protocol, Set
 
 from core.config import Settings
 from domain.meilensteine import Meilenstein, Meilensteindaten, meilensteine_berechnen
 from services.art9_einwilligung_service import get_art9_einwilligung_service
-from services.punkte_service import NutzungsQuelle, SichtbareBeitraege
+from domain.models.content_type import ContentType
+from services.punkte_service import (
+    BEITRAG_WARTEZEIT,
+    NutzungsQuelle,
+    SichtbareBeitraege,
+)
+
+BeantworteteBeitraege = Callable[[List[Any]], Awaitable[Set[str]]]
+"""Von diesen Beitrags-IDs die, die eine sichtbare Aussage als Antwort fuehrt."""
 
 
 class MeilensteinQuellen(Protocol):
@@ -45,6 +58,8 @@ class MeilensteinQuellen(Protocol):
         self, user_id: str, ausgenommen: Set[str]
     ) -> int: ...
 
+    def eigene_einwuerfe(self, user_id: str) -> int: ...
+
 
 class MeilensteineService:
     def __init__(
@@ -53,12 +68,16 @@ class MeilensteineService:
         nutzung: NutzungsQuelle,
         stimmen_und_einwuerfe: MeilensteinQuellen,
         settings: Settings,
+        beantwortete: BeantworteteBeitraege,
         eingewilligt: Optional[Callable[[str], bool]] = None,
+        jetzt: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
     ):
         self._sichtbare_beitraege = sichtbare_beitraege
         self._nutzung = nutzung
         self._stimmen_und_einwuerfe = stimmen_und_einwuerfe
         self._settings = settings
+        self._beantwortete = beantwortete
+        self._jetzt = jetzt
         # Spaet geholt wie in PunkteService, damit Tests den Dienst ersetzen koennen.
         self._eingewilligt = eingewilligt or (
             lambda user_id: get_art9_einwilligung_service().eingewilligt(user_id)
@@ -90,11 +109,26 @@ class MeilensteineService:
         eingeworfen = await asyncio.to_thread(
             quelle.eigene_einwuerfe_von_anderen_ausformuliert, user_id, startkonten
         )
+        einwuerfe = await asyncio.to_thread(quelle.eigene_einwuerfe, user_id)
+        grenze = self._jetzt() - BEITRAG_WARTEZEIT
+        gehalten = sum(
+            1 for b in beitraege if b.created.astimezone(timezone.utc) <= grenze
+        )
+        kommentare = [b.id for b in beitraege if _ist_kommentar(b)]
+        zu_aussagen = len(await self._beantwortete(kommentare)) if kommentare else 0
         return meilensteine_berechnen(
             Meilensteindaten(
                 nutzungen=nutzung,
                 zustimmungen=zustimmungen,
                 einwuerfe_ausformuliert=ausformuliert,
                 eigene_einwuerfe_von_anderen_ausformuliert=eingeworfen,
+                einwuerfe=einwuerfe,
+                beitraege_gehalten=gehalten,
+                kommentare_zu_aussagen=zu_aussagen,
             )
         )
+
+
+def _ist_kommentar(beitrag: Any) -> bool:
+    # ContentType ist ein str-Enum: gleich fuer Enum und Rohwert.
+    return getattr(beitrag, "content_type", None) == ContentType.COMMENTARY

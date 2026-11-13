@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import uuid
-from typing import AbstractSet, Iterable, List
+from typing import AbstractSet, Iterable, List, Set
 
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
@@ -103,6 +103,14 @@ class IStatementRepository(
         """
         Visible statements the Beitrag answers (#603): those with the Beitrag among
         their reply suggestions, found through the payload field antwort_ids.
+        """
+        pass
+
+    @abstractmethod
+    async def beantwortete(self, beitrag_ids: List[uuid.UUID]) -> Set[str]:
+        """
+        Of the given Beitrag IDs, those a visible statement lists among its reply
+        suggestions (Meilenstein "Erster Widerspruch", #351), as strings.
         """
         pass
 

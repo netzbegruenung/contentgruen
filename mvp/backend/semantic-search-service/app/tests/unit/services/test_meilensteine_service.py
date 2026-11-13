@@ -5,6 +5,7 @@ tests/unit/domain/test_meilensteine.py.
 """
 
 import uuid
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Dict, List
 
@@ -17,19 +18,30 @@ pytestmark = pytest.mark.asyncio
 
 KIM = "kim-1"
 START = "start-9"
+JETZT = datetime(2026, 11, 20, 12, tzinfo=timezone.utc)
 
 
 class _Quellen:
     """Steht fuer Qdrant und PostgreSQL: liefert, was ihm gegeben wird."""
 
     def __init__(
-        self, beitraege=(), nutzung=None, zustimmungen=0, ausformuliert=0, eingeworfen=0
+        self,
+        beitraege=(),
+        nutzung=None,
+        zustimmungen=0,
+        ausformuliert=0,
+        eingeworfen=0,
+        einwuerfe=0,
+        beantwortet=(),
     ):
         self.beitraege = list(beitraege)
         self.nutzung = nutzung or {}
         self.zustimmungen_zahl = zustimmungen
         self.ausformuliert = ausformuliert
         self.eingeworfen = eingeworfen
+        self.einwuerfe = einwuerfe
+        self.beantwortet = {str(i) for i in beantwortet}
+        self.gefragt_nach_antworten: List = []
         self.aufrufe: List[str] = []
 
     async def sichtbare_beitraege(self, user_id: str) -> List:
@@ -52,6 +64,14 @@ class _Quellen:
         self.eingeworfen_ausgenommen = ausgenommen
         return self.eingeworfen
 
+    def eigene_einwuerfe(self, user_id: str) -> int:
+        self.einwuerfe_von = user_id
+        return self.einwuerfe
+
+    async def beantwortete(self, ids) -> set:
+        self.gefragt_nach_antworten.append(list(ids))
+        return {str(i) for i in ids} & self.beantwortet
+
 
 def _service(quellen: _Quellen, eingewilligt=lambda user_id: True):
     return MeilensteineService(
@@ -59,12 +79,16 @@ def _service(quellen: _Quellen, eingewilligt=lambda user_id: True):
         quellen,
         quellen,
         Settings(startkonten=START),
+        quellen.beantwortete,
         eingewilligt=eingewilligt,
+        jetzt=lambda: JETZT,
     )
 
 
-def _beitrag() -> SimpleNamespace:
-    return SimpleNamespace(id=uuid.uuid4())
+def _beitrag(
+    alter: timedelta = timedelta(hours=1), typ: str = "post"
+) -> SimpleNamespace:
+    return SimpleNamespace(id=uuid.uuid4(), created=JETZT - alter, content_type=typ)
 
 
 def _nach_kennung(meilensteine) -> dict:
@@ -121,3 +145,60 @@ async def test_ohne_einwilligung_keine_meilensteine():
     assert await _service(quellen, eingewilligt).meilensteine(KIM) == []
     assert gefragt == [KIM]
     assert quellen.aufrufe == []
+
+
+async def test_erster_einwurf_aus_eigenen_einwuerfen():
+    quellen = _Quellen(einwuerfe=1)
+
+    meilensteine = _nach_kennung(await _service(quellen).meilensteine(KIM))
+
+    assert meilensteine["einwurf-1"].erreicht
+    assert meilensteine["einwurf-1"].art == "weg"
+    assert quellen.einwuerfe_von == KIM
+
+
+async def test_erster_fremder_einwurf_ausformuliert_ab_eins():
+    quellen = _Quellen(ausformuliert=1)
+
+    meilensteine = _nach_kennung(await _service(quellen).meilensteine(KIM))
+
+    assert meilensteine["ausformuliert-1"].erreicht
+    assert not meilensteine["ausformuliert-10"].erreicht
+
+
+async def test_beitrag_haelt_erst_nach_drei_tagen():
+    frisch = _beitrag(timedelta(days=2, hours=23))
+    quellen = _Quellen([frisch])
+
+    meilensteine = _nach_kennung(await _service(quellen).meilensteine(KIM))
+    assert not meilensteine["beitrag-gehalten-1"].erreicht
+
+    quellen.beitraege.append(_beitrag(timedelta(days=3)))
+    meilensteine = _nach_kennung(await _service(quellen).meilensteine(KIM))
+    assert meilensteine["beitrag-gehalten-1"].stand == 1
+    assert meilensteine["beitrag-gehalten-1"].erreicht
+
+
+async def test_erster_widerspruch_nur_kommentare_die_eine_aussage_fuehrt():
+    kommentar = _beitrag(typ="commentary")
+    ohne_aussage = _beitrag(typ="commentary")
+    post = _beitrag(typ="post")
+    quellen = _Quellen(
+        [kommentar, ohne_aussage, post], beantwortet=[kommentar.id, post.id]
+    )
+
+    meilensteine = _nach_kennung(await _service(quellen).meilensteine(KIM))
+
+    assert meilensteine["aussage-kommentiert-1"].stand == 1
+    assert meilensteine["aussage-kommentiert-1"].erreicht
+    # Nur Kommentare werden nachgeschlagen; ein Post zaehlt nicht, auch wenn er antwortet.
+    assert quellen.gefragt_nach_antworten == [[kommentar.id, ohne_aussage.id]]
+
+
+async def test_ohne_kommentare_keine_abfrage_der_aussagen():
+    quellen = _Quellen([_beitrag(typ="post")])
+
+    meilensteine = _nach_kennung(await _service(quellen).meilensteine(KIM))
+
+    assert not meilensteine["aussage-kommentiert-1"].erreicht
+    assert quellen.gefragt_nach_antworten == []

@@ -258,11 +258,17 @@ def get_meilensteine_service(
     from repositories.punkte_repository import get_punkte_repository
     from repositories.usage_tracking_repository import get_usage_repository
 
+    async def beantwortete(beitrag_ids):
+        # Erst beim Abruf geholt, damit sich der Dienst auch vor der Initialisierung
+        # bauen laesst (abzeichen_service_bauen, Tests).
+        return await get_statement_service().beantwortete(beitrag_ids)
+
     return MeilensteineService(
         _sichtbare_beitraege(settings),
         get_usage_repository(),
         get_punkte_repository(),
         settings,
+        beantwortete,
     )
 
 

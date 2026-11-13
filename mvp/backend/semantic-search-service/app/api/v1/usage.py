@@ -112,10 +112,18 @@ class PunkteResponse(BaseModel):
 
 
 class MeilensteinResponse(BaseModel):
-    """Ein Meilenstein mit Stand (#351); ``erreicht`` ab ``stand >= schwelle``."""
+    """
+    Ein Meilenstein mit Stand (#351); ``erreicht`` ab ``stand >= schwelle``. ``bild``
+    ist ein Pfad unter public/ des Frontends, ``art`` ``weg`` eine Wegmarke, die nicht
+    fuers Abzeichen zaehlt (domain/meilensteine.py).
+    """
 
     kennung: str
     name: str
+    untertitel: str
+    beschreibung: str
+    bild: str
+    bildnachweis: str
     art: str
     schwelle: int
     stand: int
@@ -497,6 +505,10 @@ async def eigene_meilensteine(
             MeilensteinResponse(
                 kennung=m.kennung,
                 name=m.name,
+                untertitel=m.untertitel,
+                beschreibung=m.beschreibung,
+                bild=m.bild,
+                bildnachweis=m.bildnachweis,
                 art=m.art,
                 schwelle=m.schwelle,
                 stand=m.stand,

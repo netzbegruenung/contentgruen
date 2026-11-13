@@ -4,7 +4,7 @@ import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
-from typing import AbstractSet, Dict, List, Optional, Tuple
+from typing import AbstractSet, Dict, List, Optional, Set, Tuple
 import uuid
 import logging
 
@@ -245,6 +245,10 @@ class StatementService(
     async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
         """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
         return await self._repository.zu_antwort(beitrag_id)
+
+    async def beantwortete(self, beitrag_ids: List[uuid.UUID]) -> Set[str]:
+        """Von diesen Beitraegen die, die eine sichtbare Aussage als Antwort fuehrt (#351)."""
+        return await self._repository.beantwortete(beitrag_ids)
 
     async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
         """Die sichtbaren Beitraege unter den IDs, mit Typ und Titel (#603)."""

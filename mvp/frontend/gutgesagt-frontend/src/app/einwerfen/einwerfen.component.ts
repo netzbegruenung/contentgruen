@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -20,6 +20,7 @@ import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-
 import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { NavigationService } from '../services/navigation.service';
 import { RouterLink } from '@angular/router';
 import { ROUTES } from '../shared/constants/app.constants';
@@ -119,6 +120,9 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
   vorbelegung: string | null = null;
   /** Einwuerfe mit gleichem Link wie im Link-Feld, neueste zuerst. */
   gleicheEinwuerfe: GleicherEinwurf[] = [];
+
+  /** Ein kurzer Hinweis, wenn der Einwurf einen Meilenstein bringt (#351). */
+  private meilensteinHinweis = inject(MeilensteinHinweisService);
 
   constructor(
     private fb: FormBuilder,
@@ -294,6 +298,7 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
         this.einwurfForm.reset({ link: '', hinweis: '' });
         this.vorbelegung = null;
         this.ausShare = false;
+        this.meilensteinHinweis.pruefen();
       },
       error: (error) => {
         this.logger.error('Einwurf fehlgeschlagen', error);

@@ -6,13 +6,16 @@ import { Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
+import { gesehenMerken } from './meilenstein-hinweis.service';
 
 /**
- * Die eigenen Meilensteine in „Meine Beiträge“ (#351): erreichte als Abzeichen, die
- * übrigen mit Stand („3/10“).
+ * Die eigenen Meilensteine in „Meine Beiträge“ (#351): je einer mit Medaillon (Motiv
+ * aus Fluent Emoji, erreicht tannengrün, offen grau gestrichelt), sprechendem Namen,
+ * Untertitel und Beschreibung; offene mit Stand („3/10“). Was hier zu sehen war, gilt
+ * dem Hinweis nach dem Einwerfen als gesehen (meilenstein-hinweis.service.ts).
  *
  * Darunter die Zustimmung zur Sichtbarkeit (GLOSSARY.md): Ab dem ersten erreichten
- * Meilenstein fragt die Seite einmal mit zwei gleichwertigen Knöpfen, ob andere
+ * Meilenstein, der fürs Abzeichen zählt (keine Wegmarke), fragt die Seite einmal mit zwei gleichwertigen Knöpfen, ob andere
  * Angemeldete das Abzeichen am Namen sehen; nichts ist vorbelegt, die Antwort lässt
  * sich jederzeit ändern (ADR 0004, docs/VISION.md). Ohne die Schalter liefert der
  * Server keine Sichtbarkeit, dann fragt die Seite nicht und die Meilensteine bleiben
@@ -63,6 +66,7 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
       .subscribe(({ meilensteine, sichtbarkeit }) => {
         this.meilensteine = meilensteine;
         this.sichtbarkeit = sichtbarkeit;
+        gesehenMerken(meilensteine);
         this.cdr.markForCheck();
       });
   }
@@ -71,12 +75,17 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
     return this.meilensteine.filter((m) => m.erreicht).length;
   }
 
+  /** Erreichte, die das Abzeichen am Namen zählt: Wegmarken (eigenes Tun) nicht. */
+  get erreichteFuersAbzeichen(): number {
+    return this.meilensteine.filter((m) => m.erreicht && m.art !== 'weg').length;
+  }
+
   /** Einmal fragen, sobald es etwas zu zeigen gäbe. */
   get fragen(): boolean {
     if (!this.sichtbarkeit) {
       return false;
     }
-    return this.frageOffen || (!this.sichtbarkeit.gefragt && this.erreichte > 0);
+    return this.frageOffen || (!this.sichtbarkeit.gefragt && this.erreichteFuersAbzeichen > 0);
   }
 
   /** Andere Angemeldete sehen das Abzeichen. */
