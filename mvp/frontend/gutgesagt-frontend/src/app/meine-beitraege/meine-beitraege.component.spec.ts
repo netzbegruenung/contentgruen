@@ -476,13 +476,15 @@ describe('MeineBeitraegeComponent', () => {
       await erstellen([]);
 
       expect(text('.erster-schritt h2')).toBe('Fang mit einer unbeantworteten Aussage an');
-      expect(eintraege().map((e) => e.querySelector('.unbeantwortete-aussage-text')!.textContent!.trim())).toEqual([
+      expect(eintraege().map((e) => e.querySelector('.aussagekarte-titel')!.textContent!.trim())).toEqual([
         'Unbeantwortete Aussage 1',
         'Unbeantwortete Aussage 2',
         'Unbeantwortete Aussage 3',
       ]);
       const antworten = eintraege()[0].querySelector('a.antworten') as HTMLAnchorElement;
       expect(antworten.textContent!.trim()).toBe('Antworten');
+      // Nebenknopf: "Beitragen" bleibt der einzige Hauptknopf der Seite
+      expect(antworten.classList).not.toContain('dark-green-button');
       expect(antworten.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1&von=hier-fehlt-eine-antwort');
       expect(
         (fixture.nativeElement.querySelector('.alle-unbeantworteten') as HTMLAnchorElement).getAttribute('href'),
