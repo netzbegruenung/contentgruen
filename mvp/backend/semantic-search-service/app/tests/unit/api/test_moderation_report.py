@@ -444,3 +444,78 @@ class TestAngabenNachArtikel16:
             == 422
         )
         service.report_content.assert_not_awaited()
+
+
+class TestKontoAdresseFuerAngemeldete:
+    """
+    Angemeldete geben keine Adresse ein (UX-Review B17): Mit Haekchen nimmt der
+    Suchdienst die Adresse des Kontos aus X-User-Email (vom BFF, prozentkodiert),
+    nie eine aus dem Koerper; ohne Haekchen wird keine gespeichert.
+    """
+
+    ANGEMELDET = {"X-User": "user-1", "X-User-Email": "test.user%40example.com"}
+
+    def _melder(self, service) -> MelderAngaben:
+        return service.report_content.await_args.kwargs["melder"]
+
+    def test_mit_haekchen_die_adresse_des_kontos(self, client, service):
+        antwort = client.post(
+            REPORT_URL,
+            json=_payload(bestaetigung_an_konto=True),
+            headers=self.ANGEMELDET,
+        )
+
+        assert antwort.status_code == 200
+        assert self._melder(service).email == "test.user@example.com"
+
+    def test_ohne_haekchen_keine_adresse(self, client, service):
+        client.post(REPORT_URL, json=_payload(), headers=self.ANGEMELDET)
+
+        assert self._melder(service).email is None
+
+    def test_adresse_aus_dem_koerper_zaehlt_fuer_angemeldete_nie(self, client, service):
+        client.post(
+            REPORT_URL,
+            json=_payload(melder_email="fremd@example.com"),
+            headers=self.ANGEMELDET,
+        )
+        assert self._melder(service).email is None
+
+        client.post(
+            REPORT_URL,
+            json=_payload(melder_email="fremd@example.com", bestaetigung_an_konto=True),
+            headers=self.ANGEMELDET,
+        )
+        assert self._melder(service).email == "test.user@example.com"
+
+    def test_mit_haekchen_ohne_kontoadresse_keine(self, client, service):
+        client.post(
+            REPORT_URL,
+            json=_payload(bestaetigung_an_konto=True),
+            headers={"X-User": "user-1"},
+        )
+
+        assert self._melder(service).email is None
+
+    def test_ungueltige_kontoadresse_wird_nicht_gespeichert(self, client, service):
+        antwort = client.post(
+            REPORT_URL,
+            json=_payload(bestaetigung_an_konto=True),
+            headers={"X-User": "user-1", "X-User-Email": "keine-adresse"},
+        )
+
+        assert antwort.status_code == 200
+        assert self._melder(service).email is None
+
+    def test_besucher_bleiben_beim_eingegebenen_und_ignorieren_kontoheader(
+        self, client, service
+    ):
+        client.post(
+            REPORT_URL,
+            json=_payload(
+                melder_email="test.user@example.com", bestaetigung_an_konto=True
+            ),
+            headers={"X-User": "anonymous", "X-User-Email": "fremd%40example.com"},
+        )
+
+        assert self._melder(service).email == "test.user@example.com"

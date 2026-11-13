@@ -139,16 +139,22 @@ export class EinwilligungComponent implements OnInit {
 
   widerrufenKlick(): void {
     const erlaubt = this.zustand === 'eingewilligt' || (this.zustand === 'frage' && this.fruehereEinwilligung);
-    if (!erlaubt) {
+    if (!erlaubt || this.rueckfrageOffen) {
       return;
     }
+    // Ein Doppelklick oeffnete sonst zwei Rueckfragen.
+    this.rueckfrageOffen = true;
     this.dialog
       .open(BestaetigungsDialogComponent, { data: WIDERRUF_FRAGE, autoFocus: 'dialog' })
       .afterClosed()
       .subscribe((ja) => {
+        this.rueckfrageOffen = false;
         if (ja === true) this.widerrufen();
       });
   }
+
+  /** Die Rueckfrage vor dem Widerruf ist offen. */
+  private rueckfrageOffen = false;
 
   private widerrufen(): void {
     const erlaubt = this.zustand === 'eingewilligt' || (this.zustand === 'frage' && this.fruehereEinwilligung);

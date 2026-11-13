@@ -3,7 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 
 import { environment } from '../../environments/environment';
-import { PUNKTE_NICHT_GELADEN, UsageTrackingService } from './usage-tracking.service';
+import { PUNKTE_NICHT_GELADEN, SCHALTER_AUS_MERKEN_MS, UsageTrackingService } from './usage-tracking.service';
+import { AuthService } from '../auth/auth.service';
 import { LoggingService } from './logging.service';
 
 /**
@@ -30,6 +31,12 @@ describe('UsageTrackingService', () => {
   });
 
   afterEach(() => http.verify());
+
+  const STATUS = `${environment.baseUrl}/api/v1/usage/punkte/status`;
+  /** Der Schalter-Status, den punkte, meilensteine und abzeichen-sichtbarkeit zuerst fragen (B20). */
+  function status(aktiv = true, abzeichen_sichtbar = true): void {
+    http.expectOne(STATUS).flush({ aktiv, abzeichen_sichtbar });
+  }
 
   function antworten(id: string, count: number): void {
     http.expectOne(ADRESSE(id)).flush({ success: true, message: 'ok', usage_count: count });
@@ -122,6 +129,7 @@ describe('UsageTrackingService', () => {
     it('fragt ohne Kennung im Pfad und liefert die Liste', () => {
       let ergebnis: unknown;
       service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+      status();
 
       const anfrage = http.expectOne(MEILENSTEINE);
       expect(anfrage.request.method).toBe('GET');
@@ -133,6 +141,7 @@ describe('UsageTrackingService', () => {
     it('liefert bei ausgeschalteten Punkten (404) still eine leere Liste', () => {
       let ergebnis: unknown;
       service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+      status();
 
       http.expectOne(MEILENSTEINE).flush('weg', { status: 404, statusText: 'Not Found' });
 
@@ -143,6 +152,7 @@ describe('UsageTrackingService', () => {
     it('liefert bei einem Fehler eine leere Liste und protokolliert ihn', () => {
       let ergebnis: unknown;
       service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+      status();
 
       http.expectOne(MEILENSTEINE).flush('kaputt', { status: 500, statusText: 'Server Error' });
 
@@ -158,6 +168,7 @@ describe('UsageTrackingService', () => {
     it('holt den eigenen Punktestand', () => {
       let ergebnis: unknown;
       service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+      status();
 
       const anfrage = http.expectOne(PUNKTE);
       expect(anfrage.request.method).toBe('GET');
@@ -169,6 +180,7 @@ describe('UsageTrackingService', () => {
     it('liefert bei ausgeschalteten Punkten (404) still null', () => {
       let ergebnis: unknown = 'unberuehrt';
       service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+      status();
 
       http.expectOne(PUNKTE).flush('weg', { status: 404, statusText: 'Not Found' });
 
@@ -179,6 +191,7 @@ describe('UsageTrackingService', () => {
     it('meldet einen anderen Fehler als unbekannten Stand und protokolliert ihn', () => {
       let ergebnis: unknown = 'unberuehrt';
       service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+      status();
 
       http.expectOne(PUNKTE).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });
 
@@ -187,17 +200,15 @@ describe('UsageTrackingService', () => {
     });
   });
 
-  // UX-Review B20: Bei ausgeschalteten Punkten nach dem ersten 404 nicht weiter fragen
-  describe('Schalter aus (B20)', () => {
+  // UX-Review B20: Schalter zuerst fragen, Endpunkte nur bei eingeschaltetem Schalter
+  describe('Schalter (B20)', () => {
     const PUNKTE = `${environment.baseUrl}/api/v1/usage/users/me/punkte`;
     const MEILENSTEINE = `${environment.baseUrl}/api/v1/usage/users/me/meilensteine`;
     const SICHTBARKEIT = `${environment.baseUrl}/api/v1/usage/users/me/abzeichen-sichtbarkeit`;
     const weg = { status: 404, statusText: 'Not Found' };
+    const STAND = { tun: 0, quests: 0, wirkung: 0, gesamt: 0, sammelt: true };
 
-    it('fragt nach einem 404 der Punkte weder Punkte noch Meilensteine noch Sichtbarkeit noch einmal', () => {
-      service.getEigenePunkte().subscribe();
-      http.expectOne(PUNKTE).flush('weg', weg);
-
+    it('fragt bei ausgeschaltetem Schalter weder Punkte noch Meilensteine noch Sichtbarkeit, und den Status nur einmal', () => {
       let punkte: unknown = 'unberuehrt';
       let meilensteine: unknown;
       let sichtbarkeit: unknown = 'unberuehrt';
@@ -205,40 +216,75 @@ describe('UsageTrackingService', () => {
       service.getEigeneMeilensteine().subscribe((m) => (meilensteine = m));
       service.getAbzeichenSichtbarkeit().subscribe((s) => (sichtbarkeit = s));
 
+      status(false, false);
+
       http.expectNone(PUNKTE);
       http.expectNone(MEILENSTEINE);
       http.expectNone(SICHTBARKEIT);
       expect(punkte).toBeNull();
       expect(meilensteine).toEqual([]);
       expect(sichtbarkeit).toBeNull();
+      service.getEigenePunkte().subscribe();
+      http.expectNone(STATUS);
     });
 
-    it('merkt sich auch ein 404 der Meilensteine', () => {
-      service.getEigeneMeilensteine().subscribe();
-      http.expectOne(MEILENSTEINE).flush('weg', weg);
+    it('fragt die Sichtbarkeit nur, wenn auch die Abzeichen eingeschaltet sind', () => {
+      service.getAbzeichenSichtbarkeit().subscribe();
+      service.getEigenePunkte().subscribe();
+      status(true, false);
+
+      http.expectNone(SICHTBARKEIT);
+      const neu = http.expectOne(PUNKTE);
+      expect(neu.request.method).toBe('GET');
+      neu.flush(STAND);
+    });
+
+    it('fragt ohne lesbaren Status die Endpunkte selbst und merkt sich deren 404', () => {
+      service.getEigenePunkte().subscribe();
+      http.expectOne(STATUS).flush('weg', weg);
+      http.expectOne(PUNKTE).flush('weg', weg);
 
       let punkte: unknown = 'unberuehrt';
       service.getEigenePunkte().subscribe((p) => (punkte = p));
+      // Ein gescheiterter Status gilt nicht weiter
+      status(true, true);
       http.expectNone(PUNKTE);
       expect(punkte).toBeNull();
     });
 
-    it('merkt sich ein 404 der Sichtbarkeit, ohne die Punkte abzuschalten', () => {
-      service.getAbzeichenSichtbarkeit().subscribe();
-      http.expectOne(SICHTBARKEIT).flush('weg', weg);
+    // Review zu #670: "laedt selbst nach" - ein eingeschalteter Schalter kommt ohne Neuladen an
+    it('fragt den Status nach 15 Minuten wieder', () => {
+      jasmine.clock().install();
+      try {
+        jasmine.clock().mockDate(new Date(2026, 10, 13, 12, 0));
+        service.getEigeneMeilensteine().subscribe();
+        status(false, false);
 
-      service.getAbzeichenSichtbarkeit().subscribe();
-      http.expectNone(SICHTBARKEIT);
-      service.getEigenePunkte().subscribe();
-      http.expectOne(PUNKTE).flush({ tun: 0, quests: 0, wirkung: 0, gesamt: 0, sammelt: true });
+        jasmine.clock().tick(SCHALTER_AUS_MERKEN_MS - 1000);
+        service.getEigeneMeilensteine().subscribe();
+        http.expectNone(STATUS);
+
+        jasmine.clock().tick(2000);
+        service.getEigeneMeilensteine().subscribe();
+        status(true, true);
+        const neu = http.expectOne(MEILENSTEINE);
+        expect(neu.request.method).toBe('GET');
+        neu.flush({ meilensteine: [] });
+      } finally {
+        jasmine.clock().uninstall();
+      }
     });
 
-    it('fragt nach einem anderen Fehler wieder', () => {
+    it('fragt den Status nach einem Wechsel der Anmeldung wieder', () => {
       service.getEigenePunkte().subscribe();
-      http.expectOne(PUNKTE).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });
+      status(false, false);
 
-      service.getEigenePunkte().subscribe();
-      http.expectOne(PUNKTE).flush({ tun: 0, quests: 0, wirkung: 0, gesamt: 0, sammelt: true });
+      TestBed.inject(AuthService).setUserInfo({ isAuthenticated: true, userId: 'kim', userName: 'Kim', claims: null });
+      service.getEigeneMeilensteine().subscribe();
+      status(true, true);
+      const neu = http.expectOne(MEILENSTEINE);
+      expect(neu.request.method).toBe('GET');
+      neu.flush({ meilensteine: [] });
     });
   });
 
@@ -326,6 +372,7 @@ describe('UsageTrackingService', () => {
     it('liest die Antwort', () => {
       let ergebnis: unknown;
       service.getAbzeichenSichtbarkeit().subscribe((stand) => (ergebnis = stand));
+      status();
       const stand = { gefragt: false, zeigen: null, aktueller_wortlaut: { kennung: '2026-11-09-b', text: 'x', mehr_dazu: 'y' } };
 
       http.expectOne(SICHTBARKEIT).flush(stand);
@@ -336,6 +383,7 @@ describe('UsageTrackingService', () => {
     it('liefert ohne Schalter (404) still null', () => {
       let ergebnis: unknown = 'unberuehrt';
       service.getAbzeichenSichtbarkeit().subscribe((stand) => (ergebnis = stand));
+      status();
 
       http.expectOne(SICHTBARKEIT).flush('weg', { status: 404, statusText: 'Not Found' });
 

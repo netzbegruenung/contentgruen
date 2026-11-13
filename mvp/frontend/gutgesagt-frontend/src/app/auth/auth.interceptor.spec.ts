@@ -178,6 +178,30 @@ describe('AuthInterceptor', () => {
     abmelden();
   }));
 
+  it('holt einen vorhandenen Hinweiskasten bei einem 403 in den Blick', fakeAsync(() => {
+    const zustand = TestBed.inject(Art9EinwilligungZustand);
+    const abmelden = zustand.hinweisAnmelden();
+    const gezeigt = spyOn(zustand, 'hinweisZeigen');
+    httpClient.post('/api/v1/einwuerfe', {}).subscribe({ error: () => undefined });
+
+    httpMock.expectOne('/api/v1/einwuerfe').flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(gezeigt).toHaveBeenCalledTimes(1);
+    abmelden();
+  }));
+
+  // Review zu #670: ein spaeter 403 (Satz beim Verlassen von Destillieren) laege sonst ueber den Knoepfen
+  it('zeigt auf /einwilligung selbst keine Snackbar', fakeAsync(() => {
+    (router as any).url = '/einwilligung?returnUrl=%2Fdestillieren%2Fe-1';
+    httpClient.put('/api/v1/rawinput/e-1/satz', {}).subscribe({ error: () => undefined });
+
+    httpMock.expectOne('/api/v1/rawinput/e-1/satz').flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(snackBar.open).not.toHaveBeenCalled();
+  }));
+
   it('leitet bei anderem 403 nicht um', fakeAsync(() => {
     (router as any).url = '/einwerfen';
     httpClient.post('/api/v1/moderation/x', {}).subscribe({ error: () => {} });

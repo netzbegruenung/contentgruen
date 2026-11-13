@@ -33,11 +33,11 @@ export const MELDER_EMAIL_MAX = 254;
 /**
  * Der Meldedialog. Der DSA gilt fuer Gut gesagt (#438).
  * Deshalb fragt er die Angaben nach Art. 16 Abs. 2 DSA ab: Name und E-Mail-Adresse
- * freiwillig, die Erklaerung guten Glaubens als Pflicht. Angemeldete fragt er nicht
- * nach dem Namen (UX-Review B17): Die Meldung haengt an ihrem Konto
- * (``reported_by_user_id``). Die E-Mail-Adresse bleibt fuer sie freiwillig, weil der
- * Suchdienst Bestaetigung und Entscheidung nur an eine hier angegebene Adresse
- * schickt, nicht an die des Kontos. Bestaetigt wird der Eingang
+ * freiwillig, die Erklaerung guten Glaubens als Pflicht. Angemeldete fragt er weder
+ * nach Name noch nach Adresse (UX-Review B17, Entscheidung Maintainer 13.11.2026): Die
+ * Meldung haengt an ihrem Konto (``reported_by_user_id``), und ein vorausgewaehltes
+ * Haekchen laesst den Suchdienst Bestaetigung und Entscheidung an die Adresse des
+ * Kontos schicken. Die Adresse kommt dort aus dem Konto (BFF), nie aus dem Dialog. Bestaetigt wird der Eingang
  * hier; mit E-Mail-Adresse schickt der Suchdienst die Bestaetigung und spaeter die
  * Entscheidung auch per Mail (#493, services/meldung_mitteilen.py).
  */
@@ -83,8 +83,10 @@ export class ReportDialogComponent {
   readonly reasons = MELDEGRUENDE;
   readonly nameMax = MELDER_NAME_MAX;
   readonly emailMax = MELDER_EMAIL_MAX;
-  /** Angemeldet: kein Namensfeld, die Meldung haengt am Konto. */
+  /** Angemeldet: kein Namens- und kein Adressfeld, die Meldung haengt am Konto. */
   readonly angemeldet: boolean;
+  /** Angemeldet: Bestaetigung und Entscheidung per Mail an das Konto; vorausgewaehlt. */
+  bestaetigungAnKonto = true;
 
   constructor(
     public dialogRef: MatDialogRef<ReportDialogComponent>,
@@ -122,7 +124,7 @@ export class ReportDialogComponent {
     if (this.begruendungPflicht && this.description.trim() === '') {
       fehlt.push({ text: 'die Begründung, warum der Beitrag rechtswidrig ist', endetMitNebensatz: true });
     }
-    if (fuerHinweis ? this.emailFehlerZeigen : this.emailUngueltig) {
+    if (!this.angemeldet && (fuerHinweis ? this.emailFehlerZeigen : this.emailUngueltig)) {
       fehlt.push({ text: 'eine gültige E-Mail-Adresse (oder das Feld leer lassen)' });
     }
     if (!this.guterGlaube) {
@@ -158,7 +160,8 @@ export class ReportDialogComponent {
     }
     this.submitting = true;
     this.error = null;
-    const melderEmail = this.melderEmail.trim() || null;
+    const melderEmail = this.angemeldet ? null : this.melderEmail.trim() || null;
+    const anKonto = this.angemeldet && this.bestaetigungAnKonto;
 
     this.moderationService.reportContent({
       contentId: this.data.contentId,
@@ -168,11 +171,12 @@ export class ReportDialogComponent {
       melderName: this.angemeldet ? null : this.melderName.trim() || null,
       melderEmail,
       guterGlaube: true,
+      ...(anKonto ? { bestaetigungAnKonto: true } : {}),
     }).subscribe({
       next: () => {
         this.submitting = false;
         this.submitted = true;
-        this.mitEmail = melderEmail !== null;
+        this.mitEmail = melderEmail !== null || anKonto;
       },
       error: (error) => {
         this.submitting = false;

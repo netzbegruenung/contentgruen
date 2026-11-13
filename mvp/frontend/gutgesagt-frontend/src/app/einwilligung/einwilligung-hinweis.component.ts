@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Input, NgZone, OnDestroy, OnInit, inject } from '@angular/core';
 import { AsyncPipe, NgIf } from '@angular/common';
 import { AbstractControl } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,9 +7,9 @@ import { map } from 'rxjs/operators';
 
 import { zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
+import { ENTWURF_PRAEFIX, entwurfHolen, entwurfSichern as entwurfAblegen } from './entwurf-vor-einwilligung';
 
-/** Unter diesem Praefix plus Adresse der Seite liegt eine begonnene Eingabe, solange die Person einwilligt. */
-export const ENTWURF_PRAEFIX = 'gutgesagt-entwurf-vor-einwilligung:';
+export { ENTWURF_PRAEFIX };
 
 export const EINWILLIGUNG_HINWEIS_TITEL = 'Zum Beitragen brauchst du deine Einwilligung.';
 export const EINWILLIGUNG_HINWEIS_TEXT =
@@ -25,6 +25,8 @@ export const EINWILLIGUNG_HINWEIS_KNOPF = 'Einwilligen';
  *
  * Solange der Kasten auf der Seite ist, zeigt der Interceptor bei einem 403 keinen
  * zweiten Hinweis als Snackbar; die Formulare zeigen dann auch keine Fehlermeldung.
+ * Stattdessen holt der Kasten sich in den Blick und nimmt den Fokus (Review zu #670):
+ * Auf langen Formularen steht er sonst ausser Sicht, und Absenden taete scheinbar nichts.
  */
 @Component({
   selector: 'app-einwilligung-hinweis',
@@ -32,7 +34,8 @@ export const EINWILLIGUNG_HINWEIS_KNOPF = 'Einwilligen';
   imports: [NgIf, AsyncPipe, MatButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div *ngIf="zeigen$ | async" class="hinweis-box einwilligung-hinweis" role="status" data-testid="einwilligung-hinweis">
+    <div *ngIf="zeigen$ | async" class="hinweis-box einwilligung-hinweis" role="status" tabindex="-1"
+         data-testid="einwilligung-hinweis">
       <p>
         <strong>{{ titel }}</strong>
         {{ text }}
@@ -54,6 +57,10 @@ export const EINWILLIGUNG_HINWEIS_KNOPF = 'Einwilligen';
       .einwilligung-hinweis p {
         flex: 1 1 240px;
       }
+      .einwilligung-hinweis:focus-visible {
+        outline: 2px solid var(--akzent-tanne);
+        outline-offset: 2px;
+      }
     `,
   ],
 })
@@ -66,16 +73,36 @@ export class EinwilligungHinweisComponent implements OnInit, OnDestroy {
   readonly knopf = EINWILLIGUNG_HINWEIS_KNOPF;
   private readonly zustand = inject(Art9EinwilligungZustand);
   private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly zone = inject(NgZone);
   readonly zeigen$ = this.zustand.zustand$.pipe(map((zustand) => zustand === 'fehlt'));
   private abmelden?: () => void;
+  private blickAbo?: { unsubscribe(): void };
 
   ngOnInit(): void {
     this.abmelden = this.zustand.hinweisAnmelden();
+    this.blickAbo = this.zustand.hinweisInDenBlick$.subscribe(() => this.inDenBlick());
     this.entwurfEinsetzen();
   }
 
   ngOnDestroy(): void {
     this.abmelden?.();
+    this.blickAbo?.unsubscribe();
+  }
+
+  /**
+   * Den Kasten zeigen und fokussieren. Nach dem Rendern: Er kann mit demselben 403 erst
+   * entstanden sein.
+   */
+  private inDenBlick(): void {
+    setTimeout(() =>
+      this.zone.run(() => {
+        const kasten = this.host.nativeElement.querySelector<HTMLElement>('.einwilligung-hinweis');
+        if (!kasten) return;
+        kasten.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+        kasten.focus({ preventScroll: true });
+      }),
+    );
   }
 
   einwilligen(): void {
@@ -83,31 +110,19 @@ export class EinwilligungHinweisComponent implements OnInit, OnDestroy {
     zurEinwilligungFuehren(this.router);
   }
 
-  private get schluessel(): string {
-    return ENTWURF_PRAEFIX + (this.router.url ?? '/');
+  private get adresse(): string {
+    return this.router.url ?? '/';
   }
 
   private entwurfSichern(): void {
-    if (!this.formular) return;
-    try {
-      sessionStorage.setItem(this.schluessel, JSON.stringify(this.formular.getRawValue()));
-    } catch {
-      // Ohne Speicher geht nur die Eingabe verloren; der Weg zur Einwilligung klappt.
-    }
+    if (this.formular) entwurfAblegen(this.adresse, this.formular.getRawValue());
   }
 
   /** Nur nicht leere Werte: Was die Seite selbst vorbelegt hat, bleibt sonst stehen. */
   private entwurfEinsetzen(): void {
     if (!this.formular) return;
-    let gelesen: unknown;
-    try {
-      const wert = sessionStorage.getItem(this.schluessel);
-      if (!wert) return;
-      sessionStorage.removeItem(this.schluessel);
-      gelesen = JSON.parse(wert);
-    } catch {
-      return;
-    }
+    const gelesen = entwurfHolen(this.adresse);
+    if (gelesen === undefined) return;
     if (gelesen !== null && typeof gelesen === 'object' && !Array.isArray(gelesen)) {
       const nichtLeer = Object.fromEntries(
         Object.entries(gelesen as Record<string, unknown>).filter(([, v]) => !leer(v)),

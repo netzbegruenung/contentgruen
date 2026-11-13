@@ -1,9 +1,14 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { FormControl, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { ENTWURF_PRAEFIX, EinwilligungHinweisComponent } from './einwilligung-hinweis.component';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
+import { ENTWURF_HOECHSTENS_MS } from './entwurf-vor-einwilligung';
+
+function ablegen(werte: unknown, zeit = Date.now()): void {
+  sessionStorage.setItem(ENTWURF_PRAEFIX + '/einwerfen?von=fangkorb', JSON.stringify({ zeit, werte }));
+}
 
 /** UX-Review B4: Hinweis mit „Einwilligen“ über dem Formular, die Eingabe übersteht den Umweg. */
 describe('EinwilligungHinweisComponent', () => {
@@ -69,15 +74,14 @@ describe('EinwilligungHinweisComponent', () => {
 
     (kasten()!.querySelector('button') as HTMLButtonElement).click();
 
-    expect(JSON.parse(sessionStorage.getItem(ENTWURF_PRAEFIX + ADRESSE)!)).toEqual({
-      link: 'https://example.org/a',
-      hinweis: 'Schon getippt',
-    });
+    const abgelegt = JSON.parse(sessionStorage.getItem(ENTWURF_PRAEFIX + ADRESSE)!);
+    expect(abgelegt.werte).toEqual({ link: 'https://example.org/a', hinweis: 'Schon getippt' });
+    expect(typeof abgelegt.zeit).toBe('number');
     expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], { queryParams: { returnUrl: ADRESSE } });
   });
 
   it('setzt eine gesicherte Eingabe beim Zurueckkommen wieder ein, einmal, und laesst Vorbelegtes bei leeren Feldern', () => {
-    sessionStorage.setItem(ENTWURF_PRAEFIX + ADRESSE, JSON.stringify({ link: '', hinweis: 'Schon getippt' }));
+    ablegen({ link: '', hinweis: 'Schon getippt' });
     formular.setValue({ link: 'https://vorbelegt.example/', hinweis: '' });
 
     erstellen();
@@ -88,7 +92,7 @@ describe('EinwilligungHinweisComponent', () => {
 
   it('setzt auch den Wert eines einzelnen Felds wieder ein (Satz beim Destillieren)', () => {
     const satz = new FormControl('');
-    sessionStorage.setItem(ENTWURF_PRAEFIX + ADRESSE, JSON.stringify('Mein Satz'));
+    ablegen('Mein Satz');
     fixture = TestBed.createComponent(EinwilligungHinweisComponent);
     fixture.componentInstance.formular = satz;
     fixture.detectChanges();
@@ -105,4 +109,31 @@ describe('EinwilligungHinweisComponent', () => {
 
     expect(router.navigate).toHaveBeenCalled();
   });
+  // Review zu #670: Entwuerfe von vor der Einwilligung liegen nicht laenger als noetig
+  it('verwirft einen Entwurf, der aelter als eine Stunde ist, und einen ohne Zeitpunkt', () => {
+    ablegen({ link: '', hinweis: 'Von gestern' }, Date.now() - ENTWURF_HOECHSTENS_MS - 1000);
+    erstellen();
+    expect(formular.value.hinweis).toBe('');
+    expect(sessionStorage.getItem(ENTWURF_PRAEFIX + ADRESSE)).toBeNull();
+
+    sessionStorage.setItem(ENTWURF_PRAEFIX + ADRESSE, JSON.stringify({ link: '', hinweis: 'Altes Format' }));
+    fixture.destroy();
+    erstellen();
+    expect(formular.value.hinweis).toBe('');
+  });
+
+  // Review zu #670: Absenden mit Kasten soll sichtbar etwas tun
+  it('holt sich bei einem weiteren 403 in den Blick und nimmt den Fokus', fakeAsync(() => {
+    zustand.setzen('fehlt');
+    erstellen();
+    const kastenElement = kasten()!;
+    const scroll = jasmine.createSpy('scrollIntoView');
+    kastenElement.scrollIntoView = scroll;
+
+    zustand.hinweisZeigen();
+    tick();
+
+    expect(scroll).toHaveBeenCalled();
+    expect(document.activeElement).toBe(kastenElement);
+  }));
 });

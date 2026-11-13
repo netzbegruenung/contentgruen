@@ -6,7 +6,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PublicEndpoints } from '../shared/public-endpoints';
-import { einwilligungFehlt, zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
+import { einwilligungFehlt, ohneEinwilligungsUmleitung, zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 export const EINWILLIGUNG_FEHLT_HINWEIS = 'Zum Beitragen und Bewerten brauchst du deine Einwilligung.';
@@ -38,10 +38,15 @@ export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
       // ersetzte der sonst diesen, und der Knopf waere weg.
       // Hat die Seite einen eigenen Hinweiskasten (Formulare, B4), zeigt der den
       // Hinweis; ein zweiter als Snackbar waere doppelt.
+      // Auf /einwilligung selbst (und was sie verlinkt) keine Snackbar: Ein spaeter 403,
+      // etwa der Satz beim Verlassen von Destillieren, laege sonst ueber ihren Knoepfen,
+      // und sein "Einwilligen" fuehrte nirgendwohin (Review zu #670).
+      const einwilligungHier = einwilligungFehlt(error) && ohneEinwilligungsUmleitung(router.url ?? '/');
       if (einwilligungFehlt(error)) {
         einwilligungZustand.setzen('fehlt');
+        if (einwilligungZustand.hinweisDa && !einwilligungHier) einwilligungZustand.hinweisZeigen();
       }
-      if (einwilligungFehlt(error) && !einwilligungZustand.hinweisDa) {
+      if (einwilligungFehlt(error) && !einwilligungZustand.hinweisDa && !einwilligungHier) {
         setTimeout(() =>
           snackBar
             .open(EINWILLIGUNG_FEHLT_HINWEIS, 'Einwilligen', { duration: HINWEIS_DAUER_MS })

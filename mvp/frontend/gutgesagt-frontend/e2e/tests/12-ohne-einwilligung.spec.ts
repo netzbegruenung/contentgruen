@@ -58,9 +58,11 @@ test('Ohne Einwilligung: Hinweis im Formular, kein "erneut versuchen", Eingabe u
   await expect(kasten).toContainText('Zum Beitragen brauchst du deine Einwilligung.');
   await page.locator('#einwurf-hinweis').fill(hinweis);
 
-  // Trotzdem absenden: 403, der Kasten bleibt, keine Fehlermeldung, keine Snackbar
+  // Trotzdem absenden: 403, der Kasten kommt in den Blick und hat den Fokus,
+  // keine Fehlermeldung, keine Snackbar
   await page.getByRole('button', { name: 'Einwerfen' }).click();
-  await expect(kasten).toBeVisible();
+  await expect(kasten).toBeFocused();
+  await expect(kasten).toBeInViewport();
   await expect(page.locator('.einwurf-rueckmeldung .fehler')).toHaveCount(0);
   await expect(page.locator('mat-snack-bar-container')).toHaveCount(0);
   await bild('12b-einwerfen-ohne-einwilligung');

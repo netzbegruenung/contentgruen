@@ -29,6 +29,17 @@ public static class IdentityHeaderTransform
     /// </summary>
     public const string DisplayNameHeader = "X-User-Display-Name";
 
+    /// <summary>
+    /// E-Mail-Adresse des Kontos, prozentkodiert wie der Anzeigename. Nur auf dem Meldeweg
+    /// (<see cref="KontoAdressePfade"/>): Dort nimmt der Suchdienst sie fuer Bestaetigung
+    /// und Entscheidung, wenn die angemeldete Person das Haekchen setzt (DSA Art. 16 Abs. 4
+    /// und 5, UX-Review B17). Sonst geht die Adresse nicht an den Suchdienst.
+    /// </summary>
+    public const string EmailHeader = "X-User-Email";
+
+    /// <summary>Die einzigen Pfade, an die das BFF die Adresse des Kontos weitergibt.</summary>
+    public static readonly string[] KontoAdressePfade = { "/api/v1/moderation/report" };
+
     public const string AnonymousUser = "anonymous";
 
     /// <summary>
@@ -54,6 +65,7 @@ public static class IdentityHeaderTransform
         "X-User-Id",
         "X-User-Name",
         DisplayNameHeader,
+        EmailHeader,
         "X-Roles",
         "X-Is-Authenticated",
         SessionHeader
@@ -91,6 +103,13 @@ public static class IdentityHeaderTransform
             if (anzeigename is not null)
             {
                 SetSingleValue(proxyRequest, DisplayNameHeader, Uri.EscapeDataString(anzeigename));
+            }
+
+            // Die Adresse selbst steht in keinem Log.
+            var adresse = user.FindFirst(ClaimTypes.Email)?.Value ?? user.FindFirst("email")?.Value;
+            if (!string.IsNullOrWhiteSpace(adresse) && EndpointPolicy.Matches(KontoAdressePfade, path))
+            {
+                SetSingleValue(proxyRequest, EmailHeader, Uri.EscapeDataString(adresse.Trim()));
             }
 
             if (AdminPolicy.IsAdmin(user, adminUserIds))

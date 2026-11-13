@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { distinctUntilChanged } from 'rxjs/operators';
 
 /**
@@ -25,6 +25,9 @@ export class Art9EinwilligungZustand {
   private readonly stand = new BehaviorSubject<Art9Zustand>('unbekannt');
   readonly zustand$ = this.stand.asObservable().pipe(distinctUntilChanged());
   private hinweise = 0;
+  private readonly inDenBlick = new Subject<void>();
+  /** Ein 403 kam, waehrend ein Hinweiskasten auf der Seite ist: Er soll sich zeigen. */
+  readonly hinweisInDenBlick$ = this.inDenBlick.asObservable();
 
   get wert(): Art9Zustand {
     return this.stand.value;
@@ -44,6 +47,11 @@ export class Art9EinwilligungZustand {
         this.hinweise -= 1;
       }
     };
+  }
+
+  /** Den Hinweiskasten der Seite in den Blick holen und fokussieren. */
+  hinweisZeigen(): void {
+    this.inDenBlick.next();
   }
 
   /** Ob die Seite einen eigenen Hinweiskasten hat. */

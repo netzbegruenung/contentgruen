@@ -301,8 +301,8 @@ describe('ReportDialogComponent', () => {
       'Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.',
     );
   });
-  // UX-Review B17: Angemeldete nicht nach dem Namen fragen, die Meldung haengt am Konto.
-  // Die E-Mail-Adresse bleibt: Bestaetigung und Entscheidung gehen nur an eine hier angegebene.
+  // UX-Review B17 (Entscheidung Maintainer 13.11.2026): Angemeldete tippen weder Name noch
+  // Adresse; ein vorausgewaehltes Haekchen laesst den Suchdienst die Adresse des Kontos nehmen.
   describe('angemeldet', () => {
     beforeEach(async () => {
       spyOn(TestBed.inject(AuthService), 'getUserInfo').and.returnValue({
@@ -314,16 +314,26 @@ describe('ReportDialogComponent', () => {
       fixture = TestBed.createComponent(ReportDialogComponent);
       fixture.detectChanges();
       await fixture.whenStable();
+      fixture.detectChanges();
     });
 
-    it('fragt nicht nach dem Namen, behaelt die freiwillige E-Mail-Adresse', () => {
+    function anKonto(): HTMLInputElement {
+      return element().querySelector('[data-testid="melden-an-konto"] input') as HTMLInputElement;
+    }
+
+    it('fragt weder nach Name noch nach Adresse und bietet das Haekchen vorausgewaehlt an', () => {
       expect(element().querySelector('input[name="melder_name"]')).toBeNull();
-      expect(element().querySelector('input[name="melder_email"]')).not.toBeNull();
-      expect(element().textContent).toContain('Deine E-Mail-Adresse sehen nur Admins.');
+      expect(element().querySelector('input[name="melder_email"]')).toBeNull();
+      expect(element().querySelector('[data-testid="melden-an-konto"]')!.textContent).toContain(
+        'Bestätigung und Entscheidung per Mail an mein Konto',
+      );
+      expect(anKonto().checked).toBeTrue();
+      expect(element().textContent).toContain('Die Adresse deines Kontos sehen nur Admins, und nur mit Häkchen.');
     });
 
-    it('schickt keinen Namen mit', async () => {
+    it('schickt mit Haekchen bestaetigung_an_konto, aber weder Name noch Adresse, und kuendigt die Mail an', async () => {
       fixture.componentInstance.melderName = 'Liegengeblieben';
+      fixture.componentInstance.melderEmail = 'liegengeblieben@example.com';
       await grundWaehlen();
       await gutenGlaubenErklaeren();
 
@@ -331,7 +341,29 @@ describe('ReportDialogComponent', () => {
 
       const anfrage = http.expectOne(URL);
       expect(anfrage.request.body.melder_name).toBeNull();
+      expect(anfrage.request.body.melder_email).toBeNull();
+      expect(anfrage.request.body.bestaetigung_an_konto).toBeTrue();
       anfrage.flush({ success: true, message: '' });
+      fixture.detectChanges();
+      expect(element().querySelector('[role="status"]')!.textContent).toContain(
+        'Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.',
+      );
+    });
+
+    it('schickt ohne Haekchen keine Bitte um Mail und kuendigt keine an', async () => {
+      anKonto().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await grundWaehlen();
+      await gutenGlaubenErklaeren();
+
+      await melden();
+
+      const anfrage = http.expectOne(URL);
+      expect(anfrage.request.body.bestaetigung_an_konto).toBeUndefined();
+      anfrage.flush({ success: true, message: '' });
+      fixture.detectChanges();
+      expect(element().querySelector('[role="status"]')!.textContent).not.toContain('per E-Mail');
     });
   });
 });

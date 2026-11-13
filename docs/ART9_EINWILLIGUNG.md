@@ -28,7 +28,11 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   Erst beim Beitragen zeigen die Formulare (Einwerfen, Satz beim Destillieren, Kommentar,
   Hintergrundinfo, Bild, Post, auch beim Ausformulieren) über dem Formular einen Hinweis mit
   „Einwilligen“ (`EinwilligungHinweisComponent`); eine schon begonnene Eingabe liegt so lange
-  im `sessionStorage` und steht nach der Rückkehr wieder im Formular.
+  im `sessionStorage` und steht nach der Rückkehr wieder im Formular
+  (`entwurf-vor-einwilligung.ts`: höchstens eine Stunde, beim Abmelden und Kontowechsel
+  gelöscht). Wer trotzdem absendet, bekommt den Kasten in den Blick geholt und fokussiert;
+  auf `/einwilligung` selbst zeigt ein später 403 keine Snackbar. Die Einträge im Browser
+  fehlen noch in der Datenschutzerklärung (`docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N16.md`).
 - **Widerruf mit Rückfrage (UX-Review B3):** „Einwilligung widerrufen“ und „Frühere
   Einwilligung widerrufen“ fragen erst nach und nennen die Folgen (Bewertungen gelöscht,
   Löschauftrag binnen sieben Tagen); widerrufen wird nur mit „Widerrufen“.

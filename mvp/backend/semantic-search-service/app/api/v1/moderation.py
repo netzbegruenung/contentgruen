@@ -7,7 +7,17 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from urllib.parse import unquote
+
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from domain.models.meldegrund import Meldegrund, beschreibung_fehlt
 from domain.models.meldung import (
@@ -77,6 +87,14 @@ class ReportContentRequest(BaseModel):
         None,
         max_length=MELDER_EMAIL_MAX,
         description="Optional: E-Mail-Adresse fuer die Mitteilung der Entscheidung",
+    )
+    # Angemeldete geben keine Adresse ein (UX-Review B17, Entscheidung Maintainer
+    # 13.11.2026): Mit diesem Haekchen nimmt der Suchdienst die Adresse ihres Kontos,
+    # die das BFF nur auf diesem Pfad als X-User-Email mitschickt. Ohne Haekchen wird
+    # keine Adresse gespeichert. Fuer Besucher ohne Bedeutung.
+    bestaetigung_an_konto: bool = Field(
+        False,
+        description="Angemeldet: Bestaetigung und Entscheidung an die Adresse des Kontos",
     )
     # Die Erklaerung guten Glaubens (lit. d) ist Pflicht: Ohne sie ist eine
     # Meldung nach Abs. 3 nicht vollstaendig.
@@ -227,12 +245,39 @@ class ReportStatsResponse(BaseModel):
     by_status: dict
 
 
+_EMAIL = TypeAdapter(EmailStr)
+
+
+def _melder_email(
+    request: "ReportContentRequest", angemeldet: bool, konto_email: Optional[str]
+) -> Optional[str]:
+    """
+    Die Adresse fuer Bestaetigung und Entscheidung (DSA Art. 16 Abs. 4 und 5).
+
+    Besucher geben sie selbst ein. Fuer Angemeldete zaehlt nur die Adresse des Kontos,
+    die das BFF setzt (X-User-Email, prozentkodiert), und nur mit Haekchen; eine im
+    Koerper mitgeschickte Adresse wird verworfen (UX-Review B17). Ist die Kontoadresse
+    keine gueltige Adresse, wird keine gespeichert. Die Adresse steht in keinem Log.
+    """
+    if not angemeldet:
+        return request.melder_email
+    if not request.bestaetigung_an_konto or not konto_email:
+        return None
+    try:
+        adresse = _EMAIL.validate_python(unquote(konto_email).strip())
+    except ValidationError:
+        logger.warning("Kontoadresse fuer die Meldung ist keine gueltige Adresse")
+        return None
+    return adresse if len(adresse) <= MELDER_EMAIL_MAX else None
+
+
 # Public Endpoint - Report Content
 @router.post("/report", response_model=ReportContentResponse)
 async def report_content(
     request: ReportContentRequest,
     http_request: Request,
     x_user_id: Optional[str] = Header(None, alias="X-User"),
+    x_user_email: Optional[str] = Header(None, alias="X-User-Email"),
     settings: Settings = Depends(get_settings),
     moderation_service: ModerationService = Depends(get_moderation_service),
 ):
@@ -300,7 +345,7 @@ async def report_content(
             melder=MelderAngaben(
                 guter_glaube=request.guter_glaube,
                 name=request.melder_name,
-                email=request.melder_email,
+                email=_melder_email(request, is_authenticated, x_user_email),
             ),
         )
 

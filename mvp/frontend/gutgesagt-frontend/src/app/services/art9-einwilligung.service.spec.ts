@@ -17,6 +17,7 @@ import {
   zurEinwilligungUmleiten,
 } from './art9-einwilligung.service';
 import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
+import { entwurfHolen, entwurfSichern } from '../einwilligung/entwurf-vor-einwilligung';
 
 /** Nach dem Anmelden ohne Art.-9-Einwilligung auf /einwilligung fuehren (#489). */
 describe('Art9EinwilligungService', () => {
@@ -358,6 +359,24 @@ describe('Art9EinwilligungService', () => {
       // Zum aktuellen schon ohne weiter: nicht noch einmal
       expect(zurEinwilligungUmleiten(frueher, '2026-11-13')).toBeFalse();
     });
+  });
+
+  // Review zu #670: Beitragstext von vor der Einwilligung nicht ueber Abmelden und Kontowechsel
+  it('loescht begonnene Eingaben beim Abmelden und Kontowechsel, nicht beim App-Start', () => {
+    entwurfSichern('/einwerfen', 'vor dem Start');
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+    http.expectOne(ADRESSE).flush(stand(true));
+    expect(entwurfHolen('/einwerfen')).toBe('vor dem Start');
+
+    entwurfSichern('/einwerfen', 'von kim');
+    anmeldung.next(angemeldet('alex'));
+    http.expectOne(ADRESSE).flush(stand(true));
+    expect(entwurfHolen('/einwerfen')).toBeUndefined();
+
+    entwurfSichern('/einwerfen', 'von alex');
+    anmeldung.next(null);
+    expect(entwurfHolen('/einwerfen')).toBeUndefined();
   });
 
   it('einwilligungFehlt erkennt nur 403 mit Kennzeichen', () => {

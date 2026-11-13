@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { EinwilligungComponent, WIDERRUF_FRAGE } from './einwilligung.component';
 import { Art9EinwilligungService, Art9EinwilligungStand } from '../services/art9-einwilligung.service';
 import { environment } from '../../environments/environment';
@@ -263,6 +263,22 @@ describe('EinwilligungComponent', () => {
       expect(daten.text).toContain('sieben Tagen');
       http.expectOne({ method: 'DELETE', url: URL }).flush(null, { status: 204, statusText: 'No Content' });
       standLiefern(stand({ wortlaut: '2026-11-05', widerrufen_am: '2026-11-06T09:30:00Z' }));
+    });
+
+    it('oeffnet bei einem Doppelklick nur eine Rueckfrage', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+      const offen = new Subject<boolean>();
+      dialog.open.and.callFake((() => ({ afterClosed: () => offen.asObservable() })) as any);
+
+      knopf('Einwilligung widerrufen').click();
+      knopf('Einwilligung widerrufen').click();
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+
+      offen.next(false);
+      offen.complete();
+      knopf('Einwilligung widerrufen').click();
+      expect(dialog.open).toHaveBeenCalledTimes(2);
     });
 
     it('widerruft nach Abbrechen nicht', () => {

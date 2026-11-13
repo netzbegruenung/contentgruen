@@ -150,6 +150,7 @@ public class IdentityHeaderTransformTests
     [InlineData("X-User-Id")]
     [InlineData("X-User-Name")]
     [InlineData(IdentityHeaderTransform.DisplayNameHeader)]
+    [InlineData(IdentityHeaderTransform.EmailHeader)]
     [InlineData("X-Roles")]
     [InlineData("X-Is-Authenticated")]
     public void Apply_StripsEveryClientControlledIdentityHeader(string header)
@@ -209,6 +210,52 @@ public class IdentityHeaderTransformTests
         var werte = ValuesOf(proxyRequest, IdentityHeaderTransform.DisplayNameHeader);
         Assert.Equal(new[] { "J%C3%BCrgen%20%C3%96." }, werte);
         Assert.Equal("Jürgen Ö.", Uri.UnescapeDataString(werte[0]));
+    }
+
+    private const string ReportPath = "/api/v1/moderation/report";
+
+    private static ClaimsPrincipal UserWithEmail(string claimType) =>
+        new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "echte-kennung"),
+            new Claim(claimType, "test.user@example.com")
+        }, "TestAuth"));
+
+    [Theory]
+    [InlineData(ClaimTypes.Email)]
+    [InlineData("email")]
+    public void Apply_AuthenticatedOnReport_SetsAccountEmailOnce(string claimType)
+    {
+        // Die Adresse kommt aus dem Konto, nie vom Client (UX-Review B17).
+        var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.EmailHeader, "fremd@example.com"));
+
+        IdentityHeaderTransform.Apply(proxyRequest, UserWithEmail(claimType), ReportPath, NoAllowlist, Logger);
+
+        var werte = ValuesOf(proxyRequest, IdentityHeaderTransform.EmailHeader);
+        Assert.Equal(new[] { "test.user%40example.com" }, werte);
+        Assert.Equal("test.user@example.com", Uri.UnescapeDataString(werte[0]));
+    }
+
+    [Theory]
+    [InlineData(ProtectedPath)]
+    [InlineData("/api/v1/moderation/reports")]   // Segmentgrenze: Admin-Liste
+    public void Apply_AuthenticatedElsewhere_SetsNoEmail(string path)
+    {
+        var proxyRequest = new HttpRequestMessage();
+
+        IdentityHeaderTransform.Apply(proxyRequest, UserWithEmail(ClaimTypes.Email), path, NoAllowlist, Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.EmailHeader));
+    }
+
+    [Fact]
+    public void Apply_AnonymousOnReport_SetsNoEmail()
+    {
+        var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.EmailHeader, "fremd@example.com"));
+
+        IdentityHeaderTransform.Apply(proxyRequest, AnonymousUser(), ReportPath, NoAllowlist, Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.EmailHeader));
     }
 
     [Fact]

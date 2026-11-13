@@ -37,7 +37,13 @@
              autocomplete="name" />
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <!-- Angemeldete: keine Adresse eintippen, die des Kontos nimmt der Suchdienst (B17) -->
+    <mat-checkbox *ngIf="angemeldet" data-testid="melden-an-konto" [(ngModel)]="bestaetigungAnKonto"
+                  class="an-konto">
+      Bestätigung und Entscheidung per Mail an mein Konto
+    </mat-checkbox>
+
+    <mat-form-field *ngIf="!angemeldet" appearance="outline" class="full-width">
       <mat-label>Deine E-Mail-Adresse (optional)</mat-label>
       <input matInput
              type="email"
@@ -51,7 +57,7 @@
       <mat-hint *ngIf="!emailFehlerZeigen">Nur wenn du Bestätigung und Entscheidung per E-Mail willst.</mat-hint>
     </mat-form-field>
     <!-- Erst nach dem Verlassen des Feldes, sonst kündigt ein Screenreader den Fehler bei jedem Zeichen an. -->
-    <p *ngIf="emailFehlerZeigen" id="melder-email-fehler" class="feld-fehler" role="alert">Das ist keine E-Mail-Adresse.</p>
+    <p *ngIf="!angemeldet && emailFehlerZeigen" id="melder-email-fehler" class="feld-fehler" role="alert">Das ist keine E-Mail-Adresse.</p>
 
     <mat-checkbox data-testid="melden-guter-glaube"
                   [(ngModel)]="guterGlaube"
@@ -65,7 +71,7 @@
     </p>
 
     <p class="hinweis">
-      {{ angemeldet ? 'Deine E-Mail-Adresse sehen nur Admins.' : 'Name und E-Mail-Adresse sehen nur Admins.' }} Mehr dazu in der
+      {{ angemeldet ? 'Die Adresse deines Kontos sehen nur Admins, und nur mit Häkchen.' : 'Name und E-Mail-Adresse sehen nur Admins.' }} Mehr dazu in der
       <a href="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
     </p>
 

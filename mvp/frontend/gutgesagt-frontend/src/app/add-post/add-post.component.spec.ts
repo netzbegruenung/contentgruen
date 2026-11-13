@@ -135,6 +135,19 @@ describe('AddPostComponent', () => {
     expect(component.postForm.get('url')!.hasError('pattern')).toBeTrue();
   });
 
+  // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+  it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', () => {
+    spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+    component.postForm.patchValue(WERTE);
+
+    component.speichern();
+    fixture.detectChanges();
+
+    expect(component.fehler).toBeNull();
+    expect(component.speichert).toBeFalse();
+    expect(component.postForm.value.title).toBe(WERTE.title);
+  });
+
   it('behaelt nach gescheitertem Speichern die Eingaben und meldet den Fehler', () => {
     spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(throwError(() => ({ status: 500 })));
     component.postForm.patchValue(WERTE);

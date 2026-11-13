@@ -321,6 +321,18 @@ describe('DestillierenComponent', () => {
       expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformulieren');
     });
 
+    // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+    it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung', async () => {
+      await erstellen('id-1');
+      einwurfService.satzSpeichern.and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+      component.satz.setValue('Noch nicht ganz', { emitEvent: false });
+
+      knopf('spaeter')!.click();
+
+      expect(component.fehler).toBeNull();
+      expect(component.satz.value).toBe('Noch nicht ganz');
+    });
+
     it('stellt bei gescheitertem Speichern nichts zurueck', async () => {
       await erstellen('id-1');
       einwurfService.satzSpeichern.and.returnValue(throwError(() => ({ status: 500 })));

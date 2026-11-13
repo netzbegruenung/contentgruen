@@ -7,6 +7,7 @@ import { catchError, distinctUntilChanged, filter, map, switchMap, take, tap } f
 import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
+import { entwuerfeLoeschen } from '../einwilligung/entwurf-vor-einwilligung';
 
 /**
  * Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum, ein zweiter
@@ -76,6 +77,12 @@ function pfadVon(url: string): string {
   return url.split(/[?#]/)[0];
 }
 
+/** Ob ``url`` die Einwilligung selbst, eine von ihr verlinkte Seite oder die Anmeldung ist. */
+export function ohneEinwilligungsUmleitung(url: string): boolean {
+  const pfad = pfadVon(url);
+  return OHNE_UMLEITUNG.some((seite) => pfad === seite || pfad.startsWith(`${seite}/`));
+}
+
 /**
  * Auf /einwilligung fuehren und danach an die jetzige Stelle zurueck; nicht von der
  * Seite selbst, von dem, was sie verlinkt, und von der Anmeldung aus. Eine Funktion
@@ -84,8 +91,7 @@ function pfadVon(url: string): string {
  */
 export function zurEinwilligungFuehren(router: Router): void {
   const hier = router.url ?? '/';
-  const pfad = pfadVon(hier);
-  if (OHNE_UMLEITUNG.some((seite) => pfad === seite || pfad.startsWith(`${seite}/`))) {
+  if (ohneEinwilligungsUmleitung(hier)) {
     return;
   }
   router.navigate([EINWILLIGUNG_PFAD], { queryParams: { returnUrl: hier } });
@@ -235,6 +241,10 @@ export class Art9EinwilligungService implements OnDestroy {
         map((info) => (info?.isAuthenticated ? info.userId : null)),
         distinctUntilChanged(),
         tap((kennung) => {
+          // Abmelden oder anderes Konto: begonnene Eingaben von vor der Einwilligung weg.
+          // Nicht beim ersten Wert (null beim App-Start), sonst ginge ein Entwurf ueber ein
+          // Neuladen verloren.
+          if (this.kennung !== null && this.kennung !== kennung) entwuerfeLoeschen();
           this.kennung = kennung;
           this.geklaertSetzen(null); // abgemeldet oder andere Person: neu klaeren
           this.zustand.setzen('unbekannt');
