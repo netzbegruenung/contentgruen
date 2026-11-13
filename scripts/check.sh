@@ -79,10 +79,11 @@ if laeuft integration; then
   # traceback rerun the failing test with pytest directly.
   # A test hanging longer than 5 min dumps the stacks of all threads (faulthandler), the
   # whole step stops after INTEGRATION_ZEITLIMIT (SIGINT, so pytest still prints its summary):
-  # main pipeline 1257 sat silent for 46 min until Woodpecker cancelled it.
+  # main pipeline 1257 sat silent for 46 min until Woodpecker cancelled it. The summary keeps
+  # the stack dump and the interrupt lines (CI shows everything, CHECK_VOLL=1).
   INTEGRATION_STACK_PFLICHT=1 timeout -s INT -k 60 "${INTEGRATION_ZEITLIMIT:-25m}" \
     ./venv/bin/python -m pytest app/tests/integration/ -q -rfEs -o faulthandler_timeout=300 2>&1 \
-    | kurz '^(SKIPPED|FAILED|ERROR|Exit: )|^- .*[^!]$|^=+ .*[0-9.]+s( \([0-9:]+\))? =+$' 40
+    | kurz '^(SKIPPED|FAILED|ERROR|Exit: |Timeout \(|Thread 0x|  File ")|KeyboardInterrupt|^- .*[^!]$|^=+ .*[0-9.]+s( \([0-9:]+\))? =+$' 80
   test "${PIPESTATUS[0]}" -eq 0
 fi
 
