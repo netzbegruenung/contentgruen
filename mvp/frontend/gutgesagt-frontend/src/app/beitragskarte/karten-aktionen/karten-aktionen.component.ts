@@ -228,7 +228,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    * kopiert!“. Ein Klick auf „Ja, gepostet“ zählt die Person einmal je Woche als
    * öffentlich gekontert; welcher Beitrag, erfährt der Server dabei nicht.
    *
-   * Hat der Text noch eine Lücke „[Hier …]“ (#640), bleibt es beim Hinweis aufs
+   * Hat der Text noch einen Platzhalter „[Hier …]“ (#640), bleibt es beim Hinweis aufs
    * Ausfüllen: Gepostet sein kann der Text dann noch nicht.
    */
   private kopiertMelden(text: string): void {
@@ -405,7 +405,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       .open('Bitte melde dich an, um abzustimmen', 'Anmelden', { duration: 5000 })
       .onAction()
       .subscribe(() => {
-        this.authService.login();
+        // Zurueck auf diese Seite samt Suche, dort sagt ein Satz, dass Abstimmen jetzt geht
+        this.authService.login('abstimmen');
       });
   }
 

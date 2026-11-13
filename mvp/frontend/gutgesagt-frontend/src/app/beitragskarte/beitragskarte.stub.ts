@@ -18,4 +18,6 @@ export class BeitragskarteStubComponent {
   @Input() vorschau = false;
   @Input() abstimmenSichtbar = true;
   @Input() ansichtVerlinkt = true;
+  @Input() titelEbene: 3 | 4 = 3;
+  @Input() antwortAufZeigen = true;
 }
