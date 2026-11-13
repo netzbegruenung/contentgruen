@@ -54,10 +54,17 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   Transaktion löscht der Widerruf alle Stimmen der Person (`Art9EinwilligungService.widerrufen`,
   Art. 17 Abs. 1 lit. b DSGVO, juristische Vorprüfung vom 12.11.2026); scheitert das, gilt auch
   der Widerruf nicht, die Antwort ist 500, und die Person kann über die Seite erneut widerrufen.
-  Das Abzeichen nimmt der Endpunkt vorher und unabhängig davon zurück. Beiträge, Einwürfe und Sätze bleiben, bis die Person sie
-  löscht oder ihr Konto löschen lässt (Löschkonzept). **Offen:** Nach derselben Vorprüfung müssten
-  auch sie beim Widerruf ihren Bezug zur Person verlieren wie bei der Kontolöschung; das ist nicht
-  gebaut, und der Wortlaut verspricht es deshalb nicht. Eine neue
+  Das Abzeichen nimmt der Endpunkt vorher und unabhängig davon zurück. In derselben Transaktion
+  legt der Widerruf auch einen **Löschauftrag** an (Frist sieben Tage, je Person höchstens ein
+  offener): Ein Admin führt unter „Moderation“, „Löschaufträge“ den Löschablauf aus, danach
+  zeigen ihre Beiträge „ehemalige Person“, ihre Einwürfe sind gelöscht und ihre Sätze an fremden
+  Einwürfen tragen einen Platzhalter; Konto, Anzeigename und diese Zeile bleiben
+  (`docs/LOESCHKONZEPT.md`, „Löschauftrag nach dem Widerruf“, DSFA R9b). Bis dahin bleiben
+  Beiträge, Einwürfe und Sätze an der Person. **Offen:** Der Wortlaut `2026-11-12` sagt noch,
+  das übrige Gespeicherte bleibe bis zur eigenen Löschung oder Kontolöschung; das stimmt nicht
+  mehr, ein neuer Wortlaut braucht ein eigenes Ticket. Willigt die Person vor der Ausführung neu
+  ein, bleibt der Auftrag offen und erfasst beim Ausführen auch, was sie danach beiträgt
+  (**offen**, Entscheidung Maintainer). Eine neue
   Einwilligung ist eine neue Zeile; die früheren bleiben. Jede Prüfung fragt die Datenbank,
   damit ein Widerruf und das Löschkommando sofort wirken.
 - **Startkonten und Import:** Auch ein Startkonto willigt einmal in der App ein, bevor es

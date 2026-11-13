@@ -58,6 +58,22 @@ def stimmen(repository, monkeypatch):
     return ersatz
 
 
+@pytest.fixture
+def loeschauftraege(repository, stimmen, monkeypatch):
+    """Der Loeschauftrag, den der Widerruf anlegt (DSFA R9b); ersetzt die Datenbank."""
+    from unittest.mock import MagicMock
+
+    import services.art9_einwilligung_service as modul
+
+    ersatz = MagicMock()
+    monkeypatch.setattr(
+        modul,
+        "_service",
+        modul.Art9EinwilligungService(repository, stimmen, ersatz),
+    )
+    return ersatz
+
+
 class TestStand:
     def test_get_ohne_anmeldung_401(self, client):
         assert client.get(BASIS).status_code == 401
@@ -254,6 +270,38 @@ class TestWiderrufen:
             "user-001", session=sitzung
         )
 
+    def test_delete_legt_den_loeschauftrag_in_der_transaktion_des_widerrufs_an(
+        self, client, repository, stimmen, loeschauftraege
+    ):
+        """
+        Beitraege, Einwuerfe und Saetze verlieren den Personenbezug, sobald ein Admin
+        den Auftrag ausfuehrt; angelegt wird er in der Sitzung des Vermerks.
+        """
+        sitzung = object()
+        repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
+            im_selben_zug(sitzung)
+        )
+
+        assert client.delete(BASIS, headers=PERSON).status_code == 204
+        loeschauftraege.anlegen.assert_called_once_with("user-001", session=sitzung)
+        stimmen.loeschen_fuer_person.assert_called_once_with(
+            "user-001", session=sitzung
+        )
+
+    def test_delete_fehler_beim_auftrag_gibt_500(
+        self, client, repository, stimmen, loeschauftraege
+    ):
+        repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
+            im_selben_zug(object())
+        )
+        loeschauftraege.anlegen.side_effect = RuntimeError("Datenbank weg")
+
+        antwort = TestClient(client.app, raise_server_exceptions=False).delete(
+            BASIS, headers=PERSON
+        )
+
+        assert antwort.status_code == 500
+
     def test_delete_fehler_beim_loeschen_gibt_500(self, client, repository, stimmen):
         repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
             im_selben_zug(object())
@@ -430,6 +478,8 @@ OFFEN = {
     ("POST", "/api/v1/moderation/report"),
     ("POST", "/api/v1/moderation/melder/meldungen"),
     ("POST", "/api/v1/moderation/melder/angaben-loeschen"),
+    # Loeschauftrag ausfuehren (Admin, nach dem Widerruf einer anderen Person)
+    ("POST", "/api/v1/moderation/loeschauftraege/{auftrag_id}/ausfuehren"),
     ("POST", "/api/v1/sperren/{sperre_id}/widerspruch"),
     # Einladungen (vor dem Konto) und Admin-Endpunkte
     ("POST", "/api/v1/einladungen"),

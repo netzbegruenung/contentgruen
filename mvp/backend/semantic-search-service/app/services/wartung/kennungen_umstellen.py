@@ -60,6 +60,9 @@ SPALTEN = {
     "art9_einwilligungen": ("user_id",),
     # Zustimmung zur Sichtbarkeit der Abzeichen (#351): geht mit der Person mit.
     "abzeichen_sichtbarkeit": ("user_id",),
+    # Loeschauftraege nach dem Widerruf (DSFA R9b): Ein offener muss die Kennung
+    # treffen, unter der Beitraege und Einwuerfe dann stehen.
+    "loeschauftraege": ("user_id",),
     "votes": ("user_id",),
     "raw_inputs": ("submitted_by", "destilled_by"),
     "raw_input_drafts": ("user_id",),

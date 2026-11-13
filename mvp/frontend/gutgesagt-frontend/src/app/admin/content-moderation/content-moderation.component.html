@@ -2,7 +2,7 @@
   <div class="header">
     <h2>Moderation</h2>
     <button
-      *ngIf="selectedStatus !== 'person'"
+      *ngIf="!laedtSelbst"
       mat-raised-button
       color="primary"
       (click)="loadReports()">
@@ -41,6 +41,11 @@
       <mat-button-toggle value="person">
         <mat-icon>person_search</mat-icon>
         Nach Person
+      </mat-button-toggle>
+      <mat-button-toggle value="loeschauftraege">
+        <mat-icon>delete_sweep</mat-icon>
+        <span [matBadge]="offeneLoeschauftraege || null" matBadgeOverlap="false" matBadgeColor="warn"
+              [attr.aria-label]="offeneLoeschauftraege ? 'Löschaufträge, ' + offeneLoeschauftraege + ' offen' : null">Löschaufträge</span>
       </mat-button-toggle>
     </mat-button-toggle-group>
   </div>
@@ -108,14 +113,16 @@
   </ng-container>
 
   <app-meldungen-einer-person *ngIf="selectedStatus === 'person'"></app-meldungen-einer-person>
+  <app-loeschauftraege *ngIf="selectedStatus === 'loeschauftraege'"
+                       (anzahl)="offeneLoeschauftraege = $event"></app-loeschauftraege>
 
-  <div *ngIf="selectedStatus !== 'gesperrt' && selectedStatus !== 'person' && !loading && !error && reports.length === 0" class="empty-state">
+  <div *ngIf="selectedStatus !== 'gesperrt' && !laedtSelbst && !loading && !error && reports.length === 0" class="empty-state">
     <mat-icon class="large-icon">check_circle</mat-icon>
     <h2>Keine Meldungen</h2>
     <p>In dieser Ansicht gibt es keine Meldungen.</p>
   </div>
 
-  <div *ngIf="selectedStatus !== 'gesperrt' && selectedStatus !== 'person' && !loading && !error && reports.length > 0" class="reports-table">
+  <div *ngIf="selectedStatus !== 'gesperrt' && !laedtSelbst && !loading && !error && reports.length > 0" class="reports-table">
     <table mat-table [dataSource]="reports" class="mat-elevation-z2" multiTemplateDataRows>
       <!-- Expand Column -->
       <ng-container matColumnDef="expand">

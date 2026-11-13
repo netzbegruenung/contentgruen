@@ -175,6 +175,17 @@ describe('EinwilligungComponent', () => {
       expect(el().querySelector('.wortlaut')?.textContent).toContain(zweiter.text);
     });
 
+    it('sagt vor dem Widerruf, was mit Beiträgen, Einwürfen und Sätzen geschieht (Löschauftrag)', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+
+      const text = el().textContent!.replace(/\s+/g, ' ');
+      expect(text).toContain('Innerhalb von sieben Tagen zeigen deine Beiträge dann „ehemalige Person“');
+      expect(text).toContain('deine Einwürfe werden gelöscht');
+      expect(text).toContain('Dein Konto bleibt.');
+      expect(text).not.toContain('bleibt, bis du es löschst');
+    });
+
     it('widerrufen fragt danach erneut, ohne Haekchen', () => {
       starten(null);
       standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));

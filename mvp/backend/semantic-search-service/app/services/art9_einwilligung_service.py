@@ -10,8 +10,9 @@ Loeschen, Verwerfen, Melden und Feedback bleiben offen; die Liste steht an den E
 
 Ein Widerruf loescht in derselben Transaktion die Stimmen der Person: Fuer sie fehlt dann die
 Rechtsgrundlage (Art. 17 Abs. 1 lit. b DSGVO, juristische Vorpruefung vom
-12.11.2026). Beitraege, Einwuerfe und Saetze bleiben bis zur eigenen Loeschung oder
-zur Kontoloeschung (docs/ART9_EINWILLIGUNG.md, offen).
+12.11.2026). Fuer Beitraege, Einwuerfe und Saetze legt er in derselben Transaktion
+einen Loeschauftrag an, den ein Admin binnen sieben Tagen ausfuehrt
+(services/loeschauftrag_service.py, DSFA R9b).
 
 Jede Pruefung fragt die Datenbank (eine Zeile ueber einen Index). Ein Merken im
 Prozess wuerde einen Widerruf, das Loeschkommando oder die Kennungsumstellung
@@ -21,6 +22,7 @@ erst nach einem Neustart sehen.
 from typing import Optional, Protocol
 
 from domain.art9_einwilligung import bekannter_wortlaut
+from repositories.loeschauftrag_repository import get_loeschauftrag_repository
 from repositories.vote_repository import VoteRepository
 from repositories.art9_einwilligung_repository import (
     Art9Einwilligung,
@@ -37,15 +39,24 @@ class StimmenDerPerson(Protocol):
     def loeschen_fuer_person(self, user_id: str, session=None) -> int: ...
 
 
+class LoeschauftraegeDerPerson(Protocol):
+    def anlegen(self, user_id: str, session=None) -> None: ...
+
+
 class Art9EinwilligungService:
     def __init__(
         self,
         repository: Art9EinwilligungRepository,
         stimmen: Optional[StimmenDerPerson] = None,
+        loeschauftraege: Optional[LoeschauftraegeDerPerson] = None,
     ):
-        """``stimmen``: loescht beim Widerruf die Stimmen; ohne (Tests) nichts."""
+        """
+        ``stimmen``: loescht beim Widerruf die Stimmen; ``loeschauftraege``: legt
+        beim Widerruf einen Loeschauftrag an. Ohne (Tests) jeweils nichts.
+        """
         self._repository = repository
         self._stimmen = stimmen
+        self._loeschauftraege = loeschauftraege
 
     def stand(self, user_id: str) -> Optional[Art9Einwilligung]:
         return self._repository.lesen(user_id)
@@ -61,21 +72,25 @@ class Art9EinwilligungService:
 
     def widerrufen(self, user_id: str) -> None:
         """
-        Widerruf vermerken und die Stimmen loeschen, in einer Transaktion (beide
-        Repositories nutzen die globale AppDatabase): Scheitert das Loeschen, gilt
-        auch der Widerruf nicht, die Person bleibt eingewilligt und kann ihn ueber
-        die Oberflaeche wiederholen.
+        Widerruf vermerken, die Stimmen loeschen und einen Loeschauftrag anlegen, in
+        einer Transaktion (alle Repositories nutzen die globale AppDatabase):
+        Scheitert eins davon, gilt auch der Widerruf nicht, die Person bleibt
+        eingewilligt und kann ihn ueber die Oberflaeche wiederholen. Ein offener
+        Auftrag bleibt bei einem zweiten Widerruf der einzige.
         """
         stimmen = self._stimmen
-        if stimmen is None:
+        loeschauftraege = self._loeschauftraege
+        if stimmen is None and loeschauftraege is None:
             self._repository.widerrufen(user_id)
             return
-        self._repository.widerrufen(
-            user_id,
-            im_selben_zug=lambda session: stimmen.loeschen_fuer_person(
-                user_id, session=session
-            ),
-        )
+
+        def im_selben_zug(session) -> None:
+            if stimmen is not None:
+                stimmen.loeschen_fuer_person(user_id, session=session)
+            if loeschauftraege is not None:
+                loeschauftraege.anlegen(user_id, session=session)
+
+        self._repository.widerrufen(user_id, im_selben_zug=im_selben_zug)
 
 
 _service: Optional[Art9EinwilligungService] = None
@@ -85,6 +100,8 @@ def get_art9_einwilligung_service() -> Art9EinwilligungService:
     global _service
     if _service is None:
         _service = Art9EinwilligungService(
-            get_art9_einwilligung_repository(), VoteRepository()
+            get_art9_einwilligung_repository(),
+            VoteRepository(),
+            get_loeschauftrag_repository(),
         )
     return _service

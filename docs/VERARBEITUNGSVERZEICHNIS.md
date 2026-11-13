@@ -102,13 +102,15 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   Abzeichen Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a.
 - **Betroffene:** angemeldete Personen.
 - **Daten:** Kennung, Zeitpunkt, Kennung des Wortlauts, Zeitpunkt des Widerrufs; je Antwort zur
-  Sichtbarkeit Kennung, Ja/Nein, Wortlaut, Zeitpunkt.
+  Sichtbarkeit Kennung, Ja/Nein, Wortlaut, Zeitpunkt; je Widerruf ein Löschauftrag mit Kennung,
+  Zeitpunkt, Frist und Zeitpunkt der Ausführung.
 - **Empfänger:** wie oben, nur Admins in der Datenbank.
 - **Fristen:** solange das Konto besteht, auch widerrufene (LK „Ablauf“, Schritt 2; für die
-  Abzeichen auch LK „Fristen“).
-- **TOM:** DSFA V2, V22. Mit #658 löscht ein Widerruf die Stimmen der Person (T4).
-  **Offen:** Beiträge, Einwürfe und Sätze behalten nach dem Widerruf ihren Personenbezug
-  (DSFA V2, R9, Maßnahme R9b).
+  Abzeichen auch LK „Fristen“); Löschaufträge offen bis zur Ausführung, erledigte nach LK
+  „Fristen“, alle mit dem Konto.
+- **TOM:** DSFA V2, V22. Mit #658 löscht ein Widerruf die Stimmen der Person (T4). Für Beiträge,
+  Einwürfe und Sätze legt er einen Löschauftrag an, den ein Admin binnen sieben Tagen ausführt
+  (DSFA V2, R9, Maßnahme R9b); bis dahin behalten sie ihren Personenbezug.
 
 ### T3 Beiträge, Einwürfe und Gegenlesen
 
@@ -128,7 +130,8 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Fristen:** LK „Fristen“ (gelöschte Beiträge, Einwürfe) und LK „Zwei Wege, einen Beitrag zu
   löschen“; Beiträge ohne Frist. Bei Kontolöschung werden Beiträge anonymisiert (LK „Ablauf“,
   Schritt 3), Sätze an fremden Einwürfen bekommen einen Platzhalter, eigene Einwürfe werden
-  gelöscht (Schritt 2).
+  gelöscht (Schritt 2); dasselbe mit dem Löschauftrag nach einem Widerruf der Art.-9-Einwilligung
+  (T2), dann bleibt das Konto.
 - **TOM:** DSFA V3, V4, V20. **Offen:** Information der Dritten nach Art. 14 (DSFA V3, R3).
 
 ### T4 Bewertungen und Güte

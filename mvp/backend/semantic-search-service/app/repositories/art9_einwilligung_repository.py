@@ -70,8 +70,8 @@ class Art9EinwilligungRepository:
         Setzt den Zeitpunkt des Widerrufs an jeder noch geltenden Zeile.
 
         ``im_selben_zug`` laeuft danach in derselben Transaktion (das Loeschen der
-        Stimmen, Art9EinwilligungService.widerrufen): Scheitert es, gilt auch der
-        Widerruf nicht, und die Person kann ihn wiederholen.
+        Stimmen und der Loeschauftrag, Art9EinwilligungService.widerrufen): Scheitert
+        es, gilt auch der Widerruf nicht, und die Person kann ihn wiederholen.
         """
         with self.db.get_session() as session:
             session.execute(

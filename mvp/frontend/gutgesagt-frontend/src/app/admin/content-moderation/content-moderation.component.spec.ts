@@ -63,11 +63,12 @@ describe('ContentModerationComponent', () => {
   }
 
   beforeEach(() => {
-    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport']);
+    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport', 'getLoeschauftraege', 'loeschauftragAusfuehren']);
     moderation.sperren.and.returnValue(of({ success: true, message: '' }));
     moderation.entsperren.and.returnValue(of({ success: true, message: '' }));
     moderation.sperreBestaetigen.and.returnValue(of({ success: true, message: '' }));
     moderation.getGesperrte.and.returnValue(of({ total: 0, beitraege: [] }));
+    moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [] }));
     dialog = jasmine.createSpyObj('MatDialog', ['open']);
 
     TestBed.configureTestingModule({
@@ -307,5 +308,38 @@ describe('ContentModerationComponent', () => {
     const zelle: HTMLElement = fixture.nativeElement.querySelector('.reporter-cell');
     expect(zelle.textContent).toContain('ohne Erklärung guten Glaubens');
     expect(zelle.querySelector('a')).toBeNull();
+  });
+
+  describe('Löschaufträge (DSFA R9b)', () => {
+    const auftrag = {
+      id: 'auftrag-1',
+      user_id: 'person-1',
+      anzeigename: 'Anna B.',
+      angelegt_am: '2026-11-01T10:00:00Z',
+      frist: '2026-11-08T10:00:00Z',
+      ueberfaellig: true,
+    };
+
+    it('zählt die offenen Aufträge am Umschalter', () => {
+      moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [auftrag] }));
+      mitMeldungen([]);
+
+      expect(fixture.componentInstance.offeneLoeschauftraege).toBe(1);
+      const umschalter = Array.from(fixture.nativeElement.querySelectorAll('mat-button-toggle')) as HTMLElement[];
+      const loeschauftraege = umschalter.find((u) => u.textContent?.includes('Löschaufträge'))!;
+      expect(loeschauftraege.querySelector('[aria-label]')?.getAttribute('aria-label')).toBe('Löschaufträge, 1 offen');
+    });
+
+    it('zeigt die Liste ohne „Aktualisieren“: sie lädt selbst nach', () => {
+      mitMeldungen([]);
+
+      fixture.componentInstance.onStatusFilterChange('loeschauftraege');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-loeschauftraege')).not.toBeNull();
+      expect(knopf('Aktualisieren')).toBeUndefined();
+      expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
+      fixture.destroy();
+    });
   });
 });

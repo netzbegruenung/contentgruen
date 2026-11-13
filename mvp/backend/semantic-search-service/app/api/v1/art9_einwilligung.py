@@ -106,7 +106,7 @@ def widerrufen(user_id: str = Depends(require_user)) -> Response:
                 f"Zustimmung zur Sichtbarkeit von {log_pseudonym(user_id)} nicht zurueckgenommen: {type(e).__name__}",
                 exc_info=True,
             )
-    # Vermerk und Loeschen der Stimmen in einer Transaktion
+    # Vermerk, Loeschen der Stimmen und Loeschauftrag in einer Transaktion
     # (Art9EinwilligungService.widerrufen): Bei einem Fehler gilt die Einwilligung
     # weiter, und die Person kann erneut widerrufen.
     try:
