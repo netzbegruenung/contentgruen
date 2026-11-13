@@ -111,6 +111,16 @@ describe('EinwilligungComponent', () => {
       expect(eingabe.getAttribute('aria-describedby')).toBe('einwilligung-wortlaut-voll');
     });
 
+    // ErwG 42 DSGVO: Verantwortlicher und Datenschutzerklaerung direkt an der Frage
+    it('nennt den Verantwortlichen und verlinkt die Datenschutzerklaerung', () => {
+      starten();
+      standLiefern(stand());
+
+      const fussnote = el().querySelector('.fussnote')!;
+      expect(fussnote.textContent).toContain('Verantwortlich ist NETZBEGRÜNUNG');
+      expect(fussnote.querySelector('a')!.getAttribute('href')).toBe('/datenschutz');
+    });
+
     it('zeigt einen Wortlaut aus einem Satz ganz am Haekchen, ohne Aufklapper', () => {
       starten();
       standLiefern(stand());

@@ -14,6 +14,7 @@ import {
   wortlautErsterSatz,
 } from '../services/art9-einwilligung.service';
 import { ROUTES } from '../shared/constants/app.constants';
+import { LEGAL_ENTITY } from '../shared/legal-entity';
 import { HILFE_PARAM } from '../help-dialog/help-dialog.component';
 import {
   BestaetigungsDialogComponent,
@@ -55,6 +56,8 @@ type Zustand = 'laedt' | 'frage' | 'sendet' | 'eingewilligt' | 'widerruft' | 'fe
 })
 export class EinwilligungComponent implements OnInit {
   zustand: Zustand = 'laedt';
+  /** Der Verantwortliche, am Häkchen genannt (ErwG 42 DSGVO). */
+  readonly verein = LEGAL_ENTITY.NAME;
   stand?: Art9EinwilligungStand;
   angehakt = false;
 
@@ -77,7 +80,7 @@ export class EinwilligungComponent implements OnInit {
 
   /**
    * Eingewilligt zu einem frueheren Wortlaut und nicht widerrufen: Das Backend meldet
-   * dann nicht eingewilligt (nur der aktuelle Wortlaut zaehlt, seit 2026-11-13), die
+   * dann nicht eingewilligt (nur der aktuelle Wortlaut zaehlt, seit 2026-11-13; aktuell 2026-11-14), die
    * Einwilligung bleibt aber widerrufbar.
    */
   get fruehereEinwilligung(): boolean {

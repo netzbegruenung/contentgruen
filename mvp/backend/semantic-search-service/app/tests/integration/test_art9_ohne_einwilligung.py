@@ -42,7 +42,7 @@ def test_einwilligung_hebt_den_vermerk_auf_widerruf_nicht(repository):
     dienst = Art9EinwilligungService(repository)
     dienst.ohne_merken(PERSON, "2026-11-13")
 
-    dienst.einwilligen(PERSON, "2026-11-13")
+    dienst.einwilligen(PERSON, "2026-11-14")
     assert dienst.ohne(PERSON) is None
 
     dienst.ohne_merken(PERSON, "2026-11-13")

@@ -187,8 +187,10 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 
 - **Zweck:** Wirkung der Mitwirkung zeigen, Anerkennung sichtbar machen, Punkte gegen Absprachen
   schützen.
-- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art.-9-Einwilligung; Sichtbarkeit der
-  Abzeichen mit gesonderter Zustimmung (T2).
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a in einer eigenen,
+  freiwilligen Einwilligung, getrennt von der Art.-9-Einwilligung zum Beitragen (seit Wortlaut
+  `2026-11-14`, Entscheidung Maintainer 13.11.2026; gebaut mit #668, bis dahin ausgeschaltet);
+  Sichtbarkeit der Abzeichen mit gesonderter Zustimmung (T2).
 - **Betroffene:** angemeldete Personen mit Art.-9-Einwilligung, ohne Startkonten.
 - **Daten:** Punkte und Meilensteine nicht gespeichert, bei jedem Abruf berechnet;
   Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen.
