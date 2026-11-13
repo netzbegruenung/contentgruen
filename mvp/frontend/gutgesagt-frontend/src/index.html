@@ -34,11 +34,12 @@
       document.querySelector('meta[name="theme-color"]').setAttribute('content', schema === 'dark' ? '#1e1f1e' : '#008939');
     })();
   </script>
-  <!-- Grundflaechen der Dunkel-Palette, bis das volle Stylesheet geladen ist: Der Build
-       inlined nur das kritische CSS, das zur Build-Zeit zum <html> ohne data-theme passt,
-       und laedt den Rest nachtraeglich. Ohne diese Zeilen blitzt die Seite dunkel hell auf.
-       Werte wie im Block html[data-theme='dark'] in theme/custom-theme.scss (Palette n2);
-       sobald das Stylesheet da ist, gelten dessen Werte (es steht danach). -->
+  <!-- Grundflaechen dunkel, bis das Stylesheet da ist: Der Build inlined nur das kritische CSS,
+       das zur Build-Zeit zum <html> ohne data-theme passt, und laedt den Rest nachtraeglich.
+       Hier stehen nur Grund, Karten, Schrift und die Baender (Suche, Willkommen/Rundgang folgen
+       --such-band); alles andere kommt mit dem Stylesheet, dessen Werte danach gelten (es steht
+       danach). Werte wie im Block html[data-theme='dark'] in theme/custom-theme.scss; das prueft
+       scripts/tests/test_farbschema_inline.py. -->
   <style>
     html[data-theme='dark'] {
       color-scheme: dark;
@@ -46,6 +47,9 @@
       --bg-card: #282a29;
       --bg-surface: #282a29;
       --text-primary: rgba(255, 255, 255, 0.87);
+      --primary-main: #e0e0e0;
+      --primary-dark: #ececec;
+      --such-band: #2e3c19;
       background: var(--bg-main);
       color: var(--text-primary);
     }
