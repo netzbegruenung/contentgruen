@@ -117,43 +117,17 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
         # Folgen des Widerrufs nach dem Loeschauftrag (Entscheidung Maintainer,
         # 13.11.2026, DSFA R9b): Binnen sieben Tagen werden Beitraege, Einwuerfe und
         # Saetze von der Person geloest (services/loeschauftrag_service.py), nur was bis
-        # zum Widerruf angelegt war. Sonst wortgleich mit 2026-11-12 (ein Test sichert
-        # das). Die Folgen gehen weiter als bisher, deshalb fragt die App alle neu, die
+        # zum Widerruf angelegt war. Sonst wortgleich mit 2026-11-12, nur ohne die
+        # Spielelemente (ein Test sichert das). Die Folgen gehen weiter als bisher, deshalb fragt die App alle neu, die
         # einem frueheren Wortlaut zugestimmt haben (GELTENDE_WORTLAUTE).
+        # Ueberschrieben am 13.11.2026 (Entscheidung Maintainer nach juristischer
+        # Pruefung), bevor ein Release ihn enthielt: Die erste Fassung vom selben Tag
+        # nannte noch Punktestand, Level, Quests, Freischaltungen und den
+        # Muster-Hinweis. Die gehoeren nicht in die Einwilligung, ohne die niemand
+        # beitragen kann (ErwG 43 S. 2, Art. 7 Abs. 4 DSGVO); Punkte und Meilensteine
+        # bekommen eine eigene, freiwillige Einwilligung (#668). Restrisiko: Falls die
+        # erste Fassung irgendwo gezeigt wurde, steht dieselbe Kennung fuer zwei Texte.
         "2026-11-13": (
-            "Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung "
-            "verarbeitet, auch wenn sich daraus auf meine politische Meinung "
-            "schließen lässt (Art. 9 Abs. 2 lit. a DSGVO). Das betrifft Beiträge, "
-            "Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere, "
-            "und meinen Anzeigenamen daran. Beiträge sind für alle sichtbar, mein "
-            "Anzeigename nur für Angemeldete. Gut gesagt nutzt meine Mitwirkung "
-            "nur für den Betrieb der Plattform. Dazu gehören ein Punktestand, ein "
-            "Level, Quests und Meilenstein-Abzeichen, die nur ich sehe, solange "
-            "ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen; "
-            "neue Aktionen, die ein höheres Level freischaltet; und ein Hinweis an "
-            "die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. "
-            "Gut gesagt wertet meine Mitwirkung nicht nach politischer Haltung aus "
-            "und gibt sie nicht an Dritte weiter. Ich kann die Einwilligung "
-            "jederzeit im Profilmenü unter „Datenschutz-Einstellungen“ widerrufen. "
-            "Danach kann ich nichts mehr beitragen oder bewerten, und meine "
-            "Bewertungen werden gelöscht. Innerhalb von sieben Tagen werden auch "
-            "meine Beiträge, Einwürfe und Sätze von mir gelöst: Meine Beiträge "
-            "bleiben stehen und zeigen „ehemalige Person“ statt meines Namens, "
-            "meine Einwürfe werden gelöscht, und meine Sätze an Einwürfen anderer "
-            "bleiben ohne meinen Namen. Was ich nach einer neuen Einwilligung "
-            "beitrage, bleibt davon unberührt. Mein Konto bleibt. Was bis zum "
-            "Widerruf geschehen ist, bleibt rechtmäßig."
-        ),
-        # Ohne Spielelemente (Entscheidung Maintainer, 13.11.2026, nach juristischer
-        # Pruefung): Punktestand, Level, Quests, Freischaltungen und der Muster-Hinweis
-        # gehoeren nicht in die Einwilligung, ohne die niemand beitragen kann
-        # (ErwG 43 S. 2, Art. 7 Abs. 4 DSGVO); Punkte und Meilensteine bekommen eine
-        # eigene, freiwillige Einwilligung (#668). Sonst wortgleich mit 2026-11-13 (ein
-        # Test sichert das). Neue Kennung statt Ueberschreiben, weil 2026-11-13 seit
-        # dem Merge von #661 in einem gebauten Image auf main steht. Nur dieser
-        # Wortlaut zaehlt: Wer 2026-11-13 bestaetigt hat, bestaetigte die Spielelemente
-        # mit und wird zum korrigierten Text neu gefragt.
-        "2026-11-14": (
             "Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung "
             "verarbeitet, auch wenn sich daraus auf meine politische Meinung "
             "schließen lässt (Art. 9 Abs. 2 lit. a DSGVO). Das betrifft Beiträge, "
@@ -177,7 +151,7 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
 )
 
 # Der Wortlaut, den die App heute zeigt.
-AKTUELLER_WORTLAUT = "2026-11-14"
+AKTUELLER_WORTLAUT = "2026-11-13"
 
 # Wortlaute, deren Einwilligung heute zaehlt. Eine Einwilligung zu einem anderen
 # bekannten Wortlaut bleibt als Nachweis stehen und kann widerrufen werden, zaehlt
@@ -185,9 +159,8 @@ AKTUELLER_WORTLAUT = "2026-11-14"
 # Einwilligung verlangt, ist gesperrt, bis die Person dem aktuellen Wortlaut
 # zustimmt. Bis 2026-11-12 galt jede Kennung (redaktionelle Aenderungen ohne neue
 # Frage); 2026-11-13 erweitert die Folgen des Widerrufs, deshalb nur dieser
-# (Entscheidung Maintainer, 13.11.2026, docs/ART9_EINWILLIGUNG.md). 2026-11-14 nimmt
-# die Spielelemente heraus; nur er zaehlt, damit niemand sie mitbestaetigt.
-GELTENDE_WORTLAUTE = frozenset({"2026-11-14"})
+# (Entscheidung Maintainer, 13.11.2026, docs/ART9_EINWILLIGUNG.md).
+GELTENDE_WORTLAUTE = frozenset({"2026-11-13"})
 
 
 def bekannter_wortlaut(kennung: str) -> bool:

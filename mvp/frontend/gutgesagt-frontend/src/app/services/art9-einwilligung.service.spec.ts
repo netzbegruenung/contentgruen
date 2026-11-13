@@ -238,7 +238,7 @@ describe('Art9EinwilligungService', () => {
     expect(text.startsWith(wortlautErsterSatz(text))).toBeTrue();
   });
 
-  // Kopie des aktuellen Wortlauts 2026-11-14 (domain/art9_einwilligung.py; der erste Satz wie 2026-11-13), Anfang und
+  // Kopie des aktuellen Wortlauts 2026-11-13 (domain/art9_einwilligung.py), Anfang und
   // zweiter Satz: Aendert sich der Wortlaut, zeigt dieser Test, ob der Schnitt noch passt.
   it('wortlautErsterSatz schneidet den aktuellen Wortlaut nach dem Art.-9-Satz', () => {
     const ersterSatz =

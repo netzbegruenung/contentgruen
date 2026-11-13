@@ -138,12 +138,12 @@ zugestimmt hat …“.
 - **Mit neuer Frage** (`GELTENDE_WORTLAUTE` nur mit der neuen Kennung): neue Zwecke, neue
   Datenarten oder weiter gehende Folgen des Widerrufs. So bei `2026-11-13` (Löschauftrag,
   Entscheidung Maintainer, 13.11.2026).
-- **Ausnahme `2026-11-14`:** nimmt nur Zwecke heraus (die Spielelemente) und wirkt damit
-  zugunsten der Person, steht aber trotzdem allein in `GELTENDE_WORTLAUTE`: Wer `2026-11-13`
-  bestätigt hat, bestätigte Level, Quests und Freischaltungen mit, die es nicht gibt, und soll
-  dem korrigierten Text zustimmen (Entscheidung Maintainer, 13.11.2026, nach juristischer
-  Prüfung). Neue Kennung statt Überschreiben, weil `2026-11-13` seit dem Merge von #661 in einem
-  gebauten Image auf `main` steht und nicht sicher ist, dass er nirgends gezeigt wurde.
+- **Überschrieben `2026-11-13`:** Die erste Fassung vom 13.11.2026 nannte noch Punktestand,
+  Level, Quests, Freischaltungen und den Muster-Hinweis. Nach juristischer Prüfung hat der
+  Maintainer entschieden (13.11.2026), den Text unter derselben Kennung zu ersetzen, statt eine
+  neue zu vergeben: Er war in keinem Release. Restrisiko: `2026-11-13` stand seit dem Merge von
+  #661 in gebauten `:main`-Images; wurde die erste Fassung irgendwo gezeigt, steht dieselbe
+  Kennung für zwei Texte. Sonst gilt: eine Kennung nie für einen anderen Text.
 
 ## Wortlaut ändern: diese Stellen mitziehen
 
@@ -214,5 +214,4 @@ Wortlaut vom Backend.
 | `2026-11-05-b` | vorläufig, Prüfung mit #296; nennt zusätzlich Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, für andere Angemeldete nur mit gesonderter Zustimmung), Freischaltungen eines höheren Levels und die Muster-Hinweise (#559, Zwecke aus `docs/DSFA.md` Abschnitt 4); vor dem Merge noch zweimal geändert, Kennung beibehalten, weil nie auf `main` und in keinem Release | seit dem Produktiv-Deploy von #489 und #559 bis zum Produktiv-Deploy von #644 (Daten nach dem Ausrollen eintragen); wer zugestimmt hat, bleibt eingewilligt |
 | `2026-11-10` | redaktionell (#644): wortgleich mit `2026-11-05-b` bis auf den Widerrufsweg „im Profilmenü unter „Datenschutz-Einstellungen““ statt „Einwilligung“, weil der Menüpunkt umbenannt ist; gleiche Zwecke, deshalb keine neue Frage | seit dem Produktiv-Deploy von #644 bis zum Produktiv-Deploy des Wortlauts `2026-11-12` (Daten nach dem Ausrollen eintragen) |
 | `2026-11-12` | Folgen des Widerrufs nach der juristischen Vorprüfung vom 12.11.2026: Die Bewertungen werden gelöscht, das Übrige bleibt bis zur eigenen Löschung oder Kontolöschung; sonst wortgleich mit `2026-11-10` (ein Test sichert das). Keine neuen Zwecke, und die Änderung wirkt nur zugunsten der Person, deshalb keine neue Frage | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) bis zum Produktiv-Deploy von `2026-11-13` |
-| `2026-11-13` | Löschauftrag nach dem Widerruf (#661, Entscheidung Maintainer, 13.11.2026): Binnen sieben Tagen zeigen Beiträge „ehemalige Person“, Einwürfe werden gelöscht, Sätze an fremden Einwürfen bleiben ohne Namen; was nach einer neuen Einwilligung beigetragen wird, bleibt unberührt; sonst wortgleich mit `2026-11-12` (ein Test sichert das). Neue Frage, weil die Folgen des Widerrufs weiter gehen: Nur dieser Wortlaut steht in `GELTENDE_WORTLAUTE`, wer einem früheren zugestimmt hat, wird beim nächsten Besuch neu gefragt | nie produktiv vorgesehen: von `2026-11-14` abgelöst, bevor ein Release ihn enthielt |
-| `2026-11-14` | Ohne Spielelemente (Entscheidung Maintainer, 13.11.2026, nach juristischer Prüfung; ErwG 43 S. 2, Art. 7 Abs. 4 DSGVO): Punktestand, Level, Quests, Meilenstein-Abzeichen, Freischaltungen und der Muster-Hinweis fallen weg; die Mitte lautet „Gut gesagt nutzt meine Mitwirkung nur für den Betrieb der Plattform, wertet sie nicht nach politischer Haltung aus und gibt sie nicht an Dritte weiter.“ Sonst wortgleich mit `2026-11-13` (ein Test sichert das). Punkte und Meilensteine bekommen eine eigene, freiwillige Einwilligung (#668). Nur dieser Wortlaut zählt | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) |
+| `2026-11-13` | Löschauftrag nach dem Widerruf (#661, Entscheidung Maintainer, 13.11.2026): Binnen sieben Tagen zeigen Beiträge „ehemalige Person“, Einwürfe werden gelöscht, Sätze an fremden Einwürfen bleiben ohne Namen; was nach einer neuen Einwilligung beigetragen wird, bleibt unberührt. Ohne Spielelemente: Punktestand, Level, Quests, Meilenstein-Abzeichen, Freischaltungen und der Muster-Hinweis fallen weg, die Mitte lautet „Gut gesagt nutzt meine Mitwirkung nur für den Betrieb der Plattform, wertet sie nicht nach politischer Haltung aus und gibt sie nicht an Dritte weiter.“ (ErwG 43 S. 2, Art. 7 Abs. 4 DSGVO; Punkte und Meilensteine bekommen eine eigene, freiwillige Einwilligung, #668). Am 13.11.2026 vor jedem Release überschrieben (Entscheidung Maintainer). Sonst wortgleich mit `2026-11-12` (ein Test sichert das). Neue Frage, weil die Folgen des Widerrufs weiter gehen: Nur dieser Wortlaut steht in `GELTENDE_WORTLAUTE`, wer einem früheren zugestimmt hat, wird beim nächsten Besuch neu gefragt | seit dem Produktiv-Deploy (Datum nach dem Ausrollen eintragen) |

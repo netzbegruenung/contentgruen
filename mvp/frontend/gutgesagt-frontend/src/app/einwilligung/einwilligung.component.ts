@@ -80,7 +80,7 @@ export class EinwilligungComponent implements OnInit {
 
   /**
    * Eingewilligt zu einem frueheren Wortlaut und nicht widerrufen: Das Backend meldet
-   * dann nicht eingewilligt (nur der aktuelle Wortlaut zaehlt, seit 2026-11-13; aktuell 2026-11-14), die
+   * dann nicht eingewilligt (nur der aktuelle Wortlaut zaehlt, seit 2026-11-13), die
    * Einwilligung bleibt aber widerrufbar.
    */
   get fruehereEinwilligung(): boolean {

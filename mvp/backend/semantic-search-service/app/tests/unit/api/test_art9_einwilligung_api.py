@@ -103,17 +103,17 @@ class TestStand:
         repository.lesen.assert_called_once_with("user-001")
 
     def test_get_eingewilligt_mit_zeitpunkt_und_wortlaut(self, client, repository):
-        repository.lesen.return_value = Art9Einwilligung("2026-11-14", AM, None)
+        repository.lesen.return_value = Art9Einwilligung("2026-11-13", AM, None)
 
         stand = client.get(BASIS, headers=PERSON).json()
 
         assert stand["eingewilligt"] is True
-        assert stand["wortlaut"] == "2026-11-14"
+        assert stand["wortlaut"] == "2026-11-13"
         assert stand["eingewilligt_am"].startswith("2026-11-05T09:30")
 
     @pytest.mark.parametrize(
         "frueher",
-        ["2026-11-05", "2026-11-05-b", "2026-11-10", "2026-11-12", "2026-11-13"],
+        ["2026-11-05", "2026-11-05-b", "2026-11-10", "2026-11-12"],
     )
     def test_einwilligung_zu_frueherem_wortlaut_fragt_neu(
         self, client, repository, frueher
@@ -131,7 +131,7 @@ class TestStand:
         assert stand["eingewilligt"] is False
         assert stand["wortlaut"] == frueher
         assert stand["widerrufen_am"] is None
-        assert stand["aktueller_wortlaut"]["kennung"] == "2026-11-14"
+        assert stand["aktueller_wortlaut"]["kennung"] == "2026-11-13"
 
     def test_get_widerrufen_nicht_eingewilligt_wortlaut_bleibt(
         self, client, repository
@@ -183,13 +183,13 @@ class TestOhneEinwilligung:
 class TestWortlaute:
     def test_aktueller_wortlaut_nennt_keine_spielelemente(self):
         """
-        2026-11-14 (Entscheidung Maintainer, 13.11.2026, nach juristischer Pruefung):
+        2026-11-13, ueberschrieben (Entscheidung Maintainer, 13.11.2026, nach juristischer Pruefung):
         Punkte, Level, Quests, Freischaltungen und Muster-Hinweise gehoeren nicht in die
         Einwilligung, ohne die niemand beitragen kann (ErwG 43, Art. 7 Abs. 4 DSGVO).
         """
         text = WORTLAUTE[AKTUELLER_WORTLAUT]
 
-        assert AKTUELLER_WORTLAUT == "2026-11-14"
+        assert AKTUELLER_WORTLAUT == "2026-11-13"
         for wort in (
             "Punktestand",
             "Level",
@@ -237,44 +237,46 @@ class TestWortlaute:
         assert WORTLAUTE["2026-11-12"] == vorher
         assert "meine Bewertungen werden gelöscht" in WORTLAUTE[AKTUELLER_WORTLAUT]
 
-    def test_wortlaut_vom_13_11_aendert_nur_die_folgen_des_widerrufs(self):
+    def test_wortlaut_vom_13_11_aendert_die_folgen_und_nimmt_die_spielelemente_heraus(
+        self,
+    ):
         """
-        Loeschauftrag nach dem Widerruf (Entscheidung Maintainer, 13.11.2026): Sonst
-        wortgleich mit 2026-11-12; die neuen Folgen stehen im Text.
+        Loeschauftrag nach dem Widerruf und ohne Spielelemente (beides Entscheidung
+        Maintainer, 13.11.2026; 2026-11-13 ueberschrieben, bevor ein Release ihn
+        enthielt). Sonst wortgleich mit 2026-11-12.
         """
-        vorher = WORTLAUTE["2026-11-12"].replace(
-            "Was ich sonst gespeichert habe, bleibt, bis ich es lösche oder mein "
-            "Konto löschen lasse. ",
-            "Innerhalb von sieben Tagen werden auch meine Beiträge, Einwürfe und "
-            "Sätze von mir gelöst: Meine Beiträge bleiben stehen und zeigen "
-            "„ehemalige Person“ statt meines Namens, meine Einwürfe werden gelöscht, "
-            "und meine Sätze an Einwürfen anderer bleiben ohne meinen Namen. Was ich "
-            "nach einer neuen Einwilligung beitrage, bleibt davon unberührt. Mein "
-            "Konto bleibt. ",
+        vorher = (
+            WORTLAUTE["2026-11-12"]
+            .replace(
+                "Was ich sonst gespeichert habe, bleibt, bis ich es lösche oder mein "
+                "Konto löschen lasse. ",
+                "Innerhalb von sieben Tagen werden auch meine Beiträge, Einwürfe und "
+                "Sätze von mir gelöst: Meine Beiträge bleiben stehen und zeigen "
+                "„ehemalige Person“ statt meines Namens, meine Einwürfe werden gelöscht, "
+                "und meine Sätze an Einwürfen anderer bleiben ohne meinen Namen. Was ich "
+                "nach einer neuen Einwilligung beitrage, bleibt davon unberührt. Mein "
+                "Konto bleibt. ",
+            )
+            .replace(
+                "nur für den Betrieb der Plattform. Dazu gehören ein Punktestand, ein "
+                "Level, Quests und Meilenstein-Abzeichen, die nur ich sehe, solange "
+                "ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen; "
+                "neue Aktionen, die ein höheres Level freischaltet; und ein Hinweis an "
+                "die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. "
+                "Gut gesagt wertet meine Mitwirkung nicht nach politischer Haltung aus "
+                "und gibt sie nicht an Dritte weiter.",
+                "nur für den Betrieb der Plattform, wertet sie nicht nach politischer "
+                "Haltung aus und gibt sie nicht an Dritte weiter.",
+            )
         )
         assert WORTLAUTE["2026-11-13"] == vorher
-
-    def test_wortlaut_vom_14_11_nimmt_nur_die_spielelemente_heraus(self):
-        """Sonst wortgleich mit 2026-11-13: Anfang und Ende samt Widerrufsfolgen bleiben."""
-        vorher = WORTLAUTE["2026-11-13"].replace(
-            "nur für den Betrieb der Plattform. Dazu gehören ein Punktestand, ein "
-            "Level, Quests und Meilenstein-Abzeichen, die nur ich sehe, solange "
-            "ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen; "
-            "neue Aktionen, die ein höheres Level freischaltet; und ein Hinweis an "
-            "die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. "
-            "Gut gesagt wertet meine Mitwirkung nicht nach politischer Haltung aus "
-            "und gibt sie nicht an Dritte weiter.",
-            "nur für den Betrieb der Plattform, wertet sie nicht nach politischer "
-            "Haltung aus und gibt sie nicht an Dritte weiter.",
-        )
-        assert WORTLAUTE["2026-11-14"] == vorher
+        assert "2026-11-14" not in WORTLAUTE
 
     def test_nur_der_aktuelle_wortlaut_zaehlt(self):
         """Fruehere Einwilligungen zaehlen nicht (GELTENDE_WORTLAUTE, 13.11.2026)."""
         assert GELTENDE_WORTLAUTE == {AKTUELLER_WORTLAUT}
         assert all(k in WORTLAUTE for k in GELTENDE_WORTLAUTE)
         assert not geltender_wortlaut("2026-11-12")
-        assert not geltender_wortlaut("2026-11-13")
         assert Art9Einwilligung(AKTUELLER_WORTLAUT, AM, None).zaehlt
         assert not Art9Einwilligung("2026-11-12", AM, None).zaehlt
         assert not Art9Einwilligung(AKTUELLER_WORTLAUT, AM, SPAETER).zaehlt

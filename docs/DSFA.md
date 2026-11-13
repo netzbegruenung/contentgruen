@@ -94,8 +94,8 @@ steht in 8.4 und hängt heute an den offenen Fakten (8.6) und an Frage 7 zum Wid
 
 1. **Beim ersten Login** fragt die App seit #489 nach der Art.-9-Einwilligung (Lückenliste
    D-N15, `docs/ART9_EINWILLIGUNG.md`); die DSE nennt sie seit #557. Die Wortlaute `2026-11-05-b`
-   (#559) bis `2026-11-13` nannten zusätzlich Punktestand, Level, Quests, Meilenstein-Abzeichen,
-   Freischaltungen und Muster-Hinweise. Seit `2026-11-14` gehören sie nicht mehr dazu
+   (#559) bis `2026-11-12` nannten zusätzlich Punktestand, Level, Quests, Meilenstein-Abzeichen,
+   Freischaltungen und Muster-Hinweise. Seit `2026-11-13` gehören sie nicht mehr dazu
    (Entscheidung Maintainer, 13.11.2026, nach juristischer Prüfung): Ohne diese Einwilligung kann
    niemand beitragen, die Spielelemente braucht es dafür nicht (ErwG 43 S. 2, Art. 7 Abs. 4).
    Level, Quests und Freischaltungen gibt es ohnehin nicht. Für Punkte, Meilensteine und
