@@ -68,6 +68,15 @@ describe('SearchViewComponent', () => {
     expect(band.textContent).toContain('Beispiel probieren');
   });
 
+  it('stellt Willkommen und "Seit deinem letzten Besuch" unter das Suchfeld, vor die Kacheln (Nutzerfuehrung 13.11.)', () => {
+    const band: HTMLElement = fixture.nativeElement.querySelector('.such-band');
+    const willkommen = band.nextElementSibling as HTMLElement;
+
+    expect(willkommen.tagName.toLowerCase()).toBe('app-rundgang-band');
+    expect(willkommen.nextElementSibling!.tagName.toLowerCase()).toBe('app-seit-letztem-besuch');
+    expect(willkommen.nextElementSibling!.nextElementSibling!.classList).toContain('start-kacheln');
+  });
+
   it('zeigt als Beispiel das Startbeispiel und sucht genau danach (#601)', () => {
     const navigation = TestBed.inject(NavigationService);
     spyOn(navigation, 'navigateToResult');

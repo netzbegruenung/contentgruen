@@ -80,14 +80,16 @@ class Art9EinwilligungService:
         """Wortlaut, zu dem die Person bewusst ohne Einwilligung weiterging (B2), sonst None."""
         return self._repository.ohne_lesen(user_id)
 
-    def ohne_merken(self, user_id: str, wortlaut: str) -> None:
+    def ohne_merken(self, user_id: str, wortlaut: str) -> bool:
         """
         "Ohne Einwilligung weiter" am Konto festhalten (B2), damit die App nicht bei
-        jedem Start wieder fragt. Nur zu einem bekannten Wortlaut.
+        jedem Start wieder fragt. Nur zu einem bekannten Wortlaut, und nur ohne geltende
+        Einwilligung (das prueft das Repository in derselben Anweisung); sonst ohne
+        Wirkung. Gibt zurueck, ob etwas geschrieben wurde.
         """
         if not bekannter_wortlaut(wortlaut):
             raise UnbekannterWortlaut(wortlaut)
-        self._repository.ohne_merken(user_id, wortlaut)
+        return self._repository.ohne_merken(user_id, wortlaut)
 
     def widerrufen(self, user_id: str) -> None:
         """

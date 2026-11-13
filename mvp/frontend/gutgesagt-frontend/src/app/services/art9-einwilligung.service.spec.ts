@@ -323,6 +323,19 @@ describe('Art9EinwilligungService', () => {
       expect(router.navigate).not.toHaveBeenCalled();
     });
 
+    it('nimmt die Klaerung zurueck, wenn ein anderer Tab widerrufen hat', () => {
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(true));
+      expect(service.geklaert()).toBe('kim');
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      http.expectOne(ADRESSE).flush({ ...stand(false), widerrufen_am: '2026-11-14T09:00:00Z' });
+
+      expect(service.geklaert()).toBeNull();
+      expect(TestBed.inject(Art9EinwilligungZustand).wert).toBe('fehlt');
+    });
+
     it('setzt den Zustand fuer Formulare: fehlt, eingewilligt, nach dem Abmelden unbekannt', () => {
       const zustand = TestBed.inject(Art9EinwilligungZustand);
       service.starten();

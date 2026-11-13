@@ -246,6 +246,18 @@ public class IdentityHeaderTransformTests
         Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.EmailHeader));
     }
 
+    [Theory]
+    [InlineData("true")]
+    [InlineData("True")]
+    public void Apply_VerifiedEmailOnReport_IgnoresCase(string verified)
+    {
+        var proxyRequest = new HttpRequestMessage();
+
+        IdentityHeaderTransform.Apply(proxyRequest, UserWithEmail(ClaimTypes.Email, verified), ReportPath, NoAllowlist, Logger);
+
+        Assert.Equal(new[] { "test.user%40example.com" }, ValuesOf(proxyRequest, IdentityHeaderTransform.EmailHeader));
+    }
+
     [Fact]
     public void Apply_ManagedLoginOnReport_SetsEmailWithoutVerifiedClaim()
     {

@@ -30,6 +30,7 @@ import {
 import { alsGespeichert, aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
 import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
 /** Der Bild-Titel beschreibt, er ist keine Behauptung (CODING_STANDARDS.md); bis 200 Zeichen. */
 export const TITEL_MAX = 200;
@@ -82,6 +83,8 @@ function aufgeloest(adresse: string): string {
 })
 export class AddImageComponent implements AfterViewInit, OnDestroy {
   private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
+  /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
+  readonly einspaltig = einspaltig();
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('image');
   readonly titelMax = TITEL_MAX;

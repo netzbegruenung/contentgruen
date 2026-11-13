@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -93,6 +93,19 @@ export class EinwilligungComponent implements OnInit {
 
   ngOnInit(): void {
     this.laden();
+  }
+
+  /**
+   * Zurueck im Tab: den Stand neu holen, damit eine Einwilligung oder ein Widerruf aus
+   * einem anderen Tab hier ankommt (Review zu #670). Nicht mitten im Senden und nicht,
+   * wenn das Haekchen schon gesetzt ist.
+   */
+  @HostListener('document:visibilitychange')
+  beiSichtbarkeit(): void {
+    if (document.visibilityState !== 'visible') return;
+    if (this.zustand === 'eingewilligt' || (this.zustand === 'frage' && !this.angehakt)) {
+      this.laden();
+    }
   }
 
   private laden(): void {

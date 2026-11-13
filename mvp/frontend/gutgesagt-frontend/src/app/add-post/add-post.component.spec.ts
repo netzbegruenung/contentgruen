@@ -13,6 +13,11 @@ import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert
 import { OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of as vonWert } from 'rxjs';
+
+/** Zweispaltig wie am Desktop: Gegenlesen neben der Vorschau (Nutzerfuehrung 13.11.). */
+const ZWEISPALTIG = { provide: BreakpointObserver, useValue: { observe: () => vonWert({ matches: false, breakpoints: {} }) } };
 
 describe('AddPostComponent', () => {
   let fixture: ComponentFixture<AddPostComponent>;
@@ -28,7 +33,7 @@ describe('AddPostComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AddPostComponent, NoopAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ZWEISPALTIG],
     })
       .overrideComponent(AddPostComponent, {
         remove: { imports: [BeitragskarteComponent] },

@@ -267,7 +267,8 @@ export class Art9EinwilligungService implements OnDestroy {
       .subscribe((stand) => {
         if (!stand) return;
         this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
-        if (stand.eingewilligt) this.geklaertSetzen(this.kennung);
+        // Ein Widerruf in einem anderen Tab nimmt auch hier die Klaerung zurueck (#587).
+        this.geklaertSetzen(stand.eingewilligt ? this.kennung : null);
       });
   }
 

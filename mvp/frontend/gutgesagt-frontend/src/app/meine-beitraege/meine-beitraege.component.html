@@ -15,12 +15,6 @@
         <!-- Gesperrte eigene Beitraege stehen nicht im Album, nur hier (#448) -->
         <app-sperrnachrichten></app-sperrnachrichten>
 
-        <!-- Nur fuer die Person selbst; bei ausgeschalteten Punkten leer (#352) -->
-        <app-punkte></app-punkte>
-
-        <!-- Nur fuer die Person selbst; ohne Meilensteine (Punkte aus, keine Einwilligung) leer (#351) -->
-        <app-meilensteine></app-meilensteine>
-
         <div *ngIf="isLoading">
             <p>Lade eigene Beiträge …</p>
             <div class="loading-container">
@@ -50,12 +44,14 @@
                         (click)="zumBeitragen()">Beitragen</button>
             </ng-container>
 
+            <!-- Wirkung zuerst: der Satz, darunter die Beitraege nach Nutzung; Punkte und Meilensteine danach (Nutzerfuehrung 13.11.) -->
             <p *ngIf="karten.length" class="album-statistik">{{ statistik }}</p>
             <!-- Bei 0 Nutzungen: was „genutzt“ heisst und was als Naechstes hilft (UX-Review B11) -->
             <p *ngIf="nochNichtGenutzt" class="hinweis-box nutzung-leer" data-testid="nutzung-leer">
                 Noch hat niemand deine Beiträge genutzt. Genutzt heißt: Jemand kopiert einen davon, um ihn zu posten.
                 Öffne einen Beitrag und teil seinen Link, dann findet er schneller seinen Weg.
             </p>
+            <p *ngIf="karten.length && gesamtNutzung > 0" class="nutzung-erklaerung">Genutzt heißt: Jemand hat den Beitrag kopiert oder geteilt.</p>
 
             <app-kartenliste *ngIf="karten.length"
                              variante="kompakt"
@@ -69,6 +65,12 @@
             [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
             (page)="onPageChange($event)">
         </mat-paginator>
+
+        <!-- Nur fuer die Person selbst; bei ausgeschalteten Punkten leer (#352) -->
+        <app-punkte></app-punkte>
+
+        <!-- Nur fuer die Person selbst; ohne Meilensteine (Punkte aus, keine Einwilligung) leer (#351) -->
+        <app-meilensteine></app-meilensteine>
     </div>
 
     <!-- Erst beim ersten Oeffnen geladen, danach nur versteckt: Seite und Liste bleiben beim Wechseln stehen -->

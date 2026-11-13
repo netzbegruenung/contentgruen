@@ -24,7 +24,9 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   dafür nichts (Entscheidung Maintainer, 13.11.2026, bis § 25 TDDDG geprüft ist); einen
   älteren Eintrag `gutgesagt-art9-ohne` im localStorage räumt die App einmal weg. Eine
   Einwilligung löscht die Zeile, ein Widerruf lässt sie stehen (dann gilt ohnehin
-  „widerrufen“); sie geht mit dem Konto (`person_loeschen.sql`), mit dem Löschablauf eines
+  „widerrufen“); solange eine geltende Einwilligung besteht, schreibt `/ohne` nichts (in
+  derselben Anweisung geprüft, falls „ohne“ etwa aus einem zweiten Tab nach der Einwilligung
+  ankommt); sie geht mit dem Konto (`person_loeschen.sql`), mit dem Löschablauf eines
   Löschauftrags und zieht beim Umstellen der Kennungen mit. Ausnahme: Wer einem früheren
   Wortlaut zugestimmt hat, der nicht mehr zählt, wird zum neuen einmal gefragt.
   Erst beim Beitragen zeigen die Formulare (Einwerfen, Satz beim Destillieren, Kommentar,
@@ -72,7 +74,9 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
   Meilensteine“ (#668, Entscheidung Maintainer 13.11.2026); ohne sie kann die Person genauso
   beitragen und bewerten. Bis #668 gemergt ist, prüft der Code dafür noch diese Einwilligung
   (`PunkteService.punkte`, #559, F559-1: ohne sie 0 in jeder Stufe, gefragt je Abruf); das ist
-  folgenlos, solange der Schalter `punkte_aktiv` aus ist.
+  folgenlos, solange der Schalter `punkte_aktiv` aus ist. **`punkte_aktiv` erst nach dem Merge
+  von #668 einschalten:** Bis dahin startet der Suchdienst damit nicht
+  (`punkte_schalter_pruefen` in `core/config.py`, `PUNKTE_EINWILLIGUNG_GEBAUT`, das #668 setzt).
 - **Abzeichen (#351):** Ohne geltende Einwilligung kein Abzeichen am Anzeigenamen. Ein Widerruf nimmt das Abzeichen sofort weg und hält ein
   früheres Ja zur Sichtbarkeit als Nein fest, damit es nach einer neuen Einwilligung nicht
   ohne neue Frage wieder erscheint (`AbzeichenService.zuruecknehmen`). Die Antwort zur

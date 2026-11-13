@@ -7,11 +7,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
 
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import String, delete, func, insert, literal, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from domain.art9_einwilligung import geltender_wortlaut
+from domain.art9_einwilligung import GELTENDE_WORTLAUTE, geltender_wortlaut
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import (
     Art9EinwilligungZeile,
@@ -90,21 +90,41 @@ class Art9EinwilligungRepository:
                 )
             ).scalar_one_or_none()
 
-    def ohne_merken(self, user_id: str, wortlaut: str) -> None:
+    def ohne_merken(self, user_id: str, wortlaut: str) -> bool:
         """
         "Ohne Einwilligung weiter" zu diesem Wortlaut festhalten (B2); eine fruehere
         Entscheidung wird ersetzt, je Kennung bleibt eine Zeile.
+
+        Nur, wenn keine geltende Einwilligung besteht, in einer Anweisung
+        (INSERT ... SELECT ... WHERE NOT EXISTS): Kommt "ohne" nach einer Einwilligung an,
+        etwa aus einem zweiten Tab, bleibt es ohne Wirkung (Review zu #670). Gibt zurueck,
+        ob etwas geschrieben wurde.
         """
-        with self.db.get_session() as session:
-            anweisung = pg_insert(Art9OhneEinwilligungZeile).values(
-                user_id=user_id, wortlaut=wortlaut, entschieden_am=func.now()
+        geltend = (
+            select(Art9EinwilligungZeile.id)
+            .where(
+                Art9EinwilligungZeile.user_id == user_id,
+                Art9EinwilligungZeile.widerrufen_am.is_(None),
+                Art9EinwilligungZeile.wortlaut.in_(sorted(GELTENDE_WORTLAUTE)),
             )
-            session.execute(
+            .exists()
+        )
+        quelle = select(
+            literal(user_id, String(255)),
+            literal(wortlaut, String(64)),
+            func.now(),
+        ).where(~geltend)
+        with self.db.get_session() as session:
+            anweisung = pg_insert(Art9OhneEinwilligungZeile).from_select(
+                ["user_id", "wortlaut", "entschieden_am"], quelle
+            )
+            ergebnis = session.execute(
                 anweisung.on_conflict_do_update(
                     index_elements=[Art9OhneEinwilligungZeile.user_id],
                     set_={"wortlaut": wortlaut, "entschieden_am": func.now()},
                 )
             )
+            return ergebnis.rowcount > 0
 
     def widerrufen(
         self,

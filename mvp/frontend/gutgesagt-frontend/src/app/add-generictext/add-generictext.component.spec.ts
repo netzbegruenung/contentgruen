@@ -28,6 +28,11 @@ import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.servi
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
 import { environment } from '../../environments/environment';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of as vonWert } from 'rxjs';
+
+/** Zweispaltig wie am Desktop: Gegenlesen neben der Vorschau (Nutzerfuehrung 13.11.). */
+const ZWEISPALTIG = { provide: BreakpointObserver, useValue: { observe: () => vonWert({ matches: false, breakpoints: {} }) } };
 
 /** Gleich gebaut wie das Kommentarformular; hier die Unterschiede und die geteilten Wege. */
 describe('AddGenerictextComponent', () => {
@@ -41,6 +46,7 @@ describe('AddGenerictextComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AddGenerictextComponent, NoopAnimationsModule],
       providers: [
+        ZWEISPALTIG,
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),

@@ -373,6 +373,27 @@ describe('EinwilligungComponent', () => {
     });
   });
 
+  it('holt den Stand neu, wenn der Tab wieder sichtbar wird (Widerruf in einem anderen Tab)', () => {
+    starten(null);
+    standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    standLiefern(stand({ wortlaut: '2026-11-05', widerrufen_am: '2026-11-06T09:30:00Z' }));
+
+    expect(el().querySelector('mat-checkbox')).not.toBeNull();
+    expect(el().querySelector('.hinweis')?.textContent).toContain('06.11.2026');
+  });
+
+  it('laedt beim Zurueckkommen nicht neu, wenn das Haekchen schon gesetzt ist', () => {
+    starten(null);
+    standLiefern(stand());
+    fixture.componentInstance.angehakt = true;
+
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    http.expectNone({ method: 'GET', url: URL });
+  });
+
   it('zeigt einen Fehler, wenn der Stand nicht kommt', () => {
     starten();
     http.expectOne({ method: 'GET', url: URL }).flush(null, { status: 500, statusText: 'Fehler' });

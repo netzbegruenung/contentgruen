@@ -4,8 +4,17 @@
   stroke: var(--akzent-tanne) !important;
 }
 
+/* Der Wirkungssatz: oben und lesbar, nicht als graue Fussnote (Nutzerfuehrung 13.11.) */
 .album-statistik {
-  margin: var(--spacing-md) 0 12px;
+  margin: var(--spacing-md) 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.nutzung-erklaerung {
+  margin: 0 0 12px;
   font-size: 14px;
   color: var(--text-secondary);
 }
@@ -44,4 +53,10 @@
 /* Erklaerung bei 0 Nutzungen (UX-Review B11) */
 .nutzung-leer {
   margin: 0 0 var(--spacing-md);
+}
+
+/* Punkte und Meilensteine stehen unter den Beitraegen (Nutzerfuehrung 13.11.) */
+app-punkte {
+  display: block;
+  margin-top: var(--spacing-lg);
 }

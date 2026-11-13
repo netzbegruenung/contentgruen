@@ -1,48 +1,48 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ROUTES } from '../shared/constants/app.constants';
-import { NavigationService } from '../services/navigation.service';
 import { Subscription, Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { SearchService } from '../services/search.service';
-import { SearchResponse, GenerictextResult } from '../services/dtos/searchDtos';
-import { CommentarySearchResultsComponent } from '../commentary-search-results/commentary-search-results.component';
-import { GenerictextSearchResultsComponent } from '../generictext-search-results/generictext-search-results.component';
+import { SearchResponse } from '../services/dtos/searchDtos';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
-import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { SearchComponent } from '../search/search.component';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialog } from '@angular/material/dialog';
 import { StateManagementService } from '../services/state-management.service';
 import { LoadingSpinnerComponent } from '../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../shared/components/error-message/error-message.component';
-import { LoggingService } from '../services/logging.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { AuthService, UserInfo } from '../auth/auth.service';
-import { hilfeOeffnen } from '../help-dialog/help-dialog.component';
-import { FORMULAR_PFAD, aussageParameterMitText } from '../shared/formular-adresse';
-import { typBeschreibung } from '../shared/content-type-registry';
+import { FORMULAR_PFAD, aussageParameterMitText, istAussageId } from '../shared/formular-adresse';
 import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
-import { ErkannteAussage, aussageZumAntworten, erkannteAussage, zurErkanntenAussage } from './erkannte-aussage';
+import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
+import { StatementSearchResult } from '../services/dtos/statementDtos';
+import {
+  AnsichtGruppe,
+  ErgebnisGruppe,
+  TREFFER_TYPEN,
+  TYP_NAMEN,
+  TrefferTyp,
+  TypFilter,
+  alleTreffer,
+  ansichtBauen,
+  anzahlJeTyp,
+  anzahlSichtbar,
+  istWeniger,
+  aufklappSchluessel,
+  aussageSchluessel,
+  gruppieren,
+  typFilterLesen,
+  typFilterMerken,
+} from './ergebnis-gruppen';
 
-export { erkannteAussage, zurErkanntenAussage } from './erkannte-aussage';
-export type { ErkannteAussage } from './erkannte-aussage';
-
-/** Anker von "Nicht dabei?" unter den Treffern, Ziel von "Nicht gemeint?" (#642). */
-export const NICHT_DABEI_ANKER = 'nicht-dabei-unten';
-
-/** Die Abschnitte der Ergebnisseite: am Handy je ein Tab. */
-type Ergebnisabschnitt = 'commentary' | 'generictext' | 'post';
+/** Wie viele aehnliche Aussagen das Kopfband unter "Nicht gemeint?" anbietet. */
+const ALTERNATIVEN_IM_KOPFBAND = 3;
 
 /** Ob ein Treffer zum Themenfilter passt; ohne Filter passt jeder. */
 function passtZuThema(treffer: BaseSearchResult, thema: string | null): boolean {
@@ -50,17 +50,16 @@ function passtZuThema(treffer: BaseSearchResult, thema: string | null): boolean 
 }
 
 /**
- * Die Themen aller Treffer, jedes einmal, in der Reihenfolge ihres ersten
- * Auftretens. Nur sie stehen im Filter: Ein Thema ohne Treffer liesse die Seite leer.
+ * Die Themen der Treffer, jedes einmal, in der Reihenfolge ihres ersten Auftretens.
+ * Nur sie stehen im Filter: Ein Thema ohne Treffer liesse die Seite leer. Mit
+ * ``nurAussage`` (Schluessel der erkannten Aussage) nur die Themen ihrer Treffer: Ein
+ * Thema nur eingeklappter Treffer liesse die erkannte Gruppe wegfallen und die
+ * weniger passenden offen dastehen.
  */
-export function themenDerTreffer(antwort: SearchResponse): Thema[] {
+export function themenDerTreffer(antwort: SearchResponse, nurAussage: string | null = null): Thema[] {
   const gesehen = new Map<string, Thema>();
-  const alle: BaseSearchResult[] = [
-    ...(antwort.commentary_search_results ?? []),
-    ...(antwort.generictext_search_results ?? []),
-    ...(antwort.post_search_results ?? []),
-  ];
-  for (const treffer of alle) {
+  const auswahl = alleTreffer(antwort).filter((t) => nurAussage === null || aussageSchluessel(t) === nurAussage);
+  for (const treffer of auswahl) {
     for (const thema of treffer.themen ?? []) {
       if (!gesehen.has(thema.schluessel)) {
         gesehen.set(thema.schluessel, thema);
@@ -70,18 +69,65 @@ export function themenDerTreffer(antwort: SearchResponse): Thema[] {
   return [...gesehen.values()];
 }
 
+/** Die Aussage, als die die Suche verstanden wurde: ID (falls bekannt) und Text. */
+export interface ErkannteAussage {
+  id: string | null;
+  text: string;
+}
+
 /**
- * Die Aussagen, deren Beitraege als Treffer dastehen, und die Aussage der Suche selbst:
- * "Nicht dabei?" schlaegt sie nicht noch einmal als aehnliche Aussage vor.
+ * Die erkannte Aussage (#642, R40): die Aussage, ueber die die meisten Treffer
+ * gefunden wurden; bei Gleichstand die des Treffers mit dem hoechsten Score. Sie
+ * steht im Kopfband ueber den Treffern, ihre Gruppe kommt zuerst. null, wenn kein
+ * Treffer ueber eine Aussage kam (nur direkte Treffer) oder die gewaehlte weder den
+ * obersten Treffer noch die Mehrheit traegt.
  */
-export function aussagenDerTreffer(antwort: SearchResponse): string[] {
-  const alle: BaseSearchResult[] = [
-    ...(antwort.commentary_search_results ?? []),
-    ...(antwort.generictext_search_results ?? []),
-    ...(antwort.post_search_results ?? []),
-  ];
-  const ids = alle.map((treffer) => treffer.statement_id);
-  return [...new Set([antwort.statement_id, ...ids].filter((id): id is string => !!id))];
+export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null {
+  const je = new Map<string, { aussage: ErkannteAussage; anzahl: number; bester: number }>();
+  for (const treffer of alleTreffer(antwort)) {
+    const schluessel = aussageSchluessel(treffer);
+    if (!schluessel) {
+      continue;
+    }
+    const eintrag = je.get(schluessel);
+    if (eintrag) {
+      eintrag.anzahl += 1;
+      eintrag.bester = Math.max(eintrag.bester, treffer.score ?? 0);
+    } else {
+      je.set(schluessel, {
+        aussage: { id: treffer.statement_id || null, text: treffer.statement_text!.trim() },
+        anzahl: 1,
+        bester: treffer.score ?? 0,
+      });
+    }
+  }
+  let gewaehlt: { aussage: ErkannteAussage; anzahl: number; bester: number } | null = null;
+  let mitAussage = 0;
+  let hoechster = -Infinity;
+  for (const eintrag of je.values()) {
+    mitAussage += eintrag.anzahl;
+    hoechster = Math.max(hoechster, eintrag.bester);
+  }
+  for (const eintrag of je.values()) {
+    if (
+      !gewaehlt ||
+      eintrag.anzahl > gewaehlt.anzahl ||
+      (eintrag.anzahl === gewaehlt.anzahl && eintrag.bester > gewaehlt.bester)
+    ) {
+      gewaehlt = eintrag;
+    }
+  }
+  // Nur, wenn das Kopfband fuer die Treffer steht: Die Aussage traegt den obersten
+  // Treffer oder die Mehrheit. Verteilt auf viele Aussagen sagte es zu wenig.
+  if (!gewaehlt || (gewaehlt.bester < hoechster && gewaehlt.anzahl * 2 <= mitAussage)) {
+    return null;
+  }
+  return gewaehlt.aussage;
+}
+
+/** Der Gruppenschluessel der erkannten Aussage (wie aussageSchluessel); null ohne. */
+export function erkannterSchluessel(erkannt: ErkannteAussage | null): string | null {
+  return erkannt ? erkannt.id || `text:${erkannt.text}` : null;
 }
 
 /** Die Suchantwort mit nur den Treffern zum Thema, Zaehler passend dazu. */
@@ -92,6 +138,7 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
   const kommentare = (antwort.commentary_search_results ?? []).filter((t) => passtZuThema(t, thema));
   const hintergrund = (antwort.generictext_search_results ?? []).filter((t) => passtZuThema(t, thema));
   const posts = (antwort.post_search_results ?? []).filter((t) => passtZuThema(t, thema));
+  const bilder = (antwort.image_search_results ?? []).filter((t) => passtZuThema(t, thema));
   return {
     ...antwort,
     commentary_search_results: kommentare,
@@ -100,7 +147,16 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     generictext_search_results_count: hintergrund.length,
     post_search_results: posts,
     post_search_results_count: posts.length,
+    image_search_results: bilder,
+    image_search_results_count: bilder.length,
   };
+}
+
+/** Ein Chip oben: ein Typ mit Treffern, oder "Alle". */
+export interface TypChip {
+  filter: TypFilter;
+  name: string;
+  anzahl: number;
 }
 
 @Component({
@@ -109,16 +165,11 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    CommentarySearchResultsComponent,
-    GenerictextSearchResultsComponent,
+    RouterLink,
     KartenlisteComponent,
     SearchComponent,
-    MatTooltipModule,
     MatButtonModule,
     MatIconModule,
-    MatSidenavModule,
-    MatDividerModule,
-    MatChipsModule,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
@@ -129,34 +180,16 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
   styleUrls: ['./result-view.component.css'],
 })
 export class ResultViewComponent implements OnInit, OnDestroy {
-  @ViewChild('sidenav') sidenav!: MatSidenav;
-
   searchQuery$: Observable<string>;
   searchResponse$: Observable<SearchResponse | null>;
   loading$: Observable<boolean>;
   error$: Observable<string | null>;
 
   searchQuery: string = '';
-  searchResponse: SearchResponse | null = null;
-  generictextSearchResults: GenerictextResult[] = [];
-  loading: boolean = false;
-  error: string = '';
   private queryParamsSubscription?: Subscription;
   private destroy$ = new Subject<void>();
 
-  // Einmal je Suchantwort umgerechnet, nicht im Template: neue Objekte bei jeder
-  // Change Detection setzten die Karten zurueck (aufgeklappte Aussage, Kurz/Lang).
-  kommentarKarten: KartenDaten[] = [];
-  hintergrundKarten: KartenDaten[] = [];
-  postKarten: KartenDaten[] = [];
-
-  // Mobile navigation
   isMobile: boolean = false;
-  isTablet: boolean = false;
-  currentSection: Ergebnisabschnitt = 'commentary';
-  hasCommentaryResults: boolean = false;
-  hasGenerictextResults: boolean = false;
-  hasPostResults: boolean = false;
 
   // Themenfilter: die Themen der Aussagen, ueber die die Treffer gefunden wurden.
   // `angezeigt` ist die Suchantwort mit nur den Treffern zum aktiven Thema.
@@ -164,40 +197,61 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   angezeigt: SearchResponse | null = null;
   themenDerTreffer: Thema[] = [];
   aktivesThema: string | null = null;
-  aussagenDerTreffer: string[] = [];
-  /** Einmal ueber den Treffern (#642); aus allen Treffern, nicht nur denen zum Thema. */
+  bekannteAussagen: string[] = [];
+  /** Im Kopfband (#642); aus allen Treffern, nicht nur denen zum Thema. */
   erkannt: ErkannteAussage | null = null;
+
+  // Einmal je Suchantwort und Wahl umgerechnet, nicht im Template: neue Objekte bei
+  // jeder Change Detection setzten die Karten zurueck (Kurz/Lang, Aufklapper).
+  private gruppen: ErgebnisGruppe[] = [];
   /**
-   * Wie viele andere aehnliche Aussagen "Nicht dabei?" zeigt. "Nicht gemeint?" steht
-   * nur, wenn es dort welche gibt; sonst fuehrte der Link in einen leeren Kasten.
+   * Karten je Treffer, einmal je Suchantwort gebaut: Der Themenfilter gruppiert neu,
+   * die Karten bleiben dieselben Objekte, und die Beitragskarte setzt Fassung,
+   * Aufklapper und Nutzung nicht zurueck (ngOnChanges bei neuen Daten).
    */
-  andereAussagen = 0;
+  private karten = new WeakMap<BaseSearchResult, KartenDaten>();
+  private readonly karteZu = (treffer: BaseSearchResult): KartenDaten => {
+    let karte = this.karten.get(treffer);
+    if (!karte) {
+      karte = ausSuchergebnis(treffer);
+      this.karten.set(treffer, karte);
+    }
+    return karte;
+  };
+  ansicht: AnsichtGruppe[] = [];
+  /** Treffer je Typ, die ohne Aufklappen dastehen; danach richten sich die Chips. */
+  anzahl: Record<TrefferTyp, number> = anzahlJeTyp(null);
+  /** Alle Treffer je Typ, auch die weniger passenden: fuer den Leerzustand. */
+  private anzahlAlle: Record<TrefferTyp, number> = anzahlJeTyp(null);
+  /** Gruppen, die ohne Aufklappen dastehen, und die weniger passenden darunter. */
+  hauptGruppen: AnsichtGruppe[] = [];
+  weitereGruppen: AnsichtGruppe[] = [];
+  weitereAnzahl = 0;
+  /** "Weitere, weniger passende Treffer" aufgeklappt; jede neue Suche beginnt zu. */
+  weitereOffen = false;
+  chips: TypChip[] = [];
+  /** Gewaehlter Typ; gilt fuer die Sitzung (sessionStorage). */
+  typFilter: TypFilter = typFilterLesen();
+  /** Gruppe und Typ, die alle Karten zeigen ("Alle N … zeigen"). */
+  private aufgeklappt = new Set<string>();
+  /** Fuer Screenreader: was nach einer Typwahl dasteht. */
+  ansage = '';
 
-  // Erklaerzeile je Tab, derselbe Satz wie auf der Beitragen-Seite
-  readonly kommentarErklaerung = typBeschreibung('commentary');
-  readonly hintergrundErklaerung = typBeschreibung('generictext');
-  readonly postErklaerung = typBeschreibung('post');
-  readonly nichtDabeiAnker = NICHT_DABEI_ANKER;
+  /** Aehnliche Aussagen aus "Nicht dabei?", ohne die der Treffer; fuer "Nicht gemeint?". */
+  alternativen: StatementSearchResult[] = [];
+  /** Am Handy klappt "Nicht gemeint?" die Alternativen erst auf. */
+  alternativenOffen = false;
 
-  // User authentication
-  userInfo: UserInfo | null = null;
-
-  // Popular topics for empty state suggestions
-  popularTopics: string[] = ['Klimaschutz', 'Mobilität', 'Energie', 'Soziales', 'Digitalisierung', 'Bildung'];
+  readonly typNamen = TYP_NAMEN;
 
   constructor(
     private searchService: SearchService,
-    private navigationService: NavigationService,
     private stateService: StateManagementService,
-    private logger: LoggingService,
-    private authService: AuthService,
-    private dialog: MatDialog,
     private router: Router,
     private route: ActivatedRoute,
     private breakpointObserver: BreakpointObserver,
     private cdr: ChangeDetectorRef
   ) {
-    // Connect to state observables
     this.searchQuery$ = this.stateService.searchQuery$;
     this.searchResponse$ = this.stateService.searchResults$;
     this.loading$ = this.stateService.loading$;
@@ -205,7 +259,6 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Set up mobile and tablet detection
     this.breakpointObserver.observe(['(max-width: 599px)'])
       .pipe(takeUntil(this.destroy$))
       .subscribe(result => {
@@ -213,37 +266,26 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
 
-    this.breakpointObserver.observe(['(min-width: 600px) and (max-width: 959px)'])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(result => {
-        this.isTablet = result.matches;
-        this.cdr.markForCheck();
-      });
-
-    // Subscribe to user info changes
-    this.authService.userInfo$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((userInfo) => {
-        this.userInfo = userInfo;
-        this.cdr.markForCheck();
-      });
-
-    // Monitor search results to determine available sections
     this.searchResponse$
       .pipe(takeUntil(this.destroy$))
       .subscribe(response => {
         this.antwort = response;
-        // Eine neue Suche beginnt ohne Filter.
+        this.karten = new WeakMap();
+        // Eine neue Suche beginnt ohne Themenfilter und zugeklappt; die Typwahl bleibt.
         this.aktivesThema = null;
-        this.themenDerTreffer = response ? themenDerTreffer(response) : [];
-        this.aussagenDerTreffer = response ? aussagenDerTreffer(response) : [];
+        this.aufgeklappt.clear();
+        this.alternativenOffen = false;
+        this.weitereOffen = false;
+        // Alternativen und Ansage gehoeren zur vorigen Suche; "Nicht dabei?" meldet neu.
+        this.alternativen = [];
+        this.ansage = '';
         this.erkannt = response ? erkannteAussage(response) : null;
+        this.themenDerTreffer = response ? themenDerTreffer(response, erkannterSchluessel(this.erkannt)) : [];
         this.anzeigen();
       });
 
-    // Listen to query parameters and fetch results
+    // Ohne Suchtext kommt man nicht hierher: ohneSuchtextZumStart (#642, R50).
     this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
-      // Ohne Suchtext kommt man nicht hierher: ohneSuchtextZumStart (#642, R50).
       this.searchQuery = params['searchQuery'] || '';
       if (this.searchQuery) {
         this.performSearch();
@@ -257,62 +299,103 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.anzeigen();
   }
 
-  /** Karten und Abschnitte aus der Suchantwort, gefiltert nach dem aktiven Thema. */
+  /** Gruppen, Zaehler und Chips aus der Suchantwort, gefiltert nach dem aktiven Thema. */
   private anzeigen(): void {
     const response = this.antwort ? nachThemaGefiltert(this.antwort, this.aktivesThema) : null;
     this.angezeigt = response;
-    if (response) {
-      this.hasCommentaryResults = response.commentary_search_results_count > 0;
-      this.hasGenerictextResults = response.generictext_search_results_count > 0;
-      this.kommentarKarten = (response.commentary_search_results ?? []).map((paket) => this.karte(paket));
-      this.hintergrundKarten = (response.generictext_search_results ?? []).map((paket) => this.karte(paket));
-      this.hasPostResults = (response.post_search_results_count ?? 0) > 0;
-      this.postKarten = (response.post_search_results ?? []).map((paket) => this.karte(paket));
+    this.anzahlAlle = anzahlJeTyp(response);
+    this.gruppen = response ? gruppieren(response, erkannterSchluessel(this.erkannt), this.karteZu) : [];
+    this.anzahl = anzahlSichtbar(this.gruppen);
+    this.bekannteAktualisieren();
+    const gesamt = TREFFER_TYPEN.reduce((summe, typ) => summe + this.anzahl[typ], 0);
+    this.chips = [
+      { filter: 'alle' as TypFilter, name: 'Alle', anzahl: gesamt },
+      ...TREFFER_TYPEN.filter((typ) => this.anzahl[typ] > 0).map((typ) => ({
+        filter: typ as TypFilter,
+        name: TYP_NAMEN[typ].mehrzahl,
+        anzahl: this.anzahl[typ],
+      })),
+    ];
+    this.ansichtAktualisieren();
+  }
 
-      // Der erste Abschnitt mit Treffern: Kommentar, dann Hintergrundinfo, dann Post
-      if (this.hasCommentaryResults) {
-        this.currentSection = 'commentary';
-      } else if (this.hasGenerictextResults) {
-        this.currentSection = 'generictext';
-      } else if (this.hasPostResults) {
-        this.currentSection = 'post';
-      }
-    }
+  /** Der Filter, der gilt: ein gewaehlter Typ ohne Treffer zeigt alle. */
+  get wirksamerFilter(): TypFilter {
+    return this.typFilter !== 'alle' && this.anzahl[this.typFilter] === 0 ? 'alle' : this.typFilter;
+  }
+
+  private ansichtAktualisieren(): void {
+    this.ansicht = ansichtBauen(this.gruppen, this.wirksamerFilter, this.aufgeklappt);
+    this.hauptGruppen = this.ansicht.filter((g) => !g.weniger);
+    this.weitereGruppen = this.ansicht.filter((g) => g.weniger);
+    this.weitereAnzahl = this.weitereGruppen.reduce((summe, g) => summe + g.anzahl, 0);
     this.cdr.markForCheck();
   }
 
-  /**
-   * Die Karte zu einem Treffer. Kam er ueber die erkannte Aussage, steht die schon
-   * einmal ueber den Treffern: Die Karte laesst ihren Antwort-auf-Kopf dann weg und
-   * zeigt ihn nur, wenn er abweicht (#642, R40).
-   */
-  private karte(paket: BaseSearchResult & Record<string, any>): KartenDaten {
-    const karte = ausSuchergebnis(paket);
-    if (karte.statement && zurErkanntenAussage(paket, this.erkannt)) {
-      const { statement: _statement, ...ohne } = karte;
-      return ohne;
-    }
-    return karte;
+  /** Gruppen und Typen behalten ihre Karten, wenn sich Filter oder Aufklappen aendern. */
+  nachGruppe(_index: number, gruppe: AnsichtGruppe): string {
+    return gruppe.schluessel;
+  }
+
+  nachTyp(_index: number, block: { typ: TrefferTyp }): string {
+    return block.typ;
   }
 
   /**
-   * "Nicht gemeint?": zu "Nicht dabei?" unter den Treffern, wo die anderen
-   * aehnlichen Aussagen stehen, und den Fokus dorthin setzen.
+   * Aussagen, die "Nicht dabei?" nicht noch einmal vorschlaegt: die Aussage der Suche und
+   * die der offenen Gruppen. Eingeklappte Aussagen bleiben als Alternative unter
+   * "Nicht gemeint?" waehlbar.
    */
-  zuAnderenAussagen(): void {
-    const ziel = document.getElementById(NICHT_DABEI_ANKER);
-    if (!ziel) {
-      return;
+  private bekannteAktualisieren(): void {
+    const ids = this.gruppen
+      .filter((g) => !istWeniger(g, this.gruppen) && g.art !== 'ohne' && !g.schluessel.startsWith('text:'))
+      .map((g) => g.schluessel);
+    const neu = [...new Set([this.antwort?.statement_id, ...ids].filter((id): id is string => !!id))];
+    if (neu.join('|') !== this.bekannteAussagen.join('|')) {
+      this.bekannteAussagen = neu;
     }
-    const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    ziel.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'start' });
-    ziel.focus({ preventScroll: true });
   }
 
-  andereAussagenGeladen(anzahl: number): void {
-    // Nach der laufenden Pruefung: Der Link steht im Template vor "Nicht dabei?".
+  /** Irgendein Treffer, gleich welchen Typs. */
+  get hatTreffer(): boolean {
+    return TREFFER_TYPEN.some((typ) => this.anzahlAlle[typ] > 0);
+  }
+
+  /** Chip gewaehlt: nur noch dieser Typ (oder alle); gilt fuer die Sitzung. */
+  typWaehlen(filter: TypFilter): void {
+    this.typFilter = filter;
+    typFilterMerken(filter);
+    this.ansichtAktualisieren();
+    const chip = this.chips.find((c) => c.filter === filter);
+    const anzahl = chip?.anzahl ?? 0;
+    const eingeklappt = this.weitereAnzahl > 0 ? `, ${this.weitereAnzahl} weitere eingeklappt` : '';
+    this.ansage =
+      (filter === 'alle'
+        ? `Alle Typen, ${anzahl} Treffer`
+        : `Nur ${TYP_NAMEN[filter].mehrzahl}, ${anzahl} Treffer`) + eingeklappt;
+  }
+
+  /**
+   * "Alle N … zeigen": den Rest des Typs in dieser Gruppe zeigen und den Fokus auf
+   * die erste neue Karte setzen, damit Tastatur und Screenreader dort weiterlesen.
+   */
+  alleZeigen(gruppe: AnsichtGruppe, typ: TrefferTyp, blockId: string, bisher: number): void {
+    this.aufgeklappt.add(aufklappSchluessel(gruppe.schluessel, typ));
+    this.ansichtAktualisieren();
+    this.cdr.detectChanges();
+    const block = document.getElementById(blockId);
+    const neue = block?.querySelectorAll('app-beitragskarte')[bisher];
+    const ziel =
+      neue?.querySelector<HTMLElement>('a.titel-link, button, [tabindex="0"]') ??
+      block?.querySelector<HTMLElement>('.typ-ueberschrift');
+    ziel?.focus();
+  }
+
+  /** "Nicht dabei?" hat aehnliche Aussagen geladen; das Kopfband bietet die ersten an. */
+  alternativenGeladen(aussagen: StatementSearchResult[]): void {
+    // Nach der laufenden Pruefung: Das Kopfband steht im Template vor "Nicht dabei?".
     Promise.resolve().then(() => {
-      this.andereAussagen = anzahl;
+      this.alternativen = aussagen.slice(0, ALTERNATIVEN_IM_KOPFBAND);
       this.cdr.markForCheck();
     });
   }
@@ -321,17 +404,6 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.queryParamsSubscription?.unsubscribe();
-  }
-
-  // Switch sections (for tab navigation)
-  /** Irgendein Treffer, gleich welchen Typs. */
-  get hatTreffer(): boolean {
-    return this.hasCommentaryResults || this.hasGenerictextResults || this.hasPostResults;
-  }
-
-  switchToSection(section: Ergebnisabschnitt): void {
-    this.currentSection = section;
-    this.cdr.markForCheck();
   }
 
   /**
@@ -348,9 +420,6 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.fetchSearchResults();
   }
 
-  /**
-   * Fetch search results for the query entered by the user.
-   */
   private fetchSearchResults(): void {
     this.searchService.search(this.searchQuery, 10).subscribe();
   }
@@ -359,59 +428,13 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.fetchSearchResults();
   }
 
-  navigateToStart(): void {
-    this.navigationService.navigateToStart();
-  }
-
-  navigateToContributeView(): void {
-    this.navigationService.navigateToContribute();
-  }
-
-  navigateToMeineBeitraege(): void {
-    this.navigationService.navigateToMeineBeitraege();
-  }
-
-  login(): void {
-    this.authService.login();
-  }
-
-  logout(): void {
-    this.authService.logout();
-  }
-
-  toggleMobileMenu(): void {
-    this.sidenav?.toggle();
-  }
-
-  openHelpDialog(): void {
-    hilfeOeffnen(this.dialog);
-  }
-
-  handleContributeClick(): void {
-    if (this.userInfo?.isAuthenticated) {
-      this.navigateToContributeView();
-    } else {
-      this.login();
-    }
-  }
-
-  getContributeButtonLabel(): string {
-    return this.userInfo?.isAuthenticated ? 'Beitragen' : 'Anmelden zum Beitragen';
-  }
-
   /**
-   * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: die erkannte
-   * Aussage, sonst die der Suche per ID, sonst der Suchtext (aussageZumAntworten).
+   * Ins Formular des Typs, als Antwort auf die erkannte Aussage, wo es eine mit ID gibt,
+   * sonst auf die Aussage der Suche per ID, sonst mit dem Suchtext. Die erkannte zuerst:
+   * Legt die Suche eine eigene Aussage an (dieselbe Behauptung in anderen Worten),
+   * liefert getById sie Nicht-Admins nicht aus (#436), und die Antwort landete an einer
+   * Fast-Dublette statt an der Aussage, die das Kopfband nennt (#680).
    */
-  navigateToContribute(typ: 'commentary' | 'generictext'): void {
-    const { searchResults, loading } = this.stateService.currentState;
-    // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
-    const ausAntwort = loading ? null : aussageZumAntworten(searchResults);
-    this.router.navigate([FORMULAR_PFAD[typ]], {
-      queryParams: aussageParameterMitText(ausAntwort, this.searchQuery),
-    });
-  }
-
   /**
    * Nur einen Link dazu (UX-Review B13): in den Fangkorb einwerfen statt gleich
    * antworten. Besucher fuehrt der Guard zur Anmeldung und danach dorthin.
@@ -420,10 +443,19 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.router.navigate([ROUTES.RAW_INPUT]);
   }
 
-  /**
-   * Search for a specific topic
-   */
-  searchForTopic(topic: string): void {
-    this.navigationService.navigateToResult(topic);
+  navigateToContribute(typ: 'commentary' | 'generictext'): void {
+    const { searchResults, loading } = this.stateService.currentState;
+    // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
+    const erkannt = this.erkannt?.id;
+    const ausAntwort = loading
+      ? null
+      : istAussageId(erkannt)
+        ? erkannt
+        : istAussageId(searchResults?.statement_id)
+          ? searchResults!.statement_id
+          : null;
+    this.router.navigate([FORMULAR_PFAD[typ]], {
+      queryParams: aussageParameterMitText(ausAntwort, this.searchQuery),
+    });
   }
 }

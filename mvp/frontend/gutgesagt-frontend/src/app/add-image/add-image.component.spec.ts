@@ -14,6 +14,11 @@ import { OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.compon
 import { typBeschreibung } from '../shared/content-type-registry';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of as vonWert } from 'rxjs';
+
+/** Zweispaltig wie am Desktop: Gegenlesen neben der Vorschau (Nutzerfuehrung 13.11.). */
+const ZWEISPALTIG = { provide: BreakpointObserver, useValue: { observe: () => vonWert({ matches: false, breakpoints: {} }) } };
 
 const WERTE = {
   image_url: 'https://example.org/dach.jpg',
@@ -28,7 +33,7 @@ describe('AddImageComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AddImageComponent, NoopAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ZWEISPALTIG],
     })
       .overrideComponent(AddImageComponent, {
         remove: { imports: [BeitragskarteComponent] },
@@ -237,7 +242,7 @@ describe('AddImageComponent mit der echten Vorschau-Karte', () => {
   it('bemerkt den Ladefehler des Bildes, das die Karte zur eingegebenen URL zeigt', async () => {
     await TestBed.configureTestingModule({
       imports: [AddImageComponent, NoopAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ZWEISPALTIG],
     }).compileComponents();
     const fixture = TestBed.createComponent(AddImageComponent);
     fixture.detectChanges();
