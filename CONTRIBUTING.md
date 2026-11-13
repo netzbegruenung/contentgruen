@@ -152,8 +152,8 @@ and confirm that you have the right to do so.
 
 1. Open an issue on Forgejo or comment on an existing one to coordinate
 2. Create a branch as described above
-3. Make your changes and run the checks: `scripts/check.sh --geaendert` while working, the full
-   `scripts/check.sh --integration` before opening the pull request
+3. Make your changes and run the checks: `scripts/check.sh --geaendert` while working and before
+   pushing; the full run (`scripts/check.sh --integration`) is the pipeline's job
 4. Open a pull request against `main` on Forgejo with a clear description of what and why, and
    `Closes #<issue>`
 5. Woodpecker runs the same checks on every pull request ([docs/CI.md](docs/CI.md)); a maintainer

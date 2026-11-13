@@ -1385,4 +1385,53 @@ describe('BeitragskarteComponent', () => {
       expect(component.darfVerwerfen).toBeFalse();
     });
   });
+  describe('Einwurf quer (Fangkorb am Desktop)', () => {
+    function einwurfKarte(): KartenDaten {
+      return ausEinwurf({
+        id: 'e-quer',
+        content: 'Hinweis',
+        url: 'https://www.instagram.com/reel/ABC/',
+        image_url: null,
+        submitted_by: 'bob',
+        source_channel: 'web',
+        status: 'open',
+        created_at: '2026-09-13T12:00:00Z',
+        drafts: [],
+        links: [],
+      });
+    }
+
+    it('steht ohne quer wie bisher: Griff ueber der Meta-Zeile', () => {
+      zeigen(einwurfKarte(), { variante: 'einwurf' });
+      fixture.nativeElement.style.display = 'block';
+      fixture.nativeElement.style.width = '700px';
+
+      expect(element('.karte').classList).not.toContain('karte--quer');
+      const griff = element('.einwurf-primaer').getBoundingClientRect();
+      const meta = element('.einwurf-meta').getBoundingClientRect();
+      expect(meta.top).toBeGreaterThanOrEqual(griff.bottom);
+    });
+
+    it('stellt quer Meta links und Griff mit Menue rechts in eine Zeile', () => {
+      zeigen(einwurfKarte(), { variante: 'einwurf', quer: true });
+      fixture.nativeElement.style.display = 'block';
+      fixture.nativeElement.style.width = '700px';
+
+      expect(element('.karte').classList).toContain('karte--quer');
+      const griff = element('.einwurf-primaer').getBoundingClientRect();
+      const meta = element('.einwurf-meta').getBoundingClientRect();
+      expect(meta.right).toBeLessThanOrEqual(griff.left);
+      expect(meta.top).toBeLessThan(griff.bottom);
+      expect(meta.bottom).toBeGreaterThan(griff.top);
+      // Tab-Reihenfolge wie hochkant: erst der Griff, die Meta-Zeile hat keinen Tab-Stopp
+      expect(element('.einwurf-fuss').firstElementChild!.classList).toContain('einwurf-aktion');
+    });
+
+    it('wirkt im Kopf nicht', () => {
+      zeigen(einwurfKarte(), { variante: 'kopf', quer: true });
+
+      expect(element('.karte').classList).not.toContain('karte--quer');
+      expect(element('.einwurf-fuss')).toBeNull();
+    });
+  });
 });

@@ -200,6 +200,10 @@ _Avoid_: Content-Typ, Inhaltsart, Kategorie
 Eine Behauptung oder Frage aus der Debatte, auf die man eine gute Antwort braucht, etwa ein Vorwurf gegen grüne Politik oder „Wie erkläre ich die Wärmepumpe?“.
 _Avoid_: Statement, These, Angriff
 
+**Aussagekarte**:
+Eine unbeantwortete Aussage als Karte, im Stil der Karte eines Beitrags: das Kopfband mit der Aussage, darunter die Nachfrage und die Themen, im Fuß „Antworten“. Sie steht in „Hier fehlt eine Antwort“ und im leeren Zustand von „Meine Beiträge“. Inhalte erscheinen als Karten: Beiträge und Einwürfe als Karte, Aussagen als Aussagekarte.
+_Avoid_: Aussagezeile, Statement-Karte
+
 **Kommentar**:
 Eine Antwort, die man direkt posten kann, mit einer Mittelfassung und optional einer Kurz- und einer Langfassung, mit einem Stil und einem Zweck.
 _Avoid_: Commentary, Fertiger Kommentar, Antwort, Reply
