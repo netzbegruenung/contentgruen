@@ -14,6 +14,7 @@ import {
   wortlautErsterSatz,
 } from '../services/art9-einwilligung.service';
 import { ROUTES } from '../shared/constants/app.constants';
+import { HILFE_PARAM } from '../help-dialog/help-dialog.component';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -124,14 +125,16 @@ export class EinwilligungComponent implements OnInit {
   }
 
   /**
-   * Ohne Einwilligung weiter: lesen und suchen geht, beitragen und bewerten nicht.
-   * Die App merkt sich die Entscheidung und fuehrt nicht bei jedem Start wieder her (B2).
+   * Ohne Einwilligung weiter: lesen und suchen geht, beitragen und bewerten nicht. Kam
+   * die Anmeldung aus der Hilfe (HILFE_PARAM), öffnet sie sich danach nicht wieder: Sie
+   * böte nur Selbst beitragen an, und das geht ohne Einwilligung nicht. Die App merkt
+   * sich die Entscheidung und fuehrt nicht bei jedem Start wieder her (B2).
    */
   ohneEinwilligung(): void {
     if (this.stand) {
       this.einwilligung.ohneMerken(this.stand.aktueller_wortlaut.kennung);
     }
-    this.weiter();
+    this.weiter(true);
   }
 
   widerrufenKlick(): void {
@@ -166,9 +169,16 @@ export class EinwilligungComponent implements OnInit {
   }
 
   /** Zurueck, woher die Person kam; nur Pfade innerhalb der App. */
-  private weiter(): void {
+  private weiter(ohneHilfe = false): void {
     const ziel = this.route.snapshot.queryParamMap.get('returnUrl');
     const sicher = ziel && ziel.startsWith('/') && !ziel.startsWith('//') && !ziel.startsWith(EINWILLIGUNG_PFAD);
-    this.router.navigateByUrl(sicher ? ziel : ROUTES.SEARCH);
+    let url = sicher ? ziel : ROUTES.SEARCH;
+    const baum = this.router.parseUrl(url);
+    if (ohneHilfe && HILFE_PARAM in baum.queryParams) {
+      const { [HILFE_PARAM]: _weg, ...rest } = baum.queryParams;
+      baum.queryParams = rest;
+      url = this.router.serializeUrl(baum);
+    }
+    this.router.navigateByUrl(url);
   }
 }
