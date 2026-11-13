@@ -19,7 +19,7 @@ import { Art9EinwilligungService, EINWILLIGUNG_PFAD } from './services/art9-einw
 import { ProfilbildService } from './services/profilbild.service';
 import { rueckkehrzielLesen, rueckkehrzielLoeschen } from './login/rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
-import { hilfeOeffnen } from './help-dialog/help-dialog.component';
+import { hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog/help-dialog.component';
 import { feedbackDialogOeffnen } from './shared/feedback/feedback-dialog.component';
 import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
@@ -113,6 +113,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private art9Einwilligung: Art9EinwilligungService,
     private profilbild: ProfilbildService) {
     this.logger.debug('AppComponent created');
+    // Nach der Anmeldung aus der Hilfe dorthin zurück; dort startet dann Selbst beitragen
+    hilfeNachAnmeldung(this.destroyRef);
   }
 
   ngOnInit() {
