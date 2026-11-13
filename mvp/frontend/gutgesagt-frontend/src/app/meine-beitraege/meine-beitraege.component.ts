@@ -26,9 +26,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { ROUTES } from '../shared/constants/app.constants';
 import { StatementService } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
-import { beantwortenParams } from '../hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component';
+import { beantwortenParamsJeAussage } from '../hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { nachNutzung, wirkungssatz } from './wirkung';
+import { AussagekarteComponent } from '../shared/aussagekarte/aussagekarte.component';
 
 /** So viele unbeantwortete Aussagen zeigt der leere Zustand als ersten Schritt (#645). */
 export const ERSTE_SCHRITTE = 3;
@@ -63,10 +64,11 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     MeineEinwuerfeComponent,
     SperrnachrichtenComponent,
     MeilensteineComponent,
-    PunkteComponent
+    PunkteComponent,
+    AussagekarteComponent
   ],
   templateUrl: './meine-beitraege.component.html',
-  styleUrls: ['../shared/tabs.css', './meine-beitraege.component.css'],
+  styleUrls: ['../shared/tabs.css', '../shared/aussagekarte/aussagekarten.scss', './meine-beitraege.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Hier und nicht in app.config.ts: dort zoege der Import den Paginator samt
   // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.
@@ -94,7 +96,7 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   unbeantworteteAussagen: UnbeantworteteAussage[] = [];
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
-  readonly beantwortenParams = beantwortenParams;
+  readonly beantwortenParams = beantwortenParamsJeAussage();
 
   constructor(
     private meineBeitraegeService: MeineBeitraegeService,

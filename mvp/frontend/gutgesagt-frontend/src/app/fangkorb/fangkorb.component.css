@@ -1,4 +1,5 @@
-/* Mobil zuerst: eine Spalte, volle Breite. Ab Tablet nur begrenzt und zentriert. */
+/* Mobil zuerst: eine Spalte, volle Breite. Ab Tablet nur begrenzt und zentriert,
+   ab 1024 px Seitenleiste und Liste nebeneinander (.fangkorb--seitenleiste, unten). */
 
 .mat-spinner-color::ng-deep circle {
   stroke: var(--akzent-tanne) !important;
@@ -83,7 +84,9 @@
   flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
+  /* 16 px plus der Innenabstand oben, den der Kasten hatte, als Tabs und Liste noch
+     in zwei Kaesten standen: am Handy sieht es aus wie vorher. */
+  margin-top: calc(16px + var(--spacing-xs));
   margin-bottom: 16px;
   padding-right: 16px;
   overflow-x: auto;
@@ -167,6 +170,10 @@
   color: var(--text-secondary);
 }
 
+.fangkorb-fehler p {
+  margin: 0 0 12px;
+}
+
 /* Ab Tablet: Tabs, Filter und Liste in derselben 720er-Spalte; die Filter brechen
    um, statt seitlich zu scrollen, wenn Platz ist (#512). */
 @media (min-width: 600px) {
@@ -193,4 +200,103 @@
   .filter-trenner {
     display: none;
   }
+}
+
+/*
+ * Ab 1024 px (SEITENLEISTE_MEDIEN in fangkorb.component.ts setzt die Klasse): links
+ * eine Seitenleiste mit Einwerfen, den Arbeitslisten untereinander und den Filtern,
+ * rechts die Liste mit queren Karten. Beide fuellen nur den inneren Rahmen der
+ * Seite; Breite und Rand der Seite kommen von aussen.
+ */
+.fangkorb--seitenleiste {
+  display: grid;
+  grid-template-columns: minmax(220px, 15rem) minmax(0, 1fr);
+  column-gap: 32px;
+  align-items: start;
+  padding-bottom: 32px;
+}
+
+/* Nicht sticky: main hat overflow: hidden, daran haengt position: sticky und wirkt
+   nicht. Das zu aendern waere ein Eingriff in den Seitenrahmen. */
+.fangkorb--seitenleiste .steuerung {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 8px;
+}
+
+.einwerfen-knopf {
+  --mat-button-filled-container-color: var(--primary-fill);
+  --mat-button-filled-label-text-color: #fff;
+  width: 100%;
+  height: 44px;
+  font-weight: 600;
+}
+
+.fangkorb--seitenleiste .guidance,
+.fangkorb--seitenleiste .filterleiste,
+.fangkorb--seitenleiste .karten,
+.fangkorb--seitenleiste .fangkorb-mehr {
+  max-width: none;
+  margin: 0;
+}
+
+/* Tabs untereinander, Wort links, Zahl rechts; das ?-Icon darunter */
+.fangkorb--seitenleiste .fangkorb-kopf {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.fangkorb--seitenleiste .fangkorb-kopf app-hilfe-umschalter {
+  align-self: flex-start;
+}
+
+.fangkorb--seitenleiste .tabs {
+  grid-template-columns: 1fr;
+}
+
+.fangkorb--seitenleiste .tab {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.fangkorb--seitenleiste .tab + .tab {
+  border-left: 0;
+  border-top: 1px solid var(--divider-color);
+}
+
+/* Filter: die Gruppen untereinander, die Chips brechen um */
+.fangkorb--seitenleiste .filterleiste {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  overflow: visible;
+}
+
+.fangkorb--seitenleiste .filtergruppe {
+  flex-wrap: wrap;
+}
+
+.fangkorb--seitenleiste .filter-trenner {
+  display: block;
+  width: 100%;
+  height: 1px;
+}
+
+.fangkorb--seitenleiste .karten {
+  gap: 12px;
+  border-radius: var(--border-radius-medium);
+}
+
+.fangkorb--seitenleiste .fangkorb-laedt,
+.fangkorb--seitenleiste .fangkorb-leer,
+.fangkorb--seitenleiste .fangkorb-fehler {
+  padding-top: 8px;
+}
+
+.erneut-versuchen[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: progress;
 }

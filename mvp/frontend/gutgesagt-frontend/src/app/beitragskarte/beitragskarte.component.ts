@@ -146,6 +146,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * "Meine Einwuerfe", wo alle Karten die eigenen sind und die Stufe die Rueckmeldung ist.
    */
   @Input() stufeZeigen = false;
+  /**
+   * Einwurf-Karte quer (Fangkorb am Desktop): Meta-Zeile links, Griff und ⋮ rechts in
+   * einer Zeile, statt Griff mittig und Meta darunter. Spart Hoehe in breiten Listen.
+   */
+  @Input() quer = false;
 
   /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
@@ -287,6 +292,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     // Im Formular fuellt die Vorschau ihre Spalte statt fester 450 px (#512).
     if (this.vorschau) {
       klassen.push('karte--vorschau');
+    }
+    if (this.quer && this.einwurfAngaben && !this.istKopf) {
+      klassen.push('karte--quer');
     }
     return klassen;
   }

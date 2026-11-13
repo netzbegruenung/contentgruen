@@ -1156,6 +1156,38 @@
   padding-top: 0;
 }
 
+// Hochkant traegt der Fuss nichts zum Layout bei: Aktion und Meta stehen wie bisher
+// untereinander im Fluss der Karte.
+.einwurf-fuss {
+  display: contents;
+}
+
+// Quer (Fangkorb am Desktop): eine Zeile unten in der Karte. Die Aktion steht im DOM
+// vor der Meta (Tab-Reihenfolge wie hochkant), row-reverse stellt sie nach rechts.
+.karte--quer {
+  .einwurf-fuss {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-top: auto;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .einwurf-aktion {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--spacing-sm);
+    padding: 0;
+  }
+
+  .einwurf-meta {
+    padding: 0;
+    text-align: left;
+  }
+}
+
 .einwurf-alter,
 .einwurf-stufe,
 .einwurf-einwerfer {

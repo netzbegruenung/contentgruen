@@ -1,6 +1,6 @@
 import { convertToParamMap } from '@angular/router';
 
-import { beantwortenParams } from './hier-fehlt-eine-antwort.component';
+import { beantwortenParams, beantwortenParamsJeAussage } from './hier-fehlt-eine-antwort.component';
 import { gesuchtAus, lueckeZuSatz } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 
 describe('beantwortenParams und "Lücke zu" (Nutzerfuehrung 13.11.)', () => {
@@ -31,5 +31,15 @@ describe('beantwortenParams und "Lücke zu" (Nutzerfuehrung 13.11.)', () => {
     expect(lueckeZuSatz(3)).toBe('3 Personen haben danach gesucht, ab jetzt finden sie was.');
     expect(lueckeZuSatz(1)).toBe('Eine Person hat danach gesucht, ab jetzt findet sie was.');
     expect(lueckeZuSatz(0)).toBe('Wer danach sucht, findet ab jetzt deine Antwort.');
+  });
+});
+
+describe('beantwortenParamsJeAussage', () => {
+  it('merkt sich die Parameter je Aussage und Nachfrage', () => {
+    const params = beantwortenParamsJeAussage();
+    const erste = params({ statement_id: 'a-1', personen_ohne_treffer: 2 });
+
+    expect(params({ statement_id: 'a-1', personen_ohne_treffer: 2 })).toBe(erste);
+    expect(params({ statement_id: 'a-1', personen_ohne_treffer: 3 })['gesucht']).toBe('3');
   });
 });
