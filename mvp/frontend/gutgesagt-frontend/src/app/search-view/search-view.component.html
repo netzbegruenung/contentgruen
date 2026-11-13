@@ -46,7 +46,7 @@
     <a class="start-kachel" routerLink="/contribute">
         <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
         <span class="kachel-text">
-            <span class="kachel-titel">Beitrag verfassen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
+            <span class="kachel-titel">Beitragen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
             <span class="kachel-satz">Ausgearbeitet und direkt verwendbar: {{ typLabel('commentary') }}, {{ typLabel('generictext') }} oder {{ typLabel('image') }}.</span>
         </span>
         <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>

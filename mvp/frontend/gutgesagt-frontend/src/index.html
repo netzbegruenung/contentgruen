@@ -14,11 +14,51 @@
   <link rel="icon" type="image/png" sizes="64x64" href="marke/favicon-64.png">
   <link rel="icon" type="image/png" sizes="32x32" href="marke/favicon-32.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <!-- Hell und dunkel nach Geraeteeinstellung (#588); Erweiterungen wie Dark Reader
-       erkennen daran das eigene dunkle Thema. -->
+  <!-- Hell oder dunkel (#588): eigene Wahl aus dem Umschalter, sonst die Geraeteeinstellung.
+       color-scheme meldet beides, damit Erweiterungen wie Dark Reader das eigene dunkle
+       Thema erkennen. Die Farbe der Browserleiste setzen Skript und FarbschemaService. -->
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#008939" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1c1c1c" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#008939">
+  <!-- Farbschema vor dem ersten Bild setzen: data-theme am <html>, gleiche Logik und gleicher
+       Schluessel wie FarbschemaService; ohne Speicher gilt das Geraet. -->
+  <script>
+    (function () {
+      var schema = null;
+      try {
+        schema = localStorage.getItem('gutgesagt-farbschema');
+      } catch (e) {}
+      if (schema !== 'light' && schema !== 'dark') {
+        schema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', schema);
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', schema === 'dark' ? '#1e1f1e' : '#008939');
+    })();
+  </script>
+  <!-- Grundflaechen dunkel, bis das Stylesheet da ist: Der Build inlined nur das kritische CSS,
+       das zur Build-Zeit zum <html> ohne data-theme passt, und laedt den Rest nachtraeglich.
+       Hier stehen nur Grund, Karten, Schrift und die Baender (Suche, Willkommen/Rundgang folgen
+       --such-band); alles andere kommt mit dem Stylesheet, dessen Werte danach gelten (es steht
+       danach). Werte wie im Block html[data-theme='dark'] in theme/custom-theme.scss; das prueft
+       scripts/tests/test_farbschema_inline.py. -->
+  <style>
+    html[data-theme='dark'] {
+      color-scheme: dark;
+      --bg-main: #1e1f1e;
+      --bg-card: #282a29;
+      --bg-surface: #282a29;
+      --text-primary: rgba(255, 255, 255, 0.87);
+      --primary-main: #e0e0e0;
+      --primary-dark: #ececec;
+      --such-band: #2e3c19;
+      background: var(--bg-main);
+      color: var(--text-primary);
+    }
+
+    html[data-theme='dark'] body {
+      background: var(--bg-main);
+      color: var(--text-primary);
+    }
+  </style>
   <link rel="apple-touch-icon" href="marke/icon-192.png">
 </head>
 <body>
