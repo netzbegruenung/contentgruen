@@ -6,7 +6,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
-import { merkerSchluessel } from '../meine-beitraege/meilenstein-merker';
+import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from '../meine-beitraege/meilenstein-merker';
 import {
   Art9EinwilligungService,
   Art9EinwilligungStand,
@@ -81,24 +81,24 @@ describe('Art9EinwilligungService', () => {
   });
 
   it('raeumt beim Start ohne Einwilligung den Merker der Meilensteine in diesem Browser auf (#351)', () => {
-    localStorage.setItem(merkerSchluessel('kim'), '["einwurf-1"]');
+    localStorage.setItem(MEILENSTEINE_GESEHEN_SCHLUESSEL, '["einwurf-1"]');
     service.starten();
     anmeldung.next(angemeldet('kim'));
 
     http.expectOne(ADRESSE).flush(stand(false));
 
-    expect(localStorage.getItem(merkerSchluessel('kim'))).toBeNull();
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
   });
 
   it('laesst den Merker mit Einwilligung stehen', () => {
-    localStorage.setItem(merkerSchluessel('kim'), '["einwurf-1"]');
+    localStorage.setItem(MEILENSTEINE_GESEHEN_SCHLUESSEL, '["einwurf-1"]');
     service.starten();
     anmeldung.next(angemeldet('kim'));
 
     http.expectOne(ADRESSE).flush(stand(true));
 
-    expect(localStorage.getItem(merkerSchluessel('kim'))).toBe('["einwurf-1"]');
-    localStorage.removeItem(merkerSchluessel('kim'));
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBe('["einwurf-1"]');
+    localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL);
   });
 
   it('wartet eine laufende Navigation ab, damit der Rueckweg dorthin fuehrt', () => {
@@ -187,12 +187,12 @@ describe('Art9EinwilligungService', () => {
   });
 
   it('entfernt beim Widerruf den Merker der angezeigten Meilensteine (#351)', () => {
-    localStorage.setItem(merkerSchluessel('kim'), '["einwurf-1"]');
+    localStorage.setItem(MEILENSTEINE_GESEHEN_SCHLUESSEL, '["einwurf-1"]');
 
     service.widerrufen().subscribe();
     http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
 
-    expect(localStorage.getItem(merkerSchluessel('kim'))).toBeNull();
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
   });
 
   it('vergisst die Klaerung nach dem Widerruf (#587)', () => {

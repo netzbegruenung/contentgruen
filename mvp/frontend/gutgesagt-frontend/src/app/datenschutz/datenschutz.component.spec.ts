@@ -715,7 +715,7 @@ describe('DatenschutzComponent', () => {
     });
   });
 
-  describe('Merker der Meilensteine (#351, § 25 TDDDG in Prüfung)', () => {
+  describe('Merker der Meilensteine (#351, § 25 TDDDG geprüft 13.11.2026)', () => {
     function mitMerker(aktiv: boolean): string {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
@@ -727,21 +727,22 @@ describe('DatenschutzComponent', () => {
       return normalisiert((fixture.nativeElement as HTMLElement).textContent);
     }
 
-    it('nennt ohne Merker weder Hinweis noch Browser-Eintrag, nur Meine Beiträge', () => {
-      const text = mitMerker(false);
-
-      expect(text).toContain('Einen neu erreichten Meilenstein siehst du unter „Meine Beiträge“.');
-      expect(text).not.toContain('welche deiner erreichten Meilensteine dir schon angezeigt wurden');
-      expect(text).not.toContain('still als gesehen');
-    });
-
-    it('beschreibt mit Merker Hinweis und Browser-Eintrag', () => {
+    it('beschreibt mit Merker Hinweis und Browser-Vermerk im freigegebenen Wortlaut', () => {
       const text = mitMerker(true);
 
-      expect(text).toContain('Welche deiner erreichten Meilensteine dir schon angezeigt wurden, merkt sich nur dein Browser');
-      expect(text).toContain('Sind die Punkte eingeschaltet, merkt sich dein Browser außerdem');
-      expect(text).toContain('ohne Einwilligung anmeldest');
-      expect(text).not.toContain('Einen neu erreichten Meilenstein siehst du unter');
+      expect(text).toContain('nach dem Anmelden gilt, was du bis dahin erreicht hast, still als gesehen');
+      expect(text).toContain(
+        'Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein Browser, welche du schon gesehen hast. ' +
+          'Der Vermerk enthält keine Angaben über dich, geht nicht an uns und wird beim Abmelden und beim nächsten Anmelden gelöscht.',
+      );
+      expect(text).not.toContain('Prüfwert deiner Kennung');
+    });
+
+    it('lässt beides weg, wenn der Merker ausgeschaltet ist', () => {
+      const text = mitMerker(false);
+
+      expect(text).not.toContain('merkt sich nur dein Browser');
+      expect(text).not.toContain('Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint');
     });
   });
 });

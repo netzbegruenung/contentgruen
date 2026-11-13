@@ -579,12 +579,12 @@ Empfänger und Ort“.
   `antwort_ids` in Qdrant). Keine neue Speicherung, kein zeitliches Muster, keine Suchen, Kopien,
   Meldungen oder Anmeldetage. Drei davon sind Wegmarken: nur für die Person, nicht in der Zahl am
   Namen und nicht für die Krone (V22 unverändert). Der Hinweis beim Erreichen (nach dem eigenen
-  Tun oder beim Anmelden) merkt sich die angezeigten Kennungen nur im Browser (localStorage), je
-  Konto unter einem Schlüssel mit einem Prüfwert der Kennung, entfernt beim Abmelden und beim
-  Widerruf der Art.-9-Einwilligung; ohne Server-Eintrag, keine Erinnerungen. Das Abzeichen
-  rechnet ohne Wegmarken und ohne deren Abfragen. Bis zur juristischen Prüfung nach § 25 TDDDG
-  ist der Merker ausgeschaltet (`MEILENSTEIN_MERKER_AKTIV = false` im Frontend): kein Eintrag im
-  Browser, keine Hinweise; die Meilensteine stehen nur in „Meine Beiträge“. Ob ein Einwurf der erste ist, liest die Karte nach dem
+  Tun) merkt sich die angezeigten Kennungen der Meilensteine nur im Browser (localStorage) unter
+  einem festen Schlüssel ohne Angaben über die Person; gelöscht bei jedem Anmelden, beim Abmelden
+  und beim Widerruf der Art.-9-Einwilligung, nach dem Anmelden still neu angelegt. Ohne
+  Server-Eintrag, keine Erinnerungen. Geprüft nach § 25 TDDDG am 13.11.2026 in dieser Form;
+  Schalter `MEILENSTEIN_MERKER_AKTIV` im Frontend (an). Das Abzeichen rechnet ohne Wegmarken und
+  ohne deren Abfragen. Ob ein Einwurf der erste ist, liest die Karte nach dem
   Einwurf aus der Zahl der eigenen Einwürfe (`getOwnRawInputs`, vorhanden).
   Die Erklärung nennt die neue Liste unter „Punkte“.
 

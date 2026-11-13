@@ -1,49 +1,47 @@
-import { MEILENSTEINE_GESEHEN_PRAEFIX, gesehenLesen, gesehenMerken, merkerEntfernen, merkerSchluessel } from './meilenstein-merker';
+import { MEILENSTEINE_GESEHEN_SCHLUESSEL, gesehenLesen, gesehenMerken, merkerEntfernen } from './meilenstein-merker';
 import { Meilenstein } from '../services/usage-tracking.service';
 
 describe('Meilenstein-Merker (#351)', () => {
   const erreicht = { kennung: 'einwurf-1', erreicht: true } as Meilenstein;
   const offen = { kennung: 'nutzung-1', erreicht: false } as Meilenstein;
 
-  afterEach(() => ['kim-1', 'bo-2'].forEach((k) => localStorage.removeItem(merkerSchluessel(k))));
+  afterEach(() => localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL));
 
-  it('trägt im Schlüssel einen Prüfwert, nicht die Kennung', () => {
-    const schluessel = merkerSchluessel('kim-1');
+  it('nutzt einen festen Schlüssel ohne Angaben über die Person', () => {
+    gesehenMerken('kim-1', [erreicht]);
 
-    expect(schluessel.startsWith(MEILENSTEINE_GESEHEN_PRAEFIX)).toBeTrue();
-    expect(schluessel).not.toContain('kim-1');
-    expect(schluessel).toBe(merkerSchluessel('kim-1'));
-    expect(schluessel).not.toBe(merkerSchluessel('bo-2'));
+    expect(MEILENSTEINE_GESEHEN_SCHLUESSEL).toBe('gutgesagt-meilensteine-gesehen');
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBe('["einwurf-1"]');
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).not.toContain('kim');
   });
 
   it('schreibt nichts ohne Meilensteine und nichts, wenn nichts Erreichtes neu ist', () => {
     gesehenMerken('kim-1', []);
-    expect(localStorage.getItem(merkerSchluessel('kim-1'))).toBeNull();
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
 
     gesehenMerken('kim-1', [offen]);
-    expect(localStorage.getItem(merkerSchluessel('kim-1'))).toBe('[]'); // einmal angelegt
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBe('[]'); // einmal angelegt
     const setzen = spyOn(Storage.prototype, 'setItem').and.callThrough();
     gesehenMerken('kim-1', [offen]);
     expect(setzen).not.toHaveBeenCalled();
   });
 
-  it('merkt nur erreichte, je Konto getrennt, und entfernt sie wieder', () => {
+  it('merkt nur erreichte und entfernt sie wieder', () => {
     gesehenMerken('kim-1', [erreicht, offen]);
 
     expect([...gesehenLesen('kim-1')!]).toEqual(['einwurf-1']);
-    expect([...gesehenLesen('bo-2')!]).toEqual([]);
-    merkerEntfernen('kim-1');
-    expect(localStorage.getItem(merkerSchluessel('kim-1'))).toBeNull();
+    merkerEntfernen();
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
   });
 
-  it('ohne Konto gibt es keinen Merker', () => {
+  it('ohne Anmeldung gibt es keinen Merker', () => {
     expect(gesehenLesen(null)).toBeNull();
     gesehenMerken(null, [erreicht]);
-    merkerEntfernen(null);
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
   });
 
   it('übersteht einen kaputten Eintrag', () => {
-    localStorage.setItem(merkerSchluessel('kim-1'), '{kaputt');
+    localStorage.setItem(MEILENSTEINE_GESEHEN_SCHLUESSEL, '{kaputt');
 
     expect(gesehenLesen('kim-1')).toBeNull();
   });

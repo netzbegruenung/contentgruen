@@ -8,7 +8,7 @@ import { AuthService } from '../auth/auth.service';
 import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 import { ROUTES } from '../shared/constants/app.constants';
 import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
-import { gesehenMerken, merkerLesen } from './meilenstein-merker';
+import { gesehenMerken, merkerEntfernen, merkerLesen } from './meilenstein-merker';
 
 /** So lange steht der Hinweis, wenn niemand ihn wegtippt; wie die Rückmeldung (#349). */
 const ANZEIGEDAUER_MS = 8000;
@@ -29,10 +29,10 @@ export function meilensteinText(neu: Meilenstein[]): string {
  * Kommentar speichern oder einen vorhandenen nehmen) oder beim Anmelden, wenn ein
  * Meilenstein neu erreicht wurde (#351).
  *
- * Was schon angezeigt wurde, merkt sich nur der Browser je Konto
- * (meilenstein-merker.ts), und zwar erst, wenn es wirklich angezeigt wurde. Gibt es
- * noch keinen Eintrag (neuer Browser, nach dem Abmelden), gilt alles schon Erreichte
- * still als gesehen: Genannt wird nur, was danach neu dazukommt. Kein
+ * Was schon angezeigt wurde, merkt sich nur der Browser (meilenstein-merker.ts), und
+ * zwar erst, wenn es wirklich angezeigt wurde. Bei jedem Anmelden wird der Eintrag
+ * gelöscht (anmeldung); ohne Eintrag gilt alles schon Erreichte still als gesehen:
+ * Genannt wird nur, was danach neu dazukommt. Kein
  * Server-Eintrag, keine Mail, kein Push. Kein Countdown, keine Serie, keine
  * Erinnerung; wer „Meine Beiträge“ öffnet, hat alles gesehen. Ohne eingeschaltete
  * Punkte liefert der Server keine Meilensteine, dann passiert hier nichts.
@@ -102,6 +102,17 @@ export class MeilensteinHinweisService implements OnDestroy {
         return meilensteine.filter((m) => m.erreicht && !merker.gesehen.has(m.kennung));
       }),
     );
+  }
+
+  /**
+   * Bei jedem Anmelden (auch beim App-Start mit Sitzung, RueckmeldungService): löscht
+   * den Merker, damit kein Konto den eines anderen erbt, und legt ihn still neu an.
+   * Gilt auch bei ausgeschaltetem Merker als Aufräumen (nur removeItem).
+   */
+  anmeldung(): Observable<void> {
+    merkerEntfernen();
+    // Der erste Abruf legt den Merker still an: Genannt wird nur, was danach dazukommt.
+    return this.neueErreichte().pipe(map(() => undefined));
   }
 
   /** Diese Meilensteine als angezeigt merken. */

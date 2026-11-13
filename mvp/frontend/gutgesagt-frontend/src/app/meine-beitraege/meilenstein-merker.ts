@@ -1,33 +1,23 @@
 import type { Meilenstein } from '../services/usage-tracking.service';
 
 /**
- * Welche erreichten Meilensteine dem Konto in diesem Browser schon angezeigt wurden
- * (#351): eine Liste der Kennungen im localStorage, je Konto unter einem eigenen
- * Schlüssel. Der Schlüssel trägt einen Prüfwert der Kennung, nicht die Kennung selbst,
- * damit sich zwei Konten im selben Browser nicht vermischen. Beim Abmelden und beim
- * Widerruf der Art.-9-Einwilligung wird der Eintrag entfernt (merkerEntfernen).
- * Nichts davon geht an den Server.
+ * Welche erreichten Meilensteine in diesem Browser schon angezeigt wurden (#351): eine
+ * Liste der Kennungen der Meilensteine im localStorage unter einem festen Schlüssel,
+ * ohne Angaben über die Person. Getrennt nach Konten wird nur dadurch, dass der Eintrag
+ * bei jedem Anmelden (MeilensteinHinweisService.anmeldung) und beim Abmelden gelöscht
+ * wird, dazu beim Widerruf der Art.-9-Einwilligung. Nichts davon geht an den Server.
+ * Geprüft nach § 25 TDDDG am 13.11.2026 in dieser Form (ohne Prüfwert der Kennung).
  */
-export const MEILENSTEINE_GESEHEN_PRAEFIX = 'gutgesagt-meilensteine-gesehen-';
+export const MEILENSTEINE_GESEHEN_SCHLUESSEL = 'gutgesagt-meilensteine-gesehen';
 
-/** FNV-1a über die Kennung, 32 Bit hexadezimal: genügt zum Trennen, ist kein Geheimnis. */
-export function merkerSchluessel(kennung: string): string {
-  let wert = 0x811c9dc5;
-  for (let i = 0; i < kennung.length; i++) {
-    wert ^= kennung.charCodeAt(i);
-    wert = Math.imul(wert, 0x01000193) >>> 0;
-  }
-  return MEILENSTEINE_GESEHEN_PRAEFIX + wert.toString(16).padStart(8, '0');
-}
-
-/** Der Merker eines Kontos: die angezeigten Kennungen und ob es schon einen Eintrag gibt. */
+/** Der Merker: die angezeigten Kennungen und ob es schon einen Eintrag gibt. */
 export interface Merker {
   gesehen: Set<string>;
   vorhanden: boolean;
 }
 
 /**
- * Der Merker, oder null ohne Konto oder ohne Speicher (privates Fenster, gesperrt).
+ * Der Merker, oder null ohne Anmeldung oder ohne Speicher (privates Fenster, gesperrt).
  * Ohne Speicher gibt es keinen Hinweis: Er käme sonst jedes Mal.
  */
 export function merkerLesen(kennung: string | null): Merker | null {
@@ -35,7 +25,7 @@ export function merkerLesen(kennung: string | null): Merker | null {
     return null;
   }
   try {
-    const roh = localStorage.getItem(merkerSchluessel(kennung));
+    const roh = localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL);
     const liste: unknown = roh ? JSON.parse(roh) : [];
     const gesehen = new Set(Array.isArray(liste) ? liste.filter((k): k is string => typeof k === 'string') : []);
     return { gesehen, vorhanden: roh !== null };
@@ -53,7 +43,8 @@ export function gesehenLesen(kennung: string | null): Set<string> | null {
  * Diese Meilensteine als angezeigt merken. Geschrieben wird nur, wenn es Meilensteine
  * gibt (also Punkte an und eingewilligt) und dabei etwas Erreichtes neu ist, oder
  * einmal zum Anlegen des Eintrags: Ohne Eintrag gilt alles schon Erreichte still als
- * gesehen (merkerAnlegen). Ohne Konto oder Speicher passiert nichts.
+ * gesehen (MeilensteinHinweisService.neueErreichte). Ohne Anmeldung oder Speicher
+ * passiert nichts.
  */
 export function gesehenMerken(kennung: string | null, meilensteine: Meilenstein[]): void {
   const merker = merkerLesen(kennung);
@@ -66,19 +57,16 @@ export function gesehenMerken(kennung: string | null, meilensteine: Meilenstein[
   }
   neu.forEach((m) => merker.gesehen.add(m.kennung));
   try {
-    localStorage.setItem(merkerSchluessel(kennung), JSON.stringify([...merker.gesehen]));
+    localStorage.setItem(MEILENSTEINE_GESEHEN_SCHLUESSEL, JSON.stringify([...merker.gesehen]));
   } catch {
     // Ohne Speicher kein Merker; der Hinweis bleibt dann ganz aus (merkerLesen).
   }
 }
 
-/** Beim Abmelden und beim Widerruf: den Eintrag des Kontos entfernen. */
-export function merkerEntfernen(kennung: string | null): void {
-  if (!kennung) {
-    return;
-  }
+/** Bei jedem Anmelden, beim Abmelden und beim Widerruf: den Eintrag entfernen. */
+export function merkerEntfernen(): void {
   try {
-    localStorage.removeItem(merkerSchluessel(kennung));
+    localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL);
   } catch {
     // Ohne Speicher gibt es nichts zu entfernen.
   }

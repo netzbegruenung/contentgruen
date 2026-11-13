@@ -3,11 +3,10 @@ import { provideRouter } from '@angular/router';
 import { Observable, of } from 'rxjs';
 
 import { MeilensteineComponent } from './meilensteine.component';
-import { merkerSchluessel } from './meilenstein-merker';
+import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from './meilenstein-merker';
 import { AuthService } from '../auth/auth.service';
 import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 
-const MEILENSTEINE_GESEHEN_SCHLUESSEL = merkerSchluessel('kim-1');
 import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 
 describe('MeilensteineComponent (#351)', () => {

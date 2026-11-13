@@ -5,12 +5,12 @@ import { Subject, of } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
 import { MeilensteinHinweisService, SAMMELN_MS } from './meilenstein-hinweis.service';
-import { merkerSchluessel } from './meilenstein-merker';
+import { MEILENSTEINE_GESEHEN_SCHLUESSEL, merkerEntfernen } from './meilenstein-merker';
 import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 
 describe('MeilensteinHinweisService (#351)', () => {
-  const SCHLUESSEL = merkerSchluessel('kim-1');
+  const SCHLUESSEL = MEILENSTEINE_GESEHEN_SCHLUESSEL;
   let meilensteine: Meilenstein[];
   let snackBar: jasmine.SpyObj<MatSnackBar>;
   let aktion: Subject<void>;
@@ -91,19 +91,38 @@ describe('MeilensteinHinweisService (#351)', () => {
     expect(gesehen()).toEqual(['einwurf-1']);
   });
 
-  it('merkt je Konto: ein anderes Konto im selben Browser bekommt seinen Hinweis', fakeAsync(() => {
-    localStorage.setItem(SCHLUESSEL, JSON.stringify(['einwurf-1']));
-    localStorage.setItem(merkerSchluessel('bo-2'), '[]');
-    meilensteine = [meilenstein('einwurf-1', true)];
-    kennung = 'bo-2';
+  it('Konto A, abmelden, Konto B: kein Hinweis aus A, B bekommt nur später Neues', fakeAsync(() => {
+    meilensteine = [meilenstein('einwurf-1', true, 'Erster Einwurf')];
     const hinweis = dienst();
-
     hinweis.pruefen();
     tick(SAMMELN_MS);
-
     expect(snackBar.open).toHaveBeenCalledTimes(1);
-    localStorage.removeItem(merkerSchluessel('bo-2'));
+
+    // A meldet sich ab (AuthService.logout), B meldet sich an (RueckmeldungService).
+    merkerEntfernen();
+    kennung = 'bo-2';
+    meilensteine = [meilenstein('einwurf-1', true), meilenstein('zustimmung-1', true)];
+    hinweis.anmeldung().subscribe();
+    hinweis.pruefen();
+    tick(SAMMELN_MS);
+    expect(snackBar.open).toHaveBeenCalledTimes(1);
+
+    meilensteine = [...meilensteine, meilenstein('nutzung-1', true, 'Erstmals genutzt')];
+    hinweis.pruefen();
+    tick(SAMMELN_MS);
+    expect(snackBar.open).toHaveBeenCalledTimes(2);
+    expect(snackBar.open.calls.mostRecent().args[0]).toBe('Meilenstein erreicht: Erstmals genutzt');
   }));
+
+  it('anmeldung löscht den Merker und legt ihn still neu an', () => {
+    localStorage.setItem(SCHLUESSEL, '["vom-vorigen-konto"]');
+    meilensteine = [meilenstein('einwurf-1', true)];
+
+    dienst().anmeldung().subscribe();
+
+    expect(gesehen()).toEqual(['einwurf-1']);
+    expect(snackBar.open).not.toHaveBeenCalled();
+  });
 
   it('schweigt ohne neue Meilensteine (auch bei ausgeschalteten Punkten: leere Liste)', fakeAsync(() => {
     localStorage.setItem(SCHLUESSEL, JSON.stringify(['einwurf-1']));
@@ -143,8 +162,8 @@ describe('MeilensteinHinweisService (#351)', () => {
     expect(snackBar.open).toHaveBeenCalledTimes(1);
 
     // Abmelden entfernt den Merker (AuthService.logout), das Anmelden fragt wieder.
-    localStorage.removeItem(SCHLUESSEL);
-    hinweis.neueErreichte().subscribe((neu) => expect(neu).toEqual([]));
+    merkerEntfernen();
+    hinweis.anmeldung().subscribe();
     hinweis.pruefen();
     tick(SAMMELN_MS);
 
@@ -233,6 +252,16 @@ describe('MeilensteinHinweisService (#351)', () => {
       expect(schreiben).not.toHaveBeenCalled();
       expect(snackBar.open).not.toHaveBeenCalled();
     }));
+
+    it('räumt beim Anmelden trotzdem auf, ohne zu fragen', () => {
+      localStorage.setItem(SCHLUESSEL, '["alt"]');
+      const hinweis = dienst();
+
+      hinweis.anmeldung().subscribe();
+
+      expect(localStorage.getItem(SCHLUESSEL)).toBeNull();
+      expect(laden).not.toHaveBeenCalled();
+    });
 
     it('zeigt eine Bestätigung als normale Snackbar', () => {
       dienst().bestaetigen('Der Einwurf ist verknüpft.');

@@ -62,8 +62,8 @@ export class AuthService {
   }
 
   logout() {
-    // Der Merker der angezeigten Meilensteine gehört zum Konto (#351).
-    merkerEntfernen(this.getCurrentUserId());
+    // Der Merker der angezeigten Meilensteine gilt nur für diese Anmeldung (#351).
+    merkerEntfernen();
     // Use the API logout endpoint which properly handles both Keycloak and managed users
     this.http.post(`${environment.baseUrl}/api/auth/logout`, {}, {
       withCredentials: true

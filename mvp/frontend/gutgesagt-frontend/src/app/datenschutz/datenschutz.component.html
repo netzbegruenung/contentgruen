@@ -685,15 +685,11 @@
         wird einer gesperrt oder gelöscht, kann ein Meilenstein wieder wegfallen. Startkonten
         zählen auch hier nicht.
         <ng-container *ngIf="meilensteinMerker">
-            Einen neu erreichten Meilenstein nennen wir dir mit einem
-            kurzen Hinweis, direkt nach einem Einwurf, einem Ausformulieren oder einem Kommentar
-            oder beim nächsten Anmelden. Welche deiner erreichten Meilensteine dir schon angezeigt
-            wurden, merkt sich nur dein Browser (siehe „Speicherung auf deinem Gerät“); in einem
-            anderen Browser oder nach dem Abmelden gilt, was du bis dahin erreicht hast, still als
-            gesehen, und genannt wird nur, was danach dazukommt.
-        </ng-container>
-        <ng-container *ngIf="!meilensteinMerker">
-            Einen neu erreichten Meilenstein siehst du unter „Meine Beiträge“.
+            Einen neu erreichten Meilenstein nennen wir dir mit einem kurzen Hinweis, direkt
+            nach einem Einwurf, einem Ausformulieren oder einem Kommentar. Welche deiner
+            erreichten Meilensteine dir schon angezeigt wurden, merkt sich nur dein Browser
+            (siehe „Speicherung auf deinem Gerät“); nach dem Anmelden gilt, was du bis dahin
+            erreicht hast, still als gesehen, und genannt wird nur, was danach dazukommt.
         </ng-container>
         Keine Erinnerungen, keine Mails. Für Meilensteine gelten Zweck und Rechtsgrundlage wie
         für die Punkte (unten); ohne deine Einwilligung gibt es keine.
@@ -1085,14 +1081,9 @@
         an uns und werden nicht gezählt.
       </p>
       <p *ngIf="meilensteinMerker">
-        Sind die Punkte eingeschaltet, merkt sich dein Browser außerdem, welche deiner
-        erreichten Meilensteine dir schon angezeigt wurden (siehe „Punkte“), damit der Hinweis
-        darauf nur einmal kommt: eine Liste der Meilensteine, gespeichert unter einem
-        Schlüssel mit einem Prüfwert deiner Kennung, damit sich zwei Konten im selben Browser
-        nicht vermischen. Beim Abmelden und beim Widerruf deiner Einwilligung zu deiner
-        Mitwirkung entfernen wir diesen Eintrag in diesem Browser, ebenso, wenn du dich hier
-        ohne Einwilligung anmeldest; sonst bleibt er, bis du die Websitedaten dieser Seite
-        löschst. Er geht nicht an uns.
+        Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein
+        Browser, welche du schon gesehen hast. Der Vermerk enthält keine Angaben über dich,
+        geht nicht an uns und wird beim Abmelden und beim nächsten Anmelden gelöscht.
       </p>
       <p>
         Außerdem richtet die Plattform in deinem Browser ein kleines Hintergrundskript ein

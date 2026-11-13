@@ -141,7 +141,7 @@ export class Art9EinwilligungService implements OnDestroy {
       tap(() => {
         this.geklaertSetzen(null);
         // Ohne Einwilligung keine Meilensteine: ihr Merker im Browser geht mit (#351).
-        merkerEntfernen(this.authService.getCurrentUserId());
+        merkerEntfernen();
       }),
     );
   }
@@ -168,7 +168,7 @@ export class Art9EinwilligungService implements OnDestroy {
             tap((stand) => {
               if (!stand || stand.eingewilligt) this.geklaertSetzen(kennung);
               // Ohne Einwilligung keine Meilensteine: ein alter Merker in diesem Browser geht (#351).
-              if (stand && !stand.eingewilligt) merkerEntfernen(kennung);
+              if (stand && !stand.eingewilligt) merkerEntfernen();
             }),
           ),
         ),

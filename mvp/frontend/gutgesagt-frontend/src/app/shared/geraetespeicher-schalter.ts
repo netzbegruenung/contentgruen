@@ -7,11 +7,12 @@ import { InjectionToken } from '@angular/core';
  */
 
 /**
- * Merker der angezeigten Meilensteine im localStorage (#351). Erst nach juristischer
- * Prüfung (§ 25 TDDDG) auf true; bis dahin kein Zugriff auf den Speicher dafür, keine
- * Meilenstein-Hinweise und kein Absatz dazu in der Datenschutzerklärung.
+ * Merker der angezeigten Meilensteine im localStorage (#351). Nach § 25 TDDDG geprüft am
+ * 13.11.2026: fester Schlüssel ohne Angaben über die Person, gelöscht bei jedem An- und
+ * Abmelden. Auf false: kein Zugriff auf den Speicher dafür, keine Meilenstein-Hinweise
+ * und kein Absatz dazu in der Datenschutzerklärung.
  */
-export const MEILENSTEIN_MERKER_AKTIV = false;
+export const MEILENSTEIN_MERKER_AKTIV = true;
 
 /** Derselbe Schalter zum Einspritzen, damit Tests beide Stellungen prüfen können. */
 export const MEILENSTEIN_MERKER = new InjectionToken<boolean>('MEILENSTEIN_MERKER', {
