@@ -277,8 +277,10 @@ async def test_search_by_text_vorhandene_suchanfrage_einmal_eingebettet(suche):
 
     assert antwort["query_was_newly_added_as_statement"] is False
     assert einbettungen == [f"query: {SUCHANFRAGE}"]
+    # Das zweite retrieve, ohne Einbettung: Ist die vorhandene Aussage eine
+    # Suchanfrage, die Nicht-Admins nicht sehen (Vormoderation)?
     assert sorted(anfragen) == sorted(
-        ["scroll", "query_points", "retrieve", "query_batch_points"]
+        ["scroll", "query_points", "retrieve", "retrieve", "query_batch_points"]
     )
 
 

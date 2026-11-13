@@ -48,7 +48,11 @@ from dtos.statement import (
     UnbeantworteteAussagenResponse,
 )
 from services.beitrag_fuer_aufrufer import AUSSAGE, Aufrufer, als_responses
-from services.content.statement_service import AussageNichtGefunden, StatementService
+from services.content.statement_service import (
+    AussageNichtGefunden,
+    StatementService,
+    SuchanfrageNichtFreigegeben,
+)
 from core.logging import get_logger
 from domain.models.statement import Statement
 from repositories.implementations.qdrant.qdrant_repository_factory import (
@@ -537,6 +541,11 @@ async def add_replysuggestion_to_statement(
         # Nur "gibt es nicht" ist 404; alles andere (nicht lesbar, Speicherfehler,
         # andere ValueErrors) ist ein echter Fehler.
         raise HTTPException(status_code=404, detail="Statement not found")
+    except SuchanfrageNichtFreigegeben:
+        # Vormoderation: erst freigeben, dann antworten (StatementService).
+        raise HTTPException(
+            status_code=409, detail="Search query statement awaits moderation"
+        )
     except Exception as e:
         logger.error(
             f"Error in /addReplysuggestionToStatement: {type(e).__name__}",

@@ -15,7 +15,11 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.statement import Statement
 from services.content.commentary_service import CommentaryService
-from services.content.statement_service import StatementService
+from services.content.statement_service import (
+    AussageNichtGefunden,
+    StatementService,
+    SuchanfrageNichtFreigegeben,
+)
 
 from tests.integration.beitrag_helfer import sichtbarer_beitrag
 from tests.integration.conftest import requires_qdrant
@@ -147,7 +151,7 @@ async def test_gesperrter_oder_geloeschter_kommentar_ist_keine_antwort(
 
 
 async def test_ohne_kommentar_laesst_unbeantwortete_suchanfragen_weg(
-    statement_service,
+    statement_service, suchanfrage_freigaben_ohne_datenbank
 ):
     suchanfrage = await _anlegen(
         statement_service,
@@ -161,6 +165,8 @@ async def test_ohne_kommentar_laesst_unbeantwortete_suchanfragen_weg(
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    # Antworten gibt es nur an freigegebenen (Vormoderation).
+    _entscheidung_setzen(suchanfrage_freigaben_ohne_datenbank, angenommen, True)
     hintergrund = await sichtbarer_beitrag(statement_service, ContentType.GENERIC_TEXT)
     await _verknuepfen(
         statement_service, angenommen, hintergrund, ContentType.GENERIC_TEXT
@@ -366,3 +372,91 @@ async def test_zaehlt_nur_sichtbare_unbeantwortete_suchanfragen(
     )
 
     assert anzahl == 1
+
+
+@NICHT_FREIGEGEBEN
+async def test_antwort_per_id_an_nicht_freigegebene_suchanfrage_geht_nicht(
+    statement_service,
+    commentary_service,
+    suchanfrage_freigaben_ohne_datenbank,
+    entscheidung,
+):
+    # addReplysuggestionToStatement mit bekannter ID: abgelehnt, nichts angehaengt.
+    gesucht = "Die Grünen wollen Grillen verbieten"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(
+        suchanfrage_freigaben_ohne_datenbank, suchanfrage, entscheidung
+    )
+    kommentar = await _kommentar(commentary_service, "Grillen bleibt erlaubt.")
+
+    with pytest.raises(SuchanfrageNichtFreigegeben):
+        await _verknuepfen(
+            statement_service, suchanfrage, kommentar, ContentType.COMMENTARY
+        )
+
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)
+
+
+@NICHT_FREIGEGEBEN
+async def test_beitrag_per_id_einer_nicht_freigegebenen_suchanfrage(
+    statement_service,
+    commentary_service,
+    suchanfrage_freigaben_ohne_datenbank,
+    entscheidung,
+):
+    # Beitragsformular mit ?aussage=<ID>: mit Text eine eigene Aussage, ohne Text
+    # "nicht gefunden"; der Wortlaut der Suchanfrage geht nie zurueck.
+    gesucht = "Das Deutschlandticket wird abgeschafft"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(
+        suchanfrage_freigaben_ohne_datenbank, suchanfrage, entscheidung
+    )
+    kommentar = await _kommentar(commentary_service, "Das Ticket bleibt.")
+
+    with pytest.raises(AussageNichtGefunden):
+        await statement_service.beitrag_als_antwort_verknuepfen(
+            beitrag_id=kommentar,
+            content_type=ContentType.COMMENTARY,
+            relevance=1.0,
+            author="person-1",
+            statement_id=suchanfrage,
+        )
+
+    eigener = "das Deutschlandticket wird abgeschafft!"
+    statement_id, text, neu = await statement_service.beitrag_als_antwort_verknuepfen(
+        beitrag_id=kommentar,
+        content_type=ContentType.COMMENTARY,
+        relevance=1.0,
+        author="person-1",
+        statement_id=suchanfrage,
+        statement_text=eigener,
+    )
+
+    assert neu
+    assert statement_id != suchanfrage
+    assert text == eigener
+    assert (await statement_service.get(statement_id)).replysuggestions_count == 1
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)
+
+
+async def test_antwort_per_id_an_freigegebene_suchanfrage_wie_bisher(
+    statement_service, commentary_service, suchanfrage_freigaben_ohne_datenbank
+):
+    suchanfrage = await _anlegen(
+        statement_service,
+        "Wärmepumpen funktionieren im Altbau nicht",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+    _entscheidung_setzen(suchanfrage_freigaben_ohne_datenbank, suchanfrage, True)
+    kommentar = await _kommentar(commentary_service, "Doch, mit Planung.")
+
+    await _verknuepfen(
+        statement_service, suchanfrage, kommentar, ContentType.COMMENTARY
+    )
+
+    assert (await statement_service.get(suchanfrage)).replysuggestions_count == 1

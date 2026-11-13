@@ -39,12 +39,14 @@ async def _anlegen(service, text, origin=ContentOrigin.MANUALLY_CREATED):
 
 
 @pytest_asyncio.fixture
-async def bestand(statement_service):
+async def bestand(statement_service, suchanfrage_freigaben_ohne_datenbank):
     """
     Je eine Aussage einer Person, eine beantwortete Aussage aus einer
     Suchanfrage, eine aus der Suchanfrage einer einzelnen Person und eine aus
-    einer Suchanfrage ueber der Schwelle (gefragt).
+    einer Suchanfrage ueber der Schwelle (gefragt). Beantworten laesst sich nur
+    eine freigegebene Suchanfrage (Vormoderation).
     """
+    suchanfrage_freigaben_ohne_datenbank.ist_freigegeben.return_value = True
     von_person = await _anlegen(
         statement_service, "Windräder vertreiben die Touristen von der Küste"
     )

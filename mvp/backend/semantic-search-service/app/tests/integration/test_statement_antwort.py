@@ -64,7 +64,11 @@ async def test_kuratierte_suche_laesst_unbeantwortete_suchanfragen_weg(
     assert {r.id for r in nur_kuratiert} == {kuratiert}
 
 
-async def test_beantwortete_suchanfrage_gilt_als_kuratiert(statement_service):
+async def test_beantwortete_suchanfrage_gilt_als_kuratiert(
+    statement_service, suchanfrage_freigaben_ohne_datenbank
+):
+    # Antworten gibt es nur an freigegebenen Suchanfragen (Vormoderation).
+    suchanfrage_freigaben_ohne_datenbank.ist_freigegeben.return_value = True
     suchanfrage = await _anlegen(
         statement_service,
         "Windräder machen Vögel kaputt",

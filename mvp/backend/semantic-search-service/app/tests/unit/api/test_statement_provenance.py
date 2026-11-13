@@ -138,11 +138,31 @@ class TestSuchpfadBackend:
         )
 
         resp = TestClient(app).post(
-            SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10}
+            SEARCH_URL,
+            json={"query_text": "klimaschutz", "limit": 10},
+            headers={"X-User": "admin-1", "X-Is-Admin": "true"},
         )
 
         assert resp.status_code == 200
         assert resp.json()["statement_id"] == str(statement_id)
+
+    def test_suche_verbirgt_nicht_admins_die_id_der_neuen_suchanfrage(
+        self, statement_service
+    ):
+        # Vormoderation: eben angelegt heisst ungeprueft; das Formular nimmt den Text.
+        statement_service.add_statement.return_value = (
+            True,
+            uuid.uuid4(),
+            "klimaschutz",
+        )
+
+        resp = TestClient(app).post(
+            SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10}
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["statement_id"] is None
+        assert resp.json()["statement_text"] == "klimaschutz"
 
     def test_suche_liefert_null_statt_none_wenn_anlegen_scheitert(
         self, statement_service

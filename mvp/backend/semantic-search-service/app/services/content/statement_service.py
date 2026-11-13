@@ -73,6 +73,14 @@ def _ist_unbeantwortete_suchanfrage(aussage) -> bool:
     )
 
 
+class SuchanfrageNichtFreigegeben(Exception):
+    """
+    Eine Antwort soll an eine unbeantwortete Suchanfrage, die kein Admin freigegeben
+    hat (Vormoderation): Das machte sie mit ihrem Wortlaut fuer alle sichtbar.
+    Bewusst kein ValueError, damit sie nirgends als "nicht gefunden" durchgeht.
+    """
+
+
 class AussageNichtGefunden(ValueError):
     """Die Aussage zu einer ID gibt es nicht (mehr) - erwartbar, etwa bei einem alten Link."""
 
@@ -635,8 +643,17 @@ class StatementService(
         content_type: ContentType,
         relevance: float,
     ) -> bool:
-        """Lesen, aendern, schreiben - nur unter der Sperre der Aussage aufrufen."""
+        """
+        Lesen, aendern, schreiben - nur unter der Sperre der Aussage aufrufen.
+        SuchanfrageNichtFreigegeben bei einer nicht freigegebenen unbeantworteten
+        Suchanfrage (Vormoderation): Freigeben ist der ausdrueckliche Weg, auch fuer
+        Admins; eine Antwort soll ihn nicht stillschweigend ersetzen.
+        """
         statement_db_entry = await self._aussage_laden(statement_id)
+        if _ist_unbeantwortete_suchanfrage(
+            statement_db_entry
+        ) and not await self._suchanfrage_freigegeben(statement_id):
+            raise SuchanfrageNichtFreigegeben(str(statement_id))
 
         # Zweimal dieselbe Antwort (etwa ein wiederholter Speicheraufruf) haengt
         # nicht doppelt an und zaehlt nicht doppelt.
@@ -716,6 +733,19 @@ class StatementService(
             return None
 
         neu = False
+        if statement_id is not None:
+            aussage = await self._aussage_laden(statement_id)
+            if _ist_unbeantwortete_suchanfrage(
+                aussage
+            ) and not await self._suchanfrage_freigegeben(statement_id):
+                # Vormoderation: Die Suchanfrage gibt es fuer den Aufrufer nicht (wie
+                # getById). Mit Text wie add_statement eine eigene Aussage, sonst
+                # "nicht gefunden"; ihr Wortlaut geht nie zurueck.
+                if not text:
+                    raise AussageNichtGefunden(str(statement_id))
+                statement_id = None
+            else:
+                aussage_text = aussage.text
         if statement_id is None:
             neu, statement_id, aussage_text = await self.add_statement(
                 Statement(text=text, replysuggestions=[]),
@@ -723,8 +753,6 @@ class StatementService(
                 NEW_CONTENT_STATUS,
                 ContentOrigin.MANUALLY_CREATED,
             )
-        else:
-            aussage_text = (await self._aussage_laden(statement_id)).text
 
         await self.add_statementreplysuggestion_to_statement(
             statement_id=statement_id,

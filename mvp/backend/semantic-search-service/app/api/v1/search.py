@@ -65,6 +65,9 @@ from domain.models.content_type import ContentType
 from domain.models.statement import StatementSearchResult
 from services.content.commentary_service import CommentaryService
 from services.content.statement_service import StatementService
+from repositories.implementations.qdrant.statement_repository import (
+    ist_unbeantwortete_suchanfrage,
+)
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 from core.fehler import INTERNER_FEHLER
@@ -184,6 +187,40 @@ def suchspezifikationen(
             else []
         ),
     ]
+
+
+async def _aussage_fuer_aufrufer(
+    aufrufer: Aufrufer,
+    statement_service: StatementService,
+    suchen_ohne_treffer: SuchenOhneTrefferService,
+    neu: bool,
+    statement_id,
+    statement_text: str,
+    query_text: str,
+):
+    """
+    ID und Text der Aussage zur Suchanfrage, wie die Antwort sie nennt (Vormoderation,
+    13.11.2026). Ist sie eine unbeantwortete Suchanfrage, die Nicht-Admins nicht sehen
+    (unter der Schwelle oder nicht freigegeben), bekommen sie weder ihre ID noch
+    ihren Wortlaut, sondern ihren eigenen Suchtext ohne ID: Das Formular braucht
+    keine ID (es faellt auf den Text zurueck), und "Nicht dabei?" schlaegt solche
+    Aussagen ohnehin nicht vor. Eben aus dieser Suche angelegt heisst ungeprueft.
+    Laesst sich das nicht pruefen, wird verborgen.
+    """
+    if statement_id is None or aufrufer.ist_admin:
+        return statement_id, statement_text
+    if not neu:
+        try:
+            aussage = await statement_service.get(statement_id)
+            if not ist_unbeantwortete_suchanfrage(aussage):
+                return statement_id, statement_text
+            if statement_id in await suchen_ohne_treffer.sichtbar_fuer_alle():
+                return statement_id, statement_text
+        except Exception as e:
+            logger.warning(
+                f"Could not check search query statement: {type(e).__name__}"
+            )
+    return None, query_text
 
 
 # Searches for content in various indexes using similarity search
@@ -307,10 +344,19 @@ async def search_by_text(
             f"{len(generictext_search_results)} generictexts"
         )
 
+        antwort_id, antwort_text = await _aussage_fuer_aufrufer(
+            aufrufer,
+            statement_service,
+            suchen_ohne_treffer,
+            statement_was_new,
+            statement_id,
+            statement_text,
+            request.query_text,
+        )
         response = SearchResponse(
             query_was_newly_added_as_statement=statement_was_new,
-            statement_id=str(statement_id) if statement_id is not None else None,
-            statement_text=statement_text,
+            statement_id=str(antwort_id) if antwort_id is not None else None,
+            statement_text=antwort_text,
             commentary_search_results_count=len(commentary_search_results),
             commentary_search_results=commentary_search_results,
             generictext_search_results_count=len(generictext_search_results),
