@@ -21,7 +21,6 @@ from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
 )
 from services.unbeantwortete_aussagen_service import (
-    PUFFER_BEANTWORTETE,
     UnbeantworteteAussage,
     UnbeantworteteAussagenService,
 )
@@ -47,7 +46,10 @@ def _service(ohne_kommentar=(), gesucht=(), themen=None):
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
     statement_service.mit_kommentar = AsyncMock(return_value=set())
     suchen = Mock(spec=SuchenOhneTrefferService)
-    suchen.haeufigste = AsyncMock(return_value=list(gesucht))
+    # Wie die Kennzahl: hoechstens ``limit`` Aussagen, die haeufigsten zuerst
+    suchen.haeufigste = AsyncMock(
+        side_effect=lambda wochen, limit: list(gesucht)[:limit]
+    )
     themen_service = Mock(spec=AussageThemenService)
     themen_service.themen_von = Mock(
         side_effect=lambda ids: {
@@ -147,10 +149,36 @@ async def test_beantwortete_druecken_unbeantwortete_nicht_unter_die_grenze():
     liste = await service.liste(limit=1)
 
     assert [a.statement_id for a in liste] == [B]
-    assert (
-        service._suchen_ohne_treffer.haeufigste.call_args.kwargs["limit"]
-        == 1 + PUFFER_BEANTWORTETE
+
+
+async def test_viele_beantwortete_hotspots_verdraengen_keine_unbeantworteten():
+    """Auch wenn weit mehr als das Limit schon beantwortet ist (Kennzahl waechst)."""
+    beantwortet = [uuid.uuid4() for _ in range(120)]
+    gesucht = [SucheOhneTreffer(i, "x", 200 - n, 2) for n, i in enumerate(beantwortet)]
+    gesucht.append(SucheOhneTreffer(B, "b", 3, 2))
+    service = _service(gesucht=gesucht)
+    service._statement_service.mit_kommentar = AsyncMock(
+        side_effect=lambda ids: set(ids) & set(beantwortet)
     )
+
+    liste = await service.liste(limit=50)
+
+    assert [a.statement_id for a in liste] == [B]
+
+
+async def test_gescheiterte_kommentarpruefung_laesst_ungefiltert(caplog):
+    """Die Liste ist Beiwerk: ungefiltert statt gar nicht, mit Warnung."""
+    service = _service(gesucht=[SucheOhneTreffer(A, "a", 9, 5)])
+    service._statement_service.mit_kommentar = AsyncMock(
+        side_effect=RuntimeError("Qdrant weg")
+    )
+
+    with caplog.at_level("WARNING"):
+        liste = await service.liste()
+
+    assert [a.statement_id for a in liste] == [A]
+    warnungen = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert warnungen and "ungefiltert" in warnungen[-1].getMessage()
 
 
 async def test_liste_ist_begrenzt():

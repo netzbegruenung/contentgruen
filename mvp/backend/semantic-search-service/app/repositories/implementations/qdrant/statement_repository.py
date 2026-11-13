@@ -1,4 +1,4 @@
-from typing import AbstractSet, Iterable, List, Optional, Set
+from typing import TYPE_CHECKING, AbstractSet, Iterable, List, Optional, Set
 import asyncio
 import logging
 import uuid
@@ -23,6 +23,9 @@ from utils.antwort_ids import FELD_ANTWORT_IDS
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_type import ContentType
 from domain.models.content_status import AUSGEBLENDET_WERTE
+
+if TYPE_CHECKING:
+    from qdrant_client.models import Record
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +52,10 @@ _TITEL_OHNE_TITEL_HOECHSTENS = 120
 # aus aelteren Punkten loest StatementDbEntry.parse_replysuggestions vorher auf.
 _ANTWORTVORSCHLAEGE = TypeAdapter(List[StatementReplysuggestion])
 
-# Hoechstens so viele IDs je retrieve: mit_kommentar fragt bis zu einige hundert
-# Aussagen ab, und jede kann mehrere Kommentare tragen.
+# Hoechstens so viele IDs je retrieve (_abrufen): mit_kommentar fragt bis zu einige
+# hundert Aussagen ab, jede kann mehrere Kommentare tragen, und ohne_kommentar fragt
+# die Kommentare aller kuratierten Aussagen ab. Die Pakete laufen nacheinander, damit
+# ein Aufruf der Liste Qdrant nicht mit vielen gleichzeitigen Anfragen belegt.
 _IDS_JE_ABRUF = 256
 
 
@@ -291,21 +296,13 @@ class StatementRepository(
         Antwortvorschlaegen haben: das Gegenstueck zu ohne_kommentar fuer wenige,
         schon bekannte Aussagen (die Kandidaten aus "Suchen ohne Treffer" in
         UnbeantworteteAussagenService). Zwei Abrufe per ID, kein Scan; wie dort zaehlt
-        ein gesperrter oder geloeschter Kommentar nicht. Scheitert der erste
-        Abruf, gilt keine als beantwortet (Warnung im Log).
+        ein gesperrter oder geloeschter Kommentar nicht. Ein Fehler beim Abruf geht
+        an den Aufrufer; was dann gilt, entscheidet der Service.
         """
         ids = list(dict.fromkeys(ids))
         if not ids:
             return set()
-        try:
-            punkte = await self._abrufen(ids, ["content_type", "replysuggestions"])
-        except Exception as fehler:
-            # Die Liste ist Beiwerk: lieber ungefiltert als gar nicht.
-            logger.warning(
-                f"mit_kommentar: Abruf gescheitert ({type(fehler).__name__}), "
-                "Liste bleibt ungefiltert"
-            )
-            return set()
+        punkte = await self._abrufen(ids, ["content_type", "replysuggestions"])
         kommentare_je_aussage = {}
         for punkt in punkte:
             payload = punkt.payload or {}
@@ -416,7 +413,9 @@ class StatementRepository(
             )
         return [gefunden[i] for i in ids if i in gefunden]
 
-    async def _abrufen(self, ids: Iterable[uuid.UUID], felder: List[str]) -> list:
+    async def _abrufen(
+        self, ids: Iterable[uuid.UUID], felder: List[str]
+    ) -> List["Record"]:
         """Punkte per ID, in Paketen von hoechstens _IDS_JE_ABRUF IDs."""
         ids = [str(i) for i in ids]
         punkte = []

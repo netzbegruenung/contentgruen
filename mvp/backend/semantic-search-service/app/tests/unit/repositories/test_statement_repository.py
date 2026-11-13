@@ -520,16 +520,17 @@ class TestMitKommentar:
 
         assert await repository.mit_kommentar([self.AUSSAGE, self.ZWEITE]) == set()
 
-    async def test_gescheiterter_abruf_laesst_ungefiltert(
-        self, test_settings, test_embeddings_manager, caplog
+    async def test_gescheiterter_abruf_geht_an_den_aufrufer(
+        self, test_settings, test_embeddings_manager
     ):
+        """Was dann gilt, entscheidet der Service (UnbeantworteteAussagenService)."""
         repository, retrieve = self._repository(
             test_settings, test_embeddings_manager, {}
         )
         retrieve.side_effect = RuntimeError("Qdrant weg")
 
-        assert await repository.mit_kommentar([self.AUSSAGE]) == set()
-        assert "mit_kommentar" in caplog.text
+        with pytest.raises(RuntimeError):
+            await repository.mit_kommentar([self.AUSSAGE])
 
     async def test_ruft_in_paketen_ab(self, test_settings, test_embeddings_manager):
         from repositories.implementations.qdrant import statement_repository
@@ -542,3 +543,30 @@ class TestMitKommentar:
         assert await repository.mit_kommentar(ids) == set()
         groessen = [len(c.kwargs["ids"]) for c in retrieve.call_args_list]
         assert groessen == [statement_repository._IDS_JE_ABRUF, 1]
+
+    async def test_kommentare_auch_in_paketen(
+        self, test_settings, test_embeddings_manager
+    ):
+        """Der zweite Abruf (Zustand der Kommentare) teilt ebenfalls in Pakete."""
+        from repositories.implementations.qdrant import statement_repository
+
+        kommentare = [
+            uuid.uuid4() for _ in range(statement_repository._IDS_JE_ABRUF + 1)
+        ]
+        punkte = {
+            str(self.AUSSAGE): self._punkt(
+                self.AUSSAGE,
+                content_type="statement",
+                replysuggestions=[self._vorschlag(k) for k in kommentare],
+            ),
+            str(kommentare[-1]): self._punkt(
+                kommentare[-1], content_type="commentary", status="visible"
+            ),
+        }
+        repository, retrieve = self._repository(
+            test_settings, test_embeddings_manager, punkte
+        )
+
+        assert await repository.mit_kommentar([self.AUSSAGE]) == {self.AUSSAGE}
+        groessen = [len(c.kwargs["ids"]) for c in retrieve.call_args_list]
+        assert groessen == [1, statement_repository._IDS_JE_ABRUF, 1]
