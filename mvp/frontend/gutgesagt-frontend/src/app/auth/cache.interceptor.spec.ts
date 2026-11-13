@@ -152,6 +152,17 @@ describe('cacheInterceptor', () => {
     httpMock.expectOne(`${api}/statement/unbeantwortet`).flush({ aussagen: [] });
   });
 
+  it('haelt den eigenen Punktestand nie im Cache, er laedt jede Minute nach (#352)', () => {
+    const erstes = holen(`${api}/usage/users/me/punkte`);
+    httpMock.expectOne(`${api}/usage/users/me/punkte`).flush({ gesamt: 1 });
+
+    const zweites = holen(`${api}/usage/users/me/punkte`);
+    httpMock.expectOne(`${api}/usage/users/me/punkte`).flush({ gesamt: 2 });
+
+    expect(erstes).toEqual([{ gesamt: 1 }]);
+    expect(zweites).toEqual([{ gesamt: 2 }]);
+  });
+
   for (const pfad of ['/api/check-session', '/api/user-info']) {
     it(`fragt ${pfad} jedes Mal beim BFF nach (#278)`, () => {
       // Eine beendete Sitzung soll beim naechsten Seitenwechsel auffallen, nicht erst nach

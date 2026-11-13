@@ -440,7 +440,7 @@ Der gelbe Punkt an „Beitragen“ im Kopf (Desktop und Handy): Er erscheint nac
 _Avoid_: Badge, Benachrichtigungspunkt
 
 **Punkte**:
-Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte. Ein Konto ohne geltende Art.-9-Einwilligung (nie erteilt oder widerrufen) hat keine Punkte, wie ein Startkonto (#559).
+Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte. Ein Konto ohne geltende Art.-9-Einwilligung (nie erteilt oder widerrufen) hat keine Punkte, wie ein Startkonto (#559). Den Punktestand sieht nur die Person selbst, gesamt und je Stufe in „Meine Beiträge“, nur bei eingeschalteten Punkten; er wird nicht gespeichert, sondern bei jedem Abruf berechnet (#352).
 _Avoid_: XP, Score, Karma
 
 **Muster-Hinweis**:

@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 
 import { environment } from '../../environments/environment';
-import { UsageTrackingService } from './usage-tracking.service';
+import { PUNKTE_NICHT_GELADEN, UsageTrackingService } from './usage-tracking.service';
 import { LoggingService } from './logging.service';
 
 /**
@@ -147,6 +147,42 @@ describe('UsageTrackingService', () => {
       http.expectOne(MEILENSTEINE).flush('kaputt', { status: 500, statusText: 'Server Error' });
 
       expect(ergebnis).toEqual([]);
+      expect(TestBed.inject(LoggingService).error).toHaveBeenCalled();
+    });
+  });
+
+  describe('Eigene Punkte (#352)', () => {
+    const PUNKTE = `${environment.baseUrl}/api/v1/usage/users/me/punkte`;
+    const STAND = { tun: 2, quests: 0, wirkung: 30, gesamt: 32, sammelt: true };
+
+    it('holt den eigenen Punktestand', () => {
+      let ergebnis: unknown;
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+
+      const anfrage = http.expectOne(PUNKTE);
+      expect(anfrage.request.method).toBe('GET');
+      anfrage.flush(STAND);
+
+      expect(ergebnis).toEqual(STAND);
+    });
+
+    it('liefert bei ausgeschalteten Punkten (404) still null', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+
+      http.expectOne(PUNKTE).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toBeNull();
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('meldet einen anderen Fehler als unbekannten Stand und protokolliert ihn', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+
+      http.expectOne(PUNKTE).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });
+
+      expect(ergebnis).toBe(PUNKTE_NICHT_GELADEN);
       expect(TestBed.inject(LoggingService).error).toHaveBeenCalled();
     });
   });

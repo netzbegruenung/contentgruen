@@ -117,6 +117,7 @@ async def test_punkte_startkonto_sammelt_keine():
     stand = await _service(quellen).punkte(START)
 
     assert stand.gesamt == 0
+    assert stand.sammelt is False
 
 
 async def test_punkte_ohne_art9_einwilligung_keine():
@@ -127,6 +128,15 @@ async def test_punkte_ohne_art9_einwilligung_keine():
     stand = await _service(quellen, eingewilligt=lambda user_id: False).punkte(KIM)
 
     assert stand.gesamt == 0
+    assert stand.sammelt is False
+
+
+async def test_punkte_mit_einwilligung_sammelt_auch_bei_null():
+    """Neu und noch ohne Wirkung: 0 Punkte, aber ein Punktestand (#352)."""
+    stand = await _service(_Quellen([])).punkte(KIM)
+
+    assert stand.gesamt == 0
+    assert stand.sammelt is True
 
 
 async def test_punkte_widerruf_wirkt_beim_naechsten_abruf():
