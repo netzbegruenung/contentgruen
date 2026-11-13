@@ -9,7 +9,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { LADE_GROESSE, FangkorbComponent, SEITENLEISTE_MEDIEN, WIEDERHOLUNG_MS } from './fangkorb.component';
+import { LADE_GROESSE, FangkorbComponent, SEITENLEISTE_MEDIEN } from './fangkorb.component';
+import { WIEDERHOLUNG_MS } from '../shared/lade-wiederholung';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';

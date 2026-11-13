@@ -20,6 +20,10 @@
   color: var(--text-secondary);
 }
 
+.einwuerfe-fehler p {
+  margin: 0 0 12px;
+}
+
 /* Wie im Fangkorb: die Einwurf-Karten untereinander auf dem Kartengrund */
 .karten {
   display: flex;

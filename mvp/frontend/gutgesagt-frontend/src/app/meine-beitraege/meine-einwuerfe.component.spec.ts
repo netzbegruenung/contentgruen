@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
@@ -8,6 +8,7 @@ import { By } from '@angular/platform-browser';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
+import { WIEDERHOLUNG_MS } from '../shared/lade-wiederholung';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { Einwurf, EinwurfService, EinwurfSeite } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
@@ -173,12 +174,43 @@ describe('MeineEinwuerfeComponent', () => {
     expect(texte('.einwuerfe-statistik')).toEqual([]);
   });
 
-  it('sagt, wenn die Liste nicht geladen werden konnte', () => {
+  it('sagt, wenn die Liste nicht geladen werden konnte, ohne "neu laden" und mit Knopf', () => {
     einwurfService.eigeneLaden.and.returnValue(throwError(() => ({ status: 500 })));
     anzeigen();
 
-    expect(texte('.einwuerfe-fehler')).toEqual(['Deine Einwürfe konnten nicht geladen werden. Bitte lade die Seite neu.']);
+    expect(texte('.einwuerfe-fehler p')).toEqual([
+      'Deine Einwürfe konnten gerade nicht geladen werden. Gleich kommt ein neuer Versuch.',
+    ]);
+    expect(texte('.einwuerfe-fehler')[0]).not.toMatch(/neu ?lad/i);
+    expect(texte('button.erneut-versuchen')).toEqual(['Erneut versuchen']);
   });
+
+  it('versucht es nach einem Ladefehler selbst wieder', fakeAsync(() => {
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), of(antwort([offen])));
+    anzeigen();
+
+    tick(WIEDERHOLUNG_MS[0]);
+    fixture.detectChanges();
+
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(2);
+    expect(texte('.einwuerfe-fehler')).toEqual([]);
+    expect(fixture.nativeElement.querySelectorAll('article.karte--einwurf').length).toBe(1);
+  }));
+
+  it('versucht es auf Knopfdruck sofort, auf derselben Seite', fakeAsync(() => {
+    einwurfService.eigeneLaden.and.returnValues(throwError(() => ({ status: 500 })), of(antwort([offen])));
+    anzeigen();
+
+    (fixture.nativeElement.querySelector('button.erneut-versuchen') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(2);
+    expect(einwurfService.eigeneLaden.calls.mostRecent().args).toEqual([1, 24]);
+    expect(texte('.einwuerfe-fehler')).toEqual([]);
+    // Der geplante Versuch faellt weg
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
+    expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(2);
+  }));
 
   it('blaettert erst ab mehr als einer Seite', () => {
     anzeigen();

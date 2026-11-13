@@ -11,7 +11,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Subject, Subscription, timer } from 'rxjs';
+import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { EinwurfAktionenService } from './einwurf-aktionen.service';
@@ -24,6 +24,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
 import { TabAusrichtung, tabMitTasteWaehlen } from '../shared/tab-tasten';
+import { LadeWiederholung } from '../shared/lade-wiederholung';
 import {
   FangkorbFilter,
   FangkorbTab,
@@ -48,13 +49,6 @@ export const LADE_GROESSE = 100;
  * Tastatur: Das CSS haengt an der Klasse, die dieser Wert setzt.
  */
 export const SEITENLEISTE_MEDIEN = '(min-width: 1024px)';
-
-/**
- * Nach einem Ladefehler versucht der Fangkorb es selbst wieder, erst schnell, dann
- * seltener; der letzte Abstand gilt fuer alle weiteren Versuche. Niemand muss die
- * Seite neu laden.
- */
-export const WIEDERHOLUNG_MS: readonly number[] = [2000, 5000, 15000, 30000, 60000];
 
 /**
  * Der Fangkorb: zwei Tabs, die Arbeitslisten, benannt nach der naechsten Arbeit,
@@ -103,9 +97,8 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   seitenleiste = false;
 
   private destroy$ = new Subject<void>();
-  /** Wie viele Versuche seit dem letzten Erfolg gescheitert sind. */
-  private fehlversuche = 0;
-  private wiederholung: Subscription | null = null;
+  /** Nach einem Ladefehler: der naechste Versuch, selbst geplant. */
+  private wiederholung = new LadeWiederholung(this.destroy$);
 
   constructor(
     private einwurfService: EinwurfService,
@@ -132,7 +125,7 @@ export class FangkorbComponent implements OnInit, OnDestroy {
    * naechste Versuch laeuft; der Spinner kommt nur, solange noch nichts gescheitert ist.
    */
   laden(): void {
-    this.wiederholungAbbrechen();
+    this.wiederholung.abbrechen();
     if (this.ladefehler) {
       this.erneutLaedt = true;
     } else {
@@ -149,7 +142,7 @@ export class FangkorbComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           this.ladefehler = false;
           this.erneutLaedt = false;
-          this.fehlversuche = 0;
+          this.wiederholung.erfolg();
           this.filtern();
         },
         error: (error) => {
@@ -157,7 +150,7 @@ export class FangkorbComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           this.ladefehler = true;
           this.erneutLaedt = false;
-          this.wiederholungPlanen();
+          this.wiederholung.planen(() => this.laden());
           this.cdr.markForCheck();
         },
       });
@@ -269,22 +262,9 @@ export class FangkorbComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.wiederholungAbbrechen();
+    this.wiederholung.abbrechen();
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private wiederholungPlanen(): void {
-    const abstand = WIEDERHOLUNG_MS[Math.min(this.fehlversuche, WIEDERHOLUNG_MS.length - 1)];
-    this.fehlversuche++;
-    this.wiederholung = timer(abstand)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.laden());
-  }
-
-  private wiederholungAbbrechen(): void {
-    this.wiederholung?.unsubscribe();
-    this.wiederholung = null;
   }
 
   private filterSetzen(filter: FangkorbFilter): void {

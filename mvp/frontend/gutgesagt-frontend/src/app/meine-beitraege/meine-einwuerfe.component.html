@@ -3,7 +3,15 @@
     <mat-spinner class="mat-spinner-color" diameter="40"></mat-spinner>
 </div>
 
-<p *ngIf="!isLoading && ladefehler" class="einwuerfe-fehler">Deine Einwürfe konnten nicht geladen werden. Bitte lade die Seite neu.</p>
+<!-- Nie "neu laden": Die Liste versucht es selbst wieder, der Knopf zieht den Versuch vor -->
+<div *ngIf="!isLoading && ladefehler" class="einwuerfe-fehler" role="status">
+    <p>
+        Deine Einwürfe konnten gerade nicht geladen werden.
+        {{ erneutLaedt ? 'Neuer Versuch läuft …' : 'Gleich kommt ein neuer Versuch.' }}
+    </p>
+    <button mat-stroked-button type="button" class="erneut-versuchen"
+            [disabled]="erneutLaedt" (click)="erneutVersuchen()">Erneut versuchen</button>
+</div>
 
 <ng-container *ngIf="!isLoading && !ladefehler">
     <p *ngIf="!karten.length" class="einwuerfe-leer">Du hast noch nichts eingeworfen.</p>
