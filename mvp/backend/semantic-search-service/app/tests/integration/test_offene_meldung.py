@@ -63,12 +63,23 @@ def test_abweisen_mit_nur_offene_aendert_eine_bearbeitete_meldung_nicht(meldunge
 
     beitrag_id = uuid.uuid4()
     _melden(meldungen, beitrag_id)
-    meldung = meldungen.get_reports_by_content_id(beitrag_id)[0]
-    meldungen.update_report_status(meldung.id, "reviewed", reviewed_by="admin-1")
+    # Die Admin-Liste liefert Woerterbuecher; ORM-Objekte waeren ausserhalb der Sitzung abgeloest.
+    [eintrag] = [
+        m
+        for m in meldungen.get_reports(status="all")
+        if m["content_id"] == str(beitrag_id)
+    ]
+    meldung_id = uuid.UUID(eintrag["id"])
+    meldungen.update_report_status(meldung_id, "reviewed", reviewed_by="admin-1")
 
     with pytest.raises(MeldungNichtOffen):
         meldungen.update_report_status(
-            meldung.id, "dismissed", reviewed_by="admin-2", nur_offene=True
+            meldung_id, "dismissed", reviewed_by="admin-2", nur_offene=True
         )
 
-    assert meldungen.get_reports_by_content_id(beitrag_id)[0].status == "reviewed"
+    [nachher] = [
+        m
+        for m in meldungen.get_reports(status="all")
+        if m["content_id"] == str(beitrag_id)
+    ]
+    assert nachher["status"] == "reviewed"
