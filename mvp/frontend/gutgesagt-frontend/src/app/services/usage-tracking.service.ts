@@ -42,6 +42,16 @@ export interface Meilenstein {
   erreicht: boolean;
 }
 
+/** Der eigene Punktestand je Stufe (ADR 0004, #352); siehe GLOSSARY.md „Punkte“. */
+export interface Punktestand {
+  /** Kleine, je Tag gedeckelte Punkte fürs Tun. */
+  tun: number;
+  quests: number;
+  /** Nutzung und Zustimmung durch andere: der Hauptanteil. */
+  wirkung: number;
+  gesamt: number;
+}
+
 /** Die Antwort auf die Frage, ob andere Angemeldete die Abzeichen sehen (#351). */
 export interface AbzeichenSichtbarkeit {
   gefragt: boolean;
@@ -222,6 +232,22 @@ export class UsageTrackingService {
           return of(null);
         })
       );
+  }
+
+  /**
+   * Der eigene Punktestand (#352), nur für die Person selbst. Solange die Punkte
+   * ausgeschaltet sind, antwortet der Server 404; dann und bei jedem anderen Fehler
+   * null, und „Meine Beiträge“ zeigt keine Punkte.
+   */
+  getEigenePunkte(): Observable<Punktestand | null> {
+    return this.http.get<Punktestand>(`${this.apiUrl}/users/me/punkte`).pipe(
+      catchError((error) => {
+        if (error?.status !== 404) {
+          this.loggingService.error('Eigene Punkte nicht geladen', error);
+        }
+        return of(null);
+      })
+    );
   }
 
   /**

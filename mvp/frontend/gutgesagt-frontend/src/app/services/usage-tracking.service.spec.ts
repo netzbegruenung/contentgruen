@@ -151,6 +151,42 @@ describe('UsageTrackingService', () => {
     });
   });
 
+  describe('Eigene Punkte (#352)', () => {
+    const PUNKTE = `${environment.baseUrl}/api/v1/usage/users/me/punkte`;
+    const STAND = { tun: 2, quests: 0, wirkung: 30, gesamt: 32 };
+
+    it('holt den eigenen Punktestand', () => {
+      let ergebnis: unknown;
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+
+      const anfrage = http.expectOne(PUNKTE);
+      expect(anfrage.request.method).toBe('GET');
+      anfrage.flush(STAND);
+
+      expect(ergebnis).toEqual(STAND);
+    });
+
+    it('liefert bei ausgeschalteten Punkten (404) still null', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+
+      http.expectOne(PUNKTE).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toBeNull();
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('liefert bei einem Fehler null und protokolliert ihn', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+
+      http.expectOne(PUNKTE).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toBeNull();
+      expect(TestBed.inject(LoggingService).error).toHaveBeenCalled();
+    });
+  });
+
   describe('Rückmeldung „Gepostet?“ (#643)', () => {
     const GEPOSTET = `${environment.baseUrl}/api/v1/usage/users/me/gepostet`;
 
