@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
@@ -359,6 +359,13 @@ export class UsageTrackingService {
   }
 
   /**
+   * Die Zahl aus dem letzten besuchMelden dieses App-Starts; null, solange keine da ist.
+   * Die Startseite zeigt sie in „Seit deinem letzten Besuch“, ohne selbst zu fragen:
+   * Eine zweite Frage schriebe den gezeigten Stand fort und ergaebe 0.
+   */
+  readonly nutzungSeitLetztemBesuch$ = new BehaviorSubject<number | null>(null);
+
+  /**
    * Meldet einen Besuch der angemeldeten Person und liefert, wie oft ihre Beitraege
    * seit dem letzten Besuch genutzt wurden (#349). POST, weil das Backend dabei den
    * gezeigten Stand fortschreibt; die Person kommt wie bei der Nutzungsstatistik
@@ -370,6 +377,7 @@ export class UsageTrackingService {
     return this.http.post<BesuchResponse>(`${this.apiUrl}/users/me/besuch`, {})
       .pipe(
         map(antwort => antwort.nutzung_seit_letztem_besuch),
+        tap(anzahl => this.nutzungSeitLetztemBesuch$.next(anzahl)),
         catchError(error => {
           this.loggingService.error('Besuch nicht gemeldet', error);
           return of(null);

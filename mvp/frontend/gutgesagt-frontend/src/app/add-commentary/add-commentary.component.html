@@ -44,6 +44,8 @@
                     <mat-error *ngIf="commentaryForm.get('text')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
                     <mat-error *ngIf="commentaryForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
+                <!-- Einspaltig direkt unter dem Feld, damit man es beim Tippen sieht (Nutzerfuehrung 13.11.) -->
+                <app-gegenlesen *ngIf="einspaltig()" [kompakt]="true" [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"></app-gegenlesen>
 
                 <button *ngIf="!zeigtFassungen" type="button" class="text-link fassungen-link" (click)="fassungenZeigen()">
                     + Weitere Fassungen
@@ -139,7 +141,7 @@
                 <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
-            <app-gegenlesen [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"></app-gegenlesen>
+            <app-gegenlesen *ngIf="!einspaltig()" [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"></app-gegenlesen>
         </section>
     </div>
 </div>

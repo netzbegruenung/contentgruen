@@ -24,6 +24,15 @@
     font-weight: 500;
 }
 
+.luecke-zu-titel {
+    display: block;
+    font-family: GrueneType, Roboto, sans-serif;
+    font-weight: 400;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    color: var(--primary-dark);
+}
+
 .gespeichert-laedt {
     display: flex;
     justify-content: center;

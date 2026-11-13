@@ -27,6 +27,30 @@ export function vonHierFehltEineAntwort(params: { get(name: string): string | nu
   return params.get(VON_PARAM) === VON_HIER_FEHLT_EINE_ANTWORT;
 }
 
+/**
+ * ?gesucht=<N>: Wie viele Personen ohne Treffer nach der Aussage gesucht haben, wie
+ * "Hier fehlt eine Antwort" sie zeigt. Reist von dort ueber das Formular auf die
+ * Ergebnisseite mit, die damit "Luecke zu" sagt; die Zahl steht auf der Herkunftsseite
+ * schon offen, ein neuer Abruf entsteht nicht.
+ */
+export const GESUCHT_PARAM = 'gesucht';
+
+/** Die Zahl aus ?gesucht=; 0 ohne Angabe oder bei Unsinn. */
+export function gesuchtAus(params: { get(name: string): string | null }): number {
+  const zahl = Number.parseInt(params.get(GESUCHT_PARAM) ?? '', 10);
+  return Number.isFinite(zahl) && zahl > 0 ? zahl : 0;
+}
+
+/** Der Satz unter "Luecke zu.", je nachdem, wie viele Personen gesucht haben. */
+export function lueckeZuSatz(personen: number): string {
+  if (personen <= 0) {
+    return 'Wer danach sucht, findet ab jetzt deine Antwort.';
+  }
+  return personen === 1
+    ? 'Eine Person hat danach gesucht, ab jetzt findet sie was.'
+    : `${personen} Personen haben danach gesucht, ab jetzt finden sie was.`;
+}
+
 export type Herkunft = 'fangkorb' | 'suche' | 'frei';
 
 /** Was ein Beitragsformular nach dem Speichern meldet; die Ergebnisseite zeigt es. */

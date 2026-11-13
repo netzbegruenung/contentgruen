@@ -22,8 +22,12 @@ import {
   GespeichertZustand,
   Herkunft,
   SUCHE_PARAM,
+  gesuchtAus,
   herkunftAus,
+  lueckeZuSatz,
+  vonHierFehltEineAntwort,
 } from './gespeichert-adresse';
+import { ROUTES } from '../../shared/constants/app.constants';
 import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
 
 /** Beitragstypen, fuer die es die Ergebnisseite gibt. */
@@ -195,6 +199,28 @@ export class BeitragGespeichertComponent implements OnInit {
       return;
     }
     this.router.navigate(['/search']);
+  }
+
+  /**
+   * "Luecke zu" (Nutzerfuehrung 13.11.): Der Beitrag beantwortet eine Aussage aus "Hier
+   * fehlt eine Antwort". Das ist der staerkste Wirkungsmoment, deshalb statt des
+   * allgemeinen Satzes die Nachfrage und als Hauptknopf die naechste Luecke. Nicht,
+   * wenn die Verknuepfung mit der Aussage gescheitert ist: Dann ist die Luecke offen.
+   */
+  get lueckeZu(): boolean {
+    return (
+      this.typ === 'commentary' &&
+      vonHierFehltEineAntwort(this.route.snapshot.queryParamMap) &&
+      this.zustand.verknuepft !== false
+    );
+  }
+
+  get lueckeZuSatz(): string {
+    return lueckeZuSatz(gesuchtAus(this.route.snapshot.queryParamMap));
+  }
+
+  naechsteLuecke(): void {
+    this.router.navigate([ROUTES.HIER_FEHLT_EINE_ANTWORT]);
   }
 
   nochEiner(): void {

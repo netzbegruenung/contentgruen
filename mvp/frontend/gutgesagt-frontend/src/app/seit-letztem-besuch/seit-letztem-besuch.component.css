@@ -1,0 +1,38 @@
+/* Eine ruhige Zeile ueber den Kacheln, keine Kachel und kein Zaehler (Nutzerfuehrung 13.11.) */
+.seit-besuch {
+  max-width: 720px;
+  margin: 20px auto 0;
+  padding: 0 var(--page-margin, 16px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 599px) {
+  .seit-besuch {
+    margin-top: 16px;
+    padding: 0 var(--page-margin-mobile, 16px);
+  }
+}
+
+.seit-besuch-titel {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.seit-besuch-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seit-besuch-link {
+  display: inline-block;
+  padding: 6px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-dark);
+}

@@ -28,6 +28,7 @@ import { StatementService } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
 import { beantwortenParams } from '../hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
+import { nachNutzung, wirkungssatz } from './wirkung';
 
 /** So viele unbeantwortete Aussagen zeigt der leere Zustand als ersten Schritt (#645). */
 export const ERSTE_SCHRITTE = 3;
@@ -141,7 +142,8 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   fetchData(page: number, pageSize: number) {
     this.isLoading = true;
     this.meineBeitraegeService.meineBeitraege(page, pageSize).subscribe((data) => {
-      this.karten = data.results.map((eintrag) => ausBeitrag(eintrag));
+      // Wirkung zuerst: die meistgenutzten oben (Nutzerfuehrung 13.11.)
+      this.karten = nachNutzung(data.results.map((eintrag) => ausBeitrag(eintrag)));
       this.totalRecords = data.total_records_count;
       this.calculateTotalUsage(data.results);
       this.isLoading = false;
@@ -189,11 +191,26 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     tabMitTasteWaehlen(event, jetzt, this.tabs.length, (ziel) => this.tabWaehlen(this.tabs[ziel].wert));
   }
 
-  /** "2 Beiträge · 3× genutzt": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. */
+  /**
+   * Der Wirkungssatz oben, etwa "Deine 4 Beiträge wurden 3-mal genutzt, 2 davon diese
+   * Woche.": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. Die Woche nur, wenn
+   * alle Beitraege geladen sind; eine Summe ueber eine Seite waere zu klein.
+   */
   get statistik(): string {
-    const beitraege = this.totalRecords === 1 ? 'Beitrag' : 'Beiträge';
-    const nutzung = this.nutzungsstatistik?.total_usage_count ?? this.totalUsageCount;
-    return `${this.totalRecords} ${beitraege} · ${nutzung}× genutzt`;
+    return wirkungssatz(this.totalRecords, this.gesamtNutzung, this.nutzungDieseWoche);
+  }
+
+  /** Nutzung ueber alle Seiten aus der Nutzungsstatistik, sonst die Summe dieser Seite. */
+  get gesamtNutzung(): number {
+    return this.nutzungsstatistik?.total_usage_count ?? this.totalUsageCount;
+  }
+
+  /** Summe der letzten 7 Tage; null, solange nicht alle Beitraege auf dieser Seite stehen. */
+  get nutzungDieseWoche(): number | null {
+    if (this.totalRecords > this.karten.length) {
+      return null;
+    }
+    return this.karten.reduce((summe, karte) => summe + (karte.nutzungLetzte7Tage ?? 0), 0);
   }
 
   calculateTotalUsage(beitraege: ContentResult[]) {

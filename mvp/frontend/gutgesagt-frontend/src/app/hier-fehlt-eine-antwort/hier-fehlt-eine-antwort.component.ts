@@ -18,6 +18,7 @@ import { ThemenFilterComponent } from '../shared/themen/themen-filter.component'
 import { AUSSAGE_GIBT_ES_SCHON, THEMEN_NICHT_GESPEICHERT, themenDerAussage } from '../shared/themen/themen-meldung';
 import { AUSSAGE_PARAM, FORMULAR_PFAD } from '../shared/formular-adresse';
 import {
+  GESUCHT_PARAM,
   VON_HIER_FEHLT_EINE_ANTWORT,
   VON_PARAM,
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
@@ -55,10 +56,18 @@ export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean):
 /**
  * Query-Parameter fuer "Antworten": das Kommentarformular mit dieser Aussage; ?von=
  * fuehrt die Pfeile nach "Hier fehlt eine Antwort" zurueck. Auch "Meine Beitraege"
- * nutzt das fuer seinen leeren Zustand.
+ * nutzt das fuer seinen leeren Zustand. ?gesucht= nimmt die Nachfrage mit, damit die
+ * Ergebnisseite nach dem Speichern "Luecke zu" mit der Zahl sagen kann.
  */
-export function beantwortenParams(aussage: Pick<UnbeantworteteAussage, 'statement_id'>): Record<string, string> {
-  return { [AUSSAGE_PARAM]: aussage.statement_id, [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT };
+export function beantwortenParams(
+  aussage: Pick<UnbeantworteteAussage, 'statement_id'> & Partial<Pick<UnbeantworteteAussage, 'personen_ohne_treffer'>>,
+): Record<string, string> {
+  const gesucht = aussage.personen_ohne_treffer ?? 0;
+  return {
+    [AUSSAGE_PARAM]: aussage.statement_id,
+    [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT,
+    ...(gesucht > 0 ? { [GESUCHT_PARAM]: String(gesucht) } : {}),
+  };
 }
 
 /**
