@@ -21,6 +21,7 @@ import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { StatementSearchResult } from '../services/dtos/statementDtos';
+import { TeilenService, sucheLink, suchtextKuerzen } from '../shared/teilen.service';
 import {
   AnsichtGruppe,
   ErgebnisGruppe,
@@ -249,7 +250,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private breakpointObserver: BreakpointObserver,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private teilenService: TeilenService,
   ) {
     this.searchQuery$ = this.stateService.searchQuery$;
     this.searchResponse$ = this.stateService.searchResults$;
@@ -396,6 +398,35 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     Promise.resolve().then(() => {
       this.alternativen = aussagen.slice(0, ALTERNATIVEN_IM_KOPFBAND);
       this.cdr.markForCheck();
+    });
+  }
+
+  /**
+   * Was geteilt wird, in Link und Text: die erkannte Aussage, nicht der rohe Suchtext.
+   * Der kann ein eingefuegter fremder Post samt Namen sein; ohne erkannte Aussage geht
+   * er deshalb nur gekuerzt mit (B7, Review zu #675).
+   */
+  private get geteilteAussage(): string {
+    const erkannt = this.erkannt?.text?.trim();
+    return erkannt || suchtextKuerzen(this.searchQuery);
+  }
+
+  get ergebnisTeilenBeschriftung(): string {
+    return `Ergebnis teilen: Antworten auf „${this.geteilteAussage}“`;
+  }
+
+  /**
+   * "Ergebnis teilen" (B7, docs/VISION.md): der Link auf die Suche nach der
+   * erkannten Aussage, ueber das Teilen-Menue, wo das Geraet eines hat, sonst in die Zwischenablage. Zaehlt nicht als Nutzung, es ist keine
+   * Karte (VISION: "eine Ergebnisseite teilen ... zaehlt nicht").
+   */
+  async ergebnisTeilen(): Promise<void> {
+    if (!this.searchQuery.trim()) {
+      return;
+    }
+    await this.teilenService.teilen({
+      url: sucheLink(this.geteilteAussage),
+      text: `Antworten auf: „${this.geteilteAussage}“`,
     });
   }
 

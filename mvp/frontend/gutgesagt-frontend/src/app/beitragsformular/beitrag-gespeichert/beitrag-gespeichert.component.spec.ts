@@ -4,6 +4,7 @@ import { Observable, of, throwError } from 'rxjs';
 
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TEILEN_LINK_KOPIERT, TEILEN_NAVIGATOR, TeilenNavigator } from '../../shared/teilen.service';
 
 import { BeitragGespeichertComponent, EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT, beitragLink } from './beitrag-gespeichert.component';
 import { GespeichertZustand, gespeichertEltern } from './gespeichert-adresse';
@@ -29,8 +30,11 @@ describe('BeitragGespeichertComponent', () => {
   let einwurfService: jasmine.SpyObj<EinwurfService>;
   /** Was das Nachladen des Einwurfs liefert; Standard: der eigene. */
   let geladenerEinwurf: Observable<Einwurf>;
+  /** Das Teilen-Menue des Geraets; ohne share wie am Desktop ohne Web Share API. */
+  let nav: TeilenNavigator;
 
   beforeEach(() => {
+    nav = {};
     geladenerEinwurf = of({ id: 'e-1', ist_eigener_einwurf: true } as Einwurf);
   });
 
@@ -71,6 +75,7 @@ describe('BeitragGespeichertComponent', () => {
         { provide: DestillierUebergabeService, useValue: uebergabe },
         { provide: NavigationService, useValue: navigation },
         { provide: EinwurfService, useValue: einwurfService },
+        { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -118,7 +123,7 @@ describe('BeitragGespeichertComponent', () => {
     expect(commentaryService.getCommentaryById).not.toHaveBeenCalled();
     expect(seite().textContent).toContain('Dein Post ist gespeichert.');
     expect(seite().querySelector('.gespeichert-karte')!.textContent).toContain('Ein Reel zur Wärmepumpe');
-    expect(knoepfe()).toEqual(['Noch einen Post', 'Link kopieren', 'Meine Beiträge']);
+    expect(knoepfe()).toEqual(['Noch einen Post', 'Teilen', 'Meine Beiträge']);
     (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-post']);
   });
@@ -131,7 +136,7 @@ describe('BeitragGespeichertComponent', () => {
     expect(seite().textContent).toContain('Dein Bild ist gespeichert.');
     expect(seite().querySelector('.gespeichert-karte')!.textContent).toContain('Solardach auf der Grundschule');
     expect(seite().textContent).toContain('Solar lohnt sich nicht');
-    expect(knoepfe()).toEqual(['Noch ein Bild', 'Zur Aussage', 'Link kopieren', 'Meine Beiträge']);
+    expect(knoepfe()).toEqual(['Noch ein Bild', 'Zur Aussage', 'Teilen', 'Meine Beiträge']);
     (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-image']);
   });
@@ -141,7 +146,7 @@ describe('BeitragGespeichertComponent', () => {
       await oeffnen();
       const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
-      expect(knoepfe()).toEqual(['Noch einen Kommentar', 'Link kopieren', 'Meine Beiträge']);
+      expect(knoepfe()).toEqual(['Noch einen Kommentar', 'Teilen', 'Meine Beiträge']);
       (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
       expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary']);
       expect(seite().querySelector('a.meine-beitraege')!.getAttribute('href')).toBe('/contributions');
@@ -152,7 +157,7 @@ describe('BeitragGespeichertComponent', () => {
       const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
       expect(einwurfService.einwurfLaden).toHaveBeenCalledOnceWith('e-1');
-      expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Link kopieren', 'Meine Beiträge']);
+      expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Teilen', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
       expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('e-1');
@@ -173,7 +178,7 @@ describe('BeitragGespeichertComponent', () => {
         await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: true });
         const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
-        expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Link kopieren', 'Meine Beiträge']);
+        expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Teilen', 'Meine Beiträge']);
         (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
 
         expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
@@ -207,7 +212,7 @@ describe('BeitragGespeichertComponent', () => {
     it('Suche: zurueck zur Suche mit der urspruenglichen Anfrage', async () => {
       await oeffnen({ von: 'suche', suche: 'Wärmepumpen zu teuer' });
 
-      expect(knoepfe()).toEqual(['Zurück zur Suche', 'Link kopieren', 'Meine Beiträge']);
+      expect(knoepfe()).toEqual(['Zurück zur Suche', 'Teilen', 'Meine Beiträge']);
       (seite().querySelector('.zur-suche') as HTMLButtonElement).click();
       expect(navigation.navigateToResult).toHaveBeenCalledOnceWith('Wärmepumpen zu teuer');
     });
@@ -310,7 +315,7 @@ describe('BeitragGespeichertComponent', () => {
     it('fuehrt "Zur Aussage" in die Suche nach ihr (#617)', async () => {
       await oeffnen({}, { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true });
 
-      expect(knoepfe()).toEqual(['Noch einen Kommentar', 'Zur Aussage', 'Link kopieren', 'Meine Beiträge']);
+      expect(knoepfe()).toEqual(['Noch einen Kommentar', 'Zur Aussage', 'Teilen', 'Meine Beiträge']);
       (seite().querySelector('.zur-aussage') as HTMLButtonElement).click();
       expect(navigation.navigateToResult).toHaveBeenCalledOnceWith('Wärmepumpen sind zu teuer');
     });
@@ -340,26 +345,54 @@ describe('BeitragGespeichertComponent', () => {
     });
   });
 
-  describe('Link kopieren (#617)', () => {
-    it('kopiert die eigene Adresse des Beitrags und sagt es', async () => {
-      await oeffnen();
-      const kopieren = spyOn(fixture.debugElement.injector.get(Clipboard), 'copy').and.returnValue(true);
-      const snack = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+  describe('Teilen (B7, vorher Link kopieren #617)', () => {
+    function teilenKnopf(): HTMLButtonElement {
+      return seite().querySelector('.gespeichert-knoepfe button.teilen') as HTMLButtonElement;
+    }
 
-      (seite().querySelector('.link-kopieren') as HTMLButtonElement).click();
+    it('oeffnet das Teilen-Menue des Geraets mit Text und eigener Adresse, ohne Nutzung', async () => {
+      await oeffnen();
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+      const kopieren = spyOn(TestBed.inject(Clipboard), 'copy');
+
+      await fixture.componentInstance.teilen();
+
+      expect(nav.share).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({ url: `${window.location.origin}/beitrag/k-1`, title: 'Wärmepumpe lohnt sich', text: 'Text' }),
+      );
+      expect(kopieren).not.toHaveBeenCalled();
+    });
+
+    it('kopiert ohne Teilen-Menue die eigene Adresse und sagt es', async () => {
+      await oeffnen();
+      const kopieren = spyOn(TestBed.inject(Clipboard), 'copy').and.returnValue(true);
+      const snack = spyOn(TestBed.inject(MatSnackBar), 'open');
+
+      teilenKnopf().click();
+      await fixture.whenStable();
 
       expect(kopieren).toHaveBeenCalledOnceWith(`${window.location.origin}/beitrag/k-1`);
-      expect(snack.calls.mostRecent().args[0]).toBe('Link kopiert.');
+      expect(snack.calls.mostRecent().args[0]).toBe(TEILEN_LINK_KOPIERT);
     });
 
     it('sagt, wenn das Kopieren nicht klappt', async () => {
       await oeffnen();
-      spyOn(fixture.debugElement.injector.get(Clipboard), 'copy').and.returnValue(false);
-      const snack = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+      spyOn(TestBed.inject(Clipboard), 'copy').and.returnValue(false);
+      const snack = spyOn(TestBed.inject(MatSnackBar), 'open');
 
-      (seite().querySelector('.link-kopieren') as HTMLButtonElement).click();
+      await fixture.componentInstance.teilen();
 
-      expect(snack.calls.mostRecent().args[0]).toBe('Kopieren hat nicht geklappt.');
+      expect(snack.calls.mostRecent().args[0]).toBe(`Kopieren hat nicht geklappt. Der Link: ${window.location.origin}/beitrag/k-1`);
+    });
+
+    it('meldet nichts, wenn das Teilen abgebrochen wird', async () => {
+      await oeffnen();
+      nav.share = jasmine.createSpy('share').and.rejectWith(new DOMException('abgebrochen', 'AbortError'));
+      const snack = spyOn(TestBed.inject(MatSnackBar), 'open');
+
+      await fixture.componentInstance.teilen();
+
+      expect(snack).not.toHaveBeenCalled();
     });
 
     it('baut die Adresse mit kodierter ID', () => {
@@ -368,7 +401,7 @@ describe('BeitragGespeichertComponent', () => {
 
     it('fehlt, solange der Beitrag nicht ladbar ist', async () => {
       await oeffnen({}, undefined, false);
-      expect(seite().querySelector('.link-kopieren')).toBeNull();
+      expect(seite().querySelector('.teilen')).toBeNull();
     });
   });
 
