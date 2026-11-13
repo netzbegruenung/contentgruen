@@ -1,0 +1,97 @@
+# Baut die CI-Images (Dockerfile.ci) und pusht sie in die Registry: gutgesagt-ci-python und
+# gutgesagt-ci-node, je mit den Tags latest und <12 Zeichen Pruefsumme der Lockfiles>
+# (scripts/ci-installieren.sh --pruefsumme). ci.yaml laeuft in :latest und prueft je Lauf,
+# ob das Image zum Checkout passt; sonst installiert der Schritt wie ohne Image (docs/CI.md,
+# "CI images").
+# Nach einem Push auf main, der aendert, was das Image enthaelt (Pfadfilter je Schritt), dazu
+# woechentlich per Cron-Job "ci-image" (neue Paketversionen aus den >=-Bereichen, Modell-
+# revisionen, Sicherheitsupdates des Basis-Images) und manuell auf main. Kein depends_on
+# auf ci: Ein Cron-Lauf hat kein ci.
+# Secrets registry_user/registry_token wie in build.yaml, zusaetzlich fuer das Event "Cron".
+when:
+  - event: push
+    branch: main
+  - event: cron
+    cron: ci-image
+  - event: manual
+    branch: main
+
+steps:
+  # Schreibt die Tags je Image nach .ci-tags-<art>, die Build-Schritte lesen sie. Pfadfilter:
+  # alles, was einer der beiden Build-Schritte liest; sonst startet kein Schritt.
+  - name: ci-image-tags
+    image: python:3.13-slim
+    depends_on: []
+    when:
+      - path:
+          include:
+            - Dockerfile.ci
+            - Dockerfile.ci.dockerignore
+            - mvp/backend/semantic-search-service/requirements.txt
+            - mvp/frontend/gutgesagt-frontend/package.json
+            - mvp/frontend/gutgesagt-frontend/package-lock.json
+            - scripts/ci-installieren.sh
+            - scripts/ci-chromium.sh
+            - .woodpecker/ci-image.yaml
+    commands:
+      - printf 'latest\n' > .ci-tags-python
+      - sh scripts/ci-installieren.sh --pruefsumme python | cut -c1-12 >> .ci-tags-python
+      - printf 'latest\n' > .ci-tags-node
+      - sh scripts/ci-installieren.sh --pruefsumme frontend | cut -c1-12 >> .ci-tags-node
+      - cat .ci-tags-python .ci-tags-node
+
+  - name: ci-python
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    depends_on: [ci-image-tags]
+    settings:
+      registry: git.verdigado.com
+      repo: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python
+      context: .
+      dockerfile: Dockerfile.ci
+      target: ci-python
+      platforms: linux/amd64
+      tags_file: .ci-tags-python
+      username:
+        from_secret: registry_user
+      password:
+        from_secret: registry_token
+    when:
+      - path:
+          include:
+            - Dockerfile.ci
+            - Dockerfile.ci.dockerignore
+            - mvp/backend/semantic-search-service/requirements.txt
+            - scripts/ci-installieren.sh
+            - .woodpecker/ci-image.yaml
+
+  # Nach ci-python, nie zugleich: Der Runner ist geteilt (docs/CI.md, "Staggered steps").
+  # Optional, weil der Pfadfilter ci-python weglassen kann; auch nach rotem ci-python.
+  - name: ci-node
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    depends_on:
+      - ci-image-tags
+      - name: ci-python
+        optional: true
+    settings:
+      registry: git.verdigado.com
+      repo: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-node
+      context: .
+      dockerfile: Dockerfile.ci
+      target: ci-node
+      platforms: linux/amd64
+      tags_file: .ci-tags-node
+      username:
+        from_secret: registry_user
+      password:
+        from_secret: registry_token
+    when:
+      - path:
+          include:
+            - Dockerfile.ci
+            - Dockerfile.ci.dockerignore
+            - mvp/frontend/gutgesagt-frontend/package.json
+            - mvp/frontend/gutgesagt-frontend/package-lock.json
+            - scripts/ci-installieren.sh
+            - scripts/ci-chromium.sh
+            - .woodpecker/ci-image.yaml
+        status: [success, failure]
