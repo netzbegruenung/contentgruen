@@ -11,6 +11,7 @@ import { DATENSCHUTZ_EINSTELLUNGEN, EINWERFEN_TITEL, MENUE_ICONS } from '../../f
 import { ROUTES } from '../../constants/app.constants';
 import { RundgangId, rundgangBeschriftung } from '../../../rundgang/rundgang-daten';
 import { FarbschemaService } from '../../../services/farbschema.service';
+import { MITMACHEN_HINWEIS, anmeldenZurHilfe } from '../../../help-dialog/help-dialog.component';
 
 @Component({
   selector: 'app-mobile-menu',
@@ -31,6 +32,7 @@ export class MobileMenuComponent {
   readonly pfade = ROUTES;
   readonly antwortFinden = rundgangBeschriftung('antwort-finden');
   readonly selbstBeitragen = rundgangBeschriftung('mitmachen');
+  readonly mitmachenHinweis = MITMACHEN_HINWEIS;
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   readonly einwerfenTitel = EINWERFEN_TITEL;
   readonly farbschema = inject(FarbschemaService);
@@ -127,6 +129,12 @@ export class MobileMenuComponent {
   onRundgangClick(id: RundgangId): void {
     this.rundgang.emit(id);
     this.close();
+  }
+
+  /** Besucher: anmelden, danach öffnet die App die Hilfe mit Selbst beitragen. */
+  onAnmeldenZurHilfeClick(): void {
+    this.close();
+    anmeldenZurHilfe(this.router);
   }
 
   onFeedbackClick(): void {

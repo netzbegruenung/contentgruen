@@ -1,6 +1,6 @@
 import { DestroyRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
@@ -232,6 +232,33 @@ describe('RundgangService', () => {
       service.beenden();
       await weiter;
       expect(service.aktiv()).toBeNull();
+    });
+
+    it('endet mit Zurück im Browser, auch während der nächste Schritt lädt', async () => {
+      await service.starten('antwort-finden');
+      await service.weiter();
+      events.next(new NavigationStart(2, '/search', 'popstate'));
+      expect(service.aktiv()).toBeNull();
+
+      await service.starten('antwort-finden');
+      const weiter = service.weiter();
+      events.next(new NavigationStart(3, '/search', 'popstate'));
+      await weiter;
+      expect(service.aktiv()).toBeNull();
+    });
+
+    it('zeigt den ersten Schritt nicht, wenn Zurück kommt, während seine Seite lädt', async () => {
+      router.url = '/fangkorb';
+      const start = service.starten('antwort-finden');
+      events.next(new NavigationStart(2, '/fangkorb', 'popstate'));
+      await start;
+      expect(service.aktiv()).toBeNull();
+    });
+
+    it('bleibt bei seinen eigenen Seitenwechseln stehen', async () => {
+      await service.starten('antwort-finden');
+      events.next(new NavigationStart(2, '/result', 'imperative'));
+      expect(service.aktiv()?.index).toBe(0);
     });
 
     it('lässt sich wieder aufrufen, auch wenn das Willkommen schon gesehen ist', async () => {
