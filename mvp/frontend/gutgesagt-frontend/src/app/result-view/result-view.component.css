@@ -217,160 +217,6 @@ mat-sidenav-content {
   margin-bottom: 0;
 }
 
-/* Mobile results container */
-.mobile-results-container {
-  /* Container for mobile results - maintains layout flow */
-  display: block;
-  width: 100%;
-}
-
-/* Mobile section - minimal styling to let carousel handle layout */
-.mobile-section {
-  /* Section wrapper - maintains layout flow */
-  display: block;
-  width: 100%;
-}
-
-/* Hide content sections on mobile - only show minimal info */
-.mobile-section .content-section {
-  display: none;
-}
-
-/* Removed mobile-carousel-wrapper - no longer needed */
-
-/* Mobile Tab Bar Navigation */
-.mobile-results-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-}
-
-/* Ansichts-Umschalter wie Fangkorb-Tabs und Kurz/Mittel/Lang: graue Kontur,
-   gewaehlt Tanne-Hauch mit Tanne-Text und Unterstrich (#512). */
-.mobile-tab-bar {
-  display: flex;
-  width: calc(100% - 2 * var(--spacing-md));
-  margin: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
-  overflow: hidden;
-  background: var(--bg-card);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--border-radius-medium);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.tab-button {
-  /* Gleich breit und schrumpfbar: Mit dem dritten Tab (Posts) ist bei 360 px
-     kein Platz fuer Symbol, Name und Zahl in einer Zeile - die Zahl bricht um,
-     statt die Leiste seitlich ueberlaufen zu lassen. */
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0 6px;
-  padding: 8px 4px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  position: relative;
-  min-height: 44px;
-}
-
-.tab-button + .tab-button {
-  border-left: 1px solid var(--divider-color);
-}
-
-.tab-button:hover:not(:disabled) {
-  background: var(--hover-bg);
-}
-
-.tab-button.active {
-  color: var(--primary-dark);
-  font-weight: 700;
-  background: var(--auswahl-grund);
-  box-shadow: inset 0 -2px 0 var(--akzent-tanne);
-}
-
-.tab-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.tab-icon {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.tab-label {
-  font-weight: inherit;
-}
-
-.tab-count {
-  font-size: 12px;
-  color: inherit;
-  opacity: 0.8;
-}
-
-/* Active tab indicator animation */
-.tab-button.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--primary-fill);
-  animation: slide-in 0.3s ease;
-}
-
-@keyframes slide-in {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-/* Mobile empty state */
-.mobile-empty-state {
-  padding: var(--spacing-lg);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-
-.mobile-empty-state .search-query-info {
-  color: var(--text-secondary);
-  font-style: italic;
-  margin: 0;
-}
-
-
-.mobile-action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  width: 100%;
-  max-width: 300px;
-}
-
-.mobile-action-buttons button {
-  width: 100%;
-}
-
 /* Mobile responsive adjustments */
 @media (max-width: 768px) {
   .search-box {
@@ -520,14 +366,6 @@ mat-sidenav-content {
   }
 }
 
-/* Mobil mit Treffern: ergaenzen unter dem Suchband (dezent) und unter der Liste */
-.mobile-ergaenzen-kopf {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
-  padding: 0 var(--page-margin, 16px);
-}
-
 .ergaenzen-link {
   min-height: 40px;
   padding: 0;
@@ -545,15 +383,6 @@ mat-sidenav-content {
   outline: 2px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
-
-.mobile-ergaenzen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-lg) var(--page-margin, 16px);
-}
-
 
 /* Rat unter den Treffern, ruhig (#602): kleine graue Zeile mit Info-Symbol,
    ohne Kasten und Balken, damit er nicht mit den Treffern konkurriert */
@@ -582,29 +411,6 @@ mat-sidenav-content {
   font-weight: normal;
 }
 
-.mobile-keine-antwort-noetig {
-  padding: 0 var(--page-margin) var(--spacing-lg);
-}
-
-/* Leerer Reiter: ein Satz statt einer leeren Flaeche (#599) */
-.mobile-section .reiter-leer {
-  margin: 0;
-  padding: var(--spacing-md);
-  color: var(--text-primary);
-}
-
-/* Mobil: was der Beitragstyp des offenen Tabs ist; Grundregel in styles.css */
-.mobile-section .typ-erklaerung {
-  margin: 0;
-  padding: var(--spacing-sm) var(--spacing-md) 0;
-  color: var(--text-secondary);
-}
-
-/* Filter nach Thema (#363) */
-.mobile-themen-filter {
-  padding: var(--spacing-xs) var(--page-margin);
-}
-
 /* "Nicht dabei?" (#362): Satz und Knopf zum Neu-Anlegen, links in der Hinweisbox */
 .neu-anlegen-satz {
   margin: 0;
@@ -618,11 +424,6 @@ mat-sidenav-content {
   margin-top: var(--spacing-lg);
 }
 
-.mobile-ergaenzen app-nicht-dabei,
-.mobile-empty-state app-nicht-dabei {
-  align-self: stretch;
-}
-
 .unified-empty-state app-nicht-dabei {
   margin-bottom: 1.5rem;
 }
@@ -632,47 +433,302 @@ mat-sidenav-content {
   margin-bottom: 0;
 }
 
-.mobile-empty-state app-nicht-dabei .mobile-action-buttons {
-  max-width: none;
-}
-
-/* Erkannte Aussage einmal ueber den Treffern (#642, R40): ein ruhiger Satz,
-   die Aussage selbst kursiv wie bisher an den Karten, "Nicht gemeint?" als Link */
-.gefunden-zu {
+/* Ergebnisseite als eine Liste (K2+): Kopfband, Chips je Typ, Gruppen je Aussage.
+   Am Handy und am Desktop dieselbe Darstellung; Raster ab 600 px macht die Kartenliste. */
+.ergebnisse {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: var(--spacing-md);
-  row-gap: 0;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-xl);
 }
 
-.gefunden-zu-satz {
+/* Kopfband: die erkannte Aussage gross, darunter "Nicht gemeint?" mit Alternativen */
+.kopfband {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--primary-tint);
+  border-left: 4px solid var(--akzent-klee);
+  border-radius: var(--border-radius-medium, 10px);
+}
+
+.kopfband-label {
   margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.4;
-  color: var(--text-primary);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.kopfband-aussage {
+  margin: 2px 0 0;
+  font-family: GrueneType, Roboto, sans-serif;
+  font-size: 1.7rem;
+  line-height: 1.15;
+  color: var(--primary-dark);
   overflow-wrap: anywhere;
 }
 
-.gefunden-zu-aussage {
-  font-family: PTSans-bold, Roboto, sans-serif;
+.kopfband-alternativen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: var(--spacing-sm);
 }
 
-.mobile-gefunden-zu {
-  padding: var(--spacing-xs) var(--page-margin, 16px) 0;
+.kopfband-frage {
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
-/* "Nicht gemeint?" links, "Antworten" rechts in derselben Zeile */
-.mobile-ergaenzen-kopf .nicht-gemeint {
-  margin-right: auto;
+.kopfband-umschalter {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
-.mobile-gefunden-zu .gefunden-zu-satz {
+.kopfband-umschalter mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+.kopfband-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kopfband-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 1px solid var(--akzent-klee);
+  border-radius: 18px;
+  font-size: 14px;
+  color: var(--primary-dark);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.kopfband-chip:hover {
+  background: var(--primary-tint);
+}
+
+@media (max-width: 599px) {
+  .kopfband {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .kopfband-aussage {
+    font-size: 1.35rem;
+  }
+
+  .kopfband-alternativen {
+    margin-top: 0;
+  }
+
+  .kopfband-liste {
+    flex-basis: 100%;
+  }
+}
+
+/* Typwahl: Chips mit Zahl; "Antworten" rechts daneben */
+.typ-leiste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs) var(--spacing-md);
+}
+
+.typ-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.typ-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--chip-rand);
+  border-radius: 20px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.typ-chip:hover {
+  background: var(--primary-tint);
+}
+
+.typ-chip.aktiv {
+  border-color: var(--primary-fill);
+  background: var(--primary-fill);
+  color: #fff;
+}
+
+.typ-zahl {
+  min-width: 1.5em;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--surface-variant);
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.typ-chip.aktiv .typ-zahl {
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+}
+
+@media (max-width: 599px) {
+  .typ-chips {
+    gap: 6px;
+  }
+
+  .typ-chip {
+    gap: 4px;
+    min-height: 36px;
+    padding: 0 9px;
+    font-size: 13px;
+  }
+
+  .typ-zahl {
+    padding: 0 4px;
+    font-size: 12px;
+  }
+}
+
+/* Gruppe je Aussage: Kopf im Stil der Zeile "Antwort auf" der Karte, etwas groesser */
+.gruppe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.gruppe-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 6px;
+  row-gap: 2px;
+  margin: var(--spacing-sm) 0 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--primary-tint);
+  border-left: 3px solid var(--akzent-klee);
+  border-radius: 8px;
+  font-family: PTSans, Roboto, sans-serif;
   font-size: 1rem;
+  line-height: 1.35;
+  color: var(--text-primary);
 }
 
-/* Ziel von "Nicht gemeint?": kein Fokusrahmen um den ganzen Abschnitt */
-.nicht-dabei-unten:focus,
-.mobile-ergaenzen:focus {
+.gruppe-kopf--neben {
+  background: var(--primary-tint-faint);
+  border-left-color: var(--gruppe-neben-rand);
+}
+
+.gruppe-icon {
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: var(--primary-dark);
+}
+
+.gruppe-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.gruppe-aussage {
+  font-family: PTSans-bold-italic, PTSans-bold, Roboto, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.gruppe-zahl {
+  padding: 0 8px;
+  border-radius: 10px;
+  background: var(--surface-variant);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* Typ in der Gruppe: kleine Ueberschrift, Erklaerung nur beim ersten Vorkommen */
+.typ-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.typ-ueberschrift {
+  margin: var(--spacing-sm) 0 var(--spacing-xs);
+  font-family: PTSans-bold, Roboto, sans-serif;
+  font-weight: normal;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.typ-ueberschrift:focus {
   outline: none;
+}
+
+.typ-block .typ-erklaerung {
+  margin: 0 0 var(--spacing-xs);
+  font-size: 14px;
+}
+
+.alle-zeigen {
+  align-self: center;
+  min-height: 44px;
+  margin-top: var(--spacing-sm);
+  padding: 0 20px;
+  border: 1px solid var(--primary-fill);
+  border-radius: 22px;
+  background: none;
+  font: inherit;
+  color: var(--primary-dark);
+  cursor: pointer;
+}
+
+.alle-zeigen:hover {
+  background: var(--primary-tint);
+}
+
+/* Am Handy laufen die Karten wie bisher ueber die ganze Breite */
+@media (max-width: 599px) {
+  .typ-block app-kartenliste {
+    margin: 0 calc(-1 * var(--page-margin));
+  }
+}
+
+/* Farben, die es im Theme nicht gibt: Kontur der Chips und Rand der Nebengruppen,
+   je mit mindestens 3:1 gegen den Grund (WCAG 1.4.11) */
+.ergebnisse {
+  --chip-rand: rgba(0, 0, 0, 0.42);
+  --gruppe-neben-rand: rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  .ergebnisse {
+    --chip-rand: rgba(255, 255, 255, 0.45);
+    --gruppe-neben-rand: rgba(255, 255, 255, 0.35);
+  }
 }
