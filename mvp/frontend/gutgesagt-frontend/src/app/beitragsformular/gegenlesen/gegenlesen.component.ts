@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -92,6 +92,11 @@ export class GegenlesenComponent implements OnChanges {
   /** Jede Eingabe (null) und jedes Ergebnis (die Zahl) schiebt die Ansage auf. */
   private readonly ansageTakt = new Subject<string | null>();
 
+  /** Erst, wenn schon etwas geschrieben ist: Ein leeres Formular soll nicht mahnen. */
+  get zeigtHerkunftHinweis(): boolean {
+    return this.herkunftFehlt && this.ergebnis.guete !== null;
+  }
+
   get istGut(): boolean {
     return this.ergebnis.guete !== null && !this.ergebnis.anmerkungen.length && !this.zeigtHerkunftHinweis;
   }
@@ -156,12 +161,16 @@ export class GegenlesenComponent implements OnChanges {
       });
   }
 
-  /** Erst, wenn schon etwas geschrieben ist: Ein leeres Formular soll nicht mahnen. */
-  get zeigtHerkunftHinweis(): boolean {
-    return this.herkunftFehlt && this.ergebnis.guete !== null;
-  }
-
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    const nurHerkunft = !!changes['herkunftFehlt'] && Object.keys(changes).length === 1;
+    if (nurHerkunft) {
+      // Kein neues Gegenlesen (die Eingabe ist dieselbe), aber die Zahl aendert sich:
+      // die Ansage aus dem jetzigen Stand nachziehen, statt sie mit null zu verwerfen.
+      if (this.ergebnis.guete !== null) {
+        this.ansageTakt.next(zusammenfassung(this.ergebnis, this.herkunftZusatz));
+      }
+      return;
+    }
     this.ansageTakt.next(null);
     this.eingabe.next({
       titel: this.titel ?? '',
