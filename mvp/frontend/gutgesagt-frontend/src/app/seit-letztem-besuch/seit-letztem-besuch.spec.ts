@@ -22,6 +22,10 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
       ]);
     });
 
+    it('zeigt an der Grenze der Liste „50+“', () => {
+      expect(neuesListe(0, 0, 50, true).map((e) => e.text)).toEqual(['50+ Lücken warten auf eine Antwort']);
+    });
+
     it('zeigt nie eine negative oder leere Zahl', () => {
       expect(neuesListe(null, 0, 0)).toEqual([]);
       expect(neuesListe(-1, -3, -2)).toEqual([]);

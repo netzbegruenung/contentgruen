@@ -202,3 +202,52 @@ class TestNeueEinwuerfeSeitLetztemBesuch:
 
         assert repo.count_von_anderen(AUTORIN) == 2
         assert repo.count_von_anderen("andere") == 2
+
+    def test_einwuerfe_in_jedem_stand_offen_nur_offen_und_destilliert(
+        self, datenbank
+    ):  # noqa: F811
+        from infrastructure.database.models import Einwurf
+        from repositories.einwurf_repository import EinwurfRepository
+
+        with datenbank.get_session() as s:
+            for status in ("open", "in_progress", "processed", "discarded"):
+                s.add(
+                    Einwurf(
+                        url=f"https://example.org/{status}",
+                        submitted_by="andere",
+                        status=status,
+                    )
+                )
+        repo = EinwurfRepository(datenbank)
+
+        assert repo.count_von_anderen(AUTORIN) == 4
+        assert repo.count_von_anderen(AUTORIN, nur_offene=True) == 2
+
+    def test_zwei_gleichzeitige_besuche_melden_nichts_doppelt(
+        self, datenbank
+    ):  # noqa: F811
+        repo = GeseheneNutzungRepository(datenbank)
+        repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 10)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            ergebnisse = list(
+                pool.map(
+                    lambda _: repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 14),
+                    range(2),
+                )
+            )
+
+        assert sorted(ergebnisse) == [0, 4]
+
+    def test_besuch_mit_nutzung_und_einwuerfen_zugleich(self, datenbank):  # noqa: F811
+        # Wie im Endpunkt: Nutzung und Einwuerfe in zwei Verbindungen zugleich, auch
+        # beim ersten Besuch (beide legen die Zeile an).
+        repo = GeseheneNutzungRepository(datenbank)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            nutzung = pool.submit(repo.neu_seit_letztem_besuch, AUTORIN, 3)
+            einwuerfe = pool.submit(repo.neue_einwuerfe_seit_letztem_besuch, AUTORIN, 8)
+            assert (nutzung.result(), einwuerfe.result()) == (3, 0)
+
+        with datenbank.get_session() as s:
+            zeile = s.get(GeseheneNutzung, AUTORIN)
+            assert (zeile.nutzung, zeile.einwuerfe) == (3, 8)

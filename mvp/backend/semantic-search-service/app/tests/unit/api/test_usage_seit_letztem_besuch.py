@@ -7,6 +7,8 @@ Wie die Nutzungsstatistik ohne Kennung in der Adresse: Die Person kommt aus
 POST, weil der Aufruf den gezeigten Stand fortschreibt.
 """
 
+import asyncio
+import time
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -19,6 +21,7 @@ from core.logging import log_pseudonym
 from dependencies import get_unbeantwortete_aussagen_service
 from repositories.einwurf_repository import get_einwurf_repository
 from repositories.gesehene_nutzung_repository import get_gesehene_nutzung_repository
+from services.unbeantwortete_aussagen_service import LIMIT_STANDARD
 
 URL = "/api/v1/usage/users/me/besuch"
 
@@ -33,7 +36,9 @@ def dienst():
 @pytest.fixture
 def einwuerfe():
     repo = Mock()
-    repo.count_von_anderen = Mock(return_value=12)
+    repo.count_von_anderen = Mock(
+        side_effect=lambda person, nur_offene=False: 5 if nur_offene else 12
+    )
     return repo
 
 
@@ -74,6 +79,7 @@ class TestSeitLetztemBesuch:
             "nutzung_seit_letztem_besuch": 4,
             "neue_einwuerfe": 3,
             "unbeantwortete_aussagen": 2,
+            "unbeantwortete_aussagen_mehr": False,
         }
         dienst.nutzung_seit_letztem_besuch.assert_awaited_once_with("kim-1")
 
@@ -110,7 +116,7 @@ class TestSeitDeinemLetztenBesuch:
     ):
         client.post(URL, headers={"X-User": "kim-1"})
 
-        einwuerfe.count_von_anderen.assert_called_once_with("kim-1")
+        einwuerfe.count_von_anderen.assert_any_call("kim-1")
         gesehen.neue_einwuerfe_seit_letztem_besuch.assert_called_once_with("kim-1", 12)
 
     def test_nie_negativ(self, client, gesehen):
@@ -126,7 +132,7 @@ class TestSeitDeinemLetztenBesuch:
         antwort = client.post(URL, headers={"X-User": "kim-1"})
 
         assert antwort.json()["unbeantwortete_aussagen"] == 2
-        unbeantwortete.liste.assert_awaited_once_with()
+        unbeantwortete.liste.assert_awaited_once_with(mit_themen=False)
 
     def test_fehler_bei_einwuerfen_und_aussagen_lassen_die_nutzung_stehen(
         self, client, einwuerfe, unbeantwortete, caplog
@@ -141,5 +147,66 @@ class TestSeitDeinemLetztenBesuch:
             "nutzung_seit_letztem_besuch": 4,
             "neue_einwuerfe": 0,
             "unbeantwortete_aussagen": 0,
+            "unbeantwortete_aussagen_mehr": False,
         }
         assert "kim-1" not in caplog.text
+
+    def test_zeigt_hoechstens_so_viele_wie_offen_sind(self, client, gesehen):
+        gesehen.neue_einwuerfe_seit_letztem_besuch.return_value = 9
+
+        antwort = client.post(URL, headers={"X-User": "kim-1"})
+
+        # Stand ueber alle Zustaende (12), offen bei anderen nur 5
+        assert antwort.json()["neue_einwuerfe"] == 5
+
+    def test_grenze_der_liste_heisst_mehr(self, client, unbeantwortete):
+        unbeantwortete.liste.return_value = [object()] * LIMIT_STANDARD
+
+        antwort = client.post(URL, headers={"X-User": "kim-1"})
+
+        assert antwort.json()["unbeantwortete_aussagen"] == LIMIT_STANDARD
+        assert antwort.json()["unbeantwortete_aussagen_mehr"] is True
+
+    def test_nach_der_zeitgrenze_null_und_die_nutzung_steht(
+        self, client, unbeantwortete, einwuerfe
+    ):
+        async def langsam(**_):
+            await asyncio.sleep(1)
+            return [object()]
+
+        unbeantwortete.liste.side_effect = langsam
+        einwuerfe.count_von_anderen.side_effect = lambda *a, **k: time.sleep(1) or 3
+
+        # Mit offenem Client: Sonst schliesst die Testschleife nach der Anfrage und
+        # wartet dabei auf den noch laufenden Thread, was der Server nicht tut.
+        with client, patch.object(usage_module, "BESUCH_NEBENZAHLEN_TIMEOUT_S", 0.2):
+            start = time.monotonic()
+            antwort = client.post(URL, headers={"X-User": "kim-1"})
+            dauer = time.monotonic() - start
+
+        assert antwort.status_code == 200
+        assert antwort.json()["nutzung_seit_letztem_besuch"] == 4
+        assert antwort.json()["neue_einwuerfe"] == 0
+        assert antwort.json()["unbeantwortete_aussagen"] == 0
+        assert dauer < 0.9
+
+    def test_zaehlt_parallel(self, client, dienst, unbeantwortete, einwuerfe):
+        async def nutzung(_):
+            await asyncio.sleep(0.4)
+            return 4
+
+        async def liste(**_):
+            await asyncio.sleep(0.4)
+            return [object()]
+
+        dienst.nutzung_seit_letztem_besuch.side_effect = nutzung
+        unbeantwortete.liste.side_effect = liste
+        einwuerfe.count_von_anderen.side_effect = lambda *a, **k: time.sleep(0.4) or 3
+
+        start = time.monotonic()
+        antwort = client.post(URL, headers={"X-User": "kim-1"})
+        dauer = time.monotonic() - start
+
+        assert antwort.json()["unbeantwortete_aussagen"] == 1
+        # Nacheinander waeren es ueber 1,2 s (Nutzung, Einwuerfe, Luecken)
+        assert dauer < 1.0

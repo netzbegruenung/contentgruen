@@ -31,7 +31,10 @@ from repositories.gesehene_nutzung_repository import (
     GeseheneNutzungRepository,
     get_gesehene_nutzung_repository,
 )
-from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
+from services.unbeantwortete_aussagen_service import (
+    LIMIT_STANDARD,
+    UnbeantworteteAussagenService,
+)
 from utils.client_identity import derive_client_key
 from utils.device_category import derive_device_category
 from utils.rate_limiter import RateLimiter
@@ -115,6 +118,13 @@ class BesuchResponse(BaseModel):
     # Wie viele Aussagen "Hier fehlt eine Antwort" gerade zeigt (hoechstens deren
     # Grenze); kein Stand, deshalb nennt die Startseite sie nicht "neu".
     unbeantwortete_aussagen: int = 0
+    # Die Liste hat ihre Grenze erreicht: Es koennen mehr warten ("50+").
+    unbeantwortete_aussagen_mehr: bool = False
+
+
+# So lange warten Einwuerfe und Luecken hoechstens; danach gilt 0, damit die
+# Rueckmeldung zur Nutzung beim Anmelden nicht auf sie wartet.
+BESUCH_NEBENZAHLEN_TIMEOUT_S = 1.5
 
 
 class PunkteResponse(BaseModel):
@@ -610,8 +620,16 @@ async def besuch(
     POST, weil der Aufruf den gezeigten Stand fortschreibt; ein zweiter Aufruf
     direkt danach liefert 0. Die Person kommt aus ``X-User``, nicht aus dem Pfad (#284).
     """
+    # Alle drei Zahlen zugleich: Einwuerfe und Luecken haben eine Zeitgrenze, die
+    # Nutzung nicht; scheitert sie, ist der Besuch gescheitert (500).
     try:
-        anzahl = await get_usage_service().nutzung_seit_letztem_besuch(current_user)
+        anzahl, neu, wartend = await asyncio.gather(
+            get_usage_service().nutzung_seit_letztem_besuch(current_user),
+            _hoechstens(
+                _neue_einwuerfe(current_user, einwuerfe, gesehen), 0, "Neue Einwuerfe"
+            ),
+            _hoechstens(_unbeantwortete_aussagen(unbeantwortete), 0, "Unbeantwortete"),
+        )
     except Exception as e:
         logger.error(
             f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {type(e).__name__}",
@@ -620,9 +638,23 @@ async def besuch(
         raise HTTPException(status_code=500, detail="Internal server error")
     return BesuchResponse(
         nutzung_seit_letztem_besuch=anzahl,
-        neue_einwuerfe=await _neue_einwuerfe(current_user, einwuerfe, gesehen),
-        unbeantwortete_aussagen=await _unbeantwortete_aussagen(unbeantwortete),
+        neue_einwuerfe=neu,
+        unbeantwortete_aussagen=wartend,
+        unbeantwortete_aussagen_mehr=wartend >= LIMIT_STANDARD,
     )
+
+
+async def _hoechstens(aufruf, ersatz: int, was: str) -> int:
+    """
+    ``aufruf`` mit Zeitgrenze (BESUCH_NEBENZAHLEN_TIMEOUT_S); danach ``ersatz``.
+    Ein schon laufender Datenbankaufruf im Thread laeuft zu Ende, die Antwort wartet
+    nur nicht mehr darauf.
+    """
+    try:
+        return await asyncio.wait_for(aufruf, timeout=BESUCH_NEBENZAHLEN_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        logger.warning(f"{was} beim Besuch nicht rechtzeitig gezaehlt")
+        return ersatz
 
 
 async def _neue_einwuerfe(
@@ -634,13 +666,16 @@ async def _neue_einwuerfe(
     haengen.
     """
     try:
-        jetzt = await asyncio.to_thread(einwuerfe.count_von_anderen, person)
-        return max(
-            0,
-            await asyncio.to_thread(
-                gesehen.neue_einwuerfe_seit_letztem_besuch, person, jetzt
-            ),
+        jetzt, offen = await asyncio.gather(
+            asyncio.to_thread(einwuerfe.count_von_anderen, person),
+            asyncio.to_thread(einwuerfe.count_von_anderen, person, nur_offene=True),
         )
+        neu = await asyncio.to_thread(
+            gesehen.neue_einwuerfe_seit_letztem_besuch, person, jetzt
+        )
+        # Der Stand zaehlt alle Zustaende; angezeigt werden hoechstens so viele, wie
+        # im Fangkorb noch Arbeit sind, sonst stuende "3 neue" vor einer leeren Liste.
+        return max(0, min(neu, offen))
     except Exception as e:
         logger.warning(
             f"Neue Einwuerfe fuer {log_pseudonym(person)} nicht gezaehlt: {type(e).__name__}"
@@ -655,7 +690,7 @@ async def _unbeantwortete_aussagen(dienst: UnbeantworteteAussagenService) -> int
     Fehler 0.
     """
     try:
-        return len(await dienst.liste())
+        return len(await dienst.liste(mit_themen=False))
     except Exception as e:
         logger.warning(f"Unbeantwortete Aussagen nicht gezaehlt: {type(e).__name__}")
         return 0

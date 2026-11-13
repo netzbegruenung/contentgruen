@@ -19,7 +19,7 @@ export interface NeuesEintrag {
 }
 
 /** Hoechstens drei Links, je nur, wenn die Zahl groesser 0 ist. */
-export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: number): NeuesEintrag[] {
+export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: number, aussagenMehr = false): NeuesEintrag[] {
   const liste: NeuesEintrag[] = [];
   if (nutzung && nutzung > 0) {
     liste.push({
@@ -39,7 +39,7 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
     liste.push({
       art: 'aussagen',
       ziel: ROUTES.HIER_FEHLT_EINE_ANTWORT,
-      text: lueckenWarten(aussagen),
+      text: lueckenWarten(aussagen, aussagenMehr),
     });
   }
   return liste;
@@ -93,6 +93,7 @@ export class SeitLetztemBesuchComponent {
                 stand.nutzung_seit_letztem_besuch,
                 stand.neue_einwuerfe ?? 0,
                 stand.unbeantwortete_aussagen ?? 0,
+                stand.unbeantwortete_aussagen_mehr ?? false,
               ).filter((e) => !erledigt.has(e.art))
             : [],
         ),

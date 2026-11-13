@@ -80,6 +80,8 @@ export interface BesuchResponse {
   neue_einwuerfe?: number;
   /** Wie viele Aussagen „Hier fehlt eine Antwort“ gerade zeigt; kein Stand, nicht „neu“. */
   unbeantwortete_aussagen?: number;
+  /** Die Liste hat ihre Grenze erreicht: Es können mehr warten („50+“). */
+  unbeantwortete_aussagen_mehr?: boolean;
 }
 
 export interface TrendingContent {
