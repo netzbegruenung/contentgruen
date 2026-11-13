@@ -69,10 +69,8 @@ export class HelpDialogComponent {
 
   /** Zur Anmeldung; danach zurück auf diese Seite mit offener Hilfe (hilfeNachAnmeldung). */
   anmelden(): void {
-    const hier = this.router.parseUrl(this.router.url);
-    hier.queryParams = { ...hier.queryParams, [HILFE_PARAM]: '1' };
     this.dialogRef.close();
-    this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.serializeUrl(hier) } });
+    anmeldenZurHilfe(this.router);
   }
 
   navigateToAbout(): void {
@@ -96,6 +94,17 @@ export function hilfeOeffnen(dialog: MatDialog): MatDialogRef<HelpDialogComponen
     maxHeight: '100%',
     panelClass: 'hilfe-seitenleiste',
   });
+}
+
+/**
+ * Zur Anmeldung mit der jetzigen Seite als Rückkehrziel, ergänzt um HILFE_PARAM: Danach
+ * öffnet die App die Hilfe (hilfeNachAnmeldung), dort startet Selbst beitragen. Aus der
+ * Hilfe und aus dem mobilen Menü.
+ */
+export function anmeldenZurHilfe(router: Router): void {
+  const hier = router.parseUrl(router.url);
+  hier.queryParams = { ...hier.queryParams, [HILFE_PARAM]: '1' };
+  void router.navigate(['/login'], { queryParams: { returnUrl: router.serializeUrl(hier) } });
 }
 
 /**

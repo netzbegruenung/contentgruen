@@ -87,3 +87,37 @@ test('Besucher: Hilfe teasert Selbst beitragen an, nach der Anmeldung startet es
   await frei.click();
   await expect(page.locator('.blase h3')).toHaveText('Beitragen', { timeout: 20_000 });
 });
+
+test('Besucher: Menü teasert Selbst beitragen an, nach der Anmeldung öffnet sich die Hilfe', async ({ page }) => {
+  await page.goto('/search');
+  await page.locator('.mobile-header .menu-button').click();
+
+  const eintrag = page.locator('app-mobile-menu .mobile-menu-rundgang-mitmachen');
+  await expect(eintrag).toContainText('Selbst beitragen (4 Schritte)');
+  await expect(eintrag).toHaveAttribute('aria-disabled', 'true');
+  await expect(eintrag).toHaveAccessibleDescription(/Nach der Anmeldung zeigen wir dir, wie Beitragen geht\./);
+  await expect(eintrag).toBeDisabled(); // Playwright wertet aria-disabled aus
+  await eintrag.scrollIntoViewIfNeeded();
+  await eintrag.click({ force: true });
+  await expect(page.locator('app-rundgang .blase')).toHaveCount(0);
+
+  for (const sel of ['.mobile-menu-mitmachen-hinweis', '.mobile-menu-rundgang-mitmachen']) {
+    const { farbe, grund } = await page.locator(`app-mobile-menu ${sel}`).evaluate((el) => {
+      let g = el as HTMLElement | null;
+      while (g && /rgba\(0, 0, 0, 0\)|transparent/.test(getComputedStyle(g).backgroundColor)) g = g.parentElement;
+      return { farbe: getComputedStyle(el).color, grund: getComputedStyle(g!).backgroundColor };
+    });
+    expect(kontrast(farbe, grund), `${sel}: ${farbe} auf ${grund}`).toBeGreaterThanOrEqual(4.5);
+  }
+
+  await page.locator('app-mobile-menu .mobile-menu-mitmachen-anmelden').click();
+  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fsearch%3Fhilfe%3D1$/);
+  await page.locator('.gutgesagt-button').click();
+  await page.locator('input[formControlName="email"]').fill(KONTO.email);
+  await page.locator('input[formControlName="password"]').fill(KONTO.passwort);
+  await page.locator('button[type="submit"]').click();
+  await expect(page.locator('app-help-dialog')).toBeVisible({ timeout: 20_000 });
+  await expect(page).toHaveURL(/\/search$/);
+  await page.locator('app-help-dialog .rundgang-mitmachen').click();
+  await expect(page.locator('.blase h3')).toHaveText('Beitragen', { timeout: 20_000 });
+});

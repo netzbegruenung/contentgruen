@@ -92,7 +92,8 @@
             Hilfe
         </button>
 
-        <!-- Rundgaenge wieder aufrufen (#389); Selbst beitragen nur fuer Angemeldete.
+        <!-- Rundgaenge wieder aufrufen (#389); Selbst beitragen startet nur fuer Angemeldete,
+             Besucher sehen es ausgegraut mit Weg zur Anmeldung wie in der Hilfe.
              Name, Schrittzahl und je ein eigenes Icon wie in der Hilfe (#644). -->
         <div class="mobile-menu-gruppe" role="group" aria-labelledby="menue-rundgaenge">
             <span class="mobile-menu-gruppentitel" id="menue-rundgaenge">Rundgang</span>
@@ -100,11 +101,25 @@
                 <mat-icon>travel_explore</mat-icon>
                 {{ antwortFinden }}
             </button>
-            <button mat-button *ngIf="userInfo?.isAuthenticated" (click)="onRundgangClick('mitmachen')"
-                    class="mobile-menu-item mobile-menu-rundgang-mitmachen">
-                <mat-icon>edit_note</mat-icon>
-                {{ selbstBeitragen }}
-            </button>
+            @if (userInfo?.isAuthenticated) {
+                <button mat-button (click)="onRundgangClick('mitmachen')"
+                        class="mobile-menu-item mobile-menu-rundgang-mitmachen">
+                    <mat-icon>edit_note</mat-icon>
+                    {{ selbstBeitragen }}
+                </button>
+            } @else {
+                <!-- Fokussierbar und vorlesbar, aber ohne Wirkung; der Hinweis sagt, warum -->
+                <button mat-button aria-disabled="true" aria-describedby="menue-mitmachen-hinweis"
+                        class="mobile-menu-item mobile-menu-rundgang-mitmachen gesperrt">
+                    <mat-icon>edit_note</mat-icon>
+                    {{ selbstBeitragen }}
+                </button>
+                <p id="menue-mitmachen-hinweis" class="mobile-menu-mitmachen-hinweis">
+                    {{ mitmachenHinweis }}
+                    <button type="button" class="mobile-menu-mitmachen-anmelden"
+                            (click)="onAnmeldenZurHilfeClick()">Anmelden</button>
+                </p>
+            }
         </div>
 
         <button mat-button (click)="onFeedbackClick()" class="mobile-menu-item mobile-menu-feedback">
