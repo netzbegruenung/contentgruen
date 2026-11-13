@@ -43,6 +43,9 @@ export interface ContentReport {
   description: string | null;
   reported_by_user_id: string | null;
   reported_by_session_id: string | null;
+  /** Anzeigename der meldenden bzw. bearbeitenden Person, wenn bekannt (nur Admin-Listen). */
+  reported_by_name?: string | null;
+  reviewed_by_name?: string | null;
   created: string;
   status: string;
   reviewed_by?: string | null;

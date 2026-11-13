@@ -40,7 +40,11 @@ from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
 from core.fehler import Validierungsfehler
-from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG
+from services.anzeigename_service import (
+    EHEMALIGE_PERSON_KENNUNG,
+    AnzeigenameService,
+    get_anzeigename_service,
+)
 from services.content.verweise_entfernen import verweise_entfernen
 from services.meldung_mitteilen import (
     Entscheidung,
@@ -145,6 +149,7 @@ class ModerationService:
         sperre_repo: Optional[SperreRepository] = None,
         mitteilung: Optional[MeldungMitteilung] = None,
         varianten_repo: Optional[VariantenRepository] = None,
+        anzeigenamen: Optional[AnzeigenameService] = None,
     ):
         self.report_repo = report_repo or get_content_report_repository()
         self.moderation_repo = moderation_repo or get_moderation_repository()
@@ -155,6 +160,40 @@ class ModerationService:
         self._varianten_repo = varianten_repo
         # Mails an die meldende Person (#493); ohne eingerichteten Versand geht nichts hinaus.
         self._mitteilung = mitteilung
+        # Anzeigenamen fuer "Gemeldet von" und "Bearbeitet von"; erst beim Lesen gebraucht.
+        self._anzeigenamen = anzeigenamen
+
+    async def _namen_anhaengen(self, meldungen: List[Dict[str, Any]]) -> None:
+        """
+        Haengt an jede Meldung ``reported_by_name`` und ``reviewed_by_name`` (Anzeigename
+        der meldenden bzw. bearbeitenden Person, sonst None), eine Abfrage fuer alle.
+        Nur fuer die Admin-Listen; die Endpunkte verlangen Admin-Rechte.
+        """
+        kennungen = {
+            kennung
+            for meldung in meldungen
+            for kennung in (
+                meldung.get("reported_by_user_id"),
+                meldung.get("reviewed_by"),
+            )
+            if kennung
+        }
+        namen: Dict[str, str] = {}
+        if kennungen:
+            # Ohne Namen bleibt die Liste brauchbar (Kurzform der Kennung im Frontend):
+            # ein Fehler beim Nachschlagen darf sie nicht leeren.
+            try:
+                dienst = self._anzeigenamen or get_anzeigename_service()
+                namen = await asyncio.to_thread(dienst.namen, kennungen)
+            except Exception as e:
+                logger.warning(
+                    f"Anzeigenamen fuer Meldungen nicht lesbar: {type(e).__name__}"
+                )
+        for meldung in meldungen:
+            meldung["reported_by_name"] = namen.get(
+                meldung.get("reported_by_user_id") or ""
+            )
+            meldung["reviewed_by_name"] = namen.get(meldung.get("reviewed_by") or "")
 
     async def report_content(
         self,
@@ -360,6 +399,7 @@ class ModerationService:
                         )
                         report["content"] = None
 
+            await self._namen_anhaengen(reports)
             return reports
         except Exception as e:
             logger.error(
@@ -373,7 +413,9 @@ class ModerationService:
         Alle Meldungen mit diesen Angaben der meldenden Person, fuer die Auskunft
         an Personen ohne Konto (Art. 15 DSGVO, #494). Regeln der Suche: MelderSuche.
         """
-        return await asyncio.to_thread(self.report_repo.von_melder, suche)
+        meldungen = await asyncio.to_thread(self.report_repo.von_melder, suche)
+        await self._namen_anhaengen(meldungen)
+        return meldungen
 
     async def angaben_der_person_loeschen(
         self,

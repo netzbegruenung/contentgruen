@@ -184,7 +184,8 @@
         <th mat-header-cell *matHeaderCellDef>Gemeldet von</th>
         <td mat-cell *matCellDef="let report" data-label="Gemeldet von">
           <div class="reporter-cell">
-            <span *ngIf="report.reported_by_user_id" [title]="report.reported_by_user_id">{{ kurzeKennung(report.reported_by_user_id) }}</span>
+            <!-- Der Anzeigename, wenn es einen gibt; sonst die Kurzform der Kennung -->
+            <span *ngIf="report.reported_by_user_id" [title]="report.reported_by_user_id">{{ report.reported_by_name || kurzeKennung(report.reported_by_user_id) }}</span>
             <span *ngIf="!report.reported_by_user_id && report.reported_by_session_id" class="anonymous">
               Anonym<ng-container *ngIf="melderQuelle(report.reported_by_session_id) as quelle"> ({{ quelle }})</ng-container>
             </span>
@@ -223,7 +224,7 @@
       <ng-container matColumnDef="reviewed_by">
         <th mat-header-cell *matHeaderCellDef>Bearbeitet von</th>
         <td mat-cell *matCellDef="let report" data-label="Bearbeitet von">
-          <span *ngIf="report.reviewed_by" [title]="report.reviewed_by">{{ kurzeKennung(report.reviewed_by) }}</span>
+          <span *ngIf="report.reviewed_by" [title]="report.reviewed_by">{{ report.reviewed_by_name || kurzeKennung(report.reviewed_by) }}</span>
           <span *ngIf="!report.reviewed_by" class="not-reviewed">-</span>
         </td>
       </ng-container>

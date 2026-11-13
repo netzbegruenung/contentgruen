@@ -607,7 +607,13 @@ describe('ContentModerationComponent', () => {
       ausdruecklich.complete();
       expect(fixture.componentInstance.sitzungAbgelaufen).toBeFalse();
 
-      // Das nächste ausdrückliche Laden stößt das gestoppte Nachladen wieder an.
+      // Erst belegen, dass das Nachladen wirklich steht …
+      const stillGezaehlt = () => moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length;
+      const gestoppt = stillGezaehlt();
+      tick(NACHLADEN_MS * 4);
+      expect(stillGezaehlt()).toBe(gestoppt);
+
+      // … dann stößt das nächste ausdrückliche Laden es wieder an.
       moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung()] }));
       fixture.componentInstance.loadReports();
       const vorher = moderation.getGesperrte.calls.allArgs().filter((args) => args[0] === true).length;
@@ -800,6 +806,22 @@ describe('ContentModerationComponent', () => {
       knopf('Abweisen')!.click();
 
       expect(moderation.dismissReport).not.toHaveBeenCalled();
+    });
+
+    it('zeigt bei „Gemeldet von“ und „Bearbeitet von“ den Anzeigenamen, wenn es einen gibt', () => {
+      mitMeldungen([]);
+      moderation.getReports.and.returnValue(of({ total: 1, reports: [meldung({
+        status: 'reviewed', reported_by_session_id: null,
+        reported_by_user_id: 'f3a9c1d2-7b4e-4c55-9a10-2e8d6b0c7f11', reported_by_name: 'Anna B.',
+        reviewed_by: 'admin-kennung-0123456789', reviewed_by_name: 'Henrike P.',
+      })] }));
+      fixture.componentInstance.onStatusFilterChange('reviewed');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.reporter-cell span').textContent.trim()).toBe('Anna B.');
+      const bearbeitet = fixture.nativeElement.querySelector('td[data-label="Bearbeitet von"] span');
+      expect(bearbeitet.textContent.trim()).toBe('Henrike P.');
+      expect(bearbeitet.getAttribute('title')).toBe('admin-kennung-0123456789');
     });
 
     it('zeigt statt langer Kennungen eine kurze Form, die volle im Tooltip', () => {

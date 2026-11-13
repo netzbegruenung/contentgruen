@@ -66,6 +66,8 @@ export interface AbweisenDialogDaten {
         <textarea matInput [(ngModel)]="satz" rows="3" [required]="grund === andererGrund"
                   [maxlength]="maxLaenge" placeholder="Ein Satz, warum die Meldung nicht zutrifft"></textarea>
         <mat-hint align="end">{{ satz.length }} / {{ maxLaenge }}</mat-hint>
+        <!-- Zu lang (etwa vor der Wahl des Grunds getippt): sagen, warum der Knopf gesperrt ist -->
+        <mat-hint *ngIf="zuLang" class="zu-lang" aria-live="polite">Höchstens {{ maxLaenge }} Zeichen, bitte kürzen.</mat-hint>
       </mat-form-field>
     </div>
     <div mat-dialog-actions align="end">
@@ -80,6 +82,7 @@ export interface AbweisenDialogDaten {
       .volle-breite { width: 100%; }
       .abweisen-titel { font-weight: 500; }
       .abweisen-meldegrund, .abweisen-hinweis { color: var(--text-secondary); }
+      .zu-lang { color: var(--error-color); }
     `,
   ],
 })
@@ -97,6 +100,11 @@ export class AbweisenDialogComponent {
   /** Was für den eigenen Satz bleibt: ABWEISUNG_MAX abzüglich Grund und „: “. */
   get maxLaenge(): number {
     return ABWEISUNG_MAX - (this.grund?.length ?? 0) - 2;
+  }
+
+  /** Der Satz passt nicht mehr neben den gewählten Grund. */
+  get zuLang(): boolean {
+    return this.satz.trim().length > this.maxLaenge;
   }
 
   /** Ein Grund ist Pflicht; bei „Anderer Grund“ auch der Satz. */
