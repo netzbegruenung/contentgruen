@@ -53,17 +53,13 @@
                     </div>
                 </div>
 
-                <div *ngIf="!showReferences" class="herkunft-anstoss">
-                    <button type="button" class="text-link herkunft-link" (click)="revealReferences()">
-                        + Herkunft
-                    </button>
-                    <p class="herkunft-satz">Zahlen und Fakten mit Herkunft sind glaubwürdiger.</p>
-                </div>
-                <div *ngIf="showReferences" class="herkunft">
+                <!-- Bei der Hintergrundinfo immer offen, nicht hinter "+ Herkunft" (Persona-Test Gerd, 13.11.) -->
+                <div class="herkunft">
                     <app-reference-input formControlName="references" [kompakt]="true"
-                                         beschriftung="Herkunft (optional)" platzhalter="Link oder Beschreibung"
+                                         beschriftung="Herkunft (empfohlen)" platzhalter="Link oder Beschreibung"
                                          [maxReferences]="10">
                     </app-reference-input>
+                    <p *ngIf="herkunftFehlt" class="herkunft-satz">Zahlen und Fakten mit Herkunft sind glaubwürdiger.</p>
                 </div>
 
                 <div class="formular-fuss">
@@ -99,7 +95,8 @@
                 <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
-            <app-gegenlesen [titel]="generictextForm.value.title" [text]="generictextForm.value.text" [aussage]="aussage.text"></app-gegenlesen>
+            <app-gegenlesen [titel]="generictextForm.value.title" [text]="generictextForm.value.text" [aussage]="aussage.text"
+                            [herkunftFehlt]="herkunftFehlt"></app-gegenlesen>
         </section>
     </div>
 </div>

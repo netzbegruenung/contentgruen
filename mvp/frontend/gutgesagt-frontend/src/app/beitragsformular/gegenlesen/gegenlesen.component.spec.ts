@@ -172,4 +172,51 @@ describe('GegenlesenComponent', () => {
     expect(element().querySelector('[aria-live="polite"]')).toBe(region);
     expect(region!.querySelector('.gegenlesen-anmerkung')).not.toBeNull();
   }));
+
+  describe('Herkunft fehlt (Persona-Test Gerd)', () => {
+    const HINWEIS = 'Ohne Herkunft glaubt dir das kaum jemand. Nenn, woher es stammt: ein Link oder eine Fundstelle.';
+
+    function gegengelesen(antwort: Gegengelesen): void {
+      schreibe('Abschaltsysteme gibt es nur an einem Teil der Windräder', 'Eine Zahl ohne Beleg.');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(antwort);
+      fixture.detectChanges();
+    }
+
+    it('meldet statt "Nichts aufgefallen" die fehlende Herkunft, ohne Anfrage dafür', fakeAsync(() => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+
+      expect(element().querySelector('.herkunft-fehlt')!.textContent!.trim()).toBe(HINWEIS);
+      expect(element().querySelector('.gegenlesen-gut')).toBeNull();
+    }));
+
+    it('steht vor den Anmerkungen des Dienstes', fakeAsync(() => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      gegengelesen(MIT_ANMERKUNG);
+
+      const punkte = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((p) => p.textContent!.trim());
+      expect(punkte).toEqual([HINWEIS, MIT_ANMERKUNG.anmerkungen[0].text]);
+    }));
+
+    it('verschwindet, sobald eine Herkunft da ist, ohne neue Anfrage', fakeAsync(() => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+
+      fixture.componentRef.setInput('herkunftFehlt', false);
+      fixture.detectChanges();
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectNone(PFAD);
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      expect(element().querySelector('.gegenlesen-gut')).not.toBeNull();
+    }));
+
+    it('mahnt im leeren Formular noch nicht', () => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      fixture.detectChanges();
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+    });
+  });
 });

@@ -351,4 +351,22 @@ describe('BeitragGespeichertComponent', () => {
     expect(gespeichertEltern(snapshot({ von: 'suche' }))).toBe('/search');
     expect(gespeichertEltern(snapshot({}))).toBe('/contribute');
   });
+
+  it('gibt der Karte die Herkunft mit Link, wie getById sie liefert (Persona-Test Gerd)', async () => {
+    await oeffnen();
+    commentaryService.getCommentaryById.and.returnValue(
+      of({
+        id: 'k-1',
+        title: 'Wärmepumpe lohnt sich',
+        text: 'Text',
+        content_type: 'commentary',
+        references: [{ reference_id: '6f1c2d3e-0000-4000-8000-000000000001', created: '', reference_text: 'https://example.org/studie' }],
+      } as any),
+    );
+    fixture.componentInstance.ngOnInit();
+
+    expect(fixture.componentInstance.karte!.quellen).toEqual([
+      { id: '6f1c2d3e-0000-4000-8000-000000000001', url: 'https://example.org/studie', beschreibung: undefined },
+    ]);
+  });
 });

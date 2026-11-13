@@ -9,10 +9,11 @@
         </div>
     </div>
     <div class="gegenlesen-ergebnis" aria-live="polite">
-        <ul *ngIf="ergebnis.anmerkungen.length" class="gegenlesen-anmerkungen">
+        <ul *ngIf="ergebnis.anmerkungen.length || zeigtHerkunftHinweis" class="gegenlesen-anmerkungen">
+            <li *ngIf="zeigtHerkunftHinweis" class="gegenlesen-anmerkung herkunft-fehlt">{{ herkunftHinweis }}</li>
             <li *ngFor="let a of ergebnis.anmerkungen" class="gegenlesen-anmerkung">{{ a.text }}</li>
         </ul>
-        <p *ngIf="ergebnis.guete !== null && !ergebnis.anmerkungen.length" class="gegenlesen-gut">
+        <p *ngIf="ergebnis.guete !== null && !ergebnis.anmerkungen.length && !zeigtHerkunftHinweis" class="gegenlesen-gut">
             Nichts aufgefallen.
         </p>
     </div>

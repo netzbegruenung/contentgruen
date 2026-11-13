@@ -16,6 +16,12 @@ interface Eingabe {
   titelIstBehauptung: boolean;
 }
 
+/**
+ * Hintergrundinfo ohne Herkunft (Persona-Test Gerd, 13.11.): eine feste Regel im Formular,
+ * ohne Aufruf beim Dienst. Sie zählt nicht in die Güte, die rechnet der Dienst.
+ */
+export const HERKUNFT_FEHLT = 'Ohne Herkunft glaubt dir das kaum jemand. Nenn, woher es stammt: ein Link oder eine Fundstelle.';
+
 const NOCH_LEER: Gegengelesen = { guete: null, anmerkungen: [] };
 
 /** Zu viele Anfragen: Das letzte Ergebnis bleibt stehen, statt dass der Block verschwindet. */
@@ -44,6 +50,10 @@ export class GegenlesenComponent implements OnChanges {
   @Input() aussage: string | null = '';
   /** Kommentar und Hintergrundinfo behaupten im Titel; ein Post-Titel beschreibt, ohne Verneinungsregel. */
   @Input() titelIstBehauptung = true;
+  /** Das Formular hat ein Herkunftsfeld, und es ist leer; nur die Hintergrundinfo setzt das. */
+  @Input() herkunftFehlt = false;
+
+  readonly herkunftHinweis = HERKUNFT_FEHLT;
 
   ergebnis: Gegengelesen = NOCH_LEER;
   verfuegbar = true;
@@ -83,6 +93,11 @@ export class GegenlesenComponent implements OnChanges {
         if (ergebnis) this.ergebnis = ergebnis;
         cdr.markForCheck();
       });
+  }
+
+  /** Erst, wenn schon etwas geschrieben ist: Ein leeres Formular soll nicht mahnen. */
+  get zeigtHerkunftHinweis(): boolean {
+    return this.herkunftFehlt && this.ergebnis.guete !== null;
   }
 
   ngOnChanges(): void {

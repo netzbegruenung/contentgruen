@@ -33,6 +33,7 @@ import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage'
 import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
 import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../../shared/beitrags-link';
 import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
+import { platzhalterDialogOeffnen } from './platzhalter-dialog.component';
 import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
 
 /**
@@ -202,11 +203,30 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.inZwischenablage(this.zweiteKopie?.text ?? '');
   }
 
+  /**
+   * Mit Platzhalter „[Hier …]“ fragt erst der Dialog nach dem eigenen Satz und kopiert
+   * selbst (Persona-Test Dennis, 13.11.); abgebrochen wird nichts kopiert und nichts gezählt.
+   */
   private inZwischenablage(text: string): void {
     if (this.vorschau || !text) {
       return;
     }
+    if (hatLuecke(text)) {
+      platzhalterDialogOeffnen(this.dialog, text)
+        .afterClosed()
+        .subscribe((ergebnis) => {
+          if (ergebnis) {
+            this.nachKopieren(ergebnis.text);
+          }
+        });
+      return;
+    }
     this.clipboard.copy(text);
+    this.nachKopieren(text);
+  }
+
+  /** Rückmeldung, Animation und Nutzung nach dem Kopieren, gleich ob mit oder ohne Dialog. */
+  private nachKopieren(text: string): void {
     this.kopiertMelden(text);
 
     this.copyAnimationActive = true;

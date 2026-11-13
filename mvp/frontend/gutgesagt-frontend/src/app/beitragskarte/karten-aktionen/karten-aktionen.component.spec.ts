@@ -506,12 +506,74 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
     });
 
-    it('erinnert mit Platzhalter ans Ausfuellen der Luecke (#640, R38)', () => {
-      component.kopierText = 'Gut. [Hier ein eigenes Erlebnis: …] Ende.';
+    describe('mit Platzhalter (Persona-Test Dennis)', () => {
+      const MIT_PLATZHALTER = 'Gut. [Hier ein eigenes Erlebnis: …] Ende.';
+      let dialog: jasmine.SpyObj<MatDialog>;
+      let clipboard: jasmine.SpyObj<Clipboard>;
+      let usage: jasmine.SpyObj<UsageTrackingService>;
 
-      component.kopieren();
+      function dialogSchliesstMit(ergebnis: { text: string } | undefined): void {
+        dialog.open.and.returnValue({ afterClosed: () => of(ergebnis) } as any);
+      }
 
-      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
+      beforeEach(() => {
+        dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
+        clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+        usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+        component.kopierText = MIT_PLATZHALTER;
+      });
+
+      it('fragt vor dem Kopieren im Dialog nach dem eigenen Satz und kopiert selbst nichts', () => {
+        dialogSchliesstMit(undefined);
+
+        component.kopieren();
+
+        expect(dialog.open).toHaveBeenCalledTimes(1);
+        expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ text: MIT_PLATZHALTER });
+        expect(clipboard.copy).not.toHaveBeenCalled();
+      });
+
+      it('zaehlt abgebrochen nichts und meldet nichts', () => {
+        const kopiert = jasmine.createSpy('kopiert');
+        component.kopiert.subscribe(kopiert);
+        dialogSchliesstMit(undefined);
+
+        component.kopieren();
+
+        expect(usage.trackContentUsage).not.toHaveBeenCalled();
+        expect(kopiert).not.toHaveBeenCalled();
+        expect(snackBar.open).not.toHaveBeenCalled();
+      });
+
+      it('zaehlt den gefuellten Text wie normales Kopieren und meldet "Erfolgreich kopiert!"', () => {
+        const kopiert = jasmine.createSpy('kopiert');
+        component.kopiert.subscribe(kopiert);
+        dialogSchliesstMit({ text: 'Gut. Mein Satz. Ende.' });
+
+        component.kopieren();
+
+        expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, undefined);
+        expect(kopiert).toHaveBeenCalledTimes(1);
+        expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      });
+
+      it('fragt auch bei "Mit Herkunft kopieren" aus dem Menue', () => {
+        dialogSchliesstMit({ text: 'Gut. Ende.\n\nHerkunft: https://example.org' });
+        component.zweiteKopie = { text: `${MIT_PLATZHALTER}\n\nHerkunft: https://example.org`, wort: 'Mit Herkunft kopieren' };
+
+        component.zweiteKopieren();
+
+        expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ text: `${MIT_PLATZHALTER}\n\nHerkunft: https://example.org` });
+        expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
+      });
+
+      it('oeffnet in der Vorschau keinen Dialog', () => {
+        component.vorschau = true;
+
+        component.kopieren();
+
+        expect(dialog.open).not.toHaveBeenCalled();
+      });
     });
 
     it('oeffnet den Melde-Dialog mit ID und Typ', () => {
@@ -608,14 +670,16 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(usage.gepostetMelden).not.toHaveBeenCalled();
     });
 
-    it('bleibt bei einer Lücke beim Hinweis aufs Ausfüllen und fragt nicht (#640)', () => {
+    it('fragt nach dem gefuellten Platzhalter wie sonst auch', () => {
       usage.gepostetBekannt.and.returnValue(true);
+      (TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>).open.and.returnValue({
+        afterClosed: () => of({ text: 'Gut. Mein Satz. Ende.' }),
+      } as any);
       component.kopierText = 'Gut. [Hier ein eigenes Erlebnis: …] Ende.';
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
-      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
     });
 
     it('fragt Besucher nicht und fragt auch den Server nicht', () => {

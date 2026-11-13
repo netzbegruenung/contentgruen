@@ -173,7 +173,6 @@ export class AddGenerictextComponent implements OnChanges {
   /** Was im Antwort-auf-Block gerade gilt. */
   aussage: AntwortAuf = OHNE_AUSSAGE;
 
-  showReferences = false;
   speichert = false;
   fehler: string | null = null;
   /**
@@ -309,15 +308,21 @@ export class AddGenerictextComponent implements OnChanges {
   }
 
   // Titel = Satz aus dem Destillier-Ablauf, Herkunft = Link des Einwurfs. Beides
-  // bleibt aenderbar; die Herkunft wird aufgeklappt, damit sie sichtbar ist.
+  // bleibt aenderbar.
   vorbefuellungAnwenden(vorbefuellung: Vorbefuellung): void {
     this.generictextForm.patchValue({
       title: vorbefuellung.titel,
       references: vorbefuellung.url ? [{ reference_string: vorbefuellung.url }] : [],
     });
-    if (vorbefuellung.url) {
-      this.showReferences = true;
-    }
+  }
+
+  /**
+   * Noch keine Herkunft angegeben (Persona-Test Gerd, 13.11.): Das Feld steht bei der
+   * Hintergrundinfo immer offen, darunter der Satz, warum sie sich lohnt, und das
+   * Gegenlesen sagt es auch. Pflicht ist sie nicht.
+   */
+  get herkunftFehlt(): boolean {
+    return !this.generictextForm.value.references?.length;
   }
 
   get titelLaenge(): number {
@@ -398,10 +403,6 @@ export class AddGenerictextComponent implements OnChanges {
       karte: { ...karte, nutzung: null, erstellt: '', autorName: 'Du' },
     };
     return this.vorschauCache.karte;
-  }
-
-  revealReferences(): void {
-    this.showReferences = true;
   }
 
   speichern(): void {
@@ -620,7 +621,6 @@ export class AddGenerictextComponent implements OnChanges {
     this.generictextForm.reset({ title: '', text: '', themen: [], references: [] });
     this.antwortAuf?.leeren();
     this.aussage = OHNE_AUSSAGE;
-    this.showReferences = false;
     this.fehler = null;
     // Wer zuruecksetzt, faengt neu an: kein "Variante von", kein beruht_auf (#356).
     this.vorlage = null;

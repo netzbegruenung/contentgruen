@@ -376,13 +376,15 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-text').textContent).toContain(' Deshalb ja.');
     });
 
-    it('kopiert den Text unveraendert und erinnert an die Luecke', () => {
+    it('fragt beim Kopieren erst im Dialog nach dem eigenen Satz (Persona-Test Dennis)', () => {
+      const dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
+      dialog.open.and.returnValue({ afterClosed: () => of(undefined) } as any);
       zeigen(ausSuchergebnis(paket('commentary_result', { text: MIT_LUECKE })));
 
       element<HTMLButtonElement>('.kopieren-knopf').click();
 
-      expect(TestBed.inject(Clipboard).copy).toHaveBeenCalledWith(MIT_LUECKE);
-      expect(snackBar.open.calls.mostRecent().args[0]).toBe('Kopiert – füll noch die Lücke in [ ] aus.');
+      expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ text: MIT_LUECKE });
+      expect(TestBed.inject(Clipboard).copy).not.toHaveBeenCalled();
     });
 
     it('markiert ohne Platzhalter nichts', () => {
