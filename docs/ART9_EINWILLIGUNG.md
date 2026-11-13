@@ -8,18 +8,38 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
 ## Ablauf
 
 - **Fragen:** Nach dem Anmelden fragt die App einmal je Person und App-Start nach dem Stand
-  (`GET /api/v1/art9-einwilligung`) und führt ohne Einwilligung auf `/einwilligung`. Das gilt
-  für jede Kontoart (Netzbegrünung-Login, Konto aus einer Einladung, Beta-Zugang). Dort steht
-  der Wortlaut an einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht
-  angehakt: als Label der erste Satz, der ganze Wortlaut aufklappbar darunter (#620).
+  (`GET /api/v1/art9-einwilligung`) und führt auf `/einwilligung`, solange sich die Person
+  noch nicht entschieden hat (`zurEinwilligungUmleiten` in `art9-einwilligung.service.ts`).
+  Das gilt für jede Kontoart (Netzbegrünung-Login, Konto aus einer Einladung, Beta-Zugang).
+  Dort steht der Wortlaut an einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und
+  nicht angehakt: als Label der erste Satz, der ganze Wortlaut aufklappbar darunter (#620).
+  Fragt die App so (mit Rückweg in der Adresse), heißt die Seite im Kopf „Einwilligung“, aus
+  dem Profilmenü „Datenschutz-Einstellungen“.
   „Ohne Einwilligung weiter“ führt zurück; die Person kann suchen und lesen.
+- **Nicht drängen (UX-Review B2):** Wer „Ohne Einwilligung weiter“ gewählt oder widerrufen
+  hat, wird nicht bei jedem App-Start wieder auf `/einwilligung` geführt. Den Widerruf kennt
+  das Backend (`widerrufen_am`); das „ohne“ merkt sich nur der Browser
+  (`localStorage`, Schlüssel `gutgesagt-art9-ohne`: nur die Kennung des Wortlauts, der da
+  galt, keine Angabe über die Person; ohne Speicher nur der laufende Besuch), am Server
+  entsteht dafür nichts. Eine Einwilligung löscht den Vermerk. Der Vermerk gilt für den
+  Browser, nicht für ein Konto: Meldet sich dort ein zweites Konto zum ersten Mal an, fragt
+  die App es nicht von selbst, der Hinweis kommt beim Beitragen. Ausnahme: Wer einem früheren Wortlaut
+  zugestimmt hat, der nicht mehr zählt, wird zum neuen einmal gefragt.
+  Erst beim Beitragen zeigen die Formulare (Einwerfen, Satz beim Destillieren, Kommentar,
+  Hintergrundinfo, Bild, Post, auch beim Ausformulieren) über dem Formular einen Hinweis mit
+  „Einwilligen“ (`EinwilligungHinweisComponent`); eine schon begonnene Eingabe liegt so lange
+  im `sessionStorage` und steht nach der Rückkehr wieder im Formular.
+- **Widerruf mit Rückfrage (UX-Review B3):** „Einwilligung widerrufen“ und „Frühere
+  Einwilligung widerrufen“ fragen erst nach und nennen die Folgen (Bewertungen gelöscht,
+  Löschauftrag binnen sieben Tagen); widerrufen wird nur mit „Widerrufen“.
 - **Speichern:** Tabelle `art9_einwilligungen`, je Einwilligung eine Zeile mit Kennung der
   Person, Zeitpunkt und Kennung des gezeigten Wortlauts. Es gilt die jüngste Zeile.
 - **Sperren:** Ohne geltende Einwilligung antworten die Endpunkte, die mit Personenbezug etwas
   speichern, aus dem sich auf die politische Meinung schließen lässt, mit 403
   (`art9_einwilligung_fehlt`); die App zeigt dann einen Hinweis mit Knopf, der auf
   `/einwilligung` und danach zurück führt, und bleibt sonst auf der Seite, damit kein Text im
-  Formular verloren geht.
+  Formular verloren geht. Auf einer Seite mit Hinweiskasten ist das der Kasten, ohne
+  „Bitte versuche es erneut“; anderswo (etwa bei den Stimm-Knöpfen) eine Snackbar.
   Gesperrt: Beiträge anlegen und ändern, Herkunft anlegen, Einwurf und Satz, einen Einwurf
   ausformulieren, Stimmen abgeben, „Ja, gepostet“ nach dem Kopieren melden und erfragen, ob es
   angeboten wird (#643). Offen bleiben Lesen, Suchen, Löschen, einen Einwurf

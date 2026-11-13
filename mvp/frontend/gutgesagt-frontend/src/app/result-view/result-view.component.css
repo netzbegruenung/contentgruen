@@ -676,3 +676,10 @@ mat-sidenav-content {
 .mobile-ergaenzen:focus {
   outline: none;
 }
+
+/* Dritter Weg ohne Treffer: nur einen Link einwerfen (UX-Review B13) */
+.nur-link {
+  margin: var(--spacing-sm) 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}

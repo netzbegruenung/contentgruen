@@ -9,10 +9,14 @@ import { AuthService, UserInfo } from '../auth/auth.service';
 import {
   Art9EinwilligungService,
   Art9EinwilligungStand,
+  OHNE_EINWILLIGUNG_SCHLUESSEL,
   WORTLAUT_LABEL_MAX,
+  einwilligungFehlt,
   wortlautDatum,
   wortlautErsterSatz,
+  zurEinwilligungUmleiten,
 } from './art9-einwilligung.service';
+import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
 
 /** Nach dem Anmelden ohne Art.-9-Einwilligung auf /einwilligung fuehren (#489). */
 describe('Art9EinwilligungService', () => {
@@ -38,6 +42,7 @@ describe('Art9EinwilligungService', () => {
   });
 
   beforeEach(() => {
+    localStorage.removeItem(OHNE_EINWILLIGUNG_SCHLUESSEL);
     anmeldung = new BehaviorSubject<UserInfo | null>(null);
     router = {
       url: '/fangkorb',
@@ -60,6 +65,7 @@ describe('Art9EinwilligungService', () => {
   afterEach(() => {
     service.ngOnDestroy();
     http.verify();
+    localStorage.removeItem(OHNE_EINWILLIGUNG_SCHLUESSEL);
   });
 
   it('fragt fuer Besucher nicht', () => {
@@ -255,5 +261,110 @@ describe('Art9EinwilligungService', () => {
 
     service.widerrufen().subscribe();
     http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
+  });
+  // UX-Review B2: nur beim ersten Anmelden umleiten, nicht nach einer Entscheidung
+  describe('nicht draengen (B2)', () => {
+    const widerrufen = (): Art9EinwilligungStand => ({
+      ...stand(false),
+      wortlaut: '2026-11-05-b',
+      eingewilligt_am: '2026-11-05T09:00:00Z',
+      widerrufen_am: '2026-11-06T09:00:00Z',
+    });
+
+    it('leitet nach einem Widerruf nicht um', () => {
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+
+      http.expectOne(ADRESSE).flush(widerrufen());
+
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('leitet nicht mehr um, wer ohne Einwilligung weitergegangen ist, auch nach einem Neustart', () => {
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(false));
+      expect(router.navigate).toHaveBeenCalledTimes(1);
+
+      service.ohneMerken('2026-11-05-b');
+      // Neustart der App: ein frischer Dienst, derselbe Browser
+      service.ngOnDestroy();
+      anmeldung.next(null);
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(false));
+
+      expect(router.navigate).toHaveBeenCalledTimes(1);
+      expect(localStorage.getItem(OHNE_EINWILLIGUNG_SCHLUESSEL)).toBe('2026-11-05-b');
+    });
+
+    it('vergisst das Ohne nach einer Einwilligung', () => {
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(false));
+      service.ohneMerken('2026-11-05-b');
+
+      service.einwilligen('2026-11-05-b').subscribe();
+      http.expectOne({ method: 'POST', url: ADRESSE }).flush(null);
+
+      expect(localStorage.getItem(OHNE_EINWILLIGUNG_SCHLUESSEL)).toBeNull();
+    });
+
+    it('merkt sich das Ohne im Besuch, wenn der Speicher gesperrt ist', () => {
+      spyOn(Storage.prototype, 'setItem').and.throwError('gesperrt');
+      service.ohneMerken('2026-11-05-b');
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+
+      http.expectOne(ADRESSE).flush(stand(false));
+
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('setzt den Zustand fuer Formulare: fehlt, eingewilligt, nach dem Abmelden unbekannt', () => {
+      const zustand = TestBed.inject(Art9EinwilligungZustand);
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(false));
+      expect(zustand.wert).toBe('fehlt');
+
+      service.einwilligen('2026-11-05-b').subscribe();
+      http.expectOne({ method: 'POST', url: ADRESSE }).flush(null);
+      expect(zustand.wert).toBe('eingewilligt');
+
+      service.widerrufen().subscribe();
+      http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
+      expect(zustand.wert).toBe('fehlt');
+
+      anmeldung.next(null);
+      expect(zustand.wert).toBe('unbekannt');
+    });
+
+    it('zurEinwilligungUmleiten: erstes Mal ja, nach Entscheidung nein, neuer Wortlaut nach frueherer Einwilligung einmal ja', () => {
+      const neu = stand(false);
+      expect(zurEinwilligungUmleiten(neu, null)).toBeTrue();
+      expect(zurEinwilligungUmleiten(neu, '2026-11-05-b')).toBeFalse();
+      expect(zurEinwilligungUmleiten(stand(true), null)).toBeFalse();
+      expect(zurEinwilligungUmleiten(widerrufen(), null)).toBeFalse();
+
+      const frueher: Art9EinwilligungStand = {
+        ...stand(false),
+        wortlaut: '2026-11-12',
+        eingewilligt_am: '2026-11-12T09:00:00Z',
+        aktueller_wortlaut: { kennung: '2026-11-13', text: '…' },
+      };
+      // Frueher schon einmal ohne weiter (zu einem aelteren Wortlaut): zum neuen trotzdem fragen
+      expect(zurEinwilligungUmleiten(frueher, '2026-11-10')).toBeTrue();
+      // Zum aktuellen schon ohne weiter: nicht noch einmal
+      expect(zurEinwilligungUmleiten(frueher, '2026-11-13')).toBeFalse();
+    });
+  });
+
+  it('einwilligungFehlt erkennt nur 403 mit Kennzeichen', () => {
+    expect(einwilligungFehlt({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })).toBeTrue();
+    expect(einwilligungFehlt({ status: 403, error: { detail: 'anderes' } })).toBeFalse();
+    expect(einwilligungFehlt({ status: 500 })).toBeFalse();
+    expect(einwilligungFehlt(new Error('x'))).toBeFalse();
+    expect(einwilligungFehlt(null)).toBeFalse();
   });
 });

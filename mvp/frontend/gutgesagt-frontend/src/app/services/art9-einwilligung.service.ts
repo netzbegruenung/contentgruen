@@ -6,6 +6,7 @@ import { catchError, distinctUntilChanged, filter, map, switchMap, take, tap } f
 
 import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
+import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
 
 /**
  * Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum, ein zweiter
@@ -59,8 +60,9 @@ export function wortlautErsterSatz(text: string): string {
 }
 
 /** Ob ein HTTP-Fehler die fehlende Art.-9-Einwilligung meldet (403 mit Kennzeichen). */
-export function einwilligungFehlt(fehler: { status?: number; error?: any } | null | undefined): boolean {
-  return fehler?.status === 403 && fehler?.error?.detail === ART9_EINWILLIGUNG_FEHLT;
+export function einwilligungFehlt(fehler: unknown): boolean {
+  const f = fehler as { status?: number; error?: { detail?: unknown } | null } | null | undefined;
+  return f?.status === 403 && f?.error?.detail === ART9_EINWILLIGUNG_FEHLT;
 }
 
 /**
@@ -90,12 +92,63 @@ export function zurEinwilligungFuehren(router: Router): void {
 }
 
 /**
+ * Der Vermerk im Browser, dass hier jemand bewusst ohne Einwilligung weitergegangen ist:
+ * nur die Kennung des Wortlauts, der da galt, keine Angabe ueber die Person (wie die
+ * Vermerke fuer Willkommen und Rundgang, rundgang-merker.ts). Nichts am Server; ohne
+ * Speicher (privates Fenster, gesperrt) merkt es sich der laufende Besuch.
+ */
+export const OHNE_EINWILLIGUNG_SCHLUESSEL = 'gutgesagt-art9-ohne';
+
+function ohneLesen(): string | null {
+  try {
+    return localStorage.getItem(OHNE_EINWILLIGUNG_SCHLUESSEL);
+  } catch {
+    return null;
+  }
+}
+
+function ohneSchreiben(wortlaut: string | null): void {
+  try {
+    if (wortlaut) {
+      localStorage.setItem(OHNE_EINWILLIGUNG_SCHLUESSEL, wortlaut);
+    } else {
+      localStorage.removeItem(OHNE_EINWILLIGUNG_SCHLUESSEL);
+    }
+  } catch {
+    // Ohne Speicher gilt die Entscheidung nur fuer diesen Besuch (ohneImBesuch).
+  }
+}
+
+/**
+ * Ob die App ohne Einwilligung auf /einwilligung fuehrt (UX-Review B2): nur, solange
+ * die Person sich nicht entschieden hat. Wer widerrufen hat oder bewusst ohne
+ * weitergegangen ist, sieht den Hinweis erst beim Beitragen. Ausnahme: Wer einem
+ * frueheren Wortlaut zugestimmt hat, der nicht mehr zaehlt, wird zum neuen einmal
+ * gefragt, auch wenn er zu einem noch aelteren schon ohne weitergegangen war.
+ *
+ * @param ohneBeiWortlaut Kennung des Wortlauts, bei dem die Person ohne Einwilligung
+ *   weiterging, sonst null.
+ */
+export function zurEinwilligungUmleiten(stand: Art9EinwilligungStand, ohneBeiWortlaut: string | null): boolean {
+  if (stand.eingewilligt || stand.widerrufen_am) {
+    return false;
+  }
+  if (ohneBeiWortlaut === null) {
+    return true;
+  }
+  const frueherEingewilligt = !!stand.wortlaut;
+  return frueherEingewilligt && ohneBeiWortlaut !== stand.aktueller_wortlaut.kennung;
+}
+
+/**
  * Die Art.-9-Einwilligung (#489): Stand lesen, einwilligen, widerrufen.
  *
  * Nach dem Anmelden fragt ``starten`` einmal je Person und App-Start nach dem Stand
- * und fuehrt ohne Einwilligung auf /einwilligung. Wer dort ohne Einwilligung
- * weitergeht, wird erst beim naechsten App-Start wieder hingefuehrt; verlangt ein
- * Endpunkt sie vorher, zeigt der Auth-Interceptor einen Hinweis mit Knopf.
+ * und fuehrt beim ersten Mal ohne Einwilligung auf /einwilligung
+ * (``zurEinwilligungUmleiten``). Wer dort ohne Einwilligung weitergeht oder
+ * widerruft, wird nicht wieder hingefuehrt; Formulare zeigen dann einen
+ * Hinweiskasten (``EinwilligungHinweisComponent``), und verlangt ein Endpunkt die
+ * Einwilligung anderswo, zeigt der Auth-Interceptor einen Hinweis mit Knopf.
  */
 @Injectable({ providedIn: 'root' })
 export class Art9EinwilligungService implements OnDestroy {
@@ -104,6 +157,8 @@ export class Art9EinwilligungService implements OnDestroy {
   /** Kennung der angemeldeten Person, sonst null. */
   private kennung: string | null = null;
   private readonly geklaertFuer = new BehaviorSubject<string | null>(null);
+  /** Ohne localStorage: bei welchem Wortlaut in diesem Besuch jemand ohne Einwilligung weiterging. */
+  private ohneImBesuch: string | null = null;
   /**
    * Kennung der angemeldeten Person, sobald feststeht, dass sie eingewilligt hat (oder
    * der Stand nicht abrufbar ist); sonst null. Bis dahin bietet die App keinen Rundgang
@@ -115,6 +170,7 @@ export class Art9EinwilligungService implements OnDestroy {
     private http: HttpClient,
     private authService: AuthService,
     private router: Router,
+    private zustand: Art9EinwilligungZustand,
   ) {}
 
   stand(): Observable<Art9EinwilligungStand> {
@@ -122,7 +178,32 @@ export class Art9EinwilligungService implements OnDestroy {
   }
 
   einwilligen(kennung: string): Observable<void> {
-    return this.http.post<void>(this.apiUrl, { wortlaut: kennung }).pipe(tap(() => this.geklaertSetzen(this.kennung)));
+    return this.http.post<void>(this.apiUrl, { wortlaut: kennung }).pipe(
+      tap(() => {
+        this.geklaertSetzen(this.kennung);
+        this.zustand.setzen('eingewilligt');
+        this.ohneVergessen();
+      }),
+    );
+  }
+
+  /**
+   * Die Person geht bewusst ohne Einwilligung weiter: Beim naechsten App-Start fuehrt
+   * die App nicht wieder auf /einwilligung (B2). ``wortlaut`` ist die Kennung des
+   * Wortlauts, der dabei galt.
+   */
+  ohneMerken(wortlaut: string): void {
+    this.ohneImBesuch = wortlaut;
+    ohneSchreiben(wortlaut);
+  }
+
+  private ohneGemerkt(): string | null {
+    return ohneLesen() ?? this.ohneImBesuch;
+  }
+
+  private ohneVergessen(): void {
+    this.ohneImBesuch = null;
+    ohneSchreiben(null);
   }
 
   /** Der jetzige Wert von ``geklaert$``. */
@@ -136,7 +217,12 @@ export class Art9EinwilligungService implements OnDestroy {
 
   /** Nach dem Widerruf gilt die Person nicht mehr als geklaert: kein Angebot ohne Einwilligung (#587). */
   widerrufen(): Observable<void> {
-    return this.http.delete<void>(this.apiUrl).pipe(tap(() => this.geklaertSetzen(null)));
+    return this.http.delete<void>(this.apiUrl).pipe(
+      tap(() => {
+        this.geklaertSetzen(null);
+        this.zustand.setzen('fehlt');
+      }),
+    );
   }
 
   /** Einmal beim App-Start aufrufen; weitere Aufrufe tun nichts. */
@@ -151,6 +237,7 @@ export class Art9EinwilligungService implements OnDestroy {
         tap((kennung) => {
           this.kennung = kennung;
           this.geklaertSetzen(null); // abgemeldet oder andere Person: neu klaeren
+          this.zustand.setzen('unbekannt');
         }),
         filter((kennung): kennung is string => !!kennung),
         // Scheitert die Abfrage, nicht umleiten: Das Backend sperrt trotzdem, und der
@@ -160,10 +247,12 @@ export class Art9EinwilligungService implements OnDestroy {
             catchError(() => of(null)),
             tap((stand) => {
               if (!stand || stand.eingewilligt) this.geklaertSetzen(kennung);
+              if (stand) this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
             }),
+            map((stand) => !!stand && zurEinwilligungUmleiten(stand, this.ohneGemerkt())),
           ),
         ),
-        filter((stand): stand is Art9EinwilligungStand => !!stand && !stand.eingewilligt),
+        filter((umleiten) => umleiten),
         // Laeuft gerade eine Navigation (etwa zurueck an die Stelle vor dem Anmelden),
         // erst ihr Ende abwarten, damit der Rueckweg dorthin fuehrt.
         switchMap(() => (this.router.getCurrentNavigation() ? this.navigationsEnde() : of(undefined))),

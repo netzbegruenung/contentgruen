@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
+import { ROUTES } from '../shared/constants/app.constants';
 import { NavigationService } from '../services/navigation.service';
 import { Subscription, Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -485,6 +486,14 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.router.navigate([FORMULAR_PFAD[typ]], {
       queryParams: aussageParameterMitText(ausAntwort, this.searchQuery),
     });
+  }
+
+  /**
+   * Nur einen Link dazu (UX-Review B13): in den Fangkorb einwerfen statt gleich
+   * antworten. Besucher fuehrt der Guard zur Anmeldung und danach dorthin.
+   */
+  zumEinwerfen(): void {
+    this.router.navigate([ROUTES.RAW_INPUT]);
   }
 
   /**

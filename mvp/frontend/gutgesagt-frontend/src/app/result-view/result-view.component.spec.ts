@@ -429,9 +429,10 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
   }
 
   for (const mobil of [false, true]) {
-    it(`laesst die Seite ohne Treffer unveraendert (${mobil ? 'Handy' : 'Desktop'})`, () => {
+    // Seit dem UX-Review (B13) steht der Rat auch ohne Treffer, sonst bleibt die Seite gleich
+    it(`zeigt ohne Treffer den Rat, aber keine Typ-Erklaerungen (${mobil ? 'Handy' : 'Desktop'})`, () => {
       const seite = oeffnen(mobil, 0, 0);
-      expect(seite.querySelector('.keine-antwort-noetig')).toBeNull();
+      expect(seite.querySelectorAll('.keine-antwort-noetig').length).toBe(1);
       expect(erklaerungen(seite)).toEqual([]);
     });
   }
@@ -651,6 +652,20 @@ describe('ResultViewComponent: Nicht dabei?', () => {
     tick();
     expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
   }));
+
+  // UX-Review B13: dritter Weg "nur einen Link" und der Hinweis, dass nicht jede Aussage eine Antwort braucht
+  for (const mobil of [true, false]) {
+    it(`bietet ohne Treffer "Nur einen Link dazu? Einwerfen" und den Hinweis zur Antwort (${mobil ? 'Handy' : 'Desktop'})`, () => {
+      const seite = oeffnen(mobil, false);
+      const bereich = seite.querySelector<HTMLElement>(mobil ? '.mobile-empty-state' : '.unified-empty-state')!;
+      const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
+      expect(bereich.querySelector('.nur-link')?.textContent).toContain('Nur einen Link dazu?');
+      expect(bereich.querySelector('.keine-antwort-noetig')?.textContent).toContain('Nicht jede Aussage braucht eine Antwort.');
+      bereich.querySelector<HTMLButtonElement>('.nur-link button')!.click();
+      expect(navigate).toHaveBeenCalledWith(['/einwerfen']);
+    });
+  }
 
   it('zeigt am Desktop unter den Treffern "Nicht dabei?" ohne die Aussage der Treffer', fakeAsync(() => {
     const seite = oeffnen(false, true);

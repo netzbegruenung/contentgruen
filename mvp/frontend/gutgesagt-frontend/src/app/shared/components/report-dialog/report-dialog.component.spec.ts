@@ -9,6 +9,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ERFUNDENES_MELDEN } from '../../schreibregeln';
 import { MeldegrundWert } from '../../meldegruende';
 import { environment } from '../../../../environments/environment';
+import { AuthService } from '../../../auth/auth.service';
 
 const URL = `${environment.baseUrl}/api/v1/moderation/report`;
 
@@ -299,5 +300,38 @@ describe('ReportDialogComponent', () => {
     expect(element().querySelector('[role="status"]')!.textContent).toContain(
       'Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.',
     );
+  });
+  // UX-Review B17: Angemeldete nicht nach dem Namen fragen, die Meldung haengt am Konto.
+  // Die E-Mail-Adresse bleibt: Bestaetigung und Entscheidung gehen nur an eine hier angegebene.
+  describe('angemeldet', () => {
+    beforeEach(async () => {
+      spyOn(TestBed.inject(AuthService), 'getUserInfo').and.returnValue({
+        isAuthenticated: true,
+        userId: 'kim',
+        userName: 'Kim',
+        claims: null,
+      });
+      fixture = TestBed.createComponent(ReportDialogComponent);
+      fixture.detectChanges();
+      await fixture.whenStable();
+    });
+
+    it('fragt nicht nach dem Namen, behaelt die freiwillige E-Mail-Adresse', () => {
+      expect(element().querySelector('input[name="melder_name"]')).toBeNull();
+      expect(element().querySelector('input[name="melder_email"]')).not.toBeNull();
+      expect(element().textContent).toContain('Deine E-Mail-Adresse sehen nur Admins.');
+    });
+
+    it('schickt keinen Namen mit', async () => {
+      fixture.componentInstance.melderName = 'Liegengeblieben';
+      await grundWaehlen();
+      await gutenGlaubenErklaeren();
+
+      await melden();
+
+      const anfrage = http.expectOne(URL);
+      expect(anfrage.request.body.melder_name).toBeNull();
+      anfrage.flush({ success: true, message: '' });
+    });
   });
 });

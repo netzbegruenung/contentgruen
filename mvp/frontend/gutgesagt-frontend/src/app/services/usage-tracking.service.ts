@@ -109,6 +109,15 @@ export class UsageTrackingService {
   /** Je Kennung, ob „Ja, gepostet“ angeboten wird, soweit schon sicher bekannt (#643). */
   private gepostetStand = new Map<string, boolean>();
 
+  /**
+   * Punkte am Server ausgeschaltet: ``punkte`` oder ``meilensteine`` antworteten 404
+   * (UX-Review B20). Bis zum Neuladen fragt die App dann nicht mehr, auch nicht im Takt
+   * der Punkte-Anzeige; ohne Punkte gibt es auch keine Sichtbarkeit der Abzeichen.
+   */
+  private punkteAus = false;
+  /** ``abzeichen-sichtbarkeit`` antwortete 404 (Schalter aus); gilt bis zum Neuladen. */
+  private sichtbarkeitAus = false;
+
   constructor(
     private http: HttpClient,
     private loggingService: LoggingService
@@ -246,9 +255,13 @@ export class UsageTrackingService {
    * Stand gerade unbekannt ist: PUNKTE_NICHT_GELADEN.
    */
   getEigenePunkte(): Observable<Punktestand | null | typeof PUNKTE_NICHT_GELADEN> {
+    if (this.punkteAus) {
+      return of(null);
+    }
     return this.http.get<Punktestand>(`${this.apiUrl}/users/me/punkte`).pipe(
       catchError((error) => {
         if (error?.status === 404) {
+          this.punkteAus = true;
           return of(null);
         }
         this.loggingService.error('Eigene Punkte nicht geladen', error);
@@ -263,12 +276,17 @@ export class UsageTrackingService {
    * eine leere Liste, und „Meine Beiträge“ zeigt keine Meilensteine.
    */
   getEigeneMeilensteine(): Observable<Meilenstein[]> {
+    if (this.punkteAus) {
+      return of([]);
+    }
     return this.http
       .get<{ meilensteine: Meilenstein[] }>(`${this.apiUrl}/users/me/meilensteine`)
       .pipe(
         map((antwort) => antwort.meilensteine ?? []),
         catchError((error) => {
-          if (error?.status !== 404) {
+          if (error?.status === 404) {
+            this.punkteAus = true;
+          } else {
             this.loggingService.error('Eigene Meilensteine nicht geladen', error);
           }
           return of([]);
@@ -282,9 +300,14 @@ export class UsageTrackingService {
    * fragt nicht.
    */
   getAbzeichenSichtbarkeit(): Observable<AbzeichenSichtbarkeit | null> {
+    if (this.punkteAus || this.sichtbarkeitAus) {
+      return of(null);
+    }
     return this.http.get<AbzeichenSichtbarkeit>(`${this.apiUrl}/users/me/abzeichen-sichtbarkeit`).pipe(
       catchError((error) => {
-        if (error?.status !== 404) {
+        if (error?.status === 404) {
+          this.sichtbarkeitAus = true;
+        } else {
           this.loggingService.error('Sichtbarkeit der Abzeichen nicht geladen', error);
         }
         return of(null);

@@ -15,6 +15,8 @@ import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprac
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
@@ -63,6 +65,7 @@ function aufgeloest(adresse: string): string {
   styleUrls: ['./add-image.component.scss'],
   imports: [
     ...SHARED_IMPORTS,
+    EinwilligungHinweisComponent,
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
@@ -246,6 +249,11 @@ export class AddImageComponent implements AfterViewInit, OnDestroy {
         // Die Eingaben bleiben stehen; der Knopf speichert dasselbe noch einmal.
         this.logger.error('Error saving image', error);
         this.speichert = false;
+        // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
+        if (einwilligungFehlt(error)) {
+          this.fehler = null;
+          return;
+        }
         this.validierung = validierungsMeldung(error);
         this.fehler = this.validierung ?? SPEICHERN_FEHLGESCHLAGEN;
       },

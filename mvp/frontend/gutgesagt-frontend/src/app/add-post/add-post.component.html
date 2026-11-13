@@ -8,6 +8,8 @@
 
     <div class="content-wrapper">
         <div class="form-column">
+            <!-- Ohne Art.-9-Einwilligung: Hinweis mit Weg dorthin; die Eingabe uebersteht ihn (B4) -->
+            <app-einwilligung-hinweis [formular]="postForm"></app-einwilligung-hinweis>
             <form [formGroup]="postForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
                 <app-antwort-auf (aussageChange)="aussageSetzen($event)"></app-antwort-auf>
 

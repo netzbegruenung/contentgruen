@@ -3,8 +3,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { EinwilligungComponent } from './einwilligung.component';
-import { Art9EinwilligungStand } from '../services/art9-einwilligung.service';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
+import { EinwilligungComponent, WIDERRUF_FRAGE } from './einwilligung.component';
+import { Art9EinwilligungService, Art9EinwilligungStand } from '../services/art9-einwilligung.service';
 import { environment } from '../../environments/environment';
 
 const URL = `${environment.baseUrl}/api/v1/art9-einwilligung`;
@@ -26,8 +28,14 @@ describe('EinwilligungComponent', () => {
   let fixture: ComponentFixture<EinwilligungComponent>;
   let http: HttpTestingController;
   let router: Router;
+  let dialog: jasmine.SpyObj<MatDialog>;
+  /** Was die Rueckfrage vor dem Widerruf antwortet (B3). */
+  let rueckfrage: boolean | undefined;
 
   function starten(returnUrl: string | null = '/einwerfen') {
+    rueckfrage = true;
+    dialog = jasmine.createSpyObj('MatDialog', ['open']);
+    dialog.open.and.callFake((() => ({ afterClosed: () => of(rueckfrage) })) as any);
     TestBed.configureTestingModule({
       imports: [EinwilligungComponent],
       providers: [
@@ -41,6 +49,7 @@ describe('EinwilligungComponent', () => {
         },
       ],
     });
+    TestBed.overrideProvider(MatDialog, { useValue: dialog });
     fixture = TestBed.createComponent(EinwilligungComponent);
     http = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
@@ -159,6 +168,17 @@ describe('EinwilligungComponent', () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
     });
 
+    // UX-Review B2: wer bewusst ohne weitergeht, wird nicht bei jedem Start wieder hergefuehrt
+    it('ohne Einwilligung weiter merkt sich die Entscheidung mit dem gezeigten Wortlaut', () => {
+      starten('/einwerfen');
+      const merken = spyOn(TestBed.inject(Art9EinwilligungService), 'ohneMerken');
+      standLiefern(stand());
+
+      knopf('Ohne Einwilligung weiter').click();
+
+      expect(merken).toHaveBeenCalledWith(WORTLAUT.kennung);
+    });
+
     it('fuehrt nur innerhalb der App zurueck', () => {
       starten('//fremd.example/');
       standLiefern(stand());
@@ -205,6 +225,46 @@ describe('EinwilligungComponent', () => {
       expect(text).toContain('Dein Konto bleibt.');
       expect(text).toContain('Was du nach einer neuen Einwilligung beiträgst, bleibt davon unberührt.');
       expect(text).not.toContain('bleibt, bis du es löschst');
+    });
+
+    // UX-Review B3: Rueckfrage mit den Folgen, bevor etwas geloescht wird
+    it('fragt vor dem Widerruf nach und nennt die Folgen', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+
+      knopf('Einwilligung widerrufen').click();
+
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      const daten = dialog.open.calls.mostRecent().args[1]!.data as typeof WIDERRUF_FRAGE;
+      expect(daten.ja).toBe('Widerrufen');
+      expect(daten.nein).toBe('Abbrechen');
+      expect(daten.text).toContain('Bewertungen werden sofort gelöscht');
+      expect(daten.text).toContain('sieben Tagen');
+      http.expectOne({ method: 'DELETE', url: URL }).flush(null, { status: 204, statusText: 'No Content' });
+      standLiefern(stand({ wortlaut: '2026-11-05', widerrufen_am: '2026-11-06T09:30:00Z' }));
+    });
+
+    it('widerruft nach Abbrechen nicht', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+      rueckfrage = false;
+
+      knopf('Einwilligung widerrufen').click();
+      fixture.detectChanges();
+
+      http.expectNone({ method: 'DELETE', url: URL });
+      expect(knopf('Einwilligung widerrufen').disabled).toBeFalse();
+    });
+
+    it('widerruft nicht, wenn die Rueckfrage ohne Antwort schliesst (Escape)', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+      rueckfrage = undefined;
+
+      knopf('Einwilligung widerrufen').click();
+
+      http.expectNone({ method: 'DELETE', url: URL });
+      expect(dialog.open).toHaveBeenCalledTimes(1);
     });
 
     it('widerrufen fragt danach erneut, ohne Haekchen', () => {

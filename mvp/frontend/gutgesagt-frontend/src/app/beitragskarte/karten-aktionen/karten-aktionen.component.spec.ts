@@ -500,10 +500,10 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
     });
 
-    it('meldet "Erfolgreich kopiert!" ohne Luecke', () => {
+    it('meldet "Kopiert – jetzt unter dem Post einfügen." ohne Luecke', () => {
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
     });
 
     it('erinnert mit Platzhalter ans Ausfuellen der Luecke (#640, R38)', () => {
@@ -539,7 +539,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
       expect(usage.gepostetAngeboten).toHaveBeenCalledWith('test-user');
       antwort.next(true);
       expect(snackBar.open).toHaveBeenCalledWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
@@ -560,7 +560,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledOnceWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
       expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
     });
 
@@ -601,10 +601,10 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       );
     });
 
-    it('bleibt ohne Angebot bei „Erfolgreich kopiert!“', () => {
+    it('bleibt ohne Angebot beim Kopier-Hinweis ohne Luecke', () => {
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
       expect(usage.gepostetMelden).not.toHaveBeenCalled();
     });
 
@@ -624,7 +624,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.kopieren();
 
       expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
-      expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
     });
   });
 

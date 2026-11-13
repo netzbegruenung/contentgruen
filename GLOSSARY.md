@@ -553,6 +553,10 @@ _Avoid_: Consent, Opt-in, Datenschutz-Häkchen, Zustimmung (die gilt den Nutzung
 Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitragen dürfen.
 _Avoid_: Gast, anonymer Nutzer
 
+**Teaser**:
+Ein Mitmach-Element, das Besucher sehen, obwohl sie es erst nach dem Anmelden benutzen können: ausgegraut oder mit einem kurzen Hinweis zur Anmeldung, etwa die Kacheln „Einwerfen“ und „Beitrag verfassen“ mit dem Zusatz „mit Konto“, die Stimm-Knöpfe (ein Tipp zeigt „Bitte melde dich an, um abzustimmen“ mit „Anmelden“) und die Führung „Selbst beitragen“. Grundsatz (Entscheidung Maintainer, 13.11.2026, UX-Review): Mitmach-Elemente werden Besuchern als Teaser gezeigt, nicht ausgeblendet, damit sie sehen, was mit Konto geht. Ein Teaser führt zur Anmeldung und danach an dieselbe Stelle zurück; er speichert nichts. Dasselbe Muster gilt für Angemeldete ohne Art.-9-Einwilligung: Formulare zeigen einen Hinweis mit „Einwilligen“, statt zu verschwinden.
+_Avoid_: Anteaser, Lockangebot
+
 **Profilbild**:
 Das Bild, das Mitwirkende im Kopf der Seite vertritt. Ohne eigene Wahl ist es fest aus der Kennung abgeleitet und nirgends gespeichert; wählen Mitwirkende im Profilmenü selbst eines der Bilder, merkt sich ihr Browser diese Wahl, bis sie sie zurücksetzen. Die Auswahl ist nicht nach Geschlecht eingeteilt. Besucher haben kein Profilbild, nur einen Platzhalter.
 _Avoid_: Avatar (in Texten für Nutzende), Profilfoto

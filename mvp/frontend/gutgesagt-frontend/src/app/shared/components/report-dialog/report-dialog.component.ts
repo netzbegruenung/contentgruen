@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ModerationService } from '../../../services/moderation.service';
 import { MELDEGRUENDE, MeldegrundWert, brauchtBegruendung } from '../../meldegruende';
 import { istEmailAdresse } from '../../email-adresse';
+import { AuthService } from '../../../auth/auth.service';
 
 interface FehlendeAngabe {
   text: string;
@@ -32,7 +33,11 @@ export const MELDER_EMAIL_MAX = 254;
 /**
  * Der Meldedialog. Der DSA gilt fuer Gut gesagt (#438).
  * Deshalb fragt er die Angaben nach Art. 16 Abs. 2 DSA ab: Name und E-Mail-Adresse
- * freiwillig, die Erklaerung guten Glaubens als Pflicht. Bestaetigt wird der Eingang
+ * freiwillig, die Erklaerung guten Glaubens als Pflicht. Angemeldete fragt er nicht
+ * nach dem Namen (UX-Review B17): Die Meldung haengt an ihrem Konto
+ * (``reported_by_user_id``). Die E-Mail-Adresse bleibt fuer sie freiwillig, weil der
+ * Suchdienst Bestaetigung und Entscheidung nur an eine hier angegebene Adresse
+ * schickt, nicht an die des Kontos. Bestaetigt wird der Eingang
  * hier; mit E-Mail-Adresse schickt der Suchdienst die Bestaetigung und spaeter die
  * Entscheidung auch per Mail (#493, services/meldung_mitteilen.py).
  */
@@ -78,12 +83,17 @@ export class ReportDialogComponent {
   readonly reasons = MELDEGRUENDE;
   readonly nameMax = MELDER_NAME_MAX;
   readonly emailMax = MELDER_EMAIL_MAX;
+  /** Angemeldet: kein Namensfeld, die Meldung haengt am Konto. */
+  readonly angemeldet: boolean;
 
   constructor(
     public dialogRef: MatDialogRef<ReportDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ReportDialogData,
-    private moderationService: ModerationService
-  ) {}
+    private moderationService: ModerationService,
+    authService: AuthService,
+  ) {
+    this.angemeldet = !!authService.getUserInfo()?.isAuthenticated;
+  }
 
   get emailUngueltig(): boolean {
     const email = this.melderEmail.trim();
@@ -155,7 +165,7 @@ export class ReportDialogComponent {
       contentType: this.data.contentType,
       reason: grund,
       description: this.description || undefined,
-      melderName: this.melderName.trim() || null,
+      melderName: this.angemeldet ? null : this.melderName.trim() || null,
       melderEmail,
       guterGlaube: true,
     }).subscribe({

@@ -187,6 +187,61 @@ describe('UsageTrackingService', () => {
     });
   });
 
+  // UX-Review B20: Bei ausgeschalteten Punkten nach dem ersten 404 nicht weiter fragen
+  describe('Schalter aus (B20)', () => {
+    const PUNKTE = `${environment.baseUrl}/api/v1/usage/users/me/punkte`;
+    const MEILENSTEINE = `${environment.baseUrl}/api/v1/usage/users/me/meilensteine`;
+    const SICHTBARKEIT = `${environment.baseUrl}/api/v1/usage/users/me/abzeichen-sichtbarkeit`;
+    const weg = { status: 404, statusText: 'Not Found' };
+
+    it('fragt nach einem 404 der Punkte weder Punkte noch Meilensteine noch Sichtbarkeit noch einmal', () => {
+      service.getEigenePunkte().subscribe();
+      http.expectOne(PUNKTE).flush('weg', weg);
+
+      let punkte: unknown = 'unberuehrt';
+      let meilensteine: unknown;
+      let sichtbarkeit: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((p) => (punkte = p));
+      service.getEigeneMeilensteine().subscribe((m) => (meilensteine = m));
+      service.getAbzeichenSichtbarkeit().subscribe((s) => (sichtbarkeit = s));
+
+      http.expectNone(PUNKTE);
+      http.expectNone(MEILENSTEINE);
+      http.expectNone(SICHTBARKEIT);
+      expect(punkte).toBeNull();
+      expect(meilensteine).toEqual([]);
+      expect(sichtbarkeit).toBeNull();
+    });
+
+    it('merkt sich auch ein 404 der Meilensteine', () => {
+      service.getEigeneMeilensteine().subscribe();
+      http.expectOne(MEILENSTEINE).flush('weg', weg);
+
+      let punkte: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((p) => (punkte = p));
+      http.expectNone(PUNKTE);
+      expect(punkte).toBeNull();
+    });
+
+    it('merkt sich ein 404 der Sichtbarkeit, ohne die Punkte abzuschalten', () => {
+      service.getAbzeichenSichtbarkeit().subscribe();
+      http.expectOne(SICHTBARKEIT).flush('weg', weg);
+
+      service.getAbzeichenSichtbarkeit().subscribe();
+      http.expectNone(SICHTBARKEIT);
+      service.getEigenePunkte().subscribe();
+      http.expectOne(PUNKTE).flush({ tun: 0, quests: 0, wirkung: 0, gesamt: 0, sammelt: true });
+    });
+
+    it('fragt nach einem anderen Fehler wieder', () => {
+      service.getEigenePunkte().subscribe();
+      http.expectOne(PUNKTE).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });
+
+      service.getEigenePunkte().subscribe();
+      http.expectOne(PUNKTE).flush({ tun: 0, quests: 0, wirkung: 0, gesamt: 0, sammelt: true });
+    });
+  });
+
   describe('Rückmeldung „Gepostet?“ (#643)', () => {
     const GEPOSTET = `${environment.baseUrl}/api/v1/usage/users/me/gepostet`;
 

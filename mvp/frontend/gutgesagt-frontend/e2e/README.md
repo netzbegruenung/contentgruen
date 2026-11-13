@@ -2,7 +2,8 @@
 
 Prüfen die wichtigsten Szenarien am Handy gegen den laufenden Dev-Stack: Verfassen eines Kommentars,
 einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort auf“ mit neuer Aussage, aus der Suche ergänzen, die Kette im
-Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz
+Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz,
+den Weg ohne Art.-9-Einwilligung (`12-ohne-einwilligung`: widerruft für das Testkonto und willigt danach wieder ein)
 sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seiten und ohne
 Umleitung bei einem 401 der Suche), den Aufruf eines Beitrags per Direktlink und die Darstellung bei
 360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur). Nicht in CI: Die Tests brauchen den vollen Stack.

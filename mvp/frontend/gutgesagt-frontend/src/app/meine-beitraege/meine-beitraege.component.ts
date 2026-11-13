@@ -196,6 +196,15 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     return `${this.totalRecords} ${beitraege} · ${nutzung}× genutzt`;
   }
 
+  /**
+   * Beitraege da, aber noch nie genutzt (UX-Review B11): dann erklaert die Seite, was
+   * „genutzt“ heisst, und nennt den naechsten Schritt. Nur mit der Statistik ueber alle
+   * Seiten, nicht mit der Summe dieser Seite.
+   */
+  get nochNichtGenutzt(): boolean {
+    return this.karten.length > 0 && this.nutzungsstatistik?.total_usage_count === 0;
+  }
+
   calculateTotalUsage(beitraege: ContentResult[]) {
     this.totalUsageCount = beitraege.reduce((sum, item) => {
       return sum + (item.usage_count || 0);

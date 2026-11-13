@@ -62,3 +62,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Erklaerung bei 0 Nutzungen (UX-Review B11) */
+.nutzung-leer {
+  margin: 0 0 var(--spacing-md);
+}

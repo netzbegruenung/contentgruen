@@ -30,6 +30,8 @@ import { KartenDaten, ausEinwurf, istSichtbar, istVerwerfbar } from '../beitrags
 import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -59,7 +61,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 @Component({
   selector: 'app-destillieren',
   standalone: true,
-  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent, Cc0HinweisComponent],
+  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent, Cc0HinweisComponent, EinwilligungHinweisComponent],
   templateUrl: './destillieren.component.html',
   styleUrls: ['./destillieren.component.css'],
 })
@@ -454,6 +456,11 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   private speicherfehler(error: Error): void {
     this.logger.error('Satz konnte nicht gespeichert werden', error);
     this.arbeitet = false;
+    // Ohne Einwilligung sagt der Hinweiskasten oben, was zu tun ist (B4).
+    if (einwilligungFehlt(error)) {
+      this.fehler = null;
+      return;
+    }
     // Ein zu langer Satz ist kein Netzfehler - "versuche es erneut" waere hier
     // der falsche Rat, kuerzen hilft.
     this.fehler =

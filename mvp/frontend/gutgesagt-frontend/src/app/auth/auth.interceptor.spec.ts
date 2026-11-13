@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { AuthInterceptor } from './auth.interceptor';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 describe('AuthInterceptor', () => {
   let httpClient: HttpClient;
@@ -161,6 +162,20 @@ describe('AuthInterceptor', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], {
       queryParams: { returnUrl: '/einwerfen?von=fangkorb' },
     });
+  }));
+
+  // UX-Review B4: Hat die Seite einen Hinweiskasten, zeigt der den Hinweis; keine Snackbar dazu
+  it('zeigt keinen Snackbar-Hinweis, wenn die Seite einen Hinweiskasten hat, und meldet den Zustand', fakeAsync(() => {
+    const zustand = TestBed.inject(Art9EinwilligungZustand);
+    const abmelden = zustand.hinweisAnmelden();
+    httpClient.post('/api/v1/einwuerfe', {}).subscribe({ error: () => undefined });
+
+    httpMock.expectOne('/api/v1/einwuerfe').flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(snackBar.open).not.toHaveBeenCalled();
+    expect(zustand.wert).toBe('fehlt');
+    abmelden();
   }));
 
   it('leitet bei anderem 403 nicht um', fakeAsync(() => {

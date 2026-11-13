@@ -16,6 +16,8 @@ import { typFarbe } from '../shared/content-type-registry';
 import { PLATTFORMEN, Plattform, plattformAusUrl, plattformName } from '../shared/plattform';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
@@ -62,6 +64,7 @@ export const SPEICHERN_FEHLGESCHLAGEN =
   styleUrls: ['./add-post.component.scss'],
   imports: [
     ...SHARED_IMPORTS,
+    EinwilligungHinweisComponent,
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
@@ -238,6 +241,11 @@ export class AddPostComponent implements OnChanges {
         // Die Eingaben bleiben stehen; der Knopf speichert dasselbe noch einmal.
         this.logger.error('Error saving post', error);
         this.speichert = false;
+        // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
+        if (einwilligungFehlt(error)) {
+          this.fehler = null;
+          return;
+        }
         this.validierung = validierungsMeldung(error);
         this.fehler = this.validierung ?? SPEICHERN_FEHLGESCHLAGEN;
       },

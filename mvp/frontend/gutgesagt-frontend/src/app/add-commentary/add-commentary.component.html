@@ -14,6 +14,8 @@
 
     <div class="content-wrapper">
         <div class="form-column">
+            <!-- Ohne Art.-9-Einwilligung: Hinweis mit Weg dorthin; die Eingabe uebersteht ihn (B4) -->
+            <app-einwilligung-hinweis [formular]="commentaryForm"></app-einwilligung-hinweis>
             <form [formGroup]="commentaryForm" (ngSubmit)="absendenGeklickt()" class="beitrag-formular" novalidate>
                 <app-antwort-auf [aussage]="aussageAusAdresse" [hinweis]="aussageHinweis"
                                  (aussageChange)="aussageSetzen($event)">

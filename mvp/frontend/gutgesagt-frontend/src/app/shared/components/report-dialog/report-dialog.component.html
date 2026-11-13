@@ -27,7 +27,8 @@
         [placeholder]="begruendungPflicht ? 'Welches Gesetz verletzt er, und wodurch?' : 'Was genau stimmt nicht?'"></textarea>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <!-- Angemeldete nicht nach dem Namen fragen: Die Meldung haengt an ihrem Konto (B17) -->
+    <mat-form-field *ngIf="!angemeldet" appearance="outline" class="full-width">
       <mat-label>Dein Name (optional)</mat-label>
       <input matInput
              name="melder_name"
@@ -64,7 +65,7 @@
     </p>
 
     <p class="hinweis">
-      Name und E-Mail-Adresse sehen nur Admins. Mehr dazu in der
+      {{ angemeldet ? 'Deine E-Mail-Adresse sehen nur Admins.' : 'Name und E-Mail-Adresse sehen nur Admins.' }} Mehr dazu in der
       <a href="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
     </p>
 
