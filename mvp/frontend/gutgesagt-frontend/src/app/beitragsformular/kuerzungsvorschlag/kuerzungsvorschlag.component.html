@@ -4,7 +4,7 @@
     <div aria-live="polite">
         <div *ngIf="stand === 'vorschlag'" class="kuerzungsvorschlag-box">
             <p class="kuerzungsvorschlag-text">{{ vorschlag }}</p>
-            <p class="kuerzungsvorschlag-fuss">Aus deinen eigenen Sätzen, ohne KI · {{ vorschlag.length }} Zeichen</p>
+            <p class="kuerzungsvorschlag-fuss">Aus deinen eigenen Sätzen, ohne generative KI · {{ vorschlag.length }} Zeichen</p>
             <div class="kuerzungsvorschlag-aktionen">
                 <button type="button" class="text-link" (click)="annehmen()">Übernehmen</button>
                 <button type="button" class="text-link" (click)="verwerfen()">Verwerfen</button>

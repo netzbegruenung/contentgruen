@@ -20,4 +20,9 @@
             </button>
         </div>
     </form>
+    <!-- Leise unter dem Feld, ohne Symbol: Information, keine Warnung (Persona-Test Gerd) -->
+    <p class="such-hinweis">
+        {{ suchhinweis }}
+        <a routerLink="/datenschutz" [fragment]="suchanfragenAbschnitt">Mehr dazu im Datenschutz</a>
+    </p>
 </div>

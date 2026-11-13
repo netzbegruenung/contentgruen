@@ -4,9 +4,10 @@ import { MatInputModule } from '@angular/material/input';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideRouter } from '@angular/router';
 import { NavigationService } from '../services/navigation.service';
 
-import { SearchComponent } from './search.component';
+import { SUCHANFRAGEN_ABSCHNITT, SUCHHINWEIS, SearchComponent } from './search.component';
 
 describe('SearchComponent', () => {
   let component: SearchComponent;
@@ -26,7 +27,8 @@ describe('SearchComponent', () => {
         { provide: NavigationService, useValue: navigationServiceMock },
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideAnimations()
+        provideAnimations(),
+        provideRouter([])
       ]
     })
     .compileComponents();
@@ -48,6 +50,32 @@ describe('SearchComponent', () => {
     fixture.componentRef.setInput('compactMode', true);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('mat-label').textContent.trim()).toBe('Text oder Post einfügen');
+  });
+
+  // Persona-Test Gerd: dass der Suchtext gespeichert wird, stand nur in der Datenschutzerklärung
+  describe('Hinweis unter dem Feld', () => {
+    function hinweis(): HTMLElement {
+      return fixture.nativeElement.querySelector('.such-hinweis');
+    }
+
+    it('sagt, dass Suchtexte ohne Namen gespeichert und erst nach Prüfung sichtbar werden', () => {
+      const text = hinweis().textContent!.replace(/\s+/g, ' ');
+      expect(text).toContain(SUCHHINWEIS);
+      expect(SUCHHINWEIS).toContain('ohne deinen Namen');
+      expect(SUCHHINWEIS).toContain('nach Prüfung durch das Moderationsteam');
+    });
+
+    it('verlinkt den Abschnitt „Deine Suchanfragen“ der Datenschutzerklärung', () => {
+      const link = hinweis().querySelector('a') as HTMLAnchorElement;
+      expect(link.textContent!.trim()).toBe('Mehr dazu im Datenschutz');
+      expect(link.getAttribute('href')).toBe(`/datenschutz#${SUCHANFRAGEN_ABSCHNITT}`);
+    });
+
+    it('steht auch über den Treffern (compactMode)', () => {
+      fixture.componentRef.setInput('compactMode', true);
+      fixture.detectChanges();
+      expect(hinweis()).not.toBeNull();
+    });
   });
 
   // R55 (#644): Fokus nur, wenn der Start es verlangt

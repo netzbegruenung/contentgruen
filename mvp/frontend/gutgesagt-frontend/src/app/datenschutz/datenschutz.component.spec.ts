@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { abschnitt as abschnittIn, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
+import { SUCHANFRAGEN_ABSCHNITT } from '../search/search.component';
 
 /**
  * Die Datenschutzerklaerung beschreibt, was die App tut (#222). Geprueft wird der Text,
@@ -258,6 +259,12 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('solange Punkte ausgeschaltet sind');
       expect(text).toContain('hat keine Folgen für dich');
     });
+  });
+
+  // Sprungziel des Hinweises unter dem Suchfeld (search.component.ts, SUCHANFRAGEN_ABSCHNITT)
+  it('trägt am Abschnitt „Deine Suchanfragen“ die Sprungmarke des Suchfelds', () => {
+    const ziel = seite.querySelector(`#${SUCHANFRAGEN_ABSCHNITT}`)!;
+    expect(ziel.querySelector('h2')!.textContent!.trim()).toBe('Deine Suchanfragen');
   });
 
   describe('Gegenlesen (#358)', () => {

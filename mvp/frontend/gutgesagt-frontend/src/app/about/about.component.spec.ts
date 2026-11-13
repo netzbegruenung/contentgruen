@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { AboutComponent } from './about.component';
 import { ORGANISATION } from '../shared/organisation';
+import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
 import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
 /** Text eines Elements mit einfachen Leerzeichen, damit Umbrüche im Template keine Rolle spielen. */
@@ -76,8 +77,23 @@ describe('AboutComponent', () => {
 
     expect(text).toContain('Gründungsteam');
     expect(text).not.toContain('Startkont');
-    expect(text).toContain('jeden Beitrag verantwortet ein Mensch');
+    expect(text).toContain(KEINE_GENERATIVE_KI);
     expect(text).toContain('Jeder Beitrag beginnt bei 0 Stimmen und 0 Nutzungen');
+  });
+
+  // Persona-Test Gerd: „KI schlägt höchstens etwas vor“ las er als Hintertür
+  it('sagt zu KI dasselbe wie die Hilfe und nennt die Modelle', () => {
+    const text = einzeilig(seite);
+    const ki = einzeilig(seite.querySelector('.technik-ki')!);
+    const modelle = einzeilig(seite.querySelector('.technik-modelle')!);
+
+    expect(text).not.toContain('KI schlägt');
+    expect(text).not.toContain('KI hilft');
+    expect(ki).toContain(KEINE_GENERATIVE_KI);
+    expect(ki).toContain(SUCHE_MIT_SPRACHMODELLEN);
+    expect(modelle).toContain('multilingual-e5-base');
+    expect(modelle).toContain('mDeBERTa-v3');
+    expect(modelle).toContain('nach festen Regeln');
   });
 
   it('nennt CC0 und verlinkt die Nutzungsbedingungen', () => {

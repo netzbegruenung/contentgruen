@@ -101,6 +101,7 @@ describe('GegenlesenComponent', () => {
     expect(siegelText()).toBe('Siegel: Güte 10 von 10');
     expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(0);
     expect(element().textContent).toContain('Nichts aufgefallen');
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe('Nach festen Regeln, ohne generative KI');
   }));
 
   it('dreht das Siegel nach oben, wenn der Text besser wird', fakeAsync(() => {
@@ -127,6 +128,17 @@ describe('GegenlesenComponent', () => {
 
     expect(siegelText()).toBe('Siegel: neu, noch keine Güte');
     expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(0);
+  }));
+
+  // Persona-Test Gerd: „Wer liest mit, eine KI?“ – die Antwort stand erst nach dem Tippen da
+  it('sagt schon vor dem Tippen, dass es nach festen Regeln liest, ohne generative KI', fakeAsync(() => {
+    schreibe('', '');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectNone(PFAD);
+
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe(
+      'Schreib los, dann liest es mit: nach festen Regeln, ohne generative KI.',
+    );
   }));
 
   it('verschwindet still, wenn der Dienst nicht antwortet', fakeAsync(() => {

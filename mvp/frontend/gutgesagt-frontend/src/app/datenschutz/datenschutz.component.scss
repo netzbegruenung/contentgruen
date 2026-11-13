@@ -1,1 +1,6 @@
 @use '../shared/styles/legal-pages.scss' as *;
+
+/* Sprungziel vom Suchfeld (#suchanfragen): Mobil klebt der Kopf oben und verdeckte sonst die Überschrift */
+.legal-section[id] {
+  scroll-margin-top: calc(var(--header-height-desktop) + var(--spacing-md));
+}
