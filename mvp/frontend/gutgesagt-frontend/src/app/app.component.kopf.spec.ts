@@ -10,6 +10,7 @@ import { BehaviorSubject, of, throwError } from 'rxjs';
 import { AppComponent } from './app.component';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { NavigationService } from './services/navigation.service';
+import { FarbschemaService } from './services/farbschema.service';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
 import {
   ALTE_PROFILBILD_SCHLUESSEL,
@@ -119,6 +120,8 @@ describe('AppComponent - Desktop-Kopf', () => {
       const komponente = fixture.componentInstance;
       const anmelden = spyOn(komponente, 'login');
       const anmeldenMitZiel = spyOn(komponente, 'loginWithReturnUrl');
+      // Der Umschalter hell/dunkel setzt das Attribut am Testdokument und den localStorage
+      spyOn(TestBed.inject(FarbschemaService), 'umschalten');
 
       const klickbar = kopf().querySelectorAll('button, a, [role="button"], [tabindex], .avatar-container, img');
       klickbar.forEach((e) => (e as HTMLElement).click());
