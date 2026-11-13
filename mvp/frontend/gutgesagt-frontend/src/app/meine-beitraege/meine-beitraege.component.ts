@@ -28,7 +28,7 @@ import { StatementService } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
 import { beantwortenParams } from '../hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
-import { AussagekarteComponent } from '../shared/aussagekarte/aussagekarte.component';
+import { AussagekarteComponent, jeAussage } from '../shared/aussagekarte/aussagekarte.component';
 
 /** So viele unbeantwortete Aussagen zeigt der leere Zustand als ersten Schritt (#645). */
 export const ERSTE_SCHRITTE = 3;
@@ -95,7 +95,7 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   unbeantworteteAussagen: UnbeantworteteAussage[] = [];
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
-  readonly beantwortenParams = beantwortenParams;
+  readonly beantwortenParams = jeAussage(beantwortenParams);
 
   constructor(
     private meineBeitraegeService: MeineBeitraegeService,

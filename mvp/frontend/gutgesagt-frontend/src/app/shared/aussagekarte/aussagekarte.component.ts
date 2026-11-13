@@ -6,7 +6,9 @@ import {
   ElementRef,
   Input,
   NgZone,
+  OnChanges,
   OnDestroy,
+  SimpleChanges,
   QueryList,
   ViewChildren,
 } from '@angular/core';
@@ -27,6 +29,22 @@ import { MatIconModule } from '@angular/material/icon';
  * Gekuerzt wird nur sichtbar: Screenreader hoeren ueber aria-describedby am
  * Knopf immer den vollen Text.
  */
+/**
+ * Merkt sich ein Ergebnis je statement_id, etwa die Query-Parameter von "Antworten":
+ * Ein neues Objekt bei jedem Durchlauf liesse OnPush in der Karte ins Leere laufen.
+ */
+export function jeAussage<A extends { statement_id: string }, E>(bilden: (aussage: A) => E): (aussage: A) => E {
+  const gemerkt = new Map<string, E>();
+  return (aussage) => {
+    let wert = gemerkt.get(aussage.statement_id);
+    if (wert === undefined) {
+      wert = bilden(aussage);
+      gemerkt.set(aussage.statement_id, wert);
+    }
+    return wert;
+  };
+}
+
 @Component({
   selector: 'app-aussagekarte',
   standalone: true,
@@ -35,7 +53,7 @@ import { MatIconModule } from '@angular/material/icon';
   templateUrl: './aussagekarte.component.html',
   styleUrls: ['./aussagekarte.component.scss'],
 })
-export class AussagekarteComponent implements AfterViewInit, OnDestroy {
+export class AussagekarteComponent implements AfterViewInit, OnChanges, OnDestroy {
   /** Text der Aussage, steht als Titel im Kopfband. */
   @Input({ required: true }) text = '';
   /** Id des Titels; Karte (aria-labelledby) und "Antworten" (aria-describedby) verweisen darauf. */
@@ -61,6 +79,13 @@ export class AussagekarteComponent implements AfterViewInit, OnDestroy {
     private readonly zone: NgZone,
   ) {}
 
+  ngOnChanges(changes: SimpleChanges): void {
+    // Anderer Text: nach dem Rendern neu messen, ob "Ganz lesen" noch gebraucht wird
+    if (changes['text'] && !changes['text'].firstChange) {
+      this.spaeterMessen();
+    }
+  }
+
   ngAfterViewInit(): void {
     const element = this.titel.first?.nativeElement;
     if (!element) {
@@ -79,6 +104,24 @@ export class AussagekarteComponent implements AfterViewInit, OnDestroy {
 
   umschalten(): void {
     this.aufgeklappt = !this.aufgeklappt;
+    this.cdr.markForCheck();
+    // Waehrend die Aussage offen war, kann das Fenster breiter geworden sein:
+    // nach dem Zuklappen neu messen, sonst bliebe "Ganz lesen" grundlos stehen.
+    if (!this.aufgeklappt) {
+      this.spaeterMessen();
+    }
+  }
+
+  /** Nach dem naechsten Rendern messen, wie fassungWaehlen in der Beitragskarte. */
+  private spaeterMessen(): void {
+    requestAnimationFrame(() =>
+      this.zone.run(() => {
+        const element = this.titel?.first?.nativeElement;
+        if (element) {
+          this.messen(element);
+        }
+      }),
+    );
   }
 
   /** Zugeklappt fehlt etwas, wenn der Text hoeher ist als die vier sichtbaren Zeilen. */

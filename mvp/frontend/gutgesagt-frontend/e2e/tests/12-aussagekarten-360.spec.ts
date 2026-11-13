@@ -29,9 +29,22 @@ test('Hier fehlt eine Antwort: lange Aussage ohne Querscrollen, "Ganz lesen" per
   expect(breit).toBeLessThanOrEqual(sichtbar);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 
+  const titel = karte.locator('.aussagekarte-titel');
+  await expect(titel).toHaveClass(/aussagekarte-titel--zu/);
+  const hoeheZu = (await titel.boundingBox())!.height;
+
   const knopf = karte.getByRole('button', { name: 'Ganz lesen' });
   await expect(knopf).toHaveAttribute('aria-expanded', 'false');
   await knopf.focus();
   await page.keyboard.press('Enter');
   await expect(karte.getByRole('button', { name: 'Weniger zeigen' })).toHaveAttribute('aria-expanded', 'true');
+
+  // Aufgeklappt: ganz zu sehen, hoeher als vorher, und noch immer kein Querscrollen
+  await expect(titel).not.toHaveClass(/aussagekarte-titel--zu/);
+  expect((await titel.boundingBox())!.height).toBeGreaterThan(hoeheZu);
+  const offen = await page.locator('main').evaluate((element) => ({
+    breit: element.scrollWidth,
+    sichtbar: element.clientWidth,
+  }));
+  expect(offen.breit).toBeLessThanOrEqual(offen.sichtbar);
 });

@@ -9,7 +9,18 @@
                        [themen]="themen" [aktiv]="aktivesThema"
                        (aktivChange)="filtern($event)"></app-themen-filter>
 
-    <p *ngIf="ladefehler" class="hinweis">Die Aussagen konnten nicht geladen werden.</p>
+    <!-- Nie "neu laden": Die Seite versucht es selbst wieder (LadeWiederholung), der Knopf
+         zieht den naechsten Versuch vor. Angesagt wird nur ueber die Live-Region. -->
+    <p class="cdk-visually-hidden" aria-live="polite">{{ ansage }}</p>
+    <div *ngIf="ladefehler" class="ladefehler">
+        <p class="hinweis">
+            Die Aussagen konnten gerade nicht geladen werden.
+            <ng-container *ngIf="erneutLaedt">Neuer Versuch läuft …</ng-container>
+            <ng-container *ngIf="!erneutLaedt && versuchtWeiter">Die Seite versucht es weiter.</ng-container>
+        </p>
+        <button mat-stroked-button type="button" class="erneut-versuchen"
+                [attr.aria-disabled]="erneutLaedt" (click)="erneutVersuchen()">Erneut versuchen</button>
+    </div>
 
     <ng-container *ngIf="aussagen">
         <!-- Inhalte sind Karten: jede Aussage als Aussagekarte, Themen im Koerper der Karte -->

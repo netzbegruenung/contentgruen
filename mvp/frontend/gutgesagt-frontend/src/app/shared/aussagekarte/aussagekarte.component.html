@@ -11,6 +11,7 @@
             </ng-template>
             <button *ngIf="gekuerzt || aufgeklappt" type="button" class="ganz-lesen"
                     [attr.aria-expanded]="aufgeklappt" [attr.aria-controls]="titelId"
+                    [attr.aria-describedby]="titelId"
                     (click)="umschalten()">{{ aufgeklappt ? 'Weniger zeigen' : 'Ganz lesen' }}</button>
         </div>
     </header>

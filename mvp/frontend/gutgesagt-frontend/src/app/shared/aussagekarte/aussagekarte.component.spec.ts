@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { AussagekarteComponent } from './aussagekarte.component';
+import { AussagekarteComponent, jeAussage } from './aussagekarte.component';
 
 const LANG = 'Windräder töten die Vögel, ' + 'und überhaupt ist alles viel zu teuer und zu laut und zu hoch, '.repeat(8);
 
@@ -9,7 +9,7 @@ const LANG = 'Windräder töten die Vögel, ' + 'und überhaupt ist alles viel z
   standalone: true,
   imports: [AussagekarteComponent],
   template: `
-    <div style="width: 260px">
+    <div [style.width.px]="breite">
       <app-aussagekarte [text]="text" titelId="aussage-a-1" [ebene]="ebene" [knopf]="knopf"
                         [gesucht]="gesucht" antwortenPfad="/workflow/add-commentary"
                         [antwortenParams]="{ aussage: 'a-1' }">
@@ -23,6 +23,12 @@ class GastgeberComponent {
   ebene: 2 | 3 = 2;
   knopf: 'haupt' | 'neben' = 'haupt';
   gesucht = '';
+  breite = 260;
+}
+
+/** Ein Frame warten, damit ResizeObserver und requestAnimationFrame durchlaufen. */
+function frame(): Promise<void> {
+  return new Promise((fertig) => requestAnimationFrame(() => setTimeout(fertig, 0)));
 }
 
 describe('AussagekarteComponent', () => {
@@ -102,5 +108,61 @@ describe('AussagekarteComponent', () => {
     expect(titel.classList).toContain('aussagekarte-titel--zu');
     // Gekürzt wird nur sichtbar: der volle Text steht weiter im Titel
     expect(titel.textContent).toContain('zu hoch, und überhaupt');
+  });
+
+  it('nimmt "Ganz lesen" zurück, wenn die Karte breiter wird und nichts mehr fehlt', async () => {
+    const el = erstellen({ text: LANG });
+    await frame();
+    fixture.detectChanges();
+    expect(el.querySelector('.ganz-lesen')).not.toBeNull();
+
+    fixture.componentInstance.breite = 4000;
+    fixture.detectChanges();
+    await frame();
+    await frame();
+    fixture.detectChanges();
+    expect(el.querySelector('.ganz-lesen')).toBeNull();
+  });
+
+  it('misst nach dem Zuklappen neu: breiter gewordene Karte ohne "Ganz lesen"', async () => {
+    const el = erstellen({ text: LANG });
+    await frame();
+    fixture.detectChanges();
+    (el.querySelector('.ganz-lesen') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    fixture.componentInstance.breite = 4000;
+    fixture.detectChanges();
+    await frame();
+    (el.querySelector('.ganz-lesen') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    await frame();
+    await frame();
+    fixture.detectChanges();
+    expect(el.querySelector('.ganz-lesen')).toBeNull();
+  });
+
+  it('beschreibt "Ganz lesen" mit der Aussage', () => {
+    const el = erstellen({ text: LANG });
+    fixture.detectChanges();
+    const knopf = el.querySelector('button.ganz-lesen') as HTMLButtonElement;
+    expect(knopf.getAttribute('aria-describedby')).toBe('aussage-a-1');
+  });
+
+  it('meldet den ResizeObserver beim Zerstören ab', () => {
+    const abmelden = spyOn(ResizeObserver.prototype, 'disconnect').and.callThrough();
+    erstellen();
+    fixture.destroy();
+    expect(abmelden).toHaveBeenCalled();
+  });
+});
+
+describe('jeAussage', () => {
+  it('bildet das Ergebnis je statement_id nur einmal', () => {
+    const bilden = jasmine.createSpy('bilden').and.callFake((a: { statement_id: string }) => ({ aussage: a.statement_id }));
+    const params = jeAussage(bilden);
+    const erstes = params({ statement_id: 'a-1' });
+    expect(params({ statement_id: 'a-1' })).toBe(erstes);
+    expect(params({ statement_id: 'a-2' })).toEqual({ aussage: 'a-2' });
+    expect(bilden).toHaveBeenCalledTimes(2);
   });
 });

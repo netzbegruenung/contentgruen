@@ -483,6 +483,8 @@ describe('MeineBeitraegeComponent', () => {
       ]);
       const antworten = eintraege()[0].querySelector('a.antworten') as HTMLAnchorElement;
       expect(antworten.textContent!.trim()).toBe('Antworten');
+      // Nebenknopf: "Beitragen" bleibt der einzige Hauptknopf der Seite
+      expect(antworten.classList).not.toContain('dark-green-button');
       expect(antworten.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1&von=hier-fehlt-eine-antwort');
       expect(
         (fixture.nativeElement.querySelector('.alle-unbeantworteten') as HTMLAnchorElement).getAttribute('href'),

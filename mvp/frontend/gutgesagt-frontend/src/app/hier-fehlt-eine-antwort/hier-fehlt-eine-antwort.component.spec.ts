@@ -6,6 +6,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { HierFehltEineAntwortComponent } from './hier-fehlt-eine-antwort.component';
 import { environment } from '../../environments/environment';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
+import { LADE_TIMEOUT_MS, WIEDERHOLUNG_MS } from '../shared/lade-wiederholung';
 
 const SPRACHE_URL = `${environment.baseUrl}/api/v1/spracherkennung`;
 const LISTE_URL = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
@@ -140,12 +141,58 @@ describe('HierFehltEineAntwortComponent', () => {
     expect(text()).toContain('Gerade fehlt keine Antwort');
   });
 
-  it('meldet einen Ladefehler', () => {
+  it('meldet einen Ladefehler, ohne zum Neuladen aufzufordern', () => {
     http.expectOne(LISTE_URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
-    expect(text()).toContain('konnten nicht geladen werden');
+    expect(text()).toContain('konnten gerade nicht geladen werden');
+    expect(text()).toContain('Die Seite versucht es weiter.');
+    expect(text()).not.toMatch(/neu laden/i);
+    expect(element().querySelector('[aria-live="polite"]')?.textContent?.trim()).toBe(
+      'Die Aussagen konnten gerade nicht geladen werden.',
+    );
   });
+
+  it('versucht es nach einem Serverfehler von selbst erneut und sagt die Rückkehr an', fakeAsync(() => {
+    http.expectOne(LISTE_URL).flush('kaputt', { status: 503, statusText: 'Unavailable' });
+    fixture.detectChanges();
+    tick(WIEDERHOLUNG_MS[0]);
+    liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 0 }]);
+
+    expect(aussagen().length).toBe(1);
+    expect(element().querySelector('.ladefehler')).toBeNull();
+    expect(element().querySelector('[aria-live="polite"]')?.textContent?.trim()).toBe('Die Aussagen sind wieder da.');
+    fixture.destroy();
+  }));
+
+  it('plant bei einem Fehler, den Warten nicht behebt (403), keinen Versuch; der Knopf lädt sofort', fakeAsync(() => {
+    http.expectOne(LISTE_URL).flush('nein', { status: 403, statusText: 'Forbidden' });
+    fixture.detectChanges();
+    expect(text()).not.toContain('Die Seite versucht es weiter.');
+    tick(WIEDERHOLUNG_MS[WIEDERHOLUNG_MS.length - 1]);
+    http.expectNone(LISTE_URL);
+
+    (element().querySelector('button.erneut-versuchen') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(text()).toContain('Neuer Versuch läuft');
+    liefern([]);
+    expect(element().querySelector('.ladefehler')).toBeNull();
+    fixture.destroy();
+  }));
+
+  it('wertet eine hängende Anfrage nach dem Timeout als Fehler und versucht es erneut', fakeAsync(() => {
+    liefern([]);
+    // Neue Anfrage innerhalb von fakeAsync, damit der Timeout auf der Testuhr laeuft
+    fixture.componentInstance.filtern(null);
+    http.expectOne(LISTE_URL);
+    tick(LADE_TIMEOUT_MS);
+    fixture.detectChanges();
+    expect(text()).toContain('konnten gerade nicht geladen werden');
+    tick(WIEDERHOLUNG_MS[0]);
+    liefern([]);
+    expect(element().querySelector('.ladefehler')).toBeNull();
+    fixture.destroy();
+  }));
 
   describe('Themen', () => {
     it('filtert nach einem Thema und lädt die Liste dafür neu', () => {
