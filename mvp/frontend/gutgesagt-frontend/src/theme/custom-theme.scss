@@ -149,7 +149,15 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --text-body: #4a4a4a;
   --text-muted: #666;
   --text-subtle: #757575;
-  --text-faint: #999;
+  // #6b6b6b statt #999: AA auch auf Beige (--bg-main), --kartenliste-bg und --surface-muted,
+  // auf Weiss 5,33:1 statt 2,85:1 (Designrunde 12.11., Review #663)
+  --text-faint: #6b6b6b;
+
+  // Werte, die nur im Dunkeln abweichen (Gegenstueck im Block html[data-theme='dark'])
+  --link-unterstrich: none;
+  --filter-aktiv-grund: var(--primary-light);
+  --referenz-marke-schrift: white;
+  --knopf-rand-auf-band: transparent;
 
   // Spacing system (8px grid)
   --spacing-xs: 4px;
@@ -262,8 +270,11 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-// Dunkelmodus (#588): folgt der Einstellung des Geraets (prefers-color-scheme), ohne
-// eigenen Schalter. Flaechen neutral Anthrazit, Gruen nur als Akzent (Knoepfe, Links,
+// Dunkelmodus (#588). Welche Palette gilt, steht als data-theme am <html>: gesetzt vom
+// Skript in index.html (eigene Wahl aus dem localStorage, sonst die Einstellung des Geraets)
+// und vom FarbschemaService beim Umschalten. Alles, was im Dunkeln anders aussieht, ist ein
+// Token in diesem Block; eine neue Dunkel-Palette tauscht nur die Werte hier.
+// Flaechen neutral Anthrazit, Gruen nur als Akzent (Knoepfe, Links,
 // Siegel), keine gruen getoenten Flaechen. Knoepfe in Klee statt Tanne, damit sie sich
 // vom dunklen Grund abheben; Schrift hellgrau, Grashalm nur fuer kleine Markierungen.
 $gutgesagt-dark-primary: mat.m2-define-palette($gutgesagt-green-palette, 500, 300, 700);
@@ -275,11 +286,16 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
   ),
 ));
 
-@media (prefers-color-scheme: dark) {
+html {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
   @include mat.all-component-colors($gutgesagt-dark-theme);
 
-  :root {
+  & {
     color-scheme: dark;
+    // Palette n2 (Entscheidung 13.11.): leicht gruenliche Anthrazit-Flaechen, Such-Band in Moos
 
     // Schrift, Ueberschriften und Links hellgrau statt Grashalm ("zu limonig", 07.11.);
     // Gruen bleibt Knopf-Fuellung (Klee) und kleine Markierung (Grashalm).
@@ -288,19 +304,19 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --primary-fill: #008939;
     --akzent-tanne: #8abd24;
     --akzent-klee: #8abd24;
-    --linie-tanne: #5c5c5c;
-    --linie-klee: #5c5c5c;
+    --linie-tanne: #6a6f6b;
+    --linie-klee: #6a6f6b;
 
-    --accent-light: #3a3a3a; // neutral: Themen-Marken sind Flaechen, kein Akzent
+    --accent-light: #373b38; // neutral: Themen-Marken sind Flaechen, kein Akzent
 
-    --bg-main: #1c1c1c;
-    --bg-card: #262626;
-    --bg-surface: #262626;
-    --surface-elevated: #2c2c2c;
-    --surface-variant: #2a2a2a;
-    --surface-muted: #2e2e2e;
-    --surface-pressed: #353535;
-    --surface-glaze: rgba(38, 38, 38, 0.85);
+    --bg-main: #1e1f1e;
+    --bg-card: #282a29;
+    --bg-surface: #282a29;
+    --surface-elevated: #2e302f;
+    --surface-variant: #2b2d2c;
+    --surface-muted: #303231;
+    --surface-pressed: #373938;
+    --surface-glaze: rgba(40, 42, 41, 0.85);
 
     --text-primary: rgba(255, 255, 255, 0.87);
     --text-secondary: rgba(255, 255, 255, 0.66);
@@ -318,8 +334,8 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --error-strong: #ff8a80;
     --error-main: #ff8a80;
     --error-tint: rgba(239, 83, 80, 0.14);
-    --success-bg: #2e2e2e;
-    --success-faint: #2a2a2a;
+    --success-bg: #303231;
+    --success-faint: #2b2d2c;
     --warning-bg: #3a2f1c;
     --warning-color: #ffb74d;
     --warning-border: #ffa726;
@@ -343,31 +359,39 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --trend-gleich: var(--warning-color);
 
     // Beitragstypen: dunkle, fast neutrale Baender; unterscheidbar bleiben sie ueber das Symbol
-    --commentary-bg: #303030;
-    --commentary-bg-end: #383838;
-    --generictext-bg: #2b3138;
+    --commentary-bg: #2f3430;
+    --commentary-bg-end: #373d38;
+    --generictext-bg: #2b3238;
     --generictext-bg-end: #323a43;
-    --image-bg: #32302d;
-    --image-bg-end: #3a3834;
-    --post-bg: #372f29;
-    --post-bg-end: #40372f;
-    --statement-bg: #2c2c2c;
-    --kartenliste-bg: #171717;
-    --einwurf-grund: #2a2926;
+    --image-bg: #33312d;
+    --image-bg-end: #3b3934;
+    --post-bg: #382f29;
+    --post-bg-end: #41372f;
+    --statement-bg: #2e302f;
+    --kartenliste-bg: #191a19;
+    --einwurf-grund: #2b2a26;
 
     // Such-Band: helleres Anthrazit statt Leuchtgelb; nur der Rahmen des Lichtkegels bleibt gelb
-    --such-band: #303030;
+    --such-band: #2e3c19;
     --rundgang-kegel: #d8e05a;
-    --rundgang-balken: #3d3d3d;
+    --rundgang-balken: #3d403e;
     --rundgang-schleier: rgba(0, 0, 0, 0.65);
     --rundgang-fokus: #4fc3f7;
 
-    --divider-color: #3a3a3a;
-    --border-color: #4d4d4d;
-    --hover-bg: #2e2e2e;
-    --selected-bg: #353535;
+    --divider-color: #393c3a;
+    --border-color: #4e524f;
+    --hover-bg: #303231;
+    --selected-bg: #373938;
+    // Links sind im Dunkeln hellgrau wie der Text: unterstrichen, damit sie erkennbar bleiben
+    --link-unterstrich: underline;
+    // Gewaehlter Filter im Fangkorb: --primary-light und --primary-dark sind hier beide hell
+    --filter-aktiv-grund: var(--selected-bg);
+    // Blau und Orange sind hier heller: dunkle Schrift auf den Referenz-Marken
+    --referenz-marke-schrift: var(--bg-main);
+    // Klee-Knoepfe auf dem Moos-Band (Suchen, Rundgang starten): heller Rand, sonst unter 3:1 zum Band
+    --knopf-rand-auf-band: rgba(255, 255, 255, 0.85);
     --auswahl-grund: rgba(255, 255, 255, 0.08);
-    --disabled-bg: #2e2e2e;
+    --disabled-bg: #303231;
     --disabled-color: rgba(255, 255, 255, 0.38);
 
     --primary-tint-faint: rgba(255, 255, 255, 0.04);
@@ -415,7 +439,7 @@ $gutgesagt-dark-theme: mat.m2-define-dark-theme((
     --mat-button-outlined-label-text-color: var(--primary-dark);
   }
 
-  html .mat-mdc-icon-button.mat-primary {
+  .mat-mdc-icon-button.mat-primary {
     --mat-icon-button-icon-color: var(--primary-dark);
   }
 

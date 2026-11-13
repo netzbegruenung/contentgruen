@@ -148,15 +148,9 @@
 
 .mobile-menu-about a {
     color: var(--primary-main);
-    text-decoration: none;
+    text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
 }
 
-/* Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588) */
-@media (prefers-color-scheme: dark) {
-    .mobile-menu-about a {
-        text-decoration: underline;
-    }
-}
 
 .mobile-menu-about a:hover {
     text-decoration: underline;

@@ -2,7 +2,8 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    margin: 16px 16px 0;
+    /* Seitenrand wie Kopf und Inhalt, damit die Kanten fluchten (Designrunde 12.11.) */
+    margin: 16px var(--page-margin) 0;
     padding: 12px 16px;
     border-radius: var(--border-radius-large);
     background: var(--rundgang-gelb);
@@ -46,7 +47,7 @@ p {
     .band {
         flex-wrap: wrap;
         gap: 8px 12px;
-        margin: 12px 12px 0;
+        margin-top: 12px;
     }
 
     .daumen {
