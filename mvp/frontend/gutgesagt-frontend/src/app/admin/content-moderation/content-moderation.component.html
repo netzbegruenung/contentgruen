@@ -85,6 +85,13 @@
         <div class="gesperrter-text">
           <strong>{{ beitragsTitel(beitrag) }}</strong>
           <code>{{ beitrag['id'] }}</code>
+          <!-- Den gesperrten Text lesen können, bevor über einen Widerspruch entschieden wird -->
+          <button *ngIf="beitragsText(beitrag)" mat-button type="button" class="text-umschalter"
+                  [attr.aria-expanded]="textOffen(beitrag)" (click)="textUmschalten(beitrag)">
+            <mat-icon aria-hidden="true">{{ textOffen(beitrag) ? 'expand_less' : 'expand_more' }}</mat-icon>
+            {{ textOffen(beitrag) ? 'Text verbergen' : 'Text anzeigen' }}
+          </button>
+          <div *ngIf="textOffen(beitrag)" class="gesperrter-beitragstext">{{ beitragsText(beitrag) }}</div>
           <div *ngIf="beitrag.sperre as sperre" class="sperre-details">
             <div><strong>Sperrgrund:</strong> {{ getSperrgrundLabel(sperre.sperrgrund) }}</div>
             <div><strong>Begründung:</strong> {{ sperre.begruendung }}</div>
@@ -153,7 +160,7 @@
       <!-- Content Type Column -->
       <ng-container matColumnDef="content_type">
         <th mat-header-cell *matHeaderCellDef>Typ</th>
-        <td mat-cell *matCellDef="let report">
+        <td mat-cell *matCellDef="let report" data-label="Typ">
           <span class="content-type-badge">{{ getContentTypeLabel(report.content_type) }}</span>
         </td>
       </ng-container>
@@ -161,7 +168,7 @@
       <!-- Reason Column -->
       <ng-container matColumnDef="reason">
         <th mat-header-cell *matHeaderCellDef>Grund</th>
-        <td mat-cell *matCellDef="let report">
+        <td mat-cell *matCellDef="let report" data-label="Grund">
           <div class="reason-cell">
             <strong>{{ getReasonLabel(report.reason) }}</strong>
             <p *ngIf="report.description" class="description">{{ report.description }}</p>
@@ -172,9 +179,9 @@
       <!-- Reporter Column -->
       <ng-container matColumnDef="reporter">
         <th mat-header-cell *matHeaderCellDef>Gemeldet von</th>
-        <td mat-cell *matCellDef="let report">
+        <td mat-cell *matCellDef="let report" data-label="Gemeldet von">
           <div class="reporter-cell">
-            <span *ngIf="report.reported_by_user_id">{{ report.reported_by_user_id }}</span>
+            <span *ngIf="report.reported_by_user_id" [title]="report.reported_by_user_id">{{ kurzeKennung(report.reported_by_user_id) }}</span>
             <span *ngIf="!report.reported_by_user_id && report.reported_by_session_id" class="anonymous">
               Anonym<ng-container *ngIf="melderQuelle(report.reported_by_session_id) as quelle"> ({{ quelle }})</ng-container>
             </span>
@@ -194,7 +201,7 @@
       <!-- Created Column -->
       <ng-container matColumnDef="created">
         <th mat-header-cell *matHeaderCellDef>Datum</th>
-        <td mat-cell *matCellDef="let report">
+        <td mat-cell *matCellDef="let report" data-label="Datum">
           {{ formatDate(report.created) }}
         </td>
       </ng-container>
@@ -202,7 +209,7 @@
       <!-- Status Column -->
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef>Status</th>
-        <td mat-cell *matCellDef="let report">
+        <td mat-cell *matCellDef="let report" data-label="Status">
           <span class="status-badge" [class]="'status-' + report.status">
             {{ getStatusLabel(report.status) }}
           </span>
@@ -212,8 +219,8 @@
       <!-- Reviewed By Column -->
       <ng-container matColumnDef="reviewed_by">
         <th mat-header-cell *matHeaderCellDef>Bearbeitet von</th>
-        <td mat-cell *matCellDef="let report">
-          <span *ngIf="report.reviewed_by">{{ report.reviewed_by }}</span>
+        <td mat-cell *matCellDef="let report" data-label="Bearbeitet von">
+          <span *ngIf="report.reviewed_by" [title]="report.reviewed_by">{{ kurzeKennung(report.reviewed_by) }}</span>
           <span *ngIf="!report.reviewed_by" class="not-reviewed">-</span>
         </td>
       </ng-container>
@@ -266,6 +273,9 @@
               <h3>Gemeldeter Beitrag:</h3>
               <div class="content-info">
                 <p class="content-id"><strong>Beitrags-ID:</strong> <code>{{ report.content_id }}</code></p>
+                <p *ngIf="report.status !== 'pending'" class="entscheidung-begruendung">
+                  <strong>Begründung der Entscheidung:</strong> {{ entscheidungsBegruendung(report) }}
+                </p>
               </div>
               <div class="content-wrapper">
                 <ng-container *ngIf="report.content_type === 'commentary'">

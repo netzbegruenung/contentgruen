@@ -427,6 +427,7 @@ describe('ContentModerationComponent', () => {
     it('verwirft ein stilles Nachladen, das eine Aktion überholt hat (umgekehrte Antwortreihenfolge)', fakeAsync(() => {
       spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
       moderation.dismissReport.and.returnValue(of({}));
+      dialog.open.and.returnValue({ afterClosed: () => of('Kein Verstoß gegen die Nutzungsbedingungen') } as any);
       mitMeldungen([meldung(), meldung({ id: 'report-2' })]);
       const alt = new Subject<PendingReportsResponse>();
       moderation.getReports.and.returnValue(alt);
@@ -588,6 +589,74 @@ describe('ContentModerationComponent', () => {
       const offen = umschalter.find((u) => u.textContent?.includes('Offen'))!;
       expect(offen.querySelector('[aria-label]')?.getAttribute('aria-label')).toBe('Offen, 2 Meldungen');
       fixture.destroy();
+    });
+  });
+
+  describe('Persona-Test 13.11.2026', () => {
+    it('weist erst nach dem Dialog ab und schickt die Begründung als notes', () => {
+      moderation.dismissReport.and.returnValue(of({}));
+      dialog.open.and.returnValue({ afterClosed: () => of('Zulässige Meinungsäußerung: Zuspitzung, kein Angriff') } as any);
+      mitMeldungen([meldung({ melder_email: 'a@example.org' })]);
+
+      knopf('Abweisen')!.click();
+
+      const daten = dialog.open.calls.mostRecent().args[1]!.data as any;
+      expect(daten).toEqual(jasmine.objectContaining({ titel: 'Titel', mitMail: true }));
+      expect(moderation.dismissReport).toHaveBeenCalledWith('report-1', 'Zulässige Meinungsäußerung: Zuspitzung, kein Angriff');
+    });
+
+    it('weist nicht ab, wenn der Dialog abgebrochen wird', () => {
+      dialog.open.and.returnValue({ afterClosed: () => of(undefined) } as any);
+      mitMeldungen([meldung()]);
+
+      knopf('Abweisen')!.click();
+
+      expect(moderation.dismissReport).not.toHaveBeenCalled();
+    });
+
+    it('zeigt statt langer Kennungen eine kurze Form, die volle im Tooltip', () => {
+      mitMeldungen([meldung({ reported_by_user_id: 'f3a9c1d2-7b4e-4c55-9a10-2e8d6b0c7f11', reported_by_session_id: null })]);
+
+      const melder: HTMLElement = fixture.nativeElement.querySelector('.reporter-cell span');
+      expect(melder.textContent!.trim()).toBe('Person f3a9');
+      expect(melder.getAttribute('title')).toBe('f3a9c1d2-7b4e-4c55-9a10-2e8d6b0c7f11');
+    });
+
+    it('beschriftet jede Angabe für die Kartenansicht am Handy', () => {
+      mitMeldungen([meldung()]);
+
+      const labels = Array.from(fixture.nativeElement.querySelectorAll('tr.report-row td[data-label]')).map((td: any) => td.getAttribute('data-label'));
+      expect(labels).toEqual(['Typ', 'Grund', 'Gemeldet von', 'Datum']);
+    });
+
+    it('zeigt in „Gesperrt“ den Text zum Aufklappen und gibt Text und Widerspruch an den Dialog', () => {
+      moderation.getGesperrte.and.returnValue(of({
+        total: 1,
+        beitraege: [{
+          id: 'b-1', content_type: 'commentary', status: 'blocked', title: 'Titel', text: 'Der gesperrte Text',
+          sperre: sperre({ widerspruch: 'Das ist keine Unterstellung.', widerspruch_am: '2026-11-12T10:00:00Z', widerspruch_offen: true }),
+        }],
+      }));
+      dialog.open.and.returnValue({ afterClosed: () => of(undefined) } as any);
+      mitMeldungen([]);
+      fixture.componentInstance.onStatusFilterChange('gesperrt');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).not.toContain('Der gesperrte Text');
+      knopf('Text anzeigen')!.click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.gesperrter-beitragstext').textContent).toContain('Der gesperrte Text');
+
+      knopf('Sperre bestätigen')!.click();
+      expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual(jasmine.objectContaining({
+        art: 'bestaetigen', text: 'Der gesperrte Text', widerspruch: 'Das ist keine Unterstellung.',
+      }));
+    });
+
+    it('nennt die interne Begründung einer Entscheidung, alte englische Platzhalter als „ohne Begründung“', () => {
+      const c = TestBed.createComponent(ContentModerationComponent).componentInstance;
+      expect(c.entscheidungsBegruendung(meldung({ status: 'dismissed', resolution_notes: 'Dismissed by admin' }))).toBe('ohne Begründung');
+      expect(c.entscheidungsBegruendung(meldung({ status: 'dismissed', resolution_notes: 'Doppelte Meldung, schon entschieden' }))).toBe('Doppelte Meldung, schon entschieden');
     });
   });
 

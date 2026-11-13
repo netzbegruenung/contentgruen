@@ -253,10 +253,15 @@ export class ModerationService {
     });
   }
 
+  /**
+   * Meldung abweisen. Der Suchdienst liest ``notes`` als Query-Parameter (``notes: Optional[str]``
+   * ohne Body in api/v1/moderation.py); im Body ging die Begründung bisher verloren.
+   */
   dismissReport(reportId: string, notes?: string): Observable<any> {
     return this.http.put(
       `${this.baseUrl}/reports/${reportId}/dismiss`,
-      { notes }
+      {},
+      { params: notes ? { notes } : {} }
     );
   }
 }

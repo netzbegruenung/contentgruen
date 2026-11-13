@@ -416,3 +416,79 @@ table {
     font-size: 14px;
   }
 }
+
+/* Gesperrt: Text des Beitrags zum Aufklappen */
+.text-umschalter {
+  align-self: flex-start;
+  padding: 0 8px 0 0;
+}
+
+.gesperrter-beitragstext {
+  max-height: 16em;
+  overflow-y: auto;
+  padding: 8px 12px;
+  border-left: 3px solid var(--divider-color);
+  white-space: pre-wrap;
+}
+
+.entscheidung-begruendung {
+  margin: 4px 0 0;
+}
+
+/*
+ * Mobil (Persona-Test 13.11.): Meldungen als Karten statt abgeschnittener Tabelle, jede
+ * Angabe mit Beschriftung (data-label), Sperren und Abweisen sichtbar. Gesperrte einspaltig.
+ */
+@media (max-width: 599px) {
+  /* tbody kommt aus der Vorlage von mat-table und trägt unser Attribut nicht: ::ng-deep */
+  .reports-table table,
+  .reports-table ::ng-deep tbody,
+  .reports-table tr,
+  .reports-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .reports-table thead,
+  .reports-table tr.mat-mdc-header-row {
+    display: none;
+  }
+
+  .reports-table tr.report-row {
+    height: auto;
+    padding: 8px 0;
+    border-top: 1px solid var(--divider-color);
+  }
+
+  .reports-table td.mat-mdc-cell {
+    border-bottom: none;
+    padding: 4px 12px;
+  }
+
+  .reports-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .reports-table .action-buttons {
+    flex-wrap: wrap;
+  }
+
+  .reports-table tr.expanded-row {
+    height: auto;
+  }
+
+  .gesperrter-beitrag {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gesperrt-aktionen {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+}

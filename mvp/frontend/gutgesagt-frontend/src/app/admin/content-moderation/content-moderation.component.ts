@@ -20,6 +20,8 @@ import { meldegrundLabel } from '../../shared/meldegruende';
 import { sperrgrundLabel } from '../../shared/sperrgruende';
 import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
+import { AbweisenDialogComponent, AbweisenDialogDaten } from './abweisen-dialog.component';
+import { kurzeKennung } from './kennung';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 import { LoeschauftraegeComponent } from './loeschauftraege.component';
 import { MELDUNGEN_GRENZE, ZuTunService } from '../../services/zu-tun.service';
@@ -411,6 +413,37 @@ export class ContentModerationComponent implements OnInit {
     this.displayedColumns = baseColumns;
   }
 
+  readonly kurzeKennung = kurzeKennung;
+
+  /** Der Text eines Beitrags (Kommentar, Hintergrundinfo, Aussage); null ohne Text. */
+  beitragsText(beitrag: GemeldeterBeitrag): string | null {
+    const text = beitrag['text'] || beitrag['long_text'] || beitrag['short_text'];
+    return typeof text === 'string' && text.trim() ? text : null;
+  }
+
+  /** Gesperrte Beiträge, deren Text aufgeklappt ist. */
+  private readonly offeneTexte = new Set<string>();
+
+  textOffen(beitrag: GemeldeterBeitrag): boolean {
+    return this.offeneTexte.has(beitrag['id']);
+  }
+
+  textUmschalten(beitrag: GemeldeterBeitrag) {
+    const id = beitrag['id'];
+    if (!this.offeneTexte.delete(id)) {
+      this.offeneTexte.add(id);
+    }
+  }
+
+  /** Die interne Begründung; frühere Abweisungen trugen nur einen englischen Platzhalter. */
+  entscheidungsBegruendung(report: ContentReport): string {
+    const notiz = report.resolution_notes?.trim();
+    if (!notiz || notiz === 'Report dismissed' || notiz === 'Dismissed by admin') {
+      return 'ohne Begründung';
+    }
+    return notiz;
+  }
+
   beitragsTitel(beitrag: GemeldeterBeitrag): string {
     return beitrag['title'] || beitrag['text'] || beitrag['id'];
   }
@@ -421,7 +454,11 @@ export class ContentModerationComponent implements OnInit {
 
   /** Sperren nur mit Sperrgrund und Begründung (#448); beides fragt der Dialog ab. */
   sperren(report: ContentReport) {
-    const daten: SperrenDialogDaten = { art: 'sperren', titel: this.beitragsTitel(report.content ?? { id: report.content_id }) };
+    const daten: SperrenDialogDaten = {
+      art: 'sperren',
+      titel: this.beitragsTitel(report.content ?? { id: report.content_id }),
+      text: report.content ? this.beitragsText(report.content) : null,
+    };
     this.dialog
       .open<SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis>(SperrenDialogComponent, { data: daten, width: '520px' })
       .afterClosed()
@@ -450,7 +487,12 @@ export class ContentModerationComponent implements OnInit {
     if (!sperre) {
       return;
     }
-    const daten: SperrenDialogDaten = { art: 'bestaetigen', titel: this.beitragsTitel(beitrag) };
+    const daten: SperrenDialogDaten = {
+      art: 'bestaetigen',
+      titel: this.beitragsTitel(beitrag),
+      text: this.beitragsText(beitrag),
+      widerspruch: sperre.widerspruch,
+    };
     this.dialog
       .open<SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis>(SperrenDialogComponent, { data: daten, width: '520px' })
       .afterClosed()
@@ -503,9 +545,29 @@ export class ContentModerationComponent implements OnInit {
     });
   }
 
+  /**
+   * Abweisen nur mit Begründung aus dem Dialog (Persona-Test 13.11.2026): Grund aus fester Liste,
+   * dazu ein Satz. Sie geht als notes an den Suchdienst und bleibt intern an der Meldung.
+   */
   dismissReport(report: ContentReport) {
+    const daten: AbweisenDialogDaten = {
+      titel: this.beitragsTitel(report.content ?? { id: report.content_id }),
+      meldegrund: this.getReasonLabel(report.reason),
+      mitMail: !!report.melder_email,
+    };
+    this.dialog
+      .open<AbweisenDialogComponent, AbweisenDialogDaten, string>(AbweisenDialogComponent, { data: daten, width: '520px' })
+      .afterClosed()
+      .subscribe((begruendung) => {
+        if (begruendung) {
+          this.abweisen(report, begruendung);
+        }
+      });
+  }
+
+  private abweisen(report: ContentReport, begruendung: string) {
     this.generation++;
-    this.moderationService.dismissReport(report.id, 'Dismissed by admin').subscribe({
+    this.moderationService.dismissReport(report.id, begruendung).subscribe({
       next: (response) => {
         this.snackBar.open('Meldung abgewiesen', 'OK', { duration: 3000 });
         this.nachAktion(); // Reload to remove from list
