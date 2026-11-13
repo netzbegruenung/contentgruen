@@ -389,3 +389,156 @@ class TestSearchWithReplyFilter:
         assert (
             bedingungen[: len(nur_sichtbar_bedingungen())] == nur_sichtbar_bedingungen()
         )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestMitKommentar:
+    """
+    Welche Aussagen schon einen sichtbaren Kommentar haben ("Hier fehlt eine
+    Antwort"): Qdrants retrieve ist gemockt, geprueft wird die Auswertung.
+    """
+
+    AUSSAGE = uuid.UUID("aaaaaaaa-0000-0000-0000-000000000001")
+    ZWEITE = uuid.UUID("aaaaaaaa-0000-0000-0000-000000000002")
+    KOMMENTAR = uuid.UUID("cccccccc-0000-0000-0000-000000000001")
+    TEXT = uuid.UUID("dddddddd-0000-0000-0000-000000000001")
+
+    @staticmethod
+    def _vorschlag(beitrag_id, content_type="commentary"):
+        return {
+            "id": str(beitrag_id),
+            "content_type": content_type,
+            "relevance": 0.9,
+            "created": "2026-11-01T10:00:00Z",
+            "updated": "2026-11-01T10:00:00Z",
+            "number_of_usages": 0,
+        }
+
+    @staticmethod
+    def _punkt(punkt_id, **payload):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(id=str(punkt_id), payload=payload)
+
+    def _repository(self, test_settings, test_embeddings_manager, punkte):
+        """retrieve liefert je ID den Punkt aus ``punkte``, unbekannte fehlen."""
+        from unittest.mock import AsyncMock, MagicMock
+        from repositories.implementations.qdrant.statement_repository import (
+            StatementRepository,
+        )
+
+        async def retrieve(collection_name, ids, with_payload, with_vectors):
+            return [punkte[i] for i in ids if i in punkte]
+
+        manager = MagicMock()
+        manager.collection_name = "content_collection"
+        manager.async_client.retrieve = AsyncMock(side_effect=retrieve)
+        repository = StatementRepository(
+            test_settings, embeddings_manager=test_embeddings_manager
+        )
+        repository._shared_manager = manager
+        return repository, manager.async_client.retrieve
+
+    async def test_sichtbarer_kommentar_heisst_beantwortet(
+        self, test_settings, test_embeddings_manager
+    ):
+        punkte = {
+            str(self.AUSSAGE): self._punkt(
+                self.AUSSAGE,
+                content_type="statement",
+                replysuggestions=[self._vorschlag(self.KOMMENTAR)],
+            ),
+            str(self.KOMMENTAR): self._punkt(
+                self.KOMMENTAR, content_type="commentary", status="visible"
+            ),
+        }
+        repository, _ = self._repository(test_settings, test_embeddings_manager, punkte)
+
+        assert await repository.mit_kommentar([self.AUSSAGE]) == {self.AUSSAGE}
+
+    async def test_nur_gesperrter_kommentar_heisst_nicht_beantwortet(
+        self, test_settings, test_embeddings_manager
+    ):
+        punkte = {
+            str(self.AUSSAGE): self._punkt(
+                self.AUSSAGE,
+                content_type="statement",
+                replysuggestions=[self._vorschlag(self.KOMMENTAR)],
+            ),
+            str(self.KOMMENTAR): self._punkt(
+                self.KOMMENTAR, content_type="commentary", status="blocked"
+            ),
+        }
+        repository, _ = self._repository(test_settings, test_embeddings_manager, punkte)
+
+        assert await repository.mit_kommentar([self.AUSSAGE]) == set()
+
+    async def test_antwortvorschlaege_als_json_text(
+        self, test_settings, test_embeddings_manager
+    ):
+        """Aeltere Punkte tragen die Antwortvorschlaege als JSON-Text."""
+        import json
+
+        punkte = {
+            str(self.AUSSAGE): self._punkt(
+                self.AUSSAGE,
+                content_type="statement",
+                replysuggestions=json.dumps([self._vorschlag(self.KOMMENTAR)]),
+            ),
+            str(self.KOMMENTAR): self._punkt(
+                self.KOMMENTAR, content_type="commentary", status="visible"
+            ),
+        }
+        repository, _ = self._repository(test_settings, test_embeddings_manager, punkte)
+
+        assert await repository.mit_kommentar([self.AUSSAGE]) == {self.AUSSAGE}
+
+    async def test_fremder_content_type_zaehlt_nicht(
+        self, test_settings, test_embeddings_manager
+    ):
+        """Weder ein Punkt, der keine Aussage ist, noch ein Text statt Kommentar."""
+        punkte = {
+            str(self.AUSSAGE): self._punkt(
+                self.AUSSAGE,
+                content_type="commentary",
+                replysuggestions=[self._vorschlag(self.KOMMENTAR)],
+            ),
+            str(self.ZWEITE): self._punkt(
+                self.ZWEITE,
+                content_type="statement",
+                replysuggestions=[self._vorschlag(self.TEXT, "generic_text")],
+            ),
+            str(self.KOMMENTAR): self._punkt(
+                self.KOMMENTAR, content_type="commentary", status="visible"
+            ),
+            str(self.TEXT): self._punkt(
+                self.TEXT, content_type="generic_text", status="visible"
+            ),
+        }
+        repository, _ = self._repository(test_settings, test_embeddings_manager, punkte)
+
+        assert await repository.mit_kommentar([self.AUSSAGE, self.ZWEITE]) == set()
+
+    async def test_gescheiterter_abruf_laesst_ungefiltert(
+        self, test_settings, test_embeddings_manager, caplog
+    ):
+        repository, retrieve = self._repository(
+            test_settings, test_embeddings_manager, {}
+        )
+        retrieve.side_effect = RuntimeError("Qdrant weg")
+
+        assert await repository.mit_kommentar([self.AUSSAGE]) == set()
+        assert "mit_kommentar" in caplog.text
+
+    async def test_ruft_in_paketen_ab(self, test_settings, test_embeddings_manager):
+        from repositories.implementations.qdrant import statement_repository
+
+        repository, retrieve = self._repository(
+            test_settings, test_embeddings_manager, {}
+        )
+        ids = [uuid.uuid4() for _ in range(statement_repository._IDS_JE_ABRUF + 1)]
+
+        assert await repository.mit_kommentar(ids) == set()
+        groessen = [len(c.kwargs["ids"]) for c in retrieve.call_args_list]
+        assert groessen == [statement_repository._IDS_JE_ABRUF, 1]

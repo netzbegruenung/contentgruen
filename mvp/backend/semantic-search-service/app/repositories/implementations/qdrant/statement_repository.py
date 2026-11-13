@@ -49,6 +49,10 @@ _TITEL_OHNE_TITEL_HOECHSTENS = 120
 # aus aelteren Punkten loest StatementDbEntry.parse_replysuggestions vorher auf.
 _ANTWORTVORSCHLAEGE = TypeAdapter(List[StatementReplysuggestion])
 
+# Hoechstens so viele IDs je retrieve: mit_kommentar fragt bis zu einige hundert
+# Aussagen ab, und jede kann mehrere Kommentare tragen.
+_IDS_JE_ABRUF = 256
+
 
 def _unbeantwortete_suchanfrage(
     ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset(),
@@ -287,17 +291,21 @@ class StatementRepository(
         Antwortvorschlaegen haben: das Gegenstueck zu ohne_kommentar fuer wenige,
         schon bekannte Aussagen (die Kandidaten aus "Suchen ohne Treffer" in
         UnbeantworteteAussagenService). Zwei Abrufe per ID, kein Scan; wie dort zaehlt
-        ein gesperrter oder geloeschter Kommentar nicht.
+        ein gesperrter oder geloeschter Kommentar nicht. Scheitert der erste
+        Abruf, gilt keine als beantwortet (Warnung im Log).
         """
         ids = list(dict.fromkeys(ids))
         if not ids:
             return set()
-        punkte = await self._shared_manager.async_client.retrieve(
-            collection_name=self._shared_manager.collection_name,
-            ids=[str(i) for i in ids],
-            with_payload=["content_type", "replysuggestions"],
-            with_vectors=False,
-        )
+        try:
+            punkte = await self._abrufen(ids, ["content_type", "replysuggestions"])
+        except Exception as fehler:
+            # Die Liste ist Beiwerk: lieber ungefiltert als gar nicht.
+            logger.warning(
+                f"mit_kommentar: Abruf gescheitert ({type(fehler).__name__}), "
+                "Liste bleibt ungefiltert"
+            )
+            return set()
         kommentare_je_aussage = {}
         for punkt in punkte:
             payload = punkt.payload or {}
@@ -408,16 +416,24 @@ class StatementRepository(
             )
         return [gefunden[i] for i in ids if i in gefunden]
 
+    async def _abrufen(self, ids: Iterable[uuid.UUID], felder: List[str]) -> list:
+        """Punkte per ID, in Paketen von hoechstens _IDS_JE_ABRUF IDs."""
+        ids = [str(i) for i in ids]
+        punkte = []
+        for start in range(0, len(ids), _IDS_JE_ABRUF):
+            punkte += await self._shared_manager.async_client.retrieve(
+                collection_name=self._shared_manager.collection_name,
+                ids=ids[start : start + _IDS_JE_ABRUF],
+                with_payload=felder,
+                with_vectors=False,
+            )
+        return punkte
+
     async def _sichtbare_kommentare(self, ids: Set[uuid.UUID]) -> Set[uuid.UUID]:
         """Welche der IDs einen Kommentar bezeichnen, der weder gesperrt noch geloescht ist."""
         if not ids:
             return set()
-        punkte = await self._shared_manager.async_client.retrieve(
-            collection_name=self._shared_manager.collection_name,
-            ids=[str(i) for i in ids],
-            with_payload=["content_type", "status"],
-            with_vectors=False,
-        )
+        punkte = await self._abrufen(ids, ["content_type", "status"])
         return {
             uuid.UUID(str(punkt.id))
             for punkt in punkte

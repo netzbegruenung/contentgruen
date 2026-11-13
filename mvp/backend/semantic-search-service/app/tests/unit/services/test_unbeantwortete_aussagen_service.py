@@ -21,6 +21,7 @@ from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
 )
 from services.unbeantwortete_aussagen_service import (
+    PUFFER_BEANTWORTETE,
     UnbeantworteteAussage,
     UnbeantworteteAussagenService,
 )
@@ -134,6 +135,22 @@ async def test_gesuchte_aussage_mit_kommentar_verschwindet():
     assert [a.statement_id for a in liste] == [B]
     gefragt = service._statement_service.mit_kommentar.call_args.args[0]
     assert set(gefragt) == {A, B}
+
+
+async def test_beantwortete_druecken_unbeantwortete_nicht_unter_die_grenze():
+    """Ohne Thema holt die Liste mehr als das Limit und filtert vor dem Kuerzen."""
+    service = _service(
+        gesucht=[SucheOhneTreffer(A, "a", 9, 5), SucheOhneTreffer(B, "b", 4, 2)],
+    )
+    service._statement_service.mit_kommentar = AsyncMock(return_value={A})
+
+    liste = await service.liste(limit=1)
+
+    assert [a.statement_id for a in liste] == [B]
+    assert (
+        service._suchen_ohne_treffer.haeufigste.call_args.kwargs["limit"]
+        == 1 + PUFFER_BEANTWORTETE
+    )
 
 
 async def test_liste_ist_begrenzt():

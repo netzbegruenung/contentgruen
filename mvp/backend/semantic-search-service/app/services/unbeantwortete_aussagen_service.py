@@ -15,8 +15,9 @@ Anders als die Kennzahl laesst die Liste eine Aussage weg, sobald sie einen
 sichtbaren Kommentar hat (StatementService.mit_kommentar): Die Suchen ohne Treffer
 zaehlen ueber Wochen weiter, und wer geantwortet hat, soll die Luecke nicht weiter
 offen sehen. Ein gesperrter oder geloeschter Kommentar zaehlt nicht. Gefiltert wird
-nach dem Limit der Kennzahl; die Liste kann dadurch kuerzer werden, die Aussagen
-ohne Kommentar fuellen sie auf.
+vor der Begrenzung: Die Kennzahl liefert dafuer mehr als das Limit
+(PUFFER_BEANTWORTETE), damit beantwortete Hotspots unbeantwortete nicht unter die
+Grenze druecken.
 
 Sortiert nach Bedarf: zuerst die Aussagen mit Suchen ohne Treffer, absteigend nach
 der Zahl der Personen (bei gleicher Zahl wie in der Kennzahl), dann die uebrigen
@@ -50,6 +51,10 @@ LIMIT_STANDARD = 50
 # Aussagen des Themas, die weiter hinten stehen.
 KANDIDATEN_MIT_FILTER = 500
 
+# Ohne Thema: so viele Aussagen mit Suchen ohne Treffer mehr als das Limit, weil die
+# schon beantworteten erst danach herausfallen.
+PUFFER_BEANTWORTETE = 50
+
 
 @dataclass(frozen=True)
 class UnbeantworteteAussage:
@@ -78,7 +83,7 @@ class UnbeantworteteAussagenService:
     ) -> List[UnbeantworteteAussage]:
         gesucht = await self._suchen_ohne_treffer.haeufigste(
             wochen=WOCHEN_STANDARD,
-            limit=KANDIDATEN_MIT_FILTER if thema else limit,
+            limit=KANDIDATEN_MIT_FILTER if thema else limit + PUFFER_BEANTWORTETE,
         )
         beantwortet = await self._statement_service.mit_kommentar(
             [g.statement_id for g in gesucht]
