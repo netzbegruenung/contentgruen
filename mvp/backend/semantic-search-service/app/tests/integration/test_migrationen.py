@@ -48,6 +48,15 @@ INIT_VOR_285 = Path(__file__).with_name("init_vor_285.sql")
 INIT_VOR_DATENSPARSAMKEIT = Path(__file__).with_name("init_vor_datensparsamkeit.sql")
 
 
+@pytest.fixture(autouse=True)
+def nicht_zehn_minuten_warten(monkeypatch):
+    """
+    Haelt eine vergessene Verbindung die Advisory-Sperre, wartete jedes einspielen
+    WARTEN_AUF_ANDEREN_START (10 min) und der Schritt stuende fast eine Stunde.
+    """
+    monkeypatch.setattr(migrationen, "WARTEN_AUF_ANDEREN_START", "60s")
+
+
 def _schema_der(db: Datenbank) -> dict:
     """Spalten, Indizes, Constraints, Sequenzen, Trigger und Funktionen im Schema."""
     abfragen = {
@@ -591,7 +600,7 @@ def test_einspielen_zwei_gleichzeitige_starts_spielen_einmal_ein(
             pool.submit(migrationen.einspielen, aktuelle_datenbank.engine, tmp_path)
             for _ in range(2)
         ]
-        ergebnisse = sorted(lauf.result() for lauf in laeufe)
+        ergebnisse = sorted(lauf.result(timeout=120) for lauf in laeufe)
 
     assert ergebnisse == [[], [name]]
     with aktuelle_datenbank.engine.begin() as c:
