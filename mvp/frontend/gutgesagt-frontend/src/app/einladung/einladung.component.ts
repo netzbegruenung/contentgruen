@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, Injector, OnInit, ViewChild, afterNextRender, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -68,6 +68,18 @@ export class EinladungComponent implements OnInit {
   link = '';
   linkFalsch = false;
   private code = '';
+  /** Nach „Anderen Link einfügen“: Fokus ins Feld, sobald es wieder da ist; beim ersten Aufruf nicht. */
+  private feldFokussieren = false;
+  private readonly injector = inject(Injector);
+
+  @ViewChild('linkFeld')
+  set linkFeld(feld: ElementRef<HTMLInputElement> | undefined) {
+    if (feld && this.feldFokussieren) {
+      this.feldFokussieren = false;
+      // Erst nach dem Rendern: Fokus mitten in der Change Detection aendert das Formularfeld
+      afterNextRender(() => feld.nativeElement.focus(), { injector: this.injector });
+    }
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -96,6 +108,7 @@ export class EinladungComponent implements OnInit {
   andererLink() {
     this.link = '';
     this.linkFalsch = false;
+    this.feldFokussieren = true;
     this.stand = 'eingeben';
   }
 

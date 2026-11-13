@@ -12,7 +12,7 @@
       </p>
       <mat-form-field appearance="outline" class="email">
         <mat-label>Link der Einladung</mat-label>
-        <input matInput name="link" autocomplete="off" autocapitalize="off" spellcheck="false"
+        <input #linkFeld matInput name="link" autocomplete="off" autocapitalize="off" spellcheck="false"
                [(ngModel)]="link" required />
         <mat-hint>Das Stück nach # reicht auch.</mat-hint>
       </mat-form-field>

@@ -56,6 +56,8 @@ describe('LoginSelectorComponent', () => {
       const optionen = fixture.nativeElement.querySelector('.registration-options') as HTMLElement;
       expect(optionen.textContent).toContain('Einladung');
       expect(optionen.querySelector('a.einladung-link')?.getAttribute('href')).toBe('/einladung');
+      // Anders benannt als der Knopf darunter: zwei gleich lautende Links verwirren in der Linkliste von Screenreadern
+      expect(optionen.querySelector('a.einladung-link')?.textContent?.trim()).toBe('Einladungslink einfügen');
     });
 
     it('fuehrt im selben Tab ohne Neuladen zu /einladung', () => {

@@ -75,14 +75,24 @@ describe('EinladungComponent', () => {
     expect(el().querySelector('[role="alert"]')?.textContent).toContain('kein Link einer Einladung');
   });
 
-  it('nach einer Einladung, die nicht gilt, laesst sich ein anderer Link einfuegen', () => {
+  it('nach einer Einladung, die nicht gilt, laesst sich ein anderer Link einfuegen', async () => {
     starten('Code123');
     pruefen(false);
     const knopf = Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes('Anderen Link'));
     knopf!.click();
     fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(el().querySelector('input[name="link"]')).not.toBeNull();
+    // Der Fokus steht im Feld, nicht auf dem verschwundenen Knopf (Tastatur, Screenreader)
+    expect(document.activeElement).toBe(el().querySelector('input[name="link"]'));
+  });
+
+  it('setzt beim ersten Aufruf ohne Code den Fokus nicht von selbst ins Feld', async () => {
+    starten(null);
+    await fixture.whenStable();
+
+    expect(document.activeElement).not.toBe(el().querySelector('input[name="link"]'));
   });
 
   it('eine ungueltige Einladung zeigt kein Formular', () => {

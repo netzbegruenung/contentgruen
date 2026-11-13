@@ -38,7 +38,11 @@ export function hinweisNachAnmeldung(destroyRef: DestroyRef): void {
     )
     .subscribe(([adresse, info]) => {
       const anlass = adresse.queryParamMap.get(ANLASS_PARAM);
-      void router.navigate([], { queryParams: { [ANLASS_PARAM]: null }, queryParamsHandling: 'merge', replaceUrl: true });
+      // Gibt die Navigation false zurueck, hat eine andere sie abgeloest (etwa zur
+      // Einwilligung); deren Rueckweg bringt den Parameter wieder und kommt hier erneut an.
+      router
+        .navigate([], { queryParams: { [ANLASS_PARAM]: null }, queryParamsHandling: 'merge', replaceUrl: true })
+        .catch((fehler) => console.warn('Anlass-Parameter liess sich nicht aus der Adresse entfernen:', fehler));
       if (!info?.isAuthenticated || !istAnlass(anlass) || gezeigtFuer === info.userId) {
         return;
       }

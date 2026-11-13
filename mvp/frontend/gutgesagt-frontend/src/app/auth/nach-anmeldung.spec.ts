@@ -74,6 +74,51 @@ describe('hinweisNachAnmeldung', () => {
     expect(snackBar.open).toHaveBeenCalledTimes(1);
   });
 
+  it('Keycloak mit Umweg ueber /einwilligung: der Satz kommt nach der Einwilligung genau einmal', () => {
+    // Zurueck von Keycloak: angemeldet, die Art.-9-Einwilligung ist noch nicht geklaert
+    navigiert(zurueck);
+    userInfo.next(angemeldet);
+    expect(snackBar.open).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+
+    // Art9EinwilligungService fuehrt auf /einwilligung, das Rueckkehrziel steht kodiert in returnUrl
+    navigiert(`/einwilligung?returnUrl=${encodeURIComponent(zurueck)}`);
+    geklaert.next('u1');
+    expect(snackBar.open).not.toHaveBeenCalled();
+
+    // Nach dem Einwilligen zurueck an die Stelle, dann fuehrt AppComponent das
+    // gespeicherte Rueckkehrziel noch einmal aus
+    navigiert(zurueck);
+    navigiert(zurueck);
+
+    expect(snackBar.open).toHaveBeenCalledOnceWith(NACH_ANMELDUNG_HINWEIS.abstimmen, 'OK', jasmine.any(Object));
+    parameterEntfernt();
+  });
+
+  it('zwei Rueckkehr-Navigationen vor der Klaerung: genau ein Satz', () => {
+    userInfo.next(angemeldet);
+    navigiert(zurueck);
+    navigiert(zurueck);
+    geklaert.next('u1');
+    // Die Benutzerinfo kommt noch einmal (fetchUserInfo), die Adresse ist unveraendert
+    userInfo.next({ ...angemeldet });
+
+    expect(snackBar.open).toHaveBeenCalledTimes(1);
+  });
+
+  it('scheitert das Entfernen des Parameters, wird das geloggt und der Satz kommt trotzdem', async () => {
+    const warnung = spyOn(console, 'warn');
+    navigate.and.rejectWith(new Error('kaputt'));
+    userInfo.next(angemeldet);
+    geklaert.next('u1');
+    navigiert(zurueck);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(snackBar.open).toHaveBeenCalledTimes(1);
+    expect(warnung).toHaveBeenCalled();
+  });
+
   it('ohne Anmeldung zurueck: kein Satz, aber der Parameter verschwindet', () => {
     userInfo.next(besucher);
     navigiert(zurueck);
