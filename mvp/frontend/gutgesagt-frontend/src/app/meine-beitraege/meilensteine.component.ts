@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
@@ -8,6 +8,7 @@ import { takeUntil } from 'rxjs/operators';
 import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
 import { gesehenMerken } from './meilenstein-merker';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 
 /**
  * Die eigenen Meilensteine in „Meine Beiträge“ (#351): je einer mit Medaillon (Motiv
@@ -48,6 +49,7 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
     private usageTrackingService: UsageTrackingService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
+    @Inject(MEILENSTEIN_MERKER) private merkerAktiv: boolean,
   ) {}
 
   ngOnInit(): void {
@@ -69,7 +71,9 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
         this.meilensteine = meilensteine;
         this.sichtbarkeit = sichtbarkeit;
         // Was hier steht, ist angezeigt: Kein späterer Hinweis nennt es noch einmal.
-        gesehenMerken(this.authService.getCurrentUserId(), meilensteine);
+        if (this.merkerAktiv) {
+          gesehenMerken(this.authService.getCurrentUserId(), meilensteine);
+        }
         this.cdr.markForCheck();
       });
   }

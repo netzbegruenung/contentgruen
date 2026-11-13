@@ -582,7 +582,9 @@ Empfänger und Ort“.
   Tun oder beim Anmelden) merkt sich die angezeigten Kennungen nur im Browser (localStorage), je
   Konto unter einem Schlüssel mit einem Prüfwert der Kennung, entfernt beim Abmelden und beim
   Widerruf der Art.-9-Einwilligung; ohne Server-Eintrag, keine Erinnerungen. Das Abzeichen
-  rechnet ohne Wegmarken und ohne deren Abfragen. Ob ein Einwurf der erste ist, liest die Karte nach dem
+  rechnet ohne Wegmarken und ohne deren Abfragen. Bis zur juristischen Prüfung nach § 25 TDDDG
+  ist der Merker ausgeschaltet (`MEILENSTEIN_MERKER_AKTIV = false` im Frontend): kein Eintrag im
+  Browser, keine Hinweise; die Meilensteine stehen nur in „Meine Beiträge“. Ob ein Einwurf der erste ist, liest die Karte nach dem
   Einwurf aus der Zahl der eigenen Einwürfe (`getOwnRawInputs`, vorhanden).
   Die Erklärung nennt die neue Liste unter „Punkte“.
 

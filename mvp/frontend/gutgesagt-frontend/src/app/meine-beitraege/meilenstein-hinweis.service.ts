@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Inject, Injectable, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, Subject, Subscription, of } from 'rxjs';
@@ -7,6 +7,7 @@ import { debounceTime, map, switchMap } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 import { ROUTES } from '../shared/constants/app.constants';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 import { gesehenMerken, merkerLesen } from './meilenstein-merker';
 
 /** So lange steht der Hinweis, wenn niemand ihn wegtippt; wie die Rückmeldung (#349). */
@@ -35,6 +36,10 @@ export function meilensteinText(neu: Meilenstein[]): string {
  * Server-Eintrag, keine Mail, kein Push. Kein Countdown, keine Serie, keine
  * Erinnerung; wer „Meine Beiträge“ öffnet, hat alles gesehen. Ohne eingeschaltete
  * Punkte liefert der Server keine Meilensteine, dann passiert hier nichts.
+ *
+ * Solange MEILENSTEIN_MERKER aus ist (§ 25 TDDDG in Prüfung), gibt es weder Merker noch
+ * Hinweise: neueErreichte liefert nichts, ohne Anfrage und ohne Speicherzugriff, und
+ * eine Bestätigung kommt als normale Snackbar.
  */
 @Injectable({ providedIn: 'root' })
 export class MeilensteinHinweisService implements OnDestroy {
@@ -48,6 +53,7 @@ export class MeilensteinHinweisService implements OnDestroy {
     private authService: AuthService,
     private snackBar: MatSnackBar,
     private router: Router,
+    @Inject(MEILENSTEIN_MERKER) private merkerAktiv: boolean,
   ) {
     // Mehrere Anstöße kurz hintereinander ergeben eine Abfrage und einen Hinweis.
     this.abo = this.anstoesse
@@ -78,7 +84,7 @@ export class MeilensteinHinweisService implements OnDestroy {
    * ohne Anfrage.
    */
   neueErreichte(): Observable<Meilenstein[]> {
-    if (!merkerLesen(this.authService.getCurrentUserId())) {
+    if (!this.merkerAktiv || !merkerLesen(this.authService.getCurrentUserId())) {
       return of([]);
     }
     return this.usageTrackingService.getEigeneMeilensteine().pipe(
@@ -100,12 +106,17 @@ export class MeilensteinHinweisService implements OnDestroy {
 
   /** Diese Meilensteine als angezeigt merken. */
   merken(meilensteine: Meilenstein[]): void {
+    if (!this.merkerAktiv) {
+      return;
+    }
     gesehenMerken(this.authService.getCurrentUserId(), meilensteine);
   }
 
   /** Nach einer gespeicherten Handlung aufrufen; Aufrufe kurz hintereinander zählen einmal. */
   pruefen(): void {
-    this.anstoesse.next();
+    if (this.merkerAktiv) {
+      this.anstoesse.next();
+    }
   }
 
   /**
@@ -113,6 +124,10 @@ export class MeilensteinHinweisService implements OnDestroy {
    * damit der Hinweis die Bestätigung nicht verdrängt.
    */
   bestaetigen(text: string, aktion = 'OK', dauer = 5000): void {
+    if (!this.merkerAktiv) {
+      this.snackBar.open(text, aktion, { duration: dauer });
+      return;
+    }
     this.bestaetigung = { text, aktion, dauer };
     this.anstoesse.next();
   }

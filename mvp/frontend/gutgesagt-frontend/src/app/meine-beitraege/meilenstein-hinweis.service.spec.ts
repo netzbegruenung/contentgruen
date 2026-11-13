@@ -6,6 +6,7 @@ import { Subject, of } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { MeilensteinHinweisService, SAMMELN_MS } from './meilenstein-hinweis.service';
 import { merkerSchluessel } from './meilenstein-merker';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 
 describe('MeilensteinHinweisService (#351)', () => {
@@ -16,6 +17,7 @@ describe('MeilensteinHinweisService (#351)', () => {
   let router: jasmine.SpyObj<Router>;
   let laden: jasmine.Spy;
   let kennung: string | null;
+  let merkerAktiv: boolean;
 
   function meilenstein(k: string, erreicht: boolean, name = k): Meilenstein {
     return { kennung: k, name, untertitel: '', beschreibung: '', bild: '', bildnachweis: '', art: 'weg', schwelle: 1, stand: erreicht ? 1 : 0, erreicht };
@@ -33,6 +35,7 @@ describe('MeilensteinHinweisService (#351)', () => {
         { provide: AuthService, useValue: { getCurrentUserId: () => kennung } },
         { provide: MatSnackBar, useValue: snackBar },
         { provide: Router, useValue: router },
+        { provide: MEILENSTEIN_MERKER, useValue: merkerAktiv },
       ],
     });
     return TestBed.inject(MeilensteinHinweisService);
@@ -44,6 +47,7 @@ describe('MeilensteinHinweisService (#351)', () => {
 
   beforeEach(() => {
     kennung = 'kim-1';
+    merkerAktiv = true;
     // Ein angelegter, leerer Merker: Ohne Eintrag merkt der erste Abruf still alles.
     localStorage.setItem(SCHLUESSEL, '[]');
   });
@@ -207,4 +211,33 @@ describe('MeilensteinHinweisService (#351)', () => {
     expect(laden).not.toHaveBeenCalled();
     expect(snackBar.open).not.toHaveBeenCalled();
   }));
+
+  describe('Schalter aus (§ 25 TDDDG in Prüfung)', () => {
+    beforeEach(() => (merkerAktiv = false));
+
+    it('fragt nicht, liest und schreibt keinen Merker und zeigt keinen Hinweis', fakeAsync(() => {
+      meilensteine = [meilenstein('einwurf-1', true)];
+      const lesen = spyOn(Storage.prototype, 'getItem').and.callThrough();
+      const schreiben = spyOn(Storage.prototype, 'setItem').and.callThrough();
+      const hinweis = dienst();
+      let neu: Meilenstein[] | undefined;
+
+      hinweis.pruefen();
+      tick(SAMMELN_MS);
+      hinweis.neueErreichte().subscribe((liste) => (neu = liste));
+      hinweis.merken(meilensteine);
+
+      expect(neu).toEqual([]);
+      expect(laden).not.toHaveBeenCalled();
+      expect(lesen).not.toHaveBeenCalled();
+      expect(schreiben).not.toHaveBeenCalled();
+      expect(snackBar.open).not.toHaveBeenCalled();
+    }));
+
+    it('zeigt eine Bestätigung als normale Snackbar', () => {
+      dienst().bestaetigen('Der Einwurf ist verknüpft.');
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Der Einwurf ist verknüpft.', 'OK', { duration: 5000 });
+    });
+  });
 });

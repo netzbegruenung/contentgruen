@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { abschnitt as abschnittIn, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 
 /**
  * Die Datenschutzerklaerung beschreibt, was die App tut (#222). Geprueft wird der Text,
@@ -711,6 +712,36 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Für das Einbinden und damit für die Übermittlung deiner IP-Adresse an den fremden Server sind wir mitverantwortlich');
       expect(text).toContain('was der fremde Server danach mit den Daten macht, verantwortet sein Betreiber');
       expect(ganzerText()).not.toContain('Diesen Abruf richtet dein Browser aus, nicht wir');
+    });
+  });
+
+  describe('Merker der Meilensteine (#351, § 25 TDDDG in Prüfung)', () => {
+    function mitMerker(aktiv: boolean): string {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [DatenschutzComponent],
+        providers: [provideRouter([]), { provide: MEILENSTEIN_MERKER, useValue: aktiv }],
+      });
+      const fixture = TestBed.createComponent(DatenschutzComponent);
+      fixture.detectChanges();
+      return normalisiert((fixture.nativeElement as HTMLElement).textContent);
+    }
+
+    it('nennt ohne Merker weder Hinweis noch Browser-Eintrag, nur Meine Beiträge', () => {
+      const text = mitMerker(false);
+
+      expect(text).toContain('Einen neu erreichten Meilenstein siehst du unter „Meine Beiträge“.');
+      expect(text).not.toContain('welche deiner erreichten Meilensteine dir schon angezeigt wurden');
+      expect(text).not.toContain('still als gesehen');
+    });
+
+    it('beschreibt mit Merker Hinweis und Browser-Eintrag', () => {
+      const text = mitMerker(true);
+
+      expect(text).toContain('Welche deiner erreichten Meilensteine dir schon angezeigt wurden, merkt sich nur dein Browser');
+      expect(text).toContain('Sind die Punkte eingeschaltet, merkt sich dein Browser außerdem');
+      expect(text).toContain('ohne Einwilligung anmeldest');
+      expect(text).not.toContain('Einen neu erreichten Meilenstein siehst du unter');
     });
   });
 });

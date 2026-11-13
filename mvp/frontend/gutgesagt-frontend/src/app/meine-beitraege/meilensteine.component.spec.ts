@@ -5,6 +5,7 @@ import { Observable, of } from 'rxjs';
 import { MeilensteineComponent } from './meilensteine.component';
 import { merkerSchluessel } from './meilenstein-merker';
 import { AuthService } from '../auth/auth.service';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 
 const MEILENSTEINE_GESEHEN_SCHLUESSEL = merkerSchluessel('kim-1');
 import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
@@ -32,6 +33,9 @@ describe('MeilensteineComponent (#351)', () => {
   beforeEach(() => localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL));
   afterEach(() => localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL));
 
+  let merkerAktiv = true;
+  afterEach(() => (merkerAktiv = true));
+
   function erstellen(meilensteine: Meilenstein[], sichtbarkeit: AbzeichenSichtbarkeit | null = null): HTMLElement {
     speichern = jasmine.createSpy('speichern').and.returnValue(of(true));
     TestBed.configureTestingModule({
@@ -39,6 +43,7 @@ describe('MeilensteineComponent (#351)', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: { getCurrentUserId: () => 'kim-1' } },
+        { provide: MEILENSTEIN_MERKER, useValue: merkerAktiv },
         {
           provide: UsageTrackingService,
           useValue: {
@@ -117,6 +122,14 @@ describe('MeilensteineComponent (#351)', () => {
     expect(weitere.open).toBeFalse();
     expect(weitere.querySelector('summary')?.textContent).toContain('Weitere Meilensteine (2)');
     expect(weitere.querySelectorAll('.meilenstein').length).toBe(2);
+  });
+
+  it('schreibt bei ausgeschaltetem Merker nichts in den Browser (§ 25 TDDDG in Prüfung)', () => {
+    merkerAktiv = false;
+    const element = erstellen([meilenstein({ stand: 1, erreicht: true })]);
+
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
+    expect(element.querySelectorAll('.meilenstein').length).toBe(1);
   });
 
   it('schreibt ohne Meilensteine (Punkte aus, keine Einwilligung, Widerruf) keinen Merker', () => {

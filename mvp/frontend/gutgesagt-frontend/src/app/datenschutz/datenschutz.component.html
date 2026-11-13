@@ -683,12 +683,18 @@
         jedem Abruf aus deinen gespeicherten Beiträgen, Einwürfen und den Bewertungen und
         Zählern, die wir für die Punkte ohnehin haben. Es zählen nur nicht gesperrte Beiträge;
         wird einer gesperrt oder gelöscht, kann ein Meilenstein wieder wegfallen. Startkonten
-        zählen auch hier nicht. Einen neu erreichten Meilenstein nennen wir dir mit einem
-        kurzen Hinweis, direkt nach einem Einwurf, einem Ausformulieren oder einem Kommentar
-        oder beim nächsten Anmelden. Welche deiner erreichten Meilensteine dir schon angezeigt
-        wurden, merkt sich nur dein Browser (siehe „Speicherung auf deinem Gerät“); in einem
-        anderen Browser oder nach dem Abmelden gilt, was du bis dahin erreicht hast, still als
-        gesehen, und genannt wird nur, was danach dazukommt.
+        zählen auch hier nicht.
+        <ng-container *ngIf="meilensteinMerker">
+            Einen neu erreichten Meilenstein nennen wir dir mit einem
+            kurzen Hinweis, direkt nach einem Einwurf, einem Ausformulieren oder einem Kommentar
+            oder beim nächsten Anmelden. Welche deiner erreichten Meilensteine dir schon angezeigt
+            wurden, merkt sich nur dein Browser (siehe „Speicherung auf deinem Gerät“); in einem
+            anderen Browser oder nach dem Abmelden gilt, was du bis dahin erreicht hast, still als
+            gesehen, und genannt wird nur, was danach dazukommt.
+        </ng-container>
+        <ng-container *ngIf="!meilensteinMerker">
+            Einen neu erreichten Meilenstein siehst du unter „Meine Beiträge“.
+        </ng-container>
         Keine Erinnerungen, keine Mails. Für Meilensteine gelten Zweck und Rechtsgrundlage wie
         für die Punkte (unten); ohne deine Einwilligung gibt es keine.
       </p>
@@ -1078,7 +1084,7 @@
         über das Schließen hinaus, bis du die Websitedaten dieser Seite löschst. Sie gehen nicht
         an uns und werden nicht gezählt.
       </p>
-      <p>
+      <p *ngIf="meilensteinMerker">
         Sind die Punkte eingeschaltet, merkt sich dein Browser außerdem, welche deiner
         erreichten Meilensteine dir schon angezeigt wurden (siehe „Punkte“), damit der Hinweis
         darauf nur einmal kommt: eine Liste der Meilensteine, gespeichert unter einem
