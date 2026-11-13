@@ -163,6 +163,31 @@ describe('HelpDialogComponent', () => {
     expect(inhalt).not.toContain('in der Datenbank, indem');
   });
 
+  // UX-Review B10: die Kette, Begriffe nach GLOSSARY, kein Jargon, organisationsneutral
+  it('erklärt die Kette Einwerfen, Destillieren, Ausformulieren in drei Zeilen', () => {
+    const schritte = Array.from(fixture.nativeElement.querySelectorAll('.hilfe-kette li')) as HTMLElement[];
+    expect(schritte.map((s) => s.querySelector('strong')!.textContent)).toEqual([
+      'Einwerfen:',
+      'Destillieren:',
+      'Ausformulieren:',
+    ]);
+    expect(schritte[0].textContent).toContain('Fangkorb');
+  });
+
+  it('nennt Begriffe nach GLOSSARY, ohne Jargon und ohne Widerspruch zu den eigenen Modellen', () => {
+    const inhalt: string = fixture.nativeElement.querySelector('mat-dialog-content').textContent;
+    expect(inhalt).not.toContain('fertige Kommentare');
+    expect(inhalt).not.toContain('grünen Mitglied');
+    expect(inhalt).not.toContain('Vektordatenbank');
+    expect(inhalt).not.toContain('semantisch');
+    expect(inhalt).not.toContain('selbst aber keine KI');
+    const technik = Array.from(fixture.nativeElement.querySelectorAll('.hilfe-technik'))
+      .map((p) => (p as HTMLElement).textContent)
+      .join(' ');
+    expect(technik).toContain('auf unseren eigenen Servern');
+    expect(technik).toContain('Die Beiträge selbst schreiben Menschen, keine KI.');
+  });
+
   it('nennt die sechs Schreibregeln', () => {
     const regeln = fixture.nativeElement.querySelectorAll('.schreibregeln li');
 

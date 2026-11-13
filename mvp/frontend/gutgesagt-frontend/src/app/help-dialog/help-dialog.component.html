@@ -44,15 +44,22 @@
 
     <ul>
         <li>🔍 Füge einen Post ein oder tippe eine Aussage oder ein Schlagwort</li>
-        <li>📄 Finde so passende fertige Kommentare und Hintergrundinfos und nutze diese für deine Argumentation</li>
-        <li>✒️ Erstelle eigene fertige Kommentare oder Hintergrundinfos und teile dein Wissen mit anderen grünen
-            Mitgliedern</li>
+        <li>📄 Finde passende Kommentare und Hintergrundinfos und nutze sie für deine Argumentation</li>
+        <li>✒️ Verfasse eigene Kommentare oder Hintergrundinfos und teile dein Wissen mit anderen Mitwirkenden</li>
     </ul>
 
     <p class="hilfe-suche">
         Gib ein, was du gelesen hast – du bekommst Antworten darauf, keine ähnlichen Texte.
         Du kannst also direkt den Post einfügen, auf den du antworten willst.
     </p>
+
+    <!-- Die Kette (GLOSSARY): wie aus einem Fundstueck ein Beitrag wird -->
+    <h3>Vom Fundstück zum Beitrag</h3>
+    <ol class="hilfe-kette">
+        <li><strong>Einwerfen:</strong> Leg einen Link oder Hinweis in den Fangkorb, ohne ihn schon auszuarbeiten.</li>
+        <li><strong>Destillieren:</strong> Im Fangkorb fasst jemand das Argument in einem Satz.</li>
+        <li><strong>Ausformulieren:</strong> Aus dem Satz wird ein Beitrag, den alle finden. Jeden Schritt kann jemand anderes machen.</li>
+    </ol>
 
     <!-- Die Saetze stehen in der Registry, wie bei der Typwahl auf der Beitragen-Seite -->
     <ng-container *ngFor="let typ of typen">
@@ -68,28 +75,16 @@
     <p class="nicht-jede-aussage">{{ nichtJedeAussage }}</p>
     <p class="erfundenes-melden">{{ erfundenesMelden }}</p>
 
-    <h3>Technische Details</h3>
-    <p>
-
-        Gut gesagt nutzt die Techniken, die hinter Chat-GPT und Co stecken, um die Inhalte zu
-        analysieren und zu bewerten – ist dabei selbst aber keine KI.<br>
-        <br>
-        Die Suchfunktion arbeitet in drei Schritten:
+    <!-- Ohne Fachbegriffe; passt zur Datenschutzerklaerung (Berechnung auf eigenen Servern) -->
+    <h3>Wie die Suche funktioniert</h3>
+    <p class="hilfe-technik">
+        Die Suche vergleicht die Bedeutung deiner Eingabe mit den Aussagen, die bei Gut gesagt schon
+        gespeichert sind, und zeigt die Beiträge, die darauf antworten. Je mehr Mitwirkende beitragen
+        und bewerten, desto besser werden die Treffer.
     </p>
-    <ol>
-        <li>Zu deiner Eingabe werden die passendsten bereits bei Gut gesagt gespeicherten „Aussagen“ ermittelt
-        </li>
-        <li>Aussagen sind mit Antwortaussagen verknüpft</li>
-        <li>Zu diesen Antwortaussagen werden die passendsten Inhalte aus der Datenbank geladen</li>
-    </ol>
-    <p>
-        Aussagen, Antworten und Inhalte werden dabei semantisch, d.h. in ihrer Bedeutung, analysiert und
-        bewertet. Die Datenbasis wird dabei durch die Beiträge der grünen Mitglieder kontinuierlich erweitert
-        und durch die Nutzung und Bewertung werden die Ergebnisse kontinuierlich verbessert.<br>
-        <br>
-        Für die semantische Suche nutzen wir die Vektordatenbank
-        <a target="_blank" href="https://qdrant.tech">Qdrant</a>
-        und mehrsprachige KI-Modelle.
+    <p class="hilfe-technik">
+        Den Vergleich rechnen Sprachmodelle auf unseren eigenen Servern; deine Eingabe geht an keinen
+        externen Dienst. Die Beiträge selbst schreiben Menschen, keine KI.
     </p>
 
     <mat-divider></mat-divider>
