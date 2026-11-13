@@ -4,6 +4,7 @@ Woodpecker kann kein Dockerfile lesen; die Images stehen deshalb ein zweites Mal
 Pipeline. Diese Tests halten beide Stellen gleich und sichern die Regeln aus docs/CI.md.
 """
 
+import itertools
 import pathlib
 import re
 
@@ -274,4 +275,63 @@ def test_frontend_schritte_teilen_ein_npm_ci():
     ]
     assert mit_npm_ci == ["frontend-installieren"]
     for name in ("frontend", "frontend-build"):
-        assert SCHRITTE[name]["depends_on"] == ["frontend-installieren"]
+        assert "frontend-installieren" in SCHRITTE[name]["depends_on"]
+
+
+# Die schweren Schritte, kuerzeste zuerst: nie zwei zugleich auf dem geteilten Runner (docs/CI.md).
+SCHWER = ["unit", "frontend-build", "frontend", "integration"]
+VORBEREITUNG = {
+    "unit": "python-installieren",
+    "frontend-build": "frontend-installieren",
+    "frontend": "frontend-installieren",
+    "integration": "python-installieren",
+}
+
+
+def vorfahren(name):
+    """Alle Schritte, auf die ``name`` ueber depends_on direkt oder indirekt wartet."""
+    gesehen = set()
+    offen = list(SCHRITTE[name].get("depends_on", []))
+    while offen:
+        n = offen.pop()
+        if n not in gesehen:
+            gesehen.add(n)
+            offen.extend(SCHRITTE[n].get("depends_on", []))
+    return gesehen
+
+
+def test_schwere_schritte_laufen_als_kette_nacheinander():
+    for vorher, nachher in itertools.pairwise(SCHWER):
+        assert vorher in SCHRITTE[nachher]["depends_on"], nachher
+    for i, a in enumerate(SCHWER):
+        for b in SCHWER[i + 1 :]:
+            assert a in vorfahren(b), (a, b)
+
+
+def test_schwere_schritte_warten_auf_ihre_vorbereitung():
+    for name, vorbereitung in VORBEREITUNG.items():
+        assert vorbereitung in SCHRITTE[name]["depends_on"], name
+
+
+def test_kette_laeuft_nach_rotem_vorgaenger_weiter():
+    # Sonst fehlten ci-bericht nach einem roten unit alle Ergebnisse dahinter.
+    assert "when" not in SCHRITTE[SCHWER[0]]
+    for name in SCHWER[1:]:
+        assert SCHRITTE[name]["when"] == [{"status": ["success", "failure"]}], name
+
+
+def test_leichte_schritte_warten_nicht_auf_die_kette():
+    for name in SCHRITTE:
+        if name in SCHWER or name == BERICHT:
+            continue
+        assert not vorfahren(name) & set(SCHWER), name
+
+
+def test_ci_begrenzt_worker_und_speicher_der_schweren_schritte():
+    assert SCHRITTE["unit"]["environment"]["CHECK_WORKER"] == "2"
+    assert SCHRITTE["frontend-build"]["environment"]["NG_BUILD_MAX_WORKERS"] == "2"
+    assert SCHRITTE["frontend"]["environment"]["CHECK_OHNE_SOURCEMAPS"] == "1"
+    check = (WURZEL / "scripts" / "check.sh").read_text()
+    # Lokal bleiben vier Worker und die Source-Maps.
+    assert '-n "${CHECK_WORKER:-4}"' in check
+    assert "${CHECK_OHNE_SOURCEMAPS:+--source-map=false}" in check

@@ -16,13 +16,13 @@ mirror (`.github/workflows/`) still build them too and publish the tags the envi
 |---|---|---|
 | `retired-words` | `node:22` (frontend Dockerfile; has git and python3) | `check.sh --schritt retired-words`, lines added since the branch left the target branch; pull requests only (push, tag and manual runs have no target branch) |
 | `python-installieren` | `python:3.13-slim` (semantic-search Dockerfile) | venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` |
-| `lint` | same | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
-| `unit` | same | `check.sh --schritt unit`: Python unit tests and `scripts/tests/`, each with four pytest-xdist workers (`CHECK_WORKER`) |
-| `integration` | same | `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below, serially |
-| `frontend-installieren` | `node:22` | `npm ci` in the frontend directory, once for the two steps below |
-| `frontend` | same | after `frontend-installieren`: Chromium from Debian (`scripts/ci-chromium.sh`), `check.sh --schritt frontend` (Karma tests) |
-| `frontend-build` | same | after `frontend-installieren`: `check.sh --schritt frontend-build` (`ng build --configuration production`, for the budgets of the image build) |
+| `frontend-installieren` | `node:22` | `npm ci` in the frontend directory, once for the two frontend steps |
+| `lint` | `python:3.13-slim` | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
 | `bff` | `mcr.microsoft.com/dotnet/sdk:9.0` (BFF Dockerfile) | `check.sh --schritt bff` with `CHECK_OHNE_DOCKER=1` |
+| `unit` | `python:3.13-slim` | `check.sh --schritt unit`: Python unit tests and `scripts/tests/`, each with two pytest-xdist workers (`CHECK_WORKER=2`; locally four) |
+| `frontend-build` | `node:22` | after `unit`: `check.sh --schritt frontend-build` (`ng build --configuration production`, for the budgets of the image build) with `NG_BUILD_MAX_WORKERS=2` |
+| `frontend` | same | after `frontend-build`: Chromium from Debian (`scripts/ci-chromium.sh`), `check.sh --schritt frontend` (Karma tests) with `CHECK_OHNE_SOURCEMAPS=1` (`ng test --source-map=false`) |
+| `integration` | `python:3.13-slim` | after `frontend`: `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below, serially |
 | `ci-bericht` | `python:3.13-slim` | red pull-request runs only, see below |
 
 Services: `qdrant` (same version as the compose files and `.github/workflows/tests-backend.yml`,
@@ -60,19 +60,33 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 - The clone step fetches the full history and the target branch (`fetch-target-branch`),
   so `retired-words` can find where the branch started.
 
-**Run time.** The steps without `depends_on` run side by side, so the longest chain sets the
-duration. Two choices keep chains short without caches or volumes on the runner:
+**Staggered steps.** The runner is shared with the other pipelines of the Woodpecker
+instance. With the heavy steps side by side, on 13.11. its memory ran out and many pipelines
+were cancelled together. So the four heavy steps run one after the other, never two at once, in one chain of `depends_on`;
+the light ones (`retired-words`, `lint`, `bff` and the two installations) run alongside.
+The chain goes shortest first, so a quick failure shows early: `unit` (about half a minute),
+`frontend-build`, `frontend` (Chromium and Karma), `integration` (loads the embedding model,
+the longest). From `frontend-build` on, a step also runs after a red predecessor
+(`status: [success, failure]`), so `ci-bericht` still sees every result; a failed
+installation then makes the steps after it red as well. A run takes longer than with the
+steps in parallel; that is the price of not running the host out of memory.
+`scripts/tests/test_woodpecker_ci.py` checks the chain and the settings below.
 
-- `frontend` and `frontend-build` are two steps after one `npm ci` (`frontend-installieren`):
-  the build runs next to Chromium's installation and the Karma tests instead of after them.
-  Steps share the workspace, so only one step may run `npm ci` there; a second one would
-  delete `node_modules` under the other step (`scripts/tests/test_woodpecker_ci.py` checks it).
-  Angular's build cache is off in CI (`CI` set), the two builders share no files.
-- The unit step runs pytest with four xdist workers (`-n`; `CHECK_WORKER=0` runs serially).
-  Every worker collects the tests itself, so parametrized test IDs must not contain random
-  values such as `uuid4()`, otherwise xdist aborts with "Different tests were collected".
-  The integration step stays serial: every worker would load the embedding model again and
-  the suite sizes its torch threads for one process (`tests/integration/conftest.py`).
+- `unit` runs pytest with two xdist workers in CI (`CHECK_WORKER=2`), four locally (`-n`;
+  `CHECK_WORKER=0` runs serially). Every worker collects the tests itself, so parametrized
+  test IDs must not contain random values such as `uuid4()`, otherwise xdist aborts with
+  "Different tests were collected". The integration step stays serial: every worker would
+  load the embedding model again and the suite sizes its torch threads for one process
+  (`tests/integration/conftest.py`).
+- `frontend-build` sets `NG_BUILD_MAX_WORKERS=2`: `@angular/build` otherwise starts
+  min(4, cores - 1) worker threads for the JavaScript transformer and Sass
+  (`src/utils/environment-options.js`). `frontend` runs `ng test --source-map=false`
+  (`CHECK_OHNE_SOURCEMAPS=1`): the same specs, but stack traces of a failing spec point
+  into the bundle instead of the `.ts` file; rerun it locally for the mapped trace.
+- `frontend` and `frontend-build` share one `npm ci` (`frontend-installieren`). Steps share
+  the workspace, so only one step may run `npm ci` there; a second one would delete
+  `node_modules` under the other step (`scripts/tests/test_woodpecker_ci.py` checks it).
+  Angular's build cache is off in CI (`CI` set).
 
 ## CI report
 

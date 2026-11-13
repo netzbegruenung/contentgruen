@@ -52,32 +52,6 @@ steps:
       - sh scripts/ci-protokoll.sh python-installieren python -m venv mvp/backend/semantic-search-service/venv
       - sh scripts/ci-protokoll.sh python-installieren mvp/backend/semantic-search-service/venv/bin/pip install -q --no-cache-dir -r mvp/backend/semantic-search-service/requirements.txt
 
-  - name: lint
-    image: python:3.13-slim
-    depends_on: [python-installieren]
-    commands:
-      - sh scripts/ci-protokoll.sh lint bash scripts/check.sh --schritt lint
-
-  - name: unit
-    image: python:3.13-slim
-    depends_on: [python-installieren]
-    environment:
-      CHECK_VOLL: "1"
-    commands:
-      - sh scripts/ci-protokoll.sh unit bash scripts/check.sh --schritt unit
-
-  - name: integration
-    image: python:3.13-slim
-    depends_on: [python-installieren]
-    environment:
-      CHECK_VOLL: "1"
-      INTEGRATION_STACK_PFLICHT: "1"
-      QDRANT_URL: http://qdrant:6333
-      POSTGRES_TEST_DATABASE_URL: postgresql+psycopg2://app_user:ci@postgres:5432/gutgesagt_app
-    commands:
-      - sh scripts/ci-protokoll.sh integration python3 scripts/ci_dienste_warten.py qdrant:6333 postgres:5432
-      - sh scripts/ci-protokoll.sh integration bash scripts/check.sh --schritt integration
-
   # Einmal fuer frontend und frontend-build: die Schritte teilen den Workspace, ein zweites
   # npm ci loeschte dem anderen Schritt node_modules unter den Fuessen weg.
   - name: frontend-installieren
@@ -86,25 +60,11 @@ steps:
     commands:
       - sh scripts/ci-protokoll.sh frontend-installieren npm ci --prefix mvp/frontend/gutgesagt-frontend --no-audit --no-fund
 
-  - name: frontend
-    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
-    depends_on: [frontend-installieren]
-    environment:
-      CHECK_VOLL: "1"
-      CHROME_BIN: /usr/local/bin/chromium-ci
+  - name: lint
+    image: python:3.13-slim
+    depends_on: [python-installieren]
     commands:
-      - sh scripts/ci-protokoll.sh frontend sh scripts/ci-chromium.sh
-      - sh scripts/ci-protokoll.sh frontend bash scripts/check.sh --schritt frontend
-
-  # Neben den Tests statt danach, spart auf dem Frontend-Pfad den Build (docs/CI.md).
-  # Braucht kein Chromium.
-  - name: frontend-build
-    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
-    depends_on: [frontend-installieren]
-    environment:
-      CHECK_VOLL: "1"
-    commands:
-      - sh scripts/ci-protokoll.sh frontend-build bash scripts/check.sh --schritt frontend-build
+      - sh scripts/ci-protokoll.sh lint bash scripts/check.sh --schritt lint
 
   - name: bff
     image: mcr.microsoft.com/dotnet/sdk:9.0@sha256:840f3b62b9742dde4461a3c31e38ffd34d41d7d33afd39c378cfcfd5dcb82bd5
@@ -116,6 +76,62 @@ steps:
     commands:
       - sh scripts/ci-protokoll.sh bff bash scripts/check.sh --schritt bff
 
+  # Die vier schweren Schritte laufen nacheinander, nie zwei zugleich: der Runner ist geteilt,
+  # parallel liefen ihm am 13.11. Speicher und Pipelines aus (docs/CI.md, "Staggered steps").
+  # Kuerzeste zuerst, damit schnelle Fehler frueh kommen: unit, frontend-build, frontend,
+  # integration. Ab frontend-build laufen sie auch nach einem roten Vorgaenger
+  # (status success/failure), damit ci-bericht trotzdem alle Ergebnisse hat.
+  - name: unit
+    image: python:3.13-slim
+    depends_on: [python-installieren]
+    environment:
+      CHECK_VOLL: "1"
+      # Lokal 4; zwei Worker brauchen in der CI weniger Speicher neben den anderen Pipelines
+      CHECK_WORKER: "2"
+    commands:
+      - sh scripts/ci-protokoll.sh unit bash scripts/check.sh --schritt unit
+
+  # Braucht kein Chromium.
+  - name: frontend-build
+    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    depends_on: [frontend-installieren, unit]
+    when:
+      - status: [success, failure]
+    environment:
+      CHECK_VOLL: "1"
+      # Worker-Threads von @angular/build (Standard min(4, Kerne - 1)), docs/CI.md
+      NG_BUILD_MAX_WORKERS: "2"
+    commands:
+      - sh scripts/ci-protokoll.sh frontend-build bash scripts/check.sh --schritt frontend-build
+
+  - name: frontend
+    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    depends_on: [frontend-installieren, frontend-build]
+    when:
+      - status: [success, failure]
+    environment:
+      CHECK_VOLL: "1"
+      CHROME_BIN: /usr/local/bin/chromium-ci
+      # ng test --source-map=false: dieselben Tests, weniger Speicher im Webpack-Prozess
+      CHECK_OHNE_SOURCEMAPS: "1"
+    commands:
+      - sh scripts/ci-protokoll.sh frontend sh scripts/ci-chromium.sh
+      - sh scripts/ci-protokoll.sh frontend bash scripts/check.sh --schritt frontend
+
+  - name: integration
+    image: python:3.13-slim
+    depends_on: [python-installieren, frontend]
+    when:
+      - status: [success, failure]
+    environment:
+      CHECK_VOLL: "1"
+      INTEGRATION_STACK_PFLICHT: "1"
+      QDRANT_URL: http://qdrant:6333
+      POSTGRES_TEST_DATABASE_URL: postgresql+psycopg2://app_user:ci@postgres:5432/gutgesagt_app
+    commands:
+      - sh scripts/ci-protokoll.sh integration python3 scripts/ci_dienste_warten.py qdrant:6333 postgres:5432
+      - sh scripts/ci-protokoll.sh integration bash scripts/check.sh --schritt integration
+
   # Nur Standardbibliothek, damit der Bericht auch kommt, wenn python-installieren scheitert.
   # Fehlt das Secret oder ist es nicht fuer pull_request freigegeben, bricht Woodpecker
   # jeden PR-Lauf ab, bevor ein Schritt laeuft (docs/CI.md).
@@ -125,13 +141,13 @@ steps:
     depends_on:
       - retired-words
       - python-installieren
-      - lint
-      - unit
-      - integration
       - frontend-installieren
-      - frontend
-      - frontend-build
+      - lint
       - bff
+      - unit
+      - frontend-build
+      - frontend
+      - integration
     when:
       - event: pull_request
         status: failure
@@ -146,10 +162,10 @@ steps:
         python3 scripts/ci_bericht.py
         retired-words
         python-installieren
-        lint
-        unit
-        integration
         frontend-installieren
-        frontend
-        frontend-build
+        lint
         bff
+        unit
+        frontend-build
+        frontend
+        integration
