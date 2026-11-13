@@ -47,6 +47,7 @@ import {
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import { HINTERGRUNDINFO_TEXT_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
+import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
 export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = HINTERGRUNDINFO_TEXT_MAX;
@@ -142,6 +143,8 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
   ],
 })
 export class AddGenerictextComponent implements OnChanges {
+  /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
+  readonly einspaltig = einspaltig();
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('generictext');
   readonly titelMax = TITEL_MAX;

@@ -56,6 +56,41 @@ class GeseheneNutzungRepository:
             )
             return nutzung_jetzt - gesehen
 
+    def neue_einwuerfe_seit_letztem_besuch(
+        self, user_id: str, einwuerfe_jetzt: int
+    ) -> int:
+        """
+        Wie viele Einwuerfe anderer seit dem zuletzt gezeigten Stand dazugekommen sind;
+        danach gilt ``einwuerfe_jetzt`` als gesehen ("Seit deinem letzten Besuch").
+
+        Ohne Stand (neue Zeile oder NULL nach der Migration) ist nichts neu: Der
+        Stand wird gesetzt, und die Antwort ist 0. Sonst stuende beim ersten Mal der
+        ganze Fangkorb als neu da.
+
+        Wie bei der Nutzung sinkt der Stand nie, und die Antwort ist nie negativ.
+        Werden Einwuerfe geloescht (nach 365 Tagen ohne Arbeit, mit einem Konto), faellt
+        die Zahl darunter; dann bleiben bis zu deren Menge neue Einwuerfe unerwaehnt.
+        """
+        with self.db.get_session() as session:
+            session.execute(
+                insert(GeseheneNutzung)
+                .values(user_id=user_id, nutzung=0, einwuerfe=None)
+                .on_conflict_do_nothing(index_elements=[GeseheneNutzung.user_id])
+            )
+            gesehen = session.execute(
+                select(GeseheneNutzung.einwuerfe)
+                .where(GeseheneNutzung.user_id == user_id)
+                .with_for_update()
+            ).scalar_one()
+            if gesehen is not None and einwuerfe_jetzt <= gesehen:
+                return 0
+            session.execute(
+                update(GeseheneNutzung)
+                .where(GeseheneNutzung.user_id == user_id)
+                .values(einwuerfe=einwuerfe_jetzt)
+            )
+            return 0 if gesehen is None else einwuerfe_jetzt - gesehen
+
 
 _repository: Optional[GeseheneNutzungRepository] = None
 

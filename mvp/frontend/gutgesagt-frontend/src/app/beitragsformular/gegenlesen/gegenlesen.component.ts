@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap } from 'rxjs/operators';
 
 import { SiegelComponent } from '../../shared/components/siegel/siegel.component';
 import { GEGENLESEN_VERZOEGERUNG_MS, Gegengelesen, GegenlesenService } from './gegenlesen.service';
@@ -23,6 +23,27 @@ interface Eingabe {
 export const HERKUNFT_FEHLT = 'Ohne Herkunft glaubt dir das kaum jemand. Nenn, woher es stammt: ein Link oder eine Fundstelle.';
 
 const NOCH_LEER: Gegengelesen = { guete: null, anmerkungen: [] };
+
+/**
+ * So lange nach dem letzten Ergebnis und der letzten Eingabe wartet die Ansage fuer
+ * Screenreader: Sonst meldete sie sich bei jeder Tipp-Pause von einer Sekunde.
+ */
+export const ANSAGE_PAUSE_MS = 1500;
+
+/**
+ * Die Zahl der Anmerkungen in Worten; leer, solange nichts gegengelesen ist. ``zusaetzlich``
+ * zaehlt Anmerkungen des Formulars mit, etwa die fehlende Herkunft (HERKUNFT_FEHLT).
+ */
+export function zusammenfassung(ergebnis: Gegengelesen, zusaetzlich = 0): string {
+  if (ergebnis.guete === null) {
+    return '';
+  }
+  const anzahl = ergebnis.anmerkungen.length + zusaetzlich;
+  if (!anzahl) {
+    return 'Nichts aufgefallen';
+  }
+  return anzahl === 1 ? '1 Anmerkung' : `${anzahl} Anmerkungen`;
+}
 
 /** Zu viele Anfragen: Das letzte Ergebnis bleibt stehen, statt dass der Block verschwindet. */
 const ZU_VIELE = 'zu-viele';
@@ -54,13 +75,50 @@ export class GegenlesenComponent implements OnChanges {
   @Input() herkunftFehlt = false;
 
   readonly herkunftHinweis = HERKUNFT_FEHLT;
+  /**
+   * Kompakt direkt unter dem Textfeld, wenn das Formular einspaltig ist: eine Zeile mit
+   * Siegel und Zahl der Anmerkungen, aufklappbar. Sonst neben der Vorschau, ganz offen.
+   */
+  @Input() kompakt = false;
 
   ergebnis: Gegengelesen = NOCH_LEER;
   verfuegbar = true;
+  /** Kompakt: ob die Anmerkungen aufgeklappt sind. */
+  offen = false;
+  /** Was die Live-Region ansagt: nur die Zahl, entprellt (ANSAGE_PAUSE_MS). */
+  ansage = '';
 
   private readonly eingabe = new Subject<Eingabe>();
+  /** Jede Eingabe (null) und jedes Ergebnis (die Zahl) schiebt die Ansage auf. */
+  private readonly ansageTakt = new Subject<string | null>();
+
+  get istGut(): boolean {
+    return this.ergebnis.guete !== null && !this.ergebnis.anmerkungen.length && !this.zeigtHerkunftHinweis;
+  }
+
+  /** Die kompakte Zeile: die Zahl, oder vor dem ersten Gegenlesen eine Einladung. */
+  get zeile(): string {
+    return zusammenfassung(this.ergebnis, this.herkunftZusatz) || 'liest mit, sobald du schreibst';
+  }
+
+  /** Der Herkunftshinweis zaehlt in Zeile und Ansage als eine Anmerkung mit. */
+  private get herkunftZusatz(): number {
+    return this.zeigtHerkunftHinweis ? 1 : 0;
+  }
 
   constructor(service: GegenlesenService, cdr: ChangeDetectorRef) {
+    this.ansageTakt
+      .pipe(
+        debounceTime(ANSAGE_PAUSE_MS),
+        filter((text): text is string => text !== null),
+        distinctUntilChanged(),
+        takeUntilDestroyed(inject(DestroyRef)),
+      )
+      .subscribe((text) => {
+        this.ansage = text;
+        cdr.markForCheck();
+      });
+
     this.eingabe
       .pipe(
         debounceTime(GEGENLESEN_VERZOEGERUNG_MS),
@@ -90,7 +148,10 @@ export class GegenlesenComponent implements OnChanges {
       .subscribe((ergebnis) => {
         if (ergebnis === ZU_VIELE) return;
         this.verfuegbar = ergebnis !== null;
-        if (ergebnis) this.ergebnis = ergebnis;
+        if (ergebnis) {
+          this.ergebnis = ergebnis;
+          this.ansageTakt.next(zusammenfassung(ergebnis, this.herkunftZusatz));
+        }
         cdr.markForCheck();
       });
   }
@@ -101,6 +162,7 @@ export class GegenlesenComponent implements OnChanges {
   }
 
   ngOnChanges(): void {
+    this.ansageTakt.next(null);
     this.eingabe.next({
       titel: this.titel ?? '',
       text: this.text ?? '',

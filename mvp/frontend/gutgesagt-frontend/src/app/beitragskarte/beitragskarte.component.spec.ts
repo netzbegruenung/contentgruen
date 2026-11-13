@@ -692,6 +692,13 @@ describe('BeitragskarteComponent', () => {
       expect(element('.badge-beliebt')).toBeNull();
     });
 
+    it('zeigt Nutzung und Kopieren lesbar gross statt 11/12 px (Nutzerfuehrung 13.11.)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 2 })));
+
+      expect(parseFloat(getComputedStyle(element('.karte-nutzung')).fontSize)).toBeGreaterThanOrEqual(14);
+      expect(parseFloat(getComputedStyle(element('.kopieren-knopf')).fontSize)).toBeGreaterThanOrEqual(15);
+    });
+
     it('zaehlt die Nutzung nach dem Kopieren hoch', fakeAsync(() => {
       zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 2 })));
 
@@ -813,6 +820,26 @@ describe('BeitragskarteComponent', () => {
       fixture.detectChanges();
       expect(element('.statement-details')).toBeNull();
       expect(fixture.nativeElement.textContent).not.toContain('%');
+    });
+
+    it('blendet die Zeile "Antwort auf" auf Wunsch aus, Admins behalten den Aufklapper mit den Werten', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { antwortAufZeigen: false });
+      expect(element('.statement')).toBeNull();
+
+      alsAdmin();
+      zeigen(ausSuchergebnis(paket('commentary_result')), { antwortAufZeigen: false });
+      element('.statement-zeile').click();
+      fixture.detectChanges();
+      expect(element('.statement-details').textContent).toContain('Suchübereinstimmung: 90%');
+    });
+
+    it('setzt den Titel als h3, auf Wunsch als h4', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+      expect(element('.karte-titel').tagName).toBe('H3');
+
+      zeigen(ausSuchergebnis(paket('commentary_result')), { titelEbene: 4 });
+      expect(element('.karte-titel').tagName).toBe('H4');
+      expect(element('.karte-titel a.titel-link')).toBeTruthy();
     });
 
     it('zeigt die Aussage ohne Anmeldung ebenso ohne Werte', () => {
@@ -1070,7 +1097,8 @@ describe('BeitragskarteComponent', () => {
       expect(getComputedStyle(element('.album-anriss')).webkitLineClamp).toBe('2');
       expect(getComputedStyle(element('.album-anriss')).fontSize).toBe('13px');
       expect(element('.album-fuss .karte-datum').textContent!.trim()).toBe('13.09.2026');
-      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7×');
+      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7× genutzt');
+      expect(getComputedStyle(element('.album-fuss .badge-nutzung')).fontSize).toBe('15px');
       expect(element('.badge-nutzung').classList).not.toContain('ungenutzt');
       expect(element('.statement')).toBeNull();
       expect(element('.karte-text')).toBeNull();
@@ -1151,27 +1179,27 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-bild app-fremdes-bild')).not.toBeNull();
     });
 
-    it('zeigt ohne oder mit unbekannter Nutzung eine dezente 0', () => {
+    it('zeigt ohne oder mit unbekannter Nutzung dezent "Noch nicht genutzt"', () => {
       const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 0 }));
 
       zeigen(daten, { variante: 'kompakt' });
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('0×');
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('Noch nicht genutzt');
       expect(element('.badge-nutzung').classList).toContain('ungenutzt');
 
       zeigen({ ...daten, nutzung: null }, { variante: 'kompakt' });
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('0×');
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('Noch nicht genutzt');
       expect(element('.badge-nutzung').classList).toContain('ungenutzt');
     });
 
-    it('zeigt im Fuss den Zuwachs der letzten 7 Tage neben der Nutzung', () => {
+    it('zeigt im Fuss den Zuwachs der letzten 7 Tage ausgeschrieben unter der Nutzung', () => {
       const daten = { ...ausSuchergebnis(paket('commentary_result', { usage_count: 7 })), nutzungLetzte7Tage: 2 };
 
       zeigen(daten, { variante: 'kompakt' });
       const zuwachs = element('.album-fuss .nutzung-zuwachs');
 
-      expect(zuwachs.textContent!.trim()).toBe('+2');
-      expect(zuwachs.getAttribute('aria-label')).toBe('2 davon in den letzten 7 Tagen');
-      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7×');
+      expect(zuwachs.textContent!.trim()).toBe('+2 diese Woche');
+      expect(getComputedStyle(zuwachs).fontSize).toBe('13px');
+      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7× genutzt');
     });
 
     it('zeigt ohne Zuwachs keinen Zuwachs', () => {

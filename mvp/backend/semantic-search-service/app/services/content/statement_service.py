@@ -7,6 +7,7 @@ from domain.models.zeit import utc_jetzt
 from typing import AbstractSet, Dict, List, Optional, Tuple
 import uuid
 import logging
+from collections.abc import Iterable, Set
 
 from pydantic import ValidationError
 
@@ -241,6 +242,13 @@ class StatementService(
         Grundlage von "Hier fehlt eine Antwort" (StatementRepository.ohne_kommentar).
         """
         return await self._repository.ohne_kommentar()
+
+    async def mit_kommentar(self, ids: Iterable[uuid.UUID]) -> Set[uuid.UUID]:
+        """
+        Welche dieser Aussagen einen sichtbaren Kommentar haben
+        (StatementRepository.mit_kommentar): fuer "Hier fehlt eine Antwort".
+        """
+        return await self._repository.mit_kommentar(ids)
 
     async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
         """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
