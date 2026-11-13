@@ -675,9 +675,11 @@ describe('ResultViewComponent: Nicht dabei?', () => {
     expect(unten.textContent).toContain('Nicht dabei?');
     expect(aehnliche(unten)).toEqual(['Wärmepumpen lohnen sich nicht']);
 
+    // "Schreib selbst einen Kommentar zu dieser Aussage": die der Treffer, nicht die
+    // der Suche (getById liefert eine eigene Suchanfrage Nicht-Admins nicht aus, #436).
     unten.querySelector<HTMLButtonElement>('.neu-anlegen-knopf button')!.click();
     tick();
-    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}&searchQuery=waermepumpe%20teuer`);
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${TREFFER_AUSSAGE}&searchQuery=waermepumpe%20teuer`);
   }));
 
   it('sucht mit einem Klick auf eine aehnliche Aussage nach ihr', fakeAsync(() => {
@@ -827,6 +829,35 @@ describe('ResultViewComponent: Gefunden zu', () => {
   it('zeigt keinen Block, wenn kein Treffer ueber eine Aussage kam', async () => {
     const seite = await oeffnen(false, [kommentar('k-4', null, '', 0.5)]);
     expect(seite.querySelector('.gefunden-zu')).toBeNull();
+  });
+
+  for (const mobil of [false, true]) {
+    it(`antwortet mit "Antworten" auf die erkannte Aussage, nicht auf die der Suche (${mobil ? 'Handy' : 'Desktop'})`, async () => {
+      // Die Suche hat eine eigene Aussage angelegt (11111111-...), die getById Nicht-Admins
+      // nicht ausliefert (#436); gefunden wurde ueber die erkannte.
+      const seite = await oeffnen(mobil, TREFFER());
+      const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      const knopf = Array.from(seite.querySelectorAll<HTMLButtonElement>('button'))
+        .find((b) => b.textContent!.trim().endsWith('Antworten'))!;
+      expect(knopf).withContext('Knopf "Antworten"').toBeTruthy();
+
+      knopf.click();
+
+      expect(navigieren).toHaveBeenCalledWith(['/workflow/add-commentary'], {
+        queryParams: { aussage: ERKANNT_ID, searchQuery: 'tempolimit bringt nichts' },
+      });
+    });
+  }
+
+  it('nimmt ohne erkannte Aussage die der Suche', async () => {
+    await oeffnen(false, [kommentar('k-4', null, '', 0.5)]);
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    fixture.componentInstance.navigateToContribute('generictext');
+
+    expect(navigieren).toHaveBeenCalledWith(['/workflow/add-generictext'], {
+      queryParams: { aussage: '11111111-2222-4333-8444-555555555555', searchQuery: 'tempolimit bringt nichts' },
+    });
   });
 
   it('sagt unter den Treffern "zu dieser Aussage", nicht "zu deiner Aussage" (R49)', async () => {
