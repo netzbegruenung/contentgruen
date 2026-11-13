@@ -123,6 +123,34 @@ class TestDienst:
 
         repository.ausfuehren.assert_not_called()
 
+    def test_postgres_scheitert_zweiter_klick_erledigt(
+        self, dienst, repository, qdrant
+    ):
+        """Qdrant gelingt, PostgreSQL scheitert: Auftrag offen, der zweite Lauf holt nach."""
+        repository.laden.return_value = _auftrag()
+        repository.ausfuehren.side_effect = [
+            RuntimeError("Datenbank weg"),
+            PostgresBericht(einwuerfe=2, saetze=1),
+        ]
+
+        with pytest.raises(RuntimeError):
+            dienst.ausfuehren(ID)
+        ergebnis = dienst.ausfuehren(ID)
+
+        assert qdrant.call_count == 2
+        assert repository.ausfuehren.call_count == 2
+        assert (ergebnis.einwuerfe, ergebnis.saetze) == (2, 1)
+
+    def test_neue_einwilligung_steht_in_der_liste(self, dienst, repository):
+        neu = JETZT - timedelta(hours=1)
+        repository.offene.return_value = [
+            Loeschauftrag(**{**vars(_auftrag(tage_alt=2)), "neu_eingewilligt_am": neu})
+        ]
+
+        (auftrag,) = dienst.offene(JETZT)
+
+        assert auftrag.neu_eingewilligt_am == neu
+
     def test_unbekannt(self, dienst, repository):
         repository.laden.return_value = None
 
@@ -161,6 +189,7 @@ class TestApi:
         assert auftrag["user_id"] == "person-1"
         assert auftrag["anzeigename"] == "Anna B."
         assert auftrag["ueberfaellig"] is True
+        assert auftrag["neu_eingewilligt_am"] is None
 
     def test_liste_fehler_500(self, client, repository):
         repository.offene.side_effect = RuntimeError("Datenbank weg")

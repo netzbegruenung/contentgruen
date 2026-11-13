@@ -88,7 +88,12 @@ class TestLoeschauftraege:
 
     @pytest.fixture
     def loeschauftraege(self):
-        return Mock(**{"erledigte_loeschen_vor.return_value": 0})
+        return Mock(
+            **{
+                "erledigte_loeschen_vor.return_value": 0,
+                "ueberfaellige_zaehlen.return_value": 0,
+            }
+        )
 
     @pytest.fixture
     def service(
@@ -109,6 +114,24 @@ class TestLoeschauftraege:
         loeschauftraege.erledigte_loeschen_vor.assert_called_once_with(
             datetime(2025, 10, 29, tzinfo=timezone.utc)
         )
+
+    async def test_ueberfaellige_als_warning_nur_mit_zahl(
+        self, service, loeschauftraege, caplog
+    ):
+        loeschauftraege.ueberfaellige_zaehlen.return_value = 2
+
+        with caplog.at_level("WARNING"):
+            await service.fristen_anwenden(HEUTE)
+
+        warnungen = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warnungen) == 1
+        assert warnungen[0].getMessage().startswith("2 Loeschauftraege past")
+
+    async def test_keine_warning_ohne_ueberfaellige(self, service, caplog):
+        with caplog.at_level("WARNING"):
+            await service.fristen_anwenden(HEUTE)
+
+        assert not [r for r in caplog.records if r.levelname == "WARNING"]
 
     async def test_fehler_haelt_die_anderen_nicht_auf(
         self, service, loeschauftraege, beitraege

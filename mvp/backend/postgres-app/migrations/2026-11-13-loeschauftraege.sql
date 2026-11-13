@@ -10,8 +10,10 @@
 -- Start an, auch in bestehenden Datenbanken, vor dem Einspielen der Migrationen.
 --
 -- Vorhandene Daten: Wer vor diesem Stand widerrufen und seither nicht neu
--- eingewilligt hat, bekommt einen offenen Auftrag mit Frist ab dem Einspielen, ausser
--- es gibt schon einen seit diesem Widerruf. Ein zweiter Lauf legt deshalb nichts an.
+-- eingewilligt hat, bekommt einen offenen Auftrag, angelegt zum Zeitpunkt des
+-- Widerrufs, mit Frist sieben Tage ab dem Einspielen (sonst waere er sofort
+-- ueberfaellig); ausser es gibt schon einen seit diesem Widerruf. Ein zweiter Lauf
+-- legt deshalb nichts an.
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
@@ -31,7 +33,7 @@ CREATE INDEX IF NOT EXISTS idx_loeschauftraege_erledigt_am
     ON loeschauftraege (erledigt_am);
 
 INSERT INTO loeschauftraege (id, user_id, angelegt_am, frist)
-SELECT gen_random_uuid(), j.user_id, now(), now() + interval '7 days'
+SELECT gen_random_uuid(), j.user_id, j.widerrufen_am, now() + interval '7 days'
 FROM (
     SELECT DISTINCT ON (user_id) user_id, widerrufen_am
     FROM art9_einwilligungen

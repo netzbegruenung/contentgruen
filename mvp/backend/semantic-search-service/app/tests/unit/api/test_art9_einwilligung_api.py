@@ -262,7 +262,7 @@ class TestWiderrufen:
         """
         sitzung = object()
         repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
-            im_selben_zug(sitzung)
+            im_selben_zug(sitzung, True)
         )
 
         assert client.delete(BASIS, headers=PERSON).status_code == 204
@@ -279,7 +279,7 @@ class TestWiderrufen:
         """
         sitzung = object()
         repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
-            im_selben_zug(sitzung)
+            im_selben_zug(sitzung, True)
         )
 
         assert client.delete(BASIS, headers=PERSON).status_code == 204
@@ -288,11 +288,22 @@ class TestWiderrufen:
             "user-001", session=sitzung
         )
 
+    def test_delete_ohne_geltende_einwilligung_kein_auftrag(
+        self, client, repository, stimmen, loeschauftraege
+    ):
+        """Nichts widerrufen (nie eingewilligt oder schon widerrufen): kein Auftrag."""
+        repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
+            im_selben_zug(object(), False)
+        )
+
+        assert client.delete(BASIS, headers=PERSON).status_code == 204
+        loeschauftraege.anlegen.assert_not_called()
+
     def test_delete_fehler_beim_auftrag_gibt_500(
         self, client, repository, stimmen, loeschauftraege
     ):
         repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
-            im_selben_zug(object())
+            im_selben_zug(object(), True)
         )
         loeschauftraege.anlegen.side_effect = RuntimeError("Datenbank weg")
 
@@ -304,7 +315,7 @@ class TestWiderrufen:
 
     def test_delete_fehler_beim_loeschen_gibt_500(self, client, repository, stimmen):
         repository.widerrufen.side_effect = lambda user_id, im_selben_zug=None: (
-            im_selben_zug(object())
+            im_selben_zug(object(), True)
         )
         stimmen.loeschen_fuer_person.side_effect = RuntimeError("Datenbank weg")
 

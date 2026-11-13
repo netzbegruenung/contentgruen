@@ -63,6 +63,10 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
           <span *ngIf="a.anzeigename"> ({{ a.user_id }})</span>
         </div>
         <div>Widerrufen am {{ datum(a.angelegt_am) }}</div>
+        <div *ngIf="a.neu_eingewilligt_am" class="neu-eingewilligt" data-testid="neu-eingewilligt">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          Neu eingewilligt am {{ datum(a.neu_eingewilligt_am) }}
+        </div>
         <div class="frist">
           <mat-icon *ngIf="a.ueberfaellig" aria-hidden="true">warning</mat-icon>
           {{ a.ueberfaellig ? 'Überfällig seit' : 'Frist bis' }} {{ datum(a.frist) }}
@@ -95,7 +99,7 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
     .auftrag button { justify-self: start; margin-top: 4px; }
     .auftrag.ueberfaellig { border-left-color: var(--error-color); }
     .auftrag.ueberfaellig .frist { color: var(--error-color); font-weight: 700; }
-    .frist { display: flex; align-items: center; gap: 4px; }
+    .frist, .neu-eingewilligt { display: flex; align-items: center; gap: 4px; }
     .im-knopf { display: inline-block; margin-right: 8px; vertical-align: middle; }
   `],
 })
@@ -162,7 +166,9 @@ export class LoeschauftraegeComponent implements OnInit, OnDestroy {
             const text =
               fehler?.status === 409
                 ? 'Der Löschauftrag ist schon erledigt.'
-                : 'Löschablauf fehlgeschlagen; der Auftrag bleibt offen. Erneut ausführen holt nach, was fehlt.';
+                : fehler?.status === 404
+                  ? 'Den Löschauftrag gibt es nicht mehr, etwa nach einer Kontolöschung.'
+                  : 'Löschablauf fehlgeschlagen; der Auftrag bleibt offen. Erneut ausführen holt nach, was fehlt.';
             this.snackBar.open(text, 'OK', { duration: 8000 });
             this.laden();
           },

@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import (
+    Art9EinwilligungZeile,
     AusformuliertIn,
     Einwurf,
     LoeschauftragZeile,
@@ -39,6 +40,8 @@ class Loeschauftrag:
     angelegt_am: datetime
     frist: datetime
     erledigt_am: Optional[datetime]
+    # Juengste Einwilligung nach dem Widerruf, falls die Person neu eingewilligt hat
+    neu_eingewilligt_am: Optional[datetime] = None
 
 
 @dataclass(frozen=True)
@@ -82,14 +85,38 @@ class LoeschauftragRepository:
             eigene.execute(anweisung)
 
     def offene(self) -> List[Loeschauftrag]:
-        """Offene Auftraege, die mit der fruehesten Frist zuerst."""
+        """
+        Offene Auftraege, die mit der fruehesten Frist zuerst. Hat die Person nach dem
+        Widerruf (``angelegt_am``) neu eingewilligt, steht der juengste Zeitpunkt in
+        ``neu_eingewilligt_am``.
+        """
+        neu_eingewilligt = (
+            select(func.max(Art9EinwilligungZeile.eingewilligt_am))
+            .where(
+                Art9EinwilligungZeile.user_id == LoeschauftragZeile.user_id,
+                Art9EinwilligungZeile.eingewilligt_am > LoeschauftragZeile.angelegt_am,
+            )
+            .scalar_subquery()
+        )
         with self.db.get_session() as session:
             zeilen = session.execute(
-                select(LoeschauftragZeile)
+                select(LoeschauftragZeile, neu_eingewilligt)
                 .where(LoeschauftragZeile.erledigt_am.is_(None))
                 .order_by(LoeschauftragZeile.frist, LoeschauftragZeile.id)
-            ).scalars()
-            return [_auftrag(z) for z in zeilen]
+            ).all()
+            return [_auftrag(z, neu) for z, neu in zeilen]
+
+    def ueberfaellige_zaehlen(self, jetzt: datetime) -> int:
+        """Offene Auftraege, deren Frist vor ``jetzt`` lag."""
+        with self.db.get_session() as session:
+            return session.execute(
+                select(func.count())
+                .select_from(LoeschauftragZeile)
+                .where(
+                    LoeschauftragZeile.erledigt_am.is_(None),
+                    LoeschauftragZeile.frist < jetzt,
+                )
+            ).scalar_one()
 
     def laden(self, auftrag_id: uuid.UUID) -> Optional[Loeschauftrag]:
         with self.db.get_session() as session:
@@ -175,13 +202,16 @@ class LoeschauftragRepository:
             ).rowcount
 
 
-def _auftrag(zeile: LoeschauftragZeile) -> Loeschauftrag:
+def _auftrag(
+    zeile: LoeschauftragZeile, neu_eingewilligt_am: Optional[datetime] = None
+) -> Loeschauftrag:
     return Loeschauftrag(
         id=zeile.id,
         user_id=zeile.user_id,
         angelegt_am=zeile.angelegt_am,
         frist=zeile.frist,
         erledigt_am=zeile.erledigt_am,
+        neu_eingewilligt_am=neu_eingewilligt_am,
     )
 
 

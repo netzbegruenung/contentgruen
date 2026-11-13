@@ -99,6 +99,39 @@ class TestWiderruf:
 
         assert _zeilen(datenbank) == [(PERSON, True), (PERSON, False)]
 
+    def test_widerruf_ohne_geltende_einwilligung_legt_keinen_auftrag_an(
+        self, dienst, datenbank
+    ):
+        dienst.widerrufen(PERSON)
+
+        assert _zeilen(datenbank) == []
+
+    def test_wiederholter_widerruf_nach_erledigtem_auftrag_legt_keinen_neuen_an(
+        self, dienst, auftraege, datenbank, einwuerfe
+    ):
+        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.widerrufen(PERSON)
+        (erster,) = auftraege.offene()
+        auftraege.ausfuehren(erster)
+
+        dienst.widerrufen(PERSON)
+
+        assert _zeilen(datenbank) == [(PERSON, True)]
+
+    def test_liste_zeigt_eine_neue_einwilligung_nach_dem_widerruf(
+        self, dienst, auftraege
+    ):
+        dienst.einwilligen(PERSON, "2026-11-12")
+        dienst.widerrufen(PERSON)
+        (vorher,) = auftraege.offene()
+        assert vorher.neu_eingewilligt_am is None
+
+        dienst.einwilligen(PERSON, "2026-11-12")
+
+        (nachher,) = auftraege.offene()
+        assert nachher.neu_eingewilligt_am is not None
+        assert nachher.neu_eingewilligt_am > nachher.angelegt_am
+
     def test_scheitert_der_auftrag_gilt_der_widerruf_nicht(self, datenbank):
         """Eine Transaktion wie beim Loeschen der Stimmen."""
         from unittest.mock import MagicMock
@@ -230,6 +263,26 @@ class TestAusfuehren:
 
 
 class TestFrist:
+    def test_ueberfaellige_zaehlen_nur_offene_mit_vergangener_frist(
+        self, datenbank, auftraege
+    ):
+        jetzt = datetime.now(timezone.utc)
+        alt = jetzt - timedelta(days=10)
+        with datenbank.get_session() as s:
+            s.add_all(
+                [
+                    LoeschauftragZeile(user_id="a", angelegt_am=alt, frist=alt),
+                    LoeschauftragZeile(
+                        user_id="b", angelegt_am=alt, frist=alt, erledigt_am=jetzt
+                    ),
+                    LoeschauftragZeile(
+                        user_id="c", angelegt_am=jetzt, frist=jetzt + timedelta(days=7)
+                    ),
+                ]
+            )
+
+        assert auftraege.ueberfaellige_zaehlen(jetzt) == 1
+
     def test_erledigte_vor_der_grenze_gehen_offene_bleiben(self, datenbank, auftraege):
         alt = datetime(2025, 1, 1, tzinfo=timezone.utc)
         with datenbank.get_session() as s:
@@ -302,4 +355,9 @@ def test_migration_legt_auftraege_fuer_fruehere_widerrufe_an(postgres_url):
 
         (auftrag,) = LoeschauftragRepository(db).offene()
         assert auftrag.user_id == "widerrufen"
-        assert auftrag.frist - auftrag.angelegt_am == timedelta(days=FRIST_TAGE)
+        # "Widerrufen am" in der Liste ist der echte Widerruf; die Frist zaehlt ab jetzt,
+        # sonst waere der Auftrag sofort ueberfaellig.
+        assert auftrag.angelegt_am == frueher
+        assert auftrag.frist > datetime.now(timezone.utc) + timedelta(
+            days=FRIST_TAGE - 1
+        )

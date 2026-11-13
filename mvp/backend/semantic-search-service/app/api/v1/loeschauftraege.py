@@ -31,6 +31,8 @@ class OffenerAuftragResponse(BaseModel):
     angelegt_am: datetime
     frist: datetime
     ueberfaellig: bool
+    # Hat die Person nach dem Widerruf neu eingewilligt: wann zuletzt
+    neu_eingewilligt_am: Optional[datetime]
 
 
 class OffeneAuftraegeResponse(BaseModel):

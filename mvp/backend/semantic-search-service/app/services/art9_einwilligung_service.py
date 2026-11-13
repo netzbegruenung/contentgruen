@@ -75,8 +75,9 @@ class Art9EinwilligungService:
         Widerruf vermerken, die Stimmen loeschen und einen Loeschauftrag anlegen, in
         einer Transaktion (alle Repositories nutzen die globale AppDatabase):
         Scheitert eins davon, gilt auch der Widerruf nicht, die Person bleibt
-        eingewilligt und kann ihn ueber die Oberflaeche wiederholen. Ein offener
-        Auftrag bleibt bei einem zweiten Widerruf der einzige.
+        eingewilligt und kann ihn ueber die Oberflaeche wiederholen. Den Auftrag gibt
+        es nur, wenn eben eine geltende Einwilligung widerrufen wurde; ein offener
+        bleibt ohnehin der einzige.
         """
         stimmen = self._stimmen
         loeschauftraege = self._loeschauftraege
@@ -84,10 +85,10 @@ class Art9EinwilligungService:
             self._repository.widerrufen(user_id)
             return
 
-        def im_selben_zug(session) -> None:
+        def im_selben_zug(session, widerrufen: bool) -> None:
             if stimmen is not None:
                 stimmen.loeschen_fuer_person(user_id, session=session)
-            if loeschauftraege is not None:
+            if loeschauftraege is not None and widerrufen:
                 loeschauftraege.anlegen(user_id, session=session)
 
         self._repository.widerrufen(user_id, im_selben_zug=im_selben_zug)

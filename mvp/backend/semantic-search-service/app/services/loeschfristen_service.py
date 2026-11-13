@@ -40,7 +40,8 @@ services/suchen_ohne_treffer_service.py, Nutzungsereignisse in core/config.py.
 - Loeschauftraege nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b): erledigte
   ERLEDIGTER_LOESCHAUFTRAG_TAGE nach dem Ausfuehren. So lange laesst sich auf eine
   Nachfrage oder Beschwerde belegen, wann der Loeschablauf lief; den Widerruf selbst
-  belegt weiter die Zeile der Einwilligung. Offene bleiben: Sie sind Arbeit.
+  belegt weiter die Zeile der Einwilligung. Offene bleiben: Sie sind Arbeit. Ueberfaellige
+  offene meldet jeder Lauf als WARNING, nur mit ihrer Zahl.
 - Stimmen haben keine eigene Frist: Aus ihnen entsteht die Guete eines Beitrags, sie
   leben so lange wie er und gehen mit ihm.
 
@@ -153,6 +154,7 @@ class LoeschfristenService:
                 _grenze(heute, ERLEDIGTER_LOESCHAUFTRAG_TAGE),
                 "completed Loeschauftraege",
             )
+            await self._ueberfaellige_melden()
         if self._konten is not None:
             await self._frist_anwenden(
                 self._konten.nie_benutzte_loeschen,
@@ -165,6 +167,24 @@ class LoeschfristenService:
         except Exception as e:
             logger.error(
                 f"Error removing deleted content: {type(e).__name__}", exc_info=True
+            )
+
+    async def _ueberfaellige_melden(self) -> None:
+        """Ueberfaellige offene Loeschauftraege als WARNING, ohne Kennungen."""
+        try:
+            n = await asyncio.to_thread(
+                self._loeschauftraege.ueberfaellige_zaehlen, datetime.now(timezone.utc)
+            )
+        except Exception as e:
+            logger.error(
+                f"Error counting overdue Loeschauftraege: {type(e).__name__}",
+                exc_info=True,
+            )
+            return
+        if n:
+            logger.warning(
+                f"{n} Loeschauftraege past their seven days, run them under "
+                "Moderation > Loeschauftraege"
             )
 
     @staticmethod

@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, Subject } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,6 +7,7 @@ import { ContentReport, ModerationService, PendingReportsResponse } from '../../
 import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
+import { NACHLADEN_MS } from './loeschauftraege.component';
 
 function sperre(overrides: Partial<SperreFuerAdmins> = {}): SperreFuerAdmins {
   return {
@@ -318,6 +319,7 @@ describe('ContentModerationComponent', () => {
       angelegt_am: '2026-11-01T10:00:00Z',
       frist: '2026-11-08T10:00:00Z',
       ueberfaellig: true,
+      neu_eingewilligt_am: null,
     };
 
     it('zählt die offenen Aufträge am Umschalter', () => {
@@ -329,6 +331,29 @@ describe('ContentModerationComponent', () => {
       const loeschauftraege = umschalter.find((u) => u.textContent?.includes('Löschaufträge'))!;
       expect(loeschauftraege.querySelector('[aria-label]')?.getAttribute('aria-label')).toBe('Löschaufträge, 1 offen');
     });
+
+    it('lädt die Zahl am Umschalter im Takt nach, solange sichtbar, auch in anderen Ansichten', fakeAsync(() => {
+      let sichtbarkeit: DocumentVisibilityState = 'visible';
+      spyOnProperty(document, 'visibilityState', 'get').and.callFake(() => sichtbarkeit);
+      mitMeldungen([]);
+      expect(fixture.componentInstance.offeneLoeschauftraege).toBe(0);
+
+      moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [auftrag] }));
+      tick(NACHLADEN_MS);
+      expect(fixture.componentInstance.offeneLoeschauftraege).toBe(1);
+
+      sichtbarkeit = 'hidden';
+      tick(NACHLADEN_MS);
+      expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
+
+      sichtbarkeit = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(3);
+
+      fixture.destroy();
+      tick(NACHLADEN_MS);
+      expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(3);
+    }));
 
     it('zeigt die Liste ohne „Aktualisieren“: sie lädt selbst nach', () => {
       mitMeldungen([]);

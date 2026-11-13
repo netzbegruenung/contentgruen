@@ -156,14 +156,18 @@ Widerruft eine Person ihre Art.-9-Einwilligung, fehlt für die Zuordnung ihrer B
 Einwürfe und Sätze die Rechtsgrundlage (DSFA V2, R9; `docs/ART9_EINWILLIGUNG.md`). Der Widerruf
 löscht sofort ihre Stimmen und legt in derselben Transaktion einen **Löschauftrag** an: Kennung,
 Zeitpunkt und Frist, sieben Tage später (Tabelle `loeschauftraege`,
-`Art9EinwilligungService.widerrufen`). Je Person gibt es höchstens einen offenen Auftrag; ein
-zweiter Widerruf legt keinen zweiten an. Wer vor diesem Stand widerrufen und seither nicht neu
-eingewilligt hat, bekommt den Auftrag beim Einspielen der Migration
-(`2026-11-13-loeschauftraege.sql`).
+`Art9EinwilligungService.widerrufen`). Einen Auftrag gibt es nur, wenn dabei eine geltende
+Einwilligung widerrufen wurde; je Person höchstens einen offenen, ein zweiter Widerruf legt
+keinen zweiten an. Wer vor diesem Stand widerrufen und seither nicht neu eingewilligt hat,
+bekommt den Auftrag beim Einspielen der Migration (`2026-11-13-loeschauftraege.sql`): angelegt
+zum Zeitpunkt des Widerrufs, Frist sieben Tage ab dem Einspielen. Beim Umstellen der Kennungen
+zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
 
 Admins sehen offene Aufträge unter „Moderation“, „Löschaufträge“, mit der frühesten Frist
-zuerst; überfällige stehen hervorgehoben, die Zahl offener steht am Umschalter. Die Liste lädt
-selbst nach. „Löschablauf ausführen“ (`POST /api/v1/moderation/loeschauftraege/{id}/ausfuehren`)
+zuerst; überfällige stehen hervorgehoben, die Zahl offener steht am Umschalter. Liste und
+Zahl laden selbst nach. Hat die Person nach dem Widerruf neu eingewilligt, steht „Neu
+eingewilligt am …“ daneben; was dann gilt, ist **offen** (Entscheidung Maintainer). Überfällige
+meldet der tägliche Löschfrist-Task zusätzlich als WARNING im Log, nur mit ihrer Zahl. „Löschablauf ausführen“ (`POST /api/v1/moderation/loeschauftraege/{id}/ausfuehren`)
 macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwirkung:
 
 - **Qdrant wie Schritt 3:** Beiträge anonymisieren (`services/wartung/beitraege_anonymisieren.py`,
@@ -175,8 +179,8 @@ macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwir
   In derselben Transaktion bekommt der Auftrag den Zeitpunkt der Ausführung.
 
 Was **bleibt**: das Konto, der Anzeigename in `users`, die Einwilligungen samt Widerruf als
-Nachweis (Art. 7 Abs. 1), Meldungen der Person, `gesehene_nutzung` und Muster-Hinweise (die gehen
-mit ihrer Frist). Erst Qdrant, dann PostgreSQL: Scheitert ein Schritt, bleibt der Auftrag offen,
+Nachweis (Art. 7 Abs. 1), Meldungen der Person und Muster-Hinweise (beide gehen mit ihrer
+Frist) sowie `gesehene_nutzung` (nur eine Zahl, ohne Frist, geht mit dem Konto). Erst Qdrant, dann PostgreSQL: Scheitert ein Schritt, bleibt der Auftrag offen,
 und ein zweiter Klick holt nach, was fehlt; beide Teile sind wiederholbar. Danach wie in
 Schritt 3 die Texte durchsehen; macht einer die Person erkennbar, wird er einzeln entfernt. Die
 Beiträge stehen danach nicht mehr in „Meine Beiträge“ der Person, sie kann sie also nicht mehr

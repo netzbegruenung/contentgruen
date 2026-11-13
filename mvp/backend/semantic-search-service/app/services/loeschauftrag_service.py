@@ -42,6 +42,8 @@ class OffenerAuftrag:
     angelegt_am: datetime
     frist: datetime
     ueberfaellig: bool
+    # Neue Einwilligung nach dem Widerruf (Entscheidung offen, was dann gilt)
+    neu_eingewilligt_am: Optional[datetime]
 
 
 @dataclass(frozen=True)
@@ -86,6 +88,7 @@ class LoeschauftragService:
                 angelegt_am=a.angelegt_am,
                 frist=a.frist,
                 ueberfaellig=a.frist < jetzt,
+                neu_eingewilligt_am=a.neu_eingewilligt_am,
             )
             for a in auftraege
         ]

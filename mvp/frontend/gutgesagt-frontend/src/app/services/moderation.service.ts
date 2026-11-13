@@ -123,6 +123,8 @@ export interface Loeschauftrag {
   angelegt_am: string;
   frist: string;
   ueberfaellig: boolean;
+  /** Neue Einwilligung nach dem Widerruf: wann zuletzt; sonst null. */
+  neu_eingewilligt_am: string | null;
 }
 
 export interface LoeschauftraegeResponse {

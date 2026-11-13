@@ -14,6 +14,7 @@ function auftrag(overrides: Partial<Loeschauftrag> = {}): Loeschauftrag {
     angelegt_am: '2026-11-10T10:00:00Z',
     frist: '2026-11-17T10:00:00Z',
     ueberfaellig: false,
+    neu_eingewilligt_am: null,
     ...overrides,
   };
 }
@@ -99,6 +100,22 @@ describe('LoeschauftraegeComponent', () => {
       const zeile = element().querySelector('[data-testid="loeschauftrag"]')!;
       expect(zeile.classList).toContain('ueberfaellig');
       expect(zeile.textContent).toContain('Überfällig seit');
+    });
+
+    it('zeigt eine neue Einwilligung nach dem Widerruf', () => {
+      moderation.getLoeschauftraege.and.returnValue(
+        of(antwort([auftrag({ neu_eingewilligt_am: '2026-11-12T10:00:00Z' })]))
+      );
+
+      starten();
+
+      expect(element().querySelector('[data-testid="neu-eingewilligt"]')!.textContent).toContain('Neu eingewilligt am 12.11.2026');
+    });
+
+    it('zeigt ohne neue Einwilligung keinen Hinweis darauf', () => {
+      starten();
+
+      expect(element().querySelector('[data-testid="neu-eingewilligt"]')).toBeNull();
     });
 
     it('zeigt ohne Anzeigenamen die Kennung', () => {
@@ -234,6 +251,18 @@ describe('LoeschauftraegeComponent', () => {
 
       expect(snackBar.open.calls.mostRecent().args[0]).toContain('der Auftrag bleibt offen');
       expect(knopf('Löschablauf ausführen')!.disabled).toBeFalse();
+    });
+
+    it('sagt bei 404, dass es den Auftrag nicht mehr gibt, statt „bleibt offen“', () => {
+      starten();
+      dialogAntwort(true);
+      moderation.loeschauftragAusfuehren.and.returnValue(throwError(() => ({ status: 404 })));
+
+      knopf('Löschablauf ausführen')!.click();
+
+      const text = snackBar.open.calls.mostRecent().args[0];
+      expect(text).toBe('Den Löschauftrag gibt es nicht mehr, etwa nach einer Kontolöschung.');
+      expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
     });
 
     it('sagt, wenn ein anderer Admin schneller war', () => {

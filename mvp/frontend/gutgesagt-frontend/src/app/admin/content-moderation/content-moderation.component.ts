@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,7 +19,7 @@ import { sperrgrundLabel } from '../../shared/sperrgruende';
 import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
-import { LoeschauftraegeComponent } from './loeschauftraege.component';
+import { LoeschauftraegeComponent, NACHLADEN_MS } from './loeschauftraege.component';
 
 // 'person': Meldungen einer Person nach Name oder E-Mail-Adresse (#494).
 // 'loeschauftraege': Löschaufträge nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b).
@@ -63,7 +63,7 @@ type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'pers
     ])
   ]
 })
-export class ContentModerationComponent implements OnInit {
+export class ContentModerationComponent implements OnInit, OnDestroy {
   reports: ContentReport[] = [];
   // Ansicht "Gesperrt": gesperrte Beiträge, auch ohne Meldung; offene Widersprüche zuerst.
   gesperrte: GemeldeterBeitrag[] = [];
@@ -76,6 +76,7 @@ export class ContentModerationComponent implements OnInit {
   selectedStatus: Ansicht = 'pending';
   displayedColumns: string[] = ['expand', 'content_type', 'reason', 'reporter', 'created', 'actions'];
   expandedReports = new Set<string>();
+  private zaehlTakt: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private moderationService: ModerationService,
@@ -87,6 +88,26 @@ export class ContentModerationComponent implements OnInit {
     this.loadReports();
     this.offeneWiderspruecheZaehlen();
     this.offeneLoeschauftraegeZaehlen();
+    // Die Zahl am Umschalter lädt selbst nach wie die Liste, auch wenn ein anderer Umschalter offen ist.
+    this.zaehlTakt = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        this.offeneLoeschauftraegeZaehlen();
+      }
+    }, NACHLADEN_MS);
+  }
+
+  ngOnDestroy() {
+    if (this.zaehlTakt !== null) {
+      clearInterval(this.zaehlTakt);
+    }
+  }
+
+  /** Zurück auf dem Reiter: die Zahl der Löschaufträge sofort nachladen. */
+  @HostListener('document:visibilitychange')
+  sichtbarkeitGeaendert() {
+    if (document.visibilityState === 'visible') {
+      this.offeneLoeschauftraegeZaehlen();
+    }
   }
 
   /** Ansichten, die selbst laden: die Suche nach Person und die Löschaufträge. */
@@ -237,8 +258,14 @@ export class ContentModerationComponent implements OnInit {
     });
   }
 
-  /** Lädt die Löschaufträge nur, um die offenen am Umschalter zu zählen. */
+  /**
+   * Lädt die Löschaufträge nur, um die offenen am Umschalter zu zählen. Ist die Liste offen,
+   * zählt sie selbst (Ereignis „anzahl“); dann fragt der Umschalter nicht doppelt.
+   */
   private offeneLoeschauftraegeZaehlen() {
+    if (this.selectedStatus === 'loeschauftraege') {
+      return;
+    }
     this.moderationService.getLoeschauftraege().subscribe({
       next: (response) => (this.offeneLoeschauftraege = response.auftraege.length),
       error: (error) => console.error('Error counting Löschaufträge:', error)

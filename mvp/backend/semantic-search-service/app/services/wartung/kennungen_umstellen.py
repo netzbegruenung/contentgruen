@@ -136,6 +136,18 @@ _ZEILE_DER_NEUEN_GEWINNT = {
 }
 
 
+# Loeschauftraege (DSFA R9b): Je Person hoechstens ein offener (Index
+# idx_loeschauftraege_offen). Haben beide Kennungen einen offenen, geht der der alten;
+# der der neuen erfasst nach dem Umstellen auch alles, was unter der alten stand.
+# Erledigte ziehen mit um, sie stoeren den Index nicht.
+_OFFENER_AUFTRAG_DER_NEUEN_GEWINNT = (
+    "DELETE FROM loeschauftraege AS t USING kennungen_zuordnung AS z"
+    " WHERE t.user_id = z.alt AND t.erledigt_am IS NULL"
+    " AND EXISTS (SELECT 1 FROM loeschauftraege AS n"
+    " WHERE n.user_id = z.neu AND n.erledigt_am IS NULL)"
+)
+
+
 # Ein Satz, der mit alter Kennung stehen bleibt: Die neue hat am selben Einwurf schon
 # einen. Solange es ihn gibt, bleibt auch die Zeile der alten Kennung in users, sonst
 # verloere er seinen Anzeigenamen.
@@ -213,6 +225,8 @@ def _spalte_umschreiben(verbindung: Connection, tabelle: str, spalte: str) -> in
         if tabelle == "users":
             # Was hier noch steht, obwohl die neue eine Zeile hat, bleibt (Satz).
             bedingung = f" AND NOT {neue_hat_zeile}"
+    if (tabelle, spalte) == ("loeschauftraege", "user_id"):
+        anzahl += verbindung.execute(text(_OFFENER_AUFTRAG_DER_NEUEN_GEWINNT)).rowcount
     if (tabelle, spalte) == ("raw_input_drafts", "user_id"):
         # Satz der neuen Kennung am selben Einwurf: der alte bleibt stehen (Bericht).
         bedingung = (
