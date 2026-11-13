@@ -615,7 +615,7 @@ export class AddCommentaryComponent implements OnChanges {
         }
         this.responseId = antwort.id;
         this.success.emit(this.ergebnisAus(request, antwort));
-        // Ein Kommentar zu einer Aussage kann die Wegmarke „Erster Widerspruch“ bringen.
+        // Ein Kommentar zu einer Aussage kann die Wegmarke „Erste Gegenrede“ bringen.
         this.meilensteinHinweis.pruefen();
       },
       error: (error: Error) => {
@@ -762,6 +762,8 @@ export class AddCommentaryComponent implements OnChanges {
         vorhanden.aussage = antwort.statement_text;
         vorhanden.gewaehlt = 'genommen';
         this.vorhandenGewaehlt.emit(vorhanden.id);
+        // Auch der genommene Kommentar kann jetzt eine Aussage beantworten (#351).
+        this.meilensteinHinweis.pruefen();
       },
       error: (error: Error) => {
         this.logger.error('Error taking the existing commentary', error);

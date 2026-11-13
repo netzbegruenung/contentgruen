@@ -6,6 +6,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
+import { merkerSchluessel } from '../meine-beitraege/meilenstein-merker';
 import {
   Art9EinwilligungService,
   Art9EinwilligungStand,
@@ -49,7 +50,7 @@ describe('Art9EinwilligungService', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: { userInfo$: anmeldung.asObservable() } },
+        { provide: AuthService, useValue: { userInfo$: anmeldung.asObservable(), getCurrentUserId: () => 'kim' } },
         { provide: Router, useValue: router },
       ],
     });
@@ -162,6 +163,15 @@ describe('Art9EinwilligungService', () => {
     anmeldung.next({ isAuthenticated: false, userId: null, userName: null, claims: null });
 
     expect(service.geklaert()).toBeNull();
+  });
+
+  it('entfernt beim Widerruf den Merker der angezeigten Meilensteine (#351)', () => {
+    localStorage.setItem(merkerSchluessel('kim'), '["einwurf-1"]');
+
+    service.widerrufen().subscribe();
+    http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
+
+    expect(localStorage.getItem(merkerSchluessel('kim'))).toBeNull();
   });
 
   it('vergisst die Klaerung nach dem Widerruf (#587)', () => {

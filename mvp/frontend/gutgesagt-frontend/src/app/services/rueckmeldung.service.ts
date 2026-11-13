@@ -60,6 +60,7 @@ export class RueckmeldungService implements OnDestroy {
         }
         const meilenstein = meilensteinText(neu);
         this.meilensteinHinweis.zeigen(genutzt ? `${genutzt}. ${meilenstein}` : meilenstein);
+        this.meilensteinHinweis.merken(neu);
       });
   }
 

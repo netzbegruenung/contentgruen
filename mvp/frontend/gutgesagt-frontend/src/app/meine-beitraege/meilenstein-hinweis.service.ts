@@ -1,45 +1,22 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, Subject, Subscription, of } from 'rxjs';
+import { debounceTime, map, switchMap } from 'rxjs/operators';
 
+import { AuthService } from '../auth/auth.service';
 import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 import { ROUTES } from '../shared/constants/app.constants';
-
-/** Welche erreichten Meilensteine der Browser schon gezeigt hat (Kennungen, JSON). */
-export const MEILENSTEINE_GESEHEN_SCHLUESSEL = 'gutgesagt-meilensteine-gesehen';
+import { gesehenLesen, gesehenMerken } from './meilenstein-merker';
 
 /** So lange steht der Hinweis, wenn niemand ihn wegtippt; wie die Rückmeldung (#349). */
 const ANZEIGEDAUER_MS = 8000;
 
 /**
- * Die gesehenen Kennungen, oder null ohne Speicher (privates Fenster, gesperrt).
- * Ohne Speicher gibt es keinen Hinweis: Er käme sonst nach jedem Einwurf wieder.
+ * So lange sammelt pruefen() Aufrufe: Ausformulieren speichert einen Beitrag und
+ * verknüpft den Einwurf, beides ruft pruefen() auf; daraus wird ein Hinweis.
  */
-export function gesehenLesen(): Set<string> | null {
-  try {
-    const roh = localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL);
-    const liste: unknown = roh ? JSON.parse(roh) : [];
-    return new Set(Array.isArray(liste) ? liste.filter((k): k is string => typeof k === 'string') : []);
-  } catch {
-    return null;
-  }
-}
-
-/** Die erreichten Meilensteine als gesehen merken; ohne Speicher passiert nichts. */
-export function gesehenMerken(meilensteine: Meilenstein[]): void {
-  const gesehen = gesehenLesen();
-  if (!gesehen) {
-    return;
-  }
-  meilensteine.filter((m) => m.erreicht).forEach((m) => gesehen.add(m.kennung));
-  try {
-    localStorage.setItem(MEILENSTEINE_GESEHEN_SCHLUESSEL, JSON.stringify([...gesehen]));
-  } catch {
-    // Ohne Speicher kein Merker; der Hinweis bleibt dann ganz aus (gesehenLesen).
-  }
-}
+export const SAMMELN_MS = 300;
 
 /** „Meilenstein erreicht: Erster Einwurf“ oder „2 Meilensteine erreicht“. */
 export function meilensteinText(neu: Meilenstein[]): string {
@@ -48,51 +25,69 @@ export function meilensteinText(neu: Meilenstein[]): string {
 
 /**
  * Ein kurzer Hinweis direkt nach dem eigenen Tun (Einwerfen, Ausformulieren, einen
- * Kommentar speichern) oder beim Anmelden, wenn ein Meilenstein neu erreicht wurde (#351).
+ * Kommentar speichern oder einen vorhandenen nehmen) oder beim Anmelden, wenn ein
+ * Meilenstein neu erreicht wurde (#351).
  *
- * Was schon gezeigt wurde, merkt sich nur der Browser, wie beim Rundgang (#389):
- * kein Server-Eintrag, keine Mail, kein Push. Kein Countdown, keine Serie, keine
+ * Was schon angezeigt wurde, merkt sich nur der Browser je Konto
+ * (meilenstein-merker.ts), und zwar erst, wenn es wirklich angezeigt wurde: kein
+ * Server-Eintrag, keine Mail, kein Push. Kein Countdown, keine Serie, keine
  * Erinnerung; wer „Meine Beiträge“ öffnet, hat alles gesehen. Ohne eingeschaltete
  * Punkte liefert der Server keine Meilensteine, dann passiert hier nichts.
  */
 @Injectable({ providedIn: 'root' })
-export class MeilensteinHinweisService {
+export class MeilensteinHinweisService implements OnDestroy {
+  private anstoesse = new Subject<void>();
+  private abo: Subscription;
+
   constructor(
     private usageTrackingService: UsageTrackingService,
+    private authService: AuthService,
     private snackBar: MatSnackBar,
     private router: Router,
-  ) {}
+  ) {
+    // Mehrere Anstöße kurz hintereinander ergeben eine Abfrage und einen Hinweis.
+    this.abo = this.anstoesse
+      .pipe(
+        debounceTime(SAMMELN_MS),
+        switchMap(() => this.neueErreichte()),
+      )
+      .subscribe((neu) => {
+        if (neu.length) {
+          this.zeigen(meilensteinText(neu));
+          this.merken(neu);
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.abo.unsubscribe();
+  }
 
   /**
-   * Die neu erreichten, noch nicht gezeigten Meilensteine; sie gelten danach als
-   * gesehen. Ohne Speicher (oder bei Fehlern) eine leere Liste, ohne Anfrage.
+   * Die erreichten, noch nicht angezeigten Meilensteine. Gemerkt werden sie erst mit
+   * merken(), nachdem sie angezeigt wurden. Ohne Konto oder Speicher eine leere Liste,
+   * ohne Anfrage.
    */
   neueErreichte(): Observable<Meilenstein[]> {
-    if (!gesehenLesen()) {
+    if (!gesehenLesen(this.authService.getCurrentUserId())) {
       return of([]);
     }
     return this.usageTrackingService.getEigeneMeilensteine().pipe(
       map((meilensteine) => {
-        const gesehen = gesehenLesen();
-        if (!gesehen) {
-          return [];
-        }
-        const neu = meilensteine.filter((m) => m.erreicht && !gesehen.has(m.kennung));
-        if (neu.length) {
-          gesehenMerken(meilensteine);
-        }
-        return neu;
+        const gesehen = gesehenLesen(this.authService.getCurrentUserId());
+        return gesehen ? meilensteine.filter((m) => m.erreicht && !gesehen.has(m.kennung)) : [];
       }),
     );
   }
 
-  /** Nach einer gespeicherten Handlung aufrufen: ein Hinweis, wenn etwas neu ist. */
+  /** Diese Meilensteine als angezeigt merken. */
+  merken(meilensteine: Meilenstein[]): void {
+    gesehenMerken(this.authService.getCurrentUserId(), meilensteine);
+  }
+
+  /** Nach einer gespeicherten Handlung aufrufen; Aufrufe kurz hintereinander zählen einmal. */
   pruefen(): void {
-    this.neueErreichte().subscribe((neu) => {
-      if (neu.length) {
-        this.zeigen(meilensteinText(neu));
-      }
-    });
+    this.anstoesse.next();
   }
 
   /** Ein Hinweis mit „Ansehen“, das zu Meine Beiträge führt. */

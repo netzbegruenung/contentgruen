@@ -6,7 +6,8 @@ import { Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
-import { gesehenMerken } from './meilenstein-hinweis.service';
+import { AuthService } from '../auth/auth.service';
+import { gesehenMerken } from './meilenstein-merker';
 
 /**
  * Die eigenen Meilensteine in „Meine Beiträge“ (#351): je einer mit Medaillon (Motiv
@@ -45,6 +46,7 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
 
   constructor(
     private usageTrackingService: UsageTrackingService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -66,7 +68,8 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
       .subscribe(({ meilensteine, sichtbarkeit }) => {
         this.meilensteine = meilensteine;
         this.sichtbarkeit = sichtbarkeit;
-        gesehenMerken(meilensteine);
+        // Was hier steht, ist angezeigt: Kein späterer Hinweis nennt es noch einmal.
+        gesehenMerken(this.authService.getCurrentUserId(), meilensteine);
         this.cdr.markForCheck();
       });
   }
@@ -85,6 +88,11 @@ export class MeilensteineComponent implements OnInit, OnDestroy {
   get weitere(): Meilenstein[] {
     const sichtbar = new Set(this.sichtbare);
     return this.meilensteine.filter((m) => !sichtbar.has(m));
+  }
+
+  /** Die Bildnachweise, je einmal; für ein später ersetztes Bild steht dort ein eigener. */
+  get bildnachweise(): string[] {
+    return [...new Set(this.meilensteine.map((m) => m.bildnachweis).filter((n) => !!n))];
   }
 
   /** Erreichte, die das Abzeichen am Namen zählt: Wegmarken (eigenes Tun) nicht. */

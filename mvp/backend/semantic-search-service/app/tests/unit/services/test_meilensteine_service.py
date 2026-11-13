@@ -68,9 +68,9 @@ class _Quellen:
         self.einwuerfe_von = user_id
         return self.einwuerfe
 
-    async def beantwortete(self, ids) -> set:
+    async def beantwortet_einer(self, ids) -> bool:
         self.gefragt_nach_antworten.append(list(ids))
-        return {str(i) for i in ids} & self.beantwortet
+        return bool({str(i) for i in ids} & self.beantwortet)
 
 
 def _service(quellen: _Quellen, eingewilligt=lambda user_id: True):
@@ -79,7 +79,7 @@ def _service(quellen: _Quellen, eingewilligt=lambda user_id: True):
         quellen,
         quellen,
         Settings(startkonten=START),
-        quellen.beantwortete,
+        quellen.beantwortet_einer,
         eingewilligt=eingewilligt,
         jetzt=lambda: JETZT,
     )
@@ -202,3 +202,15 @@ async def test_ohne_kommentare_keine_abfrage_der_aussagen():
 
     assert not meilensteine["aussage-kommentiert-1"].erreicht
     assert quellen.gefragt_nach_antworten == []
+
+
+async def test_ohne_wegmarken_fuers_abzeichen_ohne_ihre_abfragen():
+    quellen = _Quellen([_beitrag(typ="commentary")], einwuerfe=1, zustimmungen=1)
+
+    meilensteine = await _service(quellen).meilensteine(KIM, mit_wegmarken=False)
+
+    assert all(m.zaehlt_fuers_abzeichen for m in meilensteine)
+    assert "einwurf-1" not in _nach_kennung(meilensteine)
+    assert _nach_kennung(meilensteine)["zustimmung-1"].erreicht
+    assert quellen.gefragt_nach_antworten == []
+    assert not hasattr(quellen, "einwuerfe_von")

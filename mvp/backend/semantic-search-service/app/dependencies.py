@@ -248,8 +248,13 @@ def abzeichen_service_bauen(settings: Settings) -> "AbzeichenService":
     from services.abzeichen_service import AbzeichenService
 
     meilensteine = get_meilensteine_service(settings)
+
+    async def ohne_wegmarken(user_id: str):
+        # Wegmarken zaehlen fuers Abzeichen nicht; ihre Abfragen spart der Takt.
+        return await meilensteine.meilensteine(user_id, mit_wegmarken=False)
+
     return AbzeichenService(
-        get_abzeichen_sichtbarkeit_repository(), meilensteine.meilensteine, settings
+        get_abzeichen_sichtbarkeit_repository(), ohne_wegmarken, settings
     )
 
 
@@ -259,17 +264,17 @@ def get_meilensteine_service(
     from repositories.punkte_repository import get_punkte_repository
     from repositories.usage_tracking_repository import get_usage_repository
 
-    async def beantwortete(beitrag_ids):
+    async def beantwortet_einer(beitrag_ids):
         # Erst beim Abruf geholt, damit sich der Dienst auch vor der Initialisierung
         # bauen laesst (abzeichen_service_bauen, Tests).
-        return await get_statement_service().beantwortete(beitrag_ids)
+        return await get_statement_service().beantwortet_einer(beitrag_ids)
 
     return MeilensteineService(
         _sichtbare_beitraege(settings),
         get_usage_repository(),
         get_punkte_repository(),
         settings,
-        beantwortete,
+        beantwortet_einer,
     )
 
 

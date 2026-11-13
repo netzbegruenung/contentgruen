@@ -22,7 +22,7 @@ describe('RueckmeldungService', () => {
   let http: HttpTestingController;
   let service: RueckmeldungService;
   let neu: Meilenstein[];
-  let hinweis: { neueErreichte: () => Observable<Meilenstein[]>; zeigen: jasmine.Spy };
+  let hinweis: { neueErreichte: () => Observable<Meilenstein[]>; zeigen: jasmine.Spy; merken: jasmine.Spy };
 
   const angemeldet = (userId: string): UserInfo => ({
     isAuthenticated: true,
@@ -35,7 +35,7 @@ describe('RueckmeldungService', () => {
     anmeldung = new BehaviorSubject<UserInfo | null>(null);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
     neu = [];
-    hinweis = { neueErreichte: () => of(neu), zeigen: jasmine.createSpy('zeigen') };
+    hinweis = { neueErreichte: () => of(neu), zeigen: jasmine.createSpy('zeigen'), merken: jasmine.createSpy('merken') };
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -135,6 +135,7 @@ describe('RueckmeldungService', () => {
         'Seit deinem letzten Besuch wurden deine Beiträge 3-mal genutzt. Meilenstein erreicht: Erste Zustimmung',
       );
       expect(snackBar.open).not.toHaveBeenCalled();
+      expect(hinweis.merken).toHaveBeenCalledOnceWith([EINER]);
     });
 
     it('nennt ihn auch ohne neue Nutzung', () => {

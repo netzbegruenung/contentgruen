@@ -26,7 +26,7 @@ import { NavigationService } from '../services/navigation.service';
 import { RouterLink } from '@angular/router';
 import { ROUTES } from '../shared/constants/app.constants';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
-import { Subject, forkJoin, of, timer } from 'rxjs';
+import { Subject, of, timer } from 'rxjs';
 import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 export const HINWEIS_LIMIT = 5000;
@@ -114,9 +114,10 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
    * Die Erfolgskarte nach dem Einwurf: beim allerersten Einwurf der Person die
    * ausfuehrliche Fassung, sonst die kurze; mit eingeschalteten Punkten dazu neu
    * erreichte Meilensteine (#351). Ob es der erste ist, sagt die Zahl der eigenen
-   * Einwuerfe aus "Meine Einwuerfe" (vorhandene API, kein neuer Zweck).
+   * Einwuerfe aus "Meine Einwuerfe" (vorhandene API, kein neuer Zweck). Die Karte
+   * steht sofort; ``erster`` (null: noch offen) und die Meilensteine kommen nach.
    */
-  erfolg: { erster: boolean; meilensteine: Meilenstein[] } | null = null;
+  erfolg: { erster: boolean | null; meilensteine: Meilenstein[] } | null = null;
   @ViewChild('linkFeld') linkFeld?: ElementRef<HTMLInputElement>;
   /**
    * Ob der aktuelle Feldinhalt aus dem Teilen-Menue stammt. Steuert nur den
@@ -322,18 +323,33 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
   }
 
 
-  /** Erst nach der Antwort zeigen: sonst springt die Karte von kurz auf ausführlich. */
+  /** Die Karte steht sofort; die Zeile zum ersten Einwurf und Meilensteine kommen nach. */
   private erfolgZeigen(): void {
-    const erster =
-      this.eingeworfen === 1
-        ? this.einwurfService.eigeneLaden(1, 1).pipe(
-            map((seite) => seite.total_records_count === 1),
-            catchError(() => of(false)),
-          )
-        : of(false);
-    forkJoin({ erster, meilensteine: this.meilensteinHinweis.neueErreichte() })
+    const karte: { erster: boolean | null; meilensteine: Meilenstein[] } = {
+      erster: this.eingeworfen === 1 ? null : false,
+      meilensteine: [],
+    };
+    this.erfolg = karte;
+    if (karte.erster === null) {
+      this.einwurfService
+        .eigeneLaden(1, 1)
+        .pipe(
+          map((seite) => seite.total_records_count === 1),
+          catchError(() => of(false)),
+          takeUntil(this.destroy$),
+        )
+        .subscribe((erster) => (karte.erster = erster));
+    }
+    this.meilensteinHinweis
+      .neueErreichte()
       .pipe(takeUntil(this.destroy$))
-      .subscribe((stand) => (this.erfolg = stand));
+      .subscribe((neu) => {
+        // Nur merken, wenn die Karte noch steht und die Zeile also angezeigt wird.
+        if (neu.length && this.erfolg === karte) {
+          karte.meilensteine = neu;
+          this.meilensteinHinweis.merken(neu);
+        }
+      });
   }
 
   /** „Meilenstein erreicht: Erster Einwurf“, bei mehreren alle Namen. */

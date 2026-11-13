@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import uuid
-from typing import AbstractSet, Iterable, List, Set
+from typing import AbstractSet, Iterable, List
 
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
@@ -107,10 +107,10 @@ class IStatementRepository(
         pass
 
     @abstractmethod
-    async def beantwortete(self, beitrag_ids: List[uuid.UUID]) -> Set[str]:
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
         """
-        Of the given Beitrag IDs, those a visible statement lists among its reply
-        suggestions (Meilenstein "Erster Widerspruch", #351), as strings.
+        Whether a visible statement lists one of the given Beitraege among its reply
+        suggestions (Meilenstein "Erste Gegenrede", #351).
         """
         pass
 

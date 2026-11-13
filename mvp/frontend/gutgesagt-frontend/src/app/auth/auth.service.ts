@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { merkerEntfernen } from '../meine-beitraege/meilenstein-merker';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 export interface UserInfo {
@@ -61,6 +62,8 @@ export class AuthService {
   }
 
   logout() {
+    // Der Merker der angezeigten Meilensteine gehört zum Konto (#351).
+    merkerEntfernen(this.getCurrentUserId());
     // Use the API logout endpoint which properly handles both Keycloak and managed users
     this.http.post(`${environment.baseUrl}/api/auth/logout`, {}, {
       withCredentials: true

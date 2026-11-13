@@ -11,7 +11,7 @@ import {
   SEITENTITEL_PRAEFIX,
   hinweisVorschlag,
 } from './einwerfen.component';
-import { Einwurf, EinwurfService } from '../services/einwurf.service';
+import { Einwurf, EinwurfSeite, EinwurfService } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
 import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
@@ -61,7 +61,7 @@ describe('EinwerfenComponent', () => {
     serviceSpy.eigeneLaden.and.returnValue(of({ results_count: 1, results: [], total_records_count: eigeneEinwuerfe }));
     serviceSpy.einwerfen.and.returnValue(of({ id: 'neue-id' }));
     serviceSpy.mitGleichemLink.and.returnValue(of([]));
-    meilensteinHinweis = jasmine.createSpyObj<MeilensteinHinweisService>('MeilensteinHinweisService', ['neueErreichte']);
+    meilensteinHinweis = jasmine.createSpyObj<MeilensteinHinweisService>('MeilensteinHinweisService', ['neueErreichte', 'merken']);
     meilensteinHinweis.neueErreichte.and.returnValue(of(neueMeilensteine));
 
     await TestBed.configureTestingModule({
@@ -296,6 +296,34 @@ describe('EinwerfenComponent', () => {
       component.einwerfen();
 
       expect(karte()?.querySelector('.erfolg-meilenstein')?.textContent).toContain('Meilenstein erreicht: Erster Einwurf');
+      // Gemerkt wird erst, was die Karte angezeigt hat.
+      expect(meilensteinHinweis.merken).toHaveBeenCalledOnceWith([EINWURF_1]);
+    });
+
+    it('steht sofort; die Zeile zum ersten Einwurf kommt nach', async () => {
+      await erstellen();
+      const antwort = new Subject<EinwurfSeite>();
+      einwurfService.eigeneLaden.and.returnValue(antwort.asObservable());
+      eingeben('', 'eins');
+
+      component.einwerfen();
+
+      expect(karte()?.textContent).toContain('Drin.');
+      expect(karte()?.querySelector('.erfolg-text')).toBeNull();
+      antwort.next({ results_count: 1, results: [], total_records_count: 1 });
+      expect(karte()?.textContent).toContain('Dein erster Einwurf');
+    });
+
+    it('hat im role="status" nur den Text, nicht die Knöpfe', async () => {
+      await erstellen();
+      eingeben('', 'eins');
+
+      component.einwerfen();
+      fixture.detectChanges();
+
+      const status = (fixture.nativeElement as HTMLElement).querySelector('.einwurf-rueckmeldung [role="status"]')!;
+      expect(status.textContent).toContain('Drin.');
+      expect(status.querySelector('button')).toBeNull();
     });
 
     it('"Noch einen einwerfen" schliesst die Karte und setzt den Fokus ins Link-Feld', async () => {

@@ -85,7 +85,7 @@ describe('AppComponent - Desktop-Kopf', () => {
         provideAnimations(),
         {
           provide: AuthService,
-          useValue: jasmine.createSpyObj('AuthService', ['fetchUserInfo', 'setUserInfo', 'logout'], {
+          useValue: jasmine.createSpyObj('AuthService', ['fetchUserInfo', 'setUserInfo', 'logout', 'getCurrentUserId'], {
             userInfo$: userInfo$.asObservable(),
           }),
         },

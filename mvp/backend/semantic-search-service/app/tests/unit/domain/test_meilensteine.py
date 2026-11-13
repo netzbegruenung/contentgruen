@@ -71,6 +71,8 @@ def test_wegmarken_ab_eins_zaehlen_nicht_fuers_abzeichen():
         "aussage-kommentiert-1",
     ]
     assert all(m.art == WEG and not m.zaehlt_fuers_abzeichen for m in meilensteine)
+    # Nicht "Widerspruch": Das ist im Glossar der Einwand gegen eine Sperre.
+    assert meilensteine[2].name == "Erste Gegenrede"
 
 
 def test_wirkung_und_unterstuetzung_zaehlen_fuers_abzeichen():

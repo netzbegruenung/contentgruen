@@ -43,8 +43,8 @@ from services.punkte_service import (
     SichtbareBeitraege,
 )
 
-BeantworteteBeitraege = Callable[[List[Any]], Awaitable[Set[str]]]
-"""Von diesen Beitrags-IDs die, die eine sichtbare Aussage als Antwort fuehrt."""
+BeantwortetEiner = Callable[[List[Any]], Awaitable[bool]]
+"""Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt."""
 
 
 class MeilensteinQuellen(Protocol):
@@ -68,7 +68,7 @@ class MeilensteineService:
         nutzung: NutzungsQuelle,
         stimmen_und_einwuerfe: MeilensteinQuellen,
         settings: Settings,
-        beantwortete: BeantworteteBeitraege,
+        beantwortet_einer: BeantwortetEiner,
         eingewilligt: Optional[Callable[[str], bool]] = None,
         jetzt: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
     ):
@@ -76,15 +76,21 @@ class MeilensteineService:
         self._nutzung = nutzung
         self._stimmen_und_einwuerfe = stimmen_und_einwuerfe
         self._settings = settings
-        self._beantwortete = beantwortete
+        self._beantwortet_einer = beantwortet_einer
         self._jetzt = jetzt
         # Spaet geholt wie in PunkteService, damit Tests den Dienst ersetzen koennen.
         self._eingewilligt = eingewilligt or (
             lambda user_id: get_art9_einwilligung_service().eingewilligt(user_id)
         )
 
-    async def meilensteine(self, user_id: str) -> List[Meilenstein]:
-        """Alle Meilensteine mit Stand; leer fuer Startkonten und ohne Einwilligung."""
+    async def meilensteine(
+        self, user_id: str, mit_wegmarken: bool = True
+    ) -> List[Meilenstein]:
+        """
+        Alle Meilensteine mit Stand; leer fuer Startkonten und ohne Einwilligung.
+        ``mit_wegmarken=False`` laesst die Wegmarken samt ihren Abfragen weg (fuer das
+        Abzeichen, das sie nicht zaehlt).
+        """
         if self._settings.ist_startkonto(user_id):
             return []
         if not await asyncio.to_thread(self._eingewilligt, user_id):
@@ -109,14 +115,18 @@ class MeilensteineService:
         eingeworfen = await asyncio.to_thread(
             quelle.eigene_einwuerfe_von_anderen_ausformuliert, user_id, startkonten
         )
-        einwuerfe = await asyncio.to_thread(quelle.eigene_einwuerfe, user_id)
-        grenze = self._jetzt() - BEITRAG_WARTEZEIT
-        gehalten = sum(
-            1 for b in beitraege if b.created.astimezone(timezone.utc) <= grenze
-        )
-        kommentare = [b.id for b in beitraege if _ist_kommentar(b)]
-        zu_aussagen = len(await self._beantwortete(kommentare)) if kommentare else 0
-        return meilensteine_berechnen(
+        einwuerfe = gehalten = zu_aussagen = 0
+        if mit_wegmarken:
+            einwuerfe = await asyncio.to_thread(quelle.eigene_einwuerfe, user_id)
+            grenze = self._jetzt() - BEITRAG_WARTEZEIT
+            gehalten = sum(
+                1 for b in beitraege if b.created.astimezone(timezone.utc) <= grenze
+            )
+            # Die Wegmarke hat Schwelle 1: Ein Treffer genuegt, gezaehlt wird nicht.
+            kommentare = [b.id for b in beitraege if _ist_kommentar(b)]
+            if kommentare and await self._beantwortet_einer(kommentare):
+                zu_aussagen = 1
+        alle = meilensteine_berechnen(
             Meilensteindaten(
                 nutzungen=nutzung,
                 zustimmungen=zustimmungen,
@@ -127,6 +137,7 @@ class MeilensteineService:
                 kommentare_zu_aussagen=zu_aussagen,
             )
         )
+        return alle if mit_wegmarken else [m for m in alle if m.zaehlt_fuers_abzeichen]
 
 
 def _ist_kommentar(beitrag: Any) -> bool:

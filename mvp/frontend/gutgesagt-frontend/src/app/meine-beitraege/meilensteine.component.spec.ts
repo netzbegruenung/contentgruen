@@ -3,7 +3,10 @@ import { provideRouter } from '@angular/router';
 import { Observable, of } from 'rxjs';
 
 import { MeilensteineComponent } from './meilensteine.component';
-import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from './meilenstein-hinweis.service';
+import { merkerSchluessel } from './meilenstein-merker';
+import { AuthService } from '../auth/auth.service';
+
+const MEILENSTEINE_GESEHEN_SCHLUESSEL = merkerSchluessel('kim-1');
 import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 
 describe('MeilensteineComponent (#351)', () => {
@@ -35,6 +38,7 @@ describe('MeilensteineComponent (#351)', () => {
       imports: [MeilensteineComponent],
       providers: [
         provideRouter([]),
+        { provide: AuthService, useValue: { getCurrentUserId: () => 'kim-1' } },
         {
           provide: UsageTrackingService,
           useValue: {
@@ -84,7 +88,8 @@ describe('MeilensteineComponent (#351)', () => {
     // Schmuck: Name und Zustand stehen als Text daneben.
     expect(bild.getAttribute('alt')).toBe('');
     expect(eintrag.querySelector('.meilenstein-medaillon')?.getAttribute('aria-hidden')).toBe('true');
-    expect(eintrag.querySelector('.meilenstein-medaillon')?.getAttribute('title')).toContain('MIT-Lizenz');
+    // Bildnachweis sichtbar und klein, aufklappbar unter der Liste (nicht nur als title).
+    expect(element.querySelector('details.meilensteine-bildnachweis')?.textContent).toContain('MIT-Lizenz');
   });
 
   it('merkt sich die erreichten als gesehen, damit nach dem Einwerfen kein alter Hinweis kommt', () => {

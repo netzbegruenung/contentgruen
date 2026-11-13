@@ -7,8 +7,8 @@ Corporation), fest auf denselben Commit wie die Profilbilder
 steht in public/meilensteine/FLUENT-EMOJI-LIZENZ.txt.
 
 Die SVGs bleiben, wie sie sind, bis auf einen Hinweis auf Quelle und Lizenz am Anfang.
-Einzige Ausnahme ist die Sprechblase fuer "Erster Widerspruch": Sie bekommt ein
-Ausrufezeichen, damit sie nach Widerspruch aussieht und nicht nach Plaudern. Das
+Einzige Ausnahme ist die Sprechblase fuer "Erste Gegenrede": Sie bekommt ein
+Ausrufezeichen, damit sie nach Gegenrede aussieht und nicht nach Plaudern. Das
 Medaillon drumherum (erreicht tannengruen, offen grau gestrichelt) zeichnet die
 Komponente selbst (src/app/meine-beitraege/meilensteine.component.html).
 

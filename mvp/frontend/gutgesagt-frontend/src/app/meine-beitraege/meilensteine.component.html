@@ -18,9 +18,13 @@
             </li>
         </ul>
     </details>
+    <details *ngIf="bildnachweise.length" class="meilensteine-bildnachweis">
+        <summary>Bildnachweis</summary>
+        <p *ngFor="let nachweis of bildnachweise">{{ nachweis }}</p>
+    </details>
     <ng-template #eintrag let-meilenstein>
             <!-- Einheitliches Medaillon: erreicht tannengruen, offen grau gestrichelt; das Motiv ist Fluent Emoji (MIT) -->
-            <span class="meilenstein-medaillon" aria-hidden="true" [title]="meilenstein.bildnachweis">
+            <span class="meilenstein-medaillon" aria-hidden="true">
                 <svg class="medaillon-rahmen" viewBox="0 0 56 56" width="56" height="56">
                     <circle cx="28" cy="28" r="26"></circle>
                 </svg>

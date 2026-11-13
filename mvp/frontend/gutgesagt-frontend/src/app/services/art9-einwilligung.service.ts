@@ -6,6 +6,7 @@ import { catchError, distinctUntilChanged, filter, map, switchMap, take, tap } f
 
 import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
+import { merkerEntfernen } from '../meine-beitraege/meilenstein-merker';
 
 /**
  * Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum, ein zweiter
@@ -136,7 +137,13 @@ export class Art9EinwilligungService implements OnDestroy {
 
   /** Nach dem Widerruf gilt die Person nicht mehr als geklaert: kein Angebot ohne Einwilligung (#587). */
   widerrufen(): Observable<void> {
-    return this.http.delete<void>(this.apiUrl).pipe(tap(() => this.geklaertSetzen(null)));
+    return this.http.delete<void>(this.apiUrl).pipe(
+      tap(() => {
+        this.geklaertSetzen(null);
+        // Ohne Einwilligung keine Meilensteine: ihr Merker im Browser geht mit (#351).
+        merkerEntfernen(this.authService.getCurrentUserId());
+      }),
+    );
   }
 
   /** Einmal beim App-Start aufrufen; weitere Aufrufe tun nichts. */

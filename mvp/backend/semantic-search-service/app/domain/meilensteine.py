@@ -130,7 +130,7 @@ MEILENSTEINE: Tuple[Meilensteinart, ...] = (
     ),
     Meilensteinart(
         kennung="aussage-kommentiert-1",
-        name="Erster Widerspruch",
+        name="Erste Gegenrede",
         untertitel="„Nein!“",
         beschreibung=(
             "Irgendwo wurde etwas behauptet, und du hast nicht nur den Kopf "

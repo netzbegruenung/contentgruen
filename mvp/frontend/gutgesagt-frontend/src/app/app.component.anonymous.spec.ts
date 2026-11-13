@@ -23,7 +23,7 @@ describe('AppComponent - Anonymous User Functionality', () => {
     userInfoSubject = new BehaviorSubject<UserInfo | null>(null);
 
     const authServiceSpy = jasmine.createSpyObj('AuthService',
-      ['fetchUserInfo', 'setUserInfo', 'login', 'logout'],
+      ['fetchUserInfo', 'setUserInfo', 'login', 'logout', 'getCurrentUserId'],
       { userInfo$: userInfoSubject.asObservable() }
     );
 

@@ -579,8 +579,10 @@ Empfänger und Ort“.
   `antwort_ids` in Qdrant). Keine neue Speicherung, kein zeitliches Muster, keine Suchen, Kopien,
   Meldungen oder Anmeldetage. Drei davon sind Wegmarken: nur für die Person, nicht in der Zahl am
   Namen und nicht für die Krone (V22 unverändert). Der Hinweis beim Erreichen (nach dem eigenen
-  Tun oder beim Anmelden) merkt sich die gesehenen Kennungen nur im Browser (localStorage), ohne
-  Server-Eintrag; keine Erinnerungen. Ob ein Einwurf der erste ist, liest die Karte nach dem
+  Tun oder beim Anmelden) merkt sich die angezeigten Kennungen nur im Browser (localStorage), je
+  Konto unter einem Schlüssel mit einem Prüfwert der Kennung, entfernt beim Abmelden und beim
+  Widerruf der Art.-9-Einwilligung; ohne Server-Eintrag, keine Erinnerungen. Das Abzeichen
+  rechnet ohne Wegmarken und ohne deren Abfragen. Ob ein Einwurf der erste ist, liest die Karte nach dem
   Einwurf aus der Zahl der eigenen Einwürfe (`getOwnRawInputs`, vorhanden).
   Die Erklärung nennt die neue Liste unter „Punkte“.
 
@@ -724,7 +726,7 @@ unten unter „Geplant, nicht gebaut“.
 - **Risiko:** Das Abzeichen zeigt, dass und wie viel jemand mitmacht; unter den Angemeldeten
   sind Nicht-Mitglieder, Screenshots können nach außen gehen. Mehr als der Anzeigename am
   Beitrag verrät es nur in der Menge: Schon der Name am Beitrag zeigt die Mitwirkung (R1).
-- **Maßnahmen:** gesonderte Einwilligung, einmal gefragt ab dem ersten erreichten Meilenstein,
+- **Maßnahmen:** gesonderte Einwilligung, einmal gefragt ab dem ersten erreichten Meilenstein, der keine Wegmarke ist,
   zwei gleichwertige Knöpfe, nichts vorbelegt; Nein und Widerruf der Art.-9-Einwilligung
   nehmen das Abzeichen sofort weg; gezeigt wird nur eine Zahl, keine Einzelheiten, ohne
   Wegmarken (eigenes Tun, `ss/domain/meilensteine.py`), damit sie Anerkennung durch andere

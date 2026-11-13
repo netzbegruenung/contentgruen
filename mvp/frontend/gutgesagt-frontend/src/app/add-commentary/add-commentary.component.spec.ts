@@ -30,6 +30,7 @@ import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinwe
 import { KuerzungsvorschlagComponent } from '../beitragsformular/kuerzungsvorschlag/kuerzungsvorschlag.component';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { environment } from '../../environments/environment';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 
 describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
@@ -259,6 +260,17 @@ describe('AddCommentaryComponent', () => {
       flush();
 
       expect(erfolg).toHaveBeenCalledOnceWith({ id: 'k-1', aussage: { id: '', text: '' }, verknuepft: true });
+    }));
+
+    it('schaut nach dem Speichern nach neuen Meilensteinen (#351)', fakeAsync(() => {
+      speichernMit();
+      const pruefen = spyOn(TestBed.inject(MeilensteinHinweisService), 'pruefen');
+      ausfuellen();
+
+      component.speichern();
+      flush();
+
+      expect(pruefen).toHaveBeenCalledTimes(1);
     }));
 
     it('behaelt bei einem Fehler die Eingaben, und "Erneut versuchen" speichert dasselbe noch einmal', fakeAsync(() => {
@@ -547,6 +559,7 @@ describe('AddCommentaryComponent', () => {
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
       const erfolg = spyOn(component.success, 'emit');
       const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
+      const pruefen = spyOn(TestBed.inject(MeilensteinHinweisService), 'pruefen');
       ausfuellen();
       aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
       component.speichern();
@@ -561,6 +574,7 @@ describe('AddCommentaryComponent', () => {
       expect(erste.vorhanden_nehmen).toBeUndefined();
       expect(zweite).toEqual({ ...erste, vorhanden_nehmen: 'k-alt' });
       expect(gewaehlt).toHaveBeenCalledOnceWith('k-alt');
+      expect(pruefen).toHaveBeenCalledTimes(1);
       expect(stimme).not.toHaveBeenCalled();
       expect(erfolg).not.toHaveBeenCalled();
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(
