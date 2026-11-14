@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -24,6 +24,9 @@ import { NavigationService } from '../services/navigation.service';
 import { RouterLink } from '@angular/router';
 import { ROUTES } from '../shared/constants/app.constants';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { Subject, of, timer } from 'rxjs';
 import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
@@ -90,11 +93,12 @@ export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
 @Component({
   selector: 'app-einwerfen',
   standalone: true,
-  imports: [...SHARED_IMPORTS, CommonModule, RouterLink, TextFieldModule, Cc0HinweisComponent],
+  imports: [...SHARED_IMPORTS, CommonModule, RouterLink, TextFieldModule, Cc0HinweisComponent, EinwilligungHinweisComponent],
   templateUrl: './einwerfen.component.html',
   styleUrls: ['./einwerfen.component.css'],
 })
 export class EinwerfenComponent implements OnInit, OnDestroy {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
   private destroy$ = new Subject<void>();
 
   readonly hinweisLimit = HINWEIS_LIMIT;
@@ -298,6 +302,13 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.logger.error('Einwurf fehlgeschlagen', error);
         this.wirdGespeichert = false;
+        // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist;
+        // "versuche es erneut" waere der falsche Rat (B4).
+        if (einwilligungFehlt(error)) {
+          this.fehler = null;
+          this.einwilligungZustand.hinweisZeigen();
+          return;
+        }
         this.fehler =
           error?.status === 422
             ? 'Damit kann der Fangkorb nichts anfangen. Bitte prüfe den Link.'

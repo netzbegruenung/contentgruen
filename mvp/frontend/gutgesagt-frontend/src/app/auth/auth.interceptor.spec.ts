@@ -6,6 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { AuthInterceptor } from './auth.interceptor';
 import { stillerKontext } from '../shared/selbst-nachladen';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 describe('AuthInterceptor', () => {
   let httpClient: HttpClient;
@@ -174,6 +175,46 @@ describe('AuthInterceptor', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/einwilligung'], {
       queryParams: { returnUrl: '/einwerfen?von=fangkorb' },
     });
+  }));
+
+  // UX-Review B4: Hat die Seite einen Hinweiskasten, zeigt der den Hinweis; keine Snackbar dazu
+  it('zeigt keinen Snackbar-Hinweis, wenn die Seite einen Hinweiskasten hat, und meldet den Zustand', fakeAsync(() => {
+    const zustand = TestBed.inject(Art9EinwilligungZustand);
+    const abmelden = zustand.hinweisAnmelden();
+    httpClient.post('/api/v1/einwuerfe', {}).subscribe({ error: () => undefined });
+
+    httpMock.expectOne('/api/v1/einwuerfe').flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(snackBar.open).not.toHaveBeenCalled();
+    expect(zustand.wert).toBe('fehlt');
+    abmelden();
+  }));
+
+  // Re-Review zu #670: In den Blick holen nur die Formulare bei einer Aktion der Person,
+  // nie der Interceptor (sonst sprang der Fokus beim Autosave in Destillieren weg)
+  it('holt den Hinweiskasten bei einem 403 nicht selbst in den Blick', fakeAsync(() => {
+    const zustand = TestBed.inject(Art9EinwilligungZustand);
+    const abmelden = zustand.hinweisAnmelden();
+    const gezeigt = spyOn(zustand, 'hinweisZeigen');
+    httpClient.post('/api/v1/einwuerfe', {}).subscribe({ error: () => undefined });
+
+    httpMock.expectOne('/api/v1/einwuerfe').flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(gezeigt).not.toHaveBeenCalled();
+    abmelden();
+  }));
+
+  // Review zu #670: ein spaeter 403 (Satz beim Verlassen von Destillieren) laege sonst ueber den Knoepfen
+  it('zeigt auf /einwilligung selbst keine Snackbar', fakeAsync(() => {
+    (router as any).url = '/einwilligung?returnUrl=%2Fdestillieren%2Fe-1';
+    httpClient.put('/api/v1/rawinput/e-1/satz', {}).subscribe({ error: () => undefined });
+
+    httpMock.expectOne('/api/v1/rawinput/e-1/satz').flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(snackBar.open).not.toHaveBeenCalled();
   }));
 
   it('leitet bei anderem 403 nicht um', fakeAsync(() => {

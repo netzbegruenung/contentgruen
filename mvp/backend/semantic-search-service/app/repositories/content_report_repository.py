@@ -110,6 +110,10 @@ class MeldungNichtOffen(Exception):
     """Die Meldung ist schon bearbeitet oder abgewiesen; abweisen geht nur bei offenen."""
 
 
+class BeitragGesperrt(Exception):
+    """Der gemeldete Beitrag ist gesperrt; eine Meldung dazu laesst sich nicht abweisen."""
+
+
 class ContentReportRepository:
     """Repository for managing content report data."""
 
@@ -360,6 +364,15 @@ class ContentReportRepository:
                 exc_info=True,
             )
             return []
+
+    def content_id_von(self, report_id: UUID) -> Optional[UUID]:
+        """Der gemeldete Beitrag einer Meldung; None, wenn es die Meldung nicht gibt."""
+        with self.db.get_session() as session:
+            return (
+                session.query(ContentReport.content_id)
+                .filter(ContentReport.id == report_id)
+                .scalar()
+            )
 
     def update_report_status(
         self,

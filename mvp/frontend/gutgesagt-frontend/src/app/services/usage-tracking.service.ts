@@ -1,9 +1,32 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
+import { AuthService } from '../auth/auth.service';
+
+/** Antwort von GET /api/v1/usage/punkte/status: die Schalter, ohne Personenbezug. */
+export interface PunkteStatus {
+  aktiv: boolean;
+  abzeichen_sichtbar: boolean;
+}
+
+/**
+ * Ist der Status nicht lesbar (aelteres Backend ohne den Endpunkt, Netzfehler), fragt
+ * die App die Endpunkte selbst und merkt sich deren 404 wie zuvor.
+ */
+const STATUS_UNBEKANNT: PunkteStatus = { aktiv: true, abzeichen_sichtbar: true };
+
+/**
+ * So lange gilt der abgefragte Schalter-Status und ein 404 auf punkte, meilensteine oder
+ * abzeichen-sichtbarkeit als Schalter aus; danach fragt die App wieder.
+ */
+export const SCHALTER_AUS_MERKEN_MS = 15 * 60 * 1000;
+
+function noch(seit: number | null): boolean {
+  return seit !== null && Date.now() - seit < SCHALTER_AUS_MERKEN_MS;
+}
 import type { Fassung } from '../shared/fassung';
 
 export interface TrackUsageRequest {
@@ -115,10 +138,67 @@ export class UsageTrackingService {
   /** Je Kennung, ob „Ja, gepostet“ angeboten wird, soweit schon sicher bekannt (#643). */
   private gepostetStand = new Map<string, boolean>();
 
+  /**
+   * Seit wann die Punkte am Server als ausgeschaltet gelten: ``punkte`` oder
+   * ``meilensteine`` antworteten 404 (UX-Review B20). So lange fragt die App nicht, auch
+   * nicht im Takt der Punkte-Anzeige; ohne Punkte gibt es auch keine Sichtbarkeit der
+   * Abzeichen. Nach SCHALTER_AUS_MERKEN_MS und bei einem Wechsel der Anmeldung fragt sie
+   * wieder, damit ein eingeschalteter Schalter ohne Neuladen ankommt.
+   */
+  private punkteAusSeit: number | null = null;
+  /** ``abzeichen-sichtbarkeit`` antwortete 404 (Schalter aus); wie oben. */
+  private sichtbarkeitAusSeit: number | null = null;
+  /** Der Schalter-Status, einmal abgefragt und geteilt; mit dem Zeitpunkt der Abfrage. */
+  private status$?: Observable<PunkteStatus>;
+  private statusSeit: number | null = null;
+
   constructor(
     private http: HttpClient,
-    private loggingService: LoggingService
-  ) {}
+    private loggingService: LoggingService,
+    authService: AuthService,
+  ) {
+    authService.userInfo$
+      .pipe(
+        map((info) => (info?.isAuthenticated ? info.userId : null)),
+        distinctUntilChanged(),
+      )
+      .subscribe(() => {
+        this.punkteAusSeit = null;
+        this.sichtbarkeitAusSeit = null;
+        this.status$ = undefined;
+      });
+  }
+
+  private get punkteAus(): boolean {
+    return noch(this.punkteAusSeit);
+  }
+
+  private get sichtbarkeitAus(): boolean {
+    return noch(this.sichtbarkeitAusSeit);
+  }
+
+  /**
+   * Ob die Punkte eingeschaltet sind (UX-Review B20, Entscheidung Maintainer 13.11.2026):
+   * einmal von ``GET /punkte/status`` (ohne Anmeldung lesbar), geteilt fuer punkte,
+   * meilensteine und abzeichen-sichtbarkeit. So fragt die App diese nur bei eingeschaltetem
+   * Schalter und laeuft nicht auf ihr 404. Gilt SCHALTER_AUS_MERKEN_MS und bis zum
+   * naechsten Wechsel der Anmeldung; ein 404 ebenso, ein anderer Fehler nicht.
+   */
+  punkteStatus(): Observable<PunkteStatus> {
+    if (!this.status$ || !noch(this.statusSeit)) {
+      this.statusSeit = Date.now();
+      this.status$ = this.http.get<PunkteStatus>(`${this.apiUrl}/punkte/status`).pipe(
+        catchError((error) => {
+          // Ein 404 (aelteres Backend ohne den Endpunkt) gilt wie der Status selbst
+          // SCHALTER_AUS_MERKEN_MS; ein anderer Fehler nicht, dann fragt der naechste Abruf.
+          if (error?.status !== 404) this.status$ = undefined;
+          return of(STATUS_UNBEKANNT);
+        }),
+        shareReplay(1),
+      );
+    }
+    return this.status$;
+  }
 
 
   /**
@@ -252,14 +332,21 @@ export class UsageTrackingService {
    * Stand gerade unbekannt ist: PUNKTE_NICHT_GELADEN.
    */
   getEigenePunkte(): Observable<Punktestand | null | typeof PUNKTE_NICHT_GELADEN> {
-    return this.http.get<Punktestand>(`${this.apiUrl}/users/me/punkte`).pipe(
-      catchError((error) => {
-        if (error?.status === 404) {
-          return of(null);
-        }
-        this.loggingService.error('Eigene Punkte nicht geladen', error);
-        return of(PUNKTE_NICHT_GELADEN);
-      })
+    return this.punkteStatus().pipe(
+      switchMap((status) =>
+        !status.aktiv || this.punkteAus
+          ? of(null)
+          : this.http.get<Punktestand>(`${this.apiUrl}/users/me/punkte`).pipe(
+              catchError((error) => {
+                if (error?.status === 404) {
+                  this.punkteAusSeit = Date.now();
+                  return of(null);
+                }
+                this.loggingService.error('Eigene Punkte nicht geladen', error);
+                return of(PUNKTE_NICHT_GELADEN);
+              })
+            )
+      )
     );
   }
 
@@ -269,17 +356,23 @@ export class UsageTrackingService {
    * eine leere Liste, und „Meine Beiträge“ zeigt keine Meilensteine.
    */
   getEigeneMeilensteine(): Observable<Meilenstein[]> {
-    return this.http
-      .get<{ meilensteine: Meilenstein[] }>(`${this.apiUrl}/users/me/meilensteine`)
-      .pipe(
-        map((antwort) => antwort.meilensteine ?? []),
-        catchError((error) => {
-          if (error?.status !== 404) {
-            this.loggingService.error('Eigene Meilensteine nicht geladen', error);
-          }
-          return of([]);
-        })
-      );
+    return this.punkteStatus().pipe(
+      switchMap((status) =>
+        !status.aktiv || this.punkteAus
+          ? of([])
+          : this.http.get<{ meilensteine: Meilenstein[] }>(`${this.apiUrl}/users/me/meilensteine`).pipe(
+              map((antwort) => antwort.meilensteine ?? []),
+              catchError((error) => {
+                if (error?.status === 404) {
+                  this.punkteAusSeit = Date.now();
+                } else {
+                  this.loggingService.error('Eigene Meilensteine nicht geladen', error);
+                }
+                return of([]);
+              })
+            )
+      )
+    );
   }
 
   /**
@@ -288,13 +381,21 @@ export class UsageTrackingService {
    * fragt nicht.
    */
   getAbzeichenSichtbarkeit(): Observable<AbzeichenSichtbarkeit | null> {
-    return this.http.get<AbzeichenSichtbarkeit>(`${this.apiUrl}/users/me/abzeichen-sichtbarkeit`).pipe(
-      catchError((error) => {
-        if (error?.status !== 404) {
-          this.loggingService.error('Sichtbarkeit der Abzeichen nicht geladen', error);
-        }
-        return of(null);
-      })
+    return this.punkteStatus().pipe(
+      switchMap((status) =>
+        !status.abzeichen_sichtbar || this.punkteAus || this.sichtbarkeitAus
+          ? of(null)
+          : this.http.get<AbzeichenSichtbarkeit>(`${this.apiUrl}/users/me/abzeichen-sichtbarkeit`).pipe(
+              catchError((error) => {
+                if (error?.status === 404) {
+                  this.sichtbarkeitAusSeit = Date.now();
+                } else {
+                  this.loggingService.error('Sichtbarkeit der Abzeichen nicht geladen', error);
+                }
+                return of(null);
+              })
+            )
+      )
     );
   }
 

@@ -51,15 +51,17 @@ steps:
       - export CHECK_BASE=origin/$${CI_COMMIT_TARGET_BRANCH}
       - sh scripts/ci-protokoll.sh retired-words bash scripts/check.sh --schritt retired-words
 
+  # venv, und bringt das CI-Image (Dockerfile.ci) die Pakete zu genau dieser requirements.txt
+  # schon mit, nur der Verweis darauf; sonst pip wie bisher (scripts/ci-installieren.sh).
   - name: python-installieren
     image: python:3.13-slim
     depends_on: []
     commands:
-      - sh scripts/ci-protokoll.sh python-installieren python -m venv mvp/backend/semantic-search-service/venv
-      - sh scripts/ci-protokoll.sh python-installieren mvp/backend/semantic-search-service/venv/bin/pip install -q --no-cache-dir -r mvp/backend/semantic-search-service/requirements.txt
+      - sh scripts/ci-protokoll.sh python-installieren sh scripts/ci-installieren.sh python
 
   # Einmal fuer frontend und frontend-build: die Schritte teilen den Workspace, ein zweites
-  # npm ci loeschte dem anderen Schritt node_modules unter den Fuessen weg.
+  # npm ci loeschte dem anderen Schritt node_modules unter den Fuessen weg. Passt das CI-Image
+  # zu package.json und package-lock.json, nur ein Verweis auf dessen node_modules.
   - name: frontend-installieren
     image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
     depends_on: []
@@ -73,7 +75,7 @@ steps:
             - scripts/**/*.py
       - event: [push, tag, manual]
     commands:
-      - sh scripts/ci-protokoll.sh frontend-installieren npm ci --prefix mvp/frontend/gutgesagt-frontend --no-audit --no-fund
+      - sh scripts/ci-protokoll.sh frontend-installieren sh scripts/ci-installieren.sh frontend
 
   - name: lint
     image: python:3.13-slim

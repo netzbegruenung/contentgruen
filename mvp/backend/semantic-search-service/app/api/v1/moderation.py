@@ -7,7 +7,17 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from urllib.parse import unquote
+
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from domain.models.meldegrund import Meldegrund, beschreibung_fehlt
 from domain.models.meldung import (
@@ -34,7 +44,11 @@ from dependencies import (
 from utils.rate_limiter import report_rate_limiter
 from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
-from repositories.content_report_repository import MeldungNichtOffen, melder_pseudonym
+from repositories.content_report_repository import (
+    BeitragGesperrt,
+    MeldungNichtOffen,
+    melder_pseudonym,
+)
 
 logger = get_logger(__name__)
 
@@ -68,15 +82,23 @@ class ReportContentRequest(BaseModel):
     # Name und E-Mail-Adresse sind freiwillig
     # (lit. c); nur wer sie angibt, kann die Entscheidung erfahren (Abs. 5).
     # Beides sehen nur Admins, und keins von beiden landet im Log.
+    # Geprueft werden beide in der Route (``_angaben_von_besuchern``): Fuer Angemeldete
+    # zaehlen sie nicht und fuehren deshalb auch nicht zu einem 422 (Review zu #670).
     melder_name: Optional[str] = Field(
         None,
-        max_length=MELDER_NAME_MAX,
-        description="Optional: Name der meldenden Person",
+        description=f"Optional: Name der meldenden Person (hoechstens {MELDER_NAME_MAX} Zeichen)",
     )
-    melder_email: Optional[EmailStr] = Field(
+    melder_email: Optional[str] = Field(
         None,
-        max_length=MELDER_EMAIL_MAX,
         description="Optional: E-Mail-Adresse fuer die Mitteilung der Entscheidung",
+    )
+    # Angemeldete geben keine Adresse ein (UX-Review B17, Entscheidung Maintainer
+    # 13.11.2026): Mit diesem Haekchen nimmt der Suchdienst die Adresse ihres Kontos,
+    # die das BFF nur auf diesem Pfad als X-User-Email mitschickt. Ohne Haekchen wird
+    # keine Adresse gespeichert. Fuer Besucher ohne Bedeutung.
+    bestaetigung_an_konto: bool = Field(
+        False,
+        description="Angemeldet: Bestaetigung und Entscheidung an die Adresse des Kontos",
     )
     # Die Erklaerung guten Glaubens (lit. d) ist Pflicht: Ohne sie ist eine
     # Meldung nach Abs. 3 nicht vollstaendig.
@@ -114,6 +136,12 @@ class ReportContentResponse(BaseModel):
 
     success: bool
     message: str
+    # Ob an der Meldung eine Adresse fuer Bestaetigung und Entscheidung steht. Danach
+    # richtet der Dialog seine Zusage einer Mail (Review zu #670): Fuer Angemeldete
+    # kann sie fehlen, etwa ohne Adresse im Konto.
+    mit_email: bool = False
+    # Doppelmeldung derselben Person zum selben Beitrag: nichts neu angelegt, keine Mail.
+    schon_gemeldet: bool = False
 
 
 class PendingReportsResponse(BaseModel):
@@ -227,12 +255,72 @@ class ReportStatsResponse(BaseModel):
     by_status: dict
 
 
+_EMAIL = TypeAdapter(EmailStr)
+
+
+def _ungueltig(feld: str, meldung: str) -> HTTPException:
+    """Ein 422 in der Form der Validierungsfehler von FastAPI."""
+    return HTTPException(
+        status_code=422,
+        detail=[{"loc": ["body", feld], "msg": meldung, "type": "value_error"}],
+    )
+
+
+def _angaben_von_besuchern(
+    request: "ReportContentRequest",
+) -> tuple[Optional[str], Optional[str]]:
+    """
+    Name und Adresse, die ein Besucher eingibt, geprueft wie vorher im Schema: Laenge,
+    gueltige Adresse (EmailStr normalisiert die Domain). Sonst 422.
+    """
+    name = request.melder_name
+    if name is not None and len(name) > MELDER_NAME_MAX:
+        raise _ungueltig("melder_name", f"Hoechstens {MELDER_NAME_MAX} Zeichen")
+    adresse = request.melder_email
+    if adresse is None:
+        return name, None
+    if len(adresse) > MELDER_EMAIL_MAX:
+        raise _ungueltig("melder_email", f"Hoechstens {MELDER_EMAIL_MAX} Zeichen")
+    try:
+        adresse = _EMAIL.validate_python(adresse)
+    except ValidationError:
+        raise _ungueltig("melder_email", "Das ist keine gueltige E-Mail-Adresse")
+    if len(adresse) > MELDER_EMAIL_MAX:
+        raise _ungueltig("melder_email", f"Hoechstens {MELDER_EMAIL_MAX} Zeichen")
+    return name, adresse
+
+
+def _melder_email(
+    request: "ReportContentRequest", angemeldet: bool, konto_email: Optional[str]
+) -> Optional[str]:
+    """
+    Die Adresse fuer Bestaetigung und Entscheidung (DSA Art. 16 Abs. 4 und 5).
+
+    Besucher geben sie selbst ein (geprueft in ``_angaben_von_besuchern``). Fuer
+    Angemeldete zaehlt nur die Adresse des Kontos,
+    die das BFF setzt (X-User-Email, prozentkodiert), und nur mit Haekchen; eine im
+    Koerper mitgeschickte Adresse wird verworfen (UX-Review B17). Ist die Kontoadresse
+    keine gueltige Adresse, wird keine gespeichert. Die Adresse steht in keinem Log.
+    """
+    if not angemeldet:
+        return _angaben_von_besuchern(request)[1]
+    if not request.bestaetigung_an_konto or not konto_email:
+        return None
+    try:
+        adresse = _EMAIL.validate_python(unquote(konto_email).strip())
+    except ValidationError:
+        logger.warning("Kontoadresse fuer die Meldung ist keine gueltige Adresse")
+        return None
+    return adresse if len(adresse) <= MELDER_EMAIL_MAX else None
+
+
 # Public Endpoint - Report Content
 @router.post("/report", response_model=ReportContentResponse)
 async def report_content(
     request: ReportContentRequest,
     http_request: Request,
     x_user_id: Optional[str] = Header(None, alias="X-User"),
+    x_user_email: Optional[str] = Header(None, alias="X-User-Email"),
     settings: Settings = Depends(get_settings),
     moderation_service: ModerationService = Depends(get_moderation_service),
 ):
@@ -253,6 +341,10 @@ async def report_content(
     """
     try:
         is_authenticated = bool(x_user_id and x_user_id != "anonymous")
+        # Fuer Angemeldete zaehlen Name und Adresse aus dem Koerper nicht (Review zu
+        # #670): kein 422 dafuer, und gespeichert wird nur die Kontoadresse mit Haekchen.
+        melder_name = None if is_authenticated else _angaben_von_besuchern(request)[0]
+        melder_email = _melder_email(request, is_authenticated, x_user_email)
 
         # Die Adresse begrenzt jeden Aufrufer, auch den anonymen. Der Schluessel
         # ist ein prozesslokaler Hash und wird weder gespeichert noch geloggt.
@@ -299,13 +391,15 @@ async def report_content(
             description=request.description,
             melder=MelderAngaben(
                 guter_glaube=request.guter_glaube,
-                name=request.melder_name,
-                email=request.melder_email,
+                name=melder_name,
+                email=melder_email,
             ),
         )
 
         if success:
             return ReportContentResponse(
+                mit_email=success.mit_email,
+                schon_gemeldet=not success.neu,
                 success=True,
                 message="Content reported successfully. We will review it shortly.",
             )
@@ -604,6 +698,8 @@ async def delete_content(
 
 # Kennzeichen fuer das Frontend: Die Meldung ist nicht mehr offen.
 MELDUNG_NICHT_OFFEN = "meldung_nicht_offen"
+# Kennzeichen fuer das Frontend: Der Beitrag ist gesperrt, Abweisen passt nicht.
+BEITRAG_GESPERRT = "beitrag_gesperrt"
 
 
 # Admin Endpoint - Dismiss Report
@@ -637,6 +733,9 @@ async def dismiss_report(
     except MeldungNichtOffen:
         # Schon bearbeitet oder abgewiesen, etwa aus einem veralteten Fenster.
         raise HTTPException(status_code=409, detail=MELDUNG_NICHT_OFFEN)
+    except BeitragGesperrt:
+        # Die Abweisungsmail ("kein Verstoss") waere bei einem gesperrten Beitrag falsch.
+        raise HTTPException(status_code=409, detail=BEITRAG_GESPERRT)
     except HTTPException:
         raise
     except Exception as e:

@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatRadioModule } from '@angular/material/radio';
@@ -41,6 +41,10 @@ import { KartenDaten, ausEinwurf, istSichtbar, istVerwerfbar } from '../beitrags
 import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { entwurfSichern } from '../einwilligung/entwurf-vor-einwilligung';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -74,11 +78,12 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 @Component({
   selector: 'app-destillieren',
   standalone: true,
-  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent, Cc0HinweisComponent],
+  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent, Cc0HinweisComponent, EinwilligungHinweisComponent],
   templateUrl: './destillieren.component.html',
   styleUrls: ['./destillieren.component.css'],
 })
 export class DestillierenComponent implements OnInit, OnDestroy {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
   readonly satzLimit = SATZ_LIMIT;
   readonly typen = TYPEN;
   readonly consentHinweis = CONSENT_HINWEIS_SATZ;
@@ -341,6 +346,14 @@ export class DestillierenComponent implements OnInit, OnDestroy {
    * navigiert dann nicht.
    */
   private readonly satzSichernVorZurueck = async (): Promise<void> => {
+    // Ohne Einwilligung gaebe es nur ein 403, und Pfeil oder Haus warteten darauf: sofort
+    // weiter, den Satz in den Entwurf im Arbeitsspeicher, damit er nach einer
+    // Einwilligung wieder dasteht (Review zu #670).
+    if (this.einwilligungZustand.wert === 'fehlt') {
+      const satz = this.satz.value.trim();
+      if (satz) entwurfSichern(this.router.url, this.satz.value, this.einwilligungZustand.kennung);
+      return;
+    }
     this.arbeitet = true;
     this.fehler = null;
     try {
@@ -549,7 +562,15 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+   * Speichern im Hintergrund (Tipppause, Verlassen des Felds, Wegnavigieren). Ohne
+   * Einwilligung nicht: Es gaebe nur ein 403, und der Satz steht ja noch im Feld; der
+   * Hinweiskasten sagt, was zu tun ist (Review zu #670).
+   */
   private satzSpeichern(): void {
+    if (this.einwilligungZustand.wert === 'fehlt') {
+      return;
+    }
     this.speichernWennGeaendert().subscribe({
       error: (error) => this.logger.warn('Satz konnte nicht gespeichert werden', error),
     });
@@ -557,7 +578,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
   private satzSichern(): void {
     const satz = this.satz.value.trim();
-    if (!this.einwurf || satz === this.zuletztGespeichert || satz.length > SATZ_LIMIT) {
+    if (this.einwilligungZustand.wert === 'fehlt' || !this.einwurf || satz === this.zuletztGespeichert || satz.length > SATZ_LIMIT) {
       return;
     }
     this.einwurfService.satzSpeichernKeepalive(this.einwurf.id, satz);
@@ -567,6 +588,12 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   private speicherfehler(error: Error): void {
     this.logger.error('Satz konnte nicht gespeichert werden', error);
     this.arbeitet = false;
+    // Ohne Einwilligung sagt der Hinweiskasten oben, was zu tun ist (B4).
+    if (einwilligungFehlt(error)) {
+      this.fehler = null;
+      this.einwilligungZustand.hinweisZeigen();
+      return;
+    }
     // Ein zu langer Satz ist kein Netzfehler - "versuche es erneut" waere hier
     // der falsche Rat, kuerzen hilft.
     this.fehler =

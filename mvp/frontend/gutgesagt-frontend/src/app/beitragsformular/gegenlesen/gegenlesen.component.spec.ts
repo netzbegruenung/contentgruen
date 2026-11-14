@@ -178,6 +178,96 @@ describe('GegenlesenComponent', () => {
     expect(region!.textContent!.trim()).toBe('1 Anmerkung');
   }));
 
+  describe('Herkunft fehlt (Persona-Test Gerd)', () => {
+    const HINWEIS = 'Ohne Herkunft glaubt dir das kaum jemand. Nenn, woher es stammt: ein Link oder eine Fundstelle.';
+
+    function gegengelesen(antwort: Gegengelesen): void {
+      schreibe('Abschaltsysteme gibt es nur an einem Teil der Windräder', 'Eine Zahl ohne Beleg.');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(antwort);
+      // Die Ansage fuer Screenreader wartet ANSAGE_PAUSE_MS; danach ist keine Uhr mehr offen
+      tick(ANSAGE_PAUSE_MS);
+      fixture.detectChanges();
+    }
+
+    it('meldet statt "Nichts aufgefallen" die fehlende Herkunft, ohne Anfrage dafür', fakeAsync(() => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+
+      expect(element().querySelector('.herkunft-fehlt')!.textContent!.trim()).toBe(HINWEIS);
+      expect(element().querySelector('.gegenlesen-gut')).toBeNull();
+    }));
+
+    it('steht vor den Anmerkungen des Dienstes', fakeAsync(() => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      gegengelesen(MIT_ANMERKUNG);
+
+      const punkte = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((p) => p.textContent!.trim());
+      expect(punkte).toEqual([HINWEIS, MIT_ANMERKUNG.anmerkungen[0].text]);
+    }));
+
+    it('verschwindet, sobald eine Herkunft da ist, ohne neue Anfrage', fakeAsync(() => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+
+      fixture.componentRef.setInput('herkunftFehlt', false);
+      fixture.detectChanges();
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectNone(PFAD);
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      expect(element().querySelector('.gegenlesen-gut')).not.toBeNull();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('kompakt: Zeile, Farbe und Ansage folgen der Herkunft, ohne neue Anfrage', fakeAsync(() => {
+      fixture.componentRef.setInput('kompakt', true);
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+      const zeile = element().querySelector('.gegenlesen-zeile')!;
+      const ansage = () => element().querySelector('.gegenlesen-ansage')!.textContent!.trim();
+      expect(ansage()).toBe('1 Anmerkung');
+
+      fixture.componentRef.setInput('herkunftFehlt', false);
+      fixture.detectChanges();
+      tick(ANSAGE_PAUSE_MS);
+      fixture.detectChanges();
+      http.expectNone(PFAD);
+
+      expect(zeile.textContent).toContain('Gegenlesen: Nichts aufgefallen');
+      expect(zeile.classList).toContain('gut');
+      expect(ansage()).toBe('Nichts aufgefallen');
+
+      // Und zurueck: Herkunft wieder leer
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      fixture.detectChanges();
+      tick(ANSAGE_PAUSE_MS);
+      fixture.detectChanges();
+
+      expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
+      expect(zeile.classList).not.toContain('gut');
+      expect(ansage()).toBe('1 Anmerkung');
+    }));
+
+    it('mahnt im leeren Formular noch nicht', () => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      fixture.detectChanges();
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+    });
+
+    it('zaehlt kompakt als Anmerkung mit, statt gruen "Nichts aufgefallen" zu zeigen', fakeAsync(() => {
+      fixture.componentRef.setInput('kompakt', true);
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+      const zeile = element().querySelector('.gegenlesen-zeile')!;
+
+      expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
+      expect(zeile.classList).not.toContain('gut');
+      expect(element().querySelector('.gegenlesen-ansage')!.textContent!.trim()).toBe('1 Anmerkung');
+    }));
+  });
+
   it('meldet sich nicht bei jedem Ergebnis, solange weiter getippt wird (entprellt)', fakeAsync(() => {
     const region = element().querySelector('[aria-live="polite"]')!;
 

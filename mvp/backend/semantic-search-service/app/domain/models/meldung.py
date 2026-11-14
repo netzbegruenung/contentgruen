@@ -91,3 +91,23 @@ class AngabenGeloescht:
 
     geloescht: int
     angaben_entfernt: int
+
+
+@dataclass(frozen=True)
+class MeldungErgebnis:
+    """
+    Was ``ModerationService.report_content`` angelegt hat. Wahr, wenn die Meldung
+    angenommen ist; ``neu`` ist falsch bei einer Doppelmeldung derselben Person (dann
+    entsteht nichts, und es kommt keine Mail); ``mit_email``, ob an der neuen Meldung
+    eine Adresse fuer Bestaetigung und Entscheidung steht (Review zu #670).
+    """
+
+    erfolg: bool
+    neu: bool = False
+    mit_email: bool = False
+
+    def __bool__(self) -> bool:
+        return self.erfolg
+
+
+MELDUNG_FEHLGESCHLAGEN = MeldungErgebnis(erfolg=False)

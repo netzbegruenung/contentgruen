@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -16,6 +16,9 @@ import { typFarbe } from '../shared/content-type-registry';
 import { PLATTFORMEN, Plattform, plattformAusUrl, plattformName } from '../shared/plattform';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
@@ -63,6 +66,7 @@ export const SPEICHERN_FEHLGESCHLAGEN =
   styleUrls: ['./add-post.component.scss'],
   imports: [
     ...SHARED_IMPORTS,
+    EinwilligungHinweisComponent,
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
@@ -78,6 +82,7 @@ export const SPEICHERN_FEHLGESCHLAGEN =
   ],
 })
 export class AddPostComponent implements OnChanges {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
   /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
   readonly einspaltig = einspaltig();
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
@@ -241,6 +246,12 @@ export class AddPostComponent implements OnChanges {
         // Die Eingaben bleiben stehen; der Knopf speichert dasselbe noch einmal.
         this.logger.error('Error saving post', error);
         this.speichert = false;
+        // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
+        if (einwilligungFehlt(error)) {
+          this.fehler = null;
+          this.einwilligungZustand.hinweisZeigen();
+          return;
+        }
         this.validierung = validierungsMeldung(error);
         this.fehler = this.validierung ?? SPEICHERN_FEHLGESCHLAGEN;
       },
