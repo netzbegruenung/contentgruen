@@ -1,7 +1,7 @@
 """Die Image-Tags, die Woodpecker beim Build und beim Release setzt (scripts/image_tags.py).
 
-Gleiche Tags wie bisher die GitHub-CI (docker/metadata-action), damit Deployment und
-Renovate unverändert weiterlaufen (#327).
+Gleiche Release-Tags wie bisher die GitHub-CI (docker/metadata-action), damit Deployment
+und Renovate unverändert weiterlaufen (#327); auf main nur noch ``main``.
 """
 
 import pathlib
@@ -18,11 +18,15 @@ SHA = "3523b55f0e1d2c3b4a5968778695a4b3c2d1e0f9"
 
 
 class TestPushAufMain:
-    def test_main_und_kurzer_commit(self):
-        assert image_tags("push", "", SHA) == ["main", "sha-3523b55"]
+    def test_nur_main_ohne_tag_je_commit(self):
+        # Ein sha-Tag je Merge hielt jedes Image in der Registry fest (Platte voll, 14.11.)
+        assert image_tags("push", "", SHA) == ["main"]
 
     def test_manueller_lauf_wie_push(self):
-        assert image_tags("manual", "", SHA) == ["main", "sha-3523b55"]
+        assert image_tags("manual", "", SHA) == ["main"]
+
+    def test_praefix_auch_auf_main(self):
+        assert image_tags("push", "", SHA, praefix="woodpecker-") == ["woodpecker-main"]
 
 
 class TestRelease:

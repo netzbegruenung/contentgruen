@@ -32,6 +32,10 @@ import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinwe
 import { KuerzungsvorschlagComponent } from '../beitragsformular/kuerzungsvorschlag/kuerzungsvorschlag.component';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { environment } from '../../environments/environment';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
+import { AuthService } from '../auth/auth.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
+import { KOMMENTAR_ENTWURF_SCHLUESSEL, kommentarEntwurfSichern } from '../beitragsformular/kommentar-entwurf';
 
 describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
@@ -180,6 +184,183 @@ describe('AddCommentaryComponent', () => {
     });
   });
 
+  describe('Entwurf über einen App-Wechsel (E1)', () => {
+    const anmelden = (userId = 'kim-1') =>
+      TestBed.inject(AuthService).setUserInfo({ isAuthenticated: true, userId, userName: 'Kim', claims: null });
+    const ausblenden = () => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    afterEach(() => sessionStorage.removeItem(KOMMENTAR_ENTWURF_SCHLUESSEL));
+
+    it('sichert beim Ausblenden in den sessionStorage', () => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      ausfuellen();
+
+      ausblenden();
+
+      const roh = JSON.parse(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)!);
+      expect(roh.werte.text).toBe('Ein ausreichend langer Text.');
+      expect(roh.aussage).toBe('Wärmepumpen sind zu teuer');
+      expect(JSON.stringify(roh)).not.toContain('kim-1');
+    });
+
+    it('holt ihn nach dem Neuladen zurück, sobald die Anmeldung feststeht', () => {
+      kommentarEntwurfSichern(
+        { title: 'Eigener Titel', text: 'Ein ausreichend langer Text.', kurz: '', lang: '', zweck: null, stil: null },
+        '',
+        'kim-1',
+      );
+      fixture = TestBed.createComponent(AddCommentaryComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      anmelden();
+
+      expect(component.commentaryForm.value.text).toBe('Ein ausreichend langer Text.');
+      expect(component.commentaryForm.value.title).toBe('Eigener Titel');
+    });
+
+    it('sichert nicht, wenn eine Vorlage im Formular steht', () => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      component.vorlageAnwenden({ id: 'v1', titel: 'Titel der Vorlage', text: 'Text der Vorlage hier.' });
+      component.vorlage = { id: 'v1', titel: 'Titel der Vorlage', text: 'Text der Vorlage hier.' };
+
+      ausblenden();
+
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+    });
+
+    it('führt einen zurückgeholten, unveränderten Titelvorschlag weiter nach', () => {
+      kommentarEntwurfSichern(
+        { title: 'Erster Satz hier.', text: 'Erster Satz hier. Und mehr.', kurz: '', lang: '', zweck: null, stil: null },
+        '',
+        'kim-1',
+      );
+      fixture = TestBed.createComponent(AddCommentaryComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      anmelden();
+
+      component.commentaryForm.get('text')!.setValue('Neuer Anfang. Und mehr.');
+      expect(component.commentaryForm.value.title).toBe('Neuer Anfang.');
+    });
+
+    it('löscht ihn nach dem Speichern und beim Leeren', () => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      ausfuellen();
+      ausblenden();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).not.toBeNull();
+
+      speichernMit();
+      component.speichern();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+      kommentarEntwurfSichern({ title: 'T', text: 'Text', kurz: '', lang: '', zweck: null, stil: null }, '', 'kim-1');
+      component.leeren();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+    });
+
+    it('löscht ihn nach dem Zustimmen und sichert danach nicht wieder', fakeAsync(() => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValue(
+        of({ id: 'k-fremd', vorhanden: { eigen: false }, verknuepft: false } as AddCommentaryResponse),
+      );
+      spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(of({ content_id: 'k-fremd', vote_type: 'like', message: 'ok' }));
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
+      component.speichern();
+      flush();
+      kommentarEntwurfSichern({ title: 'T', text: 'Text', kurz: '', lang: '', zweck: null, stil: null }, 'Wärmepumpen sind zu teuer', 'kim-1');
+
+      component.zustimmen();
+      flush();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+      ausblenden();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+      // Ein neuer Text verwirft den vorhandenen: Er darf wieder Entwurf werden (Review #686).
+      component.commentaryForm.get('text')!.setValue('Ein ganz neuer, eigener Kommentartext.');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(JSON.parse(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)!).werte.text).toBe(
+        'Ein ganz neuer, eigener Kommentartext.',
+      );
+    }));
+
+    it('löscht ihn nach dem Nehmen und sichert danach nicht wieder; nach dem Leeren wieder', fakeAsync(() => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
+        of({
+          id: 'k-alt',
+          vorhanden: { eigen: true },
+          statement_id: ID,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddCommentaryResponse),
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
+      component.speichern();
+      flush();
+
+      component.nehmen();
+      flush();
+      ausblenden();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+      component.leeren();
+      ausfuellen();
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).not.toBeNull();
+    }));
+  });
+
+  describe('Titel unter dem Text, vorbelegt (E2)', () => {
+    const titel = () => component.commentaryForm.get('title')!;
+    const text = () => component.commentaryForm.get('text')!;
+
+    it('steht unter dem Kommentarfeld', () => {
+      const kommentar = seite().querySelector('textarea#text')!;
+      const titelFeld = seite().querySelector('textarea#title')!;
+      expect(kommentar.compareDocumentPosition(titelFeld) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('belegt den Titel mit dem ersten Satz vor und führt ihn beim Schreiben nach', () => {
+      text().setValue('Wärmepumpen lohnen sich. Auch');
+      expect(titel().value).toBe('Wärmepumpen lohnen sich.');
+
+      text().setValue('Wärmepumpen lohnen sich im Altbau. Auch dort.');
+      expect(titel().value).toBe('Wärmepumpen lohnen sich im Altbau.');
+    });
+
+    it('lässt einen geänderten Titel stehen', () => {
+      text().setValue('Wärmepumpen lohnen sich. Auch');
+      titel().setValue('Mein eigener Titel');
+
+      text().setValue('Ganz anderer Text hier. Noch mehr.');
+      expect(titel().value).toBe('Mein eigener Titel');
+    });
+
+    it('überschreibt keinen Titel aus der Vorlage', () => {
+      component.vorlageAnwenden({ id: 'v1', titel: 'Titel der Vorlage', text: 'Text der Vorlage hier.' } as any);
+      text().setValue('Neuer Text. Weiter.');
+      expect(titel().value).toBe('Titel der Vorlage');
+    });
+
+    it('schlägt nach dem Leeren wieder vor', () => {
+      text().setValue('Erster Satz hier. Zweiter.');
+      titel().setValue('Eigener');
+      component.leeren();
+
+      text().setValue('Neuer erster Satz. Mehr.');
+      expect(titel().value).toBe('Neuer erster Satz.');
+    });
+  });
+
   describe('Titel und Kartenbezug', () => {
     it('ist zweizeilig, waechst mit und bricht bei Enter nicht um', () => {
       const titel: HTMLTextAreaElement = seite().querySelector('textarea#title')!;
@@ -281,6 +462,17 @@ describe('AddCommentaryComponent', () => {
       expect(erfolg).toHaveBeenCalledOnceWith({ id: 'k-1', aussage: { id: '', text: '' }, verknuepft: true });
     }));
 
+    it('schaut nach dem Speichern nach neuen Meilensteinen (#351)', fakeAsync(() => {
+      speichernMit();
+      const pruefen = spyOn(TestBed.inject(MeilensteinHinweisService), 'pruefen');
+      ausfuellen();
+
+      component.speichern();
+      flush();
+
+      expect(pruefen).toHaveBeenCalledTimes(1);
+    }));
+
     // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
     it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', fakeAsync(() => {
       spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
@@ -340,7 +532,8 @@ describe('AddCommentaryComponent', () => {
 
       const anfrage: AddCommentaryRequest = hinzufuegen.calls.mostRecent().args[0];
       expect(anfrage.statement_id).toBe(ID);
-      expect(anfrage.statement_text).toBeUndefined();
+      // Der Text geht mit (Vormoderation: verborgene Suchanfrage, aussageFuerAnfrage).
+      expect(anfrage.statement_text).toBe('Wärmepumpen sind zu teuer');
       expect(seite().querySelector('.gewaehlt-karte')).toBeTruthy();
     }));
 
@@ -582,6 +775,7 @@ describe('AddCommentaryComponent', () => {
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
       const erfolg = spyOn(component.success, 'emit');
       const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
+      const pruefen = spyOn(TestBed.inject(MeilensteinHinweisService), 'pruefen');
       ausfuellen();
       aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
       component.speichern();
@@ -596,6 +790,7 @@ describe('AddCommentaryComponent', () => {
       expect(erste.vorhanden_nehmen).toBeUndefined();
       expect(zweite).toEqual({ ...erste, vorhanden_nehmen: 'k-alt' });
       expect(gewaehlt).toHaveBeenCalledOnceWith('k-alt');
+      expect(pruefen).toHaveBeenCalledTimes(1);
       expect(stimme).not.toHaveBeenCalled();
       expect(erfolg).not.toHaveBeenCalled();
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(

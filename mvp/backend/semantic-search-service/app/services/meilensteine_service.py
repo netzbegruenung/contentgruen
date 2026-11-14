@@ -15,23 +15,39 @@ Woher die Zahlen kommen:
 - Unterstuetzungsarbeit: Einwuerfe anderer, die die Person ausformuliert hat, und
   eigene Einwuerfe, die andere ausformuliert haben, je mit nicht gesperrtem Beitrag
   und ohne Startkonten auf der anderen Seite.
+- Wegmarken (eigenes Tun, zaehlen nicht fuers Abzeichen): eigene Einwuerfe, die nicht
+  verworfen sind; sichtbare Beitraege, die mindestens BEITRAG_WARTEZEIT alt sind
+  (dieselbe Regel wie fuer die Punkte); sichtbare Kommentare, die eine sichtbare
+  Aussage als Antwort fuehrt.
 
 Weil nichts gespeichert wird, kann ein erreichter Meilenstein wieder verschwinden,
 etwa wenn ein Beitrag gesperrt oder geloescht wird; das ist der Preis dafuer, dass es
 keine Tabelle mit Meilensteinen und keine Frist dafuer gibt.
 
-Ein Startkonto hat keine Meilensteine, ein Konto ohne geltende Art.-9-Einwilligung
-auch nicht: Deren Wortlaut nennt die Meilenstein-Abzeichen als Zweck (#559). Gefragt
-wird je Abruf, damit ein Widerruf sofort wirkt.
+Ein Startkonto hat keine Meilensteine, ein Konto ohne geltende Einwilligung "Punkte
+und Meilensteine" auch nicht (domain/punkte_einwilligung.py, #351): Ohne sie wird
+nichts berechnet, auch keine Wegmarke. Gefragt wird je Abruf, damit ein Widerruf
+sofort wirkt.
 """
 
 import asyncio
-from typing import Callable, List, Optional, Protocol, Set
+from datetime import datetime, timezone
+from typing import Any, Awaitable, Callable, List, Optional, Protocol, Set
 
 from core.config import Settings
 from domain.meilensteine import Meilenstein, Meilensteindaten, meilensteine_berechnen
-from services.art9_einwilligung_service import get_art9_einwilligung_service
-from services.punkte_service import NutzungsQuelle, SichtbareBeitraege
+from repositories.punkte_einwilligung_repository import (
+    get_punkte_einwilligung_repository,
+)
+from domain.models.content_type import ContentType
+from services.punkte_service import (
+    BEITRAG_WARTEZEIT,
+    NutzungsQuelle,
+    SichtbareBeitraege,
+)
+
+BeantwortetEiner = Callable[[List[Any]], Awaitable[bool]]
+"""Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt."""
 
 
 class MeilensteinQuellen(Protocol):
@@ -45,6 +61,8 @@ class MeilensteinQuellen(Protocol):
         self, user_id: str, ausgenommen: Set[str]
     ) -> int: ...
 
+    def eigene_einwuerfe(self, user_id: str) -> int: ...
+
 
 class MeilensteineService:
     def __init__(
@@ -53,19 +71,29 @@ class MeilensteineService:
         nutzung: NutzungsQuelle,
         stimmen_und_einwuerfe: MeilensteinQuellen,
         settings: Settings,
+        beantwortet_einer: BeantwortetEiner,
         eingewilligt: Optional[Callable[[str], bool]] = None,
+        jetzt: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
     ):
         self._sichtbare_beitraege = sichtbare_beitraege
         self._nutzung = nutzung
         self._stimmen_und_einwuerfe = stimmen_und_einwuerfe
         self._settings = settings
-        # Spaet geholt wie in PunkteService, damit Tests den Dienst ersetzen koennen.
+        self._beantwortet_einer = beantwortet_einer
+        self._jetzt = jetzt
+        # Spaet geholt wie in PunkteService, damit Tests das Repository ersetzen koennen.
         self._eingewilligt = eingewilligt or (
-            lambda user_id: get_art9_einwilligung_service().eingewilligt(user_id)
+            lambda user_id: get_punkte_einwilligung_repository().eingewilligt(user_id)
         )
 
-    async def meilensteine(self, user_id: str) -> List[Meilenstein]:
-        """Alle Meilensteine mit Stand; leer fuer Startkonten und ohne Einwilligung."""
+    async def meilensteine(
+        self, user_id: str, mit_wegmarken: bool = True
+    ) -> List[Meilenstein]:
+        """
+        Alle Meilensteine mit Stand; leer fuer Startkonten und ohne Einwilligung.
+        ``mit_wegmarken=False`` laesst die Wegmarken samt ihren Abfragen weg (fuer das
+        Abzeichen, das sie nicht zaehlt).
+        """
         if self._settings.ist_startkonto(user_id):
             return []
         if not await asyncio.to_thread(self._eingewilligt, user_id):
@@ -90,11 +118,31 @@ class MeilensteineService:
         eingeworfen = await asyncio.to_thread(
             quelle.eigene_einwuerfe_von_anderen_ausformuliert, user_id, startkonten
         )
-        return meilensteine_berechnen(
+        einwuerfe = gehalten = zu_aussagen = 0
+        if mit_wegmarken:
+            einwuerfe = await asyncio.to_thread(quelle.eigene_einwuerfe, user_id)
+            grenze = self._jetzt() - BEITRAG_WARTEZEIT
+            gehalten = sum(
+                1 for b in beitraege if b.created.astimezone(timezone.utc) <= grenze
+            )
+            # Die Wegmarke hat Schwelle 1: Ein Treffer genuegt, gezaehlt wird nicht.
+            kommentare = [b.id for b in beitraege if _ist_kommentar(b)]
+            if kommentare and await self._beantwortet_einer(kommentare):
+                zu_aussagen = 1
+        alle = meilensteine_berechnen(
             Meilensteindaten(
                 nutzungen=nutzung,
                 zustimmungen=zustimmungen,
                 einwuerfe_ausformuliert=ausformuliert,
                 eigene_einwuerfe_von_anderen_ausformuliert=eingeworfen,
+                einwuerfe=einwuerfe,
+                beitraege_gehalten=gehalten,
+                kommentare_zu_aussagen=zu_aussagen,
             )
         )
+        return alle if mit_wegmarken else [m for m in alle if m.zaehlt_fuers_abzeichen]
+
+
+def _ist_kommentar(beitrag: Any) -> bool:
+    # ContentType ist ein str-Enum: gleich fuer Enum und Rohwert.
+    return getattr(beitrag, "content_type", None) == ContentType.COMMENTARY

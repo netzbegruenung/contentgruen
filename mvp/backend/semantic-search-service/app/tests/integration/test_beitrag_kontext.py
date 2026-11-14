@@ -103,6 +103,26 @@ async def test_kontext_mit_weiteren_sichtbaren_antworten(
     assert kontext.weitere_antworten[0].titel == "Tempolimit"
 
 
+async def test_beantwortet_einer_nur_mit_sichtbarer_aussage(
+    statement_service, post_service
+):
+    """Fuer den Meilenstein "Erste Gegenrede" (#351): ein Filter mit MatchAny."""
+    sichtbar = await _aussage(statement_service, "Fleisch ist Privatsache")
+    gesperrt = await _aussage(statement_service, "Radwege sind Geldverschwendung")
+    antwort, zur_gesperrten, ohne = (
+        await _post(post_service),
+        await _post(post_service),
+        await _post(post_service),
+    )
+    await _verknuepfen(statement_service, antwort, sichtbar)
+    await _verknuepfen(statement_service, zur_gesperrten, gesperrt)
+    await statement_service._repository.update_status(gesperrt, ContentStatus.BLOCKED)
+
+    assert await statement_service.beantwortet_einer([zur_gesperrten, antwort, ohne])
+    assert not await statement_service.beantwortet_einer([zur_gesperrten, ohne])
+    assert not await statement_service.beantwortet_einer([])
+
+
 async def test_gesperrte_aussage_wird_nicht_gezeigt(statement_service, post_service):
     statement_id = await _aussage(statement_service, "Elektroautos brennen ständig")
     beitrag = await _post(post_service)

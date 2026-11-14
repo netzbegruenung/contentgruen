@@ -15,8 +15,12 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
+from services.content.statement_service import AussageNichtGefunden
 from services.suchen_ohne_treffer_service import (
+    ZU_PRUEFEN_KANDIDATEN,
+    KeineUnbeantworteteSuchanfrage,
     PersonenDesTages,
     SuchenOhneTrefferService,
     alte_wochen_loeschen,
@@ -41,28 +45,47 @@ PERSON_A = "a" * 64
 PERSON_B = "b" * 64
 
 
+def _nach_freigabe(ids, freigaben, freigabe):
+    """Wie _freigabe_bedingung im Repository, auf einer Zuordnung ID -> freigegeben."""
+    if freigabe is None:
+        return list(ids)
+    if freigabe == "freigegebene":
+        return [i for i in ids if freigaben.get(i) is True]
+    if freigabe == "entschiedene":
+        return [i for i in ids if i in freigaben]
+    return [i for i in ids if i not in freigaben]
+
+
 class FakeRepository:
-    def __init__(self, haeufigste=None):
+    def __init__(self, haeufigste=None, freigaben=None):
         self.gezaehlt = []
         self.abfragen = []
+        self.freigabe_abfragen = []
         self.geloescht_vor = []
         self._haeufigste = haeufigste or []
+        self._freigaben = freigaben or {}
 
     def zaehlen(self, statement_id, woche, neue_person):
         self.gezaehlt.append((statement_id, woche, neue_person))
 
-    def haeufigste(self, seit_woche, mindestanzahl, limit, offset=0):
+    def haeufigste(self, seit_woche, mindestanzahl, limit, offset=0, freigabe=None):
         self.abfragen.append((seit_woche, mindestanzahl, limit, offset))
-        return self._haeufigste[offset : offset + limit]
+        self.freigabe_abfragen.append(freigabe)
+        erlaubt = set(
+            _nach_freigabe([z[0] for z in self._haeufigste], self._freigaben, freigabe)
+        )
+        zeilen = [z for z in self._haeufigste if z[0] in erlaubt]
+        return zeilen[offset : offset + limit]
 
     def loeschen_vor(self, woche):
         self.geloescht_vor.append(woche)
         return 3
 
-    def ueber_der_schwelle(self, seit_woche, mindestanzahl):
+    def ueber_der_schwelle(self, seit_woche, mindestanzahl, freigabe=None):
         self.abfragen.append((seit_woche, mindestanzahl))
+        self.freigabe_abfragen.append(freigabe)
         self.thread = threading.current_thread()
-        return [AUSSAGE, ANDERE]
+        return _nach_freigabe([AUSSAGE, ANDERE], self._freigaben, freigabe)
 
 
 def _statement_service(aussagen):
@@ -72,16 +95,26 @@ def _statement_service(aussagen):
     async def get(statement_id):
         if statement_id not in aussagen:
             raise ValueError("nicht gefunden")
-        text, status = aussagen[statement_id]
-        return SimpleNamespace(id=statement_id, text=text, status=status)
+        text, status, *herkunft = aussagen[statement_id]
+        origin, antworten = herkunft or (ContentOrigin.MANUALLY_CREATED, 0)
+        return SimpleNamespace(
+            id=statement_id,
+            text=text,
+            status=status,
+            origin=origin,
+            replysuggestions_count=antworten,
+        )
 
     service.get = AsyncMock(side_effect=get)
     return service
 
 
-def _service(repo, aussagen=None, personen=None):
+def _service(repo, aussagen=None, personen=None, freigaben=None):
     return SuchenOhneTrefferService(
-        repo, _statement_service(aussagen or {}), personen or PersonenDesTages()
+        repo,
+        _statement_service(aussagen or {}),
+        personen or PersonenDesTages(),
+        freigaben,
     )
 
 
@@ -367,3 +400,184 @@ class TestUeberDerSchwelle:
         await _service(repo).ueber_der_schwelle(heute=MITTWOCH)
 
         assert repo.thread is not threading.current_thread()
+
+
+class FakeFreigaben:
+    def __init__(self, entscheidungen=None):
+        self._entscheidungen = dict(entscheidungen or {})
+        self.entschieden = []
+
+    def entscheidungen(self):
+        return dict(self._entscheidungen)
+
+    def entscheiden(self, statement_id, freigegeben):
+        self.entschieden.append((statement_id, freigegeben))
+        self._entscheidungen[statement_id] = freigegeben
+
+
+SUCHANFRAGE = (ContentOrigin.SEARCH_QUERY, 0)
+BEANTWORTET = (ContentOrigin.SEARCH_QUERY, 1)
+
+
+class TestVormoderation:
+    @pytest.mark.asyncio
+    async def test_sichtbar_fuer_alle_nur_ueber_der_schwelle_und_freigegeben(self):
+        # FakeRepository.ueber_der_schwelle liefert AUSSAGE und ANDERE.
+        repo = FakeRepository(freigaben={AUSSAGE: True, GELOESCHT: True, ANDERE: False})
+
+        ergebnis = await _service(repo).sichtbar_fuer_alle(heute=MITTWOCH)
+
+        assert ergebnis == {AUSSAGE}
+        assert repo.freigabe_abfragen == ["freigegebene"]
+
+    @pytest.mark.asyncio
+    async def test_ohne_freigaben_ist_nichts_fuer_alle_sichtbar(self):
+        assert (
+            await _service(FakeRepository()).sichtbar_fuer_alle(heute=MITTWOCH) == set()
+        )
+
+    @pytest.mark.asyncio
+    async def test_haeufigste_kennzeichnet_unbeantwortete_suchanfragen(self):
+        repo = FakeRepository(haeufigste=[(AUSSAGE, 7, 4), (ANDERE, 3, 2)])
+        service = _service(
+            repo,
+            {
+                AUSSAGE: ("gesucht", SICHTBAR, *SUCHANFRAGE),
+                ANDERE: ("beantwortet", SICHTBAR, *BEANTWORTET),
+            },
+        )
+
+        ergebnis = await service.haeufigste(wochen=4, heute=MITTWOCH)
+
+        assert [e.unbeantwortete_suchanfrage for e in ergebnis] == [True, False]
+
+    @pytest.mark.asyncio
+    async def test_zu_pruefen_nur_offene_suchanfragen_meiste_personen_zuerst(self):
+        dritte = uuid.UUID("55555555-5555-5555-5555-555555555555")
+        vierte = uuid.UUID("66666666-6666-6666-6666-666666666666")
+        repo = FakeRepository(
+            haeufigste=[
+                (AUSSAGE, 9, 2),
+                (ANDERE, 8, 5),
+                (dritte, 7, 3),
+                (vierte, 6, 4),
+            ],
+            freigaben={vierte: False},
+        )
+        aussagen = {
+            AUSSAGE: ("wenige Personen", SICHTBAR, *SUCHANFRAGE),
+            ANDERE: ("beantwortet", SICHTBAR, *BEANTWORTET),
+            dritte: ("viele Personen", SICHTBAR, *SUCHANFRAGE),
+            vierte: ("schon entschieden", SICHTBAR, *SUCHANFRAGE),
+        }
+        ergebnis = await _service(repo, aussagen).zu_pruefen(heute=MITTWOCH)
+
+        assert [(e.statement_id, e.personen) for e in ergebnis] == [
+            (dritte, 3),
+            (AUSSAGE, 2),
+        ]
+        # Entschiedene fallen schon in der Abfrage heraus.
+        assert set(repo.freigabe_abfragen) == {"unentschiedene"}
+
+    @pytest.mark.asyncio
+    async def test_anzahl_zu_pruefen_zaehlt_unentschiedene_in_einem_aufruf(self):
+        repo = FakeRepository(freigaben={ANDERE: True})
+        statement_service = _statement_service({})
+        statement_service.zaehle_unbeantwortete_suchanfragen = AsyncMock(return_value=1)
+        service = SuchenOhneTrefferService(repo, statement_service, PersonenDesTages())
+
+        assert await service.anzahl_zu_pruefen(heute=MITTWOCH) == 1
+        statement_service.zaehle_unbeantwortete_suchanfragen.assert_awaited_once_with(
+            frozenset({AUSSAGE})
+        )
+        statement_service.get.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_anzahl_zu_pruefen_ohne_kandidaten_fragt_qdrant_nicht(self):
+        repo = FakeRepository(freigaben={AUSSAGE: True, ANDERE: False})
+        statement_service = _statement_service({})
+        statement_service.zaehle_unbeantwortete_suchanfragen = AsyncMock()
+        service = SuchenOhneTrefferService(repo, statement_service, PersonenDesTages())
+
+        assert await service.anzahl_zu_pruefen(heute=MITTWOCH) == 0
+        statement_service.zaehle_unbeantwortete_suchanfragen.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("freigegeben", [True, False])
+    async def test_entscheiden_speichert_die_entscheidung(self, freigegeben):
+        freigaben = FakeFreigaben()
+        service = _service(
+            FakeRepository(),
+            {AUSSAGE: ("gesucht", SICHTBAR, *SUCHANFRAGE)},
+            freigaben=freigaben,
+        )
+
+        await service.entscheiden(AUSSAGE, freigegeben)
+
+        assert freigaben.entschieden == [(AUSSAGE, freigegeben)]
+
+    @pytest.mark.asyncio
+    async def test_entscheiden_nur_fuer_unbeantwortete_suchanfragen(self):
+        freigaben = FakeFreigaben()
+        service = _service(
+            FakeRepository(),
+            {AUSSAGE: ("beantwortet", SICHTBAR, *BEANTWORTET)},
+            freigaben=freigaben,
+        )
+
+        with pytest.raises(KeineUnbeantworteteSuchanfrage):
+            await service.entscheiden(AUSSAGE, True)
+        assert freigaben.entschieden == []
+
+    @pytest.mark.asyncio
+    async def test_entscheiden_ohne_aussage(self):
+        service = _service(FakeRepository(), freigaben=FakeFreigaben())
+
+        with pytest.raises(AussageNichtGefunden):
+            await service.entscheiden(GELOESCHT, True)
+
+
+class TestOhneVerborgene:
+    @pytest.mark.asyncio
+    async def test_viele_ungepruefte_schneiden_die_liste_nicht_ab(self):
+        # 60 ungepruefte Suchanfragen mit mehr Personen vor einer gepflegten Aussage:
+        # Mit Limit 50 stand die gepflegte frueher nicht mehr in der Liste.
+        ungepruefte = [uuid.UUID(int=1000 + i) for i in range(60)]
+        gepflegt = uuid.UUID(int=5)
+        frei = uuid.UUID(int=6)
+        repo = FakeRepository(
+            haeufigste=[(i, 9, 5) for i in ungepruefte]
+            + [(gepflegt, 3, 2), (frei, 2, 2)]
+        )
+        repo.ueber_der_schwelle = lambda seit, mind, freigabe=None: [frei]
+        aussagen = {i: ("ungeprueft", SICHTBAR, *SUCHANFRAGE) for i in ungepruefte}
+        aussagen[gepflegt] = ("gepflegt", SICHTBAR)
+        aussagen[frei] = ("freigegeben", SICHTBAR, *SUCHANFRAGE)
+
+        ergebnis = await _service(repo, aussagen).haeufigste(
+            wochen=4, limit=50, heute=MITTWOCH, ohne_verborgene=True
+        )
+
+        assert [e.statement_id for e in ergebnis] == [gepflegt, frei]
+
+    @pytest.mark.asyncio
+    async def test_ohne_den_schalter_bleibt_die_admin_kennzahl_vollstaendig(self):
+        repo = FakeRepository(haeufigste=[(AUSSAGE, 9, 5)])
+        aussagen = {AUSSAGE: ("ungeprueft", SICHTBAR, *SUCHANFRAGE)}
+
+        ergebnis = await _service(repo, aussagen).haeufigste(heute=MITTWOCH)
+
+        assert [e.statement_id for e in ergebnis] == [AUSSAGE]
+
+
+@pytest.mark.asyncio
+async def test_anzahl_zu_pruefen_hoechstens_so_viele_wie_die_liste():
+    repo = FakeRepository()
+    statement_service = _statement_service({})
+    statement_service.zaehle_unbeantwortete_suchanfragen = AsyncMock(return_value=999)
+
+    anzahl = await SuchenOhneTrefferService(
+        repo, statement_service, PersonenDesTages()
+    ).anzahl_zu_pruefen(heute=MITTWOCH)
+
+    assert anzahl == ZU_PRUEFEN_KANDIDATEN

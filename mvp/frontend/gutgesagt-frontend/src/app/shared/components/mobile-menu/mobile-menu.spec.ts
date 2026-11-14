@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { LeerComponent } from '../../../testing/routen-ohne-waechter';
+import { of } from 'rxjs';
+import { ZuTunService } from '../../../services/zu-tun.service';
 
 import { MobileMenuComponent } from './mobile-menu';
 import { FarbschemaService } from '../../../services/farbschema.service';
@@ -16,7 +18,14 @@ describe('MobileMenuComponent', () => {
       providers: [provideRouter([
         { path: 'fangkorb', component: LeerComponent },
         { path: 'impressum', component: LeerComponent },
-      ])]
+      ]),
+      {
+        provide: ZuTunService,
+        useValue: {
+          meldungen$: of({ daten: { anzahl: 2, mehr: false, aelteste: null }, fehler: false }),
+          suchanfragen$: of({ daten: { anzahl: 0 }, fehler: false }),
+        },
+      }]
     })
     .compileComponents();
 
@@ -200,6 +209,15 @@ describe('MobileMenuComponent', () => {
     spyOn(component.closeMenu, 'emit');
     eintrag.click();
     expect(component.closeMenu.emit).toHaveBeenCalled();
+  });
+
+  it('zeigt am Admin-Link die Zahl offener Meldungen', () => {
+    component.userInfo = { isAuthenticated: true, isAdmin: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+
+    const eintrag = link('.mobile-menu-admin');
+    expect(eintrag.querySelector('.zahl')!.textContent!.trim()).toBe('2');
+    expect(eintrag.textContent!.replace(/\s+/g, ' ')).toContain('Admin2, 2 offene Meldungen');
   });
 
   it('zeigt den Admin-Bereich nur Admins', () => {

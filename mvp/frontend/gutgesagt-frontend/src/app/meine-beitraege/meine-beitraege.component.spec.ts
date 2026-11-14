@@ -16,6 +16,7 @@ import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
 import { NavigationService } from '../services/navigation.service';
 import { StatementService } from '../services/statement.service';
+import { PUNKTE_EINWILLIGUNG_AUS } from '../shared/punkte-einwilligung/punkte-einwilligung.testing';
 
 describe('MeineBeitraegeComponent', () => {
   let fixture: ComponentFixture<MeineBeitraegeComponent>;
@@ -61,6 +62,7 @@ describe('MeineBeitraegeComponent', () => {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
+        PUNKTE_EINWILLIGUNG_AUS,
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
         { provide: MeineBeitraegeService, useValue: { meineBeitraege } },
         {
@@ -313,7 +315,10 @@ describe('MeineBeitraegeComponent', () => {
       await erstellen([beitrag({ usage_count: 0 })]);
 
       expect(text('[data-testid=nutzung-leer]')).toContain('Noch hat niemand deine Beiträge genutzt.');
+      expect(text('[data-testid=nutzung-leer]')).toContain('Genutzt heißt: Jemand hat einen davon kopiert oder geteilt.');
       expect(text('[data-testid=nutzung-leer]')).toContain('teil seinen Link');
+      // Nicht doppelt: „noch nicht genutzt“ steht nur in der Box (P52)
+      expect(fixture.nativeElement.querySelector('.album-statistik')).toBeNull();
     });
 
     it('zeigt die Erklaerung nicht, sobald etwas genutzt wurde oder die Statistik fehlt', async () => {

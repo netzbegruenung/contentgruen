@@ -58,7 +58,7 @@
         </div>
         <a mat-button *ngIf="userInfo?.isAdmin" routerLink="/admin/dashboard" (click)="close()" class="mobile-menu-item mobile-menu-admin">
             <mat-icon>admin_panel_settings</mat-icon>
-            Admin
+            Admin<app-offene-meldungen-zahl></app-offene-meldungen-zahl>
         </a>
         <button mat-button (click)="onProfilbildClick()" class="mobile-menu-item mobile-menu-profilbild">
             <mat-icon>face</mat-icon>

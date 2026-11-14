@@ -8,7 +8,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 
-import { KartenAktionenComponent } from './karten-aktionen.component';
+import { KOPIERT_DAUER_MS, KartenAktionenComponent } from './karten-aktionen.component';
 import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
@@ -522,7 +522,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     it('meldet "Kopiert – jetzt unter dem Post einfügen." ohne Luecke', () => {
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
     });
 
     describe('mit Platzhalter (Persona-Test Dennis)', () => {
@@ -573,7 +573,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
         expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, undefined);
         expect(kopiert).toHaveBeenCalledTimes(1);
-        expect(snackBar.open).toHaveBeenCalledWith(KOPIERT, 'Schließen', { duration: 1500 });
+        expect(snackBar.open).toHaveBeenCalledWith(KOPIERT, 'Schließen', { duration: KOPIERT_DAUER_MS });
       });
 
       it('fragt auch bei "Mit Herkunft kopieren" aus dem Menue', () => {
@@ -620,7 +620,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
       expect(usage.gepostetAngeboten).toHaveBeenCalledWith('test-user');
       antwort.next(true);
       expect(snackBar.open).toHaveBeenCalledWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
@@ -641,7 +641,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
       expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
     });
 
@@ -685,7 +685,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     it('bleibt ohne Angebot beim Kopier-Hinweis ohne Luecke', () => {
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
       expect(usage.gepostetMelden).not.toHaveBeenCalled();
     });
 
@@ -707,7 +707,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.kopieren();
 
       expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
-      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: 1500 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
     });
   });
 
@@ -1008,5 +1008,9 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(clipboard.copy).not.toHaveBeenCalled();
       expect(dialog.open).not.toHaveBeenCalled();
     }));
+  });
+
+  it('laesst „Kopiert“ 4 s stehen, lang genug fuer den Wechsel in die andere App (P10)', () => {
+    expect(KOPIERT_DAUER_MS).toBe(4000);
   });
 });

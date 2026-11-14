@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import (
     AbstractSet,
+    Callable,
     Any,
     Dict,
     List,
@@ -74,11 +75,14 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
 
     @abstractmethod
     async def finde_normalisiert_gleich(
-        self, normalform: str
+        self,
+        normalform: str,
+        ausschliessen: Optional[Callable[[Any], bool]] = None,
     ) -> Optional[TContentSearchResult]:
         """
         Einen Eintrag mit genau dieser Normalform (utils/text_normalisierung.py),
-        ohne Vektorsuche; None, wenn es keinen gibt.
+        ohne Vektorsuche; None, wenn es keinen gibt. Eintraege, fuer die
+        ausschliessen wahr ist, zaehlen nicht (Vormoderation).
         """
         pass
 

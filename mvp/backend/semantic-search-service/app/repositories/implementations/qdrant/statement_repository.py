@@ -209,6 +209,37 @@ class StatementRepository(
             )
             return 0
 
+    async def zaehle_unbeantwortete_suchanfragen(
+        self, ids: AbstractSet[uuid.UUID]
+    ) -> int:
+        """
+        Wie viele der IDs sichtbare unbeantwortete Suchanfragen sind, mit einem
+        Zaehlaufruf (Zaehler der Vormoderation). Fehler gehen an den Aufrufer.
+        """
+        from qdrant_client.models import (
+            FieldCondition,
+            Filter,
+            HasIdCondition,
+            MatchValue,
+        )
+
+        if not ids:
+            return 0
+        result = await self._shared_manager.async_client.count(
+            collection_name=self._shared_manager.collection_name,
+            count_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="content_type", match=MatchValue(value=self.content_type)
+                    ),
+                    *nur_sichtbar_bedingungen(),
+                    HasIdCondition(has_id=[str(i) for i in sorted(ids)]),
+                    _unbeantwortete_suchanfrage(),
+                ]
+            ),
+        )
+        return result.count
+
     async def get_all_curated(
         self,
         limit: int,
@@ -382,6 +413,36 @@ class StatementRepository(
                     f"Payload ungueltig ({fehler.error_count()} Fehler)"
                 )
         return aussagen
+
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
+        """
+        Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt
+        (Meilenstein "Erste Gegenrede", #351): eine gefilterte Abfrage ueber
+        antwort_ids wie zu_antwort, ein Treffer genuegt.
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchAny, MatchValue
+
+        if not beitrag_ids:
+            return False
+        punkte, _ = await self._shared_manager.async_client.scroll(
+            collection_name=self._shared_manager.collection_name,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="content_type", match=MatchValue(value=self.content_type)
+                    ),
+                    FieldCondition(
+                        key=FELD_ANTWORT_IDS,
+                        match=MatchAny(any=sorted({str(i) for i in beitrag_ids})),
+                    ),
+                    *nur_sichtbar_bedingungen(),
+                ]
+            ),
+            limit=1,
+            with_payload=False,
+            with_vectors=False,
+        )
+        return bool(punkte)
 
     async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
         """

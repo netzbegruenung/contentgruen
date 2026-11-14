@@ -86,9 +86,8 @@
     </p>
     <p class="startbestand">
       Den Anfang machen Menschen: Zum Start schreibt ein Gründungsteam die ersten Beiträge zu
-      den häufigsten Aussagen selbst. KI schlägt höchstens etwas vor,
-      jeden Beitrag verantwortet ein Mensch. Alle Zahlen, die du siehst, sind echt: Jeder Beitrag
-      beginnt bei 0 Stimmen und 0 Nutzungen.
+      den häufigsten Aussagen selbst. {{ keineGenerativeKi }}
+      Alle Zahlen, die du siehst, sind echt: Jeder Beitrag beginnt bei 0 Stimmen und 0 Nutzungen.
     </p>
   </section>
 
@@ -183,14 +182,15 @@
         <strong>Suche nach Bedeutung:</strong> Gut gesagt vergleicht, was ein Satz meint, nicht
         nur seine Wörter. Dieselbe Aussage in anderen Worten führt zu denselben Antworten.
       </li>
-      <li>
-        <strong>Eigene Infrastruktur:</strong> Die Suche rechnet mit einem offenen Sprachmodell
-        auf eigener Infrastruktur und speichert in
-        <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>.
+      <li class="technik-ki">
+        <strong>Keine generative KI:</strong> {{ keineGenerativeKi }} {{ sucheMitSprachmodellen }}
       </li>
-      <li>
-        <strong>KI schlägt vor, ein Mensch verantwortet:</strong> KI hilft beim Finden und
-        Ordnen. Beiträge schreibt sie nicht selbst.
+      <li class="technik-modelle">
+        <strong>Offene Modelle auf eigener Infrastruktur:</strong> Ein Modell rechnet aus, was ein
+        Satz bedeutet (multilingual-e5-base). Zwei weitere prüfen, ob zwei Sätze dasselbe behaupten
+        oder sich widersprechen (mDeBERTa-v3 und XLM-RoBERTa-large, beide mehrsprachig). Gespeichert wird in
+        <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>. Das Gegenlesen
+        beim Schreiben arbeitet nach festen Regeln.
       </li>
       <li>
         <strong>Offener Code:</strong> Gut gesagt ist Open Source unter der AGPL.

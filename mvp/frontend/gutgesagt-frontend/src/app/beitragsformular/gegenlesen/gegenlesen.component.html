@@ -1,8 +1,9 @@
 <section *ngIf="verfuegbar" class="gegenlesen" [class.kompakt]="kompakt" aria-labelledby="gegenlesen-titel">
-    <!-- Kompakt unter dem Textfeld (einspaltig): eine Zeile mit Siegel und Zahl, aufklappbar (Nutzerfuehrung 13.11.) -->
+    <!-- Kompakt unter dem Textfeld (einspaltig): eine Zeile mit Siegel und Zahl, aufklappbar (Nutzerfuehrung 13.11.);
+         mit der ersten Anmerkung von selbst offen (P33) -->
     <button *ngIf="kompakt; else kopf" type="button" class="gegenlesen-zeile"
             [class.gut]="istGut" [attr.aria-expanded]="offen" aria-controls="gegenlesen-inhalt"
-            (click)="offen = !offen">
+            (click)="umschalten()">
         <app-siegel [guete]="ergebnis.guete"></app-siegel>
         <span id="gegenlesen-titel" class="gegenlesen-zeile-text">Gegenlesen: {{ zeile }}</span>
         <span class="gegenlesen-pfeil" aria-hidden="true">{{ offen ? '▴' : '▾' }}</span>
@@ -13,7 +14,7 @@
             <div>
                 <h4 id="gegenlesen-titel">Gegenlesen</h4>
                 <p class="gegenlesen-stand">
-                    {{ ergebnis.guete === null ? 'Schreib los, dann liest es mit.' : 'Nach festen Regeln, ohne KI' }}
+                    {{ ergebnis.guete === null ? 'Schreib los, dann liest es mit: nach festen Regeln, ohne generative KI.' : 'Nach festen Regeln, ohne generative KI' }}
                 </p>
             </div>
         </div>

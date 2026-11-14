@@ -14,6 +14,8 @@ FROM python:3.13-slim AS ci-python
 # requirements.txt ab, installiert pip dort nur die Unterschiede.
 COPY mvp/backend/semantic-search-service/requirements.txt /opt/ci/src/mvp/backend/semantic-search-service/
 COPY scripts/ci-installieren.sh /opt/ci/src/scripts/
+# Geht in die Pruefsumme ein (Basis-Image), scripts/ci-installieren.sh
+COPY Dockerfile.ci /opt/ci/src/
 RUN pip install --no-cache-dir --root-user-action=ignore \
       -r /opt/ci/src/mvp/backend/semantic-search-service/requirements.txt \
     && sh /opt/ci/src/scripts/ci-installieren.sh --pruefsumme python > /opt/ci/python.sha256
@@ -41,6 +43,7 @@ RUN sh /opt/ci/src/scripts/ci-chromium.sh && rm -rf /var/lib/apt/lists/*
 COPY mvp/frontend/gutgesagt-frontend/package.json mvp/frontend/gutgesagt-frontend/package-lock.json \
      /opt/ci/src/mvp/frontend/gutgesagt-frontend/
 COPY scripts/ci-installieren.sh /opt/ci/src/scripts/
+COPY Dockerfile.ci /opt/ci/src/
 RUN npm ci --prefix /opt/ci/src/mvp/frontend/gutgesagt-frontend --no-audit --no-fund \
     && mv /opt/ci/src/mvp/frontend/gutgesagt-frontend/node_modules /opt/ci/node_modules \
     && sh /opt/ci/src/scripts/ci-installieren.sh --pruefsumme frontend > /opt/ci/frontend.sha256

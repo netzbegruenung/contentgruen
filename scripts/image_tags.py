@@ -1,9 +1,12 @@
 """Image-Tags fuer den Build in Woodpecker (.woodpecker/build.yaml, release.yaml, #327).
 
-Dieselben Tags wie zuvor docker/metadata-action in der GitHub-CI, damit Deployment und
-Renovate unveraendert weiterlaufen:
+Dieselben Release-Tags wie zuvor docker/metadata-action in der GitHub-CI, damit Deployment
+und Renovate unveraendert weiterlaufen:
 
-- push auf main (und manuell): ``main`` und ``sha-<7 Zeichen>``
+- push auf main (und manuell): nur ``main``. Kein ``sha-<kurz>`` je Commit: Jeder Tag haelt
+  sein Image in der Registry fest, ein ueberschriebenes ``main`` raeumt Forgejo dagegen
+  selbst weg (Cron cleanup_packages). Mit Tags je Commit lief die Paket-Platte am 14.11.
+  voll (docs/CI.md, "Images and releases").
 - Tag ``vX.Y.Z``: ``X.Y.Z``, ``X.Y`` und ``latest``; eine Vorabversion (``v1.2.3-rc.1``)
   bekommt nur ``1.2.3-rc.1``, damit sie ``latest`` und damit Produktion nie bewegt.
 
@@ -34,7 +37,7 @@ def image_tags(ereignis, git_tag, commit_sha, praefix=""):
     if ereignis in ("push", "manual"):
         if not commit_sha:
             raise ValueError("Commit fehlt (CI_COMMIT_SHA)")
-        tags = ["main", f"sha-{commit_sha[:7]}"]
+        tags = ["main"]
     elif ereignis == "tag":
         treffer = SEMVER.fullmatch(git_tag)
         if not treffer:

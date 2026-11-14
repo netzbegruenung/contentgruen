@@ -3,6 +3,7 @@ import datetime
 import json
 from typing import (
     AbstractSet,
+    Callable,
     Any,
     Dict,
     List,
@@ -266,7 +267,9 @@ class QdrantBaseRepository(
         ]
 
     async def finde_normalisiert_gleich(
-        self, normalform: str
+        self,
+        normalform: str,
+        ausschliessen: Optional[Callable[[Any], bool]] = None,
     ) -> Optional[TContentSearchResult]:
         """
         Einen Eintrag dieses Typs mit genau dieser Normalform (Payload-Feld
@@ -276,7 +279,9 @@ class QdrantBaseRepository(
 
         Wie search() nur sichtbare: Ein neuer Beitrag haengt sich nie still an einen
         gesperrten oder geloeschten. Gibt es mehrere, entscheidet die Reihenfolge
-        deterministisch: der aelteste (created), dann die ID.
+        deterministisch: der aelteste (created), dann die ID. Eintraege, fuer die
+        ausschliessen wahr ist, zaehlen nicht; dann der naechste (Vormoderation:
+        eine verborgene Suchanfrage, StatementService.add_statement).
         """
         from qdrant_client.models import Filter, FieldCondition, MatchValue
 
@@ -309,10 +314,13 @@ class QdrantBaseRepository(
                 str(punkt.id),
             )
 
-        erster = min(punkte, key=rang)
-        return self.content_search_result_model_class.model_validate(
-            {**erster.payload, "id": str(erster.id), "score": 1.0}
-        )
+        for punkt in sorted(punkte, key=rang):
+            eintrag = self.content_search_result_model_class.model_validate(
+                {**punkt.payload, "id": str(punkt.id), "score": 1.0}
+            )
+            if ausschliessen is None or not ausschliessen(eintrag):
+                return eintrag
+        return None
 
     async def get(
         self,

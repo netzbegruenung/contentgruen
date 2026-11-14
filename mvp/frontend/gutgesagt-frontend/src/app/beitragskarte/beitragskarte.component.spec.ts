@@ -387,6 +387,16 @@ describe('BeitragskarteComponent', () => {
       expect(TestBed.inject(Clipboard).copy).not.toHaveBeenCalled();
     });
 
+    it('oeffnet beim Antippen des Platzhalters den Dialog (P19)', () => {
+      const dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
+      dialog.open.and.returnValue({ afterClosed: () => of(undefined) } as any);
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: MIT_LUECKE })));
+
+      element<HTMLElement>('.karte-text mark.vorlagen-luecke').click();
+
+      expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ text: MIT_LUECKE });
+    });
+
     it('markiert ohne Platzhalter nichts', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { text: 'Siehe [1] und [sic].' })));
 

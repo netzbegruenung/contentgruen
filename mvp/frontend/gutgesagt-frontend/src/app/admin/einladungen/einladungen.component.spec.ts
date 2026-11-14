@@ -116,6 +116,6 @@ describe('EinladungenComponent', () => {
     http.expectOne(URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
-    expect(el().textContent).toContain('konnten nicht geladen werden');
+    expect(el().textContent).toContain('gerade nicht erreichbar, neuer Versuch in Kürze');
   });
 });

@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { cacheInterceptor, cacheService, NUR_LESEND, nurLesend } from './cache.interceptor';
 import { EinwurfService } from '../services/einwurf.service';
 import { environment } from '../../environments/environment';
+import { stillerKontext } from '../shared/selbst-nachladen';
 
 describe('cacheInterceptor', () => {
   let http: HttpClient;
@@ -134,6 +135,24 @@ describe('cacheInterceptor', () => {
     const danach = holen(`${api}/content/recent`);
     httpMock.expectOne(`${api}/content/recent`).flush({ stand: 'neu' });
     expect(danach).toEqual([{ stand: 'neu' }]);
+  });
+
+  it('holt eine stille Hintergrund-Abfrage frisch und legt ihre Antwort in den Cache', () => {
+    holen(`${api}/metrics/bilanz`);
+    httpMock.expectOne(`${api}/metrics/bilanz`).flush({ stand: 'alt' });
+
+    http.get(`${api}/metrics/bilanz`, { context: stillerKontext() }).subscribe();
+    httpMock.expectOne(`${api}/metrics/bilanz`).flush({ stand: 'neu' });
+
+    expect(holen(`${api}/metrics/bilanz`)).toEqual([{ stand: 'neu' }]);
+  });
+
+  it('haelt die Moderation nie im Cache: Meldungen, Sperren und Loeschauftraege muessen frisch sein', () => {
+    holen(`${api}/moderation/gesperrt`);
+    httpMock.expectOne(`${api}/moderation/gesperrt`).flush({ stand: 'alt' });
+
+    holen(`${api}/moderation/gesperrt`);
+    httpMock.expectOne(`${api}/moderation/gesperrt`).flush({ stand: 'neu' });
   });
 
   it('haelt den Fangkorb nie im Cache', () => {

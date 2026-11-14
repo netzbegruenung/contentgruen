@@ -556,20 +556,47 @@ describe('FangkorbComponent', () => {
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['neu', 'mittel', 'alt']);
     });
 
-    it('sagt im leeren Tab "Ausformulieren" in einer Zeile, dass dort nichts liegt', () => {
+    it('zeigt im leeren Tab "Ausformulieren" auf das, was beim Destillieren wartet', () => {
       erstellen([einwurf({ id: 'roh' })]);
+      klicken(tabKnopf('Ausformulieren'));
+
+      expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
+        'Leer gefischt. Beim Destillieren wartet 1 Einwurf – zum Destillieren',
+      );
+    });
+
+    it('sagt im leeren Tab nur, dass dort nichts liegt, wenn auch im anderen nichts wartet', () => {
+      erstellen([
+        einwurf({ id: 'fertig', status: 'processed', drafts: [satz('s-2', 'bob', 'Genommen')], links: [link('s-2')] }),
+      ]);
       klicken(tabKnopf('Ausformulieren'));
 
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
         'Nichts auszuformulieren.',
       );
+      expect(fixture.nativeElement.querySelector('.leer-verweis')).toBeNull();
     });
 
-    it('sagt im leeren Tab "Destillieren" in einer Zeile, dass dort nichts liegt', () => {
+    it('wechselt ueber den Satz im leeren Tab in den anderen Tab', () => {
+      erstellen([
+        einwurf({ id: 'satz-1', status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] }),
+        einwurf({ id: 'satz-2', status: 'in_progress', drafts: [satz('s-3', 'bob', 'Noch ein Satz')] }),
+      ]);
+      klicken(tabKnopf('Destillieren'));
+
+      const verweis: HTMLButtonElement = fixture.nativeElement.querySelector('.leer-verweis');
+      expect(verweis.textContent!.trim()).toBe('Beim Ausformulieren warten 2 Einwürfe – zum Ausformulieren');
+      klicken(verweis);
+
+      expect(component.filter.tab).toBe('ausformulieren');
+      expect(karten().length).toBe(2);
+    });
+
+    it('zeigt im leeren Tab "Destillieren" auf das, was beim Ausformulieren wartet', () => {
       erstellen([einwurf({ id: 'satz', status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] })]);
 
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
-        'Nichts zu destillieren.',
+        'Leer gefischt. Beim Ausformulieren wartet 1 Einwurf – zum Ausformulieren',
       );
     });
   });

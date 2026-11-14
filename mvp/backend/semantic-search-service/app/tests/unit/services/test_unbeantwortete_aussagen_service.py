@@ -48,7 +48,7 @@ def _service(ohne_kommentar=(), gesucht=(), themen=None):
     suchen = Mock(spec=SuchenOhneTrefferService)
     # Wie die Kennzahl: hoechstens ``limit`` Aussagen, die haeufigsten zuerst
     suchen.haeufigste = AsyncMock(
-        side_effect=lambda wochen, limit: list(gesucht)[:limit]
+        side_effect=lambda wochen, limit, ohne_verborgene=False: list(gesucht)[:limit]
     )
     themen_service = Mock(spec=AussageThemenService)
     themen_service.themen_von = Mock(
@@ -239,6 +239,17 @@ async def test_filter_wird_vor_der_begrenzung_angewandt():
     liste = await service.liste(limit=1, thema="klima")
 
     assert [a.statement_id for a in liste] == [C]
+
+
+async def test_liste_laesst_verborgene_suchanfragen_vor_der_begrenzung_weg():
+    # Vormoderation: Das Weglassen geschieht in haeufigste (ohne_verborgene) vor dem
+    # Limit, damit viele ungepruefte die Liste nicht leer schneiden.
+    service = _service(gesucht=[SucheOhneTreffer(C, "gepflegt", 4, 2)])
+
+    await service.liste()
+
+    aufruf = service._suchen_ohne_treffer.haeufigste.call_args.kwargs
+    assert aufruf["ohne_verborgene"] is True
 
 
 async def test_ohne_themen_gleiche_auswahl_ohne_nachschlagen():

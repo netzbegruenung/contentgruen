@@ -16,7 +16,11 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.statement import Statement
 from services.content.commentary_service import CommentaryService
-from services.content.statement_service import StatementService
+from services.content.statement_service import (
+    AussageNichtGefunden,
+    StatementService,
+    SuchanfrageNichtFreigegeben,
+)
 
 from tests.integration.beitrag_helfer import sichtbarer_beitrag
 from tests.integration.conftest import requires_qdrant
@@ -158,7 +162,7 @@ async def test_gesperrter_oder_geloeschter_kommentar_ist_keine_antwort(
 
 
 async def test_ohne_kommentar_laesst_unbeantwortete_suchanfragen_weg(
-    statement_service,
+    statement_service, sichtbare_suchanfragen
 ):
     suchanfrage = await _anlegen(
         statement_service,
@@ -172,6 +176,8 @@ async def test_ohne_kommentar_laesst_unbeantwortete_suchanfragen_weg(
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    # Antworten gibt es nur an freigegebenen (Vormoderation).
+    _entscheidung_setzen(sichtbare_suchanfragen, angenommen, True)
     hintergrund = await sichtbarer_beitrag(statement_service, ContentType.GENERIC_TEXT)
     await _verknuepfen(
         statement_service, angenommen, hintergrund, ContentType.GENERIC_TEXT
@@ -233,7 +239,7 @@ async def test_mit_kommentar_nur_mit_sichtbarem_kommentar(
 
 
 async def test_gesuchte_aussage_verschwindet_nach_dem_kommentar(
-    statement_service, commentary_service
+    statement_service, commentary_service, sichtbare_suchanfragen
 ):
     """
     Der Weg "Hier fehlt eine Antwort" -> Antworten -> gespeichert: Die Suchanfrage,
@@ -246,6 +252,9 @@ async def test_gesuchte_aussage_verschwindet_nach_dem_kommentar(
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    # Freigegeben und ueber der Schwelle (Vormoderation): Nur dann steht sie auf
+    # der Liste, und nur dann laesst sich darauf antworten.
+    sichtbare_suchanfragen.add(gesucht)
     suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(
         return_value=[
@@ -272,7 +281,7 @@ async def test_gesuchte_aussage_verschwindet_nach_dem_kommentar(
 
 
 async def test_vorab_uebernimmt_gleiche_unbeantwortete_suchanfrage(
-    statement_service,
+    statement_service, sichtbare_suchanfragen
 ):
     suchanfrage = await _anlegen(
         statement_service,
@@ -280,6 +289,8 @@ async def test_vorab_uebernimmt_gleiche_unbeantwortete_suchanfrage(
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    # Uebernommen wird nur eine sichtbare (Vormoderation).
+    sichtbare_suchanfragen.add(suchanfrage)
 
     neu, statement_id, _ = await statement_service.vorab_anlegen(
         "Die Grundsteuer steigt wegen der Grünen", "person-1"
@@ -307,3 +318,250 @@ async def test_vorab_laesst_vorhandene_aussage_einer_person_unveraendert(
     assert not neu
     assert statement_id == vorhanden
     assert (await statement_service.get(vorhanden)).original_author == "person-2"
+
+
+# Vormoderation (Entscheidung des Maintainers vom 13.11.2026): Eine unbeantwortete
+# Suchanfrage, die kein Admin freigegeben hat, wird ueber Schreibwege nicht sichtbar.
+NICHT_FREIGEGEBEN = pytest.mark.parametrize(
+    "entscheidung", [None, False], ids=["ungeprueft", "abgelehnt"]
+)
+
+
+def _entscheidung_setzen(freigaben, suchanfrage, entscheidung):
+    # Sichtbar ist nur eine freigegebene (die Schwelle gilt im Test als erreicht).
+    if entscheidung is True:
+        freigaben.add(suchanfrage)
+
+
+async def _bleibt_in_der_vormoderation(statement_service, suchanfrage, text):
+    aussage = await statement_service.get(suchanfrage)
+    assert aussage.origin is ContentOrigin.SEARCH_QUERY
+    assert aussage.original_author == SEARCH_QUERY_AUTHOR
+    assert aussage.replysuggestions_count == 0
+    assert aussage.text == text
+
+
+@NICHT_FREIGEGEBEN
+async def test_vorab_legt_bei_nicht_freigegebener_suchanfrage_eine_neue_an(
+    statement_service, sichtbare_suchanfragen, entscheidung
+):
+    gesucht = "Die Pendlerpauschale fällt wegen der Grünen weg"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, entscheidung)
+
+    eigener = "die Pendlerpauschale fällt wegen der Grünen weg!"
+    neu, statement_id, text = await statement_service.vorab_anlegen(eigener, "person-1")
+
+    assert neu
+    assert statement_id != suchanfrage
+    assert text == eigener
+    assert (await statement_service.get(statement_id)).original_author == "person-1"
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)
+    assert suchanfrage not in await _ohne_kommentar(statement_service)
+
+
+@NICHT_FREIGEGEBEN
+async def test_antwort_haengt_bei_nicht_freigegebener_suchanfrage_an_eine_neue(
+    statement_service,
+    commentary_service,
+    sichtbare_suchanfragen,
+    entscheidung,
+):
+    gesucht = "Das Heizungsgesetz verbietet Kamine"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, entscheidung)
+
+    # Wie /addStatement aus dem Beitragsformular: die Aussage zum eigenen Text.
+    eigener = "das Heizungsgesetz verbietet Kamine."
+    neu, statement_id, text = await statement_service.add_statement(
+        Statement(text=eigener, replysuggestions=[]),
+        "person-1",
+        ContentStatus.VISIBLE,
+        ContentOrigin.MANUALLY_CREATED,
+    )
+    kommentar = await _kommentar(commentary_service, "Kamine bleiben erlaubt.")
+    await _verknuepfen(
+        statement_service, statement_id, kommentar, ContentType.COMMENTARY
+    )
+
+    assert neu
+    assert statement_id != suchanfrage
+    assert text == eigener
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)
+
+
+async def test_antwort_landet_bei_freigegebener_suchanfrage_wie_bisher(
+    statement_service, sichtbare_suchanfragen
+):
+    gesucht = "Windräder machen krank"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, True)
+
+    neu, statement_id, text = await statement_service.add_statement(
+        Statement(text="windräder machen krank", replysuggestions=[]),
+        "person-1",
+        ContentStatus.VISIBLE,
+        ContentOrigin.MANUALLY_CREATED,
+    )
+
+    assert not neu
+    assert statement_id == suchanfrage
+    assert text == gesucht
+
+
+async def test_eine_suche_landet_weiter_auf_der_nicht_freigegebenen_suchanfrage(
+    statement_service, suchen_ohne_treffer_ohne_datenbank
+):
+    # Sonst zaehlten die Suchen ohne Treffer nicht mehr an derselben Aussage.
+    gesucht = "Tempolimit bringt nichts"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+
+    zweite = await _anlegen(
+        statement_service,
+        "tempolimit bringt nichts",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+
+    assert zweite == suchanfrage
+    suchen_ohne_treffer_ohne_datenbank.ueber_der_schwelle.assert_not_called()
+
+
+async def test_zaehlt_nur_sichtbare_unbeantwortete_suchanfragen(
+    statement_service, status_setzen
+):
+    # Zaehler am Umschalter der Vormoderation: ein Zaehlaufruf statt einer Abfrage je ID.
+    offen = await _anlegen(
+        statement_service,
+        "Solarpflicht ruiniert Hausbesitzer",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+    gesperrt = await _anlegen(
+        statement_service,
+        "Bürgergeld lockt Zuwanderer an",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+    await status_setzen(gesperrt, ContentStatus.BLOCKED)
+    gepflegt = await _anlegen(statement_service, "Bahnfahren ist zu teuer")
+
+    anzahl = await statement_service.zaehle_unbeantwortete_suchanfragen(
+        frozenset({offen, gesperrt, gepflegt, uuid.uuid4()})
+    )
+
+    assert anzahl == 1
+
+
+@NICHT_FREIGEGEBEN
+async def test_antwort_per_id_an_nicht_freigegebene_suchanfrage_geht_nicht(
+    statement_service,
+    commentary_service,
+    sichtbare_suchanfragen,
+    entscheidung,
+):
+    # addReplysuggestionToStatement mit bekannter ID: abgelehnt, nichts angehaengt.
+    gesucht = "Die Grünen wollen Grillen verbieten"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, entscheidung)
+    kommentar = await _kommentar(commentary_service, "Grillen bleibt erlaubt.")
+
+    with pytest.raises(SuchanfrageNichtFreigegeben):
+        await _verknuepfen(
+            statement_service, suchanfrage, kommentar, ContentType.COMMENTARY
+        )
+
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)
+
+
+@NICHT_FREIGEGEBEN
+async def test_beitrag_per_id_einer_nicht_freigegebenen_suchanfrage(
+    statement_service,
+    commentary_service,
+    sichtbare_suchanfragen,
+    entscheidung,
+):
+    # Beitragsformular mit ?aussage=<ID>: mit Text eine eigene Aussage, ohne Text
+    # "nicht gefunden"; der Wortlaut der Suchanfrage geht nie zurueck.
+    gesucht = "Das Deutschlandticket wird abgeschafft"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, entscheidung)
+    kommentar = await _kommentar(commentary_service, "Das Ticket bleibt.")
+
+    with pytest.raises(AussageNichtGefunden):
+        await statement_service.beitrag_als_antwort_verknuepfen(
+            beitrag_id=kommentar,
+            content_type=ContentType.COMMENTARY,
+            relevance=1.0,
+            author="person-1",
+            statement_id=suchanfrage,
+        )
+
+    eigener = "das Deutschlandticket wird abgeschafft!"
+    statement_id, text, neu = await statement_service.beitrag_als_antwort_verknuepfen(
+        beitrag_id=kommentar,
+        content_type=ContentType.COMMENTARY,
+        relevance=1.0,
+        author="person-1",
+        statement_id=suchanfrage,
+        statement_text=eigener,
+    )
+
+    assert neu
+    assert statement_id != suchanfrage
+    assert text == eigener
+    assert (await statement_service.get(statement_id)).replysuggestions_count == 1
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)
+
+
+async def test_antwort_per_id_an_freigegebene_suchanfrage_wie_bisher(
+    statement_service, commentary_service, sichtbare_suchanfragen
+):
+    suchanfrage = await _anlegen(
+        statement_service,
+        "Wärmepumpen funktionieren im Altbau nicht",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+    _entscheidung_setzen(sichtbare_suchanfragen, suchanfrage, True)
+    kommentar = await _kommentar(commentary_service, "Doch, mit Planung.")
+
+    await _verknuepfen(
+        statement_service, suchanfrage, kommentar, ContentType.COMMENTARY
+    )
+
+    assert (await statement_service.get(suchanfrage)).replysuggestions_count == 1
+
+
+async def test_zweimal_derselbe_text_ergibt_genau_eine_neue_aussage(
+    statement_service, sichtbare_suchanfragen
+):
+    # Die verborgene Suchanfrage ist kein Kandidat; der zweite Aufruf landet auf der
+    # eigenen Aussage des ersten. Sonst entstuende je Aufruf eine weitere, und zweimal
+    # "neu" verriete, dass es eine verborgene Suchanfrage mit diesem Text gibt.
+    gesucht = "Die Grünen wollen das Eigenheim abschaffen"
+    suchanfrage = await _anlegen(
+        statement_service, gesucht, SEARCH_QUERY_AUTHOR, ContentOrigin.SEARCH_QUERY
+    )
+
+    erst_neu, erste, _ = await statement_service.vorab_anlegen(gesucht, "person-1")
+    dann_neu, zweite, text = await statement_service.vorab_anlegen(gesucht, "person-2")
+
+    assert erst_neu
+    assert erste != suchanfrage
+    assert not dann_neu
+    assert zweite == erste
+    assert text == gesucht
+    await _bleibt_in_der_vormoderation(statement_service, suchanfrage, gesucht)

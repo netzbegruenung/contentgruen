@@ -15,7 +15,7 @@
 
         <mat-form-field appearance="outline" class="einwurf-feld">
             <mat-label>Link</mat-label>
-            <input matInput
+            <input matInput #linkFeld
                    id="einwurf-link"
                    type="url"
                    inputmode="url"
@@ -81,18 +81,38 @@
             <button mat-raised-button color="primary" type="submit"
                     class="einwerfen-knopf"
                     [disabled]="!kannEinwerfen">
-                <mat-icon *ngIf="!wirdGespeichert">save</mat-icon>
+                <!-- Dasselbe Symbol wie der Einwerfen-Knopf im Fangkorb, keine Diskette (Persona-Runde 2, P47) -->
+                <mat-icon *ngIf="!wirdGespeichert" aria-hidden="true">move_to_inbox</mat-icon>
                 <mat-spinner *ngIf="wirdGespeichert" diameter="20" class="knopf-spinner"></mat-spinner>
                 Einwerfen
             </button>
         </div>
 
-        <div class="einwurf-rueckmeldung" role="status" aria-live="polite">
-            <p *ngIf="eingeworfen > 0 && !fehler" class="erfolg">
-                ✅ Drin. {{ eingeworfen === 1 ? 'Ein Einwurf' : eingeworfen + ' Einwürfe' }} in dieser Sitzung –
-                die Felder sind wieder frei für den nächsten.
-            </p>
-            <p *ngIf="fehler" class="fehler">⚠️ {{ fehler }}</p>
+        <!-- Erfolgskarte (#351): beim ersten Einwurf ausfuehrlich, danach kurz; Meilensteine nur mit
+             eingeschalteten Punkten. Im role="status" steht nur der Text, die Knoepfe stehen daneben. -->
+        <div class="einwurf-rueckmeldung" [class.erfolg-karte]="erfolg && !fehler">
+            <div role="status" aria-live="polite">
+                <ng-container *ngIf="erfolg && !fehler">
+                    <p class="erfolg-titel"><span aria-hidden="true">✅</span> Drin.</p>
+                    <p *ngIf="erfolg.erster === true" class="erfolg-text">
+                        Dein erster Einwurf liegt im Fangkorb. Sobald jemand einen Beitrag daraus macht,
+                        steht das unter „Meine Einwürfe“; bis dahin liegt er da und sieht wichtig aus.
+                    </p>
+                    <p *ngIf="erfolg.erster === false" class="erfolg-text">
+                        Liegt im Fangkorb<ng-container *ngIf="eingeworfen > 1">, {{ eingeworfen }} in dieser Sitzung</ng-container>.
+                        Die Felder sind wieder frei.
+                    </p>
+                    <p *ngIf="erfolg.meilensteine.length" class="erfolg-meilenstein">
+                        <img *ngFor="let m of erfolg.meilensteine" [src]="'/' + m.bild" alt="" width="20" height="20">
+                        {{ meilensteinZeile }}
+                    </p>
+                </ng-container>
+                <p *ngIf="fehler" class="fehler">⚠️ {{ fehler }}</p>
+            </div>
+            <div *ngIf="erfolg && !fehler" class="erfolg-knoepfe">
+                <button mat-stroked-button type="button" (click)="meineEinwuerfe()">Meine Einwürfe</button>
+                <button mat-button type="button" (click)="nochEiner()">Noch einen einwerfen</button>
+            </div>
         </div>
 
     </form>

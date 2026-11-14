@@ -33,7 +33,8 @@ async def als_antwort_verknuepfen(
     if not (anfrage.statement_id or (anfrage.statement_text or "").strip()):
         return AntwortAufErgebnis()
     try:
-        statement_id, statement_text = (
+        # Drei Werte: ID, Text und ob die Aussage eben neu angelegt wurde.
+        statement_id, statement_text, _neu = (
             await statement_service.beitrag_als_antwort_verknuepfen(
                 beitrag_id=beitrag_id,
                 content_type=content_type,

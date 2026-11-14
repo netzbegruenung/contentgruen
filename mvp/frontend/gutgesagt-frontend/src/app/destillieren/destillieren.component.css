@@ -80,7 +80,7 @@
   margin: 0;
 }
 
-/* Steht unter den Knoepfen und erklaert "Spaeter". */
+/* Steht unter den Knoepfen und erklaert "Naechster Einwurf": der Satz bleibt. */
 .spaeter-hinweis {
   margin: 8px 0 0;
   font-size: 13px;

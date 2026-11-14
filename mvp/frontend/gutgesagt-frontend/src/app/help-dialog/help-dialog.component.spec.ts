@@ -7,6 +7,7 @@ import { DefaultUrlSerializer, NavigationEnd, Router } from '@angular/router';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
+import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
 
 import { HILFE_PARAM, HelpDialogComponent, MITMACHEN_HINWEIS, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
 
@@ -185,7 +186,18 @@ describe('HelpDialogComponent', () => {
       .map((p) => (p as HTMLElement).textContent)
       .join(' ');
     expect(technik).toContain('auf unseren eigenen Servern');
-    expect(technik).toContain('Die Beiträge selbst schreiben Menschen, keine KI.');
+    expect(technik).not.toContain('keine KI.');
+  });
+
+  // Persona-Test Gerd: die Antwort auf „Nutzt Gut gesagt KI?“ stand ganz unten
+  it('beantwortet „Nutzt Gut gesagt KI?“ gleich nach dem Einstieg, mit den Sätzen der Über-Seite', () => {
+    const ueberschriften = Array.from(fixture.nativeElement.querySelectorAll('mat-dialog-content h3'))
+      .map((h) => (h as HTMLElement).textContent!.trim());
+    expect(ueberschriften.indexOf('Nutzt Gut gesagt KI?')).toBe(1);
+
+    const ki = (fixture.nativeElement.querySelector('.hilfe-ki') as HTMLElement).textContent!;
+    expect(ki).toContain(KEINE_GENERATIVE_KI);
+    expect(ki).toContain(SUCHE_MIT_SPRACHMODELLEN);
   });
 
   it('nennt die sechs Schreibregeln', () => {

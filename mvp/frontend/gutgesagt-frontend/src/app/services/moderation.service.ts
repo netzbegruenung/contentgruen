@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { MeldegrundWert } from '../shared/meldegruende';
 import { SperrgrundWert } from '../shared/sperrgruende';
+import { stillerKontext } from '../shared/selbst-nachladen';
 
 export interface ReportContentRequest {
   content_id: string;
@@ -50,6 +51,9 @@ export interface ContentReport {
   description: string | null;
   reported_by_user_id: string | null;
   reported_by_session_id: string | null;
+  /** Anzeigename der meldenden bzw. bearbeitenden Person, wenn bekannt (nur Admin-Listen). */
+  reported_by_name?: string | null;
+  reviewed_by_name?: string | null;
   created: string;
   status: string;
   reviewed_by?: string | null;
@@ -182,11 +186,11 @@ export class ModerationService {
   getReports(
     status: 'pending' | 'reviewed' | 'dismissed' | 'all' = 'pending',
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
+    still = false
   ): Observable<PendingReportsResponse> {
     // Add cache-busting timestamp to prevent browser caching
     const timestamp = new Date().getTime();
-    console.log(`[ModerationService] getReports called, status: ${status}, timestamp:`, timestamp);
 
     return this.http.get<PendingReportsResponse>(
       `${this.baseUrl}/reports?status=${status}&limit=${limit}&offset=${offset}&_t=${timestamp}`,
@@ -194,7 +198,8 @@ export class ModerationService {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        }
+        },
+        context: still ? stillerKontext() : undefined
       }
     );
   }
@@ -218,13 +223,16 @@ export class ModerationService {
     return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/entsperren`, {});
   }
 
-  getGesperrte(): Observable<GesperrteResponse> {
-    return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`);
+  /** ``still``: Hintergrund-Abfrage, frisch statt aus dem Cache, ohne Umleitung bei 401 (STILLE_ABFRAGE). */
+  getGesperrte(still = false): Observable<GesperrteResponse> {
+    return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`, { context: still ? stillerKontext() : undefined });
   }
 
   /** Offene Löschaufträge, die mit der frühesten Frist zuerst. */
-  getLoeschauftraege(): Observable<LoeschauftraegeResponse> {
-    return this.http.get<LoeschauftraegeResponse>(`${this.baseUrl}/loeschauftraege`);
+  getLoeschauftraege(still = false): Observable<LoeschauftraegeResponse> {
+    return this.http.get<LoeschauftraegeResponse>(`${this.baseUrl}/loeschauftraege`, {
+      context: still ? stillerKontext() : undefined,
+    });
   }
 
   /**
@@ -257,10 +265,23 @@ export class ModerationService {
     });
   }
 
+  /**
+   * Eine offene Meldung zu einem schon gesperrten Beitrag schließen: Sie steht danach auf
+   * bearbeitet, die meldende Person bekommt die Mail „gesperrt“; keine neue Sperre.
+   */
+  meldungSchliessen(reportId: string): Observable<unknown> {
+    return this.http.put(`${this.baseUrl}/reports/${encodeURIComponent(reportId)}/schliessen`, {});
+  }
+
+  /**
+   * Meldung abweisen. Der Suchdienst liest ``notes`` als Query-Parameter (``notes: Optional[str]``
+   * ohne Body in api/v1/moderation.py); im Body ging die Begründung bisher verloren.
+   */
   dismissReport(reportId: string, notes?: string): Observable<any> {
     return this.http.put(
       `${this.baseUrl}/reports/${reportId}/dismiss`,
-      { notes }
+      {},
+      { params: notes ? { notes } : {} }
     );
   }
 }

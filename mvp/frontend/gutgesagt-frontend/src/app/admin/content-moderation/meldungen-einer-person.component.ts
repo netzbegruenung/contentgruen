@@ -11,6 +11,7 @@ import { filter } from 'rxjs';
 import { AngabenGeloescht, ContentReport, MelderSuche, ModerationService } from '../../services/moderation.service';
 import { meldegrundLabel } from '../../shared/meldegruende';
 import { meldungsstatusLabel } from '../../shared/meldungsstatus';
+import { kurzeKennung } from './kennung';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -97,7 +98,10 @@ function loeschenFrage(nurName: boolean, anzahl: number): BestaetigungsDialogDat
           <div>Beitrag: <code>{{ m.content_id }}</code></div>
           <div *ngIf="m.melder_name">Name: {{ m.melder_name }}</div>
           <div *ngIf="m.melder_email">E-Mail-Adresse: {{ m.melder_email }}</div>
-          <div *ngIf="m.reported_by_user_id">Kennung: {{ m.reported_by_user_id }}</div>
+          <div *ngIf="m.reported_by_user_id" [title]="m.reported_by_user_id">
+            Konto: {{ m.reported_by_name || kurzeKennung(m.reported_by_user_id) }}
+            <details class="kennung-voll"><summary>Kennung</summary><code>{{ m.reported_by_user_id }}</code></details>
+          </div>
           <div *ngIf="m.resolution_notes">Notiz: {{ m.resolution_notes }}</div>
         </div>
       </ng-container>
@@ -112,6 +116,7 @@ function loeschenFrage(nurName: boolean, anzahl: number): BestaetigungsDialogDat
   `],
 })
 export class MeldungenEinerPersonComponent {
+  readonly kurzeKennung = kurzeKennung;
   email = '';
   name = '';
   /** null: noch nicht gesucht. */

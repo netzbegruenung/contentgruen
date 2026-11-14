@@ -52,39 +52,29 @@ class AussageTreffer(AussageResponse):
 
 class StatementSource(str, Enum):
     """
-    Woher der Text stammt, den /addStatement anlegen soll.
+    Woher der Text stammt, den /addStatement anlegen soll: nur MANUALLY_CREATED,
+    jemand benennt ausdruecklich eine Aussage und ist ihr Autor.
 
-    Das Frontend ruft denselben Endpunkt aus zwei Situationen auf (beide ueber
-    StatementService.findOrCreateStatement):
-
-    - SEARCH_QUERY: aus der Ergebnisansicht heraus, weil jemand gesucht hat.
-      Niemand hat hier etwas verfasst, also haengt auch niemand am Statement.
-    - MANUALLY_CREATED: aus "Beitrag ergaenzen", wo jemand ausdruecklich eine
-      Aussage benennt, zu der er antworten will.
-
-    Bewusst ein eigenes, zweiwertiges Enum statt ContentOrigin: ueber die API
-    sollen sich weder INITIAL_DATA noch AI_GENERATED setzen lassen.
+    Bewusst ein eigenes Enum statt ContentOrigin: ueber die API sollen sich weder
+    INITIAL_DATA noch AI_GENERATED setzen lassen, und auch nicht SEARCH_QUERY.
+    Die Herkunft Suchanfrage vergibt nur der Suchpfad intern (/searchByText); ueber
+    die API gesetzt, faende sie verborgene Suchanfragen als "dieselbe" und verriete
+    deren ID und Wortlaut (Vormoderation, StatementService.add_statement).
     """
 
-    SEARCH_QUERY = "search_query"
     MANUALLY_CREATED = "manually_created"
 
     def to_content_origin(self) -> ContentOrigin:
-        return (
-            ContentOrigin.SEARCH_QUERY
-            if self is StatementSource.SEARCH_QUERY
-            else ContentOrigin.MANUALLY_CREATED
-        )
+        return ContentOrigin.MANUALLY_CREATED
 
 
 class AddStatementRequest(BaseModel):
     statement: Statement
     source: StatementSource = Field(
-        default=StatementSource.SEARCH_QUERY,
+        default=StatementSource.MANUALLY_CREATED,
         description=(
-            "Aus welcher Situation der Aufruf kommt. Voreinstellung ist die "
-            "datensparsame: ein Aufrufer, der nichts angibt, bekommt kein "
-            "Statement mit Personenbezug."
+            "Nur manually_created: die aufrufende Person benennt die Aussage und "
+            "ist ihr Autor. search_query vergibt nur die Suche selbst."
         ),
     )
 

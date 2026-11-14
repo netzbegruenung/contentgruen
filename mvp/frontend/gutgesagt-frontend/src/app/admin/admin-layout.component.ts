@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { ZuTunComponent } from './zu-tun/zu-tun.component';
 
 /**
  * Rahmen des Admin-Bereichs: Navigation links, mobil als Zeile ueber dem Inhalt.
@@ -10,11 +11,13 @@ import { MatIconModule } from '@angular/material/icon';
  * App-Kopf wie auf jeder Seite, und die fest offene Seitenleiste liess auf dem Handy
  * fuer den Inhalt rund 150 px. Kein eigener Zurueck-Knopf: Der Pfeil im Kopf fuehrt
  * von hier auf die Startseite (data.parent an der Route /admin).
+ *
+ * Ueber dem Inhalt steht auf jeder Admin-Seite die Zeile „Zu tun“ (ZuTunComponent).
  */
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIconModule],
+  imports: [CommonModule, RouterModule, MatIconModule, ZuTunComponent],
   template: `
     <div class="admin-container">
       <nav class="admin-nav" aria-label="Admin-Bereich">
@@ -33,6 +36,8 @@ import { MatIconModule } from '@angular/material/icon';
       </nav>
 
       <div class="admin-content">
+        <!-- Was ansteht, auf jeder Admin-Seite oben; laedt selbst nach -->
+        <app-zu-tun></app-zu-tun>
         <router-outlet></router-outlet>
       </div>
     </div>
@@ -105,6 +110,19 @@ import { MatIconModule } from '@angular/material/icon';
 
       .admin-nav a.aktiv {
         box-shadow: inset 0 -2px 0 var(--akzent-tanne);
+      }
+    }
+
+    /* Am Handy passen die drei Links nur ohne Symbol in eine Zeile ("Ther…" war abgeschnitten) */
+    @container (max-width: 479px) {
+      .admin-nav a {
+        flex: 1 1 auto;
+        justify-content: center;
+        padding: 0 var(--spacing-sm);
+      }
+
+      .admin-nav mat-icon {
+        display: none;
       }
     }
   `]

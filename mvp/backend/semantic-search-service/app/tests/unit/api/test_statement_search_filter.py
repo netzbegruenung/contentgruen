@@ -27,7 +27,7 @@ def statement_service():
     service.search_filtered = AsyncMock(return_value=[])
     app.dependency_overrides[get_statement_service] = lambda: service
     app.dependency_overrides[get_suchen_ohne_treffer_service] = lambda: MagicMock(
-        ueber_der_schwelle=AsyncMock(return_value=frozenset())
+        sichtbar_fuer_alle=AsyncMock(return_value=frozenset())
     )
     yield service
     app.dependency_overrides.clear()

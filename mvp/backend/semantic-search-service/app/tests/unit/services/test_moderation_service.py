@@ -283,6 +283,22 @@ class TestLoeschen:
         assert CONTENT_ID in speicher.get_data()
         service.report_repo.update_reports_by_content_id.assert_not_called()
 
+    async def test_loeschen_nimmt_die_entscheidung_der_vormoderation_mit(
+        self, service, suchanfrage_freigaben_ohne_datenbank
+    ):
+        assert await service.delete_content(CONTENT_ID, "statement", "admin-1")
+
+        suchanfrage_freigaben_ohne_datenbank.loeschen.assert_called_once_with(
+            uuid.UUID(CONTENT_ID)
+        )
+
+    async def test_loeschen_bleibt_wenn_die_entscheidung_nicht_weggeht(
+        self, service, suchanfrage_freigaben_ohne_datenbank
+    ):
+        suchanfrage_freigaben_ohne_datenbank.loeschen.side_effect = RuntimeError("weg")
+
+        assert await service.delete_content(CONTENT_ID, "statement", "admin-1")
+
     async def test_loeschen_nimmt_stimmen_und_ausformuliert_in_mit(
         self, service, varianten_ohne_datenbank
     ):

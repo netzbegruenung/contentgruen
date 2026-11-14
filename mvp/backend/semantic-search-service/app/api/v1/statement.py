@@ -36,7 +36,6 @@ from dtos.statement import (
     SearchStatementByTextRequest,
     StatementSearchResponse,
     StatementGetAllResponse,
-    StatementSource,
     ThemaDto,
     ThemenResponse,
     ThemenTestsetResponse,
@@ -48,7 +47,11 @@ from dtos.statement import (
     UnbeantworteteAussagenResponse,
 )
 from services.beitrag_fuer_aufrufer import AUSSAGE, Aufrufer, als_responses
-from services.content.statement_service import AussageNichtGefunden, StatementService
+from services.content.statement_service import (
+    AussageNichtGefunden,
+    StatementService,
+    SuchanfrageNichtFreigegeben,
+)
 from core.logging import get_logger
 from domain.models.statement import Statement
 from repositories.implementations.qdrant.qdrant_repository_factory import (
@@ -58,7 +61,6 @@ from repositories.implementations.qdrant.statement_repository import (
     ist_unbeantwortete_suchanfrage,
 )
 from domain.models.content_status import NEW_CONTENT_STATUS
-from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
@@ -78,12 +80,13 @@ async def _ueber_der_schwelle_fuer(
     """
     Welche Aussagen aus Suchanfragen ohne Antwort der Aufrufer sehen darf (#436):
     Admins alle (None: kein Filter), alle anderen nur die ueber der Schwelle der
-    Kennzahl "Suchen ohne Treffer", wie in "Hier fehlt eine Antwort". Eine leere
-    Menge heisst dann: nur kuratierte Aussagen, nicht etwa kein Filter.
+    Kennzahl "Suchen ohne Treffer", die ein Admin freigegeben hat (Vormoderation,
+    13.11.2026), wie in "Hier fehlt eine Antwort". Eine leere Menge heisst dann: nur
+    kuratierte Aussagen, nicht etwa kein Filter.
     """
     if aufrufer.ist_admin:
         return None
-    return await suchen_ohne_treffer.ueber_der_schwelle()
+    return await suchen_ohne_treffer.sichtbar_fuer_alle()
 
 
 # Alle Aussagen, seitenweise; was Nicht-Admins sehen: _ueber_der_schwelle_fuer.
@@ -136,7 +139,8 @@ async def get_all(
 # Eine Aussage per ID - fuer Beitragsformulare, die mit ?aussage=<id> geoeffnet
 # werden. Liefert bewusst nur ID und Text, nicht die Antwortvorschlaege. Fuer
 # Nicht-Admins dieselbe Auswahl wie getAll (#436): Eine unbeantwortete Suchanfrage
-# unter der Schwelle gibt es fuer sie nicht (404, wie eine geloeschte). Das Formular
+# unter der Schwelle oder ohne Freigabe gibt es fuer sie nicht (404, wie eine
+# geloeschte). Das Formular
 # faellt dann auf den Text aus ?searchQuery= zurueck (statement.service.ts).
 @router.get("/getById", response_model=GetStatementByIdResponse)
 async def get_by_id(
@@ -185,7 +189,7 @@ async def get_by_id(
 # "Hier fehlt eine Antwort": unbeantwortete Aussagen fuer Mitwirkende. Nur
 # Aussagen, dazu aus der Kennzahl "Suchen ohne Treffer" die Zahl der Personen, nicht
 # die der Suchen; eine Aussage aus einer Suchanfrage erst ab der Schwelle der
-# Kennzahl, nie die einer einzelnen Person
+# Kennzahl und nach Freigabe durch einen Admin, nie die einer einzelnen Person
 # (services/unbeantwortete_aussagen_service.py).
 @router.get("/unbeantwortet", response_model=UnbeantworteteAussagenResponse)
 async def unbeantwortet(
@@ -472,14 +476,9 @@ async def add_statement(
             replysuggestions=request.statement.replysuggestions,
         )
 
-        # Suchanfragen bekommen einen Systemautor: sie fallen automatisch an,
-        # sobald jemand sucht, und sind keine Autorenleistung. Nur der
-        # ausdrueckliche Weg ueber "Beitrag ergaenzen" nennt die Person.
-        author = (
-            SEARCH_QUERY_AUTHOR
-            if request.source is StatementSource.SEARCH_QUERY
-            else x_user
-        )
+        # Nur der ausdrueckliche Weg: Die Person ist Autorin. Suchanfragen legt
+        # allein /searchByText an, mit Systemautor (StatementSource).
+        author = x_user
 
         # Aussagen sind sofort sichtbar.
         statement_was_new, statement_id, statement_text = (
@@ -535,6 +534,11 @@ async def add_replysuggestion_to_statement(
         # Nur "gibt es nicht" ist 404; alles andere (nicht lesbar, Speicherfehler,
         # andere ValueErrors) ist ein echter Fehler.
         raise HTTPException(status_code=404, detail="Statement not found")
+    except SuchanfrageNichtFreigegeben:
+        # Vormoderation: erst freigeben, dann antworten (StatementService).
+        raise HTTPException(
+            status_code=409, detail="Search query statement awaits moderation"
+        )
     except Exception as e:
         logger.error(
             f"Error in /addReplysuggestionToStatement: {type(e).__name__}",

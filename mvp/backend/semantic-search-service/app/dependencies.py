@@ -38,6 +38,9 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
+from repositories.suchanfrage_freigabe_repository import (
+    get_suchanfrage_freigabe_repository,
+)
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
 from repositories.einladung_repository import get_einladung_repository
@@ -173,6 +176,7 @@ def get_suchen_ohne_treffer_service(
         get_suchen_ohne_treffer_repository(),
         statement_service,
         get_personen_des_tages(),
+        get_suchanfrage_freigabe_repository(),
     )
 
 
@@ -248,8 +252,13 @@ def abzeichen_service_bauen(settings: Settings) -> "AbzeichenService":
     from services.abzeichen_service import AbzeichenService
 
     meilensteine = get_meilensteine_service(settings)
+
+    async def ohne_wegmarken(user_id: str):
+        # Wegmarken zaehlen fuers Abzeichen nicht; ihre Abfragen spart der Takt.
+        return await meilensteine.meilensteine(user_id, mit_wegmarken=False)
+
     return AbzeichenService(
-        get_abzeichen_sichtbarkeit_repository(), meilensteine.meilensteine, settings
+        get_abzeichen_sichtbarkeit_repository(), ohne_wegmarken, settings
     )
 
 
@@ -259,11 +268,17 @@ def get_meilensteine_service(
     from repositories.punkte_repository import get_punkte_repository
     from repositories.usage_tracking_repository import get_usage_repository
 
+    async def beantwortet_einer(beitrag_ids):
+        # Erst beim Abruf geholt, damit sich der Dienst auch vor der Initialisierung
+        # bauen laesst (abzeichen_service_bauen, Tests).
+        return await get_statement_service().beantwortet_einer(beitrag_ids)
+
     return MeilensteineService(
         _sichtbare_beitraege(settings),
         get_usage_repository(),
         get_punkte_repository(),
         settings,
+        beantwortet_einer,
     )
 
 

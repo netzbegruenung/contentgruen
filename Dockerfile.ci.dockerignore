@@ -1,6 +1,7 @@
 # Kontext von Dockerfile.ci (Wurzel des Repos): nur, was es kopiert.
 # .woodpecker/ci-image.yaml baut bei Aenderungen genau dieser Dateien neu.
 *
+!Dockerfile.ci
 !mvp/backend/semantic-search-service/requirements.txt
 !mvp/frontend/gutgesagt-frontend/package.json
 !mvp/frontend/gutgesagt-frontend/package-lock.json

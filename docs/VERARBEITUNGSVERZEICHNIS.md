@@ -85,6 +85,8 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   verschlüsselten Anmelde-Cookie; bei Konten aus Einladungen im Anmeldedienst E-Mail-Adresse und
   Passwort-Hash (DSE „Konto aus einer Einladung“); beim Beta-Zugang E-Mail-Adresse, Anzeigename und Prüfsumme des
   Passworts in einer Konfigurationsdatei; Anmelde-Cookie; an Einladungen nur Zähler und Notiz.
+  Im Browser bis zum Tabschluss, höchstens eine Stunde, ein angefangener Kommentar mit Prüfwert
+  des Kontos (DSE „Weitere Einträge“, E1).
   Schon das Konto kann eine politische Nähe erkennen lassen (Art. 9).
 - **Empfänger:** wie oben; der Anzeigename ist für andere Angemeldete sichtbar, nicht für
   Besucher.
@@ -157,8 +159,9 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Daten:** Suchtext als Aussage ohne Autor; Suchereignisse mit Tag, Trefferzahl und
   Tagespseudonym (Besucher: aus Anschluss und Tag, ohne User-Agent; Angemeldete: aus Kennung und
   Tag); je Aussage und Woche Zahl der Suchen und Personen ohne Treffer.
-- **Empfänger:** offene Aussagen aus Suchen für alle, sobald jemand antwortet oder zwei Personen
-  ohne Treffer danach suchten; Zähler für Angemeldete und Admins.
+- **Empfänger:** unbeantwortete Suchanfragen für alle, sobald jemand antwortet oder, wenn zwei
+  Personen ohne Treffer danach suchten, nach Freigabe durch Admins (Vormoderation seit
+  13.11.2026); Zähler für Angemeldete und Admins.
 - **Fristen:** LK „Fristen“ (Suchereignisse bis zum Ende ihres Tages, dann zu Tageszählern
   verdichtet) und „Was nicht gelöscht wird“ (Suchanfragen als Aussage, Suchen ohne Treffer).
 - **TOM:** DSFA V6, V7, V8. **Offen:** Schlüssel des Pseudonyms der Angemeldeten in Produktion
@@ -187,17 +190,20 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 
 - **Zweck:** Wirkung der Mitwirkung zeigen, Anerkennung sichtbar machen, Punkte gegen Absprachen
   schützen.
-- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a in einer eigenen,
-  freiwilligen Einwilligung, getrennt von der Art.-9-Einwilligung zum Beitragen (seit Wortlaut
-  `2026-11-13`, Entscheidung Maintainer 13.11.2026; gebaut mit #668, bis dahin ausgeschaltet);
-  Sichtbarkeit der Abzeichen mit gesonderter Zustimmung (T2).
-- **Betroffene:** angemeldete Personen mit Art.-9-Einwilligung, ohne Startkonten.
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a über die eigene, freiwillige
+  Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351), getrennt von der
+  Art.-9-Einwilligung zum Beitragen (seit deren Wortlaut `2026-11-13`, Entscheidung Maintainer
+  13.11.2026; Kopplungsverbot, Art. 7 Abs. 4); Sichtbarkeit der Abzeichen mit gesonderter
+  Zustimmung (T2).
+- **Betroffene:** angemeldete Personen mit Einwilligung „Punkte und Meilensteine“, ohne
+  Startkonten; Muster-Hinweise nur, wenn beide Konten eingewilligt haben.
 - **Daten:** Punkte und Meilensteine nicht gespeichert, bei jedem Abruf berechnet;
-  Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen.
+  Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen; je Antwort auf die Einwilligung eine
+  Zeile mit Kennung, ja/nein, Wortlaut und Zeitpunkt.
 - **Empfänger:** Punkte nur für die Person; Abzeichen für andere Angemeldete mit Zustimmung;
   Muster-Hinweise nur für Admins.
 - **Fristen:** LK „Fristen“ (Paar-Prüfwerte, Muster-Hinweise, Abzeichen).
-- **TOM:** DSFA Abschnitt 3, V11, V22. `punkte_aktiv` erst nach dem Merge von #668 einschalten (sonst startet der Suchdienst nicht). Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
+- **TOM:** DSFA Abschnitt 3, V11, V22. Eigene Einwilligung „Punkte und Meilensteine“ gebaut (#668, `PUNKTE_EINWILLIGUNG_GEBAUT`). Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
   Standard aus; einschalten erst nach Übernahme der DSFA (DSFA Abschnitt 7).
 
 ### T8 Meldungen, Sperren und Widerspruch

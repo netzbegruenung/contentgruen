@@ -10,6 +10,7 @@ import { combineLatest } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { CONTENT_TYPE_REGISTRY } from '../shared/content-type-registry';
 import { ERFUNDENES_MELDEN, NICHT_JEDE_AUSSAGE, SCHREIBREGELN } from '../shared/schreibregeln';
+import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
 import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
@@ -45,6 +46,8 @@ export class HelpDialogComponent {
   readonly schreibregeln = SCHREIBREGELN;
   readonly nichtJedeAussage = NICHT_JEDE_AUSSAGE;
   readonly erfundenesMelden = ERFUNDENES_MELDEN;
+  readonly keineGenerativeKi = KEINE_GENERATIVE_KI;
+  readonly sucheMitSprachmodellen = SUCHE_MIT_SPRACHMODELLEN;
 
   readonly antwortFinden = rundgangBeschriftung('antwort-finden');
   readonly selbstBeitragen = rundgangBeschriftung('mitmachen');

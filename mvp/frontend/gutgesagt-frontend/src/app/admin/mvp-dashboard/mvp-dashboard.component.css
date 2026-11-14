@@ -61,13 +61,29 @@
 }
 
 .metric-card .info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-left: auto;
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--text-faint);
   cursor: help;
   transition: color 0.2s;
+}
+
+.metric-card .info-icon mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.metric-card .info-icon:focus-visible {
+  outline: 2px solid var(--akzent-tanne);
+  outline-offset: 2px;
 }
 
 .metric-card .info-icon:hover {

@@ -98,6 +98,15 @@ class IStatementRepository(
         """
         pass
 
+    async def zaehle_unbeantwortete_suchanfragen(
+        self, ids: AbstractSet[uuid.UUID]
+    ) -> int:
+        """
+        How many of the given IDs are visible search queries nobody has answered yet
+        (Vormoderation counter). Not abstract: only the Qdrant repository needs it.
+        """
+        raise NotImplementedError
+
     @abstractmethod
     async def mit_kommentar(self, ids: Iterable[uuid.UUID]) -> Set[uuid.UUID]:
         """
@@ -113,6 +122,14 @@ class IStatementRepository(
         """
         Visible statements the Beitrag answers (#603): those with the Beitrag among
         their reply suggestions, found through the payload field antwort_ids.
+        """
+        pass
+
+    @abstractmethod
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
+        """
+        Whether a visible statement lists one of the given Beitraege among its reply
+        suggestions (Meilenstein "Erste Gegenrede", #351).
         """
         pass
 

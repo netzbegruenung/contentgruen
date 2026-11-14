@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import { FeedbackListeComponent } from './feedback-liste.component';
 import { FeedbackEintrag } from '../../shared/feedback/feedback.service';
 import { environment } from '../../../environments/environment';
+import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
 
 const URL = `${environment.baseUrl}/api/v1/feedback`;
 const OFFEN = `${URL}?erledigt=false`;
@@ -93,11 +94,36 @@ describe('FeedbackListeComponent', () => {
       expect(text()).toContain('Kein offenes Feedback');
     });
 
+    it('laedt im Takt still nach, ohne die Liste zu leeren', () => {
+      jasmine.clock().install();
+      try {
+        spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+        // Der Takt startet mit dem ersten Laden; diesen Test neu aufsetzen, damit die Uhr ihn kennt.
+        http.expectOne(OFFEN).flush({ eintraege: [], aufbewahrung_tage: 30 });
+        fixture.destroy();
+        fixture = TestBed.createComponent(FeedbackListeComponent);
+        fixture.detectChanges();
+        laden(OFFEN, [eintrag()]);
+
+        jasmine.clock().tick(NACHLADEN_MS);
+        const nachladen = http.expectOne(OFFEN);
+        fixture.detectChanges();
+        expect(zeilen().length).toBe(1);
+
+        nachladen.flush({ eintraege: [eintrag(), eintrag({ id: 'b', text: 'Neu' })], aufbewahrung_tage: 30 });
+        fixture.detectChanges();
+        expect(zeilen().length).toBe(2);
+        fixture.destroy();
+      } finally {
+        jasmine.clock().uninstall();
+      }
+    });
+
     it('meldet einen Ladefehler', () => {
       http.expectOne(OFFEN).flush('kaputt', { status: 500, statusText: 'Server Error' });
       fixture.detectChanges();
 
-      expect(text()).toContain('konnte nicht geladen werden');
+      expect(text()).toContain('gerade nicht erreichbar, neuer Versuch in Kürze');
     });
   });
 

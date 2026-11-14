@@ -49,6 +49,7 @@ JE_SPALTE_EINE = {
     "art9_einwilligungen.user_id": 1,
     "art9_ohne_einwilligung.user_id": 1,
     "abzeichen_sichtbarkeit.user_id": 1,
+    "punkte_einwilligung.user_id": 1,
     "loeschauftraege.user_id": 1,
     "votes.user_id": 1,
     "raw_inputs.submitted_by": 1,

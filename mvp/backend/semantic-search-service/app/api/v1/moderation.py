@@ -44,7 +44,12 @@ from dependencies import (
 from utils.rate_limiter import report_rate_limiter
 from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
-from repositories.content_report_repository import melder_pseudonym
+from repositories.content_report_repository import (
+    BeitragGesperrt,
+    BeitragNichtGesperrt,
+    MeldungNichtOffen,
+    melder_pseudonym,
+)
 
 logger = get_logger(__name__)
 
@@ -692,11 +697,18 @@ async def delete_content(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+# Kennzeichen fuer das Frontend: Die Meldung ist nicht mehr offen.
+MELDUNG_NICHT_OFFEN = "meldung_nicht_offen"
+# Kennzeichen fuer das Frontend: Der Beitrag ist gesperrt, Abweisen passt nicht.
+BEITRAG_GESPERRT = "beitrag_gesperrt"
+
+
 # Admin Endpoint - Dismiss Report
 @router.put("/reports/{report_id}/dismiss", response_model=DismissReportResponse)
 async def dismiss_report(
     report_id: str,
-    notes: Optional[str] = None,
+    # Die Begruendung steht in der Adresse (Logs, Grenze der URL-Laenge): hoechstens 500 Zeichen.
+    notes: Optional[str] = Query(None, max_length=500),
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
     moderation_service: ModerationService = Depends(get_moderation_service),
@@ -719,11 +731,50 @@ async def dismiss_report(
         else:
             raise HTTPException(status_code=404, detail="Report not found")
 
+    except MeldungNichtOffen:
+        # Schon bearbeitet oder abgewiesen, etwa aus einem veralteten Fenster.
+        raise HTTPException(status_code=409, detail=MELDUNG_NICHT_OFFEN)
+    except BeitragGesperrt:
+        # Die Abweisungsmail ("kein Verstoss") waere bei einem gesperrten Beitrag falsch.
+        raise HTTPException(status_code=409, detail=BEITRAG_GESPERRT)
     except HTTPException:
         raise
     except Exception as e:
         logger.error(
             f"Error in dismiss_report endpoint: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Kennzeichen fuer das Frontend: Schliessen geht nur bei gesperrtem Beitrag.
+BEITRAG_NICHT_GESPERRT = "beitrag_nicht_gesperrt"
+
+
+# Admin Endpoint - Meldung zu gesperrtem Beitrag schliessen
+@router.put("/reports/{report_id}/schliessen", response_model=DismissReportResponse)
+async def meldung_schliessen(
+    report_id: str,
+    admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
+):
+    """
+    Eine offene Meldung zu einem schon gesperrten Beitrag erledigen (nur Admins): Sie
+    steht danach auf bearbeitet, die meldende Person bekommt die Mail "gesperrt".
+    """
+    try:
+        logger.info(f"Admin schliesst Meldung: {report_id}")
+        if not await moderation_service.meldung_schliessen(report_id, admin_user):
+            raise HTTPException(status_code=404, detail="Report not found")
+        return DismissReportResponse(success=True, message="Meldung geschlossen")
+    except MeldungNichtOffen:
+        raise HTTPException(status_code=409, detail=MELDUNG_NICHT_OFFEN)
+    except BeitragNichtGesperrt:
+        raise HTTPException(status_code=409, detail=BEITRAG_NICHT_GESPERRT)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error in meldung_schliessen endpoint: {type(e).__name__}", exc_info=True
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 

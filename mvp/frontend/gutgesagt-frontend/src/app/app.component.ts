@@ -25,6 +25,7 @@ import { feedbackDialogOeffnen } from './shared/feedback/feedback-dialog.compone
 import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
+import { OffeneMeldungenZahlComponent } from './shared/components/offene-meldungen-zahl/offene-meldungen-zahl.component';
 import { FarbschemaKnopfComponent } from './shared/components/farbschema-knopf/farbschema-knopf.component';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
 import { RouteConfigService } from './shared/services/route-config.service';
@@ -56,6 +57,7 @@ import { NEU_HINWEIS, RundgangId } from './rundgang/rundgang-daten';
     RouterLink,
     RouterLinkActive,
     FooterComponent,
+    OffeneMeldungenZahlComponent,
     MobileMenuComponent,
     MobileHeaderComponent,
     RundgangComponent,

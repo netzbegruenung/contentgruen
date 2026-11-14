@@ -15,23 +15,113 @@
   margin: 0;
 }
 
-/* Mobil scrollt die Filterleiste seitlich statt abgeschnitten zu werden (#512) */
+/*
+ * Die Umschalter brechen um, statt rechts abgeschnitten zu werden: mobil ("Abgewi…") und
+ * am Laptop bei 1280 px ("Löscha…", Persona-Runde 2, M2). Jeder mit eigenem Rand, damit
+ * erkennbar bleibt, wo einer endet.
+ */
 .filter-section {
   margin-bottom: 24px;
   display: flex;
-  justify-content: center;
-  overflow-x: auto;
+  justify-content: flex-start;
+}
+
+/* Doppelte Klasse: schlaegt den Rand der Gruppe aus dem Material-Theme */
+.filter-section mat-button-toggle-group.mat-button-toggle-group {
+  flex-wrap: wrap;
+  gap: 8px;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.filter-section mat-button-toggle,
+.filter-section mat-button-toggle + mat-button-toggle {
+  border: 1px solid var(--divider-color);
+  border-radius: 18px;
+  overflow: visible;
+}
+
+.filter-section mat-button-toggle.mat-button-toggle-checked {
+  border-color: var(--akzent-tanne);
+}
+
+/* Die rote Zahl steht neben dem Wort, nicht darauf (M2): Platz fuer das Abzeichen */
+.filter-section .mat-badge:not(.mat-badge-hidden) {
+  margin-right: 18px;
+}
+
+.statuszeile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  margin: 0 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.nachladefehler {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.nachladefehler mat-spinner {
+  flex-shrink: 0;
+}
+
+/* Der Text weicht, nie der Knopf: mit Auslassungszeichen statt abgeschnitten */
+.nachladefehler-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nachladefehler-text.kurz {
+  display: none;
+}
+
+.statuszeile .neue-meldungen {
+  flex-shrink: 0;
 }
 
 @media (max-width: 599px) {
-  .filter-section {
-    justify-content: flex-start;
+  .nachladefehler-text.lang {
+    display: none;
+  }
+
+  .nachladefehler-text.kurz {
+    display: inline;
   }
 }
 
-.filter-section mat-button-toggle-group {
-  border: 1px solid var(--divider-color);
-  border-radius: 4px;
+.sitzung-abgelaufen {
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+/* Beim Nachladen nicht mehr offen: abgesetzt über Farbe statt Deckkraft (Kontrast AA), Knöpfe gesperrt */
+tr.erledigt {
+  background-color: var(--hover-bg);
+}
+
+tr.erledigt td {
+  color: var(--text-secondary);
+}
+
+.status-erledigt {
+  background-color: var(--hover-bg);
+  color: var(--text-secondary);
+}
+
+.error mat-spinner {
+  margin: 0 auto 12px;
 }
 
 .filter-section mat-icon {
@@ -194,6 +284,7 @@ table {
 
 .melder-angabe {
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .melder-angabe.guter-glaube {
@@ -202,7 +293,30 @@ table {
 
 .action-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Bei 1280 px passt die Tabelle samt Aktionen ohne seitliches Rollen (M2) */
+@media (min-width: 600px) {
+  .reports-table th.mat-mdc-header-cell,
+  .reports-table td.mat-mdc-cell {
+    padding: 8px;
+  }
+
+  .datum-teil {
+    white-space: nowrap;
+  }
+
+  /* Schmal, aber lesbar: bis zu drei Zeilen statt einer gekuerzten, voller Text im title (Review) */
+  .reason-cell .description {
+    max-width: 180px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
 }
 
 .action-buttons button {
@@ -350,4 +464,90 @@ table {
   .content-item p {
     font-size: 14px;
   }
+}
+
+/* Gesperrt: Text des Beitrags zum Aufklappen */
+.text-umschalter {
+  align-self: flex-start;
+  padding: 0 8px 0 0;
+}
+
+.gesperrter-beitragstext {
+  max-height: 16em;
+  overflow-y: auto;
+  padding: 8px 12px;
+  border-left: 3px solid var(--divider-color);
+  white-space: pre-wrap;
+}
+
+.entscheidung-begruendung {
+  margin: 4px 0 0;
+}
+
+/*
+ * Mobil (Persona-Test 13.11.): Meldungen als Karten statt abgeschnittener Tabelle, jede
+ * Angabe mit Beschriftung (data-label), Sperren und Abweisen sichtbar. Gesperrte einspaltig.
+ */
+@media (max-width: 599px) {
+  /* tbody kommt aus der Vorlage von mat-table und trägt unser Attribut nicht: ::ng-deep */
+  .reports-table table,
+  .reports-table ::ng-deep tbody,
+  .reports-table tr,
+  .reports-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .reports-table tr.mat-mdc-header-row {
+    display: none;
+  }
+
+  .reports-table tr.report-row {
+    height: auto;
+    padding: 8px 0;
+    border-top: 1px solid var(--divider-color);
+  }
+
+  .reports-table td.mat-mdc-cell {
+    border-bottom: none;
+    padding: 4px 12px;
+  }
+
+  .reports-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .reports-table .action-buttons {
+    flex-wrap: wrap;
+  }
+
+  .reports-table tr.expanded-row {
+    height: auto;
+  }
+
+  /* Die eingeklappte Detailzeile nimmt keinen Platz */
+  .reports-table tr.expanded-row td.mat-mdc-cell {
+    padding: 0;
+  }
+
+  .gesperrter-beitrag {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gesperrt-aktionen {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+}
+
+.kennung {
+  margin: 2px 0;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
 }

@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { merkerEntfernen } from '../meine-beitraege/meilenstein-merker';
+import { kommentarEntwurfLoeschen } from '../beitragsformular/kommentar-entwurf';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { ANLASS_PARAM, Anmeldeanlass } from './anmeldeanlass';
 
@@ -73,6 +75,10 @@ export class AuthService {
   }
 
   logout() {
+    // Der Merker der angezeigten Meilensteine gilt nur für diese Anmeldung (#351).
+    merkerEntfernen();
+    // Der Kommentar-Entwurf im Tab gehört zu dieser Anmeldung (E1).
+    kommentarEntwurfLoeschen();
     // Use the API logout endpoint which properly handles both Keycloak and managed users
     this.http.post(`${environment.baseUrl}/api/auth/logout`, {}, {
       withCredentials: true

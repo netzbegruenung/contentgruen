@@ -72,3 +72,55 @@ tr.inaktiv td {
   color: var(--text-muted);
   margin-top: 12px;
 }
+
+/* Mobil jede Einladung als Karte statt Tabelle, in der die Notiz einen Buchstaben je Zeile bekam */
+@media (max-width: 599px) {
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tr {
+    padding: 8px 0;
+    border-top: 1px solid var(--divider-color);
+  }
+
+  td,
+  td.eng {
+    width: 100%;
+    padding: 2px 0;
+    border: none;
+    white-space: normal;
+  }
+
+  td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  td.link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+
+  td.link::before {
+    flex-basis: 100%;
+  }
+
+  td.link code {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}

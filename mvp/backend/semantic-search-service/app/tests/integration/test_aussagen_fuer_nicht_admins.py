@@ -39,11 +39,12 @@ async def _anlegen(service, text, origin=ContentOrigin.MANUALLY_CREATED):
 
 
 @pytest_asyncio.fixture
-async def bestand(statement_service):
+async def bestand(statement_service, sichtbare_suchanfragen):
     """
     Je eine Aussage einer Person, eine beantwortete Aussage aus einer
     Suchanfrage, eine aus der Suchanfrage einer einzelnen Person und eine aus
-    einer Suchanfrage ueber der Schwelle (gefragt).
+    einer Suchanfrage ueber der Schwelle (gefragt). Beantworten laesst sich nur
+    sichtbare Suchanfrage (Vormoderation).
     """
     von_person = await _anlegen(
         statement_service, "Windräder vertreiben die Touristen von der Küste"
@@ -53,6 +54,7 @@ async def bestand(statement_service):
         "Tempolimit bringt für das Klima gar nichts",
         ContentOrigin.SEARCH_QUERY,
     )
+    sichtbare_suchanfragen.add(beantwortet)
     await statement_service.add_statementreplysuggestion_to_statement(
         statement_id=beantwortet,
         replysuggestion_id=await sichtbarer_beitrag(

@@ -260,11 +260,12 @@ class Settings(BaseSettings):
     # schaltet die Punkte (/api/v1/usage/users/me/punkte) und die Muster-Hinweise
     # fuer Admins; Entdoppelung und Startkonten wirken immer.
     #
-    # ERST NACH DEM MERGE VON #668 EINSCHALTEN: Punkte und Meilensteine haengen seit dem
-    # Wortlaut 2026-11-13 nicht mehr an der Art.-9-Einwilligung, sondern an einer
-    # eigenen, freiwilligen Einwilligung "Punkte und Meilensteine" (Entscheidung
-    # Maintainer 13.11.2026). Solange es die nicht gibt (PUNKTE_EINWILLIGUNG_GEBAUT),
-    # startet der Dienst mit punkte_aktiv nicht (punkte_schalter_pruefen, main.py).
+    # Punkte und Meilensteine haengen seit dem Wortlaut 2026-11-13 nicht mehr an der
+    # Art.-9-Einwilligung, sondern an einer eigenen, freiwilligen Einwilligung "Punkte
+    # und Meilensteine" (Entscheidung Maintainer 13.11.2026, gebaut mit #668:
+    # domain/punkte_einwilligung.py, Tabelle punkte_einwilligung). Ohne sie startete
+    # der Dienst mit punkte_aktiv nicht (PUNKTE_EINWILLIGUNG_GEBAUT,
+    # punkte_schalter_pruefen, main.py).
     punkte_aktiv: bool = False
     # Meilenstein-Abzeichen am Anzeigenamen, die andere Angemeldete sehen (#351).
     # Standard aus und nur zusammen mit punkte_aktiv: Wie die Punkte haengen sie an
@@ -417,10 +418,12 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
-# Die eigene, freiwillige Einwilligung "Punkte und Meilensteine" (#668). #668 setzt das
-# auf True, sobald sie gebaut ist; bis dahin verhindert punkte_schalter_pruefen, dass
-# jemand punkte_aktiv einschaltet (Review zu #670).
-PUNKTE_EINWILLIGUNG_GEBAUT = False
+# Die eigene, freiwillige Einwilligung "Punkte und Meilensteine" ist gebaut (#668:
+# domain/punkte_einwilligung.py, repositories/punkte_einwilligung_repository.py,
+# GET/PUT /api/v1/usage/users/me/punkte-einwilligung). Bleibt als Sicherung stehen:
+# Auf False verhindert punkte_schalter_pruefen, dass jemand punkte_aktiv einschaltet
+# (Review zu #670).
+PUNKTE_EINWILLIGUNG_GEBAUT = True
 
 
 def punkte_schalter_pruefen(einstellungen: "Settings") -> None:

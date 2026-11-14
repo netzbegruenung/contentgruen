@@ -8,6 +8,8 @@ import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
 import { entwuerfeAufraeumen, entwuerfeLoeschen } from '../einwilligung/entwurf-vor-einwilligung';
+import { merkerEntfernen } from '../meine-beitraege/meilenstein-merker';
+import { kommentarEntwurfAufraeumen, kommentarEntwurfLoeschen } from '../beitragsformular/kommentar-entwurf';
 
 /**
  * Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum, ein zweiter
@@ -204,6 +206,10 @@ export class Art9EinwilligungService implements OnDestroy {
       tap(() => {
         this.geklaertSetzen(null);
         this.zustand.setzen('fehlt');
+        // Aufräumen nach dem Widerruf: Der Merker der angezeigten Meilensteine geht mit (#351),
+        // ebenso ein Kommentar-Entwurf im Tab (E1).
+        merkerEntfernen();
+        kommentarEntwurfLoeschen();
       }),
     );
   }
@@ -225,8 +231,13 @@ export class Art9EinwilligungService implements OnDestroy {
           // Neuladen verloren.
           // Sonst (App-Start, Anmelden): abgelaufene und die eines anderen Kontos weg,
           // auch nach einem Neuladen, das die vorige Kennung nicht mehr kennt.
-          if (this.kennung !== null && this.kennung !== kennung) entwuerfeLoeschen();
-          else entwuerfeAufraeumen(kennung);
+          if (this.kennung !== null && this.kennung !== kennung) {
+            entwuerfeLoeschen();
+            kommentarEntwurfLoeschen();
+          } else {
+            entwuerfeAufraeumen(kennung);
+            kommentarEntwurfAufraeumen(kennung);
+          }
           this.kennung = kennung;
           this.zustand.kennung = kennung;
           this.geklaertSetzen(null); // abgemeldet oder andere Person: neu klaeren
@@ -241,6 +252,11 @@ export class Art9EinwilligungService implements OnDestroy {
             tap((stand) => {
               if (!stand || stand.eingewilligt) this.geklaertSetzen(kennung);
               if (stand) this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
+              // Ohne Einwilligung kein Beitragen: ein alter Merker in diesem Browser geht (#351).
+              if (stand && !stand.eingewilligt) {
+                merkerEntfernen();
+                kommentarEntwurfLoeschen();
+              }
             }),
             map((stand) => !!stand && zurEinwilligungUmleiten(stand)),
           ),
@@ -275,6 +291,8 @@ export class Art9EinwilligungService implements OnDestroy {
       .subscribe((stand) => {
         if (!stand) return;
         this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
+        // Widerruf in einem anderen Tab: auch der Kommentar-Entwurf dieses Tabs geht (E1).
+        if (!stand.eingewilligt) kommentarEntwurfLoeschen();
         // Ein Widerruf in einem anderen Tab nimmt auch hier die Klaerung zurueck (#587).
         this.geklaertSetzen(stand.eingewilligt ? this.kennung : null);
       });

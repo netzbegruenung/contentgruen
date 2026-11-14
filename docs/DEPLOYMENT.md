@@ -170,14 +170,17 @@ described in [CI.md, "Images and releases"](CI.md#images-and-releases) two CIs b
   the tags the environments use, after running their test suites
   (`tests-backend.yml`, `tests-frontend.yml`, `tests-bff.yml`).
 - **Woodpecker** (`.woodpecker/build.yaml` and `release.yaml`, after a green `ci` run) builds
-  the same images with the same tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
+  the same images with the same release tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
   `:woodpecker-0.9.0`), so the two CIs never overwrite each other's tags. After the switch
   the prefix is gone and the GitHub workflows are removed.
 
-Tags, the same in both CIs (`scripts/image_tags.py`):
+Tags (`scripts/image_tags.py` in Woodpecker):
 
-- **Push to `main`:** `:main` and `:sha-<short>` for the images whose files changed. The test
-  environment runs `:main`, rolled out manually (see above).
+- **Push to `main`:** `:main` for the images whose files changed; GitHub also sets
+  `:sha-<short>`, Woodpecker no longer does (registry space, `docs/CI.md`). A cleanup rule of
+  the organisation removes `sha-` tags older than 7 days; the 5 newest versions per image
+  (all tags counted, `main` and releases included) always stay. The test environment runs
+  `:main`, rolled out manually (see above).
 - **Tag `vX.Y.Z`:** `:X.Y.Z` (the tag without its `v`), `:X.Y` and `:latest` for all four
   images. A prerelease (`v1.2.3-rc.1`) only gets `:1.2.3-rc.1`.
 
@@ -205,6 +208,13 @@ published for whoever wants the newest release, but nothing in production follow
      as before, `npm version X.Y.Z --no-git-tag-version` in that directory. This sub-step
      goes with the switch. Woodpecker's builds of `main` show „main · <commit>“
      instead of a version; local builds show the `package.json` version.
+   - **Datum des Einspielens in DSE und Löschkonzept eintragen:** replace the placeholder
+     „[Datum des Einspielens]“ in the privacy policy
+     (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`) and in
+     `docs/LOESCHKONZEPT.md` with the day the release goes to production („1. Dezember 2026“).
+     The privacy-policy spec accepts placeholder or date; on a tag the `ci` step
+     `release-platzhalter` (`scripts/release_platzhalter.py`) fails while the placeholder is
+     still there, and `release.yaml` builds nothing. Once no placeholder is left, drop this sub-step.
    - **Change list:** draft the text of the Forgejo release and show it in the description of
      the release pull request, so it is reviewed with it. The change list lives only in the
      Forgejo release, not in a file in the repository. Draft it with

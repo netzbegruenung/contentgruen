@@ -1,29 +1,58 @@
-<section *ngIf="meilensteine.length" class="meilensteine" aria-labelledby="meilensteine-titel">
-    <h2 id="meilensteine-titel">Meilensteine <span class="meilensteine-zahl">{{ erreichte }} von {{ meilensteine.length }}</span></h2>
+<!-- Ohne Einwilligung „Punkte und Meilensteine“ (#351) eine kurze Einladung statt der Liste -->
+<section *ngIf="einladen" class="meilensteine meilensteine-einladung" aria-labelledby="meilensteine-einladung-titel">
+    <h2 id="meilensteine-einladung-titel">Meilensteine</h2>
+    <p class="meilensteine-hinweis">
+        Punkte und Meilensteine wie „Erster Einwurf“ gibt es nur, wenn du sie willst. Sie zeigen dir, was du
+        beigetragen hast und wie es wirkt; beitragen und bewerten kannst du genauso ohne.
+    </p>
+    <app-punkte-einwilligung></app-punkte-einwilligung>
+</section>
+<section *ngIf="meilensteine.length && !einladen" class="meilensteine" aria-labelledby="meilensteine-titel">
+    <h2 id="meilensteine-titel">Meilensteine <span class="meilensteine-zahl">{{ erreichte }} von {{ meilensteine.length }}<ng-container *ngIf="sichtbar"> · Am Namen: {{ erreichteFuersAbzeichen }}</ng-container></span></h2>
     <p class="meilensteine-hinweis">
         <ng-container *ngIf="!sichtbar">Nur du siehst deine Meilensteine.</ng-container>
-        <ng-container *ngIf="sichtbar">Andere Angemeldete sehen an deinem Namen, wie viele Meilensteine du erreicht hast.</ng-container>
+        <ng-container *ngIf="sichtbar">Andere Angemeldete sehen an deinem Namen, wie viele Meilensteine du erreicht hast; Wegmarken zählen dabei nicht.</ng-container>
     </p>
+    <!-- Erreichte und der naechste offene; der Rest aufklappbar, damit die Liste kurz bleibt (UX-Befund B14) -->
     <ul class="meilensteine-liste">
-        <li *ngFor="let meilenstein of meilensteine" class="meilenstein" [class.erreicht]="meilenstein.erreicht">
-            <svg class="meilenstein-zeichen" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                <ng-container *ngIf="meilenstein.erreicht; else offen">
-                    <circle cx="8" cy="8" r="8" fill="currentColor"></circle>
-                    <path d="M4.5 8.2l2.3 2.3 4.7-4.9" fill="none" stroke="var(--bg-card)" stroke-width="1.8"
-                          stroke-linecap="round" stroke-linejoin="round"></path>
-                </ng-container>
-                <ng-template #offen>
-                    <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
-                </ng-template>
-            </svg>
-            <span class="meilenstein-name">{{ meilenstein.name }}</span>
-            <span *ngIf="meilenstein.erreicht" class="visually-hidden">, erreicht</span>
-            <span *ngIf="!meilenstein.erreicht" class="meilenstein-stand">
-                <span class="visually-hidden">, noch nicht erreicht: {{ meilenstein.stand }} von {{ meilenstein.schwelle }}</span>
-                <span aria-hidden="true">{{ meilenstein.stand }}/{{ meilenstein.schwelle }}</span>
-            </span>
+        <li *ngFor="let meilenstein of sichtbare" class="meilenstein" [class.erreicht]="meilenstein.erreicht">
+            <ng-container *ngTemplateOutlet="eintrag; context: { $implicit: meilenstein }"></ng-container>
         </li>
     </ul>
+    <details *ngIf="weitere.length" class="meilensteine-weitere">
+        <summary>Weitere Meilensteine ({{ weitere.length }})</summary>
+        <ul class="meilensteine-liste">
+            <li *ngFor="let meilenstein of weitere" class="meilenstein">
+                <ng-container *ngTemplateOutlet="eintrag; context: { $implicit: meilenstein }"></ng-container>
+            </li>
+        </ul>
+    </details>
+    <details *ngIf="bildnachweise.length" class="meilensteine-bildnachweis">
+        <summary>Bildnachweis</summary>
+        <p *ngFor="let nachweis of bildnachweise">{{ nachweis }}</p>
+    </details>
+    <ng-template #eintrag let-meilenstein>
+            <!-- Einheitliches Medaillon: erreicht tannengruen, offen grau gestrichelt; das Motiv ist Fluent Emoji (MIT) -->
+            <span class="meilenstein-medaillon" aria-hidden="true">
+                <svg class="medaillon-rahmen" viewBox="0 0 56 56" width="56" height="56">
+                    <circle cx="28" cy="28" r="26"></circle>
+                </svg>
+                <img class="medaillon-motiv" [src]="'/' + meilenstein.bild" alt="" width="30" height="30">
+            </span>
+            <span class="meilenstein-text">
+                <span class="meilenstein-kopf">
+                    <span class="meilenstein-name">{{ meilenstein.name }}</span>
+                    <span *ngIf="meilenstein.erreicht" class="visually-hidden">, erreicht</span>
+                    <span *ngIf="!meilenstein.erreicht" class="meilenstein-stand">
+                        <span class="visually-hidden">, noch nicht erreicht: {{ meilenstein.stand }} von {{ meilenstein.schwelle }}</span>
+                        <span aria-hidden="true">{{ meilenstein.stand }}/{{ meilenstein.schwelle }}</span>
+                    </span>
+                </span>
+                <span class="meilenstein-untertitel">{{ meilenstein.untertitel }}</span>
+                <span class="meilenstein-beschreibung">{{ meilenstein.beschreibung }}</span>
+                <span *ngIf="sichtbar && meilenstein.art === 'weg'" class="meilenstein-wegmarke">Wegmarke, zählt nicht fürs Abzeichen</span>
+            </span>
+    </ng-template>
 
     <!-- Zustimmung zur Sichtbarkeit: einmal fragen, zwei gleichwertige Knoepfe, nichts vorbelegt (#351) -->
     <div *ngIf="fragen" class="sichtbarkeit-frage" role="group" aria-labelledby="sichtbarkeit-text">

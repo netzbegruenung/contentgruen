@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterModule } from '@angular/router';
 import { LEGAL_ENTITY } from '../shared/legal-entity';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 
 @Component({
   selector: 'app-datenschutz',
@@ -19,6 +20,8 @@ import { LEGAL_ENTITY } from '../shared/legal-entity';
 })
 export class DatenschutzComponent {
   readonly VEREIN = LEGAL_ENTITY;
+  /** Merker der Meilensteine im Browser; der Absatz dazu steht erst, wenn er an ist (§ 25 TDDDG). */
+  readonly meilensteinMerker = inject(MEILENSTEIN_MERKER);
   readonly KONTAKT_MAIL = LEGAL_ENTITY.KONTAKT_MAIL;
 
   // Der Datenschutzbeauftragte ist ueber die Vereinsadresse erreichbar, nicht privat.
