@@ -13,9 +13,8 @@ und beide werden hier festgenagelt:
 Aus der Suche heraus schreibt nur noch das Backend, in /searchByText. Die
 Ergebnisansicht ruft /statement/addStatement nicht mehr auf - fuer Anonyme endete
 das mit 401 und einem Sprung auf /login. Der Endpunkt nimmt `source=search_query`
-weiterhin an und ist hier mit abgedeckt. Er bedient ausserdem den ausdruecklichen
-Weg "Beitrag ergaenzen" - unterschieden allein ueber das Feld `source`; nur dort
-bleibt die Person Autorin.
+seit der Vormoderation nicht mehr an (422). Er bedient nur noch den ausdruecklichen
+Weg "Beitrag ergaenzen"; dort ist die Person Autorin.
 """
 
 import logging
@@ -127,14 +126,23 @@ class TestSuchpfadBackend:
         assert author == SEARCH_QUERY_AUTHOR
         assert status is ContentStatus.VISIBLE
 
-    def test_suche_liefert_statement_id_der_angelegten_suchanfrage(
+    def test_suche_liefert_statement_id_einer_gepflegten_aussage(
         self, statement_service
     ):
         statement_id = uuid.uuid4()
+        # Eine vorhandene, gepflegte Aussage: Ihre ID geht an alle.
         statement_service.add_statement.return_value = (
-            True,
+            False,
             statement_id,
             "klimaschutz",
+        )
+
+        statement_service.get = AsyncMock(
+            return_value=MagicMock(
+                id=statement_id,
+                origin=ContentOrigin.MANUALLY_CREATED,
+                replysuggestions_count=0,
+            )
         )
 
         resp = TestClient(app).post(
@@ -143,6 +151,22 @@ class TestSuchpfadBackend:
 
         assert resp.status_code == 200
         assert resp.json()["statement_id"] == str(statement_id)
+
+    def test_suche_verbirgt_die_id_der_neuen_suchanfrage(self, statement_service):
+        # Vormoderation: eben angelegt heisst ungeprueft; das Formular nimmt den Text.
+        statement_service.add_statement.return_value = (
+            True,
+            uuid.uuid4(),
+            "klimaschutz",
+        )
+
+        resp = TestClient(app).post(
+            SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10}
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["statement_id"] is None
+        assert resp.json()["statement_text"] == "klimaschutz"
 
     def test_suche_liefert_null_statt_none_wenn_anlegen_scheitert(
         self, statement_service
@@ -202,7 +226,14 @@ class TestAddStatementEndpunkt:
     Derselbe Endpunkt fuer beide Wege; `source` entscheidet ueber den Autor.
     """
 
-    def test_source_search_query_verwirft_die_person(self, statement_service):
+    def test_source_search_query_ist_ueber_die_api_nicht_setzbar(
+        self, statement_service
+    ):
+        """
+        Vormoderation: Mit Herkunft Suchanfrage faende add_statement verborgene
+        Suchanfragen als dieselbe und lieferte ihre ID und ihren Wortlaut. Die
+        Herkunft vergibt nur /searchByText.
+        """
         client = TestClient(app)
 
         resp = client.post(
@@ -214,10 +245,8 @@ class TestAddStatementEndpunkt:
             headers={"X-User": "testuser"},
         )
 
-        assert resp.status_code == 200
-        _, author, _, origin = _aufruf_argumente(statement_service)
-        assert author == SEARCH_QUERY_AUTHOR
-        assert origin is ContentOrigin.SEARCH_QUERY
+        assert resp.status_code == 422
+        statement_service.add_statement.assert_not_called()
 
     def test_source_manually_created_behaelt_die_person(self, statement_service):
         """Der ausdrueckliche Weg "Beitrag ergaenzen" bleibt eine Autorenleistung."""
@@ -240,8 +269,11 @@ class TestAddStatementEndpunkt:
         assert author == "testuser"
         assert origin is ContentOrigin.MANUALLY_CREATED
 
-    def test_ohne_source_gilt_die_datensparsame_voreinstellung(self, statement_service):
-        """Ein Aufrufer, der nichts angibt, erzeugt kein Statement mit Personenbezug."""
+    def test_ohne_source_legt_die_person_an(self, statement_service):
+        """
+        Ohne source wie "Beitrag ergaenzen": Die Person ist Autorin, und add_statement
+        laesst verborgene Suchanfragen als Kandidaten aus (Vormoderation).
+        """
         client = TestClient(app)
 
         resp = client.post(
@@ -252,8 +284,8 @@ class TestAddStatementEndpunkt:
 
         assert resp.status_code == 200
         _, author, _, origin = _aufruf_argumente(statement_service)
-        assert author == SEARCH_QUERY_AUTHOR
-        assert origin is ContentOrigin.SEARCH_QUERY
+        assert author == "testuser"
+        assert origin is ContentOrigin.MANUALLY_CREATED
 
     @pytest.mark.parametrize("source", ["initial_data", "ai-generated", "ingested"])
     def test_andere_herkuenfte_sind_ueber_die_api_nicht_setzbar(
@@ -261,7 +293,7 @@ class TestAddStatementEndpunkt:
     ):
         """
         Seeding- und KI-Herkunft gehoeren nicht in die Hand eines API-Aufrufers;
-        deshalb ist `source` ein eigenes, zweiwertiges Enum.
+        deshalb ist `source` ein eigenes Enum.
         """
         client = TestClient(app)
 

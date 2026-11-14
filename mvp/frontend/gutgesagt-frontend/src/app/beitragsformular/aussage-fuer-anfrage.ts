@@ -20,13 +20,23 @@ export function themenWaehlbar(aussage: AntwortAuf): boolean {
   return !aussage.id && !!aussage.text && aussage.neuGewaehlt === true;
 }
 
+/** So lang muss ein Aussagetext mindestens sein, den das Backend annimmt (AUSSAGE_MIN_ZEICHEN dort). */
+const AUSSAGETEXT_MIN_ZEICHEN = 10;
+
 /**
  * Die gewaehlte Aussage per ID, sonst ihr Text mit den gewaehlten Themen, sonst nichts.
- * Leere Themen fehlen in der Anfrage.
+ * Leere Themen fehlen in der Anfrage. Zur ID geht der Text mit, wenn er lang genug ist:
+ * Ist die Aussage eine Suchanfrage, die noch auf Freigabe wartet (Vormoderation),
+ * haengt das Backend die Antwort an eine eigene Aussage mit diesem Text, statt sie zu
+ * verwerfen.
  */
 export function aussageFuerAnfrage(aussage: AntwortAuf, themen: string[]): AussageInAnfrage {
   if (aussage.id) {
-    return { statement_id: aussage.id };
+    const text = aussage.text?.trim() ?? '';
+    return {
+      statement_id: aussage.id,
+      ...(text.length >= AUSSAGETEXT_MIN_ZEICHEN ? { statement_text: aussage.text } : {}),
+    };
   }
   if (!aussage.text) {
     return {};

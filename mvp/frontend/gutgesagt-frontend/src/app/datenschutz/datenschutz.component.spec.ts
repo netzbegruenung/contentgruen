@@ -86,7 +86,8 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('„Hier fehlt eine Antwort“');
       expect(text).toContain('n Personen suchten das ohne Treffer');
       expect(text).toContain('die Zahl der Suchen sehen sie nicht');
-      expect(text).toContain('Administratorinnen und Administratoren, zusätzlich mit der Zahl der Suchen');
+      expect(text).toContain('das Moderationsteam, zusätzlich mit der Zahl der Suchen');
+      expect(text).toContain('erst nach Prüfung durch das Moderationsteam');
     });
 
     it('bezieht die Zwei-Personen-Schwelle auf die Listen, nicht auf die Auffindbarkeit', () => {
@@ -119,8 +120,16 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('kann danach für alle auffindbar werden');
       expect(text).not.toContain('ist danach für alle auffindbar');
-      expect(text).toContain('nur unseren Administratorinnen und Administratoren');
+      expect(text).toContain('nur unserem Moderationsteam (unseren Administratorinnen und Administratoren)');
       expect(text).toContain('mindestens zwei verschiedene Personen innerhalb von vier Wochen');
+      // Vormoderation (13.11.2026): erst nach Prüfung, auch nicht über eine gleichlautende Aussage.
+      expect(text).toContain('Ein freigegebener Eintrag ist für alle sichtbar, solange in den letzten vier Wochen');
+      expect(text).toContain('dauerhaft, sobald jemand einen Beitrag als Antwort darauf eingestellt hat');
+      expect(text).toContain('Dafür entsteht eine eigene Aussage mit dem Wortlaut dieser Person');
+      // Übernommen wird nur eine sichtbare Suchanfrage (freigegeben und über der Schwelle).
+      expect(abschnitt('Suchen ohne Treffer')).toContain('einer für alle sichtbaren (freigegebenen), noch unbeantworteten Suchanfrage');
+      // Keine Ausnahme für den Bestand (Entscheidung des Maintainers vom 13.11.2026).
+      expect(text).toContain('nur wegen der Zahl der Suchen sichtbar waren, sind es erst nach dieser Prüfung wieder; hatte schon jemand darauf geantwortet, bleiben sie sichtbar');
       expect(text).toContain('Gib nichts in das Suchfeld ein, was nicht öffentlich werden soll');
     });
   });

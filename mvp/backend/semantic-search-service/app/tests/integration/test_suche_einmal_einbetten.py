@@ -251,7 +251,9 @@ async def test_search_by_text_neue_suchanfrage_einmal_eingebettet(suche):
     """
     antwort, einbettungen, anfragen = await suche()
 
-    assert antwort["query_was_newly_added_as_statement"] is True
+    # Ob die Suchanfrage neu ist, erfahren nur Admins (Vormoderation); neu angelegt
+    # zeigen hier die beiden upsert.
+    assert antwort["query_was_newly_added_as_statement"] is False
     assert antwort["commentary_search_results_count"] >= 1
     assert einbettungen == [f"query: {SUCHANFRAGE}"]
     assert sorted(anfragen) == sorted(
@@ -277,8 +279,10 @@ async def test_search_by_text_vorhandene_suchanfrage_einmal_eingebettet(suche):
 
     assert antwort["query_was_newly_added_as_statement"] is False
     assert einbettungen == [f"query: {SUCHANFRAGE}"]
+    # Das zweite retrieve, ohne Einbettung: Ist die vorhandene Aussage eine
+    # Suchanfrage, die Nicht-Admins nicht sehen (Vormoderation)?
     assert sorted(anfragen) == sorted(
-        ["scroll", "query_points", "retrieve", "query_batch_points"]
+        ["scroll", "query_points", "retrieve", "retrieve", "query_batch_points"]
     )
 
 
@@ -296,9 +300,10 @@ async def test_search_by_text_suchanfrage_mit_apostroph_oder_semikolon_einmal_ei
 
     Vor #321 ersetzte die Suche ' und ; vor dem Einbetten: zwei Einbettungen.
     """
-    antwort, einbettungen, _ = await suche(text)
+    _, einbettungen, anfragen = await suche(text)
 
-    assert antwort["query_was_newly_added_as_statement"] is True
+    # Neu angelegt (upsert); das Feld in der Antwort sehen nur Admins.
+    assert "upsert" in anfragen
     assert einbettungen == [f"query: {text}"]
 
 

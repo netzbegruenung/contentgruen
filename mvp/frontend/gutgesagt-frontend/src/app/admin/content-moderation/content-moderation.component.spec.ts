@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, Subject } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -15,6 +15,7 @@ import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
 import { KOPF_NACHLADEN_MS } from '../../services/zu-tun.service';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { throwError } from 'rxjs';
+import { SuchanfragenFreigabeService } from '../../services/suchanfragen-freigabe.service';
 
 function sperre(overrides: Partial<SperreFuerAdmins> = {}): SperreFuerAdmins {
   return {
@@ -53,6 +54,7 @@ describe('ContentModerationComponent', () => {
   let fixture: ComponentFixture<ContentModerationComponent>;
   let moderation: jasmine.SpyObj<ModerationService>;
   let dialog: jasmine.SpyObj<MatDialog>;
+  let suchanfragen: jasmine.SpyObj<SuchanfragenFreigabeService>;
 
   /** Der Dialog schließt mit diesem Ergebnis; undefined heißt abgebrochen. */
   function dialogErgebnis(ergebnis: SperrenDialogErgebnis | undefined) {
@@ -78,10 +80,17 @@ describe('ContentModerationComponent', () => {
     moderation.getGesperrte.and.returnValue(of({ total: 0, beitraege: [] }));
     moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [] }));
     dialog = jasmine.createSpyObj('MatDialog', ['open']);
+    suchanfragen = jasmine.createSpyObj('SuchanfragenFreigabeService', ['zuPruefen', 'anzahl', 'freigeben', 'ablehnen']);
+    suchanfragen.zuPruefen.and.returnValue(of({ suchanfragen: [] }));
+    suchanfragen.anzahl.and.returnValue(of({ anzahl: 0 }));
 
     TestBed.configureTestingModule({
       imports: [ContentModerationComponent, NoopAnimationsModule],
-      providers: [provideRouter([]), { provide: ModerationService, useValue: moderation }]
+      providers: [
+        provideRouter([]),
+        { provide: ModerationService, useValue: moderation },
+        { provide: SuchanfragenFreigabeService, useValue: suchanfragen }
+      ]
     });
     // Die Komponente importiert MatDialogModule selbst; deshalb hier überschreiben.
     TestBed.overrideProvider(MatDialog, { useValue: dialog });
@@ -184,6 +193,29 @@ describe('ContentModerationComponent', () => {
     expect(fixture.nativeElement.querySelector('.reports-table')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
   });
+
+  it('zählt die Suchanfragen, die auf Freigabe warten, am Umschalter und zeigt sie statt der Meldungen', fakeAsync(() => {
+    suchanfragen.zuPruefen.and.returnValue(of({
+      suchanfragen: [{ statement_id: 'a-1', statement_text: 'Sind Wärmepumpen laut?', personen_ohne_treffer: 3 }]
+    }));
+    suchanfragen.anzahl.and.returnValue(of({ anzahl: 1 }));
+    mitMeldungen([meldung()]);
+    flushMicrotasks();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.zuPruefendeSuchanfragen).toBe(1);
+    expect(fixture.nativeElement.textContent).not.toContain('Sind Wärmepumpen laut?');
+
+    moderation.getReports.calls.reset();
+    fixture.componentInstance.onStatusFilterChange('suchanfragen');
+    fixture.detectChanges();
+
+    expect(moderation.getReports).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Sind Wärmepumpen laut?');
+    expect(fixture.nativeElement.querySelector('.reports-table')).toBeNull();
+    expect(knopf('Aktualisieren')).toBeUndefined();
+    discardPeriodicTasks();
+  }));
 
   it('zeigt unter „Nach Person“ keinen Fehler einer Liste, die vorher noch lud (#494)', () => {
     const liste = new Subject<PendingReportsResponse>();

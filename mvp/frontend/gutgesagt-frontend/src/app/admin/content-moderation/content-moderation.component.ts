@@ -24,6 +24,7 @@ import { AbweisenDialogComponent, AbweisenDialogDaten } from './abweisen-dialog.
 import { kurzeKennung } from './kennung';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 import { LoeschauftraegeComponent } from './loeschauftraege.component';
+import { SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
 import { MELDUNGEN_GRENZE, ZuTunService } from '../../services/zu-tun.service';
 import { EMPTY, Observable, Subject, merge } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -32,10 +33,11 @@ import { RouterLink } from '@angular/router';
 
 // 'person': Meldungen einer Person nach Name oder E-Mail-Adresse (#494).
 // 'loeschauftraege': Löschaufträge nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b).
-type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'person' | 'loeschauftraege';
+// 'suchanfragen': Suchanfragen freigeben (Vormoderation, 13.11.2026); lädt selbst.
+type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'person' | 'loeschauftraege' | 'suchanfragen';
 /** Die Ansichten, die eine Meldungsliste zeigen. */
 type Meldungsansicht = 'pending' | 'reviewed' | 'dismissed' | 'all';
-const ANSICHTEN: readonly Ansicht[] = ['pending', 'reviewed', 'dismissed', 'all', 'gesperrt', 'person', 'loeschauftraege'];
+const ANSICHTEN: readonly Ansicht[] = ['pending', 'reviewed', 'dismissed', 'all', 'gesperrt', 'person', 'loeschauftraege', 'suchanfragen'];
 
 /** Snackbar, wenn eine Aktion eine inzwischen erledigte Meldung träfe. */
 export const MELDUNG_ERLEDIGT = 'Die Meldung ist inzwischen erledigt.';
@@ -64,7 +66,8 @@ function ansichtAus(wert: string | null): Ansicht | null {
     MatBadgeModule,
     MeldungenEinerPersonComponent,
     LoeschauftraegeComponent,
-    RouterLink
+    RouterLink,
+    SuchanfragenFreigebenComponent
   ],
   templateUrl: './content-moderation.component.html',
   styleUrls: ['./content-moderation.component.css'],
@@ -102,6 +105,8 @@ export class ContentModerationComponent implements OnInit {
   offeneLoeschauftraege = 0;
   /** Zahl am Umschalter "Offen": offene Meldungen. */
   offeneMeldungen = 0;
+  /** Zahl am Umschalter "Suchanfragen": warten auf Freigabe (SuchanfragenFreigebenComponent). */
+  zuPruefendeSuchanfragen = 0;
   loading = true;
   error: string | null = null;
   /** Ein stilles Nachladen ist gescheitert; die Liste zeigt den letzten Stand. */
@@ -168,9 +173,13 @@ export class ContentModerationComponent implements OnInit {
   readonly nachId = (_index: number, meldung: ContentReport) => meldung.id;
   readonly nachBeitragsId = (_index: number, beitrag: GemeldeterBeitrag): string => beitrag['id'];
 
-  /** Ansichten, die selbst laden: die Suche nach Person und die Löschaufträge. */
+  /** Ansichten, die selbst laden: die Suche nach Person, die Löschaufträge und die Suchanfragen. */
   get laedtSelbst(): boolean {
-    return this.selectedStatus === 'person' || this.selectedStatus === 'loeschauftraege';
+    return (
+      this.selectedStatus === 'person' ||
+      this.selectedStatus === 'loeschauftraege' ||
+      this.selectedStatus === 'suchanfragen'
+    );
   }
 
   /** Nach 401/403 beim Nachladen: Es wird nicht weiter gefragt, der Link führt zur Anmeldung. */
@@ -216,7 +225,7 @@ export class ContentModerationComponent implements OnInit {
     this.erledigt.clear();
     if (this.laedtSelbst) {
       // Die Suche lädt selbst, erst wenn Angaben eingegeben sind; die Löschaufträge
-      // kommen aus dem ZuTunService.
+      // kommen aus dem ZuTunService, die Suchanfragen laden selbst und laden selbst nach.
       this.loading = false;
       this.error = null;
       this.nachladefehler = false;

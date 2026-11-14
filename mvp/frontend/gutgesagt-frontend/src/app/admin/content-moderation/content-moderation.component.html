@@ -32,6 +32,11 @@
         <span [matBadge]="offeneWidersprueche || null" matBadgeOverlap="false" matBadgeColor="warn"
               [attr.aria-label]="offeneWidersprueche ? 'Gesperrt, ' + offeneWidersprueche + ' offene Widersprüche' : null">Gesperrt</span>
       </mat-button-toggle>
+      <mat-button-toggle value="suchanfragen">
+        <mat-icon>fact_check</mat-icon>
+        <span [matBadge]="zuPruefendeSuchanfragen || null" matBadgeOverlap="false" matBadgeColor="warn"
+              [attr.aria-label]="zuPruefendeSuchanfragen ? 'Suchanfragen, ' + zuPruefendeSuchanfragen + ' warten auf Freigabe' : null">Suchanfragen</span>
+      </mat-button-toggle>
       <mat-button-toggle value="person">
         <mat-icon>person_search</mat-icon>
         Nach Person
@@ -139,6 +144,9 @@
   <app-meldungen-einer-person *ngIf="selectedStatus === 'person'"></app-meldungen-einer-person>
   <app-loeschauftraege *ngIf="selectedStatus === 'loeschauftraege'"
                        (anzahl)="loeschauftraegeGezaehlt($event)"></app-loeschauftraege>
+
+  <app-suchanfragen-freigeben [aktiv]="selectedStatus === 'suchanfragen'"
+                              (anzahl)="zuPruefendeSuchanfragen = $event"></app-suchanfragen-freigeben>
 
   <div *ngIf="selectedStatus !== 'gesperrt' && !laedtSelbst && !loading && !error && !sitzungAbgelaufen && reports.length === 0" class="empty-state">
     <mat-icon class="large-icon">check_circle</mat-icon>

@@ -36,7 +36,7 @@ NICHT_ADMIN_IDS = ["mitwirkende", "besucher", "ohne_kopf"]
 @pytest.fixture(autouse=True)
 def suchen_ohne_treffer():
     dienst = MagicMock()
-    dienst.ueber_der_schwelle = AsyncMock(return_value=UEBER_DER_SCHWELLE)
+    dienst.sichtbar_fuer_alle = AsyncMock(return_value=UEBER_DER_SCHWELLE)
     app.dependency_overrides[get_suchen_ohne_treffer_service] = lambda: dienst
     yield dienst
     app.dependency_overrides.clear()
@@ -149,7 +149,7 @@ class TestGetByIdSchwelle:
         )
 
         assert resp.status_code == 200
-        suchen_ohne_treffer.ueber_der_schwelle.assert_not_awaited()
+        suchen_ohne_treffer.sichtbar_fuer_alle.assert_not_awaited()
 
     def test_kuratierte_aussage_kommt_ohne_schwelle(
         self, statement_service, suchen_ohne_treffer
@@ -164,7 +164,7 @@ class TestGetByIdSchwelle:
         )
 
         assert resp.status_code == 200
-        suchen_ohne_treffer.ueber_der_schwelle.assert_not_awaited()
+        suchen_ohne_treffer.sichtbar_fuer_alle.assert_not_awaited()
 
     def test_admin_bekommt_suchanfrage_unter_der_schwelle(
         self, statement_service, suchen_ohne_treffer
@@ -179,7 +179,7 @@ class TestGetByIdSchwelle:
         )
 
         assert resp.status_code == 200
-        suchen_ohne_treffer.ueber_der_schwelle.assert_not_awaited()
+        suchen_ohne_treffer.sichtbar_fuer_alle.assert_not_awaited()
 
     def test_fehler_bei_der_schwelle_gibt_500(
         self, statement_service, suchen_ohne_treffer
@@ -188,7 +188,7 @@ class TestGetByIdSchwelle:
         statement_service.get = AsyncMock(
             return_value=_aussage(statement_id, ContentOrigin.SEARCH_QUERY, 0)
         )
-        suchen_ohne_treffer.ueber_der_schwelle.side_effect = RuntimeError("weg")
+        suchen_ohne_treffer.sichtbar_fuer_alle.side_effect = RuntimeError("weg")
 
         resp = TestClient(app, raise_server_exceptions=False).get(
             GET_BY_ID_URL,

@@ -291,7 +291,8 @@ describe('AddGenerictextComponent', () => {
 
       const anfrage: AddGenericTextRequest = hinzufuegen.calls.mostRecent().args[0];
       expect(anfrage.statement_id).toBe(ID);
-      expect(anfrage.statement_text).toBeUndefined();
+      // Der Text geht mit (Vormoderation: verborgene Suchanfrage, aussageFuerAnfrage).
+      expect(anfrage.statement_text).toBe('Wärmepumpen sind zu teuer');
       expect(seite().querySelector('.gewaehlt-karte')).toBeTruthy();
     }));
 

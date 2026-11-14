@@ -157,8 +157,9 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Daten:** Suchtext als Aussage ohne Autor; Suchereignisse mit Tag, Trefferzahl und
   Tagespseudonym (Besucher: aus Anschluss und Tag, ohne User-Agent; Angemeldete: aus Kennung und
   Tag); je Aussage und Woche Zahl der Suchen und Personen ohne Treffer.
-- **Empfänger:** offene Aussagen aus Suchen für alle, sobald jemand antwortet oder zwei Personen
-  ohne Treffer danach suchten; Zähler für Angemeldete und Admins.
+- **Empfänger:** unbeantwortete Suchanfragen für alle, sobald jemand antwortet oder, wenn zwei
+  Personen ohne Treffer danach suchten, nach Freigabe durch Admins (Vormoderation seit
+  13.11.2026); Zähler für Angemeldete und Admins.
 - **Fristen:** LK „Fristen“ (Suchereignisse bis zum Ende ihres Tages, dann zu Tageszählern
   verdichtet) und „Was nicht gelöscht wird“ (Suchanfragen als Aussage, Suchen ohne Treffer).
 - **TOM:** DSFA V6, V7, V8. **Offen:** Schlüssel des Pseudonyms der Angemeldeten in Produktion

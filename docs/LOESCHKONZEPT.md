@@ -482,6 +482,13 @@ und der Ablauf oben erfasst die Tabelle nicht.
   Anschluss-Prüfwert aus #496 braucht es dafür nicht mehr. Die Personen einer Woche sind die
   Summe der Personen je Tag, ein Pseudonym über Tagesgrenzen gibt es auch hier nicht. Wochen älter als acht löscht ein täglicher Task von
   selbst (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
+- **`suchanfrage_freigaben`** (Vormoderation, Entscheidung des Maintainers vom 13.11.2026)
+  trägt je geprüfter unbeantworteter Suchanfrage nur Aussage-ID, ob sie freigegeben oder
+  abgelehnt ist, und den Zeitpunkt der Entscheidung, weder Text noch Kennung des Admins:
+  nichts, was sich einer Person zuordnen ließe. Beim Einspielen wird nichts nachgetragen;
+  eine Zeile entsteht erst mit der Entscheidung. Keine eigene Frist: Die Zeile bleibt, solange
+  die Aussage besteht, und geht mit ihr, wenn ein Admin sie endgültig entfernt
+  (`ModerationService.delete_content`, `repositories/suchanfrage_freigabe_repository.py`).
 - **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
   Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen
   ließe. Keine Frist. Aussagen werden nicht gelöscht; wird eine gesperrt, bleiben ihre

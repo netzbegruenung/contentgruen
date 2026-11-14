@@ -348,6 +348,26 @@ class SucheOhneTrefferZeile(Base):
     __table_args__ = (Index("idx_suchen_ohne_treffer_woche", "woche"),)
 
 
+class SuchanfrageFreigabe(Base):
+    """Vormoderation (Entscheidung des Maintainers vom 13.11.2026): ob ein Admin eine
+    unbeantwortete Suchanfrage ueber der Schwelle fuer alle freigegeben oder
+    abgelehnt hat. Ohne Zeile ist sie ungeprueft und nur fuer Admins sichtbar.
+
+    Traegt weder Text noch Kennung des Admins: der Text steht an der Aussage in
+    Qdrant, hier nur deren ID. Siehe services/suchen_ohne_treffer_service.py
+    (sichtbar_fuer_alle, zu_pruefen, entscheiden).
+    """
+
+    __tablename__ = "suchanfrage_freigaben"
+
+    statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
+    # True: freigegeben, False: abgelehnt.
+    freigegeben = Column(Boolean, nullable=False)
+    entschieden_am = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class FeedbackZeile(Base):
     """Feedback an das Team: Freitext und optional eine Kontaktangabe.
 

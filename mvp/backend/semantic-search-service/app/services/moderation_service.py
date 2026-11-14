@@ -23,6 +23,9 @@ from repositories.einwurf_repository import (
     get_einwurf_repository,
 )
 from repositories.sperre_repository import SperreRepository, get_sperre_repository
+from repositories.suchanfrage_freigabe_repository import (
+    get_suchanfrage_freigabe_repository,
+)
 from repositories.vote_repository import VoteRepository
 from repositories.varianten_repository import (
     VariantenRepository,
@@ -769,6 +772,18 @@ class ModerationService:
             logger.warning(
                 f"Content {content_id} deleted, lifting its Sperre failed "
                 f"({type(e).__name__})"
+            )
+
+        # Die Entscheidung der Vormoderation zu einer Aussage aus einer Suchanfrage
+        # geht mit ihr (suchanfrage_freigaben); auch hier ohne Rueckgaengigmachen.
+        try:
+            await asyncio.to_thread(
+                get_suchanfrage_freigabe_repository().loeschen, UUID(content_id)
+            )
+        except Exception as e:
+            logger.warning(
+                f"Content {content_id} deleted, removing its Vormoderation decision "
+                f"failed ({type(e).__name__})"
             )
 
         # Offene Meldungen als bearbeitet markieren. Der Beitrag ist schon weg;
