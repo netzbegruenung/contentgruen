@@ -13,6 +13,7 @@ import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
+import { KOPIERT } from '../../shared/vorlagen-luecke';
 import { TEILEN_LINK_KOPIERT, TEILEN_NAVIGATOR, TeilenNavigator } from '../../shared/teilen.service';
 
 /**
@@ -563,7 +564,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         expect(snackBar.open).not.toHaveBeenCalled();
       });
 
-      it('zaehlt den gefuellten Text wie normales Kopieren und meldet "Erfolgreich kopiert!"', () => {
+      it('zaehlt den gefuellten Text wie normales Kopieren und meldet es wie dort (KOPIERT)', () => {
         const kopiert = jasmine.createSpy('kopiert');
         component.kopiert.subscribe(kopiert);
         dialogSchliesstMit({ text: 'Gut. Mein Satz. Ende.' });
@@ -572,7 +573,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
         expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, undefined);
         expect(kopiert).toHaveBeenCalledTimes(1);
-        expect(snackBar.open).toHaveBeenCalledWith('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+        expect(snackBar.open).toHaveBeenCalledWith(KOPIERT, 'Schließen', { duration: 1500 });
       });
 
       it('fragt auch bei "Mit Herkunft kopieren" aus dem Menue', () => {
