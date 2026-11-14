@@ -2,6 +2,7 @@ import { Injectable, InjectionToken, Injector, inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 import { NavigationEnd, NavigationError, Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 
 /**
@@ -298,15 +299,32 @@ export class NeueVersionService {
     const hinweis = { ziel: zielUrl, ref };
     this.hinweis = hinweis;
     ref.onAction().subscribe(() => this.browser.wechseln(hinweis.ziel));
-    ref.afterDismissed().subscribe(({ dismissedByAction }) => {
+    ref.afterDismissed().subscribe(({ dismissedByAction } = { dismissedByAction: false }) => {
       this.hinweis = null;
       if (dismissedByAction) return;
-      const andere = this.snackBar._openedSnackBarRef;
-      if (andere && andere !== ref) {
-        andere.afterDismissed().subscribe(() => this.hinweisZeigen(hinweis.ziel));
-      } else {
-        this.hinweisZeigen(hinweis.ziel);
-      }
+      this.nachVerdraengung(ref, () => this.hinweisZeigen(hinweis.ziel));
     });
+  }
+
+  /**
+   * Ruft ``wieder`` auf, sobald die Snackbar geschlossen ist, die ``ref`` verdraengt hat.
+   * ``_openedSnackBarRef`` ist ein oeffentlicher Getter mit Unterstrich in Angular Material:
+   * Faellt er bei einem Update weg oder aendert sich seine Form, kommt der Hinweis eben nicht
+   * zurueck; geworfen wird nichts, und eine fremde Snackbar wird nicht sofort ersetzt.
+   */
+  private nachVerdraengung(ref: MatSnackBarRef<TextOnlySnackBar>, wieder: () => void): void {
+    try {
+      const snackBar = this.snackBar as unknown as Record<string, unknown>;
+      if (!('_openedSnackBarRef' in snackBar)) return;
+      const andere = snackBar['_openedSnackBarRef'] as { afterDismissed?: unknown } | null | undefined;
+      if (andere === null) {
+        // Nichts verdraengt ihn (etwa dismiss() von aussen): gleich wieder zeigen.
+        wieder();
+      } else if (andere !== ref && typeof andere?.afterDismissed === 'function') {
+        (andere.afterDismissed as () => Observable<unknown>)().subscribe(() => wieder());
+      }
+    } catch {
+      // Still: ohne Zugriff auf die offene Snackbar kein Wiederkommen.
+    }
   }
 }

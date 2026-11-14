@@ -327,6 +327,40 @@ describe('neue Version laden', () => {
       expect(hinweise().length).toBe(2);
     });
 
+    for (const [fall, ohne] of [
+      ['den Getter gibt es nicht mehr', (sb: object) => delete (sb as { _openedSnackBarRef?: unknown })._openedSnackBarRef],
+      ['der Getter wirft', (sb: object) => Object.defineProperty(sb, '_openedSnackBarRef', { get: () => { throw new Error('weg'); } })],
+      ['er liefert etwas ohne afterDismissed', (sb: object) => ((sb as { _openedSnackBarRef: unknown })._openedSnackBarRef = {})],
+    ] as const) {
+      it(`degradiert still, wenn ${fall}: kein Fehler, der Hinweis kommt nicht zurueck`, async () => {
+        speicher = null;
+        await dienst().neueVersionLaden('/impressum', chrome());
+        ohne(snackBar);
+
+        expect(() => refs[0].geschlossen.next({ dismissedByAction: false })).not.toThrow();
+
+        expect(hinweise().length).toBe(1);
+      });
+    }
+
+    it('zeigt den Hinweis gleich wieder, wenn er ohne andere Snackbar geschlossen wurde', async () => {
+      speicher = null;
+      await dienst().neueVersionLaden('/impressum', chrome());
+
+      refs[0].geschlossen.next({ dismissedByAction: false });
+
+      expect(hinweise().length).toBe(2);
+    });
+
+    it('zeigt den Hinweis nach „Neu laden“ nicht wieder', async () => {
+      speicher = null;
+      await dienst().neueVersionLaden('/impressum', chrome());
+
+      refs[0].geschlossen.next({ dismissedByAction: true });
+
+      expect(hinweise().length).toBe(1);
+    });
+
     for (const [fall, kaputt] of [
       ['beim Lesen wirft', (s: Storage) => spyOn(s, 'getItem').and.throwError(new DOMException('gesperrt', 'SecurityError'))],
       ['beim Schreiben wirft (voll)', (s: Storage) => spyOn(s, 'setItem').and.throwError(new DOMException('voll', 'QuotaExceededError'))],
