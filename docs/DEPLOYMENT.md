@@ -192,6 +192,13 @@ Images are pushed into the Netzbegruenung/Verdigado registry:
 operators roll it out. A release tag does not deploy anything by itself. `:latest` is still
 published for whoever wants the newest release, but nothing in production follows it.
 
+**How open apps and installed PWAs get the new version:** the service worker caches nothing,
+`index.html` is served with `no-cache`, so every page load gets the current version. Whoever has
+the app open across a rollout keeps the old code until a route needs a chunk the new container no
+longer has (404); the frontend then loads that route once with a full page load and so gets the
+new version (`src/app/shared/neue-version.ts`, at most once per 10 s; without `sessionStorage` a
+notice "Gut gesagt wurde aktualisiert – Neu laden" instead).
+
 #### Releases
 
 1. **Only the maintainer sets tags.** Agents and contributors propose, they do not tag.
