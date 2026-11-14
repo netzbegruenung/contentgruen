@@ -46,7 +46,7 @@
         schema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       }
       document.documentElement.setAttribute('data-theme', schema);
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', schema === 'dark' ? '#1e1f1e' : '#008939');
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', schema === 'dark' ? '#101110' : '#008939');
     })();
   </script>
   <!-- Grundflaechen dunkel, bis das Stylesheet da ist: Der Build inlined nur das kritische CSS,
