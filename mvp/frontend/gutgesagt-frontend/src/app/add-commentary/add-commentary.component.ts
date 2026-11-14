@@ -381,6 +381,12 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
    * Mit Vorlage oder Einwurf aus dem Fangkorb kein Entwurf (Review): Beide laden nach und
    * ueberschrieben einen zurueckgeholten Entwurf, oder er sie. Die Adresse sagt es sofort.
    */
+  /**
+   * Zugestimmt oder einen vorhandenen genommen: Der Entwurf ist erledigt und wird nicht
+   * wieder gesichert, auch wenn das Formular noch die Eingaben zeigt (Review #686).
+   */
+  private entwurfErledigt = false;
+
   private get mitVorlageOderEinwurf(): boolean {
     const params = this.route?.snapshot.queryParamMap;
     return !!(this.vorlage || this.vorbefuellung || params?.get(VORLAGE_PARAM) || params?.get(EINWURF_PARAM));
@@ -463,8 +469,9 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
   }
 
   private entwurfSichern(): void {
-    // Nach dem Speichern, mit Vorlage oder Einwurf und ohne Einwilligung nicht (Review).
-    if (this.responseId || this.mitVorlageOderEinwurf || this.einwilligungZustand.wert === 'fehlt') {
+    // Nach dem Speichern, Zustimmen oder Nehmen, mit Vorlage oder Einwurf und ohne
+    // Einwilligung nicht (Review).
+    if (this.responseId || this.entwurfErledigt || this.mitVorlageOderEinwurf || this.einwilligungZustand.wert === 'fehlt') {
       return;
     }
     const w = this.commentaryForm.getRawValue();
@@ -840,7 +847,7 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
       next: () => {
         this.stimmtZu = false;
         vorhanden.gewaehlt = 'zugestimmt';
-        kommentarEntwurfLoeschen();
+        this.entwurfErledigen();
         this.vorhandenGewaehlt.emit(vorhanden.id);
       },
       error: (error: Error) => {
@@ -863,7 +870,7 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
     }
     if (!this.mitAussage) {
       vorhanden.gewaehlt = 'genommen';
-      kommentarEntwurfLoeschen();
+      this.entwurfErledigen();
       this.vorhandenGewaehlt.emit(vorhanden.id);
       return;
     }
@@ -890,7 +897,7 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
         }
         vorhanden.aussage = antwort.statement_text;
         vorhanden.gewaehlt = 'genommen';
-        kommentarEntwurfLoeschen();
+        this.entwurfErledigen();
         this.vorhandenGewaehlt.emit(vorhanden.id);
         // Auch der genommene Kommentar kann jetzt eine Aussage beantworten (#351).
         this.meilensteinHinweis.pruefen();
@@ -908,6 +915,12 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
         this.entscheidungsFehler = validierungsMeldung(error) ?? NEHMEN_FEHLGESCHLAGEN;
       },
     });
+  }
+
+  /** Nach Zustimmen oder Nehmen: Entwurf löschen und nicht wieder sichern. */
+  private entwurfErledigen(): void {
+    this.entwurfErledigt = true;
+    kommentarEntwurfLoeschen();
   }
 
   vorhandenAnsehen(): void {
@@ -930,6 +943,8 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
 
   leeren(): void {
     this.titelVorbelegung = '';
+    // Wer leert, fängt neu an: Ein neuer Text darf wieder als Entwurf gesichert werden.
+    this.entwurfErledigt = false;
     kommentarEntwurfLoeschen();
     this.commentaryForm.reset({ title: '', text: '', kurz: '', lang: '', ...OPTIONALE_ANGABEN_LEER, references: [] });
     this.antwortAuf?.leeren();

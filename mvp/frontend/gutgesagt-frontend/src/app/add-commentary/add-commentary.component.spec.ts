@@ -262,6 +262,54 @@ describe('AddCommentaryComponent', () => {
       component.leeren();
       expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
     });
+
+    it('löscht ihn nach dem Zustimmen und sichert danach nicht wieder', fakeAsync(() => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValue(
+        of({ id: 'k-fremd', vorhanden: { eigen: false }, verknuepft: false } as AddCommentaryResponse),
+      );
+      spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(of({ content_id: 'k-fremd', vote_type: 'like', message: 'ok' }));
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
+      component.speichern();
+      flush();
+      kommentarEntwurfSichern({ title: 'T', text: 'Text', kurz: '', lang: '', zweck: null, stil: null }, 'Wärmepumpen sind zu teuer', 'kim-1');
+
+      component.zustimmen();
+      flush();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+      ausblenden();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+    }));
+
+    it('löscht ihn nach dem Nehmen und sichert danach nicht wieder; nach dem Leeren wieder', fakeAsync(() => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', vorhanden: { eigen: true }, verknuepft: false } as AddCommentaryResponse),
+        of({
+          id: 'k-alt',
+          vorhanden: { eigen: true },
+          statement_id: ID,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddCommentaryResponse),
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
+      component.speichern();
+      flush();
+
+      component.nehmen();
+      flush();
+      ausblenden();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+      component.leeren();
+      ausfuellen();
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).not.toBeNull();
+    }));
   });
 
   describe('Titel unter dem Text, vorbelegt (E2)', () => {
