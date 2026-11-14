@@ -657,6 +657,8 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Rückschlüsse auf deine politische Haltung');
 
       expect(text).toContain('Innerhalb von sieben Tagen lösen wir auch deine Beiträge, Einwürfe und Sätze von dir');
+      // Widerrufe vor dem Einspielen: Frist ab dem Einspielen; das Datum setzt der Release-Tag (Launch-Checkliste).
+      expect(text).toContain('Wer vor dem [Datum des Einspielens] widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.');
       expect(text).toContain('zeigen statt deines Namens „ehemalige Person“, deine Einwürfe löschen wir');
       expect(text).toContain('Dafür legen wir einen Löschauftrag an: deine Kennung, der Zeitpunkt deines Widerrufs und die Frist');
       expect(text).toContain('Einen erledigten Löschauftrag löschen wir ein Jahr nach der Erledigung, mit deinem Konto sofort');
