@@ -10,7 +10,7 @@ svg {
   display: block;
   width: 100%;
   height: 100%;
-  // Die Krone ragt über das Sichtfeld hinaus, statt dauerhaft Platz darin zu belegen.
+  // Die Glanz-Sterne ragen über das Sichtfeld hinaus, statt dauerhaft Platz darin zu belegen.
   overflow: visible;
 }
 
@@ -31,6 +31,50 @@ svg {
 
 .siegel-glanz > g {
   mix-blend-mode: screen;
+  // Schimmer beim Erscheinen: einmal kräftig aufleuchten, dann der ruhige Glanz
+  animation: siegel-schimmer 1.2s ease-out;
+}
+
+// Sterne funkeln beim Erscheinen einmal auf, jeder etwas versetzt
+.siegel-sterne path {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: siegel-stern-auf 0.9s ease-out backwards;
+}
+
+.siegel-sterne .siegel-funkler:nth-of-type(2) {
+  animation-delay: 0.15s;
+}
+
+.siegel-sterne .siegel-funkler:nth-of-type(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes siegel-schimmer {
+  0% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+    filter: brightness(1.8);
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes siegel-stern-auf {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.35) rotate(10deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
 }
 
 :host(.springt) svg {
@@ -74,7 +118,9 @@ svg {
     transition: none;
   }
 
-  :host(.springt) svg {
+  :host(.springt) svg,
+  .siegel-glanz > g,
+  .siegel-sterne path {
     animation: none;
   }
 

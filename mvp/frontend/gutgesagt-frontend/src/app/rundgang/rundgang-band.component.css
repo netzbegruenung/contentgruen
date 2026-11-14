@@ -26,7 +26,13 @@ h2 {
     font-weight: 400;
     font-size: 24px;
     line-height: 1.1;
-    color: var(--primary-dark);
+    color: var(--band-akzent-schrift);
+}
+
+/* Voller Knopf auf dem Band: Farben aus Tokens, im Dunkeln eigene Werte (Ersteindruck-Test 14.11.) */
+.knoepfe .rundgang-knopf.voll {
+    background: var(--knopf-auf-band-grund);
+    color: var(--knopf-auf-band-schrift);
 }
 
 p {
@@ -55,8 +61,17 @@ p {
         height: 40px;
     }
 
+    /* Mit Dauer im Knopf ("Rundgang starten (1 Min.)") passen beide Knoepfe bei 360 px nicht
+       mehr nebeneinander: "Ausblenden" rueckt dann in die naechste Zeile, statt mitten im
+       Wort zu brechen (Ersteindruck-Test 14.11.). */
     .knoepfe {
         width: 100%;
+        flex-wrap: wrap;
         justify-content: space-between;
+    }
+
+    .knoepfe .rundgang-knopf {
+        flex: none;
+        white-space: nowrap;
     }
 }

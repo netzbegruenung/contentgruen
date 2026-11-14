@@ -5,7 +5,7 @@
  * `siegel.component.html`, die Hand in `shared/marke/hand.ts`. Das Logo
  * `public/marke/logo.svg` und die Favicons sind dieselbe Zeichnung bei Güte 10; wer die
  * Blase oder die Hand ändert, ändert sie mit (der Test in `siegel.component.spec.ts`
- * passt darauf auf). Glanz und Krone sind eigene Abzeichen und hängen nicht an der Güte.
+ * passt darauf auf). Glanz ist ein eigenes Abzeichen und hängt nicht an der Güte.
  */
 /** Höchste Güte. Güte 1–10; ohne Daten (`null`) ist ein Beitrag „neu“. */
 export const HOECHSTE_GUETE = 10;
@@ -31,8 +31,11 @@ const zwischen = (a: number, b: number, t: number): number => a + (b - a) * t;
 const runde = (x: number): number => Math.round(x * 10) / 10;
 
 type Hsl = [farbton: number, saettigung: number, helligkeit: number];
-const GRAU: Hsl = [80, 6, 58];
-const GELB: Hsl = [46, 90, 46];
+// Grau im Farbton des Gelbs: Der Farbton laeuft so nur in eine Richtung, Grau -> Gelb -> Gruen.
+// Vorher lag Grau bei 80 und Gelb bei 46: Die Leiste lief erst zurueck ueber Orange, dann
+// vor zu Gruen (Ersteindruck-Test 14.11.). Gelb bei 52 statt 46 wirkt reiner, nicht orange.
+const GRAU: Hsl = [52, 6, 58];
+const GELB: Hsl = [52, 95, 46];
 /** Tannengrün der Seite, `--primary-dark` = #005437 in `src/theme/custom-theme.scss`. */
 const TANNENGRUEN: Hsl = [159.3, 100, 16.5];
 /**
@@ -58,11 +61,24 @@ export function siegelFarbe(guete: number | null, dunkel = false): string {
   return `hsl(${runde(h)} ${runde(s)}% ${runde(l)}%)`;
 }
 
+/** Anteil der Helligkeit, den der Rand der Blase behält. */
+const RAND_HELLIGKEIT = 0.55;
+
+/**
+ * Rand der Blase im Hellen: derselbe Farbton, dunkler. Gelb erreicht auf Weiss keine 3:1
+ * (1.4.11), der Rand schon; im Dunkeln hebt sich die Blase selbst ab, dort kein Rand.
+ */
+export function siegelRand(guete: number | null, dunkel = false): string {
+  if (dunkel) return 'none';
+  const t = (normierteGuete(guete) ?? 0) / HOECHSTE_GUETE;
+  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, TANNENGRUEN, (t - GELB_BEI) / (1 - GELB_BEI));
+  return `hsl(${runde(h)} ${runde(s)}% ${runde(l * RAND_HELLIGKEIT)}%)`;
+}
+
 /** Was Screenreader über das Siegel sagen. */
-export function siegelText(guete: number | null, glanz = false, krone = false): string {
+export function siegelText(guete: number | null, glanz = false): string {
   const g = normierteGuete(guete);
   const text = g === null ? 'Siegel: neu, noch keine Güte' : `Siegel: Güte ${g} von ${HOECHSTE_GUETE}`;
-  // Glanz und Krone (#351): eigene Abzeichen, gehören in dieselbe Beschriftung.
-  const abzeichen = [glanz ? 'Glanz' : '', krone ? 'Krone' : ''].filter(Boolean).join(' und ');
-  return abzeichen ? `${text}, mit ${abzeichen}` : text;
+  // Glanz (#351): eigenes Abzeichen, gehört in dieselbe Beschriftung.
+  return glanz ? `${text}, mit Glanz` : text;
 }

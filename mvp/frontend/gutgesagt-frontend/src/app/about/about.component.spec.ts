@@ -149,14 +149,13 @@ describe('AboutComponent', () => {
     const beispiele = Array.from(seite.querySelectorAll('.siegel-beispiele app-siegel svg')).map((svg) =>
       svg.getAttribute('aria-label'),
     );
-    expect(beispiele.length).toBe(13);
+    expect(beispiele.length).toBe(12);
     expect(beispiele[0]).toBe('Siegel: neu, noch keine Güte');
     expect(beispiele[10]).toBe('Siegel: Güte 10 von 10');
-    // Glanz und Krone als Beispiel (#351)
+    // Glanz als Beispiel (#351); eine Krone gibt es am Siegel nicht mehr
     expect(seite.querySelectorAll('.siegel-beispiele .siegel-glanz').length).toBe(1);
-    expect(beispiele[11]).toBe('Siegel: Güte 7 von 10, mit Glanz');
-    expect(beispiele[12]).toBe('Siegel: Güte 7 von 10, mit Krone');
-    expect(seite.querySelectorAll('.siegel-beispiele .siegel-krone').length).toBe(1);
-    expect(seite.querySelector('.siegel-absatz')!.textContent).toContain('Die Krone sehen nur Angemeldete.');
+    expect(beispiele[11]).toBe('Siegel: Güte 10 von 10, mit Glanz');
+    expect(seite.querySelectorAll('.siegel-beispiele .siegel-krone').length).toBe(0);
+    expect(seite.querySelector('.siegel-absatz')!.textContent).not.toContain('Krone');
   });
 });

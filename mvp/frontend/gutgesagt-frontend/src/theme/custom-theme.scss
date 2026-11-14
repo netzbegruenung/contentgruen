@@ -158,6 +158,11 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --filter-aktiv-grund: var(--primary-light);
   --referenz-marke-schrift: white;
   --knopf-rand-auf-band: transparent;
+  // Volle Knoepfe und Akzentschrift auf den Baendern (Such-Band, Willkommen): im Hellen Tanne
+  // und Weiss bzw. Tanne wie ueberall; im Dunkeln eigene Werte (Ersteindruck-Test 14.11.)
+  --knopf-auf-band-grund: var(--primary-fill);
+  --knopf-auf-band-schrift: white;
+  --band-akzent-schrift: var(--primary-dark);
 
   // Spacing system (8px grid)
   --spacing-xs: 4px;
@@ -299,56 +304,56 @@ html[data-theme='dark'] {
 
     // Schrift, Ueberschriften und Links hellgrau statt Grashalm ("zu limonig", 07.11.);
     // Gruen bleibt Knopf-Fuellung (Klee) und kleine Markierung (Grashalm).
-    --primary-main: #e0e0e0;
-    --primary-dark: #ececec;
+    --primary-main: #ebebeb;
+    --primary-dark: #f2f2f2;
     --primary-fill: #008939;
     --akzent-tanne: #8abd24;
     --akzent-klee: #8abd24;
-    --linie-tanne: #6a6f6b;
-    --linie-klee: #6a6f6b;
+    --linie-tanne: #7b817c;
+    --linie-klee: #7b817c;
 
-    --accent-light: #373b38; // neutral: Themen-Marken sind Flaechen, kein Akzent
+    --accent-light: #2a2d2b; // neutral: Themen-Marken sind Flaechen, kein Akzent
 
-    --bg-main: #1e1f1e;
-    --bg-card: #282a29;
-    --bg-surface: #282a29;
-    --surface-elevated: #2e302f;
-    --surface-variant: #2b2d2c;
-    --surface-muted: #303231;
-    --surface-pressed: #373938;
-    --surface-glaze: rgba(40, 42, 41, 0.85);
+    --bg-main: #101110;
+    --bg-card: #1b1d1c;
+    --bg-surface: #1b1d1c;
+    --surface-elevated: #232524;
+    --surface-variant: #1f2120;
+    --surface-muted: #252726;
+    --surface-pressed: #2c2e2d;
+    --surface-glaze: rgba(27, 29, 28, 0.85);
 
-    --text-primary: rgba(255, 255, 255, 0.87);
-    --text-secondary: rgba(255, 255, 255, 0.66);
-    --text-disabled: rgba(255, 255, 255, 0.38);
-    --text-hint: rgba(255, 255, 255, 0.5);
-    --text-strong: #e6e6e6;
-    --text-body: #d0d0d0;
-    --text-muted: #b3b3b3;
-    --text-subtle: #a8a8a8;
-    --text-faint: #9e9e9e;
+    --text-primary: rgba(255, 255, 255, 0.92);
+    --text-secondary: rgba(255, 255, 255, 0.74);
+    --text-disabled: rgba(255, 255, 255, 0.42);
+    --text-hint: rgba(255, 255, 255, 0.6);
+    --text-strong: #f2f2f2;
+    --text-body: #dedede;
+    --text-muted: #c4c4c4;
+    --text-subtle: #bababa;
+    --text-faint: #b0b0b0;
 
-    --error-bg: #3a2526;
+    --error-bg: #2c1a1b;
     --error-color: #ff8a80;
     --error-border: #ef5350;
     --error-strong: #ff8a80;
     --error-main: #ff8a80;
     --error-tint: rgba(239, 83, 80, 0.14);
-    --success-bg: #303231;
-    --success-faint: #2b2d2c;
-    --warning-bg: #3a2f1c;
+    --success-bg: #252726;
+    --success-faint: #1f2120;
+    --warning-bg: #2c2315;
     --warning-color: #ffb74d;
     --warning-border: #ffa726;
     --warning-edge: #f5a03a;
     --warning-text: #ffcc80;
     --warning-tint: rgba(255, 167, 38, 0.14);
-    --hint-bg: #39331f;
-    --hint-bg-start: #312c1c;
+    --hint-bg: #2c2717;
+    --hint-bg-start: #252115;
     --hint-border: #d9a91a;
     --hint-line: #6e5c1f;
     --hint-text: #ffe08a;
-    --info-bg: #1f2b38;
-    --info-bg-end: #1b2530;
+    --info-bg: #172230;
+    --info-bg-end: #141c26;
     --info-color: #90caf9;
     --info-border: #42a5f5;
     --info-accent: #64b5f6;
@@ -359,29 +364,29 @@ html[data-theme='dark'] {
     --trend-gleich: var(--warning-color);
 
     // Beitragstypen: dunkle, fast neutrale Baender; unterscheidbar bleiben sie ueber das Symbol
-    --commentary-bg: #2f3430;
-    --commentary-bg-end: #373d38;
-    --generictext-bg: #2b3238;
-    --generictext-bg-end: #323a43;
-    --image-bg: #33312d;
-    --image-bg-end: #3b3934;
-    --post-bg: #382f29;
-    --post-bg-end: #41372f;
-    --statement-bg: #2e302f;
-    --kartenliste-bg: #191a19;
-    --einwurf-grund: #2b2a26;
+    --commentary-bg: #1e2420;
+    --commentary-bg-end: #262c27;
+    --generictext-bg: #1b2228;
+    --generictext-bg-end: #232b33;
+    --image-bg: #24221e;
+    --image-bg-end: #2c2a25;
+    --post-bg: #28201b;
+    --post-bg-end: #302721;
+    --statement-bg: #232524;
+    --kartenliste-bg: #0a0b0a;
+    --einwurf-grund: #1f1e1a;
 
     // Such-Band: helleres Anthrazit statt Leuchtgelb; nur der Rahmen des Lichtkegels bleibt gelb
-    --such-band: #2e3c19;
+    --such-band: #1a2410;
     --rundgang-kegel: #d8e05a;
-    --rundgang-balken: #3d403e;
+    --rundgang-balken: #383b39;
     --rundgang-schleier: rgba(0, 0, 0, 0.65);
     --rundgang-fokus: #4fc3f7;
 
-    --divider-color: #393c3a;
-    --border-color: #4e524f;
-    --hover-bg: #303231;
-    --selected-bg: #373938;
+    --divider-color: #303331;
+    --border-color: #737874;
+    --hover-bg: #252726;
+    --selected-bg: #2e302f;
     // Links sind im Dunkeln hellgrau wie der Text: unterstrichen, damit sie erkennbar bleiben
     --link-unterstrich: underline;
     // Gewaehlter Filter im Fangkorb: --primary-light und --primary-dark sind hier beide hell
@@ -389,21 +394,26 @@ html[data-theme='dark'] {
     // Blau und Orange sind hier heller: dunkle Schrift auf den Referenz-Marken
     --referenz-marke-schrift: var(--bg-main);
     // Klee-Knoepfe auf dem Moos-Band (Suchen, Rundgang starten): heller Rand, sonst unter 3:1 zum Band
-    --knopf-rand-auf-band: rgba(255, 255, 255, 0.85);
+    --knopf-rand-auf-band: transparent;
     --auswahl-grund: rgba(255, 255, 255, 0.08);
-    --disabled-bg: #303231;
+    --disabled-bg: #252726;
     --disabled-color: rgba(255, 255, 255, 0.38);
 
     --primary-tint-faint: rgba(255, 255, 255, 0.04);
     --primary-tint: rgba(255, 255, 255, 0.07);
     --primary-tint-strong: rgba(255, 255, 255, 0.09);
     --primary-line: rgba(138, 189, 36, 0.4);
-    --overlay-faint: rgba(255, 255, 255, 0.05);
-    --overlay-light: rgba(255, 255, 255, 0.1);
-    --line-faint: rgba(255, 255, 255, 0.1);
-    --line-light: rgba(255, 255, 255, 0.14);
-    --line-soft: rgba(255, 255, 255, 0.18);
-    --line-medium: rgba(255, 255, 255, 0.26);
+    --overlay-faint: rgba(255, 255, 255, 0.06);
+    --overlay-light: rgba(255, 255, 255, 0.11);
+    --line-faint: rgba(255, 255, 255, 0.12);
+    --line-light: rgba(255, 255, 255, 0.17);
+    --line-soft: rgba(255, 255, 255, 0.22);
+    --line-medium: rgba(255, 255, 255, 0.32);
+
+    // Volle Knoepfe und Akzentschrift auf den Baendern
+    --knopf-auf-band-grund: #f6ff7c;
+    --knopf-auf-band-schrift: #121312;
+    --band-akzent-schrift: #f6ff7c;
 
     // Material-Flaechen auf die eigenen Grautoene statt Materials #424242/#303030
     --mat-app-background-color: var(--bg-main);
