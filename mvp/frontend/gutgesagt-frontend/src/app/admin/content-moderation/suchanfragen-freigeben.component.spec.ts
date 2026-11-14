@@ -1,9 +1,12 @@
 import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { Subject, of, throwError } from 'rxjs';
-import { FREIGEBEN_FRAGE, NACHLADEN_MS, SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
+import { FREIGEBEN_FRAGE, SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
+import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
+import { ZuTunService } from '../../services/zu-tun.service';
 import {
   SuchanfragenFreigabeService,
   ZuPruefendeSuchanfrage,
@@ -22,7 +25,7 @@ describe('SuchanfragenFreigebenComponent', () => {
   /** Was die Rückfrage vor dem Freigeben ergibt; Standard: bestätigt. */
   let antwort: boolean | undefined;
   let sichtbarkeit: DocumentVisibilityState;
-  let gemeldet: number[];
+  let zuTun: jasmine.SpyObj<ZuTunService>;
 
   function element(): HTMLElement {
     return fixture.nativeElement as HTMLElement;
@@ -37,12 +40,11 @@ describe('SuchanfragenFreigebenComponent', () => {
   function erzeugen(aktiv = true) {
     fixture = TestBed.createComponent(SuchanfragenFreigebenComponent);
     fixture.componentRef.setInput('aktiv', aktiv);
-    fixture.componentInstance.anzahl.subscribe((n) => gemeldet.push(n));
     fixture.detectChanges();
   }
 
   beforeEach(() => {
-    gemeldet = [];
+    zuTun = jasmine.createSpyObj('ZuTunService', ['aktualisieren']);
     sichtbarkeit = 'visible';
     spyOnProperty(document, 'visibilityState', 'get').and.callFake(() => sichtbarkeit);
     service = jasmine.createSpyObj('SuchanfragenFreigabeService', ['zuPruefen', 'anzahl', 'freigeben', 'ablehnen']);
@@ -59,7 +61,11 @@ describe('SuchanfragenFreigebenComponent', () => {
 
     TestBed.configureTestingModule({
       imports: [SuchanfragenFreigebenComponent, NoopAnimationsModule],
-      providers: [{ provide: SuchanfragenFreigabeService, useValue: service }],
+      providers: [
+        provideRouter([]),
+        { provide: SuchanfragenFreigabeService, useValue: service },
+        { provide: ZuTunService, useValue: zuTun },
+      ],
     });
     TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
     TestBed.overrideProvider(MatDialog, { useValue: dialog });
@@ -76,29 +82,56 @@ describe('SuchanfragenFreigebenComponent', () => {
     expect(element().textContent).not.toContain('neu laden');
   });
 
-  it('listet die Suchanfragen mit der Zahl der Personen und meldet die Anzahl', fakeAsync(() => {
+  it('listet die Suchanfragen mit der Zahl der Personen, still geladen', fakeAsync(() => {
     erzeugen();
     flushMicrotasks();
+    fixture.detectChanges();
 
     expect(element().textContent).toContain('„Sind Wärmepumpen laut?“');
     expect(element().textContent).toContain('3 Personen suchten das ohne Treffer');
     expect(element().textContent).toContain('1 Person suchte das ohne Treffer');
-    expect(gemeldet).toEqual([2]);
+    // Still: ohne Sprung auf /login bei 401
+    expect(service.zuPruefen).toHaveBeenCalledWith(true);
     discardPeriodicTasks();
   }));
 
-  it('holt ohne gewählten Umschalter nur die Zahl, nicht die Liste', fakeAsync(() => {
+  it('lädt ohne gewählten Umschalter nichts, auch die Zahl nicht (die kommt aus dem ZuTunService)', fakeAsync(() => {
     erzeugen(false);
     flushMicrotasks();
 
     expect(service.zuPruefen).not.toHaveBeenCalled();
-    expect(service.anzahl).toHaveBeenCalledTimes(1);
+    expect(service.anzahl).not.toHaveBeenCalled();
     expect(element().textContent).not.toContain('Sind Wärmepumpen laut?');
-    expect(gemeldet).toEqual([5]);
 
-    tick(NACHLADEN_MS);
-    expect(service.anzahl).toHaveBeenCalledTimes(2);
+    tick(NACHLADEN_MS * 4);
     expect(service.zuPruefen).not.toHaveBeenCalled();
+    discardPeriodicTasks();
+  }));
+
+  it('hört beim Wechsel auf einen anderen Umschalter auf nachzuladen', fakeAsync(() => {
+    erzeugen();
+    service.zuPruefen.calls.reset();
+
+    fixture.componentRef.setInput('aktiv', false);
+    fixture.detectChanges();
+    tick(NACHLADEN_MS * 4);
+
+    expect(service.zuPruefen).not.toHaveBeenCalled();
+    discardPeriodicTasks();
+  }));
+
+  it('zeigt nach 401/403 „Sitzung abgelaufen – Anmelden“ und fragt nicht weiter', fakeAsync(() => {
+    service.zuPruefen.and.returnValue(throwError(() => ({ status: 401 })));
+    erzeugen();
+    fixture.detectChanges();
+
+    const link = element().querySelector('[data-testid="suchanfragen-abgelaufen"] a') as HTMLAnchorElement;
+    expect(link.textContent!.trim()).toBe('Sitzung abgelaufen – Anmelden');
+    expect(link.getAttribute('href')).toContain('/login');
+    expect(element().textContent).not.toContain('Es wird gleich noch einmal versucht');
+
+    tick(NACHLADEN_MS * 8);
+    expect(service.zuPruefen).toHaveBeenCalledTimes(1);
     discardPeriodicTasks();
   }));
 
@@ -112,9 +145,10 @@ describe('SuchanfragenFreigebenComponent', () => {
     expect(liste.observed).toBeFalse();
   });
 
-  it('gibt frei, nimmt den Eintrag aus der Liste und meldet die neue Anzahl', fakeAsync(() => {
+  it('gibt frei, nimmt den Eintrag aus der Liste und stößt die Zahl an', fakeAsync(() => {
     erzeugen();
     flushMicrotasks();
+    fixture.detectChanges();
 
     knoepfe('Freigeben')[0].click();
     flushMicrotasks();
@@ -122,7 +156,7 @@ describe('SuchanfragenFreigebenComponent', () => {
 
     expect(service.freigeben).toHaveBeenCalledWith('a');
     expect(element().textContent).not.toContain('Sind Wärmepumpen laut?');
-    expect(gemeldet).toEqual([2, 1]);
+    expect(zuTun.aktualisieren).toHaveBeenCalledTimes(1);
     expect(snackBar.open).toHaveBeenCalledWith('Freigegeben', 'OK', jasmine.any(Object));
     discardPeriodicTasks();
   }));

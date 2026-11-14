@@ -145,8 +145,7 @@
   <app-loeschauftraege *ngIf="selectedStatus === 'loeschauftraege'"
                        (anzahl)="loeschauftraegeGezaehlt($event)"></app-loeschauftraege>
 
-  <app-suchanfragen-freigeben [aktiv]="selectedStatus === 'suchanfragen'"
-                              (anzahl)="zuPruefendeSuchanfragen = $event"></app-suchanfragen-freigeben>
+  <app-suchanfragen-freigeben [aktiv]="selectedStatus === 'suchanfragen'"></app-suchanfragen-freigeben>
 
   <div *ngIf="selectedStatus !== 'gesperrt' && !laedtSelbst && !loading && !error && !sitzungAbgelaufen && reports.length === 0" class="empty-state">
     <mat-icon class="large-icon">check_circle</mat-icon>

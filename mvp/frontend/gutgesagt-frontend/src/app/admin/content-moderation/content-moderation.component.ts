@@ -117,7 +117,7 @@ export class ContentModerationComponent implements OnInit {
   offeneLoeschauftraege = 0;
   /** Zahl am Umschalter "Offen": offene Meldungen. */
   offeneMeldungen = 0;
-  /** Zahl am Umschalter "Suchanfragen": warten auf Freigabe (SuchanfragenFreigebenComponent). */
+  /** Zahl am Umschalter "Suchanfragen": warten auf Freigabe (ZuTunService). */
   zuPruefendeSuchanfragen = 0;
   loading = true;
   error: string | null = null;
@@ -159,6 +159,11 @@ export class ContentModerationComponent implements OnInit {
     this.zuTun.loeschauftraege$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((stand) => {
       if (stand.daten) {
         this.offeneLoeschauftraege = stand.daten.anzahl;
+      }
+    });
+    this.zuTun.suchanfragen$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((stand) => {
+      if (stand.daten) {
+        this.zuPruefendeSuchanfragen = stand.daten.anzahl;
       }
     });
     // Erst nach den Abos laden: Die offene Liste speist den ZuTunService gleich beim Laden.
