@@ -3,9 +3,7 @@
  *
  * Glanz zeichnet den Beitrag aus: Er hat viel Wirkung, gemessen am Zähler der Karte,
  * den alle sehen. Er betrifft keine Person und erscheint deshalb auch Besuchern.
- *
- * Eine Krone für die Person gibt es am Siegel nicht mehr: Sie beschrieb die Autorin, nicht
- * den Beitrag (Entscheidung 14.11.). Die Meilensteine stehen weiter als Abzeichen am Namen.
+ * Was die Person auszeichnet, steht am Namen (Abzeichen), nicht am Siegel (Entscheidung 14.11.).
  */
 
 /** Ab so vielen Nutzungen glänzt das Siegel; „Beliebt“ (🔥) kommt schon früher. */

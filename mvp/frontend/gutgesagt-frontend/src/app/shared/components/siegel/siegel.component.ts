@@ -28,8 +28,8 @@ let naechsteId = 0;
  * die Farbe und der Winkel.
  *
  * Glanz (der Beitrag hat viel Wirkung) ist ein eigenes Abzeichen, keine Stufe der Güte:
- * Er kann bei jeder Güte auftreten, auch bei „neu“ (#351). Eine Krone für die Person gibt
- * es am Siegel nicht mehr (Entscheidung 14.11.: Sie beschrieb die Autorin, nicht den Beitrag).
+ * Er kann bei jeder Güte auftreten, auch bei „neu“ (#351). Das Siegel beschreibt nur den
+ * Beitrag, nie die Person (Entscheidung 14.11.).
  *
  * Die Größe setzt die einbindende Komponente über `width` am Element (Standard 24 px).
  */
