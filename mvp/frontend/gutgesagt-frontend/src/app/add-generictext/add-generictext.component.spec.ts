@@ -232,6 +232,21 @@ describe('AddGenerictextComponent', () => {
       expect(erfolg).toHaveBeenCalledOnceWith({ id: 'k-1', aussage: { id: '', text: '' }, verknuepft: true });
     }));
 
+    // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+    it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', fakeAsync(() => {
+      spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(component.fehler).toBeNull();
+      expect(seite().querySelector('.speicher-fehler')).toBeNull();
+      expect(component.speichert).toBeFalse();
+      expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
+    }));
+
     it('behaelt bei einem Fehler die Eingaben, und "Erneut versuchen" speichert dasselbe noch einmal', fakeAsync(() => {
       const hinzufuegen = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
         throwError(() => new Error('500')),

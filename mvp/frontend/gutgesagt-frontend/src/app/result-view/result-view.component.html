@@ -51,7 +51,13 @@
                         <mat-icon>add</mat-icon> Hintergrundinfo hinzufügen
                     </button>
                 </div>
+                <!-- Dritter, niedrigschwelliger Weg: nur einen Link in den Fangkorb (UX-Review B13) -->
+                <p class="nur-link">Nur einen Link dazu?
+                    <button type="button" class="ergaenzen-link" (click)="zumEinwerfen()">Einwerfen</button>
+                </p>
             </app-nicht-dabei>
+
+            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
 
             <div class="suggestions">
                 <!-- Gesucht wird nach Aussagen: ein Tipp, der dazu passt (#617, offen aus #362) -->

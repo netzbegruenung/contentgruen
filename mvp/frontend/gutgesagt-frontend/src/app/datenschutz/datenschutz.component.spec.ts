@@ -149,6 +149,26 @@ describe('DatenschutzComponent', () => {
       expect(text).not.toContain('keine Löschfrist');
     });
 
+    // PR #670 (freigegeben 13./14.11.2026): Kontoadresse mit Häkchen; geht mit dem Konto
+    // (person_loeschen.sql loescht die Meldungen der Person samt Adresse)
+    it('Meldungen Angemeldeter: Kontoadresse nur mit Häkchen, geht mit dem Konto', () => {
+      const text = abschnitt('Meldungen von Beiträgen');
+
+      expect(text).toContain('Bestätigung und Entscheidung per Mail an mein Konto');
+      expect(text).toContain('ohne Häkchen speichern wir keine Adresse');
+      expect(text).toContain('löschst du dein Konto, löschen wir deine Meldungen samt Adresse mit');
+      expect(text).not.toContain('auch wenn du dein Konto vorher löschst');
+      expect(abschnitt('Anmeldung und Zugang')).toContain('speichern wir die E-Mail-Adresse deines Kontos an dieser Meldung');
+    });
+
+    it('Art.-9-Einwilligung: „ohne Einwilligung weiter“ am Konto, Punkte gesondert (PR #670)', () => {
+      const text = abschnitt('Rückschlüsse auf deine politische Haltung');
+
+      expect(text).toContain('Gehst du ohne Einwilligung weiter, speichern wir das mit der Fassung des');
+      expect(text).toContain('Punkte und Meilensteine gehören nicht zu dieser Einwilligung');
+      expect(abschnitt('Punkte')).toContain('eine eigene, freiwillige Einwilligung');
+    });
+
     it('Sperren: Kennung des Autors, Widerspruch, 180 Tage nach der Aufhebung (#448)', () => {
       const text = abschnitt('Sperren von Beiträgen und Widerspruch');
 

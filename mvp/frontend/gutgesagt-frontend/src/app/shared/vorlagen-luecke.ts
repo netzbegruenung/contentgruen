@@ -14,7 +14,8 @@
  */
 const LUECKE = /\[Hier\b[^\]\n]*\]/g;
 
-export const KOPIERT = 'Erfolgreich kopiert!';
+// Sagt, was als Naechstes kommt (UX-Review B16), statt nur "Erfolgreich kopiert!"
+export const KOPIERT = 'Kopiert – jetzt unter dem Post einfügen.';
 export const KOPIERT_MIT_LUECKE = 'Kopiert – füll noch den Platzhalter in [ ] aus.';
 
 export interface TextStueck {

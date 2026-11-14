@@ -21,6 +21,7 @@ from api.v1.einwurf import _einwuerfe_fuer_aufrufer
 from infrastructure.database.models import (
     AbzeichenSichtbarkeitZeile,
     Art9EinwilligungZeile,
+    Art9OhneEinwilligungZeile,
     Base,
     ContentReport,
     GeseheneNutzung,
@@ -262,6 +263,14 @@ def spuren(datenbank, einwuerfe):
                 user_id=PERSON,
                 wortlaut="2026-11-05",
                 eingewilligt_am=datetime.now(timezone.utc),
+            )
+        )
+        # "Ohne Einwilligung weiter" am Konto (B2): geht mit dem Konto.
+        s.add(
+            Art9OhneEinwilligungZeile(
+                user_id=PERSON,
+                wortlaut="2026-11-13",
+                entschieden_am=datetime.now(timezone.utc),
             )
         )
         s.add(

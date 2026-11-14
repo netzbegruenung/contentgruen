@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { ROUTES } from '../shared/constants/app.constants';
 import { Subscription, Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { SearchService } from '../services/search.service';
@@ -465,6 +466,14 @@ export class ResultViewComponent implements OnInit, OnDestroy {
    * liefert getById sie Nicht-Admins nicht aus (#436), und die Antwort landete an einer
    * Fast-Dublette statt an der Aussage, die das Kopfband nennt (#680).
    */
+  /**
+   * Nur einen Link dazu (UX-Review B13): in den Fangkorb einwerfen statt gleich
+   * antworten. Besucher fuehrt der Guard zur Anmeldung und danach dorthin.
+   */
+  zumEinwerfen(): void {
+    this.router.navigate([ROUTES.RAW_INPUT]);
+  }
+
   navigateToContribute(typ: 'commentary' | 'generictext'): void {
     const { searchResults, loading } = this.stateService.currentState;
     // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
