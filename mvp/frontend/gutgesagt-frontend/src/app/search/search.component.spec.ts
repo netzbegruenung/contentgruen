@@ -7,7 +7,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { NavigationService } from '../services/navigation.service';
 
-import { SUCHANFRAGEN_ABSCHNITT, SUCHHINWEIS, SearchComponent } from './search.component';
+import { SUCHANFRAGEN_ABSCHNITT, SUCHHINWEIS, SUCHHINWEIS_KURZ, SearchComponent } from './search.component';
 
 describe('SearchComponent', () => {
   let component: SearchComponent;
@@ -78,10 +78,14 @@ describe('SearchComponent', () => {
       expect(feld.getAttribute('aria-describedby')).toBe(id);
     });
 
-    it('steht auch über den Treffern (compactMode)', () => {
+    it('steht über den Treffern (compactMode) einzeilig mit „Mehr“ auf denselben Abschnitt (E5)', () => {
       fixture.componentRef.setInput('compactMode', true);
       fixture.detectChanges();
-      expect(hinweis()).not.toBeNull();
+
+      expect(hinweis().textContent!.replace(/\s+/g, ' ').trim()).toBe('Suchtexte speichern wir ohne deinen Namen. Mehr');
+      expect(SUCHHINWEIS_KURZ).toBe('Suchtexte speichern wir ohne deinen Namen.');
+      const link = hinweis().querySelector('a') as HTMLAnchorElement;
+      expect(link.getAttribute('href')).toBe(`/datenschutz#${SUCHANFRAGEN_ABSCHNITT}`);
     });
   });
 

@@ -21,9 +21,10 @@
             </button>
         </div>
     </form>
-    <!-- Leise unter dem Feld, ohne Symbol: Information, keine Warnung (Persona-Test Gerd) -->
+    <!-- Leise unter dem Feld, ohne Symbol: Information, keine Warnung (Persona-Test Gerd);
+         ueber den Treffern einzeilig (E5) -->
     <p class="such-hinweis" [id]="hinweisId">
         {{ suchhinweis }}
-        <a routerLink="/datenschutz" [fragment]="suchanfragenAbschnitt">Mehr dazu im Datenschutz</a>
+        <a routerLink="/datenschutz" [fragment]="suchanfragenAbschnitt">{{ compactMode ? 'Mehr' : 'Mehr dazu im Datenschutz' }}</a>
     </p>
 </div>
