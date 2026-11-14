@@ -77,6 +77,14 @@ describe('DestillierUebergabeService', () => {
     expect(ergebnis!.kopf!.einwurfAngaben!.kopfSatz).toBeUndefined();
   });
 
+  it('bleibt nach dem Ausformulieren in der Serie beim Ausformulieren', () => {
+    service.zumNaechstenAusformulieren('id-1');
+
+    expect(router.navigate).toHaveBeenCalledOnceWith(['/destillieren'], {
+      queryParams: { nach: 'id-1', reihe: 'ausformulieren' },
+    });
+  });
+
   it('reicht den Tab der Handlung an die Destillier-Ansicht weiter', () => {
     service.zumNaechsten('id-1', 'destillieren');
 

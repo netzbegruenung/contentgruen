@@ -10,10 +10,7 @@
     <p>Lade Metriken...</p>
   </div>
 
-  <div *ngIf="error" class="error">
-    <mat-icon>error</mat-icon>
-    <p>{{ error }}</p>
-  </div>
+  <app-nachlade-hinweis [fehler]="!!error" [geladen]="!!metrics" was="Kennzahlen"></app-nachlade-hinweis>
 
   <app-bilanz></app-bilanz>
 
@@ -24,12 +21,12 @@
         <mat-card-title>
           <mat-icon>people</mat-icon>
           Aktive Personen pro Tag
-          <mat-icon
-            class="info-icon"
-            matTooltip="Anzahl eindeutiger Nutzer (eingeloggt) und anonymer Sessions, die heute mindestens eine Suche durchgeführt haben. Gezählt werden alle Einträge in der search_tracking-Tabelle für den heutigen Tag."
-            matTooltipPosition="right">
-            info_outline
-          </mat-icon>
+          <!-- Antippbar: Auf Touch gibt es kein Hovern, der Tipp zeigt die Erklaerung -->
+          <button type="button" class="info-icon" #tipp1="matTooltip"
+                  matTooltip="Anzahl eindeutiger Nutzer (eingeloggt) und anonymer Sessions, die heute mindestens eine Suche durchgeführt haben. Gezählt werden alle Einträge in der search_tracking-Tabelle für den heutigen Tag."
+                  matTooltipPosition="right" (click)="tipp1.toggle()" aria-label="So wird gezählt: Aktive Personen pro Tag">
+            <mat-icon aria-hidden="true">info_outline</mat-icon>
+          </button>
         </mat-card-title>
       </mat-card-header>
       <mat-card-content>
@@ -45,12 +42,12 @@
         <mat-card-title>
           <mat-icon>search</mat-icon>
           Suchen pro Person
-          <mat-icon
-            class="info-icon"
-            matTooltip="Durchschnittliche Anzahl an Suchanfragen pro Nutzer/Session in den letzten 7 Tagen. Berechnet als: Gesamtanzahl aller Suchen geteilt durch Anzahl eindeutiger Nutzer/Sessions im Zeitraum."
-            matTooltipPosition="right">
-            info_outline
-          </mat-icon>
+          <!-- Antippbar: Auf Touch gibt es kein Hovern, der Tipp zeigt die Erklaerung -->
+          <button type="button" class="info-icon" #tipp2="matTooltip"
+                  matTooltip="Durchschnittliche Anzahl an Suchanfragen pro Nutzer/Session in den letzten 7 Tagen. Berechnet als: Gesamtanzahl aller Suchen geteilt durch Anzahl eindeutiger Nutzer/Sessions im Zeitraum."
+                  matTooltipPosition="right" (click)="tipp2.toggle()" aria-label="So wird gezählt: Suchen pro Person">
+            <mat-icon aria-hidden="true">info_outline</mat-icon>
+          </button>
         </mat-card-title>
       </mat-card-header>
       <mat-card-content>
@@ -66,12 +63,12 @@
         <mat-card-title>
           <mat-icon>edit</mat-icon>
           Neue Inhalte diese Woche
-          <mat-icon
-            class="info-icon"
-            matTooltip="Anzahl neuer Inhalte (Kommentare, Statements, etc.), die in dieser Woche erstellt wurden. Gezählt werden Einträge in usage_tracking, deren first_used-Timestamp in den letzten 7 Tagen liegt."
-            matTooltipPosition="right">
-            info_outline
-          </mat-icon>
+          <!-- Antippbar: Auf Touch gibt es kein Hovern, der Tipp zeigt die Erklaerung -->
+          <button type="button" class="info-icon" #tipp3="matTooltip"
+                  matTooltip="Anzahl neuer Inhalte (Kommentare, Statements, etc.), die in dieser Woche erstellt wurden. Gezählt werden Einträge in usage_tracking, deren first_used-Timestamp in den letzten 7 Tagen liegt."
+                  matTooltipPosition="right" (click)="tipp3.toggle()" aria-label="So wird gezählt: Neue Inhalte diese Woche">
+            <mat-icon aria-hidden="true">info_outline</mat-icon>
+          </button>
         </mat-card-title>
       </mat-card-header>
       <mat-card-content>
@@ -87,12 +84,12 @@
         <mat-card-title>
           <mat-icon>timeline</mat-icon>
           Nutzungen im Verlauf
-          <mat-icon
-            class="info-icon"
-            matTooltip="Wie oft Beiträge insgesamt genutzt wurden. Darunter die Nutzungen der letzten 7 Tage und der 7 Tage davor. Der Trend vergleicht beide: steigend (+10%), fallend (-10%) oder stabil. Die Kalenderwochen stehen in der Bilanz."
-            matTooltipPosition="right">
-            info_outline
-          </mat-icon>
+          <!-- Antippbar: Auf Touch gibt es kein Hovern, der Tipp zeigt die Erklaerung -->
+          <button type="button" class="info-icon" #tipp4="matTooltip"
+                  matTooltip="Wie oft Beiträge insgesamt genutzt wurden. Darunter die Nutzungen der letzten 7 Tage und der 7 Tage davor. Der Trend vergleicht beide: steigend (+10%), fallend (-10%) oder stabil. Die Kalenderwochen stehen in der Bilanz."
+                  matTooltipPosition="right" (click)="tipp4.toggle()" aria-label="So wird gezählt: Nutzungen im Verlauf">
+            <mat-icon aria-hidden="true">info_outline</mat-icon>
+          </button>
         </mat-card-title>
       </mat-card-header>
       <mat-card-content>
@@ -123,12 +120,12 @@
         <mat-card-title>
           <mat-icon>thumb_up</mat-icon>
           Anteil „War hilfreich“
-          <mat-icon
-            class="info-icon"
-            matTooltip="Prozentsatz der positiven Bewertungen (Likes) an allen abgegebenen Votes der letzten 7 Tage. Berechnet als: (Anzahl Likes / Gesamtanzahl Votes) × 100. Daten aus der votes-Tabelle."
-            matTooltipPosition="right">
-            info_outline
-          </mat-icon>
+          <!-- Antippbar: Auf Touch gibt es kein Hovern, der Tipp zeigt die Erklaerung -->
+          <button type="button" class="info-icon" #tipp5="matTooltip"
+                  matTooltip="Prozentsatz der positiven Bewertungen (Likes) an allen abgegebenen Votes der letzten 7 Tage. Berechnet als: (Anzahl Likes / Gesamtanzahl Votes) × 100. Daten aus der votes-Tabelle."
+                  matTooltipPosition="right" (click)="tipp5.toggle()" aria-label="So wird gezählt: Anteil „War hilfreich“">
+            <mat-icon aria-hidden="true">info_outline</mat-icon>
+          </button>
         </mat-card-title>
       </mat-card-header>
       <mat-card-content>

@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { AuthInterceptor } from './auth.interceptor';
+import { stillerKontext } from '../shared/selbst-nachladen';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 describe('AuthInterceptor', () => {
@@ -44,6 +45,18 @@ describe('AuthInterceptor', () => {
     const req = httpMock.expectOne('/api/test');
     expect(req.request.withCredentials).toBe(true);
     req.flush({});
+  });
+
+  it('leitet eine stille Hintergrund-Abfrage bei 401 nicht auf /login um', () => {
+    let status = 0;
+    httpClient.get('/api/v1/moderation/reports', { context: stillerKontext() }).subscribe({
+      error: (error: HttpErrorResponse) => (status = error.status),
+    });
+
+    httpMock.expectOne('/api/v1/moderation/reports').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(status).toBe(401);
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('should NOT redirect to login for 401 on public search endpoints', () => {

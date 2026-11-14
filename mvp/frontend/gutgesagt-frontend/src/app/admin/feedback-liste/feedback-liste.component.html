@@ -19,7 +19,7 @@
       <mat-button-toggle [value]="true">Erledigt</mat-button-toggle>
     </mat-button-toggle-group>
 
-    <p *ngIf="fehler" class="hinweis">Das Feedback konnte nicht geladen werden.</p>
+    <app-nachlade-hinweis [fehler]="fehler" [geladen]="!!daten" was="Feedback"></app-nachlade-hinweis>
 
     <ng-container *ngIf="daten">
       <table *ngIf="daten.eintraege.length > 0; else leer">

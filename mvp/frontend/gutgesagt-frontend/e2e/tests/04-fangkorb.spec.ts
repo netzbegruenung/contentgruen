@@ -105,7 +105,7 @@ test('Fangkorb: zwei Einwuerfe ausformulieren, naechster Einwurf, Meine Einwuerf
   const ergebnis = page.url();
 
   await test.step('Naechster Einwurf nach dem zweiten: Ende der Runde im Fangkorb', async () => {
-    // Andere offene Einwuerfe (Seed, fruehere Laeufe) kommen vorher dran: "Spaeter"
+    // Andere offene Einwuerfe (Seed, fruehere Laeufe) kommen vorher dran: "Naechster Einwurf"
     // ohne Satz stellt sie fuer diese Runde zurueck, ohne sie zu aendern.
     await page.locator('.naechster-einwurf').click();
     let zurueckgestellt = 0;

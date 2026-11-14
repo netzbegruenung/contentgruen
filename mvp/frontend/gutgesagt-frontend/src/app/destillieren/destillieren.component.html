@@ -3,9 +3,14 @@
         <mat-spinner diameter="40"></mat-spinner>
     </div>
 
-    <div *ngIf="!laedt && allesDestilliert" class="zustand alles-destilliert">
-        <p>Alles destilliert.</p>
-        <a mat-stroked-button color="primary" routerLink="/fangkorb">Zurück zum Fangkorb</a>
+    <!-- Leer gefischt: ein Satz zeigt, ob im anderen Tab etwas wartet (Destillieren <-> Ausformulieren) -->
+    <div *ngIf="!laedt && leer" class="zustand leer-gefischt" [ngClass]="'leer-' + leer" role="status">
+        <p>{{ leerGefischtText }} {{ wartetImAnderen }}</p>
+        <button *ngIf="imAnderenAnzahl; else zurueckZumFangkorb" mat-raised-button color="primary"
+                type="button" [ngClass]="'zum-' + anderer" (click)="zumAnderen()">Zum {{ andererName }}</button>
+        <ng-template #zurueckZumFangkorb>
+            <a mat-stroked-button color="primary" routerLink="/fangkorb">Zurück zum Fangkorb</a>
+        </ng-template>
     </div>
 
     <div *ngIf="!laedt && !einwurf && fehler" class="zustand ladefehler">
@@ -60,8 +65,9 @@
             <div class="knoepfe">
                 <button mat-raised-button color="primary" type="button" class="weiter"
                         [disabled]="!kannWeiter" (click)="weiter()">Ausformulieren</button>
-                <button mat-stroked-button type="button" class="spaeter"
-                        [disabled]="arbeitet" (click)="spaeter()">Später</button>
+                <!-- Satz gemerkt oder uebersprungen: weiter mit dem naechsten, ohne Umweg ueber den Fangkorb -->
+                <button mat-stroked-button type="button" class="spaeter naechster-einwurf"
+                        [disabled]="arbeitet" (click)="spaeter()">Nächster Einwurf</button>
                 <button *ngIf="darfVerwerfen" mat-button color="warn" type="button"
                         class="verwerfen" [disabled]="arbeitet" (click)="verwerfen()">Einwurf verwerfen</button>
             </div>
@@ -92,6 +98,9 @@
                 <button mat-raised-button color="primary" type="button" class="formular-oeffnen"
                         (click)="formularOeffnen()">Formular öffnen</button>
                 <button mat-button type="button" class="zurueck" (click)="zurueckZumSatz()">Zurück</button>
+                <!-- Serie beim Ausformulieren: weiter, ohne diesen Einwurf auszuformulieren -->
+                <button *ngIf="inAusformulierReihe" mat-stroked-button type="button" class="spaeter naechster-einwurf"
+                        [disabled]="arbeitet" (click)="spaeter()">Nächster Einwurf</button>
             </div>
         </section>
     </ng-container>

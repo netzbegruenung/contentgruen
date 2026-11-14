@@ -30,10 +30,14 @@ import {
   FangkorbFilter,
   FangkorbTab,
   TABS,
+  LEER_GEFISCHT,
+  andererTab,
   filterLaden,
   filterSpeichern,
   passtZumFilter,
   passtZumTab,
+  tabName,
+  wartenImTab,
 } from './fangkorb-filter';
 
 /**
@@ -226,7 +230,25 @@ export class FangkorbComponent implements OnInit, OnDestroy {
     if (!this.gefiltert.length) {
       return 'Keine Einwürfe für diese Filter.';
     }
+    if (this.leerVerweis) {
+      return LEER_GEFISCHT;
+    }
     return TABS.find((eintrag) => eintrag.wert === this.filter.tab)!.leer;
+  }
+
+  /**
+   * Leer ist nur dieser Tab, im anderen wartet etwas (unter denselben Chips): Dann zeigt
+   * ein Satz dorthin, etwa „Beim Ausformulieren warten 2 Einwürfe.“
+   */
+  get leerVerweis(): { tab: FangkorbTab; text: string } | null {
+    if (this.sichtbar.length || !this.gefiltert.length) {
+      return null;
+    }
+    const anderer = andererTab(this.filter.tab);
+    const anzahl = this.zaehler[anderer];
+    // Der Link sagt, wohin er fuehrt: „Beim Ausformulieren warten 2 Einwürfe – zum Ausformulieren“.
+    const text = `${wartenImTab(anderer, anzahl).replace(/\.$/, '')} – zum ${tabName(anderer)}`;
+    return anzahl > 0 ? { tab: anderer, text } : null;
   }
 
   // Filter

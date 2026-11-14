@@ -154,6 +154,19 @@ button.header-link {
     font-weight: 600;
 }
 
+/* Zahl offener Meldungen am Admin-Link: neben dem Wort, am runden Knopf oben rechts */
+.header-link {
+    position: relative;
+}
+
+@media (max-width: 1199px) {
+    .header-link app-offene-meldungen-zahl {
+        position: absolute;
+        top: -4px;
+        right: -6px;
+    }
+}
+
 /* Lange Titel ("Hintergrundinfo verfassen") eine Stufe kleiner, damit sie in eine Zeile passen */
 .desktop-header-title--lang {
     font-size: var(--font-size-h2-tablet);
