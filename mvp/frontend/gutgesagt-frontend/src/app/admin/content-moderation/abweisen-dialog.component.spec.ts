@@ -80,6 +80,8 @@ describe('AbweisenDialogComponent', () => {
 
     expect(c.vollstaendig).toBeFalse();
     expect(abweisknopf(fixture).disabled).toBeTrue();
+    // … und sagt, warum
+    expect(fixture.nativeElement.querySelector('.zu-lang').textContent.trim()).toBe(`Höchstens ${c.maxLaenge} Zeichen, bitte kürzen.`);
   });
 
   it('sagt ohne Mail-Adresse, dass niemand benachrichtigt wird', () => {
