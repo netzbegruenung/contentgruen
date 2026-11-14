@@ -341,6 +341,7 @@ Verzeichnis der Verarbeitungstätigkeiten).
 |---|---|---|
 | Nutzungsereignisse (`usage_events`), Einzelzeilen | 90 Tage, danach nur Zähler je Beitrag | abschaltbarer Bereinigungsjob (`SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB`, Standard an), `usage_retention_days` in `core/config.py`; Datenschutzerklärung „Verwendung von Beiträgen“ |
 | Anmelde-Cookie | 14 Tage nach letzter Nutzung | Browser und BFF; Datenschutzerklärung „Anmelde-Cookie“ |
+| Angefangener Kommentar im Browser (sessionStorage, E1) | bis zum Schließen des Tabs, höchstens 1 Stunde ab dem ersten Sichern; sofort beim Speichern, Leeren, Abmelden und Widerruf der Art.-9-Einwilligung | Anwendung im Browser (`beitragsformular/kommentar-entwurf.ts`); Datenschutzerklärung „Weitere Einträge“ |
 | Zugriffsprotokolle des vorgelagerten Webservers | 14 Tage | Betrieb am Host; Datenschutzerklärung „Protokolldateien“ |
 | Zugriffsprotokolle des Webservers der Anwendung, Protokolle der Anwendung | **keine**; Ziel 14 Tage, noch nicht ausgerollt | Betrieb am Host; unter „Was nicht gelöscht wird“ (#485, #336) |
 | Zähler der Rate-Limits | höchstens etwa 16 Minuten, nur im Arbeitsspeicher | Anwendung; Datenschutzerklärung zu Suche, Meldungen, Feedback, Einladungen, Gegenlesen |

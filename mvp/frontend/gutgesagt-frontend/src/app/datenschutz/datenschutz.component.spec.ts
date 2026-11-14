@@ -685,6 +685,18 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Service Worker');
     });
 
+    it('Gerätespeicher: der angefangene Kommentar bis zum Tabschluss, höchstens eine Stunde (E1, 14.11.2026)', () => {
+      const text = abschnitt('Weitere Einträge').replace(/\s+/g, ' ');
+
+      expect(text).toContain(
+        'Schreibst du einen Kommentar und wechselst kurz in eine andere App, merkt sich dein Browser den ' +
+          'angefangenen Kommentar bis zum Schließen des Tabs, höchstens eine Stunde lang: Titel, Text, Kurz- und ' +
+          'Langfassung, Zweck und Stil, die Aussage, auf die er antwortet, und einen Prüfwert, der ihn deinem Konto ' +
+          'zuordnet, nicht deinen Namen. Wir löschen ihn, sobald du den Kommentar speicherst, das Formular leerst, ' +
+          'dich abmeldest oder deine Einwilligung widerrufst. Er verlässt dein Gerät nicht von selbst.',
+      );
+    });
+
     it('Gerätespeicher: das Profilbild liegt nur nach eigener Wahl im Browser, bis zum Zurücksetzen (#437)', () => {
       const text = abschnitt('Weitere Einträge');
 
