@@ -182,7 +182,7 @@
         <td mat-cell *matCellDef="let report" data-label="Grund">
           <div class="reason-cell">
             <strong>{{ getReasonLabel(report.reason) }}</strong>
-            <p *ngIf="report.description" class="description">{{ report.description }}</p>
+            <p *ngIf="report.description" class="description" [title]="report.description">{{ report.description }}</p>
           </div>
         </td>
       </ng-container>
@@ -269,7 +269,6 @@
             <button
               *ngIf="report.status === 'pending'"
               mat-stroked-button
-              class="abweisen-knopf"
               [disabled]="istErledigt(report)" disabledInteractive
               (click)="dismissReport(report); $event.stopPropagation()"
               matTooltip="Meldung abweisen, Beitrag bleibt sichtbar">

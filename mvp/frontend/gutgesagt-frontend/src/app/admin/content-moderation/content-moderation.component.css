@@ -308,8 +308,14 @@ table {
     white-space: nowrap;
   }
 
+  /* Schmal, aber lesbar: bis zu drei Zeilen statt einer gekuerzten, voller Text im title (Review) */
   .reason-cell .description {
     max-width: 180px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
 }
 
