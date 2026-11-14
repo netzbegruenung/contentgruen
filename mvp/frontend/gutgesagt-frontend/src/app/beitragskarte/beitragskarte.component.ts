@@ -244,6 +244,17 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName || this.daten.eigen != null);
   }
 
+  /** Die Aktionsleiste; nur die volle Karte hat eine. */
+  @ViewChild(KartenAktionenComponent) private aktionen?: KartenAktionenComponent;
+
+  /**
+   * Antippen des gelben Platzhalters (P19, Persona-Runde 2): wie "Kopieren", also der
+   * Platzhalter-Dialog. Mit der Tastatur bleibt es beim Kopieren-Knopf, der dasselbe tut.
+   */
+  platzhalterAntippen(): void {
+    this.aktionen?.kopieren();
+  }
+
   @ViewChild('textElement')
   set textElementRef(ref: ElementRef<HTMLElement> | undefined) {
     const element = ref?.nativeElement;
