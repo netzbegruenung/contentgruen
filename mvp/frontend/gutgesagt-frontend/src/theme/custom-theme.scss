@@ -376,7 +376,8 @@ html[data-theme='dark'] {
     --kartenliste-bg: #0a0b0a;
     --einwurf-grund: #1f1e1a;
 
-    // Such-Band: helleres Anthrazit statt Leuchtgelb; nur der Rahmen des Lichtkegels bleibt gelb
+    // Such-Band: dunkles Moos statt Leuchtgelb; das Gelb aus Hell tragen die Knoepfe und die
+    // Akzentschrift auf den Baendern (--knopf-auf-band-*, --band-akzent-schrift) und der Lichtkegel
     --such-band: #1a2410;
     --rundgang-kegel: #d8e05a;
     --rundgang-balken: #383b39;

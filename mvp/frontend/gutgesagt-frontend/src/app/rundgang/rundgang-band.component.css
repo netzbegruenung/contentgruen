@@ -33,6 +33,16 @@ h2 {
 .knoepfe .rundgang-knopf.voll {
     background: var(--knopf-auf-band-grund);
     color: var(--knopf-auf-band-schrift);
+    border-color: var(--knopf-auf-band-grund);
+}
+
+/* Hover und Druck sichtbar, auch auf dem hellen Gelb im Dunkeln (Review #689) */
+.knoepfe .rundgang-knopf.voll:hover {
+    filter: brightness(0.92);
+}
+
+.knoepfe .rundgang-knopf.voll:active {
+    filter: brightness(0.82);
 }
 
 p {
