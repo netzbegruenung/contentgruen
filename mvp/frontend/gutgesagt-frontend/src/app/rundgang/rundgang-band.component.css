@@ -61,7 +61,7 @@ p {
         height: 40px;
     }
 
-    /* Mit Dauer im Knopf ("Rundgang starten (1 Min.)") passen beide Knoepfe bei 360 px nicht
+    /* Mit Dauer im Knopf ("Rundgang starten (1 Minute)") passen beide Knoepfe bei 360 px nicht
        mehr nebeneinander: "Ausblenden" rueckt dann in die naechste Zeile, statt mitten im
        Wort zu brechen (Ersteindruck-Test 14.11.). */
     .knoepfe {
