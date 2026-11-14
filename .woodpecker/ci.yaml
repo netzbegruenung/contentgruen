@@ -35,11 +35,11 @@ services:
     image: qdrant/qdrant:v1.18.2
     # Ohne absoluten Pfad startet der Dienst nicht
     entrypoint: [/qdrant/qdrant]
-    when: &nur_main
+    when: &mit_integration
       - event: [push, tag, manual]
   - name: postgres
     image: postgres:16-alpine
-    when: *nur_main
+    when: *mit_integration
     environment:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: ci

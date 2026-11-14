@@ -378,15 +378,15 @@ PR_LAEUFE = [
     # (geaenderte Dateien, Schritte, die wegfallen)
     (
         ["mvp/frontend/gutgesagt-frontend/src/app/app.component.ts"],
-        {"lint", "integration", "bff"},
+        {"lint", "bff"},
     ),
     (["mvp/backend/semantic-search-service/app/main.py"], FRONTEND_GRUPPE | {"bff"}),
     (["mvp/backend/postgres-app/migrations/x.sql"], FRONTEND_GRUPPE | {"bff"}),
-    (["mvp/backend/BFF/Program.cs"], FRONTEND_GRUPPE | {"lint", "integration"}),
+    (["mvp/backend/BFF/Program.cs"], FRONTEND_GRUPPE | {"lint"}),
     (["scripts/tests/test_x.py", "scripts/ci_bericht.py"], FRONTEND_GRUPPE | {"bff"}),
     (
         ["mvp/frontend/gutgesagt-frontend/src/x.ts", "mvp/backend/BFF/Program.cs"],
-        {"lint", "integration"},
+        {"lint"},
     ),
     (
         [
@@ -433,11 +433,11 @@ def test_dienste_nur_wenn_integration_laeuft():
     for dienst in DIENSTE.values():
         assert dienst["when"] == integration
     andere = " ".join(
-        str(s.get("environment", "")) + " ".join(s["commands"])
+        " ".join([str(s.get("environment", "")), *s["commands"]])
         for n, s in SCHRITTE.items()
         if n != "integration"
     )
-    assert "qdrant" not in andere and "postgres:" not in andere
+    assert "qdrant" not in andere and "postgres" not in andere
 
 
 @pytest.mark.parametrize("event", ["push", "tag", "manual"])
