@@ -155,7 +155,6 @@ describe('AboutComponent', () => {
     // Glanz als Beispiel (#351); eine Krone gibt es am Siegel nicht mehr
     expect(seite.querySelectorAll('.siegel-beispiele .siegel-glanz').length).toBe(1);
     expect(beispiele[11]).toBe('Siegel: Güte 10 von 10, mit Glanz');
-    expect(seite.querySelectorAll('.siegel-beispiele .siegel-krone').length).toBe(0);
     expect(seite.querySelector('.siegel-absatz')!.textContent).not.toContain('Krone');
   });
 });

@@ -1,3 +1,4 @@
+import { reflectComponentType } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { SiegelComponent } from './siegel.component';
@@ -114,17 +115,21 @@ describe('SiegelComponent', () => {
   });
 
   it('gibt der Blase im Hellen einen dunkleren Rand im selben Farbton, im Dunkeln keinen', () => {
-    const blase = () => (fixture.nativeElement as HTMLElement).querySelector('.siegel-blase-gruppe')!;
+    const el = () => fixture.nativeElement as HTMLElement;
     zeige(4);
     const [farbton] = farbe();
-    const rand = /hsl\(([\d.]+) ([\d.]+)% ([\d.]+)%\)/.exec(blase().getAttribute('stroke')!)!;
+    const randGruppe = el().querySelector('.siegel-blase-rand')!;
+    const rand = /hsl\(([\d.]+) ([\d.]+)% ([\d.]+)%\)/.exec(randGruppe.getAttribute('stroke')!)!;
     expect(Number(rand[1])).toBe(farbton);
     expect(Number(rand[3])).toBeLessThan(farbe()[2]);
+    // Hinter der Füllung, und die Füllung selbst ohne Kontur: keine Naht am Zipfel
+    expect(randGruppe.nextElementSibling).toBe(el().querySelector('.siegel-blase-gruppe'));
+    expect(el().querySelector('.siegel-blase-gruppe')!.hasAttribute('stroke')).toBeFalse();
 
     spyOn(TestBed.inject(FarbschemaService), 'dunkel').and.returnValue(true);
     fixture = TestBed.createComponent(SiegelComponent);
     zeige(4);
-    expect(blase().getAttribute('stroke')).toBe('none');
+    expect(el().querySelector('.siegel-blase-rand')).toBeNull();
   });
 
   it('endet im Dunkelmodus in Klee, damit das Siegel sich vom dunklen Grund abhebt (#588)', () => {
@@ -163,9 +168,10 @@ describe('SiegelComponent', () => {
     expect(el.querySelectorAll('.siegel-sterne .siegel-funkler').length).toBe(2);
   });
 
-  it('zeichnet keine Krone mehr: Sie beschrieb die Person, nicht den Beitrag (14.11.)', () => {
-    const el = zeige(10, { glanz: true });
-    expect(el.querySelector('.siegel-krone')).toBeNull();
+  it('kennt keine Krone mehr: Sie beschrieb die Person, nicht den Beitrag (14.11.)', () => {
+    const eingaenge = reflectComponentType(SiegelComponent)!.inputs.map((e) => e.propName);
+    expect(eingaenge).toEqual(jasmine.arrayWithExactContents(['guete', 'glanz']));
+    zeige(10, { glanz: true });
     expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 10 von 10, mit Glanz');
   });
 

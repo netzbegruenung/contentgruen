@@ -1,3 +1,4 @@
+import { reflectComponentType } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -294,7 +295,10 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
 
       const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.siegel-knopf');
       expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz. Erklärung öffnen');
-      expect(fixture.nativeElement.querySelector('app-siegel .siegel-krone')).toBeNull();
+      // Die Karte reicht dem Siegel nur Güte und Glanz, kein Abzeichen der Person
+      const eingaenge = reflectComponentType(SiegelComponent)!.inputs.map((e) => e.propName);
+      expect(eingaenge).not.toContain('krone');
+      expect('krone' in fixture.componentInstance).toBeFalse();
     });
   });
 });

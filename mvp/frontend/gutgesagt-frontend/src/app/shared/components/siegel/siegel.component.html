@@ -13,7 +13,17 @@
             <stop offset=".7" stop-color="#fff" stop-opacity="0"/>
         </linearGradient>
     </defs>
-    <g class="siegel-blase-gruppe" [attr.fill]="farbe" [attr.stroke]="rand" stroke-width="1.5" stroke-linejoin="round">
+    <!--
+        Rand der Blase (nur im Hellen) als eigene Gruppe hinter der Füllung: doppelt so breit
+        gezeichnet, die Füllung deckt die innere Hälfte. Als Kontur an der Füllung selbst lief
+        er als Naht über die Stelle, an der der Zipfel auf dem Rechteck liegt.
+    -->
+    <g *ngIf="rand !== 'none'" class="siegel-blase-rand" [attr.fill]="rand" [attr.stroke]="rand"
+       stroke-width="3" stroke-linejoin="round">
+        <rect x="4" y="16" width="44" height="38" rx="11"/>
+        <path d="M11 51 L8 63 L24 53 Z"/>
+    </g>
+    <g class="siegel-blase-gruppe" [attr.fill]="farbe">
         <rect x="4" y="16" width="44" height="38" rx="11"/>
         <path d="M11 51 L8 63 L24 53 Z"/>
     </g>

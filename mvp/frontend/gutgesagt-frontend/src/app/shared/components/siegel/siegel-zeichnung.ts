@@ -5,7 +5,8 @@
  * `siegel.component.html`, die Hand in `shared/marke/hand.ts`. Das Logo
  * `public/marke/logo.svg` und die Favicons sind dieselbe Zeichnung bei Güte 10; wer die
  * Blase oder die Hand ändert, ändert sie mit (der Test in `siegel.component.spec.ts`
- * passt darauf auf). Glanz ist ein eigenes Abzeichen und hängt nicht an der Güte.
+ * passt darauf auf). Den Rand der Blase im Hellen (`siegelRand`) trägt nur das Siegel; das
+ * Logo bleibt bewusst ohne Rand. Glanz ist ein eigenes Abzeichen und hängt nicht an der Güte.
  */
 /** Höchste Güte. Güte 1–10; ohne Daten (`null`) ist ein Beitrag „neu“. */
 export const HOECHSTE_GUETE = 10;
@@ -40,7 +41,7 @@ const GELB: Hsl = [52, 95, 46];
 const TANNENGRUEN: Hsl = [159.3, 100, 16.5];
 /**
  * Klee (#008939) als oberes Ende im Dunkelmodus (#588): Tannengrün hebt sich vom dunklen
- * Kartengrund (#262626) kaum ab (1,7:1), Klee erreicht die 3:1 für Grafiken.
+ * Kartengrund (#1b1d1c) kaum ab (1,9:1), Klee erreicht die 3:1 für Grafiken (3,7:1).
  */
 const KLEE: Hsl = [145, 100, 26.9];
 /** Anteil der Güte-Skala, an dem das Siegel ganz gelb ist. */
@@ -55,11 +56,16 @@ const mische = (von: Hsl, nach: Hsl, t: number): Hsl =>
  * Dunkelmodus (`dunkel`) endet die Skala in Klee.
  */
 export function siegelFarbe(guete: number | null, dunkel = false): string {
-  const t = (normierteGuete(guete) ?? 0) / HOECHSTE_GUETE;
-  const gruen = dunkel ? KLEE : TANNENGRUEN;
-  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, gruen, (t - GELB_BEI) / (1 - GELB_BEI));
-  return `hsl(${runde(h)} ${runde(s)}% ${runde(l)}%)`;
+  return alsHsl(skala(guete, dunkel ? KLEE : TANNENGRUEN));
 }
+
+/** Farbe auf der Skala Grau – Gelb – `gruen` für eine Güte. */
+function skala(guete: number | null, gruen: Hsl): Hsl {
+  const t = (normierteGuete(guete) ?? 0) / HOECHSTE_GUETE;
+  return t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, gruen, (t - GELB_BEI) / (1 - GELB_BEI));
+}
+
+const alsHsl = ([h, s, l]: Hsl): string => `hsl(${runde(h)} ${runde(s)}% ${runde(l)}%)`;
 
 /** Anteil der Helligkeit, den der Rand der Blase behält. */
 const RAND_HELLIGKEIT = 0.55;
@@ -70,9 +76,8 @@ const RAND_HELLIGKEIT = 0.55;
  */
 export function siegelRand(guete: number | null, dunkel = false): string {
   if (dunkel) return 'none';
-  const t = (normierteGuete(guete) ?? 0) / HOECHSTE_GUETE;
-  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, TANNENGRUEN, (t - GELB_BEI) / (1 - GELB_BEI));
-  return `hsl(${runde(h)} ${runde(s)}% ${runde(l * RAND_HELLIGKEIT)}%)`;
+  const [h, s, l] = skala(guete, TANNENGRUEN);
+  return alsHsl([h, s, l * RAND_HELLIGKEIT]);
 }
 
 /** Was Screenreader über das Siegel sagen. */
