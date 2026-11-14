@@ -24,6 +24,7 @@ import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component
 import { typFarbe } from '../shared/content-type-registry';
 import { STIL_LABEL, Stil, ZWECK_LABEL, ZWECK_STANDARD, Zweck, stileFuer, stilPasst } from '../shared/zweck-stil';
 import { einzeilig } from '../beitragsformular/einzeilig';
+import { titelVorschlag } from '../beitragsformular/titel-vorschlag';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
 import { einwilligungFehlt } from '../services/art9-einwilligung.service';
@@ -353,6 +354,13 @@ export class AddCommentaryComponent implements OnChanges {
 
   private meilensteinHinweis = inject(MeilensteinHinweisService);
 
+  /**
+   * Der zuletzt vorgeschlagene Titel (E2). Steht genau er noch im Feld, wird er beim
+   * Schreiben nachgefuehrt; hat die Person ihn geaendert oder kam der Titel aus Vorlage
+   * oder Fangkorb, ist das null und der Titel bleibt, wie er ist.
+   */
+  private titelVorbelegung: string | null = '';
+
   constructor(
     fb: FormBuilder,
     private commentaryService: CommentaryService,
@@ -386,11 +394,27 @@ export class AddCommentaryComponent implements OnChanges {
     this.commentaryForm
       .get('text')!
       .valueChanges.pipe(takeUntilDestroyed())
-      .subscribe(() => {
+      .subscribe((text: string | null) => {
         if (this.vorhanden && !this.speichert && !this.nimmt) {
           this.vorhandenVergessen();
         }
+        this.titelNachfuehren(text);
       });
+  }
+
+  /** Den Titel aus dem Text vorschlagen, solange er die unveraenderte Vorbelegung ist (E2). */
+  // Der neue Text kommt aus valueChanges: commentaryForm.value zieht erst danach nach.
+  private titelNachfuehren(text: string | null): void {
+    const titel = this.commentaryForm.get('title')!;
+    if (this.titelVorbelegung === null || titel.value !== this.titelVorbelegung) {
+      this.titelVorbelegung = null;
+      return;
+    }
+    const vorschlag = titelVorschlag(text, this.aussage.text);
+    this.titelVorbelegung = vorschlag;
+    if (vorschlag !== titel.value) {
+      titel.setValue(vorschlag);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -416,6 +440,7 @@ export class AddCommentaryComponent implements OnChanges {
   // "Als Vorlage nehmen": der Text des Originals, alles aenderbar. Die Herkunft
   // nicht - fuer die eigene Fassung gibt die Person ihre an.
   vorlageAnwenden(vorlage: Vorlage): void {
+    this.titelVorbelegung = null;
     this.commentaryForm.patchValue({
       title: vorlage.titel,
       text: vorlage.text,
@@ -433,6 +458,7 @@ export class AddCommentaryComponent implements OnChanges {
   // Titel = Satz aus dem Destillier-Ablauf, Herkunft = Link des Einwurfs. Beides
   // bleibt aenderbar; die Herkunft wird aufgeklappt, damit sie sichtbar ist.
   vorbefuellungAnwenden(vorbefuellung: Vorbefuellung): void {
+    this.titelVorbelegung = vorbefuellung.titel ? null : this.titelVorbelegung;
     this.commentaryForm.patchValue({
       title: vorbefuellung.titel,
       references: vorbefuellung.url ? [{ reference_string: vorbefuellung.url }] : [],
@@ -813,6 +839,7 @@ export class AddCommentaryComponent implements OnChanges {
   }
 
   leeren(): void {
+    this.titelVorbelegung = '';
     this.commentaryForm.reset({ title: '', text: '', kurz: '', lang: '', ...OPTIONALE_ANGABEN_LEER, references: [] });
     this.antwortAuf?.leeren();
     this.aussage = OHNE_AUSSAGE;

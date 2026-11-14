@@ -181,6 +181,48 @@ describe('AddCommentaryComponent', () => {
     });
   });
 
+  describe('Titel unter dem Text, vorbelegt (E2)', () => {
+    const titel = () => component.commentaryForm.get('title')!;
+    const text = () => component.commentaryForm.get('text')!;
+
+    it('steht unter dem Kommentarfeld', () => {
+      const kommentar = seite().querySelector('textarea#text')!;
+      const titelFeld = seite().querySelector('textarea#title')!;
+      expect(kommentar.compareDocumentPosition(titelFeld) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('belegt den Titel mit dem ersten Satz vor und führt ihn beim Schreiben nach', () => {
+      text().setValue('Wärmepumpen lohnen sich. Auch');
+      expect(titel().value).toBe('Wärmepumpen lohnen sich.');
+
+      text().setValue('Wärmepumpen lohnen sich im Altbau. Auch dort.');
+      expect(titel().value).toBe('Wärmepumpen lohnen sich im Altbau.');
+    });
+
+    it('lässt einen geänderten Titel stehen', () => {
+      text().setValue('Wärmepumpen lohnen sich. Auch');
+      titel().setValue('Mein eigener Titel');
+
+      text().setValue('Ganz anderer Text hier. Noch mehr.');
+      expect(titel().value).toBe('Mein eigener Titel');
+    });
+
+    it('überschreibt keinen Titel aus der Vorlage', () => {
+      component.vorlageAnwenden({ id: 'v1', titel: 'Titel der Vorlage', text: 'Text der Vorlage hier.' } as any);
+      text().setValue('Neuer Text. Weiter.');
+      expect(titel().value).toBe('Titel der Vorlage');
+    });
+
+    it('schlägt nach dem Leeren wieder vor', () => {
+      text().setValue('Erster Satz hier. Zweiter.');
+      titel().setValue('Eigener');
+      component.leeren();
+
+      text().setValue('Neuer erster Satz. Mehr.');
+      expect(titel().value).toBe('Neuer erster Satz.');
+    });
+  });
+
   describe('Titel und Kartenbezug', () => {
     it('ist zweizeilig, waechst mit und bricht bei Enter nicht um', () => {
       const titel: HTMLTextAreaElement = seite().querySelector('textarea#title')!;

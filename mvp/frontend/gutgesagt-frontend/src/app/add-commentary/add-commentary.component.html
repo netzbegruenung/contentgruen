@@ -22,19 +22,6 @@
                 </app-antwort-auf>
 
                 <mat-form-field appearance="outline" class="formular-feld">
-                    <mat-label>Titel</mat-label>
-                    <!-- Zweizeilig, damit ein ganzer Satz sichtbar bleibt; Enter bricht nicht um -->
-                    <textarea matInput id="title" formControlName="title" required
-                              [attr.maxlength]="titelMax" placeholder="Was ist der Punkt? Ein Satz."
-                              cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="4"
-                              (keydown.enter)="$event.preventDefault()"></textarea>
-                    <mat-hint align="end">{{ titelLaenge }} / {{ titelMax }}</mat-hint>
-                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('required')">Der Titel fehlt.</mat-error>
-                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('minlength')">Mindestens 3 Zeichen.</mat-error>
-                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('maxlength')">Höchstens {{ titelMax }} Zeichen.</mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="formular-feld">
                     <mat-label>Kommentar</mat-label>
                     <textarea matInput id="text" formControlName="text" required
                               [attr.maxlength]="textMax" placeholder="So, wie du ihn posten würdest"
@@ -48,6 +35,21 @@
                 </mat-form-field>
                 <!-- Einspaltig direkt unter dem Feld, damit man es beim Tippen sieht (Nutzerfuehrung 13.11.) -->
                 <app-gegenlesen *ngIf="einspaltig()" [kompakt]="true" [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"></app-gegenlesen>
+
+                <!-- Titel unter dem Text, vorbelegt aus ihm (E2, titelVorschlag); bleibt Pflicht und aenderbar -->
+                <mat-form-field appearance="outline" class="formular-feld titel-feld">
+                    <mat-label>Titel</mat-label>
+                    <!-- Zweizeilig, damit ein ganzer Satz sichtbar bleibt; Enter bricht nicht um -->
+                    <textarea matInput id="title" formControlName="title" required
+                              [attr.maxlength]="titelMax" placeholder="Was ist der Punkt? Ein Satz."
+                              cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="4"
+                              (keydown.enter)="$event.preventDefault()"></textarea>
+                    <mat-hint align="end">{{ titelLaenge }} / {{ titelMax }}</mat-hint>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('required')">Der Titel fehlt.</mat-error>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('minlength')">Mindestens 3 Zeichen.</mat-error>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('maxlength')">Höchstens {{ titelMax }} Zeichen.</mat-error>
+                </mat-form-field>
+
 
                 <button *ngIf="!zeigtFassungen" type="button" class="text-link fassungen-link" (click)="fassungenZeigen()">
                     + Weitere Fassungen
