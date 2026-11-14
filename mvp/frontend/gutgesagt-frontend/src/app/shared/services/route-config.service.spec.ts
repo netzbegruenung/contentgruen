@@ -72,6 +72,12 @@ describe('RouteConfigService', () => {
     }
   });
 
+  // UX-Review B18: Fragt die App nach der Einwilligung (mit Rueckweg), heisst die Seite so
+  it('nennt /einwilligung mit Rueckweg "Einwilligung", aus dem Profilmenue "Datenschutz-Einstellungen"', () => {
+    expect(service.getRouteConfig('/einwilligung?returnUrl=%2Feinwerfen').pageTitle).toBe('Einwilligung');
+    expect(service.getRouteConfig('/einwilligung').pageTitle).toBe('Datenschutz-Einstellungen');
+  });
+
   it('nennt die eigene Adresse eines Beitrags "Beitrag", mit Pfeil (#300)', () => {
     const config = service.getRouteConfig('/beitrag/b-1');
     expect(config.pageTitle).toBe('Beitrag');

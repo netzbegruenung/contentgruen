@@ -382,6 +382,18 @@ describe('ResultViewComponent: Nicht dabei?', () => {
     expect(aehnliche(seite)).toEqual(['Wärmepumpen sind zu teuer', 'Wärmepumpen lohnen sich nicht']);
   });
 
+  // UX-Review B13: dritter Weg "nur einen Link" und der Hinweis, dass nicht jede Aussage eine Antwort braucht
+  it('bietet ohne Treffer "Nur einen Link dazu? Einwerfen" und den Hinweis zur Antwort', () => {
+    const seite = oeffnen(true, false);
+    const bereich = seite.querySelector<HTMLElement>('.unified-empty-state')!;
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+
+    expect(bereich.querySelector('.nur-link')?.textContent).toContain('Nur einen Link dazu?');
+    expect(bereich.querySelector('.keine-antwort-noetig')?.textContent).toContain('Nicht jede Aussage braucht eine Antwort.');
+    bereich.querySelector<HTMLButtonElement>('.nur-link button')!.click();
+    expect(navigate).toHaveBeenCalledWith(['/einwerfen']);
+  });
+
   it('gibt ohne Treffer einen Suchtipp, der zur Suche nach Aussagen passt (#617)', () => {
     const seite = oeffnen(false, false);
     const tipp = seite.querySelector('.unified-empty-state .such-tipp')?.textContent ?? '';

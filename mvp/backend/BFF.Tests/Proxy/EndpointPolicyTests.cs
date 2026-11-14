@@ -20,6 +20,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/usage/content/abc/usage")]
     [InlineData("/api/v1/usage/trending")]
     [InlineData("/api/v1/usage/trending/woche")]  // "Diese Woche oft genutzt" (#364)
+    [InlineData("/api/v1/usage/punkte/status")]  // Schalter der Punkte (UX-Review B20)
     [InlineData("/api/v1/moderation/report")]
     [InlineData("/api/v1/metrics/getmetrics")]   // Bestandszaehler der Startseite
     [InlineData("/api/v1/metrics/getMetrics")]   // Schreibweise darf keine Rolle spielen
@@ -47,6 +48,8 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/einladungen/33333333-3333-3333-3333-333333333333")]
     [InlineData("/api/v1/content/33333333-3333-3333-3333-333333333333")]  // Loeschen durch den Autor
     [InlineData("/api/v1/content/beitraege")]    // Segmentgrenze
+    [InlineData("/api/v1/usage/users/me/punkte")]  // nur /punkte/status ist offen (B20)
+    [InlineData("/api/v1/usage/punkte/statusx")]   // Segmentgrenze
     public void IsAnonymousAllowed_FalseForProtectedPaths(string path)
     {
         Assert.False(EndpointPolicy.IsAnonymousAllowed(path));

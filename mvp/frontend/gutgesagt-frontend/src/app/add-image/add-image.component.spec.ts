@@ -115,6 +115,19 @@ describe('AddImageComponent', () => {
     expect(gemeldet).toEqual({ id: 'b-1', aussage: OHNE_AUSSAGE, verknuepft: true });
   });
 
+  // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+  it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', () => {
+    spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+    component.imageForm.patchValue(WERTE);
+
+    component.speichern();
+    fixture.detectChanges();
+
+    expect(component.fehler).toBeNull();
+    expect(component.speichert).toBeFalse();
+    expect(component.imageForm.value.title).toBe(WERTE.title);
+  });
+
   it('behaelt nach gescheitertem Speichern die Eingaben und speichert mit "Erneut versuchen" dasselbe', () => {
     const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValues(
       throwError(() => ({ status: 500 })),

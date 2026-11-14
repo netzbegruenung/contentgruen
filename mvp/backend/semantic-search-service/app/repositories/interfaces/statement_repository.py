@@ -104,6 +104,7 @@ class IStatementRepository(
         Those of the given statements that have a visible Kommentar among their
         reply suggestions (the counterpart of ohne_kommentar for a few known
         statements). Blocked or deleted Kommentare do not count as an answer.
+        Errors while reading are raised to the caller.
         """
         pass
 

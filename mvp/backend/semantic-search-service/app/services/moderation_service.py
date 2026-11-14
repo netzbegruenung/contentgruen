@@ -31,6 +31,8 @@ from repositories.varianten_repository import (
 from domain.models.content_status import ContentStatus
 from domain.models.meldegrund import MELDEGRUENDE, Meldegrund, beschreibung_fehlt
 from domain.models.meldung import (
+    MELDUNG_FEHLGESCHLAGEN,
+    MeldungErgebnis,
     AngabenGeloescht,
     MelderAdresse,
     MelderAngaben,
@@ -166,7 +168,7 @@ class ModerationService:
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> bool:
+    ) -> MeldungErgebnis:
         """
         Report a content item.
 
@@ -180,31 +182,31 @@ class ModerationService:
             melder: Angaben der meldenden Person nach Art. 16 Abs. 2 DSA
 
         Returns:
-            bool: True if report was created successfully
+            MeldungErgebnis: wahr, wenn angenommen; ``neu`` und ``mit_email`` wie dort
         """
         # Validate inputs
         if not content_id or not content_type or not reason:
             logger.warning("Invalid report submission: missing required fields")
-            return False
+            return MELDUNG_FEHLGESCHLAGEN
 
         if not user_id and not session_id:
             logger.warning("Invalid report submission: no reporter identifier")
-            return False
+            return MELDUNG_FEHLGESCHLAGEN
 
         if reason not in MELDEGRUENDE:
             # Der Grund ist hier freier Text von aussen (#422).
             logger.warning("Invalid report reason")
-            return False
+            return MELDUNG_FEHLGESCHLAGEN
 
         # Art. 16 Abs. 2 lit. d DSA (#438): keine neue Meldung ohne die Erklaerung
         # guten Glaubens, auch nicht an der API vorbei; fuer jeden Meldegrund.
         if melder.guter_glaube is not True:
             logger.warning("Invalid report submission: no Erklaerung guten Glaubens")
-            return False
+            return MELDUNG_FEHLGESCHLAGEN
 
         if beschreibung_fehlt(reason, description):
             logger.warning("Invalid report submission: illegal_content without reason")
-            return False
+            return MELDUNG_FEHLGESCHLAGEN
 
         try:
             content_uuid = UUID(content_id)
@@ -217,7 +219,7 @@ class ModerationService:
                 content_id=content_uuid, user_id=user_id
             ):
                 logger.info(f"Duplicate report for content {content_id} ignored")
-                return True
+                return MeldungErgebnis(erfolg=True, neu=False, mit_email=False)
 
             report = self.report_repo.create_report(
                 content_id=content_uuid,
@@ -231,18 +233,18 @@ class ModerationService:
             logger.info(f"Content {content_id} reported: {reason}")
         except ValueError as e:
             logger.error("Invalid content_id format")
-            return False
+            return MELDUNG_FEHLGESCHLAGEN
         except Exception as e:
             logger.error(f"Error reporting content: {type(e).__name__}", exc_info=True)
-            return False
+            return MELDUNG_FEHLGESCHLAGEN
 
         if report is None:
-            return False
+            return MELDUNG_FEHLGESCHLAGEN
         # Art. 16 Abs. 4 DSA (#493): nur fuer eine neu angelegte Meldung, nicht fuer
         # die Doppelmeldung oben.
         if melder.email:
             await self._eingang_bestaetigen(content_id, melder.email)
-        return True
+        return MeldungErgebnis(erfolg=True, neu=True, mit_email=bool(melder.email))
 
     async def content_exists(self, content_id: str) -> bool:
         """
