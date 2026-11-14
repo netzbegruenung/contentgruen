@@ -7,7 +7,9 @@ completed the [setup](#setup-by-a-person).
 
 After the merge, `.woodpecker/build.yaml` and, on `v*` tags, `release.yaml` build the images
 (see [Images and releases](#images-and-releases)), and every night `.woodpecker/nacht.yaml`
-measures search quality against the real model (see [Nightly run](#nightly-run)). Until the switch the GitHub Actions on the
+measures search quality against the real model (see [Nightly run](#nightly-run)).
+`.woodpecker/ci-image.yaml` builds the images the pipeline itself can run in, with the Python
+packages, the models and `node_modules` already installed (see [CI images](#ci-images)). Until the switch the GitHub Actions on the
 mirror (`.github/workflows/`) still build them too and publish the tags the environments use.
 
 ## What runs
@@ -15,8 +17,8 @@ mirror (`.github/workflows/`) still build them too and publish the tags the envi
 | Step | Image | Runs |
 |---|---|---|
 | `retired-words` | `node:22` (frontend Dockerfile; has git and python3) | `check.sh --schritt retired-words`, lines added since the branch left the target branch; pull requests only (push, tag and manual runs have no target branch) |
-| `python-installieren` | `python:3.13-slim` (semantic-search Dockerfile) | venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` |
-| `frontend-installieren` | `node:22` | `npm ci` in the frontend directory, once for the two frontend steps |
+| `python-installieren` | `python:3.13-slim` (semantic-search Dockerfile) | `scripts/ci-installieren.sh python`: venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` (only a link to the packages of the [CI image](#ci-images) when they match) |
+| `frontend-installieren` | `node:22` | `scripts/ci-installieren.sh frontend`: `npm ci` in the frontend directory, once for the two frontend steps (or a link to the `node_modules` of the CI image) |
 | `lint` | `python:3.13-slim` | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
 | `bff` | `mcr.microsoft.com/dotnet/sdk:9.0` (BFF Dockerfile) | `check.sh --schritt bff` with `CHECK_OHNE_DOCKER=1` |
 | `unit` | `python:3.13-slim` | `check.sh --schritt unit`: Python unit tests and `scripts/tests/`, each with two pytest-xdist workers (`CHECK_WORKER=2`; locally four) |
@@ -54,8 +56,10 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
   the BFF. When raising a version, change all of them.
 - **One source for commands.** Each step calls `check.sh --schritt <name>`, one pipeline step
   per step of `check.sh` (the test compares the names). Only the preparation a working tree
-  already has locally stays in `ci.yaml`: the venv (`python-installieren`), `npm ci`
-  (`frontend-installieren`) and Chromium for the frontend. `CHECK_VOLL=1`
+  already has locally stays out of `check.sh`: the venv (`python-installieren`), `npm ci`
+  (`frontend-installieren`), both through `scripts/ci-installieren.sh`, and Chromium for the
+  frontend (`scripts/ci-chromium.sh`). `check.sh` installs nothing, so it needs no
+  knowledge of the CI images. `CHECK_VOLL=1`
   makes `check.sh` print the full output instead of its summary lines.
 - **No path filter on the workflow.** A skipped workflow reports no status, and the
   required status then blocks the pull request. Filters only per step, and only so that
@@ -130,6 +134,60 @@ start a run with the event `pull_request_metadata`, and its status context is
 required status would stay green from the light run, and the full run after removing
 "WIP:" would not be required for the merge. An empty push after removing "WIP:" would
 fix the status but depends on nobody forgetting it.
+
+## CI images
+
+`Dockerfile.ci` has two targets, built by `.woodpecker/ci-image.yaml` with the same plugin,
+registry and secrets as `build.yaml`:
+
+| Image | Base | Contains | For the steps |
+|---|---|---|---|
+| `gutgesagt-ci-python` | `python:3.13-slim` | the packages of `requirements.txt` system-wide; the models `intfloat/multilingual-e5-base` and `MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7` under `HF_HOME=/opt/ci/huggingface` | `python-installieren`, `lint`, `unit`, `integration` |
+| `gutgesagt-ci-node` | `node:22` (same digest) | Chromium with the wrapper of `scripts/ci-chromium.sh`; `node_modules` from `package-lock.json` under `/opt/ci/node_modules`; the npm cache | `frontend-installieren`, `frontend-build`, `frontend` |
+
+Tags: `latest` and the first 12 characters of the checksum of the files the packages come
+from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `requirements.txt`, or
+`package.json` and `package-lock.json`). Measured locally on 13.11.: about 1.9 GB (Python)
+and 0.8 GB (Node) compressed in the registry; the Node image shares its base layers with
+`node:22`.
+
+- **Every run checks the image** (in the installation step). The image keeps the checksum under `/opt/ci/`.
+  `scripts/ci-installieren.sh` compares it with the checkout. If it matches, the venv is
+  created with `--system-site-packages` and pip does nothing (2 s instead of about 85 s
+  locally, about 2 min in CI), and `node_modules` becomes a link to `/opt/ci/node_modules`.
+  If it does not match (a pull request changes `requirements.txt` or `package-lock.json`, or
+  the image is behind), the step installs as without an image: pip only installs what differs
+  from the packages in the image (13 s locally for one changed pin), `npm ci --prefer-offline`
+  takes what it can from the npm cache of the image. Known price: a package that the pull
+  request removes from `requirements.txt` is still importable from the image until it is
+  rebuilt; the service image would then fail on the import, the CI not. In the plain `python:3.13-slim` and
+  `node:22` images there is no checksum and everything is installed. No pull request turns
+  red because the image is old.
+- **Models without offline mode.** Unlike the service image, the CI image does not set
+  `HF_HUB_OFFLINE`: if a pull request switches to a model the image does not have, the
+  run downloads it as before. The confirmer (`NLI_BESTAETIGER_MODELL`, 2.2 GB) is left out;
+  it is off by default and no test loads it. Locally the integration suite passed with
+  `HF_HUB_OFFLINE=1` in the image, so the two models are all it needs.
+- **When it is built:** after a push to `main` that changes what an image contains (path
+  filter per build step: `Dockerfile.ci`, `Dockerfile.ci.dockerignore`, the lockfiles,
+  `scripts/ci-installieren.sh`, for Node also `scripts/ci-chromium.sh`, and the workflow),
+  weekly by the cron job `ci-image` (new versions within the `>=` ranges of
+  `requirements.txt`, new model revisions, security updates of `python:3.13-slim`), and
+  with "Run pipeline" on `main`. The workflow waits for `ci` and `build` (both optional:
+  a cron run has neither, and `build` drops out when no image step matches), so it never
+  builds next to the heavy steps; if `ci` is red on `main`, it does not build and the next
+  cron run catches up. The two images are built one after the other; `ci-node` does not
+  build after a red step before it.
+- The build context is the repository root, cut down by `Dockerfile.ci.dockerignore` to the
+  files the Dockerfile copies (`scripts/tests/test_woodpecker_ci.py` keeps both lists and
+  the path filters equal).
+- The images contain nothing secret and are public like the other images of
+  `netzbegruenung-images`, so the pipeline pulls them without a login.
+- **Switching `ci.yaml` to the images** is a separate pull request after the first build:
+  until `:latest` exists in the registry, a step with that image cannot start, and a
+  missing image is the one case the checksum cannot catch. The steps then name
+  `gutgesagt-ci-python:latest` or `gutgesagt-ci-node:latest` with `pull: true`;
+  `retired-words` and `ci-bericht` stay on the plain images.
 
 ## CI report
 
@@ -357,7 +415,16 @@ enabled, and the pull request that adds the pipeline already needs it):
    is brought up to date by merge ("Update branch"), not by rebase. Whoever wants a linear
    `main` sets the merge style to squash.
 
-6. **Cron job for the nightly run,** after the pull request that adds `nacht.yaml` is
+6. **CI images, before merging the pull request that adds `ci-image.yaml`:** release the
+   secrets `registry_user` and `registry_token` (step 4) also for the event "Cron", so the
+   weekly build can push; nothing else changes (same plugin, same image filter, already
+   privileged). After the merge, add a cron job named `ci-image` (the workflow only reacts
+   to this name), branch `main`, schedule e.g. `0 4 * * 0` (Sundays at 04:00, after the
+   nightly run). The merge itself builds both images, since it changes the workflow; if
+   that run is red, start the cron job once with "Run now", so `:latest` exists before
+   `ci.yaml` switches to the images.
+
+7. **Cron job for the nightly run,** after the pull request that adds `nacht.yaml` is
    merged: in the repository settings of Woodpecker, "Cron", add a job named `nachtlauf`
    (the workflow only reacts to this name), branch `main`, schedule e.g. `0 3 * * *`
    (every night at 03:00). No secret needed.

@@ -4,6 +4,7 @@ import { Vorlage } from '../beitragsformular/vorlage';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
@@ -24,6 +25,7 @@ import { AddGenericTextRequest, AddGenericTextResponse } from '../services/dtos/
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
@@ -1210,6 +1212,38 @@ describe('AddGenerictextComponent', () => {
     }));
   });
 
+  describe('Herkunft offen (Persona-Test Gerd)', () => {
+    it('zeigt das Herkunftsfeld von Anfang an, ohne "+ Herkunft"', () => {
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.herkunft-link')).toBeNull();
+      expect(seite().querySelector('.reference-source-input')).not.toBeNull();
+      expect(seite().querySelector('.herkunft mat-label')!.textContent!.trim()).toBe('Herkunft (empfohlen)');
+      expect(seite().querySelector('.herkunft-satz')!.textContent).toContain('Zahlen und Fakten mit Herkunft sind glaubwürdiger.');
+    });
+
+    it('sagt dem Gegenlesen, ob die Herkunft fehlt, und blendet den Satz mit Herkunft aus', () => {
+      fixture.detectChanges();
+      const gegenlesen = () => fixture.debugElement.query(By.directive(GegenlesenComponent)).componentInstance as GegenlesenComponent;
+      expect(gegenlesen().herkunftFehlt).toBeTrue();
+
+      component.generictextForm.patchValue({ references: [{ reference_string: 'https://example.org/studie' }] });
+      fixture.detectChanges();
+
+      expect(gegenlesen().herkunftFehlt).toBeFalse();
+      expect(seite().querySelector('.herkunft-satz')).toBeNull();
+    });
+
+    it('bleibt nach dem Zuruecksetzen offen', () => {
+      component.generictextForm.patchValue({ references: [{ reference_string: 'https://example.org/studie' }] });
+      component.leeren();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.reference-source-input')).not.toBeNull();
+      expect(component.herkunftFehlt).toBeTrue();
+    });
+  });
+
   describe('Vorbefuellung aus dem Destillier-Ablauf', () => {
     function vorbefuellen(url: string | null): void {
       component.vorbefuellung = { einwurfId: 'id-1', titel: 'Wärmepumpe lohnt sich auch im Altbau', url, kopf: {} as any };
@@ -1221,7 +1255,7 @@ describe('AddGenerictextComponent', () => {
 
       expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich auch im Altbau');
       expect(component.generictextForm.value.references).toEqual([{ reference_string: 'https://example.org/p' }]);
-      expect(component.showReferences).toBeTrue();
+      expect(component.herkunftFehlt).toBeFalse();
     });
 
     it('laesst die Herkunft zu, wenn der Einwurf keinen Link hat', () => {
@@ -1229,9 +1263,8 @@ describe('AddGenerictextComponent', () => {
 
       expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich auch im Altbau');
       expect(component.generictextForm.value.references).toEqual([]);
-      expect(component.showReferences).toBeFalse();
       fixture.detectChanges();
-      expect(seite().querySelector('.herkunft-link')!.textContent).toContain('+ Herkunft');
+      expect(seite().querySelector('.reference-source-input')).not.toBeNull();
       expect(seite().querySelector('.herkunft-satz')!.textContent).toContain('Zahlen und Fakten mit Herkunft sind glaubwürdiger.');
     });
 
