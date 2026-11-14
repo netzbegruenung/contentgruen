@@ -5,6 +5,26 @@
   gap: 6px;
 }
 
+/*
+ * Mobil steht der Filter in einer Zeile zum seitlichen Wischen: 13 Themen fuellten
+ * umgebrochen einen ganzen Bildschirm (Persona-Runde 2, P24). Die Auswahl im Formular
+ * bricht weiter um, dort soll man alle sehen.
+ */
+@media (max-width: 599px) {
+  .themen-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    /* Platz fuer den Fokusrahmen, den overflow sonst abschneidet */
+    padding: 3px 2px;
+  }
+
+  .themen-filter .thema-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
 .thema-chip {
   border: 1px solid var(--linie-tanne);
   border-radius: var(--border-radius-medium);
