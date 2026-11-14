@@ -264,8 +264,9 @@
               <mat-icon>lock_open</mat-icon>
               Entsperren
             </button>
+            <!-- Kein Abweisen bei gesperrtem Beitrag: Dialog und Mail sagten sonst „bleibt sichtbar“ bzw. „kein Verstoß“ -->
             <button
-              *ngIf="report.status === 'pending'"
+              *ngIf="report.status === 'pending' && !istGesperrt(report)"
               mat-button
               [disabled]="istErledigt(report)" disabledInteractive
               (click)="dismissReport(report); $event.stopPropagation()"

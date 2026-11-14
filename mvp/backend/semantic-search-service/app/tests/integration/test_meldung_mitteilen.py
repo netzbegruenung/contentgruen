@@ -4,7 +4,7 @@ PostgreSQL: nur offene Meldungen mit E-Mail-Adresse, und jede nur einmal.
 """
 
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.orm import sessionmaker
@@ -106,6 +106,8 @@ class TestAbweisenTeiltMit:
             report_repo=repo,
             moderation_repo=moderation_repo,
             mitteilung=MeldungMitteilung(postausgang),
+            # Der Beitrag ist nicht gesperrt (Abweisen gesperrter Beitraege: 409).
+            sperre_repo=MagicMock(**{"aktive.return_value": None}),
         )
         meldung = _melden(repo, "anna@example.org")
 

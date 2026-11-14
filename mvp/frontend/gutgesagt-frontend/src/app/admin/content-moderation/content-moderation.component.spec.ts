@@ -713,6 +713,26 @@ describe('ContentModerationComponent', () => {
       fixture.destroy();
     }));
 
+    it('bietet bei einem gesperrten Beitrag kein Abweisen an', () => {
+      mitMeldungen([meldung({ content: { status: 'blocked', title: 'T', text: 'T' } })]);
+
+      expect(knopf('Abweisen')).toBeUndefined();
+      fixture.componentInstance.dismissReport(meldung({ content: { status: 'blocked', title: 'T', text: 'T' } }));
+      expect(dialog.open).not.toHaveBeenCalled();
+    });
+
+    it('meldet 409 „beitrag_gesperrt“ beim Abweisen mit dem vorhandenen Satz und lädt neu', () => {
+      const snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+      TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
+      moderation.dismissReport.and.returnValue(throwError(() => ({ status: 409, error: { detail: 'beitrag_gesperrt' } })));
+      dialog.open.and.returnValue({ afterClosed: () => of('Kein Verstoß gegen die Nutzungsbedingungen') } as any);
+      mitMeldungen([meldung()]);
+
+      fixture.componentInstance.dismissReport(meldung());
+
+      expect(snackBar.open).toHaveBeenCalledWith('Der Beitrag ist schon gesperrt', 'OK', jasmine.anything());
+    });
+
     it('meldet 409 beim Abweisen als „inzwischen erledigt“ und lädt neu', () => {
       const snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
       TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });

@@ -7,15 +7,16 @@ Begruendung kommt als Query-Parameter ``notes`` an.
 """
 
 from unittest.mock import AsyncMock, MagicMock, Mock
+from uuid import UUID
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api.v1.moderation import MELDUNG_NICHT_OFFEN
+from api.v1.moderation import BEITRAG_GESPERRT, MELDUNG_NICHT_OFFEN
 from api.v1.moderation import router as moderation_router
 from dependencies import get_moderation_service, get_settings
-from repositories.content_report_repository import MeldungNichtOffen
+from repositories.content_report_repository import BeitragGesperrt, MeldungNichtOffen
 from services.moderation_service import ModerationService
 
 ADMIN = {"X-User": "admin-1", "X-Is-Admin": "true"}
@@ -80,13 +81,46 @@ def test_abweisen_lehnt_eine_begruendung_ueber_500_zeichen_ab():
 @pytest.mark.asyncio
 async def test_der_dienst_weist_nur_offene_ab_und_reicht_den_konflikt_durch():
     report_repo = MagicMock()
+    report_repo.content_id_von = MagicMock(return_value=None)
     report_repo.update_report_status = MagicMock(
         side_effect=MeldungNichtOffen(REPORT_ID)
     )
     service = ModerationService.__new__(ModerationService)
     service.report_repo = report_repo
+    service._sperre_repo = MagicMock(**{"aktive.return_value": None})
 
     with pytest.raises(MeldungNichtOffen):
         await service.dismiss_report(REPORT_ID, "admin-1", notes="x")
 
     assert report_repo.update_report_status.call_args.kwargs["nur_offene"] is True
+
+
+@pytest.mark.unit
+def test_abweisen_zu_einem_gesperrten_beitrag_ist_409():
+    service = Mock()
+    service.dismiss_report = AsyncMock(side_effect=BeitragGesperrt("beitrag-1"))
+
+    antwort = _client(service).put(
+        f"/api/v1/moderation/reports/{REPORT_ID}/dismiss", headers=ADMIN
+    )
+
+    assert antwort.status_code == 409
+    assert antwort.json()["detail"] == BEITRAG_GESPERRT
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_der_dienst_weist_bei_gesperrtem_beitrag_nicht_ab_und_schickt_keine_mail():
+    """Die Abweisungsmail sagt "kein Verstoss"; bei einem gesperrten Beitrag waere das falsch."""
+    report_repo = MagicMock()
+    report_repo.content_id_von = MagicMock(
+        return_value=UUID("00000000-0000-4000-8000-000000000001")
+    )
+    service = ModerationService.__new__(ModerationService)
+    service.report_repo = report_repo
+    service._sperre_repo = MagicMock(**{"aktive.return_value": object()})
+
+    with pytest.raises(BeitragGesperrt):
+        await service.dismiss_report(REPORT_ID, "admin-1", notes="x")
+
+    report_repo.update_report_status.assert_not_called()
