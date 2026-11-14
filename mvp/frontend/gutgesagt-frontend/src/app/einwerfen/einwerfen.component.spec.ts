@@ -116,6 +116,11 @@ describe('EinwerfenComponent', () => {
   describe('Felder', () => {
     beforeEach(() => erstellen());
 
+    it('zeigt am Knopf das Einwerfen-Symbol des Fangkorbs, keine Diskette (P47)', () => {
+      const symbol = fixture.nativeElement.querySelector('.einwerfen-knopf mat-icon') as HTMLElement;
+      expect(symbol.textContent!.trim()).toBe('move_to_inbox');
+    });
+
     it('hat genau zwei Felder: Link und Hinweis fuer andere', () => {
       const labels = Array.from(fixture.nativeElement.querySelectorAll('mat-label')).map((l) =>
         (l as HTMLElement).textContent!.trim(),

@@ -81,7 +81,8 @@
             <button mat-raised-button color="primary" type="submit"
                     class="einwerfen-knopf"
                     [disabled]="!kannEinwerfen">
-                <mat-icon *ngIf="!wirdGespeichert">save</mat-icon>
+                <!-- Dasselbe Symbol wie der Einwerfen-Knopf im Fangkorb, keine Diskette (Persona-Runde 2, P47) -->
+                <mat-icon *ngIf="!wirdGespeichert" aria-hidden="true">move_to_inbox</mat-icon>
                 <mat-spinner *ngIf="wirdGespeichert" diameter="20" class="knopf-spinner"></mat-spinner>
                 Einwerfen
             </button>
