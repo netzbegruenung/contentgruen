@@ -18,7 +18,7 @@ import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinwei
 import { AddCommentaryRequest, AddCommentaryResponse, Commentary } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
-import { Vorlage, vorlageHinweis } from '../beitragsformular/vorlage';
+import { VORLAGE_PARAM, Vorlage, vorlageHinweis } from '../beitragsformular/vorlage';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
@@ -34,6 +34,8 @@ import {
   kommentarEntwurfSichern,
 } from '../beitragsformular/kommentar-entwurf';
 import { AuthService } from '../auth/auth.service';
+import { ActivatedRoute } from '@angular/router';
+import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
 import { einwilligungFehlt } from '../services/art9-einwilligung.service';
@@ -373,6 +375,16 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
   private readonly authService = inject(AuthService);
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+
+  /**
+   * Mit Vorlage oder Einwurf aus dem Fangkorb kein Entwurf (Review): Beide laden nach und
+   * ueberschrieben einen zurueckgeholten Entwurf, oder er sie. Die Adresse sagt es sofort.
+   */
+  private get mitVorlageOderEinwurf(): boolean {
+    const params = this.route?.snapshot.queryParamMap;
+    return !!(this.vorlage || this.vorbefuellung || params?.get(VORLAGE_PARAM) || params?.get(EINWURF_PARAM));
+  }
 
   constructor(
     fb: FormBuilder,
@@ -451,7 +463,8 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
   }
 
   private entwurfSichern(): void {
-    if (this.responseId) {
+    // Nach dem Speichern, mit Vorlage oder Einwurf und ohne Einwilligung nicht (Review).
+    if (this.responseId || this.mitVorlageOderEinwurf || this.einwilligungZustand.wert === 'fehlt') {
       return;
     }
     const w = this.commentaryForm.getRawValue();
@@ -469,7 +482,7 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
   /** Nur in ein leeres Formular ohne Vorlage und ohne Einwurf aus dem Fangkorb. */
   private entwurfHolen(kennung: string | null): void {
     const { title, text } = this.commentaryForm.value;
-    if (this.vorlage || this.vorbefuellung || title || text) {
+    if (this.mitVorlageOderEinwurf || title || text) {
       return;
     }
     const entwurf = kommentarEntwurfHolen(this.aussageAusAdresse.text, kennung);

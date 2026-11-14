@@ -2,6 +2,7 @@ import {
   KOMMENTAR_ENTWURF_HOECHSTENS_MS,
   KOMMENTAR_ENTWURF_SCHLUESSEL,
   KommentarEntwurfWerte,
+  kommentarEntwurfAufraeumen,
   kommentarEntwurfHolen,
   kommentarEntwurfLoeschen,
   kommentarEntwurfSichern,
@@ -55,6 +56,26 @@ describe('Kommentar-Entwurf (E1)', () => {
   it('löscht auf Zuruf', () => {
     kommentarEntwurfSichern(WERTE, 'Aussage', 'kennung-1', JETZT);
     kommentarEntwurfLoeschen();
+    expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+  });
+
+  it('zählt die Stunde ab dem ersten Sichern', () => {
+    kommentarEntwurfSichern(WERTE, 'Aussage', 'kennung-1', JETZT);
+    kommentarEntwurfSichern(WERTE, 'Aussage', 'kennung-1', JETZT + KOMMENTAR_ENTWURF_HOECHSTENS_MS - 1000);
+
+    expect(kommentarEntwurfHolen('Aussage', 'kennung-1', JETZT + KOMMENTAR_ENTWURF_HOECHSTENS_MS + 1)).toBeNull();
+  });
+
+  it('räumt beim App-Start Abgelaufenes und ein fremdes Konto weg, ohne offenes Formular', () => {
+    kommentarEntwurfSichern(WERTE, 'Aussage', 'kennung-1', JETZT);
+    kommentarEntwurfAufraeumen('kennung-1', JETZT + 1000);
+    expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).not.toBeNull();
+
+    kommentarEntwurfAufraeumen(null, JETZT + KOMMENTAR_ENTWURF_HOECHSTENS_MS + 1);
+    expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+    kommentarEntwurfSichern(WERTE, 'Aussage', 'kennung-1', JETZT);
+    kommentarEntwurfAufraeumen('kennung-2', JETZT);
     expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
   });
 });

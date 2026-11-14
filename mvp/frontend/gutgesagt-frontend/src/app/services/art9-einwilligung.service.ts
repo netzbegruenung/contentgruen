@@ -9,7 +9,7 @@ import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
 import { entwuerfeAufraeumen, entwuerfeLoeschen } from '../einwilligung/entwurf-vor-einwilligung';
 import { merkerEntfernen } from '../meine-beitraege/meilenstein-merker';
-import { kommentarEntwurfLoeschen } from '../beitragsformular/kommentar-entwurf';
+import { kommentarEntwurfAufraeumen, kommentarEntwurfLoeschen } from '../beitragsformular/kommentar-entwurf';
 
 /**
  * Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum, ein zweiter
@@ -234,8 +234,10 @@ export class Art9EinwilligungService implements OnDestroy {
           if (this.kennung !== null && this.kennung !== kennung) {
             entwuerfeLoeschen();
             kommentarEntwurfLoeschen();
+          } else {
+            entwuerfeAufraeumen(kennung);
+            kommentarEntwurfAufraeumen(kennung);
           }
-          else entwuerfeAufraeumen(kennung);
           this.kennung = kennung;
           this.zustand.kennung = kennung;
           this.geklaertSetzen(null); // abgemeldet oder andere Person: neu klaeren
@@ -289,6 +291,8 @@ export class Art9EinwilligungService implements OnDestroy {
       .subscribe((stand) => {
         if (!stand) return;
         this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
+        // Widerruf in einem anderen Tab: auch der Kommentar-Entwurf dieses Tabs geht (E1).
+        if (!stand.eingewilligt) kommentarEntwurfLoeschen();
         // Ein Widerruf in einem anderen Tab nimmt auch hier die Klaerung zurueck (#587).
         this.geklaertSetzen(stand.eingewilligt ? this.kennung : null);
       });

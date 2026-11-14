@@ -51,8 +51,11 @@ export function kommentarEntwurfSichern(
     kommentarEntwurfLoeschen();
     return;
   }
+  // Die Stunde zählt ab dem ersten Sichern, nicht ab dem letzten Ausblenden (Review).
+  const vorher = lesen();
+  const zeit = vorher && vorher.konto === konto && !abgelaufen(vorher, jetzt) ? vorher.zeit : jetzt;
   try {
-    sessionStorage.setItem(KOMMENTAR_ENTWURF_SCHLUESSEL, JSON.stringify({ zeit: jetzt, konto, aussage, werte }));
+    sessionStorage.setItem(KOMMENTAR_ENTWURF_SCHLUESSEL, JSON.stringify({ zeit, konto, aussage, werte }));
   } catch {
     // Ohne Speicher (privates Fenster, gesperrt) gibt es keinen Entwurf; mehr passiert nicht.
   }
@@ -63,26 +66,42 @@ export function kommentarEntwurfSichern(
  * einem anderen Konto: Der Eintrag wird gelöscht. Eine andere Aussage lässt ihn liegen.
  */
 export function kommentarEntwurfHolen(aussage: string, kennung: string | null, jetzt = Date.now()): KommentarEntwurfWerte | null {
-  let eintrag: unknown;
-  try {
-    const roh = sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL);
-    eintrag = roh ? JSON.parse(roh) : null;
-  } catch {
-    return null;
-  }
-  if (!eintrag) return null;
+  const eintrag = lesen();
   const konto = kontoPruefwert(kennung);
-  if (
-    !istEintrag(eintrag) ||
-    konto === null ||
-    eintrag.konto !== konto ||
-    jetzt - eintrag.zeit > KOMMENTAR_ENTWURF_HOECHSTENS_MS ||
-    jetzt < eintrag.zeit
-  ) {
+  if (!eintrag || konto === null || eintrag.konto !== konto || abgelaufen(eintrag, jetzt)) {
     kommentarEntwurfLoeschen();
     return null;
   }
   return eintrag.aussage === aussage ? eintrag.werte : null;
+}
+
+/**
+ * Beim App-Start und bei jeder Anmeldung (Art9EinwilligungService.starten): ein abgelaufener
+ * Eintrag geht, mit ``kennung`` auch der eines anderen Kontos, ohne dass das Formular offen ist.
+ */
+export function kommentarEntwurfAufraeumen(kennung: string | null, jetzt = Date.now()): void {
+  const eintrag = lesen();
+  const konto = kontoPruefwert(kennung);
+  if (eintrag === undefined) return;
+  if (!eintrag || abgelaufen(eintrag, jetzt) || (konto !== null && eintrag.konto !== konto)) {
+    kommentarEntwurfLoeschen();
+  }
+}
+
+function abgelaufen(eintrag: Eintrag, jetzt: number): boolean {
+  return jetzt - eintrag.zeit > KOMMENTAR_ENTWURF_HOECHSTENS_MS || jetzt < eintrag.zeit;
+}
+
+/** Der Eintrag; null, wenn er unlesbar ist; undefined, wenn es keinen gibt oder keinen Speicher. */
+function lesen(): Eintrag | null | undefined {
+  try {
+    const roh = sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL);
+    if (roh === null) return undefined;
+    const wert: unknown = JSON.parse(roh);
+    return istEintrag(wert) ? wert : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Beim Absenden, Leeren, Abmelden und Widerruf. */

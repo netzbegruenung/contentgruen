@@ -223,6 +223,31 @@ describe('AddCommentaryComponent', () => {
       expect(component.commentaryForm.value.title).toBe('Eigener Titel');
     });
 
+    it('sichert nicht, wenn eine Vorlage im Formular steht', () => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      component.vorlageAnwenden({ id: 'v1', titel: 'Titel der Vorlage', text: 'Text der Vorlage hier.' });
+      component.vorlage = { id: 'v1', titel: 'Titel der Vorlage', text: 'Text der Vorlage hier.' };
+
+      ausblenden();
+
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+    });
+
+    it('führt einen zurückgeholten, unveränderten Titelvorschlag weiter nach', () => {
+      kommentarEntwurfSichern(
+        { title: 'Erster Satz hier.', text: 'Erster Satz hier. Und mehr.', kurz: '', lang: '', zweck: null, stil: null },
+        '',
+        'kim-1',
+      );
+      fixture = TestBed.createComponent(AddCommentaryComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      anmelden();
+
+      component.commentaryForm.get('text')!.setValue('Neuer Anfang. Und mehr.');
+      expect(component.commentaryForm.value.title).toBe('Neuer Anfang.');
+    });
+
     it('löscht ihn nach dem Speichern und beim Leeren', () => {
       TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
       ausfuellen();
