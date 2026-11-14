@@ -540,6 +540,20 @@ def test_dockerignore_laesst_genau_durch_was_dockerfile_ci_kopiert():
     assert all((WURZEL / q).is_file() for q in kopiert)
 
 
+def test_dienst_image_ohne_den_bestaetiger():
+    # 2,2 GB je Build in der Registry, standardmaessig aus (Platte voll, 14.11.); wer ihn
+    # einschaltet, laedt ihn beim Start (docs/DEPLOYMENT.md).
+    config = (
+        WURZEL / "mvp/backend/semantic-search-service/app/core/config.py"
+    ).read_text()
+    dockerfile = (
+        WURZEL / "mvp/backend/semantic-search-service/Dockerfile"
+    ).read_text()
+    for name in ("NLI_BESTAETIGER_MODELL", "NLI_BESTAETIGER_TOKENIZER"):
+        modell = re.search(rf'^{name} = "([^"]+)"', config, re.MULTILINE).group(1)
+        assert modell not in dockerfile
+
+
 def test_ci_python_bringt_die_modelle_der_integrationstests_mit():
     # Die Modelle aus core/config.py, die standardmaessig laden; der Bestaetiger (aus) nicht.
     config = (

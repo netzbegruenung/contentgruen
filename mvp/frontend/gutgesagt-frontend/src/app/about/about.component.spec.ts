@@ -93,7 +93,7 @@ describe('AboutComponent', () => {
     expect(ki).toContain(SUCHE_MIT_SPRACHMODELLEN);
     expect(modelle).toContain('multilingual-e5-base');
     expect(modelle).toContain('mDeBERTa-v3');
-    // Der Bestaetiger (NLI_BESTAETIGER_MODELL, core/config.py) liegt im Image und ist zuschaltbar
+    // Der Bestaetiger (NLI_BESTAETIGER_MODELL, core/config.py) ist zuschaltbar (laedt dann beim Start)
     expect(modelle).toContain('Zwei weitere');
     expect(modelle).toContain('XLM-RoBERTa-large');
     expect(modelle).toContain('nach festen Regeln');

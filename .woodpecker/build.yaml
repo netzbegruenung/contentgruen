@@ -1,5 +1,5 @@
 # Baut nach jedem Push auf main die Images der geaenderten Komponenten und pusht sie in die
-# Registry (#327), Tags main und sha-<kurz> wie bisher .github/workflows/build.yml.
+# Registry (#327), nur Tag main (ohne Tag je Commit, scripts/image_tags.py).
 # Erst nach gruenem ci (depends_on), manuell auf main baut alle Images (kein Pfadfilter
 # bei manual). Die Pfadfilter decken alles ab, was das Dockerfile kopiert, dazu diese
 # Pipeline und das Tag-Skript; scripts/tests/test_woodpecker_images.py prueft das.
@@ -81,6 +81,13 @@ steps:
       dockerfile: mvp/backend/semantic-search-service/Dockerfile
       platforms: linux/amd64
       tags_file: .image-tags
+      # Schichten aus dem letzten main-Build wiederverwenden (Cache-Metadaten inline im
+      # Image, kein eigenes Cache-Image): Ohne Cache ergab jeder Build rund 4 GB neue
+      # Schichten in der Registry, auch wenn sich nur der Code aenderte. Tag mit dem
+      # IMAGE_TAG_PRAEFIX oben (scripts/tests/test_woodpecker_images.py).
+      cache_from:
+        - git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:woodpecker-main
+      cache_to: type=inline
       username:
         from_secret: registry_user
       password:

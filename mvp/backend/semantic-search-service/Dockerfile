@@ -26,13 +26,10 @@ RUN python -c "from transformers import AutoModelForSequenceClassification, Auto
     AutoTokenizer.from_pretrained(name); AutoModelForSequenceClassification.from_pretrained(name); \
     print('NLI model pre-downloaded successfully')"
 
-# Der Bestaetiger (core/config.py NLI_BESTAETIGER_MODELL, rund 2,2 GB), auch wenn
-# nli_bestaetiger aus ist: Einschalten soll keinen neuen Build brauchen. Der Tokenizer
-# kommt aus dem Basismodell (schneller Tokenizer, ohne sentencepiece).
-RUN python -c "from transformers import AutoModelForSequenceClassification, AutoTokenizer; \
-    AutoTokenizer.from_pretrained('FacebookAI/xlm-roberta-large'); \
-    AutoModelForSequenceClassification.from_pretrained('joeddav/xlm-roberta-large-xnli'); \
-    print('NLI confirmer model pre-downloaded successfully')"
+# Nicht im Image: der Bestaetiger (core/config.py NLI_BESTAETIGER_MODELL, rund 2,2 GB),
+# standardmaessig aus. Er machte jedes Image gut doppelt so gross und fuellte die Registry
+# (14.11.). Wer ihn einschaltet, laesst ihn beim Start laden (CONFIG.md,
+# SEMANTIC_SEARCH_NLI_BESTAETIGER).
 
 # Ab hier nur noch die eingebauten Modelle: Ohne Offline-Modus fragt der Dienst bei
 # jedem Start huggingface.co an (Startzeit, Datenverkehr in die USA) und koennte eine

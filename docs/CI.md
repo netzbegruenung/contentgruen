@@ -199,8 +199,8 @@ and 0.8 GB (Node) compressed in the registry; the Node image shares its base lay
   red because the image is old.
 - **Models without offline mode.** Unlike the service image, the CI image does not set
   `HF_HUB_OFFLINE`: if a pull request switches to a model the image does not have, the
-  run downloads it as before. The confirmer (`NLI_BESTAETIGER_MODELL`, 2.2 GB) is left out;
-  it is off by default and no test loads it. Locally the integration suite passed with
+  run downloads it as before. The confirmer (`NLI_BESTAETIGER_MODELL`, 2.2 GB) is left out, as
+  in the service image; it is off by default and no test loads it. Locally the integration suite passed with
   `HF_HUB_OFFLINE=1` in the image, so the two models are all it needs.
 - **When it is built:** after a push to `main` that changes what an image contains (path
   filter per build step: `Dockerfile.ci`, `Dockerfile.ci.dockerignore`, the lockfiles,
@@ -359,7 +359,7 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
 
 | Workflow | Runs on | Builds | Tags |
 |---|---|---|---|
-| `build.yaml` | push to `main`; "Run pipeline" on `main` | images whose files changed; a manual run builds all | `main`, `sha-<7 characters>` |
+| `build.yaml` | push to `main`; "Run pipeline" on `main` | images whose files changed; a manual run builds all | `main` |
 | `release.yaml` | tag `v*` | all four | `X.Y.Z`, `X.Y`, `latest`; a prerelease only `X.Y.Z` |
 
 - **Tags from one script.** The step `image-tags` runs `scripts/image_tags.py`, which writes
@@ -378,7 +378,16 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
 - `scripts/tests/test_woodpecker_images.py` keeps the two workflows identical except for the
   path filters and `APP_VERSION`, checks the image names, the filters against the
   Dockerfiles and that only the plugin steps see the registry secret.
-- No build cache: each run builds from scratch, as the earlier Woodpecker builds did.
+- **Build cache only for the semantic search image:** `cache_from` its `:woodpecker-main`,
+  `cache_to: type=inline` (the cache metadata travel inside the image, no extra cache image).
+  Without it every build pushed about 4 GB of new layers (the models), even for a code change;
+  with it the layers up to the model downloads stay the same blobs as long as the base image
+  and `requirements.txt` do. The other images build from scratch, they are small.
+- **Registry space:** `build.yaml` tags only `main`, no tag per commit. Forgejo deletes an
+  overwritten tag right away and its blobs with the cron task `cleanup_packages` (daily, older
+  than 24 h); a `sha-` tag per merge kept every build forever and filled the package disk on
+  14.11.2026. The `sha-` tags of the GitHub workflow go by a cleanup rule of the organisation
+  `netzbegruenung-images` (`docs/DEPLOYMENT.md`, "Updating Production").
 
 **Parallel run.** As long as the GitHub workflows build, every Woodpecker tag carries the
 prefix `woodpecker-` (`IMAGE_TAG_PRAEFIX` in both workflows): `:woodpecker-main`,
