@@ -166,7 +166,7 @@ eingewilligt hat, bekommt den Auftrag beim Einspielen der Migration
 (`2026-11-13-loeschauftraege.sql`): angelegt zum Zeitpunkt des jüngsten Widerrufs, Frist sieben
 Tage ab dem Einspielen (entschieden 13.11.2026). Die Datenschutzerklärung sagt dazu: „Wer vor dem [Datum des Einspielens] widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.“
 Das Datum steht bis zum Release-Tag als Platzhalter „[Datum des Einspielens]“ und wird dort gesetzt
-(Launch-Checkliste). Was nach einer neuen Einwilligung gespeichert
+(`docs/DEPLOYMENT.md`, Releases; bei Tags prüft `scripts/release_platzhalter.py`, dass er ersetzt ist). Was nach einer neuen Einwilligung gespeichert
 wurde, schützt die Obergrenze (unten). Beim Umstellen der Kennungen
 zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
 

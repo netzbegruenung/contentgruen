@@ -16,7 +16,8 @@ SCHRITTE = {s["name"]: s for s in PIPELINE["steps"]}
 DIENSTE = {d["name"]: d for d in PIPELINE["services"]}
 BERICHT = "ci-bericht"
 # Laufen nie in PR-Laeufen (Entscheidung @BanSe 14.11.), nur bei push auf main, Tag, manuell
-NUR_MAIN = {"integration"}
+# Nie in PR-Laeufen: integration (main, Tags, manuell), release-platzhalter (nur Tags)
+NUR_MAIN = {"integration", "release-platzhalter"}
 
 
 def from_zeile(dockerfile, stufe=None):
@@ -444,7 +445,8 @@ def test_dienste_nur_wenn_integration_laeuft():
 def test_push_tag_und_manuell_laufen_voll(event):
     # Auch ein Push, der nur das Frontend aendert: auf main laeuft immer alles.
     lauf = schritte_im_lauf(event, ["mvp/frontend/gutgesagt-frontend/src/x.ts"])
-    assert set(lauf) == ALLE - {"retired-words", BERICHT}
+    nur_tag = set() if event == "tag" else {"release-platzhalter"}
+    assert set(lauf) == ALLE - {"retired-words", BERICHT} - nur_tag
 
 
 def test_python_installation_und_unit_laufen_immer():

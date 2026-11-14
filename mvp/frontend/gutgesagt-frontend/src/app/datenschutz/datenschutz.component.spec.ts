@@ -6,6 +6,14 @@ import { DatenschutzComponent } from './datenschutz.component';
 import { SUCHANFRAGEN_ABSCHNITT } from '../search/search.component';
 import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 
+/** Der Satz zu Widerrufen vor dem Einspielen: mit Platzhalter oder mit Datum („1. Dezember 2026“). */
+const WIDERRUF_VOR_DEM_EINSPIELEN = new RegExp(
+  'Wer vor dem (\\[Datum des Einspielens\\]|([1-9]|[12]\\d|3[01])\\. ' +
+    '(Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember) \\d{4}) ' +
+    'widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ' +
+    'ab diesem Tag von ihm\\.'
+);
+
 /**
  * Die Datenschutzerklaerung beschreibt, was die App tut (#222). Geprueft wird der Text,
  * den Lesende sehen, je Abschnitt: Ein Abschnitt reicht von seiner Ueberschrift (h2 oder
@@ -657,8 +665,10 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Rückschlüsse auf deine politische Haltung');
 
       expect(text).toContain('Innerhalb von sieben Tagen lösen wir auch deine Beiträge, Einwürfe und Sätze von dir');
-      // Widerrufe vor dem Einspielen: Frist ab dem Einspielen; das Datum setzt der Release-Tag (Launch-Checkliste).
-      expect(text).toContain('Wer vor dem [Datum des Einspielens] widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.');
+      // Widerrufe vor dem Einspielen: Frist ab dem Einspielen. Bis zum Release steht der Platzhalter,
+      // danach ein Datum (docs/DEPLOYMENT.md, Releases); bei Tags prüft scripts/release_platzhalter.py,
+      // dass der Platzhalter ersetzt ist.
+      expect(text).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
       expect(text).toContain('zeigen statt deines Namens „ehemalige Person“, deine Einwürfe löschen wir');
       expect(text).toContain('Dafür legen wir einen Löschauftrag an: deine Kennung, der Zeitpunkt deines Widerrufs und die Frist');
       expect(text).toContain('Einen erledigten Löschauftrag löschen wir ein Jahr nach der Erledigung, mit deinem Konto sofort');
@@ -668,6 +678,16 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('was du danach beiträgst, erfasst ein noch offener Löschauftrag nicht');
       expect(abschnitt('Beiträge, die du einstellst')).toContain('Widerrufst du deine Art.-9-Einwilligung, ersetzen wir deine Kennung ebenso, innerhalb von sieben Tagen');
       expect(abschnitt('Einwürfe in den Fangkorb')).toContain('Widerrufst du deine Art.-9-Einwilligung, tun wir dasselbe innerhalb von sieben Tagen');
+    });
+
+    it('Satz zu Widerrufen vor dem Einspielen: Platzhalter oder echtes Datum, sonst nichts', () => {
+      const satz = (tag: string) =>
+        `Wer vor dem ${tag} widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.`;
+
+      expect(satz('[Datum des Einspielens]')).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('1. Dezember 2026')).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('[Datum]')).not.toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('Dezember 2026')).not.toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
     });
   });
 
