@@ -52,7 +52,7 @@
       </mat-card-header>
       <mat-card-content>
         <div class="metric-value">
-          <span class="current">{{ metrics.searches_per_user | number:'1.1-1' }}</span>
+          <span class="current">{{ metrics.searches_per_user | number:'1.1-1':'de' }}</span>
         </div>
       </mat-card-content>
     </mat-card>
@@ -109,7 +109,7 @@
         </div>
         <div class="trend" [style.color]="getTrendColor(metrics.usage_counter_trend)">
           <mat-icon>{{ getTrendIcon(metrics.usage_counter_trend) }}</mat-icon>
-          <span class="trend-text">{{ metrics.usage_counter_trend | titlecase }}</span>
+          <span class="trend-text">{{ trendWort(metrics.usage_counter_trend) }}</span>
         </div>
       </mat-card-content>
     </mat-card>
@@ -130,7 +130,7 @@
       </mat-card-header>
       <mat-card-content>
         <div class="metric-value">
-          <span class="current">{{ metrics.helpful_rate | number:'1.0-0' }}%</span>
+          <span class="current">{{ metrics.helpful_rate | number:'1.0-0':'de' }}%</span>
         </div>
         <div class="vote-details">
           <span class="likes">👍 {{ metrics.helpful_like_count }}</span>

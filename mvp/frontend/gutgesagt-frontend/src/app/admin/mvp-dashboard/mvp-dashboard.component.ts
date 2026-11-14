@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, registerLocaleData } from '@angular/common';
+import localeDe from '@angular/common/locales/de';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -12,6 +13,18 @@ import { EinladungenComponent } from '../einladungen/einladungen.component';
 import { Subscription } from 'rxjs';
 import { nachladeStrom } from '../../shared/selbst-nachladen';
 import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
+
+// Zahlen mit Komma ("2,5" statt "2.5", Persona-Runde 2, M9); die App setzt sonst keine Locale.
+registerLocaleData(localeDe);
+
+/** Der Trend auf Deutsch, mit den Woertern der Erklaerung daneben (M9: "Stable"). */
+export function trendWort(trend: string): string {
+  switch (trend) {
+    case 'increasing': return 'Steigend';
+    case 'decreasing': return 'Fallend';
+    default: return 'Stabil';
+  }
+}
 
 /** Die Kennzahlen aendern sich langsam: alle fuenf Minuten und beim Zurueckkehren auf den Reiter. */
 export const KENNZAHLEN_NACHLADEN_MS = 5 * 60 * 1000;
@@ -67,6 +80,8 @@ export class MvpDashboardComponent implements OnInit, OnDestroy {
       this.refreshSubscription.unsubscribe();
     }
   }
+
+  readonly trendWort = trendWort;
 
   getTrendIcon(trend: string): string {
     switch (trend) {
