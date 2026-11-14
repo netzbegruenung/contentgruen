@@ -281,6 +281,13 @@ describe('AddCommentaryComponent', () => {
 
       ausblenden();
       expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+      // Ein neuer Text verwirft den vorhandenen: Er darf wieder Entwurf werden (Review #686).
+      component.commentaryForm.get('text')!.setValue('Ein ganz neuer, eigener Kommentartext.');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(JSON.parse(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)!).werte.text).toBe(
+        'Ein ganz neuer, eigener Kommentartext.',
+      );
     }));
 
     it('löscht ihn nach dem Nehmen und sichert danach nicht wieder; nach dem Leeren wieder', fakeAsync(() => {

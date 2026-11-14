@@ -378,15 +378,16 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
   private readonly route = inject(ActivatedRoute, { optional: true });
 
   /**
-   * Mit Vorlage oder Einwurf aus dem Fangkorb kein Entwurf (Review): Beide laden nach und
-   * ueberschrieben einen zurueckgeholten Entwurf, oder er sie. Die Adresse sagt es sofort.
-   */
-  /**
    * Zugestimmt oder einen vorhandenen genommen: Der Entwurf ist erledigt und wird nicht
-   * wieder gesichert, auch wenn das Formular noch die Eingaben zeigt (Review #686).
+   * wieder gesichert, auch wenn das Formular noch die Eingaben zeigt (Review #686). Ist der
+   * vorhandene vergessen (neuer Text, Leeren), gilt das nicht mehr.
    */
   private entwurfErledigt = false;
 
+  /**
+   * Mit Vorlage oder Einwurf aus dem Fangkorb kein Entwurf (Review): Beide laden nach und
+   * ueberschrieben einen zurueckgeholten Entwurf, oder er sie. Die Adresse sagt es sofort.
+   */
   private get mitVorlageOderEinwurf(): boolean {
     const params = this.route?.snapshot.queryParamMap;
     return !!(this.vorlage || this.vorbefuellung || params?.get(VORLAGE_PARAM) || params?.get(EINWURF_PARAM));
@@ -943,8 +944,6 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
 
   leeren(): void {
     this.titelVorbelegung = '';
-    // Wer leert, fängt neu an: Ein neuer Text darf wieder als Entwurf gesichert werden.
-    this.entwurfErledigt = false;
     kommentarEntwurfLoeschen();
     this.commentaryForm.reset({ title: '', text: '', kurz: '', lang: '', ...OPTIONALE_ANGABEN_LEER, references: [] });
     this.antwortAuf?.leeren();
@@ -969,5 +968,7 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
   private vorhandenVergessen(): void {
     this.vorhanden = null;
     this.entscheidungsFehler = null;
+    // Ohne vorhandenen keine Entscheidung mehr: Ein neuer Text darf wieder Entwurf werden.
+    this.entwurfErledigt = false;
   }
 }
