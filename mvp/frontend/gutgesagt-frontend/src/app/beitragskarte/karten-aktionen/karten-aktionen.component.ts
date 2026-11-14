@@ -38,6 +38,12 @@ import { platzhalterDialogOeffnen } from './platzhalter-dialog.component';
 import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
 
 /**
+ * So lange steht „Kopiert“: Mit 1,5 s war es beim Wechsel in die andere App schon weg
+ * (Persona-Runde 2, P10).
+ */
+export const KOPIERT_DAUER_MS = 4000;
+
+/**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, teilen, melden, im
  * Menue der Weg zur eigenen Adresse des Beitrags (/beitrag/:id, #300) und,
  * angemeldet, als Vorlage nehmen (#356).
@@ -271,7 +277,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     const person = this.authService.getUserInfo();
     const kennung = person?.isAuthenticated ? person.userId : null;
     if (!kennung) {
-      this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
+      this.snackBar.open(KOPIERT, 'Schließen', { duration: KOPIERT_DAUER_MS });
       return;
     }
     if (this.usageTrackingService.gepostetBekannt(kennung)) {
@@ -280,7 +286,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     }
     // Noch unbekannt oder nicht angeboten: sofort die gewohnte Bestätigung; kommt vom
     // Server ein Ja, ersetzt die Frage sie (eine neue Snackbar schließt die alte).
-    this.snackBar.open(KOPIERT, 'Schließen', { duration: 1500 });
+    this.snackBar.open(KOPIERT, 'Schließen', { duration: KOPIERT_DAUER_MS });
     if (this.usageTrackingService.gepostetBekannt(kennung) === false) {
       return;
     }
