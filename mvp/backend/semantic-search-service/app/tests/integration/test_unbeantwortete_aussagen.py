@@ -239,7 +239,7 @@ async def test_mit_kommentar_nur_mit_sichtbarem_kommentar(
 
 
 async def test_gesuchte_aussage_verschwindet_nach_dem_kommentar(
-    statement_service, commentary_service
+    statement_service, commentary_service, sichtbare_suchanfragen
 ):
     """
     Der Weg "Hier fehlt eine Antwort" -> Antworten -> gespeichert: Die Suchanfrage,
@@ -252,6 +252,9 @@ async def test_gesuchte_aussage_verschwindet_nach_dem_kommentar(
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    # Freigegeben und ueber der Schwelle (Vormoderation): Nur dann steht sie auf
+    # der Liste, und nur dann laesst sich darauf antworten.
+    sichtbare_suchanfragen.add(gesucht)
     suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(
         return_value=[
