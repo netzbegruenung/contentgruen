@@ -305,7 +305,7 @@ describe('GegenlesenComponent', () => {
       fixture.componentRef.setInput('kompakt', true);
     }
 
-    it('zeigt eine Zeile mit der Zahl und klappt die Anmerkungen auf', fakeAsync(() => {
+    it('zeigt eine Zeile mit der Zahl und klappt mit der ersten Anmerkung selbst auf (P33)', fakeAsync(() => {
       kompakt();
       schreibe('Nicht die Wärmepumpe ist das Problem');
       tick(GEGENLESEN_VERZOEGERUNG_MS);
@@ -315,14 +315,42 @@ describe('GegenlesenComponent', () => {
       const inhalt = element().querySelector('.gegenlesen-inhalt') as HTMLElement;
 
       expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
-      expect(zeile.getAttribute('aria-expanded')).toBe('false');
-      expect(inhalt.hidden).toBeTrue();
-
-      zeile.click();
-      fixture.detectChanges();
       expect(zeile.getAttribute('aria-expanded')).toBe('true');
       expect(inhalt.hidden).toBeFalse();
       expect(inhalt.textContent).toContain('Sag lieber, was stimmt.');
+
+      zeile.click();
+      fixture.detectChanges();
+      expect(zeile.getAttribute('aria-expanded')).toBe('false');
+      expect(inhalt.hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('bleibt zu, wenn die Person selbst zugeklappt hat', fakeAsync(() => {
+      kompakt();
+      schreibe('Nicht die Wärmepumpe ist das Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+      (element().querySelector('.gegenlesen-zeile') as HTMLButtonElement).click();
+
+      schreibe('Nicht die Wärmepumpe ist das eigentliche Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('bleibt bei „Nichts aufgefallen“ zu', fakeAsync(() => {
+      kompakt();
+      schreibe('Wärmepumpe lohnt sich auch im Altbau');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
       tick(ANSAGE_PAUSE_MS);
     }));
 
