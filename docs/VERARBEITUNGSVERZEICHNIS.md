@@ -172,7 +172,7 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   Art.-9-Einwilligung.
 - **Betroffene:** alle, die kopieren oder teilen; Mitwirkende, deren Beiträge genutzt werden.
 - **Daten:** Nutzungsereignisse ohne Kennung (Beitrag, Art, Zeitpunkt, Geräteklasse, Fassung);
-  Prüfwert der entdoppelten Nutzung; je Kennung eine Zahl für die Rückmeldung; je Person und
+  Prüfwert der entdoppelten Nutzung; je Kennung zwei Zählerstände für die Rückmeldung und „Seit deinem letzten Besuch“ (Nutzung, Einwürfe anderer; kein Zeitpunkt, aus dem Einwurf-Stand und `raw_inputs.created_at` nur grob ableitbar, für Admins mit DB-Zugriff); je Person und
   Woche ein Prüfwert „Ja, gepostet“, danach nur die Zahl der Woche.
 - **Empfänger:** Zähler an der Karte für alle; die Rückmeldung nur für die Person; Zahlen je
   Woche für Admins.
@@ -180,22 +180,24 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   Einzelzeilen, danach nur Zähler je Beitrag (LK „Fristen außerhalb des täglichen Tasks“;
   `usage_retention_days` in `mvp/backend/semantic-search-service/app/core/config.py`, wirkt
   über den abschaltbaren Bereinigungsjob, Standard an; DSE „Verwendung von Beiträgen“); Zahl
-  für die Rückmeldung bis zur Kontolöschung (LK „Ablauf“, Schritt 2).
+  Zählerstände für die Rückmeldung bis zur Kontolöschung (LK „Ablauf“, Schritt 2).
 - **TOM:** DSFA V9, V9a, V10. „Ja, gepostet“ hinter dem Schalter `gepostet_aktiv`.
 
 ### T7 Punkte, Meilensteine, Abzeichen und Muster-Hinweise (gebaut, ausgeschaltet)
 
 - **Zweck:** Wirkung der Mitwirkung zeigen, Anerkennung sichtbar machen, Punkte gegen Absprachen
   schützen.
-- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art.-9-Einwilligung; Sichtbarkeit der
-  Abzeichen mit gesonderter Zustimmung (T2).
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a in einer eigenen,
+  freiwilligen Einwilligung, getrennt von der Art.-9-Einwilligung zum Beitragen (seit Wortlaut
+  `2026-11-13`, Entscheidung Maintainer 13.11.2026; gebaut mit #668, bis dahin ausgeschaltet);
+  Sichtbarkeit der Abzeichen mit gesonderter Zustimmung (T2).
 - **Betroffene:** angemeldete Personen mit Art.-9-Einwilligung, ohne Startkonten.
 - **Daten:** Punkte und Meilensteine nicht gespeichert, bei jedem Abruf berechnet;
   Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen.
 - **Empfänger:** Punkte nur für die Person; Abzeichen für andere Angemeldete mit Zustimmung;
   Muster-Hinweise nur für Admins.
 - **Fristen:** LK „Fristen“ (Paar-Prüfwerte, Muster-Hinweise, Abzeichen).
-- **TOM:** DSFA Abschnitt 3, V11, V22. Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
+- **TOM:** DSFA Abschnitt 3, V11, V22. `punkte_aktiv` erst nach dem Merge von #668 einschalten (sonst startet der Suchdienst nicht). Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
   Standard aus; einschalten erst nach Übernahme der DSFA (DSFA Abschnitt 7).
 
 ### T8 Meldungen, Sperren und Widerspruch

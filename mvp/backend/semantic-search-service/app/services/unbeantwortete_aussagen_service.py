@@ -15,8 +15,11 @@ Anders als die Kennzahl laesst die Liste eine Aussage weg, sobald sie einen
 sichtbaren Kommentar hat (StatementService.mit_kommentar): Die Suchen ohne Treffer
 zaehlen ueber Wochen weiter, und wer geantwortet hat, soll die Luecke nicht weiter
 offen sehen. Ein gesperrter oder geloeschter Kommentar zaehlt nicht. Gefiltert wird
-nach dem Limit der Kennzahl; die Liste kann dadurch kuerzer werden, die Aussagen
-ohne Kommentar fuellen sie auf.
+vor der Begrenzung, mit oder ohne Thema aus KANDIDATEN_MIT_FILTER Aussagen der
+Kennzahl, damit beantwortete Hotspots unbeantwortete nicht unter die Grenze druecken;
+ihr Anteil waechst mit den Wochen, ein knapper Puffer reichte nicht lange. Scheitert
+die Pruefung auf Kommentare, bleibt die Liste ungefiltert (Warnung im Log): Sie ist
+Beiwerk und soll nicht ganz ausfallen.
 
 Sortiert nach Bedarf: zuerst die Aussagen mit Suchen ohne Treffer, absteigend nach
 der Zahl der Personen (bei gleicher Zahl wie in der Kennzahl), dann die uebrigen
@@ -31,6 +34,7 @@ bleiben nur die Aussagen mit diesem Thema, in derselben Reihenfolge; gefiltert w
 vor der Begrenzung, damit die Liste nicht durch Aussagen anderer Themen leer bleibt.
 """
 
+import logging
 import uuid
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -43,11 +47,13 @@ from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
 )
 
+logger = logging.getLogger(__name__)
+
 LIMIT_STANDARD = 50
 
-# Wie viele Aussagen mit Suchen ohne Treffer gelesen werden, wenn nach einem Thema
-# gefiltert wird: Der Filter laeuft danach, und mit nur LIMIT_STANDARD fehlten
-# Aussagen des Themas, die weiter hinten stehen.
+# Wie viele Aussagen mit Suchen ohne Treffer gelesen werden: Thema und beantwortete
+# Aussagen fallen erst danach heraus, und mit nur LIMIT_STANDARD fehlten Aussagen,
+# die weiter hinten stehen.
 KANDIDATEN_MIT_FILTER = 500
 
 
@@ -74,15 +80,31 @@ class UnbeantworteteAussagenService:
         self._themen = themen
 
     async def liste(
-        self, limit: int = LIMIT_STANDARD, thema: Optional[str] = None
+        self,
+        limit: int = LIMIT_STANDARD,
+        thema: Optional[str] = None,
+        mit_themen: bool = True,
     ) -> List[UnbeantworteteAussage]:
+        """
+        ``mit_themen=False`` (nur ohne Thema-Filter): ohne Nachschlagen der Themen,
+        etwa wenn nur gezaehlt wird ("Seit deinem letzten Besuch"); die Eintraege
+        tragen dann keine Themen, Auswahl und Reihenfolge bleiben gleich.
+        """
         gesucht = await self._suchen_ohne_treffer.haeufigste(
             wochen=WOCHEN_STANDARD,
-            limit=KANDIDATEN_MIT_FILTER if thema else limit,
+            limit=KANDIDATEN_MIT_FILTER,
         )
-        beantwortet = await self._statement_service.mit_kommentar(
-            [g.statement_id for g in gesucht]
-        )
+        try:
+            beantwortet = await self._statement_service.mit_kommentar(
+                [g.statement_id for g in gesucht]
+            )
+        except Exception as fehler:
+            # Die Liste ist Beiwerk: lieber ungefiltert als gar nicht.
+            logger.warning(
+                f"Hier fehlt eine Antwort: Pruefung auf Kommentare gescheitert "
+                f"({type(fehler).__name__}), Liste bleibt ungefiltert"
+            )
+            beantwortet = set()
         gesucht = sorted(
             (g for g in gesucht if g.statement_id not in beantwortet),
             key=lambda g: g.personen,
@@ -102,7 +124,11 @@ class UnbeantworteteAussagenService:
         if thema is None:
             # Ohne Filter zaehlen nur die ersten; nur deren Themen nachschlagen.
             kandidaten = kandidaten[:limit]
-        themen = self._themen.themen_von([s for s, _, _ in kandidaten])
+        themen = (
+            self._themen.themen_von([s for s, _, _ in kandidaten])
+            if mit_themen or thema is not None
+            else {}
+        )
         ergebnis = [
             UnbeantworteteAussage(
                 statement_id, text, personen, tuple(themen.get(statement_id, ()))

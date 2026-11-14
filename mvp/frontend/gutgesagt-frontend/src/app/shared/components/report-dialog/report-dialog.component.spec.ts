@@ -4,11 +4,12 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
-import { ReportDialogComponent, meldeDialogOeffnen } from './report-dialog.component';
+import { MELDEN_AN_KONTO_VORAUSGEWAEHLT, ReportDialogComponent, meldeDialogOeffnen } from './report-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { ERFUNDENES_MELDEN } from '../../schreibregeln';
 import { MeldegrundWert } from '../../meldegruende';
 import { environment } from '../../../../environments/environment';
+import { AuthService } from '../../../auth/auth.service';
 
 const URL = `${environment.baseUrl}/api/v1/moderation/report`;
 
@@ -299,5 +300,109 @@ describe('ReportDialogComponent', () => {
     expect(element().querySelector('[role="status"]')!.textContent).toContain(
       'Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.',
     );
+  });
+  // UX-Review B17 (Entscheidung Maintainer 13.11.2026): Angemeldete tippen weder Name noch
+  // Adresse; das Haekchen laesst den Suchdienst die Adresse des Kontos nehmen. Vorauswahl
+  // vorerst aus (MELDEN_AN_KONTO_VORAUSGEWAEHLT, Art. 25 Abs. 2 DSGVO).
+  describe('angemeldet', () => {
+    const KIM = { isAuthenticated: true, userId: 'kim', userName: 'Kim', claims: null };
+
+    beforeEach(async () => {
+      TestBed.inject(AuthService).setUserInfo(KIM);
+      fixture = TestBed.createComponent(ReportDialogComponent);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    });
+
+    function anKonto(): HTMLInputElement {
+      return element().querySelector('[data-testid="melden-an-konto"] input') as HTMLInputElement;
+    }
+
+    async function haekchenSetzen() {
+      anKonto().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+    }
+
+    it('fragt weder nach Name noch nach Adresse und bietet das Haekchen an, nach der Konstante vorausgewaehlt', () => {
+      expect(element().querySelector('input[name="melder_name"]')).toBeNull();
+      expect(element().querySelector('input[name="melder_email"]')).toBeNull();
+      expect(element().querySelector('[data-testid="melden-an-konto"]')!.textContent).toContain(
+        'Bestätigung und Entscheidung per Mail an mein Konto',
+      );
+      expect(anKonto().checked).toBe(MELDEN_AN_KONTO_VORAUSGEWAEHLT);
+      expect(MELDEN_AN_KONTO_VORAUSGEWAEHLT).toBeFalse();
+      expect(element().textContent).toContain('Die Adresse deines Kontos sehen nur Admins, und nur mit Häkchen.');
+    });
+
+    it('schickt mit Haekchen bestaetigung_an_konto, weder Name noch Adresse, und kuendigt die Mail an, wenn der Suchdienst eine gespeichert hat', async () => {
+      fixture.componentInstance.melderName = 'Liegengeblieben';
+      fixture.componentInstance.melderEmail = 'liegengeblieben@example.com';
+      await haekchenSetzen();
+      await grundWaehlen();
+      await gutenGlaubenErklaeren();
+
+      await melden();
+
+      const anfrage = http.expectOne(URL);
+      expect(anfrage.request.body.melder_name).toBeNull();
+      expect(anfrage.request.body.melder_email).toBeNull();
+      expect(anfrage.request.body.bestaetigung_an_konto).toBeTrue();
+      anfrage.flush({ success: true, message: '', mit_email: true });
+      fixture.detectChanges();
+      expect(element().querySelector('[role="status"]')!.textContent).toContain(
+        'Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.',
+      );
+    });
+
+    it('verspricht keine Mail, wenn der Suchdienst keine Adresse gespeichert hat (etwa keine im Konto)', async () => {
+      await haekchenSetzen();
+      await grundWaehlen();
+      await gutenGlaubenErklaeren();
+
+      await melden();
+
+      http.expectOne(URL).flush({ success: true, message: '', mit_email: false });
+      fixture.detectChanges();
+      const status = element().querySelector('[role="status"]')!.textContent!;
+      expect(status).not.toContain('per E-Mail');
+      expect(status).toContain('An dein Konto können wir keine Mail schicken; die Meldung ist trotzdem eingegangen.');
+    });
+
+    it('sagt bei einer Doppelmeldung, dass der Beitrag schon gemeldet ist, und verspricht keine Mail', async () => {
+      await haekchenSetzen();
+      await grundWaehlen();
+      await gutenGlaubenErklaeren();
+
+      await melden();
+
+      http.expectOne(URL).flush({ success: true, message: '', mit_email: false, schon_gemeldet: true });
+      fixture.detectChanges();
+      const status = element().querySelector('[role="status"]')!.textContent!;
+      expect(status).toContain('Du hast diesen Beitrag schon gemeldet.');
+      expect(status).not.toContain('per E-Mail');
+      expect(status).not.toContain('keine Mail schicken');
+    });
+
+    it('schickt ohne Haekchen keine Bitte um Mail', async () => {
+      await grundWaehlen();
+      await gutenGlaubenErklaeren();
+
+      await melden();
+
+      const anfrage = http.expectOne(URL);
+      expect(anfrage.request.body.bestaetigung_an_konto).toBeUndefined();
+      anfrage.flush({ success: true, message: '', mit_email: false });
+    });
+
+    it('folgt der Anmeldung: Abmelden zeigt die Felder fuer Besucher wieder', async () => {
+      TestBed.inject(AuthService).setUserInfo({ isAuthenticated: false, userId: null, userName: null, claims: null });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(element().querySelector('input[name="melder_email"]')).not.toBeNull();
+      expect(element().querySelector('[data-testid="melden-an-konto"]')).toBeNull();
+    });
   });
 });

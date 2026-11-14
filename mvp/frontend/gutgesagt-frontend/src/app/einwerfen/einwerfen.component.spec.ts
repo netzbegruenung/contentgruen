@@ -17,6 +17,7 @@ import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 describe('hinweisVorschlag', () => {
   it('stellt den Seitentitel mit Praefix voran', () => {
@@ -213,6 +214,25 @@ describe('EinwerfenComponent', () => {
 
       expect(component.fehler).toContain('Link');
       expect(component.wirdGespeichert).toBeFalse();
+    });
+
+    // UX-Review B4: Ohne Einwilligung kein "versuche es erneut", sondern der Hinweiskasten
+    it('zeigt bei fehlender Einwilligung (403) keinen Fehler, sondern den Hinweiskasten, und behaelt die Eingabe', () => {
+      einwurfService.einwerfen.and.returnValue(
+        throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })),
+      );
+      eingeben('https://example.org/a', 'nicht verlieren');
+
+      component.einwerfen();
+      TestBed.inject(Art9EinwilligungZustand).setzen('fehlt'); // setzt sonst der Interceptor
+      fixture.detectChanges();
+
+      expect(component.fehler).toBeNull();
+      expect(component.wirdGespeichert).toBeFalse();
+      expect(component.einwurfForm.value.hinweis).toBe('nicht verlieren');
+      const element = fixture.nativeElement as HTMLElement;
+      expect(element.querySelector('[data-testid=einwilligung-hinweis]')).not.toBeNull();
+      expect(element.textContent).not.toContain('versuche es erneut');
     });
 
     it('behaelt die Eingabe, wenn das Speichern fehlschlaegt', () => {

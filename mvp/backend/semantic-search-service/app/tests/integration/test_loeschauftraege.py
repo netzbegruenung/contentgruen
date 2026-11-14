@@ -15,6 +15,7 @@ import pytest
 from sqlalchemy import text
 from infrastructure.database.models import (
     Art9EinwilligungZeile,
+    Art9OhneEinwilligungZeile,
     AusformuliertIn,
     Einwurf,
     LoeschauftragZeile,
@@ -181,6 +182,16 @@ class TestAusfuehren:
             platzhalter: "ehemalige Person"
         }
         assert _destilled_by(datenbank, einwuerfe.fremd) == platzhalter
+
+    def test_vermerk_ohne_einwilligung_geht_mit(
+        self, datenbank, einwuerfe, auftraege, auftrag
+    ):
+        """UX-Review B2: Der Vermerk am Konto geht mit dem Loeschablauf (PR #670)."""
+        Art9EinwilligungRepository(datenbank).ohne_merken(PERSON, "2026-11-13")
+
+        auftraege.ausfuehren(auftrag)
+
+        assert Art9EinwilligungRepository(datenbank).ohne_lesen(PERSON) is None
 
     def test_konto_name_und_einwilligung_bleiben(
         self, datenbank, einwuerfe, auftraege, auftrag

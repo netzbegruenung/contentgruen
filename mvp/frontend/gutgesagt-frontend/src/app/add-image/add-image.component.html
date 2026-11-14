@@ -3,6 +3,8 @@
 
     <div class="content-wrapper">
         <div class="form-column">
+            <!-- Ohne Art.-9-Einwilligung: Hinweis mit Weg dorthin; die Eingabe uebersteht ihn (B4) -->
+            <app-einwilligung-hinweis [formular]="imageForm"></app-einwilligung-hinweis>
             <form [formGroup]="imageForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
                 <app-antwort-auf (aussageChange)="aussageSetzen($event)"></app-antwort-auf>
 
@@ -41,6 +43,8 @@
                     <mat-error *ngIf="imageForm.get('caption')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
                     <mat-error *ngIf="imageForm.get('caption')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
+                <!-- Einspaltig direkt unter dem Feld, damit man es beim Tippen sieht (Nutzerfuehrung 13.11.) -->
+                <app-gegenlesen *ngIf="einspaltig()" [kompakt]="true" [titel]="imageForm.value.title" [text]="imageForm.value.caption" [aussage]="aussage.text" [titelIstBehauptung]="false"></app-gegenlesen>
 
                 <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
                 <div *ngIf="zeigtThemen" class="optionale-angaben">
@@ -80,7 +84,7 @@
                 </p>
                 <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
             </div>
-            <app-gegenlesen [titel]="imageForm.value.title" [text]="imageForm.value.caption" [aussage]="aussage.text"
+            <app-gegenlesen *ngIf="!einspaltig()" [titel]="imageForm.value.title" [text]="imageForm.value.caption" [aussage]="aussage.text"
                             [titelIstBehauptung]="false"></app-gegenlesen>
         </section>
     </div>

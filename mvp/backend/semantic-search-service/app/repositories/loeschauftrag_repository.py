@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import (
     Art9EinwilligungZeile,
+    Art9OhneEinwilligungZeile,
     AusformuliertIn,
     Einwurf,
     LoeschauftragZeile,
@@ -219,6 +220,9 @@ class LoeschauftragRepository:
         - ``raw_input_content_links.created_by`` leer; an Sperren ihrer Beitraege
           Autor und Widerspruch leer (sonst verbaende beides die Person mit Beitraegen).
         - Platzhalter ohne Satz aus ``users`` abraeumen.
+        - Den Vermerk "ohne Einwilligung weiter" (B2) loeschen: Er ist eine Angabe am
+          Konto, die nach dem Widerruf niemand mehr braucht. Die Einwilligungszeilen
+          bleiben als Nachweis (Art. 7 Abs. 1 DSGVO).
         """
         uid = auftrag.user_id
         vor = auftrag.obergrenze
@@ -291,6 +295,11 @@ class LoeschauftragRepository:
                 delete(User).where(
                     User.user_id.like(f"{EHEMALIGE_PERSON_KENNUNG}-%"),
                     ~select(Satz.id).where(Satz.user_id == User.user_id).exists(),
+                )
+            )
+            session.execute(
+                delete(Art9OhneEinwilligungZeile).where(
+                    Art9OhneEinwilligungZeile.user_id == uid
                 )
             )
             session.execute(

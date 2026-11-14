@@ -148,3 +148,106 @@ class TestSeitLetztemBesuch:
         repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=5)
 
         assert repo.neu_seit_letztem_besuch("andere", nutzung_jetzt=2) == 2
+
+
+class TestNeueEinwuerfeSeitLetztemBesuch:
+    """
+    "Seit deinem letzten Besuch" auf der Startseite (Nutzerfuehrung 13.11.): ein
+    Zaehlerstand der Einwuerfe anderer neben der Nutzung, kein Zeitpunkt.
+    """
+
+    def test_erster_besuch_nennt_nichts_und_setzt_den_stand(
+        self, datenbank
+    ):  # noqa: F811
+        repo = GeseheneNutzungRepository(datenbank)
+
+        assert repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 7) == 0
+        with datenbank.get_session() as s:
+            zeile = s.get(GeseheneNutzung, AUTORIN)
+            assert (zeile.nutzung, zeile.einwuerfe) == (0, 7)
+
+    def test_naechster_besuch_nennt_den_zuwachs(self, datenbank):  # noqa: F811
+        repo = GeseheneNutzungRepository(datenbank)
+        repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 7)
+
+        assert repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 10) == 3
+        assert repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 10) == 0
+
+    def test_stand_sinkt_nie_und_nichts_wird_negativ(self, datenbank):  # noqa: F811
+        repo = GeseheneNutzungRepository(datenbank)
+        repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 10)
+
+        # Einwuerfe geloescht (365 Tage, Kontoloeschung): kein negativer Zuwachs
+        assert repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 6) == 0
+        assert repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 11) == 1
+
+    def test_vorhandene_zeile_ohne_stand_nennt_nichts(self, datenbank):  # noqa: F811
+        # Wie nach der Migration: die Nutzung steht, der Einwurf-Stand ist NULL.
+        with datenbank.get_session() as s:
+            s.add(GeseheneNutzung(user_id=AUTORIN, nutzung=5, einwuerfe=None))
+        repo = GeseheneNutzungRepository(datenbank)
+
+        assert repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 40) == 0
+        assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=5) == 0
+
+    def test_einwuerfe_von_anderen_ohne_eigene(self, datenbank):  # noqa: F811
+        from infrastructure.database.models import Einwurf
+        from repositories.einwurf_repository import EinwurfRepository
+
+        with datenbank.get_session() as s:
+            s.add(Einwurf(url="https://example.org/1", submitted_by=AUTORIN))
+            s.add(Einwurf(url="https://example.org/2", submitted_by="andere"))
+            s.add(Einwurf(url="https://example.org/3", submitted_by=None))
+        repo = EinwurfRepository(datenbank)
+
+        assert repo.count_von_anderen(AUTORIN) == 2
+        assert repo.count_von_anderen("andere") == 2
+
+    def test_einwuerfe_in_jedem_stand_offen_nur_offen_und_destilliert(
+        self, datenbank
+    ):  # noqa: F811
+        from infrastructure.database.models import Einwurf
+        from repositories.einwurf_repository import EinwurfRepository
+
+        with datenbank.get_session() as s:
+            for status in ("open", "in_progress", "processed", "discarded"):
+                s.add(
+                    Einwurf(
+                        url=f"https://example.org/{status}",
+                        submitted_by="andere",
+                        status=status,
+                    )
+                )
+        repo = EinwurfRepository(datenbank)
+
+        assert repo.count_von_anderen(AUTORIN) == 4
+        assert repo.count_von_anderen(AUTORIN, nur_offene=True) == 2
+
+    def test_zwei_gleichzeitige_besuche_melden_nichts_doppelt(
+        self, datenbank
+    ):  # noqa: F811
+        repo = GeseheneNutzungRepository(datenbank)
+        repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 10)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            ergebnisse = list(
+                pool.map(
+                    lambda _: repo.neue_einwuerfe_seit_letztem_besuch(AUTORIN, 14),
+                    range(2),
+                )
+            )
+
+        assert sorted(ergebnisse) == [0, 4]
+
+    def test_besuch_mit_nutzung_und_einwuerfen_zugleich(self, datenbank):  # noqa: F811
+        # Wie im Endpunkt: Nutzung und Einwuerfe in zwei Verbindungen zugleich, auch
+        # beim ersten Besuch (beide legen die Zeile an).
+        repo = GeseheneNutzungRepository(datenbank)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            nutzung = pool.submit(repo.neu_seit_letztem_besuch, AUTORIN, 3)
+            einwuerfe = pool.submit(repo.neue_einwuerfe_seit_letztem_besuch, AUTORIN, 8)
+            assert (nutzung.result(), einwuerfe.result()) == (3, 0)
+
+        with datenbank.get_session() as s:
+            zeile = s.get(GeseheneNutzung, AUTORIN)
+            assert (zeile.nutzung, zeile.einwuerfe) == (3, 8)

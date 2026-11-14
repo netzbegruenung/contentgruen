@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import BackgroundTasks, Depends, FastAPI
 
 # Import configuration first
-from core.config import settings
+from core.config import punkte_schalter_pruefen, settings
 
 # Initialize logging with dependency injection
 from core.logging import initialize_logging, get_logger
@@ -102,6 +102,9 @@ async def lifespan(app: FastAPI):
     and non-blocking seeding initialization.
     """
     # Startup
+    # Punkte nur mit der eigenen Einwilligung "Punkte und Meilensteine" (#668); vor
+    # allem anderen, damit ein falscher Schalter den Dienst gar nicht erst startet.
+    punkte_schalter_pruefen(settings)
     try:
         logger.info("🚀 Starting Gut gesagt Semantic Search Service v1.0.0")
 

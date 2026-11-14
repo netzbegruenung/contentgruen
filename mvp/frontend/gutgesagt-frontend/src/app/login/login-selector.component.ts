@@ -88,6 +88,19 @@ export class LoginSelectorComponent implements OnInit {
     this.router.navigate(['/login/managed'], { queryParams: { returnUrl: this.returnUrl } });
   }
 
+  /**
+   * Zur Seite, auf der man eine Einladung einloest; ohne Code fragt sie nach dem Link.
+   * Ein echter Link (href) fuer neuen Tab und Screenreader, im selben Tab ohne Neuladen.
+   */
+  zurEinladung(event?: MouseEvent): void {
+    // Strg-/Cmd-/Umschalt-Klick oeffnet wie gewohnt einen neuen Tab oder ein Fenster
+    if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0)) {
+      return;
+    }
+    event?.preventDefault();
+    this.router.navigate(['/einladung']);
+  }
+
   navigateToStart(): void {
     this.router.navigate(['/']);
   }

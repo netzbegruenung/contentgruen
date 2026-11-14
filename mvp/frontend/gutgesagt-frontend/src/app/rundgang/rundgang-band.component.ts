@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { RundgangService } from './rundgang.service';
 
 /**
@@ -10,7 +10,7 @@ import { RundgangService } from './rundgang.service';
   selector: 'app-rundgang-band',
   standalone: true,
   template: `
-    @if (rundgang.band(); as angebot) {
+    @if (angebot(); as angebot) {
       <aside class="band" aria-labelledby="rundgang-band-titel">
         <img class="daumen" src="marke/daumen.svg" alt="" width="48" height="48" />
         <div class="text">
@@ -28,4 +28,14 @@ import { RundgangService } from './rundgang.service';
 })
 export class RundgangBandComponent {
   protected readonly rundgang = inject(RundgangService);
+  /**
+   * Wo dieses Band steht: „kopf“ ueber jedem Seiteninhalt (app.component), „start“ auf
+   * der Startseite unter dem Suchfeld. Ein Angebot mit `imInhalt` zeigt nur das Band
+   * auf seiner Seite, alle anderen nur das im Kopf (Nutzerfuehrung 13.11.).
+   */
+  readonly ort = input<'kopf' | 'start'>('kopf');
+  protected readonly angebot = computed(() => {
+    const angebot = this.rundgang.band();
+    return angebot && !!angebot.imInhalt === (this.ort() === 'start') ? angebot : null;
+  });
 }

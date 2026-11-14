@@ -40,6 +40,9 @@ class StandResponse(BaseModel):
     widerrufen_am: Optional[datetime]
     # Der Wortlaut, den die App zum Einwilligen zeigt
     aktueller_wortlaut: Wortlaut
+    # Zu welchem Wortlaut die Person bewusst ohne Einwilligung weiterging (B2), sonst
+    # None; die App fuehrt dann nicht bei jedem Start auf /einwilligung.
+    ohne_wortlaut: Optional[str] = None
 
 
 class EinwilligenRequest(BaseModel):
@@ -54,6 +57,7 @@ def _service():
 def stand(user_id: str = Depends(require_user)) -> StandResponse:
     try:
         einwilligung = _service().stand(user_id)
+        ohne_wortlaut = _service().ohne(user_id)
     except Exception as e:
         logger.error(
             f"Art.-9-Einwilligung von {log_pseudonym(user_id)} nicht gelesen: {type(e).__name__}",
@@ -70,6 +74,7 @@ def stand(user_id: str = Depends(require_user)) -> StandResponse:
         aktueller_wortlaut=Wortlaut(
             kennung=AKTUELLER_WORTLAUT, text=WORTLAUTE[AKTUELLER_WORTLAUT]
         ),
+        ohne_wortlaut=ohne_wortlaut,
     )
 
 
@@ -93,6 +98,29 @@ def einwilligen(
     except Exception as e:
         logger.error(
             f"Art.-9-Einwilligung von {log_pseudonym(user_id)} nicht gespeichert: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    return Response(status_code=204)
+
+
+@router.post("/ohne", status_code=204)
+def ohne_einwilligung_weiter(
+    request: EinwilligenRequest, user_id: str = Depends(require_user)
+) -> Response:
+    """
+    Die Person geht bewusst ohne Einwilligung weiter (UX-Review B2): am Konto mit dem
+    Wortlaut, der da galt. Eine spaetere Einwilligung hebt das auf.
+    """
+    try:
+        _service().ohne_merken(user_id, request.wortlaut)
+    except UnbekannterWortlaut:
+        raise HTTPException(
+            status_code=422, detail="Unbekannter Wortlaut der Einwilligung"
+        )
+    except Exception as e:
+        logger.error(
+            f"Ohne Einwilligung von {log_pseudonym(user_id)} nicht gespeichert: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

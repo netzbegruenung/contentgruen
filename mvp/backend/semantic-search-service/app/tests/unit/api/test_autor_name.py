@@ -156,6 +156,8 @@ class TestGetById:
         app.dependency_overrides[get_commentary_service] = lambda: commentary
         app.dependency_overrides[get_generic_text_service] = lambda: generic_text
         app.dependency_overrides[get_post_service] = lambda: post
+        # Die Herkunft ergaenzt getById seit dem Persona-Test Gerd; hier ohne Herkuenfte.
+        app.dependency_overrides[get_reference_service] = lambda: AsyncMock()
 
     @pytest.mark.parametrize(
         "url",

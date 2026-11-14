@@ -3,8 +3,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { EinwilligungComponent } from './einwilligung.component';
-import { Art9EinwilligungStand } from '../services/art9-einwilligung.service';
+import { MatDialog } from '@angular/material/dialog';
+import { Subject, of } from 'rxjs';
+import { EinwilligungComponent, WIDERRUF_FRAGE } from './einwilligung.component';
+import { Art9EinwilligungService, Art9EinwilligungStand } from '../services/art9-einwilligung.service';
 import { environment } from '../../environments/environment';
 
 const URL = `${environment.baseUrl}/api/v1/art9-einwilligung`;
@@ -26,8 +28,14 @@ describe('EinwilligungComponent', () => {
   let fixture: ComponentFixture<EinwilligungComponent>;
   let http: HttpTestingController;
   let router: Router;
+  let dialog: jasmine.SpyObj<MatDialog>;
+  /** Was die Rueckfrage vor dem Widerruf antwortet (B3). */
+  let rueckfrage: boolean | undefined;
 
   function starten(returnUrl: string | null = '/einwerfen') {
+    rueckfrage = true;
+    dialog = jasmine.createSpyObj('MatDialog', ['open']);
+    dialog.open.and.callFake((() => ({ afterClosed: () => of(rueckfrage) })) as any);
     TestBed.configureTestingModule({
       imports: [EinwilligungComponent],
       providers: [
@@ -41,6 +49,7 @@ describe('EinwilligungComponent', () => {
         },
       ],
     });
+    TestBed.overrideProvider(MatDialog, { useValue: dialog });
     fixture = TestBed.createComponent(EinwilligungComponent);
     http = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
@@ -65,7 +74,11 @@ describe('EinwilligungComponent', () => {
     return treffer as HTMLButtonElement;
   }
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // "Ohne Einwilligung weiter" geht als POST an den Server (B2); nur der eigene Test prueft ihn.
+    http.match({ method: 'POST', url: `${URL}/ohne` }).forEach((r) => r.flush(null, { status: 204, statusText: 'No Content' }));
+    http.verify();
+  });
 
   describe('Frage', () => {
     it('zeigt den Wortlaut vom Backend am Haekchen, nicht angehakt', () => {
@@ -96,6 +109,16 @@ describe('EinwilligungComponent', () => {
       expect(aufklapp.querySelector('.wortlaut-voll')!.textContent!.trim()).toBe(lang.text);
       const eingabe = el().querySelector('mat-checkbox input[type=checkbox]') as HTMLInputElement;
       expect(eingabe.getAttribute('aria-describedby')).toBe('einwilligung-wortlaut-voll');
+    });
+
+    // ErwG 42 DSGVO: Verantwortlicher und Datenschutzerklaerung direkt an der Frage
+    it('nennt den Verantwortlichen und verlinkt die Datenschutzerklaerung', () => {
+      starten();
+      standLiefern(stand());
+
+      const fussnote = el().querySelector('.fussnote')!;
+      expect(fussnote.textContent).toContain('Verantwortlich ist NETZBEGRÜNUNG');
+      expect(fussnote.querySelector('a')!.getAttribute('href')).toBe('/datenschutz');
     });
 
     it('zeigt einen Wortlaut aus einem Satz ganz am Haekchen, ohne Aufklapper', () => {
@@ -156,6 +179,20 @@ describe('EinwilligungComponent', () => {
       knopf('Ohne Einwilligung weiter').click();
 
       http.expectNone({ method: 'POST', url: URL });
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
+    });
+
+    // UX-Review B2: wer bewusst ohne weitergeht, wird nicht bei jedem Start wieder hergefuehrt
+    it('ohne Einwilligung weiter merkt sich die Entscheidung mit dem gezeigten Wortlaut', () => {
+      starten('/einwerfen');
+      standLiefern(stand());
+
+      knopf('Ohne Einwilligung weiter').click();
+
+      // Am Konto, nicht im Browser (Entscheidung Maintainer 13.11.2026)
+      const anfrage = http.expectOne({ method: 'POST', url: `${URL}/ohne` });
+      expect(anfrage.request.body).toEqual({ wortlaut: WORTLAUT.kennung });
+      anfrage.flush(null, { status: 204, statusText: 'No Content' });
       expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
     });
 
@@ -228,6 +265,62 @@ describe('EinwilligungComponent', () => {
       expect(text).not.toContain('bleibt, bis du es löschst');
     });
 
+    // UX-Review B3: Rueckfrage mit den Folgen, bevor etwas geloescht wird
+    it('fragt vor dem Widerruf nach und nennt die Folgen', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+
+      knopf('Einwilligung widerrufen').click();
+
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      const daten = dialog.open.calls.mostRecent().args[1]!.data as typeof WIDERRUF_FRAGE;
+      expect(daten.ja).toBe('Widerrufen');
+      expect(daten.nein).toBe('Abbrechen');
+      expect(daten.text).toContain('Bewertungen werden sofort gelöscht');
+      expect(daten.text).toContain('sieben Tagen');
+      http.expectOne({ method: 'DELETE', url: URL }).flush(null, { status: 204, statusText: 'No Content' });
+      standLiefern(stand({ wortlaut: '2026-11-05', widerrufen_am: '2026-11-06T09:30:00Z' }));
+    });
+
+    it('oeffnet bei einem Doppelklick nur eine Rueckfrage', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+      const offen = new Subject<boolean>();
+      dialog.open.and.callFake((() => ({ afterClosed: () => offen.asObservable() })) as any);
+
+      knopf('Einwilligung widerrufen').click();
+      knopf('Einwilligung widerrufen').click();
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+
+      offen.next(false);
+      offen.complete();
+      knopf('Einwilligung widerrufen').click();
+      expect(dialog.open).toHaveBeenCalledTimes(2);
+    });
+
+    it('widerruft nach Abbrechen nicht', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+      rueckfrage = false;
+
+      knopf('Einwilligung widerrufen').click();
+      fixture.detectChanges();
+
+      http.expectNone({ method: 'DELETE', url: URL });
+      expect(knopf('Einwilligung widerrufen').disabled).toBeFalse();
+    });
+
+    it('widerruft nicht, wenn die Rueckfrage ohne Antwort schliesst (Escape)', () => {
+      starten(null);
+      standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+      rueckfrage = undefined;
+
+      knopf('Einwilligung widerrufen').click();
+
+      http.expectNone({ method: 'DELETE', url: URL });
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+    });
+
     it('widerrufen fragt danach erneut, ohne Haekchen', () => {
       starten(null);
       standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
@@ -278,6 +371,27 @@ describe('EinwilligungComponent', () => {
       expect(el().querySelector('.hinweis')?.textContent).toContain('13.11.2026 widerrufen');
       expect(el().textContent).not.toContain('Frühere Einwilligung widerrufen');
     });
+  });
+
+  it('holt den Stand neu, wenn der Tab wieder sichtbar wird (Widerruf in einem anderen Tab)', () => {
+    starten(null);
+    standLiefern(stand({ eingewilligt: true, wortlaut: '2026-11-05', eingewilligt_am: '2026-11-05T09:30:00Z' }));
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    standLiefern(stand({ wortlaut: '2026-11-05', widerrufen_am: '2026-11-06T09:30:00Z' }));
+
+    expect(el().querySelector('mat-checkbox')).not.toBeNull();
+    expect(el().querySelector('.hinweis')?.textContent).toContain('06.11.2026');
+  });
+
+  it('laedt beim Zurueckkommen nicht neu, wenn das Haekchen schon gesetzt ist', () => {
+    starten(null);
+    standLiefern(stand());
+    fixture.componentInstance.angehakt = true;
+
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    http.expectNone({ method: 'GET', url: URL });
   });
 
   it('zeigt einen Fehler, wenn der Stand nicht kommt', () => {

@@ -162,6 +162,7 @@ def art9_einwilligung_ohne_datenbank(monkeypatch):
         eingewilligt_am=datetime.datetime(2026, 11, 5, tzinfo=datetime.timezone.utc),
         widerrufen_am=None,
     )
+    repository.ohne_lesen.return_value = None
     monkeypatch.setattr(modul, "_service", modul.Art9EinwilligungService(repository))
     yield repository
 

@@ -113,6 +113,11 @@
   overflow-wrap: anywhere;
 }
 
+// Als h4 (Ergebnisseite) ohne die Laufweite der globalen h4
+h4.karte-titel {
+  letter-spacing: normal;
+}
+
 // Der Titel als Link zur Beitragsseite (#640, R48): sieht aus wie der Titel, unterstrichen erst beim Zeigen
 .titel-link {
   color: inherit;
@@ -239,10 +244,15 @@
   font-weight: 700;
 }
 
-// Nutzung in der Meta-Zeile; inline-block, damit sie beim Hochzaehlen kurz waechst
+// Nutzung in der Meta-Zeile; inline-block, damit sie beim Hochzaehlen kurz waechst.
+// Lesbar gross und in Textfarbe, auch wenn die Meta-Zeile sonst klein und grau ist:
+// Sie ist die soziale Bestaetigung der Karte (Nutzerfuehrung 13.11.).
 .karte-nutzung {
   display: inline-block;
   transition: transform 0.2s ease;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .nutzung-animiert {
@@ -422,7 +432,7 @@
   // Ansage fuer Screenreader per CSS: generierter Inhalt landet beim Markieren und
   // Kopieren von Hand nicht in der Zwischenablage, ein versteckter Span schon.
   &::before {
-    content: '' / 'Lücke zum Ausfüllen: ';
+    content: '' / 'Platzhalter zum Ausfüllen: ';
   }
 }
 
@@ -855,8 +865,9 @@
 
 .album-fuss {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   margin-top: auto;
   padding: var(--spacing-sm) 12px;
@@ -867,15 +878,30 @@
   color: var(--text-secondary);
 }
 
+// Die Nutzung zuerst und lesbar gross, der Zuwachs der Woche darunter (Nutzerfuehrung 13.11.).
 .album-nutzung {
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  .badge-nutzung {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+
+    // Ohne Nutzung lesbar, aber ruhig
+    &.ungenutzt {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+  }
 }
 
-// Der Zuwachs der Woche: klein und in der Akzentfarbe, damit er neben der Summe auffaellt.
+// Der Zuwachs der Woche in der Akzentfarbe, damit er neben der Summe auffaellt.
 .nutzung-zuwachs {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--primary-dark);
 }

@@ -1,4 +1,4 @@
-from typing import AbstractSet, Iterable, List, Optional, Set
+from typing import TYPE_CHECKING, AbstractSet, Iterable, List, Optional, Set
 import asyncio
 import logging
 import uuid
@@ -24,6 +24,9 @@ from domain.models.content_origin import ContentOrigin
 from domain.models.content_type import ContentType
 from domain.models.content_status import AUSGEBLENDET_WERTE
 
+if TYPE_CHECKING:
+    from qdrant_client.models import Record
+
 logger = logging.getLogger(__name__)
 
 # Wie viele Aussagen zu einem Beitrag zu_antwort hoechstens liest. Ein Beitrag
@@ -48,6 +51,12 @@ _TITEL_OHNE_TITEL_HOECHSTENS = 120
 # Die Antwortvorschlaege aus dem Payload einer Aussage (mit_kommentar); ein JSON-Text
 # aus aelteren Punkten loest StatementDbEntry.parse_replysuggestions vorher auf.
 _ANTWORTVORSCHLAEGE = TypeAdapter(List[StatementReplysuggestion])
+
+# Hoechstens so viele IDs je retrieve (_abrufen): mit_kommentar fragt bis zu einige
+# hundert Aussagen ab, jede kann mehrere Kommentare tragen, und ohne_kommentar fragt
+# die Kommentare aller kuratierten Aussagen ab. Die Pakete laufen nacheinander, damit
+# ein Aufruf der Liste Qdrant nicht mit vielen gleichzeitigen Anfragen belegt.
+_IDS_JE_ABRUF = 256
 
 
 def _unbeantwortete_suchanfrage(
@@ -287,17 +296,13 @@ class StatementRepository(
         Antwortvorschlaegen haben: das Gegenstueck zu ohne_kommentar fuer wenige,
         schon bekannte Aussagen (die Kandidaten aus "Suchen ohne Treffer" in
         UnbeantworteteAussagenService). Zwei Abrufe per ID, kein Scan; wie dort zaehlt
-        ein gesperrter oder geloeschter Kommentar nicht.
+        ein gesperrter oder geloeschter Kommentar nicht. Ein Fehler beim Abruf geht
+        an den Aufrufer; was dann gilt, entscheidet der Service.
         """
         ids = list(dict.fromkeys(ids))
         if not ids:
             return set()
-        punkte = await self._shared_manager.async_client.retrieve(
-            collection_name=self._shared_manager.collection_name,
-            ids=[str(i) for i in ids],
-            with_payload=["content_type", "replysuggestions"],
-            with_vectors=False,
-        )
+        punkte = await self._abrufen(ids, ["content_type", "replysuggestions"])
         kommentare_je_aussage = {}
         for punkt in punkte:
             payload = punkt.payload or {}
@@ -408,16 +413,26 @@ class StatementRepository(
             )
         return [gefunden[i] for i in ids if i in gefunden]
 
+    async def _abrufen(
+        self, ids: Iterable[uuid.UUID], felder: List[str]
+    ) -> List["Record"]:
+        """Punkte per ID, in Paketen von hoechstens _IDS_JE_ABRUF IDs."""
+        ids = [str(i) for i in ids]
+        punkte = []
+        for start in range(0, len(ids), _IDS_JE_ABRUF):
+            punkte += await self._shared_manager.async_client.retrieve(
+                collection_name=self._shared_manager.collection_name,
+                ids=ids[start : start + _IDS_JE_ABRUF],
+                with_payload=felder,
+                with_vectors=False,
+            )
+        return punkte
+
     async def _sichtbare_kommentare(self, ids: Set[uuid.UUID]) -> Set[uuid.UUID]:
         """Welche der IDs einen Kommentar bezeichnen, der weder gesperrt noch geloescht ist."""
         if not ids:
             return set()
-        punkte = await self._shared_manager.async_client.retrieve(
-            collection_name=self._shared_manager.collection_name,
-            ids=[str(i) for i in ids],
-            with_payload=["content_type", "status"],
-            with_vectors=False,
-        )
+        punkte = await self._abrufen(ids, ["content_type", "status"])
         return {
             uuid.UUID(str(punkt.id))
             for punkt in punkte

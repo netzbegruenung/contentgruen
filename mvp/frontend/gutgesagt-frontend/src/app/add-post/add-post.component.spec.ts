@@ -13,6 +13,11 @@ import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert
 import { OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of as vonWert } from 'rxjs';
+
+/** Zweispaltig wie am Desktop: Gegenlesen neben der Vorschau (Nutzerfuehrung 13.11.). */
+const ZWEISPALTIG = { provide: BreakpointObserver, useValue: { observe: () => vonWert({ matches: false, breakpoints: {} }) } };
 
 describe('AddPostComponent', () => {
   let fixture: ComponentFixture<AddPostComponent>;
@@ -28,7 +33,7 @@ describe('AddPostComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AddPostComponent, NoopAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ZWEISPALTIG],
     })
       .overrideComponent(AddPostComponent, {
         remove: { imports: [BeitragskarteComponent] },
@@ -133,6 +138,19 @@ describe('AddPostComponent', () => {
     component.postForm.patchValue({ ...WERTE, url: 'instagram.com/p/abc' });
 
     expect(component.postForm.get('url')!.hasError('pattern')).toBeTrue();
+  });
+
+  // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+  it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', () => {
+    spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+    component.postForm.patchValue(WERTE);
+
+    component.speichern();
+    fixture.detectChanges();
+
+    expect(component.fehler).toBeNull();
+    expect(component.speichert).toBeFalse();
+    expect(component.postForm.value.title).toBe(WERTE.title);
   });
 
   it('behaelt nach gescheitertem Speichern die Eingaben und meldet den Fehler', () => {

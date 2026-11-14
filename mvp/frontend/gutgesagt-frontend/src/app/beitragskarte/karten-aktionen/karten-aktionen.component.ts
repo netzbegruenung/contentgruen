@@ -31,12 +31,14 @@ import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
 import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
-import { LINK_KOPIERT, LINK_NICHT_KOPIERT, beitragsLink } from '../../shared/beitrags-link';
+import { beitragsLink } from '../../shared/beitrags-link';
+import { TeilenService, hatGeteilt } from '../../shared/teilen.service';
 import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
+import { platzhalterDialogOeffnen } from './platzhalter-dialog.component';
 import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
 
 /**
- * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
+ * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, teilen, melden, im
  * Menue der Weg zur eigenen Adresse des Beitrags (/beitrag/:id, #300) und,
  * angemeldet, als Vorlage nehmen (#356).
  * Hat der Beitrag eine Herkunft, steht die zweite Kopier-Variante (mit oder ohne
@@ -74,6 +76,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() typ: string | null = null;
   @Input() kopierText = '';
   @Input() kopierBeschriftung = 'Kopieren';
+  /** Am Handy statt kopierBeschriftung sichtbar (Bild: "Kopieren"); null = kein Kurzwort. */
+  @Input() kopierKurz: string | null = null;
   /** Was der Knopf kopiert, als Tooltip (MatTooltip haengt ihn als Beschreibung an); leer = keiner. */
   @Input() kopierHinweis = '';
   /** Die andere Variante (mit oder ohne Herkunft) im Menue; null = es gibt nur eine. */
@@ -86,6 +90,10 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() fassung: Fassung | null = null;
   /** Der Menueeintrag "Beitrag öffnen"; aus auf der eigenen Adresse selbst. */
   @Input() ansichtVerlinkt = true;
+  /** Der Knopf "Teilen" (B7); die Karte gibt ansichtVerlinkt weiter, ausser auf der Beitragsseite. */
+  @Input() teilbar = true;
+  /** Der Titel des Beitrags: im Namen des Teilen-Knopfs und als Titel im Teilen-Menue. */
+  @Input() titel: string | null = null;
   /**
    * Zaehler an den Stimm-Knoepfen (#427), wie der Server sie zuletzt gemeldet hat;
    * null = unter der Mindestzahl (der Server schickt dann keine, DSFA M5) oder
@@ -98,7 +106,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();
-  /** Nach erfolgreichem Kopieren; die Karte zaehlt daraufhin ihre Nutzung hoch. */
+  /** Nach erfolgreichem Kopieren oder Teilen; die Karte zaehlt daraufhin ihre Nutzung hoch. */
   @Output() kopiert = new EventEmitter<void>();
 
   isLiked = false;
@@ -133,6 +141,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     private logger: LoggingService,
     private dialog: MatDialog,
     private router: Router,
+    private teilenService: TeilenService,
   ) {}
 
   ngOnInit(): void {
@@ -202,11 +211,30 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.inZwischenablage(this.zweiteKopie?.text ?? '');
   }
 
+  /**
+   * Mit Platzhalter „[Hier …]“ fragt erst der Dialog nach dem eigenen Satz und kopiert
+   * selbst (Persona-Test Dennis, 13.11.); abgebrochen wird nichts kopiert und nichts gezählt.
+   */
   private inZwischenablage(text: string): void {
     if (this.vorschau || !text) {
       return;
     }
+    if (hatLuecke(text)) {
+      platzhalterDialogOeffnen(this.dialog, text)
+        .afterClosed()
+        .subscribe((ergebnis) => {
+          if (ergebnis) {
+            this.nachKopieren(ergebnis.text);
+          }
+        });
+      return;
+    }
     this.clipboard.copy(text);
+    this.nachKopieren(text);
+  }
+
+  /** Rückmeldung, Animation und Nutzung nach dem Kopieren, gleich ob mit oder ohne Dialog. */
+  private nachKopieren(text: string): void {
     this.kopiertMelden(text);
 
     this.copyAnimationActive = true;
@@ -228,10 +256,13 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    * kopiert!“. Ein Klick auf „Ja, gepostet“ zählt die Person einmal je Woche als
    * öffentlich gekontert; welcher Beitrag, erfährt der Server dabei nicht.
    *
-   * Hat der Text noch eine Lücke „[Hier …]“ (#640), bleibt es beim Hinweis aufs
+   * Hat der Text noch einen Platzhalter „[Hier …]“ (#640), bleibt es beim Hinweis aufs
    * Ausfüllen: Gepostet sein kann der Text dann noch nicht.
    */
   private kopiertMelden(text: string): void {
+    // Sicherheitsnetz: Seit dem Platzhalter-Dialog kommt hier normalerweise kein Text mit
+    // Luecke an (der Dialog fuellt oder entfernt sie). Bleibt er stehen, falls ein
+    // eingegebener Satz selbst "[Hier …]" enthaelt oder ein Weg am Dialog vorbei kopiert.
     if (hatLuecke(text)) {
       // Mit Platzhalter "[Hier …]" erinnert der Hinweis ans Ausfuellen (#640, R38) und bleibt laenger stehen.
       this.snackBar.open(KOPIERT_MIT_LUECKE, 'OK', { duration: 6000 });
@@ -279,13 +310,37 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       });
   }
 
-  /** Die Adresse des Beitrags zum Teilen (#640, R48); zaehlt nicht als Nutzung, wie auf der Beitragsseite. */
-  linkKopieren(): void {
+  get teilenSichtbar(): boolean {
+    return this.teilbar && !!this.inhaltId;
+  }
+
+  /** Der unsichtbare Name des Teilen-Knopfs, mit dem Titel des Beitrags, sofern er einen hat. */
+  get teilenBeschriftung(): string {
+    const titel = this.titel?.trim();
+    return titel ? `Beitrag teilen: „${titel}“` : 'Beitrag teilen';
+  }
+
+  /**
+   * Teilen (B7): der Text, den auch "Kopieren" nimmt, und der Link auf die Beitragsseite,
+   * ueber das Teilen-Menue, wo das Geraet eines hat, sonst nur der Link in die Zwischenablage. Eine Karte
+   * teilen zaehlt als Nutzung (docs/VISION.md, Teilen; GLOSSARY.md, Nutzung), ueber
+   * denselben Endpunkt wie Kopieren; ein Abbruch zaehlt nicht. Die eigene Nutzung
+   * verwirft der Server (api/v1/usage.py).
+   */
+  async teilen(): Promise<void> {
     if (this.vorschau || !this.inhaltId) {
       return;
     }
-    const kopiert = this.clipboard.copy(beitragsLink(this.inhaltId));
-    this.snackBar.open(kopiert ? LINK_KOPIERT : LINK_NICHT_KOPIERT, undefined, { duration: 3000 });
+    const ergebnis = await this.teilenService.teilen({
+      url: beitragsLink(this.inhaltId),
+      text: this.kopierText || undefined,
+      titel: this.titel?.trim() || undefined,
+    });
+    if (hatGeteilt(ergebnis)) {
+      this.usageTrackingService.trackContentUsage(this.inhaltId, this.fassung ?? undefined);
+      this.kopiert.emit();
+    }
+    this.cdr.markForCheck();
   }
 
   beitragOeffnen(): void {
@@ -405,7 +460,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       .open('Bitte melde dich an, um abzustimmen', 'Anmelden', { duration: 5000 })
       .onAction()
       .subscribe(() => {
-        this.authService.login();
+        // Zurueck auf diese Seite samt Suche, dort sagt ein Satz, dass Abstimmen jetzt geht
+        this.authService.login('abstimmen');
       });
   }
 

@@ -24,6 +24,23 @@
     font-weight: 500;
 }
 
+.gespeichert-kopf:has(.luecke-zu) {
+    align-items: flex-start;
+}
+
+.luecke-zu {
+    margin: 0;
+}
+
+.luecke-zu-titel {
+    display: block;
+    font-family: GrueneType, Roboto, sans-serif;
+    font-weight: 400;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    color: var(--primary-dark);
+}
+
 .gespeichert-laedt {
     display: flex;
     justify-content: center;

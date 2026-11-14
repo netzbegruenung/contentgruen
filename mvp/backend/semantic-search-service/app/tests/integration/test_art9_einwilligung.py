@@ -11,7 +11,11 @@ import pytest
 from sqlalchemy import text
 
 from domain.art9_einwilligung import AKTUELLER_WORTLAUT
-from infrastructure.database.models import Art9EinwilligungZeile, Base
+from infrastructure.database.models import (
+    Art9EinwilligungZeile,
+    Art9OhneEinwilligungZeile,
+    Base,
+)
 from repositories.art9_einwilligung_repository import Art9EinwilligungRepository
 from repositories.vote_repository import VoteRepository
 from services.art9_einwilligung_service import (
@@ -21,6 +25,7 @@ from services.art9_einwilligung_service import (
 from tests.integration import postgres
 
 MIGRATION = postgres.MIGRATIONEN / "2026-11-05-art9-einwilligung.sql"
+MIGRATION_OHNE = postgres.MIGRATIONEN / "2026-11-13-art9-ohne-einwilligung.sql"
 PERSON = "person-mit-einwilligung"
 
 pytestmark = pytest.mark.integration
@@ -29,7 +34,8 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def datenbank(wegwerf_schema):
     Base.metadata.create_all(
-        wegwerf_schema.engine, tables=[Art9EinwilligungZeile.__table__]
+        wegwerf_schema.engine,
+        tables=[Art9EinwilligungZeile.__table__, Art9OhneEinwilligungZeile.__table__],
     )
     return wegwerf_schema
 
@@ -195,6 +201,8 @@ def test_migration_legt_die_tabelle_an_und_darf_zweimal_laufen(postgres_url):
     with postgres.schema(postgres_url, "itest_art9") as db:
         postgres.migration(db, MIGRATION)
         postgres.migration(db, MIGRATION)
+        # Die Einwilligung raeumt "ohne Einwilligung weiter" ab (PR #670)
+        postgres.migration(db, MIGRATION_OHNE)
 
         repository = Art9EinwilligungRepository(db)
         repository.einwilligen(PERSON, "2026-11-05")

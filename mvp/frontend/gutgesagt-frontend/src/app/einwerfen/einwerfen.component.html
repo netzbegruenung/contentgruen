@@ -8,6 +8,9 @@
         </div>
     </div>
 
+    <!-- Ohne Art.-9-Einwilligung: Hinweis mit Weg dorthin; die Eingabe uebersteht ihn (B4) -->
+    <app-einwilligung-hinweis [formular]="einwurfForm"></app-einwilligung-hinweis>
+
     <form [formGroup]="einwurfForm" (ngSubmit)="einwerfen()" class="einwurf-formular">
 
         <mat-form-field appearance="outline" class="einwurf-feld">

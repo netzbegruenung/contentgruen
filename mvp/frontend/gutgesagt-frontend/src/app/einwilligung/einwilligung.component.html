@@ -40,8 +40,10 @@
         <summary>Ganzen Wortlaut lesen</summary>
         <p class="wortlaut-voll" id="einwilligung-wortlaut-voll">{{ stand.aktueller_wortlaut.text }}</p>
       </details>
+      <!-- ErwG 42 DSGVO: wer verantwortlich ist und wo die Zwecke stehen, direkt am Häkchen -->
       <p class="fussnote">
-        Mehr dazu in der <a routerLink="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
+        Verantwortlich ist {{ verein }}. Mehr dazu in der
+        <a routerLink="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
       </p>
       <div class="knoepfe">
         <button mat-raised-button color="primary" type="submit" [disabled]="!angehakt || zustand === 'sendet'">

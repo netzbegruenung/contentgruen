@@ -2,12 +2,15 @@
 
 Prüfen die wichtigsten Szenarien am Handy gegen den laufenden Dev-Stack: Verfassen eines Kommentars,
 einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort auf“ mit neuer Aussage, aus der Suche ergänzen (mit der erkannten Aussage vorgewählt), aus „Hier fehlt eine Antwort“ antworten (danach verschwindet die Aussage von der Liste; braucht zwei Suchen ohne Treffer, Testkonto und Besucher), die Kette im
-Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz
+Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz,
+den Weg ohne Art.-9-Einwilligung (`12-ohne-einwilligung`: widerruft für das Testkonto und willigt danach wieder ein)
 sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seiten und ohne
 Umleitung bei einem 401 der Suche), den Aufruf eines Beitrags per Direktlink und die Darstellung bei
 360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur) sowie Kanten und
 Fluchten bei 360, 390, 1280 und 1440 px (Suchraster, Rundgang-Band, Seitenrahmen, Beitragen-Seite, Zweck-Umschalter,
-Startkacheln, Fuß) samt Umschalter hell/dunkel (liest nur). Nicht in CI: Die Tests brauchen den vollen Stack.
+Startkacheln, Fuß) samt Umschalter hell/dunkel (liest nur). Ohne Stack, alle Antworten gemockt (`einladung-besucher`, auch gegen `ng serve` ohne Backend): Einladung von der Login-Seite einlösen und Rückkehr nach dem Anmelden aus der Daumen-Snackbar. Teilen (`13-teilen`, Projekt `teilen`: Karte, Beitragsseite,
+„Ergebnis teilen“, mobil mit nachgebautem `navigator.share`, am Desktop Zwischenablage) mockt jede Anfrage an `/api`
+(`route.fulfill`) und braucht nur ein `ng serve` über `E2E_BASE_URL`. Nicht in CI: Die Tests brauchen den vollen Stack.
 
 ## Starten
 

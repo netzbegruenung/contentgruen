@@ -52,15 +52,19 @@ test('Post verfassen: Formular, Ergebnisseite, in der Suche als Post-Karte', asy
 
   await test.step('In der Suche als Post-Karte', async () => {
     await page.goto(`/result?searchQuery=${encodeURIComponent(titel)}`);
-    const postTab = page.locator('.tab-post');
-    await expect(postTab).toBeVisible({ timeout: 45_000 });
-    await postTab.click();
-    const karte = page.locator('.mobile-section .karte.typ-post', { hasText: titel });
+    // Ein Chip je Typ mit Treffern; "Posts" filtert auf die Post-Karten.
+    const postChip = page.locator('.typ-chip', { hasText: 'Posts' });
+    await expect(postChip).toBeVisible({ timeout: 45_000 });
+    await postChip.click();
+    await expect(postChip).toHaveAttribute('aria-pressed', 'true');
+    const karte = page.locator('[data-typ="post"] .karte.typ-post', { hasText: titel });
     await expect(karte).toBeVisible();
     await expect.soft(karte).toContainText('@e2e-klimaverein · Instagram');
-    // Drei Tabs (Kommentare, Hintergrund, Posts) passen in 360 px.
+    // Die Chips brechen um, statt die Seite in 360 px zu verbreitern.
     const ueberlauf = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
-    expect.soft(ueberlauf, 'kein seitlicher Ueberlauf mit dem Post-Tab').toBe(false);
+    expect.soft(ueberlauf, 'kein seitlicher Ueberlauf mit den Chips').toBe(false);
+    // Die Wahl gilt fuer die Sitzung: zuruecksetzen, damit spaetere Specs alle Typen sehen.
+    await page.locator('.typ-chip', { hasText: 'Alle' }).click();
     await karte.scrollIntoViewIfNeeded();
     await bild('103-post-in-der-suche');
   });

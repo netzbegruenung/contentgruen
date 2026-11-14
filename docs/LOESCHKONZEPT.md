@@ -106,9 +106,10 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    `raw_inputs` der Person löschen (CASCADE räumt deren Links und die Sätze daran mit
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
-   `users` (Anzeigename), die in `gesehene_nutzung` (Stand der Rückmeldung beim
-   Anmelden, nur eine Zahl) und die in `art9_einwilligungen` (jede Art.-9-Einwilligung mit
-   Zeitpunkt und Wortlaut, auch widerrufene; #489) und in `abzeichen_sichtbarkeit` (jede
+   `users` (Anzeigename), die in `gesehene_nutzung` (Stände der Rückmeldung beim
+   Anmelden und von „Seit deinem letzten Besuch“, nur Zählerstände) und die in `art9_einwilligungen` (jede Art.-9-Einwilligung mit
+   Zeitpunkt und Wortlaut, auch widerrufene; #489), die in `art9_ohne_einwilligung` („ohne
+   Einwilligung weiter“ mit dem Wortlaut, PR #670) und in `abzeichen_sichtbarkeit` (jede
    Antwort auf die Frage nach der Sichtbarkeit der Abzeichen, auch ein Nein; #351) und die in
    `loeschauftraege` (offene und erledigte Löschaufträge nach einem Widerruf)
    löschen, ebenso jeden Muster-Hinweis
@@ -208,8 +209,9 @@ macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwir
   obwohl der Auftrag erledigt ist; beim Durchsehen der Texte (Schritt 3) fällt es auf.
 
 Was **bleibt**: das Konto, der Anzeigename in `users`, die Einwilligungen samt Widerruf als
-Nachweis (Art. 7 Abs. 1), Meldungen der Person und Muster-Hinweise (beide gehen mit ihrer
-Frist) sowie `gesehene_nutzung` (nur eine Zahl, ohne Frist, geht mit dem Konto). Erst Qdrant, dann PostgreSQL: Scheitert ein Schritt, bleibt der Auftrag offen,
+Nachweis (Art. 7 Abs. 1; der Vermerk „ohne Einwilligung weiter“ in `art9_ohne_einwilligung`
+geht dagegen mit dem Löschablauf), Meldungen der Person und Muster-Hinweise (beide gehen mit ihrer
+Frist) sowie `gesehene_nutzung` (nur Zählerstände: Nutzung und Einwürfe anderer beim letzten Besuch, kein Zeitpunkt, ohne Frist, geht mit dem Konto). Erst Qdrant, dann PostgreSQL: Scheitert ein Schritt, bleibt der Auftrag offen,
 und ein zweiter Klick holt nach, was fehlt; beide Teile sind wiederholbar. Danach wie in
 Schritt 3 die Texte durchsehen; macht einer die Person erkennbar, wird er einzeln entfernt. Die
 Beiträge stehen danach nicht mehr in „Meine Beiträge“ der Person, sie kann sie also nicht mehr
@@ -652,7 +654,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, abzeichen_sichtbarkeit, loeschauftraege;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, art9_ohne_einwilligung, abzeichen_sichtbarkeit, loeschauftraege;"
 ```
 
 ```bash

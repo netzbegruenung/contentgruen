@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute, provideRouter } from '@angular/router';
-import { EinladungComponent } from './einladung.component';
+import { EinladungComponent, codeAusEingabe } from './einladung.component';
 import { environment } from '../../environments/environment';
 
 const URL = `${environment.baseUrl}/api/v1/einladungen`;
@@ -47,10 +47,52 @@ describe('EinladungComponent', () => {
     return http.expectOne(`${URL}/einloesen`);
   }
 
-  it('ohne Code im Link gibt es nichts einzuloesen', () => {
+  it('ohne Code im Link fragt die Seite nach dem Link, statt "gilt nicht" zu melden', () => {
     starten(null);
 
-    expect(el().textContent).toContain('gilt nicht');
+    expect(el().textContent).not.toContain('gilt nicht');
+    expect(el().querySelector('input[name="link"]')).not.toBeNull();
+    expect(el().querySelector('input[type="email"]')).toBeNull();
+  });
+
+  it('nimmt den eingefuegten Link, prueft den Code und zeigt dann das Formular', () => {
+    starten(null);
+    fixture.componentInstance.link = `  ${window.location.origin}/einladung#Code123\n`;
+    fixture.componentInstance.linkUebernehmen();
+    fixture.detectChanges();
+
+    pruefen(true);
+    expect(el().querySelector('input[type="email"]')).not.toBeNull();
+  });
+
+  it('meldet einen Link, der keiner einer Einladung sein kann, ohne Anfrage', () => {
+    starten(null);
+    fixture.componentInstance.link = 'https://example.org/einladung#Code mit / Zeichen?';
+    fixture.componentInstance.linkUebernehmen();
+    fixture.detectChanges();
+
+    http.expectNone(`${URL}/pruefen`);
+    expect(el().querySelector('[role="alert"]')?.textContent).toContain('kein Link einer Einladung');
+  });
+
+  it('nach einer Einladung, die nicht gilt, laesst sich ein anderer Link einfuegen', async () => {
+    starten('Code123');
+    pruefen(false);
+    const knopf = Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes('Anderen Link'));
+    knopf!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(el().querySelector('input[name="link"]')).not.toBeNull();
+    // Der Fokus steht im Feld, nicht auf dem verschwundenen Knopf (Tastatur, Screenreader)
+    expect(document.activeElement).toBe(el().querySelector('input[name="link"]'));
+  });
+
+  it('setzt beim ersten Aufruf ohne Code den Fokus nicht von selbst ins Feld', async () => {
+    starten(null);
+    await fixture.whenStable();
+
+    expect(document.activeElement).not.toBe(el().querySelector('input[name="link"]'));
   });
 
   it('eine ungueltige Einladung zeigt kein Formular', () => {
@@ -122,5 +164,22 @@ describe('EinladungComponent', () => {
 
     expect(el().querySelector('[role="status"]')).toBe(region);
     expect(region?.textContent).toContain('gilt nicht');
+  });
+});
+
+describe('codeAusEingabe', () => {
+  it('nimmt das Stueck hinter # aus dem ganzen Link', () => {
+    expect(codeAusEingabe('https://gutgesagt.example/einladung#Ab-c_123')).toBe('Ab-c_123');
+  });
+
+  it('nimmt einen Code ohne Link, ohne Leerraum und Umbrueche', () => {
+    expect(codeAusEingabe(' Ab-c\n_123 ')).toBe('Ab-c_123');
+  });
+
+  it('gibt null fuer Leeres, fremde Zeichen und zu Langes', () => {
+    expect(codeAusEingabe('')).toBeNull();
+    expect(codeAusEingabe('https://gutgesagt.example/einladung#')).toBeNull();
+    expect(codeAusEingabe('https://gutgesagt.example/einladung')).toBeNull();
+    expect(codeAusEingabe('a'.repeat(65))).toBeNull();
   });
 });

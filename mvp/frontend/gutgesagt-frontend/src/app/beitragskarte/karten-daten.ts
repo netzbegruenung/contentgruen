@@ -550,9 +550,32 @@ function plattformNameAusUrl(url: string | null): string | null {
   return plattform && plattform !== 'web' ? plattformName(plattform) : null;
 }
 
+/**
+ * Das Praefix, mit dem Einwerfen einen geteilten Seitentitel im Hinweis markiert
+ * (SEITENTITEL_PRAEFIX in einwerfen.component.ts; hier eigens, damit die Karte nicht
+ * vom Formular abhaengt, ein Test haelt beide gleich).
+ */
+export const SEITENTITEL_MARKE = 'Seitentitel: ';
+
+/**
+ * Der Hinweis als Kartentitel. Ein stehengelassenes „Seitentitel: “ aus dem Teilen
+ * faellt weg: Der Seitentitel ist dann der Titel, nicht roh mit Marke davor
+ * (Nutzerfuehrung 13.11.). Gespeichert bleibt der Hinweis, wie er ist.
+ */
+export function hinweisTitel(inhalt: string | null | undefined, url: string | null = null): string | null {
+  let text = inhalt?.trim();
+  const marke = SEITENTITEL_MARKE.trim();
+  if (text?.startsWith(marke)) {
+    // Seitentitel vorn, der Rest des geteilten Texts mit Strich dahinter: Die Karte
+    // zeigt den Titel in einer Zeile, ein Zeilenumbruch fiele dort weg.
+    const [titel, ...rest] = text.slice(marke.length).split('\n');
+    text = [titel.trim(), rest.join(' ').trim()].filter(Boolean).join(' – ');
+  }
+  return text && text !== url ? text : null;
+}
+
 function hinweis(einwurf: Einwurf): string | null {
-  const inhalt = einwurf.content?.trim();
-  return inhalt && inhalt !== einwurf.url ? inhalt : null;
+  return hinweisTitel(einwurf.content, einwurf.url);
 }
 
 // Aussage im Beitragsformular

@@ -357,6 +357,17 @@ describe('AddCommentaryWorkflowComponent mit Aussage aus der Adresse', () => {
     expect(navigieren.calls.mostRecent().args[1]!.queryParams).toEqual({ von: 'hier-fehlt-eine-antwort' });
   });
 
+  it('reicht aus "Hier fehlt eine Antwort" die Nachfrage an die Ergebnisseite weiter (Lücke zu)', async () => {
+    await oeffnen({});
+    adresse.next(convertToParamMap({ aussage: 'a-1', von: 'hier-fehlt-eine-antwort', gesucht: '2' }));
+    http.expectOne((req) => req.url === getByIdUrl).flush({ statement_id: 'a-1', statement_text: 'Waermepumpen sind zu teuer' });
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    component.onSuccess({ id: 'k-1', aussage: { id: 'a-1', text: 'Waermepumpen sind zu teuer' }, verknuepft: true });
+
+    expect(navigieren.calls.mostRecent().args[1]!.queryParams).toEqual({ von: 'hier-fehlt-eine-antwort', gesucht: '2' });
+  });
+
   it('oeffnet ohne Parameter ein eigenstaendiges Formular', async () => {
     await oeffnen({});
 

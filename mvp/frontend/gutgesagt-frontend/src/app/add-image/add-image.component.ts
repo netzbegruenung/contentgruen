@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -15,6 +15,9 @@ import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprac
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
@@ -27,6 +30,7 @@ import {
 import { alsGespeichert, aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
 import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
 /** Der Bild-Titel beschreibt, er ist keine Behauptung (CODING_STANDARDS.md); bis 200 Zeichen. */
 export const TITEL_MAX = 200;
@@ -63,6 +67,7 @@ function aufgeloest(adresse: string): string {
   styleUrls: ['./add-image.component.scss'],
   imports: [
     ...SHARED_IMPORTS,
+    EinwilligungHinweisComponent,
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
@@ -77,6 +82,9 @@ function aufgeloest(adresse: string): string {
   ],
 })
 export class AddImageComponent implements AfterViewInit, OnDestroy {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
+  /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
+  readonly einspaltig = einspaltig();
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('image');
   readonly titelMax = TITEL_MAX;
@@ -246,6 +254,12 @@ export class AddImageComponent implements AfterViewInit, OnDestroy {
         // Die Eingaben bleiben stehen; der Knopf speichert dasselbe noch einmal.
         this.logger.error('Error saving image', error);
         this.speichert = false;
+        // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
+        if (einwilligungFehlt(error)) {
+          this.fehler = null;
+          this.einwilligungZustand.hinweisZeigen();
+          return;
+        }
         this.validierung = validierungsMeldung(error);
         this.fehler = this.validierung ?? SPEICHERN_FEHLGESCHLAGEN;
       },

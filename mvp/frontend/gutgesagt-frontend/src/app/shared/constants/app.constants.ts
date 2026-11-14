@@ -78,6 +78,8 @@ export const PAGE_TITLES = {
   NUTZUNGSBEDINGUNGEN: 'Nutzungsbedingungen',
   // Wie der Menuepunkt (DATENSCHUTZ_EINSTELLUNGEN in fangkorb-texte.ts, #644)
   EINWILLIGUNG: 'Datenschutz-Einstellungen',
+  // Wenn die App nach der Einwilligung fragt (mit Rueckweg), nicht aus dem Profilmenue (UX-Review B18)
+  EINWILLIGUNG_FRAGE: 'Einwilligung',
   UEBER: 'Über Gut gesagt',
   EINLADUNG: 'Einladung',
   ADMIN: 'Admin'

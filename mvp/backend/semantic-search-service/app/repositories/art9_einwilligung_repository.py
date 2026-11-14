@@ -7,12 +7,16 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
 
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import String, delete, func, insert, literal, select, text, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from domain.art9_einwilligung import geltender_wortlaut
+from domain.art9_einwilligung import GELTENDE_WORTLAUTE, geltender_wortlaut
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import Art9EinwilligungZeile
+from infrastructure.database.models import (
+    Art9EinwilligungZeile,
+    Art9OhneEinwilligungZeile,
+)
 
 
 @dataclass(frozen=True)
@@ -33,6 +37,20 @@ class Art9Einwilligung:
         (GELTENDE_WORTLAUTE): Nur dann ist frei, was die Einwilligung verlangt.
         """
         return self.gilt and geltender_wortlaut(self.wortlaut)
+
+
+# Schluessel der Advisory-Sperre je Person fuer Einwilligen und "ohne Einwilligung
+# weiter" (eigener Raum neben SPERRE_THEMEN = 363). Unter READ COMMITTED saehe sonst
+# ein gleichzeitiges "ohne" die noch nicht festgeschriebene Einwilligung nicht, und
+# am Ende stuenden beide nebeneinander (Review zu #670).
+SPERRE_ART9 = 489
+
+
+def _sperren(session: Session, user_id: str) -> None:
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(:sperre, hashtext(:kennung))"),
+        {"sperre": SPERRE_ART9, "kennung": user_id},
+    )
 
 
 class Art9EinwilligungRepository:
@@ -58,6 +76,7 @@ class Art9EinwilligungRepository:
         Einwilligung zu diesem Wortlaut, bleibt es bei ihr (doppeltes Absenden).
         """
         with self.db.get_session() as session:
+            _sperren(session, user_id)
             juengste = self._juengste(session, user_id)
             if (
                 juengste is not None
@@ -70,6 +89,61 @@ class Art9EinwilligungRepository:
                     user_id=user_id, wortlaut=wortlaut, eingewilligt_am=func.now()
                 )
             )
+            # Eine Einwilligung hebt "ohne Einwilligung weiter" auf (B2).
+            session.execute(
+                delete(Art9OhneEinwilligungZeile).where(
+                    Art9OhneEinwilligungZeile.user_id == user_id
+                )
+            )
+
+    def ohne_lesen(self, user_id: str) -> Optional[str]:
+        """Der Wortlaut, zu dem die Person ohne Einwilligung weiterging, sonst None."""
+        with self.db.get_session() as session:
+            return session.execute(
+                select(Art9OhneEinwilligungZeile.wortlaut).where(
+                    Art9OhneEinwilligungZeile.user_id == user_id
+                )
+            ).scalar_one_or_none()
+
+    def ohne_merken(self, user_id: str, wortlaut: str) -> bool:
+        """
+        "Ohne Einwilligung weiter" zu diesem Wortlaut festhalten (B2); eine fruehere
+        Entscheidung wird ersetzt, je Kennung bleibt eine Zeile.
+
+        Nur, wenn keine geltende Einwilligung besteht, in einer Anweisung
+        (INSERT ... SELECT ... WHERE NOT EXISTS) unter der Advisory-Sperre der Person,
+        die auch ``einwilligen`` nimmt: Kommt "ohne" nach einer Einwilligung an,
+        etwa aus einem zweiten Tab, bleibt es ohne Wirkung (Review zu #670). Gibt zurueck,
+        ob etwas geschrieben wurde.
+        """
+        geltend = (
+            select(Art9EinwilligungZeile.id)
+            .where(
+                Art9EinwilligungZeile.user_id == user_id,
+                Art9EinwilligungZeile.widerrufen_am.is_(None),
+                Art9EinwilligungZeile.wortlaut.in_(sorted(GELTENDE_WORTLAUTE)),
+            )
+            .exists()
+        )
+        quelle = select(
+            literal(user_id, String(255)),
+            literal(wortlaut, String(64)),
+            func.now(),
+        ).where(~geltend)
+        with self.db.get_session() as session:
+            # Dieselbe Sperre wie beim Einwilligen: Wer zuerst kommt, ist fertig, bevor
+            # der andere prueft (Review zu #670).
+            _sperren(session, user_id)
+            anweisung = pg_insert(Art9OhneEinwilligungZeile).from_select(
+                ["user_id", "wortlaut", "entschieden_am"], quelle
+            )
+            ergebnis = session.execute(
+                anweisung.on_conflict_do_update(
+                    index_elements=[Art9OhneEinwilligungZeile.user_id],
+                    set_={"wortlaut": wortlaut, "entschieden_am": func.now()},
+                )
+            )
+            return ergebnis.rowcount > 0
 
     def widerrufen(
         self,

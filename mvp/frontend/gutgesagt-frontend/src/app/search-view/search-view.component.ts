@@ -15,6 +15,8 @@ import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { STARTBEISPIEL } from '../shared/startbeispiel';
 import { AuthService } from '../auth/auth.service';
 import { map } from 'rxjs/operators';
+import { RundgangBandComponent } from '../rundgang/rundgang-band.component';
+import { SeitLetztemBesuchComponent } from '../seit-letztem-besuch/seit-letztem-besuch.component';
 
 /**
  * Am Desktop mit Maus springt der Fokus beim Laden ins Suchfeld; auf Touch-Geraeten
@@ -35,6 +37,8 @@ export const AUTOFOKUS_MEDIEN = '(min-width: 960px) and (hover: hover) and (poin
     OftGenutztComponent,
     RecentContentComponent,
     AboutTeaserComponent,
+    RundgangBandComponent,
+    SeitLetztemBesuchComponent,
   ],
   templateUrl: './search-view.component.html',
   styleUrls: ['./search-view.component.scss']

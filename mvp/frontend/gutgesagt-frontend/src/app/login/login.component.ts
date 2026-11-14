@@ -79,10 +79,9 @@ export class LoginComponent {
         this.authService.loginWithManagedAuth(email, password).subscribe({
             next: () => {
                 this.isLoading = false;
-                this.snackBar.open('Anmeldung erfolgreich!', 'OK', {
-                    duration: 3000,
-                    panelClass: ['success-snackbar']
-                });
+                // Keine Snackbar "Anmeldung erfolgreich!": Danach kommt oft gleich die
+                // Einwilligung, und sie lag ueber deren Knoepfen (UX-Review B18). Dass es
+                // geklappt hat, zeigt das Profilbild im Kopf.
                 // Clear the stored return URL after successful login
                 rueckkehrzielLoeschen();
                 this.router.navigateByUrl(this.returnUrl);

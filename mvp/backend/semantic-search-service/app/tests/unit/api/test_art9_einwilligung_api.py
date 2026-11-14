@@ -98,6 +98,7 @@ class TestStand:
                 "kennung": AKTUELLER_WORTLAUT,
                 "text": WORTLAUTE[AKTUELLER_WORTLAUT],
             },
+            "ohne_wortlaut": None,
         }
         repository.lesen.assert_called_once_with("user-001")
 
@@ -111,7 +112,8 @@ class TestStand:
         assert stand["eingewilligt_am"].startswith("2026-11-05T09:30")
 
     @pytest.mark.parametrize(
-        "frueher", ["2026-11-05", "2026-11-05-b", "2026-11-10", "2026-11-12"]
+        "frueher",
+        ["2026-11-05", "2026-11-05-b", "2026-11-10", "2026-11-12"],
     )
     def test_einwilligung_zu_frueherem_wortlaut_fragt_neu(
         self, client, repository, frueher
@@ -143,18 +145,64 @@ class TestStand:
         assert stand["widerrufen_am"].startswith("2026-11-06T09:30")
 
 
+class TestOhneEinwilligung:
+    """UX-Review B2: "Ohne Einwilligung weiter" am Konto statt im Browser."""
+
+    def test_stand_liefert_den_wortlaut_des_ohne(self, client, repository):
+        repository.lesen.return_value = None
+        repository.ohne_lesen.return_value = "2026-11-13"
+
+        stand = client.get(BASIS, headers=PERSON).json()
+
+        assert stand["ohne_wortlaut"] == "2026-11-13"
+        repository.ohne_lesen.assert_called_once_with("user-001")
+
+    def test_ohne_merken(self, client, repository):
+        antwort = client.post(
+            f"{BASIS}/ohne", json={"wortlaut": "2026-11-13"}, headers=PERSON
+        )
+
+        assert antwort.status_code == 204
+        repository.ohne_merken.assert_called_once_with("user-001", "2026-11-13")
+
+    def test_ohne_unbekannter_wortlaut_422(self, client, repository):
+        antwort = client.post(
+            f"{BASIS}/ohne", json={"wortlaut": "1999-01-01"}, headers=PERSON
+        )
+
+        assert antwort.status_code == 422
+        repository.ohne_merken.assert_not_called()
+
+    def test_ohne_nur_angemeldet(self, client):
+        assert (
+            client.post(f"{BASIS}/ohne", json={"wortlaut": "2026-11-13"}).status_code
+            == 401
+        )
+
+
 class TestWortlaute:
-    def test_aktueller_wortlaut_nennt_punkte_und_muster_hinweise(self):
-        """Wortlaut vom 12.11.2026: die Zwecke aus DSFA Abschnitt 4 wie 2026-11-05-b."""
+    def test_aktueller_wortlaut_nennt_keine_spielelemente(self):
+        """
+        2026-11-13, ueberschrieben (Entscheidung Maintainer, 13.11.2026, nach juristischer Pruefung):
+        Punkte, Level, Quests, Freischaltungen und Muster-Hinweise gehoeren nicht in die
+        Einwilligung, ohne die niemand beitragen kann (ErwG 43, Art. 7 Abs. 4 DSGVO).
+        """
         text = WORTLAUTE[AKTUELLER_WORTLAUT]
 
         assert AKTUELLER_WORTLAUT == "2026-11-13"
+        for wort in (
+            "Punktestand",
+            "Level",
+            "Quests",
+            "Meilenstein",
+            "freischaltet",
+            "Admins",
+        ):
+            assert wort not in text, wort
         assert (
-            "ein Punktestand, ein Level, Quests und Meilenstein-Abzeichen, die nur ich "
-            "sehe, solange ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen"
+            "Gut gesagt nutzt meine Mitwirkung nur für den Betrieb der Plattform, wertet "
+            "sie nicht nach politischer Haltung aus und gibt sie nicht an Dritte weiter."
         ) in text
-        assert "neue Aktionen, die ein höheres Level freischaltet" in text
-        assert "wenn zwei Konten sich auffällig oft gegenseitig nutzen" in text
 
     def test_aktueller_wortlaut_nennt_den_menuepunkt_datenschutz_einstellungen(self):
         """Der Widerrufsweg heisst wie der Menuepunkt (#644)."""
@@ -189,23 +237,40 @@ class TestWortlaute:
         assert WORTLAUTE["2026-11-12"] == vorher
         assert "meine Bewertungen werden gelöscht" in WORTLAUTE[AKTUELLER_WORTLAUT]
 
-    def test_wortlaut_vom_13_11_aendert_nur_die_folgen_des_widerrufs(self):
+    def test_wortlaut_vom_13_11_aendert_die_folgen_und_nimmt_die_spielelemente_heraus(
+        self,
+    ):
         """
-        Loeschauftrag nach dem Widerruf (Entscheidung Maintainer, 13.11.2026): Sonst
-        wortgleich mit 2026-11-12; die neuen Folgen stehen im Text.
+        Loeschauftrag nach dem Widerruf und ohne Spielelemente (beides Entscheidung
+        Maintainer, 13.11.2026; 2026-11-13 ueberschrieben, bevor ein Release ihn
+        enthielt). Sonst wortgleich mit 2026-11-12.
         """
-        vorher = WORTLAUTE["2026-11-12"].replace(
-            "Was ich sonst gespeichert habe, bleibt, bis ich es lösche oder mein "
-            "Konto löschen lasse. ",
-            "Innerhalb von sieben Tagen werden auch meine Beiträge, Einwürfe und "
-            "Sätze von mir gelöst: Meine Beiträge bleiben stehen und zeigen "
-            "„ehemalige Person“ statt meines Namens, meine Einwürfe werden gelöscht, "
-            "und meine Sätze an Einwürfen anderer bleiben ohne meinen Namen. Was ich "
-            "nach einer neuen Einwilligung beitrage, bleibt davon unberührt. Mein "
-            "Konto bleibt. ",
+        vorher = (
+            WORTLAUTE["2026-11-12"]
+            .replace(
+                "Was ich sonst gespeichert habe, bleibt, bis ich es lösche oder mein "
+                "Konto löschen lasse. ",
+                "Innerhalb von sieben Tagen werden auch meine Beiträge, Einwürfe und "
+                "Sätze von mir gelöst: Meine Beiträge bleiben stehen und zeigen "
+                "„ehemalige Person“ statt meines Namens, meine Einwürfe werden gelöscht, "
+                "und meine Sätze an Einwürfen anderer bleiben ohne meinen Namen. Was ich "
+                "nach einer neuen Einwilligung beitrage, bleibt davon unberührt. Mein "
+                "Konto bleibt. ",
+            )
+            .replace(
+                "nur für den Betrieb der Plattform. Dazu gehören ein Punktestand, ein "
+                "Level, Quests und Meilenstein-Abzeichen, die nur ich sehe, solange "
+                "ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen; "
+                "neue Aktionen, die ein höheres Level freischaltet; und ein Hinweis an "
+                "die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. "
+                "Gut gesagt wertet meine Mitwirkung nicht nach politischer Haltung aus "
+                "und gibt sie nicht an Dritte weiter.",
+                "nur für den Betrieb der Plattform, wertet sie nicht nach politischer "
+                "Haltung aus und gibt sie nicht an Dritte weiter.",
+            )
         )
         assert WORTLAUTE["2026-11-13"] == vorher
-        assert AKTUELLER_WORTLAUT == "2026-11-13"
+        assert "2026-11-14" not in WORTLAUTE
 
     def test_nur_der_aktuelle_wortlaut_zaehlt(self):
         """Fruehere Einwilligungen zaehlen nicht (GELTENDE_WORTLAUTE, 13.11.2026)."""
@@ -521,8 +586,9 @@ OFFEN = {
     # Zustimmung zur Sichtbarkeit der Abzeichen (#351): Ein Nein ist Zuruecknehmen,
     # ein Ja zeigt ohne Einwilligung nichts (keine Meilensteine).
     ("PUT", "/api/v1/usage/users/me/abzeichen-sichtbarkeit"),
-    # Die Einwilligung selbst
+    # Die Einwilligung selbst und "ohne Einwilligung weiter" (B2)
     ("POST", "/api/v1/art9-einwilligung"),
+    ("POST", "/api/v1/art9-einwilligung/ohne"),
     # Suchen und Lesen per POST
     ("POST", "/api/v1/search/searchByText"),
     ("POST", "/api/v1/post/searchPost"),

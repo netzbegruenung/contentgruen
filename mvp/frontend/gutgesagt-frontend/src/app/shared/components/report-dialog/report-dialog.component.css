@@ -76,3 +76,9 @@ button mat-spinner {
 .fehlt-hinweis:empty {
   display: none;
 }
+
+/* Angemeldet: Bestaetigung an die Adresse des Kontos (UX-Review B17) */
+.an-konto {
+  display: block;
+  margin: 0 0 12px;
+}

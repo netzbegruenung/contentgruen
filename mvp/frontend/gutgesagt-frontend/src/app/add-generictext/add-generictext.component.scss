@@ -82,15 +82,9 @@ app-formular-hilfe {
   margin-top: 4px;
 }
 
-// Unter "+ Herkunft": warum sie sich bei Zahlen lohnt
-.herkunft-anstoss {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
+// Unter dem Herkunftsfeld, solange es leer ist: warum sie sich bei Zahlen lohnt
 .herkunft-satz {
-  margin: 0;
+  margin: -12px 0 0;
   font-size: 0.85rem;
   color: var(--text-secondary);
 }

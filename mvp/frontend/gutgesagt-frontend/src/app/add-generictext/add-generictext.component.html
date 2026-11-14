@@ -14,6 +14,8 @@
 
     <div class="content-wrapper">
         <div class="form-column">
+            <!-- Ohne Art.-9-Einwilligung: Hinweis mit Weg dorthin; die Eingabe uebersteht ihn (B4) -->
+            <app-einwilligung-hinweis [formular]="generictextForm"></app-einwilligung-hinweis>
             <form [formGroup]="generictextForm" (ngSubmit)="absendenGeklickt()" class="beitrag-formular" novalidate>
                 <app-antwort-auf [aussage]="aussageAusAdresse" [hinweis]="aussageHinweis"
                                  (aussageChange)="aussageSetzen($event)">
@@ -42,6 +44,9 @@
                     <mat-error *ngIf="generictextForm.get('text')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
                     <mat-error *ngIf="generictextForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
+                <!-- Einspaltig direkt unter dem Feld, damit man es beim Tippen sieht (Nutzerfuehrung 13.11.) -->
+                <app-gegenlesen *ngIf="einspaltig()" [kompakt]="true" [titel]="generictextForm.value.title" [text]="generictextForm.value.text" [aussage]="aussage.text"
+                                [herkunftFehlt]="herkunftFehlt"></app-gegenlesen>
 
                 <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
                 <div *ngIf="zeigtThemen" class="optionale-angaben">
@@ -53,17 +58,13 @@
                     </div>
                 </div>
 
-                <div *ngIf="!showReferences" class="herkunft-anstoss">
-                    <button type="button" class="text-link herkunft-link" (click)="revealReferences()">
-                        + Herkunft
-                    </button>
-                    <p class="herkunft-satz">Zahlen und Fakten mit Herkunft sind glaubwürdiger.</p>
-                </div>
-                <div *ngIf="showReferences" class="herkunft">
+                <!-- Bei der Hintergrundinfo immer offen, nicht hinter "+ Herkunft" (Persona-Test Gerd, 13.11.) -->
+                <div class="herkunft">
                     <app-reference-input formControlName="references" [kompakt]="true"
-                                         beschriftung="Herkunft (optional)" platzhalter="Link oder Beschreibung"
+                                         beschriftung="Herkunft (empfohlen)" platzhalter="Link oder Beschreibung"
                                          [maxReferences]="10">
                     </app-reference-input>
+                    <p *ngIf="herkunftFehlt" class="herkunft-satz">Zahlen und Fakten mit Herkunft sind glaubwürdiger.</p>
                 </div>
 
                 <div class="formular-fuss">
@@ -99,7 +100,8 @@
                 <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
-            <app-gegenlesen [titel]="generictextForm.value.title" [text]="generictextForm.value.text" [aussage]="aussage.text"></app-gegenlesen>
+            <app-gegenlesen *ngIf="!einspaltig()" [titel]="generictextForm.value.title" [text]="generictextForm.value.text" [aussage]="aussage.text"
+                            [herkunftFehlt]="herkunftFehlt"></app-gegenlesen>
         </section>
     </div>
 </div>
