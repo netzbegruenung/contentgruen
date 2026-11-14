@@ -1,6 +1,7 @@
 import { HttpContext, HttpContextToken, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { finalize, of, tap } from 'rxjs';
+import { STILLE_ABFRAGE } from '../shared/selbst-nachladen';
 
 interface CacheEntry {
   response: HttpResponse<unknown>;
@@ -65,7 +66,8 @@ export function nurLesend(): { context: HttpContext } {
  * Kontoloeschung (#278), noch fuenf Minuten als angemeldet gelten.
  *
  * "Hier fehlt eine Antwort" ist geteilte Arbeit wie der Fangkorb: Was eben jemand
- * beantwortet hat, soll dort nicht mehr stehen.
+ * beantwortet hat, soll dort nicht mehr stehen. Ebenso die Suchanfragen, die in der
+ * Moderation auf Freigabe warten: Die Liste laedt alle 30 Sekunden nach.
  *
  * Der eigene Punktestand laedt in „Meine Beitraege“ jede Minute nach (#352); aus dem
  * Cache kaeme fuenf Minuten lang derselbe Stand.
@@ -75,7 +77,10 @@ const NIE_CACHEN = [
   '/api/check-session',
   '/api/user-info',
   '/api/v1/statement/unbeantwortet',
+  '/api/v1/moderation/suchanfragen',
   '/api/v1/usage/users/me/punkte',
+  // Moderation: Meldungen, Sperren und Loeschauftraege muessen frisch sein (Zahl am Admin-Link, „Zu tun“).
+  '/api/v1/moderation/',
 ];
 
 /**
@@ -128,7 +133,9 @@ export const cacheInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const cacheKey = `${req.method}-${req.urlWithParams}`;
-  const cachedResponse = cacheService.get(cacheKey);
+  // Ein Nachladen im Hintergrund (STILLE_ABFRAGE) will den frischen Stand, nicht den Cache;
+  // seine Antwort ersetzt den Eintrag.
+  const cachedResponse = req.context.get(STILLE_ABFRAGE) ? null : cacheService.get(cacheKey);
 
   if (cachedResponse) {
     // Return cached response

@@ -145,6 +145,16 @@ class TestMeilensteinQuellen:
         )
         assert repo.eigene_einwuerfe_von_anderen_ausformuliert("kim-1", set()) == 2
 
+    def test_eigene_einwuerfe_ohne_verworfene(self, datenbank):  # noqa: F811
+        repo = PunkteRepository(datenbank)
+        with datenbank.get_session() as s:
+            for stufe in ("open", "in_progress", "processed", "discarded"):
+                s.add(Einwurf(content="Fundstueck", submitted_by="kim-1", status=stufe))
+            s.add(Einwurf(content="Fundstueck", submitted_by="bo-2", status="open"))
+
+        assert repo.eigene_einwuerfe("kim-1") == 3
+        assert repo.eigene_einwuerfe("niemand") == 0
+
 
 class TestStimmenVonStartkonten:
     def test_get_vote_counts_ohne_ausgenommene(self, datenbank):  # noqa: F811

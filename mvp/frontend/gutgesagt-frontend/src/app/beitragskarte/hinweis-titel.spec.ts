@@ -1,5 +1,5 @@
 import { SEITENTITEL_MARKE, ausEinwurf, hinweisTitel } from './karten-daten';
-import { SEITENTITEL_PRAEFIX, hinweisVorschlag } from '../einwerfen/einwerfen.component';
+import { SEITENTITEL_PRAEFIX } from '../einwerfen/einwerfen.component';
 import { Einwurf } from '../services/einwurf.service';
 
 /** Geteilte Einwuerfe sehen im Fangkorb nicht roh aus (Nutzerfuehrung 13.11., T3). */
@@ -8,8 +8,9 @@ describe('hinweisTitel', () => {
     expect(SEITENTITEL_MARKE).toBe(SEITENTITEL_PRAEFIX);
   });
 
-  it('trennt „Seitentitel:“ ab und setzt den Rest mit Strich dahinter', () => {
-    const geteilt = hinweisVorschlag({ titel: 'Windkraft: Neue Studie', text: 'Schau mal, das passt', url: null } as any);
+  it('trennt bei alten Einwuerfen „Seitentitel:“ ab und setzt den Rest mit Strich dahinter', () => {
+    // So legte das Einwerfen den Vorschlag bis zur Persona-Runde 2 an (P44).
+    const geteilt = 'Seitentitel: Windkraft: Neue Studie\nSchau mal, das passt';
 
     expect(hinweisTitel(geteilt)).toBe('Windkraft: Neue Studie – Schau mal, das passt');
     expect(hinweisTitel('Seitentitel:   Nur der Titel ')).toBe('Nur der Titel');

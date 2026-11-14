@@ -17,7 +17,7 @@
       </mat-select>
     </mat-form-field>
 
-    <p *ngIf="fehler" class="hinweis">Die Bilanz konnte nicht geladen werden.</p>
+    <app-nachlade-hinweis [fehler]="fehler" [geladen]="!!daten" was="Bilanz"></app-nachlade-hinweis>
 
     <div *ngIf="daten" class="tabelle">
       <table>

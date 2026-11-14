@@ -205,6 +205,13 @@ published for whoever wants the newest release, but nothing in production follow
      as before, `npm version X.Y.Z --no-git-tag-version` in that directory. This sub-step
      goes with the switch. Woodpecker's builds of `main` show „main · <commit>“
      instead of a version; local builds show the `package.json` version.
+   - **Datum des Einspielens in DSE und Löschkonzept eintragen:** replace the placeholder
+     „[Datum des Einspielens]“ in the privacy policy
+     (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`) and in
+     `docs/LOESCHKONZEPT.md` with the day the release goes to production („1. Dezember 2026“).
+     The privacy-policy spec accepts placeholder or date; on a tag the `ci` step
+     `release-platzhalter` (`scripts/release_platzhalter.py`) fails while the placeholder is
+     still there, and `release.yaml` builds nothing. Once no placeholder is left, drop this sub-step.
    - **Change list:** draft the text of the Forgejo release and show it in the description of
      the release pull request, so it is reviewed with it. The change list lives only in the
      Forgejo release, not in a file in the repository. Draft it with

@@ -12,6 +12,22 @@
     width: 100%;
 }
 
+.such-hinweis {
+    margin: var(--spacing-xs) 0 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.search-container:not(.compact-mode) .such-hinweis {
+    text-align: center;
+}
+
+.such-hinweis a {
+    color: inherit;
+    text-decoration: underline;
+}
+
 .search-button-container {
     width: 100%;
 }

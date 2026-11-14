@@ -274,6 +274,27 @@ export class EinwurfService {
     );
   }
 
+  /**
+   * Der naechste Einwurf fuer die Serie beim Ausformulieren: einer aus dem Tab
+   * "Ausformulieren" (destilliert, nicht verworfen), den eigenen Satz zuerst, dann wie
+   * der Server sortiert. ``ausser`` und Zurueckgestelltes werden uebersprungen.
+   */
+  naechsterZumAusformulieren(ausser?: string | null): Observable<Einwurf | null> {
+    return this.fangkorbLaden(1, 100).pipe(
+      map((daten) => {
+        const kandidaten = daten.results.filter(
+          (einwurf) =>
+            (einwurf.status === 'open' || einwurf.status === 'in_progress') &&
+            (!!einwurf.own_draft || (einwurf.drafts ?? []).length > 0) &&
+            !(einwurf.links ?? []).length &&
+            einwurf.id !== ausser &&
+            !this.zurueckgestellt.has(einwurf.id),
+        );
+        return kandidaten.find((einwurf) => !!einwurf.own_draft) ?? kandidaten[0] ?? null;
+      }),
+    );
+  }
+
   private einwurfUrl(id: string): string {
     return `${this.baseApiUrl}/${encodeURIComponent(id)}`;
   }

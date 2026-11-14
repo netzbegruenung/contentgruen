@@ -19,6 +19,7 @@ import pytest
 from sqlalchemy import text
 from starlette.requests import Request
 
+from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from infrastructure.database.models import Base, SucheOhneTrefferZeile
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
@@ -88,6 +89,8 @@ def _service(db: Datenbank) -> SuchenOhneTrefferService:
             id=AUSSAGE,
             text="Lohnt sich eine Waermepumpe im Altbau?",
             status=ContentStatus.VISIBLE,
+            origin=ContentOrigin.SEARCH_QUERY,
+            replysuggestions_count=0,
         )
     )
     return SuchenOhneTrefferService(repository, aussagen, PersonenDesTages())

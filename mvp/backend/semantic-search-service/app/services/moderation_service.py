@@ -10,7 +10,10 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from repositories.content_report_repository import (
+    BeitragGesperrt,
+    BeitragNichtGesperrt,
     ContentReportRepository,
+    MeldungNichtOffen,
     get_content_report_repository,
 )
 from repositories.implementations.qdrant.moderation_repository import (
@@ -22,6 +25,9 @@ from repositories.einwurf_repository import (
     get_einwurf_repository,
 )
 from repositories.sperre_repository import SperreRepository, get_sperre_repository
+from repositories.suchanfrage_freigabe_repository import (
+    get_suchanfrage_freigabe_repository,
+)
 from repositories.vote_repository import VoteRepository
 from repositories.varianten_repository import (
     VariantenRepository,
@@ -41,7 +47,11 @@ from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
 from core.fehler import Validierungsfehler
-from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG
+from services.anzeigename_service import (
+    EHEMALIGE_PERSON_KENNUNG,
+    AnzeigenameService,
+    get_anzeigename_service,
+)
 from services.content.verweise_entfernen import verweise_entfernen
 from services.meldung_mitteilen import (
     Entscheidung,
@@ -146,6 +156,7 @@ class ModerationService:
         sperre_repo: Optional[SperreRepository] = None,
         mitteilung: Optional[MeldungMitteilung] = None,
         varianten_repo: Optional[VariantenRepository] = None,
+        anzeigenamen: Optional[AnzeigenameService] = None,
     ):
         self.report_repo = report_repo or get_content_report_repository()
         self.moderation_repo = moderation_repo or get_moderation_repository()
@@ -156,6 +167,40 @@ class ModerationService:
         self._varianten_repo = varianten_repo
         # Mails an die meldende Person (#493); ohne eingerichteten Versand geht nichts hinaus.
         self._mitteilung = mitteilung
+        # Anzeigenamen fuer "Gemeldet von" und "Bearbeitet von"; erst beim Lesen gebraucht.
+        self._anzeigenamen = anzeigenamen
+
+    async def _namen_anhaengen(self, meldungen: List[Dict[str, Any]]) -> None:
+        """
+        Haengt an jede Meldung ``reported_by_name`` und ``reviewed_by_name`` (Anzeigename
+        der meldenden bzw. bearbeitenden Person, sonst None), eine Abfrage fuer alle.
+        Nur fuer die Admin-Listen; die Endpunkte verlangen Admin-Rechte.
+        """
+        kennungen = {
+            kennung
+            for meldung in meldungen
+            for kennung in (
+                meldung.get("reported_by_user_id"),
+                meldung.get("reviewed_by"),
+            )
+            if kennung
+        }
+        namen: Dict[str, str] = {}
+        if kennungen:
+            # Ohne Namen bleibt die Liste brauchbar (Kurzform der Kennung im Frontend):
+            # ein Fehler beim Nachschlagen darf sie nicht leeren.
+            try:
+                dienst = self._anzeigenamen or get_anzeigename_service()
+                namen = await asyncio.to_thread(dienst.namen, kennungen)
+            except Exception as e:
+                logger.warning(
+                    f"Anzeigenamen fuer Meldungen nicht lesbar: {type(e).__name__}"
+                )
+        for meldung in meldungen:
+            meldung["reported_by_name"] = namen.get(
+                meldung.get("reported_by_user_id") or ""
+            )
+            meldung["reviewed_by_name"] = namen.get(meldung.get("reviewed_by") or "")
 
     async def report_content(
         self,
@@ -361,6 +406,7 @@ class ModerationService:
                         )
                         report["content"] = None
 
+            await self._namen_anhaengen(reports)
             return reports
         except Exception as e:
             logger.error(
@@ -374,7 +420,9 @@ class ModerationService:
         Alle Meldungen mit diesen Angaben der meldenden Person, fuer die Auskunft
         an Personen ohne Konto (Art. 15 DSGVO, #494). Regeln der Suche: MelderSuche.
         """
-        return await asyncio.to_thread(self.report_repo.von_melder, suche)
+        meldungen = await asyncio.to_thread(self.report_repo.von_melder, suche)
+        await self._namen_anhaengen(meldungen)
+        return meldungen
 
     async def angaben_der_person_loeschen(
         self,
@@ -407,6 +455,25 @@ class ModerationService:
             return None
 
         return await self.moderation_repo.laden(content_id)
+
+    async def _beitrag_gesperrt(self, content_id: UUID) -> bool:
+        """
+        Ist der Beitrag gesperrt? Eine aktive Sperre oder, fuer Sperren von vor #448 ohne
+        Sperr-Eintrag, der Status BLOCKED am Beitrag. Ein geloeschter Beitrag gilt als
+        nicht gesperrt. Ohne gemeinsame Transaktion mit dem Statuswechsel danach: Sperrt
+        jemand genau dazwischen, setzt sperren() die Meldung auf bearbeitet, und
+        nur_offene antwortet mit MeldungNichtOffen (bekanntes, kleines Fenster).
+        """
+        if await asyncio.to_thread(self._sperre_repository().aktive, content_id):
+            return True
+        try:
+            beitrag = await self._beitrag_laden(str(content_id))
+        except Exception as e:
+            logger.warning(
+                f"Beitrag fuer die Sperrpruefung nicht lesbar: {type(e).__name__}"
+            )
+            return False
+        return bool(beitrag) and beitrag.get("status") == ContentStatus.BLOCKED.value
 
     async def sperren(
         self,
@@ -728,6 +795,18 @@ class ModerationService:
                 f"({type(e).__name__})"
             )
 
+        # Die Entscheidung der Vormoderation zu einer Aussage aus einer Suchanfrage
+        # geht mit ihr (suchanfrage_freigaben); auch hier ohne Rueckgaengigmachen.
+        try:
+            await asyncio.to_thread(
+                get_suchanfrage_freigabe_repository().loeschen, UUID(content_id)
+            )
+        except Exception as e:
+            logger.warning(
+                f"Content {content_id} deleted, removing its Vormoderation decision "
+                f"failed ({type(e).__name__})"
+            )
+
         # Offene Meldungen als bearbeitet markieren. Der Beitrag ist schon weg;
         # ein Fehler hier macht die Loeschung nicht rueckgaengig.
         adressen: List[MelderAdresse] = []
@@ -792,9 +871,21 @@ class ModerationService:
 
         Returns:
             bool: True if dismissal was successful
+
+        Raises:
+            MeldungNichtOffen: die Meldung ist schon bearbeitet oder abgewiesen
+            BeitragGesperrt: der Beitrag ist gesperrt; die Mail an die meldende
+                Person ("weder ein Verstoss noch rechtswidrig") waere dann falsch.
+                Solche Meldungen erledigt erneutes Sperren (sperren), das alle
+                Meldungen zum Beitrag auf bearbeitet setzt und "gesperrt" mitteilt.
         """
         try:
             report_uuid = UUID(report_id)
+            content_id = await asyncio.to_thread(
+                self.report_repo.content_id_von, report_uuid
+            )
+            if content_id is not None and await self._beitrag_gesperrt(content_id):
+                raise BeitragGesperrt(str(content_id))
             adressen: List[MelderAdresse] = []
             updated_report = self.report_repo.update_report_status(
                 report_id=report_uuid,
@@ -802,6 +893,7 @@ class ModerationService:
                 reviewed_by=dismissed_by,
                 resolution_notes=notes or "Report dismissed",
                 melder_adressen=adressen,
+                nur_offene=True,
             )
             if updated_report:
                 logger.info(f"Report {report_id} dismissed")
@@ -814,12 +906,61 @@ class ModerationService:
             else:
                 logger.warning(f"Report {report_id} not found")
                 return False
+        except (MeldungNichtOffen, BeitragGesperrt):
+            raise
         except ValueError as e:
             logger.error("Invalid report_id format")
             return False
         except Exception as e:
             logger.error(f"Error dismissing report: {type(e).__name__}", exc_info=True)
             return False
+
+    async def meldung_schliessen(self, report_id: str, geschlossen_von: str) -> bool:
+        """
+        Eine offene Meldung zu einem schon gesperrten Beitrag erledigen: Sie steht danach
+        auf bearbeitet ("Beitrag gesperrt"), und die meldende Person bekommt die vorhandene
+        Mail "gesperrt". Eine neue Sperre entsteht nicht. Gebraucht fuer Meldungen, die nach
+        der Sperre kamen; Abweisen passt dort nicht (BeitragGesperrt).
+
+        Returns:
+            bool: False, wenn es die Meldung nicht gibt oder die Kennung ungueltig ist
+
+        Raises:
+            BeitragNichtGesperrt: der Beitrag ist nicht (mehr) gesperrt
+            MeldungNichtOffen: die Meldung ist schon bearbeitet oder abgewiesen
+        """
+        try:
+            report_uuid = UUID(report_id)
+        except ValueError:
+            logger.error("Invalid report_id format")
+            return False
+        content_id = await asyncio.to_thread(
+            self.report_repo.content_id_von, report_uuid
+        )
+        if content_id is None:
+            return False
+        if not await self._beitrag_gesperrt(content_id):
+            raise BeitragNichtGesperrt(str(content_id))
+        adressen: List[MelderAdresse] = []
+        meldung = await asyncio.to_thread(
+            lambda: self.report_repo.update_report_status(
+                report_id=report_uuid,
+                status="reviewed",
+                reviewed_by=geschlossen_von,
+                resolution_notes="Beitrag gesperrt",
+                melder_adressen=adressen,
+                nur_offene=True,
+            )
+        )
+        if meldung is None:
+            return False
+        logger.info(f"Report {report_id} geschlossen, Beitrag bleibt gesperrt")
+        if adressen:
+            beitrag = await self._beitrag_fuer_mail(str(content_id))
+            await self._entscheidung_mitteilen(
+                adressen, Entscheidung.GESPERRT, _titel(beitrag)
+            )
+        return True
 
     def get_report_stats(self) -> Dict[str, Any]:
         """

@@ -375,7 +375,7 @@
 
     <mat-divider></mat-divider>
 
-    <section class="legal-section">
+    <section class="legal-section" id="suchanfragen">
       <h2>Deine Suchanfragen</h2>
       <p>
         Was du in das Suchfeld eingibst, wird <strong>dauerhaft als eigener Eintrag
@@ -384,11 +384,19 @@
         darüber, welche Formulierungen gebraucht werden.
       </p>
       <p>
-        Solange niemand darauf antwortet, zeigen wir den Eintrag in den Listen und Vorschlägen
-        der Aussagen nur unseren Administratorinnen und Administratoren. Für alle sichtbar wird
-        er, sobald jemand einen Beitrag als Antwort darauf einstellt oder sobald mindestens
-        zwei verschiedene Personen innerhalb von vier Wochen ohne Treffer danach gesucht haben
-        (siehe „Suchen ohne Treffer“).
+        Zunächst zeigen wir den Eintrag in den Listen und Vorschlägen der Aussagen nur unserem
+        Moderationsteam (unseren Administratorinnen und Administratoren). Haben mindestens zwei
+        verschiedene Personen innerhalb von vier Wochen ohne Treffer danach gesucht (siehe
+        „Suchen ohne Treffer“), legen wir ihn dem Moderationsteam vor. Es gibt ihn frei oder
+        lehnt ihn ab, etwa wenn er Namen oder Angaben über andere Personen enthält. Ein
+        freigegebener Eintrag ist für alle sichtbar, solange in den letzten vier Wochen
+        mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben, und dauerhaft,
+        sobald jemand einen Beitrag als Antwort darauf eingestellt hat. Einen noch nicht
+        geprüften oder abgelehnten Eintrag sieht außer dem Moderationsteam niemand, auch dann
+        nicht, wenn jemand eine gleichlautende Aussage anlegt oder beantwortet: Dafür entsteht
+        eine eigene Aussage mit dem Wortlaut dieser Person. Einträge, die vor Einführung dieser
+        Prüfung im November 2026 nur wegen der Zahl der Suchen sichtbar waren, sind es erst nach
+        dieser Prüfung wieder; hatte schon jemand darauf geantwortet, bleiben sie sichtbar.
       </p>
       <p>
         <strong>An diesem Eintrag steht nicht, wer gesucht hat.</strong> Statt einer
@@ -518,7 +526,9 @@
         zwei verschiedene Personen</strong> im obigen Sinn ohne Treffer danach gesucht haben.
         Wer am selben Tag am selben Anschluss oder mit demselben Konto mehrfach dasselbe sucht,
         bringt den Eintrag also nicht allein auf die Listen, außer der Server startet
-        zwischendurch neu. Die Listen sehen
+        zwischendurch neu. Ein Eintrag, der aus einer noch unbeantworteten Suchanfrage
+        stammt, steht dort für Mitwirkende erst nach Prüfung durch das Moderationsteam
+        (siehe „Deine Suchanfragen“). Die Listen sehen
       </p>
       <ul>
         <li>
@@ -527,14 +537,15 @@
           dieser Zahl geordnet; die Zahl der Suchen sehen sie nicht;
         </li>
         <li>
-          unsere Administratorinnen und Administratoren, zusätzlich mit der Zahl der Suchen.
+          das Moderationsteam, zusätzlich mit der Zahl der Suchen.
         </li>
       </ul>
       <p>
         Wer gesucht hat, sieht niemand. Legt eine angemeldete Person auf „Hier fehlt eine
-        Antwort“ selbst eine Aussage an, die einer noch unbeantworteten Suchanfrage gleicht,
-        übernimmt sie diese: Die Aussage gilt danach als von ihr angelegt und trägt ihre
-        Kennung. Das gilt auch für Suchanfragen, die noch auf keiner der Listen standen.
+        Antwort“ selbst eine Aussage an, die einer für alle sichtbaren (freigegebenen), noch
+        unbeantworteten Suchanfrage gleicht, übernimmt sie diese: Die Aussage gilt danach als
+        von ihr angelegt und trägt ihre Kennung. Gleicht sie einer noch nicht freigegebenen, entsteht eine
+        eigene Aussage mit ihrem Wortlaut, und die Suchanfrage bleibt unverändert.
       </p>
       <p>
         <strong>Zweck:</strong> zu erkennen, auf welche Fragen und Behauptungen der Bestand
@@ -675,15 +686,30 @@
       </p>
       <p>
         Zusammen mit den Punkten zeigen wir dir unter „Meine Beiträge“ deine
-        <strong>Meilensteine</strong>: die erste Nutzung durch andere, 10, 50 und 100
-        Nutzungen, die erste Zustimmung, 10 ausformulierte Einwürfe anderer und 10 eigene
-        Einwürfe, die andere ausformuliert haben. Dafür zählen wir auch, wie viele Einwürfe
-        anderer du ausformuliert hast. Deine Meilensteine <strong>siehst nur du</strong>. Wir
-        speichern sie nicht, sondern berechnen sie bei jedem Abruf aus den Daten, die wir für
-        die Punkte ohnehin haben. Es zählen nur nicht gesperrte Beiträge; wird einer gesperrt
-        oder gelöscht, kann ein Meilenstein wieder wegfallen. Startkonten zählen auch hier
-        nicht. Für Meilensteine gelten Zweck und Rechtsgrundlage wie für die Punkte (unten);
-        ohne deine Einwilligung gibt es keine.
+        <strong>Meilensteine</strong>. Für die Wirkung deiner Beiträge: die erste Nutzung
+        durch andere, 10, 50 und 100 Nutzungen und die erste Zustimmung. Für deine
+        Unterstützung: der erste und 10 ausformulierte Einwürfe anderer und 10 eigene
+        Einwürfe, die andere ausformuliert haben. Für dein eigenes Tun, als
+        <strong>Wegmarken</strong>: dein erster Einwurf, dein erster Beitrag, der mindestens
+        drei Tage alt und heute sichtbar ist, und dein erster Kommentar, den eine Aussage als
+        Antwort führt. Dafür zählen wir auch, wie viele Einwürfe anderer du ausformuliert
+        hast und wie viele Einwürfe du eingeworfen hast (verworfene nicht), und sehen nach,
+        ob eine Aussage einen deiner Kommentare als Antwort führt. Deine Meilensteine
+        <strong>siehst nur du</strong>. Wir speichern sie nicht, sondern berechnen sie bei
+        jedem Abruf aus deinen gespeicherten Beiträgen, Einwürfen und den Bewertungen und
+        Zählern, die wir für die Punkte ohnehin haben. Es zählen nur nicht gesperrte Beiträge;
+        wird einer gesperrt oder gelöscht, kann ein Meilenstein wieder wegfallen. Startkonten
+        zählen auch hier nicht.
+        <ng-container *ngIf="meilensteinMerker">
+            Einen neu erreichten Meilenstein nennen wir dir mit einem kurzen Hinweis, direkt
+            nach einem Einwurf, einem Ausformulieren oder einem Kommentar. Welche deiner
+            erreichten Meilensteine dir schon angezeigt wurden, merkt sich nur dein Browser
+            (siehe „Speicherung auf deinem Gerät“); nach dem Anmelden gilt, was du bis dahin
+            erreicht hast, still als gesehen, und genannt wird nur, was danach dazukommt.
+        </ng-container>
+        Keine Erinnerungen, keine Mails. Für Meilensteine gelten Zweck und Rechtsgrundlage wie
+        für die Punkte (unten); ohne deine Einwilligung „Punkte und Meilensteine“ gibt es
+        keine, auch keine Wegmarken.
       </p>
       <p>
         Damit Punkte nicht durch Absprachen entstehen, achten wir darauf, ob sich zwei Konten
@@ -708,14 +734,19 @@
       <p>
         <strong>Zweck:</strong> dir die Wirkung deiner Mitwirkung zeigen und die Punkte gegen
         Absprachen schützen.<br>
-        <strong>Rechtsgrundlage:</strong> eine eigene, freiwillige Einwilligung nach Artikel 6
-        Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO, nach der wir dich
-        fragen, bevor wir Punkte einschalten. Sie ist getrennt von der Einwilligung unter
-        „Rückschlüsse auf deine politische Haltung“: Ohne sie kannst du genauso beitragen und
-        bewerten, und du kannst sie jederzeit unter „Datenschutz-Einstellungen“ widerrufen.
-        Ohne diese Einwilligung (nie erteilt oder widerrufen) hat dein Konto keine Punkte, und es entsteht weder ein Paar-Prüfwert noch ein Muster-Hinweis,
-        der es nennt. Kopien, die ein Konto ohne Einwilligung macht, bringen niemandem Punkte
-        (siehe „Verwendung von Beiträgen“).<br>
+        <strong>Rechtsgrundlage:</strong> deine eigene, freiwillige Einwilligung „Punkte und
+        Meilensteine“ nach Artikel 6 Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a
+        DSGVO. Du gibst sie mit einem eigenen Häkchen unter „Meine Beiträge“ oder in den
+        „Datenschutz-Einstellungen“; nichts ist vorausgewählt. Sie ist getrennt von der
+        Einwilligung zu deiner Mitwirkung (siehe „Rückschlüsse auf deine politische
+        Haltung“): Ohne sie kannst du genauso beitragen und bewerten. Ohne sie (nie erteilt
+        oder widerrufen) berechnen wir für dein Konto keine Punkte und keine Meilensteine,
+        und es entsteht weder ein Paar-Prüfwert noch ein Muster-Hinweis, der es nennt. Du
+        kannst sie jederzeit in den „Datenschutz-Einstellungen“ widerrufen; danach wird
+        nichts mehr berechnet. Deine Antwort speichern wir mit der Kennung des Wortlauts und
+        dem Zeitpunkt als Nachweis, bis dein Konto gelöscht wird; ein Widerruf ist ein
+        weiterer Eintrag. Kopien, die ein Konto ohne Einwilligung zu seiner Mitwirkung macht,
+        bringen niemandem Punkte (siehe „Verwendung von Beiträgen“).<br>
         <strong>Dauer:</strong> Paar-Prüfwerte löschen wir sieben Tage nach der letzten
         Nutzung in ihrer Richtung, Muster-Hinweise acht Wochen nach dem letzten auffälligen
         Tag, jeweils automatisch (täglicher Löschlauf, also spätestens einen Tag danach). Wird
@@ -727,14 +758,16 @@
         und wir schalten sie getrennt von den Punkten ein; bis dahin sieht sie niemand außer
         dir. Danach gilt: Wenn du es erlaubst, sehen andere
         Angemeldete an deinen Beiträgen neben deinem Anzeigenamen, wie viele Meilensteine du
-        erreicht hast, nur diese Zahl; ab fünf Meilensteinen trägt das Siegel deiner Beiträge
-        für sie außerdem eine Krone. Wir fragen dich einmal, sobald du den ersten erreicht
-        hast; ändern kannst du deine Antwort jederzeit unter „Meine Beiträge“, ein Nein gilt
+        erreicht hast, nur diese Zahl und ohne Wegmarken; ab fünf Meilensteinen trägt das
+        Siegel deiner Beiträge für sie außerdem eine Krone. Wir fragen dich einmal, sobald du
+        den ersten erreicht hast, der dafür zählt; ändern kannst du deine Antwort jederzeit unter „Meine Beiträge“, ein Nein gilt
         sofort. Ohne Anmeldung sieht niemand ein Abzeichen. Wir speichern deine Antwort mit
         Zeitpunkt als Nachweis, bis dein Konto gelöscht wird; die Zahl selbst speichern wir
         nicht, sondern berechnen sie im Arbeitsspeicher alle 15 Minuten neu. Widerrufst du die
         Einwilligung zu deiner Mitwirkung (siehe „Rückschlüsse auf deine politische Haltung“),
-        verschwindet das Abzeichen sofort, und wir halten deine Antwort als Nein fest.
+        verschwindet das Abzeichen sofort, und wir halten deine Antwort als Nein fest. Ohne
+        die Einwilligung „Punkte und Meilensteine“ gibt es keine Meilensteine und damit kein
+        Abzeichen; widerrufst du sie, verschwindet es ebenfalls sofort.
         <strong>Rechtsgrundlage:</strong> deine gesonderte Einwilligung nach Artikel 6 Absatz 1
         Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO.
       </p>
@@ -1064,6 +1097,14 @@
         Gerät nicht von selbst.
       </p>
       <p>
+        Schreibst du einen Kommentar und wechselst kurz in eine andere App, merkt sich dein Browser
+        den angefangenen Kommentar bis zum Schließen des Tabs, höchstens eine Stunde lang: Titel,
+        Text, Kurz- und Langfassung, Zweck und Stil, die Aussage, auf die er antwortet, und einen
+        Prüfwert, der ihn deinem Konto zuordnet, nicht deinen Namen. Wir löschen ihn, sobald du den
+        Kommentar speicherst, das Formular leerst, dich abmeldest oder deine Einwilligung
+        widerrufst. Er verlässt dein Gerät nicht von selbst.
+      </p>
+      <p>
         Dein Profilbild legen wir nur in deinem Browser ab, <strong>wenn du es selbst
         wählst</strong> (im Profilmenü unter „Profilbild wählen“). Dann merkt sich der Browser,
         welches Bild du gewählt hast, auch über das Schließen hinaus, <strong>bis du die Wahl
@@ -1078,6 +1119,11 @@
         sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich. Sie bleiben auch
         über das Schließen hinaus, bis du die Websitedaten dieser Seite löschst. Sie gehen nicht
         an uns und werden nicht gezählt.
+      </p>
+      <p *ngIf="meilensteinMerker">
+        Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein
+        Browser, welche du schon gesehen hast. Der Vermerk enthält keine Angaben über dich,
+        geht nicht an uns und wird beim Abmelden und beim nächsten Anmelden gelöscht.
       </p>
       <p>
         Außerdem richtet die Plattform in deinem Browser ein kleines Hintergrundskript ein
@@ -1226,6 +1272,7 @@
         „Einwürfe in den Fangkorb“). Dafür legen wir einen Löschauftrag an: deine Kennung, der
         Zeitpunkt deines Widerrufs und die Frist; ist er erledigt, auch wann. Dein Konto bleibt;
         was bis zum Widerruf geschehen ist, bleibt rechtmäßig. Willigst du später erneut ein, kommt eine neue Einwilligung hinzu; was du danach beiträgst, erfasst ein noch offener Löschauftrag nicht.
+        Wer vor dem [Datum des Einspielens] widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.
       </p>
       <p>
         <strong>Zweck:</strong> deine Mitwirkung verarbeiten zu dürfen und nachzuweisen, dass

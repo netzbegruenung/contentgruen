@@ -95,7 +95,7 @@ export const routes: Routes = [
         data: { parent: '/search' }
     },
     {
-        // Ohne ID: oeffnet den naechsten offenen Einwurf oder zeigt "Alles destilliert".
+        // Ohne ID: oeffnet den naechsten offenen Einwurf oder zeigt "Leer gefischt."
         path: 'destillieren',
         loadComponent: () => import('./destillieren/destillieren.component').then(m => m.DestillierenComponent),
         canActivate: [AuthGuard],

@@ -2,7 +2,7 @@
 Meilenstein-Abzeichen am Anzeigenamen, die andere Angemeldete sehen (#351,
 GLOSSARY.md "Meilenstein" und "Zustimmung zur Sichtbarkeit").
 
-Das Abzeichen ist die Zahl der erreichten Meilensteine. Es steht nur an Personen,
+Das Abzeichen ist die Zahl der erreichten Meilensteine ohne Wegmarken. Es steht nur an Personen,
 die der Sichtbarkeit zugestimmt haben, nur fuer Angemeldete
 (services/beitrag_fuer_aufrufer.py) und nur mit beiden Schaltern
 (``Settings.abzeichen_sichtbar``). Startkonten und Personen ohne Art.-9-Einwilligung
@@ -109,7 +109,13 @@ class AbzeichenService:
             return
         stand = self._vergessen.get(user_id, 0)
         try:
-            erreicht = sum(1 for m in await self._meilensteine(user_id) if m.erreicht)
+            # Wegmarken (eigenes Tun) zaehlen nicht: Die Zahl zeigt Anerkennung
+            # durch andere (domain/meilensteine.py, docs/DSFA.md V22).
+            erreicht = sum(
+                1
+                for m in await self._meilensteine(user_id)
+                if m.erreicht and m.zaehlt_fuers_abzeichen
+            )
             # Erst nach der Rechnung nachsehen: Ein Nein waehrend der Rechnung
             # (im Takt laufen viele nacheinander) darf kein Abzeichen zuruecklassen.
             antwort = await asyncio.to_thread(self._repository.lesen, user_id)

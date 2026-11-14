@@ -11,7 +11,7 @@
     </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
-    <p *ngIf="fehler" class="hinweis">Die Suchen ohne Treffer konnten nicht geladen werden.</p>
+    <app-nachlade-hinweis [fehler]="fehler" [geladen]="!!daten" was="Suchen ohne Treffer"></app-nachlade-hinweis>
 
     <ng-container *ngIf="daten">
       <table *ngIf="daten.suchanfragen.length > 0; else leer">

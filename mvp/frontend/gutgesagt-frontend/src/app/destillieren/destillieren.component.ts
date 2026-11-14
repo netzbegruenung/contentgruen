@@ -18,10 +18,21 @@ import { typBeschreibung, typLabel } from '../shared/content-type-registry';
 import {
   DestillierUebergabeService,
   SCHRITT_PARAM,
+  REIHE_PARAM,
   TAB_PARAM,
 } from './destillier-uebergabe.service';
 import { EINWURF_PARAM } from './einwurf-adresse';
-import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../fangkorb/fangkorb-filter';
+import {
+  FangkorbTab,
+  LEER_GEFISCHT,
+  andererTab,
+  passtZumTab,
+  tabName,
+  tabAus,
+  tabMerken,
+  verworfenEinblenden,
+  wartenImTab,
+} from '../fangkorb/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -58,7 +69,11 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
  * Der Ablauf muss am Handy unterbrechbar sein: Der Satz wird verzoegert beim
  * Tippen, beim Verlassen des Felds, bei jedem Knopf und beim Wegwechseln der App
  * (keepalive) serverseitig gespeichert. Ohne ID in der Adresse oeffnet sich der
- * naechste offene Einwurf ohne eigenen Satz, sonst "Alles destilliert".
+ * naechste offene Einwurf ohne eigenen Satz, sonst "Leer gefischt." mit dem Hinweis,
+ * wie viele Einwuerfe beim Ausformulieren warten.
+ *
+ * "Naechster Einwurf" (frueher "Spaeter") merkt den Satz oder ueberspringt den
+ * Einwurf und oeffnet gleich den naechsten: Destillieren als Serie.
  */
 @Component({
   selector: 'app-destillieren',
@@ -82,8 +97,12 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   typ: Beitragstyp = 'commentary';
   laedt = true;
   arbeitet = false;
-  allesDestilliert = false;
+  /** Welche Liste leer gefischt ist: "destillieren" oder, in der Serie beim Ausformulieren, "ausformulieren". */
+  leer: FangkorbTab | null = null;
+  /** Im leeren Zustand: wie viele Einwuerfe im anderen Tab warten; null, solange unbekannt. */
+  imAnderenAnzahl: number | null = null;
   fehler: string | null = null;
+  readonly leerGefischtText = LEER_GEFISCHT;
 
   private zuletztGespeichert = '';
   private destroy$ = new Subject<void>();
@@ -265,6 +284,11 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         // Nicht gleich wieder anbieten - sonst springt "Spaeter" ohne Satz
         // zwischen zwei offenen Einwuerfen endlos hin und her.
         this.einwurfService.zurueckstellen(einwurf.id);
+        // In der Serie beim Ausformulieren bleibt "Naechster Einwurf" dort.
+        if (this.inAusformulierReihe) {
+          this.uebergabe.zumNaechstenAusformulieren(einwurf.id);
+          return;
+        }
         // Ist keiner mehr offen, geht es in den Tab, in dem der Einwurf jetzt liegt.
         this.uebergabe.zumNaechsten(einwurf.id, this.tabDesEinwurfs);
       },
@@ -285,6 +309,11 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         // aus ist - fuer diese Sitzung wird er eingeschaltet, sonst ist der
         // Einwurf nach dem Verwerfen scheinbar spurlos weg.
         verworfenEinblenden();
+        // In der Serie beim Ausformulieren bleibt es dort, wie bei "Naechster Einwurf".
+        if (this.inAusformulierReihe) {
+          this.uebergabe.zumNaechstenAusformulieren(einwurf.id);
+          return;
+        }
         this.uebergabe.zumNaechsten(einwurf.id, this.tabDesEinwurfs);
       },
       error: (error) => {
@@ -349,7 +378,8 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.schritt = 'satz';
     this.typ = 'commentary';
     this.arbeitet = false;
-    this.allesDestilliert = false;
+    this.leer = null;
+    this.imAnderenAnzahl = null;
     this.fehler = null;
     this.laedt = true;
 
@@ -384,8 +414,46 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Die Ansicht laeuft in der Serie beim Ausformulieren (``?reihe=ausformulieren``). */
+  get inAusformulierReihe(): boolean {
+    return this.route.snapshot?.queryParamMap?.get(REIHE_PARAM) === 'ausformulieren';
+  }
+
+  /**
+   * Serie beim Ausformulieren (Entscheidung 13.11.2026): der naechste Einwurf aus dem Tab
+   * "Ausformulieren", gleich in der Typwahl; ist keiner mehr da, "Leer gefischt" mit dem
+   * Verweis auf das Destillieren.
+   */
+  private naechstenZumAusformulierenOeffnen(nach: string | null): void {
+    if (!nach) {
+      this.einwurfService.rundeBeginnen();
+    }
+    this.einwurfService.naechsterZumAusformulieren(nach).subscribe({
+      next: (naechster) => {
+        if (naechster) {
+          this.router.navigate(['/destillieren', naechster.id], {
+            queryParams: { [SCHRITT_PARAM]: 'typwahl', [REIHE_PARAM]: 'ausformulieren' },
+            replaceUrl: true,
+          });
+          return;
+        }
+        this.einwurfService.rundeBeginnen();
+        this.leerGefischt('ausformulieren');
+      },
+      error: (error) => {
+        this.logger.error('Fangkorb konnte nicht geladen werden', error);
+        this.laedt = false;
+        this.fehler = 'Der Fangkorb konnte nicht geladen werden.';
+      },
+    });
+  }
+
   private naechstenOeffnen(): void {
     const nach = this.route.snapshot?.queryParamMap?.get('nach') ?? null;
+    if (this.inAusformulierReihe) {
+      this.naechstenZumAusformulierenOeffnen(nach);
+      return;
+    }
     const tab = tabAus(this.route.snapshot?.queryParamMap?.get(TAB_PARAM));
     // Ohne "nach" beginnt eine neue Runde: Zurueckgestelltes kommt wieder dran.
     if (!nach) {
@@ -412,14 +480,59 @@ export class DestillierenComponent implements OnInit, OnDestroy {
           this.router.navigate(['/fangkorb'], { replaceUrl: true });
           return;
         }
-        this.laedt = false;
-        this.allesDestilliert = true;
+        this.leerGefischt('destillieren');
       },
       error: (error) => {
         this.logger.error('Fangkorb konnte nicht geladen werden', error);
         this.laedt = false;
         this.fehler = 'Der Fangkorb konnte nicht geladen werden.';
       },
+    });
+  }
+
+  /** Der Tab, auf den der leere Zustand zeigt. */
+  get anderer(): FangkorbTab {
+    return andererTab(this.leer ?? 'destillieren');
+  }
+
+  /** Der Name des anderen Tabs fuer den Knopf ("Zum Ausformulieren", "Zum Destillieren"). */
+  get andererName(): string {
+    return tabName(this.anderer);
+  }
+
+  /** Der Satz zum anderen Tab im leeren Zustand; ohne Zahl (noch nicht geladen) keiner. */
+  get wartetImAnderen(): string {
+    const anzahl = this.imAnderenAnzahl;
+    if (anzahl === null) {
+      return '';
+    }
+    return anzahl > 0 ? wartenImTab(this.anderer, anzahl) : `Beim ${this.andererName} wartet auch nichts.`;
+  }
+
+  /** Aus dem leeren Zustand in den anderen Tab des Fangkorbs. */
+  zumAnderen(): void {
+    tabMerken(this.anderer);
+    this.router.navigate(['/fangkorb']);
+  }
+
+  private leerGefischt(tab: FangkorbTab): void {
+    this.laedt = false;
+    this.leer = tab;
+    this.anderenZaehlen();
+  }
+
+  /**
+   * Zaehlt fuer den leeren Zustand, was im anderen Tab wartet: wie der Tab im Fangkorb
+   * (eine Seite zu 100 wie naechsterOffenerEinwurf), ohne Chips, Verworfenes nicht.
+   * Scheitert das, bleibt es beim Satz ohne Zahl.
+   */
+  private anderenZaehlen(): void {
+    const anderer = this.anderer;
+    this.einwurfService.fangkorbLaden(1, 100).subscribe({
+      next: (daten) => {
+        this.imAnderenAnzahl = daten.results.filter((einwurf) => passtZumTab(einwurf, anderer, false)).length;
+      },
+      error: (error) => this.logger.warn('Fangkorb konnte nicht gezaehlt werden', error),
     });
   }
 

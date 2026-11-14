@@ -35,8 +35,8 @@ class _Repo:
         return [k for k, v in self.antworten_je.items() if v]
 
 
-def _meilenstein(erreicht: bool) -> Meilenstein:
-    return Meilenstein("x", "x", "wirkung", 1, 1 if erreicht else 0)
+def _meilenstein(erreicht: bool, art: str = "wirkung") -> Meilenstein:
+    return Meilenstein("x", "x", "", "", "", art, 1, 1 if erreicht else 0)
 
 
 def _service(repo, erreicht=None, an=True, meilensteine=None) -> AbzeichenService:
@@ -56,6 +56,24 @@ async def test_ja_zeigt_die_zahl_der_erreichten_meilensteine():
     await dienst.antworten("kim-1", True, WORTLAUT)
 
     assert dienst.abzeichen(["kim-1", "bo-2", None]) == {"kim-1": 3}
+
+
+async def test_wegmarken_zaehlen_nicht_fuers_abzeichen():
+    repo = _Repo()
+
+    async def meilensteine(user_id: str) -> List[Meilenstein]:
+        return [
+            _meilenstein(True),
+            _meilenstein(True, "unterstuetzung"),
+            _meilenstein(True, "weg"),
+            _meilenstein(True, "weg"),
+        ]
+
+    dienst = _service(repo, meilensteine=meilensteine)
+
+    await dienst.antworten("kim-1", True, WORTLAUT)
+
+    assert dienst.abzeichen(["kim-1"]) == {"kim-1": 2}
 
 
 async def test_ohne_zustimmung_kein_abzeichen():

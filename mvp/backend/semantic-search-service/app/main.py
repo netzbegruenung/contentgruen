@@ -39,6 +39,7 @@ from api.v1.seeding import router as seeding_router
 from api.v1.usage import router as usage_router
 from api.v1.voting import router as voting_router
 from api.v1.moderation import router as moderation_router
+from api.v1.vormoderation import router as vormoderation_router
 from api.v1.loeschauftraege import router as loeschauftraege_router
 from api.v1.sperren import router as sperren_router
 from api.v1.health import router as health_router
@@ -337,6 +338,9 @@ app.include_router(seeding_router, prefix="/api/v1", tags=["seeding"])
 app.include_router(usage_router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(voting_router, prefix="/api/v1/voting", tags=["voting"])
 app.include_router(moderation_router, prefix="/api/v1/moderation", tags=["moderation"])
+app.include_router(
+    vormoderation_router, prefix="/api/v1/moderation", tags=["moderation"]
+)
 # Loeschauftraege nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b), admin-only
 app.include_router(
     loeschauftraege_router,

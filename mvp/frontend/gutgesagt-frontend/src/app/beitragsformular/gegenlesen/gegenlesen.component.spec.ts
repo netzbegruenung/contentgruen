@@ -101,6 +101,7 @@ describe('GegenlesenComponent', () => {
     expect(siegelText()).toBe('Siegel: Güte 10 von 10');
     expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(0);
     expect(element().textContent).toContain('Nichts aufgefallen');
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe('Nach festen Regeln, ohne generative KI');
   }));
 
   it('dreht das Siegel nach oben, wenn der Text besser wird', fakeAsync(() => {
@@ -127,6 +128,17 @@ describe('GegenlesenComponent', () => {
 
     expect(siegelText()).toBe('Siegel: neu, noch keine Güte');
     expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(0);
+  }));
+
+  // Persona-Test Gerd: „Wer liest mit, eine KI?“ – die Antwort stand erst nach dem Tippen da
+  it('sagt schon vor dem Tippen, dass es nach festen Regeln liest, ohne generative KI', fakeAsync(() => {
+    schreibe('', '');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectNone(PFAD);
+
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe(
+      'Schreib los, dann liest es mit: nach festen Regeln, ohne generative KI.',
+    );
   }));
 
   it('verschwindet still, wenn der Dienst nicht antwortet', fakeAsync(() => {
@@ -293,7 +305,7 @@ describe('GegenlesenComponent', () => {
       fixture.componentRef.setInput('kompakt', true);
     }
 
-    it('zeigt eine Zeile mit der Zahl und klappt die Anmerkungen auf', fakeAsync(() => {
+    it('zeigt eine Zeile mit der Zahl und klappt mit der ersten Anmerkung selbst auf (P33)', fakeAsync(() => {
       kompakt();
       schreibe('Nicht die Wärmepumpe ist das Problem');
       tick(GEGENLESEN_VERZOEGERUNG_MS);
@@ -303,14 +315,42 @@ describe('GegenlesenComponent', () => {
       const inhalt = element().querySelector('.gegenlesen-inhalt') as HTMLElement;
 
       expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
-      expect(zeile.getAttribute('aria-expanded')).toBe('false');
-      expect(inhalt.hidden).toBeTrue();
-
-      zeile.click();
-      fixture.detectChanges();
       expect(zeile.getAttribute('aria-expanded')).toBe('true');
       expect(inhalt.hidden).toBeFalse();
       expect(inhalt.textContent).toContain('Sag lieber, was stimmt.');
+
+      zeile.click();
+      fixture.detectChanges();
+      expect(zeile.getAttribute('aria-expanded')).toBe('false');
+      expect(inhalt.hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('bleibt zu, wenn die Person selbst zugeklappt hat', fakeAsync(() => {
+      kompakt();
+      schreibe('Nicht die Wärmepumpe ist das Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+      (element().querySelector('.gegenlesen-zeile') as HTMLButtonElement).click();
+
+      schreibe('Nicht die Wärmepumpe ist das eigentliche Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('bleibt bei „Nichts aufgefallen“ zu', fakeAsync(() => {
+      kompakt();
+      schreibe('Wärmepumpe lohnt sich auch im Altbau');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
       tick(ANSAGE_PAUSE_MS);
     }));
 

@@ -1,10 +1,13 @@
-import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Subject, of, throwError } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { LoeschauftraegeComponent, NACHLADEN_MS } from './loeschauftraege.component';
+import { LoeschauftraegeComponent } from './loeschauftraege.component';
+// Die Liste kommt aus dem ZuTunService; ausserhalb von /admin (wie hier im Testlauf) fragt er alle 120 s.
+import { KOPF_NACHLADEN_MS as NACHLADEN_MS } from '../../services/zu-tun.service';
 import { Loeschauftrag, LoeschauftraegeResponse, ModerationService } from '../../services/moderation.service';
+import { SuchanfragenFreigabeService } from '../../services/suchanfragen-freigabe.service';
 
 function auftrag(overrides: Partial<Loeschauftrag> = {}): Loeschauftrag {
   return {
@@ -60,7 +63,10 @@ describe('LoeschauftraegeComponent', () => {
 
     TestBed.configureTestingModule({
       imports: [LoeschauftraegeComponent, NoopAnimationsModule],
-      providers: [{ provide: ModerationService, useValue: moderation }],
+      providers: [
+        { provide: ModerationService, useValue: moderation },
+        { provide: SuchanfragenFreigabeService, useValue: { anzahl: () => of({ anzahl: 0 }) } },
+      ],
     });
     TestBed.overrideProvider(MatDialog, { useValue: dialog });
     TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
@@ -87,7 +93,8 @@ describe('LoeschauftraegeComponent', () => {
       expect(zeilen.length).toBe(1);
       const text = zeilen[0].textContent!;
       expect(text).toContain('Anna B.');
-      expect(text).toContain('(person-1)');
+      // Die volle Kennung steht aufklappbar daneben.
+      expect(zeilen[0].querySelector('.kennung-voll code')!.textContent).toBe('person-1');
       expect(text).toContain('Widerrufen am');
       expect(text).toContain('Frist bis');
       expect(zeilen[0].classList).not.toContain('ueberfaellig');
@@ -127,12 +134,17 @@ describe('LoeschauftraegeComponent', () => {
       expect(element().querySelector('[data-testid="neu-eingewilligt"]')).toBeNull();
     });
 
-    it('zeigt ohne Anzeigenamen die Kennung', () => {
-      moderation.getLoeschauftraege.and.returnValue(of(antwort([auftrag({ anzeigename: null })])));
+    it('zeigt ohne Anzeigenamen die Kennung, eine lange kurz als „Person …“', () => {
+      moderation.getLoeschauftraege.and.returnValue(of(antwort([
+        auftrag({ anzeigename: null }),
+        auftrag({ id: 'auftrag-2', anzeigename: null, user_id: '7c1e0b2a-1111-4222-8333-944455556666' }),
+      ])));
 
       starten();
 
-      expect(element().querySelector('.person')!.textContent!.trim()).toBe('person-1');
+      const namen = Array.from(element().querySelectorAll('.person strong')).map((e) => e.textContent!.trim());
+      expect(namen[0]).toBe('person-1');
+      expect(namen[1]).toMatch(/^Person [0-9a-f]{8}$/);
     });
 
     it('sagt, wenn nichts offen ist', () => {
@@ -176,7 +188,7 @@ describe('LoeschauftraegeComponent', () => {
       tick(NACHLADEN_MS);
       expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
 
-      discardPeriodicTasks();
+      fixture.destroy();
     }));
 
     it('lädt sofort nach, wenn der Reiter wieder sichtbar wird', fakeAsync(() => {
@@ -186,7 +198,7 @@ describe('LoeschauftraegeComponent', () => {
       document.dispatchEvent(new Event('visibilitychange'));
 
       expect(moderation.getLoeschauftraege).toHaveBeenCalledTimes(2);
-      discardPeriodicTasks();
+      fixture.destroy();
     }));
 
     it('holt nach einem Ladefehler die Liste im nächsten Takt selbst', fakeAsync(() => {
@@ -194,11 +206,12 @@ describe('LoeschauftraegeComponent', () => {
       starten();
       moderation.getLoeschauftraege.and.returnValue(of(antwort([auftrag()])));
 
-      tick(NACHLADEN_MS);
+      // Nach einem Fehler wartet der naechste Versuch doppelt so lang.
+      tick(NACHLADEN_MS * 2);
       fixture.detectChanges();
 
       expect(element().querySelectorAll('[data-testid="loeschauftrag"]').length).toBe(1);
-      discardPeriodicTasks();
+      fixture.destroy();
     }));
 
     it('hört beim Verlassen auf nachzuladen', fakeAsync(() => {

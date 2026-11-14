@@ -4,7 +4,7 @@ import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
-from typing import AbstractSet, Dict, List, Optional, Tuple
+from typing import AbstractSet, Callable, Dict, FrozenSet, List, Optional, Tuple
 import uuid
 import logging
 from collections.abc import Iterable, Set
@@ -61,6 +61,22 @@ def _normalisiert_gleich(
     if not normalform:
         return None
     return next((t for t in treffer if text_normalisiert(t.text) == normalform), None)
+
+
+def _ist_unbeantwortete_suchanfrage(aussage) -> bool:
+    """Aus einer Suche und ohne Antwortvorschlag (wie ist_unbeantwortete_suchanfrage)."""
+    return (
+        aussage.origin is ContentOrigin.SEARCH_QUERY
+        and aussage.replysuggestions_count < 1
+    )
+
+
+class SuchanfrageNichtFreigegeben(Exception):
+    """
+    Eine Antwort soll an eine unbeantwortete Suchanfrage, die kein Admin freigegeben
+    hat (Vormoderation): Das machte sie mit ihrem Wortlaut fuer alle sichtbar.
+    Bewusst kein ValueError, damit sie nirgends als "nicht gefunden" durchgeht.
+    """
 
 
 class AussageNichtGefunden(ValueError):
@@ -236,6 +252,12 @@ class StatementService(
         """
         return await self._repository.kuratierte()
 
+    async def zaehle_unbeantwortete_suchanfragen(
+        self, ids: AbstractSet[uuid.UUID]
+    ) -> int:
+        """Wie viele der IDs sichtbare unbeantwortete Suchanfragen sind (Vormoderation)."""
+        return await self._repository.zaehle_unbeantwortete_suchanfragen(ids)
+
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
         Sichtbare Aussagen ohne Kommentar, ohne die unbeantworteten Suchanfragen;
@@ -254,6 +276,10 @@ class StatementService(
         """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
         return await self._repository.zu_antwort(beitrag_id)
 
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
+        """Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt (#351)."""
+        return await self._repository.beantwortet_einer(beitrag_ids)
+
     async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
         """Die sichtbaren Beitraege unter den IDs, mit Typ und Titel (#603)."""
         return await self._repository.sichtbare_antworten(ids)
@@ -265,8 +291,9 @@ class StatementService(
         Eine Aussage vorab anlegen ("Hier fehlt eine Antwort"), mit der Person als
         Autorin. Gibt es dieselbe schon (add_statement), kommt sie zurueck.
 
-        Ist die vorhandene eine unbeantwortete Suchanfrage, uebernimmt die Person
-        sie: Herkunft und Autor wechseln, und die Aussage erscheint danach wie eine
+        Ist die vorhandene eine unbeantwortete Suchanfrage (das kann nach der
+        Vormoderation nur eine freigegebene sein, add_statement), uebernimmt die
+        Person sie: Herkunft und Autor wechseln, und die Aussage erscheint danach wie eine
         vorab angelegte auf der Seite. Sonst bliebe sie dort unsichtbar, obwohl die
         Person gerade dieselbe Aussage benannt hat. Andere vorhandene Aussagen
         bleiben unveraendert.
@@ -282,10 +309,10 @@ class StatementService(
 
         async with self._verknuepfungs_sperre(statement_id):
             aussage = await self._aussage_laden(statement_id)
-            if (
-                aussage.origin is ContentOrigin.SEARCH_QUERY
-                and aussage.replysuggestions_count == 0
-            ):
+            # Unter der Sperre noch einmal: Nur eine sichtbare wird uebernommen.
+            if _ist_unbeantwortete_suchanfrage(
+                aussage
+            ) and await self._suchanfrage_sichtbar(statement_id):
                 aussage.origin = ContentOrigin.MANUALLY_CREATED
                 aussage.original_author = author
                 aussage.last_modified_by = author
@@ -303,7 +330,12 @@ class StatementService(
         """
         return (await self._dieselbe_pruefen(text, schatten=False)).vorhanden
 
-    async def _dieselbe_pruefen(self, text: str, schatten: bool) -> Dublettenpruefung:
+    async def _dieselbe_pruefen(
+        self,
+        text: str,
+        schatten: bool,
+        ausschliessen: Optional[Callable[[BaseContentSearchResult], bool]] = None,
+    ) -> Dublettenpruefung:
         """
         Die Pruefung auf dieselbe Aussage, gemeinsam fuer add_statement und
         vorhandene_finden. Normalisiert gleich zaehlt immer. Sonst je nach
@@ -315,7 +347,12 @@ class StatementService(
           Hintergrund mit und wird nur gezaehlt (Schattenprotokoll).
         - an: die NLI-Stufe entscheidet (_nli_entscheiden).
         """
-        gleich, treffer = await self._dublettenkandidaten(text, praefix="query")
+        if ausschliessen is None:
+            gleich, treffer = await self._dublettenkandidaten(text, praefix="query")
+        else:
+            gleich, treffer = await self._dublettenkandidaten(
+                text, praefix="query", ausschliessen=ausschliessen
+            )
         if gleich is not None:
             return Dublettenpruefung(vorhanden=gleich, aehnlichster=gleich)
         heute = dublette_nach_schwelle(
@@ -500,6 +537,15 @@ class StatementService(
         Suche, Seeding. Bei einer vorhandenen bleibt deren Wortlaut; der neue Text
         wird nicht gespeichert (#387, vgl. #370).
 
+        Vormoderation (Entscheidung des Maintainers vom 13.11.2026): Ausser fuer eine
+        Suche (origin SEARCH_QUERY) gilt eine unbeantwortete Suchanfrage, die kein
+        Admin freigegeben hat oder die unter der Schwelle liegt (verborgen wie beim
+        Lesen, SuchenOhneTrefferService.sichtbar_fuer_alle), nicht als dieselbe: Sie
+        ist schon kein Kandidat, der naechste sichtbare gilt, sonst entsteht eine neue
+        Aussage mit dem eingegebenen Text. Sonst machte eine Antwort oder das
+        Vorab-Anlegen sie mit ihrem Wortlaut fuer alle sichtbar, die Antwort hier
+        verriete ihn, und jeder weitere gleiche Text ergaebe eine weitere Aussage.
+
         Pruefen und Schreiben laufen unter einer Sperre je normalisiertem Text, damit
         zwei gleichzeitige Anfragen mit demselben neuen Text nicht zwei Aussagen anlegen.
 
@@ -507,7 +553,19 @@ class StatementService(
             - (neu angelegt, ID, Text) - bei einer vorhandenen Aussage deren ID und Text.
         """
         async with self._text_sperre.halten(statement.text):
-            pruefung = await self._dieselbe_pruefen(statement.text, schatten=True)
+            ausschliessen = None
+            if origin is not ContentOrigin.SEARCH_QUERY:
+                sichtbare = await self._sichtbare_suchanfragen()
+
+                def ausschliessen(eintrag) -> bool:
+                    return (
+                        _ist_unbeantwortete_suchanfrage(eintrag)
+                        and eintrag.id not in sichtbare
+                    )
+
+            pruefung = await self._dieselbe_pruefen(
+                statement.text, schatten=True, ausschliessen=ausschliessen
+            )
             vorhandene, bester = pruefung.vorhanden, pruefung.aehnlichster
             if vorhandene is not None:
                 # DEBUG: Jede Suche laeuft hier durch; eine INFO-Zeile mit ID und
@@ -541,6 +599,27 @@ class StatementService(
                 f"Successfully created new statement with ID {statement_input.id}"
             )
             return True, statement_input.id, statement_input.text
+
+    async def _sichtbare_suchanfragen(self) -> FrozenSet[uuid.UUID]:
+        """
+        Die unbeantworteten Suchanfragen, die Nicht-Admins sehen: ueber der Schwelle
+        und freigegeben (wie SuchenOhneTrefferService.sichtbar_fuer_alle). Ist die
+        Datenbank nicht erreichbar, gilt keine als sichtbar: lieber eine Aussage
+        doppelt als ein ungepruefter Suchtext sichtbar.
+        """
+        # Spaet importiert: der Dienst der Kennzahl haengt selbst am StatementService.
+        from services.suchen_ohne_treffer_service import sichtbare_suchanfragen
+
+        try:
+            return await asyncio.to_thread(sichtbare_suchanfragen)
+        except Exception as e:
+            logger.warning(
+                f"Vormoderation lookup failed ({type(e).__name__}), treating as hidden"
+            )
+            return frozenset()
+
+    async def _suchanfrage_sichtbar(self, statement_id: uuid.UUID) -> bool:
+        return statement_id in await self._sichtbare_suchanfragen()
 
     async def update_statement(self, updated_statement: StatementDbEntry) -> uuid.UUID:
 
@@ -595,8 +674,17 @@ class StatementService(
         content_type: ContentType,
         relevance: float,
     ) -> bool:
-        """Lesen, aendern, schreiben - nur unter der Sperre der Aussage aufrufen."""
+        """
+        Lesen, aendern, schreiben - nur unter der Sperre der Aussage aufrufen.
+        SuchanfrageNichtFreigegeben bei einer nicht freigegebenen unbeantworteten
+        Suchanfrage (Vormoderation): Freigeben ist der ausdrueckliche Weg, auch fuer
+        Admins; eine Antwort soll ihn nicht stillschweigend ersetzen.
+        """
         statement_db_entry = await self._aussage_laden(statement_id)
+        if _ist_unbeantwortete_suchanfrage(
+            statement_db_entry
+        ) and not await self._suchanfrage_sichtbar(statement_id):
+            raise SuchanfrageNichtFreigegeben(str(statement_id))
 
         # Zweimal dieselbe Antwort (etwa ein wiederholter Speicheraufruf) haengt
         # nicht doppelt an und zaehlt nicht doppelt.
@@ -676,6 +764,19 @@ class StatementService(
             return None
 
         neu = False
+        if statement_id is not None:
+            aussage = await self._aussage_laden(statement_id)
+            if _ist_unbeantwortete_suchanfrage(
+                aussage
+            ) and not await self._suchanfrage_sichtbar(statement_id):
+                # Vormoderation: Die Suchanfrage gibt es fuer den Aufrufer nicht (wie
+                # getById). Mit Text wie add_statement eine eigene Aussage, sonst
+                # "nicht gefunden"; ihr Wortlaut geht nie zurueck.
+                if not text:
+                    raise AussageNichtGefunden(str(statement_id))
+                statement_id = None
+            else:
+                aussage_text = aussage.text
         if statement_id is None:
             neu, statement_id, aussage_text = await self.add_statement(
                 Statement(text=text, replysuggestions=[]),
@@ -683,8 +784,6 @@ class StatementService(
                 NEW_CONTENT_STATUS,
                 ContentOrigin.MANUALLY_CREATED,
             )
-        else:
-            aussage_text = (await self._aussage_laden(statement_id)).text
 
         await self.add_statementreplysuggestion_to_statement(
             statement_id=statement_id,

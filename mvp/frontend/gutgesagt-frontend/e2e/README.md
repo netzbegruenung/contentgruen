@@ -8,7 +8,7 @@ sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seite
 Umleitung bei einem 401 der Suche), den Aufruf eines Beitrags per Direktlink und die Darstellung bei
 360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur) sowie Kanten und
 Fluchten bei 360, 390, 1280 und 1440 px (Suchraster, Rundgang-Band, Seitenrahmen, Beitragen-Seite, Zweck-Umschalter,
-Startkacheln, Fuß) samt Umschalter hell/dunkel (liest nur). Ohne Stack, alle Antworten gemockt (`einladung-besucher`, auch gegen `ng serve` ohne Backend): Einladung von der Login-Seite einlösen und Rückkehr nach dem Anmelden aus der Daumen-Snackbar. Teilen (`13-teilen`, Projekt `teilen`: Karte, Beitragsseite,
+Startkacheln, Fuß) samt Umschalter hell/dunkel (liest nur). Ohne Stack, alle Antworten gemockt (`einladung-besucher`, auch gegen `ng serve` ohne Backend): Einladung von der Login-Seite einlösen und Rückkehr nach dem Anmelden aus der Daumen-Snackbar; `datenschutz-sprung-besucher`: Sprung vom Hinweis am Suchfeld zum Abschnitt „Deine Suchanfragen“, mobil und am Desktop. Teilen (`13-teilen`, Projekt `teilen`: Karte, Beitragsseite,
 „Ergebnis teilen“, mobil mit nachgebautem `navigator.share`, am Desktop Zwischenablage) mockt jede Anfrage an `/api`
 (`route.fulfill`) und braucht nur ein `ng serve` über `E2E_BASE_URL`. Nicht in CI: Die Tests brauchen den vollen Stack.
 
@@ -53,7 +53,7 @@ Einzelne Specs: `npx playwright test tests/04-fangkorb.spec.ts`, ein Projekt:
 - **Dubletten:** Ab dem zweiten Lauf gleicht ein neuer Kommentar dem aus dem Vorlauf. Die
   Specs wählen dann „Trotzdem speichern“ (`aufErgebnisWarten`) und vermerken das im Report.
 - **Nächster Einwurf:** Die Reihenfolge kommt vom Server (eigene zuerst, dann die neuesten).
-  Liegen im Fangkorb andere offene Einwürfe, stellt `04-fangkorb` sie mit „Später“ (ohne Satz,
+  Liegen im Fangkorb andere offene Einwürfe, stellt `04-fangkorb` sie mit „Nächster Einwurf“ (ohne Satz,
   also ohne sie zu ändern) für die Runde zurück, bis die Runde im Fangkorb endet.
 - **Browser:** Playwright sucht Chromium unter `~/.cache/ms-playwright`; die Version in
   `package.json` muss zum installierten Browser passen.

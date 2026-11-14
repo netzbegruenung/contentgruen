@@ -22,8 +22,27 @@ def dienst():
     dienst = Mock()
     dienst.meilensteine = AsyncMock(
         return_value=[
-            Meilenstein("nutzung-1", "Erste Nutzung durch andere", "wirkung", 1, 3),
-            Meilenstein("nutzung-10", "10 Nutzungen", "wirkung", 10, 3),
+            Meilenstein(
+                "nutzung-1",
+                "Erstmals genutzt",
+                "Ausgeflogen",
+                "Jemand hat deinen Beitrag mitgenommen.",
+                "meilensteine/vogel.svg",
+                "wirkung",
+                1,
+                3,
+            ),
+            Meilenstein(
+                "einwurf-1",
+                "Erster Einwurf",
+                "Fundstück",
+                "Dein erster Einwurf liegt im Fangkorb.",
+                "meilensteine/korb.svg",
+                "weg",
+                1,
+                0,
+                "Eigenes Bild, CC BY 4.0",
+            ),
         ]
     )
     return dienst
@@ -45,18 +64,26 @@ def test_eigene_meilensteine_mit_stand(dienst):
         "meilensteine": [
             {
                 "kennung": "nutzung-1",
-                "name": "Erste Nutzung durch andere",
+                "name": "Erstmals genutzt",
+                "untertitel": "Ausgeflogen",
+                "beschreibung": "Jemand hat deinen Beitrag mitgenommen.",
+                "bild": "meilensteine/vogel.svg",
+                "bildnachweis": "Motiv: Fluent Emoji, © Microsoft Corporation, MIT-Lizenz",
                 "art": "wirkung",
                 "schwelle": 1,
                 "stand": 3,
                 "erreicht": True,
             },
             {
-                "kennung": "nutzung-10",
-                "name": "10 Nutzungen",
-                "art": "wirkung",
-                "schwelle": 10,
-                "stand": 3,
+                "kennung": "einwurf-1",
+                "name": "Erster Einwurf",
+                "untertitel": "Fundstück",
+                "beschreibung": "Dein erster Einwurf liegt im Fangkorb.",
+                "bild": "meilensteine/korb.svg",
+                "bildnachweis": "Eigenes Bild, CC BY 4.0",
+                "art": "weg",
+                "schwelle": 1,
+                "stand": 0,
                 "erreicht": False,
             },
         ]

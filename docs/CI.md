@@ -144,6 +144,13 @@ required status would stay green from the light run, and the full run after remo
 "WIP:" would not be required for the merge. An empty push after removing "WIP:" would
 fix the status but depends on nobody forgetting it.
 
+## Placeholders before a release
+
+On tags only, the step `release-platzhalter` runs `scripts/release_platzhalter.py`: it fails
+while „[Datum des Einspielens]“ still stands in the privacy policy or in
+`docs/LOESCHKONZEPT.md` ([DEPLOYMENT.md](DEPLOYMENT.md), Releases). Pull-request and `main`
+runs skip it, because the placeholder is expected there until the release pull request.
+
 ## Integration tests on main only
 
 Decided on 14.11.: `integration` runs on a push to `main`, on tags (`release.yaml` waits for

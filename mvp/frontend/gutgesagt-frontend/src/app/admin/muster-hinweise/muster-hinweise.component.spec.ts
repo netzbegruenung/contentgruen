@@ -72,6 +72,6 @@ describe('MusterHinweiseComponent', () => {
     http.expectOne(URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
-    expect(text()).toContain('konnten nicht geladen werden');
+    expect(text()).toContain('gerade nicht erreichbar, neuer Versuch in Kürze');
   });
 });

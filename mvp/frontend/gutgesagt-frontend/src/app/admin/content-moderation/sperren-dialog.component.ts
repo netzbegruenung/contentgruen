@@ -18,6 +18,10 @@ export const BEGRUENDUNG_MAX = 2000;
 export interface SperrenDialogDaten {
   art: 'sperren' | 'bestaetigen';
   titel: string;
+  /** Der Text des Beitrags, damit vor der Entscheidung gelesen werden kann, worum es geht. */
+  text?: string | null;
+  /** Beim Bestätigen: der Widerspruch des Autors (null: ohne Text). */
+  widerspruch?: string | null;
 }
 
 export interface SperrenDialogErgebnis {
@@ -46,6 +50,15 @@ export interface SperrenDialogErgebnis {
     <h2 mat-dialog-title>{{ daten.art === 'sperren' ? 'Beitrag sperren' : 'Sperre bestätigen' }}</h2>
     <div mat-dialog-content>
       <p class="sperren-titel">„{{ daten.titel }}“</p>
+      <!-- Erst lesen, dann entscheiden: Text und Widerspruch stehen im Dialog (Persona-Test 13.11.) -->
+      <div *ngIf="daten.text" class="sperren-zitat">
+        <p class="zitat-label">Text des Beitrags</p>
+        <p class="zitat-text">{{ daten.text }}</p>
+      </div>
+      <div *ngIf="daten.art === 'bestaetigen'" class="sperren-zitat">
+        <p class="zitat-label">Widerspruch des Autors</p>
+        <p class="zitat-text">{{ daten.widerspruch ? '„' + daten.widerspruch + '“' : 'ohne Text' }}</p>
+      </div>
       <p *ngIf="daten.art === 'sperren'">
         Der Beitrag verschwindet aus Suche und Ansicht, bleibt aber erhalten; die Sperre lässt sich
         aufheben. Alle Meldungen zum Beitrag stehen danach auf bearbeitet.
@@ -85,6 +98,9 @@ export interface SperrenDialogErgebnis {
       .volle-breite { width: 100%; }
       .sperren-titel { font-weight: 500; }
       .sperren-hinweis { color: var(--text-secondary); }
+      .sperren-zitat { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--divider-color); }
+      .zitat-label { margin: 0 0 4px; font-size: 0.8125rem; color: var(--text-secondary); }
+      .zitat-text { margin: 0; max-height: 12em; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
     `,
   ],
 })

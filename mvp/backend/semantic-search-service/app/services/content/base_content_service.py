@@ -1,6 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Generic
+from typing import Any, Callable, Dict, List, Optional, Sequence, Type, TypeVar, Generic
 import uuid
 import logging
 
@@ -128,17 +128,27 @@ class BaseContentService(
         return await type(repositories[0]).search_batch(repositories, query_text, limit)
 
     async def _dublettenkandidaten(
-        self, text: str, praefix: str
+        self,
+        text: str,
+        praefix: str,
+        ausschliessen: Optional[Callable[[BaseContentSearchResult], bool]] = None,
     ) -> tuple[Optional[BaseContentSearchResult], List[BaseContentSearchResult]]:
         """
         Die Kandidaten der Dublettenpruefung: (normalisiert gleicher Eintrag aus dem
         Keyword-Index oder None, sichtbare Vektortreffer nach Score). Wie in der Suche
         zaehlen nur sichtbare Eintraege; der Text geht wie in der Suche unveraendert in
         die Einbettung (#321). Ist der erste Wert gesetzt, ist die Liste leer.
+        Eintraege, fuer die ausschliessen wahr ist, sind keine Kandidaten
+        (Vormoderation, StatementService.add_statement).
         """
         normalform = text_normalisiert(text)
         if normalform:
-            gleich = await self._repository.finde_normalisiert_gleich(normalform)
+            if ausschliessen is None:
+                gleich = await self._repository.finde_normalisiert_gleich(normalform)
+            else:
+                gleich = await self._repository.finde_normalisiert_gleich(
+                    normalform, ausschliessen=ausschliessen
+                )
             if gleich is not None:
                 return gleich, []
 
@@ -147,7 +157,12 @@ class BaseContentService(
         )
         # search() liefert nur sichtbare; ein gesperrter Treffer, der doch
         # durchrutscht, darf nie wiederverwendet werden.
-        return None, [k for k in treffer if k.status == ContentStatus.VISIBLE]
+        return None, [
+            k
+            for k in treffer
+            if k.status == ContentStatus.VISIBLE
+            and (ausschliessen is None or not ausschliessen(k))
+        ]
 
     async def _vorhandenen_finden(
         self, text: str, schwelle: float, praefix: str

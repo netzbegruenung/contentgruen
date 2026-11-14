@@ -121,6 +121,7 @@ class TestAntwortAuf:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Solar lohnt sich nicht",
+            False,
         )
 
         resp = TestClient(app).post(
@@ -153,6 +154,7 @@ class TestAntwortAuf:
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Solar lohnt sich doch nicht!",
+            False,
         )
 
         resp = TestClient(app).post(
