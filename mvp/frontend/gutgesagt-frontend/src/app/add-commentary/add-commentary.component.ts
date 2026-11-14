@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -24,6 +24,9 @@ import { typFarbe } from '../shared/content-type-registry';
 import { STIL_LABEL, Stil, ZWECK_LABEL, ZWECK_STANDARD, Zweck, stileFuer, stilPasst } from '../shared/zweck-stil';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { AussageInAnfrage, aussageFuerAnfrage, themenHinweisNachSpeichern } from '../beitragsformular/aussage-fuer-anfrage';
@@ -51,6 +54,7 @@ import {
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import { KOMMENTAR_TEXT_MAX, KURZFASSUNG_MAX, LANGFASSUNG_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
+import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
 export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = KOMMENTAR_TEXT_MAX;
@@ -181,6 +185,7 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
   styleUrls: ['./add-commentary.component.scss'],
   imports: [
     ...SHARED_IMPORTS,
+    EinwilligungHinweisComponent,
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
@@ -200,6 +205,9 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
   ],
 })
 export class AddCommentaryComponent implements OnChanges {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
+  /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
+  readonly einspaltig = einspaltig();
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('commentary');
   readonly titelMax = TITEL_MAX;
@@ -617,6 +625,12 @@ export class AddCommentaryComponent implements OnChanges {
         // Die Eingaben bleiben stehen; "Erneut versuchen" speichert dasselbe noch einmal.
         this.logger.error('Error saving commentary', error);
         this.speichert = false;
+        // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
+        if (einwilligungFehlt(error)) {
+          this.fehler = null;
+          this.einwilligungZustand.hinweisZeigen();
+          return;
+        }
         // Bei 422 sagt das Backend, was nicht passt - das ist hilfreicher als "nicht geklappt".
         const meldung = validierungsMeldung(error);
         if (meldung) {

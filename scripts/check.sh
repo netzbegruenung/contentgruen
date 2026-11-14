@@ -18,7 +18,8 @@
 # it, without --integration. Enough before a push; the full run is the CI's job (docs/CI.md).
 # CHECK_VOLL=1 shows the full output instead of the summary lines; CHECK_OHNE_DOCKER=1 runs the
 # BFF tests with the local dotnet instead of the .NET SDK container. CHECK_WORKER=<n> sets the
-# pytest-xdist workers of the unit step (default 4, 0 runs serially in one process).
+# pytest-xdist workers of the unit step (default 4, 0 runs serially in one process; CI: 2).
+# CHECK_OHNE_SOURCEMAPS=1 runs the frontend tests without source maps (less memory, CI).
 set -e
 INTEGRATION=
 SCHRITT=
@@ -67,6 +68,7 @@ if laeuft unit; then
   # In parallel (pytest-xdist): every worker collects on its own, so test IDs must not contain
   # random values (fixed UUIDs in parametrize). Fixed 4 rather than auto: on a large CI runner
   # auto starts one worker per core, each importing the app, next to the other steps.
+  # The CI sets CHECK_WORKER=2: its runner is shared (docs/CI.md).
   # The integration step stays serial: every worker would load the embedding model (#459)
   # and its torch threads are sized for one process (tests/integration/conftest.py).
   ./venv/bin/python -m pytest app/tests/unit/ --ignore=app/tests/unit/services/test_seeding_implementation.py -q -n "${CHECK_WORKER:-4}" 2>&1 | kurz . 2; test "${PIPESTATUS[0]}" -eq 0
@@ -77,13 +79,18 @@ if laeuft integration; then
   # Shown: skip/failure/error summary lines, the abort message of a missing stack (Exit: and
   # its "- " lines, without pytest's repeat ending in "!") and the final count. For a
   # traceback rerun the failing test with pytest directly.
-  INTEGRATION_STACK_PFLICHT=1 ./venv/bin/python -m pytest app/tests/integration/ -q -rfEs 2>&1 \
-    | kurz '^(SKIPPED|FAILED|ERROR|Exit: )|^- .*[^!]$|^=+ .*[0-9.]+s( \([0-9:]+\))? =+$' 40
+  # A test hanging longer than 5 min dumps the stacks of all threads (faulthandler), the
+  # whole step stops after INTEGRATION_ZEITLIMIT (SIGINT, so pytest still prints its summary):
+  # main pipeline 1257 sat silent for 46 min until Woodpecker cancelled it. The summary keeps
+  # the stack dump and the interrupt lines (CI shows everything, CHECK_VOLL=1).
+  INTEGRATION_STACK_PFLICHT=1 timeout -s INT -k 60 "${INTEGRATION_ZEITLIMIT:-25m}" \
+    ./venv/bin/python -m pytest app/tests/integration/ -q -rfEs -o faulthandler_timeout=300 2>&1 \
+    | kurz '^(SKIPPED|FAILED|ERROR|Exit: |Timeout \(|Thread 0x|  File ")|KeyboardInterrupt|^- .*[^!]$|^=+ .*[0-9.]+s( \([0-9:]+\))? =+$' 80
   test "${PIPESTATUS[0]}" -eq 0
 fi
 
-# environment.ts is gitignored; tests and build need it. Copy and rename: in CI both steps run at
-# once in one workspace, neither may read a half-written file.
+# environment.ts is gitignored; tests and build need it. Copy and rename, so no step that
+# shares the workspace ever reads a half-written file.
 frontend_umgebung() {
   cd "$FE"; local ziel=src/environments/environment.ts
   [ -f "$ziel" ] || { cp "$ziel.template" "$ziel.$$" && mv -f "$ziel.$$" "$ziel"; }
@@ -92,14 +99,14 @@ if laeuft frontend; then
   echo "== Frontend"; frontend_umgebung
   # A run that fails before Karma starts (no node_modules, no browser) prints no summary line: then the tail.
   log=$(mktemp); status=0
-  npx ng test --watch=false --browsers=ChromeHeadless --progress=false "${INCLUDE[@]}" >"$log" 2>&1 || status=$?
+  npx ng test --watch=false --browsers=ChromeHeadless --progress=false ${CHECK_OHNE_SOURCEMAPS:+--source-map=false} "${INCLUDE[@]}" >"$log" 2>&1 || status=$?
   kurz 'Executed [0-9]+ of [0-9]+.*(SUCCESS|FAILED)|ERROR' 2 <"$log"
   [ "$status" -eq 0 ] || [ -n "$CHECK_VOLL" ] || { echo "-- ng test exit $status, last lines:"; tail -n 15 "$log"; }
   rm -f "$log"; test "$status" -eq 0
 fi
 # The image build (Dockerfile) runs `ng build --configuration production`, whose budgets ng test
-# does not check: an exceeded budget stopped the :main images after merge (10.11.). Own step, so
-# CI runs it next to the tests; not with --include, and with --geaendert not for spec-only changes.
+# does not check: an exceeded budget stopped the :main images after merge (10.11.). Own step
+# (own CI step too); not with --include, and with --geaendert not for spec-only changes.
 if laeuft frontend-build; then
   echo "== Frontend build (production)"; frontend_umgebung; log=$(mktemp); status=0
   npx ng build gutgesagt-frontend --configuration production --progress=false >"$log" 2>&1 || status=$?

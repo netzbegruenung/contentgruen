@@ -57,6 +57,7 @@ async def get_by_id(
     ),
     commentary_service: CommentaryService = Depends(get_commentary_service),
     aufrufer: Aufrufer = Depends(get_aufrufer),
+    reference_service: ReferenceService = Depends(get_reference_service),
 ) -> KommentarResponse:
     try:
         # Retrieve commentary by ID
@@ -68,6 +69,9 @@ async def get_by_id(
                 status_code=404, detail=f"Commentary with id {commentary_id} not found"
             )
 
+        # Wie die Beitragsansicht: Link und Beschreibung der Herkunft fuer die Karte, sonst
+        # zeigt die Ergebnisseite nach dem Speichern nur "Herkunft 1" (Persona-Test Gerd).
+        await reference_service.herkunft_ergaenzen(commentary)
         return als_responses(KommentarResponse, [commentary], aufrufer)[0]
 
     except Exception as e:

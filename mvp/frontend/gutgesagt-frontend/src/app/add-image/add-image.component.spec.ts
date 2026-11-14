@@ -14,6 +14,11 @@ import { OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.compon
 import { typBeschreibung } from '../shared/content-type-registry';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of as vonWert } from 'rxjs';
+
+/** Zweispaltig wie am Desktop: Gegenlesen neben der Vorschau (Nutzerfuehrung 13.11.). */
+const ZWEISPALTIG = { provide: BreakpointObserver, useValue: { observe: () => vonWert({ matches: false, breakpoints: {} }) } };
 
 const WERTE = {
   image_url: 'https://example.org/dach.jpg',
@@ -28,7 +33,7 @@ describe('AddImageComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AddImageComponent, NoopAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ZWEISPALTIG],
     })
       .overrideComponent(AddImageComponent, {
         remove: { imports: [BeitragskarteComponent] },
@@ -108,6 +113,19 @@ describe('AddImageComponent', () => {
       image: { title: 'Solardach auf der Grundschule', image_url: WERTE.image_url, text: WERTE.caption },
     });
     expect(gemeldet).toEqual({ id: 'b-1', aussage: OHNE_AUSSAGE, verknuepft: true });
+  });
+
+  // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+  it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', () => {
+    spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+    component.imageForm.patchValue(WERTE);
+
+    component.speichern();
+    fixture.detectChanges();
+
+    expect(component.fehler).toBeNull();
+    expect(component.speichert).toBeFalse();
+    expect(component.imageForm.value.title).toBe(WERTE.title);
   });
 
   it('behaelt nach gescheitertem Speichern die Eingaben und speichert mit "Erneut versuchen" dasselbe', () => {
@@ -224,7 +242,7 @@ describe('AddImageComponent mit der echten Vorschau-Karte', () => {
   it('bemerkt den Ladefehler des Bildes, das die Karte zur eingegebenen URL zeigt', async () => {
     await TestBed.configureTestingModule({
       imports: [AddImageComponent, NoopAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ZWEISPALTIG],
     }).compileComponents();
     const fixture = TestBed.createComponent(AddImageComponent);
     fixture.detectChanges();

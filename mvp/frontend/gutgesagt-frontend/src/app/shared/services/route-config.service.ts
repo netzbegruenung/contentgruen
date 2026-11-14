@@ -112,8 +112,13 @@ export class RouteConfigService {
         return { ...defaultConfig, pageTitle: PAGE_TITLES.DATENSCHUTZ };
       case '/nutzungsbedingungen':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.NUTZUNGSBEDINGUNGEN };
+      // Fragt die App (erstes Anmelden, Hinweis beim Beitragen), steht ein Rueckweg in
+      // der Adresse: dann "Einwilligung"; aus dem Profilmenue "Datenschutz-Einstellungen".
       case '/einwilligung':
-        return { ...defaultConfig, pageTitle: PAGE_TITLES.EINWILLIGUNG };
+        return {
+          ...defaultConfig,
+          pageTitle: queryParams.has('returnUrl') ? PAGE_TITLES.EINWILLIGUNG_FRAGE : PAGE_TITLES.EINWILLIGUNG,
+        };
       case '/about':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.UEBER };
       case '/einladung':

@@ -14,6 +14,8 @@
     </div>
 
     <ng-container *ngIf="!laedt && einwurf">
+        <!-- Ohne Art.-9-Einwilligung wird der Satz nicht gespeichert: Hinweis mit Weg dorthin (B4) -->
+        <app-einwilligung-hinweis [formular]="satz"></app-einwilligung-hinweis>
         <!--
             Kein eigener Pfeil mehr: Der im Kopf fuehrt in den Fangkorb und laesst
             die Ansicht vorher ihren Satz speichern (registerBeforeBack). Aus der

@@ -9,16 +9,22 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
   const aussageKern = `${TESTDATEN_PRAEFIX} Balkonkraftwerke sind nur Spielerei`;
 
   await page.goto(`/result?searchQuery=${encodeURIComponent(anfrage)}`);
-  // Fertig ist die Suche, wenn Tabs, Karten oder der Leerzustand stehen.
-  await expect(page.locator('.mobile-tab-bar, .mobile-empty-state, app-kartenliste').first()).toBeVisible({
+  // Fertig ist die Suche, wenn Chips, Karten oder der Leerzustand stehen.
+  await expect(page.locator('.typ-chips, .unified-empty-state, app-kartenliste').first()).toBeVisible({
     timeout: 45_000,
   });
   await bild('30-suche');
+  // Hat die Suche Treffer zu einer erkannten Aussage (Kopfband), waehlt "Antworten"
+  // diese vor, nicht die eigene Aussage der Suche - auch wenn ein Vorlauf sie lieferte.
+  const gefundenZu = page.locator('.kopfband-aussage');
+  const erwartet = (await gefundenZu.isVisible())
+    ? (await gefundenZu.textContent())!.trim().replace(/^„|“$/g, '')
+    : aussageKern;
 
   await test.step('Beitrag ergaenzen', async () => {
-    // Mobil mit Treffern: dezent unter dem Suchband und unter der Liste; ohne Treffer im Leerzustand.
-    const unterSuchband = page.locator('.mobile-ergaenzen-kopf button');
-    const unterListe = page.locator('.mobile-ergaenzen button, .mobile-action-buttons button').first();
+    // Mit Treffern: dezent neben den Chips und unter der Liste; ohne Treffer im Leerzustand.
+    const unterSuchband = page.locator('.typ-leiste .ergaenzen-link');
+    const unterListe = page.locator('.nicht-dabei-unten .neu-anlegen-knopf button, .unified-empty-state .action-buttons-top button').first();
     await expect.soft(unterListe).toBeVisible();
     if (await unterSuchband.isVisible()) {
       await expect.soft(unterSuchband).toHaveText(/Antworten/);
@@ -34,7 +40,7 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
     const vorbelegt = page.locator('.gewaehlt-karte .karte-titel').or(page.locator('.antwort-eingabe')).first();
     await expect
       .poll(() => vorbelegt.evaluate((el) => (el instanceof HTMLTextAreaElement ? el.value : (el.textContent ?? '')).trim()))
-      .toContain(aussageKern);
+      .toContain(erwartet);
     await bild('31-formular-vorbelegt');
   });
 
@@ -46,8 +52,11 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
     );
     const id = await speichernUndErgebnis(page);
     test.info().annotations.push({ type: 'Kommentar-ID', description: id });
-    await expect.soft(page.locator('.gespeichert-aussage')).toContainText(aussageKern);
-    expect.soft(await ergebnisKnoepfe(page)).toEqual(['Zurück zur Suche', 'Meine Beiträge']);
+    await expect.soft(page.locator('.gespeichert-aussage')).toContainText(erwartet);
+    // Je nach Aussage stehen dazwischen weitere ("Zur Aussage", "Link kopieren").
+    const knoepfe = await ergebnisKnoepfe(page);
+    expect.soft(knoepfe[0]).toBe('Zurück zur Suche');
+    expect.soft(knoepfe.at(-1)).toBe('Meine Beiträge');
     await bild('32-ergebnis-suche');
 
     await page.locator('.zur-suche').click();

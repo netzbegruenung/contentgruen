@@ -19,12 +19,22 @@ from dependencies import (
     get_nutzung_rate_limiter,
     get_punkte_service,
     get_settings,
+    get_unbeantwortete_aussagen_service,
     get_current_user_optional,
     get_reference_service,
     require_art9_einwilligung,
     require_user,
 )
 from utils.besucher_pseudonym import besucher_merkmal
+from repositories.einwurf_repository import EinwurfRepository, get_einwurf_repository
+from repositories.gesehene_nutzung_repository import (
+    GeseheneNutzungRepository,
+    get_gesehene_nutzung_repository,
+)
+from services.unbeantwortete_aussagen_service import (
+    LIMIT_STANDARD,
+    UnbeantworteteAussagenService,
+)
 from utils.client_identity import derive_client_key
 from utils.device_category import derive_device_category
 from utils.rate_limiter import RateLimiter
@@ -97,9 +107,24 @@ class UserUsageStatsResponse(BaseModel):
 
 
 class BesuchResponse(BaseModel):
-    """Antwort auf einen Besuch: Grundlage der Rueckmeldung beim Anmelden."""
+    """
+    Antwort auf einen Besuch: Grundlage der Rueckmeldung beim Anmelden und von "Seit
+    deinem letzten Besuch" auf der Startseite. Alles Zaehlerstaende, kein Zeitpunkt.
+    """
 
     nutzung_seit_letztem_besuch: int
+    # Einwuerfe anderer seit dem zuletzt gesehenen Stand; nie negativ.
+    neue_einwuerfe: int = 0
+    # Wie viele Aussagen "Hier fehlt eine Antwort" gerade zeigt (hoechstens deren
+    # Grenze); kein Stand, deshalb nennt die Startseite sie nicht "neu".
+    unbeantwortete_aussagen: int = 0
+    # Die Liste hat ihre Grenze erreicht: Es koennen mehr warten ("50+").
+    unbeantwortete_aussagen_mehr: bool = False
+
+
+# So lange warten Einwuerfe und Luecken hoechstens; danach gilt 0, damit die
+# Rueckmeldung zur Nutzung beim Anmelden nicht auf sie wartet.
+BESUCH_NEBENZAHLEN_TIMEOUT_S = 1.5
 
 
 class PunkteResponse(BaseModel):
@@ -443,6 +468,28 @@ async def eigene_nutzungsstatistik(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+class PunkteStatusResponse(BaseModel):
+    """Welche Schalter der Punkte an sind (``GET /punkte/status``)."""
+
+    aktiv: bool
+    abzeichen_sichtbar: bool
+
+
+@router.get("/punkte/status", response_model=PunkteStatusResponse)
+async def punkte_status(settings: Settings = Depends(get_settings)):
+    """
+    Ob die Punkte eingeschaltet sind (``SEMANTIC_SEARCH_PUNKTE_AKTIV``) und ob andere
+    Angemeldete Abzeichen sehen koennen (beide Schalter, ``Settings.abzeichen_sichtbar``).
+    Ohne Anmeldung lesbar und ohne Personenbezug: Das Frontend fragt hier einmal und ruft
+    punkte, meilensteine und abzeichen-sichtbarkeit nur bei eingeschaltetem Schalter auf,
+    statt deren 404 abzuwarten (UX-Review B20, Entscheidung Maintainer 13.11.2026).
+    """
+    return PunkteStatusResponse(
+        aktiv=settings.punkte_aktiv,
+        abzeichen_sichtbar=settings.abzeichen_sichtbar,
+    )
+
+
 @router.get("/users/me/punkte", response_model=PunkteResponse)
 async def eigene_punkte(
     current_user: str = Depends(require_user),
@@ -581,6 +628,11 @@ async def abzeichen_sichtbarkeit_antworten(
 @router.post("/users/me/besuch", response_model=BesuchResponse)
 async def besuch(
     current_user: str = Depends(require_user),
+    einwuerfe: EinwurfRepository = Depends(get_einwurf_repository),
+    gesehen: GeseheneNutzungRepository = Depends(get_gesehene_nutzung_repository),
+    unbeantwortete: UnbeantworteteAussagenService = Depends(
+        get_unbeantwortete_aussagen_service
+    ),
 ):
     """
     Ein Besuch der angemeldeten Person: wie oft ihre Beitraege seitdem genutzt
@@ -590,15 +642,80 @@ async def besuch(
     POST, weil der Aufruf den gezeigten Stand fortschreibt; ein zweiter Aufruf
     direkt danach liefert 0. Die Person kommt aus ``X-User``, nicht aus dem Pfad (#284).
     """
+    # Alle drei Zahlen zugleich: Einwuerfe und Luecken haben eine Zeitgrenze, die
+    # Nutzung nicht; scheitert sie, ist der Besuch gescheitert (500).
     try:
-        anzahl = await get_usage_service().nutzung_seit_letztem_besuch(current_user)
-        return BesuchResponse(nutzung_seit_letztem_besuch=anzahl)
+        anzahl, neu, wartend = await asyncio.gather(
+            get_usage_service().nutzung_seit_letztem_besuch(current_user),
+            _hoechstens(
+                _neue_einwuerfe(current_user, einwuerfe, gesehen), 0, "Neue Einwuerfe"
+            ),
+            _hoechstens(_unbeantwortete_aussagen(unbeantwortete), 0, "Unbeantwortete"),
+        )
     except Exception as e:
         logger.error(
             f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
+    return BesuchResponse(
+        nutzung_seit_letztem_besuch=anzahl,
+        neue_einwuerfe=neu,
+        unbeantwortete_aussagen=wartend,
+        unbeantwortete_aussagen_mehr=wartend >= LIMIT_STANDARD,
+    )
+
+
+async def _hoechstens(aufruf, ersatz: int, was: str) -> int:
+    """
+    ``aufruf`` mit Zeitgrenze (BESUCH_NEBENZAHLEN_TIMEOUT_S); danach ``ersatz``.
+    Ein schon laufender Datenbankaufruf im Thread laeuft zu Ende, die Antwort wartet
+    nur nicht mehr darauf.
+    """
+    try:
+        return await asyncio.wait_for(aufruf, timeout=BESUCH_NEBENZAHLEN_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        logger.warning(f"{was} beim Besuch nicht rechtzeitig gezaehlt")
+        return ersatz
+
+
+async def _neue_einwuerfe(
+    person: str, einwuerfe: EinwurfRepository, gesehen: GeseheneNutzungRepository
+) -> int:
+    """
+    Neue Einwuerfe anderer seit dem letzten Besuch, als Zaehlerstand wie die Nutzung.
+    Scheitert das, bleibt es bei 0: Die Rueckmeldung zur Nutzung soll daran nicht
+    haengen.
+    """
+    try:
+        jetzt, offen = await asyncio.gather(
+            asyncio.to_thread(einwuerfe.count_von_anderen, person),
+            asyncio.to_thread(einwuerfe.count_von_anderen, person, nur_offene=True),
+        )
+        neu = await asyncio.to_thread(
+            gesehen.neue_einwuerfe_seit_letztem_besuch, person, jetzt
+        )
+        # Der Stand zaehlt alle Zustaende; angezeigt werden hoechstens so viele, wie
+        # im Fangkorb noch Arbeit sind, sonst stuende "3 neue" vor einer leeren Liste.
+        return max(0, min(neu, offen))
+    except Exception as e:
+        logger.warning(
+            f"Neue Einwuerfe fuer {log_pseudonym(person)} nicht gezaehlt: {type(e).__name__}"
+        )
+        return 0
+
+
+async def _unbeantwortete_aussagen(dienst: UnbeantworteteAussagenService) -> int:
+    """
+    Wie viele Aussagen "Hier fehlt eine Antwort" zeigt: dieselbe Liste und damit
+    dieselbe Sichtbarkeit (auch die der Vormoderation, sobald es sie gibt). Bei einem
+    Fehler 0.
+    """
+    try:
+        return len(await dienst.liste(mit_themen=False))
+    except Exception as e:
+        logger.warning(f"Unbeantwortete Aussagen nicht gezaehlt: {type(e).__name__}")
+        return 0
 
 
 def _gepostet_dienst(

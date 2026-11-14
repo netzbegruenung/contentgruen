@@ -55,7 +55,6 @@ test('Hintergrundinfo verfassen: Aufbau, neue Aussage, Ergebnisseite', async ({ 
       titel,
       `${TESTDATEN_PRAEFIX} Bei 800 Watt und 30 Cent je Kilowattstunde spart ein Balkonkraftwerk rund 150 Euro im Jahr.`,
     );
-    await page.locator('.herkunft-link').click();
     await page.locator('.reference-source-input').fill(`${TESTDATEN_PRAEFIX} Herkunft: Verbraucherzentrale, Rechner Balkonkraftwerk`);
     await page.locator('.reference-source-input').press('Enter');
     await expect.soft(page.locator('.reference-item')).toHaveCount(1);

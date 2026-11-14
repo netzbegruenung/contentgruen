@@ -105,6 +105,7 @@ async def get_by_id(
     ),
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
     aufrufer: Aufrufer = Depends(get_aufrufer),
+    reference_service: ReferenceService = Depends(get_reference_service),
 ) -> HintergrundinfoResponse:
     try:
         # Retrieve generic text by ID
@@ -117,6 +118,9 @@ async def get_by_id(
                 detail=f"GenericText with id {generic_text_id} not found",
             )
 
+        # Wie die Beitragsansicht: Link und Beschreibung der Herkunft fuer die Karte, sonst
+        # zeigt die Ergebnisseite nach dem Speichern nur "Herkunft 1" (Persona-Test Gerd).
+        await reference_service.herkunft_ergaenzen(generic_text)
         return als_responses(HintergrundinfoResponse, [generic_text], aufrufer)[0]
 
     except Exception as e:

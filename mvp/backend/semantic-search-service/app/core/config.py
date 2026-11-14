@@ -259,6 +259,12 @@ class Settings(BaseSettings):
     # Datenschutzerklaerung den Abschnitt hat (#222), bleibt der Schalter aus. Er
     # schaltet die Punkte (/api/v1/usage/users/me/punkte) und die Muster-Hinweise
     # fuer Admins; Entdoppelung und Startkonten wirken immer.
+    #
+    # ERST NACH DEM MERGE VON #668 EINSCHALTEN: Punkte und Meilensteine haengen seit dem
+    # Wortlaut 2026-11-13 nicht mehr an der Art.-9-Einwilligung, sondern an einer
+    # eigenen, freiwilligen Einwilligung "Punkte und Meilensteine" (Entscheidung
+    # Maintainer 13.11.2026). Solange es die nicht gibt (PUNKTE_EINWILLIGUNG_GEBAUT),
+    # startet der Dienst mit punkte_aktiv nicht (punkte_schalter_pruefen, main.py).
     punkte_aktiv: bool = False
     # Meilenstein-Abzeichen am Anzeigenamen, die andere Angemeldete sehen (#351).
     # Standard aus und nur zusammen mit punkte_aktiv: Wie die Punkte haengen sie an
@@ -409,3 +415,19 @@ class Settings(BaseSettings):
 
 # Create global settings instance
 settings = Settings()
+
+
+# Die eigene, freiwillige Einwilligung "Punkte und Meilensteine" (#668). #668 setzt das
+# auf True, sobald sie gebaut ist; bis dahin verhindert punkte_schalter_pruefen, dass
+# jemand punkte_aktiv einschaltet (Review zu #670).
+PUNKTE_EINWILLIGUNG_GEBAUT = False
+
+
+def punkte_schalter_pruefen(einstellungen: "Settings") -> None:
+    """Beim Start: Punkte nur mit eigener Einwilligung (#668); sonst startet der Dienst nicht."""
+    if einstellungen.punkte_aktiv and not PUNKTE_EINWILLIGUNG_GEBAUT:
+        raise RuntimeError(
+            "SEMANTIC_SEARCH_PUNKTE_AKTIV ist an, aber die eigene Einwilligung "
+            "'Punkte und Meilensteine' (#668) ist noch nicht gebaut. Erst nach dem "
+            "Merge von #668 einschalten."
+        )

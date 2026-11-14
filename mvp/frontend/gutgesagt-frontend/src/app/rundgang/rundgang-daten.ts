@@ -76,6 +76,11 @@ export interface Angebot {
   nein: string;
   /** Erster Schritt des Rundgangs, wenn er aus dem Band startet. */
   ab: number;
+  /**
+   * Die Seite stellt das Band selbst in ihren Inhalt (app-rundgang-band ort="start"),
+   * statt dass es ueber dem Inhalt steht.
+   */
+  imInhalt?: boolean;
 }
 
 export const WILLKOMMEN: Angebot = {
@@ -87,6 +92,9 @@ export const WILLKOMMEN: Angebot = {
     'wie du zu einer Aussage aus dem Netz eine erprobte Antwort findest.',
   // Nur die Startseite: über den Treffern schob das Band mobil Suchfeld und Treffer weg (#599)
   seiten: ['/search'],
+  // Dort unter dem Suchfeld: darüber stand das Suchfeld mobil erst bei y 489 von 844
+  // (Nutzerführung 13.11.)
+  imInhalt: true,
   ja: 'Rundgang starten',
   nein: 'Ausblenden',
   ab: 0,
