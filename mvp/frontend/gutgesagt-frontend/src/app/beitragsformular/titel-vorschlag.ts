@@ -29,14 +29,25 @@ const ABKUERZUNGEN = new Set([
 ]);
 
 /**
+ * Wörter, vor denen eine Zahl mit Punkt eine Ordinalzahl ist („1. Januar“, „19. Jahrhundert“):
+ * Dort endet kein Satz. Klein geschrieben.
+ */
+const NACH_ORDINALZAHL = new Set([
+  'januar', 'jänner', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september',
+  'oktober', 'november', 'dezember', 'jahrhundert', 'jahrtausend',
+]);
+
+/**
  * Bis zum ersten Satzzeichen (. ! ? …), dem Leerraum oder das Ende folgt; ein Punkt hinter
- * einer Abkürzung oder einer Ziffer (Ordinalzahl, Datum) zählt nicht. Sonst der ganze Text.
+ * einer Abkürzung zählt nicht. Ein Punkt hinter einer Zahl („seit 2019.“) beendet den Satz,
+ * außer bei einer Ordinalzahl: vor einem Monatsnamen oder „Jahrhundert“ („1. Januar“) oder
+ * vor einem klein geschriebenen Wort („am 3. und 4. Mai“). Sonst der ganze Text.
  */
 function ersterSatz(text: string): string {
   const ende = /[.!?…](?=\s|$)/g;
   for (const treffer of text.matchAll(ende)) {
     const stelle = treffer.index!;
-    if (treffer[0] === '.' && keinSatzende(text.slice(0, stelle))) {
+    if (treffer[0] === '.' && keinSatzende(text.slice(0, stelle), text.slice(stelle + 1))) {
       continue;
     }
     return text.slice(0, stelle + 1).trim();
@@ -44,12 +55,24 @@ function ersterSatz(text: string): string {
   return text.trim();
 }
 
-/** Ob der Punkt nach diesem Text eine Abkürzung oder Zahl beendet statt eines Satzes. */
-function keinSatzende(davor: string): boolean {
+/** Ob der Punkt nach ``davor`` eine Abkürzung oder Ordinalzahl beendet statt eines Satzes. */
+function keinSatzende(davor: string, danach: string): boolean {
   const wort = davor.match(/(\S+)$/)?.[1] ?? '';
+  if (/\d$/.test(wort)) {
+    return istOrdinalzahl(danach);
+  }
   const ohneZeichen = wort.replace(/^[„"'(]+/, '').replace(/\./g, '').toLowerCase();
   // Ein Punkt schon im Wort („u.a“, „z.B“): zusammengeschriebene Abkürzung
-  return /\d$/.test(wort) || /\p{L}\.\p{L}/u.test(wort) || ohneZeichen.length === 1 || ABKUERZUNGEN.has(ohneZeichen);
+  return /\p{L}\.\p{L}/u.test(wort) || ohneZeichen.length === 1 || ABKUERZUNGEN.has(ohneZeichen);
+}
+
+/** Ob das Wort nach „<Zahl>.“ die Zahl zur Ordinalzahl macht (Monat, Jahrhundert, klein geschrieben). */
+function istOrdinalzahl(danach: string): boolean {
+  const naechstes = danach.trimStart().match(/^[„"'(]*(\p{L}+)/u)?.[1];
+  if (!naechstes) {
+    return false;
+  }
+  return NACH_ORDINALZAHL.has(naechstes.toLowerCase()) || naechstes[0] === naechstes[0].toLowerCase();
 }
 
 /** Satzgrenzen innerhalb eines Satzes, an denen ein Titel enden darf. */

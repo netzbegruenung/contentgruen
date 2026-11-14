@@ -42,6 +42,19 @@ describe('titelVorschlag (E2)', () => {
     expect(titelVorschlag('Das sagt u.a. die Studie. Weiter.')).toBe('Das sagt u.a. die Studie.');
   });
 
+  it('endet am Punkt nach einer Jahreszahl oder Zahl am Satzende (Review #686)', () => {
+    expect(titelVorschlag('Das Gesetz gilt seit 2024. Trotzdem fehlt die Förderung.')).toBe('Das Gesetz gilt seit 2024.');
+    expect(titelVorschlag('Die Quote liegt bei 80. Das reicht nicht.')).toBe('Die Quote liegt bei 80.');
+    expect(titelVorschlag('Die Anlage läuft seit 2019.')).toBe('Die Anlage läuft seit 2019.');
+  });
+
+  it('endet nicht an einer Ordinalzahl vor einem Monat, „Jahrhundert“ oder einem kleinen Wort', () => {
+    expect(titelVorschlag('Ab dem 1. Januar 2025 gilt das. Weiter.')).toBe('Ab dem 1. Januar 2025 gilt das.');
+    expect(titelVorschlag('Am 3. Oktober feiern wir. Weiter.')).toBe('Am 3. Oktober feiern wir.');
+    expect(titelVorschlag('Seit dem 19. Jahrhundert wächst die Stadt. Weiter.')).toBe('Seit dem 19. Jahrhundert wächst die Stadt.');
+    expect(titelVorschlag('Am 3. und 4. Mai ist Markt. Weiter.')).toBe('Am 3. und 4. Mai ist Markt.');
+  });
+
   it('endet weiter an einem normalen Satzende mit Punkt', () => {
     expect(titelVorschlag('Wind ist günstig. Solar auch.')).toBe('Wind ist günstig.');
   });
