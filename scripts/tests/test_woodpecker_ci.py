@@ -272,10 +272,14 @@ def namen(abhaengigkeiten):
 
 def test_frontend_schritte_teilen_ein_npm_ci():
     # Die Schritte teilen den Workspace: ein zweites npm ci loeschte node_modules des anderen.
+    # npm ci laeuft in scripts/ci-installieren.sh frontend (oder dort nur ein Verweis).
     mit_npm_ci = [
         name
         for name, s in SCHRITTE.items()
-        if any("npm ci" in b for b in s.get("commands", []))
+        if any(
+            "npm ci" in b or "ci-installieren.sh frontend" in b
+            for b in s.get("commands", [])
+        )
     ]
     assert mit_npm_ci == ["frontend-installieren"]
     for name in ("frontend", "frontend-build"):
@@ -447,3 +451,262 @@ def test_ci_begrenzt_worker_und_speicher_der_schweren_schritte():
     # Lokal bleiben vier Worker und die Source-Maps.
     assert '-n "${CHECK_WORKER:-4}"' in check
     assert "${CHECK_OHNE_SOURCEMAPS:+--source-map=false}" in check
+
+
+# CI-Images (Dockerfile.ci, .woodpecker/ci-image.yaml, scripts/ci-installieren.sh; docs/CI.md,
+# "CI images").
+CI_IMAGE = yaml.safe_load((WURZEL / ".woodpecker" / "ci-image.yaml").read_text())
+CI_IMAGE_SCHRITTE = {s["name"]: s for s in CI_IMAGE["steps"]}
+CI_IMAGE_ZIELE = {"ci-python": "gutgesagt-ci-python", "ci-node": "gutgesagt-ci-node"}
+INSTALLIEREN = WURZEL / "scripts" / "ci-installieren.sh"
+
+
+def dockerfile_ci_stufen():
+    """Je Stufe von Dockerfile.ci: Basis-Image und die kopierten Quellen."""
+    stufen, aktuell = {}, None
+    for zeile in (
+        (WURZEL / "Dockerfile.ci").read_text().replace("\\\n", " ").splitlines()
+    ):
+        m = re.match(r"FROM\s+(\S+)\s+AS\s+(\S+)", zeile, re.IGNORECASE)
+        if m:
+            aktuell = m.group(2)
+            stufen[aktuell] = {"basis": m.group(1), "kopiert": [], "text": ""}
+            continue
+        if aktuell is None:
+            continue
+        stufen[aktuell]["text"] += zeile + "\n"
+        m = re.match(r"COPY\s+(.*)", zeile, re.IGNORECASE)
+        if m:
+            stufen[aktuell]["kopiert"] += [
+                q for q in m.group(1).split()[:-1] if not q.startswith("--")
+            ]
+    return stufen
+
+
+STUFEN = dockerfile_ci_stufen()
+
+
+def test_dockerfile_ci_baut_auf_den_images_der_dienste():
+    # Dieselben Basis-Images wie die Schritte ohne CI-Image: gleiche Python- und Node-Version.
+    assert set(STUFEN) == set(CI_IMAGE_ZIELE)
+    assert STUFEN["ci-python"]["basis"] == PYTHON
+    assert STUFEN["ci-node"]["basis"] == NODE
+
+
+def test_dockerignore_laesst_genau_durch_was_dockerfile_ci_kopiert():
+    zeilen = (WURZEL / "Dockerfile.ci.dockerignore").read_text().splitlines()
+    regeln = [z for z in zeilen if z.strip() and not z.startswith("#")]
+    assert regeln[0] == "*"
+    durch = {r.removeprefix("!") for r in regeln[1:]}
+    kopiert = {q for s in STUFEN.values() for q in s["kopiert"]}
+    assert durch == kopiert
+    assert all((WURZEL / q).is_file() for q in kopiert)
+
+
+def test_ci_python_bringt_die_modelle_der_integrationstests_mit():
+    # Die Modelle aus core/config.py, die standardmaessig laden; der Bestaetiger (aus) nicht.
+    config = (
+        WURZEL / "mvp/backend/semantic-search-service/app/core/config.py"
+    ).read_text()
+
+    def modell(name):
+        return re.search(rf'^{name} = "([^"]+)"', config, re.MULTILINE).group(1)
+
+    text = STUFEN["ci-python"]["text"]
+    assert f"'{modell('EMBEDDING_MODELL')}'" in text
+    assert f"'{modell('NLI_MODELL')}'" in text
+    assert modell("NLI_BESTAETIGER_MODELL") not in text
+    assert "ENV HF_HOME=/opt/ci/huggingface" in text
+    # Ohne Offline-Modus laedt ein Lauf ein fehlendes Modell nach, statt rot zu werden.
+    assert not re.search(
+        r"^ENV.*HF_HUB_OFFLINE", (WURZEL / "Dockerfile.ci").read_text(), re.MULTILINE
+    )
+
+
+def test_ci_image_baut_nach_push_auf_main_woechentlich_und_manuell():
+    assert CI_IMAGE["when"] == [
+        {"event": "push", "branch": "main"},
+        {"event": "cron", "cron": "ci-image"},
+        {"event": "manual", "branch": "main"},
+    ]
+
+
+def test_ci_image_wartet_auf_ci_und_build():
+    # Nie zugleich mit den schweren Schritten; optional, weil ein Cron-Lauf beide nicht hat.
+    assert CI_IMAGE["depends_on"] == [
+        {"name": "ci", "optional": True},
+        {"name": "build", "optional": True},
+    ]
+
+
+def test_dockerfile_ci_schreibt_wohin_das_skript_liest():
+    # Ein Tippfehler hier ergaebe stillen Dauer-Rueckfall ohne rotes Signal.
+    skript = INSTALLIEREN.read_text()
+    assert "CI_DIR=${CI_IMAGE_DIR:-/opt/ci}" in skript
+    assert '"$CI_DIR/$1.sha256"' in skript
+    assert '"$CI_DIR/node_modules"' in skript
+    assert "--pruefsumme python > /opt/ci/python.sha256" in STUFEN["ci-python"]["text"]
+    node = STUFEN["ci-node"]["text"]
+    assert "--pruefsumme frontend > /opt/ci/frontend.sha256" in node
+    assert "node_modules /opt/ci/node_modules" in node
+
+
+def test_ci_image_wie_die_image_builds():
+    # Plugin, Registry und Secrets wie build.yaml; nur die Build-Schritte sehen das Secret.
+    build = yaml.safe_load((WURZEL / ".woodpecker" / "build.yaml").read_text())
+    plugin = {s["image"] for s in build["steps"] if "settings" in s}
+    tags = CI_IMAGE_SCHRITTE["ci-image-tags"]
+    assert tags["image"] == PYTHON
+    assert "from_secret" not in str(tags)
+    for ziel, repo in CI_IMAGE_ZIELE.items():
+        schritt = CI_IMAGE_SCHRITTE[ziel]
+        einstellungen = schritt["settings"]
+        assert {schritt["image"]} == plugin
+        assert (
+            einstellungen["repo"] == f"git.verdigado.com/netzbegruenung-images/{repo}"
+        )
+        assert einstellungen["registry"] == "git.verdigado.com"
+        assert einstellungen["dockerfile"] == "Dockerfile.ci"
+        assert einstellungen["context"] == "."
+        assert einstellungen["target"] == ziel
+        assert einstellungen["username"] == {"from_secret": "registry_user"}
+        assert einstellungen["password"] == {"from_secret": "registry_token"}
+        art = ziel.removeprefix("ci-")
+        assert einstellungen["tags_file"] == f".ci-tags-{art}"
+
+
+def test_ci_image_tags_latest_und_pruefsumme():
+    befehle = CI_IMAGE_SCHRITTE["ci-image-tags"]["commands"]
+    for art, quelle in (("python", "python"), ("node", "frontend")):
+        summe = f"sh scripts/ci-installieren.sh --pruefsumme {quelle} > .ci-summe-{art}"
+        tags = [
+            f"printf 'latest\\n' > .ci-tags-{art}",
+            f"cut -c1-12 .ci-summe-{art} >> .ci-tags-{art}",
+        ]
+        # Keine Pipe hinter der Pruefsumme: ihr Fehler machte den Schritt sonst nicht rot.
+        assert befehle.index(summe) < befehle.index(tags[0]) < befehle.index(tags[1])
+
+
+def test_ci_image_baut_die_beiden_images_nacheinander():
+    node = CI_IMAGE_SCHRITTE["ci-node"]
+    assert node["depends_on"] == [
+        "ci-image-tags",
+        {"name": "ci-python", "optional": True},
+    ]
+    # Nicht nach rotem ci-image-tags: dann fehlte die Tag-Datei.
+    assert "status" not in node["when"][0]
+
+
+@pytest.mark.parametrize("ziel", list(CI_IMAGE_ZIELE))
+def test_ci_image_pfadfilter_erfasst_was_das_image_liest(ziel):
+    muster = set(CI_IMAGE_SCHRITTE[ziel]["when"][0]["path"]["include"])
+    noetig = set(STUFEN[ziel]["kopiert"]) | {
+        "Dockerfile.ci",
+        "Dockerfile.ci.dockerignore",
+        ".woodpecker/ci-image.yaml",
+    }
+    assert noetig <= muster
+    # Der Tag-Schritt laeuft, sobald einer der beiden Build-Schritte laeuft.
+    tags = set(CI_IMAGE_SCHRITTE["ci-image-tags"]["when"][0]["path"]["include"])
+    assert muster <= tags
+
+
+def test_installationsschritte_nutzen_das_ci_image_skript():
+    assert SCHRITTE["python-installieren"]["commands"] == [
+        "sh scripts/ci-protokoll.sh python-installieren sh scripts/ci-installieren.sh python"
+    ]
+    assert SCHRITTE["frontend-installieren"]["commands"] == [
+        "sh scripts/ci-protokoll.sh frontend-installieren sh scripts/ci-installieren.sh frontend"
+    ]
+
+
+def _baum(tmp_path):
+    """Kopie des Skripts mit Lockfiles und Attrappen fuer python, npm (sie protokollieren)."""
+    (tmp_path / "scripts").mkdir()
+    skript = tmp_path / "scripts" / "ci-installieren.sh"
+    skript.write_text(INSTALLIEREN.read_text())
+    py = tmp_path / "mvp/backend/semantic-search-service"
+    fe = tmp_path / "mvp/frontend/gutgesagt-frontend"
+    py.mkdir(parents=True)
+    fe.mkdir(parents=True)
+    (py / "requirements.txt").write_text("ruff==1\n")
+    (fe / "package.json").write_text("{}\n")
+    (fe / "package-lock.json").write_text("{}\n")
+    bin_ = tmp_path / "bin"
+    bin_.mkdir()
+    protokoll = tmp_path / "protokoll"
+    # python -m venv ... legt eine pip-Attrappe an; npm protokolliert nur
+    (bin_ / "python").write_text(
+        "#!/bin/sh\n"
+        f'echo "python $*" >> {protokoll}\n'
+        'eval "ziel=\\${$#}"; mkdir -p "$ziel/bin"\n'
+        f'printf \'#!/bin/sh\\necho "pip $*" >> {protokoll}\\n\' > "$ziel/bin/pip"\n'
+        'chmod +x "$ziel/bin/pip"\n'
+    )
+    (bin_ / "npm").write_text(f'#!/bin/sh\necho "npm $*" >> {protokoll}\n')
+    for datei in bin_.iterdir():
+        datei.chmod(0o755)
+    image = tmp_path / "opt-ci"
+    image.mkdir()
+    return skript, image, protokoll, fe
+
+
+def _lauf(skript, image, *argumente):
+    import os
+    import subprocess
+
+    umgebung = {
+        **os.environ,
+        "PATH": f"{skript.parents[1] / 'bin'}:{os.environ['PATH']}",
+        "CI_IMAGE_DIR": str(image),
+    }
+    return subprocess.run(
+        ["sh", str(skript), *argumente],
+        env=umgebung,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+
+
+def test_pruefsumme_haengt_an_den_lockfiles(tmp_path):
+    skript, image, _, fe = _baum(tmp_path)
+    vorher = _lauf(skript, image, "--pruefsumme", "frontend")
+    assert re.fullmatch(r"[0-9a-f]{64}\n", vorher)
+    assert _lauf(skript, image, "--pruefsumme", "frontend") == vorher
+    (fe / "package-lock.json").write_text('{"neu": 1}\n')
+    assert _lauf(skript, image, "--pruefsumme", "frontend") != vorher
+
+
+def test_passendes_image_verknuepft_nur(tmp_path):
+    skript, image, protokoll, fe = _baum(tmp_path)
+    for art in ("python", "frontend"):
+        (image / f"{art}.sha256").write_text(_lauf(skript, image, "--pruefsumme", art))
+
+    _lauf(skript, image, "python")
+    _lauf(skript, image, "frontend")
+
+    befehle = protokoll.read_text().splitlines()
+    venv = f"{tmp_path}/mvp/backend/semantic-search-service/venv"
+    assert befehle == [f"python -m venv --system-site-packages {venv}"]
+    assert (fe / "node_modules").is_symlink()
+    assert (fe / "node_modules").readlink() == image / "node_modules"
+
+
+@pytest.mark.parametrize("image_alt", [True, False], ids=["image-alt", "ohne-image"])
+def test_sonst_installiert_der_schritt_wie_ohne_image(tmp_path, image_alt):
+    skript, image, protokoll, fe = _baum(tmp_path)
+    if image_alt:
+        (image / "python.sha256").write_text("alt\n")
+        (image / "frontend.sha256").write_text("alt\n")
+
+    ausgabe = _lauf(skript, image, "python") + _lauf(skript, image, "frontend")
+
+    befehle = protokoll.read_text().splitlines()
+    assert befehle[1] == (
+        f"pip install -q --no-cache-dir -r {tmp_path}"
+        "/mvp/backend/semantic-search-service/requirements.txt"
+    )
+    assert befehle[2] == f"npm ci --prefix {fe} --prefer-offline --no-audit --no-fund"
+    assert not (fe / "node_modules").exists()
+    assert ("passt nicht" in ausgabe) is image_alt
