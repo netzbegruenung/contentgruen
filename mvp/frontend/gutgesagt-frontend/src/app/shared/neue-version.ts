@@ -17,8 +17,6 @@ import { Observable } from 'rxjs';
  * faellt nach ``SPERRE_MS``. Solange er steht, wird nicht automatisch neu geladen, nur ein Hinweis
  * gezeigt: hoechstens ein automatisches Neuladen je zehn Minuten, gleich ob ein Guard vor dem
  * Laden lange wartet oder ein ``@defer``-Block erst spaet scheitert.
- * So bleibt es bei einem Wechsel, auch wenn die neue Version selbst ihre Chunks nicht findet
- * oder ein Guard vor dem Laden lange auf den Server wartet.
  */
 
 /** Meldungen der Browser bei einem gescheiterten dynamischen Import (der Builder ist esbuild). */
@@ -37,6 +35,9 @@ const DEFER_FEHLER = /^NG0?750\b/;
 
 /** So lange gilt der Merker eines automatischen Neuladens; aelter zaehlt er als abgelaufen. */
 export const SPERRE_MS = 10 * 60_000;
+
+/** Ein Merker bis zu so weit in der Zukunft gilt noch (kleine Uhrspruenge, etwa NTP). */
+export const UHR_TOLERANZ_MS = 60_000;
 
 /** So lange darf die Pruefung auf dem Server dauern; danach gilt sie als Netzfehler. */
 export const PRUEFUNG_MS = 5_000;
@@ -163,12 +164,24 @@ export function chunkAdresse(fehler: unknown, basis: string): string | null {
   }
 }
 
+/** Eine umgeleitete Antwort oder eine von fremdem Ursprung zaehlt nicht als Antwort des Servers. */
+function umgeleitet(antwort: Response, url: string): boolean {
+  if (antwort.redirected) return true;
+  if (!antwort.url) return false;
+  try {
+    return new URL(antwort.url).origin !== new URL(url).origin;
+  } catch {
+    return true;
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class NeueVersionService {
   private readonly browser = inject(BROWSER);
   private readonly snackBar = inject(MatSnackBar);
   private readonly location = inject(Location);
   private readonly zone = inject(NgZone);
+  private aufraeumWecker: ReturnType<typeof setTimeout> | null = null;
 
   /** Eine Pruefung oder ein Wechsel laeuft: Folgefehler derselben Seite tun nichts mehr. */
   private laeuft = false;
@@ -181,10 +194,15 @@ export class NeueVersionService {
    * So liegt er nicht laenger als ``SPERRE_MS`` im Browser, auch wenn kein Fehler mehr kommt.
    */
   aufraeumen(): void {
+    if (this.aufraeumWecker !== null) clearTimeout(this.aufraeumWecker);
+    this.aufraeumWecker = null;
     const zeitpunkt = this.sperreZeitpunkt();
     if (zeitpunkt === null) return;
     // Ausserhalb der Zone: Ein Wecker ueber zehn Minuten soll die App nicht als unruhig fuehren.
-    this.zone.runOutsideAngular(() => setTimeout(() => this.sperreZeitpunkt(), zeitpunkt + SPERRE_MS - Date.now()));
+    // Steht der Merker beim Klingeln noch (Uhr verstellt, Timer gedrosselt), neu stellen.
+    this.zone.runOutsideAngular(() => {
+      this.aufraeumWecker = setTimeout(() => this.aufraeumen(), Math.max(0, zeitpunkt + SPERRE_MS - Date.now()));
+    });
   }
 
   /** Fuer ``withNavigationErrorHandler``: bei einem Ladefehler hart auf das Ziel der Navigation. */
@@ -232,7 +250,7 @@ export class NeueVersionService {
       gewechselt = true;
       this.browser.wechseln(zielUrl);
       // Bleibt die Seite stehen (Wechsel abgebrochen), darf ein spaeterer Fehler es neu versuchen.
-      setTimeout(() => (this.laeuft = false), WECHSEL_FRIST_MS);
+      this.zone.runOutsideAngular(() => setTimeout(() => (this.laeuft = false), WECHSEL_FRIST_MS));
       return 'neu-geladen';
     } finally {
       if (!gewechselt) this.laeuft = false;
@@ -252,7 +270,8 @@ export class NeueVersionService {
   }
 
   /**
-   * HEAD ohne Cache, abgebrochen nach ``PRUEFUNG_MS``; null bei Netzfehler oder Zeitueberschreitung.
+   * HEAD ohne Cache, abgebrochen nach ``PRUEFUNG_MS``; null bei Netzfehler, Zeitueberschreitung
+   * oder Umleitung (etwa ein Captive Portal im WLAN: Dessen Antwort sagt nichts ueber den Server).
    * AbortController und eigener Wecker statt ``AbortSignal.timeout``: Der Wecker beendet die
    * Pruefung auch, wenn ``fetch`` das Signal nicht beachtet.
    */
@@ -268,7 +287,7 @@ export class NeueVersionService {
     try {
       const antwort = this.browser
         .abrufen(url, { method: 'HEAD', cache: 'no-store', signal: abbruch.signal })
-        .then((a) => a.status);
+        .then((a) => (umgeleitet(a, url) ? null : a.status));
       return await Promise.race([antwort, zuSpaet]);
     } catch {
       return null;
@@ -278,8 +297,8 @@ export class NeueVersionService {
   }
 
   /**
-   * Der Zeitpunkt eines geltenden Merkers, oder null. Ein Merker aelter als ``SPERRE_MS``, aus
-   * der Zukunft oder unlesbar zaehlt als abgelaufen und faellt weg.
+   * Der Zeitpunkt eines geltenden Merkers, oder null. Ein Merker aelter als ``SPERRE_MS``, mehr
+   * als ``UHR_TOLERANZ_MS`` in der Zukunft oder unlesbar zaehlt als abgelaufen und faellt weg.
    */
   private sperreZeitpunkt(): number | null {
     try {
@@ -288,7 +307,7 @@ export class NeueVersionService {
       if (wert === null) return null;
       const zeitpunkt = Number(wert);
       const alter = Date.now() - zeitpunkt;
-      if (Number.isFinite(zeitpunkt) && alter >= 0 && alter < SPERRE_MS) return zeitpunkt;
+      if (Number.isFinite(zeitpunkt) && alter >= -UHR_TOLERANZ_MS && alter < SPERRE_MS) return zeitpunkt;
       speicher!.removeItem(SPERRE_SCHLUESSEL);
       return null;
     } catch {
@@ -304,7 +323,10 @@ export class NeueVersionService {
       if (!speicher || this.sperreZeitpunkt() !== null) return false;
       speicher.setItem(SPERRE_SCHLUESSEL, jetzt);
       // Manche Browser schlucken Schreibzugriffe still: nur weiter, wenn der Merker wirklich steht.
-      return speicher.getItem(SPERRE_SCHLUESSEL) === jetzt;
+      if (speicher.getItem(SPERRE_SCHLUESSEL) !== jetzt) return false;
+      // Bleibt die Seite stehen (Wechsel abgebrochen, bfcache), faellt der Merker trotzdem nach Frist.
+      this.aufraeumen();
+      return true;
     } catch {
       return false;
     }

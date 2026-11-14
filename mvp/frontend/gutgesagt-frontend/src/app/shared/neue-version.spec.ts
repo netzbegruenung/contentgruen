@@ -18,6 +18,7 @@ import {
   PRUEFUNG_MS,
   SPERRE_MS,
   SPERRE_SCHLUESSEL,
+  UHR_TOLERANZ_MS,
   Verlauf,
   WECHSEL_FRIST_MS,
   chunkAdresse,
@@ -315,7 +316,7 @@ describe('neue Version laden', () => {
 
     for (const [fall, wert] of [
       ['aelter als zehn Minuten', () => String(Date.now() - SPERRE_MS)],
-      ['aus der Zukunft', () => String(Date.now() + 60_000)],
+      ['mehr als eine Minute aus der Zukunft', () => String(Date.now() + UHR_TOLERANZ_MS + 60_000)],
       ['unlesbar', () => 'kaputt'],
     ] as const) {
       it(`ein Merker ${fall} zaehlt als abgelaufen: wieder automatisch neu laden`, async () => {
@@ -324,6 +325,44 @@ describe('neue Version laden', () => {
         expect(await dienst().neueVersionLaden('/impressum', chrome())).toBe('neu-geladen');
 
         expect(Number(speicher!.getItem(SPERRE_SCHLUESSEL))).toBeCloseTo(Date.now(), -3);
+      });
+    }
+
+    it('ein Merker knapp aus der Zukunft (kleiner Uhrsprung) gilt noch', async () => {
+      speicher!.setItem(SPERRE_SCHLUESSEL, String(Date.now() + 30_000));
+
+      expect(await dienst().neueVersionLaden('/impressum', chrome())).toBe('hinweis');
+      expect(browser.wechseln).not.toHaveBeenCalled();
+    });
+
+    it('Wechsel abgebrochen: der Merker faellt trotzdem nach zehn Minuten weg', fakeAsync(() => {
+      void dienst().neueVersionLaden('/impressum', chrome());
+      flushMicrotasks();
+      expect(browser.wechseln).toHaveBeenCalledTimes(1);
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).not.toBeNull();
+
+      tick(SPERRE_MS - 1);
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).not.toBeNull();
+      tick(1);
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).toBeNull();
+      flush();
+    }));
+
+    for (const [fall, umleiten] of [
+      ['umgeleitet (redirected)', (a: Response) => Object.defineProperty(a, 'redirected', { value: true })],
+      ['von fremdem Ursprung', (a: Response) => Object.defineProperty(a, 'url', { value: 'https://portal.example/login' })],
+    ] as const) {
+      it(`eine Antwort ${fall} zaehlt nicht (Captive Portal): kein Wechsel`, async () => {
+        browser.abrufen.and.callFake((url: string) => {
+          const a = new Response(null, { status: url === STARTSEITE ? 200 : 404 });
+          umleiten(a);
+          return Promise.resolve(a);
+        });
+
+        const neueVersion = dienst();
+        expect(await neueVersion.neueVersionLaden('/impressum', safari())).toBe('netzfehler');
+        expect(await neueVersion.neueVersionLaden('/impressum', chrome())).toBe('netzfehler');
+        expect(browser.wechseln).not.toHaveBeenCalled();
       });
     }
 
@@ -343,10 +382,10 @@ describe('neue Version laden', () => {
       for (let minute = 1; minute < 10; minute++) {
         fehlerNach(60_000);
       }
-      expect(browser.wechseln).toHaveBeenCalledTimes(1);
+      expect(ausgaenge).toEqual(['1:0', ...Array.from({ length: 9 }, () => '1:1')]);
 
       fehlerNach(60_000); // zehn Minuten nach dem ersten: wieder automatisch
-      expect(browser.wechseln).toHaveBeenCalledTimes(2);
+      expect(ausgaenge[10]).toBe('2:1');
       flush();
     }));
 
@@ -526,6 +565,7 @@ describe('neue Version laden', () => {
       });
       const router = TestBed.inject(Router);
       const errorHandler = TestBed.inject(ErrorHandler);
+      spyOn(errorHandler, 'handleError').and.callThrough();
 
       // Die abgelehnte Navigation landet wie bei einem routerLink im globalen ErrorHandler, in der Huelle von zone.js.
       await router
@@ -541,6 +581,7 @@ describe('neue Version laden', () => {
             ),
         );
       await new Promise((fertig) => setTimeout(fertig, 10));
+      expect(errorHandler.handleError).toHaveBeenCalledTimes(1);
     }
 
     it('ein fehlender Chunk fuehrt zu genau einem Seitenwechsel aufs Ziel, ohne Fehlermeldung', async () => {

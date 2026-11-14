@@ -202,9 +202,10 @@ answers 404 (otherwise, as for Safari and `@defer`, that a `HEAD` on `index.html
 each check gives up after 5 s); a network error only shows a message. A marker in
 `sessionStorage` (only a timestamp) allows at most one automatic reload per ten minutes; while it
 stands, or without `sessionStorage`, a notice "Gut gesagt wurde aktualisiert – Neu laden" appears
-instead, also for a second rollout within those ten minutes. State that only lives in memory or in the navigation's `state` is lost by that
-one reload: search results, a Destillieren handover, and on the "gespeichert" page the
-"Antwort auf" card and the warning that linking failed (`extras.state`). This only hits whoever
+instead, also for a second rollout within those ten minutes. A `HEAD` answer that was redirected
+(captive portal) does not count. State that only lives in memory or in the navigation's `state`
+is lost by that one reload: search results, a Destillieren handover, and on the "gespeichert"
+page the "Antwort auf" card and the warning that linking failed (`extras.state`). This only hits whoever
 navigates there across a rollout; moving it into the address is open.
 
 #### Releases
