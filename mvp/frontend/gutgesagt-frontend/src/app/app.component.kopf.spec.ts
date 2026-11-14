@@ -466,7 +466,10 @@ describe('AppComponent - Desktop-Kopf', () => {
 
     it('zeigt am Admin-Link die Zahl offener Meldungen', () => {
       TestBed.overrideProvider(ZuTunService, {
-        useValue: { meldungen$: of({ daten: { anzahl: 3, mehr: false, aelteste: null }, fehler: false }) },
+        useValue: {
+          meldungen$: of({ daten: { anzahl: 3, mehr: false, aelteste: null }, fehler: false }),
+          suchanfragen$: of({ daten: { anzahl: 0 }, fehler: false }),
+        },
       });
       starten({ ...ANGEMELDET, isAdmin: true });
 

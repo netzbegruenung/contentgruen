@@ -2,13 +2,17 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Subscription, of, throwError } from 'rxjs';
 
 import { ContentReport, Loeschauftrag, ModerationService } from './moderation.service';
+import { SuchanfragenFreigabeService } from './suchanfragen-freigabe.service';
 import {
+  KEINE_SUCHANFRAGEN,
   KOPF_NACHLADEN_MS,
   MELDUNGEN_GRENZE,
   OffeneLoeschauftraege,
   OffeneMeldungen,
   Stand,
+  WartendeSuchanfragen,
   ZuTunService,
+  suchanfragenText,
   wartetSeit,
 } from './zu-tun.service';
 import { NACHLADEN_MS } from '../shared/selbst-nachladen';
@@ -42,6 +46,7 @@ function auftrag(id: string, ueberfaellig: boolean): Loeschauftrag {
 
 describe('ZuTunService', () => {
   let moderation: jasmine.SpyObj<ModerationService>;
+  let suchanfragen: jasmine.SpyObj<SuchanfragenFreigabeService>;
   let dienst: ZuTunService;
   let sichtbarkeit: DocumentVisibilityState;
 
@@ -53,8 +58,42 @@ describe('ZuTunService', () => {
       of({ total: 2, reports: [meldung('neu', '2026-11-13T09:00:00Z'), meldung('alt', '2026-11-10T09:00:00Z')] }),
     );
     moderation.getLoeschauftraege.and.returnValue(of({ frist_tage: 7, auftraege: [auftrag('a', true), auftrag('b', false)] }));
-    TestBed.configureTestingModule({ providers: [{ provide: ModerationService, useValue: moderation }] });
+    suchanfragen = jasmine.createSpyObj('SuchanfragenFreigabeService', ['anzahl']);
+    suchanfragen.anzahl.and.returnValue(of({ anzahl: 3 }));
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ModerationService, useValue: moderation },
+        { provide: SuchanfragenFreigabeService, useValue: suchanfragen },
+      ],
+    });
     dienst = TestBed.inject(ZuTunService);
+  });
+
+  it('zaehlt wartende Suchanfragen still und erst, wenn jemand zuhoert (#664)', () => {
+    expect(suchanfragen.anzahl).not.toHaveBeenCalled();
+    let stand: Stand<WartendeSuchanfragen> | undefined;
+    const abo = dienst.suchanfragen$.subscribe((s) => (stand = s));
+
+    expect(suchanfragen.anzahl).toHaveBeenCalledOnceWith(true);
+    expect(stand).toEqual({ daten: { anzahl: 3 }, fehler: false });
+    abo.unsubscribe();
+  });
+
+  it('meldet 401/403 bei den Suchanfragen als abgelaufen und fragt nicht weiter', fakeAsync(() => {
+    suchanfragen.anzahl.and.returnValue(throwError(() => ({ status: 403 })));
+    let stand: Stand<WartendeSuchanfragen> | undefined;
+    const abo = dienst.suchanfragen$.subscribe((s) => (stand = s));
+
+    expect(stand).toEqual({ daten: null, fehler: true, abgelaufen: true });
+    tick(KOPF_NACHLADEN_MS * 8);
+    expect(suchanfragen.anzahl).toHaveBeenCalledTimes(1);
+    abo.unsubscribe();
+  }));
+
+  it('suchanfragenText: Einzahl und Mehrzahl wie freigegeben', () => {
+    expect(suchanfragenText(1)).toBe('1 Suchanfrage wartet auf Freigabe');
+    expect(suchanfragenText(2)).toBe('2 Suchanfragen warten auf Freigabe');
+    expect(KEINE_SUCHANFRAGEN).toBe('Keine Suchanfragen zur Freigabe');
   });
 
   it('zaehlt die offenen Meldungen und nennt die aelteste', () => {

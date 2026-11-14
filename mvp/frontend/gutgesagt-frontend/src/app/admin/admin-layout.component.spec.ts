@@ -27,6 +27,7 @@ describe('AdminLayoutComponent', () => {
           useValue: {
             meldungen$: of({ daten: { anzahl: 0, mehr: false, aelteste: null }, fehler: false }),
             loeschauftraege$: of({ daten: { anzahl: 0, ueberfaellig: 0 }, fehler: false }),
+            suchanfragen$: of({ daten: { anzahl: 0 }, fehler: false }),
           },
         },
       ],

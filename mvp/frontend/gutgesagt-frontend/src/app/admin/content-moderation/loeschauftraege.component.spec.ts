@@ -7,6 +7,7 @@ import { LoeschauftraegeComponent } from './loeschauftraege.component';
 // Die Liste kommt aus dem ZuTunService; ausserhalb von /admin (wie hier im Testlauf) fragt er alle 120 s.
 import { KOPF_NACHLADEN_MS as NACHLADEN_MS } from '../../services/zu-tun.service';
 import { Loeschauftrag, LoeschauftraegeResponse, ModerationService } from '../../services/moderation.service';
+import { SuchanfragenFreigabeService } from '../../services/suchanfragen-freigabe.service';
 
 function auftrag(overrides: Partial<Loeschauftrag> = {}): Loeschauftrag {
   return {
@@ -62,7 +63,10 @@ describe('LoeschauftraegeComponent', () => {
 
     TestBed.configureTestingModule({
       imports: [LoeschauftraegeComponent, NoopAnimationsModule],
-      providers: [{ provide: ModerationService, useValue: moderation }],
+      providers: [
+        { provide: ModerationService, useValue: moderation },
+        { provide: SuchanfragenFreigabeService, useValue: { anzahl: () => of({ anzahl: 0 }) } },
+      ],
     });
     TestBed.overrideProvider(MatDialog, { useValue: dialog });
     TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });

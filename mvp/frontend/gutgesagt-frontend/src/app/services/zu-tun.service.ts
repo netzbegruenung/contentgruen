@@ -3,6 +3,7 @@ import { EMPTY, Observable, Subject, merge } from 'rxjs';
 import { map, scan, shareReplay } from 'rxjs/operators';
 
 import { ContentReport, LoeschauftraegeResponse, ModerationService } from './moderation.service';
+import { SuchanfragenFreigabeService } from './suchanfragen-freigabe.service';
 import { NACHLADEN_MS, nachladeStrom, ohneRechte } from '../shared/selbst-nachladen';
 
 /** So viele offene Meldungen fragt die Zahl hoechstens ab (Grenze des Endpunkts). */
@@ -33,6 +34,19 @@ export interface OffeneLoeschauftraege {
   anzahl: number;
   ueberfaellig: number;
 }
+
+/** Suchanfragen, die auf Freigabe warten (Vormoderation, #664). */
+export interface WartendeSuchanfragen {
+  anzahl: number;
+}
+
+/** „1 Suchanfrage wartet auf Freigabe“ / „N Suchanfragen warten auf Freigabe“ (freigegeben 14.11.2026). */
+export function suchanfragenText(anzahl: number): string {
+  return anzahl === 1 ? '1 Suchanfrage wartet auf Freigabe' : `${anzahl} Suchanfragen warten auf Freigabe`;
+}
+
+/** Leerfall in „Zu tun“ (freigegeben 14.11.2026). */
+export const KEINE_SUCHANFRAGEN = 'Keine Suchanfragen zur Freigabe';
 
 /**
  * Der Stand einer Abfrage: ``daten`` null heisst noch nie geladen. Scheitert ein
@@ -67,7 +81,8 @@ function letzterStand<T>(vorher: Stand<T>, jetzt: Stand<T>): Stand<T> {
 
 /**
  * Was im Admin-Bereich zu tun ist, fuer die Zahl am Admin-Link, die Zeile „Zu tun“, die
- * Zahlen an den Umschaltern der Moderation und die Liste der Loeschauftraege.
+ * Zahlen an den Umschaltern der Moderation und die Liste der Loeschauftraege. Dazu die
+ * Suchanfragen, die auf Freigabe warten (#664): nur ihre Zahl, die Liste laedt die Ansicht.
  *
  * Laedt selbst nach (``nachladeStrom``), solange jemand zuhoert, und teilt das Ergebnis:
  * Kopf, Zeile und Moderation fragen nicht doppelt. Ohne Abonnent fragt niemand; die
@@ -86,8 +101,9 @@ export class ZuTunService {
   /** Die offenen Loeschauftraege selbst, fuer deren Liste in der Moderation. */
   readonly loeschauftraegeAntwort$: Observable<Stand<LoeschauftraegeResponse>>;
   readonly loeschauftraege$: Observable<Stand<OffeneLoeschauftraege>>;
+  readonly suchanfragen$: Observable<Stand<WartendeSuchanfragen>>;
 
-  constructor(moderation: ModerationService) {
+  constructor(moderation: ModerationService, suchanfragen: SuchanfragenFreigabeService) {
     const optionen = { sofort: true, ms: zuTunTakt, aufhoerenBei: ohneRechte, anstoss$: this.anstoss$ };
 
     this.meldungen$ = merge(
@@ -110,6 +126,12 @@ export class ZuTunService {
       shareReplay({ bufferSize: 1, refCount: true }),
     );
 
+    this.suchanfragen$ = nachladeStrom(() => suchanfragen.anzahl(true), optionen).pipe(
+      map((lauf) => standAus<WartendeSuchanfragen>(lauf)),
+      scan(letzterStand<WartendeSuchanfragen>, { daten: null, fehler: false } as Stand<WartendeSuchanfragen>),
+      shareReplay({ bufferSize: 1, refCount: true }),
+    );
+
     this.loeschauftraege$ = this.loeschauftraegeAntwort$.pipe(
       map((stand) => ({
         daten: stand.daten
@@ -124,7 +146,7 @@ export class ZuTunService {
     );
   }
 
-  /** Sofort neu fragen, etwa nach dem Abweisen einer Meldung oder einem Loeschablauf. */
+  /** Sofort neu fragen, etwa nach dem Abweisen einer Meldung, einem Loeschablauf oder einer Freigabe. */
   aktualisieren(): void {
     this.gespeistBis = 0;
     this.anstoss$.next();

@@ -3,19 +3,21 @@ import { provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 
 import { ZuTunComponent } from './zu-tun.component';
-import { OffeneLoeschauftraege, OffeneMeldungen, Stand, ZuTunService } from '../../services/zu-tun.service';
+import { OffeneLoeschauftraege, OffeneMeldungen, Stand, WartendeSuchanfragen, ZuTunService } from '../../services/zu-tun.service';
 
 describe('ZuTunComponent', () => {
   let fixture: ComponentFixture<ZuTunComponent>;
   let meldungen$: BehaviorSubject<Stand<OffeneMeldungen>>;
   let loeschauftraege$: BehaviorSubject<Stand<OffeneLoeschauftraege>>;
+  let suchanfragen$: BehaviorSubject<Stand<WartendeSuchanfragen>>;
 
   beforeEach(() => {
     meldungen$ = new BehaviorSubject<Stand<OffeneMeldungen>>({ daten: null, fehler: false });
     loeschauftraege$ = new BehaviorSubject<Stand<OffeneLoeschauftraege>>({ daten: null, fehler: false });
+    suchanfragen$ = new BehaviorSubject<Stand<WartendeSuchanfragen>>({ daten: { anzahl: 0 }, fehler: false });
     TestBed.configureTestingModule({
       imports: [ZuTunComponent],
-      providers: [provideRouter([]), { provide: ZuTunService, useValue: { meldungen$, loeschauftraege$ } }],
+      providers: [provideRouter([]), { provide: ZuTunService, useValue: { meldungen$, loeschauftraege$, suchanfragen$ } }],
     });
     fixture = TestBed.createComponent(ZuTunComponent);
     fixture.detectChanges();
@@ -93,5 +95,37 @@ describe('ZuTunComponent', () => {
     expect(text(punkt('zu-tun-meldungen'))).toBe('Meldungen gerade nicht erreichbar, neuer Versuch in Kürze …');
     expect(text(fixture.nativeElement)).toContain('Aktualisieren gerade nicht möglich, neuer Versuch in Kürze …');
     expect(text(fixture.nativeElement)).not.toContain('neu laden');
+  });
+
+  it('nennt wartende Suchanfragen und verlinkt ihre Liste (#664)', () => {
+    meldungen$.next({ daten: { anzahl: 0, mehr: false, aelteste: null }, fehler: false });
+    loeschauftraege$.next({ daten: { anzahl: 0, ueberfaellig: 0 }, fehler: false });
+    suchanfragen$.next({ daten: { anzahl: 1 }, fehler: false });
+    fixture.detectChanges();
+
+    expect(text(punkt('zu-tun-suchanfragen'))).toBe('1 Suchanfrage wartet auf Freigabe');
+    expect(punkt('zu-tun-suchanfragen').querySelector('a')!.getAttribute('href')).toBe(
+      '/admin/moderation?ansicht=suchanfragen',
+    );
+    expect(punkt('zu-tun-nichts')).toBeNull();
+
+    suchanfragen$.next({ daten: { anzahl: 4 }, fehler: false });
+    fixture.detectChanges();
+    expect(text(punkt('zu-tun-suchanfragen'))).toBe('4 Suchanfragen warten auf Freigabe');
+  });
+
+  it('sagt im Leerfall „Keine Suchanfragen zur Freigabe“', () => {
+    meldungen$.next({ daten: { anzahl: 1, mehr: false, aelteste: null }, fehler: false });
+    loeschauftraege$.next({ daten: { anzahl: 0, ueberfaellig: 0 }, fehler: false });
+    fixture.detectChanges();
+
+    expect(text(punkt('zu-tun-suchanfragen'))).toBe('Keine Suchanfragen zur Freigabe');
+  });
+
+  it('zeigt nach 401/403 der Suchanfragen „Sitzung abgelaufen – Anmelden“', () => {
+    suchanfragen$.next({ daten: null, fehler: true, abgelaufen: true });
+    fixture.detectChanges();
+
+    expect(text(punkt('zu-tun-abgelaufen'))).toBe('Sitzung abgelaufen – Anmelden');
   });
 });

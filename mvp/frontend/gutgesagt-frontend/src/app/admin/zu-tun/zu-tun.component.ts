@@ -6,7 +6,16 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { OffeneLoeschauftraege, OffeneMeldungen, Stand, ZuTunService, wartetSeit } from '../../services/zu-tun.service';
+import {
+  KEINE_SUCHANFRAGEN,
+  OffeneLoeschauftraege,
+  OffeneMeldungen,
+  Stand,
+  WartendeSuchanfragen,
+  ZuTunService,
+  suchanfragenText,
+  wartetSeit,
+} from '../../services/zu-tun.service';
 import { SITZUNG_ABGELAUFEN } from '../../shared/selbst-nachladen';
 
 /** Adresse der Moderation mit gewaehlter Ansicht (ContentModerationComponent liest ``ansicht``). */
@@ -15,14 +24,14 @@ export const MODERATION_PFAD = '/admin/moderation';
 interface Ansicht {
   meldungen: Stand<OffeneMeldungen>;
   loeschauftraege: Stand<OffeneLoeschauftraege>;
+  suchanfragen: Stand<WartendeSuchanfragen>;
 }
 
 /**
  * Die Zeile „Zu tun“ oben im Admin-Bereich: offene Meldungen mit dem Alter der
- * aeltesten, offene Loeschauftraege mit den ueberfaelligen. Je Punkt ein Link auf die
- * passende Liste der Moderation. Laedt selbst nach (ZuTunService).
- *
- * Suchanfragen zur Freigabe (#664) kommen dazu, sobald ihr Endpunkt auf main ist.
+ * aeltesten, offene Loeschauftraege mit den ueberfaelligen, Suchanfragen, die auf
+ * Freigabe warten (#664). Je Punkt ein Link auf die passende Liste der Moderation.
+ * Laedt selbst nach (ZuTunService).
  */
 @Component({
   selector: 'app-zu-tun',
@@ -71,6 +80,19 @@ interface Ansicht {
             } @else {
               <mat-spinner diameter="16" aria-hidden="true"></mat-spinner>
               <span role="status">{{ a.loeschauftraege.fehler ? 'Löschaufträge gerade nicht erreichbar, neuer Versuch in Kürze …' : 'Lade Löschaufträge …' }}</span>
+            }
+          </p>
+
+          <p class="punkt" data-testid="zu-tun-suchanfragen">
+            @if (a.suchanfragen.daten; as s) {
+              @if (s.anzahl > 0) {
+                <a [routerLink]="moderationPfad" [queryParams]="{ ansicht: 'suchanfragen' }">{{ suchanfragenText(s.anzahl) }}</a>
+              } @else {
+                <span class="ruhig">{{ keineSuchanfragen }}</span>
+              }
+            } @else {
+              <mat-spinner diameter="16" aria-hidden="true"></mat-spinner>
+              <span role="status">{{ a.suchanfragen.fehler ? 'Suchanfragen gerade nicht erreichbar, neuer Versuch in Kürze …' : 'Lade Suchanfragen …' }}</span>
             }
           </p>
         }
@@ -152,15 +174,18 @@ export class ZuTunComponent {
   readonly moderationPfad = MODERATION_PFAD;
   private readonly zuTun = inject(ZuTunService);
 
-  readonly ansicht$ = combineLatest([this.zuTun.meldungen$, this.zuTun.loeschauftraege$]).pipe(
-    map(([meldungen, loeschauftraege]): Ansicht => ({ meldungen, loeschauftraege })),
+  readonly ansicht$ = combineLatest([this.zuTun.meldungen$, this.zuTun.loeschauftraege$, this.zuTun.suchanfragen$]).pipe(
+    map(([meldungen, loeschauftraege, suchanfragen]): Ansicht => ({ meldungen, loeschauftraege, suchanfragen })),
   );
+
+  readonly suchanfragenText = suchanfragenText;
+  readonly keineSuchanfragen = KEINE_SUCHANFRAGEN;
 
   readonly sitzungAbgelaufen = SITZUNG_ABGELAUFEN;
 
   /** 401/403: Die Abfragen haben aufgehört, nur neues Anmelden hilft. */
   abgelaufen(a: Ansicht): boolean {
-    return !!a.meldungen.abgelaufen || !!a.loeschauftraege.abgelaufen;
+    return !!a.meldungen.abgelaufen || !!a.loeschauftraege.abgelaufen || !!a.suchanfragen.abgelaufen;
   }
 
   /** Wohin es nach dem Anmelden zurückgeht. */
@@ -169,12 +194,12 @@ export class ZuTunComponent {
   }
 
   nichtsZuTun(a: Ansicht): boolean {
-    return a.meldungen.daten?.anzahl === 0 && a.loeschauftraege.daten?.anzahl === 0;
+    return a.meldungen.daten?.anzahl === 0 && a.loeschauftraege.daten?.anzahl === 0 && a.suchanfragen.daten?.anzahl === 0;
   }
 
   /** Ein Nachladen ist gescheitert, angezeigt wird der letzte Stand. */
   veraltet(a: Ansicht): boolean {
-    return (!!a.meldungen.daten && a.meldungen.fehler) || (!!a.loeschauftraege.daten && a.loeschauftraege.fehler);
+    return [a.meldungen, a.loeschauftraege, a.suchanfragen].some((stand) => !!stand.daten && stand.fehler);
   }
 
   meldungenText(m: OffeneMeldungen): string {

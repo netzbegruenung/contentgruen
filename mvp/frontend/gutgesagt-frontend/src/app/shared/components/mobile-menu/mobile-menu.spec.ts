@@ -21,7 +21,10 @@ describe('MobileMenuComponent', () => {
       ]),
       {
         provide: ZuTunService,
-        useValue: { meldungen$: of({ daten: { anzahl: 2, mehr: false, aelteste: null }, fehler: false }) },
+        useValue: {
+          meldungen$: of({ daten: { anzahl: 2, mehr: false, aelteste: null }, fehler: false }),
+          suchanfragen$: of({ daten: { anzahl: 0 }, fehler: false }),
+        },
       }]
     })
     .compileComponents();

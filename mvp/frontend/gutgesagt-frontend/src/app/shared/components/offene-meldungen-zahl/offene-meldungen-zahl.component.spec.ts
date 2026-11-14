@@ -2,17 +2,19 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BehaviorSubject } from 'rxjs';
 
 import { OffeneMeldungenZahlComponent } from './offene-meldungen-zahl.component';
-import { OffeneMeldungen, Stand, ZuTunService } from '../../../services/zu-tun.service';
+import { OffeneMeldungen, Stand, WartendeSuchanfragen, ZuTunService } from '../../../services/zu-tun.service';
 
 describe('OffeneMeldungenZahlComponent', () => {
   let fixture: ComponentFixture<OffeneMeldungenZahlComponent>;
   let meldungen$: BehaviorSubject<Stand<OffeneMeldungen>>;
+  let suchanfragen$: BehaviorSubject<Stand<WartendeSuchanfragen>>;
 
   beforeEach(() => {
     meldungen$ = new BehaviorSubject<Stand<OffeneMeldungen>>({ daten: null, fehler: false });
+    suchanfragen$ = new BehaviorSubject<Stand<WartendeSuchanfragen>>({ daten: null, fehler: false });
     TestBed.configureTestingModule({
       imports: [OffeneMeldungenZahlComponent],
-      providers: [{ provide: ZuTunService, useValue: { meldungen$ } }],
+      providers: [{ provide: ZuTunService, useValue: { meldungen$, suchanfragen$ } }],
     });
     fixture = TestBed.createComponent(OffeneMeldungenZahlComponent);
     fixture.detectChanges();
@@ -48,5 +50,29 @@ describe('OffeneMeldungenZahlComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.zahl').textContent.trim()).toBe('100+');
+  });
+
+  it('zählt wartende Suchanfragen mit und sagt sie an (#664)', () => {
+    meldungen$.next({ daten: { anzahl: 2, mehr: false, aelteste: null }, fehler: false });
+    suchanfragen$.next({ daten: { anzahl: 1 }, fehler: false });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.zahl').textContent.trim()).toBe('3');
+    expect(fixture.nativeElement.querySelector('.visually-hidden').textContent.trim())
+      .toBe(', 2 offene Meldungen, 1 Suchanfrage wartet auf Freigabe');
+
+    meldungen$.next({ daten: { anzahl: 0, mehr: false, aelteste: null }, fehler: false });
+    suchanfragen$.next({ daten: { anzahl: 3 }, fehler: false });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.zahl').textContent.trim()).toBe('3');
+    expect(fixture.nativeElement.querySelector('.visually-hidden').textContent.trim())
+      .toBe(', 3 Suchanfragen warten auf Freigabe');
+  });
+
+  it('zeigt Suchanfragen auch, solange die Meldungen noch laden', () => {
+    suchanfragen$.next({ daten: { anzahl: 2 }, fehler: false });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.zahl').textContent.trim()).toBe('2');
   });
 });
