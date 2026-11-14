@@ -73,7 +73,7 @@ describe('ContentModerationComponent', () => {
   }
 
   beforeEach(() => {
-    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport', 'getLoeschauftraege', 'loeschauftragAusfuehren']);
+    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport', 'getLoeschauftraege', 'loeschauftragAusfuehren', 'meldungSchliessen']);
     moderation.sperren.and.returnValue(of({ success: true, message: '' }));
     moderation.entsperren.and.returnValue(of({ success: true, message: '' }));
     moderation.sperreBestaetigen.and.returnValue(of({ success: true, message: '' }));
@@ -712,6 +712,30 @@ describe('ContentModerationComponent', () => {
       expect(moderation.sperren).not.toHaveBeenCalled();
       fixture.destroy();
     }));
+
+    it('schließt eine Meldung zu einem gesperrten Beitrag über den eigenen Endpunkt', () => {
+      const snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+      TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
+      moderation.meldungSchliessen.and.returnValue(of({}));
+      const gesperrt = meldung({ content: { status: 'blocked', title: 'T', text: 'T' } });
+      mitMeldungen([gesperrt]);
+      const vorher = moderation.getReports.calls.count();
+
+      const schliessen = knopf('Meldung schließen')!;
+      schliessen.click();
+
+      expect(moderation.meldungSchliessen).toHaveBeenCalledWith('report-1');
+      expect(moderation.sperren).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledWith('Meldung geschlossen, Beitrag bleibt gesperrt', 'OK', jasmine.anything());
+      expect(moderation.getReports.calls.count()).toBeGreaterThan(vorher);
+    });
+
+    it('bietet „Meldung schließen“ nur bei gesperrtem Beitrag an', () => {
+      mitMeldungen([meldung()]);
+
+      expect(knopf('Meldung schließen')).toBeUndefined();
+      expect(knopf('Abweisen')).toBeDefined();
+    });
 
     it('bietet bei einem gesperrten Beitrag kein Abweisen an', () => {
       mitMeldungen([meldung({ content: { status: 'blocked', title: 'T', text: 'T' } })]);

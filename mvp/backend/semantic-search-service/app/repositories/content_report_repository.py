@@ -114,6 +114,10 @@ class BeitragGesperrt(Exception):
     """Der gemeldete Beitrag ist gesperrt; eine Meldung dazu laesst sich nicht abweisen."""
 
 
+class BeitragNichtGesperrt(Exception):
+    """Meldung schliessen geht nur, wenn der gemeldete Beitrag schon gesperrt ist."""
+
+
 class ContentReportRepository:
     """Repository for managing content report data."""
 

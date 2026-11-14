@@ -266,6 +266,14 @@ export class ModerationService {
   }
 
   /**
+   * Eine offene Meldung zu einem schon gesperrten Beitrag schließen: Sie steht danach auf
+   * bearbeitet, die meldende Person bekommt die Mail „gesperrt“; keine neue Sperre.
+   */
+  meldungSchliessen(reportId: string): Observable<unknown> {
+    return this.http.put(`${this.baseUrl}/reports/${encodeURIComponent(reportId)}/schliessen`, {});
+  }
+
+  /**
    * Meldung abweisen. Der Suchdienst liest ``notes`` als Query-Parameter (``notes: Optional[str]``
    * ohne Body in api/v1/moderation.py); im Body ging die Begründung bisher verloren.
    */

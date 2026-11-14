@@ -11,6 +11,7 @@ from uuid import UUID
 
 from repositories.content_report_repository import (
     BeitragGesperrt,
+    BeitragNichtGesperrt,
     ContentReportRepository,
     MeldungNichtOffen,
     get_content_report_repository,
@@ -455,6 +456,25 @@ class ModerationService:
 
         return await self.moderation_repo.laden(content_id)
 
+    async def _beitrag_gesperrt(self, content_id: UUID) -> bool:
+        """
+        Ist der Beitrag gesperrt? Eine aktive Sperre oder, fuer Sperren von vor #448 ohne
+        Sperr-Eintrag, der Status BLOCKED am Beitrag. Ein geloeschter Beitrag gilt als
+        nicht gesperrt. Ohne gemeinsame Transaktion mit dem Statuswechsel danach: Sperrt
+        jemand genau dazwischen, setzt sperren() die Meldung auf bearbeitet, und
+        nur_offene antwortet mit MeldungNichtOffen (bekanntes, kleines Fenster).
+        """
+        if await asyncio.to_thread(self._sperre_repository().aktive, content_id):
+            return True
+        try:
+            beitrag = await self._beitrag_laden(str(content_id))
+        except Exception as e:
+            logger.warning(
+                f"Beitrag fuer die Sperrpruefung nicht lesbar: {type(e).__name__}"
+            )
+            return False
+        return bool(beitrag) and beitrag.get("status") == ContentStatus.BLOCKED.value
+
     async def sperren(
         self,
         content_id: str,
@@ -864,9 +884,7 @@ class ModerationService:
             content_id = await asyncio.to_thread(
                 self.report_repo.content_id_von, report_uuid
             )
-            if content_id is not None and await asyncio.to_thread(
-                self._sperre_repository().aktive, content_id
-            ):
+            if content_id is not None and await self._beitrag_gesperrt(content_id):
                 raise BeitragGesperrt(str(content_id))
             adressen: List[MelderAdresse] = []
             updated_report = self.report_repo.update_report_status(
@@ -896,6 +914,53 @@ class ModerationService:
         except Exception as e:
             logger.error(f"Error dismissing report: {type(e).__name__}", exc_info=True)
             return False
+
+    async def meldung_schliessen(self, report_id: str, geschlossen_von: str) -> bool:
+        """
+        Eine offene Meldung zu einem schon gesperrten Beitrag erledigen: Sie steht danach
+        auf bearbeitet ("Beitrag gesperrt"), und die meldende Person bekommt die vorhandene
+        Mail "gesperrt". Eine neue Sperre entsteht nicht. Gebraucht fuer Meldungen, die nach
+        der Sperre kamen; Abweisen passt dort nicht (BeitragGesperrt).
+
+        Returns:
+            bool: False, wenn es die Meldung nicht gibt oder die Kennung ungueltig ist
+
+        Raises:
+            BeitragNichtGesperrt: der Beitrag ist nicht (mehr) gesperrt
+            MeldungNichtOffen: die Meldung ist schon bearbeitet oder abgewiesen
+        """
+        try:
+            report_uuid = UUID(report_id)
+        except ValueError:
+            logger.error("Invalid report_id format")
+            return False
+        content_id = await asyncio.to_thread(
+            self.report_repo.content_id_von, report_uuid
+        )
+        if content_id is None:
+            return False
+        if not await self._beitrag_gesperrt(content_id):
+            raise BeitragNichtGesperrt(str(content_id))
+        adressen: List[MelderAdresse] = []
+        meldung = await asyncio.to_thread(
+            lambda: self.report_repo.update_report_status(
+                report_id=report_uuid,
+                status="reviewed",
+                reviewed_by=geschlossen_von,
+                resolution_notes="Beitrag gesperrt",
+                melder_adressen=adressen,
+                nur_offene=True,
+            )
+        )
+        if meldung is None:
+            return False
+        logger.info(f"Report {report_id} geschlossen, Beitrag bleibt gesperrt")
+        if adressen:
+            beitrag = await self._beitrag_fuer_mail(str(content_id))
+            await self._entscheidung_mitteilen(
+                adressen, Entscheidung.GESPERRT, _titel(beitrag)
+            )
+        return True
 
     def get_report_stats(self) -> Dict[str, Any]:
         """
