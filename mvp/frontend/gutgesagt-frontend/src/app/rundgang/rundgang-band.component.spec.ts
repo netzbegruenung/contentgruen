@@ -73,7 +73,7 @@ describe('RundgangBandComponent', () => {
     it('sagt in einem Satz, wie es geht, mit dem Teilen-Symbol nur fürs Auge', () => {
       const p = el().querySelector('aside p')!;
       expect(p.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        'In Safari auf Teilen tippen, dann „Zum Home-Bildschirm“.',
+        'Tippe in Safari auf Teilen (oder erst auf ···) und dann auf „Zum Home-Bildschirm“.',
       );
       const svg = p.querySelector('svg')!;
       expect(svg.getAttribute('aria-hidden')).toBe('true');
@@ -84,11 +84,39 @@ describe('RundgangBandComponent', () => {
       expect(el().querySelector('aside img')?.getAttribute('src')).toBe('marke/apple-touch-icon-180.png');
     });
 
-    it('hat nur „Ausblenden“', () => {
+    it('hat nur „Ausblenden“, für Screenreader „Hinweis ausblenden“', () => {
       const knoepfe = el().querySelectorAll('aside button');
       expect(knoepfe.length).toBe(1);
+      expect(knopf('Ausblenden').getAttribute('aria-label')).toBe('Hinweis ausblenden');
       knopf('Ausblenden').click();
       expect(rundgang.bandBeantworten).toHaveBeenCalledWith(false);
+    });
+  });
+
+  describe('Fokus nach dem Ausblenden', () => {
+    let haupt: HTMLElement;
+
+    beforeEach(() => {
+      haupt = document.createElement('main');
+      document.body.appendChild(haupt);
+      document.body.appendChild(fixture.nativeElement);
+    });
+
+    afterEach(() => haupt.remove());
+
+    it('geht an den Hauptinhalt, nicht an den Seitenanfang', () => {
+      band.set(MITMACHEN_ANGEBOT);
+      fixture.detectChanges();
+      knopf('Nein danke').focus();
+      knopf('Nein danke').click();
+      expect(document.activeElement).toBe(haupt);
+      expect(haupt.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('lässt Knöpfe ohne eigenen Namen ohne aria-label', () => {
+      band.set(MITMACHEN_ANGEBOT);
+      fixture.detectChanges();
+      expect(knopf('Nein danke').hasAttribute('aria-label')).toBeFalse();
     });
   });
 

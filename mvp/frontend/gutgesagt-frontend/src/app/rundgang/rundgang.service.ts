@@ -7,7 +7,7 @@ import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
 import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
 import { Angebot, HOME_ANGEBOT, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
-import { gesehen as imSpeicher, merken as speichern, speicherLesbar } from './rundgang-merker';
+import { gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
 
 export interface RundgangStand {
   rundgang: Rundgang;
@@ -62,18 +62,15 @@ export class RundgangService {
    * Fenster): „Ausblenden“ wirkt dann wenigstens bis zum nächsten Besuch.
    */
   private readonly beantworteteAngebote = new Set<string>();
-  /**
-   * Hinweis „Gut gesagt als App“: Schalter an, Gerät passt und der Speicher ist lesbar.
-   * Ohne Speicher kein Hinweis, sonst käme er nach dem Ausblenden bei jedem Besuch wieder.
-   */
+  /** Hinweis „Gut gesagt als App“: Schalter an und Gerät passt. */
   private homeHier = false;
   /** Willkommen oder Mitmachen stand in diesem Besuch schon da: dann kein zweites Band danach. */
   private anderesBandGezeigt = false;
 
   /** Einmal beim Start der App. */
   beobachten(destroyRef: DestroyRef): void {
-    // Liest nur, schreibt nichts: Einen Merker gibt es erst mit „Ausblenden“
-    this.homeHier = this.homeMerkerAktiv && this.homeMoeglich() && speicherLesbar();
+    // Schalter zuerst: Ist er aus, greift der Hinweis nie auf den Speicher zu
+    this.homeHier = this.homeMerkerAktiv && this.homeMoeglich();
 
     // Zurück (oder Vor) im Browser beendet den Rundgang: Sonst stuende der Schritt auf
     // der Seite, zu der die Person gerade zurückgeht, etwa „Passende Treffer“ über den
@@ -179,21 +176,22 @@ export class RundgangService {
     // Wer Mitmachen schon hatte, braucht kein Willkommen mehr
     if (!this.gesehen(WILLKOMMEN) && !this.gesehen(MITMACHEN_ANGEBOT) && hier(WILLKOMMEN)) return WILLKOMMEN;
     // Zuletzt und nie zugleich mit einem anderen: Es gibt nur ein Band
-    if (this.homeFaellig(info) && hier(HOME_ANGEBOT)) return HOME_ANGEBOT;
+    if (this.homeFaellig() && hier(HOME_ANGEBOT)) return HOME_ANGEBOT;
     return null;
   }
 
   /**
-   * Erst wenn das Willkommen beantwortet ist (sein Vermerk, oder Mitmachen, das es
-   * ersetzt) oder nach dem Anmelden; kein eigener Merker für Besuche (§ 25 TDDDG).
-   * Nie nach „Ausblenden“ und nicht im selben Besuch wie Willkommen oder Mitmachen.
+   * Erst wenn der Vermerk für Willkommen oder Mitmachen im Speicher steht; kein eigener
+   * Merker für Besuche (§ 25 TDDDG). Ohne Speicher steht dort nie einer, dann gibt es
+   * auch keinen Hinweis, der nach dem Ausblenden wiederkäme. Nie nach „Ausblenden“ und
+   * nicht nach Willkommen oder Mitmachen im selben Besuch.
    */
-  private homeFaellig(info: UserInfo): boolean {
+  private homeFaellig(): boolean {
     return (
       this.homeHier &&
       !this.anderesBandGezeigt &&
-      !this.gesehen(HOME_ANGEBOT) &&
-      (this.gesehen(WILLKOMMEN) || this.gesehen(MITMACHEN_ANGEBOT) || info.isAuthenticated)
+      (imSpeicher(WILLKOMMEN.schluessel) || imSpeicher(MITMACHEN_ANGEBOT.schluessel)) &&
+      !this.gesehen(HOME_ANGEBOT)
     );
   }
 

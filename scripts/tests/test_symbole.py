@@ -55,6 +55,18 @@ def test_logo_im_kopf_mit_neuem_namen_und_vorhanden():
     assert not fehlend, f"genannt, aber nicht unter public/: {fehlend}"
 
 
+def test_markendateien_im_code_vorhanden():
+    # Auch Pfade in TypeScript, etwa das Bild im Band des Home-Hinweises (rundgang-daten.ts)
+    pfade = {
+        m.lstrip("/")
+        for d in (FRONTEND / "src/app").rglob("*.ts")
+        for m in re.findall(r"'(/?marke/[^']+)'", d.read_text(encoding="utf-8"))
+    }
+    assert "marke/apple-touch-icon-180.png" in pfade
+    fehlend = sorted(p for p in pfade if not (PUBLIC / p).is_file())
+    assert not fehlend, f"genannt, aber nicht unter public/: {fehlend}"
+
+
 def test_apple_touch_icon_180_ohne_transparenz():
     # iOS fuellt Transparenz schwarz
     pfad = re.search(r'<link\s+rel="apple-touch-icon"[^>]*\shref="([^"]+)"', INDEX.read_text(encoding="utf-8"))

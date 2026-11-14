@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 import { RundgangService } from './rundgang.service';
 
@@ -32,7 +33,7 @@ import { RundgangService } from './rundgang.service';
           @if (angebot.ja) {
             <button type="button" class="rundgang-knopf voll" (click)="rundgang.bandBeantworten(true)">{{ angebot.ja }}</button>
           }
-          <button type="button" class="rundgang-knopf text" (click)="rundgang.bandBeantworten(false)">{{ angebot.nein }}</button>
+          <button type="button" class="rundgang-knopf text" [attr.aria-label]="angebot.neinLabel ?? null" (click)="ausblenden()">{{ angebot.nein }}</button>
         </div>
       </aside>
     }
@@ -41,6 +42,7 @@ import { RundgangService } from './rundgang.service';
 })
 export class RundgangBandComponent {
   protected readonly rundgang = inject(RundgangService);
+  private readonly dokument = inject(DOCUMENT);
   /**
    * Wo dieses Band steht: „kopf“ ueber jedem Seiteninhalt (app.component), „start“ auf
    * der Startseite unter dem Suchfeld. Ein Angebot mit `imInhalt` zeigt nur das Band
@@ -51,4 +53,16 @@ export class RundgangBandComponent {
     const angebot = this.rundgang.band();
     return angebot && !!angebot.imInhalt === (this.ort() === 'start') ? angebot : null;
   });
+
+  /**
+   * Mit dem Band verschwindet der Knopf, der den Fokus hatte: Er geht an den Hauptinhalt
+   * statt an den Seitenanfang. Nicht ins Suchfeld, sonst klappt am Handy die Tastatur auf.
+   */
+  protected ausblenden(): void {
+    this.rundgang.bandBeantworten(false);
+    const haupt = this.dokument.querySelector<HTMLElement>('main');
+    if (!haupt) return;
+    if (!haupt.hasAttribute('tabindex')) haupt.setAttribute('tabindex', '-1');
+    haupt.focus({ preventScroll: true });
+  }
 }

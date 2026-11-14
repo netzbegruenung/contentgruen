@@ -21,16 +21,6 @@ export function gesehen(schluessel: string): boolean {
   }
 }
 
-/** Ob sich der Speicher lesen lässt; schreibt nichts. */
-export function speicherLesbar(): boolean {
-  try {
-    localStorage.getItem(WILLKOMMEN_SCHLUESSEL);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function merken(schluessel: string): void {
   try {
     localStorage.setItem(schluessel, '1');

@@ -850,11 +850,10 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich.');
     });
 
-    it('Schalter an: der Absatz im freigegebenen Wortlaut, die zwei Vermerke Willkommen und Mitmachen zugeordnet', () => {
+    it('Schalter an: der Absatz im freigegebenen Wortlaut; der Satz zu den zwei Vermerken bleibt, der Absatz zählt seinen selbst', () => {
       const text = mitMerker(true);
       expect(text).toContain(ABSATZ);
-      expect(text).toContain('Für Willkommen und Mitmachen sind das zwei Vermerke ohne Angaben über dich.');
-      expect(text).not.toContain('Das sind zwei Vermerke');
+      expect(text).toContain('sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich.');
     });
   });
 });

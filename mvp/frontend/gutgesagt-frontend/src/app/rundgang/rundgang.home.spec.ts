@@ -101,7 +101,7 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
     expect(zweiter.band()).toBe(HOME_ANGEBOT);
   });
 
-  it('nach dem Anmelden erst nach der Einwilligung', () => {
+  it('angemeldet erst nach der Einwilligung', () => {
     willkommenErledigt();
     userInfo.next(angemeldet);
     const service = besuch();
@@ -109,6 +109,14 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
     expect(service.band()).toBeNull();
     geklaert.next('u1');
     expect(service.band()).toBe(HOME_ANGEBOT);
+  });
+
+  it('die Anmeldung allein reicht nicht: ohne Vermerk zuerst das Willkommen', () => {
+    userInfo.next(angemeldet);
+    geklaert.next('u1');
+    const service = besuch();
+    navigiert('/search');
+    expect(service.band()).toBe(WILLKOMMEN);
   });
 
   it('steht nur auf der Startseite, nicht über den Treffern', () => {
@@ -120,10 +128,14 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
 
   it('schreibt beim Anzeigen nichts in den Speicher, erst mit „Ausblenden“', () => {
     willkommenErledigt();
+    const sitzungVorher = sessionStorage.length;
+    const cookiesVorher = document.cookie;
     const service = besuch();
     navigiert('/search');
     expect(service.band()).toBe(HOME_ANGEBOT);
     expect(eigeneEintraege()).toEqual([]);
+    expect(sessionStorage.length).toBe(sitzungVorher);
+    expect(document.cookie).toBe(cookiesVorher);
     service.bandBeantworten(false);
     expect(eigeneEintraege()).toEqual([HOME_HINWEIS_SCHLUESSEL]);
   });
@@ -148,22 +160,6 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
     expect(service.band()).toBeNull();
   });
 
-  it('erscheint nicht, wenn der Speicher fehlt (privates Fenster, gesperrt)', () => {
-    spyOn(Storage.prototype, 'getItem').and.throwError('gesperrt');
-    spyOn(Storage.prototype, 'setItem').and.throwError('gesperrt');
-    userInfo.next(angemeldet);
-    geklaert.next('u1');
-    const service = besuch();
-    navigiert('/search');
-    // Ohne Speicher steht das Willkommen da; ausgeblendet folgt kein Hinweis
-    expect(service.band()).toBe(WILLKOMMEN);
-    const naechster = besuch();
-    navigiert('/search');
-    service.bandBeantworten(false);
-    expect(naechster.band()).not.toBe(HOME_ANGEBOT);
-    expect(service.band()).toBeNull();
-  });
-
   it('auf anderen Geräten: kein Hinweis', () => {
     ios = false;
     willkommenErledigt();
@@ -173,11 +169,13 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
     expect(eigeneEintraege()).toEqual([]);
   });
 
-  it('mit ausgeschaltetem Schalter: kein Hinweis', () => {
+  it('mit ausgeschaltetem Schalter: kein Hinweis, sein Merker wird nie gelesen', () => {
     schalter = false;
     willkommenErledigt();
+    const lesen = spyOn(Storage.prototype, 'getItem').and.callThrough();
     const service = besuch();
     navigiert('/search');
     expect(service.band()).toBeNull();
+    expect(lesen).not.toHaveBeenCalledWith(HOME_HINWEIS_SCHLUESSEL);
   });
 });

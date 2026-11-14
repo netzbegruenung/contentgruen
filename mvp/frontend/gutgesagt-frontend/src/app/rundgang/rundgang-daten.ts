@@ -79,6 +79,8 @@ export interface Angebot {
   /** Beschriftung der beiden Knöpfe: Rundgang starten bzw. ausblenden. */
   ja?: string;
   nein: string;
+  /** Name des Ausblenden-Knopfs für Screenreader, wenn „nein“ allein nicht reicht. */
+  neinLabel?: string;
   /** Erster Schritt des Rundgangs, wenn er aus dem Band startet. */
   ab: number;
   /**
@@ -123,19 +125,23 @@ export const MITMACHEN_ANGEBOT: Angebot = {
 
 /**
  * Nur auf iPhone und iPad in Safari (14.11.2026): Dort bietet der Browser das Installieren
- * nicht von selbst an. Erst wenn das Willkommen beantwortet ist oder nach dem Anmelden,
- * nie im selben Besuch wie Willkommen oder Mitmachen; einmal ausgeblendet, kommt es nicht wieder.
+ * nicht von selbst an. Erst wenn der Vermerk für Willkommen oder Mitmachen im Speicher
+ * steht, nicht nach Willkommen oder Mitmachen im selben Besuch; einmal ausgeblendet,
+ * kommt es nicht wieder.
  */
 export const HOME_ANGEBOT: Angebot = {
   schluessel: HOME_HINWEIS_SCHLUESSEL,
   titel: 'Gut gesagt als App',
-  satz: 'In Safari auf Teilen',
-  nachTeilenSymbol: 'tippen, dann „Zum Home-Bildschirm“.',
+  // Ab iOS 26 kann „Teilen“ im Menü „···“ liegen
+  satz: 'Tippe in Safari auf Teilen',
+  // Geschütztes Leerzeichen: „auf“ und „···“ bleiben in einer Zeile
+  nachTeilenSymbol: '(oder erst auf ···) und dann auf „Zum Home-Bildschirm“.',
   bild: 'marke/apple-touch-icon-180.png',
   // Wie das Willkommen nur auf der Startseite unter dem Suchfeld, nicht über Treffern (#599)
   seiten: ['/search'],
   imInhalt: true,
   nein: 'Ausblenden',
+  neinLabel: 'Hinweis ausblenden',
   ab: 0,
 };
 
