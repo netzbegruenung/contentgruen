@@ -8,8 +8,8 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import {
   EinwerfenComponent,
   LINK_PRUEFEN_NACH_MS,
-  SEITENTITEL_PRAEFIX,
   hinweisVorschlag,
+  ohneSeitenname,
 } from './einwerfen.component';
 import { Einwurf, EinwurfSeite, EinwurfService } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
@@ -22,20 +22,37 @@ import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 describe('hinweisVorschlag', () => {
-  it('stellt den Seitentitel mit Praefix voran', () => {
-    expect(hinweisVorschlag({ url: 'https://example.org/a', titel: 'Ein Titel', text: null })).toBe(
-      `${SEITENTITEL_PRAEFIX}Ein Titel`,
-    );
+  it('legt den Seitentitel ohne "Seitentitel:" vor (P44)', () => {
+    expect(hinweisVorschlag({ url: 'https://example.org/a', titel: 'Ein Titel', text: null })).toBe('Ein Titel');
   });
 
   it('nimmt uebrigen Text dazu', () => {
-    expect(hinweisVorschlag({ url: null, titel: 'Ein Titel', text: 'noch was' })).toBe(
-      'Seitentitel: Ein Titel\nnoch was',
+    expect(hinweisVorschlag({ url: null, titel: 'Ein Titel', text: 'noch was' })).toBe('Ein Titel\nnoch was');
+  });
+
+  it('laesst den angehaengten Seitennamen weg (P44)', () => {
+    expect(hinweisVorschlag({ url: null, titel: 'AfD klar vor SPD | tagesschau.de', text: null })).toBe(
+      'AfD klar vor SPD',
     );
   });
 
   it('hat ohne Titel und Text keinen Vorschlag', () => {
     expect(hinweisVorschlag({ url: 'https://example.org/a', titel: null, text: null })).toBeNull();
+  });
+});
+
+describe('ohneSeitenname', () => {
+  it('schneidet nur den letzten Teil nach " | " ab', () => {
+    expect(ohneSeitenname('Teil A | Teil B | Beispielmagazin')).toBe('Teil A | Teil B');
+  });
+
+  it('laesst Titel ohne Seitennamen und einen Strich ohne Leerzeichen stehen', () => {
+    expect(ohneSeitenname('Wind-Kraft: neue Studie')).toBe('Wind-Kraft: neue Studie');
+    expect(ohneSeitenname('A|B')).toBe('A|B');
+  });
+
+  it('behaelt den Titel, wenn vor dem Strich nichts steht', () => {
+    expect(ohneSeitenname(' | tagesschau.de')).toBe('| tagesschau.de');
   });
 });
 
@@ -98,6 +115,11 @@ describe('EinwerfenComponent', () => {
 
   describe('Felder', () => {
     beforeEach(() => erstellen());
+
+    it('zeigt am Knopf das Einwerfen-Symbol des Fangkorbs, keine Diskette (P47)', () => {
+      const symbol = fixture.nativeElement.querySelector('.einwerfen-knopf mat-icon') as HTMLElement;
+      expect(symbol.textContent!.trim()).toBe('move_to_inbox');
+    });
 
     it('hat genau zwei Felder: Link und Hinweis fuer andere', () => {
       const labels = Array.from(fixture.nativeElement.querySelectorAll('mat-label')).map((l) =>
@@ -385,9 +407,7 @@ describe('EinwerfenComponent', () => {
       await erstellen(vomBrowser);
 
       expect(component.einwurfForm.value.link).toBe('https://www.tagesschau.de/inland/x-100.html');
-      expect(component.einwurfForm.value.hinweis).toBe(
-        'Seitentitel: AfD klar vor SPD | tagesschau.de',
-      );
+      expect(component.einwurfForm.value.hinweis).toBe('AfD klar vor SPD');
       expect(component.istVorbelegt).toBeTrue();
       expect(fixture.nativeElement.querySelector('.hinweis-feld.vorbelegt')).toBeTruthy();
       expect(text()).toContain('Vorschlag aus dem Teilen');
@@ -400,7 +420,7 @@ describe('EinwerfenComponent', () => {
 
       expect(einwurfService.einwerfen).toHaveBeenCalledWith({
         url: 'https://www.tagesschau.de/inland/x-100.html',
-        content: 'Seitentitel: AfD klar vor SPD | tagesschau.de',
+        content: 'AfD klar vor SPD',
         source_channel: 'share',
       });
     });

@@ -1,4 +1,5 @@
-import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -6,7 +7,8 @@ import { TextFieldModule } from '@angular/cdk/text-field';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
-import { filter } from 'rxjs/operators';
+import { fromEvent, merge } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { CommentaryService } from '../services/commentary.service';
@@ -16,7 +18,7 @@ import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinwei
 import { AddCommentaryRequest, AddCommentaryResponse, Commentary } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
-import { Vorlage, vorlageHinweis } from '../beitragsformular/vorlage';
+import { VORLAGE_PARAM, Vorlage, vorlageHinweis } from '../beitragsformular/vorlage';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
@@ -24,6 +26,16 @@ import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component
 import { typFarbe } from '../shared/content-type-registry';
 import { STIL_LABEL, Stil, ZWECK_LABEL, ZWECK_STANDARD, Zweck, stileFuer, stilPasst } from '../shared/zweck-stil';
 import { einzeilig } from '../beitragsformular/einzeilig';
+import { titelVorschlag } from '../beitragsformular/titel-vorschlag';
+import {
+  KommentarEntwurfWerte,
+  kommentarEntwurfHolen,
+  kommentarEntwurfLoeschen,
+  kommentarEntwurfSichern,
+} from '../beitragsformular/kommentar-entwurf';
+import { AuthService } from '../auth/auth.service';
+import { ActivatedRoute } from '@angular/router';
+import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
 import { einwilligungFehlt } from '../services/art9-einwilligung.service';
@@ -205,7 +217,7 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
     DublettenHinweisComponent,
   ],
 })
-export class AddCommentaryComponent implements OnChanges {
+export class AddCommentaryComponent implements OnChanges, OnInit {
   private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
   /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
   readonly einspaltig = einspaltig();
@@ -353,6 +365,27 @@ export class AddCommentaryComponent implements OnChanges {
 
   private meilensteinHinweis = inject(MeilensteinHinweisService);
 
+  /**
+   * Der zuletzt vorgeschlagene Titel (E2). Steht genau er noch im Feld, wird er beim
+   * Schreiben nachgefuehrt; hat die Person ihn geaendert oder kam der Titel aus Vorlage
+   * oder Fangkorb, ist das null und der Titel bleibt, wie er ist.
+   */
+  private titelVorbelegung: string | null = '';
+
+  private readonly authService = inject(AuthService);
+  private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+
+  /**
+   * Mit Vorlage oder Einwurf aus dem Fangkorb kein Entwurf (Review): Beide laden nach und
+   * ueberschrieben einen zurueckgeholten Entwurf, oder er sie. Die Adresse sagt es sofort.
+   */
+  private get mitVorlageOderEinwurf(): boolean {
+    const params = this.route?.snapshot.queryParamMap;
+    return !!(this.vorlage || this.vorbefuellung || params?.get(VORLAGE_PARAM) || params?.get(EINWURF_PARAM));
+  }
+
   constructor(
     fb: FormBuilder,
     private commentaryService: CommentaryService,
@@ -386,11 +419,88 @@ export class AddCommentaryComponent implements OnChanges {
     this.commentaryForm
       .get('text')!
       .valueChanges.pipe(takeUntilDestroyed())
-      .subscribe(() => {
+      .subscribe((text: string | null) => {
         if (this.vorhanden && !this.speichert && !this.nimmt) {
           this.vorhandenVergessen();
         }
+        this.titelNachfuehren(text);
       });
+  }
+
+  /** Den Titel aus dem Text vorschlagen, solange er die unveraenderte Vorbelegung ist (E2). */
+  // Der neue Text kommt aus valueChanges: commentaryForm.value zieht erst danach nach.
+  private titelNachfuehren(text: string | null): void {
+    const titel = this.commentaryForm.get('title')!;
+    if (this.titelVorbelegung === null || titel.value !== this.titelVorbelegung) {
+      this.titelVorbelegung = null;
+      return;
+    }
+    const vorschlag = titelVorschlag(text, this.aussage.text);
+    this.titelVorbelegung = vorschlag;
+    if (vorschlag !== titel.value) {
+      titel.setValue(vorschlag);
+    }
+  }
+
+  /**
+   * Der Entwurf über einen App-Wechsel (E1, kommentar-entwurf.ts): beim Ausblenden der Seite
+   * sichern, nach dem Neuladen im selben Tab zurückholen, sobald die Anmeldung feststeht.
+   */
+  ngOnInit(): void {
+    merge(
+      fromEvent(this.document, 'visibilitychange').pipe(filter(() => this.document.visibilityState === 'hidden')),
+      fromEvent(this.document.defaultView ?? window, 'pagehide'),
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.entwurfSichern());
+    this.authService.userInfo$
+      .pipe(
+        filter((info) => !!info?.isAuthenticated && !!info.userId),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((info) => this.entwurfHolen(info!.userId));
+  }
+
+  private entwurfSichern(): void {
+    // Nach dem Speichern, mit Vorlage oder Einwurf und ohne Einwilligung nicht (Review).
+    if (this.responseId || this.mitVorlageOderEinwurf || this.einwilligungZustand.wert === 'fehlt') {
+      return;
+    }
+    const w = this.commentaryForm.getRawValue();
+    const werte: KommentarEntwurfWerte = {
+      title: w.title ?? '',
+      text: w.text ?? '',
+      kurz: w.kurz ?? '',
+      lang: w.lang ?? '',
+      zweck: w.zweck ?? null,
+      stil: w.stil ?? null,
+    };
+    kommentarEntwurfSichern(werte, this.aussageAusAdresse.text, this.einwilligungZustand.kennung);
+  }
+
+  /** Nur in ein leeres Formular ohne Vorlage und ohne Einwurf aus dem Fangkorb. */
+  private entwurfHolen(kennung: string | null): void {
+    const { title, text } = this.commentaryForm.value;
+    if (this.mitVorlageOderEinwurf || title || text) {
+      return;
+    }
+    const entwurf = kommentarEntwurfHolen(this.aussageAusAdresse.text, kennung);
+    if (!entwurf) {
+      return;
+    }
+    this.commentaryForm.patchValue({
+      text: entwurf.text,
+      title: entwurf.title,
+      kurz: entwurf.kurz,
+      lang: entwurf.lang,
+      ...(entwurf.zweck ? { zweck: entwurf.zweck } : {}),
+      stil: entwurf.stil,
+    });
+    this.titelVorbelegung = entwurf.title === titelVorschlag(entwurf.text, this.aussage.text) ? entwurf.title : null;
+    if (entwurf.kurz || entwurf.lang) {
+      this.zeigtFassungen = true;
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -416,6 +526,7 @@ export class AddCommentaryComponent implements OnChanges {
   // "Als Vorlage nehmen": der Text des Originals, alles aenderbar. Die Herkunft
   // nicht - fuer die eigene Fassung gibt die Person ihre an.
   vorlageAnwenden(vorlage: Vorlage): void {
+    this.titelVorbelegung = null;
     this.commentaryForm.patchValue({
       title: vorlage.titel,
       text: vorlage.text,
@@ -433,6 +544,7 @@ export class AddCommentaryComponent implements OnChanges {
   // Titel = Satz aus dem Destillier-Ablauf, Herkunft = Link des Einwurfs. Beides
   // bleibt aenderbar; die Herkunft wird aufgeklappt, damit sie sichtbar ist.
   vorbefuellungAnwenden(vorbefuellung: Vorbefuellung): void {
+    this.titelVorbelegung = vorbefuellung.titel ? null : this.titelVorbelegung;
     this.commentaryForm.patchValue({
       title: vorbefuellung.titel,
       references: vorbefuellung.url ? [{ reference_string: vorbefuellung.url }] : [],
@@ -622,6 +734,7 @@ export class AddCommentaryComponent implements OnChanges {
           return;
         }
         this.responseId = antwort.id;
+        kommentarEntwurfLoeschen();
         this.success.emit(this.ergebnisAus(request, antwort));
         // Ein Kommentar zu einer Aussage kann die Wegmarke „Erste Gegenrede“ bringen.
         this.meilensteinHinweis.pruefen();
@@ -727,6 +840,7 @@ export class AddCommentaryComponent implements OnChanges {
       next: () => {
         this.stimmtZu = false;
         vorhanden.gewaehlt = 'zugestimmt';
+        kommentarEntwurfLoeschen();
         this.vorhandenGewaehlt.emit(vorhanden.id);
       },
       error: (error: Error) => {
@@ -749,6 +863,7 @@ export class AddCommentaryComponent implements OnChanges {
     }
     if (!this.mitAussage) {
       vorhanden.gewaehlt = 'genommen';
+      kommentarEntwurfLoeschen();
       this.vorhandenGewaehlt.emit(vorhanden.id);
       return;
     }
@@ -775,6 +890,7 @@ export class AddCommentaryComponent implements OnChanges {
         }
         vorhanden.aussage = antwort.statement_text;
         vorhanden.gewaehlt = 'genommen';
+        kommentarEntwurfLoeschen();
         this.vorhandenGewaehlt.emit(vorhanden.id);
         // Auch der genommene Kommentar kann jetzt eine Aussage beantworten (#351).
         this.meilensteinHinweis.pruefen();
@@ -813,6 +929,8 @@ export class AddCommentaryComponent implements OnChanges {
   }
 
   leeren(): void {
+    this.titelVorbelegung = '';
+    kommentarEntwurfLoeschen();
     this.commentaryForm.reset({ title: '', text: '', kurz: '', lang: '', ...OPTIONALE_ANGABEN_LEER, references: [] });
     this.antwortAuf?.leeren();
     this.aussage = OHNE_AUSSAGE;

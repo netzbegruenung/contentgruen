@@ -7,7 +7,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 
-import { KENNZAHLEN_NACHLADEN_MS, MvpDashboardComponent } from './mvp-dashboard.component';
+import { KENNZAHLEN_NACHLADEN_MS, MvpDashboardComponent, trendWort } from './mvp-dashboard.component';
 import { MetricsService, MVPMetrics } from '../../services/metrics.service';
 import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
 
@@ -61,6 +61,18 @@ describe('MvpDashboardComponent', () => {
       'So wird gezählt: Anteil „War hilfreich“',
     ]);
     expect(knoepfe.every((knopf) => knopf.type === 'button')).toBeTrue();
+  });
+
+  it('zeigt Trend und Zahlen auf Deutsch, nicht „Increasing“ und „2.5“ (M9)', () => {
+    fixture = TestBed.createComponent(MvpDashboardComponent);
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Steigend');
+    expect(text).not.toContain('Increasing');
+    expect(text).toContain('2,5');
+    expect(trendWort('stable')).toBe('Stabil');
+    expect(trendWort('decreasing')).toBe('Fallend');
   });
 
   it('laedt nach einem Fehler weiter nach, statt fuer immer stehen zu bleiben', fakeAsync(() => {

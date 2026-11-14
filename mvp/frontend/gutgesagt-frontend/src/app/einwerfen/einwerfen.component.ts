@@ -58,10 +58,21 @@ function alsGleicherEinwurf(einwurf: Einwurf): GleicherEinwurf {
 }
 
 /**
- * Womit ein Seitentitel im Hinweis-Feld als Vorbelegung erkennbar bleibt -- im
- * Formular und, falls die Person ihn stehen laesst, auch spaeter im Fangkorb.
+ * Womit ein Seitentitel frueher im Hinweis-Feld vorbelegt war. Neue Vorbelegungen tragen
+ * es nicht mehr, es sah nach Debug-Ausgabe aus (Persona-Runde 2, P44); die Vorbelegung
+ * zeigt das Feld selbst ("Vorschlag aus dem Teilen"). Die Karte schneidet es bei alten
+ * Einwuerfen weiter ab (SEITENTITEL_MARKE in karten-daten.ts).
  */
 export const SEITENTITEL_PRAEFIX = 'Seitentitel: ';
+
+/** Ein angehaengter Seitenname wie "… | tagesschau.de" am Ende eines Seitentitels. */
+const SEITENNAME_AM_ENDE = /\s+\|\s+[^|]+$/;
+
+/** Der Seitentitel ohne angehaengten Seitennamen; bleibt nichts davor, der ganze Titel. */
+export function ohneSeitenname(titel: string): string {
+  const ohne = titel.replace(SEITENNAME_AM_ENDE, '').trim();
+  return ohne || titel.trim();
+}
 
 /** Ein Link und nur ein Link. Der Server prueft ihn noch einmal richtig. */
 const NUR_EIN_LINK = /^https?:\/\/\S+$/i;
@@ -74,7 +85,7 @@ function nurEinLink(control: AbstractControl): ValidationErrors | null {
 /** Der Vorschlag fuer das Hinweis-Feld aus geteilten Feldern, oder null. */
 export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
   const zeilen = [
-    geteilt.titel ? `${SEITENTITEL_PRAEFIX}${geteilt.titel}` : null,
+    geteilt.titel ? ohneSeitenname(geteilt.titel) : null,
     geteilt.text,
   ].filter((zeile): zeile is string => !!zeile);
   return zeilen.length ? zeilen.join('\n').slice(0, HINWEIS_LIMIT) : null;
@@ -85,7 +96,7 @@ export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
  *
  * Keine Kategorien, keine Labels, keine Schalter -- alles Weitere ist schon
  * Destillieren. Kommt der Einwurf aus dem Teilen-Menue, steht der Link im
- * Link-Feld; Seitentitel und uebriger Text stehen als markierte Vorbelegung im
+ * Link-Feld; Seitentitel (ohne Seitenname) und uebriger Text stehen als markierte Vorbelegung im
  * Hinweis-Feld und werden nur gespeichert, wenn die Person sie stehen laesst.
  *
  * Liegt derselbe Link schon im Fangkorb, steht unter dem Link-Feld eine Anzeige mit

@@ -8,7 +8,7 @@ import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
 import { kurzeKennung } from './kennung';
-import { MELDUNG_ERLEDIGT } from './content-moderation.component';
+import { ENTSPERREN_FRAGE, MELDUNG_ERLEDIGT } from './content-moderation.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
 // Ausserhalb von /admin (wie im Testlauf) fragt der ZuTunService alle 120 s.
@@ -120,6 +120,23 @@ describe('ContentModerationComponent', () => {
     });
   });
 
+  it('teilt das Datum in Tag mit Komma und Uhrzeit, umgebrochen wird nur dazwischen (M2)', () => {
+    mitMeldungen([meldung()]);
+    const teile = fixture.componentInstance.datumTeile('2026-11-14T02:05:00Z');
+
+    expect(teile.tag).toMatch(/^\d{2}\.\d{2}\.\d{4},$/);
+    expect(teile.zeit).toMatch(/^\d{2}:\d{2}$/);
+    const zelle = fixture.nativeElement.querySelector('td.datum-zelle') as HTMLElement;
+    expect(zelle.querySelectorAll('.datum-teil').length).toBe(2);
+    expect(zelle.textContent!.trim()).toMatch(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+  });
+
+  it('zeigt Abweisen mit Rand wie Sperren, nicht als blassen Textknopf (M7)', () => {
+    mitMeldungen([meldung()]);
+
+    expect(knopf('Abweisen')!.hasAttribute('mat-stroked-button')).toBeTrue();
+  });
+
   it('bietet zu einer offenen Meldung Sperren statt Löschen an', () => {
     mitMeldungen([meldung()]);
 
@@ -155,9 +172,51 @@ describe('ContentModerationComponent', () => {
     fixture.detectChanges();
 
     expect(knopf('Sperren')).toBeUndefined();
+    dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
     knopf('Entsperren')!.click();
 
+    expect(dialog.open.calls.mostRecent().args[1]!.data).toBe(ENTSPERREN_FRAGE);
     expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-1');
+  });
+
+  it('entsperrt nicht, wenn die Rückfrage abgebrochen wird (M1)', () => {
+    mitMeldungen([meldung({ status: 'reviewed', content: { status: 'blocked', title: 'T', text: 'T' } })]);
+    fixture.componentInstance.onStatusFilterChange('reviewed');
+    fixture.detectChanges();
+    dialog.open.and.returnValue({ afterClosed: () => of(false) } as any);
+
+    knopf('Entsperren')!.click();
+
+    expect(dialog.open).toHaveBeenCalled();
+    expect(moderation.entsperren).not.toHaveBeenCalled();
+  });
+
+  it('öffnet bei einem Doppelklick auf Entsperren nur eine Rückfrage', () => {
+    mitMeldungen([meldung({ status: 'reviewed', content: { status: 'blocked', title: 'T', text: 'T' } })]);
+    fixture.componentInstance.onStatusFilterChange('reviewed');
+    fixture.detectChanges();
+    const geschlossen = new Subject<boolean>();
+    dialog.open.and.returnValue({ afterClosed: () => geschlossen } as any);
+
+    knopf('Entsperren')!.click();
+    knopf('Entsperren')!.click();
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+
+    geschlossen.next(false);
+    geschlossen.complete();
+    dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+    knopf('Entsperren')!.click();
+    expect(dialog.open).toHaveBeenCalledTimes(2);
+    expect(moderation.entsperren).toHaveBeenCalledTimes(1);
+  });
+
+  it('fragt vor dem Entsperren mit dem vereinbarten Muster', () => {
+    expect(ENTSPERREN_FRAGE).toEqual({
+      titel: 'Sperre aufheben?',
+      text: 'Der Beitrag ist danach wieder für alle sichtbar.',
+      ja: 'Aufheben',
+      nein: 'Abbrechen',
+    });
   });
 
   it('listet gesperrte Beiträge auch ohne Meldung und entsperrt sie', () => {
@@ -174,6 +233,7 @@ describe('ContentModerationComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Gesperrter Titel');
     expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
 
+    dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
     knopf('Entsperren')!.click();
 
     expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-2');

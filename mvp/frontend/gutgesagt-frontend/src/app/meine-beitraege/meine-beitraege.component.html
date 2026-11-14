@@ -45,7 +45,8 @@
             </ng-container>
 
             <!-- Wirkung zuerst: der Satz, darunter die Beitraege nach Nutzung; Punkte und Meilensteine danach (Nutzerfuehrung 13.11.) -->
-            <p *ngIf="karten.length" class="album-statistik">{{ statistik }}</p>
+            <!-- Bei 0 Nutzungen sagt es die Box darunter; zweimal derselbe Satz wirkte doppelt (Persona-Runde 2, P52) -->
+            <p *ngIf="karten.length && !nochNichtGenutzt" class="album-statistik">{{ statistik }}</p>
             <!-- Bei 0 Nutzungen: was „genutzt“ heisst und was als Naechstes hilft (UX-Review B11) -->
             <p *ngIf="nochNichtGenutzt" class="hinweis-box nutzung-leer" data-testid="nutzung-leer">
                 Noch hat niemand deine Beiträge genutzt. Genutzt heißt: Jemand hat einen davon kopiert oder geteilt.

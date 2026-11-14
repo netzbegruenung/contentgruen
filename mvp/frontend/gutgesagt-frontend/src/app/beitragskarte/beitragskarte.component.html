@@ -240,9 +240,9 @@
                 <app-fremdes-bild [src]="daten.bildUrl" [alt]="vorschau ? '' : daten.text || daten.titel || ''"></app-fremdes-bild>
             </div>
 
-            <!-- Platzhalter "[Hier …]" als Feld zum Ausfuellen (#640, R38) -->
+            <!-- Platzhalter "[Hier …]" als Feld zum Ausfuellen (#640, R38); Antippen oeffnet den Platzhalter-Dialog (P19) -->
             <p #textElement class="karte-text" *ngIf="angezeigterText"
-               [class.aufgeklappt]="textAufgeklappt"><ng-container *ngFor="let stueck of textStueckeAnzeige"><mark *ngIf="stueck.luecke; else stueckText" class="vorlagen-luecke">{{ stueck.text }}</mark><ng-template #stueckText>{{ stueck.text }}</ng-template></ng-container></p>
+               [class.aufgeklappt]="textAufgeklappt"><ng-container *ngFor="let stueck of textStueckeAnzeige"><mark *ngIf="stueck.luecke; else stueckText" class="vorlagen-luecke" (click)="platzhalterAntippen()">{{ stueck.text }}</mark><ng-template #stueckText>{{ stueck.text }}</ng-template></ng-container></p>
             <button type="button" class="mehr-knopf" *ngIf="textGekuerzt || textAufgeklappt"
                     [attr.aria-expanded]="textAufgeklappt"
                     (click)="textUmschalten()">{{ textAufgeklappt ? 'weniger' : 'mehr' }}</button>

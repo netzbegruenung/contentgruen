@@ -7,6 +7,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from '../meine-beitraege/meilenstein-merker';
+import { KOMMENTAR_ENTWURF_SCHLUESSEL } from '../beitragsformular/kommentar-entwurf';
 import {
   Art9EinwilligungService,
   Art9EinwilligungStand,
@@ -200,6 +201,15 @@ describe('Art9EinwilligungService', () => {
     http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
 
     expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
+  });
+
+  it('entfernt beim Widerruf den Kommentar-Entwurf des Tabs (E1)', () => {
+    sessionStorage.setItem(KOMMENTAR_ENTWURF_SCHLUESSEL, '{}');
+
+    service.widerrufen().subscribe();
+    http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
+
+    expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
   });
 
   it('vergisst die Klaerung nach dem Widerruf (#587)', () => {

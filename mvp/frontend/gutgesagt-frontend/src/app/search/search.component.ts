@@ -19,6 +19,11 @@ export const SUCHFELD_NAME_KOMPAKT = 'Text oder Post einfügen';
 export const SUCHHINWEIS =
   'Suchtexte speichern wir ohne deinen Namen. Gibt es noch keine Antwort, können sie nach ' +
   'Prüfung durch das Moderationsteam für alle sichtbar werden.';
+/**
+ * Über den Treffern nur der erste Satz und „Mehr“ (Freigabe E5, 14.11.2026): Der volle
+ * Hinweis schob die erste Antwort mobil aus dem ersten Bildschirm. Der Start behält ihn ganz.
+ */
+export const SUCHHINWEIS_KURZ = 'Suchtexte speichern wir ohne deinen Namen.';
 /** Sprungmarke des Abschnitts „Deine Suchanfragen“ in der Datenschutzerklärung. */
 export const SUCHANFRAGEN_ABSCHNITT = 'suchanfragen';
 /** Zaehler fuer eindeutige Kennungen des Hinweises, falls mehrere Suchfelder zugleich da sind. */
@@ -43,7 +48,9 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
   /** Ziel des Skip-Links „Zur Suche“ im Kopf; nur das Feld auf dem Start traegt es (leer: eigene Kennung von Material). */
   @Input() feldId = '';
   @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
-  readonly suchhinweis = SUCHHINWEIS;
+  get suchhinweis(): string {
+    return this.compactMode ? SUCHHINWEIS_KURZ : SUCHHINWEIS;
+  }
   readonly suchanfragenAbschnitt = SUCHANFRAGEN_ABSCHNITT;
   /** Screenreader lesen den Hinweis mit dem Feld vor (aria-describedby). */
   readonly hinweisId = `such-hinweis-${naechsterHinweis++}`;

@@ -83,8 +83,13 @@ export class GegenlesenComponent implements OnChanges {
 
   ergebnis: Gegengelesen = NOCH_LEER;
   verfuegbar = true;
-  /** Kompakt: ob die Anmerkungen aufgeklappt sind. */
+  /**
+   * Kompakt: ob die Anmerkungen aufgeklappt sind. Mit der ersten Anmerkung klappt die
+   * Zeile von selbst auf, zugeklappt wurde "1 Anmerkung" uebersehen (Persona-Runde 2,
+   * P33); hat die Person selbst umgeschaltet, bleibt es bei ihrer Wahl.
+   */
   offen = false;
+  private vonHandGeschaltet = false;
   /** Was die Live-Region ansagt: nur die Zahl, entprellt (ANSAGE_PAUSE_MS). */
   ansage = '';
 
@@ -155,10 +160,18 @@ export class GegenlesenComponent implements OnChanges {
         this.verfuegbar = ergebnis !== null;
         if (ergebnis) {
           this.ergebnis = ergebnis;
+          if (this.kompakt && !this.vonHandGeschaltet && (ergebnis.anmerkungen.length || this.zeigtHerkunftHinweis)) {
+            this.offen = true;
+          }
           this.ansageTakt.next(zusammenfassung(ergebnis, this.herkunftZusatz));
         }
         cdr.markForCheck();
       });
+  }
+
+  umschalten(): void {
+    this.offen = !this.offen;
+    this.vonHandGeschaltet = true;
   }
 
   ngOnChanges(changes: SimpleChanges): void {

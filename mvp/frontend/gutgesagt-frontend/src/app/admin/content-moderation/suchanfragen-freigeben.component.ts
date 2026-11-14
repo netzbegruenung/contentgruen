@@ -13,18 +13,32 @@ import {
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subscription, fromEvent, interval } from 'rxjs';
+import { Observable, Subscription, fromEvent, interval, of } from 'rxjs';
+import { filter, switchMap } from 'rxjs/operators';
 import {
   SuchanfragenFreigabeService,
   ZuPruefendeSuchanfrage,
 } from '../../services/suchanfragen-freigabe.service';
+import {
+  BestaetigungsDialogComponent,
+  BestaetigungsDialogDaten,
+} from '../../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 
 /** So oft lädt die Liste nach, solange die Seite sichtbar ist. */
 export const NACHLADEN_MS = 30_000;
+
+/** Rückfrage vor dem Freigeben (Persona-Runde 2, M1): Freigegebenes sehen alle, Rückgängig gibt es nicht. */
+export const FREIGEBEN_FRAGE: BestaetigungsDialogDaten = {
+  titel: 'Suchanfrage freigeben?',
+  text: 'Die Suchanfrage ist danach für alle sichtbar, etwa in „Hier fehlt eine Antwort“.',
+  ja: 'Freigeben',
+  nein: 'Abbrechen',
+};
 
 /**
  * „Suchanfragen freigeben“ in der Moderation (Vormoderation, Entscheidung des Maintainers
@@ -43,6 +57,7 @@ export const NACHLADEN_MS = 30_000;
   imports: [
     CommonModule,
     MatButtonModule,
+    MatDialogModule,
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
@@ -129,6 +144,7 @@ export class SuchanfragenFreigebenComponent implements OnInit, OnChanges {
   constructor(
     private service: SuchanfragenFreigabeService,
     private snackBar: MatSnackBar,
+    private dialog: MatDialog,
     private destroyRef: DestroyRef,
     private zone: NgZone,
     @Inject(DOCUMENT) private document: Document,
@@ -192,28 +208,42 @@ export class SuchanfragenFreigebenComponent implements OnInit, OnChanges {
       });
   }
 
+  /** Freigeben erst nach der Rückfrage (M1); Ablehnen gleich, es bleibt unsichtbar. */
   entscheiden(suchanfrage: ZuPruefendeSuchanfrage, freigeben: boolean): void {
     const id = suchanfrage.statement_id;
     this.entscheidet.add(id);
-    const anfrage = freigeben ? this.service.freigeben(id) : this.service.ablehnen(id);
-    anfrage.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.erledigt.add(id);
-        this.suchanfragen = (this.suchanfragen ?? []).filter((s) => s.statement_id !== id);
-        this.anzahlMelden();
-        this.entscheidet.delete(id);
-        this.snackBar.open(freigeben ? 'Freigegeben' : 'Abgelehnt', 'OK', { duration: 3000 });
-      },
-      error: (fehler) => {
-        this.entscheidet.delete(id);
-        const text =
-          fehler?.status === 404 || fehler?.status === 409
-            ? 'Die Suchanfrage gibt es so nicht mehr; die Liste wird aktualisiert'
-            : 'Die Entscheidung konnte nicht gespeichert werden';
-        this.snackBar.open(text, 'OK', { duration: 4000 });
-        this.laden();
-      },
-    });
+    const bestaetigt: Observable<unknown> = freigeben
+      ? this.dialog
+          .open(BestaetigungsDialogComponent, { data: FREIGEBEN_FRAGE, autoFocus: 'dialog' })
+          .afterClosed()
+      : of(true);
+    bestaetigt
+      .pipe(
+        filter((ja) => {
+          if (ja !== true) this.entscheidet.delete(id);
+          return ja === true;
+        }),
+        switchMap(() => (freigeben ? this.service.freigeben(id) : this.service.ablehnen(id))),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.erledigt.add(id);
+          this.suchanfragen = (this.suchanfragen ?? []).filter((s) => s.statement_id !== id);
+          this.anzahlMelden();
+          this.entscheidet.delete(id);
+          this.snackBar.open(freigeben ? 'Freigegeben' : 'Abgelehnt', 'OK', { duration: 3000 });
+        },
+        error: (fehler) => {
+          this.entscheidet.delete(id);
+          const text =
+            fehler?.status === 404 || fehler?.status === 409
+              ? 'Die Suchanfrage gibt es so nicht mehr; die Liste wird aktualisiert'
+              : 'Die Entscheidung konnte nicht gespeichert werden';
+          this.snackBar.open(text, 'OK', { duration: 4000 });
+          this.laden();
+        },
+      });
   }
 
   personenText(personen: number): string {

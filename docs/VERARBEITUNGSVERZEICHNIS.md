@@ -85,6 +85,8 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   verschlüsselten Anmelde-Cookie; bei Konten aus Einladungen im Anmeldedienst E-Mail-Adresse und
   Passwort-Hash (DSE „Konto aus einer Einladung“); beim Beta-Zugang E-Mail-Adresse, Anzeigename und Prüfsumme des
   Passworts in einer Konfigurationsdatei; Anmelde-Cookie; an Einladungen nur Zähler und Notiz.
+  Im Browser bis zum Tabschluss, höchstens eine Stunde, ein angefangener Kommentar mit Prüfwert
+  des Kontos (DSE „Weitere Einträge“, E1).
   Schon das Konto kann eine politische Nähe erkennen lassen (Art. 9).
 - **Empfänger:** wie oben; der Anzeigename ist für andere Angemeldete sichtbar, nicht für
   Besucher.

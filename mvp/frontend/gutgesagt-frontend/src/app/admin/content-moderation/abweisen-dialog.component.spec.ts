@@ -71,6 +71,18 @@ describe('AbweisenDialogComponent', () => {
     expect(fixture.nativeElement.querySelector('textarea').getAttribute('maxlength')).toBe(String(c.maxLaenge));
   });
 
+  it('zeigt den Zähler erst nahe der Grenze, nicht „0 / 498“ (M3)', () => {
+    const fixture = erzeugen();
+    const c = fixture.componentInstance;
+    c.grund = 'Zulässige Meinungsäußerung';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.zaehler')).toBeNull();
+
+    c.satz = 'x'.repeat(c.maxLaenge - 100);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.zaehler').textContent.trim()).toBe(`${c.satz.length} / ${c.maxLaenge}`);
+  });
+
   it('lässt einen vorher getippten, zu langen Satz nach der Wahl des Grunds nicht durch', () => {
     const fixture = erzeugen();
     const c = fixture.componentInstance;

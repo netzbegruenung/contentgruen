@@ -182,7 +182,7 @@
         <td mat-cell *matCellDef="let report" data-label="Grund">
           <div class="reason-cell">
             <strong>{{ getReasonLabel(report.reason) }}</strong>
-            <p *ngIf="report.description" class="description">{{ report.description }}</p>
+            <p *ngIf="report.description" class="description" [title]="report.description">{{ report.description }}</p>
           </div>
         </td>
       </ng-container>
@@ -213,8 +213,9 @@
       <!-- Created Column -->
       <ng-container matColumnDef="created">
         <th mat-header-cell *matHeaderCellDef>Datum</th>
-        <td mat-cell *matCellDef="let report" data-label="Datum">
-          {{ formatDate(report.created) }}
+        <!-- Tag und Uhrzeit je ohne Umbruch: sonst brach es vor dem Komma um (Persona-Runde 2, M2) -->
+        <td mat-cell *matCellDef="let report" data-label="Datum" class="datum-zelle">
+          <ng-container *ngIf="datumTeile(report.created) as teile"><span class="datum-teil">{{ teile.tag }}</span>&ngsp;<span class="datum-teil">{{ teile.zeit }}</span></ng-container>
         </td>
       </ng-container>
 
@@ -241,6 +242,7 @@
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef>Aktionen</th>
         <td mat-cell *matCellDef="let report">
+          <!-- Abweisen mit Rand, gleich hoch wie Sperren: am Handy draengte das Gewicht zum Sperren (M7) -->
           <div class="action-buttons">
             <!-- Beim Nachladen nicht mehr offen: steht ausgegraut, bis die Liste neu geladen wird -->
             <span *ngIf="istErledigt(report)" class="status-badge status-erledigt">erledigt</span>
@@ -267,7 +269,7 @@
             <!-- Bei gesperrtem Beitrag statt Abweisen: die Meldung schließen (Mail „gesperrt“) -->
             <button
               *ngIf="report.status === 'pending' && istGesperrt(report)"
-              mat-button
+              mat-stroked-button
               class="meldung-schliessen"
               [disabled]="istErledigt(report)" disabledInteractive
               (click)="meldungSchliessen(report); $event.stopPropagation()"
@@ -278,7 +280,7 @@
             <!-- Kein Abweisen bei gesperrtem Beitrag: Dialog und Mail sagten sonst „bleibt sichtbar“ bzw. „kein Verstoß“ -->
             <button
               *ngIf="report.status === 'pending' && !istGesperrt(report)"
-              mat-button
+              mat-stroked-button
               [disabled]="istErledigt(report)" disabledInteractive
               (click)="dismissReport(report); $event.stopPropagation()"
               matTooltip="Meldung abweisen, Beitrag bleibt sichtbar">

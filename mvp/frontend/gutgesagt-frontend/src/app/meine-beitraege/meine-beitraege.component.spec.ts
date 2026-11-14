@@ -317,6 +317,8 @@ describe('MeineBeitraegeComponent', () => {
       expect(text('[data-testid=nutzung-leer]')).toContain('Noch hat niemand deine Beiträge genutzt.');
       expect(text('[data-testid=nutzung-leer]')).toContain('Genutzt heißt: Jemand hat einen davon kopiert oder geteilt.');
       expect(text('[data-testid=nutzung-leer]')).toContain('teil seinen Link');
+      // Nicht doppelt: „noch nicht genutzt“ steht nur in der Box (P52)
+      expect(fixture.nativeElement.querySelector('.album-statistik')).toBeNull();
     });
 
     it('zeigt die Erklaerung nicht, sobald etwas genutzt wurde oder die Statistik fehlt', async () => {
