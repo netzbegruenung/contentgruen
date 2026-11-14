@@ -130,13 +130,16 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
     willkommenErledigt();
     const sitzungVorher = sessionStorage.length;
     const cookiesVorher = document.cookie;
+    const schreiben = spyOn(Storage.prototype, 'setItem').and.callThrough();
     const service = besuch();
     navigiert('/search');
     expect(service.band()).toBe(HOME_ANGEBOT);
+    expect(schreiben).not.toHaveBeenCalled();
     expect(eigeneEintraege()).toEqual([]);
     expect(sessionStorage.length).toBe(sitzungVorher);
     expect(document.cookie).toBe(cookiesVorher);
     service.bandBeantworten(false);
+    expect(schreiben).toHaveBeenCalledOnceWith(HOME_HINWEIS_SCHLUESSEL, '1');
     expect(eigeneEintraege()).toEqual([HOME_HINWEIS_SCHLUESSEL]);
   });
 

@@ -98,11 +98,15 @@ describe('RundgangBandComponent', () => {
 
     beforeEach(() => {
       haupt = document.createElement('main');
+      haupt.id = 'hauptinhalt';
       document.body.appendChild(haupt);
       document.body.appendChild(fixture.nativeElement);
     });
 
-    afterEach(() => haupt.remove());
+    afterEach(() => {
+      haupt.remove();
+      (fixture.nativeElement as HTMLElement).remove();
+    });
 
     it('geht an den Hauptinhalt, nicht an den Seitenanfang', () => {
       band.set(MITMACHEN_ANGEBOT);
@@ -111,6 +115,17 @@ describe('RundgangBandComponent', () => {
       knopf('Nein danke').click();
       expect(document.activeElement).toBe(haupt);
       expect(haupt.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('auch beim Home-Hinweis mit eigenem Namen für Screenreader', () => {
+      fixture.componentRef.setInput('ort', 'start');
+      band.set(HOME_ANGEBOT);
+      fixture.detectChanges();
+      const aus = el().querySelector<HTMLButtonElement>('button[aria-label="Hinweis ausblenden"]')!;
+      aus.focus();
+      aus.click();
+      expect(rundgang.bandBeantworten).toHaveBeenCalledWith(false);
+      expect(document.activeElement).toBe(haupt);
     });
 
     it('lässt Knöpfe ohne eigenen Namen ohne aria-label', () => {

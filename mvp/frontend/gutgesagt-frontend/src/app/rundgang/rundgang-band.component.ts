@@ -60,7 +60,7 @@ export class RundgangBandComponent {
    */
   protected ausblenden(): void {
     this.rundgang.bandBeantworten(false);
-    const haupt = this.dokument.querySelector<HTMLElement>('main');
+    const haupt = this.dokument.getElementById('hauptinhalt'); // <main> in app.component.html
     if (!haupt) return;
     if (!haupt.hasAttribute('tabindex')) haupt.setAttribute('tabindex', '-1');
     haupt.focus({ preventScroll: true });

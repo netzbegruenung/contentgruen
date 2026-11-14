@@ -384,7 +384,7 @@ app-rundgang-band .rundgang-knopf.voll {
 }
 
 /* Fokusziel nach dem Ausblenden eines Bands (app-rundgang-band): kein Rahmen um die ganze Seite */
-main[tabindex='-1']:focus {
+#hauptinhalt[tabindex='-1']:focus {
     outline: none;
 }
 
