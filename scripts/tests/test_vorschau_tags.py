@@ -1,7 +1,7 @@
 """
 Linkvorschau in Messengern (Persona-Runde 2, P01): index.html traegt allgemeine og-Tags, sonst
-zeigt WhatsApp einen nackten Link. og:title gleicht dem <title>; og:description steht als
-Platzhalter TODO-E4, bis die Textentscheidung E4 gefallen ist.
+zeigt WhatsApp einen nackten Link. og:title gleicht dem <title>; die Beschreibung ist der
+freigegebene Text (E4, 14.11.2026); das Bild steht mit absoluter Adresse.
 """
 
 import pathlib
@@ -30,6 +30,15 @@ def test_og_title_gleicht_seitentitel():
     assert _meta()["og:title"] == titel
 
 
-def test_og_bild_liegt_im_public_ordner():
-    bild = _meta()["og:image"].lstrip("/")
-    assert (FRONTEND / "public" / bild).is_file()
+def test_beschreibung_freigegeben_und_gleich():
+    meta = _meta()
+    assert meta["og:description"] == "Gute Antworten gegen Stimmungsmache im Netz. Finden, kopieren, posten."
+    assert meta["twitter:description"] == meta["og:description"]
+    assert "TODO" not in INDEX.read_text(encoding="utf-8")
+
+
+def test_og_bild_absolut_und_im_public_ordner():
+    bild = _meta()["og:image"]
+    praefix = "https://gutgesagt.netzbegruenung.de/"
+    assert bild.startswith(praefix), "WhatsApp zeigt nur Bilder mit absoluter Adresse"
+    assert (FRONTEND / "public" / bild[len(praefix) :]).is_file()
