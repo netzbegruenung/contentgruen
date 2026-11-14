@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import uuid
-from typing import AbstractSet, Iterable, List
+from typing import AbstractSet, Iterable, List, Set
 
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
@@ -106,6 +106,16 @@ class IStatementRepository(
         (Vormoderation counter). Not abstract: only the Qdrant repository needs it.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    async def mit_kommentar(self, ids: Iterable[uuid.UUID]) -> Set[uuid.UUID]:
+        """
+        Those of the given statements that have a visible Kommentar among their
+        reply suggestions (the counterpart of ohne_kommentar for a few known
+        statements). Blocked or deleted Kommentare do not count as an answer.
+        Errors while reading are raised to the caller.
+        """
+        pass
 
     @abstractmethod
     async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:

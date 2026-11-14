@@ -41,12 +41,15 @@ def _aussage(statement_id, text, tag):
     )
 
 
-def _service(ohne_kommentar=(), gesucht=(), themen=None, freigegeben=()):
+def _service(ohne_kommentar=(), gesucht=(), themen=None):
     statement_service = Mock(spec=StatementService)
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
+    statement_service.mit_kommentar = AsyncMock(return_value=set())
     suchen = Mock(spec=SuchenOhneTrefferService)
-    suchen.haeufigste = AsyncMock(return_value=list(gesucht))
-    suchen.sichtbar_fuer_alle = AsyncMock(return_value=frozenset(freigegeben))
+    # Wie die Kennzahl: hoechstens ``limit`` Aussagen, die haeufigsten zuerst
+    suchen.haeufigste = AsyncMock(
+        side_effect=lambda wochen, limit, ohne_verborgene=False: list(gesucht)[:limit]
+    )
     themen_service = Mock(spec=AussageThemenService)
     themen_service.themen_von = Mock(
         side_effect=lambda ids: {
@@ -115,6 +118,67 @@ async def test_gesuchte_aussage_ohne_kommentar_erscheint_nur_einmal():
     liste = await service.liste()
 
     assert liste == [UnbeantworteteAussage(A, "Windräder sind hässlich", 2)]
+
+
+async def test_gesuchte_aussage_mit_kommentar_verschwindet():
+    """Wer geantwortet hat, sieht die Luecke zu; die Suchen ohne Treffer zaehlen weiter."""
+    service = _service(
+        gesucht=[
+            SucheOhneTreffer(A, "Das Bürgergeld ist höher als der Mindestlohn", 4, 2),
+            SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 3, 2),
+        ],
+    )
+    service._statement_service.mit_kommentar = AsyncMock(
+        side_effect=lambda ids: set(ids) & {A}
+    )
+
+    liste = await service.liste()
+
+    assert [a.statement_id for a in liste] == [B]
+    gefragt = service._statement_service.mit_kommentar.call_args.args[0]
+    assert set(gefragt) == {A, B}
+
+
+async def test_beantwortete_druecken_unbeantwortete_nicht_unter_die_grenze():
+    """Ohne Thema holt die Liste mehr als das Limit und filtert vor dem Kuerzen."""
+    service = _service(
+        gesucht=[SucheOhneTreffer(A, "a", 9, 5), SucheOhneTreffer(B, "b", 4, 2)],
+    )
+    service._statement_service.mit_kommentar = AsyncMock(return_value={A})
+
+    liste = await service.liste(limit=1)
+
+    assert [a.statement_id for a in liste] == [B]
+
+
+async def test_viele_beantwortete_hotspots_verdraengen_keine_unbeantworteten():
+    """Auch wenn weit mehr als das Limit schon beantwortet ist (Kennzahl waechst)."""
+    beantwortet = [uuid.uuid4() for _ in range(120)]
+    gesucht = [SucheOhneTreffer(i, "x", 200 - n, 2) for n, i in enumerate(beantwortet)]
+    gesucht.append(SucheOhneTreffer(B, "b", 3, 2))
+    service = _service(gesucht=gesucht)
+    service._statement_service.mit_kommentar = AsyncMock(
+        side_effect=lambda ids: set(ids) & set(beantwortet)
+    )
+
+    liste = await service.liste(limit=50)
+
+    assert [a.statement_id for a in liste] == [B]
+
+
+async def test_gescheiterte_kommentarpruefung_laesst_ungefiltert(caplog):
+    """Die Liste ist Beiwerk: ungefiltert statt gar nicht, mit Warnung."""
+    service = _service(gesucht=[SucheOhneTreffer(A, "a", 9, 5)])
+    service._statement_service.mit_kommentar = AsyncMock(
+        side_effect=RuntimeError("Qdrant weg")
+    )
+
+    with caplog.at_level("WARNING"):
+        liste = await service.liste()
+
+    assert [a.statement_id for a in liste] == [A]
+    warnungen = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert warnungen and "ungefiltert" in warnungen[-1].getMessage()
 
 
 async def test_liste_ist_begrenzt():
@@ -186,3 +250,18 @@ async def test_liste_laesst_verborgene_suchanfragen_vor_der_begrenzung_weg():
 
     aufruf = service._suchen_ohne_treffer.haeufigste.call_args.kwargs
     assert aufruf["ohne_verborgene"] is True
+
+
+async def test_ohne_themen_gleiche_auswahl_ohne_nachschlagen():
+    """Fuer "Seit deinem letzten Besuch" wird nur gezaehlt (Nutzerfuehrung 13.11.)."""
+    service = _service(
+        ohne_kommentar=[_aussage(A, "Windräder sind hässlich", 20)],
+        gesucht=[SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 7, 4)],
+        themen={A: ["natur-umwelt"]},
+    )
+
+    liste = await service.liste(mit_themen=False)
+
+    assert [a.statement_id for a in liste] == [B, A]
+    assert all(a.themen == () for a in liste)
+    service._themen.themen_von.assert_not_called()

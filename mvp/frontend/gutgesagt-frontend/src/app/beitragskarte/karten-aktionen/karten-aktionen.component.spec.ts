@@ -13,6 +13,7 @@ import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
+import { TEILEN_LINK_KOPIERT, TEILEN_NAVIGATOR, TeilenNavigator } from '../../shared/teilen.service';
 
 /**
  * Portiert aus commentary-result-item.component.voting.spec.ts; statt eines
@@ -27,6 +28,8 @@ describe('KartenAktionenComponent - Abstimmen', () => {
   let fixture: ComponentFixture<KartenAktionenComponent>;
   let votingService: jasmine.SpyObj<VotingService>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  /** Das Teilen-Menue des Geraets; ohne share wie am Desktop ohne Web Share API. */
+  let nav: TeilenNavigator;
 
   function stimmeAendern(stimme: 'like' | 'dislike' | undefined, vorher?: 'like' | 'dislike'): void {
     component.stimme = stimme;
@@ -46,6 +49,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     ]);
     usageTrackingSpy.gepostetAngeboten.and.returnValue(of(false));
     usageTrackingSpy.gepostetBekannt.and.returnValue(null);
+    nav = {};
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['getUserInfo', 'login']);
     authServiceSpy.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' });
 
@@ -60,6 +64,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         { provide: AuthService, useValue: authServiceSpy },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
         { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) },
+        { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -283,6 +288,18 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         duration: 5000,
       });
     }));
+
+    it('"Anmelden" in der Snackbar meldet mit Anlass Abstimmen an; die Stimme gibt die App nicht ab', fakeAsync(() => {
+      const authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      authService.getUserInfo.and.returnValue(null);
+      snackBar.open.and.returnValue({ onAction: () => of(undefined) } as any);
+
+      component.toggleLike();
+      tick(50);
+
+      expect(authService.login).toHaveBeenCalledWith('abstimmen');
+      expect(votingService.setLike).not.toHaveBeenCalled();
+    }));
   });
 
   describe('Dislike Functionality', () => {
@@ -455,7 +472,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(document.querySelector('.zweite-kopie')).toBeNull();
     });
 
-    it('zeigt die zweite Variante oben im ⋮-Menue, direkt nach "Link kopieren" (#641, #640)', () => {
+    it('zeigt die zweite Variante ganz oben im ⋮-Menue (#641; "Link kopieren" ist im Teilen aufgegangen)', () => {
       fixture.componentRef.setInput('zweiteKopie', { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' });
       fixture.detectChanges();
 
@@ -463,7 +480,8 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       fixture.detectChanges();
 
       const eintraege = Array.from(document.querySelectorAll('.mat-mdc-menu-item-text')).map((eintrag) => eintrag.textContent!.trim());
-      expect(eintraege.slice(0, 2)).toEqual(['Link kopieren', 'Mit Herkunft kopieren']);
+      expect(eintraege[0]).toBe('Mit Herkunft kopieren');
+      expect(eintraege).not.toContain('Link kopieren');
       expect(fixture.nativeElement.querySelectorAll('.kopieren button').length).toBe(1);
     });
 
@@ -511,7 +529,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – füll noch den Platzhalter in [ ] aus.', 'OK', { duration: 6000 });
     });
 
     it('oeffnet den Melde-Dialog mit ID und Typ', () => {
@@ -614,7 +632,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.kopieren();
 
-      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – füll noch die Lücke in [ ] aus.', 'OK', { duration: 6000 });
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – füll noch den Platzhalter in [ ] aus.', 'OK', { duration: 6000 });
       expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
     });
 
@@ -660,32 +678,152 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     });
   });
 
-  describe('Link kopieren (#640, R48)', () => {
-    function menueEintraege(): HTMLElement[] {
+  describe('Kurzwort am Kopieren-Knopf (Bild, Entscheidung 14.11.)', () => {
+    it('zeigt das Kurzwort am Handy, der Name bleibt das lange Wort', () => {
+      fixture.componentRef.setInput('kopierBeschriftung', 'Bildunterschrift kopieren');
+      fixture.componentRef.setInput('kopierKurz', 'Kopieren');
       fixture.detectChanges();
-      fixture.nativeElement.querySelector('.menue-knopf').click();
+
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.kopieren-knopf');
+      expect(knopf.classList).toContain('mit-kurzwort');
+      expect(knopf.getAttribute('aria-label')).toBe('Bildunterschrift kopieren');
+      expect(knopf.querySelector('.kopieren-wort--kurz')!.textContent!.trim()).toBe('Kopieren');
+      expect(knopf.querySelector('.kopieren-wort--lang')!.textContent!.trim()).toBe('Bildunterschrift kopieren');
+    });
+
+    it('setzt ohne Kurzwort keinen eigenen Namen', () => {
       fixture.detectChanges();
-      return Array.from(document.querySelectorAll<HTMLElement>('.mat-mdc-menu-panel .mat-mdc-menu-item'));
+
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.kopieren-knopf');
+      expect(knopf.classList).not.toContain('mit-kurzwort');
+      expect(knopf.hasAttribute('aria-label')).toBeFalse();
+      expect(knopf.querySelector('.kopieren-wort--kurz')).toBeNull();
+    });
+  });
+
+  describe('Teilen (B7)', () => {
+    const LINK = `${window.location.origin}/beitrag/${INHALT_ID}`;
+    let clipboard: jasmine.SpyObj<Clipboard>;
+    let usage: jasmine.SpyObj<UsageTrackingService>;
+
+    function knopf(): HTMLButtonElement {
+      fixture.detectChanges();
+      return fixture.nativeElement.querySelector('button.teilen-knopf');
     }
 
-    it('steht ganz oben im Menue und kopiert die Adresse des Beitrags, ohne als Nutzung zu zaehlen', () => {
-      const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
-      const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+    beforeEach(() => {
+      clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+      usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      fixture.componentRef.setInput('titel', 'Wärmepumpe lohnt sich auch im Altbau');
+    });
+
+    it('ist ein echter Knopf neben dem Menue, mit dem Titel im Namen', () => {
+      const teilen = knopf();
+      expect(teilen).not.toBeNull();
+      expect(teilen.getAttribute('aria-label')).toBe('Beitrag teilen: „Wärmepumpe lohnt sich auch im Altbau“');
+      expect(teilen.parentElement!.querySelector('.menue-knopf')).not.toBeNull();
+      // Der Kopieren-Knopf bleibt der Hauptknopf in der Mitte
+      expect(fixture.nativeElement.querySelector('.kopieren .kopieren-knopf')).not.toBeNull();
+    });
+
+    it('oeffnet das Teilen-Menue des Geraets mit Text und Link und zaehlt als Nutzung', async () => {
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+      const kopiert = jasmine.createSpy('kopiert');
+      component.kopiert.subscribe(kopiert);
+
+      await component.teilen();
+
+      expect(nav.share).toHaveBeenCalledWith({
+        url: LINK,
+        text: 'Test text',
+        title: 'Wärmepumpe lohnt sich auch im Altbau',
+      });
+      expect(clipboard.copy).not.toHaveBeenCalled();
+      expect(snackBar.open).not.toHaveBeenCalled();
+      expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, undefined);
+      expect(kopiert).toHaveBeenCalledTimes(1);
+    });
+
+    it('zaehlt die angezeigte Fassung eines Kommentars', async () => {
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+      fixture.componentRef.setInput('fassung', 'lang');
+
+      await component.teilen();
+
+      expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, 'lang');
+    });
+
+    it('kopiert ohne Teilen-Menue den Link, meldet das und zaehlt als Nutzung', async () => {
       clipboard.copy.and.returnValue(true);
 
-      const erster = menueEintraege()[0];
-      expect(erster.classList).toContain('link-kopieren');
-      erster.click();
+      knopf().click();
+      await fixture.whenStable();
 
-      expect(clipboard.copy).toHaveBeenCalledWith(`${window.location.origin}/beitrag/${INHALT_ID}`);
-      expect(snackBar.open).toHaveBeenCalledWith('Link kopiert.', undefined, { duration: 3000 });
+      expect(clipboard.copy).toHaveBeenCalledWith(LINK);
+      expect(snackBar.open).toHaveBeenCalledWith(TEILEN_LINK_KOPIERT, 'OK', { duration: 4000 });
+      expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, undefined);
+    });
+
+    it('bricht still ab: keine Meldung, keine Nutzung (AbortError)', async () => {
+      nav.share = jasmine.createSpy('share').and.rejectWith(new DOMException('abgebrochen', 'AbortError'));
+
+      await component.teilen();
+
+      expect(snackBar.open).not.toHaveBeenCalled();
+      expect(clipboard.copy).not.toHaveBeenCalled();
       expect(usage.trackContentUsage).not.toHaveBeenCalled();
     });
 
-    it('fehlt auf der Beitragsseite selbst', () => {
-      fixture.componentRef.setInput('ansichtVerlinkt', false);
+    it('faellt bei einem anderen Fehler des Teilen-Menues aufs Kopieren zurueck', async () => {
+      nav.share = jasmine.createSpy('share').and.rejectWith(new DOMException('nein', 'NotAllowedError'));
+      clipboard.copy.and.returnValue(true);
 
-      expect(menueEintraege().some((e) => e.classList.contains('link-kopieren'))).toBeFalse();
+      await component.teilen();
+
+      expect(clipboard.copy).toHaveBeenCalledWith(LINK);
+      expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
+    });
+
+    it('zaehlt nicht, wenn auch Kopieren scheitert', async () => {
+      clipboard.copy.and.returnValue(false);
+
+      await component.teilen();
+
+      expect(snackBar.open).toHaveBeenCalledWith(`Kopieren hat nicht geklappt. Der Link: ${LINK}`, 'OK', { duration: 15000 });
+      expect(usage.trackContentUsage).not.toHaveBeenCalled();
+    });
+
+    it('fehlt, wenn die Karte ihn nicht teilbar schaltet, und ohne Beitrag', () => {
+      fixture.componentRef.setInput('teilbar', false);
+      expect(knopf()).toBeNull();
+
+      fixture.componentRef.setInput('teilbar', true);
+      fixture.componentRef.setInput('inhaltId', '');
+      expect(knopf()).toBeNull();
+    });
+
+    it('hat keinen Tooltip neben dem Namen (sonst doppelte Ansage)', () => {
+      expect(knopf()).not.toBeNull();
+      expect(fixture.debugElement.query(By.css('.teilen-knopf')).injector.get(MatTooltip, null)).toBeNull();
+    });
+
+    it('tut in der Vorschau nichts', async () => {
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+      fixture.componentRef.setInput('vorschau', true);
+
+      expect(knopf().getAttribute('aria-disabled')).toBe('true');
+      await component.teilen();
+
+      expect(nav.share).not.toHaveBeenCalled();
+      expect(clipboard.copy).not.toHaveBeenCalled();
+    });
+
+    it('hat im Menue kein "Link kopieren" mehr', () => {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+
+      expect(document.querySelector('.mat-mdc-menu-panel .link-kopieren')).toBeNull();
     });
   });
 
@@ -771,7 +909,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       expect(getComputedStyle(leiste).pointerEvents).toBe('none');
       expect(Number(getComputedStyle(leiste).opacity)).toBeLessThan(1);
-      expect(knoepfe.length).toBe(4);
+      expect(knoepfe.length).toBe(5); // zwei Daumen, Kopieren, Teilen, Menue
       knoepfe.forEach((knopf) => {
         expect(knopf.getAttribute('aria-disabled')).toBe('true');
         expect(knopf.getAttribute('tabindex')).toBe('-1');

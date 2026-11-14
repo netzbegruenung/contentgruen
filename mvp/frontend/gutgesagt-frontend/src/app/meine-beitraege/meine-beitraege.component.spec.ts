@@ -265,14 +265,14 @@ describe('MeineBeitraegeComponent', () => {
     expect(erste.querySelector('.album-inhalt .karte-titel')!.textContent).toContain('Wärmepumpe lohnt sich auch im Altbau');
     expect(erste.querySelector('.album-anriss')!.textContent).toContain('Text der Hintergrundinfo');
     expect(erste.querySelector('.album-fuss .karte-datum')!.textContent!.trim()).toBe('13.09.2026');
-    expect(erste.querySelector('.album-fuss .badge-nutzung')!.textContent!.trim()).toBe('12×');
+    expect(erste.querySelector('.album-fuss .badge-nutzung')!.textContent!.trim()).toBe('12× genutzt');
     expect(erste.getAttribute('aria-label')).toBe('Hintergrundinfo: Wärmepumpe lohnt sich auch im Altbau');
   });
 
   it('zeigt die Statistik als eine Textzeile, ohne Hinweisbox und Kacheln', async () => {
     await erstellen([beitrag(), beitrag({ id: 'b2', usage_count: 3 })]);
 
-    expect(text('.album-statistik')).toBe('2 Beiträge · 15× genutzt');
+    expect(text('.album-statistik')).toBe('Deine 2 Beiträge wurden 15-mal genutzt.');
     expect(fixture.nativeElement.querySelector('.info-message')).toBeNull();
     expect(fixture.nativeElement.querySelector('.stat-card')).toBeNull();
   });
@@ -280,7 +280,7 @@ describe('MeineBeitraegeComponent', () => {
   it('schreibt einen Beitrag im Singular und nimmt die Gesamtnutzung, wenn es sie gibt', async () => {
     await erstellen([beitrag()]);
 
-    expect(text('.album-statistik')).toBe('1 Beitrag · 12× genutzt');
+    expect(text('.album-statistik')).toBe('Dein Beitrag wurde 12-mal genutzt.');
 
     fixture.componentInstance.nutzungsstatistik = {
       user_id: 'person-1',
@@ -289,7 +289,8 @@ describe('MeineBeitraegeComponent', () => {
       top_content: [],
     };
     fixture.componentInstance.totalRecords = 25;
-    expect(fixture.componentInstance.statistik).toBe('25 Beiträge · 40× genutzt');
+    // Nicht alle Beitraege geladen: keine Zahl fuer die Woche
+    expect(fixture.componentInstance.statistik).toBe('Deine 25 Beiträge wurden 40-mal genutzt.');
   });
 
   describe('Nutzungsstatistik', () => {
@@ -301,7 +302,7 @@ describe('MeineBeitraegeComponent', () => {
 
       await erstellen([beitrag()]);
 
-      expect(text('.album-statistik')).toBe('1 Beitrag · 40× genutzt');
+      expect(text('.album-statistik')).toBe('Dein Beitrag wurde 40-mal genutzt.');
     });
 
     it('faellt ohne Nutzungsstatistik auf die Summe der Seite zurueck', async () => {
@@ -309,7 +310,52 @@ describe('MeineBeitraegeComponent', () => {
 
       await erstellen([beitrag()]);
 
-      expect(text('.album-statistik')).toBe('1 Beitrag · 12× genutzt');
+      expect(text('.album-statistik')).toBe('Dein Beitrag wurde 12-mal genutzt.');
+    });
+  });
+
+  describe('Wirkung zuerst (Nutzerfuehrung 13.11.)', () => {
+    it('nennt die Nutzung dieser Woche und erklaert, was genutzt heisst', async () => {
+      await erstellen([
+        beitrag({ usage_count: 5, nutzung_letzte_7_tage: 2 }),
+        beitrag({ id: 'b2', usage_count: 3, nutzung_letzte_7_tage: 1 }),
+      ]);
+
+      expect(text('.album-statistik')).toBe('Deine 2 Beiträge wurden 8-mal genutzt, 3 davon diese Woche.');
+      expect(text('.nutzung-erklaerung')).toBe('Genutzt heißt: Jemand hat den Beitrag kopiert oder geteilt.');
+    });
+
+    it('zeigt ohne Nutzung keine Erklaerung', async () => {
+      await erstellen([beitrag({ usage_count: 0 })]);
+
+      expect(text('.album-statistik')).toBe('Dein Beitrag wurde noch nicht genutzt.');
+      expect(fixture.nativeElement.querySelector('.nutzung-erklaerung')).toBeNull();
+    });
+
+    it('sortiert die Beitraege nach Nutzung, bei Gleichstand wie der Server', async () => {
+      await erstellen([
+        beitrag({ id: 'a', title: 'Neu und ungenutzt', usage_count: 0 }),
+        beitrag({ id: 'b', title: 'Viel genutzt', usage_count: 9 }),
+        beitrag({ id: 'c', title: 'Etwas genutzt', usage_count: 2 }),
+        beitrag({ id: 'd', title: 'Auch ungenutzt', usage_count: 0 }),
+      ]);
+
+      expect(karten().map((karte) => karte.querySelector('.karte-titel')!.textContent!.trim())).toEqual([
+        'Viel genutzt',
+        'Etwas genutzt',
+        'Neu und ungenutzt',
+        'Auch ungenutzt',
+      ]);
+    });
+
+    it('stellt Satz und Beitraege vor Punkte und Meilensteine', async () => {
+      await erstellen([beitrag()]);
+      const bereich = fixture.nativeElement.querySelector('#meine-bereich-beitraege') as HTMLElement;
+      const reihenfolge = Array.from(bereich.querySelectorAll('.album-statistik, app-kartenliste, app-punkte, app-meilensteine')).map(
+        (el) => (el as HTMLElement).tagName.toLowerCase() === 'p' ? 'satz' : (el as HTMLElement).tagName.toLowerCase(),
+      );
+
+      expect(reihenfolge).toEqual(['satz', 'app-kartenliste', 'app-punkte', 'app-meilensteine']);
     });
   });
 
@@ -389,7 +435,7 @@ describe('MeineBeitraegeComponent', () => {
     expect(laden).toHaveBeenCalledTimes(2);
     expect(laden.calls.mostRecent().args).toEqual([1, 24]);
     expect(karten().length).toBe(1);
-    expect(text('.album-statistik')).toContain('1 Beitrag');
+    expect(text('.album-statistik')).toContain('Dein Beitrag');
   });
 
   it('springt eine Seite zurück, wenn der letzte Beitrag einer Seite gelöscht ist', async () => {
