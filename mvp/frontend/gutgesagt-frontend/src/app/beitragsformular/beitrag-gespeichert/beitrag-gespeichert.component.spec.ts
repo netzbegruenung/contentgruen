@@ -32,6 +32,7 @@ import { KartenDaten } from '../../beitragskarte/karten-daten';
 class KarteMitKurzFassungStub extends BeitragskarteStubComponent {
   @Input() override daten?: KartenDaten;
   readonly kopierText = 'Kurz gesagt';
+  readonly titelAnzeige = 'Titel wie angezeigt';
 }
 
 describe('BeitragGespeichertComponent', () => {
@@ -387,7 +388,7 @@ describe('BeitragGespeichertComponent', () => {
 
       await fixture.componentInstance.teilen();
 
-      expect(nav.share).toHaveBeenCalledOnceWith(jasmine.objectContaining({ text: 'Kurz gesagt' }));
+      expect(nav.share).toHaveBeenCalledOnceWith(jasmine.objectContaining({ text: 'Kurz gesagt', title: 'Titel wie angezeigt' }));
     });
 
     it('kopiert ohne Teilen-Menue die eigene Adresse und sagt es', async () => {

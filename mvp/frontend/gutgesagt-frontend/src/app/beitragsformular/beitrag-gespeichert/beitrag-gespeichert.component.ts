@@ -264,7 +264,7 @@ export class BeitragGespeichertComponent implements OnInit {
     await this.teilenService.teilen({
       url: beitragLink(this.beitragId),
       text: this.karteAnsicht?.kopierText || this.karte?.text || undefined,
-      titel: this.karte?.titel ?? undefined,
+      titel: this.karteAnsicht?.titelAnzeige?.trim() || this.karte?.titel || undefined,
     });
   }
 
