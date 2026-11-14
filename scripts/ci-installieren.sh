@@ -1,7 +1,9 @@
 #!/bin/sh
-# Vorbereitung der CI-Schritte python-installieren und frontend-installieren (.woodpecker/ci.yaml).
+# Vorbereitung der CI-Schritte python-installieren und frontend-installieren (.woodpecker/ci.yaml),
+# mit --nachpruefen auch der Schritte danach.
 # Die CI-Images (Dockerfile.ci) bringen die Pakete schon mit, dazu unter /opt/ci die
-# Pruefsumme der Dateien, aus denen sie installiert wurden. Stimmt sie mit dem Checkout
+# Pruefsumme der Dateien, aus denen sie gebaut wurden: Dockerfile.ci selbst (Basis-Image,
+# Python- und Node-Version) und die Lockfiles. Stimmt sie mit dem Checkout
 # ueberein, wird nur verknuepft; sonst (ein PR aendert requirements.txt oder package-lock.json,
 # das Image ist alt, oder der Schritt laeuft im blanken python- bzw. node-Image) installiert
 # der Schritt wie bisher. Kein PR wird rot, weil ein Image nicht passt (docs/CI.md, "CI images").
@@ -11,8 +13,8 @@
 # frontend: node_modules des Frontends als Verweis auf /opt/ci/node_modules, sonst npm ci
 #           (--prefer-offline: aus dem npm-Cache des Images, was dort schon liegt).
 # --pruefsumme python|frontend gibt die Pruefsumme aus; Dockerfile.ci schreibt sie so ins Image.
-# --nachpruefen python|frontend: fuer spaetere Schritte (unit, integration, frontend-build,
-#           frontend). Jeder Schritt zieht :latest selbst; wurde dazwischen ein neues Image
+# --nachpruefen python|frontend: fuer spaetere Schritte (unit, lint, integration,
+#           frontend-build, frontend). Jeder Schritt zieht :latest selbst; wurde dazwischen ein neues Image
 #           gepusht, passt es vielleicht nicht mehr. Dann pip nachinstallieren bzw. den Verweis
 #           durch npm ci ersetzen. Passt es, kostet das nur die Pruefsumme. Nur in Schritten,
 #           die nie zugleich laufen (die Kette der schweren Schritte), sonst schrieben zwei
@@ -25,8 +27,10 @@ CI_DIR=${CI_IMAGE_DIR:-/opt/ci}
 
 dateien() {
   case "$1" in
-    python) echo "$PY/requirements.txt" ;;
-    frontend) echo "$FE/package.json $FE/package-lock.json" ;;
+    # Dockerfile.ci zuerst: Hebt ein PR die Python- oder Node-Version, passt das alte Image
+    # nicht mehr, auch wenn die Lockfiles gleich bleiben.
+    python) echo "$ROOT/Dockerfile.ci $PY/requirements.txt" ;;
+    frontend) echo "$ROOT/Dockerfile.ci $FE/package.json $FE/package-lock.json" ;;
     *) echo "Unbekannt: $1 (python oder frontend)" >&2; exit 2 ;;
   esac
 }

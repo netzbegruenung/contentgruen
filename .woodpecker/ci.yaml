@@ -5,10 +5,10 @@
 # Jeder Schritt ruft check.sh mit --schritt auf, die Befehle stehen also nur dort.
 # Status ci/woodpecker/pr/ci ist Pflicht fuer main. Ist ein PR-Lauf rot, schreibt
 # ci-bericht die roten Schritte in den PR (docs/CI.md).
-# Images: dieselben wie in den Dockerfiles und docker-compose.dev.yml;
-# scripts/tests/test_woodpecker_ci.py haelt beide Stellen gleich. Installations- und schwere
-# Schritte laufen in den CI-Images (Dockerfile.ci, ci-image.yaml), die auf denselben Images
-# aufbauen; passt ein Image nicht zum Checkout, installiert der Schritt wie ohne.
+# Images: dieselben wie in den Dockerfiles und docker-compose.dev.yml (retired-words, bff,
+# ci-bericht; die CI-Images bauen auf denselben auf); scripts/tests/test_woodpecker_ci.py haelt
+# die Stellen gleich. Die uebrigen Schritte laufen in den CI-Images (Dockerfile.ci,
+# ci-image.yaml); passt ein Image nicht zum Checkout, installiert der Schritt wie ohne.
 # Kein Pfadfilter hier: ein uebersprungener Workflow meldet keinen Status. Pfadfilter nur je
 # Schritt und nur fuer pull_request (geaenderte Dateien des PRs gegen die Basis): ein Schritt
 # faellt nur weg, wenn ALLE geaenderten Dateien in Bereichen liegen, die er nicht liest
@@ -87,10 +87,12 @@ steps:
     commands:
       - sh scripts/ci-protokoll.sh frontend-installieren sh scripts/ci-installieren.sh frontend
 
+  # Nach unit, nie zugleich: Beide pruefen das Image nach und schrieben sonst zugleich in den
+  # venv (scripts/ci-installieren.sh --nachpruefen). Leicht, laeuft neben frontend-build.
   - name: lint
     image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python:latest
     pull: true
-    depends_on: [python-installieren]
+    depends_on: [python-installieren, unit]
     when:
       # Nicht, wenn sich nur Frontend und BFF aendern; Ruff und Black lesen nur app/
       - event: pull_request
@@ -100,8 +102,11 @@ steps:
             - mvp/backend/BFF/**
             - mvp/backend/BFF.Tests/**
             - mvp/backend/GutGesagt.sln
+        status: [success, failure]
       - event: [push, tag, manual]
+        status: [success, failure]
     commands:
+      - sh scripts/ci-protokoll.sh lint sh scripts/ci-installieren.sh --nachpruefen python
       - sh scripts/ci-protokoll.sh lint bash scripts/check.sh --schritt lint
 
   - name: bff
@@ -193,9 +198,12 @@ steps:
     image: git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python:latest
     pull: true
     # frontend optional: faellt es per Pfadfilter weg, wartet integration auf unit
+    # lint optional: nie zugleich mit integration im venv
     depends_on:
       - python-installieren
       - unit
+      - name: lint
+        optional: true
       - name: frontend
         optional: true
     # Nicht bei pull_request (Entscheidung @BanSe 14.11.): push laeuft nur auf main (when des

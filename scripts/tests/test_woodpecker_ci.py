@@ -89,6 +89,12 @@ def test_schritt_nutzt_das_image_aus_dem_dockerfile(schritt, quelle):
     assert SCHRITTE[schritt].get("pull", False) is (quelle in (CI_PYTHON, CI_NODE))
 
 
+def test_jeder_schritt_im_ci_image_zieht_neu():
+    for name, s in SCHRITTE.items():
+        if "gutgesagt-ci-" in s["image"]:
+            assert s.get("pull") is True, name
+
+
 @pytest.mark.parametrize(
     "quelle",
     [
@@ -427,7 +433,7 @@ def test_integration_nie_im_pull_request(dateien):
 @pytest.mark.parametrize("event", ["push", "tag", "manual"])
 def test_integration_auf_main_mit_der_ganzen_kette(event):
     lauf = schritte_im_lauf(event, [])
-    assert set(lauf["integration"]) == {"python-installieren", "unit", "frontend"}
+    assert set(lauf["integration"]) == {"python-installieren", "unit", "lint", "frontend"}
 
 
 def test_dienste_nur_wenn_integration_laeuft():
@@ -470,10 +476,22 @@ def test_schwere_schritte_laufen_in_jeder_auswahl_nacheinander(dateien):
     for name, vorbereitung in VORBEREITUNG.items():
         if name in lauf:
             assert vorbereitung in vorfahren(lauf, name), name
-    # Leichte Schritte warten nie auf die Kette.
+    # Leichte Schritte warten nie auf die Kette; nur lint wartet auf unit (gemeinsamer venv).
     for name in lauf:
-        if name not in SCHWER and name != BERICHT:
+        if name not in SCHWER and name not in (BERICHT, "lint"):
             assert not vorfahren(lauf, name) & set(SCHWER), name
+
+
+@pytest.mark.parametrize("dateien", [d for d, _ in PR_LAEUFE])
+def test_nie_zwei_schritte_zugleich_im_venv(dateien):
+    # unit, lint und integration pruefen das Image nach und koennen dabei in den venv
+    # schreiben: Sie laufen in jedem Lauf nacheinander.
+    for event in ("pull_request", "push"):
+        lauf = schritte_im_lauf(event, dateien)
+        venv = [n for n in ("unit", "lint", "integration") if n in lauf]
+        for i, a in enumerate(venv):
+            for b in venv[i + 1 :]:
+                assert a in vorfahren(lauf, b), (event, a, b)
 
 
 def test_kette_laeuft_nach_rotem_vorgaenger_weiter():
@@ -679,6 +697,7 @@ def _baum(tmp_path):
     (py / "requirements.txt").write_text("ruff==1\n")
     (fe / "package.json").write_text("{}\n")
     (fe / "package-lock.json").write_text("{}\n")
+    (tmp_path / "Dockerfile.ci").write_text("FROM python:3.13-slim AS ci-python\n")
     bin_ = tmp_path / "bin"
     bin_.mkdir()
     protokoll = tmp_path / "protokoll"
@@ -764,6 +783,7 @@ def test_schwere_schritte_pruefen_das_image_ihres_schritts_nach():
     # ab. Nur die Kette der schweren Schritte: lint liefe zugleich mit unit im selben venv.
     erwartet = {
         "unit": "python",
+        "lint": "python",
         "integration": "python",
         "frontend-build": "frontend",
         "frontend": "frontend",
@@ -808,3 +828,32 @@ def test_nachpruefen_laesst_ein_echtes_node_modules_stehen(tmp_path):
     (image / "frontend.sha256").write_text("anderes\n")
     _lauf(skript, image, "--nachpruefen", "frontend")
     assert not protokoll.exists()
+
+
+@pytest.mark.parametrize("art", ["python", "frontend"])
+def test_neue_basis_im_dockerfile_aendert_die_pruefsumme(tmp_path, art):
+    # Hebt ein PR die Python- oder Node-Version, passt das alte Image nicht mehr, auch
+    # bei gleichen Lockfiles: sonst liefe der PR noch in der alten Version.
+    skript, image, _, _ = _baum(tmp_path)
+    vorher = _lauf(skript, image, "--pruefsumme", art)
+    (tmp_path / "Dockerfile.ci").write_text("FROM python:3.14-slim AS ci-python\n")
+    assert _lauf(skript, image, "--pruefsumme", art) != vorher
+
+
+def test_nachpruefen_ohne_pruefsumme_im_image_installiert(tmp_path):
+    # Blankes Image oder Image ohne /opt/ci: pip prueft nach
+    skript, image, protokoll, _ = _baum(tmp_path)
+    _lauf(skript, image, "python")
+    _lauf(skript, image, "--nachpruefen", "python")
+    befehle = protokoll.read_text().splitlines()
+    assert [b.split()[0] for b in befehle] == ["python", "pip", "pip"]
+
+
+@pytest.mark.parametrize("argumente", [["--nachpruefen"], ["--nachpruefen", "java"]])
+def test_nachpruefen_unbekannte_art(tmp_path, argumente):
+    import subprocess
+
+    skript, image, _, _ = _baum(tmp_path)
+    with pytest.raises(subprocess.CalledProcessError) as fehler:
+        _lauf(skript, image, *argumente)
+    assert fehler.value.returncode == 2

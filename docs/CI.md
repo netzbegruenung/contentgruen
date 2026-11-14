@@ -74,8 +74,11 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 
 **Staggered steps.** The runner is shared with the other pipelines of the Woodpecker
 instance. With the heavy steps side by side, on 13.11. its memory ran out and many pipelines
-were cancelled together. So the four heavy steps (three in pull requests, without `integration`) run one after the other, never two at once, in one chain of `depends_on`;
-the light ones (`retired-words`, `lint`, `bff` and the two installations) run alongside.
+were cancelled together. So the four heavy steps (three in pull requests, without
+`integration`) run one after the other, never two at once, in one chain of `depends_on`;
+the light ones (`retired-words`, `bff` and the two installations) run alongside, and `lint`
+after `unit`, next to `frontend-build` (both may write to the venv, see
+[CI images](#ci-images)).
 The chain goes shortest first, so a quick failure shows early: `unit` (about half a minute),
 `frontend-build`, `frontend` (Chromium and Karma), `integration` (loads the embedding model,
 the longest). Each of the four also runs when the run is already red
@@ -172,28 +175,31 @@ registry and secrets as `build.yaml`:
 | `gutgesagt-ci-python` | `python:3.13-slim` | the packages of `requirements.txt` system-wide; the models `intfloat/multilingual-e5-base` and `MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7` under `HF_HOME=/opt/ci/huggingface` | `python-installieren`, `lint`, `unit`, `integration` |
 | `gutgesagt-ci-node` | `node:22` (same digest) | Chromium with the wrapper of `scripts/ci-chromium.sh`; `node_modules` from `package-lock.json` under `/opt/ci/node_modules`; the npm cache | `frontend-installieren`, `frontend-build`, `frontend` |
 
-Tags: `latest` and the first 12 characters of the checksum of the files the packages come
-from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `requirements.txt`, or
-`package.json` and `package-lock.json`). Measured locally on 13.11.: about 1.9 GB (Python)
+Tags: `latest` and the first 12 characters of the checksum of the files the image is built
+from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `Dockerfile.ci` with
+`requirements.txt`, or with `package.json` and `package-lock.json`). `Dockerfile.ci` is part
+of it so that a pull request raising the Python or Node version does not run on the old
+image with matching lockfiles. Measured locally on 13.11.: about 1.9 GB (Python)
 and 0.8 GB (Node) compressed in the registry; the Node image shares its base layers with
 `node:22`.
 
 - **Every run checks the image**, in the installation step and again at the start of
-  `unit`, `integration`, `frontend-build` and `frontend` (`--nachpruefen`): each step pulls
-  `:latest` itself, and an image pushed in between could no longer match. Then pip
-  installs what is missing into the venv, or `npm ci` replaces the link. `lint` does not
-  check again; it runs next to `unit` in the same venv. The image keeps the checksum under `/opt/ci/`.
+  `unit`, `lint`, `integration`, `frontend-build` and `frontend` (`--nachpruefen`): each step
+  pulls `:latest` itself, and an image pushed in between could no longer match. Then pip
+  installs what is missing into the venv, or `npm ci` replaces the link. The steps that may
+  write to the venv (`unit`, `lint`, `integration`) and to `node_modules` (`frontend-build`,
+  `frontend`) never run at the same time. The image keeps the checksum under `/opt/ci/`.
   `scripts/ci-installieren.sh` compares it with the checkout. If it matches, the venv is
   created with `--system-site-packages` and pip does nothing (2 s instead of about 85 s
   locally, about 2 min in CI), and `node_modules` becomes a link to `/opt/ci/node_modules`.
-  If it does not match (a pull request changes `requirements.txt` or `package-lock.json`, or
-  the image is behind), the step installs as without an image: pip only installs what differs
+  If it does not match (a pull request changes `Dockerfile.ci`, `requirements.txt` or
+  `package-lock.json`, or the image is behind), the step installs as without an image: pip only installs what differs
   from the packages in the image (13 s locally for one changed pin), `npm ci --prefer-offline`
   takes what it can from the npm cache of the image. Known price: a package that the pull
   request removes from `requirements.txt` is still importable from the image until it is
-  rebuilt; the service image would then fail on the import, the CI not. In the plain `python:3.13-slim` and
-  `node:22` images there is no checksum and everything is installed. No pull request turns
-  red because the image is old.
+  rebuilt; the service image would then fail on the import, the CI not. Without a checksum
+  in the image (a plain `python:3.13-slim` or `node:22`) everything is installed. No pull
+  request turns red because the image is old.
 - **Models without offline mode.** Unlike the service image, the CI image does not set
   `HF_HUB_OFFLINE`: if a pull request switches to a model the image does not have, the
   run downloads it as before. The confirmer (`NLI_BESTAETIGER_MODELL`, 2.2 GB) is left out;
@@ -216,8 +222,8 @@ and 0.8 GB (Node) compressed in the registry; the Node image shares its base lay
   `netzbegruenung-images`, so the pipeline pulls them without a login.
 - `ci.yaml` names `gutgesagt-ci-python:latest` and `gutgesagt-ci-node:latest` with
   `pull: true` (`:latest` moves with every build); `retired-words` and `ci-bericht` stay on
-  the plain images, they need neither packages nor models. A missing image is the one case
-  the checksum cannot catch: a step with an image that is not in the registry cannot start.
+  the plain images, they need neither packages nor models. A missing image is what the
+  checksum cannot catch: a step with an image that is not in the registry cannot start.
   So the images must never be deleted from the registry; if they are, the cron job
   `ci-image` with "Run now" rebuilds them.
 
