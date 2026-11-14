@@ -61,8 +61,9 @@ nur wenig:
   container). While working and before a push: `--geaendert` (only the steps the changes since
   `origin/main` reach, integration tests included when reached) or `--schritt <name>`; single
   frontend specs with `--include <pfad>` (implies `--schritt frontend`, not combinable with
-  `--geaendert`). The full run is the job of Woodpecker, which runs every step on every PR
-  (`docs/CI.md`); locally only when CI is red and you need the full output.
+  `--geaendert`). The full run is the job of Woodpecker, which runs every step on every PR except
+  the integration tests, which run on `main` only (`docs/CI.md`); locally only when CI is red
+  and you need the full output.
 - Pre-commit hooks format Python (Black) and run the backend unit tests; a commit can fail once
   after reformatting and pass on the second try. Commit again; `--no-verify` only in emergencies.
 - Replaced names are listed in `scripts/retired-words.txt`; check and pre-commit reject them in

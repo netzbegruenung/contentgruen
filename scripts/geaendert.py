@@ -3,7 +3,7 @@
 Aufruf: python3 scripts/geaendert.py [--base <ref>]   (aus scripts/check.sh --geaendert)
 Gruende gehen nach stderr, fuer check.sh nach stdout eine Zeile ``schritte <name> ...`` und je
 Frontend-Spec eine Zeile ``spec <pfad>`` (relativ zum Frontend); ohne spec-Zeilen laufen alle.
-Im Zweifel laeuft mehr, nicht weniger. Nur fuer lokale Zwischenpruefungen, die CI prueft alles.
+Im Zweifel laeuft mehr, nicht weniger. Nur fuer lokale Zwischenpruefungen, die CI prueft alles (die Integrationstests auf main).
 """
 
 import argparse
