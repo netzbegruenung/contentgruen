@@ -262,8 +262,8 @@ describe('SiegelComponent', () => {
   });
 
   it('teilt die Zeichnung mit dem Logo, das als Datei ausgeliefert wird', async () => {
-    const antwort = await fetch('/marke/logo.svg');
-    expect(antwort.ok).withContext('logo.svg ausgeliefert').toBeTrue();
+    const antwort = await fetch('/marke/logo-v2.svg');
+    expect(antwort.ok).withContext('logo-v2.svg ausgeliefert').toBeTrue();
     const logo = await antwort.text();
 
     expect(logo).toContain(`d="${HAND}"`);
@@ -278,9 +278,9 @@ describe('SiegelComponent', () => {
   });
 
   it('gibt dem Logo eine weiße Kontur, damit es auch auf tannengrünem Grund lesbar ist', async () => {
-    const logo = await (await fetch('/marke/logo.svg')).text();
+    const logo = await (await fetch('/marke/logo-v2.svg')).text();
     const dokument = new DOMParser().parseFromString(logo, 'image/svg+xml');
-    expect(dokument.querySelector('parsererror')).withContext('logo.svg ist wohlgeformtes XML').toBeNull();
+    expect(dokument.querySelector('parsererror')).withContext('logo-v2.svg ist wohlgeformtes XML').toBeNull();
     const kontur = dokument.querySelector('g.kontur');
 
     expect(kontur).withContext('Gruppe .kontur im Logo').not.toBeNull();

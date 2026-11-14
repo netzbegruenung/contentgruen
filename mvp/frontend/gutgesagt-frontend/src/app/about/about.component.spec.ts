@@ -44,7 +44,7 @@ describe('AboutComponent', () => {
   });
 
   it('zeigt das Logo im neuen Auftritt', () => {
-    expect(seite.querySelector('.hero-section img')!.getAttribute('src')).toBe('marke/logo.svg');
+    expect(seite.querySelector('.hero-section img')!.getAttribute('src')).toBe('marke/logo-v2.svg');
   });
 
   it('richtet die Antworten an die Mitlesenden', () => {

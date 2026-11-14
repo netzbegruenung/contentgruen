@@ -3,7 +3,7 @@
  * Blase“): Winkel der Hand, Farbe und Text für Screenreader. Die Zeichnung selbst, eine
  * eckige Sprechblase unten links, aus der die Hand oben rechts ragt, steht in
  * `siegel.component.html`, die Hand in `shared/marke/hand.ts`. Das Logo
- * `public/marke/logo.svg` und die Favicons sind dieselbe Zeichnung bei Güte 10; wer die
+ * `public/marke/logo-v2.svg` und die Favicons sind dieselbe Zeichnung bei Güte 10; wer die
  * Blase oder die Hand ändert, ändert sie mit (der Test in `siegel.component.spec.ts`
  * passt darauf auf). Glanz und Krone sind eigene Abzeichen und hängen nicht an der Güte.
  */

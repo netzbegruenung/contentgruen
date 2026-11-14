@@ -61,7 +61,7 @@ describe('MobileHeaderComponent', () => {
     expect(link.getAttribute('aria-label')).toBe('Startseite');
     expect(link.getAttribute('href')).toBe('/');
     const logo = link.querySelector('img.kopf-logo') as HTMLImageElement;
-    expect(logo.getAttribute('src')).toBe('marke/logo.svg');
+    expect(logo.getAttribute('src')).toBe('marke/logo-v2.svg');
     expect(logo.getAttribute('alt')).toBe('');
   }));
 
