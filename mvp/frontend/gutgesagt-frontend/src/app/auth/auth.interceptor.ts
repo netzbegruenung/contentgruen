@@ -6,7 +6,8 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PublicEndpoints } from '../shared/public-endpoints';
-import { einwilligungFehlt, zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
+import { einwilligungFehlt, ohneEinwilligungsUmleitung, zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 export const EINWILLIGUNG_FEHLT_HINWEIS = 'Zum Beitragen und Bewerten brauchst du deine Einwilligung.';
 const HINWEIS_DAUER_MS = 10000;
@@ -14,6 +15,7 @@ const HINWEIS_DAUER_MS = 10000;
 export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
   const router = inject(Router);  // Inject Router for navigation
   const snackBar = inject(MatSnackBar);
+  const einwilligungZustand = inject(Art9EinwilligungZustand);
 
   const modifiedRequest = req.clone({
     withCredentials: true,  // Ensures cookies are included also cross-origin
@@ -34,7 +36,18 @@ export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
       // der auf Wunsch zur Einwilligung fuehrt und danach zurueck an diese Stelle.
       // Erst nach dem Fehlerzweig des Aufrufers: Oeffnet der selbst einen Hinweis,
       // ersetzte der sonst diesen, und der Knopf waere weg.
+      // Hat die Seite einen eigenen Hinweiskasten (Formulare, B4), zeigt der den
+      // Hinweis; ein zweiter als Snackbar waere doppelt. In den Blick holen ihn die
+      // Formulare selbst, nur bei einer Aktion der Person, nie beim Speichern im
+      // Hintergrund (Review zu #670).
+      // Auf /einwilligung selbst (und was sie verlinkt) keine Snackbar: Ein spaeter 403,
+      // etwa der Satz beim Verlassen von Destillieren, laege sonst ueber ihren Knoepfen,
+      // und sein "Einwilligen" fuehrte nirgendwohin (Review zu #670).
+      const einwilligungHier = einwilligungFehlt(error) && ohneEinwilligungsUmleitung(router.url ?? '/');
       if (einwilligungFehlt(error)) {
+        einwilligungZustand.setzen('fehlt');
+      }
+      if (einwilligungFehlt(error) && !einwilligungZustand.hinweisDa && !einwilligungHier) {
         setTimeout(() =>
           snackBar
             .open(EINWILLIGUNG_FEHLT_HINWEIS, 'Einwilligen', { duration: HINWEIS_DAUER_MS })

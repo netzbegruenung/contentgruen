@@ -113,6 +113,17 @@ describe('NichtDabeiComponent', () => {
     expect(gemeldet).toEqual([1]);
   });
 
+  it('meldet dieselben aehnlichen Aussagen auch als Liste, fuer das Kopfband der Ergebnisseite', () => {
+    starten();
+    const komponente = fixture.debugElement.children[0].componentInstance as NichtDabeiComponent;
+    const gemeldet: string[][] = [];
+    komponente.aehnlicheGeladen.subscribe((liste) => gemeldet.push(liste.map((a) => a.id)));
+    fixture.componentInstance.bekannt = ['a-1'];
+    fixture.detectChanges();
+    expect(gemeldet).toEqual([komponente.aehnliche.map((a) => a.id)]);
+    expect(gemeldet[0]).not.toContain('a-1');
+  });
+
   it('fragt bei zu kurzem Suchtext nicht nach', () => {
     const seite = starten();
     statementService.aehnlicheAussagen.calls.reset();

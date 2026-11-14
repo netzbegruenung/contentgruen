@@ -1,20 +1,33 @@
-<section *ngIf="verfuegbar" class="gegenlesen" aria-labelledby="gegenlesen-titel">
-    <div class="gegenlesen-kopf">
+<section *ngIf="verfuegbar" class="gegenlesen" [class.kompakt]="kompakt" aria-labelledby="gegenlesen-titel">
+    <!-- Kompakt unter dem Textfeld (einspaltig): eine Zeile mit Siegel und Zahl, aufklappbar (Nutzerfuehrung 13.11.) -->
+    <button *ngIf="kompakt; else kopf" type="button" class="gegenlesen-zeile"
+            [class.gut]="istGut" [attr.aria-expanded]="offen" aria-controls="gegenlesen-inhalt"
+            (click)="offen = !offen">
         <app-siegel [guete]="ergebnis.guete"></app-siegel>
-        <div>
-            <h4 id="gegenlesen-titel">Gegenlesen</h4>
-            <p class="gegenlesen-stand">
-                {{ ergebnis.guete === null ? 'Schreib los, dann liest es mit.' : 'Nach festen Regeln, ohne KI' }}
-            </p>
+        <span id="gegenlesen-titel" class="gegenlesen-zeile-text">Gegenlesen: {{ zeile }}</span>
+        <span class="gegenlesen-pfeil" aria-hidden="true">{{ offen ? '▴' : '▾' }}</span>
+    </button>
+    <ng-template #kopf>
+        <div class="gegenlesen-kopf">
+            <app-siegel [guete]="ergebnis.guete"></app-siegel>
+            <div>
+                <h4 id="gegenlesen-titel">Gegenlesen</h4>
+                <p class="gegenlesen-stand">
+                    {{ ergebnis.guete === null ? 'Schreib los, dann liest es mit.' : 'Nach festen Regeln, ohne KI' }}
+                </p>
+            </div>
         </div>
+    </ng-template>
+    <div id="gegenlesen-inhalt" class="gegenlesen-inhalt" [hidden]="kompakt && !offen">
+        <div class="gegenlesen-ergebnis">
+            <ul *ngIf="ergebnis.anmerkungen.length || zeigtHerkunftHinweis" class="gegenlesen-anmerkungen">
+                <li *ngIf="zeigtHerkunftHinweis" class="gegenlesen-anmerkung herkunft-fehlt">{{ herkunftHinweis }}</li>
+                <li *ngFor="let a of ergebnis.anmerkungen" class="gegenlesen-anmerkung">{{ a.text }}</li>
+            </ul>
+            <p *ngIf="istGut" class="gegenlesen-gut">Nichts aufgefallen. Die Nachbarin nickt.</p>
+        </div>
+        <p class="gegenlesen-fuss">Nur du siehst das. Speichern kannst du immer.</p>
     </div>
-    <div class="gegenlesen-ergebnis" aria-live="polite">
-        <ul *ngIf="ergebnis.anmerkungen.length" class="gegenlesen-anmerkungen">
-            <li *ngFor="let a of ergebnis.anmerkungen" class="gegenlesen-anmerkung">{{ a.text }}</li>
-        </ul>
-        <p *ngIf="ergebnis.guete !== null && !ergebnis.anmerkungen.length" class="gegenlesen-gut">
-            Nichts aufgefallen.
-        </p>
-    </div>
-    <p class="gegenlesen-fuss">Nur du siehst das. Speichern kannst du immer.</p>
+    <!-- Screenreader hoeren nur die Zahl, und erst nach einer Tipp-Pause, nicht bei jedem Ergebnis -->
+    <p class="cdk-visually-hidden gegenlesen-ansage" aria-live="polite">{{ ansage }}</p>
 </section>

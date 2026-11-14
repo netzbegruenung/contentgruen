@@ -148,7 +148,7 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
 
     expect(uebergabe.vorbefuellungLaden).toHaveBeenCalledWith('id-1');
     expect(formular.generictextForm.value.title).toBe('Waermepumpe lohnt sich auch im Altbau');
-    expect(formular.showReferences).toBeTrue();
+    expect(formular.herkunftFehlt).toBeFalse();
   });
 
   it('verknuepft den Einwurf nach dem Speichern und zeigt die Ergebnisseite mit Herkunft Fangkorb', () => {

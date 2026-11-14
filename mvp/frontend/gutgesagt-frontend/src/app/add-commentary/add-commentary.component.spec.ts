@@ -6,7 +6,9 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
-import { Subject, of, throwError } from 'rxjs';
+import { By } from '@angular/platform-browser';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
+import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 
 import {
   AddCommentaryComponent,
@@ -35,16 +37,20 @@ describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
   let fixture: ComponentFixture<AddCommentaryComponent>;
   let dialog: { open: jasmine.Spy };
+  /** Ob das Formular einspaltig ist (EINSPALTIG); Standard: zweispaltig wie am Desktop. */
+  let breite: BehaviorSubject<BreakpointState>;
 
   const ID = '5f0c4a8e-1b2c-4d3e-8f90-123456789abc';
 
   beforeEach(async () => {
+    breite = new BehaviorSubject<BreakpointState>({ matches: false, breakpoints: {} });
     await TestBed.configureTestingModule({
       imports: [AddCommentaryComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        { provide: BreakpointObserver, useValue: { observe: () => breite } },
       ],
     })
       .overrideComponent(AddCommentaryComponent, {
@@ -96,6 +102,20 @@ describe('AddCommentaryComponent', () => {
       'Wärmepumpen sind zu teuer',
     ]);
     expect(seite().querySelector<HTMLButtonElement>('.submit-btn')!.disabled).toBeFalse();
+  });
+
+  it('liest einspaltig kompakt direkt unter dem Textfeld gegen, nicht unter der Vorschau (Nutzerfuehrung 13.11.)', () => {
+    breite.next({ matches: true, breakpoints: {} });
+    ausfuellen();
+
+    const alle = fixture.debugElement.queryAll(By.directive(GegenlesenComponent));
+    expect(alle.length).toBe(1);
+    const gegenlesen = alle[0];
+    expect(seite().querySelector('.preview-column')!.contains(gegenlesen.nativeElement)).toBeFalse();
+    expect((gegenlesen.componentInstance as GegenlesenComponent).kompakt).toBeTrue();
+    const textfeld = seite().querySelector('#text')!.closest('mat-form-field')!;
+    expect(textfeld.nextElementSibling).toBe(gegenlesen.nativeElement);
+    expect((gegenlesen.componentInstance as GegenlesenComponent).text).toBe('Ein ausreichend langer Text.');
   });
 
   it('gibt Titel und Text dem Sprachhinweis über dem CC0-Hinweis, ohne das Speichern zu sperren (#405)', () => {
@@ -259,6 +279,21 @@ describe('AddCommentaryComponent', () => {
       flush();
 
       expect(erfolg).toHaveBeenCalledOnceWith({ id: 'k-1', aussage: { id: '', text: '' }, verknuepft: true });
+    }));
+
+    // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+    it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', fakeAsync(() => {
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(component.fehler).toBeNull();
+      expect(seite().querySelector('.speicher-fehler')).toBeNull();
+      expect(component.speichert).toBeFalse();
+      expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
     }));
 
     it('behaelt bei einem Fehler die Eingaben, und "Erneut versuchen" speichert dasselbe noch einmal', fakeAsync(() => {

@@ -23,3 +23,9 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
 }
+
+/* Abstand zwischen Feld samt Hinweis und dem Knopf */
+form .email + p,
+form .email + button {
+  margin-top: 8px;
+}

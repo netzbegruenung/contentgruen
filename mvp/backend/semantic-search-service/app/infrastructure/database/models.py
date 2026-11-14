@@ -728,6 +728,11 @@ class GeseheneNutzung(Base):
 
     user_id = Column(String(255), primary_key=True)
     nutzung = Column(Integer, nullable=False)
+    # Wie viele Einwuerfe anderer es gab, als die Person zuletzt da war ("Seit deinem
+    # letzten Besuch" auf der Startseite). Ebenfalls ein Zaehlerstand, kein Zeitpunkt.
+    # NULL: noch nie gezaehlt; der erste Besuch nennt dann nichts als neu.
+    # Migration: postgres-app/migrations/2026-11-13-gesehene-einwuerfe.sql.
+    einwuerfe = Column(Integer, nullable=True)
 
 
 class Art9EinwilligungZeile(Base):
@@ -757,6 +762,27 @@ class Art9EinwilligungZeile(Base):
     __table_args__ = (
         Index("idx_art9_einwilligungen_user", "user_id", "eingewilligt_am"),
     )
+
+
+class Art9OhneEinwilligungZeile(Base):
+    """
+    Die Person ist nach der Anmeldung bewusst ohne Art.-9-Einwilligung weitergegangen
+    (UX-Review B2, Entscheidung Maintainer 13.11.2026): je Kennung hoechstens eine Zeile,
+    mit dem Wortlaut, der da galt, und dem Zeitpunkt. Damit fuehrt die App nicht bei
+    jedem Start wieder auf /einwilligung. Am Konto statt im Browser, bis Paragraf 25
+    TDDDG fuer Browser-Eintraege geprueft ist.
+
+    Eine Einwilligung loescht die Zeile, ein Widerruf laesst sie stehen (dann gilt
+    ohnehin "widerrufen"). Neue Tabelle: create_all legt sie an; das Skript
+    postgres-app/migrations/2026-11-13-art9-ohne-einwilligung.sql dokumentiert das
+    Schema. Loeschen: mit dem Konto (docs/LOESCHKONZEPT.md, Schritt 2).
+    """
+
+    __tablename__ = "art9_ohne_einwilligung"
+
+    user_id = Column(String(255), primary_key=True)
+    wortlaut = Column(String(64), nullable=False)
+    entschieden_am = Column(DateTime(timezone=True), nullable=False)
 
 
 class AbzeichenSichtbarkeitZeile(Base):

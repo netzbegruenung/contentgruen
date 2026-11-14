@@ -31,6 +31,9 @@ public static class EndpointPolicy
         "/api/v1/content/beitrag",
         "/api/v1/usage/content/",        // anonyme Nutzungserfassung
         "/api/v1/usage/trending",        // anonymer Zugriff auf Trending
+        // Ob die Punkte eingeschaltet sind (UX-Review B20): ein Schalter, keine Person.
+        // Nur dieser Pfad; /api/v1/usage/users/me/* bleibt hinter dem Gate.
+        "/api/v1/usage/punkte/status",
         "/api/v1/moderation/report",     // anonyme Meldung (DSA Art. 16)
         // Feedback an das Team, auch von Besuchern. Nur das Senden: die Liste unter
         // /api/v1/feedback ist admin-only und bleibt hinter dem Gate.

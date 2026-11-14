@@ -117,9 +117,16 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
         # Folgen des Widerrufs nach dem Loeschauftrag (Entscheidung Maintainer,
         # 13.11.2026, DSFA R9b): Binnen sieben Tagen werden Beitraege, Einwuerfe und
         # Saetze von der Person geloest (services/loeschauftrag_service.py), nur was bis
-        # zum Widerruf angelegt war. Sonst wortgleich mit 2026-11-12 (ein Test sichert
-        # das). Die Folgen gehen weiter als bisher, deshalb fragt die App alle neu, die
+        # zum Widerruf angelegt war. Sonst wortgleich mit 2026-11-12, nur ohne die
+        # Spielelemente (ein Test sichert das). Die Folgen gehen weiter als bisher, deshalb fragt die App alle neu, die
         # einem frueheren Wortlaut zugestimmt haben (GELTENDE_WORTLAUTE).
+        # Ueberschrieben am 13.11.2026 (Entscheidung Maintainer nach juristischer
+        # Pruefung), bevor ein Release ihn enthielt: Die erste Fassung vom selben Tag
+        # nannte noch Punktestand, Level, Quests, Freischaltungen und den
+        # Muster-Hinweis. Die gehoeren nicht in die Einwilligung, ohne die niemand
+        # beitragen kann (ErwG 43 S. 2, Art. 7 Abs. 4 DSGVO); Punkte und Meilensteine
+        # bekommen eine eigene, freiwillige Einwilligung (#668). Restrisiko: Falls die
+        # erste Fassung irgendwo gezeigt wurde, steht dieselbe Kennung fuer zwei Texte.
         "2026-11-13": (
             "Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung "
             "verarbeitet, auch wenn sich daraus auf meine politische Meinung "
@@ -127,13 +134,9 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
             "Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere, "
             "und meinen Anzeigenamen daran. Beiträge sind für alle sichtbar, mein "
             "Anzeigename nur für Angemeldete. Gut gesagt nutzt meine Mitwirkung "
-            "nur für den Betrieb der Plattform. Dazu gehören ein Punktestand, ein "
-            "Level, Quests und Meilenstein-Abzeichen, die nur ich sehe, solange "
-            "ich nicht gesondert zustimme, sie anderen Angemeldeten zu zeigen; "
-            "neue Aktionen, die ein höheres Level freischaltet; und ein Hinweis an "
-            "die Admins, wenn zwei Konten sich auffällig oft gegenseitig nutzen. "
-            "Gut gesagt wertet meine Mitwirkung nicht nach politischer Haltung aus "
-            "und gibt sie nicht an Dritte weiter. Ich kann die Einwilligung "
+            "nur für den Betrieb der Plattform, wertet sie nicht nach politischer "
+            "Haltung aus und gibt sie nicht an Dritte weiter. Ich kann die "
+            "Einwilligung "
             "jederzeit im Profilmenü unter „Datenschutz-Einstellungen“ widerrufen. "
             "Danach kann ich nichts mehr beitragen oder bewerten, und meine "
             "Bewertungen werden gelöscht. Innerhalb von sieben Tagen werden auch "
