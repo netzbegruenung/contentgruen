@@ -610,12 +610,20 @@ export class ContentModerationComponent implements OnInit {
     this.entsperren(report.content_id, () => !this.erledigtMelden(report));
   }
 
+  /** Beiträge, zu denen die Rückfrage gerade offen ist: Ein Doppelklick öffnet sie nur einmal (Review). */
+  private entsperrenFragt = new Set<string>();
+
   /** Entsperren erst nach der Rückfrage (M1). */
   entsperren(contentId: string, vorher: () => boolean = () => true) {
+    if (this.entsperrenFragt.has(contentId)) return;
+    this.entsperrenFragt.add(contentId);
     this.dialog
       .open(BestaetigungsDialogComponent, { data: ENTSPERREN_FRAGE, autoFocus: 'dialog' })
       .afterClosed()
-      .pipe(filter((ja) => ja === true))
+      .pipe(
+        tap(() => this.entsperrenFragt.delete(contentId)),
+        filter((ja) => ja === true),
+      )
       .subscribe(() => {
         // Während der Dialog offen war, kann die Meldung erledigt worden sein.
         if (vorher()) this.entsperrenOhneFrage(contentId);

@@ -191,6 +191,25 @@ describe('ContentModerationComponent', () => {
     expect(moderation.entsperren).not.toHaveBeenCalled();
   });
 
+  it('öffnet bei einem Doppelklick auf Entsperren nur eine Rückfrage', () => {
+    mitMeldungen([meldung({ status: 'reviewed', content: { status: 'blocked', title: 'T', text: 'T' } })]);
+    fixture.componentInstance.onStatusFilterChange('reviewed');
+    fixture.detectChanges();
+    const geschlossen = new Subject<boolean>();
+    dialog.open.and.returnValue({ afterClosed: () => geschlossen } as any);
+
+    knopf('Entsperren')!.click();
+    knopf('Entsperren')!.click();
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+
+    geschlossen.next(false);
+    geschlossen.complete();
+    dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+    knopf('Entsperren')!.click();
+    expect(dialog.open).toHaveBeenCalledTimes(2);
+    expect(moderation.entsperren).toHaveBeenCalledTimes(1);
+  });
+
   it('fragt vor dem Entsperren mit dem vereinbarten Muster', () => {
     expect(ENTSPERREN_FRAGE).toEqual({
       titel: 'Sperre aufheben?',
