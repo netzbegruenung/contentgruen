@@ -1116,9 +1116,17 @@
       <p>
         Damit das Willkommen beim ersten Besuch und das Angebot des Rundgangs „Mitmachen“ nach
         deiner ersten Anmeldung nicht jedes Mal wiederkommen, merkt sich dein Browser, dass du
-        sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich. Sie bleiben auch
+        sie schon gesehen hast. <ng-container *ngIf="homeHinweisMerker">Für Willkommen und
+        Mitmachen sind das</ng-container><ng-container *ngIf="!homeHinweisMerker">Das
+        sind</ng-container> zwei Vermerke ohne Angaben über dich. Sie bleiben auch
         über das Schließen hinaus, bis du die Websitedaten dieser Seite löschst. Sie gehen nicht
         an uns und werden nicht gezählt.
+      </p>
+      <p *ngIf="homeHinweisMerker">
+        Auf iPhone und iPad zeigen wir einen Hinweis, wie du Gut gesagt auf deinen
+        Home-Bildschirm legst. Blendest du ihn aus, merkt sich dein Browser das, damit er nicht
+        wiederkommt. Der Vermerk enthält keine Angaben über dich, bleibt auch über das Schließen
+        hinaus, bis du die Websitedaten dieser Seite löschst, und geht nicht an uns.
       </p>
       <p *ngIf="meilensteinMerker">
         Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein

@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { abschnitt as abschnittIn, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
 import { SUCHANFRAGEN_ABSCHNITT } from '../search/search.component';
-import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
+import { HOME_HINWEIS_MERKER, MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 
 /** Der Satz zu Widerrufen vor dem Einspielen: mit Platzhalter oder mit Datum („1. Dezember 2026“). */
 const WIDERRUF_VOR_DEM_EINSPIELEN = new RegExp(
@@ -823,6 +823,38 @@ describe('DatenschutzComponent', () => {
 
       expect(text).not.toContain('merkt sich nur dein Browser');
       expect(text).not.toContain('Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint');
+    });
+  });
+
+  describe('Merker des Hinweises zum Home-Bildschirm (14.11.2026)', () => {
+    const ABSATZ =
+      'Auf iPhone und iPad zeigen wir einen Hinweis, wie du Gut gesagt auf deinen Home-Bildschirm legst. ' +
+      'Blendest du ihn aus, merkt sich dein Browser das, damit er nicht wiederkommt. Der Vermerk enthält ' +
+      'keine Angaben über dich, bleibt auch über das Schließen hinaus, bis du die Websitedaten dieser Seite ' +
+      'löschst, und geht nicht an uns.';
+
+    function mitMerker(aktiv: boolean): string {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [DatenschutzComponent],
+        providers: [provideRouter([]), { provide: HOME_HINWEIS_MERKER, useValue: aktiv }],
+      });
+      const fixture = TestBed.createComponent(DatenschutzComponent);
+      fixture.detectChanges();
+      return normalisiert((fixture.nativeElement as HTMLElement).textContent);
+    }
+
+    it('Schalter aus: kein Absatz, die zwei Vermerke wie bisher', () => {
+      const text = mitMerker(false);
+      expect(text).not.toContain('Auf iPhone und iPad zeigen wir einen Hinweis');
+      expect(text).toContain('sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich.');
+    });
+
+    it('Schalter an: der Absatz im freigegebenen Wortlaut, die zwei Vermerke Willkommen und Mitmachen zugeordnet', () => {
+      const text = mitMerker(true);
+      expect(text).toContain(ABSATZ);
+      expect(text).toContain('Für Willkommen und Mitmachen sind das zwei Vermerke ohne Angaben über dich.');
+      expect(text).not.toContain('Das sind zwei Vermerke');
     });
   });
 });

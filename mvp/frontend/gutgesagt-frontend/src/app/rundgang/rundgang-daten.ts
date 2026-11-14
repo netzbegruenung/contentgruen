@@ -123,8 +123,8 @@ export const MITMACHEN_ANGEBOT: Angebot = {
 
 /**
  * Nur auf iPhone und iPad in Safari (14.11.2026): Dort bietet der Browser das Installieren
- * nicht von selbst an. Frühestens beim zweiten Besuch oder nach einer Suche mit Treffern,
- * nie zusammen mit Willkommen oder Mitmachen; einmal ausgeblendet, kommt es nicht wieder.
+ * nicht von selbst an. Erst wenn das Willkommen beantwortet ist oder nach dem Anmelden,
+ * nie im selben Besuch wie Willkommen oder Mitmachen; einmal ausgeblendet, kommt es nicht wieder.
  */
 export const HOME_ANGEBOT: Angebot = {
   schluessel: HOME_HINWEIS_SCHLUESSEL,

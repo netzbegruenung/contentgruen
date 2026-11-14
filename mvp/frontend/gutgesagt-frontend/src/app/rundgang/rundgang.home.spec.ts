@@ -4,27 +4,22 @@ import { NavigationEnd, Router } from '@angular/router';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
-import { SearchResponse } from '../services/dtos/searchDtos';
-import { StateManagementService } from '../services/state-management.service';
 import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
 import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
 import { RundgangService } from './rundgang.service';
 import { HOME_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
-import {
-  HOME_HINWEIS_SCHLUESSEL,
-  MITMACHEN_SCHLUESSEL,
-  SCHON_DA_SCHLUESSEL,
-  WILLKOMMEN_SCHLUESSEL,
-} from './rundgang-merker';
+import { HOME_HINWEIS_SCHLUESSEL, MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
 
 /** Hinweis „Gut gesagt als App“ auf iPhone und iPad im selben Band wie das Willkommen. */
 describe('RundgangService: Hinweis Home-Bildschirm', () => {
-  const SCHLUESSEL = [WILLKOMMEN_SCHLUESSEL, MITMACHEN_SCHLUESSEL, HOME_HINWEIS_SCHLUESSEL, SCHON_DA_SCHLUESSEL];
+  const SCHLUESSEL = [WILLKOMMEN_SCHLUESSEL, MITMACHEN_SCHLUESSEL, HOME_HINWEIS_SCHLUESSEL];
   const besucher: UserInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
+  const angemeldet: UserInfo = { isAuthenticated: true, userId: 'u1', userName: 'Test', claims: null };
 
   let events: Subject<unknown>;
   let router: { url: string; events: Subject<unknown> };
-  let suchStand: StateManagementService;
+  let userInfo: BehaviorSubject<UserInfo | null>;
+  let geklaert: BehaviorSubject<string | null>;
   let ios: boolean;
   let schalter: boolean;
 
@@ -38,19 +33,17 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
     schalter = true;
     events = new Subject();
     router = { url: '/search', events };
+    userInfo = new BehaviorSubject<UserInfo | null>(besucher);
+    geklaert = new BehaviorSubject<string | null>(null);
     TestBed.configureTestingModule({
       providers: [
         { provide: Router, useValue: router },
-        { provide: AuthService, useValue: { userInfo$: new BehaviorSubject<UserInfo | null>(besucher) } },
-        {
-          provide: Art9EinwilligungService,
-          useValue: { geklaert$: new BehaviorSubject<string | null>(null), geklaert: () => null },
-        },
+        { provide: AuthService, useValue: { userInfo$: userInfo } },
+        { provide: Art9EinwilligungService, useValue: { geklaert$: geklaert, geklaert: () => geklaert.value } },
         { provide: HOME_BILDSCHIRM_MOEGLICH, useValue: () => ios },
         { provide: HOME_HINWEIS_MERKER, useFactory: () => schalter },
       ],
     });
-    suchStand = TestBed.inject(StateManagementService);
   });
 
   afterEach(aufraeumen);
@@ -67,132 +60,124 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
     events.next(new NavigationEnd(1, url, url));
   }
 
-  function suche(treffer: number): void {
-    suchStand.setSearchResults({
-      commentary_search_results: [],
-      commentary_search_results_count: treffer,
-      generictext_search_results: [],
-      generictext_search_results_count: 0,
-    } as unknown as SearchResponse);
-  }
-
-  /** Willkommen schon beantwortet: Sonst steht es zuerst da. */
+  /** Willkommen in einem früheren Besuch beantwortet: sein Vermerk steht im Speicher. */
   function willkommenErledigt(): void {
     localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
   }
 
-  it('erscheint nicht beim ersten Besuch ohne Suche', () => {
+  /** Alles, was die App gerade im Speicher hat, außer dem, was der Test selbst hineinlegt. */
+  function eigeneEintraege(): string[] {
+    return Object.keys(localStorage).filter((k) => k.startsWith('gutgesagt-') && k !== WILLKOMMEN_SCHLUESSEL);
+  }
+
+  it('erscheint nicht, solange das Willkommen offen ist: das kommt zuerst', () => {
+    const service = besuch();
+    navigiert('/search');
+    expect(service.band()).toBe(WILLKOMMEN);
+  });
+
+  it('erscheint auf der Startseite, wenn das Willkommen schon beantwortet ist', () => {
     willkommenErledigt();
     const service = besuch();
     navigiert('/search');
-    expect(service.band()).toBeNull();
+    expect(service.band()).toBe(HOME_ANGEBOT);
   });
 
-  it('erscheint beim zweiten Besuch auf der Startseite', () => {
-    willkommenErledigt();
-    besuch();
+  it('erscheint auch, wenn statt des Willkommens Mitmachen beantwortet ist', () => {
+    localStorage.setItem(MITMACHEN_SCHLUESSEL, '1');
+    const service = besuch();
+    navigiert('/search');
+    expect(service.band()).toBe(HOME_ANGEBOT);
+  });
+
+  it('nach dem Willkommen nicht gleich im selben Besuch, aber beim nächsten', () => {
+    const erster = besuch();
+    navigiert('/search');
+    expect(erster.band()).toBe(WILLKOMMEN);
+    erster.bandBeantworten(false);
+    expect(erster.band()).toBeNull();
     const zweiter = besuch();
     navigiert('/search');
     expect(zweiter.band()).toBe(HOME_ANGEBOT);
   });
 
-  it('erscheint schon beim ersten Besuch nach einer Suche mit Treffern, nicht nach einer ohne', () => {
+  it('nach dem Anmelden erst nach der Einwilligung', () => {
     willkommenErledigt();
+    userInfo.next(angemeldet);
     const service = besuch();
     navigiert('/search');
-    suche(0);
     expect(service.band()).toBeNull();
-    suche(3);
+    geklaert.next('u1');
     expect(service.band()).toBe(HOME_ANGEBOT);
   });
 
   it('steht nur auf der Startseite, nicht über den Treffern', () => {
     willkommenErledigt();
-    besuch();
-    const zweiter = besuch();
+    const service = besuch();
     navigiert('/result?searchQuery=x');
-    expect(zweiter.band()).toBeNull();
+    expect(service.band()).toBeNull();
   });
 
-  it('nie zusammen mit dem Willkommen und nicht gleich danach im selben Besuch', () => {
-    besuch();
-    const zweiter = besuch();
+  it('schreibt beim Anzeigen nichts in den Speicher, erst mit „Ausblenden“', () => {
+    willkommenErledigt();
+    const service = besuch();
     navigiert('/search');
-    expect(zweiter.band()).toBe(WILLKOMMEN);
-    zweiter.bandBeantworten(false);
-    expect(zweiter.band()).toBeNull();
-    // Beim nächsten Besuch ist es dran
-    const dritter = besuch();
-    navigiert('/search');
-    expect(dritter.band()).toBe(HOME_ANGEBOT);
+    expect(service.band()).toBe(HOME_ANGEBOT);
+    expect(eigeneEintraege()).toEqual([]);
+    service.bandBeantworten(false);
+    expect(eigeneEintraege()).toEqual([HOME_HINWEIS_SCHLUESSEL]);
   });
 
   it('kommt nach „Ausblenden“ nicht wieder, auch nicht beim nächsten Besuch', () => {
     willkommenErledigt();
-    besuch();
-    const zweiter = besuch();
+    const service = besuch();
     navigiert('/search');
-    zweiter.bandBeantworten(false);
-    expect(zweiter.band()).toBeNull();
-    expect(localStorage.getItem(HOME_HINWEIS_SCHLUESSEL)).toBe('1');
-    const dritter = besuch();
+    service.bandBeantworten(false);
+    expect(service.band()).toBeNull();
+    const naechster = besuch();
     navigiert('/search');
-    expect(dritter.band()).toBeNull();
+    expect(naechster.band()).toBeNull();
   });
 
   it('„Ausblenden“ ist der einzige Knopf: Auch „ja“ startet keinen Rundgang', () => {
     willkommenErledigt();
-    besuch();
-    const zweiter = besuch();
-    navigiert('/search');
-    zweiter.bandBeantworten(true);
-    expect(zweiter.aktiv()).toBeNull();
-    expect(zweiter.band()).toBeNull();
-  });
-
-  it('erscheint nicht, wenn der Browser nichts speichern lässt', () => {
-    willkommenErledigt();
-    spyOn(Storage.prototype, 'setItem').and.throwError('gesperrt');
     const service = besuch();
     navigiert('/search');
-    suche(3);
+    service.bandBeantworten(true);
+    expect(service.aktiv()).toBeNull();
     expect(service.band()).toBeNull();
   });
 
-  it('erscheint nicht, wenn der Speicher ganz fehlt (privates Fenster, gesperrt)', () => {
+  it('erscheint nicht, wenn der Speicher fehlt (privates Fenster, gesperrt)', () => {
     spyOn(Storage.prototype, 'getItem').and.throwError('gesperrt');
     spyOn(Storage.prototype, 'setItem').and.throwError('gesperrt');
+    userInfo.next(angemeldet);
+    geklaert.next('u1');
     const service = besuch();
     navigiert('/search');
     // Ohne Speicher steht das Willkommen da; ausgeblendet folgt kein Hinweis
     expect(service.band()).toBe(WILLKOMMEN);
-    service.bandBeantworten(false);
-    const zweiter = besuch();
+    const naechster = besuch();
     navigiert('/search');
-    suche(3);
+    service.bandBeantworten(false);
+    expect(naechster.band()).not.toBe(HOME_ANGEBOT);
     expect(service.band()).toBeNull();
-    expect(zweiter.band()).not.toBe(HOME_ANGEBOT);
   });
 
-  it('auf anderen Geräten: kein Hinweis und kein Merker', () => {
+  it('auf anderen Geräten: kein Hinweis', () => {
     ios = false;
     willkommenErledigt();
-    besuch();
-    const zweiter = besuch();
+    const service = besuch();
     navigiert('/search');
-    suche(3);
-    expect(zweiter.band()).toBeNull();
-    expect(localStorage.getItem(SCHON_DA_SCHLUESSEL)).toBeNull();
+    expect(service.band()).toBeNull();
+    expect(eigeneEintraege()).toEqual([]);
   });
 
-  it('mit ausgeschaltetem Schalter: kein Hinweis und kein Merker', () => {
+  it('mit ausgeschaltetem Schalter: kein Hinweis', () => {
     schalter = false;
     willkommenErledigt();
-    besuch();
-    const zweiter = besuch();
+    const service = besuch();
     navigiert('/search');
-    suche(3);
-    expect(zweiter.band()).toBeNull();
-    expect(localStorage.getItem(SCHON_DA_SCHLUESSEL)).toBeNull();
+    expect(service.band()).toBeNull();
   });
 });

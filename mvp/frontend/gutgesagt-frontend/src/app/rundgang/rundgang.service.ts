@@ -4,23 +4,10 @@ import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
-import { StateManagementService } from '../services/state-management.service';
-import { SearchResponse } from '../services/dtos/searchDtos';
 import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
 import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
 import { Angebot, HOME_ANGEBOT, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
-import { SCHON_DA_SCHLUESSEL, gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
-
-function hatTreffer(antwort: SearchResponse | null): boolean {
-  if (!antwort) return false;
-  return (
-    (antwort.commentary_search_results_count ?? 0) +
-      (antwort.generictext_search_results_count ?? 0) +
-      (antwort.post_search_results_count ?? 0) +
-      (antwort.image_search_results_count ?? 0) >
-    0
-  );
-}
+import { gesehen as imSpeicher, merken as speichern, speicherLesbar } from './rundgang-merker';
 
 export interface RundgangStand {
   rundgang: Rundgang;
@@ -46,7 +33,6 @@ export class RundgangService {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly einwilligung = inject(Art9EinwilligungService);
-  private readonly suchStand = inject(StateManagementService);
   private readonly homeMerkerAktiv = inject(HOME_HINWEIS_MERKER);
   private readonly homeMoeglich = inject(HOME_BILDSCHIRM_MOEGLICH);
 
@@ -77,25 +63,17 @@ export class RundgangService {
    */
   private readonly beantworteteAngebote = new Set<string>();
   /**
-   * Hinweis „Gut gesagt als App“: Gerät passt und der Browser nimmt Merker an. Ohne
-   * Speicher kein Hinweis, sonst käme er nach dem Ausblenden bei jedem Besuch wieder.
+   * Hinweis „Gut gesagt als App“: Schalter an, Gerät passt und der Speicher ist lesbar.
+   * Ohne Speicher kein Hinweis, sonst käme er nach dem Ausblenden bei jedem Besuch wieder.
    */
-  private homeSpeicherDa = false;
-  /** Beim Start der App stand der Merker schon da: mindestens der zweite Besuch. */
-  private schonDaGewesen = false;
-  /** In diesem Besuch hat eine Suche Treffer gebracht. */
-  private sucheMitTreffern = false;
+  private homeHier = false;
   /** Willkommen oder Mitmachen stand in diesem Besuch schon da: dann kein zweites Band danach. */
   private anderesBandGezeigt = false;
 
   /** Einmal beim Start der App. */
   beobachten(destroyRef: DestroyRef): void {
-    this.homeVorbereiten();
-    this.suchStand.searchResults$.pipe(takeUntilDestroyed(destroyRef)).subscribe((antwort) => {
-      if (this.sucheMitTreffern || !hatTreffer(antwort)) return;
-      this.sucheMitTreffern = true;
-      this.angebotPruefen();
-    });
+    // Liest nur, schreibt nichts: Einen Merker gibt es erst mit „Ausblenden“
+    this.homeHier = this.homeMerkerAktiv && this.homeMoeglich() && speicherLesbar();
 
     // Zurück (oder Vor) im Browser beendet den Rundgang: Sonst stuende der Schritt auf
     // der Seite, zu der die Person gerade zurückgeht, etwa „Passende Treffer“ über den
@@ -201,31 +179,21 @@ export class RundgangService {
     // Wer Mitmachen schon hatte, braucht kein Willkommen mehr
     if (!this.gesehen(WILLKOMMEN) && !this.gesehen(MITMACHEN_ANGEBOT) && hier(WILLKOMMEN)) return WILLKOMMEN;
     // Zuletzt und nie zugleich mit einem anderen: Es gibt nur ein Band
-    if (this.homeFaellig() && hier(HOME_ANGEBOT)) return HOME_ANGEBOT;
+    if (this.homeFaellig(info) && hier(HOME_ANGEBOT)) return HOME_ANGEBOT;
     return null;
   }
 
   /**
-   * Nur auf iPhone und iPad im Browser und nur mit Speicher: merkt sich, dass die Person
-   * schon einmal hier war, und liest vorher, ob sie es schon war. Andere Geräte bekommen
-   * keinen Merker.
+   * Erst wenn das Willkommen beantwortet ist (sein Vermerk, oder Mitmachen, das es
+   * ersetzt) oder nach dem Anmelden; kein eigener Merker für Besuche (§ 25 TDDDG).
+   * Nie nach „Ausblenden“ und nicht im selben Besuch wie Willkommen oder Mitmachen.
    */
-  private homeVorbereiten(): void {
-    if (!this.homeMerkerAktiv || !this.homeMoeglich()) return;
-    this.schonDaGewesen = imSpeicher(SCHON_DA_SCHLUESSEL);
-    this.homeSpeicherDa = speichern(SCHON_DA_SCHLUESSEL);
-  }
-
-  /**
-   * Frühestens beim zweiten Besuch oder nach einer Suche mit Treffern; nie nach
-   * „Ausblenden“ und nicht im selben Besuch wie Willkommen oder Mitmachen.
-   */
-  private homeFaellig(): boolean {
+  private homeFaellig(info: UserInfo): boolean {
     return (
-      this.homeSpeicherDa &&
+      this.homeHier &&
       !this.anderesBandGezeigt &&
       !this.gesehen(HOME_ANGEBOT) &&
-      (this.schonDaGewesen || this.sucheMitTreffern)
+      (this.gesehen(WILLKOMMEN) || this.gesehen(MITMACHEN_ANGEBOT) || info.isAuthenticated)
     );
   }
 

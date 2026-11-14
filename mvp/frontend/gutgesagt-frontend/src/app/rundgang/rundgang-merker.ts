@@ -8,11 +8,10 @@
 export const WILLKOMMEN_SCHLUESSEL = 'gutgesagt-willkommen-gesehen';
 export const MITMACHEN_SCHLUESSEL = 'gutgesagt-mitmachen-angeboten';
 /**
- * Hinweis „Gut gesagt als App“ auf iPhone und iPad: ausgeblendet bzw. schon einmal hier
- * gewesen. Nur dort im Browser geschrieben und nur bei HOME_HINWEIS_MERKER (§ 25 TDDDG).
+ * Hinweis „Gut gesagt als App“ auf iPhone und iPad ausgeblendet. Nur dort im Browser
+ * geschrieben und nur bei HOME_HINWEIS_MERKER (§ 25 TDDDG).
  */
 export const HOME_HINWEIS_SCHLUESSEL = 'gutgesagt-home-hinweis-ausgeblendet';
-export const SCHON_DA_SCHLUESSEL = 'gutgesagt-schon-da-gewesen';
 
 export function gesehen(schluessel: string): boolean {
   try {
@@ -22,13 +21,20 @@ export function gesehen(schluessel: string): boolean {
   }
 }
 
-/** true, wenn der Browser den Merker angenommen hat. */
-export function merken(schluessel: string): boolean {
+/** Ob sich der Speicher lesen lässt; schreibt nichts. */
+export function speicherLesbar(): boolean {
   try {
-    localStorage.setItem(schluessel, '1');
+    localStorage.getItem(WILLKOMMEN_SCHLUESSEL);
     return true;
   } catch {
-    // Ohne Speicher kommt das Angebot beim nächsten Besuch wieder; mehr passiert nicht.
     return false;
+  }
+}
+
+export function merken(schluessel: string): void {
+  try {
+    localStorage.setItem(schluessel, '1');
+  } catch {
+    // Ohne Speicher kommt das Angebot beim nächsten Besuch wieder; mehr passiert nicht.
   }
 }
