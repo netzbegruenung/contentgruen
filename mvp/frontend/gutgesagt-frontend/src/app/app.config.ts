@@ -22,6 +22,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([AuthInterceptor, cacheInterceptor])),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
     // Keine Sitzungskennung im Browser (#446): was fruehere Versionen ablegten, kommt weg.
-    provideAppInitializer(() => alteSitzungskennungEntfernen())
+    provideAppInitializer(() => alteSitzungskennungEntfernen()),
+    // Merker eines automatischen Neuladens erst nach geschaffter Navigation loeschen (Schleifensperre).
+    provideAppInitializer(() => inject(NeueVersionService).beobachten())
   ]
 };

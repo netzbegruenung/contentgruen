@@ -1,19 +1,34 @@
-import { TestBed } from '@angular/core/testing';
-import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
-import { NavigationError } from '@angular/router';
+import { APP_BASE_HREF } from '@angular/common';
+import { ErrorHandler } from '@angular/core';
+import { TestBed, fakeAsync, flush, flushMicrotasks, tick } from '@angular/core/testing';
+import { MatSnackBar, MatSnackBarDismiss, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
+import { NavigationEnd, NavigationError, Router, provideRouter, withNavigationErrorHandler } from '@angular/router';
+import { inject } from '@angular/core';
 import { Subject } from 'rxjs';
 
 import {
+  BESTAETIGT_MS,
+  BROWSER,
+  Browser,
   HINWEIS_KNOPF,
   HINWEIS_TEXT,
+  NETZFEHLER_TEXT,
   NeueVersionService,
-  SEITENWECHSEL,
-  SITZUNGSSPEICHER,
-  SPERRE_MS,
+  OFFLINE_TEXT,
+  Ort,
   SPERRE_SCHLUESSEL,
+  Verlauf,
+  WECHSEL_FRIST_MS,
+  chunkAdresse,
+  hartWechseln,
   istLadefehler,
 } from './neue-version';
 import { GlobalErrorHandler } from '../services/error-handler.service';
+
+const URSPRUNG = 'https://gutgesagt.example';
+const CHUNK = `${URSPRUNG}/chunk-ABC123.js`;
+const chrome = (adresse = CHUNK) => new TypeError(`Failed to fetch dynamically imported module: ${adresse}`);
+const safari = () => new TypeError('Importing a module script failed.');
 
 /** Ein Speicher im Arbeitsspeicher, damit der echte sessionStorage unberuehrt bleibt. */
 function speicherAttrappe(): Storage {
@@ -33,15 +48,15 @@ function speicherAttrappe(): Storage {
 describe('neue Version laden', () => {
   describe('istLadefehler', () => {
     const meldungen: Array<[string, unknown]> = [
-      ['Chrome', new TypeError('Failed to fetch dynamically imported module: https://gutgesagt.example/chunk-ABC123.js')],
-      ['Firefox', new TypeError('error loading dynamically imported module: https://gutgesagt.example/chunk-ABC123.js')],
-      ['Safari', new TypeError('Importing a module script failed.')],
-      ['webpack', Object.assign(new Error('Loading chunk 123 failed.\n(error: /123.js)'), { name: 'ChunkLoadError' })],
-      ['webpack mit Namen', new Error('Loading chunk src_app_impressum_impressum_component_ts failed.')],
-      ['Name allein', Object.assign(new Error('irgendwas'), { name: 'ChunkLoadError' })],
-      ['unbehandelte Promise-Ablehnung', { rejection: new TypeError('Importing a module script failed.') }],
-      ['NavigationError', new NavigationError(1, '/impressum', new TypeError('Failed to fetch dynamically imported module: x'))],
-      ['Text', 'Failed to fetch dynamically imported module: x'],
+      ['Chrome', chrome()],
+      ['Firefox', new TypeError(`error loading dynamically imported module: ${CHUNK}`)],
+      ['Safari', safari()],
+      ['@defer (Code)', Object.assign(new Error('NG0750'), { code: -750 })],
+      ['@defer (Meldung, Produktion)', new Error('NG0750')],
+      ['@defer (Meldung, Entwicklung)', new Error('NG0750: Loading dependencies for `@defer` block failed, but no `@error` block was configured.')],
+      ['unbehandelte Promise-Ablehnung', { rejection: safari() }],
+      ['NavigationError', new NavigationError(1, '/impressum', chrome())],
+      ['Text', `Failed to fetch dynamically imported module: ${CHUNK}`],
     ];
     for (const [browser, fehler] of meldungen) {
       it(`erkennt ${browser}`, () => {
@@ -52,6 +67,7 @@ describe('neue Version laden', () => {
     const andere: Array<[string, unknown]> = [
       ['HTTP-Fehler', { status: 404, message: 'Http failure response for /api/x: 404 Not Found' }],
       ['Netzfehler beim fetch', new TypeError('Failed to fetch')],
+      ['anderer Angular-Fehler', Object.assign(new Error('NG07500'), { code: -7500 })],
       ['gewoehnlicher Fehler', new Error('Cannot read properties of undefined')],
       ['null', null],
       ['undefined', undefined],
@@ -71,148 +87,298 @@ describe('neue Version laden', () => {
     });
   });
 
-  describe('NeueVersionService', () => {
-    let seitenwechsel: jasmine.Spy<(url: string) => void>;
-    let snackBar: jasmine.SpyObj<MatSnackBar>;
-    let aktion: Subject<void>;
-    let geschlossen: Subject<void>;
+  describe('chunkAdresse', () => {
+    it('liest die Adresse aus der Meldung von Chrome und Firefox', () => {
+      expect(chunkAdresse(chrome(), `${URSPRUNG}/search`)).toBe(CHUNK);
+      expect(chunkAdresse({ rejection: new TypeError(`error loading dynamically imported module: ${CHUNK}`) }, URSPRUNG)).toBe(CHUNK);
+    });
 
-    function dienst(speicher: Storage | null): NeueVersionService {
+    it('nennt keine fremde Adresse und keine, wenn die Meldung keine hat (Safari, @defer)', () => {
+      expect(chunkAdresse(chrome('https://fremd.example/chunk-X.js'), URSPRUNG)).toBeNull();
+      expect(chunkAdresse(safari(), URSPRUNG)).toBeNull();
+      expect(chunkAdresse(new Error('NG0750'), URSPRUNG)).toBeNull();
+    });
+  });
+
+  describe('hartWechseln', () => {
+    function ort(href: string): jasmine.SpyObj<Ort> {
+      const url = new URL(href);
+      return Object.assign(jasmine.createSpyObj<Ort>('Ort', ['assign', 'reload']), {
+        href,
+        pathname: url.pathname,
+        search: url.search,
+      });
+    }
+    const verlauf = () => Object.assign(jasmine.createSpyObj<Verlauf>('Verlauf', ['replaceState']), { state: { navigationId: 3 } });
+
+    it('wechselt auf einen anderen Pfad mit assign', () => {
+      const o = ort(`${URSPRUNG}/search`);
+      const v = verlauf();
+      hartWechseln('/impressum', o, v);
+      expect(o.assign).toHaveBeenCalledOnceWith(`${URSPRUNG}/impressum`);
+      expect(o.reload).not.toHaveBeenCalled();
+    });
+
+    it('wechselt bei anderer Query mit assign', () => {
+      const o = ort(`${URSPRUNG}/result?q=a`);
+      hartWechseln('/result?q=b', o, verlauf());
+      expect(o.assign).toHaveBeenCalledOnceWith(`${URSPRUNG}/result?q=b`);
+    });
+
+    it('laedt bei gleichem Pfad und gleicher Query neu, auch mit Fragment (assign waere nur ein Sprung)', () => {
+      const o = ort(`${URSPRUNG}/datenschutz`);
+      const v = verlauf();
+      hartWechseln('/datenschutz#suchanfragen', o, v);
+      expect(v.replaceState).toHaveBeenCalledOnceWith({ navigationId: 3 }, '', `${URSPRUNG}/datenschutz#suchanfragen`);
+      expect(o.reload).toHaveBeenCalledTimes(1);
+      expect(o.assign).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('NeueVersionService', () => {
+    let browser: jasmine.SpyObj<Browser>;
+    let speicher: Storage | null;
+    let online: boolean;
+    let snackBar: jasmine.SpyObj<MatSnackBar> & { _openedSnackBarRef: MatSnackBarRef<unknown> | null };
+    let refs: Array<{ aktion: Subject<void>; geschlossen: Subject<MatSnackBarDismiss> }>;
+    let routerEreignisse: Subject<unknown>;
+
+    function dienst(): NeueVersionService {
       TestBed.configureTestingModule({
         providers: [
-          { provide: SEITENWECHSEL, useValue: seitenwechsel },
-          { provide: SITZUNGSSPEICHER, useValue: speicher },
+          { provide: BROWSER, useValue: browser },
           { provide: MatSnackBar, useValue: snackBar },
+          { provide: Router, useValue: { events: routerEreignisse } },
         ],
       });
       return TestBed.inject(NeueVersionService);
     }
 
+    function antwort(status: number): Promise<Response> {
+      return Promise.resolve(new Response(null, { status }));
+    }
+
     beforeEach(() => {
-      seitenwechsel = jasmine.createSpy('seitenwechsel');
-      aktion = new Subject<void>();
-      geschlossen = new Subject<void>();
-      snackBar = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
-      snackBar.open.and.returnValue({
-        onAction: () => aktion,
-        afterDismissed: () => geschlossen,
-      } as unknown as MatSnackBarRef<TextOnlySnackBar>);
+      speicher = speicherAttrappe();
+      online = true;
+      routerEreignisse = new Subject();
+      browser = jasmine.createSpyObj<Browser>('Browser', ['wechseln', 'speicher', 'online', 'abrufen', 'adresse']);
+      browser.speicher.and.callFake(() => speicher);
+      browser.online.and.callFake(() => online);
+      browser.adresse.and.returnValue(`${URSPRUNG}/search`);
+      browser.abrufen.and.callFake(() => antwort(404));
+      refs = [];
+      snackBar = Object.assign(jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']), { _openedSnackBarRef: null });
+      snackBar.open.and.callFake(() => {
+        const r = { aktion: new Subject<void>(), geschlossen: new Subject<MatSnackBarDismiss>() };
+        refs.push(r);
+        return { onAction: () => r.aktion, afterDismissed: () => r.geschlossen } as unknown as MatSnackBarRef<TextOnlySnackBar>;
+      });
     });
 
-    it('laedt das Ziel hart und merkt sich den Zeitpunkt', () => {
-      const speicher = speicherAttrappe();
-      const ausgang = dienst(speicher).neueVersionLaden('/impressum');
+    const hinweise = () => snackBar.open.calls.allArgs().filter(([text]) => text === HINWEIS_TEXT);
+
+    it('laedt das Ziel hart, wenn der Chunk auf dem Server fehlt (HEAD 404), und setzt den Merker', async () => {
+      const ausgang = await dienst().neueVersionLaden('/impressum', chrome());
 
       expect(ausgang).toBe('neu-geladen');
-      expect(seitenwechsel).toHaveBeenCalledOnceWith('/impressum');
-      expect(Number(speicher.getItem(SPERRE_SCHLUESSEL))).toBeCloseTo(Date.now(), -3);
+      expect(browser.abrufen).toHaveBeenCalledOnceWith(CHUNK, { method: 'HEAD', cache: 'no-store' });
+      expect(browser.wechseln).toHaveBeenCalledOnceWith('/impressum');
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).not.toBeNull();
       expect(snackBar.open).not.toHaveBeenCalled();
     });
 
-    it('wechselt auf derselben Seite nur einmal, auch wenn der Fehler zweimal ankommt', () => {
-      const neueVersion = dienst(speicherAttrappe());
-
-      neueVersion.neueVersionLaden('/impressum');
-      expect(neueVersion.neueVersionLaden('/impressum')).toBe('laeuft-schon');
-
-      expect(seitenwechsel).toHaveBeenCalledTimes(1);
-      expect(snackBar.open).not.toHaveBeenCalled();
+    it('laedt ohne Adresse in der Meldung (Safari) ohne Pruefung', async () => {
+      expect(await dienst().neueVersionLaden('/impressum', safari())).toBe('neu-geladen');
+      expect(browser.abrufen).not.toHaveBeenCalled();
+      expect(browser.wechseln).toHaveBeenCalledOnceWith('/impressum');
     });
 
-    it('laedt innerhalb der Sperre nicht noch einmal, sondern zeigt den Hinweis', () => {
-      const speicher = speicherAttrappe();
-      speicher.setItem(SPERRE_SCHLUESSEL, String(Date.now() - SPERRE_MS + 1000));
+    it('offline: kein Wechsel, keine Pruefung, die Meldung „Keine Internetverbindung“', async () => {
+      online = false;
 
-      const ausgang = dienst(speicher).neueVersionLaden('/impressum');
+      expect(await dienst().neueVersionLaden('/impressum', chrome())).toBe('netzfehler');
 
+      expect(browser.wechseln).not.toHaveBeenCalled();
+      expect(browser.abrufen).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledOnceWith(OFFLINE_TEXT, 'Schließen', jasmine.any(Object));
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).toBeNull();
+    });
+
+    for (const [fall, abruf] of [
+      ['der Chunk ist da (200): Netzabbruch, kein Deploy', () => antwort(200)],
+      ['der Server antwortet mit 503', () => antwort(503)],
+      ['die Pruefung scheitert am Netz', () => Promise.reject(new TypeError('Failed to fetch'))],
+    ] as const) {
+      it(`kein Wechsel, wenn ${fall}`, async () => {
+        browser.abrufen.and.callFake(abruf);
+
+        expect(await dienst().neueVersionLaden('/impressum', chrome())).toBe('netzfehler');
+
+        expect(browser.wechseln).not.toHaveBeenCalled();
+        expect(snackBar.open).toHaveBeenCalledOnceWith(NETZFEHLER_TEXT, 'Schließen', jasmine.any(Object));
+      });
+    }
+
+    it('behandelt denselben Fehler nur einmal (Router und ErrorHandler melden ihn beide)', async () => {
+      const neueVersion = dienst();
+      const fehler = chrome();
+
+      const erst = neueVersion.neueVersionLaden('/impressum', fehler);
+      expect(await neueVersion.neueVersionLaden(window.location.href, { rejection: fehler })).toBe('schon-behandelt');
+      await erst;
+
+      expect(browser.abrufen).toHaveBeenCalledTimes(1);
+      expect(browser.wechseln).toHaveBeenCalledTimes(1);
+    });
+
+    it('wechselt waehrend eines laufenden Wechsels nicht noch einmal, danach nur mit Hinweis', fakeAsync(() => {
+      const neueVersion = dienst();
+      let ausgang = '';
+
+      void neueVersion.neueVersionLaden('/impressum', safari());
+      flushMicrotasks();
+      void neueVersion.neueVersionLaden('/impressum', safari()).then((a) => (ausgang = a));
+      flushMicrotasks();
+      expect(ausgang).toBe('laeuft-schon');
+
+      // Die Seite blieb stehen (Wechsel abgebrochen): Der Merker steht noch, also nur der Hinweis.
+      tick(WECHSEL_FRIST_MS);
+      void neueVersion.neueVersionLaden('/impressum', safari()).then((a) => (ausgang = a));
+      flushMicrotasks();
       expect(ausgang).toBe('hinweis');
-      expect(seitenwechsel).not.toHaveBeenCalled();
-      expect(snackBar.open).toHaveBeenCalledOnceWith(HINWEIS_TEXT, HINWEIS_KNOPF, jasmine.any(Object));
+      expect(browser.wechseln).toHaveBeenCalledTimes(1);
+    }));
+
+    it('laedt nicht noch einmal, solange der Merker steht, egal wie alt er ist (langsamer Start)', async () => {
+      speicher!.setItem(SPERRE_SCHLUESSEL, String(Date.now() - 60 * 60 * 1000));
+
+      expect(await dienst().neueVersionLaden('/impressum', chrome())).toBe('hinweis');
+
+      expect(browser.wechseln).not.toHaveBeenCalled();
+      expect(hinweise()).toEqual([[HINWEIS_TEXT, HINWEIS_KNOPF, jasmine.any(Object)]]);
     });
 
-    it('laedt nach Ablauf der Sperre wieder automatisch', () => {
-      const speicher = speicherAttrappe();
-      speicher.setItem(SPERRE_SCHLUESSEL, String(Date.now() - SPERRE_MS - 1));
+    it('loescht den Merker erst, wenn die Seite navigiert hat und danach fehlerfrei lief', fakeAsync(() => {
+      speicher!.setItem(SPERRE_SCHLUESSEL, '1');
+      dienst().beobachten();
 
-      expect(dienst(speicher).neueVersionLaden('/impressum')).toBe('neu-geladen');
-      expect(seitenwechsel).toHaveBeenCalledOnceWith('/impressum');
-    });
+      tick(BESTAETIGT_MS * 10);
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).withContext('ohne Navigation bleibt er').toBe('1');
 
-    it('zeigt ohne Speicher den Hinweis; erst der Knopf laedt neu', () => {
-      const neueVersion = dienst(null);
+      routerEreignisse.next(new NavigationEnd(1, '/impressum', '/impressum'));
+      tick(BESTAETIGT_MS - 1);
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).toBe('1');
+      tick(1);
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).toBeNull();
+    }));
 
-      expect(neueVersion.neueVersionLaden('/impressum')).toBe('hinweis');
-      expect(seitenwechsel).not.toHaveBeenCalled();
-      expect(snackBar.open).toHaveBeenCalledOnceWith(HINWEIS_TEXT, HINWEIS_KNOPF, jasmine.any(Object));
+    it('laesst den Merker stehen, wenn nach der Navigation gleich wieder ein Ladefehler kommt (@defer)', fakeAsync(() => {
+      speicher!.setItem(SPERRE_SCHLUESSEL, '1');
+      const neueVersion = dienst();
+      neueVersion.beobachten();
+      routerEreignisse.next(new NavigationEnd(1, '/', '/'));
+      tick(1000);
+
+      neueVersion.beiFehler(Object.assign(new Error('NG0750'), { code: -750 }));
+      flushMicrotasks();
+      tick(BESTAETIGT_MS * 2);
+
+      expect(speicher!.getItem(SPERRE_SCHLUESSEL)).toBe('1');
+      expect(browser.wechseln).not.toHaveBeenCalled();
+      expect(hinweise().length).toBe(1);
+      flush();
+    }));
+
+    it('zeigt ohne Speicher den Hinweis; erst der Knopf laedt neu', async () => {
+      speicher = null;
+
+      expect(await dienst().neueVersionLaden('/impressum', chrome())).toBe('hinweis');
+      expect(browser.wechseln).not.toHaveBeenCalled();
       // Unaufdringlich, aber bleibt stehen: keine Dauer
       expect(snackBar.open.calls.mostRecent().args[2]?.duration).toBeUndefined();
 
-      aktion.next();
-      expect(seitenwechsel).toHaveBeenCalledOnceWith('/impressum');
+      refs[0].aktion.next();
+      expect(browser.wechseln).toHaveBeenCalledOnceWith('/impressum');
     });
 
-    it('zeigt den Hinweis nur einmal, solange er offen ist', () => {
-      const neueVersion = dienst(null);
+    it('zeigt den Hinweis nur einmal und laedt auf das zuletzt gewollte Ziel', async () => {
+      speicher = null;
+      const neueVersion = dienst();
 
-      neueVersion.neueVersionLaden('/impressum');
-      neueVersion.neueVersionLaden('/datenschutz');
-      expect(snackBar.open).toHaveBeenCalledTimes(1);
+      await neueVersion.neueVersionLaden('/impressum', chrome());
+      await neueVersion.neueVersionLaden('/datenschutz', chrome(`${URSPRUNG}/chunk-DEF.js`));
+      expect(hinweise().length).toBe(1);
 
-      geschlossen.next();
-      neueVersion.neueVersionLaden('/datenschutz');
-      expect(snackBar.open).toHaveBeenCalledTimes(2);
+      refs[0].aktion.next();
+      expect(browser.wechseln).toHaveBeenCalledOnceWith('/datenschutz');
     });
 
-    it('zeigt den Hinweis, wenn der Speicher beim Lesen wirft', () => {
-      const speicher = speicherAttrappe();
-      spyOn(speicher, 'getItem').and.throwError(new DOMException('gesperrt', 'SecurityError'));
+    it('zeigt den Hinweis wieder, wenn eine andere Snackbar ihn verdraengt hat und geschlossen ist', async () => {
+      speicher = null;
+      await dienst().neueVersionLaden('/impressum', chrome());
+      const andere = new Subject<MatSnackBarDismiss>();
+      snackBar._openedSnackBarRef = { afterDismissed: () => andere } as unknown as MatSnackBarRef<unknown>;
 
-      expect(dienst(speicher).neueVersionLaden('/impressum')).toBe('hinweis');
-      expect(seitenwechsel).not.toHaveBeenCalled();
+      refs[0].geschlossen.next({ dismissedByAction: false });
+      expect(hinweise().length).toBe(1);
+      andere.next({ dismissedByAction: false });
+
+      expect(hinweise().length).toBe(2);
     });
 
-    it('zeigt den Hinweis, wenn der Speicher beim Schreiben wirft (voll)', () => {
-      const speicher = speicherAttrappe();
-      spyOn(speicher, 'setItem').and.throwError(new DOMException('voll', 'QuotaExceededError'));
-
-      expect(dienst(speicher).neueVersionLaden('/impressum')).toBe('hinweis');
-      expect(seitenwechsel).not.toHaveBeenCalled();
-    });
-
-    it('zeigt den Hinweis, wenn der Speicher Schreiben still schluckt', () => {
-      const speicher = speicherAttrappe();
-      spyOn(speicher, 'setItem').and.stub();
-
-      expect(dienst(speicher).neueVersionLaden('/impressum')).toBe('hinweis');
-      expect(seitenwechsel).not.toHaveBeenCalled();
-    });
-
-    it('nimmt bei einem Navigationsfehler das Ziel der Navigation', () => {
-      const neueVersion = dienst(speicherAttrappe());
-
-      neueVersion.beiNavigationsfehler(
-        new NavigationError(1, '/beitrag/7?von=suche', new TypeError('Importing a module script failed.')),
-      );
-
-      expect(seitenwechsel).toHaveBeenCalledOnceWith('/beitrag/7?von=suche');
-    });
+    for (const [fall, kaputt] of [
+      ['beim Lesen wirft', (s: Storage) => spyOn(s, 'getItem').and.throwError(new DOMException('gesperrt', 'SecurityError'))],
+      ['beim Schreiben wirft (voll)', (s: Storage) => spyOn(s, 'setItem').and.throwError(new DOMException('voll', 'QuotaExceededError'))],
+      ['Schreiben still schluckt', (s: Storage) => spyOn(s, 'setItem').and.stub()],
+    ] as const) {
+      it(`zeigt den Hinweis, wenn der Speicher ${fall}`, async () => {
+        kaputt(speicher!);
+        expect(await dienst().neueVersionLaden('/impressum', chrome())).toBe('hinweis');
+        expect(browser.wechseln).not.toHaveBeenCalled();
+      });
+    }
 
     it('laesst andere Navigationsfehler in Ruhe', () => {
-      const neueVersion = dienst(speicherAttrappe());
+      dienst().beiNavigationsfehler(new NavigationError(1, '/beitrag/7', new Error('Guard kaputt')));
 
-      neueVersion.beiNavigationsfehler(new NavigationError(1, '/beitrag/7', new Error('Guard kaputt')));
-
-      expect(seitenwechsel).not.toHaveBeenCalled();
+      expect(browser.wechseln).not.toHaveBeenCalled();
       expect(snackBar.open).not.toHaveBeenCalled();
     });
+  });
 
-    it('der globale ErrorHandler laedt bei einem Ladefehler neu, statt eine Fehlermeldung zu zeigen', () => {
-      dienst(speicherAttrappe());
-      const handler = TestBed.runInInjectionContext(() => new GlobalErrorHandler(snackBar, TestBed.inject(NeueVersionService)));
+  describe('mit echtem Router und globalem ErrorHandler', () => {
+    it('ein fehlender Chunk fuehrt zu genau einem Seitenwechsel aufs Ziel, ohne Fehlermeldung', async () => {
+      const browser = jasmine.createSpyObj<Browser>('Browser', ['wechseln', 'speicher', 'online', 'abrufen', 'adresse']);
+      const speicher = speicherAttrappe();
+      browser.speicher.and.returnValue(speicher);
+      browser.online.and.returnValue(true);
+      browser.adresse.and.returnValue(`${URSPRUNG}/search`);
+      browser.abrufen.and.callFake(() => Promise.resolve(new Response(null, { status: 404 })));
+      const snackBar = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
+      const fehler = chrome();
 
-      handler.handleError({ rejection: new TypeError('Failed to fetch dynamically imported module: x') } as unknown as Error);
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: APP_BASE_HREF, useValue: '/' },
+          provideRouter(
+            [{ path: 'x', loadComponent: () => Promise.reject(fehler) }],
+            withNavigationErrorHandler((e) => inject(NeueVersionService).beiNavigationsfehler(e)),
+          ),
+          { provide: ErrorHandler, useClass: GlobalErrorHandler },
+          { provide: BROWSER, useValue: browser },
+          { provide: MatSnackBar, useValue: snackBar },
+        ],
+      });
+      const router = TestBed.inject(Router);
+      const errorHandler = TestBed.inject(ErrorHandler);
 
-      expect(seitenwechsel).toHaveBeenCalledOnceWith(window.location.href);
+      // Die abgelehnte Navigation landet wie bei einem routerLink im globalen ErrorHandler.
+      await router.navigateByUrl('/x?a=1#f').catch((e) => errorHandler.handleError(e));
+      await new Promise((fertig) => setTimeout(fertig));
+
+      expect(browser.wechseln).toHaveBeenCalledOnceWith('/x?a=1#f');
+      expect(browser.abrufen).toHaveBeenCalledTimes(1);
       expect(snackBar.open).not.toHaveBeenCalled();
     });
   });

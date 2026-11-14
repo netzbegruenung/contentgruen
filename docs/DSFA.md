@@ -711,7 +711,8 @@ oder Kennung nur gekürzt im Arbeitsspeicher, höchstens etwa 16 Minuten, mit Sc
 
 - **Zweck, Rechtsgrundlage:** Anmeldung und Bedienkomfort; § 25 TDDDG (`DSE:924-993`).
 - **Daten im Browser:** Anmelde-Cookie (V1) und zwei kurzlebige Cookies im Anmeldevorgang;
-  nur bis zum Tabschluss Rücksprungseite, Filter im Fangkorb, ein geteilter Link und, höchstens eine
+  nur bis zum Tabschluss Rücksprungseite, Filter im Fangkorb, ein geteilter Link, der Zeitpunkt
+  eines automatischen Neuladens nach einer neuen Version (Schleifensperre) und, höchstens eine
   Stunde, ein angefangener Kommentar mit Prüfwert des Kontos (E1, 14.11.2026); dauerhaft die
   Wahl des Profilbilds und zwei Vermerke „schon gesehen“; ein Service Worker, der nichts speichert
   (`DSE:924-993`).

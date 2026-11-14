@@ -195,9 +195,16 @@ published for whoever wants the newest release, but nothing in production follow
 **How open apps and installed PWAs get the new version:** the service worker caches nothing,
 `index.html` is served with `no-cache`, so every page load gets the current version. Whoever has
 the app open across a rollout keeps the old code until a route needs a chunk the new container no
-longer has (404); the frontend then loads that route once with a full page load and so gets the
-new version (`src/app/shared/neue-version.ts`, at most once per 10 s; without `sessionStorage` a
-notice "Gut gesagt wurde aktualisiert – Neu laden" instead).
+longer has (404, also from an `@defer` block); the frontend then loads that route once with a
+full page load and so gets the new version (`src/app/shared/neue-version.ts`). Before switching it
+checks that the browser is online and, where the error names the chunk, that a `HEAD` on it
+answers 404; a network error only shows a message. A marker in `sessionStorage` blocks a second
+automatic reload until the reloaded page has navigated and run 30 s without a load error; while
+it stands, or without `sessionStorage`, a notice "Gut gesagt wurde aktualisiert – Neu laden"
+appears instead. State that only lives in memory or in the navigation's `state` is lost by that
+one reload: search results, a Destillieren handover, and on the "gespeichert" page the
+"Antwort auf" card and the warning that linking failed (`extras.state`). This only hits whoever
+navigates there across a rollout; moving it into the address is open.
 
 #### Releases
 

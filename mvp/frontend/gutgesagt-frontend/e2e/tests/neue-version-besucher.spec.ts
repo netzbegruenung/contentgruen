@@ -52,3 +52,38 @@ test('fehlender Chunk nach einem Deploy: die App laedt das Ziel selbst neu', asy
   // Kein Notfall-Hinweis: Der Speicher war da, also wurde automatisch neu geladen.
   await expect(page.getByText('Gut gesagt wurde aktualisiert')).toHaveCount(0);
 });
+
+test('fehlt der Chunk auch in der neuen Version: ein Neuladen, dann nur der Hinweis', async ({ page }) => {
+  test.setTimeout(60_000);
+  await ohneStack(page);
+  const startSkripte = new Set<string>();
+  let gestartet = false;
+  const seitenaufrufe: string[] = [];
+  page.on('request', (anfrage) => {
+    if (gestartet && anfrage.resourceType() === 'document' && anfrage.frame() === page.mainFrame()) {
+      seitenaufrufe.push(new URL(anfrage.url()).pathname);
+    }
+  });
+  // Was die Startseite laedt, gibt es weiter; jedes andere Skript fehlt dauerhaft (kaputter Deploy).
+  await page.route(/\.m?js(\?.*)?$/, (anfrage) => {
+    const pfad = new URL(anfrage.request().url()).pathname;
+    if (!gestartet) {
+      startSkripte.add(pfad);
+      return anfrage.fallback();
+    }
+    if (startSkripte.has(pfad)) return anfrage.fallback();
+    return anfrage.fulfill({ status: 404, contentType: 'text/html', body: 'Not Found' });
+  });
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Impressum' }).first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  gestartet = true;
+
+  await page.getByRole('link', { name: 'Impressum' }).first().click();
+
+  await expect(page.getByText('Gut gesagt wurde aktualisiert')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('button', { name: 'Neu laden' })).toBeVisible();
+  expect(seitenaufrufe).toEqual(['/impressum']);
+  await page.waitForTimeout(15_000);
+  expect(seitenaufrufe, 'kein weiteres automatisches Neuladen').toEqual(['/impressum']);
+});
