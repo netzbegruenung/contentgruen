@@ -5,6 +5,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 
 import { environment } from '../../../environments/environment';
 import { LoggingService } from '../../services/logging.service';
+import { merkerEntfernen } from '../../meine-beitraege/meilenstein-merker';
 
 /** Die Einwilligung „Punkte und Meilensteine“ der Person (#351) und der Wortlaut fürs Häkchen. */
 export interface PunkteEinwilligungStand {
@@ -55,7 +56,13 @@ export class PunkteEinwilligungService {
     }
     return this.http.put(this.url, { eingewilligt, wortlaut: stand.aktueller_wortlaut.kennung }).pipe(
       map(() => true),
-      tap(() => this.stand.next({ ...stand, eingewilligt, wortlaut: stand.aktueller_wortlaut.kennung })),
+      tap(() => {
+        if (!eingewilligt) {
+          // Nach dem Widerruf gibt es keine Meilensteine mehr: ihr Merker im Browser geht mit.
+          merkerEntfernen();
+        }
+        this.stand.next({ ...stand, eingewilligt, wortlaut: stand.aktueller_wortlaut.kennung });
+      }),
       catchError((error) => {
         this.logger.error('Einwilligung Punkte nicht gespeichert', error);
         return of(false);

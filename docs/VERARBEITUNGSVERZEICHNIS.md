@@ -200,7 +200,7 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Empfänger:** Punkte nur für die Person; Abzeichen für andere Angemeldete mit Zustimmung;
   Muster-Hinweise nur für Admins.
 - **Fristen:** LK „Fristen“ (Paar-Prüfwerte, Muster-Hinweise, Abzeichen).
-- **TOM:** DSFA Abschnitt 3, V11, V22. `punkte_aktiv` erst nach dem Merge von #668 einschalten (sonst startet der Suchdienst nicht). Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
+- **TOM:** DSFA Abschnitt 3, V11, V22. Eigene Einwilligung „Punkte und Meilensteine“ gebaut (#668, `PUNKTE_EINWILLIGUNG_GEBAUT`). Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
   Standard aus; einschalten erst nach Übernahme der DSFA (DSFA Abschnitt 7).
 
 ### T8 Meldungen, Sperren und Widerspruch

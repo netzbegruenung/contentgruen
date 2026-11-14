@@ -73,11 +73,11 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
 - **Punkte und Meilensteine:** gehören seit dem Wortlaut `2026-11-13` nicht mehr zu dieser
   Einwilligung, sondern hängen an der eigenen, freiwilligen Einwilligung „Punkte und
   Meilensteine“ (#668, Entscheidung Maintainer 13.11.2026); ohne sie kann die Person genauso
-  beitragen und bewerten. Bis #668 gemergt ist, prüft der Code dafür noch diese Einwilligung
-  (`PunkteService.punkte`, #559, F559-1: ohne sie 0 in jeder Stufe, gefragt je Abruf); das ist
-  folgenlos, solange der Schalter `punkte_aktiv` aus ist. **`punkte_aktiv` erst nach dem Merge
-  von #668 einschalten:** Bis dahin startet der Suchdienst damit nicht
-  (`punkte_schalter_pruefen` in `core/config.py`, `PUNKTE_EINWILLIGUNG_GEBAUT`, das #668 setzt).
+  beitragen und bewerten. Der Code prüft dafür die Tabelle `punkte_einwilligung`
+  (`PunkteService.punkte`, `MeilensteineService`, Muster-Hinweise; ohne sie 0 in jeder Stufe und
+  keine Meilensteine, gefragt je Abruf). `PUNKTE_EINWILLIGUNG_GEBAUT` in `core/config.py` steht
+  seit #668 auf `True`; auf `False` verhindert `punkte_schalter_pruefen`, dass der Suchdienst mit
+  `punkte_aktiv` startet.
 - **Abzeichen (#351):** Ohne geltende Einwilligung kein Abzeichen am Anzeigenamen. Ein Widerruf nimmt das Abzeichen sofort weg und hält ein
   früheres Ja zur Sichtbarkeit als Nein fest, damit es nach einer neuen Einwilligung nicht
   ohne neue Frage wieder erscheint (`AbzeichenService.zuruecknehmen`). Die Antwort zur

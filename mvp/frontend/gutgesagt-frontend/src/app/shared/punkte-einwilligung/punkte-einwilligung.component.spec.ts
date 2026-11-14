@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
 import { LoggingService } from '../../services/logging.service';
 import { PunkteEinwilligungComponent } from './punkte-einwilligung.component';
 import { PunkteEinwilligungStand } from './punkte-einwilligung.service';
+import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from '../../meine-beitraege/meilenstein-merker';
 
 describe('PunkteEinwilligungComponent (#351)', () => {
   const URL = `${environment.baseUrl}/api/v1/usage/users/me/punkte-einwilligung`;
@@ -69,6 +70,18 @@ describe('PunkteEinwilligungComponent (#351)', () => {
     const nein = http.expectOne({ method: 'PUT', url: URL });
     expect(nein.request.body).toEqual({ eingewilligt: false, wortlaut: '2026-11-13' });
     nein.flush(null);
+  });
+
+  it('entfernt beim Widerruf den Merker der angezeigten Meilensteine', () => {
+    localStorage.setItem(MEILENSTEINE_GESEHEN_SCHLUESSEL, '["einwurf-1"]');
+    const fixture = erstellen();
+    http.expectOne(URL).flush(stand(true));
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('input[type="checkbox"]') as HTMLInputElement).click();
+    http.expectOne({ method: 'PUT', url: URL }).flush(null);
+
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
   });
 
   it('meldet einen Fehler und setzt den Haken zurück', () => {

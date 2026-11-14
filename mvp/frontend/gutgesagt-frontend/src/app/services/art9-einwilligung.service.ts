@@ -205,7 +205,7 @@ export class Art9EinwilligungService implements OnDestroy {
       tap(() => {
         this.geklaertSetzen(null);
         this.zustand.setzen('fehlt');
-        // Ohne Einwilligung keine Meilensteine: ihr Merker im Browser geht mit (#351).
+        // Aufräumen nach dem Widerruf: Der Merker der angezeigten Meilensteine geht mit (#351).
         merkerEntfernen();
       }),
     );
@@ -244,7 +244,7 @@ export class Art9EinwilligungService implements OnDestroy {
             tap((stand) => {
               if (!stand || stand.eingewilligt) this.geklaertSetzen(kennung);
               if (stand) this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
-              // Ohne Einwilligung keine Meilensteine: ein alter Merker in diesem Browser geht (#351).
+              // Ohne Einwilligung kein Beitragen: ein alter Merker in diesem Browser geht (#351).
               if (stand && !stand.eingewilligt) merkerEntfernen();
             }),
             map((stand) => !!stand && zurEinwilligungUmleiten(stand)),
