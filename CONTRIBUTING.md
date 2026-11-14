@@ -153,11 +153,12 @@ and confirm that you have the right to do so.
 1. Open an issue on Forgejo or comment on an existing one to coordinate
 2. Create a branch as described above
 3. Make your changes and run the checks: `scripts/check.sh --geaendert` while working and before
-   pushing; the full run (`scripts/check.sh --integration`) is the pipeline's job
+   pushing; the full run (`scripts/check.sh --integration`) is the pipeline's job, the
+   integration tests on `main` after the merge
 4. Open a pull request against `main` on Forgejo with a clear description of what and why, and
    `Closes #<issue>`
-5. Woodpecker runs the same checks on every pull request ([docs/CI.md](docs/CI.md)); a maintainer
-   reviews and merges
+5. Woodpecker runs the same checks on every pull request, except the integration tests, which
+   run on `main` only ([docs/CI.md](docs/CI.md)); a maintainer reviews and merges
 
 Before starting significant work, please get in touch first to avoid duplication. Judgement rules
 for reviews are in [CODING_STANDARDS.md](CODING_STANDARDS.md).
