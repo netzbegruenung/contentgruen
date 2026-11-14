@@ -34,6 +34,7 @@ import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
 import { beitragsLink } from '../../shared/beitrags-link';
 import { TeilenService, hatGeteilt } from '../../shared/teilen.service';
 import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
+import { platzhalterDialogOeffnen } from './platzhalter-dialog.component';
 import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
 
 /**
@@ -210,11 +211,30 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.inZwischenablage(this.zweiteKopie?.text ?? '');
   }
 
+  /**
+   * Mit Platzhalter „[Hier …]“ fragt erst der Dialog nach dem eigenen Satz und kopiert
+   * selbst (Persona-Test Dennis, 13.11.); abgebrochen wird nichts kopiert und nichts gezählt.
+   */
   private inZwischenablage(text: string): void {
     if (this.vorschau || !text) {
       return;
     }
+    if (hatLuecke(text)) {
+      platzhalterDialogOeffnen(this.dialog, text)
+        .afterClosed()
+        .subscribe((ergebnis) => {
+          if (ergebnis) {
+            this.nachKopieren(ergebnis.text);
+          }
+        });
+      return;
+    }
     this.clipboard.copy(text);
+    this.nachKopieren(text);
+  }
+
+  /** Rückmeldung, Animation und Nutzung nach dem Kopieren, gleich ob mit oder ohne Dialog. */
+  private nachKopieren(text: string): void {
     this.kopiertMelden(text);
 
     this.copyAnimationActive = true;
@@ -240,6 +260,9 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    * Ausfüllen: Gepostet sein kann der Text dann noch nicht.
    */
   private kopiertMelden(text: string): void {
+    // Sicherheitsnetz: Seit dem Platzhalter-Dialog kommt hier normalerweise kein Text mit
+    // Luecke an (der Dialog fuellt oder entfernt sie). Bleibt er stehen, falls ein
+    // eingegebener Satz selbst "[Hier …]" enthaelt oder ein Weg am Dialog vorbei kopiert.
     if (hatLuecke(text)) {
       // Mit Platzhalter "[Hier …]" erinnert der Hinweis ans Ausfuellen (#640, R38) und bleibt laenger stehen.
       this.snackBar.open(KOPIERT_MIT_LUECKE, 'OK', { duration: 6000 });

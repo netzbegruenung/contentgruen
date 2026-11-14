@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -16,6 +16,12 @@ interface Eingabe {
   titelIstBehauptung: boolean;
 }
 
+/**
+ * Hintergrundinfo ohne Herkunft (Persona-Test Gerd, 13.11.): eine feste Regel im Formular,
+ * ohne Aufruf beim Dienst. Sie zählt nicht in die Güte, die rechnet der Dienst.
+ */
+export const HERKUNFT_FEHLT = 'Ohne Herkunft glaubt dir das kaum jemand. Nenn, woher es stammt: ein Link oder eine Fundstelle.';
+
 const NOCH_LEER: Gegengelesen = { guete: null, anmerkungen: [] };
 
 /**
@@ -24,12 +30,15 @@ const NOCH_LEER: Gegengelesen = { guete: null, anmerkungen: [] };
  */
 export const ANSAGE_PAUSE_MS = 1500;
 
-/** Die Zahl der Anmerkungen in Worten; leer, solange nichts gegengelesen ist. */
-export function zusammenfassung(ergebnis: Gegengelesen): string {
+/**
+ * Die Zahl der Anmerkungen in Worten; leer, solange nichts gegengelesen ist. ``zusaetzlich``
+ * zaehlt Anmerkungen des Formulars mit, etwa die fehlende Herkunft (HERKUNFT_FEHLT).
+ */
+export function zusammenfassung(ergebnis: Gegengelesen, zusaetzlich = 0): string {
   if (ergebnis.guete === null) {
     return '';
   }
-  const anzahl = ergebnis.anmerkungen.length;
+  const anzahl = ergebnis.anmerkungen.length + zusaetzlich;
   if (!anzahl) {
     return 'Nichts aufgefallen';
   }
@@ -62,6 +71,10 @@ export class GegenlesenComponent implements OnChanges {
   @Input() aussage: string | null = '';
   /** Kommentar und Hintergrundinfo behaupten im Titel; ein Post-Titel beschreibt, ohne Verneinungsregel. */
   @Input() titelIstBehauptung = true;
+  /** Das Formular hat ein Herkunftsfeld, und es ist leer; nur die Hintergrundinfo setzt das. */
+  @Input() herkunftFehlt = false;
+
+  readonly herkunftHinweis = HERKUNFT_FEHLT;
   /**
    * Kompakt direkt unter dem Textfeld, wenn das Formular einspaltig ist: eine Zeile mit
    * Siegel und Zahl der Anmerkungen, aufklappbar. Sonst neben der Vorschau, ganz offen.
@@ -79,13 +92,23 @@ export class GegenlesenComponent implements OnChanges {
   /** Jede Eingabe (null) und jedes Ergebnis (die Zahl) schiebt die Ansage auf. */
   private readonly ansageTakt = new Subject<string | null>();
 
+  /** Erst, wenn schon etwas geschrieben ist: Ein leeres Formular soll nicht mahnen. */
+  get zeigtHerkunftHinweis(): boolean {
+    return this.herkunftFehlt && this.ergebnis.guete !== null;
+  }
+
   get istGut(): boolean {
-    return this.ergebnis.guete !== null && !this.ergebnis.anmerkungen.length;
+    return this.ergebnis.guete !== null && !this.ergebnis.anmerkungen.length && !this.zeigtHerkunftHinweis;
   }
 
   /** Die kompakte Zeile: die Zahl, oder vor dem ersten Gegenlesen eine Einladung. */
   get zeile(): string {
-    return zusammenfassung(this.ergebnis) || 'liest mit, sobald du schreibst';
+    return zusammenfassung(this.ergebnis, this.herkunftZusatz) || 'liest mit, sobald du schreibst';
+  }
+
+  /** Der Herkunftshinweis zaehlt in Zeile und Ansage als eine Anmerkung mit. */
+  private get herkunftZusatz(): number {
+    return this.zeigtHerkunftHinweis ? 1 : 0;
   }
 
   constructor(service: GegenlesenService, cdr: ChangeDetectorRef) {
@@ -132,13 +155,22 @@ export class GegenlesenComponent implements OnChanges {
         this.verfuegbar = ergebnis !== null;
         if (ergebnis) {
           this.ergebnis = ergebnis;
-          this.ansageTakt.next(zusammenfassung(ergebnis));
+          this.ansageTakt.next(zusammenfassung(ergebnis, this.herkunftZusatz));
         }
         cdr.markForCheck();
       });
   }
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    const nurHerkunft = !!changes['herkunftFehlt'] && Object.keys(changes).length === 1;
+    if (nurHerkunft) {
+      // Kein neues Gegenlesen (die Eingabe ist dieselbe), aber die Zahl aendert sich:
+      // die Ansage aus dem jetzigen Stand nachziehen, statt sie mit null zu verwerfen.
+      if (this.ergebnis.guete !== null) {
+        this.ansageTakt.next(zusammenfassung(this.ergebnis, this.herkunftZusatz));
+      }
+      return;
+    }
     this.ansageTakt.next(null);
     this.eingabe.next({
       titel: this.titel ?? '',
