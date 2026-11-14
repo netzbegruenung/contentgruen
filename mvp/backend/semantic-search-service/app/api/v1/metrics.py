@@ -224,10 +224,12 @@ async def get_metrics(
             # Ohne unbeantwortete Suchanfragen, wie statement_count: Sonst verriete
             # der Zaehler (auch Anonymen) jede neue Suchanfrage (Vormoderation).
             statement_count = await statement_service.count_curated()
-            content_count = (
+            # count() liefert bei einem Fehler 0; nie negativ melden.
+            content_count = max(
+                0,
                 await content_repository.count()
                 - await statement_service.count()
-                + statement_count
+                + statement_count,
             )
 
             metrics = GetMetricsResponse(
