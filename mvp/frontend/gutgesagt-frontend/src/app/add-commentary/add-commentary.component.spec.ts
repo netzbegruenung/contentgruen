@@ -33,6 +33,9 @@ import { KuerzungsvorschlagComponent } from '../beitragsformular/kuerzungsvorsch
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { environment } from '../../environments/environment';
 import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
+import { AuthService } from '../auth/auth.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
+import { KOMMENTAR_ENTWURF_SCHLUESSEL, kommentarEntwurfSichern } from '../beitragsformular/kommentar-entwurf';
 
 describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
@@ -178,6 +181,61 @@ describe('AddCommentaryComponent', () => {
     it('beschriftet den Knopf mit "Kommentar speichern" und zeigt kein Info-Icon an der Vorschau', () => {
       expect(seite().querySelector('.submit-btn')!.textContent).toContain('Kommentar speichern');
       expect(seite().querySelector('.preview-header mat-icon')).toBeNull();
+    });
+  });
+
+  describe('Entwurf über einen App-Wechsel (E1)', () => {
+    const anmelden = (userId = 'kim-1') =>
+      TestBed.inject(AuthService).setUserInfo({ isAuthenticated: true, userId, userName: 'Kim', claims: null });
+    const ausblenden = () => {
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    afterEach(() => sessionStorage.removeItem(KOMMENTAR_ENTWURF_SCHLUESSEL));
+
+    it('sichert beim Ausblenden in den sessionStorage', () => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      ausfuellen();
+
+      ausblenden();
+
+      const roh = JSON.parse(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)!);
+      expect(roh.werte.text).toBe('Ein ausreichend langer Text.');
+      expect(roh.aussage).toBe('Wärmepumpen sind zu teuer');
+      expect(JSON.stringify(roh)).not.toContain('kim-1');
+    });
+
+    it('holt ihn nach dem Neuladen zurück, sobald die Anmeldung feststeht', () => {
+      kommentarEntwurfSichern(
+        { title: 'Eigener Titel', text: 'Ein ausreichend langer Text.', kurz: '', lang: '', zweck: null, stil: null },
+        '',
+        'kim-1',
+      );
+      fixture = TestBed.createComponent(AddCommentaryComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      anmelden();
+
+      expect(component.commentaryForm.value.text).toBe('Ein ausreichend langer Text.');
+      expect(component.commentaryForm.value.title).toBe('Eigener Titel');
+    });
+
+    it('löscht ihn nach dem Speichern und beim Leeren', () => {
+      TestBed.inject(Art9EinwilligungZustand).kennung = 'kim-1';
+      ausfuellen();
+      ausblenden();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).not.toBeNull();
+
+      speichernMit();
+      component.speichern();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
+
+      kommentarEntwurfSichern({ title: 'T', text: 'Text', kurz: '', lang: '', zweck: null, stil: null }, '', 'kim-1');
+      component.leeren();
+      expect(sessionStorage.getItem(KOMMENTAR_ENTWURF_SCHLUESSEL)).toBeNull();
     });
   });
 
