@@ -13,3 +13,5 @@ mvp/frontend/gutgesagt-frontend/node_modules
 mvp/frontend/gutgesagt-frontend/.angular
 mvp/frontend/gutgesagt-frontend/dist
 mvp/frontend/gutgesagt-frontend/src/environments/environment.ts
+mvp/frontend/gutgesagt-frontend/coverage
+mvp/frontend/gutgesagt-frontend/**/.env*

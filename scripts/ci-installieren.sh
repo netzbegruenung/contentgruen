@@ -95,6 +95,8 @@ case "${1:-}" in
         if [ -L "$FE/node_modules" ] && ! vorinstalliert frontend; then
           echo "Image dieses Schritts passt nicht zu package-lock.json: npm ci statt Verweis"
           rm -f "$FE/node_modules"
+          # Der kopierte Angular-Cache gehoert zu den node_modules des Images
+          rm -rf "$FE/.angular/cache"
           npm ci --prefix "$FE" --prefer-offline --no-audit --no-fund
         fi ;;
       *) echo "Unbekannt: ${2:-} (python oder frontend)" >&2; exit 2 ;;

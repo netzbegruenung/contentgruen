@@ -434,7 +434,12 @@ def test_integration_nie_im_pull_request(dateien):
 @pytest.mark.parametrize("event", ["push", "tag", "manual"])
 def test_integration_auf_main_mit_der_ganzen_kette(event):
     lauf = schritte_im_lauf(event, [])
-    assert set(lauf["integration"]) == {"python-installieren", "unit", "lint", "frontend"}
+    assert set(lauf["integration"]) == {
+        "python-installieren",
+        "unit",
+        "lint",
+        "frontend",
+    }
 
 
 def test_dienste_nur_wenn_integration_laeuft():
@@ -838,6 +843,21 @@ def test_nachpruefen_ersetzt_den_verweis_nur_bei_neuem_image(tmp_path):
     assert not (fe / "node_modules").is_symlink()
 
 
+def test_nachpruefen_entfernt_den_cache_des_alten_images(tmp_path):
+    skript, image, _, fe = _baum(tmp_path)
+    (image / "frontend.sha256").write_text(
+        _lauf(skript, image, "--pruefsumme", "frontend")
+    )
+    (image / "angular-cache" / "v").mkdir(parents=True)
+    _lauf(skript, image, "frontend", ereignis="pull_request")
+    assert (fe / ".angular" / "cache" / "v").is_dir()
+
+    (image / "frontend.sha256").write_text("neu\n")
+    _lauf(skript, image, "--nachpruefen", "frontend")
+    assert not (fe / ".angular" / "cache").exists()
+    assert not (fe / "node_modules").is_symlink()
+
+
 def test_nachpruefen_laesst_ein_echtes_node_modules_stehen(tmp_path):
     skript, image, protokoll, fe = _baum(tmp_path)
     (fe / "node_modules").mkdir()
@@ -907,12 +927,25 @@ def test_angular_cache_mit_denselben_ng_aufrufen_wie_check_sh():
     # In der CI ohne Source-Maps (CHECK_OHNE_SOURCEMAPS im Schritt frontend)
     assert SCHRITTE["frontend"]["environment"]["CHECK_OHNE_SOURCEMAPS"] == "1"
     assert f"{testen} --source-map=false" in node
+    # Wie der Schritt frontend-build: zwei Worker, der Runner ist knapp (13.11. OOM)
+    workers = SCHRITTE["frontend-build"]["environment"]["NG_BUILD_MAX_WORKERS"]
+    assert f"NG_BUILD_MAX_WORKERS={workers} timeout 900 {bauen}" in node
+    assert f"timeout 900 {testen}" in node
+    # Ein abgebrochener Lauf ohne Cache macht den Bau nicht rot
+    assert "mkdir -p .angular/cache && mv .angular/cache /opt/ci/angular-cache" in node
 
 
 def test_frontend_aenderung_baut_ci_node_nicht_neu():
-    # Frisch wird der Cache mit dem woechentlichen Bau; sonst baute jeder Merge das Image.
+    # Der Cache veraltet praktisch nur mit dem Lockfile; sonst baute jeder Merge das Image.
+    import fnmatch
+
     muster = CI_IMAGE_SCHRITTE["ci-node"]["when"][0]["path"]["include"]
-    assert not any(m.startswith("mvp/frontend/gutgesagt-frontend/**") for m in muster)
+    beispiel = "mvp/frontend/gutgesagt-frontend/src/app/app.component.ts"
+    assert not any(fnmatch.fnmatch(beispiel, m) for m in muster)
+    assert any(
+        fnmatch.fnmatch("mvp/frontend/gutgesagt-frontend/package-lock.json", m)
+        for m in muster
+    )
 
 
 @pytest.mark.parametrize(

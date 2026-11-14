@@ -191,7 +191,10 @@ from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `Dockerfile.ci`
 of it so that a pull request raising the Python or Node version does not run on the old
 image with matching lockfiles. Measured locally on 13.11.: about 1.9 GB (Python)
 and 0.8 GB (Node) compressed in the registry; the Node image shares its base layers with
-`node:22`.
+`node:22`. The layer with the Angular cache adds about 27 MB compressed (measured 14.11.).
+Every change to a lockfile or to `Dockerfile.ci` leaves a new checksum tag behind; the old
+ones stay in the registry until a cleanup rule removes them (`latest` and the untagged
+`sha256:` versions are never touched by Forgejo's cleanup rules).
 
 - **Every run checks the image**, in the installation step and again at the start of
   `unit`, `lint`, `integration`, `frontend-build` and `frontend` (`--nachpruefen`): each step
@@ -229,7 +232,8 @@ and 0.8 GB (Node) compressed in the registry; the Node image shares its base lay
   files the Dockerfile copies and the frontend sources it mounts for the Angular cache
   (`scripts/tests/test_woodpecker_ci.py` keeps the lists and the path filters equal).
 
-**Angular cache.** The Node image also carries Angular's cache (`.angular/cache`, 117 MB)
+**Angular cache.** The Node image also carries Angular's cache (`.angular/cache`, 123 MB on
+disk, 27 MB compressed)
 from `ng build` and `ng test` of the commit it was built from, normally `main`.
 `frontend-installieren` copies it into the workspace in pull-request runs only, and only
 when the image matches the lockfiles; the steps write to the copy, the image stays as it
@@ -243,17 +247,19 @@ is. Push, tag and manual runs build without it, as a clean reference.
 - **Built at the workspace path of Woodpecker**
   (`/woodpecker/src/git.verdigado.com/Netzbegruenung/gutgesagt`, `ARG CI_WORKSPACE`): the
   webpack cache of the Karma tests is keyed by absolute paths; copied to another path, the
-  test run saved 3 s instead of 7–15 s. If `ci.yaml` ever sets its own `workspace`, or the
+  test run saved 3 s instead of 7–15 s. Files of the app webpack checks by timestamp, so in a
+  fresh checkout they count as changed anyway; the gain comes from `node_modules` and the
+  content cache. If `ci.yaml` ever sets its own `workspace`, or the
   repository moves, the argument has to follow (`scripts/tests/test_woodpecker_ci.py` checks
   the default).
-- The same `ng` calls as `check.sh` in CI (production build; tests without source maps),
-  otherwise the cache keys differ. A red build or red tests do not stop the image; the
-  cache is written anyway.
-- The sources are mounted, not copied, and a frontend change does not rebuild the image:
-  the cache gets fresher with the weekly build. Every week it lags behind `main` more, and
-  the gain shrinks with it; a shorter cron schedule (it rebuilds both images) or a path
-  filter on `mvp/frontend/**` would keep it fresher, at the price of more builds on the
-  shared runner.
+- The same `ng` calls as `check.sh` in CI (production build with
+  `NG_BUILD_MAX_WORKERS=2`; tests without source maps), otherwise the cache keys differ.
+  Each call is capped at 15 minutes (`timeout 900`). A red, aborted or timed-out build does
+  not stop the image; without a cache the directory stays empty and pull requests build
+  without it.
+- The sources are mounted, not copied, and a frontend change does not rebuild the image.
+  The cache goes stale in practice only with the lockfile, and a lockfile change rebuilds
+  the image anyway.
 - Pull requests only read it: nothing a pull request writes reaches another run or the
   image. Release images are built from the Dockerfiles without any cache.
 - The images contain nothing secret and are public like the other images of
