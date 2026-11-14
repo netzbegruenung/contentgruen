@@ -170,14 +170,17 @@ described in [CI.md, "Images and releases"](CI.md#images-and-releases) two CIs b
   the tags the environments use, after running their test suites
   (`tests-backend.yml`, `tests-frontend.yml`, `tests-bff.yml`).
 - **Woodpecker** (`.woodpecker/build.yaml` and `release.yaml`, after a green `ci` run) builds
-  the same images with the same tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
+  the same images with the same release tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
   `:woodpecker-0.9.0`), so the two CIs never overwrite each other's tags. After the switch
   the prefix is gone and the GitHub workflows are removed.
 
-Tags, the same in both CIs (`scripts/image_tags.py`):
+Tags (`scripts/image_tags.py` in Woodpecker):
 
-- **Push to `main`:** `:main` and `:sha-<short>` for the images whose files changed. The test
-  environment runs `:main`, rolled out manually (see above).
+- **Push to `main`:** `:main` for the images whose files changed; GitHub also sets
+  `:sha-<short>`, Woodpecker no longer does (registry space, `docs/CI.md`). A cleanup rule of
+  the organisation removes `sha-` tags older than 7 days; the 5 newest versions per image
+  (all tags counted, `main` and releases included) always stay. The test environment runs
+  `:main`, rolled out manually (see above).
 - **Tag `vX.Y.Z`:** `:X.Y.Z` (the tag without its `v`), `:X.Y` and `:latest` for all four
   images. A prerelease (`v1.2.3-rc.1`) only gets `:1.2.3-rc.1`.
 
