@@ -5,6 +5,7 @@ import { RundgangService } from './rundgang.service';
  * Bietet einen Rundgang an, ohne etwas zu verdecken (#587): ein
  * gelbes Band mit Daumen über dem Inhalt statt eines Fensters (Look nach #389,
  * Variante B). Kein Fokusfang, kein Schleier; wer weiterliest, liest weiter.
+ * Ein Angebot ohne Rundgang (Hinweis „Gut gesagt als App“) hat nur „Ausblenden“.
  */
 @Component({
   selector: 'app-rundgang-band',
@@ -12,13 +13,25 @@ import { RundgangService } from './rundgang.service';
   template: `
     @if (angebot(); as angebot) {
       <aside class="band" aria-labelledby="rundgang-band-titel">
-        <img class="daumen" src="marke/daumen.svg" alt="" width="48" height="48" />
+        <img class="daumen" [class.symbol]="!!angebot.bild" [src]="angebot.bild ?? 'marke/daumen.svg'" alt="" width="48" height="48" />
         <div class="text">
           <h2 id="rundgang-band-titel">{{ angebot.titel }}</h2>
-          <p>{{ angebot.satz }}</p>
+          <p>
+            {{ angebot.satz }}
+            @if (angebot.nachTeilenSymbol) {
+              <!-- Das Teilen-Symbol von iOS: Quadrat mit Pfeil nach oben -->
+              <svg class="teilen-symbol" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M8.5 9.5H6.5v11h11v-11h-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M12 3v11.5M8.5 6.5 12 3l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              {{ angebot.nachTeilenSymbol }}
+            }
+          </p>
         </div>
         <div class="knoepfe">
-          <button type="button" class="rundgang-knopf voll" (click)="rundgang.bandBeantworten(true)">{{ angebot.ja }}</button>
+          @if (angebot.ja) {
+            <button type="button" class="rundgang-knopf voll" (click)="rundgang.bandBeantworten(true)">{{ angebot.ja }}</button>
+          }
           <button type="button" class="rundgang-knopf text" (click)="rundgang.bandBeantworten(false)">{{ angebot.nein }}</button>
         </div>
       </aside>

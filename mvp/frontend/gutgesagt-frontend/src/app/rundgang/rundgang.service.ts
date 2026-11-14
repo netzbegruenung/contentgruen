@@ -4,8 +4,23 @@ import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
-import { Angebot, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
-import { gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
+import { StateManagementService } from '../services/state-management.service';
+import { SearchResponse } from '../services/dtos/searchDtos';
+import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
+import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
+import { Angebot, HOME_ANGEBOT, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
+import { SCHON_DA_SCHLUESSEL, gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
+
+function hatTreffer(antwort: SearchResponse | null): boolean {
+  if (!antwort) return false;
+  return (
+    (antwort.commentary_search_results_count ?? 0) +
+      (antwort.generictext_search_results_count ?? 0) +
+      (antwort.post_search_results_count ?? 0) +
+      (antwort.image_search_results_count ?? 0) >
+    0
+  );
+}
 
 export interface RundgangStand {
   rundgang: Rundgang;
@@ -23,13 +38,17 @@ export interface RundgangStand {
  * zum ersten Mal ankommt. Bis dahin trägt „Beitragen“ im Kopf einen Neu-Punkt.
  * Ein Band bleibt, bis die Person darauf reagiert; nach einem Rundgang ist es für
  * diesen Besuch weg. Kein Band auf Formularen, Einladung, Anmeldung, Einwilligung
- * oder Rechtstexten.
+ * oder Rechtstexten. Dasselbe Band trägt auf iPhone und iPad den Hinweis „Gut gesagt
+ * als App“ (HOME_ANGEBOT), nachrangig zu Willkommen und Mitmachen.
  */
 @Injectable({ providedIn: 'root' })
 export class RundgangService {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly einwilligung = inject(Art9EinwilligungService);
+  private readonly suchStand = inject(StateManagementService);
+  private readonly homeMerkerAktiv = inject(HOME_HINWEIS_MERKER);
+  private readonly homeMoeglich = inject(HOME_BILDSCHIRM_MOEGLICH);
 
   private readonly stand = signal<RundgangStand | null>(null);
   /** Der laufende Rundgang mit dem aktuellen Schritt, sonst null. */
@@ -57,9 +76,27 @@ export class RundgangService {
    * Fenster): „Ausblenden“ wirkt dann wenigstens bis zum nächsten Besuch.
    */
   private readonly beantworteteAngebote = new Set<string>();
+  /**
+   * Hinweis „Gut gesagt als App“: Gerät passt und der Browser nimmt Merker an. Ohne
+   * Speicher kein Hinweis, sonst käme er nach dem Ausblenden bei jedem Besuch wieder.
+   */
+  private homeSpeicherDa = false;
+  /** Beim Start der App stand der Merker schon da: mindestens der zweite Besuch. */
+  private schonDaGewesen = false;
+  /** In diesem Besuch hat eine Suche Treffer gebracht. */
+  private sucheMitTreffern = false;
+  /** Willkommen oder Mitmachen stand in diesem Besuch schon da: dann kein zweites Band danach. */
+  private anderesBandGezeigt = false;
 
   /** Einmal beim Start der App. */
   beobachten(destroyRef: DestroyRef): void {
+    this.homeVorbereiten();
+    this.suchStand.searchResults$.pipe(takeUntilDestroyed(destroyRef)).subscribe((antwort) => {
+      if (this.sucheMitTreffern || !hatTreffer(antwort)) return;
+      this.sucheMitTreffern = true;
+      this.angebotPruefen();
+    });
+
     // Zurück (oder Vor) im Browser beendet den Rundgang: Sonst stuende der Schritt auf
     // der Seite, zu der die Person gerade zurückgeht, etwa „Passende Treffer“ über den
     // neuesten Inhalten der Startseite. Starten lässt er sich jederzeit über die Hilfe neu.
@@ -101,7 +138,7 @@ export class RundgangService {
   bandBeantworten(starten: boolean): void {
     const angebot = this.band();
     if (!angebot) return;
-    if (starten) {
+    if (starten && angebot.rundgang) {
       void this.starten(angebot.rundgang, angebot.ab);
     } else {
       this.beantwortet(angebot);
@@ -163,7 +200,33 @@ export class RundgangService {
     }
     // Wer Mitmachen schon hatte, braucht kein Willkommen mehr
     if (!this.gesehen(WILLKOMMEN) && !this.gesehen(MITMACHEN_ANGEBOT) && hier(WILLKOMMEN)) return WILLKOMMEN;
+    // Zuletzt und nie zugleich mit einem anderen: Es gibt nur ein Band
+    if (this.homeFaellig() && hier(HOME_ANGEBOT)) return HOME_ANGEBOT;
     return null;
+  }
+
+  /**
+   * Nur auf iPhone und iPad im Browser und nur mit Speicher: merkt sich, dass die Person
+   * schon einmal hier war, und liest vorher, ob sie es schon war. Andere Geräte bekommen
+   * keinen Merker.
+   */
+  private homeVorbereiten(): void {
+    if (!this.homeMerkerAktiv || !this.homeMoeglich()) return;
+    this.schonDaGewesen = imSpeicher(SCHON_DA_SCHLUESSEL);
+    this.homeSpeicherDa = speichern(SCHON_DA_SCHLUESSEL);
+  }
+
+  /**
+   * Frühestens beim zweiten Besuch oder nach einer Suche mit Treffern; nie nach
+   * „Ausblenden“ und nicht im selben Besuch wie Willkommen oder Mitmachen.
+   */
+  private homeFaellig(): boolean {
+    return (
+      this.homeSpeicherDa &&
+      !this.anderesBandGezeigt &&
+      !this.gesehen(HOME_ANGEBOT) &&
+      (this.schonDaGewesen || this.sucheMitTreffern)
+    );
   }
 
   /** Ohne Kennung ist nichts geklärt, auch wenn `geklaert()` ebenfalls null ist. */
@@ -177,7 +240,9 @@ export class RundgangService {
   }
 
   private angebotPruefen(): void {
-    this.angebot.set(this.faelligesAngebot());
+    const angebot = this.faelligesAngebot();
+    if (angebot && angebot !== HOME_ANGEBOT) this.anderesBandGezeigt = true;
+    this.angebot.set(angebot);
     this.mitmachenOffen.set(this.mitmachenFaellig(this.info));
   }
 

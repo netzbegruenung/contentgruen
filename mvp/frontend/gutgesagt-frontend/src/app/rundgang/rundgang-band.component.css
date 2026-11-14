@@ -15,6 +15,17 @@
     height: 48px;
 }
 
+/* Das App-Symbol statt des Daumens: so, wie es auf dem Home-Bildschirm aussieht */
+.daumen.symbol {
+    border-radius: 22%;
+}
+
+.teilen-symbol {
+    display: inline-block;
+    vertical-align: -3px;
+    color: var(--primary-dark);
+}
+
 .text {
     flex: 1;
     min-width: 0;

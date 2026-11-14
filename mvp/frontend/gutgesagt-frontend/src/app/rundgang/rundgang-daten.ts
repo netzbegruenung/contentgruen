@@ -6,7 +6,7 @@
  */
 
 import { STARTBEISPIEL } from '../shared/startbeispiel';
-import { MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
+import { HOME_HINWEIS_SCHLUESSEL, MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
 
 /** Ein Wert, der sich zwischen breitem Kopf (Desktop) und mobilem Kopf unterscheidet. */
 export type JeGeraet<T> = T | { desktop: T; mobil: T };
@@ -64,15 +64,20 @@ export const NEU_HINWEIS = 'Neu: so geht Beitragen';
  * Treffern, Mitmachen, sobald jemand zum ersten Mal auf Beitragen ankommt (seit #644 nicht im Fangkorb).
  */
 export interface Angebot {
-  rundgang: RundgangId;
+  /** Ohne Rundgang ist das Band nur ein Hinweis mit „Ausblenden“ (Home-Bildschirm). */
+  rundgang?: RundgangId;
   /** Unter diesem Schlüssel merkt sich der Browser, dass das Angebot beantwortet wurde. */
   schluessel: string;
   titel: string;
   satz: string;
+  /** Hinter dem Satz das Teilen-Symbol von iOS und danach dieser Text. */
+  nachTeilenSymbol?: string;
+  /** Bild links im Band; ohne Angabe der Daumen. */
+  bild?: string;
   /** Seiten (Pfadanfang), auf denen das Band steht. */
   seiten: string[];
   /** Beschriftung der beiden Knöpfe: Rundgang starten bzw. ausblenden. */
-  ja: string;
+  ja?: string;
   nein: string;
   /** Erster Schritt des Rundgangs, wenn er aus dem Band startet. */
   ab: number;
@@ -114,6 +119,24 @@ export const MITMACHEN_ANGEBOT: Angebot = {
   ja: 'Zeig mir’s',
   nein: 'Nein danke',
   ab: 1,
+};
+
+/**
+ * Nur auf iPhone und iPad in Safari (14.11.2026): Dort bietet der Browser das Installieren
+ * nicht von selbst an. Frühestens beim zweiten Besuch oder nach einer Suche mit Treffern,
+ * nie zusammen mit Willkommen oder Mitmachen; einmal ausgeblendet, kommt es nicht wieder.
+ */
+export const HOME_ANGEBOT: Angebot = {
+  schluessel: HOME_HINWEIS_SCHLUESSEL,
+  titel: 'Gut gesagt als App',
+  satz: 'In Safari auf Teilen',
+  nachTeilenSymbol: 'tippen, dann „Zum Home-Bildschirm“.',
+  bild: 'marke/apple-touch-icon-180.png',
+  // Wie das Willkommen nur auf der Startseite unter dem Suchfeld, nicht über Treffern (#599)
+  seiten: ['/search'],
+  imInhalt: true,
+  nein: 'Ausblenden',
+  ab: 0,
 };
 
 export const RUNDGAENGE: Record<RundgangId, Rundgang> = {

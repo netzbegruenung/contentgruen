@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RundgangBandComponent } from './rundgang-band.component';
 import { RundgangService } from './rundgang.service';
-import { Angebot, MITMACHEN_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
+import { Angebot, HOME_ANGEBOT, MITMACHEN_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
 
 /** Das Angebot eines Rundgangs als Band statt Fenster (#587). */
 describe('RundgangBandComponent', () => {
@@ -61,6 +61,35 @@ describe('RundgangBandComponent', () => {
     expect(rundgang.bandBeantworten).toHaveBeenCalledWith(true);
     knopf('Ausblenden').click();
     expect(rundgang.bandBeantworten).toHaveBeenCalledWith(false);
+  });
+
+  describe('Hinweis „Gut gesagt als App“ (14.11.2026)', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('ort', 'start');
+      band.set(HOME_ANGEBOT);
+      fixture.detectChanges();
+    });
+
+    it('sagt in einem Satz, wie es geht, mit dem Teilen-Symbol nur fürs Auge', () => {
+      const p = el().querySelector('aside p')!;
+      expect(p.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'In Safari auf Teilen tippen, dann „Zum Home-Bildschirm“.',
+      );
+      const svg = p.querySelector('svg')!;
+      expect(svg.getAttribute('aria-hidden')).toBe('true');
+      expect(el().querySelector('aside h2')?.textContent).toContain('Gut gesagt als App');
+    });
+
+    it('zeigt das App-Symbol statt des Daumens', () => {
+      expect(el().querySelector('aside img')?.getAttribute('src')).toBe('marke/apple-touch-icon-180.png');
+    });
+
+    it('hat nur „Ausblenden“', () => {
+      const knoepfe = el().querySelectorAll('aside button');
+      expect(knoepfe.length).toBe(1);
+      knopf('Ausblenden').click();
+      expect(rundgang.bandBeantworten).toHaveBeenCalledWith(false);
+    });
   });
 
   describe('Ort (Nutzerfuehrung 13.11.)', () => {
