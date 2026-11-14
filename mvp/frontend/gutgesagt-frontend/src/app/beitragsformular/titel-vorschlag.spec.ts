@@ -53,6 +53,9 @@ describe('titelVorschlag (E2)', () => {
     expect(titelVorschlag('Am 3. Oktober feiern wir. Weiter.')).toBe('Am 3. Oktober feiern wir.');
     expect(titelVorschlag('Seit dem 19. Jahrhundert wächst die Stadt. Weiter.')).toBe('Seit dem 19. Jahrhundert wächst die Stadt.');
     expect(titelVorschlag('Am 3. und 4. Mai ist Markt. Weiter.')).toBe('Am 3. und 4. Mai ist Markt.');
+    expect(titelVorschlag('Nach dem 2. Weltkrieg wurde neu gebaut. Weiter.')).toBe('Nach dem 2. Weltkrieg wurde neu gebaut.');
+    expect(titelVorschlag('Die 3. Klasse lernt das. Weiter.')).toBe('Die 3. Klasse lernt das.');
+    expect(titelVorschlag('Der 1. FC Köln spielt. Weiter.')).toBe('Der 1. FC Köln spielt.');
   });
 
   it('endet weiter an einem normalen Satzende mit Punkt', () => {

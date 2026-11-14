@@ -38,10 +38,20 @@ const NACH_ORDINALZAHL = new Set([
 ]);
 
 /**
+ * Artikel und Präpositionen mit Artikel, nach denen eine Zahl mit Punkt eine Ordinalzahl ist
+ * („nach dem 2. Weltkrieg“, „der 1. FC“, „die 3. Klasse“). Klein geschrieben.
+ */
+const VOR_ORDINALZAHL = new Set([
+  'der', 'die', 'das', 'dem', 'den', 'des', 'am', 'im', 'zum', 'zur', 'vom', 'beim', 'ins', 'ans',
+  'ein', 'eine', 'einem', 'einen', 'einer', 'eines', 'jeder', 'jede', 'jedes', 'jedem', 'jeden',
+]);
+
+/**
  * Bis zum ersten Satzzeichen (. ! ? …), dem Leerraum oder das Ende folgt; ein Punkt hinter
  * einer Abkürzung zählt nicht. Ein Punkt hinter einer Zahl („seit 2019.“) beendet den Satz,
- * außer bei einer Ordinalzahl: vor einem Monatsnamen oder „Jahrhundert“ („1. Januar“) oder
- * vor einem klein geschriebenen Wort („am 3. und 4. Mai“). Sonst der ganze Text.
+ * außer bei einer Ordinalzahl: vor einem Monatsnamen oder „Jahrhundert“ („1. Januar“), vor
+ * einem klein geschriebenen Wort („am 3. und 4. Mai“) oder nach einem Artikel („dem 2.
+ * Weltkrieg“). Sonst der ganze Text.
  */
 function ersterSatz(text: string): string {
   const ende = /[.!?…](?=\s|$)/g;
@@ -59,7 +69,8 @@ function ersterSatz(text: string): string {
 function keinSatzende(davor: string, danach: string): boolean {
   const wort = davor.match(/(\S+)$/)?.[1] ?? '';
   if (/\d$/.test(wort)) {
-    return istOrdinalzahl(danach);
+    const vorher = davor.slice(0, davor.length - wort.length).match(/(\p{L}+)\s*$/u)?.[1]?.toLowerCase();
+    return istOrdinalzahl(danach) || (!!vorher && VOR_ORDINALZAHL.has(vorher) && !!danach.trim());
   }
   const ohneZeichen = wort.replace(/^[„"'(]+/, '').replace(/\./g, '').toLowerCase();
   // Ein Punkt schon im Wort („u.a“, „z.B“): zusammengeschriebene Abkürzung
