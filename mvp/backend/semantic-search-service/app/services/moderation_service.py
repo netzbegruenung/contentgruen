@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from repositories.content_report_repository import (
+    BeitragGesperrt,
     ContentReportRepository,
     MeldungNichtOffen,
     get_content_report_repository,
@@ -793,9 +794,23 @@ class ModerationService:
 
         Returns:
             bool: True if dismissal was successful
+
+        Raises:
+            MeldungNichtOffen: die Meldung ist schon bearbeitet oder abgewiesen
+            BeitragGesperrt: der Beitrag ist gesperrt; die Mail an die meldende
+                Person ("weder ein Verstoss noch rechtswidrig") waere dann falsch.
+                Solche Meldungen erledigt erneutes Sperren (sperren), das alle
+                Meldungen zum Beitrag auf bearbeitet setzt und "gesperrt" mitteilt.
         """
         try:
             report_uuid = UUID(report_id)
+            content_id = await asyncio.to_thread(
+                self.report_repo.content_id_von, report_uuid
+            )
+            if content_id is not None and await asyncio.to_thread(
+                self._sperre_repository().aktive, content_id
+            ):
+                raise BeitragGesperrt(str(content_id))
             adressen: List[MelderAdresse] = []
             updated_report = self.report_repo.update_report_status(
                 report_id=report_uuid,
@@ -816,7 +831,7 @@ class ModerationService:
             else:
                 logger.warning(f"Report {report_id} not found")
                 return False
-        except MeldungNichtOffen:
+        except (MeldungNichtOffen, BeitragGesperrt):
             raise
         except ValueError as e:
             logger.error("Invalid report_id format")

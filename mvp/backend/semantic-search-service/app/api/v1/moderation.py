@@ -44,7 +44,11 @@ from dependencies import (
 from utils.rate_limiter import report_rate_limiter
 from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
-from repositories.content_report_repository import MeldungNichtOffen, melder_pseudonym
+from repositories.content_report_repository import (
+    BeitragGesperrt,
+    MeldungNichtOffen,
+    melder_pseudonym,
+)
 
 logger = get_logger(__name__)
 
@@ -694,6 +698,8 @@ async def delete_content(
 
 # Kennzeichen fuer das Frontend: Die Meldung ist nicht mehr offen.
 MELDUNG_NICHT_OFFEN = "meldung_nicht_offen"
+# Kennzeichen fuer das Frontend: Der Beitrag ist gesperrt, Abweisen passt nicht.
+BEITRAG_GESPERRT = "beitrag_gesperrt"
 
 
 # Admin Endpoint - Dismiss Report
@@ -727,6 +733,9 @@ async def dismiss_report(
     except MeldungNichtOffen:
         # Schon bearbeitet oder abgewiesen, etwa aus einem veralteten Fenster.
         raise HTTPException(status_code=409, detail=MELDUNG_NICHT_OFFEN)
+    except BeitragGesperrt:
+        # Die Abweisungsmail ("kein Verstoss") waere bei einem gesperrten Beitrag falsch.
+        raise HTTPException(status_code=409, detail=BEITRAG_GESPERRT)
     except HTTPException:
         raise
     except Exception as e:

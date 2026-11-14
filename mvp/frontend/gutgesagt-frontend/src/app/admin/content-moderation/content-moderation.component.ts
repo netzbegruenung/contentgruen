@@ -609,6 +609,8 @@ export class ContentModerationComponent implements OnInit {
    */
   dismissReport(report: ContentReport) {
     if (this.erledigtMelden(report)) return;
+    // Bei gesperrtem Beitrag gibt es kein Abweisen (Knopf fehlt; der Suchdienst lehnt mit 409 ab).
+    if (this.istGesperrt(report)) return;
     const daten: AbweisenDialogDaten = {
       titel: this.beitragsTitel(report.content ?? { id: report.content_id }),
       meldegrund: this.getReasonLabel(report.reason),
@@ -643,8 +645,14 @@ export class ContentModerationComponent implements OnInit {
         this.nachAktion(); // Reload to remove from list
       },
       error: (error) => {
-        // 409: inzwischen bearbeitet oder abgewiesen (etwa aus einem anderen Fenster).
-        const text = error?.status === 409 ? MELDUNG_ERLEDIGT : 'Fehler beim Abweisen der Meldung';
+        // 409: inzwischen bearbeitet oder abgewiesen (etwa aus einem anderen Fenster), oder der
+        // Beitrag wurde gesperrt, während der Dialog offen war.
+        const text =
+          error?.status === 409 && error?.error?.detail === 'beitrag_gesperrt'
+            ? 'Der Beitrag ist schon gesperrt'
+            : error?.status === 409
+              ? MELDUNG_ERLEDIGT
+              : 'Fehler beim Abweisen der Meldung';
         this.snackBar.open(text, 'OK', { duration: 5000 });
         if (error?.status === 409) {
           this.nachAktion();
