@@ -626,6 +626,7 @@ OFFEN = {
     ("PUT", "/api/v1/moderation/content/{content_id}/sperren"),
     ("PUT", "/api/v1/moderation/content/{content_id}/entsperren"),
     ("PUT", "/api/v1/moderation/reports/{report_id}/dismiss"),
+    ("PUT", "/api/v1/moderation/reports/{report_id}/schliessen"),
     ("PUT", "/api/v1/moderation/sperren/{sperre_id}/bestaetigen"),
     ("POST", "/api/v1/usage/cleanup/run"),
     # Seeding: am BFF gesperrt (EndpointPolicy.Blocked)

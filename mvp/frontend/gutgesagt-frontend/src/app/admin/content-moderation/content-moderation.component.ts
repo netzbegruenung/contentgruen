@@ -626,6 +626,29 @@ export class ContentModerationComponent implements OnInit {
       });
   }
 
+  /**
+   * Eine offene Meldung zu einem schon gesperrten Beitrag schließen (eigener Endpunkt): Die
+   * meldende Person bekommt die vorhandene Mail „gesperrt“, eine neue Sperre entsteht nicht.
+   */
+  meldungSchliessen(report: ContentReport) {
+    if (this.erledigtMelden(report) || !this.istGesperrt(report)) return;
+    this.generation++;
+    this.moderationService.meldungSchliessen(report.id).subscribe({
+      next: () => {
+        this.snackBar.open('Meldung geschlossen, Beitrag bleibt gesperrt', 'OK', { duration: 3000 });
+        this.nachAktion();
+      },
+      error: (error) => {
+        // 409: inzwischen erledigt oder der Beitrag ist nicht mehr gesperrt; neu laden zeigt den Stand.
+        const text = error?.status === 409 ? MELDUNG_ERLEDIGT : 'Fehler beim Schließen der Meldung';
+        this.snackBar.open(text, 'OK', { duration: 5000 });
+        if (error?.status === 409) {
+          this.nachAktion();
+        }
+      }
+    });
+  }
+
   /** Eine erledigte Meldung (ausgegraut) bekommt keine Aktion mehr; das sagt eine Snackbar. */
   private erledigtMelden(report: ContentReport): boolean {
     if (!this.istErledigt(report)) {

@@ -256,6 +256,17 @@
               <mat-icon>lock_open</mat-icon>
               Entsperren
             </button>
+            <!-- Bei gesperrtem Beitrag statt Abweisen: die Meldung schließen (Mail „gesperrt“) -->
+            <button
+              *ngIf="report.status === 'pending' && istGesperrt(report)"
+              mat-button
+              class="meldung-schliessen"
+              [disabled]="istErledigt(report)" disabledInteractive
+              (click)="meldungSchliessen(report); $event.stopPropagation()"
+              matTooltip="Beitrag ist schon gesperrt; die meldende Person erfährt das per Mail">
+              <mat-icon>task_alt</mat-icon>
+              Meldung schließen
+            </button>
             <!-- Kein Abweisen bei gesperrtem Beitrag: Dialog und Mail sagten sonst „bleibt sichtbar“ bzw. „kein Verstoß“ -->
             <button
               *ngIf="report.status === 'pending' && !istGesperrt(report)"

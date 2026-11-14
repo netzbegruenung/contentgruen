@@ -221,6 +221,16 @@ describe('ModerationService', () => {
     });
   });
 
+  describe('meldungSchliessen', () => {
+    it('schliesst über den eigenen Endpunkt, nicht über sperren', () => {
+      service.meldungSchliessen('report-123').subscribe();
+
+      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/reports/report-123/schliessen`);
+      expect(req.request.method).toBe('PUT');
+      req.flush({ success: true, message: 'Meldung geschlossen' });
+    });
+  });
+
   describe('dismissReport', () => {
     it('should send dismiss request with optional notes', () => {
       const reportId = 'report-123';
