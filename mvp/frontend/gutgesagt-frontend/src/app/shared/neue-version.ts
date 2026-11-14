@@ -1,9 +1,8 @@
-import { Injectable, InjectionToken, Injector, inject } from '@angular/core';
+import { Injectable, InjectionToken, NgZone, inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
-import { NavigationEnd, NavigationError, Router } from '@angular/router';
+import { NavigationError } from '@angular/router';
 import { Observable } from 'rxjs';
-import { filter, take } from 'rxjs/operators';
 
 /**
  * Nach einem Deploy die neue Version laden, ohne dass jemand von Hand neu laden muss.
@@ -14,9 +13,10 @@ import { filter, take } from 'rxjs/operators';
  * geladene Route oeffnet, bekommt beim dynamischen Import eine 404. Dann hilft nur ein harter
  * Seitenwechsel auf das Ziel: Er holt die neue index.html mit den neuen Chunks.
  *
- * Schleifensperre: Vor dem Wechsel steht ein Merker im sessionStorage. Er faellt erst, wenn die
- * neu geladene Seite ihre erste Navigation geschafft hat und danach ``BESTAETIGT_MS`` ohne
- * Ladefehler lief. Solange er steht, wird nicht automatisch neu geladen, nur ein Hinweis gezeigt.
+ * Schleifensperre: Vor dem Wechsel steht ein Merker (nur der Zeitpunkt) im sessionStorage; er
+ * faellt nach ``SPERRE_MS``. Solange er steht, wird nicht automatisch neu geladen, nur ein Hinweis
+ * gezeigt: hoechstens ein automatisches Neuladen je zehn Minuten, gleich ob ein Guard vor dem
+ * Laden lange wartet oder ein ``@defer``-Block erst spaet scheitert.
  * So bleibt es bei einem Wechsel, auch wenn die neue Version selbst ihre Chunks nicht findet
  * oder ein Guard vor dem Laden lange auf den Server wartet.
  */
@@ -35,13 +35,16 @@ const LADEFEHLER = [
 const DEFER_FEHLER_CODE = -750;
 const DEFER_FEHLER = /^NG0?750\b/;
 
-/** So lange muss die neu geladene Seite nach ihrer ersten Navigation fehlerfrei laufen. */
-export const BESTAETIGT_MS = 30_000;
+/** So lange gilt der Merker eines automatischen Neuladens; aelter zaehlt er als abgelaufen. */
+export const SPERRE_MS = 10 * 60_000;
+
+/** So lange darf die Pruefung auf dem Server dauern; danach gilt sie als Netzfehler. */
+export const PRUEFUNG_MS = 5_000;
 
 /** Nach so langer Zeit gilt ein angestossener Wechsel als nicht passiert (etwa abgebrochen). */
-export const WECHSEL_FRIST_MS = 5_000;
+export const WECHSEL_FRIST_MS = 10_000;
 
-/** Schluessel im sessionStorage: Zeitpunkt des automatischen Neuladens, bis es bestaetigt ist. */
+/** Schluessel im sessionStorage: Zeitpunkt des letzten automatischen Neuladens. */
 export const SPERRE_SCHLUESSEL = 'gutgesagt.neueVersionGeladen';
 
 /** Der Hinweis, wenn nicht automatisch neu geladen wird (Notfall). */
@@ -88,6 +91,8 @@ export interface Browser {
   wechseln(url: string): void;
   /** Die aktuelle Adresse (window.location.href). */
   adresse(): string;
+  /** Die eigene index.html (no-cache): Antwortet sie, ist der Server erreichbar. */
+  startseite(): string;
   /** Der sessionStorage, oder null, wenn schon der Zugriff scheitert (gesperrte Website-Daten). */
   speicher(): Storage | null;
   online(): boolean;
@@ -99,6 +104,7 @@ export const BROWSER = new InjectionToken<Browser>('Browser', {
   factory: () => ({
     wechseln: (url) => hartWechseln(url, window.location, window.history),
     adresse: () => window.location.href,
+    startseite: () => new URL('index.html', document.baseURI).href,
     speicher: () => {
       try {
         return window.sessionStorage;
@@ -126,13 +132,14 @@ export function ladefehlerKern(fehler: unknown, tiefe = 0): object | string | nu
   if (typeof fehler !== 'object') return null;
   const f = fehler as { code?: unknown; message?: unknown; rejection?: unknown; error?: unknown };
   if (f.code === DEFER_FEHLER_CODE) return fehler;
-  if (typeof f.message === 'string' && ladefehlerKern(f.message) !== null) return fehler;
+  // Erst die Huellen: zone.js packt den Fehler in „Uncaught (in promise): …“ mit ``rejection``,
+  // und Router wie ErrorHandler sollen denselben Kern sehen.
   for (const huelle of [f.rejection, f.error]) {
     if (huelle === fehler) continue;
     const kern = ladefehlerKern(huelle, tiefe + 1);
     if (kern !== null) return kern;
   }
-  return null;
+  return typeof f.message === 'string' && ladefehlerKern(f.message) !== null ? fehler : null;
 }
 
 /** Ist ``fehler`` ein gescheiterter Chunk- bzw. Modul-Import (auch ``@defer``)? */
@@ -161,29 +168,23 @@ export class NeueVersionService {
   private readonly browser = inject(BROWSER);
   private readonly snackBar = inject(MatSnackBar);
   private readonly location = inject(Location);
-  // Spaet geholt: Der globale ErrorHandler braucht diesen Dienst, der Router ihn womoeglich.
-  private readonly injector = inject(Injector);
+  private readonly zone = inject(NgZone);
 
   /** Eine Pruefung oder ein Wechsel laeuft: Folgefehler derselben Seite tun nichts mehr. */
   private laeuft = false;
   /** Schon behandelte Fehler: Router und ErrorHandler melden denselben Fehler nacheinander. */
   private readonly behandelt = new WeakSet<object>();
   private hinweis: { ziel: string; ref: MatSnackBarRef<TextOnlySnackBar> } | null = null;
-  private bestaetigung: ReturnType<typeof setTimeout> | null = null;
 
-  /** Beim Start: Nach der ersten geschafften Navigation und ``BESTAETIGT_MS`` Ruhe faellt der Merker. */
-  beobachten(): void {
-    this.injector.get(Router).events
-      .pipe(
-        filter((ereignis) => ereignis instanceof NavigationEnd),
-        take(1),
-      )
-      .subscribe(() => {
-        this.bestaetigung = setTimeout(() => {
-          this.bestaetigung = null;
-          this.sperreLoeschen();
-        }, BESTAETIGT_MS);
-      });
+  /**
+   * Beim Start: Ein abgelaufener Merker faellt gleich, ein stehender, sobald er abgelaufen ist.
+   * So liegt er nicht laenger als ``SPERRE_MS`` im Browser, auch wenn kein Fehler mehr kommt.
+   */
+  aufraeumen(): void {
+    const zeitpunkt = this.sperreZeitpunkt();
+    if (zeitpunkt === null) return;
+    // Ausserhalb der Zone: Ein Wecker ueber zehn Minuten soll die App nicht als unruhig fuehren.
+    this.zone.runOutsideAngular(() => setTimeout(() => this.sperreZeitpunkt(), zeitpunkt + SPERRE_MS - Date.now()));
   }
 
   /** Fuer ``withNavigationErrorHandler``: bei einem Ladefehler hart auf das Ziel der Navigation. */
@@ -200,20 +201,15 @@ export class NeueVersionService {
 
   /**
    * Laedt ``zielUrl`` hart, wenn wirklich eine neue Version da ist: nicht offline, und das
-   * fehlende Skript (sofern die Meldung es nennt) antwortet mit 404. Steht der Merker eines
-   * frueheren automatischen Neuladens noch oder laesst er sich nicht setzen (kein Speicher),
-   * kommt stattdessen ein Hinweis mit Knopf.
+   * fehlende Skript antwortet mit 404 (nennt die Meldung keins, wie Safari und ``@defer``: die
+   * eigene index.html antwortet). Steht der Merker eines frueheren automatischen Neuladens noch
+   * oder laesst er sich nicht setzen (kein Speicher), kommt stattdessen ein Hinweis mit Knopf.
    */
   async neueVersionLaden(zielUrl: string, fehler?: unknown): Promise<Ausgang> {
     const kern = ladefehlerKern(fehler);
     if (kern !== null && typeof kern === 'object') {
       if (this.behandelt.has(kern)) return 'schon-behandelt';
       this.behandelt.add(kern);
-    }
-    // Ein Fehler, waehrend die neu geladene Seite noch nicht bestaetigt ist: Merker bleibt.
-    if (this.bestaetigung !== null) {
-      clearTimeout(this.bestaetigung);
-      this.bestaetigung = null;
     }
     if (this.laeuft) return 'laeuft-schon';
     this.laeuft = true;
@@ -224,7 +220,8 @@ export class NeueVersionService {
         return 'netzfehler';
       }
       const chunk = chunkAdresse(fehler, this.browser.adresse());
-      if (chunk !== null && !(await this.fehltAufDemServer(chunk))) {
+      const neueVersion = chunk !== null ? await this.fehltAufDemServer(chunk) : await this.serverErreichbar();
+      if (!neueVersion) {
         this.meldung(NETZFEHLER_TEXT);
         return 'netzfehler';
       }
@@ -244,33 +241,72 @@ export class NeueVersionService {
 
   /** Nur ein 404 (oder 410) heisst: Diese Version gibt es nicht mehr. Netzfehler und 5xx nicht. */
   private async fehltAufDemServer(chunk: string): Promise<boolean> {
+    const status = await this.kopfStatus(chunk);
+    return status === 404 || status === 410;
+  }
+
+  /** Ohne Adresse des Chunks: Antwortet die eigene index.html mit 2xx, ist es kein Netzproblem. */
+  private async serverErreichbar(): Promise<boolean> {
+    const status = await this.kopfStatus(this.browser.startseite());
+    return status !== null && status >= 200 && status < 300;
+  }
+
+  /**
+   * HEAD ohne Cache, abgebrochen nach ``PRUEFUNG_MS``; null bei Netzfehler oder Zeitueberschreitung.
+   * AbortController und eigener Wecker statt ``AbortSignal.timeout``: Der Wecker beendet die
+   * Pruefung auch, wenn ``fetch`` das Signal nicht beachtet.
+   */
+  private async kopfStatus(url: string): Promise<number | null> {
+    const abbruch = new AbortController();
+    let wecker: ReturnType<typeof setTimeout> | undefined;
+    const zuSpaet = new Promise<null>((fertig) => {
+      wecker = setTimeout(() => {
+        abbruch.abort();
+        fertig(null);
+      }, PRUEFUNG_MS);
+    });
     try {
-      const antwort = await this.browser.abrufen(chunk, { method: 'HEAD', cache: 'no-store' });
-      return antwort.status === 404 || antwort.status === 410;
+      const antwort = this.browser
+        .abrufen(url, { method: 'HEAD', cache: 'no-store', signal: abbruch.signal })
+        .then((a) => a.status);
+      return await Promise.race([antwort, zuSpaet]);
     } catch {
-      return false;
+      return null;
+    } finally {
+      clearTimeout(wecker);
     }
   }
 
-  /** Setzt den Merker; false, wenn er schon steht oder kein Speicher da ist. */
+  /**
+   * Der Zeitpunkt eines geltenden Merkers, oder null. Ein Merker aelter als ``SPERRE_MS``, aus
+   * der Zukunft oder unlesbar zaehlt als abgelaufen und faellt weg.
+   */
+  private sperreZeitpunkt(): number | null {
+    try {
+      const speicher = this.browser.speicher();
+      const wert = speicher?.getItem(SPERRE_SCHLUESSEL) ?? null;
+      if (wert === null) return null;
+      const zeitpunkt = Number(wert);
+      const alter = Date.now() - zeitpunkt;
+      if (Number.isFinite(zeitpunkt) && alter >= 0 && alter < SPERRE_MS) return zeitpunkt;
+      speicher!.removeItem(SPERRE_SCHLUESSEL);
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Setzt den Merker; false, wenn ein geltender schon steht oder kein Speicher da ist. */
   private sperreSetzen(): boolean {
     const jetzt = String(Date.now());
     try {
       const speicher = this.browser.speicher();
-      if (!speicher || speicher.getItem(SPERRE_SCHLUESSEL) !== null) return false;
+      if (!speicher || this.sperreZeitpunkt() !== null) return false;
       speicher.setItem(SPERRE_SCHLUESSEL, jetzt);
       // Manche Browser schlucken Schreibzugriffe still: nur weiter, wenn der Merker wirklich steht.
       return speicher.getItem(SPERRE_SCHLUESSEL) === jetzt;
     } catch {
       return false;
-    }
-  }
-
-  private sperreLoeschen(): void {
-    try {
-      this.browser.speicher()?.removeItem(SPERRE_SCHLUESSEL);
-    } catch {
-      // Ohne Speicher gibt es auch keinen Merker.
     }
   }
 
@@ -321,7 +357,8 @@ export class NeueVersionService {
         // Nichts verdraengt ihn (etwa dismiss() von aussen): gleich wieder zeigen.
         wieder();
       } else if (andere !== ref && typeof andere?.afterDismissed === 'function') {
-        (andere.afterDismissed as () => Observable<unknown>)().subscribe(() => wieder());
+        // Danach erneut schauen: Vielleicht wartet schon die naechste fremde Snackbar.
+        (andere.afterDismissed as () => Observable<unknown>)().subscribe(() => this.nachVerdraengung(ref, wieder));
       }
     } catch {
       // Still: ohne Zugriff auf die offene Snackbar kein Wiederkommen.

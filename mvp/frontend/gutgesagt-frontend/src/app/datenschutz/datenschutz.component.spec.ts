@@ -710,7 +710,7 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain(
         'den Zeitpunkt, zu dem die Seite wegen einer neuen Version von Gut gesagt von selbst neu geladen hat ' +
-          '(nur ein Merker, damit das nicht in einer Schleife geschieht; er fällt weg, sobald die neue Version läuft)',
+          '(nur ein Merker, damit das nicht in einer Schleife geschieht; er fällt nach zehn Minuten weg)',
       );
     });
 

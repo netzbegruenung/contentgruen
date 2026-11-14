@@ -18,6 +18,11 @@ async function ohneStack(page: Page): Promise<void> {
   });
 }
 
+/** Der Merker der Schleifensperre im sessionStorage (shared/neue-version.ts), oder null. */
+function merker(page: Page): Promise<string | null> {
+  return page.evaluate(() => sessionStorage.getItem('gutgesagt.neueVersionGeladen'));
+}
+
 test('fehlender Chunk nach einem Deploy: die App laedt das Ziel selbst neu', async ({ page }) => {
   await ohneStack(page);
   await page.goto('/');
@@ -49,6 +54,7 @@ test('fehlender Chunk nach einem Deploy: die App laedt das Ziel selbst neu', asy
   expect(verweigert.length, 'mindestens ein Chunk kam mit 404').toBeGreaterThan(0);
   expect(seitenaufrufe, 'genau ein harter Seitenwechsel, aufs Ziel').toEqual(['/impressum']);
   expect(await page.evaluate(() => (window as unknown as { alteSeite?: boolean }).alteSeite)).toBeUndefined();
+  expect(await merker(page), 'Merker der Schleifensperre steht').not.toBeNull();
   // Kein Notfall-Hinweis: Der Speicher war da, also wurde automatisch neu geladen.
   await expect(page.getByText('Gut gesagt wurde aktualisiert')).toHaveCount(0);
 });
@@ -82,6 +88,7 @@ test('fehlt der Chunk auch in der neuen Version: ein Neuladen, dann nur der Hinw
   await page.getByRole('link', { name: 'Impressum' }).first().click();
 
   await expect(page.getByText('Gut gesagt wurde aktualisiert')).toBeVisible({ timeout: 15_000 });
+  expect(await merker(page), 'Merker der Schleifensperre steht').not.toBeNull();
   await expect(page.getByRole('button', { name: 'Neu laden' })).toBeVisible();
   expect(seitenaufrufe).toEqual(['/impressum']);
   await page.waitForTimeout(15_000);

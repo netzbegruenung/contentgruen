@@ -198,10 +198,11 @@ the app open across a rollout keeps the old code until a route needs a chunk the
 longer has (404, also from an `@defer` block); the frontend then loads that route once with a
 full page load and so gets the new version (`src/app/shared/neue-version.ts`). Before switching it
 checks that the browser is online and, where the error names the chunk, that a `HEAD` on it
-answers 404; a network error only shows a message. A marker in `sessionStorage` blocks a second
-automatic reload until the reloaded page has navigated and run 30 s without a load error; while
-it stands, or without `sessionStorage`, a notice "Gut gesagt wurde aktualisiert – Neu laden"
-appears instead. State that only lives in memory or in the navigation's `state` is lost by that
+answers 404 (otherwise, as for Safari and `@defer`, that a `HEAD` on `index.html` answers 2xx;
+each check gives up after 5 s); a network error only shows a message. A marker in
+`sessionStorage` (only a timestamp) allows at most one automatic reload per ten minutes; while it
+stands, or without `sessionStorage`, a notice "Gut gesagt wurde aktualisiert – Neu laden" appears
+instead, also for a second rollout within those ten minutes. State that only lives in memory or in the navigation's `state` is lost by that
 one reload: search results, a Destillieren handover, and on the "gespeichert" page the
 "Antwort auf" card and the warning that linking failed (`extras.state`). This only hits whoever
 navigates there across a rollout; moving it into the address is open.

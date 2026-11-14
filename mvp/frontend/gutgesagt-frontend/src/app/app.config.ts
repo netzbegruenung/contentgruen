@@ -23,7 +23,7 @@ export const appConfig: ApplicationConfig = {
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
     // Keine Sitzungskennung im Browser (#446): was fruehere Versionen ablegten, kommt weg.
     provideAppInitializer(() => alteSitzungskennungEntfernen()),
-    // Merker eines automatischen Neuladens erst nach geschaffter Navigation loeschen (Schleifensperre).
-    provideAppInitializer(() => inject(NeueVersionService).beobachten())
+    // Der Merker eines automatischen Neuladens (Schleifensperre) faellt nach zehn Minuten.
+    provideAppInitializer(() => inject(NeueVersionService).aufraeumen())
   ]
 };
