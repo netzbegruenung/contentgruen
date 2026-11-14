@@ -117,7 +117,8 @@ def test_ein_plugin_image_mit_digest():
 
 
 def test_tag_skript_im_python_image_der_ci():
-    python = schritte(CI)["python-installieren"]["image"]
+    # ci-bericht laeuft im blanken Python-Image, die anderen Python-Schritte im CI-Image
+    python = schritte(CI)["ci-bericht"]["image"]
     assert schritte(BUILD)[TAGS]["image"] == python
 
 

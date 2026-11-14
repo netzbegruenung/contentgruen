@@ -19,14 +19,14 @@ mirror (`.github/workflows/`) still build them too and publish the tags the envi
 | Step | Image | Runs |
 |---|---|---|
 | `retired-words` | `node:22` (frontend Dockerfile; has git and python3) | `check.sh --schritt retired-words`, lines added since the branch left the target branch; pull requests only (push, tag and manual runs have no target branch) |
-| `python-installieren` | `python:3.13-slim` (semantic-search Dockerfile) | `scripts/ci-installieren.sh python`: venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` (only a link to the packages of the [CI image](#ci-images) when they match) |
-| `frontend-installieren` | `node:22` | `scripts/ci-installieren.sh frontend`: `npm ci` in the frontend directory, once for the two frontend steps (or a link to the `node_modules` of the CI image) |
-| `lint` | `python:3.13-slim` | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
+| `python-installieren` | `gutgesagt-ci-python:latest` ([CI image](#ci-images) on `python:3.13-slim` of the semantic-search Dockerfile) | `scripts/ci-installieren.sh python`: venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` (only a link to the packages of the [CI image](#ci-images) when they match) |
+| `frontend-installieren` | `gutgesagt-ci-node:latest` (CI image on `node:22`) | `scripts/ci-installieren.sh frontend`: `npm ci` in the frontend directory, once for the two frontend steps (or a link to the `node_modules` of the CI image) |
+| `lint` | `gutgesagt-ci-python` | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
 | `bff` | `mcr.microsoft.com/dotnet/sdk:9.0` (BFF Dockerfile) | `check.sh --schritt bff` with `CHECK_OHNE_DOCKER=1` |
-| `unit` | `python:3.13-slim` | `check.sh --schritt unit`: Python unit tests and `scripts/tests/`, each with two pytest-xdist workers (`CHECK_WORKER=2`; locally four) |
-| `frontend-build` | `node:22` | after `unit`: `check.sh --schritt frontend-build` (`ng build --configuration production`, for the budgets of the image build) with `NG_BUILD_MAX_WORKERS=2` |
-| `frontend` | same | after `frontend-build`: Chromium from Debian (`scripts/ci-chromium.sh`), `check.sh --schritt frontend` (Karma tests) with `CHECK_OHNE_SOURCEMAPS=1` (`ng test --source-map=false`) |
-| `integration` | `python:3.13-slim` | push to `main`, tags and manual runs only, never in pull requests: after `frontend`, `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below, serially |
+| `unit` | `gutgesagt-ci-python` | `check.sh --schritt unit`: Python unit tests and `scripts/tests/`, each with two pytest-xdist workers (`CHECK_WORKER=2`; locally four) |
+| `frontend-build` | `gutgesagt-ci-node` | after `unit`: `check.sh --schritt frontend-build` (`ng build --configuration production`, for the budgets of the image build) with `NG_BUILD_MAX_WORKERS=2` |
+| `frontend` | same | after `frontend-build`: Chromium from Debian (`scripts/ci-chromium.sh`, already in the CI image), `check.sh --schritt frontend` (Karma tests) with `CHECK_OHNE_SOURCEMAPS=1` (`ng test --source-map=false`) |
+| `integration` | `gutgesagt-ci-python` | push to `main`, tags and manual runs only, never in pull requests: after `frontend`, `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below, serially |
 | `ci-bericht` | `python:3.13-slim` | red pull-request runs only, see below |
 
 Services (started only when `integration` runs, same `when`): `qdrant` (same version as the
@@ -46,7 +46,7 @@ The same holds for `test_webserver_protokoll.py`, which starts nginx in a contai
 app database the code under test would open (`localhost:5433`, the dev stack) does not exist
 in CI either: tests replace the repositories that need it (`tests/conftest.py`), and in unit
 tests a fixture blocks `get_app_database()` (`tests/fixtures/ohne_app_datenbank.py`).
-The `python:3.13-slim` image of the unit step has no git: tests that call a program ask for it
+The CI image of the unit step (on `python:3.13-slim`) has no git: tests that call a program ask for it
 with `programme.noetig` (`scripts/tests/programme.py`) and skip in CI when it is missing; locally
 a missing program is an error.
 
@@ -54,7 +54,7 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 `check.sh`):
 
 - **One source for versions.** Woodpecker cannot read a Dockerfile, so the images appear a
-  second time in `ci.yaml`. The test fails if they differ from the Dockerfiles, the
+  second time in `ci.yaml` and in `Dockerfile.ci`, whose CI images build on them. The test fails if they differ from the Dockerfiles, the
   compose files, the Qdrant service of the GitHub CI or the SDK image `check.sh` uses for
   the BFF. When raising a version, change all of them.
 - **One source for commands.** Each step calls `check.sh --schritt <name>`, one pipeline step
@@ -74,8 +74,11 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 
 **Staggered steps.** The runner is shared with the other pipelines of the Woodpecker
 instance. With the heavy steps side by side, on 13.11. its memory ran out and many pipelines
-were cancelled together. So the four heavy steps (three in pull requests, without `integration`) run one after the other, never two at once, in one chain of `depends_on`;
-the light ones (`retired-words`, `lint`, `bff` and the two installations) run alongside.
+were cancelled together. So the four heavy steps (three in pull requests, without
+`integration`) run one after the other, never two at once, in one chain of `depends_on`;
+the light ones (`retired-words`, `bff` and the two installations) run alongside, and `lint`
+after `unit`, next to `frontend-build` (both may write to the venv, see
+[CI images](#ci-images)).
 The chain goes shortest first, so a quick failure shows early: `unit` (about half a minute),
 `frontend-build`, `frontend` (Chromium and Karma), `integration` (loads the embedding model,
 the longest). Each of the four also runs when the run is already red
@@ -179,24 +182,31 @@ registry and secrets as `build.yaml`:
 | `gutgesagt-ci-python` | `python:3.13-slim` | the packages of `requirements.txt` system-wide; the models `intfloat/multilingual-e5-base` and `MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7` under `HF_HOME=/opt/ci/huggingface` | `python-installieren`, `lint`, `unit`, `integration` |
 | `gutgesagt-ci-node` | `node:22` (same digest) | Chromium with the wrapper of `scripts/ci-chromium.sh`; `node_modules` from `package-lock.json` under `/opt/ci/node_modules`; the npm cache | `frontend-installieren`, `frontend-build`, `frontend` |
 
-Tags: `latest` and the first 12 characters of the checksum of the files the packages come
-from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `requirements.txt`, or
-`package.json` and `package-lock.json`). Measured locally on 13.11.: about 1.9 GB (Python)
+Tags: `latest` and the first 12 characters of the checksum of the files the image is built
+from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `Dockerfile.ci` with
+`requirements.txt`, or with `package.json` and `package-lock.json`). `Dockerfile.ci` is part
+of it so that a pull request raising the Python or Node version does not run on the old
+image with matching lockfiles. Measured locally on 13.11.: about 1.9 GB (Python)
 and 0.8 GB (Node) compressed in the registry; the Node image shares its base layers with
 `node:22`.
 
-- **Every run checks the image** (in the installation step). The image keeps the checksum under `/opt/ci/`.
+- **Every run checks the image**, in the installation step and again at the start of
+  `unit`, `lint`, `integration`, `frontend-build` and `frontend` (`--nachpruefen`): each step
+  pulls `:latest` itself, and an image pushed in between could no longer match. Then pip
+  installs what is missing into the venv, or `npm ci` replaces the link. The steps that may
+  write to the venv (`unit`, `lint`, `integration`) and to `node_modules` (`frontend-build`,
+  `frontend`) never run at the same time. The image keeps the checksum under `/opt/ci/`.
   `scripts/ci-installieren.sh` compares it with the checkout. If it matches, the venv is
   created with `--system-site-packages` and pip does nothing (2 s instead of about 85 s
   locally, about 2 min in CI), and `node_modules` becomes a link to `/opt/ci/node_modules`.
-  If it does not match (a pull request changes `requirements.txt` or `package-lock.json`, or
-  the image is behind), the step installs as without an image: pip only installs what differs
+  If it does not match (a pull request changes `Dockerfile.ci`, `requirements.txt` or
+  `package-lock.json`, or the image is behind), the step installs as without an image: pip only installs what differs
   from the packages in the image (13 s locally for one changed pin), `npm ci --prefer-offline`
   takes what it can from the npm cache of the image. Known price: a package that the pull
   request removes from `requirements.txt` is still importable from the image until it is
-  rebuilt; the service image would then fail on the import, the CI not. In the plain `python:3.13-slim` and
-  `node:22` images there is no checksum and everything is installed. No pull request turns
-  red because the image is old.
+  rebuilt; the service image would then fail on the import, the CI not. Without a checksum
+  in the image (a plain `python:3.13-slim` or `node:22`) everything is installed. No pull
+  request turns red because the image is old.
 - **Models without offline mode.** Unlike the service image, the CI image does not set
   `HF_HUB_OFFLINE`: if a pull request switches to a model the image does not have, the
   run downloads it as before. The confirmer (`NLI_BESTAETIGER_MODELL`, 2.2 GB) is left out;
@@ -217,11 +227,12 @@ and 0.8 GB (Node) compressed in the registry; the Node image shares its base lay
   the path filters equal).
 - The images contain nothing secret and are public like the other images of
   `netzbegruenung-images`, so the pipeline pulls them without a login.
-- **Switching `ci.yaml` to the images** is a separate pull request after the first build:
-  until `:latest` exists in the registry, a step with that image cannot start, and a
-  missing image is the one case the checksum cannot catch. The steps then name
-  `gutgesagt-ci-python:latest` or `gutgesagt-ci-node:latest` with `pull: true`;
-  `retired-words` and `ci-bericht` stay on the plain images.
+- `ci.yaml` names `gutgesagt-ci-python:latest` and `gutgesagt-ci-node:latest` with
+  `pull: true` (`:latest` moves with every build); `retired-words` and `ci-bericht` stay on
+  the plain images, they need neither packages nor models. A missing image is what the
+  checksum cannot catch: a step with an image that is not in the registry cannot start.
+  So the images must never be deleted from the registry; if they are, the cron job
+  `ci-image` with "Run now" rebuilds them.
 
 ## CI report
 
@@ -455,8 +466,8 @@ enabled, and the pull request that adds the pipeline already needs it):
    privileged). After the merge, add a cron job named `ci-image` (the workflow only reacts
    to this name), branch `main`, schedule e.g. `0 4 * * 0` (Sundays at 04:00, after the
    nightly run). The merge itself builds both images, since it changes the workflow; if
-   that run is red, start the cron job once with "Run now", so `:latest` exists before
-   `ci.yaml` switches to the images.
+   that run is red, start the cron job once with "Run now", so `:latest` exists: `ci.yaml`
+   cannot start its steps without it.
 
 7. **Cron job for the nightly run,** after the pull request that adds `nacht.yaml` is
    merged: in the repository settings of Woodpecker, "Cron", add a job named `nachtlauf`

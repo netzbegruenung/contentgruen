@@ -31,6 +31,9 @@ def from_zeile(dockerfile, stufe=None):
 
 PYTHON = from_zeile("mvp/backend/semantic-search-service/Dockerfile")
 NODE = from_zeile("mvp/frontend/gutgesagt-frontend/Dockerfile", "build")
+# Die CI-Images bauen auf PYTHON und NODE auf (Dockerfile.ci, unten geprueft).
+CI_PYTHON = "git.verdigado.com/netzbegruenung-images/gutgesagt-ci-python:latest"
+CI_NODE = "git.verdigado.com/netzbegruenung-images/gutgesagt-ci-node:latest"
 
 
 def compose_image(datei, dienst):
@@ -68,20 +71,29 @@ def test_ci_hat_keinen_pfadfilter_auf_workflow_ebene():
 @pytest.mark.parametrize(
     "schritt, quelle",
     [
-        ("python-installieren", PYTHON),
-        ("lint", PYTHON),
-        ("unit", PYTHON),
-        ("integration", PYTHON),
+        ("python-installieren", CI_PYTHON),
+        ("lint", CI_PYTHON),
+        ("unit", CI_PYTHON),
+        ("integration", CI_PYTHON),
+        # Nur Standardbibliothek bzw. git: kein CI-Image noetig
         ("ci-bericht", PYTHON),
         ("retired-words", NODE),
-        ("frontend", NODE),
-        ("frontend-build", NODE),
-        ("frontend-installieren", NODE),
+        ("frontend", CI_NODE),
+        ("frontend-build", CI_NODE),
+        ("frontend-installieren", CI_NODE),
         ("bff", from_zeile("mvp/backend/BFF/Dockerfile", "build")),
     ],
 )
 def test_schritt_nutzt_das_image_aus_dem_dockerfile(schritt, quelle):
     assert SCHRITTE[schritt]["image"] == quelle
+    # :latest wandert mit jedem Build; ohne pull bliebe ein altes CI-Image im Agent.
+    assert SCHRITTE[schritt].get("pull", False) is (quelle in (CI_PYTHON, CI_NODE))
+
+
+def test_jeder_schritt_im_ci_image_zieht_neu():
+    for name, s in SCHRITTE.items():
+        if "gutgesagt-ci-" in s["image"]:
+            assert s.get("pull") is True, name
 
 
 @pytest.mark.parametrize(
@@ -422,7 +434,7 @@ def test_integration_nie_im_pull_request(dateien):
 @pytest.mark.parametrize("event", ["push", "tag", "manual"])
 def test_integration_auf_main_mit_der_ganzen_kette(event):
     lauf = schritte_im_lauf(event, [])
-    assert set(lauf["integration"]) == {"python-installieren", "unit", "frontend"}
+    assert set(lauf["integration"]) == {"python-installieren", "unit", "lint", "frontend"}
 
 
 def test_dienste_nur_wenn_integration_laeuft():
@@ -466,10 +478,22 @@ def test_schwere_schritte_laufen_in_jeder_auswahl_nacheinander(dateien):
     for name, vorbereitung in VORBEREITUNG.items():
         if name in lauf:
             assert vorbereitung in vorfahren(lauf, name), name
-    # Leichte Schritte warten nie auf die Kette.
+    # Leichte Schritte warten nie auf die Kette; nur lint wartet auf unit (gemeinsamer venv).
     for name in lauf:
-        if name not in SCHWER and name != BERICHT:
+        if name not in SCHWER and name not in (BERICHT, "lint"):
             assert not vorfahren(lauf, name) & set(SCHWER), name
+
+
+@pytest.mark.parametrize("dateien", [d for d, _ in PR_LAEUFE])
+def test_nie_zwei_schritte_zugleich_im_venv(dateien):
+    # unit, lint und integration pruefen das Image nach und koennen dabei in den venv
+    # schreiben: Sie laufen in jedem Lauf nacheinander.
+    for event in ("pull_request", "push"):
+        lauf = schritte_im_lauf(event, dateien)
+        venv = [n for n in ("unit", "lint", "integration") if n in lauf]
+        for i, a in enumerate(venv):
+            for b in venv[i + 1 :]:
+                assert a in vorfahren(lauf, b), (event, a, b)
 
 
 def test_kette_laeuft_nach_rotem_vorgaenger_weiter():
@@ -566,6 +590,12 @@ def test_ci_image_baut_nach_push_auf_main_woechentlich_und_manuell():
         {"event": "cron", "cron": "ci-image"},
         {"event": "manual", "branch": "main"},
     ]
+
+
+def test_ci_yaml_nutzt_die_images_aus_ci_image():
+    for ziel, image in (("ci-python", CI_PYTHON), ("ci-node", CI_NODE)):
+        repo = CI_IMAGE_SCHRITTE[ziel]["settings"]["repo"]
+        assert image == f"{repo}:latest"
 
 
 def test_ci_image_wartet_auf_ci_und_build():
@@ -669,6 +699,7 @@ def _baum(tmp_path):
     (py / "requirements.txt").write_text("ruff==1\n")
     (fe / "package.json").write_text("{}\n")
     (fe / "package-lock.json").write_text("{}\n")
+    (tmp_path / "Dockerfile.ci").write_text("FROM python:3.13-slim AS ci-python\n")
     bin_ = tmp_path / "bin"
     bin_.mkdir()
     protokoll = tmp_path / "protokoll"
@@ -747,3 +778,84 @@ def test_sonst_installiert_der_schritt_wie_ohne_image(tmp_path, image_alt):
     assert befehle[2] == f"npm ci --prefix {fe} --prefer-offline --no-audit --no-fund"
     assert not (fe / "node_modules").exists()
     assert ("passt nicht" in ausgabe) is image_alt
+
+
+def test_schwere_schritte_pruefen_das_image_ihres_schritts_nach():
+    # Jeder Schritt zieht :latest selbst; ein dazwischen gepushtes Image faengt nachpruefen
+    # ab. Nur die Kette der schweren Schritte: lint liefe zugleich mit unit im selben venv.
+    erwartet = {
+        "unit": "python",
+        "lint": "python",
+        "integration": "python",
+        "frontend-build": "frontend",
+        "frontend": "frontend",
+    }
+    for name, s in SCHRITTE.items():
+        befehle = " ".join(s["commands"])
+        if name in erwartet:
+            aufruf = f"ci-installieren.sh --nachpruefen {erwartet[name]}"
+            assert aufruf in befehle, name
+            assert befehle.index(aufruf) < befehle.index("check.sh --schritt"), name
+        else:
+            assert "--nachpruefen" not in befehle, name
+
+
+def test_nachpruefen_ersetzt_den_verweis_nur_bei_neuem_image(tmp_path):
+    skript, image, protokoll, fe = _baum(tmp_path)
+    for art in ("python", "frontend"):
+        (image / f"{art}.sha256").write_text(_lauf(skript, image, "--pruefsumme", art))
+    _lauf(skript, image, "python")
+    _lauf(skript, image, "frontend")
+
+    # Gleiches Image: nichts zu tun
+    _lauf(skript, image, "--nachpruefen", "python")
+    _lauf(skript, image, "--nachpruefen", "frontend")
+    assert len(protokoll.read_text().splitlines()) == 1
+    assert (fe / "node_modules").is_symlink()
+
+    # Ein neues Image kam zwischen den Schritten
+    (image / "python.sha256").write_text("neu\n")
+    (image / "frontend.sha256").write_text("neu\n")
+    _lauf(skript, image, "--nachpruefen", "python")
+    _lauf(skript, image, "--nachpruefen", "frontend")
+    befehle = protokoll.read_text().splitlines()
+    assert befehle[1].startswith("pip install -q --no-cache-dir -r ")
+    assert befehle[2] == f"npm ci --prefix {fe} --prefer-offline --no-audit --no-fund"
+    assert not (fe / "node_modules").is_symlink()
+
+
+def test_nachpruefen_laesst_ein_echtes_node_modules_stehen(tmp_path):
+    skript, image, protokoll, fe = _baum(tmp_path)
+    (fe / "node_modules").mkdir()
+    (image / "frontend.sha256").write_text("anderes\n")
+    _lauf(skript, image, "--nachpruefen", "frontend")
+    assert not protokoll.exists()
+
+
+@pytest.mark.parametrize("art", ["python", "frontend"])
+def test_neue_basis_im_dockerfile_aendert_die_pruefsumme(tmp_path, art):
+    # Hebt ein PR die Python- oder Node-Version, passt das alte Image nicht mehr, auch
+    # bei gleichen Lockfiles: sonst liefe der PR noch in der alten Version.
+    skript, image, _, _ = _baum(tmp_path)
+    vorher = _lauf(skript, image, "--pruefsumme", art)
+    (tmp_path / "Dockerfile.ci").write_text("FROM python:3.14-slim AS ci-python\n")
+    assert _lauf(skript, image, "--pruefsumme", art) != vorher
+
+
+def test_nachpruefen_ohne_pruefsumme_im_image_installiert(tmp_path):
+    # Blankes Image oder Image ohne /opt/ci: pip prueft nach
+    skript, image, protokoll, _ = _baum(tmp_path)
+    _lauf(skript, image, "python")
+    _lauf(skript, image, "--nachpruefen", "python")
+    befehle = protokoll.read_text().splitlines()
+    assert [b.split()[0] for b in befehle] == ["python", "pip", "pip"]
+
+
+@pytest.mark.parametrize("argumente", [["--nachpruefen"], ["--nachpruefen", "java"]])
+def test_nachpruefen_unbekannte_art(tmp_path, argumente):
+    import subprocess
+
+    skript, image, _, _ = _baum(tmp_path)
+    with pytest.raises(subprocess.CalledProcessError) as fehler:
+        _lauf(skript, image, *argumente)
+    assert fehler.value.returncode == 2
