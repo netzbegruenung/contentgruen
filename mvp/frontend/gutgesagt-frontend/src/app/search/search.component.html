@@ -5,7 +5,8 @@
             <mat-label>
                 <span class="label">{{ feldName }}</span>
             </mat-label>
-            <input matInput #feld [id]="feldId" [(ngModel)]="searchQuery" name="searchQuery">
+            <input matInput #feld [id]="feldId" [(ngModel)]="searchQuery" name="searchQuery"
+                   [attr.aria-describedby]="hinweisId">
             <!-- Search button as suffix icon on mobile in compact mode -->
             <button mat-icon-button matSuffix type="submit" class="mobile-search-button"
                     *ngIf="compactMode"
@@ -20,4 +21,9 @@
             </button>
         </div>
     </form>
+    <!-- Leise unter dem Feld, ohne Symbol: Information, keine Warnung (Persona-Test Gerd) -->
+    <p class="such-hinweis" [id]="hinweisId">
+        {{ suchhinweis }}
+        <a routerLink="/datenschutz" [fragment]="suchanfragenAbschnitt">Mehr dazu im Datenschutz</a>
+    </p>
 </div>
