@@ -15,6 +15,8 @@ PIPELINE = yaml.safe_load((WURZEL / ".woodpecker" / "ci.yaml").read_text())
 SCHRITTE = {s["name"]: s for s in PIPELINE["steps"]}
 DIENSTE = {d["name"]: d for d in PIPELINE["services"]}
 BERICHT = "ci-bericht"
+# Laufen nie in PR-Laeufen (Entscheidung @BanSe 14.11.), nur bei push auf main, Tag, manuell
+NUR_MAIN = {"integration"}
 
 
 def from_zeile(dockerfile, stufe=None):
@@ -124,7 +126,8 @@ def test_jeder_schritt_protokolliert_fuer_den_ci_bericht():
 
 
 def test_ci_bericht_kennt_alle_schritte_in_pipeline_reihenfolge():
-    andere = [n for n in SCHRITTE if n != BERICHT]
+    # Ohne die Schritte, die nie in PRs laufen: der Bericht laeuft nur in PRs.
+    andere = [n for n in SCHRITTE if n != BERICHT and n not in NUR_MAIN]
     bericht = SCHRITTE[BERICHT]
 
     assert list(SCHRITTE)[-1] == BERICHT
@@ -227,7 +230,12 @@ def test_nachtlauf_suchtest_laeuft_auch_nach_rotem_messset():
 
 def test_nachtlauf_dienste_wie_in_ci():
     # Postgres (#576): Der Dienststart oeffnet die App-Datenbank (VotingService).
-    assert NACHT["services"] == [DIENSTE["qdrant"], DIENSTE["postgres"]]
+    # Bis auf das when der CI-Dienste (nur, wenn integration laeuft)
+    ohne_when = [
+        {k: v for k, v in DIENSTE[n].items() if k != "when"}
+        for n in ("qdrant", "postgres")
+    ]
+    assert NACHT["services"] == ohne_when
 
 
 def test_nachtlauf_suchtest_wartet_auf_die_dienste_und_nutzt_ihre_datenbank():
@@ -370,15 +378,15 @@ PR_LAEUFE = [
     # (geaenderte Dateien, Schritte, die wegfallen)
     (
         ["mvp/frontend/gutgesagt-frontend/src/app/app.component.ts"],
-        {"lint", "integration", "bff"},
+        {"lint", "bff"},
     ),
     (["mvp/backend/semantic-search-service/app/main.py"], FRONTEND_GRUPPE | {"bff"}),
     (["mvp/backend/postgres-app/migrations/x.sql"], FRONTEND_GRUPPE | {"bff"}),
-    (["mvp/backend/BFF/Program.cs"], FRONTEND_GRUPPE | {"lint", "integration"}),
+    (["mvp/backend/BFF/Program.cs"], FRONTEND_GRUPPE | {"lint"}),
     (["scripts/tests/test_x.py", "scripts/ci_bericht.py"], FRONTEND_GRUPPE | {"bff"}),
     (
         ["mvp/frontend/gutgesagt-frontend/src/x.ts", "mvp/backend/BFF/Program.cs"],
-        {"lint", "integration"},
+        {"lint"},
     ),
     (
         [
@@ -402,7 +410,34 @@ PR_LAEUFE = [
 
 @pytest.mark.parametrize("dateien, weg", PR_LAEUFE)
 def test_pfadfilter_bei_pull_request(dateien, weg):
-    assert set(schritte_im_lauf("pull_request", dateien)) == ALLE - weg
+    assert set(schritte_im_lauf("pull_request", dateien)) == ALLE - weg - NUR_MAIN
+
+
+@pytest.mark.parametrize("dateien", [d for d, _ in PR_LAEUFE])
+def test_integration_nie_im_pull_request(dateien):
+    assert not set(schritte_im_lauf("pull_request", dateien)) & NUR_MAIN
+
+
+@pytest.mark.parametrize("event", ["push", "tag", "manual"])
+def test_integration_auf_main_mit_der_ganzen_kette(event):
+    lauf = schritte_im_lauf(event, [])
+    assert set(lauf["integration"]) == {"python-installieren", "unit", "frontend"}
+
+
+def test_dienste_nur_wenn_integration_laeuft():
+    # Qdrant und PostgreSQL braucht nur integration; in PRs starten sie gar nicht.
+    integration = [
+        {k: v for k, v in b.items() if k != "status"}
+        for b in SCHRITTE["integration"]["when"]
+    ]
+    for dienst in DIENSTE.values():
+        assert dienst["when"] == integration
+    andere = " ".join(
+        " ".join([str(s.get("environment", "")), *s["commands"]])
+        for n, s in SCHRITTE.items()
+        if n != "integration"
+    )
+    assert "qdrant" not in andere and "postgres" not in andere
 
 
 @pytest.mark.parametrize("event", ["push", "tag", "manual"])

@@ -56,7 +56,7 @@ make help               # All commands
 
 - ✅ **379 unit tests collected** — CI runs 366 of them (the seeding implementation suite is excluded); 355 pass, 11 skip
 - ✅ **Integration tests** against real Qdrant and PostgreSQL — the Woodpecker CI runs
-  them for every pull request (both as services, `docs/CI.md`); locally
+  them on `main`, not in pull requests (both as services, `docs/CI.md`); locally
   `bash scripts/check.sh --integration`, or `--geaendert` before a push (TESTING_GUIDE.md)
 - ✅ **Dependency injection architecture**
 - ✅ **Pre-commit hooks integrated**

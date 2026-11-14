@@ -1,6 +1,7 @@
-# Was ein PR bestehen muss, wie scripts/check.sh --integration: Retired words, Ruff, Black,
-# Python-Unit- und Integrationstests (Qdrant und PostgreSQL als Dienste), Frontend-Tests,
-# Frontend-Build (production, Budgets) und BFF.
+# Was ein PR bestehen muss: Retired words, Ruff, Black, Python-Unit-Tests, Frontend-Tests,
+# Frontend-Build (production, Budgets) und BFF. Die Integrationstests (Qdrant und PostgreSQL
+# als Dienste) nur auf main, bei Tags und manuell, nie in PR-Laeufen (docs/CI.md,
+# "Integration tests on main only"); dort laeuft alles wie scripts/check.sh --integration.
 # Jeder Schritt ruft check.sh mit --schritt auf, die Befehle stehen also nur dort.
 # Status ci/woodpecker/pr/ci ist Pflicht fuer main. Ist ein PR-Lauf rot, schreibt
 # ci-bericht die roten Schritte in den PR (docs/CI.md).
@@ -28,13 +29,17 @@ clone:
       depth: 0
       fetch-target-branch: true
 
+# Nur fuer den Schritt integration, also nur, wenn er laeuft (dieselben Ereignisse)
 services:
   - name: qdrant
     image: qdrant/qdrant:v1.18.2
     # Ohne absoluten Pfad startet der Dienst nicht
     entrypoint: [/qdrant/qdrant]
+    when: &mit_integration
+      - event: [push, tag, manual]
   - name: postgres
     image: postgres:16-alpine
+    when: *mit_integration
     environment:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: ci
@@ -177,11 +182,9 @@ steps:
       - unit
       - name: frontend
         optional: true
+    # Nicht bei pull_request (Entscheidung @BanSe 14.11.): push laeuft nur auf main (when des
+    # Workflows), Tags bauen Releases (release.yaml wartet auf ci), manuell auf Wunsch.
     when:
-      - event: pull_request
-        path:
-          exclude: *ohne_python
-        status: [success, failure]
       - event: [push, tag, manual]
         status: [success, failure]
     environment:
@@ -198,8 +201,10 @@ steps:
   # jeden PR-Lauf ab, bevor ein Schritt laeuft (docs/CI.md).
   - name: ci-bericht
     image: python:3.13-slim
-    # je Schritt ein Eintrag, in Pipeline-Reihenfolge (auch in der Argumentliste unten);
-    # optional, was der Pfadfilter weglassen kann: sonst verwirft Woodpecker die Pipeline
+    # je Schritt eines PR-Laufs ein Eintrag, in Pipeline-Reihenfolge (auch in der
+    # Argumentliste unten); integration fehlt, es laeuft nie in PRs und stuende sonst in jedem
+    # Bericht unter "Nicht gelaufen". Optional, was der Pfadfilter weglassen kann: sonst
+    # verwirft Woodpecker die Pipeline
     depends_on:
       - retired-words
       - python-installieren
@@ -213,8 +218,6 @@ steps:
       - name: frontend-build
         optional: true
       - name: frontend
-        optional: true
-      - name: integration
         optional: true
     when:
       - event: pull_request
@@ -236,4 +239,3 @@ steps:
         unit
         frontend-build
         frontend
-        integration

@@ -46,7 +46,7 @@ pytest tests/integration/               # Integration tests (Qdrant on :6333, Po
 ### Integration Tests as a Gate
 
 One command runs the full check plus the integration suite, from the repository root. The
-pipeline runs it on every pull request; before a push `bash scripts/check.sh --geaendert` is
+pipeline runs it on `main` (pull requests without the integration tests); before a push `bash scripts/check.sh --geaendert` is
 enough, and includes the integration tests when the changes reach them (`docs/CI.md`):
 
 ```bash
@@ -267,7 +267,8 @@ pytest -x              # Stop on first failure
 ## CI Integration
 
 Every pull request runs `.woodpecker/ci.yaml` on Woodpecker: the same steps as
-`bash scripts/check.sh --integration`, with Qdrant and PostgreSQL as services
+`bash scripts/check.sh`; the integration tests run only on `main`, tags and manual runs, with
+Qdrant and PostgreSQL as services
 (`POSTGRES_TEST_DATABASE_URL`, no throwaway container) and `INTEGRATION_STACK_PFLICHT=1`.
 Once set up, its status `ci/woodpecker/pr/ci` is required for `main`; a red pull-request run gets a
 comment with the red steps. Details, the setup steps for a person and how to run one step
