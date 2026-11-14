@@ -120,6 +120,17 @@ describe('ContentModerationComponent', () => {
     });
   });
 
+  it('teilt das Datum in Tag mit Komma und Uhrzeit, umgebrochen wird nur dazwischen (M2)', () => {
+    mitMeldungen([meldung()]);
+    const teile = fixture.componentInstance.datumTeile('2026-11-14T02:05:00Z');
+
+    expect(teile.tag).toMatch(/^\d{2}\.\d{2}\.\d{4},$/);
+    expect(teile.zeit).toMatch(/^\d{2}:\d{2}$/);
+    const zelle = fixture.nativeElement.querySelector('td.datum-zelle') as HTMLElement;
+    expect(zelle.querySelectorAll('.datum-teil').length).toBe(2);
+    expect(zelle.textContent!.trim()).toMatch(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+  });
+
   it('bietet zu einer offenen Meldung Sperren statt Löschen an', () => {
     mitMeldungen([meldung()]);
 

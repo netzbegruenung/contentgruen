@@ -213,8 +213,9 @@
       <!-- Created Column -->
       <ng-container matColumnDef="created">
         <th mat-header-cell *matHeaderCellDef>Datum</th>
-        <td mat-cell *matCellDef="let report" data-label="Datum">
-          {{ formatDate(report.created) }}
+        <!-- Tag und Uhrzeit je ohne Umbruch: sonst brach es vor dem Komma um (Persona-Runde 2, M2) -->
+        <td mat-cell *matCellDef="let report" data-label="Datum" class="datum-zelle">
+          <ng-container *ngIf="datumTeile(report.created) as teile"><span class="datum-teil">{{ teile.tag }}</span>&ngsp;<span class="datum-teil">{{ teile.zeit }}</span></ng-container>
         </td>
       </ng-container>
 

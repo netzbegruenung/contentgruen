@@ -15,43 +15,40 @@
   margin: 0;
 }
 
-/* Mobil scrollt die Filterleiste seitlich statt abgeschnitten zu werden (#512) */
+/*
+ * Die Umschalter brechen um, statt rechts abgeschnitten zu werden: mobil ("Abgewi…") und
+ * am Laptop bei 1280 px ("Löscha…", Persona-Runde 2, M2). Jeder mit eigenem Rand, damit
+ * erkennbar bleibt, wo einer endet.
+ */
 .filter-section {
   margin-bottom: 24px;
   display: flex;
-  justify-content: center;
-  overflow-x: auto;
+  justify-content: flex-start;
 }
 
-/*
- * Mobil brechen die Umschalter um, statt rechts abgeschnitten zu werden ("Abgewi…"):
- * jeder mit eigenem Rand, damit erkennbar bleibt, wo einer endet.
- */
-@media (max-width: 599px) {
-  .filter-section {
-    justify-content: flex-start;
-    overflow-x: visible;
-  }
+/* Doppelte Klasse: schlaegt den Rand der Gruppe aus dem Material-Theme */
+.filter-section mat-button-toggle-group.mat-button-toggle-group {
+  flex-wrap: wrap;
+  gap: 8px;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
 
-  /* Doppelte Klasse: schlaegt die Randregel weiter unten, die fuer breite Fenster gilt */
-  .filter-section mat-button-toggle-group.mat-button-toggle-group {
-    flex-wrap: wrap;
-    gap: 8px;
-    border: none;
-    border-radius: 0;
-    overflow: visible;
-  }
+.filter-section mat-button-toggle,
+.filter-section mat-button-toggle + mat-button-toggle {
+  border: 1px solid var(--divider-color);
+  border-radius: 18px;
+  overflow: visible;
+}
 
-  .filter-section mat-button-toggle,
-  .filter-section mat-button-toggle + mat-button-toggle {
-    border: 1px solid var(--divider-color);
-    border-radius: 18px;
-    overflow: visible;
-  }
+.filter-section mat-button-toggle.mat-button-toggle-checked {
+  border-color: var(--akzent-tanne);
+}
 
-  .filter-section mat-button-toggle.mat-button-toggle-checked {
-    border-color: var(--akzent-tanne);
-  }
+/* Die rote Zahl steht neben dem Wort, nicht darauf (M2): Platz fuer das Abzeichen */
+.filter-section .mat-badge:not(.mat-badge-hidden) {
+  margin-right: 18px;
 }
 
 .statuszeile {
@@ -125,11 +122,6 @@ tr.erledigt td {
 
 .error mat-spinner {
   margin: 0 auto 12px;
-}
-
-.filter-section mat-button-toggle-group {
-  border: 1px solid var(--divider-color);
-  border-radius: 4px;
 }
 
 .filter-section mat-icon {
@@ -292,6 +284,7 @@ table {
 
 .melder-angabe {
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .melder-angabe.guter-glaube {
@@ -300,7 +293,24 @@ table {
 
 .action-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Bei 1280 px passt die Tabelle samt Aktionen ohne seitliches Rollen (M2) */
+@media (min-width: 600px) {
+  .reports-table th.mat-mdc-header-cell,
+  .reports-table td.mat-mdc-cell {
+    padding: 8px;
+  }
+
+  .datum-teil {
+    white-space: nowrap;
+  }
+
+  .reason-cell .description {
+    max-width: 180px;
+  }
 }
 
 .action-buttons button {

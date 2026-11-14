@@ -720,6 +720,13 @@ export class ContentModerationComponent implements OnInit {
     return typLabel(type);
   }
 
+  /** Datum als Tag (mit Komma) und Uhrzeit, damit die Tabelle nur zwischen beiden umbricht. */
+  datumTeile(dateString: string): { tag: string; zeit: string } {
+    const text = this.formatDate(dateString);
+    const komma = text.indexOf(', ');
+    return komma < 0 ? { tag: text, zeit: '' } : { tag: text.slice(0, komma + 1), zeit: text.slice(komma + 2) };
+  }
+
   formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleString('de-DE', {
