@@ -21,6 +21,9 @@ export const ANDERER_GRUND = 'Anderer Grund';
 /** Höchstlänge der ganzen Begründung: Sie steht als notes in der Adresse (Logs, Grenze der URL-Länge). */
 export const ABWEISUNG_MAX = 500;
 
+/** Ab so vielen Zeichen vor der Grenze steht der Zaehler unter dem Feld. */
+export const ZAEHLER_AB_REST = 100;
+
 export interface AbweisenDialogDaten {
   /** Titel oder Anfang des gemeldeten Beitrags. */
   titel: string;
@@ -65,7 +68,8 @@ export interface AbweisenDialogDaten {
         <mat-label>{{ grund === andererGrund ? 'Begründung' : 'Begründung (optional)' }}</mat-label>
         <textarea matInput [(ngModel)]="satz" rows="3" [required]="grund === andererGrund"
                   [maxlength]="maxLaenge" placeholder="Ein Satz, warum die Meldung nicht zutrifft"></textarea>
-        <mat-hint align="end">{{ satz.length }} / {{ maxLaenge }}</mat-hint>
+        <!-- Der Zaehler erst nahe der Grenze: "0 / 498" sah nach Fehler aus (Persona-Runde 2, M3) -->
+        <mat-hint *ngIf="zaehlerZeigen" align="end" class="zaehler">{{ satz.length }} / {{ maxLaenge }}</mat-hint>
         <!-- Zu lang (etwa vor der Wahl des Grunds getippt): sagen, warum der Knopf gesperrt ist -->
         <mat-hint *ngIf="zuLang" class="zu-lang" aria-live="polite">Höchstens {{ maxLaenge }} Zeichen, bitte kürzen.</mat-hint>
       </mat-form-field>
@@ -100,6 +104,14 @@ export class AbweisenDialogComponent {
   /** Was für den eigenen Satz bleibt: ABWEISUNG_MAX abzüglich Grund und „: “. */
   get maxLaenge(): number {
     return ABWEISUNG_MAX - (this.grund?.length ?? 0) - 2;
+  }
+
+  /**
+   * Den Zähler erst zeigen, wenn die Grenze näher rückt: Die Grenze hängt am Grund und
+   * ergab krumme Zahlen wie „0 / 498“, die nach Fehler aussahen (M3).
+   */
+  get zaehlerZeigen(): boolean {
+    return this.satz.length >= this.maxLaenge - ZAEHLER_AB_REST;
   }
 
   /** Der Satz passt nicht mehr neben den gewählten Grund. */
