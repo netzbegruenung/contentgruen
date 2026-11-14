@@ -524,6 +524,28 @@ async def eigene_nutzungsstatistik(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+class PunkteStatusResponse(BaseModel):
+    """Welche Schalter der Punkte an sind (``GET /punkte/status``)."""
+
+    aktiv: bool
+    abzeichen_sichtbar: bool
+
+
+@router.get("/punkte/status", response_model=PunkteStatusResponse)
+async def punkte_status(settings: Settings = Depends(get_settings)):
+    """
+    Ob die Punkte eingeschaltet sind (``SEMANTIC_SEARCH_PUNKTE_AKTIV``) und ob andere
+    Angemeldete Abzeichen sehen koennen (beide Schalter, ``Settings.abzeichen_sichtbar``).
+    Ohne Anmeldung lesbar und ohne Personenbezug: Das Frontend fragt hier einmal und ruft
+    punkte, meilensteine und abzeichen-sichtbarkeit nur bei eingeschaltetem Schalter auf,
+    statt deren 404 abzuwarten (UX-Review B20, Entscheidung Maintainer 13.11.2026).
+    """
+    return PunkteStatusResponse(
+        aktiv=settings.punkte_aktiv,
+        abzeichen_sichtbar=settings.abzeichen_sichtbar,
+    )
+
+
 @router.get("/users/me/punkte", response_model=PunkteResponse)
 async def eigene_punkte(
     current_user: str = Depends(require_user),

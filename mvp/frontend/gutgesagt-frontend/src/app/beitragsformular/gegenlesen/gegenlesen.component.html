@@ -20,7 +20,8 @@
     </ng-template>
     <div id="gegenlesen-inhalt" class="gegenlesen-inhalt" [hidden]="kompakt && !offen">
         <div class="gegenlesen-ergebnis">
-            <ul *ngIf="ergebnis.anmerkungen.length" class="gegenlesen-anmerkungen">
+            <ul *ngIf="ergebnis.anmerkungen.length || zeigtHerkunftHinweis" class="gegenlesen-anmerkungen">
+                <li *ngIf="zeigtHerkunftHinweis" class="gegenlesen-anmerkung herkunft-fehlt">{{ herkunftHinweis }}</li>
                 <li *ngFor="let a of ergebnis.anmerkungen" class="gegenlesen-anmerkung">{{ a.text }}</li>
             </ul>
             <p *ngIf="istGut" class="gegenlesen-gut">Nichts aufgefallen. Die Nachbarin nickt.</p>

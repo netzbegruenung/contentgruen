@@ -13,6 +13,8 @@ export interface ReportContentRequest {
   melder_name: string | null;
   melder_email: string | null;
   guter_glaube: true;
+  /** Angemeldet: Bestaetigung und Entscheidung an die Adresse des Kontos (UX-Review B17). */
+  bestaetigung_an_konto?: boolean;
 }
 
 /**
@@ -27,11 +29,17 @@ export interface NeueMeldung {
   melderName: string | null;
   melderEmail: string | null;
   guterGlaube: true;
+  /** Angemeldet: Die Adresse nimmt der Suchdienst aus dem Konto, nie aus dem Dialog. */
+  bestaetigungAnKonto?: boolean;
 }
 
 export interface ReportContentResponse {
   success: boolean;
   message: string;
+  /** Ob an der Meldung eine Adresse fuer Bestaetigung und Entscheidung steht (fehlt bei aelterem Backend). */
+  mit_email?: boolean;
+  /** Doppelmeldung derselben Person: nichts neu angelegt (Review zu #670). */
+  schon_gemeldet?: boolean;
 }
 
 export interface ContentReport {
@@ -160,6 +168,7 @@ export class ModerationService {
       melder_name: meldung.melderName,
       melder_email: meldung.melderEmail,
       guter_glaube: meldung.guterGlaube,
+      ...(meldung.bestaetigungAnKonto ? { bestaetigung_an_konto: true } : {}),
     };
 
     return this.http.post<ReportContentResponse>(`${this.baseUrl}/report`, request);

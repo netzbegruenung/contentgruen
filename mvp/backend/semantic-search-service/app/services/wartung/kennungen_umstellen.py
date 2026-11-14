@@ -58,6 +58,8 @@ SPALTEN = {
     "users": ("user_id",),
     "gesehene_nutzung": ("user_id",),
     "art9_einwilligungen": ("user_id",),
+    # "Ohne Einwilligung weiter" (B2): geht mit der Person mit.
+    "art9_ohne_einwilligung": ("user_id",),
     # Zustimmung zur Sichtbarkeit der Abzeichen (#351): geht mit der Person mit.
     "abzeichen_sichtbarkeit": ("user_id",),
     # Einwilligung "Punkte und Meilensteine" (#351): geht mit der Person mit.
@@ -134,6 +136,7 @@ class PostgresBericht:
 _ZEILE_DER_NEUEN_GEWINNT = {
     ("users", "user_id"): (),
     ("gesehene_nutzung", "user_id"): (),
+    ("art9_ohne_einwilligung", "user_id"): (),
     ("votes", "user_id"): ("content_id",),
 }
 

@@ -93,14 +93,15 @@ steht in 8.4 und hängt heute an den offenen Fakten (8.6) und an Frage 7 zum Wid
 **Empfehlung: ausdrückliche Einwilligung, Art. 9 Abs. 2 lit. a, in zwei Stufen.**
 
 1. **Beim ersten Login** fragt die App seit #489 nach der Art.-9-Einwilligung (Lückenliste
-   D-N15, `docs/ART9_EINWILLIGUNG.md`); die DSE nennt sie seit #557. Ihr Wortlaut muss zusätzlich
-   als Zwecke nennen: Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person,
-   solange sie nicht gesondert zustimmt, sie anderen Angemeldeten zu zeigen; Opt-in aus Risiko 1),
-   neue Aktionen, die ein höheres Level freischaltet, und den Schutz der Punkte durch
-   Muster-Hinweise; das tut der Wortlaut `2026-11-05-b` (#559), der den ersten vom selben
-   Tag ablöst, bevor er in einem Release war. `2026-11-10` (#644) ändert daran nur den Namen
-   des Menüpunkts für den Widerruf („Datenschutz-Einstellungen“), redaktionell, ohne neue Frage. Für die Muster-Hinweise
-   reicht Art. 6 Abs. 1 lit. f allein nicht, weil sie Art. 9-Daten betreffen.
+   D-N15, `docs/ART9_EINWILLIGUNG.md`); die DSE nennt sie seit #557. Die Wortlaute `2026-11-05-b`
+   (#559) bis `2026-11-12` nannten zusätzlich Punktestand, Level, Quests, Meilenstein-Abzeichen,
+   Freischaltungen und Muster-Hinweise. Seit `2026-11-13` gehören sie nicht mehr dazu
+   (Entscheidung Maintainer, 13.11.2026, nach juristischer Prüfung): Ohne diese Einwilligung kann
+   niemand beitragen, die Spielelemente braucht es dafür nicht (ErwG 43 S. 2, Art. 7 Abs. 4).
+   Level, Quests und Freischaltungen gibt es ohnehin nicht. Für Punkte, Meilensteine und
+   Muster-Hinweise fragt die App vor dem Einschalten eine eigene, freiwillige Einwilligung ab
+   (#668, Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a); für die Muster-Hinweise reicht
+   Art. 6 Abs. 1 lit. f allein nicht, weil sie Art. 9-Daten betreffen.
 2. **Beim ersten Punkt** fragt die App nach dem Opt-in aus Risiko 1, das ist eine eigene
    Einwilligung für die Sichtbarkeit. Für Meilenstein-Abzeichen gebaut (#351): gefragt ab dem
    ersten erreichten Meilenstein, `GLOSSARY.md` „Zustimmung zur Sichtbarkeit“, V22.

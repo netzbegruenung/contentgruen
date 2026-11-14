@@ -1,0 +1,46 @@
+# CI-Images fuer .woodpecker/ci.yaml (docs/CI.md, "CI images"). Zwei Ziele, je eines pro
+# Image: ci-python (Schritte python-installieren, lint, unit, integration) und ci-node
+# (frontend-installieren, frontend-build, frontend). Getrennt, weil sich die beiden selten
+# zugleich aendern und kein Schritt beides braucht: eine neue package-lock.json baut nicht
+# auch torch und die Modelle neu, und die Python-Schritte ziehen kein Chromium.
+# Gebaut von .woodpecker/ci-image.yaml; scripts/ci-installieren.sh entscheidet je Lauf, ob
+# das Image zum Checkout passt, sonst installiert der Schritt wie ohne Image.
+# Basis-Images wie in den Dockerfiles der Dienste (scripts/tests/test_woodpecker_ci.py).
+# Kontext ist die Wurzel; was er enthaelt, steht in Dockerfile.ci.dockerignore.
+
+FROM python:3.13-slim AS ci-python
+
+# Pakete systemweit: Der venv im Workspace (--system-site-packages) sieht sie, und weicht
+# requirements.txt ab, installiert pip dort nur die Unterschiede.
+COPY mvp/backend/semantic-search-service/requirements.txt /opt/ci/src/mvp/backend/semantic-search-service/
+COPY scripts/ci-installieren.sh /opt/ci/src/scripts/
+RUN pip install --no-cache-dir --root-user-action=ignore \
+      -r /opt/ci/src/mvp/backend/semantic-search-service/requirements.txt \
+    && sh /opt/ci/src/scripts/ci-installieren.sh --pruefsumme python > /opt/ci/python.sha256
+
+# Modelle, die die Integrationstests laden (core/config.py), wie im Dockerfile des Dienstes.
+# Ohne den Bestaetiger (NLI_BESTAETIGER_MODELL, 2,2 GB): standardmaessig aus, kein Test laedt
+# ihn. Kein HF_HUB_OFFLINE: Fehlt ein Modell oder hat der Hub eine neue Revision, laedt der
+# Lauf es wie bisher nach, statt rot zu werden.
+ENV HF_HOME=/opt/ci/huggingface
+RUN python -c "from sentence_transformers import SentenceTransformer; \
+    SentenceTransformer('intfloat/multilingual-e5-base')"
+RUN python -c "from transformers import AutoModelForSequenceClassification, AutoTokenizer; \
+    name = 'MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7'; \
+    AutoTokenizer.from_pretrained(name); AutoModelForSequenceClassification.from_pretrained(name)"
+
+
+FROM node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92 AS ci-node
+
+# Chromium fuer den Schritt frontend: dasselbe Skript wie ohne Image, hier schon beim Bauen
+COPY scripts/ci-chromium.sh /opt/ci/src/scripts/
+RUN sh /opt/ci/src/scripts/ci-chromium.sh && rm -rf /var/lib/apt/lists/*
+
+# node_modules unter /opt/ci, der Schritt frontend-installieren verweist darauf. Der npm-Cache
+# (~/.npm) bleibt im Image, damit npm ci bei geaenderter package-lock.json nur Neues laedt.
+COPY mvp/frontend/gutgesagt-frontend/package.json mvp/frontend/gutgesagt-frontend/package-lock.json \
+     /opt/ci/src/mvp/frontend/gutgesagt-frontend/
+COPY scripts/ci-installieren.sh /opt/ci/src/scripts/
+RUN npm ci --prefix /opt/ci/src/mvp/frontend/gutgesagt-frontend --no-audit --no-fund \
+    && mv /opt/ci/src/mvp/frontend/gutgesagt-frontend/node_modules /opt/ci/node_modules \
+    && sh /opt/ci/src/scripts/ci-installieren.sh --pruefsumme frontend > /opt/ci/frontend.sha256

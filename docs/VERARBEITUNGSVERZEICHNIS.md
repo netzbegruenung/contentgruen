@@ -189,8 +189,9 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   schützen.
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a über die eigene, freiwillige
   Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351), getrennt von der
-  Art.-9-Einwilligung zur Mitwirkung (Kopplungsverbot, Art. 7 Abs. 4); Sichtbarkeit der
-  Abzeichen mit gesonderter Zustimmung (T2).
+  Art.-9-Einwilligung zum Beitragen (seit deren Wortlaut `2026-11-13`, Entscheidung Maintainer
+  13.11.2026; Kopplungsverbot, Art. 7 Abs. 4); Sichtbarkeit der Abzeichen mit gesonderter
+  Zustimmung (T2).
 - **Betroffene:** angemeldete Personen mit Einwilligung „Punkte und Meilensteine“, ohne
   Startkonten; Muster-Hinweise nur, wenn beide Konten eingewilligt haben.
 - **Daten:** Punkte und Meilensteine nicht gespeichert, bei jedem Abruf berechnet;
@@ -199,7 +200,7 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Empfänger:** Punkte nur für die Person; Abzeichen für andere Angemeldete mit Zustimmung;
   Muster-Hinweise nur für Admins.
 - **Fristen:** LK „Fristen“ (Paar-Prüfwerte, Muster-Hinweise, Abzeichen).
-- **TOM:** DSFA Abschnitt 3, V11, V22. Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
+- **TOM:** DSFA Abschnitt 3, V11, V22. `punkte_aktiv` erst nach dem Merge von #668 einschalten (sonst startet der Suchdienst nicht). Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
   Standard aus; einschalten erst nach Übernahme der DSFA (DSFA Abschnitt 7).
 
 ### T8 Meldungen, Sperren und Widerspruch

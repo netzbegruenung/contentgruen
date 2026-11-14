@@ -54,6 +54,8 @@ DELETE FROM gesehene_nutzung WHERE user_id            = :'uid';
 -- ganz, ohne die Person ist er keiner mehr.
 DELETE FROM muster_hinweise WHERE konto_a = :'uid' OR konto_b = :'uid';
 DELETE FROM art9_einwilligungen WHERE user_id         = :'uid';
+-- "Ohne Einwilligung weiter" am Konto (B2, PR #670)
+DELETE FROM art9_ohne_einwilligung WHERE user_id      = :'uid';
 DELETE FROM abzeichen_sichtbarkeit WHERE user_id      = :'uid';
 DELETE FROM punkte_einwilligung WHERE user_id         = :'uid';
 -- Loeschauftraege nach einem Widerruf, offene wie erledigte: Die Kontoloeschung

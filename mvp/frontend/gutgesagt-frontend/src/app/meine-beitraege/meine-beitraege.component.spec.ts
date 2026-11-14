@@ -307,6 +307,24 @@ describe('MeineBeitraegeComponent', () => {
       expect(text('.album-statistik')).toBe('Dein Beitrag wurde 40-mal genutzt.');
     });
 
+    // UX-Review B11: bei 0 Nutzungen erklaeren, was genutzt heisst, und den naechsten Schritt nennen
+    it('erklaert bei 0 Nutzungen, was „genutzt“ heisst, und nennt den naechsten Schritt', async () => {
+      kennung = 'person-1';
+      nutzungsstatistik = { user_id: 'person-1', unique_contents_contributed: 1, total_usage_count: 0, top_content: [] };
+
+      await erstellen([beitrag({ usage_count: 0 })]);
+
+      expect(text('[data-testid=nutzung-leer]')).toContain('Noch hat niemand deine Beiträge genutzt.');
+      expect(text('[data-testid=nutzung-leer]')).toContain('teil seinen Link');
+    });
+
+    it('zeigt die Erklaerung nicht, sobald etwas genutzt wurde oder die Statistik fehlt', async () => {
+      kennung = 'person-1';
+      nutzungsstatistik = { user_id: 'person-1', unique_contents_contributed: 1, total_usage_count: 3, top_content: [] };
+      await erstellen([beitrag()]);
+      expect(fixture.nativeElement.querySelector('[data-testid=nutzung-leer]')).toBeNull();
+    });
+
     it('faellt ohne Nutzungsstatistik auf die Summe der Seite zurueck', async () => {
       kennung = 'person-1';
 

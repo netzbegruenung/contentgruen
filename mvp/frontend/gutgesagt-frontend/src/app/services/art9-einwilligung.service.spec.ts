@@ -10,10 +10,15 @@ import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from '../meine-beitraege/meilenstein-
 import {
   Art9EinwilligungService,
   Art9EinwilligungStand,
+  ALTER_OHNE_SCHLUESSEL,
   WORTLAUT_LABEL_MAX,
+  einwilligungFehlt,
   wortlautDatum,
   wortlautErsterSatz,
+  zurEinwilligungUmleiten,
 } from './art9-einwilligung.service';
+import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
+import { entwurfHolen, entwurfSichern } from '../einwilligung/entwurf-vor-einwilligung';
 
 /** Nach dem Anmelden ohne Art.-9-Einwilligung auf /einwilligung fuehren (#489). */
 describe('Art9EinwilligungService', () => {
@@ -39,6 +44,7 @@ describe('Art9EinwilligungService', () => {
   });
 
   beforeEach(() => {
+    localStorage.removeItem(ALTER_OHNE_SCHLUESSEL);
     anmeldung = new BehaviorSubject<UserInfo | null>(null);
     router = {
       url: '/fangkorb',
@@ -61,6 +67,7 @@ describe('Art9EinwilligungService', () => {
   afterEach(() => {
     service.ngOnDestroy();
     http.verify();
+    localStorage.removeItem(ALTER_OHNE_SCHLUESSEL);
   });
 
   it('fragt fuer Besucher nicht', () => {
@@ -286,5 +293,159 @@ describe('Art9EinwilligungService', () => {
 
     service.widerrufen().subscribe();
     http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
+  });
+  // UX-Review B2: nur beim ersten Anmelden umleiten, nicht nach einer Entscheidung
+  describe('nicht draengen (B2)', () => {
+    const widerrufen = (): Art9EinwilligungStand => ({
+      ...stand(false),
+      wortlaut: '2026-11-05-b',
+      eingewilligt_am: '2026-11-05T09:00:00Z',
+      widerrufen_am: '2026-11-06T09:00:00Z',
+    });
+
+    it('leitet nach einem Widerruf nicht um', () => {
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+
+      http.expectOne(ADRESSE).flush(widerrufen());
+
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('leitet nicht um, wer laut Server ohne Einwilligung weitergegangen ist', () => {
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+
+      http.expectOne(ADRESSE).flush({ ...stand(false), ohne_wortlaut: '2026-11-05-b' });
+
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('merkt sich "ohne" am Konto per POST, nicht im Browser', () => {
+      const setItem = spyOn(Storage.prototype, 'setItem').and.callThrough();
+
+      service.ohneMerken('2026-11-05-b').subscribe();
+
+      const anfrage = http.expectOne({ method: 'POST', url: `${ADRESSE}/ohne` });
+      expect(anfrage.request.body).toEqual({ wortlaut: '2026-11-05-b' });
+      anfrage.flush(null);
+      expect(setItem).not.toHaveBeenCalled();
+    });
+
+    it('raeumt einen alten Eintrag im localStorage beim Start weg', () => {
+      localStorage.setItem(ALTER_OHNE_SCHLUESSEL, '2026-11-05-b');
+
+      service.starten();
+
+      expect(localStorage.getItem(ALTER_OHNE_SCHLUESSEL)).toBeNull();
+    });
+
+    it('holt den Stand neu, wenn der Tab wieder sichtbar wird (Einwilligung aus einem anderen Tab)', () => {
+      const zustand = TestBed.inject(Art9EinwilligungZustand);
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush({ ...stand(false), ohne_wortlaut: '2026-11-05-b' });
+      expect(zustand.wert).toBe('fehlt');
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      http.expectOne(ADRESSE).flush(stand(true));
+
+      expect(zustand.wert).toBe('eingewilligt');
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('verwirft einen Stand aus dem Tab-Wechsel, der nach einem Kontowechsel ankommt', () => {
+      const zustand = TestBed.inject(Art9EinwilligungZustand);
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(true));
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      const alt = http.expectOne(ADRESSE);
+      anmeldung.next(angemeldet('alex'));
+      http.expectOne(ADRESSE).flush(stand(false));
+      alt.flush(stand(true));
+
+      expect(zustand.wert).toBe('fehlt');
+      expect(service.geklaert()).toBeNull();
+    });
+
+    it('nimmt die Klaerung zurueck, wenn ein anderer Tab widerrufen hat', () => {
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(true));
+      expect(service.geklaert()).toBe('kim');
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      http.expectOne(ADRESSE).flush({ ...stand(false), widerrufen_am: '2026-11-14T09:00:00Z' });
+
+      expect(service.geklaert()).toBeNull();
+      expect(TestBed.inject(Art9EinwilligungZustand).wert).toBe('fehlt');
+    });
+
+    it('setzt den Zustand fuer Formulare: fehlt, eingewilligt, nach dem Abmelden unbekannt', () => {
+      const zustand = TestBed.inject(Art9EinwilligungZustand);
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush(stand(false));
+      expect(zustand.wert).toBe('fehlt');
+
+      service.einwilligen('2026-11-05-b').subscribe();
+      http.expectOne({ method: 'POST', url: ADRESSE }).flush(null);
+      expect(zustand.wert).toBe('eingewilligt');
+
+      service.widerrufen().subscribe();
+      http.expectOne({ method: 'DELETE', url: ADRESSE }).flush(null);
+      expect(zustand.wert).toBe('fehlt');
+
+      anmeldung.next(null);
+      expect(zustand.wert).toBe('unbekannt');
+    });
+
+    it('zurEinwilligungUmleiten: erstes Mal ja, nach Entscheidung nein, neuer Wortlaut nach frueherer Einwilligung einmal ja', () => {
+      const neu = stand(false);
+      expect(zurEinwilligungUmleiten(neu)).toBeTrue();
+      expect(zurEinwilligungUmleiten({ ...neu, ohne_wortlaut: '2026-11-05-b' })).toBeFalse();
+      expect(zurEinwilligungUmleiten(stand(true))).toBeFalse();
+      expect(zurEinwilligungUmleiten(widerrufen())).toBeFalse();
+
+      const frueher: Art9EinwilligungStand = {
+        ...stand(false),
+        wortlaut: '2026-11-12',
+        eingewilligt_am: '2026-11-12T09:00:00Z',
+        aktueller_wortlaut: { kennung: '2026-11-13', text: '…' },
+      };
+      // Frueher schon einmal ohne weiter (zu einem aelteren Wortlaut): zum neuen trotzdem fragen
+      expect(zurEinwilligungUmleiten({ ...frueher, ohne_wortlaut: '2026-11-10' })).toBeTrue();
+      // Zum aktuellen schon ohne weiter: nicht noch einmal
+      expect(zurEinwilligungUmleiten({ ...frueher, ohne_wortlaut: '2026-11-13' })).toBeFalse();
+    });
+  });
+
+  it('raeumt Entwuerfe beim App-Start auf und loescht sie beim Abmelden und Kontowechsel', () => {
+    entwurfSichern('/einwerfen', 'von kim', 'kim');
+    entwurfSichern('/fangkorb', 'von alex', 'alex');
+    service.starten();
+    anmeldung.next(angemeldet('kim'));
+    http.expectOne(ADRESSE).flush(stand(true));
+    expect(entwurfHolen('/fangkorb', 'alex')).toBeUndefined();
+    expect(entwurfHolen('/einwerfen', 'kim')).toBe('von kim');
+
+    entwurfSichern('/einwerfen', 'von kim', 'kim');
+    anmeldung.next(angemeldet('alex'));
+    http.expectOne(ADRESSE).flush(stand(true));
+    expect(entwurfHolen('/einwerfen', 'kim')).toBeUndefined();
+
+    entwurfSichern('/einwerfen', 'von alex', 'alex');
+    anmeldung.next(null);
+    expect(entwurfHolen('/einwerfen', 'alex')).toBeUndefined();
+  });
+
+  it('einwilligungFehlt erkennt nur 403 mit Kennzeichen', () => {
+    expect(einwilligungFehlt({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })).toBeTrue();
+    expect(einwilligungFehlt({ status: 403, error: { detail: 'anderes' } })).toBeFalse();
+    expect(einwilligungFehlt({ status: 500 })).toBeFalse();
+    expect(einwilligungFehlt(new Error('x'))).toBeFalse();
+    expect(einwilligungFehlt(null)).toBeFalse();
   });
 });

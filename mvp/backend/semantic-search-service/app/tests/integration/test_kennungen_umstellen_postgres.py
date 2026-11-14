@@ -47,6 +47,7 @@ JE_SPALTE_EINE = {
     "users.user_id": 1,
     "gesehene_nutzung.user_id": 1,
     "art9_einwilligungen.user_id": 1,
+    "art9_ohne_einwilligung.user_id": 1,
     "abzeichen_sichtbarkeit.user_id": 1,
     "punkte_einwilligung.user_id": 1,
     "loeschauftraege.user_id": 1,

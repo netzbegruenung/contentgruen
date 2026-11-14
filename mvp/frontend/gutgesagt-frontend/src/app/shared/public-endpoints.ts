@@ -33,6 +33,7 @@ export class PublicEndpoints {
     '/api/auth/',          // Anmeldung selbst: 401 = falsche Angaben, kein Redirect (#512)
     '/api/v1/usage/content/',  // Allow anonymous usage tracking
     '/api/v1/usage/trending',   // Allow anonymous access to trending content
+    '/api/v1/usage/punkte/status', // Schalter der Punkte, ohne Anmeldung lesbar (UX-Review B20)
     '/api/v1/content/recent',   // oeffentlich am BFF; fehlte hier, ein anonymer
                                 // Besucher wurde deshalb auf /login umgeleitet
     '/api/v1/content/beitrag/', // eigene Adresse eines Beitrags (#300), oeffentlich am BFF

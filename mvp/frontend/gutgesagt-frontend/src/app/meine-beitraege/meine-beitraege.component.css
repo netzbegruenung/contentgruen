@@ -50,6 +50,11 @@
   white-space: nowrap;
 }
 
+/* Erklaerung bei 0 Nutzungen (UX-Review B11) */
+.nutzung-leer {
+  margin: 0 0 var(--spacing-md);
+}
+
 /* Punkte und Meilensteine stehen unter den Beitraegen (Nutzerfuehrung 13.11.) */
 app-punkte {
   display: block;
