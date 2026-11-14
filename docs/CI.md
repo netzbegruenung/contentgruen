@@ -1,9 +1,11 @@
 # CI on Woodpecker
 
 Every pull request on Forgejo runs the pipeline `.woodpecker/ci.yaml` (workflow `ci`) on
-verdigado's Woodpecker. It checks what `scripts/check.sh --integration` checks locally, and
-its status `ci/woodpecker/pr/ci` is required before a merge into `main` once a person has
-completed the [setup](#setup-by-a-person).
+verdigado's Woodpecker. It checks what `scripts/check.sh` checks locally; the integration
+tests run only on `main`, on tags and manually (see
+[Integration tests on main only](#integration-tests-on-main-only)). Its status
+`ci/woodpecker/pr/ci` is required before a merge into `main` once a person has completed the
+[setup](#setup-by-a-person).
 
 After the merge, `.woodpecker/build.yaml` and, on `v*` tags, `release.yaml` build the images
 (see [Images and releases](#images-and-releases)), and every night `.woodpecker/nacht.yaml`
@@ -24,10 +26,11 @@ mirror (`.github/workflows/`) still build them too and publish the tags the envi
 | `unit` | `gutgesagt-ci-python` | `check.sh --schritt unit`: Python unit tests and `scripts/tests/`, each with two pytest-xdist workers (`CHECK_WORKER=2`; locally four) |
 | `frontend-build` | `gutgesagt-ci-node` | after `unit`: `check.sh --schritt frontend-build` (`ng build --configuration production`, for the budgets of the image build) with `NG_BUILD_MAX_WORKERS=2` |
 | `frontend` | same | after `frontend-build`: Chromium from Debian (`scripts/ci-chromium.sh`, already in the CI image), `check.sh --schritt frontend` (Karma tests) with `CHECK_OHNE_SOURCEMAPS=1` (`ng test --source-map=false`) |
-| `integration` | `gutgesagt-ci-python` | after `frontend`: `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below, serially |
+| `integration` | `gutgesagt-ci-python` | push to `main`, tags and manual runs only, never in pull requests: after `frontend`, `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below, serially |
 | `ci-bericht` | `python:3.13-slim` | red pull-request runs only, see below |
 
-Services: `qdrant` (same version as the compose files and `.github/workflows/tests-backend.yml`,
+Services (started only when `integration` runs, same `when`): `qdrant` (same version as the
+compose files and `.github/workflows/tests-backend.yml`,
 `entrypoint: /qdrant/qdrant`; without the absolute path the service does not start) and `postgres` (base image of
 `mvp/backend/postgres-app`). The integration step reaches them through `QDRANT_URL` and
 `POSTGRES_TEST_DATABASE_URL`, after `scripts/ci_dienste_warten.py` has waited (up to two
@@ -71,7 +74,7 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 
 **Staggered steps.** The runner is shared with the other pipelines of the Woodpecker
 instance. With the heavy steps side by side, on 13.11. its memory ran out and many pipelines
-were cancelled together. So the four heavy steps run one after the other, never two at once, in one chain of `depends_on`;
+were cancelled together. So the four heavy steps (three in pull requests, without `integration`) run one after the other, never two at once, in one chain of `depends_on`;
 the light ones (`retired-words`, `lint`, `bff` and the two installations) run alongside.
 The chain goes shortest first, so a quick failure shows early: `unit` (about half a minute),
 `frontend-build`, `frontend` (Chromium and Karma), `integration` (loads the embedding model,
@@ -111,9 +114,10 @@ step.
 | Step | Skipped when only these change |
 |---|---|
 | `frontend-installieren`, `frontend-build`, `frontend` | `mvp/backend/**`, `mvp/scripts/**`, `scripts/**/*.py` |
-| `lint`, `integration` | `mvp/frontend/**`, the BFF (`mvp/backend/BFF/**`, `BFF.Tests/**`, `GutGesagt.sln`) |
+| `lint` | `mvp/frontend/**`, the BFF (`mvp/backend/BFF/**`, `BFF.Tests/**`, `GutGesagt.sln`) |
 | `bff` | `mvp/frontend/**`, `mvp/backend/semantic-search-service/**`, `mvp/backend/postgres-app/**`, `mvp/scripts/**`, `scripts/**/*.py` |
 | `retired-words`, `python-installieren`, `unit` | never |
+| `integration` | not applicable, it never runs in pull requests |
 
 - `python-installieren` and `unit` always run: unit tests and `scripts/tests/` also read
   frontend and BFF files (CSS variables, unused endpoints, profile pictures, ...), so a
@@ -122,7 +126,9 @@ step.
   a pipeline in which a step depends on a missing step, unless the dependency is marked
   `optional: true` (Woodpecker 3.15 and later). So `integration` depends on `frontend`
   optionally (without it, it waits for `unit`), and `ci-bericht` lists every filtered
-  step as optional. Skipped steps do not make the run red; `ci-bericht` lists them under
+  step as optional; `integration` is not in its list at all, since the report only runs in
+  pull requests, where `integration` never runs. Skipped steps do not make the run red;
+  `ci-bericht` lists them under
   "Nicht gelaufen".
 - `scripts/tests/test_woodpecker_ci.py` replays Woodpecker's filtering for typical
   pull requests and checks that the heavy steps never overlap and no dependency is missing.
@@ -134,6 +140,27 @@ start a run with the event `pull_request_metadata`, and its status context is
 required status would stay green from the light run, and the full run after removing
 "WIP:" would not be required for the merge. An empty push after removing "WIP:" would
 fix the status but depends on nobody forgetting it.
+
+## Integration tests on main only
+
+Decided on 14.11.: `integration` runs on a push to `main`, on tags (`release.yaml` waits for
+`ci`, so no release skips them) and on "Run pipeline", never in pull-request runs. The
+services `qdrant` and `postgres` have the same `when` and do not start in pull requests
+either. Pull-request runs lose their longest step (several minutes on the shared runner,
+loading the embedding model).
+
+- **The price:** a pull request can be green and still break the integration tests on
+  `main`. Then a red `main` takes precedence over new work: fix it first (or revert), and
+  check `ci/woodpecker/push/ci` after every merge; nothing reports a red `main` by itself.
+  As long as `main` is red, `build.yaml` (it waits for `ci`) builds no images, so nothing
+  new reaches test or production.
+- Whoever wants the integration tests before the merge runs them locally
+  (`bash scripts/check.sh --schritt integration`, or `--geaendert`, which picks them when
+  the changes reach them) or starts "Run pipeline" on the branch.
+- Woodpecker 3.20.1 (`pipeline/frontend/yaml/compiler/dag.go`): a step that `when` filters out
+  is dropped together with every optional dependency on it; a missing required one rejects
+  the pipeline. Nothing depends on `integration`, so pull requests lose only that step.
+  Services are filtered by the same `when` (`compiler.go`, services stage).
 
 ## CI images
 
@@ -445,7 +472,7 @@ Check without admin rights: `GET /api/v1/repos/<owner>/<repo>/branches/main` sho
 `bash scripts/check.sh --integration` runs all of them.
 
 **Before a push, `bash scripts/check.sh --geaendert` is enough.** The full run, with
-integration tests, all specs and the BFF, is the pipeline's job on every pull request; run it
+all specs and the BFF, is the pipeline's job (the integration tests on `main`); run it
 locally only when the pipeline is red and you need the full output.
 
 `bash scripts/check.sh --geaendert` runs only the steps the files changed
@@ -459,4 +486,5 @@ directly or indirectly changed, without `--integration`, and then needs Qdrant a
 `--schritt integration`. It prints the chosen steps and why (`scripts/geaendert.py`, tests in
 `scripts/tests/test_geaendert.py`). When in doubt it runs more: changes under `scripts/` or
 `.woodpecker/` and paths it does not know run everything, documentation runs only
-`retired-words`. The pipeline does not use `--geaendert`; it always runs every step.
+`retired-words`. The pipeline does not use `--geaendert`; on `main` it runs every step, pull
+requests see [Path filters](#path-filters) and [Integration tests on main only](#integration-tests-on-main-only).
