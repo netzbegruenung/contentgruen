@@ -70,8 +70,9 @@ export class RueckmeldungService implements OnDestroy {
         ),
         map(({ anzahl }) => anzahl),
         filter((anzahl): anzahl is number => !!anzahl && anzahl > 0),
-        // Vor der ersten Navigation steht router.url noch auf "/", auch bei einem Direktaufruf.
-        switchMap((anzahl) => this.ersteNavigation().pipe(map(() => anzahl))),
+        // Erst, wenn feststeht, wo die App landet: vor der ersten Navigation steht router.url
+        // auf "/", direkt nach der Anmeldung noch auf /login (Review).
+        switchMap((anzahl) => this.zielErreicht().pipe(map(() => anzahl))),
         filter(() => !istStartseite(this.router.url)),
       )
       .subscribe((anzahl) => {
@@ -83,13 +84,16 @@ export class RueckmeldungService implements OnDestroy {
       });
   }
 
-  private ersteNavigation(): Observable<unknown> {
-    return this.router.navigated
-      ? of(true)
-      : this.router.events.pipe(
-          filter((ereignis) => ereignis instanceof NavigationEnd),
+  private zielErreicht(): Observable<unknown> {
+    const unterwegs =
+      !this.router.navigated || !!this.router.getCurrentNavigation() || this.router.url.startsWith('/login');
+    return unterwegs
+      ? this.router.events.pipe(
+          filter((ereignis): ereignis is NavigationEnd => ereignis instanceof NavigationEnd),
+          filter((ereignis) => !ereignis.urlAfterRedirects.startsWith('/login')),
           take(1),
-        );
+        )
+      : of(true);
   }
 
   ngOnDestroy(): void {

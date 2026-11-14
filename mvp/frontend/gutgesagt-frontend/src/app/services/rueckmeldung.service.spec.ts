@@ -23,7 +23,7 @@ describe('RueckmeldungService', () => {
   let service: RueckmeldungService;
   let hinweis: { anmeldung: jasmine.Spy };
   /** Wo die App gerade steht; Standard: nicht auf der Startseite. */
-  let router: { url: string; navigated: boolean; events: Subject<unknown> };
+  let router: { url: string; navigated: boolean; events: Subject<unknown>; getCurrentNavigation: () => unknown };
 
   const angemeldet = (userId: string): UserInfo => ({
     isAuthenticated: true,
@@ -36,7 +36,7 @@ describe('RueckmeldungService', () => {
     anmeldung = new BehaviorSubject<UserInfo | null>(null);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
     hinweis = { anmeldung: jasmine.createSpy('anmeldung').and.returnValue(of(undefined)) };
-    router = { url: '/meine-beitraege', navigated: true, events: new Subject<unknown>() };
+    router = { url: '/meine-beitraege', navigated: true, events: new Subject<unknown>(), getCurrentNavigation: () => null };
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -94,6 +94,18 @@ describe('RueckmeldungService', () => {
     router.events.next(new NavigationEnd(1, '/meine-beitraege', '/meine-beitraege'));
 
     expect(snackBar.open).toHaveBeenCalledTimes(1);
+  });
+
+  it('zeigt nach der Anmeldung nichts, wenn es von /login auf die Startseite geht (Review)', () => {
+    router.url = '/login';
+    service.starten();
+    anmeldung.next(angemeldet('kim-1'));
+    http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 3 });
+
+    router.url = '/search';
+    router.events.next(new NavigationEnd(2, '/search', '/search'));
+
+    expect(snackBar.open).not.toHaveBeenCalled();
   });
 
   it('erkennt die Startseite auch vor der Weiterleitung und mit Parametern', () => {
