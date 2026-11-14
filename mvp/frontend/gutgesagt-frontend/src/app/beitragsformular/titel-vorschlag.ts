@@ -18,10 +18,38 @@ export function titelVorschlag(text: string | null | undefined, _aussage: string
   return gekuerzt(ersterSatz(einzeilig(text)), TITEL_VORSCHLAG_ZIEL);
 }
 
-/** Bis zum ersten Satzzeichen (. ! ? …), dem Leerraum oder das Ende folgt; sonst der ganze Text. */
+/**
+ * Abkürzungen, an deren Punkt kein Satz endet („z. B.“ machte sonst „Das ist z.“ zum Titel).
+ * Klein geschrieben, ohne Punkt; dazu gelten ein einzelner Buchstabe und ein Wort mit Punkt darin
+ * („u.a.“) als Abkürzung.
+ */
+const ABKUERZUNGEN = new Set([
+  'bzw', 'ca', 'd', 'dh', 'evtl', 'ggf', 'inkl', 'insb', 'mio', 'mrd', 'nr', 'o', 'u', 'usw', 'v', 'vgl',
+  'z', 'zb', 'zt', 'bspw', 'etc', 'abs', 'art', 'dr', 'prof', 'st', 'str', 'jh', 'mind', 'max', 'min',
+]);
+
+/**
+ * Bis zum ersten Satzzeichen (. ! ? …), dem Leerraum oder das Ende folgt; ein Punkt hinter
+ * einer Abkürzung oder einer Ziffer (Ordinalzahl, Datum) zählt nicht. Sonst der ganze Text.
+ */
 function ersterSatz(text: string): string {
-  const treffer = text.match(/^.*?[.!?…](?=\s|$)/);
-  return (treffer ? treffer[0] : text).trim();
+  const ende = /[.!?…](?=\s|$)/g;
+  for (const treffer of text.matchAll(ende)) {
+    const stelle = treffer.index!;
+    if (treffer[0] === '.' && keinSatzende(text.slice(0, stelle))) {
+      continue;
+    }
+    return text.slice(0, stelle + 1).trim();
+  }
+  return text.trim();
+}
+
+/** Ob der Punkt nach diesem Text eine Abkürzung oder Zahl beendet statt eines Satzes. */
+function keinSatzende(davor: string): boolean {
+  const wort = davor.match(/(\S+)$/)?.[1] ?? '';
+  const ohneZeichen = wort.replace(/^[„"'(]+/, '').replace(/\./g, '').toLowerCase();
+  // Ein Punkt schon im Wort („u.a“, „z.B“): zusammengeschriebene Abkürzung
+  return /\d$/.test(wort) || /\p{L}\.\p{L}/u.test(wort) || ohneZeichen.length === 1 || ABKUERZUNGEN.has(ohneZeichen);
 }
 
 /** Satzgrenzen innerhalb eines Satzes, an denen ein Titel enden darf. */

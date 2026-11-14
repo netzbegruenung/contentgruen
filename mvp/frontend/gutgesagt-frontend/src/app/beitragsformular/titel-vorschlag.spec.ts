@@ -35,6 +35,17 @@ describe('titelVorschlag (E2)', () => {
     expect(TITEL_MAX).toBeGreaterThanOrEqual(TITEL_VORSCHLAG_ZIEL);
   });
 
+  it('endet nicht an Abkürzungen wie „z. B.“ oder „bzw.“ (Review)', () => {
+    expect(titelVorschlag('Das ist z. B. teuer. Aber es lohnt sich.')).toBe('Das ist z. B. teuer.');
+    expect(titelVorschlag('Strom bzw. Wärme wird billiger. Weiter.')).toBe('Strom bzw. Wärme wird billiger.');
+    expect(titelVorschlag('Seit dem 1. Januar gilt das GEG. Mehr dazu.')).toBe('Seit dem 1. Januar gilt das GEG.');
+    expect(titelVorschlag('Das sagt u.a. die Studie. Weiter.')).toBe('Das sagt u.a. die Studie.');
+  });
+
+  it('endet weiter an einem normalen Satzende mit Punkt', () => {
+    expect(titelVorschlag('Wind ist günstig. Solar auch.')).toBe('Wind ist günstig.');
+  });
+
   it('ist leer ohne Text', () => {
     expect(titelVorschlag('')).toBe('');
     expect(titelVorschlag(null)).toBe('');
