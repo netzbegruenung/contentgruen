@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Set
 from sqlalchemy import bindparam, func, select
 
 from infrastructure.database.connection import AppDatabase, get_app_database
+from domain.models.einwurf import EinwurfStatus
 from infrastructure.database.models import Einwurf, AusformuliertIn, Sperre
 from repositories.vote_repository import OHNE_AUSGENOMMENE, ohne_ausgenommene
 
@@ -115,6 +116,18 @@ class PunkteRepository:
             select(func.count(func.distinct(AusformuliertIn.raw_input_id)))
             .join(Einwurf, Einwurf.id == AusformuliertIn.raw_input_id)
             .where(*bedingungen)
+        )
+        with self.db.get_session() as session:
+            return session.execute(abfrage).scalar_one()
+
+    def eigene_einwuerfe(self, user_id: str) -> int:
+        """
+        Wie viele Einwuerfe die Person eingeworfen hat, ohne verworfene (Wegmarke
+        "Erster Einwurf", #351). Ein geloeschter Einwurf faellt mit seiner Zeile weg.
+        """
+        abfrage = select(func.count()).where(
+            Einwurf.submitted_by == user_id,
+            Einwurf.status != EinwurfStatus.DISCARDED.value,
         )
         with self.db.get_session() as session:
             return session.execute(abfrage).scalar_one()

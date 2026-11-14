@@ -221,6 +221,16 @@ describe('ModerationService', () => {
     });
   });
 
+  describe('meldungSchliessen', () => {
+    it('schliesst über den eigenen Endpunkt, nicht über sperren', () => {
+      service.meldungSchliessen('report-123').subscribe();
+
+      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/reports/report-123/schliessen`);
+      expect(req.request.method).toBe('PUT');
+      req.flush({ success: true, message: 'Meldung geschlossen' });
+    });
+  });
+
   describe('dismissReport', () => {
     it('should send dismiss request with optional notes', () => {
       const reportId = 'report-123';
@@ -229,10 +239,11 @@ describe('ModerationService', () => {
       service.dismissReport(reportId, notes).subscribe();
 
       const req = httpMock.expectOne(
-        `${environment.baseUrl}/api/v1/moderation/reports/${reportId}/dismiss`
+        (r) => r.url === `${environment.baseUrl}/api/v1/moderation/reports/${reportId}/dismiss`
       );
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ notes });
+      // Der Suchdienst liest notes als Query-Parameter, nicht aus dem Body.
+      expect(req.request.params.get('notes')).toBe(notes);
 
       req.flush({ success: true, message: 'Report dismissed' });
     });
@@ -245,7 +256,7 @@ describe('ModerationService', () => {
       const req = httpMock.expectOne(
         `${environment.baseUrl}/api/v1/moderation/reports/${reportId}/dismiss`
       );
-      expect(req.request.body).toEqual({ notes: undefined });
+      expect(req.request.params.has('notes')).toBeFalse();
 
       req.flush({ success: true, message: 'Report dismissed' });
     });

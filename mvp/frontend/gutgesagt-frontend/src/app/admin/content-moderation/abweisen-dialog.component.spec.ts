@@ -1,0 +1,104 @@
+import { TestBed } from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { ANDERER_GRUND, AbweisenDialogComponent, AbweisenDialogDaten } from './abweisen-dialog.component';
+
+describe('AbweisenDialogComponent', () => {
+  let schliessen: jasmine.Spy;
+
+  function erzeugen(daten: AbweisenDialogDaten = { titel: 'Titel', meldegrund: 'Unangemessener Inhalt', mitMail: true }) {
+    schliessen = jasmine.createSpy('close');
+    TestBed.configureTestingModule({
+      imports: [AbweisenDialogComponent, NoopAnimationsModule],
+      providers: [
+        { provide: MAT_DIALOG_DATA, useValue: daten },
+        { provide: MatDialogRef, useValue: { close: schliessen } },
+      ],
+    });
+    const fixture = TestBed.createComponent(AbweisenDialogComponent);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  function abweisknopf(fixture: any): HTMLButtonElement {
+    const knoepfe = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    return knoepfe.find((b) => b.textContent?.includes('Meldung abweisen'))!;
+  }
+
+  it('lässt ohne Grund nicht abweisen und sagt, was die meldende Person erfährt', () => {
+    const fixture = erzeugen();
+
+    expect(abweisknopf(fixture).disabled).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('Gemeldet als: Unangemessener Inhalt');
+    expect(fixture.nativeElement.textContent).toContain('Die meldende Person erfährt per Mail nur, dass abgewiesen wurde.');
+    expect(fixture.nativeElement.textContent).toContain('Das Abweisen lässt sich nicht zurücknehmen.');
+  });
+
+  it('schließt mit dem Grund und dem optionalen Satz als Begründung', () => {
+    const fixture = erzeugen();
+    const c = fixture.componentInstance;
+
+    c.grund = 'Zulässige Meinungsäußerung';
+    fixture.detectChanges();
+    abweisknopf(fixture).click();
+    expect(schliessen).toHaveBeenCalledWith('Zulässige Meinungsäußerung');
+
+    c.satz = '  Zuspitzung, kein Angriff ';
+    abweisknopf(fixture).click();
+    expect(schliessen).toHaveBeenCalledWith('Zulässige Meinungsäußerung: Zuspitzung, kein Angriff');
+  });
+
+  it('verlangt bei „Anderer Grund“ einen eigenen Satz', () => {
+    const fixture = erzeugen();
+    const c = fixture.componentInstance;
+
+    c.grund = ANDERER_GRUND;
+    fixture.detectChanges();
+    expect(abweisknopf(fixture).disabled).toBeTrue();
+
+    c.satz = 'Meldung betrifft einen anderen Beitrag';
+    fixture.detectChanges();
+    expect(abweisknopf(fixture).disabled).toBeFalse();
+  });
+
+  it('begrenzt die ganze Begründung auf 500 Zeichen, sie steht in der Adresse', () => {
+    const fixture = erzeugen();
+    const c = fixture.componentInstance;
+    c.grund = 'Zulässige Meinungsäußerung';
+    fixture.detectChanges();
+
+    expect(c.maxLaenge).toBe(500 - 'Zulässige Meinungsäußerung'.length - 2);
+    expect(fixture.nativeElement.querySelector('textarea').getAttribute('maxlength')).toBe(String(c.maxLaenge));
+  });
+
+  it('zeigt den Zähler erst nahe der Grenze, nicht „0 / 498“ (M3)', () => {
+    const fixture = erzeugen();
+    const c = fixture.componentInstance;
+    c.grund = 'Zulässige Meinungsäußerung';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.zaehler')).toBeNull();
+
+    c.satz = 'x'.repeat(c.maxLaenge - 100);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.zaehler').textContent.trim()).toBe(`${c.satz.length} / ${c.maxLaenge}`);
+  });
+
+  it('lässt einen vorher getippten, zu langen Satz nach der Wahl des Grunds nicht durch', () => {
+    const fixture = erzeugen();
+    const c = fixture.componentInstance;
+    c.satz = 'x'.repeat(490);
+    c.grund = 'Zulässige Meinungsäußerung';
+    fixture.detectChanges();
+
+    expect(c.vollstaendig).toBeFalse();
+    expect(abweisknopf(fixture).disabled).toBeTrue();
+    // … und sagt, warum
+    expect(fixture.nativeElement.querySelector('.zu-lang').textContent.trim()).toBe(`Höchstens ${c.maxLaenge} Zeichen, bitte kürzen.`);
+  });
+
+  it('sagt ohne Mail-Adresse, dass niemand benachrichtigt wird', () => {
+    const fixture = erzeugen({ titel: 'T', meldegrund: 'Spam', mitMail: false });
+
+    expect(fixture.nativeElement.textContent).toContain('Ohne E-Mail-Adresse erfährt die meldende Person nichts.');
+  });
+});

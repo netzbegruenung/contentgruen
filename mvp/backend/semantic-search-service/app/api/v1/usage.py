@@ -49,6 +49,14 @@ from domain.abzeichen_sichtbarkeit import (
     UnbekannterWortlaut,
 )
 from services.punkte_service import PunkteService
+from domain.punkte_einwilligung import (
+    AKTUELLER_WORTLAUT as PUNKTE_WORTLAUT,
+    GELTENDE_WORTLAUTE as PUNKTE_GELTENDE_WORTLAUTE,
+    WORTLAUTE as PUNKTE_WORTLAUTE,
+)
+from repositories.punkte_einwilligung_repository import (
+    get_punkte_einwilligung_repository,
+)
 from services.gepostet_service import GepostetService, get_gepostet_service
 from services.art9_einwilligung_service import get_art9_einwilligung_service
 from services.usage_tracking_service import get_usage_service
@@ -134,16 +142,24 @@ class PunkteResponse(BaseModel):
     quests: int
     wirkung: int
     gesamt: int
-    # False fuer Startkonten und ohne geltende Art.-9-Einwilligung: Das Konto hat
-    # keine Punkte (GLOSSARY.md "Punkte"), das Frontend zeigt dann keinen Stand.
+    # False fuer Startkonten und ohne Einwilligung "Punkte und Meilensteine": Das
+    # Konto hat keine Punkte (GLOSSARY.md "Punkte"), das Frontend zeigt dann keinen Stand.
     sammelt: bool = True
 
 
 class MeilensteinResponse(BaseModel):
-    """Ein Meilenstein mit Stand (#351); ``erreicht`` ab ``stand >= schwelle``."""
+    """
+    Ein Meilenstein mit Stand (#351); ``erreicht`` ab ``stand >= schwelle``. ``bild``
+    ist ein Pfad unter public/ des Frontends, ``art`` ``weg`` eine Wegmarke, die nicht
+    fuers Abzeichen zaehlt (domain/meilensteine.py).
+    """
 
     kennung: str
     name: str
+    untertitel: str
+    beschreibung: str
+    bild: str
+    bildnachweis: str
     art: str
     schwelle: int
     stand: int
@@ -151,7 +167,7 @@ class MeilensteinResponse(BaseModel):
 
 
 class MeilensteineResponse(BaseModel):
-    """Die eigenen Meilensteine; leer fuer Startkonten und ohne Art.-9-Einwilligung."""
+    """Die eigenen Meilensteine; leer fuer Startkonten und ohne Einwilligung zu Punkten."""
 
     meilensteine: list[MeilensteinResponse]
 
@@ -173,6 +189,27 @@ class AbzeichenSichtbarkeitResponse(BaseModel):
 
 class AbzeichenSichtbarkeitRequest(BaseModel):
     zeigen: bool
+    wortlaut: str
+
+
+class PunkteEinwilligungWortlaut(BaseModel):
+    kennung: str
+    text: str
+
+
+class PunkteEinwilligungResponse(BaseModel):
+    """
+    Die Einwilligung "Punkte und Meilensteine" der Person (#351): ob sie gilt, zu
+    welchem Wortlaut sie zuletzt geantwortet hat, und der Wortlaut fuer das Haekchen.
+    """
+
+    eingewilligt: bool
+    wortlaut: Optional[str] = None
+    aktueller_wortlaut: PunkteEinwilligungWortlaut
+
+
+class PunkteEinwilligungRequest(BaseModel):
+    eingewilligt: bool
     wortlaut: str
 
 
@@ -226,6 +263,23 @@ async def _eingewilligt(kennung: str) -> bool:
     except Exception as e:
         logger.error(
             f"Art.-9-Einwilligung beim Zaehlen nicht lesbar: {type(e).__name__}",
+            exc_info=True,
+        )
+        return False
+
+
+async def _punkte_eingewilligt(kennung: str) -> bool:
+    """
+    Gilt fuer das Konto die Einwilligung "Punkte und Meilensteine" (#351)? Fuer die
+    Muster-Hinweise; im Zweifel nicht erteilt, der Zaehler laeuft trotzdem.
+    """
+    try:
+        return await asyncio.to_thread(
+            get_punkte_einwilligung_repository().eingewilligt, kennung
+        )
+    except Exception as e:
+        logger.error(
+            f"Einwilligung Punkte beim Zaehlen nicht lesbar: {type(e).__name__}",
             exc_info=True,
         )
         return False
@@ -374,14 +428,16 @@ async def track_content_usage(
         # Erkannt wird gegenseitige Nutzung innerhalb von MUSTER_FENSTER_TAGE (sieben)
         # Tagen; gemerkt wird dafuer nur ein Paar-Pruefwert mit einem Schluessel im
         # Speicher (services/entdoppelung.py, DSFA Risiko 2).
-        # Ein Muster-Hinweis nennt beide Konten (#559): Hat die Autorin nicht
-        # eingewilligt oder widerrufen, keine Meldung - sonst ergaebe ihr frueherer
-        # Paar-Pruefwert noch einen Hinweis mit ihrer Kennung.
+        # Ein Muster-Hinweis nennt beide Konten: Er steht im Wortlaut der Einwilligung
+        # "Punkte und Meilensteine" (#351), nicht mehr in der Art.-9-Einwilligung. Haben
+        # nicht beide sie gegeben (oder hat eine widerrufen), keine Meldung - sonst
+        # ergaebe ein frueherer Paar-Pruefwert noch einen Hinweis mit ihrer Kennung.
         if (
             settings.punkte_aktiv
-            and eingewilligt
+            and angemeldet
             and beitrag is not None
-            and await _eingewilligt(beitrag.original_author)
+            and await _punkte_eingewilligt(aufrufer)
+            and await _punkte_eingewilligt(beitrag.original_author)
         ):
             try:
                 await asyncio.to_thread(
@@ -551,6 +607,10 @@ async def eigene_meilensteine(
             MeilensteinResponse(
                 kennung=m.kennung,
                 name=m.name,
+                untertitel=m.untertitel,
+                beschreibung=m.beschreibung,
+                bild=m.bild,
+                bildnachweis=m.bildnachweis,
                 art=m.art,
                 schwelle=m.schwelle,
                 stand=m.stand,
@@ -622,6 +682,79 @@ async def abzeichen_sichtbarkeit_antworten(
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
+    return Response(status_code=204)
+
+
+def _punkte_einwilligung_angeboten(
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Ohne punkte_aktiv 404: Dann gibt es nichts, wozu man einwilligen koennte."""
+    if not settings.punkte_aktiv:
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+@router.get("/users/me/punkte-einwilligung", response_model=PunkteEinwilligungResponse)
+async def punkte_einwilligung(
+    current_user: str = Depends(require_user),
+    _angeboten: None = Depends(_punkte_einwilligung_angeboten),
+):
+    """
+    Die Einwilligung "Punkte und Meilensteine" der Person (#351) und der Wortlaut
+    fuers Haekchen. Nichts ist vorausgewaehlt: ``eingewilligt`` ist False, bis die
+    Person selbst einwilligt.
+    """
+    try:
+        stand = await asyncio.to_thread(
+            get_punkte_einwilligung_repository().lesen, current_user
+        )
+    except Exception as e:
+        logger.error(
+            f"Einwilligung Punkte fuer {log_pseudonym(current_user)} nicht gelesen: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return PunkteEinwilligungResponse(
+        eingewilligt=stand is not None and stand.gilt,
+        wortlaut=stand.wortlaut if stand else None,
+        aktueller_wortlaut=PunkteEinwilligungWortlaut(
+            kennung=PUNKTE_WORTLAUT, text=PUNKTE_WORTLAUTE[PUNKTE_WORTLAUT]
+        ),
+    )
+
+
+@router.put("/users/me/punkte-einwilligung", status_code=204)
+async def punkte_einwilligung_antworten(
+    request: PunkteEinwilligungRequest,
+    current_user: str = Depends(require_user),
+    _angeboten: None = Depends(_punkte_einwilligung_angeboten),
+):
+    """
+    Einwilligen oder widerrufen, jederzeit. Einwilligen geht nur zu einem geltenden
+    Wortlaut. Ein Widerruf wirkt sofort: Punkte und Meilensteine werden je Abruf
+    berechnet und fragen die Einwilligung; das Abzeichen am Namen verschwindet.
+    """
+    if request.wortlaut not in PUNKTE_WORTLAUTE or (
+        request.eingewilligt and request.wortlaut not in PUNKTE_GELTENDE_WORTLAUTE
+    ):
+        raise HTTPException(status_code=422, detail="Unbekannter Wortlaut")
+    try:
+        await asyncio.to_thread(
+            get_punkte_einwilligung_repository().antworten,
+            current_user,
+            request.eingewilligt,
+            request.wortlaut,
+        )
+    except Exception as e:
+        logger.error(
+            f"Einwilligung Punkte fuer {log_pseudonym(current_user)} nicht gespeichert: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    if not request.eingewilligt:
+        # Ohne Meilensteine kein Abzeichen: sofort weg, nicht erst im naechsten Takt.
+        dienst = get_abzeichen_service()
+        if dienst is not None:
+            dienst.vergessen(current_user)
     return Response(status_code=204)
 
 

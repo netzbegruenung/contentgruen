@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { selbstNachladen } from '../../shared/selbst-nachladen';
+import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -37,6 +39,7 @@ function inTagen(tage: number, heute = new Date()): string {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    NachladeHinweisComponent,
   ],
   templateUrl: './einladungen.component.html',
   styleUrls: ['./einladungen.component.css'],
@@ -58,16 +61,30 @@ export class EinladungenComponent implements OnInit {
   erlaubteEinloesungen = 1;
   gueltigBis = inTagen(14);
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private einladungService: EinladungService) {}
 
+  /** Die Liste laedt selbst nach, solange der Reiter sichtbar ist; das Formular bleibt unberuehrt. */
   ngOnInit() {
-    this.einladungService.liste().subscribe({
-      next: (liste) => {
-        this.einladungen = liste.einladungen;
-        this.einloesenEingerichtet = liste.einloesen_eingerichtet;
-      },
+    this.laden();
+    selbstNachladen(() => this.einladungService.liste(true), this.destroyRef, {
+      next: (liste) => this.uebernehmen(liste),
       error: () => (this.fehler = true),
     });
+  }
+
+  private laden() {
+    this.einladungService.liste().subscribe({
+      next: (liste) => this.uebernehmen(liste),
+      error: () => (this.fehler = true),
+    });
+  }
+
+  private uebernehmen(liste: { einladungen: Einladung[]; einloesen_eingerichtet: boolean }) {
+    this.einladungen = liste.einladungen;
+    this.einloesenEingerichtet = liste.einloesen_eingerichtet;
+    this.fehler = false;
   }
 
   anlegen() {

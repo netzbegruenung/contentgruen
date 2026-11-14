@@ -1,3 +1,4 @@
+import { Component, Input, Type, forwardRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -19,6 +20,20 @@ import { FILTER_SCHLUESSEL, filterLaden } from '../../fangkorb/fangkorb-filter';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../../beitragskarte/beitragskarte.stub';
+import { KartenDaten } from '../../beitragskarte/karten-daten';
+
+/** Karte mit gewaehlter Fassung Kurz: steht fuer die echte Karte, damit die Seite ihren Text liest. */
+@Component({
+  selector: 'app-beitragskarte',
+  standalone: true,
+  template: '<article class="karte-stub">{{ daten?.titel }}</article>',
+  providers: [{ provide: BeitragskarteComponent, useExisting: forwardRef(() => KarteMitKurzFassungStub) }],
+})
+class KarteMitKurzFassungStub extends BeitragskarteStubComponent {
+  @Input() override daten?: KartenDaten;
+  readonly kopierText = 'Kurz gesagt';
+  readonly titelAnzeige = 'Titel wie angezeigt';
+}
 
 describe('BeitragGespeichertComponent', () => {
   let fixture: ComponentFixture<BeitragGespeichertComponent>;
@@ -32,9 +47,12 @@ describe('BeitragGespeichertComponent', () => {
   let geladenerEinwurf: Observable<Einwurf>;
   /** Das Teilen-Menue des Geraets; ohne share wie am Desktop ohne Web Share API. */
   let nav: TeilenNavigator;
+  /** Was statt der echten Karte gerendert wird. */
+  let karteStub: Type<unknown>;
 
   beforeEach(() => {
     nav = {};
+    karteStub = BeitragskarteStubComponent;
     geladenerEinwurf = of({ id: 'e-1', ist_eigener_einwurf: true } as Einwurf);
   });
 
@@ -58,7 +76,7 @@ describe('BeitragGespeichertComponent', () => {
     postService.getPostById.and.returnValue(
       of({ id: 'k-1', title: 'Ein Reel zur Wärmepumpe', text: 'Text', content_type: 'post', platform: 'Instagram', author: '@konto' } as any),
     );
-    uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
+    uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten', 'zumNaechstenAusformulieren']);
     navigation = jasmine.createSpyObj('NavigationService', ['navigateToResult', 'navigateToMeineEinwuerfe']);
     einwurfService = jasmine.createSpyObj('EinwurfService', ['einwurfLaden']);
     einwurfService.einwurfLaden.and.callFake(() => geladenerEinwurf);
@@ -87,7 +105,7 @@ describe('BeitragGespeichertComponent', () => {
     })
       .overrideComponent(BeitragGespeichertComponent, {
         remove: { imports: [BeitragskarteComponent] },
-        add: { imports: [BeitragskarteStubComponent] },
+        add: { imports: [karteStub] },
       })
       .compileComponents();
 
@@ -160,7 +178,7 @@ describe('BeitragGespeichertComponent', () => {
       expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Teilen', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+      expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('e-1');
 
       // Ausformuliertes liegt in keinem Tab, sondern unter "Meine Einwuerfe" (#508, F1).
       (seite().querySelector('.zu-meinen-einwuerfen') as HTMLButtonElement).click();
@@ -193,7 +211,7 @@ describe('BeitragGespeichertComponent', () => {
 
       expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT);
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+      expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('e-1');
     });
 
     it('Fangkorb: nicht verknuepft fuehrt "Zum Fangkorb" nach Ausformulieren, wo der Einwurf noch liegt', async () => {
@@ -361,6 +379,16 @@ describe('BeitragGespeichertComponent', () => {
         jasmine.objectContaining({ url: `${window.location.origin}/beitrag/k-1`, title: 'Wärmepumpe lohnt sich', text: 'Text' }),
       );
       expect(kopieren).not.toHaveBeenCalled();
+    });
+
+    it('schickt die auf der Karte gewaehlte Fassung, wie das Teilen-Symbol der Karte (P03)', async () => {
+      karteStub = KarteMitKurzFassungStub;
+      await oeffnen();
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+
+      await fixture.componentInstance.teilen();
+
+      expect(nav.share).toHaveBeenCalledOnceWith(jasmine.objectContaining({ text: 'Kurz gesagt', title: 'Titel wie angezeigt' }));
     });
 
     it('kopiert ohne Teilen-Menue die eigene Adresse und sagt es', async () => {

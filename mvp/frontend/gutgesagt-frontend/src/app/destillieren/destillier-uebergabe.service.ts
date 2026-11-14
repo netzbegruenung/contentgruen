@@ -1,10 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import { BeitragsTyp, EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { FangkorbTab } from '../fangkorb/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
 import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
@@ -17,6 +18,12 @@ export const SCHRITT_PARAM = 'schritt';
 
 /** Query-Parameter, der den Tab fuer den Ruecksprung in den Fangkorb traegt. */
 export const TAB_PARAM = 'tab';
+
+/**
+ * Query-Parameter der Serie: ``ausformulieren`` heisst, "Naechster Einwurf" bleibt beim
+ * Ausformulieren (Entscheidung 13.11.2026). Ohne ihn geht es zum naechsten zum Destillieren.
+ */
+export const REIHE_PARAM = 'reihe';
 
 /** Was aus dem Einwurf ins Beitragsformular uebernommen wird. Alles bleibt aenderbar. */
 export interface Vorbefuellung {
@@ -39,6 +46,8 @@ export interface Vorbefuellung {
  */
 @Injectable({ providedIn: 'root' })
 export class DestillierUebergabeService {
+  private meilensteinHinweis = inject(MeilensteinHinweisService);
+
   constructor(
     private einwurfService: EinwurfService,
     private router: Router,
@@ -70,6 +79,8 @@ export class DestillierUebergabeService {
   mitBeitragVerknuepfen(einwurfId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
     return this.einwurfService.updateStatus(einwurfId, 'processed', contentId, typ).pipe(
       map(() => true),
+      // Ein fremder Einwurf kann „Erster fremder Einwurf ausformuliert“ bringen (#351).
+      tap(() => this.meilensteinHinweis.pruefen()),
       catchError((error) => {
         this.logger.error('Einwurf konnte nicht mit dem Beitrag verknuepft werden', error);
         return of(false);
@@ -88,5 +99,14 @@ export class DestillierUebergabeService {
    */
   zumNaechsten(nach: string, tab: FangkorbTab): void {
     this.router.navigate(['/destillieren'], { queryParams: { nach, [TAB_PARAM]: tab } });
+  }
+
+  /**
+   * Die Serie beim Ausformulieren: der naechste Einwurf, der ausformuliert werden kann,
+   * gleich in der Typwahl; ``nach`` wird uebersprungen. Ist keiner mehr da, sagt die
+   * Destillier-Ansicht "Leer gefischt" und zeigt auf das Destillieren.
+   */
+  zumNaechstenAusformulieren(nach: string): void {
+    this.router.navigate(['/destillieren'], { queryParams: { nach, [REIHE_PARAM]: 'ausformulieren' } });
   }
 }

@@ -3,6 +3,16 @@ import { provideRouter } from '@angular/router';
 
 import { abschnitt as abschnittIn, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
+import { SUCHANFRAGEN_ABSCHNITT } from '../search/search.component';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
+
+/** Der Satz zu Widerrufen vor dem Einspielen: mit Platzhalter oder mit Datum („1. Dezember 2026“). */
+const WIDERRUF_VOR_DEM_EINSPIELEN = new RegExp(
+  'Wer vor dem (\\[Datum des Einspielens\\]|([1-9]|[12]\\d|3[01])\\. ' +
+    '(Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember) \\d{4}) ' +
+    'widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ' +
+    'ab diesem Tag von ihm\\.'
+);
 
 /**
  * Die Datenschutzerklaerung beschreibt, was die App tut (#222). Geprueft wird der Text,
@@ -86,7 +96,8 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('„Hier fehlt eine Antwort“');
       expect(text).toContain('n Personen suchten das ohne Treffer');
       expect(text).toContain('die Zahl der Suchen sehen sie nicht');
-      expect(text).toContain('Administratorinnen und Administratoren, zusätzlich mit der Zahl der Suchen');
+      expect(text).toContain('das Moderationsteam, zusätzlich mit der Zahl der Suchen');
+      expect(text).toContain('erst nach Prüfung durch das Moderationsteam');
     });
 
     it('bezieht die Zwei-Personen-Schwelle auf die Listen, nicht auf die Auffindbarkeit', () => {
@@ -119,8 +130,16 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('kann danach für alle auffindbar werden');
       expect(text).not.toContain('ist danach für alle auffindbar');
-      expect(text).toContain('nur unseren Administratorinnen und Administratoren');
+      expect(text).toContain('nur unserem Moderationsteam (unseren Administratorinnen und Administratoren)');
       expect(text).toContain('mindestens zwei verschiedene Personen innerhalb von vier Wochen');
+      // Vormoderation (13.11.2026): erst nach Prüfung, auch nicht über eine gleichlautende Aussage.
+      expect(text).toContain('Ein freigegebener Eintrag ist für alle sichtbar, solange in den letzten vier Wochen');
+      expect(text).toContain('dauerhaft, sobald jemand einen Beitrag als Antwort darauf eingestellt hat');
+      expect(text).toContain('Dafür entsteht eine eigene Aussage mit dem Wortlaut dieser Person');
+      // Übernommen wird nur eine sichtbare Suchanfrage (freigegeben und über der Schwelle).
+      expect(abschnitt('Suchen ohne Treffer')).toContain('einer für alle sichtbaren (freigegebenen), noch unbeantworteten Suchanfrage');
+      // Keine Ausnahme für den Bestand (Entscheidung des Maintainers vom 13.11.2026).
+      expect(text).toContain('nur wegen der Zahl der Suchen sichtbar waren, sind es erst nach dieser Prüfung wieder; hatte schon jemand darauf geantwortet, bleiben sie sichtbar');
       expect(text).toContain('Gib nichts in das Suchfeld ein, was nicht öffentlich werden soll');
     });
   });
@@ -251,9 +270,18 @@ describe('DatenschutzComponent', () => {
     it('Punkte: ohne Einwilligung keine Punkte, kein Paar-Prüfwert, kein Muster-Hinweis (#562)', () => {
       const text = abschnitt('Punkte');
 
-      expect(text).toContain('Ohne diese Einwilligung (nie erteilt oder widerrufen) hat dein Konto keine Punkte');
+      expect(text).toContain('Ohne sie (nie erteilt oder widerrufen) berechnen wir für dein Konto keine Punkte und keine Meilensteine');
       expect(text).toContain('weder ein Paar-Prüfwert noch ein Muster-Hinweis, der es nennt');
-      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung macht, bringen niemandem Punkte');
+      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung zu seiner Mitwirkung macht, bringen niemandem Punkte');
+    });
+
+    it('Punkte: eigene, freiwillige Einwilligung, getrennt von der zur Mitwirkung (#351)', () => {
+      const text = abschnitt('Punkte');
+
+      expect(text).toContain('deine eigene, freiwillige Einwilligung „Punkte und Meilensteine“');
+      expect(text).toContain('nichts ist vorausgewählt');
+      expect(text).toContain('Ohne sie kannst du genauso beitragen und bewerten');
+      expect(text).toContain('jederzeit in den „Datenschutz-Einstellungen“ widerrufen; danach wird nichts mehr berechnet');
       expect(text).not.toContain('Bevor wir Punkte einschalten');
     });
 
@@ -279,6 +307,12 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('solange Punkte ausgeschaltet sind');
       expect(text).toContain('hat keine Folgen für dich');
     });
+  });
+
+  // Sprungziel des Hinweises unter dem Suchfeld (search.component.ts, SUCHANFRAGEN_ABSCHNITT)
+  it('trägt am Abschnitt „Deine Suchanfragen“ die Sprungmarke des Suchfelds', () => {
+    const ziel = seite.querySelector(`#${SUCHANFRAGEN_ABSCHNITT}`)!;
+    expect(ziel.querySelector('h2')!.textContent!.trim()).toBe('Deine Suchanfragen');
   });
 
   describe('Gegenlesen (#358)', () => {
@@ -631,6 +665,10 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Rückschlüsse auf deine politische Haltung');
 
       expect(text).toContain('Innerhalb von sieben Tagen lösen wir auch deine Beiträge, Einwürfe und Sätze von dir');
+      // Widerrufe vor dem Einspielen: Frist ab dem Einspielen. Bis zum Release steht der Platzhalter,
+      // danach ein Datum (docs/DEPLOYMENT.md, Releases); bei Tags prüft scripts/release_platzhalter.py,
+      // dass der Platzhalter ersetzt ist.
+      expect(text).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
       expect(text).toContain('zeigen statt deines Namens „ehemalige Person“, deine Einwürfe löschen wir');
       expect(text).toContain('Dafür legen wir einen Löschauftrag an: deine Kennung, der Zeitpunkt deines Widerrufs und die Frist');
       expect(text).toContain('Einen erledigten Löschauftrag löschen wir ein Jahr nach der Erledigung, mit deinem Konto sofort');
@@ -640,6 +678,16 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('was du danach beiträgst, erfasst ein noch offener Löschauftrag nicht');
       expect(abschnitt('Beiträge, die du einstellst')).toContain('Widerrufst du deine Art.-9-Einwilligung, ersetzen wir deine Kennung ebenso, innerhalb von sieben Tagen');
       expect(abschnitt('Einwürfe in den Fangkorb')).toContain('Widerrufst du deine Art.-9-Einwilligung, tun wir dasselbe innerhalb von sieben Tagen');
+    });
+
+    it('Satz zu Widerrufen vor dem Einspielen: Platzhalter oder echtes Datum, sonst nichts', () => {
+      const satz = (tag: string) =>
+        `Wer vor dem ${tag} widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.`;
+
+      expect(satz('[Datum des Einspielens]')).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('1. Dezember 2026')).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('[Datum]')).not.toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('Dezember 2026')).not.toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
     });
   });
 
@@ -655,6 +703,18 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('deine Filter im Fangkorb');
       expect(text).toContain('Teilen-Menü');
       expect(text).toContain('Service Worker');
+    });
+
+    it('Gerätespeicher: der angefangene Kommentar bis zum Tabschluss, höchstens eine Stunde (E1, 14.11.2026)', () => {
+      const text = abschnitt('Weitere Einträge').replace(/\s+/g, ' ');
+
+      expect(text).toContain(
+        'Schreibst du einen Kommentar und wechselst kurz in eine andere App, merkt sich dein Browser den ' +
+          'angefangenen Kommentar bis zum Schließen des Tabs, höchstens eine Stunde lang: Titel, Text, Kurz- und ' +
+          'Langfassung, Zweck und Stil, die Aussage, auf die er antwortet, und einen Prüfwert, der ihn deinem Konto ' +
+          'zuordnet, nicht deinen Namen. Wir löschen ihn, sobald du den Kommentar speicherst, das Formular leerst, ' +
+          'dich abmeldest oder deine Einwilligung widerrufst. Er verlässt dein Gerät nicht von selbst.',
+      );
     });
 
     it('Gerätespeicher: das Profilbild liegt nur nach eigener Wahl im Browser, bis zum Zurücksetzen (#437)', () => {
@@ -732,6 +792,37 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Für das Einbinden und damit für die Übermittlung deiner IP-Adresse an den fremden Server sind wir mitverantwortlich');
       expect(text).toContain('was der fremde Server danach mit den Daten macht, verantwortet sein Betreiber');
       expect(ganzerText()).not.toContain('Diesen Abruf richtet dein Browser aus, nicht wir');
+    });
+  });
+
+  describe('Merker der Meilensteine (#351, § 25 TDDDG geprüft 13.11.2026)', () => {
+    function mitMerker(aktiv: boolean): string {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [DatenschutzComponent],
+        providers: [provideRouter([]), { provide: MEILENSTEIN_MERKER, useValue: aktiv }],
+      });
+      const fixture = TestBed.createComponent(DatenschutzComponent);
+      fixture.detectChanges();
+      return normalisiert((fixture.nativeElement as HTMLElement).textContent);
+    }
+
+    it('beschreibt mit Merker Hinweis und Browser-Vermerk im freigegebenen Wortlaut', () => {
+      const text = mitMerker(true);
+
+      expect(text).toContain('nach dem Anmelden gilt, was du bis dahin erreicht hast, still als gesehen');
+      expect(text).toContain(
+        'Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein Browser, welche du schon gesehen hast. ' +
+          'Der Vermerk enthält keine Angaben über dich, geht nicht an uns und wird beim Abmelden und beim nächsten Anmelden gelöscht.',
+      );
+      expect(text).not.toContain('Prüfwert deiner Kennung');
+    });
+
+    it('lässt beides weg, wenn der Merker ausgeschaltet ist', () => {
+      const text = mitMerker(false);
+
+      expect(text).not.toContain('merkt sich nur dein Browser');
+      expect(text).not.toContain('Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint');
     });
   });
 });

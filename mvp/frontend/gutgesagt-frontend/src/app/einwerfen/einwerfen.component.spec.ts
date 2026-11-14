@@ -8,27 +8,31 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import {
   EinwerfenComponent,
   LINK_PRUEFEN_NACH_MS,
-  SEITENTITEL_PRAEFIX,
   hinweisVorschlag,
+  ohneSeitenname,
 } from './einwerfen.component';
-import { Einwurf, EinwurfService } from '../services/einwurf.service';
+import { Einwurf, EinwurfSeite, EinwurfService } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
 import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
+import { Meilenstein } from '../services/usage-tracking.service';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 describe('hinweisVorschlag', () => {
-  it('stellt den Seitentitel mit Praefix voran', () => {
-    expect(hinweisVorschlag({ url: 'https://example.org/a', titel: 'Ein Titel', text: null })).toBe(
-      `${SEITENTITEL_PRAEFIX}Ein Titel`,
-    );
+  it('legt den Seitentitel ohne "Seitentitel:" vor (P44)', () => {
+    expect(hinweisVorschlag({ url: 'https://example.org/a', titel: 'Ein Titel', text: null })).toBe('Ein Titel');
   });
 
   it('nimmt uebrigen Text dazu', () => {
-    expect(hinweisVorschlag({ url: null, titel: 'Ein Titel', text: 'noch was' })).toBe(
-      'Seitentitel: Ein Titel\nnoch was',
+    expect(hinweisVorschlag({ url: null, titel: 'Ein Titel', text: 'noch was' })).toBe('Ein Titel\nnoch was');
+  });
+
+  it('laesst den angehaengten Seitennamen weg (P44)', () => {
+    expect(hinweisVorschlag({ url: null, titel: 'AfD klar vor SPD | tagesschau.de', text: null })).toBe(
+      'AfD klar vor SPD',
     );
   });
 
@@ -37,10 +41,28 @@ describe('hinweisVorschlag', () => {
   });
 });
 
+describe('ohneSeitenname', () => {
+  it('schneidet nur den letzten Teil nach " | " ab', () => {
+    expect(ohneSeitenname('Teil A | Teil B | Beispielmagazin')).toBe('Teil A | Teil B');
+  });
+
+  it('laesst Titel ohne Seitennamen und einen Strich ohne Leerzeichen stehen', () => {
+    expect(ohneSeitenname('Wind-Kraft: neue Studie')).toBe('Wind-Kraft: neue Studie');
+    expect(ohneSeitenname('A|B')).toBe('A|B');
+  });
+
+  it('behaelt den Titel, wenn vor dem Strich nichts steht', () => {
+    expect(ohneSeitenname(' | tagesschau.de')).toBe('| tagesschau.de');
+  });
+});
+
 describe('EinwerfenComponent', () => {
   let component: EinwerfenComponent;
   let fixture: ComponentFixture<EinwerfenComponent>;
   let einwurfService: jasmine.SpyObj<EinwurfService>;
+  let meilensteinHinweis: jasmine.SpyObj<MeilensteinHinweisService>;
+  let eigeneEinwuerfe = 1;
+  let neueMeilensteine: Meilenstein[] = [];
 
   /**
    * Die Vorbelegung passiert in ngOnInit, also muss eine Ablage liegen, bevor die
@@ -53,15 +75,19 @@ describe('EinwerfenComponent', () => {
       sessionStorage.setItem(SHARE_FELDER_SCHLUESSEL, ablage);
     }
 
-    const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen', 'mitGleichemLink']);
+    const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen', 'mitGleichemLink', 'eigeneLaden']);
+    serviceSpy.eigeneLaden.and.returnValue(of({ results_count: 1, results: [], total_records_count: eigeneEinwuerfe }));
     serviceSpy.einwerfen.and.returnValue(of({ id: 'neue-id' }));
     serviceSpy.mitGleichemLink.and.returnValue(of([]));
+    meilensteinHinweis = jasmine.createSpyObj<MeilensteinHinweisService>('MeilensteinHinweisService', ['neueErreichte', 'merken']);
+    meilensteinHinweis.neueErreichte.and.returnValue(of(neueMeilensteine));
 
     await TestBed.configureTestingModule({
       imports: [EinwerfenComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
         { provide: EinwurfService, useValue: serviceSpy },
+        { provide: MeilensteinHinweisService, useValue: meilensteinHinweis },
         {
           provide: LoggingService,
           useValue: jasmine.createSpyObj('LoggingService', ['debug', 'error', 'warn']),
@@ -89,6 +115,11 @@ describe('EinwerfenComponent', () => {
 
   describe('Felder', () => {
     beforeEach(() => erstellen());
+
+    it('zeigt am Knopf das Einwerfen-Symbol des Fangkorbs, keine Diskette (P47)', () => {
+      const symbol = fixture.nativeElement.querySelector('.einwerfen-knopf mat-icon') as HTMLElement;
+      expect(symbol.textContent!.trim()).toBe('move_to_inbox');
+    });
 
     it('hat genau zwei Felder: Link und Hinweis fuer andere', () => {
       const labels = Array.from(fixture.nativeElement.querySelectorAll('mat-label')).map((l) =>
@@ -249,6 +280,109 @@ describe('EinwerfenComponent', () => {
     });
   });
 
+  describe('Erfolgskarte (#351)', () => {
+    const EINWURF_1: Meilenstein = {
+      kennung: 'einwurf-1', name: 'Erster Einwurf', untertitel: 'Fundstück', beschreibung: '',
+      bild: 'meilensteine/korb.svg', bildnachweis: '', art: 'weg', schwelle: 1, stand: 1, erreicht: true,
+    };
+
+    afterEach(() => {
+      eigeneEinwuerfe = 1;
+      neueMeilensteine = [];
+    });
+
+    function karte(): HTMLElement | null {
+      fixture.detectChanges();
+      return (fixture.nativeElement as HTMLElement).querySelector('.erfolg-karte');
+    }
+
+    it('erklaert beim allerersten Einwurf, wo man das Ergebnis sieht', async () => {
+      await erstellen();
+      eingeben('', 'Waermepumpen-Foerderung wurde gekuerzt');
+
+      component.einwerfen();
+
+      expect(einwurfService.eigeneLaden).toHaveBeenCalledWith(1, 1);
+      expect(karte()?.textContent).toContain('Dein erster Einwurf liegt im Fangkorb');
+      expect(karte()?.textContent).toContain('Meine Einwürfe');
+      expect(karte()?.textContent).not.toContain('Meilenstein');
+    });
+
+    it('ist kurz, wenn es nicht der erste Einwurf der Person ist', async () => {
+      eigeneEinwuerfe = 7;
+      await erstellen();
+      eingeben('', 'eins');
+
+      component.einwerfen();
+
+      expect(karte()?.textContent).toContain('Liegt im Fangkorb');
+      expect(karte()?.textContent).not.toContain('erster');
+    });
+
+    it('fragt ab dem zweiten in der Sitzung nicht mehr nach und zaehlt mit', async () => {
+      await erstellen();
+      eingeben('', 'eins');
+      component.einwerfen();
+      eingeben('', 'zwei');
+      component.einwerfen();
+
+      expect(einwurfService.eigeneLaden).toHaveBeenCalledTimes(1);
+      expect(karte()?.textContent).toContain('2 in dieser Sitzung');
+    });
+
+    it('nennt mit eingeschalteten Punkten den erreichten Meilenstein', async () => {
+      neueMeilensteine = [EINWURF_1];
+      await erstellen();
+      eingeben('', 'eins');
+
+      component.einwerfen();
+
+      expect(karte()?.querySelector('.erfolg-meilenstein')?.textContent).toContain('Meilenstein erreicht: Erster Einwurf');
+      // Gemerkt wird erst, was die Karte angezeigt hat.
+      expect(meilensteinHinweis.merken).toHaveBeenCalledOnceWith([EINWURF_1]);
+    });
+
+    it('steht sofort; die Zeile zum ersten Einwurf kommt nach', async () => {
+      await erstellen();
+      const antwort = new Subject<EinwurfSeite>();
+      einwurfService.eigeneLaden.and.returnValue(antwort.asObservable());
+      eingeben('', 'eins');
+
+      component.einwerfen();
+
+      expect(karte()?.textContent).toContain('Drin.');
+      expect(karte()?.querySelector('.erfolg-text')).toBeNull();
+      antwort.next({ results_count: 1, results: [], total_records_count: 1 });
+      expect(karte()?.textContent).toContain('Dein erster Einwurf');
+    });
+
+    it('hat im role="status" nur den Text, nicht die Knöpfe', async () => {
+      await erstellen();
+      eingeben('', 'eins');
+
+      component.einwerfen();
+      fixture.detectChanges();
+
+      const status = (fixture.nativeElement as HTMLElement).querySelector('.einwurf-rueckmeldung [role="status"]')!;
+      expect(status.textContent).toContain('Drin.');
+      expect(status.querySelector('button')).toBeNull();
+    });
+
+    it('"Noch einen einwerfen" schliesst die Karte und setzt den Fokus ins Link-Feld', async () => {
+      await erstellen();
+      document.body.appendChild(fixture.nativeElement);
+      eingeben('', 'eins');
+      component.einwerfen();
+      const knopf = Array.from(karte()!.querySelectorAll('button')).find((b) => b.textContent?.includes('Noch einen'))!;
+
+      knopf.click();
+
+      expect(karte()).toBeNull();
+      expect(document.activeElement?.id).toBe('einwurf-link');
+      (fixture.nativeElement as HTMLElement).remove();
+    });
+  });
+
   describe('Uebernahme aus dem Teilen-Menue', () => {
     const vomBrowser = JSON.stringify({
       url: 'https://www.tagesschau.de/inland/x-100.html',
@@ -273,9 +407,7 @@ describe('EinwerfenComponent', () => {
       await erstellen(vomBrowser);
 
       expect(component.einwurfForm.value.link).toBe('https://www.tagesschau.de/inland/x-100.html');
-      expect(component.einwurfForm.value.hinweis).toBe(
-        'Seitentitel: AfD klar vor SPD | tagesschau.de',
-      );
+      expect(component.einwurfForm.value.hinweis).toBe('AfD klar vor SPD');
       expect(component.istVorbelegt).toBeTrue();
       expect(fixture.nativeElement.querySelector('.hinweis-feld.vorbelegt')).toBeTruthy();
       expect(text()).toContain('Vorschlag aus dem Teilen');
@@ -288,7 +420,7 @@ describe('EinwerfenComponent', () => {
 
       expect(einwurfService.einwerfen).toHaveBeenCalledWith({
         url: 'https://www.tagesschau.de/inland/x-100.html',
-        content: 'Seitentitel: AfD klar vor SPD | tagesschau.de',
+        content: 'AfD klar vor SPD',
         source_channel: 'share',
       });
     });

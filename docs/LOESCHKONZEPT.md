@@ -109,8 +109,10 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    `users` (Anzeigename), die in `gesehene_nutzung` (Stände der Rückmeldung beim
    Anmelden und von „Seit deinem letzten Besuch“, nur Zählerstände) und die in `art9_einwilligungen` (jede Art.-9-Einwilligung mit
    Zeitpunkt und Wortlaut, auch widerrufene; #489), die in `art9_ohne_einwilligung` („ohne
-   Einwilligung weiter“ mit dem Wortlaut, PR #670) und in `abzeichen_sichtbarkeit` (jede
-   Antwort auf die Frage nach der Sichtbarkeit der Abzeichen, auch ein Nein; #351) und die in
+   Einwilligung weiter“ mit dem Wortlaut, PR #670), in `abzeichen_sichtbarkeit` (jede
+   Antwort auf die Frage nach der Sichtbarkeit der Abzeichen, auch ein Nein; #351), in
+   `punkte_einwilligung` (jede Antwort auf die Einwilligung „Punkte und Meilensteine“, auch
+   ein Widerruf; #351) und die in
    `loeschauftraege` (offene und erledigte Löschaufträge nach einem Widerruf)
    löschen, ebenso jeden Muster-Hinweis
    (`muster_hinweise`, #352), der die Person nennt. Der Anzeigename steht **nur dort** — weder in Qdrant
@@ -162,7 +164,9 @@ Einwilligung widerrufen wurde; je Person höchstens einen offenen, ein zweiter W
 keinen zweiten an. Wer vor diesem Stand irgendwann widerrufen hat, auch wer seither neu
 eingewilligt hat, bekommt den Auftrag beim Einspielen der Migration
 (`2026-11-13-loeschauftraege.sql`): angelegt zum Zeitpunkt des jüngsten Widerrufs, Frist sieben
-Tage ab dem Einspielen (entschieden 13.11.2026); was nach einer neuen Einwilligung gespeichert
+Tage ab dem Einspielen (entschieden 13.11.2026). Die Datenschutzerklärung sagt dazu: „Wer vor dem [Datum des Einspielens] widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.“
+Das Datum steht bis zum Release-Tag als Platzhalter „[Datum des Einspielens]“ und wird dort gesetzt
+(`docs/DEPLOYMENT.md`, Releases; bei Tags prüft `scripts/release_platzhalter.py`, dass er ersetzt ist). Was nach einer neuen Einwilligung gespeichert
 wurde, schützt die Obergrenze (unten). Beim Umstellen der Kennungen
 zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
 
@@ -245,6 +249,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Löschaufträge (`loeschauftraege`), offen | keine | — sie sind Arbeit und bleiben, bis ein Admin den Löschablauf ausführt (Frist dafür: sieben Tage ab dem Widerruf, unter „Löschauftrag nach dem Widerruf“) |
 | Löschaufträge, erledigt | 365 Tage (entschieden 13.11.2026) | Ausführung (`erledigt_am`); mit dem Konto sofort (Schritt 2) |
 | Zustimmung zur Sichtbarkeit der Abzeichen (`abzeichen_sichtbarkeit`) | solange das Konto besteht | — Nachweis der Zustimmung (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
+| Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351) | solange das Konto besteht | — Nachweis der Einwilligung und des Widerrufs (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Meilenstein-Abzeichen am Anzeigenamen (#351) | keine Speicherung | — nur im Arbeitsspeicher, alle 15 Minuten neu berechnet, nach einem Neustart leer; nach dem Löschkommando (Schritt 2) höchstens noch bis zum nächsten Lauf |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
@@ -336,6 +341,7 @@ Verzeichnis der Verarbeitungstätigkeiten).
 |---|---|---|
 | Nutzungsereignisse (`usage_events`), Einzelzeilen | 90 Tage, danach nur Zähler je Beitrag | abschaltbarer Bereinigungsjob (`SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB`, Standard an), `usage_retention_days` in `core/config.py`; Datenschutzerklärung „Verwendung von Beiträgen“ |
 | Anmelde-Cookie | 14 Tage nach letzter Nutzung | Browser und BFF; Datenschutzerklärung „Anmelde-Cookie“ |
+| Angefangener Kommentar im Browser (sessionStorage, E1) | bis zum Schließen des Tabs, höchstens 1 Stunde ab dem ersten Sichern; sofort beim Speichern, Leeren, Abmelden und Widerruf der Art.-9-Einwilligung | Anwendung im Browser (`beitragsformular/kommentar-entwurf.ts`); Datenschutzerklärung „Weitere Einträge“ |
 | Zugriffsprotokolle des vorgelagerten Webservers | 14 Tage | Betrieb am Host; Datenschutzerklärung „Protokolldateien“ |
 | Zugriffsprotokolle des Webservers der Anwendung, Protokolle der Anwendung | **keine**; Ziel 14 Tage, noch nicht ausgerollt | Betrieb am Host; unter „Was nicht gelöscht wird“ (#485, #336) |
 | Zähler der Rate-Limits | höchstens etwa 16 Minuten, nur im Arbeitsspeicher | Anwendung; Datenschutzerklärung zu Suche, Meldungen, Feedback, Einladungen, Gegenlesen |
@@ -482,6 +488,13 @@ und der Ablauf oben erfasst die Tabelle nicht.
   Anschluss-Prüfwert aus #496 braucht es dafür nicht mehr. Die Personen einer Woche sind die
   Summe der Personen je Tag, ein Pseudonym über Tagesgrenzen gibt es auch hier nicht. Wochen älter als acht löscht ein täglicher Task von
   selbst (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
+- **`suchanfrage_freigaben`** (Vormoderation, Entscheidung des Maintainers vom 13.11.2026)
+  trägt je geprüfter unbeantworteter Suchanfrage nur Aussage-ID, ob sie freigegeben oder
+  abgelehnt ist, und den Zeitpunkt der Entscheidung, weder Text noch Kennung des Admins:
+  nichts, was sich einer Person zuordnen ließe. Beim Einspielen wird nichts nachgetragen;
+  eine Zeile entsteht erst mit der Entscheidung. Keine eigene Frist: Die Zeile bleibt, solange
+  die Aussage besteht, und geht mit ihr, wenn ein Admin sie endgültig entfernt
+  (`ModerationService.delete_content`, `repositories/suchanfrage_freigabe_repository.py`).
 - **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
   Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen
   ließe. Keine Frist. Aussagen werden nicht gelöscht; wird eine gesperrt, bleiben ihre
@@ -654,7 +667,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, art9_ohne_einwilligung, abzeichen_sichtbarkeit, loeschauftraege;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, art9_ohne_einwilligung, abzeichen_sichtbarkeit, punkte_einwilligung, loeschauftraege;"
 ```
 
 ```bash

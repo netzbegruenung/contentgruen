@@ -10,7 +10,7 @@
     </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
-    <p *ngIf="fehler" class="hinweis">Die Muster-Hinweise konnten nicht geladen werden.</p>
+    <app-nachlade-hinweis [fehler]="fehler" [geladen]="!!daten" was="Muster-Hinweise"></app-nachlade-hinweis>
 
     <ng-container *ngIf="daten">
       <p *ngIf="!daten.aktiv; else liste" class="hinweis">

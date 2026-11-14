@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -103,6 +103,8 @@ export class BeitragGespeichertComponent implements OnInit {
   readonly aussageKopf: KartenDaten | null;
   /** Die ID aus der Adresse, fuer "Teilen". */
   private beitragId = '';
+  /** Die gespeicherte Karte selbst: "Teilen" nimmt ihre gewaehlte Fassung (P03, Persona-Runde 2). */
+  @ViewChild('gespeichertKarte', { read: BeitragskarteComponent }) private karteAnsicht?: BeitragskarteComponent;
 
   constructor(
     private route: ActivatedRoute,
@@ -165,9 +167,9 @@ export class BeitragGespeichertComponent implements OnInit {
       });
   }
 
-  /** Fangkorb: der naechste offene Einwurf; ist keiner offen, der Fangkorb. */
+  /** Fangkorb: der naechste Einwurf zum Ausformulieren; ist keiner mehr da, "Leer gefischt". */
   naechsterEinwurf(): void {
-    this.uebergabe.zumNaechsten(this.einwurfId ?? '', NACH_DEM_AUSFORMULIEREN);
+    this.uebergabe.zumNaechstenAusformulieren(this.einwurfId ?? '');
   }
 
   /**
@@ -252,6 +254,8 @@ export class BeitragGespeichertComponent implements OnInit {
    * Den eigenen neuen Beitrag teilen (B7, vorher "Link kopieren", #617): das
    * Teilen-Menue, wo das Geraet eines hat, mit Text und Link auf die Beitragsseite (/beitrag/:id, oeffentlich),
    * sonst der Link in die Zwischenablage. Keine Nutzung: Es ist der eigene Beitrag.
+   * Der Text ist der, den auch das Teilen-Symbol der Karte schickt: die gewaehlte Fassung
+   * (P03, Persona-Runde 2), nicht immer Mittel.
    */
   async teilen(): Promise<void> {
     if (!this.beitragId) {
@@ -259,8 +263,8 @@ export class BeitragGespeichertComponent implements OnInit {
     }
     await this.teilenService.teilen({
       url: beitragLink(this.beitragId),
-      text: this.karte?.text ?? undefined,
-      titel: this.karte?.titel ?? undefined,
+      text: this.karteAnsicht?.kopierText || this.karte?.text || undefined,
+      titel: this.karteAnsicht?.titelAnzeige?.trim() || this.karte?.titel || undefined,
     });
   }
 

@@ -4,7 +4,7 @@ PostgreSQL: nur offene Meldungen mit E-Mail-Adresse, und jede nur einmal.
 """
 
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.orm import sessionmaker
@@ -93,7 +93,12 @@ class TestAdressenBeimErledigen:
 
 
 class TestAbweisenTeiltMit:
-    async def test_zweites_abweisen_schickt_keine_zweite_mail(self, repo):
+    async def test_zweites_abweisen_ist_konflikt_und_schickt_keine_zweite_mail(
+        self, repo
+    ):
+        """Abweisen nur offener Meldungen (#673): Das zweite scheitert mit MeldungNichtOffen."""
+        from repositories.content_report_repository import MeldungNichtOffen
+
         postausgang = Postausgang()
         moderation_repo = AsyncMock()
         moderation_repo.laden.return_value = {"title": "Ein gemeldeter Kommentar"}
@@ -101,11 +106,14 @@ class TestAbweisenTeiltMit:
             report_repo=repo,
             moderation_repo=moderation_repo,
             mitteilung=MeldungMitteilung(postausgang),
+            # Der Beitrag ist nicht gesperrt (Abweisen gesperrter Beitraege: 409).
+            sperre_repo=MagicMock(**{"aktive.return_value": None}),
         )
         meldung = _melden(repo, "anna@example.org")
 
         assert await service.dismiss_report(str(meldung), "admin-1")
-        assert await service.dismiss_report(str(meldung), "admin-1")
+        with pytest.raises(MeldungNichtOffen):
+            await service.dismiss_report(str(meldung), "admin-1")
 
         [mail] = postausgang.mails
         assert mail.an == "anna@example.org"

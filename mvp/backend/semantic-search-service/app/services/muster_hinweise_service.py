@@ -21,8 +21,9 @@ Fristen, angewendet von loeschen_im_takt, einem eigenen Hintergrund-Task aus mai
 
 Hinweise entstehen nur mit eingeschalteten Punkten (``punkte_aktiv``, geprueft im
 Zaehl-Endpunkt api/v1/usage.py): Sie schuetzen die Punkte und haben ohne sie keinen
-Zweck. Gemeldet wird dort auch nur die Nutzung eines Kontos mit geltender
-Art.-9-Einwilligung (#559); ohne sie entsteht kein Paar-Pruefwert.
+Zweck. Gemeldet wird dort auch nur, wenn beide Konten die Einwilligung "Punkte und
+Meilensteine" gegeben haben (#351, domain/punkte_einwilligung.py); sonst entsteht kein
+Paar-Pruefwert.
 """
 
 import asyncio

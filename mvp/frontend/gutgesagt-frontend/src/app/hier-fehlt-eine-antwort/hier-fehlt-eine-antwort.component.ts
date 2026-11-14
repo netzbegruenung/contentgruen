@@ -35,7 +35,7 @@ import { LADE_TIMEOUT_MS, LadeWiederholung } from '../shared/lade-wiederholung';
  * hier Aussagen vorab an. Von der Kennzahl zeigt die Seite nur die Zahl der Personen,
  * die ohne Treffer gesucht haben, damit Hotspots sichtbar werden, nicht die Zahl der
  * Suchen; eine Aussage aus einer Suchanfrage erst ab der Schwelle der Kennzahl
- * (zwei Personen).
+ * (zwei Personen) und nach Freigabe durch einen Admin (Vormoderation).
  *
  * Themen: Die Liste laesst sich nach einem Thema filtern, jede Aussage zeigt ihre
  * Themen, und Mitwirkende ordnen sie hier zu oder aendern sie, auch beim Anlegen

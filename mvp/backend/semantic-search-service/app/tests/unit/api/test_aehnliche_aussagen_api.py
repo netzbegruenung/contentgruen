@@ -34,7 +34,7 @@ def statement_service(monkeypatch):
     service.search = AsyncMock(return_value=[])
     service.search_filtered = AsyncMock(return_value=[])
     service.ohne_widerspruch = AsyncMock(return_value=[])
-    schwelle = MagicMock(ueber_der_schwelle=AsyncMock(return_value=frozenset({"x"})))
+    schwelle = MagicMock(sichtbar_fuer_alle=AsyncMock(return_value=frozenset({"x"})))
     app.dependency_overrides[get_statement_service] = lambda: service
     app.dependency_overrides[get_suchen_ohne_treffer_service] = lambda: schwelle
     yield service
