@@ -313,6 +313,7 @@ describe('MeineBeitraegeComponent', () => {
       await erstellen([beitrag({ usage_count: 0 })]);
 
       expect(text('[data-testid=nutzung-leer]')).toContain('Noch hat niemand deine Beiträge genutzt.');
+      expect(text('[data-testid=nutzung-leer]')).toContain('Genutzt heißt: Jemand hat einen davon kopiert oder geteilt.');
       expect(text('[data-testid=nutzung-leer]')).toContain('teil seinen Link');
     });
 
