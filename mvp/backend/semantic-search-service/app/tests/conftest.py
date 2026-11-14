@@ -168,6 +168,23 @@ def art9_einwilligung_ohne_datenbank(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def punkte_einwilligung_ohne_datenbank(monkeypatch):
+    """
+    Punkte, Meilensteine und Muster-Hinweise pruefen die Einwilligung "Punkte und
+    Meilensteine" (#351). Der Ersatz laesst jede Person als eingewilligt durch, ohne
+    PostgreSQL; Tests ohne Einwilligung setzen
+    ``punkte_einwilligung_ohne_datenbank.eingewilligt.return_value = False``.
+    """
+    import repositories.punkte_einwilligung_repository as modul
+
+    repository = MagicMock()
+    repository.eingewilligt.return_value = True
+    repository.lesen.return_value = None
+    monkeypatch.setattr(modul, "_repository", repository)
+    yield repository
+
+
+@pytest.fixture(autouse=True)
 def guete_ohne_datenbank(monkeypatch):
     """
     Lesende Antworten ergaenzen an Beitraegen die Guete (#427). Ohne diesen Ersatz

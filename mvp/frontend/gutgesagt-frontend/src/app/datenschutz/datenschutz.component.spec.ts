@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { abschnitt as abschnittIn, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
 import { SUCHANFRAGEN_ABSCHNITT } from '../search/search.component';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
 
 /**
  * Die Datenschutzerklaerung beschreibt, was die App tut (#222). Geprueft wird der Text,
@@ -261,9 +262,18 @@ describe('DatenschutzComponent', () => {
     it('Punkte: ohne Einwilligung keine Punkte, kein Paar-Prüfwert, kein Muster-Hinweis (#562)', () => {
       const text = abschnitt('Punkte');
 
-      expect(text).toContain('Ohne diese Einwilligung (nie erteilt oder widerrufen) hat dein Konto keine Punkte');
+      expect(text).toContain('Ohne sie (nie erteilt oder widerrufen) berechnen wir für dein Konto keine Punkte und keine Meilensteine');
       expect(text).toContain('weder ein Paar-Prüfwert noch ein Muster-Hinweis, der es nennt');
-      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung macht, bringen niemandem Punkte');
+      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung zu seiner Mitwirkung macht, bringen niemandem Punkte');
+    });
+
+    it('Punkte: eigene, freiwillige Einwilligung, getrennt von der zur Mitwirkung (#351)', () => {
+      const text = abschnitt('Punkte');
+
+      expect(text).toContain('deine eigene, freiwillige Einwilligung „Punkte und Meilensteine“');
+      expect(text).toContain('nichts ist vorausgewählt');
+      expect(text).toContain('Ohne sie kannst du genauso beitragen und bewerten');
+      expect(text).toContain('jederzeit in den „Datenschutz-Einstellungen“ widerrufen; danach wird nichts mehr berechnet');
       expect(text).not.toContain('Bevor wir Punkte einschalten');
     });
 
@@ -748,6 +758,37 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Für das Einbinden und damit für die Übermittlung deiner IP-Adresse an den fremden Server sind wir mitverantwortlich');
       expect(text).toContain('was der fremde Server danach mit den Daten macht, verantwortet sein Betreiber');
       expect(ganzerText()).not.toContain('Diesen Abruf richtet dein Browser aus, nicht wir');
+    });
+  });
+
+  describe('Merker der Meilensteine (#351, § 25 TDDDG geprüft 13.11.2026)', () => {
+    function mitMerker(aktiv: boolean): string {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [DatenschutzComponent],
+        providers: [provideRouter([]), { provide: MEILENSTEIN_MERKER, useValue: aktiv }],
+      });
+      const fixture = TestBed.createComponent(DatenschutzComponent);
+      fixture.detectChanges();
+      return normalisiert((fixture.nativeElement as HTMLElement).textContent);
+    }
+
+    it('beschreibt mit Merker Hinweis und Browser-Vermerk im freigegebenen Wortlaut', () => {
+      const text = mitMerker(true);
+
+      expect(text).toContain('nach dem Anmelden gilt, was du bis dahin erreicht hast, still als gesehen');
+      expect(text).toContain(
+        'Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein Browser, welche du schon gesehen hast. ' +
+          'Der Vermerk enthält keine Angaben über dich, geht nicht an uns und wird beim Abmelden und beim nächsten Anmelden gelöscht.',
+      );
+      expect(text).not.toContain('Prüfwert deiner Kennung');
+    });
+
+    it('lässt beides weg, wenn der Merker ausgeschaltet ist', () => {
+      const text = mitMerker(false);
+
+      expect(text).not.toContain('merkt sich nur dein Browser');
+      expect(text).not.toContain('Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint');
     });
   });
 });

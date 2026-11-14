@@ -586,6 +586,9 @@ OFFEN = {
     # Zustimmung zur Sichtbarkeit der Abzeichen (#351): Ein Nein ist Zuruecknehmen,
     # ein Ja zeigt ohne Einwilligung nichts (keine Meilensteine).
     ("PUT", "/api/v1/usage/users/me/abzeichen-sichtbarkeit"),
+    # Einwilligung "Punkte und Meilensteine" (#351): eine eigene, freiwillige, nicht
+    # an die Art.-9-Einwilligung gekoppelt (Art. 7 Abs. 4).
+    ("PUT", "/api/v1/usage/users/me/punkte-einwilligung"),
     # Die Einwilligung selbst und "ohne Einwilligung weiter" (B2)
     ("POST", "/api/v1/art9-einwilligung"),
     ("POST", "/api/v1/art9-einwilligung/ohne"),

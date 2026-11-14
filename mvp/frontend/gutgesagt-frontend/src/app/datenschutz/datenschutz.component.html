@@ -686,15 +686,30 @@
       </p>
       <p>
         Zusammen mit den Punkten zeigen wir dir unter „Meine Beiträge“ deine
-        <strong>Meilensteine</strong>: die erste Nutzung durch andere, 10, 50 und 100
-        Nutzungen, die erste Zustimmung, 10 ausformulierte Einwürfe anderer und 10 eigene
-        Einwürfe, die andere ausformuliert haben. Dafür zählen wir auch, wie viele Einwürfe
-        anderer du ausformuliert hast. Deine Meilensteine <strong>siehst nur du</strong>. Wir
-        speichern sie nicht, sondern berechnen sie bei jedem Abruf aus den Daten, die wir für
-        die Punkte ohnehin haben. Es zählen nur nicht gesperrte Beiträge; wird einer gesperrt
-        oder gelöscht, kann ein Meilenstein wieder wegfallen. Startkonten zählen auch hier
-        nicht. Für Meilensteine gelten Zweck und Rechtsgrundlage wie für die Punkte (unten);
-        ohne deine Einwilligung gibt es keine.
+        <strong>Meilensteine</strong>. Für die Wirkung deiner Beiträge: die erste Nutzung
+        durch andere, 10, 50 und 100 Nutzungen und die erste Zustimmung. Für deine
+        Unterstützung: der erste und 10 ausformulierte Einwürfe anderer und 10 eigene
+        Einwürfe, die andere ausformuliert haben. Für dein eigenes Tun, als
+        <strong>Wegmarken</strong>: dein erster Einwurf, dein erster Beitrag, der mindestens
+        drei Tage alt und heute sichtbar ist, und dein erster Kommentar, den eine Aussage als
+        Antwort führt. Dafür zählen wir auch, wie viele Einwürfe anderer du ausformuliert
+        hast und wie viele Einwürfe du eingeworfen hast (verworfene nicht), und sehen nach,
+        ob eine Aussage einen deiner Kommentare als Antwort führt. Deine Meilensteine
+        <strong>siehst nur du</strong>. Wir speichern sie nicht, sondern berechnen sie bei
+        jedem Abruf aus deinen gespeicherten Beiträgen, Einwürfen und den Bewertungen und
+        Zählern, die wir für die Punkte ohnehin haben. Es zählen nur nicht gesperrte Beiträge;
+        wird einer gesperrt oder gelöscht, kann ein Meilenstein wieder wegfallen. Startkonten
+        zählen auch hier nicht.
+        <ng-container *ngIf="meilensteinMerker">
+            Einen neu erreichten Meilenstein nennen wir dir mit einem kurzen Hinweis, direkt
+            nach einem Einwurf, einem Ausformulieren oder einem Kommentar. Welche deiner
+            erreichten Meilensteine dir schon angezeigt wurden, merkt sich nur dein Browser
+            (siehe „Speicherung auf deinem Gerät“); nach dem Anmelden gilt, was du bis dahin
+            erreicht hast, still als gesehen, und genannt wird nur, was danach dazukommt.
+        </ng-container>
+        Keine Erinnerungen, keine Mails. Für Meilensteine gelten Zweck und Rechtsgrundlage wie
+        für die Punkte (unten); ohne deine Einwilligung „Punkte und Meilensteine“ gibt es
+        keine, auch keine Wegmarken.
       </p>
       <p>
         Damit Punkte nicht durch Absprachen entstehen, achten wir darauf, ob sich zwei Konten
@@ -719,14 +734,19 @@
       <p>
         <strong>Zweck:</strong> dir die Wirkung deiner Mitwirkung zeigen und die Punkte gegen
         Absprachen schützen.<br>
-        <strong>Rechtsgrundlage:</strong> eine eigene, freiwillige Einwilligung nach Artikel 6
-        Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO, nach der wir dich
-        fragen, bevor wir Punkte einschalten. Sie ist getrennt von der Einwilligung unter
-        „Rückschlüsse auf deine politische Haltung“: Ohne sie kannst du genauso beitragen und
-        bewerten, und du kannst sie jederzeit unter „Datenschutz-Einstellungen“ widerrufen.
-        Ohne diese Einwilligung (nie erteilt oder widerrufen) hat dein Konto keine Punkte, und es entsteht weder ein Paar-Prüfwert noch ein Muster-Hinweis,
-        der es nennt. Kopien, die ein Konto ohne Einwilligung macht, bringen niemandem Punkte
-        (siehe „Verwendung von Beiträgen“).<br>
+        <strong>Rechtsgrundlage:</strong> deine eigene, freiwillige Einwilligung „Punkte und
+        Meilensteine“ nach Artikel 6 Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a
+        DSGVO. Du gibst sie mit einem eigenen Häkchen unter „Meine Beiträge“ oder in den
+        „Datenschutz-Einstellungen“; nichts ist vorausgewählt. Sie ist getrennt von der
+        Einwilligung zu deiner Mitwirkung (siehe „Rückschlüsse auf deine politische
+        Haltung“): Ohne sie kannst du genauso beitragen und bewerten. Ohne sie (nie erteilt
+        oder widerrufen) berechnen wir für dein Konto keine Punkte und keine Meilensteine,
+        und es entsteht weder ein Paar-Prüfwert noch ein Muster-Hinweis, der es nennt. Du
+        kannst sie jederzeit in den „Datenschutz-Einstellungen“ widerrufen; danach wird
+        nichts mehr berechnet. Deine Antwort speichern wir mit der Kennung des Wortlauts und
+        dem Zeitpunkt als Nachweis, bis dein Konto gelöscht wird; ein Widerruf ist ein
+        weiterer Eintrag. Kopien, die ein Konto ohne Einwilligung zu seiner Mitwirkung macht,
+        bringen niemandem Punkte (siehe „Verwendung von Beiträgen“).<br>
         <strong>Dauer:</strong> Paar-Prüfwerte löschen wir sieben Tage nach der letzten
         Nutzung in ihrer Richtung, Muster-Hinweise acht Wochen nach dem letzten auffälligen
         Tag, jeweils automatisch (täglicher Löschlauf, also spätestens einen Tag danach). Wird
@@ -738,14 +758,16 @@
         und wir schalten sie getrennt von den Punkten ein; bis dahin sieht sie niemand außer
         dir. Danach gilt: Wenn du es erlaubst, sehen andere
         Angemeldete an deinen Beiträgen neben deinem Anzeigenamen, wie viele Meilensteine du
-        erreicht hast, nur diese Zahl; ab fünf Meilensteinen trägt das Siegel deiner Beiträge
-        für sie außerdem eine Krone. Wir fragen dich einmal, sobald du den ersten erreicht
-        hast; ändern kannst du deine Antwort jederzeit unter „Meine Beiträge“, ein Nein gilt
+        erreicht hast, nur diese Zahl und ohne Wegmarken; ab fünf Meilensteinen trägt das
+        Siegel deiner Beiträge für sie außerdem eine Krone. Wir fragen dich einmal, sobald du
+        den ersten erreicht hast, der dafür zählt; ändern kannst du deine Antwort jederzeit unter „Meine Beiträge“, ein Nein gilt
         sofort. Ohne Anmeldung sieht niemand ein Abzeichen. Wir speichern deine Antwort mit
         Zeitpunkt als Nachweis, bis dein Konto gelöscht wird; die Zahl selbst speichern wir
         nicht, sondern berechnen sie im Arbeitsspeicher alle 15 Minuten neu. Widerrufst du die
         Einwilligung zu deiner Mitwirkung (siehe „Rückschlüsse auf deine politische Haltung“),
-        verschwindet das Abzeichen sofort, und wir halten deine Antwort als Nein fest.
+        verschwindet das Abzeichen sofort, und wir halten deine Antwort als Nein fest. Ohne
+        die Einwilligung „Punkte und Meilensteine“ gibt es keine Meilensteine und damit kein
+        Abzeichen; widerrufst du sie, verschwindet es ebenfalls sofort.
         <strong>Rechtsgrundlage:</strong> deine gesonderte Einwilligung nach Artikel 6 Absatz 1
         Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO.
       </p>
@@ -1089,6 +1111,11 @@
         sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich. Sie bleiben auch
         über das Schließen hinaus, bis du die Websitedaten dieser Seite löschst. Sie gehen nicht
         an uns und werden nicht gezählt.
+      </p>
+      <p *ngIf="meilensteinMerker">
+        Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein
+        Browser, welche du schon gesehen hast. Der Vermerk enthält keine Angaben über dich,
+        geht nicht an uns und wird beim Abmelden und beim nächsten Anmelden gelöscht.
       </p>
       <p>
         Außerdem richtet die Plattform in deinem Browser ein kleines Hintergrundskript ein

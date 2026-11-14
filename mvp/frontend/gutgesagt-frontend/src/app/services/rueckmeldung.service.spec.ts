@@ -2,12 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from './logging.service';
 import { RueckmeldungService } from './rueckmeldung.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 
 /**
  * Die Rueckmeldung beim Anmelden (#349): "Seit deinem letzten Besuch wurden deine
@@ -19,6 +20,7 @@ describe('RueckmeldungService', () => {
   let snackBar: jasmine.SpyObj<MatSnackBar>;
   let http: HttpTestingController;
   let service: RueckmeldungService;
+  let hinweis: { anmeldung: jasmine.Spy };
 
   const angemeldet = (userId: string): UserInfo => ({
     isAuthenticated: true,
@@ -30,12 +32,14 @@ describe('RueckmeldungService', () => {
   beforeEach(() => {
     anmeldung = new BehaviorSubject<UserInfo | null>(null);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+    hinweis = { anmeldung: jasmine.createSpy('anmeldung').and.returnValue(of(undefined)) };
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: { userInfo$: anmeldung.asObservable() } },
         { provide: MatSnackBar, useValue: snackBar },
+        { provide: MeilensteinHinweisService, useValue: hinweis },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['debug', 'info', 'error']) },
       ],
     });
@@ -109,6 +113,18 @@ describe('RueckmeldungService', () => {
 
     http.expectOne(ADRESSE).flush('kaputt', { status: 500, statusText: 'Server Error' });
 
+    expect(snackBar.open).not.toHaveBeenCalled();
+  });
+
+  it('beginnt bei jeder Anmeldung den Merker der Meilensteine neu (#351)', () => {
+    service.starten();
+    anmeldung.next(angemeldet('kim-1'));
+    http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 0 });
+    anmeldung.next({ isAuthenticated: false, userId: null, userName: null, claims: null });
+    anmeldung.next(angemeldet('bo-2'));
+    http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 0 });
+
+    expect(hinweis.anmeldung).toHaveBeenCalledTimes(2);
     expect(snackBar.open).not.toHaveBeenCalled();
   });
 });

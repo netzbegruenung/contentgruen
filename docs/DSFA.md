@@ -43,7 +43,7 @@ Muster-Hinweis; Ausbaustufe steht in
   (`ss/services/muster_hinweise_service.py:1-24` (#476)).
 - **Gebaut (#351), hinter demselben Schalter:** Meilensteine, die die Person selbst in
   „Meine Beiträge“ sieht, bei jedem Abruf aus denselben Zählern berechnet und nicht gespeichert,
-  ohne Startkonten und nur mit Art.-9-Einwilligung (`ss/services/meilensteine_service.py`).
+  ohne Startkonten und nur mit der Einwilligung „Punkte und Meilensteine“ (V11, #351) (`ss/services/meilensteine_service.py`).
   Dazu, hinter einem zweiten Schalter (`abzeichen_sichtbar_aktiv`, Standard aus), das
   Abzeichen am Anzeigenamen für andere Angemeldete mit eigener Zustimmung; geprüft in
   Abschnitt 8.2, V22.
@@ -564,11 +564,20 @@ Empfänger und Ort“.
 #### V11 Punkte und Muster-Hinweise (gebaut, ausgeschaltet)
 
 - **Zweck:** Wirkung der Mitwirkung zeigen, Punkte gegen Absprachen schützen (`DSE:637-638`).
-- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a (`DSE:639-644`).
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a über die eigene,
+  freiwillige Einwilligung „Punkte und Meilensteine“ (#351, Entscheidung Maintainer 13.11.2026
+  nach juristischer Vorprüfung), nicht mehr über die Art.-9-Einwilligung zur Mitwirkung: Ohne
+  diese kann niemand beitragen, Punkte braucht man dazu nicht (Art. 7 Abs. 4, ErwG 43). Eigenes
+  Häkchen, nichts vorausgewählt, nur mit `punkte_aktiv` angeboten; Widerruf jederzeit, danach
+  wird nichts mehr berechnet (`ss/domain/punkte_einwilligung.py`,
+  `ss/repositories/punkte_einwilligung_repository.py`). Muster-Hinweise nur, wenn beide Konten
+  eingewilligt haben.
 - **Daten:** Punktestand nicht gespeichert, bei jedem Abruf berechnet
   (`ss/services/punkte_service.py:1-7`); Paar-Prüfwerte und Muster-Hinweise mit zwei Kennungen
-  (`ss/infrastructure/database/models.py:184-223`).
-- **Frist:** Paar-Prüfwert 7 Tage, Muster-Hinweis 56 Tage (`LK:162-163`).
+  (`ss/infrastructure/database/models.py:184-223`); je Antwort auf die Einwilligung eine Zeile
+  in `punkte_einwilligung` (Kennung, ja/nein, Wortlaut, Zeitpunkt; Nachweis nach Art. 7 Abs. 1).
+- **Frist:** Paar-Prüfwert 7 Tage, Muster-Hinweis 56 Tage (`LK:162-163`); Antworten auf die
+  Einwilligung bis zur Kontolöschung (LK Schritt 2).
 - **Risiko und Maßnahmen:** Abschnitt 3 (Sichtbarkeit, Nutzungsnetz, Zweckentfremdung),
   Rechtsgrundlage Abschnitt 4. Schalter `punkte_aktiv`, Standard aus (`ss/core/config.py:238-244`).
 - **Meilensteine, nur für die Person selbst (#615, gemergt am 09.11.2026):** hinter
@@ -578,6 +587,22 @@ Empfänger und Ort“.
   `ss/infrastructure/database/models.py:577`, V4), nicht nur
   ihre eigenen Einwürfe, die andere ausformuliert haben. Die Daten liegen schon in V4; neu ist nur
   die Zählung je Person, und die sieht nur sie selbst. Die Erklärung nennt das unter „Punkte“.
+- **Wegmarken, Texte und Bilder (#351, gebaut, ausgeschaltet):** vier neue Meilensteine aus gespeicherten Daten,
+  die schon unter die Art.-9-Einwilligung fallen: erster Einwurf (eigene, nicht verworfene
+  Einwürfe, V4), erster fremder Einwurf ausformuliert (dieselbe Zählung wie oben, Schwelle 1),
+  erster Beitrag, der heute sichtbar und mindestens drei Tage alt ist (Alter der sichtbaren
+  Beiträge, Regel wie bei den Punkten), erster Kommentar, den eine sichtbare Aussage als Antwort führt (Payload
+  `antwort_ids` in Qdrant). Keine neue Speicherung, kein zeitliches Muster, keine Suchen, Kopien,
+  Meldungen oder Anmeldetage. Drei davon sind Wegmarken: nur für die Person, nicht in der Zahl am
+  Namen und nicht für die Krone (V22 unverändert). Der Hinweis beim Erreichen (nach dem eigenen
+  Tun) merkt sich die angezeigten Kennungen der Meilensteine nur im Browser (localStorage) unter
+  einem festen Schlüssel ohne Angaben über die Person; gelöscht bei jedem Anmelden, beim Abmelden
+  und beim Widerruf der Art.-9-Einwilligung, nach dem Anmelden still neu angelegt. Ohne
+  Server-Eintrag, keine Erinnerungen. Geprüft nach § 25 TDDDG am 13.11.2026 in dieser Form;
+  Schalter `MEILENSTEIN_MERKER_AKTIV` im Frontend (an). Das Abzeichen rechnet ohne Wegmarken und
+  ohne deren Abfragen. Ob ein Einwurf der erste ist, liest die Karte nach dem
+  Einwurf aus der Zahl der eigenen Einwürfe (`getOwnRawInputs`, vorhanden).
+  Die Erklärung nennt die neue Liste unter „Punkte“.
 
 #### V12 Meldungen
 
@@ -704,7 +729,7 @@ unten unter „Geplant, nicht gebaut“.
   neben der Art.-9-Einwilligung (`ss/domain/abzeichen_sichtbarkeit.py`, Wortlaut `2026-11-09-b`: kurze Frage, die
   Hinweise auf Nicht-Mitglieder, Screenshots und die Datenschutzerklärung aufklappbar unter
   „Mehr dazu“ direkt darunter).
-  Ohne Art.-9-Einwilligung keine Meilensteine und damit kein Abzeichen.
+  Ohne Einwilligung „Punkte und Meilensteine“ (V11) keine Meilensteine und damit kein Abzeichen.
 - **Daten:** je Antwort eine Zeile mit Kennung, Ja/Nein, Wortlaut und Zeitpunkt
   (`abzeichen_sichtbarkeit`, Nachweis nach Art. 7 Abs. 1); die Zahl der erreichten
   Meilensteine nur im Arbeitsspeicher, alle 15 Minuten neu berechnet
@@ -719,9 +744,11 @@ unten unter „Geplant, nicht gebaut“.
 - **Risiko:** Das Abzeichen zeigt, dass und wie viel jemand mitmacht; unter den Angemeldeten
   sind Nicht-Mitglieder, Screenshots können nach außen gehen. Mehr als der Anzeigename am
   Beitrag verrät es nur in der Menge: Schon der Name am Beitrag zeigt die Mitwirkung (R1).
-- **Maßnahmen:** gesonderte Einwilligung, einmal gefragt ab dem ersten erreichten Meilenstein,
+- **Maßnahmen:** gesonderte Einwilligung, einmal gefragt ab dem ersten erreichten Meilenstein, der keine Wegmarke ist,
   zwei gleichwertige Knöpfe, nichts vorbelegt; Nein und Widerruf der Art.-9-Einwilligung
-  nehmen das Abzeichen sofort weg; gezeigt wird nur eine Zahl, keine Einzelheiten; nur für
+  nehmen das Abzeichen sofort weg; gezeigt wird nur eine Zahl, keine Einzelheiten, ohne
+  Wegmarken (eigenes Tun, `ss/domain/meilensteine.py`), damit sie Anerkennung durch andere
+  zeigt und nicht die Menge des eigenen Tuns; nur für
   Angemeldete; zwei Schalter, Standard aus (`abzeichen_sichtbar_aktiv` und `punkte_aktiv`).
 - **Widerruf:** Ein Widerruf der Art.-9-Einwilligung nimmt das Abzeichen sofort weg und hält
   ein früheres Ja als Nein fest; nach einer neuen Art.-9-Einwilligung erscheint es erst nach

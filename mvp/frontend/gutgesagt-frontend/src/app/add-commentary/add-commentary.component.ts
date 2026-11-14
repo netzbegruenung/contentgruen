@@ -12,6 +12,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommentaryService } from '../services/commentary.service';
 import { VotingService } from '../services/voting.service';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { AddCommentaryRequest, AddCommentaryResponse, Commentary } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
@@ -350,6 +351,8 @@ export class AddCommentaryComponent implements OnChanges {
     karte: KartenDaten;
   };
 
+  private meilensteinHinweis = inject(MeilensteinHinweisService);
+
   constructor(
     fb: FormBuilder,
     private commentaryService: CommentaryService,
@@ -620,6 +623,8 @@ export class AddCommentaryComponent implements OnChanges {
         }
         this.responseId = antwort.id;
         this.success.emit(this.ergebnisAus(request, antwort));
+        // Ein Kommentar zu einer Aussage kann die Wegmarke „Erste Gegenrede“ bringen.
+        this.meilensteinHinweis.pruefen();
       },
       error: (error: Error) => {
         // Die Eingaben bleiben stehen; "Erneut versuchen" speichert dasselbe noch einmal.
@@ -771,6 +776,8 @@ export class AddCommentaryComponent implements OnChanges {
         vorhanden.aussage = antwort.statement_text;
         vorhanden.gewaehlt = 'genommen';
         this.vorhandenGewaehlt.emit(vorhanden.id);
+        // Auch der genommene Kommentar kann jetzt eine Aussage beantworten (#351).
+        this.meilensteinHinweis.pruefen();
       },
       error: (error: Error) => {
         this.logger.error('Error taking the existing commentary', error);

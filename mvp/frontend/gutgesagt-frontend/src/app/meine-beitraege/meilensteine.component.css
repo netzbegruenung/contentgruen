@@ -21,8 +21,8 @@
 }
 
 .meilensteine-liste {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -30,33 +30,128 @@
 }
 
 .meilenstein {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 4px 12px 4px 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: 8px;
   font-size: 14px;
   color: var(--text-secondary);
 }
 
 .meilenstein.erreicht {
   border-color: var(--akzent-tanne);
-  background: var(--primary-tint);
   color: var(--text-primary);
 }
 
-.meilenstein-zeichen {
+/* Medaillon: ein Kreis um das Motiv, erreicht tannengruen gefuellt umrandet, offen grau gestrichelt */
+.meilenstein-medaillon {
+  position: relative;
   flex: none;
+  width: 56px;
+  height: 56px;
 }
 
-.meilenstein.erreicht .meilenstein-zeichen {
-  color: var(--akzent-tanne);
+.medaillon-rahmen {
+  display: block;
+}
+
+.medaillon-rahmen circle {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.meilenstein.erreicht .medaillon-rahmen circle {
+  fill: var(--primary-tint);
+  stroke: var(--akzent-tanne);
+  stroke-width: 3;
+  stroke-dasharray: none;
+}
+
+.medaillon-motiv {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  width: 30px;
+  height: 30px;
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.meilenstein.erreicht .medaillon-motiv {
+  filter: none;
+  opacity: 1;
+}
+
+.meilenstein-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.meilenstein-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+}
+
+.meilenstein-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.meilenstein-untertitel {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.meilenstein-beschreibung {
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.meilenstein-wegmarke {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .meilenstein-stand {
   font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.meilensteine-weitere {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.meilensteine-weitere summary {
+  cursor: pointer;
+  margin-bottom: 8px;
+  color: var(--primary-dark);
+}
+
+.meilensteine-bildnachweis {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.meilensteine-bildnachweis summary {
+  cursor: pointer;
+}
+
+.meilensteine-bildnachweis p {
+  margin: 2px 0 0;
 }
 
 .sichtbarkeit-frage {

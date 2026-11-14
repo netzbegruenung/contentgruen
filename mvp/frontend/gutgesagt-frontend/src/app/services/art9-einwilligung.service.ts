@@ -8,6 +8,7 @@ import { environment } from '../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungZustand } from './art9-einwilligung-zustand';
 import { entwuerfeAufraeumen, entwuerfeLoeschen } from '../einwilligung/entwurf-vor-einwilligung';
+import { merkerEntfernen } from '../meine-beitraege/meilenstein-merker';
 
 /**
  * Ein Wortlaut der Art.-9-Einwilligung; die Kennung ist sein Stand-Datum, ein zweiter
@@ -204,6 +205,8 @@ export class Art9EinwilligungService implements OnDestroy {
       tap(() => {
         this.geklaertSetzen(null);
         this.zustand.setzen('fehlt');
+        // Aufräumen nach dem Widerruf: Der Merker der angezeigten Meilensteine geht mit (#351).
+        merkerEntfernen();
       }),
     );
   }
@@ -241,6 +244,8 @@ export class Art9EinwilligungService implements OnDestroy {
             tap((stand) => {
               if (!stand || stand.eingewilligt) this.geklaertSetzen(kennung);
               if (stand) this.zustand.setzen(stand.eingewilligt ? 'eingewilligt' : 'fehlt');
+              // Ohne Einwilligung kein Beitragen: ein alter Merker in diesem Browser geht (#351).
+              if (stand && !stand.eingewilligt) merkerEntfernen();
             }),
             map((stand) => !!stand && zurEinwilligungUmleiten(stand)),
           ),

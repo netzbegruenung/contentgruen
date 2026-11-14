@@ -3,6 +3,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
+import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from '../meine-beitraege/meilenstein-merker';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -32,6 +33,17 @@ describe('AuthService', () => {
   });
 
   describe('logout', () => {
+    it('entfernt den Merker der angezeigten Meilensteine des Kontos (#351)', () => {
+      spyOn(console, 'error');
+      service.setUserInfo({ isAuthenticated: true, userId: 'kim-1', userName: 'Kim', claims: null });
+      localStorage.setItem(MEILENSTEINE_GESEHEN_SCHLUESSEL, '["einwurf-1"]');
+
+      service.logout();
+      httpMock.expectOne(logoutUrl).flush(null, { status: 500, statusText: 'Server Error' });
+
+      expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
+    });
+
     it('navigiert zur Startseite, wenn der Logout-Request fehlschlaegt', () => {
       spyOn(console, 'error');
 

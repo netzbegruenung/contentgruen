@@ -276,6 +276,10 @@ class StatementService(
         """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
         return await self._repository.zu_antwort(beitrag_id)
 
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
+        """Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt (#351)."""
+        return await self._repository.beantwortet_einer(beitrag_ids)
+
     async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
         """Die sichtbaren Beitraege unter den IDs, mit Typ und Titel (#603)."""
         return await self._repository.sichtbare_antworten(ids)

@@ -26,3 +26,18 @@ def test_mit_eigener_einwilligung_darf_er_an(monkeypatch):
     monkeypatch.setattr(config, "PUNKTE_EINWILLIGUNG_GEBAUT", True)
 
     punkte_schalter_pruefen(Settings(punkte_aktiv=True))
+
+
+def test_die_eigene_einwilligung_ist_gebaut_und_passt_zum_schalter():
+    """#668: Konstante an, und es gibt Wortlaut, Tabelle und Endpunkt dazu."""
+    from api.v1.usage import router
+    from domain.punkte_einwilligung import AKTUELLER_WORTLAUT, GELTENDE_WORTLAUTE
+    from infrastructure.database.models import PunkteEinwilligungZeile
+
+    assert config.PUNKTE_EINWILLIGUNG_GEBAUT is True
+    assert AKTUELLER_WORTLAUT in GELTENDE_WORTLAUTE
+    assert PunkteEinwilligungZeile.__tablename__ == "punkte_einwilligung"
+    pfade = {(m, r.path) for r in router.routes for m in getattr(r, "methods", ())}
+    assert ("GET", "/users/me/punkte-einwilligung") in pfade
+    assert ("PUT", "/users/me/punkte-einwilligung") in pfade
+    punkte_schalter_pruefen(Settings(punkte_aktiv=True))

@@ -8,6 +8,7 @@ import { Subject, of } from 'rxjs';
 import { EinwilligungComponent, WIDERRUF_FRAGE } from './einwilligung.component';
 import { Art9EinwilligungService, Art9EinwilligungStand } from '../services/art9-einwilligung.service';
 import { environment } from '../../environments/environment';
+import { PUNKTE_EINWILLIGUNG_AUS } from '../shared/punkte-einwilligung/punkte-einwilligung.testing';
 
 const URL = `${environment.baseUrl}/api/v1/art9-einwilligung`;
 const WORTLAUT = { kennung: '2026-11-05', text: 'Ich willige ausdrücklich ein, dass …' };
@@ -42,6 +43,7 @@ describe('EinwilligungComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideNoopAnimations(),
+        PUNKTE_EINWILLIGUNG_AUS,
         provideRouter([]),
         {
           provide: ActivatedRoute,

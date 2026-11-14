@@ -188,17 +188,20 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 
 - **Zweck:** Wirkung der Mitwirkung zeigen, Anerkennung sichtbar machen, Punkte gegen Absprachen
   schützen.
-- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a in einer eigenen,
-  freiwilligen Einwilligung, getrennt von der Art.-9-Einwilligung zum Beitragen (seit Wortlaut
-  `2026-11-13`, Entscheidung Maintainer 13.11.2026; gebaut mit #668, bis dahin ausgeschaltet);
-  Sichtbarkeit der Abzeichen mit gesonderter Zustimmung (T2).
-- **Betroffene:** angemeldete Personen mit Art.-9-Einwilligung, ohne Startkonten.
+- **Rechtsgrundlage:** Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a über die eigene, freiwillige
+  Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351), getrennt von der
+  Art.-9-Einwilligung zum Beitragen (seit deren Wortlaut `2026-11-13`, Entscheidung Maintainer
+  13.11.2026; Kopplungsverbot, Art. 7 Abs. 4); Sichtbarkeit der Abzeichen mit gesonderter
+  Zustimmung (T2).
+- **Betroffene:** angemeldete Personen mit Einwilligung „Punkte und Meilensteine“, ohne
+  Startkonten; Muster-Hinweise nur, wenn beide Konten eingewilligt haben.
 - **Daten:** Punkte und Meilensteine nicht gespeichert, bei jedem Abruf berechnet;
-  Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen.
+  Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen; je Antwort auf die Einwilligung eine
+  Zeile mit Kennung, ja/nein, Wortlaut und Zeitpunkt.
 - **Empfänger:** Punkte nur für die Person; Abzeichen für andere Angemeldete mit Zustimmung;
   Muster-Hinweise nur für Admins.
 - **Fristen:** LK „Fristen“ (Paar-Prüfwerte, Muster-Hinweise, Abzeichen).
-- **TOM:** DSFA Abschnitt 3, V11, V22. `punkte_aktiv` erst nach dem Merge von #668 einschalten (sonst startet der Suchdienst nicht). Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
+- **TOM:** DSFA Abschnitt 3, V11, V22. Eigene Einwilligung „Punkte und Meilensteine“ gebaut (#668, `PUNKTE_EINWILLIGUNG_GEBAUT`). Schalter `punkte_aktiv` und `abzeichen_sichtbar_aktiv`,
   Standard aus; einschalten erst nach Übernahme der DSFA (DSFA Abschnitt 7).
 
 ### T8 Meldungen, Sperren und Widerspruch

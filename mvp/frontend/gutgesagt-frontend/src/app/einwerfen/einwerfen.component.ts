@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -20,6 +20,8 @@ import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-
 import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { LoggingService } from '../services/logging.service';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
+import { Meilenstein } from '../services/usage-tracking.service';
 import { NavigationService } from '../services/navigation.service';
 import { RouterLink } from '@angular/router';
 import { ROUTES } from '../shared/constants/app.constants';
@@ -113,6 +115,15 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
   /** Anzahl der Einwuerfe in dieser Sitzung - das Formular bleibt ja offen. */
   eingeworfen = 0;
   /**
+   * Die Erfolgskarte nach dem Einwurf: beim allerersten Einwurf der Person die
+   * ausfuehrliche Fassung, sonst die kurze; mit eingeschalteten Punkten dazu neu
+   * erreichte Meilensteine (#351). Ob es der erste ist, sagt die Zahl der eigenen
+   * Einwuerfe aus "Meine Einwuerfe" (vorhandene API, kein neuer Zweck). Die Karte
+   * steht sofort; ``erster`` (null: noch offen) und die Meilensteine kommen nach.
+   */
+  erfolg: { erster: boolean | null; meilensteine: Meilenstein[] } | null = null;
+  @ViewChild('linkFeld') linkFeld?: ElementRef<HTMLInputElement>;
+  /**
    * Ob der aktuelle Feldinhalt aus dem Teilen-Menue stammt. Steuert nur den
    * Weg des naechsten Einwurfs und wird danach zurueckgesetzt: das
    * Formular bleibt offen, und was jemand danach von Hand eintippt, ist wieder
@@ -123,6 +134,9 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
   vorbelegung: string | null = null;
   /** Einwuerfe mit gleichem Link wie im Link-Feld, neueste zuerst. */
   gleicheEinwuerfe: GleicherEinwurf[] = [];
+
+  /** Ein kurzer Hinweis, wenn der Einwurf einen Meilenstein bringt (#351). */
+  private meilensteinHinweis = inject(MeilensteinHinweisService);
 
   constructor(
     private fb: FormBuilder,
@@ -288,6 +302,7 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
 
     this.wirdGespeichert = true;
     this.fehler = null;
+    this.erfolg = null;
 
     this.einwurfService.einwerfen(anfrage).subscribe({
       next: () => {
@@ -298,6 +313,7 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
         this.einwurfForm.reset({ link: '', hinweis: '' });
         this.vorbelegung = null;
         this.ausShare = false;
+        this.erfolgZeigen();
       },
       error: (error) => {
         this.logger.error('Einwurf fehlgeschlagen', error);
@@ -317,6 +333,50 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
     });
   }
 
+
+  /** Die Karte steht sofort; die Zeile zum ersten Einwurf und Meilensteine kommen nach. */
+  private erfolgZeigen(): void {
+    const karte: { erster: boolean | null; meilensteine: Meilenstein[] } = {
+      erster: this.eingeworfen === 1 ? null : false,
+      meilensteine: [],
+    };
+    this.erfolg = karte;
+    if (karte.erster === null) {
+      this.einwurfService
+        .eigeneLaden(1, 1)
+        .pipe(
+          map((seite) => seite.total_records_count === 1),
+          catchError(() => of(false)),
+          takeUntil(this.destroy$),
+        )
+        .subscribe((erster) => (karte.erster = erster));
+    }
+    this.meilensteinHinweis
+      .neueErreichte()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((neu) => {
+        // Nur merken, wenn die Karte noch steht und die Zeile also angezeigt wird.
+        if (neu.length && this.erfolg === karte) {
+          karte.meilensteine = neu;
+          this.meilensteinHinweis.merken(neu);
+        }
+      });
+  }
+
+  /** „Meilenstein erreicht: Erster Einwurf“, bei mehreren alle Namen. */
+  get meilensteinZeile(): string {
+    const namen = (this.erfolg?.meilensteine ?? []).map((m) => m.name);
+    return namen.length === 1 ? `Meilenstein erreicht: ${namen[0]}` : `Meilensteine erreicht: ${namen.join(', ')}`;
+  }
+
+  meineEinwuerfe(): void {
+    this.navigationService.navigateToMeineEinwuerfe();
+  }
+
+  nochEiner(): void {
+    this.erfolg = null;
+    this.linkFeld?.nativeElement.focus();
+  }
 
   zurueckZurStartseite(): void {
     this.navigationService.navigateToStart();

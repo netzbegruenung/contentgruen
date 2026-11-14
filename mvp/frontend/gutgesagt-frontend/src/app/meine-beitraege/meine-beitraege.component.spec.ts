@@ -16,6 +16,7 @@ import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
 import { NavigationService } from '../services/navigation.service';
 import { StatementService } from '../services/statement.service';
+import { PUNKTE_EINWILLIGUNG_AUS } from '../shared/punkte-einwilligung/punkte-einwilligung.testing';
 
 describe('MeineBeitraegeComponent', () => {
   let fixture: ComponentFixture<MeineBeitraegeComponent>;
@@ -61,6 +62,7 @@ describe('MeineBeitraegeComponent', () => {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
+        PUNKTE_EINWILLIGUNG_AUS,
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
         { provide: MeineBeitraegeService, useValue: { meineBeitraege } },
         {

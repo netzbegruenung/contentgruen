@@ -126,6 +126,14 @@ class IStatementRepository(
         pass
 
     @abstractmethod
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
+        """
+        Whether a visible statement lists one of the given Beitraege among its reply
+        suggestions (Meilenstein "Erste Gegenrede", #351).
+        """
+        pass
+
+    @abstractmethod
     async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
         """
         Of the given reply-suggestion IDs, the Beitraege that are neither blocked

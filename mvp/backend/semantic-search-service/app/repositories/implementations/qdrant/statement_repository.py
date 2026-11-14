@@ -414,6 +414,36 @@ class StatementRepository(
                 )
         return aussagen
 
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
+        """
+        Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt
+        (Meilenstein "Erste Gegenrede", #351): eine gefilterte Abfrage ueber
+        antwort_ids wie zu_antwort, ein Treffer genuegt.
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchAny, MatchValue
+
+        if not beitrag_ids:
+            return False
+        punkte, _ = await self._shared_manager.async_client.scroll(
+            collection_name=self._shared_manager.collection_name,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="content_type", match=MatchValue(value=self.content_type)
+                    ),
+                    FieldCondition(
+                        key=FELD_ANTWORT_IDS,
+                        match=MatchAny(any=sorted({str(i) for i in beitrag_ids})),
+                    ),
+                    *nur_sichtbar_bedingungen(),
+                ]
+            ),
+            limit=1,
+            with_payload=False,
+            with_vectors=False,
+        )
+        return bool(punkte)
+
     async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
         """
         Die Beitraege unter den IDs, die weder gesperrt noch geloescht sind, mit Typ
