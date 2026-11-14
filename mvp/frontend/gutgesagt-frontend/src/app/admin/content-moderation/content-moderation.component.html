@@ -242,6 +242,7 @@
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef>Aktionen</th>
         <td mat-cell *matCellDef="let report">
+          <!-- Abweisen mit Rand, gleich hoch wie Sperren: am Handy draengte das Gewicht zum Sperren (M7) -->
           <div class="action-buttons">
             <!-- Beim Nachladen nicht mehr offen: steht ausgegraut, bis die Liste neu geladen wird -->
             <span *ngIf="istErledigt(report)" class="status-badge status-erledigt">erledigt</span>
@@ -267,7 +268,8 @@
             </button>
             <button
               *ngIf="report.status === 'pending'"
-              mat-button
+              mat-stroked-button
+              class="abweisen-knopf"
               [disabled]="istErledigt(report)" disabledInteractive
               (click)="dismissReport(report); $event.stopPropagation()"
               matTooltip="Meldung abweisen, Beitrag bleibt sichtbar">

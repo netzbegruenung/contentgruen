@@ -131,6 +131,12 @@ describe('ContentModerationComponent', () => {
     expect(zelle.textContent!.trim()).toMatch(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
   });
 
+  it('zeigt Abweisen mit Rand wie Sperren, nicht als blassen Textknopf (M7)', () => {
+    mitMeldungen([meldung()]);
+
+    expect(knopf('Abweisen')!.hasAttribute('mat-stroked-button')).toBeTrue();
+  });
+
   it('bietet zu einer offenen Meldung Sperren statt Löschen an', () => {
     mitMeldungen([meldung()]);
 
