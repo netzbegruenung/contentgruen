@@ -8,7 +8,7 @@ import { MELDEGRUENDE } from '../../shared/meldegruende';
 import { SperreFuerAdmins } from '../../services/moderation.service';
 import { SperrenDialogErgebnis } from './sperren-dialog.component';
 import { kurzeKennung } from './kennung';
-import { MELDUNG_ERLEDIGT } from './content-moderation.component';
+import { ENTSPERREN_FRAGE, MELDUNG_ERLEDIGT } from './content-moderation.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NACHLADEN_MS } from '../../shared/selbst-nachladen';
 // Ausserhalb von /admin (wie im Testlauf) fragt der ZuTunService alle 120 s.
@@ -155,9 +155,32 @@ describe('ContentModerationComponent', () => {
     fixture.detectChanges();
 
     expect(knopf('Sperren')).toBeUndefined();
+    dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
     knopf('Entsperren')!.click();
 
+    expect(dialog.open.calls.mostRecent().args[1]!.data).toBe(ENTSPERREN_FRAGE);
     expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-1');
+  });
+
+  it('entsperrt nicht, wenn die Rückfrage abgebrochen wird (M1)', () => {
+    mitMeldungen([meldung({ status: 'reviewed', content: { status: 'blocked', title: 'T', text: 'T' } })]);
+    fixture.componentInstance.onStatusFilterChange('reviewed');
+    fixture.detectChanges();
+    dialog.open.and.returnValue({ afterClosed: () => of(false) } as any);
+
+    knopf('Entsperren')!.click();
+
+    expect(dialog.open).toHaveBeenCalled();
+    expect(moderation.entsperren).not.toHaveBeenCalled();
+  });
+
+  it('fragt vor dem Entsperren mit dem vereinbarten Muster', () => {
+    expect(ENTSPERREN_FRAGE).toEqual({
+      titel: 'Sperre aufheben?',
+      text: 'Der Beitrag ist danach wieder für alle sichtbar.',
+      ja: 'Aufheben',
+      nein: 'Abbrechen',
+    });
   });
 
   it('listet gesperrte Beiträge auch ohne Meldung und entsperrt sie', () => {
@@ -174,6 +197,7 @@ describe('ContentModerationComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Gesperrter Titel');
     expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
 
+    dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
     knopf('Entsperren')!.click();
 
     expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-2');

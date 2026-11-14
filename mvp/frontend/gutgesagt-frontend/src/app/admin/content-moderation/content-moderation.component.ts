@@ -22,12 +22,16 @@ import { meldungsstatusLabel } from '../../shared/meldungsstatus';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
 import { AbweisenDialogComponent, AbweisenDialogDaten } from './abweisen-dialog.component';
 import { kurzeKennung } from './kennung';
+import {
+  BestaetigungsDialogComponent,
+  BestaetigungsDialogDaten,
+} from '../../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 import { LoeschauftraegeComponent } from './loeschauftraege.component';
 import { SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
 import { MELDUNGEN_GRENZE, ZuTunService } from '../../services/zu-tun.service';
 import { EMPTY, Observable, Subject, merge } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, filter, tap } from 'rxjs/operators';
 import { NACHLADEN_MS, SITZUNG_ABGELAUFEN, ohneRechte, selbstNachladen } from '../../shared/selbst-nachladen';
 import { RouterLink } from '@angular/router';
 
@@ -48,6 +52,14 @@ export const ANSICHT_PARAM = 'ansicht';
 function ansichtAus(wert: string | null): Ansicht | null {
   return ANSICHTEN.find((ansicht) => ansicht === wert) ?? null;
 }
+
+/** Rückfrage vor dem Entsperren (Persona-Runde 2, M1): ein Fehlklick machte Gesperrtes öffentlich. */
+export const ENTSPERREN_FRAGE: BestaetigungsDialogDaten = {
+  titel: 'Sperre aufheben?',
+  text: 'Der Beitrag ist danach wieder für alle sichtbar.',
+  ja: 'Aufheben',
+  nein: 'Abbrechen',
+};
 
 @Component({
   selector: 'app-content-moderation',
@@ -595,10 +607,22 @@ export class ContentModerationComponent implements OnInit {
   /** Entsperren aus einer Meldungszeile: nicht für eine erledigte (gesperrt dargestellte) Zeile. */
   meldungEntsperren(report: ContentReport) {
     if (this.erledigtMelden(report)) return;
-    this.entsperren(report.content_id);
+    this.entsperren(report.content_id, () => !this.erledigtMelden(report));
   }
 
-  entsperren(contentId: string) {
+  /** Entsperren erst nach der Rückfrage (M1). */
+  entsperren(contentId: string, vorher: () => boolean = () => true) {
+    this.dialog
+      .open(BestaetigungsDialogComponent, { data: ENTSPERREN_FRAGE, autoFocus: 'dialog' })
+      .afterClosed()
+      .pipe(filter((ja) => ja === true))
+      .subscribe(() => {
+        // Während der Dialog offen war, kann die Meldung erledigt worden sein.
+        if (vorher()) this.entsperrenOhneFrage(contentId);
+      });
+  }
+
+  private entsperrenOhneFrage(contentId: string) {
     this.generation++;
     this.moderationService.entsperren(contentId).subscribe({
       next: () => {

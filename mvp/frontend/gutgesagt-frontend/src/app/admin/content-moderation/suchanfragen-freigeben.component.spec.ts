@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { Subject, of, throwError } from 'rxjs';
-import { NACHLADEN_MS, SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
+import { FREIGEBEN_FRAGE, NACHLADEN_MS, SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
 import {
   SuchanfragenFreigabeService,
   ZuPruefendeSuchanfrage,
@@ -17,6 +18,9 @@ describe('SuchanfragenFreigebenComponent', () => {
   let fixture: ComponentFixture<SuchanfragenFreigebenComponent>;
   let service: jasmine.SpyObj<SuchanfragenFreigabeService>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let dialog: jasmine.SpyObj<MatDialog>;
+  /** Was die Rückfrage vor dem Freigeben ergibt; Standard: bestätigt. */
+  let antwort: boolean | undefined;
   let sichtbarkeit: DocumentVisibilityState;
   let gemeldet: number[];
 
@@ -49,12 +53,16 @@ describe('SuchanfragenFreigebenComponent', () => {
     service.freigeben.and.returnValue(of({ statement_id: 'a', freigegeben: true }));
     service.ablehnen.and.returnValue(of({ statement_id: 'a', freigegeben: false }));
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
+    antwort = true;
+    dialog = jasmine.createSpyObj('MatDialog', ['open']);
+    dialog.open.and.callFake(() => ({ afterClosed: () => of(antwort) }) as any);
 
     TestBed.configureTestingModule({
       imports: [SuchanfragenFreigebenComponent, NoopAnimationsModule],
       providers: [{ provide: SuchanfragenFreigabeService, useValue: service }],
     });
     TestBed.overrideProvider(MatSnackBar, { useValue: snackBar });
+    TestBed.overrideProvider(MatDialog, { useValue: dialog });
   });
 
   afterEach(() => fixture?.destroy());
@@ -119,7 +127,32 @@ describe('SuchanfragenFreigebenComponent', () => {
     discardPeriodicTasks();
   }));
 
-  it('lehnt ab; eine ältere Antwort bringt den Eintrag nicht zurück', fakeAsync(() => {
+  it('fragt vor dem Freigeben nach und gibt bei Abbrechen nichts frei (M1)', fakeAsync(() => {
+    antwort = false;
+    erzeugen();
+    flushMicrotasks();
+
+    knoepfe('Freigeben')[0].click();
+    flushMicrotasks();
+    fixture.detectChanges();
+
+    expect(dialog.open.calls.mostRecent().args[1]!.data).toBe(FREIGEBEN_FRAGE);
+    expect(service.freigeben).not.toHaveBeenCalled();
+    expect(element().textContent).toContain('Sind Wärmepumpen laut?');
+    expect(knoepfe('Freigeben')[0].disabled).toBeFalse();
+    discardPeriodicTasks();
+  }));
+
+  it('fragt nach dem vereinbarten Muster', () => {
+    expect(FREIGEBEN_FRAGE).toEqual({
+      titel: 'Suchanfrage freigeben?',
+      text: 'Die Suchanfrage ist danach für alle sichtbar, etwa in „Hier fehlt eine Antwort“.',
+      ja: 'Freigeben',
+      nein: 'Abbrechen',
+    });
+  });
+
+  it('lehnt ohne Rückfrage ab; eine ältere Antwort bringt den Eintrag nicht zurück', fakeAsync(() => {
     erzeugen();
     flushMicrotasks();
 
@@ -129,6 +162,7 @@ describe('SuchanfragenFreigebenComponent', () => {
     fixture.detectChanges();
 
     expect(service.ablehnen).toHaveBeenCalledWith('a');
+    expect(dialog.open).not.toHaveBeenCalled();
     expect(element().textContent).not.toContain('Sind Wärmepumpen laut?');
     expect(element().textContent).toContain('Ist Solar teuer?');
     discardPeriodicTasks();
