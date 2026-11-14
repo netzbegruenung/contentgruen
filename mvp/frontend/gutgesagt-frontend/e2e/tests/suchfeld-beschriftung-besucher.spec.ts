@@ -53,11 +53,18 @@ async function ohneStack(page: Page): Promise<void> {
   });
 }
 
-/** Die Beschriftung ist ganz zu sehen: kein Überlauf im Label selbst. */
+/** Die Beschriftung ist ganz zu sehen: kein Überlauf im Label, und sie liegt im Feld. */
 async function nichtAbgeschnitten(label: Locator, text: string): Promise<void> {
   await expect(label).toHaveText(text);
-  const masse = await label.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
+  const masse = await label.evaluate((el) => {
+    const l = el.getBoundingClientRect();
+    const feld = el.closest('.mat-mdc-text-field-wrapper')!.querySelector('.mat-mdc-form-field-infix')!.getBoundingClientRect();
+    return { scroll: el.scrollWidth, client: el.clientWidth, links: l.left - feld.left, rechts: feld.right - l.right };
+  });
   expect(masse.scroll, `„${text}“ abgeschnitten: ${masse.scroll} > ${masse.client}`).toBeLessThanOrEqual(masse.client);
+  // Innerhalb des Eingabebereichs (infix), nicht unter der Lupe oder über den Rand hinaus
+  expect(masse.links, `„${text}“ ragt links aus dem Feld`).toBeGreaterThanOrEqual(-0.5);
+  expect(masse.rechts, `„${text}“ ragt rechts aus dem Feld`).toBeGreaterThanOrEqual(-0.5);
 }
 
 test.describe('Beschriftung des Suchfelds bei 360 px', () => {
@@ -79,6 +86,8 @@ test.describe('Beschriftung des Suchfelds bei 360 px', () => {
     // Leer steht sie in voller Größe im Feld, neben der Lupe: dort ist es am engsten
     await page.locator('app-search textarea, app-search input').first().fill('');
     await page.locator('body').click({ position: { x: 5, y: 5 } });
+    // Wirklich in voller Größe im Feld, nicht noch klein darüber
+    await expect(label).not.toHaveClass(/mdc-floating-label--float-above/);
     await nichtAbgeschnitten(label, 'Worauf antworten? Text einfügen');
   });
 });

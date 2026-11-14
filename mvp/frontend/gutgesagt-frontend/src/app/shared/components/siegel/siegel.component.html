@@ -1,8 +1,9 @@
 <!--
     Sichtfeld 3.5 -1 57.5 64.5: eng um Blase und Hand in jedem Winkel (rechts reicht die
     waagrechte Hand bis 60.6, oben der senkrechte Daumen bis -0.6, unten die Spitze der
-    Blase bis 63). Der Glanz-Stern ragt oben links darüber hinaus (overflow: visible im
-    Stylesheet); links, weil die Hand oben rechts in jedem Winkel ihren Platz braucht.
+    Blase bis 63). Darüber hinaus ragen nur der Glanz-Stern oben links (links, weil die Hand
+    oben rechts in jedem Winkel ihren Platz braucht) und im Hellen der Rand der Blase um 0,75
+    (overflow: visible im Stylesheet).
     Blase unten links, die Hand dreht um ihre Mitte (36/24) und ragt oben rechts aus der Blase.
 -->
 <svg viewBox="3.5 -1 57.5 64.5" role="img" [attr.aria-label]="text">
@@ -14,12 +15,12 @@
         </linearGradient>
     </defs>
     <!--
-        Rand der Blase (nur im Hellen) als eigene Gruppe hinter der Füllung: doppelt so breit
-        gezeichnet, die Füllung deckt die innere Hälfte. Als Kontur an der Füllung selbst lief
-        er als Naht über die Stelle, an der der Zipfel auf dem Rechteck liegt.
+        Rand der Blase (nur im Hellen) als eigene Gruppe hinter der Füllung: Die Füllung deckt
+        die innere Hälfte der Kontur, aussen bleiben 0,75 sichtbar. Als Kontur an der Füllung
+        selbst lief er als Naht über die Stelle, an der der Zipfel auf dem Rechteck liegt.
     -->
     <g *ngIf="rand !== 'none'" class="siegel-blase-rand" [attr.fill]="rand" [attr.stroke]="rand"
-       stroke-width="3" stroke-linejoin="round">
+       stroke-width="1.5" stroke-linejoin="round">
         <rect x="4" y="16" width="44" height="38" rx="11"/>
         <path d="M11 51 L8 63 L24 53 Z"/>
     </g>
