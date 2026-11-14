@@ -199,8 +199,8 @@ and 0.8 GB (Node) compressed in the registry; the Node image shares its base lay
   red because the image is old.
 - **Models without offline mode.** Unlike the service image, the CI image does not set
   `HF_HUB_OFFLINE`: if a pull request switches to a model the image does not have, the
-  run downloads it as before. The confirmer (`NLI_BESTAETIGER_MODELL`, 2.2 GB) is left out, as
-  in the service image; it is off by default and no test loads it. Locally the integration suite passed with
+  run downloads it as before. The confirmer (`NLI_BESTAETIGER_MODELL`, 2.2 GB) is left out;
+  it is off by default and no test loads it. Locally the integration suite passed with
   `HF_HUB_OFFLINE=1` in the image, so the two models are all it needs.
 - **When it is built:** after a push to `main` that changes what an image contains (path
   filter per build step: `Dockerfile.ci`, `Dockerfile.ci.dockerignore`, the lockfiles,

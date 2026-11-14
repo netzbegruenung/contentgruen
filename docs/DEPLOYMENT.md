@@ -87,15 +87,10 @@ up to about 2 GB at the peak while loading (measured on the dev VM, `python -m
 tests.regression.nli_messen --zeit`), and the image grows by about 0.55 GB. If the container has
 a memory limit, raise it accordingly; `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=aus` together with
 `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI=aus` (#574, below) skips the model and restores the rule
-before #387. A second NLI model, the Bestätiger (`joeddav/xlm-roberta-large-xnli`, fp32, about
-2.2 GB on disk), is not in the image: it doubled the size of every build in the registry,
-which filled the package disk of git.verdigado.com on 14.11.2026. It is only loaded with
-`SEMANTIC_SEARCH_NLI_BESTAETIGER=true` (default off, and never with the NLI-Stufe `aus`). To
-switch it on, also set `HF_HUB_OFFLINE=0` for the service: it then downloads the model from
-huggingface.co while it preloads at start (about 2.2 GB; until then, and if the download fails,
-only the first model judges, with a WARNING in the log). With offline mode off the other models
-also ask the hub at start, and each new container downloads the Bestätiger again (no volume on
-`/root/.cache/huggingface`: it would hide the models baked into the image). Plan for up to about 2.2 GB more RAM (measured locally: peak +1.4 to
+before #387. The image also carries a second NLI model, the Bestätiger
+(`joeddav/xlm-roberta-large-xnli`, fp32, about 2.2 GB on disk, so the image grows by about that
+much). It is only loaded with `SEMANTIC_SEARCH_NLI_BESTAETIGER=true` (default off, and never with
+the NLI-Stufe `aus`): then plan for up to about 2.2 GB more RAM (measured locally: peak +1.4 to
 +1.6 GB). Check the free memory of the host before switching it on. The polarity penalty of the search
 (#574, `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI`, default `schatten`) uses the same first NLI model,
 so no extra memory while the NLI-Stufe is on; with the NLI-Stufe `aus` it loads the model
@@ -175,7 +170,7 @@ described in [CI.md, "Images and releases"](CI.md#images-and-releases) two CIs b
   the tags the environments use, after running their test suites
   (`tests-backend.yml`, `tests-frontend.yml`, `tests-bff.yml`).
 - **Woodpecker** (`.woodpecker/build.yaml` and `release.yaml`, after a green `ci` run) builds
-  the same images with the same tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
+  the same images with the same release tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
   `:woodpecker-0.9.0`), so the two CIs never overwrite each other's tags. After the switch
   the prefix is gone and the GitHub workflows are removed.
 
@@ -183,8 +178,9 @@ Tags (`scripts/image_tags.py` in Woodpecker):
 
 - **Push to `main`:** `:main` for the images whose files changed; GitHub also sets
   `:sha-<short>`, Woodpecker no longer does (registry space, `docs/CI.md`). A cleanup rule of
-  the organisation removes `sha-` tags older than 7 days beyond the 5 newest versions per
-  image. The test environment runs `:main`, rolled out manually (see above).
+  the organisation removes `sha-` tags older than 7 days; the 5 newest versions per image
+  (all tags counted, `main` and releases included) always stay. The test environment runs
+  `:main`, rolled out manually (see above).
 - **Tag `vX.Y.Z`:** `:X.Y.Z` (the tag without its `v`), `:X.Y` and `:latest` for all four
   images. A prerelease (`v1.2.3-rc.1`) only gets `:1.2.3-rc.1`.
 
