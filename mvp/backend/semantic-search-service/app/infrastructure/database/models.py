@@ -728,6 +728,11 @@ class GeseheneNutzung(Base):
 
     user_id = Column(String(255), primary_key=True)
     nutzung = Column(Integer, nullable=False)
+    # Wie viele Einwuerfe anderer es gab, als die Person zuletzt da war ("Seit deinem
+    # letzten Besuch" auf der Startseite). Ebenfalls ein Zaehlerstand, kein Zeitpunkt.
+    # NULL: noch nie gezaehlt; der erste Besuch nennt dann nichts als neu.
+    # Migration: postgres-app/migrations/2026-11-13-gesehene-einwuerfe.sql.
+    einwuerfe = Column(Integer, nullable=True)
 
 
 class Art9EinwilligungZeile(Base):

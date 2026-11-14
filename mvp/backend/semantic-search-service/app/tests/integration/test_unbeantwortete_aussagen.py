@@ -6,6 +6,7 @@ Qdrant selbst aus.
 """
 
 import uuid
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -19,6 +20,16 @@ from services.content.statement_service import StatementService
 
 from tests.integration.beitrag_helfer import sichtbarer_beitrag
 from tests.integration.conftest import requires_qdrant
+
+# Fuer den Weg "Hier fehlt eine Antwort" -> gespeichert (UnbeantworteteAussagenService).
+from services.aussage_themen_service import AussageThemenService
+from services.suchen_ohne_treffer_service import (
+    SucheOhneTreffer,
+    SuchenOhneTrefferService,
+)
+from services.unbeantwortete_aussagen_service import (
+    UnbeantworteteAussagenService,
+)
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
 
@@ -181,6 +192,83 @@ async def test_ohne_kommentar_laesst_gesperrte_aussagen_weg(
     await status_setzen(gesperrt, ContentStatus.BLOCKED)
 
     assert gesperrt not in await _ohne_kommentar(statement_service)
+
+
+async def test_mit_kommentar_nur_mit_sichtbarem_kommentar(
+    statement_service, commentary_service, status_setzen
+):
+    beantwortet = await _anlegen(
+        statement_service, "Das Bürgergeld ist höher als der Mindestlohn"
+    )
+    kommentar = await _kommentar(
+        commentary_service,
+        "Wer Vollzeit zum Mindestlohn arbeitet, hat mit Wohngeld und "
+        "Kinderzuschlag mehr im Monat als mit Bürgergeld.",
+    )
+    await _verknuepfen(
+        statement_service, beantwortet, kommentar, ContentType.COMMENTARY
+    )
+    nur_hintergrund = await _anlegen(
+        statement_service, "Lastenräder blockieren die Gehwege"
+    )
+    hintergrund = await sichtbarer_beitrag(statement_service, ContentType.GENERIC_TEXT)
+    await _verknuepfen(
+        statement_service, nur_hintergrund, hintergrund, ContentType.GENERIC_TEXT
+    )
+    gesperrt = await _anlegen(statement_service, "Biogas verdirbt die Böden")
+    gesperrter = await _kommentar(
+        commentary_service,
+        "Gärreste aus Biogasanlagen ersetzen Mineraldünger, wenn man sie nach "
+        "Bedarf ausbringt.",
+    )
+    await _verknuepfen(statement_service, gesperrt, gesperrter, ContentType.COMMENTARY)
+    await status_setzen(gesperrter, ContentStatus.BLOCKED)
+    leer = await _anlegen(statement_service, "Hitzeschutzpläne sind Panikmache")
+
+    ids = await statement_service.mit_kommentar(
+        [beantwortet, nur_hintergrund, gesperrt, leer, uuid.uuid4()]
+    )
+
+    assert ids == {beantwortet}
+
+
+async def test_gesuchte_aussage_verschwindet_nach_dem_kommentar(
+    statement_service, commentary_service
+):
+    """
+    Der Weg "Hier fehlt eine Antwort" -> Antworten -> gespeichert: Die Suchanfrage,
+    nach der zwei Personen ohne Treffer gesucht haben, steht auf der Liste, bis ein
+    Kommentar an ihr haengt; die Suchen ohne Treffer bleiben gezaehlt.
+    """
+    gesucht = await _anlegen(
+        statement_service,
+        "Windräder im Wald vergiften das Grundwasser",
+        SEARCH_QUERY_AUTHOR,
+        ContentOrigin.SEARCH_QUERY,
+    )
+    suchen = Mock(spec=SuchenOhneTrefferService)
+    suchen.haeufigste = AsyncMock(
+        return_value=[
+            SucheOhneTreffer(
+                gesucht, "Windräder im Wald vergiften das Grundwasser", 3, 2
+            )
+        ]
+    )
+    themen = Mock(spec=AussageThemenService)
+    themen.themen_von = Mock(return_value={})
+    service = UnbeantworteteAussagenService(statement_service, suchen, themen)
+
+    vorher = await service.liste(limit=500)
+    kommentar = await _kommentar(
+        commentary_service,
+        "Fundamente von Windrädern reichen nicht ins Grundwasser, und jede "
+        "Anlage im Wald braucht ein Gutachten zum Wasserschutz.",
+    )
+    await _verknuepfen(statement_service, gesucht, kommentar, ContentType.COMMENTARY)
+    nachher = await service.liste(limit=500)
+
+    assert gesucht in [a.statement_id for a in vorher]
+    assert gesucht not in [a.statement_id for a in nachher]
 
 
 async def test_vorab_uebernimmt_gleiche_unbeantwortete_suchanfrage(

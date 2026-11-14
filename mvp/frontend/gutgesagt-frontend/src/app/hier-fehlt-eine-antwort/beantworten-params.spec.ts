@@ -1,0 +1,45 @@
+import { convertToParamMap } from '@angular/router';
+
+import { beantwortenParams, beantwortenParamsJeAussage } from './hier-fehlt-eine-antwort.component';
+import { gesuchtAus, lueckeZuSatz } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+
+describe('beantwortenParams und "Lücke zu" (Nutzerfuehrung 13.11.)', () => {
+  it('nimmt die Nachfrage als ?gesucht= mit, nur wenn es eine gibt', () => {
+    expect(beantwortenParams({ statement_id: 'a-1', personen_ohne_treffer: 2 })).toEqual({
+      aussage: 'a-1',
+      von: 'hier-fehlt-eine-antwort',
+      gesucht: '2',
+    });
+    expect(beantwortenParams({ statement_id: 'a-1', personen_ohne_treffer: 0 })).toEqual({
+      aussage: 'a-1',
+      von: 'hier-fehlt-eine-antwort',
+    });
+    expect(beantwortenParams({ statement_id: 'a-1' })).toEqual({ aussage: 'a-1', von: 'hier-fehlt-eine-antwort' });
+  });
+
+  it('liest ?gesucht= nur als positive Zahl', () => {
+    expect(gesuchtAus(convertToParamMap({ gesucht: '4' }))).toBe(4);
+    expect(gesuchtAus(convertToParamMap({ gesucht: 'viele' }))).toBe(0);
+    expect(gesuchtAus(convertToParamMap({ gesucht: '-1' }))).toBe(0);
+    expect(gesuchtAus(convertToParamMap({}))).toBe(0);
+    expect(gesuchtAus(convertToParamMap({ gesucht: '3abc' }))).toBe(0);
+    expect(gesuchtAus(convertToParamMap({ gesucht: '123456' }))).toBe(0);
+    expect(gesuchtAus(convertToParamMap({ gesucht: '99999' }))).toBe(99999);
+  });
+
+  it('formuliert den Satz je nach Zahl', () => {
+    expect(lueckeZuSatz(3)).toBe('3 Personen haben danach gesucht, ab jetzt finden sie was.');
+    expect(lueckeZuSatz(1)).toBe('Eine Person hat danach gesucht, ab jetzt findet sie was.');
+    expect(lueckeZuSatz(0)).toBe('Wer danach sucht, findet ab jetzt deine Antwort.');
+  });
+});
+
+describe('beantwortenParamsJeAussage', () => {
+  it('merkt sich die Parameter je Aussage und Nachfrage', () => {
+    const params = beantwortenParamsJeAussage();
+    const erste = params({ statement_id: 'a-1', personen_ohne_treffer: 2 });
+
+    expect(params({ statement_id: 'a-1', personen_ohne_treffer: 2 })).toBe(erste);
+    expect(params({ statement_id: 'a-1', personen_ohne_treffer: 3 })['gesucht']).toBe('3');
+  });
+});

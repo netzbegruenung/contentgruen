@@ -176,9 +176,13 @@ _Avoid_: Fassung (eine Länge eines Kommentars), Version
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
 
+**Platzhalter**:
+Die Stelle in eckigen Klammern im Text eines Beitrags, „[Hier …]“, die die Person vor dem Posten selbst füllt, etwa mit einem eigenen Erlebnis (Schreibregel: eigene Erlebnisse nur als Platzhalter). Die Karte hebt ihn als Feld hervor, und nach dem Kopieren erinnert der Hinweis daran, ihn auszufüllen. Andere eckige Klammern wie „[1]“ sind kein Platzhalter. Bis 13.11. hieß er „Lücke“; im Code tragen Datei und Bezeichner (`vorlagen-luecke.ts`, `.vorlagen-luecke`) noch den alten Namen.
+_Avoid_: Lücke (das ist eine unbeantwortete Aussage), Vorlagen-Lücke, Leerstelle
+
 **Lücke**:
-Die Stelle in eckigen Klammern im Text eines Beitrags, „[Hier …]“, die die Person vor dem Posten selbst füllt, etwa mit einem eigenen Erlebnis (Schreibregel: eigene Erlebnisse nur als Platzhalter). Die Karte hebt sie als Feld hervor, und nach dem Kopieren erinnert der Hinweis daran, sie auszufüllen. Andere eckige Klammern wie „[1]“ sind keine Lücke.
-_Avoid_: Vorlagen-Lücke, Leerstelle
+Eine Aussage in „Hier fehlt eine Antwort“, auf die noch keine Antwort passt. Wer sie beantwortet, schließt die Lücke: Die Ergebnisseite sagt dann „Lücke zu“ mit der Zahl der Personen, die ohne Treffer danach gesucht haben, und bietet die nächste an. Die Startseite nennt Angemeldeten unter „Seit deinem letzten Besuch“, wie viele Lücken warten. Im Code steht das Wort nur in `shared/luecke-texte.ts`. Bis 13.11. hieß so der Platzhalter.
+_Avoid_: Platzhalter (das ist die Stelle „[Hier …]“ im Text), offene Frage
 
 **Schreibhilfe**:
 Ein Kniff, mit dem ein Text besser ankommt, etwa der Küchenzuruf („Was würdest du in einem Satz durch die Küche rufen?“) als Leitfrage für die Kurzfassung, der Aufhänger vor der Begründung, die Lesenden als Hauptfigur oder Zahlen, die in den Alltag übersetzt sind. Anders als eine Schreibregel ist sie ein Angebot.
@@ -377,7 +381,7 @@ Ein neuer Beitrag, der einem vorhandenen desselben Beitragstyps fast gleicht; ei
 _Avoid_: Duplikat, Doppelung
 
 **Unbeantwortete Aussage**:
-Eine Aussage ohne Kommentar oder eine, nach der mindestens zwei Personen ohne Treffer gesucht haben. Mitwirkende sehen sie in „Hier fehlt eine Antwort“ und dürfen dort Aussagen auch vorab anlegen.
+Eine Aussage ohne Kommentar, auch eine, nach der mindestens zwei Personen ohne Treffer gesucht haben. Mitwirkende sehen sie in „Hier fehlt eine Antwort“ und dürfen dort Aussagen auch vorab anlegen. Sobald ein sichtbarer Kommentar an ihr hängt, ist sie beantwortet und verschwindet von der Liste, auch wenn ihre Suchen ohne Treffer noch gezählt sind; ein gesperrter oder gelöschter Kommentar zählt nicht.
 _Avoid_: Offene Aussage (offen ist eine Stufe eines Einwurfs), Wunsch, Anfrage
 
 **Suchanfrage**:
@@ -385,7 +389,7 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Suche ohne Treffer**:
-Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen. Unterschieden werden die Personen über ihr Tagespseudonym, nur am selben Tag und nur im Arbeitsspeicher; gespeichert wird je Woche die Summe der Personen der einzelnen Tage. Dieselbe Person zählt an zwei Tagen deshalb zweimal, ein Pseudonym über Tagesgrenzen braucht es nicht. Weil das Tagespseudonym eines Besuchers für seinen Anschluss steht, zählt je Anschluss und Aussage am Tag höchstens ein Besucher als Person; mehrere Besucher hinter demselben Anschluss zählen als eine, auch mit verschiedenen Browsern.
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen und jede nur, solange sie keinen sichtbaren Kommentar hat (unbeantwortete Aussage). Unterschieden werden die Personen über ihr Tagespseudonym, nur am selben Tag und nur im Arbeitsspeicher; gespeichert wird je Woche die Summe der Personen der einzelnen Tage. Dieselbe Person zählt an zwei Tagen deshalb zweimal, ein Pseudonym über Tagesgrenzen braucht es nicht. Weil das Tagespseudonym eines Besuchers für seinen Anschluss steht, zählt je Anschluss und Aussage am Tag höchstens ein Besucher als Person; mehrere Besucher hinter demselben Anschluss zählen als eine, auch mit verschiedenen Browsern.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
@@ -429,11 +433,11 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:
-Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Auf der Startseite steht für Angemeldete dazu eine Zeile „Seit deinem letzten Besuch“ mit höchstens drei Links: neue Nutzungen (dieselbe Zahl), neue Einwürfe anderer im Fangkorb und wie viele Lücken in „Hier fehlt eine Antwort“ warten; ohne Neues steht sie nicht da. Auch die Einwürfe sind ein Zählerstand am Konto wie die Nutzung, kein Zeitpunkt, und nichts davon liegt im Browser.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Willkommen**:
-Das gelbe Band beim ersten Besuch, über dem Inhalt der Startseite, kein Fenster (#587; seit #599 nicht mehr über den Treffern): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Selbst beitragen“ bietet erst ein Band auf Beitragen an (#587, gestaffelt; seit #644 nicht mehr im Fangkorb).
+Das gelbe Band beim ersten Besuch auf der Startseite, unter dem Suchfeld (vorher darüber; mobil stand das Suchfeld dann erst weit unten), kein Fenster (#587; seit #599 nicht mehr über den Treffern): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Selbst beitragen“ bietet erst ein Band auf Beitragen an (#587, gestaffelt; seit #644 nicht mehr im Fangkorb).
 
 **Rundgang**:
 Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Selbst beitragen“ (bis #644 „Mitmachen“) zeigt Beitragen, Einwerfen, Fangkorb und Meine Beiträge; nach der Art.-9-Einwilligung trägt „Beitragen“ im Kopf einen Neu-Punkt, und wer zum ersten Mal auf Beitragen ankommt, bekommt dort im Band „Kurz zeigen, wie Beitragen geht?“ angeboten; der Rundgang beginnt dann beim Einwerfen. Beides bleibt, bis die Person darauf reagiert. Beide lassen sich über Hilfe und Menü jederzeit wieder starten; dort stehen sie mit Schrittzahl, etwa „Antwort finden (5 Schritte)“. Angeboten, nie erzwungen.

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import uuid
-from typing import AbstractSet, Iterable, List
+from typing import AbstractSet, Iterable, List, Set
 
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
@@ -95,6 +95,16 @@ class IStatementRepository(
         Visible statements without a visible Kommentar among their reply
         suggestions, leaving out search queries nobody has answered yet (as
         count_curated). Blocked or deleted Kommentare do not count as an answer.
+        """
+        pass
+
+    @abstractmethod
+    async def mit_kommentar(self, ids: Iterable[uuid.UUID]) -> Set[uuid.UUID]:
+        """
+        Those of the given statements that have a visible Kommentar among their
+        reply suggestions (the counterpart of ohne_kommentar for a few known
+        statements). Blocked or deleted Kommentare do not count as an answer.
+        Errors while reading are raised to the caller.
         """
         pass
 

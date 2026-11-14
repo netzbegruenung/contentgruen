@@ -71,7 +71,8 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Rückmeldung zur Nutzung deiner Beiträge');
 
       expect(text).toContain('Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt');
-      expect(text).toContain('nur eine Zahl');
+      expect(text).toContain('nur zwei Zahlen');
+      expect(text).toContain('wie viele Einwürfe anderer es im Fangkorb gab');
       expect(text).toContain('Wann du da warst, speichern wir nicht');
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
       expect(text).toContain('bis zur Löschung deines Kontos');
