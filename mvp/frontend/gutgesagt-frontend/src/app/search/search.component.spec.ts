@@ -41,7 +41,7 @@ describe('SearchComponent', () => {
   // R56 (#644): Auf einer Seite mit nur einem Feld war der Pflichtstern Formularsprache
   it('beschriftet das Feld ohne Pflichtstern', () => {
     const feld: HTMLElement = fixture.nativeElement.querySelector('mat-form-field');
-    expect(feld.querySelector('mat-label')!.textContent!.trim()).toBe('Was hast du gelesen? Text oder Post einfügen');
+    expect(feld.querySelector('mat-label')!.textContent!.trim()).toBe('Worauf willst du antworten? Text einfügen');
     expect(feld.querySelector('.mat-mdc-form-field-required-marker')).toBeNull();
     expect(feld.querySelector('input')!.hasAttribute('required')).toBeFalse();
   });
@@ -49,7 +49,7 @@ describe('SearchComponent', () => {
   it('nimmt ueber den Treffern (compactMode) die kurze Beschriftung', () => {
     fixture.componentRef.setInput('compactMode', true);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('mat-label').textContent.trim()).toBe('Text oder Post einfügen');
+    expect(fixture.nativeElement.querySelector('mat-label').textContent.trim()).toBe('Worauf antworten? Text einfügen');
   });
 
   // Persona-Test Gerd: dass der Suchtext gespeichert wird, stand nur in der Datenschutzerklärung

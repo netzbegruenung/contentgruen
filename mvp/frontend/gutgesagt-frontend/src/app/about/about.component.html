@@ -44,29 +44,23 @@
       <li>
         <strong>Bewerten:</strong> Angemeldet gibst du Beiträgen deine Stimme. So sieht man,
         welche Antworten gut ankommen.
-        <p class="siegel-absatz">
+        <p class="siegel-absatz" id="siegel">
           Das Siegel zeigt die Güte eines Beitrags: wie gut er nach festen Regeln formuliert
           ist und wie andere ihn bewerten. Neue Beiträge ohne Daten bekommen ein graues,
           waagrechtes Siegel. Mit steigender Güte dreht sich der Daumen nach oben und wird
           über Gelb grün. Wie oft ein Beitrag genutzt wird, zählt nicht hinein.
-          Zwei Abzeichen kommen dazu, unabhängig von der Güte: Glanz, wenn ein Beitrag oft
-          genutzt wurde, und eine Krone für Menschen mit vielen Meilensteinen, die zugestimmt
-          haben, dass andere das sehen. Die Krone sehen nur Angemeldete.
+          Unabhängig von der Güte kommt Glanz dazu, wenn ein Beitrag oft genutzt wurde.
         </p>
         <!-- Beispielsiegel von neu bis Güte 10 (#427, Entscheidung in PR #441) -->
-        <ul class="siegel-beispiele" aria-label="Beispielsiegel von neu bis Güte 10, dazu Glanz und Krone">
+        <ul class="siegel-beispiele" aria-label="Beispielsiegel von neu bis Güte 10, dazu Glanz">
           <li *ngFor="let guete of beispielGueten">
             <app-siegel [guete]="guete"></app-siegel>
             <span aria-hidden="true">{{ guete === null ? 'neu' : guete }}</span>
           </li>
-          <!-- Glanz und Krone (#351) als Beispiel, bei einer mittleren Guete -->
+          <!-- Glanz (#351) als Beispiel, bei Guete 10; er haengt nicht an der Guete -->
           <li>
-            <app-siegel [guete]="7" [glanz]="true"></app-siegel>
+            <app-siegel [guete]="10" [glanz]="true"></app-siegel>
             <span aria-hidden="true">Glanz</span>
-          </li>
-          <li>
-            <app-siegel [guete]="7" [krone]="true"></app-siegel>
-            <span aria-hidden="true">Krone</span>
           </li>
         </ul>
       </li>

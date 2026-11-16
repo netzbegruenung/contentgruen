@@ -160,8 +160,9 @@ h4.karte-titel {
   cursor: help;
   border-radius: 8px;
 
+  // 36 statt 30 px: Der Glanz war auf der Karte kaum zu sehen (Ersteindruck-Test 14.11.)
   app-siegel {
-    width: 30px;
+    width: 36px;
   }
 
   &:focus-visible {
@@ -182,6 +183,15 @@ h4.karte-titel {
   background: none;
   font-size: 14px;
   line-height: 1.4;
+}
+
+// Weiter zur Ueber-Seite: als Link erkennbar, auch im Dunkeln (Ersteindruck-Test 14.11.)
+.siegel-mehr.mat-mdc-menu-item {
+  min-height: 44px;
+  color: var(--primary-dark);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .siegel-erklaerung-kopf {

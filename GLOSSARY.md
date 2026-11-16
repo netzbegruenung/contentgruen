@@ -337,7 +337,7 @@ Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qu
 _Avoid_: Vote, Like, Daumen
 
 **Siegel**:
-Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb tannengrün. Nach unten zeigt es nie, rot wird es nie. Glanz und Krone sind eigene Abzeichen am Siegel, keine Stufen der Güte, und können bei jeder Güte auftreten: Glanz heißt, der Beitrag hat viel Wirkung (ab 25 Nutzungen am Zähler der Karte, auch für Besucher); die Krone zeichnet die Person aus (ab 5 erreichten Meilensteinen, nur für Angemeldete und nur mit ihrer Zustimmung zur Sichtbarkeit, #351). Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, runde Knöpfe mit schlanken Umriss-Daumen ohne Sprechblase (#641).
+Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb tannengrün. Nach unten zeigt es nie, rot wird es nie. Glanz ist ein eigenes Abzeichen am Siegel, keine Stufe der Güte, und kann bei jeder Güte auftreten: Der Beitrag hat viel Wirkung (ab 25 Nutzungen am Zähler der Karte, auch für Besucher, #351). Eine Krone für die Person trägt das Siegel nicht mehr: Sie beschrieb die Autorin, nicht den Beitrag (Entscheidung 14.11.); die Meilensteine stehen als Abzeichen am Anzeigenamen. Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, runde Knöpfe mit schlanken Umriss-Daumen ohne Sprechblase (#641).
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:
@@ -492,7 +492,7 @@ Die eigene, freiwillige Einwilligung einer angemeldeten Person, dass Gut gesagt 
 _Avoid_: Opt-in, Gamification-Einwilligung
 
 **Wegmarke**:
-Ein Meilenstein für das eigene Tun, nicht für die Wirkung bei anderen (#351): der erste Einwurf (nicht verworfen), der erste Beitrag, der heute sichtbar und mindestens drei Tage alt ist (dieselbe Regel wie für die Punkte), und der erste Kommentar, den eine sichtbare Aussage als Antwort führt. Wegmarken sieht nur die Person selbst; sie zählen nicht für das Abzeichen am Anzeigenamen und nicht für die Krone und lösen die Frage nach der Zustimmung zur Sichtbarkeit nicht aus. Nicht zu verwechseln mit dem Weg eines Einwurfs.
+Ein Meilenstein für das eigene Tun, nicht für die Wirkung bei anderen (#351): der erste Einwurf (nicht verworfen), der erste Beitrag, der heute sichtbar und mindestens drei Tage alt ist (dieselbe Regel wie für die Punkte), und der erste Kommentar, den eine sichtbare Aussage als Antwort führt. Wegmarken sieht nur die Person selbst; sie zählen nicht für das Abzeichen am Anzeigenamen und lösen die Frage nach der Zustimmung zur Sichtbarkeit nicht aus. Nicht zu verwechseln mit dem Weg eines Einwurfs.
 _Avoid_: Achievement, Erfolg
 
 **Zustimmung zur Sichtbarkeit**:

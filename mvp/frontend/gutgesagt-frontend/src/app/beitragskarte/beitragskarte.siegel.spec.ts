@@ -1,3 +1,4 @@
+import { reflectComponentType } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -250,18 +251,17 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
     });
   });
 
-  describe('Glanz und Krone (#351)', () => {
+  describe('Glanz (#351)', () => {
     function alsBesucher(): void {
       const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
       auth.getUserInfo.and.returnValue(null);
       (auth as any).userInfo$.next(null);
     }
 
-    it('ohne viel Nutzung und ohne Abzeichen weder Glanz noch Krone', () => {
+    it('ohne viel Nutzung kein Glanz', () => {
       zeigen(ausSuchergebnis(paket({ usage_count: 24, autor_name: 'Kim G.' })));
 
       expect(siegel()!.glanz).toBeFalse();
-      expect(siegel()!.krone).toBeFalse();
     });
 
     it('Glanz ab 25 Nutzungen, erklärt im Menü und für Screenreader', () => {
@@ -277,6 +277,10 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       const menue = document.querySelector('.siegel-menue')!.textContent!;
       expect(menue).toContain('Glanz: Der Beitrag wurde mindestens 25-mal genutzt.');
       expect(menue).not.toContain('Krone:');
+      // Weiter zur ganzen Erklaerung auf der Ueber-Seite (Ersteindruck-Test 14.11.)
+      const mehr = document.querySelector<HTMLAnchorElement>('.siegel-menue a.siegel-mehr')!;
+      expect(mehr.textContent!.trim()).toBe('Mehr zur Güte');
+      expect(mehr.getAttribute('href')).toBe('/about#siegel');
     });
 
     it('Glanz auch für Besucher: Er betrifft keine Person', () => {
@@ -286,35 +290,15 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       expect(siegel()!.glanz).toBeTrue();
     });
 
-    it('Krone ab 5 Meilensteinen der Autorin, die der Server mitschickt', () => {
-      zeigen(ausSuchergebnis(paket({ autor_name: 'Kim G.', autor_abzeichen: 5 })));
-
-      expect(siegel()!.krone).toBeTrue();
-      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.siegel-knopf');
-      expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Krone. Erklärung öffnen');
-    });
-
-    it('keine Krone unter 5 Meilensteinen', () => {
-      zeigen(ausSuchergebnis(paket({ autor_name: 'Kim G.', autor_abzeichen: 4 })));
-
-      expect(siegel()!.krone).toBeFalse();
-    });
-
-    it('keine Krone ohne Anmeldung, auch wenn ein Abzeichen mitkäme', () => {
-      alsBesucher();
-      zeigen(ausSuchergebnis(paket({ autor_name: 'Kim G.', autor_abzeichen: 7 })));
-
-      expect(siegel()!.krone).toBeFalse();
-    });
-
-    it('beide zusammen', () => {
+    it('keine Krone am Siegel, auch mit vielen Meilensteinen der Autorin (Entscheidung 14.11.)', () => {
       zeigen(ausSuchergebnis(paket({ usage_count: 40, autor_name: 'Kim G.', autor_abzeichen: 6 })));
 
       const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.siegel-knopf');
-      expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz und Krone. Erklärung öffnen');
-      expect(fixture.nativeElement.querySelector('app-siegel svg').getAttribute('aria-label')).toBe(
-        'Siegel: Güte 6 von 10, mit Glanz und Krone',
-      );
+      expect(knopf.getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz. Erklärung öffnen');
+      // Die Karte reicht dem Siegel nur Güte und Glanz, kein Abzeichen der Person
+      const eingaenge = reflectComponentType(SiegelComponent)!.inputs.map((e) => e.propName);
+      expect(eingaenge).not.toContain('krone');
+      expect('krone' in fixture.componentInstance).toBeFalse();
     });
   });
 });
