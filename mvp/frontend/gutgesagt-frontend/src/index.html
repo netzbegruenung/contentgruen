@@ -16,7 +16,7 @@
   <meta property="og:locale" content="de_DE">
   <meta property="og:title" content="Gut gesagt – Nie wieder sprachlos">
   <meta property="og:description" content="Gute Antworten gegen Stimmungsmache im Netz. Finden, kopieren, posten.">
-  <meta property="og:image" content="https://gutgesagt.netzbegruenung.de/marke/icon-512.png">
+  <meta property="og:image" content="https://gutgesagt.netzbegruenung.de/marke/icon-512-v2.png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
@@ -24,10 +24,13 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Bilder liefert nginx mit "expires 1y" aus: Ein geaendertes Logo braucht einen
-       neuen Dateinamen, sonst sehen wiederkehrende Besucher ein Jahr lang das alte. -->
-  <link rel="icon" type="image/svg+xml" href="marke/logo.svg">
-  <link rel="icon" type="image/png" sizes="64x64" href="marke/favicon-64.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="marke/favicon-32.png">
+       neuen Dateinamen, sonst sehen wiederkehrende Besucher ein Jahr lang das alte. Die
+       Symbole und das Logo vom 29.10. tragen deshalb "-v2"; die alten Dateien bleiben fuer alte Verweise
+       liegen. Dass jede hier und im Manifest genannte Datei existiert, prueft
+       scripts/tests/test_symbole.py. -->
+  <link rel="icon" type="image/svg+xml" href="marke/logo-v2.svg">
+  <link rel="icon" type="image/png" sizes="64x64" href="marke/favicon-64-v2.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="marke/favicon-32-v2.png">
   <link rel="manifest" href="manifest.webmanifest">
   <!-- Hell oder dunkel (#588): eigene Wahl aus dem Umschalter, sonst die Geraeteeinstellung.
        color-scheme meldet beides, damit Erweiterungen wie Dark Reader das eigene dunkle
@@ -74,7 +77,16 @@
       color: var(--text-primary);
     }
   </style>
-  <link rel="apple-touch-icon" href="marke/icon-192.png">
+  <!-- Auf dem iPhone-Home-Bildschirm: iOS nimmt das Symbol nicht aus dem Manifest, sondern
+       hieraus, und fuellt Transparenz schwarz. Deshalb 180 x 180 ohne Alphakanal. Titel unter
+       dem Symbol und Start ohne Browserleiste; "default" laesst die Statusleiste der
+       Geraeteeinstellung folgen (hell/dunkel), "black-translucent" braeuchte
+       viewport-fit=cover und Abstaende an Kopf und Leisten. -->
+  <link rel="apple-touch-icon" sizes="180x180" href="marke/apple-touch-icon-180.png">
+  <meta name="apple-mobile-web-app-title" content="Gut gesagt">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
   <app-root></app-root>

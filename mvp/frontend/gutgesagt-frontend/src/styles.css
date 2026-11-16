@@ -384,6 +384,11 @@ app-rundgang-band .rundgang-knopf.voll {
     box-shadow: 0 0 0 2px var(--knopf-rand-auf-band);
 }
 
+/* Fokusziel nach dem Ausblenden eines Bands (app-rundgang-band): kein Rahmen um die ganze Seite */
+#hauptinhalt[tabindex='-1']:focus {
+    outline: none;
+}
+
 /* Fuellung und Schrift des Suchen-Knopfs auf dem Band aus Tokens; gegen die !important der
    Klasse gutgesagt-primary-dark (custom-theme.scss), daher hier ebenso (Ersteindruck-Test 14.11.) */
 .such-band .search-button-container .mat-mdc-raised-button.search-button {

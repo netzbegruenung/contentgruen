@@ -7,6 +7,11 @@
  */
 export const WILLKOMMEN_SCHLUESSEL = 'gutgesagt-willkommen-gesehen';
 export const MITMACHEN_SCHLUESSEL = 'gutgesagt-mitmachen-angeboten';
+/**
+ * Hinweis „Gut gesagt als App“ auf iPhone und iPad ausgeblendet. Nur dort im Browser
+ * geschrieben und nur bei HOME_HINWEIS_MERKER (§ 25 TDDDG).
+ */
+export const HOME_HINWEIS_SCHLUESSEL = 'gutgesagt-home-hinweis-ausgeblendet';
 
 export function gesehen(schluessel: string): boolean {
   try {

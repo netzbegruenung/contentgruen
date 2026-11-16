@@ -149,10 +149,10 @@ describe('FremdesBildComponent', () => {
   });
 
   it('zeigt Bilder vom eigenen Server sofort', () => {
-    zeigen('/marke/logo.svg', 'Logo');
+    zeigen('/marke/logo-v2.svg', 'Logo');
 
     expect(element.querySelector('button.bild-laden')).toBeNull();
-    expect(element.querySelector('img')!.getAttribute('src')).toBe('/marke/logo.svg');
+    expect(element.querySelector('img')!.getAttribute('src')).toBe('/marke/logo-v2.svg');
   });
 
   it('nutzt Sand als Grund und Tanne als Schrift', () => {
@@ -175,7 +175,7 @@ describe('istFremdeAdresse', () => {
 
   it('laesst eigene, relative und eingebettete Bilder durch', () => {
     expect(istFremdeAdresse('https://gutgesagt.example/bild.png', eigener)).toBeFalse();
-    expect(istFremdeAdresse('/marke/logo.svg', eigener)).toBeFalse();
+    expect(istFremdeAdresse('/marke/logo-v2.svg', eigener)).toBeFalse();
     expect(istFremdeAdresse('data:image/png;base64,AAAA', eigener)).toBeFalse();
   });
 

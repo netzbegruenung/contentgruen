@@ -4,7 +4,9 @@ import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
-import { Angebot, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
+import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
+import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
+import { Angebot, HOME_ANGEBOT, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
 import { gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
 
 export interface RundgangStand {
@@ -23,13 +25,16 @@ export interface RundgangStand {
  * zum ersten Mal ankommt. Bis dahin trägt „Beitragen“ im Kopf einen Neu-Punkt.
  * Ein Band bleibt, bis die Person darauf reagiert; nach einem Rundgang ist es für
  * diesen Besuch weg. Kein Band auf Formularen, Einladung, Anmeldung, Einwilligung
- * oder Rechtstexten.
+ * oder Rechtstexten. Dasselbe Band trägt auf iPhone und iPad den Hinweis „Gut gesagt
+ * als App“ (HOME_ANGEBOT), nachrangig zu Willkommen und Mitmachen.
  */
 @Injectable({ providedIn: 'root' })
 export class RundgangService {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly einwilligung = inject(Art9EinwilligungService);
+  private readonly homeMerkerAktiv = inject(HOME_HINWEIS_MERKER);
+  private readonly homeMoeglich = inject(HOME_BILDSCHIRM_MOEGLICH);
 
   private readonly stand = signal<RundgangStand | null>(null);
   /** Der laufende Rundgang mit dem aktuellen Schritt, sonst null. */
@@ -57,9 +62,16 @@ export class RundgangService {
    * Fenster): „Ausblenden“ wirkt dann wenigstens bis zum nächsten Besuch.
    */
   private readonly beantworteteAngebote = new Set<string>();
+  /** Hinweis „Gut gesagt als App“: Schalter an und Gerät passt. */
+  private homeHier = false;
+  /** Willkommen oder Mitmachen stand in diesem Besuch schon da: dann kein zweites Band danach. */
+  private anderesBandGezeigt = false;
 
   /** Einmal beim Start der App. */
   beobachten(destroyRef: DestroyRef): void {
+    // Schalter zuerst: Ist er aus, greift der Hinweis nie auf den Speicher zu
+    this.homeHier = this.homeMerkerAktiv && this.homeMoeglich();
+
     // Zurück (oder Vor) im Browser beendet den Rundgang: Sonst stuende der Schritt auf
     // der Seite, zu der die Person gerade zurückgeht, etwa „Passende Treffer“ über den
     // neuesten Inhalten der Startseite. Starten lässt er sich jederzeit über die Hilfe neu.
@@ -101,7 +113,7 @@ export class RundgangService {
   bandBeantworten(starten: boolean): void {
     const angebot = this.band();
     if (!angebot) return;
-    if (starten) {
+    if (starten && angebot.rundgang) {
       void this.starten(angebot.rundgang, angebot.ab);
     } else {
       this.beantwortet(angebot);
@@ -163,7 +175,24 @@ export class RundgangService {
     }
     // Wer Mitmachen schon hatte, braucht kein Willkommen mehr
     if (!this.gesehen(WILLKOMMEN) && !this.gesehen(MITMACHEN_ANGEBOT) && hier(WILLKOMMEN)) return WILLKOMMEN;
+    // Zuletzt und nie zugleich mit einem anderen: Es gibt nur ein Band
+    if (this.homeFaellig() && hier(HOME_ANGEBOT)) return HOME_ANGEBOT;
     return null;
+  }
+
+  /**
+   * Erst wenn der Vermerk für Willkommen oder Mitmachen im Speicher steht; kein eigener
+   * Merker für Besuche (§ 25 TDDDG). Ohne Speicher steht dort nie einer, dann gibt es
+   * auch keinen Hinweis, der nach dem Ausblenden wiederkäme. Nie nach „Ausblenden“ und
+   * nicht nach Willkommen oder Mitmachen im selben Besuch.
+   */
+  private homeFaellig(): boolean {
+    return (
+      this.homeHier &&
+      !this.anderesBandGezeigt &&
+      (imSpeicher(WILLKOMMEN.schluessel) || imSpeicher(MITMACHEN_ANGEBOT.schluessel)) &&
+      !this.gesehen(HOME_ANGEBOT)
+    );
   }
 
   /** Ohne Kennung ist nichts geklärt, auch wenn `geklaert()` ebenfalls null ist. */
@@ -177,7 +206,9 @@ export class RundgangService {
   }
 
   private angebotPruefen(): void {
-    this.angebot.set(this.faelligesAngebot());
+    const angebot = this.faelligesAngebot();
+    if (angebot && angebot !== HOME_ANGEBOT) this.anderesBandGezeigt = true;
+    this.angebot.set(angebot);
     this.mitmachenOffen.set(this.mitmachenFaellig(this.info));
   }
 
