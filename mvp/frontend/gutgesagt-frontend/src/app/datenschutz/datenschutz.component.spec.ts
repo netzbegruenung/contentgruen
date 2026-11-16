@@ -705,6 +705,15 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Service Worker');
     });
 
+    it('Gerätespeicher: der Merker für das Neuladen nach einer neuen Version (neue-version.ts)', () => {
+      const text = abschnitt('Weitere Einträge').replace(/\s+/g, ' ');
+
+      expect(text).toContain(
+        'den Zeitpunkt, zu dem die Seite wegen einer neuen Version von Gut gesagt von selbst neu geladen hat ' +
+          '(nur ein Merker, damit das nicht in einer Schleife geschieht; er gilt nur zehn Minuten)',
+      );
+    });
+
     it('Gerätespeicher: der angefangene Kommentar bis zum Tabschluss, höchstens eine Stunde (E1, 14.11.2026)', () => {
       const text = abschnitt('Weitere Einträge').replace(/\s+/g, ' ');
 
