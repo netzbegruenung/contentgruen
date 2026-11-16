@@ -118,6 +118,8 @@ describe('RundgangComponent', () => {
       expect(blase()?.querySelector('h3')?.textContent).toContain('Erster');
       expect(blase()?.textContent).toContain('Text eins');
       expect(blase()?.textContent).toContain('Schritt 1 von 3');
+      // Wegweiser statt Daumen: der Daumen bleibt Siegel und Stimmen vorbehalten (16.11.)
+      expect(blase()?.querySelector('.kopf img')?.getAttribute('src')).toBe('marke/wegweiser.svg');
       const r = (seite.querySelector('#probe-eins') as HTMLElement).getBoundingClientRect();
       const k = kegel()!.getBoundingClientRect();
       expect(k.left).toBeCloseTo(r.left - 8, 0);

@@ -72,7 +72,7 @@ export interface Angebot {
   satz: string;
   /** Hinter dem Satz das Teilen-Symbol von iOS und danach dieser Text. */
   nachTeilenSymbol?: string;
-  /** Bild links im Band; ohne Angabe der Daumen. */
+  /** Bild links im Band; ohne Angabe der Wegweiser. */
   bild?: string;
   /** Seiten (Pfadanfang), auf denen das Band steht. */
   seiten: string[];

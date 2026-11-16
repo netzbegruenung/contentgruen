@@ -82,12 +82,12 @@ describe('HelpDialogComponent', () => {
     });
   });
 
-  // Rundgang wieder aufrufen (#389): gelber Kasten mit Daumen ganz oben
+  // Rundgang wieder aufrufen (#389): gelber Kasten mit Wegweiser ganz oben
   describe('Rundgang', () => {
-    it('steht als Kasten mit Daumen am Anfang des Inhalts', () => {
+    it('steht als Kasten mit Wegweiser am Anfang des Inhalts', () => {
       const kasten = fixture.nativeElement.querySelector('mat-dialog-content > .rundgang-kasten') as HTMLElement;
       expect(kasten).not.toBeNull();
-      expect(kasten.querySelector('img')!.getAttribute('src')).toBe('marke/daumen.svg');
+      expect(kasten.querySelector('img')!.getAttribute('src')).toBe('marke/wegweiser.svg');
       expect(kasten.querySelector('img')!.getAttribute('alt')).toBe('');
       expect(kasten.querySelector('h3')!.textContent).toContain('Lieber zeigen lassen?');
     });

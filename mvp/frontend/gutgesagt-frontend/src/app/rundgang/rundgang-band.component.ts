@@ -4,7 +4,7 @@ import { RundgangService } from './rundgang.service';
 
 /**
  * Bietet einen Rundgang an, ohne etwas zu verdecken (#587): ein
- * gelbes Band mit Daumen über dem Inhalt statt eines Fensters (Look nach #389,
+ * gelbes Band mit Wegweiser über dem Inhalt statt eines Fensters (Look nach #389,
  * Variante B). Kein Fokusfang, kein Schleier; wer weiterliest, liest weiter.
  * Ein Angebot ohne Rundgang (Hinweis „Gut gesagt als App“) hat nur „Ausblenden“.
  */
@@ -14,7 +14,7 @@ import { RundgangService } from './rundgang.service';
   template: `
     @if (angebot(); as angebot) {
       <aside class="band" aria-labelledby="rundgang-band-titel">
-        <img class="daumen" [class.symbol]="!!angebot.bild" [src]="angebot.bild ?? 'marke/daumen.svg'" alt="" width="48" height="48" />
+        <img class="band-bild" [class.symbol]="!!angebot.bild" [src]="angebot.bild ?? 'marke/wegweiser.svg'" alt="" width="48" height="48" />
         <div class="text">
           <h2 id="rundgang-band-titel">{{ angebot.titel }}</h2>
           <p>
