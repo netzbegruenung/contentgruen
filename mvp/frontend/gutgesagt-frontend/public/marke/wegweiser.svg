@@ -1,9 +1,6 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-<!-- Gut gesagt: Wegweiser für den Rundgang (Band, Sprechblase, Hilfe), eigene Zeichnung.
-     Der Daumen bleibt Siegel und Stimmen vorbehalten (Entscheidung 16.11.).
-     Farben mit mindestens 3:1 gegen helles Band und Weiß wie gegen dunkles Band und dunkle Karte. -->
 <ellipse cx="16" cy="28.6" rx="8" ry="2" fill="#008939"/>
-<rect x="14.25" y="1.75" width="3.5" height="26.75" rx="1.75" fill="#9C5B2E"/>
+<rect x="14" y="1.75" width="4" height="26.75" rx="2" fill="#9C5B2E"/>
 <path d="M5 5.5H23.5L28 9L23.5 12.5H5Z" fill="#008939" stroke="#008939" stroke-width="2" stroke-linejoin="round"/>
 <path d="M27 16.5H8.5L4 20L8.5 23.5H27Z" fill="#CC7000" stroke="#CC7000" stroke-width="2" stroke-linejoin="round"/>
 </svg>
