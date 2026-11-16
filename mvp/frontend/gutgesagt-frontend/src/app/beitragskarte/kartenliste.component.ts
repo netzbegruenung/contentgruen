@@ -26,7 +26,7 @@ import { KartenDaten, KartenVariante } from './karten-daten';
     >
       <li *ngFor="let karte of daten; trackBy: nachId">
         <app-beitragskarte [daten]="karte" [variante]="variante" [titelEbene]="titelEbene"
-                           [antwortAufZeigen]="antwortAufZeigen" (angetippt)="angetippt.emit($event)">
+                           [antwortAufZeigen]="antwortAufZeigen" [schlank]="schlank" (angetippt)="angetippt.emit($event)">
         </app-beitragskarte>
       </li>
     </ul>
@@ -84,6 +84,8 @@ export class KartenlisteComponent {
   @Input() titelEbene: 3 | 4 = 3;
   /** Durchgereicht an die Karten: Zeile "Antwort auf:" (aus, wo die Seite die Aussage nennt). */
   @Input() antwortAufZeigen = true;
+  /** Durchgereicht an die Karten: ohne "passt auf X/Bluesky" und Alter (Startseite). */
+  @Input() schlank = false;
 
   /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */
   @Output() angetippt = new EventEmitter<KartenDaten>();

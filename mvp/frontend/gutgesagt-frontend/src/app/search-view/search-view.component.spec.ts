@@ -49,22 +49,24 @@ describe('SearchViewComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('zeigt den Markennamen als Zeile ueber der Ueberschrift, ohne Gedankenstrich', () => {
+  // Startseite 16.11.: ohne Markenzeile darueber, das Logo im Kopf nennt den Namen
+  it('zeigt Ueberschrift und Untertitel ohne Markenzeile darueber', () => {
     const hero: HTMLElement = fixture.nativeElement.querySelector('.start-hero');
 
-    expect(hero.querySelector('.hero-eyebrow')!.textContent!.trim()).toBe('Gut gesagt');
-    expect(hero.querySelector('.hero-eyebrow')!.nextElementSibling).toBe(hero.querySelector('.hero-title'));
+    expect(hero.firstElementChild).toBe(hero.querySelector('.hero-title'));
     expect(hero.querySelector('.hero-title')!.textContent!.trim()).toBe('Nie wieder sprachlos');
+    expect(hero.querySelector('.hero-subtitle')!.textContent!.trim()).toBe('Bewährte Argumente aus der Community.');
+    expect(hero.textContent).not.toContain('Gut gesagt');
   });
 
-  it('stellt unter Titel und Untertitel das Such-Band mit Erklaerzeile, Suchfeld und Beispiel', () => {
+  it('stellt unter Titel und Untertitel das Such-Band mit Suchfeld und Beispiel, ohne Erklaerzeile', () => {
     const hero: HTMLElement = fixture.nativeElement.querySelector('.start-hero');
     const band: HTMLElement = fixture.nativeElement.querySelector('.such-band');
 
     expect(hero.querySelector('.hero-title')).toBeTruthy();
     expect(hero.nextElementSibling).toBe(band);
-    expect(band.querySelector('.such-erklaerung')!.textContent).toContain('Fremden Text einfügen – Antwort finden – verwenden!');
-    expect(band.querySelector('app-search')).toBeTruthy();
+    expect(band.querySelector('.such-band-inhalt')!.firstElementChild!.tagName.toLowerCase()).toBe('app-search');
+    expect(band.textContent).not.toContain('Antwort finden – verwenden');
     expect(band.textContent).toContain('Beispiel probieren');
   });
 
@@ -93,7 +95,26 @@ describe('SearchViewComponent', () => {
     );
 
     expect(kacheln.map((kachel) => kachel.getAttribute('href'))).toEqual(['/einwerfen', '/contribute']);
-    expect(kacheln[0].textContent).toContain(FANGKORB_KURZ);
+  });
+
+  // Startseite 16.11.: Der Satz steht nicht mehr sichtbar da, bleibt aber Beschreibung der Kachel
+  it('zeigt an den Kacheln nur den Titel und liest den Satz als Beschreibung vor', () => {
+    const kacheln: HTMLAnchorElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('a.start-kachel'),
+    );
+
+    const saetze = kacheln.map((kachel) => {
+      const satz = fixture.nativeElement.querySelector(`#${kachel.getAttribute('aria-describedby')}`) as HTMLElement;
+      expect(kachel.contains(satz)).toBe(true);
+      expect(satz.hidden).toBe(true);
+      return satz.textContent!.trim();
+    });
+    expect(saetze[0]).toBe(FANGKORB_KURZ);
+    expect(saetze[1]).toBe('Ausgearbeitet und direkt verwendbar: Kommentar, Hintergrundinfo oder Bild.');
+    // Der Name der Kachel bleibt der Titel, ohne den Satz
+    expect(kacheln.map((kachel) => kachel.querySelector('.kachel-titel')!.textContent!.trim())).toEqual(['Einwerfen', 'Beitragen']);
+    // Sichtbar (innerText) steht der Satz nicht mehr
+    kacheln.forEach((kachel, i) => expect(kachel.innerText).not.toContain(saetze[i]));
   });
 
   // R57 (#644): Anonym fuehrten die Kacheln kommentarlos auf die Anmeldung

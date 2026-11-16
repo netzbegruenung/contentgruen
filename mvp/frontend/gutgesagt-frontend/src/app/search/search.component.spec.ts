@@ -58,11 +58,12 @@ describe('SearchComponent', () => {
       return fixture.nativeElement.querySelector('.such-hinweis');
     }
 
-    it('sagt, dass Suchtexte ohne Namen gespeichert und erst nach Prüfung sichtbar werden', () => {
-      const text = hinweis().textContent!.replace(/\s+/g, ' ');
-      expect(text).toContain(SUCHHINWEIS);
-      expect(SUCHHINWEIS).toContain('ohne deinen Namen');
-      expect(SUCHHINWEIS).toContain('nach Prüfung durch das Moderationsteam');
+    // Wortlaut rechtlich abgestimmt (16.11.2026): Aenderungen hier fallen auf
+    it('sagt, dass Suchtexte ohne Namen gespeichert und erst nach Prüfung öffentlich werden', () => {
+      expect(hinweis().textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Suchtexte speichern wir ohne deinen Namen. Nach Prüfung können sie öffentlich werden. Mehr dazu im Datenschutz',
+      );
+      expect(SUCHHINWEIS).toBe('Suchtexte speichern wir ohne deinen Namen. Nach Prüfung können sie öffentlich werden.');
     });
 
     it('verlinkt den Abschnitt „Deine Suchanfragen“ der Datenschutzerklärung', () => {

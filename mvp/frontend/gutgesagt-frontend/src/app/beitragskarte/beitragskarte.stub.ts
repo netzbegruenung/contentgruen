@@ -21,4 +21,5 @@ export class BeitragskarteStubComponent {
   @Input() teilbar: boolean | undefined = undefined;
   @Input() titelEbene: 3 | 4 = 3;
   @Input() antwortAufZeigen = true;
+  @Input() schlank = false;
 }

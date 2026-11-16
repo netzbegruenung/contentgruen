@@ -21,10 +21,10 @@
   </div>
 </div>
 
-<!-- Mobil eine Liste, ab 600 px das Karussell -->
+<!-- Mobil eine Liste, ab 600 px das Karussell; die Karten schlank, ohne "passt auf X/Bluesky" und Alter (16.11.) -->
 <ng-container *ngIf="!loading && !error && karten.length > 0">
-  <app-kartenliste *ngIf="istMobil; else karussell" [daten]="angezeigteKarten"></app-kartenliste>
+  <app-kartenliste *ngIf="istMobil; else karussell" [daten]="angezeigteKarten" [schlank]="true"></app-kartenliste>
   <ng-template #karussell>
-    <app-result-carousel [daten]="karten"></app-result-carousel>
+    <app-result-carousel [daten]="karten" [schlank]="true"></app-result-carousel>
   </ng-template>
 </ng-container>

@@ -11,6 +11,7 @@ import { LoggingService } from '../services/logging.service';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { ResultCarouselComponent } from '../result-carousel/result-carousel.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
+import { By } from '@angular/platform-browser';
 
 describe('RecentContentComponent', () => {
   let component: RecentContentComponent;
@@ -104,6 +105,21 @@ describe('RecentContentComponent', () => {
     erstellen(eintraege(5));
 
     expect(alle('app-beitragskarte').length).toBe(5);
+  });
+
+  // Startseite 16.11.: ohne "passt auf X/Bluesky" und Alter, nur in diesem Streifen
+  it('zeigt die Karten schlank, in der Liste wie im Karussell', () => {
+    const schlank = () =>
+      fixture.debugElement
+        .queryAll(By.directive(BeitragskarteStubComponent))
+        .map((karte) => (karte.componentInstance as BeitragskarteStubComponent).schlank);
+
+    erstellen(eintraege(3));
+    expect(schlank()).toEqual([true, true, true]);
+
+    mobil = true;
+    erstellen(eintraege(3));
+    expect(schlank()).toEqual([true, true, true]);
   });
 
   it('zeigt ab 600 px das Karussell', () => {
