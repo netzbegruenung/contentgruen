@@ -68,3 +68,24 @@ def test_inline_style_und_theme_nennen_dieselben_dunklen_werte():
     assert (
         not abweichend
     ), f"index.html weicht vom Theme ab (inline, Theme): {abweichend}"
+
+
+SERVICE = FRONTEND / "app/services/farbschema.service.ts"
+
+
+def test_browserleiste_im_dunkeln_hat_den_dunklen_grund():
+    """Die Leiste (meta theme-color) steht im Dunkeln auf --bg-main, im Skript von index.html
+    und im FarbschemaService; sonst hebt sie sich nach einer neuen Palette als Streifen ab.
+    """
+    grund = theme_werte()["--bg-main"].lower()
+    skript = re.search(
+        r"schema === 'dark' \? '(#[0-9a-fA-F]{6})'", INDEX.read_text(encoding="utf-8")
+    )
+    service = re.search(
+        r"dark: '(#[0-9a-fA-F]{6})'", SERVICE.read_text(encoding="utf-8")
+    )
+    assert (
+        skript and service
+    ), "Leistenfarbe in index.html oder farbschema.service.ts nicht gefunden"
+    assert skript.group(1).lower() == grund, (skript.group(1), grund)
+    assert service.group(1).lower() == grund, (service.group(1), grund)

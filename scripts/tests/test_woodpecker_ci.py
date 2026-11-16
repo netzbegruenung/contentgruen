@@ -434,7 +434,12 @@ def test_integration_nie_im_pull_request(dateien):
 @pytest.mark.parametrize("event", ["push", "tag", "manual"])
 def test_integration_auf_main_mit_der_ganzen_kette(event):
     lauf = schritte_im_lauf(event, [])
-    assert set(lauf["integration"]) == {"python-installieren", "unit", "lint", "frontend"}
+    assert set(lauf["integration"]) == {
+        "python-installieren",
+        "unit",
+        "lint",
+        "frontend",
+    }
 
 
 def test_dienste_nur_wenn_integration_laeuft():
@@ -531,7 +536,12 @@ def dockerfile_ci_stufen():
         m = re.match(r"FROM\s+(\S+)\s+AS\s+(\S+)", zeile, re.IGNORECASE)
         if m:
             aktuell = m.group(2)
-            stufen[aktuell] = {"basis": m.group(1), "kopiert": [], "text": ""}
+            stufen[aktuell] = {
+                "basis": m.group(1),
+                "kopiert": [],
+                "eingebunden": [],
+                "text": "",
+            }
             continue
         if aktuell is None:
             continue
@@ -541,6 +551,9 @@ def dockerfile_ci_stufen():
             stufen[aktuell]["kopiert"] += [
                 q for q in m.group(1).split()[:-1] if not q.startswith("--")
             ]
+        stufen[aktuell]["eingebunden"] += re.findall(
+            r"--mount=type=bind,source=([^,\s]+)", zeile
+        )
     return stufen
 
 
@@ -558,10 +571,15 @@ def test_dockerignore_laesst_genau_durch_was_dockerfile_ci_kopiert():
     zeilen = (WURZEL / "Dockerfile.ci.dockerignore").read_text().splitlines()
     regeln = [z for z in zeilen if z.strip() and not z.startswith("#")]
     assert regeln[0] == "*"
-    durch = {r.removeprefix("!") for r in regeln[1:]}
+    durch = {r.removeprefix("!") for r in regeln[1:] if r.startswith("!")}
     kopiert = {q for s in STUFEN.values() for q in s["kopiert"]}
-    assert durch == kopiert
+    eingebunden = {q for s in STUFEN.values() for q in s["eingebunden"]}
+    assert durch == kopiert | eingebunden
     assert all((WURZEL / q).is_file() for q in kopiert)
+    assert all((WURZEL / q).is_dir() for q in eingebunden)
+    # Ausnahmen nur innerhalb eingebundener Verzeichnisse (lokale Artefakte)
+    for regel in (r for r in regeln[1:] if not r.startswith("!")):
+        assert any(regel.startswith(q + "/") for q in eingebunden), regel
 
 
 def test_ci_python_bringt_die_modelle_der_integrationstests_mit():
@@ -719,7 +737,7 @@ def _baum(tmp_path):
     return skript, image, protokoll, fe
 
 
-def _lauf(skript, image, *argumente):
+def _lauf(skript, image, *argumente, ereignis=""):
     import os
     import subprocess
 
@@ -727,6 +745,7 @@ def _lauf(skript, image, *argumente):
         **os.environ,
         "PATH": f"{skript.parents[1] / 'bin'}:{os.environ['PATH']}",
         "CI_IMAGE_DIR": str(image),
+        "CI_PIPELINE_EVENT": ereignis,
     }
     return subprocess.run(
         ["sh", str(skript), *argumente],
@@ -824,6 +843,21 @@ def test_nachpruefen_ersetzt_den_verweis_nur_bei_neuem_image(tmp_path):
     assert not (fe / "node_modules").is_symlink()
 
 
+def test_nachpruefen_entfernt_den_cache_des_alten_images(tmp_path):
+    skript, image, _, fe = _baum(tmp_path)
+    (image / "frontend.sha256").write_text(
+        _lauf(skript, image, "--pruefsumme", "frontend")
+    )
+    (image / "angular-cache" / "v").mkdir(parents=True)
+    _lauf(skript, image, "frontend", ereignis="pull_request")
+    assert (fe / ".angular" / "cache" / "v").is_dir()
+
+    (image / "frontend.sha256").write_text("neu\n")
+    _lauf(skript, image, "--nachpruefen", "frontend")
+    assert not (fe / ".angular" / "cache").exists()
+    assert not (fe / "node_modules").is_symlink()
+
+
 def test_nachpruefen_laesst_ein_echtes_node_modules_stehen(tmp_path):
     skript, image, protokoll, fe = _baum(tmp_path)
     (fe / "node_modules").mkdir()
@@ -859,3 +893,84 @@ def test_nachpruefen_unbekannte_art(tmp_path, argumente):
     with pytest.raises(subprocess.CalledProcessError) as fehler:
         _lauf(skript, image, *argumente)
     assert fehler.value.returncode == 2
+
+
+# Angular-Cache im CI-Image (Dockerfile.ci, Ziel ci-node; docs/CI.md, "Angular cache").
+WOODPECKER_WORKSPACE = "/woodpecker/src/git.verdigado.com/Netzbegruenung/gutgesagt"
+
+
+def _ein_leerzeichen(text):
+    return re.sub(r"\s+", " ", text)
+
+
+def test_angular_cache_im_workspace_pfad_von_woodpecker_gebaut():
+    # Der Webpack-Cache der Karma-Tests haengt am absoluten Pfad. Woodpecker legt den
+    # Workspace unter /woodpecker/src/<Forge-Host>/<Repo> an, solange ci.yaml keinen
+    # eigenen workspace setzt.
+    node = STUFEN["ci-node"]
+    assert f"ARG CI_WORKSPACE={WOODPECKER_WORKSPACE}" in node["text"]
+    assert "workspace" not in PIPELINE
+    assert node["eingebunden"] == ["mvp/frontend/gutgesagt-frontend"]
+    assert "mv .angular/cache /opt/ci/angular-cache" in node["text"]
+
+
+def test_angular_cache_mit_denselben_ng_aufrufen_wie_check_sh():
+    # Andere Optionen, anderer Cache-Schluessel: dann traefe der Cache nicht.
+    node = _ein_leerzeichen(STUFEN["ci-node"]["text"])
+    check = (WURZEL / "scripts" / "check.sh").read_text()
+    bauen = (
+        "npx ng build gutgesagt-frontend --configuration production --progress=false"
+    )
+    testen = "npx ng test --watch=false --browsers=ChromeHeadless --progress=false"
+    assert bauen in check and bauen in node
+    assert testen in check and testen in node
+    # In der CI ohne Source-Maps (CHECK_OHNE_SOURCEMAPS im Schritt frontend)
+    assert SCHRITTE["frontend"]["environment"]["CHECK_OHNE_SOURCEMAPS"] == "1"
+    assert f"{testen} --source-map=false" in node
+    # Wie der Schritt frontend-build: zwei Worker, der Runner ist knapp (13.11. OOM)
+    workers = SCHRITTE["frontend-build"]["environment"]["NG_BUILD_MAX_WORKERS"]
+    assert f"NG_BUILD_MAX_WORKERS={workers} timeout 900 {bauen}" in node
+    assert f"timeout 900 {testen}" in node
+    # Ein abgebrochener Lauf ohne Cache macht den Bau nicht rot
+    assert "mkdir -p .angular/cache && mv .angular/cache /opt/ci/angular-cache" in node
+
+
+def test_frontend_aenderung_baut_ci_node_nicht_neu():
+    # Der Cache veraltet praktisch nur mit dem Lockfile; sonst baute jeder Merge das Image.
+    import fnmatch
+
+    muster = CI_IMAGE_SCHRITTE["ci-node"]["when"][0]["path"]["include"]
+    beispiel = "mvp/frontend/gutgesagt-frontend/src/app/app.component.ts"
+    assert not any(fnmatch.fnmatch(beispiel, m) for m in muster)
+    assert any(
+        fnmatch.fnmatch("mvp/frontend/gutgesagt-frontend/package-lock.json", m)
+        for m in muster
+    )
+
+
+@pytest.mark.parametrize(
+    "ereignis, kopiert",
+    [("pull_request", True), ("push", False), ("tag", False), ("manual", False)],
+)
+def test_angular_cache_nur_in_pr_laeufen_kopiert(tmp_path, ereignis, kopiert):
+    skript, image, _, fe = _baum(tmp_path)
+    (image / "frontend.sha256").write_text(
+        _lauf(skript, image, "--pruefsumme", "frontend")
+    )
+    (image / "angular-cache" / "20.0.3").mkdir(parents=True)
+    (image / "angular-cache" / "20.0.3" / "eintrag").write_text("x")
+
+    _lauf(skript, image, "frontend", ereignis=ereignis)
+
+    cache = fe / ".angular" / "cache"
+    assert (cache / "20.0.3" / "eintrag").is_file() is kopiert
+    # Eine Kopie, kein Verweis: Das Image bleibt unberuehrt.
+    assert not cache.is_symlink()
+
+
+def test_angular_cache_nicht_bei_abweichendem_image(tmp_path):
+    skript, image, _, fe = _baum(tmp_path)
+    (image / "frontend.sha256").write_text("alt\n")
+    (image / "angular-cache").mkdir()
+    _lauf(skript, image, "frontend", ereignis="pull_request")
+    assert not (fe / ".angular").exists()

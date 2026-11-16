@@ -239,9 +239,8 @@ a {
 .siegel-beispiele {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 12px;
+  gap: 12px 16px;
   margin: 4px 0 0;
-  /* Platz fuer die Krone, die ueber das Siegel hinausragt (#351) */
   padding: 8px 0 0;
   list-style: none;
 
@@ -253,8 +252,9 @@ a {
     font-size: 0.8rem;
   }
 
+  // Doppelt so gross wie vorher, damit der Glanz erkennbar ist (Ersteindruck-Test 14.11.)
   app-siegel {
-    width: 28px;
+    width: 56px;
   }
 }
 

@@ -7,10 +7,13 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-/** Was ins Suchfeld gehoert, als Beschriftung des Feldes (#644). */
-export const SUCHFELD_NAME = 'Was hast du gelesen? Text oder Post einfügen';
+/**
+ * Was ins Suchfeld gehoert, als Beschriftung des Feldes (#644): der fremde Text, auf den man
+ * antworten will. "Text oder Post einfügen" lasen Testerinnen als "mein Post?" (Ersteindruck-Test 14.11.).
+ */
+export const SUCHFELD_NAME = 'Worauf willst du antworten? Text einfügen';
 /** Kurz fuer das kompakte Feld ueber den Treffern: Daneben steht der Such-Knopf (#644). */
-export const SUCHFELD_NAME_KOMPAKT = 'Text oder Post einfügen';
+export const SUCHFELD_NAME_KOMPAKT = 'Worauf antworten? Text einfügen';
 /**
  * Unter dem Feld: dass der Suchtext gespeichert wird und nach der Vormoderation (#664)
  * sichtbar werden kann. Die Einzelheiten stehen im Abschnitt der Datenschutzerklärung,

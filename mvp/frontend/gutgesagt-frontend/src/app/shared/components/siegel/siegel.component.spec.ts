@@ -1,3 +1,4 @@
+import { reflectComponentType } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { SiegelComponent } from './siegel.component';
@@ -13,16 +14,15 @@ function tannengruen(): string {
 /**
  * Das Siegel zeigt die Güte eines Beitrags (#416, auf Karten #427): ohne Güte grau
  * und waagrecht, mit steigender Güte dreht der Daumen nach oben und die Farbe läuft
- * von Grau über Gelb nach Tannengrün. Nie nach unten, nie rot. Glanz und Krone sind
- * eigene Abzeichen, keine Stufen der Güte.
+ * von Grau über Gelb nach Tannengrün. Nie nach unten, nie rot. Glanz ist ein eigenes
+ * Abzeichen, keine Stufe der Güte; eine Krone gibt es nicht mehr.
  */
 describe('SiegelComponent', () => {
   let fixture: ComponentFixture<SiegelComponent>;
 
-  function zeige(guete: number | null, extras: { glanz?: boolean; krone?: boolean } = {}): HTMLElement {
+  function zeige(guete: number | null, extras: { glanz?: boolean } = {}): HTMLElement {
     fixture.componentRef.setInput('guete', guete);
     if (extras.glanz !== undefined) fixture.componentRef.setInput('glanz', extras.glanz);
-    if (extras.krone !== undefined) fixture.componentRef.setInput('krone', extras.krone);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   }
@@ -103,6 +103,35 @@ describe('SiegelComponent', () => {
     expect(farbtonHoch).toBeGreaterThan(120); // Grün
   });
 
+  it('laesst den Farbton nur in eine Richtung laufen, ohne Umweg ueber Orange (Ersteindruck-Test 14.11.)', () => {
+    const farbtoene = [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((guete) => {
+      zeige(guete);
+      return farbe()[0];
+    });
+    for (let i = 1; i < farbtoene.length; i++) {
+      expect(farbtoene[i]).withContext(`Güte ${i}`).toBeGreaterThanOrEqual(farbtoene[i - 1]);
+    }
+    expect(Math.min(...farbtoene)).toBeGreaterThanOrEqual(50); // kein Orange
+  });
+
+  it('gibt der Blase im Hellen einen dunkleren Rand im selben Farbton, im Dunkeln keinen', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    zeige(4);
+    const [farbton] = farbe();
+    const randGruppe = el().querySelector('.siegel-blase-rand')!;
+    const rand = /hsl\(([\d.]+) ([\d.]+)% ([\d.]+)%\)/.exec(randGruppe.getAttribute('stroke')!)!;
+    expect(Number(rand[1])).toBe(farbton);
+    expect(Number(rand[3])).toBeLessThan(farbe()[2]);
+    // Hinter der Füllung, und die Füllung selbst ohne Kontur: keine Naht am Zipfel
+    expect(randGruppe.nextElementSibling).toBe(el().querySelector('.siegel-blase-gruppe'));
+    expect(el().querySelector('.siegel-blase-gruppe')!.hasAttribute('stroke')).toBeFalse();
+
+    spyOn(TestBed.inject(FarbschemaService), 'dunkel').and.returnValue(true);
+    fixture = TestBed.createComponent(SiegelComponent);
+    zeige(4);
+    expect(el().querySelector('.siegel-blase-rand')).toBeNull();
+  });
+
   it('endet im Dunkelmodus in Klee, damit das Siegel sich vom dunklen Grund abhebt (#588)', () => {
     spyOn(TestBed.inject(FarbschemaService), 'dunkel').and.returnValue(true);
     fixture = TestBed.createComponent(SiegelComponent);
@@ -127,49 +156,52 @@ describe('SiegelComponent', () => {
     }
   });
 
-  it('zeigt Glanz und Krone nur, wenn sie gesetzt sind', () => {
+  it('zeigt den Glanz nur, wenn er gesetzt ist', () => {
     const el = zeige(7);
     expect(el.querySelector('.siegel-glanz')).toBeNull();
-    expect(el.querySelector('.siegel-krone')).toBeNull();
+    expect(el.querySelector('.siegel-sterne')).toBeNull();
 
-    zeige(7, { glanz: true, krone: true });
+    zeige(7, { glanz: true });
     expect(el.querySelector('.siegel-glanz')).not.toBeNull();
-    expect(el.querySelector('.siegel-krone')).not.toBeNull();
+    // Ein grosser Stern und zwei kleine Funken (Ersteindruck-Test 14.11.)
+    expect(el.querySelectorAll('.siegel-sterne .siegel-stern').length).toBe(1);
+    expect(el.querySelectorAll('.siegel-sterne .siegel-funkler').length).toBe(2);
   });
 
-  it('zeigt Glanz und Krone bei jeder Güte, unabhängig voneinander', () => {
+  it('kennt keine Krone mehr: Sie beschrieb die Person, nicht den Beitrag (14.11.)', () => {
+    const eingaenge = reflectComponentType(SiegelComponent)!.inputs.map((e) => e.propName);
+    expect(eingaenge).toEqual(jasmine.arrayWithExactContents(['guete', 'glanz']));
+    zeige(10, { glanz: true });
+    expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 10 von 10, mit Glanz');
+  });
+
+  it('zeigt den Glanz bei jeder Güte', () => {
     for (const guete of [null, 1, 3, 6, 8, 10]) {
-      for (const [glanz, krone] of [[true, false], [false, true], [true, true], [false, false]]) {
-        const el = zeige(guete, { glanz, krone });
-        const fall = `Güte ${guete}, Glanz ${glanz}, Krone ${krone}`;
-        expect(el.querySelector('.siegel-glanz') !== null).withContext(fall).toBe(glanz);
-        expect(el.querySelector('.siegel-krone') !== null).withContext(fall).toBe(krone);
+      for (const glanz of [true, false]) {
+        const el = zeige(guete, { glanz });
+        expect(el.querySelector('.siegel-glanz') !== null).withContext(`Güte ${guete}, Glanz ${glanz}`).toBe(glanz);
       }
     }
   });
 
-  it('lässt Winkel, Farbe und den Text der Güte von Glanz und Krone unberührt; Glanz und Krone hängen nur an (#351)', () => {
+  it('lässt Winkel, Farbe und den Text der Güte vom Glanz unberührt; der Glanz hängt nur an (#351)', () => {
     for (const guete of [null, 3, 6, 8, 10]) {
-      zeige(guete, { glanz: false, krone: false });
+      zeige(guete, { glanz: false });
       const ohne = [winkel(), farbe()];
       const text = svg().getAttribute('aria-label');
-      zeige(guete, { glanz: true, krone: true });
+      zeige(guete, { glanz: true });
       expect([winkel(), farbe()]).withContext(`Güte ${guete}`).toEqual(ohne);
-      expect(svg().getAttribute('aria-label')).withContext(`Güte ${guete}`).toBe(`${text}, mit Glanz und Krone`);
+      expect(svg().getAttribute('aria-label')).withContext(`Güte ${guete}`).toBe(`${text}, mit Glanz`);
     }
-    zeige(6, { glanz: true, krone: false });
-    expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Glanz');
-    zeige(6, { glanz: false, krone: true });
-    expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 6 von 10, mit Krone');
   });
 
-  it('legt das Sichtfeld eng an die Zeichnung, die Krone ragt darüber hinaus', () => {
-    const el = zeige(10, { krone: true });
+  it('legt das Sichtfeld eng an die Zeichnung, der Glanz-Stern ragt darüber hinaus', () => {
+    const el = zeige(10, { glanz: true });
     document.body.appendChild(el);
     const [, oben] = svg().getAttribute('viewBox')!.split(' ').map(Number);
-    const krone = el.querySelector<SVGPathElement>('.siegel-krone')!.getBBox();
+    const stern = el.querySelector<SVGPathElement>('.siegel-stern')!.getBBox();
 
-    expect(krone.y).toBeLessThan(oben);
+    expect(stern.y).toBeLessThan(oben);
     expect(getComputedStyle(svg()).overflow).toBe('visible');
     // Die Blase sitzt unten am Rand: kein Streifen unter der Spitze.
     const blase = el.querySelector<SVGGElement>('.siegel-blase-gruppe')!.getBBox();
@@ -178,30 +210,31 @@ describe('SiegelComponent', () => {
     el.remove();
   });
 
-  it('hält die Krone in jedem Winkel der Hand frei vom Daumen', () => {
+  it('hält die Glanz-Sterne in jedem Winkel der Hand frei vom Daumen', () => {
     /** Punkte auf dem Umriss eines Pfads, im Koordinatensystem des Sichtfelds. */
     function umriss(pfad: SVGPathElement, wurzel: SVGSVGElement): DOMPoint[] {
       const m = wurzel.getCTM()!.inverse().multiply(pfad.getCTM()!);
       const laenge = pfad.getTotalLength();
       return Array.from({ length: 200 }, (_, i) => pfad.getPointAtLength((laenge * i) / 200).matrixTransform(m));
     }
-    // Halbe Strichstärken von Hand (2.6 bei Maßstab 1.6) und Krone, dazu Luft.
-    const mindestens = (2.6 * 1.6) / 2 + 0.5 + 1;
+    // Halbe Strichstärken von Hand (2.6 bei Maßstab 1.6) und Stern, dazu Luft.
+    const mindestens = (2.6 * 1.6) / 2 + 0.6 + 1;
 
     for (const guete of [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
       // Je Güte ein frisches Siegel: ohne Wechsel läuft keine Drehung, die Hand steht im Zielwinkel.
       const f = TestBed.createComponent(SiegelComponent);
       f.componentRef.setInput('guete', guete);
-      f.componentRef.setInput('krone', true);
+      f.componentRef.setInput('glanz', true);
       f.detectChanges();
       const el = f.nativeElement as HTMLElement;
       document.body.appendChild(el);
       const wurzel = el.querySelector<SVGSVGElement>('svg')!;
       const hand = umriss(el.querySelector<SVGPathElement>('.siegel-hand path')!, wurzel);
-      const krone = umriss(el.querySelector<SVGPathElement>('.siegel-krone')!, wurzel);
-
-      const abstand = Math.min(...hand.flatMap((h) => krone.map((k) => Math.hypot(h.x - k.x, h.y - k.y))));
-      expect(abstand).withContext(`Güte ${guete}`).toBeGreaterThan(mindestens);
+      for (const pfad of Array.from(el.querySelectorAll<SVGPathElement>('.siegel-sterne path'))) {
+        const stern = umriss(pfad, wurzel);
+        const abstand = Math.min(...hand.flatMap((h) => stern.map((s) => Math.hypot(h.x - s.x, h.y - s.y))));
+        expect(abstand).withContext(`Güte ${guete}, ${pfad.getAttribute('class')}`).toBeGreaterThan(mindestens);
+      }
       el.remove();
     }
   });

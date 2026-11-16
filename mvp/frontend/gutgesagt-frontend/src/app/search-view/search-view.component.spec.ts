@@ -63,7 +63,7 @@ describe('SearchViewComponent', () => {
 
     expect(hero.querySelector('.hero-title')).toBeTruthy();
     expect(hero.nextElementSibling).toBe(band);
-    expect(band.querySelector('.such-erklaerung')!.textContent).toContain('Post reinkopieren – Antwort finden – Verwenden!');
+    expect(band.querySelector('.such-erklaerung')!.textContent).toContain('Fremden Text einfügen – Antwort finden – verwenden!');
     expect(band.querySelector('app-search')).toBeTruthy();
     expect(band.textContent).toContain('Beispiel probieren');
   });
