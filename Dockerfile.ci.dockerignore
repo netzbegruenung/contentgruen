@@ -7,3 +7,11 @@
 !mvp/frontend/gutgesagt-frontend/package-lock.json
 !scripts/ci-installieren.sh
 !scripts/ci-chromium.sh
+# Quellen des Frontends fuer den Angular-Cache (nur eingebunden), ohne lokale Artefakte
+!mvp/frontend/gutgesagt-frontend
+mvp/frontend/gutgesagt-frontend/node_modules
+mvp/frontend/gutgesagt-frontend/.angular
+mvp/frontend/gutgesagt-frontend/dist
+mvp/frontend/gutgesagt-frontend/src/environments/environment.ts
+mvp/frontend/gutgesagt-frontend/coverage
+mvp/frontend/gutgesagt-frontend/**/.env*
