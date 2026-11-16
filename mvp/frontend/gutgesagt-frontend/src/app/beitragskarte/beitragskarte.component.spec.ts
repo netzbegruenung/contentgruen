@@ -1001,6 +1001,14 @@ describe('BeitragskarteComponent', () => {
       expect(element('app-karten-aktionen')).toBeTruthy();
     });
 
+    it('zeigt schlank und ohne Anmeldung nur die Nutzung, ohne Trenner davor', () => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 1 })), { schlank: true });
+
+      expect(element('.karte-meta').textContent!.trim()).toBe('1× genutzt');
+    });
+
     it('zeichnet die gewaehlte Fassung wie die Tabs: Tanne-Text auf Tanne-Hauch (#512)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
       const gewaehlt = element('.textlaenge .mat-button-toggle-checked');

@@ -107,11 +107,14 @@ describe('SearchViewComponent', () => {
       const satz = fixture.nativeElement.querySelector(`#${kachel.getAttribute('aria-describedby')}`) as HTMLElement;
       expect(kachel.contains(satz)).toBe(true);
       expect(satz.hidden).toBe(true);
-      expect(satz.getBoundingClientRect().height).toBe(0);
       return satz.textContent!.trim();
     });
     expect(saetze[0]).toBe(FANGKORB_KURZ);
     expect(saetze[1]).toBe('Ausgearbeitet und direkt verwendbar: Kommentar, Hintergrundinfo oder Bild.');
+    // Der Name der Kachel bleibt der Titel, ohne den Satz
+    expect(kacheln.map((kachel) => kachel.querySelector('.kachel-titel')!.textContent!.trim())).toEqual(['Einwerfen', 'Beitragen']);
+    // Sichtbar (innerText) steht der Satz nicht mehr
+    kacheln.forEach((kachel, i) => expect(kachel.innerText).not.toContain(saetze[i]));
   });
 
   // R57 (#644): Anonym fuehrten die Kacheln kommentarlos auf die Anmeldung
