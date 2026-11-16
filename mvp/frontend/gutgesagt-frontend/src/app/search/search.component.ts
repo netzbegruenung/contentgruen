@@ -17,11 +17,10 @@ export const SUCHFELD_NAME_KOMPAKT = 'Worauf antworten? Text einfügen';
 /**
  * Unter dem Feld: dass der Suchtext gespeichert wird und nach der Vormoderation (#664)
  * sichtbar werden kann. Die Einzelheiten stehen im Abschnitt der Datenschutzerklärung,
- * auf den der Link springt (Persona-Test Gerd).
+ * auf den der Link springt (Persona-Test Gerd). Wortlaut rechtlich abgestimmt (16.11.2026):
+ * nur nach Ruecksprache aendern.
  */
-export const SUCHHINWEIS =
-  'Suchtexte speichern wir ohne deinen Namen. Gibt es noch keine Antwort, können sie nach ' +
-  'Prüfung durch das Moderationsteam für alle sichtbar werden.';
+export const SUCHHINWEIS = 'Suchtexte speichern wir ohne deinen Namen. Nach Prüfung können sie öffentlich werden.';
 /**
  * Über den Treffern nur der erste Satz und „Mehr“ (Freigabe E5, 14.11.2026): Der volle
  * Hinweis schob die erste Antwort mobil aus dem ersten Bildschirm. Der Start behält ihn ganz.

@@ -1,20 +1,18 @@
 <!-- Titel und Untertitel auf Weiss, direkt darunter die Suche im schmalen gelben
      Band: auf dem Handy soll das Suchfeld ohne Scrollen dastehen. -->
+<!-- Ohne Markenzeile darueber: Das Logo im Kopf nennt den Namen schon (Startseite 16.11.) -->
 <section class="start-hero">
-    <div class="hero-eyebrow">Gut gesagt</div>
     <div class="hero-title">
         Nie wieder sprachlos
     </div>
     <div class="hero-subtitle">
-        Gemeinsam stark: Bewährte Argumente aus der Community.
+        Bewährte Argumente aus der Community.
     </div>
 </section>
 
 <section class="such-band">
     <div class="such-band-inhalt">
-        <!-- "Fremder Text" statt "Post": "Post" lasen Testerinnen als den eigenen (Ersteindruck-Test 14.11.) -->
-        <p class="such-erklaerung">Fremden Text einfügen – Antwort finden – verwenden!</p>
-
+        <!-- Ohne Erklaerzeile darueber: Die Beschriftung des Feldes sagt, was hinein gehoert (Startseite 16.11.) -->
         <app-search class="start-suche" feldId="suche" [autofokus]="autofokus"></app-search>
 
         <p class="beispiel-zeile">
@@ -33,22 +31,24 @@
 <app-seit-letztem-besuch></app-seit-letztem-besuch>
 
 <!-- Zwei Wege zum Mitmachen. Beide Ziele sind geschuetzt; ohne Anmeldung leitet
-     der AuthGuard zum Login und danach zurueck. Anonym sagt "mit Konto" das vorher (#644). -->
+     der AuthGuard zum Login und danach zurueck. Anonym sagt "mit Konto" das vorher (#644).
+     Der erklaerende Satz steht nicht mehr sichtbar da (Startseite 16.11.), Screenreader lesen
+     ihn als Beschreibung der Kachel vor; der Name bleibt Titel samt "mit Konto". -->
 <section class="start-kacheln" aria-label="Mitmachen">
-    <a class="start-kachel" routerLink="/einwerfen">
+    <a class="start-kachel" routerLink="/einwerfen" aria-describedby="kachel-satz-einwerfen">
         <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
         <span class="kachel-text">
             <span class="kachel-titel">Einwerfen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
-            <span class="kachel-satz">{{ fangkorbKurz }}</span>
+            <span class="kachel-satz" id="kachel-satz-einwerfen" hidden>{{ fangkorbKurz }}</span>
         </span>
         <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </a>
 
-    <a class="start-kachel" routerLink="/contribute">
+    <a class="start-kachel" routerLink="/contribute" aria-describedby="kachel-satz-beitragen">
         <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
         <span class="kachel-text">
             <span class="kachel-titel">Beitragen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
-            <span class="kachel-satz">Ausgearbeitet und direkt verwendbar: {{ typLabel('commentary') }}, {{ typLabel('generictext') }} oder {{ typLabel('image') }}.</span>
+            <span class="kachel-satz" id="kachel-satz-beitragen" hidden>Ausgearbeitet und direkt verwendbar: {{ typLabel('commentary') }}, {{ typLabel('generictext') }} oder {{ typLabel('image') }}.</span>
         </span>
         <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </a>

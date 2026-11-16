@@ -35,6 +35,8 @@ const SCROLL_SCHRITT = 474;
 })
 export class ResultCarouselComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() daten: KartenDaten[] = [];
+  /** Durchgereicht an die Karten: ohne "passt auf X/Bluesky" und Alter (Startseite). */
+  @Input() schlank = false;
 
   @ViewChild('resultContainer', { static: true }) resultContainerRef!: ElementRef<HTMLElement>;
 

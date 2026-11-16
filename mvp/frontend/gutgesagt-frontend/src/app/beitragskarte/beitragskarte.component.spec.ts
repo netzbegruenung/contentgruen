@@ -987,6 +987,20 @@ describe('BeitragskarteComponent', () => {
       expect(element('.fassung-marke')).toBeNull();
     });
 
+    // Streifen "Frisch aus der Community" auf der Startseite (16.11.)
+    it('laesst schlank die Marke "passt auf X/Bluesky" und das Alter weg, sonst nichts', () => {
+      const daten = ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), short_text: 'Kurzfassung' }));
+      zeigen(daten);
+      expect(element('.fassung-marke')).toBeTruthy();
+      expect(element('.karte-meta')?.textContent).toMatch(/vor|gerade/);
+
+      zeigen(daten, { schlank: true });
+      expect(element('.fassung-marke')).toBeNull();
+      expect(element('.karte-meta')?.textContent ?? '').not.toMatch(/vor|gerade|·/);
+      expect(element('.textlaenge')).toBeTruthy();
+      expect(element('app-karten-aktionen')).toBeTruthy();
+    });
+
     it('zeichnet die gewaehlte Fassung wie die Tabs: Tanne-Text auf Tanne-Hauch (#512)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
       const gewaehlt = element('.textlaenge .mat-button-toggle-checked');
