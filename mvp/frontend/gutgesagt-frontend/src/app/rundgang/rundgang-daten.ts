@@ -89,13 +89,16 @@ export const WILLKOMMEN: Angebot = {
   titel: 'Schön, dass du da bist!',
   satz:
     'Gut gesagt ist eine Tauschbörse für bewährte Argumente. Der Rundgang zeigt dir in fünf Schritten, ' +
-    'wie du zu einer Aussage aus dem Netz eine erprobte Antwort findest.',
+    'wie du zu einer Aussage aus dem Netz oder aus dem Gespräch eine erprobte Antwort findest. ' +
+    'Ein Konto brauchst du dafür nicht.',
+  // Ohne Konto vollwertig: Gespräch am Stand, am Familientisch, am Stammtisch (14.11.)
   // Nur die Startseite: über den Treffern schob das Band mobil Suchfeld und Treffer weg (#599)
   seiten: ['/search'],
   // Dort unter dem Suchfeld: darüber stand das Suchfeld mobil erst bei y 489 von 844
   // (Nutzerführung 13.11.)
   imInhalt: true,
-  ja: 'Rundgang starten',
+  // Mit Dauer: Ungeduldige ueberspringen Rundgaenge sonst (Ersteindruck-Test 14.11.)
+  ja: 'Rundgang starten (1 Minute)',
   nein: 'Ausblenden',
   ab: 0,
 };
@@ -125,7 +128,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
       {
         titel: 'Aussage eingeben',
         text:
-          'Kopiere einen Post hier hinein oder tippe die Aussage ein, auf die du antworten willst. ' +
+          'Füge den Text ein, auf den du antworten willst – einen Post oder Kommentar –, oder tippe die Aussage ein. ' +
           `Probier’s mit „${STARTBEISPIEL}“: Die nächsten Schritte zeigen die Treffer dazu.`,
         ziel: 'app-search.start-suche .search-field',
         seite: { pfad: '/search' },
@@ -136,7 +139,10 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
         titel: 'Passende Treffer',
         text:
           'Hier stehen Kommentare, die auf deine Aussage antworten. Mit Kurz, Mittel und Lang ' +
-          'wählst du die Fassung.',
+          'wählst du die Fassung. Das Siegel oben rechts zeigt die Güte: Je weiter der Daumen nach oben ' +
+          'zeigt, desto besser ist der Kommentar formuliert und bewertet. Ein Klick oder Tipp darauf erklärt es.',
+        // Sätze zum Siegel: es fiel nicht auf und erklärte sich nicht selbst (Ersteindruck-Test 14.11.);
+        // kürzer als der Absatz #siegel auf der Über-Seite, sagt aber dasselbe (Güte aus Regeln und Stimmen)
         ziel: 'app-beitragskarte',
         seite: { pfad: '/result', query: { searchQuery: STARTBEISPIEL } },
       },

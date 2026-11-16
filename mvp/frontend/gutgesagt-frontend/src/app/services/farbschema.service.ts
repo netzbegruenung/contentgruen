@@ -10,7 +10,7 @@ export const FARBSCHEMA_SCHLUESSEL = 'gutgesagt-farbschema';
  * Farbe der Browserleiste je Schema (meta theme-color): hell Klee, dunkel --bg-main der
  * Dunkel-Palette. Dieselben Werte stehen im Skript in index.html.
  */
-export const LEISTENFARBE: Record<Farbschema, string> = { light: '#008939', dark: '#1e1f1e' };
+export const LEISTENFARBE: Record<Farbschema, string> = { light: '#008939', dark: '#101110' };
 
 const SYSTEM_DUNKEL = '(prefers-color-scheme: dark)';
 

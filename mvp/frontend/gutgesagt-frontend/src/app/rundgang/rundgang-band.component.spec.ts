@@ -57,7 +57,7 @@ describe('RundgangBandComponent', () => {
     fixture.componentRef.setInput('ort', 'start');
     band.set(WILLKOMMEN);
     fixture.detectChanges();
-    knopf('Rundgang starten').click();
+    knopf('Rundgang starten (1 Minute)').click();
     expect(rundgang.bandBeantworten).toHaveBeenCalledWith(true);
     knopf('Ausblenden').click();
     expect(rundgang.bandBeantworten).toHaveBeenCalledWith(false);

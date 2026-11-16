@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 
 import { FarbschemaService } from '../../../services/farbschema.service';
 import { HAND, SCHATTEN } from '../../marke/hand';
-import { normierteGuete, siegelFarbe, siegelText, siegelWinkel } from './siegel-zeichnung';
+import { normierteGuete, siegelFarbe, siegelRand, siegelText, siegelWinkel } from './siegel-zeichnung';
 
 /** Wie lange die Funken nach einem Aufstieg im DOM bleiben (ms), etwas länger als ihre Animation. */
 const FUNKEN_DAUER_MS = 900;
@@ -27,9 +27,9 @@ let naechsteId = 0;
  * Überschwingen und es sprühen kurz Funken; bei `prefers-reduced-motion` wechselt nur
  * die Farbe und der Winkel.
  *
- * Glanz (der Beitrag hat viel Wirkung) und Krone (Auszeichnung der Person) sind eigene
- * Abzeichen, keine Stufen der Güte: Sie können bei jeder Güte auftreten, auch bei „neu“
- * (vergeben in #351). Wer sie wem zeigen darf, entscheidet die einbindende Komponente.
+ * Glanz (der Beitrag hat viel Wirkung) ist ein eigenes Abzeichen, keine Stufe der Güte:
+ * Er kann bei jeder Güte auftreten, auch bei „neu“ (#351). Das Siegel beschreibt nur den
+ * Beitrag, nie die Person (Entscheidung 14.11.).
  *
  * Die Größe setzt die einbindende Komponente über `width` am Element (Standard 24 px).
  */
@@ -47,8 +47,6 @@ export class SiegelComponent implements OnChanges, OnDestroy {
   @Input() guete: number | null = null;
   /** Abzeichen: Der Beitrag hat viel Wirkung (#351). Unabhängig von der Güte. */
   @Input() glanz = false;
-  /** Abzeichen: Auszeichnung der Person (#351). Unabhängig von der Güte. */
-  @Input() krone = false;
 
   readonly HAND = HAND;
   readonly SCHATTEN = SCHATTEN;
@@ -72,8 +70,12 @@ export class SiegelComponent implements OnChanges, OnDestroy {
     return siegelFarbe(this.guete, this.farbschema.dunkel());
   }
 
+  get rand(): string {
+    return siegelRand(this.guete, this.farbschema.dunkel());
+  }
+
   get text(): string {
-    return siegelText(this.guete, this.glanz, this.krone);
+    return siegelText(this.guete, this.glanz);
   }
 
   ngOnChanges(changes: SimpleChanges): void {

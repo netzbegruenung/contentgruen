@@ -9,7 +9,7 @@ Drei Arten:
   fremde Einwuerfe ausformuliert, eigene Einwuerfe, die andere ausformuliert haben.
 - Weg: eine Wegmarke, das eigene Tun (erster Einwurf, erster Beitrag, der drei Tage
   steht, erster Kommentar zu einer Aussage). Wegmarken sieht nur die Person selbst;
-  sie zaehlen nicht fuer das Abzeichen am Namen und nicht fuer die Krone, damit die
+  sie zaehlen nicht fuer das Abzeichen am Namen, damit die
   Zahl dort weiter Anerkennung durch andere zeigt (docs/DSFA.md V22).
 
 Jeder Meilenstein hat einen sprechenden Namen (wofuer es ihn gibt), einen Untertitel
@@ -35,7 +35,7 @@ WIRKUNG = "wirkung"
 UNTERSTUETZUNG = "unterstuetzung"
 WEG = "weg"
 
-# Was fuer das Abzeichen am Namen und die Krone zaehlt (services/abzeichen_service.py).
+# Was fuer das Abzeichen am Namen zaehlt (services/abzeichen_service.py).
 ARTEN_FUERS_ABZEICHEN = frozenset({WIRKUNG, UNTERSTUETZUNG})
 
 # Nachweis der Fluent-Motive (public/meilensteine/FLUENT-EMOJI-LIZENZ.txt).
