@@ -39,6 +39,16 @@ describe('RundgangBandComponent', () => {
     expect(aside.getAttribute('aria-labelledby')).toBe(aside.querySelector('h2')!.id);
   });
 
+  it('zeigt ohne eigenes Bild den Wegweiser, nicht den Daumen des Siegels (16.11.)', () => {
+    band.set(MITMACHEN_ANGEBOT);
+    fixture.detectChanges();
+    const bild = el().querySelector('aside img')!;
+    expect(bild.getAttribute('src')).toBe('marke/wegweiser.svg');
+    expect(bild.getAttribute('alt')).toBe('');
+    expect(bild.classList).toContain('band-bild');
+    expect(bild.classList).not.toContain('symbol');
+  });
+
   it('ist kein Fenster: kein Dialog, kein Fokusfang', () => {
     band.set(MITMACHEN_ANGEBOT);
     fixture.detectChanges();
@@ -80,7 +90,7 @@ describe('RundgangBandComponent', () => {
       expect(el().querySelector('aside h2')?.textContent).toContain('Gut gesagt als App');
     });
 
-    it('zeigt das App-Symbol statt des Daumens', () => {
+    it('zeigt das App-Symbol statt des Wegweisers', () => {
       expect(el().querySelector('aside img')?.getAttribute('src')).toBe('marke/apple-touch-icon-180.png');
     });
 
