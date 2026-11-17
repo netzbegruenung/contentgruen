@@ -527,8 +527,21 @@ describe('BeitragskarteComponent', () => {
         zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute' })), { variante });
       }
 
-      it('setzt das Etikett weiss auf Tanne', () => {
+      // Designrunde 17.11., Variante A: In der vollen Karte eine kleine Zeile in Tanne ueber dem Titel
+      it('steht in der vollen Karte als kleine Zeile in Tanne, ohne Fuellung', () => {
         eigeneLeute();
+        const zeile = getComputedStyle(element('.karte-kopf .karte-angaben'));
+        const etikett = getComputedStyle(element('.karte-kopf .karte-eigene-leute'));
+
+        expect(zeile.color).toBe(TANNE);
+        expect(zeile.fontSize).toBe('11px');
+        expect(zeile.textTransform).toBe('uppercase');
+        expect(etikett.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+        expect(etikett.color).toBe(TANNE);
+      });
+
+      it('setzt das Etikett in der kompakten Karte weiss auf Tanne', () => {
+        eigeneLeute('kompakt');
         const etikett = getComputedStyle(element('.karte-eigene-leute'));
         const icon = getComputedStyle(element('.karte-eigene-leute .angabe-icon'));
 
@@ -557,16 +570,15 @@ describe('BeitragskarteComponent', () => {
         expect(element('.karte').classList).toContain('karte--eigene-leute');
       });
 
-      it('weist ueber dem Kopieren-Knopf darauf hin', () => {
+      // Designrunde 17.11.: Die Zeile ueber dem Titel sagt es schon, keine zweite Zeile im Fuss
+      it('steht als kleine Zeile ueber dem Titel, ohne doppelten Hinweis im Fuss', () => {
         eigeneLeute();
-        const hinweis = element('.karte-fuss .eigene-leute-hinweis');
+        const block = element('.titel-block');
 
-        expect(hinweis?.textContent?.trim()).toBe('Für die eigenen Leute – nicht für Kommentarspalten');
-        expect(hinweis.nextElementSibling?.tagName.toLowerCase()).toBe('app-karten-aktionen');
-        const stil = getComputedStyle(hinweis);
-        expect(stil.fontSize).toBe('12px');
-        expect(stil.textAlign).toBe('center');
-        expect(stil.color).toBe(TANNE);
+        expect(block.firstElementChild?.classList).toContain('karte-angaben');
+        expect(block.querySelector('.karte-angaben + .karte-titel')).not.toBeNull();
+        expect(element('.karte-inhalt .karte-angaben')).toBeNull();
+        expect(element('.karte-fuss')?.textContent).not.toContain('nicht für Kommentarspalten');
       });
 
       it('laesst Kommentare fuer die Kommentarspalte ohne Rand und ohne Hinweis', () => {
@@ -574,7 +586,7 @@ describe('BeitragskarteComponent', () => {
 
         expect(element('.karte').classList).not.toContain('karte--eigene-leute');
         expect(getComputedStyle(element('.karte')).borderLeftWidth).toBe('0px');
-        expect(element('.eigene-leute-hinweis')).toBeNull();
+        expect(element('.karte-eigene-leute')).toBeNull();
       });
     });
   });

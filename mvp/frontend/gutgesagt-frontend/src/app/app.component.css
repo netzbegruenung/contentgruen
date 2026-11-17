@@ -2,17 +2,25 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: var(--bg-main);
+    background-color: var(--aussen-grund, var(--bg-main)); /* Seitenfueller neben der Inhaltsspalte */
 }
 
 main {
     flex: 1;
-    background-color: var(--bg-card);
+    background-color: var(--seite-grund);
     max-width: 1400px;
     width: 100%;
     margin: 0 auto;
     overflow: hidden;
     min-height: 100vh;
+    /* Auf kurzen Seiten sitzt die Fusszeile unten statt mitten im Bild, ohne Leere
+       darunter (Designrunde 17.11.) */
+    display: flex;
+    flex-direction: column;
+}
+
+main > .main-content {
+    flex: 1 0 auto;
 }
 
 main * {
@@ -507,5 +515,5 @@ button.header-link {
 mat-sidenav-content {
     height: 100%;
     overflow-y: auto;
-    background-color: var(--bg-main);
+    background-color: var(--aussen-grund, var(--bg-main));
 }

@@ -67,6 +67,20 @@
     gap: 8px;
 }
 
+/* Dunkelmodus: Kasten bleibt Schiefer (--rundgang-gelb = --such-band), hervorgehoben wird
+   er gelb über die Band-Tokens wie das Such-Band (Wunsch Sebastian 17.11.). Auf #18212a:
+   Überschrift #e2e88a 12,5:1; Knopf: Schrift #121312 auf #e2e88a 14,3:1, Fläche zum
+   Kasten 12,5:1, Fokusring #4fc3f7 8,1:1. Der gesperrte Knopf bleibt gestrichelt wie bisher. */
+:host-context(html[data-theme='dark']) .rundgang-kasten h3 {
+    color: var(--band-akzent-schrift);
+}
+
+:host-context(html[data-theme='dark']) .rundgang-knopf.umriss.rundgang-starten {
+    background: var(--knopf-auf-band-grund);
+    color: var(--knopf-auf-band-schrift);
+    border-color: var(--knopf-auf-band-grund);
+}
+
 /* Selbst beitragen für Besucher: ausgegraut, aber lesbar (Schrift mit mind. 4,5:1 auf
    der Karte, hell wie dunkel); der Hinweis darunter in normaler Schrift */
 .rundgang-knopf.umriss.gesperrt {
@@ -104,6 +118,37 @@
     font-size: 24px;
     line-height: 1.15;
     margin: 24px 0 8px;
+}
+
+/* Unterpunkte von „Beitragen“ (Beitragstypen, Gut schreiben) eine Stufe darunter */
+.hilfe-inhalt h4 {
+    color: var(--primary-dark);
+    font-size: 19px;
+    line-height: 1.2;
+    margin: 18px 0 6px;
+}
+
+/* Links aus der Hilfe auf die Über-Seite: eigene Zeile, 44 px Zielgröße (Touch) */
+.hilfe-siegel-link,
+.hilfe-technik-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    /* Mit Klasse greift die globale Regel nicht: im Dunkeln unterstrichen wie andere Links (#588) */
+    text-decoration: var(--link-unterstrich);
+}
+
+.hilfe-feedback-knopf mat-icon {
+    margin-right: 8px;
+}
+
+.hilfe-fragen dt {
+    font-weight: 600;
+    margin-top: 12px;
+}
+
+.hilfe-fragen dd {
+    margin: 4px 0 0;
 }
 
 @media (max-width: 599px) {

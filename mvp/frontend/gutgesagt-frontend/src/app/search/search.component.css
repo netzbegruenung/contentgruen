@@ -162,3 +162,43 @@
     background-color: var(--input-background) !important;
     box-shadow: none !important;
 }
+
+/* Startseite (ohne compactMode): Suchen ist der eine Hauptknopf, so hoch wie das Feld
+   (56 px, mobil 52 px), Schrift eine Stufe groesser (Designrunde 17.11.). Ueber den
+   Treffern bleibt der Knopf, wie er ist. */
+.search-container:not(.compact-mode) .search-button {
+    height: 56px;
+    font-size: 1.25rem;
+}
+
+@media (max-width: 768px) {
+    .search-container:not(.compact-mode) .search-button {
+        height: 52px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-container:not(.compact-mode) .search-button {
+        font-size: 1.05rem;
+    }
+}
+
+/* „Ausprobieren“ im Feld: kurz aufleuchten, wenn ein Hot Take fertig getippt ist */
+.ausprobieren-knopf {
+    margin-right: 6px;
+    white-space: nowrap;
+    animation: ausprobieren-auf 0.6s ease-out;
+}
+
+@keyframes ausprobieren-auf {
+    0% { opacity: 0; transform: scale(0.9); }
+    60% { opacity: 1; transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ausprobieren-knopf {
+        animation: none;
+    }
+}

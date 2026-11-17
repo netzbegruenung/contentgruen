@@ -13,7 +13,11 @@ describe('AboutTeaserComponent', () => {
     fixture.detectChanges();
     const teaser: HTMLElement = fixture.nativeElement;
 
-    expect(teaser.querySelector('.teaser-text')!.textContent).toContain('Antworten, die Unentschiedene mitnehmen');
+    // Designrunde 17.11.: erst die Erklaerung, dann der Knopf, darunter das Zitat mit Bild
+    expect(teaser.querySelector('.teaser-text')!.textContent).toContain('sammelt deshalb gute Antworten');
     expect(teaser.querySelector('a')!.getAttribute('href')).toBe('/about');
+    expect(teaser.querySelector('.cta-container')!.nextElementSibling!.classList).toContain('zitat');
+    expect(teaser.querySelector('.zitat blockquote')!.textContent).toContain('Antworten, die Unentschiedene mitnehmen');
+    expect(teaser.querySelector('.zitat img')!.getAttribute('src')).toBe('/profilbild-2026.jpg');
   });
 });

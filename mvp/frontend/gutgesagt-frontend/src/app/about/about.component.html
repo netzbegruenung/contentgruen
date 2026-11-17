@@ -6,17 +6,16 @@
     <p class="subtitle">Antworten, die Unentschiedene mitnehmen. Gesammelt und verbessert von vielen.</p>
   </section>
 
-  <!-- Wofuer -->
+  <!-- Wofuer: warum es Gut gesagt gibt; wie man es bedient, steht in der Hilfe (Designrunde 17.11.) -->
   <section class="content-section zweck">
     <h2>Wofür es Gut gesagt gibt</h2>
     <p>
       Unter einem Post steht eine Aussage, und du willst gut darauf antworten. Mit Gut gesagt
-      findest du schnell eine passende Antwort, kopierst sie und postest sie. Du suchst mit
-      einem ganzen Satz, so wie die Aussage gefallen ist.
+      findest du schnell eine passende Antwort, kopierst sie und postest sie.
     </p>
-    <p>
-      Die Antworten schreiben viele Menschen gemeinsam. Andere verbessern sie, bewerten sie und
-      nutzen sie. So wird der Bestand mit jeder Person besser, die mitmacht.
+    <p class="so-gehts">
+      Wie du suchst, kopierst und beiträgst, zeigt dir die Hilfe.
+      <button type="button" class="so-gehts-link" (click)="openHelpDialog()">So geht’s</button>
     </p>
   </section>
 
@@ -29,15 +28,18 @@
       Unentschiedenen sind die Antworten hier gedacht: kurz, freundlich, in Alltagswörtern. Sie
       fangen bei dem an, was uns verbindet, und sagen, wofür wir sind.
     </p>
-    <p class="nicht-jede-aussage">{{ nichtJedeAussage }}</p>
   </section>
 
-  <!-- Mitmachen -->
-  <section class="content-section mitmachen">
-    <h2>So machst du mit</h2>
+  <!-- Wie Qualitaet entsteht: viele schreiben, verbessern, bewerten; Siegel; keine Linie -->
+  <section class="content-section qualitaet">
+    <h2>Wie Qualität entsteht</h2>
+    <p>
+      Die Antworten schreiben viele Menschen gemeinsam. Andere verbessern sie, bewerten sie und
+      nutzen sie. So wird der Bestand mit jeder Person besser, die mitmacht.
+    </p>
     <ul>
       <li>
-        <strong>Suchen und nutzen:</strong> Suchen und lesen kann jede Person, auch ohne
+        <strong>Nutzen:</strong> Suchen und lesen kann jede Person, auch ohne
         Anmeldung. Kopiert jemand einen fremden Beitrag, zählt das als Nutzung und zeigt, dass der
         Beitrag hilft.
       </li>
@@ -65,14 +67,8 @@
         </ul>
       </li>
       <li>
-        <strong>Neue Beiträge in drei Schritten:</strong> Jeder Schritt kann von einer anderen
-        Person kommen.
-        <ol class="kette">
-          <li><strong>Einwerfen:</strong> Du legst ein Fundstück in den Fangkorb: einen Link, einen Hinweis oder beides.</li>
-          <li><strong>Destillieren:</strong> Jemand fasst das Argument darin in einem Satz.</li>
-          <li><strong>Ausformulieren:</strong> Jemand macht daraus einen fertigen Beitrag.</li>
-        </ol>
-        Weißt du schon, was du sagen willst, verfasst du einen Beitrag auch direkt.
+        <strong>Gemeinsam schreiben:</strong> Aus einem Fundstück wird über einen Satz ein
+        fertiger Beitrag. Jeden Schritt kann eine andere Person machen.
       </li>
     </ul>
     <p>
@@ -80,9 +76,24 @@
     </p>
     <p class="startbestand">
       Den Anfang machen Menschen: Zum Start schreibt ein Gründungsteam die ersten Beiträge zu
-      den häufigsten Aussagen selbst. {{ keineGenerativeKi }}
+      den häufigsten Aussagen selbst.
       Alle Zahlen, die du siehst, sind echt: Jeder Beitrag beginnt bei 0 Stimmen und 0 Nutzungen.
     </p>
+
+    <div class="linie">
+      <h3>Keine offizielle Linie</h3>
+      <p>
+        Gut gesagt gibt keine Linie vor. Welche Antwort oben steht, entscheidet keine Redaktion,
+        sondern wie gut sie zu deiner Suche passt. Stimmen und Nutzung zeigen dazu, was gut
+        ankommt. Offizielles Material, etwa von Parteigliederungen, erscheint nur als Herkunft an
+        einem Beitrag.
+      </p>
+      <p>
+        Beiträge sind sofort sichtbar. Ist einer problematisch oder sachlich falsch, meldest du
+        ihn. Admins sehen sich die Meldung an und sperren den Beitrag, wenn nötig. Von selbst
+        verschwindet nichts.
+      </p>
+    </div>
   </section>
 
   <!-- CC0 -->
@@ -96,20 +107,31 @@
     </p>
   </section>
 
-  <!-- Keine offizielle Linie -->
-  <section class="content-section linie">
-    <h2>Keine offizielle Linie</h2>
-    <p>
-      Gut gesagt gibt keine Linie vor. Welche Antwort oben steht, entscheidet keine Redaktion,
-      sondern wie gut sie zu deiner Suche passt. Stimmen und Nutzung zeigen dazu, was gut
-      ankommt. Offizielles Material, etwa von Parteigliederungen, erscheint nur als Herkunft an
-      einem Beitrag.
-    </p>
-    <p>
-      Beiträge sind sofort sichtbar. Ist einer problematisch oder sachlich falsch, meldest du
-      ihn. Admins sehen sich die Meldung an und sperren den Beitrag, wenn nötig. Von selbst
-      verschwindet nichts.
-    </p>
+  <!-- Technik: auch der technische Teil aus „Nutzt Gut gesagt KI?“ der Hilfe; die Hilfe verlinkt #technik -->
+  <section class="content-section technik" id="technik">
+    <h2>Die Technik dahinter</h2>
+    <ul>
+      <li class="technik-suche">
+        <strong>Suche nach Bedeutung:</strong> Gut gesagt vergleicht, was ein Satz meint, nicht
+        nur seine Wörter. Dieselbe Aussage in anderen Worten führt zu denselben Antworten. Die
+        Suche vergleicht deine Eingabe mit den Aussagen, die bei Gut gesagt schon gespeichert sind,
+        und zeigt die Beiträge, die darauf antworten. Je mehr Mitwirkende beitragen und bewerten,
+        desto besser werden die Treffer.
+      </li>
+      <li class="technik-ki">
+        <strong>Keine generative KI:</strong> {{ keineGenerativeKi }} {{ sucheMitSprachmodellen }}
+      </li>
+      <li class="technik-modelle">
+        <strong>Offene Modelle auf eigener Infrastruktur:</strong> Ein Modell rechnet aus, was ein
+        Satz bedeutet (multilingual-e5-base). Zwei weitere prüfen, ob zwei Sätze dasselbe behaupten
+        oder sich widersprechen (mDeBERTa-v3 und XLM-RoBERTa-large, beide mehrsprachig). Gespeichert wird in
+        <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>. Das Gegenlesen
+        beim Schreiben arbeitet nach festen Regeln.
+      </li>
+      <li>
+        <strong>Offener Code:</strong> Gut gesagt ist Open Source unter der AGPL.
+      </li>
+    </ul>
   </section>
 
   <!-- Project History -->
@@ -147,7 +169,7 @@
     <h2>Der Mensch hinter Gut gesagt</h2>
     <div class="personal-intro">
       <div class="profile-image-container">
-        <img src="/profilbild_gruen_2024.jpg"
+        <img src="/profilbild-2026.jpg"
              alt="Sebastian Banach"
              class="profile-image">
       </div>
@@ -166,30 +188,6 @@
         </p>
       </div>
     </div>
-  </section>
-
-  <!-- Technology -->
-  <section class="content-section technik">
-    <h2>Die Technik dahinter</h2>
-    <ul>
-      <li>
-        <strong>Suche nach Bedeutung:</strong> Gut gesagt vergleicht, was ein Satz meint, nicht
-        nur seine Wörter. Dieselbe Aussage in anderen Worten führt zu denselben Antworten.
-      </li>
-      <li class="technik-ki">
-        <strong>Keine generative KI:</strong> {{ keineGenerativeKi }} {{ sucheMitSprachmodellen }}
-      </li>
-      <li class="technik-modelle">
-        <strong>Offene Modelle auf eigener Infrastruktur:</strong> Ein Modell rechnet aus, was ein
-        Satz bedeutet (multilingual-e5-base). Zwei weitere prüfen, ob zwei Sätze dasselbe behaupten
-        oder sich widersprechen (mDeBERTa-v3 und XLM-RoBERTa-large, beide mehrsprachig). Gespeichert wird in
-        <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>. Das Gegenlesen
-        beim Schreiben arbeitet nach festen Regeln.
-      </li>
-      <li>
-        <strong>Offener Code:</strong> Gut gesagt ist Open Source unter der AGPL.
-      </li>
-    </ul>
   </section>
 
   <!-- Community -->
@@ -223,12 +221,6 @@
          rel="noopener">
         <mat-icon>chat</mat-icon>
         Kontakt aufnehmen
-      </a>
-      <a mat-raised-button
-         routerLink="/contribute"
-         class="secondary-button">
-        <mat-icon>add_circle</mat-icon>
-        Beitragen
       </a>
       <button mat-raised-button
               (click)="openHelpDialog()"

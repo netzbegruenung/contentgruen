@@ -64,8 +64,12 @@
         <!-- Der Titel fuehrt zur Beitragsseite (#640, R48), ausser auf ihr selbst und in der Vorschau -->
         <ng-template #titelInhalt><a *ngIf="titelVerlinkt; else titelText" class="titel-link"
             [routerLink]="beitragAdresse">{{ titelAnzeige }}</a><ng-template #titelText>{{ titelAnzeige }}</ng-template></ng-template>
-        <h3 class="karte-titel" *ngIf="!istKompakt && titelEbene === 3"><ng-container *ngTemplateOutlet="titelInhalt"></ng-container></h3>
-        <h4 class="karte-titel" *ngIf="!istKompakt && titelEbene === 4"><ng-container *ngTemplateOutlet="titelInhalt"></ng-container></h4>
+        <!-- Zweck und Stil als kleine Zeile ueber dem Titel (Designrunde 17.11., Variante A) -->
+        <div class="titel-block" *ngIf="!istKompakt">
+            <ng-container *ngIf="istVoll"><ng-container *ngTemplateOutlet="angaben; context: { antippbar: true }"></ng-container></ng-container>
+            <h3 class="karte-titel" *ngIf="titelEbene === 3"><ng-container *ngTemplateOutlet="titelInhalt"></ng-container></h3>
+            <h4 class="karte-titel" *ngIf="titelEbene === 4"><ng-container *ngTemplateOutlet="titelInhalt"></ng-container></h4>
+        </div>
 
         <div class="karte-badges" *ngIf="!istKompakt && !istKopf">
             <!-- Siegel (#427): zeigt die Guete, kein Knopf zum Abstimmen; Antippen erklaert sie -->
@@ -209,7 +213,6 @@
 
     <ng-container *ngIf="istVoll">
         <div class="karte-inhalt">
-            <ng-container *ngTemplateOutlet="angaben; context: { antippbar: true }"></ng-container>
 
             <!-- Reiter mit Zeichenzahl, darunter die Marke wie im Formular (#641); bei nur einer Fassung keine Reiter -->
             <ng-container *ngIf="hatKurzOderLang">
@@ -288,8 +291,6 @@
         </div>
 
         <footer class="karte-fuss">
-            <!-- Vor dem Kopieren: nicht fuer Kommentarspalten gedacht (#357, Variante D) -->
-            <p class="eigene-leute-hinweis" *ngIf="eigeneLeuteAnzeige">Für die eigenen Leute – nicht für Kommentarspalten</p>
             <app-karten-aktionen
                 [inhaltId]="daten.id"
                 [typ]="daten.typ"

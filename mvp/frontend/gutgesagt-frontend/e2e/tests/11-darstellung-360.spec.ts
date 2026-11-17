@@ -57,10 +57,13 @@ for (const modus of ['light', 'dark'] as const) {
       expect(kontrast(vorne, hinten)).toBeGreaterThanOrEqual(4.5);
     });
 
-    test('Beispiel-Link auf dem gelben Band ist lesbar (AA)', async ({ page }) => {
+    // Designrunde 17.11.: „Ausprobieren“ im Suchfeld statt der Beispielzeile; bei reduzierter
+    // Bewegung steht das Beispiel sofort da, der Knopf daneben
+    test('Ausprobieren-Knopf im Suchfeld ist lesbar (AA)', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto('/search');
-      await expect(page.locator('.beispiel-link')).toBeVisible();
-      const { vorne, hinten } = await farben(page, '.beispiel-link');
+      await expect(page.locator('.ausprobieren-knopf')).toBeVisible();
+      const { vorne, hinten } = await farben(page, '.ausprobieren-knopf');
       expect(kontrast(vorne, hinten)).toBeGreaterThanOrEqual(4.5);
     });
 

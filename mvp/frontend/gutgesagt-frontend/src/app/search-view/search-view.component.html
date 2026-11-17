@@ -13,13 +13,9 @@
 <section class="such-band">
     <div class="such-band-inhalt">
         <!-- Ohne Erklaerzeile darueber: Die Beschriftung des Feldes sagt, was hinein gehoert (Startseite 16.11.) -->
-        <app-search class="start-suche" feldId="suche" [autofokus]="autofokus"></app-search>
-
-        <p class="beispiel-zeile">
-            Beispiel probieren:
-            <a (click)="performExampleSearch()" (keyup.enter)="performExampleSearch()"
-               tabindex="0" role="button" class="beispiel-link">„{{ startbeispiel }}“</a>
-        </p>
+        <!-- Statt „Beispiel probieren“: Das Feld tippt Hot Takes vor (Designrunde 17.11.);
+             das Startbeispiel zeigt auch der Rundgang -->
+        <app-search class="start-suche" feldId="suche" [autofokus]="autofokus" [beispielAnimation]="true"></app-search>
     </div>
 </section>
 

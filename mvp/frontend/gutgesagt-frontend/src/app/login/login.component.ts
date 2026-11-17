@@ -21,7 +21,7 @@ const ANMELDEFEHLER = 'anmeldung';
 export class LoginComponent {
     loginForm: FormGroup;
     errorMessage: string | null = null;
-    /** Dieselbe Adresse wie unter "So bekommst du ein Konto" auf /login (#645). */
+    /** Kontaktadresse von Gut gesagt aus der Organisationskonstante (#645). */
     readonly gutgesagtMail = ORGANISATION.gutgesagtMail;
     readonly passwortVergessenLink =
         `mailto:${ORGANISATION.gutgesagtMail}?subject=${encodeURIComponent('Passwort vergessen')}`;

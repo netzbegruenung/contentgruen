@@ -1,12 +1,23 @@
 <div class="search-container" [class.compact-mode]="compactMode">
     <form (ngSubmit)="onSearch()" class="search-form" [class.search-form-compact]="compactMode">
-        <mat-form-field appearance="outline" class="search-field">
+        <mat-form-field appearance="outline" class="search-field"
+                        [floatLabel]="beispielAnimation && beispielText ? 'always' : 'auto'">
             <!-- Ohne Pflichtstern: Auf einer Seite mit nur einem Feld war er Formularsprache (#644) -->
             <mat-label>
                 <span class="label">{{ feldName }}</span>
             </mat-label>
             <input matInput #feld [id]="feldId" [(ngModel)]="searchQuery" name="searchQuery"
-                   [attr.aria-describedby]="hinweisId">
+                   [attr.aria-describedby]="hinweisId"
+                   [placeholder]="beispielAnimation && !searchQuery ? beispielText : ''"
+                   (pointerdown)="beispielBeenden()" (input)="beispielBeenden()" (paste)="beispielBeenden()">
+            <!-- Hot Take ausprobieren: erscheint, wenn ein Beispiel fertig getippt ist (Designrunde 17.11.) -->
+            <button mat-stroked-button matSuffix type="button" class="ausprobieren-knopf"
+                    *ngIf="beispielAnimation && beispielFertig && beispielText && !searchQuery"
+                    [attr.aria-label]="'Ausprobieren: ' + beispielText"
+                    (focus)="beispielAnhalten()"
+                    (click)="beispielAusprobieren()">
+                Ausprobieren
+            </button>
             <!-- Search button as suffix icon on mobile in compact mode -->
             <button mat-icon-button matSuffix type="submit" class="mobile-search-button"
                     *ngIf="compactMode"
