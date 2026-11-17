@@ -134,9 +134,16 @@ h4.karte-titel {
   }
 }
 
+// Drei Titelzeilen Platz reserviert der Kopf, nicht der Titel: So steht ein ein- oder
+// zweizeiliger Titel senkrecht mittig im Kopf (Designrunde 17.11.). 19 px Titelschrift.
 @media (min-width: 600px) {
+  .karte--voll .karte-kopf {
+    min-height: calc(3 * 1.3 * 19px + 2 * var(--spacing-md));
+    box-sizing: border-box;
+  }
+
   .karte--voll .karte-titel {
-    min-height: calc(3 * 1.3em);
+    min-height: 0;
   }
 }
 
