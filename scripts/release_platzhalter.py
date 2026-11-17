@@ -1,4 +1,6 @@
-"""Platzhalter, die vor einem Release-Tag ersetzt sein muessen (docs/DEPLOYMENT.md, Releases).
+"""Platzhalter, die vor einem Release-Tag ersetzt sein muessen.
+
+Beschrieben in docs/CI.md, "Placeholders before a release".
 
 Die Datenschutzerklaerung und das Loeschkonzept nennen fuer Widerrufe vor dem Einspielen der
 Loeschauftraege ein Datum, das erst beim Release feststeht. Bis dahin steht dort
@@ -35,7 +37,10 @@ def fundstellen(wurzel=WURZEL, dateien=DATEIEN):
 def main():
     treffer = fundstellen()
     for datei, nummer in treffer:
-        print(f"{datei}:{nummer}: {PLATZHALTER} noch nicht ersetzt (docs/DEPLOYMENT.md, Releases)")
+        print(
+            f"{datei}:{nummer}: {PLATZHALTER} noch nicht ersetzt "
+            "(docs/CI.md, Placeholders before a release)"
+        )
     if treffer:
         return 1
     print("Keine offenen Platzhalter.")
