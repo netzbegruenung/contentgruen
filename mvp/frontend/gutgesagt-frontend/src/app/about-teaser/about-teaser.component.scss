@@ -35,8 +35,8 @@
   }
 
   .profile-image {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     object-fit: cover;
   }
@@ -58,8 +58,8 @@
 
   .cta-container {
     display: flex;
-    justify-content: center;
-    margin-top: 1.5rem;
+    justify-content: flex-start;
+    margin-top: 1rem;
 
     a {
       display: inline-flex;
@@ -78,6 +78,39 @@
         width: 100%;
         justify-content: center;
       }
+    }
+  }
+}
+
+// Zitat: als Zitat erkennbar, mit Bild und Name darunter (Designrunde 17.11.)
+.zitat {
+  margin: var(--spacing-xl) 0 0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-left: 4px solid var(--akzent-klee);
+  background: var(--willkommen-grund, var(--bg-card));
+  border-radius: 0 var(--border-radius-medium) var(--border-radius-medium) 0;
+
+  blockquote {
+    position: relative;
+    margin: 0 0 var(--spacing-md);
+    padding-left: 2rem;
+
+    &::before {
+      content: '“';
+      position: absolute;
+      left: 0;
+      top: -0.2rem;
+      font-size: 3rem;
+      line-height: 1;
+      color: var(--akzent-klee);
+    }
+
+    p {
+      margin: 0;
+      font-size: 1.1rem;
+      font-style: italic;
+      line-height: 1.5;
+      color: var(--text-primary);
     }
   }
 }
