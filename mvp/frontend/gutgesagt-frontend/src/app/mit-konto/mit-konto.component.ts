@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs/operators';
@@ -13,6 +14,10 @@ export const ANMELDEN_KNOPF = 'Mit Netzbegrünung-Konto anmelden';
 /** Ist die Netzbegrünung-Anmeldung abgeschaltet (Entwicklung), führt der Knopf zur Auswahl. */
 export const ANMELDEN_KNOPF_OHNE_KEYCLOAK = 'Anmelden';
 export const WEITER_SUCHEN = 'Erst mal weiter suchen';
+/** Etikett auf jedem Vorschaurahmen; steht auch vor dem Alternativtext. */
+export const VORSCHAU_ETIKETT = 'Vorschau';
+/** Über den Bildern: Es sind Bilder der angemeldeten Oberfläche, nicht die Seite selbst. */
+export const VORSCHAU_SATZ = 'Eine Vorschau: So sieht Gut gesagt aus, wenn du angemeldet bist.';
 
 interface AuthModes {
   keycloakEnabled: boolean;
@@ -35,7 +40,7 @@ interface AuthModes {
 @Component({
   selector: 'app-mit-konto',
   standalone: true,
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink, MatIconModule, NgTemplateOutlet],
   templateUrl: './mit-konto.component.html',
   styleUrls: ['./mit-konto.component.css'],
 })
@@ -46,6 +51,8 @@ export class MitKontoComponent {
 
   readonly schritte = VORSCHAU_SCHRITTE;
   readonly weiterSuchen = WEITER_SUCHEN;
+  readonly etikett = VORSCHAU_ETIKETT;
+  readonly vorschauSatz = VORSCHAU_SATZ;
 
   private readonly params = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
   readonly ziel = computed(() => vorschauZiel(this.params().get(ZIEL_PARAM)));

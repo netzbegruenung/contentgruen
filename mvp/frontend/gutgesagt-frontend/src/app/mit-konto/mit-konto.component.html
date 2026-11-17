@@ -1,62 +1,92 @@
-<!-- Vorschau fuer Besucher (Entscheidung 17.11.): Uebersicht oder Rundgang aus denselben Schritten -->
+<!-- Vorschau fuer Besucher (Entscheidung 17.11.): Uebersicht oder Rundgang aus denselben Schritten.
+     Als Tour erkennbar (Feedback Sebastian 17.11.): Flaeche wie das Willkommen mit Wegweiser,
+     jedes Bild in einem Vorschaurahmen mit Etikett, damit es nicht wie die Seite selbst wirkt. -->
+<ng-template #rahmen let-s>
+    <figure class="mk-rahmen">
+        <div class="mk-rahmen-leiste" aria-hidden="true">
+            <span class="mk-etikett">{{ etikett }}</span>
+            <span class="mk-rahmen-punkte"><span></span><span></span><span></span></span>
+        </div>
+        <img class="mk-bild" [src]="s.bild" [alt]="etikett + ': ' + s.alt" [width]="s.breite" [height]="s.hoehe"
+             draggable="false" decoding="async">
+    </figure>
+</ng-template>
+
 <div class="mit-konto">
-    @if (!rundgang()) {
-        <h2 class="mk-titel" id="mk-titel">Das erwartet dich mit Konto</h2>
-        <p class="mk-einleitung">Suchen und kopieren geht ohne Konto. Mit Konto machst du selbst mit.</p>
+    <section class="mk-band" aria-labelledby="mk-titel">
+        <div class="mk-band-kopf">
+            <img class="mk-wegweiser" src="marke/wegweiser.svg" alt="" width="48" height="48">
+            <div>
+                @if (!rundgang()) {
+                    <h2 class="mk-titel" id="mk-titel">Das erwartet dich mit Konto</h2>
+                    <p class="mk-einleitung">Suchen und kopieren geht ohne Konto. Mit Konto machst du selbst mit.</p>
+                } @else {
+                    <!-- Der Kopf heisst schon "Selbst beitragen" -->
+                    <h2 class="mk-titel" id="mk-titel">So machst du mit Konto mit</h2>
+                }
+            </div>
+        </div>
 
-        <ol class="mk-schritte" aria-labelledby="mk-titel">
-            @for (s of schritte; track s.titel; let i = $index) {
-                <li class="mk-schritt">
-                    <div class="mk-schritt-text">
-                        <span class="mk-nummer" aria-hidden="true">{{ i + 1 }}</span>
-                        <div>
-                            <h3 class="mk-schritt-titel">{{ s.titel }}</h3>
-                            <p class="mk-schritt-satz">{{ s.satz }}</p>
+        <p class="mk-vorschau-satz">{{ vorschauSatz }}</p>
+
+        @if (!rundgang()) {
+            <ol class="mk-schritte">
+                @for (s of schritte; track s.titel; let i = $index) {
+                    <li class="mk-schritt">
+                        <div class="mk-schritt-text">
+                            <span class="mk-nummer" aria-hidden="true">{{ i + 1 }}</span>
+                            <div>
+                                <h3 class="mk-schritt-titel">{{ s.titel }}</h3>
+                                <p class="mk-schritt-satz">{{ s.satz }}</p>
+                            </div>
                         </div>
-                    </div>
-                    <img class="mk-bild" [src]="s.bild" [alt]="s.alt" [width]="s.breite" [height]="s.hoehe"
-                         loading="lazy" decoding="async">
-                </li>
-            }
-        </ol>
-    } @else {
-        <!-- Der Kopf heisst schon "Selbst beitragen" -->
-        <h2 class="mk-titel mk-titel-rundgang" id="mk-titel">So machst du mit Konto mit</h2>
+                        <ng-container *ngTemplateOutlet="rahmen; context: { $implicit: s }"></ng-container>
+                    </li>
+                }
+            </ol>
+        } @else {
+            <div class="mk-geschichte">
+                <!-- Fortschritt: Punkte fuers Auge, der Text sagt dasselbe -->
+                <div class="mk-fortschritt" aria-hidden="true">
+                    <span class="mk-punkte">
+                        @for (s of schritte; track s.titel; let i = $index) {
+                            <span class="mk-punkt" [class.aktiv]="i === index()"></span>
+                        }
+                    </span>
+                    <span class="mk-zaehler">Schritt {{ index() + 1 }} von {{ schritte.length }}</span>
+                </div>
+                <!-- Fokusziel nach Weiter/Zurueck: Titel mit Zaehler im Namen -->
+                <h3 class="mk-schritt-titel" #schrittTitel tabindex="-1">
+                    <span class="visually-hidden">Schritt {{ index() + 1 }} von {{ schritte.length }}: </span>{{ schritt().titel }}
+                </h3>
+                <p class="mk-schritt-satz">{{ schritt().satz }}</p>
+                <ng-container *ngTemplateOutlet="rahmen; context: { $implicit: schritt() }"></ng-container>
+            </div>
 
-        <figure class="mk-geschichte">
-            <p class="mk-zaehler" aria-hidden="true">Bild {{ index() + 1 }} von {{ schritte.length }}</p>
-            <!-- Fokusziel nach Weiter/Zurueck: Titel mit Zaehler im Namen -->
-            <h3 class="mk-schritt-titel" #schrittTitel tabindex="-1">
-                <span class="visually-hidden">Bild {{ index() + 1 }} von {{ schritte.length }}: </span>{{ schritt().titel }}
-            </h3>
-            <p class="mk-schritt-satz">{{ schritt().satz }}</p>
-            <img class="mk-bild" [src]="schritt().bild" [alt]="schritt().alt"
-                 [width]="schritt().breite" [height]="schritt().hoehe" decoding="async">
-        </figure>
+            <div class="mk-blaettern">
+                @if (index() > 0) {
+                    <button type="button" class="mk-knopf mk-zweit mk-zurueck" (click)="zurueck()">
+                        <mat-icon aria-hidden="true">arrow_back</mat-icon> Zurück
+                    </button>
+                }
+                @if (!letzter()) {
+                    <button type="button" class="mk-knopf mk-voll mk-weiter" (click)="weiter()">
+                        Weiter <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                    </button>
+                }
+            </div>
+        }
 
-        <div class="mk-blaettern">
-            @if (index() > 0) {
-                <button type="button" class="mk-knopf mk-zweit mk-zurueck" (click)="zurueck()">
-                    <mat-icon aria-hidden="true">arrow_back</mat-icon> Zurück
+        @if (!rundgang() || letzter()) {
+            <div class="mk-aktionen">
+                <button type="button" class="mk-knopf mk-voll mk-anmelden" (click)="anmelden()">
+                    <mat-icon aria-hidden="true">vpn_key</mat-icon> {{ anmeldenText() }}
                 </button>
-            }
-            @if (!letzter()) {
-                <button type="button" class="mk-knopf mk-voll mk-weiter" (click)="weiter()">
-                    Weiter <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-                </button>
-            }
-        </div>
-    }
-
-    @if (!rundgang() || letzter()) {
-        <div class="mk-aktionen">
-            <button type="button" class="mk-knopf mk-voll mk-anmelden" (click)="anmelden()">
-                <mat-icon aria-hidden="true">vpn_key</mat-icon> {{ anmeldenText() }}
-            </button>
-            <a class="mk-weiter-suchen" routerLink="/search">{{ weiterSuchen }}</a>
-        </div>
-        <p class="mk-konto-weg">
-            <a routerLink="/login" [queryParams]="{ returnUrl: ziel() }" fragment="noch-kein-konto">Noch kein Konto? So kommst du zu einem.</a>
-        </p>
-    }
+                <a class="mk-weiter-suchen" routerLink="/search">{{ weiterSuchen }}</a>
+            </div>
+            <p class="mk-konto-weg">
+                <a routerLink="/login" [queryParams]="{ returnUrl: ziel() }" fragment="noch-kein-konto">Noch kein Konto? So kommst du zu einem.</a>
+            </p>
+        }
+    </section>
 </div>

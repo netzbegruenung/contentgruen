@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
-import { ANMELDEN_KNOPF, ANMELDEN_KNOPF_OHNE_KEYCLOAK, MitKontoComponent, WEITER_SUCHEN } from './mit-konto.component';
+import { ANMELDEN_KNOPF, ANMELDEN_KNOPF_OHNE_KEYCLOAK, MitKontoComponent, VORSCHAU_ETIKETT, VORSCHAU_SATZ, WEITER_SUCHEN } from './mit-konto.component';
 import { VORSCHAU_SCHRITTE } from './vorschau-schritte';
 import { RUECKKEHRZIEL_SCHLUESSEL } from '../login/rueckkehrziel';
 
@@ -52,7 +52,21 @@ describe('MitKontoComponent', () => {
         expect(text(schritte[i].querySelector('.mk-schritt-satz'))).toBe(s.satz);
         const bild = schritte[i].querySelector('img') as HTMLImageElement;
         expect(bild.getAttribute('src')).toBe(s.bild);
-        expect(bild.alt).toBe(s.alt);
+        expect(bild.alt).toBe(`Vorschau: ${s.alt}`);
+      });
+    });
+
+    it('zeigt sich als Tour: Wegweiser, Vorschau-Satz und jedes Bild im Rahmen mit Etikett', () => {
+      const seite = starten({ ziel: '/einwerfen' });
+      expect(seite.querySelector('.mk-band .mk-wegweiser')).not.toBeNull();
+      expect(text(seite.querySelector('.mk-vorschau-satz'))).toBe(VORSCHAU_SATZ);
+      const rahmen = seite.querySelectorAll('.mk-rahmen');
+      expect(rahmen.length).toBe(3);
+      rahmen.forEach((r) => {
+        expect(text(r.querySelector('.mk-etikett'))).toBe(VORSCHAU_ETIKETT);
+        const bild = r.querySelector('img') as HTMLImageElement;
+        expect(bild.closest('a, button')).toBeNull();
+        expect(bild.getAttribute('draggable')).toBe('false');
       });
     });
 
@@ -96,9 +110,12 @@ describe('MitKontoComponent', () => {
       const seite = starten({ ansicht: 'rundgang', ziel: '/contribute' });
       expect(seite.querySelectorAll('.mk-schritt').length).toBe(0);
       VORSCHAU_SCHRITTE.forEach((s, i) => {
-        expect(text(seite.querySelector('.mk-geschichte .mk-schritt-titel'))).toBe(`Bild ${i + 1} von 3: ${s.titel}`);
+        expect(text(seite.querySelector('.mk-geschichte .mk-schritt-titel'))).toBe(`Schritt ${i + 1} von 3: ${s.titel}`);
         expect(text(seite.querySelector('.mk-geschichte .mk-schritt-satz'))).toBe(s.satz);
-        expect((seite.querySelector('.mk-geschichte img') as HTMLImageElement).alt).toBe(s.alt);
+        expect((seite.querySelector('.mk-geschichte img') as HTMLImageElement).alt).toBe(`Vorschau: ${s.alt}`);
+        expect(text(seite.querySelector('.mk-zaehler'))).toBe(`Schritt ${i + 1} von 3`);
+        const punkte = Array.from(seite.querySelectorAll('.mk-punkt'));
+        expect(punkte.map((p) => p.classList.contains('aktiv'))).toEqual([0, 1, 2].map((j) => j === i));
         expect(!!seite.querySelector('.mk-zurueck')).toBe(i > 0);
         const weiter = seite.querySelector('.mk-weiter') as HTMLButtonElement | null;
         if (i < 2) {
