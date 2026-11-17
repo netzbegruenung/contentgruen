@@ -438,8 +438,8 @@ html[data-theme='dark'] {
     --knopf-auf-band-schrift: #121312;
     --band-akzent-schrift: #e2e88a;
     --knopf-zweit-grund: transparent;
-    --knopf-zweit-schrift: #e2e88a;
-    --knopf-zweit-rand: 1px solid #e2e88a;
+    --knopf-zweit-schrift: var(--band-akzent-schrift);
+    --knopf-zweit-rand: 1px solid var(--band-akzent-schrift);
 
     // Material-Flaechen auf die eigenen Grautoene statt Materials #424242/#303030
     --mat-app-background-color: var(--bg-main);
