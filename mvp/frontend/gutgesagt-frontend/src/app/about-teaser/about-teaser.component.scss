@@ -114,3 +114,38 @@
     }
   }
 }
+
+// Zweispaltig: Zitat links, Bild und Name rechts; schmal untereinander (Designrunde 17.11.)
+.zitat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-lg);
+
+  blockquote {
+    margin: 0;
+  }
+
+  .profil {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+  }
+
+  .profile-info {
+    align-items: center;
+  }
+
+  @media (max-width: 599px) {
+    grid-template-columns: 1fr;
+
+    .profil {
+      flex-direction: row;
+      text-align: left;
+    }
+
+    .profile-info {
+      align-items: flex-start;
+    }
+  }
+}
