@@ -23,7 +23,7 @@
   -ms-overflow-style: none;
   gap: 24px;
   padding: 24px;
-  background: var(--bg-main);
+  background: var(--karussell-grund, var(--bg-main));
   border-radius: var(--border-radius-medium);
   box-shadow: var(--karussell-schatten);
   border: var(--karussell-rand);
