@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { FeedbackDialogComponent } from './feedback-dialog.component';
 import { environment } from '../../../environments/environment';
 
@@ -117,5 +117,30 @@ describe('FeedbackDialogComponent', () => {
 
     expect(dialogRef.close).toHaveBeenCalled();
     http.expectNone(URL);
+  });
+
+  it('ist ohne Vorbelegung leer', () => {
+    expect(fixture.componentInstance.text).toBe('');
+  });
+});
+
+describe('FeedbackDialogComponent mit Vorbelegung (Warteliste, Designrunde 17.11.)', () => {
+  it('belegt das Textfeld mit dem uebergebenen Text vor', async () => {
+    await TestBed.configureTestingModule({
+      imports: [FeedbackDialogComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideAnimations(),
+        { provide: MatDialogRef, useValue: jasmine.createSpyObj('MatDialogRef', ['close']) },
+        { provide: MAT_DIALOG_DATA, useValue: { text: 'Warteliste bitte' } },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(FeedbackDialogComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.text).toBe('Warteliste bitte');
+    expect(fixture.componentInstance.kannSenden).toBeTrue();
   });
 });

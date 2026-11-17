@@ -183,3 +183,22 @@
         font-size: 1.05rem;
     }
 }
+
+/* „Ausprobieren“ im Feld: kurz aufleuchten, wenn ein Hot Take fertig getippt ist */
+.ausprobieren-knopf {
+    margin-right: 6px;
+    white-space: nowrap;
+    animation: ausprobieren-auf 0.6s ease-out;
+}
+
+@keyframes ausprobieren-auf {
+    0% { opacity: 0; transform: scale(0.9); }
+    60% { opacity: 1; transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ausprobieren-knopf {
+        animation: none;
+    }
+}

@@ -336,7 +336,7 @@ html[data-theme='dark'] {
     // Gruen bleibt Knopf-Fuellung (Klee) und kleine Markierung (Grashalm).
     --primary-main: #ebebeb;
     --primary-dark: #f2f2f2;
-    --primary-fill: #008939;
+    --primary-fill: #0b7a40; // Schiefer: Klee eine Spur tiefer, blendet weniger (5,4:1 mit Weiss)
     --akzent-tanne: #8abd24;
     --akzent-klee: #8abd24;
     --linie-tanne: #7b817c;
@@ -403,16 +403,27 @@ html[data-theme='dark'] {
     --post-bg: #28201b;
     --post-bg-end: #302721;
     --statement-bg: #21282c;
-    --kartenliste-bg: var(--bg-main); // kein dunkles Loch unter den Karten
+    --kartenliste-bg: var(--aussen-grund); // Mulde unter den Karten wie die Seitenfueller, wie die Sandflaeche im Hellen (Sebastian 17.11.)
     --kartenliste-rand: 1px solid var(--border-color);
     --seite-grund: var(--bg-main);
-    --karussell-rand: var(--kartenliste-rand);
-    --karussell-schatten: none;
+    --karussell-rand: none; // ohne hellen Rand, die Mulde traegt sich ueber Farbe und Innenschatten (Sebastian 17.11.)
+    --karussell-schatten: inset 0 3px 8px rgba(0, 0, 0, 0.6); // Mulde sichtbar (Sebastian 17.11.)
+    --karussell-grund: var(--aussen-grund);
     --einwurf-grund: #1f1e1a;
 
     // Such-Band: dunkles Moos statt Leuchtgelb; das Gelb aus Hell tragen die Knoepfe und die
     // Akzentschrift auf den Baendern (--knopf-auf-band-*, --band-akzent-schrift) und der Lichtkegel
-    --such-band: #16211f;
+    --such-band: #18212a; // Schiefer ohne Gruenstich
+    --aussen-grund: #0b0e10; // Seitenfueller neben der Inhaltsspalte, eine Stufe unter der Seite (Designrunde 17.11.)
+    // Schatten im Dunkeln kraeftiger, sonst unsichtbar (Sebastian 17.11.)
+    --elevation-1: 0 1px 3px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.45);
+    --elevation-2: 0 2px 6px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.5);
+    --elevation-3: 0 4px 10px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.5);
+    --elevation-4: 0 4px 12px rgba(0,0,0,0.62), 0 2px 5px rgba(0,0,0,0.5);
+    --elevation-6: 0 6px 18px rgba(0,0,0,0.65), 0 3px 6px rgba(0,0,0,0.5);
+    --elevation-8: 0 8px 24px rgba(0,0,0,0.68), 0 4px 8px rgba(0,0,0,0.5);
+    --elevation-12: 0 12px 32px rgba(0,0,0,0.7), 0 6px 12px rgba(0,0,0,0.5);
+    --elevation-16: 0 16px 40px rgba(0,0,0,0.72), 0 8px 16px rgba(0,0,0,0.5);
     --rundgang-kegel: #d8e05a;
     --rundgang-balken: #383b39;
     --rundgang-schleier: rgba(0, 0, 0, 0.65);
@@ -454,10 +465,10 @@ html[data-theme='dark'] {
     // mit dem Such-Band darueber vermischen (12 px Luft am Handy); Rand der Kacheln 2 px
     // gedaempft. Der Rand ist Zierde, 1,8:1 zur Seite, die Kachel erkennt man an Flaeche,
     // Titel und Pfeil. Marke "mit Konto" auf dem Seitengrund.
-    // Auf #1c2a27: Gelb 11,5:1, Text 92 % 12,8:1, Titel 13,3:1, Fokusring 7,4:1; Marke 10,2:1
-    --willkommen-grund: #1c2a27;
+    // Auf #1d262e (nachgerechnet 17.11.): Gelb 11,8:1, Text 92 % 13,2:1, Titel 13,7:1, Fokusring 7,7:1
+    --willkommen-grund: #1d262e;
     --mitmachen-kachel-grund: var(--willkommen-grund);
-    --mitmachen-kachel-rand: #344440;
+    --mitmachen-kachel-rand: #34404a;
     --mitmachen-kachel-marke: var(--bg-main);
     --willkommen-fokus: var(--rundgang-fokus);
     --knopf-zweit-grund: transparent;
@@ -466,7 +477,7 @@ html[data-theme='dark'] {
 
     // Material-Flaechen auf die eigenen Grautoene statt Materials #424242/#303030
     --mat-app-background-color: var(--bg-main);
-    --mat-sidenav-content-background-color: var(--bg-main);
+    --mat-sidenav-content-background-color: var(--aussen-grund, var(--bg-main)); // Seitenfueller (Designrunde 17.11.)
     --mat-card-elevated-container-color: var(--bg-card);
     --mat-card-outlined-container-color: var(--bg-card);
     --mat-card-filled-container-color: var(--bg-card);

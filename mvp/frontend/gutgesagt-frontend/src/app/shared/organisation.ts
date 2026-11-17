@@ -11,6 +11,8 @@ export const ORGANISATION = {
   name: 'Netzbegrünung',
   vereinsname: 'Netzbegrünung e.V.',
   url: 'https://netzbegruenung.de/',
+  /** Mitglied werden: der Weg zum Konto über den Netzbegrünung-Login (Anmeldeseite, Designrunde 17.11.). */
+  mitgliedsantragUrl: 'https://netzbegruenung.de/verein/mitgliedsantrag/',
   /**
    * Fragen und Hinweise zu Gut gesagt, neben dem Knopf „Feedback“ (Kontaktwege, #290).
    * Dieselbe Adresse gilt für Beta-Zugänge und Sicherheitslücken (SECURITY.md, security.txt; #430).

@@ -29,19 +29,23 @@ test('Besucher: von der Startseite suchen und zurueck', async ({ page }) => {
   await expect(page).toHaveURL(/\/search$/);
 });
 
+// Designrunde 17.11.: Das Feld tippt Hot Takes vor; bei reduzierter Bewegung steht das
+// Startbeispiel sofort als Platzhalter da, „Ausprobieren“ sucht danach
 test('Besucher: das Startbeispiel zeigt Treffer (#601)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/search');
-  const beispiel = page.locator('.beispiel-link');
-  const text = (await beispiel.textContent())!.trim().replace(/^„|“$/g, '');
-  await beispiel.click();
+  const text = (await page.locator('app-search.start-suche input[name="searchQuery"]').getAttribute('placeholder'))!;
+  expect(text).not.toBe('');
+  await page.locator('.ausprobieren-knopf').click();
   await page.waitForURL(/\/result\?/);
   expect(new URL(page.url()).searchParams.get('searchQuery')).toBe(text);
   await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });
 });
 
 test('Besucher: Rundgang füllt das Startbeispiel vor, Schritt 2 zeigt Treffer (#601)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/search');
-  const text = (await page.locator('.beispiel-link').textContent())!.trim().replace(/^„|“$/g, '');
+  const text = (await page.locator('app-search.start-suche input[name="searchQuery"]').getAttribute('placeholder'))!;
   await page.getByRole('button', { name: 'Rundgang starten' }).click();
   await expect(page.locator('.blase h3')).toHaveText('Aussage eingeben');
   await expect(page.locator('app-search.start-suche input[name="searchQuery"]')).toHaveValue(text);

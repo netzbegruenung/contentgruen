@@ -131,7 +131,7 @@ body {
 
 body {
     min-height: 100vh;
-    background-color: var(--bg-main);
+    background-color: var(--aussen-grund, var(--bg-main));
     font-family: PTSans, Roboto, sans-serif;
     color: var(--text-primary);
     overflow-y: auto;
@@ -787,4 +787,18 @@ body.cdk-global-scrollblock {
 .beitragen-knopf .neu-punkt {
     top: -12px;
     right: -20px;
+}
+
+/* Material-Erhebungen im Dunkeln mit kraeftigerem Schatten (Sebastian 17.11.) */
+html[data-theme='dark'] .mat-elevation-z2 {
+    box-shadow: var(--elevation-2) !important;
+}
+
+html[data-theme='dark'] .mat-elevation-z8 {
+    box-shadow: var(--elevation-8) !important;
+}
+
+/* Im Dunkeln traegt ein heller Lichtrand oben die Erhebung mit, Schwarz allein verschwindet */
+html[data-theme='dark'] .karte {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }

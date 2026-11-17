@@ -1,10 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { LoginSelectorComponent } from './login-selector.component';
+import { LoginSelectorComponent, WARTELISTE_TEXT } from './login-selector.component';
+import { EINLADUNG_AB } from '../shared/einladung-ab';
+import { ORGANISATION } from '../shared/organisation';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
-import { ORGANISATION } from '../shared/organisation';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
 describe('LoginSelectorComponent', () => {
   let component: LoginSelectorComponent;
@@ -43,105 +46,38 @@ describe('LoginSelectorComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  // Persona-Test BDK: Wer eine Einladung hat, findet den Weg ohne Aufklappen
-  describe('Einladung einlösen', () => {
-    it('zeigt den Weg zur Einladung ohne Aufklappen, auch waehrend die Anmeldewege laden', () => {
-      const knopf = fixture.nativeElement.querySelector('.einladung-weg a.einladung-knopf') as HTMLAnchorElement;
-      expect(knopf).toBeTruthy();
-      expect(knopf.textContent).toContain('Einladung einlösen');
-      expect(knopf.getAttribute('href')).toBe('/einladung');
+  // Designrunde 17.11.: Anmeldung oben, darunter immer sichtbar, wie man zu einem Konto kommt
+  describe('Noch kein Konto?', () => {
+    it('nennt die Mitgliedschaft mit Link zum Mitgliedsantrag, auch waehrend die Anmeldewege laden', () => {
+      const weg = fixture.nativeElement.querySelector('.konto-weg') as HTMLElement;
+
+      expect(weg.querySelector('h2')?.textContent?.trim()).toBe('Noch kein Konto?');
+      expect(weg.querySelector('a')?.getAttribute('href')).toBe(ORGANISATION.mitgliedsantragUrl);
+      expect(weg.querySelector('a')?.textContent?.trim()).toBe(`Mitglied der ${ORGANISATION.name}`);
     });
 
-    it('nennt die Einladung unter "So bekommst du ein Konto"', () => {
-      const optionen = fixture.nativeElement.querySelector('.registration-options') as HTMLElement;
-      expect(optionen.textContent).toContain('Einladung');
-      expect(optionen.querySelector('a.einladung-link')?.getAttribute('href')).toBe('/einladung');
-      // Anders benannt als der Knopf darunter: zwei gleich lautende Links verwirren in der Linkliste von Screenreadern
-      expect(optionen.querySelector('a.einladung-link')?.textContent?.trim()).toBe('Einladungslink einfügen');
+    it('zeigt die Einladung bis zur Realm-Umstellung nur als eingeklappte Vorschau ohne Funktion', () => {
+      const vorschau = fixture.nativeElement.querySelector('details.einladung-vorschau') as HTMLDetailsElement;
+
+      expect(vorschau.open).toBeFalse();
+      expect(vorschau.querySelector('summary')?.textContent).toContain(`Ab ${EINLADUNG_AB}`);
+      expect((vorschau.querySelector('.einladung-knopf') as HTMLButtonElement).disabled).toBeTrue();
+      expect(vorschau.querySelector('a[href="/einladung"]')).toBeNull();
     });
 
-    it('fuehrt im selben Tab ohne Neuladen zu /einladung', () => {
-      const router = TestBed.inject(Router);
-      const klick = new MouseEvent('click', { button: 0, cancelable: true });
-      component.zurEinladung(klick);
+    it('oeffnet fuer die Warteliste den Feedback-Dialog mit vorbelegtem Text', () => {
+      const dialog = fixture.debugElement.injector.get(MatDialog);
+      const offen = spyOn(dialog, 'open').and.returnValue({} as MatDialogRef<unknown>);
 
-      expect(klick.defaultPrevented).toBeTrue();
-      expect(router.navigate).toHaveBeenCalledWith(['/einladung']);
-    });
+      (fixture.nativeElement.querySelector('.warteliste-knopf') as HTMLButtonElement).click();
 
-    it('laesst Strg-Klick dem Browser (neuer Tab)', () => {
-      const router = TestBed.inject(Router);
-      const klick = new MouseEvent('click', { button: 0, ctrlKey: true, cancelable: true });
-      component.zurEinladung(klick);
-
-      expect(klick.defaultPrevented).toBeFalse();
-      expect(router.navigate).not.toHaveBeenCalledWith(['/einladung']);
-    });
-  });
-
-  describe('Expandable Registration Info', () => {
-    it('should initialize with registration info collapsed', () => {
-      expect(component.isRegistrationInfoExpanded).toBeFalsy();
-    });
-
-    it('should toggle registration info expansion state', () => {
-      const initialState = component.isRegistrationInfoExpanded;
-
-      // Simulate clicking the expansion panel header
-      component.isRegistrationInfoExpanded = !component.isRegistrationInfoExpanded;
-      fixture.detectChanges();
-
-      expect(component.isRegistrationInfoExpanded).toBe(!initialState);
-
-      // Toggle back
-      component.isRegistrationInfoExpanded = !component.isRegistrationInfoExpanded;
-      fixture.detectChanges();
-
-      expect(component.isRegistrationInfoExpanded).toBe(initialState);
-    });
-
-    it('should display correct expansion hint text based on state', () => {
-      // When collapsed
-      component.isRegistrationInfoExpanded = false;
-      fixture.detectChanges();
-
-      let compiled = fixture.nativeElement;
-      let expansionHint = compiled.querySelector('.expansion-hint');
-
-      if (expansionHint) {
-        expect(expansionHint.textContent).toContain('Mehr Informationen');
-      }
-
-      // When expanded
-      component.isRegistrationInfoExpanded = true;
-      fixture.detectChanges();
-
-      compiled = fixture.nativeElement;
-      expansionHint = compiled.querySelector('.expansion-hint');
-
-      if (expansionHint) {
-        expect(expansionHint.textContent).toContain('Weniger anzeigen');
-      }
-    });
-
-    it('should render expansion panel with correct binding', () => {
-      const compiled = fixture.nativeElement;
-      const expansionPanel = compiled.querySelector('mat-expansion-panel');
-
-      // Note: In a real test environment with Angular Material properly configured,
-      // we would check the expanded attribute. Here we just verify the component has the property
-      expect(component.hasOwnProperty('isRegistrationInfoExpanded')).toBeTruthy();
-    });
-
-    it('nennt für den Beta-Zugang die Kontaktadresse aus der Organisationskonstante (#430)', () => {
-      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.email-link');
-
-      expect(link.textContent?.trim()).toBe(ORGANISATION.gutgesagtMail);
-      expect(link.getAttribute('href')).toBe(
-        `mailto:${ORGANISATION.gutgesagtMail}?subject=${encodeURIComponent('Beta-Account Anfrage')}`
+      expect(offen).toHaveBeenCalledWith(
+        FeedbackDialogComponent,
+        jasmine.objectContaining({ data: { text: WARTELISTE_TEXT } }),
       );
     });
   });
+
   describe('Grund und nur eingeschaltete Anmeldewege (#600)', () => {
     let http: HttpTestingController;
 
@@ -159,7 +95,7 @@ describe('LoginSelectorComponent', () => {
       expect(el.querySelector('.gutgesagt-button')).toBeNull();
       expect(el.querySelector('.divider-container')).toBeNull();
       expect(el.querySelector('.disabled-notice')).toBeNull();
-      expect(el.querySelector('button[disabled]')).toBeNull();
+      expect(el.querySelector('.login-options button[disabled]')).toBeNull();
     });
 
     it('blendet den ausgeschalteten Netzbegrünung-Login aus (Dev-Stack)', () => {
@@ -198,9 +134,9 @@ describe('LoginSelectorComponent', () => {
       const el = modes(true, false);
       const text = el.textContent ?? '';
 
-      expect(el.querySelector('.keycloak-button')?.textContent).toContain('mit deinem Netzbegrünung-Konto');
+      expect(el.querySelector('.keycloak-button')?.textContent).toContain('Mit Netzbegrünung-Konto anmelden');
       expect(text).not.toMatch(/Keycloak|SSO|Selbstregistrierung|Beta-Account/);
-      expect(text).toContain('So bekommst du ein Konto');
+      expect(text).toContain('Noch kein Konto?');
     });
 
     it('zeigt ohne Ziel aus "Antworten" keinen Grund', () => {
@@ -232,7 +168,7 @@ describe('LoginSelectorComponent nach "Antworten" (#600)', () => {
 
     const grund: HTMLElement | null = fixture.nativeElement.querySelector('.anmeldegrund');
     expect(grund?.textContent?.trim()).toBe('Zum Beantworten melde dich an.');
-    // Der Grund steht vor dem Hinweis zum Konto und den Anmeldewegen
+    // Der Grund steht ueber den Anmeldewegen und dem Hinweis zum Konto
     expect(fixture.nativeElement.querySelector('.component-box').firstElementChild).toBe(grund);
   });
 });

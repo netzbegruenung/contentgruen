@@ -11,10 +11,12 @@ import { filter, map } from 'rxjs/operators';
 import { CONTENT_TYPE_REGISTRY } from '../shared/content-type-registry';
 import { ERFUNDENES_MELDEN, NICHT_JEDE_AUSSAGE, SCHREIBREGELN } from '../shared/schreibregeln';
 import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
+import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
+import { EINLADUNG_AB } from '../shared/einladung-ab';
 
 /** Rueckkehrziel-Parameter: Nach der Anmeldung aus der Hilfe oeffnet die App sie wieder. */
 export const HILFE_PARAM = 'hilfe';
@@ -52,8 +54,10 @@ export class HelpDialogComponent {
   readonly antwortFinden = rundgangBeschriftung('antwort-finden');
   readonly selbstBeitragen = rundgangBeschriftung('mitmachen');
   readonly mitmachenHinweis = MITMACHEN_HINWEIS;
+  readonly einladungAb = EINLADUNG_AB;
 
   private readonly rundgang = inject(RundgangService);
+  private readonly dialog = inject(MatDialog);
   readonly angemeldet = !!inject(AuthService).getUserInfo()?.isAuthenticated;
 
   constructor(
@@ -76,9 +80,22 @@ export class HelpDialogComponent {
     anmeldenZurHilfe(this.router);
   }
 
-  navigateToAbout(): void {
+  /**
+   * Links aus der Hilfe auf die Über-Seite, auch mit Anker (/about#siegel, /about#technik).
+   * Wie früher „Über Gut gesagt“: erst schliessen, dann navigieren. Die Navigation wartet, bis
+   * die Hilfe zu ist, denn beim Schliessen stellt der Dialog die alte Scrollposition wieder her
+   * und hebt sonst den Sprung zum Anker auf. Mit Strg/Cmd/Umschalt öffnet der Browser das href.
+   */
+  zuUeber(event: MouseEvent, fragment?: string): void {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    this.dialogRef.afterClosed().subscribe(() => void this.router.navigate(['/about'], { fragment }));
     this.dialogRef.close();
-    this.router.navigate(['/about']);
+  }
+
+  /** Feedback über der Hilfe; nach dem Absenden oder Abbrechen ist die Hilfe wieder da. */
+  feedbackOeffnen(): void {
+    feedbackDialogOeffnen(this.dialog);
   }
 }
 

@@ -134,9 +134,16 @@ h4.karte-titel {
   }
 }
 
+// Drei Titelzeilen Platz reserviert der Kopf, nicht der Titel: So steht ein ein- oder
+// zweizeiliger Titel senkrecht mittig im Kopf (Designrunde 17.11.). 19 px Titelschrift.
 @media (min-width: 600px) {
+  .karte--voll .karte-kopf {
+    min-height: calc(3 * 1.3 * 19px + 2 * var(--spacing-md));
+    box-sizing: border-box;
+  }
+
   .karte--voll .karte-titel {
-    min-height: calc(3 * 1.3em);
+    min-height: 0;
   }
 }
 
@@ -501,14 +508,6 @@ h4.karte-titel {
 // Die ganze Karte traegt die Markierung als Rand links (Klasse aus kartenKlassen).
 .karte.karte--eigene-leute {
   border-left: 6px solid var(--akzent-tanne);
-}
-
-.eigene-leute-hinweis {
-  margin: 0;
-  padding: var(--spacing-sm) var(--spacing-md) 0;
-  font-size: 12px;
-  text-align: center;
-  color: var(--primary-dark);
 }
 
 .angabe-icon {
@@ -1208,4 +1207,51 @@ h4.karte-titel {
 .einwurf-stufe,
 .einwurf-einwerfer {
   white-space: nowrap;
+}
+
+// Variante A (Designrunde 17.11.): Zweck und Stil als kleine Zeile ueber dem Titel, ohne Chips
+.titel-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.karte-kopf .karte-angaben {
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+
+  .karte-eigene-leute {
+    padding: 0;
+    background: none;
+    color: inherit;
+    font-weight: inherit;
+
+    .angabe-icon {
+      color: inherit;
+      width: 14px;
+      height: 14px;
+      font-size: 14px;
+    }
+  }
+
+  .karte-eigene-leute + .karte-stil::before {
+    content: '·';
+    margin-right: 6px;
+  }
+
+  .karte-stil {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+  }
 }

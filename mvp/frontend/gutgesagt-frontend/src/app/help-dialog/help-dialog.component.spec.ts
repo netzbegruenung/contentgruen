@@ -3,13 +3,15 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { DestroyRef } from '@angular/core';
-import { DefaultUrlSerializer, NavigationEnd, Router } from '@angular/router';
+import { DefaultUrlSerializer, NavigationEnd, Router, provideRouter } from '@angular/router';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
+import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
 import { HILFE_PARAM, HelpDialogComponent, MITMACHEN_HINWEIS, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
+import { EINLADUNG_AB } from '../shared/einladung-ab';
 
 describe('HelpDialogComponent', () => {
   let component: HelpDialogComponent;
@@ -25,6 +27,8 @@ describe('HelpDialogComponent', () => {
     await TestBed.configureTestingModule({
       imports: [HelpDialogComponent, HttpClientTestingModule],
       providers: [
+        // Router fuer die Links auf die Über-Seite (href plus zuUeber)
+        provideRouter([]),
         {
           provide: MatDialogRef,
           useValue: {
@@ -189,15 +193,112 @@ describe('HelpDialogComponent', () => {
     expect(technik).not.toContain('keine KI.');
   });
 
-  // Persona-Test Gerd: die Antwort auf „Nutzt Gut gesagt KI?“ stand ganz unten
-  it('beantwortet „Nutzt Gut gesagt KI?“ gleich nach dem Einstieg, mit den Sätzen der Über-Seite', () => {
+  // Designrunde 17.11.: die Hilfe sagt, wie man es jetzt nutzt; warum und wer steht auf der Über-Seite
+  it('ordnet die Hilfe nach dem, was man zuerst braucht', () => {
     const ueberschriften = Array.from(fixture.nativeElement.querySelectorAll('mat-dialog-content h3'))
       .map((h) => (h as HTMLElement).textContent!.trim());
-    expect(ueberschriften.indexOf('Nutzt Gut gesagt KI?')).toBe(1);
+    expect(ueberschriften).toEqual([
+      'Lieber zeigen lassen?',
+      'Suchen und Kopieren',
+      'Bewerten und Siegel',
+      'Beitragen',
+      'Konto und Anmeldung',
+      'Nutzt Gut gesagt KI?',
+      'Feedback',
+      'Häufige Fragen',
+    ]);
+  });
 
-    const ki = (fixture.nativeElement.querySelector('.hilfe-ki') as HTMLElement).textContent!;
-    expect(ki).toContain(KEINE_GENERATIVE_KI);
-    expect(ki).toContain(SUCHE_MIT_SPRACHMODELLEN);
+  it('nennt die Fassungen Kurz, Mittel, Lang und den Hinweis „passt auf X/Bluesky“', () => {
+    const text = (fixture.nativeElement.querySelector('.hilfe-fassungen') as HTMLElement).textContent!;
+    expect(text).toContain('Kurz, Mittel und Lang');
+    expect(text).toContain('„passt auf X/Bluesky“');
+  });
+
+  // Persona-Test Gerd: die Antwort auf „Nutzt Gut gesagt KI?“ bleibt, kurz, mit den Sätzen der Über-Seite
+  it('beantwortet „Nutzt Gut gesagt KI?“ kurz mit den Sätzen der Über-Seite und verlinkt die Technik', () => {
+    const ki = fixture.nativeElement.querySelector('.hilfe-ki') as HTMLElement;
+    expect(ki.textContent).toContain(KEINE_GENERATIVE_KI);
+    expect(ki.textContent).toContain(SUCHE_MIT_SPRACHMODELLEN);
+    expect(ki.querySelector('a')!.getAttribute('href')).toBe('/about#technik');
+    // Wie die Suche technisch arbeitet, steht jetzt unter /about#technik
+    expect(fixture.nativeElement.textContent).not.toContain('Je mehr Mitwirkende beitragen und bewerten');
+  });
+
+  describe('Links auf die Über-Seite', () => {
+    function link(selektor: string): HTMLAnchorElement {
+      return fixture.nativeElement.querySelector(selektor) as HTMLAnchorElement;
+    }
+
+    it('verlinkt „Was bedeutet das Siegel?“ auf /about#siegel, schliesst die Hilfe und navigiert danach', () => {
+      const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      const siegel = link('.hilfe-siegel-link');
+      expect(siegel.textContent!.trim()).toBe('Was bedeutet das Siegel?');
+      expect(siegel.getAttribute('href')).toBe('/about#siegel');
+      siegel.click();
+
+      expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/about'], { fragment: 'siegel' });
+    });
+
+    it('macht dasselbe bei „Mehr zur Technik“ und „Über Gut gesagt“', () => {
+      const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      const technik = link('.hilfe-technik-link');
+      expect(technik.getAttribute('href')).toBe('/about#technik');
+      technik.click();
+      expect(navigate).toHaveBeenCalledWith(['/about'], { fragment: 'technik' });
+
+      const ueber = link('.about-link-section a');
+      expect(ueber.getAttribute('href')).toBe('/about');
+      ueber.click();
+      expect(navigate).toHaveBeenCalledWith(['/about'], { fragment: undefined });
+      expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalledTimes(2);
+    });
+
+    it('lässt Strg-Klick dem Browser (neuer Tab), ohne die Hilfe zu schliessen', () => {
+      const navigate = spyOn(TestBed.inject(Router), 'navigate');
+      const ziel = link('.hilfe-siegel-link');
+      // Nach dem Handler der Komponente pruefen, ob sie den Klick dem Browser liess, und ihn
+      // dann selbst abfangen: Sonst oeffnet Chrome wirklich einen Tab, der Testtab liegt
+      // im Hintergrund, und Tests mit Sichtbarkeit, Fokus und requestAnimationFrame scheitern.
+      let vonKomponenteVerhindert: boolean | undefined;
+      ziel.addEventListener('click', (e) => {
+        vonKomponenteVerhindert = e.defaultPrevented;
+        e.preventDefault();
+      }, { once: true });
+      ziel.dispatchEvent(new MouseEvent('click', { ctrlKey: true, cancelable: true }));
+      expect(vonKomponenteVerhindert).toBeFalse();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(TestBed.inject(MatDialogRef).close).not.toHaveBeenCalled();
+    });
+  });
+
+  it('sagt, wie man zu einem Konto kommt: Netzbegrünung-Konto, Einladung ab 4. Dezember, Warteliste', () => {
+    const text = (fixture.nativeElement.querySelector('.hilfe-konto') as HTMLElement).textContent!;
+    expect(text).toContain('Netzbegrünung-Konto');
+    expect(text).toContain(`Ab ${EINLADUNG_AB}`);
+    expect(text).toContain('Warteliste');
+    expect(text).toContain('„Feedback“');
+  });
+
+  it('öffnet Feedback aus der Hilfe heraus', () => {
+    // MatDialogModule im Komponenten-Import stellt einen eigenen MatDialog bereit
+    const open = spyOn(fixture.debugElement.injector.get(MatDialog), 'open');
+    (fixture.nativeElement.querySelector('.hilfe-feedback-knopf') as HTMLButtonElement).click();
+
+    expect(open).toHaveBeenCalledWith(FeedbackDialogComponent, jasmine.anything());
+  });
+
+  it('hält die häufigen Fragen kurz: höchstens vier', () => {
+    const fragen = fixture.nativeElement.querySelectorAll('.hilfe-fragen dt');
+    expect(fragen.length).toBeGreaterThan(0);
+    expect(fragen.length).toBeLessThanOrEqual(4);
+    expect(fixture.nativeElement.querySelectorAll('.hilfe-fragen dd').length).toBe(fragen.length);
+  });
+
+  it('erklärt die Kette nur einmal, unter „Beitragen“', () => {
+    expect(fixture.nativeElement.querySelectorAll('.hilfe-kette').length).toBe(1);
+    expect(fixture.nativeElement.querySelectorAll('.nicht-jede-aussage').length).toBe(1);
   });
 
   it('nennt die sechs Schreibregeln', () => {

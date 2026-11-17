@@ -98,7 +98,7 @@ describe('LoginComponent', () => {
       expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
     });
 
-    it('nennt bei "Passwort vergessen?" dieselbe Mail wie "So bekommst du ein Konto"', () => {
+    it('nennt bei "Passwort vergessen?" die Kontaktadresse aus der Organisationskonstante', () => {
       const hinweis = (fixture.nativeElement as HTMLElement).querySelector('.passwort-vergessen')!;
       const link = hinweis.querySelector('a')!;
 

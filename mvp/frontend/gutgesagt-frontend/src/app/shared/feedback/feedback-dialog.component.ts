@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, Inject, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -37,8 +37,11 @@ export class FeedbackDialogComponent {
 
   constructor(
     public dialogRef: MatDialogRef<FeedbackDialogComponent>,
-    private feedbackService: FeedbackService
-  ) {}
+    private feedbackService: FeedbackService,
+    @Optional() @Inject(MAT_DIALOG_DATA) daten: { text?: string } | null
+  ) {
+    this.text = daten?.text ?? '';
+  }
 
   get kannSenden(): boolean {
     return !this.sendet && this.text.trim().length > 0;
@@ -70,10 +73,14 @@ export class FeedbackDialogComponent {
   }
 }
 
-/** Öffnet das Feedback-Formular, aus dem Kopf wie von der Über-Seite gleich groß. */
-export function feedbackDialogOeffnen(dialog: MatDialog): MatDialogRef<FeedbackDialogComponent> {
+/**
+ * Öffnet das Feedback-Formular, aus dem Kopf wie von der Über-Seite gleich groß.
+ * `text` belegt das Feld vor, etwa für die Warteliste auf der Anmeldeseite.
+ */
+export function feedbackDialogOeffnen(dialog: MatDialog, text?: string): MatDialogRef<FeedbackDialogComponent> {
   return dialog.open(FeedbackDialogComponent, {
     width: '560px',
     maxWidth: '95vw',
+    data: text ? { text } : undefined,
   });
 }

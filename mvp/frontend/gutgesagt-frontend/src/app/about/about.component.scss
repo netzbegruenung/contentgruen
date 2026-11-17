@@ -231,6 +231,29 @@ a {
   }
 }
 
+// „Keine offizielle Linie“ als Unterabschnitt von „Wie Qualität entsteht“
+.linie {
+  margin-top: 2rem;
+}
+
+// „So geht's“ öffnet die Hilfe: ein Knopf, der wie ein Link aussieht, 44 px Zielgröße (Touch)
+.so-gehts-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--primary-main);
+  text-decoration: var(--link-unterstrich);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 // Beispielsiegel unter „Bewerten“ (#427): umbrechend, damit sie auch mobil passen
 .siegel-absatz {
   margin: var(--spacing-xs, 4px) 0;

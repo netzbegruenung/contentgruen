@@ -64,17 +64,6 @@
   text-align: left;
 }
 
-.beispiel-zeile {
-  margin: var(--spacing-md) 0 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-
-  @media (max-width: 599px) {
-    font-size: 0.85rem;
-    margin-top: var(--spacing-sm);
-  }
-}
-
 // Abstand vom gelben Band zum Willkommen. Der Rand am Element faellt mit dem Rand des
 // Bandes darin zusammen (der groessere gilt); ist das Willkommen ausgeblendet, faellt er
 // mit dem Rand der Kacheln zusammen, es entsteht keine Luecke.
@@ -84,18 +73,6 @@ app-rundgang-band {
 
   @media (max-width: 599px) {
     margin-top: var(--spacing-md);
-  }
-}
-
-// Tanne statt Klee: Klee auf dem gelben Band hat nur 4,21:1 (Designrunde 12.11.)
-.beispiel-link {
-  color: var(--primary-dark);
-  text-decoration: underline;
-  cursor: pointer;
-  font-weight: 500;
-
-  &:hover {
-    text-decoration-thickness: 2px;
   }
 }
 
@@ -130,11 +107,31 @@ app-rundgang-band {
   background: var(--mitmachen-kachel-grund, var(--bg-card));
   color: var(--text-primary);
   text-decoration: none;
-  transition: box-shadow var(--transition-fast, 0.2s);
+  // Als Knopf erkennbar: leicht erhoben in Ruhe, beim Zeigen hoeher und eine Spur dunkler,
+  // beim Druecken flach (Designrunde 17.11.)
+  box-shadow: var(--elevation-2, 0 2px 4px rgba(0, 0, 0, 0.15));
+  transition: box-shadow var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s),
+    background-color var(--transition-fast, 0.2s);
 
   &:hover,
   &:focus-visible {
-    box-shadow: var(--elevation-2, 0 2px 8px rgba(0, 0, 0, 0.15));
+    box-shadow: var(--elevation-6, 0 4px 12px rgba(0, 0, 0, 0.2));
+    transform: translateY(-2px);
+    background: color-mix(in srgb, var(--mitmachen-kachel-grund, var(--bg-card)) 92%, var(--akzent-tanne, #00563a));
+  }
+
+  &:active {
+    box-shadow: var(--elevation-1, 0 1px 2px rgba(0, 0, 0, 0.15));
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover,
+    &:focus-visible {
+      transform: none;
+    }
   }
 
   &:focus-visible {

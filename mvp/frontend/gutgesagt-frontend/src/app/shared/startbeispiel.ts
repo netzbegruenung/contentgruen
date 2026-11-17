@@ -1,6 +1,6 @@
 /**
- * Das Startbeispiel (#601): die Aussage hinter „Beispiel probieren“ auf der Startseite
- * und im Rundgang „Antwort finden“. Steht nur hier.
+ * Das Startbeispiel (#601): das erste Beispiel, das das Suchfeld auf der Startseite
+ * vortippt (hinter „Ausprobieren“), und die Aussage im Rundgang „Antwort finden“. Steht nur hier.
  *
  * Wörtlich eine Aussage aus Startbestand und Seed: Die Suche findet so ihre eigene
  * Aussage (Score um 1, weit über der Schwelle von 0,82) und zeigt deren Kommentare,
@@ -10,3 +10,16 @@
  * tests/regression/suche_testset.py.
  */
 export const STARTBEISPIEL = 'Windräder töten die Vögel!';
+
+/**
+ * Typische Hot Takes, die das Suchfeld auf dem Start nacheinander eintippt (Designrunde 17.11.).
+ * Jede wörtlich eine Aussage aus dem Startbestand, damit „Ausprobieren“ ihre Antworten zeigt.
+ * Das Startbeispiel steht vorn.
+ */
+export const HOT_TAKES: readonly string[] = [
+  STARTBEISPIEL,
+  'Die Grünen wollen mir meine Heizung verbieten!',
+  'E-Autos sind auch nicht besser für die Umwelt!',
+  'Ein Tempolimit bringt doch nichts fürs Klima!',
+  'Wärmepumpen funktionieren nur im Neubau!',
+];
