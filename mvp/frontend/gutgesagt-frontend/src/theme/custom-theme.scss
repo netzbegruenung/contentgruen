@@ -168,8 +168,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --knopf-zweit-grund: var(--knopf-auf-band-grund);
   --knopf-zweit-schrift: var(--knopf-auf-band-schrift);
   --knopf-zweit-rand: 2px solid var(--knopf-auf-band-grund);
-  // Rand der Kacheln "Einwerfen"/"Beitragen" und der Kartenliste; im Dunkeln weicher
-  --start-kachel-rand: 2px solid var(--linie-tanne);
+  // Rand der Kartenliste: im Hellen keiner, im Dunkeln 1 px
   --kartenliste-rand: none;
   // Grund des Inhaltsbereichs (<main>): im Hellen weiss wie die Karten, im Dunkeln die
   // unterste Stufe, damit Karten und Kacheln darueber heller liegen (Variante Warm 17.11.)
@@ -290,6 +289,19 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+// Startseite im Hellen (Designrunde 17.11., Variante b+K2): Willkommen und die Kacheln
+// "Einwerfen"/"Beitragen" in zartem Klee-Gruen wie der Kartenkopf, damit sich das Willkommen
+// vom gelben Suchband absetzt und "Suchen" der eine volle Knopf bleibt. Nur hell gesetzt:
+// Ohne Wert im Dunkeln greifen die Rueckfallwerte in den Komponenten (bisheriges Aussehen);
+// eigene Dunkel-Werte gehoeren in den Block html[data-theme='dark'].
+html:not([data-theme='dark']) {
+  --willkommen-grund: var(--commentary-bg); // Flaeche des Willkommens auf der Startseite
+  --mitmachen-kachel-grund: var(--commentary-bg); // Flaeche der Kacheln
+  --mitmachen-kachel-rand: var(--commentary-bg); // Randfarbe der Kacheln (2 px), hier wie die Flaeche
+  --mitmachen-kachel-marke: var(--bg-card); // Grund der Marke "mit Konto" auf der Kachel
+  --willkommen-fokus: var(--akzent-tanne); // Fokusring der Knoepfe im Willkommen (7,6:1 auf Klee-zart)
+}
+
 // Dunkelmodus (#588). Welche Palette gilt, steht als data-theme am <html>: gesetzt vom
 // Skript in index.html (eigene Wahl aus dem localStorage, sonst die Einstellung des Geraets)
 // und vom FarbschemaService beim Umschalten. Alles, was im Dunkeln anders aussieht, ist ein
@@ -407,7 +419,6 @@ html[data-theme='dark'] {
 
     --divider-color: #303331;
     --border-color: #6c7262;
-    --start-kachel-rand: 1px solid var(--border-color);
     --hover-bg: #252726;
     --selected-bg: #2e302f;
     // Links sind im Dunkeln hellgrau wie der Text: unterstrichen, damit sie erkennbar bleiben
@@ -437,6 +448,16 @@ html[data-theme='dark'] {
     --knopf-auf-band-grund: #e2e88a;
     --knopf-auf-band-schrift: #121312;
     --band-akzent-schrift: #e2e88a;
+    // Startseite (Gegenstueck zum Block html:not([data-theme='dark'])): Willkommen und Kacheln
+    // im Moos des Such-Bands, eine Stufe heller, weil sie auf der Seite liegen und sich sonst
+    // mit dem Such-Band darueber vermischen (12 px Luft am Handy); Rand der Kacheln 2 px
+    // gedaempft (wirkt wie 1 px --border-color), Marke "mit Konto" auf dem Seitengrund.
+    // Gelb 11,3:1, Schrift 12,7:1, Fokusring 7,4:1 auf #222b18; Marke 10,3:1 (Variante Warm)
+    --willkommen-grund: #222b18;
+    --mitmachen-kachel-grund: var(--willkommen-grund);
+    --mitmachen-kachel-rand: #454f39;
+    --mitmachen-kachel-marke: var(--bg-main);
+    --willkommen-fokus: var(--rundgang-fokus);
     --knopf-zweit-grund: transparent;
     --knopf-zweit-schrift: var(--band-akzent-schrift);
     --knopf-zweit-rand: 1px solid var(--band-akzent-schrift);

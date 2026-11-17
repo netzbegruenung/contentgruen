@@ -78,6 +78,39 @@ p {
     gap: 4px;
 }
 
+/* Auf der Startseite in der Spalte von Suchfeld und Kacheln (720 px, mittig), schmaler als der
+   Seitenrahmen; die Knoepfe stehen immer unter dem Text, sonst wird das Band bei 600 bis 960 px
+   sehr hoch (Designrunde 17.11.). Das Band im Kopf der anderen Seiten bleibt im Seitenrahmen.
+   Flaeche im Hellen zartes Klee-Gruen, damit es nicht mit dem gelben Suchband verschmilzt
+   (Token --willkommen-grund); ohne Token das bisherige Gelb. */
+:host([ort='start']) .band {
+    background: var(--willkommen-grund, var(--rundgang-gelb));
+    flex-wrap: wrap;
+    row-gap: 12px;
+    /* Kanten wie das Suchfeld im Band darueber: 16 px Einzug, ab 752 px die mittige 720er-Spalte */
+    margin-left: max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
+    margin-right: max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
+}
+
+/* Fokusring im Hellen in Tanne: das Hellblau hat auf Klee-zart nur 2,5:1 (Token
+   --willkommen-fokus; ohne Token wie bisher) */
+:host([ort='start']) .rundgang-knopf:focus-visible {
+    outline-color: var(--willkommen-fokus, var(--rundgang-fokus));
+}
+
+:host([ort='start']) .knoepfe {
+    box-sizing: border-box;
+    width: 100%;
+    /* Unter dem Text, nicht unter dem Wegweiser: Bildbreite plus Abstand */
+    padding-left: 64px;
+    gap: 16px;
+}
+
+/* Sonst greift .text { flex: 1 } auch am Knopf "Ausblenden" und zieht ihn in die Mitte */
+:host([ort='start']) .knoepfe .rundgang-knopf {
+    flex: none;
+}
+
 @media (max-width: 599px) {
     .band {
         flex-wrap: wrap;
@@ -102,5 +135,9 @@ p {
     .knoepfe .rundgang-knopf {
         flex: none;
         white-space: nowrap;
+    }
+
+    :host([ort='start']) .knoepfe {
+        padding-left: 0;
     }
 }
