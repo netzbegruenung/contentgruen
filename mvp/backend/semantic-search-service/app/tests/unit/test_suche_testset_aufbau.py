@@ -173,7 +173,7 @@ class TestBezugZumSeed:
 @pytest.mark.skipif(REPO_WURZEL is None, reason="Frontend und Seed nicht im Checkout")
 class TestStartbeispiel:
     """
-    Das Startbeispiel (#601) hinter „Beispiel probieren“ und im Rundgang steht im
+    Das Startbeispiel (#601) im Suchfeld des Starts und im Rundgang steht im
     Frontend (shared/startbeispiel.ts). Ist es woertlich eine Aussage mit Kommentaren,
     findet die Suche diese Aussage mit Score um 1 (gleicher Text, gleiche Einbettung)
     und zeigt ihre Kommentare; eine neue Aussage legt sie nicht an. Ob der Bestand der
@@ -206,6 +206,20 @@ class TestStartbeispiel:
             for k in eintrag.get("commentaries", [])
         ]
         assert kommentare
+
+    def test_hot_takes_sind_aussagen_des_startbestands(self):
+        """Das Suchfeld des Starts tippt weitere Beispiele vor (HOT_TAKES, Designrunde
+        17.11.); „Ausprobieren“ soll auch bei ihnen die eigene Aussage finden."""
+        ts = (
+            REPO_WURZEL
+            / "mvp/frontend/gutgesagt-frontend/src/app/shared/startbeispiel.ts"
+        ).read_text(encoding="utf-8")
+        block = re.search(r"export const HOT_TAKES[^=]*= \[(.*?)\];", ts, re.S)
+        assert block, "HOT_TAKES nicht gefunden"
+        hot_takes = re.findall(r"'([^']+)'", block.group(1))
+        assert hot_takes
+        start = {text_normalisiert(t) for t in STARTBESTAND}
+        assert [t for t in hot_takes if text_normalisiert(t) not in start] == []
 
 
 # ---------------------------------------------------------------------- #

@@ -79,20 +79,24 @@ async function ohneStack(page: Page): Promise<Stand> {
   return stand;
 }
 
-test('Login-Seite: Einladung ohne Aufklappen finden, Link einfügen, Konto anlegen', async ({ page, bild }) => {
+// Designrunde 17.11.: Bis zur Realm-Umstellung zeigt die Login-Seite die Einladung nur als
+// eingeklappte Vorschau ohne Funktion; die Seite /einladung selbst bleibt erreichbar
+test('Login-Seite: Einladung als Vorschau, Link einfügen, Konto anlegen', async ({ page, bild }) => {
   const stand = await ohneStack(page);
   await page.goto('/login');
 
-  const weg = page.locator('.einladung-weg');
-  await expect(weg).toContainText('Noch kein Konto, aber eine Einladung bekommen?');
+  const weg = page.locator('.konto-weg');
+  await expect(weg).toContainText('Noch kein Konto?');
   await expect(weg).toBeInViewport();
-  await bild('login-einladung-weg');
-  // Auch unter „So bekommst du ein Konto“
-  await page.getByText('So bekommst du ein Konto').click();
-  await expect(page.locator('.registration-options')).toContainText('Einladung');
-  await bild('login-so-bekommst-du-ein-konto', true);
+  await bild('login-noch-kein-konto');
+  const vorschau = weg.locator('details.einladung-vorschau');
+  await expect(vorschau).not.toHaveAttribute('open', /.*/);
+  await vorschau.locator('summary').click();
+  await expect(vorschau.getByRole('button', { name: 'Einladung einlösen' })).toBeDisabled();
+  await expect(vorschau.getByRole('button', { name: 'Auf die Warteliste' })).toBeEnabled();
+  await bild('login-einladung-vorschau', true);
 
-  await weg.getByRole('link', { name: 'Einladung einlösen' }).click();
+  await page.goto('/einladung');
   await expect(page).toHaveURL(/\/einladung$/);
   const feld = page.getByLabel('Link der Einladung');
   await expect(feld).toBeVisible();

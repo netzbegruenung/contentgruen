@@ -6,8 +6,6 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { SearchViewComponent } from './search-view.component';
 import { FANGKORB_KURZ } from '../shared/fangkorb-texte';
-import { STARTBEISPIEL } from '../shared/startbeispiel';
-import { NavigationService } from '../services/navigation.service';
 import { AuthService } from '../auth/auth.service';
 import { SearchComponent } from '../search/search.component';
 import { By } from '@angular/platform-browser';
@@ -59,7 +57,7 @@ describe('SearchViewComponent', () => {
     expect(hero.textContent).not.toContain('Gut gesagt');
   });
 
-  it('stellt unter Titel und Untertitel das Such-Band mit Suchfeld und Beispiel, ohne Erklaerzeile', () => {
+  it('stellt unter Titel und Untertitel das Such-Band mit Suchfeld, ohne Erklaer- und Beispielzeile', () => {
     const hero: HTMLElement = fixture.nativeElement.querySelector('.start-hero');
     const band: HTMLElement = fixture.nativeElement.querySelector('.such-band');
 
@@ -67,7 +65,8 @@ describe('SearchViewComponent', () => {
     expect(hero.nextElementSibling).toBe(band);
     expect(band.querySelector('.such-band-inhalt')!.firstElementChild!.tagName.toLowerCase()).toBe('app-search');
     expect(band.textContent).not.toContain('Antwort finden – verwenden');
-    expect(band.textContent).toContain('Beispiel probieren');
+    // Designrunde 17.11.: Statt „Beispiel probieren“ tippt das Feld Hot Takes vor
+    expect(band.textContent).not.toContain('Beispiel probieren');
   });
 
   it('stellt Willkommen und "Seit deinem letzten Besuch" unter das Suchfeld, vor die Kacheln (Nutzerfuehrung 13.11.)', () => {
@@ -79,14 +78,10 @@ describe('SearchViewComponent', () => {
     expect(willkommen.nextElementSibling!.nextElementSibling!.classList).toContain('start-kacheln');
   });
 
-  it('zeigt als Beispiel das Startbeispiel und sucht genau danach (#601)', () => {
-    const navigation = TestBed.inject(NavigationService);
-    spyOn(navigation, 'navigateToResult');
-    const link: HTMLElement = fixture.nativeElement.querySelector('.beispiel-link');
+  it('laesst nur das Suchfeld auf dem Start Hot Takes vortippen (Designrunde 17.11.)', () => {
+    const suche = fixture.debugElement.query(By.css('.such-band app-search')).componentInstance as SearchComponent;
 
-    expect(link.textContent!.trim()).toBe(`„${STARTBEISPIEL}“`);
-    link.click();
-    expect(navigation.navigateToResult).toHaveBeenCalledWith(STARTBEISPIEL);
+    expect(suche.beispielAnimation).toBeTrue();
   });
 
   it('fuehrt mit zwei Kacheln zum Einwerfen und zum Verfassen', () => {

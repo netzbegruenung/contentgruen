@@ -2,7 +2,6 @@ import { Component, ChangeDetectionStrategy, AfterViewInit, inject } from '@angu
 import { SearchComponent } from '../search/search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { RecentContentComponent } from '../recent-content/recent-content.component';
@@ -12,7 +11,6 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { typLabel } from '../shared/content-type-registry';
 import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
-import { STARTBEISPIEL } from '../shared/startbeispiel';
 import { AuthService } from '../auth/auth.service';
 import { map } from 'rxjs/operators';
 import { RundgangBandComponent } from '../rundgang/rundgang-band.component';
@@ -47,13 +45,11 @@ export class SearchViewComponent implements AfterViewInit {
   readonly typLabel = typLabel;
   readonly fangkorbKurz = FANGKORB_KURZ;
   readonly kettenIcons = KETTEN_ICONS;
-  readonly startbeispiel = STARTBEISPIEL;
   readonly autofokus = typeof window !== 'undefined' && !!window.matchMedia?.(AUTOFOKUS_MEDIEN).matches;
   /** Erst wenn feststeht, dass niemand angemeldet ist: kein Aufblitzen fuer Angemeldete. */
   readonly anonym$ = inject(AuthService).userInfo$.pipe(map((info) => info?.isAuthenticated === false));
 
   constructor(
-    private navigationService: NavigationService,
     private logger: LoggingService,
     private router: Router,
     private route: ActivatedRoute,
@@ -115,12 +111,5 @@ export class SearchViewComponent implements AfterViewInit {
     });
 
     this.logger.debug('=== SEARCH VIEW: ngAfterViewInit END ===');
-  }
-
-  performExampleSearch(): void {
-    // Dieselbe Aussage durchsucht der Rundgang „Antwort finden“ (#389, #601)
-    const exampleQuery = STARTBEISPIEL;
-    this.logger.debug('Performing example search:', exampleQuery);
-    this.navigationService.navigateToResult(exampleQuery);
   }
 }

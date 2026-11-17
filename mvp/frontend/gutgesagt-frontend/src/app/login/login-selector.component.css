@@ -2,43 +2,6 @@
     padding: 20px;
 }
 
-.welcome-section {
-    text-align: center;
-    margin-bottom: 40px;
-}
-
-.welcome-section h1 {
-    margin-bottom: 20px;
-    color: var(--primary-dark);
-}
-
-.welcome-text {
-    font-size: 16px;
-    line-height: 1.6;
-    color: var(--text-strong);
-    margin-bottom: 15px;
-}
-
-.emphasis {
-    color: var(--primary-dark);
-    font-weight: 500;
-    border-bottom: 2px dotted var(--linie-klee);
-    cursor: help;
-}
-
-.login-prompt {
-    font-size: 16px;
-    color: var(--text-muted);
-    margin-top: 30px;
-    font-weight: 500;
-}
-
-.inline-content {
-    display: flex;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
 /* Wozu die Anmeldung noetig ist, ueber allem anderen (#600) */
 .anmeldegrund {
     max-width: 1000px;
@@ -56,59 +19,6 @@
     max-width: 1000px;
     margin: 20px auto 30px;
     padding: 0 20px;
-}
-
-.registration-expansion-panel {
-    background: var(--surface-variant);
-    border-left: 4px solid var(--linie-klee);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.registration-expansion-panel .mat-expansion-panel-header {
-    background: var(--surface-variant) !important;
-    padding: 16px 24px;
-}
-
-.registration-expansion-panel .mat-expansion-panel-header:hover {
-    background: var(--surface-pressed) !important;
-}
-
-.registration-panel-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--primary-dark);
-    font-size: 16px;
-    font-weight: 500;
-    width: 100%;
-}
-
-.registration-panel-title .info-icon {
-    color: var(--primary-dark);
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-}
-
-.expansion-hint {
-    margin-left: auto;
-    color: var(--text-muted);
-    font-size: 14px;
-    font-weight: normal;
-    padding-right: 24px;
-    white-space: nowrap;
-}
-
-.registration-content {
-    padding: 16px 24px 24px;
-}
-
-.registration-intro {
-    color: var(--text-strong);
-    font-size: 15px;
-    line-height: 1.5;
-    margin-bottom: 20px;
 }
 
 .registration-options {
@@ -152,20 +62,6 @@
     font-size: 14px;
     line-height: 1.4;
     margin: 0;
-}
-
-.registration-option .email-link {
-    color: var(--primary-dark);
-    text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
-    font-weight: 500;
-    border-bottom: 1px dotted var(--linie-klee);
-    transition: all 0.2s ease;
-}
-
-
-.registration-option .email-link:hover {
-    color: var(--primary-dark);
-    border-bottom-color: var(--primary-main);
 }
 
 .login-selector-container {
@@ -247,19 +143,6 @@
     font-weight: 500;
 }
 
-.button-subtitle {
-    font-size: 12px;
-    opacity: 0.9;
-    margin-top: 2px;
-}
-
-.login-description {
-    margin-top: 12px;
-    color: var(--text-muted);
-    font-size: 14px;
-    text-align: center;
-}
-
 .divider-container {
     text-align: center;
     position: relative;
@@ -309,30 +192,6 @@
         font-size: 18px;
     }
 
-    .registration-expansion-panel .mat-expansion-panel-header {
-        padding: 12px 16px;
-    }
-
-    .registration-panel-title {
-        font-size: 14px;
-        gap: 8px;
-    }
-
-    .registration-panel-title .info-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-        flex-shrink: 0;
-    }
-
-    .expansion-hint {
-        display: none;
-    }
-
-    .registration-content {
-        padding: 12px 16px 16px;
-    }
-
     .registration-option {
         padding: 10px;
     }
@@ -378,25 +237,6 @@
     }
 }
 
-/* Einladung einloesen: ohne Aufklappen sichtbar, unter den Anmeldewegen */
-.einladung-weg {
-    max-width: 1000px;
-    margin: 24px auto 0;
-    padding: 0 20px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 8px 16px;
-    text-align: center;
-}
-
-.einladung-frage {
-    margin: 0;
-    color: var(--text-strong);
-    font-size: 15px;
-}
-
 /* Noch kein Konto? Immer sichtbar unter der Anmeldung, so breit wie die Anmeldekarte (Designrunde 17.11.) */
 .konto-weg {
     max-width: 600px;
@@ -420,12 +260,6 @@
 
 .konto-weg .einladung-knopf {
     margin: 4px 0 8px;
-}
-
-.konto-weg .einladung-anfragen {
-    margin: 0;
-    font-size: 14px;
-    color: var(--text-subtle);
 }
 
 /* Vorschau Einladung: eingeklappt, ohne Funktion, bis zur Realm-Umstellung */

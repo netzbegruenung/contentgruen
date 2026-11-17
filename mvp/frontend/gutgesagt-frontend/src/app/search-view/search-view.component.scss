@@ -64,17 +64,6 @@
   text-align: left;
 }
 
-.beispiel-zeile {
-  margin: var(--spacing-md) 0 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-
-  @media (max-width: 599px) {
-    font-size: 0.85rem;
-    margin-top: var(--spacing-sm);
-  }
-}
-
 // Abstand vom gelben Band zum Willkommen. Der Rand am Element faellt mit dem Rand des
 // Bandes darin zusammen (der groessere gilt); ist das Willkommen ausgeblendet, faellt er
 // mit dem Rand der Kacheln zusammen, es entsteht keine Luecke.
@@ -84,18 +73,6 @@ app-rundgang-band {
 
   @media (max-width: 599px) {
     margin-top: var(--spacing-md);
-  }
-}
-
-// Tanne statt Klee: Klee auf dem gelben Band hat nur 4,21:1 (Designrunde 12.11.)
-.beispiel-link {
-  color: var(--primary-dark);
-  text-decoration: underline;
-  cursor: pointer;
-  font-weight: 500;
-
-  &:hover {
-    text-decoration-thickness: 2px;
   }
 }
 

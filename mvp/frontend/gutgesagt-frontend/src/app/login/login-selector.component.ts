@@ -5,7 +5,6 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { anmeldegrund, rueckkehrzielLesen, rueckkehrzielMerken } from './rueckkehrziel';
-import { ORGANISATION } from '../shared/organisation';
 import { MatDialog } from '@angular/material/dialog';
 import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 
@@ -30,8 +29,6 @@ export class LoginSelectorComponent implements OnInit {
   returnUrl: string = '/';
   /** Wozu die Anmeldung nötig ist, aus dem Ziel; null zeigt keinen Satz (#600). */
   anmeldegrund: string | null = null;
-  isRegistrationInfoExpanded = false;
-  readonly gutgesagtMail = ORGANISATION.gutgesagtMail;
 
   constructor(
     private authService: AuthService,
@@ -91,27 +88,8 @@ export class LoginSelectorComponent implements OnInit {
     this.router.navigate(['/login/managed'], { queryParams: { returnUrl: this.returnUrl } });
   }
 
-  /**
-   * Zur Seite, auf der man eine Einladung einloest; ohne Code fragt sie nach dem Link.
-   * Ein echter Link (href) fuer neuen Tab und Screenreader, im selben Tab ohne Neuladen.
-   */
-  zurEinladung(event?: MouseEvent): void {
-    // Strg-/Cmd-/Umschalt-Klick oeffnet wie gewohnt einen neuen Tab oder ein Fenster
-    if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0)) {
-      return;
-    }
-    event?.preventDefault();
-    this.router.navigate(['/einladung']);
-  }
-
   navigateToStart(): void {
     this.router.navigate(['/']);
-  }
-
-  getMailtoLink(): string {
-    const email = this.gutgesagtMail;
-    const subject = 'Beta-Account Anfrage';
-    return `mailto:${email}?subject=${encodeURIComponent(subject)}`;
   }
 
   /** Warteliste fuer Einladungen ab 4.12. ueber den Feedback-Dialog (Designrunde 17.11.). */

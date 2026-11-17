@@ -1,6 +1,6 @@
 /**
- * Das Startbeispiel (#601): die Aussage hinter „Beispiel probieren“ auf der Startseite
- * und im Rundgang „Antwort finden“. Steht nur hier.
+ * Das Startbeispiel (#601): das erste Beispiel, das das Suchfeld auf der Startseite
+ * vortippt (hinter „Ausprobieren“), und die Aussage im Rundgang „Antwort finden“. Steht nur hier.
  *
  * Wörtlich eine Aussage aus Startbestand und Seed: Die Suche findet so ihre eigene
  * Aussage (Score um 1, weit über der Schwelle von 0,82) und zeigt deren Kommentare,
