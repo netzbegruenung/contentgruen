@@ -40,26 +40,27 @@ h2 {
     color: var(--band-akzent-schrift);
 }
 
-/* Voller Knopf auf dem Band: Farben aus Tokens, im Dunkeln eigene Werte (Ersteindruck-Test 14.11.) */
+/* Knopf auf dem Band: im Hellen voll wie Suchen (Ersteindruck-Test 14.11.), im Dunkeln Umriss
+   in Gelb, damit nur ein Knopf voll leuchtet (Dunkelmodus 17.11.); Tokens --knopf-zweit-* */
 .knoepfe .rundgang-knopf.voll {
-    background: var(--knopf-auf-band-grund);
-    color: var(--knopf-auf-band-schrift);
-    border-color: var(--knopf-auf-band-grund);
+    background: var(--knopf-zweit-grund);
+    color: var(--knopf-zweit-schrift);
+    border: var(--knopf-zweit-rand);
 }
 
 /* Hover und Druck als Schleier in der Schriftfarbe wie beim Suchen-Knopf (12 % / 20 %):
-   sichtbar auf Tanne im Hellen und auf Gelb im Dunkeln (Review #689) */
+   sichtbar auf Tanne im Hellen und als gelber Hauch auf dem Umriss im Dunkeln (Review #689) */
 .knoepfe .rundgang-knopf.voll:hover {
     background-image: linear-gradient(
-        color-mix(in srgb, var(--knopf-auf-band-schrift) 12%, transparent),
-        color-mix(in srgb, var(--knopf-auf-band-schrift) 12%, transparent)
+        color-mix(in srgb, var(--knopf-zweit-schrift) 12%, transparent),
+        color-mix(in srgb, var(--knopf-zweit-schrift) 12%, transparent)
     );
 }
 
 .knoepfe .rundgang-knopf.voll:active {
     background-image: linear-gradient(
-        color-mix(in srgb, var(--knopf-auf-band-schrift) 20%, transparent),
-        color-mix(in srgb, var(--knopf-auf-band-schrift) 20%, transparent)
+        color-mix(in srgb, var(--knopf-zweit-schrift) 20%, transparent),
+        color-mix(in srgb, var(--knopf-zweit-schrift) 20%, transparent)
     );
 }
 
