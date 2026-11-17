@@ -151,8 +151,9 @@ fix the status but depends on nobody forgetting it.
 
 On tags only, the step `release-platzhalter` runs `scripts/release_platzhalter.py`: it fails
 while „[Datum des Einspielens]“ still stands in the privacy policy or in
-`docs/LOESCHKONZEPT.md` ([DEPLOYMENT.md](DEPLOYMENT.md), Releases). Pull-request and `main`
-runs skip it, because the placeholder is expected there until the release pull request.
+`docs/LOESCHKONZEPT.md`. The release pull request for v0.9.0 replaced the last one with the
+day of the production rollout; the step stays as a guard in case the placeholder comes back.
+Pull-request and `main` runs skip it.
 
 ## Integration tests on main only
 
