@@ -396,3 +396,34 @@
     color: var(--text-strong);
     font-size: 15px;
 }
+
+/* Noch kein Konto? Immer sichtbar unter der Anmeldung, so breit wie die Anmeldekarte (Designrunde 17.11.) */
+.konto-weg {
+    max-width: 600px;
+    margin: 32px auto 0;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.konto-weg-titel {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.konto-weg .registration-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.konto-weg .einladung-knopf {
+    margin: 4px 0 8px;
+}
+
+.konto-weg .einladung-anfragen {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-subtle);
+}
