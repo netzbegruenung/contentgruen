@@ -457,3 +457,26 @@
 .registration-option.inaktiv {
     opacity: 0.7;
 }
+
+.einladung-vorschau summary {
+    list-style: none;
+}
+
+.einladung-vorschau summary::-webkit-details-marker {
+    display: none;
+}
+
+.einladung-vorschau .vorschau-pfeil {
+    margin-left: auto;
+    transition: transform 0.2s;
+}
+
+.einladung-vorschau[open] .vorschau-pfeil {
+    transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .einladung-vorschau .vorschau-pfeil {
+        transition: none;
+    }
+}
