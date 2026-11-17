@@ -77,9 +77,24 @@
 }
 
 /* Version und Commit: rechts unter den Links, unauffaellig */
+.footer-container {
+    position: relative;
+}
+
+/* Version rechts neben der Fusszeile statt in einer eigenen Zeile darunter (Designrunde 17.11.) */
 .build-kennung {
-    padding: 0 20px 8px;
-    text-align: right;
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
     font-size: 11px;
     color: var(--text-faint);
+}
+
+/* Mobil umbricht die Fusszeile; dort klein darunter, ohne eigenen Abstand */
+@media (max-width: 899px) {
+    .build-kennung {
+        position: static;
+        padding: 0 16px 6px;
+        text-align: right;
+    }
 }
