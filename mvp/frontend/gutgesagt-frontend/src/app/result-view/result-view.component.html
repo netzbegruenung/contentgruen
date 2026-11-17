@@ -1,3 +1,6 @@
+<!-- Eine mittige Spalte unter dem Kopf, darin alles linksbuendig (Ausrichtungsregel, styles.css
+     .inhalt-spalte; Designrunde 18.11.): Suchfeld, Hinweis, Erkannt-Zeile, Karten, Nicht dabei? -->
+<div class="inhalt-spalte treffer-spalte">
 <!-- Unified search box for all screen sizes -->
 <section class="full-width-section search-box">
     <div class="search-box-content">
@@ -134,7 +137,7 @@
                                     [matTooltip]="erklaerung" matTooltipPosition="above">
                                 <mat-icon aria-hidden="true">info_outline</mat-icon>
                             </button>
-                            <mat-menu #typMenue="matMenu" class="typ-menue">
+                            <mat-menu #typMenue="matMenu" class="typ-menue" xPosition="before">
                                 <div mat-menu-item disableRipple class="typ-erklaerung-text" (click)="$event.stopPropagation()">{{ erklaerung }}</div>
                             </mat-menu>
                         </ng-container>
@@ -190,3 +193,4 @@
         <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
     </div>
 </ng-container>
+</div>

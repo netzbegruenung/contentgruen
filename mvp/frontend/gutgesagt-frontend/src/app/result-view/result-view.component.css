@@ -447,7 +447,6 @@ mat-sidenav-content {
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-sm);
-  max-width: 720px;
   margin-bottom: calc(-1 * var(--spacing-sm));
 }
 
@@ -493,10 +492,10 @@ mat-sidenav-content {
   outline-offset: 2px;
 }
 
-/* Ergebnis teilen (B7): nur das Symbol, Ziel 48 px */
+/* Ergebnis teilen (B7): nur das Symbol, Ziel 48 px, rechts buendig zur Spalte */
 .ergebnis-teilen-symbol {
   flex: none;
-  margin: -8px -8px -8px 0;
+  margin: -8px 0;
   color: var(--primary-dark);
 }
 
@@ -683,7 +682,9 @@ mat-sidenav-content {
   display: block;
   height: auto;
   min-height: 0;
-  max-width: 280px;
+  /* Am Handy mindestens 16 px Abstand zum Rand (Designrunde 18.11.) */
+  max-width: min(280px, calc(100vw - 32px));
+  box-sizing: border-box;
   padding: 8px 16px;
   background: none;
   cursor: default;
@@ -718,7 +719,6 @@ mat-sidenav-content {
    hoechstens so breit wie gut lesbar */
 .typ-block app-kartenliste {
   width: 100%;
-  max-width: 720px;
 }
 
 .typ-block app-kartenliste ::ng-deep .karte--voll {
@@ -732,12 +732,30 @@ mat-sidenav-content {
   color: var(--text-secondary);
 }
 
-/* Unter den Treffern dieselbe Spalte wie die Karten (Design-Abnahme V3, 17.11.):
-   gleiche Hoechstbreite, gleiche linke Kante; das Suchfeld bleibt breit */
+/* Unter den Treffern dieselbe Spalte wie die Karten (Design-Abnahme V3, 17.11.) */
 .ergebnisse > .weitere,
 .ergebnisse > .nicht-dabei-unten,
 .ergebnisse > .keine-antwort-noetig {
   width: 100%;
-  max-width: 720px;
   box-sizing: border-box;
+}
+
+/* Eine mittige Spalte (Designrunde 18.11.): Rand und Breite macht .inhalt-spalte, die
+   Abschnitte darin bringen keinen eigenen Seitenrand mehr mit. Am Handy wie bisher. */
+.treffer-spalte {
+  --inhalt-breite: 760px;
+}
+
+.treffer-spalte .search-box-content,
+.treffer-spalte .content-section {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Info-Menue am Handy: mindestens 16 px zum Rand. Das Overlay schiebt das Feld samt
+   Aussenabstand in den Bildschirm, der Abstand bleibt so frei (Designrunde 18.11.). */
+@media (max-width: 599px) {
+  ::ng-deep .mat-mdc-menu-panel.typ-menue {
+    margin-inline: 16px;
+  }
 }
