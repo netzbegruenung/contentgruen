@@ -90,14 +90,14 @@
   }
 }
 
-// Weiss mit tannengruenem Rand; bewusst ohne Typfarben. Nur Symbol, Titel und Pfeil,
+// Weiss mit tannengruenem Rand (im Dunkeln 1 px in --border-color); bewusst ohne Typfarben. Nur Symbol, Titel und Pfeil,
 // deshalb flach (Startseite 16.11.)
 .start-kachel {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  border: 2px solid var(--linie-tanne);
+  border: var(--start-kachel-rand);
   border-radius: 12px;
   background: var(--bg-card);
   color: var(--text-primary);
