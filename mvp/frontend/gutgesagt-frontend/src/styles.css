@@ -789,11 +789,7 @@ body.cdk-global-scrollblock {
     right: -20px;
 }
 
-/* Karten und Material-Erhebungen im Dunkeln mit kraeftigerem Schatten (Sebastian 17.11.) */
-html[data-theme='dark'] .karte {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.5);
-}
-
+/* Material-Erhebungen im Dunkeln mit kraeftigerem Schatten (Sebastian 17.11.) */
 html[data-theme='dark'] .mat-elevation-z2 {
     box-shadow: var(--elevation-2) !important;
 }

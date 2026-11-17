@@ -7,6 +7,11 @@ import { environment } from '../../environments/environment';
 import { anmeldegrund, rueckkehrzielLesen, rueckkehrzielMerken } from './rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
 import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
+import { ORGANISATION } from '../shared/organisation';
+import { EINLADUNG_AB } from '../shared/einladung-ab';
+
+/** Vorbelegt im Feedback-Dialog, damit die Warteliste von anderem Feedback zu trennen ist. */
+export const WARTELISTE_TEXT = 'Bitte setzt mich auf die Warteliste für eine Einladung.';
 
 interface AuthModes {
   keycloakEnabled: boolean;
@@ -29,6 +34,8 @@ export class LoginSelectorComponent implements OnInit {
   returnUrl: string = '/';
   /** Wozu die Anmeldung nötig ist, aus dem Ziel; null zeigt keinen Satz (#600). */
   anmeldegrund: string | null = null;
+  readonly organisation = ORGANISATION;
+  readonly einladungAb = EINLADUNG_AB;
 
   constructor(
     private authService: AuthService,
@@ -92,8 +99,8 @@ export class LoginSelectorComponent implements OnInit {
     this.router.navigate(['/']);
   }
 
-  /** Warteliste fuer Einladungen ab 4.12. ueber den Feedback-Dialog (Designrunde 17.11.). */
+  /** Warteliste fuer Einladungen ueber den Feedback-Dialog, Text vorbelegt (Designrunde 17.11.). */
   aufWarteliste(): void {
-    feedbackDialogOeffnen(this.dialog);
+    feedbackDialogOeffnen(this.dialog, WARTELISTE_TEXT);
   }
 }

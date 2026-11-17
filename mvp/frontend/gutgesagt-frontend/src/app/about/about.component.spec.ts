@@ -62,7 +62,7 @@ describe('AboutComponent', () => {
       expect(einzeilig(zweck)).toContain('findest du schnell eine passende Antwort');
       expect(einzeilig(zweck)).not.toContain('ganzen Satz');
       const soGehts = zweck.querySelector('.so-gehts-link') as HTMLButtonElement;
-      expect(soGehts.textContent!.trim()).toBe("So geht's");
+      expect(soGehts.textContent!.trim()).toBe("So geht’s");
       soGehts.click();
       expect(TestBed.inject(MatDialog).open).toHaveBeenCalled();
     });

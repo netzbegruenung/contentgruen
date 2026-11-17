@@ -11,6 +11,7 @@ import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saet
 import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
 import { HILFE_PARAM, HelpDialogComponent, MITMACHEN_HINWEIS, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
+import { EINLADUNG_AB } from '../shared/einladung-ab';
 
 describe('HelpDialogComponent', () => {
   let component: HelpDialogComponent;
@@ -26,7 +27,7 @@ describe('HelpDialogComponent', () => {
     await TestBed.configureTestingModule({
       imports: [HelpDialogComponent, HttpClientTestingModule],
       providers: [
-        // Die Links auf die Über-Seite sind routerLinks
+        // Router fuer die Links auf die Über-Seite (href plus zuUeber)
         provideRouter([]),
         {
           provide: MatDialogRef,
@@ -265,7 +266,7 @@ describe('HelpDialogComponent', () => {
   it('sagt, wie man zu einem Konto kommt: Netzbegrünung-Konto, Einladung ab 4. Dezember, Warteliste', () => {
     const text = (fixture.nativeElement.querySelector('.hilfe-konto') as HTMLElement).textContent!;
     expect(text).toContain('Netzbegrünung-Konto');
-    expect(text).toContain('Ab 4. Dezember');
+    expect(text).toContain(`Ab ${EINLADUNG_AB}`);
     expect(text).toContain('Warteliste');
     expect(text).toContain('„Feedback“');
   });

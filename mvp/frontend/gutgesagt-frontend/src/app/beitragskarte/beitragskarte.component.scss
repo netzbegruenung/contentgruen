@@ -1239,8 +1239,7 @@ h4.karte-titel {
     }
   }
 
-  .karte-eigene-leute + .karte-stil::before,
-  .karte-eigene-leute + ng-container + .karte-stil::before {
+  .karte-eigene-leute + .karte-stil::before {
     content: '·';
     margin-right: 6px;
   }

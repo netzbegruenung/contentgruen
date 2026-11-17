@@ -549,6 +549,10 @@ _Avoid_: Mandant, Tenant, Keycloak (für den Realm allein)
 Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends. Ein Konto aus einer Einladung, dessen Link nie benutzt wurde (kein Passwort, Adresse nie bestätigt), wird nach der Frist im Löschkonzept gelöscht.
 _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 
+**Warteliste**:
+Bis Einladungen gehen (Umstellung auf den eigenen Realm), schicken Interessierte über „Feedback“ ihre Mail-Adresse; daraus bekommen sie zum Start ihre Einladung. Keine eigene Liste im System: Die Einträge sind Feedback mit vorbelegtem Text, die Adresse dient nur der Einladung.
+_Avoid_: Anmeldeliste, Vormerkung
+
 **Einlösung**:
 Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt, auch wenn es zur Adresse schon ein Konto gibt oder die Adresse einen Tippfehler hat; nur wenn Keycloak das Konto nicht anlegen konnte, wird sie zurückgenommen. Die Zahl erlaubter Einlösungen begrenzt eine Einladung.
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung

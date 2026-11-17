@@ -252,12 +252,6 @@
     color: var(--primary-dark);
 }
 
-.konto-weg .registration-options {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
 .konto-weg .einladung-knopf {
     margin: 4px 0 8px;
 }
@@ -277,6 +271,7 @@
     cursor: pointer;
     color: var(--text-subtle);
     font-weight: 600;
+    list-style: none;
 }
 
 .einladung-vorschau summary:focus-visible {
@@ -288,12 +283,8 @@
     margin-top: 12px;
 }
 
-.registration-option.inaktiv {
+.registration-option.inaktiv .option-icon {
     opacity: 0.7;
-}
-
-.einladung-vorschau summary {
-    list-style: none;
 }
 
 .einladung-vorschau summary::-webkit-details-marker {

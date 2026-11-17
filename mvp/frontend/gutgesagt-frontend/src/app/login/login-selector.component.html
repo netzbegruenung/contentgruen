@@ -49,8 +49,8 @@
             <div class="registration-option">
                 <mat-icon class="option-icon">group</mat-icon>
                 <div class="option-text">
-                    <strong>Werde Mitglied der <a href="https://netzbegruenung.de/verein/mitgliedsantrag/">Netzbegrünung</a></strong>
-                    <p>Mit deinem Netzbegrünung-Konto meldest du dich dann oben an.</p>
+                    <strong>Werde <a [href]="organisation.mitgliedsantragUrl">Mitglied der {{ organisation.name }}</a></strong>
+                    <p>Mit deinem {{ organisation.name }}-Konto meldest du dich dann oben an.</p>
                 </div>
             </div>
         </div>
@@ -60,7 +60,7 @@
         <details class="einladung-vorschau">
             <summary>
                 <mat-icon class="option-icon">schedule</mat-icon>
-                <span>Ab 4. Dezember: Konto mit Einladung</span>
+                <span>Ab {{ einladungAb }}: Konto mit Einladung</span>
                 <mat-icon class="vorschau-pfeil" aria-hidden="true">expand_more</mat-icon>
             </summary>
             <div class="registration-options einladung-vorschau-inhalt">
@@ -79,7 +79,7 @@
                     <mat-icon class="option-icon">mail</mat-icon>
                     <div class="option-text">
                         <strong>Auf die Warteliste</strong>
-                        <p>Schick uns über „Feedback“ deine Mail-Adresse, dann bekommst du zum 4. Dezember deine Einladung.</p>
+                        <p>Schick uns über „Feedback“ deine Mail-Adresse, dann bekommst du zum {{ einladungAb }} deine Einladung.</p>
                         <button mat-stroked-button type="button" class="warteliste-knopf" (click)="aufWarteliste()">
                             <mat-icon>feedback</mat-icon>
                             Auf die Warteliste

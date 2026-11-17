@@ -9,11 +9,12 @@
             <input matInput #feld [id]="feldId" [(ngModel)]="searchQuery" name="searchQuery"
                    [attr.aria-describedby]="hinweisId"
                    [placeholder]="beispielAnimation && !searchQuery ? beispielText : ''"
-                   (pointerdown)="beispielBeenden()" (keydown)="beispielBeenden()" (paste)="beispielBeenden()">
+                   (pointerdown)="beispielBeenden()" (input)="beispielBeenden()" (paste)="beispielBeenden()">
             <!-- Hot Take ausprobieren: erscheint, wenn ein Beispiel fertig getippt ist (Designrunde 17.11.) -->
             <button mat-stroked-button matSuffix type="button" class="ausprobieren-knopf"
                     *ngIf="beispielAnimation && beispielFertig && beispielText && !searchQuery"
-                    [attr.aria-label]="'Beispiel ausprobieren: ' + beispielText"
+                    [attr.aria-label]="'Ausprobieren: ' + beispielText"
+                    (focus)="beispielAnhalten()"
                     (click)="beispielAusprobieren()">
                 Ausprobieren
             </button>

@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { LoginSelectorComponent } from './login-selector.component';
+import { LoginSelectorComponent, WARTELISTE_TEXT } from './login-selector.component';
+import { EINLADUNG_AB } from '../shared/einladung-ab';
+import { ORGANISATION } from '../shared/organisation';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -50,25 +52,29 @@ describe('LoginSelectorComponent', () => {
       const weg = fixture.nativeElement.querySelector('.konto-weg') as HTMLElement;
 
       expect(weg.querySelector('h2')?.textContent?.trim()).toBe('Noch kein Konto?');
-      expect(weg.querySelector('a')?.getAttribute('href')).toBe('https://netzbegruenung.de/verein/mitgliedsantrag/');
+      expect(weg.querySelector('a')?.getAttribute('href')).toBe(ORGANISATION.mitgliedsantragUrl);
+      expect(weg.querySelector('a')?.textContent?.trim()).toBe(`Mitglied der ${ORGANISATION.name}`);
     });
 
     it('zeigt die Einladung bis zur Realm-Umstellung nur als eingeklappte Vorschau ohne Funktion', () => {
       const vorschau = fixture.nativeElement.querySelector('details.einladung-vorschau') as HTMLDetailsElement;
 
       expect(vorschau.open).toBeFalse();
-      expect(vorschau.querySelector('summary')?.textContent).toContain('Ab 4. Dezember');
+      expect(vorschau.querySelector('summary')?.textContent).toContain(`Ab ${EINLADUNG_AB}`);
       expect((vorschau.querySelector('.einladung-knopf') as HTMLButtonElement).disabled).toBeTrue();
       expect(vorschau.querySelector('a[href="/einladung"]')).toBeNull();
     });
 
-    it('oeffnet fuer die Warteliste den Feedback-Dialog', () => {
+    it('oeffnet fuer die Warteliste den Feedback-Dialog mit vorbelegtem Text', () => {
       const dialog = fixture.debugElement.injector.get(MatDialog);
       const offen = spyOn(dialog, 'open').and.returnValue({} as MatDialogRef<unknown>);
 
       (fixture.nativeElement.querySelector('.warteliste-knopf') as HTMLButtonElement).click();
 
-      expect(offen).toHaveBeenCalledWith(FeedbackDialogComponent, jasmine.anything());
+      expect(offen).toHaveBeenCalledWith(
+        FeedbackDialogComponent,
+        jasmine.objectContaining({ data: { text: WARTELISTE_TEXT } }),
+      );
     });
   });
 

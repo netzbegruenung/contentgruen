@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, Input, ChangeDetectionStrategy, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, Input, ChangeDetectionStrategy, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { HOT_TAKES } from '../shared/startbeispiel';
 import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
@@ -40,7 +40,7 @@ let naechsterHinweis = 0;
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.css'],
 })
-export class SearchComponent implements AfterViewInit, OnDestroy {
+export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() searchQuery: string = '';
   @Input() compactMode: boolean = false; // Enable compact mode on result view
   /**
@@ -53,9 +53,11 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
   @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
   /**
    * Auf dem Start tippt das leere Feld typische Hot Takes als Platzhalter ein, daneben
-   * blinkt „Ausprobieren“ (Designrunde 17.11.). Zwei Durchläufe, dann bleibt das erste
-   * Beispiel stehen (WCAG 2.2.2). Bei reduzierter Bewegung kein Tippen, nur das Beispiel.
-   * Klickt oder tippt man selbst ins Feld, ist der Platzhalter sofort weg.
+   * steht „Ausprobieren“ (Designrunde 17.11.). Die Vorführung stoppt, sobald man ins Feld
+   * klickt, tippt oder einfügt; Fokus auf „Ausprobieren“ hält sie beim aktuellen Beispiel
+   * an (WCAG 2.2.2); spätestens nach zwei Durchläufen bleibt das erste Beispiel stehen.
+   * Tab beendet sie nicht, damit „Ausprobieren“ per Tastatur erreichbar bleibt.
+   * Bei reduzierter Bewegung kein Tippen, nur das Beispiel.
    */
   @Input() beispielAnimation = false;
   beispielText = '';
@@ -82,17 +84,26 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) { }
 
+  /** Bei reduzierter Bewegung steht das Beispiel schon vor dem ersten Zeichnen. */
+  private ruhig = false;
+
+  ngOnInit(): void {
+    this.ruhig = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (this.beispielAnimation && this.ruhig) {
+      this.beispielText = HOT_TAKES[0];
+      this.beispielFertig = true;
+    }
+  }
+
   ngAfterViewInit(): void {
     if (this.autofokus) {
       this.feld?.nativeElement.focus({ preventScroll: true });
     }
-    if (this.beispielAnimation) {
-      const ruhig = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      if (ruhig) {
-        this.beispielZeigen(HOT_TAKES[0], true);
-      } else {
-        this.zone.runOutsideAngular(() => this.tippen(0, 0, 0));
-      }
+    if (this.beispielAnimation && !this.ruhig) {
+      // Erst nach dem ersten Zeichnen anfangen, ausserhalb der Zone
+      this.zone.runOutsideAngular(() => {
+        this.beispielTimer = setTimeout(() => this.tippen(0, 0, 0));
+      });
     }
   }
 
@@ -106,18 +117,30 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
     this.beispielZeigen('', false);
   }
 
+  /** Fokus auf „Ausprobieren“: beim aktuellen Beispiel stehen bleiben, damit der Knopf nicht verschwindet. */
+  beispielAnhalten(): void {
+    clearTimeout(this.beispielTimer);
+    this.beispielTimer = undefined;
+  }
+
   beispielAusprobieren(): void {
     const text = this.beispielText;
     this.beispielBeenden();
     this.performSearch(text);
   }
 
+  /**
+   * Die Vorführung läuft außerhalb der Zone: nur diese Komponente (OnPush) neu zeichnen,
+   * nicht alle 45 ms die ganze App. Aus Template-Ereignissen (in der Zone) genügt markForCheck.
+   */
   private beispielZeigen(text: string, fertig: boolean): void {
-    this.zone.run(() => {
-      this.beispielText = text;
-      this.beispielFertig = fertig;
+    this.beispielText = text;
+    this.beispielFertig = fertig;
+    if (NgZone.isInAngularZone()) {
       this.cdr.markForCheck();
-    });
+    } else {
+      this.cdr.detectChanges();
+    }
   }
 
   private tippen(nr: number, zeichen: number, runde: number): void {

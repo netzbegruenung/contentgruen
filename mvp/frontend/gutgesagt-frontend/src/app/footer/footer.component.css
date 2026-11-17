@@ -76,7 +76,7 @@
     text-decoration: underline;
 }
 
-/* Version und Commit: rechts unter den Links, unauffaellig */
+/* Version und Commit: rechts neben den Links, unauffaellig */
 .footer-container {
     position: relative;
 }

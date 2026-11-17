@@ -188,13 +188,40 @@ describe('SearchComponent', () => {
       f.detectChanges();
       expect(feld(f).placeholder).not.toBe('');
 
-      feld(f).dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+      feld(f).value = 'a';
+      feld(f).dispatchEvent(new Event('input'));
       tick(10_000);
       f.detectChanges();
 
       expect(feld(f).placeholder).toBe('');
       expect(knopf(f)).toBeNull();
       flush();
+    }));
+
+    it('laesst Tab den Knopf stehen, damit er per Tastatur erreichbar bleibt', fakeAsync(() => {
+      const f = mitBeispiel(false);
+      tick(HOT_TAKES[0].length * 45 + 10);
+      f.detectChanges();
+
+      feld(f).dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+      f.detectChanges();
+
+      expect(knopf(f)).not.toBeNull();
+      expect(feld(f).placeholder).toBe(HOT_TAKES[0]);
+      flush(5000);
+    }));
+
+    it('haelt mit Fokus auf „Ausprobieren“ beim aktuellen Beispiel an', fakeAsync(() => {
+      const f = mitBeispiel(false);
+      tick(HOT_TAKES[0].length * 45 + 10);
+      f.detectChanges();
+
+      knopf(f)!.dispatchEvent(new FocusEvent('focus'));
+      tick(10_000);
+      f.detectChanges();
+
+      expect(feld(f).placeholder).toBe(HOT_TAKES[0]);
+      expect(knopf(f)).not.toBeNull();
     }));
 
     it('bleibt nach zwei Durchlaeufen beim ersten Beispiel stehen (WCAG 2.2.2)', fakeAsync(() => {

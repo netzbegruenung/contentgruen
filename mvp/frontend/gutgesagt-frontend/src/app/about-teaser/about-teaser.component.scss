@@ -89,10 +89,15 @@
   border-left: 4px solid var(--akzent-klee);
   background: var(--willkommen-grund, var(--bg-card));
   border-radius: 0 var(--border-radius-medium) var(--border-radius-medium) 0;
+  // Zweispaltig: Zitat links, Bild und Name rechts; schmal untereinander (Designrunde 17.11.)
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-lg);
 
   blockquote {
     position: relative;
-    margin: 0 0 var(--spacing-md);
+    margin: 0;
     padding-left: 2rem;
 
     &::before {
@@ -115,17 +120,8 @@
   }
 }
 
-// Zweispaltig: Zitat links, Bild und Name rechts; schmal untereinander (Designrunde 17.11.)
+// Bild und Name rechts neben dem Zitat
 .zitat {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--spacing-lg);
-
-  blockquote {
-    margin: 0;
-  }
-
   .profil {
     flex-direction: column;
     text-align: center;

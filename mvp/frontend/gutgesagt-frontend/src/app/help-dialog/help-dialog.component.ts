@@ -16,6 +16,7 @@ import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
+import { EINLADUNG_AB } from '../shared/einladung-ab';
 
 /** Rueckkehrziel-Parameter: Nach der Anmeldung aus der Hilfe oeffnet die App sie wieder. */
 export const HILFE_PARAM = 'hilfe';
@@ -53,6 +54,7 @@ export class HelpDialogComponent {
   readonly antwortFinden = rundgangBeschriftung('antwort-finden');
   readonly selbstBeitragen = rundgangBeschriftung('mitmachen');
   readonly mitmachenHinweis = MITMACHEN_HINWEIS;
+  readonly einladungAb = EINLADUNG_AB;
 
   private readonly rundgang = inject(RundgangService);
   private readonly dialog = inject(MatDialog);
