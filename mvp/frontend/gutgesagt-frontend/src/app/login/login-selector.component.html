@@ -49,7 +49,7 @@
             <div class="registration-option">
                 <mat-icon class="option-icon">group</mat-icon>
                 <div class="option-text">
-                    <strong>Werde Mitglied der <a href="https://netzbegruenung.de/">Netzbegrünung</a></strong>
+                    <strong>Werde Mitglied der <a href="https://netzbegruenung.de/verein/mitgliedsantrag/">Netzbegrünung</a></strong>
                     <p>Mit deinem Netzbegrünung-Konto meldest du dich dann oben an.</p>
                 </div>
             </div>
@@ -75,11 +75,15 @@
                         </button>
                     </div>
                 </div>
-                <div class="registration-option inaktiv">
+                <div class="registration-option">
                     <mat-icon class="option-icon">mail</mat-icon>
                     <div class="option-text">
-                        <strong>Grünes Mitglied?</strong>
-                        <p>Frag eine Einladung per Mail an und nenne deinen Grünen Kreisverband.</p>
+                        <strong>Grünes Mitglied? Auf die Warteliste</strong>
+                        <p>Schick uns über „Feedback“ deine Mail-Adresse und deinen Grünen Kreisverband, dann bekommst du zum 4. Dezember deine Einladung.</p>
+                        <button mat-stroked-button type="button" class="warteliste-knopf" (click)="aufWarteliste()">
+                            <mat-icon>feedback</mat-icon>
+                            Auf die Warteliste
+                        </button>
                     </div>
                 </div>
             </div>

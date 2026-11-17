@@ -6,6 +6,8 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { anmeldegrund, rueckkehrzielLesen, rueckkehrzielMerken } from './rueckkehrziel';
 import { ORGANISATION } from '../shared/organisation';
+import { MatDialog } from '@angular/material/dialog';
+import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 
 interface AuthModes {
   keycloakEnabled: boolean;
@@ -35,7 +37,8 @@ export class LoginSelectorComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
-    private http: HttpClient
+    private http: HttpClient,
+    private dialog: MatDialog
   ) {
     // Get return URL from route parameters or sessionStorage or default to '/'
     const queryReturnUrl = this.route.snapshot.queryParams['returnUrl'];
@@ -109,5 +112,10 @@ export class LoginSelectorComponent implements OnInit {
     const email = this.gutgesagtMail;
     const subject = 'Beta-Account Anfrage';
     return `mailto:${email}?subject=${encodeURIComponent(subject)}`;
+  }
+
+  /** Warteliste fuer Einladungen ab 4.12. ueber den Feedback-Dialog (Designrunde 17.11.). */
+  aufWarteliste(): void {
+    feedbackDialogOeffnen(this.dialog);
   }
 }
