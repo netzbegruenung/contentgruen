@@ -1,40 +1,54 @@
 // Import shared hero styles
 @use '../shared/styles/hero-styles' as *;
 
+// Abstaende der Startseite aus der Abstandsskala (--spacing-*), mobil je eine Stufe kleiner.
+// Nach #694 stand weniger Text da und alles wirkte gedraengt (Designrunde 17.11.).
+// Grenze mobil: Bei 360 x 740 bleiben Suchfeld und Suchen-Knopf ohne Scrollen sichtbar.
+
 // Titel und Untertitel auf Weiss, mittig begrenzt
 .start-hero {
   max-width: 720px;
   margin: 0 auto;
-  padding: 20px var(--page-margin) 0;
+  padding: var(--spacing-xl) var(--page-margin) 0;
   text-align: center;
 
   @media (max-width: 599px) {
-    padding: 12px var(--page-margin-mobile) 0;
+    padding: var(--spacing-lg) var(--page-margin-mobile) 0;
   }
 }
 
-// Claim und Untertitel mobil; nur hier, die geteilten _hero-styles bleiben
+// Mehr Abstand zwischen Claim und Untertitel; nur hier, die geteilten _hero-styles bleiben
+.start-hero .hero-title {
+  margin-bottom: var(--spacing-md);
+}
+
+.start-hero .hero-subtitle {
+  margin: 0;
+}
+
+// Claim und Untertitel mobil
 @media (max-width: 599px) {
   .start-hero .hero-title {
+    margin-bottom: var(--spacing-sm);
     font-size: 34px;
   }
 
   .start-hero .hero-subtitle {
-    margin: 8px 0 16px;
     font-size: 15px;
     font-weight: normal;
     color: var(--text-secondary);
   }
 }
 
-// Schmales gelbes Band: Suchfeld, Knopf, Hinweis, Beispielzeile
+// Gelbes Band: Suchfeld, Knopf, Hinweis, Beispielzeile
 .such-band {
-  margin-top: 16px;
-  padding: 16px;
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-md);
   background-color: var(--such-band);
 
   @media (max-width: 599px) {
-    margin-top: 12px;
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-lg) var(--spacing-md);
   }
 }
 
@@ -51,13 +65,25 @@
 }
 
 .beispiel-zeile {
-  margin: 8px 0 0;
+  margin: var(--spacing-md) 0 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
 
   @media (max-width: 599px) {
     font-size: 0.85rem;
-    margin-top: 4px;
+    margin-top: var(--spacing-sm);
+  }
+}
+
+// Abstand vom gelben Band zum Willkommen. Der Rand am Element faellt mit dem Rand des
+// Bandes darin zusammen (der groessere gilt); ist das Willkommen ausgeblendet, faellt er
+// mit dem Rand der Kacheln zusammen, es entsteht keine Luecke.
+app-rundgang-band {
+  display: block;
+  margin-top: var(--spacing-lg);
+
+  @media (max-width: 599px) {
+    margin-top: var(--spacing-md);
   }
 }
 
@@ -77,26 +103,28 @@
 .start-kacheln {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: var(--spacing-md);
   max-width: 720px;
-  margin: 24px auto var(--section-gap);
+  margin: var(--spacing-xl) auto var(--spacing-xxl);
   padding: 0 var(--page-margin);
 
   @media (max-width: 599px) {
     grid-template-columns: 1fr;
-    gap: 12px;
-    margin-top: 16px;
+    gap: var(--spacing-md);
+    margin: var(--spacing-lg) auto var(--spacing-xl);
     padding: 0 var(--page-margin-mobile);
   }
 }
 
-// Weiss mit tannengruenem Rand; bewusst ohne Typfarben. Nur Symbol, Titel und Pfeil,
-// deshalb flach (Startseite 16.11.)
+// Weiss mit tannengruenem Rand; bewusst ohne Typfarben. Nur Symbol, Titel und Pfeil.
+// Gross wie ein Knopf: 72 px hoch, mobil 64 px (Designrunde 17.11.)
 .start-kachel {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
+  gap: var(--spacing-md);
+  box-sizing: border-box;
+  min-height: 72px;
+  padding: var(--spacing-md) var(--spacing-lg);
   border: 2px solid var(--linie-tanne);
   border-radius: 12px;
   background: var(--bg-card);
@@ -115,17 +143,18 @@
   }
 
   @media (max-width: 599px) {
-    gap: 10px;
-    padding: 10px 16px;
+    gap: var(--spacing-md);
+    min-height: 64px;
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 }
 
 .kachel-icon {
-  font-size: 28px;
+  font-size: 36px;
   line-height: 1;
 
   @media (max-width: 599px) {
-    font-size: 24px;
+    font-size: 32px;
   }
 }
 
@@ -140,19 +169,20 @@
 }
 
 .kachel-titel {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
+  line-height: 1.2;
   color: var(--primary-dark);
 
   @media (max-width: 599px) {
-    font-size: 16px;
+    font-size: 20px;
   }
 }
 
 // Anonym: kleiner Hinweis neben dem Titel, dass es ein Konto braucht (#644). Reicht der Platz
 // neben dem laengeren Titel ("Einwerfen") nicht, rutscht er in beiden Kacheln unter den
 // Titel, nicht nur in einer (Designrunde 12.11.). Die Schwellen sind die Breite von
-// "Einwerfen" samt Marke, je Schriftgroesse des Titels (18/16 px), mit etwas Luft.
+// "Einwerfen" samt Marke, je Schriftgroesse des Titels (22/20 px: 161/153 px), mit etwas Luft.
 .kachel-konto {
   display: inline-block;
   margin-left: 6px;
@@ -165,7 +195,7 @@
   vertical-align: middle;
 }
 
-@container (max-width: 155.98px) {
+@container (max-width: 169.98px) {
   .kachel-konto {
     display: table;
     margin: 2px 0 0;
@@ -173,7 +203,7 @@
 }
 
 @media (max-width: 599px) {
-  @container (min-width: 146px) {
+  @container (min-width: 160px) {
     .kachel-konto {
       display: inline-block;
       margin: 0 0 0 6px;
@@ -183,5 +213,8 @@
 
 .kachel-pfeil {
   flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  font-size: 28px;
   color: var(--primary-dark);
 }
