@@ -515,5 +515,5 @@ button.header-link {
 mat-sidenav-content {
     height: 100%;
     overflow-y: auto;
-    background-color: var(--bg-main);
+    background-color: var(--aussen-grund, var(--bg-main));
 }

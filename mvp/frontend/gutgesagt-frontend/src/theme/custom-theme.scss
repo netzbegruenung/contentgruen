@@ -467,7 +467,7 @@ html[data-theme='dark'] {
 
     // Material-Flaechen auf die eigenen Grautoene statt Materials #424242/#303030
     --mat-app-background-color: var(--bg-main);
-    --mat-sidenav-content-background-color: var(--bg-main);
+    --mat-sidenav-content-background-color: var(--aussen-grund, var(--bg-main)); // Seitenfueller (Designrunde 17.11.)
     --mat-card-elevated-container-color: var(--bg-card);
     --mat-card-outlined-container-color: var(--bg-card);
     --mat-card-filled-container-color: var(--bg-card);
