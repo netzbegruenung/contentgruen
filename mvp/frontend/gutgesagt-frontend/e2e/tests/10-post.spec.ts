@@ -52,19 +52,17 @@ test('Post verfassen: Formular, Ergebnisseite, in der Suche als Post-Karte', asy
 
   await test.step('In der Suche als Post-Karte', async () => {
     await page.goto(`/result?searchQuery=${encodeURIComponent(titel)}`);
-    // Ein Chip je Typ mit Treffern; "Posts" filtert auf die Post-Karten.
-    const postChip = page.locator('.typ-chip', { hasText: 'Posts' });
-    await expect(postChip).toBeVisible({ timeout: 45_000 });
-    await postChip.click();
-    await expect(postChip).toHaveAttribute('aria-pressed', 'true');
+    // Ohne Typ-Chips (V3): Der Post steht als beste Antwort oder eingeklappt; eingeklappt aufklappen.
     const karte = page.locator('[data-typ="post"] .karte.typ-post', { hasText: titel });
-    await expect(karte).toBeVisible();
+    await expect(karte).toBeVisible({ timeout: 45_000 });
+    const aufklappen = karte.locator('.aufklapp-knopf');
+    if (await aufklappen.count()) {
+      await aufklappen.click();
+      await expect(aufklappen).toHaveAttribute('aria-expanded', 'true');
+    }
     await expect.soft(karte).toContainText('@e2e-klimaverein · Instagram');
-    // Die Chips brechen um, statt die Seite in 360 px zu verbreitern.
     const ueberlauf = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
-    expect.soft(ueberlauf, 'kein seitlicher Ueberlauf mit den Chips').toBe(false);
-    // Die Wahl gilt fuer die Sitzung: zuruecksetzen, damit spaetere Specs alle Typen sehen.
-    await page.locator('.typ-chip', { hasText: 'Alle' }).click();
+    expect.soft(ueberlauf, 'kein seitlicher Ueberlauf').toBe(false);
     await karte.scrollIntoViewIfNeeded();
     await bild('103-post-in-der-suche');
   });

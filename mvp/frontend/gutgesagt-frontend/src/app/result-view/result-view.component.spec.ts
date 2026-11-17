@@ -539,7 +539,7 @@ describe('erkannteAussage', () => {
  * Eine Darstellung fuer Handy und Desktop (K2+): Kopfband mit der erkannten Aussage,
  * Chips je Typ, Treffer nach Aussage gruppiert, je Typ zuerst hoechstens drei Karten.
  */
-describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
+describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je Aussage', () => {
   const ERKANNT_ID = '22222222-2222-4333-8444-555555555555';
   const ANDERE_ID = '44444444-2222-4333-8444-555555555555';
   const ERKANNT = 'Windräder töten die Vögel!';
@@ -548,12 +548,6 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     { id: '55555555-2222-4333-8444-555555555555', text: 'Windräder sind zu laut', replysuggestions_count: 1, score: 0.8 },
     { id: '66666666-2222-4333-8444-555555555555', text: 'Infraschall macht krank', replysuggestions_count: 0, score: 0.7 },
   ];
-  const SAETZE = {
-    commentary: 'Eine Antwort, die du direkt posten kannst.',
-    generictext: 'Fakten und Zahlen, die eine Antwort stützen.',
-    image: 'Ein Bild mit Unterschrift, das für sich spricht.',
-    post: 'Ein gelungener Beitrag aus einem sozialen Netzwerk, zum Teilen.',
-  };
 
   type Typ = 'commentary' | 'generictext' | 'image' | 'post';
   const FELD: Record<Typ, string> = {
@@ -645,7 +639,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     fixture.componentInstance.searchQuery = 'windraeder voegel';
     fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
-    // Die aehnlichen Aussagen fuers Kopfband kommen nach der Pruefung an (Promise).
+    // Die aehnlichen Aussagen fuer "Nicht gemeint?" kommen nach der Pruefung an (Promise).
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture.nativeElement;
@@ -659,9 +653,8 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     fixture.detectChanges();
   }
 
-  function chip(seite: HTMLElement, name: string): HTMLButtonElement {
-    return Array.from(seite.querySelectorAll<HTMLButtonElement>('.typ-chip')).find((c) => text(c).startsWith(name))!;
-  }
+  /** Die Aufklapp-Knoepfe der eingeklappten Karten. */
+  const aufklapper = (seite: Element) => Array.from(seite.querySelectorAll<HTMLButtonElement>('.aufklapp-knopf'));
 
   for (const mobil of [false, true]) {
     const wo = mobil ? 'Handy' : 'Desktop';
@@ -698,13 +691,61 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
       expect(seite.querySelector('.statement-zeile, .statement-vorschau')).toBeNull();
     });
 
-    it(`ordnet die Typen je Gruppe fest und erklaert jeden Typ einmal (${wo})`, async () => {
+    it(`ordnet die Typen je Gruppe fest: die beste Antwort zuerst, die Titel tragen Typ und Zahl (${wo})`, async () => {
       const seite = await oeffnen(mobil, GEMISCHT());
       const ersteGruppe = seite.querySelector('.gruppe')!;
       expect(Array.from(ersteGruppe.querySelectorAll('.typ-block')).map((b) => b.getAttribute('data-typ')))
         .toEqual(['commentary', 'generictext', 'image', 'post']);
-      expect(texte(ersteGruppe, '.typ-ueberschrift')).toEqual(['Kommentare', 'Hintergrundinfo', 'Bild', 'Post']);
-      expect(texte(seite, '.typ-erklaerung')).toEqual([SAETZE.commentary, SAETZE.generictext, SAETZE.image, SAETZE.post]);
+      expect(texte(ersteGruppe, '.typ-ueberschrift'))
+        .toEqual(['Beste Antwort', 'Weitere Antworten · 1', 'Hintergrundinfo · 1', 'Bild · 1', 'Post · 1']);
+      expect(seite.querySelector('.typ-erklaerung')).withContext('die Titel tragen die Typen (V3)').toBeNull();
+    });
+
+    it(`zeigt die beste Antwort ganz und alle anderen Karten eingeklappt (${wo})`, async () => {
+      const seite = await oeffnen(mobil, GEMISCHT());
+      const beste = seite.querySelectorAll('.beste-antwort app-beitragskarte');
+      expect(beste.length).toBe(1);
+      expect(text(beste[0].querySelector('.karte-titel'))).toBe('Titel k-1');
+      expect(beste[0].querySelector('.aufklapp-knopf')).withContext('die beste ist nicht aufklappbar').toBeNull();
+      expect(beste[0].querySelector('.karte-inhalt')).toBeTruthy();
+      expect(beste[0].querySelector('.kopieren-knopf')).toBeTruthy();
+      // Die beste steht vor allen anderen Karten.
+      expect(seite.querySelector('app-beitragskarte')).toBe(beste[0]);
+
+      const eingeklappt = seite.querySelectorAll('.eingeklappte-karten app-beitragskarte');
+      expect(eingeklappt.length).toBe(4);
+      eingeklappt.forEach((karte) => {
+        expect(karte.querySelector('.aufklapp-knopf')?.getAttribute('aria-expanded')).toBe('false');
+        expect(karte.querySelector('.karte-inhalt, .karte-fuss, .karte-badges')).toBeNull();
+      });
+      expect(texte(seite, '.eingeklappte-karten .aufklapp-titel')).toEqual(['Titel k-3', 'Titel h-1', 'Titel b-1', 'Titel p-1']);
+      expect(seite.querySelectorAll('.karte--schlicht').length).withContext('alle Karten schlicht').toBe(5);
+    });
+
+    it(`klappt eine Karte an Ort und Stelle auf und wieder zu, per Knopf mit aria-expanded (${wo})`, async () => {
+      const seite = await oeffnen(mobil, GEMISCHT());
+      const knopf = aufklapper(seite)[0];
+      const karte = knopf.closest('app-beitragskarte')!;
+      const koerperId = knopf.getAttribute('aria-controls')!;
+      expect(knopf.tagName).toBe('BUTTON');
+      expect(knopf.closest('h4')).withContext('Akkordeon: Knopf in der Ueberschrift').toBeTruthy();
+      expect(document.getElementById(koerperId)?.hidden).toBeTrue();
+
+      knopf.click();
+      fixture.detectChanges();
+      expect(knopf.getAttribute('aria-expanded')).toBe('true');
+      const koerper = document.getElementById(koerperId)!;
+      expect(koerper.hidden).toBeFalse();
+      expect(karte.contains(koerper)).toBeTrue();
+      expect(koerper.querySelector('.karte-inhalt')).toBeTruthy();
+      expect(koerper.querySelector('.kopieren-knopf')).toBeTruthy();
+      expect(aufklapper(seite).slice(1).every((k) => k.getAttribute('aria-expanded') === 'false'))
+        .withContext('die anderen bleiben zu').toBeTrue();
+
+      knopf.click();
+      fixture.detectChanges();
+      expect(knopf.getAttribute('aria-expanded')).toBe('false');
+      expect(karte.querySelector('.karte-inhalt')).toBeNull();
     });
 
     it(`zeigt Bilder aus image_search_results (${wo})`, async () => {
@@ -714,55 +755,34 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
       const bilder = seite.querySelectorAll('[data-typ="image"]');
       expect(bilder.length).withContext('in der erkannten und der anderen Gruppe').toBe(2);
       expect(text(bilder[0])).toContain('Titel b-1');
-      expect(bilder[0].querySelector('img')).withContext('eigenes Bild direkt sichtbar').toBeTruthy();
+      bilder[0].querySelector<HTMLButtonElement>('.aufklapp-knopf')!.click();
+      fixture.detectChanges();
+      expect(bilder[0].querySelector('img')).withContext('eigenes Bild nach dem Aufklappen sichtbar').toBeTruthy();
     });
 
-    it(`zeigt die Karten ab 600 px als Raster (${wo})`, async () => {
+    it(`zeigt die Karten in einer Spalte ohne Grund und Rahmen (${wo})`, async () => {
       const seite = await oeffnen(mobil, GEMISCHT());
-      const listen = seite.querySelectorAll('.typ-block app-kartenliste ul');
-      expect(listen.length).toBe(seite.querySelectorAll('.typ-block').length);
-      listen.forEach((liste) => expect(liste.classList).toContain('kartenliste--spalten'));
+      const listen = Array.from(seite.querySelectorAll('.typ-block app-kartenliste ul'));
+      expect(listen.length).toBeGreaterThan(0);
+      listen.forEach((liste) => {
+        expect(liste.classList).toContain('kartenliste--schlicht');
+        expect(liste.classList).not.toContain('kartenliste--spalten');
+      });
     });
 
-    it(`bietet Chips nur fuer Typen mit Treffern, mit Zahl, "Alle" gewaehlt (${wo})`, async () => {
+    it(`zeigt keine Typ-Chips und oben kein "Antworten" (${wo})`, async () => {
       const seite = await oeffnen(mobil, antwort({ k: [erkannt('commentary', 'k-1', 0.9)], b: [erkannt('image', 'b-1', 0.8), erkannt('image', 'b-2', 0.7)] }));
-      expect(texte(seite, '.typ-chip')).toEqual(['Alle 3', 'Kommentare 1', 'Bilder 2']);
-      expect(seite.querySelector('.typ-chips')?.getAttribute('role')).toBe('group');
-      expect(chip(seite, 'Alle').getAttribute('aria-pressed')).toBe('true');
-      expect(chip(seite, 'Bilder').getAttribute('aria-pressed')).toBe('false');
+      expect(seite.querySelector('.typ-leiste, .typ-chips, .typ-chip')).toBeNull();
+      expect(seite.querySelector('.kopfband')).withContext('kein Kopfband mehr').toBeNull();
+      expect(texte(seite, '.typ-ueberschrift')).toEqual(['Beste Antwort', 'Bilder · 2']);
     });
   }
 
-  it('filtert per Chip, sagt die Wahl an und merkt sie fuer die Sitzung', async () => {
+  it('zeigt immer alle Typen, auch mit einer gemerkten Typwahl von frueher', async () => {
+    sessionStorage.setItem(TYPFILTER_SCHLUESSEL, 'image');
     const seite = await oeffnen(false, GEMISCHT());
-
-    chip(seite, 'Bilder').click();
-    fixture.detectChanges();
-
-    expect(chip(seite, 'Bilder').getAttribute('aria-pressed')).toBe('true');
-    expect(chip(seite, 'Alle').getAttribute('aria-pressed')).toBe('false');
-    expect(Array.from(seite.querySelectorAll('.typ-block')).map((b) => b.getAttribute('data-typ'))).toEqual(['image']);
-    expect(texte(seite, '.gruppe > h2 .gruppe-zahl')).withContext('Zahl je Gruppe passt zum Filter').toEqual(['1 Treffer']);
-    expect(text(seite.querySelector('.typ-ansage'))).withContext('nur, was ohne Aufklappen dasteht').toBe('Nur Bilder, 1 Treffer, 1 weitere eingeklappt');
-    expect(text(seite.querySelector('.weitere-umschalter'))).toContain('(1)');
-    expect(sessionStorage.getItem(TYPFILTER_SCHLUESSEL)).toBe('image');
-
-    // Eine neue Ansicht in derselben Sitzung beginnt mit derselben Wahl.
-    const zweite = TestBed.createComponent(ResultViewComponent);
-    zweite.detectChanges();
-    expect(zweite.componentInstance.typFilter).toBe('image');
-
-    chip(seite, 'Alle').click();
-    fixture.detectChanges();
-    expect(text(seite.querySelector('.typ-ansage'))).toBe('Alle Typen, 5 Treffer, 3 weitere eingeklappt');
-    expect(sessionStorage.getItem(TYPFILTER_SCHLUESSEL)).toBeNull();
-  });
-
-  it('zeigt alle Typen, wenn der gemerkte Typ in dieser Suche keine Treffer hat', async () => {
-    sessionStorage.setItem(TYPFILTER_SCHLUESSEL, 'post');
-    const seite = await oeffnen(false, antwort({ k: [erkannt('commentary', 'k-1', 0.9)] }));
-    expect(chip(seite, 'Alle').getAttribute('aria-pressed')).toBe('true');
-    expect(seite.querySelectorAll('app-beitragskarte').length).toBe(1);
+    expect(Array.from(seite.querySelector('.gruppe')!.querySelectorAll('.typ-block')).map((b) => b.getAttribute('data-typ')))
+      .toEqual(['commentary', 'generictext', 'image', 'post']);
   });
 
   it('zeigt je Typ hoechstens drei Karten, auf Wunsch alle, und setzt den Fokus auf die erste neue', async () => {
@@ -782,39 +802,36 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     expect(karten[3].contains(document.activeElement)).withContext('Fokus auf der vierten Karte').toBeTrue();
   });
 
-  it('zeigt am Desktop die erkannte Aussage im Kopfband, mit den Alternativen unter "Nicht gemeint?"', async () => {
+  for (const mobil of [false, true]) {
+    it(`nennt die erkannte Aussage in einer Zeile vor den Treffern; "Nicht gemeint?" klappt die Alternativen auf (${mobil ? 'Handy' : 'Desktop'})`, async () => {
+      const seite = await oeffnen(mobil, GEMISCHT());
+      const zeile = seite.querySelector('.erkannt-zeile')!;
+      expect(text(zeile.querySelector('.erkannt-text'))).toContain(`Erkannt als „${ERKANNT}“`);
+      expect(zeile.compareDocumentPosition(seite.querySelector('.gruppe')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+      const umschalter = zeile.querySelector<HTMLButtonElement>('.erkannt-umschalter')!;
+      expect(text(umschalter)).toContain('Nicht gemeint?');
+      expect(umschalter.getAttribute('aria-expanded')).toBe('false');
+      expect(umschalter.getAttribute('aria-controls')).toBe('erkannt-liste');
+      expect(seite.querySelector<HTMLElement>('#erkannt-liste')!.hidden).toBeTrue();
+
+      umschalter.click();
+      fixture.detectChanges();
+
+      expect(umschalter.getAttribute('aria-expanded')).toBe('true');
+      expect(seite.querySelector<HTMLElement>('#erkannt-liste')!.hidden).toBeFalse();
+      expect(texte(seite, '.erkannt-liste a')).toEqual(AEHNLICH.map((a) => a.text));
+    });
+  }
+
+  it('sucht mit einem Klick auf eine Alternative unter "Nicht gemeint?" nach ihr', fakeAsync(async () => {
     const seite = await oeffnen(false, GEMISCHT());
-    expect(text(seite.querySelector('.kopfband-aussage'))).toBe(`„${ERKANNT}“`);
-    expect(text(seite.querySelector('.kopfband-frage'))).toBe('Nicht gemeint?');
-    expect(seite.querySelector('.kopfband-umschalter')).toBeNull();
-    expect(texte(seite, '.kopfband-liste a')).toEqual(AEHNLICH.map((a) => a.text));
-    // Das Kopfband steht vor den Chips und der ersten Gruppe.
-    const band = seite.querySelector('.kopfband')!;
-    expect(band.compareDocumentPosition(seite.querySelector('.typ-chips')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('klappt am Handy die Alternativen erst mit "Nicht gemeint?" auf', async () => {
-    const seite = await oeffnen(true, GEMISCHT());
-    const umschalter = seite.querySelector<HTMLButtonElement>('.kopfband-umschalter')!;
-    expect(text(umschalter)).toContain('Nicht gemeint?');
-    expect(umschalter.getAttribute('aria-expanded')).toBe('false');
-    expect(seite.querySelector('.kopfband-liste')).toBeNull();
-
-    umschalter.click();
-    fixture.detectChanges();
-
-    expect(umschalter.getAttribute('aria-expanded')).toBe('true');
-    expect(texte(seite, '.kopfband-liste a')).toEqual(AEHNLICH.map((a) => a.text));
-  });
-
-  it('sucht mit einem Klick auf eine Alternative im Kopfband nach ihr', fakeAsync(async () => {
-    const seite = await oeffnen(false, GEMISCHT());
-    seite.querySelector<HTMLAnchorElement>('.kopfband-liste a')!.click();
+    seite.querySelector<HTMLAnchorElement>('.erkannt-liste a')!.click();
     tick();
     expect(router.url).toBe('/result?searchQuery=Windr%C3%A4der%20sind%20zu%20laut');
   }));
 
-  it('behaelt die Karten anderer Gruppen, wenn eine Gruppe aufklappt oder ein Chip wechselt', async () => {
+  it('behaelt die Karten anderer Gruppen, wenn eine Gruppe aufklappt', async () => {
     // Vier Kommentare zur erkannten Aussage (eine Gruppe mit "Alle 4 … zeigen"), einer zu einer anderen.
     const viele = [1, 2, 3, 4].map((n) => erkannt('commentary', `k-${n}`, 0.9 - n / 100));
     const seite = await oeffnen(false, antwort({ k: [...viele, andere('commentary', 'a-1', 0.5)] }));
@@ -827,10 +844,6 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     fixture.detectChanges();
     expect(gruppen()[0].querySelectorAll('app-beitragskarte').length).toBe(4);
     expect(gruppen()[1].querySelector('app-beitragskarte')).withContext('dieselbe Karte, Zustand bleibt').toBe(karteDerAnderen);
-
-    chip(seite, 'Kommentare').click();
-    fixture.detectChanges();
-    expect(gruppen()[1].querySelector('app-beitragskarte')).toBe(karteDerAnderen);
   });
 
   it('behaelt die gewaehlte Fassung einer Karte ueber den Themenfilter hinweg', async () => {
@@ -883,16 +896,14 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     expect(seite.querySelector('.hintergrund-ergaenzen')).withContext('mit Hintergrundinfos nicht').toBeNull();
   }));
 
-  it('vergisst Alternativen und Ansage der vorigen Suche', async () => {
-    const seite = await oeffnen(false, GEMISCHT());
-    chip(seite, 'Bilder').click();
-    fixture.detectChanges();
-    expect(fixture.componentInstance.ansage).not.toBe('');
+  it('vergisst die Alternativen der vorigen Suche', async () => {
+    await oeffnen(false, GEMISCHT());
+    fixture.componentInstance.alternativenOffen = true;
     expect(fixture.componentInstance.alternativen.length).toBe(2);
 
     TestBed.inject(StateManagementService).setSearchResults(antwort({ k: [erkannt('commentary', 'k-9', 0.9)] }));
-    expect(fixture.componentInstance.ansage).toBe('');
     expect(fixture.componentInstance.alternativen).toEqual([]);
+    expect(fixture.componentInstance.alternativenOffen).toBeFalse();
   });
 
   /**
@@ -916,7 +927,6 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
       ],
     }));
 
-    expect(texte(seite, '.typ-chip')).withContext('Chips zaehlen nur, was dasteht').toEqual(['Alle 3', 'Kommentare 3']);
     expect(texte(seite, '.gruppe > h2 .gruppe-label')).toEqual([`Zu dieser Aussage: „${HEIZUNG.text}“`]);
     const offen = Array.from(seite.querySelectorAll('.gruppe app-beitragskarte')).map((k) => text(k));
     expect(offen.length).toBe(3);
@@ -927,10 +937,10 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     seite.querySelector<HTMLButtonElement>('.weitere-umschalter')!.click();
     fixture.detectChanges();
     expect(texte(seite, '.gruppe > h2 .gruppe-aussage')).toEqual([`„${FLEISCH.text}“`, `„${GENDERN.text}“`]);
-    expect(texte(seite, '.typ-chip')).withContext('Aufklappen aendert die Chips nicht').toEqual(['Alle 3', 'Kommentare 3']);
+    expect(text(seite.querySelector('.beste-antwort'))).withContext('die beste bleibt die der erkannten Aussage').toContain('Titel testtext');
   });
 
-  it('klappt ohne erkannte Aussage nichts ein; ein gemerkter Typ ohne offene Treffer zeigt alle', async () => {
+  it('klappt ohne erkannte Aussage keine Gruppe ein; nur Bilder zur erkannten Aussage: die beste ist ein Bild', async () => {
     let seite = await oeffnen(false, antwort({
       k: [
         treffer('commentary', 'k-1', 'a', 'Aussage A', 0.9),
@@ -942,15 +952,17 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     expect(seite.querySelector('.weitere')).toBeNull();
     expect(seite.querySelectorAll('.gruppe').length).toBe(3);
 
-    // Erkannte Aussage nur mit Bildern, der einzige Kommentar ist eingeklappt: Der gemerkte
-    // Kommentar-Filter hat keine offenen Treffer, also gilt "Alle"; der Kommentar bleibt eingeklappt.
+    expect(seite.querySelectorAll('.beste-antwort app-beitragskarte').length).withContext('nur die erste Gruppe hat eine beste').toBe(1);
+    expect(texte(seite, '.weitere-ueberschrift')).toEqual(['Kommentare · 2', 'Kommentar · 1']);
+
+    // Erkannte Aussage nur mit Bildern, der einzige Kommentar ist eingeklappt (weniger passend).
     TestBed.resetTestingModule();
-    sessionStorage.setItem(TYPFILTER_SCHLUESSEL, 'commentary');
     seite = await oeffnen(false, antwort({
       k: [andere('commentary', 'a-1', 0.5)],
       b: [erkannt('image', 'b-1', 0.9), erkannt('image', 'b-2', 0.85)],
     }));
-    expect(chip(seite, 'Alle').getAttribute('aria-pressed')).withContext('kein sichtbarer Kommentar: alle').toBe('true');
+    expect(text(seite.querySelector('.beste-antwort'))).toContain('Titel b-1');
+    expect(texte(seite.querySelector('.gruppe')!, '.typ-ueberschrift')).toEqual(['Beste Antwort', 'Weitere Bilder · 1']);
     expect(seite.querySelector('.weitere-umschalter')).not.toBeNull();
   });
 
@@ -967,7 +979,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
       ],
     }), [anderAlsAlternative, ...AEHNLICH]);
 
-    expect(texte(seite, '.kopfband-liste a')).withContext('eingeklappte Aussage waehlbar').toContain(ANDERE);
+    expect(texte(seite, '.erkannt-liste a')).withContext('eingeklappte Aussage waehlbar').toContain(ANDERE);
     const themen = texte(seite, 'app-themen-filter button');
     expect(themen).toEqual(['Alle Themen', 'Klima']);
     expect(themenDerTreffer(antwort({ k: [mitThema(andere('commentary', 'a-1', 0.8), ERNAEHRUNG)] }))
@@ -979,11 +991,8 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     expect(seite.querySelector('.weitere')).withContext('Ernaehrung faellt mit dem Thema weg').toBeNull();
   });
 
-  it('sagt bei der Typwahl, wie viele weitere eingeklappt sind, und verknuepft den Knopf nur offen', async () => {
+  it('verknuepft den Knopf "Weitere, weniger passende Treffer" nur offen mit der Liste', async () => {
     const seite = await oeffnen(false, GEMISCHT());
-    chip(seite, 'Kommentare').click();
-    fixture.detectChanges();
-    expect(text(seite.querySelector('.typ-ansage'))).toBe('Nur Kommentare, 2 Treffer, 2 weitere eingeklappt');
     const knopf = seite.querySelector<HTMLButtonElement>('.weitere-umschalter')!;
     expect(knopf.getAttribute('aria-controls')).toBeNull();
     knopf.click();
@@ -994,13 +1003,13 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
 
   it('zeigt "Nicht gemeint?" nicht ohne Alternativen', async () => {
     const seite = await oeffnen(false, GEMISCHT(), []);
-    expect(seite.querySelector('.kopfband')).toBeTruthy();
-    expect(seite.querySelector('.kopfband-alternativen')).toBeNull();
+    expect(text(seite.querySelector('.erkannt-text'))).toContain('Erkannt als');
+    expect(seite.querySelector('.erkannt-umschalter, .erkannt-liste')).toBeNull();
   });
 
-  it('zeigt kein Kopfband, wenn kein Treffer ueber eine Aussage kam, und eine Gruppe fuer die direkten Treffer', async () => {
+  it('nennt keine erkannte Aussage, wenn kein Treffer ueber eine Aussage kam, und eine Gruppe fuer die direkten Treffer', async () => {
     const seite = await oeffnen(false, antwort({ k: [direkt('commentary', 'k-1', 0.6)] }));
-    expect(seite.querySelector('.kopfband')).toBeNull();
+    expect(text(seite.querySelector('.erkannt-zeile'))).not.toContain('Erkannt als');
     expect(texte(seite, '.gruppe > h2 .gruppe-label')).toEqual(['Passt zu deinem Suchtext']);
   });
 
@@ -1008,20 +1017,22 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
     // Mit erkannter Aussage geht sie in den Link, nicht der rohe Suchtext (Review zu #675)
     const LINK = `${window.location.origin}/result?searchQuery=${encodeURIComponent(ERKANNT)}`;
 
-    it('steht im Kopfband, mit der erkannten Aussage im Namen', async () => {
-      const seite = await oeffnen(true, GEMISCHT());
-      const knopf = seite.querySelector<HTMLButtonElement>('.kopfband .ergebnis-teilen')!;
-      expect(knopf.tagName).toBe('BUTTON');
-      expect(text(knopf)).toContain('Ergebnis teilen');
-      expect(knopf.getAttribute('aria-label')).toBe(`Ergebnis teilen: Antworten auf „${ERKANNT}“`);
-      expect(seite.querySelector('.ergebnis-teilen-leiste')).toBeNull();
-    });
+    for (const mobil of [false, true]) {
+      it(`steht als Symbol in der Zeile "Erkannt als", mit der erkannten Aussage im Namen (${mobil ? 'Handy' : 'Desktop'})`, async () => {
+        const seite = await oeffnen(mobil, GEMISCHT());
+        const knopf = seite.querySelector<HTMLButtonElement>('.erkannt-zeile .ergebnis-teilen-symbol')!;
+        expect(knopf.tagName).toBe('BUTTON');
+        expect(text(knopf)).toBe('share');
+        expect(knopf.getAttribute('aria-label')).toBe(`Ergebnis teilen: Antworten auf „${ERKANNT}“`);
+        expect(seite.querySelectorAll('.ergebnis-teilen-symbol').length).toBe(1);
+      });
+    }
 
     it('oeffnet das Teilen-Menue mit dem Link auf die erkannte Aussage und zaehlt keine Nutzung', async () => {
       const seite = await oeffnen(true, GEMISCHT());
       nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
 
-      seite.querySelector<HTMLButtonElement>('.ergebnis-teilen')!.click();
+      seite.querySelector<HTMLButtonElement>('.ergebnis-teilen-symbol')!.click();
       await fixture.whenStable();
 
       expect(nav.share).toHaveBeenCalledOnceWith({ url: LINK, text: `Antworten auf: „${ERKANNT}“` });
@@ -1053,9 +1064,9 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
 
     it('steht ohne erkannte Aussage oben ueber den Treffern und nennt den Suchtext', async () => {
       const seite = await oeffnen(false, antwort({ k: [direkt('commentary', 'k-1', 0.6)] }));
-      const knopf = seite.querySelector<HTMLButtonElement>('.ergebnis-teilen-leiste .ergebnis-teilen')!;
+      const knopf = seite.querySelector<HTMLButtonElement>('.erkannt-zeile .ergebnis-teilen-symbol')!;
       expect(knopf.getAttribute('aria-label')).toBe('Ergebnis teilen: Antworten auf „windraeder voegel“');
-      expect(knopf.compareDocumentPosition(seite.querySelector('.typ-chips')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(knopf.compareDocumentPosition(seite.querySelector('.gruppe')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it('gibt ohne erkannte Aussage den Suchtext nur gekuerzt weiter', async () => {
@@ -1084,7 +1095,7 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
         treffer('commentary', 'k-4', 'c', 'Aussage C', 0.6),
       ],
     }));
-    expect(seite.querySelector('.kopfband')).toBeNull();
+    expect(seite.querySelector('.erkannt-aussage')).toBeNull();
     expect(texte(seite, '.gruppe > h2 .gruppe-aussage')).toEqual(['„Aussage A“', '„Aussage B“', '„Aussage C“']);
     expect(texte(seite, '.gruppe > h2 .gruppe-label')).toEqual(['Zur Aussage:', 'Zur Aussage:', 'Zur Aussage:']);
   });
@@ -1092,32 +1103,24 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
   it('zeigt Treffer, auch wenn nur Posts oder nur Bilder passen', async () => {
     let seite = await oeffnen(false, antwort({ p: [direkt('post', 'p-1', 0.6)] }));
     expect(seite.querySelector('.unified-empty-state')).toBeNull();
-    expect(texte(seite, '.typ-chip')).toEqual(['Alle 1', 'Posts 1']);
-    expect(text(seite)).toContain('Titel p-1');
+    expect(texte(seite, '.typ-ueberschrift')).toEqual(['Beste Antwort']);
+    expect(text(seite.querySelector('.beste-antwort'))).toContain('Titel p-1');
 
     TestBed.resetTestingModule();
     seite = await oeffnen(true, antwort({ b: [erkannt('image', 'b-1', 0.6)] }));
     expect(seite.querySelector('.unified-empty-state')).toBeNull();
-    expect(texte(seite, '.typ-chip')).toEqual(['Alle 1', 'Bilder 1']);
+    expect(text(seite.querySelector('.beste-antwort'))).toContain('Titel b-1');
   });
 
-  it('fuehrt mit "Antworten" oben und unten ins Kommentarformular, mit Hintergrund-Filter unten ins Hintergrundformular', fakeAsync(async () => {
+  it('fuehrt mit "Antworten" unter den Treffern ins Kommentarformular; oben steht keins', fakeAsync(async () => {
     const seite = await oeffnen(false, GEMISCHT());
     const navigieren = spyOn(router, 'navigate').and.resolveTo(true);
-
-    seite.querySelector<HTMLButtonElement>('.typ-leiste .ergaenzen-link')!.click();
-    expect(navigieren.calls.mostRecent().args[0]).toEqual(['/workflow/add-commentary']);
+    expect(seite.querySelector('.typ-leiste')).toBeNull();
 
     const unten = () => seite.querySelector<HTMLButtonElement>('.nicht-dabei-unten .neu-anlegen-knopf button')!;
     expect(text(unten())).toContain('Antworten');
     unten().click();
     expect(navigieren.calls.mostRecent().args[0]).toEqual(['/workflow/add-commentary']);
-
-    chip(seite, 'Hintergrundinfos').click();
-    fixture.detectChanges();
-    expect(text(unten())).toContain('Hintergrundinfo ergänzen');
-    unten().click();
-    expect(navigieren.calls.mostRecent().args[0]).toEqual(['/workflow/add-generictext']);
   }));
 
   for (const mobil of [false, true]) {
@@ -1128,8 +1131,6 @@ describe('ResultViewComponent: Kopfband, Chips und Gruppen je Aussage', () => {
       const navigieren = spyOn(router, 'navigate').and.resolveTo(true);
       const erwartet = [['/workflow/add-commentary'], { queryParams: { aussage: ERKANNT_ID, searchQuery: 'windraeder voegel' } }];
 
-      seite.querySelector<HTMLButtonElement>('.typ-leiste .ergaenzen-link')!.click();
-      expect(navigieren.calls.mostRecent().args).toEqual(erwartet as any);
       seite.querySelector<HTMLButtonElement>('.nicht-dabei-unten .neu-anlegen-knopf button')!.click();
       expect(navigieren.calls.mostRecent().args).toEqual(erwartet as any);
     });

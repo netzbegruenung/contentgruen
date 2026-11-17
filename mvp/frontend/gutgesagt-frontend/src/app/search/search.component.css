@@ -23,6 +23,11 @@
     text-align: center;
 }
 
+/* Auf der Trefferseite kleiner (Designrunde 17.11., V3); der Wortlaut bleibt */
+.compact-mode .such-hinweis {
+    font-size: 12px;
+}
+
 .such-hinweis a {
     color: inherit;
     text-decoration: underline;

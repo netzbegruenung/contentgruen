@@ -440,88 +440,67 @@ mat-sidenav-content {
   padding-bottom: var(--spacing-xl);
 }
 
-/* Kopfband: die erkannte Aussage gross, darunter "Nicht gemeint?" mit Alternativen */
-.kopfband {
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--primary-tint);
-  border-left: 4px solid var(--akzent-klee);
-  border-radius: var(--border-radius-medium, 10px);
-}
-
-.kopfband-kopf {
+/* Zeile "Erkannt als" statt Kopfband (V3, Designrunde 17.11.): klein unter dem Suchfeld,
+   "Nicht gemeint?" dahinter, rechts "Ergebnis teilen" als Symbol */
+.erkannt-zeile {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-xs) var(--spacing-md);
+  gap: var(--spacing-sm);
+  max-width: 720px;
+  margin-bottom: calc(-1 * var(--spacing-sm));
 }
 
-.kopfband-teilen {
-  margin-top: var(--spacing-sm);
-}
-
-.ergebnis-teilen-leiste {
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* Ziel mindestens 44 px (B7) */
-.ergebnis-teilen {
-  min-height: 44px;
-  flex-shrink: 0;
-}
-
-.kopfband-label {
+.erkannt-text {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--text-secondary);
-}
-
-.kopfband-aussage {
-  margin: 2px 0 0;
-  font-family: GrueneType, Roboto, sans-serif;
-  font-size: 1.7rem;
-  line-height: 1.15;
-  color: var(--primary-dark);
   overflow-wrap: anywhere;
 }
 
-.kopfband-alternativen {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-  margin-top: var(--spacing-sm);
+.erkannt-aussage {
+  font-family: PTSans-bold, Roboto, sans-serif;
+  font-weight: normal;
+  color: var(--text-primary);
 }
 
-.kopfband-frage {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.kopfband-umschalter {
+.erkannt-umschalter {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  min-height: 40px;
+  min-height: 24px;
   padding: 0;
   border: 0;
   background: none;
   font: inherit;
-  font-size: 14px;
   color: var(--primary-dark);
   text-decoration: underline;
   text-underline-offset: 3px;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.kopfband-umschalter mat-icon {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
+.erkannt-umschalter mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
 }
 
-.kopfband-liste {
+.erkannt-umschalter:focus-visible {
+  outline: 2px solid var(--akzent-klee);
+  outline-offset: 2px;
+}
+
+/* Ergebnis teilen (B7): nur das Symbol, Ziel 48 px */
+.ergebnis-teilen-symbol {
+  flex: none;
+  margin: -8px -8px -8px 0;
+  color: var(--primary-dark);
+}
+
+.erkannt-liste {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 8px;
@@ -530,7 +509,11 @@ mat-sidenav-content {
   list-style: none;
 }
 
-.kopfband-chip {
+.erkannt-liste[hidden] {
+  display: none;
+}
+
+.erkannt-chip {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
@@ -543,99 +526,8 @@ mat-sidenav-content {
   box-sizing: border-box;
 }
 
-.kopfband-chip:hover {
+.erkannt-chip:hover {
   background: var(--primary-tint);
-}
-
-@media (max-width: 599px) {
-  .kopfband {
-    padding: var(--spacing-sm) var(--spacing-md);
-  }
-
-  .kopfband-aussage {
-    font-size: 1.15rem;
-  }
-
-  .kopfband-alternativen {
-    margin-top: 0;
-  }
-
-  .kopfband-liste {
-    flex-basis: 100%;
-  }
-}
-
-/* Typwahl: Chips mit Zahl; "Antworten" rechts daneben */
-.typ-leiste {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-xs) var(--spacing-md);
-}
-
-.typ-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.typ-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 14px;
-  border: 1px solid var(--text-subtle);
-  border-radius: 20px;
-  background: none;
-  font: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.typ-chip:hover {
-  background: var(--primary-tint);
-}
-
-.typ-chip.aktiv {
-  border-color: var(--primary-fill);
-  background: var(--primary-fill);
-  color: #fff;
-}
-
-.typ-zahl {
-  min-width: 1.5em;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: var(--surface-variant);
-  font-size: 13px;
-  text-align: center;
-  color: var(--text-primary);
-}
-
-.typ-chip.aktiv .typ-zahl {
-  background: rgba(0, 0, 0, 0.28);
-  color: #fff;
-}
-
-@media (max-width: 599px) {
-  .typ-chips {
-    gap: 6px;
-  }
-
-  .typ-chip {
-    gap: 4px;
-    min-height: 36px;
-    padding: 0 9px;
-    font-size: 13px;
-  }
-
-  .typ-zahl {
-    padding: 0 4px;
-    font-size: 12px;
-  }
 }
 
 /* Gruppe je Aussage: Kopf im Stil der Zeile "Antwort auf" der Karte, etwas groesser */
@@ -731,22 +623,29 @@ mat-sidenav-content {
   flex-direction: column;
 }
 
+/* Kleine Abschnittstitel (V3): "Beste Antwort", "Weitere Antworten · 2", "Hintergrundinfo · 1" */
 .typ-ueberschrift {
   margin: var(--spacing-sm) 0 var(--spacing-xs);
   font-family: PTSans-bold, Roboto, sans-serif;
   font-weight: normal;
-  font-size: 1rem;
-  color: var(--text-primary);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.beste-ueberschrift {
+  color: var(--primary-dark);
+}
+
+.weitere-ueberschrift {
+  margin-top: var(--spacing-md);
 }
 
 .typ-ueberschrift:focus {
   outline: none;
 }
 
-.typ-block .typ-erklaerung {
-  margin: 0 0 var(--spacing-xs);
-  font-size: 14px;
-}
 
 .alle-zeigen {
   align-self: center;
@@ -765,11 +664,15 @@ mat-sidenav-content {
   background: var(--primary-tint);
 }
 
-/* Am Handy laufen die Karten wie bisher ueber die ganze Breite */
-@media (max-width: 599px) {
-  .typ-block app-kartenliste {
-    margin: 0 calc(-1 * var(--page-margin));
-  }
+/* Eine Spalte, ohne Grund und Rahmen (V3): am Handy innerhalb des Seitenrands, am Desktop
+   hoechstens so breit wie gut lesbar */
+.typ-block app-kartenliste {
+  width: 100%;
+  max-width: 720px;
+}
+
+.typ-block app-kartenliste ::ng-deep .karte--voll {
+  width: 100%;
 }
 
 /* Dritter Weg ohne Treffer: nur einen Link einwerfen (UX-Review B13) */
@@ -777,20 +680,4 @@ mat-sidenav-content {
   margin: var(--spacing-sm) 0 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
-}
-
-/* Mobil: Teilen nur als Symbol neben dem Label (Designrunde mobil 17.11.) */
-.ergebnis-teilen-symbol {
-  margin: -8px -8px -8px 0;
-  color: var(--primary-dark);
-}
-
-@media (max-width: 599px) {
-  .kopfband-kopf {
-    flex-wrap: nowrap;
-  }
-
-  .kopfband-label {
-    font-size: 0.85rem;
-  }
 }

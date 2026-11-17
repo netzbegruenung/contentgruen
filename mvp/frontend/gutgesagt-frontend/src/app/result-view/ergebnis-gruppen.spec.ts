@@ -5,6 +5,7 @@ import {
   anzahlJeTyp,
   anzahlSichtbar,
   aufklappSchluessel,
+  besteHervorheben,
   istWeniger,
   gruppieren,
   typFilterLesen,
@@ -146,6 +147,54 @@ describe('ergebnis-gruppen', () => {
         ['ergebnis-gruppe-0-generictext', 'Hintergrundinfo', true],
         ['ergebnis-gruppe-1-generictext', 'Hintergrundinfo', false],
       ]);
+    });
+  });
+
+  describe('besteHervorheben (V3, Designrunde 17.11.)', () => {
+    const ansicht = (erkannt: string | null) =>
+      ansichtBauen(
+        gruppieren(
+          antwort({
+            k: [
+              treffer('commentary_result', 'k-1', 'a', 'A', 0.9),
+              treffer('commentary_result', 'k-2', 'a', 'A', 0.8),
+              treffer('commentary_result', 'k-3', 'b', 'B', 0.7),
+            ],
+            h: [treffer('generictext_result', 'h-1', 'a', 'A', 0.5)],
+          }),
+          erkannt,
+        ),
+        'alle',
+        new Set(),
+      );
+
+    it('stellt die erste Karte der erkannten Gruppe als beste heraus, den Rest darunter mit Titel und Zahl', () => {
+      const [erste, zweite] = besteHervorheben(ansicht('a'));
+      expect(erste.bloecke.map((b) => [b.beste?.id ?? null, b.weitere.map((k) => k.id), b.weitereTitel])).toEqual([
+        ['k-1', ['k-2'], 'Weitere Antworten · 1'],
+        [null, ['h-1'], 'Hintergrundinfo · 1'],
+      ]);
+      expect(zweite.weniger).toBeTrue();
+      expect(zweite.bloecke[0].beste).withContext('weniger passende Gruppen haben keine beste').toBeNull();
+      expect(zweite.bloecke[0].weitereTitel).toBe('Kommentar · 1');
+    });
+
+    it('nimmt ohne erkannte Aussage die erste Gruppe und laesst die Karten dieselben Objekte', () => {
+      const vorher = ansicht(null);
+      const nachher = besteHervorheben(vorher);
+      expect(nachher.filter((g) => g.bloecke.some((b) => b.beste)).length).toBe(1);
+      expect(nachher[0].bloecke[0].beste).toBe(vorher[0].bloecke[0].karten[0]);
+      expect(nachher[1]).withContext('andere Gruppen unveraendert').toBe(vorher[1]);
+    });
+
+    it('nennt andere Typen als Kommentar in der Mehrzahl', () => {
+      const nurHintergrund = ansichtBauen(
+        gruppieren(antwort({ h: [treffer('generictext_result', 'h-1', 'a', 'A', 0.5), treffer('generictext_result', 'h-2', 'a', 'A', 0.4)] }), 'a'),
+        'alle',
+        new Set(),
+      );
+      expect(besteHervorheben(nurHintergrund)[0].bloecke[0].weitereTitel).toBe('Weitere Hintergrundinfos · 1');
+      expect(besteHervorheben([])).toEqual([]);
     });
   });
 

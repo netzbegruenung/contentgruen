@@ -142,6 +142,12 @@ export interface AnsichtBlock {
   alle: number;
   /** Text des Knopfs "Alle N … zeigen"; null, wenn schon alle dastehen. */
   mehrText: string | null;
+  /** Die beste Antwort, ganz gezeigt (Trefferseite, V3); nur im ersten Block der ersten Gruppe. */
+  beste: KartenDaten | null;
+  /** Die uebrigen Karten, eingeklappt unter einer kleinen Ueberschrift. */
+  weitere: KartenDaten[];
+  /** Ueberschrift ueber den eingeklappten Karten, mit Zahl: "Weitere Antworten · 2", "Hintergrundinfo · 1". */
+  weitereTitel: string;
 }
 
 export interface AnsichtGruppe {
@@ -181,14 +187,18 @@ export function ansichtBauen(
       const id = blockId(nr, typ);
       const offen = aufgeklappt.has(aufklappSchluessel(gruppe.schluessel, typ));
       const namen = TYP_NAMEN[typ];
+      const gezeigt = offen ? karten : karten.slice(0, KARTEN_JE_TYP);
       bloecke.push({
         typ,
         id,
         ueberschrift: karten.length === 1 ? namen.einzahl : namen.mehrzahl,
         erklaerung: erklaert.has(typ) ? null : typBeschreibung(typ) || null,
-        karten: offen ? karten : karten.slice(0, KARTEN_JE_TYP),
+        karten: gezeigt,
         alle: karten.length,
         mehrText: !offen && karten.length > KARTEN_JE_TYP ? `Alle ${karten.length} ${namen.mehrzahl} zeigen` : null,
+        beste: null,
+        weitere: gezeigt,
+        weitereTitel: `${karten.length === 1 ? namen.einzahl : namen.mehrzahl} · ${karten.length}`,
       });
       erklaert.add(typ);
     }
@@ -205,6 +215,32 @@ export function ansichtBauen(
     }
   });
   return ansicht;
+}
+
+/**
+ * Die beste Antwort hervorheben (Trefferseite, V3, Designrunde 17.11.): die erste Karte
+ * im ersten Block der ersten offenen Gruppe (die erkannte Aussage, Kommentare zuerst)
+ * steht ganz da, alle anderen Karten eingeklappt. Ohne offene Gruppe die erste Gruppe,
+ * damit nie alles eingeklappt ist. Liefert neue Bloecke, die Karten bleiben dieselben.
+ */
+export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGruppe[] {
+  const erste = ansicht.find((g) => !g.weniger) ?? ansicht[0];
+  return ansicht.map((gruppe) => {
+    if (gruppe !== erste || !gruppe.bloecke.length) {
+      return gruppe;
+    }
+    const [block, ...rest] = gruppe.bloecke;
+    const [beste, ...weitere] = block.karten;
+    const namen = TYP_NAMEN[block.typ];
+    const name = block.typ === 'commentary' ? 'Antworten' : namen.mehrzahl;
+    return {
+      ...gruppe,
+      bloecke: [
+        { ...block, beste: beste ?? null, weitere, weitereTitel: `Weitere ${name} · ${block.alle - 1}` },
+        ...rest,
+      ],
+    };
+  });
 }
 
 /**
