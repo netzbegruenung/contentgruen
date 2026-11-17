@@ -171,12 +171,12 @@ describe('SearchComponent', () => {
 
     it('tippt das erste Beispiel ein und sucht mit „Ausprobieren“ genau danach', fakeAsync(() => {
       const f = mitBeispiel(false);
-      tick(HOT_TAKES[0].length * 45 + 10);
+      tick(HOT_TAKES[0].text.length * 45 + 10);
       f.detectChanges();
 
-      expect(feld(f).placeholder).toBe(HOT_TAKES[0]);
+      expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
       knopf(f)!.click();
-      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith(HOT_TAKES[0]);
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith(HOT_TAKES[0].text);
       f.detectChanges();
       expect(feld(f).placeholder).toBe('');
       flush();
@@ -200,27 +200,27 @@ describe('SearchComponent', () => {
 
     it('laesst Tab den Knopf stehen, damit er per Tastatur erreichbar bleibt', fakeAsync(() => {
       const f = mitBeispiel(false);
-      tick(HOT_TAKES[0].length * 45 + 10);
+      tick(HOT_TAKES[0].text.length * 45 + 10);
       f.detectChanges();
 
       feld(f).dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
       f.detectChanges();
 
       expect(knopf(f)).not.toBeNull();
-      expect(feld(f).placeholder).toBe(HOT_TAKES[0]);
+      expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
       flush(5000);
     }));
 
     it('haelt mit Fokus auf „Ausprobieren“ beim aktuellen Beispiel an', fakeAsync(() => {
       const f = mitBeispiel(false);
-      tick(HOT_TAKES[0].length * 45 + 10);
+      tick(HOT_TAKES[0].text.length * 45 + 10);
       f.detectChanges();
 
       knopf(f)!.dispatchEvent(new FocusEvent('focus'));
       tick(10_000);
       f.detectChanges();
 
-      expect(feld(f).placeholder).toBe(HOT_TAKES[0]);
+      expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
       expect(knopf(f)).not.toBeNull();
     }));
 
@@ -229,7 +229,7 @@ describe('SearchComponent', () => {
       flush(5000);
       f.detectChanges();
 
-      expect(feld(f).placeholder).toBe(HOT_TAKES[0]);
+      expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
       expect(knopf(f)).not.toBeNull();
     }));
 
@@ -237,7 +237,7 @@ describe('SearchComponent', () => {
       const f = mitBeispiel(true);
       f.detectChanges();
 
-      expect(feld(f).placeholder).toBe(HOT_TAKES[0]);
+      expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
       expect(knopf(f)).not.toBeNull();
       discardPeriodicTasks();
     }));

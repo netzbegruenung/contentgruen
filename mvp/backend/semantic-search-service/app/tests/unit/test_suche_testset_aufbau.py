@@ -207,19 +207,50 @@ class TestStartbeispiel:
         ]
         assert kommentare
 
-    def test_hot_takes_sind_aussagen_des_startbestands(self):
-        """Das Suchfeld des Starts tippt weitere Beispiele vor (HOT_TAKES, Designrunde
-        17.11.); „Ausprobieren“ soll auch bei ihnen die eigene Aussage finden."""
+    @staticmethod
+    def _hot_takes() -> list:
+        """(text, aussage) je Hot Take aus HOT_TAKES; aussage: STARTBEISPIEL wird aufgeloest."""
         ts = (
             REPO_WURZEL
             / "mvp/frontend/gutgesagt-frontend/src/app/shared/startbeispiel.ts"
         ).read_text(encoding="utf-8")
         block = re.search(r"export const HOT_TAKES[^=]*= \[(.*?)\];", ts, re.S)
         assert block, "HOT_TAKES nicht gefunden"
-        hot_takes = re.findall(r"'([^']+)'", block.group(1))
-        assert hot_takes
+        paare = re.findall(
+            r"\{\s*text:\s*'([^']+)',\s*aussage:\s*('[^']+'|STARTBEISPIEL)\s*\}",
+            block.group(1),
+        )
+        assert paare, "keine Hot Takes als { text, aussage } gefunden"
+        start = TestStartbeispiel._startbeispiel()
+        return [
+            (text, start if aussage == "STARTBEISPIEL" else aussage.strip("'"))
+            for text, aussage in paare
+        ]
+
+    def test_hot_takes_sind_aussagen_des_startbestands_und_seeds(self):
+        """Das Suchfeld des Starts tippt Hot Takes vor (HOT_TAKES, Designrunde 17.11.),
+        leicht anders formuliert als die zugeordnete Aussage. Die Aussage steht im
+        Startbestand und im Seed, damit „Ausprobieren“ sie auf Produktion und im
+        Dev-Stack findet."""
+        paare = self._hot_takes()
         start = {text_normalisiert(t) for t in STARTBESTAND}
-        assert [t for t in hot_takes if text_normalisiert(t) not in start] == []
+        seed = {text_normalisiert(t) for t in SEED}
+        assert [a for _, a in paare if text_normalisiert(a) not in start] == []
+        assert [a for _, a in paare if text_normalisiert(a) not in seed] == []
+
+    def test_hot_takes_sind_anders_formuliert_und_stehen_im_suchtestset(self):
+        """Die Hot Takes zeigen die Suche nach Bedeutung: nicht woertlich die Aussage, und
+        als Faelle im Suchtestset mit genau dieser Aussage als Erwartung."""
+        paare = self._hot_takes()
+        assert [
+            t for t, a in paare if text_normalisiert(t) == text_normalisiert(a)
+        ] == []
+        faelle = {text_normalisiert(f.anfrage): f for f in FAELLE}
+        for text, aussage in paare:
+            fall = faelle.get(text_normalisiert(text))
+            assert fall, f"Hot Take fehlt im Suchtestset: {text}"
+            assert fall.erwartet == (aussage,)
+            assert fall.dieselbe_behauptung
 
 
 # ---------------------------------------------------------------------- #

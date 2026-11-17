@@ -90,7 +90,7 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.ruhig = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (this.beispielAnimation && this.ruhig) {
-      this.beispielText = HOT_TAKES[0];
+      this.beispielText = HOT_TAKES[0].text;
       this.beispielFertig = true;
     }
   }
@@ -147,7 +147,7 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.beispielAus) {
       return;
     }
-    const satz = HOT_TAKES[nr];
+    const satz = HOT_TAKES[nr].text;
     if (zeichen <= satz.length) {
       this.beispielZeigen(satz.slice(0, zeichen), zeichen === satz.length);
       this.beispielTimer = setTimeout(() => this.tippen(nr, zeichen + 1, runde), zeichen === satz.length ? 2600 : 45);
@@ -156,7 +156,7 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     const naechster = (nr + 1) % HOT_TAKES.length;
     const neueRunde = naechster === 0 ? runde + 1 : runde;
     if (neueRunde >= 2) {
-      this.beispielZeigen(HOT_TAKES[0], true);
+      this.beispielZeigen(HOT_TAKES[0].text, true);
       return;
     }
     this.beispielZeigen('', false);

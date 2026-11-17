@@ -148,8 +148,9 @@ vor #392 (Unterschiede danach unter „Stemmer“). Der Seed hat 14
 Aussagen mit Antworten, jede Antwort hängt an einer Aussage, und er ist klein und
 geschrieben, um gefunden zu werden. Die Bewertung der Schwelle steht unter „Ergebnis am
 Startbestand“; die Zeile der Schwelle von heute ist hier das Soll des nächtlichen Laufs.
-Die Zeile 0,82 ist am 07.11.2026 mit dem nächtlichen Lauf nachgemessen (Stemmer nach
-#392); die übrigen Zeilen sind die Messung vom 05.11.
+Die Zeile 0,82 ist am 18.11.2026 mit dem nächtlichen Lauf nachgemessen, mit den fünf
+Hot Takes des Starts (S107 bis S111, 47 Fälle, 38 mit Erwartung; alle fünf Treffer, vier
+davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen.
 
 | Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|---|---|
@@ -158,7 +159,7 @@ Die Zeile 0,82 ist am 07.11.2026 mit dem nächtlichen Lauf nachgemessen (Stemmer
 | 0.79 | 30/33 | 2 | 1 | 1/9 / 8 | 0.25 | 0.91 | 0.94 | 0.97 | 13 / 203 |
 | 0.80 | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.88 | 0.91 | 0.94 | 11 / 136 |
 | 0.81 | 28/33 | 3 | 2 | 3/9 / 6 | 0.39 | 0.88 | 0.91 | 0.94 | 21 / 102 |
-| 0.82 (heute) | 27/33 | 3 | 3 | 4/9 / 5 | 0.49 | 0.85 | 0.88 | 0.88 | 17 / 51 |
+| 0.82 (heute) | 32/38 | 3 | 3 | 4/9 / 5 | 0.49 | 0.87 | 0.89 | 0.89 | 17 / 61 |
 | 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 0.76 | 0.76 | 12 / 15 |
 | 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
@@ -185,7 +186,7 @@ Die Zeile 0,82 ist am 07.11.2026 mit dem nächtlichen Lauf nachgemessen (Stemmer
   wollen uns das Fleisch verbieten“ verloren.
 - **Fremde Themen:** 3 von 5 zeigen etwas (Rente, Mülltrennung, Deutschlandticket),
   zwei davon nur über den direkten Weg.
-- **Zerfaserung:** 14 der 15 Suchanfragen, die dieselbe Behauptung wie eine vorhandene
+- **Zerfaserung:** 14 der 15 Suchanfragen (mit den Hot Takes S107 bis S111 am 18.11.: 18 der 20 Suchanfragen), die dieselbe Behauptung wie eine vorhandene
   Aussage sind, landen nicht auf ihr, sondern ergäben eine neue Aussage; nur der
   wörtliche Fall landet, schon ein Tippfehler („Vögle“) nicht. Die Dublettenprüfung
   (query/query-Ähnlichkeit ab 0,98) fängt also fast nur wörtliche Wiederholungen. Weil
@@ -196,7 +197,7 @@ Die Zeile 0,82 ist am 07.11.2026 mit dem nächtlichen Lauf nachgemessen (Stemmer
   Behauptung wie eine vorhandene Aussage (siehe Grenze oben). Wie groß der Anteil im
   Bestand ist, misst erst der Startbestand; die Trennung gleicher Behauptungen ist
   Aufgabe der NLI-Stufe (#387).
-- **Ähnliche Aussagen** (gemessen am 06.11.2026, #391): Bei 25 von 33 Fällen mit
+- **Ähnliche Aussagen** (gemessen am 06.11.2026, #391; am 18.11. mit S107 bis S111: 30 von 38): Bei 25 von 33 Fällen mit
   Erwartung ist eine erwartete Aussage unter den ähnlichen Aussagen; 6 von 9 Fällen ohne
   Erwartung zeigen trotzdem eine, darunter alle 4 Verneinungen. Die untere Grenze 0,885
   hält also das Gegenteil einer Aussage nicht fern, das kann nur #387.
@@ -391,9 +392,9 @@ Geprüft wird bei der Schwelle von heute (Werte in `nachtlauf.py`):
   Wer Modell, Schwelle, Stemmer, Normalisierung oder das Set ändert, zieht `SOLL` und
   diese Seite im selben PR nach (ein Unit-Test vergleicht beide).
 - **Tor für Roadmap-Stufe 3** (`docs/VISION.md`): Recall@10 mindestens 0,80 und Präzision
-  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,88 und 0,49.
+  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,89 und 0,49.
 - **Untere Grenze für ähnliche Aussagen:** Bei mindestens 70 % der Fälle mit Erwartung
-  ist eine erwartete Aussage unter den ähnlichen Aussagen. Am Seed heute 76 %.
+  ist eine erwartete Aussage unter den ähnlichen Aussagen. Am Seed heute 79 %.
 
 Tor und Grenze sind am Seed gesetzt, so dass ein erlaubter Ausreißer von einem Fall
 nicht rot wird. Am Entwurf des Startbestands (#568) halten bei 0,82 beide (Präzision

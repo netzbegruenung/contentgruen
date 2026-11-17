@@ -257,6 +257,13 @@ FAELLE = tuple(Fall(*f) for f in (
     ("S104", "In diesem Land darf man seine Meinung nicht mehr sagen", "satz", "umformulierung", (MEINUNG,), True, "eigen"),
     ("S105", "Meinungsfreiheit", "stichwort", "schlagwort", (MEINUNG,), False, "eigen"),
     ("S106", "Cancel Culture", "stichwort", "umgangssprache", (MEINUNG,), False, "eigen"),
+    # Hot Takes, die das Suchfeld des Starts vortippt (Designrunde 17.11., shared/startbeispiel.ts):
+    # leicht anders formuliert als ihre Aussage; die Suche soll genau diese Aussage erkennen.
+    ("S107", "Windräder killen doch massenhaft Vögel!", "satz", "umgangssprache", (VOEGEL,), True, "eigen"),
+    ("S108", "Die Grünen wollen uns die Heizung wegnehmen!", "satz", "umformulierung", (HEIZUNG,), True, "eigen"),
+    ("S109", "E-Autos sind auch nicht klimafreundlicher!", "satz", "umformulierung", (EAUTO,), True, "eigen"),
+    ("S110", "Tempolimit? Bringt fürs Klima gar nichts!", "satz", "umgangssprache", (TEMPO,), True, "eigen"),
+    ("S111", "Wärmepumpen taugen nur für Neubauten!", "satz", "umformulierung", (NEUBAU,), True, "eigen"),
 ))
 # fmt: on
 
