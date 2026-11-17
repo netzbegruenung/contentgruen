@@ -257,7 +257,17 @@ describe('HelpDialogComponent', () => {
 
     it('lässt Strg-Klick dem Browser (neuer Tab), ohne die Hilfe zu schliessen', () => {
       const navigate = spyOn(TestBed.inject(Router), 'navigate');
-      link('.hilfe-siegel-link').dispatchEvent(new MouseEvent('click', { ctrlKey: true, cancelable: true }));
+      const ziel = link('.hilfe-siegel-link');
+      // Nach dem Handler der Komponente pruefen, ob sie den Klick dem Browser liess, und ihn
+      // dann selbst abfangen: Sonst oeffnet Chrome wirklich einen Tab, der Testtab liegt
+      // im Hintergrund, und Tests mit Sichtbarkeit, Fokus und requestAnimationFrame scheitern.
+      let vonKomponenteVerhindert: boolean | undefined;
+      ziel.addEventListener('click', (e) => {
+        vonKomponenteVerhindert = e.defaultPrevented;
+        e.preventDefault();
+      }, { once: true });
+      ziel.dispatchEvent(new MouseEvent('click', { ctrlKey: true, cancelable: true }));
+      expect(vonKomponenteVerhindert).toBeFalse();
       expect(navigate).not.toHaveBeenCalled();
       expect(TestBed.inject(MatDialogRef).close).not.toHaveBeenCalled();
     });
