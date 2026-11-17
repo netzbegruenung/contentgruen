@@ -168,7 +168,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input() quer = false;
   /**
    * Streifen "Frisch aus der Community" auf der Startseite (16.11.): volle Karte ohne die
-   * Marke "passt auf X/Bluesky" und ohne das Alter in der Meta-Zeile. Ueberall sonst bleiben beide.
+   * Marke "passt auf Mastodon/Bluesky/X" und ohne das Alter in der Meta-Zeile. Ueberall sonst bleiben beide.
    */
   @Input() schlank = false;
 
@@ -542,7 +542,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     });
   }
 
-  /** Die Marke "passt auf X/Bluesky" unter den Reitern, wie im Formular; nur wenn es stimmt, nicht schlank. */
+  /** Die Marke "passt auf Mastodon/Bluesky/X" unter den Reitern, wie im Formular; nur wenn es stimmt, nicht schlank. */
   get passtAufX(): boolean {
     return !this.schlank && this.angezeigterText.length > 0 && this.angezeigterText.length <= PLATTFORM_GRENZE;
   }

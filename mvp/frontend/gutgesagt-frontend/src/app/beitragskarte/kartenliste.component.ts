@@ -86,7 +86,7 @@ export class KartenlisteComponent {
   @Input() titelEbene: 3 | 4 = 3;
   /** Durchgereicht an die Karten: Zeile "Antwort auf:" (aus, wo die Seite die Aussage nennt). */
   @Input() antwortAufZeigen = true;
-  /** Durchgereicht an die Karten: ohne "passt auf X/Bluesky" und Alter (Startseite). */
+  /** Durchgereicht an die Karten: ohne "passt auf Mastodon/Bluesky/X" und Alter (Startseite). */
   @Input() schlank = false;
 
   /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */

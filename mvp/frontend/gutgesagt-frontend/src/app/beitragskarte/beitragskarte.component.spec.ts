@@ -990,9 +990,9 @@ describe('BeitragskarteComponent', () => {
       expect(element('.textlaenge mat-button-toggle')).toBe(vorher);
     });
 
-    it('setzt die Marke "passt auf X/Bluesky" nur, wenn die angezeigte Fassung passt', () => {
+    it('setzt die Marke "passt auf Mastodon/Bluesky/X" nur, wenn die angezeigte Fassung passt', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), short_text: 'Kurzfassung' })));
-      expect(element('.fassung-marke')?.textContent).toContain('passt auf X/Bluesky');
+      expect(element('.fassung-marke')?.textContent).toContain('passt auf Mastodon/Bluesky/X');
 
       component.fassungWaehlen('mittel');
       fixture.detectChanges();
@@ -1000,7 +1000,7 @@ describe('BeitragskarteComponent', () => {
     });
 
     // Streifen "Frisch aus der Community" auf der Startseite (16.11.)
-    it('laesst schlank die Marke "passt auf X/Bluesky" und das Alter weg, sonst nichts', () => {
+    it('laesst schlank die Marke "passt auf Mastodon/Bluesky/X" und das Alter weg, sonst nichts', () => {
       const daten = ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), short_text: 'Kurzfassung' }));
       zeigen(daten);
       expect(element('.fassung-marke')).toBeTruthy();

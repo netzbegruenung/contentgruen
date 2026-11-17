@@ -39,7 +39,7 @@ test('Hintergrundinfo verfassen: Aufbau, neue Aussage, Ergebnisseite', async ({ 
     await bild('81-hintergrundinfo-leer');
   });
 
-  await test.step('Text: 2000er-Zaehler, kein X/Bluesky, waechst mit', async () => {
+  await test.step('Text: 2000er-Zaehler, kein Mastodon/Bluesky/X, waechst mit', async () => {
     await page.locator('textarea#text').fill(`${TESTDATEN_PRAEFIX} ${'Zahlen. '.repeat(40)}`.slice(0, 300));
     await expect.soft(page.locator('mat-hint', { hasText: '300 / 2000' })).toBeVisible();
     await expect.soft(page.locator('.plattform-hinweis')).toHaveCount(0);

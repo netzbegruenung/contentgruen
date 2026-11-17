@@ -49,18 +49,18 @@ test('Verfassen: Aufbau und Bedienung des Kommentarformulars', async ({ page, bi
     await bild('04-platzhalter-fokus');
   });
 
-  await test.step('Zaehler, X/Bluesky-Hinweis, Autosize', async () => {
+  await test.step('Zaehler, Mastodon/Bluesky/X-Hinweis, Autosize', async () => {
     await page.locator('textarea#title').fill(`${TESTDATEN_PRAEFIX} Windräder sind besser als ihr Ruf`);
     const satz = 'Windräder liefern günstigen Strom und schützen das Klima. ';
     const text250 = `${TESTDATEN_PRAEFIX} ${satz.repeat(6)}`.slice(0, 250);
     await page.locator('textarea#text').fill(text250);
     const hoehe250 = await page.locator('textarea#text').evaluate((el) => (el as HTMLElement).offsetHeight);
     await expect.soft(page.locator('mat-hint', { hasText: '250 / 500' })).toBeVisible();
-    await expect.soft(page.locator('.plattform-hinweis')).toHaveText('passt auf X/Bluesky');
+    await expect.soft(page.locator('.plattform-hinweis')).toHaveText('passt auf Mastodon/Bluesky/X');
     await bild('05-text-250');
 
     await page.locator('textarea#text').fill(`${TESTDATEN_PRAEFIX} ${satz.repeat(8)}`.slice(0, 300));
-    await expect.soft(page.locator('.plattform-hinweis')).toHaveText('zu lang für X/Bluesky');
+    await expect.soft(page.locator('.plattform-hinweis')).toHaveText('zu lang für Mastodon/Bluesky/X');
     await expect.soft(page.locator('mat-form-field:has(#text) mat-error')).toHaveCount(0);
     const hoehe300 = await page.locator('textarea#text').evaluate((el) => (el as HTMLElement).offsetHeight);
     expect.soft(hoehe300, 'Textfeld waechst mit').toBeGreaterThan(hoehe250);
