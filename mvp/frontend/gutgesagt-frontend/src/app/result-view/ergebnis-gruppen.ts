@@ -33,6 +33,14 @@ export const TYP_NAMEN: Record<TrefferTyp, { einzahl: string; mehrzahl: string }
   post: { einzahl: 'Post', mehrzahl: 'Posts' },
 };
 
+/** Name des ⓘ-Knopfs je Typ (Trefferseite, V3). */
+const ERKLAER_FRAGE: Record<TrefferTyp, string> = {
+  commentary: 'Was ist ein Kommentar?',
+  generictext: 'Was ist Hintergrundinfo?',
+  image: 'Was ist ein Bild?',
+  post: 'Was ist ein Post?',
+};
+
 /** Die Treffer eines Typs aus der Antwort; fehlende Felder (aeltere Antworten) sind leer. */
 export function trefferDesTyps(antwort: SearchResponse, typ: TrefferTyp): BaseSearchResult[] {
   return (antwort[FELD[typ]] as BaseSearchResult[] | undefined) ?? [];
@@ -136,8 +144,10 @@ export interface AnsichtBlock {
   /** Eindeutig auf der Seite; Anker fuer den Fokus nach "Alle N … zeigen". */
   id: string;
   ueberschrift: string;
-  /** Erklaerung des Typs, nur beim ersten Vorkommen auf der Seite (VISION: je eine Zeile). */
+  /** Erklaerung des Typs aus der Registry, hinter dem ⓘ am Abschnittstitel; null ohne Beschreibung. */
   erklaerung: string | null;
+  /** Name des ⓘ-Knopfs, etwa "Was ist Hintergrundinfo?". */
+  erklaerFrage: string;
   karten: KartenDaten[];
   alle: number;
   /** Text des Knopfs "Alle N … zeigen"; null, wenn schon alle dastehen. */
@@ -175,7 +185,6 @@ export function ansichtBauen(
   filter: TypFilter,
   aufgeklappt: ReadonlySet<string>,
 ): AnsichtGruppe[] {
-  const erklaert = new Set<TrefferTyp>();
   const ansicht: AnsichtGruppe[] = [];
   gruppen.forEach((gruppe, nr) => {
     const bloecke: AnsichtBlock[] = [];
@@ -192,7 +201,8 @@ export function ansichtBauen(
         typ,
         id,
         ueberschrift: karten.length === 1 ? namen.einzahl : namen.mehrzahl,
-        erklaerung: erklaert.has(typ) ? null : typBeschreibung(typ) || null,
+        erklaerung: typBeschreibung(typ) || null,
+        erklaerFrage: ERKLAER_FRAGE[typ],
         karten: gezeigt,
         alle: karten.length,
         mehrText: !offen && karten.length > KARTEN_JE_TYP ? `Alle ${karten.length} ${namen.mehrzahl} zeigen` : null,
@@ -200,7 +210,6 @@ export function ansichtBauen(
         weitere: gezeigt,
         weitereTitel: `${karten.length === 1 ? namen.einzahl : namen.mehrzahl} · ${karten.length}`,
       });
-      erklaert.add(typ);
     }
     if (bloecke.length) {
       ansicht.push({

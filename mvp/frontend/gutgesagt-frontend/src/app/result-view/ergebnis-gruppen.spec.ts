@@ -140,12 +140,12 @@ describe('ergebnis-gruppen', () => {
       expect(ansichtBauen(gruppen(), 'image', new Set())).toEqual([]);
     });
 
-    it('erklaert jeden Typ nur beim ersten Vorkommen und vergibt eindeutige Anker', () => {
+    it('gibt jedem Block die Erklaerung aus der Registry samt Frage fuers ⓘ und vergibt eindeutige Anker', () => {
       const ansicht = ansichtBauen(gruppen(), 'alle', new Set());
-      expect(ansicht.flatMap((g) => g.bloecke.map((b) => [b.id, b.ueberschrift, !!b.erklaerung]))).toEqual([
-        ['ergebnis-gruppe-0-commentary', 'Kommentare', true],
-        ['ergebnis-gruppe-0-generictext', 'Hintergrundinfo', true],
-        ['ergebnis-gruppe-1-generictext', 'Hintergrundinfo', false],
+      expect(ansicht.flatMap((g) => g.bloecke.map((b) => [b.id, b.ueberschrift, b.erklaerung, b.erklaerFrage]))).toEqual([
+        ['ergebnis-gruppe-0-commentary', 'Kommentare', 'Eine Antwort, die du direkt posten kannst.', 'Was ist ein Kommentar?'],
+        ['ergebnis-gruppe-0-generictext', 'Hintergrundinfo', 'Fakten und Zahlen, die eine Antwort stützen.', 'Was ist Hintergrundinfo?'],
+        ['ergebnis-gruppe-1-generictext', 'Hintergrundinfo', 'Fakten und Zahlen, die eine Antwort stützen.', 'Was ist Hintergrundinfo?'],
       ]);
     });
   });

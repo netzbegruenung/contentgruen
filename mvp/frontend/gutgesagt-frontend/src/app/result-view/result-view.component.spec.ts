@@ -1,3 +1,4 @@
+import { MatTooltip } from '@angular/material/tooltip';
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -699,6 +700,26 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
       expect(texte(ersteGruppe, '.typ-ueberschrift'))
         .toEqual(['Beste Antwort', 'Weitere Antworten · 1', 'Hintergrundinfo · 1', 'Bild · 1', 'Post · 1']);
       expect(seite.querySelector('.typ-erklaerung')).withContext('die Titel tragen die Typen (V3)').toBeNull();
+    });
+
+    it(`erklaert jeden Typ-Abschnitt per ⓘ hinter dem Titel, "Beste Antwort" ohne (${wo})`, async () => {
+      const seite = await oeffnen(mobil, GEMISCHT());
+      const ersteGruppe = seite.querySelector('.gruppe')!;
+      const knoepfe = Array.from(ersteGruppe.querySelectorAll<HTMLButtonElement>('.typ-kopf .typ-info'));
+      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual([
+        'Was ist ein Kommentar?', 'Was ist Hintergrundinfo?', 'Was ist ein Bild?', 'Was ist ein Post?',
+      ]);
+      expect(seite.querySelector('.beste-ueberschrift')!.closest('.typ-kopf')).toBeNull();
+      expect(knoepfe.length).toBe(ersteGruppe.querySelectorAll('.typ-ueberschrift').length - 1);
+      // Nicht in der Ueberschrift: sonst gehoerte die Frage zu ihrem Namen
+      knoepfe.forEach((k) => expect(k.closest('h3')).toBeNull());
+
+      const tooltip = fixture.debugElement.queryAll(By.css('.typ-info'))[1].injector.get(MatTooltip);
+      expect(tooltip.message).withContext('Tooltip am Desktop').toBe('Fakten und Zahlen, die eine Antwort stützen.');
+      knoepfe[1].click();
+      fixture.detectChanges();
+      expect(document.querySelector('.mat-mdc-menu-panel .typ-erklaerung-text')?.textContent?.trim())
+        .toBe('Fakten und Zahlen, die eine Antwort stützen.');
     });
 
     it(`zeigt die beste Antwort ganz und alle anderen Karten eingeklappt (${wo})`, async () => {

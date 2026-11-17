@@ -123,7 +123,22 @@
                     <app-kartenliste class="beste-antwort" [daten]="[beste]" [schlicht]="true" [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
                 </ng-container>
                 <ng-container *ngIf="block.weitere.length">
-                    <h3 class="typ-ueberschrift weitere-ueberschrift" [attr.tabindex]="block.beste ? null : -1">{{ block.weitereTitel }}</h3>
+                    <!-- Der Erklaersatz des Typs hinter dem ⓘ, wie das Stil-ⓘ der Karte: Tooltip am Desktop,
+                         Antippen oeffnet ihn als Menue, auch am Handy (Designrunde 17.11.). Neben, nicht in der
+                         Ueberschrift: sonst hiesse sie fuer Screenreader samt der Frage. -->
+                    <div class="typ-kopf">
+                        <h3 class="typ-ueberschrift weitere-ueberschrift" [attr.tabindex]="block.beste ? null : -1">{{ block.weitereTitel }}</h3>
+                        <ng-container *ngIf="block.erklaerung as erklaerung">
+                            <button type="button" class="typ-info" [matMenuTriggerFor]="typMenue"
+                                    [attr.aria-label]="block.erklaerFrage"
+                                    [matTooltip]="erklaerung" matTooltipPosition="above">
+                                <mat-icon aria-hidden="true">info_outline</mat-icon>
+                            </button>
+                            <mat-menu #typMenue="matMenu" class="typ-menue">
+                                <div mat-menu-item disableRipple class="typ-erklaerung-text" (click)="$event.stopPropagation()">{{ erklaerung }}</div>
+                            </mat-menu>
+                        </ng-container>
+                    </div>
                     <app-kartenliste class="eingeklappte-karten" [daten]="block.weitere" [schlicht]="true" [aufklappbar]="true"
                                      [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
                 </ng-container>

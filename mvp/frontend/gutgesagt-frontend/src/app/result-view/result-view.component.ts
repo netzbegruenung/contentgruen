@@ -10,6 +10,8 @@ import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { SearchComponent } from '../search/search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { StateManagementService } from '../services/state-management.service';
 import { LoadingSpinnerComponent } from '../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../shared/components/error-message/error-message.component';
@@ -161,6 +163,8 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     SearchComponent,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
+    MatTooltipModule,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
