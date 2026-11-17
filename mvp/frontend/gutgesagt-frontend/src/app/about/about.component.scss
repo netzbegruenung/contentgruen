@@ -29,8 +29,11 @@
   padding-left: 1.5rem;
 }
 
+// Rahmen und mittige Lesespalte (720 px) aus .inhalt-spalte (styles.css); der Hero
+// bleibt volle Breite und zentriert, hier nur der Abstand oben und unten (Ausrichtung 17.11.)
 .content-section {
-  padding: 1.5rem var(--page-margin);
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
 
   h2 {
     /* Uses global h2 styles */
@@ -61,7 +64,8 @@
   }
 
   @media (max-width: 768px) {
-    padding: 1rem var(--page-margin);
+    padding-top: 1rem;
+    padding-bottom: 1rem;
 
     h2 {
       margin-bottom: 1rem;

@@ -196,12 +196,14 @@ body {
 /* Layout variables
  * Seitenrahmen: Jede Seite hat links und rechts --page-margin Rand zum Rand von <main>
  * (hoechstens 1400 px breit), wie Kopf und Fuss; die Werte fallen mit der Breite (unten).
- * Schmalere Spalten (Formularfelder, Fliesstext) stehen linksbuendig im Rahmen und werden
- * hoechstens --lesespalte breit; die Raender der Seite bleiben gleich (Designrunde 12.11.).
- * Nur die Blaetter-Knoepfe der Karussells liegen auf dem Rand. */
+ * Schmalere Spalten (Fliesstext, Formulare, Listen) stehen mittig im Rahmen, ihr Inhalt
+ * linksbuendig: Klasse .inhalt-spalte unten (Ausrichtung 17.11., ersetzt "linksbuendig im
+ * Rahmen" vom 12.11.). Nur die Blaetter-Knoepfe der Karussells liegen auf dem Rand. */
 :root {
     --page-margin: 100px;
     --lesespalte: 720px;
+    --formularspalte: 600px;
+    --listenspalte: 1100px;
     --page-margin-tablet: 50px;
     --page-margin-mobile: 24px;
     --section-gap: 40px;
@@ -225,6 +227,40 @@ body {
     max-width: 100%;
     height: auto;
     display: block;
+}
+
+/*
+ * Inhaltsspalte (Ausrichtung 17.11.): Seitenrahmen und mittige Spalte in einem Element.
+ * Links und rechts --page-margin Rand wie Kopf und Fuss; dazwischen hoechstens
+ * --inhalt-breite, die Spalte steht mittig in <main>, ihr Inhalt linksbuendig.
+ * Kopf, Hero und Fuss bleiben ausserhalb und zentriert. Den Abstand oben und unten
+ * setzt die Seite selbst (padding-top/-bottom), nicht das Kuerzel padding.
+ *   --lesen     Fliesstext (Ueber, Rechtliches, Beitrag)       720 px
+ *   --formular  Formulare (Einwerfen)                          600 px
+ *   --liste     Karten- und Listenseiten                      1100 px
+ */
+.inhalt-spalte {
+    --inhalt-breite: var(--lesespalte);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: calc(var(--inhalt-breite) + 2 * var(--page-margin));
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--page-margin);
+    padding-right: var(--page-margin);
+    text-align: left;
+}
+
+.inhalt-spalte--lesen {
+    --inhalt-breite: var(--lesespalte);
+}
+
+.inhalt-spalte--formular {
+    --inhalt-breite: var(--formularspalte);
+}
+
+.inhalt-spalte--liste {
+    --inhalt-breite: var(--listenspalte);
 }
 
 /* Carousel section - Full width for carousels */

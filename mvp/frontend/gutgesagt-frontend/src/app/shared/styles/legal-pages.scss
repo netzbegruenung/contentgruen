@@ -22,15 +22,15 @@
   }
 }
 
-// Seitenrahmen wie alle Seiten (styles.css); der Text behaelt seine Zeilenlaenge (900 px),
-// steht aber linksbuendig im Rahmen statt mittig
+// Rahmen und mittige Lesespalte (720 px) aus .inhalt-spalte (styles.css), fuer alle drei
+// Rechtsseiten gleich; hier nur der Abstand oben und unten (Ausrichtung 17.11.)
 .content-section {
-  box-sizing: content-box;
-  padding: 2rem var(--page-margin);
-  max-width: 900px;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 
   @media (max-width: 768px) {
-    padding: 1.5rem var(--page-margin);
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
   }
 }
 

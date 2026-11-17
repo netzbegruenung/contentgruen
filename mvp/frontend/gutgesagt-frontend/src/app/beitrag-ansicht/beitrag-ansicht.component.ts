@@ -55,7 +55,7 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="beitrag-ansicht">
+    <div class="beitrag-ansicht inhalt-spalte">
       <div *ngIf="zustand === 'laedt'" class="laedt">
         <mat-spinner diameter="32"></mat-spinner>
       </div>
@@ -76,12 +76,17 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
       .beitrag-ansicht {
         display: flex;
         flex-direction: column;
-        align-items: center;
         gap: 16px;
-        /* Spalte so breit wie die Karte, linksbuendig im Seitenrahmen (styles.css) */
-        max-width: calc(450px + 2 * var(--page-margin));
-        box-sizing: border-box; /* kein globales border-box: sonst kaeme der Rand auf max-width */
-        padding: 16px var(--page-margin);
+        /* Rahmen und mittige Spalte aus .inhalt-spalte (styles.css), so breit wie die
+           Karte: eine einzelne Karte steht mittig, Kontext darunter linksbuendig */
+        --inhalt-breite: 450px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+      }
+
+      .laedt,
+      .zur-suche {
+        align-self: center;
       }
 
       app-beitragskarte {
