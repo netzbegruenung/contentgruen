@@ -22,4 +22,6 @@ export class BeitragskarteStubComponent {
   @Input() titelEbene: 3 | 4 = 3;
   @Input() antwortAufZeigen = true;
   @Input() schlank = false;
+  @Input() schlicht = false;
+  @Input() aufklappbar = false;
 }
