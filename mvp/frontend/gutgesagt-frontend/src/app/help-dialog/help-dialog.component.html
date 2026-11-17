@@ -49,8 +49,16 @@
     <p class="hilfe-bewerten">
         Angemeldet gibst du Beiträgen deine Stimme. Das Siegel auf der Karte zeigt die Güte:
         Je weiter der Daumen nach oben zeigt, desto besser ist der Beitrag formuliert und bewertet.
-        <a class="hilfe-siegel-link" href="/about#siegel" (click)="zuUeber($event, 'siegel')">Was bedeutet das Siegel?</a>
     </p>
+    <!-- Drei Beispielsiegel als Link zum Abschnitt auf „Über“ (Designrunde 17.11.) -->
+    <a class="hilfe-siegel-beispiele" href="/about#siegel" (click)="zuUeber($event, 'siegel')">
+        <span class="siegel-reihe" aria-hidden="true">
+            <app-siegel [guete]="null"></app-siegel>
+            <app-siegel [guete]="5"></app-siegel>
+            <app-siegel [guete]="10"></app-siegel>
+        </span>
+        <span class="hilfe-siegel-link">Was bedeutet das Siegel?</span>
+    </a>
 
     <h3>Beitragen</h3>
     <!-- Die Kette (GLOSSARY): wie aus einem Fundstueck ein Beitrag wird -->

@@ -263,10 +263,11 @@ a {
   margin: var(--spacing-xs, 4px) 0;
 }
 
+// Alle zwoelf Beispiele in einer Reihe, Groesse aus der Spaltenbreite (Designrunde 17.11.)
 .siegel-beispiele {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
   margin: 4px 0 0;
   padding: 8px 0 0;
   list-style: none;
@@ -279,9 +280,15 @@ a {
     font-size: 0.8rem;
   }
 
-  // Doppelt so gross wie vorher, damit der Glanz erkennbar ist (Ersteindruck-Test 14.11.)
   app-siegel {
-    width: 56px;
+    width: 100%;
+    max-width: 52px;
+  }
+
+  // Schmal zwei Reihen zu je sechs, sonst werden sie zu klein
+  @media (max-width: 479px) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    row-gap: 12px;
   }
 }
 

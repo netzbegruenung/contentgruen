@@ -17,6 +17,7 @@ import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
 import { EINLADUNG_AB } from '../shared/einladung-ab';
+import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 
 /**
  * Rueckkehrziel-Parameter: Nach der Anmeldung aus der Hilfe oeffnet die App sie wieder.
@@ -34,7 +35,8 @@ export const HILFE_PARAM = 'hilfe';
     MatDividerModule,
     MatIconModule,
     RouterModule,
-    NgFor
+    NgFor,
+    SiegelComponent
   ],
   templateUrl: './help-dialog.component.html',
   styleUrls: ['../rundgang/rundgang-knoepfe.css', './help-dialog.component.css']
