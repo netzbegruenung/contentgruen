@@ -182,7 +182,7 @@ app-rundgang-band {
 // Anonym: kleiner Hinweis neben dem Titel, dass es ein Konto braucht (#644). Reicht der Platz
 // neben dem laengeren Titel ("Einwerfen") nicht, rutscht er in beiden Kacheln unter den
 // Titel, nicht nur in einer (Designrunde 12.11.). Die Schwellen sind die Breite von
-// "Einwerfen" samt Marke, je Schriftgroesse des Titels (22/20 px: 161/153 px), mit etwas Luft.
+// "Einwerfen" samt Marke, je Schriftgroesse des Titels (22/20 px: rund 167/152 px), mit etwas Luft.
 .kachel-konto {
   display: inline-block;
   margin-left: 6px;
@@ -195,7 +195,7 @@ app-rundgang-band {
   vertical-align: middle;
 }
 
-@container (max-width: 169.98px) {
+@container (max-width: 175.98px) {
   .kachel-konto {
     display: table;
     margin: 2px 0 0;
