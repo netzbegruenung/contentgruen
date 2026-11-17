@@ -211,11 +211,25 @@ describe('HelpDialogComponent', () => {
 
     it('verlinkt „Was bedeutet das Siegel?“ auf /about#siegel, schliesst die Hilfe und navigiert danach', () => {
       const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
-      const siegel = link('.hilfe-siegel-link');
-      expect(siegel.textContent!.trim()).toBe('Was bedeutet das Siegel?');
+      const siegel = link('.hilfe-siegel-beispiele');
+      expect(siegel.querySelector('.hilfe-siegel-link')!.textContent!.trim()).toBe('Was bedeutet das Siegel?');
       expect(siegel.getAttribute('href')).toBe('/about#siegel');
       siegel.click();
 
+      expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/about'], { fragment: 'siegel' });
+    });
+
+    // Designrunde 17.11.: drei Beispielsiegel (neu, mittel, top) gehören zum Link, nur Schmuck
+    it('zeigt drei Beispielsiegel im Link auf /about#siegel, für Screenreader ausgeblendet', () => {
+      const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      const siegel = link('.hilfe-siegel-beispiele');
+      const reihe = siegel.querySelector('.siegel-reihe') as HTMLElement;
+      expect(reihe.getAttribute('aria-hidden')).toBe('true');
+      expect(reihe.querySelectorAll('app-siegel').length).toBe(3);
+      expect(siegel.textContent!.trim()).toBe('Was bedeutet das Siegel?');
+
+      (reihe.querySelector('app-siegel') as HTMLElement).click();
       expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
       expect(navigate).toHaveBeenCalledWith(['/about'], { fragment: 'siegel' });
     });
@@ -236,7 +250,7 @@ describe('HelpDialogComponent', () => {
 
     it('lässt Strg-Klick dem Browser (neuer Tab), ohne die Hilfe zu schliessen', () => {
       const navigate = spyOn(TestBed.inject(Router), 'navigate');
-      const ziel = link('.hilfe-siegel-link');
+      const ziel = link('.hilfe-siegel-beispiele');
       // Nach dem Handler der Komponente pruefen, ob sie den Klick dem Browser liess, und ihn
       // dann selbst abfangen: Sonst oeffnet Chrome wirklich einen Tab, der Testtab liegt
       // im Hintergrund, und Tests mit Sichtbarkeit, Fokus und requestAnimationFrame scheitern.
