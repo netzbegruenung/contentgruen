@@ -86,8 +86,15 @@ p {
     background: var(--willkommen-grund, var(--rundgang-gelb));
     flex-wrap: wrap;
     row-gap: 12px;
-    margin-left: max(var(--page-margin), calc((100% - var(--lesespalte)) / 2));
-    margin-right: max(var(--page-margin), calc((100% - var(--lesespalte)) / 2));
+    /* Kanten wie das Suchfeld im Band darueber: 16 px Einzug, ab 752 px die mittige 720er-Spalte */
+    margin-left: max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
+    margin-right: max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
+}
+
+/* Fokusring im Hellen in Tanne: das Hellblau hat auf Klee-zart nur 2,5:1 (Token
+   --willkommen-fokus; ohne Token wie bisher) */
+:host([ort='start']) .rundgang-knopf:focus-visible {
+    outline-color: var(--willkommen-fokus, var(--rundgang-fokus));
 }
 
 :host([ort='start']) .knoepfe {

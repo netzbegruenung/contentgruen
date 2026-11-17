@@ -104,15 +104,14 @@ app-rundgang-band {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-md);
-  max-width: 720px;
-  margin: var(--spacing-xl) auto var(--spacing-xxl);
-  padding: 0 var(--page-margin);
+  // Kanten wie das Suchfeld im Band darueber: 16 px Einzug, ab 752 px die mittige 720er-Spalte
+  margin: var(--spacing-xl) max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2)) var(--spacing-xxl);
 
   @media (max-width: 599px) {
     grid-template-columns: 1fr;
     gap: var(--spacing-md);
-    // Seitenrand wie Willkommen und Suchfeld (bis 480 px 16 px), nicht der feste 24er
-    margin: var(--spacing-lg) auto var(--spacing-xl);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
   }
 }
 

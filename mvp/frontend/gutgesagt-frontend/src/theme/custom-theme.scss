@@ -285,6 +285,7 @@ html:not([data-theme='dark']) {
   --mitmachen-kachel-grund: var(--commentary-bg); // Flaeche der Kacheln
   --mitmachen-kachel-rand: var(--commentary-bg); // Randfarbe der Kacheln (2 px), hier wie die Flaeche
   --mitmachen-kachel-marke: var(--bg-card); // Grund der Marke "mit Konto" auf der Kachel
+  --willkommen-fokus: var(--akzent-tanne); // Fokusring der Knoepfe im Willkommen (7,6:1 auf Klee-zart)
 }
 
 // Dunkelmodus (#588). Welche Palette gilt, steht als data-theme am <html>: gesetzt vom
