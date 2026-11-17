@@ -44,11 +44,13 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
     </div>
   `,
   styles: [`
+    /* Hauptknopf links unter den Feldern, eine Zweitaktion daneben (Ausrichtung 17.11.) */
     .leiste {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 12px;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 12px 24px;
       margin-top: 12px;
     }
 
@@ -99,7 +101,8 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
         background: var(--warning-bg);
       }
 
-      .leiste ::ng-deep button {
+      /* Der Hauptknopf fuellt die Leiste, ein Textlink daneben (Zuruecksetzen) bleibt schmal */
+      .leiste ::ng-deep .mat-mdc-button-base {
         flex: 1;
         min-height: 48px;
       }
