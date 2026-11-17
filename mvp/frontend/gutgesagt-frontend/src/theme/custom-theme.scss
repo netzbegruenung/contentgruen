@@ -275,6 +275,18 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+// Startseite im Hellen (Designrunde 17.11., Variante b+K2): Willkommen und die Kacheln
+// "Einwerfen"/"Beitragen" in zartem Klee-Gruen wie der Kartenkopf, damit sich das Willkommen
+// vom gelben Suchband absetzt und "Suchen" der eine volle Knopf bleibt. Nur hell gesetzt:
+// Ohne Wert im Dunkeln greifen die Rueckfallwerte in den Komponenten (bisheriges Aussehen);
+// eigene Dunkel-Werte gehoeren in den Block html[data-theme='dark'].
+html:not([data-theme='dark']) {
+  --willkommen-grund: var(--commentary-bg); // Flaeche des Willkommens auf der Startseite
+  --mitmachen-kachel-grund: var(--commentary-bg); // Flaeche der Kacheln
+  --mitmachen-kachel-rand: var(--commentary-bg); // Randfarbe der Kacheln (2 px), hier wie die Flaeche
+  --mitmachen-kachel-marke: var(--bg-card); // Grund der Marke "mit Konto" auf der Kachel
+}
+
 // Dunkelmodus (#588). Welche Palette gilt, steht als data-theme am <html>: gesetzt vom
 // Skript in index.html (eigene Wahl aus dem localStorage, sonst die Einstellung des Geraets)
 // und vom FarbschemaService beim Umschalten. Alles, was im Dunkeln anders aussieht, ist ein

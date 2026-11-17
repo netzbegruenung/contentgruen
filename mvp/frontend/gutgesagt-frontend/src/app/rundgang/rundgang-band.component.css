@@ -79,8 +79,11 @@ p {
 
 /* Auf der Startseite in der Spalte von Suchfeld und Kacheln (720 px, mittig), schmaler als der
    Seitenrahmen; die Knoepfe stehen immer unter dem Text, sonst wird das Band bei 600 bis 960 px
-   sehr hoch (Designrunde 17.11.). Das Band im Kopf der anderen Seiten bleibt im Seitenrahmen. */
+   sehr hoch (Designrunde 17.11.). Das Band im Kopf der anderen Seiten bleibt im Seitenrahmen.
+   Flaeche im Hellen zartes Klee-Gruen, damit es nicht mit dem gelben Suchband verschmilzt
+   (Token --willkommen-grund); ohne Token das bisherige Gelb. */
 :host([ort='start']) .band {
+    background: var(--willkommen-grund, var(--rundgang-gelb));
     flex-wrap: wrap;
     row-gap: 12px;
     margin-left: max(var(--page-margin), calc((100% - var(--lesespalte)) / 2));

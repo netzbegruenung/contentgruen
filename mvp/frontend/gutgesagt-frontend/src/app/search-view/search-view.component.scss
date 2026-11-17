@@ -116,8 +116,9 @@ app-rundgang-band {
   }
 }
 
-// Weiss mit tannengruenem Rand; bewusst ohne Typfarben. Nur Symbol, Titel und Pfeil.
-// Gross wie ein Knopf: 72 px hoch, mobil 64 px (Designrunde 17.11.)
+// Tonal wie ein zweiter Knopf: im Hellen zartes Klee-Gruen ohne sichtbaren Rand, Schrift Tanne
+// (Tokens --mitmachen-kachel-*, Designrunde 17.11.); ohne Token weiss mit tannengruenem Rand.
+// Bewusst ohne Typfarben. Gross wie ein Knopf: 72 px hoch, mobil 64 px.
 .start-kachel {
   display: flex;
   align-items: center;
@@ -125,9 +126,9 @@ app-rundgang-band {
   box-sizing: border-box;
   min-height: 72px;
   padding: var(--spacing-md) var(--spacing-lg);
-  border: 2px solid var(--linie-tanne);
+  border: 2px solid var(--mitmachen-kachel-rand, var(--linie-tanne));
   border-radius: 12px;
-  background: var(--bg-card);
+  background: var(--mitmachen-kachel-grund, var(--bg-card));
   color: var(--text-primary);
   text-decoration: none;
   transition: box-shadow var(--transition-fast, 0.2s);
@@ -188,7 +189,7 @@ app-rundgang-band {
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: var(--bg-main);
+  background: var(--mitmachen-kachel-marke, var(--bg-main));
   font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
