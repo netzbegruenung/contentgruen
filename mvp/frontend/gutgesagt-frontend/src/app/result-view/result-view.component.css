@@ -553,7 +553,7 @@ mat-sidenav-content {
   }
 
   .kopfband-aussage {
-    font-size: 1.35rem;
+    font-size: 1.15rem;
   }
 
   .kopfband-alternativen {
@@ -777,4 +777,20 @@ mat-sidenav-content {
   margin: var(--spacing-sm) 0 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
+}
+
+/* Mobil: Teilen nur als Symbol neben dem Label (Designrunde mobil 17.11.) */
+.ergebnis-teilen-symbol {
+  margin: -8px -8px -8px 0;
+  color: var(--primary-dark);
+}
+
+@media (max-width: 599px) {
+  .kopfband-kopf {
+    flex-wrap: nowrap;
+  }
+
+  .kopfband-label {
+    font-size: 0.85rem;
+  }
 }

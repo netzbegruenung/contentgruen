@@ -75,13 +75,16 @@
         <section class="kopfband" *ngIf="erkannt as aussage; else teilenOhneKopfband" aria-labelledby="kopfband-aussage">
             <div class="kopfband-kopf">
                 <p class="kopfband-label">Deine Suche passt zur Aussage</p>
-                <!-- Am Desktop rechts neben dem Label, am Handy unter der Aussage: sonst truege er Label und Aussage auseinander -->
-                <ng-container *ngIf="!isMobile" [ngTemplateOutlet]="ergebnisTeilenKnopf"></ng-container>
+                <!-- Mobil nur das Symbol neben dem Label, kein eigener Block (Designrunde mobil 17.11.) -->
+                <ng-container *ngIf="!isMobile; else teilenSymbol" [ngTemplateOutlet]="ergebnisTeilenKnopf"></ng-container>
+                <ng-template #teilenSymbol>
+                    <button mat-icon-button type="button" class="ergebnis-teilen-symbol"
+                            [attr.aria-label]="ergebnisTeilenBeschriftung" (click)="ergebnisTeilen()">
+                        <mat-icon aria-hidden="true">share</mat-icon>
+                    </button>
+                </ng-template>
             </div>
             <p class="kopfband-aussage" id="kopfband-aussage">„{{ aussage.text }}“</p>
-            <div class="kopfband-teilen" *ngIf="isMobile">
-                <ng-container *ngTemplateOutlet="ergebnisTeilenKnopf"></ng-container>
-            </div>
             <div class="kopfband-alternativen" *ngIf="alternativen.length">
                 <button *ngIf="isMobile; else frageText" type="button" class="kopfband-frage kopfband-umschalter"
                         [attr.aria-expanded]="alternativenOffen" aria-controls="kopfband-liste"
@@ -119,7 +122,8 @@
 
         <!-- Typwahl: Einfachwahl, "Alle" vorgewaehlt, nur Typen mit Treffern; gilt fuer die Sitzung -->
         <div class="typ-leiste">
-            <div class="typ-chips" role="group" aria-label="Treffer nach Typ filtern">
+            <!-- Nur mit mindestens zwei Typen: „Alle 2 / Kommentare 2“ filtert nichts (Designrunde mobil 17.11.) -->
+            <div class="typ-chips" role="group" aria-label="Treffer nach Typ filtern" *ngIf="chips.length > 2; else typLeer">
                 <button *ngFor="let chip of chips" type="button" class="typ-chip"
                         [class.aktiv]="wirksamerFilter === chip.filter"
                         [attr.aria-pressed]="wirksamerFilter === chip.filter"
@@ -127,6 +131,7 @@
                     {{ chip.name }} <span class="typ-zahl">{{ chip.anzahl }}</span>
                 </button>
             </div>
+            <ng-template #typLeer><span></span></ng-template>
             <!-- Dezent oben, derselbe Wortlaut wie der Knopf unter den Treffern (#599) -->
             <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">Antworten</button>
         </div>
@@ -137,7 +142,8 @@
              erkannte Aussage, stehen die anderen eingeklappt darunter und zaehlen nicht in den Chips. -->
         <ng-template #gruppeTpl let-gruppe>
         <section class="gruppe" [attr.aria-labelledby]="gruppe.id">
-            <h2 class="gruppe-kopf" [class.gruppe-kopf--neben]="gruppe.art === 'aehnlich' || gruppe.art === 'ohne'" [id]="gruppe.id">
+            <!-- Die erkannte Gruppe nennt das Kopfband schon; ihr Kopf nur fuer Screenreader (Designrunde mobil 17.11.) -->
+            <h2 class="gruppe-kopf" [class.visually-hidden]="gruppe.art === 'erkannt' && erkannt" [class.gruppe-kopf--neben]="gruppe.art === 'aehnlich' || gruppe.art === 'ohne'" [id]="gruppe.id">
                 <mat-icon class="gruppe-icon" aria-hidden="true">{{ gruppe.art === 'ohne' ? 'search' : 'subdirectory_arrow_left' }}</mat-icon>
                 <ng-container [ngSwitch]="gruppe.art">
                     <span *ngSwitchCase="'erkannt'" class="gruppe-label">Zu dieser Aussage<span class="visually-hidden" *ngIf="gruppe.text">: „{{ gruppe.text }}“</span></span>
@@ -151,7 +157,7 @@
 
             <div class="typ-block" *ngFor="let block of gruppe.bloecke; trackBy: nachTyp" [id]="block.id" [attr.data-typ]="block.typ">
                 <h3 class="typ-ueberschrift" tabindex="-1">{{ block.ueberschrift }}</h3>
-                <p class="typ-erklaerung" *ngIf="block.erklaerung">{{ block.erklaerung }}</p>
+                <p class="typ-erklaerung" *ngIf="block.erklaerung && !isMobile">{{ block.erklaerung }}</p>
                 <app-kartenliste [daten]="block.karten" [raster]="true" [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
                 <button *ngIf="block.mehrText" type="button" class="alle-zeigen"
                         (click)="alleZeigen(gruppe, block.typ, block.id, block.karten.length)">
