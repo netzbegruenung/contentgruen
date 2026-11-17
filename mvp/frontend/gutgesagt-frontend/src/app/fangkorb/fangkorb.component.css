@@ -147,6 +147,7 @@
   padding: 16px;
   list-style: none;
   background: var(--kartenliste-bg);
+  border: var(--kartenliste-rand);
 }
 
 .fangkorb-laedt {

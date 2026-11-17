@@ -38,6 +38,7 @@
   padding: 16px;
   list-style: none;
   background: var(--kartenliste-bg);
+  border: var(--kartenliste-rand);
 
   @media (min-width: 600px) {
     gap: 24px;

@@ -41,6 +41,7 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         padding: 16px;
         list-style: none;
         background: var(--kartenliste-bg);
+        border: var(--kartenliste-rand);
       }
 
       .kartenliste--raster {
@@ -49,6 +50,7 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         gap: 12px;
         padding: 0;
         background: none;
+        border: none;
       }
 
       @media (min-width: 600px) {
