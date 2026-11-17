@@ -1216,3 +1216,51 @@ h4.karte-titel {
 .einwurf-einwerfer {
   white-space: nowrap;
 }
+
+// Variante A (Designrunde 17.11.): Zweck und Stil als kleine Zeile ueber dem Titel, ohne Chips
+.titel-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.karte-kopf .karte-angaben {
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+
+  .karte-eigene-leute {
+    padding: 0;
+    background: none;
+    color: inherit;
+    font-weight: inherit;
+
+    .angabe-icon {
+      color: inherit;
+      width: 14px;
+      height: 14px;
+      font-size: 14px;
+    }
+  }
+
+  .karte-eigene-leute + .karte-stil::before,
+  .karte-eigene-leute + ng-container + .karte-stil::before {
+    content: '·';
+    margin-right: 6px;
+  }
+
+  .karte-stil {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+  }
+}
