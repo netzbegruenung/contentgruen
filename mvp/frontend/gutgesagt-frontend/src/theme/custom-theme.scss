@@ -336,7 +336,7 @@ html[data-theme='dark'] {
     --bg-surface: #1e201a;
     --surface-elevated: #282b23;
     --surface-variant: #1f2120;
-    --surface-muted: #252726;
+    --surface-muted: #23261f;
     --surface-pressed: #2c2e2d;
     --surface-glaze: rgba(30, 32, 26, 0.85);
 
@@ -356,7 +356,7 @@ html[data-theme='dark'] {
     --error-strong: #ff8a80;
     --error-main: #ff8a80;
     --error-tint: rgba(239, 83, 80, 0.14);
-    --success-bg: #252726;
+    --success-bg: #23261f;
     --success-faint: #1f2120;
     --warning-bg: #2c2315;
     --warning-color: #ffb74d;
@@ -382,14 +382,14 @@ html[data-theme='dark'] {
 
     // Beitragstypen: dunkle, fast neutrale Baender; unterscheidbar bleiben sie ueber das Symbol
     --commentary-bg: #262b1f;
-    --commentary-bg-end: #262c27;
+    --commentary-bg-end: #2b3023;
     --generictext-bg: #1b2228;
     --generictext-bg-end: #232b33;
     --image-bg: #24221e;
     --image-bg-end: #2c2a25;
     --post-bg: #28201b;
     --post-bg-end: #302721;
-    --statement-bg: #232524;
+    --statement-bg: #23261f;
     --kartenliste-bg: var(--bg-main); // kein dunkles Loch unter den Karten
     --kartenliste-rand: 1px solid var(--border-color);
     --seite-grund: var(--bg-main);
@@ -481,6 +481,12 @@ html[data-theme='dark'] {
 
   .mat-icon.mat-primary {
     --mat-icon-color: var(--primary-dark);
+  }
+
+  // Inhaltsspalte ohne Schatten: auf dunklem Grund wirkt er kaum, die Hoehe zeigen die
+  // helleren Flaechen (Variante Warm, Design-Review 17.11.)
+  main#hauptinhalt {
+    box-shadow: none;
   }
 
   // Suchfeld: Rand wie alle Raender, Klee erst im Fokus (Materials Fokusfarbe), damit der
