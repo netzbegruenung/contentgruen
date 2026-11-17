@@ -1,7 +1,8 @@
 .about-teaser-section {
   max-width: 720px;
   padding: 0 var(--page-margin);
-  margin: 2rem auto;
+  // Mehr Abstand zum Karussell darueber (Designrunde 17.11.)
+  margin: var(--spacing-xxl) auto var(--spacing-xl);
 
   h2 {
     margin-bottom: 1rem;
@@ -10,7 +11,7 @@
 
   @media (max-width: 768px) {
     padding: 0 var(--page-margin-mobile);
-    margin: 1rem auto;
+    margin: var(--spacing-xl) auto var(--spacing-lg);
   }
 }
 
