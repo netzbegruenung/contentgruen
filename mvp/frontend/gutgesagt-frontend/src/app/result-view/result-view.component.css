@@ -681,3 +681,13 @@ mat-sidenav-content {
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
+
+/* Unter den Treffern dieselbe Spalte wie die Karten (Design-Abnahme V3, 17.11.):
+   gleiche Hoechstbreite, gleiche linke Kante; das Suchfeld bleibt breit */
+.ergebnisse > .weitere,
+.ergebnisse > .nicht-dabei-unten,
+.ergebnisse > .keine-antwort-noetig {
+  width: 100%;
+  max-width: 720px;
+  box-sizing: border-box;
+}
