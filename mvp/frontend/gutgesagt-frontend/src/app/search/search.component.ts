@@ -1,4 +1,5 @@
-import { AfterViewInit, Component, ElementRef, Input, ChangeDetectionStrategy, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, Input, ChangeDetectionStrategy, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { HOT_TAKES } from '../shared/startbeispiel';
 import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SearchService } from '../services/search.service';
@@ -50,6 +51,17 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
   /** Ziel des Skip-Links „Zur Suche“ im Kopf; nur das Feld auf dem Start traegt es (leer: eigene Kennung von Material). */
   @Input() feldId = '';
   @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
+  /**
+   * Auf dem Start tippt das leere Feld typische Hot Takes als Platzhalter ein, daneben
+   * blinkt „Ausprobieren“ (Designrunde 17.11.). Zwei Durchläufe, dann bleibt das erste
+   * Beispiel stehen (WCAG 2.2.2). Bei reduzierter Bewegung kein Tippen, nur das Beispiel.
+   * Klickt oder tippt man selbst ins Feld, ist der Platzhalter sofort weg.
+   */
+  @Input() beispielAnimation = false;
+  beispielText = '';
+  beispielFertig = false;
+  private beispielAus = false;
+  private beispielTimer?: ReturnType<typeof setTimeout>;
   get suchhinweis(): string {
     return this.compactMode ? SUCHHINWEIS_KURZ : SUCHHINWEIS;
   }
@@ -65,13 +77,67 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
     private navigationService: NavigationService,
     private logger: LoggingService,
     private searchService: SearchService,
-    private router: Router
+    private router: Router,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngAfterViewInit(): void {
     if (this.autofokus) {
       this.feld?.nativeElement.focus({ preventScroll: true });
     }
+    if (this.beispielAnimation) {
+      const ruhig = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      if (ruhig) {
+        this.beispielZeigen(HOT_TAKES[0], true);
+      } else {
+        this.zone.runOutsideAngular(() => this.tippen(0, 0, 0));
+      }
+    }
+  }
+
+  /** Eigene Eingabe beendet die Vorführung und leert den Platzhalter. */
+  beispielBeenden(): void {
+    if (this.beispielAus) {
+      return;
+    }
+    this.beispielAus = true;
+    clearTimeout(this.beispielTimer);
+    this.beispielZeigen('', false);
+  }
+
+  beispielAusprobieren(): void {
+    const text = this.beispielText;
+    this.beispielBeenden();
+    this.performSearch(text);
+  }
+
+  private beispielZeigen(text: string, fertig: boolean): void {
+    this.zone.run(() => {
+      this.beispielText = text;
+      this.beispielFertig = fertig;
+      this.cdr.markForCheck();
+    });
+  }
+
+  private tippen(nr: number, zeichen: number, runde: number): void {
+    if (this.beispielAus) {
+      return;
+    }
+    const satz = HOT_TAKES[nr];
+    if (zeichen <= satz.length) {
+      this.beispielZeigen(satz.slice(0, zeichen), zeichen === satz.length);
+      this.beispielTimer = setTimeout(() => this.tippen(nr, zeichen + 1, runde), zeichen === satz.length ? 2600 : 45);
+      return;
+    }
+    const naechster = (nr + 1) % HOT_TAKES.length;
+    const neueRunde = naechster === 0 ? runde + 1 : runde;
+    if (neueRunde >= 2) {
+      this.beispielZeigen(HOT_TAKES[0], true);
+      return;
+    }
+    this.beispielZeigen('', false);
+    this.beispielTimer = setTimeout(() => this.tippen(naechster, 0, neueRunde), 400);
   }
 
   onSearch(): void {
@@ -92,6 +158,7 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.beispielTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }

@@ -10,3 +10,16 @@
  * tests/regression/suche_testset.py.
  */
 export const STARTBEISPIEL = 'Windräder töten die Vögel!';
+
+/**
+ * Typische Hot Takes, die das Suchfeld auf dem Start nacheinander eintippt (Designrunde 17.11.).
+ * Jede wörtlich eine Aussage aus dem Startbestand, damit „Ausprobieren“ ihre Antworten zeigt.
+ * Das Startbeispiel steht vorn.
+ */
+export const HOT_TAKES: readonly string[] = [
+  STARTBEISPIEL,
+  'Die Grünen wollen mir meine Heizung verbieten!',
+  'E-Autos sind auch nicht besser für die Umwelt!',
+  'Ein Tempolimit bringt doch nichts fürs Klima!',
+  'Wärmepumpen funktionieren nur im Neubau!',
+];
