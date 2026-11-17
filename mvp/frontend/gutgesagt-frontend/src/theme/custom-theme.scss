@@ -406,7 +406,7 @@ html[data-theme='dark'] {
     --kartenliste-bg: var(--aussen-grund); // Mulde unter den Karten wie die Seitenfueller, wie die Sandflaeche im Hellen (Sebastian 17.11.)
     --kartenliste-rand: 1px solid var(--border-color);
     --seite-grund: var(--bg-main);
-    --karussell-rand: var(--kartenliste-rand);
+    --karussell-rand: none; // ohne hellen Rand, die Mulde traegt sich ueber Farbe und Innenschatten (Sebastian 17.11.)
     --karussell-schatten: inset 0 3px 8px rgba(0, 0, 0, 0.6); // Mulde sichtbar (Sebastian 17.11.)
     --karussell-grund: var(--aussen-grund);
     --einwurf-grund: #1f1e1a;
