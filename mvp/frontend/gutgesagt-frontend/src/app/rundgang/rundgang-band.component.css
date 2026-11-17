@@ -41,7 +41,7 @@ h2 {
 }
 
 /* Knopf auf dem Band: im Hellen voll wie Suchen (Ersteindruck-Test 14.11.), im Dunkeln Umriss
-   in Gelb, damit nur ein Knopf voll leuchtet (Variante Warm 17.11.); Tokens --knopf-zweit-* */
+   in Gelb, damit nur ein Knopf voll leuchtet (Dunkelmodus 17.11.); Tokens --knopf-zweit-* */
 .knoepfe .rundgang-knopf.voll {
     background: var(--knopf-zweit-grund);
     color: var(--knopf-zweit-schrift);

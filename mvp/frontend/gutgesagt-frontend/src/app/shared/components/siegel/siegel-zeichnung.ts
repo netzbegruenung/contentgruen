@@ -41,7 +41,7 @@ const GELB: Hsl = [52, 95, 46];
 const TANNENGRUEN: Hsl = [159.3, 100, 16.5];
 /**
  * Klee (#008939) als oberes Ende im Dunkelmodus (#588): Tannengrün hebt sich vom dunklen
- * Kartengrund (#1e201a) kaum ab (1,8:1), Klee erreicht die 3:1 für Grafiken (3,6:1).
+ * Kartengrund (#1b2125) kaum ab (1,8:1), Klee erreicht die 3:1 für Grafiken (3,6:1).
  */
 const KLEE: Hsl = [145, 100, 26.9];
 /** Anteil der Güte-Skala, an dem das Siegel ganz gelb ist. */

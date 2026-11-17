@@ -171,7 +171,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   // Rand der Kartenliste: im Hellen keiner, im Dunkeln 1 px
   --kartenliste-rand: none;
   // Grund des Inhaltsbereichs (<main>): im Hellen weiss wie die Karten, im Dunkeln die
-  // unterste Stufe, damit Karten und Kacheln darueber heller liegen (Variante Warm 17.11.)
+  // unterste Stufe, damit Karten und Kacheln darueber heller liegen (Dunkelmodus Schiefer 17.11.)
   --seite-grund: var(--bg-card);
   // Tisch unter dem Karussell (ab 600 px): im Hellen eingelassen, im Dunkeln flach mit Rand
   --karussell-rand: 1px solid var(--line-faint);
@@ -328,8 +328,9 @@ html[data-theme='dark'] {
   & {
     color-scheme: dark;
     // Palette n2 (Entscheidung 13.11.): leicht gruenliche Anthrazit-Flaechen, Such-Band in Moos.
-    // Variante "Warm" (17.11.): Flaechen etwas waermer, je hoeher desto heller (Grund, Karte,
-    // Erhoehung), Gelb gedaempft und nur noch einmal voll ("Suchen")
+    // Palette "Schiefer" (Entscheidung 17.11.): kuehles Blaugrau, je hoeher desto heller (Seite,
+    // Karte, Kartenkopf, Erhoehung), Baender in Schiefer-Gruen, Gelb gedaempft und nur einmal
+    // voll ("Suchen"), Schrift leicht kuehl getoent
 
     // Schrift, Ueberschriften und Links hellgrau statt Grashalm ("zu limonig", 07.11.);
     // Gruen bleibt Knopf-Fuellung (Klee) und kleine Markierung (Grashalm).
@@ -343,23 +344,23 @@ html[data-theme='dark'] {
 
     --accent-light: #2a2d2b; // neutral: Themen-Marken sind Flaechen, kein Akzent
 
-    --bg-main: #141511;
-    --bg-card: #1e201a;
-    --bg-surface: #1e201a;
-    --surface-elevated: #282b23;
+    --bg-main: #121619;
+    --bg-card: #1b2125;
+    --bg-surface: #1b2125;
+    --surface-elevated: #242b30;
     --surface-variant: #1f2120;
-    --surface-muted: #23261f;
+    --surface-muted: #21282c;
     --surface-pressed: #2c2e2d;
-    --surface-glaze: rgba(30, 32, 26, 0.85);
+    --surface-glaze: rgba(27, 33, 37, 0.85);
 
     --text-primary: rgba(255, 255, 255, 0.92);
     --text-secondary: rgba(255, 255, 255, 0.74);
     --text-disabled: rgba(255, 255, 255, 0.42);
     --text-hint: rgba(255, 255, 255, 0.6);
     --text-strong: #f2f2f2;
-    --text-body: #dadbd2;
+    --text-body: #d6dbdc;
     --text-muted: #c4c4c4;
-    --text-subtle: #adb0a3;
+    --text-subtle: #a7b0b2;
     --text-faint: #b0b0b0;
 
     --error-bg: #2c1a1b;
@@ -368,7 +369,7 @@ html[data-theme='dark'] {
     --error-strong: #ff8a80;
     --error-main: #ff8a80;
     --error-tint: rgba(239, 83, 80, 0.14);
-    --success-bg: #23261f;
+    --success-bg: #21282c;
     --success-faint: #1f2120;
     --warning-bg: #2c2315;
     --warning-color: #ffb74d;
@@ -393,15 +394,15 @@ html[data-theme='dark'] {
     --trend-gleich: var(--warning-color);
 
     // Beitragstypen: dunkle, fast neutrale Baender; unterscheidbar bleiben sie ueber das Symbol
-    --commentary-bg: #262b1f;
-    --commentary-bg-end: #2b3023;
+    --commentary-bg: #1f272b;
+    --commentary-bg-end: #253035;
     --generictext-bg: #1b2228;
     --generictext-bg-end: #232b33;
     --image-bg: #24221e;
     --image-bg-end: #2c2a25;
     --post-bg: #28201b;
     --post-bg-end: #302721;
-    --statement-bg: #23261f;
+    --statement-bg: #21282c;
     --kartenliste-bg: var(--bg-main); // kein dunkles Loch unter den Karten
     --kartenliste-rand: 1px solid var(--border-color);
     --seite-grund: var(--bg-main);
@@ -411,14 +412,14 @@ html[data-theme='dark'] {
 
     // Such-Band: dunkles Moos statt Leuchtgelb; das Gelb aus Hell tragen die Knoepfe und die
     // Akzentschrift auf den Baendern (--knopf-auf-band-*, --band-akzent-schrift) und der Lichtkegel
-    --such-band: #1d2414;
+    --such-band: #16211f;
     --rundgang-kegel: #d8e05a;
     --rundgang-balken: #383b39;
     --rundgang-schleier: rgba(0, 0, 0, 0.65);
     --rundgang-fokus: #4fc3f7;
 
     --divider-color: #303331;
-    --border-color: #6c7262;
+    --border-color: #64706f;
     --hover-bg: #252726;
     --selected-bg: #2e302f;
     // Links sind im Dunkeln hellgrau wie der Text: unterstrichen, damit sie erkennbar bleiben
@@ -449,14 +450,14 @@ html[data-theme='dark'] {
     --knopf-auf-band-schrift: #121312;
     --band-akzent-schrift: #e2e88a;
     // Startseite (Gegenstueck zum Block html:not([data-theme='dark'])): Willkommen und Kacheln
-    // im Moos des Such-Bands, eine Stufe heller, weil sie auf der Seite liegen und sich sonst
+    // im Ton des Such-Bands, eine Stufe heller, weil sie auf der Seite liegen und sich sonst
     // mit dem Such-Band darueber vermischen (12 px Luft am Handy); Rand der Kacheln 2 px
-    // gedaempft (wirkt so ruhig wie 1 px --border-color). Der Rand ist Zierde, 2,1:1 zur Seite,
-    // die Kachel erkennt man an Flaeche, Titel und Pfeil. Marke "mit Konto" auf dem Seitengrund.
-    // Auf #222b18: Gelb 11,3:1, Text 92 % 12,7:1, Titel 13,2:1, Fokusring 7,4:1; Marke 10,3:1
-    --willkommen-grund: #222b18;
+    // gedaempft. Der Rand ist Zierde, 1,8:1 zur Seite, die Kachel erkennt man an Flaeche,
+    // Titel und Pfeil. Marke "mit Konto" auf dem Seitengrund.
+    // Auf #1c2a27: Gelb 11,5:1, Text 92 % 12,8:1, Titel 13,3:1, Fokusring 7,4:1; Marke 10,2:1
+    --willkommen-grund: #1c2a27;
     --mitmachen-kachel-grund: var(--willkommen-grund);
-    --mitmachen-kachel-rand: #454f39;
+    --mitmachen-kachel-rand: #344440;
     --mitmachen-kachel-marke: var(--bg-main);
     --willkommen-fokus: var(--rundgang-fokus);
     --knopf-zweit-grund: transparent;
@@ -506,13 +507,13 @@ html[data-theme='dark'] {
   }
 
   // Inhaltsspalte ohne Schatten: auf dunklem Grund wirkt er kaum, die Hoehe zeigen die
-  // helleren Flaechen (Variante Warm, Design-Review 17.11.)
+  // helleren Flaechen (Design-Review 17.11.)
   main#hauptinhalt {
     box-shadow: none;
   }
 
   // Suchfeld: Rand wie alle Raender, Klee erst im Fokus (Materials Fokusfarbe), damit der
-  // Rand nicht mit dem Suchen-Knopf konkurriert (Variante Warm 17.11.)
+  // Rand nicht mit dem Suchen-Knopf konkurriert (Design-Review 17.11.)
   .search-field {
     --mat-form-field-outlined-outline-color: var(--border-color);
   }
