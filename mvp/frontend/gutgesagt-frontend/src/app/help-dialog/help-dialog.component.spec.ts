@@ -10,7 +10,7 @@ import { RundgangService } from '../rundgang/rundgang.service';
 import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
 import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
-import { HILFE_PARAM, HelpDialogComponent, MITMACHEN_HINWEIS, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
+import { HILFE_PARAM, HelpDialogComponent, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
 import { EINLADUNG_AB } from '../shared/einladung-ab';
 
 describe('HelpDialogComponent', () => {
@@ -106,37 +106,16 @@ describe('HelpDialogComponent', () => {
       expect(rundgang.starten).toHaveBeenCalledWith('antwort-finden');
     });
 
-    it('teasert Besuchern Selbst beitragen an: aria-disabled, ohne Wirkung, mit Hinweis', () => {
+    it('bietet Besuchern Selbst beitragen als Bildergeschichte an, ohne Sperre (17.11.)', () => {
       const knopf = fixture.nativeElement.querySelector('.rundgang-mitmachen') as HTMLButtonElement;
-      expect(knopf.textContent!.trim()).toBe('Selbst beitragen (4 Schritte)');
-      expect(knopf.getAttribute('aria-disabled')).toBe('true');
-      expect(knopf.disabled).toBeFalse(); // fokussierbar, der Screenreader liest den Hinweis
-      const hinweis = fixture.nativeElement.querySelector('#' + knopf.getAttribute('aria-describedby')) as HTMLElement;
-      expect(hinweis.textContent).toContain(MITMACHEN_HINWEIS);
+      expect(knopf.textContent!.trim()).toBe('Selbst beitragen (3 Bilder)');
+      expect(knopf.hasAttribute('aria-disabled')).toBeFalse();
       knopf.click();
-      expect(rundgang.starten).not.toHaveBeenCalled();
-    });
-
-    it('führt Besucher zur Anmeldung und danach zurück in die Hilfe', () => {
-      const router = TestBed.inject(Router);
-      spyOnProperty(router, 'url').and.returnValue('/result?searchQuery=x');
-      const navigate = spyOn(router, 'navigate').and.resolveTo(true);
-      (fixture.nativeElement.querySelector('.rundgang-anmelden') as HTMLButtonElement).click();
 
       expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
-      expect(navigate).toHaveBeenCalledWith(['/login'], {
-        queryParams: { returnUrl: `/result?searchQuery=x&${HILFE_PARAM}=1` },
-      });
-    });
-
-    it('lässt auf der Anmeldung deren Rückkehrziel stehen und schliesst nur die Hilfe', () => {
-      const router = TestBed.inject(Router);
-      spyOnProperty(router, 'url').and.returnValue('/login?returnUrl=%2Ffangkorb');
-      const navigate = spyOn(router, 'navigate').and.resolveTo(true);
-      (fixture.nativeElement.querySelector('.rundgang-anmelden') as HTMLButtonElement).click();
-
-      expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
-      expect(navigate).not.toHaveBeenCalled();
+      // Wohin es geht, entscheidet der Rundgang: ohne Konto auf /mit-konto
+      expect(rundgang.starten).toHaveBeenCalledWith('mitmachen');
+      expect(fixture.nativeElement.querySelector('.rundgang-mitmachen-hinweis')).toBeNull();
     });
 
     it('bietet Angemeldeten auch den Rundgang Selbst beitragen an, mit Schrittzahl (#644)', () => {

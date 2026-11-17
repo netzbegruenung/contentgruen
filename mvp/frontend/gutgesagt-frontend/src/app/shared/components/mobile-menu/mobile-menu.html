@@ -92,8 +92,8 @@
             Hilfe
         </button>
 
-        <!-- Rundgaenge wieder aufrufen (#389); Selbst beitragen startet nur fuer Angemeldete,
-             Besucher sehen es ausgegraut mit Weg zur Anmeldung wie in der Hilfe.
+        <!-- Rundgaenge wieder aufrufen (#389); Selbst beitragen zeigt Besuchern die
+             Bildergeschichte auf /mit-konto (RundgangService.starten, 17.11.).
              Name, Schrittzahl und je ein eigenes Icon wie in der Hilfe (#644). -->
         <div class="mobile-menu-gruppe" role="group" aria-labelledby="menue-rundgaenge">
             <span class="mobile-menu-gruppentitel" id="menue-rundgaenge">Rundgang</span>
@@ -101,25 +101,11 @@
                 <mat-icon>travel_explore</mat-icon>
                 {{ antwortFinden }}
             </button>
-            @if (userInfo?.isAuthenticated) {
-                <button mat-button (click)="onRundgangClick('mitmachen')"
-                        class="mobile-menu-item mobile-menu-rundgang-mitmachen">
-                    <mat-icon>edit_note</mat-icon>
-                    {{ selbstBeitragen }}
-                </button>
-            } @else {
-                <!-- Fokussierbar und vorlesbar, aber ohne Wirkung; der Hinweis sagt, warum -->
-                <button mat-button aria-disabled="true" aria-describedby="menue-mitmachen-hinweis"
-                        class="mobile-menu-item mobile-menu-rundgang-mitmachen gesperrt">
-                    <mat-icon>edit_note</mat-icon>
-                    {{ selbstBeitragen }}
-                </button>
-                <p class="mobile-menu-mitmachen-hinweis">
-                    <span id="menue-mitmachen-hinweis">{{ mitmachenHinweis }}</span>
-                    <button type="button" class="mobile-menu-mitmachen-anmelden"
-                            (click)="onAnmeldenZurHilfeClick()">Anmelden</button>
-                </p>
-            }
+            <button mat-button (click)="onRundgangClick('mitmachen')"
+                    class="mobile-menu-item mobile-menu-rundgang-mitmachen">
+                <mat-icon>edit_note</mat-icon>
+                {{ userInfo?.isAuthenticated ? selbstBeitragen : selbstBeitragenOhneKonto }}
+            </button>
         </div>
 
         <!-- Hell/dunkel wie der Umschalter im Desktop-Kopf; das Menue bleibt dabei offen -->

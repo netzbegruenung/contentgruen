@@ -1,5 +1,6 @@
 import { ActivatedRouteSnapshot, Routes } from '@angular/router';
-import { AuthGuard } from './auth/auth.guard';
+import { AuthGuard, MIT_KONTO_VORSCHAU } from './auth/auth.guard';
+import { mitKontoVorschauGuard } from './mit-konto/mit-konto.guard';
 import { AdminGuard } from './auth/admin.guard';
 import { PublicGuard } from './auth/public.guard';
 import { ShareTargetGuard } from './share-target/share-target.guard';
@@ -80,19 +81,19 @@ export const routes: Routes = [
         path: 'contribute',
         loadComponent: () => import('./contribute-view/contribute-view.component').then(m => m.ContributeViewComponent),
         canActivate: [AuthGuard],
-        data: { parent: '/search' }
+        data: { [MIT_KONTO_VORSCHAU]: true, parent: '/search' }
     },
     {
         path: 'einwerfen',
         loadComponent: () => import('./einwerfen/einwerfen.component').then(m => m.EinwerfenComponent),
         canActivate: [AuthGuard],
-        data: { parent: einwerfenEltern }
+        data: { [MIT_KONTO_VORSCHAU]: true, parent: einwerfenEltern }
     },
     {
         path: 'fangkorb',
         loadComponent: () => import('./fangkorb/fangkorb.component').then(m => m.FangkorbComponent),
         canActivate: [AuthGuard],
-        data: { parent: '/search' }
+        data: { [MIT_KONTO_VORSCHAU]: true, parent: '/search' }
     },
     {
         // Ohne ID: oeffnet den naechsten offenen Einwurf oder zeigt "Leer gefischt."
@@ -202,6 +203,16 @@ export const routes: Routes = [
         canActivate: [ShareTargetGuard],
         loadComponent: () => import('./share-target-debug/share-target-debug.component').then(m => m.ShareTargetDebugComponent),
         data: { parent: '/einwerfen' }
+    },
+    {
+        // Was ein Konto bringt, fuer Besucher vor der Anmeldung (Entscheidung 17.11.): Ziel des
+        // AuthGuard an den Einstiegen ins Mitmachen (MIT_KONTO_VORSCHAU) und, mit
+        // ?ansicht=rundgang, der Rundgang Selbst beitragen ohne Konto. Angemeldete gehen
+        // gleich auf ?ziel=.
+        path: 'mit-konto',
+        loadComponent: () => import('./mit-konto/mit-konto.component').then(m => m.MitKontoComponent),
+        canActivate: [mitKontoVorschauGuard],
+        data: { parent: '/search' }
     },
     {
         path: 'login',

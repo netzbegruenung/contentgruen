@@ -72,6 +72,9 @@ export const PAGE_TITLES = {
   POST_FORM: `${typLabel('post')} verfassen`,
   GESPEICHERT: 'Gespeichert',
   LOGIN: 'Anmelden',
+  // Vorschau fuer Besucher (/mit-konto): Uebersicht bzw. Rundgang ohne Konto
+  MIT_KONTO: 'Mit Konto',
+  MIT_KONTO_RUNDGANG: 'Selbst beitragen',
   HELP: 'Hilfe',
   IMPRESSUM: 'Impressum',
   DATENSCHUTZ: 'Datenschutz',

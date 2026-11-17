@@ -27,7 +27,7 @@ describe('RundgangService', () => {
     userInfo = new BehaviorSubject<UserInfo | null>(besucher);
     geklaert = new BehaviorSubject<string | null>(null);
     router = Object.assign(
-      jasmine.createSpyObj<Router>('Router', ['navigateByUrl', 'createUrlTree', 'serializeUrl']),
+      jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl', 'createUrlTree', 'serializeUrl']),
       { url: '/search', events },
     );
     router.createUrlTree.and.callFake(((befehle: unknown[], extras?: { queryParams?: Record<string, string> }) => ({
@@ -39,6 +39,7 @@ describe('RundgangService', () => {
       return q ? `${baum.pfad}?${q}` : baum.pfad;
     }) as never);
     router.navigateByUrl.and.resolveTo(true);
+    router.navigate.and.resolveTo(true);
 
     TestBed.configureTestingModule({
       providers: [
@@ -173,8 +174,11 @@ describe('RundgangService', () => {
 
     it('bleibt nach einem Rundgang für diesen Besuch weg, ohne als beantwortet zu gelten (#585)', async () => {
       navigiert('/search');
+      // Ein anderer Rundgang als der angebotene; Selbst beitragen spielt nur angemeldet hier
+      userInfo.next(angemeldet);
       await service.starten('mitmachen');
       service.beenden();
+      userInfo.next(besucher);
       navigiert('/search');
       expect(service.band()).toBeNull();
       expect(localStorage.getItem(WILLKOMMEN_SCHLUESSEL)).toBeNull();
@@ -185,6 +189,22 @@ describe('RundgangService', () => {
   });
 
   describe('Rundgang', () => {
+    it('zeigt Besuchern Selbst beitragen als Bildergeschichte auf /mit-konto, mit Beitragen als Ziel', async () => {
+      await service.starten('mitmachen');
+      expect(router.navigate).toHaveBeenCalledWith(['/mit-konto'], {
+        queryParams: { ansicht: 'rundgang', ziel: '/contribute' },
+      });
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      expect(service.aktiv()).toBeNull();
+    });
+
+    it('zeigt Angemeldeten Selbst beitragen in der echten Oberfläche', async () => {
+      userInfo.next(angemeldet);
+      await service.starten('mitmachen');
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(service.aktiv()?.rundgang.id).toBe('mitmachen');
+    });
+
     it('führt für die Treffer-Schritte über die Beispielsuche, Schritt erst nach dem Laden', async () => {
       await service.starten('antwort-finden');
       const weiter = service.weiter();
@@ -214,6 +234,7 @@ describe('RundgangService', () => {
     });
 
     it('endet nach dem letzten Schritt mit Weiter', async () => {
+      userInfo.next(angemeldet);
       await service.starten('mitmachen');
       for (let i = 0; i < 4; i++) await service.weiter();
       expect(service.aktiv()).toBeNull();

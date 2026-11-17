@@ -5,6 +5,7 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { anmeldegrund, rueckkehrzielLesen, rueckkehrzielMerken } from './rueckkehrziel';
+import { keycloakAnmelden } from './keycloak-anmeldung';
 import { MatDialog } from '@angular/material/dialog';
 import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 import { ORGANISATION } from '../shared/organisation';
@@ -81,13 +82,7 @@ export class LoginSelectorComponent implements OnInit {
   }
 
   loginWithKeycloak(): void {
-    // Store return URL in session storage for Keycloak redirect; '/' needs no entry
-    rueckkehrzielMerken(this.returnUrl);
-    // Redirect to Keycloak login through the API endpoint. The return URL also goes along as a
-    // query parameter: the BFF sends the browser straight back there after the login, which does
-    // not depend on sessionStorage surviving the round trip through Keycloak.
-    const returnUrl = encodeURIComponent(this.returnUrl);
-    window.location.href = `${environment.baseUrl}/api/auth/login/keycloak?returnUrl=${returnUrl}`;
+    keycloakAnmelden(this.returnUrl);
   }
 
   loginWithGutGesagt(): void {

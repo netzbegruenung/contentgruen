@@ -6,7 +6,6 @@ import { ZuTunService } from '../../../services/zu-tun.service';
 
 import { MobileMenuComponent } from './mobile-menu';
 import { FarbschemaService } from '../../../services/farbschema.service';
-import { HILFE_PARAM, MITMACHEN_HINWEIS } from '../../../help-dialog/help-dialog.component';
 
 describe('MobileMenuComponent', () => {
   let component: MobileMenuComponent;
@@ -88,28 +87,17 @@ describe('MobileMenuComponent', () => {
       expect(schliessen).toHaveBeenCalled();
     });
 
-    it('teasert Besuchern Selbst beitragen an: aria-disabled, ohne Wirkung, mit Hinweis', () => {
+    it('bietet Besuchern Selbst beitragen als Bildergeschichte an (17.11.)', () => {
       const rundgang = spyOn(component.rundgang, 'emit');
-      const eintrag = fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen') as HTMLButtonElement;
-      expect(eintrag.textContent).toContain('Selbst beitragen (4 Schritte)');
-      expect(eintrag.getAttribute('aria-disabled')).toBe('true');
-      expect(eintrag.disabled).toBeFalse();
-      const hinweis = fixture.nativeElement.querySelector('#' + eintrag.getAttribute('aria-describedby')) as HTMLElement;
-      expect(hinweis.textContent).toContain(MITMACHEN_HINWEIS);
-      eintrag.click();
-      expect(rundgang).not.toHaveBeenCalled();
-    });
-
-    it('führt Besucher zur Anmeldung und danach in die Hilfe', () => {
-      const router = TestBed.inject(Router);
-      spyOnProperty(router, 'url').and.returnValue('/fangkorb');
-      const navigate = spyOn(router, 'navigate').and.resolveTo(true);
       const schliessen = spyOn(component.closeMenu, 'emit');
+      const eintrag = fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen') as HTMLButtonElement;
+      expect(eintrag.textContent).toContain('Selbst beitragen (3 Bilder)');
+      expect(eintrag.hasAttribute('aria-disabled')).toBeFalse();
+      eintrag.click();
 
-      (fixture.nativeElement.querySelector('.mobile-menu-mitmachen-anmelden') as HTMLButtonElement).click();
-
+      expect(rundgang).toHaveBeenCalledWith('mitmachen');
       expect(schliessen).toHaveBeenCalled();
-      expect(navigate).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: `/fangkorb?${HILFE_PARAM}=1` } });
+      expect(fixture.nativeElement.querySelector('.mobile-menu-mitmachen-hinweis')).toBeNull();
     });
 
     it('bietet Angemeldeten zusaetzlich den Rundgang Selbst beitragen an', () => {

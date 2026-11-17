@@ -1,0 +1,234 @@
+/* Vorschau "Das erwartet dich mit Konto": mittig wie die Startseite, Abstaende aus --spacing-* */
+.mit-konto {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-md) var(--spacing-xxl);
+    box-sizing: border-box;
+}
+
+.mk-titel {
+    margin: 0 0 var(--spacing-sm);
+    color: var(--primary-dark);
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 600;
+    text-align: center;
+}
+
+.mk-einleitung {
+    max-width: 560px;
+    margin: 0 auto var(--spacing-xl);
+    color: var(--text-body);
+    font-size: 17px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* Uebersicht: je Schritt Text und Bild; breit nebeneinander, schmal untereinander */
+.mk-schritte {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mk-schritt {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+    gap: var(--spacing-lg);
+    align-items: center;
+}
+
+.mk-schritt-text {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: flex-start;
+}
+
+.mk-nummer {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-fill);
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.mk-schritt-titel {
+    margin: 0 0 var(--spacing-xs);
+    color: var(--primary-dark);
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 600;
+}
+
+.mk-schritt-titel:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 4px;
+    border-radius: var(--border-radius-small);
+}
+
+.mk-schritt-satz {
+    margin: 0;
+    color: var(--text-body);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* Die Bilder bleiben auch im Dunkeln hell; ein zarter Rand und runde Ecken setzen sie ab */
+.mk-bild {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--divider-color);
+    border-radius: 12px;
+    background: white;
+    box-shadow: var(--elevation-2, 0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+/* Rundgang: ein Bild nach dem anderen */
+.mk-geschichte {
+    max-width: 520px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.mk-zaehler {
+    margin: 0 0 var(--spacing-xs);
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.mk-geschichte .mk-schritt-satz {
+    margin-bottom: var(--spacing-md);
+}
+
+.mk-blaettern {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    max-width: 520px;
+    margin: var(--spacing-lg) auto 0;
+}
+
+/* Knoepfe: voll in Tanne (auch im Dunkeln nicht aufgehellt), zweiter mit Rand */
+.mk-knopf {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    box-sizing: border-box;
+    min-height: 48px;
+    padding: 0 var(--spacing-lg);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.mk-knopf:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
+}
+
+.mk-voll {
+    background: var(--primary-fill);
+    color: white;
+}
+
+.mk-voll:hover {
+    background: color-mix(in srgb, var(--primary-fill) 88%, black);
+}
+
+.mk-zweit {
+    border-color: var(--knopf-auf-band-grund, var(--primary-fill));
+    background: transparent;
+    color: var(--primary-dark);
+}
+
+/* Auf dem ersten Bild gibt es kein Zurueck: Weiter steht trotzdem rechts */
+.mk-weiter {
+    margin-left: auto;
+}
+
+.mk-titel-rundgang {
+    margin-bottom: var(--spacing-lg);
+}
+
+.mk-aktionen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+}
+
+.mk-anmelden {
+    min-height: 56px;
+    font-size: 17px;
+}
+
+/* Eigenstaendige Links: Klickziel mindestens 24 px hoch (WCAG 2.5.8) */
+.mk-weiter-suchen,
+.mk-konto-weg a {
+    display: inline-block;
+    min-height: 24px;
+    padding: 4px 0;
+    color: var(--primary-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.mk-weiter-suchen {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.mk-konto-weg {
+    margin: var(--spacing-md) 0 0;
+    font-size: 14px;
+    text-align: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .mk-knopf {
+        transition: background-color 0.2s;
+    }
+}
+
+@media (max-width: 699px) {
+    .mit-konto {
+        padding-top: var(--spacing-lg);
+    }
+
+    .mk-titel {
+        font-size: 24px;
+    }
+
+    .mk-einleitung {
+        margin-bottom: var(--spacing-lg);
+        font-size: 16px;
+    }
+
+    .mk-schritt {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--spacing-md);
+    }
+
+    .mk-schritt-titel {
+        font-size: 20px;
+    }
+
+    .mk-anmelden {
+        width: 100%;
+    }
+}
