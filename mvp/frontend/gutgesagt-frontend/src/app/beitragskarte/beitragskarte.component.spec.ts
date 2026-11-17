@@ -1066,6 +1066,94 @@ describe('BeitragskarteComponent', () => {
     });
   });
 
+  // Trefferseite, V3 (Designrunde 17.11.)
+  describe('Schlicht und aufklappbar (Trefferseite)', () => {
+    const QUELLE = 'https://www.umweltbundesamt.de/themen/tempolimit';
+    const voll = () =>
+      ausSuchergebnis(
+        paket('commentary_result', {
+          text: 'M'.repeat(200),
+          short_text: 'Kurzfassung',
+          long_text: 'L'.repeat(500),
+          references: [{ reference_id: 'r-1', created: '', reference_text: QUELLE }],
+        }),
+      );
+
+    it('laesst schlicht Zeichenzahl, "passt auf Mastodon/Bluesky/X", 📚, Datum und den Teilen-Knopf weg', () => {
+      zeigen(voll());
+      expect(element('.reiter-zeichen')).toBeTruthy();
+      expect(element('.fassung-marke')).toBeTruthy();
+      expect(element('.quelle-icon')).toBeTruthy();
+      expect(element('.quelle').textContent).toContain('Herkunft:');
+      expect(element('.karte-meta')?.textContent).toMatch(/vor|gerade/);
+      expect(element('.teilen-knopf')).toBeTruthy();
+      expect(element('.karte--schlicht')).toBeNull();
+
+      zeigen(voll(), { schlicht: true });
+      expect(element('.karte--schlicht')).toBeTruthy();
+      expect(element('.reiter-zeichen')).toBeNull();
+      expect(element('.fassung-marke')).toBeNull();
+      expect(element('.quelle-icon')).toBeNull();
+      expect(element('.quelle-wort').textContent!.trim()).toBe('Quelle:');
+      expect(element('.quelle-link').textContent!.trim()).toBe('umweltbundesamt.de');
+      expect(element('.karte-meta')?.textContent ?? '').not.toMatch(/vor|gerade/);
+      expect(element('.teilen-knopf')).withContext('Teilen steht im ⋮-Menue').toBeNull();
+      expect(aktionen().teilenImMenue).toBeTrue();
+      // Bleibt: Reiter (vorgelesen mit Zeichenzahl), Stimmen, Kopieren, Menue.
+      expect(element('.textlaenge')).toBeTruthy();
+      expect(element('mat-button-toggle button').getAttribute('aria-label')).toMatch(/Zeichen/);
+      expect(element('.stimmen')).toBeTruthy();
+      expect(element('.kopieren-knopf')).toBeTruthy();
+      expect(element('.menue-knopf')).toBeTruthy();
+    });
+
+    it('zeigt eingeklappt nur Symbol, Titel und Pfeil im Knopf; die volle Karte erst aufgeklappt', () => {
+      zeigen(voll(), { schlicht: true, aufklappbar: true, titelEbene: 4 });
+      const knopf = element<HTMLButtonElement>('h4.karte-titel button.aufklapp-knopf');
+      expect(knopf).toBeTruthy();
+      expect(knopf.textContent).toContain('Test Title');
+      expect(knopf.getAttribute('aria-expanded')).toBe('false');
+      expect(knopf.getAttribute('aria-controls')).toBe(component.koerperId);
+      expect(element('.karte-icon')).toBeTruthy();
+      expect(element('.karte-inhalt, .karte-fuss, .karte-badges, .karte-angaben, .titel-link')).toBeNull();
+      expect(element(`#${component.koerperId}`).hidden).toBeTrue();
+      expect(element('.karte--zu')).toBeTruthy();
+
+      knopf.click();
+      fixture.detectChanges();
+      expect(knopf.getAttribute('aria-expanded')).toBe('true');
+      expect(element(`#${component.koerperId}`).hidden).toBeFalse();
+      expect(element('.karte-inhalt')).toBeTruthy();
+      expect(element('.kopieren-knopf')).toBeTruthy();
+      expect(element('.karte-badges')).toBeTruthy();
+      expect(element('.karte--zu')).toBeNull();
+
+      knopf.click();
+      fixture.detectChanges();
+      expect(knopf.getAttribute('aria-expanded')).toBe('false');
+      expect(element('.karte-inhalt')).toBeNull();
+    });
+
+    it('klappt per Tastatur auf (ein echter Knopf) und vergibt je Karte eine eigene Koerper-ID', () => {
+      zeigen(voll(), { aufklappbar: true });
+      const ersteId = component.koerperId;
+      const knopf = element<HTMLButtonElement>('.aufklapp-knopf');
+      knopf.focus();
+      expect(document.activeElement).toBe(knopf);
+      expect(knopf.getAttribute('type')).toBe('button');
+
+      zeigen(voll(), { aufklappbar: true });
+      expect(component.koerperId).not.toBe(ersteId);
+    });
+
+    it('ist ohne aufklappbar nie eingeklappt und hat keinen Aufklapp-Knopf', () => {
+      zeigen(voll(), { schlicht: true });
+      expect(element('.aufklapp-knopf')).toBeNull();
+      expect(element('.titel-link')).toBeTruthy();
+      expect(element('.karte-inhalt')).toBeTruthy();
+    });
+  });
+
   describe('Varianten (#356)', () => {
     it('zeigt "N Varianten" als Link auf ihre Liste', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { varianten: 3 })));

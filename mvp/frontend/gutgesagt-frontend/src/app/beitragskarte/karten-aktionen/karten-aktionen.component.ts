@@ -98,6 +98,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() ansichtVerlinkt = true;
   /** Der Knopf "Teilen" (B7); die Karte gibt ansichtVerlinkt weiter, ausser auf der Beitragsseite. */
   @Input() teilbar = true;
+  /** Teilen als Eintrag im ⋮-Menue statt als eigener Knopf (schlichte Karte der Trefferseite, V3 17.11.). */
+  @Input() teilenImMenue = false;
   /** Der Titel des Beitrags: im Namen des Teilen-Knopfs und als Titel im Teilen-Menue. */
   @Input() titel: string | null = null;
   /**

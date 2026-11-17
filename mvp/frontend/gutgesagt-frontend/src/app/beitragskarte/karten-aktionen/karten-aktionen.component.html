@@ -52,7 +52,7 @@
     <div class="rechts">
         <!-- Teilen (B7, docs/VISION.md): das Teilen-Menue, wo das Geraet eines hat, sonst Link kopieren.
              Ohne Tooltip: Der Name sagt es schon, sonst kaeme es doppelt an. -->
-        <button mat-icon-button type="button" class="teilen-knopf" *ngIf="teilenSichtbar"
+        <button mat-icon-button type="button" class="teilen-knopf" *ngIf="teilenSichtbar && !teilenImMenue"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
                 [attr.aria-label]="teilenBeschriftung"
@@ -70,6 +70,12 @@
     </div>
 
     <mat-menu #menue="matMenu">
+        <!-- Schlichte Karte (Trefferseite): Teilen hier statt als eigener Knopf -->
+        <button mat-menu-item type="button" class="teilen-eintrag" *ngIf="teilenSichtbar && teilenImMenue"
+                [attr.aria-label]="teilenBeschriftung" (click)="teilen()">
+            <mat-icon>share</mat-icon>
+            <span>Teilen</span>
+        </button>
         <!-- "Link kopieren" (#640, R48) ist im Knopf "Teilen" aufgegangen: Ohne Teilen-Menue kopiert er den Link -->
         <button mat-menu-item type="button" class="zweite-kopie" *ngIf="zweiteKopie as zweite" (click)="zweiteKopieren()">
             <mat-icon>content_copy</mat-icon>

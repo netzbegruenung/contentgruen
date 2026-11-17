@@ -6,7 +6,7 @@
 
     <!-- Zuerst, worauf der Beitrag antwortet, dann Titel und Text: sonst lasen sich
          Kurzfassung und Aussage wie zwei gleichrangige Saetze (#599) -->
-    <ng-container *ngIf="istVoll">
+    <ng-container *ngIf="istVoll && !zu">
         <div class="statement" *ngIf="(antwortAufZeigen || zeigtWerte) && daten.statement as statement">
             <!-- Fuer Nutzer:innen ohne Werte und ohne Aufklapper (#640, R39): Fuer die Guete
                  gilt nach aussen nur das Siegel; die Aussage steht hier ganz -->
@@ -62,16 +62,19 @@
               [matTooltip]="typName" matTooltipPosition="below">{{ emoji }}</span>
 
         <!-- Der Titel fuehrt zur Beitragsseite (#640, R48), ausser auf ihr selbst und in der Vorschau -->
-        <ng-template #titelInhalt><a *ngIf="titelVerlinkt; else titelText" class="titel-link"
-            [routerLink]="beitragAdresse">{{ titelAnzeige }}</a><ng-template #titelText>{{ titelAnzeige }}</ng-template></ng-template>
+        <!-- Aufklappbar (Trefferseite, V3): der Titel ist der Knopf, Akkordeon-Muster mit Ueberschrift um den Knopf -->
+        <ng-template #titelInhalt><button *ngIf="aufklappbar; else titelNormal" type="button" class="aufklapp-knopf"
+            [attr.aria-expanded]="offen" [attr.aria-controls]="koerperId"
+            (click)="aufklappenUmschalten($event)"><span class="aufklapp-titel">{{ titelAnzeige }}</span><mat-icon class="aufklapp-pfeil" aria-hidden="true">{{ offen ? 'expand_less' : 'expand_more' }}</mat-icon></button><ng-template #titelNormal><a *ngIf="titelVerlinkt; else titelText" class="titel-link"
+            [routerLink]="beitragAdresse">{{ titelAnzeige }}</a><ng-template #titelText>{{ titelAnzeige }}</ng-template></ng-template></ng-template>
         <!-- Zweck und Stil als kleine Zeile ueber dem Titel (Designrunde 17.11., Variante A) -->
         <div class="titel-block" *ngIf="!istKompakt">
-            <ng-container *ngIf="istVoll"><ng-container *ngTemplateOutlet="angaben; context: { antippbar: true }"></ng-container></ng-container>
+            <ng-container *ngIf="istVoll && !zu"><ng-container *ngTemplateOutlet="angaben; context: { antippbar: true }"></ng-container></ng-container>
             <h3 class="karte-titel" *ngIf="titelEbene === 3"><ng-container *ngTemplateOutlet="titelInhalt"></ng-container></h3>
             <h4 class="karte-titel" *ngIf="titelEbene === 4"><ng-container *ngTemplateOutlet="titelInhalt"></ng-container></h4>
         </div>
 
-        <div class="karte-badges" *ngIf="!istKompakt && !istKopf">
+        <div class="karte-badges" *ngIf="!istKompakt && !istKopf && !zu">
             <!-- Siegel (#427): zeigt die Guete, kein Knopf zum Abstimmen; Antippen erklaert sie -->
             <button type="button" class="siegel-knopf" *ngIf="istVoll && guete as g"
                     [matMenuTriggerFor]="siegelMenue"
@@ -211,7 +214,9 @@
         </footer>
     </ng-container>
 
-    <ng-container *ngIf="istVoll">
+    <!-- Der Koerper: Ziel des Aufklapp-Knopfs; eingeklappt leer und verborgen -->
+    <div class="karte-koerper" *ngIf="istVoll" [id]="koerperId" [hidden]="zu">
+    <ng-container *ngIf="!zu">
         <div class="karte-inhalt">
 
             <!-- Reiter mit Zeichenzahl, darunter die Marke wie im Formular (#641); bei nur einer Fassung keine Reiter -->
@@ -223,7 +228,7 @@
                                          (change)="fassungWaehlen($event.value)">
                     <mat-button-toggle *ngFor="let reiter of fassungsReiter; trackBy: reiterSchluessel" [value]="reiter.fassung"
                                        [aria-label]="reiter.vorgelesen">
-                        <span aria-hidden="true">{{ reiter.label }}<span class="reiter-zeichen"> · {{ reiter.zeichen }}</span></span>
+                        <span aria-hidden="true">{{ reiter.label }}<span class="reiter-zeichen" *ngIf="!schlicht"> · {{ reiter.zeichen }}</span></span>
                     </mat-button-toggle>
                 </mat-button-toggle-group>
                 <p class="fassung-marke" *ngIf="passtAufX">
@@ -271,10 +276,10 @@
             <div class="karte-quellen" *ngIf="zeigtQuellen && daten.quellen.length">
                 <ul>
                     <li class="quelle" *ngFor="let quelle of daten.quellen; let i = index">
-                        <span class="quelle-icon" aria-hidden="true">📚</span>
+                        <span class="quelle-icon" aria-hidden="true" *ngIf="!schlicht">📚</span>
                         <!-- Die Domain statt der rohen Adresse (#640, R47); die volle Adresse im Tooltip -->
                         <ng-container *ngIf="quelle.url; else ohneAdresse">
-                            <span class="quelle-wort">Herkunft:</span>
+                            <span class="quelle-wort">{{ schlicht ? 'Quelle:' : 'Herkunft:' }}</span>
                             <a class="quelle-link" [href]="quelle.url"
                                target="_blank" rel="noopener noreferrer"
                                [matTooltip]="quellenTooltip(quelle)" matTooltipPosition="above">{{ quellenDomain(quelle.url) }}</a>
@@ -305,6 +310,7 @@
                 [fassung]="fassung"
                 [ansichtVerlinkt]="ansichtVerlinkt"
                 [teilbar]="teilbar ?? ansichtVerlinkt"
+                [teilenImMenue]="schlicht"
                 [titel]="titelAnzeige"
                 [hilfreich]="guete?.hilfreich ?? null"
                 [nichtHilfreich]="guete?.nichtHilfreich ?? null"
@@ -324,6 +330,7 @@
             <p class="karte-meta" *ngIf="zeigtAutor || zeigtAlter || nutzungInMeta"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}<span *ngIf="autorAbzeichen as abzeichen" class="autor-abzeichen" [attr.title]="abzeichenText(abzeichen)"><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M6 .8l1.5 3.3 3.6.4-2.7 2.4.8 3.6L6 8.7 2.8 10.5l.8-3.6L.9 4.5l3.6-.4z" fill="currentColor"></path></svg><span aria-hidden="true">{{ abzeichen }}</span><span class="cdk-visually-hidden">, {{ abzeichenText(abzeichen) }}</span></span></ng-container><ng-container *ngIf="zeigtAutor && zeigtAlter"> · </ng-container><ng-container *ngIf="zeigtAlter">{{ daten.erstellt | relativeTime }}</ng-container><ng-container *ngIf="nutzungInMeta"><ng-container *ngIf="zeigtAutor || zeigtAlter"> · </ng-container><span class="karte-nutzung" [class.nutzung-animiert]="nutzungAnimiert">{{ nutzungAnzeige }} genutzt</span></ng-container></p>
         </footer>
     </ng-container>
+    </div>
 
     <!-- Am Kommentar (#357), in der vollen und der kompakten Karte: Markierung fuer
          die eigenen Leute und der Stil -->
