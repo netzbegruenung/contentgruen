@@ -348,9 +348,9 @@ html[data-theme='dark'] {
     --bg-card: #1b2125;
     --bg-surface: #1b2125;
     --surface-elevated: #242b30;
-    --surface-variant: #1f2120;
+    --surface-variant: #1e2428;
     --surface-muted: #21282c;
-    --surface-pressed: #2c2e2d;
+    --surface-pressed: #2a3237;
     --surface-glaze: rgba(27, 33, 37, 0.85);
 
     --text-primary: rgba(255, 255, 255, 0.92);
@@ -418,10 +418,10 @@ html[data-theme='dark'] {
     --rundgang-schleier: rgba(0, 0, 0, 0.65);
     --rundgang-fokus: #4fc3f7;
 
-    --divider-color: #303331;
-    --border-color: #64706f;
-    --hover-bg: #252726;
-    --selected-bg: #2e302f;
+    --divider-color: #2e363b;
+    --border-color: #697574; // kleinster Wert mit 3:1 auf allen Flaechen bis zur Erhoehung (3,0:1)
+    --hover-bg: #232a2e;
+    --selected-bg: #2c3439;
     // Links sind im Dunkeln hellgrau wie der Text: unterstrichen, damit sie erkennbar bleiben
     --link-unterstrich: underline;
     // Gewaehlter Filter im Fangkorb: --primary-light und --primary-dark sind hier beide hell
