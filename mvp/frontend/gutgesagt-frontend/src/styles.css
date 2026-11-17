@@ -131,7 +131,7 @@ body {
 
 body {
     min-height: 100vh;
-    background-color: var(--bg-main);
+    background-color: var(--aussen-grund, var(--bg-main));
     font-family: PTSans, Roboto, sans-serif;
     color: var(--text-primary);
     overflow-y: auto;
