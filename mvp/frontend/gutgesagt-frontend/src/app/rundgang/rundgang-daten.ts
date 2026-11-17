@@ -6,6 +6,7 @@
  */
 
 import { STARTBEISPIEL } from '../shared/startbeispiel';
+import { VORSCHAU_SCHRITTE } from '../mit-konto/vorschau-schritte';
 import { HOME_HINWEIS_SCHLUESSEL, MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
 
 /** Ein Wert, der sich zwischen breitem Kopf (Desktop) und mobilem Kopf unterscheidet. */
@@ -51,8 +52,10 @@ export interface Rundgang {
  * Wie Hilfe und Menü einen Rundgang nennen: Kurzname und Schrittzahl, damit man vorher
  * sieht, was er zeigt und wie lang er ist (#644).
  */
-export function rundgangBeschriftung(id: RundgangId): string {
+export function rundgangBeschriftung(id: RundgangId, angemeldet = true): string {
   const r = RUNDGAENGE[id];
+  // Ohne Konto ist Selbst beitragen die Bildergeschichte aus VORSCHAU_SCHRITTE (17.11.)
+  if (id === 'mitmachen' && !angemeldet) return `${r.titel} (${VORSCHAU_SCHRITTE.length} Bilder)`;
   return `${r.titel} (${r.schritte.length} Schritte)`;
 }
 

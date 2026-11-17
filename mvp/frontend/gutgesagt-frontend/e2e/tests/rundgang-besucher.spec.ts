@@ -5,8 +5,8 @@ import { KONTO } from './konto';
 /**
  * Rundgang und Zurück im Browser: Zurück beendet den Rundgang, statt den Schritt auf der
  * vorigen Seite stehen zu lassen. Läuft als Besucher (Projekt „besucher“) und legt keine
- * Inhalte an; die Tests zu Hilfe und Menü melden sich am Ende über die Direktanmeldung an
- * und willigen nur ein, falls dem Testkonto die Art.-9-Einwilligung fehlt.
+ * Inhalte an; ohne Konto ist Selbst beitragen die Bildergeschichte auf /mit-konto, der Test
+ * zum Menü meldet sich am Ende über die Direktanmeldung an.
  */
 test('Besucher: Zurück im Browser beendet den Rundgang, er lässt sich neu starten', async ({ page }) => {
   await page.goto('/search');
@@ -67,95 +67,51 @@ async function kontrastPruefen(page: Page, selektoren: string[]): Promise<void> 
   await page.emulateMedia({ colorScheme: 'light' });
 }
 
-/**
- * Direktanmeldung über die Login-Seite. Fehlt dem Testkonto die Art.-9-Einwilligung
- * (das Projekt „besucher“ hängt nicht am Setup), willigt der Test auf /einwilligung ein;
- * die Hilfe darf erst danach aufgehen.
- */
-async function anmeldenUndEinwilligen(page: Page): Promise<boolean> {
-  await page.locator('.gutgesagt-button').click();
-  await page.locator('input[formControlName="email"]').fill(KONTO.email);
-  await page.locator('input[formControlName="password"]').fill(KONTO.passwort);
-  await page.locator('button[type="submit"]').click();
-  const hilfe = page.locator('app-help-dialog');
-  const einwilligung = page.locator('app-einwilligung .haekchen');
-  await expect(hilfe.or(einwilligung)).toBeVisible({ timeout: 20_000 });
-  const mitEinwilligung = await einwilligung.isVisible();
-  if (mitEinwilligung) {
-    await expect(hilfe).toHaveCount(0);
-    await einwilligung.click();
-    await page.getByRole('button', { name: 'Einwilligen und weiter' }).click();
-  }
-  await expect(hilfe).toBeVisible({ timeout: 20_000 });
-  return mitEinwilligung;
+// Ohne Konto ist Selbst beitragen die Bildergeschichte auf /mit-konto (17.11.), ohne Sperre
+async function bildergeschichte(page: Page): Promise<void> {
+  await expect(page).toHaveURL(/\/mit-konto\?ansicht=rundgang/);
+  await expect(page.locator('.mk-titel')).toHaveText('So machst du mit Konto mit');
+  await expect(page.locator('.mk-zaehler')).toHaveText('Schritt 1 von 3');
+  await expect(page.locator('.mk-anmelden')).toHaveCount(0);
+  await page.locator('.mk-weiter').click();
+  await page.locator('.mk-weiter').click();
+  await expect(page.locator('.mk-zaehler')).toHaveText('Schritt 3 von 3');
+  await expect(page.locator('.mk-weiter')).toHaveCount(0);
+  await expect(page.locator('.mk-anmelden')).toBeVisible();
+  await kontrastPruefen(page, ['.mk-schritt-satz', '.mk-weiter-suchen']);
 }
 
-test('Besucher: Hilfe teasert Selbst beitragen an, nach der Anmeldung startet es', async ({ page }) => {
+test('Besucher: Hilfe startet Selbst beitragen als Bildergeschichte', async ({ page }) => {
   await page.goto('/search');
   await page.locator('.mobile-header .menu-button').click();
   await page.locator('.mobile-menu-item', { hasText: 'Hilfe' }).first().click();
 
   const knopf = page.locator('app-help-dialog .rundgang-mitmachen');
-  await expect(knopf).toHaveText('Selbst beitragen (4 Schritte)');
-  await expect(knopf).toHaveAttribute('aria-disabled', 'true');
-  await expect(knopf).toHaveAccessibleDescription(/Nach der Anmeldung zeigen wir dir, wie Beitragen geht\./);
-  await expect(knopf).toBeDisabled(); // Playwright wertet aria-disabled aus
-  await knopf.click({ force: true });
-  await expect(page.locator('app-help-dialog')).toBeVisible(); // ohne Wirkung, kein Rundgang
+  await expect(knopf).toHaveText('Selbst beitragen (3 Bilder)');
+  await expect(knopf).not.toHaveAttribute('aria-disabled', 'true');
+  await knopf.click();
+  await expect(page.locator('app-help-dialog')).toHaveCount(0);
   await expect(page.locator('app-rundgang .blase')).toHaveCount(0);
-
-  await kontrastPruefen(page, ['app-help-dialog .rundgang-mitmachen-hinweis', 'app-help-dialog .rundgang-mitmachen']);
-
-  // Anmelden führt über die Direktanmeldung (und ggf. die Einwilligung) zurück auf die
-  // Startseite mit offener Hilfe
-  await page.locator('app-help-dialog .rundgang-anmelden').click();
-  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fsearch%3Fhilfe%3D1$/);
-  await anmeldenUndEinwilligen(page);
-  await expect(page).toHaveURL(/\/search$/); // Parameter wieder weg
-  const frei = page.locator('app-help-dialog .rundgang-mitmachen');
-  await expect(frei).not.toHaveAttribute('aria-disabled', 'true');
-  await expect(page.locator('app-help-dialog .rundgang-mitmachen-hinweis')).toHaveCount(0);
-  await frei.click();
-  await expect(page.locator('.blase h3')).toHaveText('Beitragen', { timeout: 20_000 });
+  await bildergeschichte(page);
 });
 
-test('Besucher: Menü teasert Selbst beitragen an, nach der Anmeldung öffnet sich die Hilfe', async ({ page }) => {
+test('Besucher: Menü startet Selbst beitragen als Bildergeschichte, nach der Anmeldung Beitragen', async ({ page }) => {
   await page.goto('/search');
   await page.locator('.mobile-header .menu-button').click();
 
   const eintrag = page.locator('app-mobile-menu .mobile-menu-rundgang-mitmachen');
-  await expect(eintrag).toContainText('Selbst beitragen (4 Schritte)');
-  await expect(eintrag).toHaveAttribute('aria-disabled', 'true');
-  await expect(eintrag).toHaveAccessibleDescription(/Nach der Anmeldung zeigen wir dir, wie Beitragen geht\./);
-  await expect(eintrag).toBeDisabled(); // Playwright wertet aria-disabled aus
+  await expect(eintrag).toContainText('Selbst beitragen (3 Bilder)');
+  await expect(eintrag).not.toHaveAttribute('aria-disabled', 'true');
   await eintrag.scrollIntoViewIfNeeded();
-  await eintrag.click({ force: true });
-  await expect(page.locator('app-rundgang .blase')).toHaveCount(0);
+  await eintrag.click();
+  await bildergeschichte(page);
 
-  await kontrastPruefen(page, ['app-mobile-menu .mobile-menu-mitmachen-hinweis', 'app-mobile-menu .mobile-menu-rundgang-mitmachen']);
-
-  // Hier immer über die Einwilligung, ohne etwas zu speichern: Der Test beantwortet Abfrage
-  // („nicht eingewilligt“) und Einwilligen selbst. Die Hilfe darf erst danach aufgehen.
-  let eingewilligt = false;
-  await page.route('**/api/v1/art9-einwilligung', (anfrage) => {
-    if (anfrage.request().method() === 'POST') {
-      eingewilligt = true;
-      return anfrage.fulfill({ status: 204 });
-    }
-    return anfrage.fulfill({
-      json: {
-        eingewilligt,
-        wortlaut: eingewilligt ? '2026-11-05' : null,
-        eingewilligt_am: null,
-        widerrufen_am: null,
-        aktueller_wortlaut: { kennung: '2026-11-05', text: 'Ich willige ein (Testwortlaut).' },
-      },
-    });
-  });
-  await page.locator('app-mobile-menu .mobile-menu-mitmachen-anmelden').click();
-  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fsearch%3Fhilfe%3D1$/);
-  expect(await anmeldenUndEinwilligen(page)).toBe(true);
-  await expect(page).toHaveURL(/\/search$/);
-  await page.locator('app-help-dialog .rundgang-mitmachen').click();
-  await expect(page.locator('.blase h3')).toHaveText('Beitragen', { timeout: 20_000 });
+  // Im Dev-Stack ohne Keycloak über die Login-Auswahl; danach geht es nach Beitragen
+  await page.locator('.mk-anmelden').click();
+  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fcontribute$/);
+  await page.locator('.gutgesagt-button').click();
+  await page.locator('input[formControlName="email"]').fill(KONTO.email);
+  await page.locator('input[formControlName="password"]').fill(KONTO.passwort);
+  await page.locator('button[type="submit"]').click();
+  await expect(page).toHaveURL(/\/(contribute|einwilligung)/, { timeout: 20_000 });
 });

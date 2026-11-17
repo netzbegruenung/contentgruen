@@ -70,7 +70,7 @@
 /* Dunkelmodus: Kasten bleibt Schiefer (--rundgang-gelb = --such-band), hervorgehoben wird
    er gelb über die Band-Tokens wie das Such-Band (Wunsch Sebastian 17.11.). Auf #18212a:
    Überschrift #e2e88a 12,5:1; Knopf: Schrift #121312 auf #e2e88a 14,3:1, Fläche zum
-   Kasten 12,5:1, Fokusring #4fc3f7 8,1:1. Der gesperrte Knopf bleibt gestrichelt wie bisher. */
+   Kasten 12,5:1, Fokusring #4fc3f7 8,1:1. */
 :host-context(html[data-theme='dark']) .rundgang-kasten h3 {
     color: var(--band-akzent-schrift);
 }
@@ -79,31 +79,6 @@
     background: var(--knopf-auf-band-grund);
     color: var(--knopf-auf-band-schrift);
     border-color: var(--knopf-auf-band-grund);
-}
-
-/* Selbst beitragen für Besucher: ausgegraut, aber lesbar (Schrift mit mind. 4,5:1 auf
-   der Karte, hell wie dunkel); der Hinweis darunter in normaler Schrift */
-.rundgang-knopf.umriss.gesperrt {
-    color: var(--text-secondary);
-    border-style: dashed;
-    border-color: var(--text-secondary);
-    cursor: not-allowed;
-}
-
-.rundgang-mitmachen-hinweis {
-    margin: 8px 0 0;
-    color: var(--text-primary);
-    font-size: 15px;
-    line-height: 1.4;
-}
-
-/* Inline, aber mit 44 px Zielgröße (Touch) */
-.rundgang-mitmachen-hinweis .rundgang-knopf.text {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0;
-    font-size: inherit;
 }
 
 @media (max-width: 599px) {
@@ -185,4 +160,32 @@
 
 .about-link-section mat-icon {
     margin-right: 8px;
+}
+
+/* Drei Beispielsiegel neben dem Link zum Abschnitt „Das Siegel“ (Designrunde 17.11.) */
+.hilfe-siegel-beispiele {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 8px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.hilfe-siegel-beispiele .siegel-reihe {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.hilfe-siegel-beispiele app-siegel {
+    width: 36px;
+}
+
+.hilfe-siegel-beispiele .hilfe-siegel-link {
+    text-decoration: underline;
+}
+
+.hilfe-siegel-beispiele:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
 }

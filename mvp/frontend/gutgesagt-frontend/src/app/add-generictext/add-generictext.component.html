@@ -67,11 +67,6 @@
                     <p *ngIf="herkunftFehlt" class="herkunft-satz">Zahlen und Fakten mit Herkunft sind glaubwürdiger.</p>
                 </div>
 
-                <div class="formular-fuss">
-                    <button type="button" class="text-link zuruecksetzen" (click)="zuruecksetzen()"
-                            [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
-                </div>
-
                 <app-sprachhinweis [titel]="generictextForm.value.title" [text]="generictextForm.value.text"></app-sprachhinweis>
                 <p appCc0Hinweis></p>
 
@@ -91,6 +86,9 @@
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
                         {{ fehler && !validierung ? 'Erneut versuchen' : offeneEntscheidung ? 'Trotzdem speichern' : 'Hintergrundinfo speichern' }}
                     </button>
+                    <!-- Zweitaktion neben dem Hauptknopf, nicht rechts abseits (Ausrichtung 17.11.) -->
+                    <button type="button" class="text-link zuruecksetzen" (click)="zuruecksetzen()"
+                            [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
                 </app-formular-leiste>
             </form>
         </div>

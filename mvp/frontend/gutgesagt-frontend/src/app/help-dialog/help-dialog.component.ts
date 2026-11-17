@@ -17,12 +17,14 @@ import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
 import { EINLADUNG_AB } from '../shared/einladung-ab';
+import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 
-/** Rueckkehrziel-Parameter: Nach der Anmeldung aus der Hilfe oeffnet die App sie wieder. */
+/**
+ * Rueckkehrziel-Parameter: Nach der Anmeldung aus der Hilfe oeffnet die App sie wieder.
+ * Seit Selbst beitragen ohne Konto als Bildergeschichte laeuft (17.11.), setzt die App ihn
+ * selbst nicht mehr; Adressen, die ihn noch tragen, wirken weiter.
+ */
 export const HILFE_PARAM = 'hilfe';
-
-/** Steht für Besucher unter dem ausgegrauten Rundgang Selbst beitragen. */
-export const MITMACHEN_HINWEIS = 'Nach der Anmeldung zeigen wir dir, wie Beitragen geht.';
 
 @Component({
   selector: 'app-help-dialog',
@@ -33,7 +35,8 @@ export const MITMACHEN_HINWEIS = 'Nach der Anmeldung zeigen wir dir, wie Beitrag
     MatDividerModule,
     MatIconModule,
     RouterModule,
-    NgFor
+    NgFor,
+    SiegelComponent
   ],
   templateUrl: './help-dialog.component.html',
   styleUrls: ['../rundgang/rundgang-knoepfe.css', './help-dialog.component.css']
@@ -52,13 +55,13 @@ export class HelpDialogComponent {
   readonly sucheMitSprachmodellen = SUCHE_MIT_SPRACHMODELLEN;
 
   readonly antwortFinden = rundgangBeschriftung('antwort-finden');
-  readonly selbstBeitragen = rundgangBeschriftung('mitmachen');
-  readonly mitmachenHinweis = MITMACHEN_HINWEIS;
+  readonly angemeldet = !!inject(AuthService).getUserInfo()?.isAuthenticated;
+  /** Ohne Konto: „Selbst beitragen (3 Bilder)“, die Bildergeschichte statt der echten Oberfläche. */
+  readonly selbstBeitragen = rundgangBeschriftung('mitmachen', this.angemeldet);
   readonly einladungAb = EINLADUNG_AB;
 
   private readonly rundgang = inject(RundgangService);
   private readonly dialog = inject(MatDialog);
-  readonly angemeldet = !!inject(AuthService).getUserInfo()?.isAuthenticated;
 
   constructor(
     private dialogRef: MatDialogRef<HelpDialogComponent>,
@@ -72,12 +75,6 @@ export class HelpDialogComponent {
   rundgangStarten(id: RundgangId): void {
     this.dialogRef.afterClosed().subscribe(() => void this.rundgang.starten(id));
     this.dialogRef.close();
-  }
-
-  /** Zur Anmeldung; danach zurück auf diese Seite mit offener Hilfe (hilfeNachAnmeldung). */
-  anmelden(): void {
-    this.dialogRef.close();
-    anmeldenZurHilfe(this.router);
   }
 
   /**
@@ -114,20 +111,6 @@ export function hilfeOeffnen(dialog: MatDialog): MatDialogRef<HelpDialogComponen
     maxHeight: '100%',
     panelClass: 'hilfe-seitenleiste',
   });
-}
-
-/**
- * Zur Anmeldung mit der jetzigen Seite als Rückkehrziel, ergänzt um HILFE_PARAM: Danach
- * öffnet die App die Hilfe (hilfeNachAnmeldung), dort startet Selbst beitragen. Aus der
- * Hilfe und aus dem mobilen Menü.
- */
-export function anmeldenZurHilfe(router: Router): void {
-  // Schon auf der Anmeldung (Hilfe dort geöffnet): deren Rückkehrziel bleibt, wie bei
-  // AppComponent.loginWithReturnUrl
-  if (router.url.startsWith('/login')) return;
-  const hier = router.parseUrl(router.url);
-  hier.queryParams = { ...hier.queryParams, [HILFE_PARAM]: '1' };
-  void router.navigate(['/login'], { queryParams: { returnUrl: router.serializeUrl(hier) } });
 }
 
 /**
