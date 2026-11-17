@@ -77,6 +77,29 @@ p {
     gap: 4px;
 }
 
+/* Auf der Startseite in der Spalte von Suchfeld und Kacheln (720 px, mittig), schmaler als der
+   Seitenrahmen; die Knoepfe stehen immer unter dem Text, sonst wird das Band bei 600 bis 960 px
+   sehr hoch (Designrunde 17.11.). Das Band im Kopf der anderen Seiten bleibt im Seitenrahmen. */
+:host([ort='start']) .band {
+    flex-wrap: wrap;
+    row-gap: 12px;
+    margin-left: max(var(--page-margin), calc((100% - var(--lesespalte)) / 2));
+    margin-right: max(var(--page-margin), calc((100% - var(--lesespalte)) / 2));
+}
+
+:host([ort='start']) .knoepfe {
+    box-sizing: border-box;
+    width: 100%;
+    /* Unter dem Text, nicht unter dem Wegweiser: Bildbreite plus Abstand */
+    padding-left: 64px;
+    gap: 16px;
+}
+
+/* Sonst greift .text { flex: 1 } auch am Knopf "Ausblenden" und zieht ihn in die Mitte */
+:host([ort='start']) .knoepfe .rundgang-knopf {
+    flex: none;
+}
+
 @media (max-width: 599px) {
     .band {
         flex-wrap: wrap;
@@ -101,5 +124,9 @@ p {
     .knoepfe .rundgang-knopf {
         flex: none;
         white-space: nowrap;
+    }
+
+    :host([ort='start']) .knoepfe {
+        padding-left: 0;
     }
 }

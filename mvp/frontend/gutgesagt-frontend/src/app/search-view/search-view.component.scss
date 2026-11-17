@@ -111,8 +111,8 @@ app-rundgang-band {
   @media (max-width: 599px) {
     grid-template-columns: 1fr;
     gap: var(--spacing-md);
+    // Seitenrand wie Willkommen und Suchfeld (bis 480 px 16 px), nicht der feste 24er
     margin: var(--spacing-lg) auto var(--spacing-xl);
-    padding: 0 var(--page-margin-mobile);
   }
 }
 
