@@ -203,7 +203,6 @@ body {
     --page-margin: 100px;
     --lesespalte: 720px;
     --formularspalte: 600px;
-    --listenspalte: 1100px;
     --page-margin-tablet: 50px;
     --page-margin-mobile: 24px;
     --section-gap: 40px;
@@ -257,10 +256,6 @@ body {
 
 .inhalt-spalte--formular {
     --inhalt-breite: var(--formularspalte);
-}
-
-.inhalt-spalte--liste {
-    --inhalt-breite: var(--listenspalte);
 }
 
 /* Carousel section - Full width for carousels */

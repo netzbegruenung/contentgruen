@@ -198,12 +198,12 @@ describe('AboutComponent', () => {
     expect(seite.querySelector('.siegel-absatz')!.textContent).not.toContain('Krone');
   });
 
-  // Designrunde 17.11.: alle zwölf Beispiele in einer Reihe, schmal (unter 480 px) zwei Reihen zu je sechs
+  // Designrunde 17.11.: alle zwölf Beispiele in einer Reihe, schmal (unter 600 px) zwei Reihen zu je sechs
   it('stellt die Siegelbeispiele in einer Reihe aus zwölf Spalten', () => {
     const reihe = seite.querySelector('.siegel-beispiele') as HTMLElement;
     const stil = getComputedStyle(reihe);
     expect(stil.display).toBe('grid');
     const spalten = stil.gridTemplateColumns.trim().split(/\s+/).length;
-    expect(spalten).toBe(window.matchMedia('(max-width: 479px)').matches ? 6 : 12);
+    expect(spalten).toBe(window.matchMedia('(max-width: 599px)').matches ? 6 : 12);
   });
 });

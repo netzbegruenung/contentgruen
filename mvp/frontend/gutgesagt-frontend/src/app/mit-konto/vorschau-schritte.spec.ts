@@ -16,7 +16,7 @@ describe('Vorschau mit Konto: Schritte und Ziel', () => {
   });
 
   it('weicht bei fehlenden, fremden oder kreisenden Zielen auf Beitragen aus', () => {
-    for (const wert of [null, undefined, '', 'einwerfen', '//fremd.example', '/\\fremd.example', 'https://fremd.example', '/login?returnUrl=%2F', '/mit-konto?ziel=%2F']) {
+    for (const wert of [null, undefined, '', 'einwerfen', '//fremd.example', '/\\fremd.example', 'https://fremd.example', '/login?returnUrl=%2F', '/mit-konto?ziel=%2F', '/\t/fremd.example', '/einwerfen\n']) {
       expect(vorschauZiel(wert)).withContext(String(wert)).toBe(STANDARD_ZIEL);
     }
   });

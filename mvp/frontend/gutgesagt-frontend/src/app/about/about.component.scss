@@ -285,8 +285,8 @@ a {
     max-width: 52px;
   }
 
-  // Schmal zwei Reihen zu je sechs, sonst werden sie zu klein
-  @media (max-width: 479px) {
+  // Schmal zwei Reihen zu je sechs, sonst werden sie zu klein und „Glanz“ stößt an die Nachbarn
+  @media (max-width: 599px) {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     row-gap: 12px;
   }

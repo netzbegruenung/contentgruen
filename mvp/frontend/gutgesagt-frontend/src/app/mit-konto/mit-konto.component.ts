@@ -4,7 +4,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { map } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { keycloakAnmelden } from '../login/keycloak-anmeldung';
 import { ANSICHT_PARAM, VORSCHAU_SCHRITTE, ZIEL_PARAM, vorschauZiel } from './vorschau-schritte';
@@ -63,9 +64,15 @@ export class MitKontoComponent {
   readonly schritt = computed(() => this.schritte[this.index()]);
   readonly letzter = computed(() => this.index() === this.schritte.length - 1);
 
-  /** null, bis /api/auth/modes antwortet; bis dahin gilt die Netzbegrünung-Anmeldung. */
+  /**
+   * null, bis /api/auth/modes antwortet; bis dahin und bei einem Fehler gilt die
+   * Netzbegrünung-Anmeldung (sonst wirft das Signal und der Anmeldeknopf fällt aus).
+   */
   private readonly modes = toSignal(
-    this.http.get<AuthModes>(`${environment.baseUrl}/api/auth/modes`).pipe(map((m) => m as AuthModes | null)),
+    this.http.get<AuthModes>(`${environment.baseUrl}/api/auth/modes`).pipe(
+      map((m) => m as AuthModes | null),
+      catchError(() => of(null)),
+    ),
     { initialValue: null },
   );
   private readonly mitKeycloak = computed(() => this.modes()?.keycloakEnabled !== false);

@@ -61,10 +61,12 @@ export const STANDARD_ZIEL = '/contribute';
 
 /**
  * Nur Pfade dieser App: mit einem Schrägstrich vorn, nicht zwei (sonst ein fremder Host),
- * nicht die Anmeldung und nicht die Vorschau selbst. Alles andere wird STANDARD_ZIEL.
+ * keine Steuerzeichen, nicht die Anmeldung und nicht die Vorschau selbst. Alles andere wird STANDARD_ZIEL.
  */
 export function vorschauZiel(wert: string | null | undefined): string {
   if (!wert || !wert.startsWith('/') || wert.startsWith('//') || wert.startsWith('/\\')) return STANDARD_ZIEL;
+  // Steuerzeichen wie das BFF ablehnen (AuthController): Browser entfernen etwa Tabs aus Adressen
+  if (/[\u0000-\u001f\u007f]/.test(wert)) return STANDARD_ZIEL;
   if (wert.startsWith('/login') || wert.startsWith(MIT_KONTO_PFAD)) return STANDARD_ZIEL;
   return wert;
 }
