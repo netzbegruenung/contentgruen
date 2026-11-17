@@ -84,8 +84,6 @@ for (const modus of ['light', 'dark'] as const) {
       // wie die Kopfzeile. Gemessen wird der aeussere Kasten des Inhalts.
       for (const [name, pfad, inhalt] of [
         ['Kommentarformular', '/workflow/add-commentary', '.workflow-container > *'],
-        ['Einwerfen', '/einwerfen', '.einwurf-container > *'],
-        ['Datenschutz', '/datenschutz', '.content-section h2'],
         ['Beitragen', '/contribute', '.typ-zeile'],
       ] as const) {
         test(`${name}: linke Kante wie die Kopfzeile`, async ({ page }) => {
@@ -103,6 +101,31 @@ for (const modus of ['light', 'dark'] as const) {
           );
           expect(Math.abs(kopfLinks - soll)).toBeLessThanOrEqual(1);
           expect(Math.abs((await element.boundingBox())!.x - soll)).toBeLessThanOrEqual(1);
+        });
+      }
+
+      // Ausrichtung 17.11.: Einwerfen (600 px) und Rechtstexte (720 px) stehen als Spalte
+      // (.inhalt-spalte) mittig in <main>, nicht mehr links an der Kopfzeile
+      for (const [name, pfad, breite] of [
+        ['Einwerfen', '/einwerfen', 600],
+        ['Datenschutz', '/datenschutz', 720],
+      ] as const) {
+        test(`${name}: Inhaltsspalte ${breite} px mittig`, async ({ page }) => {
+          await page.goto(pfad);
+          const spalte = page.locator('.inhalt-spalte').first();
+          await expect(spalte).toBeVisible();
+          const { mitteMain, mitteSpalte, inhalt } = await spalte.evaluate((el) => {
+            const main = document.querySelector('main')!.getBoundingClientRect();
+            const r = el.getBoundingClientRect();
+            const stil = getComputedStyle(el);
+            return {
+              mitteMain: main.left + main.width / 2,
+              mitteSpalte: r.left + r.width / 2,
+              inhalt: r.width - parseFloat(stil.paddingLeft) - parseFloat(stil.paddingRight),
+            };
+          });
+          expect(Math.abs(mitteSpalte - mitteMain)).toBeLessThanOrEqual(1);
+          expect(Math.abs(inhalt - breite)).toBeLessThanOrEqual(1);
         });
       }
 

@@ -10,7 +10,7 @@ import { RundgangService } from '../rundgang/rundgang.service';
 import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
 import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
-import { HILFE_PARAM, HelpDialogComponent, MITMACHEN_HINWEIS, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
+import { HILFE_PARAM, HelpDialogComponent, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
 import { EINLADUNG_AB } from '../shared/einladung-ab';
 
 describe('HelpDialogComponent', () => {
@@ -106,37 +106,16 @@ describe('HelpDialogComponent', () => {
       expect(rundgang.starten).toHaveBeenCalledWith('antwort-finden');
     });
 
-    it('teasert Besuchern Selbst beitragen an: aria-disabled, ohne Wirkung, mit Hinweis', () => {
+    it('bietet Besuchern Selbst beitragen als Bildergeschichte an, ohne Sperre (17.11.)', () => {
       const knopf = fixture.nativeElement.querySelector('.rundgang-mitmachen') as HTMLButtonElement;
-      expect(knopf.textContent!.trim()).toBe('Selbst beitragen (4 Schritte)');
-      expect(knopf.getAttribute('aria-disabled')).toBe('true');
-      expect(knopf.disabled).toBeFalse(); // fokussierbar, der Screenreader liest den Hinweis
-      const hinweis = fixture.nativeElement.querySelector('#' + knopf.getAttribute('aria-describedby')) as HTMLElement;
-      expect(hinweis.textContent).toContain(MITMACHEN_HINWEIS);
+      expect(knopf.textContent!.trim()).toBe('Selbst beitragen (3 Bilder)');
+      expect(knopf.hasAttribute('aria-disabled')).toBeFalse();
       knopf.click();
-      expect(rundgang.starten).not.toHaveBeenCalled();
-    });
-
-    it('führt Besucher zur Anmeldung und danach zurück in die Hilfe', () => {
-      const router = TestBed.inject(Router);
-      spyOnProperty(router, 'url').and.returnValue('/result?searchQuery=x');
-      const navigate = spyOn(router, 'navigate').and.resolveTo(true);
-      (fixture.nativeElement.querySelector('.rundgang-anmelden') as HTMLButtonElement).click();
 
       expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
-      expect(navigate).toHaveBeenCalledWith(['/login'], {
-        queryParams: { returnUrl: `/result?searchQuery=x&${HILFE_PARAM}=1` },
-      });
-    });
-
-    it('lässt auf der Anmeldung deren Rückkehrziel stehen und schliesst nur die Hilfe', () => {
-      const router = TestBed.inject(Router);
-      spyOnProperty(router, 'url').and.returnValue('/login?returnUrl=%2Ffangkorb');
-      const navigate = spyOn(router, 'navigate').and.resolveTo(true);
-      (fixture.nativeElement.querySelector('.rundgang-anmelden') as HTMLButtonElement).click();
-
-      expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
-      expect(navigate).not.toHaveBeenCalled();
+      // Wohin es geht, entscheidet der Rundgang: ohne Konto auf /mit-konto
+      expect(rundgang.starten).toHaveBeenCalledWith('mitmachen');
+      expect(fixture.nativeElement.querySelector('.rundgang-mitmachen-hinweis')).toBeNull();
     });
 
     it('bietet Angemeldeten auch den Rundgang Selbst beitragen an, mit Schrittzahl (#644)', () => {
@@ -232,11 +211,25 @@ describe('HelpDialogComponent', () => {
 
     it('verlinkt „Was bedeutet das Siegel?“ auf /about#siegel, schliesst die Hilfe und navigiert danach', () => {
       const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
-      const siegel = link('.hilfe-siegel-link');
-      expect(siegel.textContent!.trim()).toBe('Was bedeutet das Siegel?');
+      const siegel = link('.hilfe-siegel-beispiele');
+      expect(siegel.querySelector('.hilfe-siegel-link')!.textContent!.trim()).toBe('Was bedeutet das Siegel?');
       expect(siegel.getAttribute('href')).toBe('/about#siegel');
       siegel.click();
 
+      expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/about'], { fragment: 'siegel' });
+    });
+
+    // Designrunde 17.11.: drei Beispielsiegel (neu, mittel, top) gehören zum Link, nur Schmuck
+    it('zeigt drei Beispielsiegel im Link auf /about#siegel, für Screenreader ausgeblendet', () => {
+      const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      const siegel = link('.hilfe-siegel-beispiele');
+      const reihe = siegel.querySelector('.siegel-reihe') as HTMLElement;
+      expect(reihe.getAttribute('aria-hidden')).toBe('true');
+      expect(reihe.querySelectorAll('app-siegel').length).toBe(3);
+      expect(siegel.textContent!.trim()).toBe('Was bedeutet das Siegel?');
+
+      (reihe.querySelector('app-siegel') as HTMLElement).click();
       expect(TestBed.inject(MatDialogRef).close).toHaveBeenCalled();
       expect(navigate).toHaveBeenCalledWith(['/about'], { fragment: 'siegel' });
     });
@@ -257,7 +250,7 @@ describe('HelpDialogComponent', () => {
 
     it('lässt Strg-Klick dem Browser (neuer Tab), ohne die Hilfe zu schliessen', () => {
       const navigate = spyOn(TestBed.inject(Router), 'navigate');
-      const ziel = link('.hilfe-siegel-link');
+      const ziel = link('.hilfe-siegel-beispiele');
       // Nach dem Handler der Komponente pruefen, ob sie den Klick dem Browser liess, und ihn
       // dann selbst abfangen: Sonst oeffnet Chrome wirklich einen Tab, der Testtab liegt
       // im Hintergrund, und Tests mit Sichtbarkeit, Fokus und requestAnimationFrame scheitern.

@@ -7,6 +7,7 @@ import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
 import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
 import { Angebot, HOME_ANGEBOT, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
+import { ANSICHT_PARAM, MIT_KONTO_PFAD, STANDARD_ZIEL, ZIEL_PARAM } from '../mit-konto/vorschau-schritte';
 import { gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
 
 export interface RundgangStand {
@@ -100,6 +101,13 @@ export class RundgangService {
   }
 
   starten(id: RundgangId, ab = 0): Promise<void> {
+    // Ohne Konto zeigt Selbst beitragen keine echte Oberflaeche (die Seiten sind geschuetzt),
+    // sondern die Bildergeschichte auf /mit-konto; danach geht es nach Beitragen (17.11.)
+    if (id === 'mitmachen' && !this.info?.isAuthenticated) {
+      return this.router
+        .navigate([MIT_KONTO_PFAD], { queryParams: { [ANSICHT_PARAM]: 'rundgang', [ZIEL_PARAM]: STANDARD_ZIEL } })
+        .then(() => undefined, () => undefined);
+    }
     // Auch über Hilfe oder Menü gestartet ist das offene Angebot beantwortet: das Band
     // oder Mitmachen hinter dem Neu-Punkt
     const angebot = this.angebot();

@@ -88,17 +88,30 @@ test('Besucher: Direktlink auf einen Beitrag, den es nicht gibt', async ({ page 
   expect(new URL(page.url()).pathname).toBe('/beitrag/00000000-0000-0000-0000-000000000000');
 });
 
-for (const pfad of ['/contribute', '/contributions', '/einwerfen', '/fangkorb']) {
-  test(`Besucher: ${pfad} fuehrt zur Anmeldung`, async ({ page }) => {
+// Vorschau mit Konto (17.11.): Einwerfen, Beitragen und Fangkorb zeigen Besuchern erst, was sie
+// mit Konto erwartet; Meine Beiträge führt weiter direkt zur Anmeldung
+for (const pfad of ['/contribute', '/einwerfen', '/fangkorb']) {
+  test(`Besucher: ${pfad} fuehrt zur Vorschau mit Konto`, async ({ page }) => {
     await page.goto(pfad);
-    await page.waitForURL(/\/login\?/);
-    expect(new URL(page.url()).searchParams.get('returnUrl')).toBe(pfad);
+    await page.waitForURL(/\/mit-konto\?/);
+    expect(new URL(page.url()).searchParams.get('ziel')).toBe(pfad);
+    await expect(page.locator('.mk-titel')).toHaveText('Das erwartet dich mit Konto');
   });
 }
 
+test('Besucher: /contributions fuehrt zur Anmeldung', async ({ page }) => {
+  await page.goto('/contributions');
+  await page.waitForURL(/\/login\?/);
+  expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/contributions');
+});
+
 test('Besucher: nach der Anmeldung zurueck, wohin es gehen sollte', async ({ page }) => {
   await page.goto('/fangkorb');
+  await page.waitForURL(/\/mit-konto\?/);
+  // Im Dev-Stack ohne Keycloak fuehrt der Knopf zur Login-Auswahl, mit dem Ziel
+  await page.locator('.mk-anmelden').click();
   await page.waitForURL(/\/login\?/);
+  expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/fangkorb');
   await page.getByRole('button', { name: /Direktanmeldung/ }).click();
   await page.waitForURL(/\/login\/managed/);
   await page.locator('input[formControlName="email"]').fill(KONTO.email);

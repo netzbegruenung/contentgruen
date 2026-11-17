@@ -14,23 +14,11 @@
                 <!-- Name und Schrittzahl sagen vorher, was der Rundgang zeigt (#644) -->
                 <button type="button" class="rundgang-knopf umriss rundgang-starten"
                         (click)="rundgangStarten('antwort-finden')">{{ antwortFinden }}</button>
-                @if (angemeldet) {
-                    <button type="button" class="rundgang-knopf umriss rundgang-mitmachen"
-                            (click)="rundgangStarten('mitmachen')">{{ selbstBeitragen }}</button>
-                } @else {
-                    <!-- Angeteasert: fokussierbar und vorlesbar, aber ohne Wirkung; der Hinweis
-                         darunter sagt, warum, und führt zur Anmeldung (danach zurück in die Hilfe) -->
-                    <button type="button" class="rundgang-knopf umriss rundgang-mitmachen gesperrt"
-                            aria-disabled="true" aria-describedby="rundgang-mitmachen-hinweis">{{ selbstBeitragen }}</button>
-                }
+                <!-- Ohne Konto die Bildergeschichte auf /mit-konto, angemeldet der echte Rundgang
+                     (RundgangService.starten, Entscheidung 17.11.) -->
+                <button type="button" class="rundgang-knopf umriss rundgang-mitmachen"
+                        (click)="rundgangStarten('mitmachen')">{{ selbstBeitragen }}</button>
             </div>
-            @if (!angemeldet) {
-                <p class="rundgang-mitmachen-hinweis">
-                    <span id="rundgang-mitmachen-hinweis">{{ mitmachenHinweis }}</span>
-                    <button type="button" class="rundgang-knopf text rundgang-anmelden"
-                            (click)="anmelden()">Anmelden</button>
-                </p>
-            }
         </div>
     </section>
 
@@ -61,8 +49,16 @@
     <p class="hilfe-bewerten">
         Angemeldet gibst du Beiträgen deine Stimme. Das Siegel auf der Karte zeigt die Güte:
         Je weiter der Daumen nach oben zeigt, desto besser ist der Beitrag formuliert und bewertet.
-        <a class="hilfe-siegel-link" href="/about#siegel" (click)="zuUeber($event, 'siegel')">Was bedeutet das Siegel?</a>
     </p>
+    <!-- Drei Beispielsiegel als Link zum Abschnitt auf „Über“ (Designrunde 17.11.) -->
+    <a class="hilfe-siegel-beispiele" href="/about#siegel" (click)="zuUeber($event, 'siegel')">
+        <span class="siegel-reihe" aria-hidden="true">
+            <app-siegel [guete]="null"></app-siegel>
+            <app-siegel [guete]="5"></app-siegel>
+            <app-siegel [guete]="10"></app-siegel>
+        </span>
+        <span class="hilfe-siegel-link">Was bedeutet das Siegel?</span>
+    </a>
 
     <h3>Beitragen</h3>
     <!-- Die Kette (GLOSSARY): wie aus einem Fundstueck ein Beitrag wird -->

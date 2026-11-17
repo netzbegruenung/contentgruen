@@ -105,6 +105,14 @@ export class RouteConfigService {
           showContributeButton: false
         };
 
+      // Vorschau fuer Besucher: Uebersicht oder Rundgang Selbst beitragen ohne Konto
+      case '/mit-konto':
+        return {
+          pageTitle: queryParams.get('ansicht') === 'rundgang' ? PAGE_TITLES.MIT_KONTO_RUNDGANG : PAGE_TITLES.MIT_KONTO,
+          showBackButton: true,
+          showContributeButton: false
+        };
+
       // Feste Seiten mit eigenem Namen statt "Gut gesagt" (#512)
       case '/impressum':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.IMPRESSUM };
