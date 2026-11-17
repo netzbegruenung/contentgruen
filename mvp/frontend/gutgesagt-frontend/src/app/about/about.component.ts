@@ -6,12 +6,14 @@ import { RouterModule } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { hilfeOeffnen } from '../help-dialog/help-dialog.component';
 import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
-import { NICHT_JEDE_AUSSAGE } from '../shared/schreibregeln';
 import { ORGANISATION } from '../shared/organisation';
 import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 
-/** Die Über-Seite: wofür Gut gesagt da ist, für wen und wie man mitmacht (docs/VISION.md, #345). */
+/**
+ * Die Über-Seite: wofür Gut gesagt da ist, für wen, wie Qualität entsteht und wer dahintersteht
+ * (docs/VISION.md, #345). Wie man es bedient, steht in der Hilfe (Designrunde 17.11.).
+ */
 @Component({
   selector: 'app-about',
   standalone: true,
@@ -26,7 +28,6 @@ import { SiegelComponent } from '../shared/components/siegel/siegel.component';
   styleUrls: ['./about.component.scss']
 })
 export class AboutComponent {
-  readonly nichtJedeAussage = NICHT_JEDE_AUSSAGE;
   readonly organisation = ORGANISATION;
   readonly keineGenerativeKi = KEINE_GENERATIVE_KI;
   readonly sucheMitSprachmodellen = SUCHE_MIT_SPRACHMODELLEN;

@@ -52,21 +52,48 @@ describe('AboutComponent', () => {
 
     expect(abschnitt.querySelector('h2')!.textContent).toContain('Für die Mitlesenden');
     expect(abschnitt.textContent).toContain('Unentschiedenen');
-    expect(abschnitt.querySelector('.nicht-jede-aussage')!.textContent).toContain(
-      'Nicht jede Aussage braucht eine Antwort',
-    );
   });
 
-  it('erklärt die Kette in der Reihenfolge Einwerfen, Destillieren, Ausformulieren', () => {
-    const schritte = Array.from(seite.querySelectorAll('.mitmachen .kette > li')).map(
-      (li) => li.querySelector('strong')!.textContent,
-    );
+  // Designrunde 17.11.: Über sagt warum und wer, die Hilfe wie; Doppeltes steht nur an einer Stelle
+  describe('getrennt von der Hilfe', () => {
+    it('sagt im Zweck, wofür es Gut gesagt gibt, und verweist für die Bedienung auf die Hilfe', () => {
+      const zweck = seite.querySelector('.zweck')!;
 
-    expect(schritte).toEqual(['Einwerfen:', 'Destillieren:', 'Ausformulieren:']);
+      expect(einzeilig(zweck)).toContain('findest du schnell eine passende Antwort');
+      expect(einzeilig(zweck)).not.toContain('ganzen Satz');
+      const soGehts = zweck.querySelector('.so-gehts-link') as HTMLButtonElement;
+      expect(soGehts.textContent!.trim()).toBe("So geht's");
+      soGehts.click();
+      expect(TestBed.inject(MatDialog).open).toHaveBeenCalled();
+    });
+
+    it('erklärt die Kette nicht selbst und lässt „Nicht jede Aussage“ der Hilfe', () => {
+      expect(seite.querySelector('.kette')).toBeNull();
+      expect(seite.querySelector('.nicht-jede-aussage')).toBeNull();
+      expect(einzeilig(seite)).not.toContain('Nicht jede Aussage braucht eine Antwort');
+    });
+
+    it('nennt die Sätze zu KI nur einmal, unter der Technik', () => {
+      const text = einzeilig(seite);
+
+      expect(text.split(KEINE_GENERATIVE_KI).length - 1).toBe(1);
+      expect(text.split(SUCHE_MIT_SPRACHMODELLEN).length - 1).toBe(1);
+    });
+  });
+
+  it('erklärt unter „Wie Qualität entsteht“, dass viele schreiben und jeder Schritt von anderen kommen kann', () => {
+    const abschnitt = seite.querySelector('.qualitaet')!;
+
+    expect(abschnitt.querySelector('h2')!.textContent).toContain('Wie Qualität entsteht');
+    expect(einzeilig(abschnitt)).toContain('Die Antworten schreiben viele Menschen gemeinsam');
+    expect(einzeilig(abschnitt)).toContain('Jeden Schritt kann eine andere Person machen');
+    expect(einzeilig(abschnitt)).toContain('Mitwirken können heute Mitglieder der');
+    // Der Anker #siegel ist von der Karte verlinkt (beitragskarte.siegel.spec.ts)
+    expect(abschnitt.querySelector('#siegel')).not.toBeNull();
   });
 
   it('zählt als Nutzung nur das Kopieren fremder Beiträge, Teilen gibt es noch nicht', () => {
-    const text = einzeilig(seite.querySelector('.mitmachen')!);
+    const text = einzeilig(seite.querySelector('.qualitaet')!);
 
     expect(text).toContain('Kopiert jemand einen fremden Beitrag, zählt das als Nutzung');
     expect(text).not.toContain('Teilen');
@@ -77,12 +104,11 @@ describe('AboutComponent', () => {
 
     expect(text).toContain('Gründungsteam');
     expect(text).not.toContain('Startkont');
-    expect(text).toContain(KEINE_GENERATIVE_KI);
     expect(text).toContain('Jeder Beitrag beginnt bei 0 Stimmen und 0 Nutzungen');
   });
 
   // Persona-Test Gerd: „KI schlägt höchstens etwas vor“ las er als Hintertür
-  it('sagt zu KI dasselbe wie die Hilfe und nennt die Modelle', () => {
+  it('sagt zu KI dasselbe wie die Hilfe und nennt die Modelle unter #technik', () => {
     const text = einzeilig(seite);
     const ki = einzeilig(seite.querySelector('.technik-ki')!);
     const modelle = einzeilig(seite.querySelector('.technik-modelle')!);
@@ -97,6 +123,15 @@ describe('AboutComponent', () => {
     expect(modelle).toContain('Zwei weitere');
     expect(modelle).toContain('XLM-RoBERTa-large');
     expect(modelle).toContain('nach festen Regeln');
+    // Die Hilfe verlinkt „Mehr zur Technik“ hierher
+    expect(seite.querySelector('#technik')!.contains(seite.querySelector('.technik-ki'))).toBeTrue();
+  });
+
+  it('erklärt unter der Technik, wie die Suche Treffer findet (vorher in der Hilfe)', () => {
+    const suche = einzeilig(seite.querySelector('#technik .technik-suche')!);
+
+    expect(suche).toContain('Dieselbe Aussage in anderen Worten führt zu denselben Antworten');
+    expect(suche).toContain('Je mehr Mitwirkende beitragen und bewerten, desto besser werden die Treffer');
   });
 
   it('nennt CC0 und verlinkt die Nutzungsbedingungen', () => {
@@ -109,7 +144,8 @@ describe('AboutComponent', () => {
   it('sagt, dass es keine offizielle Linie gibt', () => {
     const abschnitt = seite.querySelector('.linie')!;
 
-    expect(abschnitt.querySelector('h2')!.textContent).toContain('Keine offizielle Linie');
+    expect(seite.querySelector('.qualitaet .linie')).toBe(abschnitt);
+    expect(abschnitt.querySelector('h3')!.textContent).toContain('Keine offizielle Linie');
     expect(abschnitt.textContent).toContain('nur als Herkunft');
   });
 
@@ -136,9 +172,13 @@ describe('AboutComponent', () => {
     expect(TestBed.inject(MatDialog).open).toHaveBeenCalledWith(FeedbackDialogComponent, jasmine.anything());
   });
 
-  it('öffnet die Hilfe', () => {
+  it('bietet unter „Mach mit!“ Kontakt und Hilfe an, die Hilfe öffnet sich', () => {
     const dialog = TestBed.inject(MatDialog);
+    const knoepfe = Array.from(seite.querySelectorAll('.cta-buttons > a, .cta-buttons > button')).map((k) =>
+      einzeilig(k).replace(/^\s*\S+\s/, '').trim(),
+    );
 
+    expect(knoepfe).toEqual(['Kontakt aufnehmen', 'Hilfe']);
     (seite.querySelector('.hilfe-knopf') as HTMLButtonElement).click();
 
     expect(dialog.open).toHaveBeenCalled();

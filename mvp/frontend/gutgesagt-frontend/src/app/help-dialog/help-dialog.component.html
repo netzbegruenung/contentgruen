@@ -40,44 +40,49 @@
         Gut gesagt ist eine Tauschbörse für bewährte Argumente aus echten Diskussionen.
     </p>
 
-    <!-- Gleich nach dem Einstieg, weil das die erste Frage vieler ist (Persona-Test Gerd);
-         dieselben Saetze wie auf der Über-Seite (shared/ki-saetze.ts) -->
-    <h3>Nutzt Gut gesagt KI?</h3>
-    <p class="hilfe-technik hilfe-ki">{{ keineGenerativeKi }} {{ sucheMitSprachmodellen }}</p>
-    <p class="hilfe-technik">
-        Die Suche vergleicht die Bedeutung deiner Eingabe mit den Aussagen, die bei Gut gesagt schon
-        gespeichert sind, und zeigt die Beiträge, die darauf antworten. Je mehr Mitwirkende beitragen
-        und bewerten, desto besser werden die Treffer.
-    </p>
-
-    <h3>So funktioniert Gut gesagt</h3>
-
-    <ul>
-        <li>🔍 Füge den Text ein, auf den du antworten willst – einen Post oder Kommentar –, oder tippe eine Aussage oder ein Schlagwort</li>
-        <li>📄 Finde passende Kommentare und Hintergrundinfos und nutze sie für deine Argumentation</li>
-        <li>✒️ Verfasse eigene Kommentare oder Hintergrundinfos und teile dein Wissen mit anderen Mitwirkenden</li>
-    </ul>
-
+    <!-- Reihenfolge (Designrunde 17.11.): erst suchen und kopieren, dann bewerten, beitragen,
+         Konto, KI kurz, Feedback, Fragen. Warum und wer steht auf der Über-Seite. -->
+    <h3>Suchen und Kopieren</h3>
     <p class="hilfe-suche">
         Gib ein, was du gelesen hast – du bekommst Antworten darauf, keine ähnlichen Texte.
-        Du kannst also direkt den Post einfügen, auf den du antworten willst.
+        Am besten mit einem ganzen Satz, so wie die Aussage gefallen ist. Du kannst auch direkt
+        den Post einfügen, auf den du antworten willst, oder ein Schlagwort tippen.
+    </p>
+    <p>
+        Darunter stehen passende Beiträge: Kommentare zum Posten und Hintergrundinfos zum Nachlesen.
+        „Kopieren“ legt den Text in deine Zwischenablage.
+    </p>
+    <p class="hilfe-fassungen">
+        Viele Kommentare gibt es in drei Fassungen: Kurz, Mittel und Lang. Steht „passt auf X/Bluesky“
+        darunter, ist der Text kurz genug für diese Plattformen.
     </p>
 
+    <h3>Bewerten und Siegel</h3>
+    <p class="hilfe-bewerten">
+        Angemeldet gibst du Beiträgen deine Stimme. Das Siegel auf der Karte zeigt die Güte:
+        Je weiter der Daumen nach oben zeigt, desto besser ist der Beitrag formuliert und bewertet.
+        <a class="hilfe-siegel-link" href="/about#siegel" (click)="zuUeber($event, 'siegel')">Was bedeutet das Siegel?</a>
+    </p>
+
+    <h3>Beitragen</h3>
     <!-- Die Kette (GLOSSARY): wie aus einem Fundstueck ein Beitrag wird -->
-    <h3>Vom Fundstück zum Beitrag</h3>
     <ol class="hilfe-kette">
-        <li><strong>Einwerfen:</strong> Leg einen Link oder Hinweis in den Fangkorb, ohne ihn schon auszuarbeiten.</li>
+        <li><strong>Einwerfen:</strong> Leg einen Link, einen Hinweis oder beides in den Fangkorb, ohne ihn schon auszuarbeiten.</li>
         <li><strong>Destillieren:</strong> Im Fangkorb fasst jemand das Argument in einem Satz.</li>
-        <li><strong>Ausformulieren:</strong> Aus dem Satz wird ein Beitrag, den alle finden. Jeden Schritt kann jemand anderes machen.</li>
+        <li><strong>Ausformulieren:</strong> Aus dem Satz wird ein Beitrag, den alle finden.</li>
     </ol>
+    <p>
+        Jeden Schritt kann jemand anderes machen. Weißt du schon, was du sagen willst, verfasst du
+        einen Beitrag auch direkt.
+    </p>
 
     <!-- Die Saetze stehen in der Registry, wie bei der Typwahl auf der Beitragen-Seite -->
     <ng-container *ngFor="let typ of typen">
-        <h3>Was ist {{ typ.artikel }} {{ typ.emoji }} {{ typ.label }}?</h3>
+        <h4>Was ist {{ typ.artikel }} {{ typ.emoji }} {{ typ.label }}?</h4>
         <p>{{ typ.beschreibung }}</p>
     </ng-container>
 
-    <h3>Gut schreiben</h3>
+    <h4>Gut schreiben</h4>
     <p>Für Kommentare und Posts. Die Schreibregeln stehen auch im Formular hinter dem ?. Sie sind eine Hilfe, keine Sperre.</p>
     <ol class="schreibregeln">
         <li *ngFor="let regel of schreibregeln">{{ regel }}</li>
@@ -85,13 +90,50 @@
     <p class="nicht-jede-aussage">{{ nichtJedeAussage }}</p>
     <p class="erfundenes-melden">{{ erfundenesMelden }}</p>
 
+    <h3>Konto und Anmeldung</h3>
+    <p class="hilfe-konto">
+        Suchen, lesen und kopieren geht ohne Anmeldung. Zum Bewerten und Beitragen meldest du dich
+        mit deinem Netzbegrünung-Konto an. Ab 4. Dezember gibt es Konten auch mit Einladung. Auf die
+        Warteliste kommst du über „Feedback“.
+    </p>
+
+    <!-- Kurz: dieselben Saetze wie auf der Über-Seite (shared/ki-saetze.ts), die Technik steht dort -->
+    <h3>Nutzt Gut gesagt KI?</h3>
+    <p class="hilfe-technik hilfe-ki">
+        {{ keineGenerativeKi }} {{ sucheMitSprachmodellen }}
+        <a class="hilfe-technik-link" href="/about#technik" (click)="zuUeber($event, 'technik')">Mehr zur Technik</a>
+    </p>
+
+    <h3>Feedback</h3>
+    <p>
+        Eine Frage, ein Fehler oder eine Idee? Schreib es uns, auch ohne Konto.
+    </p>
+    <p>
+        <button mat-stroked-button type="button" class="hilfe-feedback-knopf" (click)="feedbackOeffnen()">
+            <mat-icon>feedback</mat-icon>
+            Feedback geben
+        </button>
+    </p>
+
+    <h3>Häufige Fragen</h3>
+    <dl class="hilfe-fragen">
+        <dt>Darf ich einen Text ändern, bevor ich ihn poste?</dt>
+        <dd>Ja. Die Texte stehen unter CC0: Du darfst sie kopieren, verändern und weiterverwenden.</dd>
+        <dt>Ich finde keine passende Antwort. Was nun?</dt>
+        <dd>Dann fehlt sie noch. Angemeldet schreibst du sie selbst oder wirfst ein Fundstück dazu ein.</dd>
+        <dt>Ein Beitrag ist falsch oder problematisch. Was tun?</dt>
+        <dd>Melde ihn. Admins sehen sich die Meldung an und sperren den Beitrag, wenn nötig.</dd>
+        <dt>Wer entscheidet, welche Antwort oben steht?</dt>
+        <dd>Keine Redaktion: Oben steht, was am besten zu deiner Suche passt.</dd>
+    </dl>
+
     <mat-divider></mat-divider>
 
     <div class="about-link-section">
         <p>
-            Möchtest du mehr über Gut gesagt, die Vision dahinter und das Team erfahren?
+            Warum es Gut gesagt gibt, wer dahintersteht und wie Qualität entsteht:
         </p>
-        <a mat-raised-button color="primary" (click)="navigateToAbout()">
+        <a mat-raised-button color="primary" href="/about" (click)="zuUeber($event)">
             <mat-icon>info</mat-icon>
             Über Gut gesagt
         </a>
