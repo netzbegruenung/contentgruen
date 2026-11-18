@@ -50,11 +50,21 @@ describe('AdminLayoutComponent', () => {
     expect(fixture.nativeElement.querySelector('mat-sidenav')).toBeNull();
   });
 
-  it('fuehrt auf Deutsch zu Uebersicht, Moderation und Themen', () => {
+  it('fuehrt auf Deutsch zu Uebersicht, Moderation, Themen und Schalter', () => {
     const links = Array.from(fixture.nativeElement.querySelectorAll('nav.admin-nav a')) as HTMLAnchorElement[];
 
-    expect(links.map((a) => a.querySelector('span')!.textContent!.trim())).toEqual(['Übersicht', 'Moderation', 'Themen']);
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/moderation', '/admin/themen']);
+    expect(links.map((a) => a.querySelector('span')!.textContent!.trim())).toEqual([
+      'Übersicht',
+      'Moderation',
+      'Themen',
+      'Schalter',
+    ]);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      '/admin/dashboard',
+      '/admin/moderation',
+      '/admin/themen',
+      '/admin/schalter',
+    ]);
   });
 
   it('zeigt oben auf jeder Admin-Seite die Zeile „Zu tun“', () => {
@@ -63,7 +73,7 @@ describe('AdminLayoutComponent', () => {
     expect(inhalt.textContent).toContain('Nichts zu tun.');
   });
 
-  it('zeigt die drei Links auf dem Handy ganz, ohne „Ther…“ abzuschneiden', () => {
+  it('zeigt die vier Links auf dem Handy ganz, ohne „Ther…“ abzuschneiden', () => {
     breit(390);
 
     const nav: HTMLElement = fixture.nativeElement.querySelector('nav.admin-nav');

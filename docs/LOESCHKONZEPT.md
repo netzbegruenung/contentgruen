@@ -251,6 +251,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Zustimmung zur Sichtbarkeit der Abzeichen (`abzeichen_sichtbarkeit`) | solange das Konto besteht | — Nachweis der Zustimmung (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351) | solange das Konto besteht | — Nachweis der Einwilligung und des Widerrufs (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Meilenstein-Abzeichen am Anzeigenamen (#351) | keine Speicherung | — nur im Arbeitsspeicher, alle 15 Minuten neu berechnet, nach einem Neustart leer; nach dem Löschkommando (Schritt 2) höchstens noch bis zum nächsten Lauf |
+| Schalter (`schalter`) und ihr Verlauf (`schalter_verlauf`, #708): Admin-Wert, Zeitpunkt, Kennung des Admins | Verlauf: 12 Monate ab der Änderung, Bereinigungslauf (Task der Löschfristen, `SCHALTER_VERLAUF_TAGE` in `services/loeschfristen_service.py`, unabhängig vom abschaltbaren Bereinigungsjob; Entscheidung Maintainer 18.11.2026). Der aktuelle Stand in `schalter` bleibt. | Kennung des Admins: mit seinem Konto geleert (`person_loeschen.sql`), beim Umstellen der Kennungen mit umgeschrieben (#487) — betrifft nur Admins, nicht Nutzende; die Kennung steht nur dort, kein Klarname |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange

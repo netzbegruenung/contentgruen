@@ -171,6 +171,10 @@ Verhältnismäßigkeit des Grundbetriebs ohne Punkte: 8.5.
 
 ## 7. Vor dem Einschalten der Punkte
 
+Einschalten = Obergrenze und Admin-Klick (#708): Die Umgebungsvariable (`SEMANTIC_SEARCH_PUNKTE_AKTIV`,
+`SEMANTIC_SEARCH_ABZEICHEN_SICHTBAR_AKTIV`) erlaubt den Schalter nur; wirksam wird er erst, wenn
+ein Admin ihn unter „Admin“, „Schalter“ einschaltet (`docs/DEPLOYMENT.md`).
+
 Offen:
 
 - DSFA übernommen (Abschnitt 6).

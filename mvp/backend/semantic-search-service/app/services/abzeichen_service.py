@@ -4,8 +4,8 @@ GLOSSARY.md "Meilenstein" und "Zustimmung zur Sichtbarkeit").
 
 Das Abzeichen ist die Zahl der erreichten Meilensteine ohne Wegmarken. Es steht nur an Personen,
 die der Sichtbarkeit zugestimmt haben, nur fuer Angemeldete
-(services/beitrag_fuer_aufrufer.py) und nur mit beiden Schaltern
-(``Settings.abzeichen_sichtbar``). Startkonten und Personen ohne Art.-9-Einwilligung
+(services/beitrag_fuer_aufrufer.py) und nur mit beiden Schaltern wirksam
+(Obergrenze und Admin-Wert, services/schalter_service.py). Startkonten und Personen ohne Art.-9-Einwilligung
 haben keine Meilensteine und damit kein Abzeichen (services/meilensteine_service.py).
 
 Die Zahlen liegen nur im Arbeitsspeicher: Antworten mit Anzeigenamen entstehen bei
@@ -22,6 +22,7 @@ from typing import Awaitable, Callable, Dict, Iterable, List, Optional
 
 from core.config import Settings
 from core.logging import log_pseudonym
+from services.schalter_service import schalter_wirksam
 from domain.abzeichen_sichtbarkeit import WORTLAUTE, UnbekannterWortlaut
 from domain.meilensteine import Meilenstein
 from repositories.abzeichen_sichtbarkeit_repository import (
@@ -53,7 +54,7 @@ class AbzeichenService:
 
     def abzeichen(self, kennungen: Iterable[Optional[str]]) -> Dict[str, int]:
         """Die Abzeichen dieser Kennungen, nur die vorhandenen; ohne Schalter leer."""
-        if not self._settings.abzeichen_sichtbar:
+        if not self._wirksam():
             return {}
         return {k: self._abzeichen[k] for k in kennungen if k in self._abzeichen}
 
@@ -95,7 +96,7 @@ class AbzeichenService:
 
     async def alle_aktualisieren(self) -> None:
         """Die Abzeichen aller Zustimmenden neu berechnen; alle anderen vergessen."""
-        if not self._settings.abzeichen_sichtbar:
+        if not await asyncio.to_thread(self._wirksam):
             self._abzeichen.clear()
             return
         zeigende = await asyncio.to_thread(self._repository.zeigende)
@@ -104,8 +105,12 @@ class AbzeichenService:
         for kennung in zeigende:
             await self._neu_berechnen(kennung)
 
+    def _wirksam(self) -> bool:
+        """Beide Schalter wirksam (Obergrenze und Admin-Wert, #708)."""
+        return schalter_wirksam("abzeichen_sichtbar", self._settings)
+
     async def _neu_berechnen(self, user_id: str) -> None:
-        if not self._settings.abzeichen_sichtbar:
+        if not await asyncio.to_thread(self._wirksam):
             return
         stand = self._vergessen.get(user_id, 0)
         try:

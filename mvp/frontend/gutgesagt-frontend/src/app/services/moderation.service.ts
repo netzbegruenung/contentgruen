@@ -6,6 +6,22 @@ import { MeldegrundWert } from '../shared/meldegruende';
 import { SperrgrundWert } from '../shared/sperrgruende';
 import { stillerKontext } from '../shared/selbst-nachladen';
 
+/** Ein Schalter (#708, Glossar „Schalter“): wirksam nur mit Obergrenze und Admin-Wert. */
+export interface Schalter {
+  name: string;
+  erklaerung: string;
+  umgebungsvariable: string;
+  /** Server erlaubt (Umgebungsvariable). */
+  obergrenze: boolean;
+  admin_wert: boolean;
+  wirksam: boolean;
+  dsfa_hinweis: string | null;
+}
+
+export interface SchalterListe {
+  schalter: Schalter[];
+}
+
 export interface ReportContentRequest {
   content_id: string;
   content_type: string;
@@ -241,6 +257,16 @@ export class ModerationService {
    */
   loeschauftragAusfuehren(id: string): Observable<LoeschauftragAusgefuehrt> {
     return this.http.post<LoeschauftragAusgefuehrt>(`${this.baseUrl}/loeschauftraege/${encodeURIComponent(id)}/ausfuehren`, {});
+  }
+
+  /** Stand aller Schalter (#708): Obergrenze, Admin-Wert, wirksam. */
+  getSchalter(still = false): Observable<SchalterListe> {
+    return this.http.get<SchalterListe>(`${this.baseUrl}/schalter`, { context: still ? stillerKontext() : undefined });
+  }
+
+  /** Admin-Wert setzen; Einschalten über die Obergrenze hinaus lehnt der Server mit 409 ab. */
+  schalterSetzen(name: string, an: boolean): Observable<SchalterListe> {
+    return this.http.put<SchalterListe>(`${this.baseUrl}/schalter/${encodeURIComponent(name)}`, { an });
   }
 
   /**

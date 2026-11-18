@@ -33,6 +33,10 @@ import { ZuTunComponent } from './zu-tun/zu-tun.component';
           <mat-icon aria-hidden="true">label</mat-icon>
           <span>Themen</span>
         </a>
+        <a routerLink="/admin/schalter" routerLinkActive="aktiv" ariaCurrentWhenActive="page">
+          <mat-icon aria-hidden="true">toggle_on</mat-icon>
+          <span>Schalter</span>
+        </a>
       </nav>
 
       <div class="admin-content">
