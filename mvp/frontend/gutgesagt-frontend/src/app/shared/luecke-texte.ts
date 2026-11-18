@@ -10,16 +10,3 @@ export const LUECKE_ZU = `${LUECKE.einzahl} zu.`;
 
 /** Der Hauptknopf danach. */
 export const NAECHSTE_LUECKE = `Nächste ${LUECKE.einzahl}`;
-
-/**
- * Startseite: „3 Lücken warten auf eine Antwort“; hat die Liste ihre Grenze erreicht
- * (`mehr`), „50+ Lücken …“.
- */
-export function lueckenWarten(anzahl: number, mehr = false): string {
-  if (mehr) {
-    return `${anzahl}+ ${LUECKE.mehrzahl} warten auf eine Antwort`;
-  }
-  return anzahl === 1
-    ? `1 ${LUECKE.einzahl} wartet auf eine Antwort`
-    : `${anzahl} ${LUECKE.mehrzahl} warten auf eine Antwort`;
-}
