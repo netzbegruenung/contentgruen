@@ -112,11 +112,16 @@ class SchalterService:
         self._gelesen_um = 0.0
         self._sperre = threading.Lock()
 
-    def admin_werte(self) -> Dict[str, bool]:
-        """Admin-Werte mit Cache; synchron (kurze Abfrage hoechstens je Cache-Dauer)."""
+    def admin_werte(self, frisch: bool = False) -> Dict[str, bool]:
+        """Admin-Werte mit Cache; synchron (kurze Abfrage hoechstens je Cache-Dauer).
+
+        ``frisch``: am Cache vorbei lesen (Admin-Seite, mehrere Replikas) und den
+        Cache dabei erneuern.
+        """
         with self._sperre:
             if (
-                self._werte is not None
+                not frisch
+                and self._werte is not None
                 and self._uhr() - self._gelesen_um < self._cache_sekunden
             ):
                 return self._werte
@@ -135,22 +140,25 @@ class SchalterService:
         return bool(self.admin_werte().get(name, False))
 
     def wirksam(self, name: str, einstellungen: Settings) -> bool:
-        art = _art(name)
-        an = bool(getattr(einstellungen, art.feld)) and self.admin_wert(name)
-        if name == "abzeichen_sichtbar":
-            # Ohne Punkte keine sichtbaren Abzeichen (wie Settings.abzeichen_sichtbar)
-            return an and self.wirksam("punkte", einstellungen)
-        return an
+        # Ohne Obergrenze gar nicht erst lesen: Auf Prod fragt der Dienst die
+        # Datenbank dann nicht.
+        if not getattr(einstellungen, _art(name).feld):
+            return False
+        return _wirksam(name, einstellungen, self.admin_werte())
 
-    def stand(self, einstellungen: Settings) -> List[Schalterstand]:
+    def stand(
+        self, einstellungen: Settings, frisch: bool = False
+    ) -> List[Schalterstand]:
+        """Stand aller Schalter; ``frisch`` liest die Admin-Werte am Cache vorbei."""
+        werte = self.admin_werte(frisch=frisch)
         return [
             Schalterstand(
                 name=art.name,
                 erklaerung=art.erklaerung,
                 umgebungsvariable=art.umgebungsvariable,
                 obergrenze=bool(getattr(einstellungen, art.feld)),
-                admin_wert=self.admin_wert(art.name),
-                wirksam=self.wirksam(art.name, einstellungen),
+                admin_wert=bool(werte.get(art.name, False)),
+                wirksam=_wirksam(art.name, einstellungen, werte),
                 dsfa_hinweis=DSFA_HINWEIS if art.dsfa_hinweis else None,
             )
             for art in SCHALTER.values()
@@ -164,6 +172,15 @@ class SchalterService:
         self._setzen(name, an, admin)
         with self._sperre:
             self._werte = None
+
+
+def _wirksam(name: str, einstellungen: Settings, werte: Dict[str, bool]) -> bool:
+    art = _art(name)
+    an = bool(getattr(einstellungen, art.feld)) and bool(werte.get(name, False))
+    if name == "abzeichen_sichtbar":
+        # Ohne Punkte keine sichtbaren Abzeichen (wie Settings.abzeichen_sichtbar)
+        return an and _wirksam("punkte", einstellungen, werte)
+    return an
 
 
 def _art(name: str) -> Schalterart:

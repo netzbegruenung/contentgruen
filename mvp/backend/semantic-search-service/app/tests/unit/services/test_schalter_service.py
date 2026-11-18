@@ -109,6 +109,35 @@ def test_cache_liest_hoechstens_je_cache_dauer_setzen_gilt_sofort():
     assert dienst.wirksam("gepostet", settings) is False
 
 
+def test_stand_frisch_liest_am_cache_vorbei():
+    uhr = Uhr()
+    werte = {"gepostet": False}
+    dienst, _, _ = _dienst(werte, uhr=uhr)
+    settings = Settings(gepostet_aktiv=True)
+    assert dienst.wirksam("gepostet", settings) is False
+
+    werte["gepostet"] = True  # andere Replika schaltet ein
+    stand = {s.name: s for s in dienst.stand(settings, frisch=True)}
+
+    assert stand["gepostet"].admin_wert is True
+    assert stand["gepostet"].wirksam is True
+    # Der frische Wert erneuert auch den Cache
+    assert dienst.wirksam("gepostet", settings) is True
+
+
+def test_ohne_obergrenze_liest_wirksam_die_datenbank_nicht():
+    gelesen = []
+
+    def lesen():
+        gelesen.append(1)
+        return {"punkte": True}
+
+    dienst, _, _ = _dienst(lesen=lesen)
+
+    assert dienst.wirksam("punkte", Settings(punkte_aktiv=False)) is False
+    assert gelesen == []
+
+
 def test_datenbank_nicht_erreichbar_gilt_aus():
     def kaputt():
         raise RuntimeError("weg")

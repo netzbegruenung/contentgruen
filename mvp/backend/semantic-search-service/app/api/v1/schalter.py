@@ -53,8 +53,12 @@ def _service() -> SchalterService:
 
 
 def _liste(dienst: SchalterService, settings: Settings) -> SchalterListeResponse:
+    # Frisch, am Cache vorbei: Mit mehreren Replikas zeigte die Seite sonst bis zu
+    # CACHE_SEKUNDEN einen alten Stand, und der Umschalter spraenge zurueck.
     return SchalterListeResponse(
-        schalter=[SchalterResponse(**vars(s)) for s in dienst.stand(settings)]
+        schalter=[
+            SchalterResponse(**vars(s)) for s in dienst.stand(settings, frisch=True)
+        ]
     )
 
 

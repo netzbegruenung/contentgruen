@@ -3,9 +3,10 @@ Repository fuer die Tabellen ``schalter`` und ``schalter_verlauf``: Admin-Werte 
 Schalter und jede Aenderung daran (#708, GLOSSARY.md "Schalter").
 """
 
+from datetime import datetime
 from typing import Dict, Optional
 
-from sqlalchemy import func, insert, select
+from sqlalchemy import delete, func, insert, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from infrastructure.database.connection import AppDatabase, get_app_database
@@ -44,6 +45,19 @@ class SchalterRepository:
                     name=name, an=an, geaendert_am=func.now(), geaendert_von=admin
                 )
             )
+
+    def verlauf_loeschen_vor(self, grenze: datetime) -> int:
+        """Eintraege im Verlauf loeschen, die vor der Grenze geaendert wurden.
+
+        Der aktuelle Stand in ``schalter`` bleibt (Frist: docs/LOESCHKONZEPT.md).
+        """
+        with self.db.get_session() as session:
+            ergebnis = session.execute(
+                delete(SchalterVerlaufZeile).where(
+                    SchalterVerlaufZeile.geaendert_am < grenze
+                )
+            )
+            return ergebnis.rowcount
 
 
 _repository: Optional[SchalterRepository] = None

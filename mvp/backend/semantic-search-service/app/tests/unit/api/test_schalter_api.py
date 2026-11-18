@@ -68,6 +68,16 @@ def test_liste_ohne_eintrag_aus(werte):
     assert stand["gepostet"]["obergrenze"] is False
 
 
+def test_liste_liest_frisch_ohne_cache(werte):
+    client = _client(punkte_aktiv=True)
+    assert client.get(URL, headers=ADMIN).status_code == 200
+
+    werte["punkte"] = True  # andere Replika schaltet ein
+
+    stand = {s["name"]: s for s in client.get(URL, headers=ADMIN).json()["schalter"]}
+    assert stand["punkte"]["admin_wert"] is True
+
+
 def test_einschalten_wirkt_auf_oeffentlichen_status(werte):
     client = _client(punkte_aktiv=True)
     assert client.get("/api/v1/usage/punkte/status").json()["aktiv"] is False

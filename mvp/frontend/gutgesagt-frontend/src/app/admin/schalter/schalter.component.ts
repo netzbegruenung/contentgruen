@@ -46,12 +46,16 @@ const TITEL: Record<string, string> = {
           <mat-slide-toggle
             [checked]="s.admin_wert"
             [disabled]="!s.obergrenze && !s.admin_wert || setzend !== null"
-            [attr.aria-label]="titel(s) + ' einschalten'"
+            [aria-label]="titel(s) + ', Admin'"
+            [aria-describedby]="'zustand-' + s.name"
             (change)="umschalten(s, $event)"
           >
-            {{ s.wirksam ? 'Wirkt' : 'Aus' }}
+            Admin
           </mat-slide-toggle>
         </div>
+        <p class="zustand" [id]="'zustand-' + s.name" [class.wirkt]="s.wirksam" data-testid="zustand">
+          {{ zustand(s) }}
+        </p>
         <p>{{ s.erklaerung }}</p>
         <p class="obergrenze" [class.aus]="!s.obergrenze">
           <mat-icon aria-hidden="true">{{ s.obergrenze ? 'check_circle' : 'block' }}</mat-icon>
@@ -77,6 +81,8 @@ const TITEL: Record<string, string> = {
     .schalter p { margin: 4px 0; }
     .kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .kopf h3 { margin: 0; font-size: 1.0625rem; }
+    .zustand { font-weight: 500; color: var(--text-secondary); }
+    .zustand.wirkt { color: inherit; }
     .obergrenze, .dsfa { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .obergrenze code { font-size: 0.8125rem; color: var(--text-secondary); }
     .obergrenze.aus, .gesperrt { color: var(--text-secondary); }
@@ -105,6 +111,26 @@ export class SchalterComponent implements OnInit {
 
   titel(s: Schalter): string {
     return TITEL[s.name] ?? s.name;
+  }
+
+  /**
+   * Admin-Wert und Wirkung in einer Zeile, damit ein eingeschalteter Umschalter neben
+   * „aus“ nicht widersprüchlich aussieht: Der Umschalter zeigt den Admin-Wert, die Zeile
+   * sagt, ob und warum er nicht wirkt.
+   */
+  zustand(s: Schalter): string {
+    const admin = `Admin: ${s.admin_wert ? 'an' : 'aus'}`;
+    if (s.wirksam) {
+      return `${admin} · wirksam: an`;
+    }
+    if (s.admin_wert && !s.obergrenze) {
+      return `${admin} · wirksam: aus (Server erlaubt nicht)`;
+    }
+    const punkte = this.liste?.find((p) => p.name === 'punkte');
+    if (s.admin_wert && s.name === 'abzeichen_sichtbar' && punkte && !punkte.wirksam) {
+      return `${admin} · wirksam: aus, weil Punkte aus`;
+    }
+    return `${admin} · wirksam: aus`;
   }
 
   umschalten(s: Schalter, ereignis: MatSlideToggleChange): void {

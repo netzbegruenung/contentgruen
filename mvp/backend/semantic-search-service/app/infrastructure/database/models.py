@@ -910,14 +910,16 @@ class SchalterZeile(Base):
     name = Column(String(64), primary_key=True)
     an = Column(Boolean, nullable=False)
     geaendert_am = Column(DateTime(timezone=True), nullable=False)
-    # Kennung des Admins (GLOSSARY.md "Kennung"), kein Klarname
-    geaendert_von = Column(String(255), nullable=False)
+    # Kennung des Admins (GLOSSARY.md "Kennung"), kein Klarname; leer, wenn sein Konto
+    # geloescht ist (mvp/scripts/manual/person_loeschen.sql)
+    geaendert_von = Column(String(255), nullable=True)
 
 
 class SchalterVerlaufZeile(Base):
     """
     Jede Aenderung eines Admin-Werts (#708): welcher Schalter, neuer Wert, wann, von
-    welchem Admin (Kennung). Frist: docs/LOESCHKONZEPT.md.
+    welchem Admin (Kennung). Frist: ein Jahr ab ``geaendert_am``
+    (services/loeschfristen_service.py, docs/LOESCHKONZEPT.md).
     """
 
     __tablename__ = "schalter_verlauf"
@@ -926,7 +928,8 @@ class SchalterVerlaufZeile(Base):
     name = Column(String(64), nullable=False)
     an = Column(Boolean, nullable=False)
     geaendert_am = Column(DateTime(timezone=True), nullable=False)
-    geaendert_von = Column(String(255), nullable=False)
+    # Leer, wenn das Konto des Admins geloescht ist (person_loeschen.sql)
+    geaendert_von = Column(String(255), nullable=True)
 
     __table_args__ = (Index("idx_schalter_verlauf_geaendert_am", "geaendert_am"),)
 

@@ -24,6 +24,9 @@ UPDATE raw_input_content_links SET created_by  = NULL WHERE created_by  = :'uid'
 UPDATE sperren SET autor = NULL, widerspruch = NULL WHERE autor = :'uid';
 UPDATE sperren SET gesperrt_von = NULL WHERE gesperrt_von = :'uid';
 UPDATE sperren SET geprueft_von = NULL WHERE geprueft_von = :'uid';
+-- Schalter (#708): Stand und Verlauf bleiben, die Kennung des Admins geht.
+UPDATE schalter         SET geaendert_von = NULL WHERE geaendert_von = :'uid';
+UPDATE schalter_verlauf SET geaendert_von = NULL WHERE geaendert_von = :'uid';
 DELETE FROM raw_inputs       WHERE submitted_by        = :'uid';
 -- Saetze an fremden Einwuerfen bleiben, die Kennung wird ersetzt: je Satz ein
 -- eigener Platzhalter, weil der eindeutige Index (raw_input_id, user_id) keinen

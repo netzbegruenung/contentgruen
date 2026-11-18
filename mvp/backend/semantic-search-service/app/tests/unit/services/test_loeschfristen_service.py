@@ -18,6 +18,7 @@ from services.loeschfristen_service import (
     GELOESCHTER_BEITRAG_TAGE,
     MELDUNG_NACH_BEARBEITUNG_TAGE,
     NIE_BENUTZTES_KONTO_TAGE,
+    SCHALTER_VERLAUF_TAGE,
     SPERRE_NACH_AUFHEBUNG_TAGE,
     LoeschfristenService,
     loeschen_im_takt,
@@ -137,6 +138,39 @@ class TestLoeschauftraege:
         self, service, loeschauftraege, beitraege
     ):
         loeschauftraege.erledigte_loeschen_vor.side_effect = RuntimeError("db weg")
+
+        await service.fristen_anwenden(HEUTE)
+
+        beitraege.geloeschte_laden.assert_awaited_once()
+
+
+class TestSchalterVerlauf:
+    """Verlauf der Schalter nach einem Jahr (#708, Entscheidung 18.11.2026)."""
+
+    @pytest.fixture
+    def schalter(self):
+        return Mock(**{"verlauf_loeschen_vor.return_value": 0})
+
+    @pytest.fixture
+    def service(self, meldungen, einwuerfe, beitraege, moderation, sperren, schalter):
+        return LoeschfristenService(
+            meldungen, einwuerfe, beitraege, moderation, sperren, schalter=schalter
+        )
+
+    def test_frist_ein_jahr(self):
+        assert SCHALTER_VERLAUF_TAGE == 365
+
+    async def test_verlauf_vor_einem_jahr_geht(self, service, schalter):
+        await service.fristen_anwenden(HEUTE)
+
+        schalter.verlauf_loeschen_vor.assert_called_once_with(
+            datetime(2025, 10, 29, tzinfo=timezone.utc)
+        )
+
+    async def test_fehler_haelt_die_anderen_nicht_auf(
+        self, service, schalter, beitraege
+    ):
+        schalter.verlauf_loeschen_vor.side_effect = RuntimeError("db weg")
 
         await service.fristen_anwenden(HEUTE)
 

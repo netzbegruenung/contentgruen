@@ -130,7 +130,9 @@ def schalter_admin_alle_an():
     Admin-Werte der Schalter ohne Datenbank (#708): alle an, damit die bisherigen Tests
     weiter nur die Obergrenze aus ihren Settings pruefen. Die Verknuepfung aus
     Obergrenze und Admin-Wert (ohne Eintrag aus) pruefen tests/unit/services/
-    test_schalter_service.py und tests/unit/api/test_schalter_api.py mit eigenem Dienst.
+    test_schalter_service.py und tests/unit/api/test_schalter_api.py mit eigenem Dienst;
+    dass keine Stelle an den Admin-Werten vorbei liest, tests/unit/
+    test_schalter_direktzugriff.py (ueberschreibt dieses Fixture ausdruecklich).
     """
     from services.schalter_service import (
         SCHALTER,

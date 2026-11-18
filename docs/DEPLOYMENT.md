@@ -168,6 +168,10 @@ its variable is `true` **and** an admin has switched it on in the app (Admin, �
 in the table `schalter`, every change with time and admin Kennung in `schalter_verlauf`). Without
 an entry the admin value is off. Admins can always switch off, but never on above the upper bound
 (the API answers 409). Changes take effect without a restart, in other replicas within about 45 s.
+An admin value „on“ stays when the upper bound is switched off later: the Schalter is then off, but
+if a rollout sets the variable to `true` again, it takes effect without a new admin click. Switch
+it off in the app first if it should stay off. The history in `schalter_verlauf` is deleted after
+12 months by the Löschfristen task (`docs/LOESCHKONZEPT.md`); the current value stays.
 Behaviour change on rollout: a system where a variable is already `true` (for example
 `SEMANTIC_SEARCH_PUNKTE_AKTIV=true` on test) has that function **off** after the update until an
 admin switches it on. Before switching on Punkte or Abzeichen on production: DSFA decided

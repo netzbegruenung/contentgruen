@@ -86,8 +86,38 @@ describe('SchalterComponent', () => {
     anfrage.flush({ schalter: [schalter({ name: 'punkte', admin_wert: true, wirksam: true })] });
     fixture.detectChanges();
 
-    expect(karten()[0].textContent).toContain('Wirkt');
+    expect(karten()[0].textContent).toContain('Admin: an · wirksam: an');
     expect(knopf(karten()[0]).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('nennt dem Screenreader den Schalter und beschreibt den Zustand', () => {
+    laden([schalter({ name: 'punkte', admin_wert: true, wirksam: true })]);
+
+    const karte = karten()[0];
+    const button = knopf(karte);
+    expect(button.getAttribute('aria-label')).toBe('Punkte und Meilensteine, Admin');
+    // Sichtbarer Text des Umschalters steckt im Namen (WCAG 2.5.3)
+    expect(karte.querySelector('mat-slide-toggle')!.textContent!.trim()).toBe('Admin');
+    const beschreibung = button.getAttribute('aria-describedby')!.split(' ');
+    const zustand = karte.querySelector('[data-testid="zustand"]') as HTMLElement;
+    expect(beschreibung).toContain(zustand.id);
+    expect(zustand.textContent).toContain('wirksam: an');
+  });
+
+  it('erklärt, warum ein eingeschalteter Admin-Wert nicht wirkt', () => {
+    laden([
+      schalter({ name: 'punkte', admin_wert: false, wirksam: false }),
+      schalter({ name: 'abzeichen_sichtbar', admin_wert: true, wirksam: false }),
+      schalter({ name: 'gepostet', obergrenze: false, admin_wert: true, wirksam: false }),
+    ]);
+
+    const [punkte, abzeichen, gepostet] = karten().map(
+      (k) => (k.querySelector('[data-testid="zustand"]') as HTMLElement).textContent!.trim(),
+    );
+    expect(punkte).toBe('Admin: aus · wirksam: aus');
+    expect(abzeichen).toBe('Admin: an · wirksam: aus, weil Punkte aus');
+    expect(gepostet).toBe('Admin: an · wirksam: aus (Server erlaubt nicht)');
+    expect(knopf(karten()[2]).getAttribute('aria-checked')).toBe('true');
   });
 
   it('nimmt den Umschalter bei 409 zurück und zeigt die Erklärung', () => {

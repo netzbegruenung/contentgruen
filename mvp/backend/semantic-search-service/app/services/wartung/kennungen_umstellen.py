@@ -72,6 +72,9 @@ SPALTEN = {
     "raw_input_drafts": ("user_id",),
     "raw_input_content_links": ("created_by",),
     "content_reports": ("reported_by_user_id", "reviewed_by"),
+    # Kennung des Admins an Schaltern und ihrem Verlauf (#708).
+    "schalter": ("geaendert_von",),
+    "schalter_verlauf": ("geaendert_von",),
     "sperren": ("autor", "gesperrt_von", "geprueft_von"),
 }
 

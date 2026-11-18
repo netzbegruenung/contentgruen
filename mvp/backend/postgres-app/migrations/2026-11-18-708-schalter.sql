@@ -11,7 +11,9 @@
 --
 -- Vorhandene Daten: keine. Ohne Zeile gilt der Admin-Wert als aus; ein bisher per
 -- Umgebung eingeschalteter Schalter ist danach aus, bis ein Admin ihn einschaltet
--- (docs/DEPLOYMENT.md). Ein zweiter Lauf aendert nichts.
+-- (docs/DEPLOYMENT.md). Ein zweiter Lauf aendert nichts. Die Kennung des Admins
+-- (geaendert_von) darf leer sein: Das Loeschkommando leert sie mit dem Konto. Den
+-- Verlauf loescht der Task der Loeschfristen nach einem Jahr (docs/LOESCHKONZEPT.md).
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
@@ -21,7 +23,7 @@ CREATE TABLE IF NOT EXISTS schalter (
     name VARCHAR(64) NOT NULL,
     an BOOLEAN NOT NULL,
     geaendert_am TIMESTAMP WITH TIME ZONE NOT NULL,
-    geaendert_von VARCHAR(255) NOT NULL,
+    geaendert_von VARCHAR(255),
     PRIMARY KEY (name)
 );
 
@@ -30,7 +32,7 @@ CREATE TABLE IF NOT EXISTS schalter_verlauf (
     name VARCHAR(64) NOT NULL,
     an BOOLEAN NOT NULL,
     geaendert_am TIMESTAMP WITH TIME ZONE NOT NULL,
-    geaendert_von VARCHAR(255) NOT NULL,
+    geaendert_von VARCHAR(255),
     PRIMARY KEY (id)
 );
 CREATE INDEX IF NOT EXISTS idx_schalter_verlauf_geaendert_am
