@@ -6,17 +6,24 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { NavigationService } from '../services/navigation.service';
+import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
+import { CdkTextareaAutosize } from '@angular/cdk/text-field';
+import { By } from '@angular/platform-browser';
+import { BehaviorSubject, of } from 'rxjs';
 import { HOT_TAKES } from '../shared/startbeispiel';
 
-import { SUCHANFRAGEN_ABSCHNITT, SUCHHINWEIS, SUCHHINWEIS_KURZ, SearchComponent } from './search.component';
+import { SCHMAL, SUCHANFRAGEN_ABSCHNITT, SUCHHINWEIS, SUCHHINWEIS_KURZ, SearchComponent } from './search.component';
 
 describe('SearchComponent', () => {
   let component: SearchComponent;
   let fixture: ComponentFixture<SearchComponent>;
   let navigationServiceMock: any;
+  /** Bildschirmbreite fuer die Komponente: matches = unter 600 px. */
+  let breite$: BehaviorSubject<BreakpointState>;
 
   beforeEach(async () => {
     navigationServiceMock = jasmine.createSpyObj('NavigationService', ['navigateToResult']);
+    breite$ = new BehaviorSubject<BreakpointState>({ matches: false, breakpoints: {} });
 
     await TestBed.configureTestingModule({
       imports: [
@@ -26,6 +33,14 @@ describe('SearchComponent', () => {
       ],
       providers: [
         { provide: NavigationService, useValue: navigationServiceMock },
+        {
+          provide: BreakpointObserver,
+          // Material fragt selbst weitere Medienabfragen ab (etwa forced-colors)
+          useValue: {
+            observe: (q: string) => (q === SCHMAL ? breite$ : of({ matches: false, breakpoints: {} })),
+            isMatched: () => false,
+          },
+        },
         provideHttpClient(),
         provideHttpClientTesting(),
         provideAnimations(),
@@ -245,6 +260,96 @@ describe('SearchComponent', () => {
     it('tippt ohne beispielAnimation nichts vor (Feld ueber den Treffern)', () => {
       expect(feld(fixture).placeholder).toBe('');
       expect(knopf(fixture)).toBeNull();
+    });
+
+    it('zeigt „Ausprobieren“ am Desktop im Feld, nicht darunter', fakeAsync(() => {
+      const f = mitBeispiel(false);
+      tick(HOT_TAKES[0].text.length * 45 + 10);
+      f.detectChanges();
+
+      expect(knopf(f)!.closest('mat-form-field')).not.toBeNull();
+      expect(knopf(f)!.classList).not.toContain('ausprobieren-unter-feld');
+      flush(5000);
+    }));
+  });
+
+  // Designrunde 18.11.: Am Handy lief der Hot Take aus dem einzeiligen Feld
+  describe('am Handy (unter 600 px)', () => {
+    function schmal(f: ComponentFixture<SearchComponent> = fixture): void {
+      breite$.next({ matches: true, breakpoints: { [SCHMAL]: true } });
+      f.detectChanges();
+    }
+    const textfeld = (f: ComponentFixture<SearchComponent> = fixture) =>
+      f.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+
+    it('wird das Feld mehrzeilig: 2 bis 4 Zeilen, mit Beschriftung, Hinweis und Kennung', () => {
+      fixture.componentRef.setInput('feldId', 'suche');
+      schmal();
+
+      expect(fixture.nativeElement.querySelector('input')).toBeNull();
+      const autosize = fixture.debugElement.query(By.directive(CdkTextareaAutosize)).injector.get(CdkTextareaAutosize);
+      expect(autosize.minRows).toBe(2);
+      expect(autosize.maxRows).toBe(4);
+      expect(textfeld().id).toBe('suche');
+      expect(textfeld().getAttribute('aria-describedby')).toBe(fixture.nativeElement.querySelector('.such-hinweis').id);
+      expect(fixture.nativeElement.querySelector('mat-label').textContent.trim()).toBe('Worauf willst du antworten? Text einfügen');
+    });
+
+    it('sucht mit Enter, ohne eine neue Zeile', () => {
+      schmal();
+      component.searchQuery = 'Tempolimit bringt nichts';
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true });
+      textfeld().dispatchEvent(enter);
+
+      expect(enter.defaultPrevented).toBeTrue();
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith('Tempolimit bringt nichts');
+    });
+
+    it('macht mit Umschalt+Enter keine neue Zeile', () => {
+      schmal();
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, cancelable: true });
+      textfeld().dispatchEvent(enter);
+
+      expect(enter.defaultPrevented).toBeTrue();
+    });
+
+    it('macht aus Zeilenumbruechen im eingefuegten Text Leerzeichen', fakeAsync(() => {
+      schmal();
+      tick(); // ngModel meldet sich erst nach einem Mikrotask beim Formular an
+      textfeld().value = 'Windräder\r\nkillen  \n\n  doch Vögel';
+      textfeld().dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      tick();
+      fixture.detectChanges();
+
+      expect(component.searchQuery).toBe('Windräder killen doch Vögel');
+      expect(textfeld().value).toBe('Windräder killen doch Vögel');
+    }));
+
+    it('tippt den Hot Take als Platzhalter und zeigt „Ausprobieren“ unter dem Feld', fakeAsync(() => {
+      spyOn(window, 'matchMedia').and.callFake(() => ({ matches: false }) as MediaQueryList);
+      const f = TestBed.createComponent(SearchComponent);
+      f.componentRef.setInput('beispielAnimation', true);
+      schmal(f);
+      tick(HOT_TAKES[0].text.length * 45 + 10);
+      f.detectChanges();
+
+      expect(textfeld(f).placeholder).toBe(HOT_TAKES[0].text);
+      const knopf = f.nativeElement.querySelector('.ausprobieren-knopf') as HTMLButtonElement;
+      expect(knopf.classList).toContain('ausprobieren-unter-feld');
+      expect(knopf.closest('mat-form-field')).toBeNull();
+      knopf.click();
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith(HOT_TAKES[0].text);
+      flush();
+    }));
+
+    it('hat ueber den Treffern (compactMode) kein „Ausprobieren“, aber das mehrzeilige Feld', () => {
+      fixture.componentRef.setInput('compactMode', true);
+      schmal();
+
+      expect(textfeld()).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.ausprobieren-zeile')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.ausprobieren-knopf')).toBeNull();
     });
   });
 });

@@ -206,6 +206,29 @@
     animation: ausprobieren-auf 0.6s ease-out;
 }
 
+/* Handy: das Feld waechst mit, der Hot Take bricht um (Designrunde 18.11.) */
+.suchfeld-mehrzeilig {
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.4;
+}
+
+/* Handy: „Ausprobieren“ klein und rechtsbuendig unter dem Feld; Tippflaeche 44 px.
+   Die Zeile ruht im Unterbereich des Feldes, damit „Suchen“ nicht weit nach unten rutscht. */
+.ausprobieren-zeile {
+    display: flex;
+    justify-content: flex-end;
+    min-height: 44px;
+    margin-top: -18px;
+}
+
+.ausprobieren-unter-feld {
+    margin-right: 0;
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 0.875rem;
+}
+
 @keyframes ausprobieren-auf {
     0% { opacity: 0; transform: scale(0.9); }
     60% { opacity: 1; transform: scale(1.06); }

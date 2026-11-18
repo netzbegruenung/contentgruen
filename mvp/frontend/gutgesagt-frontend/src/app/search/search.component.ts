@@ -4,6 +4,8 @@ import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SearchService } from '../services/search.service';
 import { Router, RouterLink } from '@angular/router';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { TextFieldModule } from '@angular/cdk/text-field';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -30,6 +32,8 @@ export const SUCHHINWEIS = 'Suchtexte speichern wir ohne deinen Namen. Nach Prü
 export const SUCHHINWEIS_KURZ = 'Suchtexte speichern wir ohne deinen Namen.';
 /** Sprungmarke des Abschnitts „Deine Suchanfragen“ in der Datenschutzerklärung. */
 export const SUCHANFRAGEN_ABSCHNITT = 'suchanfragen';
+/** Ab hier abwärts wird das Feld mehrzeilig und „Ausprobieren“ steht darunter (Designrunde 18.11.). */
+export const SCHMAL = '(max-width: 599px)';
 /** Zaehler fuer eindeutige Kennungen des Hinweises, falls mehrere Suchfelder zugleich da sind. */
 let naechsterHinweis = 0;
 
@@ -37,7 +41,7 @@ let naechsterHinweis = 0;
   selector: 'app-search',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [...SHARED_IMPORTS, RouterLink],
+  imports: [...SHARED_IMPORTS, RouterLink, TextFieldModule],
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.css'],
 })
@@ -51,7 +55,12 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() autofokus = false;
   /** Ziel des Skip-Links „Zur Suche“ im Kopf; nur das Feld auf dem Start traegt es (leer: eigene Kennung von Material). */
   @Input() feldId = '';
-  @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
+  @ViewChild('feld') private feld?: ElementRef<HTMLInputElement | HTMLTextAreaElement>;
+  /**
+   * Unter 600 px ein mitwachsendes Textfeld (2 bis 4 Zeilen) statt der einen Zeile: Der
+   * vorgetippte Hot Take bricht um, statt aus dem Feld zu laufen (Designrunde 18.11.).
+   */
+  schmal = false;
   /**
    * Auf dem Start tippt das leere Feld typische Hot Takes als Platzhalter ein, daneben
    * steht „Ausprobieren“ (Designrunde 17.11.). Die Vorführung stoppt, sobald man ins Feld
@@ -65,6 +74,13 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   beispielFertig = false;
   private beispielAus = false;
   private beispielTimer?: ReturnType<typeof setTimeout>;
+  /** Die Vorführung ist nicht durch eigene Eingabe beendet. */
+  get beispielLaeuft(): boolean {
+    return !this.beispielAus;
+  }
+  get ausprobierenSichtbar(): boolean {
+    return this.beispielAnimation && this.beispielFertig && !!this.beispielText && !this.searchQuery;
+  }
   get suchhinweis(): string {
     return this.compactMode ? SUCHHINWEIS_KURZ : SUCHHINWEIS;
   }
@@ -82,7 +98,8 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     private searchService: SearchService,
     private router: Router,
     private zone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private breakpointObserver: BreakpointObserver
   ) { }
 
   /** Bei reduzierter Bewegung steht das Beispiel schon vor dem ersten Zeichnen. */
@@ -94,6 +111,31 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
       this.beispielText = HOT_TAKES[0].text;
       this.beispielFertig = true;
     }
+    this.breakpointObserver.observe(SCHMAL).pipe(takeUntil(this.destroy$)).subscribe((stand) => {
+      this.schmal = stand.matches;
+      this.cdr.markForCheck();
+    });
+  }
+
+  /**
+   * Enter sucht, auch im mehrzeiligen Feld; Umschalt+Enter macht keine neue Zeile.
+   * Waehrend einer IME-Eingabe bestaetigt Enter nur das Zeichen.
+   */
+  enterImFeld(ereignis: Event): void {
+    if ((ereignis as KeyboardEvent).isComposing) {
+      return;
+    }
+    ereignis.preventDefault();
+    this.onSearch();
+  }
+
+  /**
+   * Ein Suchtext ist eine Zeile: Zeilenumbrueche aus eingefuegtem Text werden zu Leerzeichen.
+   * Er landet in der Adresse der Trefferseite und dort wieder im Feld, und er wird als eine
+   * Zeile gespeichert und angezeigt; fuer die Suche tragen Umbrueche nichts bei.
+   */
+  einzeilig(text: string): string {
+    return (text ?? '').replace(/[^\S\r\n]*[\r\n]+[^\S\r\n]*/g, ' ');
   }
 
   ngAfterViewInit(): void {
