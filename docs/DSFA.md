@@ -704,8 +704,9 @@ oder Kennung nur gekürzt im Arbeitsspeicher, höchstens etwa 16 Minuten, mit Sc
 - **Zweck, Rechtsgrundlage:** dem Schreibenden Anmerkungen, Sprachhinweis und Kürzungsvorschlag zeigen;
   Art. 6 Abs. 1 lit. b (`DSE:320-361`).
 - **Daten:** Titel, Text und die Aussage, auf die geantwortet wird, gehen an den eigenen Server, ohne
-  KI und ohne externen Dienst; gespeichert wird nichts, nur ein flüchtiger Zähler gegen Überlastung
-  (`DSE:320-361`).
+  KI und ohne externen Dienst; beim Kommentar und bei der Hintergrundinfo dazu `hat_herkunft`, nur
+  Ja/Nein, ob eine Herkunft eingetragen ist (die Herkunft selbst geht nicht mit); gespeichert wird
+  nichts, nur ein flüchtiger Zähler gegen Überlastung (`DSE:320-361`).
 - **Frist:** keine Speicherung; der Zähler höchstens etwa elf Minuten (`DSE:320-361`).
 - **Risiko:** gering. Die Entwürfe können politische Haltung enthalten, werden aber nicht abgelegt.
   Die Funktionen sind auch ohne Art.-9-Einwilligung offen (`A9:17-27`).

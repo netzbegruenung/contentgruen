@@ -108,6 +108,26 @@ describe('AddCommentaryComponent', () => {
     expect(seite().querySelector<HTMLButtonElement>('.submit-btn')!.disabled).toBeFalse();
   });
 
+  it('sagt dem Gegenlesen, ob eine Herkunft eingetragen ist (Zahlen ohne Herkunft)', () => {
+    ausfuellen();
+    const instanz = () => fixture.debugElement.query(By.directive(GegenlesenComponent)).componentInstance as GegenlesenComponent;
+    expect(instanz().hatHerkunft).toBeFalse();
+
+    component.commentaryForm.patchValue({ references: [{ reference_string: 'https://example.org/studie' }] });
+    fixture.detectChanges();
+
+    expect(instanz().hatHerkunft).toBeTrue();
+  });
+
+  it('nimmt einen Link in der Langfassung als Herkunft, ein "laut" nicht', () => {
+    ausfuellen();
+    component.commentaryForm.patchValue({ lang: 'Laut Umweltbundesamt sind es 30 Prozent.' });
+    expect(component.hatHerkunft).toBeFalse();
+
+    component.commentaryForm.patchValue({ lang: 'Quelle: https://example.org/studie' });
+    expect(component.hatHerkunft).toBeTrue();
+  });
+
   it('liest einspaltig kompakt direkt unter dem Textfeld gegen, nicht unter der Vorschau (Nutzerfuehrung 13.11.)', () => {
     breite.next({ matches: true, breakpoints: {} });
     ausfuellen();

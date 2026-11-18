@@ -79,7 +79,26 @@ describe('GegenlesenComponent', () => {
 
     const anfrage = http.expectOne(PFAD);
     expect(anfrage.request.body.titel_ist_behauptung).toBe(false);
+    // Ohne Herkunftsfeld (Post, Bild) geht hat_herkunft gar nicht mit, auch nicht als null.
+    expect('hat_herkunft' in anfrage.request.body).toBeFalse();
     anfrage.flush({ guete: 10, anmerkungen: [] });
+  }));
+
+  it('sagt, ob eine Herkunft da ist, und liest neu, wenn sie dazukommt', fakeAsync(() => {
+    fixture.componentRef.setInput('hatHerkunft', false);
+    schreibe('Wärmepumpe lohnt sich', 'Sie spart 30 Prozent.');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const ohne = http.expectOne(PFAD);
+    expect(ohne.request.body.hat_herkunft).toBe(false);
+    ohne.flush({ guete: 9, anmerkungen: [] });
+
+    fixture.componentRef.setInput('hatHerkunft', true);
+    fixture.detectChanges();
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const mit = http.expectOne(PFAD);
+    expect(mit.request.body.hat_herkunft).toBe(true);
+    mit.flush({ guete: 10, anmerkungen: [] });
+    tick(ANSAGE_PAUSE_MS);
   }));
 
   it('zeigt das Siegel mit der Güte und die Anmerkungen darunter', fakeAsync(() => {
@@ -221,6 +240,12 @@ describe('GegenlesenComponent', () => {
   describe('Herkunft fehlt (Persona-Test Gerd)', () => {
     const HINWEIS = 'Ohne Herkunft glaubt dir das kaum jemand. Nenn, woher es stammt: ein Link oder eine Fundstelle.';
 
+    /** Wie die Hintergrundinfo: Herkunftsfeld leer, eigener Hinweis empfohlen. */
+    function herkunft(da: boolean): void {
+      fixture.componentRef.setInput('herkunftEmpfohlen', true);
+      fixture.componentRef.setInput('hatHerkunft', da);
+    }
+
     function gegengelesen(antwort: Gegengelesen): void {
       schreibe('Abschaltsysteme gibt es nur an einem Teil der Windräder', 'Eine Zahl ohne Beleg.');
       tick(GEGENLESEN_VERZOEGERUNG_MS);
@@ -231,56 +256,76 @@ describe('GegenlesenComponent', () => {
     }
 
     it('meldet statt "Nichts aufgefallen" die fehlende Herkunft, ohne Anfrage dafür', fakeAsync(() => {
-      fixture.componentRef.setInput('herkunftFehlt', true);
+      herkunft(false);
       gegengelesen({ guete: 10, anmerkungen: [] });
 
       expect(element().querySelector('.herkunft-fehlt')!.textContent!.trim()).toBe(HINWEIS);
       expect(element().querySelector('.gegenlesen-gut')).toBeNull();
     }));
 
+    it('weicht der genaueren Anmerkung zu Zahlen ohne Herkunft', fakeAsync(() => {
+      herkunft(false);
+      const zahl = 'Zahlen ohne Herkunft: „30 Prozent“. Nenn, woher sie stammen, dann glaubt man sie eher.';
+      gegengelesen({
+        guete: 9,
+        anmerkungen: [{ art: 'zahl_ohne_herkunft', stelle: 'text', text: zahl, woerter: ['30 Prozent'] }],
+      });
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      const punkte = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((p) => p.textContent!.trim());
+      expect(punkte).toEqual([zahl]);
+    }));
+
     it('steht vor den Anmerkungen des Dienstes', fakeAsync(() => {
-      fixture.componentRef.setInput('herkunftFehlt', true);
+      herkunft(false);
       gegengelesen(MIT_ANMERKUNG);
 
       const punkte = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((p) => p.textContent!.trim());
       expect(punkte).toEqual([HINWEIS, MIT_ANMERKUNG.anmerkungen[0].text]);
     }));
 
-    it('verschwindet, sobald eine Herkunft da ist, ohne neue Anfrage', fakeAsync(() => {
-      fixture.componentRef.setInput('herkunftFehlt', true);
+    it('verschwindet, sobald eine Herkunft da ist, und der Dienst liest neu', fakeAsync(() => {
+      herkunft(false);
       gegengelesen({ guete: 10, anmerkungen: [] });
 
-      fixture.componentRef.setInput('herkunftFehlt', false);
+      herkunft(true);
       fixture.detectChanges();
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
       tick(GEGENLESEN_VERZOEGERUNG_MS);
-      http.expectNone(PFAD);
+      const neu = http.expectOne(PFAD);
+      expect(neu.request.body.hat_herkunft).toBe(true);
+      neu.flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
 
       expect(element().querySelector('.herkunft-fehlt')).toBeNull();
       expect(element().querySelector('.gegenlesen-gut')).not.toBeNull();
       tick(ANSAGE_PAUSE_MS);
     }));
 
-    it('kompakt: Zeile, Farbe und Ansage folgen der Herkunft, ohne neue Anfrage', fakeAsync(() => {
+    it('kompakt: Zeile, Farbe und Ansage folgen der Herkunft', fakeAsync(() => {
       fixture.componentRef.setInput('kompakt', true);
-      fixture.componentRef.setInput('herkunftFehlt', true);
+      herkunft(false);
       gegengelesen({ guete: 10, anmerkungen: [] });
       const zeile = element().querySelector('.gegenlesen-zeile')!;
       const ansage = () => element().querySelector('.gegenlesen-ansage')!.textContent!.trim();
       expect(ansage()).toBe('1 Anmerkung');
 
-      fixture.componentRef.setInput('herkunftFehlt', false);
+      herkunft(true);
       fixture.detectChanges();
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
       tick(ANSAGE_PAUSE_MS);
       fixture.detectChanges();
-      http.expectNone(PFAD);
 
       expect(zeile.textContent).toContain('Gegenlesen: Nichts aufgefallen');
       expect(zeile.classList).toContain('gut');
       expect(ansage()).toBe('Nichts aufgefallen');
 
       // Und zurueck: Herkunft wieder leer
-      fixture.componentRef.setInput('herkunftFehlt', true);
+      herkunft(false);
       fixture.detectChanges();
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
       tick(ANSAGE_PAUSE_MS);
       fixture.detectChanges();
 
@@ -289,8 +334,16 @@ describe('GegenlesenComponent', () => {
       expect(ansage()).toBe('1 Anmerkung');
     }));
 
+    it('kommt nur, wo das Formular ihn empfiehlt (Kommentar: nur die Zahl-Regel)', fakeAsync(() => {
+      fixture.componentRef.setInput('hatHerkunft', false);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      expect(element().querySelector('.gegenlesen-gut')).not.toBeNull();
+    }));
+
     it('mahnt im leeren Formular noch nicht', () => {
-      fixture.componentRef.setInput('herkunftFehlt', true);
+      herkunft(false);
       fixture.detectChanges();
 
       expect(element().querySelector('.herkunft-fehlt')).toBeNull();
@@ -298,7 +351,7 @@ describe('GegenlesenComponent', () => {
 
     it('zaehlt kompakt als Anmerkung mit, statt gruen "Nichts aufgefallen" zu zeigen', fakeAsync(() => {
       fixture.componentRef.setInput('kompakt', true);
-      fixture.componentRef.setInput('herkunftFehlt', true);
+      herkunft(false);
       gegengelesen({ guete: 10, anmerkungen: [] });
       const zeile = element().querySelector('.gegenlesen-zeile')!;
 

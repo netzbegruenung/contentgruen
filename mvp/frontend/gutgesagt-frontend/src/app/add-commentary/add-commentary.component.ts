@@ -73,6 +73,9 @@ export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = KOMMENTAR_TEXT_MAX;
 /** Zeichengrenze von X und Bluesky; nur ein Hinweis, keine Pruefung. */
 export const PLATTFORM_GRENZE = KURZFASSUNG_MAX;
+/** Ein Link als Herkunft in der Langfassung (hatHerkunft). */
+const LINK = /\bhttps?:\/\/\S|\bwww\.\S/i;
+
 /** Die Fassungen Kurz und Lang (#355), wie im Backend (dtos/commentary.py). */
 export const KURZ_MAX = PLATTFORM_GRENZE;
 export const LANG_MAX = LANGFASSUNG_MAX;
@@ -560,6 +563,15 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
     if (vorbefuellung.url) {
       this.showReferences = true;
     }
+  }
+
+  /**
+   * Fuer das Gegenlesen: Zahlen ohne Herkunft merkt es nur an, solange keine eingetragen
+   * ist. Ein Link in der Langfassung zaehlt mit, ihr Platzhalter sagt "Mit Begruendung und
+   * Herkunft"; ein "laut X" im Text nicht, das ist oft nur eine Behauptung.
+   */
+  get hatHerkunft(): boolean {
+    return !!this.commentaryForm.value.references?.length || LINK.test(this.commentaryForm.value.lang ?? '');
   }
 
   get titelLaenge(): number {

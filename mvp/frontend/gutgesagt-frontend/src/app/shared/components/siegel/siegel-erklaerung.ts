@@ -15,6 +15,11 @@ export const KRITERIUM_ERFUELLT: Record<Anmerkung['art'], string> = {
   statt_sag: 'Ohne Wörter aus der Liste „statt X, sag Y“',
   passiv: 'Aktiv formuliert',
   kompositum: 'Ohne lange zusammengesetzte Wörter',
+  gedankenstrich: 'Ohne Gedankenstriche',
+  parteistimme: 'Klingt nach Nachbarin, nicht nach Partei',
+  titel_frage: 'Titel als Behauptung, nicht als Frage',
+  // Prüft nur das Formular, das die Herkunft kennt; auf der Karte nie erfüllt gemeldet.
+  zahl_ohne_herkunft: 'Zahlen mit Herkunft',
 };
 
 export interface SiegelErklaerung {

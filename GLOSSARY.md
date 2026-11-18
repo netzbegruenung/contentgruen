@@ -173,7 +173,7 @@ Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Ze
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
 **Schreibregel**:
-Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog. Was das Gegenlesen nicht erkennt (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle u. a.), nennt es als drei Inhaltsfragen; ausführlich steht es im Hilfe-Dialog.
+Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog. Was das Gegenlesen nicht oder nur in einfachen Fällen erkennt (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle u. a.), nennt es als drei Inhaltsfragen; ausführlich steht es im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
 
 **Platzhalter**:
@@ -349,7 +349,7 @@ Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen a
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
-Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv und lange zusammengesetzte Wörter. Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
+Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv, lange zusammengesetzte Wörter, Gedankenstriche, Parteistimme, ein Titel als Frage (nur bei behauptenden Titeln, Kommentar und Hintergrundinfo; es zählt nur das Fragezeichen am Ende) und Zahlen ohne Herkunft (nur im Formular mit Herkunftsfeld; die Karte prüft diese Regel nicht, sie kennt die Herkunft beim Gegenlesen nicht). Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
 _Avoid_: Prüfung, Lektorat, Check, Validierung
 
 **Anmerkung**:

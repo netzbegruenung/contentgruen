@@ -107,6 +107,12 @@ describe('AddPostComponent', () => {
     expect((fixture.nativeElement.querySelector('.submit-btn') as HTMLButtonElement).disabled).toBeFalse();
   });
 
+  it('sagt dem Gegenlesen nichts zur Herkunft: kein Herkunftsfeld, keine Zahl-Regel', () => {
+    const gegenlesen = fixture.debugElement.query((d) => d.name === 'app-gegenlesen').componentInstance;
+    expect(gegenlesen.hatHerkunft).toBeNull();
+    expect(gegenlesen.herkunftEmpfohlen).toBeFalse();
+  });
+
   it('schickt nichts, solange ein Pflichtfeld fehlt', () => {
     const senden = spyOn(TestBed.inject(PostService), 'addPost');
     component.postForm.patchValue({ ...WERTE, url: '' });

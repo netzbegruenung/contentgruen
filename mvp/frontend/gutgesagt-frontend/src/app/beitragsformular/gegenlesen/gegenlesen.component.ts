@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -14,6 +14,7 @@ interface Eingabe {
   text: string;
   aussage: string;
   titelIstBehauptung: boolean;
+  hatHerkunft: boolean | null;
 }
 
 /**
@@ -84,8 +85,17 @@ export class GegenlesenComponent implements OnChanges {
   @Input() aussage: string | null = '';
   /** Kommentar und Hintergrundinfo behaupten im Titel; ein Post-Titel beschreibt, ohne Verneinungsregel. */
   @Input() titelIstBehauptung = true;
-  /** Das Formular hat ein Herkunftsfeld, und es ist leer; nur die Hintergrundinfo setzt das. */
-  @Input() herkunftFehlt = false;
+  /**
+   * Ob eine Herkunft eingetragen ist, fuer die Regel zu Zahlen ohne Herkunft; ``null``,
+   * wenn das Formular kein Herkunftsfeld hat (Post, Bild). Aendert es sich, liest der
+   * Dienst neu, denn die Regel und damit die Guete haengen daran.
+   */
+  @Input() hatHerkunft: boolean | null = null;
+  /**
+   * Fehlt die Herkunft, sagt das ein eigener Hinweis (HERKUNFT_FEHLT), auch ohne Zahl im
+   * Text; nur die Hintergrundinfo setzt das (Persona-Test Gerd).
+   */
+  @Input() herkunftEmpfohlen = false;
 
   readonly herkunftHinweis = HERKUNFT_FEHLT;
   readonly formGut = FORM_GUT;
@@ -114,9 +124,17 @@ export class GegenlesenComponent implements OnChanges {
   /** Jede Eingabe (null) und jedes Ergebnis (die Zahl) schiebt die Ansage auf. */
   private readonly ansageTakt = new Subject<string | null>();
 
-  /** Erst, wenn schon etwas geschrieben ist: Ein leeres Formular soll nicht mahnen. */
+  /**
+   * Erst, wenn schon etwas geschrieben ist: Ein leeres Formular soll nicht mahnen. Merkt
+   * der Dienst Zahlen ohne Herkunft an, sagt das dasselbe genauer; dann nur das.
+   */
   get zeigtHerkunftHinweis(): boolean {
-    return this.herkunftFehlt && this.ergebnis.guete !== null;
+    return (
+      this.herkunftEmpfohlen &&
+      this.hatHerkunft === false &&
+      this.ergebnis.guete !== null &&
+      !this.ergebnis.anmerkungen.some((a) => a.art === 'zahl_ohne_herkunft')
+    );
   }
 
   get istGut(): boolean {
@@ -155,13 +173,14 @@ export class GegenlesenComponent implements OnChanges {
             a.titel === b.titel &&
             a.text === b.text &&
             a.aussage === b.aussage &&
-            a.titelIstBehauptung === b.titelIstBehauptung,
+            a.titelIstBehauptung === b.titelIstBehauptung &&
+            a.hatHerkunft === b.hatHerkunft,
         ),
         switchMap((e) =>
           !e.titel && !e.text
             ? of(NOCH_LEER)
             : service
-                .gegenlesen(e.titel, e.text, e.aussage, e.titelIstBehauptung)
+                .gegenlesen(e.titel, e.text, e.aussage, e.titelIstBehauptung, e.hatHerkunft)
                 .pipe(
                   catchError((fehler: unknown) =>
                     of<typeof ZU_VIELE | null>(
@@ -191,22 +210,14 @@ export class GegenlesenComponent implements OnChanges {
     this.vonHandGeschaltet = true;
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    const nurHerkunft = !!changes['herkunftFehlt'] && Object.keys(changes).length === 1;
-    if (nurHerkunft) {
-      // Kein neues Gegenlesen (die Eingabe ist dieselbe), aber die Zahl aendert sich:
-      // die Ansage aus dem jetzigen Stand nachziehen, statt sie mit null zu verwerfen.
-      if (this.ergebnis.guete !== null) {
-        this.ansageTakt.next(zusammenfassung(this.ergebnis, this.herkunftZusatz));
-      }
-      return;
-    }
+  ngOnChanges(): void {
     this.ansageTakt.next(null);
     this.eingabe.next({
       titel: this.titel ?? '',
       text: this.text ?? '',
       aussage: this.aussage ?? '',
       titelIstBehauptung: this.titelIstBehauptung,
+      hatHerkunft: this.hatHerkunft,
     });
   }
 }
