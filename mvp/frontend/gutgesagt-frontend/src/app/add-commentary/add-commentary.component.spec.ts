@@ -374,7 +374,7 @@ describe('AddCommentaryComponent', () => {
 
     it('zeigt Streifen in der Typfarbe und das Typ-Emoji vor der Hilfezeile', () => {
       const bereich: HTMLElement = seite().querySelector('.formular-bereich')!;
-      expect(bereich.style.getPropertyValue('--typ-farbe')).toBe('var(--commentary-bg)');
+      expect(bereich.style.getPropertyValue('--typ-farbe')).toBe('var(--karte-kommentar)');
       expect(seite().querySelector('.hilfe-emoji')!.textContent!.trim()).toBe('💬');
     });
   });

@@ -42,12 +42,12 @@ import { FarbschemaService } from '../../../services/farbschema.service';
         border: 0;
         border-radius: 50%;
         background: none;
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
         cursor: pointer;
       }
 
       .farbschema-knopf:hover {
-        background: var(--overlay-faint);
+        background: var(--mulde);
       }
 
       .farbschema-knopf:focus-visible {

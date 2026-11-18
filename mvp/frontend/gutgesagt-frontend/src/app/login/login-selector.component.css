@@ -7,7 +7,7 @@
     max-width: 1000px;
     margin: 4px auto 0;
     padding: 0 20px;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     line-height: 1.3;
     font-size: 20px;
     font-weight: 600;
@@ -32,13 +32,13 @@
     align-items: flex-start;
     gap: 12px;
     padding: 12px;
-    background: var(--bg-card);
+    background: var(--flaeche);
     border-radius: 8px;
-    border: 1px solid var(--divider-color);
+    border: 1px solid var(--linie);
 }
 
 .registration-option .option-icon {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 24px;
     width: 24px;
     height: 24px;
@@ -52,13 +52,13 @@
 
 .registration-option .option-text strong {
     display: block;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 16px;
     margin-bottom: 6px;
 }
 
 .registration-option .option-text p {
-    color: var(--text-body);
+    color: var(--text);
     font-size: 14px;
     line-height: 1.4;
     margin: 0;
@@ -78,7 +78,7 @@
 }
 
 .login-option-card {
-    background: var(--bg-card);
+    background: var(--flaeche);
     padding: 20px;
     border-radius: 8px;
     transition: transform 0.2s ease;
@@ -91,10 +91,10 @@
 .disabled-notice {
     margin-top: 12px;
     padding: 8px 12px;
-    background: var(--hint-bg);
-    border: 1px solid var(--hint-border);
+    background: var(--hinweis-tint);
+    border: 1px solid var(--hinweis-rand);
     border-radius: 4px;
-    color: var(--hint-text);
+    color: var(--hinweis-text);
     font-size: 13px;
     display: flex;
     align-items: center;
@@ -122,7 +122,7 @@
 /* Beide Anmeldewege im einen Primaergruen, ohne Verlaeufe (#512) */
 .keycloak-button,
 .gutgesagt-button {
-    background: var(--primary-fill);
+    background: var(--primaer);
     color: white;
 }
 
@@ -156,13 +156,13 @@
     top: 50%;
     width: 100%;
     height: 1px;
-    background: var(--divider-color);
+    background: var(--linie);
 }
 
 .divider-text {
-    background: var(--bg-card);
+    background: var(--flaeche);
     padding: 0 16px;
-    color: var(--text-faint);
+    color: var(--text-leise);
     position: relative;
     font-size: 14px;
 }
@@ -174,7 +174,7 @@
 
 .loading-container p {
     margin-top: 20px;
-    color: var(--text-muted);
+    color: var(--text-leise);
 }
 
 @media (max-width: 600px) {
@@ -249,7 +249,7 @@
     margin: 0 0 12px;
     font-size: 20px;
     font-weight: 600;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .konto-weg .einladung-knopf {
@@ -259,7 +259,7 @@
 /* Vorschau Einladung: eingeklappt, ohne Funktion, bis zur Realm-Umstellung */
 .einladung-vorschau {
     margin-top: 16px;
-    border: 1px dashed var(--border-color);
+    border: 1px dashed var(--feldrand);
     border-radius: 8px;
     padding: 8px 12px;
 }
@@ -269,7 +269,7 @@
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    color: var(--text-subtle);
+    color: var(--text-leise);
     font-weight: 600;
     list-style: none;
 }

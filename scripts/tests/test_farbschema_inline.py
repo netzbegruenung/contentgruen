@@ -53,7 +53,7 @@ def theme_werte() -> dict[str, str]:
 
 
 def test_inline_style_hat_die_grundflaechen():
-    assert {"--bg-main", "--bg-card", "--text-primary", "--such-band"} <= set(
+    assert {"--bg-main", "--flaeche", "--text", "--kopf"} <= set(
         inline_werte()
     )
 

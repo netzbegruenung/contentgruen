@@ -10,7 +10,7 @@
 .gewaehlt-label {
     margin: 0 0 6px;
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 /* Karte und Entfernen-Knopf nebeneinander; die Karte nimmt den Rest */
@@ -19,9 +19,9 @@
     align-items: flex-start;
     gap: 4px;
     border-radius: 12px;
-    border: 1px solid var(--divider-color);
+    border: 1px solid var(--linie);
     overflow: hidden;
-    background: var(--statement-bg);
+    background: var(--mulde);
 }
 
 .gewaehlt-karte {
@@ -41,7 +41,7 @@
     border: 0;
     border-radius: 50%;
     background: none;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     cursor: pointer;
 }
 
@@ -63,7 +63,7 @@
 .vorschlaege-titel {
     margin: 0 0 4px;
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 .vorschlaege ul {
@@ -82,10 +82,10 @@
     width: 100%;
     min-height: 44px;
     padding: 10px 12px;
-    border: 1px solid var(--divider-color);
+    border: 1px solid var(--linie);
     border-radius: 8px;
-    background: var(--statement-bg);
-    color: var(--text-primary);
+    background: var(--mulde);
+    color: var(--text);
     font: inherit;
     text-align: left;
     cursor: pointer;
@@ -106,8 +106,8 @@
     padding: 10px 12px;
     border: 1px dashed var(--linie-klee);
     border-radius: 8px;
-    background: var(--bg-card);
-    color: var(--primary-dark);
+    background: var(--flaeche);
+    color: var(--akzent-schrift);
     font: inherit;
     text-align: left;
     cursor: pointer;
@@ -129,7 +129,7 @@
     margin-left: 6px;
     padding: 1px 6px;
     border-radius: 8px;
-    background: var(--primary-fill);
+    background: var(--primaer);
     color: white;
     font-size: 0.75rem;
     font-weight: 600;
@@ -147,13 +147,13 @@
 .aussage-hinweis {
     margin: 0 0 12px;
     padding: 12px 16px;
-    border-left: 4px solid var(--warning-edge);
+    border-left: 4px solid var(--hinweis-rand);
     border-radius: 4px;
-    background: var(--warning-bg);
+    background: var(--hinweis-tint);
 }
 
 /* 1-9 Zeichen: kein Fehler, aber Speichern ist gesperrt, bis es passt oder leer ist */
 .zu-kurz {
-    color: var(--warning-text);
+    color: var(--hinweis-text);
     font-weight: 500;
 }

@@ -22,7 +22,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     }
     .loading-message {
       margin-top: 10px;
-      color: var(--text-secondary);
+      color: var(--text-leise);
     }
   `]
 })

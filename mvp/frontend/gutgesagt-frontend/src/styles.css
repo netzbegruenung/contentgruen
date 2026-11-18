@@ -65,7 +65,7 @@
 /* Typography - Using consistent Material Design inspired typography with brand fonts */
 h1 {
     font-family: GrueneType, Roboto, sans-serif;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: var(--font-size-h1-desktop);
     line-height: 1.1;
     font-weight: 400;
@@ -75,7 +75,7 @@ h1 {
 
 h2 {
     font-family: GrueneType, Roboto, sans-serif;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: var(--font-size-h2-desktop);
     line-height: 1.1;
     font-weight: 400;
@@ -85,7 +85,7 @@ h2 {
 
 h3 {
     font-family: GrueneType, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: var(--font-size-h3-desktop);
     line-height: 1.1;
     font-weight: 400;
@@ -94,7 +94,7 @@ h3 {
 
 h4 {
     font-family: PTSans-bold, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 25px;
     line-height: 1.3;
     font-weight: 700;
@@ -104,7 +104,7 @@ h4 {
 
 h5 {
     font-family: PTSans-bold, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 20px;
     line-height: 1.3;
     font-weight: 700;
@@ -114,7 +114,7 @@ h5 {
 
 h6 {
     font-family: PTSans-bold, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 16px;
     line-height: 1.3;
     font-weight: 700;
@@ -133,7 +133,7 @@ body {
     min-height: 100vh;
     background-color: var(--aussen-grund, var(--bg-main));
     font-family: PTSans, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     overflow-y: auto;
 }
 
@@ -150,7 +150,7 @@ body {
 
 .emphasis {
     font-weight: 700;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .italic {
@@ -169,7 +169,7 @@ body {
 
 .text-emphasis {
     font-weight: 700;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .text-italic {
@@ -206,7 +206,6 @@ body {
     --page-margin-tablet: 50px;
     --page-margin-mobile: 24px;
     --section-gap: 40px;
-    --input-background: var(--bg-card);
 
     /* Mobile layout heights */
     --mobile-header-height: 140px;
@@ -269,7 +268,7 @@ body {
 .card-section {
     padding: var(--spacing-lg) var(--page-margin);
     margin-bottom: var(--section-gap);
-    background: var(--bg-surface);
+    background: var(--flaeche);
     box-shadow: var(--elevation-2);
     border-radius: var(--border-radius-medium);
     margin-left: var(--page-margin);
@@ -309,26 +308,26 @@ body {
     padding: var(--spacing-lg);
     margin: var(--spacing-md) 0;
     border-radius: var(--border-radius-small);
-    background-color: var(--error-bg);
-    color: var(--error-color);
-    border-left: 4px solid var(--error-border);
+    background-color: var(--fehler-tint);
+    color: var(--fehler);
+    border-left: 4px solid var(--fehler);
 }
 
 .success-container {
     padding: var(--spacing-lg);
     margin: var(--spacing-md) 0;
     border-radius: var(--border-radius-small);
-    background-color: var(--success-bg);
-    color: var(--success-color);
-    border-left: 4px solid var(--success-border);
+    background-color: var(--primaer-tint);
+    color: var(--akzent-schrift);
+    border-left: 4px solid var(--primaer-text);
 }
 
 .warning-container {
     padding: var(--spacing-lg);
     margin: var(--spacing-md) 0;
     border-radius: var(--border-radius-small);
-    background-color: var(--warning-bg);
-    color: var(--warning-color);
+    background-color: var(--hinweis-tint);
+    color: var(--hinweis-text);
     border-left: 4px solid var(--warning-border);
 }
 
@@ -336,9 +335,9 @@ body {
     padding: var(--spacing-lg);
     margin: var(--spacing-md) 0;
     border-radius: var(--border-radius-small);
-    background-color: var(--info-bg);
-    color: var(--info-color);
-    border-left: 4px solid var(--info-border);
+    background-color: var(--info-tint);
+    color: var(--info-text);
+    border-left: 4px solid var(--info-rand);
 }
 
 /*
@@ -349,7 +348,7 @@ body {
 .submit-hint {
     font-size: 0.8em;
     line-height: 1.5;
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 /*
@@ -358,11 +357,11 @@ body {
  * im Fangkorb. Abstaende nach aussen setzt die jeweilige Stelle.
  */
 .hinweis-box {
-    background-color: var(--surface-variant);
+    background-color: var(--mulde);
     padding: 12px 16px;
     border-radius: var(--border-radius-medium);
     border-left: 4px solid var(--linie-klee);
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 14px;
     line-height: 1.5;
 }
@@ -375,7 +374,7 @@ body {
    (Ergebnisseite; Satz aus typBeschreibung() der Registry) */
 .typ-erklaerung {
     margin: 0 0 var(--spacing-sm);
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 h2:has(+ .typ-erklaerung) {
@@ -384,7 +383,7 @@ h2:has(+ .typ-erklaerung) {
 
 /* Links */
 a {
-    color: var(--primary-main);
+    color: var(--primaer-text);
     text-decoration: none;
 }
 
@@ -493,23 +492,23 @@ app-rundgang-band .rundgang-knopf.voll {
 
 /* Button utilities - Consistent with Material Design */
 .dark-green-button {
-    background-color: var(--primary-fill) !important;
+    background-color: var(--primaer) !important;
     color: white !important;
 }
 
 .primary-button {
-    background-color: var(--primary-fill) !important;
+    background-color: var(--primaer) !important;
     color: white !important;
 }
 
 .accent-button {
-    background-color: var(--accent-main) !important;
+    background-color: var(--akzent) !important;
     color: white !important;
 }
 
 .light-button {
-    background-color: var(--bg-card) !important;
-    color: var(--primary-dark) !important;
+    background-color: var(--flaeche) !important;
+    color: var(--akzent-schrift) !important;
     border: 1px solid var(--linie-tanne) !important;
 }
 
@@ -684,7 +683,7 @@ app-rundgang-band .rundgang-knopf.voll {
     left: -9999px;
     z-index: var(--z-index-dropdown);
     padding: var(--spacing-sm) var(--spacing-md);
-    background-color: var(--primary-fill);
+    background-color: var(--primaer);
     color: white;
     text-decoration: none;
 }
@@ -728,7 +727,7 @@ app-rundgang-band .rundgang-knopf.voll {
 
 .custom-dialog-container {
     /* Ensure dialog has proper background */
-    background: var(--bg-card);
+    background: var(--flaeche);
     border-radius: 4px;
     box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
                 0 24px 38px 3px rgba(0,0,0,0.14),
@@ -748,7 +747,7 @@ app-rundgang-band .rundgang-knopf.voll {
 
 .cdk-overlay-pane:not(.hilfe-seitenleiste) .mat-mdc-dialog-surface {
     display: block !important;
-    background: var(--bg-card) !important;
+    background: var(--flaeche) !important;
     max-height: 90vh !important;
     overflow-y: auto !important;
 }
@@ -763,7 +762,7 @@ body.cdk-global-scrollblock {
 
 /* Success Snackbar Styling for Contribution Feedback */
 .mat-mdc-snack-bar-container.success-snackbar {
-    --mat-snack-bar-container-color: var(--primary-fill);
+    --mat-snack-bar-container-color: var(--primaer);
     --mat-snack-bar-supporting-text-color: white;
     --mat-snack-bar-button-color: white;
 }
@@ -805,9 +804,9 @@ body.cdk-global-scrollblock {
     /* Groesser und mit hellem Aussenring: gelb auf Gruen allein war zu schwach (UX-Review B19) */
     width: 14px;
     height: 14px;
-    border: 2px solid var(--primary-fill);
+    border: 2px solid var(--primaer);
     border-radius: 50%;
-    box-shadow: 0 0 0 2px var(--bg-card);
+    box-shadow: 0 0 0 2px var(--flaeche);
     /* Kegel statt Band: Das Band ist im Dunkelmodus Anthrazit, der Punkt bleibt gelb (#591) */
     background: var(--rundgang-kegel);
     pointer-events: none;

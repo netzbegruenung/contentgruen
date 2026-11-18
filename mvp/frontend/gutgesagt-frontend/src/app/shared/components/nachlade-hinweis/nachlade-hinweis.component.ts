@@ -28,7 +28,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
       gap: 8px;
       margin: 0 0 8px;
       font-size: 0.875rem;
-      color: var(--text-secondary);
+      color: var(--text-leise);
     }
   `],
 })

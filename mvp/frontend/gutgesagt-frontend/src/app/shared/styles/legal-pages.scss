@@ -11,7 +11,7 @@
 
 .hero-section {
   @extend .hero-section-base;
-  background: linear-gradient(135deg, var(--surface-muted) 0%, var(--success-bg) 100%);
+  background: linear-gradient(135deg, var(--mulde) 0%, var(--primaer-tint) 100%);
 
   h1 {
     @extend .hero-title;
@@ -42,7 +42,7 @@
   }
 
   h2 {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     margin-bottom: 1.5rem;
     font-size: 1.8rem;
     font-weight: 500;
@@ -54,7 +54,7 @@
   }
 
   h3 {
-    color: var(--text-primary);
+    color: var(--text);
     margin-top: 1.5rem;
     margin-bottom: 1rem;
     font-size: 1.3rem;
@@ -68,7 +68,7 @@
   p {
     font-size: 1rem;
     line-height: 1.7;
-    color: var(--text-primary);
+    color: var(--text);
     margin-bottom: 1rem;
 
     @media (max-width: 768px) {
@@ -84,10 +84,10 @@
     li {
       margin-bottom: 0.75rem;
       line-height: 1.6;
-      color: var(--text-primary);
+      color: var(--text);
 
       strong {
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
       }
     }
 
@@ -102,11 +102,11 @@
 
   strong {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text);
   }
 
   a {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     // Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588)
     text-decoration: var(--link-unterstrich);
 
@@ -118,13 +118,13 @@
 
 mat-divider {
   margin: 0;
-  border-top-color: var(--divider-color);
+  border-top-color: var(--linie);
 }
 
 .update-notice {
   margin-top: 3rem;
   padding: 1.5rem;
-  background-color: var(--surface-muted);
+  background-color: var(--mulde);
   border-radius: 8px;
 
   p {
@@ -142,7 +142,7 @@ mat-divider {
 }
 
 .contact-info {
-  background-color: var(--surface-variant);
+  background-color: var(--mulde);
   padding: 1.5rem;
   border-radius: 8px;
   margin: 1.5rem 0;
@@ -153,7 +153,7 @@ mat-divider {
 }
 
 .info-box {
-  background-color: var(--success-bg);
+  background-color: var(--primaer-tint);
   border-left: 4px solid var(--linie-tanne);
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
@@ -173,7 +173,7 @@ mat-divider {
 }
 
 .warning-box {
-  background-color: var(--warning-bg);
+  background-color: var(--hinweis-tint);
   border-left: 4px solid var(--warning-border);
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
@@ -181,7 +181,7 @@ mat-divider {
 
   p {
     margin: 0.5rem 0;
-    color: var(--warning-color);
+    color: var(--hinweis-text);
 
     &:first-child {
       margin-top: 0;
@@ -202,13 +202,13 @@ mat-divider {
   th, td {
     padding: 0.75rem;
     text-align: left;
-    border-bottom: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--linie);
   }
 
   th {
-    background-color: var(--surface-muted);
+    background-color: var(--mulde);
     font-weight: 600;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
   }
 
   tr:last-child td {

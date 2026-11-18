@@ -520,7 +520,7 @@ describe('BeitragskarteComponent', () => {
     });
 
     describe('Markierung fuer die eigenen Leute (Variante D, Tanne)', () => {
-      const TANNE = 'rgb(0, 84, 55)'; // var(--primary-dark), #005437
+      const TANNE = 'rgb(0, 84, 55)'; // var(--akzent-schrift), #005437
       const WEISS = 'rgb(255, 255, 255)';
 
       function eigeneLeute(variante: KartenVariante = 'voll'): void {
@@ -1021,12 +1021,12 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-meta').textContent!.trim()).toBe('1× genutzt');
     });
 
-    it('zeichnet die gewaehlte Fassung wie die Tabs: Tanne-Text auf Tanne-Hauch (#512)', () => {
+    it('zeichnet die gewaehlte Fassung wie die Tabs: Tanne-Text auf --primaer-tint (#512)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
       const gewaehlt = element('.textlaenge .mat-button-toggle-checked');
 
       expect(getComputedStyle(gewaehlt).color).toBe('rgb(0, 84, 55)');
-      expect(getComputedStyle(gewaehlt).backgroundColor).toBe('rgba(0, 84, 55, 0.07)');
+      expect(getComputedStyle(gewaehlt).backgroundColor).toBe('rgb(235, 246, 239)');
     });
 
     it('zeigt ohne Kurz- und Langfassung keinen Umschalter', () => {

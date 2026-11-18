@@ -5,7 +5,7 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: 20px;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     margin-top: 50px;
     text-align: center;
     font-size: 16px;
@@ -46,7 +46,7 @@
 }
 
 .footer a {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
     cursor: pointer;
 }
@@ -68,7 +68,7 @@
     border: none;
     background: none;
     font: inherit;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     cursor: pointer;
 }
 
@@ -87,7 +87,7 @@
     right: 20px;
     bottom: 20px;
     font-size: 11px;
-    color: var(--text-faint);
+    color: var(--text-leise);
 }
 
 /* Mobil umbricht die Fusszeile; dort klein darunter, ohne eigenen Abstand */

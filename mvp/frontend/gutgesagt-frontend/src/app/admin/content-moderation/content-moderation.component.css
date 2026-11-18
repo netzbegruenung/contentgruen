@@ -37,7 +37,7 @@
 
 .filter-section mat-button-toggle,
 .filter-section mat-button-toggle + mat-button-toggle {
-  border: 1px solid var(--divider-color);
+  border: 1px solid var(--linie);
   border-radius: 18px;
   overflow: visible;
 }
@@ -68,7 +68,7 @@
   flex: 1 1 auto;
   min-width: 0;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .nachladefehler mat-spinner {
@@ -102,22 +102,22 @@
 }
 
 .sitzung-abgelaufen {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-weight: 700;
 }
 
 /* Beim Nachladen nicht mehr offen: abgesetzt über Farbe statt Deckkraft (Kontrast AA), Knöpfe gesperrt */
 tr.erledigt {
-  background-color: var(--hover-bg);
+  background-color: var(--mulde);
 }
 
 tr.erledigt td {
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .status-erledigt {
-  background-color: var(--hover-bg);
-  color: var(--text-secondary);
+  background-color: var(--mulde);
+  color: var(--text-leise);
 }
 
 .error mat-spinner {
@@ -138,23 +138,23 @@ tr.erledigt td {
 }
 
 .status-pending {
-  background-color: var(--warning-bg);
-  color: var(--warning-color);
+  background-color: var(--hinweis-tint);
+  color: var(--hinweis-text);
 }
 
 .status-reviewed {
-  background-color: var(--success-bg);
-  color: var(--primary-dark);
+  background-color: var(--primaer-tint);
+  color: var(--akzent-schrift);
 }
 
 .status-dismissed {
-  background-color: var(--info-bg);
+  background-color: var(--info-tint);
   color: var(--info-text);
 }
 
 .status-gesperrt {
-  background-color: var(--error-bg);
-  color: var(--error-color);
+  background-color: var(--fehler-tint);
+  color: var(--fehler);
 }
 
 .gesperrte-liste {
@@ -168,7 +168,7 @@ tr.erledigt td {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: var(--bg-card);
+  background: var(--flaeche);
   border-radius: 4px;
 }
 
@@ -189,7 +189,7 @@ tr.erledigt td {
 }
 
 .widerspruch-offen {
-  color: var(--error-strong);
+  color: var(--fehler);
 }
 
 .gesperrt-aktionen {
@@ -199,7 +199,7 @@ tr.erledigt td {
 }
 
 .not-reviewed {
-  color: var(--text-faint);
+  color: var(--text-leise);
   font-style: italic;
 }
 
@@ -213,12 +213,12 @@ tr.erledigt td {
 }
 
 .loading p, .error p {
-  color: var(--text-muted);
+  color: var(--text-leise);
   margin: 0;
 }
 
 .error {
-  color: var(--error-main);
+  color: var(--fehler);
 }
 
 .error mat-icon {
@@ -232,17 +232,17 @@ tr.erledigt td {
   font-size: 80px;
   width: 80px;
   height: 80px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   margin-bottom: 16px;
 }
 
 .empty-state h2 {
-  color: var(--text-strong);
+  color: var(--text);
   margin: 0 0 8px 0;
 }
 
 .empty-state p {
-  color: var(--text-muted);
+  color: var(--text-leise);
 }
 
 .reports-table {
@@ -254,8 +254,8 @@ table {
 }
 
 .content-type-badge {
-  background-color: var(--info-bg);
-  color: var(--info-accent);
+  background-color: var(--info-tint);
+  color: var(--info-rand);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -268,7 +268,7 @@ table {
 }
 
 .reason-cell .description {
-  color: var(--text-muted);
+  color: var(--text-leise);
   font-size: 13px;
   margin: 0;
   max-width: 300px;
@@ -278,7 +278,7 @@ table {
 }
 
 .anonymous {
-  color: var(--text-faint);
+  color: var(--text-leise);
   font-style: italic;
 }
 
@@ -288,7 +288,7 @@ table {
 }
 
 .melder-angabe.guter-glaube {
-  color: var(--text-muted);
+  color: var(--text-leise);
 }
 
 .action-buttons {
@@ -332,7 +332,7 @@ table {
 }
 
 .report-row:hover {
-  background-color: var(--surface-muted);
+  background-color: var(--mulde);
 }
 
 .expanded-row {
@@ -344,20 +344,20 @@ table {
 }
 
 .content-display {
-  background-color: var(--surface-variant);
-  border-left: 3px solid var(--info-accent);
+  background-color: var(--mulde);
+  border-left: 3px solid var(--info-rand);
 }
 
 .content-display h3 {
   margin: 0 0 16px 0;
-  color: var(--text-strong);
+  color: var(--text);
   font-size: 16px;
 }
 
 .content-info {
   margin-bottom: 12px;
   padding: 8px 12px;
-  background-color: var(--info-bg);
+  background-color: var(--info-tint);
   border-radius: 4px;
 }
 
@@ -367,16 +367,16 @@ table {
 }
 
 .content-id code {
-  background-color: var(--bg-card);
+  background-color: var(--flaeche);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
   font-size: 12px;
-  color: var(--info-accent);
+  color: var(--info-rand);
 }
 
 .content-wrapper {
-  background-color: var(--bg-card);
+  background-color: var(--flaeche);
   padding: 16px;
   border-radius: 4px;
 }
@@ -387,16 +387,16 @@ table {
 }
 
 .content-item strong {
-  color: var(--info-accent);
+  color: var(--info-rand);
   margin-right: 8px;
 }
 
 .text-section {
   margin: 16px 0;
   padding: 12px;
-  background-color: var(--surface-variant);
+  background-color: var(--mulde);
   border-radius: 4px;
-  border-left: 3px solid var(--divider-color);
+  border-left: 3px solid var(--linie);
 }
 
 .text-section p strong {
@@ -407,7 +407,7 @@ table {
 
 .text-content {
   padding: 8px;
-  background-color: var(--bg-card);
+  background-color: var(--flaeche);
   border-radius: 3px;
   line-height: 1.8;
   white-space: pre-wrap;
@@ -422,7 +422,7 @@ table {
 
 .metadata {
   margin-top: 8px;
-  color: var(--text-muted);
+  color: var(--text-leise);
 }
 
 .metadata small {
@@ -435,7 +435,7 @@ table {
   gap: 12px;
   color: var(--warning-border);
   padding: 16px;
-  background-color: var(--warning-bg);
+  background-color: var(--hinweis-tint);
   border-left: 3px solid var(--warning-border);
 }
 
@@ -476,7 +476,7 @@ table {
   max-height: 16em;
   overflow-y: auto;
   padding: 8px 12px;
-  border-left: 3px solid var(--divider-color);
+  border-left: 3px solid var(--linie);
   white-space: pre-wrap;
 }
 
@@ -506,7 +506,7 @@ table {
   .reports-table tr.report-row {
     height: auto;
     padding: 8px 0;
-    border-top: 1px solid var(--divider-color);
+    border-top: 1px solid var(--linie);
   }
 
   .reports-table td.mat-mdc-cell {
@@ -518,7 +518,7 @@ table {
     content: attr(data-label);
     display: block;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: var(--text-leise);
   }
 
   .reports-table .action-buttons {

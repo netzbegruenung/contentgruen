@@ -4,11 +4,11 @@
 
 .hinweis {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-leise);
 }
 
 .fehler {
-  color: var(--error-strong);
+  color: var(--fehler);
 }
 
 .danke {

@@ -29,10 +29,10 @@
   height: 100%;
   min-height: 72px;
   padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
-  border: 2px solid var(--mitmachen-kachel-rand, var(--linie-tanne));
+  border: 2px solid var(--karte-kommentar, var(--linie-tanne));
   border-radius: 12px;
-  background: var(--mitmachen-kachel-grund, var(--bg-card));
-  color: var(--text-primary);
+  background: var(--karte-kommentar, var(--flaeche));
+  color: var(--text);
   text-decoration: none;
   box-shadow: var(--elevation-2, 0 2px 4px rgba(0, 0, 0, 0.15));
   transition: box-shadow var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s),
@@ -43,7 +43,7 @@
 .seit-besuch-kachel:focus-visible {
   box-shadow: var(--elevation-6, 0 4px 12px rgba(0, 0, 0, 0.2));
   transform: translateY(-2px);
-  background: color-mix(in srgb, var(--mitmachen-kachel-grund, var(--bg-card)) 92%, var(--akzent-tanne, #00563a));
+  background: color-mix(in srgb, var(--karte-kommentar, var(--flaeche)) 92%, var(--akzent-tanne, #00563a));
 }
 
 .seit-besuch-kachel:active {
@@ -73,21 +73,21 @@
   width: 28px;
   height: 28px;
   font-size: 28px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .seit-besuch-zahl {
   font-size: 32px;
   font-weight: 700;
   line-height: 1.1;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-variant-numeric: tabular-nums;
 }
 
 .seit-besuch-wort {
   font-size: 15px;
   line-height: 1.3;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 /* Handy: drei schmale nebeneinander, kleiner und mit weniger Innenabstand */

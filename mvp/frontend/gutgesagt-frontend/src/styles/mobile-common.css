@@ -8,9 +8,9 @@
         flex-direction: column;
         position: sticky;
         bottom: 0;
-        background-color: var(--bg-card);
+        background-color: var(--flaeche);
         padding: var(--spacing-md);
-        border-top: 2px solid var(--divider-color);
+        border-top: 2px solid var(--linie);
         z-index: 50;
     }
 
@@ -85,7 +85,7 @@
         top: var(--spacing-md);
         right: var(--spacing-md);
         font-size: 20px;
-        color: var(--text-secondary);
+        color: var(--text-leise);
         transform: rotate(180deg);
         transition: transform 0.3s;
     }
@@ -125,11 +125,11 @@
 .mobile-form-container {
     position: relative;
     min-height: 100vh;
-    background-color: var(--bg-card);
+    background-color: var(--flaeche);
 }
 
 .mobile-form-content {
     padding: 0;
-    background-color: var(--bg-card);
+    background-color: var(--flaeche);
     min-height: 100vh;
 }

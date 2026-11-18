@@ -66,8 +66,8 @@ export function kopfZahl(meldungen: Stand<OffeneMeldungen>, suchanfragen: Stand<
       margin-left: 6px;
       box-sizing: border-box;
       border-radius: 10px;
-      background: var(--error-color);
-      color: var(--bg-card); /* hell auf Rot, im Dunkeln dunkel auf Hellrot */
+      background: var(--fehler);
+      color: var(--flaeche); /* hell auf Rot, im Dunkeln dunkel auf Hellrot */
       font-size: 12px;
       font-weight: 700;
       line-height: 1;
