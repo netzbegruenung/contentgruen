@@ -6,7 +6,8 @@ import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
 import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
-import { Angebot, HOME_ANGEBOT, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
+import { AppInstallierenService } from './app-installieren.service';
+import { Angebot, APP_INSTALLIEREN_ANGEBOT, HOME_ANGEBOT, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
 import { ANSICHT_PARAM, MIT_KONTO_PFAD, STANDARD_ZIEL, ZIEL_PARAM } from '../mit-konto/vorschau-schritte';
 import { gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
 
@@ -27,7 +28,8 @@ export interface RundgangStand {
  * Ein Band bleibt, bis die Person darauf reagiert; nach einem Rundgang ist es für
  * diesen Besuch weg. Kein Band auf Formularen, Einladung, Anmeldung, Einwilligung
  * oder Rechtstexten. Dasselbe Band trägt auf iPhone und iPad den Hinweis „Gut gesagt
- * als App“ (HOME_ANGEBOT), nachrangig zu Willkommen und Mitmachen.
+ * als App“ (HOME_ANGEBOT), nachrangig zu Willkommen und Mitmachen; in Chrome und Edge
+ * mit Knopf „Installieren“ (APP_INSTALLIEREN_ANGEBOT), wenn der Browser es anbietet.
  */
 @Injectable({ providedIn: 'root' })
 export class RundgangService {
@@ -36,6 +38,7 @@ export class RundgangService {
   private readonly einwilligung = inject(Art9EinwilligungService);
   private readonly homeMerkerAktiv = inject(HOME_HINWEIS_MERKER);
   private readonly homeMoeglich = inject(HOME_BILDSCHIRM_MOEGLICH);
+  private readonly app = inject(AppInstallierenService);
 
   private readonly stand = signal<RundgangStand | null>(null);
   /** Der laufende Rundgang mit dem aktuellen Schritt, sonst null. */
@@ -63,15 +66,20 @@ export class RundgangService {
    * Fenster): „Ausblenden“ wirkt dann wenigstens bis zum nächsten Besuch.
    */
   private readonly beantworteteAngebote = new Set<string>();
-  /** Hinweis „Gut gesagt als App“: Schalter an und Gerät passt. */
+  /** Hinweis „Gut gesagt als App“: Schalter an (Merker darf gelesen werden). */
   private homeHier = false;
+  /** iPhone oder iPad in Safari: Anleitung statt Knopf. */
+  private homeIos = false;
   /** Willkommen oder Mitmachen stand in diesem Besuch schon da: dann kein zweites Band danach. */
   private anderesBandGezeigt = false;
 
   /** Einmal beim Start der App. */
   beobachten(destroyRef: DestroyRef): void {
     // Schalter zuerst: Ist er aus, greift der Hinweis nie auf den Speicher zu
-    this.homeHier = this.homeMerkerAktiv && this.homeMoeglich();
+    this.homeHier = this.homeMerkerAktiv;
+    this.homeIos = this.homeHier && this.homeMoeglich();
+    // Chrome und Edge melden das Installieren-Angebot irgendwann nach dem Laden
+    this.app.geaendert$.pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.angebotPruefen());
 
     // Zurück (oder Vor) im Browser beendet den Rundgang: Sonst stuende der Schritt auf
     // der Seite, zu der die Person gerade zurückgeht, etwa „Passende Treffer“ über den
@@ -117,12 +125,21 @@ export class RundgangService {
     return this.zuSchritt(RUNDGAENGE[id], ab);
   }
 
-  /** Ein Knopf im Band: Rundgang starten oder ausblenden. Das Angebot kommt nicht wieder. */
-  bandBeantworten(starten: boolean): void {
+  /**
+   * Ein Knopf im Band: Rundgang starten, installieren oder ausblenden. Nach „Ausblenden“
+   * kommt das Angebot nicht wieder. Nach dem Installieren-Dialog ist das Band für diesen
+   * Besuch weg, ohne Vermerk: Installiert meldet der Browser nichts mehr, abgelehnt
+   * meldet er es frühestens beim nächsten Besuch wieder.
+   */
+  async bandBeantworten(starten: boolean): Promise<void> {
     const angebot = this.band();
     if (!angebot) return;
     if (starten && angebot.rundgang) {
-      void this.starten(angebot.rundgang, angebot.ab);
+      await this.starten(angebot.rundgang, angebot.ab);
+    } else if (starten && angebot.installieren) {
+      await this.app.installieren();
+      this.beantworteteAngebote.add(angebot.schluessel);
+      this.angebotPruefen();
     } else {
       this.beantwortet(angebot);
     }
@@ -184,7 +201,10 @@ export class RundgangService {
     // Wer Mitmachen schon hatte, braucht kein Willkommen mehr
     if (!this.gesehen(WILLKOMMEN) && !this.gesehen(MITMACHEN_ANGEBOT) && hier(WILLKOMMEN)) return WILLKOMMEN;
     // Zuletzt und nie zugleich mit einem anderen: Es gibt nur ein Band
-    if (this.homeFaellig() && hier(HOME_ANGEBOT)) return HOME_ANGEBOT;
+    // iPhone und iPad: Anleitung. Sonst nur mit Angebot des Browsers (nicht in Firefox,
+    // nicht schon installiert); ohne es wird auch kein Vermerk gelesen.
+    const app = this.homeIos ? HOME_ANGEBOT : this.app.installierbar() ? APP_INSTALLIEREN_ANGEBOT : null;
+    if (app && hier(app) && this.homeFaellig()) return app;
     return null;
   }
 
@@ -215,7 +235,7 @@ export class RundgangService {
 
   private angebotPruefen(): void {
     const angebot = this.faelligesAngebot();
-    if (angebot && angebot !== HOME_ANGEBOT) this.anderesBandGezeigt = true;
+    if (angebot && angebot.schluessel !== HOME_ANGEBOT.schluessel) this.anderesBandGezeigt = true;
     this.angebot.set(angebot);
     this.mitmachenOffen.set(this.mitmachenFaellig(this.info));
   }

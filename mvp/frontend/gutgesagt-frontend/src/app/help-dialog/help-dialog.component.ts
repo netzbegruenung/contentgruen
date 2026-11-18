@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgFor } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +15,7 @@ import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.compon
 import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
+import { AppInstallierenService } from '../rundgang/app-installieren.service';
 import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
 import { EINLADUNG_AB } from '../shared/einladung-ab';
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
@@ -62,6 +63,9 @@ export class HelpDialogComponent {
 
   private readonly rundgang = inject(RundgangService);
   private readonly dialog = inject(MatDialog);
+  /** Derselbe Stand wie im Band: Knopf nur mit Angebot des Browsers, sonst die Anleitung. */
+  readonly app = inject(AppInstallierenService);
+  private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
   constructor(
     private dialogRef: MatDialogRef<HelpDialogComponent>,
@@ -88,6 +92,15 @@ export class HelpDialogComponent {
     event.preventDefault();
     this.dialogRef.afterClosed().subscribe(() => void this.router.navigate(['/about'], { fragment }));
     this.dialogRef.close();
+  }
+
+  /**
+   * Dialog des Browsers; der Abschnitt zeigt danach „schon als App“ oder wieder die Anleitung.
+   * Der Knopf ist dann weg: Der Fokus geht auf die Überschrift des Abschnitts statt auf den Dialog.
+   */
+  async installieren(): Promise<void> {
+    await this.app.installieren();
+    this.host.nativeElement.querySelector<HTMLElement>('#hilfe-als-app-titel')?.focus();
   }
 
   /** Feedback über der Hilfe; nach dem Absenden oder Abbrechen ist die Hilfe wieder da. */

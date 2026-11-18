@@ -175,6 +175,25 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       tick(1000);
     }));
 
+    it('meldet neue Güte und, nach dem Kopieren, die Nutzung nach oben (für "Zu dieser Antwort")', fakeAsync(() => {
+      zeigen();
+      const gemeldet = jasmine.createSpy('kennzahlen');
+      fixture.componentInstance.kennzahlen.subscribe(gemeldet);
+      votingService.setLike.and.returnValue(of({} as any));
+      contentService.beitragLaden.and.returnValue(of(paket({ guete: 7 }).commentary_result));
+
+      aktionen().toggleLike();
+      tick(50);
+      expect(gemeldet).toHaveBeenCalledTimes(1);
+      expect(gemeldet.calls.mostRecent().args[0].id).toBe(ID);
+      expect(gemeldet.calls.mostRecent().args[0].guete.wert).toBe(7);
+
+      const vorher = fixture.componentInstance.nutzung!;
+      fixture.componentInstance.nutzungHochzaehlen();
+      expect(gemeldet.calls.mostRecent().args[0].nutzung).toBe(vorher + 1);
+      tick(1000);
+    }));
+
     it('behält die alte Güte, wenn das Nachladen scheitert', fakeAsync(() => {
       zeigen();
       votingService.setLike.and.returnValue(of({} as any));

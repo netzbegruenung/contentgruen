@@ -7,7 +7,9 @@ import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
 import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
 import { RundgangService } from './rundgang.service';
-import { HOME_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
+import { APP_INSTALLIEREN_ANGEBOT, HOME_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
+import { ALS_APP_GESTARTET } from './app-installieren.service';
+import { installierenEreignis } from '../testing/installieren-ereignis';
 import { HOME_HINWEIS_SCHLUESSEL, MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
 
 /** Hinweis „Gut gesagt als App“ auf iPhone und iPad im selben Band wie das Willkommen. */
@@ -42,6 +44,7 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
         { provide: Art9EinwilligungService, useValue: { geklaert$: geklaert, geklaert: () => geklaert.value } },
         { provide: HOME_BILDSCHIRM_MOEGLICH, useValue: () => ios },
         { provide: HOME_HINWEIS_MERKER, useFactory: () => schalter },
+        { provide: ALS_APP_GESTARTET, useValue: () => false },
       ],
     });
   });
@@ -180,5 +183,87 @@ describe('RundgangService: Hinweis Home-Bildschirm', () => {
     navigiert('/search');
     expect(service.band()).toBeNull();
     expect(lesen).not.toHaveBeenCalledWith(HOME_HINWEIS_SCHLUESSEL);
+  });
+
+  /** Chrome und Edge auf Android und Computer: Knopf „Installieren“ (18.11.2026). */
+  describe('mit Angebot des Browsers (beforeinstallprompt)', () => {
+    beforeEach(() => {
+      ios = false;
+    });
+
+    it('zeigt das Band mit „Installieren“, wenn der Browser es anbietet', () => {
+      willkommenErledigt();
+      const service = besuch();
+      navigiert('/search');
+      expect(service.band()).toBeNull();
+      window.dispatchEvent(installierenEreignis('accepted'));
+      expect(service.band()).toBe(APP_INSTALLIEREN_ANGEBOT);
+    });
+
+    it('nicht vor dem Willkommen und nicht über den Treffern', () => {
+      window.dispatchEvent(installierenEreignis('accepted'));
+      const service = besuch();
+      navigiert('/search');
+      expect(service.band()).toBe(WILLKOMMEN);
+      navigiert('/result?searchQuery=x');
+      expect(service.band()).toBeNull();
+    });
+
+    it('„Installieren“ öffnet den Dialog; angenommen ist das Band weg, ohne Vermerk', async () => {
+      willkommenErledigt();
+      const e = installierenEreignis('accepted');
+      const service = besuch();
+      window.dispatchEvent(e);
+      navigiert('/search');
+      const schreiben = spyOn(Storage.prototype, 'setItem').and.callThrough();
+      await service.bandBeantworten(true);
+      expect(e.prompt).toHaveBeenCalledTimes(1);
+      expect(service.band()).toBeNull();
+      expect(service.aktiv()).toBeNull();
+      expect(schreiben).not.toHaveBeenCalled();
+    });
+
+    it('abgelehnt: für diesen Besuch weg, ohne Vermerk', async () => {
+      willkommenErledigt();
+      const service = besuch();
+      window.dispatchEvent(installierenEreignis('dismissed'));
+      navigiert('/search');
+      await service.bandBeantworten(true);
+      expect(service.band()).toBeNull();
+      expect(eigeneEintraege()).toEqual([]);
+    });
+
+    it('appinstalled blendet das Band aus', () => {
+      willkommenErledigt();
+      const service = besuch();
+      window.dispatchEvent(installierenEreignis('accepted'));
+      navigiert('/search');
+      expect(service.band()).toBe(APP_INSTALLIEREN_ANGEBOT);
+      window.dispatchEvent(new Event('appinstalled'));
+      expect(service.band()).toBeNull();
+    });
+
+    it('„Ausblenden“ schreibt denselben Vermerk wie auf dem iPhone; danach nie wieder', () => {
+      willkommenErledigt();
+      const service = besuch();
+      window.dispatchEvent(installierenEreignis('accepted'));
+      navigiert('/search');
+      service.bandBeantworten(false);
+      expect(eigeneEintraege()).toEqual([HOME_HINWEIS_SCHLUESSEL]);
+      const naechster = besuch();
+      navigiert('/search');
+      expect(naechster.band()).toBeNull();
+    });
+
+    it('mit ausgeschaltetem Schalter: kein Band, sein Merker wird nie gelesen', () => {
+      schalter = false;
+      willkommenErledigt();
+      const lesen = spyOn(Storage.prototype, 'getItem').and.callThrough();
+      const service = besuch();
+      window.dispatchEvent(installierenEreignis('accepted'));
+      navigiert('/search');
+      expect(service.band()).toBeNull();
+      expect(lesen).not.toHaveBeenCalledWith(HOME_HINWEIS_SCHLUESSEL);
+    });
   });
 });

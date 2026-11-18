@@ -117,6 +117,20 @@
     margin-right: 8px;
 }
 
+/* Als App aufs Handy (18.11.): je Gerät eine fette Zeile, darunter der Schritt */
+.hilfe-als-app-schritte dt {
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.hilfe-als-app-schritte dd {
+    margin: 2px 0 0;
+}
+
+.hilfe-als-app .teilen-symbol {
+    vertical-align: -3px;
+}
+
 .hilfe-fragen dt {
     font-weight: 600;
     margin-top: 12px;

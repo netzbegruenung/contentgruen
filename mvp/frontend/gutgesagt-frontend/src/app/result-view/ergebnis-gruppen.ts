@@ -1,13 +1,12 @@
 import { SearchResponse } from '../services/dtos/searchDtos';
 import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
-import { typBeschreibung } from '../shared/content-type-registry';
 
 /**
  * Die Ergebnisseite als eine Liste (K2+): Treffer nach Aussage gruppiert, in jeder
  * Gruppe die Typen in fester Reihenfolge, je Typ zuerst nur wenige Karten. Am Handy
- * eine Spalte; ab 1024 px steht die beste Antwort links neben dem Rest, wenn
- * mitZweiterSpalte() das erlaubt.
+ * eine Spalte; ab 1024 px steht neben der besten Antwort der Kasten "Zu dieser Antwort"
+ * und darunter der Rest in zwei Spalten, wenn mitZweiterSpalte() das erlaubt.
  */
 
 /** Die Typen der Treffer, in der Reihenfolge der Seite: Kommentare zuerst. */
@@ -31,14 +30,6 @@ export const TYP_NAMEN: Record<TrefferTyp, { einzahl: string; mehrzahl: string }
   generictext: { einzahl: 'Hintergrundinfo', mehrzahl: 'Hintergrundinfos' },
   image: { einzahl: 'Bild', mehrzahl: 'Bilder' },
   post: { einzahl: 'Post', mehrzahl: 'Posts' },
-};
-
-/** Name des ⓘ-Knopfs je Typ (Trefferseite, V3). */
-const ERKLAER_FRAGE: Record<TrefferTyp, string> = {
-  commentary: 'Was ist ein Kommentar?',
-  generictext: 'Was ist Hintergrundinfo?',
-  image: 'Was ist ein Bild?',
-  post: 'Was ist ein Post?',
 };
 
 /** Die Treffer eines Typs aus der Antwort; fehlende Felder (aeltere Antworten) sind leer. */
@@ -144,10 +135,6 @@ export interface AnsichtBlock {
   /** Eindeutig auf der Seite; Anker fuer den Fokus nach "Alle N … zeigen". */
   id: string;
   ueberschrift: string;
-  /** Erklaerung des Typs aus der Registry, hinter dem ⓘ am Abschnittstitel; null ohne Beschreibung. */
-  erklaerung: string | null;
-  /** Name des ⓘ-Knopfs, etwa "Was ist Hintergrundinfo?". */
-  erklaerFrage: string;
   karten: KartenDaten[];
   alle: number;
   /** Text des Knopfs "Alle N … zeigen"; null, wenn schon alle dastehen. */
@@ -199,8 +186,6 @@ export function ansichtBauen(
         typ,
         id,
         ueberschrift: karten.length === 1 ? namen.einzahl : namen.mehrzahl,
-        erklaerung: typBeschreibung(typ) || null,
-        erklaerFrage: ERKLAER_FRAGE[typ],
         karten: gezeigt,
         alle: karten.length,
         mehrText: !offen && karten.length > KARTEN_JE_TYP ? `Alle ${karten.length} ${namen.mehrzahl} zeigen` : null,
@@ -258,12 +243,12 @@ export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGrup
 }
 
 /**
- * Ob neben der besten Antwort eine zweite Spalte steht (Desktop ab 1024 px, Maintainer 18.11.):
- * nur in der Gruppe mit der besten Antwort, und nur wenn es dort mehr als sie gibt.
+ * Ob die Gruppe am Desktop ab 1024 px zweispaltig steht (Maintainer 18.11.): oben die beste
+ * Antwort und daneben der Kasten "Zu dieser Antwort", darunter die weiteren Karten in zwei
+ * Spalten. Nur in der Gruppe mit der besten Antwort, auch wenn sie die einzige ist.
  */
 export function mitZweiterSpalte(gruppe: AnsichtGruppe | undefined): boolean {
-  const [erster, ...rest] = gruppe?.bloecke ?? [];
-  return !!erster?.beste && (erster.weitere.length > 0 || rest.length > 0);
+  return !!gruppe?.bloecke[0]?.beste;
 }
 
 /**

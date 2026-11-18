@@ -59,6 +59,16 @@ export interface KartenGuete {
   nichtHilfreich: number | null;
 }
 
+/**
+ * Was eine Karte nach dem Laden selbst aendert: Guete nach einer Stimme, Nutzung nach dem
+ * Kopieren. Die Karte meldet es, damit "Zu dieser Antwort" daneben dasselbe zeigt.
+ */
+export interface KartenKennzahlen {
+  id: string;
+  guete: KartenGuete | undefined;
+  nutzung: number | null;
+}
+
 /** Siegel und Zaehler aus einem Beitrag der Antwort; ohne Feld `guete` (alte Antwort) undefined. */
 type GueteFelder = Pick<
   BaseContentResult,

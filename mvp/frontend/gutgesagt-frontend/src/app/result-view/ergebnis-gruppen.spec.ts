@@ -129,12 +129,12 @@ describe('ergebnis-gruppen', () => {
       expect(erste.bloecke[0].mehrText).toBeNull();
     });
 
-    it('gibt jedem Block die Erklaerung aus der Registry samt Frage fuers ⓘ und vergibt eindeutige Anker', () => {
+    it('vergibt jedem Block eine Ueberschrift und einen eindeutigen Anker', () => {
       const ansicht = ansichtBauen(gruppen(), new Set());
-      expect(ansicht.flatMap((g) => g.bloecke.map((b) => [b.id, b.ueberschrift, b.erklaerung, b.erklaerFrage]))).toEqual([
-        ['ergebnis-gruppe-0-commentary', 'Kommentare', 'Eine Antwort, die du direkt posten kannst.', 'Was ist ein Kommentar?'],
-        ['ergebnis-gruppe-0-generictext', 'Hintergrundinfo', 'Fakten und Zahlen, die eine Antwort stützen.', 'Was ist Hintergrundinfo?'],
-        ['ergebnis-gruppe-1-generictext', 'Hintergrundinfo', 'Fakten und Zahlen, die eine Antwort stützen.', 'Was ist Hintergrundinfo?'],
+      expect(ansicht.flatMap((g) => g.bloecke.map((b) => [b.id, b.ueberschrift]))).toEqual([
+        ['ergebnis-gruppe-0-commentary', 'Kommentare'],
+        ['ergebnis-gruppe-0-generictext', 'Hintergrundinfo'],
+        ['ergebnis-gruppe-1-generictext', 'Hintergrundinfo'],
       ]);
     });
   });
@@ -184,13 +184,13 @@ describe('ergebnis-gruppen', () => {
       expect(besteHervorheben([])).toEqual([]);
     });
 
-    it('stellt nur neben eine beste Antwort mit weiteren Karten eine zweite Spalte', () => {
+    it('stellt jede Gruppe mit bester Antwort zweispaltig, auch mit nur einer Antwort', () => {
       const [erste, zweite] = besteHervorheben(ansicht('a'));
       expect(mitZweiterSpalte(erste)).toBeTrue();
       expect(mitZweiterSpalte(zweite)).withContext('ohne beste Antwort').toBeFalse();
       const eine = [treffer('commentary_result', 'k-1', 'a', 'A', 0.9)];
       const allein = besteHervorheben(ansichtBauen(gruppieren(antwort({ k: eine }), 'a'), new Set()));
-      expect(mitZweiterSpalte(allein[0])).withContext('nur eine Antwort').toBeFalse();
+      expect(mitZweiterSpalte(allein[0])).withContext('nur eine Antwort: der Kasten steht trotzdem daneben').toBeTrue();
       expect(mitZweiterSpalte(undefined)).toBeFalse();
     });
 

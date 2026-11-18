@@ -31,6 +31,7 @@ import {
   EinwurfAngaben,
   EinwurfSatz,
   KartenGuete,
+  KartenKennzahlen,
   KartenQuelle,
   NICHT_SICHTBAR,
   STUFEN,
@@ -191,6 +192,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Output() angetippt = new EventEmitter<KartenDaten>();
   /** Primaerknopf oder Menueeintrag auf einer Einwurf-Karte. */
   @Output() aktion = new EventEmitter<EinwurfAktion>();
+  /** Guete oder Nutzung haben sich an dieser Karte geaendert (Stimme, Kopieren). */
+  @Output() kennzahlen = new EventEmitter<KartenKennzahlen>();
 
   nutzung: number | null = null;
   /** Aufgeklappt (nur mit aufklappbar). */
@@ -815,6 +818,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       return;
     }
     this.nutzung++;
+    this.kennzahlenMelden();
     this.nutzungAnimiert = true;
     setTimeout(() => {
       this.nutzungAnimiert = false;
@@ -870,11 +874,16 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
           const neu = gueteAus(beitrag);
           if (neu && this.daten.id === id) {
             this.guete = neu;
+            this.kennzahlenMelden();
             this.cdr.markForCheck();
           }
         },
         error: () => undefined,
       });
+  }
+
+  private kennzahlenMelden(): void {
+    this.kennzahlen.emit({ id: this.daten.id, guete: this.guete, nutzung: this.nutzung });
   }
 
   private stundenSeit(zeitpunkt: string): number {
