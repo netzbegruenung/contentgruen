@@ -153,6 +153,12 @@ On tags only, the step `release-platzhalter` runs `scripts/release_platzhalter.p
 while „[Datum des Einspielens]“ still stands in the privacy policy or in
 `docs/LOESCHKONZEPT.md`. The release pull request for v0.9.0 replaced the last one with the
 day of the production rollout; the step stays as a guard in case the placeholder comes back.
+For the tags in `STICHTAG_TAGS` (releases whose pull request sets the dates of the legal texts
+to the production day, so far `v0.9.0`) it also fails when the „Stand“ of the privacy policy or
+a „Wer vor dem …“ date in the privacy policy or `docs/LOESCHKONZEPT.md` lies before the day of
+the tag run: a tag set a day later than planned would otherwise ship a privacy policy naming a
+day on which nothing was rolled out. Later releases leave those dates alone. Locally:
+`python3 scripts/release_platzhalter.py --tag v0.9.0 [--stichtag YYYY-MM-DD]`.
 Pull-request and `main` runs skip it.
 
 ## Integration tests on main only
