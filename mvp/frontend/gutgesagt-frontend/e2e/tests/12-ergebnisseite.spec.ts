@@ -73,21 +73,24 @@ async function oeffnen(page: Page): Promise<void> {
   await page.route('**/api/v1/search/searchByText**', (r) => r.fulfill({ json: ANTWORT }));
   await page.route('**/api/v1/statement/aehnliche**', (r) => r.fulfill({ json: { results: ALTERNATIVEN } }));
   await page.goto(`/result?searchQuery=${encodeURIComponent(ANTWORT.statement_text)}`);
-  await expect(page.locator('.kopfband-aussage')).toHaveText(`„${ERKANNT.text}“`, { timeout: 45_000 });
+  await expect(page.locator('.erkannt-aussage')).toHaveText(`„${ERKANNT.text}“`, { timeout: 45_000 });
 }
 
 for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
   test.describe(`Ergebnisseite ${name} px`, () => {
     test.use({ viewport: { width: breite, height: breite < 600 ? 844 : 900 } });
 
-    test(`Kopfband, Chips, Gruppen und Bilder (${name})`, async ({ page, bild }) => {
+    test(`Zeile "Erkannt als", beste Antwort, eingeklappte Karten, Gruppen und Bilder (${name})`, async ({ page, bild }) => {
       await oeffnen(page);
 
-      // Chips: nur Typen mit Treffern, mit Zahl, "Alle" gewaehlt; gezaehlt wird nur, was
-      // ohne Aufklappen dasteht (die erkannte Aussage)
-      const chips = page.locator('.typ-chip');
-      await expect(chips).toHaveText([/Alle\s*7/, /Kommentare\s*4/, /Hintergrundinfos\s*1/, /Bilder\s*1/, /Posts\s*1/]);
-      await expect(chips.first()).toHaveAttribute('aria-pressed', 'true');
+      // V3 (Designrunde 17.11.): keine Chips; die Titel tragen Typ und Zahl, die beste Antwort ganz
+      await expect(page.locator('.typ-chip, .kopfband')).toHaveCount(0);
+      await expect(page.locator('.gruppe').first().locator('.typ-ueberschrift')).toHaveText([
+        'Beste Antwort', 'Weitere Antworten · 3', 'Hintergrundinfo · 1', 'Bild · 1', 'Post · 1',
+      ], { ignoreCase: true });
+      await expect(page.locator('.beste-antwort .kopieren-knopf')).toBeVisible();
+      const zu = page.locator('.eingeklappte-karten .aufklapp-knopf');
+      await expect(zu.first()).toHaveAttribute('aria-expanded', 'false');
 
       // Gruppen: erkannte offen; andere Aussage und direkte Treffer eingeklappt darunter.
       // Der Kopf der erkannten Gruppe nennt die Aussage nur fuer Screenreader (visually-hidden).
@@ -106,7 +109,10 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
       await expect(page.locator('.typ-block h3.karte-titel')).toHaveCount(0);
       // Keine doppelte Antwort-auf-Zeile an den Karten
       await expect(page.locator('app-beitragskarte .statement-zeile')).toHaveCount(0);
-      // Bilder sind sichtbar
+      // Bilder erscheinen nach dem Aufklappen an Ort und Stelle
+      const bildKnopf = page.locator('.gruppe').first().locator('[data-typ="image"] .aufklapp-knopf');
+      await bildKnopf.click();
+      await expect(bildKnopf).toHaveAttribute('aria-expanded', 'true');
       await expect(page.locator('[data-typ="image"] app-beitragskarte img').first()).toBeVisible();
 
       // Kein waagerechtes Scrollen der Seite
@@ -118,14 +124,12 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
 
     test(`"Nicht gemeint?" bietet die Alternativen an (${name})`, async ({ page }) => {
       await oeffnen(page);
-      const liste = page.locator('.kopfband-liste a');
-      if (breite < 600) {
-        const umschalter = page.locator('.kopfband-umschalter');
-        await expect(umschalter).toHaveAttribute('aria-expanded', 'false');
-        await expect(liste).toHaveCount(0);
-        await umschalter.click();
-        await expect(umschalter).toHaveAttribute('aria-expanded', 'true');
-      }
+      const liste = page.locator('.erkannt-liste a');
+      const umschalter = page.locator('.erkannt-umschalter');
+      await expect(umschalter).toHaveAttribute('aria-expanded', 'false');
+      await expect(liste.first()).toBeHidden();
+      await umschalter.click();
+      await expect(umschalter).toHaveAttribute('aria-expanded', 'true');
       await expect(liste).toHaveText(ALTERNATIVEN.map((a) => a.text));
     });
 
@@ -133,7 +137,7 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
       await oeffnen(page);
       const block = page.locator('.gruppe').first().locator('[data-typ="commentary"]');
       await expect(block.locator('app-beitragskarte')).toHaveCount(3);
-      await block.getByRole('button', { name: 'Alle 4 Kommentare zeigen' }).click();
+      await block.getByRole('button', { name: 'Alle 3 weiteren Antworten zeigen' }).click();
       await expect(block.locator('app-beitragskarte')).toHaveCount(4);
       const imVierten = await block
         .locator('app-beitragskarte')
@@ -141,20 +145,53 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
         .evaluate((karte) => karte.contains(document.activeElement));
       expect(imVierten).toBe(true);
     });
-
-    test(`Chip filtert, die Wahl gilt fuer die Sitzung (${name})`, async ({ page, bild }) => {
-      await oeffnen(page);
-      const bilder = page.locator('.typ-chip', { hasText: 'Bilder' });
-      await bilder.click();
-      await expect(bilder).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.locator('.typ-ansage')).toHaveText('Nur Bilder, 1 Treffer, 1 weitere eingeklappt');
-      const typen = await page.locator('.typ-block').evaluateAll((bloecke) => bloecke.map((b) => b.getAttribute('data-typ')));
-      expect(typen).toEqual(['image']);
-      await bild(`ergebnis-${name}-nur-bilder`);
-
-      await page.reload();
-      await expect(page.locator('.kopfband-aussage')).toBeVisible({ timeout: 45_000 });
-      await expect(page.locator('.typ-chip', { hasText: 'Bilder' })).toHaveAttribute('aria-pressed', 'true');
-    });
   });
 }
+
+/** Linke Kante und Breite eines Elements, gerundet. */
+async function kasten(page: Page, selektor: string): Promise<{ x: number; y: number; breite: number }> {
+  const box = await page.locator(selektor).first().boundingBox();
+  if (!box) throw new Error(`Nicht sichtbar: ${selektor}`);
+  return { x: Math.round(box.x), y: Math.round(box.y), breite: Math.round(box.width) };
+}
+
+// Desktop ab 1024 px zweispaltig (Maintainer 18.11.), darunter eine Spalte; der Kopf springt nicht.
+test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
+  test('1280 px: beste Antwort und weitere nebeneinander, Kopf vor und nach neuer Suche gleich breit', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await oeffnen(page);
+    const beste = await kasten(page, '.beste-antwort');
+    const rechts = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
+    expect(rechts.x).toBeGreaterThan(beste.x + beste.breite);
+    const besteTitel = await kasten(page, '.gruppe.mit-bester .typ-block .beste-ueberschrift');
+    const weitereTitel = await kasten(page, '.gruppe.mit-bester .typ-block .weitere-ueberschrift');
+    expect(Math.abs(weitereTitel.y - besteTitel.y)).toBeLessThanOrEqual(2);
+    const kopfVorher = await kasten(page, '.search-box');
+
+    // Neue Suche mit verzoegerter Antwort: auch waehrend des Ladens bleibt der Kopf gleich
+    let freigeben: () => void = () => undefined;
+    const gehalten = new Promise<void>((weiter) => (freigeben = weiter));
+    await page.unroute('**/api/v1/search/searchByText**');
+    await page.route('**/api/v1/search/searchByText**', async (r) => {
+      await gehalten;
+      await r.fulfill({ json: ANTWORT });
+    });
+    await page.locator('.search-box input').fill('Windräder sind zu laut');
+    await page.locator('.search-box input').press('Enter');
+    await expect(page.locator('app-loading-spinner .loading-container')).toBeVisible();
+    expect(await kasten(page, '.search-box')).toEqual(kopfVorher);
+    freigeben();
+    await expect(page.locator('.erkannt-aussage')).toBeVisible({ timeout: 45_000 });
+    expect(await kasten(page, '.search-box')).toEqual(kopfVorher);
+  });
+
+  test('1023 px: beste Antwort und weitere untereinander', async ({ page }) => {
+    await page.setViewportSize({ width: 1023, height: 900 });
+    await oeffnen(page);
+    await expect(page.locator('.gruppe.mit-bester')).toHaveCount(1);
+    const beste = await kasten(page, '.beste-antwort');
+    const weitere = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
+    expect(weitere.x).toBe(beste.x);
+    expect(weitere.y).toBeGreaterThan(beste.y);
+  });
+});

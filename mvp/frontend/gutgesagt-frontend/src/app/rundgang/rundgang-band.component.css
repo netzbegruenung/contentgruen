@@ -111,6 +111,96 @@ p {
     flex: none;
 }
 
+/* Schlanke Zeile (Persona-Runde 18.11.): kein Kasten, kein Bild, in der Spalte von Suchfeld
+   und Karten. Link und Kreuz behalten 44 px Tippflaeche, ohne die Zeile aufzublaehen. */
+/* Etwas hoeher und luftiger als die reine Textzeile, mit dem Wegweiser links (Maintainer 18.11.);
+   am Handy bleiben Suche und der Anfang der ersten Community-Karte im ersten Bild (390 x 844). */
+.zeile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
+    padding: 6px 0 6px 14px;
+    border-radius: var(--border-radius-large);
+    background: var(--willkommen-grund, var(--rundgang-gelb));
+}
+
+.zeile-bild {
+    flex: none;
+    width: 28px;
+    height: 28px;
+}
+
+.zeile p {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.zeile-titel {
+    font-weight: 700;
+    color: var(--band-akzent-schrift, var(--primary-dark));
+}
+
+.zeile-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    color: var(--primary-dark);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.zeile-satz {
+    white-space: nowrap;
+}
+
+/* Am Handy passt die Zeile nicht in eine: der Satz steht dann ohne Trennpunkt darunter,
+   statt dass eine Zeile mit "·" beginnt */
+@media (max-width: 599px) {
+    .zeile-satz {
+        display: block;
+        margin: -8px 0 8px;
+    }
+
+    .zeile-satz > [aria-hidden='true'] {
+        display: none;
+    }
+}
+
+.zeile-zu {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.zeile-zu:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.zeile-link:focus-visible,
+.zeile-zu:focus-visible {
+    outline: 3px solid var(--willkommen-fokus, var(--rundgang-fokus));
+    outline-offset: -3px;
+}
+
 @media (max-width: 599px) {
     .band {
         flex-wrap: wrap;

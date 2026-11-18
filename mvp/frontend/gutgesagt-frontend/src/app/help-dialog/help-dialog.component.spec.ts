@@ -188,10 +188,10 @@ describe('HelpDialogComponent', () => {
     ]);
   });
 
-  it('nennt die Fassungen Kurz, Mittel, Lang und den Hinweis „passt auf X/Bluesky“', () => {
+  it('nennt die Fassungen Kurz, Mittel, Lang und den Hinweis „passt auf Mastodon/Bluesky/X“', () => {
     const text = (fixture.nativeElement.querySelector('.hilfe-fassungen') as HTMLElement).textContent!;
     expect(text).toContain('Kurz, Mittel und Lang');
-    expect(text).toContain('„passt auf X/Bluesky“');
+    expect(text).toContain('„passt auf Mastodon/Bluesky/X“');
   });
 
   // Persona-Test Gerd: die Antwort auf „Nutzt Gut gesagt KI?“ bleibt, kurz, mit den Sätzen der Über-Seite

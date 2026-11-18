@@ -12,7 +12,7 @@ Erst nach dem Ausrollen der Version laufen lassen, die die neuen Zustaende kennt
 vorher einen Qdrant-Snapshot ziehen (docs/DEPLOYMENT.md). Auf Test/Prod liegt kein
 Repo-Checkout - Skript herunterladen, dann ausfuehren:
 
-    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/zustaende_umstellen.py
+    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/zustaende_umstellen.py
 
     # 1. Zaehlen - aendert nichts
     docker exec -i gutgesagt-semantic-search python - < zustaende_umstellen.py

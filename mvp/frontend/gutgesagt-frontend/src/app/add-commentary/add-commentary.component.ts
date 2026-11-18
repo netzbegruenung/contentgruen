@@ -594,7 +594,7 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
   }
 
   get plattformHinweis(): string {
-    return this.textLaenge > PLATTFORM_GRENZE ? 'zu lang für X/Bluesky' : 'passt auf X/Bluesky';
+    return this.textLaenge > PLATTFORM_GRENZE ? 'zu lang für Mastodon/Bluesky/X' : 'passt auf Mastodon/Bluesky/X';
   }
 
   /** Irgendetwas eingetragen oder vorbelegt - dann fragt Zuruecksetzen nach. */

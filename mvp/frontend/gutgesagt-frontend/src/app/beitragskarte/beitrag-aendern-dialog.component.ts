@@ -114,7 +114,7 @@ function alsEingabe(quelle: KartenQuelle): HerkunftEingabe {
             <textarea matInput id="aendern-kurz" formControlName="kurz" [attr.maxlength]="kurzMax"
                       placeholder="Der Punkt in einem Satz"
                       cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="6"></textarea>
-            <mat-hint>für X/Bluesky</mat-hint>
+            <mat-hint>für Mastodon/Bluesky/X</mat-hint>
             <mat-hint align="end">{{ formular.value.kurz?.length ?? 0 }} / {{ kurzMax }}</mat-hint>
             <mat-error *ngIf="formular.controls.kurz.hasError('maxlength')">Höchstens {{ kurzMax }} Zeichen.</mat-error>
           </mat-form-field>

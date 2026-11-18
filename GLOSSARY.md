@@ -280,7 +280,7 @@ Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstell
 _Avoid_: Quelle, Referenz, Reference, Beleg (und nicht für den Einstieg in ein Formular)
 
 **Stil**:
-Die Tonlage eines Kommentars, etwa sachlich, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“.
+Die Tonlage eines Kommentars, etwa sachlich, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“. Die Oberfläche zeigt „brückenbauend“ als „freundlich“ und „bissig“ als „deutlich“ (Persona-Runde 18.11.); die Werte bleiben.
 _Avoid_: Ton, Tonalität
 
 **Fassung**:
@@ -288,7 +288,7 @@ Eine der Längen eines Kommentars: Kurz (bis 280 Zeichen), Mittel (der Haupttext
 _Avoid_: Version, Variante, Länge
 
 **Zweck**:
-Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder für die eigenen Leute.
+Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder für die eigenen Leute (in der Oberfläche „Für Gleichgesinnte“).
 _Avoid_: Zielgruppe, Modus, Kanal
 
 **Variante**:
@@ -562,7 +562,7 @@ Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt,
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
 **Startbeispiel**:
-Die Aussage, die das leere Suchfeld auf der Startseite als erste vortippt und hinter „Ausprobieren“ sucht; danach tippt es weitere Aussagen des Startbestands vor (im Code `HOT_TAKES`) und bleibt am Ende beim Startbeispiel stehen. Der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
+Die Aussage, die das leere Suchfeld auf der Startseite als erste vortippt und hinter „Beispiel ausprobieren“ sucht; danach tippt es weitere Aussagen des Startbestands vor (im Code `HOT_TAKES`) und bleibt am Ende beim Startbeispiel stehen. Der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
 _Avoid_: Beispielsuche, Demo-Aussage
 
 **Startbestand**:

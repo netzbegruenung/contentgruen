@@ -9,26 +9,23 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
   const aussageKern = `${TESTDATEN_PRAEFIX} Balkonkraftwerke sind nur Spielerei`;
 
   await page.goto(`/result?searchQuery=${encodeURIComponent(anfrage)}`);
-  // Fertig ist die Suche, wenn Chips, Karten oder der Leerzustand stehen.
-  await expect(page.locator('.typ-chips, .unified-empty-state, app-kartenliste').first()).toBeVisible({
+  // Fertig ist die Suche, wenn Karten oder der Leerzustand stehen.
+  await expect(page.locator('.unified-empty-state, app-kartenliste').first()).toBeVisible({
     timeout: 45_000,
   });
   await bild('30-suche');
-  // Hat die Suche Treffer zu einer erkannten Aussage (Kopfband), waehlt "Antworten"
+  // Hat die Suche Treffer zu einer erkannten Aussage (Zeile "Erkannt als"), waehlt "Antworten"
   // diese vor, nicht die eigene Aussage der Suche - auch wenn ein Vorlauf sie lieferte.
-  const gefundenZu = page.locator('.kopfband-aussage');
+  const gefundenZu = page.locator('.erkannt-aussage');
   const erwartet = (await gefundenZu.isVisible())
     ? (await gefundenZu.textContent())!.trim().replace(/^„|“$/g, '')
     : aussageKern;
 
   await test.step('Beitrag ergaenzen', async () => {
-    // Mit Treffern: dezent neben den Chips und unter der Liste; ohne Treffer im Leerzustand.
-    const unterSuchband = page.locator('.typ-leiste .ergaenzen-link');
+    // Mit Treffern unter der Liste (oben steht seit V3 keins mehr); ohne Treffer im Leerzustand.
     const unterListe = page.locator('.nicht-dabei-unten .neu-anlegen-knopf button, .unified-empty-state .action-buttons-top button').first();
     await expect.soft(unterListe).toBeVisible();
-    if (await unterSuchband.isVisible()) {
-      await expect.soft(unterSuchband).toHaveText(/Antworten/);
-    }
+    await expect.soft(page.locator('.typ-leiste')).toHaveCount(0);
     await unterListe.scrollIntoViewIfNeeded();
     await bild('30c-suche-ergaenzen-360');
     const knopf = unterListe;

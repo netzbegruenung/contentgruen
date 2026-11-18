@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 
 /**
@@ -114,11 +114,17 @@ async function ohneTeilenMenue(page: Page): Promise<void> {
   });
 }
 
+/** Auf der Trefferseite steht Teilen im ⋮-Menue der Karte (V3, Designrunde 17.11.). */
+async function karteTeilen(page: Page, karte: Locator): Promise<void> {
+  await karte.locator('.menue-knopf').click();
+  await page.locator('.mat-mdc-menu-panel .teilen-eintrag').click();
+}
+
 const geteilt = (page: Page) => page.evaluate(() => (window as unknown as { geteilt: ShareData[] }).geteilt);
 
 async function sucheOeffnen(page: Page): Promise<void> {
   await page.goto(`/result?searchQuery=${encodeURIComponent(SUCHE)}`);
-  await expect(page.locator('.kopfband-aussage')).toHaveText(`„${ERKANNT.text}“`, { timeout: 45_000 });
+  await expect(page.locator('.erkannt-aussage')).toHaveText(`„${ERKANNT.text}“`, { timeout: 45_000 });
 }
 
 test.describe('Teilen mobil 390 px', () => {
@@ -130,18 +136,13 @@ test.describe('Teilen mobil 390 px', () => {
     await sucheOeffnen(page);
 
     const karte = page.locator('app-beitragskarte').first();
-    const teilen = karte.getByRole('button', { name: `Beitrag teilen: „${KOMMENTAR.title}“` });
-    await expect(teilen).toBeVisible();
-    const groesse = await teilen.boundingBox();
-    expect(groesse!.width).toBeGreaterThanOrEqual(44);
-    expect(groesse!.height).toBeGreaterThanOrEqual(44);
-    // Kein waagerechtes Scrollen durch den zusaetzlichen Knopf
+    await expect(karte.locator('.teilen-knopf')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     await bild('teilen-390-ergebnis');
     await karte.scrollIntoViewIfNeeded();
     await bild('teilen-390-karte');
 
-    await teilen.click();
+    await karteTeilen(page, karte);
     await expect.poll(() => geteilt(page)).toHaveLength(1);
     const [karteGeteilt] = await geteilt(page);
     expect(karteGeteilt.url).toMatch(new RegExp(`/beitrag/${KOMMENTAR_ID}$`));
@@ -163,7 +164,7 @@ test.describe('Teilen mobil 390 px', () => {
     await teilenMenue(page, true);
     await sucheOeffnen(page);
 
-    await page.locator('app-beitragskarte').first().locator('button.teilen-knopf').click();
+    await karteTeilen(page, page.locator('app-beitragskarte').first());
     await expect.poll(() => geteilt(page)).toHaveLength(1);
     await page.waitForTimeout(500);
     await expect(page.locator('mat-snack-bar-container')).toHaveCount(0);
@@ -190,19 +191,21 @@ test.describe('Teilen mobil 390 px', () => {
 test.describe('Teilen 360 px', () => {
   test.use({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
 
-  test('Kartenleiste passt: ⋮ und Teilen liegen in der Karte, mit Stimmzaehlern', async ({ page, bild }) => {
+  test('Kartenleiste passt: ⋮ und Kopieren liegen in der Karte, mit Stimmzaehlern', async ({ page, bild }) => {
     await mocken(page);
     await teilenMenue(page);
     await sucheOeffnen(page);
 
     const karten = page.locator('app-beitragskarte');
     await expect(karten).toHaveCount(2);
+    // Die zweite Karte steht eingeklappt (V3): aufklappen
+    await karten.nth(1).locator('.aufklapp-knopf').click();
     await expect(karten.first().locator('.stimm-zahl').first()).toHaveText('12');
     for (let n = 0; n < 2; n++) {
       const karte = karten.nth(n);
       await karte.scrollIntoViewIfNeeded();
       const rahmen = (await karte.locator('article.karte').boundingBox())!;
-      for (const knopf of ['.menue-knopf', '.teilen-knopf', '.kopieren-knopf']) {
+      for (const knopf of ['.menue-knopf', '.kopieren-knopf']) {
         const box = (await karte.locator(knopf).boundingBox())!;
         expect(box.x, `${knopf} links in Karte ${n}`).toBeGreaterThanOrEqual(rahmen.x);
         expect(box.x + box.width, `${knopf} rechts in Karte ${n}`).toBeLessThanOrEqual(rahmen.x + rahmen.width);
@@ -238,16 +241,17 @@ test.describe('Teilen Desktop 1280 px', () => {
     await sucheOeffnen(page);
     await bild('teilen-1280-ergebnis');
 
-    // Am Desktop steht am Bild das lange Wort
+    // Am Desktop steht am Bild das lange Wort (die Bildkarte steht eingeklappt, V3)
+    await page.locator('app-beitragskarte').nth(1).locator('.aufklapp-knopf').click();
     await expect(page.locator('app-beitragskarte').nth(1).locator('.kopieren-wort:visible')).toHaveText('Bildunterschrift kopieren');
 
-    await page.locator('app-beitragskarte').first().locator('button.teilen-knopf').click();
+    await karteTeilen(page, page.locator('app-beitragskarte').first());
     await expect(page.locator('mat-snack-bar-container')).toContainText('Link kopiert – füg ihn ein, wo du teilen willst.');
     expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(new RegExp(`/beitrag/${KOMMENTAR_ID}$`));
     await expect.poll(nutzungen).toBe(1);
     await bild('teilen-1280-kopiert');
 
-    await page.locator('.ergebnis-teilen').click();
+    await page.locator('.ergebnis-teilen-symbol').click();
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toMatch(/\/result\?searchQuery=/);
     expect(nutzungen()).toBe(1);
   });

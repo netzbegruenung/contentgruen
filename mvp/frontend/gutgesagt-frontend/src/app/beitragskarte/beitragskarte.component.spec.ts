@@ -476,7 +476,7 @@ describe('BeitragskarteComponent', () => {
     it('zeigt den Stil und markiert Beitraege fuer die eigenen Leute', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'persoenlich' })));
 
-      expect(element('.karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.karte-eigene-leute')?.textContent).toContain('Für Gleichgesinnte');
       expect(element('.karte-stil')?.textContent).toContain('persönlich');
     });
 
@@ -492,19 +492,19 @@ describe('BeitragskarteComponent', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
 
       expect(element('.karte-eigene-leute')).toBeNull();
-      expect(element('.karte-stil')?.textContent).toContain('brückenbauend');
+      expect(element('.karte-stil')?.textContent).toContain('freundlich');
     });
 
     it('zeigt den Stil als Chip, der beim Antippen erklaert, was er bewirkt (#641)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
       const chip = element<HTMLButtonElement>('button.karte-stil');
 
-      expect(chip.getAttribute('aria-label')).toBe('Stil: brückenbauend, Erklärung öffnen');
+      expect(chip.getAttribute('aria-label')).toBe('Stil: freundlich, Erklärung öffnen');
       expect(getComputedStyle(chip).fontStyle).toBe('normal');
       chip.click();
       fixture.detectChanges();
 
-      expect(document.querySelector('.stil-erklaerung')?.textContent!.trim()).toBe('brückenbauend: holt Unentschiedene ab');
+      expect(document.querySelector('.stil-erklaerung')?.textContent!.trim()).toBe('freundlich: holt Unentschiedene ab, ohne sie vorzuführen');
     });
 
     it('zeigt Markierung und Stil auch in der kompakten Karte (Meine Beitraege)', () => {
@@ -512,7 +512,7 @@ describe('BeitragskarteComponent', () => {
         variante: 'kompakt',
       });
 
-      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für Gleichgesinnte');
       expect(element('.album-inhalt .karte-stil')?.textContent).toContain('humorvoll');
       // Die kompakte Karte ist als Ganzes antippbar: dort kein eigener Knopf, die Erklaerung als title
       expect(element('.album-inhalt button.karte-stil')).toBeNull();
@@ -990,9 +990,9 @@ describe('BeitragskarteComponent', () => {
       expect(element('.textlaenge mat-button-toggle')).toBe(vorher);
     });
 
-    it('setzt die Marke "passt auf X/Bluesky" nur, wenn die angezeigte Fassung passt', () => {
+    it('setzt die Marke "passt auf Mastodon/Bluesky/X" nur, wenn die angezeigte Fassung passt', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), short_text: 'Kurzfassung' })));
-      expect(element('.fassung-marke')?.textContent).toContain('passt auf X/Bluesky');
+      expect(element('.fassung-marke')?.textContent).toContain('passt auf Mastodon/Bluesky/X');
 
       component.fassungWaehlen('mittel');
       fixture.detectChanges();
@@ -1000,7 +1000,7 @@ describe('BeitragskarteComponent', () => {
     });
 
     // Streifen "Frisch aus der Community" auf der Startseite (16.11.)
-    it('laesst schlank die Marke "passt auf X/Bluesky" und das Alter weg, sonst nichts', () => {
+    it('laesst schlank die Marke "passt auf Mastodon/Bluesky/X" und das Alter weg, sonst nichts', () => {
       const daten = ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), short_text: 'Kurzfassung' }));
       zeigen(daten);
       expect(element('.fassung-marke')).toBeTruthy();
@@ -1063,6 +1063,94 @@ describe('BeitragskarteComponent', () => {
       fixture.detectChanges();
 
       expect(element('.mehr-knopf')).toBeNull();
+    });
+  });
+
+  // Trefferseite, V3 (Designrunde 17.11.)
+  describe('Schlicht und aufklappbar (Trefferseite)', () => {
+    const QUELLE = 'https://www.umweltbundesamt.de/themen/tempolimit';
+    const voll = () =>
+      ausSuchergebnis(
+        paket('commentary_result', {
+          text: 'M'.repeat(200),
+          short_text: 'Kurzfassung',
+          long_text: 'L'.repeat(500),
+          references: [{ reference_id: 'r-1', created: '', reference_text: QUELLE }],
+        }),
+      );
+
+    it('laesst schlicht Zeichenzahl, "passt auf Mastodon/Bluesky/X", 📚, Datum und den Teilen-Knopf weg', () => {
+      zeigen(voll());
+      expect(element('.reiter-zeichen')).toBeTruthy();
+      expect(element('.fassung-marke')).toBeTruthy();
+      expect(element('.quelle-icon')).toBeTruthy();
+      expect(element('.quelle').textContent).toContain('Herkunft:');
+      expect(element('.karte-meta')?.textContent).toMatch(/vor|gerade/);
+      expect(element('.teilen-knopf')).toBeTruthy();
+      expect(element('.karte--schlicht')).toBeNull();
+
+      zeigen(voll(), { schlicht: true });
+      expect(element('.karte--schlicht')).toBeTruthy();
+      expect(element('.reiter-zeichen')).toBeNull();
+      expect(element('.fassung-marke')).toBeNull();
+      expect(element('.quelle-icon')).toBeNull();
+      expect(element('.quelle-wort').textContent!.trim()).toBe('Quelle:');
+      expect(element('.quelle-link').textContent!.trim()).toBe('umweltbundesamt.de');
+      expect(element('.karte-meta')?.textContent ?? '').not.toMatch(/vor|gerade/);
+      expect(element('.teilen-knopf')).withContext('Teilen steht im ⋮-Menue').toBeNull();
+      expect(aktionen().teilenImMenue).toBeTrue();
+      // Bleibt: Reiter (vorgelesen mit Zeichenzahl), Stimmen, Kopieren, Menue.
+      expect(element('.textlaenge')).toBeTruthy();
+      expect(element('mat-button-toggle button').getAttribute('aria-label')).toMatch(/Zeichen/);
+      expect(element('.stimmen')).toBeTruthy();
+      expect(element('.kopieren-knopf')).toBeTruthy();
+      expect(element('.menue-knopf')).toBeTruthy();
+    });
+
+    it('zeigt eingeklappt nur Symbol, Titel und Pfeil im Knopf; die volle Karte erst aufgeklappt', () => {
+      zeigen(voll(), { schlicht: true, aufklappbar: true, titelEbene: 4 });
+      const knopf = element<HTMLButtonElement>('h4.karte-titel button.aufklapp-knopf');
+      expect(knopf).toBeTruthy();
+      expect(knopf.textContent).toContain('Test Title');
+      expect(knopf.getAttribute('aria-expanded')).toBe('false');
+      expect(knopf.getAttribute('aria-controls')).toBe(component.koerperId);
+      expect(element('.karte-icon')).toBeTruthy();
+      expect(element('.karte-inhalt, .karte-fuss, .karte-badges, .karte-angaben, .titel-link')).toBeNull();
+      expect(element(`#${component.koerperId}`).hidden).toBeTrue();
+      expect(element('.karte--zu')).toBeTruthy();
+
+      knopf.click();
+      fixture.detectChanges();
+      expect(knopf.getAttribute('aria-expanded')).toBe('true');
+      expect(element(`#${component.koerperId}`).hidden).toBeFalse();
+      expect(element('.karte-inhalt')).toBeTruthy();
+      expect(element('.kopieren-knopf')).toBeTruthy();
+      expect(element('.karte-badges')).toBeTruthy();
+      expect(element('.karte--zu')).toBeNull();
+
+      knopf.click();
+      fixture.detectChanges();
+      expect(knopf.getAttribute('aria-expanded')).toBe('false');
+      expect(element('.karte-inhalt')).toBeNull();
+    });
+
+    it('klappt per Tastatur auf (ein echter Knopf) und vergibt je Karte eine eigene Koerper-ID', () => {
+      zeigen(voll(), { aufklappbar: true });
+      const ersteId = component.koerperId;
+      const knopf = element<HTMLButtonElement>('.aufklapp-knopf');
+      knopf.focus();
+      expect(document.activeElement).toBe(knopf);
+      expect(knopf.getAttribute('type')).toBe('button');
+
+      zeigen(voll(), { aufklappbar: true });
+      expect(component.koerperId).not.toBe(ersteId);
+    });
+
+    it('ist ohne aufklappbar nie eingeklappt und hat keinen Aufklapp-Knopf', () => {
+      zeigen(voll(), { schlicht: true });
+      expect(element('.aufklapp-knopf')).toBeNull();
+      expect(element('.titel-link')).toBeTruthy();
+      expect(element('.karte-inhalt')).toBeTruthy();
     });
   });
 

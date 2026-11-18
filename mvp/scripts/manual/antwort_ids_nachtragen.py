@@ -14,7 +14,7 @@ Container mit aelterem Stand bricht es mit ModuleNotFoundError ab, ohne zu schre
 
 Auf Test/Prod liegt kein Repo-Checkout - Skript herunterladen, dann ausfuehren:
 
-    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/antwort_ids_nachtragen.py
+    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/antwort_ids_nachtragen.py
 
     # 1. Zaehlen, was nachzutragen waere - aendert nichts
     docker exec -i gutgesagt-semantic-search python - < antwort_ids_nachtragen.py

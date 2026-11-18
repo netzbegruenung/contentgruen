@@ -10,6 +10,7 @@ import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { SearchComponent } from '../search/search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { StateManagementService } from '../services/state-management.service';
 import { LoadingSpinnerComponent } from '../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../shared/components/error-message/error-message.component';
@@ -27,23 +28,21 @@ import {
   AnsichtGruppe,
   ErgebnisGruppe,
   TREFFER_TYPEN,
-  TYP_NAMEN,
   TrefferTyp,
-  TypFilter,
   alleTreffer,
   ansichtBauen,
+  mitZweiterSpalte,
   anzahlJeTyp,
   anzahlSichtbar,
+  besteHervorheben,
   istWeniger,
   aufklappSchluessel,
   aussageSchluessel,
   gruppieren,
-  typFilterLesen,
-  typFilterMerken,
 } from './ergebnis-gruppen';
 
-/** Wie viele aehnliche Aussagen das Kopfband unter "Nicht gemeint?" anbietet. */
-const ALTERNATIVEN_IM_KOPFBAND = 3;
+/** Wie viele aehnliche Aussagen die Zeile "Erkannt als" unter "Nicht gemeint?" anbietet. */
+const ALTERNATIVEN_ERKANNT = 3;
 
 /** Ob ein Treffer zum Themenfilter passt; ohne Filter passt jeder. */
 function passtZuThema(treffer: BaseSearchResult, thema: string | null): boolean {
@@ -153,13 +152,6 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
   };
 }
 
-/** Ein Chip oben: ein Typ mit Treffern, oder "Alle". */
-export interface TypChip {
-  filter: TypFilter;
-  name: string;
-  anzahl: number;
-}
-
 @Component({
   selector: 'app-result-view',
   standalone: true,
@@ -171,6 +163,7 @@ export interface TypChip {
     SearchComponent,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
@@ -199,7 +192,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   themenDerTreffer: Thema[] = [];
   aktivesThema: string | null = null;
   bekannteAussagen: string[] = [];
-  /** Im Kopfband (#642); aus allen Treffern, nicht nur denen zum Thema. */
+  /** In der Zeile "Erkannt als" (#642, V3); aus allen Treffern, nicht nur denen zum Thema. */
   erkannt: ErkannteAussage | null = null;
 
   // Einmal je Suchantwort und Wahl umgerechnet, nicht im Template: neue Objekte bei
@@ -220,7 +213,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     return karte;
   };
   ansicht: AnsichtGruppe[] = [];
-  /** Treffer je Typ, die ohne Aufklappen dastehen; danach richten sich die Chips. */
+  /** Treffer je Typ, die ohne Aufklappen dastehen. */
   anzahl: Record<TrefferTyp, number> = anzahlJeTyp(null);
   /** Alle Treffer je Typ, auch die weniger passenden: fuer den Leerzustand. */
   private anzahlAlle: Record<TrefferTyp, number> = anzahlJeTyp(null);
@@ -228,22 +221,20 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   hauptGruppen: AnsichtGruppe[] = [];
   weitereGruppen: AnsichtGruppe[] = [];
   weitereAnzahl = 0;
+  /**
+   * Am Desktop zwei Spalten: links die beste Antwort, rechts der Rest der Gruppe (Maintainer
+   * 18.11.). Nur wenn es neben der besten Antwort etwas gibt; die Spalten macht das CSS ab 1024 px.
+   */
+  zweispaltig = false;
   /** "Weitere, weniger passende Treffer" aufgeklappt; jede neue Suche beginnt zu. */
   weitereOffen = false;
-  chips: TypChip[] = [];
-  /** Gewaehlter Typ; gilt fuer die Sitzung (sessionStorage). */
-  typFilter: TypFilter = typFilterLesen();
   /** Gruppe und Typ, die alle Karten zeigen ("Alle N … zeigen"). */
   private aufgeklappt = new Set<string>();
-  /** Fuer Screenreader: was nach einer Typwahl dasteht. */
-  ansage = '';
 
   /** Aehnliche Aussagen aus "Nicht dabei?", ohne die der Treffer; fuer "Nicht gemeint?". */
   alternativen: StatementSearchResult[] = [];
-  /** Am Handy klappt "Nicht gemeint?" die Alternativen erst auf. */
+  /** "Nicht gemeint?" klappt die Alternativen erst auf. */
   alternativenOffen = false;
-
-  readonly typNamen = TYP_NAMEN;
 
   constructor(
     private searchService: SearchService,
@@ -273,14 +264,13 @@ export class ResultViewComponent implements OnInit, OnDestroy {
       .subscribe(response => {
         this.antwort = response;
         this.karten = new WeakMap();
-        // Eine neue Suche beginnt ohne Themenfilter und zugeklappt; die Typwahl bleibt.
+        // Eine neue Suche beginnt ohne Themenfilter und zugeklappt.
         this.aktivesThema = null;
         this.aufgeklappt.clear();
         this.alternativenOffen = false;
         this.weitereOffen = false;
-        // Alternativen und Ansage gehoeren zur vorigen Suche; "Nicht dabei?" meldet neu.
+        // Die Alternativen gehoeren zur vorigen Suche; "Nicht dabei?" meldet neu.
         this.alternativen = [];
-        this.ansage = '';
         this.erkannt = response ? erkannteAussage(response) : null;
         this.themenDerTreffer = response ? themenDerTreffer(response, erkannterSchluessel(this.erkannt)) : [];
         this.anzeigen();
@@ -301,7 +291,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.anzeigen();
   }
 
-  /** Gruppen, Zaehler und Chips aus der Suchantwort, gefiltert nach dem aktiven Thema. */
+  /** Gruppen und Zaehler aus der Suchantwort, gefiltert nach dem aktiven Thema. */
   private anzeigen(): void {
     const response = this.antwort ? nachThemaGefiltert(this.antwort, this.aktivesThema) : null;
     this.angezeigt = response;
@@ -309,28 +299,19 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.gruppen = response ? gruppieren(response, erkannterSchluessel(this.erkannt), this.karteZu) : [];
     this.anzahl = anzahlSichtbar(this.gruppen);
     this.bekannteAktualisieren();
-    const gesamt = TREFFER_TYPEN.reduce((summe, typ) => summe + this.anzahl[typ], 0);
-    this.chips = [
-      { filter: 'alle' as TypFilter, name: 'Alle', anzahl: gesamt },
-      ...TREFFER_TYPEN.filter((typ) => this.anzahl[typ] > 0).map((typ) => ({
-        filter: typ as TypFilter,
-        name: TYP_NAMEN[typ].mehrzahl,
-        anzahl: this.anzahl[typ],
-      })),
-    ];
     this.ansichtAktualisieren();
   }
 
-  /** Der Filter, der gilt: ein gewaehlter Typ ohne Treffer zeigt alle. */
-  get wirksamerFilter(): TypFilter {
-    return this.typFilter !== 'alle' && this.anzahl[this.typFilter] === 0 ? 'alle' : this.typFilter;
-  }
-
+  /**
+   * Alle Typen, ohne Typwahl: Die Abschnittstitel tragen die Typen (V3, Designrunde
+   * 17.11.). Die beste Antwort steht ganz da, alle anderen Karten eingeklappt.
+   */
   private ansichtAktualisieren(): void {
-    this.ansicht = ansichtBauen(this.gruppen, this.wirksamerFilter, this.aufgeklappt);
+    this.ansicht = besteHervorheben(ansichtBauen(this.gruppen, this.aufgeklappt));
     this.hauptGruppen = this.ansicht.filter((g) => !g.weniger);
     this.weitereGruppen = this.ansicht.filter((g) => g.weniger);
     this.weitereAnzahl = this.weitereGruppen.reduce((summe, g) => summe + g.anzahl, 0);
+    this.zweispaltig = mitZweiterSpalte(this.hauptGruppen[0]);
     this.cdr.markForCheck();
   }
 
@@ -363,20 +344,6 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     return TREFFER_TYPEN.some((typ) => this.anzahlAlle[typ] > 0);
   }
 
-  /** Chip gewaehlt: nur noch dieser Typ (oder alle); gilt fuer die Sitzung. */
-  typWaehlen(filter: TypFilter): void {
-    this.typFilter = filter;
-    typFilterMerken(filter);
-    this.ansichtAktualisieren();
-    const chip = this.chips.find((c) => c.filter === filter);
-    const anzahl = chip?.anzahl ?? 0;
-    const eingeklappt = this.weitereAnzahl > 0 ? `, ${this.weitereAnzahl} weitere eingeklappt` : '';
-    this.ansage =
-      (filter === 'alle'
-        ? `Alle Typen, ${anzahl} Treffer`
-        : `Nur ${TYP_NAMEN[filter].mehrzahl}, ${anzahl} Treffer`) + eingeklappt;
-  }
-
   /**
    * "Alle N … zeigen": den Rest des Typs in dieser Gruppe zeigen und den Fokus auf
    * die erste neue Karte setzen, damit Tastatur und Screenreader dort weiterlesen.
@@ -393,11 +360,11 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     ziel?.focus();
   }
 
-  /** "Nicht dabei?" hat aehnliche Aussagen geladen; das Kopfband bietet die ersten an. */
+  /** "Nicht dabei?" hat aehnliche Aussagen geladen; "Nicht gemeint?" bietet die ersten an. */
   alternativenGeladen(aussagen: StatementSearchResult[]): void {
-    // Nach der laufenden Pruefung: Das Kopfband steht im Template vor "Nicht dabei?".
+    // Nach der laufenden Pruefung: Die Zeile "Erkannt als" steht im Template vor "Nicht dabei?".
     Promise.resolve().then(() => {
-      this.alternativen = aussagen.slice(0, ALTERNATIVEN_IM_KOPFBAND);
+      this.alternativen = aussagen.slice(0, ALTERNATIVEN_ERKANNT);
       this.cdr.markForCheck();
     });
   }

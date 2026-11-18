@@ -5,7 +5,6 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { SearchViewComponent } from './search-view.component';
-import { FANGKORB_KURZ } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
 import { SearchComponent } from '../search/search.component';
 import { By } from '@angular/platform-browser';
@@ -69,13 +68,19 @@ describe('SearchViewComponent', () => {
     expect(band.textContent).not.toContain('Beispiel probieren');
   });
 
-  it('stellt Willkommen und "Seit deinem letzten Besuch" unter das Suchfeld, vor die Kacheln (Nutzerfuehrung 13.11.)', () => {
+  it('stellt Willkommen und "Seit deinem letzten Besuch" unter das Suchfeld (Nutzerfuehrung 13.11.)', () => {
     const band: HTMLElement = fixture.nativeElement.querySelector('.such-band');
     const willkommen = band.nextElementSibling as HTMLElement;
 
     expect(willkommen.tagName.toLowerCase()).toBe('app-rundgang-band');
     expect(willkommen.nextElementSibling!.tagName.toLowerCase()).toBe('app-seit-letztem-besuch');
-    expect(willkommen.nextElementSibling!.nextElementSibling!.classList).toContain('start-kacheln');
+  });
+
+  // Persona-Runde 18.11.: Der Weg ohne Konto (Community-Karten) kommt vor den Kacheln
+  it('stellt die Kacheln unter "Frisch aus der Community"', () => {
+    const community: HTMLElement = fixture.nativeElement.querySelector('app-recent-content');
+
+    expect(community.nextElementSibling!.classList).toContain('start-kacheln');
   });
 
   it('laesst nur das Suchfeld auf dem Start Hot Takes vortippen (Designrunde 17.11.)', () => {
@@ -92,24 +97,16 @@ describe('SearchViewComponent', () => {
     expect(kacheln.map((kachel) => kachel.getAttribute('href'))).toEqual(['/einwerfen', '/contribute']);
   });
 
-  // Startseite 16.11.: Der Satz steht nicht mehr sichtbar da, bleibt aber Beschreibung der Kachel
-  it('zeigt an den Kacheln nur den Titel und liest den Satz als Beschreibung vor', () => {
+  // Persona-Runde 18.11.: je ein kurzer Halbsatz sichtbar unter dem Titel
+  it('zeigt an den Kacheln Titel und einen kurzen erklaerenden Halbsatz', () => {
     const kacheln: HTMLAnchorElement[] = Array.from(
       fixture.nativeElement.querySelectorAll('a.start-kachel'),
     );
 
-    const saetze = kacheln.map((kachel) => {
-      const satz = fixture.nativeElement.querySelector(`#${kachel.getAttribute('aria-describedby')}`) as HTMLElement;
-      expect(kachel.contains(satz)).toBe(true);
-      expect(satz.hidden).toBe(true);
-      return satz.textContent!.trim();
-    });
-    expect(saetze[0]).toBe(FANGKORB_KURZ);
-    expect(saetze[1]).toBe('Ausgearbeitet und direkt verwendbar: Kommentar, Hintergrundinfo oder Bild.');
-    // Der Name der Kachel bleibt der Titel, ohne den Satz
     expect(kacheln.map((kachel) => kachel.querySelector('.kachel-titel')!.textContent!.trim())).toEqual(['Einwerfen', 'Beitragen']);
-    // Sichtbar (innerText) steht der Satz nicht mehr
-    kacheln.forEach((kachel, i) => expect(kachel.innerText).not.toContain(saetze[i]));
+    const saetze = kacheln.map((kachel) => kachel.querySelector('.kachel-satz') as HTMLElement);
+    expect(saetze.map((satz) => satz.textContent!.trim())).toEqual(['Spruch oder Fundstück schicken', 'Eigene Antwort schreiben']);
+    saetze.forEach((satz) => expect(satz.hidden).toBeFalse());
   });
 
   // R57 (#644): Anonym fuehrten die Kacheln kommentarlos auf die Anmeldung

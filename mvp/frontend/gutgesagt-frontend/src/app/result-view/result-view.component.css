@@ -440,88 +440,63 @@ mat-sidenav-content {
   padding-bottom: var(--spacing-xl);
 }
 
-/* Kopfband: die erkannte Aussage gross, darunter "Nicht gemeint?" mit Alternativen */
-.kopfband {
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--primary-tint);
-  border-left: 4px solid var(--akzent-klee);
-  border-radius: var(--border-radius-medium, 10px);
-}
-
-.kopfband-kopf {
+/* Zeile "Erkannt als" statt Kopfband (V3, Designrunde 17.11.): klein unter dem Suchfeld,
+   "Nicht gemeint?" dahinter, rechts "Ergebnis teilen" als Symbol */
+.erkannt-zeile {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-xs) var(--spacing-md);
+  gap: var(--spacing-sm);
+  margin-bottom: calc(-1 * var(--spacing-sm));
 }
 
-.kopfband-teilen {
-  margin-top: var(--spacing-sm);
-}
-
-.ergebnis-teilen-leiste {
+/* Persona-Runde 18.11.: die erkannte Aussage deutlicher, "Nicht gemeint?" als Knopf daneben
+   oder (schmal) darunter */
+.erkannt-text {
   display: flex;
-  justify-content: flex-end;
-}
-
-/* Ziel mindestens 44 px (B7) */
-.ergebnis-teilen {
-  min-height: 44px;
-  flex-shrink: 0;
-}
-
-.kopfband-label {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-sm);
+  min-width: 0;
   margin: 0;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.kopfband-aussage {
-  margin: 2px 0 0;
-  font-family: GrueneType, Roboto, sans-serif;
-  font-size: 1.7rem;
-  line-height: 1.15;
-  color: var(--primary-dark);
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text-primary);
   overflow-wrap: anywhere;
 }
 
-.kopfband-alternativen {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-  margin-top: var(--spacing-sm);
+.erkannt-satz {
+  min-width: 0;
 }
 
-.kopfband-frage {
-  font-size: 14px;
-  color: var(--text-secondary);
+.erkannt-aussage {
+  font-family: PTSans-bold, Roboto, sans-serif;
+  font-weight: normal;
+  font-size: 16px;
+  color: var(--text-primary);
 }
 
-.kopfband-umschalter {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 40px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 14px;
+.erkannt-umschalter {
+  flex: none;
+  min-height: 44px;
   color: var(--primary-dark);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
+  white-space: nowrap;
 }
 
-.kopfband-umschalter mat-icon {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
+.erkannt-umschalter:focus-visible {
+  outline: 2px solid var(--akzent-klee);
+  outline-offset: 2px;
 }
 
-.kopfband-liste {
+/* Ergebnis teilen (B7): nur das Symbol, Ziel 48 px, rechts buendig zur Spalte */
+.ergebnis-teilen-symbol {
+  flex: none;
+  margin: -8px 0;
+  color: var(--primary-dark);
+}
+
+.erkannt-liste {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 8px;
@@ -530,7 +505,11 @@ mat-sidenav-content {
   list-style: none;
 }
 
-.kopfband-chip {
+.erkannt-liste[hidden] {
+  display: none;
+}
+
+.erkannt-chip {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
@@ -543,99 +522,8 @@ mat-sidenav-content {
   box-sizing: border-box;
 }
 
-.kopfband-chip:hover {
+.erkannt-chip:hover {
   background: var(--primary-tint);
-}
-
-@media (max-width: 599px) {
-  .kopfband {
-    padding: var(--spacing-sm) var(--spacing-md);
-  }
-
-  .kopfband-aussage {
-    font-size: 1.35rem;
-  }
-
-  .kopfband-alternativen {
-    margin-top: 0;
-  }
-
-  .kopfband-liste {
-    flex-basis: 100%;
-  }
-}
-
-/* Typwahl: Chips mit Zahl; "Antworten" rechts daneben */
-.typ-leiste {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-xs) var(--spacing-md);
-}
-
-.typ-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.typ-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 14px;
-  border: 1px solid var(--text-subtle);
-  border-radius: 20px;
-  background: none;
-  font: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.typ-chip:hover {
-  background: var(--primary-tint);
-}
-
-.typ-chip.aktiv {
-  border-color: var(--primary-fill);
-  background: var(--primary-fill);
-  color: #fff;
-}
-
-.typ-zahl {
-  min-width: 1.5em;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: var(--surface-variant);
-  font-size: 13px;
-  text-align: center;
-  color: var(--text-primary);
-}
-
-.typ-chip.aktiv .typ-zahl {
-  background: rgba(0, 0, 0, 0.28);
-  color: #fff;
-}
-
-@media (max-width: 599px) {
-  .typ-chips {
-    gap: 6px;
-  }
-
-  .typ-chip {
-    gap: 4px;
-    min-height: 36px;
-    padding: 0 9px;
-    font-size: 13px;
-  }
-
-  .typ-zahl {
-    padding: 0 4px;
-    font-size: 12px;
-  }
 }
 
 /* Gruppe je Aussage: Kopf im Stil der Zeile "Antwort auf" der Karte, etwas groesser */
@@ -731,22 +619,92 @@ mat-sidenav-content {
   flex-direction: column;
 }
 
+/* Kleine Abschnittstitel (V3): "Beste Antwort", "Weitere Antworten · 2", "Hintergrundinfo · 1" */
 .typ-ueberschrift {
   margin: var(--spacing-sm) 0 var(--spacing-xs);
   font-family: PTSans-bold, Roboto, sans-serif;
   font-weight: normal;
-  font-size: 1rem;
-  color: var(--text-primary);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.beste-ueberschrift {
+  color: var(--primary-dark);
+}
+
+.weitere-ueberschrift {
+  margin-top: var(--spacing-md);
+}
+
+/* Abschnittstitel mit ⓘ dahinter: der Erklaersatz des Typs. Unten 10 px Abstand: so weit
+   ragt die Tippflaeche des ⓘ unter den Knopf, sie darf nicht in die erste Karte reichen,
+   deren Kopf selbst ein Knopf ist. */
+.typ-kopf {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: var(--spacing-md) 0 10px;
+}
+
+.typ-kopf .typ-ueberschrift {
+  margin: 0;
+}
+
+/* Sichtbar 24 px, Tippflaeche 44 × 44 px (Projektnorm wie .aufklapp-knopf) ueber ::before:
+   die unsichtbare Flaeche ragt ueber den Rand, das Layout bleibt gleich */
+.typ-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.typ-info::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+
+.typ-info mat-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.typ-info:focus-visible {
+  outline: 2px solid var(--akzent-klee);
+  outline-offset: 1px;
+}
+
+.typ-erklaerung-text.mat-mdc-menu-item {
+  display: block;
+  height: auto;
+  min-height: 0;
+  /* Am Handy mindestens 16 px Abstand zum Rand (Designrunde 18.11.) */
+  max-width: min(280px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 8px 16px;
+  background: none;
+  cursor: default;
+  white-space: normal;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .typ-ueberschrift:focus {
   outline: none;
 }
 
-.typ-block .typ-erklaerung {
-  margin: 0 0 var(--spacing-xs);
-  font-size: 14px;
-}
 
 .alle-zeigen {
   align-self: center;
@@ -765,11 +723,14 @@ mat-sidenav-content {
   background: var(--primary-tint);
 }
 
-/* Am Handy laufen die Karten wie bisher ueber die ganze Breite */
-@media (max-width: 599px) {
-  .typ-block app-kartenliste {
-    margin: 0 calc(-1 * var(--page-margin));
-  }
+/* Eine Spalte, ohne Grund und Rahmen (V3): am Handy innerhalb des Seitenrands, am Desktop
+   hoechstens so breit wie gut lesbar */
+.typ-block app-kartenliste {
+  width: 100%;
+}
+
+.typ-block app-kartenliste ::ng-deep .karte--voll {
+  width: 100%;
 }
 
 /* Dritter Weg ohne Treffer: nur einen Link einwerfen (UX-Review B13) */
@@ -777,4 +738,115 @@ mat-sidenav-content {
   margin: var(--spacing-sm) 0 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
+}
+
+/* Unter den Treffern dieselbe Spalte wie die Karten (Design-Abnahme V3, 17.11.) */
+.ergebnisse > .weitere,
+.ergebnisse > .nicht-dabei-unten,
+.ergebnisse > .keine-antwort-noetig {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Eine mittige Spalte (Designrunde 18.11.): Rand und Breite macht .inhalt-spalte, die
+   Abschnitte darin bringen keinen eigenen Seitenrand mehr mit. Am Handy wie bisher. */
+.treffer-spalte {
+  --inhalt-breite: 760px;
+}
+
+.treffer-spalte .search-box-content,
+.treffer-spalte .content-section {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Info-Menue am Handy: mindestens 16 px zum Rand. Das Overlay schiebt das Feld samt
+   Aussenabstand in den Bildschirm, der Abstand bleibt so frei (Designrunde 18.11.). */
+@media (max-width: 599px) {
+  ::ng-deep .mat-mdc-menu-panel.typ-menue {
+    margin-inline: 16px;
+  }
+}
+
+/* Desktop ab 1024 px zweispaltig (Maintainer 18.11.): links die beste Antwort offen (60 %),
+   rechts die weiteren Antworten und die Typ-Abschnitte eingeklappt. Der Kopf (Suchfeld,
+   "Erkannt als", Teilen) ist immer 1160 px breit, egal ob das Ergebnis zwei Spalten hat oder
+   noch laedt: sonst springt der Suchen-Knopf bei jeder neuen Suche. Einspaltige Ergebnisse
+   und alles unter der Gruppe ("Weitere, weniger passende", "Nicht dabei?", Hinweis) stehen
+   linksbuendig auf Lesebreite; nur der leere Zustand (keine Treffer) bleibt bewusst mittig.
+   Die beste Antwort floatet, damit die Reihenfolge im DOM
+   (erst die beste, dann rechts) fuer Tastatur und Screenreader gleich bleibt; Grid koppelte
+   die Zeilenhoehen beider Spalten. */
+@media (min-width: 1024px) {
+  .treffer-spalte {
+    --inhalt-breite: 1160px;
+    --spalten-abstand: 32px;
+    --treffer-lesebreite: 760px;
+  }
+
+  .treffer-spalte:not(.zweispaltig) .ergebnisse > .gruppe,
+  .treffer-spalte .unified-empty-state,
+  .ergebnisse > .weitere,
+  .ergebnisse > .nicht-dabei-unten,
+  .ergebnisse > .keine-antwort-noetig {
+    max-width: var(--treffer-lesebreite);
+  }
+
+  /* Aufgeklappte Kartentexte unter der Gruppe: hoechstens etwa 90 Zeichen je Zeile */
+  .weitere-liste ::ng-deep .karte-text {
+    max-width: 78ch;
+  }
+
+  .gruppe.mit-bester .typ-block {
+    display: block;
+  }
+
+  .gruppe.mit-bester {
+    display: flow-root;
+  }
+
+  .gruppe.mit-bester .beste-ueberschrift,
+  .gruppe.mit-bester .beste-antwort {
+    float: left;
+    clear: left;
+    width: calc(60% - var(--spalten-abstand) / 2);
+  }
+
+  .gruppe.mit-bester .beste-antwort {
+    display: block;
+  }
+
+  .gruppe.mit-bester .typ-kopf,
+  .gruppe.mit-bester .eingeklappte-karten,
+  .gruppe.mit-bester .alle-zeigen {
+    margin-left: calc(60% + var(--spalten-abstand) / 2);
+  }
+
+  .gruppe.mit-bester .eingeklappte-karten {
+    display: block;
+    width: auto;
+  }
+
+  .gruppe.mit-bester .alle-zeigen {
+    display: block;
+  }
+
+  /* Rechts oben auf einer Linie mit "Beste Antwort", auch wenn der erste Block nur die beste
+     Antwort hat und rechts direkt der naechste Typ beginnt. Den Abstand oben traegt die Gruppe:
+     Der Rand des ersten Kopfs rechts fiele sonst mit dem des Typ-Blocks zusammen, der des
+     Floats nicht, und die Spalten stuenden 8 px versetzt. "Beste Antwort" ist so hoch wie
+     der Kopf rechts mit dem ⓘ (24 px), beide Texte stehen mittig darin. */
+  .gruppe.mit-bester {
+    padding-top: var(--spacing-sm);
+  }
+
+  .gruppe.mit-bester .beste-ueberschrift {
+    margin-top: 0;
+    line-height: 24px;
+  }
+
+  .gruppe.mit-bester .typ-block:first-of-type .typ-kopf,
+  .gruppe.mit-bester .typ-block:first-of-type:not(:has(.typ-kopf)) + .typ-block .typ-kopf {
+    margin-top: 0;
+  }
 }
