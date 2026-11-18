@@ -198,7 +198,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
         titel: 'Passende Treffer',
         text:
           'Hier stehen Kommentare, die auf deine Aussage antworten. Mit Kurz, Mittel und Lang ' +
-          'wählst du die Fassung. Das Siegel oben rechts zeigt die Güte. Sie startet mit festen Regeln. ' +
+          'wählst du die Fassung. Das Siegel oben rechts zeigt die Güte. Sie startet mit dem Gegenlesen nach festen Regeln. ' +
           'Je mehr Menschen bewerten, desto mehr zählt ihr Urteil. Ein Klick oder Tipp darauf erklärt es.',
         // Sätze zum Siegel: es fiel nicht auf und erklärte sich nicht selbst (Ersteindruck-Test 14.11.);
         // kürzer als der Absatz #siegel auf der Über-Seite, sagt aber dasselbe (Güte aus Regeln und Stimmen)

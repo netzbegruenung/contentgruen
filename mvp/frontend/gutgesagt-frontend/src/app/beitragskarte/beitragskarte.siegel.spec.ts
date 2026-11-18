@@ -268,7 +268,7 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       expect(e.stimmen).toBe('Die Stimmen anderer sind eingerechnet. Je mehr Menschen bewerten, desto mehr zählt ihr Urteil.');
       expect(siegelErklaerung(null, [], false).ueberschrift).toBe('Neu: noch keine Güte');
       expect(siegelErklaerung(5, [], false).stimmen).toBe(
-        'Die Stimmen anderer zählen, sobald genug zusammenkommen. Dann zählt ihr Urteil immer mehr.',
+        'Die Stimmen anderer zählen, sobald genug zusammenkommen. Dann wiegt ihr Urteil immer mehr.',
       );
     });
   });
