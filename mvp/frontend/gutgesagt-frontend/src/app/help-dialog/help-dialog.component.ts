@@ -15,6 +15,7 @@ import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.compon
 import { AuthService } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
+import { AppInstallierenService } from '../rundgang/app-installieren.service';
 import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
 import { EINLADUNG_AB } from '../shared/einladung-ab';
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
@@ -62,6 +63,8 @@ export class HelpDialogComponent {
 
   private readonly rundgang = inject(RundgangService);
   private readonly dialog = inject(MatDialog);
+  /** Derselbe Stand wie im Band: Knopf nur mit Angebot des Browsers, sonst die Anleitung. */
+  readonly app = inject(AppInstallierenService);
 
   constructor(
     private dialogRef: MatDialogRef<HelpDialogComponent>,
@@ -88,6 +91,11 @@ export class HelpDialogComponent {
     event.preventDefault();
     this.dialogRef.afterClosed().subscribe(() => void this.router.navigate(['/about'], { fragment }));
     this.dialogRef.close();
+  }
+
+  /** Dialog des Browsers; der Abschnitt zeigt danach „schon als App“ oder wieder die Anleitung. */
+  installieren(): void {
+    void this.app.installieren();
   }
 
   /** Feedback über der Hilfe; nach dem Absenden oder Abbrechen ist die Hilfe wieder da. */

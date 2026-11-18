@@ -1,12 +1,14 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
+import { AppInstallierenService } from './app-installieren.service';
 import { RundgangService } from './rundgang.service';
 
 /**
  * Bietet einen Rundgang an, ohne etwas zu verdecken (#587): ein
  * gelbes Band mit Wegweiser über dem Inhalt statt eines Fensters (Look nach #389,
  * Variante B). Kein Fokusfang, kein Schleier; wer weiterliest, liest weiter.
- * Ein Angebot ohne Rundgang (Hinweis „Gut gesagt als App“) hat nur „Ausblenden“.
+ * Der Hinweis „Gut gesagt als App“ hat auf iPhone und iPad nur „Ausblenden“, in Chrome
+ * und Edge dazu „Installieren“, solange der Browser das anbietet.
  */
 @Component({
   selector: 'app-rundgang-band',
@@ -47,7 +49,12 @@ import { RundgangService } from './rundgang.service';
           </p>
         </div>
         <div class="knoepfe">
-          @if (angebot.ja) {
+          @if (angebot.installieren) {
+            <!-- Nur mit Angebot des Browsers: ohne das Ereignis täte der Knopf nichts -->
+            @if (app.installierbar()) {
+              <button type="button" class="rundgang-knopf voll installieren" (click)="installieren()">{{ angebot.ja }}</button>
+            }
+          } @else if (angebot.ja) {
             <button type="button" class="rundgang-knopf voll" (click)="rundgang.bandBeantworten(true)">{{ angebot.ja }}</button>
           }
           <button type="button" class="rundgang-knopf text" [attr.aria-label]="angebot.neinLabel ?? null" (click)="ausblenden()">{{ angebot.nein }}</button>
@@ -60,6 +67,7 @@ import { RundgangService } from './rundgang.service';
 })
 export class RundgangBandComponent {
   protected readonly rundgang = inject(RundgangService);
+  protected readonly app = inject(AppInstallierenService);
   private readonly dokument = inject(DOCUMENT);
   /**
    * Wo dieses Band steht: „kopf“ ueber jedem Seiteninhalt (app.component), „start“ auf
@@ -77,7 +85,17 @@ export class RundgangBandComponent {
    * statt an den Seitenanfang. Nicht ins Suchfeld, sonst klappt am Handy die Tastatur auf.
    */
   protected ausblenden(): void {
-    this.rundgang.bandBeantworten(false);
+    void this.rundgang.bandBeantworten(false);
+    this.fokusAufHauptinhalt();
+  }
+
+  /** Dialog des Browsers; danach ist das Band weg, der Fokus geht wie beim Ausblenden. */
+  protected async installieren(): Promise<void> {
+    await this.rundgang.bandBeantworten(true);
+    if (!this.angebot()) this.fokusAufHauptinhalt();
+  }
+
+  private fokusAufHauptinhalt(): void {
     const haupt = this.dokument.getElementById('hauptinhalt'); // <main> in app.component.html
     if (!haupt) return;
     if (!haupt.hasAttribute('tabindex')) haupt.setAttribute('tabindex', '-1');
