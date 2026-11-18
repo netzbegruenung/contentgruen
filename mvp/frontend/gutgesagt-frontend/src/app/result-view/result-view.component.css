@@ -754,6 +754,7 @@ mat-sidenav-content {
   }
 
   .gruppe.mit-bester .typ-kopf,
+  .gruppe.mit-bester .offene-karten,
   .gruppe.mit-bester .eingeklappte-karten,
   .gruppe.mit-bester .alle-zeigen {
     grid-column: 1 / -1;
@@ -785,10 +786,17 @@ mat-sidenav-content {
     justify-self: center;
   }
 
+  /* Zwischen offenen und eingeklappten Antworten derselbe Abstand wie zwischen den Karten */
+  .gruppe.mit-bester .offene-karten + .eingeklappte-karten {
+    margin-top: 12px;
+  }
+
   /* Die weiteren Karten zu zweit; eine aufgeklappte wird hoeher, die Nachbarin nicht.
      Ebenso die aufgeklappten "Weitere, weniger passende Treffer" (Maintainer 18.11.): dann
      ueber die volle Breite wie die Gruppe darueber; "Nicht dabei?" und der Hinweis bleiben
-     auf Lesebreite */
+     auf Lesebreite. Die offenen Antworten unter der besten (Maintainer 18.11.) ebenso zu
+     zweit, in Rangfolge zeilenweise; die Nachbarin waechst nicht mit */
+  .gruppe.mit-bester .offene-karten ::ng-deep .kartenliste,
   .gruppe.mit-bester .eingeklappte-karten ::ng-deep .kartenliste,
   .zweispaltig .weitere-liste .eingeklappte-karten ::ng-deep .kartenliste {
     display: grid;
