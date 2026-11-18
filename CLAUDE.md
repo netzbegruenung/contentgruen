@@ -11,7 +11,7 @@ the rules every agent needs and points to the docs for everything else.
   references (no "Generated with …" lines) in commit messages.
 - **Primary repository: Forgejo** — `git.verdigado.com/Netzbegruenung/gutgesagt`, which is
   what `origin` points at. Branches, pull requests, reviews and issues live there.
-- **GitHub is a read-only mirror** — `github.com/netzbegruenung/contentgruen` (remote
+- **GitHub is a read-only mirror** — `github.com/netzbegruenung/gutgesagt` (remote
   `github`). Forgejo pushes every change there automatically (push mirror); GitHub Actions
   build and release the container images from the mirrored pushes and tags. Never push to
   GitHub directly and do not open PRs or issues there.

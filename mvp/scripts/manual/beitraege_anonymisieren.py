@@ -16,7 +16,7 @@ Container mit aelterem Stand bricht es mit ModuleNotFoundError ab, ohne zu schre
 
 Auf Test/Prod liegt kein Repo-Checkout - Skript herunterladen, dann ausfuehren:
 
-    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/beitraege_anonymisieren.py
+    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/beitraege_anonymisieren.py
 
     # 1. Treffer zeigen - aendert nichts
     docker exec -i gutgesagt-semantic-search python - "$KENNUNG" \

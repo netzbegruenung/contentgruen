@@ -12,7 +12,7 @@ Container mit aelterem Stand bricht es mit ModuleNotFoundError ab, ohne zu schre
 Vorher ein Backup ziehen (mvp/scripts/backup/backup.sh). Auf Test/Prod liegt kein
 Repo-Checkout - Skript herunterladen, dann ausfuehren:
 
-    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/vektor_benennen.py
+    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/vektor_benennen.py
 
     # 1. Zaehlen - aendert nichts
     docker exec -i gutgesagt-semantic-search python - < vektor_benennen.py
