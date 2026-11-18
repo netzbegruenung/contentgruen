@@ -9,6 +9,8 @@ import { PLATTFORM_GRENZE } from '../shared/beitrag-grenzen';
 import { STIL_ERKLAERUNG, STIL_LABEL } from '../shared/zweck-stil';
 import { SiegelErklaerung, siegelErklaerung } from '../shared/components/siegel/siegel-erklaerung';
 import { GLANZ_TEXT, hatGlanz } from '../shared/components/siegel/siegel-auszeichnung';
+import { HOECHSTE_GUETE, normierteGuete } from '../shared/components/siegel/siegel-zeichnung';
+import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 
 /** Eine Zeile "Länge": je Fassung (Kurz, Mittel, Lang) oder ohne Fassungen der Text. */
@@ -51,46 +53,62 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
 @Component({
   selector: 'app-zu-dieser-antwort',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, RelativeTimePipe],
+  imports: [CommonModule, RouterLink, MatIconModule, SiegelComponent, RelativeTimePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <aside class="zu-dieser-antwort" aria-labelledby="zu-dieser-antwort-titel">
       <h3 class="zda-titel" id="zu-dieser-antwort-titel">Zu dieser Antwort</h3>
+      <!-- Je Angabe eine Kachel mit Material-Icon vorn wie die Angaben der Karte daneben
+           (Maintainer 18.11.: weniger Text); die Icons liest der Screenreader nicht vor -->
       <dl class="zda-kasten">
         <div class="zda-eintrag zda-laenge" *ngIf="laengen.length">
-          <dt>Länge</dt>
+          <dt><mat-icon class="zda-symbol" aria-hidden="true">straighten</mat-icon>Länge</dt>
           <dd>
-            <ul class="zda-zeilen">
-              <li *ngFor="let z of laengen">
-                <span>{{ z.fassung ? z.fassung + ': ' : '' }}{{ z.zeichen }} Zeichen</span>
-                <span class="zda-passt" *ngIf="z.passt"
-                  ><mat-icon class="zda-icon" aria-hidden="true">check</mat-icon>passt auf Mastodon/Bluesky/X</span
-                >
-              </li>
-            </ul>
+            <div class="zda-fassung" *ngFor="let z of laengen">
+              <p class="zda-zeichen">{{ z.fassung ? z.fassung + ' · ' : '' }}{{ z.zeichen }} Zeichen</p>
+              <ul class="zda-chips" [attr.aria-label]="z.passt ? 'passt auf' : 'zu lang für'">
+                <li *ngFor="let p of PLATTFORMEN" class="zda-chip" [class.zda-chip--aus]="!z.passt">
+                  {{ p
+                  }}<mat-icon class="zda-chip-icon" aria-hidden="true">{{ z.passt ? 'check' : 'block' }}</mat-icon>
+                </li>
+              </ul>
+            </div>
           </dd>
         </div>
-        <div class="zda-eintrag zda-stil" *ngIf="stilErklaerung as stil">
-          <dt>Stil</dt>
-          <dd>{{ stil }}</dd>
+        <div class="zda-eintrag zda-stil" *ngIf="stil as s">
+          <dt><mat-icon class="zda-symbol" aria-hidden="true">track_changes</mat-icon>Stil</dt>
+          <dd>
+            <span class="zda-stil-chip">{{ s.label }}</span>
+            <p class="zda-klein">{{ s.erklaerung }}</p>
+          </dd>
         </div>
         <div class="zda-eintrag zda-guete" *ngIf="erklaerung as e">
-          <dt>Güte</dt>
+          <dt><app-siegel class="zda-siegel" aria-hidden="true" [guete]="note" [glanz]="glanz"></app-siegel>Güte</dt>
           <dd>
-            <p class="zda-guete-kopf">{{ e.ueberschrift }}</p>
-            <ul *ngIf="e.kriterien.length" class="zda-zeilen zda-kriterien">
+            <p class="zda-guete-kopf">
+              <ng-container *ngIf="note !== null; else ohneNote">
+                <span class="zda-gross" aria-hidden="true">{{ note }}<span class="zda-von">/{{ HOECHSTE_GUETE }}</span></span>
+                <span class="cdk-visually-hidden">{{ e.ueberschrift }}</span>
+              </ng-container>
+              <ng-template #ohneNote>{{ e.ueberschrift }}</ng-template>
+            </p>
+            <ul *ngIf="e.kriterien.length" class="zda-kriterien">
               <li *ngFor="let kriterium of e.kriterien">
-                <mat-icon class="zda-icon" aria-hidden="true">check</mat-icon>{{ kriterium }}
+                <mat-icon class="zda-haken" aria-hidden="true">check</mat-icon>{{ kriterium }}
               </li>
             </ul>
-            <p>{{ e.stimmen }} Wie oft sie genutzt wird, zählt nicht hinein.</p>
-            <p *ngIf="glanz">{{ GLANZ_TEXT }}</p>
-            <a class="zda-mehr" routerLink="/about" fragment="siegel">Mehr zur Güte</a>
+            <p class="zda-klein">{{ e.stimmen }}</p>
+            <p class="zda-klein" *ngIf="glanz">{{ GLANZ_TEXT }}</p>
+            <a class="zda-mehr zda-klein" routerLink="/about" fragment="siegel">Mehr zur Güte</a>
           </dd>
         </div>
         <div class="zda-eintrag zda-alter" *ngIf="karte.erstellt">
-          <dt>Eingestellt</dt>
-          <dd>{{ karte.erstellt | relativeTime }} ({{ karte.erstellt | date: 'dd.MM.yyyy' }})</dd>
+          <dt><mat-icon class="zda-symbol" aria-hidden="true">schedule</mat-icon>Eingestellt</dt>
+          <!-- Nach fuenf Tagen nennt relativeTime selbst das Datum: dann nicht doppelt -->
+          <dd *ngIf="{ relativ: karte.erstellt | relativeTime, datum: karte.erstellt | date: 'dd.MM.yyyy' } as alter">
+            <p class="zda-gross-text">{{ alter.relativ }}</p>
+            <p class="zda-klein" *ngIf="alter.relativ !== alter.datum">{{ alter.datum }}</p>
+          </dd>
         </div>
       </dl>
     </aside>
@@ -124,12 +142,12 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         color: var(--primary-dark);
       }
 
+      /* Kacheln untereinander, durch feine Linien getrennt */
       .zda-kasten {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-md);
         margin: 0;
-        padding: var(--spacing-md);
+        padding: 0 var(--spacing-md);
         border: 1px solid var(--line-light);
         border-radius: var(--border-radius-medium);
         background: var(--primary-tint-faint);
@@ -138,51 +156,144 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         line-height: 1.45;
       }
 
+      .zda-eintrag {
+        padding: var(--spacing-sm) 0;
+      }
+
+      .zda-eintrag + .zda-eintrag {
+        border-top: 1px solid var(--line-light);
+      }
+
       dt {
-        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
         font-family: PTSans-bold, Roboto, sans-serif;
+        color: var(--text-secondary);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .zda-symbol {
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+        color: var(--primary-dark);
+      }
+
+      .zda-siegel {
+        display: block;
+        width: 20px;
+      }
+
+      /* Inhalt eingerückt unter die Bezeichnung, bündig nach dem Symbol */
+      dd {
+        margin: 0 0 0 26px;
+      }
+
+      dd p {
+        margin: 0;
+      }
+
+      .zda-klein {
         color: var(--text-secondary);
         font-size: 13px;
       }
 
-      dd {
-        margin: 0;
+      .zda-fassung + .zda-fassung {
+        margin-top: 6px;
       }
 
-      dd p {
-        margin: 0 0 4px;
+      .zda-zeichen {
+        color: var(--text-secondary);
+        font-size: 13px;
+      }
+
+      .zda-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin: 2px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .zda-chip,
+      .zda-stil-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 1px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--border-radius-large);
+        background: var(--auswahl-grund);
+        color: var(--primary-dark);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      /* Passt nicht: ausgegraut, gestrichelt; Grau wie Nebentext, damit es AA hält */
+      .zda-chip--aus {
+        border-style: dashed;
+        background: none;
+        color: var(--text-secondary);
+      }
+
+      .zda-chip-icon {
+        width: 14px;
+        height: 14px;
+        font-size: 14px;
+      }
+
+      .zda-stil-chip {
+        margin-bottom: 4px;
       }
 
       .zda-guete-kopf {
         font-family: PTSans-bold, Roboto, sans-serif;
       }
 
-      .zda-zeilen {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        margin: 0 0 4px;
-        padding: 0;
-        list-style: none;
+      .zda-gross {
+        font-size: 28px;
+        line-height: 1.1;
+        color: var(--primary-dark);
       }
 
-      .zda-zeilen li {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        column-gap: var(--spacing-sm);
-      }
-
-      .zda-passt {
-        display: inline-flex;
-        align-items: center;
+      .zda-von {
+        font-size: 16px;
         color: var(--text-secondary);
       }
 
-      .zda-icon {
+      .zda-gross-text {
+        font-family: PTSans-bold, Roboto, sans-serif;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+
+      /* Erfüllte Kriterien als kompakte Häkchen-Liste, zweispaltig */
+      .zda-kriterien {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2px var(--spacing-sm);
+        margin: 4px 0;
+        padding: 0;
+        list-style: none;
+        font-size: 13px;
+        line-height: 1.3;
+      }
+
+      .zda-kriterien li {
+        display: flex;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      .zda-haken {
+        flex: none;
         width: 16px;
         height: 16px;
-        margin-right: 4px;
         font-size: 16px;
         color: var(--primary-dark);
       }
@@ -224,22 +335,34 @@ export class ZuDieserAntwortComponent {
   @Input() kennzahlen: KartenKennzahlen | null = null;
 
   readonly GLANZ_TEXT = GLANZ_TEXT;
+  readonly HOECHSTE_GUETE = HOECHSTE_GUETE;
+  /** Plattformen mit derselben Grenze (PLATTFORM_GRENZE), wie die Marke der vollen Karte. */
+  readonly PLATTFORMEN = ['Mastodon', 'Bluesky', 'X'];
 
   private get aktuell(): KartenKennzahlen | null {
     return this.kennzahlen?.id === this.karte.id ? this.kennzahlen : null;
   }
 
-  /** Wie am Stil-Etikett der Karte, etwa "sachlich: …"; nur am Kommentar mit Stil. */
-  get stilErklaerung(): string | null {
+  private get guete() {
+    const aktuell = this.aktuell;
+    return aktuell ? aktuell.guete : this.karte.guete;
+  }
+
+  /** Wie das Stil-Etikett der Karte, dazu die Erklaerung; nur am Kommentar mit Stil. */
+  get stil(): { label: string; erklaerung: string } | null {
     const stil = this.karte.extra?.stil;
-    return stil ? `${STIL_LABEL[stil]}: ${STIL_ERKLAERUNG[stil]}` : null;
+    return stil ? { label: STIL_LABEL[stil], erklaerung: STIL_ERKLAERUNG[stil] } : null;
   }
 
   /** Dieselbe Erklaerung wie im Siegel-Menue der Karte; ohne Guete (alte Antwort) keine. */
   get erklaerung(): SiegelErklaerung | null {
-    const aktuell = this.aktuell;
-    const g = aktuell ? aktuell.guete : this.karte.guete;
+    const g = this.guete;
     return g ? siegelErklaerung(g.wert, g.erfuellt, g.stimmenZaehlen) : null;
+  }
+
+  /** Die Guete als Zahl 1–10 fuer die grosse Anzeige und das Siegel; neu (ohne Daten) null. */
+  get note(): number | null {
+    return normierteGuete(this.guete?.wert);
   }
 
   get glanz(): boolean {

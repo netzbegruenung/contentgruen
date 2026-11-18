@@ -65,18 +65,54 @@ describe('ZuDieserAntwortComponent', () => {
         guete: { wert: 8, erfuellt: ['passiv'], stimmenZaehlen: true, hilfreich: 6, nichtHilfreich: 1 },
       }),
     );
-    const zeilen = Array.from(el.querySelectorAll('.zda-laenge li'));
-    expect(zeilen.map((z) => text(z.firstElementChild))).toEqual(['Kurz: 180 Zeichen', 'Mittel: 320 Zeichen']);
-    expect(zeilen.map((z) => !!z.querySelector('.zda-passt'))).withContext('nur bis 280 Zeichen').toEqual([true, false]);
-    expect(text(zeilen[0].querySelector('.zda-passt'))).toContain('passt auf Mastodon/Bluesky/X');
-    expect(text(el.querySelector('.zda-stil dt'))).toBe('Stil');
-    expect(text(el.querySelector('.zda-stil dd'))).toMatch(/^sachlich: /);
+    const fassungen = Array.from(el.querySelectorAll('.zda-fassung'));
+    expect(fassungen.map((f) => text(f.querySelector('.zda-zeichen')))).toEqual([
+      'Kurz · 180 Zeichen',
+      'Mittel · 320 Zeichen',
+    ]);
+    const chips = (f: Element) => Array.from(f.querySelectorAll('.zda-chip'));
+    expect(chips(fassungen[0]).map((c) => text(c).replace(/ ?(check|block)$/, ''))).toEqual([
+      'Mastodon',
+      'Bluesky',
+      'X',
+    ]);
+    expect(fassungen.map((f) => chips(f).every((c) => c.classList.contains('zda-chip--aus'))))
+      .withContext('nur bis 280 Zeichen passt es')
+      .toEqual([false, true]);
+    expect(fassungen.map((f) => f.querySelector('.zda-chips')!.getAttribute('aria-label'))).toEqual([
+      'passt auf',
+      'zu lang für',
+    ]);
+    expect(text(el.querySelector('.zda-stil dt'))).toMatch(/Stil$/);
+    expect(text(el.querySelector('.zda-stil-chip'))).toBe('sachlich');
+    expect(text(el.querySelector('.zda-stil dd .zda-klein'))).not.toBe('');
     const guete = el.querySelector('.zda-guete')!;
-    expect(text(guete.querySelector('.zda-guete-kopf'))).toBe('Güte 8 von 10');
+    expect(text(guete.querySelector('.zda-gross'))).toBe('8/10');
+    expect(text(guete.querySelector('.zda-guete-kopf .cdk-visually-hidden'))).toBe('Güte 8 von 10');
+    expect(guete.querySelector('app-siegel')!.getAttribute('aria-hidden')).toBe('true');
     expect(text(guete.querySelector('.zda-kriterien'))).toMatch(/^check ?Aktiv formuliert$/);
     expect(text(guete)).toContain('Die Stimmen anderer sind eingerechnet.');
     expect(guete.querySelector('a.zda-mehr')!.getAttribute('href')).toBe('/about#siegel');
-    expect(text(el.querySelector('.zda-alter'))).toContain('(10.11.2026)');
+    expect(text(el.querySelector('.zda-alter dd'))).toContain('10.11.2026');
+    el.querySelectorAll('mat-icon').forEach((icon) => expect(icon.getAttribute('aria-hidden')).toBe('true'));
+  });
+
+  it('zeigt das Alter gross und das Datum klein, nach fuenf Tagen nur das Datum', () => {
+    const erstellt = new Date(Date.now() - 2 * 24 * 3600 * 1000 - 3600 * 1000).toISOString();
+    const el = zeigen(karte({ erstellt }));
+    expect(text(el.querySelector('.zda-alter .zda-gross-text'))).toBe('vor 2 Tagen');
+    expect(text(el.querySelector('.zda-alter .zda-klein'))).toMatch(/^\d\d\.\d\d\.\d{4}$/);
+    fixture.componentRef.setInput('karte', karte());
+    fixture.detectChanges();
+    expect(text(el.querySelector('.zda-alter .zda-gross-text'))).toBe('10.11.2026');
+    expect(el.querySelector('.zda-alter .zda-klein')).toBeNull();
+  });
+
+  it('nennt eine neue Antwort ohne Note in Worten statt einer grossen Zahl', () => {
+    const guete = { wert: null, erfuellt: [], stimmenZaehlen: false, hilfreich: null, nichtHilfreich: null };
+    const el = zeigen(karte({ guete }));
+    expect(el.querySelector('.zda-gross')).toBeNull();
+    expect(text(el.querySelector('.zda-guete-kopf'))).toBe('Neu: noch keine Güte');
   });
 
   it('nennt keine Person, keine Nutzung und keine Herkunft: die stehen auf der Karte', () => {
@@ -90,7 +126,7 @@ describe('ZuDieserAntwortComponent', () => {
   it('zieht Guete und Glanz nach, wenn die Karte daneben sie meldet, nur fuer dieselbe Karte', () => {
     const guete = { wert: 6, erfuellt: [], stimmenZaehlen: false, hilfreich: null, nichtHilfreich: null };
     const el = zeigen(karte({ guete, nutzung: 2 }));
-    const kopf = () => text(el.querySelector('.zda-guete-kopf'));
+    const kopf = () => text(el.querySelector('.zda-guete-kopf .cdk-visually-hidden'));
     expect(kopf()).toBe('Güte 6 von 10');
     expect(text(el.querySelector('.zda-guete'))).not.toContain(GLANZ_TEXT);
 
@@ -101,6 +137,7 @@ describe('ZuDieserAntwortComponent', () => {
     fixture.componentRef.setInput('kennzahlen', { id: 'k-1', guete: { ...guete, wert: 7 }, nutzung: 500 });
     fixture.detectChanges();
     expect(kopf()).toBe('Güte 7 von 10');
+    expect(text(el.querySelector('.zda-gross'))).toBe('7/10');
     expect(text(el.querySelector('.zda-guete'))).toContain(GLANZ_TEXT);
   });
 
