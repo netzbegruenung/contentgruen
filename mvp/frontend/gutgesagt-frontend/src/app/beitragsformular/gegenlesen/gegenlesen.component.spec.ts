@@ -93,6 +93,8 @@ describe('GegenlesenComponent', () => {
     expect(anmerkungen).toEqual(['Der Titel beginnt mit „Nicht“. Sag lieber, was stimmt.']);
     expect(element().textContent).toContain('Nur du siehst');
     expect(fragen()).toEqual([...INHALT_FRAGEN]);
+    expect(element().querySelector('.gegenlesen-nur-form')).not.toBeNull();
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe('Nach festen Regeln, ohne generative KI');
   }));
 
   it('sagt, wenn nichts aufgefallen ist', fakeAsync(() => {
