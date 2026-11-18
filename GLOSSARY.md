@@ -280,7 +280,7 @@ Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstell
 _Avoid_: Quelle, Referenz, Reference, Beleg (und nicht für den Einstieg in ein Formular)
 
 **Stil**:
-Die Tonlage eines Kommentars, etwa sachlich, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“.
+Die Tonlage eines Kommentars, etwa sachlich, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“. Die Oberfläche zeigt „brückenbauend“ als „freundlich“ und „bissig“ als „deutlich“ (Persona-Runde 18.11.); die Werte bleiben.
 _Avoid_: Ton, Tonalität
 
 **Fassung**:
@@ -288,7 +288,7 @@ Eine der Längen eines Kommentars: Kurz (bis 280 Zeichen), Mittel (der Haupttext
 _Avoid_: Version, Variante, Länge
 
 **Zweck**:
-Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder für die eigenen Leute.
+Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder für die eigenen Leute (in der Oberfläche „Für Gleichgesinnte“).
 _Avoid_: Zielgruppe, Modus, Kanal
 
 **Variante**:

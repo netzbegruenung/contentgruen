@@ -30,13 +30,27 @@ describe('RundgangBandComponent', () => {
   });
 
   it('zeigt Titel und Satz des Angebots, benannt nach dem Titel', () => {
+    band.set(MITMACHEN_ANGEBOT);
+    fixture.detectChanges();
+    const aside = el().querySelector('aside')!;
+    expect(aside.querySelector('h2')?.textContent).toContain(MITMACHEN_ANGEBOT.titel);
+    expect(aside.textContent).toContain(MITMACHEN_ANGEBOT.satz);
+    expect(aside.getAttribute('aria-labelledby')).toBe(aside.querySelector('h2')!.id);
+  });
+
+  it('zeigt das Willkommen als eine schlanke Zeile mit kleinem Wegweiser (Persona-Runde 18.11.)', () => {
     fixture.componentRef.setInput('ort', 'start');
     band.set(WILLKOMMEN);
     fixture.detectChanges();
-    const aside = el().querySelector('aside')!;
-    expect(aside.querySelector('h2')?.textContent).toContain(WILLKOMMEN.titel);
-    expect(aside.textContent).toContain(WILLKOMMEN.satz);
-    expect(aside.getAttribute('aria-labelledby')).toBe(aside.querySelector('h2')!.id);
+    const aside = el().querySelector('aside.zeile')!;
+    expect(aside.getAttribute('aria-label')).toBe('Neu hier?');
+    expect(aside.querySelector('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      'Neu hier? Rundgang (1 Min.) · Ein Konto brauchst du nicht',
+    );
+    const bild = aside.querySelector('img')!;
+    expect(bild.getAttribute('src')).toBe('marke/wegweiser.svg');
+    expect(bild.getAttribute('alt')).withContext('Schmuck, nicht vorgelesen').toBe('');
+    expect(aside.querySelector('h2')).toBeNull();
   });
 
   it('zeigt ohne eigenes Bild den Wegweiser, nicht den Daumen des Siegels (16.11.)', () => {
@@ -67,9 +81,9 @@ describe('RundgangBandComponent', () => {
     fixture.componentRef.setInput('ort', 'start');
     band.set(WILLKOMMEN);
     fixture.detectChanges();
-    knopf('Rundgang starten (1 Minute)').click();
+    knopf('Rundgang (1 Min.)').click();
     expect(rundgang.bandBeantworten).toHaveBeenCalledWith(true);
-    knopf('Ausblenden').click();
+    el().querySelector<HTMLButtonElement>('button[aria-label="Willkommen ausblenden"]')!.click();
     expect(rundgang.bandBeantworten).toHaveBeenCalledWith(false);
   });
 
@@ -153,7 +167,7 @@ describe('RundgangBandComponent', () => {
 
       fixture.componentRef.setInput('ort', 'start');
       fixture.detectChanges();
-      expect(el().querySelector('aside h2')?.textContent).toContain(WILLKOMMEN.titel);
+      expect(el().querySelector('aside')?.textContent).toContain(WILLKOMMEN.titel);
     });
 
     it('zeigt Mitmachen weiter ueber dem Inhalt und nicht auf der Startseite', () => {

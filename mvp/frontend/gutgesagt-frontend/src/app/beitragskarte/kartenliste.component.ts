@@ -22,11 +22,13 @@ import { KartenDaten, KartenVariante } from './karten-daten';
     <ul
       class="kartenliste"
       [class.kartenliste--raster]="variante === 'kompakt'"
-      [class.kartenliste--spalten]="raster && variante === 'voll'"
+      [class.kartenliste--spalten]="raster && variante === 'voll' && !schlicht"
+      [class.kartenliste--schlicht]="schlicht"
     >
       <li *ngFor="let karte of daten; trackBy: nachId">
         <app-beitragskarte [daten]="karte" [variante]="variante" [titelEbene]="titelEbene"
-                           [antwortAufZeigen]="antwortAufZeigen" [schlank]="schlank" (angetippt)="angetippt.emit($event)">
+                           [antwortAufZeigen]="antwortAufZeigen" [schlank]="schlank"
+                           [schlicht]="schlicht" [aufklappbar]="aufklappbar" (angetippt)="angetippt.emit($event)">
         </app-beitragskarte>
       </li>
     </ul>
@@ -42,6 +44,14 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         list-style: none;
         background: var(--kartenliste-bg);
         border: var(--kartenliste-rand);
+      }
+
+      /* Trefferseite (V3): ohne Grund, Rahmen und Innenabstand, eine Spalte */
+      .kartenliste--schlicht {
+        gap: 12px;
+        padding: 0;
+        background: none;
+        border: none;
       }
 
       .kartenliste--raster {
@@ -86,8 +96,12 @@ export class KartenlisteComponent {
   @Input() titelEbene: 3 | 4 = 3;
   /** Durchgereicht an die Karten: Zeile "Antwort auf:" (aus, wo die Seite die Aussage nennt). */
   @Input() antwortAufZeigen = true;
-  /** Durchgereicht an die Karten: ohne "passt auf X/Bluesky" und Alter (Startseite). */
+  /** Durchgereicht an die Karten: ohne "passt auf Mastodon/Bluesky/X" und Alter (Startseite). */
   @Input() schlank = false;
+  /** Durchgereicht an die Karten: schlichte Karte der Trefferseite; die Liste dann ohne Grund und Rahmen. */
+  @Input() schlicht = false;
+  /** Durchgereicht an die Karten: eingeklappt bis zum Antippen. */
+  @Input() aufklappbar = false;
 
   /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */
   @Output() angetippt = new EventEmitter<KartenDaten>();

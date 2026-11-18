@@ -883,6 +883,30 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(clipboard.copy).not.toHaveBeenCalled();
     });
 
+    // Schlichte Karte der Trefferseite (V3, Designrunde 17.11.)
+    it('steht mit teilenImMenue im ⋮-Menue statt als eigener Knopf und teilt von dort', async () => {
+      fixture.componentRef.setInput('teilenImMenue', true);
+      expect(knopf()).toBeNull();
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+      const eintrag = document.querySelector<HTMLButtonElement>('.mat-mdc-menu-panel .teilen-eintrag')!;
+      expect(eintrag.textContent).toContain('Teilen');
+      expect(eintrag.getAttribute('aria-label')).toBe('Beitrag teilen: „Wärmepumpe lohnt sich auch im Altbau“');
+      eintrag.click();
+      await fixture.whenStable();
+
+      expect(nav.share).toHaveBeenCalledTimes(1);
+    });
+
+    it('hat ohne teilenImMenue keinen Teilen-Eintrag im Menue', () => {
+      expect(knopf()).not.toBeNull();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+      expect(document.querySelector('.mat-mdc-menu-panel .teilen-eintrag')).toBeNull();
+    });
+
     it('hat im Menue kein "Link kopieren" mehr', () => {
       fixture.detectChanges();
       fixture.nativeElement.querySelector('.menue-knopf').click();

@@ -403,15 +403,15 @@ describe('AddCommentaryComponent', () => {
       expect(hinweise).toContain('10 / 500');
     });
 
-    it('sagt bis 280 Zeichen "passt auf X/Bluesky", darueber "zu lang", ohne Fehler', () => {
+    it('sagt bis 280 Zeichen "passt auf Mastodon/Bluesky/X", darueber "zu lang", ohne Fehler', () => {
       component.commentaryForm.patchValue({ text: 'a'.repeat(280) });
       fixture.detectChanges();
-      expect(seite().querySelector('.plattform-hinweis')!.textContent).toContain('passt auf X/Bluesky');
+      expect(seite().querySelector('.plattform-hinweis')!.textContent).toContain('passt auf Mastodon/Bluesky/X');
 
       component.commentaryForm.patchValue({ text: 'a'.repeat(281) });
       fixture.detectChanges();
       const hinweis = seite().querySelector('.plattform-hinweis')!;
-      expect(hinweis.textContent).toContain('zu lang für X/Bluesky');
+      expect(hinweis.textContent).toContain('zu lang für Mastodon/Bluesky/X');
       expect(component.commentaryForm.get('text')!.valid).toBeTrue();
     });
 
@@ -1242,7 +1242,7 @@ describe('AddCommentaryComponent', () => {
       expect(document.activeElement).toBe(seite().querySelector('textarea#kurz'));
     }));
 
-    it('begrenzt Kurz auf 280 Zeichen fuer X/Bluesky und Lang auf 2000', () => {
+    it('begrenzt Kurz auf 280 Zeichen fuer Mastodon/Bluesky/X und Lang auf 2000', () => {
       aufklappen();
 
       for (const [feld, limit] of [['kurz', 280], ['lang', 2000]] as const) {
@@ -1254,7 +1254,7 @@ describe('AddCommentaryComponent', () => {
       }
       expect((seite().querySelector('textarea#kurz') as HTMLTextAreaElement).maxLength).toBe(280);
       expect((seite().querySelector('textarea#lang') as HTMLTextAreaElement).maxLength).toBe(2000);
-      expect(seite().querySelector('.kurz-feld')!.textContent).toContain('X/Bluesky');
+      expect(seite().querySelector('.kurz-feld')!.textContent).toContain('Mastodon/Bluesky/X');
     });
 
     it('sind optional: Speichern geht ohne sie', () => {
@@ -1319,7 +1319,7 @@ describe('AddCommentaryComponent', () => {
   describe('Zweck und Stil (#357)', () => {
     const BESCHRIFTUNG: Record<string, string> = {
       kommentarspalte: 'Antwort in Kommentarspalten',
-      eigene_leute: 'Für die eigenen Leute',
+      eigene_leute: 'Für Gleichgesinnte',
     };
 
     function zweckKnopf(zweck: string): HTMLButtonElement {

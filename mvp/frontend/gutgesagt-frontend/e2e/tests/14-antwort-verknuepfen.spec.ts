@@ -107,13 +107,13 @@ test('Suche mit erkannter Aussage: Antworten waehlt sie vor', async ({ page, bil
   const anfrage = 'Die Grünen wollen uns die Heizung verbieten';
 
   await page.goto(`/result?searchQuery=${encodeURIComponent(anfrage)}`);
-  const gefunden = page.locator('.kopfband-aussage');
+  const gefunden = page.locator('.erkannt-aussage');
   await expect(gefunden).toBeVisible({ timeout: 45_000 });
   const erkannt = (await gefunden.textContent())!.trim().replace(/^„|“$/g, '');
   test.skip(erkannt === anfrage, 'Die Suche landet auf derselben Aussage; nichts zu unterscheiden');
   await bild('84-suche-gefunden-zu');
 
-  await page.locator('.typ-leiste .ergaenzen-link', { hasText: 'Antworten' }).click();
+  await page.locator('.nicht-dabei-unten .neu-anlegen-knopf button', { hasText: 'Antworten' }).click();
   await page.waitForURL(/\/workflow\/add-commentary\?/);
   await expect(page.locator('.gewaehlt-karte .karte-titel')).toHaveText(erkannt, { timeout: 15_000 });
   expect(new URL(page.url()).searchParams.get('searchQuery')).toBe(anfrage);

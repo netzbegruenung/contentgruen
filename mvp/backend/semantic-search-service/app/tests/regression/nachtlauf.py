@@ -37,22 +37,22 @@ from tests.regression.suche_messen import (
 # Exit-Code bei einer Abweichung (BESTAND_PASST_NICHT = 2 bleibt fuer "nichts gemessen").
 ABWEICHUNG = 1
 
-# Messung am Seed (mvp/data/seed/v1.0) vom 07.11.2026 mit intfloat/multilingual-e5-base
+# Messung am Seed (mvp/data/seed/v1.0) vom 07.11.2026, mit S107 bis S111 nachgemessen am 18.11.2026, mit intfloat/multilingual-e5-base
 # und der Schwelle von heute (0,82, #568), dieselben Zahlen wie in SUCHTESTSET.md (ein Unit-Test
 # vergleicht). Aendert sich eine Zahl gewollt (Modell, Schwelle, Stemmer, Normalisierung,
 # neue Faelle), wird sie hier und in SUCHTESTSET.md im selben PR nachgezogen.
 # S06 bis S09 zaehlen am Seed mit ihrer urspruenglichen Erwartung; ihr Ersatz (#606) gilt
 # nur an einem Bestand ohne diese Seed-Aussagen (Startbestand) und aendert das Soll nicht.
 SOLL: Dict[str, int] = {
-    "gemessen": 42,
-    "treffer": 27,
+    "gemessen": 47,
+    "treffer": 32,
     "fehltreffer": 3,
     "keine": 3,
     "ohne_richtig_keine": 4,
     "ohne_fehltreffer": 5,
-    "dieselbe_behauptung": 15,
-    "zerfaserung_neu": 14,
-    "aehnliche_erwartete_dabei": 25,
+    "dieselbe_behauptung": 20,
+    "zerfaserung_neu": 18,
+    "aehnliche_erwartete_dabei": 30,
     "aehnliche_ohne_mit_vorschlag": 6,
 }
 

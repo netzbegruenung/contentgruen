@@ -182,7 +182,7 @@ describe('AddGenerictextComponent', () => {
       expect(hinweise).toContain('10 / 2000');
     });
 
-    it('hat keinen X/Bluesky-Hinweis', () => {
+    it('hat keinen Mastodon/Bluesky/X-Hinweis', () => {
       component.generictextForm.patchValue({ text: 'a'.repeat(300) });
       fixture.detectChanges();
       expect(seite().querySelector('.plattform-hinweis')).toBeNull();

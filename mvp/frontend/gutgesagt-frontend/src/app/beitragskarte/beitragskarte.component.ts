@@ -60,6 +60,9 @@ const BELIEBT_AB = 5;
 /** So viele Saetze stehen in der Einwurf-Karte; der Rest wird nur gezaehlt. */
 const SAETZE_SICHTBAR = 3;
 
+/** Laufende Nummer fuer die Koerper-IDs aufklappbarer Karten. */
+let naechsteKarte = 0;
+
 /** Ein Reiter der Fassungen (#641): Name und Zeichenzahl, damit man vor dem Antippen sieht, wie lang sie ist. */
 interface FassungsReiter {
   fassung: Fassung;
@@ -168,9 +171,21 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input() quer = false;
   /**
    * Streifen "Frisch aus der Community" auf der Startseite (16.11.): volle Karte ohne die
-   * Marke "passt auf X/Bluesky" und ohne das Alter in der Meta-Zeile. Ueberall sonst bleiben beide.
+   * Marke "passt auf Mastodon/Bluesky/X" und ohne das Alter in der Meta-Zeile. Ueberall sonst bleiben beide.
    */
   @Input() schlank = false;
+  /**
+   * Schlichte Karte der Trefferseite (Designrunde 17.11., V3): Reiter ohne Kasten und ohne
+   * Zeichenzahl, ohne "passt auf Mastodon/Bluesky/X", Quelle klein als "Quelle: <Domain>",
+   * ohne Alter, Teilen im ⋮-Menue. Andere Seiten bleiben unveraendert.
+   */
+  @Input() schlicht = false;
+  /**
+   * Eingeklappt bis zum Antippen (Trefferseite, V3): nur Symbol, Titel und Pfeil; der
+   * Titel ist dann der Knopf zum Auf- und Zuklappen (Akkordeon-Muster), die volle Karte
+   * erscheint an Ort und Stelle.
+   */
+  @Input() aufklappbar = false;
 
   /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
@@ -178,6 +193,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Output() aktion = new EventEmitter<EinwurfAktion>();
 
   nutzung: number | null = null;
+  /** Aufgeklappt (nur mit aufklappbar). */
+  offen = false;
+  /** Ziel von aria-controls des Aufklapp-Knopfs; eindeutig, auch wenn ein Beitrag zweimal dasteht. */
+  readonly koerperId = `karte-koerper-${naechsteKarte++}`;
   /** Siegel und Stimm-Zaehler (#427); nach einer Stimme neu geladen. */
   guete: KartenGuete | undefined;
   nutzungAnimiert = false;
@@ -251,7 +270,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   /** Das Alter ("vor 2 Tagen") in der Meta-Zeile; nicht in der schlanken Karte der Startseite. */
   get zeigtAlter(): boolean {
-    return !this.schlank && !!this.daten.erstellt;
+    return !this.schlank && !this.schlicht && !!this.daten.erstellt;
   }
 
   /** Die Aktionsleiste; nur die volle Karte hat eine. */
@@ -332,7 +351,23 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     if (this.quer && this.einwurfAngaben && !this.istKopf) {
       klassen.push('karte--quer');
     }
+    if (this.schlicht) {
+      klassen.push('karte--schlicht');
+    }
+    if (this.zu) {
+      klassen.push('karte--zu');
+    }
     return klassen;
+  }
+
+  /** Eingeklappt: nur Symbol, Titel und Pfeil. */
+  get zu(): boolean {
+    return this.aufklappbar && !this.offen;
+  }
+
+  aufklappenUmschalten(event: Event): void {
+    event.stopPropagation();
+    this.offen = !this.offen;
   }
 
   get typName(): string {
@@ -542,9 +577,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     });
   }
 
-  /** Die Marke "passt auf X/Bluesky" unter den Reitern, wie im Formular; nur wenn es stimmt, nicht schlank. */
+  /** Die Marke "passt auf Mastodon/Bluesky/X" unter den Reitern, wie im Formular; nur wenn es stimmt, nicht schlank. */
   get passtAufX(): boolean {
-    return !this.schlank && this.angezeigterText.length > 0 && this.angezeigterText.length <= PLATTFORM_GRENZE;
+    return !this.schlank && !this.schlicht && this.angezeigterText.length > 0 && this.angezeigterText.length <= PLATTFORM_GRENZE;
   }
 
   /**

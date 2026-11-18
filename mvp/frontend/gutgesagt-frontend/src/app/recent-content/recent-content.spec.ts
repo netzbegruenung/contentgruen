@@ -107,7 +107,7 @@ describe('RecentContentComponent', () => {
     expect(alle('app-beitragskarte').length).toBe(5);
   });
 
-  // Startseite 16.11.: ohne "passt auf X/Bluesky" und Alter, nur in diesem Streifen
+  // Startseite 16.11.: ohne "passt auf Mastodon/Bluesky/X" und Alter, nur in diesem Streifen
   it('zeigt die Karten schlank, in der Liste wie im Karussell', () => {
     const schlank = () =>
       fixture.debugElement

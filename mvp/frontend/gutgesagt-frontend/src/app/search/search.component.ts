@@ -18,8 +18,9 @@ export const SUCHFELD_NAME_KOMPAKT = 'Worauf antworten? Text einfügen';
 /**
  * Unter dem Feld: dass der Suchtext gespeichert wird und nach der Vormoderation (#664)
  * sichtbar werden kann. Die Einzelheiten stehen im Abschnitt der Datenschutzerklärung,
- * auf den der Link springt (Persona-Test Gerd). Wortlaut rechtlich abgestimmt (16.11.2026):
- * nur nach Ruecksprache aendern.
+ * auf den der Link springt (Persona-Test Gerd). Wortlaut rechtlich abgestimmt (16.11.2026),
+ * am 18.11.2026 vom Maintainer bestätigt. Kein „nur“: Proxy-Logs halten Suchtexte mit IP
+ * befristet (siehe Löschkonzept). Nur nach Ruecksprache aendern.
  */
 export const SUCHHINWEIS = 'Suchtexte speichern wir ohne deinen Namen. Nach Prüfung können sie öffentlich werden.';
 /**
@@ -90,7 +91,7 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.ruhig = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (this.beispielAnimation && this.ruhig) {
-      this.beispielText = HOT_TAKES[0];
+      this.beispielText = HOT_TAKES[0].text;
       this.beispielFertig = true;
     }
   }
@@ -147,7 +148,7 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.beispielAus) {
       return;
     }
-    const satz = HOT_TAKES[nr];
+    const satz = HOT_TAKES[nr].text;
     if (zeichen <= satz.length) {
       this.beispielZeigen(satz.slice(0, zeichen), zeichen === satz.length);
       this.beispielTimer = setTimeout(() => this.tippen(nr, zeichen + 1, runde), zeichen === satz.length ? 2600 : 45);
@@ -156,7 +157,7 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     const naechster = (nr + 1) % HOT_TAKES.length;
     const neueRunde = naechster === 0 ? runde + 1 : runde;
     if (neueRunde >= 2) {
-      this.beispielZeigen(HOT_TAKES[0], true);
+      this.beispielZeigen(HOT_TAKES[0].text, true);
       return;
     }
     this.beispielZeigen('', false);

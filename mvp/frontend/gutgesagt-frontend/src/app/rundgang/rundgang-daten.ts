@@ -91,16 +91,21 @@ export interface Angebot {
    * statt dass es ueber dem Inhalt steht.
    */
   imInhalt?: boolean;
+  /**
+   * Eine schlanke Zeile statt des Kastens: Titel, Rundgang als Link, Satz und ein
+   * Schliessen-Kreuz (Persona-Runde 18.11.). Nur fuer kurze Saetze.
+   */
+  schlank?: boolean;
 }
 
 export const WILLKOMMEN: Angebot = {
   rundgang: 'antwort-finden',
   schluessel: WILLKOMMEN_SCHLUESSEL,
-  titel: 'Schön, dass du da bist!',
-  satz:
-    'Gut gesagt ist eine Tauschbörse für bewährte Argumente. Der Rundgang zeigt dir in fünf Schritten, ' +
-    'wie du zu einer Aussage aus dem Netz oder aus dem Gespräch eine erprobte Antwort findest. ' +
-    'Ein Konto brauchst du dafür nicht.',
+  // Eine Zeile statt Kasten (Persona-Runde 18.11.): Vielbeschaeftigte am Handy wollen zuerst
+  // suchen; was Gut gesagt ist, zeigt der Rundgang selbst.
+  titel: 'Neu hier?',
+  satz: 'Ein Konto brauchst du nicht',
+  schlank: true,
   // Ohne Konto vollwertig: Gespräch am Stand, am Familientisch, am Stammtisch (14.11.)
   // Nur die Startseite: über den Treffern schob das Band mobil Suchfeld und Treffer weg (#599)
   seiten: ['/search'],
@@ -108,8 +113,9 @@ export const WILLKOMMEN: Angebot = {
   // (Nutzerführung 13.11.)
   imInhalt: true,
   // Mit Dauer: Ungeduldige ueberspringen Rundgaenge sonst (Ersteindruck-Test 14.11.)
-  ja: 'Rundgang starten (1 Minute)',
+  ja: 'Rundgang (1 Min.)',
   nein: 'Ausblenden',
+  neinLabel: 'Willkommen ausblenden',
   ab: 0,
 };
 

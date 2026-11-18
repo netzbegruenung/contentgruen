@@ -60,7 +60,7 @@
                         <textarea #kurzFeld matInput id="kurz" formControlName="kurz" [attr.maxlength]="kurzMax"
                                   placeholder="Der Punkt in einem Satz"
                                   cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="6"></textarea>
-                        <mat-hint>für X/Bluesky</mat-hint>
+                        <mat-hint>für Mastodon/Bluesky/X</mat-hint>
                         <mat-hint align="end">{{ kurzLaenge }} / {{ kurzMax }}</mat-hint>
                         <mat-error *ngIf="commentaryForm.get('kurz')?.hasError('maxlength')">Höchstens {{ kurzMax }} Zeichen.</mat-error>
                     </mat-form-field>
@@ -92,7 +92,7 @@
                             <mat-option [value]="null">Ohne</mat-option>
                             <mat-option *ngFor="let stil of stile" [value]="stil">{{ stilLabel[stil] }}</mat-option>
                         </mat-select>
-                        <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„bissig“ nur für die eigenen Leute</mat-hint>
+                        <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„deutlich“ nur für Gleichgesinnte</mat-hint>
                     </mat-form-field>
                     <div *ngIf="zeigtThemen" class="themen-feld">
                         <span class="feld-beschriftung">Themen der neuen Aussage</span>
