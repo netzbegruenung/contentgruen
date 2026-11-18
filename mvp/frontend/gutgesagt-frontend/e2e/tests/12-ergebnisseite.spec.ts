@@ -163,9 +163,8 @@ test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
     const beste = await kasten(page, '.beste-antwort');
     const rechts = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
     expect(rechts.x).toBeGreaterThan(beste.x + beste.breite);
-    expect(rechts.x).toBeGreaterThan(beste.x);
-    const besteTitel = await kasten(page, '.beste-ueberschrift');
-    const weitereTitel = await kasten(page, '.weitere-ueberschrift');
+    const besteTitel = await kasten(page, '.gruppe.mit-bester .typ-block .beste-ueberschrift');
+    const weitereTitel = await kasten(page, '.gruppe.mit-bester .typ-block .weitere-ueberschrift');
     expect(Math.abs(weitereTitel.y - besteTitel.y)).toBeLessThanOrEqual(2);
     const kopfVorher = await kasten(page, '.search-box');
 
