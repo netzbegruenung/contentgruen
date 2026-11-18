@@ -1,4 +1,3 @@
-import { MatTooltip } from '@angular/material/tooltip';
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -9,7 +8,6 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
 import { ResultViewComponent, erkannteAussage, themenDerTreffer } from './result-view.component';
-import { TYPFILTER_SCHLUESSEL } from './ergebnis-gruppen';
 import { By } from '@angular/platform-browser';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { AuthService } from '../auth/auth.service';
@@ -612,8 +610,6 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
   let nav: TeilenNavigator;
 
   beforeEach(() => (nav = {}));
-  beforeEach(() => sessionStorage.removeItem(TYPFILTER_SCHLUESSEL));
-  afterEach(() => sessionStorage.removeItem(TYPFILTER_SCHLUESSEL));
 
   async function oeffnen(mobil: boolean, suchantwort: any, aehnliche: any[] = AEHNLICH): Promise<HTMLElement> {
     const statementService = jasmine.createSpyObj('StatementService', ['aehnlicheAussagen']);
@@ -714,8 +710,8 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
       // Nicht in der Ueberschrift: sonst gehoerte die Frage zu ihrem Namen
       knoepfe.forEach((k) => expect(k.closest('h3')).toBeNull());
 
-      const tooltip = fixture.debugElement.queryAll(By.css('.typ-info'))[1].injector.get(MatTooltip);
-      expect(tooltip.message).withContext('Tooltip am Desktop').toBe('Fakten und Zahlen, die eine Antwort stützen.');
+      // Den Erklaersatz hoeren Screenreader nur einmal, im Menue
+      knoepfe.forEach((k) => expect(k.hasAttribute('aria-describedby')).withContext('kein Tooltip-Text').toBeFalse());
       knoepfe[1].click();
       fixture.detectChanges();
       expect(document.querySelector('.mat-mdc-menu-panel .typ-erklaerung-text')?.textContent?.trim())
@@ -799,8 +795,7 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
     });
   }
 
-  it('zeigt immer alle Typen, auch mit einer gemerkten Typwahl von frueher', async () => {
-    sessionStorage.setItem(TYPFILTER_SCHLUESSEL, 'image');
+  it('zeigt immer alle Typen', async () => {
     const seite = await oeffnen(false, GEMISCHT());
     expect(Array.from(seite.querySelector('.gruppe')!.querySelectorAll('.typ-block')).map((b) => b.getAttribute('data-typ')))
       .toEqual(['commentary', 'generictext', 'image', 'post']);
@@ -812,7 +807,7 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
     const block = () => seite.querySelector('[data-typ="commentary"]')!;
     expect(block().querySelectorAll('app-beitragskarte').length).toBe(3);
     const knopf = block().querySelector<HTMLButtonElement>('.alle-zeigen')!;
-    expect(text(knopf)).toBe('Alle 5 Kommentare zeigen');
+    expect(text(knopf)).toBe('Alle 4 weiteren Antworten zeigen');
 
     knopf.click();
     fixture.detectChanges();

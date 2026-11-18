@@ -650,7 +650,10 @@ mat-sidenav-content {
   margin: 0;
 }
 
+/* Sichtbar 24 px, Tippflaeche 44 × 44 px (Projektnorm wie .aufklapp-knopf) ueber ::before:
+   die unsichtbare Flaeche ragt ueber den Rand, das Layout bleibt gleich */
 .typ-info {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -662,6 +665,12 @@ mat-sidenav-content {
   background: none;
   color: var(--text-secondary);
   cursor: pointer;
+}
+
+.typ-info::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 
 .typ-info mat-icon {

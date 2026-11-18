@@ -11,7 +11,6 @@ import { SearchComponent } from '../search/search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { StateManagementService } from '../services/state-management.service';
 import { LoadingSpinnerComponent } from '../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../shared/components/error-message/error-message.component';
@@ -164,7 +163,6 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
-    MatTooltipModule,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
@@ -303,7 +301,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
    * 17.11.). Die beste Antwort steht ganz da, alle anderen Karten eingeklappt.
    */
   private ansichtAktualisieren(): void {
-    this.ansicht = besteHervorheben(ansichtBauen(this.gruppen, 'alle', this.aufgeklappt));
+    this.ansicht = besteHervorheben(ansichtBauen(this.gruppen, this.aufgeklappt));
     this.hauptGruppen = this.ansicht.filter((g) => !g.weniger);
     this.weitereGruppen = this.ansicht.filter((g) => g.weniger);
     this.weitereAnzahl = this.weitereGruppen.reduce((summe, g) => summe + g.anzahl, 0);

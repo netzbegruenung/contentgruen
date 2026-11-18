@@ -42,12 +42,15 @@ test('Besucher: das Startbeispiel zeigt Treffer (#601)', async ({ page }) => {
   await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });
 });
 
+// Der Rundgang trägt das Startbeispiel ein, nicht den vorgetippten Hot Take: Feld und
+// Sprechblase („Probier’s mit „…““) zeigen denselben Satz
 test('Besucher: Rundgang füllt das Startbeispiel vor, Schritt 2 zeigt Treffer (#601)', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/search');
-  const text = (await page.locator('app-search.start-suche input[name="searchQuery"]').getAttribute('placeholder'))!;
   await page.getByRole('button', { name: 'Rundgang (1 Min.)' }).click();
   await expect(page.locator('.blase h3')).toHaveText('Aussage eingeben');
+  const blase = (await page.locator('#rundgang-text').textContent())!;
+  const text = /„(.+?)“/.exec(blase)![1];
   await expect(page.locator('app-search.start-suche input[name="searchQuery"]')).toHaveValue(text);
   await page.locator('.blase .weiter').click();
   await expect(page.locator('.blase h3')).toHaveText('Passende Treffer', { timeout: 45_000 });

@@ -137,7 +137,7 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
       await oeffnen(page);
       const block = page.locator('.gruppe').first().locator('[data-typ="commentary"]');
       await expect(block.locator('app-beitragskarte')).toHaveCount(3);
-      await block.getByRole('button', { name: 'Alle 4 Kommentare zeigen' }).click();
+      await block.getByRole('button', { name: 'Alle 3 weiteren Antworten zeigen' }).click();
       await expect(block.locator('app-beitragskarte')).toHaveCount(4);
       const imVierten = await block
         .locator('app-beitragskarte')

@@ -6,13 +6,12 @@ import { typBeschreibung } from '../shared/content-type-registry';
 /**
  * Die Ergebnisseite als eine Liste (K2+): Treffer nach Aussage gruppiert, in jeder
  * Gruppe die Typen in fester Reihenfolge, je Typ zuerst nur wenige Karten. Am Handy
- * und am Desktop dieselbe Darstellung; oben waehlen Chips den Typ.
+ * und am Desktop dieselbe Darstellung.
  */
 
 /** Die Typen der Treffer, in der Reihenfolge der Seite: Kommentare zuerst. */
 export const TREFFER_TYPEN = ['commentary', 'generictext', 'image', 'post'] as const;
 export type TrefferTyp = (typeof TREFFER_TYPEN)[number];
-export type TypFilter = 'alle' | TrefferTyp;
 
 /** Wie viele Karten je Typ und Gruppe zuerst dastehen; der Rest auf "Alle N … zeigen". */
 export const KARTEN_JE_TYP = 3;
@@ -25,7 +24,7 @@ const FELD: Record<TrefferTyp, keyof SearchResponse> = {
   post: 'post_search_results',
 };
 
-/** Namen je Typ: Chip und "Alle N … zeigen" in der Mehrzahl, Ueberschrift je nach Zahl. */
+/** Namen je Typ: "Alle N … zeigen" in der Mehrzahl, Ueberschrift je nach Zahl. */
 export const TYP_NAMEN: Record<TrefferTyp, { einzahl: string; mehrzahl: string }> = {
   commentary: { einzahl: 'Kommentar', mehrzahl: 'Kommentare' },
   generictext: { einzahl: 'Hintergrundinfo', mehrzahl: 'Hintergrundinfos' },
@@ -176,13 +175,11 @@ export interface AnsichtGruppe {
 }
 
 /**
- * Was die Seite zeigt: nur Typen, die zum Filter passen, je Typ hoechstens
- * KARTEN_JE_TYP Karten, ausser die Gruppe ist fuer den Typ aufgeklappt.
- * Gruppen ohne passende Karten fallen weg.
+ * Was die Seite zeigt: je Typ hoechstens KARTEN_JE_TYP Karten, ausser die Gruppe ist
+ * fuer den Typ aufgeklappt. Gruppen ohne Karten fallen weg.
  */
 export function ansichtBauen(
   gruppen: readonly ErgebnisGruppe[],
-  filter: TypFilter,
   aufgeklappt: ReadonlySet<string>,
 ): AnsichtGruppe[] {
   const ansicht: AnsichtGruppe[] = [];
@@ -190,7 +187,7 @@ export function ansichtBauen(
     const bloecke: AnsichtBlock[] = [];
     for (const typ of TREFFER_TYPEN) {
       const karten = gruppe.je[typ];
-      if (!karten.length || (filter !== 'alle' && filter !== typ)) {
+      if (!karten.length) {
         continue;
       }
       const id = blockId(nr, typ);
@@ -245,7 +242,14 @@ export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGrup
     return {
       ...gruppe,
       bloecke: [
-        { ...block, beste: beste ?? null, weitere, weitereTitel: `Weitere ${name} · ${block.alle - 1}` },
+        {
+          ...block,
+          beste: beste ?? null,
+          weitere,
+          weitereTitel: `Weitere ${name} · ${block.alle - 1}`,
+          // Zaehlt wie die Ueberschrift darueber, ohne die beste Antwort
+          mehrText: block.mehrText ? `Alle ${block.alle - 1} weiteren ${name} zeigen` : null,
+        },
         ...rest,
       ],
     };
@@ -283,28 +287,4 @@ export function blockId(gruppenNr: number, typ: TrefferTyp): string {
 
 export function aufklappSchluessel(gruppe: string, typ: TrefferTyp): string {
   return `${gruppe}|${typ}`;
-}
-
-/** Die Typwahl gilt fuer die Sitzung; ein gesperrter Storage wirft nicht. */
-export const TYPFILTER_SCHLUESSEL = 'gutgesagt.ergebnis.typ';
-
-export function typFilterLesen(): TypFilter {
-  try {
-    const wert = sessionStorage.getItem(TYPFILTER_SCHLUESSEL);
-    return wert && (TREFFER_TYPEN as readonly string[]).includes(wert) ? (wert as TrefferTyp) : 'alle';
-  } catch {
-    return 'alle';
-  }
-}
-
-export function typFilterMerken(filter: TypFilter): void {
-  try {
-    if (filter === 'alle') {
-      sessionStorage.removeItem(TYPFILTER_SCHLUESSEL);
-    } else {
-      sessionStorage.setItem(TYPFILTER_SCHLUESSEL, filter);
-    }
-  } catch {
-    // Ohne Storage gilt die Wahl nur bis zur naechsten Suche.
-  }
 }

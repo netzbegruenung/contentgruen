@@ -1,6 +1,5 @@
 import {
   KARTEN_JE_TYP,
-  TYPFILTER_SCHLUESSEL,
   ansichtBauen,
   anzahlJeTyp,
   anzahlSichtbar,
@@ -8,8 +7,6 @@ import {
   besteHervorheben,
   istWeniger,
   gruppieren,
-  typFilterLesen,
-  typFilterMerken,
 } from './ergebnis-gruppen';
 
 describe('ergebnis-gruppen', () => {
@@ -93,7 +90,7 @@ describe('ergebnis-gruppen', () => {
       const gruppen = gruppieren(daten(), 'a');
       expect(gruppen.map((g) => istWeniger(g, gruppen))).toEqual([false, true, true]);
       expect(anzahlSichtbar(gruppen)).toEqual({ commentary: 1, generictext: 0, image: 1, post: 0 });
-      expect(ansichtBauen(gruppen, 'alle', new Set()).map((g) => g.weniger)).toEqual([false, true, true]);
+      expect(ansichtBauen(gruppen, new Set()).map((g) => g.weniger)).toEqual([false, true, true]);
     });
 
     it('gibt es ohne erkannte Aussage nicht', () => {
@@ -116,7 +113,7 @@ describe('ergebnis-gruppen', () => {
       );
 
     it('begrenzt je Typ auf drei Karten und nennt den Rest im Knopf', () => {
-      const [erste] = ansichtBauen(gruppen(), 'alle', new Set());
+      const [erste] = ansichtBauen(gruppen(), new Set());
       const kommentare = erste.bloecke[0];
       expect(KARTEN_JE_TYP).toBe(3);
       expect(kommentare.karten.map((k) => k.id)).toEqual(['k-1', 'k-2', 'k-3']);
@@ -126,22 +123,13 @@ describe('ergebnis-gruppen', () => {
     });
 
     it('zeigt aufgeklappt alle Karten ohne Knopf', () => {
-      const [erste] = ansichtBauen(gruppen(), 'alle', new Set([aufklappSchluessel('a', 'commentary')]));
+      const [erste] = ansichtBauen(gruppen(), new Set([aufklappSchluessel('a', 'commentary')]));
       expect(erste.bloecke[0].karten.length).toBe(5);
       expect(erste.bloecke[0].mehrText).toBeNull();
     });
 
-    it('zeigt mit Filter nur den Typ und laesst Gruppen ohne ihn weg', () => {
-      const ansicht = ansichtBauen(gruppen(), 'generictext', new Set());
-      expect(ansicht.map((g) => [g.schluessel, g.bloecke.map((b) => b.typ), g.anzahl])).toEqual([
-        ['a', ['generictext'], 1],
-        ['b', ['generictext'], 1],
-      ]);
-      expect(ansichtBauen(gruppen(), 'image', new Set())).toEqual([]);
-    });
-
     it('gibt jedem Block die Erklaerung aus der Registry samt Frage fuers ⓘ und vergibt eindeutige Anker', () => {
-      const ansicht = ansichtBauen(gruppen(), 'alle', new Set());
+      const ansicht = ansichtBauen(gruppen(), new Set());
       expect(ansicht.flatMap((g) => g.bloecke.map((b) => [b.id, b.ueberschrift, b.erklaerung, b.erklaerFrage]))).toEqual([
         ['ergebnis-gruppe-0-commentary', 'Kommentare', 'Eine Antwort, die du direkt posten kannst.', 'Was ist ein Kommentar?'],
         ['ergebnis-gruppe-0-generictext', 'Hintergrundinfo', 'Fakten und Zahlen, die eine Antwort stützen.', 'Was ist Hintergrundinfo?'],
@@ -164,7 +152,6 @@ describe('ergebnis-gruppen', () => {
           }),
           erkannt,
         ),
-        'alle',
         new Set(),
       );
 
@@ -190,31 +177,17 @@ describe('ergebnis-gruppen', () => {
     it('nennt andere Typen als Kommentar in der Mehrzahl', () => {
       const nurHintergrund = ansichtBauen(
         gruppieren(antwort({ h: [treffer('generictext_result', 'h-1', 'a', 'A', 0.5), treffer('generictext_result', 'h-2', 'a', 'A', 0.4)] }), 'a'),
-        'alle',
         new Set(),
       );
       expect(besteHervorheben(nurHintergrund)[0].bloecke[0].weitereTitel).toBe('Weitere Hintergrundinfos · 1');
       expect(besteHervorheben([])).toEqual([]);
     });
-  });
 
-  describe('Typwahl in der Sitzung', () => {
-    afterEach(() => sessionStorage.removeItem(TYPFILTER_SCHLUESSEL));
-
-    it('merkt einen Typ, vergisst "Alle" und ignoriert Unbekanntes', () => {
-      typFilterMerken('image');
-      expect(typFilterLesen()).toBe('image');
-      typFilterMerken('alle');
-      expect(sessionStorage.getItem(TYPFILTER_SCHLUESSEL)).toBeNull();
-      sessionStorage.setItem(TYPFILTER_SCHLUESSEL, 'unsinn');
-      expect(typFilterLesen()).toBe('alle');
-    });
-
-    it('wirft nicht, wenn der Storage gesperrt ist', () => {
-      spyOn(Storage.prototype, 'getItem').and.throwError('gesperrt');
-      spyOn(Storage.prototype, 'setItem').and.throwError('gesperrt');
-      expect(typFilterLesen()).toBe('alle');
-      expect(() => typFilterMerken('post')).not.toThrow();
+    it('zaehlt im Knopf wie in der Ueberschrift, ohne die beste Antwort', () => {
+      const vier = Array.from({ length: 4 }, (_, i) => treffer('commentary_result', `k-${i + 1}`, 'a', 'A', 1 - i / 100));
+      const [block] = besteHervorheben(ansichtBauen(gruppieren(antwort({ k: vier }), 'a'), new Set()))[0].bloecke;
+      expect(block.weitereTitel).toBe('Weitere Antworten · 3');
+      expect(block.mehrText).toBe('Alle 3 weiteren Antworten zeigen');
     });
   });
 });
