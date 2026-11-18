@@ -23,6 +23,12 @@
   <meta name="twitter:description" content="Gute Antworten gegen Stimmungsmache im Netz. Finden, kopieren, posten.">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Build-Kennung fuer den Footer: replace-env.sh setzt Commit und Version beim Containerstart
+       hier ein, nicht in den *.js-Dateien. Deren Name entsteht vor der Ersetzung, nginx liefert
+       sie mit "expires 1y" aus, und der Footer zeigte so den Commit eines alten Builds;
+       index.html liefert nginx ohne Cache. -->
+  <meta name="gutgesagt-commit" content="${GIT_SHA}">
+  <meta name="gutgesagt-version" content="${APP_VERSION}">
   <!-- Bilder liefert nginx mit "expires 1y" aus: Ein geaendertes Logo braucht einen
        neuen Dateinamen, sonst sehen wiederkehrende Besucher ein Jahr lang das alte. Die
        Symbole und das Logo vom 29.10. tragen deshalb "-v2"; die alten Dateien bleiben fuer alte Verweise
