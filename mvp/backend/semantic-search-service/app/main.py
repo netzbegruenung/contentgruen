@@ -41,6 +41,7 @@ from api.v1.voting import router as voting_router
 from api.v1.moderation import router as moderation_router
 from api.v1.vormoderation import router as vormoderation_router
 from api.v1.loeschauftraege import router as loeschauftraege_router
+from api.v1.schalter import router as schalter_router
 from api.v1.sperren import router as sperren_router
 from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
@@ -219,7 +220,8 @@ async def lifespan(app: FastAPI):
         # Meilenstein-Abzeichen am Anzeigenamen (#351): der Dienst immer, damit ein
         # Widerruf der Art.-9-Einwilligung ein frueheres Ja auch bei ausgeschalteten
         # Abzeichen zuruecknimmt; Frage und Rechnen im Takt nur mit beiden Schaltern
-        # (services/abzeichen_service.py).
+        # (services/abzeichen_service.py). Der Takt laeuft, wenn die Obergrenze es
+        # erlaubt; ob er rechnet, entscheidet je Lauf der Admin-Wert (#708).
         abzeichen = abzeichen_service_bauen(settings)
         abzeichen_service_setzen(abzeichen)
         if settings.abzeichen_sichtbar:
@@ -346,6 +348,10 @@ app.include_router(
     loeschauftraege_router,
     prefix="/api/v1/moderation/loeschauftraege",
     tags=["moderation"],
+)
+# Schalter mit Obergrenze und Admin-Wert (#708), admin-only
+app.include_router(
+    schalter_router, prefix="/api/v1/moderation/schalter", tags=["moderation"]
 )
 app.include_router(sperren_router, prefix="/api/v1/sperren", tags=["moderation"])
 app.include_router(health_router, prefix="/api/v1", tags=["monitoring"])

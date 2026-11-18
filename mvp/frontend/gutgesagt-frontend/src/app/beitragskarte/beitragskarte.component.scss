@@ -14,7 +14,7 @@
 }
 
 .karte {
-  --karten-farbe: var(--statement-bg);
+  --karten-farbe: var(--mulde);
   --titel-zeilen: 3;
   --text-zeilen: 12;
 
@@ -23,27 +23,27 @@
   height: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  background: var(--bg-card);
-  color: var(--text-primary);
+  background: var(--flaeche);
+  color: var(--text);
   border-radius: var(--border-radius-large);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .typ-commentary {
-  --karten-farbe: var(--commentary-bg);
+  --karten-farbe: var(--karte-kommentar);
 }
 
 .typ-generictext {
-  --karten-farbe: var(--generictext-bg);
+  --karten-farbe: var(--info-tint);
 }
 
 .typ-image {
-  --karten-farbe: var(--image-bg);
+  --karten-farbe: var(--karte-bild);
   --titel-zeilen: 4;
 }
 
 .typ-post {
-  --karten-farbe: var(--post-bg);
+  --karten-farbe: var(--karte-post);
 }
 
 .karte--voll {
@@ -109,7 +109,7 @@
   font-size: 19px;
   font-weight: 700;
   line-height: 1.3;
-  color: var(--text-primary);
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 
@@ -173,7 +173,7 @@ h4.karte-titel {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-main);
+    outline: 2px solid var(--primaer-text);
     outline-offset: 2px;
   }
 }
@@ -195,7 +195,7 @@ h4.karte-titel {
 // Weiter zur Ueber-Seite: als Link erkennbar, auch im Dunkeln (Ersteindruck-Test 14.11.)
 .siegel-mehr.mat-mdc-menu-item {
   min-height: 44px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-size: 14px;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -225,7 +225,7 @@ h4.karte-titel {
     width: 18px;
     height: 18px;
     font-size: 18px;
-    color: var(--primary-main);
+    color: var(--primaer-text);
   }
 }
 
@@ -236,7 +236,7 @@ h4.karte-titel {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--bg-card);
+  background: var(--flaeche);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   font-size: 12px;
   font-weight: 600;
@@ -247,7 +247,7 @@ h4.karte-titel {
   width: auto;
   padding: 0 10px;
   border-radius: 18px;
-  background: var(--primary-fill);
+  background: var(--primaer);
   color: white;
   font-size: 13px;
 }
@@ -269,7 +269,7 @@ h4.karte-titel {
   transition: transform 0.2s ease;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .nutzung-animiert {
@@ -287,7 +287,7 @@ h4.karte-titel {
   cursor: pointer;
 
   &:hover {
-    background: var(--primary-tint);
+    background: var(--primaer-tint);
   }
 
   &:focus-visible {
@@ -318,7 +318,7 @@ h4.karte-titel {
   height: 18px;
   margin-right: var(--spacing-sm);
   font-size: 18px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .statement-label {
@@ -326,7 +326,7 @@ h4.karte-titel {
   margin-right: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   white-space: nowrap;
 }
 
@@ -345,7 +345,7 @@ h4.karte-titel {
   height: 20px;
   margin-left: auto;
   font-size: 20px;
-  color: var(--primary-main);
+  color: var(--primaer-text);
   transition: transform 0.3s ease;
 
   &.offen {
@@ -364,7 +364,7 @@ h4.karte-titel {
   font-size: 14px;
   font-style: italic;
   line-height: 1.7;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .statement-werte {
@@ -380,16 +380,16 @@ h4.karte-titel {
   gap: 6px;
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-small);
-  background: var(--overlay-faint);
+  background: var(--mulde);
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   cursor: help;
 
   mat-icon {
     width: 16px;
     height: 16px;
     font-size: 16px;
-    color: var(--primary-main);
+    color: var(--primaer-text);
   }
 }
 
@@ -400,13 +400,13 @@ h4.karte-titel {
   gap: 6px;
   margin: 0 0 12px;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   mat-icon {
     width: 14px;
     height: 14px;
     font-size: 14px;
-    color: var(--primary-main);
+    color: var(--primaer-text);
   }
 }
 
@@ -438,10 +438,10 @@ h4.karte-titel {
 .vorlagen-luecke {
   padding: 0 2px;
   border-radius: 2px;
-  background: var(--hint-bg);
+  background: var(--hinweis-tint);
   color: inherit;
   text-decoration: underline dashed;
-  text-decoration-color: var(--hint-border);
+  text-decoration-color: var(--hinweis-rand);
   text-underline-offset: 3px;
   cursor: pointer;
   box-decoration-break: clone;
@@ -463,7 +463,7 @@ h4.karte-titel {
   font: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: var(--primary-main);
+  color: var(--primaer-text);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -474,7 +474,7 @@ h4.karte-titel {
   max-height: 400px;
   object-fit: contain;
   border-radius: var(--border-radius-small);
-  background: var(--surface-variant);
+  background: var(--mulde);
 }
 
 // Zweck und Stil am Kommentar (#357): klein ueber dem Text, die Markierung betont
@@ -485,7 +485,7 @@ h4.karte-titel {
   gap: var(--spacing-sm);
   margin: 0;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .karte-eigene-leute {
@@ -496,7 +496,7 @@ h4.karte-titel {
   border-radius: var(--border-radius-large);
   // Variante D (Tanne, #357): nur Farben aus der Palette, kein Gelb - Sonne ist
   // fuer eine andere Markierung reserviert.
-  background: var(--primary-fill);
+  background: var(--primaer);
   color: white;
   font-weight: 600;
 
@@ -522,10 +522,10 @@ h4.karte-titel {
   align-items: center;
   gap: 2px;
   padding: 1px 8px;
-  border: 1px solid var(--divider-color);
+  border: 1px solid var(--linie);
   border-radius: var(--border-radius-large);
-  background: var(--auswahl-grund);
-  color: var(--primary-dark);
+  background: var(--primaer-tint);
+  color: var(--akzent-schrift);
   font: inherit;
   line-height: 1.5;
 }
@@ -542,7 +542,7 @@ h4.karte-titel {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-main);
+    outline: 2px solid var(--primaer-text);
     outline-offset: 2px;
   }
 }
@@ -574,10 +574,10 @@ h4.karte-titel {
   gap: 4px;
   margin: 4px 0 0;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   .angabe-icon {
-    color: var(--primary-main);
+    color: var(--primaer-text);
   }
 }
 
@@ -589,12 +589,12 @@ h4.karte-titel {
 .post-herkunft {
   margin: 0;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .post-link,
 .quelle-link {
-  color: var(--primary-main);
+  color: var(--primaer-text);
   text-decoration: underline;
   overflow-wrap: anywhere;
 }
@@ -608,7 +608,7 @@ h4.karte-titel {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   mat-icon {
     width: 16px;
@@ -620,9 +620,9 @@ h4.karte-titel {
 .karte-quellen {
   margin-top: var(--spacing-sm);
   padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--divider-color);
+  border-top: 1px solid var(--linie);
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   ul {
     margin: 0;
@@ -650,12 +650,12 @@ h4.karte-titel {
   display: flex;
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--divider-color);
+  border: 1px solid var(--linie);
   border-radius: var(--border-radius-medium);
-  --mat-button-toggle-text-color: var(--text-secondary);
-  --mat-button-toggle-selected-state-text-color: var(--primary-dark);
-  --mat-button-toggle-selected-state-background-color: var(--auswahl-grund);
-  --mat-button-toggle-divider-color: var(--divider-color);
+  --mat-button-toggle-text-color: var(--text-leise);
+  --mat-button-toggle-selected-state-text-color: var(--akzent-schrift);
+  --mat-button-toggle-selected-state-background-color: var(--primaer-tint);
+  --mat-button-toggle-divider-color: var(--linie);
 
   ::ng-deep .mat-button-toggle {
     flex: 1 1 0;
@@ -696,7 +696,7 @@ h4.karte-titel {
   justify-content: center;
   min-height: 32px;
   font-size: 13px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-decoration: underline;
   text-underline-offset: 3px;
 
@@ -718,7 +718,7 @@ h4.karte-titel {
   font-size: 12px;
   line-height: 1.3;
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 /* Meilenstein-Abzeichen am Anzeigenamen (#351) */
@@ -729,7 +729,7 @@ h4.karte-titel {
   margin-left: 4px;
   padding: 0 5px;
   border-radius: 8px;
-  background: var(--primary-tint);
+  background: var(--primaer-tint);
   color: var(--akzent-tanne);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -839,7 +839,7 @@ h4.karte-titel {
     width: 22px;
     height: 22px;
     border-radius: 6px;
-    background: var(--surface-glaze);
+    background: var(--flaeche);
     font-size: 13px;
   }
 }
@@ -869,7 +869,7 @@ h4.karte-titel {
   margin: 0;
   font-size: 13px;
   line-height: 1.4;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   overflow-wrap: anywhere;
 }
 
@@ -885,7 +885,7 @@ h4.karte-titel {
 
 .karte-datum {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Die Nutzung zuerst und lesbar gross, der Zuwachs der Woche darunter (Nutzerfuehrung 13.11.).
@@ -898,13 +898,13 @@ h4.karte-titel {
   .badge-nutzung {
     font-size: 15px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--text);
 
     // Ohne Nutzung lesbar, aber ruhig
     &.ungenutzt {
       font-size: 14px;
       font-weight: 400;
-      color: var(--text-secondary);
+      color: var(--text-leise);
     }
   }
 }
@@ -913,7 +913,7 @@ h4.karte-titel {
 .nutzung-zuwachs {
   font-size: 13px;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 // Meine Beitraege: je Fassung eine Angabe in einer Zeile, umbrechend am Handy (#355).
@@ -925,7 +925,7 @@ h4.karte-titel {
   padding: 0;
   list-style: none;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   li {
     display: inline-flex;
@@ -935,7 +935,7 @@ h4.karte-titel {
 
   .fassung-nutzung {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text);
   }
 }
 
@@ -944,7 +944,7 @@ h4.karte-titel {
   background: none;
   box-shadow: none;
   font-weight: 400;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Einwurf-Karte: dieselbe Anatomie wie die volle Karte - Kopfband, weisser Koerper,
@@ -979,7 +979,7 @@ h4.karte-titel {
 
 .stufe-verworfen .einwurf-band,
 .stufe-verworfen .einwurf-linkzeile {
-  background: var(--disabled-bg);
+  background: var(--mulde);
 }
 
 .einwurf-band {
@@ -1012,18 +1012,18 @@ h4.karte-titel {
   min-height: 44px;
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--karten-farbe);
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 13px;
   text-decoration: none;
 
   // Die Bandfarbe bleibt stehen, der Tipp legt nur einen Schleier darueber.
   &:hover,
   &:focus-visible {
-    background-image: linear-gradient(var(--overlay-faint), var(--overlay-faint));
+    background-image: linear-gradient(var(--mulde), var(--mulde));
   }
 
   &:active {
-    background-image: linear-gradient(var(--overlay-light), var(--overlay-light));
+    background-image: linear-gradient(var(--linie), var(--linie));
   }
 }
 
@@ -1038,7 +1038,7 @@ h4.karte-titel {
   font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .einwurf-adresse {
@@ -1064,17 +1064,17 @@ h4.karte-titel {
 .einwurf-verworfen {
   flex-shrink: 0;
   padding: 2px var(--spacing-sm);
-  border: 1px solid var(--line-medium);
+  border: 1px solid var(--feldrand);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Koerper: weiss wie bei der vollen Karte, die Saetze nur am gruenen Balken.
 .einwurf-koerper {
   padding: var(--spacing-md) var(--spacing-md) 0;
-  background: var(--bg-card);
+  background: var(--flaeche);
 }
 
 .einwurf-saetze {
@@ -1091,7 +1091,7 @@ h4.karte-titel {
   align-items: baseline;
   gap: var(--spacing-sm);
   padding-left: 10px;
-  border-left: 3px solid var(--primary-light);
+  border-left: 3px solid var(--akzent);
 }
 
 // Der Satz bricht um - bis zu drei Zeilen, dann abgeschnitten. Einzeilig
@@ -1110,17 +1110,17 @@ h4.karte-titel {
 .satz-status {
   flex-shrink: 0;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .satz-status--fertig {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-weight: 600;
 }
 
 .einwurf-mehr {
   padding-left: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 12px;
 }
 
@@ -1136,7 +1136,7 @@ h4.karte-titel {
 .einwurf-menue {
   grid-column: 3;
   justify-self: end;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Derselbe Knopf wie "Kopieren" auf der vollen Karte: gefuellt, gruen (die Farbe
@@ -1223,7 +1223,7 @@ h4.karte-titel {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 
   .karte-eigene-leute {
     padding: 0;
@@ -1349,7 +1349,7 @@ h4.karte-titel {
 
 .aufklapp-pfeil {
   flex: none;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Der Titel klammert nicht mehr die Zeilen, wenn er im Knopf steht: Der Knopf ist kein Box-Clamp

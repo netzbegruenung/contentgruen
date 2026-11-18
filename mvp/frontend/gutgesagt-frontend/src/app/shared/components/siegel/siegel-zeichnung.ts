@@ -37,7 +37,7 @@ type Hsl = [farbton: number, saettigung: number, helligkeit: number];
 // vor zu Gruen (Ersteindruck-Test 14.11.). Gelb bei 52 statt 46 wirkt reiner, nicht orange.
 const GRAU: Hsl = [52, 6, 58];
 const GELB: Hsl = [52, 95, 46];
-/** Tannengrün der Seite, `--primary-dark` = #005437 in `src/theme/custom-theme.scss`. */
+/** Tannengrün der Seite, `--akzent-schrift` = #005437 in `src/theme/custom-theme.scss`. */
 const TANNENGRUEN: Hsl = [159.3, 100, 16.5];
 /**
  * Klee (#008939) als oberes Ende im Dunkelmodus (#588): Tannengrün hebt sich vom dunklen

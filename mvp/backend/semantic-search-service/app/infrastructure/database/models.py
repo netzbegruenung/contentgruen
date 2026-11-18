@@ -895,6 +895,45 @@ class LoeschauftragZeile(Base):
     )
 
 
+class SchalterZeile(Base):
+    """
+    Admin-Wert eines Schalters (GLOSSARY.md "Schalter", #708): ob ein Admin ihn
+    eingeschaltet hat. Wirksam ist er nur, wenn auch die Obergrenze aus der Umgebung
+    an ist (services/schalter_service.py). Fehlt die Zeile, gilt aus.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-18-708-schalter.sql dokumentiert das Schema.
+    """
+
+    __tablename__ = "schalter"
+
+    name = Column(String(64), primary_key=True)
+    an = Column(Boolean, nullable=False)
+    geaendert_am = Column(DateTime(timezone=True), nullable=False)
+    # Kennung des Admins (GLOSSARY.md "Kennung"), kein Klarname; leer, wenn sein Konto
+    # geloescht ist (mvp/scripts/manual/person_loeschen.sql)
+    geaendert_von = Column(String(255), nullable=True)
+
+
+class SchalterVerlaufZeile(Base):
+    """
+    Jede Aenderung eines Admin-Werts (#708): welcher Schalter, neuer Wert, wann, von
+    welchem Admin (Kennung). Frist: ein Jahr ab ``geaendert_am``
+    (services/loeschfristen_service.py, docs/LOESCHKONZEPT.md).
+    """
+
+    __tablename__ = "schalter_verlauf"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(64), nullable=False)
+    an = Column(Boolean, nullable=False)
+    geaendert_am = Column(DateTime(timezone=True), nullable=False)
+    # Leer, wenn das Konto des Admins geloescht ist (person_loeschen.sql)
+    geaendert_von = Column(String(255), nullable=True)
+
+    __table_args__ = (Index("idx_schalter_verlauf_geaendert_am", "geaendert_am"),)
+
+
 class MigrationsprotokollZeile(Base):
     """
     Welche Migration aus postgres-app/migrations eingespielt ist, eine Zeile je Datei.

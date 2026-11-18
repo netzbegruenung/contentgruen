@@ -36,7 +36,7 @@
   .start-hero .hero-subtitle {
     font-size: 15px;
     font-weight: normal;
-    color: var(--text-secondary);
+    color: var(--text-leise);
   }
 }
 
@@ -44,7 +44,7 @@
 .such-band {
   margin-top: var(--spacing-xl);
   padding: var(--spacing-xl) var(--spacing-md);
-  background-color: var(--such-band);
+  background-color: var(--kopf);
 
   @media (max-width: 599px) {
     margin-top: var(--spacing-lg);
@@ -102,10 +102,10 @@ app-rundgang-band {
   box-sizing: border-box;
   min-height: 72px;
   padding: var(--spacing-md) var(--spacing-lg);
-  border: 2px solid var(--mitmachen-kachel-rand, var(--linie-tanne));
+  border: 2px solid var(--kachel-rand, var(--linie-tanne));
   border-radius: 12px;
-  background: var(--mitmachen-kachel-grund, var(--bg-card));
-  color: var(--text-primary);
+  background: var(--karte-kommentar, var(--flaeche));
+  color: var(--text);
   text-decoration: none;
   // Als Knopf erkennbar: leicht erhoben in Ruhe, beim Zeigen hoeher und eine Spur dunkler,
   // beim Druecken flach (Designrunde 17.11.)
@@ -117,7 +117,7 @@ app-rundgang-band {
   &:focus-visible {
     box-shadow: var(--elevation-6, 0 4px 12px rgba(0, 0, 0, 0.2));
     transform: translateY(-2px);
-    background: color-mix(in srgb, var(--mitmachen-kachel-grund, var(--bg-card)) 92%, var(--akzent-tanne, #00563a));
+    background: color-mix(in srgb, var(--karte-kommentar, var(--flaeche)) 92%, var(--akzent-tanne, #00563a));
   }
 
   &:active {
@@ -169,7 +169,7 @@ app-rundgang-band {
   font-size: 22px;
   font-weight: 600;
   line-height: 1.2;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 
   @media (max-width: 599px) {
     font-size: 20px;
@@ -180,7 +180,7 @@ app-rundgang-band {
 .kachel-satz {
   font-size: 15px;
   line-height: 1.3;
-  color: var(--text-primary);
+  color: var(--text);
 
   @media (max-width: 599px) {
     font-size: 14px;
@@ -199,7 +199,7 @@ app-rundgang-band {
   background: var(--mitmachen-kachel-marke, var(--bg-main));
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   vertical-align: middle;
 }
 
@@ -224,5 +224,5 @@ app-rundgang-band {
   width: 28px;
   height: 28px;
   font-size: 28px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }

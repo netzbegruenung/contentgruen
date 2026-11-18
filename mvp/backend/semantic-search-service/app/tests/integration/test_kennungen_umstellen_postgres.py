@@ -58,6 +58,8 @@ JE_SPALTE_EINE = {
     "raw_input_content_links.created_by": 1,
     "content_reports.reported_by_user_id": 1,
     "content_reports.reviewed_by": 1,
+    "schalter.geaendert_von": 1,
+    "schalter_verlauf.geaendert_von": 1,
     "sperren.autor": 1,
     "sperren.gesperrt_von": 1,
     "sperren.geprueft_von": 1,

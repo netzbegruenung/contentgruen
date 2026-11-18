@@ -25,8 +25,8 @@
 .empty-state {
   text-align: center;
   padding: 2rem;
-  color: var(--text-muted);
-  background: var(--surface-muted);
+  color: var(--text-leise);
+  background: var(--mulde);
   border-radius: 8px;
 }
 

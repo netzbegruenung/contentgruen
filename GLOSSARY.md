@@ -628,3 +628,7 @@ _Avoid_: Usage-Cleanup, Cleanup-Service
 **Admin**:
 Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Widersprüche prüft, Einwürfe verwirft, Einladungen verwaltet und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion
+
+**Schalter**:
+Eine Funktion, die sich ein- und ausschalten lässt, ohne den Code zu ändern. Bei Punkten, Abzeichen am Anzeigenamen und „Ja, gepostet“ hat ein Schalter zwei Teile: die **Obergrenze**, die der Server aus seiner Umgebung setzt, und den **Admin-Wert**, den ein Admin auf der Admin-Seite „Schalter“ setzt. Wirksam ist der Schalter nur, wenn beide an sind; ohne Admin-Wert ist er aus. Über die Obergrenze hinaus einschalten kann kein Admin, ausschalten jederzeit; jede Änderung steht mit Zeitpunkt und Kennung des Admins im Verlauf (#708). Abzeichen wirken nur zusammen mit den Punkten.
+_Avoid_: Feature-Flag, Toggle, Flag

@@ -53,7 +53,7 @@
   position: sticky;
   top: 0;
   z-index: var(--z-index-sticky);
-  background-color: var(--bg-card);
+  background-color: var(--flaeche);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -61,8 +61,8 @@
 .mobile-nav-bar {
   display: flex;
   align-items: center;
-  background-color: var(--bg-card);
-  border-bottom: 1px solid var(--line-faint);
+  background-color: var(--flaeche);
+  border-bottom: 1px solid var(--linie);
   padding: var(--spacing-sm) 0;
 }
 
@@ -75,7 +75,7 @@
   margin: 0;
   font-size: 26px;
   font-weight: 500;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 /* Mobile navigation buttons */
@@ -133,7 +133,7 @@ mat-sidenav-content {
 .mobile-sidenav {
   width: 280px;
   max-width: 85vw;
-  background: var(--bg-card);
+  background: var(--flaeche);
 }
 
 .mobile-menu-content {
@@ -150,7 +150,7 @@ mat-sidenav-content {
 }
 
 .close-menu-button {
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .mobile-menu-user-info {
@@ -162,7 +162,7 @@ mat-sidenav-content {
 
 .mobile-menu-user-info h3 {
   margin: 0 0 16px 0;
-  color: var(--text-primary);
+  color: var(--text);
   font-size: 18px;
 }
 
@@ -186,9 +186,9 @@ mat-sidenav-content {
 .mobile-menu-about {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid var(--line-light);
+  border-top: 1px solid var(--linie);
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .mobile-menu-about p {
@@ -196,7 +196,7 @@ mat-sidenav-content {
 }
 
 .mobile-menu-about a {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
 }
 
@@ -239,7 +239,7 @@ mat-sidenav-content {
 
 
 .unified-empty-state .search-query-info {
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 1.1rem;
   margin-bottom: 1.25rem;
   font-weight: 500;
@@ -284,7 +284,7 @@ mat-sidenav-content {
 
 .unified-empty-state .suggestions li:before {
   content: "•";
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-weight: bold;
   position: absolute;
   left: 0;
@@ -297,7 +297,7 @@ mat-sidenav-content {
 .unified-empty-state .alternative-searches p {
   margin-bottom: 1rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .unified-empty-state .popular-topics {
@@ -321,11 +321,11 @@ mat-sidenav-content {
 .action-section-unified {
   margin-top: 3rem;
   padding-top: 2rem;
-  border-top: 2px solid var(--divider-color);
+  border-top: 2px solid var(--linie);
 }
 
 .action-section-unified .motivation {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-style: italic;
   margin: 0 auto 2rem;
   max-width: 500px;
@@ -365,7 +365,7 @@ mat-sidenav-content {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font: inherit;
   font-size: 0.9rem;
   text-decoration: underline;
@@ -386,7 +386,7 @@ mat-sidenav-content {
   gap: var(--spacing-xs);
   max-width: 60rem;
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -462,7 +462,7 @@ mat-sidenav-content {
   margin: 0;
   font-size: 15px;
   line-height: 1.4;
-  color: var(--text-primary);
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 
@@ -474,13 +474,13 @@ mat-sidenav-content {
   font-family: PTSans-bold, Roboto, sans-serif;
   font-weight: normal;
   font-size: 16px;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .erkannt-umschalter {
   flex: none;
   min-height: 44px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   white-space: nowrap;
 }
 
@@ -493,7 +493,7 @@ mat-sidenav-content {
 .ergebnis-teilen-symbol {
   flex: none;
   margin: -8px 0;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .erkannt-liste {
@@ -517,13 +517,13 @@ mat-sidenav-content {
   border: 1px solid var(--akzent-klee);
   border-radius: 18px;
   font-size: 14px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-decoration: none;
   box-sizing: border-box;
 }
 
 .erkannt-chip:hover {
-  background: var(--primary-tint);
+  background: var(--primaer-tint);
 }
 
 /* Gruppe je Aussage: Kopf im Stil der Zeile "Antwort auf" der Karte, etwas groesser */
@@ -541,18 +541,18 @@ mat-sidenav-content {
   row-gap: 2px;
   margin: var(--spacing-sm) 0 0;
   padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--primary-tint);
+  background: var(--primaer-tint);
   border-left: 3px solid var(--akzent-klee);
   border-radius: 8px;
   font-family: PTSans, Roboto, sans-serif;
   font-size: 1rem;
   line-height: 1.35;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .gruppe-kopf--neben {
   background: var(--primary-tint-faint);
-  border-left-color: var(--text-subtle);
+  border-left-color: var(--text-leise);
 }
 
 .gruppe-icon {
@@ -560,12 +560,12 @@ mat-sidenav-content {
   width: 18px;
   height: 18px;
   font-size: 18px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .gruppe-label {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .gruppe-aussage {
@@ -576,9 +576,9 @@ mat-sidenav-content {
 .gruppe-zahl {
   padding: 0 8px;
   border-radius: 10px;
-  background: var(--surface-variant);
+  background: var(--mulde);
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 /* Weniger passende Treffer: eingeklappt unter den Gruppen */
@@ -595,16 +595,16 @@ mat-sidenav-content {
   gap: 4px;
   min-height: 44px;
   padding: 0 16px 0 8px;
-  border: 1px solid var(--text-subtle);
+  border: 1px solid var(--text-leise);
   border-radius: 22px;
   background: none;
   font: inherit;
-  color: var(--text-primary);
+  color: var(--text);
   cursor: pointer;
 }
 
 .weitere-umschalter:hover {
-  background: var(--primary-tint);
+  background: var(--primaer-tint);
 }
 
 .weitere-liste {
@@ -627,11 +627,11 @@ mat-sidenav-content {
   font-size: 13px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .beste-ueberschrift {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .weitere-ueberschrift {
@@ -661,16 +661,16 @@ mat-sidenav-content {
   min-height: 44px;
   margin-top: var(--spacing-sm);
   padding: 0 20px;
-  border: 1px solid var(--primary-fill);
+  border: 1px solid var(--primaer);
   border-radius: 22px;
   background: none;
   font: inherit;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   cursor: pointer;
 }
 
 .alle-zeigen:hover {
-  background: var(--primary-tint);
+  background: var(--primaer-tint);
 }
 
 /* Eine Spalte, ohne Grund und Rahmen (V3): am Handy innerhalb des Seitenrands, am Desktop
@@ -687,7 +687,7 @@ mat-sidenav-content {
 .nur-link {
   margin: var(--spacing-sm) 0 0;
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 /* Unter den Treffern dieselbe Spalte wie die Karten (Design-Abnahme V3, 17.11.) */
@@ -754,6 +754,7 @@ mat-sidenav-content {
   }
 
   .gruppe.mit-bester .typ-kopf,
+  .gruppe.mit-bester .offene-karten,
   .gruppe.mit-bester .eingeklappte-karten,
   .gruppe.mit-bester .alle-zeigen {
     grid-column: 1 / -1;
@@ -785,10 +786,17 @@ mat-sidenav-content {
     justify-self: center;
   }
 
+  /* Zwischen offenen und eingeklappten Antworten derselbe Abstand wie zwischen den Karten */
+  .gruppe.mit-bester .offene-karten + .eingeklappte-karten {
+    margin-top: 12px;
+  }
+
   /* Die weiteren Karten zu zweit; eine aufgeklappte wird hoeher, die Nachbarin nicht.
      Ebenso die aufgeklappten "Weitere, weniger passende Treffer" (Maintainer 18.11.): dann
      ueber die volle Breite wie die Gruppe darueber; "Nicht dabei?" und der Hinweis bleiben
-     auf Lesebreite */
+     auf Lesebreite. Die offenen Antworten unter der besten (Maintainer 18.11.) ebenso zu
+     zweit, in Rangfolge zeilenweise; die Nachbarin waechst nicht mit */
+  .gruppe.mit-bester .offene-karten ::ng-deep .kartenliste,
   .gruppe.mit-bester .eingeklappte-karten ::ng-deep .kartenliste,
   .zweispaltig .weitere-liste .eingeklappte-karten ::ng-deep .kartenliste {
     display: grid;

@@ -99,15 +99,15 @@ const AUSFUEHREN_FRAGE: BestaetigungsDialogDaten = {
   styles: [`
     .hinweis { margin: 0 0 16px; }
     .laedt { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
-    .laedt.klein { margin: 0 0 8px; font-size: 0.875rem; color: var(--text-secondary); }
+    .laedt.klein { margin: 0 0 8px; font-size: 0.875rem; color: var(--text-leise); }
     .auftrag { padding: 12px; margin-bottom: 8px; display: grid; gap: 4px; overflow-wrap: anywhere;
                border-left: 4px solid transparent; }
     .auftrag button { justify-self: start; margin-top: 4px; }
-    .auftrag.ueberfaellig { border-left-color: var(--error-color); }
-    .auftrag.ueberfaellig .frist { color: var(--error-color); font-weight: 700; }
+    .auftrag.ueberfaellig { border-left-color: var(--fehler); }
+    .auftrag.ueberfaellig .frist { color: var(--fehler); font-weight: 700; }
     .frist, .neu-eingewilligt { display: flex; align-items: center; gap: 4px; }
     .im-knopf { display: inline-block; margin-right: 8px; vertical-align: middle; }
-    .kennung-voll { font-size: 0.8125rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+    .kennung-voll { font-size: 0.8125rem; color: var(--text-leise); overflow-wrap: anywhere; }
   `],
 })
 export class LoeschauftraegeComponent implements OnInit {

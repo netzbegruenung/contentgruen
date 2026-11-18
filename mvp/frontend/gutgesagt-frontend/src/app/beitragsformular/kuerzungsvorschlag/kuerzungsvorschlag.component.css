@@ -5,9 +5,9 @@
 .kuerzungsvorschlag-box {
   margin-top: 8px;
   padding: 12px 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--feldrand);
   border-radius: 8px;
-  background: var(--bg-surface);
+  background: var(--flaeche);
 }
 
 .kuerzungsvorschlag-text {
@@ -17,7 +17,7 @@
 
 .kuerzungsvorschlag-fuss {
   margin: 4px 0 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 0.875rem;
 }
 
@@ -36,7 +36,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -49,6 +49,6 @@
 }
 
 .text-link[disabled] {
-  color: var(--text-secondary);
+  color: var(--text-leise);
   cursor: default;
 }

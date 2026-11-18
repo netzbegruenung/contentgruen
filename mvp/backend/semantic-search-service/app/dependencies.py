@@ -65,6 +65,7 @@ from repositories.content_report_repository import get_content_report_repository
 from repositories.einwurf_repository import get_einwurf_repository
 from repositories.sperre_repository import get_sperre_repository
 from repositories.loeschauftrag_repository import get_loeschauftrag_repository
+from repositories.schalter_repository import get_schalter_repository
 from core.fehler import INTERNER_FEHLER
 from core.logging import get_logger
 
@@ -412,6 +413,8 @@ def get_loeschfristen_service() -> LoeschfristenService:
         get_search_tracking_repository(),
         # Erledigte Loeschauftraege nach dem Widerruf (DSFA R9b).
         get_loeschauftrag_repository(),
+        # Verlauf der Schalter nach einem Jahr (#708).
+        get_schalter_repository(),
     )
 
 

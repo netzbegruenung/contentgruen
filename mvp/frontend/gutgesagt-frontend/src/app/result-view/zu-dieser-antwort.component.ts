@@ -139,7 +139,7 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         letter-spacing: 0.06em;
         text-transform: uppercase;
         /* Dieselbe Farbe wie "Beste Antwort" (.beste-ueberschrift), damit beide gleichrangig wirken */
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
       }
 
       /* Kacheln untereinander, durch feine Linien getrennt */
@@ -148,10 +148,10 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         flex-direction: column;
         margin: 0;
         padding: 0 var(--spacing-md);
-        border: 1px solid var(--line-light);
+        border: 1px solid var(--linie);
         border-radius: var(--border-radius-medium);
         background: var(--primary-tint-faint);
-        color: var(--text-primary);
+        color: var(--text);
         font-size: 14px;
         line-height: 1.45;
       }
@@ -161,7 +161,7 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
       }
 
       .zda-eintrag + .zda-eintrag {
-        border-top: 1px solid var(--line-light);
+        border-top: 1px solid var(--linie);
       }
 
       dt {
@@ -170,7 +170,7 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         gap: 6px;
         margin-bottom: 4px;
         font-family: PTSans-bold, Roboto, sans-serif;
-        color: var(--text-secondary);
+        color: var(--text-leise);
         font-size: 12px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
@@ -180,7 +180,7 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         width: 20px;
         height: 20px;
         font-size: 20px;
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
       }
 
       .zda-siegel {
@@ -198,7 +198,7 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
       }
 
       .zda-klein {
-        color: var(--text-secondary);
+        color: var(--text-leise);
         font-size: 13px;
       }
 
@@ -207,7 +207,7 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
       }
 
       .zda-zeichen {
-        color: var(--text-secondary);
+        color: var(--text-leise);
         font-size: 13px;
       }
 
@@ -226,10 +226,10 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         align-items: center;
         gap: 2px;
         padding: 1px 8px;
-        border: 1px solid var(--divider-color);
+        border: 1px solid var(--linie);
         border-radius: var(--border-radius-large);
-        background: var(--auswahl-grund);
-        color: var(--primary-dark);
+        background: var(--primaer-tint);
+        color: var(--akzent-schrift);
         font-size: 13px;
         line-height: 1.5;
       }
@@ -238,7 +238,7 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
       .zda-chip--aus {
         border-style: dashed;
         background: none;
-        color: var(--text-secondary);
+        color: var(--text-leise);
       }
 
       .zda-chip-icon {
@@ -258,12 +258,12 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
       .zda-gross {
         font-size: 28px;
         line-height: 1.1;
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
       }
 
       .zda-von {
         font-size: 16px;
-        color: var(--text-secondary);
+        color: var(--text-leise);
       }
 
       .zda-gross-text {
@@ -295,14 +295,14 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         width: 16px;
         height: 16px;
         font-size: 16px;
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
       }
 
       .zda-mehr {
         display: inline-flex;
         align-items: center;
         min-height: 24px;
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
         text-decoration: underline;
         text-underline-offset: 3px;
       }

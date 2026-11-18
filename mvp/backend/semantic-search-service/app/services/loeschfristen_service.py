@@ -42,6 +42,9 @@ services/suchen_ohne_treffer_service.py, Nutzungsereignisse in core/config.py.
   Nachfrage oder Beschwerde belegen, wann der Loeschablauf lief; den Widerruf selbst
   belegt weiter die Zeile der Einwilligung. Offene bleiben: Sie sind Arbeit. Ueberfaellige
   offene meldet jeder Lauf als WARNING, nur mit ihrer Zahl.
+- Verlauf der Schalter (#708, Entscheidung Maintainer 18.11.2026): Eintraege
+  SCHALTER_VERLAUF_TAGE nach der Aenderung. Der aktuelle Admin-Wert in ``schalter``
+  bleibt, er ist der Stand, nach dem der Dienst sich richtet.
 - Stimmen haben keine eigene Frist: Aus ihnen entsteht die Guete eines Beitrags, sie
   leben so lange wie er und gehen mit ihm.
 
@@ -61,6 +64,7 @@ from repositories.content_report_repository import ContentReportRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
 from repositories.einwurf_repository import EinwurfRepository
 from repositories.loeschauftrag_repository import LoeschauftragRepository
+from repositories.schalter_repository import SchalterRepository
 from repositories.search_tracking_repository import SearchTrackingRepository
 from repositories.sperre_repository import SperreRepository
 from services.moderation_service import ModerationService
@@ -74,6 +78,7 @@ GELOESCHTER_BEITRAG_TAGE = 30
 SPERRE_NACH_AUFHEBUNG_TAGE = 180
 NIE_BENUTZTES_KONTO_TAGE = 30
 ERLEDIGTER_LOESCHAUFTRAG_TAGE = 365
+SCHALTER_VERLAUF_TAGE = 365
 LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
 # Scheitert das Verdichten der Suchereignisse, versucht der Task es nach dieser Zeit
 # erneut statt erst um Mitternacht: Das Pseudonym soll den Tag nicht lange ueberleben.
@@ -108,6 +113,7 @@ class LoeschfristenService:
         konten: Optional[INieBenutzteKonten] = None,
         suchereignisse: Optional[SearchTrackingRepository] = None,
         loeschauftraege: Optional[LoeschauftragRepository] = None,
+        schalter: Optional[SchalterRepository] = None,
     ):
         self._meldungen = meldungen
         self._einwuerfe = einwuerfe
@@ -117,6 +123,7 @@ class LoeschfristenService:
         self._konten = konten
         self._suchereignisse = suchereignisse
         self._loeschauftraege = loeschauftraege
+        self._schalter = schalter
         # True, wenn der letzte Lauf Suchereignisse nicht verdichten konnte.
         self.verdichten_offen = False
 
@@ -155,6 +162,12 @@ class LoeschfristenService:
                 "completed Loeschauftraege",
             )
             await self._ueberfaellige_melden()
+        if self._schalter is not None:
+            await self._frist_anwenden(
+                self._schalter.verlauf_loeschen_vor,
+                _grenze(heute, SCHALTER_VERLAUF_TAGE),
+                "Schalter history entries",
+            )
         if self._konten is not None:
             await self._frist_anwenden(
                 self._konten.nie_benutzte_loeschen,

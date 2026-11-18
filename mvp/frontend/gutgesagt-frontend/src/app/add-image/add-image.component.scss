@@ -45,16 +45,16 @@ app-formular-hilfe {
 .speicher-fehler {
   margin: 12px 0 0;
   padding: 12px 16px;
-  border-left: 4px solid var(--error-color);
+  border-left: 4px solid var(--fehler);
   border-radius: 4px;
-  background: var(--error-tint);
+  background: var(--fehler-tint);
 }
 
 .bild-ladefehler {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--warning-color);
+  color: var(--hinweis-text);
 
   mat-icon {
     font-size: 18px;

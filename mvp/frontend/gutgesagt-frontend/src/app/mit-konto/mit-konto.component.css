@@ -1,5 +1,5 @@
 /* Vorschau "Das erwartet dich mit Konto": eine Tour-Flaeche wie das Willkommen (Wegweiser,
-   --willkommen-grund, Ueberschrift in --band-akzent-schrift), mittig wie die Startseite.
+   --karte-kommentar, Ueberschrift in --band-akzent-schrift), mittig wie die Startseite.
    Kontraste hell auf #e6f0d2: Tanne 8,9:1, Text #4a4a4a 7,6:1; dunkel auf #1d262e: Gelb
    11,8:1, Text #d6dbdc 11,6:1 (Werte aus custom-theme.scss). */
 .mit-konto {
@@ -12,7 +12,7 @@
 .mk-band {
     padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
     border-radius: var(--border-radius-large);
-    background: var(--willkommen-grund);
+    background: var(--karte-kommentar);
 }
 
 .mk-band-kopf {
@@ -38,7 +38,7 @@
 
 .mk-einleitung {
     margin: var(--spacing-xs) 0 0;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 16px;
     line-height: 1.45;
 }
@@ -51,7 +51,7 @@
     margin: var(--spacing-lg) 0 var(--spacing-lg);
     padding: var(--spacing-sm) var(--spacing-md);
     border-left: 3px solid var(--band-akzent-schrift);
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 15px;
     font-weight: 500;
     line-height: 1.4;
@@ -110,7 +110,7 @@
 
 .mk-schritt-satz {
     margin: 0;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 16px;
     line-height: 1.5;
 }
@@ -120,7 +120,7 @@
 .mk-rahmen {
     margin: 0;
     overflow: hidden;
-    border: 1px solid var(--divider-color);
+    border: 1px solid var(--linie);
     border-radius: 12px;
     background: var(--bg-main);
     box-shadow: var(--elevation-6, 0 4px 12px rgba(0, 0, 0, 0.2));
@@ -132,7 +132,7 @@
     justify-content: space-between;
     gap: var(--spacing-sm);
     padding: 8px 12px;
-    border-bottom: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--linie);
 }
 
 .mk-etikett {
@@ -154,7 +154,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--text-secondary);
+    background: var(--text-leise);
     opacity: 0.45;
 }
 
@@ -205,7 +205,7 @@
 }
 
 .mk-zaehler {
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 14px;
 }
 

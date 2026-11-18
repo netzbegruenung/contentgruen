@@ -38,7 +38,7 @@ import { MatIconModule } from '@angular/material/icon';
       border-radius: 50%;
       background: none;
       box-shadow: none;
-      color: var(--primary-dark, #005437);
+      color: var(--akzent-schrift, #005437);
       cursor: pointer;
     }
 
@@ -49,7 +49,7 @@ import { MatIconModule } from '@angular/material/icon';
     }
 
     .erklaerung-umschalter:focus-visible {
-      outline: 2px solid var(--primary-dark, #005437);
+      outline: 2px solid var(--akzent-schrift, #005437);
       outline-offset: 2px;
     }
   `],

@@ -147,12 +147,12 @@ function alsEingabe(quelle: KartenQuelle): HerkunftEingabe {
       }
 
       .fehler {
-        color: var(--error-color);
+        color: var(--fehler);
         margin: 8px 0 0;
       }
 
       .speichern-knopf:not([disabled]) {
-        background-color: var(--primary-fill);
+        background-color: var(--primaer);
         color: white;
       }
     `,

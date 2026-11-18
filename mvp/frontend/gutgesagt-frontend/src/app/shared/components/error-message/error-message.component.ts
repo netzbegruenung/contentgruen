@@ -28,7 +28,7 @@ import { MatButtonModule } from '@angular/material/button';
   styles: [`
     .error-card {
       margin: 20px;
-      background-color: var(--error-bg);
+      background-color: var(--fehler-tint);
     }
     .error-content {
       display: flex;
@@ -36,18 +36,18 @@ import { MatButtonModule } from '@angular/material/button';
       gap: 16px;
     }
     .error-icon {
-      color: var(--error-color);
+      color: var(--fehler);
       font-size: 48px;
       width: 48px;
       height: 48px;
     }
     .error-text h3 {
       margin: 0 0 8px 0;
-      color: var(--error-color);
+      color: var(--fehler);
     }
     .error-text p {
       margin: 0;
-      color: var(--text-body);
+      color: var(--text);
     }
   `]
 })
