@@ -83,6 +83,10 @@
     <ol class="schreibregeln">
         <li *ngFor="let regel of schreibregeln">{{ regel }}</li>
     </ol>
+    <p>Das Gegenlesen sieht, wie du schreibst, nicht ob es stimmt. Das prüfst du selbst:</p>
+    <ul class="selbst-pruefen">
+        <li *ngFor="let punkt of selbstPruefen">{{ punkt }}</li>
+    </ul>
     <p class="nicht-jede-aussage">{{ nichtJedeAussage }}</p>
     <p class="erfundenes-melden">{{ erfundenesMelden }}</p>
 

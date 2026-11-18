@@ -42,6 +42,22 @@ h4 {
   margin: 12px 0 0;
 }
 
+.gegenlesen-nur-form {
+  margin: 12px 0 0;
+  color: var(--text-leise);
+  font-size: 0.875rem;
+}
+
+.gegenlesen-fragen-titel {
+  margin: 8px 0 0;
+  font-weight: 600;
+}
+
+.gegenlesen-fragen {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
 .gegenlesen-fuss {
   margin-top: 12px;
 }

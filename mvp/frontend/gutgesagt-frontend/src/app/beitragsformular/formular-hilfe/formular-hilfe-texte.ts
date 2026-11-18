@@ -9,6 +9,8 @@ export interface FormularHilfe {
   ist: string[];
   istNicht: string[];
   beispiel?: { aussage: string; antwort: string };
+  /** Schwach und besser auf dieselbe Aussage, etwa: den Spruch nicht bestaetigen. */
+  vorherNachher?: { regel: string; aussage: string; schwach: string; warum: string; besser: string };
   /** Zeigt die Schreibregeln und Schreibhilfen (shared/schreibregeln.ts). */
   schreibregeln?: true;
   /** Zeigt gute und schwache Titel; nur wo der Titel eine Behauptung ist. */
@@ -32,6 +34,14 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
       aussage: 'Die Grünen wollen uns das Autofahren verbieten',
       antwort:
         'Wer aufs Auto angewiesen ist, soll es auch bleiben dürfen. Es geht um die anderen Wege: dass der Bus öfter fährt und das Kind sicher mit dem Rad zur Schule kommt. Dann ist auf der Straße auch mehr Platz für alle, die fahren müssen.',
+    },
+    vorherNachher: {
+      regel: 'Bestätige den Spruch nicht',
+      aussage: 'Die Energiewende macht den Strom teurer.',
+      schwach: 'Die Förderung zahlt seit 2022 der Bund, nicht deine Stromrechnung.',
+      warum: 'bestätigt: Wir zahlen dafür',
+      besser:
+        '2022 hat sich der Börsenpreis für Strom mehr als verdoppelt. Der Grund: Gas wurde nach Russlands Angriff knapp und teuer. Sonne und Wind brauchen kein Gas.',
     },
     schreibregeln: true,
     titelbeispiele: true,

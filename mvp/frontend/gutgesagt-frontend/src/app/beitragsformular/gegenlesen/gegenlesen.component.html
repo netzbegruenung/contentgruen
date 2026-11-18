@@ -25,7 +25,15 @@
                 <li *ngIf="zeigtHerkunftHinweis" class="gegenlesen-anmerkung herkunft-fehlt">{{ herkunftHinweis }}</li>
                 <li *ngFor="let a of ergebnis.anmerkungen" class="gegenlesen-anmerkung">{{ a.text }}</li>
             </ul>
-            <p *ngIf="istGut" class="gegenlesen-gut">Nichts aufgefallen. Die Nachbarin nickt.</p>
+            <p *ngIf="istGut" class="gegenlesen-gut">{{ formGut }}</p>
+        </div>
+        <!-- Form und Inhalt getrennt (18.11.): sobald gegengelesen ist, mit Anmerkungen oder ohne -->
+        <div *ngIf="ergebnis.guete !== null" class="gegenlesen-inhalt-fragen">
+            <p class="gegenlesen-nur-form">{{ nurDieForm }}</p>
+            <p class="gegenlesen-fragen-titel" id="gegenlesen-fragen-titel">{{ inhaltFragenTitel }}</p>
+            <ul class="gegenlesen-fragen" aria-labelledby="gegenlesen-fragen-titel">
+                <li *ngFor="let frage of inhaltFragen">{{ frage }}</li>
+            </ul>
         </div>
         <p class="gegenlesen-fuss">Nur du siehst das. Speichern kannst du immer.</p>
     </div>

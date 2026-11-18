@@ -1,7 +1,7 @@
 /**
  * Wie man gut schreibt (docs/VISION.md, "Ton und Schreiben"): die sechs
- * Schreibregeln, die Schreibhilfen, die Liste zum Selbstpruefen und die
- * Titelbeispiele. Sie lenken sanft und
+ * Schreibregeln, die Schreibhilfen, die Liste zum Selbstpruefen (Hilfe-Dialog)
+ * und die Titelbeispiele. Sie lenken sanft und
  * sperren nichts; die Hinweise beim Speichern sind eine eigene Stelle (#358).
  *
  * Hier gepflegt, damit Formularhilfe und Hilfe-Dialog dieselben Saetze zeigen.
@@ -32,12 +32,14 @@ export const SCHREIBHILFEN: readonly Schreibhilfe[] = [
 ];
 
 /**
- * Was das Gegenlesen (#358) nicht erkennt und die Person selbst pruefen muss.
- * Keine Doppelung mit den Schreibregeln oben: Gemeinsamkeit und Haeme stehen dort.
+ * Was das Gegenlesen (#358) nicht erkennt und die Person selbst pruefen muss, ausfuehrlich
+ * im Hilfe-Dialog. Im Formular stehen davon nur die drei Inhaltsfragen unter dem Gegenlesen
+ * und das Beispiel zum Bestaetigen in der Formularhilfe. Keine Doppelung mit den
+ * Schreibregeln oben: Gemeinsamkeit und Haeme stehen dort.
  */
 export const SELBST_PRUEFEN: readonly string[] = [
   'Ein Gedanke je Beitrag. Hast du noch einen, schreib lieber einen zweiten Beitrag.',
-  'Bestätige den Spruch nicht: Auf „Energiewende macht Strom teurer“ nicht „das zahlt jetzt der Staat“, sondern zeigen, was wirklich dahintersteckt.',
+  'Bestätige den Spruch nicht mit deinem Argument, sondern zeig, was wirklich dahintersteckt.',
   'Jede Zahl mit einer Quelle, die du selbst geöffnet hast und die genau das sagt.',
   'Zahlen, die bald veralten (Gesetze, Jahreswerte), lieber weglassen.',
   'Schreib wie eine Nachbarin, nicht wie eine Partei.',

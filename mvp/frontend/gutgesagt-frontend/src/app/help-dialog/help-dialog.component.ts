@@ -9,7 +9,7 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { combineLatest } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { CONTENT_TYPE_REGISTRY } from '../shared/content-type-registry';
-import { ERFUNDENES_MELDEN, NICHT_JEDE_AUSSAGE, SCHREIBREGELN } from '../shared/schreibregeln';
+import { ERFUNDENES_MELDEN, NICHT_JEDE_AUSSAGE, SCHREIBREGELN, SELBST_PRUEFEN } from '../shared/schreibregeln';
 import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
 import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 import { AuthService } from '../auth/auth.service';
@@ -50,6 +50,7 @@ export class HelpDialogComponent {
 
   // Dieselben Saetze wie in der Formularhilfe
   readonly schreibregeln = SCHREIBREGELN;
+  readonly selbstPruefen = SELBST_PRUEFEN;
   readonly nichtJedeAussage = NICHT_JEDE_AUSSAGE;
   readonly erfundenesMelden = ERFUNDENES_MELDEN;
   readonly keineGenerativeKi = KEINE_GENERATIVE_KI;

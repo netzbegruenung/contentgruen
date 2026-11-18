@@ -23,6 +23,20 @@
             <strong>Beispiel:</strong> Auf „{{ beispiel.aussage }}“ → „{{ beispiel.antwort }}“
         </p>
 
+        <ng-container *ngIf="hilfe.vorherNachher as vn">
+            <p class="hilfe-beispiel vorher-nachher-kopf"><strong>{{ vn.regel }}.</strong> Auf „{{ vn.aussage }}“:</p>
+            <ul class="hilfe-regeln vorher-nachher">
+                <li class="regel regel-nicht vorher-schwach">
+                    <span class="regel-zeichen" aria-hidden="true">✗</span>
+                    <span class="cdk-visually-hidden">Schwach:</span>„{{ vn.schwach }}“ – {{ vn.warum }}
+                </li>
+                <li class="regel regel-ist nachher-besser">
+                    <span class="regel-zeichen" aria-hidden="true">✓</span>
+                    <span class="cdk-visually-hidden">Besser:</span>„{{ vn.besser }}“
+                </li>
+            </ul>
+        </ng-container>
+
         <ng-container *ngIf="hilfe.schreibregeln">
             <h3 class="hilfe-abschnitt" [id]="panelId + '-regeln'">Schreibregeln</h3>
             <ol class="schreibregeln" [attr.aria-labelledby]="panelId + '-regeln'">
@@ -32,11 +46,6 @@
             <h3 class="hilfe-abschnitt" [id]="panelId + '-hilfen'">Schreibhilfen</h3>
             <ul class="schreibhilfen" [attr.aria-labelledby]="panelId + '-hilfen'">
                 <li *ngFor="let schreibhilfe of schreibhilfen"><strong>{{ schreibhilfe.name }}:</strong> {{ schreibhilfe.text }}</li>
-            </ul>
-
-            <h3 class="hilfe-abschnitt" [id]="panelId + '-selbst'">Selbst prüfen – das sieht die App nicht</h3>
-            <ul class="selbst-pruefen" [attr.aria-labelledby]="panelId + '-selbst'">
-                <li *ngFor="let punkt of selbstPruefen">{{ punkt }}</li>
             </ul>
 
             <ng-container *ngIf="hilfe.titelbeispiele">

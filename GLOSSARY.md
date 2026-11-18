@@ -173,7 +173,7 @@ Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Ze
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
 **Schreibregel**:
-Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog. Was das Gegenlesen nicht erkennt (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle u. a.), zeigt die Formularhilfe darunter als Liste „Selbst prüfen“.
+Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog. Was das Gegenlesen nicht erkennt (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle u. a.), nennt es als drei Inhaltsfragen; ausführlich steht es im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
 
 **Platzhalter**:
