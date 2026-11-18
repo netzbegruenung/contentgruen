@@ -128,13 +128,14 @@ _REST_AB_ZEICHEN = 3
 #: ohne Leerzeichen ("so—oder so"). Bindestriche ("Klima-Schutz") sind andere Zeichen.
 _GEDANKENSTRICH = re.compile(r"(?<=\S[^\S\n])[–—](?=\s)|(?<=\w)—(?=\w)")
 #: Was nach einem Fragezeichen am Ende eines Titels noch stehen darf (wie ist_frage in
-#: services/dieselbe_behauptung/regel.py, ohne dessen Fragewörter am Anfang).
-_TITEL_SCHLUSS = " \t\r\n\"'„“”‚‘’«»)"
+#: services/dieselbe_behauptung/regel.py, ohne dessen Fragewörter am Anfang), dazu
+#: Ausrufezeichen und Auslassung ("Echt?!", "Und dann?…").
+_TITEL_SCHLUSS = " \t\r\n\"'„“”‚‘’«»)!…"
 #: Anführungszeichen: Darin zitiert der Beitrag, statt selbst zu sprechen.
 _ZITAT = re.compile(
     r"„[^“”\n]*[“”]|\"[^\"\n]*\"|»[^«\n]*«|«[^»\n]*»|‚[^‘’\n]*[‘’]|“[^”\n]*”"
 )
-_VERNEINT = {"kein", "nicht", "nie", "niemals"}
+_VERNEINT = {"kein", "nicht", "nie", "niemals", "niemand", "niemandem"}
 #: Größenwörter: nach einer Ziffer eine Einheit ("3 Prozent"), nach einem Zahlwort
 #: selbst eine Zahl ("zehn Prozent").
 _GROESSENWOERTER = r"Prozent|Million(?:en)?|Milliarden?|Mio\.?|Mrd\.?"
@@ -152,11 +153,12 @@ _GROESSENWORT = re.compile(
     rf"\b(?P<zahlwort>(?:{_ZAHLWOERTER})\s+)(?:{_GROESSENWOERTER})(?!\w)",
     re.IGNORECASE,
 )
-#: Ziffern, die keine Zahl mit Herkunft sind: Uhrzeit, Datum, Paragraf, "Tempo 30",
+#: Ziffern, die keine Zahl mit Herkunft sind: Links, Uhrzeit, Datum, Paragraf, "Tempo 30",
 #: Ziffern vor einem Bindestrich-Wort ("1,5-Grad-Ziel", "49-Euro-Ticket") und der Name
 #: "Bündnis 90", auch am Satzanfang (dort greift _ist_name nicht).
 _KEINE_ZAHL = re.compile(
-    r"\b\d{1,2}:\d{2}\b"
+    r"(?:https?://|www\.)\S+"
+    r"|\b\d{1,2}:\d{2}\b"
     r"|\b\d{1,2}\s*Uhr\b"
     r"|\b\d{1,2}\.\d{1,2}\.(?:\d{2,4}\b)?"
     r"|§+\s*\d+\w*"
@@ -175,6 +177,9 @@ _NACH_ORDINALZAHL = {
 }  # fmt: skip
 #: Das Wort direkt vor einer Ziffer, und was davor steht (für _ist_name).
 _WORT_DAVOR = re.compile(r"(\S?)\s*(\w+)\s+$")
+#: Ein großgeschriebenes Wort direkt nach einer Ziffer: Dann zählt sie etwas
+#: ("5000 Bäume"), statt einen Namen zu tragen.
+_WORT_DANACH = re.compile(r"\s+(\w)")
 
 
 @dataclass(frozen=True)
@@ -587,8 +592,7 @@ class GegenlesenService:
             stelle=gefunden[0][0],
             text=(
                 f"{zahl} ohne Herkunft: {_aufzaehlen(genannt)}. Trag bei „Herkunft“ "
-                f"ein, woher sie {stammen} (im Kommentar hinter „+ Herkunft“), dann "
-                "glaubt man sie eher."
+                f"ein, woher sie {stammen}."
             ),
             woerter=woerter,
         )
@@ -671,8 +675,11 @@ def _im_zitat(token) -> bool:
     return any(m.start() < token.idx < m.end() for m in _ZITAT.finditer(token.doc.text))
 
 
-def _verneint(verb) -> bool:
-    """Hängt am Verb eine Verneinung, auch als "kein" vor seinem Objekt?"""
+def _verneint(verb, tiefer: bool = True) -> bool:
+    """
+    Hängt am Verb eine Verneinung, auch als "kein" vor seinem Objekt? Bei Modalverb und
+    Infinitiv auch am Infinitiv ("wollen kein Heizungsverbot einführen").
+    """
     for kind in verb.children:
         if kind.dep_ == "ng" or kind.lemma_.lower() in _VERNEINT:
             return True
@@ -680,6 +687,8 @@ def _verneint(verb) -> bool:
             enkel.dep_ == "nk" and enkel.lemma_.lower() == "kein"
             for enkel in kind.children
         ):
+            return True
+        if tiefer and kind.dep_ == "oc" and _verneint(kind, tiefer=False):
             return True
     return False
 
@@ -701,9 +710,11 @@ def _zahlen(inhalt: str) -> List[str]:
       AUFZAEHLUNG_BIS ohne Einheit ("3 Gründe", "1."); Ordinalzahlen ("24. Oktober",
       "20. Jahrhundert"); Datum und Uhrzeit ("3.10.2025", "18:30", "18 Uhr");
       Paragrafen ("§ 218"), "Tempo 30"; Ziffern vor einem Bindestrich-Wort
-      ("1,5-Grad-Ziel", "49-Euro-Ticket"); Ziffern in Wörtern ("CO2"); eine Ziffer ohne
-      Einheit nach einem großgeschriebenen Wort mitten im Satz, das sie benennt
-      ("Linie 14", "Stuttgart 21", "Bündnis 90").
+      ("1,5-Grad-Ziel", "49-Euro-Ticket"); Ziffern in Wörtern ("CO2") und in Links;
+      eine Ziffer nur aus Ziffern ohne Einheit nach einem großgeschriebenen Wort mitten
+      im Satz, das sie benennt, wenn danach kein großgeschriebenes Wort folgt ("Linie
+      14 fährt", "Stuttgart 21", "Bündnis 90"; aber "im Jahr 5000 Bäume", "Hamburg hat
+      1.500 Busse").
     - Größenwörter zählen nach einem Zahlwort ("zehn Prozent"), allein nicht ("Wie viel
       Prozent?", "Millionen Menschen").
     """
@@ -716,7 +727,11 @@ def _zahlen(inhalt: str) -> List[str]:
         einheit = _EINHEIT.match(inhalt, m.end())
         ende = einheit.end() if einheit else m.end()
         if einheit is None:
-            if _ist_name(inhalt[: m.start()]):
+            if (
+                m.group().isdigit()
+                and not _gross_danach(inhalt, m.end())
+                and _ist_name(inhalt[: m.start()])
+            ):
                 continue
             if m.group().isdigit():
                 wert = int(m.group())
@@ -740,6 +755,12 @@ def _ohne_ordinalzahlen(inhalt: str) -> str:
         return m.group()
 
     return _ORDINALZAHL.sub(ersetzen, inhalt)
+
+
+def _gross_danach(inhalt: str, ende: int) -> bool:
+    """Folgt auf die Ziffer ein großgeschriebenes Wort ("5000 Bäume")?"""
+    m = _WORT_DANACH.match(inhalt, ende)
+    return m is not None and m.group(1).isupper()
 
 
 def _ist_name(davor: str) -> bool:

@@ -476,6 +476,8 @@ class TestParteistimme:
             "Wir kämpfen um einen Sitzplatz im Bus.",
             # Verneint antwortet der Satz auf den Vorwurf.
             "Die Grünen wollen kein Heizungsverbot.",
+            "Die Grünen wollen kein Heizungsverbot einführen.",
+            "Wir wollen niemandem die Heizung wegnehmen.",
             # Zitiert: Antworten nennen den Spruch, auf den sie antworten.
             "„Die Grünen wollen alles verbieten“, heißt es oft.",
             'Der Spruch "Wir Grüne wissen es besser" stimmt so nicht.',
@@ -516,8 +518,9 @@ class TestTitelAlsFrage:
         assert frage.stelle == "titel"
         assert "deine Antwort" in frage.text
 
-    def test_fragezeichen_vor_anfuehrungszeichen(self, service):
-        ergebnis = service.gegenlesen(titel="„Geht das?“", text="", aussage="")
+    @pytest.mark.parametrize("titel", ["„Geht das?“", "Echt jetzt?!", "Und dann?…"])
+    def test_fragezeichen_vor_schlusszeichen(self, service, titel):
+        ergebnis = service.gegenlesen(titel=titel, text="", aussage="")
 
         assert "titel_frage" in arten(ergebnis)
 
@@ -564,6 +567,17 @@ class TestZahlOhneHerkunft:
             ("Es geht um zehn Prozent.", ["zehn Prozent"]),
             ("Das betrifft drei Millionen Haushalte.", ["drei Millionen"]),
             ("Im Ort stehen 250 Pumpen seit 2020.", ["250"]),
+            # Nach einem Nomen ist eine Ziffer nur dann ein Name, wenn sie nur aus
+            # Ziffern besteht und kein großgeschriebenes Wort folgt.
+            ("In Deutschland sterben jedes Jahr 2.800 Menschen.", ["2.800"]),
+            ("Insgesamt hat Hamburg 1.500 Busse.", ["1.500"]),
+            ("Die Stadt pflanzt im Jahr 5000 Bäume.", ["5000"]),
+            ("Im Schnitt spart ein Haushalt 1.200.", ["1.200"]),
+            # Ziffern in Links zählen nicht.
+            (
+                "Laut https://example.org/2024/studie-4711 spart sie 30 Prozent.",
+                ["30 Prozent"],
+            ),
         ],
     )
     def test_zahl_ohne_herkunft(self, service, text, zahlen):
@@ -573,8 +587,7 @@ class TestZahlOhneHerkunft:
 
         zahl = anmerkung(ergebnis, "zahl_ohne_herkunft")
         assert zahl.woerter == zahlen
-        assert "bei „Herkunft“" in zahl.text
-        assert "„+ Herkunft“" in zahl.text
+        assert "Trag bei „Herkunft“ ein, woher" in zahl.text
         anzahl = "Zahl ohne" if len(zahlen) == 1 else "Zahlen ohne"
         assert zahl.text.startswith(anzahl)
 
@@ -620,6 +633,8 @@ class TestZahlOhneHerkunft:
             "Über § 218 wird gestritten.",
             "Wie bei Stuttgart 21 dauert es.",
             "Die Linie 14 fährt öfter.",
+            "Die Halle 13 ist voll.",
+            "Mehr dazu auf www.example.org/zahlen/4711.",
             "Am 24. Oktober ist Markt.",
             "Seit dem 20. Jahrhundert heizen wir so.",
             "Am 3.10.2025 war Feiertag.",
