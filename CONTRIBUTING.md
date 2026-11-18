@@ -15,14 +15,14 @@ Development happens on Forgejo:
 Issues and pull requests are managed there. Access is for people working on the project
 (Netzbegrünung, verdigado).
 
-[github.com/netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen) is a
+[github.com/netzbegruenung/gutgesagt](https://github.com/netzbegruenung/gutgesagt) is a
 read-only mirror: you can read and clone the code there, but issues and pull requests opened
 there are not processed.
 
 ## Quickstart (Docker)
 
 ```bash
-git clone https://github.com/netzbegruenung/contentgruen.git gutgesagt
+git clone https://github.com/netzbegruenung/gutgesagt.git gutgesagt
 cd gutgesagt/mvp
 docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up

@@ -659,7 +659,7 @@ Die Variable heißt `KENNUNG`, nicht `UID`: `UID` ist in bash schreibgeschützt.
 
 ```bash
 KENNUNG=a1b2c3d4-0000-0000-0000-000000000000
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/person_loeschen.sql
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/person_loeschen.sql
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
   -v ON_ERROR_STOP=1 -v uid="$KENNUNG" < person_loeschen.sql   # Ausgabe protokollieren
 # Nur auf unmigriertem Schema (Spalte user_id vorhanden):
@@ -673,7 +673,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
 
 ```bash
 # Schritt 3: Beitraege anonymisieren. Vor jeder Einzelfall-Loeschung.
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/beitraege_anonymisieren.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/beitraege_anonymisieren.py
 docker exec -i gutgesagt-semantic-search python - "$KENNUNG" \
   < beitraege_anonymisieren.py                # zeigt nur, aendert nichts
 docker exec -i gutgesagt-semantic-search python - "$KENNUNG" --ausfuehren \

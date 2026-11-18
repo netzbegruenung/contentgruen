@@ -29,7 +29,7 @@ See `architecture.png` for a system overview.
 ## Getting Started
 
 ```bash
-git clone https://github.com/netzbegruenung/contentgruen.git gutgesagt
+git clone https://github.com/netzbegruenung/gutgesagt.git gutgesagt
 cd gutgesagt/mvp
 docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up
@@ -60,5 +60,5 @@ account and how to develop locally: [CONTRIBUTING.md](./CONTRIBUTING.md).
 - **Development:** issues and pull requests live on Forgejo
   ([git.verdigado.com/Netzbegruenung/gutgesagt](https://git.verdigado.com/Netzbegruenung/gutgesagt)),
   see [CONTRIBUTING.md](./CONTRIBUTING.md).
-- **GitHub** ([netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen))
+- **GitHub** ([netzbegruenung/gutgesagt](https://github.com/netzbegruenung/gutgesagt))
   is a read-only mirror, see [CONTRIBUTING.md](./CONTRIBUTING.md#repository).

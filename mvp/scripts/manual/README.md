@@ -69,14 +69,14 @@ semantic-search-Container, mit dessen Qdrant-Umgebung:
 Auf Test/Prod liegt kein Repo-Checkout; die Skripte werden heruntergeladen:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/bestand_pruefen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/bestand_pruefen.py
 docker exec -i gutgesagt-semantic-search python - < bestand_pruefen.py
 
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
 docker exec -i gutgesagt-semantic-search python - < text_normalisiert_nachtragen.py
 docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisiert_nachtragen.py
 
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/antwort_ids_nachtragen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/antwort_ids_nachtragen.py
 docker exec -i gutgesagt-semantic-search python - < antwort_ids_nachtragen.py
 docker exec -i gutgesagt-semantic-search python - --ausfuehren < antwort_ids_nachtragen.py
 ```
@@ -103,7 +103,7 @@ Reihenfolge, Backup und Rueckweg stehen in `docs/DEPLOYMENT.md`, „Qdrant: name
 Schreiben fehl.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/vektor_benennen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/vektor_benennen.py
 docker exec -i gutgesagt-semantic-search python - < vektor_benennen.py
 docker exec -i gutgesagt-semantic-search python - --ausfuehren < vektor_benennen.py
 docker restart gutgesagt-semantic-search
@@ -145,7 +145,7 @@ Reihenfolge:
    der zweite Lauf noch etwas, ihn mit `--ausfuehren` wiederholen.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/zustaende_umstellen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/zustaende_umstellen.py
 docker exec -i gutgesagt-semantic-search python - < zustaende_umstellen.py
 docker exec -i gutgesagt-semantic-search python - --ausfuehren < zustaende_umstellen.py
 ```
