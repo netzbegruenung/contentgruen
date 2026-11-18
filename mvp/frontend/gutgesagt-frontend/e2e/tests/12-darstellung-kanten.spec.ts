@@ -210,10 +210,10 @@ test.describe('Umschalter hell/dunkel', () => {
     await knopf.click();
     await expect(html).toHaveAttribute('data-theme', 'dark');
     await expect(knopf).toHaveAttribute('aria-pressed', 'true');
-    // main traegt --bg-card der Dunkel-Palette (Wert aus dem Theme, nicht fest im Test)
+    // main traegt --flaeche der Dunkel-Palette (Wert aus dem Theme, nicht fest im Test)
     const { grund, karte } = await page.evaluate(() => {
       const probe = document.createElement('div');
-      probe.style.backgroundColor = 'var(--bg-card)';
+      probe.style.backgroundColor = 'var(--flaeche)';
       document.body.appendChild(probe);
       const karte = getComputedStyle(probe).backgroundColor;
       probe.remove();

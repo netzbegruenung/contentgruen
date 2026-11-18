@@ -55,7 +55,7 @@ export const WEITERE_ANTWORTEN = 'Weitere Antworten zu dieser Aussage';
       }
 
       .beschriftung {
-        color: var(--text-secondary);
+        color: var(--text-leise);
         margin-right: 4px;
       }
 
@@ -90,7 +90,7 @@ export const WEITERE_ANTWORTEN = 'Weitere Antworten zu dieser Aussage';
         box-sizing: border-box;
         text-decoration: none;
         color: inherit;
-        border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+        border-bottom: 1px solid var(--feldrand, rgba(0, 0, 0, 0.12));
       }
 
       .weitere-link:hover .titel,
@@ -104,7 +104,7 @@ export const WEITERE_ANTWORTEN = 'Weitere Antworten zu dieser Aussage';
       }
 
       .typ-name {
-        color: var(--text-secondary);
+        color: var(--text-leise);
         font-size: 0.85rem;
         white-space: nowrap;
       }

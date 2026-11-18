@@ -37,7 +37,7 @@
 
 .profilbild-option:has(.profilbild-radio:checked) {
   border-color: var(--akzent-klee);
-  background-color: var(--selected-bg);
+  background-color: var(--karte-kommentar);
 }
 
 .profilbild-option:has(.profilbild-radio:focus-visible) {
@@ -47,5 +47,5 @@
 
 .hinweis {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }

@@ -112,7 +112,7 @@ function loeschenFrage(nurName: boolean, anzahl: number): BestaetigungsDialogDat
     .melder-suche .hinweis { flex-basis: 100%; margin: 0; }
     .treffer-kopf { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 8px; }
     .treffer { padding: 12px; margin-bottom: 8px; display: grid; gap: 4px; overflow-wrap: anywhere; }
-    .error { color: var(--error-color); }
+    .error { color: var(--fehler); }
   `],
 })
 export class MeldungenEinerPersonComponent {

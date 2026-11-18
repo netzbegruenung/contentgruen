@@ -5,7 +5,7 @@
 
 .hinweis,
 .stand {
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .kopf {
@@ -18,7 +18,7 @@
 }
 
 .fehler {
-  color: var(--error-strong);
+  color: var(--fehler);
 }
 
 .aussagen {
@@ -29,7 +29,7 @@
 
 .aussage {
   padding: 12px 0;
-  border-bottom: 1px solid var(--disabled-bg);
+  border-bottom: 1px solid var(--mulde);
 }
 
 .aussage-text {
@@ -40,5 +40,5 @@
 .nicht-im-testset {
   margin: -4px 0 8px;
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }

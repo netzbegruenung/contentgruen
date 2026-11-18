@@ -9,7 +9,7 @@
 }
 
 .aussagekarte-kopf {
-  @include karte.kopfband(var(--statement-bg));
+  @include karte.kopfband(var(--mulde));
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
@@ -20,7 +20,7 @@
   width: 32px;
   height: 32px;
   font-size: 32px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .aussagekarte-art {
@@ -28,7 +28,7 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Wie .karte-titel; zugeklappt hoechstens vier Zeilen, "Ganz lesen" klappt auf
@@ -52,7 +52,7 @@
   background: none;
   font: inherit;
   font-size: 14px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -70,7 +70,7 @@
   margin: 0 0 var(--spacing-sm);
   font-size: 14px;
   font-weight: 600;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .aussagekarte-fuss {

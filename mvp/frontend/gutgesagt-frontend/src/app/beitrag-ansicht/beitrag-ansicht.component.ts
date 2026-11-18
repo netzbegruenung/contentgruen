@@ -100,7 +100,7 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
 
       .hinweis {
         margin: 0;
-        color: var(--text-secondary);
+        color: var(--text-leise);
         text-align: center;
       }
     `,

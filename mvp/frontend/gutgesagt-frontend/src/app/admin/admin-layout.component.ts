@@ -70,20 +70,20 @@ import { ZuTunComponent } from './zu-tun/zu-tun.component';
       min-height: 44px;
       padding: 0 var(--spacing-md);
       border-radius: var(--border-radius-medium);
-      color: var(--text-secondary);
+      color: var(--text-leise);
       font-weight: 500;
       text-decoration: none;
       white-space: nowrap;
     }
 
     .admin-nav a:hover {
-      background-color: var(--hover-bg);
+      background-color: var(--mulde);
     }
 
     /* Gewaehlt wie bei den Ansichts-Umschaltern: Tanne-Hauch, Tanne-Text */
     .admin-nav a.aktiv {
-      background-color: var(--auswahl-grund);
-      color: var(--primary-dark);
+      background-color: var(--primaer-tint);
+      color: var(--akzent-schrift);
       font-weight: 700;
     }
 
@@ -101,7 +101,7 @@ import { ZuTunComponent } from './zu-tun/zu-tun.component';
       .admin-nav {
         flex-direction: row;
         overflow-x: auto;
-        border-bottom: 1px solid var(--divider-color);
+        border-bottom: 1px solid var(--linie);
       }
 
       .admin-nav a {

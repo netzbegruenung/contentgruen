@@ -14,7 +14,7 @@
 
 .such-hinweis {
     margin: var(--spacing-xs) 0 0;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     font-size: 0.875rem;
     line-height: 1.4;
 }
@@ -23,7 +23,7 @@
    Haupttextfarbe, auf dem gelben Band und im Dunkelmodus auf Schiefer deutlich ueber AA */
 .search-container:not(.compact-mode) .such-hinweis {
     text-align: center;
-    color: var(--text-primary);
+    color: var(--text);
 }
 
 /* Startseite am Handy: nicht unter 12 px (Designrunde 18.11.) */
@@ -55,7 +55,7 @@
 }
 
 ::ng-deep mat-form-field.left .mdc-text-field {
-  background-color: var(--input-background);
+  background-color: var(--flaeche);
 }
 
 .label {
@@ -86,7 +86,7 @@
     margin-left: 8px;
 
     &:not(:disabled) {
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
     }
 
     &:disabled {
@@ -94,7 +94,7 @@
     }
 
     &:hover:not(:disabled) {
-        background-color: var(--primary-tint-strong);
+        background-color: var(--primaer-tint);
     }
 }
 
@@ -155,7 +155,7 @@
     /* Show mobile search button as suffix in compact mode */
     .compact-mode .mobile-search-button {
         display: inline-flex;
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
         font-size: 20px;
     }
 }
@@ -174,7 +174,7 @@
 }
 
 ::ng-deep .mat-mdc-text-field-wrapper {
-    background-color: var(--input-background) !important;
+    background-color: var(--flaeche) !important;
     box-shadow: none !important;
 }
 

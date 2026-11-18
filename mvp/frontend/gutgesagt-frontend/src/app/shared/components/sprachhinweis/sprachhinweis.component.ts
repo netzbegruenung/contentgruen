@@ -37,7 +37,7 @@ const ZU_VIELE = 'zu-viele' as const;
     `
       .sprachhinweis {
         margin: 8px 0;
-        color: var(--text-secondary);
+        color: var(--text-leise);
         font-size: 0.875rem;
       }
     `,

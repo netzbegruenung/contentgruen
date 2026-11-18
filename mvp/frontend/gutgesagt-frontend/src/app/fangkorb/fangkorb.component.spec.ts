@@ -275,7 +275,7 @@ describe('FangkorbComponent', () => {
       const [gewaehlt, anderer] = tabs().map((tab) => getComputedStyle(tab));
 
       expect(gewaehlt.color).toBe('rgb(0, 84, 55)');
-      expect(gewaehlt.backgroundColor).toBe('rgba(0, 84, 55, 0.07)');
+      expect(gewaehlt.backgroundColor).toBe('rgb(235, 246, 239)'); // --primaer-tint
       expect(gewaehlt.boxShadow).toContain('inset');
       expect(anderer.backgroundColor).toBe('rgba(0, 0, 0, 0)');
     });

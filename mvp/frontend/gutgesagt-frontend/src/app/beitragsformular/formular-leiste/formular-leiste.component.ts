@@ -64,7 +64,7 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
       padding: 0;
       border: 0;
       background: none;
-      color: var(--primary-dark);
+      color: var(--akzent-schrift);
       font: inherit;
       text-decoration: underline;
       cursor: pointer;
@@ -80,8 +80,8 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
         z-index: 50;
         margin: 0;
         padding: 12px 16px;
-        background: var(--bg-card);
-        border-top: 1px solid var(--divider-color);
+        background: var(--flaeche);
+        border-top: 1px solid var(--linie);
         box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.06);
       }
 
@@ -90,15 +90,15 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
         flex-basis: 100%;
         margin: 0;
         padding: 8px 12px;
-        border-left: 4px solid var(--error-color);
+        border-left: 4px solid var(--fehler);
         border-radius: 4px;
-        background: var(--error-tint);
+        background: var(--fehler-tint);
         font-size: 0.9rem;
       }
 
       .leiste-hinweis {
-        border-left-color: var(--warning-edge);
-        background: var(--warning-bg);
+        border-left-color: var(--hinweis-rand);
+        background: var(--hinweis-tint);
       }
 
       /* Der Hauptknopf fuellt die Leiste, ein Textlink daneben (Zuruecksetzen) bleibt schmal */

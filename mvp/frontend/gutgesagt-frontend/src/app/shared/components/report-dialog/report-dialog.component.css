@@ -1,5 +1,5 @@
 .description {
-  color: var(--text-muted);
+  color: var(--text-leise);
   margin-bottom: 20px;
   line-height: 1.5;
 }
@@ -10,9 +10,9 @@
 }
 
 .error-message {
-  color: var(--error-main);
+  color: var(--fehler);
   padding: 12px;
-  background-color: var(--error-bg);
+  background-color: var(--fehler-tint);
   border-radius: 4px;
   margin-top: 12px;
 }
@@ -26,12 +26,12 @@
   font-size: 64px;
   width: 64px;
   height: 64px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   margin-bottom: 16px;
 }
 
 .sub-message {
-  color: var(--text-muted);
+  color: var(--text-leise);
   font-size: 14px;
 }
 
@@ -41,7 +41,7 @@ button mat-spinner {
 }
 
 .feld-fehler {
-  color: var(--error-main);
+  color: var(--fehler);
   font-size: 12px;
   margin: -12px 0 12px;
 }
@@ -53,7 +53,7 @@ button mat-spinner {
 }
 
 .hinweis {
-  color: var(--text-muted);
+  color: var(--text-leise);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -67,7 +67,7 @@ button mat-spinner {
 .fehlt-hinweis {
   flex: 1 0 100%;
   margin: 0;
-  color: var(--text-muted);
+  color: var(--text-leise);
   font-size: 13px;
   line-height: 1.4;
   text-align: right;

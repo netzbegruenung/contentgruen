@@ -97,9 +97,9 @@ export interface SperrenDialogErgebnis {
     `
       .volle-breite { width: 100%; }
       .sperren-titel { font-weight: 500; }
-      .sperren-hinweis { color: var(--text-secondary); }
-      .sperren-zitat { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--divider-color); }
-      .zitat-label { margin: 0 0 4px; font-size: 0.8125rem; color: var(--text-secondary); }
+      .sperren-hinweis { color: var(--text-leise); }
+      .sperren-zitat { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--linie); }
+      .zitat-label { margin: 0 0 4px; font-size: 0.8125rem; color: var(--text-leise); }
       .zitat-text { margin: 0; max-height: 12em; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
     `,
   ],

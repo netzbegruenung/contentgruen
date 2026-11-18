@@ -1,9 +1,9 @@
 .gegenlesen {
   margin-top: 16px;
   padding: 12px 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--feldrand);
   border-radius: 8px;
-  background: var(--bg-surface);
+  background: var(--flaeche);
 }
 
 .gegenlesen-kopf {
@@ -25,7 +25,7 @@ h4 {
 .gegenlesen-stand,
 .gegenlesen-fuss {
   margin: 2px 0 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 0.875rem;
 }
 
@@ -62,7 +62,7 @@ h4 {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text);
   font: inherit;
   font-size: 15px;
   text-align: left;
@@ -82,11 +82,11 @@ h4 {
 .gegenlesen-pfeil {
   flex: none;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .gegenlesen-zeile.gut .gegenlesen-zeile-text {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .gegenlesen.kompakt .gegenlesen-inhalt {
