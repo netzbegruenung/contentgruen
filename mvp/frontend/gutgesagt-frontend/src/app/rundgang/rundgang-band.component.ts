@@ -15,8 +15,10 @@ import { RundgangService } from './rundgang.service';
     @if (angebot(); as angebot) {
       @if (angebot.schlank) {
       <!-- Eine Zeile statt Kasten (Persona-Runde 18.11.): Am Handy stehen Suche und der Anfang
-           von „Frisch aus der Community“ so im ersten Bild. Gleiche Logik wie das Band. -->
+           von „Frisch aus der Community“ so im ersten Bild. Gleiche Logik wie das Band.
+           Links der Wegweiser des alten Kastens, klein (Maintainer 18.11.). -->
       <aside class="zeile" [attr.aria-label]="angebot.titel">
+        <img class="zeile-bild" src="marke/wegweiser.svg" alt="" width="28" height="28" />
         <p>
           <span class="zeile-titel">{{ angebot.titel }}</span>&ngsp;<button type="button" class="zeile-link" (click)="rundgang.bandBeantworten(true)">{{ angebot.ja }}</button>&ngsp;<span class="zeile-satz"><span aria-hidden="true">· </span>{{ angebot.satz }}</span>
         </p>

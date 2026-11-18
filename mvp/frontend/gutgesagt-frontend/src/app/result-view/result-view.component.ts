@@ -31,6 +31,7 @@ import {
   TrefferTyp,
   alleTreffer,
   ansichtBauen,
+  mitZweiterSpalte,
   anzahlJeTyp,
   anzahlSichtbar,
   besteHervorheben,
@@ -220,6 +221,11 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   hauptGruppen: AnsichtGruppe[] = [];
   weitereGruppen: AnsichtGruppe[] = [];
   weitereAnzahl = 0;
+  /**
+   * Am Desktop zwei Spalten: links die beste Antwort, rechts der Rest der Gruppe (Maintainer
+   * 18.11.). Nur wenn es neben der besten Antwort etwas gibt; die Spalten macht das CSS ab 1024 px.
+   */
+  zweispaltig = false;
   /** "Weitere, weniger passende Treffer" aufgeklappt; jede neue Suche beginnt zu. */
   weitereOffen = false;
   /** Gruppe und Typ, die alle Karten zeigen ("Alle N … zeigen"). */
@@ -305,6 +311,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.hauptGruppen = this.ansicht.filter((g) => !g.weniger);
     this.weitereGruppen = this.ansicht.filter((g) => g.weniger);
     this.weitereAnzahl = this.weitereGruppen.reduce((summe, g) => summe + g.anzahl, 0);
+    this.zweispaltig = mitZweiterSpalte(this.hauptGruppen[0]);
     this.cdr.markForCheck();
   }
 

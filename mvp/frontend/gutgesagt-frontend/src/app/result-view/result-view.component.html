@@ -1,6 +1,6 @@
 <!-- Eine mittige Spalte unter dem Kopf, darin alles linksbuendig (Ausrichtungsregel, styles.css
      .inhalt-spalte; Designrunde 18.11.): Suchfeld, Hinweis, Erkannt-Zeile, Karten, Nicht dabei? -->
-<div class="inhalt-spalte treffer-spalte">
+<div class="inhalt-spalte treffer-spalte" [class.zweispaltig]="zweispaltig">
 <!-- Unified search box for all screen sizes -->
 <section class="full-width-section search-box">
     <div class="search-box-content">
@@ -105,7 +105,9 @@
              nennt die Aussage, die Karten darum keinen eigenen Antwort-auf-Kopf. Gibt es eine
              erkannte Aussage, stehen die anderen eingeklappt darunter und zaehlen nicht in den Chips. -->
         <ng-template #gruppeTpl let-gruppe>
-        <section class="gruppe" [attr.aria-labelledby]="gruppe.id">
+        <!-- Am Desktop zwei Spalten (Maintainer 18.11.): Die beste Antwort floatet links, alles andere
+             der Gruppe steht rechts daneben. Die Reihenfolge im DOM bleibt: erst die beste, dann rechts. -->
+        <section class="gruppe" [class.mit-bester]="gruppe === hauptGruppen[0] && zweispaltig" [attr.aria-labelledby]="gruppe.id">
             <!-- Die erkannte Gruppe nennt die Zeile "Erkannt als" schon; ihr Kopf nur fuer Screenreader (Designrunde mobil 17.11.) -->
             <h2 class="gruppe-kopf" [class.visually-hidden]="gruppe.art === 'erkannt' && erkannt" [class.gruppe-kopf--neben]="gruppe.art === 'aehnlich' || gruppe.art === 'ohne'" [id]="gruppe.id">
                 <mat-icon class="gruppe-icon" aria-hidden="true">{{ gruppe.art === 'ohne' ? 'search' : 'subdirectory_arrow_left' }}</mat-icon>

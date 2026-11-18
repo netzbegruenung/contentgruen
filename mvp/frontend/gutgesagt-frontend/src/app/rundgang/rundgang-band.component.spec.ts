@@ -38,7 +38,7 @@ describe('RundgangBandComponent', () => {
     expect(aside.getAttribute('aria-labelledby')).toBe(aside.querySelector('h2')!.id);
   });
 
-  it('zeigt das Willkommen als eine schlanke Zeile ohne Bild (Persona-Runde 18.11.)', () => {
+  it('zeigt das Willkommen als eine schlanke Zeile mit kleinem Wegweiser (Persona-Runde 18.11.)', () => {
     fixture.componentRef.setInput('ort', 'start');
     band.set(WILLKOMMEN);
     fixture.detectChanges();
@@ -47,7 +47,9 @@ describe('RundgangBandComponent', () => {
     expect(aside.querySelector('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
       'Neu hier? Rundgang (1 Min.) · Ein Konto brauchst du nicht',
     );
-    expect(aside.querySelector('img')).toBeNull();
+    const bild = aside.querySelector('img')!;
+    expect(bild.getAttribute('src')).toBe('marke/wegweiser.svg');
+    expect(bild.getAttribute('alt')).withContext('Schmuck, nicht vorgelesen').toBe('');
     expect(aside.querySelector('h2')).toBeNull();
   });
 

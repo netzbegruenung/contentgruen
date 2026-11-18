@@ -6,6 +6,7 @@ import {
   aufklappSchluessel,
   besteHervorheben,
   istWeniger,
+  mitZweiterSpalte,
   gruppieren,
 } from './ergebnis-gruppen';
 
@@ -181,6 +182,16 @@ describe('ergebnis-gruppen', () => {
       );
       expect(besteHervorheben(nurHintergrund)[0].bloecke[0].weitereTitel).toBe('Weitere Hintergrundinfos · 1');
       expect(besteHervorheben([])).toEqual([]);
+    });
+
+    it('stellt nur neben eine beste Antwort mit weiteren Karten eine zweite Spalte', () => {
+      const [erste, zweite] = besteHervorheben(ansicht('a'));
+      expect(mitZweiterSpalte(erste)).toBeTrue();
+      expect(mitZweiterSpalte(zweite)).withContext('ohne beste Antwort').toBeFalse();
+      const eine = [treffer('commentary_result', 'k-1', 'a', 'A', 0.9)];
+      const allein = besteHervorheben(ansichtBauen(gruppieren(antwort({ k: eine }), 'a'), new Set()));
+      expect(mitZweiterSpalte(allein[0])).withContext('nur eine Antwort').toBeFalse();
+      expect(mitZweiterSpalte(undefined)).toBeFalse();
     });
 
     it('zaehlt im Knopf wie in der Ueberschrift, ohne die beste Antwort', () => {

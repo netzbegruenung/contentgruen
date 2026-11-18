@@ -113,14 +113,22 @@ p {
 
 /* Schlanke Zeile (Persona-Runde 18.11.): kein Kasten, kein Bild, in der Spalte von Suchfeld
    und Karten. Link und Kreuz behalten 44 px Tippflaeche, ohne die Zeile aufzublaehen. */
+/* Etwas hoeher und luftiger als die reine Textzeile, mit dem Wegweiser links (Maintainer 18.11.);
+   am Handy bleiben Suche und der Anfang der ersten Community-Karte im ersten Bild (390 x 844). */
 .zeile {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 10px;
     margin: 0 max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
-    padding: 0 0 0 12px;
+    padding: 6px 0 6px 14px;
     border-radius: var(--border-radius-large);
     background: var(--willkommen-grund, var(--rundgang-gelb));
+}
+
+.zeile-bild {
+    flex: none;
+    width: 28px;
+    height: 28px;
 }
 
 .zeile p {

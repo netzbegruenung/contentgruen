@@ -257,6 +257,15 @@ export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGrup
 }
 
 /**
+ * Ob neben der besten Antwort eine zweite Spalte steht (Desktop ab 1024 px, Maintainer 18.11.):
+ * nur in der Gruppe mit der besten Antwort, und nur wenn es dort mehr als sie gibt.
+ */
+export function mitZweiterSpalte(gruppe: AnsichtGruppe | undefined): boolean {
+  const [erster, ...rest] = gruppe?.bloecke ?? [];
+  return !!erster?.beste && (erster.weitere.length > 0 || rest.length > 0);
+}
+
+/**
  * Ob eine Gruppe "weniger passend" ist: Es gibt eine erkannte Aussage, und die Gruppe
  * ist eine andere. Eine Mindest-Aehnlichkeit trennt das nicht: Die Suche liefert nur
  * gewichtete Werte, und auch die rohe Aehnlichkeit liegt fuer Aussagen gleicher

@@ -726,8 +726,11 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
       expect(beste[0].querySelector('.aufklapp-knopf')).withContext('die beste ist nicht aufklappbar').toBeNull();
       expect(beste[0].querySelector('.karte-inhalt')).toBeTruthy();
       expect(beste[0].querySelector('.kopieren-knopf')).toBeTruthy();
-      // Die beste steht vor allen anderen Karten.
+      // Die beste steht vor allen anderen Karten, auch zweispaltig (DOM-Reihenfolge fuer Tastatur und Screenreader).
       expect(seite.querySelector('app-beitragskarte')).toBe(beste[0]);
+      // Neben der besten gibt es weitere Karten: am Desktop zwei Spalten (CSS ab 1024 px)
+      expect(seite.querySelector('.treffer-spalte')!.classList).toContain('zweispaltig');
+      expect(seite.querySelectorAll('.gruppe.mit-bester').length).toBe(1);
 
       const eingeklappt = seite.querySelectorAll('.eingeklappte-karten app-beitragskarte');
       expect(eingeklappt.length).toBe(4);
