@@ -34,6 +34,11 @@
                 <li *ngFor="let schreibhilfe of schreibhilfen"><strong>{{ schreibhilfe.name }}:</strong> {{ schreibhilfe.text }}</li>
             </ul>
 
+            <h3 class="hilfe-abschnitt" [id]="panelId + '-selbst'">Selbst prüfen – das sieht die App nicht</h3>
+            <ul class="selbst-pruefen" [attr.aria-labelledby]="panelId + '-selbst'">
+                <li *ngFor="let punkt of selbstPruefen">{{ punkt }}</li>
+            </ul>
+
             <ng-container *ngIf="hilfe.titelbeispiele">
                 <h3 class="hilfe-abschnitt" [id]="panelId + '-titel'">Titel: eine Behauptung in einem Satz</h3>
                 <ul class="hilfe-regeln titel-beispiele" [attr.aria-labelledby]="panelId + '-titel'">

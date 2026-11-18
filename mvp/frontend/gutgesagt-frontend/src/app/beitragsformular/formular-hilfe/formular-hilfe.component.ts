@@ -10,13 +10,14 @@ import {
   NICHT_JEDE_AUSSAGE,
   SCHREIBHILFEN,
   SCHREIBREGELN,
+  SELBST_PRUEFEN,
   TITEL_BEISPIELE,
 } from '../../shared/schreibregeln';
 
 /**
  * Kopf eines Beitragsformulars: eine Zeile, worauf es ankommt, und hinter dem ?
  * die Regeln (Ist / Ist nicht / Beispiel), bei Kommentar und Post dazu die
- * Schreibregeln und Schreibhilfen. Anfangs zu, ohne Merker. Sperrt nichts.
+ * Schreibregeln, Schreibhilfen und was man selbst pruefen muss. Anfangs zu, ohne Merker. Sperrt nichts.
  */
 @Component({
   standalone: true,
@@ -32,6 +33,7 @@ export class FormularHilfeComponent {
 
   readonly schreibregeln = SCHREIBREGELN;
   readonly schreibhilfen = SCHREIBHILFEN;
+  readonly selbstPruefen = SELBST_PRUEFEN;
   readonly titelBeispiele = TITEL_BEISPIELE;
   readonly nichtJedeAussage = NICHT_JEDE_AUSSAGE;
   readonly erfundenesMelden = ERFUNDENES_MELDEN;

@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FormularHilfeComponent } from './formular-hilfe.component';
 import { FormularTyp } from '../../shared/formular-adresse';
-import { SCHREIBHILFEN, SCHREIBREGELN, TITEL_BEISPIELE } from '../../shared/schreibregeln';
+import { SCHREIBHILFEN, SCHREIBREGELN, SELBST_PRUEFEN, TITEL_BEISPIELE } from '../../shared/schreibregeln';
 
 describe('FormularHilfeComponent', () => {
   let fixture: ComponentFixture<FormularHilfeComponent>;
@@ -63,6 +63,19 @@ describe('FormularHilfeComponent', () => {
       expect(hilfen.join(' ')).toContain('Alltag');
     });
 
+    it('zeigt, was die App nicht prüft, ohne die Schreibregeln zu wiederholen', () => {
+      aufklappen();
+
+      const punkte = texte('.selbst-pruefen li');
+      expect(punkte.length).toBe(SELBST_PRUEFEN.length);
+      expect(punkte.length).toBeLessThanOrEqual(7);
+      expect(punkte.join(' ')).toContain('Ein Gedanke je Beitrag');
+      expect(punkte.join(' ')).toContain('selbst geöffnet');
+      expect(punkte.join(' ')).toContain('140 Zeichen');
+      expect(punkte.join(' ')).not.toContain('gemeinsam');
+      expect(punkte.join(' ')).not.toContain('Häme');
+    });
+
     it('zeigt gute und schwache Titel, die schwachen mit Grund', () => {
       aufklappen();
 
@@ -99,6 +112,7 @@ describe('FormularHilfeComponent', () => {
 
       expect(texte('.schreibregeln li').length).toBe(6);
       expect(texte('.schreibhilfen li').length).toBe(SCHREIBHILFEN.length);
+      expect(texte('.selbst-pruefen li').length).toBe(SELBST_PRUEFEN.length);
       expect(seite().querySelector('.hilfe-panel')!.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
       // Post-Titel folgen der Behauptungsregel nicht (CODING_STANDARDS.md, "A Titel is a claim")
       expect(seite().querySelector('.titel-beispiele')).toBeNull();
@@ -113,6 +127,7 @@ describe('FormularHilfeComponent', () => {
 
       expect(seite().querySelector('.hilfe-panel')).toBeTruthy();
       expect(seite().querySelector('.schreibregeln')).toBeNull();
+      expect(seite().querySelector('.selbst-pruefen')).toBeNull();
       expect(seite().querySelector('.titel-beispiele')).toBeNull();
     });
   });
