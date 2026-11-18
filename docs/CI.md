@@ -417,7 +417,11 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
   argument `APP_VERSION` to the frontend image; a release needs no version change in
   `package.json` once the GitHub workflows are gone (`docs/DEPLOYMENT.md`, "Releases").
   Builds of `main` pass `APP_VERSION=main`: the footer shows „main · <commit>“ instead of a
-  version that would go stale.
+  version that would go stale. Until the switch the test system runs GitHub's `:main`, whose
+  `build.yml` passes only `GIT_SHA`, so its footer still shows the `package.json` version.
+  `replace-env.sh` writes commit and version into two meta tags of `index.html` (served
+  without cache), not into the `*.js` files: their hashed names are fixed before the
+  substitution and nginx caches them for a year, so browsers kept an old commit.
 - **Path filters** per build step, because a filter on the workflow would hide it. They cover
   everything the Dockerfile copies (the semantic search image also takes the migrations,
   `mvp/scripts/backup`, `mvp/data` and `mvp/.dockerignore`), plus `build.yaml` and

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FooterComponent, buildKennung } from './footer.component';
+import { FooterComponent, buildKennung, buildWerteAusSeite } from './footer.component';
 import { MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
@@ -104,5 +104,40 @@ describe('buildKennung', () => {
     expect(buildKennung('0.8.0', '3523b55', undefined)).toBe('v0.8.0 · 3523b55');
     expect(buildKennung('0.8.0', '3523b55', '')).toBe('v0.8.0 · 3523b55');
     expect(buildKennung('0.8.0', '3523b55', '${APP_VERSION}')).toBe('v0.8.0 · 3523b55');
+  });
+});
+
+describe('buildWerteAusSeite', () => {
+  function seite(kopf: string): Document {
+    return new DOMParser().parseFromString(`<html><head>${kopf}</head><body></body></html>`, 'text/html');
+  }
+
+  it('liest Commit und Version aus den meta-Tags, die replace-env.sh fuellt', () => {
+    const werte = buildWerteAusSeite(seite(
+      '<meta name="gutgesagt-commit" content="b511305abc"><meta name="gutgesagt-version" content="main">'));
+
+    expect(werte).toEqual({ gitSha: 'b511305abc', appVersion: 'main' });
+    expect(buildKennung('0.8.5', werte.gitSha, werte.appVersion)).toBe('main · b511305');
+  });
+
+  it('faellt ohne meta-Tags auf dev und package.json zurueck', () => {
+    const werte = buildWerteAusSeite(seite(''));
+
+    expect(werte).toEqual({ gitSha: undefined, appVersion: undefined });
+    expect(buildKennung('0.8.5', werte.gitSha, werte.appVersion)).toBe('v0.8.5 · dev');
+  });
+
+  it('faellt mit unersetzten Platzhaltern (ng serve) auf dev und package.json zurueck', () => {
+    const werte = buildWerteAusSeite(seite(
+      '<meta name="gutgesagt-commit" content="${GIT_SHA}"><meta name="gutgesagt-version" content="${APP_VERSION}">'));
+
+    expect(buildKennung('0.8.5', werte.gitSha, werte.appVersion)).toBe('v0.8.5 · dev');
+  });
+
+  it('nimmt package.json bei leerer Version aus replace-env.sh', () => {
+    const werte = buildWerteAusSeite(seite(
+      '<meta name="gutgesagt-commit" content="b511305"><meta name="gutgesagt-version" content="">'));
+
+    expect(buildKennung('0.8.5', werte.gitSha, werte.appVersion)).toBe('v0.8.5 · b511305');
   });
 });
