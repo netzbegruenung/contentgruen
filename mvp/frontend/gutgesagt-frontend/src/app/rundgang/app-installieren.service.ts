@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { DestroyRef, Injectable, InjectionToken, inject, signal } from '@angular/core';
 import { Subject } from 'rxjs';
+import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
 import { geraetAusBrowser } from './home-bildschirm';
 
 /**
@@ -24,8 +25,9 @@ export const ALS_APP_GESTARTET = new InjectionToken<() => boolean>('ALS_APP_GEST
 /**
  * Hält das Angebot des Browsers, Gut gesagt als App zu installieren (18.11.2026), damit
  * Band und Hilfe denselben Stand zeigen. Chrome und Edge melden mit `beforeinstallprompt`,
- * dass sie installieren können; das Ereignis wird abgefangen (kein eigenes Banner des
- * Browsers) und gemerkt, bis jemand „Installieren“ drückt. Safari und Firefox melden
+ * dass sie installieren können; das Ereignis wird gemerkt, bis jemand „Installieren“
+ * drückt (`prompt()` braucht kein `preventDefault()`). Die Infoleiste des Browsers wird
+ * nur unterdrückt, wenn das eigene Band an ist (`HOME_HINWEIS_MERKER`). Safari und Firefox melden
  * nichts: Dann gibt es keinen Knopf, nur die Anleitung in der Hilfe. Nichts davon landet
  * im Speicher des Browsers.
  */
@@ -44,9 +46,11 @@ export class AppInstallierenService {
 
   constructor() {
     const fenster = inject(DOCUMENT).defaultView;
+    // Das eigene Band gibt es nur mit Schalter; sonst bleibt die Infoleiste des Browsers
+    const eigenesBand = inject(HOME_HINWEIS_MERKER);
     if (!fenster) return;
     const angeboten = (e: Event): void => {
-      e.preventDefault();
+      if (eigenesBand) e.preventDefault();
       this.ereignis = e as InstallierenEreignis;
       this.setzen(true, this._installiert());
     };

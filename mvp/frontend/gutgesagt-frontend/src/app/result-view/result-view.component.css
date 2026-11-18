@@ -785,11 +785,19 @@ mat-sidenav-content {
     justify-self: center;
   }
 
-  /* Die weiteren Karten zu zweit; eine aufgeklappte wird hoeher, die Nachbarin nicht */
-  .gruppe.mit-bester .eingeklappte-karten ::ng-deep .kartenliste {
+  /* Die weiteren Karten zu zweit; eine aufgeklappte wird hoeher, die Nachbarin nicht.
+     Ebenso die aufgeklappten "Weitere, weniger passende Treffer" (Maintainer 18.11.): dann
+     ueber die volle Breite wie die Gruppe darueber; "Nicht dabei?" und der Hinweis bleiben
+     auf Lesebreite */
+  .gruppe.mit-bester .eingeklappte-karten ::ng-deep .kartenliste,
+  .zweispaltig .weitere-liste .eingeklappte-karten ::ng-deep .kartenliste {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: var(--spalten-abstand);
     align-items: start;
+  }
+
+  .treffer-spalte.zweispaltig .ergebnisse > .weitere {
+    max-width: none;
   }
 }

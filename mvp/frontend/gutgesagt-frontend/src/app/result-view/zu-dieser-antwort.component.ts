@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 
-import { KartenDaten } from '../beitragskarte/karten-daten';
+import { KartenDaten, KartenKennzahlen } from '../beitragskarte/karten-daten';
 import { FASSUNGEN, FASSUNG_LABEL } from '../shared/fassung';
 import { PLATTFORM_GRENZE } from '../shared/beitrag-grenzen';
 import { STIL_ERKLAERUNG, STIL_LABEL } from '../shared/zweck-stil';
@@ -120,7 +120,8 @@ export function laengenZeilen(karte: KartenDaten): LaengenZeile[] {
         line-height: 24px;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-secondary);
+        /* Dieselbe Farbe wie "Beste Antwort" (.beste-ueberschrift), damit beide gleichrangig wirken */
+        color: var(--primary-dark);
       }
 
       .zda-kasten {
@@ -216,7 +217,17 @@ export class ZuDieserAntwortComponent {
     return this._karte;
   }
 
+  /**
+   * Was die Karte daneben nach Stimme oder Kopieren meldet; gilt nur fuer dieselbe Karte,
+   * sonst zaehlen die Suchdaten. So stimmen Siegel und "Guete N von 10" ueberein.
+   */
+  @Input() kennzahlen: KartenKennzahlen | null = null;
+
   readonly GLANZ_TEXT = GLANZ_TEXT;
+
+  private get aktuell(): KartenKennzahlen | null {
+    return this.kennzahlen?.id === this.karte.id ? this.kennzahlen : null;
+  }
 
   /** Wie am Stil-Etikett der Karte, etwa "sachlich: …"; nur am Kommentar mit Stil. */
   get stilErklaerung(): string | null {
@@ -226,11 +237,13 @@ export class ZuDieserAntwortComponent {
 
   /** Dieselbe Erklaerung wie im Siegel-Menue der Karte; ohne Guete (alte Antwort) keine. */
   get erklaerung(): SiegelErklaerung | null {
-    const g = this.karte.guete;
+    const aktuell = this.aktuell;
+    const g = aktuell ? aktuell.guete : this.karte.guete;
     return g ? siegelErklaerung(g.wert, g.erfuellt, g.stimmenZaehlen) : null;
   }
 
   get glanz(): boolean {
-    return hatGlanz(this.karte.nutzung);
+    const aktuell = this.aktuell;
+    return hatGlanz(aktuell ? aktuell.nutzung : this.karte.nutzung);
   }
 }

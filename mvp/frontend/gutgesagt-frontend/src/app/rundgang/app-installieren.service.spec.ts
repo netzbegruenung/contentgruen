@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
 import { installierenEreignis } from '../testing/installieren-ereignis';
 import { ALS_APP_GESTARTET, AppInstallierenService } from './app-installieren.service';
 
@@ -21,7 +22,18 @@ describe('AppInstallierenService', () => {
     expect(await s.installieren()).toBeNull();
   });
 
-  it('merkt sich das Ereignis und unterdrückt das Banner des Browsers', () => {
+  it('Schalter aus: merkt sich das Ereignis, lässt die Infoleiste des Browsers stehen', async () => {
+    const s = service();
+    const e = installierenEreignis('accepted');
+    window.dispatchEvent(e);
+    expect(e.defaultPrevented).toBeFalse();
+    expect(s.installierbar()).toBeTrue();
+    expect(await s.installieren()).toBe('accepted');
+    expect(e.prompt).toHaveBeenCalledTimes(1);
+  });
+
+  it('Schalter an: unterdrückt die Infoleiste des Browsers', () => {
+    TestBed.overrideProvider(HOME_HINWEIS_MERKER, { useValue: true });
     const s = service();
     const e = installierenEreignis('accepted');
     window.dispatchEvent(e);

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgFor } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -65,6 +65,7 @@ export class HelpDialogComponent {
   private readonly dialog = inject(MatDialog);
   /** Derselbe Stand wie im Band: Knopf nur mit Angebot des Browsers, sonst die Anleitung. */
   readonly app = inject(AppInstallierenService);
+  private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
   constructor(
     private dialogRef: MatDialogRef<HelpDialogComponent>,
@@ -93,9 +94,13 @@ export class HelpDialogComponent {
     this.dialogRef.close();
   }
 
-  /** Dialog des Browsers; der Abschnitt zeigt danach „schon als App“ oder wieder die Anleitung. */
-  installieren(): void {
-    void this.app.installieren();
+  /**
+   * Dialog des Browsers; der Abschnitt zeigt danach „schon als App“ oder wieder die Anleitung.
+   * Der Knopf ist dann weg: Der Fokus geht auf die Überschrift des Abschnitts statt auf den Dialog.
+   */
+  async installieren(): Promise<void> {
+    await this.app.installieren();
+    this.host.nativeElement.querySelector<HTMLElement>('#hilfe-als-app-titel')?.focus();
   }
 
   /** Feedback über der Hilfe; nach dem Absenden oder Abbrechen ist die Hilfe wieder da. */

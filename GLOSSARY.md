@@ -441,7 +441,7 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:
-Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Auf der Startseite steht für Angemeldete dazu eine Zeile „Seit deinem letzten Besuch“ mit höchstens drei Links: neue Nutzungen (dieselbe Zahl), neue Einwürfe anderer im Fangkorb und wie viele Lücken in „Hier fehlt eine Antwort“ warten; ohne Neues steht sie nicht da. Auch die Einwürfe sind ein Zählerstand am Konto wie die Nutzung, kein Zeitpunkt, und nichts davon liegt im Browser.
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Auf der Startseite steht für Angemeldete dazu „Seit deinem letzten Besuch“ mit höchstens drei kleinen Kacheln, je eine große Zahl mit kurzem Text, die ganze Kachel ein Link (seit 18.11.2026; vorher eine Zeile mit Links): neue Nutzungen (dieselbe Zahl), neue Einwürfe anderer im Fangkorb und wie viele Lücken in „Hier fehlt eine Antwort“ warten; ohne Neues steht nichts da. Auch die Einwürfe sind ein Zählerstand am Konto wie die Nutzung, kein Zeitpunkt, und nichts davon liegt im Browser.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Willkommen**:

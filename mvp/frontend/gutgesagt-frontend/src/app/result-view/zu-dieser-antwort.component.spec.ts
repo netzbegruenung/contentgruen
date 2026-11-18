@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { ZuDieserAntwortComponent, laengenZeilen } from './zu-dieser-antwort.component';
 import { KartenDaten } from '../beitragskarte/karten-daten';
+import { GLANZ_TEXT } from '../shared/components/siegel/siegel-auszeichnung';
 
 function karte(teil: Partial<KartenDaten> = {}): KartenDaten {
   return {
@@ -84,6 +85,23 @@ describe('ZuDieserAntwortComponent', () => {
     expect(text(el)).not.toContain('Meilenstein');
     expect(text(el)).not.toContain('genutzt');
     expect(text(el)).not.toContain('example.org');
+  });
+
+  it('zieht Guete und Glanz nach, wenn die Karte daneben sie meldet, nur fuer dieselbe Karte', () => {
+    const guete = { wert: 6, erfuellt: [], stimmenZaehlen: false, hilfreich: null, nichtHilfreich: null };
+    const el = zeigen(karte({ guete, nutzung: 2 }));
+    const kopf = () => text(el.querySelector('.zda-guete-kopf'));
+    expect(kopf()).toBe('Güte 6 von 10');
+    expect(text(el.querySelector('.zda-guete'))).not.toContain(GLANZ_TEXT);
+
+    fixture.componentRef.setInput('kennzahlen', { id: 'andere', guete: { ...guete, wert: 9 }, nutzung: 2 });
+    fixture.detectChanges();
+    expect(kopf()).withContext('andere Karte zaehlt nicht').toBe('Güte 6 von 10');
+
+    fixture.componentRef.setInput('kennzahlen', { id: 'k-1', guete: { ...guete, wert: 7 }, nutzung: 500 });
+    fixture.detectChanges();
+    expect(kopf()).toBe('Güte 7 von 10');
+    expect(text(el.querySelector('.zda-guete'))).toContain(GLANZ_TEXT);
   });
 
   it('laesst Stil und Guete weg, wo die Karte keine hat', () => {

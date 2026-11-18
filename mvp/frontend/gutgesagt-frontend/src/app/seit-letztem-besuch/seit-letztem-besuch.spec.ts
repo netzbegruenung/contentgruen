@@ -18,19 +18,21 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
       expect(neuesListe(1, 1, 1).map((e) => e.wort)).toEqual(['Mal genutzt', 'neuer Einwurf', 'wartet auf Antwort']);
     });
 
-    it('gibt jeder Kachel einen ganzen Satz, der Zahl und sichtbaren Text enthaelt', () => {
+    it('gibt jeder Kachel einen ganzen Satz, der den sichtbaren Text woertlich enthaelt (WCAG 2.5.3)', () => {
       const liste = neuesListe(12, 1, 4);
       expect(liste.map((e) => e.satz)).toEqual([
         'Deine Beiträge wurden 12 Mal genutzt',
         '1 neuer Einwurf im Fangkorb',
-        '4 Lücken warten auf Antwort',
+        '4 warten auf Antwort: Lücken in „Hier fehlt eine Antwort“',
       ]);
-      expect(neuesListe(0, 0, 1)[0].satz).toBe('1 Lücke wartet auf Antwort');
-      liste.forEach((e) => expect(e.satz.replace('Lücken ', '')).toContain(`${e.zahl} ${e.wort}`));
+      expect(neuesListe(0, 0, 1)[0].satz).toBe('1 wartet auf Antwort: Lücke in „Hier fehlt eine Antwort“');
+      liste.forEach((e) => expect(e.satz).toContain(`${e.zahl} ${e.wort}`));
     });
 
     it('zeigt an der Grenze der Liste „50+“', () => {
-      expect(neuesListe(0, 0, 50, true).map((e) => [e.zahl, e.satz])).toEqual([['50+', '50+ Lücken warten auf Antwort']]);
+      expect(neuesListe(0, 0, 50, true).map((e) => [e.zahl, e.satz])).toEqual([
+        ['50+', '50+ warten auf Antwort: Lücken in „Hier fehlt eine Antwort“'],
+      ]);
     });
 
     it('zeigt nie eine negative oder leere Zahl', () => {
@@ -104,7 +106,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
       expect(links(fixture)).toEqual([
         'Deine Beiträge wurden 2 Mal genutzt',
         '3 neue Einwürfe im Fangkorb',
-        '4 Lücken warten auf Antwort',
+        '4 warten auf Antwort: Lücken in „Hier fehlt eine Antwort“',
       ]);
       // Sichtbar: grosse Zahl und kurzer Text, das Icon ist fuer Screenreader versteckt
       const kachel: HTMLElement = nav.querySelector('a.nutzung')!;
@@ -123,7 +125,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
 
       (fixture.nativeElement.querySelector('a.einwuerfe') as HTMLAnchorElement).click();
       fixture.detectChanges();
-      expect(links(fixture)).toEqual(['2 Lücken warten auf Antwort']);
+      expect(links(fixture)).toEqual(['2 warten auf Antwort: Lücken in „Hier fehlt eine Antwort“']);
 
       info.next({ isAuthenticated: true, userId: 'bo-2' } as UserInfo);
       fixture.detectChanges();

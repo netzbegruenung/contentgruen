@@ -69,8 +69,8 @@ const ANTWORT = {
   post_search_results: [treffer('post', 'p-1', ERKANNT, 0.65)],
 };
 
-async function oeffnen(page: Page): Promise<void> {
-  await page.route('**/api/v1/search/searchByText**', (r) => r.fulfill({ json: ANTWORT }));
+async function oeffnen(page: Page, antwort: typeof ANTWORT = ANTWORT): Promise<void> {
+  await page.route('**/api/v1/search/searchByText**', (r) => r.fulfill({ json: antwort }));
   await page.route('**/api/v1/statement/aehnliche**', (r) => r.fulfill({ json: { results: ALTERNATIVEN } }));
   await page.goto(`/result?searchQuery=${encodeURIComponent(ANTWORT.statement_text)}`);
   await expect(page.locator('.erkannt-aussage')).toHaveText(`„${ERKANNT.text}“`, { timeout: 45_000 });
@@ -202,6 +202,27 @@ test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
     freigeben();
     await expect(page.locator('.erkannt-aussage')).toBeVisible({ timeout: 45_000 });
     expect(await kasten(page, '.search-box')).toEqual(kopfVorher);
+  });
+
+  test('1280 px: aufgeklappte weniger passende Treffer zu zweit, "Nicht dabei?" auf Lesebreite', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const zweiAndere = [...kommentare, treffer('commentary', 'k-7', ANDERE, 0.84)];
+    await oeffnen(page, {
+      ...ANTWORT,
+      commentary_search_results: zweiAndere,
+      commentary_search_results_count: zweiAndere.length,
+    });
+    await page.locator('.weitere-umschalter').click();
+    const beste = await kasten(page, '.beste-antwort');
+    const karten = page.locator('.weitere-liste .eingeklappte-karten').first().locator('app-beitragskarte');
+    const links = await karten.nth(0).boundingBox();
+    const rechts = await karten.nth(1).boundingBox();
+    if (!links || !rechts) throw new Error('Zwei weniger passende Karten erwartet');
+    expect(Math.round(links.x)).toBe(beste.x);
+    expect(rechts.x).toBeGreaterThan(links.x + links.width);
+    expect(Math.abs(rechts.y - links.y)).toBeLessThanOrEqual(2);
+    const nichtDabei = await kasten(page, '.nicht-dabei-unten');
+    expect(nichtDabei.breite).toBeLessThanOrEqual(760);
   });
 
   test('1023 px: beste Antwort und weitere untereinander, ohne Kasten', async ({ page }) => {

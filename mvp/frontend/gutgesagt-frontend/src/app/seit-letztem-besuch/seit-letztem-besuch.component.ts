@@ -7,7 +7,7 @@ import { distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 
 import { AuthService } from '../auth/auth.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
-import { ROUTES } from '../shared/constants/app.constants';
+import { PAGE_TITLES, ROUTES } from '../shared/constants/app.constants';
 import { NeuesArt, SeitLetztemBesuchService } from './seit-letztem-besuch.service';
 import { LUECKE } from '../shared/luecke-texte';
 import { MENUE_ICONS } from '../shared/fangkorb-texte';
@@ -64,7 +64,8 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
       icon: 'question_answer',
       zahl,
       wort,
-      satz: `${zahl} ${eine ? LUECKE.einzahl : LUECKE.mehrzahl} ${wort}`,
+      // Beginnt mit dem sichtbaren Text, damit Sprachsteuerung ihn trifft (WCAG 2.5.3)
+      satz: `${zahl} ${wort}: ${eine ? LUECKE.einzahl : LUECKE.mehrzahl} in „${PAGE_TITLES.HIER_FEHLT_EINE_ANTWORT}“`,
     });
   }
   return liste;

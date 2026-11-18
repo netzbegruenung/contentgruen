@@ -127,10 +127,11 @@
                      unter einer kleinen Ueberschrift mit Zahl; die Titel tragen die Typen -->
                 <ng-container *ngIf="block.beste as beste">
                     <h3 class="typ-ueberschrift beste-ueberschrift" tabindex="-1">Beste Antwort</h3>
-                    <app-kartenliste class="beste-antwort" [daten]="[beste]" [schlicht]="true" [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
+                    <app-kartenliste class="beste-antwort" [daten]="[beste]" [schlicht]="true" [titelEbene]="4" [antwortAufZeigen]="false"
+                                     (kennzahlen)="besteKennzahlen = $event"></app-kartenliste>
                     <!-- Was die schlichte Karte nicht zeigt; nur am Desktop ab 1024 px sichtbar (CSS) -->
                     <app-zu-dieser-antwort *ngIf="gruppe === hauptGruppen[0] && zweispaltig" class="zu-dieser-antwort-spalte"
-                                           [karte]="beste"></app-zu-dieser-antwort>
+                                           [karte]="beste" [kennzahlen]="besteKennzahlen"></app-zu-dieser-antwort>
                 </ng-container>
                 <ng-container *ngIf="block.weitere.length">
                     <!-- Ohne ⓘ (Maintainer 18.11.): Die Typen erklaert nur noch das Etikett auf der Karte -->

@@ -467,6 +467,15 @@ describe('HelpDialogComponent: Als App aufs Handy', () => {
     expect(app.installieren).toHaveBeenCalledTimes(1);
   });
 
+  it('nach „Installieren“ steht der Fokus auf der Überschrift des Abschnitts', async () => {
+    document.body.appendChild(fixture.nativeElement);
+    app.installierbar.set(true);
+    fixture.detectChanges();
+    await fixture.componentInstance.installieren();
+    expect(document.activeElement?.id).toBe('hilfe-als-app-titel');
+    fixture.nativeElement.remove();
+  });
+
   it('schon als App: sagt das statt der Schritte', () => {
     app.installiert.set(true);
     fixture.detectChanges();
