@@ -67,7 +67,7 @@
     flex: 1;
     height: 6px;
     border-radius: 3px;
-    background: var(--karte-kommentar);
+    background: var(--rundgang-offen);
 }
 
 .balken i.an {

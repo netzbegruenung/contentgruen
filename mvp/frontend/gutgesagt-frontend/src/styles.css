@@ -328,7 +328,7 @@ body {
     border-radius: var(--border-radius-small);
     background-color: var(--hinweis-tint);
     color: var(--hinweis-text);
-    border-left: 4px solid var(--warning-border);
+    border-left: 4px solid var(--hinweis-rand);
 }
 
 .info-container {

@@ -102,7 +102,7 @@ app-rundgang-band {
   box-sizing: border-box;
   min-height: 72px;
   padding: var(--spacing-md) var(--spacing-lg);
-  border: 2px solid var(--karte-kommentar, var(--linie-tanne));
+  border: 2px solid var(--kachel-rand, var(--linie-tanne));
   border-radius: 12px;
   background: var(--karte-kommentar, var(--flaeche));
   color: var(--text);

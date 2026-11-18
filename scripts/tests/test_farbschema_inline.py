@@ -70,6 +70,38 @@ def test_inline_style_und_theme_nennen_dieselben_dunklen_werte():
     ), f"index.html weicht vom Theme ab (inline, Theme): {abweichend}"
 
 
+def _leuchtdichte(farbe: str) -> float:
+    kanaele = [int(farbe[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    r, g, b = [
+        k / 12.92 if k <= 0.03928 else ((k + 0.055) / 1.055) ** 2.4 for k in kanaele
+    ]
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _kontrast(a: str, b: str) -> float:
+    hell, dunkel = sorted((_leuchtdichte(a), _leuchtdichte(b)), reverse=True)
+    return (hell + 0.05) / (dunkel + 0.05)
+
+
+def test_warn_knoepfe_im_dunkeln_erreichen_aa():
+    """Materials warn (#c62828) hat auf der dunklen Flaeche nur 2,89:1. Text-, Umriss- und
+    Icon-Knoepfe mit color="warn" nehmen im Dunkeln --fehler, das 4,5:1 erreichen muss.
+    """
+    theme = _ohne_kommentare(THEME.read_text(encoding="utf-8"))
+    dunkel = _block(theme, "html[data-theme='dark']")
+    knopf = _werte(_block(dunkel, ".mat-mdc-outlined-button.mat-warn"))
+    icon = _werte(_block(dunkel, ".mat-mdc-icon-button.mat-warn"))
+    for name in (
+        "--mat-button-text-label-text-color",
+        "--mat-button-outlined-label-text-color",
+        "--mat-button-outlined-outline-color",
+    ):
+        assert knopf.get(name) == "var(--fehler)", name
+    assert icon.get("--mat-icon-button-icon-color") == "var(--fehler)"
+    werte = theme_werte()
+    assert _kontrast(werte["--fehler"], werte["--flaeche"]) >= 4.5
+
+
 SERVICE = FRONTEND / "app/services/farbschema.service.ts"
 
 

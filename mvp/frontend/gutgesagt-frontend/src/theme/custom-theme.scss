@@ -185,6 +185,14 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --karussell-rand: 1px solid var(--linie);
   --karussell-schatten: inset 0 3px 6px 0 rgba(0, 0, 0, 0.12), inset 0 2px 4px 0 rgba(0, 0, 0, 0.15),
     inset 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  // Grund unter Kartenlisten: im Hellen --mulde, im Dunkeln wie die Seitenfueller (Sebastian 17.11.)
+  --kartenliste-grund: var(--mulde);
+  // Offene Schritte im Rundgang-Fortschritt: im Hellen Klee-zart, im Dunkeln --feldrand (3:1)
+  --rundgang-offen: var(--karte-kommentar);
+  // Rand der Kacheln auf der Startseite (2 px): im Hellen wie die Flaeche, im Dunkeln sichtbar
+  --kachel-rand: var(--karte-kommentar);
+  // Material-Felder: Rand mit 3:1 wie alle Feld- und Kastenraender (Material: 38 % Schwarz, 2,7:1)
+  --mat-form-field-outlined-outline-color: var(--feldrand);
 
   // Spacing system (8px grid)
   --spacing-xs: 4px;
@@ -221,7 +229,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --rundgang-fokus: #0ba1dd; // Fokusring der Rundgang-Knoepfe, hebt sich von Gelb und Tanne ab
   --einwurf-grund: #faf6ec; // Papier/Sand: offene und destillierte Einwuerfe im Fangkorb, Saetze darin bleiben weiss
 
-  --primary-line: rgba(0, 137, 57, 0.3);
+  --primary-line: rgba(0, 120, 48, 0.3); // --primaer-text (#007830) mit 30 %
   --surface-elevated: white;
 
   // Transitions
@@ -270,8 +278,6 @@ html[data-theme='dark'] {
     // Karte, Kartenkopf, Erhoehung), Baender in Schiefer-Gruen, Gelb gedaempft und nur einmal
     // voll ("Suchen"), Schrift leicht kuehl getoent
 
-    // Schrift, Ueberschriften und Links hellgrau statt Grashalm ("zu limonig", 07.11.);
-    // Gruen bleibt Knopf-Fuellung (Klee) und kleine Markierung (Grashalm).
     // Palette (Gegenstueck zu :root)
     --flaeche: #1b2125;
     --mulde: #21282c;
@@ -315,6 +321,8 @@ html[data-theme='dark'] {
     --trend-steigt: var(--akzent);
 
     --kartenliste-rand: 1px solid var(--feldrand);
+    --kartenliste-grund: var(--aussen-grund); // Mulde unter den Karten wie die Seitenfueller (Sebastian 17.11.)
+    --rundgang-offen: var(--feldrand); // 3,4:1 auf der Blase (--flaeche)
     --seite-grund: var(--bg-main);
     --karussell-rand: none; // ohne hellen Rand, die Mulde traegt sich ueber Farbe und Innenschatten (Sebastian 17.11.)
     --karussell-schatten: inset 0 3px 8px rgba(0, 0, 0, 0.6); // Mulde sichtbar (Sebastian 17.11.)
@@ -352,10 +360,10 @@ html[data-theme='dark'] {
     --band-akzent-schrift: #e2e88a;
     // Startseite (Gegenstueck zum Block html:not([data-theme='dark'])): Willkommen und Kacheln
     // im Ton des Such-Bands, eine Stufe heller, weil sie auf der Seite liegen und sich sonst
-    // mit dem Such-Band darueber vermischen (12 px Luft am Handy); Rand der Kacheln 2 px
-    // gedaempft. Der Rand ist Zierde, 1,8:1 zur Seite, die Kachel erkennt man an Flaeche,
-    // Titel und Pfeil. Marke "mit Konto" auf dem Seitengrund.
-    // Flaeche und Rand der Kacheln sind --karte-kommentar (#1f272b, seit 18.11.)
+    // mit dem Such-Band darueber vermischen (12 px Luft am Handy). Flaeche der Kacheln
+    // --karte-kommentar (#1f272b, seit 18.11.), Rand 2 px in --feldrand, damit sich die Kachel
+    // von der Seite abhebt. Marke "mit Konto" auf dem Seitengrund.
+    --kachel-rand: var(--feldrand);
     --mitmachen-kachel-marke: var(--bg-main);
     --willkommen-fokus: var(--rundgang-fokus);
     --knopf-zweit-grund: transparent;
@@ -415,6 +423,19 @@ html[data-theme='dark'] {
 
   .mat-icon.mat-primary {
     --mat-icon-color: var(--akzent-schrift);
+  }
+
+  // Warn als Schrift, Umriss und Icon in --fehler: Materials warn (#c62828) haette auf --flaeche
+  // nur 2,89:1. Volle Warn-Knoepfe bleiben #c62828 mit Weiss (5,62:1).
+  .mat-mdc-button.mat-warn,
+  .mat-mdc-outlined-button.mat-warn {
+    --mat-button-text-label-text-color: var(--fehler);
+    --mat-button-outlined-label-text-color: var(--fehler);
+    --mat-button-outlined-outline-color: var(--fehler);
+  }
+
+  .mat-mdc-icon-button.mat-warn {
+    --mat-icon-button-icon-color: var(--fehler);
   }
 
   // Inhaltsspalte ohne Schatten: auf dunklem Grund wirkt er kaum, die Hoehe zeigen die

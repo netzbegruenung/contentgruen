@@ -43,7 +43,7 @@ import { KartenDaten, KartenKennzahlen, KartenVariante } from './karten-daten';
         margin: 0;
         padding: 16px;
         list-style: none;
-        background: var(--mulde);
+        background: var(--kartenliste-grund);
         border: var(--kartenliste-rand);
       }
 
