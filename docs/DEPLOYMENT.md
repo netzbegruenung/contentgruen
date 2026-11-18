@@ -160,6 +160,19 @@ mail never undoes a Meldung or decision; the log says `SMTP delivery failed (<er
 without the address. Check after setting the variables: report a Beitrag on the test system with
 your own address, then dismiss the Meldung in the moderation; both mails must arrive.
 
+### 🎚 Schalter: upper bound and admin value (#708)
+
+`SEMANTIC_SEARCH_PUNKTE_AKTIV`, `SEMANTIC_SEARCH_ABZEICHEN_SICHTBAR_AKTIV` and
+`SEMANTIC_SEARCH_GEPOSTET_AKTIV` are only **upper bounds** now. A Schalter takes effect only when
+its variable is `true` **and** an admin has switched it on in the app (Admin, „Schalter“; stored
+in the table `schalter`, every change with time and admin Kennung in `schalter_verlauf`). Without
+an entry the admin value is off. Admins can always switch off, but never on above the upper bound
+(the API answers 409). Changes take effect without a restart, in other replicas within about 45 s.
+Behaviour change on rollout: a system where a variable is already `true` (for example
+`SEMANTIC_SEARCH_PUNKTE_AKTIV=true` on test) has that function **off** after the update until an
+admin switches it on. Before switching on Punkte or Abzeichen on production: DSFA decided
+(`docs/DSFA.md`, section 7).
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status

@@ -247,12 +247,20 @@ class Settings(BaseSettings):
 
     @property
     def abzeichen_sichtbar(self) -> bool:
-        """Beide Schalter an: ohne Punkte gibt es auch keine sichtbaren Abzeichen."""
+        """
+        Obergrenze beider Schalter: ohne Punkte keine sichtbaren Abzeichen. Ob sie
+        wirken, sagt schalter_wirksam (services/schalter_service.py, #708).
+        """
         return self.punkte_aktiv and self.abzeichen_sichtbar_aktiv
 
     def ist_startkonto(self, user_id: Optional[str]) -> bool:
         return bool(user_id) and user_id in self.startkonto_kennungen()
 
+    # Seit #708 sind punkte_aktiv, abzeichen_sichtbar_aktiv und gepostet_aktiv nur die
+    # Obergrenze: Wirksam sind sie erst, wenn zusaetzlich ein Admin sie auf der Seite
+    # "Schalter" einschaltet (services/schalter_service.py, schalter_wirksam). Im Code
+    # nicht direkt abfragen.
+    #
     # Punkte (ADR 0004, #352). Standard aus.
     # ANNAHME (#352): Rechtsgrundlage ist die Einwilligung beim ersten Login, die
     # Punkte als Zweck nennt (DSFA zu #374); bis sie steht und die
@@ -427,7 +435,10 @@ PUNKTE_EINWILLIGUNG_GEBAUT = True
 
 
 def punkte_schalter_pruefen(einstellungen: "Settings") -> None:
-    """Beim Start: Punkte nur mit eigener Einwilligung (#668); sonst startet der Dienst nicht."""
+    """
+    Beim Start: Punkte nur mit eigener Einwilligung (#668); sonst startet der Dienst nicht.
+    Prueft nur die Obergrenze aus der Umgebung, nicht den Admin-Wert (#708).
+    """
     if einstellungen.punkte_aktiv and not PUNKTE_EINWILLIGUNG_GEBAUT:
         raise RuntimeError(
             "SEMANTIC_SEARCH_PUNKTE_AKTIV ist an, aber die eigene Einwilligung "

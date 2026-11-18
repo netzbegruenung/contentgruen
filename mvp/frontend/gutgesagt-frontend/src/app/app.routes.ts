@@ -284,6 +284,10 @@ export const routes: Routes = [
                 loadComponent: () => import('./admin/themen-zuordnen/themen-zuordnen.component').then(m => m.ThemenZuordnenComponent)
             },
             {
+                path: 'schalter',
+                loadComponent: () => import('./admin/schalter/schalter.component').then(m => m.SchalterComponent)
+            },
+            {
                 path: '',
                 redirectTo: 'dashboard',
                 pathMatch: 'full'

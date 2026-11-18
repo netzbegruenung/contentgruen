@@ -35,6 +35,7 @@ from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
 )
 from core.config import Settings
+from services.schalter_service import schalter_wirksam
 from core.logging import get_logger
 from core.fehler import INTERNER_FEHLER
 
@@ -483,7 +484,7 @@ async def get_gepostet(
     (services/gepostet_service.py). Ohne ``gepostet_aktiv`` entstehen keine Meldungen;
     ``aktiv`` sagt das.
     """
-    if not settings.gepostet_aktiv:
+    if not schalter_wirksam("gepostet", settings):
         return GepostetResponse(aktiv=False, woechentlich=[])
     try:
         zeilen = await asyncio.to_thread(dienst.wochen, wochen)
@@ -560,7 +561,7 @@ async def get_muster_hinweise(
     Automatik (services/muster_hinweise_service.py). Ohne ``punkte_aktiv`` entstehen
     keine Hinweise; ``aktiv`` sagt das dem Dashboard.
     """
-    if not settings.punkte_aktiv:
+    if not schalter_wirksam("punkte", settings):
         return MusterHinweiseResponse(
             aktiv=False, frist_tage=MUSTER_FRIST_TAGE, hinweise=[]
         )

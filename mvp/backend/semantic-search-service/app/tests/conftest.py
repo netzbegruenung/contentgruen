@@ -125,6 +125,31 @@ def frischer_tagesschluessel(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def schalter_admin_alle_an():
+    """
+    Admin-Werte der Schalter ohne Datenbank (#708): alle an, damit die bisherigen Tests
+    weiter nur die Obergrenze aus ihren Settings pruefen. Die Verknuepfung aus
+    Obergrenze und Admin-Wert (ohne Eintrag aus) pruefen tests/unit/services/
+    test_schalter_service.py und tests/unit/api/test_schalter_api.py mit eigenem Dienst.
+    """
+    from services.schalter_service import (
+        SCHALTER,
+        SchalterService,
+        schalter_service_setzen,
+    )
+
+    werte = {name: True for name in SCHALTER}
+    schalter_service_setzen(
+        SchalterService(
+            admin_werte_lesen=lambda: werte,
+            admin_wert_setzen=lambda name, an, admin: werte.__setitem__(name, an),
+        )
+    )
+    yield werte
+    schalter_service_setzen(None)
+
+
+@pytest.fixture(autouse=True)
 def anzeigenamen_ohne_datenbank(monkeypatch):
     """
     Der AnzeigenameService haengt an jeder angemeldeten Antwort. Ohne diesen Ersatz
