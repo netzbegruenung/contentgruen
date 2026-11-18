@@ -15,7 +15,7 @@
 .punkte-hinweis {
   margin: 0 0 8px;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .punkte-stufen {
@@ -26,16 +26,16 @@
   padding: 0;
   list-style: none;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .punkte-wert {
-  color: var(--text-primary);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 
 .punkte-platzhalter {
   margin: 0 0 var(--spacing-md);
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }

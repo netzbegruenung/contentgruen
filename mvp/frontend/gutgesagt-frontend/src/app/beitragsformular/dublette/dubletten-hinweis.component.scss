@@ -1,9 +1,9 @@
 .dubletten-hinweis {
   margin: 12px 0 0;
   padding: 12px 16px;
-  border-left: 4px solid var(--warning-edge);
+  border-left: 4px solid var(--hinweis-rand);
   border-radius: 4px;
-  background: var(--warning-bg);
+  background: var(--hinweis-tint);
 }
 
 .dubletten-hinweis p {
@@ -20,7 +20,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -47,5 +47,5 @@
 
 .entscheidungs-fehler {
   margin-top: 8px;
-  color: var(--error-color);
+  color: var(--fehler);
 }

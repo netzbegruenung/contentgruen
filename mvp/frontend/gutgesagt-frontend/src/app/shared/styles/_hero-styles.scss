@@ -4,7 +4,7 @@
 .hero-title {
   font-size: 60px;
   font-family: GrueneType, Roboto, sans-serif;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   line-height: 1.1;
   font-weight: 400;
   margin: 0 0 10px 0;
@@ -28,7 +28,7 @@
 .hero-subtitle {
   font-size: 1.6rem;
   line-height: 1.6;
-  color: var(--text-strong);
+  color: var(--text);
   font-weight: bold;
 
   // Tablet responsive
@@ -84,7 +84,7 @@
 // Alternative subtitle style for legal/formal pages
 .subtitle-secondary {
   font-size: 1.2rem;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   margin: 0;
   font-weight: normal;
 

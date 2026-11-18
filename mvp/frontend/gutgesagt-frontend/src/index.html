@@ -61,26 +61,25 @@
   <!-- Grundflaechen dunkel, bis das Stylesheet da ist: Der Build inlined nur das kritische CSS,
        das zur Build-Zeit zum <html> ohne data-theme passt, und laedt den Rest nachtraeglich.
        Hier stehen nur Grund, Karten, Schrift und die Baender (Suche, Willkommen/Rundgang folgen
-       --such-band); alles andere kommt mit dem Stylesheet, dessen Werte danach gelten (es steht
+       --kopf); alles andere kommt mit dem Stylesheet, dessen Werte danach gelten (es steht
        danach). Werte wie im Block html[data-theme='dark'] in theme/custom-theme.scss; das prueft
        scripts/tests/test_farbschema_inline.py. -->
   <style>
     html[data-theme='dark'] {
       color-scheme: dark;
       --bg-main: #121619;
-      --bg-card: #1b2125;
-      --bg-surface: #1b2125;
-      --text-primary: rgba(255, 255, 255, 0.92);
-      --primary-main: #ebebeb;
-      --primary-dark: #f2f2f2;
-      --such-band: #18212a;
+      --flaeche: #1b2125;
+      --text: #ededee;
+      --primaer-text: #ebebeb;
+      --akzent-schrift: #f2f2f2;
+      --kopf: #18212a;
       background: var(--bg-main);
-      color: var(--text-primary);
+      color: var(--text);
     }
 
     html[data-theme='dark'] body {
       background: var(--bg-main);
-      color: var(--text-primary);
+      color: var(--text);
     }
   </style>
   <!-- Auf dem iPhone-Home-Bildschirm: iOS nimmt das Symbol nicht aus dem Manifest, sondern

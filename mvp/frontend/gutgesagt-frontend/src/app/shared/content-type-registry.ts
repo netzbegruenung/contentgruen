@@ -43,7 +43,7 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     resultField: 'commentary_result',
     emoji: '💬',
     beschreibung: 'Eine Antwort, die du direkt posten kannst.',
-    farbe: 'var(--commentary-bg)',
+    farbe: 'var(--karte-kommentar)',
   },
   generictext: {
     key: 'generictext',
@@ -52,7 +52,7 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     resultField: 'generictext_result',
     emoji: '📄',
     beschreibung: 'Fakten und Zahlen, die eine Antwort stützen.',
-    farbe: 'var(--generictext-bg)',
+    farbe: 'var(--info-tint)',
   },
   post: {
     key: 'post',
@@ -61,7 +61,7 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     resultField: 'post_result',
     emoji: '📣',
     beschreibung: 'Ein gelungener Beitrag aus einem sozialen Netzwerk, zum Teilen.',
-    farbe: 'var(--post-bg)',
+    farbe: 'var(--karte-post)',
   },
   image: {
     key: 'image',
@@ -70,7 +70,7 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     resultField: 'image_result',
     emoji: '🖼️',
     beschreibung: 'Ein Bild mit Unterschrift, das für sich spricht.',
-    farbe: 'var(--image-bg)',
+    farbe: 'var(--karte-bild)',
   },
   statement: {
     key: 'statement',

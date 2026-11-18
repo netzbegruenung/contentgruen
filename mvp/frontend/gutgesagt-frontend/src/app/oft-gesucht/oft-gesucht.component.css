@@ -25,7 +25,7 @@
 
 .oft-gesucht-aussage,
 .hier-fehlt-link {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-decoration: underline;
   text-underline-offset: 3px;
   overflow-wrap: anywhere;
@@ -45,5 +45,5 @@
 
 .hier-fehlt {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }

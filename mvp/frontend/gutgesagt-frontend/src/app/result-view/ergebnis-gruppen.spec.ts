@@ -1,5 +1,6 @@
 import {
   KARTEN_JE_TYP,
+  OFFENE_WEITERE_DESKTOP,
   ansichtBauen,
   anzahlJeTyp,
   anzahlSichtbar,
@@ -199,6 +200,54 @@ describe('ergebnis-gruppen', () => {
       const [block] = besteHervorheben(ansichtBauen(gruppieren(antwort({ k: vier }), 'a'), new Set()))[0].bloecke;
       expect(block.weitereTitel).toBe('Weitere Antworten · 3');
       expect(block.mehrText).toBe('Alle 3 weiteren Antworten zeigen');
+      expect(block.offen).withContext('am Handy keine offenen weiteren').toEqual([]);
+    });
+  });
+
+  describe('Desktop: fuenf Antworten offen (Maintainer 18.11.)', () => {
+    const kommentare = (n: number, aussage = 'a') =>
+      Array.from({ length: n }, (_, i) => treffer('commentary_result', `k-${i + 1}`, aussage, aussage.toUpperCase(), 1 - i / 100));
+    const desktop = (teile: Record<string, any[]>, aufgeklappt = new Set<string>()) =>
+      besteHervorheben(
+        ansichtBauen(gruppieren(antwort(teile), 'a'), aufgeklappt, OFFENE_WEITERE_DESKTOP),
+        OFFENE_WEITERE_DESKTOP,
+      );
+
+    it('stellt nach der besten die naechsten vier offen, dann zwei eingeklappt, der Knopf zaehlt den Rest', () => {
+      expect(OFFENE_WEITERE_DESKTOP).toBe(4);
+      const [block] = desktop({ k: kommentare(9) })[0].bloecke;
+      expect(block.beste?.id).toBe('k-1');
+      expect(block.offen.map((k) => k.id)).toEqual(['k-2', 'k-3', 'k-4', 'k-5']);
+      expect(block.weitere.map((k) => k.id)).toEqual(['k-6', 'k-7']);
+      expect(block.karten.length).withContext('Fokus-Index nach "Alle zeigen"').toBe(7);
+      expect(block.weitereTitel).toBe('Weitere Antworten · 8');
+      expect(block.mehrText).toBe('Alle 4 weiteren Antworten zeigen');
+    });
+
+    it('zeigt bei weniger als fuenf Antworten alle offen, ohne Knopf', () => {
+      const [block] = desktop({ k: kommentare(3) })[0].bloecke;
+      expect(block.offen.map((k) => k.id)).toEqual(['k-2', 'k-3']);
+      expect(block.weitere).toEqual([]);
+      expect(block.mehrText).toBeNull();
+    });
+
+    it('zeigt aufgeklappt alle: vier offen, der Rest eingeklappt', () => {
+      const [block] = desktop({ k: kommentare(9) }, new Set([aufklappSchluessel('a', 'commentary')]))[0].bloecke;
+      expect(block.offen.length).toBe(4);
+      expect(block.weitere.length).toBe(4);
+      expect(block.mehrText).toBeNull();
+    });
+
+    it('laesst andere Typen und weniger passende Gruppen wie bisher', () => {
+      const hintergrund = Array.from({ length: 5 }, (_, i) => treffer('generictext_result', `h-${i + 1}`, 'a', 'A', 0.5 - i / 100));
+      const [erste, zweite] = desktop({ k: [...kommentare(2), ...kommentare(5, 'b')], h: hintergrund });
+      const hBlock = erste.bloecke[1];
+      expect(hBlock.offen).toEqual([]);
+      expect(hBlock.weitere.length).toBe(KARTEN_JE_TYP);
+      expect(hBlock.mehrText).toBe('Alle 5 Hintergrundinfos zeigen');
+      expect(zweite.weniger).toBeTrue();
+      expect(zweite.bloecke[0].offen).toEqual([]);
+      expect(zweite.bloecke[0].weitere.length).toBe(KARTEN_JE_TYP);
     });
   });
 });

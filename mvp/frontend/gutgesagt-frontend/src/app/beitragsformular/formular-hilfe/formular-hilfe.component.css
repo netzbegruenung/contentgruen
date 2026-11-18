@@ -19,7 +19,7 @@
     flex: 1;
     margin: 0;
     padding-top: 9px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     line-height: 1.4;
 }
 
@@ -52,11 +52,11 @@
 }
 
 .regel-ist .regel-zeichen {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .regel-nicht .regel-zeichen {
-    color: var(--error-strong);
+    color: var(--fehler);
 }
 
 .hilfe-abschnitt {
@@ -73,5 +73,5 @@
 
 .hilfe-panel .hilfe-hinweis {
     margin-top: 8px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }

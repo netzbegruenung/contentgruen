@@ -53,7 +53,7 @@ main * {
     margin: 0;
     font-size: var(--font-size-h2-desktop); /* Match h2 size: 40px */
     font-weight: 400; /* Match h2 weight */
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     display: inline-flex;
     align-items: center;
     gap: 12px;
@@ -134,7 +134,7 @@ main * {
 
 /* Textlinks im Kopf: einer der zwei Stile neben den runden Icon-Knoepfen (#512) */
 .header-link {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -198,9 +198,9 @@ button.header-link {
         height: 44px;
         margin: 0;
         border-radius: 50%;
-        background: var(--bg-card);
+        background: var(--flaeche);
         box-shadow: var(--elevation-1);
-        color: var(--text-primary);
+        color: var(--text);
     }
 
     .header-link--aktiv {
@@ -213,7 +213,7 @@ button.header-link {
     }
 
     button.header-link {
-        background: var(--bg-card);
+        background: var(--flaeche);
     }
 
     /* Nur noch fuer Screenreader, wie .cdk-visually-hidden */
@@ -253,11 +253,11 @@ button.header-link {
 
 .help-text {
     margin-top: 10px;
-    background-color: var(--surface-pressed);
+    background-color: var(--mulde);
     padding: 10px;
     border-radius: var(--border-radius-medium);
     font-size: 14px;
-    color: var(--text-strong);
+    color: var(--text);
 }
 
 .help-icon {
@@ -288,7 +288,7 @@ button.header-link {
     /* Derselbe Schatten wie die runden Icon-Knoepfe daneben */
     box-shadow: var(--elevation-1);
     border-radius: 50%;
-    background-color: var(--bg-card);
+    background-color: var(--flaeche);
     transition: transform var(--transition-standard), opacity var(--transition-standard);
     flex-shrink: 0;
 }
@@ -427,7 +427,7 @@ button.header-link {
 
 .mobile-sidenav {
     width: 280px;
-    background-color: var(--bg-card);
+    background-color: var(--flaeche);
 }
 
 .mobile-menu-content {
@@ -440,7 +440,7 @@ button.header-link {
     align-items: center;
     margin-bottom: var(--spacing-lg);
     padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--linie);
 }
 
 .mobile-menu-avatar {
@@ -458,7 +458,7 @@ button.header-link {
 
 .mobile-menu-user-info h3 {
     margin: 0 0 var(--spacing-md) 0;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .mobile-menu-item {
@@ -472,7 +472,7 @@ button.header-link {
 }
 
 .close-menu-button {
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 /* Mobile menu footer section */
@@ -489,7 +489,7 @@ button.header-link {
 
 .mobile-menu-about {
     padding: var(--spacing-md);
-    background-color: var(--surface-variant);
+    background-color: var(--mulde);
     border-radius: var(--border-radius-medium);
     margin-top: var(--spacing-md);
 }
@@ -497,12 +497,12 @@ button.header-link {
 .mobile-menu-about p {
     margin: 0;
     font-size: 14px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     line-height: 1.5;
 }
 
 .mobile-menu-about a {
-    color: var(--primary-main);
+    color: var(--primaer-text);
     text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
 }
 

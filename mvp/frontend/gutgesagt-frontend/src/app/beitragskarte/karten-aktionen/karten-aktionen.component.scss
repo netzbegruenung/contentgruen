@@ -33,7 +33,7 @@
   min-width: 1ch;
   margin-left: calc(-1 * var(--spacing-sm) + 2px);
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-variant-numeric: tabular-nums;
 }
 
@@ -46,7 +46,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   transition: all 0.2s ease;
 
   mat-icon {
@@ -56,12 +56,12 @@
   }
 
   &:hover:not(.active-button) {
-    background-color: var(--overlay-faint);
+    background-color: var(--mulde);
   }
 }
 
 .stimme-knopf.active-button {
-  background-color: var(--primary-fill) !important;
+  background-color: var(--primaer) !important;
   color: white !important;
 }
 
@@ -97,7 +97,7 @@
 
   &.copy-success {
     @include animations.copy-success-animation;
-    background-color: var(--primary-fill) !important;
+    background-color: var(--primaer) !important;
     color: white !important;
   }
 }

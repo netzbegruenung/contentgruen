@@ -101,7 +101,8 @@
 @mixin success-color-pulse {
   position: relative;
   &.success {
-    background-color: var(--success-color) !important;
+    // Volles Gruen wie die Knoepfe, Weiss darauf hell und dunkel ab 5,4:1
+    background-color: var(--primaer) !important;
     color: white !important;
     animation: copySuccess 0.4s ease-out;
 

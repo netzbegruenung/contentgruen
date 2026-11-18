@@ -52,7 +52,7 @@
 
 .erklaerung .dreischritt-satz {
   margin-bottom: 8px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 /* Etwas einwerfen: schwebend unten rechts, ueber der Liste */
@@ -61,9 +61,9 @@
   right: 16px;
   bottom: 16px;
   z-index: var(--z-index-fixed, 1030);
-  --mat-fab-container-color: var(--primary-fill);
+  --mat-fab-container-color: var(--primaer);
   --mat-fab-foreground-color: #fff;
-  background-color: var(--primary-fill);
+  background-color: var(--primaer);
   color: #fff;
 }
 
@@ -108,7 +108,7 @@
   flex-shrink: 0;
   width: 1px;
   height: 24px;
-  background: var(--line-medium);
+  background: var(--feldrand);
 }
 
 .filter-chip {
@@ -116,10 +116,10 @@
   white-space: nowrap;
   min-height: 40px;
   padding: 6px 14px;
-  border: 1px solid var(--line-medium);
+  border: 1px solid var(--feldrand);
   border-radius: var(--border-radius-medium);
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
@@ -127,9 +127,9 @@
 
 .filter-chip.aktiv {
   border-color: var(--akzent-tanne);
-  /* im Dunkeln neutral: --primary-light und --primary-dark sind dort beide hell (#588) */
+  /* im Dunkeln neutral: --akzent und --akzent-schrift sind dort beide hell (#588) */
   background: var(--filter-aktiv-grund);
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-weight: 500;
 }
 
@@ -146,7 +146,7 @@
   margin: 0;
   padding: 16px;
   list-style: none;
-  background: var(--kartenliste-bg);
+  background: var(--mulde);
   border: var(--kartenliste-rand);
 }
 
@@ -163,7 +163,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -179,7 +179,7 @@
 .fangkorb-fehler,
 .fangkorb-mehr {
   padding: 16px 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .fangkorb-fehler p {
@@ -236,7 +236,7 @@
 }
 
 .einwerfen-knopf {
-  --mat-button-filled-container-color: var(--primary-fill);
+  --mat-button-filled-container-color: var(--primaer);
   --mat-button-filled-label-text-color: #fff;
   width: 100%;
   height: 44px;
@@ -274,7 +274,7 @@
 
 .fangkorb--seitenleiste .tab + .tab {
   border-left: 0;
-  border-top: 1px solid var(--divider-color);
+  border-top: 1px solid var(--linie);
 }
 
 /* Filter: die Gruppen untereinander, die Chips brechen um */

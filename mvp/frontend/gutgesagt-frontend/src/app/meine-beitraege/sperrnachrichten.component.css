@@ -8,7 +8,7 @@
 }
 
 .sperrnachricht {
-  border: 1px solid var(--error-strong);
+  border: 1px solid var(--fehler);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 12px;
@@ -45,5 +45,5 @@
 }
 
 .fehler {
-  color: var(--error-strong);
+  color: var(--fehler);
 }

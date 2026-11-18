@@ -48,7 +48,7 @@
   p {
     font-size: 1rem;
     line-height: 1.6;
-    color: var(--text-primary);
+    color: var(--text);
     margin-bottom: 1rem;
   }
 
@@ -59,7 +59,7 @@
     li {
       margin-bottom: 0.75rem;
       line-height: 1.6;
-      color: var(--text-primary);
+      color: var(--text);
     }
   }
 
@@ -101,12 +101,12 @@
     h3 {
       font-size: 1.5rem;
       font-weight: 500;
-      color: var(--text-primary);
+      color: var(--text);
       margin: 0 0 0.25rem 0;
     }
 
     .role {
-      color: var(--primary-dark);
+      color: var(--akzent-schrift);
       font-weight: 500;
       margin-bottom: 1.5rem;
       font-size: 1rem;
@@ -132,7 +132,7 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: var(--primary-light);
+    background: var(--akzent);
   }
 
   .timeline-item {
@@ -147,8 +147,8 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background: var(--primary-fill);
-      border: 2px solid var(--bg-card);
+      background: var(--primaer);
+      border: 2px solid var(--flaeche);
       box-shadow: 0 0 0 2px var(--akzent-tanne);
       transform: translateX(-5px);
     }
@@ -156,7 +156,7 @@
     h3 {
       font-size: 1.3rem;
       font-weight: 600;
-      color: var(--text-primary);
+      color: var(--text);
       margin: 0 0 0.5rem 0;
     }
 
@@ -206,11 +206,11 @@
   }
 
   .secondary-button {
-    background-color: var(--surface-muted);
-    color: var(--text-strong);
+    background-color: var(--mulde);
+    color: var(--text);
 
     &:hover {
-      background-color: var(--divider-color);
+      background-color: var(--linie);
     }
   }
 
@@ -226,7 +226,7 @@
 }
 
 a {
-  color: var(--primary-main);
+  color: var(--primaer-text);
   // Im Dunkeln unterstrichen: Links sind dort hellgrau wie der Text (#588)
   text-decoration: var(--link-unterstrich);
 
@@ -249,7 +249,7 @@ a {
   border: 0;
   background: none;
   font: inherit;
-  color: var(--primary-main);
+  color: var(--primaer-text);
   text-decoration: var(--link-unterstrich);
   cursor: pointer;
 

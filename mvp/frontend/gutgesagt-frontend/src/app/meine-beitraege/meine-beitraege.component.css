@@ -10,17 +10,17 @@
   font-size: 18px;
   font-weight: 600;
   line-height: 1.35;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .nutzung-erklaerung {
   margin: 0 0 12px;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .beitraege-leer {
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 /* Leerer Zustand: unbeantwortete Aussagen als erster Schritt (#645) */
@@ -35,7 +35,7 @@
 .alle-unbeantworteten {
   display: inline-block;
   margin-bottom: var(--spacing-md);
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-weight: 600;
 }
 

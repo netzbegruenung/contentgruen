@@ -69,6 +69,24 @@ const ANTWORT = {
   post_search_results: [treffer('post', 'p-1', ERKANNT, 0.65)],
 };
 
+/**
+ * Neun Antworten zur erkannten Aussage: am Desktop die beste und vier offen, zwei eingeklappt,
+ * zwei hinter "Alle 4 weiteren Antworten zeigen" (Maintainer 18.11.). Die dritte offene hat
+ * einen langen Text, damit sich zeigt, dass ihre Nachbarin nicht mitwaechst.
+ */
+const neunKommentare = Array.from({ length: 9 }, (_, i) => {
+  const karte = treffer('commentary', `n-${i + 1}`, ERKANNT, 0.99 - i / 100);
+  if (i === 2) {
+    (karte['commentary_result'] as Record<string, unknown>)['text'] = 'Ein langer gemockter Text. '.repeat(30);
+  }
+  return karte;
+});
+const NEUN = {
+  ...ANTWORT,
+  commentary_search_results: neunKommentare,
+  commentary_search_results_count: neunKommentare.length,
+};
+
 async function oeffnen(page: Page, antwort: typeof ANTWORT = ANTWORT): Promise<void> {
   await page.route('**/api/v1/search/searchByText**', (r) => r.fulfill({ json: antwort }));
   await page.route('**/api/v1/statement/aehnliche**', (r) => r.fulfill({ json: { results: ALTERNATIVEN } }));
@@ -89,6 +107,8 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
         'Beste Antwort', 'Weitere Antworten · 3', 'Hintergrundinfo · 1', 'Bild · 1', 'Post · 1',
       ], { ignoreCase: true });
       await expect(page.locator('.beste-antwort .kopieren-knopf')).toBeVisible();
+      // Desktop: alle drei weiteren Antworten offen mit Kopieren (weniger als fuenf); am Handy keine
+      await expect(page.locator('.offene-karten .kopieren-knopf')).toHaveCount(breite >= 1024 ? 3 : 0);
       const zu = page.locator('.eingeklappte-karten .aufklapp-knopf');
       await expect(zu.first()).toHaveAttribute('aria-expanded', 'false');
 
@@ -134,16 +154,19 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
     });
 
     test(`"Alle N zeigen" setzt den Fokus auf die erste neue Karte (${name})`, async ({ page }) => {
-      await oeffnen(page);
+      // Handy: beste und zwei eingeklappt; Desktop: beste, vier offen, zwei eingeklappt
+      const desktop = breite >= 1024;
+      const bisher = desktop ? 7 : 3;
+      await oeffnen(page, NEUN);
       const block = page.locator('.gruppe').first().locator('[data-typ="commentary"]');
-      await expect(block.locator('app-beitragskarte')).toHaveCount(3);
-      await block.getByRole('button', { name: 'Alle 3 weiteren Antworten zeigen' }).click();
-      await expect(block.locator('app-beitragskarte')).toHaveCount(4);
-      const imVierten = await block
+      await expect(block.locator('app-beitragskarte')).toHaveCount(bisher);
+      await block.getByRole('button', { name: `Alle ${desktop ? 4 : 8} weiteren Antworten zeigen` }).click();
+      await expect(block.locator('app-beitragskarte')).toHaveCount(9);
+      const imErstenNeuen = await block
         .locator('app-beitragskarte')
-        .nth(3)
+        .nth(bisher)
         .evaluate((karte) => karte.contains(document.activeElement));
-      expect(imVierten).toBe(true);
+      expect(imErstenNeuen).toBe(true);
     });
   });
 }
@@ -160,7 +183,7 @@ async function kasten(page: Page, selektor: string): Promise<{ x: number; y: num
 test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
   test('1280 px: beste Antwort und Kasten nebeneinander, darunter zwei Karten nebeneinander, Kopf gleich breit', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await oeffnen(page);
+    await oeffnen(page, NEUN);
     const beste = await kasten(page, '.beste-antwort');
     const daneben = await kasten(page, '.gruppe.mit-bester .zu-dieser-antwort-spalte');
     expect(daneben.x).toBeGreaterThan(beste.x + beste.breite);
@@ -169,15 +192,34 @@ test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
     const kastenTitel = await kasten(page, '.gruppe.mit-bester .zda-titel');
     expect(Math.abs(kastenTitel.y - besteTitel.y)).toBeLessThanOrEqual(2);
 
-    // Darunter ueber die volle Breite: die ersten beiden eingeklappten Karten auf einer Zeile
+    // Darunter ueber die volle Breite (Maintainer 18.11.): vier offene Antworten zu zweit, in
+    // Rangfolge zeilenweise; die lange dritte (oben rechts) zieht ihre Nachbarin nicht mit
+    const offene = page.locator('.gruppe.mit-bester .offene-karten app-beitragskarte');
+    await expect(offene).toHaveCount(4);
+    await expect(offene.locator('.kopieren-knopf')).toHaveCount(4);
+    await expect(offene.locator('.aufklapp-knopf')).toHaveCount(0);
+    await expect(offene.locator('.karte-titel')).toHaveText(['n-2', 'n-3', 'n-4', 'n-5'].map((id) => `[e2e-mock] commentary ${id}`));
+    const o = await Promise.all([0, 1, 2, 3].map(async (i) => (await offene.nth(i).boundingBox())!));
+    expect(Math.round(o[0].x)).toBe(beste.x);
+    expect(o[0].y).toBeGreaterThan(beste.y + 10);
+    expect(o[1].x).toBeGreaterThan(o[0].x + o[0].width);
+    expect(Math.abs(o[1].y - o[0].y)).toBeLessThanOrEqual(2);
+    expect(o[1].height).toBeGreaterThan(o[0].height + 50);
+    expect(Math.round(o[2].x)).toBe(beste.x);
+    expect(o[2].y).toBeGreaterThan(o[1].y + o[1].height - 2);
+    expect(Math.abs(o[3].y - o[2].y)).toBeLessThanOrEqual(2);
+
+    // Erst danach die eingeklappten, ebenfalls zu zweit auf einer Zeile
     const karten = page.locator('.gruppe.mit-bester .eingeklappte-karten').first().locator('app-beitragskarte');
+    await expect(karten).toHaveCount(2);
     const links = await karten.nth(0).boundingBox();
     const rechts = await karten.nth(1).boundingBox();
     if (!links || !rechts) throw new Error('Zwei eingeklappte Karten erwartet');
     expect(Math.round(links.x)).toBe(beste.x);
     expect(rechts.x).toBeGreaterThan(links.x + links.width);
     expect(Math.abs(rechts.y - links.y)).toBeLessThanOrEqual(2);
-    expect(links.y).toBeGreaterThan(beste.y + 10);
+    expect(links.y).toBeGreaterThan(o[3].y + o[3].height);
+    await expect(page.locator('.gruppe.mit-bester .alle-zeigen')).toHaveText('Alle 4 weiteren Antworten zeigen');
 
     // Aufgeklappt waechst nur die eine Karte, nicht ihre Nachbarin
     const hoeheRechts = rechts.height;
@@ -185,6 +227,8 @@ test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
     await expect(karten.nth(0).locator('.karte-inhalt')).toBeVisible();
     expect(Math.round((await karten.nth(1).boundingBox())!.height)).toBe(Math.round(hoeheRechts));
     await karten.nth(0).locator('.aufklapp-knopf').click();
+    // Die Seite ist mit neun Antworten laenger: nach oben, sonst misst y den Scroll mit
+    await page.evaluate(() => window.scrollTo(0, 0));
     const kopfVorher = await kasten(page, '.search-box');
 
     // Neue Suche mit verzoegerter Antwort: auch waehrend des Ladens bleibt der Kopf gleich
@@ -227,12 +271,26 @@ test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
 
   test('1023 px: beste Antwort und weitere untereinander, ohne Kasten', async ({ page }) => {
     await page.setViewportSize({ width: 1023, height: 900 });
-    await oeffnen(page);
+    await oeffnen(page, NEUN);
     await expect(page.locator('.gruppe.mit-bester')).toHaveCount(1);
     await expect(page.locator('app-zu-dieser-antwort')).toBeHidden();
+    await expect(page.locator('.offene-karten')).toHaveCount(0);
     const beste = await kasten(page, '.beste-antwort');
     const weitere = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
     expect(weitere.x).toBe(beste.x);
     expect(weitere.y).toBeGreaterThan(beste.y);
+  });
+
+  test('Breitenwechsel 1280 → 1023 → 1280: offene Antworten kommen und gehen, nichts doppelt', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await oeffnen(page, NEUN);
+    const block = page.locator('.gruppe').first().locator('[data-typ="commentary"]');
+    await expect(block.locator('.offene-karten app-beitragskarte')).toHaveCount(4);
+    await page.setViewportSize({ width: 1023, height: 900 });
+    await expect(block.locator('.offene-karten')).toHaveCount(0);
+    await expect(block.locator('app-beitragskarte')).toHaveCount(3);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(block.locator('.offene-karten app-beitragskarte')).toHaveCount(4);
+    await expect(block.locator('app-beitragskarte')).toHaveCount(7);
   });
 });

@@ -160,7 +160,7 @@ describe('FremdesBildComponent', () => {
     const stil = getComputedStyle(element.querySelector('button.bild-laden')!);
 
     expect(stil.backgroundColor).toBe(aufgeloest(themaFarbe('--einwurf-grund')));
-    expect(stil.color).toBe(aufgeloest(themaFarbe('--primary-dark')));
+    expect(stil.color).toBe(aufgeloest(themaFarbe('--akzent-schrift')));
   });
 });
 
