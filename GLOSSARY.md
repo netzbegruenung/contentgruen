@@ -208,6 +208,10 @@ _Avoid_: Statement, These, Angriff
 Eine unbeantwortete Aussage als Karte, im Stil der Karte eines Beitrags: das Kopfband mit der Aussage, darunter die Nachfrage und die Themen, im Fuß „Antworten“. Sie steht in „Hier fehlt eine Antwort“ und im leeren Zustand von „Meine Beiträge“. Inhalte erscheinen als Karten: Beiträge und Einwürfe als Karte, Aussagen als Aussagekarte.
 _Avoid_: Aussagezeile, Statement-Karte
 
+**Zu dieser Antwort**:
+Der Kasten auf der Ergebnisseite am Desktop rechts neben der besten Antwort mit dem, was ihre schlichte Karte nicht oder nur hinter einem Antippen zeigt: Länge und Plattform je Fassung, Erklärung von Stil und Güte, das Alter; keine Angaben zu Personen.
+_Avoid_: Hintergrundinfo (ein Beitragstyp), Details, Seitenleiste
+
 **Kommentar**:
 Eine Antwort, die man direkt posten kann, mit einer Mittelfassung und optional einer Kurz- und einer Langfassung, mit einem Stil und einem Zweck.
 _Avoid_: Commentary, Fertiger Kommentar, Antwort, Reply

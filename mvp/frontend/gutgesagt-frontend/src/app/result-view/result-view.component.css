@@ -638,67 +638,17 @@ mat-sidenav-content {
   margin-top: var(--spacing-md);
 }
 
-/* Abschnittstitel mit ⓘ dahinter: der Erklaersatz des Typs. Unten 10 px Abstand: so weit
-   ragt die Tippflaeche des ⓘ unter den Knopf, sie darf nicht in die erste Karte reichen,
-   deren Kopf selbst ein Knopf ist. */
+/* Abschnittstitel ohne ⓘ (Maintainer 18.11.); Hoehe und Abstaende wie mit dem frueheren
+   24-px-Knopf, damit am Handy nichts verrutscht */
 .typ-kopf {
   display: flex;
   align-items: center;
-  gap: 2px;
+  min-height: 24px;
   margin: var(--spacing-md) 0 10px;
 }
 
 .typ-kopf .typ-ueberschrift {
   margin: 0;
-}
-
-/* Sichtbar 24 px, Tippflaeche 44 × 44 px (Projektnorm wie .aufklapp-knopf) ueber ::before:
-   die unsichtbare Flaeche ragt ueber den Rand, das Layout bleibt gleich */
-.typ-info {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  min-height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.typ-info::before {
-  content: '';
-  position: absolute;
-  inset: -10px;
-}
-
-.typ-info mat-icon {
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
-}
-
-.typ-info:focus-visible {
-  outline: 2px solid var(--akzent-klee);
-  outline-offset: 1px;
-}
-
-.typ-erklaerung-text.mat-mdc-menu-item {
-  display: block;
-  height: auto;
-  min-height: 0;
-  /* Am Handy mindestens 16 px Abstand zum Rand (Designrunde 18.11.) */
-  max-width: min(280px, calc(100vw - 32px));
-  box-sizing: border-box;
-  padding: 8px 16px;
-  background: none;
-  cursor: default;
-  white-space: normal;
-  font-size: 14px;
-  line-height: 1.4;
 }
 
 .typ-ueberschrift:focus {
@@ -760,23 +710,20 @@ mat-sidenav-content {
   padding-right: 0;
 }
 
-/* Info-Menue am Handy: mindestens 16 px zum Rand. Das Overlay schiebt das Feld samt
-   Aussenabstand in den Bildschirm, der Abstand bleibt so frei (Designrunde 18.11.). */
-@media (max-width: 599px) {
-  ::ng-deep .mat-mdc-menu-panel.typ-menue {
-    margin-inline: 16px;
-  }
+/* "Zu dieser Antwort" gibt es nur am Desktop ab 1024 px */
+.zu-dieser-antwort-spalte {
+  display: none;
 }
 
-/* Desktop ab 1024 px zweispaltig (Maintainer 18.11.): links die beste Antwort offen (60 %),
-   rechts die weiteren Antworten und die Typ-Abschnitte eingeklappt. Der Kopf (Suchfeld,
+/* Desktop ab 1024 px zweispaltig (Maintainer 18.11.): oben links die beste Antwort offen,
+   rechts daneben "Zu dieser Antwort", je 50 %; darunter ueber die volle Breite die weiteren
+   Antworten und die Typ-Abschnitte, ihre eingeklappten Karten zu zweit. Der Kopf (Suchfeld,
    "Erkannt als", Teilen) ist immer 1160 px breit, egal ob das Ergebnis zwei Spalten hat oder
    noch laedt: sonst springt der Suchen-Knopf bei jeder neuen Suche. Einspaltige Ergebnisse
    und alles unter der Gruppe ("Weitere, weniger passende", "Nicht dabei?", Hinweis) stehen
    linksbuendig auf Lesebreite; nur der leere Zustand (keine Treffer) bleibt bewusst mittig.
-   Die beste Antwort floatet, damit die Reihenfolge im DOM
-   (erst die beste, dann rechts) fuer Tastatur und Screenreader gleich bleibt; Grid koppelte
-   die Zeilenhoehen beider Spalten. */
+   Die Reihenfolge im DOM ist die Lesereihenfolge (beste, Kasten, weitere). Im Raster wachsen
+   Karten nicht mit ihrer Nachbarin (align-items: start), auch nicht aufgeklappt. */
 @media (min-width: 1024px) {
   .treffer-spalte {
     --inhalt-breite: 1160px;
@@ -797,56 +744,52 @@ mat-sidenav-content {
     max-width: 78ch;
   }
 
+  /* Jeder Typ-Block ein Raster aus zwei gleichen Spalten; alles ausser der obersten Zeile
+     (beste Antwort und Kasten) laeuft ueber beide */
   .gruppe.mit-bester .typ-block {
-    display: block;
-  }
-
-  .gruppe.mit-bester {
-    display: flow-root;
-  }
-
-  .gruppe.mit-bester .beste-ueberschrift,
-  .gruppe.mit-bester .beste-antwort {
-    float: left;
-    clear: left;
-    width: calc(60% - var(--spalten-abstand) / 2);
-  }
-
-  .gruppe.mit-bester .beste-antwort {
-    display: block;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--spalten-abstand);
+    align-items: start;
   }
 
   .gruppe.mit-bester .typ-kopf,
   .gruppe.mit-bester .eingeklappte-karten,
   .gruppe.mit-bester .alle-zeigen {
-    margin-left: calc(60% + var(--spalten-abstand) / 2);
+    grid-column: 1 / -1;
   }
 
-  .gruppe.mit-bester .eingeklappte-karten {
-    display: block;
-    width: auto;
-  }
-
-  .gruppe.mit-bester .alle-zeigen {
-    display: block;
-  }
-
-  /* Rechts oben auf einer Linie mit "Beste Antwort", auch wenn der erste Block nur die beste
-     Antwort hat und rechts direkt der naechste Typ beginnt. Den Abstand oben traegt die Gruppe:
-     Der Rand des ersten Kopfs rechts fiele sonst mit dem des Typ-Blocks zusammen, der des
-     Floats nicht, und die Spalten stuenden 8 px versetzt. "Beste Antwort" ist so hoch wie
-     der Kopf rechts mit dem ⓘ (24 px), beide Texte stehen mittig darin. */
-  .gruppe.mit-bester {
-    padding-top: var(--spacing-sm);
-  }
-
+  /* "Beste Antwort" und "Zu dieser Antwort" auf einer Linie, je 24 px hoch; der Kasten teilt
+     ueber subgrid die Zeilen mit Titel und Karte links und waechst nicht in deren Zeile */
   .gruppe.mit-bester .beste-ueberschrift {
-    margin-top: 0;
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: var(--spacing-sm);
     line-height: 24px;
   }
 
-  .gruppe.mit-bester .typ-block:first-of-type .typ-kopf,
-  .gruppe.mit-bester .typ-block:first-of-type:not(:has(.typ-kopf)) + .typ-block .typ-kopf {
-    margin-top: 0;
+  .gruppe.mit-bester .beste-antwort {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .gruppe.mit-bester .zu-dieser-antwort-spalte {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    grid-template-rows: subgrid;
+    padding-top: var(--spacing-sm);
+  }
+
+  .gruppe.mit-bester .alle-zeigen {
+    justify-self: center;
+  }
+
+  /* Die weiteren Karten zu zweit; eine aufgeklappte wird hoeher, die Nachbarin nicht */
+  .gruppe.mit-bester .eingeklappte-karten ::ng-deep .kartenliste {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--spalten-abstand);
+    align-items: start;
   }
 }

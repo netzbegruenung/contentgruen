@@ -698,24 +698,33 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
       expect(seite.querySelector('.typ-erklaerung')).withContext('die Titel tragen die Typen (V3)').toBeNull();
     });
 
-    it(`erklaert jeden Typ-Abschnitt per ⓘ hinter dem Titel, "Beste Antwort" ohne (${wo})`, async () => {
+    it(`zeigt an den Abschnittstiteln kein ⓘ mehr, nur am Etikett der Karte (${wo})`, async () => {
       const seite = await oeffnen(mobil, GEMISCHT());
       const ersteGruppe = seite.querySelector('.gruppe')!;
-      const knoepfe = Array.from(ersteGruppe.querySelectorAll<HTMLButtonElement>('.typ-kopf .typ-info'));
-      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual([
-        'Was ist ein Kommentar?', 'Was ist Hintergrundinfo?', 'Was ist ein Bild?', 'Was ist ein Post?',
-      ]);
+      expect(ersteGruppe.querySelectorAll('.typ-kopf').length).toBe(4);
+      expect(ersteGruppe.querySelector('.typ-kopf button, .typ-kopf mat-icon, .typ-info')).toBeNull();
       expect(seite.querySelector('.beste-ueberschrift')!.closest('.typ-kopf')).toBeNull();
-      expect(knoepfe.length).toBe(ersteGruppe.querySelectorAll('.typ-ueberschrift').length - 1);
-      // Nicht in der Ueberschrift: sonst gehoerte die Frage zu ihrem Namen
-      knoepfe.forEach((k) => expect(k.closest('h3')).toBeNull());
+    });
 
-      // Den Erklaersatz hoeren Screenreader nur einmal, im Menue
-      knoepfe.forEach((k) => expect(k.hasAttribute('aria-describedby')).withContext('kein Tooltip-Text').toBeFalse());
-      knoepfe[1].click();
-      fixture.detectChanges();
-      expect(document.querySelector('.mat-mdc-menu-panel .typ-erklaerung-text')?.textContent?.trim())
-        .toBe('Fakten und Zahlen, die eine Antwort stützen.');
+    it(`setzt "Zu dieser Antwort" zwischen die beste Antwort und die weiteren Karten (${wo})`, async () => {
+      const seite = await oeffnen(mobil, GEMISCHT());
+      const kaesten = seite.querySelectorAll('app-zu-dieser-antwort');
+      expect(kaesten.length).withContext('genau einer, zur besten Antwort').toBe(1);
+      const kasten = kaesten[0];
+      expect(kasten.querySelector('h3')?.textContent?.trim()).toBe('Zu dieser Antwort');
+      expect(kasten.querySelector('aside')?.getAttribute('aria-labelledby')).toBe(kasten.querySelector('h3')!.id);
+      // Lese- und Tab-Reihenfolge: beste, Kasten, weitere
+      const beste = seite.querySelector('.beste-antwort')!;
+      const weitere = seite.querySelector('.eingeklappte-karten')!;
+      expect(beste.compareDocumentPosition(kasten) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(kasten.compareDocumentPosition(weitere) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(kasten.textContent).toContain('4 Zeichen');
+    });
+
+    it(`stellt den Kasten auch neben die einzige Antwort (${wo})`, async () => {
+      const seite = await oeffnen(mobil, antwort({ k: [erkannt('commentary', 'k-1', 0.9)] }));
+      expect(seite.querySelector('.treffer-spalte')!.classList).toContain('zweispaltig');
+      expect(seite.querySelectorAll('.gruppe.mit-bester app-zu-dieser-antwort').length).toBe(1);
     });
 
     it(`zeigt die beste Antwort ganz und alle anderen Karten eingeklappt (${wo})`, async () => {

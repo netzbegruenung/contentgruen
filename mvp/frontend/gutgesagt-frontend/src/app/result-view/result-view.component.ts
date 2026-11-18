@@ -10,7 +10,7 @@ import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { SearchComponent } from '../search/search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
+import { ZuDieserAntwortComponent } from './zu-dieser-antwort.component';
 import { StateManagementService } from '../services/state-management.service';
 import { LoadingSpinnerComponent } from '../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../shared/components/error-message/error-message.component';
@@ -163,7 +163,7 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     SearchComponent,
     MatButtonModule,
     MatIconModule,
-    MatMenuModule,
+    ZuDieserAntwortComponent,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
@@ -222,8 +222,9 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   weitereGruppen: AnsichtGruppe[] = [];
   weitereAnzahl = 0;
   /**
-   * Am Desktop zwei Spalten: links die beste Antwort, rechts der Rest der Gruppe (Maintainer
-   * 18.11.). Nur wenn es neben der besten Antwort etwas gibt; die Spalten macht das CSS ab 1024 px.
+   * Am Desktop zwei Spalten (Maintainer 18.11.): oben die beste Antwort und "Zu dieser Antwort",
+   * darunter die weiteren Karten zu zweit. Immer, wenn es eine beste Antwort gibt; die Spalten
+   * macht das CSS ab 1024 px.
    */
   zweispaltig = false;
   /** "Weitere, weniger passende Treffer" aufgeklappt; jede neue Suche beginnt zu. */

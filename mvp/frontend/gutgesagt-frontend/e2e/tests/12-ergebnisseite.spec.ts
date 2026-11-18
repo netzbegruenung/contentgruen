@@ -155,17 +155,36 @@ async function kasten(page: Page, selektor: string): Promise<{ x: number; y: num
   return { x: Math.round(box.x), y: Math.round(box.y), breite: Math.round(box.width) };
 }
 
-// Desktop ab 1024 px zweispaltig (Maintainer 18.11.), darunter eine Spalte; der Kopf springt nicht.
+// Desktop ab 1024 px (Maintainer 18.11.): oben beste Antwort und "Zu dieser Antwort" 50/50,
+// darunter die weiteren Karten zu zweit; unter 1024 px eine Spalte; der Kopf springt nicht.
 test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
-  test('1280 px: beste Antwort und weitere nebeneinander, Kopf vor und nach neuer Suche gleich breit', async ({ page }) => {
+  test('1280 px: beste Antwort und Kasten nebeneinander, darunter zwei Karten nebeneinander, Kopf gleich breit', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await oeffnen(page);
     const beste = await kasten(page, '.beste-antwort');
-    const rechts = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
-    expect(rechts.x).toBeGreaterThan(beste.x + beste.breite);
-    const besteTitel = await kasten(page, '.gruppe.mit-bester .typ-block .beste-ueberschrift');
-    const weitereTitel = await kasten(page, '.gruppe.mit-bester .typ-block .weitere-ueberschrift');
-    expect(Math.abs(weitereTitel.y - besteTitel.y)).toBeLessThanOrEqual(2);
+    const daneben = await kasten(page, '.gruppe.mit-bester .zu-dieser-antwort-spalte');
+    expect(daneben.x).toBeGreaterThan(beste.x + beste.breite);
+    expect(Math.abs(daneben.breite - beste.breite)).toBeLessThanOrEqual(2);
+    const besteTitel = await kasten(page, '.gruppe.mit-bester .beste-ueberschrift');
+    const kastenTitel = await kasten(page, '.gruppe.mit-bester .zda-titel');
+    expect(Math.abs(kastenTitel.y - besteTitel.y)).toBeLessThanOrEqual(2);
+
+    // Darunter ueber die volle Breite: die ersten beiden eingeklappten Karten auf einer Zeile
+    const karten = page.locator('.gruppe.mit-bester .eingeklappte-karten').first().locator('app-beitragskarte');
+    const links = await karten.nth(0).boundingBox();
+    const rechts = await karten.nth(1).boundingBox();
+    if (!links || !rechts) throw new Error('Zwei eingeklappte Karten erwartet');
+    expect(Math.round(links.x)).toBe(beste.x);
+    expect(rechts.x).toBeGreaterThan(links.x + links.width);
+    expect(Math.abs(rechts.y - links.y)).toBeLessThanOrEqual(2);
+    expect(links.y).toBeGreaterThan(beste.y + 10);
+
+    // Aufgeklappt waechst nur die eine Karte, nicht ihre Nachbarin
+    const hoeheRechts = rechts.height;
+    await karten.nth(0).locator('.aufklapp-knopf').click();
+    await expect(karten.nth(0).locator('.karte-inhalt')).toBeVisible();
+    expect(Math.round((await karten.nth(1).boundingBox())!.height)).toBe(Math.round(hoeheRechts));
+    await karten.nth(0).locator('.aufklapp-knopf').click();
     const kopfVorher = await kasten(page, '.search-box');
 
     // Neue Suche mit verzoegerter Antwort: auch waehrend des Ladens bleibt der Kopf gleich
@@ -185,10 +204,11 @@ test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
     expect(await kasten(page, '.search-box')).toEqual(kopfVorher);
   });
 
-  test('1023 px: beste Antwort und weitere untereinander', async ({ page }) => {
+  test('1023 px: beste Antwort und weitere untereinander, ohne Kasten', async ({ page }) => {
     await page.setViewportSize({ width: 1023, height: 900 });
     await oeffnen(page);
     await expect(page.locator('.gruppe.mit-bester')).toHaveCount(1);
+    await expect(page.locator('app-zu-dieser-antwort')).toBeHidden();
     const beste = await kasten(page, '.beste-antwort');
     const weitere = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
     expect(weitere.x).toBe(beste.x);

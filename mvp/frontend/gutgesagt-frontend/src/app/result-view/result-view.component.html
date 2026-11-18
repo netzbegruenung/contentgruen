@@ -105,8 +105,9 @@
              nennt die Aussage, die Karten darum keinen eigenen Antwort-auf-Kopf. Gibt es eine
              erkannte Aussage, stehen die anderen eingeklappt darunter und zaehlen nicht in den Chips. -->
         <ng-template #gruppeTpl let-gruppe>
-        <!-- Am Desktop zwei Spalten (Maintainer 18.11.): Die beste Antwort floatet links, alles andere
-             der Gruppe steht rechts daneben. Die Reihenfolge im DOM bleibt: erst die beste, dann rechts. -->
+        <!-- Am Desktop zwei Spalten (Maintainer 18.11.): oben links die beste Antwort, rechts daneben
+             "Zu dieser Antwort", darunter ueber die volle Breite die weiteren Karten zu zweit. Die
+             Reihenfolge im DOM ist die Lesereihenfolge: beste, Kasten, weitere. -->
         <section class="gruppe" [class.mit-bester]="gruppe === hauptGruppen[0] && zweispaltig" [attr.aria-labelledby]="gruppe.id">
             <!-- Die erkannte Gruppe nennt die Zeile "Erkannt als" schon; ihr Kopf nur fuer Screenreader (Designrunde mobil 17.11.) -->
             <h2 class="gruppe-kopf" [class.visually-hidden]="gruppe.art === 'erkannt' && erkannt" [class.gruppe-kopf--neben]="gruppe.art === 'aehnlich' || gruppe.art === 'ohne'" [id]="gruppe.id">
@@ -127,23 +128,14 @@
                 <ng-container *ngIf="block.beste as beste">
                     <h3 class="typ-ueberschrift beste-ueberschrift" tabindex="-1">Beste Antwort</h3>
                     <app-kartenliste class="beste-antwort" [daten]="[beste]" [schlicht]="true" [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
+                    <!-- Was die schlichte Karte nicht zeigt; nur am Desktop ab 1024 px sichtbar (CSS) -->
+                    <app-zu-dieser-antwort *ngIf="gruppe === hauptGruppen[0] && zweispaltig" class="zu-dieser-antwort-spalte"
+                                           [karte]="beste"></app-zu-dieser-antwort>
                 </ng-container>
                 <ng-container *ngIf="block.weitere.length">
-                    <!-- Der Erklaersatz des Typs hinter dem ⓘ, wie das Stil-ⓘ der Karte: Antippen oeffnet ihn
-                         als Menue, am Desktop wie am Handy (Designrunde 17.11.). Kein Tooltip: Er haengte denselben
-                         Satz als aria-describedby an, Screenreader hoerten ihn doppelt. Neben, nicht in der
-                         Ueberschrift: sonst hiesse sie fuer Screenreader samt der Frage. -->
+                    <!-- Ohne ⓘ (Maintainer 18.11.): Die Typen erklaert nur noch das Etikett auf der Karte -->
                     <div class="typ-kopf">
                         <h3 class="typ-ueberschrift weitere-ueberschrift" [attr.tabindex]="block.beste ? null : -1">{{ block.weitereTitel }}</h3>
-                        <ng-container *ngIf="block.erklaerung as erklaerung">
-                            <button type="button" class="typ-info" [matMenuTriggerFor]="typMenue"
-                                    [attr.aria-label]="block.erklaerFrage">
-                                <mat-icon aria-hidden="true">info_outline</mat-icon>
-                            </button>
-                            <mat-menu #typMenue="matMenu" class="typ-menue" xPosition="before">
-                                <div mat-menu-item disableRipple class="typ-erklaerung-text" (click)="$event.stopPropagation()">{{ erklaerung }}</div>
-                            </mat-menu>
-                        </ng-container>
                     </div>
                     <app-kartenliste class="eingeklappte-karten" [daten]="block.weitere" [schlicht]="true" [aufklappbar]="true"
                                      [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
