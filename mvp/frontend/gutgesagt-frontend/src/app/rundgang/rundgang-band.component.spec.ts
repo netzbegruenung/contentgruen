@@ -2,7 +2,9 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RundgangBandComponent } from './rundgang-band.component';
 import { RundgangService } from './rundgang.service';
-import { Angebot, HOME_ANGEBOT, MITMACHEN_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
+import { Angebot, APP_INSTALLIEREN_ANGEBOT, HOME_ANGEBOT, MITMACHEN_ANGEBOT, WILLKOMMEN } from './rundgang-daten';
+import { ALS_APP_GESTARTET } from './app-installieren.service';
+import { installierenEreignis } from '../testing/installieren-ereignis';
 
 /** Das Angebot eines Rundgangs als Band statt Fenster (#587). */
 describe('RundgangBandComponent', () => {
@@ -15,7 +17,10 @@ describe('RundgangBandComponent', () => {
     rundgang = { band, bandBeantworten: jasmine.createSpy('bandBeantworten') };
     TestBed.configureTestingModule({
       imports: [RundgangBandComponent],
-      providers: [{ provide: RundgangService, useValue: rundgang }],
+      providers: [
+        { provide: RundgangService, useValue: rundgang },
+        { provide: ALS_APP_GESTARTET, useValue: () => false },
+      ],
     });
     fixture = TestBed.createComponent(RundgangBandComponent);
     fixture.detectChanges();
@@ -114,6 +119,33 @@ describe('RundgangBandComponent', () => {
       expect(knopf('Ausblenden').getAttribute('aria-label')).toBe('Hinweis ausblenden');
       knopf('Ausblenden').click();
       expect(rundgang.bandBeantworten).toHaveBeenCalledWith(false);
+    });
+  });
+
+  describe('Knopf „Installieren“ in Chrome und Edge (18.11.2026)', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('ort', 'start');
+      band.set(APP_INSTALLIEREN_ANGEBOT);
+    });
+
+    it('ohne Angebot des Browsers kein Knopf „Installieren“', () => {
+      fixture.detectChanges();
+      expect(knopf('Installieren')).toBeUndefined();
+    });
+
+    it('mit Angebot ein echter Knopf, 44 px hoch, per Tastatur erreichbar', () => {
+      window.dispatchEvent(installierenEreignis('accepted'));
+      fixture.detectChanges();
+      document.body.appendChild(fixture.nativeElement);
+      const k = knopf('Installieren');
+      expect(k.type).toBe('button');
+      expect(k.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+      k.focus();
+      expect(document.activeElement).toBe(k);
+      k.click();
+      expect(rundgang.bandBeantworten).toHaveBeenCalledWith(true);
+      expect(knopf('Ausblenden').getAttribute('aria-label')).toBe('Hinweis ausblenden');
+      (fixture.nativeElement as HTMLElement).remove();
     });
   });
 

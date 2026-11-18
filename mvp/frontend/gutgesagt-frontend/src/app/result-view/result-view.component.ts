@@ -10,7 +10,7 @@ import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { SearchComponent } from '../search/search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
+import { ZuDieserAntwortComponent } from './zu-dieser-antwort.component';
 import { StateManagementService } from '../services/state-management.service';
 import { LoadingSpinnerComponent } from '../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../shared/components/error-message/error-message.component';
@@ -21,7 +21,7 @@ import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
-import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
+import { KartenDaten, KartenKennzahlen, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { StatementSearchResult } from '../services/dtos/statementDtos';
 import { TeilenService, sucheLink, suchtextKuerzen } from '../shared/teilen.service';
 import {
@@ -163,7 +163,7 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     SearchComponent,
     MatButtonModule,
     MatIconModule,
-    MatMenuModule,
+    ZuDieserAntwortComponent,
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
@@ -222,10 +222,13 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   weitereGruppen: AnsichtGruppe[] = [];
   weitereAnzahl = 0;
   /**
-   * Am Desktop zwei Spalten: links die beste Antwort, rechts der Rest der Gruppe (Maintainer
-   * 18.11.). Nur wenn es neben der besten Antwort etwas gibt; die Spalten macht das CSS ab 1024 px.
+   * Am Desktop zwei Spalten (Maintainer 18.11.): oben die beste Antwort und "Zu dieser Antwort",
+   * darunter die weiteren Karten zu zweit. Immer, wenn es eine beste Antwort gibt; die Spalten
+   * macht das CSS ab 1024 px.
    */
   zweispaltig = false;
+  /** Was die beste Karte nach Stimme oder Kopieren meldet; "Zu dieser Antwort" zieht es nach. */
+  besteKennzahlen: KartenKennzahlen | null = null;
   /** "Weitere, weniger passende Treffer" aufgeklappt; jede neue Suche beginnt zu. */
   weitereOffen = false;
   /** Gruppe und Typ, die alle Karten zeigen ("Alle N … zeigen"). */

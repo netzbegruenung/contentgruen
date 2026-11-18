@@ -93,6 +93,38 @@
         Warteliste kommst du über „Feedback“.
     </p>
 
+    <!-- Als App installieren, je Geraet (Entscheidung Maintainer 18.11.). Knopf nur, wenn
+         der Browser das Installieren anbietet (AppInstallierenService). -->
+    <section class="hilfe-als-app" id="als-app" aria-labelledby="hilfe-als-app-titel">
+        <h3 id="hilfe-als-app-titel" tabindex="-1">Als App aufs Handy</h3>
+        @if (app.installiert()) {
+            <p class="hilfe-als-app-installiert">Du nutzt Gut gesagt hier schon als App.</p>
+        } @else {
+            <p>Mit eigenem Symbol öffnest du Gut gesagt mit einem Tipp, ohne Adressleiste.</p>
+            @if (app.installierbar()) {
+                <p>
+                    <button type="button" class="rundgang-knopf voll hilfe-als-app-knopf"
+                            (click)="installieren()">Installieren</button>
+                </p>
+            }
+            <dl class="hilfe-als-app-schritte">
+                <dt>iPhone und iPad (Safari)</dt>
+                <dd>
+                    Tippe auf Teilen
+                    <svg class="teilen-symbol" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                        <path d="M8.5 9.5H6.5v11h11v-11h-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                        <path d="M12 3v11.5M8.5 6.5 12 3l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    (oder erst auf ···), dann auf „Zum Home-Bildschirm“.
+                </dd>
+                <dt>Android (Chrome)</dt>
+                <dd>Tippe oben rechts auf das Menü ⋮, dann auf „App installieren“ oder „Zum Startbildschirm hinzufügen“.</dd>
+                <dt>Computer (Chrome oder Edge)</dt>
+                <dd>Klick rechts in der Adressleiste auf das Symbol zum Installieren.</dd>
+            </dl>
+        }
+    </section>
+
     <!-- Kurz: dieselben Saetze wie auf der Über-Seite (shared/ki-saetze.ts), die Technik steht dort -->
     <h3>Nutzt Gut gesagt KI?</h3>
     <p class="hilfe-technik hilfe-ki">
