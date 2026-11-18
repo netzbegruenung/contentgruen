@@ -773,7 +773,8 @@ mat-sidenav-content {
    "Erkannt als", Teilen) ist immer 1160 px breit, egal ob das Ergebnis zwei Spalten hat oder
    noch laedt: sonst springt der Suchen-Knopf bei jeder neuen Suche. Einspaltige Ergebnisse
    und alles unter der Gruppe ("Weitere, weniger passende", "Nicht dabei?", Hinweis) stehen
-   linksbuendig auf Lesebreite. Die beste Antwort floatet, damit die Reihenfolge im DOM
+   linksbuendig auf Lesebreite; nur der leere Zustand (keine Treffer) bleibt bewusst mittig.
+   Die beste Antwort floatet, damit die Reihenfolge im DOM
    (erst die beste, dann rechts) fuer Tastatur und Screenreader gleich bleibt; Grid koppelte
    die Zeilenhoehen beider Spalten. */
 @media (min-width: 1024px) {

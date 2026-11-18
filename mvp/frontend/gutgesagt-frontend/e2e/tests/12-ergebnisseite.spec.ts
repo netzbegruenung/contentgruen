@@ -163,7 +163,10 @@ test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
     const beste = await kasten(page, '.beste-antwort');
     const rechts = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
     expect(rechts.x).toBeGreaterThan(beste.x + beste.breite);
-    expect(Math.abs(rechts.y - beste.y)).toBeLessThan(40);
+    expect(rechts.x).toBeGreaterThan(beste.x);
+    const besteTitel = await kasten(page, '.beste-ueberschrift');
+    const weitereTitel = await kasten(page, '.weitere-ueberschrift');
+    expect(Math.abs(weitereTitel.y - besteTitel.y)).toBeLessThanOrEqual(2);
     const kopfVorher = await kasten(page, '.search-box');
 
     // Neue Suche mit verzoegerter Antwort: auch waehrend des Ladens bleibt der Kopf gleich
