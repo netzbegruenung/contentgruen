@@ -215,13 +215,49 @@ describe('SearchComponent', () => {
       flush();
     }));
 
-    it('sucht auch mit Enter im leeren Feld den Hot Take statt einer leeren Suche', fakeAsync(() => {
+    it('Enter im leeren Feld bei laufender Vorführung sucht nicht', fakeAsync(() => {
+      const f = mitBeispiel(false);
+      tick(HOT_TAKES[0].text.length * 45 + 10);
+      f.detectChanges();
+      expect(knopfText(f)).toBe('Beispiel ausprobieren');
+
+      // preventDefault verhindert auch das implizite Absenden (ngSubmit) am Desktop mit Autofokus
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true });
+      feld(f).dispatchEvent(enter);
+      tick();
+
+      expect(enter.defaultPrevented).toBeTrue();
+      expect(navigationServiceMock.navigateToResult).not.toHaveBeenCalled();
+      flush(5000);
+    }));
+
+    it('Enter im leeren Feld sucht auch bei reduzierter Bewegung nicht; nur der Knopf sucht den Hot Take', fakeAsync(() => {
       const f = mitBeispiel(true);
       tick();
-      f.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+      f.detectChanges();
 
+      feld(f).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      tick();
+      expect(navigationServiceMock.navigateToResult).not.toHaveBeenCalled();
+
+      knopf(f).click();
       expect(navigationServiceMock.navigateToResult).toHaveBeenCalledOnceWith(HOT_TAKES[0].text);
       discardPeriodicTasks();
+    }));
+
+    it('sucht mit Enter den Feldinhalt, wenn Text im Feld steht', fakeAsync(() => {
+      const f = mitBeispiel(false);
+      tick(200);
+      feld(f).value = 'Tempolimit bringt nichts';
+      feld(f).dispatchEvent(new Event('input'));
+      f.detectChanges();
+      tick();
+
+      feld(f).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      tick();
+
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledOnceWith('Tempolimit bringt nichts');
+      flush();
     }));
 
     it('heißt nach eigener Eingabe „Suchen“ und sucht den Feldinhalt', fakeAsync(() => {
@@ -415,6 +451,61 @@ describe('SearchComponent', () => {
 
       expect(enter.defaultPrevented).toBeTrue();
       expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith('Tempolimit bringt nichts');
+    });
+
+    it('sucht bei einem Umbruch per beforeinput (Android-Tastatur nach IME-Enter) wie mit Enter', fakeAsync(() => {
+      schmal();
+      component.searchQuery = 'Tempolimit bringt nichts';
+      const ime = new KeyboardEvent('keydown', { key: 'Enter', keyCode: 229, cancelable: true } as KeyboardEventInit);
+      textfeld().dispatchEvent(ime);
+      const umbruch = new InputEvent('beforeinput', { inputType: 'insertLineBreak', cancelable: true });
+      textfeld().dispatchEvent(umbruch);
+      const absatz = new InputEvent('beforeinput', { inputType: 'insertParagraph', cancelable: true });
+      tick();
+      textfeld().dispatchEvent(absatz);
+
+      expect(ime.defaultPrevented).toBeFalse();
+      expect(umbruch.defaultPrevented).toBeTrue();
+      expect(absatz.defaultPrevented).toBeTrue();
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledTimes(2);
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith('Tempolimit bringt nichts');
+    }));
+
+    it('sucht nicht doppelt, wenn nach Enter noch ein Umbruch per beforeinput kommt', fakeAsync(() => {
+      schmal();
+      component.searchQuery = 'Tempolimit bringt nichts';
+      textfeld().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+      const umbruch = new InputEvent('beforeinput', { inputType: 'insertLineBreak', cancelable: true });
+      textfeld().dispatchEvent(umbruch);
+      tick();
+
+      expect(umbruch.defaultPrevented).toBeTrue();
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledOnceWith('Tempolimit bringt nichts');
+    }));
+
+    it('sucht bei einem Umbruch per beforeinput im leeren Feld nicht, auch bei laufender Vorführung', fakeAsync(() => {
+      spyOn(window, 'matchMedia').and.callFake(() => ({ matches: false }) as MediaQueryList);
+      const f = TestBed.createComponent(SearchComponent);
+      f.componentRef.setInput('beispielAnimation', true);
+      schmal(f);
+      tick(HOT_TAKES[0].text.length * 45 + 10);
+      f.detectChanges();
+
+      const umbruch = new InputEvent('beforeinput', { inputType: 'insertLineBreak', cancelable: true });
+      textfeld(f).dispatchEvent(umbruch);
+
+      expect(umbruch.defaultPrevented).toBeTrue();
+      expect(navigationServiceMock.navigateToResult).not.toHaveBeenCalled();
+      flush(5000);
+    }));
+
+    it('laesst normale Eingaben per beforeinput durch', () => {
+      schmal();
+      const tippen = new InputEvent('beforeinput', { inputType: 'insertText', data: 'a', cancelable: true });
+      textfeld().dispatchEvent(tippen);
+
+      expect(tippen.defaultPrevented).toBeFalse();
+      expect(navigationServiceMock.navigateToResult).not.toHaveBeenCalled();
     });
 
     it('macht mit Umschalt+Enter keine neue Zeile', () => {

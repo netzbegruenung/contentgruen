@@ -16,12 +16,14 @@
                           [attr.aria-describedby]="hinweisId"
                           [placeholder]="beispielAnimation && !searchQuery ? beispielText : ''"
                           (keydown.enter)="enterImFeld($event)" (keydown.shift.enter)="enterImFeld($event)"
+                          (beforeinput)="umbruchImFeld($event)"
                           (pointerdown)="beispielBeenden()" (input)="beispielBeenden()" (paste)="beispielBeenden()"></textarea>
             } @else {
                 <input matInput #feld [id]="feldId" [(ngModel)]="searchQuery" name="searchQuery"
                        enterkeyhint="search"
                        [attr.aria-describedby]="hinweisId"
                        [placeholder]="beispielAnimation && !searchQuery ? beispielText : ''"
+                       (keydown.enter)="enterImFeld($event)"
                        (pointerdown)="beispielBeenden()" (input)="beispielBeenden()" (paste)="beispielBeenden()">
             }
             <!-- Search button as suffix icon on mobile in compact mode -->

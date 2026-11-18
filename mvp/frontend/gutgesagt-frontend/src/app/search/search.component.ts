@@ -138,11 +138,16 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /** Enter wurde in diesem Task schon per keydown behandelt; ein folgendes beforeinput sucht nicht noch einmal. */
+  private enterBehandelt = false;
+
   /**
-   * Enter sucht, auch im mehrzeiligen Feld; Umschalt+Enter macht keine neue Zeile.
-   * Nur während einer laufenden IME-Komposition (etwa Japanisch) bestätigt Enter das Zeichen.
-   * Annahme: Dann meldet der Browser isComposing oder keyCode 229. Handytastaturen wie Gboard
-   * schließen das Wort vor Enter ab und schicken Enter ohne beides; am Gerät noch zu prüfen.
+   * Enter im Feld sucht den Feldinhalt, auch im mehrzeiligen Feld; Umschalt+Enter macht keine
+   * neue Zeile. Im leeren Feld tut Enter nichts, auch während der Vorführung: Den Hot Take sucht
+   * nur ein Klick auf „Beispiel ausprobieren“ (Maintainer 18.11.). Das preventDefault verhindert
+   * auch das implizite Absenden des Formulars (ngSubmit) am Desktop mit Autofokus.
+   * Während einer IME-Komposition (isComposing oder keyCode 229) bestätigt Enter das Zeichen;
+   * kommt der Umbruch danach doch an (Android-Tastaturen), entscheidet umbruchImFeld.
    */
   enterImFeld(ereignis: Event): void {
     const taste = ereignis as KeyboardEvent;
@@ -150,7 +155,32 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     ereignis.preventDefault();
-    this.onSearch();
+    this.enterBehandelt = true;
+    setTimeout(() => (this.enterBehandelt = false));
+    this.feldSuchen();
+  }
+
+  /**
+   * Rückfallebene für das mehrzeilige Feld: Manche Handytastaturen schicken Enter als keydown
+   * mit isComposing/229 und dann nur einen Umbruch (beforeinput insertLineBreak/insertParagraph).
+   * Der würde sonst still zum Leerzeichen; er gilt hier wie Enter. Hat keydown schon gesucht,
+   * wird nur der Umbruch verworfen.
+   */
+  umbruchImFeld(ereignis: Event): void {
+    const eingabe = ereignis as InputEvent;
+    if (eingabe.inputType !== 'insertLineBreak' && eingabe.inputType !== 'insertParagraph') {
+      return;
+    }
+    ereignis.preventDefault();
+    if (this.enterBehandelt) {
+      return;
+    }
+    this.feldSuchen();
+  }
+
+  /** Enter (oder Umbruch) sucht nur, was im Feld steht, nie den Hot Take. */
+  private feldSuchen(): void {
+    this.performSearch(this.searchQuery);
   }
 
   /**
@@ -253,7 +283,10 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     this.beispielTimer = setTimeout(() => this.tippen(naechster, 0, neueRunde), 400);
   }
 
-  /** Im Beispielzustand sucht der Knopf (und Enter) den Hot Take, sonst den Feldinhalt. */
+  /**
+   * Absenden über den Knopf: Im Beispielzustand sucht er den Hot Take, sonst den Feldinhalt.
+   * Enter im Feld kommt hier nicht an (enterImFeld verhindert das implizite Absenden).
+   */
   onSearch(): void {
     if (this.beispielZustand) {
       this.beispielAusprobieren();
