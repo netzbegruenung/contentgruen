@@ -16,6 +16,12 @@ export type TrefferTyp = (typeof TREFFER_TYPEN)[number];
 /** Wie viele Karten je Typ und Gruppe zuerst dastehen; der Rest auf "Alle N … zeigen". */
 export const KARTEN_JE_TYP = 3;
 
+/**
+ * Am Desktop ab 1024 px stehen unter der besten Antwort so viele weitere offen da
+ * (Maintainer 18.11.): mindestens fuenf Antworten offen, erst dann eingeklappte.
+ */
+export const OFFENE_WEITERE_DESKTOP = 4;
+
 /** Woher die Treffer eines Typs in der Suchantwort kommen. */
 const FELD: Record<TrefferTyp, keyof SearchResponse> = {
   commentary: 'commentary_search_results',
@@ -141,6 +147,8 @@ export interface AnsichtBlock {
   mehrText: string | null;
   /** Die beste Antwort, ganz gezeigt (Trefferseite, V3); nur im ersten Block der ersten Gruppe. */
   beste: KartenDaten | null;
+  /** Weitere Karten, offen unter der besten (nur am Desktop ab 1024 px, Maintainer 18.11.). */
+  offen: KartenDaten[];
   /** Die uebrigen Karten, eingeklappt unter einer kleinen Ueberschrift. */
   weitere: KartenDaten[];
   /** Ueberschrift ueber den eingeklappten Karten, mit Zahl: "Weitere Antworten · 2", "Hintergrundinfo · 1". */
@@ -164,13 +172,18 @@ export interface AnsichtGruppe {
 
 /**
  * Was die Seite zeigt: je Typ hoechstens KARTEN_JE_TYP Karten, ausser die Gruppe ist
- * fuer den Typ aufgeklappt. Gruppen ohne Karten fallen weg.
+ * fuer den Typ aufgeklappt. Gruppen ohne Karten fallen weg. Mit offenenWeiteren (Desktop)
+ * stehen im Block der besten Antwort so viele Karten mehr da, damit die offenen die
+ * eingeklappten nicht verdraengen.
  */
 export function ansichtBauen(
   gruppen: readonly ErgebnisGruppe[],
   aufgeklappt: ReadonlySet<string>,
+  offeneWeitere = 0,
 ): AnsichtGruppe[] {
   const ansicht: AnsichtGruppe[] = [];
+  // Dieselbe Gruppe, die besteHervorheben waehlt: die erste offene, sonst die erste
+  const erste = gruppen.find((g) => !istWeniger(g, gruppen)) ?? gruppen[0];
   gruppen.forEach((gruppe, nr) => {
     const bloecke: AnsichtBlock[] = [];
     for (const typ of TREFFER_TYPEN) {
@@ -181,15 +194,17 @@ export function ansichtBauen(
       const id = blockId(nr, typ);
       const offen = aufgeklappt.has(aufklappSchluessel(gruppe.schluessel, typ));
       const namen = TYP_NAMEN[typ];
-      const gezeigt = offen ? karten : karten.slice(0, KARTEN_JE_TYP);
+      const grenze = KARTEN_JE_TYP + (gruppe === erste && !bloecke.length ? offeneWeitere : 0);
+      const gezeigt = offen ? karten : karten.slice(0, grenze);
       bloecke.push({
         typ,
         id,
         ueberschrift: karten.length === 1 ? namen.einzahl : namen.mehrzahl,
         karten: gezeigt,
         alle: karten.length,
-        mehrText: !offen && karten.length > KARTEN_JE_TYP ? `Alle ${karten.length} ${namen.mehrzahl} zeigen` : null,
+        mehrText: !offen && karten.length > grenze ? `Alle ${karten.length} ${namen.mehrzahl} zeigen` : null,
         beste: null,
+        offen: [],
         weitere: gezeigt,
         weitereTitel: `${karten.length === 1 ? namen.einzahl : namen.mehrzahl} · ${karten.length}`,
       });
@@ -214,15 +229,19 @@ export function ansichtBauen(
  * im ersten Block der ersten offenen Gruppe (die erkannte Aussage, Kommentare zuerst)
  * steht ganz da, alle anderen Karten eingeklappt. Ohne offene Gruppe die erste Gruppe,
  * damit nie alles eingeklappt ist. Liefert neue Bloecke, die Karten bleiben dieselben.
+ * Am Desktop (Maintainer 18.11.) stehen die naechsten offeneWeitere Karten des Blocks
+ * ebenfalls offen da; dieselbe Zahl gehoert an ansichtBauen.
  */
-export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGruppe[] {
+export function besteHervorheben(ansicht: readonly AnsichtGruppe[], offeneWeitere = 0): AnsichtGruppe[] {
   const erste = ansicht.find((g) => !g.weniger) ?? ansicht[0];
   return ansicht.map((gruppe) => {
     if (gruppe !== erste || !gruppe.bloecke.length) {
       return gruppe;
     }
     const [block, ...rest] = gruppe.bloecke;
-    const [beste, ...weitere] = block.karten;
+    const [beste, ...danach] = block.karten;
+    const offen = danach.slice(0, offeneWeitere);
+    const weitere = danach.slice(offen.length);
     const namen = TYP_NAMEN[block.typ];
     const name = block.typ === 'commentary' ? 'Antworten' : namen.mehrzahl;
     return {
@@ -231,10 +250,11 @@ export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGrup
         {
           ...block,
           beste: beste ?? null,
+          offen,
           weitere,
           weitereTitel: `Weitere ${name} · ${block.alle - 1}`,
-          // Zaehlt wie die Ueberschrift darueber, ohne die beste Antwort
-          mehrText: block.mehrText ? `Alle ${block.alle - 1} weiteren ${name} zeigen` : null,
+          // Zaehlt, was noch nicht offen dasteht: ohne die beste und die offenen Antworten
+          mehrText: block.mehrText ? `Alle ${block.alle - 1 - offen.length} weiteren ${name} zeigen` : null,
         },
         ...rest,
       ],
