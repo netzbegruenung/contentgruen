@@ -60,12 +60,12 @@ describe('SearchComponent', () => {
     }
 
     // Wortlaut rechtlich abgestimmt (16.11.2026): Aenderungen hier fallen auf
-    it('sagt, dass nur der Spruch ohne Namen gespeichert wird und geprüft öffentlich werden kann', () => {
+    it('sagt, dass der Spruch ohne Namen gespeichert wird und geprüft öffentlich werden kann', () => {
       expect(hinweis().textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        'Wir speichern nur den Spruch, nie deinen Namen oder Chat. Geprüfte Sprüche können öffentlich werden. Mehr dazu im Datenschutz',
+        'Den Spruch speichern wir ohne deinen Namen, deinen Chat sehen wir nie. Geprüfte Sprüche können öffentlich werden. Mehr dazu im Datenschutz',
       );
       expect(SUCHHINWEIS).toBe(
-        'Wir speichern nur den Spruch, nie deinen Namen oder Chat. Geprüfte Sprüche können öffentlich werden.',
+        'Den Spruch speichern wir ohne deinen Namen, deinen Chat sehen wir nie. Geprüfte Sprüche können öffentlich werden.',
       );
     });
 
