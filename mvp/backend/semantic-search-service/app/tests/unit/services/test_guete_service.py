@@ -82,6 +82,21 @@ def test_post_ohne_verneinungsregel():
     [beitrag] = service.ergaenzen([_beitrag(content_type="post")])
     assert gegenlesen.gegenlesen.call_args.kwargs["titel_ist_behauptung"] is False
     assert "verneinung" not in beitrag.guete_erfuellt
+    # Auch der Titel als Frage gilt nur für behauptende Titel.
+    assert "titel_frage" not in beitrag.guete_erfuellt
+
+
+def test_karte_liest_ohne_herkunft_gegen():
+    # Ob eine Herkunft eingetragen ist, weiß nur das Formular: Auf der Karte entfällt
+    # die Regel zu Zahlen ohne Herkunft, wie die zu den Schlüsselwörtern.
+    gegenlesen = _gegenlesen(arten=())
+    service, _ = _service(gegenlesen)
+    [beitrag] = service.ergaenzen([_beitrag()])
+    assert "hat_herkunft" not in gegenlesen.gegenlesen.call_args.kwargs
+    assert "zahl_ohne_herkunft" not in beitrag.guete_erfuellt
+    assert {"gedankenstrich", "parteistimme", "titel_frage"} <= set(
+        beitrag.guete_erfuellt
+    )
 
 
 def test_startkonten_gehen_an_die_abfrage():

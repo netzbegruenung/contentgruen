@@ -15,6 +15,7 @@ from services.gegenlesen.gegenlesen_service import (
     SPACY_MODELL,
     GegenlesenService,
     Sprachwerkzeuge,
+    lade_parteistimme,
     lade_statt_sag_liste,
 )
 
@@ -397,6 +398,216 @@ class TestLangeKomposita:
         )
 
         assert "kompositum" not in arten(ergebnis)
+
+
+class TestGedankenstrich:
+    @pytest.mark.parametrize("strich", ["–", "—"])
+    def test_gedankenstrich_im_text(self, service, strich):
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt",
+            text=f"Die Pumpe läuft {strich} und sie spart Geld.",
+            aussage="",
+        )
+
+        gedankenstrich = anmerkung(ergebnis, "gedankenstrich")
+        assert gedankenstrich.stelle == "text"
+        assert gedankenstrich.woerter == [strich]
+        assert "nach KI" in gedankenstrich.text
+
+    def test_geviertstrich_ohne_leerzeichen_und_im_titel(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Die Pumpe läuft—und spart Geld", text="", aussage=""
+        )
+
+        assert anmerkung(ergebnis, "gedankenstrich").stelle == "titel"
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Das Klima-Schutz-Programm hilft.",
+            "Die Pumpe spart 3–5 Euro im Monat.",
+            "Die Pumpe spart 3 – 5 Euro im Monat.",
+            "Drei Gründe:\n– Sie spart Geld.\n– Sie ist leise.",
+        ],
+    )
+    def test_bindestrich_bereich_und_aufzaehlung_zaehlen_nicht(self, service, text):
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt", text=text, aussage=""
+        )
+
+        assert "gedankenstrich" not in arten(ergebnis)
+
+
+class TestParteistimme:
+    @pytest.mark.parametrize(
+        "text, wendung",
+        [
+            ("Die Grünen wollen mehr Busse.", "Grünen wollen"),
+            ("Die Grünen im Bundestag fordern ein Tempolimit.", "Grünen fordern"),
+            ("Wir fordern mehr Busse.", "Wir fordern"),
+            ("Deshalb fordern wir mehr Busse.", "fordern wir"),
+            ("Wir Grüne setzen uns für Busse ein.", "Wir Grüne"),
+            ("Unsere Partei will mehr Busse.", "Unsere Partei"),
+            ("Bündnis 90/Die Grünen fordert mehr Radwege.", "Grünen fordert"),
+        ],
+    )
+    def test_klingt_nach_partei(self, service, text, wendung):
+        ergebnis = service.gegenlesen(titel="Busse helfen", text=text, aussage="")
+
+        partei = anmerkung(ergebnis, "parteistimme")
+        assert partei.woerter == [wendung]
+        assert "Nachbarin" in partei.text
+
+    def test_wir_grüne_mit_verb_einmal(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Busse helfen", text="Wir Grünen wollen mehr Busse.", aussage=""
+        )
+
+        assert anmerkung(ergebnis, "parteistimme").woerter == ["Wir Grünen"]
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Wir wollen alle saubere Luft.",
+            "Viele fordern mehr Busse.",
+            "Wir wissen, was die Leute fordern.",
+            "Die Grünen sind keine Verbotspartei.",
+        ],
+    )
+    def test_nachbarin_und_andere_subjekte(self, service, text):
+        ergebnis = service.gegenlesen(titel="Busse helfen", text=text, aussage="")
+
+        assert "parteistimme" not in arten(ergebnis)
+
+    def test_liste_hat_beide_arten(self):
+        liste = lade_parteistimme()
+
+        assert ("wir", "grüne") in liste.folgen
+        assert any("grüne" in wer and "fordern" in tut for wer, tut in liste.wer_tut)
+
+    def test_parteistimme_wiegt_zwei(self, service):
+        vorher = service.gegenlesen(
+            titel="Busse helfen", text="Die Grünen wollen mehr Busse.", aussage=""
+        )
+        nachher = service.gegenlesen(
+            titel="Busse helfen",
+            text="Mehr Busse bringen dich schneller hin.",
+            aussage="",
+        )
+
+        assert nachher.guete - vorher.guete == 2
+
+
+class TestTitelAlsFrage:
+    def test_titel_mit_fragezeichen(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpe im Altbau – geht das?", text="", aussage=""
+        )
+
+        frage = anmerkung(ergebnis, "titel_frage")
+        assert frage.stelle == "titel"
+        assert "deine Antwort" in frage.text
+
+    def test_wie_beim_aussagen_abgleich_auch_ohne_fragezeichen(self, service):
+        # ist_frage (#387): ein finites Verb vorn ist auch eine Frage.
+        ergebnis = service.gegenlesen(
+            titel="Lohnt sich die Wärmepumpe im Altbau", text="", aussage=""
+        )
+
+        assert "titel_frage" in arten(ergebnis)
+
+    def test_behauptung_und_frage_im_text_zaehlen_nicht(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpe lohnt sich auch im Altbau",
+            text="Rechnet sich das? Mit Förderung schon.",
+            aussage="",
+        )
+
+        assert "titel_frage" not in arten(ergebnis)
+
+    def test_beschreibender_titel_darf_fragen(self, service):
+        post = dict(titel="Wer kommt zum Sommerfest?", text="", aussage="")
+
+        assert "titel_frage" in arten(service.gegenlesen(**post))
+        assert "titel_frage" not in arten(
+            service.gegenlesen(**post, titel_ist_behauptung=False)
+        )
+
+
+class TestZahlOhneHerkunft:
+    @pytest.mark.parametrize(
+        "text, zahlen",
+        [
+            ("Die Pumpe spart 30 Prozent.", ["30 Prozent"]),
+            ("Sie kostet 12.000 Euro.", ["12.000 Euro"]),
+            ("Das spart 5 € und 3,5 Tonnen.", ["5 €", "3,5"]),
+            ("Rund 40% heizen mit Gas.", ["40%"]),
+            ("Es geht um Millionen Menschen.", ["Millionen"]),
+            ("Im Ort stehen 250 Pumpen seit 2020.", ["250"]),
+        ],
+    )
+    def test_zahl_ohne_herkunft(self, service, text, zahlen):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpe lohnt sich", text=text, aussage="", hat_herkunft=False
+        )
+
+        zahl = anmerkung(ergebnis, "zahl_ohne_herkunft")
+        assert zahl.woerter == zahlen
+        assert "woher" in zahl.text
+
+    def test_viele_zahlen_nennt_sie_die_ersten_drei(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Tempolimit hilft",
+            text="Tempo 120 und 80 sparen 6,6 Millionen Tonnen und 2,8 Milliarden Euro.",
+            aussage="",
+            hat_herkunft=False,
+        )
+
+        zahl = anmerkung(ergebnis, "zahl_ohne_herkunft")
+        assert len(zahl.woerter) == 4
+        assert zahl.text.startswith(
+            "Zahlen ohne Herkunft: „120“, „80“, „6,6 Millionen“ und weitere."
+        )
+
+    def test_zahl_im_titel(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpen sparen 30 Prozent",
+            text="",
+            aussage="",
+            hat_herkunft=False,
+        )
+
+        assert anmerkung(ergebnis, "zahl_ohne_herkunft").stelle == "titel"
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Seit 2020 heizen wir mit der Pumpe.",
+            "Drei Gründe sprechen dafür, und 2 davon sparen Geld.",
+            "1. Sie spart Geld. 2. Sie ist leise.",
+            "Weniger CO2 ist gut.",
+            "Bündnis 90 sitzt im Rat.",
+        ],
+    )
+    def test_jahreszahl_aufzaehlung_und_namen_zaehlen_nicht(self, service, text):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpe lohnt sich", text=text, aussage="", hat_herkunft=False
+        )
+
+        assert "zahl_ohne_herkunft" not in arten(ergebnis)
+
+    @pytest.mark.parametrize("hat_herkunft", [True, None])
+    def test_mit_herkunft_oder_ohne_herkunftsfeld_keine_anmerkung(
+        self, service, hat_herkunft
+    ):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpe lohnt sich",
+            text="Die Pumpe spart 30 Prozent.",
+            aussage="",
+            hat_herkunft=hat_herkunft,
+        )
+
+        assert "zahl_ohne_herkunft" not in arten(ergebnis)
 
 
 class TestGuete:

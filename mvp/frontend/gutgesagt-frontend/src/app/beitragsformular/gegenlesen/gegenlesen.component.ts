@@ -14,6 +14,7 @@ interface Eingabe {
   text: string;
   aussage: string;
   titelIstBehauptung: boolean;
+  hatHerkunft: boolean | null;
 }
 
 /**
@@ -73,6 +74,11 @@ export class GegenlesenComponent implements OnChanges {
   @Input() titelIstBehauptung = true;
   /** Das Formular hat ein Herkunftsfeld, und es ist leer; nur die Hintergrundinfo setzt das. */
   @Input() herkunftFehlt = false;
+  /**
+   * Ob eine Herkunft eingetragen ist, fuer die Regel zu Zahlen ohne Herkunft; ``null``,
+   * wenn das Formular kein Herkunftsfeld hat (Post, Bild).
+   */
+  @Input() hatHerkunft: boolean | null = null;
 
   readonly herkunftHinweis = HERKUNFT_FEHLT;
   /**
@@ -97,9 +103,16 @@ export class GegenlesenComponent implements OnChanges {
   /** Jede Eingabe (null) und jedes Ergebnis (die Zahl) schiebt die Ansage auf. */
   private readonly ansageTakt = new Subject<string | null>();
 
-  /** Erst, wenn schon etwas geschrieben ist: Ein leeres Formular soll nicht mahnen. */
+  /**
+   * Erst, wenn schon etwas geschrieben ist: Ein leeres Formular soll nicht mahnen. Merkt
+   * der Dienst Zahlen ohne Herkunft an, sagt das dasselbe genauer; dann nur das.
+   */
   get zeigtHerkunftHinweis(): boolean {
-    return this.herkunftFehlt && this.ergebnis.guete !== null;
+    return (
+      this.herkunftFehlt &&
+      this.ergebnis.guete !== null &&
+      !this.ergebnis.anmerkungen.some((a) => a.art === 'zahl_ohne_herkunft')
+    );
   }
 
   get istGut(): boolean {
@@ -138,13 +151,14 @@ export class GegenlesenComponent implements OnChanges {
             a.titel === b.titel &&
             a.text === b.text &&
             a.aussage === b.aussage &&
-            a.titelIstBehauptung === b.titelIstBehauptung,
+            a.titelIstBehauptung === b.titelIstBehauptung &&
+            a.hatHerkunft === b.hatHerkunft,
         ),
         switchMap((e) =>
           !e.titel && !e.text
             ? of(NOCH_LEER)
             : service
-                .gegenlesen(e.titel, e.text, e.aussage, e.titelIstBehauptung)
+                .gegenlesen(e.titel, e.text, e.aussage, e.titelIstBehauptung, e.hatHerkunft)
                 .pipe(
                   catchError((fehler: unknown) =>
                     of<typeof ZU_VIELE | null>(
@@ -190,6 +204,7 @@ export class GegenlesenComponent implements OnChanges {
       text: this.text ?? '',
       aussage: this.aussage ?? '',
       titelIstBehauptung: this.titelIstBehauptung,
+      hatHerkunft: this.hatHerkunft,
     });
   }
 }

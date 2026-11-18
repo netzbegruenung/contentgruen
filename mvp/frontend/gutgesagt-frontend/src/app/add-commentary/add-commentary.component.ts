@@ -562,6 +562,11 @@ export class AddCommentaryComponent implements OnChanges, OnInit {
     }
   }
 
+  /** Fuer das Gegenlesen: Zahlen ohne Herkunft merkt es nur an, solange keine eingetragen ist. */
+  get hatHerkunft(): boolean {
+    return !!this.commentaryForm.value.references?.length;
+  }
+
   get titelLaenge(): number {
     return this.commentaryForm.get('title')?.value?.length ?? 0;
   }

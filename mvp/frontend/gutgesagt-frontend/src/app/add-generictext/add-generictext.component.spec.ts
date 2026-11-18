@@ -1241,11 +1241,13 @@ describe('AddGenerictextComponent', () => {
       fixture.detectChanges();
       const gegenlesen = () => fixture.debugElement.query(By.directive(GegenlesenComponent)).componentInstance as GegenlesenComponent;
       expect(gegenlesen().herkunftFehlt).toBeTrue();
+      expect(gegenlesen().hatHerkunft).toBeFalse();
 
       component.generictextForm.patchValue({ references: [{ reference_string: 'https://example.org/studie' }] });
       fixture.detectChanges();
 
       expect(gegenlesen().herkunftFehlt).toBeFalse();
+      expect(gegenlesen().hatHerkunft).toBeTrue();
       expect(seite().querySelector('.herkunft-satz')).toBeNull();
     });
 

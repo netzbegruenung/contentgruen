@@ -46,7 +46,7 @@ export const TITEL_BEISPIELE: { gut: readonly string[]; schwach: readonly Schwac
     'Wärmepumpen rechnen sich im Altbau, wenn man die Förderung mitrechnet',
   ],
   schwach: [
-    { titel: 'Lohnt sich die Wärmepumpe im Altbau?', warum: 'eine Frage – sie gehört in die Aussage' },
+    { titel: 'Lohnt sich die Wärmepumpe im Altbau?', warum: 'eine Frage, die gehört in die Aussage' },
     { titel: 'Wärmepumpen im Altbau', warum: 'ein Thema, keine Behauptung' },
     { titel: 'Faktenhammer', warum: 'ein Etikett, sagt nichts' },
   ],

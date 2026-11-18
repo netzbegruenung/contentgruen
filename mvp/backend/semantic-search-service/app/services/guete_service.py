@@ -4,7 +4,8 @@ Die Güte an Beiträgen, wie Karten sie im Siegel zeigen (#427; Rechnung: domain
 Der Kriterienanteil kommt aus dem Gegenlesen (#358) über Titel und Text, ohne die
 Aussage: Ein Beitrag kann auf mehrere Aussagen antworten, die Güte gehört aber zum
 Beitrag. Die Regel „übernommene Schlüsselwörter“ prüft deshalb nur das Formular, das
-die Aussage kennt. Das Ergebnis des Gegenlesens wird nicht gespeichert, nur im
+die Aussage kennt, ebenso „Zahl ohne Herkunft“, die wissen muss, ob eine Herkunft
+eingetragen ist. Das Ergebnis des Gegenlesens wird nicht gespeichert, nur im
 Arbeitsspeicher je Titel und Text zwischengehalten.
 
 Gezählt werden die Stimmen anderer: ohne Startkonten (#352) und ohne die Stimme der
@@ -36,8 +37,13 @@ ZWISCHENSPEICHER_GROESSE = 4096
 #: Regel zur Verneinung nicht, wie im Formular.
 _BESCHREIBENDE_TITEL = {ContentType.POST.value, ContentType.IMAGE.value}
 
-#: Arten, die die Karte prüft. Die Schlüsselwörter brauchen die Aussage (siehe oben).
-_KARTEN_ARTEN = [art for art in GEWICHTE if art != "schluesselwoerter"]
+#: Arten, die die Karte prüft. Die Schlüsselwörter brauchen die Aussage (siehe oben),
+#: die Zahlen ohne Herkunft das Formular, das weiß, ob eine Herkunft eingetragen ist;
+#: die Karte liest ohne beides gegen.
+_NUR_IM_FORMULAR = {"schluesselwoerter", "zahl_ohne_herkunft"}
+_KARTEN_ARTEN = [art for art in GEWICHTE if art not in _NUR_IM_FORMULAR]
+#: Regeln, die nur für behauptende Titel gelten, wie im Formular.
+_NUR_BEHAUPTUNG = {"verneinung", "titel_frage"}
 
 Kriterien = Tuple[Optional[int], List[str]]
 
@@ -98,7 +104,7 @@ class GueteService:
             erfuellt = [
                 art
                 for art in _KARTEN_ARTEN
-                if art not in gefunden and (behauptung or art != "verneinung")
+                if art not in gefunden and (behauptung or art not in _NUR_BEHAUPTUNG)
             ]
             kriterien = (ergebnis.guete, erfuellt)
         with self._lock:

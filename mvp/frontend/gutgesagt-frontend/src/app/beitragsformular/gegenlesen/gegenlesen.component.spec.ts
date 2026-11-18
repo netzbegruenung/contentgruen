@@ -80,6 +80,23 @@ describe('GegenlesenComponent', () => {
     anfrage.flush({ guete: 10, anmerkungen: [] });
   }));
 
+  it('sagt, ob eine Herkunft da ist, und liest neu, wenn sie dazukommt', fakeAsync(() => {
+    fixture.componentRef.setInput('hatHerkunft', false);
+    schreibe('Wärmepumpe lohnt sich', 'Sie spart 30 Prozent.');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const ohne = http.expectOne(PFAD);
+    expect(ohne.request.body.hat_herkunft).toBe(false);
+    ohne.flush({ guete: 9, anmerkungen: [] });
+
+    fixture.componentRef.setInput('hatHerkunft', true);
+    fixture.detectChanges();
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const mit = http.expectOne(PFAD);
+    expect(mit.request.body.hat_herkunft).toBe(true);
+    mit.flush({ guete: 10, anmerkungen: [] });
+    tick(ANSAGE_PAUSE_MS);
+  }));
+
   it('zeigt das Siegel mit der Güte und die Anmerkungen darunter', fakeAsync(() => {
     schreibe('Nicht die Wärmepumpe ist das Problem');
     tick(GEGENLESEN_VERZOEGERUNG_MS);
@@ -208,6 +225,19 @@ describe('GegenlesenComponent', () => {
 
       expect(element().querySelector('.herkunft-fehlt')!.textContent!.trim()).toBe(HINWEIS);
       expect(element().querySelector('.gegenlesen-gut')).toBeNull();
+    }));
+
+    it('weicht der genaueren Anmerkung zu Zahlen ohne Herkunft', fakeAsync(() => {
+      fixture.componentRef.setInput('herkunftFehlt', true);
+      const zahl = 'Zahlen ohne Herkunft: „30 Prozent“. Nenn, woher sie stammen, dann glaubt man sie eher.';
+      gegengelesen({
+        guete: 9,
+        anmerkungen: [{ art: 'zahl_ohne_herkunft', stelle: 'text', text: zahl, woerter: ['30 Prozent'] }],
+      });
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      const punkte = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((p) => p.textContent!.trim());
+      expect(punkte).toEqual([zahl]);
     }));
 
     it('steht vor den Anmerkungen des Dienstes', fakeAsync(() => {

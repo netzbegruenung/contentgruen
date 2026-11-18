@@ -1,0 +1,16 @@
+# Parteistimme für das Gegenlesen: Wendungen, mit denen ein Beitrag wie die Partei
+# spricht statt wie die Nachbarin (docs/VISION.md, "Ton und Schreiben"). Gepflegt per
+# Pull Request. Verglichen wird über Grundformen (spaCy-Lemmata), kleingeschrieben.
+#
+# Zwei Arten von Einträgen:
+# wer/tut: "wer" ist das Subjekt eines Satzes, "tut" das Verb, an dem es hängt
+#          ("Die Grünen wollen", "Deshalb fordern wir"). "Wir" allein ist die
+#          Nachbarin ("Wir wollen alle saubere Luft"), darum für "wir" nur Verben,
+#          die nach Partei klingen.
+# folge:   Grundformen, die direkt aufeinander folgen ("wir Grüne", "unsere Partei").
+- wer: [grüne]
+  tut: [wollen, fordern, verlangen, setzen, kämpfen, planen, versprechen]
+- wer: [wir]
+  tut: [fordern, verlangen, kämpfen]
+- folge: [wir, grüne]
+- folge: [unser, partei]

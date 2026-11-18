@@ -52,6 +52,7 @@ from repositories.usage_tracking_repository import get_usage_repository
 from services.gegenlesen.gegenlesen_service import (
     SPRACHWERKZEUGE,
     GegenlesenService,
+    lade_parteistimme,
     lade_statt_sag_liste,
 )
 from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
@@ -333,11 +334,14 @@ def get_nutzung_rate_limiter() -> RateLimiter:
 
 
 def get_gegenlesen_service() -> GegenlesenService:
-    """Einmal je Prozess: die Liste "statt X sag Y" wird beim ersten Aufruf gelesen."""
+    """Einmal je Prozess: die Listen "statt X sag Y" und Parteistimme werden beim
+    ersten Aufruf gelesen."""
     global _gegenlesen_service
     if _gegenlesen_service is None:
         _gegenlesen_service = GegenlesenService(
-            statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
+            statt_sag=lade_statt_sag_liste(),
+            werkzeuge=SPRACHWERKZEUGE,
+            parteistimme=lade_parteistimme(),
         )
     return _gegenlesen_service
 

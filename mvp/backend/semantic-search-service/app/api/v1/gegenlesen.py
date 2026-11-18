@@ -39,6 +39,10 @@ class GegenlesenRequest(BaseModel):
     #: Kommentar und Hintergrundinfo: Der Titel stellt eine Behauptung auf. Ein
     #: Post-Titel ist beschreibend; dort entfällt die Prüfung auf Verneinung.
     titel_ist_behauptung: bool = True
+    #: Kommentar und Hintergrundinfo: ob das Formular eine Herkunft hat. Fehlt das Feld
+    #: (Post, Bild: kein eigenes Herkunftsfeld), entfällt die Regel zu Zahlen ohne
+    #: Herkunft. Nur ein Ja/Nein, die Herkunft selbst geht nicht mit.
+    hat_herkunft: Optional[bool] = None
 
 
 class AnmerkungResponse(BaseModel):
@@ -70,6 +74,7 @@ async def gegenlesen(
             request.text,
             request.aussage,
             request.titel_ist_behauptung,
+            request.hat_herkunft,
         )
     except (ImportError, OSError) as fehler:
         # Sprachmodell nicht installiert: Das Formular zeigt dann einfach nichts.
