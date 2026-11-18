@@ -9,7 +9,7 @@
   align-items: center;
   gap: 16px;
   padding: 32px 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 /*
@@ -21,7 +21,7 @@
 }
 
 .einwurf-stand {
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-style: italic;
 }
 
@@ -29,15 +29,15 @@
 .fremde-saetze {
   margin: 0 0 16px;
   padding: 8px 12px;
-  border-left: 3px solid var(--primary-light);
+  border-left: 3px solid var(--akzent);
   border-radius: 4px;
-  background: var(--surface-variant);
+  background: var(--mulde);
 }
 
 .fremde-saetze-titel {
   margin: 0 0 4px;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .fremde-saetze ul {
@@ -57,7 +57,7 @@
   margin-left: 6px;
   font-family: monospace;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .satz-feld {
@@ -72,7 +72,7 @@
 }
 
 .fehler {
-  color: var(--error-color);
+  color: var(--fehler);
 }
 
 /* Schrift kommt aus der globalen .submit-hint, siehe styles.css. */
@@ -84,13 +84,13 @@
 .spaeter-hinweis {
   margin: 8px 0 0;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .einwurf-kopf {
   display: block;
   margin-bottom: 16px;
-  border: 1px solid var(--divider-color);
+  border: 1px solid var(--linie);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -106,7 +106,7 @@
 .typ {
   display: block;
   padding: 8px 12px 8px 4px;
-  border: 1px solid var(--line-soft);
+  border: 1px solid var(--linie);
   border-radius: 12px;
 }
 
@@ -115,15 +115,15 @@
 }
 
 .typ-commentary.gewaehlt {
-  background: var(--commentary-bg);
+  background: var(--karte-kommentar);
 }
 
 .typ-generictext.gewaehlt {
-  background: var(--generictext-bg);
+  background: var(--info-tint);
 }
 
 .typ-post.gewaehlt {
-  background: var(--post-bg);
+  background: var(--karte-post);
 }
 
 .typ-name {
@@ -136,7 +136,7 @@
   margin-top: 2px;
   font-size: 13px;
   line-height: 1.4;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 /* Typwahl eines Einwurfs, der schon mit einem Beitrag verknuepft ist */
@@ -145,14 +145,14 @@
   padding: 10px 14px;
   border-left: 4px solid var(--linie-klee);
   border-radius: 4px;
-  background: var(--commentary-bg);
+  background: var(--karte-kommentar);
 }
 
 .text-link {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;

@@ -1,13 +1,12 @@
 import { SearchResponse } from '../services/dtos/searchDtos';
 import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
-import { typBeschreibung } from '../shared/content-type-registry';
 
 /**
  * Die Ergebnisseite als eine Liste (K2+): Treffer nach Aussage gruppiert, in jeder
  * Gruppe die Typen in fester Reihenfolge, je Typ zuerst nur wenige Karten. Am Handy
- * eine Spalte; ab 1024 px steht die beste Antwort links neben dem Rest, wenn
- * mitZweiterSpalte() das erlaubt.
+ * eine Spalte; ab 1024 px steht neben der besten Antwort der Kasten "Zu dieser Antwort"
+ * und darunter der Rest in zwei Spalten, wenn mitZweiterSpalte() das erlaubt.
  */
 
 /** Die Typen der Treffer, in der Reihenfolge der Seite: Kommentare zuerst. */
@@ -16,6 +15,12 @@ export type TrefferTyp = (typeof TREFFER_TYPEN)[number];
 
 /** Wie viele Karten je Typ und Gruppe zuerst dastehen; der Rest auf "Alle N … zeigen". */
 export const KARTEN_JE_TYP = 3;
+
+/**
+ * Am Desktop ab 1024 px stehen unter der besten Antwort so viele weitere offen da
+ * (Maintainer 18.11.): mindestens fuenf Antworten offen, erst dann eingeklappte.
+ */
+export const OFFENE_WEITERE_DESKTOP = 4;
 
 /** Woher die Treffer eines Typs in der Suchantwort kommen. */
 const FELD: Record<TrefferTyp, keyof SearchResponse> = {
@@ -31,14 +36,6 @@ export const TYP_NAMEN: Record<TrefferTyp, { einzahl: string; mehrzahl: string }
   generictext: { einzahl: 'Hintergrundinfo', mehrzahl: 'Hintergrundinfos' },
   image: { einzahl: 'Bild', mehrzahl: 'Bilder' },
   post: { einzahl: 'Post', mehrzahl: 'Posts' },
-};
-
-/** Name des ⓘ-Knopfs je Typ (Trefferseite, V3). */
-const ERKLAER_FRAGE: Record<TrefferTyp, string> = {
-  commentary: 'Was ist ein Kommentar?',
-  generictext: 'Was ist Hintergrundinfo?',
-  image: 'Was ist ein Bild?',
-  post: 'Was ist ein Post?',
 };
 
 /** Die Treffer eines Typs aus der Antwort; fehlende Felder (aeltere Antworten) sind leer. */
@@ -144,16 +141,14 @@ export interface AnsichtBlock {
   /** Eindeutig auf der Seite; Anker fuer den Fokus nach "Alle N … zeigen". */
   id: string;
   ueberschrift: string;
-  /** Erklaerung des Typs aus der Registry, hinter dem ⓘ am Abschnittstitel; null ohne Beschreibung. */
-  erklaerung: string | null;
-  /** Name des ⓘ-Knopfs, etwa "Was ist Hintergrundinfo?". */
-  erklaerFrage: string;
   karten: KartenDaten[];
   alle: number;
   /** Text des Knopfs "Alle N … zeigen"; null, wenn schon alle dastehen. */
   mehrText: string | null;
   /** Die beste Antwort, ganz gezeigt (Trefferseite, V3); nur im ersten Block der ersten Gruppe. */
   beste: KartenDaten | null;
+  /** Weitere Karten, offen unter der besten (nur am Desktop ab 1024 px, Maintainer 18.11.). */
+  offen: KartenDaten[];
   /** Die uebrigen Karten, eingeklappt unter einer kleinen Ueberschrift. */
   weitere: KartenDaten[];
   /** Ueberschrift ueber den eingeklappten Karten, mit Zahl: "Weitere Antworten · 2", "Hintergrundinfo · 1". */
@@ -177,13 +172,18 @@ export interface AnsichtGruppe {
 
 /**
  * Was die Seite zeigt: je Typ hoechstens KARTEN_JE_TYP Karten, ausser die Gruppe ist
- * fuer den Typ aufgeklappt. Gruppen ohne Karten fallen weg.
+ * fuer den Typ aufgeklappt. Gruppen ohne Karten fallen weg. Mit offenenWeiteren (Desktop)
+ * stehen im Block der besten Antwort so viele Karten mehr da, damit die offenen die
+ * eingeklappten nicht verdraengen.
  */
 export function ansichtBauen(
   gruppen: readonly ErgebnisGruppe[],
   aufgeklappt: ReadonlySet<string>,
+  offeneWeitere = 0,
 ): AnsichtGruppe[] {
   const ansicht: AnsichtGruppe[] = [];
+  // Dieselbe Gruppe, die besteHervorheben waehlt: die erste offene, sonst die erste
+  const erste = gruppen.find((g) => !istWeniger(g, gruppen)) ?? gruppen[0];
   gruppen.forEach((gruppe, nr) => {
     const bloecke: AnsichtBlock[] = [];
     for (const typ of TREFFER_TYPEN) {
@@ -194,17 +194,17 @@ export function ansichtBauen(
       const id = blockId(nr, typ);
       const offen = aufgeklappt.has(aufklappSchluessel(gruppe.schluessel, typ));
       const namen = TYP_NAMEN[typ];
-      const gezeigt = offen ? karten : karten.slice(0, KARTEN_JE_TYP);
+      const grenze = KARTEN_JE_TYP + (gruppe === erste && !bloecke.length ? offeneWeitere : 0);
+      const gezeigt = offen ? karten : karten.slice(0, grenze);
       bloecke.push({
         typ,
         id,
         ueberschrift: karten.length === 1 ? namen.einzahl : namen.mehrzahl,
-        erklaerung: typBeschreibung(typ) || null,
-        erklaerFrage: ERKLAER_FRAGE[typ],
         karten: gezeigt,
         alle: karten.length,
-        mehrText: !offen && karten.length > KARTEN_JE_TYP ? `Alle ${karten.length} ${namen.mehrzahl} zeigen` : null,
+        mehrText: !offen && karten.length > grenze ? `Alle ${karten.length} ${namen.mehrzahl} zeigen` : null,
         beste: null,
+        offen: [],
         weitere: gezeigt,
         weitereTitel: `${karten.length === 1 ? namen.einzahl : namen.mehrzahl} · ${karten.length}`,
       });
@@ -229,15 +229,19 @@ export function ansichtBauen(
  * im ersten Block der ersten offenen Gruppe (die erkannte Aussage, Kommentare zuerst)
  * steht ganz da, alle anderen Karten eingeklappt. Ohne offene Gruppe die erste Gruppe,
  * damit nie alles eingeklappt ist. Liefert neue Bloecke, die Karten bleiben dieselben.
+ * Am Desktop (Maintainer 18.11.) stehen die naechsten offeneWeitere Karten des Blocks
+ * ebenfalls offen da; dieselbe Zahl gehoert an ansichtBauen.
  */
-export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGruppe[] {
+export function besteHervorheben(ansicht: readonly AnsichtGruppe[], offeneWeitere = 0): AnsichtGruppe[] {
   const erste = ansicht.find((g) => !g.weniger) ?? ansicht[0];
   return ansicht.map((gruppe) => {
     if (gruppe !== erste || !gruppe.bloecke.length) {
       return gruppe;
     }
     const [block, ...rest] = gruppe.bloecke;
-    const [beste, ...weitere] = block.karten;
+    const [beste, ...danach] = block.karten;
+    const offen = danach.slice(0, offeneWeitere);
+    const weitere = danach.slice(offen.length);
     const namen = TYP_NAMEN[block.typ];
     const name = block.typ === 'commentary' ? 'Antworten' : namen.mehrzahl;
     return {
@@ -246,10 +250,11 @@ export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGrup
         {
           ...block,
           beste: beste ?? null,
+          offen,
           weitere,
           weitereTitel: `Weitere ${name} · ${block.alle - 1}`,
-          // Zaehlt wie die Ueberschrift darueber, ohne die beste Antwort
-          mehrText: block.mehrText ? `Alle ${block.alle - 1} weiteren ${name} zeigen` : null,
+          // Zaehlt, was noch nicht offen dasteht: ohne die beste und die offenen Antworten
+          mehrText: block.mehrText ? `Alle ${block.alle - 1 - offen.length} weiteren ${name} zeigen` : null,
         },
         ...rest,
       ],
@@ -258,12 +263,12 @@ export function besteHervorheben(ansicht: readonly AnsichtGruppe[]): AnsichtGrup
 }
 
 /**
- * Ob neben der besten Antwort eine zweite Spalte steht (Desktop ab 1024 px, Maintainer 18.11.):
- * nur in der Gruppe mit der besten Antwort, und nur wenn es dort mehr als sie gibt.
+ * Ob die Gruppe am Desktop ab 1024 px zweispaltig steht (Maintainer 18.11.): oben die beste
+ * Antwort und daneben der Kasten "Zu dieser Antwort", darunter die weiteren Karten in zwei
+ * Spalten. Nur in der Gruppe mit der besten Antwort, auch wenn sie die einzige ist.
  */
 export function mitZweiterSpalte(gruppe: AnsichtGruppe | undefined): boolean {
-  const [erster, ...rest] = gruppe?.bloecke ?? [];
-  return !!erster?.beste && (erster.weitere.length > 0 || rest.length > 0);
+  return !!gruppe?.bloecke[0]?.beste;
 }
 
 /**

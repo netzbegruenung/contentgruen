@@ -194,9 +194,10 @@ steps:
       - sh scripts/ci-protokoll.sh frontend sh scripts/ci-chromium.sh
       - sh scripts/ci-protokoll.sh frontend bash scripts/check.sh --schritt frontend
 
-  # Nur bei Tags: Platzhalter, die vor dem Release ersetzt sein muessen (docs/DEPLOYMENT.md,
-  # Releases). Rot, solange "[Datum des Einspielens]" in DSE oder Loeschkonzept steht; dann
-  # baut release.yaml nichts (depends_on: ci). Nur Standardbibliothek.
+  # Nur bei Tags: Platzhalter, die vor dem Release ersetzt sein muessen (docs/CI.md,
+  # "Placeholders before a release"). Rot, solange "[Datum des Einspielens]" in DSE oder
+  # Loeschkonzept steht oder (Tags in STICHTAG_TAGS) ein Stand-Datum vor dem Tag-Lauf liegt;
+  # dann baut release.yaml nichts (depends_on: ci). Nur Standardbibliothek.
   - name: release-platzhalter
     image: python:3.13-slim
     depends_on: []

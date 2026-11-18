@@ -95,8 +95,8 @@ export class MvpDashboardComponent implements OnInit, OnDestroy {
     switch (trend) {
       // Theme-Variablen statt fester Farben, damit der Trend auch im Dunkelmodus lesbar ist (#588)
       case 'increasing': return 'var(--trend-steigt)';
-      case 'decreasing': return 'var(--trend-faellt)';
-      default: return 'var(--trend-gleich)';
+      case 'decreasing': return 'var(--fehler)';
+      default: return 'var(--hinweis-text)';
     }
   }
 }

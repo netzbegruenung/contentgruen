@@ -10,14 +10,14 @@
 .meilensteine-zahl {
   font-size: 14px;
   font-weight: 400;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   margin-left: 4px;
 }
 
 .meilensteine-hinweis {
   margin: 0 0 8px;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .meilensteine-liste {
@@ -35,15 +35,15 @@
   gap: 12px;
   min-width: 0;
   padding: 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--feldrand);
   border-radius: 8px;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .meilenstein.erreicht {
   border-color: var(--akzent-tanne);
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 /* Medaillon: ein Kreis um das Motiv, erreicht tannengruen gefuellt umrandet, offen grau gestrichelt */
@@ -60,13 +60,13 @@
 
 .medaillon-rahmen circle {
   fill: none;
-  stroke: var(--text-muted);
+  stroke: var(--text-leise);
   stroke-width: 2;
   stroke-dasharray: 5 4;
 }
 
 .meilenstein.erreicht .medaillon-rahmen circle {
-  fill: var(--primary-tint);
+  fill: var(--primaer-tint);
   stroke: var(--akzent-tanne);
   stroke-width: 3;
   stroke-dasharray: none;
@@ -103,14 +103,14 @@
 
 .meilenstein-name {
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 
 .meilenstein-untertitel {
   font-size: 12px;
   font-style: italic;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .meilenstein-beschreibung {
@@ -121,12 +121,12 @@
 .meilenstein-wegmarke {
   margin-top: 2px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .meilenstein-stand {
   font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .meilensteine-weitere {
@@ -137,13 +137,13 @@
 .meilensteine-weitere summary {
   cursor: pointer;
   margin-bottom: 8px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .meilensteine-bildnachweis {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .meilensteine-bildnachweis summary {
@@ -157,7 +157,7 @@
 .sichtbarkeit-frage {
   margin-top: 12px;
   padding: 12px 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--feldrand);
   border-radius: 8px;
 }
 
@@ -169,12 +169,12 @@
 .sichtbarkeit-mehr {
   margin: 0 0 8px;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .sichtbarkeit-mehr summary {
   cursor: pointer;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .sichtbarkeit-mehr p {
@@ -190,7 +190,7 @@
 .sichtbarkeit-stand {
   margin: 8px 0 0;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .sichtbarkeit-aendern {
@@ -200,5 +200,5 @@
 .sichtbarkeit-fehler {
   margin: 8px 0 0;
   font-size: 14px;
-  color: var(--error-strong);
+  color: var(--fehler);
 }

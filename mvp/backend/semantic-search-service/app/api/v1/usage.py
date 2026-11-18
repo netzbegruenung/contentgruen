@@ -72,6 +72,7 @@ from services.content.reference_service import ReferenceService
 from services.cleanup.bereinigungsjob import get_bereinigungsjob
 from core.config import Settings
 from core.logging import log_pseudonym
+from services.schalter_service import schalter_wirksam
 from repositories.varianten_repository import (
     VariantenRepository,
     get_varianten_repository,
@@ -433,7 +434,7 @@ async def track_content_usage(
         # nicht beide sie gegeben (oder hat eine widerrufen), keine Meldung - sonst
         # ergaebe ein frueherer Paar-Pruefwert noch einen Hinweis mit ihrer Kennung.
         if (
-            settings.punkte_aktiv
+            schalter_wirksam("punkte", settings)
             and angemeldet
             and beitrag is not None
             and await _punkte_eingewilligt(aufrufer)
@@ -534,15 +535,16 @@ class PunkteStatusResponse(BaseModel):
 @router.get("/punkte/status", response_model=PunkteStatusResponse)
 async def punkte_status(settings: Settings = Depends(get_settings)):
     """
-    Ob die Punkte eingeschaltet sind (``SEMANTIC_SEARCH_PUNKTE_AKTIV``) und ob andere
-    Angemeldete Abzeichen sehen koennen (beide Schalter, ``Settings.abzeichen_sichtbar``).
+    Ob die Punkte wirksam sind (Obergrenze ``SEMANTIC_SEARCH_PUNKTE_AKTIV`` und
+    Admin-Wert, services/schalter_service.py) und ob andere Angemeldete Abzeichen sehen
+    koennen (beide Schalter wirksam).
     Ohne Anmeldung lesbar und ohne Personenbezug: Das Frontend fragt hier einmal und ruft
     punkte, meilensteine und abzeichen-sichtbarkeit nur bei eingeschaltetem Schalter auf,
     statt deren 404 abzuwarten (UX-Review B20, Entscheidung Maintainer 13.11.2026).
     """
     return PunkteStatusResponse(
-        aktiv=settings.punkte_aktiv,
-        abzeichen_sichtbar=settings.abzeichen_sichtbar,
+        aktiv=schalter_wirksam("punkte", settings),
+        abzeichen_sichtbar=schalter_wirksam("abzeichen_sichtbar", settings),
     )
 
 
@@ -559,7 +561,7 @@ async def eigene_punkte(
     Ohne ``punkte_aktiv`` 404: Die Funktion gibt es dann nicht. Die Person kommt aus
     ``X-User``, nicht aus dem Pfad (#284).
     """
-    if not settings.punkte_aktiv:
+    if not schalter_wirksam("punkte", settings):
         raise HTTPException(status_code=404, detail="Not found")
     try:
         stand = await service.punkte(current_user)
@@ -592,7 +594,7 @@ async def eigene_meilensteine(
     Wie die Punkte hinter ``punkte_aktiv`` (sonst 404): Beide stuetzen sich auf
     dieselbe Einwilligung und dieselbe DSFA. Die Person kommt aus ``X-User``.
     """
-    if not settings.punkte_aktiv:
+    if not schalter_wirksam("punkte", settings):
         raise HTTPException(status_code=404, detail="Not found")
     try:
         meilensteine = await service.meilensteine(current_user)
@@ -626,7 +628,7 @@ def _abzeichen_dienst(
 ) -> AbzeichenService:
     """Ohne beide Schalter 404: Sichtbare Abzeichen gibt es dann nicht (#351)."""
     dienst = get_abzeichen_service()
-    if not settings.abzeichen_sichtbar or dienst is None:
+    if not schalter_wirksam("abzeichen_sichtbar", settings) or dienst is None:
         raise HTTPException(status_code=404, detail="Not found")
     return dienst
 
@@ -689,7 +691,7 @@ def _punkte_einwilligung_angeboten(
     settings: Settings = Depends(get_settings),
 ) -> None:
     """Ohne punkte_aktiv 404: Dann gibt es nichts, wozu man einwilligen koennte."""
-    if not settings.punkte_aktiv:
+    if not schalter_wirksam("punkte", settings):
         raise HTTPException(status_code=404, detail="Not found")
 
 
@@ -860,7 +862,9 @@ def _gepostet_dienst(
     nicht (#643). Vor der Art.-9-Pruefung, damit ein ausgeschalteter Schalter die
     Datenbank nicht fragt.
     """
-    if not settings.gepostet_aktiv or settings.ist_startkonto(current_user):
+    if not schalter_wirksam("gepostet", settings) or settings.ist_startkonto(
+        current_user
+    ):
         raise HTTPException(status_code=404, detail="Not found")
     return get_gepostet_service()
 

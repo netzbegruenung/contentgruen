@@ -85,8 +85,8 @@ export interface AbweisenDialogDaten {
     `
       .volle-breite { width: 100%; }
       .abweisen-titel { font-weight: 500; }
-      .abweisen-meldegrund, .abweisen-hinweis { color: var(--text-secondary); }
-      .zu-lang { color: var(--error-color); }
+      .abweisen-meldegrund, .abweisen-hinweis { color: var(--text-leise); }
+      .zu-lang { color: var(--fehler); }
     `,
   ],
 })

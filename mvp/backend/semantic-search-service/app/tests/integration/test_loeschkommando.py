@@ -31,6 +31,8 @@ from infrastructure.database.models import (
     Einwurf,
     AusformuliertIn,
     Satz,
+    SchalterVerlaufZeile,
+    SchalterZeile,
     Sperre,
     UsageEvent,
     UsageTracking,
@@ -360,6 +362,23 @@ def spuren(datenbank, einwuerfe):
             geprueft_von=PERSON,
         )
         s.add_all([eigene_sperre, fremde_sperre])
+        # Ein Schalter, den die Person als Admin gesetzt hat, samt Verlauf (#708).
+        s.add(
+            SchalterZeile(
+                name="punkte",
+                an=True,
+                geaendert_am=datetime.now(timezone.utc),
+                geaendert_von=PERSON,
+            )
+        )
+        s.add(
+            SchalterVerlaufZeile(
+                name="punkte",
+                an=True,
+                geaendert_am=datetime.now(timezone.utc),
+                geaendert_von=PERSON,
+            )
+        )
         s.flush()
         return SimpleNamespace(
             bearbeitet=bearbeitet.id,
@@ -407,6 +426,15 @@ class TestLoeschkommando:
             fremde = s.get(Sperre, spuren.fremde_sperre)
             assert (fremde.gesperrt_von, fremde.geprueft_von) == (None, None)
             assert fremde.autor == ANDERE
+
+    def test_schalter_bleiben_ohne_kennung_des_admins(self, datenbank, spuren):
+        _loeschen(datenbank)
+
+        with datenbank.get_session() as s:
+            stand = s.get(SchalterZeile, "punkte")
+            assert (stand.an, stand.geaendert_von) == (True, None)
+            verlauf = s.query(SchalterVerlaufZeile).all()
+            assert [(v.an, v.geaendert_von) for v in verlauf] == [(True, None)]
 
     def test_nutzung_der_sitzung_weg(self, datenbank, spuren):
         _loeschen(datenbank)

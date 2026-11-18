@@ -19,7 +19,7 @@
   .teaser-text {
     font-size: 1rem;
     line-height: 1.6;
-    color: var(--text-primary);
+    color: var(--text);
     margin: 0 0 1rem;
 
     @media (max-width: 599px) {
@@ -48,11 +48,11 @@
 
   .profil-name {
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--text);
   }
 
   .role {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 0.9rem;
   }
 
@@ -87,7 +87,7 @@
   margin: var(--spacing-xl) 0 0;
   padding: var(--spacing-md) var(--spacing-lg);
   border-left: 4px solid var(--akzent-klee);
-  background: var(--willkommen-grund, var(--bg-card));
+  background: var(--karte-kommentar, var(--flaeche));
   border-radius: 0 var(--border-radius-medium) var(--border-radius-medium) 0;
   // Zweispaltig: Zitat links, Bild und Name rechts; schmal untereinander (Designrunde 17.11.)
   display: grid;
@@ -115,7 +115,7 @@
       font-size: 1.1rem;
       font-style: italic;
       line-height: 1.5;
-      color: var(--text-primary);
+      color: var(--text);
     }
   }
 }

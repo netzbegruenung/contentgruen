@@ -150,8 +150,15 @@ fix the status but depends on nobody forgetting it.
 
 On tags only, the step `release-platzhalter` runs `scripts/release_platzhalter.py`: it fails
 while „[Datum des Einspielens]“ still stands in the privacy policy or in
-`docs/LOESCHKONZEPT.md` ([DEPLOYMENT.md](DEPLOYMENT.md), Releases). Pull-request and `main`
-runs skip it, because the placeholder is expected there until the release pull request.
+`docs/LOESCHKONZEPT.md`. The release pull request for v0.9.0 replaced the last one with the
+day of the production rollout; the step stays as a guard in case the placeholder comes back.
+For the tags in `STICHTAG_TAGS` (releases whose pull request sets the dates of the legal texts
+to the production day, so far `v0.9.0`) it also fails when the „Stand“ of the privacy policy or
+a „Wer vor dem …“ date in the privacy policy or `docs/LOESCHKONZEPT.md` lies before the day of
+the tag run: a tag set a day later than planned would otherwise ship a privacy policy naming a
+day on which nothing was rolled out. Later releases leave those dates alone. Locally:
+`python3 scripts/release_platzhalter.py --tag v0.9.0 [--stichtag YYYY-MM-DD]`.
+Pull-request and `main` runs skip it.
 
 ## Integration tests on main only
 
@@ -417,6 +424,9 @@ Actions on the mirror used, so deployment and Renovate keep working (#327). Both
   `package.json` (`docs/DEPLOYMENT.md`, "Releases").
   Builds of `main` pass `APP_VERSION=main`: the footer shows „main · <commit>“ instead of a
   version that would go stale.
+  `replace-env.sh` writes commit and version into two meta tags of `index.html` (served
+  without cache), not into the `*.js` files: their hashed names are fixed before the
+  substitution and nginx caches them for a year, so browsers kept an old commit.
 - **No path filters: every push to `main` builds all four images.** Woodpecker compares only
   with the files of the single push. With path filters, a run that was cancelled (the next
   merge came during its `ci`, "Cancel previous pipelines") or that failed lost its image
@@ -460,8 +470,8 @@ Actions on the mirror used, so deployment and Renovate keep working (#327). Both
    `VERDIGADO_REGISTRY_TOKEN` (Settings, Secrets and variables, Actions) and revoke the
    registry token they held; optionally switch off Actions on the mirror.
 5. Delete the tags with the prefix `woodpecker-` of the parallel run in the registry
-   (`:woodpecker-main`, `:woodpecker-0.8.5`, `:woodpecker-0.8`, `:woodpecker-latest`, for
-   all four images); nothing deployed follows them.
+   (`:woodpecker-main`, `:woodpecker-0.8.5`, `:woodpecker-0.8`, `:woodpecker-0.9.0`,
+   `:woodpecker-0.9`, `:woodpecker-latest`, for all four images); nothing deployed follows them.
 
 ## Setup by a person
 

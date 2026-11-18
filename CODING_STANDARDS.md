@@ -40,6 +40,10 @@ Why: "must" decides whether a PR can merge, and a reviewer and an author who rea
 - **Legal texts change through their own ticket.** Changes to the privacy policy, terms of use or imprint are listed in the PR under `## Fachfrage` but made in a dedicated ticket that goes through legal review. When the wording of the Art.-9-Einwilligung changes, the review works through `docs/ART9_EINWILLIGUNG.md`, „Wortlaut ändern: diese Stellen mitziehen“ (#569). Why: these texts carry legal weight and need sign-off; a side change in a feature PR skips that.
 - **Data handling matches the privacy policy.** A change that stores, logs or derives personal data either fits the current privacy policy or names the needed change as an item under `## Fachfrage`. Why: the policy promises what the code does, and only the maintainer can have it extended.
 
+## Tests
+
+- **No real modifier clicks in Karma specs.** Specs do not dispatch clicks with `ctrlKey`, `metaKey` or `shiftKey` set to true on links: Chrome then opens a new tab, the test tab goes to the background, and other specs that rely on focus, visibility or `requestAnimationFrame` fail at random. Instead, check `defaultPrevented` after the component's handler ran and prevent the default in the spec yourself (see the help-dialog spec "lässt Strg-Klick dem Browser", PR #698). Why: the frontend has no ESLint, so this is a review rule, and flaky CI costs more than the test saves.
+
 ## Documentation
 
 - **Docs move with the code.** A PR that changes behaviour, configuration or operation updates the doc that describes it (`docs/LOESCHKONZEPT.md`, `docs/DEPLOYMENT.md`, the migration README). Why: these docs are used by people acting on production data.

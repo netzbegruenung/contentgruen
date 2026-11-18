@@ -208,6 +208,10 @@ _Avoid_: Statement, These, Angriff
 Eine unbeantwortete Aussage als Karte, im Stil der Karte eines Beitrags: das Kopfband mit der Aussage, darunter die Nachfrage und die Themen, im Fuß „Antworten“. Sie steht in „Hier fehlt eine Antwort“ und im leeren Zustand von „Meine Beiträge“. Inhalte erscheinen als Karten: Beiträge und Einwürfe als Karte, Aussagen als Aussagekarte.
 _Avoid_: Aussagezeile, Statement-Karte
 
+**Zu dieser Antwort**:
+Der Kasten auf der Ergebnisseite am Desktop rechts neben der besten Antwort mit dem, was ihre schlichte Karte nicht oder nur hinter einem Antippen zeigt: Länge und Plattform je Fassung, Erklärung von Stil und Güte, das Alter; keine Angaben zu Personen.
+_Avoid_: Hintergrundinfo (ein Beitragstyp), Details, Seitenleiste
+
 **Kommentar**:
 Eine Antwort, die man direkt posten kann, mit einer Mittelfassung und optional einer Kurz- und einer Langfassung, mit einem Stil und einem Zweck.
 _Avoid_: Commentary, Fertiger Kommentar, Antwort, Reply
@@ -437,11 +441,15 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:
-Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Auf der Startseite steht für Angemeldete dazu eine Zeile „Seit deinem letzten Besuch“ mit höchstens drei Links: neue Nutzungen (dieselbe Zahl), neue Einwürfe anderer im Fangkorb und wie viele Lücken in „Hier fehlt eine Antwort“ warten; ohne Neues steht sie nicht da. Auch die Einwürfe sind ein Zählerstand am Konto wie die Nutzung, kein Zeitpunkt, und nichts davon liegt im Browser.
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Auf der Startseite steht für Angemeldete dazu „Seit deinem letzten Besuch“ mit höchstens drei kleinen Kacheln, je eine große Zahl mit kurzem Text, die ganze Kachel ein Link (seit 18.11.2026; vorher eine Zeile mit Links): neue Nutzungen (dieselbe Zahl), neue Einwürfe anderer im Fangkorb und wie viele Lücken in „Hier fehlt eine Antwort“ warten; ohne Neues steht nichts da. Auch die Einwürfe sind ein Zählerstand am Konto wie die Nutzung, kein Zeitpunkt, und nichts davon liegt im Browser.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Willkommen**:
 Das gelbe Band beim ersten Besuch auf der Startseite, unter dem Suchfeld (vorher darüber; mobil stand das Suchfeld dann erst weit unten), kein Fenster (#587; seit #599 nicht mehr über den Treffern): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Selbst beitragen“ bietet erst ein Band auf Beitragen an (#587, gestaffelt; seit #644 nicht mehr im Fangkorb).
+
+**App-Hinweis**:
+Das Band „Gut gesagt als App“ auf der Startseite, unter dem Suchfeld, frühestens im Besuch nach dem Willkommen und nie zugleich mit einem anderen Band. Auf iPhone und iPad in Safari ist es eine Anleitung (Teilen, dann „Zum Home-Bildschirm“); in Chrome und Edge auf Android und Computer steht es nur da, wenn der Browser das Installieren anbietet, und hat dann einen Knopf „Installieren“ (18.11.). Nach „Ausblenden“ kommt es nicht wieder; der Browser merkt sich das unter demselben Vermerk auf allen Geräten, und nur, solange der Schalter für diesen Merker an ist. Nach dem Installieren ist es weg. Die Hilfe erklärt das Installieren je Gerät im Abschnitt „Als App aufs Handy“, mit demselben Knopf, wenn der Browser ihn anbietet.
+_Avoid_: PWA-Banner, Install-Prompt
 
 **Rundgang**:
 Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Selbst beitragen“ (bis #644 „Mitmachen“) zeigt Angemeldeten Beitragen, Einwerfen, Fangkorb und Meine Beiträge, Besuchern stattdessen die drei Bilder der Vorschau mit Konto nacheinander („Selbst beitragen (3 Bilder)“, seit 17.11.); nach der Art.-9-Einwilligung trägt „Beitragen“ im Kopf einen Neu-Punkt, und wer zum ersten Mal auf Beitragen ankommt, bekommt dort im Band „Kurz zeigen, wie Beitragen geht?“ angeboten; der Rundgang beginnt dann beim Einwerfen. Beides bleibt, bis die Person darauf reagiert. Beide lassen sich über Hilfe und Menü jederzeit wieder starten; dort stehen sie mit Schrittzahl, etwa „Antwort finden (5 Schritte)“. Angeboten, nie erzwungen.
@@ -562,7 +570,7 @@ Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt,
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
 **Startbeispiel**:
-Die Aussage, die das leere Suchfeld auf der Startseite als erste vortippt und hinter „Ausprobieren“ sucht; danach tippt es weitere Aussagen des Startbestands vor (im Code `HOT_TAKES`) und bleibt am Ende beim Startbeispiel stehen. Der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
+Die Aussage, die das leere Suchfeld auf der Startseite als erste vortippt und hinter „Beispiel ausprobieren“ sucht; danach tippt es weitere Aussagen des Startbestands vor (im Code `HOT_TAKES`) und bleibt am Ende beim Startbeispiel stehen. Der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
 _Avoid_: Beispielsuche, Demo-Aussage
 
 **Startbestand**:
@@ -620,3 +628,7 @@ _Avoid_: Usage-Cleanup, Cleanup-Service
 **Admin**:
 Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Widersprüche prüft, Einwürfe verwirft, Einladungen verwaltet und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion
+
+**Schalter**:
+Eine Funktion, die sich ein- und ausschalten lässt, ohne den Code zu ändern. Bei Punkten, Abzeichen am Anzeigenamen und „Ja, gepostet“ hat ein Schalter zwei Teile: die **Obergrenze**, die der Server aus seiner Umgebung setzt, und den **Admin-Wert**, den ein Admin auf der Admin-Seite „Schalter“ setzt. Wirksam ist der Schalter nur, wenn beide an sind; ohne Admin-Wert ist er aus. Über die Obergrenze hinaus einschalten kann kein Admin, ausschalten jederzeit; jede Änderung steht mit Zeitpunkt und Kennung des Admins im Verlauf (#708). Abzeichen wirken nur zusammen mit den Punkten.
+_Avoid_: Feature-Flag, Toggle, Flag

@@ -64,9 +64,9 @@ export interface PlatzhalterErgebnis {
         margin: 8px 0 4px;
         padding: 2px 6px;
         border-radius: 2px;
-        background: var(--hint-bg);
+        background: var(--hinweis-tint);
         text-decoration: underline dashed;
-        text-decoration-color: var(--hint-border);
+        text-decoration-color: var(--hinweis-rand);
         text-underline-offset: 3px;
       }
       mat-form-field {
@@ -78,7 +78,7 @@ export interface PlatzhalterErgebnis {
         gap: 4px;
       }
       .mit-satz:not([disabled]) {
-        background-color: var(--primary-fill);
+        background-color: var(--primaer);
         color: white;
       }
     `,

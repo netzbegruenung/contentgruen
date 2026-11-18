@@ -4,8 +4,8 @@
   justify-content: space-between;
   height: 56px;
   padding: 0 4px;
-  background-color: var(--bg-card);
-  border-bottom: 1px solid var(--divider-color);
+  background-color: var(--flaeche);
+  border-bottom: 1px solid var(--linie);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -58,7 +58,7 @@
   font-family: GrueneType, Roboto, sans-serif;
   font-size: 28px; /* Match h2 mobile size */
   font-weight: 400; /* Match h2 weight */
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
@@ -101,7 +101,7 @@
 }
 
 .contribute-button {
-  color: var(--text-primary); /* Standard Material Design icon color */
+  color: var(--text); /* Standard Material Design icon color */
 }
 
 .mobile-header-avatar-container {
@@ -133,7 +133,7 @@
 
 /* Anonym: Text statt Avatar-Platzhalter (#644) */
 .anmelden-knopf {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-weight: 500;
 }
 

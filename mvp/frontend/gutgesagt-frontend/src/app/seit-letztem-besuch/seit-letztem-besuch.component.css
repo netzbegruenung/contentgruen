@@ -1,44 +1,126 @@
-/* Eine ruhige Zeile ueber den Kacheln, keine Kachel und kein Zaehler (Nutzerfuehrung 13.11.) */
+/* Kleine Kacheln mit Zahl (Entscheidung 18.11.), im Stil der Mitmachen-Kacheln der
+   Startseite: dieselben Tokens fuer Flaeche, Rand und Schatten, aber ohne Pfeil und
+   kleiner. Kein roter Zaehler. */
 .seit-besuch {
-  max-width: 720px;
-  margin: 20px auto 0;
-  /* Wie .start-kacheln: 720 px Inhalt plus Seitenrand, damit die Kanten fluchten */
-  padding: 0 var(--page-margin, 16px);
+  /* Kanten wie Suchfeld und .start-kacheln: 16 px Einzug, ab 752 px die mittige 720er-Spalte */
+  margin: var(--spacing-xl, 32px) max(var(--spacing-md, 16px), calc((100% - var(--lesespalte, 720px)) / 2)) 0;
 }
 
-@media (max-width: 599px) {
-  .seit-besuch {
-    margin-top: 16px;
-    padding: 0 var(--page-margin-mobile, 16px);
-  }
+/* Die h2 nimmt die globalen Stile wie „Frisch aus der Community“ */
+.seit-besuch h2 {
+  margin-bottom: var(--spacing-md, 16px);
 }
 
-.seit-besuch-titel {
-  margin: 0 0 4px;
-  font-family: inherit;
-  font-style: normal;
-  letter-spacing: normal;
-  line-height: 1.3;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.seit-besuch-liste {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 20px;
+.seit-besuch-kacheln {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-md, 16px);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.seit-besuch-link {
-  display: inline-block;
-  padding: 6px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--primary-dark);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.seit-besuch-kachel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 72px;
+  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
+  border: 2px solid var(--kachel-rand, var(--linie-tanne));
+  border-radius: 12px;
+  background: var(--karte-kommentar, var(--flaeche));
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--elevation-2, 0 2px 4px rgba(0, 0, 0, 0.15));
+  transition: box-shadow var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s),
+    background-color var(--transition-fast, 0.2s);
+}
+
+.seit-besuch-kachel:hover,
+.seit-besuch-kachel:focus-visible {
+  box-shadow: var(--elevation-6, 0 4px 12px rgba(0, 0, 0, 0.2));
+  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--karte-kommentar, var(--flaeche)) 92%, var(--akzent-tanne, #00563a));
+}
+
+.seit-besuch-kachel:active {
+  box-shadow: var(--elevation-1, 0 1px 2px rgba(0, 0, 0, 0.15));
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seit-besuch-kachel {
+    transition: none;
+  }
+
+  .seit-besuch-kachel:hover,
+  .seit-besuch-kachel:focus-visible {
+    transform: none;
+  }
+}
+
+.seit-besuch-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seit-besuch-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  font-size: 28px;
+  color: var(--akzent-schrift);
+}
+
+.seit-besuch-zahl {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--akzent-schrift);
+  font-variant-numeric: tabular-nums;
+}
+
+.seit-besuch-wort {
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+/* Handy: drei schmale nebeneinander, kleiner und mit weniger Innenabstand */
+@media (max-width: 599px) {
+  .seit-besuch {
+    margin-top: var(--spacing-lg, 24px);
+  }
+
+  .seit-besuch-kacheln {
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .seit-besuch-kachel {
+    min-height: 64px;
+    padding: 10px 12px;
+    gap: 2px;
+  }
+
+  .seit-besuch-kopf {
+    gap: 4px;
+  }
+
+  .seit-besuch-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 22px;
+  }
+
+  .seit-besuch-zahl {
+    font-size: 26px;
+  }
+
+  .seit-besuch-wort {
+    font-size: 14px;
+  }
 }

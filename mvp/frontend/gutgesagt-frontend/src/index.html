@@ -23,6 +23,12 @@
   <meta name="twitter:description" content="Gute Antworten gegen Stimmungsmache im Netz. Finden, kopieren, posten.">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Build-Kennung fuer den Footer: replace-env.sh setzt Commit und Version beim Containerstart
+       hier ein, nicht in den *.js-Dateien. Deren Name entsteht vor der Ersetzung, nginx liefert
+       sie mit "expires 1y" aus, und der Footer zeigte so den Commit eines alten Builds;
+       index.html liefert nginx ohne Cache. -->
+  <meta name="gutgesagt-commit" content="${GIT_SHA}">
+  <meta name="gutgesagt-version" content="${APP_VERSION}">
   <!-- Bilder liefert nginx mit "expires 1y" aus: Ein geaendertes Logo braucht einen
        neuen Dateinamen, sonst sehen wiederkehrende Besucher ein Jahr lang das alte. Die
        Symbole und das Logo vom 29.10. tragen deshalb "-v2"; die alten Dateien bleiben fuer alte Verweise
@@ -55,26 +61,25 @@
   <!-- Grundflaechen dunkel, bis das Stylesheet da ist: Der Build inlined nur das kritische CSS,
        das zur Build-Zeit zum <html> ohne data-theme passt, und laedt den Rest nachtraeglich.
        Hier stehen nur Grund, Karten, Schrift und die Baender (Suche, Willkommen/Rundgang folgen
-       --such-band); alles andere kommt mit dem Stylesheet, dessen Werte danach gelten (es steht
+       --kopf); alles andere kommt mit dem Stylesheet, dessen Werte danach gelten (es steht
        danach). Werte wie im Block html[data-theme='dark'] in theme/custom-theme.scss; das prueft
        scripts/tests/test_farbschema_inline.py. -->
   <style>
     html[data-theme='dark'] {
       color-scheme: dark;
       --bg-main: #121619;
-      --bg-card: #1b2125;
-      --bg-surface: #1b2125;
-      --text-primary: rgba(255, 255, 255, 0.92);
-      --primary-main: #ebebeb;
-      --primary-dark: #f2f2f2;
-      --such-band: #18212a;
+      --flaeche: #1b2125;
+      --text: #ededee;
+      --primaer-text: #ebebeb;
+      --akzent-schrift: #f2f2f2;
+      --kopf: #18212a;
       background: var(--bg-main);
-      color: var(--text-primary);
+      color: var(--text);
     }
 
     html[data-theme='dark'] body {
       background: var(--bg-main);
-      color: var(--text-primary);
+      color: var(--text);
     }
   </style>
   <!-- Auf dem iPhone-Home-Bildschirm: iOS nimmt das Symbol nicht aus dem Manifest, sondern

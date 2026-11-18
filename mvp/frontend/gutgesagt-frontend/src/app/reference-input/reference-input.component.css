@@ -12,9 +12,9 @@
     align-items: center;
     width: 100%;
     padding: 16px 12px 12px 12px;  /* More top padding for label space */
-    background: var(--overlay-faint);
+    background: var(--mulde);
     border-radius: 8px;
-    border: 1px solid var(--line-light);
+    border: 1px solid var(--linie);
     box-sizing: border-box;
 }
 
@@ -79,7 +79,7 @@
     font-size: 12px;
     line-height: 20px;
     min-width: 0;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 /* Beschreibungsfeld am Chip: schmaler als das Quellenfeld oben */
@@ -98,7 +98,7 @@
 .suggestion-icon,
 .reference-icon {
     margin-right: var(--spacing-sm);
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 20px;
     width: 20px;
     height: 20px;
@@ -116,13 +116,13 @@
 .suggestion-title,
 .reference-url {
     font-size: 14px;
-    color: var(--text-primary);
+    color: var(--text);
 }
 
 .suggestion-meta,
 .reference-description {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     margin-top: 2px;
 }
 
@@ -151,30 +151,30 @@
     align-items: center;
     justify-content: space-between;
     padding: var(--spacing-sm);
-    background: var(--surface-variant);
+    background: var(--mulde);
     border-radius: var(--border-radius-small);
-    border: 1px solid var(--divider-color);
+    border: 1px solid var(--linie);
     transition: background-color 0.2s;
 }
 
 .reference-item:hover {
-    background: var(--hover-bg);
+    background: var(--mulde);
 }
 
 .reference-item.new-reference {
-    background-color: var(--success-bg);
+    background-color: var(--primaer-tint);
     border-color: var(--akzent-klee);
     border-left: 3px solid var(--linie-klee);
 }
 
 .reference-item.existing-reference {
     background-color: var(--info-tint);
-    border-color: var(--info-border);
-    border-left: 3px solid var(--info-border);
+    border-color: var(--info-rand);
+    border-left: 3px solid var(--info-rand);
 }
 
 .reference-item.pending-reference {
-    background-color: var(--warning-tint);
+    background-color: var(--hinweis-tint);
     border-color: var(--warning-border);
     border-left: 3px solid var(--warning-border);
     opacity: 0.8;
@@ -226,12 +226,12 @@
 }
 
 .usage-badge {
-    background: var(--selected-bg);
-    color: var(--primary-dark);
+    background: var(--karte-kommentar);
+    color: var(--akzent-schrift);
 }
 
 .reference-badge {
-    background: var(--info-border);
+    background: var(--info-rand);
     /* im Dunkeln dunkel: Blau und Orange sind dort heller (#588) */
     color: var(--referenz-marke-schrift);
 }
@@ -244,7 +244,7 @@
 .reference-count {
     margin-top: var(--spacing-xs);
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     text-align: right;
 }
 
@@ -266,13 +266,13 @@
 }
 
 .status-message.info {
-    background: var(--info-bg);
-    color: var(--info-color);
+    background: var(--info-tint);
+    color: var(--info-text);
 }
 
 .status-message.warning {
-    background: var(--warning-bg);
-    color: var(--warning-color);
+    background: var(--hinweis-tint);
+    color: var(--hinweis-text);
 }
 
 /* Responsive design */
@@ -323,7 +323,7 @@
     padding: 4px 0;
     background: none;
     border: 0;
-    border-bottom: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--linie);
     border-radius: 0;
 }
 
@@ -337,7 +337,7 @@
     padding: 0;
     border: 0;
     background: none;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     cursor: pointer;
 }
 

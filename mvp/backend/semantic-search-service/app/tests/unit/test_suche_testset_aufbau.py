@@ -230,7 +230,7 @@ class TestStartbeispiel:
     def test_hot_takes_sind_aussagen_des_startbestands_und_seeds(self):
         """Das Suchfeld des Starts tippt Hot Takes vor (HOT_TAKES, Designrunde 17.11.),
         leicht anders formuliert als die zugeordnete Aussage. Die Aussage steht im
-        Startbestand und im Seed, damit „Ausprobieren“ sie auf Produktion und im
+        Startbestand und im Seed, damit „Beispiel ausprobieren“ sie auf Produktion und im
         Dev-Stack findet."""
         paare = self._hot_takes()
         start = {text_normalisiert(t) for t in STARTBESTAND}

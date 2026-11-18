@@ -96,6 +96,8 @@ export interface Angebot {
    * Schliessen-Kreuz (Persona-Runde 18.11.). Nur fuer kurze Saetze.
    */
   schlank?: boolean;
+  /** Der Knopf „ja“ öffnet den Installieren-Dialog des Browsers statt eines Rundgangs. */
+  installieren?: boolean;
 }
 
 export const WILLKOMMEN: Angebot = {
@@ -152,6 +154,25 @@ export const HOME_ANGEBOT: Angebot = {
   // Wie das Willkommen nur auf der Startseite unter dem Suchfeld, nicht über Treffern (#599)
   seiten: ['/search'],
   imInhalt: true,
+  nein: 'Ausblenden',
+  neinLabel: 'Hinweis ausblenden',
+  ab: 0,
+};
+
+/**
+ * Dasselbe Band für Chrome und Edge auf Android und Computer (18.11.2026), nur wenn der
+ * Browser das Installieren anbietet (`beforeinstallprompt`): mit echtem Knopf statt
+ * Anleitung. Gleicher Vermerk wie HOME_ANGEBOT, gleiche Regeln.
+ */
+export const APP_INSTALLIEREN_ANGEBOT: Angebot = {
+  schluessel: HOME_HINWEIS_SCHLUESSEL,
+  titel: 'Gut gesagt als App',
+  satz: 'Mit eigenem Symbol öffnest du Gut gesagt mit einem Tipp, ohne Adressleiste.',
+  bild: 'marke/apple-touch-icon-180.png',
+  seiten: ['/search'],
+  imInhalt: true,
+  installieren: true,
+  ja: 'Installieren',
   nein: 'Ausblenden',
   neinLabel: 'Hinweis ausblenden',
   ab: 0,

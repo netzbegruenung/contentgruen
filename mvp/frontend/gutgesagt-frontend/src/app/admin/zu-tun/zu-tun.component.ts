@@ -116,7 +116,7 @@ interface Ansicht {
       margin-bottom: var(--spacing-md);
       border-left: 4px solid var(--akzent-tanne);
       border-radius: var(--border-radius-medium);
-      background: var(--auswahl-grund);
+      background: var(--primaer-tint);
     }
 
     /* Kleine Ueberschrift, nicht die globale h2 der Seitentitel */
@@ -128,7 +128,7 @@ interface Ansicht {
       font-style: normal;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--text-secondary);
+      color: var(--text-leise);
     }
 
     .punkt {
@@ -140,12 +140,12 @@ interface Ansicht {
     }
 
     .punkt a {
-      color: var(--primary-dark);
+      color: var(--akzent-schrift);
       font-weight: 700;
     }
 
     .ruhig {
-      color: var(--text-secondary);
+      color: var(--text-leise);
     }
 
     .klein {
@@ -158,8 +158,8 @@ interface Ansicht {
       gap: 2px;
       padding: 0 8px;
       border-radius: 12px;
-      background: var(--error-bg);
-      color: var(--error-color);
+      background: var(--fehler-tint);
+      color: var(--fehler);
       font-weight: 700;
     }
 

@@ -28,6 +28,9 @@ export const MEILENSTEIN_MERKER = new InjectionToken<boolean>('MEILENSTEIN_MERKE
  * Datenschutzerklärung steht nur, solange der Schalter an ist; das Einschalten ist eine
  * Änderung an der Erklärung. Auf false: kein Zugriff auf den Speicher dafür, kein
  * Hinweis und kein Absatz.
+ * Seit 18.11.2026 nutzt auch der Knopf „Installieren“ in Chrome und Edge (Android und
+ * Computer) denselben Merker. Der Absatz nennt bisher nur iPhone und iPad: Vor dem
+ * Einschalten muss er auch diese Browser nennen (eigenes Ticket, Rechtstext).
  */
 export const HOME_HINWEIS_MERKER_AKTIV = false;
 

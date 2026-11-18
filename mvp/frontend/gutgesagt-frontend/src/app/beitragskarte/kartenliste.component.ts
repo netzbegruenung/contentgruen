@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { CommonModule } from '@angular/common';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
-import { KartenDaten, KartenVariante } from './karten-daten';
+import { KartenDaten, KartenKennzahlen, KartenVariante } from './karten-daten';
 
 /**
  * Beitragskarten auf hellgrauem Grund. Voll untereinander: mobil (bis 599 px)
@@ -28,7 +28,8 @@ import { KartenDaten, KartenVariante } from './karten-daten';
       <li *ngFor="let karte of daten; trackBy: nachId">
         <app-beitragskarte [daten]="karte" [variante]="variante" [titelEbene]="titelEbene"
                            [antwortAufZeigen]="antwortAufZeigen" [schlank]="schlank"
-                           [schlicht]="schlicht" [aufklappbar]="aufklappbar" (angetippt)="angetippt.emit($event)">
+                           [schlicht]="schlicht" [aufklappbar]="aufklappbar" (angetippt)="angetippt.emit($event)"
+                           (kennzahlen)="kennzahlen.emit($event)">
         </app-beitragskarte>
       </li>
     </ul>
@@ -42,7 +43,7 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         margin: 0;
         padding: 16px;
         list-style: none;
-        background: var(--kartenliste-bg);
+        background: var(--kartenliste-grund);
         border: var(--kartenliste-rand);
       }
 
@@ -105,6 +106,8 @@ export class KartenlisteComponent {
 
   /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */
   @Output() angetippt = new EventEmitter<KartenDaten>();
+  /** Guete oder Nutzung einer Karte geaendert, unveraendert durchgereicht. */
+  @Output() kennzahlen = new EventEmitter<KartenKennzahlen>();
 
   nachId(_index: number, karte: KartenDaten): string {
     return karte.id;

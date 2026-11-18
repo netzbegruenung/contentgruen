@@ -160,6 +160,23 @@ mail never undoes a Meldung or decision; the log says `SMTP delivery failed (<er
 without the address. Check after setting the variables: report a Beitrag on the test system with
 your own address, then dismiss the Meldung in the moderation; both mails must arrive.
 
+### 🎚 Schalter: upper bound and admin value (#708)
+
+`SEMANTIC_SEARCH_PUNKTE_AKTIV`, `SEMANTIC_SEARCH_ABZEICHEN_SICHTBAR_AKTIV` and
+`SEMANTIC_SEARCH_GEPOSTET_AKTIV` are only **upper bounds** now. A Schalter takes effect only when
+its variable is `true` **and** an admin has switched it on in the app (Admin, „Schalter“; stored
+in the table `schalter`, every change with time and admin Kennung in `schalter_verlauf`). Without
+an entry the admin value is off. Admins can always switch off, but never on above the upper bound
+(the API answers 409). Changes take effect without a restart, in other replicas within about 45 s.
+An admin value „on“ stays when the upper bound is switched off later: the Schalter is then off, but
+if a rollout sets the variable to `true` again, it takes effect without a new admin click. Switch
+it off in the app first if it should stay off. The history in `schalter_verlauf` is deleted after
+12 months by the Löschfristen task (`docs/LOESCHKONZEPT.md`); the current value stays.
+Behaviour change on rollout: a system where a variable is already `true` (for example
+`SEMANTIC_SEARCH_PUNKTE_AKTIV=true` on test) has that function **off** after the update until an
+admin switches it on. Before switching on Punkte or Abzeichen on production: DSFA decided
+(`docs/DSFA.md`, section 7).
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status
@@ -211,13 +228,6 @@ navigates there across a rollout; moving it into the address is open.
      frontend image (build argument `APP_VERSION`), and the footer shows it. Builds of `main`
      show „main · <commit>“ instead of a version; local builds show the `package.json`
      version.
-   - **Datum des Einspielens in DSE und Löschkonzept eintragen:** replace the placeholder
-     „[Datum des Einspielens]“ in the privacy policy
-     (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`) and in
-     `docs/LOESCHKONZEPT.md` with the day the release goes to production („1. Dezember 2026“).
-     The privacy-policy spec accepts placeholder or date; on a tag the `ci` step
-     `release-platzhalter` (`scripts/release_platzhalter.py`) fails while the placeholder is
-     still there, and `release.yaml` builds nothing. Once no placeholder is left, drop this sub-step.
    - **Change list:** draft the text of the Forgejo release and show it in the description of
      the release pull request, so it is reviewed with it. The change list lives only in the
      Forgejo release, not in a file in the repository. Draft it with

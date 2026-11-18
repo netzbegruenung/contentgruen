@@ -164,9 +164,9 @@ Einwilligung widerrufen wurde; je Person höchstens einen offenen, ein zweiter W
 keinen zweiten an. Wer vor diesem Stand irgendwann widerrufen hat, auch wer seither neu
 eingewilligt hat, bekommt den Auftrag beim Einspielen der Migration
 (`2026-11-13-loeschauftraege.sql`): angelegt zum Zeitpunkt des jüngsten Widerrufs, Frist sieben
-Tage ab dem Einspielen (entschieden 13.11.2026). Die Datenschutzerklärung sagt dazu: „Wer vor dem [Datum des Einspielens] widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.“
-Das Datum steht bis zum Release-Tag als Platzhalter „[Datum des Einspielens]“ und wird dort gesetzt
-(`docs/DEPLOYMENT.md`, Releases; bei Tags prüft `scripts/release_platzhalter.py`, dass er ersetzt ist). Was nach einer neuen Einwilligung gespeichert
+Tage ab dem Einspielen (entschieden 13.11.2026). Die Datenschutzerklärung sagt dazu: „Wer vor dem 18. November 2026 widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.“
+Das Datum ist der Tag, an dem v0.9.0 in Produktion geht und die Migration dort einspielt; bis zum
+Release stand dort ein Platzhalter (bei Tags prüft `scripts/release_platzhalter.py`, dass keiner mehr steht). Was nach einer neuen Einwilligung gespeichert
 wurde, schützt die Obergrenze (unten). Beim Umstellen der Kennungen
 zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
 
@@ -251,6 +251,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Zustimmung zur Sichtbarkeit der Abzeichen (`abzeichen_sichtbarkeit`) | solange das Konto besteht | — Nachweis der Zustimmung (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351) | solange das Konto besteht | — Nachweis der Einwilligung und des Widerrufs (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Meilenstein-Abzeichen am Anzeigenamen (#351) | keine Speicherung | — nur im Arbeitsspeicher, alle 15 Minuten neu berechnet, nach einem Neustart leer; nach dem Löschkommando (Schritt 2) höchstens noch bis zum nächsten Lauf |
+| Schalter (`schalter`) und ihr Verlauf (`schalter_verlauf`, #708): Admin-Wert, Zeitpunkt, Kennung des Admins | Verlauf: 12 Monate ab der Änderung, Bereinigungslauf (Task der Löschfristen, `SCHALTER_VERLAUF_TAGE` in `services/loeschfristen_service.py`, unabhängig vom abschaltbaren Bereinigungsjob; Entscheidung Maintainer 18.11.2026). Der aktuelle Stand in `schalter` bleibt. | Kennung des Admins: mit seinem Konto geleert (`person_loeschen.sql`), beim Umstellen der Kennungen mit umgeschrieben (#487) — betrifft nur Admins, nicht Nutzende; die Kennung steht nur dort, kein Klarname |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange

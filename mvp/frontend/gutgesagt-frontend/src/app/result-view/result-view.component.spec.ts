@@ -1,7 +1,8 @@
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -611,7 +612,11 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
 
   beforeEach(() => (nav = {}));
 
-  async function oeffnen(mobil: boolean, suchantwort: any, aehnliche: any[] = AEHNLICH): Promise<HTMLElement> {
+  /** Ab 1024 px (Desktop-Signal der Seite); per next() laesst sich die Breite wechseln. */
+  let breit: BehaviorSubject<boolean>;
+
+  async function oeffnen(mobil: boolean, suchantwort: any, aehnliche: any[] = AEHNLICH, abDesktop = false): Promise<HTMLElement> {
+    breit = new BehaviorSubject(abDesktop);
     const statementService = jasmine.createSpyObj('StatementService', ['aehnlicheAussagen']);
     statementService.aehnlicheAussagen.and.returnValue(of(aehnliche));
     TestBed.configureTestingModule({
@@ -624,7 +629,12 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
         { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
         {
           provide: BreakpointObserver,
-          useValue: { observe: (query: string[]) => of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }) },
+          useValue: {
+            observe: (query: string[]) =>
+              query[0] === '(min-width: 1024px)'
+                ? breit.pipe(map((matches) => ({ matches, breakpoints: {} })))
+                : of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }),
+          },
         },
       ],
     });
@@ -698,24 +708,33 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
       expect(seite.querySelector('.typ-erklaerung')).withContext('die Titel tragen die Typen (V3)').toBeNull();
     });
 
-    it(`erklaert jeden Typ-Abschnitt per ⓘ hinter dem Titel, "Beste Antwort" ohne (${wo})`, async () => {
+    it(`zeigt an den Abschnittstiteln kein ⓘ mehr, nur am Etikett der Karte (${wo})`, async () => {
       const seite = await oeffnen(mobil, GEMISCHT());
       const ersteGruppe = seite.querySelector('.gruppe')!;
-      const knoepfe = Array.from(ersteGruppe.querySelectorAll<HTMLButtonElement>('.typ-kopf .typ-info'));
-      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual([
-        'Was ist ein Kommentar?', 'Was ist Hintergrundinfo?', 'Was ist ein Bild?', 'Was ist ein Post?',
-      ]);
+      expect(ersteGruppe.querySelectorAll('.typ-kopf').length).toBe(4);
+      expect(ersteGruppe.querySelector('.typ-kopf button, .typ-kopf mat-icon, .typ-info')).toBeNull();
       expect(seite.querySelector('.beste-ueberschrift')!.closest('.typ-kopf')).toBeNull();
-      expect(knoepfe.length).toBe(ersteGruppe.querySelectorAll('.typ-ueberschrift').length - 1);
-      // Nicht in der Ueberschrift: sonst gehoerte die Frage zu ihrem Namen
-      knoepfe.forEach((k) => expect(k.closest('h3')).toBeNull());
+    });
 
-      // Den Erklaersatz hoeren Screenreader nur einmal, im Menue
-      knoepfe.forEach((k) => expect(k.hasAttribute('aria-describedby')).withContext('kein Tooltip-Text').toBeFalse());
-      knoepfe[1].click();
-      fixture.detectChanges();
-      expect(document.querySelector('.mat-mdc-menu-panel .typ-erklaerung-text')?.textContent?.trim())
-        .toBe('Fakten und Zahlen, die eine Antwort stützen.');
+    it(`setzt "Zu dieser Antwort" zwischen die beste Antwort und die weiteren Karten (${wo})`, async () => {
+      const seite = await oeffnen(mobil, GEMISCHT());
+      const kaesten = seite.querySelectorAll('app-zu-dieser-antwort');
+      expect(kaesten.length).withContext('genau einer, zur besten Antwort').toBe(1);
+      const kasten = kaesten[0];
+      expect(kasten.querySelector('h3')?.textContent?.trim()).toBe('Zu dieser Antwort');
+      expect(kasten.querySelector('aside')?.getAttribute('aria-labelledby')).toBe(kasten.querySelector('h3')!.id);
+      // Lese- und Tab-Reihenfolge: beste, Kasten, weitere
+      const beste = seite.querySelector('.beste-antwort')!;
+      const weitere = seite.querySelector('.eingeklappte-karten')!;
+      expect(beste.compareDocumentPosition(kasten) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(kasten.compareDocumentPosition(weitere) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(kasten.textContent).toContain('4 Zeichen');
+    });
+
+    it(`stellt den Kasten auch neben die einzige Antwort (${wo})`, async () => {
+      const seite = await oeffnen(mobil, antwort({ k: [erkannt('commentary', 'k-1', 0.9)] }));
+      expect(seite.querySelector('.treffer-spalte')!.classList).toContain('zweispaltig');
+      expect(seite.querySelectorAll('.gruppe.mit-bester app-zu-dieser-antwort').length).toBe(1);
     });
 
     it(`zeigt die beste Antwort ganz und alle anderen Karten eingeklappt (${wo})`, async () => {
@@ -819,6 +838,62 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
     expect(karten.length).toBe(5);
     expect(block().querySelector('.alle-zeigen')).toBeNull();
     expect(karten[3].contains(document.activeElement)).withContext('Fokus auf der vierten Karte').toBeTrue();
+  });
+
+  describe('Desktop ab 1024 px: fuenf Antworten offen (Maintainer 18.11.)', () => {
+    const neun = () => [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => erkannt('commentary', `k-${n}`, 1 - n / 100));
+    const titel = (seite: Element, selektor: string) =>
+      texte(seite, selektor === '.offene-karten' ? `${selektor} .karte-titel` : `${selektor} .aufklapp-titel`);
+
+    it('zeigt die beste und vier weitere offen mit Kopieren, dann eingeklappte; Fokus nach "Alle zeigen"', async () => {
+      const seite = await oeffnen(false, antwort({ k: neun(), h: [erkannt('generictext', 'h-1', 0.5)] }), AEHNLICH, true);
+      const block = () => seite.querySelector('[data-typ="commentary"]')!;
+      const offene = block().querySelectorAll('.offene-karten app-beitragskarte');
+      expect(titel(block(), '.offene-karten')).toEqual(['Titel k-2', 'Titel k-3', 'Titel k-4', 'Titel k-5']);
+      offene.forEach((karte) => {
+        expect(karte.querySelector('.aufklapp-knopf')).toBeNull();
+        expect(karte.querySelector('.kopieren-knopf')).toBeTruthy();
+      });
+      expect(titel(block(), '.eingeklappte-karten')).toEqual(['Titel k-6', 'Titel k-7']);
+      // Lesereihenfolge: beste, Kasten, offene, eingeklappte
+      const kasten = block().querySelector('app-zu-dieser-antwort')!;
+      expect(kasten.compareDocumentPosition(offene[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(seite.querySelector('[data-typ="generictext"] .offene-karten')).withContext('andere Typen wie bisher').toBeNull();
+
+      const knopf = block().querySelector<HTMLButtonElement>('.alle-zeigen')!;
+      expect(text(knopf)).toBe('Alle 4 weiteren Antworten zeigen');
+      knopf.click();
+      fixture.detectChanges();
+      const karten = block().querySelectorAll('app-beitragskarte');
+      expect(karten.length).toBe(9);
+      expect(karten[7].contains(document.activeElement)).withContext('Fokus auf der achten Karte').toBeTrue();
+    });
+
+    it('zeigt bei weniger als fuenf Antworten alle offen', async () => {
+      const drei = [1, 2, 3].map((n) => erkannt('commentary', `k-${n}`, 1 - n / 100));
+      const seite = await oeffnen(false, antwort({ k: drei }), AEHNLICH, true);
+      expect(titel(seite, '.offene-karten')).toEqual(['Titel k-2', 'Titel k-3']);
+      expect(seite.querySelector('[data-typ="commentary"] .eingeklappte-karten, .alle-zeigen')).toBeNull();
+    });
+
+    it('baut beim Wechsel der Breite um und behaelt "Alle zeigen"', async () => {
+      const seite = await oeffnen(false, antwort({ k: neun() }), AEHNLICH, false);
+      expect(seite.querySelector('.offene-karten')).withContext('unter 1024 px nur die beste offen').toBeNull();
+      expect(seite.querySelectorAll('.eingeklappte-karten app-beitragskarte').length).toBe(2);
+
+      breit.next(true);
+      neuZeichnen();
+      expect(seite.querySelectorAll('.offene-karten app-beitragskarte').length).toBe(4);
+      expect(seite.querySelectorAll('.eingeklappte-karten app-beitragskarte').length).toBe(2);
+
+      seite.querySelector<HTMLButtonElement>('.alle-zeigen')!.click();
+      fixture.detectChanges();
+      breit.next(false);
+      neuZeichnen();
+      expect(seite.querySelector('.offene-karten')).toBeNull();
+      expect(seite.querySelectorAll('.eingeklappte-karten app-beitragskarte').length).withContext('aufgeklappt bleibt aufgeklappt').toBe(8);
+      expect(seite.querySelector('.alle-zeigen')).toBeNull();
+    });
   });
 
   for (const mobil of [false, true]) {

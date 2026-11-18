@@ -12,7 +12,7 @@
     justify-content: space-between;
     gap: var(--spacing-sm);
     padding: 20px 12px 16px 24px;
-    border-bottom: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--linie);
 }
 
 .hilfe-kopf h2 {
@@ -29,7 +29,7 @@
 .hilfe-schliessen {
     flex-shrink: 0;
     min-height: 44px;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .hilfe-inhalt {
@@ -46,7 +46,7 @@
     gap: 16px;
     padding: 14px 20px;
     margin-bottom: 16px;
-    background: var(--rundgang-gelb);
+    background: var(--kopf);
     border-radius: 12px;
 }
 
@@ -67,7 +67,7 @@
     gap: 8px;
 }
 
-/* Dunkelmodus: Kasten bleibt Schiefer (--rundgang-gelb = --such-band), hervorgehoben wird
+/* Dunkelmodus: Kasten bleibt Schiefer (--kopf = --kopf), hervorgehoben wird
    er gelb über die Band-Tokens wie das Such-Band (Wunsch Sebastian 17.11.). Auf #18212a:
    Überschrift #e2e88a 12,5:1; Knopf: Schrift #121312 auf #e2e88a 14,3:1, Fläche zum
    Kasten 12,5:1, Fokusring #4fc3f7 8,1:1. */
@@ -89,7 +89,7 @@
 
 /* Zwischenueberschriften eine Stufe kleiner, damit die Seitenleiste ruhig bleibt */
 .hilfe-inhalt h3 {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 24px;
     line-height: 1.15;
     margin: 24px 0 8px;
@@ -97,7 +97,7 @@
 
 /* Unterpunkte von „Beitragen“ (Beitragstypen, Gut schreiben) eine Stufe darunter */
 .hilfe-inhalt h4 {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 19px;
     line-height: 1.2;
     margin: 18px 0 6px;
@@ -115,6 +115,20 @@
 
 .hilfe-feedback-knopf mat-icon {
     margin-right: 8px;
+}
+
+/* Als App aufs Handy (18.11.): je Gerät eine fette Zeile, darunter der Schritt */
+.hilfe-als-app-schritte dt {
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.hilfe-als-app-schritte dd {
+    margin: 2px 0 0;
+}
+
+.hilfe-als-app .teilen-symbol {
+    vertical-align: -3px;
 }
 
 .hilfe-fragen dt {
@@ -143,14 +157,14 @@
 .about-link-section {
     margin-top: 30px;
     padding: 20px;
-    background-color: var(--surface-muted);
+    background-color: var(--mulde);
     border-radius: 8px;
     text-align: center;
 }
 
 .about-link-section p {
     margin-bottom: 15px;
-    color: var(--text-muted);
+    color: var(--text-leise);
 }
 
 .about-link-section a {

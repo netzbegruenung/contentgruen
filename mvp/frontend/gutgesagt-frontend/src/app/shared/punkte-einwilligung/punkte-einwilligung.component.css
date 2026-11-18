@@ -4,7 +4,7 @@
 
 .punkte-einwilligung-stand {
   margin: 4px 0 0;
-  color: var(--error-strong);
+  color: var(--fehler);
 }
 
 .punkte-einwilligung-stand:empty {

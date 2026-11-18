@@ -44,7 +44,7 @@ test.describe('Dunkelmodus ohne Aufblitzen (Produktions-Build)', () => {
 
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    // Die App rendert ohne das volle Stylesheet; main traegt dann --bg-card aus dem Inline-Style
+    // Die App rendert ohne das volle Stylesheet; main traegt dann --flaeche aus dem Inline-Style
     await expect(page.locator('main')).toBeAttached({ timeout: 15_000 });
     // Such-Band und Willkommen-Band der Startseite
     await expect(page.locator('.such-band')).toBeAttached({ timeout: 15_000 });

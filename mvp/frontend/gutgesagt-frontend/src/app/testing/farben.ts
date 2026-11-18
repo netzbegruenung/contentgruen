@@ -8,7 +8,7 @@ export function aufgeloest(farbe: string): string {
   return rgb;
 }
 
-/** Wert einer Farbvariable aus dem geladenen Theme (`src/theme/custom-theme.scss`), z. B. `--primary-dark`. */
+/** Wert einer Farbvariable aus dem geladenen Theme (`src/theme/custom-theme.scss`), z. B. `--akzent-schrift`. */
 export function themaFarbe(variable: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
 }

@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { DestroyRef } from '@angular/core';
+import { DestroyRef, WritableSignal, signal } from '@angular/core';
+import { AppInstallierenService } from '../rundgang/app-installieren.service';
 import { DefaultUrlSerializer, NavigationEnd, Router, provideRouter } from '@angular/router';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
@@ -182,6 +183,7 @@ describe('HelpDialogComponent', () => {
       'Bewerten und Siegel',
       'Beitragen',
       'Konto und Anmeldung',
+      'Als App aufs Handy',
       'Nutzt Gut gesagt KI?',
       'Feedback',
       'Häufige Fragen',
@@ -409,5 +411,78 @@ describe('hilfeNachAnmeldung', () => {
     navigiert('/search');
     expect(dialog.open).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+/** Abschnitt „Als App aufs Handy“ (Entscheidung Maintainer 18.11.2026). */
+describe('HelpDialogComponent: Als App aufs Handy', () => {
+  let fixture: ComponentFixture<HelpDialogComponent>;
+  let app: { installierbar: WritableSignal<boolean>; installiert: WritableSignal<boolean>; installieren: jasmine.Spy };
+
+  beforeEach(async () => {
+    app = {
+      installierbar: signal(false),
+      installiert: signal(false),
+      installieren: jasmine.createSpy('installieren').and.resolveTo('accepted'),
+    };
+    await TestBed.configureTestingModule({
+      imports: [HelpDialogComponent, HttpClientTestingModule],
+      providers: [
+        provideRouter([]),
+        { provide: MatDialogRef, useValue: { close: () => undefined, afterClosed: () => new Subject<void>() } },
+        { provide: RundgangService, useValue: jasmine.createSpyObj<RundgangService>('RundgangService', ['starten']) },
+        { provide: AuthService, useValue: { getUserInfo: () => ({ isAuthenticated: false }) } },
+        { provide: AppInstallierenService, useValue: app },
+      ],
+    }).compileComponents();
+    fixture = TestBed.createComponent(HelpDialogComponent);
+    fixture.detectChanges();
+  });
+
+  const abschnitt = (): HTMLElement => fixture.nativeElement.querySelector('section#als-app');
+  const text = (): string => abschnitt().textContent!.replace(/\s+/g, ' ').trim();
+  const knopf = (): HTMLButtonElement | null => abschnitt().querySelector('button.hilfe-als-app-knopf');
+
+  it('nennt die Schritte für iPhone/iPad, Android und Computer', () => {
+    expect(abschnitt().querySelector('h3')?.textContent).toBe('Als App aufs Handy');
+    expect(abschnitt().getAttribute('aria-labelledby')).toBe('hilfe-als-app-titel');
+    expect(text()).toContain('Tippe auf Teilen (oder erst auf ···), dann auf „Zum Home-Bildschirm“.');
+    expect(text()).toContain('Menü ⋮, dann auf „App installieren“ oder „Zum Startbildschirm hinzufügen“.');
+    expect(text()).toContain('Klick rechts in der Adressleiste auf das Symbol zum Installieren.');
+    const geraete = Array.from(abschnitt().querySelectorAll('dt')).map((dt) => dt.textContent!.trim());
+    expect(geraete).toEqual(['iPhone und iPad (Safari)', 'Android (Chrome)', 'Computer (Chrome oder Edge)']);
+    expect(abschnitt().querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('ohne Angebot des Browsers kein Knopf', () => {
+    expect(knopf()).toBeNull();
+  });
+
+  it('mit Angebot ein Knopf „Installieren“, der den Dialog des Browsers öffnet', () => {
+    app.installierbar.set(true);
+    fixture.detectChanges();
+    expect(knopf()!.textContent!.trim()).toBe('Installieren');
+    expect(knopf()!.classList).toContain('rundgang-knopf');
+    knopf()!.click();
+    expect(app.installieren).toHaveBeenCalledTimes(1);
+  });
+
+  it('nach „Installieren“ steht der Fokus auf der Überschrift des Abschnitts', async () => {
+    document.body.appendChild(fixture.nativeElement);
+    app.installierbar.set(true);
+    fixture.detectChanges();
+    await fixture.componentInstance.installieren();
+    expect(document.activeElement?.id).toBe('hilfe-als-app-titel');
+    fixture.nativeElement.remove();
+  });
+
+  it('schon als App: sagt das statt der Schritte', () => {
+    app.installiert.set(true);
+    fixture.detectChanges();
+    expect(abschnitt().querySelector('.hilfe-als-app-installiert')?.textContent).toBe(
+      'Du nutzt Gut gesagt hier schon als App.',
+    );
+    expect(abschnitt().querySelector('dl')).toBeNull();
+    expect(knopf()).toBeNull();
   });
 });

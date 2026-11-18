@@ -6,6 +6,5 @@
 export const environment = {
   production: false,
   baseUrl: '', // Empty for same-origin requests (Docker with nginx proxy)
-  useKeycloak: 'false',
-  gitSha: 'dev'
+  useKeycloak: 'false'
 };
