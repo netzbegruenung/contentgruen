@@ -76,16 +76,16 @@ const TITEL: Record<string, string> = {
     h2 { margin: 0 0 8px; }
     .hinweis { margin: 0 0 16px; }
     .laedt { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
-    .laedt.klein { margin: 0 0 8px; font-size: 0.875rem; color: var(--text-secondary); }
+    .laedt.klein { margin: 0 0 8px; font-size: 0.875rem; color: var(--text-leise); }
     .schalter { padding: 12px 16px; margin-bottom: 12px; overflow-wrap: anywhere; }
     .schalter p { margin: 4px 0; }
     .kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .kopf h3 { margin: 0; font-size: 1.0625rem; }
-    .zustand { font-weight: 500; color: var(--text-secondary); }
+    .zustand { font-weight: 500; color: var(--text-leise); }
     .zustand.wirkt { color: inherit; }
     .obergrenze, .dsfa { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .obergrenze code { font-size: 0.8125rem; color: var(--text-secondary); }
-    .obergrenze.aus, .gesperrt { color: var(--text-secondary); }
+    .obergrenze code { font-size: 0.8125rem; color: var(--text-leise); }
+    .obergrenze.aus, .gesperrt { color: var(--text-leise); }
     .dsfa { font-size: 0.875rem; }
   `],
 })
