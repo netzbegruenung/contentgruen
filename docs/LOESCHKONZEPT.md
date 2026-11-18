@@ -164,9 +164,9 @@ Einwilligung widerrufen wurde; je Person höchstens einen offenen, ein zweiter W
 keinen zweiten an. Wer vor diesem Stand irgendwann widerrufen hat, auch wer seither neu
 eingewilligt hat, bekommt den Auftrag beim Einspielen der Migration
 (`2026-11-13-loeschauftraege.sql`): angelegt zum Zeitpunkt des jüngsten Widerrufs, Frist sieben
-Tage ab dem Einspielen (entschieden 13.11.2026). Die Datenschutzerklärung sagt dazu: „Wer vor dem [Datum des Einspielens] widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.“
-Das Datum steht bis zum Release-Tag als Platzhalter „[Datum des Einspielens]“ und wird dort gesetzt
-(`docs/DEPLOYMENT.md`, Releases; bei Tags prüft `scripts/release_platzhalter.py`, dass er ersetzt ist). Was nach einer neuen Einwilligung gespeichert
+Tage ab dem Einspielen (entschieden 13.11.2026). Die Datenschutzerklärung sagt dazu: „Wer vor dem 18. November 2026 widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.“
+Das Datum ist der Tag, an dem v0.9.0 in Produktion geht und die Migration dort einspielt; bis zum
+Release stand dort ein Platzhalter (bei Tags prüft `scripts/release_platzhalter.py`, dass keiner mehr steht). Was nach einer neuen Einwilligung gespeichert
 wurde, schützt die Obergrenze (unten). Beim Umstellen der Kennungen
 zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
 
