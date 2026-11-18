@@ -36,7 +36,7 @@ pipx install pre-commit
 
 2. **Install the Git hooks** (run once from project root):
 ```bash
-cd /path/to/contentgruen
+cd /path/to/gutgesagt
 pre-commit install
 ```
 

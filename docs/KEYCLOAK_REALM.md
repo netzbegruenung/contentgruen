@@ -133,7 +133,7 @@ Das Image des Semantic-Service muss diesen Stand schon enthalten; ein älteres b
 Reihenfolge:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/kennungen_umstellen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/kennungen_umstellen.py
 # Zugang zum Realm, falls im Container noch nicht gesetzt (Secret nicht in die History):
 export SEMANTIC_SEARCH_KEYCLOAK_URL=<keycloak> SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID=gutgesagt-einladungen
 read -rs SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET; export SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET

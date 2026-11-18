@@ -42,7 +42,7 @@ def test_pflichtfelder_genau_einmal_expires():
     assert felder["contact"]
     assert len(felder["expires"]) == 1
     assert felder["preferred-languages"] == ["de"]
-    assert felder["policy"] == ["https://github.com/netzbegruenung/contentgruen/blob/main/SECURITY.md"]
+    assert felder["policy"] == ["https://github.com/netzbegruenung/gutgesagt/blob/main/SECURITY.md"]
 
 
 def test_contact_ist_die_adresse_aus_security_md():
