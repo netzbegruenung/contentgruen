@@ -1,6 +1,6 @@
 """Die Image-Builds in Woodpecker (.woodpecker/build.yaml und release.yaml, #327).
 
-Gleiche Image-Namen wie zuvor die GitHub-CI, damit Deployment und Renovate unverändert
+Gleiche Image-Namen wie früher die GitHub-CI, damit Deployment und Renovate unverändert
 weiterlaufen; Pfadfilter, die alles erfassen, was ein Dockerfile ins Image kopiert; und
 beide Workflows gleich gebaut, damit ein Release nicht anders baut als main.
 """
@@ -112,11 +112,9 @@ def test_build_und_release_bauen_gleich():
 
 def test_semantic_search_cache_aus_dem_main_image():
     # Ohne Cache ergab jeder Build rund 4 GB neue Schichten in der Registry (Platte voll,
-    # 14.11.). Der Cache kommt aus dem main-Tag dieser CI, mit ihrem Praefix: Fällt der
-    # Praefix beim Umstieg weg, muss der Cache mitziehen, sonst baut alles wieder neu.
-    praefix = schritte(BUILD)[TAGS]["environment"].get("IMAGE_TAG_PRAEFIX", "")
+    # 14.11.). Der Cache kommt aus dem main-Tag, den build.yaml selbst schreibt.
     schritt = schritte(BUILD)["semantic-search"]["settings"]
-    assert schritt["cache_from"] == [f"{schritt['repo']}:{praefix}main"]
+    assert schritt["cache_from"] == [f"{schritt['repo']}:main"]
     # inline: Cache-Metadaten im Image selbst, kein zusätzliches Cache-Image in der Registry
     assert schritt["cache_to"] == "type=inline"
 

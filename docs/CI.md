@@ -11,8 +11,8 @@ After the merge, `.woodpecker/build.yaml` and, on `v*` tags, `release.yaml` buil
 (see [Images and releases](#images-and-releases)), and every night `.woodpecker/nacht.yaml`
 measures search quality against the real model (see [Nightly run](#nightly-run)).
 `.woodpecker/ci-image.yaml` builds the images the pipeline itself can run in, with the Python
-packages, the models and `node_modules` already installed (see [CI images](#ci-images)). Until the switch the GitHub Actions on the
-mirror (`.github/workflows/`) still build them too and publish the tags the environments use.
+packages, the models and `node_modules` already installed (see [CI images](#ci-images)). The
+GitHub mirror runs no CI.
 
 ## What runs
 
@@ -30,8 +30,7 @@ mirror (`.github/workflows/`) still build them too and publish the tags the envi
 | `ci-bericht` | `python:3.13-slim` | red pull-request runs only, see below |
 
 Services (started only when `integration` runs, same `when`): `qdrant` (same version as the
-compose files and `.github/workflows/tests-backend.yml`,
-`entrypoint: /qdrant/qdrant`; without the absolute path the service does not start) and `postgres` (base image of
+compose files, `entrypoint: /qdrant/qdrant`; without the absolute path the service does not start) and `postgres` (base image of
 `mvp/backend/postgres-app`). The integration step reaches them through `QDRANT_URL` and
 `POSTGRES_TEST_DATABASE_URL`, after `scripts/ci_dienste_warten.py` has waited (up to two
 minutes) until both accept connections; the throwaway container of the suite is not used, the runner
@@ -55,7 +54,7 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 
 - **One source for versions.** Woodpecker cannot read a Dockerfile, so the images appear a
   second time in `ci.yaml` and in `Dockerfile.ci`, whose CI images build on them. The test fails if they differ from the Dockerfiles, the
-  compose files, the Qdrant service of the GitHub CI or the SDK image `check.sh` uses for
+  compose files or the SDK image `check.sh` uses for
   the BFF. When raising a version, change all of them.
 - **One source for commands.** Each step calls `check.sh --schritt <name>`, one pipeline step
   per step of `check.sh` (the test compares the names). Only the preparation a working tree
@@ -401,8 +400,8 @@ model), so the run is not a required status.
 
 Two workflows build the four images (frontend, BFF, semantic search, postgres-app) with the
 plugin `woodpeckerci/plugin-docker-buildx` and push them to
-`git.verdigado.com/netzbegruenung-images/gutgesagt-*`, the names the GitHub CI used, so
-deployment and Renovate keep working (#327). Both start only after a green `ci` run
+`git.verdigado.com/netzbegruenung-images/gutgesagt-*`, the names and tags the former GitHub
+Actions on the mirror used, so deployment and Renovate keep working (#327). Both start only after a green `ci` run
 (`depends_on: [ci]`): a tag cannot ship what `main` would have rejected.
 
 | Workflow | Runs on | Builds | Tags |
@@ -415,7 +414,7 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
   SemVer version `vX.Y.Z` turns the step red and nothing is built.
 - **Version in the footer from the tag.** The release build passes the tag as build
   argument `APP_VERSION` to the frontend image; a release needs no version change in
-  `package.json` once the GitHub workflows are gone (`docs/DEPLOYMENT.md`, "Releases").
+  `package.json` (`docs/DEPLOYMENT.md`, "Releases").
   Builds of `main` pass `APP_VERSION=main`: the footer shows „main · <commit>“ instead of a
   version that would go stale.
 - **Path filters** per build step, because a filter on the workflow would hide it. They cover
@@ -426,7 +425,7 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
 - `scripts/tests/test_woodpecker_images.py` keeps the two workflows identical except for the
   path filters and `APP_VERSION`, checks the image names, the filters against the
   Dockerfiles and that only the plugin steps see the registry secret.
-- **Build cache only for the semantic search image:** `cache_from` its `:woodpecker-main`,
+- **Build cache only for the semantic search image:** `cache_from` its `:main`,
   `cache_to: type=inline` (the cache metadata travel inside the image, no extra cache image).
   Without it every build pushed about 4 GB of new layers (the models), even for a code change;
   with it the layers up to the model downloads stay the same blobs as long as the base image
@@ -434,26 +433,20 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
 - **Registry space:** `build.yaml` tags only `main`, no tag per commit. Forgejo deletes an
   overwritten tag right away and its blobs with the cron task `cleanup_packages` (daily, older
   than 24 h); a `sha-` tag per merge kept every build forever and filled the package disk on
-  14.11.2026. The `sha-` tags of the GitHub workflow go by a cleanup rule of the organisation
-  `netzbegruenung-images` (`docs/DEPLOYMENT.md`, "Updating Production").
+  14.11.2026. The `sha-` tags the former GitHub workflow set go by a cleanup rule of the
+  organisation `netzbegruenung-images` (older than 7 days, the 5 newest versions stay).
 
-**Parallel run.** As long as the GitHub workflows build, every Woodpecker tag carries the
-prefix `woodpecker-` (`IMAGE_TAG_PRAEFIX` in both workflows): `:woodpecker-main`,
-`:woodpecker-0.9.0` and so on. The two CIs never overwrite each other's tags, and nothing
-deployed follows a prefixed tag.
+**After the switch from GitHub Actions** (#327), steps for a person, once:
 
-**Switch** (one pull request, with the maintainer's consent, because `.github/workflows/`
-changes act on the mirror at once), after at least one push to `main` and one test tag
-have built on both sides:
-
-1. Compare the images: same base layers, the same files in the image
-   (`docker run --rm --entrypoint ls <image> -R /app` or similar per image), the frontend
-   footer with the expected version and commit.
-2. Remove `IMAGE_TAG_PRAEFIX` from `build.yaml` and `release.yaml` and delete
-   `.github/workflows/`; update this section and `docs/DEPLOYMENT.md` (the `package.json`
-   step in "Releases" goes, the GitHub CI paragraph in "Updating Production" too).
-3. After the merge: delete the GitHub Actions secrets on the mirror and the prefixed tags in
-   the registry.
+1. The merge changes `build.yaml`, so its run rebuilds all four `:main` images. Check that
+   it is green and the four `:main` tags in the registry carry the merge commit. Its semantic
+   search build finds no inline cache in the old `:main` and pushes the full layers once.
+2. On the GitHub mirror, delete the Actions secrets `VERDIGADO_REGISTRY_USER` and
+   `VERDIGADO_REGISTRY_TOKEN` (Settings, Secrets and variables, Actions) and revoke the
+   registry token they held; optionally switch off Actions on the mirror.
+3. Delete the tags with the prefix `woodpecker-` of the parallel run in the registry
+   (`:woodpecker-main`, `:woodpecker-0.8.5`, `:woodpecker-0.8`, `:woodpecker-latest`, for
+   all four images); nothing deployed follows them.
 
 ## Setup by a person
 
@@ -494,7 +487,11 @@ enabled, and the pull request that adds the pipeline already needs it):
    the plugin by tag and digest, and an entry with a tag only matches that exact reference.
    In the repository settings, switch on "Cancel previous pipelines" for "Push": otherwise
    two quick merges can build in parallel, and the older one, finishing last, leaves `:main`
-   on the older commit (the GitHub CI cancelled superseded runs too). Without the secrets
+   on the older commit (the former GitHub CI cancelled superseded runs too). The price: a
+   cancelled or failed run does not pass its changed files on to the next one, so an image
+   changed only by that run keeps its old `:main` until "Run pipeline" on `main` (builds
+   all four). The GitHub CI compared with its last successful run instead (10.11.: a BFF
+   change got no `:main` image). Without the secrets
    the workflows fail before any step; `ci` is not affected. Known limit: Woodpecker has no
    branch filter for secrets. Whoever can push a branch or a tag (write access, the bot
    included) can run a changed `build.yaml` or `release.yaml` with the secret, limited to

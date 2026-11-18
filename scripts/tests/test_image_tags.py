@@ -1,6 +1,6 @@
 """Die Image-Tags, die Woodpecker beim Build und beim Release setzt (scripts/image_tags.py).
 
-Gleiche Release-Tags wie bisher die GitHub-CI (docker/metadata-action), damit Deployment
+Gleiche Release-Tags wie früher die GitHub-CI (docker/metadata-action), damit Deployment
 und Renovate unverändert weiterlaufen (#327); auf main nur noch ``main``.
 """
 
@@ -24,9 +24,6 @@ class TestPushAufMain:
 
     def test_manueller_lauf_wie_push(self):
         assert image_tags("manual", "", SHA) == ["main"]
-
-    def test_praefix_auch_auf_main(self):
-        assert image_tags("push", "", SHA, praefix="woodpecker-") == ["woodpecker-main"]
 
 
 class TestRelease:
@@ -53,16 +50,6 @@ class TestRelease:
             image_tags("tag", tag, SHA)
 
 
-class TestPraefix:
-    def test_praefix_vor_jedem_tag(self):
-        # Parallelbetrieb neben der GitHub-CI: eigene Tags, keine fremden überschreiben
-        assert image_tags("tag", "v0.9.0", SHA, praefix="woodpecker-") == [
-            "woodpecker-0.9.0",
-            "woodpecker-0.9",
-            "woodpecker-latest",
-        ]
-
-
 class TestAndereEreignisse:
     @pytest.mark.parametrize("ereignis", ["pull_request", "cron", ""])
     def test_bricht_ab(self, ereignis):
@@ -81,14 +68,13 @@ class TestAufruf:
             "CI_PIPELINE_EVENT": "tag",
             "CI_COMMIT_TAG": "v0.9.0",
             "CI_COMMIT_SHA": SHA,
-            "IMAGE_TAG_PRAEFIX": "woodpecker-",
         }
         subprocess.run(
             [sys.executable, str(SKRIPT), str(datei)],
             check=True,
             env=umgebung,
         )
-        assert datei.read_text() == "woodpecker-0.9.0\nwoodpecker-0.9\nwoodpecker-latest\n"
+        assert datei.read_text() == "0.9.0\n0.9\nlatest\n"
 
     def test_fehler_ohne_datei(self, tmp_path):
         datei = tmp_path / "tags"

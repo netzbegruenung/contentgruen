@@ -62,8 +62,7 @@ Image enthält sie.
 - **Image:** Die Skripte stecken im Image des Semantic-Service. Ein neues
   Skript kommt erst mit einem neu gebauten Image an. Woodpecker baut das Image
   nach dem Merge auch für eine neue Migration allein (Pfadfilter in
-  `.woodpecker/build.yaml`); die GitHub-CI auf dem Spiegel tut das bis zum Umstieg
-  nicht (`.github/workflows/build.yml`).
+  `.woodpecker/build.yaml`).
 
 Den Stand zeigt das Protokoll:
 
@@ -124,8 +123,8 @@ Der Unit-Test
 prüft für jede Datei hier den Dateinamen, die letzte Kopfzeile, dass kein
 Kommentar einen Befehl zum Anwenden enthält, und die Transaktion, dazu dass die
 Reihenfolge mit und ohne `.sql` gleich ist (außer beim Paar unten). Er läuft mit
-den Unit-Tests: im Pre-commit-Hook, mit `make test-backend(-fast)` und in der
-GitHub-CI nach dem Merge.
+den Unit-Tests: im Pre-commit-Hook, mit `make test-backend(-fast)` und in
+Woodpecker (Schritt `unit`).
 
 Idempotenz und Gleichheit mit `create_all` prüft der Integrationstest
 `mvp/backend/semantic-search-service/app/tests/integration/test_migrationen.py`

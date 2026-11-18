@@ -9,7 +9,7 @@ tests/
 │   ├── repositories/              # Repository layer tests
 │   └── services/                  # Service layer tests
 ├── integration/                   # Integration tests against real Qdrant and PostgreSQL
-│   └── api/                       # Against the running dev-stack BFF (skipped by GitHub CI)
+│   └── api/                       # Against the running dev-stack BFF (skipped in CI)
 ├── regression/                    # Messset and Suchtestset: data, checks, measurement scripts
 │                                  # (by hand against a stack, and every night in
 │                                  # .woodpecker/nacht.yaml; MESSSET.md, SUCHTESTSET.md,
@@ -274,5 +274,5 @@ Once set up, its status `ci/woodpecker/pr/ci` is required for `main`; a red pull
 comment with the red steps. Details, the setup steps for a person and how to run one step
 locally (`check.sh --schritt <name>`): [docs/CI.md](../../../../../docs/CI.md).
 
-After the merge, GitHub Actions on the mirror (`.github/workflows/build.yml`) run the tests
-again and build the images.
+After the merge, Woodpecker runs `ci` on `main` again, with the integration tests, and then
+builds the images (`.woodpecker/build.yaml`).

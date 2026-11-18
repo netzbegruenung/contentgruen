@@ -60,7 +60,7 @@ make help               # All commands
   `bash scripts/check.sh --integration`, or `--geaendert` before a push (TESTING_GUIDE.md)
 - ✅ **Dependency injection architecture**
 - ✅ **Pre-commit hooks integrated**
-- ✅ **Woodpecker CI for every pull request, GitHub Actions after the merge**
+- ✅ **Woodpecker CI for every pull request and after the merge**
 - ✅ **No external test dependencies**
 
 ## Legacy Commands

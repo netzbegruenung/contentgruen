@@ -18,10 +18,6 @@ steps:
   - name: image-tags
     image: python:3.13-slim
     depends_on: []
-    environment:
-      # Parallelbetrieb neben der GitHub-CI: eigene Tags, bis docs/CI.md "Umstieg" erledigt ist.
-      # In build.yaml und release.yaml gleich (scripts/tests/test_woodpecker_images.py).
-      IMAGE_TAG_PRAEFIX: woodpecker-
     commands:
       - python3 scripts/image_tags.py .image-tags
 
@@ -83,10 +79,10 @@ steps:
       tags_file: .image-tags
       # Schichten aus dem letzten main-Build wiederverwenden (Cache-Metadaten inline im
       # Image, kein eigenes Cache-Image): Ohne Cache ergab jeder Build rund 4 GB neue
-      # Schichten in der Registry, auch wenn sich nur der Code aenderte. Tag mit dem
-      # IMAGE_TAG_PRAEFIX oben (scripts/tests/test_woodpecker_images.py).
+      # Schichten in der Registry, auch wenn sich nur der Code aenderte
+      # (scripts/tests/test_woodpecker_images.py).
       cache_from:
-        - git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:woodpecker-main
+        - git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:main
       cache_to: type=inline
       username:
         from_secret: registry_user
