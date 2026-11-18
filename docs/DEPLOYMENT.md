@@ -169,7 +169,7 @@ for `main`, see [CI.md](CI.md)). After the merge Woodpecker builds the images
 
 Tags (`scripts/image_tags.py`):
 
-- **Push to `main`:** `:main` for the images whose files changed, no tag per commit
+- **Push to `main`:** `:main` for all four images, no tag per commit
   (registry space, `docs/CI.md`). The test environment runs `:main`, rolled out manually
   (see above).
 - **Tag `vX.Y.Z`:** `:X.Y.Z` (the tag without its `v`), `:X.Y` and `:latest` for all four
@@ -278,9 +278,9 @@ What this means for a rollout:
   before are not in the table yet. The repeatable ones run once more (seconds, brief table
   locks), the three non-repeatable ones are recognised by their effect and recorded as `erkannt`
   without running.
-- **A new migration needs a new semantic search image.** The files are baked into it. The
-  path filters in `.woodpecker/build.yaml` include the migrations, so a migration merged
-  alone rebuilds `:main` of that image; release tags build all images.
+- **A new migration needs a new semantic search image.** The files are baked into it. Every
+  push to `main` rebuilds all images (`.woodpecker/build.yaml` has no path filters), so a
+  merged migration lands in `:main` of that image; release tags build all images too.
 - **After restoring a backup** the table holds the state of the backup. `restore.sh` restarts
   the semantic search service, which then applies the migrations added since; after a restore
   by other means, restart it yourself.

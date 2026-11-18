@@ -406,7 +406,7 @@ Actions on the mirror used, so deployment and Renovate keep working (#327). Both
 
 | Workflow | Runs on | Builds | Tags |
 |---|---|---|---|
-| `build.yaml` | push to `main`; "Run pipeline" on `main` | images whose files changed; a manual run builds all | `main` |
+| `build.yaml` | push to `main`; "Run pipeline" on `main` | all four | `main` |
 | `release.yaml` | tag `v*` | all four | `X.Y.Z`, `X.Y`, `latest`; a prerelease only `X.Y.Z` |
 
 - **Tags from one script.** The step `image-tags` runs `scripts/image_tags.py`, which writes
@@ -417,34 +417,49 @@ Actions on the mirror used, so deployment and Renovate keep working (#327). Both
   `package.json` (`docs/DEPLOYMENT.md`, "Releases").
   Builds of `main` pass `APP_VERSION=main`: the footer shows „main · <commit>“ instead of a
   version that would go stale.
-- **Path filters** per build step, because a filter on the workflow would hide it. They cover
-  everything the Dockerfile copies (the semantic search image also takes the migrations,
-  `mvp/scripts/backup`, `mvp/data` and `mvp/.dockerignore`), plus `build.yaml` and
-  `scripts/image_tags.py`, so a change to the build rebuilds every image. Woodpecker takes
-  the changed files of a push from the webhook; if the list is empty, every step runs.
-- `scripts/tests/test_woodpecker_images.py` keeps the two workflows identical except for the
-  path filters and `APP_VERSION`, checks the image names, the filters against the
-  Dockerfiles and that only the plugin steps see the registry secret.
+- **No path filters: every push to `main` builds all four images.** Woodpecker compares only
+  with the files of the single push. With path filters, a run that was cancelled (the next
+  merge came during its `ci`, "Cancel previous pipelines") or that failed lost its image
+  build, and that image stayed silently on its old `:main` on test; only the frontend shows
+  its commit in the footer. The former GitHub CI compared with its last successful run
+  instead; it got that logic after 10.11.2026, when three merges within 13 s left a BFF change
+  without a `:main` image. The price: more build time per merge (frontend and BFF build from
+  scratch), every merge gives all four images a new digest (test still pulls only when the
+  operators roll out), and some registry churn that `cleanup_packages` removes after 24 h.
+- `scripts/tests/test_woodpecker_images.py` keeps the two workflows identical except for
+  `APP_VERSION`, checks the image names, that no step has a `when` filter and that only the
+  plugin steps see the registry secret.
 - **Build cache only for the semantic search image:** `cache_from` its `:main`,
   `cache_to: type=inline` (the cache metadata travel inside the image, no extra cache image).
   Without it every build pushed about 4 GB of new layers (the models), even for a code change;
   with it the layers up to the model downloads stay the same blobs as long as the base image
-  and `requirements.txt` do. The other images build from scratch, they are small.
+  and `requirements.txt` do, so building it on every merge costs little. The frontend and BFF
+  images build from scratch: they are multi-stage, and an inline cache holds only the layers
+  of the final stage, not the expensive `npm install` or `dotnet restore` of the build stage;
+  a separate cache image would cost registry space again.
 - **Registry space:** `build.yaml` tags only `main`, no tag per commit. Forgejo deletes an
   overwritten tag right away and its blobs with the cron task `cleanup_packages` (daily, older
   than 24 h); a `sha-` tag per merge kept every build forever and filled the package disk on
   14.11.2026. The `sha-` tags the former GitHub workflow set go by a cleanup rule of the
   organisation `netzbegruenung-images` (older than 7 days, the 5 newest versions stay).
 
-**After the switch from GitHub Actions** (#327), steps for a person, once:
+**Switch from GitHub Actions** (#327), steps for a person, once:
 
-1. The merge changes `build.yaml`, so its run rebuilds all four `:main` images. Check that
-   it is green and the four `:main` tags in the registry carry the merge commit. Its semantic
-   search build finds no inline cache in the old `:main` and pushes the full layers once.
-2. On the GitHub mirror, delete the Actions secrets `VERDIGADO_REGISTRY_USER` and
+1. Before the merge, check on the GitHub mirror (Actions) that no build run is still active.
+   A running GitHub build of the previous commit is no longer cancelled and could overwrite
+   `:main` after Woodpecker.
+2. After the merge, merge nothing else until the first `build` run on `main` is green.
+   Otherwise the next merge can cancel it, and the semantic search image stays on the GitHub
+   `:main`, which may lack migrations and data changes (its filter covered only the service).
+3. Check that this run is green and the four `:main` tags in the registry carry the merge
+   commit. Its semantic search build finds no inline cache in the old `:main` and pushes the
+   full layers once.
+4. Delete the GitHub Actions secrets only once release 0.9.0 is built: a tag on a commit before
+   the merge still builds with the old configuration (GitHub, plus the `woodpecker-` prefix).
+   Then, on the GitHub mirror, delete the Actions secrets `VERDIGADO_REGISTRY_USER` and
    `VERDIGADO_REGISTRY_TOKEN` (Settings, Secrets and variables, Actions) and revoke the
    registry token they held; optionally switch off Actions on the mirror.
-3. Delete the tags with the prefix `woodpecker-` of the parallel run in the registry
+5. Delete the tags with the prefix `woodpecker-` of the parallel run in the registry
    (`:woodpecker-main`, `:woodpecker-0.8.5`, `:woodpecker-0.8`, `:woodpecker-latest`, for
    all four images); nothing deployed follows them.
 
@@ -487,11 +502,9 @@ enabled, and the pull request that adds the pipeline already needs it):
    the plugin by tag and digest, and an entry with a tag only matches that exact reference.
    In the repository settings, switch on "Cancel previous pipelines" for "Push": otherwise
    two quick merges can build in parallel, and the older one, finishing last, leaves `:main`
-   on the older commit (the former GitHub CI cancelled superseded runs too). The price: a
-   cancelled or failed run does not pass its changed files on to the next one, so an image
-   changed only by that run keeps its old `:main` until "Run pipeline" on `main` (builds
-   all four). The GitHub CI compared with its last successful run instead (10.11.: a BFF
-   change got no `:main` image). Without the secrets
+   on the older commit (the former GitHub CI cancelled superseded runs too). Since
+   `build.yaml` builds all four images on every push, a cancelled run loses nothing: the
+   next one builds everything again. Without the secrets
    the workflows fail before any step; `ci` is not affected. Known limit: Woodpecker has no
    branch filter for secrets. Whoever can push a branch or a tag (write access, the bot
    included) can run a changed `build.yaml` or `release.yaml` with the secret, limited to
