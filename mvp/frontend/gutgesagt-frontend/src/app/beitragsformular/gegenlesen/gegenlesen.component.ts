@@ -22,6 +22,19 @@ interface Eingabe {
  */
 export const HERKUNFT_FEHLT = 'Ohne Herkunft glaubt dir das kaum jemand. Nenn, woher es stammt: ein Link oder eine Fundstelle.';
 
+/**
+ * Das Gegenlesen prueft die Form, nicht den Inhalt (18.11.): Darunter stehen die drei
+ * Fragen, die nur die schreibende Person beantworten kann, ob mit Anmerkungen oder ohne.
+ */
+export const FORM_GUT = 'Form: nichts aufgefallen.';
+export const NUR_DIE_FORM = 'Die App sieht, wie du schreibst, nicht ob es stimmt.';
+export const INHALT_FRAGEN_TITEL = 'Inhalt prüfst du:';
+export const INHALT_FRAGEN: readonly string[] = [
+  'Steht jede Zahl genau so in der Quelle?',
+  'Ein Gedanke?',
+  'Bestätigt dein Argument den Spruch?',
+];
+
 const NOCH_LEER: Gegengelesen = { guete: null, anmerkungen: [] };
 
 /**
@@ -75,6 +88,10 @@ export class GegenlesenComponent implements OnChanges {
   @Input() herkunftFehlt = false;
 
   readonly herkunftHinweis = HERKUNFT_FEHLT;
+  readonly formGut = FORM_GUT;
+  readonly nurDieForm = NUR_DIE_FORM;
+  readonly inhaltFragenTitel = INHALT_FRAGEN_TITEL;
+  readonly inhaltFragen = INHALT_FRAGEN;
   /**
    * Kompakt direkt unter dem Textfeld, wenn das Formular einspaltig ist: eine Zeile mit
    * Siegel und Zahl der Anmerkungen, aufklappbar. Sonst neben der Vorschau, ganz offen.

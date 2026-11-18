@@ -42,6 +42,22 @@ h4 {
   margin: 12px 0 0;
 }
 
+.gegenlesen-nur-form {
+  margin: 12px 0 0;
+  color: var(--text-leise);
+  font-size: 0.875rem;
+}
+
+.gegenlesen-fragen-titel {
+  margin: 8px 0 0;
+  font-weight: 600;
+}
+
+.gegenlesen-fragen {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
 .gegenlesen-fuss {
   margin-top: 12px;
 }
@@ -89,8 +105,29 @@ h4 {
   color: var(--akzent-schrift);
 }
 
-.gegenlesen.kompakt .gegenlesen-inhalt {
-  padding: 0 16px 12px;
+.gegenlesen.kompakt .gegenlesen-inhalt,
+.gegenlesen.kompakt .gegenlesen-inhalt-fragen,
+.gegenlesen.kompakt .gegenlesen-fuss {
+  padding: 0 16px;
+}
+
+/* Die Fragen bleiben kompakt sichtbar, auch zugeklappt; der Fuss schliesst offen ab */
+.gegenlesen.kompakt .gegenlesen-inhalt-fragen,
+.gegenlesen.kompakt .gegenlesen-fuss {
+  padding-bottom: 12px;
+}
+
+.gegenlesen.kompakt .gegenlesen-fuss {
+  margin-top: 0;
+}
+
+.gegenlesen.kompakt .gegenlesen-nur-form {
+  margin-top: 4px;
+}
+
+/* Aufgeklappt: Abstand zu den Anmerkungen wie am Desktop */
+.gegenlesen.kompakt .gegenlesen-inhalt:not([hidden]) + .gegenlesen-inhalt-fragen .gegenlesen-nur-form {
+  margin-top: 12px;
 }
 
 .gegenlesen.kompakt .gegenlesen-anmerkungen,

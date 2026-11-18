@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { ANSAGE_PAUSE_MS, GegenlesenComponent } from './gegenlesen.component';
+import { ANSAGE_PAUSE_MS, GegenlesenComponent, INHALT_FRAGEN } from './gegenlesen.component';
 import { GEGENLESEN_VERZOEGERUNG_MS, Gegengelesen } from './gegenlesen.service';
 import { environment } from '../../../environments/environment';
 
@@ -49,6 +49,8 @@ describe('GegenlesenComponent', () => {
   }
 
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
+  const fragen = (): string[] =>
+    Array.from(element().querySelectorAll('.gegenlesen-fragen li')).map((li) => li.textContent!.trim());
   const siegelText = (): string | null => element().querySelector('app-siegel svg')?.getAttribute('aria-label') ?? null;
 
   it('fragt erst eine Sekunde nach der letzten Eingabe, einmal', fakeAsync(() => {
@@ -90,6 +92,11 @@ describe('GegenlesenComponent', () => {
     const anmerkungen = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((li) => li.textContent?.trim());
     expect(anmerkungen).toEqual(['Der Titel beginnt mit „Nicht“. Sag lieber, was stimmt.']);
     expect(element().textContent).toContain('Nur du siehst');
+    expect(fragen()).toEqual([...INHALT_FRAGEN]);
+    expect(element().querySelector('.gegenlesen-nur-form')).not.toBeNull();
+    expect((element().querySelector('.gegenlesen-fuss') as HTMLElement).hidden).toBeFalse();
+    expect(element().querySelector('.gegenlesen-inhalt-fragen')!.closest('[hidden]')).toBeNull();
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe('Nach festen Regeln, ohne generative KI');
   }));
 
   it('sagt, wenn nichts aufgefallen ist', fakeAsync(() => {
@@ -100,9 +107,30 @@ describe('GegenlesenComponent', () => {
 
     expect(siegelText()).toBe('Siegel: Güte 10 von 10');
     expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(0);
-    expect(element().textContent).toContain('Nichts aufgefallen');
+    expect(element().querySelector('.gegenlesen-gut')!.textContent!.trim()).toBe('Form: nichts aufgefallen.');
     expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe('Nach festen Regeln, ohne generative KI');
   }));
+
+  it('trennt Form und Inhalt: drei Fragen, die nur du beantworten kannst', fakeAsync(() => {
+    schreibe('Wärmepumpe lohnt sich auch im Altbau');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+    fixture.detectChanges();
+
+    expect(element().querySelector('.gegenlesen-nur-form')!.textContent!.trim()).toBe(
+      'Die App sieht, wie du schreibst, nicht ob es stimmt.',
+    );
+    expect(element().querySelector('.gegenlesen-fragen-titel')!.textContent!.trim()).toBe('Inhalt prüfst du:');
+    expect(fragen()).toEqual([
+      'Steht jede Zahl genau so in der Quelle?',
+      'Ein Gedanke?',
+      'Bestätigt dein Argument den Spruch?',
+    ]);
+  }));
+
+  it('zeigt die Inhaltsfragen erst, wenn etwas gegengelesen ist', () => {
+    expect(element().querySelector('.gegenlesen-fragen')).toBeNull();
+  });
 
   it('dreht das Siegel nach oben, wenn der Text besser wird', fakeAsync(() => {
     schreibe('Nicht die Wärmepumpe ist das Problem');
@@ -316,6 +344,9 @@ describe('GegenlesenComponent', () => {
 
       expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
       expect(zeile.getAttribute('aria-expanded')).toBe('true');
+      // Die Zeile klappt Anmerkungen und Fuss; beide stehen in aria-controls
+      expect(zeile.getAttribute('aria-controls')).toBe('gegenlesen-inhalt gegenlesen-fuss');
+      expect(element().querySelector('#gegenlesen-fuss')).not.toBeNull();
       expect(inhalt.hidden).toBeFalse();
       expect(inhalt.textContent).toContain('Sag lieber, was stimmt.');
 
@@ -351,6 +382,45 @@ describe('GegenlesenComponent', () => {
       fixture.detectChanges();
 
       expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('zeigt die Inhaltsfragen gleich, auch zugeklappt (Handy, 18.11.)', fakeAsync(() => {
+      kompakt();
+      schreibe('Wärmepumpe lohnt sich auch im Altbau');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      const block = element().querySelector('.gegenlesen-inhalt-fragen') as HTMLElement;
+      expect(block.hidden).toBeFalse();
+      expect(block.closest('[hidden]')).toBeNull();
+      expect(fragen()).toEqual([...INHALT_FRAGEN]);
+      expect(block.textContent).toContain('Die App sieht, wie du schreibst, nicht ob es stimmt.');
+      expect((element().querySelector('.gegenlesen-fuss') as HTMLElement).hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('lässt die Fragen stehen, wenn die Person die Anmerkungen zuklappt', fakeAsync(() => {
+      kompakt();
+      schreibe('Nicht die Wärmepumpe ist das Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+      (element().querySelector('.gegenlesen-zeile') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      expect((element().querySelector('.gegenlesen-inhalt-fragen') as HTMLElement).closest('[hidden]')).toBeNull();
+      expect(fragen().length).toBe(3);
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('zeigt vor dem ersten Gegenlesen noch keine Fragen', fakeAsync(() => {
+      kompakt();
+      fixture.detectChanges();
+      expect(element().querySelector('.gegenlesen-inhalt-fragen')).toBeNull();
       tick(ANSAGE_PAUSE_MS);
     }));
 
