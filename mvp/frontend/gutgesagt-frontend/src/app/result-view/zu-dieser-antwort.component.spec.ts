@@ -91,7 +91,7 @@ describe('ZuDieserAntwortComponent', () => {
     expect(text(guete.querySelector('.zda-guete-kopf .cdk-visually-hidden'))).toBe('Güte 8 von 10');
     expect(guete.querySelector('app-siegel')!.getAttribute('aria-hidden')).toBe('true');
     expect(text(guete.querySelector('.zda-kriterien'))).toMatch(/^check ?Aktiv formuliert$/);
-    expect(text(guete)).toContain('Die Stimmen anderer sind eingerechnet.');
+    expect(text(guete)).toContain('Die Stimmen anderer sind eingerechnet. Je mehr Menschen bewerten, desto mehr zählt ihr Urteil.');
     expect(guete.querySelector('a.zda-mehr')!.getAttribute('href')).toBe('/about#siegel');
     expect(text(el.querySelector('.zda-alter dd'))).toContain('10.11.2026');
     el.querySelectorAll('mat-icon').forEach((icon) => expect(icon.getAttribute('aria-hidden')).toBe('true'));

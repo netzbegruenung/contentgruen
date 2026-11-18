@@ -185,7 +185,11 @@ describe('AboutComponent', () => {
   });
 
   it('erklärt unter „Bewerten“ das Siegel mit Beispielen von neu bis Güte 10 (#427)', () => {
-    expect(seite.querySelector('.siegel-absatz')!.textContent).toContain('Das Siegel zeigt die Güte eines Beitrags');
+    const absatz = seite.querySelector('.siegel-absatz')!.textContent!.replace(/\s+/g, ' ');
+    expect(absatz).toContain('Das Siegel zeigt die Güte eines Beitrags');
+    // Das Urteil der Menschen als Hauptmaß: Regeln zum Start, Stimmen zählen mit ihrer Zahl mehr
+    expect(absatz).toContain('Diese Regeln sind das Gegenlesen, ohne KI.');
+    expect(absatz).toContain('Je mehr Menschen bewerten, desto mehr zählt ihr Urteil.');
     const beispiele = Array.from(seite.querySelectorAll('.siegel-beispiele app-siegel svg')).map((svg) =>
       svg.getAttribute('aria-label'),
     );

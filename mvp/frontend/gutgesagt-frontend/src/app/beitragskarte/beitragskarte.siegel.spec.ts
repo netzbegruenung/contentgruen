@@ -265,8 +265,11 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
     it('nennt nur erfüllte, bekannte Kriterien', () => {
       const e = siegelErklaerung(8, ['passiv', 'unbekannt'], true);
       expect(e.kriterien).toEqual(['Aktiv formuliert']);
-      expect(e.stimmen).toBe('Die Stimmen anderer sind eingerechnet.');
+      expect(e.stimmen).toBe('Die Stimmen anderer sind eingerechnet. Je mehr Menschen bewerten, desto mehr zählt ihr Urteil.');
       expect(siegelErklaerung(null, [], false).ueberschrift).toBe('Neu: noch keine Güte');
+      expect(siegelErklaerung(5, [], false).stimmen).toBe(
+        'Die Stimmen anderer zählen, sobald genug zusammenkommen. Dann zählt ihr Urteil immer mehr.',
+      );
     });
   });
 

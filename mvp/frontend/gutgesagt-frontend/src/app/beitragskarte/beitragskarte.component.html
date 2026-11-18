@@ -86,11 +86,11 @@
                 <!-- Ein Menuepunkt ohne Aktion: Screenreader lesen den Text vor, statt ein leeres Menue anzusagen -->
                 <div mat-menu-item disableRipple class="siegel-erklaerung" *ngIf="erklaerung as e" (click)="$event.stopPropagation()">
                     <p class="siegel-erklaerung-kopf">{{ e.ueberschrift }}</p>
-                    <p class="siegel-erklaerung-text">Das Siegel zeigt, wie gut der Beitrag nach festen Regeln formuliert ist und wie andere ihn bewerten.</p>
+                    <p class="siegel-erklaerung-text">Das Siegel zeigt die Güte des Beitrags. Sie startet mit dem Gegenlesen: feste Regeln, ohne KI.</p>
                     <ul *ngIf="e.kriterien.length" class="siegel-kriterien">
                         <li *ngFor="let kriterium of e.kriterien"><mat-icon aria-hidden="true">check</mat-icon>{{ kriterium }}</li>
                     </ul>
-                    <p class="siegel-erklaerung-text">{{ e.stimmen }} Wie oft er genutzt wird, zählt nicht hinein.</p>
+                    <p class="siegel-erklaerung-text">{{ e.stimmen }} Die Nutzung zählt nicht hinein.</p>
                     <!-- Glanz (#351): eigenes Abzeichen, keine Stufe der Guete -->
                     <p class="siegel-erklaerung-text" *ngIf="glanz">{{ GLANZ_TEXT }}</p>
                 </div>
