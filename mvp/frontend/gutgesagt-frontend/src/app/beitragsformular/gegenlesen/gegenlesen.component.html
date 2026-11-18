@@ -2,7 +2,7 @@
     <!-- Kompakt unter dem Textfeld (einspaltig): eine Zeile mit Siegel und Zahl, aufklappbar (Nutzerfuehrung 13.11.);
          mit der ersten Anmerkung von selbst offen (P33) -->
     <button *ngIf="kompakt; else kopf" type="button" class="gegenlesen-zeile"
-            [class.gut]="istGut" [attr.aria-expanded]="offen" aria-controls="gegenlesen-inhalt"
+            [class.gut]="istGut" [attr.aria-expanded]="offen" aria-controls="gegenlesen-inhalt gegenlesen-fuss"
             (click)="umschalten()">
         <app-siegel [guete]="ergebnis.guete"></app-siegel>
         <span id="gegenlesen-titel" class="gegenlesen-zeile-text">Gegenlesen: {{ zeile }}</span>
@@ -19,16 +19,25 @@
             </div>
         </div>
     </ng-template>
+    <!-- Kompakt klappen nur die Anmerkungen und der Fuss; die Inhaltsfragen bleiben sichtbar (18.11.) -->
     <div id="gegenlesen-inhalt" class="gegenlesen-inhalt" [hidden]="kompakt && !offen">
         <div class="gegenlesen-ergebnis">
             <ul *ngIf="ergebnis.anmerkungen.length || zeigtHerkunftHinweis" class="gegenlesen-anmerkungen">
                 <li *ngIf="zeigtHerkunftHinweis" class="gegenlesen-anmerkung herkunft-fehlt">{{ herkunftHinweis }}</li>
                 <li *ngFor="let a of ergebnis.anmerkungen" class="gegenlesen-anmerkung">{{ a.text }}</li>
             </ul>
-            <p *ngIf="istGut" class="gegenlesen-gut">Nichts aufgefallen. Die Nachbarin nickt.</p>
+            <p *ngIf="istGut" class="gegenlesen-gut">{{ formGut }}</p>
         </div>
-        <p class="gegenlesen-fuss">Nur du siehst das. Speichern kannst du immer.</p>
     </div>
+    <!-- Form und Inhalt getrennt (18.11.): sobald gegengelesen ist, mit Anmerkungen oder ohne -->
+    <div *ngIf="ergebnis.guete !== null" class="gegenlesen-inhalt-fragen">
+        <p class="gegenlesen-nur-form">{{ nurDieForm }}</p>
+        <p class="gegenlesen-fragen-titel" id="gegenlesen-fragen-titel">{{ inhaltFragenTitel }}</p>
+        <ul class="gegenlesen-fragen" aria-labelledby="gegenlesen-fragen-titel">
+            <li *ngFor="let frage of inhaltFragen">{{ frage }}</li>
+        </ul>
+    </div>
+    <p id="gegenlesen-fuss" class="gegenlesen-fuss" [hidden]="kompakt && !offen">Nur du siehst das. Speichern kannst du immer.</p>
     <!-- Screenreader hoeren nur die Zahl, und erst nach einer Tipp-Pause, nicht bei jedem Ergebnis -->
     <p class="cdk-visually-hidden gegenlesen-ansage" aria-live="polite">{{ ansage }}</p>
 </section>

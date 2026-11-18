@@ -13,6 +13,7 @@ import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.comp
 
 import { HILFE_PARAM, HelpDialogComponent, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
 import { EINLADUNG_AB } from '../shared/einladung-ab';
+import { SELBST_PRUEFEN } from '../shared/schreibregeln';
 
 describe('HelpDialogComponent', () => {
   let component: HelpDialogComponent;
@@ -302,6 +303,20 @@ describe('HelpDialogComponent', () => {
     expect(regeln.length).toBe(6);
     expect(regeln[0].textContent).toContain('Unentschiedenen');
     expect(regeln[4].textContent).toContain('Erfinde nichts');
+  });
+
+  it('nennt, was das Gegenlesen nicht prüft, ohne die Schreibregeln zu wiederholen', () => {
+    const punkte = Array.from(fixture.nativeElement.querySelectorAll('.selbst-pruefen li') as NodeListOf<HTMLElement>).map(
+      (li) => li.textContent!.trim(),
+    );
+
+    expect(punkte.length).toBe(SELBST_PRUEFEN.length);
+    expect(punkte.length).toBeLessThanOrEqual(7);
+    expect(punkte.join(' ')).toContain('Ein Gedanke je Beitrag');
+    expect(punkte.join(' ')).toContain('selbst geöffnet');
+    expect(punkte.join(' ')).toContain('140 Zeichen');
+    expect(punkte.join(' ')).not.toContain('gemeinsam');
+    expect(punkte.join(' ')).not.toContain('Häme');
   });
 
   it('sagt, dass nicht jede Aussage eine Antwort braucht', () => {
