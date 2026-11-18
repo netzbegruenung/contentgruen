@@ -60,9 +60,8 @@ Image enthält sie.
 - **Gleichzeitige Starts:** Eine Advisory-Sperre lässt einen zweiten Dienst
   warten, bis der erste fertig ist, höchstens 10 Minuten.
 - **Image:** Die Skripte stecken im Image des Semantic-Service. Ein neues
-  Skript kommt erst mit einem neu gebauten Image an. Woodpecker baut das Image
-  nach dem Merge auch für eine neue Migration allein (Pfadfilter in
-  `.woodpecker/build.yaml`).
+  Skript kommt erst mit einem neu gebauten Image an. Jeder Push auf main baut
+  alle Images neu (`.woodpecker/build.yaml`, ohne Pfadfilter).
 
 Den Stand zeigt das Protokoll:
 
