@@ -2,7 +2,7 @@
     <!-- Kompakt unter dem Textfeld (einspaltig): eine Zeile mit Siegel und Zahl, aufklappbar (Nutzerfuehrung 13.11.);
          mit der ersten Anmerkung von selbst offen (P33) -->
     <button *ngIf="kompakt; else kopf" type="button" class="gegenlesen-zeile"
-            [class.gut]="istGut" [attr.aria-expanded]="offen" aria-controls="gegenlesen-inhalt"
+            [class.gut]="istGut" [attr.aria-expanded]="offen" aria-controls="gegenlesen-inhalt gegenlesen-fuss"
             (click)="umschalten()">
         <app-siegel [guete]="ergebnis.guete"></app-siegel>
         <span id="gegenlesen-titel" class="gegenlesen-zeile-text">Gegenlesen: {{ zeile }}</span>
@@ -37,7 +37,7 @@
             <li *ngFor="let frage of inhaltFragen">{{ frage }}</li>
         </ul>
     </div>
-    <p class="gegenlesen-fuss" [hidden]="kompakt && !offen">Nur du siehst das. Speichern kannst du immer.</p>
+    <p id="gegenlesen-fuss" class="gegenlesen-fuss" [hidden]="kompakt && !offen">Nur du siehst das. Speichern kannst du immer.</p>
     <!-- Screenreader hoeren nur die Zahl, und erst nach einer Tipp-Pause, nicht bei jedem Ergebnis -->
     <p class="cdk-visually-hidden gegenlesen-ansage" aria-live="polite">{{ ansage }}</p>
 </section>

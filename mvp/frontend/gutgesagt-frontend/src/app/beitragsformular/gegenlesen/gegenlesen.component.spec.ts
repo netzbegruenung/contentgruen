@@ -94,6 +94,8 @@ describe('GegenlesenComponent', () => {
     expect(element().textContent).toContain('Nur du siehst');
     expect(fragen()).toEqual([...INHALT_FRAGEN]);
     expect(element().querySelector('.gegenlesen-nur-form')).not.toBeNull();
+    expect((element().querySelector('.gegenlesen-fuss') as HTMLElement).hidden).toBeFalse();
+    expect(element().querySelector('.gegenlesen-inhalt-fragen')!.closest('[hidden]')).toBeNull();
     expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe('Nach festen Regeln, ohne generative KI');
   }));
 
@@ -342,6 +344,9 @@ describe('GegenlesenComponent', () => {
 
       expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
       expect(zeile.getAttribute('aria-expanded')).toBe('true');
+      // Die Zeile klappt Anmerkungen und Fuss; beide stehen in aria-controls
+      expect(zeile.getAttribute('aria-controls')).toBe('gegenlesen-inhalt gegenlesen-fuss');
+      expect(element().querySelector('#gegenlesen-fuss')).not.toBeNull();
       expect(inhalt.hidden).toBeFalse();
       expect(inhalt.textContent).toContain('Sag lieber, was stimmt.');
 
