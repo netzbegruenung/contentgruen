@@ -57,13 +57,16 @@ for (const modus of ['light', 'dark'] as const) {
       expect(kontrast(vorne, hinten)).toBeGreaterThanOrEqual(4.5);
     });
 
-    // Designrunde 17.11.: „Ausprobieren“ im Suchfeld statt der Beispielzeile; bei reduzierter
-    // Bewegung steht das Beispiel sofort da, der Knopf daneben
-    test('Ausprobieren-Knopf im Suchfeld ist lesbar (AA)', async ({ page }) => {
+    // Designrunde 18.11.: Ein Knopf; solange das Feld leer ist, heißt er „Beispiel ausprobieren“.
+    // Bei reduzierter Bewegung steht das Beispiel sofort da; der Text passt in eine Zeile
+    test('„Beispiel ausprobieren“ passt in den Knopf und ist lesbar (AA)', async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto('/search');
-      await expect(page.locator('.ausprobieren-knopf')).toBeVisible();
-      const { vorne, hinten } = await farben(page, '.ausprobieren-knopf');
+      const knopf = page.locator('app-search.start-suche .search-button');
+      await expect(knopf).toContainText('Beispiel ausprobieren');
+      const { breit, sichtbar } = await knopf.evaluate((el) => ({ breit: el.scrollWidth, sichtbar: el.clientWidth }));
+      expect(breit).toBeLessThanOrEqual(sichtbar);
+      const { vorne, hinten } = await farben(page, 'app-search.start-suche .search-button');
       expect(kontrast(vorne, hinten)).toBeGreaterThanOrEqual(4.5);
     });
 

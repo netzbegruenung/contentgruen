@@ -19,7 +19,8 @@ test('Besucher: Suche ohne Anmeldung', async ({ page, bild }) => {
 test('Besucher: von der Startseite suchen und zurueck', async ({ page }) => {
   await page.goto('/search');
   await expect(page).toHaveURL(/\/search$/);
-  const feld = page.locator('input[name="searchQuery"]');
+  // Bei 360 px ist das Feld eine textarea (Designrunde 18.11.), daher ohne Tag
+  const feld = page.locator('[name="searchQuery"]');
   await feld.fill('Windräder töten Vögel');
   await feld.press('Enter');
   await page.waitForURL(/\/result\?/);
@@ -30,13 +31,13 @@ test('Besucher: von der Startseite suchen und zurueck', async ({ page }) => {
 });
 
 // Designrunde 17.11.: Das Feld tippt Hot Takes vor; bei reduzierter Bewegung steht das
-// Startbeispiel sofort als Platzhalter da, „Ausprobieren“ sucht danach
+// Startbeispiel sofort als Platzhalter da, „Beispiel ausprobieren“ sucht danach (Designrunde 18.11.)
 test('Besucher: das Startbeispiel zeigt Treffer (#601)', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/search');
-  const text = (await page.locator('app-search.start-suche input[name="searchQuery"]').getAttribute('placeholder'))!;
+  const text = (await page.locator('app-search.start-suche [name="searchQuery"]').getAttribute('placeholder'))!;
   expect(text).not.toBe('');
-  await page.locator('.ausprobieren-knopf').click();
+  await page.getByRole('button', { name: `Beispiel ausprobieren: ${text}` }).click();
   await page.waitForURL(/\/result\?/);
   expect(new URL(page.url()).searchParams.get('searchQuery')).toBe(text);
   await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });
@@ -51,7 +52,7 @@ test('Besucher: Rundgang füllt das Startbeispiel vor, Schritt 2 zeigt Treffer (
   await expect(page.locator('.blase h3')).toHaveText('Aussage eingeben');
   const blase = (await page.locator('#rundgang-text').textContent())!;
   const text = /„(.+?)“/.exec(blase)![1];
-  await expect(page.locator('app-search.start-suche input[name="searchQuery"]')).toHaveValue(text);
+  await expect(page.locator('app-search.start-suche [name="searchQuery"]')).toHaveValue(text);
   await page.locator('.blase .weiter').click();
   await expect(page.locator('.blase h3')).toHaveText('Passende Treffer', { timeout: 45_000 });
   await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });

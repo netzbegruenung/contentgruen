@@ -562,7 +562,7 @@ Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt,
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
 **Startbeispiel**:
-Die Aussage, die das leere Suchfeld auf der Startseite als erste vortippt und hinter „Ausprobieren“ sucht; danach tippt es weitere Aussagen des Startbestands vor (im Code `HOT_TAKES`) und bleibt am Ende beim Startbeispiel stehen. Der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
+Die Aussage, die das leere Suchfeld auf der Startseite als erste vortippt und hinter „Beispiel ausprobieren“ sucht; danach tippt es weitere Aussagen des Startbestands vor (im Code `HOT_TAKES`) und bleibt am Ende beim Startbeispiel stehen. Der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
 _Avoid_: Beispielsuche, Demo-Aussage
 
 **Startbestand**:
