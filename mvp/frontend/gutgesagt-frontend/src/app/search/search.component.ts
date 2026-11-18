@@ -4,6 +4,8 @@ import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SearchService } from '../services/search.service';
 import { Router, RouterLink } from '@angular/router';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { TextFieldModule } from '@angular/cdk/text-field';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -30,6 +32,8 @@ export const SUCHHINWEIS = 'Suchtexte speichern wir ohne deinen Namen. Nach Prü
 export const SUCHHINWEIS_KURZ = 'Suchtexte speichern wir ohne deinen Namen.';
 /** Sprungmarke des Abschnitts „Deine Suchanfragen“ in der Datenschutzerklärung. */
 export const SUCHANFRAGEN_ABSCHNITT = 'suchanfragen';
+/** Ab hier abwärts wird das Feld mehrzeilig (Designrunde 18.11.). */
+export const SCHMAL = '(max-width: 599px)';
 /** Zaehler fuer eindeutige Kennungen des Hinweises, falls mehrere Suchfelder zugleich da sind. */
 let naechsterHinweis = 0;
 
@@ -37,7 +41,7 @@ let naechsterHinweis = 0;
   selector: 'app-search',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [...SHARED_IMPORTS, RouterLink],
+  imports: [...SHARED_IMPORTS, RouterLink, TextFieldModule],
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.css'],
 })
@@ -51,20 +55,51 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() autofokus = false;
   /** Ziel des Skip-Links „Zur Suche“ im Kopf; nur das Feld auf dem Start traegt es (leer: eigene Kennung von Material). */
   @Input() feldId = '';
-  @ViewChild('feld') private feld?: ElementRef<HTMLInputElement>;
+  private feld?: ElementRef<HTMLInputElement | HTMLTextAreaElement>;
+  /** Beim Wechsel der Breite (Handy drehen) war das Feld fokussiert: das neue Feld übernimmt den Fokus. */
+  private fokusZurueck = false;
+  @ViewChild('feld') private set feldRef(ref: ElementRef<HTMLInputElement | HTMLTextAreaElement> | undefined) {
+    this.feld = ref;
+    if (ref && this.fokusZurueck) {
+      this.fokusZurueck = false;
+      const el = ref.nativeElement;
+      el.focus({ preventScroll: true });
+      // ngModel schreibt den Wert erst nach einem Mikrotask ins neue Feld; danach ans Ende
+      Promise.resolve().then(() => el.setSelectionRange(el.value.length, el.value.length));
+    }
+  }
   /**
-   * Auf dem Start tippt das leere Feld typische Hot Takes als Platzhalter ein, daneben
-   * steht „Ausprobieren“ (Designrunde 17.11.). Die Vorführung stoppt, sobald man ins Feld
-   * klickt, tippt oder einfügt; Fokus auf „Ausprobieren“ hält sie beim aktuellen Beispiel
-   * an (WCAG 2.2.2); spätestens nach zwei Durchläufen bleibt das erste Beispiel stehen.
-   * Tab beendet sie nicht, damit „Ausprobieren“ per Tastatur erreichbar bleibt.
-   * Bei reduzierter Bewegung kein Tippen, nur das Beispiel.
+   * Unter 600 px ein mitwachsendes Textfeld (2 bis 4 Zeilen) statt der einen Zeile: Der
+   * vorgetippte Hot Take bricht um, statt aus dem Feld zu laufen (Designrunde 18.11.).
+   */
+  schmal = false;
+  /**
+   * Auf dem Start tippt das leere Feld typische Hot Takes als Platzhalter ein (Designrunde
+   * 17.11.). Solange das Feld leer ist, heißt der eine Knopf „Beispiel ausprobieren“ und
+   * sucht den gezeigten Hot Take; mit Text im Feld heißt er wieder „Suchen“ (Designrunde
+   * 18.11.). Die Vorführung stoppt, sobald man ins Feld klickt, tippt oder einfügt; Fokus
+   * auf den Knopf hält sie beim aktuellen Beispiel an (WCAG 2.2.2); spätestens nach zwei
+   * Durchläufen bleibt das erste Beispiel stehen. Tab beendet sie nicht, damit der Knopf
+   * per Tastatur im Beispielzustand erreichbar bleibt. Bei reduzierter Bewegung kein
+   * Tippen, nur das Beispiel.
    */
   @Input() beispielAnimation = false;
   beispielText = '';
-  beispielFertig = false;
   private beispielAus = false;
   private beispielTimer?: ReturnType<typeof setTimeout>;
+  /** Der Hot Take, der gerade getippt wird oder steht; den sucht der Knopf ganz. */
+  private beispielNr = 0;
+  /**
+   * Beispielzustand: Das Feld ist leer und zeigt einen Hot Take. Der Text bleibt von
+   * Anfang an, auch zwischen zwei Hot Takes, damit der Knopf nicht flackert.
+   */
+  get beispielZustand(): boolean {
+    return this.beispielAnimation && !this.compactMode && !this.beispielAus && !this.searchQuery;
+  }
+  /** Der ganze Hot Take, den der Knopf im Beispielzustand sucht. */
+  get beispielSatz(): string {
+    return HOT_TAKES[this.beispielNr].text;
+  }
   get suchhinweis(): string {
     return this.compactMode ? SUCHHINWEIS_KURZ : SUCHHINWEIS;
   }
@@ -82,7 +117,8 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     private searchService: SearchService,
     private router: Router,
     private zone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private breakpointObserver: BreakpointObserver
   ) { }
 
   /** Bei reduzierter Bewegung steht das Beispiel schon vor dem ersten Zeichnen. */
@@ -92,7 +128,82 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ruhig = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (this.beispielAnimation && this.ruhig) {
       this.beispielText = HOT_TAKES[0].text;
-      this.beispielFertig = true;
+    }
+    this.breakpointObserver.observe(SCHMAL).pipe(takeUntil(this.destroy$)).subscribe((stand) => {
+      if (stand.matches !== this.schmal && this.feld && document.activeElement === this.feld.nativeElement) {
+        this.fokusZurueck = true;
+      }
+      this.schmal = stand.matches;
+      this.cdr.markForCheck();
+    });
+  }
+
+  /** Enter wurde in diesem Task schon per keydown behandelt; ein folgendes beforeinput sucht nicht noch einmal. */
+  private enterBehandelt = false;
+
+  /**
+   * Enter im Feld sucht den Feldinhalt, auch im mehrzeiligen Feld; Umschalt+Enter macht keine
+   * neue Zeile. Im leeren Feld tut Enter nichts, auch während der Vorführung: Den Hot Take sucht
+   * nur ein Klick auf „Beispiel ausprobieren“ (Maintainer 18.11.). Das preventDefault verhindert
+   * auch das implizite Absenden des Formulars (ngSubmit) am Desktop mit Autofokus.
+   * Während einer IME-Komposition (isComposing oder keyCode 229) bestätigt Enter das Zeichen;
+   * kommt der Umbruch danach doch an (Android-Tastaturen), entscheidet umbruchImFeld.
+   */
+  enterImFeld(ereignis: Event): void {
+    const taste = ereignis as KeyboardEvent;
+    if (taste.isComposing || taste.keyCode === 229) {
+      return;
+    }
+    ereignis.preventDefault();
+    this.enterBehandelt = true;
+    setTimeout(() => (this.enterBehandelt = false));
+    this.feldSuchen();
+  }
+
+  /**
+   * Rückfallebene für das mehrzeilige Feld: Manche Handytastaturen schicken Enter als keydown
+   * mit isComposing/229 und dann nur einen Umbruch (beforeinput insertLineBreak/insertParagraph).
+   * Der würde sonst still zum Leerzeichen; er gilt hier wie Enter. Hat keydown schon gesucht,
+   * wird nur der Umbruch verworfen.
+   */
+  umbruchImFeld(ereignis: Event): void {
+    const eingabe = ereignis as InputEvent;
+    if (eingabe.inputType !== 'insertLineBreak' && eingabe.inputType !== 'insertParagraph') {
+      return;
+    }
+    ereignis.preventDefault();
+    if (this.enterBehandelt) {
+      return;
+    }
+    this.feldSuchen();
+  }
+
+  /** Enter (oder Umbruch) sucht nur, was im Feld steht, nie den Hot Take. */
+  private feldSuchen(): void {
+    this.performSearch(this.searchQuery);
+  }
+
+  /**
+   * Ein Suchtext ist eine Zeile: Zeilenumbrueche aus eingefuegtem Text werden zu Leerzeichen.
+   * Er landet in der Adresse der Trefferseite und dort wieder im Feld, und er wird als eine
+   * Zeile gespeichert und angezeigt; fuer die Suche tragen Umbrueche nichts bei.
+   */
+  einzeilig(text: string): string {
+    return (text ?? '').replace(/[^\S\r\n]*[\r\n]+[^\S\r\n]*/g, ' ');
+  }
+
+  /**
+   * Eingabe im mehrzeiligen Feld: Umbrüche gleich im Feld ersetzen und den Cursor dort lassen,
+   * wo er nach dem Einfügen stand, statt ihn ans Ende springen zu lassen.
+   */
+  feldGeaendert(text: string): void {
+    const sauber = this.einzeilig(text);
+    this.searchQuery = sauber;
+    const el = this.feld?.nativeElement;
+    if (el && sauber !== text && el.value === text) {
+      const cursor = this.einzeilig(text.slice(0, el.selectionStart ?? text.length)).length;
+      el.value = sauber;
+      el.setSelectionRange(cursor, cursor);
     }
   }
 
@@ -115,17 +226,24 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.beispielAus = true;
     clearTimeout(this.beispielTimer);
-    this.beispielZeigen('', false);
+    this.beispielZeigen('');
   }
 
-  /** Fokus auf „Ausprobieren“: beim aktuellen Beispiel stehen bleiben, damit der Knopf nicht verschwindet. */
+  /**
+   * Fokus auf den Knopf im Beispielzustand: beim aktuellen Hot Take stehen bleiben und ihn
+   * ganz zeigen, damit Feld und Knopf dasselbe meinen.
+   */
   beispielAnhalten(): void {
+    if (!this.beispielZustand) {
+      return;
+    }
     clearTimeout(this.beispielTimer);
     this.beispielTimer = undefined;
+    this.beispielZeigen(this.beispielSatz);
   }
 
-  beispielAusprobieren(): void {
-    const text = this.beispielText;
+  private beispielAusprobieren(): void {
+    const text = this.beispielSatz;
     this.beispielBeenden();
     this.performSearch(text);
   }
@@ -134,9 +252,8 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
    * Die Vorführung läuft außerhalb der Zone: nur diese Komponente (OnPush) neu zeichnen,
    * nicht alle 45 ms die ganze App. Aus Template-Ereignissen (in der Zone) genügt markForCheck.
    */
-  private beispielZeigen(text: string, fertig: boolean): void {
+  private beispielZeigen(text: string): void {
     this.beispielText = text;
-    this.beispielFertig = fertig;
     if (NgZone.isInAngularZone()) {
       this.cdr.markForCheck();
     } else {
@@ -148,23 +265,33 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.beispielAus) {
       return;
     }
+    this.beispielNr = nr;
     const satz = HOT_TAKES[nr].text;
     if (zeichen <= satz.length) {
-      this.beispielZeigen(satz.slice(0, zeichen), zeichen === satz.length);
+      this.beispielZeigen(satz.slice(0, zeichen));
       this.beispielTimer = setTimeout(() => this.tippen(nr, zeichen + 1, runde), zeichen === satz.length ? 2600 : 45);
       return;
     }
     const naechster = (nr + 1) % HOT_TAKES.length;
     const neueRunde = naechster === 0 ? runde + 1 : runde;
     if (neueRunde >= 2) {
-      this.beispielZeigen(HOT_TAKES[0].text, true);
+      this.beispielNr = 0;
+      this.beispielZeigen(HOT_TAKES[0].text);
       return;
     }
-    this.beispielZeigen('', false);
+    this.beispielZeigen('');
     this.beispielTimer = setTimeout(() => this.tippen(naechster, 0, neueRunde), 400);
   }
 
+  /**
+   * Absenden über den Knopf: Im Beispielzustand sucht er den Hot Take, sonst den Feldinhalt.
+   * Enter im Feld kommt hier nicht an (enterImFeld verhindert das implizite Absenden).
+   */
   onSearch(): void {
+    if (this.beispielZustand) {
+      this.beispielAusprobieren();
+      return;
+    }
     this.performSearch(this.searchQuery);
   }
 

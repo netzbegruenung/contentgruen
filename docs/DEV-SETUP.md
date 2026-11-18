@@ -13,6 +13,14 @@ Die App ruft das BFF relativ auf (`baseUrl: ''`). `ng serve` leitet `/api`, `/co
 `/report` und `/reports` per `proxy.conf.json` an http://localhost:5054 weiter – kein CORS, Cookies same-origin.
 Ein älteres lokales `environment.ts` mit `baseUrl: 'http://localhost:5054'` auf `''` umstellen.
 
+### Vorschau wie Test/Produktion
+
+Auf Test und Produktion ist nur die Keycloak-Anmeldung an, die Direktanmeldung aus. Um Anmeldeseite und
+Anmeldeknöpfe so zu sehen, wie Nutzer:innen sie sehen, `npx ng serve --proxy-config proxy.prod-modi.cjs` starten:
+`/api/auth/modes` wird dann lokal mit `{"keycloakEnabled":true,"managedAuthEnabled":false}` beantwortet, alles
+andere geht wie gewohnt an das BFF auf 5054. Der Keycloak-Knopf führt lokal ins Leere; zum Anmelden wieder ohne
+`--proxy-config` starten.
+
 ## Dev-VM (Agenten-Sandbox): `mvp/run-local.sh`
 
 Auf der Linux-Dev-VM läuft der ganze Stack in Docker Compose (`mvp/docker-compose.dev.yml`, Projekt

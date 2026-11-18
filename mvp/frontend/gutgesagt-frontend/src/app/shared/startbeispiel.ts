@@ -1,6 +1,6 @@
 /**
  * Das Startbeispiel (#601): das erste Beispiel, das das Suchfeld auf der Startseite
- * vortippt (hinter „Ausprobieren“), und die Aussage im Rundgang „Antwort finden“. Steht nur hier.
+ * vortippt (hinter „Beispiel ausprobieren“), und die Aussage im Rundgang „Antwort finden“. Steht nur hier.
  *
  * Wörtlich eine Aussage aus Startbestand und Seed: Die Suche findet so ihre eigene
  * Aussage (Score um 1, weit über der Schwelle von 0,82) und zeigt deren Kommentare,
@@ -22,7 +22,7 @@ export interface HotTake {
 /**
  * Typische Hot Takes, die das Suchfeld auf dem Start nacheinander eintippt (Designrunde 17.11.).
  * Jeder ist leicht anders formuliert als die Aussage, der er zugeordnet ist: Das zeigt, dass
- * die Suche nach Bedeutung findet, nicht nach Wortlaut. „Ausprobieren“ soll trotzdem genau
+ * die Suche nach Bedeutung findet, nicht nach Wortlaut. „Beispiel ausprobieren“ soll trotzdem genau
  * diese Aussage erkennen (am lokalen Stack geprüft, 18.11.). Die Aussagen prüft im Backend
  * tests/unit/test_suche_testset_aufbau.py (TestStartbeispiel), die Paare stehen als Fälle in
  * tests/regression/suche_testset.py. Der erste gehört zum Startbeispiel.
