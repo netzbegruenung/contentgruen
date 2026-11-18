@@ -31,6 +31,7 @@ export function buildKennung(paketVersion: string, gitSha: string | undefined, a
  * entsteht: Der Footer zeigte sonst den Commit eines alten Builds. index.html kommt ohne Cache.
  */
 export function buildWerteAusSeite(seite: Document): { gitSha?: string; appVersion?: string } {
+  // name kommt nur aus den beiden Konstanten unten, nie von aussen: kein Escaping im Selektor noetig.
   const inhalt = (name: string) => seite.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.content;
   return { gitSha: inhalt('gutgesagt-commit'), appVersion: inhalt('gutgesagt-version') };
 }
