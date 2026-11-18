@@ -349,7 +349,7 @@ Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen a
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
-Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv, lange zusammengesetzte Wörter, Gedankenstriche, Parteistimme, ein behauptender Titel als Frage und Zahlen ohne Herkunft (nur im Formular mit Herkunftsfeld). Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
+Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv, lange zusammengesetzte Wörter, Gedankenstriche, Parteistimme, ein Titel als Frage (nur bei behauptenden Titeln, Kommentar und Hintergrundinfo; es zählt nur das Fragezeichen am Ende) und Zahlen ohne Herkunft (nur im Formular mit Herkunftsfeld; die Karte prüft diese Regel nicht, sie kennt die Herkunft beim Gegenlesen nicht). Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
 _Avoid_: Prüfung, Lektorat, Check, Validierung
 
 **Anmerkung**:

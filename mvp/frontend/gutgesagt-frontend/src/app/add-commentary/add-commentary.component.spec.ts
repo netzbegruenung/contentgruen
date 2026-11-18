@@ -119,6 +119,15 @@ describe('AddCommentaryComponent', () => {
     expect(instanz().hatHerkunft).toBeTrue();
   });
 
+  it('nimmt einen Link in der Langfassung als Herkunft, ein "laut" nicht', () => {
+    ausfuellen();
+    component.commentaryForm.patchValue({ lang: 'Laut Umweltbundesamt sind es 30 Prozent.' });
+    expect(component.hatHerkunft).toBeFalse();
+
+    component.commentaryForm.patchValue({ lang: 'Quelle: https://example.org/studie' });
+    expect(component.hatHerkunft).toBeTrue();
+  });
+
   it('liest einspaltig kompakt direkt unter dem Textfeld gegen, nicht unter der Vorschau (Nutzerfuehrung 13.11.)', () => {
     breite.next({ matches: true, breakpoints: {} });
     ausfuellen();

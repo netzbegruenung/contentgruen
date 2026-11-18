@@ -19,8 +19,6 @@ from typing import Dict, Iterable, List, Literal, Optional, Tuple
 
 import yaml
 
-from services.dieselbe_behauptung.regel import ist_frage
-
 #: Das kleine deutsche Modell: Die Regeln brauchen Lemmata, Wortarten und
 #: Abhängigkeiten, keine Wortvektoren. Es braucht rund die Hälfte des Speichers von
 #: de_core_news_md und erkennt Verneinung und Lemmata hier genauso gut (PR zu #358).
@@ -128,17 +126,55 @@ _REST_AB_ZEICHEN = 3
 #: Gedankenstrich: Halbgeviert- oder Geviertstrich mit Leerzeichen davor und danach
 #: ("so – oder so"), am Zeilenanfang nicht (Aufzählung), und der Geviertstrich auch
 #: ohne Leerzeichen ("so—oder so"). Bindestriche ("Klima-Schutz") sind andere Zeichen.
-_GEDANKENSTRICH = re.compile(r"(?<=[^\S\n])[–—](?=\s)|(?<=\w)—(?=\w)")
-#: Größenwörter, die auch ohne Ziffer eine Zahl sind ("Millionen Menschen").
+_GEDANKENSTRICH = re.compile(r"(?<=\S[^\S\n])[–—](?=\s)|(?<=\w)—(?=\w)")
+#: Was nach einem Fragezeichen am Ende eines Titels noch stehen darf (wie ist_frage in
+#: services/dieselbe_behauptung/regel.py, ohne dessen Fragewörter am Anfang).
+_TITEL_SCHLUSS = " \t\r\n\"'„“”‚‘’«»)"
+#: Anführungszeichen: Darin zitiert der Beitrag, statt selbst zu sprechen.
+_ZITAT = re.compile(
+    r"„[^“”\n]*[“”]|\"[^\"\n]*\"|»[^«\n]*«|«[^»\n]*»|‚[^‘’\n]*[‘’]|“[^”\n]*”"
+)
+_VERNEINT = {"kein", "nicht", "nie", "niemals"}
+#: Größenwörter: nach einer Ziffer eine Einheit ("3 Prozent"), nach einem Zahlwort
+#: selbst eine Zahl ("zehn Prozent").
 _GROESSENWOERTER = r"Prozent|Million(?:en)?|Milliarden?|Mio\.?|Mrd\.?"
+#: Zahlwörter vor einem Größenwort ("zehn Prozent", "drei Millionen").
+_ZAHLWOERTER = (
+    r"ein|eine|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|halbe"
+    r"|\w+zehn|\w+zig|\w+ßig|\w*hundert|\w*tausend"
+)
 #: Einheiten, mit denen auch eine kleine Ziffer eine Zahl ist ("3 Prozent", "5 €").
 _EINHEIT = re.compile(
     rf"\s?(?:%|€|Euro\b|Cent\b|(?:{_GROESSENWOERTER})(?!\w))", re.IGNORECASE
 )
 _ZIFFERN = re.compile(r"(?<![\w,.])\d[\d.,]*(?<![.,])(?!\w)")
-_GROESSENWORT = re.compile(rf"\b(?:{_GROESSENWOERTER})(?!\w)", re.IGNORECASE)
-#: Ein Name mit Ziffer, keine Zahl.
-_KEINE_ZAHL = re.compile(r"Bündnis\s*90", re.IGNORECASE)
+_GROESSENWORT = re.compile(
+    rf"\b(?P<zahlwort>(?:{_ZAHLWOERTER})\s+)(?:{_GROESSENWOERTER})(?!\w)",
+    re.IGNORECASE,
+)
+#: Ziffern, die keine Zahl mit Herkunft sind: Uhrzeit, Datum, Paragraf, "Tempo 30",
+#: Ziffern vor einem Bindestrich-Wort ("1,5-Grad-Ziel", "49-Euro-Ticket") und der Name
+#: "Bündnis 90", auch am Satzanfang (dort greift _ist_name nicht).
+_KEINE_ZAHL = re.compile(
+    r"\b\d{1,2}:\d{2}\b"
+    r"|\b\d{1,2}\s*Uhr\b"
+    r"|\b\d{1,2}\.\d{1,2}\.(?:\d{2,4}\b)?"
+    r"|§+\s*\d+\w*"
+    r"|\bTempo\s*\d+"
+    r"|\d[\d.,]*-(?=\w)"
+    r"|Bündnis\s*90",
+    re.IGNORECASE,
+)
+#: Eine Ordinalzahl mit Punkt ("24. Oktober", "20. Jahrhundert", "am 3. und 4. Mai").
+_ORDINALZAHL = re.compile(r"\b(\d{1,4})\.(?=\s*[„\"'(]*(\w+))")
+#: Nach "<Zahl>." machen diese Wörter die Zahl zur Ordinalzahl, wie NACH_ORDINALZAHL
+#: in titel-vorschlag.ts; dazu jedes klein geschriebene Wort.
+_NACH_ORDINALZAHL = {
+    "januar", "jänner", "februar", "märz", "april", "mai", "juni", "juli", "august",
+    "september", "oktober", "november", "dezember", "jahrhundert", "jahrtausend",
+}  # fmt: skip
+#: Das Wort direkt vor einer Ziffer, und was davor steht (für _ist_name).
+_WORT_DAVOR = re.compile(r"(\S?)\s*(\w+)\s+$")
 
 
 @dataclass(frozen=True)
@@ -489,8 +525,8 @@ class GegenlesenService:
                     art="gedankenstrich",
                     stelle=stelle,
                     text=(
-                        f"Gedankenstrich („{striche[0]}“): Er wirkt schnell nach KI. "
-                        "Ein Punkt, ein Komma oder ein Doppelpunkt tut es auch."
+                        f"Gedankenstrich („{striche[0]}“): Das liest sich wie ein "
+                        "Einschub. Ein Punkt macht es klarer."
                     ),
                     woerter=sorted(set(striche)),
                 )
@@ -516,9 +552,10 @@ class GegenlesenService:
         )
 
     def _titel_frage(self, titel: str) -> Optional[Anmerkung]:
-        # Dieselbe Erkennung wie beim Abgleich auf dieselbe Aussage (#387): Fragezeichen
-        # am Ende oder ein finites Verb vorn ("Lohnt sich die Wärmepumpe").
-        if not titel or not ist_frage(titel):
+        # Nur das Fragezeichen am Ende. Ein Verb vorn ist hier keine Frage ("Helfen
+        # statt meckern", "Braucht keiner: die Ölheizung"), anders als bei Suchanfragen
+        # im Abgleich auf dieselbe Aussage (ist_frage, #387).
+        if not titel.rstrip(_TITEL_SCHLUSS).endswith("?"):
             return None
         return Anmerkung(
             art="titel_frage",
@@ -540,14 +577,18 @@ class GegenlesenService:
         woerter = [z for _, z in gefunden]
         # Bei vielen Zahlen nennt der Satz die ersten; markiert werden alle.
         genannt = [f"„{z}“" for z in woerter[:ZAHLEN_NENNEN]]
+        zahl, stammen = (
+            ("Zahl", "stammt") if len(woerter) == 1 else ("Zahlen", "stammen")
+        )
         if len(woerter) > ZAHLEN_NENNEN:
             genannt.append("weitere")
         return Anmerkung(
             art="zahl_ohne_herkunft",
             stelle=gefunden[0][0],
             text=(
-                f"Zahlen ohne Herkunft: {_aufzaehlen(genannt)}. "
-                "Nenn, woher sie stammen, dann glaubt man sie eher."
+                f"{zahl} ohne Herkunft: {_aufzaehlen(genannt)}. Trag bei „Herkunft“ "
+                f"ein, woher sie {stammen} (im Kommentar hinter „+ Herkunft“), dann "
+                "glaubt man sie eher."
             ),
             woerter=woerter,
         )
@@ -557,7 +598,9 @@ class GegenlesenService:
     def _wendungen(self, satz) -> List[str]:
         """Die Wendungen der Parteistimme in einem Satz, so wie sie dort stehen."""
         liste = self._parteistimme
-        woerter = _woerter(satz)
+        # Zitiert der Beitrag den Spruch ("„Die Grünen wollen alles verbieten“"),
+        # spricht er nicht selbst.
+        woerter = [t for t in _woerter(satz) if not _im_zitat(t)]
         formen = [_grundformen(t.lemma_) | _grundformen(t.text) for t in woerter]
         wendungen: List[str] = []
         for i in range(len(woerter)):
@@ -577,6 +620,10 @@ class GegenlesenService:
             if not subjekt:
                 continue
             verb = token.head.head if token.dep_ == "cj" else token.head
+            # Verneint ("Die Grünen wollen kein Heizungsverbot") antwortet der Satz
+            # auf den Vorwurf; das merkt die Verneinungsregel an, wenn es vorn steht.
+            if _im_zitat(verb) or _verneint(verb):
+                continue
             verbformen = _grundformen(verb.lemma_) | _grundformen(verb.text)
             for wer, tut in liste.wer_tut:
                 if f & wer and verbformen & tut:
@@ -619,6 +666,24 @@ class GegenlesenService:
         return formen
 
 
+def _im_zitat(token) -> bool:
+    """Steht das Wort zwischen Anführungszeichen?"""
+    return any(m.start() < token.idx < m.end() for m in _ZITAT.finditer(token.doc.text))
+
+
+def _verneint(verb) -> bool:
+    """Hängt am Verb eine Verneinung, auch als "kein" vor seinem Objekt?"""
+    for kind in verb.children:
+        if kind.dep_ == "ng" or kind.lemma_.lower() in _VERNEINT:
+            return True
+        if any(
+            enkel.dep_ == "nk" and enkel.lemma_.lower() == "kein"
+            for enkel in kind.children
+        ):
+            return True
+    return False
+
+
 def _zwischen_ziffern(inhalt: str, i: int) -> bool:
     """Steht der Strich an Stelle i zwischen zwei Zahlen ("3 – 5")?"""
     davor = inhalt[:i].rstrip()
@@ -630,31 +695,62 @@ def _zahlen(inhalt: str) -> List[str]:
     """
     Die Zahlen, die eine Herkunft brauchen, so wie sie im Text stehen. Bewusst schlicht:
 
-    - Ziffern zählen, auch mit Punkt oder Komma ("10.000", "3,5").
-    - Nicht: eine Jahreszahl allein (1900 bis 2099, "seit 2020") und kleine Ziffern
-      bis AUFZAEHLUNG_BIS ohne Einheit ("3 Gründe", "1."); mit Einheit zählen sie
-      ("3 Prozent", "5 €").
-    - Größenwörter zählen auch ohne Ziffer ("Millionen Menschen", "zehn Prozent").
-    - Ausgeschriebene kleine Zahlen ("drei"), Ziffern in Wörtern ("CO2") und Namen
-      ("Bündnis 90") zählen nicht. Datum und Uhrzeit ("24. Oktober", "18 Uhr") zählen
-      als Zahl; im Kommentar ist das selten.
+    - Ziffern zählen, auch mit Punkt oder Komma ("10.000", "3,5"), mit Einheit
+      ("30 Prozent", "5 €").
+    - Nicht: eine Jahreszahl allein (1900 bis 2099, "seit 2020"); kleine Ziffern bis
+      AUFZAEHLUNG_BIS ohne Einheit ("3 Gründe", "1."); Ordinalzahlen ("24. Oktober",
+      "20. Jahrhundert"); Datum und Uhrzeit ("3.10.2025", "18:30", "18 Uhr");
+      Paragrafen ("§ 218"), "Tempo 30"; Ziffern vor einem Bindestrich-Wort
+      ("1,5-Grad-Ziel", "49-Euro-Ticket"); Ziffern in Wörtern ("CO2"); eine Ziffer ohne
+      Einheit nach einem großgeschriebenen Wort mitten im Satz, das sie benennt
+      ("Linie 14", "Stuttgart 21", "Bündnis 90").
+    - Größenwörter zählen nach einem Zahlwort ("zehn Prozent"), allein nicht ("Wie viel
+      Prozent?", "Millionen Menschen").
     """
-    inhalt = _KEINE_ZAHL.sub(" ", inhalt)
+    inhalt = _ohne_ordinalzahlen(
+        _KEINE_ZAHL.sub(lambda m: " " * len(m.group()), inhalt)
+    )
     zahlen: List[Tuple[int, str]] = []
     belegt: List[range] = []
     for m in _ZIFFERN.finditer(inhalt):
         einheit = _EINHEIT.match(inhalt, m.end())
         ende = einheit.end() if einheit else m.end()
-        if einheit is None and m.group().isdigit():
-            wert = int(m.group())
-            if wert <= AUFZAEHLUNG_BIS or wert in JAHRESZAHLEN:
+        if einheit is None:
+            if _ist_name(inhalt[: m.start()]):
                 continue
+            if m.group().isdigit():
+                wert = int(m.group())
+                if wert <= AUFZAEHLUNG_BIS or wert in JAHRESZAHLEN:
+                    continue
         zahlen.append((m.start(), inhalt[m.start() : ende]))
         belegt.append(range(m.start(), ende))
     for m in _GROESSENWORT.finditer(inhalt):
         if not any(m.start() in r for r in belegt):
             zahlen.append((m.start(), m.group()))
     return [z for _, z in sorted(zahlen)]
+
+
+def _ohne_ordinalzahlen(inhalt: str) -> str:
+    """Ordinalzahlen durch Leerzeichen ersetzen, damit die Stellen gleich bleiben."""
+
+    def ersetzen(m) -> str:
+        wort = m.group(2)
+        if wort.lower() in _NACH_ORDINALZAHL or wort[0].islower():
+            return " " * len(m.group())
+        return m.group()
+
+    return _ORDINALZAHL.sub(ersetzen, inhalt)
+
+
+def _ist_name(davor: str) -> bool:
+    """Steht direkt vor der Ziffer ein großgeschriebenes Wort, das nicht den Satz beginnt?"""
+    # Nur das Ende: Die Suche läuft für jede Ziffer, der Text davor kann lang sein.
+    davor = davor[-60:]
+    m = _WORT_DAVOR.search(davor)
+    if m is None or not m.group(2)[0].isupper():
+        return False
+    zeichen = m.group(1)
+    return bool(zeichen) and zeichen not in ".!?:" and m.start(2) > 0
 
 
 def _ist_inhaltswort(token) -> bool:

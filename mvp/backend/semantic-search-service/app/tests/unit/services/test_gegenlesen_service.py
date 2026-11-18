@@ -412,7 +412,7 @@ class TestGedankenstrich:
         gedankenstrich = anmerkung(ergebnis, "gedankenstrich")
         assert gedankenstrich.stelle == "text"
         assert gedankenstrich.woerter == [strich]
-        assert "nach KI" in gedankenstrich.text
+        assert "Einschub" in gedankenstrich.text
 
     def test_geviertstrich_ohne_leerzeichen_und_im_titel(self, service):
         ergebnis = service.gegenlesen(
@@ -428,6 +428,7 @@ class TestGedankenstrich:
             "Die Pumpe spart 3–5 Euro im Monat.",
             "Die Pumpe spart 3 – 5 Euro im Monat.",
             "Drei Gründe:\n– Sie spart Geld.\n– Sie ist leise.",
+            "Drei Gründe:\n  – Sie spart Geld.\n  – Sie ist leise.",
         ],
     )
     def test_bindestrich_bereich_und_aufzaehlung_zaehlen_nicht(self, service, text):
@@ -472,6 +473,13 @@ class TestParteistimme:
             "Viele fordern mehr Busse.",
             "Wir wissen, was die Leute fordern.",
             "Die Grünen sind keine Verbotspartei.",
+            "Wir kämpfen um einen Sitzplatz im Bus.",
+            # Verneint antwortet der Satz auf den Vorwurf.
+            "Die Grünen wollen kein Heizungsverbot.",
+            # Zitiert: Antworten nennen den Spruch, auf den sie antworten.
+            "„Die Grünen wollen alles verbieten“, heißt es oft.",
+            'Der Spruch "Wir Grüne wissen es besser" stimmt so nicht.',
+            "»Unsere Partei will das« sagt keiner hier.",
         ],
     )
     def test_nachbarin_und_andere_subjekte(self, service, text):
@@ -508,13 +516,24 @@ class TestTitelAlsFrage:
         assert frage.stelle == "titel"
         assert "deine Antwort" in frage.text
 
-    def test_wie_beim_aussagen_abgleich_auch_ohne_fragezeichen(self, service):
-        # ist_frage (#387): ein finites Verb vorn ist auch eine Frage.
-        ergebnis = service.gegenlesen(
-            titel="Lohnt sich die Wärmepumpe im Altbau", text="", aussage=""
-        )
+    def test_fragezeichen_vor_anfuehrungszeichen(self, service):
+        ergebnis = service.gegenlesen(titel="„Geht das?“", text="", aussage="")
 
         assert "titel_frage" in arten(ergebnis)
+
+    @pytest.mark.parametrize(
+        "titel",
+        [
+            # Nur das Fragezeichen zählt, nicht ein Verb vorn wie bei ist_frage (#387).
+            "Lohnt sich die Wärmepumpe im Altbau",
+            "Helfen statt meckern",
+            "Braucht keiner: die Ölheizung",
+        ],
+    )
+    def test_verb_vorn_ohne_fragezeichen_ist_keine_frage(self, service, titel):
+        ergebnis = service.gegenlesen(titel=titel, text="", aussage="")
+
+        assert "titel_frage" not in arten(ergebnis)
 
     def test_behauptung_und_frage_im_text_zaehlen_nicht(self, service):
         ergebnis = service.gegenlesen(
@@ -542,7 +561,8 @@ class TestZahlOhneHerkunft:
             ("Sie kostet 12.000 Euro.", ["12.000 Euro"]),
             ("Das spart 5 € und 3,5 Tonnen.", ["5 €", "3,5"]),
             ("Rund 40% heizen mit Gas.", ["40%"]),
-            ("Es geht um Millionen Menschen.", ["Millionen"]),
+            ("Es geht um zehn Prozent.", ["zehn Prozent"]),
+            ("Das betrifft drei Millionen Haushalte.", ["drei Millionen"]),
             ("Im Ort stehen 250 Pumpen seit 2020.", ["250"]),
         ],
     )
@@ -553,12 +573,18 @@ class TestZahlOhneHerkunft:
 
         zahl = anmerkung(ergebnis, "zahl_ohne_herkunft")
         assert zahl.woerter == zahlen
-        assert "woher" in zahl.text
+        assert "bei „Herkunft“" in zahl.text
+        assert "„+ Herkunft“" in zahl.text
+        anzahl = "Zahl ohne" if len(zahlen) == 1 else "Zahlen ohne"
+        assert zahl.text.startswith(anzahl)
 
     def test_viele_zahlen_nennt_sie_die_ersten_drei(self, service):
         ergebnis = service.gegenlesen(
             titel="Tempolimit hilft",
-            text="Tempo 120 und 80 sparen 6,6 Millionen Tonnen und 2,8 Milliarden Euro.",
+            text=(
+                "2024 kamen 54,4 Prozent des Stroms aus Wind und Sonne. Das spart "
+                "12,8 Stunden Ausfall, 6,6 Millionen Tonnen und 2,8 Milliarden Euro."
+            ),
             aussage="",
             hat_herkunft=False,
         )
@@ -566,7 +592,7 @@ class TestZahlOhneHerkunft:
         zahl = anmerkung(ergebnis, "zahl_ohne_herkunft")
         assert len(zahl.woerter) == 4
         assert zahl.text.startswith(
-            "Zahlen ohne Herkunft: „120“, „80“, „6,6 Millionen“ und weitere."
+            "Zahlen ohne Herkunft: „54,4 Prozent“, „12,8“, „6,6 Millionen“ und weitere."
         )
 
     def test_zahl_im_titel(self, service):
@@ -587,6 +613,20 @@ class TestZahlOhneHerkunft:
             "1. Sie spart Geld. 2. Sie ist leise.",
             "Weniger CO2 ist gut.",
             "Bündnis 90 sitzt im Rat.",
+            "Im Rat sitzt Bündnis 90 schon lange.",
+            "Tempo 30 macht die Straße ruhiger.",
+            "Das 1,5-Grad-Ziel gilt weiter.",
+            "Das 49-Euro-Ticket hilft Pendlern.",
+            "Über § 218 wird gestritten.",
+            "Wie bei Stuttgart 21 dauert es.",
+            "Die Linie 14 fährt öfter.",
+            "Am 24. Oktober ist Markt.",
+            "Seit dem 20. Jahrhundert heizen wir so.",
+            "Am 3.10.2025 war Feiertag.",
+            "Treffen um 18:30 Uhr am Rathaus.",
+            "Wir treffen uns um 19 Uhr.",
+            "Wie viel Prozent?",
+            "Es geht um Millionen Menschen.",
         ],
     )
     def test_jahreszahl_aufzaehlung_und_namen_zaehlen_nicht(self, service, text):

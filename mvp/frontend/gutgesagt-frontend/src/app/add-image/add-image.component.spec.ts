@@ -195,6 +195,13 @@ describe('AddImageComponent', () => {
         'Solar lohnt sich nicht',
       );
     });
+
+    it('sagt dem Gegenlesen nichts zur Herkunft: kein Herkunftsfeld, keine Zahl-Regel', () => {
+      fixture.detectChanges();
+      const gegenlesen = fixture.debugElement.query((d) => d.name === 'app-gegenlesen').componentInstance;
+      expect(gegenlesen.hatHerkunft).toBeNull();
+      expect(gegenlesen.herkunftEmpfohlen).toBeFalse();
+    });
   });
 
   describe('Ladefehler der Bild-URL', () => {
