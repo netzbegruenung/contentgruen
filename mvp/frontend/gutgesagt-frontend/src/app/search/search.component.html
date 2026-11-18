@@ -6,53 +6,39 @@
             <mat-label>
                 <span class="label">{{ feldName }}</span>
             </mat-label>
-            <!-- Unter 600 px waechst das Feld mit (2 bis 4 Zeilen), damit der Hot Take umbricht statt
-                 aus dem Feld zu laufen; Enter sucht, ein Suchtext bleibt eine Zeile (Designrunde 18.11.) -->
+            <!-- Unter 600 px waechst das Feld mit (2 bis 4 Zeilen, Hoehe in der CSS), damit der Hot Take
+                 umbricht statt aus dem Feld zu laufen; Enter sucht, ein Suchtext bleibt eine Zeile
+                 (Designrunde 18.11.) -->
             @if (schmal) {
                 <textarea matInput #feld class="suchfeld-mehrzeilig" [id]="feldId"
-                          [ngModel]="searchQuery" (ngModelChange)="searchQuery = einzeilig($event)" name="searchQuery"
-                          cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="4"
+                          [ngModel]="searchQuery" (ngModelChange)="feldGeaendert($event)" name="searchQuery"
+                          cdkTextareaAutosize enterkeyhint="search"
                           [attr.aria-describedby]="hinweisId"
                           [placeholder]="beispielAnimation && !searchQuery ? beispielText : ''"
                           (keydown.enter)="enterImFeld($event)" (keydown.shift.enter)="enterImFeld($event)"
                           (pointerdown)="beispielBeenden()" (input)="beispielBeenden()" (paste)="beispielBeenden()"></textarea>
             } @else {
                 <input matInput #feld [id]="feldId" [(ngModel)]="searchQuery" name="searchQuery"
+                       enterkeyhint="search"
                        [attr.aria-describedby]="hinweisId"
                        [placeholder]="beispielAnimation && !searchQuery ? beispielText : ''"
                        (pointerdown)="beispielBeenden()" (input)="beispielBeenden()" (paste)="beispielBeenden()">
             }
-            <!-- Hot Take ausprobieren: erscheint, wenn ein Beispiel fertig getippt ist (Designrunde 17.11.);
-                 unter 600 px steht er unter dem Feld -->
-            <button mat-stroked-button matSuffix type="button" class="ausprobieren-knopf"
-                    *ngIf="!schmal && ausprobierenSichtbar"
-                    [attr.aria-label]="'Ausprobieren: ' + beispielText"
-                    (focus)="beispielAnhalten()"
-                    (click)="beispielAusprobieren()">
-                Ausprobieren
-            </button>
             <!-- Search button as suffix icon on mobile in compact mode -->
-            <button mat-icon-button matSuffix type="submit" class="mobile-search-button"
-                    *ngIf="compactMode"
-                    [disabled]="!searchQuery || !searchQuery.trim()">
-                <mat-icon>search</mat-icon>
-            </button>
+            @if (compactMode) {
+                <button mat-icon-button matSuffix type="submit" class="mobile-search-button"
+                        [disabled]="!searchQuery || !searchQuery.trim()">
+                    <mat-icon>search</mat-icon>
+                </button>
+            }
         </mat-form-field>
-        <!-- Handy: „Ausprobieren“ klein und rechtsbuendig unter dem Feld. Die Zeile bleibt stehen,
-             solange die Vorfuehrung laeuft, damit „Suchen“ nicht bei jedem Beispiel springt. -->
-        <div class="ausprobieren-zeile" *ngIf="schmal && beispielAnimation && beispielLaeuft && !searchQuery">
-            <button mat-stroked-button type="button" class="ausprobieren-knopf ausprobieren-unter-feld"
-                    *ngIf="ausprobierenSichtbar"
-                    [attr.aria-label]="'Ausprobieren: ' + beispielText"
-                    (focus)="beispielAnhalten()"
-                    (click)="beispielAusprobieren()">
-                Ausprobieren
-            </button>
-        </div>
-        <!-- Search button: below input on main page, inline on results page desktop -->
+        <!-- Search button: below input on main page, inline on results page desktop.
+             Ein Knopf: Solange das leere Feld Hot Takes zeigt, sucht er den gezeigten (Designrunde 18.11.) -->
         <div class="search-button-container" [class.desktop-inline]="compactMode" [class.desktop-only]="compactMode">
-            <button mat-raised-button class="gutgesagt-primary-dark search-button" type="submit">
-                <mat-icon>search</mat-icon> Suchen
+            <button mat-raised-button class="gutgesagt-primary-dark search-button" type="submit"
+                    [attr.aria-label]="beispielZustand ? 'Beispiel ausprobieren: ' + beispielSatz : null"
+                    (focus)="beispielAnhalten()">
+                <mat-icon>search</mat-icon> {{ beispielZustand ? 'Beispiel ausprobieren' : 'Suchen' }}
             </button>
         </div>
     </form>

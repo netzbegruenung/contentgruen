@@ -199,44 +199,18 @@
     }
 }
 
-/* „Ausprobieren“ im Feld: kurz aufleuchten, wenn ein Hot Take fertig getippt ist */
-.ausprobieren-knopf {
-    margin-right: 6px;
-    white-space: nowrap;
-    animation: ausprobieren-auf 0.6s ease-out;
-}
-
-/* Handy: das Feld waechst mit, der Hot Take bricht um (Designrunde 18.11.) */
-.suchfeld-mehrzeilig {
+/* Handy: das Feld waechst mit, der Hot Take bricht um (Designrunde 18.11.). Die Hoehe von
+   2 bis 4 Zeilen steht hier statt in cdkAutosizeMinRows/MaxRows: Die Direktive mass die Zeile
+   zu niedrig, und der zweizeilige Platzhalter wurde abgeschnitten (Review #703). Die
+   Direktive setzt nur die Hoehe zum Inhalt, min-/max-height begrenzen sie. */
+textarea.suchfeld-mehrzeilig.mat-mdc-input-element {
+    --zeile: 24px;
     resize: none;
     overflow-y: auto;
-    line-height: 1.4;
-}
-
-/* Handy: „Ausprobieren“ klein und rechtsbuendig unter dem Feld; Tippflaeche 44 px.
-   Die Zeile ruht im Unterbereich des Feldes, damit „Suchen“ nicht weit nach unten rutscht. */
-.ausprobieren-zeile {
-    display: flex;
-    justify-content: flex-end;
-    min-height: 44px;
-    margin-top: -18px;
-}
-
-.ausprobieren-unter-feld {
-    margin-right: 0;
-    min-height: 44px;
-    padding: 0 14px;
-    font-size: 0.875rem;
-}
-
-@keyframes ausprobieren-auf {
-    0% { opacity: 0; transform: scale(0.9); }
-    60% { opacity: 1; transform: scale(1.06); }
-    100% { transform: scale(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .ausprobieren-knopf {
-        animation: none;
-    }
+    box-sizing: content-box;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: var(--zeile);
+    min-height: calc(2 * var(--zeile));
+    max-height: calc(4 * var(--zeile));
 }

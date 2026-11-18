@@ -169,7 +169,8 @@ describe('SearchComponent', () => {
     }));
   });
 
-  // Designrunde 17.11.: Auf dem Start tippt das leere Feld Hot Takes vor, daneben „Ausprobieren“
+  // Designrunde 17.11.: Auf dem Start tippt das leere Feld Hot Takes vor. Designrunde 18.11.:
+  // Ein Knopf; solange das Feld leer ist, heißt er „Beispiel ausprobieren“ und sucht den Hot Take
   describe('Hot Takes im Feld', () => {
     function mitBeispiel(ruhig: boolean): ComponentFixture<SearchComponent> {
       spyOn(window, 'matchMedia').and.callFake(
@@ -182,19 +183,75 @@ describe('SearchComponent', () => {
     }
     const feld = (f: ComponentFixture<SearchComponent>) => f.nativeElement.querySelector('input') as HTMLInputElement;
     const knopf = (f: ComponentFixture<SearchComponent>) =>
-      f.nativeElement.querySelector('.ausprobieren-knopf') as HTMLButtonElement | null;
+      f.nativeElement.querySelector('.search-button') as HTMLButtonElement;
+    const knopfText = (f: ComponentFixture<SearchComponent>) =>
+      knopf(f).textContent!.replace('search', '').trim();
 
-    it('tippt das erste Beispiel ein und sucht mit „Ausprobieren“ genau danach', fakeAsync(() => {
+    it('heißt „Beispiel ausprobieren“ und sucht den fertig getippten Hot Take', fakeAsync(() => {
       const f = mitBeispiel(false);
       tick(HOT_TAKES[0].text.length * 45 + 10);
       f.detectChanges();
 
       expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
-      knopf(f)!.click();
+      expect(knopfText(f)).toBe('Beispiel ausprobieren');
+      expect(knopf(f).getAttribute('aria-label')).toBe('Beispiel ausprobieren: ' + HOT_TAKES[0].text);
+      knopf(f).click();
       expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith(HOT_TAKES[0].text);
       f.detectChanges();
       expect(feld(f).placeholder).toBe('');
+      expect(knopfText(f)).toBe('Suchen');
       flush();
+    }));
+
+    it('heißt schon mitten im Tippen „Beispiel ausprobieren“ und sucht den ganzen Hot Take', fakeAsync(() => {
+      const f = mitBeispiel(false);
+      tick(10 * 45);
+      f.detectChanges();
+
+      expect(feld(f).placeholder.length).toBeLessThan(HOT_TAKES[0].text.length);
+      expect(knopfText(f)).toBe('Beispiel ausprobieren');
+      knopf(f).click();
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith(HOT_TAKES[0].text);
+      flush();
+    }));
+
+    it('sucht auch mit Enter im leeren Feld den Hot Take statt einer leeren Suche', fakeAsync(() => {
+      const f = mitBeispiel(true);
+      tick();
+      f.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledOnceWith(HOT_TAKES[0].text);
+      discardPeriodicTasks();
+    }));
+
+    it('heißt nach eigener Eingabe „Suchen“ und sucht den Feldinhalt', fakeAsync(() => {
+      const f = mitBeispiel(false);
+      tick(200);
+      f.detectChanges();
+      tick();
+
+      feld(f).value = 'Tempolimit bringt nichts';
+      feld(f).dispatchEvent(new Event('input'));
+      f.detectChanges();
+      tick();
+      f.detectChanges();
+
+      expect(knopfText(f)).toBe('Suchen');
+      expect(knopf(f).hasAttribute('aria-label')).toBeFalse();
+      knopf(f).click();
+      expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith('Tempolimit bringt nichts');
+      flush();
+    }));
+
+    it('hat keinen eigenen Ausprobieren-Knopf mehr, nur den einen Knopf', fakeAsync(() => {
+      const f = mitBeispiel(false);
+      tick(HOT_TAKES[0].text.length * 45 + 10);
+      f.detectChanges();
+
+      expect(f.nativeElement.querySelectorAll('button').length).toBe(1);
+      expect(f.nativeElement.querySelector('.ausprobieren-knopf')).toBeNull();
+      expect(f.nativeElement.querySelector('.ausprobieren-zeile')).toBeNull();
+      flush(5000);
     }));
 
     it('hoert auf, sobald man selbst ins Feld tippt', fakeAsync(() => {
@@ -209,11 +266,11 @@ describe('SearchComponent', () => {
       f.detectChanges();
 
       expect(feld(f).placeholder).toBe('');
-      expect(knopf(f)).toBeNull();
+      expect(knopfText(f)).toBe('Suchen');
       flush();
     }));
 
-    it('laesst Tab den Knopf stehen, damit er per Tastatur erreichbar bleibt', fakeAsync(() => {
+    it('laesst Tab den Beispielzustand stehen, damit der Knopf per Tastatur erreichbar bleibt', fakeAsync(() => {
       const f = mitBeispiel(false);
       tick(HOT_TAKES[0].text.length * 45 + 10);
       f.detectChanges();
@@ -221,22 +278,22 @@ describe('SearchComponent', () => {
       feld(f).dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
       f.detectChanges();
 
-      expect(knopf(f)).not.toBeNull();
+      expect(knopfText(f)).toBe('Beispiel ausprobieren');
       expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
       flush(5000);
     }));
 
-    it('haelt mit Fokus auf „Ausprobieren“ beim aktuellen Beispiel an', fakeAsync(() => {
+    it('haelt mit Fokus auf dem Knopf an und zeigt den ganzen Hot Take', fakeAsync(() => {
       const f = mitBeispiel(false);
-      tick(HOT_TAKES[0].text.length * 45 + 10);
+      tick(10 * 45);
       f.detectChanges();
 
-      knopf(f)!.dispatchEvent(new FocusEvent('focus'));
+      knopf(f).dispatchEvent(new FocusEvent('focus'));
       tick(10_000);
       f.detectChanges();
 
       expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
-      expect(knopf(f)).not.toBeNull();
+      expect(knopfText(f)).toBe('Beispiel ausprobieren');
     }));
 
     it('bleibt nach zwei Durchlaeufen beim ersten Beispiel stehen (WCAG 2.2.2)', fakeAsync(() => {
@@ -245,7 +302,7 @@ describe('SearchComponent', () => {
       f.detectChanges();
 
       expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
-      expect(knopf(f)).not.toBeNull();
+      expect(knopf(f).getAttribute('aria-label')).toBe('Beispiel ausprobieren: ' + HOT_TAKES[0].text);
     }));
 
     it('zeigt bei reduzierter Bewegung das Beispiel ohne Tippen', fakeAsync(() => {
@@ -253,23 +310,27 @@ describe('SearchComponent', () => {
       f.detectChanges();
 
       expect(feld(f).placeholder).toBe(HOT_TAKES[0].text);
-      expect(knopf(f)).not.toBeNull();
+      expect(knopfText(f)).toBe('Beispiel ausprobieren');
       discardPeriodicTasks();
     }));
 
-    it('tippt ohne beispielAnimation nichts vor (Feld ueber den Treffern)', () => {
+    it('tippt ohne beispielAnimation nichts vor und heißt „Suchen“', () => {
       expect(feld(fixture).placeholder).toBe('');
-      expect(knopf(fixture)).toBeNull();
+      expect(knopfText(fixture)).toBe('Suchen');
+      expect(knopf(fixture).hasAttribute('aria-label')).toBeFalse();
     });
 
-    it('zeigt „Ausprobieren“ am Desktop im Feld, nicht darunter', fakeAsync(() => {
-      const f = mitBeispiel(false);
-      tick(HOT_TAKES[0].text.length * 45 + 10);
+    it('heißt ueber den Treffern (compactMode) „Suchen“, auch mit beispielAnimation', fakeAsync(() => {
+      spyOn(window, 'matchMedia').and.callFake(() => ({ matches: true }) as MediaQueryList);
+      const f = TestBed.createComponent(SearchComponent);
+      f.componentRef.setInput('compactMode', true);
+      f.componentRef.setInput('beispielAnimation', true);
       f.detectChanges();
 
-      expect(knopf(f)!.closest('mat-form-field')).not.toBeNull();
-      expect(knopf(f)!.classList).not.toContain('ausprobieren-unter-feld');
-      flush(5000);
+      expect(knopfText(f)).toBe('Suchen');
+      knopf(f).click();
+      expect(navigationServiceMock.navigateToResult).not.toHaveBeenCalled();
+      discardPeriodicTasks();
     }));
   });
 
@@ -282,17 +343,68 @@ describe('SearchComponent', () => {
     const textfeld = (f: ComponentFixture<SearchComponent> = fixture) =>
       f.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
 
-    it('wird das Feld mehrzeilig: 2 bis 4 Zeilen, mit Beschriftung, Hinweis und Kennung', () => {
+    it('wird das Feld mehrzeilig, mit Beschriftung, Hinweis und Kennung', () => {
       fixture.componentRef.setInput('feldId', 'suche');
       schmal();
 
       expect(fixture.nativeElement.querySelector('input')).toBeNull();
-      const autosize = fixture.debugElement.query(By.directive(CdkTextareaAutosize)).injector.get(CdkTextareaAutosize);
-      expect(autosize.minRows).toBe(2);
-      expect(autosize.maxRows).toBe(4);
+      expect(fixture.debugElement.query(By.directive(CdkTextareaAutosize))).not.toBeNull();
+      expect(textfeld().getAttribute('enterkeyhint')).toBe('search');
       expect(textfeld().id).toBe('suche');
       expect(textfeld().getAttribute('aria-describedby')).toBe(fixture.nativeElement.querySelector('.such-hinweis').id);
       expect(fixture.nativeElement.querySelector('mat-label').textContent.trim()).toBe('Worauf willst du antworten? Text einfügen');
+    });
+
+    // Review #703: Die Direktive mass die Zeile zu niedrig, der Platzhalter wurde abgeschnitten
+    it('ist leer 2 Zeilen hoch und waechst mit langem Text bis 4 Zeilen', fakeAsync(() => {
+      schmal();
+      tick();
+      const zeile = parseFloat(getComputedStyle(textfeld()).lineHeight);
+      expect(zeile).toBeGreaterThan(0);
+      expect(textfeld().clientHeight).toBeCloseTo(2 * zeile, 0);
+
+      textfeld().value = 'Windräder killen doch massenhaft Vögel und überhaupt '.repeat(8);
+      textfeld().dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      tick();
+      fixture.detectChanges();
+
+      expect(textfeld().clientHeight).toBeCloseTo(4 * zeile, 0);
+      expect(textfeld().scrollHeight).toBeGreaterThan(textfeld().clientHeight);
+    }));
+
+    it('behaelt beim Drehen (Wechsel der Breite) Text und Fokus, Cursor am Ende', fakeAsync(() => {
+      component.searchQuery = 'Tempolimit bringt nichts';
+      fixture.detectChanges();
+      tick();
+      const breit = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+      breit.focus();
+
+      schmal();
+      tick();
+
+      expect(document.activeElement).toBe(textfeld());
+      expect(textfeld().value).toBe('Tempolimit bringt nichts');
+      expect(textfeld().selectionStart).toBe('Tempolimit bringt nichts'.length);
+
+      textfeld().blur();
+      breite$.next({ matches: false, breakpoints: {} });
+      fixture.detectChanges();
+      tick();
+      expect(document.activeElement).not.toBe(fixture.nativeElement.querySelector('input'));
+    }));
+
+    it('laesst Enter waehrend einer IME-Komposition das Zeichen bestaetigen', () => {
+      schmal();
+      component.searchQuery = 'Tempolimit';
+      const komposition = new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, cancelable: true });
+      textfeld().dispatchEvent(komposition);
+      const ime = new KeyboardEvent('keydown', { key: 'Enter', keyCode: 229, cancelable: true } as KeyboardEventInit);
+      textfeld().dispatchEvent(ime);
+
+      expect(komposition.defaultPrevented).toBeFalse();
+      expect(ime.defaultPrevented).toBeFalse();
+      expect(navigationServiceMock.navigateToResult).not.toHaveBeenCalled();
     });
 
     it('sucht mit Enter, ohne eine neue Zeile', () => {
@@ -326,7 +438,21 @@ describe('SearchComponent', () => {
       expect(textfeld().value).toBe('Windräder killen doch Vögel');
     }));
 
-    it('tippt den Hot Take als Platzhalter und zeigt „Ausprobieren“ unter dem Feld', fakeAsync(() => {
+    it('laesst den Cursor nach dem Einfuegen mit Umbruch an der Einfuegestelle', fakeAsync(() => {
+      schmal();
+      tick();
+      textfeld().value = 'Windräder\nund\n töten Vögel';
+      textfeld().setSelectionRange(14, 14); // hinter „und\n“
+      textfeld().dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      tick();
+      fixture.detectChanges();
+
+      expect(textfeld().value).toBe('Windräder und töten Vögel');
+      expect(textfeld().selectionStart).toBe('Windräder und '.length);
+    }));
+
+    it('tippt den Hot Take als Platzhalter; der eine Knopf darunter sucht ihn', fakeAsync(() => {
       spyOn(window, 'matchMedia').and.callFake(() => ({ matches: false }) as MediaQueryList);
       const f = TestBed.createComponent(SearchComponent);
       f.componentRef.setInput('beispielAnimation', true);
@@ -335,21 +461,20 @@ describe('SearchComponent', () => {
       f.detectChanges();
 
       expect(textfeld(f).placeholder).toBe(HOT_TAKES[0].text);
-      const knopf = f.nativeElement.querySelector('.ausprobieren-knopf') as HTMLButtonElement;
-      expect(knopf.classList).toContain('ausprobieren-unter-feld');
-      expect(knopf.closest('mat-form-field')).toBeNull();
+      expect(f.nativeElement.querySelector('.ausprobieren-knopf')).toBeNull();
+      const knopf = f.nativeElement.querySelector('.search-button') as HTMLButtonElement;
+      expect(knopf.textContent).toContain('Beispiel ausprobieren');
       knopf.click();
       expect(navigationServiceMock.navigateToResult).toHaveBeenCalledWith(HOT_TAKES[0].text);
       flush();
     }));
 
-    it('hat ueber den Treffern (compactMode) kein „Ausprobieren“, aber das mehrzeilige Feld', () => {
+    it('hat ueber den Treffern (compactMode) „Suchen“ und das mehrzeilige Feld', () => {
       fixture.componentRef.setInput('compactMode', true);
       schmal();
 
       expect(textfeld()).not.toBeNull();
-      expect(fixture.nativeElement.querySelector('.ausprobieren-zeile')).toBeNull();
-      expect(fixture.nativeElement.querySelector('.ausprobieren-knopf')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.search-button').textContent).toContain('Suchen');
     });
   });
 });

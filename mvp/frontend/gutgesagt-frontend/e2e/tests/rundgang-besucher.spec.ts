@@ -24,7 +24,7 @@ test('Besucher: Zurück im Browser beendet den Rundgang, er lässt sich neu star
   await expect(page.locator('app-rundgang .sperre')).toHaveCount(0);
   await expect(page.locator('app-rundgang .kegel')).toHaveCount(0);
   // Die Startseite ist wieder bedienbar, das Band kommt in diesem Besuch nicht zurück
-  const feld = page.locator('app-search.start-suche input[name="searchQuery"]');
+  const feld = page.locator('app-search.start-suche [name="searchQuery"]');
   await feld.fill('Windräder töten Vögel');
   await expect(feld).toHaveValue('Windräder töten Vögel');
   await expect(page.getByRole('button', { name: 'Rundgang (1 Min.)' })).toHaveCount(0);
