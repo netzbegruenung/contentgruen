@@ -105,8 +105,24 @@ h4 {
   color: var(--akzent-schrift);
 }
 
-.gegenlesen.kompakt .gegenlesen-inhalt {
-  padding: 0 16px 12px;
+.gegenlesen.kompakt .gegenlesen-inhalt,
+.gegenlesen.kompakt .gegenlesen-inhalt-fragen,
+.gegenlesen.kompakt .gegenlesen-fuss {
+  padding: 0 16px;
+}
+
+/* Die Fragen bleiben kompakt sichtbar, auch zugeklappt; der Fuss schliesst offen ab */
+.gegenlesen.kompakt .gegenlesen-inhalt-fragen,
+.gegenlesen.kompakt .gegenlesen-fuss {
+  padding-bottom: 12px;
+}
+
+.gegenlesen.kompakt .gegenlesen-fuss {
+  margin-top: 0;
+}
+
+.gegenlesen.kompakt .gegenlesen-nur-form {
+  margin-top: 4px;
 }
 
 .gegenlesen.kompakt .gegenlesen-anmerkungen,

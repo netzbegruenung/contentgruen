@@ -380,6 +380,45 @@ describe('GegenlesenComponent', () => {
       tick(ANSAGE_PAUSE_MS);
     }));
 
+    it('zeigt die Inhaltsfragen gleich, auch zugeklappt (Handy, 18.11.)', fakeAsync(() => {
+      kompakt();
+      schreibe('Wärmepumpe lohnt sich auch im Altbau');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      const block = element().querySelector('.gegenlesen-inhalt-fragen') as HTMLElement;
+      expect(block.hidden).toBeFalse();
+      expect(block.closest('[hidden]')).toBeNull();
+      expect(fragen()).toEqual([...INHALT_FRAGEN]);
+      expect(block.textContent).toContain('Die App sieht, wie du schreibst, nicht ob es stimmt.');
+      expect((element().querySelector('.gegenlesen-fuss') as HTMLElement).hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('lässt die Fragen stehen, wenn die Person die Anmerkungen zuklappt', fakeAsync(() => {
+      kompakt();
+      schreibe('Nicht die Wärmepumpe ist das Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+      (element().querySelector('.gegenlesen-zeile') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      expect((element().querySelector('.gegenlesen-inhalt-fragen') as HTMLElement).closest('[hidden]')).toBeNull();
+      expect(fragen().length).toBe(3);
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('zeigt vor dem ersten Gegenlesen noch keine Fragen', fakeAsync(() => {
+      kompakt();
+      fixture.detectChanges();
+      expect(element().querySelector('.gegenlesen-inhalt-fragen')).toBeNull();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
     it('wird bei „Nichts aufgefallen“ gruen', fakeAsync(() => {
       kompakt();
       schreibe('Wärmepumpe lohnt sich auch im Altbau');
