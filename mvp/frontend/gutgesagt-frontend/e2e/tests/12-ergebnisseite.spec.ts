@@ -147,3 +147,49 @@ for (const [name, breite] of [['390', 390], ['1280', 1280]] as const) {
     });
   });
 }
+
+/** Linke Kante und Breite eines Elements, gerundet. */
+async function kasten(page: Page, selektor: string): Promise<{ x: number; y: number; breite: number }> {
+  const box = await page.locator(selektor).first().boundingBox();
+  if (!box) throw new Error(`Nicht sichtbar: ${selektor}`);
+  return { x: Math.round(box.x), y: Math.round(box.y), breite: Math.round(box.width) };
+}
+
+// Desktop ab 1024 px zweispaltig (Maintainer 18.11.), darunter eine Spalte; der Kopf springt nicht.
+test.describe('Ergebnisseite zweispaltig: Geometrie', () => {
+  test('1280 px: beste Antwort und weitere nebeneinander, Kopf vor und nach neuer Suche gleich breit', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await oeffnen(page);
+    const beste = await kasten(page, '.beste-antwort');
+    const rechts = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
+    expect(rechts.x).toBeGreaterThan(beste.x + beste.breite);
+    expect(Math.abs(rechts.y - beste.y)).toBeLessThan(40);
+    const kopfVorher = await kasten(page, '.search-box');
+
+    // Neue Suche mit verzoegerter Antwort: auch waehrend des Ladens bleibt der Kopf gleich
+    let freigeben: () => void = () => undefined;
+    const gehalten = new Promise<void>((weiter) => (freigeben = weiter));
+    await page.unroute('**/api/v1/search/searchByText**');
+    await page.route('**/api/v1/search/searchByText**', async (r) => {
+      await gehalten;
+      await r.fulfill({ json: ANTWORT });
+    });
+    await page.locator('.search-box input').fill('Windräder sind zu laut');
+    await page.locator('.search-box input').press('Enter');
+    await expect(page.locator('app-loading-spinner .loading-container')).toBeVisible();
+    expect(await kasten(page, '.search-box')).toEqual(kopfVorher);
+    freigeben();
+    await expect(page.locator('.erkannt-aussage')).toBeVisible({ timeout: 45_000 });
+    expect(await kasten(page, '.search-box')).toEqual(kopfVorher);
+  });
+
+  test('1023 px: beste Antwort und weitere untereinander', async ({ page }) => {
+    await page.setViewportSize({ width: 1023, height: 900 });
+    await oeffnen(page);
+    await expect(page.locator('.gruppe.mit-bester')).toHaveCount(1);
+    const beste = await kasten(page, '.beste-antwort');
+    const weitere = await kasten(page, '.gruppe.mit-bester .eingeklappte-karten');
+    expect(weitere.x).toBe(beste.x);
+    expect(weitere.y).toBeGreaterThan(beste.y);
+  });
+});

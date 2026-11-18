@@ -6,7 +6,8 @@ import { typBeschreibung } from '../shared/content-type-registry';
 /**
  * Die Ergebnisseite als eine Liste (K2+): Treffer nach Aussage gruppiert, in jeder
  * Gruppe die Typen in fester Reihenfolge, je Typ zuerst nur wenige Karten. Am Handy
- * und am Desktop dieselbe Darstellung.
+ * eine Spalte; ab 1024 px steht die beste Antwort links neben dem Rest, wenn
+ * mitZweiterSpalte() das erlaubt.
  */
 
 /** Die Typen der Treffer, in der Reihenfolge der Seite: Kommentare zuerst. */

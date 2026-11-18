@@ -638,12 +638,14 @@ mat-sidenav-content {
   margin-top: var(--spacing-md);
 }
 
-/* Abschnittstitel mit ⓘ dahinter: der Erklaersatz des Typs */
+/* Abschnittstitel mit ⓘ dahinter: der Erklaersatz des Typs. Unten 10 px Abstand: so weit
+   ragt die Tippflaeche des ⓘ unter den Knopf, sie darf nicht in die erste Karte reichen,
+   deren Kopf selbst ein Knopf ist. */
 .typ-kopf {
   display: flex;
   align-items: center;
   gap: 2px;
-  margin: var(--spacing-md) 0 var(--spacing-xs);
+  margin: var(--spacing-md) 0 10px;
 }
 
 .typ-kopf .typ-ueberschrift {
@@ -767,18 +769,33 @@ mat-sidenav-content {
 }
 
 /* Desktop ab 1024 px zweispaltig (Maintainer 18.11.): links die beste Antwort offen (60 %),
-   rechts die weiteren Antworten und die Typ-Abschnitte eingeklappt. Kopf (Suchfeld, "Erkannt
-   als", Teilen) und alles unter der Gruppe ("Weitere, weniger passende", "Nicht dabei?",
-   Hinweis) ueber die volle Breite. Die beste Antwort floatet, damit die Reihenfolge im DOM
+   rechts die weiteren Antworten und die Typ-Abschnitte eingeklappt. Der Kopf (Suchfeld,
+   "Erkannt als", Teilen) ist immer 1160 px breit, egal ob das Ergebnis zwei Spalten hat oder
+   noch laedt: sonst springt der Suchen-Knopf bei jeder neuen Suche. Einspaltige Ergebnisse
+   und alles unter der Gruppe ("Weitere, weniger passende", "Nicht dabei?", Hinweis) stehen
+   linksbuendig auf Lesebreite. Die beste Antwort floatet, damit die Reihenfolge im DOM
    (erst die beste, dann rechts) fuer Tastatur und Screenreader gleich bleibt; Grid koppelte
    die Zeilenhoehen beider Spalten. */
 @media (min-width: 1024px) {
-  .treffer-spalte.zweispaltig {
+  .treffer-spalte {
     --inhalt-breite: 1160px;
     --spalten-abstand: 32px;
+    --treffer-lesebreite: 760px;
   }
 
-  .gruppe.mit-bester,
+  .treffer-spalte:not(.zweispaltig) .ergebnisse > .gruppe,
+  .treffer-spalte .unified-empty-state,
+  .ergebnisse > .weitere,
+  .ergebnisse > .nicht-dabei-unten,
+  .ergebnisse > .keine-antwort-noetig {
+    max-width: var(--treffer-lesebreite);
+  }
+
+  /* Aufgeklappte Kartentexte unter der Gruppe: hoechstens etwa 90 Zeichen je Zeile */
+  .weitere-liste ::ng-deep .karte-text {
+    max-width: 78ch;
+  }
+
   .gruppe.mit-bester .typ-block {
     display: block;
   }
@@ -813,8 +830,22 @@ mat-sidenav-content {
     display: block;
   }
 
-  /* Rechts oben auf einer Linie mit "Beste Antwort" */
-  .gruppe.mit-bester .typ-block:first-of-type .typ-kopf {
-    margin-top: var(--spacing-sm);
+  /* Rechts oben auf einer Linie mit "Beste Antwort", auch wenn der erste Block nur die beste
+     Antwort hat und rechts direkt der naechste Typ beginnt. Den Abstand oben traegt die Gruppe:
+     Der Rand des ersten Kopfs rechts fiele sonst mit dem des Typ-Blocks zusammen, der des
+     Floats nicht, und die Spalten stuenden 8 px versetzt. "Beste Antwort" ist so hoch wie
+     der Kopf rechts mit dem ⓘ (24 px), beide Texte stehen mittig darin. */
+  .gruppe.mit-bester {
+    padding-top: var(--spacing-sm);
+  }
+
+  .gruppe.mit-bester .beste-ueberschrift {
+    margin-top: 0;
+    line-height: 24px;
+  }
+
+  .gruppe.mit-bester .typ-block:first-of-type .typ-kopf,
+  .gruppe.mit-bester .typ-block:first-of-type:not(:has(.typ-kopf)) + .typ-block .typ-kopf {
+    margin-top: 0;
   }
 }
