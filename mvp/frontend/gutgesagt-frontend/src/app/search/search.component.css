@@ -19,12 +19,14 @@
     line-height: 1.4;
 }
 
+/* Auf der Startseite dunkler, damit er beruhigt statt zu verschwinden (Persona-Runde 18.11.):
+   Haupttextfarbe, auf dem gelben Band und im Dunkelmodus auf Schiefer deutlich ueber AA */
 .search-container:not(.compact-mode) .such-hinweis {
     text-align: center;
+    color: var(--text-primary);
 }
 
-/* Startseite am Handy: der ganze Hinweis auf zwei Zeilen bei 360 und 390 px, nicht unter
-   12 px (Designrunde 18.11.); der Wortlaut bleibt, er ist rechtlich geprueft */
+/* Startseite am Handy: nicht unter 12 px (Designrunde 18.11.) */
 @media (max-width: 599px) {
     .search-container:not(.compact-mode) .such-hinweis {
         font-size: 12.5px;

@@ -13,6 +13,21 @@ import { RundgangService } from './rundgang.service';
   standalone: true,
   template: `
     @if (angebot(); as angebot) {
+      @if (angebot.schlank) {
+      <!-- Eine Zeile statt Kasten (Persona-Runde 18.11.): Am Handy stehen Suche und der Anfang
+           von „Frisch aus der Community“ so im ersten Bild. Gleiche Logik wie das Band. -->
+      <aside class="zeile" [attr.aria-label]="angebot.titel">
+        <p>
+          <span class="zeile-titel">{{ angebot.titel }}</span>&ngsp;<button type="button" class="zeile-link" (click)="rundgang.bandBeantworten(true)">{{ angebot.ja }}</button>&ngsp;<span class="zeile-satz"><span aria-hidden="true">· </span>{{ angebot.satz }}</span>
+        </p>
+        <button type="button" class="zeile-zu" [attr.aria-label]="angebot.neinLabel ?? angebot.nein"
+                [attr.title]="angebot.nein" (click)="ausblenden()">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+            <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </aside>
+      } @else {
       <aside class="band" aria-labelledby="rundgang-band-titel">
         <img class="band-bild" [class.symbol]="!!angebot.bild" [src]="angebot.bild ?? 'marke/wegweiser.svg'" alt="" width="48" height="48" />
         <div class="text">
@@ -36,6 +51,7 @@ import { RundgangService } from './rundgang.service';
           <button type="button" class="rundgang-knopf text" [attr.aria-label]="angebot.neinLabel ?? null" (click)="ausblenden()">{{ angebot.nein }}</button>
         </div>
       </aside>
+      }
     }
   `,
   styleUrls: ['./rundgang-knoepfe.css', './rundgang-band.component.css'],

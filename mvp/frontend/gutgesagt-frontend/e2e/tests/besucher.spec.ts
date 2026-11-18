@@ -46,7 +46,7 @@ test('Besucher: Rundgang füllt das Startbeispiel vor, Schritt 2 zeigt Treffer (
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/search');
   const text = (await page.locator('app-search.start-suche input[name="searchQuery"]').getAttribute('placeholder'))!;
-  await page.getByRole('button', { name: 'Rundgang starten' }).click();
+  await page.getByRole('button', { name: 'Rundgang (1 Min.)' }).click();
   await expect(page.locator('.blase h3')).toHaveText('Aussage eingeben');
   await expect(page.locator('app-search.start-suche input[name="searchQuery"]')).toHaveValue(text);
   await page.locator('.blase .weiter').click();

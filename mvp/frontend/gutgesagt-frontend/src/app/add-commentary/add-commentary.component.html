@@ -92,7 +92,7 @@
                             <mat-option [value]="null">Ohne</mat-option>
                             <mat-option *ngFor="let stil of stile" [value]="stil">{{ stilLabel[stil] }}</mat-option>
                         </mat-select>
-                        <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„bissig“ nur für die eigenen Leute</mat-hint>
+                        <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„deutlich“ nur für Gleichgesinnte</mat-hint>
                     </mat-form-field>
                     <div *ngIf="zeigtThemen" class="themen-feld">
                         <span class="feld-beschriftung">Themen der neuen Aussage</span>

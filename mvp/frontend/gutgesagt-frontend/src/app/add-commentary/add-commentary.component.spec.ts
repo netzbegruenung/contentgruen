@@ -1319,7 +1319,7 @@ describe('AddCommentaryComponent', () => {
   describe('Zweck und Stil (#357)', () => {
     const BESCHRIFTUNG: Record<string, string> = {
       kommentarspalte: 'Antwort in Kommentarspalten',
-      eigene_leute: 'Für die eigenen Leute',
+      eigene_leute: 'Für Gleichgesinnte',
     };
 
     function zweckKnopf(zweck: string): HTMLButtonElement {

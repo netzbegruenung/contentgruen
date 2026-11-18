@@ -27,7 +27,7 @@
     <p class="keine-antwort-noetig">
         <mat-icon aria-hidden="true">info_outline</mat-icon>
         <span><strong>Nicht jede Aussage braucht eine Antwort.</strong>
-            Jede Antwort macht die Aussage sichtbarer. Kleine Accounts mit wenig Reichweite lieber auf der Plattform melden, statt zu antworten.</span>
+            Jede Antwort macht die Aussage sichtbarer. Bei Trollen mit wenig Reichweite lieber gar nicht antworten. Im privaten Chat reicht oft eine kurze, freundliche Antwort.</span>
     </p>
 </ng-template>
 
@@ -75,14 +75,15 @@
 
         <!-- Eine kleine Zeile statt Kopfband (V3, Designrunde 17.11.): als welche Aussage die Suche
              verstanden wurde (#642, R40), "Nicht gemeint?" klappt die aehnlichen Aussagen aus
-             "Nicht dabei?" auf, rechts "Ergebnis teilen" (B7) als Symbol. -->
+             "Nicht dabei?" auf, rechts "Ergebnis teilen" (B7) als Symbol.
+             Persona-Runde 18.11.: die Aussage groesser, "Nicht gemeint?" als sichtbarer Knopf
+             (Umriss, 44 px hoch) statt kleinem Link. -->
         <div class="erkannt-zeile">
             <p class="erkannt-text" *ngIf="erkannt as aussage; else ohneErkannt">
-                Erkannt als <strong class="erkannt-aussage">„{{ aussage.text }}“</strong><ng-container *ngIf="alternativen.length">
-                <span aria-hidden="true"> · </span>
-                <button type="button" class="erkannt-umschalter"
+                <span class="erkannt-satz">Erkannt als <strong class="erkannt-aussage">„{{ aussage.text }}“</strong></span>
+                <button mat-stroked-button type="button" class="erkannt-umschalter" *ngIf="alternativen.length"
                         [attr.aria-expanded]="alternativenOffen" aria-controls="erkannt-liste"
-                        (click)="alternativenOffen = !alternativenOffen">Nicht gemeint?<mat-icon aria-hidden="true">{{ alternativenOffen ? 'expand_less' : 'expand_more' }}</mat-icon></button></ng-container>
+                        (click)="alternativenOffen = !alternativenOffen">Nicht gemeint?<mat-icon iconPositionEnd aria-hidden="true">{{ alternativenOffen ? 'expand_less' : 'expand_more' }}</mat-icon></button>
             </p>
             <ng-template #ohneErkannt><span class="erkannt-text"></span></ng-template>
             <button mat-icon-button type="button" class="ergebnis-teilen-symbol"

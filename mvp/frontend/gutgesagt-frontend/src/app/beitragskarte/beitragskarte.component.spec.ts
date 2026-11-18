@@ -476,7 +476,7 @@ describe('BeitragskarteComponent', () => {
     it('zeigt den Stil und markiert Beitraege fuer die eigenen Leute', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'persoenlich' })));
 
-      expect(element('.karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.karte-eigene-leute')?.textContent).toContain('Für Gleichgesinnte');
       expect(element('.karte-stil')?.textContent).toContain('persönlich');
     });
 
@@ -492,19 +492,19 @@ describe('BeitragskarteComponent', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
 
       expect(element('.karte-eigene-leute')).toBeNull();
-      expect(element('.karte-stil')?.textContent).toContain('brückenbauend');
+      expect(element('.karte-stil')?.textContent).toContain('freundlich');
     });
 
     it('zeigt den Stil als Chip, der beim Antippen erklaert, was er bewirkt (#641)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
       const chip = element<HTMLButtonElement>('button.karte-stil');
 
-      expect(chip.getAttribute('aria-label')).toBe('Stil: brückenbauend, Erklärung öffnen');
+      expect(chip.getAttribute('aria-label')).toBe('Stil: freundlich, Erklärung öffnen');
       expect(getComputedStyle(chip).fontStyle).toBe('normal');
       chip.click();
       fixture.detectChanges();
 
-      expect(document.querySelector('.stil-erklaerung')?.textContent!.trim()).toBe('brückenbauend: holt Unentschiedene ab');
+      expect(document.querySelector('.stil-erklaerung')?.textContent!.trim()).toBe('freundlich: holt Unentschiedene ab, ohne sie vorzuführen');
     });
 
     it('zeigt Markierung und Stil auch in der kompakten Karte (Meine Beitraege)', () => {
@@ -512,7 +512,7 @@ describe('BeitragskarteComponent', () => {
         variante: 'kompakt',
       });
 
-      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für Gleichgesinnte');
       expect(element('.album-inhalt .karte-stil')?.textContent).toContain('humorvoll');
       // Die kompakte Karte ist als Ganzes antippbar: dort kein eigener Knopf, die Erklaerung als title
       expect(element('.album-inhalt button.karte-stil')).toBeNull();

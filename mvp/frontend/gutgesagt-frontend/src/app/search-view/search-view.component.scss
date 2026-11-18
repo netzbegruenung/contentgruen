@@ -176,6 +176,17 @@ app-rundgang-band {
   }
 }
 
+// Kurzer Halbsatz unter dem Titel: was dahinter passiert (Persona-Runde 18.11.)
+.kachel-satz {
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--text-primary);
+
+  @media (max-width: 599px) {
+    font-size: 14px;
+  }
+}
+
 // Anonym: kleiner Hinweis neben dem Titel, dass es ein Konto braucht (#644). Reicht der Platz
 // neben dem laengeren Titel ("Einwerfen") nicht, rutscht er in beiden Kacheln unter den
 // Titel, nicht nur in einer (Designrunde 12.11.). Die Schwellen sind die Breite von

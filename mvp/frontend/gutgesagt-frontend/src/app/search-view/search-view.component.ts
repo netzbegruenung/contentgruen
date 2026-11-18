@@ -9,8 +9,7 @@ import { OftGenutztComponent } from '../oft-genutzt/oft-genutzt.component';
 import { AboutTeaserComponent } from '../about-teaser/about-teaser.component';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ContentRefreshService } from '../services/content-refresh.service';
-import { typLabel } from '../shared/content-type-registry';
-import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
+import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
 import { map } from 'rxjs/operators';
 import { RundgangBandComponent } from '../rundgang/rundgang-band.component';
@@ -42,8 +41,6 @@ export const AUTOFOKUS_MEDIEN = '(min-width: 960px) and (hover: hover) and (poin
   styleUrls: ['./search-view.component.scss']
 })
 export class SearchViewComponent implements AfterViewInit {
-  readonly typLabel = typLabel;
-  readonly fangkorbKurz = FANGKORB_KURZ;
   readonly kettenIcons = KETTEN_ICONS;
   readonly autofokus = typeof window !== 'undefined' && !!window.matchMedia?.(AUTOFOKUS_MEDIEN).matches;
   /** Erst wenn feststeht, dass niemand angemeldet ist: kein Aufblitzen fuer Angemeldete. */

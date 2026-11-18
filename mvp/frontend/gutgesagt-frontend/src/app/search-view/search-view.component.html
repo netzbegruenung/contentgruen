@@ -26,33 +26,34 @@
 <!-- Fuer Angemeldete, nur wenn es Neues gibt (Nutzerfuehrung 13.11.) -->
 <app-seit-letztem-besuch></app-seit-letztem-besuch>
 
-<!-- Zwei Wege zum Mitmachen. Beide Ziele sind geschuetzt; ohne Anmeldung leitet
-     der AuthGuard erst auf "Das erwartet dich mit Konto" (/mit-konto), von dort zur Anmeldung und danach zurueck. Anonym sagt "mit Konto" das vorher (#644).
-     Der erklaerende Satz steht nicht mehr sichtbar da (Startseite 16.11.), Screenreader lesen
-     ihn als Beschreibung der Kachel vor; der Name bleibt Titel samt "mit Konto". -->
-<section class="start-kacheln" aria-label="Mitmachen">
-    <a class="start-kachel" routerLink="/einwerfen" aria-describedby="kachel-satz-einwerfen">
-        <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
-        <span class="kachel-text">
-            <span class="kachel-titel">Einwerfen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
-            <span class="kachel-satz" id="kachel-satz-einwerfen" hidden>{{ fangkorbKurz }}</span>
-        </span>
-        <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
-    </a>
-
-    <a class="start-kachel" routerLink="/contribute" aria-describedby="kachel-satz-beitragen">
-        <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
-        <span class="kachel-text">
-            <span class="kachel-titel">Beitragen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
-            <span class="kachel-satz" id="kachel-satz-beitragen" hidden>Ausgearbeitet und direkt verwendbar: {{ typLabel('commentary') }}, {{ typLabel('generictext') }} oder {{ typLabel('image') }}.</span>
-        </span>
-        <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
-    </a>
-</section>
-
 <!-- Entfaellt ganz, solange zu wenig genutzt wurde (#364). -->
 <app-oft-genutzt></app-oft-genutzt>
 
 <app-recent-content id="recent-content"></app-recent-content>
+
+<!-- Zwei Wege zum Mitmachen, unter den Community-Karten: Der Weg ohne Konto kommt zuerst
+     (Persona-Runde 18.11.). Beide Ziele sind geschuetzt; ohne Anmeldung leitet der AuthGuard
+     erst auf "Das erwartet dich mit Konto" (/mit-konto), von dort zur Anmeldung und danach
+     zurueck. Anonym sagt "mit Konto" das vorher (#644). Je ein kurzer Halbsatz sagt sichtbar,
+     was dahinter passiert (Persona-Runde 18.11.). -->
+<section class="start-kacheln" aria-label="Mitmachen">
+    <a class="start-kachel" routerLink="/einwerfen">
+        <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+        <span class="kachel-text">
+            <span class="kachel-titel">Einwerfen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
+            <span class="kachel-satz">Spruch oder Fundstück schicken</span>
+        </span>
+        <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </a>
+
+    <a class="start-kachel" routerLink="/contribute">
+        <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
+        <span class="kachel-text">
+            <span class="kachel-titel">Beitragen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
+            <span class="kachel-satz">Eigene Antwort schreiben</span>
+        </span>
+        <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </a>
+</section>
 
 <app-about-teaser></app-about-teaser>
