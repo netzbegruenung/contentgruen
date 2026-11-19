@@ -6,8 +6,9 @@
   verlinken (`CC0_ERKLAERUNG_URL` in `mvp/frontend/gutgesagt-frontend/src/app/shared/consent-hinweis.ts`).
   Abschnitt 3 ist die Ersatzlizenz, auf die sich NB Abschnitt 4 Absatz 3 bezieht.
 - **Lizenz der Kopie:** Der Text der Creative-Commons-Lizenzen steht selbst unter CC0 (siehe
-  den Hinweis am Ende). Nur der Rechtstext ohne Navigation der Seite, aus dem HTML in Markdown
-  übertragen; die maßgebliche Fassung ist die unter der Herkunft.
+  den Hinweis am Ende). Nur der Rechtstext samt Hinweis von Creative Commons am Ende, ohne
+  Navigation und ohne den Vorspann der Seite, der nicht Teil der Lizenz ist, aus dem HTML in
+  Markdown übertragen; die maßgebliche Fassung ist die unter der Herkunft.
 
 ---
 

@@ -352,7 +352,7 @@ describe('EinwilligungComponent', () => {
       expect(el().textContent).not.toContain('Frühere Einwilligung widerrufen');
     });
 
-    // 2026-11-13: Nur der aktuelle Wortlaut zaehlt; eine fruehere Einwilligung fragt neu
+    // Seit 2026-11-13 zaehlen nur GELTENDE_WORTLAUTE; eine fruehere Einwilligung fragt neu
     it('fragt neu, wer einem frueheren Wortlaut zugestimmt hat, und laesst ihn widerrufen', () => {
       starten(null);
       standLiefern(stand({ wortlaut: '2026-11-12', eingewilligt_am: '2026-11-12T09:30:00Z' }));
