@@ -41,7 +41,7 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
       icon: 'trending_up',
       zahl: `${nutzung}`,
       wort: nutzungWort,
-      satz: `${nutzung} ${nutzungWort} seit deinem letzten Besuch`,
+      satz: `${nutzung} ${nutzungWort}`,
     });
   }
   if (einwuerfe > 0) {
