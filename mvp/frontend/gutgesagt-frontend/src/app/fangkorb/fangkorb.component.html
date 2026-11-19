@@ -27,23 +27,26 @@
                                 [attr.aria-selected]="filter.tab === tab.wert"
                                 [attr.tabindex]="filter.tab === tab.wert ? 0 : -1"
                                 (click)="tabWaehlen(tab.wert)">
-                            <span class="tab-wort">{{ tab.name }}</span>
+                            <!-- Symbol wie auf den Karten-Knoepfen: am Desktop vor dem Wort, am Handy vor der Zahl,
+                                 damit "Ausformulieren" bei 320 px ungekuerzt bleibt -->
+                            <span class="tab-name"><span *ngIf="seitenleiste" class="tab-emoji" aria-hidden="true">{{ tabEmoji[tab.wert] }}</span><span class="tab-wort">{{ tab.name }}</span></span>
                             <!-- Ohne geladene Einwuerfe nach einem Fehler waere 0 falsch: dann ein Strich -->
-                            <span class="tab-zahl">{{ zaehlerUnbekannt ? '–' : zaehler[tab.wert] }}</span>
+                            <span class="tab-zahl"><span *ngIf="!seitenleiste" class="tab-emoji" aria-hidden="true">{{ tabEmoji[tab.wert] }}</span>{{ zaehlerUnbekannt ? '–' : zaehler[tab.wert] }}</span>
                         </button>
                     </div>
 
-                    <app-hilfe-umschalter [(offen)]="erklaerungOffen" steuert="fangkorb-erklaerung"
+                    <!-- Am Desktop steht die Erklaerung immer da, ohne ?-Knopf; am Handy spart der Knopf Platz -->
+                    <app-hilfe-umschalter *ngIf="!seitenleiste" [(offen)]="erklaerungOffen" steuert="fangkorb-erklaerung"
                                           beschriftungZu="So funktioniert der Fangkorb">
                     </app-hilfe-umschalter>
                 </div>
 
-                <div *ngIf="erklaerungOffen" id="fangkorb-erklaerung" class="erklaerung">
+                <div *ngIf="erklaerungOffen || seitenleiste" id="fangkorb-erklaerung" class="erklaerung">
                     <p class="dreischritt-satz">Jeder Schritt kann von jemand anderem kommen.</p>
                     <ol class="dreiklang" aria-label="So wird aus einem Fund ein Beitrag">
-                        <li><strong>Einwerfen</strong> – {{ fangkorbBeschreibung }}</li>
-                        <li><strong>Destillieren</strong> – in einem Satz sagen, was der Punkt ist.</li>
-                        <li><strong>Ausformulieren</strong> – aus dem Satz einen Beitrag machen.</li>
+                        <li><strong>{{ einwerfenEmoji }} Einwerfen</strong> – {{ fangkorbBeschreibung }}</li>
+                        <li><strong>{{ tabEmoji.destillieren }} Destillieren</strong> – in einem Satz sagen, was der Punkt ist.</li>
+                        <li><strong>{{ tabEmoji.ausformulieren }} Ausformulieren</strong> – aus dem Satz einen Beitrag machen.</li>
                     </ol>
                     <p>Alle sehen alles. Tippe auf eine Karte, um weiterzumachen.</p>
                 </div>
