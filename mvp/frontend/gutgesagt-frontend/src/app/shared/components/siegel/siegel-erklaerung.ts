@@ -36,7 +36,7 @@ export function siegelErklaerung(guete: number | null, erfuellt: string[], stimm
       .filter((art): art is Anmerkung['art'] => Object.hasOwn(KRITERIUM_ERFUELLT, art))
       .map((art) => KRITERIUM_ERFUELLT[art]),
     stimmen: stimmenZaehlen
-      ? 'Die Stimmen anderer sind eingerechnet.'
-      : 'Die Stimmen anderer zählen, sobald genug zusammenkommen.',
+      ? 'Die Stimmen anderer sind eingerechnet. Je mehr Menschen bewerten, desto mehr zählt ihr Urteil.'
+      : 'Die Stimmen anderer zählen, sobald genug zusammenkommen. Dann wiegt ihr Urteil immer mehr.',
   };
 }
