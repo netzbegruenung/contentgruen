@@ -41,3 +41,9 @@ Kennungen. Gezeigt wird der Hinweis von `shared/cc0-hinweis/` in allen Formulare
 
 Vorher (55bb5cb8 bis #431) stand im Formular „… deine eigene Formulierung unwiderruflich unter
 CC0 …“, ohne Kennung; Beiträge, Sätze und Einwürfe aus dieser Zeit haben keine.
+
+## Linkziel von „CC0“
+
+| Datum | Änderung |
+|-------|----------|
+| 19.11.2026 | Linkziel von `https://creativecommons.org/publicdomain/zero/1.0/deed.de` auf `https://creativecommons.org/publicdomain/zero/1.0/legalcode.de` (CC0 1.0) geändert; Hinweistext und Lizenz unverändert, deshalb keine neue Kennung (Entscheidung Maintainer, 19.11.2026, #718) |
