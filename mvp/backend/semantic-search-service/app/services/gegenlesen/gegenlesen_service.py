@@ -265,7 +265,7 @@ class Sprachwerkzeuge:
     @property
     def geladen(self) -> bool:
         """Ob spaCy schon geladen ist; die Suche (Inhaltstor) wartet nicht darauf."""
-        return self._nlp is not None
+        return self._nlp is not None and self._splitter is not None
 
     def analysieren(self, text: str):
         self.laden()

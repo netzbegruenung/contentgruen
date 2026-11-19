@@ -50,15 +50,12 @@ class Inhaltstor:
         self._ab = ab
         self._aussage_bis = aussage_bis
         self._direkt_bis = direkt_bis
-        # Je Text die Lemmata; Beitraege und Aussagen kommen in vielen Suchen wieder.
+        # Je Text eines Treffers die Lemmata; Beitraege und Aussagen kommen in vielen
+        # Suchen wieder. Suchanfragen nie: Sie sollen nicht im Speicher bleiben.
         self._lemmata = lru_cache(maxsize=4096)(self._lemmata_berechnen)
 
-    def _lemmata_berechnen(self, text: str):
-        doc = self._werkzeuge.analysieren(text)
-        return (
-            frozenset(t.lemma_.lower() for t in doc),
-            frozenset(t.lemma_.lower() for t in doc if t.pos_ in INHALTS_WORTARTEN),
-        )
+    def _lemmata_berechnen(self, text: str) -> frozenset:
+        return frozenset(t.lemma_.lower() for t in self._werkzeuge.analysieren(text))
 
     def inhaltsworte(self, query_text: str) -> frozenset:
         """Die Inhaltsworte der Suchanfrage; leer, wenn das Tor fuer sie offen ist."""
@@ -67,14 +64,26 @@ class Inhaltstor:
         if not getattr(self._werkzeuge, "geladen", False):
             return frozenset()
         try:
-            return self._lemmata(query_text.strip())[1]
+            # Ohne Cache: Der Suchtext bleibt nicht im Speicher des Prozesses.
+            return frozenset(
+                t.lemma_.lower()
+                for t in self._werkzeuge.analysieren(query_text.strip())
+                if t.pos_ in INHALTS_WORTARTEN
+            )
         except Exception as e:
             logger.warning("Inhaltstor offen (%s)", type(e).__name__)
             return frozenset()
 
     def _teilt(self, inhalt: frozenset, texte: Iterable[Optional[str]]) -> bool:
         for text in texte:
-            if text and text.strip() and inhalt & self._lemmata(text.strip())[0]:
+            if not text or not text.strip():
+                continue
+            try:
+                if inhalt & self._lemmata(text.strip()):
+                    return True
+            except Exception as e:
+                # Wie ohne Modell: lieber offen als die ganze Suche scheitern lassen.
+                logger.warning("Inhaltstor offen (%s)", type(e).__name__)
                 return True
         return False
 

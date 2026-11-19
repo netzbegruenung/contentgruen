@@ -506,7 +506,6 @@ Beitrags ist; beim direkten Weg auch der Aussagen, auf die er antwortet (Payload
 Gemessen am 19.11.2026 lokal am Startbestand wie oben (135 von 138 Fällen, Schwelle 0,82), mit
 dem echten Kommentar an einer nachgestellten alten Aussage außerhalb der fünf Aussagetreffer:
 
-<!-- Zahlen vorläufig -->
 | bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | 25 fremde: mit „Erkannt als“ / nur direkt | Präzision | Recall@10 | Seed: Treffer / Recall@10 |
 |---|---|---|---|---|---|---|---|---|
 | vorher (0.9.3) | 83/97 | 6 | 8 | 24/38 / 14 | 2 / 2 | 0.48 | 0.87 | 31/38 / 0.84 |
@@ -519,7 +518,7 @@ dem echten Kommentar an einer nachgestellten alten Aussage außerhalb der fünf 
 - **Was bleibt:** S129 („Man darf ja gar nicht mehr rauchen“, kein Nomen, Tor offen), S117
   („Tauben machen unsere Städte dreckig“, teilt „Stadt“) und S138 („Radfahrer machen unsere
   Städte unsicher“, über dem Band).
-- **Laufzeit:** nicht messbar (Median 156 bis 168 ms mit und ohne).
+- **Laufzeit:** Suche je Fall im Median 145 statt 139 ms, im 95. Perzentil 349 statt 346 ms (Dev-VM, geteilt).
 - Verworfen: Tor für alle Suchanfragen samt Schlagwörtern (77/97, am Seed Recall@10 0,79 unter
   dem Tor 0,80; zusammengesetzte Wörter wie „Heizungsverbot“ zu „Heizung“ teilen kein Lemma);
   Thema über die Einbettung (71/97, am Seed Recall@10 0,63).

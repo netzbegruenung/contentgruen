@@ -111,7 +111,7 @@ a search waits for the model twice in a row, each up to 2 s, so up to 4 s when i
 The Inhaltstor of the search (`SEMANTIC_SEARCH_SUCHE_INHALTSTOR`, default `true`) uses the spaCy
 model `de_core_news_sm` that is already loaded at start for Gegenlesen, so it needs no extra
 RAM. Until the model is loaded the gate stays open; the search does not wait for it. Runtime
-cost was not measurable (median 156 to 168 ms with and without). `SEMANTIC_SEARCH_SUCHE_INHALTSTOR=false`
+cost on the dev VM: median 145 instead of 139 ms per search. `SEMANTIC_SEARCH_SUCHE_INHALTSTOR=false`
 switches it off.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
