@@ -104,7 +104,10 @@
         <!-- Je Aussage eine Gruppe: die erkannte zuerst, direkte Treffer zuletzt. Die Gruppe
              nennt die Aussage, die Karten darum keinen eigenen Antwort-auf-Kopf. Gibt es eine
              erkannte Aussage, stehen die anderen eingeklappt darunter und zaehlen nicht in den Chips. -->
-        <ng-template #gruppeTpl let-gruppe>
+        <!-- imBereich: die Gruppe steht im aufgeklappten Bereich "Weitere, weniger passende
+             Treffer". Dort sind die Karten offen; wer den Bereich aufklappt, will die Treffer
+             sehen, nicht noch einmal jede Karte einzeln aufklappen (kein verschachteltes Einklappen). -->
+        <ng-template #gruppeTpl let-gruppe let-imBereich="imBereich">
         <!-- Am Desktop zwei Spalten (Maintainer 18.11.): oben links die beste Antwort, rechts daneben
              "Zu dieser Antwort", darunter ueber die volle Breite die weiteren Karten zu zweit. Die
              Reihenfolge im DOM ist die Lesereihenfolge: beste, Kasten, weitere. -->
@@ -141,7 +144,7 @@
                     <!-- Desktop ab 1024 px (Maintainer 18.11.): die naechsten vier offen, zu zweit, erst dann eingeklappte -->
                     <app-kartenliste *ngIf="block.offen.length" class="offene-karten" [daten]="block.offen" [schlicht]="true"
                                      [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
-                    <app-kartenliste *ngIf="block.weitere.length" class="eingeklappte-karten" [daten]="block.weitere" [schlicht]="true" [aufklappbar]="true"
+                    <app-kartenliste *ngIf="block.weitere.length" class="eingeklappte-karten" [daten]="block.weitere" [schlicht]="true" [aufklappbar]="!imBereich"
                                      [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
                 </ng-container>
                 <button *ngIf="block.mehrText" type="button" class="alle-zeigen"
@@ -168,7 +171,7 @@
             </button>
             <div id="weitere-treffer" class="weitere-liste" *ngIf="weitereOffen || !hauptGruppen.length">
                 <ng-container *ngFor="let gruppe of weitereGruppen; trackBy: nachGruppe">
-                    <ng-container *ngTemplateOutlet="gruppeTpl; context: { $implicit: gruppe }"></ng-container>
+                    <ng-container *ngTemplateOutlet="gruppeTpl; context: { $implicit: gruppe, imBereich: !!hauptGruppen.length }"></ng-container>
                 </ng-container>
             </div>
         </section>

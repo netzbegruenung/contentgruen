@@ -11,27 +11,28 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
   describe('neuesListe', () => {
     it('nennt hoechstens drei Kacheln, nur mit Neuem, ohne „neu“ bei den Aussagen', () => {
       expect(neuesListe(12, 3, 4).map((e) => [e.zahl, e.wort, e.ziel])).toEqual([
-        ['12', 'Mal genutzt', '/contributions'],
-        ['3', 'neue Einwürfe', '/fangkorb'],
-        ['4', 'warten auf Antwort', '/hier-fehlt-eine-antwort'],
+        ['12', 'Nutzungen deiner Beiträge', '/contributions'],
+        ['3', 'neue Einwürfe im Fangkorb', '/fangkorb'],
+        ['4', 'Aussagen ohne Antwort', '/hier-fehlt-eine-antwort'],
       ]);
-      expect(neuesListe(1, 1, 1).map((e) => e.wort)).toEqual(['Mal genutzt', 'neuer Einwurf', 'wartet auf Antwort']);
+      expect(neuesListe(1, 1, 1).map((e) => e.wort)).toEqual(['Nutzung deiner Beiträge', 'neuer Einwurf im Fangkorb', 'Aussage ohne Antwort']);
     });
 
     it('gibt jeder Kachel einen ganzen Satz, der den sichtbaren Text woertlich enthaelt (WCAG 2.5.3)', () => {
       const liste = neuesListe(12, 1, 4);
       expect(liste.map((e) => e.satz)).toEqual([
-        'Deine Beiträge wurden 12 Mal genutzt',
+        '12 Nutzungen deiner Beiträge',
         '1 neuer Einwurf im Fangkorb',
-        '4 warten auf Antwort: Lücken in „Hier fehlt eine Antwort“',
+        '4 Aussagen ohne Antwort: Lücken in „Hier fehlt eine Antwort“',
       ]);
-      expect(neuesListe(0, 0, 1)[0].satz).toBe('1 wartet auf Antwort: Lücke in „Hier fehlt eine Antwort“');
+      expect(neuesListe(1, 0, 0)[0].satz).toBe('1 Nutzung deiner Beiträge');
+      expect(neuesListe(0, 0, 1)[0].satz).toBe('1 Aussage ohne Antwort: Lücke in „Hier fehlt eine Antwort“');
       liste.forEach((e) => expect(e.satz).toContain(`${e.zahl} ${e.wort}`));
     });
 
     it('zeigt an der Grenze der Liste „50+“', () => {
       expect(neuesListe(0, 0, 50, true).map((e) => [e.zahl, e.satz])).toEqual([
-        ['50+', '50+ warten auf Antwort: Lücken in „Hier fehlt eine Antwort“'],
+        ['50+', '50+ Aussagen ohne Antwort: Lücken in „Hier fehlt eine Antwort“'],
       ]);
     });
 
@@ -104,14 +105,14 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
       expect(nav.getAttribute('aria-labelledby')).toBe('seit-besuch-titel');
       expect(nav.querySelector('h2#seit-besuch-titel')!.textContent).toBe('Seit deinem letzten Besuch');
       expect(links(fixture)).toEqual([
-        'Deine Beiträge wurden 2 Mal genutzt',
+        '2 Nutzungen deiner Beiträge',
         '3 neue Einwürfe im Fangkorb',
-        '4 warten auf Antwort: Lücken in „Hier fehlt eine Antwort“',
+        '4 Aussagen ohne Antwort: Lücken in „Hier fehlt eine Antwort“',
       ]);
       // Sichtbar: grosse Zahl und kurzer Text, das Icon ist fuer Screenreader versteckt
       const kachel: HTMLElement = nav.querySelector('a.nutzung')!;
       expect(kachel.querySelector('.seit-besuch-zahl')!.textContent).toBe('2');
-      expect(kachel.querySelector('.seit-besuch-wort')!.textContent).toBe('Mal genutzt');
+      expect(kachel.querySelector('.seit-besuch-wort')!.textContent).toBe('Nutzungen deiner Beiträge');
       expect(kachel.querySelector('mat-icon')!.getAttribute('aria-hidden')).toBe('true');
       expect(Storage.prototype.setItem).not.toHaveBeenCalled();
       expect(Storage.prototype.getItem).not.toHaveBeenCalled();
@@ -125,7 +126,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
 
       (fixture.nativeElement.querySelector('a.einwuerfe') as HTMLAnchorElement).click();
       fixture.detectChanges();
-      expect(links(fixture)).toEqual(['2 warten auf Antwort: Lücken in „Hier fehlt eine Antwort“']);
+      expect(links(fixture)).toEqual(['2 Aussagen ohne Antwort: Lücken in „Hier fehlt eine Antwort“']);
 
       info.next({ isAuthenticated: true, userId: 'bo-2' } as UserInfo);
       fixture.detectChanges();
