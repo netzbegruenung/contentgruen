@@ -262,6 +262,11 @@ class Sprachwerkzeuge:
                 self._nlp = spacy.load(self._modell)
                 self._splitter = Splitter()
 
+    @property
+    def geladen(self) -> bool:
+        """Ob spaCy schon geladen ist; die Suche (Inhaltstor) wartet nicht darauf."""
+        return self._nlp is not None
+
     def analysieren(self, text: str):
         self.laden()
         with self._nlp_lock:

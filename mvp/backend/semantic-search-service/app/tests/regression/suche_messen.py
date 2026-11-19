@@ -677,6 +677,15 @@ async def dienste_starten() -> Dienste:
     from services.search.polaritaet_nli import get_nli_polaritaet
 
     await get_nli_polaritaet().laden_abwarten()
+    # Das Sprachmodell des Inhaltstors (wie beim Start im Dienst); ohne spaCy bleibt
+    # das Tor offen, und die Messung misst ohne es.
+    if settings.suche_inhaltstor:
+        from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
+
+        try:
+            await asyncio.to_thread(SPRACHWERKZEUGE.laden)
+        except ImportError:
+            print("Inhaltstor offen: spaCy nicht installiert", file=sys.stderr)
     # Und fuer den Bezug (services/search/bezug.py), falls nur er das Modell braucht.
     if settings.suche_bezug_nli:
         from core.config import NLI_MODELL
@@ -825,6 +834,7 @@ async def fall_messen(
     cache: Optional[dict] = None,
 ) -> FallMessung:
     from api.v1.search import aussagetreffer_finden, treffer_sammeln
+    from services.search.inhaltstor import inhaltstor_fuer
     from services.search.search_orchestrator import SearchOrchestrator
 
     fall, erwartung, ersatz_fuer = await _erwartung_mit_ersatz(
@@ -858,6 +868,7 @@ async def fall_messen(
             usage_service=None,
             voting_service=None,
             schwelle=schwelle,
+            inhaltstor=inhaltstor_fuer(dienste.statement_service),
         )
         await treffer_sammeln(orchestrator, fall.anfrage, k, aussagetreffer, polaritaet)
 

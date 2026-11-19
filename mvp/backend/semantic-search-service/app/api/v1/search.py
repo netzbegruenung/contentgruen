@@ -54,6 +54,7 @@ from services.polarity_filter_service import (
     get_polarity_filter_service,
 )
 from services.search.bezug import get_aussage_bezug
+from services.search.inhaltstor import inhaltstor_fuer
 from services.search.polaritaet_nli import get_nli_polaritaet
 from services.keyword_overlap_service import get_keyword_overlap_service
 from dtos.search import (
@@ -105,6 +106,8 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
         )
     )
     logger.debug(f"📊 Statement search results: {len(statement_index_results)} items")
+    for aussage in statement_index_results:
+        aussage.aehnlichkeit = aussage.score
 
     # Aussagen ohne inhaltlichen Bezug zur Suchanfrage (services/search/bezug.py),
     # an der Aehnlichkeit der Einbettung vor Polaritaet und Schlagwoertern gemessen.
@@ -181,7 +184,7 @@ async def treffer_sammeln(
     Anreicherung folgt im Endpunkt. Auch vom Suchtestset genutzt.
     """
     await orchestrator.collect_statement_based(
-        statement_index_results, limit, polarity_metadata
+        statement_index_results, limit, polarity_metadata, query_text=query_text
     )
     await orchestrator.collect_direct(query_text, limit)
     orchestrator.sort_and_truncate(limit)
@@ -349,6 +352,7 @@ async def search_by_text(
             reference_service=reference_service,
             usage_service=get_usage_service(),
             voting_service=voting_service,
+            inhaltstor=inhaltstor_fuer(statement_service),
         )
 
         await treffer_sammeln(
