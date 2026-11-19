@@ -1332,7 +1332,7 @@ describe('ResultViewComponent: Testeingabe', () => {
     expect(seite.querySelector('app-nicht-dabei')).toBeNull();
   });
 
-  for (const eingabe of ['test', 'Hallo!', 'Was ist das?', 'ASDF']) {
+  for (const eingabe of ['test', 'Hallo!', 'Was ist das?', 'ASDF', '12345', 'xxxx', '...']) {
     it(`sucht bei "${eingabe}" nicht und zeigt die Karte`, async () => {
       const { seite } = await oeffnen(eingabe);
       expect(suchaufrufe()).withContext('kein Suchaufruf, also keine Aussage und keine Luecke').toBe(0);
@@ -1355,6 +1355,14 @@ describe('ResultViewComponent: Testeingabe', () => {
     expect(suchaufrufe()).toBe(1);
     expect(seite.querySelector('.testeingabe-karte')).withContext('neue Suche, Karte weg').toBeNull();
   });
+
+  for (const eingabe of ['A5', '112 Notruf', 'aab']) {
+    it(`sucht bei "${eingabe}" normal`, async () => {
+      const { seite } = await oeffnen(eingabe);
+      expect(suchaufrufe()).toBe(1);
+      expect(seite.querySelector('.testeingabe-karte')).toBeNull();
+    });
+  }
 
   it('sucht normal, wenn das Wort nur Teil der Eingabe ist', async () => {
     const { seite } = await oeffnen('Testergebnis Corona');

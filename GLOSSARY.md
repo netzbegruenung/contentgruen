@@ -401,7 +401,7 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Testeingabe**:
-Eine Suchanfrage, die nur ausprobiert, grüßt oder nach der App fragt: die ganze Eingabe ist, klein geschrieben und ohne Satzzeichen am Ende, genau ein Wort der Liste („test“, „hallo“, „hilfe“, „was ist das“ …; im Code `TESTEINGABEN`). Statt Treffern zeigt die Ergebnisseite eine freundliche Karte mit einem zufälligen Text und einem Beispiel zum Suchen. Gesucht wird nicht: Es entsteht keine Aussage, keine Suche ohne Treffer und kein Suchereignis, und nichts landet in „Hier fehlt eine Antwort“. Steht das Wort nur in einer längeren Eingabe („Testergebnis Corona“), wird normal gesucht.
+Eine Suchanfrage, die nur ausprobiert, grüßt oder nach der App fragt: die ganze Eingabe ist, klein geschrieben und ohne Satzzeichen am Ende, genau ein Wort der Liste („test“, „hallo“, „hilfe“, „was ist das“ …; im Code `TESTEINGABEN`), dazu nur Ziffern oder ein einzelnes wiederholtes Zeichen ab drei Zeichen („1234“, „xxxx“) und eine Eingabe nur aus Satzzeichen („?“). Statt Treffern zeigt die Ergebnisseite eine freundliche Karte mit einem zufälligen Text und einem Beispiel zum Suchen. Gesucht wird nicht: Es entsteht keine Aussage, keine Suche ohne Treffer und kein Suchereignis, und nichts landet in „Hier fehlt eine Antwort“. Steht das Wort nur in einer längeren Eingabe („Testergebnis Corona“), wird normal gesucht.
 _Avoid_: Spam, Unsinnseingabe, Leersuche
 
 **Vormoderation**:

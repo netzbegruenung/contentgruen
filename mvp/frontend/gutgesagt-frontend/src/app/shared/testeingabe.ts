@@ -72,9 +72,29 @@ const NACH_WORT = new Map<string, TesteingabeArt>(
   ),
 );
 
-/** Die Gruppe, wenn die ganze Eingabe ein Wort der Liste ist; sonst null (dann wird gesucht). */
+/** Ab so vielen Zeichen zählen reine Ziffern („1234“) und ein wiederholtes Zeichen („aaa“) als Test. */
+export const TESTEINGABE_MIN_ZEICHEN = 3;
+
+/**
+ * Die Gruppe, wenn die ganze Eingabe ein Wort der Liste ist; sonst null (dann wird gesucht).
+ * Zur Gruppe test zählen auch (Maintainer 19.11.): nur Ziffern oder ein einzelnes wiederholtes
+ * Zeichen ab TESTEINGABE_MIN_ZEICHEN, und eine Eingabe nur aus Satzzeichen („?“, „...“).
+ * Leere oder nur Leerraum ist keine Testeingabe: Da sucht das Feld ohnehin nicht.
+ */
 export function testeingabeArt(eingabe: string): TesteingabeArt | null {
-  return NACH_WORT.get(normalisieren(eingabe)) ?? null;
+  const text = normalisieren(eingabe);
+  const art = NACH_WORT.get(text);
+  if (art) {
+    return art;
+  }
+  if (text === '') {
+    return (eingabe ?? '').trim() ? 'test' : null;
+  }
+  const zeichen = [...text];
+  if (zeichen.length >= TESTEINGABE_MIN_ZEICHEN && (/^\d+$/.test(text) || zeichen.every((z) => z === zeichen[0]))) {
+    return 'test';
+  }
+  return null;
 }
 
 /** Ein zufälliger Text der Gruppe; `zufall` liefert wie Math.random eine Zahl in [0, 1). */

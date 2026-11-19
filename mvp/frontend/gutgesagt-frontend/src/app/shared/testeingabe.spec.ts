@@ -32,15 +32,44 @@ describe('Testeingabe', () => {
         'Hallo, die Grünen wollen uns das Auto wegnehmen',
         'hi there',
         'Hilfe für Heizungstausch',
-        '1234',
+        '12',
+        'A5',
+        '112 Notruf',
+        'aab',
+        'aa',
         'test test',
         '',
         '   ',
-        '?',
         'Windräder töten die Vögel!',
       ]) {
         expect(testeingabeArt(eingabe)).withContext(eingabe).toBeNull();
       }
+    });
+
+    it('zaehlt nur Ziffern ab drei Zeichen zur Gruppe test', () => {
+      for (const eingabe of ['123', '1234', '12345', ' 0815! ']) {
+        expect(testeingabeArt(eingabe)).withContext(eingabe).toBe('test');
+      }
+      for (const eingabe of ['1', '12', 'A5', '112 Notruf', '12 34', '3,14']) {
+        expect(testeingabeArt(eingabe)).withContext(eingabe).toBeNull();
+      }
+    });
+
+    it('zaehlt ein einzelnes wiederholtes Zeichen ab drei Zeichen zur Gruppe test', () => {
+      for (const eingabe of ['aaa', 'xxxx', 'XXXX', 'ööö', 'aaaa!']) {
+        expect(testeingabeArt(eingabe)).withContext(eingabe).toBe('test');
+      }
+      for (const eingabe of ['a', 'aa', 'aab', 'abab', 'a a a', 'xxxx Corona']) {
+        expect(testeingabeArt(eingabe)).withContext(eingabe).toBeNull();
+      }
+    });
+
+    it('zaehlt eine Eingabe nur aus Satzzeichen zur Gruppe test, leere nicht', () => {
+      for (const eingabe of ['?', '...', ' ?! ', '…']) {
+        expect(testeingabeArt(eingabe)).withContext(eingabe).toBe('test');
+      }
+      expect(testeingabeArt('')).toBeNull();
+      expect(testeingabeArt('   ')).toBeNull();
     });
 
     it('zaehlt Satzzeichen am Anfang oder in der Mitte nicht weg', () => {
