@@ -50,6 +50,7 @@ from services.search.search_query_statement import (
 from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
 from services.polarity_filter_service import get_polarity_filter_service
+from services.search.bezug import get_aussage_bezug
 from services.search.polaritaet_nli import get_nli_polaritaet
 from services.keyword_overlap_service import get_keyword_overlap_service
 from dtos.search import (
@@ -83,8 +84,9 @@ router = APIRouter()
 
 async def aussagetreffer_finden(statement_service: StatementService, query_text: str):
     """
-    Die Aussagen mit Antworten, die zur Suchanfrage passen, gewichtet mit
-    Polaritaetsstrafe (Wortlisten oder NLI-Modell, #574) und Schlagwort-Ueberlappung.
+    Die Aussagen mit Antworten, die zur Suchanfrage passen, ohne die ohne Bezug zu ihr
+    (services/search/bezug.py), gewichtet mit Polaritaetsstrafe (Wortlisten oder
+    NLI-Modell, #574) und Schlagwort-Ueberlappung.
     Liefert die Treffer und die Polaritaets-Metadaten je Aussage. Eigene Funktion, damit das Suchtestset
     (tests/regression/suche_messen.py) genau so sucht und gewichtet wie die Suche.
     """
@@ -97,6 +99,17 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
         )
     )
     logger.debug(f"📊 Statement search results: {len(statement_index_results)} items")
+
+    # Aussagen ohne inhaltlichen Bezug zur Suchanfrage (services/search/bezug.py),
+    # an der Aehnlichkeit der Einbettung vor Polaritaet und Schlagwoertern gemessen.
+    # Ihre Antworten bleiben auf dem direkten Weg moeglich: Dort zaehlt die eigene
+    # Aehnlichkeit des Beitrags, und eine Antwort kommt ohne "Erkannt als".
+    ohne_bezug = await get_aussage_bezug().ohne_bezug(
+        query_text, statement_index_results, lambda r: r.text, lambda r: r.score
+    )
+    statement_index_results = [
+        r for i, r in enumerate(statement_index_results) if i not in ohne_bezug
+    ]
 
     polarity_filter = get_polarity_filter_service(
         enable_filtering=settings.enable_polarity_filtering
