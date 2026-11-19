@@ -57,7 +57,7 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
   if (aussagen > 0) {
     const zahl = aussagenMehr ? `${aussagen}+` : `${aussagen}`;
     const eine = aussagen === 1 && !aussagenMehr;
-    const wort = eine ? 'wartet auf Antwort' : 'warten auf Antwort';
+    const wort = eine ? 'Aussage ohne Antwort' : 'Aussagen ohne Antwort';
     liste.push({
       art: 'aussagen',
       ziel: ROUTES.HIER_FEHLT_EINE_ANTWORT,
