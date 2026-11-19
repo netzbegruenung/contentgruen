@@ -1,7 +1,7 @@
 # Löschkonzept (Art. 17 DSGVO)
 
 > **Noch keine erprobte Prozedur.** Produktion läuft, mit Anmeldung über die Netzbegrünung
-> und mit Beta-Zugängen (`docs/DEPLOYMENT.md`, `STATUS.md`); spätestens mit dem internen Start
+> und mit Beta-Zugängen (`docs/DEPLOYMENT.md`, `docs/STATUS.md`); spätestens mit dem internen Start
 > (`v0.9.0`) legen echte Personen Konten, Beiträge, Stimmen und Meldungen an, auch Daten nach
 > Art. 9. Ab dann ist jedes Löschverlangen zu erfüllen, und dieses Konzept ist der Weg dafür.
 > Wie viele Konten und Daten es in Produktion schon gibt, steht nicht im Repo (**offen**).
