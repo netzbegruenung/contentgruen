@@ -39,19 +39,19 @@ export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: 
       ziel: ROUTES.MEINE_BEITRAEGE,
       icon: 'trending_up',
       zahl: `${nutzung}`,
-      wort: 'Mal genutzt',
-      satz: `Deine Beiträge wurden ${nutzung} Mal genutzt`,
+      wort: nutzung === 1 ? 'Nutzung deiner Beiträge' : 'Nutzungen deiner Beiträge',
+      satz: `${nutzung} ${nutzung === 1 ? 'Nutzung' : 'Nutzungen'} deiner Beiträge seit deinem letzten Besuch`,
     });
   }
   if (einwuerfe > 0) {
-    const wort = einwuerfe === 1 ? 'neuer Einwurf' : 'neue Einwürfe';
+    const wort = einwuerfe === 1 ? 'neuer Einwurf im Fangkorb' : 'neue Einwürfe im Fangkorb';
     liste.push({
       art: 'einwuerfe',
       ziel: '/fangkorb',
       icon: MENUE_ICONS.einwerfen,
       zahl: `${einwuerfe}`,
       wort,
-      satz: `${einwuerfe} ${wort} im Fangkorb`,
+      satz: `${einwuerfe} ${wort}`,
     });
   }
   if (aussagen > 0) {
