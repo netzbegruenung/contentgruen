@@ -11,10 +11,13 @@ Fehlt der Header, bleibt ein gespeicherter Name stehen: Das ist auch der Fall
 eines BFF ohne diese Funktion, und der soll nichts loeschen.
 
 Startkonten (GLOSSARY.md "Startkonto") sind Funktionskonten, keine Personen: Fuer
-sie legt der Dienst den ungekuerzten Namen aus X-User-Full-Name ab ("Redaktion Gut
-gesagt" statt "Redaktion G."). Fuer alle anderen wird dieser Header verworfen. Weil
-der Prozess-Cache nach jedem Start leer ist und der volle Name sich vom gespeicherten
-unterscheidet, ersetzt ihn der erste Request des Startkontos nach dem Deploy.
+sie schickt das BFF den ungekuerzten Namen in X-User-Full-Name (nur fuer seine Liste
+STARTKONTEN), und der Dienst legt ihn ab ("Redaktion Gut gesagt" statt "Redaktion G.").
+Fuer Kennungen ausserhalb von SEMANTIC_SEARCH_STARTKONTEN wird der Header verworfen.
+Weil der Prozess-Cache nach jedem Start leer ist und der volle Name sich vom
+gespeicherten unterscheidet, ersetzt ihn der erste Request des Startkontos nach dem
+Deploy. Faellt eine Kennung aus der Liste, gilt umgekehrt dasselbe: Ihr naechster
+Request nach dem Neustart legt wieder den gekuerzten Namen ab.
 """
 
 import logging

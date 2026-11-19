@@ -180,5 +180,7 @@ public class DisplayNamePolicyTests
         Assert.Null(DisplayNamePolicy.FullFrom(Mit(("name", "Redaktion"))));
         Assert.Null(DisplayNamePolicy.FullFrom(Mit((ClaimTypes.GivenName, "Kim"))));
         Assert.Null(DisplayNamePolicy.FullFrom(Mit(("name", "test.user@example.com x"))));
+        Assert.Null(DisplayNamePolicy.FullFrom(Mit(
+            (ClaimTypes.GivenName, "test.user@example.com"), (ClaimTypes.Surname, "x"))));
     }
 }

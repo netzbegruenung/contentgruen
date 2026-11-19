@@ -31,9 +31,10 @@ public static class IdentityHeaderTransform
 
     /// <summary>
     /// Der ungekuerzte Name aus <see cref="DisplayNamePolicy.FullFrom"/>, prozentkodiert wie der
-    /// Anzeigename und nur, wenn er sich von ihm unterscheidet. Der Suchdienst legt ihn allein
-    /// fuer Startkonten ab (SEMANTIC_SEARCH_STARTKONTEN) und verwirft ihn sonst; er steht in
-    /// keinem Log.
+    /// Anzeigename. Nur fuer Startkonten (STARTKONTEN, GLOSSARY.md "Startkonto"): Das sind
+    /// Funktionskonten, keine Personen. Den vollen Namen einer Person bekommt der Suchdienst
+    /// nie. Er prueft die Kennung zusaetzlich gegen SEMANTIC_SEARCH_STARTKONTEN; der Name steht
+    /// in keinem Log.
     /// </summary>
     public const string FullNameHeader = "X-User-Full-Name";
 
@@ -87,12 +88,17 @@ public static class IdentityHeaderTransform
     /// IdentityHeaderTransformTests ohne Host aufrufen. Ohne Standardwert, damit eine
     /// kuenftige zweite Aufrufstelle die Liste nicht stillschweigend weglassen kann.
     /// </param>
+    /// <param name="startkonten">
+    /// Kennungen der Startkonten (STARTKONTEN), bereits zerlegt. Nur fuer sie geht der volle
+    /// Name mit. Fehlt die Liste, bekommt niemand einen: der sichere Ausgang.
+    /// </param>
     public static void Apply(
         HttpRequestMessage proxyRequest,
         ClaimsPrincipal user,
         string? path,
         IReadOnlyCollection<string> adminUserIds,
-        ILogger logger)
+        ILogger logger,
+        IReadOnlyCollection<string>? startkonten = null)
     {
         // Zuerst und ohne Bedingung: der Client darf ueber Identitaet und Rechte nichts aussagen.
         foreach (var header in ClientControlledIdentityHeaders)
@@ -113,7 +119,9 @@ public static class IdentityHeaderTransform
             {
                 SetSingleValue(proxyRequest, DisplayNameHeader, Uri.EscapeDataString(anzeigename));
 
-                var vollerName = DisplayNamePolicy.FullFrom(user);
+                var vollerName = startkonten is not null && startkonten.Contains(userId, StringComparer.Ordinal)
+                    ? DisplayNamePolicy.FullFrom(user)
+                    : null;
                 if (vollerName is not null && vollerName != anzeigename)
                 {
                     SetSingleValue(proxyRequest, FullNameHeader, Uri.EscapeDataString(vollerName));

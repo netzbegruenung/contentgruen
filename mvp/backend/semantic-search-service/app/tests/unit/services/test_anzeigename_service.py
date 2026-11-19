@@ -169,6 +169,26 @@ class TestStartkontoVollerName:
             (STARTKONTO, "Redaktion Gut gesagt"),
         ]
 
+    def test_aus_der_liste_entfernt_wird_wieder_gekuerzt(self, repository):
+        vorher = AnzeigenameService(repository, frozenset({STARTKONTO}))
+        vorher.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+        nachher = AnzeigenameService(repository, frozenset())
+        nachher.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+
+        assert [c.args for c in repository.anzeigename_speichern.call_args_list] == [
+            (STARTKONTO, "Redaktion Gut gesagt"),
+            (STARTKONTO, "Redaktion G."),
+        ]
+
+    def test_dienst_nimmt_die_liste_aus_der_konfiguration(self, monkeypatch):
+        from services import anzeigename_service as modul
+
+        monkeypatch.setattr(modul, "_anzeigename_service", None)
+        monkeypatch.setattr(modul, "get_user_repository", MagicMock)
+        monkeypatch.setattr(modul.settings, "startkonten", f" {STARTKONTO} ,andere")
+
+        assert modul.get_anzeigename_service()._startkonten == {STARTKONTO, "andere"}
+
 
 @pytest.mark.unit
 class TestDependency:

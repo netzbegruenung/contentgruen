@@ -251,6 +251,11 @@ Container names are the same in dev, test and production: `gutgesagt-app-postgre
 
 All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 
+- `STARTKONTEN` - Optional, comma-separated user ids of Startkonten (`GLOSSARY.md`), compared
+  like `ADMIN_USER_IDS`. Only for these function accounts the BFF also sends the unshortened
+  name in `X-User-Full-Name` ("Redaktion Gut gesagt" instead of "Redaktion G."); the full name
+  of a person never leaves the BFF. Set it to the same value as `SEMANTIC_SEARCH_STARTKONTEN`,
+  which the search service checks as well. Unset: every name stays shortened.
 - `SEMANTIC_SEARCH_QDRANT_URL` - Qdrant endpoint
 - `SEMANTIC_SEARCH_QDRANT_COLLECTION` - Qdrant collection name
 - `SEMANTIC_SEARCH_APP_DATABASE_URL` - PostgreSQL connection string

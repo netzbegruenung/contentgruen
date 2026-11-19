@@ -50,9 +50,8 @@ public static class DisplayNamePolicy
     /// <summary>
     /// Der ungekuerzte Name aus denselben Quellen wie <see cref="From"/>: "Redaktion Gut gesagt".
     /// Nur fuer Startkonten (GLOSSARY.md "Startkonto"): Das sind Funktionskonten, keine Personen,
-    /// und sie sollen mit vollem Namen erscheinen. Welche Kennungen Startkonten sind, weiss nur
-    /// der Suchdienst (SEMANTIC_SEARCH_STARTKONTEN); er legt diesen Namen allein fuer sie ab und
-    /// verwirft ihn fuer alle anderen.
+    /// und sie sollen mit vollem Namen erscheinen. Nur fuer sie ruft
+    /// <see cref="IdentityHeaderTransform"/> das auf (STARTKONTEN).
     /// </summary>
     /// <returns>Der volle Name, oder null, wenn keine Quelle Vor- und Nachname hergibt.</returns>
     public static string? FullFrom(ClaimsPrincipal user)

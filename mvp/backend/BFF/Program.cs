@@ -64,6 +64,12 @@ var adminUserIds = AdminPolicy.ParseAllowlist(builder.Configuration.GetValue<str
 // Variablennamen unsichtbar -- die Liste waere dann still leer.
 startupLogger.LogInformation("Admin allowlist: {Count} configured user ids", adminUserIds.Length);
 
+// STARTKONTEN (kommasepariert, GLOSSARY.md "Startkonto"): Funktionskonten, fuer die der volle
+// Name an den Suchdienst geht ("Redaktion Gut gesagt" statt "Redaktion G."). Derselbe Wert wie
+// SEMANTIC_SEARCH_STARTKONTEN. Ungesetzt: alle Namen bleiben gekuerzt.
+var startkonten = AdminPolicy.ParseAllowlist(builder.Configuration.GetValue<string>("STARTKONTEN"));
+startupLogger.LogInformation("Startkonten: {Count} configured user ids", startkonten.Length);
+
 if (useKeycloak)
 {
     // Read Keycloak configuration from appsettings.json
@@ -276,7 +282,8 @@ builder.Services.AddReverseProxy()
                         httpContext.User,
                         httpContext.Request.Path.Value,
                         adminUserIds,
-                        logger);
+                        logger,
+                        startkonten);
                 }
                 catch (Exception ex)
                 {

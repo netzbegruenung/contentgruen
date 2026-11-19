@@ -214,7 +214,7 @@ public class IdentityHeaderTransformTests
     }
 
     [Fact]
-    public void Apply_AuthenticatedUserWithName_SetsEncodedFullNameOnce()
+    public void Apply_Startkonto_SetsEncodedFullNameOnce()
     {
         var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.FullNameHeader, "Gefaelscht"));
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -229,7 +229,8 @@ public class IdentityHeaderTransformTests
             user,
             ProtectedPath,
             NoAllowlist,
-            Logger);
+            Logger,
+            new[] { "echte-kennung" });
 
         var werte = ValuesOf(proxyRequest, IdentityHeaderTransform.FullNameHeader);
         Assert.Equal(new[] { "Redaktion%20Gut%20gesagt" }, werte);
@@ -238,8 +239,39 @@ public class IdentityHeaderTransformTests
             ValuesOf(proxyRequest, IdentityHeaderTransform.DisplayNameHeader));
     }
 
+    private static ClaimsPrincipal MitVollemNamen(string kennung) =>
+        new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", kennung),
+            new Claim(ClaimTypes.GivenName, "Anna"),
+            new Claim(ClaimTypes.Surname, "Berger")
+        }, "TestAuth"));
+
     [Fact]
-    public void Apply_NameWithoutSurname_SetsNoFullName()
+    public void Apply_PersonNotInStartkonten_SendsNoFullName()
+    {
+        // Der volle Name einer Person geht nie an den Suchdienst (Datensparsamkeit, DSFA V1).
+        var proxyRequest = ProxyRequestCarrying();
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest, MitVollemNamen("person-1"), ProtectedPath, NoAllowlist, Logger, new[] { "startkonto-1" });
+
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.FullNameHeader));
+        Assert.Equal(new[] { "Anna%20B." }, ValuesOf(proxyRequest, IdentityHeaderTransform.DisplayNameHeader));
+    }
+
+    [Fact]
+    public void Apply_WithoutStartkonten_SendsNoFullName()
+    {
+        var proxyRequest = ProxyRequestCarrying();
+
+        IdentityHeaderTransform.Apply(proxyRequest, MitVollemNamen("person-1"), ProtectedPath, NoAllowlist, Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.FullNameHeader));
+    }
+
+    [Fact]
+    public void Apply_StartkontoWithoutSurname_SetsNoFullName()
     {
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
@@ -248,7 +280,7 @@ public class IdentityHeaderTransformTests
         }, "TestAuth"));
         var proxyRequest = ProxyRequestCarrying();
 
-        IdentityHeaderTransform.Apply(proxyRequest, user, ProtectedPath, NoAllowlist, Logger);
+        IdentityHeaderTransform.Apply(proxyRequest, user, ProtectedPath, NoAllowlist, Logger, new[] { "echte-kennung" });
 
         Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.FullNameHeader));
     }
