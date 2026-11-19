@@ -121,6 +121,12 @@
   }
 }
 
+// Zweite Karte und Dank mit Abstand zur Karte darueber
+.personal-intro + .personal-intro,
+.danke {
+  margin-top: 2.5rem;
+}
+
 .timeline {
   position: relative;
   padding-left: 2.4rem;

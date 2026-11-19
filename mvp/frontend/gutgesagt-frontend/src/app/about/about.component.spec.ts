@@ -149,6 +149,41 @@ describe('AboutComponent', () => {
     expect(abschnitt.textContent).toContain('nur als Herkunft');
   });
 
+  describe('Die Menschen hinter Gut gesagt', () => {
+    let abschnitt: Element;
+
+    beforeEach(() => {
+      abschnitt = seite.querySelector('.menschen')!;
+    });
+
+    it('stellt Sebastian und Aila je mit Karte vor', () => {
+      expect(abschnitt.querySelector('h2')!.textContent).toContain('Die Menschen hinter Gut gesagt');
+      const namen = Array.from(abschnitt.querySelectorAll('.personal-intro h3')).map((h) => h.textContent!.trim());
+      expect(namen).toEqual(['Sebastian Banach', 'Aila Banach']);
+    });
+
+    it('nennt Ailas Rolle und zeigt ihr Foto', () => {
+      const karte = abschnitt.querySelector('.person-aila')!;
+
+      expect(karte.querySelector('.role')!.textContent!.trim()).toBe('Konzeption & Kommunikation');
+      expect(einzeilig(karte)).toContain('Aila unterstützt Gut gesagt bei Konzeption und Kommunikation.');
+      expect(einzeilig(karte)).toContain('Versteht man das sofort?');
+      const foto = karte.querySelector('img.profile-image')!;
+      expect(foto.getAttribute('src')).toBe('/profilbild-aila.jpg');
+      expect(foto.getAttribute('alt')).toBe('Aila Banach');
+    });
+
+    it('dankt allen Helfenden ohne weitere Namen', () => {
+      const danke = abschnitt.querySelector('.danke')!;
+
+      expect(danke.querySelector('h3')!.textContent!.trim()).toBe('Danke');
+      expect(einzeilig(danke)).toContain(
+        `Danke an alle aus der ${ORGANISATION.name}, die mit Ideen, Tests und Hinweisen geholfen haben.`,
+      );
+      expect(einzeilig(danke)).toContain('Auch kleine Beiträge haben Gut gesagt besser gemacht.');
+    });
+  });
+
   it('ordnet die Zeitleiste unter ihre h2 ein, ohne Stufe zu überspringen', () => {
     expect(seite.querySelectorAll('.timeline h4').length).toBe(0);
     expect(seite.querySelectorAll('.timeline-item > h3').length).toBe(3);
