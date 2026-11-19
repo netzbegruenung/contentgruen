@@ -103,7 +103,7 @@ Suchanfragen, zu denen Menschen festgelegt haben, an welchen Aussagen passende B
 _Avoid_: Testset (allein), Messset (das sind Textpaare)
 
 **Bezug**:
-Ob eine Aussage inhaltlich zu einer Suchanfrage passt und nicht nur im Satzbau oder in einem Schlagwort ähnelt („Open Source ist unsicher!“ und „Migranten machen unsere Städte unsicher.“). Die Suche prüft ihn bei Suchanfragen ab drei Wörtern an einer Untergrenze der Ähnlichkeit: Darunter zählt eine Aussage nicht als Treffer. Bei Behauptungen prüft knapp darüber das Modell der NLI-Stufe, ob es in einer Richtung etwas folgert. Ihre Antworten kann die Suche trotzdem direkt finden, dann ohne „Erkannt als“. Schlagwörter prüft sie nicht. Messung in `tests/regression/SUCHTESTSET.md`, Abschnitt „Bezug“.
+Ob eine Aussage inhaltlich zu einer Suchanfrage passt und nicht nur im Satzbau oder in einem Schlagwort ähnelt („Open Source ist unsicher!“ und „Migranten machen unsere Städte unsicher.“). Die Suche prüft ihn bei Suchanfragen ab drei Wörtern an einer Untergrenze der Ähnlichkeit: Darunter zählt eine Aussage nicht als Treffer. Bei Behauptungen prüft knapp darüber das Modell der NLI-Stufe, ob es in einer Richtung etwas folgert. Ihre Antworten zeigt die Suche auch direkt nur, wenn sie selbst der Suchanfrage sehr ähnlich sind. Schlagwörter prüft sie nicht. Messung in `tests/regression/SUCHTESTSET.md`, Abschnitt „Bezug“.
 _Avoid_: Relevanz (das ist das Gewicht einer Antwort an ihrer Aussage)
 
 **Fehltreffer**:

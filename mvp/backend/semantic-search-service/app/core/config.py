@@ -363,6 +363,13 @@ class Settings(BaseSettings):
     suche_bezug_ab: float = Field(default=0.87, ge=0.0, le=1.0)
     suche_bezug_sicher_ab: float = Field(default=0.92, ge=0.0, le=1.0)
     suche_bezug_folgerung_ab: float = Field(default=0.2, ge=0.0, le=1.0)
+    # Antworten einer Aussage ohne Bezug kommen auch ueber den direkten Weg nur, wenn
+    # ihr eigener Rohscore zur Suchanfrage mindestens so hoch ist. Gemessen am
+    # Startbestand (SUCHTESTSET.md, Abschnitt Bezug): unpassende solche Antworten bis
+    # 0,872, passende ab 0,82; eine Schwelle trennt beides nicht. 0,86 haelt den Befund
+    # von Produktion 0.9.2 (0,83) und zwei weitere fremde Faelle fern und laesst Recall@10 am Seed
+    # ueber dem Tor; ganz ohne Ausnahme fiele er darunter.
+    suche_bezug_direkt_ab: float = Field(default=0.86, ge=0.0, le=1.01)
 
     # Keyword overlap boosting configuration
     enable_keyword_overlap_boost: bool = (

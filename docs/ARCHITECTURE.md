@@ -281,8 +281,9 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
   NLI-Stufe, so no extra RAM while the NLI-Stufe is not `aus` (otherwise this switch loads the
   model itself); measured in `tests/regression/SUCHTESTSET.md`.
 - `SEMANTIC_SEARCH_SUCHE_BEZUG_AB` - for a query of three words or more, an Aussage below this
-  embedding similarity (default 0.87) is no hit (`services/search/bezug.py`); its answers can
-  still come via the direct path, then without "Erkannt als". For a statement query (no
+  embedding similarity (default 0.87) is no hit (`services/search/bezug.py`); its answers come
+  via the direct path only with their own raw similarity of at least
+  `SEMANTIC_SEARCH_SUCHE_BEZUG_DIREKT_AB` (0.86). For a statement query (no
   question) `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI` (default `true`) also asks the first NLI model
   about Aussagen up to `SEMANTIC_SEARCH_SUCHE_BEZUG_SICHER_AB` (0.92): they count only with
   entailment of at least `SEMANTIC_SEARCH_SUCHE_BEZUG_FOLGERUNG_AB` (0.2) in one direction; the

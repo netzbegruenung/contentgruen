@@ -22,11 +22,11 @@ deshalb, an der Aehnlichkeit der Einbettung vor Polaritaet und Schlagwoertern:
   suche_bezug_nli = false, ohne geladenes Modell oder wenn es laenger als
   SUCHE_WARTET_HOECHSTENS belegt ist: Bezug.
 
-Eine Aussage ohne Bezug faellt aus den Aussagetreffern. Ihre Antworten kann der
-direkte Weg trotzdem bringen, wenn sie selbst der Suchanfrage aehnlich genug sind; sie
-stehen dann ohne "Erkannt als" da. Am Startbestand holt das sechs Faelle Umgangssprache
-zurueck ("Woelfe haben in Deutschland nichts verloren"); ein fremder Fall ("Ein neues
-Handy lohnt sich nicht") zeigt dafuer eine Antwort zu Balkonsolar, ohne "Erkannt als".
+Eine Aussage ohne Bezug faellt aus den Aussagetreffern. Ihre Antworten bringt der
+direkte Weg nur, wenn ihr eigener Rohscore zur Suchanfrage mindestens
+suche_bezug_direkt_ab erreicht (api/v1/search.py, SearchOrchestrator.collect_direct).
+Ohne diese Grenze zeigte Produktion 0.9.2 bei "Open Source ist unsicher!" einen kurzen
+Kommentar zur Migranten-Aussage als beste Antwort (eigene Aehnlichkeit 0,83).
 
 Schlagwoerter (unter MINDESTENS_WOERTER Woertern) prueft das nicht: Sie liegen oft
 niedriger, etwa "Genderzwang" oder "Migration Kriminalitaet", und fuer sie gilt die

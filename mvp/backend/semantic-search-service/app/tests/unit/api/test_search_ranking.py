@@ -610,10 +610,11 @@ class TestBezug:
         assert resp.status_code == 200
         assert resp.json()["commentary_search_results_count"] == 0
 
-    def test_direkter_weg_bleibt_ohne_erkannt_als(self, search_client):
-        # Die Aussage faellt weg, ihr Kommentar darf ueber den direkten Weg kommen, wenn
-        # er selbst ueber der Schwelle liegt: dann ohne Aussage, also ohne "Erkannt als".
-        kommentar = _commentary_search_hit(score=0.83)
+    def test_antwort_der_fremden_aussage_kommt_auch_nicht_direkt(self, search_client):
+        # Produktion 0.9.2: "Open Source ist unsicher!" zeigte unter "Passt zu deinem
+        # Suchtext" einen kurzen Kommentar zur Migranten-Aussage, eigene Aehnlichkeit
+        # 0,83 ueber der Schwelle 0,82 des direkten Wegs.
+        kommentar = _commentary_search_hit(score=0.831)
         client = search_client(
             statement_results=[self._migranten(0.862, kommentar.id)],
             direct_commentaries=[kommentar],
@@ -623,10 +624,60 @@ class TestBezug:
             SEARCH_URL, json={"query_text": "Open Source ist unsicher!", "limit": 10}
         )
 
+        assert resp.json()["commentary_search_results_count"] == 0
+
+    @pytest.mark.parametrize("eigene,anzahl", [(0.859, 0), (0.86, 1), (0.879, 1)])
+    def test_antwort_mit_eigener_hoher_aehnlichkeit_kommt_direkt(
+        self, search_client, eigene, anzahl
+    ):
+        # Ausnahme ab suche_bezug_direkt_ab (0,86): 0,879 ist S133 "Durch die
+        # Zuwanderung gibt es mehr Kriminalität" mit einem Kommentar zur Migranten-Aussage.
+        kommentar = _commentary_search_hit(score=eigene)
+        client = search_client(
+            statement_results=[self._migranten(0.862, kommentar.id)],
+            direct_commentaries=[kommentar],
+        )
+
+        resp = client.post(
+            SEARCH_URL,
+            json={"query_text": "Durch die Zuwanderung gibt es mehr Kriminalität"},
+        )
+
         treffer = resp.json()["commentary_search_results"]
-        assert len(treffer) == 1
-        assert treffer[0]["statement_id"] is None
-        assert treffer[0]["statement_text"] == ""
+        assert len(treffer) == anzahl
+        if treffer:
+            assert treffer[0]["statement_id"] is None  # ohne "Erkannt als"
+
+    def test_nur_direkt_nach_dem_modell_ebenso(self, search_client):
+        # S123 "Ein neues Handy lohnt sich nicht": Balkonsolar 0,881 verwirft das Modell
+        # (Folgerung 0,01/0,12), ihr Kommentar kam direkt mit 0,830.
+        from services.dieselbe_behauptung.regel import Richtung, Urteil
+
+        class Nli:
+            async def urteile(self, paare, warte_hoechstens=None):
+                return [
+                    Urteil(Richtung(0.01, 0.0), Richtung(0.12, 0.08)) for _ in paare
+                ]
+
+        kommentar = _commentary_search_hit(score=0.830)
+        aussage = _statement_result(
+            0.881,
+            [_reply(ContentType.COMMENTARY, 1.0, kommentar.id)],
+            "Balkonsolar lohnt sich nicht.",
+        )
+        client = search_client(
+            statement_results=[aussage], direct_commentaries=[kommentar]
+        )
+        with patch(
+            "api.v1.search.get_aussage_bezug",
+            return_value=AussageBezug(Nli(), 0.87, 0.92, 0.2),
+        ):
+            resp = client.post(
+                SEARCH_URL,
+                json={"query_text": "Ein neues Handy lohnt sich nicht", "limit": 10},
+            )
+
+        assert resp.json()["commentary_search_results_count"] == 0
 
     def test_frage_bekommt_die_untergrenze(self, search_client):
         client = search_client(statement_results=[self._migranten(0.822, uuid.uuid4())])
