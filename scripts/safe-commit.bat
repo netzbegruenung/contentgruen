@@ -2,7 +2,7 @@
 REM Safe commit script that handles pre-commit hooks
 
 if "%~1"=="" (
-    echo Usage: safe-commit.bat "commit message"
+    echo Usage: scripts\safe-commit.bat "commit message"
     exit /b 1
 )
 

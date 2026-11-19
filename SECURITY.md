@@ -6,7 +6,7 @@ Please report security vulnerabilities in Gut gesagt by e-mail to
 **gutgesagt@netzbegruenung.de**, not in a public issue, pull request or chat.
 
 <!-- Entschieden 30.10.2026 (#430): Sicherheitsluecken gehen an dieselbe Adresse wie Fragen und
-Fehler. Aendert sie sich, auch security.txt (Contact), README.md, CONTRIBUTING.md und
+Fehler. Aendert sie sich, auch security.txt (Contact), README.md, README.en.md, .github/CONTRIBUTING.md und
 ORGANISATION.gutgesagtMail (shared/organisation.ts) nachziehen. -->
 
 Please include:

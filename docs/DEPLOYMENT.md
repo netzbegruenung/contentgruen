@@ -501,7 +501,7 @@ semantic search container.
 
 Questions about deployment and requests for test-system or production access go in an issue on
 [Forgejo](https://git.verdigado.com/Netzbegruenung/gutgesagt/issues); without Forgejo access,
-see [CONTRIBUTING.md](../CONTRIBUTING.md#repository). Security vulnerabilities: see
+see [CONTRIBUTING.md](../.github/CONTRIBUTING.md#repository). Security vulnerabilities: see
 [SECURITY.md](../SECURITY.md).
 
 ---

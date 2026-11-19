@@ -307,4 +307,4 @@ The full endpoint list is in the Swagger UI at [http://localhost:8000/docs](http
 
 For project onboarding, feature suggestions, and how to help, see:
 
-👉 [`CONTRIBUTING.md`](../CONTRIBUTING.md)
+👉 [`CONTRIBUTING.md`](../.github/CONTRIBUTING.md)

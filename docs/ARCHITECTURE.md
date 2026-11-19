@@ -313,7 +313,7 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - `mvp/scripts/setup/check-environment.sh/.bat` - Checks prerequisites
 - `mvp/scripts/utils/switch-to-docker.sh/.bat` and `switch-to-local.sh/.bat` - Switch the active frontend environment config
 - `mvp/scripts/utils/clean-all.sh/.bat` - Removes containers, volumes and build artifacts
-- `safe-commit.bat/.sh` - Handles pre-commit hooks
+- `scripts/safe-commit.bat/.sh` - Handles pre-commit hooks
 
 ## Network Architecture
 

@@ -32,7 +32,7 @@ Wegwerf-Sandbox, kein Mensch entwickelt hier interaktiv: der Stack läuft in Doc
 jederzeit gelöscht und neu aufgebaut werden. Dev-Loop über `mvp/run-local.sh`
 (`up | status | reset | wipe | seed | test | logs <dienst> | down`); nach Code-Änderungen `reset`,
 `wipe` nur bei Schema-/Seed-Problemen. Ports, VM-Voraussetzungen: `docs/DEV-SETUP.md`.
-Anmeldung im Dev-Stack: `test.user@example.com` / `Liebe>Hass!` (Direktanmeldung, `CONTRIBUTING.md`).
+Anmeldung im Dev-Stack: `test.user@example.com` / `Liebe>Hass!` (Direktanmeldung, `.github/CONTRIBUTING.md`).
 
 ### Remote access
 
@@ -91,7 +91,7 @@ nur wenig:
 | Domain terms (use them in code, UI, tests, commits, PR texts; new term → `GLOSSARY.md` in the same PR) | `GLOSSARY.md`, `docs/agents/domain.md` |
 | Decisions that are hard to reverse | `docs/adr/` |
 | Review rules: severities, Scope/Fachfrage, Titel of a Beitrag, public repo, legal texts | `CODING_STANDARDS.md` |
-| Setup, local development, `ng serve` against the dev stack, tests per component, Windows scripts | `CONTRIBUTING.md`, `docs/DEV-SETUP.md`, `docs/DEV_GUIDE.md`, `mvp/README_DEV_SETUP.md`, `mvp/SCRIPTS.md` |
+| Setup, local development, `ng serve` against the dev stack, tests per component, Windows scripts | `.github/CONTRIBUTING.md`, `docs/DEV-SETUP.md`, `docs/DEV_GUIDE.md`, `mvp/README_DEV_SETUP.md`, `mvp/SCRIPTS.md` |
 | Architecture, environment variables, auth modes, container names | `docs/ARCHITECTURE.md` |
 | Adding a Beitragstyp (registry, not a new service class) | `docs/CONTENT_MODEL.md`, ADR 0002 |
 | Python backend conventions, interface locations | `mvp/backend/semantic-search-service/README.md` |
@@ -105,7 +105,7 @@ nur wenig:
 | Art. 9 consent (own checkbox after first login, wording, withdrawal, #489) | `docs/ART9_EINWILLIGUNG.md` |
 | Data protection impact assessment (draft, Art. 35 GDPR), processing by processing | `docs/DSFA.md` |
 | Record of processing activities (draft, Art. 30 GDPR) | `docs/VERARBEITUNGSVERZEICHNIS.md` |
-| Current state | `STATUS.md` (Lageseite); planning is on the Forgejo milestones |
+| Current state | `docs/STATUS.md` (Lageseite); planning is on the Forgejo milestones |
 | Purpose and limits of the product | `docs/VISION.md` |
 
 ## Agent skills
