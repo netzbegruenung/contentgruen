@@ -400,6 +400,10 @@ _Avoid_: Offene Aussage (offen ist eine Stufe eines Einwurfs), Wunsch, Anfrage
 Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber häufige Suchanfragen ohne Treffer zeigen, welche Aussagen noch Antworten brauchen.
 _Avoid_: Query, Suchbegriff
 
+**Testeingabe**:
+Eine Suchanfrage, die nur ausprobiert, grüßt oder nach der App fragt: die ganze Eingabe ist, klein geschrieben und ohne Satzzeichen am Ende, genau ein Wort der Liste („test“, „hallo“, „hilfe“, „was ist das“ …; im Code `TESTEINGABEN`), dazu nur Ziffern oder ein einzelnes wiederholtes Zeichen ab drei Zeichen („1234“, „xxxx“) und eine Eingabe nur aus Satzzeichen („?“). Statt Treffern zeigt die Ergebnisseite eine freundliche Karte mit einem zufälligen Text und einem Beispiel zum Suchen. Gesucht wird nicht: Es entsteht keine Aussage, keine Suche ohne Treffer und kein Suchereignis, und nichts landet in „Hier fehlt eine Antwort“. Steht das Wort nur in einer längeren Eingabe („Testergebnis Corona“), wird normal gesucht.
+_Avoid_: Spam, Unsinnseingabe, Leersuche
+
 **Vormoderation**:
 Die Prüfung einer unbeantworteten Suchanfrage durch das Moderationsteam (die Admins), bevor andere sie sehen (Entscheidung des Maintainers vom 13.11.2026). Erreicht eine Aussage aus einer Suchanfrage, auf die noch niemand geantwortet hat, die Schwelle der Suchen ohne Treffer, steht sie in der Moderation unter „Suchanfragen“; das Moderationsteam gibt sie frei oder lehnt sie ab, etwa wenn der Text Namen Dritter enthält. Für alle anderen sichtbar ist sie nur über der Schwelle und freigegeben; eine ungeprüfte oder abgelehnte bleibt unsichtbar. Sie gilt dann auch nicht als dieselbe Aussage, wenn jemand den gleichen Text als Aussage anlegt oder beantwortet: Es entsteht eine neue Aussage mit dessen Wortlaut, nur eine weitere Suche landet weiter auf ihr. Eine freigegebene, auf die jemand antwortet, gilt wie jede Aussage. Auch der Bestand bei der Einführung geht durch die Vormoderation; vorab freigegeben wurde nichts. „Freigeben“ meint nur diese Entscheidung, nicht den Zustand Sichtbar eines Beitrags.
 _Avoid_: Offene Aussage, Veröffentlichen

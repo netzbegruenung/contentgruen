@@ -1278,3 +1278,95 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
     expect(seite.querySelectorAll('app-beitragskarte').length).toBe(3);
   });
 });
+
+/**
+ * Testeingabe ("test", "hallo", "hilfe"): Statt zu suchen steht eine freundliche Karte da.
+ * Kein Suchaufruf heisst: Das Backend legt keine Aussage an, und nichts landet als Luecke
+ * in "Hier fehlt eine Antwort".
+ */
+describe('ResultViewComponent: Testeingabe', () => {
+  let http: HttpTestingController;
+
+  async function oeffnen(suchtext: string): Promise<{ harness: RouterTestingHarness; seite: HTMLElement }> {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: 'result', component: ResultViewComponent }]),
+      ],
+      imports: [ResultViewComponent],
+    });
+    http = TestBed.inject(HttpTestingController);
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(`result?searchQuery=${encodeURIComponent(suchtext)}`, ResultViewComponent);
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    return { harness, seite: harness.routeNativeElement as HTMLElement };
+  }
+
+  function suchaufrufe(): number {
+    return http.match((r) => r.url.endsWith('/api/v1/search/searchByText')).length;
+  }
+
+  // Keine weiteren Aufrufe, etwa an andere Endpunkte, die eine Aussage anlegen koennten.
+  afterEach(() => http.verify());
+
+  it('zeigt keine spaete Antwort einer vorigen Suche unter der Karte', async () => {
+    const { harness, seite } = await oeffnen('Klimaschutz ist zu teuer');
+    const offen = http.expectOne((r) => r.url.endsWith('/api/v1/search/searchByText'));
+    await harness.navigateByUrl('result?searchQuery=test', ResultViewComponent);
+    await harness.fixture.whenStable();
+    offen.flush({
+      query_was_newly_added_as_statement: true,
+      statement_id: null,
+      statement_text: 'Klimaschutz ist zu teuer',
+      commentary_search_results_count: 0,
+      commentary_search_results: [],
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+    });
+    harness.detectChanges();
+    expect(suchaufrufe()).withContext('fuer "test" kein neuer Suchaufruf').toBe(0);
+    expect(seite.querySelector('.testeingabe-karte')).toBeTruthy();
+    expect(seite.querySelector('.unified-empty-state')).withContext('alte Antwort bleibt weg').toBeNull();
+    expect(seite.querySelector('app-nicht-dabei')).toBeNull();
+  });
+
+  for (const eingabe of ['test', 'Hallo!', 'Was ist das?', 'ASDF', '12345', 'xxxx', '...']) {
+    it(`sucht bei "${eingabe}" nicht und zeigt die Karte`, async () => {
+      const { seite } = await oeffnen(eingabe);
+      expect(suchaufrufe()).withContext('kein Suchaufruf, also keine Aussage und keine Luecke').toBe(0);
+      const karte = seite.querySelector('.testeingabe-karte');
+      expect(karte).withContext('Karte statt Treffern').toBeTruthy();
+      expect(karte!.closest('[aria-live="polite"]')).withContext('angekuendigt per aria-live').toBeTruthy();
+      expect(seite.querySelector('.testeingabe-text')!.textContent!.trim().length).toBeGreaterThan(0);
+      expect(seite.querySelector('.unified-empty-state')).withContext('kein Leerzustand mit Antworten-Knopf').toBeNull();
+      expect(seite.querySelector('app-nicht-dabei')).toBeNull();
+    });
+  }
+
+  it('das Beispiel sucht per Klick, und dann wird wirklich gesucht', async () => {
+    const { harness, seite } = await oeffnen('hi');
+    const beispiel = seite.querySelector<HTMLAnchorElement>('.testeingabe-beispiel')!;
+    expect(beispiel.getAttribute('href')).toContain('/result?searchQuery=');
+    beispiel.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(suchaufrufe()).toBe(1);
+    expect(seite.querySelector('.testeingabe-karte')).withContext('neue Suche, Karte weg').toBeNull();
+  });
+
+  for (const eingabe of ['A5', '112 Notruf', 'aab']) {
+    it(`sucht bei "${eingabe}" normal`, async () => {
+      const { seite } = await oeffnen(eingabe);
+      expect(suchaufrufe()).toBe(1);
+      expect(seite.querySelector('.testeingabe-karte')).toBeNull();
+    });
+  }
+
+  it('sucht normal, wenn das Wort nur Teil der Eingabe ist', async () => {
+    const { seite } = await oeffnen('Testergebnis Corona');
+    expect(suchaufrufe()).toBe(1);
+    expect(seite.querySelector('.testeingabe-karte')).toBeNull();
+  });
+});
