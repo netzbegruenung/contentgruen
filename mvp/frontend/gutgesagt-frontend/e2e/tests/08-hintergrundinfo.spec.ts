@@ -39,7 +39,7 @@ test('Hintergrundinfo verfassen: Aufbau, neue Aussage, Ergebnisseite', async ({ 
     await bild('81-hintergrundinfo-leer');
   });
 
-  await test.step('Text: 2000er-Zaehler, kein X/Bluesky, waechst mit', async () => {
+  await test.step('Text: 2000er-Zaehler, kein Mastodon/Bluesky/X, waechst mit', async () => {
     await page.locator('textarea#text').fill(`${TESTDATEN_PRAEFIX} ${'Zahlen. '.repeat(40)}`.slice(0, 300));
     await expect.soft(page.locator('mat-hint', { hasText: '300 / 2000' })).toBeVisible();
     await expect.soft(page.locator('.plattform-hinweis')).toHaveCount(0);
@@ -55,7 +55,6 @@ test('Hintergrundinfo verfassen: Aufbau, neue Aussage, Ergebnisseite', async ({ 
       titel,
       `${TESTDATEN_PRAEFIX} Bei 800 Watt und 30 Cent je Kilowattstunde spart ein Balkonkraftwerk rund 150 Euro im Jahr.`,
     );
-    await page.locator('.herkunft-link').click();
     await page.locator('.reference-source-input').fill(`${TESTDATEN_PRAEFIX} Herkunft: Verbraucherzentrale, Rechner Balkonkraftwerk`);
     await page.locator('.reference-source-input').press('Enter');
     await expect.soft(page.locator('.reference-item')).toHaveCount(1);

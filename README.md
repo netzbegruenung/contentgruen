@@ -9,11 +9,13 @@ The hand in the logo, favicon, Siegel and vote buttons is the "Thumbs up" emoji 
 ## Live Systems
 
 - **Test System**: https://gutgesagt-test.netzbegruenung.de
-  Login: button "Anmelden" ("Netzbegrünung-Login oder Einladung"), with the Netzbegrünung-Login or an
-  account from an Einladung; the accounts are not part of this repository.
+  Login: button "Mit Netzbegrünung-Konto anmelden"; it leads to the sign-in page of the own Keycloak
+  realm („Mit Netzbegrünung anmelden“, or mail and password for an account from an Einladung). The
+  accounts are not part of this repository.
 
 - **Production**: [https://gutgesagt.netzbegruenung.de](https://gutgesagt.netzbegruenung.de)
-  Uses Netzbegruenung Keycloak for authentication.
+  Signs in through the own Keycloak realm „Gut gesagt“, with the Netzbegrünung as identity provider
+  (`docs/KEYCLOAK_REALM.md`).
   `contentgruen.de` currently redirects here.
 
 ## Project Overview
@@ -29,7 +31,7 @@ See `architecture.png` for a system overview.
 ## Getting Started
 
 ```bash
-git clone https://github.com/netzbegruenung/contentgruen.git gutgesagt
+git clone https://github.com/netzbegruenung/gutgesagt.git gutgesagt
 cd gutgesagt/mvp
 docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up
@@ -60,5 +62,5 @@ account and how to develop locally: [CONTRIBUTING.md](./CONTRIBUTING.md).
 - **Development:** issues and pull requests live on Forgejo
   ([git.verdigado.com/Netzbegruenung/gutgesagt](https://git.verdigado.com/Netzbegruenung/gutgesagt)),
   see [CONTRIBUTING.md](./CONTRIBUTING.md).
-- **GitHub** ([netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen))
+- **GitHub** ([netzbegruenung/gutgesagt](https://github.com/netzbegruenung/gutgesagt))
   is a read-only mirror, see [CONTRIBUTING.md](./CONTRIBUTING.md#repository).

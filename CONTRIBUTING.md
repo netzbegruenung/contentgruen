@@ -15,14 +15,14 @@ Development happens on Forgejo:
 Issues and pull requests are managed there. Access is for people working on the project
 (Netzbegrünung, verdigado).
 
-[github.com/netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen) is a
+[github.com/netzbegruenung/gutgesagt](https://github.com/netzbegruenung/gutgesagt) is a
 read-only mirror: you can read and clone the code there, but issues and pull requests opened
 there are not processed.
 
 ## Quickstart (Docker)
 
 ```bash
-git clone https://github.com/netzbegruenung/contentgruen.git gutgesagt
+git clone https://github.com/netzbegruenung/gutgesagt.git gutgesagt
 cd gutgesagt/mvp
 docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up
@@ -32,7 +32,7 @@ docker compose -f docker-compose.dev.yml up
   Docker cannot bind ports below 1024)
 - **BFF** (.NET): [http://localhost:5054](http://localhost:5054)
 - **Semantic Search Service**: [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
-- **Sign in**: button "Beta-Zugang" ("Direktanmeldung"), Beta-Zugang `test.user@example.com` /
+- **Sign in**: button "Mit E-Mail anmelden" (Direktanmeldung), Beta-Zugang `test.user@example.com` /
   `Liebe>Hass!` from `mvp/config/managed-users.example.json`. With plain `docker compose`, copy
   that file to `mvp/config/managed-users.json` before starting, otherwise this sign-in is off
   (see [docs/DEV-SETUP.md](docs/DEV-SETUP.md)).
@@ -152,12 +152,13 @@ and confirm that you have the right to do so.
 
 1. Open an issue on Forgejo or comment on an existing one to coordinate
 2. Create a branch as described above
-3. Make your changes and run the checks: `scripts/check.sh --geaendert` while working, the full
-   `scripts/check.sh --integration` before opening the pull request
+3. Make your changes and run the checks: `scripts/check.sh --geaendert` while working and before
+   pushing; the full run (`scripts/check.sh --integration`) is the pipeline's job, the
+   integration tests on `main` after the merge
 4. Open a pull request against `main` on Forgejo with a clear description of what and why, and
    `Closes #<issue>`
-5. Woodpecker runs the same checks on every pull request ([docs/CI.md](docs/CI.md)); a maintainer
-   reviews and merges
+5. Woodpecker runs the same checks on every pull request, except the integration tests, which
+   run on `main` only ([docs/CI.md](docs/CI.md)); a maintainer reviews and merges
 
 Before starting significant work, please get in touch first to avoid duplication. Judgement rules
 for reviews are in [CODING_STANDARDS.md](CODING_STANDARDS.md).

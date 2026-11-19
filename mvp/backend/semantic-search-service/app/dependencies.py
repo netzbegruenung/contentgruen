@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     # Only needed for the type annotation on the lazily-built Post service; imported
     # under TYPE_CHECKING to avoid pulling the registry/service graph at module load.
     from services.content.base_content_service import BaseContentService
+    from services.abzeichen_service import AbzeichenService
 from core.config import settings, Settings
 from utils.rate_limiter import RateLimiter
 from services.orchestration.content_orchestrator import ContentOrchestrator
@@ -37,6 +38,9 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
+from repositories.suchanfrage_freigabe_repository import (
+    get_suchanfrage_freigabe_repository,
+)
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
 from repositories.einladung_repository import get_einladung_repository
@@ -48,17 +52,21 @@ from repositories.usage_tracking_repository import get_usage_repository
 from services.gegenlesen.gegenlesen_service import (
     SPRACHWERKZEUGE,
     GegenlesenService,
+    lade_parteistimme,
     lade_statt_sag_liste,
 )
 from services.kuerzungsvorschlag_service import KuerzungsvorschlagService
 from services.loeschfristen_service import LoeschfristenService
 from services.muster_hinweise_service import MusterHinweiseService
+from services.meilensteine_service import MeilensteineService
 from services.punkte_service import PunkteService
 from services.spracherkennung.spracherkennung import SPRACHERKENNUNG, Spracherkennung
 from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
 from repositories.einwurf_repository import get_einwurf_repository
 from repositories.sperre_repository import get_sperre_repository
+from repositories.loeschauftrag_repository import get_loeschauftrag_repository
+from repositories.schalter_repository import get_schalter_repository
 from core.fehler import INTERNER_FEHLER
 from core.logging import get_logger
 
@@ -105,6 +113,19 @@ def initialize_services() -> None:
     # Create content service instances (lightweight - no data loading)
     global statement_service_instance
     statement_service_instance = StatementService(settings=settings_instance)
+    # NLI-Stufe (#387): das Modell im Hintergrund laden, damit die erste Suche nicht
+    # darauf wartet. Ohne Modell gilt die Schwelle, der Start scheitert nicht daran.
+    statement_service_instance.nli_vorladen()
+    # Die Polaritaet der Suche (#574) nutzt dasselbe Modell; ist die NLI-Stufe aus,
+    # laedt es hier, sonst wartete die Suche vergeblich auf ein nie geladenes Modell.
+    if (
+        settings_instance.suche_polaritaet_nli != "aus"
+        and settings_instance.dieselbe_aussage_nli == "aus"
+    ):
+        from core.config import NLI_MODELL
+        from services.dieselbe_behauptung.nli_modell import nli_modell
+
+        nli_modell(NLI_MODELL).vorladen()
 
     global commentary_service_instance
     commentary_service_instance = CommentaryService(settings=settings_instance)
@@ -157,6 +178,7 @@ def get_suchen_ohne_treffer_service(
         get_suchen_ohne_treffer_repository(),
         statement_service,
         get_personen_des_tages(),
+        get_suchanfrage_freigabe_repository(),
     )
 
 
@@ -191,17 +213,14 @@ def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
 
 
-def get_punkte_service(
-    settings: Settings = Depends(get_settings),
-) -> PunkteService:
+def _sichtbare_beitraege(settings: Settings):
+    """Die sichtbaren Beitraege einer Person, fuer Punkte und Meilensteine."""
     from domain.content_registry import BEITRAGSTYPEN_WERTE
     from repositories.aggregated.content_repository import ContentRepository
-    from repositories.punkte_repository import get_punkte_repository
-    from repositories.usage_tracking_repository import get_usage_repository
 
     async def sichtbare_beitraege(user_id: str):
         # get_by_author laesst gesperrte und geloeschte Beitraege aus: Sie verlieren
-        # ihre Punkte (#352).
+        # ihre Punkte (#352) und zaehlen nicht fuer Meilensteine (#351).
         return await ContentRepository(settings).get_by_author(
             # Alle Beitraege der Person, wie get_user_statistics.
             user_id,
@@ -210,8 +229,58 @@ def get_punkte_service(
             content_types=BEITRAGSTYPEN_WERTE,
         )
 
+    return sichtbare_beitraege
+
+
+def get_punkte_service(
+    settings: Settings = Depends(get_settings),
+) -> PunkteService:
+    from repositories.punkte_repository import get_punkte_repository
+    from repositories.usage_tracking_repository import get_usage_repository
+
     return PunkteService(
-        sichtbare_beitraege, get_usage_repository(), get_punkte_repository(), settings
+        _sichtbare_beitraege(settings),
+        get_usage_repository(),
+        get_punkte_repository(),
+        settings,
+    )
+
+
+def abzeichen_service_bauen(settings: Settings) -> "AbzeichenService":
+    """Fuer main.py: der Dienst der sichtbaren Abzeichen, mit den Meilensteinen (#351)."""
+    from repositories.abzeichen_sichtbarkeit_repository import (
+        get_abzeichen_sichtbarkeit_repository,
+    )
+    from services.abzeichen_service import AbzeichenService
+
+    meilensteine = get_meilensteine_service(settings)
+
+    async def ohne_wegmarken(user_id: str):
+        # Wegmarken zaehlen fuers Abzeichen nicht; ihre Abfragen spart der Takt.
+        return await meilensteine.meilensteine(user_id, mit_wegmarken=False)
+
+    return AbzeichenService(
+        get_abzeichen_sichtbarkeit_repository(), ohne_wegmarken, settings
+    )
+
+
+def get_meilensteine_service(
+    settings: Settings = Depends(get_settings),
+) -> MeilensteineService:
+    from repositories.punkte_repository import get_punkte_repository
+    from repositories.usage_tracking_repository import get_usage_repository
+
+    async def beantwortet_einer(beitrag_ids):
+        # Erst beim Abruf geholt, damit sich der Dienst auch vor der Initialisierung
+        # bauen laesst (abzeichen_service_bauen, Tests).
+        return await get_statement_service().beantwortet_einer(beitrag_ids)
+
+    return MeilensteineService(
+        _sichtbare_beitraege(settings),
+        get_usage_repository(),
+        get_punkte_repository(),
+        settings,
+        beantwortet_einer,
     )
 
 
@@ -265,13 +334,44 @@ def get_nutzung_rate_limiter() -> RateLimiter:
 
 
 def get_gegenlesen_service() -> GegenlesenService:
-    """Einmal je Prozess: die Liste "statt X sag Y" wird beim ersten Aufruf gelesen."""
+    """Einmal je Prozess: die Listen "statt X sag Y" und Parteistimme werden beim
+    ersten Aufruf gelesen."""
     global _gegenlesen_service
     if _gegenlesen_service is None:
         _gegenlesen_service = GegenlesenService(
-            statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
+            statt_sag=lade_statt_sag_liste(),
+            werkzeuge=SPRACHWERKZEUGE,
+            parteistimme=lade_parteistimme(),
         )
     return _gegenlesen_service
+
+
+_guete_service = None
+
+
+def get_guete_service():
+    """
+    Einmal je Prozess (#427): haelt das Gegenlesen je Titel und Text im Speicher vor
+    und teilt sich Sprachmodell und Stimmen-Tabelle mit Gegenlesen und Abstimmen.
+    """
+    global _guete_service
+    if _guete_service is None:
+        from domain.guete import Guetegewichte
+        from repositories.vote_repository import VoteRepository
+        from services.guete_service import GueteService
+
+        einstellungen = get_settings()
+        _guete_service = GueteService(
+            get_gegenlesen_service(),
+            VoteRepository(),
+            einstellungen.startkonto_kennungen(),
+            Guetegewichte(
+                stimmen_ab=einstellungen.guete_stimmen_ab,
+                stimmen_gewicht_max=einstellungen.guete_stimmen_gewicht_max,
+                stimmen_halbwert=einstellungen.guete_stimmen_halbwert,
+            ),
+        )
+    return _guete_service
 
 
 def get_spracherkennung() -> Spracherkennung:
@@ -313,6 +413,12 @@ def get_loeschfristen_service() -> LoeschfristenService:
         get_sperre_repository(),
         # Ohne Zugang zur Keycloak-Admin-Schnittstelle bleiben Konten im Realm unberuehrt.
         _keycloak_konten(),
+        # Suchereignisse abgeschlossener Tage zu Tageszaehlern verdichten (#495).
+        get_search_tracking_repository(),
+        # Erledigte Loeschauftraege nach dem Widerruf (DSFA R9b).
+        get_loeschauftrag_repository(),
+        # Verlauf der Schalter nach einem Jahr (#708).
+        get_schalter_repository(),
     )
 
 
@@ -349,10 +455,20 @@ def get_beitrag_aendern_service(
     repository: IContentRepository = Depends(get_content_repository),
 ) -> BeitragAendernService:
     """Ueber das aggregierte Repository, wie das Loeschen (#299)."""
+    from repositories.vote_repository import VoteRepository
+
     return BeitragAendernService(
         repository,
         get_reference_service().herkunft_id,
         get_content_report_repository().hat_offene_meldung,
+        # Stimmen verfallen bei anderer Behauptung (#427); ohne StatementService
+        # (Start noch nicht durch) entscheidet niemand, die Stimmen bleiben.
+        gleiche_behauptung=(
+            statement_service_instance.gleiche_behauptung
+            if statement_service_instance is not None
+            else None
+        ),
+        stimmen_loeschen=VoteRepository().loeschen_fuer_beitrag,
     )
 
 

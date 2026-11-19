@@ -25,6 +25,11 @@ export interface ContentResult {
      * zeigt "Du".
      */
     autor_name?: string | null;
+    /**
+     * Zahl der erreichten Meilensteine der Autorin (#351); nur fuer Angemeldete und nur,
+     * wenn sie der Sichtbarkeit zugestimmt hat, sonst null.
+     */
+    autor_abzeichen?: number | null;
     /** Ob es der eigene Beitrag ist; vom Server berechnet, in Meine Beitraege immer true. */
     ist_eigener_beitrag?: boolean | null;
     /** Leer bei Bildern ohne Bildunterschrift. */
@@ -49,4 +54,13 @@ export interface ContentResult {
     nutzung_je_fassung?: NutzungJeFassung | null;
     /** Herkunftsangaben; Adresse und Beschreibung loest der Endpunkt auf. */
     references?: ContentReference[];
+    /** Guete fuer das Siegel (#427): 1-10, null = "neu". */
+    guete?: number | null;
+    /** Die Kriterien des Gegenlesens, die der Beitrag erfuellt (nur die erfuellten). */
+    guete_erfuellt?: string[];
+    /** Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl). */
+    guete_stimmen_zaehlen?: boolean;
+    /** Zaehler an den Stimm-Knoepfen (Stimmen anderer); null unter der Mindestzahl oder unbekannt. */
+    stimmen_hilfreich?: number | null;
+    stimmen_nicht_hilfreich?: number | null;
 }

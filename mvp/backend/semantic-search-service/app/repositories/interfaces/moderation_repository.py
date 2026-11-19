@@ -65,9 +65,23 @@ class IModerationRepository(ABC):
     @abstractmethod
     async def aus_aussagen_entfernen(self, beitrag_id: str) -> int:
         """
-        Den Beitrag aus den Antwortvorschlaegen aller Aussagen streichen.
+        Den Beitrag aus den Antwortvorschlaegen aller Aussagen streichen und ihre
+        Antwortzahl aus den sichtbaren uebrigen neu zaehlen.
 
         Returns:
             Anzahl der geaenderten Aussagen
+        """
+        pass
+
+    @abstractmethod
+    async def antwortzahl_nachziehen(self, beitrag_id: str) -> int:
+        """
+        Die Antwortzahl (replysuggestions_count) aller Aussagen, die auf den Beitrag
+        verweisen, aus ihren sichtbaren Antwortvorschlaegen neu zaehlen (#631). Nach
+        Sperren und Entsperren: Der Verweis bleibt, damit Entsperren ihn nicht
+        wiederherstellen muss; nur die Zahl folgt der Sichtbarkeit.
+
+        Returns:
+            Anzahl der Aussagen, deren Zahl sich geaendert hat
         """
         pass

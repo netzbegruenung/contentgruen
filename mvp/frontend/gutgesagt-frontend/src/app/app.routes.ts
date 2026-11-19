@@ -1,5 +1,6 @@
 import { ActivatedRouteSnapshot, Routes } from '@angular/router';
-import { AuthGuard } from './auth/auth.guard';
+import { AuthGuard, MIT_KONTO_VORSCHAU } from './auth/auth.guard';
+import { mitKontoVorschauGuard } from './mit-konto/mit-konto.guard';
 import { AdminGuard } from './auth/admin.guard';
 import { PublicGuard } from './auth/public.guard';
 import { ShareTargetGuard } from './share-target/share-target.guard';
@@ -8,6 +9,8 @@ import {
     vonHierFehltEineAntwort,
 } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { ROUTES } from './shared/constants/app.constants';
+import { ohneSuchtextZumStart } from './result-view/ohne-suchtext.guard';
+import { SUCHTEXT_PARAM } from './shared/formular-adresse';
 import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
 /**
@@ -66,7 +69,10 @@ export const routes: Routes = [
     {
         path: 'result',
         loadComponent: () => import('./result-view/result-view.component').then(m => m.ResultViewComponent),
-        canActivate: [PublicGuard],
+        canActivate: [PublicGuard, ohneSuchtextZumStart],
+        // Auch /result?searchQuery=x -> /result ohne Text geht auf den Start (#642).
+        // Nur dann: Sonst liefe auch PublicGuard bei jeder neuen Suche erneut (check-session).
+        runGuardsAndResolvers: (_von, nach) => !nach.queryParamMap.get(SUCHTEXT_PARAM)?.trim(),
         data: { parent: '/search' }
     },
     {
@@ -75,22 +81,22 @@ export const routes: Routes = [
         path: 'contribute',
         loadComponent: () => import('./contribute-view/contribute-view.component').then(m => m.ContributeViewComponent),
         canActivate: [AuthGuard],
-        data: { parent: '/search' }
+        data: { [MIT_KONTO_VORSCHAU]: true, parent: '/search' }
     },
     {
         path: 'einwerfen',
         loadComponent: () => import('./einwerfen/einwerfen.component').then(m => m.EinwerfenComponent),
         canActivate: [AuthGuard],
-        data: { parent: einwerfenEltern }
+        data: { [MIT_KONTO_VORSCHAU]: true, parent: einwerfenEltern }
     },
     {
         path: 'fangkorb',
         loadComponent: () => import('./fangkorb/fangkorb.component').then(m => m.FangkorbComponent),
         canActivate: [AuthGuard],
-        data: { parent: '/search' }
+        data: { [MIT_KONTO_VORSCHAU]: true, parent: '/search' }
     },
     {
-        // Ohne ID: oeffnet den naechsten offenen Einwurf oder zeigt "Alles destilliert".
+        // Ohne ID: oeffnet den naechsten offenen Einwurf oder zeigt "Leer gefischt."
         path: 'destillieren',
         loadComponent: () => import('./destillieren/destillieren.component').then(m => m.DestillierenComponent),
         canActivate: [AuthGuard],
@@ -171,6 +177,12 @@ export const routes: Routes = [
         data: { parent: gespeichertEltern, typ: 'post' }
     },
     {
+        path: 'workflow/add-image/gespeichert/:id',
+        loadComponent: () => import('./beitragsformular/beitrag-gespeichert/beitrag-gespeichert.component').then(m => m.BeitragGespeichertComponent),
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
+        data: { parent: gespeichertEltern, typ: 'image' }
+    },
+    {
         path: 'workflow/add-image',
         loadComponent: () => import('./add-image-workflow/add-image-workflow.component').then(m => m.AddImageWorkflowComponent),
         canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
@@ -191,6 +203,16 @@ export const routes: Routes = [
         canActivate: [ShareTargetGuard],
         loadComponent: () => import('./share-target-debug/share-target-debug.component').then(m => m.ShareTargetDebugComponent),
         data: { parent: '/einwerfen' }
+    },
+    {
+        // Was ein Konto bringt, fuer Besucher vor der Anmeldung (Entscheidung 17.11.): Ziel des
+        // AuthGuard an den Einstiegen ins Mitmachen (MIT_KONTO_VORSCHAU) und, mit
+        // ?ansicht=rundgang, der Rundgang Selbst beitragen ohne Konto. Angemeldete gehen
+        // gleich auf ?ziel=.
+        path: 'mit-konto',
+        loadComponent: () => import('./mit-konto/mit-konto.component').then(m => m.MitKontoComponent),
+        canActivate: [mitKontoVorschauGuard],
+        data: { parent: '/search' }
     },
     {
         path: 'login',
@@ -235,7 +257,7 @@ export const routes: Routes = [
     },
     {
         // Art.-9-Einwilligung (#489): einwilligen nach dem ersten Anmelden, spaeter
-        // Stand ansehen und widerrufen (Profilmenue "Einwilligung").
+        // Stand ansehen und widerrufen (Profilmenue "Datenschutz-Einstellungen", #644).
         path: 'einwilligung',
         loadComponent: () => import('./einwilligung/einwilligung.component').then(m => m.EinwilligungComponent),
         canActivate: [AuthGuard],
@@ -260,6 +282,10 @@ export const routes: Routes = [
             {
                 path: 'themen',
                 loadComponent: () => import('./admin/themen-zuordnen/themen-zuordnen.component').then(m => m.ThemenZuordnenComponent)
+            },
+            {
+                path: 'schalter',
+                loadComponent: () => import('./admin/schalter/schalter.component').then(m => m.SchalterComponent)
             },
             {
                 path: '',

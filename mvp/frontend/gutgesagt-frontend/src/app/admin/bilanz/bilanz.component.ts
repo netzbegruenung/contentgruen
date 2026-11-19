@@ -1,10 +1,13 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { selbstNachladen } from '../../shared/selbst-nachladen';
+import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { Subscription } from 'rxjs';
+import { EMPTY, Subscription } from 'rxjs';
+import { filter, finalize } from 'rxjs/operators';
 import { MetricsService } from '../../services/metrics.service';
 import { BilanzResponse, BilanzWoche } from '../../services/dtos/metricsDtos';
 
@@ -15,7 +18,7 @@ import { BilanzResponse, BilanzWoche } from '../../services/dtos/metricsDtos';
 @Component({
   selector: 'app-bilanz',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatFormFieldModule, MatSelectModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, MatFormFieldModule, MatSelectModule, NachladeHinweisComponent],
   templateUrl: './bilanz.component.html',
   styleUrls: ['./bilanz.component.css'],
 })
@@ -28,10 +31,30 @@ export class BilanzComponent implements OnInit, OnDestroy {
   fehler = false;
   private anfrage?: Subscription;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private metricsService: MetricsService) {}
 
+  /** Laedt selbst nach, solange der Reiter sichtbar ist; still, ohne die Tabelle zu leeren. */
   ngOnInit() {
     this.laden();
+    // Still: bricht keine laufende Anfrage nach einem Zeitraumwechsel ab, und eine Antwort
+    // zu einem inzwischen gewechselten Zeitraum zaehlt nicht.
+    selbstNachladen(
+      () => {
+        if (this.anfrageLaeuft) return EMPTY;
+        const wochen = this.wochen;
+        return this.metricsService.getBilanz(wochen, true).pipe(filter(() => wochen === this.wochen && !this.anfrageLaeuft));
+      },
+      this.destroyRef,
+      {
+        next: (daten) => {
+          this.daten = daten;
+          this.fehler = false;
+        },
+        error: () => (this.fehler = true),
+      }
+    );
   }
 
   ngOnDestroy() {
@@ -43,13 +66,20 @@ export class BilanzComponent implements OnInit, OnDestroy {
     this.laden();
   }
 
+  /** Eine Anfrage nach Zeitraumwahl oder beim Start laeuft; das stille Nachladen wartet. */
+  private anfrageLaeuft = false;
+
   private laden() {
     // Nur die Antwort zum gewaehlten Zeitraum zaehlt: eine aeltere, die spaeter
     // ankommt, darf die Tabelle nicht ueberschreiben.
     this.anfrage?.unsubscribe();
     this.fehler = false;
-    this.anfrage = this.metricsService.getBilanz(this.wochen).subscribe({
-      next: (daten) => (this.daten = daten),
+    this.anfrageLaeuft = true;
+    this.anfrage = this.metricsService.getBilanz(this.wochen).pipe(finalize(() => (this.anfrageLaeuft = false))).subscribe({
+      next: (daten) => {
+        this.daten = daten;
+        this.fehler = false;
+      },
       error: () => {
         // Keine Tabelle eines anderen Zeitraums neben der Fehlermeldung.
         this.daten = null;

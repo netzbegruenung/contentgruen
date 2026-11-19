@@ -115,6 +115,12 @@ AUSSAGE_ROUTEN = {
         "/api/v1/statement/searchStatements",
         {"query_text": "Wärmepumpe", "limit": 3, "nur_kuratiert": True},
     ),
+    # "Nicht dabei?" auch fuer Besucher (#642): dieselben Personenfelder wie oben.
+    "statement/aehnliche": (
+        POST,
+        "/api/v1/statement/aehnliche",
+        {"query_text": "Wärmepumpe"},
+    ),
     "statement/getStatementsOfTopic": (
         POST,
         "/api/v1/statement/getStatementsOfTopic",
@@ -147,6 +153,13 @@ def aussage_client(anzeigenamen_ohne_datenbank):
     ]  # noqa: E731
     dienst.search = AsyncMock(side_effect=treffer)
     dienst.search_filtered = AsyncMock(side_effect=treffer)
+    # Fuer die Vorschlags-Auswahl (/aehnliche): Schwelle und Widerspruchsfilter.
+    from core.config import Settings
+
+    dienst.settings = Settings()
+    dienst.ohne_widerspruch = AsyncMock(
+        side_effect=lambda _text, gefunden, **_: gefunden
+    )
     dienst.get_items_of_topic.side_effect = lambda *_: [_aussage()]
     dienst.get_items_of_category.side_effect = lambda *_: [_aussage()]
     aussage_app.dependency_overrides[get_statement_service] = lambda: dienst

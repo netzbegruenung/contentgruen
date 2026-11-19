@@ -5,7 +5,9 @@ Gemessen gegen einen Stack wird mit `python -m tests.regression.suche_messen`
 (SUCHTESTSET.md).
 """
 
+import asyncio
 import json
+import re
 import uuid
 from collections import Counter
 from pathlib import Path
@@ -15,28 +17,51 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from domain.models.content_type import ContentType
+from services.content.statement_service import StatementService
 from tests.regression import suche_messen
+from tests.regression.aehnlichkeit_messen import VORSCHLAG_SCHWELLE
 from tests.regression.suche_messen import (
+    AEHNLICHE_AB,
+    AEHNLICHE_ANZAHL,
     BESTAND_PASST_NICHT,
-    VORLAEUFIG,
+    HINWEIS,
+    RUECKFALL_OHNE_BESTAETIGER,
+    RUECKFALL_SCHWELLE,
+    AehnlicheAussagen,
     AngezeigterBeitrag,
     FallMessung,
+    NliZaehler,
     _Erwartung,
+    aehnliche_aussagen,
     als_json,
     angezeigte_beitraege,
     auswerten,
     einordnen,
     faelle_text,
     je_phaenomen,
+    rueckfaelle,
     tabellen,
     zerfaserung,
+    zuordnung_text,
+    zuordnung_weg,
+)
+from tests.unit.services.test_nli_stufe import (
+    DIESELBE as NLI_DIESELBE,
+    KNAPP as NLI_KNAPP,
+    WIDERSPRUCH as NLI_WIDERSPRUCH,
+    AttrappenNli,
+    _treffer as _nli_treffer,
 )
 from tests.regression.suche_testset import (
     FAELLE,
     FORMEN,
     PHAENOMENE,
     QUELLEN,
+    SEED,
+    STARTBESTAND,
+    Ersatz,
     Fall,
+    am_seed_gemessen,
 )
 from utils.text_normalisierung import text_normalisiert
 
@@ -91,17 +116,141 @@ def _seed_aussagen() -> set:
 
 @pytest.mark.skipif(SEED_V1 is None, reason="Seed nicht im Checkout")
 class TestBezugZumSeed:
-    def test_erwartete_aussagen_stehen_woertlich_im_seed(self):
-        """Der Testbestand ist der Seed; sonst misst das Set ins Leere."""
-        seed = _seed_aussagen()
-        fehlend = {t for f in FAELLE for t in f.erwartet} - seed
-        assert fehlend == set()
+    def test_erwartete_aussagen_stehen_woertlich_im_seed_oder_im_startbestand(self):
+        """Gemessen wird am Seed und am Startbestand; sonst misst das Set ins Leere."""
+        bekannt = _seed_aussagen() | set(STARTBESTAND)
+        texte = {t for f in FAELLE for t in f.erwartet + f.nur_mit + f.nur_ohne}
+        texte |= {t for f in FAELLE if f.ersatz for t in f.ersatz.erwartet}
+        assert texte - bekannt == set()
+
+    def test_faelle_zum_seed_zaehlen_auch_am_startbestand(self):
+        """Fehlt dem Startbestand eine erwartete Seed-Aussage, misst der Fall dort mit
+        seinem Ersatz (S06 bis S09, #606); sonst fehlte er in der Kontrollmessung."""
+        start = {text_normalisiert(t) for t in STARTBESTAND}
+        luecke = []
+        for fall in FAELLE:
+            erwartet = {text_normalisiert(t) for t in fall.erwartet}
+            if not erwartet or erwartet <= start:
+                continue
+            ersatz = fall.ersatz.erwartet if fall.ersatz else ()
+            if not ersatz or not {text_normalisiert(t) for t in ersatz} <= start:
+                luecke.append(fall.id)
+        assert luecke == []
+
+    def test_ersatz_nur_bei_faellen_mit_erwartung(self):
+        for fall in FAELLE:
+            if fall.ersatz:
+                assert fall.erwartet and fall.ersatz.erwartet, fall.id
+                if fall.ersatz.dieselbe_behauptung:
+                    assert fall.form == "satz", fall.id
 
     def test_woertliche_faelle_sind_seed_aussagen(self):
         seed = {text_normalisiert(t) for t in _seed_aussagen()}
         for fall in FAELLE:
             if fall.quelle == "seed":
                 assert text_normalisiert(fall.anfrage) in seed, fall.id
+
+    def test_woertliche_faelle_aus_dem_startbestand(self):
+        start = {text_normalisiert(t) for t in STARTBESTAND}
+        for fall in FAELLE:
+            if fall.quelle == "start":
+                assert text_normalisiert(fall.anfrage) in start, fall.id
+
+    def test_startbestand_hat_30_aussagen_und_zwoelf_des_seeds(self):
+        assert len(set(STARTBESTAND)) == len(STARTBESTAND) == 30
+        assert len(set(STARTBESTAND) & _seed_aussagen()) == 12
+
+    def test_seed_im_set_ist_der_seed(self):
+        """am_seed_gemessen() rechnet mit SEED; der muss zum Seed im Checkout passen."""
+        assert set(SEED) == _seed_aussagen()
+
+    def test_faelle_zum_startbestand_zaehlen_am_seed_nicht(self):
+        """Das Soll des naechtlichen Laufs (gemessen am Seed) bleibt, wenn Faelle zum
+        Startbestand dazukommen; die Zahl gegen das Soll prueft test_nachtlauf.py."""
+        assert not any(am_seed_gemessen(f) for f in FAELLE if f.quelle == "start")
+
+
+@pytest.mark.skipif(REPO_WURZEL is None, reason="Frontend und Seed nicht im Checkout")
+class TestStartbeispiel:
+    """
+    Das Startbeispiel (#601) im Suchfeld des Starts und im Rundgang steht im
+    Frontend (shared/startbeispiel.ts). Ist es woertlich eine Aussage mit Kommentaren,
+    findet die Suche diese Aussage mit Score um 1 (gleicher Text, gleiche Einbettung)
+    und zeigt ihre Kommentare; eine neue Aussage legt sie nicht an. Ob der Bestand der
+    Instanz die Aussage wirklich hat, prueft dieser Test nicht: am Seed (Dev-Stack,
+    naechtlicher Lauf) ja, auf Produktion nach dem Import des Startbestands (#288).
+    """
+
+    @staticmethod
+    def _startbeispiel() -> str:
+        ts = (
+            REPO_WURZEL
+            / "mvp/frontend/gutgesagt-frontend/src/app/shared/startbeispiel.ts"
+        ).read_text(encoding="utf-8")
+        treffer = re.findall(r"export const STARTBEISPIEL = '([^']+)';", ts)
+        assert len(treffer) == 1, "STARTBEISPIEL nicht gefunden"
+        return treffer[0]
+
+    def test_startbeispiel_ist_aussage_des_startbestands(self):
+        start = {text_normalisiert(t) for t in STARTBESTAND}
+        assert text_normalisiert(self._startbeispiel()) in start
+
+    def test_startbeispiel_hat_im_seed_kommentare(self):
+        """So zeigt es auch im Dev-Stack und in den E2E-Tests Treffer."""
+        beispiel = text_normalisiert(self._startbeispiel())
+        kommentare = [
+            k
+            for datei in sorted(SEED_V1.glob("statements_with_commentaries/*.json"))
+            for eintrag in json.loads(datei.read_text(encoding="utf-8"))
+            if text_normalisiert(eintrag["statement"]) == beispiel
+            for k in eintrag.get("commentaries", [])
+        ]
+        assert kommentare
+
+    @staticmethod
+    def _hot_takes() -> list:
+        """(text, aussage) je Hot Take aus HOT_TAKES; aussage: STARTBEISPIEL wird aufgeloest."""
+        ts = (
+            REPO_WURZEL
+            / "mvp/frontend/gutgesagt-frontend/src/app/shared/startbeispiel.ts"
+        ).read_text(encoding="utf-8")
+        block = re.search(r"export const HOT_TAKES[^=]*= \[(.*?)\];", ts, re.S)
+        assert block, "HOT_TAKES nicht gefunden"
+        paare = re.findall(
+            r"\{\s*text:\s*'([^']+)',\s*aussage:\s*('[^']+'|STARTBEISPIEL)\s*\}",
+            block.group(1),
+        )
+        assert paare, "keine Hot Takes als { text, aussage } gefunden"
+        start = TestStartbeispiel._startbeispiel()
+        return [
+            (text, start if aussage == "STARTBEISPIEL" else aussage.strip("'"))
+            for text, aussage in paare
+        ]
+
+    def test_hot_takes_sind_aussagen_des_startbestands_und_seeds(self):
+        """Das Suchfeld des Starts tippt Hot Takes vor (HOT_TAKES, Designrunde 17.11.),
+        leicht anders formuliert als die zugeordnete Aussage. Die Aussage steht im
+        Startbestand und im Seed, damit „Beispiel ausprobieren“ sie auf Produktion und im
+        Dev-Stack findet."""
+        paare = self._hot_takes()
+        start = {text_normalisiert(t) for t in STARTBESTAND}
+        seed = {text_normalisiert(t) for t in SEED}
+        assert [a for _, a in paare if text_normalisiert(a) not in start] == []
+        assert [a for _, a in paare if text_normalisiert(a) not in seed] == []
+
+    def test_hot_takes_sind_anders_formuliert_und_stehen_im_suchtestset(self):
+        """Die Hot Takes zeigen die Suche nach Bedeutung: nicht woertlich die Aussage, und
+        als Faelle im Suchtestset mit genau dieser Aussage als Erwartung."""
+        paare = self._hot_takes()
+        assert [
+            t for t, a in paare if text_normalisiert(t) == text_normalisiert(a)
+        ] == []
+        faelle = {text_normalisiert(f.anfrage): f for f in FAELLE}
+        for text, aussage in paare:
+            fall = faelle.get(text_normalisiert(text))
+            assert fall, f"Hot Take fehlt im Suchtestset: {text}"
+            assert fall.erwartet == (aussage,)
+            assert fall.dieselbe_behauptung
 
 
 # ---------------------------------------------------------------------- #
@@ -125,8 +274,8 @@ def _k(passt, aussage=A, score=0.9):
     )
 
 
-def _m(fall, je_schwelle, fehlt=(), landet=None):
-    return FallMessung(fall, je_schwelle, fehlt, landet)
+def _m(fall, je_schwelle, fehlt=(), landet=None, aehnliche=()):
+    return FallMessung(fall, je_schwelle, fehlt, landet, aehnliche)
 
 
 class TestAuswertung:
@@ -162,6 +311,11 @@ class TestAuswertung:
             ),
             # Aussage fehlt im Bestand: zaehlt nirgends mit.
             _m(_fall("X05"), {0.8: (_k(False),), 0.84: (_k(False),)}, fehlt=(A,)),
+            # Fremd, aber der Bestand hat eine Aussage dazu (nur_ohne): ebenso.
+            _m(
+                _fall("X06", erwartet=(), phaenomen="fremd"),
+                {0.8: (_k(False),), 0.84: (_k(False),)},
+            )._replace(ausgeschlossen=(A,)),
         ]
 
     def test_auswerten_zaehlt_je_fall_und_je_beitrag(self):
@@ -205,8 +359,20 @@ class TestAuswertung:
         tabelle = je_phaenomen(self._messungen(), 0.8)
 
         assert tabelle == {
-            "umformulierung": {"treffer": 1, "fehltreffer": 1, "keine": 1},
-            "fremd": {"treffer": 0, "fehltreffer": 1, "keine": 0},
+            "umformulierung": {
+                "treffer": 1,
+                "fehltreffer": 1,
+                "keine": 1,
+                "mit_erwartung": 3,
+                "gefunden@10": 2,
+            },
+            "fremd": {
+                "treffer": 0,
+                "fehltreffer": 1,
+                "keine": 0,
+                "mit_erwartung": 0,
+                "gefunden@10": 0,
+            },
         }
 
     def test_zerfaserung(self):
@@ -230,13 +396,61 @@ class TestAuswertung:
             1,
         )
 
-    def test_ausgabe_ist_als_vorlaeufig_gekennzeichnet(self):
+    def test_aehnliche_aussagen(self):
+        messungen = [
+            _m(_fall("X01"), {0.8: ()}, aehnliche=(False, True)),
+            _m(_fall("X02"), {0.8: ()}, aehnliche=(False,)),
+            _m(_fall("X03"), {0.8: ()}),
+            _m(
+                _fall("X04", erwartet=(), phaenomen="fremd"),
+                {0.8: ()},
+                aehnliche=(False,),
+            ),
+            _m(_fall("X05", erwartet=(), phaenomen="fremd"), {0.8: ()}),
+            # Aussage fehlt im Bestand: zaehlt nicht mit.
+            _m(_fall("X06"), {0.8: ()}, fehlt=(A,), aehnliche=(True,)),
+        ]
+
+        assert aehnliche_aussagen(messungen) == AehnlicheAussagen(
+            mit_erwartung=3,
+            erwartete_dabei=1,
+            ohne_erwartung=2,
+            ohne_mit_vorschlag=1,
+        )
+
+    def test_aehnliche_aussagen_wie_im_beitragsformular(self):
+        """Anzahl wie VORSCHLAG_ANZAHL im Frontend, untere Grenze wie die Vorschlagsschwelle
+        des Dienstes (aussage_vorschlag_schwelle, #387) und VORSCHLAG_SCHWELLE im Messset.
+        """
+        if REPO_WURZEL is None:
+            pytest.skip("Frontend nicht im Checkout")
+        ts = (
+            REPO_WURZEL
+            / "mvp/frontend/gutgesagt-frontend/src/app/services/statement.service.ts"
+        ).read_text(encoding="utf-8")
+
+        assert f"VORSCHLAG_ANZAHL = {AEHNLICHE_ANZAHL};" in ts
+        assert "VORSCHLAG_MIN_AEHNLICHKEIT" not in ts
+        assert AEHNLICHE_AB == VORSCHLAG_SCHWELLE
+
+    def test_ausgabe_nennt_wo_bewertet_ist_und_was_nicht_gemessen_wurde(self):
         text = tabellen(self._messungen(), (0.8, 0.84), aktuell=0.8)
 
-        assert text.startswith(VORLAEUFIG)
-        assert "#288" in VORLAEUFIG
+        assert text.startswith(HINWEIS)
+        assert "#288" in HINWEIS and "Startbestand" in HINWEIS
         assert "| 0.80 (heute) |" in text
-        assert "X05" in text  # nicht gemessen, mit Grund
+        assert "- X05: " in text.split("Aussage fehlt im Bestand")[1]
+        assert "- X06: " in text.split("der Bestand hat eine Aussage dazu")[1]
+
+    def test_ausgabe_nennt_faelle_mit_ersatz(self):
+        mit_ersatz = _m(_fall("X07"), {0.8: (_k(True),)})._replace(
+            ersatz_fuer=("Seed",)
+        )
+        text = tabellen([mit_ersatz], (0.8,), aktuell=0.8)
+        assert f"- X07: Seed -> {A}" in text.split("Mit Ersatz gemessen")[1]
+        with patch.object(suche_messen, "schwelle_heute", return_value=0.8):
+            daten = als_json([mit_ersatz], (0.8,))
+        assert daten["faelle"][0]["ersatz_fuer"] == ["Seed"]
 
     def test_faelle_text_und_json(self):
         messungen = self._messungen()
@@ -244,8 +458,9 @@ class TestAuswertung:
         text = faelle_text(messungen, 0.8)
         assert "| X01 | umformulierung | treffer |" in text
         assert "direkt (2)" in text  # X02: erster passender auf Platz 2
-        daten = als_json(messungen, (0.8,), umgebung={"modell": "m"})
-        assert daten["hinweis"] == VORLAEUFIG
+        with patch.object(suche_messen, "schwelle_heute", return_value=0.8):
+            daten = als_json(messungen, (0.8,), umgebung={"modell": "m"})
+        assert daten["hinweis"] == HINWEIS
         assert daten["umgebung"] == {"modell": "m"}
         assert [f["id"] for f in daten["faelle"]] == [m.fall.id for m in messungen]
         assert daten["auswertung"][0]["treffer"] == 1
@@ -323,6 +538,316 @@ class TestAngezeigteBeitraege:
         ]
         assert gezeigt[0].aussage_text == ""  # direkter Treffer
         assert gezeigt[2].aussage_text == "Aussage"
+
+
+class TestErwartung:
+    """Welche Aussagen eines Falls im Bestand stehen, fehlen oder ihn ausschliessen."""
+
+    @staticmethod
+    def _erwartung(fall, bestand):
+        aussagen = {
+            t: SimpleNamespace(id=f"id-{t}", replysuggestions=[SimpleNamespace(id="k")])
+            for t in bestand
+        }
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand):
+            return asyncio.run(suche_messen._erwartung(None, fall, {}))
+
+    def test_nur_mit_fehlt_dann_zaehlt_der_fall_nicht(self):
+        fall = _fall(erwartet=(), phaenomen="verneinung")._replace(nur_mit=("B",))
+
+        assert self._erwartung(fall, {A}).fehlt == ("B",)
+        assert self._erwartung(fall, {A, "B"}).fehlt == ()
+
+    def test_nur_ohne_im_bestand_schliesst_den_fall_aus(self):
+        fall = _fall(erwartet=(), phaenomen="fremd")._replace(nur_ohne=("W",))
+
+        assert self._erwartung(fall, {A, "W"}).ausgeschlossen == ("W",)
+        assert self._erwartung(fall, {A}).ausgeschlossen == ()
+
+    def test_nicht_gezaehlter_fall_sucht_nicht(self):
+        """Am Seed zaehlen die Faelle zum Startbestand nicht: keine Suche je Schwelle."""
+        erwartung = _Erwartung(
+            frozenset(), frozenset(), fehlt=(), ausgeschlossen=("W",)
+        )
+        suche = AsyncMock()
+        with patch.object(
+            suche_messen, "_erwartung", AsyncMock(return_value=erwartung)
+        ), patch("api.v1.search.aussagetreffer_finden", suche):
+            messung = asyncio.run(
+                suche_messen.fall_messen(None, _fall(erwartet=()), (0.8, 0.84))
+            )
+
+        suche.assert_not_called()
+        assert messung.ausgeschlossen == ("W",)
+        assert messung.angezeigt == {}
+        assert als_json([messung], (0.8,))["faelle"][0]["einordnung"] == {}
+        assert suche_messen.gemessen([messung]) == []
+
+    def test_fall_messen_misst_mit_dem_ersatz_und_nennt_ihn(self):
+        """fall_messen sucht mit der Erwartung des Ersatzes und reicht weiter, welche
+        Aussagen er ersetzt (Ausgabe "Mit Ersatz gemessen", JSON ersatz_fuer)."""
+        fall = _fall(erwartet=("Seed",), dieselbe=True)._replace(
+            ersatz=Ersatz((A,), False, "verwandt")
+        )
+        aussagen = {A: SimpleNamespace(id="id-A", replysuggestions=[])}
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        dienste = SimpleNamespace(
+            statement_service=SimpleNamespace(
+                search_filtered=AsyncMock(return_value=[SimpleNamespace(id="id-A")]),
+                vorhandene_finden=AsyncMock(),
+            ),
+            specs=[],
+            reference_service=None,
+        )
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand), patch(
+            "api.v1.search.aussagetreffer_finden",
+            AsyncMock(return_value=([], None)),
+        ), patch("api.v1.search.treffer_sammeln", AsyncMock()), patch(
+            "services.search.search_orchestrator.SearchOrchestrator"
+        ), patch.object(
+            suche_messen, "angezeigte_beitraege", return_value=(_k(True),)
+        ):
+            messung = asyncio.run(suche_messen.fall_messen(dienste, fall, (0.8,)))
+
+        assert messung.ersatz_fuer == ("Seed",)
+        assert (messung.fall.erwartet, messung.fall.phaenomen) == ((A,), "verwandt")
+        assert messung.fehlt == ()
+        # Ersatz ist nicht dieselbe Behauptung: keine Pruefung, ob die Anfrage landet.
+        assert messung.landet_auf_erwarteter is None
+        dienste.statement_service.vorhandene_finden.assert_not_called()
+        assert messung.aehnliche == (True,)
+        assert suche_messen.gemessen([messung]) == [messung]
+
+    def test_fehlt_eine_erwartete_aussage_gilt_der_ersatz(self):
+        fall = _fall(erwartet=("Seed",), dieselbe=True)._replace(
+            ersatz=Ersatz((A,), False, "verwandt")
+        )
+        aussagen = {A: SimpleNamespace(id="id-A", replysuggestions=[])}
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand):
+            gemessen_als, erwartung, ersatz_fuer = asyncio.run(
+                suche_messen._erwartung_mit_ersatz(None, fall, {})
+            )
+
+        assert ersatz_fuer == ("Seed",)
+        assert (gemessen_als.erwartet, gemessen_als.dieselbe_behauptung) == (
+            (A,),
+            False,
+        )
+        assert (erwartung.aussage_ids, erwartung.fehlt) == (frozenset({"id-A"}), ())
+        assert gemessen_als.phaenomen == "verwandt"
+
+    @pytest.mark.parametrize(
+        "bestand, erwartet_gemessen, fehlt",
+        [({"Seed", A}, ("Seed",), ()), (set(), ("Seed",), ("Seed",))],
+        ids=["erwartete-da-kein-ersatz", "ersatz-fehlt-auch"],
+    )
+    def test_ersatz_nur_wenn_noetig_und_vorhanden(
+        self, bestand, erwartet_gemessen, fehlt
+    ):
+        fall = _fall(erwartet=("Seed",))._replace(ersatz=Ersatz((A,), False))
+        aussagen = {
+            t: SimpleNamespace(id=f"id-{t}", replysuggestions=[]) for t in bestand
+        }
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand):
+            gemessen_als, erwartung, ersatz_fuer = asyncio.run(
+                suche_messen._erwartung_mit_ersatz(None, fall, {})
+            )
+
+        assert (gemessen_als.erwartet, erwartung.fehlt, ersatz_fuer) == (
+            erwartet_gemessen,
+            fehlt,
+            (),
+        )
+
+    def test_erwartete_aussagen_wie_bisher(self):
+        erwartung = self._erwartung(_fall(erwartet=(A, "B")), {A})
+
+        assert erwartung.aussage_ids == frozenset({f"id-{A}"})
+        assert erwartung.beitrag_ids == frozenset({"k"})
+        assert erwartung.fehlt == ("B",)
+
+
+class TestWegUndRueckfall:
+    """Die Ausgabe nennt, womit die Zuordnung gemessen wurde (NLI-Stufe, Bestaetiger),
+    und in welchen Faellen vorhandene_finden ohne NLI-Urteil entschied: Zwei Messungen
+    am selben Bestand sind sonst nicht vergleichbar (Zerfaserung 15 gegen 26)."""
+
+    @pytest.mark.parametrize(
+        "modus, schalter, bestaetiger",
+        [
+            ("an", True, True),
+            ("an", False, False),
+            ("schatten", True, False),
+            ("aus", True, False),
+        ],
+    )
+    def test_weg_wie_der_statement_service(
+        self, test_settings, repository_factory, modus, schalter, bestaetiger
+    ):
+        """Bestaetiger "an" heisst: Der StatementService der Messung hat einen, und
+        vorhandene_finden fragt ihn (nur bei "an"). Gegen den echten Konstruktor, damit
+        beide Regeln gleich bleiben (laedt kein Modell)."""
+        settings = test_settings.model_copy(
+            update={"dieselbe_aussage_nli": modus, "nli_bestaetiger": schalter}
+        )
+        service = StatementService(settings, repository_factory=repository_factory)
+
+        weg = zuordnung_weg(settings)
+
+        assert weg == {"dieselbe_aussage_nli": modus, "nli_bestaetiger": bestaetiger}
+        assert weg["nli_bestaetiger"] == (
+            service._bestaetiger is not None and modus == "an"
+        )
+        text = zuordnung_text(weg)
+        if modus == "an":
+            assert text.endswith(f"Bestätiger {'an' if bestaetiger else 'aus'}.")
+        else:
+            assert "es gilt die Schwelle" in text and "Bestätiger aus" not in text
+
+    def test_umgebung_nennt_den_weg(self):
+        assert set(zuordnung_weg()) <= set(suche_messen.umgebung())
+
+    def test_tabellen_nennen_weg_und_rueckfaelle(self):
+        weg = {"dieselbe_aussage_nli": "an", "nli_bestaetiger": True}
+        messungen = [
+            _m(_fall("X01", dieselbe=True), {0.8: ()}, landet=False)._replace(
+                rueckfall=RUECKFALL_SCHWELLE
+            ),
+            _m(_fall("X02", dieselbe=True), {0.8: ()}, landet=True)._replace(
+                rueckfall=RUECKFALL_OHNE_BESTAETIGER
+            ),
+            _m(_fall("X03", dieselbe=True), {0.8: ()}, landet=True),
+        ]
+        with patch.object(suche_messen, "zuordnung_weg", return_value=weg):
+            text = tabellen(messungen, (0.8,), aktuell=0.8)
+
+        assert zuordnung_text(weg) in text.split("\n\n")[1]
+        assert rueckfaelle(messungen) == suche_messen.Rueckfaelle(3, ("X01",), ("X02",))
+        assert "Ohne NLI-Urteil entschieden (von 3 Prüfungen):" in text
+        assert "- 1 auf die Schwelle zurückgefallen" in text
+        assert text.split("- 1 auf die Schwelle")[1].split("\n")[0].endswith("X01")
+        assert "- 1 ohne Bestätiger" in text
+        with patch.object(suche_messen, "schwelle_heute", return_value=0.8):
+            daten = als_json(messungen, (0.8,))
+        assert daten["rueckfaelle"]["schwelle"] == ("X01",)
+        assert [f["rueckfall"] for f in daten["faelle"]] == [
+            RUECKFALL_SCHWELLE,
+            RUECKFALL_OHNE_BESTAETIGER,
+            "",
+        ]
+
+    def test_ohne_rueckfall_keine_zeile(self):
+        text = tabellen(
+            [_m(_fall("X01", dieselbe=True), {0.8: ()}, landet=True)],
+            (0.8,),
+            aktuell=0.8,
+        )
+        assert "Ohne NLI-Urteil" not in text
+
+    @staticmethod
+    def _service(test_settings, repository_factory, nli, bestaetiger=None):
+        settings = test_settings.model_copy(update={"dieselbe_aussage_nli": "an"})
+        service = StatementService(
+            settings,
+            repository_factory=repository_factory,
+            nli=nli,
+            bestaetiger=bestaetiger,
+        )
+        kandidat = _nli_treffer("Windräder töten Vögel", 0.93)
+        service._repository.finde_normalisiert_gleich = AsyncMock(return_value=None)
+        service._repository.search = AsyncMock(return_value=[kandidat])
+        return service
+
+    @pytest.mark.parametrize(
+        "erstes, zweites, rueckfall",
+        [
+            (None, None, RUECKFALL_SCHWELLE),
+            (NLI_KNAPP, None, RUECKFALL_OHNE_BESTAETIGER),
+            (NLI_KNAPP, NLI_DIESELBE, ""),
+            # Kein unsicheres Band: Der (belegte) Bestaetiger wird nie gefragt.
+            (NLI_WIDERSPRUCH, None, ""),
+        ],
+        ids=[
+            "erstes-belegt",
+            "bestaetiger-belegt",
+            "beide-urteilen",
+            "ohne-band-kein-bestaetiger",
+        ],
+    )
+    def test_zaehler_erkennt_den_rueckfall_im_statement_service(
+        self, test_settings, repository_factory, erstes, zweites, rueckfall
+    ):
+        """Gegen den echten StatementService: Ein Modell ohne Urteil (None, wie bei
+        belegter Sperre nach DIESELBE_WARTET_HOECHSTENS) ist ein Rueckfall; das
+        Ergebnis von vorhandene_finden aendert der Zaehler nicht."""
+
+        def modell(urteil):
+            return AttrappenNli(
+                {"Windräder töten Vögel": urteil}, verfuegbar=urteil is not None
+            )
+
+        service = self._service(
+            test_settings, repository_factory, modell(erstes), modell(zweites)
+        )
+        ohne_zaehler = self._service(
+            test_settings, repository_factory, modell(erstes), modell(zweites)
+        )
+        ohne_zaehler._repository.search = service._repository.search
+        zaehler = NliZaehler.einsetzen(service)
+
+        vorher = zaehler.stand()
+        gefunden = asyncio.run(service.vorhandene_finden("Windkraft bringt Vögel um"))
+
+        assert zaehler.rueckfall_seit(vorher) == rueckfall
+        assert gefunden == asyncio.run(
+            ohne_zaehler.vorhandene_finden("Windkraft bringt Vögel um")
+        )
+
+    def test_ohne_modelle_kein_zaehler(self, test_settings, repository_factory):
+        settings = test_settings.model_copy(update={"dieselbe_aussage_nli": "aus"})
+        service = StatementService(settings, repository_factory=repository_factory)
+
+        zaehler = NliZaehler.einsetzen(service)
+
+        assert zaehler == NliZaehler(None, None)
+        assert zaehler.rueckfall_seit(zaehler.stand()) == ""
+
+    def test_fall_messen_traegt_den_rueckfall_ein(self):
+        fall = _fall(dieselbe=True)
+        aussagen = {A: SimpleNamespace(id="id-A", replysuggestions=[])}
+        im_bestand = AsyncMock(side_effect=lambda _dienste, t: aussagen.get(t))
+        nli = AttrappenNli(verfuegbar=False)
+
+        async def vorhandene_finden(_text):
+            await dienste.statement_service._nli.urteile([("a", "b")])
+            return None
+
+        dienste = SimpleNamespace(
+            statement_service=SimpleNamespace(
+                _nli=nli,
+                _bestaetiger=None,
+                search_filtered=AsyncMock(return_value=[]),
+                vorhandene_finden=vorhandene_finden,
+            ),
+            specs=[],
+            reference_service=None,
+        )
+        dienste.zaehler = NliZaehler.einsetzen(dienste.statement_service)
+        with patch.object(suche_messen, "_aussage_im_bestand", im_bestand), patch(
+            "api.v1.search.aussagetreffer_finden",
+            AsyncMock(return_value=([], None)),
+        ), patch("api.v1.search.treffer_sammeln", AsyncMock()), patch(
+            "services.search.search_orchestrator.SearchOrchestrator"
+        ), patch.object(
+            suche_messen, "angezeigte_beitraege", return_value=()
+        ):
+            messung = asyncio.run(suche_messen.fall_messen(dienste, fall, (0.8,)))
+
+        assert messung.landet_auf_erwarteter is False
+        assert messung.rueckfall == RUECKFALL_SCHWELLE
 
 
 class TestDoku:

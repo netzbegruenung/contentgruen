@@ -11,7 +11,9 @@ tests/
 ├── integration/                   # Integration tests against real Qdrant and PostgreSQL
 │   └── api/                       # Against the running dev-stack BFF (skipped by GitHub CI)
 ├── regression/                    # Messset and Suchtestset: data, checks, measurement scripts
-│                                  # (scripts run by hand against a stack; MESSSET.md, SUCHTESTSET.md)
+│                                  # (by hand against a stack, and every night in
+│                                  # .woodpecker/nacht.yaml; MESSSET.md, SUCHTESTSET.md,
+│                                  # docs/CI.md "Nightly run": when a PR must trigger it)
 ├── fixtures/                      # Test utilities
 │   └── embeddings_manager.py      # In-memory test backend
 └── conftest.py                    # Shared fixtures
@@ -43,7 +45,9 @@ pytest tests/integration/               # Integration tests (Qdrant on :6333, Po
 
 ### Integration Tests as a Gate
 
-One command runs the full check plus the integration suite, from the repository root:
+One command runs the full check plus the integration suite, from the repository root. The
+pipeline runs it on `main` (pull requests without the integration tests); before a push `bash scripts/check.sh --geaendert` is
+enough, and includes the integration tests when the changes reach them (`docs/CI.md`):
 
 ```bash
 bash scripts/check.sh --integration
@@ -75,8 +79,8 @@ needs a reason that names what is missing.
 Repositories, migrations and SQL scripts that only show their behaviour in a real
 database are tested in `tests/integration/` against PostgreSQL: migrations and
 `init.sql` against the model (`test_migrationen.py`), the timestamp of a
-Suchereignis (`test_suchereignisse.py`), the shuffled rewrite of closed days
-(`test_suchereignisse_mischen.py`), "Suchen ohne Treffer"
+Suchereignis (`test_suchereignisse.py`), compacting closed days into day counters
+(`test_suchereignisse_tageszaehler.py`), "Suchen ohne Treffer"
 (`test_suchen_ohne_treffer.py`), the Rückmeldung on usage (`test_rueckmeldung_nutzung.py`),
 the deletion command (`test_loeschkommando.py`), Meldungen with each Meldegrund
 (`test_meldegrund.py`), the Angaben nach Art. 16 DSA at a Meldung
@@ -88,7 +92,6 @@ part needs a running Qdrant).
 # from mvp/backend/semantic-search-service/app
 pytest tests/integration/test_migrationen.py tests/integration/test_suchereignisse.py \
        tests/integration/test_suchereignisse_tageszaehler.py \
-       tests/integration/test_suchereignisse_mischen.py \
        tests/integration/test_suchen_ohne_treffer.py tests/integration/test_rueckmeldung_nutzung.py \
        tests/integration/test_loeschkommando.py tests/integration/test_meldegrund.py \
        tests/integration/test_meldung_angaben.py tests/integration/test_sperren_postgres.py tests/integration/test_loeschfristen.py
@@ -264,7 +267,8 @@ pytest -x              # Stop on first failure
 ## CI Integration
 
 Every pull request runs `.woodpecker/ci.yaml` on Woodpecker: the same steps as
-`bash scripts/check.sh --integration`, with Qdrant and PostgreSQL as services
+`bash scripts/check.sh`; the integration tests run only on `main`, tags and manual runs, with
+Qdrant and PostgreSQL as services
 (`POSTGRES_TEST_DATABASE_URL`, no throwaway container) and `INTEGRATION_STACK_PFLICHT=1`.
 Once set up, its status `ci/woodpecker/pr/ci` is required for `main`; a red pull-request run gets a
 comment with the red steps. Details, the setup steps for a person and how to run one step

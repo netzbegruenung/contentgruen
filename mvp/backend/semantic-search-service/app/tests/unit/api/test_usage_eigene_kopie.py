@@ -25,6 +25,7 @@ from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
 from core.config import Settings
 from dependencies import get_settings
 from services.entdoppelung import pruefwert
+from domain.art9_einwilligung import AKTUELLER_WORTLAUT
 from repositories.art9_einwilligung_repository import Art9Einwilligung
 
 BEITRAG_ID = "11111111-1111-4111-8111-111111111111"
@@ -68,10 +69,12 @@ def muster():
     return Mock()
 
 
-def zaehlen(client, user=None, agent=None):
+def zaehlen(client, user=None, agent=None, adresse=None):
     kopf = {"X-User": user} if user else {}
     if agent:
         kopf["User-Agent"] = agent
+    if adresse:
+        kopf["X-Real-IP"] = adresse
     return client.post(
         f"/api/v1/usage/content/{BEITRAG_ID}/usage", json={}, headers=kopf
     )
@@ -125,10 +128,11 @@ class TestEntdoppelung:
         assert erster and erster == zweiter
 
     def test_besucher_bekommt_pruefwert_des_tagespseudonyms(self, client, dienst):
-        """Ohne Sitzungskennung (#446): Besucher unterscheidet das Besuchermerkmal."""
-        zaehlen(client, "anonymous", agent="Browser A")
-        zaehlen(client, "anonymous", agent="Browser A")
-        zaehlen(client, "anonymous", agent="Browser B")
+        """Ohne Sitzungskennung (#446): Besucher unterscheidet das Besuchermerkmal,
+        also der Anschluss; der User-Agent geht nicht ein (#495)."""
+        zaehlen(client, "anonymous", agent="Browser A", adresse="198.51.100.5")
+        zaehlen(client, "anonymous", agent="Browser B", adresse="198.51.100.5")
+        zaehlen(client, "anonymous", agent="Browser A", adresse="198.51.100.6")
 
         pruefwerte = [
             c.kwargs["pruefwert"] for c in dienst.track_content_usage.call_args_list
@@ -165,10 +169,11 @@ class TestArt9Einwilligung:
     """
     Ohne geltende Art.-9-Einwilligung (#559): Die Kopie zaehlt am Kartenzaehler
     (Kopieren ist Lesen, #556 F489-2), aber es entsteht kein Pruefwert, also keine
-    entdoppelte Nutzung und keine Punkte, und keine Meldung fuer die Muster-Hinweise.
+    entdoppelte Nutzung und keine Punkte. Die Muster-Hinweise haengen seit #351 an der
+    Einwilligung "Punkte und Meilensteine" (TestPunkteEinwilligung).
     """
 
-    def test_ohne_einwilligung_zaehlt_ohne_pruefwert_und_muster(
+    def test_ohne_einwilligung_zaehlt_ohne_pruefwert(
         self, client, dienst, muster, art9_einwilligung_ohne_datenbank
     ):
         art9_einwilligung_ohne_datenbank.lesen.return_value = None
@@ -179,7 +184,6 @@ class TestArt9Einwilligung:
         assert antwort.json()["usage_count"] == 4
         dienst.track_content_usage.assert_called_once()
         assert dienst.track_content_usage.call_args.kwargs["pruefwert"] is None
-        muster.nutzung_melden.assert_not_called()
 
     def test_widerruf_wirkt_sofort_fuer_die_naechste_kopie(
         self, client, dienst, muster, art9_einwilligung_ohne_datenbank
@@ -197,7 +201,6 @@ class TestArt9Einwilligung:
         ]
         assert vorher
         assert nachher is None
-        muster.nutzung_melden.assert_called_once()
 
     def test_einwilligung_wird_je_kopie_gefragt(
         self, client, art9_einwilligung_ohne_datenbank
@@ -209,43 +212,6 @@ class TestArt9Einwilligung:
             c.args[0] for c in art9_einwilligung_ohne_datenbank.lesen.call_args_list
         ]
         assert gefragt.count("bo-2") == 2
-
-    def test_autorin_ohne_einwilligung_kein_muster_aber_pruefwert(
-        self, client, dienst, muster, art9_einwilligung_ohne_datenbank
-    ):
-        """Ein Muster-Hinweis nennt auch die Autorin; hat sie widerrufen, keiner."""
-        art9_einwilligung_ohne_datenbank.lesen.side_effect = lambda kennung: (
-            None
-            if kennung == AUTORIN
-            else Art9Einwilligung(
-                wortlaut="2026-11-05",
-                eingewilligt_am=datetime(2026, 11, 5, tzinfo=timezone.utc),
-                widerrufen_am=None,
-            )
-        )
-
-        assert zaehlen(client, "bo-2").status_code == 200
-
-        assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
-        muster.nutzung_melden.assert_not_called()
-
-    def test_unlesbare_einwilligung_der_autorin_kein_muster(
-        self, client, dienst, muster, art9_einwilligung_ohne_datenbank
-    ):
-        """Im Zweifel ohne Einwilligung der Autorin: Pruefwert ja, Meldung nein."""
-        stand = art9_einwilligung_ohne_datenbank.lesen.return_value
-
-        def lesen(kennung):
-            if kennung == AUTORIN:
-                raise RuntimeError("weg")
-            return stand
-
-        art9_einwilligung_ohne_datenbank.lesen.side_effect = lesen
-
-        assert zaehlen(client, "bo-2").status_code == 200
-
-        assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
-        muster.nutzung_melden.assert_not_called()
 
     def test_eigene_kopie_und_startkonto_fragen_nicht(
         self, client, art9_einwilligung_ohne_datenbank
@@ -269,13 +235,67 @@ class TestArt9Einwilligung:
     def test_unlesbare_einwilligung_zaehlt_ohne_pruefwert(
         self, client, dienst, muster, art9_einwilligung_ohne_datenbank
     ):
-        """Im Zweifel ohne Einwilligung: die Kopie zaehlt, mehr entsteht nicht."""
+        """Im Zweifel ohne Einwilligung: die Kopie zaehlt, ohne Pruefwert."""
         art9_einwilligung_ohne_datenbank.lesen.side_effect = RuntimeError("weg")
 
         antwort = zaehlen(client, "bo-2")
 
         assert antwort.status_code == 200
         assert dienst.track_content_usage.call_args.kwargs["pruefwert"] is None
+
+
+class TestPunkteEinwilligung:
+    """
+    Muster-Hinweise nur, wenn beide Konten die Einwilligung "Punkte und Meilensteine"
+    gegeben haben (#351): Ihr Wortlaut nennt den Hinweis an die Admins, die
+    Art.-9-Einwilligung nicht mehr. Der Pruefwert bleibt an der Art.-9-Einwilligung.
+    """
+
+    def test_beide_eingewilligt_meldet(self, client, muster):
+        assert zaehlen(client, "bo-2").status_code == 200
+
+        muster.nutzung_melden.assert_called_once()
+
+    def test_kopierende_ohne_einwilligung_kein_muster_aber_pruefwert(
+        self, client, dienst, muster, punkte_einwilligung_ohne_datenbank
+    ):
+        punkte_einwilligung_ohne_datenbank.eingewilligt.side_effect = (
+            lambda kennung: kennung != "bo-2"
+        )
+
+        assert zaehlen(client, "bo-2").status_code == 200
+
+        assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
+        muster.nutzung_melden.assert_not_called()
+
+    def test_autorin_ohne_einwilligung_kein_muster_aber_pruefwert(
+        self, client, dienst, muster, punkte_einwilligung_ohne_datenbank
+    ):
+        """Ein Muster-Hinweis nennt auch die Autorin; hat sie nicht eingewilligt, keiner."""
+        punkte_einwilligung_ohne_datenbank.eingewilligt.side_effect = (
+            lambda kennung: kennung != AUTORIN
+        )
+
+        assert zaehlen(client, "bo-2").status_code == 200
+
+        assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
+        muster.nutzung_melden.assert_not_called()
+
+    def test_unlesbare_einwilligung_der_autorin_kein_muster(
+        self, client, dienst, muster, punkte_einwilligung_ohne_datenbank
+    ):
+        """Im Zweifel ohne Einwilligung der Autorin: Pruefwert ja, Meldung nein."""
+
+        def eingewilligt(kennung):
+            if kennung == AUTORIN:
+                raise RuntimeError("weg")
+            return True
+
+        punkte_einwilligung_ohne_datenbank.eingewilligt.side_effect = eingewilligt
+
+        assert zaehlen(client, "bo-2").status_code == 200
+
+        assert dienst.track_content_usage.call_args.kwargs["pruefwert"]
         muster.nutzung_melden.assert_not_called()
 
 

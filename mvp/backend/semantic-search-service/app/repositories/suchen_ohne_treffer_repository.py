@@ -14,7 +14,7 @@ from sqlalchemy import delete, desc, func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import get_app_database
-from infrastructure.database.models import SucheOhneTrefferZeile
+from infrastructure.database.models import SuchanfrageFreigabe, SucheOhneTrefferZeile
 
 
 # Personen im Zeitraum: die Summe ueber die Wochen (Tagespseudonyme verschiedener
@@ -22,12 +22,39 @@ from infrastructure.database.models import SucheOhneTrefferZeile
 _PERSONEN = func.sum(SucheOhneTrefferZeile.personen)
 
 
-def _ab_mindestanzahl(abfrage, seit_woche: date, mindestanzahl: int):
-    """Je Aussage ab seit_woche, nur mit mindestens mindestanzahl Personen."""
-    return (
-        abfrage.where(SucheOhneTrefferZeile.woche >= seit_woche)
-        .group_by(SucheOhneTrefferZeile.statement_id)
-        .having(_PERSONEN >= mindestanzahl)
+# Freigaben der Vormoderation (Tabelle suchanfrage_freigaben).
+FREIGEGEBENE = "freigegebene"
+ENTSCHIEDENE = "entschiedene"
+UNENTSCHIEDENE = "unentschiedene"
+
+
+def _freigabe_bedingung(auswahl: str):
+    """Bedingung auf die Freigaben: nur freigegebene, nur entschiedene oder nur offene."""
+    if auswahl == FREIGEGEBENE:
+        ids = select(SuchanfrageFreigabe.statement_id).where(
+            SuchanfrageFreigabe.freigegeben.is_(True)
+        )
+        return SucheOhneTrefferZeile.statement_id.in_(ids)
+    ids = select(SuchanfrageFreigabe.statement_id)
+    if auswahl == ENTSCHIEDENE:
+        return SucheOhneTrefferZeile.statement_id.in_(ids)
+    if auswahl == UNENTSCHIEDENE:
+        return SucheOhneTrefferZeile.statement_id.not_in(ids)
+    raise ValueError(auswahl)
+
+
+def _ab_mindestanzahl(
+    abfrage, seit_woche: date, mindestanzahl: int, freigabe: Optional[str] = None
+):
+    """
+    Je Aussage ab seit_woche, nur mit mindestens mindestanzahl Personen; mit freigabe
+    zusaetzlich nach der Vormoderation eingeschraenkt (_freigabe_bedingung).
+    """
+    abfrage = abfrage.where(SucheOhneTrefferZeile.woche >= seit_woche)
+    if freigabe is not None:
+        abfrage = abfrage.where(_freigabe_bedingung(freigabe))
+    return abfrage.group_by(SucheOhneTrefferZeile.statement_id).having(
+        _PERSONEN >= mindestanzahl
     )
 
 
@@ -70,7 +97,12 @@ class SuchenOhneTrefferRepository:
             return ergebnis.rowcount
 
     def haeufigste(
-        self, seit_woche: date, mindestanzahl: int, limit: int, offset: int = 0
+        self,
+        seit_woche: date,
+        mindestanzahl: int,
+        limit: int,
+        offset: int = 0,
+        freigabe: Optional[str] = None,
     ) -> List[Tuple[uuid.UUID, int, int]]:
         """
         (Aussage-ID, Anzahl der Suchen, Anzahl der Personen) ab seit_woche,
@@ -89,6 +121,7 @@ class SuchenOhneTrefferRepository:
                 ),
                 seit_woche,
                 mindestanzahl,
+                freigabe,
             )
             .order_by(desc("anzahl"), SucheOhneTrefferZeile.statement_id)
             .limit(limit)
@@ -101,14 +134,18 @@ class SuchenOhneTrefferRepository:
             ]
 
     def ueber_der_schwelle(
-        self, seit_woche: date, mindestanzahl: int
+        self, seit_woche: date, mindestanzahl: int, freigabe: Optional[str] = None
     ) -> List[uuid.UUID]:
         """
         Alle Aussage-IDs ab seit_woche mit mindestens mindestanzahl Personen,
-        ungeordnet und ohne Limit; dieselbe Schwelle wie haeufigste.
+        ungeordnet und ohne Limit; dieselbe Schwelle wie haeufigste. Mit freigabe
+        nur die freigegebenen, entschiedenen oder unentschiedenen (Vormoderation).
         """
         abfrage = _ab_mindestanzahl(
-            select(SucheOhneTrefferZeile.statement_id), seit_woche, mindestanzahl
+            select(SucheOhneTrefferZeile.statement_id),
+            seit_woche,
+            mindestanzahl,
+            freigabe,
         )
         with self.db.get_session() as session:
             return list(session.execute(abfrage).scalars().all())

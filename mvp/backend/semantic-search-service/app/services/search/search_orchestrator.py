@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Search scoring constants (single source of truth; re-exported by api/v1/search.py).
-MINIMUM_SCORE_THRESHOLD = 0.8  # Minimum score for results to be included
+MINIMUM_SCORE_THRESHOLD = 0.82  # Minimum score for results to be included
 DIRECT_MATCH_PENALTY = 0.7  # Penalty multiplier for direct content matches
 STATEMENT_WEIGHT = 0.7  # Weight for statement similarity score in combined score
 RELEVANCE_WEIGHT = 0.3  # Weight for reply relevance score in combined score
@@ -107,6 +107,9 @@ class SearchOrchestrator:
         self._reference_service = reference_service
         self._usage_service = usage_service
         self._voting_service = voting_service
+        # Antworten von Aussagen, die der Suchanfrage widersprechen (#574): Sie kommen
+        # auch nicht ueber den direkten Weg zurueck.
+        self._ausgeschlossen: set = set()
         # Per-type result buckets, preserving spec order.
         self._results: Dict[ContentType, List] = {
             spec.content_type: [] for spec in specs
@@ -178,6 +181,11 @@ class SearchOrchestrator:
         polarity_metadata: dict,
     ) -> None:
         for statement_result in statement_index_results:
+            polarity_info = polarity_metadata.get(statement_result.id)
+            if polarity_info is not None and polarity_info.antworten_ausschliessen:
+                self._ausgeschlossen.update(
+                    r.id for r in statement_result.replysuggestions
+                )
             for replysuggestion in statement_result.replysuggestions:
                 spec = self._specs.get(replysuggestion.content_type)
                 combined_score = (
@@ -221,7 +229,7 @@ class SearchOrchestrator:
                         statement_similarity_score=statement_result.score,
                         reply_relevance=replysuggestion.relevance,
                         content_result=content_result,
-                        polarity_info=polarity_metadata.get(statement_result.id),
+                        polarity_info=polarity_info,
                         statement_id=statement_result.id,
                     )
                 )
@@ -257,11 +265,13 @@ class SearchOrchestrator:
             for content_result in direct_results:
                 if content_result.id in statement_based_ids:
                     continue
+                if content_result.id in self._ausgeschlossen:
+                    continue
 
                 # Der Schwellwert entscheidet ueber die Aufnahme und prueft deshalb
-                # den Rohscore. Frueher lief der Vergleich gegen den bereits mit
-                # DIRECT_MATCH_PENALTY gedaempften Wert - bei einer Penalty von 0.7
-                # und einer Schwelle von 0.8 haette der Rohscore ueber 1.143 liegen
+                # den Rohscore. Bis August 2026 lief der Vergleich gegen den bereits
+                # mit DIRECT_MATCH_PENALTY gedaempften Wert; mit der damaligen
+                # Schwelle 0.8 haette der Rohscore ueber 0.8 / 0.7 = 1.143 liegen
                 # muessen, was eine Kosinus-Aehnlichkeit nie erreicht. Der Zweig
                 # konnte dadurch nie etwas liefern.
                 if content_result.score <= self._schwelle:
@@ -348,6 +358,15 @@ class SearchOrchestrator:
         )
         for result in treffer:
             result.themen = themen_dtos(themen.get(result.statement_id, ()))
+
+    def inhalte(self) -> List:
+        """Die Beitraege aller Treffer, als Response-DTOs."""
+        return [
+            getattr(result, spec.result_field)
+            for spec in self._specs.values()
+            for result in self._results[spec.content_type]
+            if getattr(result, spec.result_field)
+        ]
 
     def fuer_aufrufer(self, aufrufer: Aufrufer) -> None:
         """

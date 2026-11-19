@@ -1,0 +1,233 @@
+.band {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    /* Seitenrand wie Kopf und Inhalt, damit die Kanten fluchten (Designrunde 12.11.) */
+    margin: 16px var(--page-margin) 0;
+    padding: 12px 16px;
+    border-radius: var(--border-radius-large);
+    background: var(--kopf);
+}
+
+.band-bild {
+    flex: none;
+    width: 48px;
+    height: 48px;
+}
+
+/* Das App-Symbol statt des Wegweisers: so, wie es auf dem Home-Bildschirm aussieht */
+.band-bild.symbol {
+    border-radius: 22%;
+}
+
+.teilen-symbol {
+    display: inline-block;
+    vertical-align: -3px;
+    color: var(--akzent-schrift);
+}
+
+.text {
+    flex: 1;
+    min-width: 0;
+}
+
+h2 {
+    margin: 0 0 2px;
+    font-family: GrueneType, Roboto, sans-serif;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 1.1;
+    color: var(--band-akzent-schrift);
+}
+
+/* Knopf auf dem Band: im Hellen voll wie Suchen (Ersteindruck-Test 14.11.), im Dunkeln Umriss
+   in Gelb, damit nur ein Knopf voll leuchtet (Dunkelmodus 17.11.); Tokens --knopf-zweit-* */
+.knoepfe .rundgang-knopf.voll {
+    background: var(--knopf-zweit-grund);
+    color: var(--knopf-zweit-schrift);
+    border: var(--knopf-zweit-rand);
+}
+
+/* Hover und Druck als Schleier in der Schriftfarbe wie beim Suchen-Knopf (12 % / 20 %):
+   sichtbar auf Tanne im Hellen und als gelber Hauch auf dem Umriss im Dunkeln (Review #689) */
+.knoepfe .rundgang-knopf.voll:hover {
+    background-image: linear-gradient(
+        color-mix(in srgb, var(--knopf-zweit-schrift) 12%, transparent),
+        color-mix(in srgb, var(--knopf-zweit-schrift) 12%, transparent)
+    );
+}
+
+.knoepfe .rundgang-knopf.voll:active {
+    background-image: linear-gradient(
+        color-mix(in srgb, var(--knopf-zweit-schrift) 20%, transparent),
+        color-mix(in srgb, var(--knopf-zweit-schrift) 20%, transparent)
+    );
+}
+
+p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--text);
+}
+
+.knoepfe {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Auf der Startseite in der Spalte von Suchfeld und Kacheln (720 px, mittig), schmaler als der
+   Seitenrahmen; die Knoepfe stehen immer unter dem Text, sonst wird das Band bei 600 bis 960 px
+   sehr hoch (Designrunde 17.11.). Das Band im Kopf der anderen Seiten bleibt im Seitenrahmen.
+   Flaeche im Hellen zartes Klee-Gruen, damit es nicht mit dem gelben Suchband verschmilzt
+   (Token --karte-kommentar); ohne Token das bisherige Gelb. */
+:host([ort='start']) .band {
+    background: var(--karte-kommentar, var(--kopf));
+    flex-wrap: wrap;
+    row-gap: 12px;
+    /* Kanten wie das Suchfeld im Band darueber: 16 px Einzug, ab 752 px die mittige 720er-Spalte */
+    margin-left: max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
+    margin-right: max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
+}
+
+/* Fokusring im Hellen in Tanne: das Hellblau hat auf Klee-zart nur 2,5:1 (Token
+   --willkommen-fokus; ohne Token wie bisher) */
+:host([ort='start']) .rundgang-knopf:focus-visible {
+    outline-color: var(--willkommen-fokus, var(--rundgang-fokus));
+}
+
+:host([ort='start']) .knoepfe {
+    box-sizing: border-box;
+    width: 100%;
+    /* Unter dem Text, nicht unter dem Wegweiser: Bildbreite plus Abstand */
+    padding-left: 64px;
+    gap: 16px;
+}
+
+/* Sonst greift .text { flex: 1 } auch am Knopf "Ausblenden" und zieht ihn in die Mitte */
+:host([ort='start']) .knoepfe .rundgang-knopf {
+    flex: none;
+}
+
+/* Schlanke Zeile (Persona-Runde 18.11.): kein Kasten, kein Bild, in der Spalte von Suchfeld
+   und Karten. Link und Kreuz behalten 44 px Tippflaeche, ohne die Zeile aufzublaehen. */
+/* Etwas hoeher und luftiger als die reine Textzeile, mit dem Wegweiser links (Maintainer 18.11.);
+   am Handy bleiben Suche und der Anfang der ersten Community-Karte im ersten Bild (390 x 844). */
+.zeile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2));
+    padding: 6px 0 6px 14px;
+    border-radius: var(--border-radius-large);
+    background: var(--karte-kommentar, var(--kopf));
+}
+
+.zeile-bild {
+    flex: none;
+    width: 28px;
+    height: 28px;
+}
+
+.zeile p {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.zeile-titel {
+    font-weight: 700;
+    color: var(--band-akzent-schrift, var(--akzent-schrift));
+}
+
+.zeile-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    color: var(--akzent-schrift);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.zeile-satz {
+    white-space: nowrap;
+}
+
+/* Am Handy passt die Zeile nicht in eine: der Satz steht dann ohne Trennpunkt darunter,
+   statt dass eine Zeile mit "·" beginnt */
+@media (max-width: 599px) {
+    .zeile-satz {
+        display: block;
+        margin: -8px 0 8px;
+    }
+
+    .zeile-satz > [aria-hidden='true'] {
+        display: none;
+    }
+}
+
+.zeile-zu {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.zeile-zu:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.zeile-link:focus-visible,
+.zeile-zu:focus-visible {
+    outline: 3px solid var(--willkommen-fokus, var(--rundgang-fokus));
+    outline-offset: -3px;
+}
+
+@media (max-width: 599px) {
+    .band {
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        margin-top: 12px;
+    }
+
+    .band-bild {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* Mit Dauer im Knopf ("Rundgang starten (1 Minute)") passen beide Knoepfe bei 360 px nicht
+       mehr nebeneinander: "Ausblenden" rueckt dann in die naechste Zeile, statt mitten im
+       Wort zu brechen (Ersteindruck-Test 14.11.). */
+    .knoepfe {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .knoepfe .rundgang-knopf {
+        flex: none;
+        white-space: nowrap;
+    }
+
+    :host([ort='start']) .knoepfe {
+        padding-left: 0;
+    }
+}

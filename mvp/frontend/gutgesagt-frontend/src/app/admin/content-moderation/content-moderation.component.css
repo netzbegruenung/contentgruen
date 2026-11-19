@@ -15,23 +15,113 @@
   margin: 0;
 }
 
-/* Mobil scrollt die Filterleiste seitlich statt abgeschnitten zu werden (#512) */
+/*
+ * Die Umschalter brechen um, statt rechts abgeschnitten zu werden: mobil ("Abgewi…") und
+ * am Laptop bei 1280 px ("Löscha…", Persona-Runde 2, M2). Jeder mit eigenem Rand, damit
+ * erkennbar bleibt, wo einer endet.
+ */
 .filter-section {
   margin-bottom: 24px;
   display: flex;
-  justify-content: center;
-  overflow-x: auto;
+  justify-content: flex-start;
+}
+
+/* Doppelte Klasse: schlaegt den Rand der Gruppe aus dem Material-Theme */
+.filter-section mat-button-toggle-group.mat-button-toggle-group {
+  flex-wrap: wrap;
+  gap: 8px;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.filter-section mat-button-toggle,
+.filter-section mat-button-toggle + mat-button-toggle {
+  border: 1px solid var(--linie);
+  border-radius: 18px;
+  overflow: visible;
+}
+
+.filter-section mat-button-toggle.mat-button-toggle-checked {
+  border-color: var(--akzent-tanne);
+}
+
+/* Die rote Zahl steht neben dem Wort, nicht darauf (M2): Platz fuer das Abzeichen */
+.filter-section .mat-badge:not(.mat-badge-hidden) {
+  margin-right: 18px;
+}
+
+.statuszeile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  margin: 0 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.nachladefehler {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: var(--text-leise);
+}
+
+.nachladefehler mat-spinner {
+  flex-shrink: 0;
+}
+
+/* Der Text weicht, nie der Knopf: mit Auslassungszeichen statt abgeschnitten */
+.nachladefehler-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nachladefehler-text.kurz {
+  display: none;
+}
+
+.statuszeile .neue-meldungen {
+  flex-shrink: 0;
 }
 
 @media (max-width: 599px) {
-  .filter-section {
-    justify-content: flex-start;
+  .nachladefehler-text.lang {
+    display: none;
+  }
+
+  .nachladefehler-text.kurz {
+    display: inline;
   }
 }
 
-.filter-section mat-button-toggle-group {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+.sitzung-abgelaufen {
+  color: var(--akzent-schrift);
+  font-weight: 700;
+}
+
+/* Beim Nachladen nicht mehr offen: abgesetzt über Farbe statt Deckkraft (Kontrast AA), Knöpfe gesperrt */
+tr.erledigt {
+  background-color: var(--mulde);
+}
+
+tr.erledigt td {
+  color: var(--text-leise);
+}
+
+.status-erledigt {
+  background-color: var(--mulde);
+  color: var(--text-leise);
+}
+
+.error mat-spinner {
+  margin: 0 auto 12px;
 }
 
 .filter-section mat-icon {
@@ -48,23 +138,23 @@
 }
 
 .status-pending {
-  background-color: #fff3e0;
-  color: #e65100;
+  background-color: var(--hinweis-tint);
+  color: var(--hinweis-text);
 }
 
 .status-reviewed {
-  background-color: var(--success-bg);
-  color: var(--primary-dark);
+  background-color: var(--primaer-tint);
+  color: var(--akzent-schrift);
 }
 
 .status-dismissed {
-  background-color: #e3f2fd;
-  color: #1565c0;
+  background-color: var(--info-tint);
+  color: var(--info-text);
 }
 
 .status-gesperrt {
-  background-color: #ffebee;
-  color: #c62828;
+  background-color: var(--fehler-tint);
+  color: var(--fehler);
 }
 
 .gesperrte-liste {
@@ -78,7 +168,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #fff;
+  background: var(--flaeche);
   border-radius: 4px;
 }
 
@@ -99,7 +189,7 @@
 }
 
 .widerspruch-offen {
-  color: #b00020;
+  color: var(--fehler);
 }
 
 .gesperrt-aktionen {
@@ -109,7 +199,7 @@
 }
 
 .not-reviewed {
-  color: #999;
+  color: var(--text-leise);
   font-style: italic;
 }
 
@@ -123,12 +213,12 @@
 }
 
 .loading p, .error p {
-  color: #666;
+  color: var(--text-leise);
   margin: 0;
 }
 
 .error {
-  color: #d32f2f;
+  color: var(--fehler);
 }
 
 .error mat-icon {
@@ -142,17 +232,17 @@
   font-size: 80px;
   width: 80px;
   height: 80px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   margin-bottom: 16px;
 }
 
 .empty-state h2 {
-  color: #333;
+  color: var(--text);
   margin: 0 0 8px 0;
 }
 
 .empty-state p {
-  color: #666;
+  color: var(--text-leise);
 }
 
 .reports-table {
@@ -164,8 +254,8 @@ table {
 }
 
 .content-type-badge {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background-color: var(--info-tint);
+  color: var(--info-rand);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -178,7 +268,7 @@ table {
 }
 
 .reason-cell .description {
-  color: #666;
+  color: var(--text-leise);
   font-size: 13px;
   margin: 0;
   max-width: 300px;
@@ -188,21 +278,45 @@ table {
 }
 
 .anonymous {
-  color: #999;
+  color: var(--text-leise);
   font-style: italic;
 }
 
 .melder-angabe {
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .melder-angabe.guter-glaube {
-  color: #666;
+  color: var(--text-leise);
 }
 
 .action-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Bei 1280 px passt die Tabelle samt Aktionen ohne seitliches Rollen (M2) */
+@media (min-width: 600px) {
+  .reports-table th.mat-mdc-header-cell,
+  .reports-table td.mat-mdc-cell {
+    padding: 8px;
+  }
+
+  .datum-teil {
+    white-space: nowrap;
+  }
+
+  /* Schmal, aber lesbar: bis zu drei Zeilen statt einer gekuerzten, voller Text im title (Review) */
+  .reason-cell .description {
+    max-width: 180px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
 }
 
 .action-buttons button {
@@ -218,7 +332,7 @@ table {
 }
 
 .report-row:hover {
-  background-color: #f5f5f5;
+  background-color: var(--mulde);
 }
 
 .expanded-row {
@@ -230,20 +344,20 @@ table {
 }
 
 .content-display {
-  background-color: #f9f9f9;
-  border-left: 3px solid #1976d2;
+  background-color: var(--mulde);
+  border-left: 3px solid var(--info-rand);
 }
 
 .content-display h3 {
   margin: 0 0 16px 0;
-  color: #333;
+  color: var(--text);
   font-size: 16px;
 }
 
 .content-info {
   margin-bottom: 12px;
   padding: 8px 12px;
-  background-color: #e3f2fd;
+  background-color: var(--info-tint);
   border-radius: 4px;
 }
 
@@ -253,16 +367,16 @@ table {
 }
 
 .content-id code {
-  background-color: white;
+  background-color: var(--flaeche);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
   font-size: 12px;
-  color: #1976d2;
+  color: var(--info-rand);
 }
 
 .content-wrapper {
-  background-color: white;
+  background-color: var(--flaeche);
   padding: 16px;
   border-radius: 4px;
 }
@@ -273,16 +387,16 @@ table {
 }
 
 .content-item strong {
-  color: #1976d2;
+  color: var(--info-rand);
   margin-right: 8px;
 }
 
 .text-section {
   margin: 16px 0;
   padding: 12px;
-  background-color: #fafafa;
+  background-color: var(--mulde);
   border-radius: 4px;
-  border-left: 3px solid #e0e0e0;
+  border-left: 3px solid var(--linie);
 }
 
 .text-section p strong {
@@ -293,7 +407,7 @@ table {
 
 .text-content {
   padding: 8px;
-  background-color: white;
+  background-color: var(--flaeche);
   border-radius: 3px;
   line-height: 1.8;
   white-space: pre-wrap;
@@ -302,13 +416,13 @@ table {
 
 .statement-text {
   font-style: italic;
-  border-left: 3px solid var(--primary-dark);
-  background-color: #f1f8f4;
+  border-left: 3px solid var(--linie-tanne);
+  background-color: var(--success-faint);
 }
 
 .metadata {
   margin-top: 8px;
-  color: #666;
+  color: var(--text-leise);
 }
 
 .metadata small {
@@ -319,10 +433,10 @@ table {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #ff9800;
+  color: var(--warning-border);
   padding: 16px;
-  background-color: #fff3e0;
-  border-left: 3px solid #ff9800;
+  background-color: var(--hinweis-tint);
+  border-left: 3px solid var(--warning-border);
 }
 
 .content-not-found mat-icon {
@@ -350,4 +464,90 @@ table {
   .content-item p {
     font-size: 14px;
   }
+}
+
+/* Gesperrt: Text des Beitrags zum Aufklappen */
+.text-umschalter {
+  align-self: flex-start;
+  padding: 0 8px 0 0;
+}
+
+.gesperrter-beitragstext {
+  max-height: 16em;
+  overflow-y: auto;
+  padding: 8px 12px;
+  border-left: 3px solid var(--linie);
+  white-space: pre-wrap;
+}
+
+.entscheidung-begruendung {
+  margin: 4px 0 0;
+}
+
+/*
+ * Mobil (Persona-Test 13.11.): Meldungen als Karten statt abgeschnittener Tabelle, jede
+ * Angabe mit Beschriftung (data-label), Sperren und Abweisen sichtbar. Gesperrte einspaltig.
+ */
+@media (max-width: 599px) {
+  /* tbody kommt aus der Vorlage von mat-table und trägt unser Attribut nicht: ::ng-deep */
+  .reports-table table,
+  .reports-table ::ng-deep tbody,
+  .reports-table tr,
+  .reports-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .reports-table tr.mat-mdc-header-row {
+    display: none;
+  }
+
+  .reports-table tr.report-row {
+    height: auto;
+    padding: 8px 0;
+    border-top: 1px solid var(--linie);
+  }
+
+  .reports-table td.mat-mdc-cell {
+    border-bottom: none;
+    padding: 4px 12px;
+  }
+
+  .reports-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-leise);
+  }
+
+  .reports-table .action-buttons {
+    flex-wrap: wrap;
+  }
+
+  .reports-table tr.expanded-row {
+    height: auto;
+  }
+
+  /* Die eingeklappte Detailzeile nimmt keinen Platz */
+  .reports-table tr.expanded-row td.mat-mdc-cell {
+    padding: 0;
+  }
+
+  .gesperrter-beitrag {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gesperrt-aktionen {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+}
+
+.kennung {
+  margin: 2px 0;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
 }

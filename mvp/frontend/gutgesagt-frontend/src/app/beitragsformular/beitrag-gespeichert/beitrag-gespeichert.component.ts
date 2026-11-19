@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -20,14 +20,20 @@ import {
   GespeichertZustand,
   Herkunft,
   SUCHE_PARAM,
+  gesuchtAus,
   herkunftAus,
+  lueckeZuSatz,
+  vonHierFehltEineAntwort,
 } from './gespeichert-adresse';
+import { ROUTES } from '../../shared/constants/app.constants';
+import { LUECKE_ZU, NAECHSTE_LUECKE } from '../../shared/luecke-texte';
 import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
+import { TeilenService } from '../../shared/teilen.service';
 
 /** Beitragstypen, fuer die es die Ergebnisseite gibt. */
-export type GespeichertTyp = Extract<FormularTyp, 'commentary' | 'generictext' | 'post'>;
+export type GespeichertTyp = FormularTyp;
 
-/** Die Saetze der Seite je Typ - der Kommentar, die Hintergrundinfo, der Post. */
+/** Die Saetze der Seite je Typ - der Kommentar, die Hintergrundinfo, der Post, das Bild. */
 const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; nichtLadbar: string }> = {
   commentary: {
     gespeichert: 'Dein Kommentar ist gespeichert.',
@@ -44,7 +50,17 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
     nochEiner: 'Noch einen Post',
     nichtLadbar: 'Er lässt sich gerade nicht anzeigen – unter „Meine Beiträge“ findest du ihn.',
   },
+  image: {
+    gespeichert: 'Dein Bild ist gespeichert.',
+    nochEiner: 'Noch ein Bild',
+    nichtLadbar: 'Es lässt sich gerade nicht anzeigen – unter „Meine Beiträge“ findest du es.',
+  },
 };
+
+/** Die oeffentliche Adresse eines Beitrags (#300). */
+export function beitragLink(id: string, origin: string = window.location.origin): string {
+  return `${origin}/beitrag/${encodeURIComponent(id)}`;
+}
 
 export const EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT =
   'Der Einwurf ließ sich nicht mit dem Beitrag verknüpfen – er steht im Fangkorb weiter unter „Ausformulieren“.';
@@ -70,6 +86,8 @@ export class BeitragGespeichertComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   readonly einwurfNichtVerknuepft = EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT;
+  readonly lueckeZuTitel = LUECKE_ZU;
+  readonly naechsteLueckeText = NAECHSTE_LUECKE;
 
   typ: GespeichertTyp = 'commentary';
   herkunft: Herkunft = 'frei';
@@ -83,6 +101,10 @@ export class BeitragGespeichertComponent implements OnInit {
   einwurfEigen: boolean | null = null;
   readonly zustand: GespeichertZustand;
   readonly aussageKopf: KartenDaten | null;
+  /** Die ID aus der Adresse, fuer "Teilen". */
+  private beitragId = '';
+  /** Die gespeicherte Karte selbst: "Teilen" nimmt ihre gewaehlte Fassung (P03, Persona-Runde 2). */
+  @ViewChild('gespeichertKarte', { read: BeitragskarteComponent }) private karteAnsicht?: BeitragskarteComponent;
 
   constructor(
     private route: ActivatedRoute,
@@ -92,6 +114,7 @@ export class BeitragGespeichertComponent implements OnInit {
     private uebergabe: DestillierUebergabeService,
     private einwurfService: EinwurfService,
     private logger: LoggingService,
+    private teilenService: TeilenService,
   ) {
     // Der State haengt an der laufenden Navigation; nach dem Neuladen gibt es keinen.
     this.zustand = (this.router.getCurrentNavigation()?.extras.state as GespeichertZustand | undefined) ?? {};
@@ -126,7 +149,8 @@ export class BeitragGespeichertComponent implements OnInit {
         switchMap((params) => {
           this.laedt = true;
           this.nichtLadbar = false;
-          return this.laden(params.get('id') ?? '');
+          this.beitragId = params.get('id') ?? '';
+          return this.laden(this.beitragId);
         }),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -143,9 +167,9 @@ export class BeitragGespeichertComponent implements OnInit {
       });
   }
 
-  /** Fangkorb: der naechste offene Einwurf; ist keiner offen, der Fangkorb. */
+  /** Fangkorb: der naechste Einwurf zum Ausformulieren; ist keiner mehr da, "Leer gefischt". */
   naechsterEinwurf(): void {
-    this.uebergabe.zumNaechsten(this.einwurfId ?? '', NACH_DEM_AUSFORMULIEREN);
+    this.uebergabe.zumNaechstenAusformulieren(this.einwurfId ?? '');
   }
 
   /**
@@ -180,8 +204,68 @@ export class BeitragGespeichertComponent implements OnInit {
     this.router.navigate(['/search']);
   }
 
+  /**
+   * "Luecke zu" (Nutzerfuehrung 13.11.): Der Beitrag beantwortet eine Aussage aus "Hier
+   * fehlt eine Antwort". Das ist der staerkste Wirkungsmoment, deshalb statt des
+   * allgemeinen Satzes die Nachfrage und als Hauptknopf die naechste Luecke. Nicht,
+   * wenn die Verknuepfung mit der Aussage gescheitert ist: Dann ist die Luecke offen.
+   */
+  get lueckeZu(): boolean {
+    return (
+      this.typ === 'commentary' &&
+      vonHierFehltEineAntwort(this.route.snapshot.queryParamMap) &&
+      this.zustand.verknuepft !== false
+    );
+  }
+
+  get lueckeZuSatz(): string {
+    return lueckeZuSatz(gesuchtAus(this.route.snapshot.queryParamMap));
+  }
+
+  naechsteLuecke(): void {
+    this.router.navigate([ROUTES.HIER_FEHLT_EINE_ANTWORT]);
+  }
+
   nochEiner(): void {
     this.router.navigate([FORMULAR_PFAD[this.typ]]);
+  }
+
+  /**
+   * "Zur Aussage" nur mit Aussage, und nicht, wenn "Zurueck zur Suche" schon genau
+   * dorthin fuehrt.
+   */
+  get zurAussageZeigen(): boolean {
+    if (!this.aussageKopf) {
+      return false;
+    }
+    const suche = this.route.snapshot.queryParamMap.get(SUCHE_PARAM)?.trim();
+    return !(this.herkunft === 'suche' && suche && suche === this.zustand.aussage?.text.trim());
+  }
+
+  /** Die Suche nach der Aussage: dort stehen alle Antworten auf sie (#617). */
+  zurAussage(): void {
+    const text = this.zustand.aussage?.text;
+    if (text) {
+      this.navigationService.navigateToResult(text);
+    }
+  }
+
+  /**
+   * Den eigenen neuen Beitrag teilen (B7, vorher "Link kopieren", #617): das
+   * Teilen-Menue, wo das Geraet eines hat, mit Text und Link auf die Beitragsseite (/beitrag/:id, oeffentlich),
+   * sonst der Link in die Zwischenablage. Keine Nutzung: Es ist der eigene Beitrag.
+   * Der Text ist der, den auch das Teilen-Symbol der Karte schickt: die gewaehlte Fassung
+   * (P03, Persona-Runde 2), nicht immer Mittel.
+   */
+  async teilen(): Promise<void> {
+    if (!this.beitragId) {
+      return;
+    }
+    await this.teilenService.teilen({
+      url: beitragLink(this.beitragId),
+      text: this.karteAnsicht?.kopierText || this.karte?.text || undefined,
+      titel: this.karteAnsicht?.titelAnzeige?.trim() || this.karte?.titel || undefined,
+    });
   }
 
   /**

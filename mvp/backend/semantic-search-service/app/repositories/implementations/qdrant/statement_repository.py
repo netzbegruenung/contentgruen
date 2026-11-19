@@ -1,9 +1,9 @@
-from typing import AbstractSet, List, Optional, Set
+from typing import TYPE_CHECKING, AbstractSet, Iterable, List, Optional, Set
 import asyncio
 import logging
 import uuid
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from core.config import Settings
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
@@ -11,13 +11,52 @@ from repositories.implementations.qdrant.base_repository import (
     QdrantBaseRepository,
     nur_sichtbar_bedingungen,
 )
+from repositories.implementations.qdrant.antwortzahl import sichtbare_antworten_zaehlen
 from repositories.interfaces.statement_repository import IStatementRepository
-from domain.models.statement import StatementDbEntry, StatementSearchResult
+from domain.models.statement import (
+    AntwortKurz,
+    StatementDbEntry,
+    StatementReplysuggestion,
+    StatementSearchResult,
+)
+from utils.antwort_ids import FELD_ANTWORT_IDS
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_type import ContentType
 from domain.models.content_status import AUSGEBLENDET_WERTE
 
+if TYPE_CHECKING:
+    from qdrant_client.models import Record
+
 logger = logging.getLogger(__name__)
+
+# Wie viele Aussagen zu einem Beitrag zu_antwort hoechstens liest. Ein Beitrag
+# antwortet meist auf eine, selten auf wenige Aussagen.
+AUSSAGEN_JE_ANTWORT_HOECHSTENS = 20
+
+# Beitragstypen, die als weitere Antwort aufgelistet werden; Aussagen und Herkunft
+# sind keine Beitraege (ADR 0002). Dieselbe Menge wie BEITRAGSTYPEN_WERTE in
+# domain/content_registry.py; nicht von dort importiert, weil die Registry die
+# Dienstschicht nachzieht und das Repository nicht von ihr abhaengen soll. Ein
+# Unit-Test haelt beide gleich.
+_BEITRAGSTYPEN = frozenset(
+    {
+        ContentType.COMMENTARY.value,
+        ContentType.GENERIC_TEXT.value,
+        ContentType.POST.value,
+        ContentType.IMAGE.value,
+    }
+)
+_TITEL_OHNE_TITEL_HOECHSTENS = 120
+
+# Die Antwortvorschlaege aus dem Payload einer Aussage (mit_kommentar); ein JSON-Text
+# aus aelteren Punkten loest StatementDbEntry.parse_replysuggestions vorher auf.
+_ANTWORTVORSCHLAEGE = TypeAdapter(List[StatementReplysuggestion])
+
+# Hoechstens so viele IDs je retrieve (_abrufen): mit_kommentar fragt bis zu einige
+# hundert Aussagen ab, jede kann mehrere Kommentare tragen, und ohne_kommentar fragt
+# die Kommentare aller kuratierten Aussagen ab. Die Pakete laufen nacheinander, damit
+# ein Aufruf der Liste Qdrant nicht mit vielen gleichzeitigen Anfragen belegt.
+_IDS_JE_ABRUF = 256
 
 
 def _unbeantwortete_suchanfrage(
@@ -51,6 +90,17 @@ def _unbeantwortete_suchanfrage(
             if ueber_der_schwelle
             else None
         ),
+    )
+
+
+def ist_unbeantwortete_suchanfrage(aussage: StatementDbEntry) -> bool:
+    """
+    Dasselbe Kriterium wie _unbeantwortete_suchanfrage, fuer eine schon gelesene
+    Aussage (getById): aus einer Suchanfrage und ohne Antwortvorschlag.
+    """
+    return (
+        aussage.origin == ContentOrigin.SEARCH_QUERY
+        and aussage.replysuggestions_count < 1
     )
 
 
@@ -159,6 +209,37 @@ class StatementRepository(
             )
             return 0
 
+    async def zaehle_unbeantwortete_suchanfragen(
+        self, ids: AbstractSet[uuid.UUID]
+    ) -> int:
+        """
+        Wie viele der IDs sichtbare unbeantwortete Suchanfragen sind, mit einem
+        Zaehlaufruf (Zaehler der Vormoderation). Fehler gehen an den Aufrufer.
+        """
+        from qdrant_client.models import (
+            FieldCondition,
+            Filter,
+            HasIdCondition,
+            MatchValue,
+        )
+
+        if not ids:
+            return 0
+        result = await self._shared_manager.async_client.count(
+            collection_name=self._shared_manager.collection_name,
+            count_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="content_type", match=MatchValue(value=self.content_type)
+                    ),
+                    *nur_sichtbar_bedingungen(),
+                    HasIdCondition(has_id=[str(i) for i in sorted(ids)]),
+                    _unbeantwortete_suchanfrage(),
+                ]
+            ),
+        )
+        return result.count
+
     async def get_all_curated(
         self,
         limit: int,
@@ -240,16 +321,179 @@ class StatementRepository(
             )
         ]
 
+    async def mit_kommentar(self, ids: Iterable[uuid.UUID]) -> Set[uuid.UUID]:
+        """
+        Welche dieser Aussagen einen sichtbaren Kommentar unter ihren
+        Antwortvorschlaegen haben: das Gegenstueck zu ohne_kommentar fuer wenige,
+        schon bekannte Aussagen (die Kandidaten aus "Suchen ohne Treffer" in
+        UnbeantworteteAussagenService). Zwei Abrufe per ID, kein Scan; wie dort zaehlt
+        ein gesperrter oder geloeschter Kommentar nicht. Ein Fehler beim Abruf geht
+        an den Aufrufer; was dann gilt, entscheidet der Service.
+        """
+        ids = list(dict.fromkeys(ids))
+        if not ids:
+            return set()
+        punkte = await self._abrufen(ids, ["content_type", "replysuggestions"])
+        kommentare_je_aussage = {}
+        for punkt in punkte:
+            payload = punkt.payload or {}
+            if payload.get("content_type") != self.content_type:
+                continue
+            try:
+                vorschlaege = _ANTWORTVORSCHLAEGE.validate_python(
+                    StatementDbEntry.parse_replysuggestions(
+                        payload.get("replysuggestions") or []
+                    )
+                )
+            except ValueError as fehler:
+                logger.warning(
+                    f"mit_kommentar: Punkt {punkt.id} uebersprungen, "
+                    f"Antwortvorschlaege ungueltig ({type(fehler).__name__})"
+                )
+                continue
+            kommentare_je_aussage[uuid.UUID(str(punkt.id))] = {
+                vorschlag.id
+                for vorschlag in vorschlaege
+                if vorschlag.content_type == ContentType.COMMENTARY
+            }
+        sichtbar = await self._sichtbare_kommentare(
+            set().union(*kommentare_je_aussage.values())
+            if kommentare_je_aussage
+            else set()
+        )
+        return {
+            aussage_id
+            for aussage_id, kommentare in kommentare_je_aussage.items()
+            if kommentare & sichtbar
+        }
+
+    async def sichtbare_antworten_zaehlen(self, ids: Iterable[uuid.UUID]) -> int:
+        """Die Antwortzahl zu diesen Antwortvorschlaegen (antwortzahl.py, #631)."""
+        return await sichtbare_antworten_zaehlen(
+            self._shared_manager.async_client, self._shared_manager.collection_name, ids
+        )
+
+    async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
+        """
+        Sichtbare Aussagen, auf die der Beitrag antwortet (#603): eine gefilterte
+        Abfrage ueber das Payload-Feld antwort_ids (Keyword-Index), kein Scan.
+        Aussagen aus der Zeit vor dem Feld findet sie erst nach dem Nachtrag
+        (scripts/manual/antwort_ids_nachtragen.py).
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+        punkte, _ = await self._shared_manager.async_client.scroll(
+            collection_name=self._shared_manager.collection_name,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="content_type", match=MatchValue(value=self.content_type)
+                    ),
+                    FieldCondition(
+                        key=FELD_ANTWORT_IDS, match=MatchValue(value=str(beitrag_id))
+                    ),
+                    *nur_sichtbar_bedingungen(),
+                ]
+            ),
+            limit=AUSSAGEN_JE_ANTWORT_HOECHSTENS,
+            with_payload=True,
+            with_vectors=False,
+        )
+        aussagen: List[StatementDbEntry] = []
+        for punkt in punkte:
+            payload = dict(punkt.payload or {})
+            payload["id"] = str(punkt.id)
+            try:
+                aussagen.append(
+                    self.content_db_entry_model_class.model_validate(payload)
+                )
+            except ValidationError as fehler:
+                logger.warning(
+                    f"zu_antwort: Punkt {punkt.id} uebersprungen, "
+                    f"Payload ungueltig ({fehler.error_count()} Fehler)"
+                )
+        return aussagen
+
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
+        """
+        Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt
+        (Meilenstein "Erste Gegenrede", #351): eine gefilterte Abfrage ueber
+        antwort_ids wie zu_antwort, ein Treffer genuegt.
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchAny, MatchValue
+
+        if not beitrag_ids:
+            return False
+        punkte, _ = await self._shared_manager.async_client.scroll(
+            collection_name=self._shared_manager.collection_name,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="content_type", match=MatchValue(value=self.content_type)
+                    ),
+                    FieldCondition(
+                        key=FELD_ANTWORT_IDS,
+                        match=MatchAny(any=sorted({str(i) for i in beitrag_ids})),
+                    ),
+                    *nur_sichtbar_bedingungen(),
+                ]
+            ),
+            limit=1,
+            with_payload=False,
+            with_vectors=False,
+        )
+        return bool(punkte)
+
+    async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
+        """
+        Die Beitraege unter den IDs, die weder gesperrt noch geloescht sind, mit Typ
+        und Titel, in der Reihenfolge der IDs (#603). Ein Abruf fuer alle; Sperren
+        und Loeschen lassen den Antwortvorschlag an der Aussage stehen (ohne_kommentar).
+        """
+        if not ids:
+            return []
+        punkte = await self._shared_manager.async_client.retrieve(
+            collection_name=self._shared_manager.collection_name,
+            ids=[str(i) for i in ids],
+            with_payload=["content_type", "status", "title", "text"],
+            with_vectors=False,
+        )
+        gefunden = {}
+        for punkt in punkte:
+            payload = punkt.payload or {}
+            typ = payload.get("content_type")
+            if typ not in _BEITRAGSTYPEN or payload.get("status") in AUSGEBLENDET_WERTE:
+                continue
+            titel = (payload.get("title") or "").strip() or (
+                (payload.get("text") or "").strip()[:_TITEL_OHNE_TITEL_HOECHSTENS]
+            )
+            if not titel:
+                continue
+            gefunden[uuid.UUID(str(punkt.id))] = AntwortKurz(
+                id=uuid.UUID(str(punkt.id)), content_type=typ, titel=titel
+            )
+        return [gefunden[i] for i in ids if i in gefunden]
+
+    async def _abrufen(
+        self, ids: Iterable[uuid.UUID], felder: List[str]
+    ) -> List["Record"]:
+        """Punkte per ID, in Paketen von hoechstens _IDS_JE_ABRUF IDs."""
+        ids = [str(i) for i in ids]
+        punkte = []
+        for start in range(0, len(ids), _IDS_JE_ABRUF):
+            punkte += await self._shared_manager.async_client.retrieve(
+                collection_name=self._shared_manager.collection_name,
+                ids=ids[start : start + _IDS_JE_ABRUF],
+                with_payload=felder,
+                with_vectors=False,
+            )
+        return punkte
+
     async def _sichtbare_kommentare(self, ids: Set[uuid.UUID]) -> Set[uuid.UUID]:
         """Welche der IDs einen Kommentar bezeichnen, der weder gesperrt noch geloescht ist."""
         if not ids:
             return set()
-        punkte = await self._shared_manager.async_client.retrieve(
-            collection_name=self._shared_manager.collection_name,
-            ids=[str(i) for i in ids],
-            with_payload=["content_type", "status"],
-            with_vectors=False,
-        )
+        punkte = await self._abrufen(ids, ["content_type", "status"])
         return {
             uuid.UUID(str(punkt.id))
             for punkt in punkte

@@ -27,7 +27,9 @@ daraus ohne Stack; --json schreibt alles als Datei.
 import argparse
 import asyncio
 import json
+import statistics
 import sys
+import time
 from datetime import date
 from typing import (
     TYPE_CHECKING,
@@ -62,13 +64,20 @@ STANDARD_SCHWELLEN = (0.76, 0.78, 0.79, 0.80, 0.81, 0.82, 0.84, 0.86)
 ANGEZEIGTE_TYPEN = ("commentary", "generic_text", "post")
 # Recall@k ueber die Ergebnisseite in ihrer Reihenfolge (ANGEZEIGTE_TYPEN).
 RECALL_BEI = (5, 10)
+# Recall je Phaenomen: das groesste k aus RECALL_BEI (wie das Tor fuer Roadmap-Stufe 3).
+RECALL_JE_PHAENOMEN = max(RECALL_BEI)
 # Exit-Code, wenn kein Fall mit Erwartung gemessen wurde: Der Bestand passt nicht zum
-# Set (leere oder falsche Sammlung, Startbestand ohne passende Faelle).
+# Set (leere oder falsche Sammlung, ein Bestand ohne Aussagen aus Seed oder Startbestand).
 BESTAND_PASST_NICHT = 2
+# Aehnliche Aussagen wie die Vorschlaege im Beitragsformular (statement.service.ts:
+# VORSCHLAG_ANZAHL, Settings.aussage_vorschlag_schwelle): hoechstens so viele gepflegte
+# Aussagen, und nur ab dieser unteren Grenze. Ein Unit-Test haelt beide Stellen gleich.
+AEHNLICHE_ANZAHL = 3
+AEHNLICHE_AB = 0.885
 
-VORLAEUFIG = (
-    "Vorläufig: gemessen am Testbestand (Seed). Nach dem Startbestand (#288) einmal neu "
-    "messen, siehe SUCHTESTSET.md."
+HINWEIS = (
+    "Bewertet am Seed und am Entwurf des Startbestands, lokal (SUCHTESTSET.md). Nach "
+    "dem Import des Startbestands auf Produktion (#288) einmal zur Kontrolle messen."
 )
 
 EINORDNUNGEN = ("treffer", "fehltreffer", "keine")
@@ -95,6 +104,29 @@ class FallMessung(NamedTuple):
     # Nur bei dieselbe_behauptung: Landet die Suchanfrage auf einer erwarteten Aussage
     # (True) oder ergaebe sie eine neue bzw. landet auf einer anderen (False)?
     landet_auf_erwarteter: Optional[bool]
+    # Die aehnlichen Aussagen zur Suchanfrage (AEHNLICHE_ANZAHL, ab AEHNLICHE_AB), je
+    # Aussage: ist sie eine erwartete? Unabhaengig von der Schwelle der Suche.
+    aehnliche: Tuple[bool, ...] = ()
+    # Aussagen aus fall.nur_ohne, die im gemessenen Bestand stehen: Der Fall ist dort
+    # nicht fremd und zaehlt nicht mit. (Fehlt eine aus fall.nur_mit, steht sie in fehlt.)
+    ausgeschlossen: Tuple[str, ...] = ()
+    # Wie lange aussagetreffer_finden fuer diesen Fall brauchte (Millisekunden):
+    # Einbettung, Aussagesuche, Polaritaet (Wortlisten oder NLI-Modell, #574) und
+    # Schlagwoerter. None, wenn der Fall nicht gemessen wurde.
+    aussagetreffer_ms: Optional[float] = None
+    # Mit dem Ersatz gemessen (fall.ersatz, #606): Dem Bestand fehlen diese Aussagen aus
+    # dem urspruenglichen erwartet; fall traegt dann die Erwartung des Ersatzes.
+    ersatz_fuer: Tuple[str, ...] = ()
+    # Nur bei dieselbe_behauptung und NLI-Stufe "an": Hat vorhandene_finden ohne Urteil
+    # eines Modells entschieden? RUECKFALL_SCHWELLE: Das erste Modell urteilte nicht
+    # (nicht rechtzeitig frei, DIESELBE_WARTET_HOECHSTENS, oder nicht verfuegbar), es
+    # galt die Schwelle. RUECKFALL_OHNE_BESTAETIGER: ebenso der Bestaetiger, es galt nur
+    # das erste Modell. Leer: kein Rueckfall.
+    rueckfall: str = ""
+
+
+RUECKFALL_SCHWELLE = "schwelle"
+RUECKFALL_OHNE_BESTAETIGER = "ohne_bestaetiger"
 
 
 class Auswertung(NamedTuple):
@@ -127,6 +159,19 @@ class Zerfaserung(NamedTuple):
     ohne_treffer_neu: int  # davon landen nicht auf der erwarteten Aussage
 
 
+class Rueckfaelle(NamedTuple):
+    geprueft: int  # gemessene Faelle mit dieselbe_behauptung (vorhandene_finden)
+    schwelle: Tuple[str, ...]  # Fall-IDs mit RUECKFALL_SCHWELLE
+    ohne_bestaetiger: Tuple[str, ...]  # Fall-IDs mit RUECKFALL_OHNE_BESTAETIGER
+
+
+class AehnlicheAussagen(NamedTuple):
+    mit_erwartung: int  # gemessene Faelle mit Erwartung
+    erwartete_dabei: int  # davon eine erwartete Aussage unter den aehnlichen
+    ohne_erwartung: int  # gemessene Faelle ohne Erwartung
+    ohne_mit_vorschlag: int  # davon mit mindestens einer aehnlichen Aussage
+
+
 # ---------------------------------------------------------------------- #
 # Auswertung (ohne Stack)
 # ---------------------------------------------------------------------- #
@@ -151,9 +196,17 @@ def einordnen(fall: Fall, gezeigt: Sequence[AngezeigterBeitrag]) -> str:
     return "fehltreffer"
 
 
+def passend_unter(gezeigt: Sequence[AngezeigterBeitrag], k: int) -> bool:
+    """Ist unter den ersten k angezeigten Beitraegen ein passender (Zaehler von Recall@k)?"""
+    return any(c.passt for c in gezeigt[:k])
+
+
 def gemessen(messungen: Iterable[FallMessung]) -> List[FallMessung]:
-    """Nur Faelle, deren erwartete Aussagen alle im Bestand sind."""
-    return [m for m in messungen if not m.fehlt]
+    """
+    Nur Faelle, deren erwartete Aussagen (und die aus nur_mit) alle im Bestand sind und
+    keine aus nur_ohne.
+    """
+    return [m for m in messungen if not m.fehlt and not m.ausgeschlossen]
 
 
 def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
@@ -173,7 +226,7 @@ def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
             zaehler[einordnung] += 1
             gefunden += any(c.passt for c in gezeigt)
             for k in RECALL_BEI:
-                gefunden_bei[k] += any(c.passt for c in gezeigt[:k])
+                gefunden_bei[k] += passend_unter(gezeigt, k)
         else:
             ohne[einordnung] += 1
     mit_erwartung = sum(1 for m in faelle if m.fall.erwartet)
@@ -201,11 +254,23 @@ def auswerten(messungen: Iterable[FallMessung], schwelle: float) -> Auswertung:
 def je_phaenomen(
     messungen: Iterable[FallMessung], schwelle: float
 ) -> Dict[str, Dict[str, int]]:
-    """Je Phaenomen, wie viele Faelle treffer, fehltreffer und keine sind."""
+    """
+    Je Phaenomen, wie viele Faelle treffer, fehltreffer und keine sind, dazu
+    mit_erwartung und gefunden@k (k = RECALL_JE_PHAENOMEN): Faelle mit Erwartung und
+    einem passenden Beitrag unter den ersten k (Recall@k = gefunden@k / mit_erwartung).
+    """
+    gefunden_k = f"gefunden@{RECALL_JE_PHAENOMEN}"
     tabelle: Dict[str, Dict[str, int]] = {}
     for m in gemessen(messungen):
-        zeile = tabelle.setdefault(m.fall.phaenomen, dict.fromkeys(EINORDNUNGEN, 0))
-        zeile[einordnen(m.fall, m.angezeigt[schwelle])] += 1
+        zeile = tabelle.setdefault(
+            m.fall.phaenomen,
+            {**dict.fromkeys(EINORDNUNGEN, 0), "mit_erwartung": 0, gefunden_k: 0},
+        )
+        gezeigt = m.angezeigt[schwelle]
+        zeile[einordnen(m.fall, gezeigt)] += 1
+        if m.fall.erwartet:
+            zeile["mit_erwartung"] += 1
+            zeile[gefunden_k] += passend_unter(gezeigt, RECALL_JE_PHAENOMEN)
     return tabelle
 
 
@@ -232,9 +297,87 @@ def zerfaserung(messungen: Iterable[FallMessung], schwelle: float) -> Zerfaserun
     )
 
 
+def rueckfaelle(messungen: Iterable[FallMessung]) -> Rueckfaelle:
+    """In welchen gemessenen Faellen vorhandene_finden ohne Urteil eines NLI-Modells
+    entschied (FallMessung.rueckfall). Solche Faelle verfaelschen die Zerfaserung still
+    in Richtung Schwelle bzw. ohne Bestaetiger."""
+    dieselbe = [m for m in gemessen(messungen) if m.landet_auf_erwarteter is not None]
+    return Rueckfaelle(
+        geprueft=len(dieselbe),
+        schwelle=tuple(
+            m.fall.id for m in dieselbe if m.rueckfall == RUECKFALL_SCHWELLE
+        ),
+        ohne_bestaetiger=tuple(
+            m.fall.id for m in dieselbe if m.rueckfall == RUECKFALL_OHNE_BESTAETIGER
+        ),
+    )
+
+
+def aehnliche_aussagen(messungen: Iterable[FallMessung]) -> AehnlicheAussagen:
+    """
+    Untere Grenze fuer aehnliche Aussagen: Bei wie vielen Faellen mit Erwartung ist eine
+    erwartete Aussage unter den aehnlichen, bei wie vielen ohne Erwartung erscheint
+    trotzdem eine (die waere unpassend).
+    """
+    faelle = gemessen(messungen)
+    mit = [m for m in faelle if m.fall.erwartet]
+    ohne = [m for m in faelle if not m.fall.erwartet]
+    return AehnlicheAussagen(
+        mit_erwartung=len(mit),
+        erwartete_dabei=sum(1 for m in mit if any(m.aehnliche)),
+        ohne_erwartung=len(ohne),
+        ohne_mit_vorschlag=sum(1 for m in ohne if m.aehnliche),
+    )
+
+
 # ---------------------------------------------------------------------- #
 # Ausgabe
 # ---------------------------------------------------------------------- #
+
+
+def laufzeit(messungen: Iterable[FallMessung]) -> Optional[Tuple[float, float]]:
+    """Median und 95. Perzentil von aussagetreffer_ms ueber die gemessenen Faelle."""
+    werte = sorted(m.aussagetreffer_ms for m in messungen if m.aussagetreffer_ms)
+    if not werte:
+        return None
+    p95 = werte[min(len(werte) - 1, round(0.95 * (len(werte) - 1)))]
+    return statistics.median(werte), p95
+
+
+def polaritaet_modus() -> str:
+    from core.config import settings
+
+    return f"Polarität mit NLI: {settings.suche_polaritaet_nli}"
+
+
+def zuordnung_weg(settings=None) -> dict:
+    """
+    Der Weg der Pruefung auf dieselbe Aussage, mit dem dieser Prozess misst: der Modus
+    der NLI-Stufe und ob der Bestaetiger mitentscheidet. Aus der geladenen Konfiguration
+    (core.config.settings, aus der auch der StatementService der Messung entsteht);
+    vorhandene_finden fragt NLI und Bestaetiger nur bei "an"; bei "schatten" und "aus"
+    gilt dort die Schwelle, der Bestaetiger wirkt also nur mit "an". Die Zerfaserung
+    haengt davon ab (SUCHTESTSET.md, Zerfaserung).
+    """
+    if settings is None:
+        from core.config import settings
+    modus = settings.dieselbe_aussage_nli
+    return {
+        "dieselbe_aussage_nli": modus,
+        "nli_bestaetiger": bool(settings.nli_bestaetiger and modus == "an"),
+    }
+
+
+def zuordnung_text(weg: Optional[dict] = None) -> str:
+    weg = zuordnung_weg() if weg is None else weg
+    modus = weg["dieselbe_aussage_nli"]
+    if modus != "an":
+        return (
+            f"Zuordnung (dieselbe Aussage): NLI-Stufe {modus}, es gilt die Schwelle "
+            "(ohne NLI und Bestätiger)."
+        )
+    bestaetiger = "an" if weg["nli_bestaetiger"] else "aus"
+    return f"Zuordnung (dieselbe Aussage): NLI-Stufe an, Bestätiger {bestaetiger}."
 
 
 def _anteil(wert: Optional[float]) -> str:
@@ -250,10 +393,11 @@ def tabellen(
     aktuell = schwelle_heute() if aktuell is None else aktuell
     faelle = gemessen(messungen)
     zeilen = [
-        VORLAEUFIG,
+        HINWEIS,
         "",
         f"{len(faelle)} von {len(messungen)} Fällen gemessen, je Beitragstyp höchstens "
         f"{k} Beiträge, Schwelle der Suche heute {aktuell}.",
+        zuordnung_text(),
         "",
         "| Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer "
         "| Präzision | "
@@ -277,13 +421,15 @@ def tabellen(
         "",
         f"Je Phänomen bei {aktuell}:",
         "",
-        "| Phänomen | Treffer | Fehltreffer | keine |",
-        "|---|---|---|---|",
+        "| Phänomen | Treffer | Fehltreffer | keine "
+        f"| passend unter den ersten {RECALL_JE_PHAENOMEN} / mit Erwartung |",
+        "|---|---|---|---|---|",
     ]
     for phaenomen, zeile in sorted(je_phaenomen(messungen, aktuell).items()):
         zeilen.append(
             f"| {phaenomen} | {zeile['treffer']} | {zeile['fehltreffer']} "
-            f"| {zeile['keine']} |"
+            f"| {zeile['keine']} "
+            f"| {zeile[f'gefunden@{RECALL_JE_PHAENOMEN}']}/{zeile['mit_erwartung']} |"
         )
     z = zerfaserung(messungen, aktuell)
     zeilen += [
@@ -295,10 +441,58 @@ def tabellen(
         f"Behauptung wie eine vorhandene Aussage, davon landen {z.ohne_treffer_neu} "
         "nicht auf ihr.",
     ]
+    r = rueckfaelle(messungen)
+    if r.schwelle or r.ohne_bestaetiger:
+        zeilen += ["", f"Ohne NLI-Urteil entschieden (von {r.geprueft} Prüfungen):"]
+        if r.schwelle:
+            zeilen.append(
+                f"- {len(r.schwelle)} auf die Schwelle zurückgefallen, das NLI-Modell "
+                f"war nicht rechtzeitig frei oder nicht verfügbar: {', '.join(r.schwelle)}"
+            )
+        if r.ohne_bestaetiger:
+            zeilen.append(
+                f"- {len(r.ohne_bestaetiger)} ohne Bestätiger, er war nicht "
+                f"rechtzeitig frei oder nicht verfügbar: {', '.join(r.ohne_bestaetiger)}"
+            )
+    a = aehnliche_aussagen(messungen)
+    zeilen += [
+        "",
+        f"Ähnliche Aussagen (höchstens {AEHNLICHE_ANZAHL}, ab {AEHNLICHE_AB}): "
+        f"erwartete Aussage dabei bei {a.erwartete_dabei} von {a.mit_erwartung} "
+        f"Fällen mit Erwartung; {a.ohne_mit_vorschlag} von {a.ohne_erwartung} Fällen "
+        "ohne Erwartung zeigen trotzdem eine.",
+    ]
+    dauer = laufzeit(messungen)
+    if dauer:
+        zeilen += [
+            "",
+            "Laufzeit der Aussagetreffer je Suche (Einbettung, Aussagesuche, Polarität, "
+            f"Schlagwörter): Median {dauer[0]:.0f} ms, 95. Perzentil {dauer[1]:.0f} ms "
+            f"({polaritaet_modus()}).",
+        ]
     fehlend = [m for m in messungen if m.fehlt]
     if fehlend:
         zeilen += ["", "Nicht gemessen (Aussage fehlt im Bestand):"]
         zeilen += [f"- {m.fall.id}: {', '.join(m.fehlt)}" for m in fehlend]
+    mit_ersatz = [m for m in gemessen(messungen) if m.ersatz_fuer]
+    if mit_ersatz:
+        zeilen += [
+            "",
+            "Mit Ersatz gemessen (Aussage fehlt im Bestand, erwartet statt ihrer):",
+        ]
+        zeilen += [
+            f"- {m.fall.id}: {', '.join(m.ersatz_fuer)} -> {', '.join(m.fall.erwartet)}"
+            for m in mit_ersatz
+        ]
+    ausgeschlossen = [m for m in messungen if m.ausgeschlossen and not m.fehlt]
+    if ausgeschlossen:
+        zeilen += [
+            "",
+            "Nicht gemessen (nicht fremd, der Bestand hat eine Aussage dazu):",
+        ]
+        zeilen += [
+            f"- {m.fall.id}: {', '.join(m.ausgeschlossen)}" for m in ausgeschlossen
+        ]
     return "\n".join(zeilen)
 
 
@@ -345,13 +539,15 @@ def als_json(
     """
     heute = schwelle_heute()
     return {
-        "hinweis": VORLAEUFIG,
+        "hinweis": HINWEIS,
         "umgebung": umgebung or {},
         "k": k,
         "schwelle_heute": heute,
         "auswertung": [auswerten(messungen, s)._asdict() for s in schwellen],
         "je_phaenomen": je_phaenomen(messungen, heute),
         "zerfaserung": zerfaserung(messungen, heute)._asdict(),
+        "rueckfaelle": rueckfaelle(messungen)._asdict(),
+        "aehnliche_aussagen": aehnliche_aussagen(messungen)._asdict(),
         "faelle": [
             {
                 "id": m.fall.id,
@@ -362,7 +558,12 @@ def als_json(
                 "erwartet": list(m.fall.erwartet),
                 "dieselbe_behauptung": m.fall.dieselbe_behauptung,
                 "fehlt": list(m.fehlt),
+                "ersatz_fuer": list(m.ersatz_fuer),
+                "ausgeschlossen": list(m.ausgeschlossen),
                 "landet_auf_erwarteter": m.landet_auf_erwarteter,
+                "rueckfall": m.rueckfall,
+                "aehnliche": list(m.aehnliche),
+                "aussagetreffer_ms": m.aussagetreffer_ms,
                 "einordnung": {
                     f"{s:.2f}": einordnen(m.fall, kandidaten)
                     for s, kandidaten in sorted(m.angezeigt.items())
@@ -382,14 +583,76 @@ def als_json(
 # ---------------------------------------------------------------------- #
 
 
+class UrteileZaehlen:
+    """
+    Reicht urteile() an ein NLI-Modell durch und zaehlt, wie oft es kein Urteil gab
+    (None: nicht rechtzeitig frei oder nicht verfuegbar). Der Dienst faellt dann still
+    zurueck (StatementService._nli_entscheiden, stufe.dieselben_finden); die Messung
+    setzt den Zaehler vor ihre Modelle, ohne das Verhalten zu aendern.
+    """
+
+    def __init__(self, pruefer):
+        self._pruefer = pruefer
+        self.ohne_urteil = 0
+
+    async def urteile(self, paare, warte_hoechstens=None):
+        urteile = await self._pruefer.urteile(paare, warte_hoechstens=warte_hoechstens)
+        if urteile is None:
+            self.ohne_urteil += 1
+        return urteile
+
+    def __getattr__(self, name):
+        return getattr(self._pruefer, name)
+
+
+class NliZaehler(NamedTuple):
+    """Die Zaehler vor dem ersten Modell und dem Bestaetiger des StatementService (je
+    None, wenn er keins hat)."""
+
+    nli: Optional[UrteileZaehlen]
+    bestaetiger: Optional[UrteileZaehlen]
+
+    @classmethod
+    def einsetzen(cls, statement_service) -> "NliZaehler":
+        """Setzt die Zaehler vor die Modelle des StatementService (Attribute _nli und
+        _bestaetiger, siehe dessen __init__)."""
+        zaehler = []
+        for attribut in ("_nli", "_bestaetiger"):
+            modell = getattr(statement_service, attribut)
+            z = None if modell is None else UrteileZaehlen(modell)
+            if z is not None:
+                setattr(statement_service, attribut, z)
+            zaehler.append(z)
+        return cls(*zaehler)
+
+    def stand(self) -> Tuple[int, int]:
+        return tuple(0 if z is None else z.ohne_urteil for z in self)
+
+    def rueckfall_seit(self, vorher: Tuple[int, int]) -> str:
+        """Der Rueckfall seit dem Stand vorher (FallMessung.rueckfall)."""
+        nli, bestaetiger = self.stand()
+        if nli > vorher[0]:
+            return RUECKFALL_SCHWELLE
+        if bestaetiger > vorher[1]:
+            return RUECKFALL_OHNE_BESTAETIGER
+        return ""
+
+
 class Dienste(NamedTuple):
     statement_service: "StatementService"
     specs: List["ContentTypeSearchSpec"]
     reference_service: object
+    # Zaehlt Rueckfaelle in vorhandene_finden (FallMessung.rueckfall).
+    zaehler: Optional[NliZaehler] = None
 
 
 async def dienste_starten() -> Dienste:
-    """Die Dienste wie beim Start des Semantic-Search-Service, ohne Datenbank und Jobs."""
+    """Die Dienste wie beim Start des Semantic-Search-Service, ohne Jobs.
+
+    Braucht die App-Datenbank (app_database_url): initialize_services legt den
+    VotingService an, und der oeffnet sie (#576). Im naechtlichen Lauf ist das der
+    Dienst postgres, lokal die Datenbank des Dev-Stacks.
+    """
     from api.v1.search import suchspezifikationen
     from core.config import settings
     from dependencies import (
@@ -407,8 +670,16 @@ async def dienste_starten() -> Dienste:
 
     await get_qdrant_embeddings_manager(settings).start()
     initialize_services()
+    # Die NLI-Stufe laedt im Hintergrund; ohne Warten mischt die Messung bis dahin die
+    # Schwelle ein (#387).
+    await get_statement_service().nli_laden_abwarten()
+    # Ebenso das Modell der Polaritaet (#574), falls die NLI-Stufe aus ist.
+    from services.search.polaritaet_nli import get_nli_polaritaet
+
+    await get_nli_polaritaet().laden_abwarten()
     return Dienste(
         statement_service=get_statement_service(),
+        zaehler=NliZaehler.einsetzen(get_statement_service()),
         specs=suchspezifikationen(
             get_commentary_service(),
             get_generic_text_service(),
@@ -432,6 +703,7 @@ class _Erwartung(NamedTuple):
     aussage_ids: frozenset
     beitrag_ids: frozenset
     fehlt: Tuple[str, ...]
+    ausgeschlossen: Tuple[str, ...] = ()
 
 
 async def _aussage_im_bestand(dienste: Dienste, text: str):
@@ -449,18 +721,56 @@ async def _aussage_im_bestand(dienste: Dienste, text: str):
 
 
 async def _erwartung(dienste: Dienste, fall: Fall, cache: dict) -> _Erwartung:
-    """Die erwarteten Aussagen im Bestand: ihre IDs und die ihrer Beitraege."""
-    aussage_ids, beitrag_ids, fehlt = set(), set(), []
-    for text in fall.erwartet:
+    """
+    Die erwarteten Aussagen im Bestand: ihre IDs und die ihrer Beitraege. Dazu, welche
+    aus erwartet und nur_mit fehlen und welche aus nur_ohne im Bestand stehen.
+    """
+
+    async def im_bestand(text: str):
         if text not in cache:
             cache[text] = await _aussage_im_bestand(dienste, text)
-        aussage = cache[text]
+        return cache[text]
+
+    aussage_ids, beitrag_ids, fehlt = set(), set(), []
+    for text in fall.erwartet:
+        aussage = await im_bestand(text)
         if aussage is None:
             fehlt.append(text)
             continue
         aussage_ids.add(str(aussage.id))
         beitrag_ids.update(str(r.id) for r in aussage.replysuggestions)
-    return _Erwartung(frozenset(aussage_ids), frozenset(beitrag_ids), tuple(fehlt))
+    fehlt += [t for t in fall.nur_mit if await im_bestand(t) is None]
+    ausgeschlossen = tuple(
+        [t for t in fall.nur_ohne if await im_bestand(t) is not None]
+    )
+    return _Erwartung(
+        frozenset(aussage_ids), frozenset(beitrag_ids), tuple(fehlt), ausgeschlossen
+    )
+
+
+async def _erwartung_mit_ersatz(
+    dienste: Dienste, fall: Fall, cache: dict
+) -> Tuple[Fall, _Erwartung, Tuple[str, ...]]:
+    """
+    Wie _erwartung; fehlt eine Aussage aus erwartet und hat der Fall einen Ersatz, gilt
+    dessen Erwartung (der Fall wird mit ihr gemessen und ausgewertet). Zurueck kommen
+    der gemessene Fall, seine Erwartung und die ersetzten Aussagen (leer ohne Ersatz).
+    """
+    erwartung = await _erwartung(dienste, fall, cache)
+    fehlt_erwartet = tuple(t for t in erwartung.fehlt if t in fall.erwartet)
+    if not fehlt_erwartet or fall.ersatz is None:
+        return fall, erwartung, ()
+    ersetzt = fall._replace(
+        erwartet=fall.ersatz.erwartet,
+        dieselbe_behauptung=fall.ersatz.dieselbe_behauptung,
+        phaenomen=fall.ersatz.phaenomen or fall.phaenomen,
+        ersatz=None,
+    )
+    erwartung_ersatz = await _erwartung(dienste, ersetzt, cache)
+    if erwartung_ersatz.fehlt:
+        # Auch der Ersatz fehlt: Der Fall zaehlt nicht, genannt wird das Original.
+        return fall, erwartung, ()
+    return ersetzt, erwartung_ersatz, fehlt_erwartet
 
 
 def angezeigte_beitraege(
@@ -511,10 +821,27 @@ async def fall_messen(
     from api.v1.search import aussagetreffer_finden, treffer_sammeln
     from services.search.search_orchestrator import SearchOrchestrator
 
-    erwartung = await _erwartung(dienste, fall, {} if cache is None else cache)
+    fall, erwartung, ersatz_fuer = await _erwartung_mit_ersatz(
+        dienste, fall, {} if cache is None else cache
+    )
+    if erwartung.fehlt or erwartung.ausgeschlossen:
+        # Zaehlt nicht mit (gemessen()): keine Suche. Am Seed sind das die Faelle zum
+        # Startbestand, im naechtlichen Lauf mehr als die Haelfte. Ohne Eintrag je
+        # Schwelle, sonst stuende im JSON "keine" fuer eine Suche, die es nie gab.
+        return FallMessung(
+            fall,
+            {},
+            erwartung.fehlt,
+            None,
+            (),
+            erwartung.ausgeschlossen,
+            ersatz_fuer=ersatz_fuer,
+        )
+    beginn = time.perf_counter()
     aussagetreffer, polaritaet = await aussagetreffer_finden(
         dienste.statement_service, fall.anfrage
     )
+    dauer_ms = (time.perf_counter() - beginn) * 1000
 
     angezeigt = {}
     for schwelle in schwellen:
@@ -533,10 +860,44 @@ async def fall_messen(
         )
 
     landet = None
+    rueckfall = ""
     if fall.dieselbe_behauptung:
+        vorher = dienste.zaehler.stand() if dienste.zaehler else None
         vorhanden = await dienste.statement_service.vorhandene_finden(fall.anfrage)
         landet = vorhanden is not None and str(vorhanden.id) in erwartung.aussage_ids
-    return FallMessung(fall, angezeigt, erwartung.fehlt, landet)
+        if dienste.zaehler:
+            rueckfall = dienste.zaehler.rueckfall_seit(vorher)
+    # Dieselbe Abfrage wie die Vorschlaege im Beitragsformular (aussageVorschlaege).
+    aehnliche = await dienste.statement_service.search_filtered(
+        fall.anfrage,
+        AEHNLICHE_ANZAHL,
+        nur_kuratiert=True,
+        min_similarity=AEHNLICHE_AB,
+    )
+    return FallMessung(
+        fall,
+        angezeigt,
+        erwartung.fehlt,
+        landet,
+        tuple(str(a.id) in erwartung.aussage_ids for a in aehnliche),
+        erwartung.ausgeschlossen,
+        dauer_ms,
+        ersatz_fuer,
+        rueckfall,
+    )
+
+
+KEIN_FALL_GEMESSEN = (
+    "Kein Fall mit Erwartung gemessen: Der Bestand passt nicht zum Suchtestset "
+    "(leere oder falsche Sammlung, oder ein Bestand ohne die Aussagen aus Seed oder "
+    "Startbestand, siehe 'Nicht gemessen'). "
+    "Die Zahlen oben sind nicht aussagekraeftig."
+)
+
+
+def bestand_passt(messungen: Iterable[FallMessung]) -> bool:
+    """Mindestens ein Fall mit Erwartung ist gemessen, sonst sagen die Zahlen nichts."""
+    return any(m.fall.erwartet for m in gemessen(messungen))
 
 
 def mit_schwelle_heute(schwellen: Iterable[float]) -> Tuple[float, ...]:
@@ -591,23 +952,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.json:
         with open(args.json, "w", encoding="utf-8") as datei:
             json.dump(
-                als_json(messungen, schwellen, args.k, _umgebung()),
+                als_json(messungen, schwellen, args.k, umgebung()),
                 datei,
                 ensure_ascii=False,
                 indent=1,
             )
-    if not any(m.fall.erwartet for m in gemessen(messungen)):
-        print(
-            "Kein Fall mit Erwartung gemessen: Der Bestand passt nicht zum Suchtestset "
-            "(leere oder falsche Sammlung, oder Faelle fuer den Startbestand fehlen). "
-            "Die Zahlen oben sind nicht aussagekraeftig.",
-            file=sys.stderr,
-        )
+    if not bestand_passt(messungen):
+        print(KEIN_FALL_GEMESSEN, file=sys.stderr)
         return BESTAND_PASST_NICHT
     return 0
 
 
-def _umgebung() -> dict:
+def umgebung() -> dict:
     """Womit gemessen wurde, fuer den Vergleich zweier Messungen."""
     from core.config import EMBEDDING_MODELL, settings
 
@@ -616,6 +972,8 @@ def _umgebung() -> dict:
         "modell": EMBEDDING_MODELL,
         "sammlung": settings.qdrant_collection,
         "dubletten_schwelle": settings.statement_similarity_threshold,
+        "suche_polaritaet_nli": settings.suche_polaritaet_nli,
+        **zuordnung_weg(settings),
     }
 
 

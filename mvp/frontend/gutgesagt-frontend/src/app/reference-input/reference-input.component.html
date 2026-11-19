@@ -26,7 +26,7 @@
                  [class.pending-reference]="ref.isPending">
                 <div class="reference-content">
                     <mat-icon class="reference-icon"
-                              [matTooltip]="ref.isPending ? 'Wird hinzugefügt...' : (ref.is_new ? 'Neue Referenz' : 'Wiederverwendete Referenz')">
+                              [matTooltip]="ref.isPending ? 'Wird hinzugefügt...' : (ref.is_new ? 'Neue Herkunft' : 'Herkunft, auf die sich schon andere Beiträge stützen')">
                         <ng-container *ngIf="!ref.isPending">
                             {{ ref.is_new ? 'add_link' : 'link' }}
                         </ng-container>
@@ -80,7 +80,7 @@
                         [disabled]="ref.isPending"
                         type="button"
                         (click)="removeReference(i)"
-                        matTooltip="Referenz entfernen">
+                        matTooltip="Herkunft entfernen">
                     <mat-icon>delete</mat-icon>
                 </button>
                 <button *ngIf="kompakt" type="button" class="entfernen-klein"

@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { selbstNachladen } from '../../shared/selbst-nachladen';
+import { NachladeHinweisComponent } from '../../shared/components/nachlade-hinweis/nachlade-hinweis.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MetricsService } from '../../services/metrics.service';
@@ -13,7 +15,7 @@ import { SuchenOhneTrefferResponse } from '../../services/dtos/metricsDtos';
 @Component({
   selector: 'app-suchen-ohne-treffer',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, NachladeHinweisComponent],
   templateUrl: './suchen-ohne-treffer.component.html',
   styleUrls: ['./suchen-ohne-treffer.component.css'],
 })
@@ -21,12 +23,28 @@ export class SuchenOhneTrefferComponent implements OnInit {
   daten: SuchenOhneTrefferResponse | null = null;
   fehler = false;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private metricsService: MetricsService) {}
 
+  /** Laedt selbst nach, solange der Reiter sichtbar ist; ein Fehler laesst den Stand stehen. */
   ngOnInit() {
-    this.metricsService.getSuchenOhneTreffer().subscribe({
-      next: (daten) => (this.daten = daten),
+    this.laden();
+    selbstNachladen(() => this.metricsService.getSuchenOhneTreffer(true), this.destroyRef, {
+      next: (daten) => this.uebernehmen(daten),
       error: () => (this.fehler = true),
     });
+  }
+
+  private laden() {
+    this.metricsService.getSuchenOhneTreffer().subscribe({
+      next: (daten) => this.uebernehmen(daten),
+      error: () => (this.fehler = true),
+    });
+  }
+
+  private uebernehmen(daten: SuchenOhneTrefferResponse) {
+    this.daten = daten;
+    this.fehler = false;
   }
 }

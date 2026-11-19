@@ -1,7 +1,8 @@
-/* Mobil zuerst: eine Spalte, volle Breite. Ab Tablet nur begrenzt und zentriert. */
+/* Mobil zuerst: eine Spalte, volle Breite. Ab Tablet nur begrenzt und zentriert,
+   ab 1024 px Seitenleiste und Liste nebeneinander (.fangkorb--seitenleiste, unten). */
 
 .mat-spinner-color::ng-deep circle {
-  stroke: rgb(0, 84, 55) !important;
+  stroke: var(--akzent-tanne) !important;
 }
 
 /* Kopf: die beiden Arbeitslisten als Tabs, Langfassung hinter dem Hilfe-Icon */
@@ -51,7 +52,7 @@
 
 .erklaerung .dreischritt-satz {
   margin-bottom: 8px;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-leise);
 }
 
 /* Etwas einwerfen: schwebend unten rechts, ueber der Liste */
@@ -60,9 +61,9 @@
   right: 16px;
   bottom: 16px;
   z-index: var(--z-index-fixed, 1030);
-  --mat-fab-container-color: var(--primary-dark, #005437);
+  --mat-fab-container-color: var(--primaer);
   --mat-fab-foreground-color: #fff;
-  background-color: var(--primary-dark, #005437);
+  background-color: var(--primaer);
   color: #fff;
 }
 
@@ -83,7 +84,9 @@
   flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
+  /* 16 px plus der Innenabstand oben, den der Kasten hatte, als Tabs und Liste noch
+     in zwei Kaesten standen: am Handy sieht es aus wie vorher. */
+  margin-top: calc(16px + var(--spacing-xs));
   margin-bottom: 16px;
   padding-right: 16px;
   overflow-x: auto;
@@ -105,7 +108,7 @@
   flex-shrink: 0;
   width: 1px;
   height: 24px;
-  background: rgba(0, 0, 0, 0.24);
+  background: var(--feldrand);
 }
 
 .filter-chip {
@@ -113,24 +116,25 @@
   white-space: nowrap;
   min-height: 40px;
   padding: 6px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--feldrand);
   border-radius: var(--border-radius-medium);
   background: transparent;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-leise);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
 }
 
 .filter-chip.aktiv {
-  border-color: var(--primary-dark, #005437);
-  background: var(--primary-light, #dcebc3);
-  color: var(--primary-dark, #005437);
+  border-color: var(--akzent-tanne);
+  /* im Dunkeln neutral: --akzent und --akzent-schrift sind dort beide hell (#588) */
+  background: var(--filter-aktiv-grund);
+  color: var(--akzent-schrift);
   font-weight: 500;
 }
 
 .filter-chip:focus-visible {
-  outline: 2px solid var(--primary-dark, #005437);
+  outline: 2px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
 
@@ -142,7 +146,8 @@
   margin: 0;
   padding: 16px;
   list-style: none;
-  background: var(--kartenliste-bg);
+  background: var(--mulde);
+  border: var(--kartenliste-rand);
 }
 
 .fangkorb-laedt {
@@ -153,23 +158,42 @@
   padding: 24px 0;
 }
 
+/* Aus dem leeren Tab in den anderen: ein Textlink, kein Knopf */
+.leer-verweis {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--akzent-schrift);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.leer-verweis:focus-visible {
+  outline: 2px solid var(--akzent-tanne);
+  outline-offset: 2px;
+}
+
 .fangkorb-leer,
 .fangkorb-fehler,
 .fangkorb-mehr {
   padding: 16px 0;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-leise);
 }
 
-/* Ab Tablet: Tabs, Filter und Liste in derselben 720er-Spalte; die Filter brechen
-   um, statt seitlich zu scrollen, wenn Platz ist (#512). */
+.fangkorb-fehler p {
+  margin: 0 0 12px;
+}
+
+/* Ab Tablet: Tabs, Filter und Liste in derselben Lesespalte, linksbuendig im Seitenrahmen
+   (Designrunde 12.11.); die Filter brechen um, statt seitlich zu scrollen (#512). */
 @media (min-width: 600px) {
   .guidance,
   .filterleiste,
   .karten,
   .fangkorb-mehr {
-    max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: var(--lesespalte);
   }
 
   .filterleiste,
@@ -186,4 +210,103 @@
   .filter-trenner {
     display: none;
   }
+}
+
+/*
+ * Ab 1024 px (SEITENLEISTE_MEDIEN in fangkorb.component.ts setzt die Klasse): links
+ * eine Seitenleiste mit Einwerfen, den Arbeitslisten untereinander und den Filtern,
+ * rechts die Liste mit queren Karten. Beide fuellen nur den inneren Rahmen der
+ * Seite; Breite und Rand der Seite kommen von aussen.
+ */
+.fangkorb--seitenleiste {
+  display: grid;
+  grid-template-columns: minmax(220px, 15rem) minmax(0, 1fr);
+  column-gap: 32px;
+  align-items: start;
+  padding-bottom: 32px;
+}
+
+/* Nicht sticky: main hat overflow: hidden, daran haengt position: sticky und wirkt
+   nicht. Das zu aendern waere ein Eingriff in den Seitenrahmen. */
+.fangkorb--seitenleiste .steuerung {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 8px;
+}
+
+.einwerfen-knopf {
+  --mat-button-filled-container-color: var(--primaer);
+  --mat-button-filled-label-text-color: #fff;
+  width: 100%;
+  height: 44px;
+  font-weight: 600;
+}
+
+.fangkorb--seitenleiste .guidance,
+.fangkorb--seitenleiste .filterleiste,
+.fangkorb--seitenleiste .karten,
+.fangkorb--seitenleiste .fangkorb-mehr {
+  max-width: none;
+  margin: 0;
+}
+
+/* Tabs untereinander, Wort links, Zahl rechts; das ?-Icon darunter */
+.fangkorb--seitenleiste .fangkorb-kopf {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.fangkorb--seitenleiste .fangkorb-kopf app-hilfe-umschalter {
+  align-self: flex-start;
+}
+
+.fangkorb--seitenleiste .tabs {
+  grid-template-columns: 1fr;
+}
+
+.fangkorb--seitenleiste .tab {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.fangkorb--seitenleiste .tab + .tab {
+  border-left: 0;
+  border-top: 1px solid var(--linie);
+}
+
+/* Filter: die Gruppen untereinander, die Chips brechen um */
+.fangkorb--seitenleiste .filterleiste {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  overflow: visible;
+}
+
+.fangkorb--seitenleiste .filtergruppe {
+  flex-wrap: wrap;
+}
+
+.fangkorb--seitenleiste .filter-trenner {
+  display: block;
+  width: 100%;
+  height: 1px;
+}
+
+.fangkorb--seitenleiste .karten {
+  gap: 12px;
+  border-radius: var(--border-radius-medium);
+}
+
+.fangkorb--seitenleiste .fangkorb-laedt,
+.fangkorb--seitenleiste .fangkorb-leer,
+.fangkorb--seitenleiste .fangkorb-fehler {
+  padding-top: 8px;
+}
+
+.erneut-versuchen[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: progress;
 }

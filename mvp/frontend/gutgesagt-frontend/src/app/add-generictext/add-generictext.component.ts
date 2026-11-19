@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -21,6 +21,9 @@ import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component
 import { typFarbe } from '../shared/content-type-registry';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { AussageInAnfrage, aussageFuerAnfrage, themenHinweisNachSpeichern } from '../beitragsformular/aussage-fuer-anfrage';
@@ -38,6 +41,7 @@ import {
   DublettenTexte,
   Vorhanden as VorhandenBeitrag,
   dublettenHinweis,
+  DUBLETTE_LEISTENHINWEIS,
   offeneEntscheidung,
   vorhandenAus,
 } from '../beitragsformular/dublette/dublette';
@@ -46,6 +50,7 @@ import {
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import { HINTERGRUNDINFO_TEXT_MAX, TITEL_MAX } from '../shared/beitrag-grenzen';
+import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
 export { TITEL_MAX } from '../shared/beitrag-grenzen';
 export const TEXT_MAX = HINTERGRUNDINFO_TEXT_MAX;
@@ -53,7 +58,8 @@ export const TEXT_MAX = HINTERGRUNDINFO_TEXT_MAX;
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';
 
-export const DUBLETTE_HINWEIS = 'Es gibt schon eine sehr ähnliche Hintergrundinfo.';
+/** Die eigene Dublette: Das hat die Person schon gespeichert (#616). */
+export const DUBLETTE_EIGEN_HINWEIS = 'Diese Hintergrundinfo hast du schon gespeichert.';
 
 /** Dublette von jemand anderem: die wird nicht mit der eigenen Aussage verknüpft. */
 export const DUBLETTE_FREMD_HINWEIS = 'Es gibt schon eine sehr ähnliche Hintergrundinfo von jemand anderem.';
@@ -86,7 +92,7 @@ export type Vorhanden = VorhandenBeitrag<AddGenericTextRequest>;
 
 /** Die Hinweise zur Dublette, fuer den gemeinsamen Baustein. */
 export const DUBLETTEN_TEXTE: DublettenTexte = {
-  hinweis: DUBLETTE_HINWEIS,
+  eigenHinweis: DUBLETTE_EIGEN_HINWEIS,
   fremdHinweis: DUBLETTE_FREMD_HINWEIS,
   fremdZuordnen: DUBLETTE_FREMD_ZUORDNEN,
   zugestimmt: ZUGESTIMMT_HINWEIS,
@@ -124,6 +130,7 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
   styleUrls: ['./add-generictext.component.scss'],
   imports: [
     ...SHARED_IMPORTS,
+    EinwilligungHinweisComponent,
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
@@ -140,6 +147,9 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
   ],
 })
 export class AddGenerictextComponent implements OnChanges {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
+  /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
+  readonly einspaltig = einspaltig();
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('generictext');
   readonly titelMax = TITEL_MAX;
@@ -161,6 +171,8 @@ export class AddGenerictextComponent implements OnChanges {
 
   @ViewChild(ReferenceInputComponent) referenceInput?: ReferenceInputComponent;
   @ViewChild(AntwortAufComponent) antwortAuf?: AntwortAufComponent;
+  /** Der Kasten mit der Wahl zur Dublette; die Leiste am Handy springt dorthin. */
+  @ViewChild(DublettenHinweisComponent, { read: ElementRef }) dublettenKasten?: ElementRef<HTMLElement>;
 
   readonly generictextForm: FormGroup;
 
@@ -169,7 +181,6 @@ export class AddGenerictextComponent implements OnChanges {
   /** Was im Antwort-auf-Block gerade gilt. */
   aussage: AntwortAuf = OHNE_AUSSAGE;
 
-  showReferences = false;
   speichert = false;
   fehler: string | null = null;
   /**
@@ -212,6 +223,40 @@ export class AddGenerictextComponent implements OnChanges {
 
   get dublettenHinweis(): string {
     return dublettenHinweis(this.vorhanden, DUBLETTEN_TEXTE, this.mitAussage);
+  }
+
+  /** Ein Satz in der Leiste am Handy, solange die Entscheidung offen ist (#616). */
+  get dublettenLeistenHinweis(): string | null {
+    return this.offeneEntscheidung ? DUBLETTE_LEISTENHINWEIS : null;
+  }
+
+  /** Der Link dahinter: zur Wahl im Kasten, ohne Wahl den vorhandenen ansehen. */
+  get dublettenLeistenAktion(): string | null {
+    if (this.fehler || !this.offeneEntscheidung) {
+      return null;
+    }
+    return this.kannZustimmen || this.kannNehmen ? 'Zur Auswahl' : 'Ansehen';
+  }
+
+  dublettenLeistenAktionAusfuehren(): void {
+    if (this.kannZustimmen || this.kannNehmen) {
+      const kasten = this.dublettenKasten?.nativeElement;
+      const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      kasten?.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'center' });
+      // Fokus mitnehmen, sonst steht er mit Tastatur oder Screenreader weiter in der Leiste
+      kasten?.querySelector<HTMLButtonElement>('.dublette-entscheidung button:not([disabled])')?.focus({ preventScroll: true });
+    } else {
+      this.vorhandenAnsehen();
+    }
+  }
+
+  /** Mit offener Entscheidung heisst der Hauptknopf "Trotzdem speichern" und tut das (#616). */
+  absendenGeklickt(): void {
+    if (this.offeneEntscheidung) {
+      this.trotzdemSpeichern();
+    } else {
+      this.speichern();
+    }
   }
 
   private vorschauCache?: { titel: string; text: string; quellen: unknown; aussage: string; karte: KartenDaten };
@@ -271,15 +316,21 @@ export class AddGenerictextComponent implements OnChanges {
   }
 
   // Titel = Satz aus dem Destillier-Ablauf, Herkunft = Link des Einwurfs. Beides
-  // bleibt aenderbar; die Herkunft wird aufgeklappt, damit sie sichtbar ist.
+  // bleibt aenderbar.
   vorbefuellungAnwenden(vorbefuellung: Vorbefuellung): void {
     this.generictextForm.patchValue({
       title: vorbefuellung.titel,
       references: vorbefuellung.url ? [{ reference_string: vorbefuellung.url }] : [],
     });
-    if (vorbefuellung.url) {
-      this.showReferences = true;
-    }
+  }
+
+  /**
+   * Noch keine Herkunft angegeben (Persona-Test Gerd, 13.11.): Das Feld steht bei der
+   * Hintergrundinfo immer offen, darunter der Satz, warum sie sich lohnt, und das
+   * Gegenlesen sagt es auch. Pflicht ist sie nicht.
+   */
+  get herkunftFehlt(): boolean {
+    return !this.generictextForm.value.references?.length;
   }
 
   get titelLaenge(): number {
@@ -362,10 +413,6 @@ export class AddGenerictextComponent implements OnChanges {
     return this.vorschauCache.karte;
   }
 
-  revealReferences(): void {
-    this.showReferences = true;
-  }
-
   speichern(): void {
     this.absenden(null);
   }
@@ -424,6 +471,12 @@ export class AddGenerictextComponent implements OnChanges {
         // Die Eingaben bleiben stehen; "Erneut versuchen" speichert dasselbe noch einmal.
         this.logger.error('Error saving generic text', error);
         this.speichert = false;
+        // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
+        if (einwilligungFehlt(error)) {
+          this.fehler = null;
+          this.einwilligungZustand.hinweisZeigen();
+          return;
+        }
         // Bei 422 sagt das Backend, was nicht passt - das ist hilfreicher als "nicht geklappt".
         const meldung = validierungsMeldung(error);
         if (meldung) {
@@ -447,6 +500,7 @@ export class AddGenerictextComponent implements OnChanges {
       id: string;
       statement_id?: string | null;
       statement_text?: string | null;
+      aussage_neu?: boolean;
       verknuepft?: boolean;
       themen?: Thema[];
     },
@@ -457,7 +511,15 @@ export class AddGenerictextComponent implements OnChanges {
       aussageGeschickt && verknuepft && antwort.statement_id
         ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
         : this.aussage;
-    return { id: antwort.id, aussage, verknuepft, ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft) };
+    // Nur, was der Server sagt: Auch ein als neu gewaehlter Text kann eine vorhandene treffen.
+    const aussageNeu = aussageGeschickt && verknuepft && antwort.aussage_neu === true;
+    return {
+      id: antwort.id,
+      aussage,
+      verknuepft,
+      ...(aussageNeu ? { aussageNeu } : {}),
+      ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft),
+    };
   }
 
   /** Im Antwort-auf-Block steht eine Aussage (per ID oder als Text). */
@@ -573,7 +635,6 @@ export class AddGenerictextComponent implements OnChanges {
     this.generictextForm.reset({ title: '', text: '', themen: [], references: [] });
     this.antwortAuf?.leeren();
     this.aussage = OHNE_AUSSAGE;
-    this.showReferences = false;
     this.fehler = null;
     // Wer zuruecksetzt, faengt neu an: kein "Variante von", kein beruht_auf (#356).
     this.vorlage = null;

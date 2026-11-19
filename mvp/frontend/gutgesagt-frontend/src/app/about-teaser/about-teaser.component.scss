@@ -1,7 +1,8 @@
 .about-teaser-section {
   max-width: 720px;
   padding: 0 var(--page-margin);
-  margin: 2rem auto;
+  // Mehr Abstand zum Karussell darueber (Designrunde 17.11.)
+  margin: var(--spacing-xxl) auto var(--spacing-xl);
 
   h2 {
     margin-bottom: 1rem;
@@ -10,7 +11,7 @@
 
   @media (max-width: 768px) {
     padding: 0 var(--page-margin-mobile);
-    margin: 1rem auto;
+    margin: var(--spacing-xl) auto var(--spacing-lg);
   }
 }
 
@@ -18,7 +19,7 @@
   .teaser-text {
     font-size: 1rem;
     line-height: 1.6;
-    color: var(--text-primary);
+    color: var(--text);
     margin: 0 0 1rem;
 
     @media (max-width: 599px) {
@@ -34,8 +35,8 @@
   }
 
   .profile-image {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     object-fit: cover;
   }
@@ -47,18 +48,18 @@
 
   .profil-name {
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--text);
   }
 
   .role {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 0.9rem;
   }
 
   .cta-container {
     display: flex;
-    justify-content: center;
-    margin-top: 1.5rem;
+    justify-content: flex-start;
+    margin-top: 1rem;
 
     a {
       display: inline-flex;
@@ -77,6 +78,70 @@
         width: 100%;
         justify-content: center;
       }
+    }
+  }
+}
+
+// Zitat: als Zitat erkennbar, mit Bild und Name darunter (Designrunde 17.11.)
+.zitat {
+  margin: var(--spacing-xl) 0 0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-left: 4px solid var(--akzent-klee);
+  background: var(--karte-kommentar, var(--flaeche));
+  border-radius: 0 var(--border-radius-medium) var(--border-radius-medium) 0;
+  // Zweispaltig: Zitat links, Bild und Name rechts; schmal untereinander (Designrunde 17.11.)
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-lg);
+
+  blockquote {
+    position: relative;
+    margin: 0;
+    padding-left: 2rem;
+
+    &::before {
+      content: '“';
+      position: absolute;
+      left: 0;
+      top: -0.2rem;
+      font-size: 3rem;
+      line-height: 1;
+      color: var(--akzent-klee);
+    }
+
+    p {
+      margin: 0;
+      font-size: 1.1rem;
+      font-style: italic;
+      line-height: 1.5;
+      color: var(--text);
+    }
+  }
+}
+
+// Bild und Name rechts neben dem Zitat
+.zitat {
+  .profil {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+  }
+
+  .profile-info {
+    align-items: center;
+  }
+
+  @media (max-width: 599px) {
+    grid-template-columns: 1fr;
+
+    .profil {
+      flex-direction: row;
+      text-align: left;
+    }
+
+    .profile-info {
+      align-items: flex-start;
     }
   }
 }

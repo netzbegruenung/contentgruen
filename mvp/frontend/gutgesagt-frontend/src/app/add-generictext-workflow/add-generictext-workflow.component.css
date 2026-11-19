@@ -3,14 +3,8 @@
  * Ergebnisse (1080 px), damit Formular und Vorschaukarte nebeneinander passen (#512).
  */
 .workflow-container {
-    max-width: 720px;
-    margin: 0 auto;
-}
-
-@media (min-width: 960px) {
-    .workflow-container {
-        max-width: 1080px;
-    }
+    /* Seitenrahmen wie alle Seiten (styles.css); vorher mittig mit 720/1080 px */
+    padding: 0 var(--page-margin);
 }
 
 .loading-container {

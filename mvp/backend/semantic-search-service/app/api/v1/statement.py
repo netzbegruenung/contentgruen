@@ -1,7 +1,7 @@
 import uuid
 from typing import FrozenSet, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request
 from pydantic import ValidationError
 
 from dependencies import (
@@ -15,6 +15,7 @@ from dependencies import (
     require_user,
 )
 from dtos.statement import (
+    AehnlicheAussagenRequest,
     AddReplysuggestionToStatementRequest,
     AddReplysuggestionToStatementResponse,
     AddStatementRequest,
@@ -35,7 +36,6 @@ from dtos.statement import (
     SearchStatementByTextRequest,
     StatementSearchResponse,
     StatementGetAllResponse,
-    StatementSource,
     ThemaDto,
     ThemenResponse,
     ThemenTestsetResponse,
@@ -47,19 +47,27 @@ from dtos.statement import (
     UnbeantworteteAussagenResponse,
 )
 from services.beitrag_fuer_aufrufer import AUSSAGE, Aufrufer, als_responses
-from services.content.statement_service import AussageNichtGefunden, StatementService
+from services.content.statement_service import (
+    AussageNichtGefunden,
+    StatementService,
+    SuchanfrageNichtFreigegeben,
+)
 from core.logging import get_logger
 from domain.models.statement import Statement
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
+from repositories.implementations.qdrant.statement_repository import (
+    ist_unbeantwortete_suchanfrage,
+)
 from domain.models.content_status import NEW_CONTENT_STATUS
-from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from domain.themen import NACH_SCHLUESSEL, THEMEN, ThemaUngueltig
 from core.fehler import INTERNER_FEHLER
+from utils.client_identity import derive_client_key
+from utils.rate_limiter import aehnliche_aussagen_rate_limiter
 
 logger = get_logger(__name__)
 
@@ -72,12 +80,13 @@ async def _ueber_der_schwelle_fuer(
     """
     Welche Aussagen aus Suchanfragen ohne Antwort der Aufrufer sehen darf (#436):
     Admins alle (None: kein Filter), alle anderen nur die ueber der Schwelle der
-    Kennzahl "Suchen ohne Treffer", wie in "Hier fehlt eine Antwort". Eine leere
-    Menge heisst dann: nur kuratierte Aussagen, nicht etwa kein Filter.
+    Kennzahl "Suchen ohne Treffer", die ein Admin freigegeben hat (Vormoderation,
+    13.11.2026), wie in "Hier fehlt eine Antwort". Eine leere Menge heisst dann: nur
+    kuratierte Aussagen, nicht etwa kein Filter.
     """
     if aufrufer.ist_admin:
         return None
-    return await suchen_ohne_treffer.ueber_der_schwelle()
+    return await suchen_ohne_treffer.sichtbar_fuer_alle()
 
 
 # Alle Aussagen, seitenweise; was Nicht-Admins sehen: _ueber_der_schwelle_fuer.
@@ -128,11 +137,19 @@ async def get_all(
 
 
 # Eine Aussage per ID - fuer Beitragsformulare, die mit ?aussage=<id> geoeffnet
-# werden. Liefert bewusst nur ID und Text, nicht die Antwortvorschlaege.
+# werden. Liefert bewusst nur ID und Text, nicht die Antwortvorschlaege. Fuer
+# Nicht-Admins dieselbe Auswahl wie getAll (#436): Eine unbeantwortete Suchanfrage
+# unter der Schwelle oder ohne Freigabe gibt es fuer sie nicht (404, wie eine
+# geloeschte). Das Formular
+# faellt dann auf den Text aus ?searchQuery= zurueck (statement.service.ts).
 @router.get("/getById", response_model=GetStatementByIdResponse)
 async def get_by_id(
     statement_id: uuid.UUID = Query(..., description="ID der Aussage"),
     statement_service: StatementService = Depends(get_statement_service),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
+    ),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> GetStatementByIdResponse:
     try:
         statement = await statement_service.get(statement_id)
@@ -153,6 +170,17 @@ async def get_by_id(
         logger.error(f"Error in /getById: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
+    if ist_unbeantwortete_suchanfrage(statement):
+        try:
+            ueber_der_schwelle = await _ueber_der_schwelle_fuer(
+                aufrufer, suchen_ohne_treffer
+            )
+        except Exception as e:
+            logger.error(f"Error in /getById: {type(e).__name__}", exc_info=True)
+            raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+        if ueber_der_schwelle is not None and statement.id not in ueber_der_schwelle:
+            raise HTTPException(status_code=404, detail="Statement not found")
+
     return GetStatementByIdResponse(
         statement_id=statement.id, statement_text=statement.text
     )
@@ -161,7 +189,7 @@ async def get_by_id(
 # "Hier fehlt eine Antwort": unbeantwortete Aussagen fuer Mitwirkende. Nur
 # Aussagen, dazu aus der Kennzahl "Suchen ohne Treffer" die Zahl der Personen, nicht
 # die der Suchen; eine Aussage aus einer Suchanfrage erst ab der Schwelle der
-# Kennzahl, nie die einer einzelnen Person
+# Kennzahl und nach Freigabe durch einen Admin, nie die einer einzelnen Person
 # (services/unbeantwortete_aussagen_service.py).
 @router.get("/unbeantwortet", response_model=UnbeantworteteAussagenResponse)
 async def unbeantwortet(
@@ -310,6 +338,13 @@ async def themen_testset(
     )
 
 
+# Vorschlaege im Feld "Antwort auf": so viele mal das Limit werden gesucht, bevor die
+# widersprechenden wegfallen (#387).
+VORSCHLAG_VORRAT = 3
+# Hoechstens so viele Vorschlaege (das Frontend fragt 3 an, VORSCHLAG_ANZAHL).
+VORSCHLAG_HOECHSTENS = 5
+
+
 # Aehnliche Aussagen. Fuer Nicht-Admins dieselbe Auswahl wie in getAll (#436);
 # nur_kuratiert laesst fuer alle auch die Suchanfragen ueber der Schwelle weg
 # (Vorschlaege im Antwort-auf-Feld).
@@ -325,27 +360,48 @@ async def search_statements(
     try:
         logger.debug("/searchStatements was called")
 
+        # vorschlaege: Feld "Antwort auf" - gepflegte Aussagen ab der Schwelle des
+        # Dienstes, Widersprueche fallen danach weg (#387).
+        min_similarity = request.min_similarity
+        limit = request.limit
+        if request.vorschlaege:
+            # Schwelle und Menge legt der Dienst fest, nicht die Anfrage: Jeder
+            # Kandidat kostet zwei Modellaufrufe.
+            min_similarity = statement_service.settings.aussage_vorschlag_schwelle
+            limit = min(request.limit, VORSCHLAG_HOECHSTENS)
+            # Mehr holen, als gezeigt wird: Faellt ein Widerspruch weg, rueckt der
+            # naechste passende nach.
+            vorrat = limit * VORSCHLAG_VORRAT
+        else:
+            vorrat = limit
+
         # nur_kuratiert: fuer jede Rolle ohne Suchanfragen ohne Antwort, auch ohne
         # die ueber der Schwelle; die Kennzahl wird dann nicht abgefragt.
-        if request.nur_kuratiert:
+        if request.nur_kuratiert or request.vorschlaege:
             ueber_der_schwelle = frozenset()
         else:
             ueber_der_schwelle = await _ueber_der_schwelle_fuer(
                 aufrufer, suchen_ohne_treffer
             )
 
-        if ueber_der_schwelle is None and request.min_similarity is None:
+        if ueber_der_schwelle is None and min_similarity is None:
             statement_index_results = await statement_service.search(
-                request.query_text, request.limit
+                request.query_text, vorrat
             )
         else:
             statement_index_results = await statement_service.search_filtered(
                 request.query_text,
-                request.limit,
+                vorrat,
                 nur_kuratiert=ueber_der_schwelle is not None,
-                min_similarity=request.min_similarity,
+                min_similarity=min_similarity,
                 ueber_der_schwelle=ueber_der_schwelle or frozenset(),
             )
+        if request.vorschlaege:
+            statement_index_results = (
+                await statement_service.ohne_widerspruch(
+                    request.query_text, statement_index_results, hoechstens=limit
+                )
+            )[:limit]
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 
         response: StatementSearchResponse = StatementSearchResponse(
@@ -358,6 +414,41 @@ async def search_statements(
     except Exception as e:
         logger.error(f"Error in /searchStatements: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+
+
+# "Nicht dabei?" auf der Ergebnisseite (#642): aehnliche Aussagen, auch fuer Besucher
+# (EndpointPolicy.cs). Dieselbe Auswahl wie die Vorschlaege fuer Angemeldete
+# (vorschlaege, nur gepflegte Aussagen, ohne Widerspruch); Anzeigenamen und Kennungen
+# blendet fuer_aufrufer fuer Besucher aus. Rate-Limit je Adresse wie die Suchaussage.
+@router.post("/aehnliche", response_model=StatementSearchResponse)
+async def aehnliche_aussagen(
+    request: AehnlicheAussagenRequest,
+    http_request: Request,
+    statement_service: StatementService = Depends(get_statement_service),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
+    ),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+) -> StatementSearchResponse:
+    if await aehnliche_aussagen_rate_limiter.is_rate_limited(
+        derive_client_key(http_request)
+    ):
+        raise HTTPException(status_code=429, detail="Too many requests")
+    # Bewusst ueber search_statements, damit die Auswahl dieselbe bleibt wie fuer
+    # Angemeldete. Alle Filter stehen hier fest (nur_kuratiert, vorschlaege), auch
+    # fuer Admins; test_aehnliche_aussagen_api.py haelt das je Rolle fest. Wer
+    # search_statements um Felder erweitert, prueft, was sie hier anonym bewirken.
+    return await search_statements(
+        SearchStatementByTextRequest(
+            query_text=request.query_text,
+            limit=request.limit,
+            nur_kuratiert=True,
+            vorschlaege=True,
+        ),
+        statement_service,
+        suchen_ohne_treffer,
+        aufrufer,
+    )
 
 
 # Adds a new statement to the statement_index
@@ -385,14 +476,9 @@ async def add_statement(
             replysuggestions=request.statement.replysuggestions,
         )
 
-        # Suchanfragen bekommen einen Systemautor: sie fallen automatisch an,
-        # sobald jemand sucht, und sind keine Autorenleistung. Nur der
-        # ausdrueckliche Weg ueber "Beitrag ergaenzen" nennt die Person.
-        author = (
-            SEARCH_QUERY_AUTHOR
-            if request.source is StatementSource.SEARCH_QUERY
-            else x_user
-        )
+        # Nur der ausdrueckliche Weg: Die Person ist Autorin. Suchanfragen legt
+        # allein /searchByText an, mit Systemautor (StatementSource).
+        author = x_user
 
         # Aussagen sind sofort sichtbar.
         statement_was_new, statement_id, statement_text = (
@@ -448,6 +534,11 @@ async def add_replysuggestion_to_statement(
         # Nur "gibt es nicht" ist 404; alles andere (nicht lesbar, Speicherfehler,
         # andere ValueErrors) ist ein echter Fehler.
         raise HTTPException(status_code=404, detail="Statement not found")
+    except SuchanfrageNichtFreigegeben:
+        # Vormoderation: erst freigeben, dann antworten (StatementService).
+        raise HTTPException(
+            status_code=409, detail="Search query statement awaits moderation"
+        )
     except Exception as e:
         logger.error(
             f"Error in /addReplysuggestionToStatement: {type(e).__name__}",

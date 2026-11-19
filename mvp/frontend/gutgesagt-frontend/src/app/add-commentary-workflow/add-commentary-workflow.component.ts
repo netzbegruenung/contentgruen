@@ -17,10 +17,12 @@ import { AUSSAGE_PARAM, SUCHTEXT_PARAM, gespeichertPfad } from '../shared/formul
 import { StateManagementService } from '../services/state-management.service';
 import {
   BeitragGespeichert,
+  GESUCHT_PARAM,
   GespeichertZustand,
   SUCHE_PARAM,
   VON_HIER_FEHLT_EINE_ANTWORT,
   VON_PARAM,
+  gesuchtAus,
   vonHierFehltEineAntwort,
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import {
@@ -36,7 +38,7 @@ import {
   VorlageAusAdresse,
   kommentarVorlageLaden,
 } from '../beitragsformular/vorlage';
-import { NACH_DEM_AUSFORMULIEREN } from '../fangkorb/fangkorb-filter';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 
 /** Den vorhandenen Kommentar aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
 export const EINWURF_MIT_VORHANDENEM_VERKNUEPFT = 'Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';
@@ -67,6 +69,7 @@ export const AUSSAGE_NICHT_VERFUEGBAR =
 export class AddCommentaryWorkflowComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private commentaryService = inject(CommentaryService);
+  private meilensteinHinweis = inject(MeilensteinHinweisService);
   /**
    * "Als Vorlage nehmen" (#356): das Original aus ?vorlage=. Ist es nicht ladbar
    * (gesperrt, geloescht, alter Link), bleibt das Formular leer und nutzbar; ein
@@ -93,8 +96,10 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   vorbefuellung: Vorbefuellung | null = null;
   /** Aus der Suche geoeffnet (?aussage= oder ?searchQuery=); dann mit der Anfrage, soweit bekannt. */
   private ausSuche: { anfrage: string | null } | null = null;
-  /** Ueber "Selbst beantworten" aus "Hier fehlt eine Antwort" geoeffnet (?von=). */
+  /** Ueber "Antworten" aus "Hier fehlt eine Antwort" geoeffnet (?von=). */
   private ausHierFehltEineAntwort = false;
+  /** Wie viele Personen ohne Treffer gesucht haben (?gesucht=); 0, wenn unbekannt. */
+  private gesucht = 0;
 
   constructor(
     private router: Router,
@@ -161,8 +166,14 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     }
   }
 
+  /** Die Nachfrage aus "Hier fehlt eine Antwort" fuer "Luecke zu" auf der Ergebnisseite. */
+  private gesuchtParam(): Record<string, string> {
+    return this.gesucht > 0 ? { [GESUCHT_PARAM]: String(this.gesucht) } : {};
+  }
+
   private herkunftMerken(params: ParamMap): void {
     this.ausHierFehltEineAntwort = vonHierFehltEineAntwort(params);
+    this.gesucht = this.ausHierFehltEineAntwort ? gesuchtAus(params) : 0;
     if (this.ausHierFehltEineAntwort || (!params.get(AUSSAGE_PARAM) && !params.get(SUCHTEXT_PARAM))) {
       this.ausSuche = null;
       return;
@@ -184,6 +195,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     const zustand: GespeichertZustand = {
       aussage: ergebnis.aussage.text ? ergebnis.aussage : undefined,
       verknuepft: ergebnis.verknuepft,
+      ...(ergebnis.aussageNeu ? { aussageNeu: true } : {}),
       ...(ergebnis.themenHinweis ? { themenHinweis: ergebnis.themenHinweis } : {}),
     };
 
@@ -198,7 +210,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     const queryParams = this.ausSuche
       ? { [VON_PARAM]: 'suche', ...(this.ausSuche.anfrage ? { [SUCHE_PARAM]: this.ausSuche.anfrage } : {}) }
       : this.ausHierFehltEineAntwort
-        ? { [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT }
+        ? { [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT, ...this.gesuchtParam() }
         : {};
     this.zurErgebnisseite(ergebnis.id, queryParams, zustand);
   }
@@ -224,8 +236,9 @@ export class AddCommentaryWorkflowComponent implements OnInit {
           .subscribe(() => this.onVorhandenGewaehlt(kommentarId));
         return;
       }
-      this.snackBar.open(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', { duration: 5000 });
-      this.uebergabe.zumNaechsten(einwurfId, NACH_DEM_AUSFORMULIEREN);
+      // Mit einem neuen Meilenstein in einer Snackbar, sonst verdraengt einer den anderen (#351).
+      this.meilensteinHinweis.bestaetigen(EINWURF_MIT_VORHANDENEM_VERKNUEPFT);
+      this.uebergabe.zumNaechstenAusformulieren(einwurfId);
     });
   }
 

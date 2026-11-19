@@ -5,87 +5,168 @@
 </div>
 <mat-dialog-content class="hilfe-inhalt">
 
-    <!-- Rundgang wieder aufrufen (#389, Variante B: gelber Kasten mit Daumen) -->
+    <!-- Rundgang wieder aufrufen (#389, Variante B: gelber Kasten mit Wegweiser) -->
     <section class="rundgang-kasten" aria-labelledby="rundgang-kasten-titel">
-        <img src="marke/daumen.svg" alt="" width="56" height="56">
+        <img src="marke/wegweiser.svg" alt="" width="56" height="56">
         <div>
             <h3 id="rundgang-kasten-titel">Lieber zeigen lassen?</h3>
             <div class="rundgang-kasten-knoepfe">
+                <!-- Name und Schrittzahl sagen vorher, was der Rundgang zeigt (#644) -->
                 <button type="button" class="rundgang-knopf umriss rundgang-starten"
-                        (click)="rundgangStarten('antwort-finden')">Rundgang starten</button>
-                @if (angemeldet) {
-                    <button type="button" class="rundgang-knopf umriss rundgang-mitmachen"
-                            (click)="rundgangStarten('mitmachen')">Rundgang Mitmachen</button>
-                }
+                        (click)="rundgangStarten('antwort-finden')">{{ antwortFinden }}</button>
+                <!-- Ohne Konto die Bildergeschichte auf /mit-konto, angemeldet der echte Rundgang
+                     (RundgangService.starten, Entscheidung 17.11.) -->
+                <button type="button" class="rundgang-knopf umriss rundgang-mitmachen"
+                        (click)="rundgangStarten('mitmachen')">{{ selbstBeitragen }}</button>
             </div>
         </div>
     </section>
 
-    <p>
-        Das hier ist KEIN KI-Generator! <br>
-        Gut gesagt ist eine Tauschbörse für bewährte Argumente. Alles was du hier findest, wurde von anderen Grünen in echten Diskussionen erprobt und geteilt.
+    <!-- Einstieg ohne Versalien und ohne Abgrenzung: was es ist, nicht was es nicht ist (#644) -->
+    <p class="hilfe-einstieg">
+        Alles hier haben Menschen geschrieben und erprobt.
+        Gut gesagt ist eine Tauschbörse für bewährte Argumente aus echten Diskussionen.
     </p>
 
-    <h3>So funktioniert Gut gesagt</h3>
-
-    <ul>
-        <li>🔍 Suche nach Inhalten in der Datenbank, indem du Text oder Schlagwörter eingibst</li>
-        <li>📄 Finde so passende fertige Kommentare und Hintergrundinfos und nutze diese für deine Argumentation</li>
-        <li>✒️ Erstelle eigene fertige Kommentare oder Hintergrundinfos und teile dein Wissen mit anderen grünen
-            Mitgliedern</li>
-    </ul>
-
+    <!-- Reihenfolge (Designrunde 17.11.): erst suchen und kopieren, dann bewerten, beitragen,
+         Konto, KI kurz, Feedback, Fragen. Warum und wer steht auf der Über-Seite. -->
+    <h3>Suchen und Kopieren</h3>
+    <p class="hilfe-suche">
+        Gib ein, was du gelesen hast – du bekommst Antworten darauf, keine ähnlichen Texte.
+        Am besten mit einem ganzen Satz, so wie die Aussage gefallen ist. Du kannst auch direkt
+        den Post einfügen, auf den du antworten willst, oder ein Schlagwort tippen.
+    </p>
     <p>
-        Die Suche funktioniert über eine Aussage-Antwort Zuordnung: Du kannst so z.B. direkt einen Social-Media-Post eingeben,
-        auf den du antworten möchtest - und findest nicht einfach Inhalte, die ähnlich zu deinem Eingabe-Post sind, sondern
-        passende Antworten darauf!
+        Darunter stehen passende Beiträge: Kommentare zum Posten und Hintergrundinfos zum Nachlesen.
+        „Kopieren“ legt den Text in deine Zwischenablage.
+    </p>
+    <p class="hilfe-fassungen">
+        Viele Kommentare gibt es in drei Fassungen: Kurz, Mittel und Lang. Steht „passt auf Mastodon/Bluesky/X“
+        darunter, ist der Text kurz genug für diese Plattformen.
+    </p>
+
+    <h3>Bewerten und Siegel</h3>
+    <p class="hilfe-bewerten">
+        Angemeldet gibst du Beiträgen deine Stimme. Das Siegel auf der Karte zeigt die Güte.
+        Sie startet mit festen Regeln, dem Gegenlesen ohne KI. Je mehr Menschen bewerten,
+        desto mehr zählt ihr Urteil. Je weiter der Daumen nach oben zeigt, desto höher die Güte.
+    </p>
+    <!-- Drei Beispielsiegel als Link zum Abschnitt auf „Über“ (Designrunde 17.11.) -->
+    <a class="hilfe-siegel-beispiele" href="/about#siegel" (click)="zuUeber($event, 'siegel')">
+        <span class="siegel-reihe" aria-hidden="true">
+            <app-siegel [guete]="null"></app-siegel>
+            <app-siegel [guete]="5"></app-siegel>
+            <app-siegel [guete]="10"></app-siegel>
+        </span>
+        <span class="hilfe-siegel-link">Was bedeutet das Siegel?</span>
+    </a>
+
+    <h3>Beitragen</h3>
+    <!-- Die Kette (GLOSSARY): wie aus einem Fundstueck ein Beitrag wird -->
+    <ol class="hilfe-kette">
+        <li><strong>Einwerfen:</strong> Leg einen Link, einen Hinweis oder beides in den Fangkorb, ohne ihn schon auszuarbeiten.</li>
+        <li><strong>Destillieren:</strong> Im Fangkorb fasst jemand das Argument in einem Satz.</li>
+        <li><strong>Ausformulieren:</strong> Aus dem Satz wird ein Beitrag, den alle finden.</li>
+    </ol>
+    <p>
+        Jeden Schritt kann jemand anderes machen. Weißt du schon, was du sagen willst, verfasst du
+        einen Beitrag auch direkt.
     </p>
 
     <!-- Die Saetze stehen in der Registry, wie bei der Typwahl auf der Beitragen-Seite -->
     <ng-container *ngFor="let typ of typen">
-        <h3>Was ist {{ typ.artikel }} {{ typ.emoji }} {{ typ.label }}?</h3>
+        <h4>Was ist {{ typ.artikel }} {{ typ.emoji }} {{ typ.label }}?</h4>
         <p>{{ typ.beschreibung }}</p>
     </ng-container>
 
-    <h3>Gut schreiben</h3>
+    <h4>Gut schreiben</h4>
     <p>Für Kommentare und Posts. Die Schreibregeln stehen auch im Formular hinter dem ?. Sie sind eine Hilfe, keine Sperre.</p>
     <ol class="schreibregeln">
         <li *ngFor="let regel of schreibregeln">{{ regel }}</li>
     </ol>
+    <p>Das Gegenlesen sieht, wie du schreibst, nicht ob es stimmt. Das prüfst du selbst:</p>
+    <ul class="selbst-pruefen">
+        <li *ngFor="let punkt of selbstPruefen">{{ punkt }}</li>
+    </ul>
     <p class="nicht-jede-aussage">{{ nichtJedeAussage }}</p>
     <p class="erfundenes-melden">{{ erfundenesMelden }}</p>
 
-    <h3>Technische Details</h3>
-    <p>
+    <h3>Konto und Anmeldung</h3>
+    <p class="hilfe-konto">
+        Suchen, lesen und kopieren geht ohne Anmeldung. Zum Bewerten und Beitragen meldest du dich
+        mit deinem Netzbegrünung-Konto an. Ab {{ einladungAb }} gibt es Konten auch mit Einladung. Auf die
+        Warteliste kommst du über „Feedback“.
+    </p>
 
-        Gut gesagt nutzt die Techniken, die hinter Chat-GPT und Co stecken, um die Inhalte zu
-        analysieren und zu bewerten – ist dabei selbst aber keine KI.<br>
-        <br>
-        Die Suchfunktion arbeitet in drei Schritten:
+    <!-- Als App installieren, je Geraet (Entscheidung Maintainer 18.11.). Knopf nur, wenn
+         der Browser das Installieren anbietet (AppInstallierenService). -->
+    <section class="hilfe-als-app" id="als-app" aria-labelledby="hilfe-als-app-titel">
+        <h3 id="hilfe-als-app-titel" tabindex="-1">Als App aufs Handy</h3>
+        @if (app.installiert()) {
+            <p class="hilfe-als-app-installiert">Du nutzt Gut gesagt hier schon als App.</p>
+        } @else {
+            <p>Mit eigenem Symbol öffnest du Gut gesagt mit einem Tipp, ohne Adressleiste.</p>
+            @if (app.installierbar()) {
+                <p>
+                    <button type="button" class="rundgang-knopf voll hilfe-als-app-knopf"
+                            (click)="installieren()">Installieren</button>
+                </p>
+            }
+            <dl class="hilfe-als-app-schritte">
+                <dt>iPhone und iPad (Safari)</dt>
+                <dd>
+                    Tippe auf Teilen
+                    <svg class="teilen-symbol" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                        <path d="M8.5 9.5H6.5v11h11v-11h-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                        <path d="M12 3v11.5M8.5 6.5 12 3l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    (oder erst auf ···), dann auf „Zum Home-Bildschirm“.
+                </dd>
+                <dt>Android (Chrome)</dt>
+                <dd>Tippe oben rechts auf das Menü ⋮, dann auf „App installieren“ oder „Zum Startbildschirm hinzufügen“.</dd>
+                <dt>Computer (Chrome oder Edge)</dt>
+                <dd>Klick rechts in der Adressleiste auf das Symbol zum Installieren.</dd>
+            </dl>
+        }
+    </section>
+
+    <!-- Kurz: dieselben Saetze wie auf der Über-Seite (shared/ki-saetze.ts), die Technik steht dort -->
+    <h3>Nutzt Gut gesagt KI?</h3>
+    <p class="hilfe-technik hilfe-ki">
+        {{ keineGenerativeKi }} {{ sucheMitSprachmodellen }}
+        <a class="hilfe-technik-link" href="/about#technik" (click)="zuUeber($event, 'technik')">Mehr zur Technik</a>
     </p>
-    <ol>
-        <li>Zu deiner Eingabe werden die passendsten bereits bei Gut gesagt gespeicherten „Aussagen“ ermittelt
-        </li>
-        <li>Aussagen sind mit Antwortaussagen verknüpft</li>
-        <li>Zu diesen Antwortaussagen werden die passendsten Inhalte aus der Datenbank geladen</li>
-    </ol>
+
+    <h3>Feedback</h3>
     <p>
-        Aussagen, Antworten und Inhalte werden dabei semantisch, d.h. in ihrer Bedeutung, analysiert und
-        bewertet. Die Datenbasis wird dabei durch die Beiträge der grünen Mitglieder kontinuierlich erweitert
-        und durch die Nutzung und Bewertung werden die Ergebnisse kontinuierlich verbessert.<br>
-        <br>
-        Für die semantische Suche nutzen wir die Vektordatenbank
-        <a target="_blank" href="https://qdrant.tech">Qdrant</a>
-        und mehrsprachige KI-Modelle.
+        Eine Frage, ein Fehler oder eine Idee? Schreib es uns, auch ohne Konto.
     </p>
+    <p>
+        <button mat-stroked-button type="button" class="hilfe-feedback-knopf" (click)="feedbackOeffnen()">
+            <mat-icon>feedback</mat-icon>
+            Feedback geben
+        </button>
+    </p>
+
+    <h3>Häufige Fragen</h3>
+    <dl class="hilfe-fragen">
+        <dt>Darf ich einen Text ändern, bevor ich ihn poste?</dt>
+        <dd>Ja. Die Texte stehen unter CC0: Du darfst sie kopieren, verändern und weiterverwenden.</dd>
+        <dt>Ich finde keine passende Antwort. Was nun?</dt>
+        <dd>Dann fehlt sie noch. Angemeldet schreibst du sie selbst oder wirfst ein Fundstück dazu ein.</dd>
+        <dt>Ein Beitrag ist falsch oder problematisch. Was tun?</dt>
+        <dd>Melde ihn. Admins sehen sich die Meldung an und sperren den Beitrag, wenn nötig.</dd>
+        <dt>Wer entscheidet, welche Antwort oben steht?</dt>
+        <dd>Keine Redaktion: Oben steht, was am besten zu deiner Suche passt.</dd>
+    </dl>
 
     <mat-divider></mat-divider>
 
     <div class="about-link-section">
         <p>
-            Möchtest du mehr über Gut gesagt, die Vision dahinter und das Team erfahren?
+            Warum es Gut gesagt gibt, wer dahintersteht und wie Qualität entsteht:
         </p>
-        <a mat-raised-button color="primary" (click)="navigateToAbout()">
+        <a mat-raised-button color="primary" href="/about" (click)="zuUeber($event)">
             <mat-icon>info</mat-icon>
             Über Gut gesagt
         </a>

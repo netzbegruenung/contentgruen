@@ -120,7 +120,7 @@ export class NavigationService {
   }
 
   /**
-   * Zur Startseite - der Haus-Knopf im Desktop-Kopf.
+   * Zur Startseite - das Logo im Kopf, Desktop und mobil (#620).
    *
    * Wartet denselben Hook ab wie der Pfeil: Wer die Destillier-Ansicht ueber das
    * Haus verlaesst, soll seinen Satz genauso wenig verlieren wie ueber den Pfeil.

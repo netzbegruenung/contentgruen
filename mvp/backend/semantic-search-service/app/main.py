@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import BackgroundTasks, Depends, FastAPI
 
 # Import configuration first
-from core.config import settings
+from core.config import punkte_schalter_pruefen, settings
 
 # Initialize logging with dependency injection
 from core.logging import initialize_logging, get_logger
@@ -39,6 +39,9 @@ from api.v1.seeding import router as seeding_router
 from api.v1.usage import router as usage_router
 from api.v1.voting import router as voting_router
 from api.v1.moderation import router as moderation_router
+from api.v1.vormoderation import router as vormoderation_router
+from api.v1.loeschauftraege import router as loeschauftraege_router
+from api.v1.schalter import router as schalter_router
 from api.v1.sperren import router as sperren_router
 from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
@@ -57,6 +60,7 @@ from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
 from dependencies import (
+    abzeichen_service_bauen,
     get_feedback_service,
     get_loeschfristen_service,
     get_muster_hinweise_service,
@@ -66,6 +70,8 @@ from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_t
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
 from repositories.usage_tracking_repository import get_usage_repository
 from services.entdoppelung import pruefwerte_verwerfen_im_takt
+from repositories.gepostet_repository import get_gepostet_repository
+from services.abzeichen_service import abzeichen_im_takt, abzeichen_service_setzen
 from services.muster_hinweise_service import (
     loeschen_im_takt as muster_hinweise_loeschen_im_takt,
 )
@@ -75,6 +81,7 @@ from services.loeschfristen_service import (
 )
 from utils.rate_limiter import (
     aufraeumen_im_takt,
+    aehnliche_aussagen_rate_limiter,
     einladung_pruefen_rate_limiter,
     einladung_rate_limiter,
     feedback_rate_limiter,
@@ -97,6 +104,9 @@ async def lifespan(app: FastAPI):
     and non-blocking seeding initialization.
     """
     # Startup
+    # Punkte nur mit der eigenen Einwilligung "Punkte und Meilensteine" (#668); vor
+    # allem anderen, damit ein falscher Schalter den Dienst gar nicht erst startet.
+    punkte_schalter_pruefen(settings)
     try:
         logger.info("🚀 Starting Gut gesagt Semantic Search Service v1.0.0")
 
@@ -128,7 +138,7 @@ async def lifespan(app: FastAPI):
         initialize_services()
         logger.info("✅ Content services initialized")
 
-        # Der taegliche Bereinigungsjob (Fristen der Nutzungs- und Suchereignisse)
+        # Der taegliche Bereinigungsjob (Frist der Nutzungsereignisse)
         logger.info("Starting Bereinigungsjob...")
         bereinigungsjob_starten()
         logger.info("✅ Bereinigungsjob started")
@@ -143,6 +153,7 @@ async def lifespan(app: FastAPI):
             aufraeumen_im_takt(
                 [
                     report_rate_limiter,
+                    aehnliche_aussagen_rate_limiter,
                     search_query_statement_rate_limiter,
                     feedback_rate_limiter,
                     einladung_rate_limiter,
@@ -183,7 +194,8 @@ async def lifespan(app: FastAPI):
             _spracherkennung_vorladen()
         )
 
-        # Loeschfristen fuer Meldungen, Einwuerfe und geloeschte Beitraege, ebenso
+        # Loeschfristen fuer Meldungen, Einwuerfe, geloeschte Beitraege und das
+        # Tagespseudonym an Suchereignissen (am Tagesende verdichtet), ebenso
         # unabhaengig vom Bereinigungsjob (services/loeschfristen_service.py).
         app.state.loeschfristen = asyncio.create_task(
             loeschfristen_im_takt(get_loeschfristen_service())
@@ -193,7 +205,10 @@ async def lifespan(app: FastAPI):
         # Pruefwerte der Entdoppelung nach ihrem Tag verwerfen (#352), unabhaengig
         # von Punkten und Usage-Cleanup (services/entdoppelung.py).
         app.state.pruefwerte_verwerfen = asyncio.create_task(
-            pruefwerte_verwerfen_im_takt(get_usage_repository())
+            pruefwerte_verwerfen_im_takt(
+                get_usage_repository(),
+                gepostet=get_gepostet_repository().vergangene_wochen_verdichten,
+            )
         )
         # Paar-Pruefwerte nach dem Fenster verwerfen und alte Muster-Hinweise
         # loeschen (#352, services/muster_hinweise_service.py).
@@ -201,6 +216,19 @@ async def lifespan(app: FastAPI):
             muster_hinweise_loeschen_im_takt(get_muster_hinweise_service())
         )
         logger.info("✅ Check value and pattern note cleanup tasks started")
+
+        # Meilenstein-Abzeichen am Anzeigenamen (#351): der Dienst immer, damit ein
+        # Widerruf der Art.-9-Einwilligung ein frueheres Ja auch bei ausgeschalteten
+        # Abzeichen zuruecknimmt; Frage und Rechnen im Takt nur mit beiden Schaltern
+        # (services/abzeichen_service.py). Der Takt laeuft, wenn die Obergrenze es
+        # erlaubt; ob er rechnet, entscheidet je Lauf der Admin-Wert (#708).
+        abzeichen = abzeichen_service_bauen(settings)
+        abzeichen_service_setzen(abzeichen)
+        if settings.abzeichen_sichtbar:
+            app.state.abzeichen_rechnen = asyncio.create_task(
+                abzeichen_im_takt(abzeichen)
+            )
+            logger.info("✅ Milestone badge task started")
 
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
@@ -222,6 +250,7 @@ async def lifespan(app: FastAPI):
                 "loeschfristen",
                 "pruefwerte_verwerfen",
                 "muster_hinweise_loeschen",
+                "abzeichen_rechnen",
             ):
                 task = getattr(app.state, name, None)
                 if task is not None:
@@ -311,6 +340,19 @@ app.include_router(seeding_router, prefix="/api/v1", tags=["seeding"])
 app.include_router(usage_router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(voting_router, prefix="/api/v1/voting", tags=["voting"])
 app.include_router(moderation_router, prefix="/api/v1/moderation", tags=["moderation"])
+app.include_router(
+    vormoderation_router, prefix="/api/v1/moderation", tags=["moderation"]
+)
+# Loeschauftraege nach dem Widerruf der Art.-9-Einwilligung (DSFA R9b), admin-only
+app.include_router(
+    loeschauftraege_router,
+    prefix="/api/v1/moderation/loeschauftraege",
+    tags=["moderation"],
+)
+# Schalter mit Obergrenze und Admin-Wert (#708), admin-only
+app.include_router(
+    schalter_router, prefix="/api/v1/moderation/schalter", tags=["moderation"]
+)
 app.include_router(sperren_router, prefix="/api/v1/sperren", tags=["moderation"])
 app.include_router(health_router, prefix="/api/v1", tags=["monitoring"])
 app.include_router(feedback_router, prefix="/api/v1/feedback", tags=["feedback"])

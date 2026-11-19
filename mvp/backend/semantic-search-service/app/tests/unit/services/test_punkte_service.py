@@ -117,6 +117,7 @@ async def test_punkte_startkonto_sammelt_keine():
     stand = await _service(quellen).punkte(START)
 
     assert stand.gesamt == 0
+    assert stand.sammelt is False
 
 
 async def test_punkte_ohne_art9_einwilligung_keine():
@@ -127,6 +128,15 @@ async def test_punkte_ohne_art9_einwilligung_keine():
     stand = await _service(quellen, eingewilligt=lambda user_id: False).punkte(KIM)
 
     assert stand.gesamt == 0
+    assert stand.sammelt is False
+
+
+async def test_punkte_mit_einwilligung_sammelt_auch_bei_null():
+    """Neu und noch ohne Wirkung: 0 Punkte, aber ein Punktestand (#352)."""
+    stand = await _service(_Quellen([])).punkte(KIM)
+
+    assert stand.gesamt == 0
+    assert stand.sammelt is True
 
 
 async def test_punkte_widerruf_wirkt_beim_naechsten_abruf():
@@ -182,13 +192,16 @@ async def test_get_punkte_service_liest_nur_sichtbare_beitraege_der_person():
     assert stand.gesamt == 0
 
 
-async def test_get_punkte_service_fragt_die_art9_einwilligung(
-    art9_einwilligung_ohne_datenbank,
+async def test_get_punkte_service_fragt_die_einwilligung_punkte(
+    punkte_einwilligung_ohne_datenbank, art9_einwilligung_ohne_datenbank
 ):
-    """Die Verdrahtung prueft die gespeicherte Einwilligung (#559, F559-1)."""
+    """
+    Die Verdrahtung prueft die Einwilligung "Punkte und Meilensteine" (#351), nicht
+    mehr die Art.-9-Einwilligung zur Mitwirkung.
+    """
     from dependencies import get_punkte_service
 
-    art9_einwilligung_ohne_datenbank.lesen.return_value = None
+    punkte_einwilligung_ohne_datenbank.eingewilligt.return_value = False
     with patch(
         "repositories.aggregated.content_repository.ContentRepository"
     ) as inhalte, patch(
@@ -200,6 +213,7 @@ async def test_get_punkte_service_fragt_die_art9_einwilligung(
 
         stand = await get_punkte_service(Settings()).punkte(KIM)
 
-    art9_einwilligung_ohne_datenbank.lesen.assert_called_once_with(KIM)
+    punkte_einwilligung_ohne_datenbank.eingewilligt.assert_called_once_with(KIM)
+    art9_einwilligung_ohne_datenbank.lesen.assert_not_called()
     inhalte.return_value.get_by_author.assert_not_awaited()
     assert stand.gesamt == 0

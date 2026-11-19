@@ -24,8 +24,8 @@ from core.config import EMBEDDING_MODELL, Settings
 from tests.regression.aehnlichkeit_paare import LABELS, PAARE, Paar
 from utils.text_normalisierung import ist_dasselbe, text_normalisiert
 
-# Vorschlagsschwelle im Feld "Antwort auf" (Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
-VORSCHLAG_SCHWELLE = 0.885
+# Vorschlagsschwelle im Feld "Antwort auf" (Settings.aussage_vorschlag_schwelle, #387).
+VORSCHLAG_SCHWELLE = Settings().aussage_vorschlag_schwelle
 # So nah an der Schwelle kann eine Entscheidung auf anderer Hardware oder mit einer
 # anderen Bibliotheksversion kippen; der Regressionstest vergleicht sie dort nicht.
 KNAPP = 0.001
@@ -190,15 +190,20 @@ def _schreiben(messungen: dict[str, Messung]) -> None:
     _ZIEL.write_text(kopf + "\n".join(zeilen) + "\n}\n# fmt: on\n", encoding="utf-8")
 
 
-def main(argv: list[str]) -> None:
-    settings = Settings()
+def messungen_jetzt(settings: Settings) -> dict[str, Messung]:
+    """Die Messung mit dem Modell, wie sie aehnlichkeit_gemessen.py speichert."""
     roh = scores()
-    messungen = {
+    return {
         p.id: Messung(
             *roh[p.id], entscheidung(p, roh[p.id], settings), fingerabdruck(p)
         )
         for p in PAARE
     }
+
+
+def main(argv: list[str]) -> None:
+    settings = Settings()
+    messungen = messungen_jetzt(settings)
     if "--schreiben" in argv:
         _schreiben(messungen)
         print(f"geschrieben: {_ZIEL}")

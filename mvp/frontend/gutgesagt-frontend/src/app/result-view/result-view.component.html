@@ -1,3 +1,6 @@
+<!-- Eine mittige Spalte unter dem Kopf, darin alles linksbuendig (Ausrichtungsregel, styles.css
+     .inhalt-spalte; Designrunde 18.11.): Suchfeld, Hinweis, Erkannt-Zeile, Karten, Nicht dabei? -->
+<div class="inhalt-spalte treffer-spalte" [class.zweispaltig]="zweispaltig">
 <!-- Unified search box for all screen sizes -->
 <section class="full-width-section search-box">
     <div class="search-box-content">
@@ -18,216 +21,175 @@
     [retryAction]="retrySearch">
 </app-error-message>
 
-<!-- Ueber den Treffern, zugeklappt: nicht auf jede Aussage antworten (docs/VISION.md).
+<!-- Unter den Treffern, ruhig und offen: nicht auf jede Aussage antworten (docs/VISION.md, #602).
      Gemeint ist Melden auf der Plattform der Aussage, nicht die Meldung eines Beitrags hier. -->
 <ng-template #keineAntwortNoetig>
-    <details class="keine-antwort-noetig hinweis-box">
-        <summary>Nicht jede Aussage braucht eine Antwort</summary>
-        <p>Jede Antwort macht die Aussage sichtbarer. Kleine Accounts mit wenig Reichweite lieber auf der Plattform melden, statt zu antworten.</p>
-    </details>
+    <p class="keine-antwort-noetig">
+        <mat-icon aria-hidden="true">info_outline</mat-icon>
+        <span><strong>Nicht jede Aussage braucht eine Antwort.</strong>
+            Jede Antwort macht die Aussage sichtbarer. Bei Trollen mit wenig Reichweite lieber gar nicht antworten. Im privaten Chat reicht oft eine kurze, freundliche Antwort.</span>
+    </p>
 </ng-template>
 
-<!-- Filter nach Thema, nur mit Themen an den Treffern; eine neue Suche setzt ihn zurueck -->
-<ng-template #themenFilter>
-    <app-themen-filter class="themen-filter-leiste"
-                       [themen]="themenDerTreffer" [aktiv]="aktivesThema"
-                       (aktivChange)="nachThemaFiltern($event)"></app-themen-filter>
+<!-- Ohne Treffer: beliebte Aussagen und "Hier fehlt eine Antwort", keine Sackgasse (#642, R51) -->
+<ng-template #oftGesucht>
+    <app-oft-gesucht [suchtext]="searchQuery"></app-oft-gesucht>
 </ng-template>
 
-<!-- Mobile view: Tab navigation and current section -->
-<div class="mobile-results-wrapper"
-     *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
+<!-- Eine Darstellung fuer Handy und Desktop: Zeile "Erkannt als", beste Antwort, Rest eingeklappt -->
+<ng-container *ngIf="!(loading$ | async) && (searchResponse$ | async) && angezeigt">
 
-    <!-- Dezent unter dem Suchband: auch mit Treffern eine eigene Antwort ergaenzen -->
-    <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
-        <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
-            + Eigenen Kommentar ergänzen
-        </button>
-    </div>
-
-    <div class="mobile-keine-antwort-noetig" *ngIf="hatTreffer">
-        <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
-    </div>
-
-    <div class="mobile-themen-filter" *ngIf="themenDerTreffer.length">
-        <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
-    </div>
-
-    <!-- Tab Bar Navigation -->
-    <div class="mobile-tab-bar" *ngIf="hatTreffer">
-        <button class="tab-button"
-                [class.active]="currentSection === 'commentary'"
-                [disabled]="!hasCommentaryResults"
-                (click)="switchToSection('commentary')"
-                aria-label="Kommentare anzeigen">
-            <span class="tab-icon">💬</span>
-            <span class="tab-label">Kommentare</span>
-            <span class="tab-count" *ngIf="searchResponse.commentary_search_results_count > 0">
-                ({{searchResponse.commentary_search_results_count}})
-            </span>
-        </button>
-        <button class="tab-button"
-                [class.active]="currentSection === 'generictext'"
-                [disabled]="!hasGenerictextResults"
-                (click)="switchToSection('generictext')"
-                aria-label="Hintergrundinfos anzeigen">
-            <span class="tab-icon">📄</span>
-            <span class="tab-label">Hintergrund</span>
-            <span class="tab-count" *ngIf="searchResponse.generictext_search_results_count > 0">
-                ({{searchResponse.generictext_search_results_count}})
-            </span>
-        </button>
-        <!-- Posts nur mit Treffern: sonst bliebe ein dritter, leerer Tab -->
-        <button *ngIf="hasPostResults" class="tab-button tab-post"
-                [class.active]="currentSection === 'post'"
-                (click)="switchToSection('post')"
-                aria-label="Posts anzeigen">
-            <span class="tab-icon">📣</span>
-            <span class="tab-label">Posts</span>
-            <span class="tab-count">({{searchResponse.post_search_results_count}})</span>
-        </button>
-    </div>
-
-    <!-- Content Container -->
-    <div class="mobile-results-container">
-        <!-- Mobil: Karten untereinander statt Karussell -->
-        <div *ngIf="currentSection === 'commentary' && hasCommentaryResults" class="mobile-section">
-            <p class="typ-erklaerung">{{ kommentarErklaerung }}</p>
-            <app-kartenliste [daten]="kommentarKarten"></app-kartenliste>
-        </div>
-
-        <div *ngIf="currentSection === 'generictext' && hasGenerictextResults" class="mobile-section">
-            <p class="typ-erklaerung">{{ hintergrundErklaerung }}</p>
-            <app-kartenliste [daten]="hintergrundKarten"></app-kartenliste>
-        </div>
-
-        <div *ngIf="currentSection === 'post' && hasPostResults" class="mobile-section">
-            <p class="typ-erklaerung">{{ postErklaerung }}</p>
-            <app-kartenliste [daten]="postKarten"></app-kartenliste>
-        </div>
-
-        <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab; ein Post antwortet auf
-             keine Aussage, im Post-Tab bleibt es beim Kommentar (Fachfrage im PR) -->
-        <div *ngIf="hatTreffer" class="mobile-ergaenzen">
-            <p class="mobile-ergaenzen-frage">Nichts Passendes dabei?</p>
-            <button *ngIf="currentSection !== 'generictext'" mat-raised-button class="gutgesagt-primary-dark"
-                    (click)="navigateToContribute('commentary')">
-                <mat-icon>add</mat-icon> Kommentar ergänzen
-            </button>
-            <button *ngIf="currentSection === 'generictext'" mat-raised-button class="gutgesagt-primary-dark"
-                    (click)="navigateToContribute('generictext')">
-                <mat-icon>add</mat-icon> Hintergrundinfo ergänzen
-            </button>
-        </div>
-
-        <!-- Mobile Empty State when no results in any category -->
-        <div *ngIf="!hatTreffer" class="mobile-empty-state">
-            <p class="search-query-info">Zu „{{searchQuery}}“ haben wir noch keine passenden Inhalte</p>
-            <h3>Hilf der Community!</h3>
-            <div class="mobile-action-buttons">
-                <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                    <mat-icon>add</mat-icon> Kommentar hinzufügen
-                </button>
-                <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('generictext')">
-                    <mat-icon>add</mat-icon> Hintergrund hinzufügen
-                </button>
-            </div>
-            <mat-icon class="empty-icon">volunteer_activism</mat-icon>
-        </div>
-    </div>
-</div>
-
-<!-- Desktop view: Show both sections or unified empty state -->
-<div *ngIf="!isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
-
-    <!-- Unified Empty State when both searches return no results -->
+    <!-- Ohne Treffer: kein leerer Kasten, sondern Antworten, aehnliche Aussagen und "Oft gesucht" -->
     <section class="content-section" *ngIf="!hatTreffer">
         <div class="unified-empty-state">
-            <p class="search-query-info">Zu „{{searchQuery}}“ haben wir noch keine passenden Inhalte</p>
-            <h2>Hilf der Community und teile dein Wissen!</h2>
+            <p class="search-query-info">Zu „{{searchQuery}}“ ist noch nichts drin. Die Sammlung wächst mit jedem Beitrag.</p>
 
-            <div class="action-buttons-top">
-                <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                    💬 Fertigen Kommentar hinzufügen
-                </button>
-                <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('generictext')">
-                    📄 Hintergrundinfo hinzufügen
-                </button>
-            </div>
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="bekannteAussagen" [ohneTreffer]="true">
+                <p class="neu-anlegen-satz">Schreib den ersten Kommentar zu dieser Aussage.</p>
+                <div class="action-buttons-top">
+                    <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
+                        <mat-icon>add</mat-icon> Antworten
+                    </button>
+                    <button mat-stroked-button (click)="navigateToContribute('generictext')">
+                        <mat-icon>add</mat-icon> Hintergrundinfo hinzufügen
+                    </button>
+                </div>
+                <!-- Dritter, niedrigschwelliger Weg: nur einen Link in den Fangkorb (UX-Review B13) -->
+                <p class="nur-link">Nur einen Link dazu?
+                    <button type="button" class="ergaenzen-link" (click)="zumEinwerfen()">Einwerfen</button>
+                </p>
+            </app-nicht-dabei>
 
-            <mat-icon class="empty-icon">volunteer_activism</mat-icon>
+            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
 
             <div class="suggestions">
-                <p><strong>Tipps für deine Suche:</strong></p>
-                <ul>
-                    <li>Versuche andere Schlagwörter</li>
-                    <li>Formuliere eine konkrete Frage</li>
-                    <li>Nutze weniger spezifische Begriffe</li>
-                </ul>
+                <!-- Gesucht wird nach Aussagen: ein Tipp, der dazu passt (#617, offen aus #362) -->
+                <p class="such-tipp"><strong>Tipp:</strong> Gib die Aussage so ein, wie du sie gehört hast.</p>
             </div>
+
+            <ng-container *ngTemplateOutlet="oftGesucht"></ng-container>
         </div>
     </section>
 
-    <!-- Show individual sections only when at least one has results -->
-    <ng-container *ngIf="hatTreffer">
+    <div class="ergebnisse content-section" *ngIf="hatTreffer">
 
-        <div class="content-section">
-            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+        <!-- Eine kleine Zeile statt Kopfband (V3, Designrunde 17.11.): als welche Aussage die Suche
+             verstanden wurde (#642, R40), "Nicht gemeint?" klappt die aehnlichen Aussagen aus
+             "Nicht dabei?" auf, rechts "Ergebnis teilen" (B7) als Symbol.
+             Persona-Runde 18.11.: die Aussage groesser, "Nicht gemeint?" als sichtbarer Knopf
+             (Umriss, 44 px hoch) statt kleinem Link. -->
+        <div class="erkannt-zeile">
+            <p class="erkannt-text" *ngIf="erkannt as aussage; else ohneErkannt">
+                <span class="erkannt-satz">Erkannt als <strong class="erkannt-aussage">„{{ aussage.text }}“</strong></span>
+                <button mat-stroked-button type="button" class="erkannt-umschalter" *ngIf="alternativen.length"
+                        [attr.aria-expanded]="alternativenOffen" aria-controls="erkannt-liste"
+                        (click)="alternativenOffen = !alternativenOffen">Nicht gemeint?<mat-icon iconPositionEnd aria-hidden="true">{{ alternativenOffen ? 'expand_less' : 'expand_more' }}</mat-icon></button>
+            </p>
+            <ng-template #ohneErkannt><span class="erkannt-text"></span></ng-template>
+            <button mat-icon-button type="button" class="ergebnis-teilen-symbol"
+                    [attr.aria-label]="ergebnisTeilenBeschriftung" (click)="ergebnisTeilen()">
+                <mat-icon aria-hidden="true">share</mat-icon>
+            </button>
         </div>
+        <ul class="erkannt-liste" id="erkannt-liste" *ngIf="erkannt && alternativen.length" [hidden]="!alternativenOffen">
+            <li *ngFor="let a of alternativen">
+                <a class="erkannt-chip" [routerLink]="['/result']" [queryParams]="{ searchQuery: a.text }">{{ a.text }}</a>
+            </li>
+        </ul>
 
-        <div class="content-section" *ngIf="themenDerTreffer.length">
-            <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
-        </div>
+        <app-themen-filter *ngIf="themenDerTreffer.length" class="themen-filter-leiste"
+                           [themen]="themenDerTreffer" [aktiv]="aktivesThema"
+                           (aktivChange)="nachThemaFiltern($event)"></app-themen-filter>
 
-        <!-- Commentary Search Results Header/Info -->
-        <section class="content-section">
-            <app-commentary-search-results
-                [searchResponse]="searchResponse"
-                [loading]="(loading$ | async) || false"
-                [error]="(error$ | async) || ''"
-                [searchQuery]="searchQuery"
-                [showMinimalEmptyState]="hasGenerictextResults || hasPostResults">
-            </app-commentary-search-results>
+        <!-- Je Aussage eine Gruppe: die erkannte zuerst, direkte Treffer zuletzt. Die Gruppe
+             nennt die Aussage, die Karten darum keinen eigenen Antwort-auf-Kopf. Gibt es eine
+             erkannte Aussage, stehen die anderen eingeklappt darunter und zaehlen nicht in den Chips. -->
+        <ng-template #gruppeTpl let-gruppe>
+        <!-- Am Desktop zwei Spalten (Maintainer 18.11.): oben links die beste Antwort, rechts daneben
+             "Zu dieser Antwort", darunter ueber die volle Breite die weiteren Karten zu zweit. Die
+             Reihenfolge im DOM ist die Lesereihenfolge: beste, Kasten, weitere. -->
+        <section class="gruppe" [class.mit-bester]="gruppe === hauptGruppen[0] && zweispaltig" [attr.aria-labelledby]="gruppe.id">
+            <!-- Die erkannte Gruppe nennt die Zeile "Erkannt als" schon; ihr Kopf nur fuer Screenreader (Designrunde mobil 17.11.) -->
+            <h2 class="gruppe-kopf" [class.visually-hidden]="gruppe.art === 'erkannt' && erkannt" [class.gruppe-kopf--neben]="gruppe.art === 'aehnlich' || gruppe.art === 'ohne'" [id]="gruppe.id">
+                <mat-icon class="gruppe-icon" aria-hidden="true">{{ gruppe.art === 'ohne' ? 'search' : 'subdirectory_arrow_left' }}</mat-icon>
+                <ng-container [ngSwitch]="gruppe.art">
+                    <span *ngSwitchCase="'erkannt'" class="gruppe-label">Zu dieser Aussage<span class="visually-hidden" *ngIf="gruppe.text">: „{{ gruppe.text }}“</span></span>
+                    <span *ngSwitchCase="'aehnlich'" class="gruppe-label">Zu einer anderen Aussage:</span>
+                    <span *ngSwitchCase="'aussage'" class="gruppe-label">Zur Aussage:</span>
+                    <span *ngSwitchCase="'ohne'" class="gruppe-label">Passt zu deinem Suchtext</span>
+                </ng-container>&ngsp;
+                <span class="gruppe-aussage" *ngIf="gruppe.art !== 'erkannt' && gruppe.text">„{{ gruppe.text }}“&ngsp;</span>
+                <span class="gruppe-zahl">{{ gruppe.anzahl }} <span class="visually-hidden">Treffer</span></span>
+            </h2>
+
+            <div class="typ-block" *ngFor="let block of gruppe.bloecke; trackBy: nachTyp" [id]="block.id" [attr.data-typ]="block.typ">
+                <!-- V3 (Designrunde 17.11.): die beste Antwort ganz, alle anderen Karten eingeklappt
+                     unter einer kleinen Ueberschrift mit Zahl; die Titel tragen die Typen -->
+                <ng-container *ngIf="block.beste as beste">
+                    <h3 class="typ-ueberschrift beste-ueberschrift" tabindex="-1">Beste Antwort</h3>
+                    <app-kartenliste class="beste-antwort" [daten]="[beste]" [schlicht]="true" [titelEbene]="4" [antwortAufZeigen]="false"
+                                     (kennzahlen)="besteKennzahlen = $event"></app-kartenliste>
+                    <!-- Was die schlichte Karte nicht zeigt; nur am Desktop ab 1024 px sichtbar (CSS) -->
+                    <app-zu-dieser-antwort *ngIf="gruppe === hauptGruppen[0] && zweispaltig" class="zu-dieser-antwort-spalte"
+                                           [karte]="beste" [kennzahlen]="besteKennzahlen"></app-zu-dieser-antwort>
+                </ng-container>
+                <ng-container *ngIf="block.offen.length || block.weitere.length">
+                    <!-- Ohne ⓘ (Maintainer 18.11.): Die Typen erklaert nur noch das Etikett auf der Karte -->
+                    <div class="typ-kopf">
+                        <h3 class="typ-ueberschrift weitere-ueberschrift" [attr.tabindex]="block.beste ? null : -1">{{ block.weitereTitel }}</h3>
+                    </div>
+                    <!-- Desktop ab 1024 px (Maintainer 18.11.): die naechsten vier offen, zu zweit, erst dann eingeklappte -->
+                    <app-kartenliste *ngIf="block.offen.length" class="offene-karten" [daten]="block.offen" [schlicht]="true"
+                                     [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
+                    <app-kartenliste *ngIf="block.weitere.length" class="eingeklappte-karten" [daten]="block.weitere" [schlicht]="true" [aufklappbar]="true"
+                                     [titelEbene]="4" [antwortAufZeigen]="false"></app-kartenliste>
+                </ng-container>
+                <button *ngIf="block.mehrText" type="button" class="alle-zeigen"
+                        (click)="alleZeigen(gruppe, block.typ, block.id, block.karten.length)">
+                    {{ block.mehrText }}
+                </button>
+            </div>
         </section>
+        </ng-template>
 
-        <!-- Commentary Carousel - Full Width -->
-        <section class="carousel-section">
-            <app-result-carousel
-                *ngIf="searchResponse.commentary_search_results_count > 0"
-                [daten]="kommentarKarten">
-            </app-result-carousel>
-        </section>
-
-        <!-- Generic Text Search Results Header/Info -->
-        <section class="content-section">
-            <app-generictext-search-results
-                [searchResponse]="searchResponse"
-                [loading]="(loading$ | async) || false"
-                [error]="(error$ | async) || ''"
-                [searchQuery]="searchQuery"
-                [showMinimalEmptyState]="hasCommentaryResults || hasPostResults">
-            </app-generictext-search-results>
-        </section>
-
-        <!-- Generic Text Carousel - Full Width -->
-        <section class="carousel-section">
-            <app-result-carousel
-                *ngIf="searchResponse.generictext_search_results_count > 0"
-                [daten]="hintergrundKarten">
-            </app-result-carousel>
-        </section>
-
-        <!-- Posts: nur mit Treffern, ergaenzt wird ueber die Beitragen-Seite -->
-        <ng-container *ngIf="hasPostResults">
-            <section class="content-section post-ergebnisse">
-                <h2>Posts</h2>
-                <p class="typ-erklaerung">{{ postErklaerung }}</p>
-                <p class="post-anzahl">{{ searchResponse.post_search_results_count }} {{ searchResponse.post_search_results_count === 1 ? 'passender Post' : 'passende Posts' }} gefunden.</p>
-            </section>
-            <section class="carousel-section">
-                <app-result-carousel [daten]="postKarten"></app-result-carousel>
-            </section>
+        <ng-container *ngFor="let gruppe of hauptGruppen; trackBy: nachGruppe">
+            <ng-container *ngTemplateOutlet="gruppeTpl; context: { $implicit: gruppe }"></ng-container>
         </ng-container>
 
-    </ng-container>
+        <!-- Weniger passend (andere Aussagen, direkte Treffer): eingeklappt. Weniger passende gibt
+             es nur neben einer offenen erkannten Gruppe; die Abfrage auf hauptGruppen sichert nur ab,
+             dass ohne sie nichts unerreichbar eingeklappt bleibt. -->
+        <section class="weitere" *ngIf="weitereGruppen.length">
+            <button *ngIf="hauptGruppen.length" type="button" class="weitere-umschalter"
+                    [attr.aria-expanded]="weitereOffen" [attr.aria-controls]="weitereOffen ? 'weitere-treffer' : null"
+                    (click)="weitereOffen = !weitereOffen">
+                <mat-icon aria-hidden="true">{{ weitereOffen ? 'expand_less' : 'expand_more' }}</mat-icon>
+                Weitere, weniger passende Treffer ({{ weitereAnzahl }})
+            </button>
+            <div id="weitere-treffer" class="weitere-liste" *ngIf="weitereOffen || !hauptGruppen.length">
+                <ng-container *ngFor="let gruppe of weitereGruppen; trackBy: nachGruppe">
+                    <ng-container *ngTemplateOutlet="gruppeTpl; context: { $implicit: gruppe }"></ng-container>
+                </ng-container>
+            </div>
+        </section>
+
+        <!-- Unter allen Treffern: aehnliche Aussagen und neu anlegen ("Antworten" steht nur hier, V3) -->
+        <section class="nicht-dabei-unten">
+            <app-nicht-dabei [suchtext]="searchQuery" [bekannteAussagen]="bekannteAussagen"
+                             (aehnlicheGeladen)="alternativenGeladen($event)">
+                <p class="neu-anlegen-satz">Schreib selbst einen Kommentar zu dieser Aussage.</p>
+                <div class="neu-anlegen-knopf">
+                    <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
+                        <mat-icon>add</mat-icon> Antworten
+                    </button>
+                </div>
+                <!-- Ohne Hintergrundinfos unter den Treffern bleibt ein Weg, die erste zu ergaenzen -->
+                <button *ngIf="anzahl.generictext === 0" type="button" class="ergaenzen-link hintergrund-ergaenzen"
+                        (click)="navigateToContribute('generictext')">Hintergrundinfo ergänzen</button>
+            </app-nicht-dabei>
+        </section>
+
+        <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+    </div>
+</ng-container>
 </div>

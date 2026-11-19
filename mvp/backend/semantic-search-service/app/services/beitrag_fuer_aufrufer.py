@@ -13,6 +13,7 @@ from typing import Iterable, List, Optional, Sequence, Tuple, Type, TypeVar
 
 from pydantic import BaseModel
 
+from services.abzeichen_service import get_abzeichen_service
 from services.anzeigename_service import angemeldet, get_anzeigename_service
 
 # Ein Response-DTO mit den Feldern eines Personenbezugs (dtos/beitrag.py u. a.);
@@ -45,19 +46,24 @@ class Personenbezug:
 
     Das Feld ``kennung_feld`` behalten nur Admins. ``name_feld`` und ``eigen_feld``
     bekommen Angemeldete statt der Kennung; ohne sie (Destillierer, Ausformulierer)
-    geht an Nicht-Admins gar nichts zur Person.
+    geht an Nicht-Admins gar nichts zur Person. ``abzeichen_feld`` bekommen
+    Angemeldete, wenn die Person der Sichtbarkeit ihrer Meilenstein-Abzeichen
+    zugestimmt hat (#351, services/abzeichen_service.py).
     """
 
     kennung_feld: str
     name_feld: Optional[str] = None
     eigen_feld: Optional[str] = None
+    abzeichen_feld: Optional[str] = None
 
     def nur_kennung(self) -> "Personenbezug":
         """Derselbe Bezug ohne Anzeigename und Kennzeichen: nur die Kennung leeren."""
         return Personenbezug(self.kennung_feld)
 
 
-BEITRAG = Personenbezug("original_author", "autor_name", "ist_eigener_beitrag")
+BEITRAG = Personenbezug(
+    "original_author", "autor_name", "ist_eigener_beitrag", "autor_abzeichen"
+)
 AUSSAGE = Personenbezug("original_author", "autor_name", "ist_eigene_aussage")
 HERKUNFT = Personenbezug("original_author", "autor_name", "ist_eigene_herkunft")
 EINWURF = Personenbezug("submitted_by", "submitted_by_name", "ist_eigener_einwurf")
@@ -89,9 +95,27 @@ def personen_fuer_aufrufer(aufrufer: Aufrufer, *gruppen: Gruppe) -> None:
                 continue
             setattr(objekt, bezug.name_feld, namen.get(kennung))
             setattr(objekt, bezug.eigen_feld, kennung == aufrufer.kennung)
+        _abzeichen_setzen(benannt)
     if not aufrufer.ist_admin:
         for objekt, bezug in paare:
             setattr(objekt, bezug.kennung_feld, None)
+
+
+def _abzeichen_setzen(paare: List[Tuple[BaseModel, Personenbezug]]) -> None:
+    """Meilenstein-Abzeichen am Anzeigenamen, nur fuer Angemeldete (#351)."""
+    mit_feld = [(o, b) for o, b in paare if b.abzeichen_feld]
+    dienst = get_abzeichen_service()
+    if not mit_feld or dienst is None:
+        return
+    abzeichen = dienst.abzeichen(getattr(o, b.kennung_feld) for o, b in mit_feld)
+    if not abzeichen:
+        return
+    for objekt, bezug in mit_feld:
+        setattr(
+            objekt,
+            bezug.abzeichen_feld,
+            abzeichen.get(getattr(objekt, bezug.kennung_feld)),
+        )
 
 
 def fuer_aufrufer(

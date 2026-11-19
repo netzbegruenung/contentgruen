@@ -3,7 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 
 import { environment } from '../../environments/environment';
-import { UsageTrackingService } from './usage-tracking.service';
+import { PUNKTE_NICHT_GELADEN, SCHALTER_AUS_MERKEN_MS, UsageTrackingService } from './usage-tracking.service';
+import { AuthService } from '../auth/auth.service';
 import { LoggingService } from './logging.service';
 
 /**
@@ -30,6 +31,12 @@ describe('UsageTrackingService', () => {
   });
 
   afterEach(() => http.verify());
+
+  const STATUS = `${environment.baseUrl}/api/v1/usage/punkte/status`;
+  /** Der Schalter-Status, den punkte, meilensteine und abzeichen-sichtbarkeit zuerst fragen (B20). */
+  function status(aktiv = true, abzeichen_sichtbar = true): void {
+    http.expectOne(STATUS).flush({ aktiv, abzeichen_sichtbar });
+  }
 
   function antworten(id: string, count: number): void {
     http.expectOne(ADRESSE(id)).flush({ success: true, message: 'ok', usage_count: count });
@@ -112,6 +119,307 @@ describe('UsageTrackingService', () => {
       http.expectOne(EIGENE).flush('kaputt', { status: 500, statusText: 'Server Error' });
 
       expect(ergebnis).toBeNull();
+    });
+  });
+
+  describe('eigene Meilensteine (#351)', () => {
+    const MEILENSTEINE = `${environment.baseUrl}/api/v1/usage/users/me/meilensteine`;
+    const EINER = { kennung: 'nutzung-1', name: 'Erste Nutzung durch andere', art: 'wirkung', schwelle: 1, stand: 2, erreicht: true };
+
+    it('fragt ohne Kennung im Pfad und liefert die Liste', () => {
+      let ergebnis: unknown;
+      service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+      status();
+
+      const anfrage = http.expectOne(MEILENSTEINE);
+      expect(anfrage.request.method).toBe('GET');
+      anfrage.flush({ meilensteine: [EINER] });
+
+      expect(ergebnis).toEqual([EINER]);
+    });
+
+    it('liefert bei ausgeschalteten Punkten (404) still eine leere Liste', () => {
+      let ergebnis: unknown;
+      service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+      status();
+
+      http.expectOne(MEILENSTEINE).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toEqual([]);
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('liefert bei einem Fehler eine leere Liste und protokolliert ihn', () => {
+      let ergebnis: unknown;
+      service.getEigeneMeilensteine().subscribe((liste) => (ergebnis = liste));
+      status();
+
+      http.expectOne(MEILENSTEINE).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toEqual([]);
+      expect(TestBed.inject(LoggingService).error).toHaveBeenCalled();
+    });
+  });
+
+  describe('Eigene Punkte (#352)', () => {
+    const PUNKTE = `${environment.baseUrl}/api/v1/usage/users/me/punkte`;
+    const STAND = { tun: 2, quests: 0, wirkung: 30, gesamt: 32, sammelt: true };
+
+    it('holt den eigenen Punktestand', () => {
+      let ergebnis: unknown;
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+      status();
+
+      const anfrage = http.expectOne(PUNKTE);
+      expect(anfrage.request.method).toBe('GET');
+      anfrage.flush(STAND);
+
+      expect(ergebnis).toEqual(STAND);
+    });
+
+    it('liefert bei ausgeschalteten Punkten (404) still null', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+      status();
+
+      http.expectOne(PUNKTE).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toBeNull();
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('meldet einen anderen Fehler als unbekannten Stand und protokolliert ihn', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((stand) => (ergebnis = stand));
+      status();
+
+      http.expectOne(PUNKTE).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });
+
+      expect(ergebnis).toBe(PUNKTE_NICHT_GELADEN);
+      expect(TestBed.inject(LoggingService).error).toHaveBeenCalled();
+    });
+  });
+
+  // UX-Review B20: Schalter zuerst fragen, Endpunkte nur bei eingeschaltetem Schalter
+  describe('Schalter (B20)', () => {
+    const PUNKTE = `${environment.baseUrl}/api/v1/usage/users/me/punkte`;
+    const MEILENSTEINE = `${environment.baseUrl}/api/v1/usage/users/me/meilensteine`;
+    const SICHTBARKEIT = `${environment.baseUrl}/api/v1/usage/users/me/abzeichen-sichtbarkeit`;
+    const weg = { status: 404, statusText: 'Not Found' };
+    const STAND = { tun: 0, quests: 0, wirkung: 0, gesamt: 0, sammelt: true };
+
+    it('fragt bei ausgeschaltetem Schalter weder Punkte noch Meilensteine noch Sichtbarkeit, und den Status nur einmal', () => {
+      let punkte: unknown = 'unberuehrt';
+      let meilensteine: unknown;
+      let sichtbarkeit: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((p) => (punkte = p));
+      service.getEigeneMeilensteine().subscribe((m) => (meilensteine = m));
+      service.getAbzeichenSichtbarkeit().subscribe((s) => (sichtbarkeit = s));
+
+      status(false, false);
+
+      http.expectNone(PUNKTE);
+      http.expectNone(MEILENSTEINE);
+      http.expectNone(SICHTBARKEIT);
+      expect(punkte).toBeNull();
+      expect(meilensteine).toEqual([]);
+      expect(sichtbarkeit).toBeNull();
+      service.getEigenePunkte().subscribe();
+      http.expectNone(STATUS);
+    });
+
+    it('fragt die Sichtbarkeit nur, wenn auch die Abzeichen eingeschaltet sind', () => {
+      service.getAbzeichenSichtbarkeit().subscribe();
+      service.getEigenePunkte().subscribe();
+      status(true, false);
+
+      http.expectNone(SICHTBARKEIT);
+      const neu = http.expectOne(PUNKTE);
+      expect(neu.request.method).toBe('GET');
+      neu.flush(STAND);
+    });
+
+    it('fragt ohne Status-Endpunkt (404) die Endpunkte selbst, merkt sich deren 404 und fragt den Status nicht gleich wieder', () => {
+      service.getEigenePunkte().subscribe();
+      http.expectOne(STATUS).flush('weg', weg);
+      http.expectOne(PUNKTE).flush('weg', weg);
+
+      let punkte: unknown = 'unberuehrt';
+      service.getEigenePunkte().subscribe((p) => (punkte = p));
+      http.expectNone(STATUS);
+      http.expectNone(PUNKTE);
+      expect(punkte).toBeNull();
+    });
+
+    it('fragt nach einem anderen Fehler des Status beim naechsten Abruf wieder', () => {
+      service.getEigeneMeilensteine().subscribe();
+      http.expectOne(STATUS).flush('kaputt', { status: 502, statusText: 'Bad Gateway' });
+      http.expectOne(MEILENSTEINE).flush({ meilensteine: [] });
+
+      service.getEigeneMeilensteine().subscribe();
+      status(false, false);
+      http.expectNone(MEILENSTEINE);
+      expect().nothing();
+    });
+
+    // Review zu #670: "laedt selbst nach" - ein eingeschalteter Schalter kommt ohne Neuladen an
+    it('fragt den Status nach 15 Minuten wieder', () => {
+      jasmine.clock().install();
+      try {
+        jasmine.clock().mockDate(new Date(2026, 10, 13, 12, 0));
+        service.getEigeneMeilensteine().subscribe();
+        status(false, false);
+
+        jasmine.clock().tick(SCHALTER_AUS_MERKEN_MS - 1000);
+        service.getEigeneMeilensteine().subscribe();
+        http.expectNone(STATUS);
+
+        jasmine.clock().tick(2000);
+        service.getEigeneMeilensteine().subscribe();
+        status(true, true);
+        const neu = http.expectOne(MEILENSTEINE);
+        expect(neu.request.method).toBe('GET');
+        neu.flush({ meilensteine: [] });
+      } finally {
+        jasmine.clock().uninstall();
+      }
+    });
+
+    it('fragt den Status nach einem Wechsel der Anmeldung wieder', () => {
+      service.getEigenePunkte().subscribe();
+      status(false, false);
+
+      TestBed.inject(AuthService).setUserInfo({ isAuthenticated: true, userId: 'kim', userName: 'Kim', claims: null });
+      service.getEigeneMeilensteine().subscribe();
+      status(true, true);
+      const neu = http.expectOne(MEILENSTEINE);
+      expect(neu.request.method).toBe('GET');
+      neu.flush({ meilensteine: [] });
+    });
+  });
+
+  describe('Rückmeldung „Gepostet?“ (#643)', () => {
+    const GEPOSTET = `${environment.baseUrl}/api/v1/usage/users/me/gepostet`;
+
+    function angeboten(kennung = 'kim-1'): boolean | undefined {
+      let ergebnis: boolean | undefined;
+      service.gepostetAngeboten(kennung).subscribe((ja) => (ergebnis = ja));
+      return ergebnis;
+    }
+
+    it('bietet an, wenn der Server 200 antwortet, und fragt fuer dieselbe Kennung nicht noch einmal', () => {
+      let ergebnis: boolean | undefined;
+      service.gepostetAngeboten('kim-1').subscribe((ja) => (ergebnis = ja));
+      const anfrage = http.expectOne(GEPOSTET);
+      expect(anfrage.request.method).toBe('GET');
+      anfrage.flush({ personen_diese_woche: 3 });
+
+      expect(ergebnis).toBeTrue();
+      expect(angeboten()).toBeTrue();
+      http.expectNone(GEPOSTET);
+    });
+
+    it('merkt sich ein 404 (Schalter aus) still', () => {
+      let ergebnis: boolean | undefined;
+      service.gepostetAngeboten('kim-1').subscribe((ja) => (ergebnis = ja));
+      http.expectOne(GEPOSTET).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toBeFalse();
+      expect(angeboten()).toBeFalse();
+      http.expectNone(GEPOSTET);
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('fragt nach einem 403 (ohne Einwilligung) beim naechsten Mal wieder', () => {
+      let ergebnis: boolean | undefined;
+      service.gepostetAngeboten('kim-1').subscribe((ja) => (ergebnis = ja));
+      http.expectOne(GEPOSTET).flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+      expect(ergebnis).toBeFalse();
+      service.gepostetAngeboten('kim-1').subscribe();
+      http.expectOne(GEPOSTET).flush({ personen_diese_woche: 0 });
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('meldet per POST und liefert die Zahl der Woche', () => {
+      let ergebnis: unknown;
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
+
+      const anfrage = http.expectOne(GEPOSTET);
+      expect(anfrage.request.method).toBe('POST');
+      anfrage.flush({ personen_diese_woche: 7 });
+
+      expect(ergebnis).toBe(7);
+    });
+
+    it('vergisst nach einem 403 beim Melden das gemerkte Angebot', () => {
+      service.gepostetAngeboten('kim-1').subscribe();
+      http.expectOne(GEPOSTET).flush({ personen_diese_woche: 1 });
+      expect(service.gepostetBekannt('kim-1')).toBeTrue();
+      let ergebnis: unknown;
+
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
+      http.expectOne(GEPOSTET).flush({ detail: 'art9_einwilligung_fehlt' }, { status: 403, statusText: 'Forbidden' });
+
+      expect(ergebnis).toBe('nicht_angeboten');
+      expect(service.gepostetBekannt('kim-1')).toBeNull();
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('liefert null, wenn das Melden scheitert', () => {
+      let ergebnis: unknown;
+      service.gepostetMelden('kim-1').subscribe((zahl) => (ergebnis = zahl));
+
+      http.expectOne(GEPOSTET).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toBeNull();
+    });
+  });
+
+  describe('Sichtbarkeit der Abzeichen (#351)', () => {
+    const SICHTBARKEIT = `${environment.baseUrl}/api/v1/usage/users/me/abzeichen-sichtbarkeit`;
+
+    it('liest die Antwort', () => {
+      let ergebnis: unknown;
+      service.getAbzeichenSichtbarkeit().subscribe((stand) => (ergebnis = stand));
+      status();
+      const stand = { gefragt: false, zeigen: null, aktueller_wortlaut: { kennung: '2026-11-09-b', text: 'x', mehr_dazu: 'y' } };
+
+      http.expectOne(SICHTBARKEIT).flush(stand);
+
+      expect(ergebnis).toEqual(stand);
+    });
+
+    it('liefert ohne Schalter (404) still null', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getAbzeichenSichtbarkeit().subscribe((stand) => (ergebnis = stand));
+      status();
+
+      http.expectOne(SICHTBARKEIT).flush('weg', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toBeNull();
+      expect(TestBed.inject(LoggingService).error).not.toHaveBeenCalled();
+    });
+
+    it('speichert per PUT mit Antwort und Wortlaut', () => {
+      let ergebnis: unknown;
+      service.setAbzeichenSichtbarkeit(true, '2026-11-09').subscribe((ok) => (ergebnis = ok));
+
+      const anfrage = http.expectOne(SICHTBARKEIT);
+      expect(anfrage.request.method).toBe('PUT');
+      expect(anfrage.request.body).toEqual({ zeigen: true, wortlaut: '2026-11-09' });
+      anfrage.flush(null, { status: 204, statusText: 'No Content' });
+
+      expect(ergebnis).toBeTrue();
+    });
+
+    it('liefert false, wenn das Speichern scheitert', () => {
+      let ergebnis: unknown;
+      service.setAbzeichenSichtbarkeit(false, '2026-11-09').subscribe((ok) => (ergebnis = ok));
+
+      http.expectOne(SICHTBARKEIT).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toBeFalse();
     });
   });
 

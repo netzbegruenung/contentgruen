@@ -5,6 +5,7 @@ import {
   DestroyRef,
   ElementRef,
   EventEmitter,
+  Injector,
   Input,
   NgZone,
   OnChanges,
@@ -29,24 +30,47 @@ import {
   EinwurfAktion,
   EinwurfAngaben,
   EinwurfSatz,
+  KartenGuete,
+  KartenKennzahlen,
+  KartenQuelle,
   NICHT_SICHTBAR,
   STUFEN,
+  gueteAus,
 } from './karten-daten';
-import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
-import { herkunftText, tragtHerkunftsangaben } from './herkunft-text';
+import { KartenAktionenComponent, KopierVariante } from './karten-aktionen/karten-aktionen.component';
+import { herkunftDomain, herkunftText, tragtHerkunftsangaben } from './herkunft-text';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { FASSUNGEN, FASSUNG_LABEL, Fassung } from '../shared/fassung';
-import { STIL_LABEL, ZWECK_LABEL } from '../shared/zweck-stil';
+import { STIL_ERKLAERUNG, STIL_LABEL, ZWECK_LABEL } from '../shared/zweck-stil';
+import { PLATTFORM_GRENZE } from '../shared/beitrag-grenzen';
 import { FremdesBildComponent } from '../shared/fremdes-bild/fremdes-bild.component';
+import { SiegelComponent } from '../shared/components/siegel/siegel.component';
+import { SiegelErklaerung, siegelErklaerung } from '../shared/components/siegel/siegel-erklaerung';
+import { siegelText } from '../shared/components/siegel/siegel-zeichnung';
+import { GLANZ_TEXT, hatGlanz } from '../shared/components/siegel/siegel-auszeichnung';
+import { ContentService } from '../services/content.service';
+import { ROUTES } from '../shared/constants/app.constants';
+import { TextStueck, textStuecke } from '../shared/vorlagen-luecke';
 
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
 
 /** So viele Saetze stehen in der Einwurf-Karte; der Rest wird nur gezaehlt. */
 const SAETZE_SICHTBAR = 3;
+
+/** Laufende Nummer fuer die Koerper-IDs aufklappbarer Karten. */
+let naechsteKarte = 0;
+
+/** Ein Reiter der Fassungen (#641): Name und Zeichenzahl, damit man vor dem Antippen sieht, wie lang sie ist. */
+interface FassungsReiter {
+  fassung: Fassung;
+  label: string;
+  zeichen: number;
+  vorgelesen: string;
+}
 
 /** Eine Zeile "Nutzung je Fassung" in Meine Beitraege; `vorgelesen` fuer Screenreader statt "3×". */
 interface NutzungsZeile {
@@ -94,6 +118,7 @@ function nutzungsZeile(label: string, nutzung: number, zuwachs: number): Nutzung
     RelativeTimePipe,
     KartenAktionenComponent,
     FremdesBildComponent,
+    SiegelComponent,
     RouterLink,
   ],
   templateUrl: './beitragskarte.component.html',
@@ -121,27 +146,75 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   /** Durchgereicht an app-karten-aktionen: "Beitrag öffnen" im Menue; aus auf /beitrag/:id selbst. */
   @Input() ansichtVerlinkt = true;
   /**
+   * Der Knopf "Teilen" (B7); ohne Angabe wie ansichtVerlinkt. Die Beitragsseite schaltet ihn
+   * ausdruecklich ein: Dort teilt die Karte mit der angezeigten Fassung und zaehlt selbst.
+   */
+  @Input() teilbar: boolean | undefined = undefined;
+  /**
    * Einwurf-Karte: die Stufe als Wort in der Meta-Zeile statt des Einwerfers. Fuer
    * "Meine Einwuerfe", wo alle Karten die eigenen sind und die Stufe die Rueckmeldung ist.
    */
   @Input() stufeZeigen = false;
+  /**
+   * Ebene der Titel-Ueberschrift. Standard h3; die Ergebnisseite nimmt h4, weil dort
+   * Gruppe (h2) und Typ (h3) darueberstehen.
+   */
+  @Input() titelEbene: 3 | 4 = 3;
+  /**
+   * Die Zeile "Antwort auf:" ueber dem Titel. Aus, wo die Seite die Aussage schon
+   * nennt (Gruppen der Ergebnisseite); Admins behalten den Aufklapper mit den Werten.
+   */
+  @Input() antwortAufZeigen = true;
+  /**
+   * Einwurf-Karte quer (Fangkorb am Desktop): Meta-Zeile links, Griff und ⋮ rechts in
+   * einer Zeile, statt Griff mittig und Meta darunter. Spart Hoehe in breiten Listen.
+   */
+  @Input() quer = false;
+  /**
+   * Streifen "Frisch aus der Community" auf der Startseite (16.11.): volle Karte ohne die
+   * Marke "passt auf Mastodon/Bluesky/X" und ohne das Alter in der Meta-Zeile. Ueberall sonst bleiben beide.
+   */
+  @Input() schlank = false;
+  /**
+   * Schlichte Karte der Trefferseite (Designrunde 17.11., V3): Reiter ohne Kasten und ohne
+   * Zeichenzahl, ohne "passt auf Mastodon/Bluesky/X", Quelle klein als "Quelle: <Domain>",
+   * ohne Alter, Teilen im ⋮-Menue. Andere Seiten bleiben unveraendert.
+   */
+  @Input() schlicht = false;
+  /**
+   * Eingeklappt bis zum Antippen (Trefferseite, V3): nur Symbol, Titel und Pfeil; der
+   * Titel ist dann der Knopf zum Auf- und Zuklappen (Akkordeon-Muster), die volle Karte
+   * erscheint an Ort und Stelle.
+   */
+  @Input() aufklappbar = false;
 
   /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
   /** Primaerknopf oder Menueeintrag auf einer Einwurf-Karte. */
   @Output() aktion = new EventEmitter<EinwurfAktion>();
+  /** Guete oder Nutzung haben sich an dieser Karte geaendert (Stimme, Kopieren). */
+  @Output() kennzahlen = new EventEmitter<KartenKennzahlen>();
 
   nutzung: number | null = null;
+  /** Aufgeklappt (nur mit aufklappbar). */
+  offen = false;
+  /** Ziel von aria-controls des Aufklapp-Knopfs; eindeutig, auch wenn ein Beitrag zweimal dasteht. */
+  readonly koerperId = `karte-koerper-${naechsteKarte++}`;
+  /** Siegel und Stimm-Zaehler (#427); nach einer Stimme neu geladen. */
+  guete: KartenGuete | undefined;
   nutzungAnimiert = false;
   istNeu = false;
   istBeliebt = false;
   statementOffen = false;
-  /** Der gewaehlte Reiter; ohne Text in dieser Fassung zeigt die Karte Mittel. */
+  /** Der gewaehlte Reiter; vorgewaehlt die kuerzeste Fassung, die auf X passt (#641). */
   gewaehlteFassung: Fassung = 'mittel';
   textAufgeklappt = false;
   textGekuerzt = false;
 
   private textElement?: HTMLElement;
+  private stueckeFuer: string | null = null;
+  private stuecke: TextStueck[] = [];
+  private readonly destroyRef: DestroyRef;
   private beobachter?: ResizeObserver;
 
   constructor(
@@ -149,7 +222,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     private zone: NgZone,
     private authService: AuthService,
     destroyRef: DestroyRef,
+    private injector: Injector,
   ) {
+    this.destroyRef = destroyRef;
     // Die Karte steht oft schon, bevor /api/user-info beantwortet ist. Ohne dieses
     // Abonnement blieben die Getter bei dem, was beim ersten Zeichnen galt: kein
     // "Von: Du" am eigenen Beitrag, kein Verwerfen am eigenen Einwurf - und die
@@ -196,6 +271,22 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName || this.daten.eigen != null);
   }
 
+  /** Das Alter ("vor 2 Tagen") in der Meta-Zeile; nicht in der schlanken Karte der Startseite. */
+  get zeigtAlter(): boolean {
+    return !this.schlank && !this.schlicht && !!this.daten.erstellt;
+  }
+
+  /** Die Aktionsleiste; nur die volle Karte hat eine. */
+  @ViewChild(KartenAktionenComponent) private aktionen?: KartenAktionenComponent;
+
+  /**
+   * Antippen des gelben Platzhalters (P19, Persona-Runde 2): wie "Kopieren", also der
+   * Platzhalter-Dialog. Mit der Tastatur bleibt es beim Kopieren-Knopf, der dasselbe tut.
+   */
+  platzhalterAntippen(): void {
+    this.aktionen?.kopieren();
+  }
+
   @ViewChild('textElement')
   set textElementRef(ref: ElementRef<HTMLElement> | undefined) {
     const element = ref?.nativeElement;
@@ -213,10 +304,15 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['daten'] && this.daten) {
       this.nutzung = this.daten.nutzung;
+      this.guete = this.daten.guete;
       this.istNeu = this.stundenSeit(this.daten.erstellt) < NEU_STUNDEN;
       this.istBeliebt = (this.nutzung ?? 0) >= BELIEBT_AB;
       this.statementOffen = false;
-      this.gewaehlteFassung = 'mittel';
+      // Die Formular-Vorschau bekommt bei jedem Tastendruck neue Daten: dort bleibt die
+      // gewaehlte Fassung stehen (anfangs Mittel), sonst spraenge sie beim Tippen auf Kurz.
+      if (!this.vorschau || changes['daten'].firstChange) {
+        this.gewaehlteFassung = this.vorschau ? 'mittel' : this.vorgewaehlteFassung;
+      }
       this.textAufgeklappt = false;
     }
   }
@@ -255,7 +351,26 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     if (this.vorschau) {
       klassen.push('karte--vorschau');
     }
+    if (this.quer && this.einwurfAngaben && !this.istKopf) {
+      klassen.push('karte--quer');
+    }
+    if (this.schlicht) {
+      klassen.push('karte--schlicht');
+    }
+    if (this.zu) {
+      klassen.push('karte--zu');
+    }
     return klassen;
+  }
+
+  /** Eingeklappt: nur Symbol, Titel und Pfeil. */
+  get zu(): boolean {
+    return this.aufklappbar && !this.offen;
+  }
+
+  aufklappenUmschalten(event: Event): void {
+    event.stopPropagation();
+    this.offen = !this.offen;
   }
 
   get typName(): string {
@@ -399,6 +514,24 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.istKompakt ? (this.daten.bildUrl ?? null) : null;
   }
 
+  /**
+   * Die Nutzung in der Meta-Zeile, nicht in der Vorschau: Dort gibt es noch keine (#599).
+   * Erst ab 1 (#640, R44): "0× genutzt" las sich wie "will keiner", gerade zum Start.
+   * Das Album in Meine Beitraege zeigt dem Autor weiter auch "0×".
+   */
+  get nutzungInMeta(): boolean {
+    return (this.nutzung ?? 0) >= 1 && !this.vorschau;
+  }
+
+  /**
+   * Die Nutzung im Fuss der kompakten Karte, ausgeschrieben statt nur "3×": in Meine
+   * Beitraege soll man ohne Tooltip lesen koennen, was die Zahl heisst.
+   */
+  get albumNutzung(): string {
+    const nutzung = this.nutzung ?? 0;
+    return nutzung ? `${nutzung}× genutzt` : 'Noch nicht genutzt';
+  }
+
   /** Text des Nutzungs-Badges fuer alle Varianten, "3×"; unbekannt zaehlt als 0. */
   get nutzungAnzeige(): string {
     return `${this.nutzung ?? 0}×`;
@@ -423,6 +556,12 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return stil ? STIL_LABEL[stil] : null;
   }
 
+  /** Die Erklaerung am Stil-Chip (#641), etwa "brückenbauend: holt Unentschiedene ab". */
+  get stilErklaerung(): string | null {
+    const stil = this.daten.extra?.stil;
+    return stil ? `${STIL_LABEL[stil]}: ${STIL_ERKLAERUNG[stil]}` : null;
+  }
+
   /** Die Markierung fuer Beitraege fuer die eigenen Leute; Kommentarspalte ist der Standard und bleibt unmarkiert. */
   get eigeneLeuteAnzeige(): string | null {
     return this.daten.extra?.fuerEigeneLeute ? ZWECK_LABEL.eigene_leute : null;
@@ -430,6 +569,42 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get hatKurzOderLang(): boolean {
     return !!(this.daten.extra?.kurz || this.daten.extra?.lang);
+  }
+
+  /** Die Reiter der vorhandenen Fassungen mit Zeichenzahl ("Kurz · 180", #641). */
+  get fassungsReiter(): FassungsReiter[] {
+    return FASSUNGEN.filter((fassung) => this.fassungsText(fassung)).map((fassung) => {
+      const zeichen = this.fassungsText(fassung).length;
+      const label = FASSUNG_LABEL[fassung];
+      return { fassung, label, zeichen, vorgelesen: `${label}, ${zeichen} Zeichen` };
+    });
+  }
+
+  /** Die Marke "passt auf Mastodon/Bluesky/X" unter den Reitern, wie im Formular; nur wenn es stimmt, nicht schlank. */
+  get passtAufX(): boolean {
+    return !this.schlank && !this.schlicht && this.angezeigterText.length > 0 && this.angezeigterText.length <= PLATTFORM_GRENZE;
+  }
+
+  /**
+   * Vorgewaehlt ist die kuerzeste Fassung, die auf X passt (#641); passt keine, Mittel,
+   * der Haupttext. Ohne Kurz und Lang ist das immer Mittel.
+   */
+  get vorgewaehlteFassung(): Fassung {
+    const passend = FASSUNGEN.find((fassung) => {
+      const text = this.fassungsText(fassung);
+      return text && text.length <= PLATTFORM_GRENZE;
+    });
+    return passend ?? 'mittel';
+  }
+
+  private fassungsText(fassung: Fassung): string {
+    if (fassung === 'kurz') {
+      return this.daten.extra?.kurz ?? '';
+    }
+    if (fassung === 'lang') {
+      return this.daten.extra?.lang ?? '';
+    }
+    return this.daten.text ?? '';
   }
 
   /** Die angezeigte Fassung: die gewaehlte, wenn sie Text hat, sonst Mittel. */
@@ -484,18 +659,77 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.daten.text ?? '';
   }
 
-  get kopierText(): string {
-    return this.angezeigterText;
+  /** Der angezeigte Text in Stuecken, Platzhalter "[Hier …]" als eigene (#640, R38). */
+  get textStueckeAnzeige(): TextStueck[] {
+    const text = this.angezeigterText;
+    if (text !== this.stueckeFuer) {
+      this.stueckeFuer = text;
+      this.stuecke = textStuecke(text);
+    }
+    return this.stuecke;
   }
 
-  /** Die angezeigte Fassung samt Herkunft; leer ohne Herkunft, dann bietet die Leiste keine Wahl an. */
-  get kopierTextMitHerkunft(): string {
+  /**
+   * Suchuebereinstimmung und Antwortqualitaet nur fuer Admins (#640, R39): Fuer
+   * Nutzer:innen widersprachen sie dem Siegel, und die Uebereinstimmung lag ueber 100 %.
+   */
+  get zeigtWerte(): boolean {
+    return this.istAdmin;
+  }
+
+  /** Der Titel fuehrt zur Beitragsseite (#640, R48); nicht auf ihr selbst und nicht in der Vorschau. */
+  get titelVerlinkt(): boolean {
+    return this.istVoll && this.ansichtVerlinkt && !this.vorschau && !!this.daten.id && !!this.titelAnzeige;
+  }
+
+  get beitragAdresse(): string[] {
+    return [ROUTES.BEITRAG, this.daten.id];
+  }
+
+  /**
+   * Was der Knopf "Kopieren" kopiert (#641): bei der Hintergrundinfo Text samt Herkunft,
+   * sonst den Text der angezeigten Fassung. Die andere Variante steht im ⋮-Menue.
+   */
+  get kopierText(): string {
+    return this.kopiertMitHerkunft ? this.textMitHerkunft : this.angezeigterText;
+  }
+
+  /** Die zweite Variante fuers ⋮-Menue; null ohne Herkunft, dann gibt es nur eine. */
+  get zweiteKopie(): KopierVariante | null {
+    if (!this.textMitHerkunft) {
+      return null;
+    }
+    return this.kopiertMitHerkunft
+      ? { text: this.angezeigterText, wort: 'Nur Text kopieren' }
+      : { text: this.textMitHerkunft, wort: 'Mit Herkunft kopieren' };
+  }
+
+  /** Tooltip des Knopfs (vorgelesen als Beschreibung): was er kopiert. */
+  get kopierHinweis(): string {
+    if (this.daten.typ === 'image') {
+      return 'Kopiert die Bildunterschrift';
+    }
+    return this.kopiertMitHerkunft ? 'Kopiert Text und Herkunft' : 'Kopiert den Text';
+  }
+
+  /** Die Hintergrundinfo lebt von ihrer Herkunft; Kommentar und Post postet man meist ohne. */
+  private get kopiertMitHerkunft(): boolean {
+    return this.daten.typ === 'generictext' && !!this.textMitHerkunft;
+  }
+
+  /** Die angezeigte Fassung samt Herkunft; leer ohne Herkunft. */
+  private get textMitHerkunft(): string {
     const herkunft = herkunftText(this.daten);
-    return herkunft && this.kopierText ? `${this.kopierText}\n\n${herkunft}` : '';
+    return herkunft && this.angezeigterText ? `${this.angezeigterText}\n\n${herkunft}` : '';
   }
 
   get kopierBeschriftung(): string {
     return this.daten.typ === 'image' ? 'Bildunterschrift kopieren' : 'Kopieren';
+  }
+
+  /** Am Handy sichtbar statt des langen Worts (Entscheidung 14.11.); null, wo es kurz genug ist. */
+  get kopierKurz(): string | null {
+    return this.daten.typ === 'image' ? 'Kopieren' : null;
   }
 
   /**
@@ -509,8 +743,30 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.daten.autorName || 'Mitglied';
   }
 
+  /**
+   * Das Meilenstein-Abzeichen am Anzeigenamen (#351): Der Server setzt es nur fuer
+   * Angemeldete und nur mit Zustimmung der Person; ohne Autorzeile auch kein Abzeichen.
+   */
+  get autorAbzeichen(): number | null {
+    return this.zeigtAutor && this.daten.autorAbzeichen ? this.daten.autorAbzeichen : null;
+  }
+
+  abzeichenText(anzahl: number): string {
+    return anzahl === 1 ? '1 Meilenstein erreicht' : `${anzahl} Meilensteine erreicht`;
+  }
+
   get postHerkunft(): string {
     return [this.daten.extra?.postAutor, this.daten.extra?.plattform].filter(Boolean).join(' · ');
+  }
+
+  /** Die Herkunft als Domain ("lfu.bayern.de", #640, R47). */
+  quellenDomain(url: string): string {
+    return herkunftDomain(url);
+  }
+
+  /** Im Tooltip die volle Adresse, mit Beschreibung davor, wenn es eine gibt. */
+  quellenTooltip(quelle: KartenQuelle): string {
+    return quelle.beschreibung ? `${quelle.beschreibung} – ${quelle.url}` : (quelle.url ?? '');
   }
 
   /** Eine UUID ohne Adresse zeigt die Vorschau als "Herkunft n" statt als Kennung. */
@@ -535,6 +791,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /** Reiter bleiben beim Neuzeichnen erhalten, sonst verloere die Tastatur den Fokus. */
+  reiterSchluessel(_: number, reiter: FassungsReiter): Fassung {
+    return reiter.fassung;
+  }
+
   fassungWaehlen(fassung: Fassung): void {
     this.gewaehlteFassung = fassung;
     this.textAufgeklappt = false;
@@ -557,6 +818,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       return;
     }
     this.nutzung++;
+    this.kennzahlenMelden();
     this.nutzungAnimiert = true;
     setTimeout(() => {
       this.nutzungAnimiert = false;
@@ -575,6 +837,53 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       this.textGekuerzt = gekuerzt;
       this.cdr.markForCheck();
     }
+  }
+
+  readonly GLANZ_TEXT = GLANZ_TEXT;
+
+  /** Glanz am Siegel (#351): der Beitrag hat viel Wirkung; betrifft keine Person, auch fuer Besucher. */
+  get glanz(): boolean {
+    return hatGlanz(this.nutzung);
+  }
+
+  /** Was Screenreader am Siegel hoeren: die Guete, Glanz, und dass sich eine Erklaerung oeffnet. */
+  get siegelBeschriftung(): string {
+    return `${siegelText(this.guete?.wert ?? null, this.glanz)}. Erklärung öffnen`;
+  }
+
+  get erklaerung(): SiegelErklaerung | null {
+    return this.guete ? siegelErklaerung(this.guete.wert, this.guete.erfuellt, this.guete.stimmenZaehlen) : null;
+  }
+
+  /**
+   * Nach einer Stimme Guete und Zaehler frisch vom Server (#427): Steigt die Guete,
+   * dreht das Siegel mit Funken hoch. Scheitert das Laden, bleibt die alte Anzeige.
+   * Den Dienst holt die Karte erst hier, Karten ohne Abstimmen brauchen ihn nicht.
+   */
+  gueteNachladen(): void {
+    if (this.guete === undefined || this.vorschau) {
+      return;
+    }
+    const id = this.daten.id;
+    this.injector
+      .get(ContentService)
+      .beitragLaden(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (beitrag) => {
+          const neu = gueteAus(beitrag);
+          if (neu && this.daten.id === id) {
+            this.guete = neu;
+            this.kennzahlenMelden();
+            this.cdr.markForCheck();
+          }
+        },
+        error: () => undefined,
+      });
+  }
+
+  private kennzahlenMelden(): void {
+    this.kennzahlen.emit({ id: this.daten.id, guete: this.guete, nutzung: this.nutzung });
   }
 
   private stundenSeit(zeitpunkt: string): number {

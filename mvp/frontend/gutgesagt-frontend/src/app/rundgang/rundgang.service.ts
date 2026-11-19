@@ -1,12 +1,15 @@
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
-import { filter, take } from 'rxjs/operators';
-import { AuthService } from '../auth/auth.service';
-import { angebotOeffnen } from './angebot-dialog.component';
-import { Angebot, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
-import { gesehen, merken } from './rundgang-merker';
+import { NavigationEnd, NavigationStart, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { AuthService, UserInfo } from '../auth/auth.service';
+import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
+import { HOME_HINWEIS_MERKER } from '../shared/geraetespeicher-schalter';
+import { HOME_BILDSCHIRM_MOEGLICH } from './home-bildschirm';
+import { AppInstallierenService } from './app-installieren.service';
+import { Angebot, APP_INSTALLIEREN_ANGEBOT, HOME_ANGEBOT, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
+import { ANSICHT_PARAM, MIT_KONTO_PFAD, STANDARD_ZIEL, ZIEL_PARAM } from '../mit-konto/vorschau-schritte';
+import { gesehen as imSpeicher, merken as speichern } from './rundgang-merker';
 
 export interface RundgangStand {
   rundgang: Rundgang;
@@ -14,57 +17,80 @@ export interface RundgangStand {
 }
 
 /**
- * Seiten, auf denen das Willkommen beim ersten Besuch erscheint: Startseite und
- * Treffer. Nicht auf Einladung, Anmeldung oder Rechtstexten, wo es den Weg verstellte.
- */
-const WILLKOMMEN_SEITEN = ['/search', '/result'];
-
-/** Hier legt sich auch das Mitmachen-Angebot nicht darüber; es wartet auf die nächste Seite. */
-const OHNE_ANGEBOT = ['/login', '/einladung', '/datenschutz', '/impressum', '/nutzungsbedingungen'];
-
-/**
  * Steuert Willkommen, Mitmachen-Angebot und den laufenden Rundgang (#389). Die
- * Darstellung macht app-rundgang; hier steht nur, welcher Schritt dran ist und
- * auf welcher Seite er spielt.
+ * Darstellung machen app-rundgang-band und app-rundgang; hier steht nur, welches
+ * Angebot und welcher Schritt dran ist und auf welcher Seite er spielt.
+ *
+ * Gestaffelt, kein Fenster (#587): Das Willkommen steht als Band über
+ * Startseite und Treffern. Nach der Anmeldung kommt nur die Art.-9-Einwilligung;
+ * Mitmachen bietet erst das Band auf Beitragen oder Fangkorb an, wenn die Person dort
+ * zum ersten Mal ankommt. Bis dahin trägt „Beitragen“ im Kopf einen Neu-Punkt.
+ * Ein Band bleibt, bis die Person darauf reagiert; nach einem Rundgang ist es für
+ * diesen Besuch weg. Kein Band auf Formularen, Einladung, Anmeldung, Einwilligung
+ * oder Rechtstexten. Dasselbe Band trägt auf iPhone und iPad den Hinweis „Gut gesagt
+ * als App“ (HOME_ANGEBOT), nachrangig zu Willkommen und Mitmachen; in Chrome und Edge
+ * mit Knopf „Installieren“ (APP_INSTALLIEREN_ANGEBOT), wenn der Browser es anbietet.
  */
 @Injectable({ providedIn: 'root' })
 export class RundgangService {
   private readonly router = inject(Router);
-  private readonly dialog = inject(MatDialog);
   private readonly auth = inject(AuthService);
+  private readonly einwilligung = inject(Art9EinwilligungService);
+  private readonly homeMerkerAktiv = inject(HOME_HINWEIS_MERKER);
+  private readonly homeMoeglich = inject(HOME_BILDSCHIRM_MOEGLICH);
+  private readonly app = inject(AppInstallierenService);
 
   private readonly stand = signal<RundgangStand | null>(null);
   /** Der laufende Rundgang mit dem aktuellen Schritt, sonst null. */
   readonly aktiv = this.stand.asReadonly();
 
-  private angebotOffen = false;
+  private readonly angebot = signal<Angebot | null>(null);
+  /**
+   * Ab dem Start, nicht erst ab dem ersten Schritt (#585): Solange dessen Seite lädt,
+   * ist `aktiv()` noch leer. Nach einem Rundgang bleibt das Band für diesen Besuch weg.
+   */
+  private readonly rundgangGestartet = signal(false);
+  /** Das Angebot, das das Band gerade zeigt; ab dem ersten Rundgang des Besuchs keines. */
+  readonly band = computed(() => (this.rundgangGestartet() ? null : this.angebot()));
+  private readonly mitmachenOffen = signal(false);
+  /** Neu-Punkt an „Beitragen“: angemeldet, eingewilligt, Mitmachen noch nicht beantwortet. */
+  readonly beitragenNeu = this.mitmachenOffen.asReadonly();
   /** Zaehlt Schrittwechsel; ein ueberholter Wechsel setzt nach dem Laden nichts mehr. */
   private wechsel = 0;
-  private mitmachenAusstehend = false;
-  /** Erst nach der ersten Seite steht fest, ob dort das Willkommen erscheint. */
+  /** Die letzten Anmeldedaten; null, solange /api/user-info nicht geantwortet hat. */
+  private info: UserInfo | null = null;
+  /** Vor der ersten Seite steht nicht fest, wo die Person landet. */
   private ersteSeiteDa = false;
-
   /**
-   * Einmal beim Start der App: Willkommen beim ersten Besuch, Mitmachen nach der
-   * ersten Anmeldung.
+   * In diesem Besuch beantwortete Angebote, auch ohne Speicher im Browser (privates
+   * Fenster): „Ausblenden“ wirkt dann wenigstens bis zum nächsten Besuch.
    */
+  private readonly beantworteteAngebote = new Set<string>();
+  /** Hinweis „Gut gesagt als App“: Schalter an (Merker darf gelesen werden). */
+  private homeHier = false;
+  /** iPhone oder iPad in Safari: Anleitung statt Knopf. */
+  private homeIos = false;
+  /** Willkommen oder Mitmachen stand in diesem Besuch schon da: dann kein zweites Band danach. */
+  private anderesBandGezeigt = false;
+
+  /** Einmal beim Start der App. */
   beobachten(destroyRef: DestroyRef): void {
+    // Schalter zuerst: Ist er aus, greift der Hinweis nie auf den Speicher zu
+    this.homeHier = this.homeMerkerAktiv;
+    this.homeIos = this.homeHier && this.homeMoeglich();
+    // Chrome und Edge melden das Installieren-Angebot irgendwann nach dem Laden
+    this.app.geaendert$.pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.angebotPruefen());
+
+    // Zurück (oder Vor) im Browser beendet den Rundgang: Sonst stuende der Schritt auf
+    // der Seite, zu der die Person gerade zurückgeht, etwa „Passende Treffer“ über den
+    // neuesten Inhalten der Startseite. Starten lässt er sich jederzeit über die Hilfe neu.
     this.router.events
       .pipe(
-        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        filter((e) => WILLKOMMEN_SEITEN.some((s) => e.urlAfterRedirects.startsWith(s))),
-        take(1),
+        filter((e): e is NavigationStart => e instanceof NavigationStart && e.navigationTrigger === 'popstate'),
         takeUntilDestroyed(destroyRef),
       )
-      .subscribe(() => {
-        if (!gesehen(WILLKOMMEN.schluessel)) {
-          this.anbieten(WILLKOMMEN);
-        }
-      });
+      .subscribe(() => this.beenden()); // ohne laufenden Rundgang ändert das nichts
 
-    // Mitmachen wartet die erste Seite ab: Ist sie Startseite oder Treffer, kommt dort
-    // zuerst das Willkommen; sonst (etwa nach einer Einladung) gleich das Angebot.
-    // Ein zurückgestelltes Angebot kommt mit der nächsten Seite.
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -72,20 +98,51 @@ export class RundgangService {
       )
       .subscribe(() => {
         this.ersteSeiteDa = true;
-        // Das Willkommen-Abo oben hat schon reagiert, falls es diese Seite war
-        if (!this.angebotOffen) this.naechstesAngebot();
+        this.angebotPruefen();
       });
 
     this.auth.userInfo$.pipe(takeUntilDestroyed(destroyRef)).subscribe((info) => {
-      if (info?.isAuthenticated) {
-        this.mitmachenPruefen();
-      }
+      this.info = info;
+      this.angebotPruefen();
     });
+    this.einwilligung.geklaert$.pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.angebotPruefen());
   }
 
-  starten(id: RundgangId): Promise<void> {
-    this.mitmachenAusstehend = this.mitmachenAusstehend && id !== 'mitmachen';
-    return this.zuSchritt(RUNDGAENGE[id], 0);
+  starten(id: RundgangId, ab = 0): Promise<void> {
+    // Ohne Konto zeigt Selbst beitragen keine echte Oberflaeche (die Seiten sind geschuetzt),
+    // sondern die Bildergeschichte auf /mit-konto; danach geht es nach Beitragen (17.11.)
+    if (id === 'mitmachen' && !this.info?.isAuthenticated) {
+      return this.router
+        .navigate([MIT_KONTO_PFAD], { queryParams: { [ANSICHT_PARAM]: 'rundgang', [ZIEL_PARAM]: STANDARD_ZIEL } })
+        .then(() => undefined, () => undefined);
+    }
+    // Auch über Hilfe oder Menü gestartet ist das offene Angebot beantwortet: das Band
+    // oder Mitmachen hinter dem Neu-Punkt
+    const angebot = this.angebot();
+    if (angebot?.rundgang === id) this.beantwortet(angebot);
+    else if (id === MITMACHEN_ANGEBOT.rundgang && this.beitragenNeu()) this.beantwortet(MITMACHEN_ANGEBOT);
+    this.rundgangGestartet.set(true);
+    return this.zuSchritt(RUNDGAENGE[id], ab);
+  }
+
+  /**
+   * Ein Knopf im Band: Rundgang starten, installieren oder ausblenden. Nach „Ausblenden“
+   * kommt das Angebot nicht wieder. Nach dem Installieren-Dialog ist das Band für diesen
+   * Besuch weg, ohne Vermerk: Installiert meldet der Browser nichts mehr, abgelehnt
+   * meldet er es frühestens beim nächsten Besuch wieder.
+   */
+  async bandBeantworten(starten: boolean): Promise<void> {
+    const angebot = this.band();
+    if (!angebot) return;
+    if (starten && angebot.rundgang) {
+      await this.starten(angebot.rundgang, angebot.ab);
+    } else if (starten && angebot.installieren) {
+      await this.app.installieren();
+      this.beantworteteAngebote.add(angebot.schluessel);
+      this.angebotPruefen();
+    } else {
+      this.beantwortet(angebot);
+    }
   }
 
   async weiter(): Promise<void> {
@@ -107,9 +164,7 @@ export class RundgangService {
 
   beenden(): void {
     this.wechsel++; // ein Schritt, dessen Seite noch laedt, erscheint nicht mehr
-    if (!this.stand()) return;
     this.stand.set(null);
-    this.naechstesAngebot();
   }
 
   /**
@@ -129,37 +184,69 @@ export class RundgangService {
     this.stand.set({ rundgang, index });
   }
 
-  private mitmachenPruefen(): void {
-    if (gesehen(MITMACHEN_ANGEBOT.schluessel)) return;
-    // Nicht über ein anderes Angebot oder einen laufenden Rundgang legen; danach.
-    const ruhigeSeite = OHNE_ANGEBOT.some((s) => this.router.url.startsWith(s));
-    if (this.angebotOffen || this.stand() || !this.ersteSeiteDa || ruhigeSeite) {
-      this.mitmachenAusstehend = true;
-      return;
+  /** Welches Angebot jetzt dran ist, falls überhaupt eines. */
+  private faelligesAngebot(): Angebot | null {
+    if (!this.ersteSeiteDa) return null;
+    const url = this.router.url;
+    const hier = (a: Angebot): boolean => a.seiten.some((s) => url.startsWith(s));
+    const info = this.info;
+    // Bis /api/user-info antwortet, ist offen, ob jemand angemeldet ist: Ein Willkommen
+    // blitzte sonst vor der Umleitung auf die Einwilligung auf (#587).
+    if (!info) return null;
+    if (info.isAuthenticated) {
+      // Nicht vor der Einwilligung; ohne sie kein Angebot
+      if (!this.eingewilligt(info.userId)) return null;
+      if (this.mitmachenFaellig(info) && hier(MITMACHEN_ANGEBOT)) return MITMACHEN_ANGEBOT;
     }
-    this.anbieten(MITMACHEN_ANGEBOT);
+    // Wer Mitmachen schon hatte, braucht kein Willkommen mehr
+    if (!this.gesehen(WILLKOMMEN) && !this.gesehen(MITMACHEN_ANGEBOT) && hier(WILLKOMMEN)) return WILLKOMMEN;
+    // Zuletzt und nie zugleich mit einem anderen: Es gibt nur ein Band
+    // iPhone und iPad: Anleitung. Sonst nur mit Angebot des Browsers (nicht in Firefox,
+    // nicht schon installiert); ohne es wird auch kein Vermerk gelesen.
+    const app = this.homeIos ? HOME_ANGEBOT : this.app.installierbar() ? APP_INSTALLIEREN_ANGEBOT : null;
+    if (app && hier(app) && this.homeFaellig()) return app;
+    return null;
   }
 
-  private naechstesAngebot(): void {
-    if (this.mitmachenAusstehend && this.auth.getUserInfo()?.isAuthenticated) {
-      this.mitmachenAusstehend = false;
-      this.mitmachenPruefen();
-    }
+  /**
+   * Erst wenn der Vermerk für Willkommen oder Mitmachen im Speicher steht; kein eigener
+   * Merker für Besuche (§ 25 TDDDG). Ohne Speicher steht dort nie einer, dann gibt es
+   * auch keinen Hinweis, der nach dem Ausblenden wiederkäme. Nie nach „Ausblenden“ und
+   * nicht nach Willkommen oder Mitmachen im selben Besuch.
+   */
+  private homeFaellig(): boolean {
+    return (
+      this.homeHier &&
+      !this.anderesBandGezeigt &&
+      (imSpeicher(WILLKOMMEN.schluessel) || imSpeicher(MITMACHEN_ANGEBOT.schluessel)) &&
+      !this.gesehen(HOME_ANGEBOT)
+    );
   }
 
-  private anbieten(angebot: Angebot): void {
-    this.angebotOffen = true;
-    angebotOeffnen(this.dialog, angebot)
-      .afterClosed()
-      .subscribe((wahl) => {
-        this.angebotOffen = false;
-        // Auch Escape und „Später“ zählen als gesehen: Das Angebot kommt nicht wieder.
-        merken(angebot.schluessel);
-        if (wahl === 'starten') {
-          void this.starten(angebot.rundgang);
-        } else {
-          this.naechstesAngebot();
-        }
-      });
+  /** Ohne Kennung ist nichts geklärt, auch wenn `geklaert()` ebenfalls null ist. */
+  private eingewilligt(kennung: string | null): boolean {
+    return kennung !== null && this.einwilligung.geklaert() === kennung;
+  }
+
+  /** Angemeldet, eingewilligt, Mitmachen noch nicht beantwortet. */
+  private mitmachenFaellig(info: UserInfo | null): boolean {
+    return !!info?.isAuthenticated && this.eingewilligt(info.userId) && !this.gesehen(MITMACHEN_ANGEBOT);
+  }
+
+  private angebotPruefen(): void {
+    const angebot = this.faelligesAngebot();
+    if (angebot && angebot.schluessel !== HOME_ANGEBOT.schluessel) this.anderesBandGezeigt = true;
+    this.angebot.set(angebot);
+    this.mitmachenOffen.set(this.mitmachenFaellig(this.info));
+  }
+
+  private gesehen(angebot: Angebot): boolean {
+    return this.beantworteteAngebote.has(angebot.schluessel) || imSpeicher(angebot.schluessel);
+  }
+
+  private beantwortet(angebot: Angebot): void {
+    this.beantworteteAngebote.add(angebot.schluessel);
+    speichern(angebot.schluessel);
+    this.angebotPruefen();
   }
 }

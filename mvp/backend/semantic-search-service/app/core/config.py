@@ -21,6 +21,19 @@ EMBEDDING_MODELL = "intfloat/multilingual-e5-base"
 # Name seines Vektors in der Qdrant-Collection (Named Vector, #395): weitere Modelle
 # bekommen daneben einen eigenen Namen, statt die Collection zu ersetzen.
 EMBEDDING_VEKTOR = "e5_base"
+# Das NLI-Modell der NLI-Stufe (#387, services/dieselbe_behauptung): mehrsprachiger
+# Cross-Encoder mit XNLI-Training, MIT-Lizenz, nur fp32. Die Schwellen nli_* in Settings
+# sind dafuer gemessen (tests/regression/MESSSET.md); das Dockerfile laedt es vor.
+NLI_MODELL = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
+# Der Bestaetiger (nli_bestaetiger in Settings): zweites NLI-Modell, MIT-Lizenz (Model
+# Card), fp32, rund 2,2 GB RAM. Tokenizer aus dem Basismodell (gleiches Vokabular, aber
+# als schneller Tokenizer, ohne sentencepiece). Das Dockerfile laedt beide vor.
+NLI_BESTAETIGER_MODELL = "joeddav/xlm-roberta-large-xnli"
+NLI_BESTAETIGER_TOKENIZER = "FacebookAI/xlm-roberta-large"
+# aus: nur die Einbettung entscheidet (Regel vor #387). schatten: Die Einbettung
+# entscheidet, die NLI-Stufe urteilt im Hintergrund mit und wird nur gezaehlt.
+# an: Die NLI-Stufe entscheidet ueber dieselbe Aussage.
+NliModus = Literal["aus", "schatten", "an"]
 
 # Wie der Mailversand mit dem SMTP-Server spricht (infrastructure/mail/versand.py).
 # Nur verschluesselt: Adresse und Text der Mail gehen nie lesbar ueber das Netz.
@@ -126,8 +139,31 @@ class Settings(BaseSettings):
     # Das Messset mit Paar-Labels (tests/regression/MESSSET.md) zeigt: Verneinungen,
     # Gegenteile und Fragen liegen auch ueber 0,98 - das faengt erst #387 ab.
     # Inhaltlich aehnliche Aussagen werden nicht still uebernommen, sondern im
-    # Formular vorgeschlagen (0,885, Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
+    # Formular vorgeschlagen (aussage_vorschlag_schwelle).
     statement_similarity_threshold: float = 0.98
+    # NLI-Stufe (#387): zweite Stufe der Pruefung auf dieselbe Aussage. Gilt in
+    # StatementService fuer alle Wege (Formular, Suche, Seeding). Ohne verfuegbares
+    # Modell gilt die Schwelle oben. Gemessen am Messset (tests/regression/MESSSET.md,
+    # Abschnitt NLI-Stufe): tau und kappa am Train-Teil, Ergebnis am Test-Teil.
+    dieselbe_aussage_nli: NliModus = "schatten"
+    # Kandidaten: Vektortreffer ab dieser query/query-Aehnlichkeit, hoechstens so viele.
+    # Das niedrigste gleich-Paar der Aussagen liegt bei 0,887.
+    nli_kandidaten_ab: float = Field(default=0.85, ge=0.0, le=1.0)
+    nli_kandidaten_hoechstens: int = Field(default=5, ge=1, le=10)
+    # tau: beide Richtungen folgern mindestens so sicher. kappa: keine Richtung
+    # widerspricht mit dieser Wahrscheinlichkeit oder mehr.
+    nli_folgerung_ab: float = Field(default=0.95, ge=0.0, le=1.0)
+    nli_widerspruch_unter: float = Field(default=0.05, ge=0.0, le=1.0)
+    # Bestaetiger: Ein Kandidat wird auch dann dieselbe Aussage, wenn das zweite Modell
+    # (NLI_BESTAETIGER_MODELL) mit tau und kappa dieselbe Behauptung sieht und das erste
+    # nicht widerspricht (kappa) und beidseitig mindestens nli_bestaetiger_veto_ab
+    # folgert (regel.bestaetigt). Gerechnet wird nur in diesem Band. Aus, solange die
+    # Ziel-VM die rund 2,2 GB zusaetzlich nicht nachweislich hat; wirkt nur, wenn die
+    # NLI-Stufe nicht aus ist. Gemessen in tests/regression/MESSSET.md und SUCHTESTSET.md.
+    nli_bestaetiger: bool = False
+    nli_bestaetiger_veto_ab: float = Field(default=0.1, ge=0.0, le=1.0)
+    # CPU-Threads: wie die Einbettung (embedding_threads); torch.set_num_threads gilt
+    # prozessweit, ein eigener Wert fuer das NLI-Modell braeche die Einbettung.
     # Kommentar-Dublette: passage/passage-Einbettung, >= Schwelle.
     # Modell: intfloat/multilingual-e5-base. Umformulierungen hoechstens 0,972,
     # trivial abweichende Kopien und Kopien mit angehaengter Herkunft ab 0,996, andere
@@ -141,6 +177,14 @@ class Settings(BaseSettings):
     # Derselbe Text mit anderer Zahl liegt darueber und gilt als Dublette,
     # Umformulierungen zum Teil darunter. Die Schwelle trennt das nicht; siehe #387.
     generic_text_similarity_threshold: float = 0.975
+    # Vorschlaege im Feld "Antwort auf" (#387, frueher Konstante im Frontend):
+    # Aussagen ab dieser query/query-Aehnlichkeit. Gemessen fuer EMBEDDING_MODELL
+    # (passende Aussagen 0,892-0,940). Widerspricht eine Aussage dem Getippten in einer
+    # Richtung mindestens so wahrscheinlich, schlaegt das Feld sie nicht vor. Der Filter
+    # wirkt schon im Schattenbetrieb (#387: zuerst als Filter der Vorschlaege), nur bei
+    # dieselbe_aussage_nli = aus nicht.
+    aussage_vorschlag_schwelle: float = Field(default=0.885, ge=0.0, le=1.0)
+    aussage_vorschlag_widerspruch_ab: float = Field(default=0.5, ge=0.0, le=1.0)
     default_search_limit: int = 10
     max_reply_suggestions: int = 50
     statement_search_limit: int = 5
@@ -201,16 +245,47 @@ class Settings(BaseSettings):
     def startkonto_kennungen(self) -> frozenset:
         return frozenset(u.strip() for u in self.startkonten.split(",") if u.strip())
 
+    @property
+    def abzeichen_sichtbar(self) -> bool:
+        """
+        Obergrenze beider Schalter: ohne Punkte keine sichtbaren Abzeichen. Ob sie
+        wirken, sagt schalter_wirksam (services/schalter_service.py, #708).
+        """
+        return self.punkte_aktiv and self.abzeichen_sichtbar_aktiv
+
     def ist_startkonto(self, user_id: Optional[str]) -> bool:
         return bool(user_id) and user_id in self.startkonto_kennungen()
 
+    # Seit #708 sind punkte_aktiv, abzeichen_sichtbar_aktiv und gepostet_aktiv nur die
+    # Obergrenze: Wirksam sind sie erst, wenn zusaetzlich ein Admin sie auf der Seite
+    # "Schalter" einschaltet (services/schalter_service.py, schalter_wirksam). Im Code
+    # nicht direkt abfragen.
+    #
     # Punkte (ADR 0004, #352). Standard aus.
     # ANNAHME (#352): Rechtsgrundlage ist die Einwilligung beim ersten Login, die
     # Punkte als Zweck nennt (DSFA zu #374); bis sie steht und die
     # Datenschutzerklaerung den Abschnitt hat (#222), bleibt der Schalter aus. Er
     # schaltet die Punkte (/api/v1/usage/users/me/punkte) und die Muster-Hinweise
     # fuer Admins; Entdoppelung und Startkonten wirken immer.
+    #
+    # Punkte und Meilensteine haengen seit dem Wortlaut 2026-11-13 nicht mehr an der
+    # Art.-9-Einwilligung, sondern an einer eigenen, freiwilligen Einwilligung "Punkte
+    # und Meilensteine" (Entscheidung Maintainer 13.11.2026, gebaut mit #668:
+    # domain/punkte_einwilligung.py, Tabelle punkte_einwilligung). Ohne sie startete
+    # der Dienst mit punkte_aktiv nicht (PUNKTE_EINWILLIGUNG_GEBAUT,
+    # punkte_schalter_pruefen, main.py).
     punkte_aktiv: bool = False
+    # Meilenstein-Abzeichen am Anzeigenamen, die andere Angemeldete sehen (#351).
+    # Standard aus und nur zusammen mit punkte_aktiv: Wie die Punkte haengen sie an
+    # der DSFA (docs/DSFA.md), zusaetzlich an der Zustimmung zur Sichtbarkeit, die
+    # jede Person selbst gibt (domain/abzeichen_sichtbarkeit.py).
+    abzeichen_sichtbar_aktiv: bool = False
+    # Rueckmeldung "Gepostet?" nach dem Kopieren (#643): Angemeldete mit
+    # Art.-9-Einwilligung melden mit einem Klick, dass sie oeffentlich gekontert haben;
+    # gezaehlt wird je Person und Kalenderwoche einmal (services/gepostet_service.py).
+    # Standard aus, unabhaengig von punkte_aktiv: eine eigene Verarbeitung, die erst
+    # mit Satz in DSFA und Datenschutzerklaerung eingeschaltet wird.
+    gepostet_aktiv: bool = False
     # Gewichte und Deckel der drei Stufen (domain/punkte.py): Tun klein und je Tag
     # gedeckelt, Quests mehr, Wirkung bei anderen am meisten.
     punkte_nutzung: int = Field(default=10, ge=0)
@@ -220,6 +295,14 @@ class Settings(BaseSettings):
     punkte_deckel_tun_je_tag: int = Field(default=3, ge=0)
     punkte_quest: int = Field(default=4, ge=0)
     punkte_deckel_quests_je_tag: int = Field(default=8, ge=0)
+
+    # Guete eines Beitrags (#427, domain/guete.py): Stimmen anderer zaehlen erst ab
+    # so vielen verschiedenen Stimmenden (DSFA, Massnahme M5), ihr Gewicht waechst mit
+    # ihrer Zahl bis hoechstens zum Anteil ``guete_stimmen_gewicht_max``; beim
+    # Halbwert ist die Haelfte davon erreicht. Der Rest kommt aus dem Gegenlesen.
+    guete_stimmen_ab: int = Field(default=3, ge=1)
+    guete_stimmen_gewicht_max: float = Field(default=0.6, ge=0, le=1)
+    guete_stimmen_halbwert: int = Field(default=5, ge=1)
 
     # Rate-Limit am Zaehl-Endpunkt (POST /usage/content/{id}/usage, #352): so viele
     # Kopien je Person (Besucher: je Adresse) im Fenster. Die Entdoppelung schuetzt
@@ -236,9 +319,10 @@ class Settings(BaseSettings):
     # pseudonym space and inflates the DAU count for that day.
     actor_hash_secret: Optional[str] = None
 
-    # Der taegliche Bereinigungsjob (services/cleanup/bereinigungsjob.py) mit den
-    # Fristen der Nutzungs- und der Suchereignisse und dem Mischen abgeschlossener
-    # Tage; ein Schalter fuer alles. Der fruehere Name ENABLE_USAGE_CLEANUP gilt
+    # Der taegliche Bereinigungsjob (services/cleanup/bereinigungsjob.py) mit der
+    # Frist der Nutzungsereignisse. Suchereignisse verdichtet er nicht mehr: Das
+    # geschieht am Tagesende ohne Schalter (services/loeschfristen_service.py, #495).
+    # Der fruehere Name ENABLE_USAGE_CLEANUP gilt
     # weiter, damit ein abgeschalteter Job nach dem Umbenennen nicht still wieder
     # loescht; der neue Name geht vor.
     enable_bereinigungsjob: bool = Field(
@@ -249,14 +333,6 @@ class Settings(BaseSettings):
         ),
     )
     usage_retention_days: int = 90
-    # Frist der Suchereignisse (#289). Aeltere Tage verdichtet der Bereinigungsjob
-    # zu Tageszaehlern ohne Pseudonym. 90 wie bei den Nutzungsereignissen: deckt die
-    # laengste Auswertung ueber Einzelzeilen (searches-per-user, hoechstens 90 Tage).
-    # Darum auch die Untergrenze: Kuerzer zaehlte searches-per-user still zu wenig,
-    # und ein negativer Wert verdichtete den laufenden Tag (Personen doppelt).
-    # Laeuft im selben Job: enable_bereinigungsjob=false schaltet auch diese Frist ab,
-    # ebenso das Mischen abgeschlossener Tage (#337).
-    search_event_retention_days: int = Field(default=90, ge=90)
     cleanup_hour: int = 2  # 2 AM
     cleanup_minute: int = 0
 
@@ -264,6 +340,16 @@ class Settings(BaseSettings):
     enable_polarity_filtering: bool = (
         True  # Enable negation detection and polarity filtering
     )
+    # Polaritaetsstrafe der Suche mit dem NLI-Modell statt der Wortlisten (#574,
+    # services/search/polaritaet_nli.py). aus: Wortlisten. schatten: Wortlisten
+    # entscheiden, das Modell urteilt im Hintergrund mit und wird gezaehlt. an: Das Modell
+    # straft Aussagen, die der Suchanfrage in beiden Richtungen mit mindestens
+    # suche_polaritaet_widerspruch_ab widersprechen, und laesst ihre Antworten auch
+    # direkt nicht zu; Fragen, Schlagwoerter und ohne Modell: die Wortlisten.
+    # Dasselbe Modell wie die NLI-Stufe (NLI_MODELL), kein zweites im Speicher.
+    # Gemessen in tests/regression/SUCHTESTSET.md (Abschnitt Polaritaet mit NLI).
+    suche_polaritaet_nli: NliModus = "schatten"
+    suche_polaritaet_widerspruch_ab: float = Field(default=0.9, ge=0.0, le=1.0)
 
     # Keyword overlap boosting configuration
     enable_keyword_overlap_boost: bool = (
@@ -338,3 +424,24 @@ class Settings(BaseSettings):
 
 # Create global settings instance
 settings = Settings()
+
+
+# Die eigene, freiwillige Einwilligung "Punkte und Meilensteine" ist gebaut (#668:
+# domain/punkte_einwilligung.py, repositories/punkte_einwilligung_repository.py,
+# GET/PUT /api/v1/usage/users/me/punkte-einwilligung). Bleibt als Sicherung stehen:
+# Auf False verhindert punkte_schalter_pruefen, dass jemand punkte_aktiv einschaltet
+# (Review zu #670).
+PUNKTE_EINWILLIGUNG_GEBAUT = True
+
+
+def punkte_schalter_pruefen(einstellungen: "Settings") -> None:
+    """
+    Beim Start: Punkte nur mit eigener Einwilligung (#668); sonst startet der Dienst nicht.
+    Prueft nur die Obergrenze aus der Umgebung, nicht den Admin-Wert (#708).
+    """
+    if einstellungen.punkte_aktiv and not PUNKTE_EINWILLIGUNG_GEBAUT:
+        raise RuntimeError(
+            "SEMANTIC_SEARCH_PUNKTE_AKTIV ist an, aber die eigene Einwilligung "
+            "'Punkte und Meilensteine' (#668) ist noch nicht gebaut. Erst nach dem "
+            "Merge von #668 einschalten."
+        )

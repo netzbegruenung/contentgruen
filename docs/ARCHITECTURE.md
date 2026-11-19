@@ -22,16 +22,17 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 - **Purpose**: Integration testing and demos
 - **Access**: https://gutgesagt-test.netzbegruenung.de
 - **Infrastructure**: Docker containers on verdigado's internal infrastructure
-- **Authentication**: Whatever the BFF configuration enables (`GET /api/auth/modes`): Keycloak and/or
-  Direktanmeldung; the accounts are not part of this repository. The login selection shows the
-  Beta-Zugang card only while the Direktanmeldung is enabled
+- **Authentication**: Whatever the BFF configuration enables (`GET /api/auth/modes`): the own Keycloak
+  realm „Gut gesagt“ and/or the Direktanmeldung; the accounts are not part of this repository. The
+  login selection shows only the enabled ways (#600)
 - **Management**: Rolled out manually on verdigado's internal infrastructure; details are documented internally
 
 ### 4. Production Environment
 - **Purpose**: Live system for Netzbegrünung members
 - **Access**: https://gutgesagt.netzbegruenung.de (contentgruen.de redirects here)
 - **Infrastructure**: Docker containers on verdigado's internal infrastructure
-- **Authentication**: Keycloak SSO integration
+- **Authentication**: Own Keycloak realm „Gut gesagt“, Netzbegrünung as identity provider
+  (`docs/KEYCLOAK_REALM.md`)
 - **Management**: Rolled out on verdigado's internal infrastructure; details are documented internally
 
 ## Service Architecture
@@ -112,7 +113,7 @@ listens on 5432 inside the container.
 
 ### PostgreSQL
 - **Purpose**: Application data — votes, usage tracking, search tracking, moderation reports,
-  Sperren with Sperrgrund and Widerspruch (`sperren`), and per person the usage last shown in the Rückmeldung (`gesehene_nutzung`); for the entdoppelte Nutzung the check values of the current day (`nutzung_heute`, HMAC only), the pair check values of the last seven days (`muster_pruefwerte`, HMAC only) and the Muster-Hinweise for admins (`muster_hinweise`, #352).
+  Sperren with Sperrgrund and Widerspruch (`sperren`), and per person the usage last shown in the Rückmeldung (`gesehene_nutzung`); for the entdoppelte Nutzung the check values of the current day (`nutzung_heute`, HMAC only), the pair check values of the last seven days (`muster_pruefwerte`, HMAC only) and the Muster-Hinweise for admins (`muster_hinweise`, #352); for „Ja, gepostet“ after copying the check values of the current calendar week (`gepostet_pruefwerte`, HMAC only) and one number per past week (`gepostet_wochen`, #643, switch `SEMANTIC_SEARCH_GEPOSTET_AKTIV`, default off).
   Content and its vector embeddings live in Qdrant, not in PostgreSQL.
 - **Image**: `postgres:16-alpine` (service `postgres-app`, container `gutgesagt-app-postgres`)
 - **Access**:
@@ -258,6 +259,29 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - `SEMANTIC_SEARCH_DATA_PATH` - Seed data path
 - `SEMANTIC_SEARCH_METADATA_PATH` - Persistent metadata storage path
 - `SEMANTIC_SEARCH_LOG_LEVEL` - DEBUG/INFO
+- `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI` - NLI-Stufe (#387): `aus`, `schatten` (default: for the
+  same-Aussage check the similarity threshold decides and the NLI model only counts along) or
+  `an` (the NLI model decides whether a new text is the same Aussage). In `schatten` and `an`
+  the model also drops contradicting Aussagen from the "Antwort auf" suggestions; ~1.2 GB extra
+  RAM, threads as `SEMANTIC_SEARCH_EMBEDDING_THREADS`. Thresholds `SEMANTIC_SEARCH_NLI_*` and
+  `SEMANTIC_SEARCH_AUSSAGE_VORSCHLAG_*`, measured in `tests/regression/MESSSET.md`.
+- `SEMANTIC_SEARCH_NLI_BESTAETIGER` - Bestätiger, a second NLI model for the same-Aussage check
+  (`true`/`false`, default `false`; no effect with the NLI-Stufe `aus`). It only judges
+  candidates the first model barely misses without contradicting, and the first model keeps a
+  veto (`SEMANTIC_SEARCH_NLI_BESTAETIGER_VETO_AB`, default 0.1). Up to ~2.2 GB extra RAM.
+  Both models together wait at most the same 3 s for their locks as the first model alone;
+  each computes with `SEMANTIC_SEARCH_EMBEDDING_THREADS`, so two searches can use both models
+  at once. The Bestätiger is preloaded after the first model, not in parallel.
+  Measured in `tests/regression/MESSSET.md` and `SUCHTESTSET.md` (Zerfaserung).
+- `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI` - polarity penalty of the search (#574): `aus` (word
+  lists in `utils/negation_detector.py`), `schatten` (default: word lists decide, the NLI model
+  judges in the background, only counters in the log) or `an` (the first NLI model decides: an
+  Aussage that contradicts the query in both directions with at least
+  `SEMANTIC_SEARCH_SUCHE_POLARITAET_WIDERSPRUCH_AB`, default 0.9, is penalised and its answers
+  do not come back via the direct path). Questions, keyword queries (under three words) and an
+  unavailable or busy model (2 s) fall back to the word lists. Same model object as the
+  NLI-Stufe, so no extra RAM while the NLI-Stufe is not `aus` (otherwise this switch loads the
+  model itself); measured in `tests/regression/SUCHTESTSET.md`.
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts

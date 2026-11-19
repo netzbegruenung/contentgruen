@@ -110,7 +110,7 @@ describe('BeitragskarteComponent', () => {
         { provide: MatSnackBar, useValue: snackBar },
         { provide: AuthService, useValue: authServiceSpy },
         { provide: Clipboard, useValue: jasmine.createSpyObj('Clipboard', ['copy']) },
-        { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']) },
+        { provide: UsageTrackingService, useValue: jasmine.createSpyObj('UsageTrackingService', { trackContentUsage: undefined, gepostetBekannt: false }) },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['error', 'debug', 'info', 'warn']) },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
         provideRouter([]),
@@ -186,6 +186,18 @@ describe('BeitragskarteComponent', () => {
       expect(element('.kopieren-knopf').textContent).toContain('Bildunterschrift kopieren');
     });
 
+    it('nimmt in der Vorschau keinen Platzhalter als Alternativtext (#619)', () => {
+      zeigen(
+        ausSuchergebnis(
+          paket('image_result', { content_type: 'image', image_url: '/assets/dach.jpg', text: 'Bildunterschrift eingeben...' }),
+        ),
+        { vorschau: true },
+      );
+
+      // Eigenes Bild: laedt ohne Klick; neben dem Formular ist es Schmuck, die Angaben stehen daneben.
+      expect(element<HTMLImageElement>('.karte-bild img').alt).toBe('');
+    });
+
     it('zeigt den Anzeigenamen und ohne Namen "Mitglied" - nie die Kennung', () => {
       const daten = ausSuchergebnis(paket('commentary_result'));
       zeigen(daten);
@@ -222,7 +234,7 @@ describe('BeitragskarteComponent', () => {
 
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
 
@@ -265,9 +277,34 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-meta')).toBeTruthy();
     });
 
-    it('zeigt ohne Herkunft einen Hinweis und sonst die Adressen', () => {
+    it('zeigt das Meilenstein-Abzeichen am Namen, wenn der Server es liefert (#351)', () => {
+      const daten = ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim G.', autor_abzeichen: 3 }));
+      zeigen(daten);
+
+      const abzeichen = element('.autor-abzeichen');
+      expect(abzeichen.textContent).toContain('3');
+      expect(abzeichen.getAttribute('title')).toBe('3 Meilensteine erreicht');
+      expect(element('.karte-meta').textContent).toContain('Von: Kim G.');
+    });
+
+    it('zeigt ohne Abzeichen vom Server keins (#351)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim G.' })));
+
+      expect(fixture.nativeElement.querySelector('.autor-abzeichen')).toBeNull();
+    });
+
+    it('zeigt ohne Anmeldung kein Abzeichen, auch wenn eins mitkaeme (#351)', () => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      zeigen(ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim G.', autor_abzeichen: 3 })));
+
+      expect(fixture.nativeElement.querySelector('.autor-abzeichen')).toBeNull();
+    });
+
+    it('zeigt ohne Herkunft keine Zeile und sonst die Adressen (#599)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result')));
-      expect(element('.quellen-leer').textContent).toContain('Keine Herkunft hinterlegt');
+      expect(element('.karte-quellen')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Keine Herkunft');
 
       zeigen(
         ausSuchergebnis(
@@ -278,47 +315,159 @@ describe('BeitragskarteComponent', () => {
       );
       expect(element<HTMLAnchorElement>('.quelle-link').getAttribute('href')).toBe('https://example.org/studie');
     });
-  });
 
-  describe('Kopieren mit Herkunft', () => {
-    it('gibt der Leiste ohne Herkunft keinen Text mit Herkunft', () => {
-      zeigen(ausSuchergebnis(paket('commentary_result')));
-
-      expect(aktionen().kopierTextMitHerkunft).toBe('');
-      expect(element('.kopier-wahl-knopf')).toBeNull();
-    });
-
-    it('haengt die Herkunft an die angezeigte Fassung an', () => {
+    it('zeigt die Herkunft als Domain, die volle Adresse im Tooltip (#640, R47)', () => {
+      const url = 'https://www.lfu.bayern.de/natur/vogelschutzwarte/vogelschlag/index.htm';
       zeigen(
         ausSuchergebnis(
           paket('commentary_result', {
-            short_text: 'Kurzfassung',
-            references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }],
+            references: [{ reference_id: 'r-1', created: '', reference_text: url }],
           }),
         ),
       );
+
+      const link = element<HTMLAnchorElement>('.quelle-link');
+      expect(link.textContent!.trim()).toBe('lfu.bayern.de');
+      expect(link.getAttribute('href')).toBe(url);
+      expect(element('.quelle').textContent).toContain('Herkunft:');
+      expect(component.quellenTooltip(component.daten.quellen[0])).toContain(url);
+      expect(fixture.nativeElement.textContent).not.toContain('vogelschlag');
+    });
+  });
+
+  describe('Titel als Link (#640, R48)', () => {
+    function titelLink(): HTMLAnchorElement | null {
+      return element<HTMLAnchorElement>('.karte-titel a.titel-link');
+    }
+
+    it('verlinkt den Titel auf die Beitragsseite', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      expect(titelLink()!.getAttribute('href')).toBe('/beitrag/test-id');
+      expect(titelLink()!.textContent!.trim()).toBe('Test Title');
+    });
+
+    it('verlinkt nicht auf der Beitragsseite selbst und nicht in der Vorschau', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { ansichtVerlinkt: false });
+      expect(titelLink()).toBeNull();
+      expect(element('.karte-titel').textContent!.trim()).toBe('Test Title');
+
+      zeigen(ausSuchergebnis(paket('commentary_result')), { vorschau: true });
+      expect(titelLink()).toBeNull();
+    });
+
+    it('verlinkt kompakte Karten nicht, die sind als Ganzes antippbar', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { variante: 'kompakt' });
+
+      expect(element('a.titel-link')).toBeNull();
+    });
+  });
+
+  describe('Lücke in der Vorlage (#640, R38)', () => {
+    const MIT_LUECKE = 'Vögel und Klima. [Hier ein eigenes Erlebnis: Windpark in deiner Gegend] Deshalb ja.';
+
+    it('hebt den Platzhalter als Feld hervor', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: MIT_LUECKE })));
+
+      const luecken = fixture.nativeElement.querySelectorAll('.karte-text mark.vorlagen-luecke');
+      expect(luecken.length).toBe(1);
+      expect(luecken[0].textContent).toContain('[Hier ein eigenes Erlebnis: Windpark in deiner Gegend]');
+      expect(element('.karte-text').textContent).toContain('Vögel und Klima. ');
+      expect(element('.karte-text').textContent).toContain(' Deshalb ja.');
+    });
+
+    it('fragt beim Kopieren erst im Dialog nach dem eigenen Satz (Persona-Test Dennis)', () => {
+      const dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
+      dialog.open.and.returnValue({ afterClosed: () => of(undefined) } as any);
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: MIT_LUECKE })));
+
+      element<HTMLButtonElement>('.kopieren-knopf').click();
+
+      expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ text: MIT_LUECKE });
+      expect(TestBed.inject(Clipboard).copy).not.toHaveBeenCalled();
+    });
+
+    it('oeffnet beim Antippen des Platzhalters den Dialog (P19)', () => {
+      const dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
+      dialog.open.and.returnValue({ afterClosed: () => of(undefined) } as any);
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: MIT_LUECKE })));
+
+      element<HTMLElement>('.karte-text mark.vorlagen-luecke').click();
+
+      expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ text: MIT_LUECKE });
+    });
+
+    it('markiert ohne Platzhalter nichts', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: 'Siehe [1] und [sic].' })));
+
+      expect(element('.vorlagen-luecke')).toBeNull();
+      expect(element('.karte-text').textContent).toBe('Siehe [1] und [sic].');
+    });
+  });
+
+  describe('Kopieren mit Herkunft (#641)', () => {
+    const MIT_HERKUNFT = { references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }] };
+
+    it('hat ohne Herkunft nur den Knopf, keine zweite Variante', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      expect(aktionen().kopierText).toBe('Test text');
+      expect(aktionen().zweiteKopie).toBeNull();
+      expect(aktionen().kopierHinweis).toBe('Kopiert den Text');
+    });
+
+    it('kopiert am Kommentar den Text der angezeigten Fassung, mit Herkunft steht im Menue', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', ...MIT_HERKUNFT })));
       component.fassungWaehlen('kurz');
       fixture.detectChanges();
 
       expect(aktionen().kopierText).toBe('Kurzfassung');
-      expect(aktionen().kopierTextMitHerkunft).toBe('Kurzfassung\n\nHerkunft: https://example.org/studie');
-      expect(element('.kopier-wahl-knopf')).not.toBeNull();
+      expect(aktionen().zweiteKopie).toEqual({
+        text: 'Kurzfassung\n\nHerkunft: https://example.org/studie',
+        wort: 'Mit Herkunft kopieren',
+      });
+      expect(aktionen().kopierHinweis).toBe('Kopiert den Text');
     });
 
-    it('zaehlt auch Text + Herkunft als Nutzung an der Karte', fakeAsync(() => {
-      zeigen(
-        ausSuchergebnis(
-          paket('commentary_result', {
-            usage_count: 2,
-            references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }],
-          }),
-        ),
-      );
+    it('kopiert an der Hintergrundinfo Text samt Herkunft, nur Text steht im Menue', () => {
+      zeigen(ausSuchergebnis(paket('generictext_result', { content_type: 'generictext', ...MIT_HERKUNFT })));
 
-      aktionen().kopierenMitHerkunft();
+      expect(aktionen().kopierText).toBe('Test text\n\nHerkunft: https://example.org/studie');
+      expect(aktionen().zweiteKopie).toEqual({ text: 'Test text', wort: 'Nur Text kopieren' });
+      expect(aktionen().kopierHinweis).toBe('Kopiert Text und Herkunft');
+    });
+
+    it('kopiert an der Hintergrundinfo ohne Herkunft nur den Text', () => {
+      zeigen(ausSuchergebnis(paket('generictext_result', { content_type: 'generictext' })));
+
+      expect(aktionen().kopierText).toBe('Test text');
+      expect(aktionen().zweiteKopie).toBeNull();
+    });
+
+    it('bietet am Post den Link als zweite Variante an', () => {
+      zeigen(ausSuchergebnis(postPaket()));
+
+      expect(aktionen().kopierText).toBe('Erneuerbare Energien konsequent ausbauen');
+      expect(aktionen().zweiteKopie).toEqual({
+        text: 'Erneuerbare Energien konsequent ausbauen\n\nHerkunft: https://social.example/posts/1',
+        wort: 'Mit Herkunft kopieren',
+      });
+    });
+
+    it('sagt am Bild, dass der Knopf die Bildunterschrift kopiert', () => {
+      zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', image_url: 'https://example.org/dach.jpg', text: 'Solardach' })));
+
+      expect(aktionen().kopierHinweis).toBe('Kopiert die Bildunterschrift');
+      expect(aktionen().zweiteKopie).toBeNull();
+    });
+
+    it('zaehlt auch die zweite Variante als Nutzung an der Karte', fakeAsync(() => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 2, ...MIT_HERKUNFT })));
+
+      aktionen().zweiteKopieren();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('3× genutzt');
       tick(600);
     }));
   });
@@ -327,7 +476,7 @@ describe('BeitragskarteComponent', () => {
     it('zeigt den Stil und markiert Beitraege fuer die eigenen Leute', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'persoenlich' })));
 
-      expect(element('.karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.karte-eigene-leute')?.textContent).toContain('Für Gleichgesinnte');
       expect(element('.karte-stil')?.textContent).toContain('persönlich');
     });
 
@@ -343,7 +492,19 @@ describe('BeitragskarteComponent', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
 
       expect(element('.karte-eigene-leute')).toBeNull();
-      expect(element('.karte-stil')?.textContent).toContain('brückenbauend');
+      expect(element('.karte-stil')?.textContent).toContain('freundlich');
+    });
+
+    it('zeigt den Stil als Chip, der beim Antippen erklaert, was er bewirkt (#641)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
+      const chip = element<HTMLButtonElement>('button.karte-stil');
+
+      expect(chip.getAttribute('aria-label')).toBe('Stil: freundlich, Erklärung öffnen');
+      expect(getComputedStyle(chip).fontStyle).toBe('normal');
+      chip.click();
+      fixture.detectChanges();
+
+      expect(document.querySelector('.stil-erklaerung')?.textContent!.trim()).toBe('freundlich: holt Unentschiedene ab, ohne sie vorzuführen');
     });
 
     it('zeigt Markierung und Stil auch in der kompakten Karte (Meine Beitraege)', () => {
@@ -351,20 +512,36 @@ describe('BeitragskarteComponent', () => {
         variante: 'kompakt',
       });
 
-      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für Gleichgesinnte');
       expect(element('.album-inhalt .karte-stil')?.textContent).toContain('humorvoll');
+      // Die kompakte Karte ist als Ganzes antippbar: dort kein eigener Knopf, die Erklaerung als title
+      expect(element('.album-inhalt button.karte-stil')).toBeNull();
+      expect(element('.album-inhalt .karte-stil').getAttribute('title')).toBe('humorvoll: nimmt mit einem Augenzwinkern die Schärfe raus');
     });
 
     describe('Markierung fuer die eigenen Leute (Variante D, Tanne)', () => {
-      const TANNE = 'rgb(0, 84, 55)'; // var(--primary-dark), #005437
+      const TANNE = 'rgb(0, 84, 55)'; // var(--akzent-schrift), #005437
       const WEISS = 'rgb(255, 255, 255)';
 
       function eigeneLeute(variante: KartenVariante = 'voll'): void {
         zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute' })), { variante });
       }
 
-      it('setzt das Etikett weiss auf Tanne', () => {
+      // Designrunde 17.11., Variante A: In der vollen Karte eine kleine Zeile in Tanne ueber dem Titel
+      it('steht in der vollen Karte als kleine Zeile in Tanne, ohne Fuellung', () => {
         eigeneLeute();
+        const zeile = getComputedStyle(element('.karte-kopf .karte-angaben'));
+        const etikett = getComputedStyle(element('.karte-kopf .karte-eigene-leute'));
+
+        expect(zeile.color).toBe(TANNE);
+        expect(zeile.fontSize).toBe('11px');
+        expect(zeile.textTransform).toBe('uppercase');
+        expect(etikett.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+        expect(etikett.color).toBe(TANNE);
+      });
+
+      it('setzt das Etikett in der kompakten Karte weiss auf Tanne', () => {
+        eigeneLeute('kompakt');
         const etikett = getComputedStyle(element('.karte-eigene-leute'));
         const icon = getComputedStyle(element('.karte-eigene-leute .angabe-icon'));
 
@@ -393,16 +570,15 @@ describe('BeitragskarteComponent', () => {
         expect(element('.karte').classList).toContain('karte--eigene-leute');
       });
 
-      it('weist ueber dem Kopieren-Knopf darauf hin', () => {
+      // Designrunde 17.11.: Die Zeile ueber dem Titel sagt es schon, keine zweite Zeile im Fuss
+      it('steht als kleine Zeile ueber dem Titel, ohne doppelten Hinweis im Fuss', () => {
         eigeneLeute();
-        const hinweis = element('.karte-fuss .eigene-leute-hinweis');
+        const block = element('.titel-block');
 
-        expect(hinweis?.textContent?.trim()).toBe('Für die eigenen Leute – nicht für Kommentarspalten');
-        expect(hinweis.nextElementSibling?.tagName.toLowerCase()).toBe('app-karten-aktionen');
-        const stil = getComputedStyle(hinweis);
-        expect(stil.fontSize).toBe('12px');
-        expect(stil.textAlign).toBe('center');
-        expect(stil.color).toBe(TANNE);
+        expect(block.firstElementChild?.classList).toContain('karte-angaben');
+        expect(block.querySelector('.karte-angaben + .karte-titel')).not.toBeNull();
+        expect(element('.karte-inhalt .karte-angaben')).toBeNull();
+        expect(element('.karte-fuss')?.textContent).not.toContain('nicht für Kommentarspalten');
       });
 
       it('laesst Kommentare fuer die Kommentarspalte ohne Rand und ohne Hinweis', () => {
@@ -410,7 +586,7 @@ describe('BeitragskarteComponent', () => {
 
         expect(element('.karte').classList).not.toContain('karte--eigene-leute');
         expect(getComputedStyle(element('.karte')).borderLeftWidth).toBe('0px');
-        expect(element('.eigene-leute-hinweis')).toBeNull();
+        expect(element('.karte-eigene-leute')).toBeNull();
       });
     });
   });
@@ -423,6 +599,8 @@ describe('BeitragskarteComponent', () => {
     it('meldet beim Kopieren die angezeigte Fassung', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
 
+      component.fassungWaehlen('mittel');
+      fixture.detectChanges();
       aktionen().kopieren();
       component.fassungWaehlen('kurz');
       fixture.detectChanges();
@@ -536,13 +714,20 @@ describe('BeitragskarteComponent', () => {
       expect(element('.badge-beliebt')).toBeNull();
     });
 
+    it('zeigt Nutzung und Kopieren lesbar gross statt 11/12 px (Nutzerfuehrung 13.11.)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 2 })));
+
+      expect(parseFloat(getComputedStyle(element('.karte-nutzung')).fontSize)).toBeGreaterThanOrEqual(14);
+      expect(parseFloat(getComputedStyle(element('.kopieren-knopf')).fontSize)).toBeGreaterThanOrEqual(15);
+    });
+
     it('zaehlt die Nutzung nach dem Kopieren hoch', fakeAsync(() => {
       zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 2 })));
 
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('3× genutzt');
       tick(600);
     }));
 
@@ -560,7 +745,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
 
@@ -571,7 +756,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('2× genutzt');
       tick(600);
     }));
   });
@@ -637,7 +822,59 @@ describe('BeitragskarteComponent', () => {
   });
 
   describe('Statement', () => {
-    it('zeigt die Aussage zugeklappt und klappt sie im Fluss auf', () => {
+    function alsAdmin(): void {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user', isAdmin: true } as UserInfo);
+    }
+
+    it('zeigt Nutzer:innen die Aussage ganz, ohne Aufklapper und ohne Prozentwerte (#640, R39)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', {}, { statement_similarity_score: 1.13 })));
+
+      const zeile = element('.statement-zeile');
+      expect(zeile.classList).toContain('statement-zeile--fest');
+      expect(zeile.getAttribute('role')).toBeNull();
+      expect(zeile.getAttribute('aria-expanded')).toBeNull();
+      expect(element('.statement-pfeil')).toBeNull();
+      expect(element('.statement-vorschau').textContent).toContain('Test statement');
+      expect(getComputedStyle(element('.statement-vorschau')).whiteSpace).toBe('normal');
+
+      zeile.click();
+      fixture.detectChanges();
+      expect(element('.statement-details')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('%');
+    });
+
+    it('blendet die Zeile "Antwort auf" auf Wunsch aus, Admins behalten den Aufklapper mit den Werten', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { antwortAufZeigen: false });
+      expect(element('.statement')).toBeNull();
+
+      alsAdmin();
+      zeigen(ausSuchergebnis(paket('commentary_result')), { antwortAufZeigen: false });
+      element('.statement-zeile').click();
+      fixture.detectChanges();
+      expect(element('.statement-details').textContent).toContain('Suchübereinstimmung: 90%');
+    });
+
+    it('setzt den Titel als h3, auf Wunsch als h4', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+      expect(element('.karte-titel').tagName).toBe('H3');
+
+      zeigen(ausSuchergebnis(paket('commentary_result')), { titelEbene: 4 });
+      expect(element('.karte-titel').tagName).toBe('H4');
+      expect(element('.karte-titel a.titel-link')).toBeTruthy();
+    });
+
+    it('zeigt die Aussage ohne Anmeldung ebenso ohne Werte', () => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      expect(element('.statement-zeile--fest')).not.toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Suchübereinstimmung');
+    });
+
+    it('zeigt Admins die Aussage zugeklappt und klappt sie mit den Werten im Fluss auf', () => {
+      alsAdmin();
       zeigen(ausSuchergebnis(paket('commentary_result')));
       expect(element('.statement-vorschau').textContent).toContain('Test statement');
       expect(element('.statement-details')).toBeNull();
@@ -652,6 +889,30 @@ describe('BeitragskarteComponent', () => {
       expect(element('.statement-zeile').getAttribute('aria-expanded')).toBe('true');
     });
 
+    it('zeigt die Aussage als Kontextzeile vor Titel und Text (#599)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+      const statement = element('.statement');
+      const kopf = element('.karte-kopf');
+      expect(statement.compareDocumentPosition(kopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('zeigt "0× genutzt" nicht, erst ab 1 (#640, R44)', fakeAsync(() => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 0 })));
+      expect(element('.karte-nutzung')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('genutzt');
+
+      element<HTMLButtonElement>('.kopieren-knopf').click();
+      fixture.detectChanges();
+      expect(element('.karte-nutzung').textContent!.trim()).toBe('1× genutzt');
+      tick(600);
+    }));
+
+    it('zeigt die Nutzung beschriftet in der Meta-Zeile statt als Kreis im Kopf (#599)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 1 })));
+      expect(element('.karte-kopf .badge-nutzung')).toBeNull();
+      expect(element('.karte-meta').textContent).toContain('1× genutzt');
+    });
+
     it('zeigt ohne Aussage keinen Aufklapper', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', {}, { statement_text: '' })));
 
@@ -662,30 +923,110 @@ describe('BeitragskarteComponent', () => {
   describe('Text', () => {
     it('wechselt zwischen Kurz, Standard und Lang und kopiert die angezeigte Fassung', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
-      expect(element('.karte-text').textContent!.trim()).toBe('Test text');
+      expect(element('.karte-text').textContent!.trim()).toBe('Kurzfassung');
 
-      component.fassungWaehlen('kurz');
+      component.fassungWaehlen('lang');
       fixture.detectChanges();
 
-      expect(element('.karte-text').textContent!.trim()).toBe('Kurzfassung');
-      expect(aktionen().kopierText).toBe('Kurzfassung');
+      expect(element('.karte-text').textContent!.trim()).toBe('Langfassung');
+      expect(aktionen().kopierText).toBe('Langfassung');
     });
 
-    it('beschriftet den Umschalter mit Kurz, Mittel und Lang', () => {
+    it('beschriftet die Reiter mit Fassung und Zeichenzahl (#641)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+      const knoepfe = Array.from(fixture.nativeElement.querySelectorAll('.textlaenge mat-button-toggle')) as HTMLElement[];
+
+      expect(knoepfe.map((knopf) => knopf.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+        'Kurz · 11',
+        'Mittel · 9',
+        'Lang · 11',
+      ]);
+      expect(knoepfe[0].querySelector('button')!.getAttribute('aria-label')).toBe('Kurz, 11 Zeichen');
+    });
+
+    it('zeigt nur die vorhandenen Fassungen als Reiter', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { long_text: 'Langfassung' })));
       const beschriftungen = Array.from(fixture.nativeElement.querySelectorAll('.textlaenge mat-button-toggle')).map(
-        (knopf) => (knopf as HTMLElement).textContent!.trim(),
+        (knopf) => (knopf as HTMLElement).textContent!.replace(/\s+/g, ' ').trim(),
       );
 
-      expect(beschriftungen).toEqual(['Kurz', 'Mittel', 'Lang']);
+      expect(beschriftungen).toEqual(['Mittel · 9', 'Lang · 11']);
     });
 
-    it('zeichnet die gewaehlte Fassung wie die Tabs: Tanne-Text auf Tanne-Hauch (#512)', () => {
+    it('waehlt die kuerzeste Fassung vor, die auf X passt (#641)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+      expect(component.angezeigteFassung).toBe('kurz');
+      expect(element('.textlaenge .mat-button-toggle-checked').textContent).toContain('Kurz');
+
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(200), long_text: 'L'.repeat(900) })));
+      expect(component.angezeigteFassung).toBe('mittel');
+
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), long_text: 'L'.repeat(900) })));
+      expect(component.angezeigteFassung).toBe('mittel');
+    });
+
+    it('bleibt in der Formular-Vorschau beim Tippen bei der gewaehlten Fassung', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung' })), { vorschau: true });
+      expect(component.angezeigteFassung).toBe('mittel');
+
+      component.fassungWaehlen('kurz');
+      fixture.componentRef.setInput('daten', ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', text: 'Neuer Text' })));
+      fixture.detectChanges();
+      expect(component.angezeigteFassung).toBe('kurz');
+
+      component.fassungWaehlen('mittel');
+      fixture.componentRef.setInput('daten', ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', text: 'Neuer Text 2' })));
+      fixture.detectChanges();
+      expect(component.angezeigteFassung).toBe('mittel');
+    });
+
+    it('behaelt die Reiter beim Wechsel der Fassung, damit der Fokus bleibt', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+      const vorher = element('.textlaenge mat-button-toggle');
+
+      component.fassungWaehlen('lang');
+      fixture.detectChanges();
+
+      expect(element('.textlaenge mat-button-toggle')).toBe(vorher);
+    });
+
+    it('setzt die Marke "passt auf Mastodon/Bluesky/X" nur, wenn die angezeigte Fassung passt', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), short_text: 'Kurzfassung' })));
+      expect(element('.fassung-marke')?.textContent).toContain('passt auf Mastodon/Bluesky/X');
+
+      component.fassungWaehlen('mittel');
+      fixture.detectChanges();
+      expect(element('.fassung-marke')).toBeNull();
+    });
+
+    // Streifen "Frisch aus der Community" auf der Startseite (16.11.)
+    it('laesst schlank die Marke "passt auf Mastodon/Bluesky/X" und das Alter weg, sonst nichts', () => {
+      const daten = ausSuchergebnis(paket('commentary_result', { text: 'M'.repeat(400), short_text: 'Kurzfassung' }));
+      zeigen(daten);
+      expect(element('.fassung-marke')).toBeTruthy();
+      expect(element('.karte-meta')?.textContent).toMatch(/vor|gerade/);
+
+      zeigen(daten, { schlank: true });
+      expect(element('.fassung-marke')).toBeNull();
+      expect(element('.karte-meta')?.textContent ?? '').not.toMatch(/vor|gerade|·/);
+      expect(element('.textlaenge')).toBeTruthy();
+      expect(element('app-karten-aktionen')).toBeTruthy();
+    });
+
+    it('zeigt schlank und ohne Anmeldung nur die Nutzung, ohne Trenner davor', () => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 1 })), { schlank: true });
+
+      expect(element('.karte-meta').textContent!.trim()).toBe('1× genutzt');
+    });
+
+    it('zeichnet die gewaehlte Fassung wie die Tabs: Tanne-Text auf --primaer-tint (#512)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
       const gewaehlt = element('.textlaenge .mat-button-toggle-checked');
 
       expect(getComputedStyle(gewaehlt).color).toBe('rgb(0, 84, 55)');
-      expect(getComputedStyle(gewaehlt).backgroundColor).toBe('rgba(0, 84, 55, 0.07)');
+      expect(getComputedStyle(gewaehlt).backgroundColor).toBe('rgb(235, 246, 239)');
     });
 
     it('zeigt ohne Kurz- und Langfassung keinen Umschalter', () => {
@@ -722,6 +1063,94 @@ describe('BeitragskarteComponent', () => {
       fixture.detectChanges();
 
       expect(element('.mehr-knopf')).toBeNull();
+    });
+  });
+
+  // Trefferseite, V3 (Designrunde 17.11.)
+  describe('Schlicht und aufklappbar (Trefferseite)', () => {
+    const QUELLE = 'https://www.umweltbundesamt.de/themen/tempolimit';
+    const voll = () =>
+      ausSuchergebnis(
+        paket('commentary_result', {
+          text: 'M'.repeat(200),
+          short_text: 'Kurzfassung',
+          long_text: 'L'.repeat(500),
+          references: [{ reference_id: 'r-1', created: '', reference_text: QUELLE }],
+        }),
+      );
+
+    it('laesst schlicht Zeichenzahl, "passt auf Mastodon/Bluesky/X", 📚, Datum und den Teilen-Knopf weg', () => {
+      zeigen(voll());
+      expect(element('.reiter-zeichen')).toBeTruthy();
+      expect(element('.fassung-marke')).toBeTruthy();
+      expect(element('.quelle-icon')).toBeTruthy();
+      expect(element('.quelle').textContent).toContain('Herkunft:');
+      expect(element('.karte-meta')?.textContent).toMatch(/vor|gerade/);
+      expect(element('.teilen-knopf')).toBeTruthy();
+      expect(element('.karte--schlicht')).toBeNull();
+
+      zeigen(voll(), { schlicht: true });
+      expect(element('.karte--schlicht')).toBeTruthy();
+      expect(element('.reiter-zeichen')).toBeNull();
+      expect(element('.fassung-marke')).toBeNull();
+      expect(element('.quelle-icon')).toBeNull();
+      expect(element('.quelle-wort').textContent!.trim()).toBe('Quelle:');
+      expect(element('.quelle-link').textContent!.trim()).toBe('umweltbundesamt.de');
+      expect(element('.karte-meta')?.textContent ?? '').not.toMatch(/vor|gerade/);
+      expect(element('.teilen-knopf')).withContext('Teilen steht im ⋮-Menue').toBeNull();
+      expect(aktionen().teilenImMenue).toBeTrue();
+      // Bleibt: Reiter (vorgelesen mit Zeichenzahl), Stimmen, Kopieren, Menue.
+      expect(element('.textlaenge')).toBeTruthy();
+      expect(element('mat-button-toggle button').getAttribute('aria-label')).toMatch(/Zeichen/);
+      expect(element('.stimmen')).toBeTruthy();
+      expect(element('.kopieren-knopf')).toBeTruthy();
+      expect(element('.menue-knopf')).toBeTruthy();
+    });
+
+    it('zeigt eingeklappt nur Symbol, Titel und Pfeil im Knopf; die volle Karte erst aufgeklappt', () => {
+      zeigen(voll(), { schlicht: true, aufklappbar: true, titelEbene: 4 });
+      const knopf = element<HTMLButtonElement>('h4.karte-titel button.aufklapp-knopf');
+      expect(knopf).toBeTruthy();
+      expect(knopf.textContent).toContain('Test Title');
+      expect(knopf.getAttribute('aria-expanded')).toBe('false');
+      expect(knopf.getAttribute('aria-controls')).toBe(component.koerperId);
+      expect(element('.karte-icon')).toBeTruthy();
+      expect(element('.karte-inhalt, .karte-fuss, .karte-badges, .karte-angaben, .titel-link')).toBeNull();
+      expect(element(`#${component.koerperId}`).hidden).toBeTrue();
+      expect(element('.karte--zu')).toBeTruthy();
+
+      knopf.click();
+      fixture.detectChanges();
+      expect(knopf.getAttribute('aria-expanded')).toBe('true');
+      expect(element(`#${component.koerperId}`).hidden).toBeFalse();
+      expect(element('.karte-inhalt')).toBeTruthy();
+      expect(element('.kopieren-knopf')).toBeTruthy();
+      expect(element('.karte-badges')).toBeTruthy();
+      expect(element('.karte--zu')).toBeNull();
+
+      knopf.click();
+      fixture.detectChanges();
+      expect(knopf.getAttribute('aria-expanded')).toBe('false');
+      expect(element('.karte-inhalt')).toBeNull();
+    });
+
+    it('klappt per Tastatur auf (ein echter Knopf) und vergibt je Karte eine eigene Koerper-ID', () => {
+      zeigen(voll(), { aufklappbar: true });
+      const ersteId = component.koerperId;
+      const knopf = element<HTMLButtonElement>('.aufklapp-knopf');
+      knopf.focus();
+      expect(document.activeElement).toBe(knopf);
+      expect(knopf.getAttribute('type')).toBe('button');
+
+      zeigen(voll(), { aufklappbar: true });
+      expect(component.koerperId).not.toBe(ersteId);
+    });
+
+    it('ist ohne aufklappbar nie eingeklappt und hat keinen Aufklapp-Knopf', () => {
+      zeigen(voll(), { schlicht: true });
+      expect(element('.aufklapp-knopf')).toBeNull();
+      expect(element('.titel-link')).toBeTruthy();
+      expect(element('.karte-inhalt')).toBeTruthy();
     });
   });
 
@@ -800,7 +1229,8 @@ describe('BeitragskarteComponent', () => {
       expect(getComputedStyle(element('.album-anriss')).webkitLineClamp).toBe('2');
       expect(getComputedStyle(element('.album-anriss')).fontSize).toBe('13px');
       expect(element('.album-fuss .karte-datum').textContent!.trim()).toBe('13.09.2026');
-      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7×');
+      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7× genutzt');
+      expect(getComputedStyle(element('.album-fuss .badge-nutzung')).fontSize).toBe('15px');
       expect(element('.badge-nutzung').classList).not.toContain('ungenutzt');
       expect(element('.statement')).toBeNull();
       expect(element('.karte-text')).toBeNull();
@@ -881,27 +1311,27 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-bild app-fremdes-bild')).not.toBeNull();
     });
 
-    it('zeigt ohne oder mit unbekannter Nutzung eine dezente 0', () => {
+    it('zeigt ohne oder mit unbekannter Nutzung dezent "Noch nicht genutzt"', () => {
       const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 0 }));
 
       zeigen(daten, { variante: 'kompakt' });
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('0×');
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('Noch nicht genutzt');
       expect(element('.badge-nutzung').classList).toContain('ungenutzt');
 
       zeigen({ ...daten, nutzung: null }, { variante: 'kompakt' });
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('0×');
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('Noch nicht genutzt');
       expect(element('.badge-nutzung').classList).toContain('ungenutzt');
     });
 
-    it('zeigt im Fuss den Zuwachs der letzten 7 Tage neben der Nutzung', () => {
+    it('zeigt im Fuss den Zuwachs der letzten 7 Tage ausgeschrieben unter der Nutzung', () => {
       const daten = { ...ausSuchergebnis(paket('commentary_result', { usage_count: 7 })), nutzungLetzte7Tage: 2 };
 
       zeigen(daten, { variante: 'kompakt' });
       const zuwachs = element('.album-fuss .nutzung-zuwachs');
 
-      expect(zuwachs.textContent!.trim()).toBe('+2');
-      expect(zuwachs.getAttribute('aria-label')).toBe('2 davon in den letzten 7 Tagen');
-      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7×');
+      expect(zuwachs.textContent!.trim()).toBe('+2 diese Woche');
+      expect(getComputedStyle(zuwachs).fontSize).toBe('13px');
+      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7× genutzt');
     });
 
     it('zeigt ohne Zuwachs keinen Zuwachs', () => {
@@ -1095,6 +1525,55 @@ describe('BeitragskarteComponent', () => {
       zeigen(einwurfKarte({ status: 'processed' }), { variante: 'einwurf' });
 
       expect(component.darfVerwerfen).toBeFalse();
+    });
+  });
+  describe('Einwurf quer (Fangkorb am Desktop)', () => {
+    function einwurfKarte(): KartenDaten {
+      return ausEinwurf({
+        id: 'e-quer',
+        content: 'Hinweis',
+        url: 'https://www.instagram.com/reel/ABC/',
+        image_url: null,
+        submitted_by: 'bob',
+        source_channel: 'web',
+        status: 'open',
+        created_at: '2026-09-13T12:00:00Z',
+        drafts: [],
+        links: [],
+      });
+    }
+
+    it('steht ohne quer wie bisher: Griff ueber der Meta-Zeile', () => {
+      zeigen(einwurfKarte(), { variante: 'einwurf' });
+      fixture.nativeElement.style.display = 'block';
+      fixture.nativeElement.style.width = '700px';
+
+      expect(element('.karte').classList).not.toContain('karte--quer');
+      const griff = element('.einwurf-primaer').getBoundingClientRect();
+      const meta = element('.einwurf-meta').getBoundingClientRect();
+      expect(meta.top).toBeGreaterThanOrEqual(griff.bottom);
+    });
+
+    it('stellt quer Meta links und Griff mit Menue rechts in eine Zeile', () => {
+      zeigen(einwurfKarte(), { variante: 'einwurf', quer: true });
+      fixture.nativeElement.style.display = 'block';
+      fixture.nativeElement.style.width = '700px';
+
+      expect(element('.karte').classList).toContain('karte--quer');
+      const griff = element('.einwurf-primaer').getBoundingClientRect();
+      const meta = element('.einwurf-meta').getBoundingClientRect();
+      expect(meta.right).toBeLessThanOrEqual(griff.left);
+      expect(meta.top).toBeLessThan(griff.bottom);
+      expect(meta.bottom).toBeGreaterThan(griff.top);
+      // Tab-Reihenfolge wie hochkant: erst der Griff, die Meta-Zeile hat keinen Tab-Stopp
+      expect(element('.einwurf-fuss').firstElementChild!.classList).toContain('einwurf-aktion');
+    });
+
+    it('wirkt im Kopf nicht', () => {
+      zeigen(einwurfKarte(), { variante: 'kopf', quer: true });
+
+      expect(element('.karte').classList).not.toContain('karte--quer');
+      expect(element('.einwurf-fuss')).toBeNull();
     });
   });
 });

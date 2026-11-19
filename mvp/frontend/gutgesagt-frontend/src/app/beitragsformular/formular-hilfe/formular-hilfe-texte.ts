@@ -9,6 +9,8 @@ export interface FormularHilfe {
   ist: string[];
   istNicht: string[];
   beispiel?: { aussage: string; antwort: string };
+  /** Schwach und besser auf dieselbe Aussage, etwa: den Spruch nicht bestaetigen. */
+  vorherNachher?: { regel: string; aussage: string; schwach: string; warum: string; besser: string };
   /** Zeigt die Schreibregeln und Schreibhilfen (shared/schreibregeln.ts). */
   schreibregeln?: true;
   /** Zeigt gute und schwache Titel; nur wo der Titel eine Behauptung ist. */
@@ -17,7 +19,6 @@ export interface FormularHilfe {
 
 /**
  * Hier gepflegt, damit Formular und spaetere Stellen nicht auseinanderlaufen.
- * Bild hat (noch) keine.
  */
 export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
   commentary: {
@@ -33,6 +34,14 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
       aussage: 'Die Grünen wollen uns das Autofahren verbieten',
       antwort:
         'Wer aufs Auto angewiesen ist, soll es auch bleiben dürfen. Es geht um die anderen Wege: dass der Bus öfter fährt und das Kind sicher mit dem Rad zur Schule kommt. Dann ist auf der Straße auch mehr Platz für alle, die fahren müssen.',
+    },
+    vorherNachher: {
+      regel: 'Bestätige den Spruch nicht',
+      aussage: 'Die Energiewende macht den Strom teurer.',
+      schwach: 'Die Förderung zahlt seit 2022 der Bund, nicht deine Stromrechnung.',
+      warum: 'bestätigt: Wir zahlen dafür',
+      besser:
+        '2022 hat sich der Börsenpreis für Strom mehr als verdoppelt. Der Grund: Gas wurde nach Russlands Angriff knapp und teuer. Sonne und Wind brauchen kein Gas.',
     },
     schreibregeln: true,
     titelbeispiele: true,
@@ -52,6 +61,17 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
     istNicht: [
       'Material, aus dem erst ein Beitrag werden soll (→ einwerfen)',
       'Den Post abschreiben – beschreib in eigenen Worten, worum es geht (CC0)',
+    ],
+    schreibregeln: true,
+  },
+  image: {
+    zeile: 'Ein Bild mit Unterschrift, das für sich spricht.',
+    frage: 'Was ist ein Bild?',
+    antwort: 'Ein Bild, das man so teilen kann, mit einer Unterschrift in eigenen Worten.',
+    ist: ['Spricht für sich, auch ohne langen Text', 'Mit einer öffentlich erreichbaren Bild-URL'],
+    istNicht: [
+      'Bilder, an denen du keine Rechte hast oder auf denen Privatpersonen ohne ihr Einverständnis erkennbar sind',
+      'Eine Unterschrift von woanders übernehmen – schreib sie in eigenen Worten (CC0)',
     ],
     schreibregeln: true,
   },

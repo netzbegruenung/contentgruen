@@ -29,6 +29,11 @@ export interface BaseContentResult {
     original_author?: string | null;
     /** Anzeigename des Autors ("Anna B."); nur fuer Angemeldete, sonst null. */
     autor_name?: string | null;
+    /**
+     * Zahl der erreichten Meilensteine der Autorin (#351); nur fuer Angemeldete und nur,
+     * wenn sie der Sichtbarkeit zugestimmt hat, sonst null.
+     */
+    autor_abzeichen?: number | null;
     /** Ob die angemeldete Person den Beitrag gespeichert hat; ohne Anmeldung null. */
     ist_eigener_beitrag?: boolean | null;
     status: ContentStatus;
@@ -38,6 +43,15 @@ export interface BaseContentResult {
     usage_count?: number;
     /** Wie viele Beitraege auf diesem beruhen (#356); nur Kommentar und Hintergrundinfo. */
     varianten?: number;
+    /** Guete fuer das Siegel (#427): 1-10, null = "neu". */
+    guete?: number | null;
+    /** Die Kriterien des Gegenlesens, die der Beitrag erfuellt (nur die erfuellten). */
+    guete_erfuellt?: string[];
+    /** Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl). */
+    guete_stimmen_zaehlen?: boolean;
+    /** Zaehler an den Stimm-Knoepfen (Stimmen anderer); null unter der Mindestzahl oder unbekannt. */
+    stimmen_hilfreich?: number | null;
+    stimmen_nicht_hilfreich?: number | null;
 }
 
 /**

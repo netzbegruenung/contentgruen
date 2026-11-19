@@ -1,6 +1,7 @@
 /**
  * Wie man gut schreibt (docs/VISION.md, "Ton und Schreiben"): die sechs
- * Schreibregeln, die Schreibhilfen und die Titelbeispiele. Sie lenken sanft und
+ * Schreibregeln, die Schreibhilfen, die Liste zum Selbstpruefen (Hilfe-Dialog)
+ * und die Titelbeispiele. Sie lenken sanft und
  * sperren nichts; die Hinweise beim Speichern sind eine eigene Stelle (#358).
  *
  * Hier gepflegt, damit Formularhilfe und Hilfe-Dialog dieselben Saetze zeigen.
@@ -30,6 +31,21 @@ export const SCHREIBHILFEN: readonly Schreibhilfe[] = [
   { name: 'Zahlen in den Alltag', text: '„Jede dritte Wohnung“ statt „33 Prozent“.' },
 ];
 
+/**
+ * Was das Gegenlesen (#358) nicht oder nur in einfachen Faellen erkennt und die Person selbst
+ * pruefen muss, ausfuehrlich im Hilfe-Dialog. Im Formular stehen davon nur die drei Inhaltsfragen unter dem Gegenlesen
+ * und das Beispiel zum Bestaetigen in der Formularhilfe. Keine Doppelung mit den
+ * Schreibregeln oben: Gemeinsamkeit und Haeme stehen dort.
+ */
+export const SELBST_PRUEFEN: readonly string[] = [
+  'Ein Gedanke je Beitrag. Hast du noch einen, schreib lieber einen zweiten Beitrag.',
+  'Bestätige den Spruch nicht mit deinem Argument, sondern zeig, was wirklich dahintersteckt.',
+  'Jede Zahl mit einer Quelle, die du selbst geöffnet hast und die genau das sagt. Das Gegenlesen merkt nur, wenn die Herkunft ganz fehlt.',
+  'Zahlen, die bald veralten (Gesetze, Jahreswerte), lieber weglassen.',
+  'Schreib wie eine Nachbarin, nicht wie eine Partei. Das Gegenlesen erkennt nur einfache Fälle wie „die Grünen fordern“.',
+  'Für Chat und Infostand: Kurzfassung möglichst unter 140 Zeichen.',
+];
+
 export interface SchwacherTitel {
   titel: string;
   warum: string;
@@ -46,7 +62,7 @@ export const TITEL_BEISPIELE: { gut: readonly string[]; schwach: readonly Schwac
     'Wärmepumpen rechnen sich im Altbau, wenn man die Förderung mitrechnet',
   ],
   schwach: [
-    { titel: 'Lohnt sich die Wärmepumpe im Altbau?', warum: 'eine Frage – sie gehört in die Aussage' },
+    { titel: 'Lohnt sich die Wärmepumpe im Altbau?', warum: 'eine Frage, die gehört in die Aussage' },
     { titel: 'Wärmepumpen im Altbau', warum: 'ein Thema, keine Behauptung' },
     { titel: 'Faktenhammer', warum: 'ein Etikett, sagt nichts' },
   ],

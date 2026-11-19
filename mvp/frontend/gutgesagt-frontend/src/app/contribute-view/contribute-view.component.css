@@ -1,50 +1,21 @@
-.einleitung p {
-    margin: 0;
-}
-
-/* Optik aus der globalen .hinweis-box (styles.css) */
-.einleitung .erstnutzer-satz {
-    margin-bottom: 12px;
-}
-
-/* Typen als kompakte Zeilen, am Handy alle auf einem Bildschirm */
+/*
+ * Zwei Abschnitte, ein Kartenstil (#620): jede Zeile weiss mit feinem Rand; die Typfarbe
+ * steckt nur noch in der Kachel hinter dem Symbol. Am Handy alles untereinander, am Desktop
+ * die Kette in einer Reihe und die Typen zweispaltig. Ohne eigene Hoechstbreite: so breit wie
+ * Kopf und Rundgang-Band darueber, die Kanten fluchten (Designrunde 12.11.).
+ */
 .typ-zeilen {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    max-width: 600px;
+    gap: var(--spacing-lg);
     padding: var(--spacing-md) var(--page-margin);
 }
 
-.typ-zeile {
+.typ-abschnitt {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 12px;
-    width: 100%;
-    min-height: 48px;
-    padding: 16px 20px;
-    border: none;
-    border-radius: 12px;
-    font: inherit;
-    text-align: left;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.typ-zeile:active {
-    transform: scale(0.98);
-}
-
-/*
- * Einwerfen und Fangkorb: weiss mit Rand wie die Startseiten-Kacheln statt
- * Typfarbe. Das Padding ist um die 2 px Rand kleiner, damit die Kacheln so hoch
- * bleiben wie die Typzeilen darunter.
- */
-.rahmen-kachel {
-    padding: 14px 18px;
-    border: 2px solid var(--primary-dark);
-    background: #fff;
+    min-width: 0;
 }
 
 .typ-liste {
@@ -53,33 +24,83 @@
     gap: 12px;
 }
 
-/*
- * Wie die Einleitung ("Waehle, was ..."), eine Stufe kleiner. Mehr Luft nach oben
- * als nach unten, damit die Ueberschrift zu ihrem Abschnitt gehoert.
- */
+/* Abschnittsueberschrift: Hausschrift wie h2, eine Stufe unter dem Seitentitel */
 .typ-zwischenueberschrift {
-    margin: 8px 0 -4px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.4;
-    letter-spacing: normal;
-    color: var(--text-primary);
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--akzent-schrift);
 }
 
-.typ-zwischenueberschrift:first-child {
-    margin-top: 0;
+/* Optik aus der globalen .hinweis-box (styles.css) */
+.erstnutzer-satz {
+    margin: 0;
+}
+
+.typ-zeile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 14px 16px;
+    border: 1px solid var(--feldrand);
+    border-radius: 12px;
+    background: var(--flaeche);
+    font: inherit;
+    text-align: left;
+    color: var(--text);
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.typ-zeile:hover {
+    border-color: var(--linie-tanne);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.typ-zeile:active {
+    transform: scale(0.98);
 }
 
 .typ-zeile:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
 }
 
+/* Kachel hinter dem Symbol; ohne Typfarbe neutral */
 .typ-icon {
+    display: flex;
     flex-shrink: 0;
-    font-size: 32px;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: var(--mulde);
+    box-shadow: inset 0 0 0 1px var(--feldrand);
+    font-size: 26px;
     line-height: 1;
+}
+
+.commentary-card .typ-icon {
+    box-shadow: none;
+    background: var(--karte-kommentar);
+}
+
+.generictext-card .typ-icon {
+    box-shadow: none;
+    background: var(--info-tint);
+}
+
+.image-card .typ-icon {
+    box-shadow: none;
+    background: var(--karte-bild);
+}
+
+.post-card .typ-icon {
+    box-shadow: none;
+    background: var(--karte-post);
 }
 
 .typ-text {
@@ -98,29 +119,46 @@
 .typ-satz {
     font-size: 14px;
     line-height: 1.4;
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 .typ-pfeil {
     flex-shrink: 0;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
+}
+
+@media (min-width: 900px) {
+    /* Einwerfen, Fangkorb, Meine Beitraege nebeneinander: der Weg vom Rohen zum Ergebnis */
+    .ketten-liste {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Die vier Typen zwei mal zwei */
+    .verfassen-abschnitt .typ-liste {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 599px) {
     .typ-zeilen {
+        gap: 20px;
         padding-top: 12px;
     }
 
     .typ-zeile {
-        padding: 12px 16px;
-    }
-
-    .rahmen-kachel {
-        padding: 10px 14px;
+        padding: 10px 12px;
     }
 
     .typ-icon {
-        font-size: 28px;
+        width: 40px;
+        height: 40px;
+        font-size: 22px;
+    }
+
+    .typ-zwischenueberschrift {
+        font-size: 20px;
     }
 
     .typ-titel {
@@ -130,20 +168,4 @@
     .typ-satz {
         font-size: 13px;
     }
-}
-
-.commentary-card {
-    background: linear-gradient(135deg, var(--commentary-bg) 0%, rgb(220, 235, 195) 100%);
-}
-
-.generictext-card {
-    background: linear-gradient(135deg, var(--generictext-bg) 0%, rgb(212, 234, 251) 100%);
-}
-
-.image-card {
-    background: linear-gradient(135deg, var(--image-bg) 0%, rgb(225, 215, 240) 100%);
-}
-
-.post-card {
-    background: linear-gradient(135deg, var(--post-bg) 0%, rgb(250, 214, 188) 100%);
 }

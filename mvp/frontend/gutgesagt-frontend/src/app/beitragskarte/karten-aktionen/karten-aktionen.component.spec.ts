@@ -1,16 +1,20 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, SimpleChange } from '@angular/core';
 import { Clipboard } from '@angular/cdk/clipboard';
+import { By } from '@angular/platform-browser';
+import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
-import { KartenAktionenComponent } from './karten-aktionen.component';
+import { KOPIERT_DAUER_MS, KartenAktionenComponent } from './karten-aktionen.component';
 import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
+import { KOPIERT } from '../../shared/vorlagen-luecke';
+import { TEILEN_LINK_KOPIERT, TEILEN_NAVIGATOR, TeilenNavigator } from '../../shared/teilen.service';
 
 /**
  * Portiert aus commentary-result-item.component.voting.spec.ts; statt eines
@@ -25,6 +29,8 @@ describe('KartenAktionenComponent - Abstimmen', () => {
   let fixture: ComponentFixture<KartenAktionenComponent>;
   let votingService: jasmine.SpyObj<VotingService>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  /** Das Teilen-Menue des Geraets; ohne share wie am Desktop ohne Web Share API. */
+  let nav: TeilenNavigator;
 
   function stimmeAendern(stimme: 'like' | 'dislike' | undefined, vorher?: 'like' | 'dislike'): void {
     component.stimme = stimme;
@@ -36,7 +42,15 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     const loggingSpy = jasmine.createSpyObj('LoggingService', ['logInteraction', 'logError', 'error', 'debug', 'info', 'warn']);
     const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
     const clipboardSpy = jasmine.createSpyObj('Clipboard', ['copy']);
-    const usageTrackingSpy = jasmine.createSpyObj('UsageTrackingService', ['trackContentUsage']);
+    const usageTrackingSpy = jasmine.createSpyObj('UsageTrackingService', [
+      'trackContentUsage',
+      'gepostetAngeboten',
+      'gepostetBekannt',
+      'gepostetMelden',
+    ]);
+    usageTrackingSpy.gepostetAngeboten.and.returnValue(of(false));
+    usageTrackingSpy.gepostetBekannt.and.returnValue(null);
+    nav = {};
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['getUserInfo', 'login']);
     authServiceSpy.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' });
 
@@ -51,6 +65,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         { provide: AuthService, useValue: authServiceSpy },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
         { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) },
+        { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -274,6 +289,18 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         duration: 5000,
       });
     }));
+
+    it('"Anmelden" in der Snackbar meldet mit Anlass Abstimmen an; die Stimme gibt die App nicht ab', fakeAsync(() => {
+      const authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      authService.getUserInfo.and.returnValue(null);
+      snackBar.open.and.returnValue({ onAction: () => of(undefined) } as any);
+
+      component.toggleLike();
+      tick(50);
+
+      expect(authService.login).toHaveBeenCalledWith('abstimmen');
+      expect(votingService.setLike).not.toHaveBeenCalled();
+    }));
   });
 
   describe('Dislike Functionality', () => {
@@ -437,48 +464,135 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(kopiert).toHaveBeenCalled();
     });
 
-    it('bietet ohne Herkunft keine Wahl an', () => {
+    it('hat keinen Pfeil neben Kopieren, ohne zweite Variante auch keinen Menueeintrag (#641)', () => {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.querySelector('.kopier-wahl-knopf')).toBeNull();
+      expect(fixture.nativeElement.querySelectorAll('.kopieren button').length).toBe(1);
+      expect(document.querySelector('.zweite-kopie')).toBeNull();
     });
 
-    it('bietet mit Herkunft die Wahl zwischen Text und Text + Herkunft an', () => {
-      fixture.componentRef.setInput('kopierTextMitHerkunft', 'Test text\n\nHerkunft: https://example.org');
+    it('zeigt die zweite Variante ganz oben im ⋮-Menue (#641; "Link kopieren" ist im Teilen aufgegangen)', () => {
+      fixture.componentRef.setInput('zweiteKopie', { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' });
       fixture.detectChanges();
 
-      fixture.nativeElement.querySelector('.kopier-wahl-knopf').click();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
       fixture.detectChanges();
 
-      const eintraege = Array.from(document.querySelectorAll('.kopier-wahl-eintrag .mat-mdc-menu-item-text')).map((eintrag) =>
-        eintrag.textContent!.trim(),
-      );
-      expect(eintraege).toEqual(['Text', 'Text + Herkunft']);
+      const eintraege = Array.from(document.querySelectorAll('.mat-mdc-menu-item-text')).map((eintrag) => eintrag.textContent!.trim());
+      expect(eintraege[0]).toBe('Mit Herkunft kopieren');
+      expect(eintraege).not.toContain('Link kopieren');
+      expect(fixture.nativeElement.querySelectorAll('.kopieren button').length).toBe(1);
     });
 
-    it('kopiert mit Herkunft den Text samt Herkunft und zaehlt auch das als Nutzung', () => {
+    it('sagt im Tooltip, was der Knopf kopiert (#641)', () => {
+      fixture.componentRef.setInput('kopierHinweis', 'Kopiert Text und Herkunft');
+      fixture.detectChanges();
+
+      const tooltip = fixture.debugElement.query(By.css('.kopieren-knopf')).injector.get(MatTooltip);
+      expect(tooltip.message).toBe('Kopiert Text und Herkunft');
+    });
+
+    it('kopiert die zweite Variante und zaehlt auch das als Nutzung', () => {
       const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
       const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
       const kopiert = jasmine.createSpy('kopiert');
       component.kopiert.subscribe(kopiert);
-      component.kopierTextMitHerkunft = 'Test text\n\nHerkunft: https://example.org';
+      component.zweiteKopie = { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' };
 
-      component.kopierenMitHerkunft();
+      component.zweiteKopieren();
 
       expect(clipboard.copy).toHaveBeenCalledWith('Test text\n\nHerkunft: https://example.org');
       expect(usage.trackContentUsage).toHaveBeenCalledWith(INHALT_ID, undefined);
       expect(kopiert).toHaveBeenCalled();
     });
 
-    it('kopiert ueber die Wahl "Text" nur den Text, auch wenn es eine Herkunft gibt', () => {
+    it('kopiert ueber den Knopf den Standardtext, auch wenn es eine zweite Variante gibt', () => {
       const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
       const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
-      component.kopierTextMitHerkunft = 'Test text\n\nHerkunft: https://example.org';
+      component.zweiteKopie = { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' };
 
       component.kopieren();
 
       expect(clipboard.copy).toHaveBeenCalledWith('Test text');
       expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
+    });
+
+    it('meldet "Kopiert – jetzt unter dem Post einfügen." ohne Luecke', () => {
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
+    });
+
+    describe('mit Platzhalter (Persona-Test Dennis)', () => {
+      const MIT_PLATZHALTER = 'Gut. [Hier ein eigenes Erlebnis: …] Ende.';
+      let dialog: jasmine.SpyObj<MatDialog>;
+      let clipboard: jasmine.SpyObj<Clipboard>;
+      let usage: jasmine.SpyObj<UsageTrackingService>;
+
+      function dialogSchliesstMit(ergebnis: { text: string } | undefined): void {
+        dialog.open.and.returnValue({ afterClosed: () => of(ergebnis) } as any);
+      }
+
+      beforeEach(() => {
+        dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
+        clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+        usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+        component.kopierText = MIT_PLATZHALTER;
+      });
+
+      it('fragt vor dem Kopieren im Dialog nach dem eigenen Satz und kopiert selbst nichts', () => {
+        dialogSchliesstMit(undefined);
+
+        component.kopieren();
+
+        expect(dialog.open).toHaveBeenCalledTimes(1);
+        expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ text: MIT_PLATZHALTER });
+        expect(clipboard.copy).not.toHaveBeenCalled();
+      });
+
+      it('zaehlt abgebrochen nichts und meldet nichts', () => {
+        const kopiert = jasmine.createSpy('kopiert');
+        component.kopiert.subscribe(kopiert);
+        dialogSchliesstMit(undefined);
+
+        component.kopieren();
+
+        expect(usage.trackContentUsage).not.toHaveBeenCalled();
+        expect(kopiert).not.toHaveBeenCalled();
+        expect(snackBar.open).not.toHaveBeenCalled();
+      });
+
+      it('zaehlt den gefuellten Text wie normales Kopieren und meldet es wie dort (KOPIERT)', () => {
+        const kopiert = jasmine.createSpy('kopiert');
+        component.kopiert.subscribe(kopiert);
+        dialogSchliesstMit({ text: 'Gut. Mein Satz. Ende.' });
+
+        component.kopieren();
+
+        expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, undefined);
+        expect(kopiert).toHaveBeenCalledTimes(1);
+        expect(snackBar.open).toHaveBeenCalledWith(KOPIERT, 'Schließen', { duration: KOPIERT_DAUER_MS });
+      });
+
+      it('fragt auch bei "Mit Herkunft kopieren" aus dem Menue', () => {
+        dialogSchliesstMit({ text: 'Gut. Ende.\n\nHerkunft: https://example.org' });
+        component.zweiteKopie = { text: `${MIT_PLATZHALTER}\n\nHerkunft: https://example.org`, wort: 'Mit Herkunft kopieren' };
+
+        component.zweiteKopieren();
+
+        expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ text: `${MIT_PLATZHALTER}\n\nHerkunft: https://example.org` });
+        expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
+      });
+
+      it('oeffnet in der Vorschau keinen Dialog', () => {
+        component.vorschau = true;
+
+        component.kopieren();
+
+        expect(dialog.open).not.toHaveBeenCalled();
+      });
     });
 
     it('oeffnet den Melde-Dialog mit ID und Typ', () => {
@@ -487,6 +601,113 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.openReportDialog();
 
       expect(dialog.open.calls.mostRecent().args[1]!.data).toEqual({ contentId: INHALT_ID, contentType: 'commentary' });
+    });
+  });
+
+  describe('Rückmeldung „Gepostet?“ (#643)', () => {
+    let usage: jasmine.SpyObj<UsageTrackingService>;
+    let aktion: Subject<void>;
+
+    beforeEach(() => {
+      usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      aktion = new Subject<void>();
+      snackBar.open.and.returnValue({ onAction: () => aktion.asObservable() } as any);
+    });
+
+    it('bestätigt sofort und fragt, sobald der Server die Rückmeldung anbietet', () => {
+      const antwort = new Subject<boolean>();
+      usage.gepostetAngeboten.and.returnValue(antwort.asObservable());
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
+      expect(usage.gepostetAngeboten).toHaveBeenCalledWith('test-user');
+      antwort.next(true);
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
+      expect(usage.gepostetMelden).not.toHaveBeenCalled();
+    });
+
+    it('fragt sofort, wenn das Angebot schon bekannt ist', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+    });
+
+    it('fragt den Server nicht, wenn schon feststeht, dass nichts angeboten wird', () => {
+      usage.gepostetBekannt.and.returnValue(false);
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+    });
+
+    it('dankt nicht, wenn der Server die Rückmeldung inzwischen nicht mehr anbietet', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+      usage.gepostetMelden.and.returnValue(of('nicht_angeboten' as const));
+      component.kopieren();
+      snackBar.open.calls.reset();
+
+      aktion.next();
+
+      expect(usage.gepostetMelden).toHaveBeenCalledWith('test-user');
+      expect(snackBar.open).not.toHaveBeenCalled();
+    });
+
+    it('dankt ohne Zahl, wenn das Zählen scheitert', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+      usage.gepostetMelden.and.returnValue(of(null));
+      component.kopieren();
+
+      aktion.next();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Danke! Zählen hat gerade nicht geklappt.', 'Schließen', { duration: 5000 });
+    });
+
+    it('zählt erst mit „Ja, gepostet“ und dankt mit der echten Zahl der Woche', () => {
+      usage.gepostetAngeboten.and.returnValue(of(true));
+      usage.gepostetMelden.and.returnValue(of(7));
+      component.kopieren();
+
+      aktion.next();
+
+      expect(usage.gepostetMelden).toHaveBeenCalledTimes(1);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Danke! Diese Woche haben 7 Menschen gemeldet, dass sie öffentlich gekontert haben. Du bist dabei.',
+        'Schließen',
+        { duration: 5000 },
+      );
+    });
+
+    it('bleibt ohne Angebot beim Kopier-Hinweis ohne Luecke', () => {
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
+      expect(usage.gepostetMelden).not.toHaveBeenCalled();
+    });
+
+    it('fragt nach dem gefuellten Platzhalter wie sonst auch', () => {
+      usage.gepostetBekannt.and.returnValue(true);
+      (TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>).open.and.returnValue({
+        afterClosed: () => of({ text: 'Gut. Mein Satz. Ende.' }),
+      } as any);
+      component.kopierText = 'Gut. [Hier ein eigenes Erlebnis: …] Ende.';
+
+      component.kopieren();
+
+      expect(snackBar.open).toHaveBeenCalledOnceWith('Kopiert. Gepostet?', 'Ja, gepostet', { duration: 8000 });
+    });
+
+    it('fragt Besucher nicht und fragt auch den Server nicht', () => {
+      (TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>).getUserInfo.and.returnValue(null);
+
+      component.kopieren();
+
+      expect(usage.gepostetAngeboten).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledWith('Kopiert – jetzt unter dem Post einfügen.', 'Schließen', { duration: KOPIERT_DAUER_MS });
     });
   });
 
@@ -522,6 +743,179 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     });
   });
 
+  describe('Kurzwort am Kopieren-Knopf (Bild, Entscheidung 14.11.)', () => {
+    it('zeigt das Kurzwort am Handy, der Name bleibt das lange Wort', () => {
+      fixture.componentRef.setInput('kopierBeschriftung', 'Bildunterschrift kopieren');
+      fixture.componentRef.setInput('kopierKurz', 'Kopieren');
+      fixture.detectChanges();
+
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.kopieren-knopf');
+      expect(knopf.classList).toContain('mit-kurzwort');
+      expect(knopf.getAttribute('aria-label')).toBe('Bildunterschrift kopieren');
+      expect(knopf.querySelector('.kopieren-wort--kurz')!.textContent!.trim()).toBe('Kopieren');
+      expect(knopf.querySelector('.kopieren-wort--lang')!.textContent!.trim()).toBe('Bildunterschrift kopieren');
+    });
+
+    it('setzt ohne Kurzwort keinen eigenen Namen', () => {
+      fixture.detectChanges();
+
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.kopieren-knopf');
+      expect(knopf.classList).not.toContain('mit-kurzwort');
+      expect(knopf.hasAttribute('aria-label')).toBeFalse();
+      expect(knopf.querySelector('.kopieren-wort--kurz')).toBeNull();
+    });
+  });
+
+  describe('Teilen (B7)', () => {
+    const LINK = `${window.location.origin}/beitrag/${INHALT_ID}`;
+    let clipboard: jasmine.SpyObj<Clipboard>;
+    let usage: jasmine.SpyObj<UsageTrackingService>;
+
+    function knopf(): HTMLButtonElement {
+      fixture.detectChanges();
+      return fixture.nativeElement.querySelector('button.teilen-knopf');
+    }
+
+    beforeEach(() => {
+      clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+      usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      fixture.componentRef.setInput('titel', 'Wärmepumpe lohnt sich auch im Altbau');
+    });
+
+    it('ist ein echter Knopf neben dem Menue, mit dem Titel im Namen', () => {
+      const teilen = knopf();
+      expect(teilen).not.toBeNull();
+      expect(teilen.getAttribute('aria-label')).toBe('Beitrag teilen: „Wärmepumpe lohnt sich auch im Altbau“');
+      expect(teilen.parentElement!.querySelector('.menue-knopf')).not.toBeNull();
+      // Der Kopieren-Knopf bleibt der Hauptknopf in der Mitte
+      expect(fixture.nativeElement.querySelector('.kopieren .kopieren-knopf')).not.toBeNull();
+    });
+
+    it('oeffnet das Teilen-Menue des Geraets mit Text und Link und zaehlt als Nutzung', async () => {
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+      const kopiert = jasmine.createSpy('kopiert');
+      component.kopiert.subscribe(kopiert);
+
+      await component.teilen();
+
+      expect(nav.share).toHaveBeenCalledWith({
+        url: LINK,
+        text: 'Test text',
+        title: 'Wärmepumpe lohnt sich auch im Altbau',
+      });
+      expect(clipboard.copy).not.toHaveBeenCalled();
+      expect(snackBar.open).not.toHaveBeenCalled();
+      expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, undefined);
+      expect(kopiert).toHaveBeenCalledTimes(1);
+    });
+
+    it('zaehlt die angezeigte Fassung eines Kommentars', async () => {
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+      fixture.componentRef.setInput('fassung', 'lang');
+
+      await component.teilen();
+
+      expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, 'lang');
+    });
+
+    it('kopiert ohne Teilen-Menue den Link, meldet das und zaehlt als Nutzung', async () => {
+      clipboard.copy.and.returnValue(true);
+
+      knopf().click();
+      await fixture.whenStable();
+
+      expect(clipboard.copy).toHaveBeenCalledWith(LINK);
+      expect(snackBar.open).toHaveBeenCalledWith(TEILEN_LINK_KOPIERT, 'OK', { duration: 4000 });
+      expect(usage.trackContentUsage).toHaveBeenCalledOnceWith(INHALT_ID, undefined);
+    });
+
+    it('bricht still ab: keine Meldung, keine Nutzung (AbortError)', async () => {
+      nav.share = jasmine.createSpy('share').and.rejectWith(new DOMException('abgebrochen', 'AbortError'));
+
+      await component.teilen();
+
+      expect(snackBar.open).not.toHaveBeenCalled();
+      expect(clipboard.copy).not.toHaveBeenCalled();
+      expect(usage.trackContentUsage).not.toHaveBeenCalled();
+    });
+
+    it('faellt bei einem anderen Fehler des Teilen-Menues aufs Kopieren zurueck', async () => {
+      nav.share = jasmine.createSpy('share').and.rejectWith(new DOMException('nein', 'NotAllowedError'));
+      clipboard.copy.and.returnValue(true);
+
+      await component.teilen();
+
+      expect(clipboard.copy).toHaveBeenCalledWith(LINK);
+      expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
+    });
+
+    it('zaehlt nicht, wenn auch Kopieren scheitert', async () => {
+      clipboard.copy.and.returnValue(false);
+
+      await component.teilen();
+
+      expect(snackBar.open).toHaveBeenCalledWith(`Kopieren hat nicht geklappt. Der Link: ${LINK}`, 'OK', { duration: 15000 });
+      expect(usage.trackContentUsage).not.toHaveBeenCalled();
+    });
+
+    it('fehlt, wenn die Karte ihn nicht teilbar schaltet, und ohne Beitrag', () => {
+      fixture.componentRef.setInput('teilbar', false);
+      expect(knopf()).toBeNull();
+
+      fixture.componentRef.setInput('teilbar', true);
+      fixture.componentRef.setInput('inhaltId', '');
+      expect(knopf()).toBeNull();
+    });
+
+    it('hat keinen Tooltip neben dem Namen (sonst doppelte Ansage)', () => {
+      expect(knopf()).not.toBeNull();
+      expect(fixture.debugElement.query(By.css('.teilen-knopf')).injector.get(MatTooltip, null)).toBeNull();
+    });
+
+    it('tut in der Vorschau nichts', async () => {
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+      fixture.componentRef.setInput('vorschau', true);
+
+      expect(knopf().getAttribute('aria-disabled')).toBe('true');
+      await component.teilen();
+
+      expect(nav.share).not.toHaveBeenCalled();
+      expect(clipboard.copy).not.toHaveBeenCalled();
+    });
+
+    // Schlichte Karte der Trefferseite (V3, Designrunde 17.11.)
+    it('steht mit teilenImMenue im ⋮-Menue statt als eigener Knopf und teilt von dort', async () => {
+      fixture.componentRef.setInput('teilenImMenue', true);
+      expect(knopf()).toBeNull();
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+      const eintrag = document.querySelector<HTMLButtonElement>('.mat-mdc-menu-panel .teilen-eintrag')!;
+      expect(eintrag.textContent).toContain('Teilen');
+      expect(eintrag.getAttribute('aria-label')).toBe('Beitrag teilen: „Wärmepumpe lohnt sich auch im Altbau“');
+      eintrag.click();
+      await fixture.whenStable();
+
+      expect(nav.share).toHaveBeenCalledTimes(1);
+    });
+
+    it('hat ohne teilenImMenue keinen Teilen-Eintrag im Menue', () => {
+      expect(knopf()).not.toBeNull();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+      expect(document.querySelector('.mat-mdc-menu-panel .teilen-eintrag')).toBeNull();
+    });
+
+    it('hat im Menue kein "Link kopieren" mehr', () => {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+
+      expect(document.querySelector('.mat-mdc-menu-panel .link-kopieren')).toBeNull();
+    });
+  });
+
   describe('Ohne Abstimmen', () => {
     it('zeigt ohne Abstimmen keine Daumen, Kopieren und Menue bleiben', () => {
       fixture.componentRef.setInput('abstimmenSichtbar', false);
@@ -540,25 +934,25 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     });
   });
 
-  describe('Stimm-Knöpfe als Umriss-Hand (#416)', () => {
-    it('zeigt die Hand einfarbig als Umriss, hoch und runter gedreht, statt der Material-Icons', () => {
+  describe('Stimm-Knöpfe mit Material-Umriss-Daumen (#641)', () => {
+    it('zeigt schlanke Umriss-Daumen hoch und runter im Kreis-Knopf, nicht die Hand des Siegels', () => {
       fixture.detectChanges();
 
       const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
-      const haende = knoepfe.map((k) => k.querySelector<SVGElement>('svg.stimm-hand'));
-      expect(haende.every((h) => h !== null)).toBeTrue();
-      expect(haende.map((h) => h!.querySelector('path')!.getAttribute('fill'))).toEqual(['currentColor', 'currentColor']);
-      expect(haende[0]!.classList).not.toContain('runter');
-      expect(haende[1]!.classList).toContain('runter');
-      expect(knoepfe.some((k) => k.querySelector('mat-icon'))).toBeFalse();
+      expect(knoepfe.map((k) => k.querySelector('mat-icon')!.textContent!.trim())).toEqual([
+        'thumb_up_off_alt',
+        'thumb_down_off_alt',
+      ]);
+      expect(knoepfe.every((k) => k.hasAttribute('mat-icon-button'))).toBeTrue();
+      expect(knoepfe.some((k) => k.querySelector('svg path'))).toBeFalse();
     });
 
-    it('verbirgt die Hand vor Screenreadern, der Knopf behält seinen Namen', () => {
+    it('verbirgt die Daumen vor Screenreadern, der Knopf behält seinen Namen', () => {
       fixture.detectChanges();
 
       const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
-      expect(knoepfe.map((k) => k.querySelector('svg')!.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
-      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Gefällt mir', 'Gefällt mir nicht']);
+      expect(knoepfe.map((k) => k.querySelector('mat-icon')!.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
+      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Hilfreich', 'Nicht hilfreich']);
     });
   });
 
@@ -598,13 +992,13 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       fixture.detectChanges();
     });
 
-    it('zeigt die Leiste unveraendert, aber ohne Reaktion auf Zeiger und Fokus', () => {
+    it('zeigt die Leiste sichtbar gesperrt, ohne Reaktion auf Zeiger und Fokus (#616)', () => {
       const leiste: HTMLElement = fixture.nativeElement.querySelector('.aktionen');
       const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('button'));
 
       expect(getComputedStyle(leiste).pointerEvents).toBe('none');
-      expect(getComputedStyle(leiste).opacity).toBe('1');
-      expect(knoepfe.length).toBe(4);
+      expect(Number(getComputedStyle(leiste).opacity)).toBeLessThan(1);
+      expect(knoepfe.length).toBe(5); // zwei Daumen, Kopieren, Teilen, Menue
       knoepfe.forEach((knopf) => {
         expect(knopf.getAttribute('aria-disabled')).toBe('true');
         expect(knopf.getAttribute('tabindex')).toBe('-1');
@@ -612,17 +1006,14 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       });
     });
 
-    it('kopiert auch mit Herkunft nicht und zaehlt keine Nutzung', () => {
+    it('kopiert auch die zweite Variante nicht und zaehlt keine Nutzung', () => {
       const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
       const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
-      fixture.componentRef.setInput('kopierTextMitHerkunft', 'Test text\n\nHerkunft: https://example.org');
+      fixture.componentRef.setInput('zweiteKopie', { text: 'Test text\n\nHerkunft: https://example.org', wort: 'Mit Herkunft kopieren' });
       fixture.detectChanges();
 
-      const wahl: HTMLButtonElement = fixture.nativeElement.querySelector('.kopier-wahl-knopf');
-      component.kopierenMitHerkunft();
+      component.zweiteKopieren();
 
-      expect(wahl.getAttribute('aria-disabled')).toBe('true');
-      expect(wahl.getAttribute('tabindex')).toBe('-1');
       expect(clipboard.copy).not.toHaveBeenCalled();
       expect(usage.trackContentUsage).not.toHaveBeenCalled();
     });
@@ -641,5 +1032,9 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(clipboard.copy).not.toHaveBeenCalled();
       expect(dialog.open).not.toHaveBeenCalled();
     }));
+  });
+
+  it('laesst „Kopiert“ 4 s stehen, lang genug fuer den Wechsel in die andere App (P10)', () => {
+    expect(KOPIERT_DAUER_MS).toBe(4000);
   });
 });

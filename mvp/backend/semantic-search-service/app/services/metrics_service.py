@@ -78,7 +78,7 @@ class MetricsService:
             days: Number of days to analyze
 
         Returns:
-            Dict with average, median, and distribution stats
+            Dict with average and totals
         """
         return self.search_repo.get_searches_per_user(days)
 

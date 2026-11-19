@@ -75,7 +75,7 @@ def test_liefert_guete_und_anmerkungen(client, service):
         ],
     }
     service.gegenlesen.assert_called_once_with(
-        "Nicht so", "Ein Text.", "Eine Aussage", True
+        "Nicht so", "Ein Text.", "Eine Aussage", True, None
     )
 
 
@@ -83,7 +83,7 @@ def test_aussage_und_text_sind_optional(client, service):
     response = client.post(PFAD, json={"titel": "Nur ein Titel"}, headers=ANGEMELDET)
 
     assert response.status_code == 200
-    service.gegenlesen.assert_called_once_with("Nur ein Titel", "", None, True)
+    service.gegenlesen.assert_called_once_with("Nur ein Titel", "", None, True, None)
 
 
 def test_post_titel_ist_keine_behauptung(client, service):
@@ -95,7 +95,22 @@ def test_post_titel_ist_keine_behauptung(client, service):
 
     assert response.status_code == 200
     service.gegenlesen.assert_called_once_with(
-        "Nicht vergessen: Sommerfest", "", None, False
+        "Nicht vergessen: Sommerfest", "", None, False, None
+    )
+
+
+@pytest.mark.parametrize("hat_herkunft", [True, False])
+def test_herkunft_als_ja_oder_nein(client, service, hat_herkunft):
+    # Nur ob eine Herkunft eingetragen ist; ohne das Feld (Post, Bild) bleibt es None.
+    response = client.post(
+        PFAD,
+        json={"titel": "T", "text": "30 Prozent", "hat_herkunft": hat_herkunft},
+        headers=ANGEMELDET,
+    )
+
+    assert response.status_code == 200
+    service.gegenlesen.assert_called_once_with(
+        "T", "30 Prozent", None, True, hat_herkunft
     )
 
 

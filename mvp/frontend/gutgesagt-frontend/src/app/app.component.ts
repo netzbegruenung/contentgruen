@@ -9,7 +9,7 @@ import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
@@ -19,21 +19,25 @@ import { Art9EinwilligungService, EINWILLIGUNG_PFAD } from './services/art9-einw
 import { ProfilbildService } from './services/profilbild.service';
 import { rueckkehrzielLesen, rueckkehrzielLoeschen } from './login/rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
-import { hilfeOeffnen } from './help-dialog/help-dialog.component';
+import { hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog/help-dialog.component';
+import { hinweisNachAnmeldung } from './auth/nach-anmeldung';
 import { feedbackDialogOeffnen } from './shared/feedback/feedback-dialog.component';
 import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
+import { OffeneMeldungenZahlComponent } from './shared/components/offene-meldungen-zahl/offene-meldungen-zahl.component';
+import { FarbschemaKnopfComponent } from './shared/components/farbschema-knopf/farbschema-knopf.component';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
 import { RouteConfigService } from './shared/services/route-config.service';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { KETTEN_ICONS } from './shared/fangkorb-texte';
+import { DATENSCHUTZ_EINSTELLUNGEN, MENUE_ICONS } from './shared/fangkorb-texte';
 import { ROUTES } from './shared/constants/app.constants';
 import { RundgangComponent } from './rundgang/rundgang.component';
+import { RundgangBandComponent } from './rundgang/rundgang-band.component';
 import { RundgangService } from './rundgang/rundgang.service';
-import { RundgangId } from './rundgang/rundgang-daten';
+import { NEU_HINWEIS, RundgangId } from './rundgang/rundgang-daten';
 
 @Component({
   selector: 'app-root',
@@ -51,10 +55,14 @@ import { RundgangId } from './rundgang/rundgang-daten';
     FormsModule,
     RouterOutlet,
     RouterLink,
+    RouterLinkActive,
     FooterComponent,
+    OffeneMeldungenZahlComponent,
     MobileMenuComponent,
     MobileHeaderComponent,
-    RundgangComponent
+    RundgangComponent,
+    RundgangBandComponent,
+    FarbschemaKnopfComponent,
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
@@ -63,10 +71,16 @@ export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
   title = 'Gut gesagt';
-  readonly kettenIcons = KETTEN_ICONS;
+  readonly menueIcons = MENUE_ICONS;
+  readonly datenschutzEinstellungen = DATENSCHUTZ_EINSTELLUNGEN;
+  readonly neuHinweis = NEU_HINWEIS;
   readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
+  /** Auf dem Start steht der Skip-Link „Zur Suche“ (#644). */
+  aufStart = false;
+  /** Auf /login* fehlt der Kopfknopf "Anmelden": Man ist schon da (#645). */
+  aufAnmeldeseite = false;
   private destroy$ = new Subject<void>();
   isMobile: boolean = false;
   isTablet: boolean = false;
@@ -104,6 +118,10 @@ export class AppComponent implements OnInit, OnDestroy {
     private art9Einwilligung: Art9EinwilligungService,
     private profilbild: ProfilbildService) {
     this.logger.debug('AppComponent created');
+    // Nach der Anmeldung aus der Hilfe dorthin zurück; dort startet dann Selbst beitragen
+    hilfeNachAnmeldung(this.destroyRef);
+    // Nach der Anmeldung zum Abstimmen: ein Satz, dass es jetzt geht
+    hinweisNachAnmeldung(this.destroyRef);
   }
 
   ngOnInit() {
@@ -269,10 +287,18 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Skip-Link: Fokus ins Suchfeld, ohne die Adresse um #suche zu ergaenzen. */
+  zurSuche(event: Event): void {
+    event.preventDefault();
+    document.getElementById('suche')?.focus();
+  }
+
   private updatePageTitle(url: string): void {
+    this.aufStart = url.split(/[?#]/)[0] === '/search';
     const config = this.routeConfigService.getRouteConfig(url);
     this.pageTitle = config.pageTitle;
     this.showBackButton = config.showBackButton;
+    this.aufAnmeldeseite = url.split(/[?#]/)[0].startsWith(ROUTES.LOGIN);
     this.logger.debug(`Updated page title to: ${this.pageTitle}, showBackButton: ${this.showBackButton}`);
   }
 

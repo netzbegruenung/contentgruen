@@ -9,32 +9,44 @@
                        [themen]="themen" [aktiv]="aktivesThema"
                        (aktivChange)="filtern($event)"></app-themen-filter>
 
-    <p *ngIf="ladefehler" class="hinweis">Die Aussagen konnten nicht geladen werden.</p>
+    <!-- Nie "neu laden": Die Seite versucht es selbst wieder (LadeWiederholung), der Knopf
+         zieht den naechsten Versuch vor. Angesagt wird nur ueber die Live-Region. -->
+    <p class="cdk-visually-hidden" aria-live="polite">{{ ansage }}</p>
+    <div *ngIf="ladefehler" class="ladefehler">
+        <p class="hinweis">
+            Die Aussagen konnten gerade nicht geladen werden.
+            <ng-container *ngIf="erneutLaedt">Neuer Versuch läuft …</ng-container>
+            <ng-container *ngIf="!erneutLaedt && versuchtWeiter">Die Seite versucht es weiter.</ng-container>
+        </p>
+        <button mat-stroked-button type="button" class="erneut-versuchen"
+                [attr.aria-disabled]="erneutLaedt" (click)="erneutVersuchen()">Erneut versuchen</button>
+    </div>
 
     <ng-container *ngIf="aussagen">
-        <ul *ngIf="aussagen.length > 0; else leer" class="aussagen">
-            <li *ngFor="let aussage of aussagen" class="aussage" data-testid="unbeantwortete-aussage">
-                <p class="aussage-text">{{ aussage.statement_text }}</p>
-                <div class="aussage-themen" *ngIf="themen.length">
-                    <span *ngFor="let thema of aussage.themen" class="thema-marke">{{ thema.name }}</span>
-                    <button type="button" class="themen-umschalter"
-                            [attr.aria-expanded]="themenBearbeiten === aussage.statement_id"
-                            (click)="themenUmschalten(aussage)">
-                        {{ aussage.themen.length ? 'Themen ändern' : 'Themen zuordnen' }}
-                    </button>
-                </div>
-                <div *ngIf="themenBearbeiten === aussage.statement_id" class="themen-bearbeiten">
-                    <app-themen-auswahl [themen]="themen" [gewaehlt]="schluessel(aussage.themen)"
-                                        beschriftung="Themen dieser Aussage"
-                                        (gewaehltChange)="themenSetzen(aussage, $event)"></app-themen-auswahl>
-                    <p *ngIf="themenFehler" class="hinweis" role="alert">{{ themenFehler }}</p>
-                </div>
-                <div class="aussage-fuss">
-                    <span *ngIf="aussage.personen_ohne_treffer > 0" class="gesucht">{{ gesuchtMarker(aussage) }}</span>
-                    <a mat-stroked-button class="selbst-beantworten"
-                       [routerLink]="kommentarFormular"
-                       [queryParams]="beantwortenParams(aussage)">Selbst beantworten</a>
-                </div>
+        <!-- Inhalte sind Karten: jede Aussage als Aussagekarte, Themen im Koerper der Karte -->
+        <ul *ngIf="aussagen.length > 0; else leer" class="aussagen aussagekarten">
+            <li *ngFor="let aussage of aussagen; trackBy: nachAussage" data-testid="unbeantwortete-aussage">
+                <app-aussagekarte [text]="aussage.statement_text"
+                                  [titelId]="'aussage-' + aussage.statement_id"
+                                  [ebene]="2"
+                                  [gesucht]="gesuchtMarker(aussage)"
+                                  [antwortenPfad]="kommentarFormular"
+                                  [antwortenParams]="beantwortenParams(aussage)">
+                    <div class="aussage-themen" *ngIf="themen.length">
+                        <span *ngFor="let thema of aussage.themen" class="thema-marke">{{ thema.name }}</span>
+                        <button type="button" class="themen-umschalter"
+                                [attr.aria-expanded]="themenBearbeiten === aussage.statement_id"
+                                (click)="themenUmschalten(aussage)">
+                            {{ aussage.themen.length ? 'Themen ändern' : 'Themen zuordnen' }}
+                        </button>
+                    </div>
+                    <div *ngIf="themenBearbeiten === aussage.statement_id" class="themen-bearbeiten">
+                        <app-themen-auswahl [themen]="themen" [gewaehlt]="schluessel(aussage.themen)"
+                                            beschriftung="Themen dieser Aussage"
+                                            (gewaehltChange)="themenSetzen(aussage, $event)"></app-themen-auswahl>
+                        <p *ngIf="themenFehler" class="hinweis" role="alert">{{ themenFehler }}</p>
+                    </div>
+                </app-aussagekarte>
             </li>
         </ul>
         <ng-template #leer>
@@ -42,8 +54,9 @@
         </ng-template>
     </ng-container>
 
-    <section class="vorab" aria-labelledby="vorab-titel">
-        <h2 id="vorab-titel">Aussage vorab anlegen</h2>
+    <!-- Zugeklappt unter der Liste: Die Liste ist die Hauptsache dieser Seite (#645) -->
+    <details class="vorab">
+        <summary class="vorab-titel">Aussage vorab anlegen</summary>
         <p class="hinweis">
             Absehbar, dass bald jemand eine Antwort auf etwas braucht? Leg die Aussage an,
             dann steht sie hier, bis jemand sie beantwortet.
@@ -66,5 +79,5 @@
                 [disabled]="!anlegbar"
                 (click)="anlegen()">Aussage anlegen</button>
         <p *ngIf="meldung" class="meldung" role="status">{{ meldung }}</p>
-    </section>
+    </details>
 </div>

@@ -29,6 +29,10 @@ class PolarityFilterResult:
     query_polarity: str
     result_polarity: str
     explanation: str
+    # Die Antworten dieser Aussage kommen auch nicht ueber den direkten Weg zurueck
+    # (SearchOrchestrator.collect_direct): Eine Antwort auf das Gegenteil ist keine
+    # Antwort. Nur bei einem Widerspruch nach dem NLI-Modell (#574).
+    antworten_ausschliessen: bool = False
 
 
 class HasScore(Protocol):

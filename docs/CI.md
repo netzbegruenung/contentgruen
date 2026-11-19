@@ -1,12 +1,17 @@
 # CI on Woodpecker
 
 Every pull request on Forgejo runs the pipeline `.woodpecker/ci.yaml` (workflow `ci`) on
-verdigado's Woodpecker. It checks what `scripts/check.sh --integration` checks locally, and
-its status `ci/woodpecker/pr/ci` is required before a merge into `main` once a person has
-completed the [setup](#setup-by-a-person).
+verdigado's Woodpecker. It checks what `scripts/check.sh` checks locally; the integration
+tests run only on `main`, on tags and manually (see
+[Integration tests on main only](#integration-tests-on-main-only)). Its status
+`ci/woodpecker/pr/ci` is required before a merge into `main` once a person has completed the
+[setup](#setup-by-a-person).
 
 After the merge, `.woodpecker/build.yaml` and, on `v*` tags, `release.yaml` build the images
-(see [Images and releases](#images-and-releases)). Until the switch the GitHub Actions on the
+(see [Images and releases](#images-and-releases)), and every night `.woodpecker/nacht.yaml`
+measures search quality against the real model (see [Nightly run](#nightly-run)).
+`.woodpecker/ci-image.yaml` builds the images the pipeline itself can run in, with the Python
+packages, the models and `node_modules` already installed (see [CI images](#ci-images)). Until the switch the GitHub Actions on the
 mirror (`.github/workflows/`) still build them too and publish the tags the environments use.
 
 ## What runs
@@ -14,26 +19,34 @@ mirror (`.github/workflows/`) still build them too and publish the tags the envi
 | Step | Image | Runs |
 |---|---|---|
 | `retired-words` | `node:22` (frontend Dockerfile; has git and python3) | `check.sh --schritt retired-words`, lines added since the branch left the target branch; pull requests only (push, tag and manual runs have no target branch) |
-| `python-installieren` | `python:3.13-slim` (semantic-search Dockerfile) | venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` |
-| `lint` | same | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
-| `unit` | same | `check.sh --schritt unit`: Python unit tests and `scripts/tests/` |
-| `integration` | same | `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below |
-| `frontend` | `node:22` | Chromium from Debian (`scripts/ci-chromium.sh`), `npm ci`, `check.sh --schritt frontend` |
+| `python-installieren` | `gutgesagt-ci-python:latest` ([CI image](#ci-images) on `python:3.13-slim` of the semantic-search Dockerfile) | `scripts/ci-installieren.sh python`: venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` (only a link to the packages of the [CI image](#ci-images) when they match) |
+| `frontend-installieren` | `gutgesagt-ci-node:latest` (CI image on `node:22`) | `scripts/ci-installieren.sh frontend`: `npm ci` in the frontend directory, once for the two frontend steps (or a link to the `node_modules` of the CI image) |
+| `lint` | `gutgesagt-ci-python` | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
 | `bff` | `mcr.microsoft.com/dotnet/sdk:9.0` (BFF Dockerfile) | `check.sh --schritt bff` with `CHECK_OHNE_DOCKER=1` |
+| `unit` | `gutgesagt-ci-python` | `check.sh --schritt unit`: Python unit tests and `scripts/tests/`, each with two pytest-xdist workers (`CHECK_WORKER=2`; locally four) |
+| `frontend-build` | `gutgesagt-ci-node` | after `unit`: `check.sh --schritt frontend-build` (`ng build --configuration production`, for the budgets of the image build) with `NG_BUILD_MAX_WORKERS=2` |
+| `frontend` | same | after `frontend-build`: Chromium from Debian (`scripts/ci-chromium.sh`, already in the CI image), `check.sh --schritt frontend` (Karma tests) with `CHECK_OHNE_SOURCEMAPS=1` (`ng test --source-map=false`) |
+| `integration` | `gutgesagt-ci-python` | push to `main`, tags and manual runs only, never in pull requests: after `frontend`, `check.sh --schritt integration` with `INTEGRATION_STACK_PFLICHT=1` against the services below, serially |
 | `ci-bericht` | `python:3.13-slim` | red pull-request runs only, see below |
 
-Services: `qdrant` (same version as the compose files and `.github/workflows/tests-backend.yml`,
+Services (started only when `integration` runs, same `when`): `qdrant` (same version as the
+compose files and `.github/workflows/tests-backend.yml`,
 `entrypoint: /qdrant/qdrant`; without the absolute path the service does not start) and `postgres` (base image of
 `mvp/backend/postgres-app`). The integration step reaches them through `QDRANT_URL` and
 `POSTGRES_TEST_DATABASE_URL`, after `scripts/ci_dienste_warten.py` has waited (up to two
 minutes) until both accept connections; the throwaway container of the suite is not used, the runner
 has no Docker socket. There is no BFF either: the tests in `tests/integration/api/`, which need
 the dev-stack BFF, skip in CI (`CI` set) instead of failing, and show up in the `SKIPPED` lines.
+A hanging integration test fails instead of stalling the step: every test session has
+`lock_timeout` 60 s and `statement_timeout` 120 s (`tests/integration/postgres.py`), a test
+running over 5 min dumps the stacks of all threads (`faulthandler_timeout`), and `check.sh` stops
+the whole step after `INTEGRATION_ZEITLIMIT` (default 25 min). Before that, main pipeline 1257
+sat silent for 46 min until it was cancelled.
 The same holds for `test_webserver_protokoll.py`, which starts nginx in a container. The
 app database the code under test would open (`localhost:5433`, the dev stack) does not exist
 in CI either: tests replace the repositories that need it (`tests/conftest.py`), and in unit
 tests a fixture blocks `get_app_database()` (`tests/fixtures/ohne_app_datenbank.py`).
-The `python:3.13-slim` image of the unit step has no git: tests that call a program ask for it
+The CI image of the unit step (on `python:3.13-slim`) has no git: tests that call a program ask for it
 with `programme.noetig` (`scripts/tests/programme.py`) and skip in CI when it is missing; locally
 a missing program is an error.
 
@@ -41,21 +54,229 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 `check.sh`):
 
 - **One source for versions.** Woodpecker cannot read a Dockerfile, so the images appear a
-  second time in `ci.yaml`. The test fails if they differ from the Dockerfiles, the
+  second time in `ci.yaml` and in `Dockerfile.ci`, whose CI images build on them. The test fails if they differ from the Dockerfiles, the
   compose files, the Qdrant service of the GitHub CI or the SDK image `check.sh` uses for
   the BFF. When raising a version, change all of them.
 - **One source for commands.** Each step calls `check.sh --schritt <name>`, one pipeline step
   per step of `check.sh` (the test compares the names). Only the preparation a working tree
-  already has locally stays in `ci.yaml`: the venv (`python-installieren`), `npm ci` and
-  Chromium for the frontend. `CHECK_VOLL=1`
+  already has locally stays out of `check.sh`: the venv (`python-installieren`), `npm ci`
+  (`frontend-installieren`), both through `scripts/ci-installieren.sh`, and Chromium for the
+  frontend (`scripts/ci-chromium.sh`). `check.sh` installs nothing, so it needs no
+  knowledge of the CI images. `CHECK_VOLL=1`
   makes `check.sh` print the full output instead of its summary lines.
 - **No path filter on the workflow.** A skipped workflow reports no status, and the
   required status then blocks the pull request. Filters only per step, and only so that
-  `ci` still reports.
+  `ci` still reports (see [Path filters](#path-filters)).
 - **Events:** `pull_request`, `push` on `main`, `tag` and `manual`. Without `manual`,
   "Run pipeline" in the Woodpecker UI filters the workflow out.
 - The clone step fetches the full history and the target branch (`fetch-target-branch`),
   so `retired-words` can find where the branch started.
+
+**Staggered steps.** The runner is shared with the other pipelines of the Woodpecker
+instance. With the heavy steps side by side, on 13.11. its memory ran out and many pipelines
+were cancelled together. So the four heavy steps (three in pull requests, without
+`integration`) run one after the other, never two at once, in one chain of `depends_on`;
+the light ones (`retired-words`, `bff` and the two installations) run alongside, and `lint`
+after `unit`, next to `frontend-build` (both may write to the venv, see
+[CI images](#ci-images)).
+The chain goes shortest first, so a quick failure shows early: `unit` (about half a minute),
+`frontend-build`, `frontend` (Chromium and Karma), `integration` (loads the embedding model,
+the longest). Each of the four also runs when the run is already red
+(`status: [success, failure]`): Woodpecker's default skips a step once any step has failed,
+so an early red light step would skip `unit`, and a red `unit` would leave `ci-bericht`
+without the results after it. A failed installation therefore makes the heavy steps that
+need it red as well. A run takes longer than with the
+steps in parallel; that is the price of not running the host out of memory.
+`scripts/tests/test_woodpecker_ci.py` checks the chain and the settings below.
+
+- `unit` runs pytest with two xdist workers in CI (`CHECK_WORKER=2`), four locally (`-n`;
+  `CHECK_WORKER=0` runs serially). Every worker collects the tests itself, so parametrized
+  test IDs must not contain random values such as `uuid4()`, otherwise xdist aborts with
+  "Different tests were collected". The integration step stays serial: every worker would
+  load the embedding model again and the suite sizes its torch threads for one process
+  (`tests/integration/conftest.py`).
+- `frontend-build` sets `NG_BUILD_MAX_WORKERS=2`: `@angular/build` otherwise starts
+  min(4, cores - 1) worker threads for the JavaScript transformer and Sass
+  (`src/utils/environment-options.js`). `frontend` runs `ng test --source-map=false`
+  (`CHECK_OHNE_SOURCEMAPS=1`): the same specs, but stack traces of a failing spec point
+  into the bundle instead of the `.ts` file; rerun it locally for the mapped trace.
+- `frontend` and `frontend-build` share one `npm ci` (`frontend-installieren`). Steps share
+  the workspace, so only one step may run `npm ci` there; a second one would delete
+  `node_modules` under the other step (`scripts/tests/test_woodpecker_ci.py` checks it).
+  Angular switches its build cache off only for `CI=1` or `CI=true`
+  (`@angular/build`, `normalize-cache.js`); Woodpecker sets `CI=woodpecker`, so the cache
+  is on and starts empty in the fresh workspace, except for the copy from the CI image in
+  pull requests (see [Angular cache](#angular-cache)).
+
+**Path filters.** In pull requests a step drops out when every changed file of the pull
+request lies in parts of the repository it does not read. Woodpecker asks Forgejo for the
+files of the pull request (the whole diff against the target branch, not only the last
+push) and checks them against `path.exclude`: the step is skipped only if all files match.
+Anything not listed, `.woodpecker/`, `scripts/check.sh` and the other shell scripts, the
+documentation and `mvp/config/` therefore run everything. If Forgejo returns no file list,
+everything runs too (`on_empty`). A push to `main`, tags and manual runs always run every
+step.
+
+| Step | Skipped when only these change |
+|---|---|
+| `frontend-installieren`, `frontend-build`, `frontend` | `mvp/backend/**`, `mvp/scripts/**`, `scripts/**/*.py` |
+| `lint` | `mvp/frontend/**`, the BFF (`mvp/backend/BFF/**`, `BFF.Tests/**`, `GutGesagt.sln`) |
+| `bff` | `mvp/frontend/**`, `mvp/backend/semantic-search-service/**`, `mvp/backend/postgres-app/**`, `mvp/scripts/**`, `scripts/**/*.py` |
+| `retired-words`, `python-installieren`, `unit` | never |
+| `integration` | not applicable, it never runs in pull requests |
+
+- `python-installieren` and `unit` always run: unit tests and `scripts/tests/` also read
+  frontend and BFF files (CSS variables, unused endpoints, profile pictures, ...), so a
+  frontend-only change can turn them red.
+- A step that `when` filters out is not part of the pipeline at all. Woodpecker rejects
+  a pipeline in which a step depends on a missing step, unless the dependency is marked
+  `optional: true` (Woodpecker 3.15 and later). So `integration` depends on `frontend`
+  optionally (without it, it waits for `unit`), and `ci-bericht` lists every filtered
+  step as optional; `integration` is not in its list at all, since the report only runs in
+  pull requests, where `integration` never runs. Skipped steps do not make the run red;
+  `ci-bericht` lists them under
+  "Nicht gelaufen".
+- `scripts/tests/test_woodpecker_ci.py` replays Woodpecker's filtering for typical
+  pull requests and checks that the heavy steps never overlap and no dependency is missing.
+
+**No light runs for WIP pull requests.** A lighter pipeline while the title starts with
+"WIP:" was considered and dropped. Editing the title or a label makes Woodpecker 3.20
+start a run with the event `pull_request_metadata`, and its status context is
+`ci/woodpecker/pull_request_metadata/ci`, not the required `ci/woodpecker/pr/ci`. The
+required status would stay green from the light run, and the full run after removing
+"WIP:" would not be required for the merge. An empty push after removing "WIP:" would
+fix the status but depends on nobody forgetting it.
+
+## Placeholders before a release
+
+On tags only, the step `release-platzhalter` runs `scripts/release_platzhalter.py`: it fails
+while „[Datum des Einspielens]“ still stands in the privacy policy or in
+`docs/LOESCHKONZEPT.md`. The release pull request for v0.9.0 replaced the last one with the
+day of the production rollout; the step stays as a guard in case the placeholder comes back.
+For the tags in `STICHTAG_TAGS` (releases whose pull request sets the dates of the legal texts
+to the production day, so far `v0.9.0`) it also fails when the „Stand“ of the privacy policy or
+a „Wer vor dem …“ date in the privacy policy or `docs/LOESCHKONZEPT.md` lies before the day of
+the tag run: a tag set a day later than planned would otherwise ship a privacy policy naming a
+day on which nothing was rolled out. Later releases leave those dates alone. Locally:
+`python3 scripts/release_platzhalter.py --tag v0.9.0 [--stichtag YYYY-MM-DD]`.
+Pull-request and `main` runs skip it.
+
+## Integration tests on main only
+
+Decided on 14.11.: `integration` runs on a push to `main`, on tags (`release.yaml` waits for
+`ci`, so no release skips them) and on "Run pipeline", never in pull-request runs. The
+services `qdrant` and `postgres` have the same `when` and do not start in pull requests
+either. Pull-request runs lose their longest step (several minutes on the shared runner,
+loading the embedding model).
+
+- **The price:** a pull request can be green and still break the integration tests on
+  `main`. Then a red `main` takes precedence over new work: fix it first (or revert), and
+  check `ci/woodpecker/push/ci` after every merge; nothing reports a red `main` by itself.
+  As long as `main` is red, `build.yaml` (it waits for `ci`) builds no images, so nothing
+  new reaches test or production.
+- Whoever wants the integration tests before the merge runs them locally
+  (`bash scripts/check.sh --schritt integration`, or `--geaendert`, which picks them when
+  the changes reach them) or starts "Run pipeline" on the branch.
+- Woodpecker 3.20.1 (`pipeline/frontend/yaml/compiler/dag.go`): a step that `when` filters out
+  is dropped together with every optional dependency on it; a missing required one rejects
+  the pipeline. Nothing depends on `integration`, so pull requests lose only that step.
+  Services are filtered by the same `when` (`compiler.go`, services stage).
+
+## CI images
+
+`Dockerfile.ci` has two targets, built by `.woodpecker/ci-image.yaml` with the same plugin,
+registry and secrets as `build.yaml`:
+
+| Image | Base | Contains | For the steps |
+|---|---|---|---|
+| `gutgesagt-ci-python` | `python:3.13-slim` | the packages of `requirements.txt` system-wide; the models `intfloat/multilingual-e5-base` and `MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7` under `HF_HOME=/opt/ci/huggingface` | `python-installieren`, `lint`, `unit`, `integration` |
+| `gutgesagt-ci-node` | `node:22` (same digest) | Chromium with the wrapper of `scripts/ci-chromium.sh`; `node_modules` from `package-lock.json` under `/opt/ci/node_modules`; the npm cache; the Angular cache of a build and a test run of the built commit under `/opt/ci/angular-cache` | `frontend-installieren`, `frontend-build`, `frontend` |
+
+Tags: `latest` and the first 12 characters of the checksum of the files the image is built
+from (`scripts/ci-installieren.sh --pruefsumme python|frontend`: `Dockerfile.ci` with
+`requirements.txt`, or with `package.json` and `package-lock.json`). `Dockerfile.ci` is part
+of it so that a pull request raising the Python or Node version does not run on the old
+image with matching lockfiles. Measured locally on 13.11.: about 1.9 GB (Python)
+and 0.8 GB (Node) compressed in the registry; the Node image shares its base layers with
+`node:22`. The layer with the Angular cache adds about 27 MB compressed (measured 14.11.).
+Every change to a lockfile or to `Dockerfile.ci` leaves a new checksum tag behind; the old
+ones stay in the registry until a cleanup rule removes them (`latest` and the untagged
+`sha256:` versions are never touched by Forgejo's cleanup rules).
+
+- **Every run checks the image**, in the installation step and again at the start of
+  `unit`, `lint`, `integration`, `frontend-build` and `frontend` (`--nachpruefen`): each step
+  pulls `:latest` itself, and an image pushed in between could no longer match. Then pip
+  installs what is missing into the venv, or `npm ci` replaces the link. The steps that may
+  write to the venv (`unit`, `lint`, `integration`) and to `node_modules` (`frontend-build`,
+  `frontend`) never run at the same time. The image keeps the checksum under `/opt/ci/`.
+  `scripts/ci-installieren.sh` compares it with the checkout. If it matches, the venv is
+  created with `--system-site-packages` and pip does nothing (2 s instead of about 85 s
+  locally, about 2 min in CI), and `node_modules` becomes a link to `/opt/ci/node_modules`.
+  If it does not match (a pull request changes `Dockerfile.ci`, `requirements.txt` or
+  `package-lock.json`, or the image is behind), the step installs as without an image: pip only installs what differs
+  from the packages in the image (13 s locally for one changed pin), `npm ci --prefer-offline`
+  takes what it can from the npm cache of the image. Known price: a package that the pull
+  request removes from `requirements.txt` is still importable from the image until it is
+  rebuilt; the service image would then fail on the import, the CI not. Without a checksum
+  in the image (a plain `python:3.13-slim` or `node:22`) everything is installed. No pull
+  request turns red because the image is old.
+- **Models without offline mode.** Unlike the service image, the CI image does not set
+  `HF_HUB_OFFLINE`: if a pull request switches to a model the image does not have, the
+  run downloads it as before. The confirmer (`NLI_BESTAETIGER_MODELL`, 2.2 GB) is left out;
+  it is off by default and no test loads it. Locally the integration suite passed with
+  `HF_HUB_OFFLINE=1` in the image, so the two models are all it needs.
+- **When it is built:** after a push to `main` that changes what an image contains (path
+  filter per build step: `Dockerfile.ci`, `Dockerfile.ci.dockerignore`, the lockfiles,
+  `scripts/ci-installieren.sh`, for Node also `scripts/ci-chromium.sh`, and the workflow),
+  weekly by the cron job `ci-image` (new versions within the `>=` ranges of
+  `requirements.txt`, new model revisions, security updates of `python:3.13-slim`), and
+  with "Run pipeline" on `main`. The workflow waits for `ci` and `build` (both optional:
+  a cron run has neither, and `build` drops out when no image step matches), so it never
+  builds next to the heavy steps; if `ci` is red on `main`, it does not build and the next
+  cron run catches up. The two images are built one after the other; `ci-node` does not
+  build after a red step before it.
+- The build context is the repository root, cut down by `Dockerfile.ci.dockerignore` to the
+  files the Dockerfile copies and the frontend sources it mounts for the Angular cache
+  (`scripts/tests/test_woodpecker_ci.py` keeps the lists and the path filters equal).
+
+**Angular cache.** The Node image also carries Angular's cache (`.angular/cache`, 123 MB on
+disk, 27 MB compressed)
+from `ng build` and `ng test` of the commit it was built from, normally `main`.
+`frontend-installieren` copies it into the workspace in pull-request runs only, and only
+when the image matches the lockfiles; the steps write to the copy, the image stays as it
+is. Push, tag and manual runs build without it, as a clean reference.
+
+| Locally, 2 CPUs, freshly touched checkout | without | with cache | one component changed |
+|---|---|---|---|
+| `frontend-build` | 14.8 s | 12.3 s | 12.5 s |
+| `frontend` (Karma) | 42.4 s | 35.5 s | 37.3 s |
+
+- **Built at the workspace path of Woodpecker**
+  (`/woodpecker/src/git.verdigado.com/Netzbegruenung/gutgesagt`, `ARG CI_WORKSPACE`): the
+  webpack cache of the Karma tests is keyed by absolute paths; copied to another path, the
+  test run saved 3 s instead of 7–15 s. Files of the app webpack checks by timestamp, so in a
+  fresh checkout they count as changed anyway; the gain comes from `node_modules` and the
+  content cache. If `ci.yaml` ever sets its own `workspace`, or the
+  repository moves, the argument has to follow (`scripts/tests/test_woodpecker_ci.py` checks
+  the default).
+- The same `ng` calls as `check.sh` in CI (production build with
+  `NG_BUILD_MAX_WORKERS=2`; tests without source maps), otherwise the cache keys differ.
+  Each call is capped at 15 minutes (`timeout 900`). A red, aborted or timed-out build does
+  not stop the image; without a cache the directory stays empty and pull requests build
+  without it.
+- The sources are mounted, not copied, and a frontend change does not rebuild the image.
+  The cache goes stale in practice only with the lockfile, and a lockfile change rebuilds
+  the image anyway.
+- Pull requests only read it: nothing a pull request writes reaches another run or the
+  image. Release images are built from the Dockerfiles without any cache.
+- The images contain nothing secret and are public like the other images of
+  `netzbegruenung-images`, so the pipeline pulls them without a login.
+- `ci.yaml` names `gutgesagt-ci-python:latest` and `gutgesagt-ci-node:latest` with
+  `pull: true` (`:latest` moves with every build); `retired-words` and `ci-bericht` stay on
+  the plain images, they need neither packages nor models. A missing image is what the
+  checksum cannot catch: a step with an image that is not in the registry cannot start.
+  So the images must never be deleted from the registry; if they are, the cron job
+  `ci-image` with "Run now" rebuilds them.
 
 ## CI report
 
@@ -129,6 +350,60 @@ not the page.
   branches and create tags. Forgejo has no narrower scope for the wiki, so a leaked token
   is revoked and replaced at once.
 
+## Nightly run
+
+`.woodpecker/nacht.yaml` (workflow `nacht`, #391) measures the Messset and the
+Suchtestset against the real embedding model, every night and on request. Both decide
+whether a change to the model, a threshold, the stemmer or the normalisation shifts
+results; they are too slow for every pull request (several minutes, over 1 GB RAM for the
+model), so the run is not a required status.
+
+| Step | Runs | Red when |
+|---|---|---|
+| `messset` | `pytest tests/regression/test_aehnlichkeit_messset.py -m langsam`, then the table per Paar-Label | a score differs from `aehnlichkeit_gemessen.py` by more than 0.005, or a decision of the Dublettenprüfung changes (`MESSSET.md`) |
+| `suchtest` | waits for the services (`scripts/ci_dienste_warten.py`), `tests.regression.seed_laden` loads the seed into an empty collection of the service `qdrant`, `tests.regression.nachtlauf` measures the Suchtestset at today's threshold and prints the tables and the checks | a number differs from the Soll by more than one case (in either direction), or the gate for Roadmap-Stufe 3 or the lower bound for ähnliche Aussagen is not met (`SUCHTESTSET.md`, „Nächtlicher Lauf“) |
+
+- **Model cache:** both steps run in the image of the semantic search service
+  (`gutgesagt-semantic-search:main`, pulled anew each run, `pull: true`; the package is
+  public, no registry login), which downloads the model at build time. The code
+  measured is the checkout; pip only installs what `requirements.txt` changed.
+  `HF_HUB_OFFLINE=1` keeps the run on the model revision baked into the image instead of
+  whatever the hub serves that night. The image itself sets it too, after the preload
+  steps of its Dockerfile, so production and the dev stack never ask the hub either (#578);
+  the step's `environment` overrides the image. A pull request that switches to another
+  model adds a preload step for it to the Dockerfile and sets `HF_HUB_OFFLINE` to `"0"` in
+  `nacht.yaml` on its branch for the manual run, so the run downloads the new model (the
+  `:main` image does not have it yet), and back to `"1"` before the merge:
+  `scripts/tests/test_woodpecker_ci.py` keeps `ci` red until then, so `"0"` never lands on
+  `main`.
+- **Services:** `qdrant` and `postgres`, the same as in `ci.yaml` (`scripts/tests/test_woodpecker_ci.py`
+  keeps them equal). `suchtest` needs the database: starting the services
+  (`dependencies.initialize_services`) creates the `VotingService`, which opens the app
+  database and creates its tables. The step points `SEMANTIC_SEARCH_APP_DATABASE_URL` at
+  `postgres:5432`; without it the run fails with „Connection refused“ on `localhost:5433` (#576).
+- `suchtest` also runs after a red `messset`, one after the other: each step loads the
+  model.
+- The log line „Folder not found: …/index_data/content_index“ while loading the seed is
+  harmless: the aggregated `ContentRepository` looks for initial data in
+  `index_data/content_index`, which the seed does not have (it keeps everything under
+  `statements_with_*`), finds nothing and loads the seed the regular way. Seeding logs it in
+  the dev stack too.
+- Always against the seed in the service `qdrant` of the run, never against test or
+  production. No secret and no report step (there is no pull request to comment on): a red
+  run is visible in Woodpecker.
+- **When a pull request must trigger the run:** if it changes the embedding model,
+  a threshold (`MINIMUM_SCORE_THRESHOLD` in `services/search/search_orchestrator.py`,
+  `aussage_vorschlag_schwelle` in `core/config.py`),
+  the stemmer, the normalisation (`utils/text_normalisierung.py`), the search pipeline, the
+  seed, the Messset or the Suchtestset. Run it with "Run pipeline" on the pull-request
+  branch (not on `main`: there a manual run also builds every image, `build.yaml`) and name
+  the result in the pull request. `ci` runs alongside (it reacts to `manual` too), so the
+  agent carries both at once for a few minutes. The other way round as well: every manual
+  run, also one meant for `ci` or the images, starts the nightly run. If a number changes
+  on purpose, update the Soll in the same pull request (`aehnlichkeit_gemessen.py` or
+  `SOLL` in `nachtlauf.py`).
+- Locally: the commands in `MESSSET.md` and `SUCHTESTSET.md`.
+
 ## Images and releases
 
 Two workflows build the four images (frontend, BFF, semantic search, postgres-app) with the
@@ -139,7 +414,7 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
 
 | Workflow | Runs on | Builds | Tags |
 |---|---|---|---|
-| `build.yaml` | push to `main`; "Run pipeline" on `main` | images whose files changed; a manual run builds all | `main`, `sha-<7 characters>` |
+| `build.yaml` | push to `main`; "Run pipeline" on `main` | images whose files changed; a manual run builds all | `main` |
 | `release.yaml` | tag `v*` | all four | `X.Y.Z`, `X.Y`, `latest`; a prerelease only `X.Y.Z` |
 
 - **Tags from one script.** The step `image-tags` runs `scripts/image_tags.py`, which writes
@@ -149,7 +424,11 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
   argument `APP_VERSION` to the frontend image; a release needs no version change in
   `package.json` once the GitHub workflows are gone (`docs/DEPLOYMENT.md`, "Releases").
   Builds of `main` pass `APP_VERSION=main`: the footer shows „main · <commit>“ instead of a
-  version that would go stale.
+  version that would go stale. Until the switch the test system runs GitHub's `:main`, whose
+  `build.yml` passes only `GIT_SHA`, so its footer still shows the `package.json` version.
+  `replace-env.sh` writes commit and version into two meta tags of `index.html` (served
+  without cache), not into the `*.js` files: their hashed names are fixed before the
+  substitution and nginx caches them for a year, so browsers kept an old commit.
 - **Path filters** per build step, because a filter on the workflow would hide it. They cover
   everything the Dockerfile copies (the semantic search image also takes the migrations,
   `mvp/scripts/backup`, `mvp/data` and `mvp/.dockerignore`), plus `build.yaml` and
@@ -158,7 +437,16 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
 - `scripts/tests/test_woodpecker_images.py` keeps the two workflows identical except for the
   path filters and `APP_VERSION`, checks the image names, the filters against the
   Dockerfiles and that only the plugin steps see the registry secret.
-- No build cache: each run builds from scratch, as the earlier Woodpecker builds did.
+- **Build cache only for the semantic search image:** `cache_from` its `:woodpecker-main`,
+  `cache_to: type=inline` (the cache metadata travel inside the image, no extra cache image).
+  Without it every build pushed about 4 GB of new layers (the models), even for a code change;
+  with it the layers up to the model downloads stay the same blobs as long as the base image
+  and `requirements.txt` do. The other images build from scratch, they are small.
+- **Registry space:** `build.yaml` tags only `main`, no tag per commit. Forgejo deletes an
+  overwritten tag right away and its blobs with the cron task `cleanup_packages` (daily, older
+  than 24 h); a `sha-` tag per merge kept every build forever and filled the package disk on
+  14.11.2026. The `sha-` tags of the GitHub workflow go by a cleanup rule of the organisation
+  `netzbegruenung-images` (`docs/DEPLOYMENT.md`, "Updating Production").
 
 **Parallel run.** As long as the GitHub workflows build, every Woodpecker tag carries the
 prefix `woodpecker-` (`IMAGE_TAG_PRAEFIX` in both workflows): `:woodpecker-main`,
@@ -229,6 +517,20 @@ enabled, and the pull request that adds the pipeline already needs it):
    is brought up to date by merge ("Update branch"), not by rebase. Whoever wants a linear
    `main` sets the merge style to squash.
 
+6. **CI images, before merging the pull request that adds `ci-image.yaml`:** release the
+   secrets `registry_user` and `registry_token` (step 4) also for the event "Cron", so the
+   weekly build can push; nothing else changes (same plugin, same image filter, already
+   privileged). After the merge, add a cron job named `ci-image` (the workflow only reacts
+   to this name), branch `main`, schedule e.g. `0 4 * * 0` (Sundays at 04:00, after the
+   nightly run). The merge itself builds both images, since it changes the workflow; if
+   that run is red, start the cron job once with "Run now", so `:latest` exists: `ci.yaml`
+   cannot start its steps without it.
+
+7. **Cron job for the nightly run,** after the pull request that adds `nacht.yaml` is
+   merged: in the repository settings of Woodpecker, "Cron", add a job named `nachtlauf`
+   (the workflow only reacts to this name), branch `main`, schedule e.g. `0 3 * * *`
+   (every night at 03:00). No secret needed.
+
 Check without admin rights: `GET /api/v1/repos/<owner>/<repo>/branches/main` shows
 `enable_status_check` and `status_check_contexts`.
 
@@ -239,13 +541,20 @@ Check without admin rights: `GET /api/v1/repos/<owner>/<repo>/branches/main` sho
 [testing guide](../mvp/backend/semantic-search-service/app/tests/TESTING_GUIDE.md)).
 `bash scripts/check.sh --integration` runs all of them.
 
-For checks in between, `bash scripts/check.sh --geaendert` runs only the steps the files changed
+**Before a push, `bash scripts/check.sh --geaendert` is enough.** The full run, with
+all specs and the BFF, is the pipeline's job (the integration tests on `main`); run it
+locally only when the pipeline is red and you need the full output.
+
+`bash scripts/check.sh --geaendert` runs only the steps the files changed
 since the branch left `origin/main` (`CHECK_BASE`) reach, the working tree included; for the
 frontend only the specs of the changed components and services and the specs that import them.
+The production build (`frontend-build`) runs for every frontend change except one touching only
+specs or `tsconfig.spec.json`, which the build does not read; `e2e/` (Playwright against the dev
+stack) runs neither Karma nor the build.
 `integration` runs when migrations, repositories or Python modules the integration tests import
 directly or indirectly changed, without `--integration`, and then needs Qdrant and PostgreSQL like
 `--schritt integration`. It prints the chosen steps and why (`scripts/geaendert.py`, tests in
 `scripts/tests/test_geaendert.py`). When in doubt it runs more: changes under `scripts/` or
 `.woodpecker/` and paths it does not know run everything, documentation runs only
-`retired-words`. The pipeline does not use `--geaendert`; it always runs every step, and so does
-the full check before the merge.
+`retired-words`. The pipeline does not use `--geaendert`; on `main` it runs every step, pull
+requests see [Path filters](#path-filters) and [Integration tests on main only](#integration-tests-on-main-only).

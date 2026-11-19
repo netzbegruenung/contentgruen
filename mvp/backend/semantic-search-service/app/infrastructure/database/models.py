@@ -198,6 +198,38 @@ class MusterPruefwert(Base):
     __table_args__ = (Index("idx_muster_pruefwerte_tag", "tag"),)
 
 
+class GepostetPruefwert(Base):
+    """
+    Wer in der laufenden Kalenderwoche "Ja, gepostet" gemeldet hat (#643), als
+    Pruefwert: ein HMAC ueber die Kennung mit einem Wochenschluessel nur im Speicher
+    (services/gepostet_service.py). Ohne ihn verraet ein Wert die Person nicht, auch
+    nicht mit Datenbank und Konfiguration. Zeilen vergangener Wochen werden zur Zahl
+    in ``gepostet_wochen`` verdichtet und geloescht; welcher Beitrag kopiert wurde,
+    steht nirgends.
+    """
+
+    __tablename__ = "gepostet_pruefwerte"
+
+    pruefwert = Column(String(64), primary_key=True)
+    # Der Montag der Kalenderwoche (UTC).
+    woche = Column(Date, nullable=False)
+
+    __table_args__ = (Index("idx_gepostet_pruefwerte_woche", "woche"),)
+
+
+class GepostetWoche(Base):
+    """
+    Je vergangener Kalenderwoche die Zahl der verschiedenen Personen, die "Ja,
+    gepostet" gemeldet haben (#643, der Nordstern in docs/VISION.md). Nur eine Zahl,
+    keine Kennung, kein Pruefwert.
+    """
+
+    __tablename__ = "gepostet_wochen"
+
+    woche = Column(Date, primary_key=True)
+    personen = Column(Integer, nullable=False)
+
+
 class MusterHinweisZeile(Base):
     """
     Ein auffaelliges Muster fuer Admins (ADR 0004, #352): zwei Konten, die innerhalb
@@ -240,10 +272,12 @@ class SearchEvent(Base):
 
     id is a random UUID, not a sequence: a running number would give the order of
     the searches of a day, which lines up with the order of the statements they
-    created (#275). For the same reason the daily cleanup job rewrites the rows
-    of each closed day in random order in one transaction, so neither xmin nor
-    the physical row order (ctid, pg_dump) gives that order any more (#337, see
-    SearchTrackingRepository.mische_abgeschlossene_tage).
+    created (#275). xmin and the physical row order still give that order for the
+    running day; closed days have no rows here at all since #495.
+
+    Rows live only for the running UTC day: once a day is closed, the
+    Loeschfristen task compacts them into SuchenJeTagZeile and deletes them with
+    their pseudonym (#495, SearchTrackingRepository.verdichten_vor).
     """
 
     __tablename__ = "search_events"
@@ -271,13 +305,13 @@ class SearchEvent(Base):
 
 
 class SuchenJeTagZeile(Base):
-    """Tageszaehler der Suchen: was von Suchereignissen nach ihrer Frist bleibt.
+    """Tageszaehler der Suchen: was von Suchereignissen eines abgeschlossenen Tages bleibt.
 
-    Der Bereinigungsjob verdichtet Suchereignisse, die aelter als
-    search_event_retention_days sind, zu einer Zeile je UTC-Tag und loescht die
-    Einzelzeilen (#289). suchen zaehlt die Suchereignisse des Tages, personen die
+    Der Task der Loeschfristen verdichtet die Suchereignisse jedes abgeschlossenen
+    UTC-Tages zu einer Zeile und loescht die Einzelzeilen (#289; bis #495 erst nach
+    90 Tagen). suchen zaehlt die Suchereignisse des Tages, personen die
     verschiedenen Tagespseudonyme; die Pseudonyme selbst stehen nicht hier. Siehe
-    SearchTrackingRepository.verdichte_alte_suchereignisse.
+    SearchTrackingRepository.verdichten_vor.
 
     ohne_treffer zaehlt die Suchen des Tages ohne Treffer, fuer den Anteil in der
     Bilanz (#467). Leer bei Tagen, die vor #467 verdichtet wurden: Der Wert ist
@@ -312,6 +346,26 @@ class SucheOhneTrefferZeile(Base):
     personen = Column(Integer, nullable=False, server_default=text("0"))
 
     __table_args__ = (Index("idx_suchen_ohne_treffer_woche", "woche"),)
+
+
+class SuchanfrageFreigabe(Base):
+    """Vormoderation (Entscheidung des Maintainers vom 13.11.2026): ob ein Admin eine
+    unbeantwortete Suchanfrage ueber der Schwelle fuer alle freigegeben oder
+    abgelehnt hat. Ohne Zeile ist sie ungeprueft und nur fuer Admins sichtbar.
+
+    Traegt weder Text noch Kennung des Admins: der Text steht an der Aussage in
+    Qdrant, hier nur deren ID. Siehe services/suchen_ohne_treffer_service.py
+    (sichtbar_fuer_alle, zu_pruefen, entscheiden).
+    """
+
+    __tablename__ = "suchanfrage_freigaben"
+
+    statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
+    # True: freigegeben, False: abgelehnt.
+    freigegeben = Column(Boolean, nullable=False)
+    entschieden_am = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class FeedbackZeile(Base):
@@ -694,6 +748,11 @@ class GeseheneNutzung(Base):
 
     user_id = Column(String(255), primary_key=True)
     nutzung = Column(Integer, nullable=False)
+    # Wie viele Einwuerfe anderer es gab, als die Person zuletzt da war ("Seit deinem
+    # letzten Besuch" auf der Startseite). Ebenfalls ein Zaehlerstand, kein Zeitpunkt.
+    # NULL: noch nie gezaehlt; der erste Besuch nennt dann nichts als neu.
+    # Migration: postgres-app/migrations/2026-11-13-gesehene-einwuerfe.sql.
+    einwuerfe = Column(Integer, nullable=True)
 
 
 class Art9EinwilligungZeile(Base):
@@ -723,6 +782,156 @@ class Art9EinwilligungZeile(Base):
     __table_args__ = (
         Index("idx_art9_einwilligungen_user", "user_id", "eingewilligt_am"),
     )
+
+
+class Art9OhneEinwilligungZeile(Base):
+    """
+    Die Person ist nach der Anmeldung bewusst ohne Art.-9-Einwilligung weitergegangen
+    (UX-Review B2, Entscheidung Maintainer 13.11.2026): je Kennung hoechstens eine Zeile,
+    mit dem Wortlaut, der da galt, und dem Zeitpunkt. Damit fuehrt die App nicht bei
+    jedem Start wieder auf /einwilligung. Am Konto statt im Browser, bis Paragraf 25
+    TDDDG fuer Browser-Eintraege geprueft ist.
+
+    Eine Einwilligung loescht die Zeile, ein Widerruf laesst sie stehen (dann gilt
+    ohnehin "widerrufen"). Neue Tabelle: create_all legt sie an; das Skript
+    postgres-app/migrations/2026-11-13-art9-ohne-einwilligung.sql dokumentiert das
+    Schema. Loeschen: mit dem Konto (docs/LOESCHKONZEPT.md, Schritt 2).
+    """
+
+    __tablename__ = "art9_ohne_einwilligung"
+
+    user_id = Column(String(255), primary_key=True)
+    wortlaut = Column(String(64), nullable=False)
+    entschieden_am = Column(DateTime(timezone=True), nullable=False)
+
+
+class AbzeichenSichtbarkeitZeile(Base):
+    """
+    Eine Antwort auf die Frage, ob andere Angemeldete die Meilenstein-Abzeichen der
+    Person an ihrem Anzeigenamen sehen (#351, GLOSSARY.md "Zustimmung zur
+    Sichtbarkeit"). Es gilt die juengste Zeile der Kennung; ``zeigen`` ist die
+    Antwort, ``wortlaut`` die Kennung der Frage (domain/abzeichen_sichtbarkeit.py).
+
+    Auch ein Nein ist eine Zeile, damit die App nicht erneut fragt. Jede Aenderung ist
+    eine neue Zeile: So bleibt belegt, wann die Person zugestimmt und wann sie
+    zurueckgenommen hat (Art. 7 Abs. 1 DSGVO).
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-09-351-abzeichen-sichtbarkeit.sql dokumentiert
+    das Schema. Loeschen: docs/LOESCHKONZEPT.md, Schritt 2.
+    """
+
+    __tablename__ = "abzeichen_sichtbarkeit"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(255), nullable=False)
+    zeigen = Column(Boolean, nullable=False)
+    wortlaut = Column(String(64), nullable=False)
+    beantwortet_am = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_abzeichen_sichtbarkeit_user", "user_id", "beantwortet_am"),
+    )
+
+
+class PunkteEinwilligungZeile(Base):
+    """
+    Eine Antwort auf die Einwilligung "Punkte und Meilensteine" (#351,
+    domain/punkte_einwilligung.py): ``eingewilligt`` ja oder nein, ``wortlaut`` die
+    Kennung des Wortlauts, ``beantwortet_am`` der Zeitpunkt. Es gilt die juengste Zeile
+    der Kennung; ein Widerruf ist eine neue Zeile mit nein, damit belegt bleibt, wann
+    die Person eingewilligt und wann sie widerrufen hat (Art. 7 Abs. 1 DSGVO).
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-13-351-punkte-einwilligung.sql dokumentiert das
+    Schema. Loeschen: docs/LOESCHKONZEPT.md, Schritt 2.
+    """
+
+    __tablename__ = "punkte_einwilligung"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(255), nullable=False)
+    eingewilligt = Column(Boolean, nullable=False)
+    wortlaut = Column(String(64), nullable=False)
+    beantwortet_am = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_punkte_einwilligung_user", "user_id", "beantwortet_am"),
+    )
+
+
+class LoeschauftragZeile(Base):
+    """
+    Ein Loeschauftrag nach dem Widerruf der Art.-9-Einwilligung (GLOSSARY.md
+    "Loeschauftrag"): wessen Mitwirkung den Personenbezug verliert, seit wann, bis
+    wann (``frist``, sieben Tage nach dem Anlegen) und wann ein Admin den Loeschablauf
+    ausgefuehrt hat (services/loeschauftrag_service.py).
+
+    Je Person hoechstens ein offener Auftrag (Index ``idx_loeschauftraege_offen``):
+    Ein zweiter Widerruf legt keinen zweiten an. Erledigte gehen nach ihrer Frist
+    (services/loeschfristen_service.py), offene bleiben, bis ein Admin sie ausfuehrt.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-13-loeschauftraege.sql dokumentiert das Schema.
+    Loeschen: docs/LOESCHKONZEPT.md, Schritt 2 und "Fristen".
+    """
+
+    __tablename__ = "loeschauftraege"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(255), nullable=False)
+    angelegt_am = Column(DateTime(timezone=True), nullable=False)
+    frist = Column(DateTime(timezone=True), nullable=False)
+    erledigt_am = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index(
+            "idx_loeschauftraege_offen",
+            "user_id",
+            unique=True,
+            postgresql_where=text("erledigt_am IS NULL"),
+        ),
+        Index("idx_loeschauftraege_erledigt_am", "erledigt_am"),
+    )
+
+
+class SchalterZeile(Base):
+    """
+    Admin-Wert eines Schalters (GLOSSARY.md "Schalter", #708): ob ein Admin ihn
+    eingeschaltet hat. Wirksam ist er nur, wenn auch die Obergrenze aus der Umgebung
+    an ist (services/schalter_service.py). Fehlt die Zeile, gilt aus.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-11-18-708-schalter.sql dokumentiert das Schema.
+    """
+
+    __tablename__ = "schalter"
+
+    name = Column(String(64), primary_key=True)
+    an = Column(Boolean, nullable=False)
+    geaendert_am = Column(DateTime(timezone=True), nullable=False)
+    # Kennung des Admins (GLOSSARY.md "Kennung"), kein Klarname; leer, wenn sein Konto
+    # geloescht ist (mvp/scripts/manual/person_loeschen.sql)
+    geaendert_von = Column(String(255), nullable=True)
+
+
+class SchalterVerlaufZeile(Base):
+    """
+    Jede Aenderung eines Admin-Werts (#708): welcher Schalter, neuer Wert, wann, von
+    welchem Admin (Kennung). Frist: ein Jahr ab ``geaendert_am``
+    (services/loeschfristen_service.py, docs/LOESCHKONZEPT.md).
+    """
+
+    __tablename__ = "schalter_verlauf"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(64), nullable=False)
+    an = Column(Boolean, nullable=False)
+    geaendert_am = Column(DateTime(timezone=True), nullable=False)
+    # Leer, wenn das Konto des Admins geloescht ist (person_loeschen.sql)
+    geaendert_von = Column(String(255), nullable=True)
+
+    __table_args__ = (Index("idx_schalter_verlauf_geaendert_am", "geaendert_am"),)
 
 
 class MigrationsprotokollZeile(Base):

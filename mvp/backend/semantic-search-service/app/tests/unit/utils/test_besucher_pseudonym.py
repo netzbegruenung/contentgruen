@@ -9,7 +9,6 @@ from starlette.requests import Request
 
 from utils.besucher_pseudonym import (
     Tagesschluessel,
-    anschluss_pruefwert,
     besucher_merkmal,
     besucher_tagespseudonym,
 )
@@ -18,7 +17,7 @@ pytestmark = pytest.mark.unit
 
 HEUTE = date(2026, 10, 29)
 MORGEN = date(2026, 10, 30)
-MERKMAL = "198.51.100.5|Mozilla/5.0 (X11; Linux x86_64) Firefox/131.0"
+MERKMAL = "198.51.100.5"
 
 
 def _anfrage(headers: dict, peer: str = "10.0.0.2") -> Request:
@@ -92,67 +91,44 @@ class TestBesucherTagespseudonym:
 
     def test_anderes_merkmal_ist_ein_anderes_pseudonym(self):
         assert besucher_tagespseudonym(MERKMAL, HEUTE) != besucher_tagespseudonym(
-            "198.51.100.6|Firefox", HEUTE
-        )
-
-    def test_enthaelt_weder_adresse_noch_user_agent(self):
-        pseudonym = besucher_tagespseudonym(MERKMAL, HEUTE)
-
-        assert len(pseudonym) == 64
-        assert "198.51.100.5" not in pseudonym
-        assert "Firefox" not in pseudonym
-
-
-class TestAnschlussPruefwert:
-    """Unterscheidet Anschluesse, nicht Browser (#496)."""
-
-    def test_anderer_user_agent_ist_derselbe_anschluss(self):
-        eins = _anfrage({"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"})
-        zwei = _anfrage({"X-Real-IP": "198.51.100.5", "User-Agent": "Chrome"})
-
-        assert anschluss_pruefwert(eins, HEUTE) == anschluss_pruefwert(zwei, HEUTE)
-
-    def test_andere_adresse_ist_ein_anderer_anschluss(self):
-        eins = _anfrage({"X-Real-IP": "198.51.100.5"})
-        zwei = _anfrage({"X-Real-IP": "198.51.100.6"})
-
-        assert anschluss_pruefwert(eins, HEUTE) != anschluss_pruefwert(zwei, HEUTE)
-
-    def test_ipv6_zaehlt_mit_seinem_64(self):
-        eins = _anfrage({"X-Real-IP": "2001:db8:1:2::a"})
-        zwei = _anfrage({"X-Real-IP": "2001:db8:1:2::b"})
-
-        assert anschluss_pruefwert(eins, HEUTE) == anschluss_pruefwert(zwei, HEUTE)
-
-    def test_am_naechsten_tag_ist_es_ein_anderes(self):
-        anfrage = _anfrage({"X-Real-IP": "198.51.100.5"})
-
-        assert anschluss_pruefwert(anfrage, HEUTE) != anschluss_pruefwert(
-            anfrage, MORGEN
-        )
-
-    def test_ist_nicht_das_tagespseudonym_eines_besuchers(self):
-        """Auch nicht das eines Besuchers ohne User-Agent."""
-        anfrage = _anfrage({"X-Real-IP": "198.51.100.5"})
-
-        assert anschluss_pruefwert(anfrage, HEUTE) != besucher_tagespseudonym(
-            besucher_merkmal(anfrage), HEUTE
+            "198.51.100.6", HEUTE
         )
 
     def test_enthaelt_die_adresse_nicht(self):
-        pseudonym = anschluss_pruefwert(_anfrage({"X-Real-IP": "198.51.100.5"}), HEUTE)
+        pseudonym = besucher_tagespseudonym(MERKMAL, HEUTE)
 
         assert len(pseudonym) == 64
         assert "198.51.100.5" not in pseudonym
 
 
 class TestBesucherMerkmal:
-    def test_aus_real_ip_und_user_agent(self):
+    """Nur der Anschluss, ohne User-Agent (#495)."""
+
+    def test_aus_real_ip_allein(self):
         merkmal = besucher_merkmal(
             _anfrage({"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"})
         )
 
-        assert merkmal == "198.51.100.5|Firefox"
+        assert merkmal == "198.51.100.5"
+
+    def test_anderer_user_agent_ist_derselbe_besucher(self):
+        """Ein Wechsel des Browsers ergibt keinen zweiten Besucher."""
+        eins = _anfrage({"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"})
+        zwei = _anfrage({"X-Real-IP": "198.51.100.5", "User-Agent": "Chrome"})
+        ohne = _anfrage({"X-Real-IP": "198.51.100.5"})
+
+        assert (
+            besucher_merkmal(eins) == besucher_merkmal(zwei) == besucher_merkmal(ohne)
+        )
+        assert besucher_tagespseudonym(
+            besucher_merkmal(eins), HEUTE
+        ) == besucher_tagespseudonym(besucher_merkmal(zwei), HEUTE)
+
+    def test_andere_adresse_ist_ein_anderer_besucher(self):
+        eins = besucher_merkmal(_anfrage({"X-Real-IP": "198.51.100.5"}))
+        zwei = besucher_merkmal(_anfrage({"X-Real-IP": "198.51.100.6"}))
+
+        assert eins != zwei
 
     def test_ipv6_zaehlt_mit_seinem_64(self):
         """Datenschutz-Erweiterungen wechseln die Adresse im /64 laufend."""
@@ -160,20 +136,15 @@ class TestBesucherMerkmal:
             _anfrage({"X-Real-IP": "2001:db8:1:2::a", "User-Agent": "Firefox"})
         )
         zwei = besucher_merkmal(
-            _anfrage({"X-Real-IP": "2001:db8:1:2::b", "User-Agent": "Firefox"})
+            _anfrage({"X-Real-IP": "2001:db8:1:2::b", "User-Agent": "Chrome"})
         )
 
-        assert eins == zwei == "2001:db8:1:2::/64|Firefox"
+        assert eins == zwei == "2001:db8:1:2::/64"
 
     def test_ohne_real_ip_der_peer_der_verbindung(self):
         merkmal = besucher_merkmal(_anfrage({"User-Agent": "Firefox"}, peer="10.0.0.9"))
 
-        assert merkmal == "10.0.0.9|Firefox"
-
-    def test_ohne_user_agent_bleibt_die_adresse(self):
-        assert besucher_merkmal(_anfrage({"X-Real-IP": "198.51.100.5"})) == (
-            "198.51.100.5|"
-        )
+        assert merkmal == "10.0.0.9"
 
     def test_eine_mitgeschickte_sitzungskennung_aendert_nichts(self):
         """Der Browser bestimmt das Merkmal nicht mehr selbst."""

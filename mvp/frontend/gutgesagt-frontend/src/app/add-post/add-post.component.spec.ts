@@ -10,8 +10,14 @@ import { PostService } from '../services/post.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of as vonWert } from 'rxjs';
+
+/** Zweispaltig wie am Desktop: Gegenlesen neben der Vorschau (Nutzerfuehrung 13.11.). */
+const ZWEISPALTIG = { provide: BreakpointObserver, useValue: { observe: () => vonWert({ matches: false, breakpoints: {} }) } };
 
 describe('AddPostComponent', () => {
   let fixture: ComponentFixture<AddPostComponent>;
@@ -27,7 +33,7 @@ describe('AddPostComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AddPostComponent, NoopAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), ZWEISPALTIG],
     })
       .overrideComponent(AddPostComponent, {
         remove: { imports: [BeitragskarteComponent] },
@@ -101,19 +107,56 @@ describe('AddPostComponent', () => {
     expect((fixture.nativeElement.querySelector('.submit-btn') as HTMLButtonElement).disabled).toBeFalse();
   });
 
+  it('sagt dem Gegenlesen nichts zur Herkunft: kein Herkunftsfeld, keine Zahl-Regel', () => {
+    const gegenlesen = fixture.debugElement.query((d) => d.name === 'app-gegenlesen').componentInstance;
+    expect(gegenlesen.hatHerkunft).toBeNull();
+    expect(gegenlesen.herkunftEmpfohlen).toBeFalse();
+  });
+
   it('schickt nichts, solange ein Pflichtfeld fehlt', () => {
     const senden = spyOn(TestBed.inject(PostService), 'addPost');
-    component.postForm.patchValue({ ...WERTE, author: '' });
+    component.postForm.patchValue({ ...WERTE, url: '' });
 
     component.speichern();
 
     expect(senden).not.toHaveBeenCalled();
   });
 
+  it('speichert ohne "Gepostet von" und schickt dann kein Konto (#618)', () => {
+    const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-2' }));
+    component.postForm.patchValue({ ...WERTE, author: '  ' });
+
+    component.speichern();
+
+    expect(senden).toHaveBeenCalledOnceWith({
+      post: jasmine.objectContaining({ author: null }),
+    });
+  });
+
+  it('zeigt bei "Gepostet von" keinen Hinweis, nur "(optional)" (#618)', () => {
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Gepostet von (optional)');
+    expect(fixture.nativeElement.textContent).not.toContain('Nur bei Organisationen');
+  });
+
   it('nimmt nur Links mit http oder https', () => {
     component.postForm.patchValue({ ...WERTE, url: 'instagram.com/p/abc' });
 
     expect(component.postForm.get('url')!.hasError('pattern')).toBeTrue();
+  });
+
+  // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+  it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', () => {
+    spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+    component.postForm.patchValue(WERTE);
+
+    component.speichern();
+    fixture.detectChanges();
+
+    expect(component.fehler).toBeNull();
+    expect(component.speichert).toBeFalse();
+    expect(component.postForm.value.title).toBe(WERTE.title);
   });
 
   it('behaelt nach gescheitertem Speichern die Eingaben und meldet den Fehler', () => {
@@ -126,5 +169,73 @@ describe('AddPostComponent', () => {
     expect(component.fehler).toBe(SPEICHERN_FEHLGESCHLAGEN);
     expect(component.postForm.value.title).toBe(WERTE.title);
     expect(component.speichert).toBeFalse();
+  });
+
+  describe('Antwort auf (optional, #619)', () => {
+    it('zeigt den Antwort-auf-Block über dem Link', () => {
+      const block = fixture.nativeElement.querySelector('form app-antwort-auf');
+      const link = fixture.nativeElement.querySelector('#url');
+
+      expect(block).not.toBeNull();
+      expect(block.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('schickt eine gewählte Aussage per ID mit und meldet die verknüpfte', () => {
+      const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(
+        of({ id: 'p-1', statement_id: 'a-1', statement_text: 'Solar lohnt sich nicht', verknuepft: true }),
+      );
+      let gemeldet: BeitragGespeichert | undefined;
+      component.success.subscribe((ergebnis) => (gemeldet = ergebnis));
+      component.postForm.patchValue(WERTE);
+      component.aussageSetzen({ id: 'a-1', text: 'Solar lohnt sich nicht' });
+
+      component.speichern();
+
+      expect(senden.calls.mostRecent().args[0].statement_id).toBe('a-1');
+      // Der Text geht mit (Vormoderation: verborgene Suchanfrage, aussageFuerAnfrage).
+      expect(senden.calls.mostRecent().args[0].statement_text).toBe('Solar lohnt sich nicht');
+      expect(gemeldet).toEqual({ id: 'p-1', aussage: { id: 'a-1', text: 'Solar lohnt sich nicht' }, verknuepft: true });
+    });
+
+    it('schickt eine neue Aussage per Text mit ihren Themen', () => {
+      const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-1', verknuepft: true }));
+      component.postForm.patchValue({ ...WERTE, themen: ['klima'] });
+      component.aussageSetzen({ id: '', text: 'Solar lohnt sich nicht', neuGewaehlt: true });
+
+      component.speichern();
+
+      expect(senden.calls.mostRecent().args[0]).toEqual(
+        jasmine.objectContaining({ statement_text: 'Solar lohnt sich nicht', themen: ['klima'] }),
+      );
+    });
+
+    it('meldet nicht verknüpft, wenn das Backend die Aussage nicht anhängen konnte', () => {
+      spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-1', verknuepft: false }));
+      let gemeldet: BeitragGespeichert | undefined;
+      component.success.subscribe((ergebnis) => (gemeldet = ergebnis));
+      component.postForm.patchValue(WERTE);
+      component.aussageSetzen({ id: 'a-weg', text: 'Gibt es nicht mehr' });
+
+      component.speichern();
+
+      expect(gemeldet?.verknuepft).toBeFalse();
+      expect(gemeldet?.aussage.text).toBe('Gibt es nicht mehr');
+    });
+
+    it('sperrt Speichern bei einer Aussage unter 10 Zeichen, leer ist erlaubt', () => {
+      const senden = spyOn(TestBed.inject(PostService), 'addPost').and.returnValue(of({ id: 'p-1' }));
+      component.postForm.patchValue(WERTE);
+      component.aussageSetzen({ id: '', text: 'zu kurz' });
+      fixture.detectChanges();
+
+      expect((fixture.nativeElement.querySelector('.submit-btn') as HTMLButtonElement).disabled).toBeTrue();
+      component.speichern();
+      expect(senden).not.toHaveBeenCalled();
+
+      component.aussageSetzen(OHNE_AUSSAGE);
+      component.speichern();
+      expect(senden).toHaveBeenCalled();
+      expect(senden.calls.mostRecent().args[0].statement_text).toBeUndefined();
+    });
   });
 });

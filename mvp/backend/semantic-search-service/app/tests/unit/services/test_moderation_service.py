@@ -19,7 +19,7 @@ from repositories.implementations.qdrant.moderation_repository import (
 )
 from domain.content_registry import BEITRAGSTYPEN_WERTE
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
-from services.moderation_service import ModerationService
+from services.moderation_service import ModerationService, SchonGesperrt
 from tests.conftest import (
     GRUND_FUER_SPERRE,
     add_aussage_mit_verweis,
@@ -167,6 +167,49 @@ class TestEntsperren:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+class TestAntwortzahl:
+    """Die Zahl "N Antworten" an Aussagen zaehlt nur sichtbare Beitraege (#631)."""
+
+    async def test_sperren_senkt_und_entsperren_hebt_die_zahl(self, service, speicher):
+        aussage_id = add_aussage_mit_verweis(speicher, CONTENT_ID)
+
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
+        assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 0
+
+        await service.entsperren(CONTENT_ID)
+        assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 1
+
+    async def test_erneutes_sperren_zieht_die_zahl_nach(self, service, speicher):
+        """Die Sperre besteht schon (SchonGesperrt), die Zahl stimmte noch nicht."""
+        aussage_id = add_aussage_mit_verweis(speicher, CONTENT_ID)
+        await service.moderation_repo.sperren({**_payload(speicher), "id": CONTENT_ID})
+        service._sperre_repo.aktive.return_value = MagicMock()
+
+        with pytest.raises(SchonGesperrt):
+            await service.sperren(
+                CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE
+            )
+
+        assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 0
+
+    async def test_scheitert_die_zahl_bleibt_die_sperre(self, service, speicher):
+        service.moderation_repo.antwortzahl_nachziehen = AsyncMock(
+            side_effect=RuntimeError("Qdrant nicht erreichbar")
+        )
+
+        assert (
+            await service.sperren(
+                CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE
+            )
+            is True
+        )
+        assert _payload(speicher)["status"] == "blocked"
+        assert await service.entsperren(CONTENT_ID) is True
+        assert _payload(speicher)["status"] == "visible"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 class TestGesperrteBeitraege:
     """Admins finden gesperrte Beitraege auch ohne Meldung, etwa nach einem Loeschantrag."""
 
@@ -239,6 +282,22 @@ class TestLoeschen:
 
         assert CONTENT_ID in speicher.get_data()
         service.report_repo.update_reports_by_content_id.assert_not_called()
+
+    async def test_loeschen_nimmt_die_entscheidung_der_vormoderation_mit(
+        self, service, suchanfrage_freigaben_ohne_datenbank
+    ):
+        assert await service.delete_content(CONTENT_ID, "statement", "admin-1")
+
+        suchanfrage_freigaben_ohne_datenbank.loeschen.assert_called_once_with(
+            uuid.UUID(CONTENT_ID)
+        )
+
+    async def test_loeschen_bleibt_wenn_die_entscheidung_nicht_weggeht(
+        self, service, suchanfrage_freigaben_ohne_datenbank
+    ):
+        suchanfrage_freigaben_ohne_datenbank.loeschen.side_effect = RuntimeError("weg")
+
+        assert await service.delete_content(CONTENT_ID, "statement", "admin-1")
 
     async def test_loeschen_nimmt_stimmen_und_ausformuliert_in_mit(
         self, service, varianten_ohne_datenbank

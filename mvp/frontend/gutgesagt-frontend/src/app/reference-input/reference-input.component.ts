@@ -201,7 +201,7 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
         this.isCommitting = true;
         try {
             // Show immediate feedback
-            this.snackBar.open('Referenz wird hinzugefügt...', '', {
+            this.snackBar.open('Herkunft wird hinzugefügt …', '', {
                 duration: 0,  // Keep open until replaced
                 panelClass: ['info-snackbar']
             });
@@ -337,7 +337,7 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
     }
 
     private showDuplicateWarning(): void {
-        this.snackBar.open('Diese Referenz wurde bereits hinzugefügt', 'OK', {
+        this.snackBar.open('Diese Herkunft steht schon in der Liste.', 'OK', {
             duration: 3000,
             panelClass: ['warning-snackbar']
         });
@@ -389,7 +389,7 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
                         // Dismiss loading snackbar and show error
                         this.snackBar.dismiss();
                     }
-                    this.snackBar.open('Fehler beim Hinzufügen der Referenz', 'OK', {
+                    this.snackBar.open('Die Herkunft ließ sich nicht hinzufügen. Versuch es noch einmal.', 'OK', {
                         duration: 3000,
                         panelClass: ['error-snackbar']
                     });
@@ -423,7 +423,7 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
                     is_new: false
                 });
                 this.clearInputs();
-                this.snackBar.open('✓ Referenz hinzugefügt', 'OK', {
+                this.snackBar.open('Herkunft hinzugefügt.', 'OK', {
                     duration: 3000,
                     panelClass: ['success-snackbar']
                 });
@@ -447,7 +447,7 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
     private showReferenceAddedFeedback(isDuplicate: boolean): void {
         if (isDuplicate) {
             this.snackBar.open(
-                '✓ Existierende Referenz wird wiederverwendet',
+                'Herkunft hinzugefügt. Andere Beiträge stützen sich schon darauf.',
                 'OK',
                 {
                     duration: 3000,
@@ -456,7 +456,7 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
             );
         } else {
             this.snackBar.open(
-                '+ Neue Referenz wird erstellt',
+                'Herkunft hinzugefügt.',
                 'OK',
                 {
                     duration: 2000,

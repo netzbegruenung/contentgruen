@@ -1,9 +1,17 @@
 # Löschkonzept (Art. 17 DSGVO)
 
-> **Vorsorge, keine erprobte Prozedur.** Es gibt heute keine Nutzer und keine
-> erhaltenswerten Daten. Die Anlage hat keinen Codepfad, der eine Person löscht,
-> außer dem Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“);
-> was hier sonst steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
+> **Noch keine erprobte Prozedur.** Produktion läuft, mit Anmeldung über die Netzbegrünung
+> und mit Beta-Zugängen (`docs/DEPLOYMENT.md`, `STATUS.md`); spätestens mit dem internen Start
+> (`v0.9.0`) legen echte Personen Konten, Beiträge, Stimmen und Meldungen an, auch Daten nach
+> Art. 9. Ab dann ist jedes Löschverlangen zu erfüllen, und dieses Konzept ist der Weg dafür.
+> Wie viele Konten und Daten es in Produktion schon gibt, steht nicht im Repo (**offen**).
+> Ein Codepfad, der eine Person mit Konto löscht, fehlt. Es gibt nur vier Teilwege: das
+> Einzellöschen von Feedback im Admin-Dashboard (unter „Feedback“), „Angaben löschen“ für
+> Meldende (`POST /api/v1/moderation/melder/angaben-loeschen`, unter „Fristen“, Meldungen),
+> den Löschauftrag nach dem Widerruf der Art.-9-Einwilligung (unter „Löschauftrag nach dem
+> Widerruf“) und das automatische Löschen nie benutzter Konten aus Einladungen (#538, unter
+> „Fristen“). Was
+> hier sonst steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
 > Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
 > zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), der
 > Qdrant-Teil gegen eine Collection im Speicher und gegen einen echten Qdrant
@@ -98,9 +106,15 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    `raw_inputs` der Person löschen (CASCADE räumt deren Links und die Sätze daran mit
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
-   `users` (Anzeigename), die in `gesehene_nutzung` (Stand der Rückmeldung beim
-   Anmelden, nur eine Zahl) und die in `art9_einwilligungen` (jede Art.-9-Einwilligung mit
-   Zeitpunkt und Wortlaut, auch widerrufene; #489) löschen, ebenso jeden Muster-Hinweis
+   `users` (Anzeigename), die in `gesehene_nutzung` (Stände der Rückmeldung beim
+   Anmelden und von „Seit deinem letzten Besuch“, nur Zählerstände) und die in `art9_einwilligungen` (jede Art.-9-Einwilligung mit
+   Zeitpunkt und Wortlaut, auch widerrufene; #489), die in `art9_ohne_einwilligung` („ohne
+   Einwilligung weiter“ mit dem Wortlaut, PR #670), in `abzeichen_sichtbarkeit` (jede
+   Antwort auf die Frage nach der Sichtbarkeit der Abzeichen, auch ein Nein; #351), in
+   `punkte_einwilligung` (jede Antwort auf die Einwilligung „Punkte und Meilensteine“, auch
+   ein Widerruf; #351) und die in
+   `loeschauftraege` (offene und erledigte Löschaufträge nach einem Widerruf)
+   löschen, ebenso jeden Muster-Hinweis
    (`muster_hinweise`, #352), der die Person nennt. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
    zeigen nach Schritt 3 „ehemalige Person“.
@@ -139,6 +153,74 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
    (`BFF/Services/ManagedUserService.cs:128`).
 
+## Löschauftrag nach dem Widerruf
+
+Widerruft eine Person ihre Art.-9-Einwilligung, fehlt für die Zuordnung ihrer Beiträge,
+Einwürfe und Sätze die Rechtsgrundlage (DSFA V2, R9; `docs/ART9_EINWILLIGUNG.md`). Der Widerruf
+löscht sofort ihre Stimmen und legt in derselben Transaktion einen **Löschauftrag** an: Kennung,
+Zeitpunkt und Frist, sieben Tage später (Tabelle `loeschauftraege`,
+`Art9EinwilligungService.widerrufen`). Einen Auftrag gibt es nur, wenn dabei eine geltende
+Einwilligung widerrufen wurde; je Person höchstens einen offenen, ein zweiter Widerruf legt
+keinen zweiten an. Wer vor diesem Stand irgendwann widerrufen hat, auch wer seither neu
+eingewilligt hat, bekommt den Auftrag beim Einspielen der Migration
+(`2026-11-13-loeschauftraege.sql`): angelegt zum Zeitpunkt des jüngsten Widerrufs, Frist sieben
+Tage ab dem Einspielen (entschieden 13.11.2026). Die Datenschutzerklärung sagt dazu: „Wer vor dem 18. November 2026 widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.“
+Das Datum ist der Tag, an dem v0.9.0 in Produktion geht und die Migration dort einspielt; bis zum
+Release stand dort ein Platzhalter (bei Tags prüft `scripts/release_platzhalter.py`, dass keiner mehr steht). Was nach einer neuen Einwilligung gespeichert
+wurde, schützt die Obergrenze (unten). Beim Umstellen der Kennungen
+zieht der Auftrag mit; haben alte und neue Kennung je einen offenen, bleibt der der neuen.
+
+Admins sehen offene Aufträge unter „Moderation“, „Löschaufträge“, mit der frühesten Frist
+zuerst; überfällige stehen hervorgehoben, die Zahl offener steht am Umschalter. Liste und
+Zahl laden selbst nach. Hat die Person nach dem Widerruf neu eingewilligt, steht „Neu
+eingewilligt am …“ daneben (die erste Einwilligung nach dem jüngsten Widerruf); der Auftrag
+bleibt, erfasst aber nur, was davor gespeichert wurde (Entscheidung Maintainer,
+13.11.2026, unten „Obergrenze“). „Widerrufen am“ ist der jüngste Widerruf. Überfällige
+meldet der tägliche Löschfrist-Task zusätzlich als WARNING im Log, nur mit ihrer Zahl. „Löschablauf ausführen“ (`POST /api/v1/moderation/loeschauftraege/{id}/ausfuehren`)
+macht für diese Person dasselbe wie der Ablauf oben, beschränkt auf die Mitwirkung:
+
+- **Qdrant wie Schritt 3:** Beiträge anonymisieren (`services/wartung/beitraege_anonymisieren.py`,
+  dieselbe Logik wie das Skript).
+- **PostgreSQL wie Schritt 2, nur Einwürfe und Sätze:** eigene Einwürfe löschen (samt Sätzen und
+  „ausformuliert in“ daran), Sätze an fremden Einwürfen und `destilled_by` mit Platzhalter,
+  `raw_input_content_links.created_by` leer, an Sperren ihrer Beiträge `autor` und
+  `widerspruch` leer, Platzhalter ohne Satz abräumen (`LoeschauftragRepository.ausfuehren`).
+  In derselben Transaktion bekommt der Auftrag den Zeitpunkt der Ausführung.
+- **Obergrenze:** die früheste Einwilligung nach dem jüngsten Widerruf und nicht vor dem Anlegen
+  des Auftrags, zu irgendeinem Wortlaut (`Loeschauftrag.obergrenze`): Jede gespeicherte
+  Einwilligung galt, als sie gegeben wurde (neu einwilligen geht nur zu einem geltenden Wortlaut),
+  und die Zusage „Was ich nach einer neuen Einwilligung beitrage, bleibt“ hängt nicht daran, ob
+  später ein neuer Wortlaut kommt. Was ab ihr gespeichert ist, bleibt an der Person; gibt es sie
+  nicht oder fehlt eine Zeile mit Widerruf, erfasst der Auftrag alles, auch Nachzügler, die kurz vor dem
+  Widerruf geprüft und erst danach gespeichert wurden (lieber zu viel als zu wenig). Widerruft
+  die Person nach einer neuen Einwilligung erneut, bleibt es bei einem Auftrag, und die
+  Obergrenze fällt weg. Verglichen werden Beiträge nach `created` im Qdrant-Payload (ohne
+  lesbares `created` zählt ein Beitrag als früher, ohne Zeitzone als UTC), Einwürfe und
+  Verknüpfungen nach `created_at`, Sätze nach `updated_at` (einen Zeitpunkt des Anlegens hat ein
+  Satz nicht; wer ihn nach einer neuen Einwilligung neu speichert, hat ihn unter ihr beigetragen).
+  An Sperren geht der Autor, außer an Beiträgen ab der Obergrenze, die in Qdrant an der Person
+  bleiben. Eigene Einwürfe von vor der Obergrenze gehen samt allen Sätzen daran, auch Sätzen der
+  Person von danach. Ein früherer Beitrag bleibt als Ganzes anonymisiert, auch wenn die Person
+  ihn nach der neuen Einwilligung noch geändert hat.
+- **Gleichzeitig widerrufen:** Der PostgreSQL-Teil sperrt die Zeile des Auftrags (`FOR UPDATE`)
+  und liest Widerruf und Obergrenze neu. Haben sie sich seit dem Laden geändert, bricht er ab
+  (409, „erneut ausführen“), der Auftrag bleibt offen, und der nächste Klick nimmt den neuen
+  Stand. Ein Widerruf sperrt den offenen Auftrag ebenso, bevor er einen anlegt: Läuft gerade die
+  Ausführung, wartet er und legt danach einen neuen Auftrag an. Bekannte Grenze, zwei
+  Restfenster von Millisekunden: Ein Schreibzugriff, der die Einwilligung kurz vor dem Widerruf
+  geprüft hat, kann erst nach dem PostgreSQL-Teil gespeichert werden, und ein Beitrag kann
+  zwischen dem Qdrant-Teil und dem PostgreSQL-Teil entstehen. Beides bleibt dann an der Person,
+  obwohl der Auftrag erledigt ist; beim Durchsehen der Texte (Schritt 3) fällt es auf.
+
+Was **bleibt**: das Konto, der Anzeigename in `users`, die Einwilligungen samt Widerruf als
+Nachweis (Art. 7 Abs. 1; der Vermerk „ohne Einwilligung weiter“ in `art9_ohne_einwilligung`
+geht dagegen mit dem Löschablauf), Meldungen der Person und Muster-Hinweise (beide gehen mit ihrer
+Frist) sowie `gesehene_nutzung` (nur Zählerstände: Nutzung und Einwürfe anderer beim letzten Besuch, kein Zeitpunkt, ohne Frist, geht mit dem Konto). Erst Qdrant, dann PostgreSQL: Scheitert ein Schritt, bleibt der Auftrag offen,
+und ein zweiter Klick holt nach, was fehlt; beide Teile sind wiederholbar. Danach wie in
+Schritt 3 die Texte durchsehen; macht einer die Person erkennbar, wird er einzeln entfernt. Die
+Beiträge stehen danach nicht mehr in „Meine Beiträge“ der Person, sie kann sie also nicht mehr
+selbst ändern oder löschen. Nach dem Freeze soll der Ablauf ohne Admin laufen (**offen**).
+
 ## Fristen
 
 Ein täglicher Task löscht nach festen Fristen, sofort beim Start des Dienstes, dann
@@ -150,6 +232,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Datenart | Frist | Gerechnet ab |
 |---|---|---|
 | Meldungen (`content_reports`), bearbeitet oder abgewiesen | 180 Tage | Bearbeitung (`reviewed_at`; ohne sie, im Altbestand, der Eingang) |
+| Suchereignisse (`search_events`) samt Tagespseudonym | bis zum Ende ihres UTC-Tages | dann zum Tageszähler der Suchen verdichtet, ohne Pseudonym (#495, `SearchTrackingRepository.verdichten_vor`; Einzelheiten unter „Was nicht gelöscht wird“) |
 | Tagespseudonym an anonymen Meldungen (`reported_by_session_id`, `besucher:…`) | bis zum Abschluss der Meldung | Bearbeiten oder Abweisen ersetzt es durch einen Zufallswert (`anon:…`), angemeldete Meldungen verlieren den Wert (#446, `repositories/content_report_repository.py`) |
 | Meldungen, offen | keine | — sie sind Arbeit und bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird (dann bearbeitet, Frist wie oben) |
 | Einwürfe (`raw_inputs`), die in keinem Beitrag ausformuliert sind, samt Sätzen | 365 Tage | letzte Arbeit daran: Einwerfen oder zuletzt gespeicherter Satz |
@@ -157,10 +240,18 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Gelöschte Beiträge (Zustand „gelöscht“, Qdrant) | 30 Tage, dann endgültig entfernt | Tag im Payload-Feld `geloescht_am` |
 | Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
-| Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
+| Stimmen (`votes`) | solange der Beitrag besteht; trifft ein geänderter Titel eine andere Behauptung (NLI-Stufe, #427), sofort; widerruft die Person ihre Art.-9-Einwilligung, sofort alle ihre Stimmen (`Art9EinwilligungService.widerrufen`) | — gehen mit ihm |
 | Prüfwerte der entdoppelten Nutzung (`nutzung_heute`) | ihr Tag | verworfen beim ersten Lauf nach Mitternacht (UTC) |
 | Paar-Prüfwerte der Muster-Hinweise (`muster_pruefwerte`) | 7 Tage | letzte Nutzung in dieser Richtung (`tag`) |
+| Prüfwerte „Ja, gepostet“ (`gepostet_pruefwerte`, #643) | ihre Kalenderwoche | zur Zahl der Woche verdichtet und gelöscht beim ersten täglichen Lauf nach Wochenende (Montag, UTC; derselbe Task wie für `nutzung_heute`, auch bei ausgeschaltetem Schalter), spätestens bei der nächsten Meldung; der Wochenschlüssel liegt nur im Arbeitsspeicher |
+| Zahl je Woche „Ja, gepostet“ (`gepostet_wochen`) | keine | — nur eine Zahl je Woche, ohne Personenbezug |
 | Muster-Hinweise (`muster_hinweise`) | 56 Tage (8 Wochen) | letzter Tag mit gegenseitiger Nutzung (`letzter_tag`) |
+| Löschaufträge (`loeschauftraege`), offen | keine | — sie sind Arbeit und bleiben, bis ein Admin den Löschablauf ausführt (Frist dafür: sieben Tage ab dem Widerruf, unter „Löschauftrag nach dem Widerruf“) |
+| Löschaufträge, erledigt | 365 Tage (entschieden 13.11.2026) | Ausführung (`erledigt_am`); mit dem Konto sofort (Schritt 2) |
+| Zustimmung zur Sichtbarkeit der Abzeichen (`abzeichen_sichtbarkeit`) | solange das Konto besteht | — Nachweis der Zustimmung (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
+| Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351) | solange das Konto besteht | — Nachweis der Einwilligung und des Widerrufs (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
+| Meilenstein-Abzeichen am Anzeigenamen (#351) | keine Speicherung | — nur im Arbeitsspeicher, alle 15 Minuten neu berechnet, nach einem Neustart leer; nach dem Löschkommando (Schritt 2) höchstens noch bis zum nächsten Lauf |
+| Schalter (`schalter`) und ihr Verlauf (`schalter_verlauf`, #708): Admin-Wert, Zeitpunkt, Kennung des Admins | Verlauf: 12 Monate ab der Änderung, Bereinigungslauf (Task der Löschfristen, `SCHALTER_VERLAUF_TAGE` in `services/loeschfristen_service.py`, unabhängig vom abschaltbaren Bereinigungsjob; Entscheidung Maintainer 18.11.2026). Der aktuelle Stand in `schalter` bleibt. | Kennung des Admins: mit seinem Konto geleert (`person_loeschen.sql`), beim Umstellen der Kennungen mit umgeschrieben (#487) — betrifft nur Admins, nicht Nutzende; die Kennung steht nur dort, kein Klarname |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
@@ -226,13 +317,38 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   (`services/muster_hinweise_service.py`), beide unabhängig vom abschaltbaren Bereinigungsjob.
   Punkte selbst werden nicht gespeichert, sondern bei jedem Abruf berechnet
   (`services/punkte_service.py`); sie brauchen keine Frist.
+- **Löschaufträge:** Ein Jahr nach der Ausführung, damit sich auf eine Nachfrage der Person
+  oder eine Beschwerde belegen lässt, wann der Löschablauf lief. Der Auftrag trägt nur Kennung
+  und drei Zeitpunkte, keinen Inhalt; den Widerruf selbst belegt weiter die Zeile in
+  `art9_einwilligungen`, solange das Konto besteht.
 - **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
   hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
   Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
   UTC-Tagen ab dem Anlegen, der tägliche Lauf löscht also 33 bis 35 Tage danach. Was „nie
   benutzt“ heißt, steht unter „Einladungen“.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
-  eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
+  eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag, oder bis die Person
+  ihre Art.-9-Einwilligung widerruft. Weil Güte, Stimmenzähler und die Punkte anderer (Zustimmung
+  zu ihren Beiträgen) beim Abruf aus `votes` berechnet werden, sinken sie nach einem Widerruf
+  sofort; gespeichert ist davon nichts, das nachgezogen werden müsste.
+
+### Fristen außerhalb des täglichen Tasks
+
+Diese Fristen setzt nicht der Task oben, sondern die Anwendung, der Browser oder der Betrieb am
+Host. Sie stehen hier, damit alle Fristen an einer Stelle stehen (Pflegeregel im
+Verzeichnis der Verarbeitungstätigkeiten).
+
+| Datenart | Frist | Wer löscht, Beleg |
+|---|---|---|
+| Nutzungsereignisse (`usage_events`), Einzelzeilen | 90 Tage, danach nur Zähler je Beitrag | abschaltbarer Bereinigungsjob (`SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB`, Standard an), `usage_retention_days` in `core/config.py`; Datenschutzerklärung „Verwendung von Beiträgen“ |
+| Anmelde-Cookie | 14 Tage nach letzter Nutzung | Browser und BFF; Datenschutzerklärung „Anmelde-Cookie“ |
+| Angefangener Kommentar im Browser (sessionStorage, E1) | bis zum Schließen des Tabs, höchstens 1 Stunde ab dem ersten Sichern; sofort beim Speichern, Leeren, Abmelden und Widerruf der Art.-9-Einwilligung | Anwendung im Browser (`beitragsformular/kommentar-entwurf.ts`); Datenschutzerklärung „Weitere Einträge“ |
+| Merker „neue Version geladen“ im Browser (sessionStorage, nur ein Zeitpunkt) | zehn Minuten nach dem Neuladen (die geöffnete App löscht ihn dann; ist sie zu dem Zeitpunkt nicht offen, beim nächsten Aufruf), spätestens beim Schließen des Tabs | Anwendung im Browser (`shared/neue-version.ts`); Datenschutzerklärung „Weitere Einträge“ |
+| Zugriffsprotokolle des vorgelagerten Webservers | 14 Tage | Betrieb am Host; Datenschutzerklärung „Protokolldateien“ |
+| Zugriffsprotokolle des Webservers der Anwendung, Protokolle der Anwendung | **keine**; Ziel 14 Tage, noch nicht ausgerollt | Betrieb am Host; unter „Was nicht gelöscht wird“ (#485, #336) |
+| Zähler der Rate-Limits | höchstens etwa 16 Minuten, nur im Arbeitsspeicher | Anwendung; Datenschutzerklärung zu Suche, Meldungen, Feedback, Einladungen, Gegenlesen |
+| Sicherungskopien | bis zu 28 Tage (7 Tages-, 4 Wochenstände) | `mvp/scripts/backup/backup.sh`; unter „Was nicht gelöscht wird“ |
+| Beta-Zugänge (`managed-users.json`) | bis von Hand entfernt | Schritt 4 im „Ablauf“; Datenschutzerklärung „Zugang, den wir selbst anlegen“ |
 
 ## Feedback
 
@@ -313,8 +429,9 @@ und der Ablauf oben erfasst die Tabelle nicht.
 - **`search_events`** trägt seit der Migration vom 19.08.2026 (unten) nur `actor_hash`,
   ein täglich rotierendes HMAC-SHA256 über Kennung + UTC-Datum
   (`services/search_tracking_service.py`, `tagespseudonym`).
-  Ohne Geheimnis nicht umkehrbar, mit Geheimnis nur tageweise nachrechenbar: Löschen
-  auf Antrag ist unmöglich und mangels Personenbezug auch nicht geschuldet.
+  Ohne Geheimnis nicht umkehrbar, mit Geheimnis nur für den laufenden Tag nachrechenbar
+  (ältere Tage tragen kein Pseudonym mehr, siehe Frist): Löschen auf Antrag ist unmöglich
+  und mangels Personenbezug auch nicht geschuldet.
   **Vorher prüfen, ob die Zielumgebung migriert ist** — auf einem Stand ohne
   `actor_hash` stehen dort Suchanfrage im Klartext, Kennung und IP-Hash, und dann ist
   `DELETE FROM search_events WHERE user_id = …` sehr wohl nötig
@@ -337,41 +454,49 @@ und der Ablauf oben erfasst die Tabelle nicht.
   Auch die physische Reihenfolge der Zeilen (`SELECT` ohne `ORDER BY`, `ctid`, die
   Reihenfolge in `pg_dump`) und die Systemspalte `xmin` folgen dem Einfügen: Jede Suche
   schreibt ihr Suchereignis in einer eigenen Transaktion, deren Nummer mit jeder Suche
-  steigt. Seit #337 schreibt der tägliche Bereinigungsjob deshalb jeden abgeschlossenen
-  Tag in zufälliger Reihenfolge und in einer Transaktion neu
-  (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
-  abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
-  und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
-  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=false`
-  entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
-  ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
-  eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
-  Mitternacht): Ihre Zeile trägt bis zum nächsten Lauf ein eigenes `xmin` und ist damit
-  als eine der letzten Suchen ihres Tages erkennbar; verloren geht dabei nichts. Die
-  alten Zeilenversionen und ihre Einträge im Index auf `timestamp` stehen physisch in
-  der Datei, bis ein `VACUUM` ihren Platz freigibt (nur mit Werkzeugen lesbar, die Seiten
-  roh auslesen); in Backups und im WAL, bis diese herausrotiert sind.
-  **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
-  (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
-  `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
-  verdichtet der tägliche Bereinigungsjob (`services/cleanup/bereinigungsjob.py`,
-  derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
-  Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
-  `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=true` (Standard; der frühere Name
-  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP` gilt weiter); abgeschaltet gilt auch diese
-  Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
-  Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
+  steigt. Das gilt seit der Umstellung zu #495 nur noch für den laufenden Tag, denn
+  abgeschlossene Tage haben keine Einzelzeilen mehr (siehe Frist). Von #337 bis dahin schrieb
+  der Bereinigungsjob jeden abgeschlossenen Tag gemischt neu; das entfällt. Die alten
+  Zeilenversionen und ihre Einträge im Index auf `timestamp` stehen physisch in der Datei,
+  bis ein `VACUUM` ihren Platz freigibt (nur mit Werkzeugen lesbar, die Seiten roh auslesen);
+  in Backups und im WAL, bis diese herausrotiert sind.
+  **Frist:** Suchereignisse bleiben nur bis zum Ende ihres UTC-Tages als Einzelzeilen
+  (#495). Den Tag danach verdichtet der tägliche Task der Löschfristen
+  (`services/loeschfristen_service.py`, `SearchTrackingRepository.verdichten_vor`) zu
+  einem Tageszähler und löscht die Einzelzeilen samt Pseudonym und `id` (#289). Er läuft
+  beim Start des Dienstes, täglich und kurz nach Mitternacht (UTC) und hängt wie die
+  übrigen Fristen nicht am abschaltbaren Bereinigungsjob. Der erste Lauf nach dem Update
+  verdichtet auch alle älteren Tage, die bis dahin 90 Tage als Einzelzeilen blieben; eine
+  Migration braucht es dafür nicht, das Schema bleibt. `SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`
+  gibt es nicht mehr; ist sie noch gesetzt, wird sie nicht beachtet. Scheitert ein Lauf,
+  folgt der nächste nach einer Stunde. Geht eine Suche kurz vor Mitternacht erst nach dem
+  Lauf ein, holt sie ein zweiter Lauf fünf Minuten später ab (`NACHZUEGLER_SEKUNDEN`) und
+  addiert sie zum Tageszähler (die Personen dieses Tages können dabei eine Person doppelt
+  zählen). `GET /metrics/searches-per-user` rechnet seitdem aus den Tageszählern (Suchen je
+  Personentag) und liefert keinen Median mehr. Physisch verschwinden die gelöschten Zeilen
+  erst, wenn PostgreSQL den Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu
+  28 Tage weiter.
 - **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen,
   die Zahl der Suchen ohne Treffer (seit #467, für die Bilanz) und die Zahl der Personen
-  (verschiedene Tagespseudonyme), kein Pseudonym: nichts, was sich einer Person zuordnen
-  ließe. Keine Frist.
+  (verschiedene Tagespseudonyme, beim Verdichten gezählt; Besucher je Anschluss), kein
+  Pseudonym: nichts, was sich einer Person zuordnen ließe. Keine Frist. Aus ihm kommen für
+  abgeschlossene Tage die Personen pro Tag und ihr Wochenmittel in der Bilanz.
 - **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche, Anzahl der Suchen
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
-  zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events`) eine Aussage
-  heute schon gezählt haben, liegt nur im Arbeitsspeicher (als SHA-256-Prüfwert) und wird
-  um Mitternacht (UTC) verworfen; bei Besuchern ebenso ein Prüfwert aus Anschluss-Prüfwert
-  (Anschluss mit dem Tagesschlüssel) und Aussage, damit je Anschluss höchstens eine Person zählt (#496). Wochen älter als acht löscht ein täglicher Task von
+  zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events` am laufenden Tag)
+  eine Aussage heute schon gezählt haben, liegt nur im Arbeitsspeicher (als SHA-256-Prüfwert)
+  und wird um Mitternacht (UTC) verworfen. Weil das Tagespseudonym eines Besuchers nur noch
+  aus dem Anschluss entsteht, zählt je Anschluss und Aussage höchstens eine Person; den
+  Anschluss-Prüfwert aus #496 braucht es dafür nicht mehr. Die Personen einer Woche sind die
+  Summe der Personen je Tag, ein Pseudonym über Tagesgrenzen gibt es auch hier nicht. Wochen älter als acht löscht ein täglicher Task von
   selbst (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
+- **`suchanfrage_freigaben`** (Vormoderation, Entscheidung des Maintainers vom 13.11.2026)
+  trägt je geprüfter unbeantworteter Suchanfrage nur Aussage-ID, ob sie freigegeben oder
+  abgelehnt ist, und den Zeitpunkt der Entscheidung, weder Text noch Kennung des Admins:
+  nichts, was sich einer Person zuordnen ließe. Beim Einspielen wird nichts nachgetragen;
+  eine Zeile entsteht erst mit der Entscheidung. Keine eigene Frist: Die Zeile bleibt, solange
+  die Aussage besteht, und geht mit ihr, wenn ein Admin sie endgültig entfernt
+  (`ModerationService.delete_content`, `repositories/suchanfrage_freigabe_repository.py`).
 - **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
   Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen
   ließe. Keine Frist. Aussagen werden nicht gelöscht; wird eine gesperrt, bleiben ihre
@@ -535,7 +660,7 @@ Die Variable heißt `KENNUNG`, nicht `UID`: `UID` ist in bash schreibgeschützt.
 
 ```bash
 KENNUNG=a1b2c3d4-0000-0000-0000-000000000000
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/person_loeschen.sql
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/person_loeschen.sql
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
   -v ON_ERROR_STOP=1 -v uid="$KENNUNG" < person_loeschen.sql   # Ausgabe protokollieren
 # Nur auf unmigriertem Schema (Spalte user_id vorhanden):
@@ -544,12 +669,12 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, art9_ohne_einwilligung, abzeichen_sichtbarkeit, punkte_einwilligung, loeschauftraege;"
 ```
 
 ```bash
 # Schritt 3: Beitraege anonymisieren. Vor jeder Einzelfall-Loeschung.
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/beitraege_anonymisieren.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/beitraege_anonymisieren.py
 docker exec -i gutgesagt-semantic-search python - "$KENNUNG" \
   < beitraege_anonymisieren.py                # zeigt nur, aendert nichts
 docker exec -i gutgesagt-semantic-search python - "$KENNUNG" --ausfuehren \

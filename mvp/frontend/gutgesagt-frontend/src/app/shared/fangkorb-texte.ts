@@ -20,9 +20,9 @@ export const EINWERFEN_TITEL = 'Schnell einwerfen';
 
 /**
  * Die Icons entlang der Kette, an jeder Stelle gleich: Startseite, Beitragen-Seite,
- * Einwurf-Formular, Fangkorb-Kopf, Header und Menue. `verfassen` steht auch fuer
+ * Einwurf-Formular und Fangkorb-Kopf. Profilmenue und Menue nehmen MENUE_ICONS (#644). `verfassen` steht auch fuer
  * Ausformulieren. `meineBeitraege` ist kein Kettenschritt, steht aber in derselben
- * Gruppe (Beitragen-Seite, Menue, Desktop-Kopf) und deshalb hier. Die Beitragstypen
+ * Gruppe wie auf der Beitragen-Seite und deshalb hier. Die Beitragstypen
  * behalten ihre Icons.
  */
 export const KETTEN_ICONS = {
@@ -34,12 +34,31 @@ export const KETTEN_ICONS = {
 } as const;
 
 /**
+ * Dieselben Eintraege als Material-Icons fuer Profilmenue und Menue: Dort stehen sie
+ * zwischen Linien-Icons (Startseite, Hilfe, Abmelden), und gemischt mit Emojis wirkte
+ * das Menue unruhig (#644).
+ */
+export const MENUE_ICONS = {
+  einwerfen: 'move_to_inbox',
+  fangkorb: 'shopping_basket',
+  meineBeitraege: 'inventory_2',
+} as const;
+
+/**
+ * Wie der Menuepunkt zur Seite /einwilligung heisst, in Profilmenue, Menue und Kopf der
+ * Seite: Die Person stellt dort ein, was sie erlaubt; „Einwilligung“ allein war
+ * Fachsprache (#644). Der Art.-9-Wortlaut und die Datenschutzerklaerung nennen ihn als
+ * Widerrufsweg und muessen mitziehen (docs/ART9_EINWILLIGUNG.md).
+ */
+export const DATENSCHUTZ_EINSTELLUNGEN = 'Datenschutz-Einstellungen';
+
+/**
  * Fuer Angemeldete, solange die Plattform jung ist: Wer jetzt etwas eintraegt,
- * setzt die Massstaebe mit. Steht unter dem Fangkorb-Kopf und ueber der
- * Typ-Auswahl auf der Beitragen-Seite.
+ * setzt die Massstaebe mit. Steht unter dem Fangkorb-Kopf und auf der
+ * Beitragen-Seite unter den Typen (#620).
  */
 export const ERSTNUTZER_SATZ =
-  'Gut gesagt ist neu. Alles, was du hier einträgst, prägt mit, was hier Standard wird. Also: kein Scheiß.';
+  'Gut gesagt ist neu. Alles, was du hier einträgst, prägt mit, was hier Standard wird. Also: kein Quatsch.';
 
 /**
  * Was beim Verwerfen schiefging, im Fangkorb und in der Destillier-Ansicht gleich:

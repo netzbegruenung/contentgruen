@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import (
     AbstractSet,
+    Callable,
     Any,
     Dict,
     List,
@@ -74,21 +75,28 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
 
     @abstractmethod
     async def finde_normalisiert_gleich(
-        self, normalform: str
+        self,
+        normalform: str,
+        ausschliessen: Optional[Callable[[Any], bool]] = None,
     ) -> Optional[TContentSearchResult]:
         """
         Einen Eintrag mit genau dieser Normalform (utils/text_normalisierung.py),
-        ohne Vektorsuche; None, wenn es keinen gibt.
+        ohne Vektorsuche; None, wenn es keinen gibt. Eintraege, fuer die
+        ausschliessen wahr ist, zaehlen nicht (Vormoderation).
         """
         pass
 
     @abstractmethod
-    async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
+    async def get(
+        self, item_id: uuid.UUID, eintrag_modell: Optional[Type[Any]] = None
+    ) -> TContentDbEntry:
         """
         Retrieve a specific content item by its ID.
 
         Args:
             item_id: Unique identifier of the content item
+            eintrag_modell: liest den Payload mit diesem Modell statt dem des
+                Repositorys, etwa den Titel ueber das aggregierte (#427)
 
         Returns:
             The content item

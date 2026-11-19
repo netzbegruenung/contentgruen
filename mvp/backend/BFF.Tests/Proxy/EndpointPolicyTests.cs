@@ -20,6 +20,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/usage/content/abc/usage")]
     [InlineData("/api/v1/usage/trending")]
     [InlineData("/api/v1/usage/trending/woche")]  // "Diese Woche oft genutzt" (#364)
+    [InlineData("/api/v1/usage/punkte/status")]  // Schalter der Punkte (UX-Review B20)
     [InlineData("/api/v1/moderation/report")]
     [InlineData("/api/v1/metrics/getmetrics")]   // Bestandszaehler der Startseite
     [InlineData("/api/v1/metrics/getMetrics")]   // Schreibweise darf keine Rolle spielen
@@ -27,6 +28,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/einladungen/pruefen")]  // Einladung oeffnen, noch ohne Konto (#429)
     [InlineData("/api/v1/einladungen/einloesen")]
     [InlineData("/api/v1/varianten/0b8f6c1e-3d2a-4f5b-9c7e-1a2b3c4d5e6f")]  // "N Varianten" (#356)
+    [InlineData("/api/v1/statement/aehnliche")]  // "Nicht dabei?" auch fuer Besucher (#642)
     public void IsAnonymousAllowed_TrueForPublicPaths(string path)
     {
         Assert.True(EndpointPolicy.IsAnonymousAllowed(path));
@@ -34,6 +36,8 @@ public class EndpointPolicyTests
 
     [Theory]
     [InlineData("/api/v1/statement/addstatement")]
+    [InlineData("/api/v1/statement/searchStatements")]  // nur /aehnliche ist offen (#642)
+    [InlineData("/api/v1/statement/aehnlichesuche")]    // Segmentgrenze
     [InlineData("/api/v1/contribution/getcontributionsofuser")]
     [InlineData("/api/v1/moderation/reports")]   // Plural: Admin-Liste, nicht /report
     [InlineData("/api/v1/usage/cleanup/run")]
@@ -44,6 +48,8 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/einladungen/33333333-3333-3333-3333-333333333333")]
     [InlineData("/api/v1/content/33333333-3333-3333-3333-333333333333")]  // Loeschen durch den Autor
     [InlineData("/api/v1/content/beitraege")]    // Segmentgrenze
+    [InlineData("/api/v1/usage/users/me/punkte")]  // nur /punkte/status ist offen (B20)
+    [InlineData("/api/v1/usage/punkte/statusx")]   // Segmentgrenze
     public void IsAnonymousAllowed_FalseForProtectedPaths(string path)
     {
         Assert.False(EndpointPolicy.IsAnonymousAllowed(path));

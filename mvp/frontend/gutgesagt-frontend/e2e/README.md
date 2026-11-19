@@ -1,10 +1,16 @@
 # E2E-Tests (Playwright)
 
 Prüfen die wichtigsten Szenarien am Handy gegen den laufenden Dev-Stack: Verfassen eines Kommentars,
-einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort auf“ mit neuer Aussage, aus der Suche ergänzen, die Kette im
-Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz
+einer Hintergrundinfo und eines Posts (samt Post-Karte in der Suche), „Antwort auf“ mit neuer Aussage, aus der Suche ergänzen (mit der erkannten Aussage vorgewählt), aus „Hier fehlt eine Antwort“ antworten (danach verschwindet die Aussage von der Liste; braucht zwei Suchen ohne Treffer, Testkonto und Besucher), die Kette im
+Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz,
+den Weg ohne Art.-9-Einwilligung (`12-ohne-einwilligung`: widerruft für das Testkonto und willigt danach wieder ein)
 sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seiten und ohne
-Umleitung bei einem 401 der Suche) und den Aufruf eines Beitrags per Direktlink. Nicht in CI: Die Tests brauchen den vollen Stack.
+Umleitung bei einem 401 der Suche), den Aufruf eines Beitrags per Direktlink und die Darstellung bei
+360 px hell und dunkel (Überläufe im Kommentarformular, Kontrast; liest nur) sowie Kanten und
+Fluchten bei 360, 390, 1280 und 1440 px (Suchraster, Rundgang-Band, Seitenrahmen, Beitragen-Seite, Zweck-Umschalter,
+Startkacheln, Fuß) samt Umschalter hell/dunkel (liest nur). Ohne Stack, alle Antworten gemockt (`einladung-besucher`, auch gegen `ng serve` ohne Backend): Einladung von der Login-Seite einlösen und Rückkehr nach dem Anmelden aus der Daumen-Snackbar; `datenschutz-sprung-besucher`: Sprung vom Hinweis am Suchfeld zum Abschnitt „Deine Suchanfragen“, mobil und am Desktop; `neue-version-besucher`: fehlt nach einem Deploy ein Chunk (404), lädt die App das Ziel selbst hart neu; fehlt er auch danach, bleibt es bei einem Neuladen und dem Hinweis „Neu laden“ (wartet 15 s); beide prüfen den Merker im sessionStorage. `suchfeld-beschriftung-besucher`: Beschriftung des Suchfelds bei 360 px nicht abgeschnitten, Startseite und Trefferseite (kompakt, mit Text und leer). Teilen (`13-teilen`, Projekt `teilen`: Karte, Beitragsseite,
+„Ergebnis teilen“, mobil mit nachgebautem `navigator.share`, am Desktop Zwischenablage) mockt jede Anfrage an `/api`
+(`route.fulfill`) und braucht nur ein `ng serve` über `E2E_BASE_URL`. Nicht in CI: Die Tests brauchen den vollen Stack.
 
 ## Starten
 
@@ -28,11 +34,13 @@ Einzelne Specs: `npx playwright test tests/04-fangkorb.spec.ts`, ein Projekt:
 | `E2E_BASE_URL` | `http://127.0.0.1:8080` | Gegen einen anderen Stand, z. B. `ng serve` mit Proxy |
 | `E2E_EMAIL`, `E2E_PASSWORT` | Testkonto aus `mvp/config/managed-users.example.json` (`tests/konto.ts`) | Anmeldung über `/api/auth/login/managed` |
 | `E2E_SCREENSHOTS` | `e2e/screenshots/` | Ablage der benannten Screenshots |
+| `E2E_DIST` | – | Pfad zu `dist/.../browser` nach `ng build --configuration production`: `13-dunkel-ohne-aufblitzen` prüft dann den Dunkelmodus vor dem Laden des Stylesheets, ohne Stack (alles gemockt); sonst übersprungen |
 
 ## Was man wissen muss
 
 - **Daten:** Die Tests legen echte Einwürfe, Aussagen und Beiträge an, alle mit dem Präfix
-  `[e2e-test]`. Sie bleiben im Dev-Stack liegen; `mvp/run-local.sh wipe` räumt auf.
+  `[e2e-test]`; nur die Suchen ohne Treffer in `14-antwort-verknuepfen` nicht, weil schon das
+  Präfix jede frühere Testaussage zum Treffer machte. Sie bleiben im Dev-Stack liegen; `mvp/run-local.sh wipe` räumt auf.
 - **Reihenfolge:** Ein Worker, nacheinander. Jede Spec legt ihre Daten selbst an, die
   Anmeldung (`anmelden.setup.ts`) läuft vorher einmal. Nacheinander, weil alle Specs mit
   demselben Testkonto am Rate-Limit hängen und `04-fangkorb` andere offene Einwürfe
@@ -45,7 +53,7 @@ Einzelne Specs: `npx playwright test tests/04-fangkorb.spec.ts`, ein Projekt:
 - **Dubletten:** Ab dem zweiten Lauf gleicht ein neuer Kommentar dem aus dem Vorlauf. Die
   Specs wählen dann „Trotzdem speichern“ (`aufErgebnisWarten`) und vermerken das im Report.
 - **Nächster Einwurf:** Die Reihenfolge kommt vom Server (eigene zuerst, dann die neuesten).
-  Liegen im Fangkorb andere offene Einwürfe, stellt `04-fangkorb` sie mit „Später“ (ohne Satz,
+  Liegen im Fangkorb andere offene Einwürfe, stellt `04-fangkorb` sie mit „Nächster Einwurf“ (ohne Satz,
   also ohne sie zu ändern) für die Runde zurück, bis die Runde im Fangkorb endet.
 - **Browser:** Playwright sucht Chromium unter `~/.cache/ms-playwright`; die Version in
   `package.json` muss zum installierten Browser passen.

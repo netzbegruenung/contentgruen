@@ -1,27 +1,26 @@
 <div class="about-container">
   <!-- Hero Section -->
   <section class="hero-section">
-    <img class="hero-logo" src="marke/logo.svg" alt="" width="96" height="96">
+    <img class="hero-logo" src="marke/logo-v2.svg" alt="" width="96" height="96">
     <h1 class="hero-title">Über Gut gesagt</h1>
     <p class="subtitle">Antworten, die Unentschiedene mitnehmen. Gesammelt und verbessert von vielen.</p>
   </section>
 
-  <!-- Wofuer -->
-  <section class="content-section zweck">
+  <!-- Wofuer: warum es Gut gesagt gibt; wie man es bedient, steht in der Hilfe (Designrunde 17.11.) -->
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section zweck">
     <h2>Wofür es Gut gesagt gibt</h2>
     <p>
       Unter einem Post steht eine Aussage, und du willst gut darauf antworten. Mit Gut gesagt
-      findest du schnell eine passende Antwort, kopierst sie und postest sie. Du suchst mit
-      einem ganzen Satz, so wie die Aussage gefallen ist.
+      findest du schnell eine passende Antwort, kopierst sie und postest sie.
     </p>
-    <p>
-      Die Antworten schreiben viele Menschen gemeinsam. Andere verbessern sie, bewerten sie und
-      nutzen sie. So wird der Bestand mit jeder Person besser, die mitmacht.
+    <p class="so-gehts">
+      Wie du suchst, kopierst und beiträgst, zeigt dir die Hilfe.
+      <button type="button" class="so-gehts-link" (click)="openHelpDialog()">So geht’s</button>
     </p>
   </section>
 
   <!-- Zielgruppe -->
-  <section class="content-section mitlesende">
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section mitlesende">
     <h2>Für die Mitlesenden</h2>
     <p>
       Wer in einer Kommentarspalte antwortet, schreibt selten für die Person, die die Aussage
@@ -29,31 +28,48 @@
       Unentschiedenen sind die Antworten hier gedacht: kurz, freundlich, in Alltagswörtern. Sie
       fangen bei dem an, was uns verbindet, und sagen, wofür wir sind.
     </p>
-    <p class="nicht-jede-aussage">{{ nichtJedeAussage }}</p>
   </section>
 
-  <!-- Mitmachen -->
-  <section class="content-section mitmachen">
-    <h2>So machst du mit</h2>
+  <!-- Wie Qualitaet entsteht: viele schreiben, verbessern, bewerten; Siegel; keine Linie -->
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section qualitaet">
+    <h2>Wie Qualität entsteht</h2>
+    <p>
+      Die Antworten schreiben viele Menschen gemeinsam. Andere verbessern sie, bewerten sie und
+      nutzen sie. So wird der Bestand mit jeder Person besser, die mitmacht.
+    </p>
     <ul>
       <li>
-        <strong>Suchen und nutzen:</strong> Suchen und lesen kann jede Person, auch ohne
+        <strong>Nutzen:</strong> Suchen und lesen kann jede Person, auch ohne
         Anmeldung. Kopiert jemand einen fremden Beitrag, zählt das als Nutzung und zeigt, dass der
         Beitrag hilft.
       </li>
       <li>
-        <strong>Bewerten:</strong> Angemeldet gibst du Beiträgen deine Stimme. So sieht man,
-        welche Antworten gut ankommen.
+        <strong>Bewerten:</strong> Angemeldet gibst du Beiträgen deine Stimme. Das Urteil aller
+        zeigt, welche Antworten wirklich taugen.
+        <p class="siegel-absatz" id="siegel">
+          Das Siegel zeigt die Güte eines Beitrags. Es startet mit einer ersten Einschätzung
+          nach festen Regeln. Diese Regeln sind das Gegenlesen, ohne KI. Sobald genug Menschen
+          bewertet haben, zählen ihre Stimmen mit. Je mehr Menschen bewerten, desto mehr zählt
+          ihr Urteil. Neue Beiträge ohne Daten bekommen ein graues, waagrechtes Siegel. Mit
+          steigender Güte dreht sich der Daumen nach oben und wird über Gelb grün. Wie oft ein Beitrag genutzt wird, zählt nicht hinein.
+          Unabhängig von der Güte kommt Glanz dazu, wenn ein Beitrag oft genutzt wurde.
+        </p>
+        <!-- Beispielsiegel von neu bis Güte 10 (#427, Entscheidung in PR #441) -->
+        <ul class="siegel-beispiele" aria-label="Beispielsiegel von neu bis Güte 10, dazu Glanz">
+          <li *ngFor="let guete of beispielGueten">
+            <app-siegel [guete]="guete"></app-siegel>
+            <span aria-hidden="true">{{ guete === null ? 'neu' : guete }}</span>
+          </li>
+          <!-- Glanz (#351) als Beispiel, bei Guete 10; er haengt nicht an der Guete -->
+          <li>
+            <app-siegel [guete]="10" [glanz]="true"></app-siegel>
+            <span aria-hidden="true">Glanz</span>
+          </li>
+        </ul>
       </li>
       <li>
-        <strong>Neue Beiträge in drei Schritten:</strong> Jeder Schritt kann von einer anderen
-        Person kommen.
-        <ol class="kette">
-          <li><strong>Einwerfen:</strong> Du legst ein Fundstück in den Fangkorb: einen Link, einen Hinweis oder beides.</li>
-          <li><strong>Destillieren:</strong> Jemand fasst das Argument darin in einem Satz.</li>
-          <li><strong>Ausformulieren:</strong> Jemand macht daraus einen fertigen Beitrag.</li>
-        </ol>
-        Weißt du schon, was du sagen willst, verfasst du einen Beitrag auch direkt.
+        <strong>Gemeinsam schreiben:</strong> Aus einem Fundstück wird über einen Satz ein
+        fertiger Beitrag. Jeden Schritt kann eine andere Person machen.
       </li>
     </ul>
     <p>
@@ -61,14 +77,28 @@
     </p>
     <p class="startbestand">
       Den Anfang machen Menschen: Zum Start schreibt ein Gründungsteam die ersten Beiträge zu
-      den häufigsten Aussagen selbst. KI schlägt höchstens etwas vor,
-      jeden Beitrag verantwortet ein Mensch. Alle Zahlen, die du siehst, sind echt: Jeder Beitrag
-      beginnt bei 0 Stimmen und 0 Nutzungen.
+      den häufigsten Aussagen selbst.
+      Alle Zahlen, die du siehst, sind echt: Jeder Beitrag beginnt bei 0 Stimmen und 0 Nutzungen.
     </p>
+
+    <div class="linie">
+      <h3>Keine offizielle Linie</h3>
+      <p>
+        Gut gesagt gibt keine Linie vor. Welche Antwort oben steht, entscheidet keine Redaktion,
+        sondern wie gut sie zu deiner Suche passt. Stimmen und Nutzung zeigen dazu, was gut
+        ankommt. Offizielles Material, etwa von Parteigliederungen, erscheint nur als Herkunft an
+        einem Beitrag.
+      </p>
+      <p>
+        Beiträge sind sofort sichtbar. Ist einer problematisch oder sachlich falsch, meldest du
+        ihn. Admins sehen sich die Meldung an und sperren den Beitrag, wenn nötig. Von selbst
+        verschwindet nichts.
+      </p>
+    </div>
   </section>
 
   <!-- CC0 -->
-  <section class="content-section cc0">
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section cc0">
     <h2>Frei für alle: CC0</h2>
     <p>
       Die Texte der Beiträge stehen unter CC0. Alle dürfen sie kopieren, verändern und
@@ -78,24 +108,35 @@
     </p>
   </section>
 
-  <!-- Keine offizielle Linie -->
-  <section class="content-section linie">
-    <h2>Keine offizielle Linie</h2>
-    <p>
-      Gut gesagt gibt keine Linie vor. Welche Antwort oben steht, entscheidet keine Redaktion,
-      sondern wie gut sie zu deiner Suche passt. Stimmen und Nutzung zeigen dazu, was gut
-      ankommt. Offizielles Material, etwa von Parteigliederungen, erscheint nur als Herkunft an
-      einem Beitrag.
-    </p>
-    <p>
-      Beiträge sind sofort sichtbar. Ist einer problematisch oder sachlich falsch, meldest du
-      ihn. Admins sehen sich die Meldung an und sperren den Beitrag, wenn nötig. Von selbst
-      verschwindet nichts.
-    </p>
+  <!-- Technik: auch der technische Teil aus „Nutzt Gut gesagt KI?“ der Hilfe; die Hilfe verlinkt #technik -->
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section technik" id="technik">
+    <h2>Die Technik dahinter</h2>
+    <ul>
+      <li class="technik-suche">
+        <strong>Suche nach Bedeutung:</strong> Gut gesagt vergleicht, was ein Satz meint, nicht
+        nur seine Wörter. Dieselbe Aussage in anderen Worten führt zu denselben Antworten. Die
+        Suche vergleicht deine Eingabe mit den Aussagen, die bei Gut gesagt schon gespeichert sind,
+        und zeigt die Beiträge, die darauf antworten. Je mehr Mitwirkende beitragen und bewerten,
+        desto besser werden die Treffer.
+      </li>
+      <li class="technik-ki">
+        <strong>Keine generative KI:</strong> {{ keineGenerativeKi }} {{ sucheMitSprachmodellen }}
+      </li>
+      <li class="technik-modelle">
+        <strong>Offene Modelle auf eigener Infrastruktur:</strong> Ein Modell rechnet aus, was ein
+        Satz bedeutet (multilingual-e5-base). Zwei weitere prüfen, ob zwei Sätze dasselbe behaupten
+        oder sich widersprechen (mDeBERTa-v3 und XLM-RoBERTa-large, beide mehrsprachig). Gespeichert wird in
+        <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>. Das Gegenlesen
+        beim Schreiben arbeitet nach festen Regeln.
+      </li>
+      <li>
+        <strong>Offener Code:</strong> Gut gesagt ist Open Source unter der AGPL.
+      </li>
+    </ul>
   </section>
 
   <!-- Project History -->
-  <section class="content-section">
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section">
     <h2>Die Geschichte von Gut gesagt</h2>
     <div class="timeline">
       <div class="timeline-item">
@@ -124,12 +165,12 @@
     </div>
   </section>
 
-  <!-- Personal Introduction -->
-  <section class="content-section">
-    <h2>Der Mensch hinter Gut gesagt</h2>
+  <!-- Menschen hinter Gut gesagt: Sebastian, Aila, Dank an alle Helfenden -->
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section menschen">
+    <h2>Die Menschen hinter Gut gesagt</h2>
     <div class="personal-intro">
       <div class="profile-image-container">
-        <img src="/profilbild_gruen_2024.jpg"
+        <img src="/profilbild-2026.jpg"
              alt="Sebastian Banach"
              class="profile-image">
       </div>
@@ -148,33 +189,34 @@
         </p>
       </div>
     </div>
-  </section>
 
-  <!-- Technology -->
-  <section class="content-section technik">
-    <h2>Die Technik dahinter</h2>
-    <ul>
-      <li>
-        <strong>Suche nach Bedeutung:</strong> Gut gesagt vergleicht, was ein Satz meint, nicht
-        nur seine Wörter. Dieselbe Aussage in anderen Worten führt zu denselben Antworten.
-      </li>
-      <li>
-        <strong>Eigene Infrastruktur:</strong> Die Suche rechnet mit einem offenen Sprachmodell
-        auf eigener Infrastruktur und speichert in
-        <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>.
-      </li>
-      <li>
-        <strong>KI schlägt vor, ein Mensch verantwortet:</strong> KI hilft beim Finden und
-        Ordnen. Beiträge schreibt sie nicht selbst.
-      </li>
-      <li>
-        <strong>Offener Code:</strong> Gut gesagt ist Open Source unter der AGPL.
-      </li>
-    </ul>
+    <div class="personal-intro person-aila">
+      <div class="profile-image-container">
+        <img src="/profilbild-aila.jpg"
+             alt="Aila Banach"
+             class="profile-image">
+      </div>
+      <div class="personal-content">
+        <h3>Aila Banach</h3>
+        <p class="role">Konzeption & Kommunikation</p>
+        <p>
+          Aila unterstützt Gut gesagt bei Konzeption und Kommunikation. Neue Seiten sieht sie sich
+          als Erste an und fragt: Versteht man das sofort?
+        </p>
+      </div>
+    </div>
+
+    <div class="danke">
+      <h3>Danke</h3>
+      <p>
+        Danke an alle aus der {{ organisation.name }}, die mit Ideen, Tests und Hinweisen geholfen
+        haben. Auch kleine Beiträge haben Gut gesagt besser gemacht.
+      </p>
+    </div>
   </section>
 
   <!-- Community -->
-  <section class="content-section">
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section">
     <h2>Teil der {{ organisation.name }}-Community</h2>
     <p>
       Gut gesagt ist ein Projekt innerhalb der AG Social des Vereins
@@ -190,7 +232,7 @@
   </section>
 
   <!-- Call to Action -->
-  <section class="content-section cta-section">
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section cta-section">
     <h2>Mach mit!</h2>
     <p>
       Du möchtest Gut gesagt unterstützen und aktiv mitgestalten?
@@ -205,12 +247,6 @@
         <mat-icon>chat</mat-icon>
         Kontakt aufnehmen
       </a>
-      <a mat-raised-button
-         routerLink="/contribute"
-         class="secondary-button">
-        <mat-icon>add_circle</mat-icon>
-        Beitrag verfassen
-      </a>
       <button mat-raised-button
               (click)="openHelpDialog()"
               class="secondary-button hilfe-knopf">
@@ -221,7 +257,7 @@
   </section>
 
   <!-- Feedback -->
-  <section class="content-section feedback-kontakt">
+  <section class="inhalt-spalte inhalt-spalte--lesen content-section feedback-kontakt">
     <h2>Feedback & Kontakt</h2>
     <p>
       Du hast eine Frage, einen Fehler gefunden oder einen Verbesserungsvorschlag?

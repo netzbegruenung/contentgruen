@@ -4,7 +4,7 @@
     <p class="subtitle">Informationen nach Artikel 13 DSGVO</p>
   </div>
 
-  <div class="content-section">
+  <div class="content-section inhalt-spalte inhalt-spalte--lesen">
     <section class="legal-section">
       <h2>Verantwortlicher</h2>
       <p>
@@ -121,7 +121,10 @@
         verschlüsselten Cookie in deinem Browser abgelegt und beim Aufruf jeder Seite
         mitgeschickt. Die Zugangs-Tokens des Anmeldedienstes legen wir darin nicht ab.
         <strong>Deine E-Mail-Adresse und deinen vollständigen Namen legt die Plattform selbst
-        nicht ab</strong>; im Anmeldedienst stehen sie an deinem Konto. Aus deinem Namen bilden wir einen
+        nicht ab</strong>; im Anmeldedienst stehen sie an deinem Konto. Eine Ausnahme ist die Meldung eines
+        Beitrags: Setzt du dort das Häkchen „Bestätigung und Entscheidung per Mail an mein Konto“,
+        speichern wir die E-Mail-Adresse deines Kontos an dieser Meldung (siehe „Meldungen von
+        Beiträgen“). Aus deinem Namen bilden wir einen
         <strong>Anzeigenamen</strong> — deinen Vornamen und den Anfangsbuchstaben deines
         Nachnamens (bei mehrteiligen Namen des letzten Teils), etwa „Anna B." — und speichern
         nur diesen, zusammen mit deiner Kennung. Deine Kennung speichern wir außerdem überall
@@ -283,6 +286,17 @@
         stell nur ein, was du auch weitergeben darfst.
       </p>
       <p>
+        Bei einem <strong>Post</strong> kannst du eintragen, wer ihn ursprünglich gepostet
+        hat („Gepostet von“), etwa den Kontonamen auf der anderen Plattform. Das Feld ist
+        <strong>freiwillig</strong>. Steht dort das Konto einer Person, ist das eine Angabe
+        über sie: Es steht am Post für alle sichtbar, auch ohne Anmeldung, und bleibt so lange
+        wie der Post, auch wenn das Konto der Person gelöscht wird, die den Post eingestellt
+        hat.
+        Rechtsgrundlage ist Artikel 6 Absatz 1 Buchstabe f DSGVO — unser berechtigtes
+        Interesse, zu zeigen, woher ein Post stammt. Wer findet, dass sein Konto dort nicht
+        stehen soll, kann den Post melden (siehe „Meldungen von Beiträgen“).
+      </p>
+      <p>
         <strong>Zweck:</strong> Aufbau eines durchsuchbaren Bestands an Formulierungen;
         Nachvollziehbarkeit, woher ein Beitrag stammt und wer ihn verändert hat.<br>
         <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe b DSGVO für die
@@ -305,7 +319,10 @@
         durch einen Platzhalter</strong>. Deinen Anzeigenamen löschen wir; deine Beiträge
         zeigen danach „ehemalige Person". Damit ist der Personenbezug weg, der Bestand bleibt.
         Macht der Text eines Beitrags dich selbst erkennbar, löschen wir diesen Beitrag auf
-        deinen Hinweis hin vollständig. Mehr dazu unter „Deine Rechte".
+        deinen Hinweis hin vollständig. Mehr dazu unter „Deine Rechte". Widerrufst du deine
+        Art.-9-Einwilligung, ersetzen wir deine Kennung ebenso, innerhalb von sieben Tagen; dein
+        Konto und dein Anzeigename bleiben dann, an diesen Beiträgen steht aber „ehemalige Person“,
+        und du findest sie nicht mehr unter „Meine Beiträge“.
       </p>
       <p>
         Einen eigenen Beitrag kannst du unter „Meine Beiträge“ löschen. Er verschwindet dann
@@ -358,7 +375,7 @@
 
     <mat-divider></mat-divider>
 
-    <section class="legal-section">
+    <section class="legal-section" id="suchanfragen">
       <h2>Deine Suchanfragen</h2>
       <p>
         Was du in das Suchfeld eingibst, wird <strong>dauerhaft als eigener Eintrag
@@ -367,11 +384,19 @@
         darüber, welche Formulierungen gebraucht werden.
       </p>
       <p>
-        Solange niemand darauf antwortet, zeigen wir den Eintrag in den Listen und Vorschlägen
-        der Aussagen nur unseren Administratorinnen und Administratoren. Für alle sichtbar wird
-        er, sobald jemand einen Beitrag als Antwort darauf einstellt oder sobald mindestens
-        zwei verschiedene Personen innerhalb von vier Wochen ohne Treffer danach gesucht haben
-        (siehe „Suchen ohne Treffer“).
+        Zunächst zeigen wir den Eintrag in den Listen und Vorschlägen der Aussagen nur unserem
+        Moderationsteam (unseren Administratorinnen und Administratoren). Haben mindestens zwei
+        verschiedene Personen innerhalb von vier Wochen ohne Treffer danach gesucht (siehe
+        „Suchen ohne Treffer“), legen wir ihn dem Moderationsteam vor. Es gibt ihn frei oder
+        lehnt ihn ab, etwa wenn er Namen oder Angaben über andere Personen enthält. Ein
+        freigegebener Eintrag ist für alle sichtbar, solange in den letzten vier Wochen
+        mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben, und dauerhaft,
+        sobald jemand einen Beitrag als Antwort darauf eingestellt hat. Einen noch nicht
+        geprüften oder abgelehnten Eintrag sieht außer dem Moderationsteam niemand, auch dann
+        nicht, wenn jemand eine gleichlautende Aussage anlegt oder beantwortet: Dafür entsteht
+        eine eigene Aussage mit dem Wortlaut dieser Person. Einträge, die vor Einführung dieser
+        Prüfung im November 2026 nur wegen der Zahl der Suchen sichtbar waren, sind es erst nach
+        dieser Prüfung wieder; hatte schon jemand darauf geantwortet, bleiben sie sichtbar.
       </p>
       <p>
         <strong>An diesem Eintrag steht nicht, wer gesucht hat.</strong> Statt einer
@@ -415,15 +440,17 @@
       </p>
       <p>
         Diese Messung ist <strong>nicht anonym, sondern pseudonym</strong>. Pseudonym heißt:
-        An den gespeicherten Zeilen steht kein Name, aber ein Wert, der dieselbe Person
-        oder dasselbe Gerät über mehrere Vorgänge hinweg wiedererkennbar macht. Das ist
+        An den gespeicherten Zeilen steht kein Name, aber ein Wert, der über mehrere Vorgänge
+        hinweg wiedererkennbar macht, dass sie vom selben Konto oder, ohne Anmeldung, vom
+        selben Anschluss kommen. Das ist
         weniger als ein Name, aber mehr als anonym — deshalb steht es hier.
       </p>
 
       <h3>Suchvorgänge</h3>
       <p>
         Zu jeder Suche speichern wir den Tag (keine Uhrzeit), die Zahl der Treffer und ein
-        <strong>täglich wechselndes Pseudonym</strong>. Bist du angemeldet, wird dieses
+        <strong>täglich wechselndes Pseudonym</strong>, dieses nur bis zum Ende des Tages
+        (siehe „Dauer“). Bist du angemeldet, wird dieses
         Pseudonym aus dem heutigen Datum und deiner Kennung berechnet, und zwar so, dass sich
         die Kennung daraus nicht zurückrechnen lässt. Weil das Datum eingeht, entsteht jeden
         Tag ein neues Pseudonym: <strong>Wir können Suchverhalten nicht über Tagesgrenzen
@@ -432,16 +459,20 @@
       </p>
       <p>
         Bist du nicht angemeldet, legen wir dafür <strong>nichts in deinem Browser
-        ab</strong>. Der Server berechnet das Pseudonym stattdessen aus dem heutigen Datum,
-        deiner IP-Adresse (bei IPv6 nur aus ihrem vorderen Teil, der deinen Anschluss
-        bezeichnet) und der Bezeichnung deines Browsers, die jeder Browser bei jedem Aufruf
-        ohnehin mitschickt (User-Agent). Dazu verwendet er einen geheimen Schlüssel, den er
+        ab</strong>. Der Server berechnet das Pseudonym stattdessen nur aus dem heutigen Datum
+        und deiner IP-Adresse (bei IPv6 nur aus ihrem vorderen Teil, der deinen Anschluss
+        bezeichnet). <strong>Die Bezeichnung deines Browsers (User-Agent) und andere Merkmale
+        deines Geräts gehen nicht ein.</strong> Wer ohne Anmeldung über denselben Anschluss
+        sucht, etwa im selben Haushalt oder Büro, hat deshalb an einem Tag dasselbe Pseudonym;
+        im Mobilfunknetz teilen sich oft viele Menschen eine Adresse, sie alle haben dann
+        dasselbe Pseudonym.
+        Dazu verwendet er einen geheimen Schlüssel, den er
         <strong>jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends
         speichert</strong>. Mit der ersten Suche eines neuen Tages ersetzt er ihn durch einen
         neuen; der alte ist dann weg. Deshalb kann auch niemand, der die gespeicherten Daten
         hat, das Pseudonym auf deine IP-Adresse zurückführen oder Pseudonyme verschiedener
-        Tage einander zuordnen. IP-Adresse und User-Agent werden dabei weder gespeichert noch
-        protokolliert. Davon unabhängig hält der vorgelagerte Webserver beides für kurze Zeit
+        Tage einander zuordnen. Die IP-Adresse wird dabei weder gespeichert noch protokolliert.
+        Davon unabhängig hält der vorgelagerte Webserver sie und den User-Agent für kurze Zeit
         in seinen Zugriffsprotokollen fest (siehe „Protokolldateien“).
       </p>
       <p>
@@ -450,10 +481,13 @@
         <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO — unser
         berechtigtes Interesse an einer belastbaren Reichweitenmessung für die
         Weiterentwicklung.<br>
-        <strong>Dauer:</strong> Die einzelnen Zeilen löschen wir <strong>nach 90 Tagen
-        automatisch</strong>. Danach bleibt je Tag nur, wie oft gesucht wurde, wie oft davon
-        ohne Treffer und von wie vielen verschiedenen Pseudonymen, ohne die Pseudonyme
-        selbst.
+        <strong>Dauer:</strong> Die einzelnen Zeilen mit dem Pseudonym löschen wir
+        <strong>automatisch nach Ablauf ihres Tages</strong>, kurz nach Mitternacht (UTC, in
+        Deutschland 1 bzw. 2 Uhr nachts), und wenige Minuten später noch einmal für Suchen,
+        die kurz vor Mitternacht begannen; scheitert das wegen einer Störung, versuchen wir es
+        stündlich erneut. Danach bleibt je Tag nur, wie oft gesucht wurde,
+        wie oft davon ohne Treffer und von wie vielen verschiedenen Pseudonymen, ohne die
+        Pseudonyme selbst.
       </p>
 
       <h3>Suchen ohne Treffer</h3>
@@ -469,18 +503,19 @@
         Um Personen zu unterscheiden, nutzen wir das oben beschriebene tägliche Pseudonym,
         aber nur im Arbeitsspeicher des Servers und nur für den laufenden Tag: Dort merken
         wir uns einen aus Pseudonym und Eintrag berechneten Prüfwert, damit wiederholte
-        Suchen derselben Person nicht als weitere Personen zählen. Zusätzlich merken wir uns
-        bei Suchen ohne Anmeldung einen aus deinem Anschluss (IP-Adresse, bei IPv6 ihr
-        vorderer Teil) und dem Eintrag berechneten Prüfwert, damit je Anschluss höchstens eine
-        Person zählt. Diese Merkliste wird nicht gespeichert und um Mitternacht (UTC, in
+        Suchen derselben Person nicht als weitere Personen zählen. Weil das Pseudonym ohne
+        Anmeldung nur aus deinem Anschluss entsteht, zählt dabei je Anschluss höchstens eine
+        Person. Diese Merkliste wird nicht gespeichert und um Mitternacht (UTC, in
         Deutschland 1 bzw. 2 Uhr nachts) verworfen.
       </p>
       <p>
         „Person“ heißt hier deshalb: dasselbe Pseudonym am selben Tag, ohne Anmeldung
-        höchstens eine je Anschluss. Als weitere Person zählt dieselbe Person, wenn sie
+        höchstens eine je Anschluss. Gespeichert wird je Woche die Summe der Personen der
+        einzelnen Tage; ein Pseudonym, das über einen Tag hinaus bleibt, brauchen wir dafür
+        nicht. Als weitere Person zählt dieselbe Person, wenn sie
         <strong>an einem anderen Tag</strong> sucht (das Pseudonym wechselt täglich), wenn
-        sie sich <strong>im Laufe des Tages anmeldet</strong> (vorher gehen IP-Adresse und
-        Browser ein, danach ihre Kennung; beides zu verknüpfen wäre ein neuer Bezug zu ihrer
+        sie sich <strong>im Laufe des Tages anmeldet</strong> (vorher geht ihr Anschluss
+        ein, danach ihre Kennung; beides zu verknüpfen wäre ein neuer Bezug zu ihrer
         Person), wenn sie ein <strong>anderes Netz</strong> nutzt (etwa vom WLAN ins
         Mobilfunknetz wechselt) und wenn der <strong>Server neu startet</strong> (Merkliste
         und Tagesschlüssel gehen dabei verloren). Umgekehrt zählen Personen, die ohne
@@ -491,23 +526,26 @@
         zwei verschiedene Personen</strong> im obigen Sinn ohne Treffer danach gesucht haben.
         Wer am selben Tag am selben Anschluss oder mit demselben Konto mehrfach dasselbe sucht,
         bringt den Eintrag also nicht allein auf die Listen, außer der Server startet
-        zwischendurch neu. Die Listen sehen
+        zwischendurch neu. Ein Eintrag, der aus einer noch unbeantworteten Suchanfrage
+        stammt, steht dort für Mitwirkende erst nach Prüfung durch das Moderationsteam
+        (siehe „Deine Suchanfragen“). Die Listen sehen
       </p>
       <ul>
         <li>
           <strong>alle angemeldeten Mitwirkenden</strong> auf der Seite „Hier fehlt eine
-          Antwort“, mit der Angabe „Danach wurde ohne Treffer gesucht: n Personen“ und nach
+          Antwort“, mit der Angabe „n Personen suchten das ohne Treffer“ und nach
           dieser Zahl geordnet; die Zahl der Suchen sehen sie nicht;
         </li>
         <li>
-          unsere Administratorinnen und Administratoren, zusätzlich mit der Zahl der Suchen.
+          das Moderationsteam, zusätzlich mit der Zahl der Suchen.
         </li>
       </ul>
       <p>
         Wer gesucht hat, sieht niemand. Legt eine angemeldete Person auf „Hier fehlt eine
-        Antwort“ selbst eine Aussage an, die einer noch unbeantworteten Suchanfrage gleicht,
-        übernimmt sie diese: Die Aussage gilt danach als von ihr angelegt und trägt ihre
-        Kennung. Das gilt auch für Suchanfragen, die noch auf keiner der Listen standen.
+        Antwort“ selbst eine Aussage an, die einer für alle sichtbaren (freigegebenen), noch
+        unbeantworteten Suchanfrage gleicht, übernimmt sie diese: Die Aussage gilt danach als
+        von ihr angelegt und trägt ihre Kennung. Gleicht sie einer noch nicht freigegebenen, entsteht eine
+        eigene Aussage mit ihrem Wortlaut, und die Suchanfrage bleibt unverändert.
       </p>
       <p>
         <strong>Zweck:</strong> zu erkennen, auf welche Fragen und Behauptungen der Bestand
@@ -537,14 +575,14 @@
         wir an jedem Vorgang zusätzlich fest, <strong>ob es an diesem Tag die erste Kopie
         dieses Beitrags durch dieselbe Person war</strong>, und zählen diese ersten Kopien je
         Beitrag. Aus diesem Vermerk lässt sich deshalb ablesen, dass mehrere Vorgänge an
-        einem Beitrag am selben Tag von derselben Person (ohne Anmeldung: vom selben Anschluss
-        mit demselben Browser) kamen, aber nicht, von wem.
+        einem Beitrag am selben Tag von derselben Person (ohne Anmeldung: vom selben Anschluss)
+        kamen, aber nicht, von wem.
       </p>
       <p>
         Um die erste Kopie zu erkennen, speichern wir <strong>bis zum Ende des Tages einen
         Prüfwert</strong>: einen Kurzwert, berechnet aus deiner Kennung (ohne Anmeldung aus
-        deiner IP-Adresse, bei IPv6 nur ihrem vorderen Teil, und der Bezeichnung deines
-        Browsers, wie bei den Suchvorgängen), dem Beitrag und dem Datum. Der Server bildet ihn
+        deiner IP-Adresse, bei IPv6 nur ihrem vorderen Teil, wie bei den Suchvorgängen), dem
+        Beitrag und dem Datum. Der Server bildet ihn
         mit einem geheimen Schlüssel, den er <strong>jeden Tag neu zufällig erzeugt, nur im
         Arbeitsspeicher hält und nirgends speichert</strong>. Auch wer die gespeicherten Daten
         hat, kann deshalb einen Prüfwert weder auf dich noch auf den Beitrag zurückführen.
@@ -576,9 +614,11 @@
         als null ist. Eigene Kopien zählen dabei nicht mit.
       </p>
       <p>
-        Damit wir das berechnen können, speichern wir zu deiner Kennung <strong>nur eine
-        Zahl</strong>: wie oft deine Beiträge insgesamt genutzt waren, als du zuletzt da
-        warst. Wann du da warst, speichern wir nicht. Die Gesamtzahl und die Zahl seit deinem
+        Damit wir das berechnen können, speichern wir zu deiner Kennung <strong>nur zwei
+        Zahlen</strong>: wie oft deine Beiträge insgesamt genutzt waren und wie viele Einwürfe
+        anderer es im Fangkorb gab, als du zuletzt da warst. Mit der zweiten zeigt dir die
+        Startseite unter „Seit deinem letzten Besuch“, wie viele Einwürfe seitdem
+        dazugekommen sind. Wann du da warst, speichern wir nicht. Die Gesamtzahl und die Zahl seit deinem
         letzten Besuch siehst nur du selbst; wie oft ein einzelner Beitrag genutzt wurde,
         steht wie bisher auch an ihm. Wer deine Beiträge genutzt hat, wissen wir nicht und
         zeigen wir nicht. Einzige Ausnahme, sobald Punkte eingeschaltet sind: Nutzen sich zwei
@@ -591,6 +631,37 @@
         berechtigtes Interesse ist, Mitwirkende über die Wirkung ihrer Beiträge zu
         informieren.<br>
         <strong>Dauer:</strong> bis zur Löschung deines Kontos.
+      </p>
+
+      <h3>Rückmeldung „Ja, gepostet“</h3>
+      <p>
+        Hast du einen Beitrag kopiert und bist angemeldet, fragen wir dich „Gepostet?“. Tippst
+        du auf „Ja, gepostet“, zählen wir dich für die laufende Kalenderwoche (ab Montag, 0 Uhr
+        UTC) einmal als Person, die öffentlich gekontert hat; ein zweites Tippen in derselben
+        Woche ändert nichts. Dafür merken wir uns bis zum Ende der Woche <strong>nur einen
+        Prüfwert</strong>, den wir ohne einen Schlüssel, der nur im Arbeitsspeicher liegt und
+        jede Woche neu entsteht, nicht auf dich zurückführen können; danach nur die Zahl der
+        Personen dieser Woche. Deine Kennung und welchen Beitrag du gepostet hast, speichern
+        wir nicht. Einen Link zu
+        deinem Post fragen wir nicht ab. Im Dank nennen wir dir die Zahl der Personen dieser
+        Woche. Die Frage erscheint nur, wenn du nach Artikel 9 DSGVO eingewilligt hast (siehe
+        „Rückschlüsse auf deine politische Haltung“). Widerrufst du sie, erscheint die Frage
+        nicht mehr; eine Meldung aus dieser Woche bleibt als Prüfwert bis Wochenende, weil wir
+        sie dir nicht zuordnen können.
+      </p>
+      <p>
+        Weil wir am Ende nur eine Zahl behalten, stützen wir die Zählung auf unser berechtigtes
+        Interesse. Weil schon die Meldung auf politische Aktivität schließen lässt, fragen wir
+        nur, wenn du nach Artikel 9 DSGVO eingewilligt hast.
+      </p>
+      <p>
+        <strong>Zweck:</strong> zu messen, wie viele Menschen mit Gut gesagt öffentlich
+        kontern.<br>
+        <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO — unser
+        berechtigtes Interesse ist, die Wirkung des Angebots zu kennen —, zusätzlich deine
+        Einwilligung nach Artikel 9 Absatz 2 Buchstabe a DSGVO.<br>
+        <strong>Dauer:</strong> der Prüfwert bis kurz nach Ende der Kalenderwoche, spätestens
+        bis zum nächsten täglichen Löschlauf; die Zahl je Woche enthält keine Angaben zu dir.
       </p>
     </section>
 
@@ -612,6 +683,33 @@
         jedem Abruf aus deinen sichtbaren Beiträgen und den Zählern daran. Eigene Kopien und
         Stimmen zählen nicht, ebenso wenig Kopien und Stimmen der Startkonten; ein Startkonto
         sammelt selbst keine Punkte.
+      </p>
+      <p>
+        Zusammen mit den Punkten zeigen wir dir unter „Meine Beiträge“ deine
+        <strong>Meilensteine</strong>. Für die Wirkung deiner Beiträge: die erste Nutzung
+        durch andere, 10, 50 und 100 Nutzungen und die erste Zustimmung. Für deine
+        Unterstützung: der erste und 10 ausformulierte Einwürfe anderer und 10 eigene
+        Einwürfe, die andere ausformuliert haben. Für dein eigenes Tun, als
+        <strong>Wegmarken</strong>: dein erster Einwurf, dein erster Beitrag, der mindestens
+        drei Tage alt und heute sichtbar ist, und dein erster Kommentar, den eine Aussage als
+        Antwort führt. Dafür zählen wir auch, wie viele Einwürfe anderer du ausformuliert
+        hast und wie viele Einwürfe du eingeworfen hast (verworfene nicht), und sehen nach,
+        ob eine Aussage einen deiner Kommentare als Antwort führt. Deine Meilensteine
+        <strong>siehst nur du</strong>. Wir speichern sie nicht, sondern berechnen sie bei
+        jedem Abruf aus deinen gespeicherten Beiträgen, Einwürfen und den Bewertungen und
+        Zählern, die wir für die Punkte ohnehin haben. Es zählen nur nicht gesperrte Beiträge;
+        wird einer gesperrt oder gelöscht, kann ein Meilenstein wieder wegfallen. Startkonten
+        zählen auch hier nicht.
+        <ng-container *ngIf="meilensteinMerker">
+            Einen neu erreichten Meilenstein nennen wir dir mit einem kurzen Hinweis, direkt
+            nach einem Einwurf, einem Ausformulieren oder einem Kommentar. Welche deiner
+            erreichten Meilensteine dir schon angezeigt wurden, merkt sich nur dein Browser
+            (siehe „Speicherung auf deinem Gerät“); nach dem Anmelden gilt, was du bis dahin
+            erreicht hast, still als gesehen, und genannt wird nur, was danach dazukommt.
+        </ng-container>
+        Keine Erinnerungen, keine Mails. Für Meilensteine gelten Zweck und Rechtsgrundlage wie
+        für die Punkte (unten); ohne deine Einwilligung „Punkte und Meilensteine“ gibt es
+        keine, auch keine Wegmarken.
       </p>
       <p>
         Damit Punkte nicht durch Absprachen entstehen, achten wir darauf, ob sich zwei Konten
@@ -636,17 +734,41 @@
       <p>
         <strong>Zweck:</strong> dir die Wirkung deiner Mitwirkung zeigen und die Punkte gegen
         Absprachen schützen.<br>
-        <strong>Rechtsgrundlage:</strong> deine Einwilligung nach Artikel 6 Absatz 1
-        Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO (siehe „Rückschlüsse auf deine
-        politische Haltung“). Ohne diese Einwilligung (nie erteilt oder widerrufen) hat dein
-        Konto keine Punkte, und es entsteht weder ein Paar-Prüfwert noch ein Muster-Hinweis,
-        der es nennt. Kopien, die ein Konto ohne Einwilligung macht, bringen niemandem Punkte
-        (siehe „Verwendung von Beiträgen“).<br>
+        <strong>Rechtsgrundlage:</strong> deine eigene, freiwillige Einwilligung „Punkte und
+        Meilensteine“ nach Artikel 6 Absatz 1 Buchstabe a und Artikel 9 Absatz 2 Buchstabe a
+        DSGVO. Du gibst sie mit einem eigenen Häkchen unter „Meine Beiträge“ oder in den
+        „Datenschutz-Einstellungen“; nichts ist vorausgewählt. Sie ist getrennt von der
+        Einwilligung zu deiner Mitwirkung (siehe „Rückschlüsse auf deine politische
+        Haltung“): Ohne sie kannst du genauso beitragen und bewerten. Ohne sie (nie erteilt
+        oder widerrufen) berechnen wir für dein Konto keine Punkte und keine Meilensteine,
+        und es entsteht weder ein Paar-Prüfwert noch ein Muster-Hinweis, der es nennt. Du
+        kannst sie jederzeit in den „Datenschutz-Einstellungen“ widerrufen; danach wird
+        nichts mehr berechnet. Deine Antwort speichern wir mit der Kennung des Wortlauts und
+        dem Zeitpunkt als Nachweis, bis dein Konto gelöscht wird; ein Widerruf ist ein
+        weiterer Eintrag. Kopien, die ein Konto ohne Einwilligung zu seiner Mitwirkung macht,
+        bringen niemandem Punkte (siehe „Verwendung von Beiträgen“).<br>
         <strong>Dauer:</strong> Paar-Prüfwerte löschen wir sieben Tage nach der letzten
         Nutzung in ihrer Richtung, Muster-Hinweise acht Wochen nach dem letzten auffälligen
         Tag, jeweils automatisch (täglicher Löschlauf, also spätestens einen Tag danach). Wird
         ein Konto gelöscht, gehen die Muster-Hinweise, die es nennen, mit; seine Paar-Prüfwerte
         laufen nach spätestens sieben Tagen aus.
+      </p>
+      <p>
+        <strong>Abzeichen an deinem Namen.</strong> Auch Abzeichen sind noch nicht eingeschaltet,
+        und wir schalten sie getrennt von den Punkten ein; bis dahin sieht sie niemand außer
+        dir. Danach gilt: Wenn du es erlaubst, sehen andere
+        Angemeldete an deinen Beiträgen neben deinem Anzeigenamen, wie viele Meilensteine du
+        erreicht hast, nur diese Zahl und ohne Wegmarken. Wir fragen dich einmal, sobald du
+        den ersten erreicht hast, der dafür zählt; ändern kannst du deine Antwort jederzeit unter „Meine Beiträge“, ein Nein gilt
+        sofort. Ohne Anmeldung sieht niemand ein Abzeichen. Wir speichern deine Antwort mit
+        Zeitpunkt als Nachweis, bis dein Konto gelöscht wird; die Zahl selbst speichern wir
+        nicht, sondern berechnen sie im Arbeitsspeicher alle 15 Minuten neu. Widerrufst du die
+        Einwilligung zu deiner Mitwirkung (siehe „Rückschlüsse auf deine politische Haltung“),
+        verschwindet das Abzeichen sofort, und wir halten deine Antwort als Nein fest. Ohne
+        die Einwilligung „Punkte und Meilensteine“ gibt es keine Meilensteine und damit kein
+        Abzeichen; widerrufst du sie, verschwindet es ebenfalls sofort.
+        <strong>Rechtsgrundlage:</strong> deine gesonderte Einwilligung nach Artikel 6 Absatz 1
+        Buchstabe a und Artikel 9 Absatz 2 Buchstabe a DSGVO.
       </p>
     </section>
 
@@ -660,17 +782,17 @@
         Bewerten ist nur angemeldet möglich; eine anonyme Bewertung gibt es nicht.
       </p>
       <p>
-        Anderen Nutzenden zeigen wir nur die Summen, nicht, wer wie bewertet hat. Du selbst
-        siehst deine eigene Bewertung und kannst sie jederzeit zurücknehmen — dann wird die
-        Zeile gelöscht.
+        Anderen Nutzenden zeigen wir nur Summen, erst ab drei Bewertungen anderer Personen, nie, wer wie bewertet hat;
+        darunter steht keine Zahl. Ab dann fließen dieselben Summen in die Güte, die das Siegel am Beitrag zeigt. Du selbst
+        siehst deine eigene Bewertung und kannst sie jederzeit zurücknehmen — dann wird die Zeile gelöscht.
       </p>
       <p>
         <strong>Zweck:</strong> Beiträge nach Brauchbarkeit sortierbar machen.<br>
         <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe b DSGVO.<br>
         <strong>Dauer:</strong> Eine Bewertung bleibt gespeichert, bis du sie zurücknimmst,
-        wir dein Konto löschen oder der bewertete Beitrag endgültig entfernt wird — ein
-        gelöschter Beitrag nach 30 Tagen (siehe „Beiträge, die du einstellst“). Eine
-        eigene Frist hat sie nicht.
+        deine Art.-9-Einwilligung widerrufst (siehe „Deine Einwilligung“), wir dein Konto löschen oder der bewertete Beitrag endgültig entfernt wird — ein
+        gelöschter Beitrag nach 30 Tagen (siehe „Beiträge, die du einstellst“). Ändert die Autorin oder der Autor den Titel so, dass er etwas anderes behauptet, löschen wir die Bewertungen dazu.
+        Eine eigene Frist hat sie nicht.
       </p>
     </section>
 
@@ -685,8 +807,9 @@
       </p>
       <p>
         Gespeichert werden der gemeldete Beitrag, der gewählte Meldegrund, dein Freitext, falls
-        du einen schreibst, deine Erklärung, in gutem Glauben zu melden, dein Name und deine
-        E-Mail-Adresse, falls du sie angibst, der Zeitpunkt sowie deine Kennung, wenn du
+        du einen schreibst, deine Erklärung, in gutem Glauben zu melden, ohne Konto dein Name und deine
+        E-Mail-Adresse, falls du sie angibst, mit Konto die E-Mail-Adresse deines Kontos, falls du das
+        Häkchen dafür setzt, der Zeitpunkt sowie deine Kennung, wenn du
         angemeldet bist. Meldest du ohne Konto, tritt an ihre Stelle dein Tagespseudonym, wie
         bei den Suchvorgängen gebildet: Es verrät weder deine IP-Adresse noch deinen Browser,
         zeigt den Administratorinnen und Administratoren aber, ob mehrere Meldungen am selben
@@ -698,7 +821,12 @@
         Kennung der bearbeitenden Person, der Zeitpunkt und ein Bearbeitungsvermerk hinzu.
       </p>
       <p>
-        Name und E-Mail-Adresse sind freiwillig. Die E-Mail-Adresse nutzen wir nur für zwei
+        Name und E-Mail-Adresse sind freiwillig. Bist du angemeldet, fragen wir nicht danach: Setzt du
+        das Häkchen „Bestätigung und Entscheidung per Mail an mein Konto“, nehmen wir dafür die
+        E-Mail-Adresse deines Kontos und speichern sie an der Meldung; ohne Häkchen speichern wir keine
+        Adresse. Sie bleibt dort wie die übrigen Angaben bis 180 Tage nach der Bearbeitung der Meldung;
+        löschst du dein Konto, löschen wir deine Meldungen samt Adresse mit. Die E-Mail-Adresse nutzen
+        wir nur für zwei
         Mails an dich: Gleich nach der Meldung bestätigen wir dir den Eingang, und sobald wir
         entschieden haben, teilen wir dir unsere Entscheidung über die Meldung mit, zusammen mit
         deinen Möglichkeiten, dagegen vorzugehen. Beide Mails verschickt der Dienst
@@ -850,6 +978,8 @@
         Platzhalter, und angezeigt wird „ehemalige Person“. Wo du als Person stehst, die den
         ersten Satz gespeichert hat, tritt ebenfalls ein Platzhalter an deine Stelle, und wo
         du einen Einwurf mit einem Beitrag verknüpft hast, entfernen wir deine Kennung.
+        Widerrufst du deine Art.-9-Einwilligung, tun wir dasselbe innerhalb von sieben Tagen;
+        dein Konto bleibt dann.
       </p>
     </section>
 
@@ -960,10 +1090,20 @@
       <h3>Weitere Einträge</h3>
       <p>
         Nur bis zum Schließen des Tabs merkt sich der Browser außerdem: die Seite, auf die du
-        nach dem Anmelden zurückkehren sollst, deine Filter im Fangkorb und, wenn du einen Link
-        über das Teilen-Menü deines Geräts an Gut gesagt schickst, dessen Titel, Text und
-        Adresse, bis das Formular für den Einwurf sie übernimmt. Diese Einträge verlassen dein
+        nach dem Anmelden zurückkehren sollst, deine Filter im Fangkorb, den Zeitpunkt, zu dem die
+        Seite wegen einer neuen Version von Gut gesagt von selbst neu geladen hat (nur ein Merker,
+        damit das nicht in einer Schleife geschieht; er gilt nur zehn Minuten) und, wenn du
+        einen Link über das Teilen-Menü deines Geräts an Gut gesagt schickst, dessen Titel,
+        Text und Adresse, bis das Formular für den Einwurf sie übernimmt. Diese Einträge verlassen dein
         Gerät nicht von selbst.
+      </p>
+      <p>
+        Schreibst du einen Kommentar und wechselst kurz in eine andere App, merkt sich dein Browser
+        den angefangenen Kommentar bis zum Schließen des Tabs, höchstens eine Stunde lang: Titel,
+        Text, Kurz- und Langfassung, Zweck und Stil, die Aussage, auf die er antwortet, und einen
+        Prüfwert, der ihn deinem Konto zuordnet, nicht deinen Namen. Wir löschen ihn, sobald du den
+        Kommentar speicherst, das Formular leerst, dich abmeldest oder deine Einwilligung
+        widerrufst. Er verlässt dein Gerät nicht von selbst.
       </p>
       <p>
         Dein Profilbild legen wir nur in deinem Browser ab, <strong>wenn du es selbst
@@ -980,6 +1120,17 @@
         sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich. Sie bleiben auch
         über das Schließen hinaus, bis du die Websitedaten dieser Seite löschst. Sie gehen nicht
         an uns und werden nicht gezählt.
+      </p>
+      <p *ngIf="homeHinweisMerker">
+        Auf iPhone und iPad zeigen wir einen Hinweis, wie du Gut gesagt auf deinen
+        Home-Bildschirm legst. Blendest du ihn aus, merkt sich dein Browser das, damit er nicht
+        wiederkommt. Der Vermerk enthält keine Angaben über dich, bleibt auch über das Schließen
+        hinaus, bis du die Websitedaten dieser Seite löschst, und geht nicht an uns.
+      </p>
+      <p *ngIf="meilensteinMerker">
+        Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein
+        Browser, welche du schon gesehen hast. Der Vermerk enthält keine Angaben über dich,
+        geht nicht an uns und wird beim Abmelden und beim nächsten Anmelden gelöscht.
       </p>
       <p>
         Außerdem richtet die Plattform in deinem Browser ein kleines Hintergrundskript ein
@@ -1054,7 +1205,10 @@
         Davon zu unterscheiden ist der oben beschriebene Fall der eingebundenen Bilder: Ein
         Bild von einem fremden Server lädt dein Browser erst nach deinem Klick auf „Bild
         laden“. Wohin er es dann lädt, hängt an der eingetragenen Adresse und kann auch
-        außerhalb der EU liegen. Diesen Abruf richtet dein Browser aus, nicht wir.
+        außerhalb der EU liegen. Den Abruf löst erst dein Klick aus. Für das Einbinden und
+        damit für die Übermittlung deiner IP-Adresse an den fremden Server sind wir
+        mitverantwortlich; was der fremde Server danach mit den Daten macht, verantwortet sein
+        Betreiber.
       </p>
     </section>
 
@@ -1098,20 +1252,34 @@
         <strong>Ohne Einwilligung kannst du suchen und lesen, aber nichts beitragen und
         nichts bewerten.</strong> Melden, Feedback schicken, eigene Beiträge löschen und einer
         Sperre widersprechen geht auch ohne sie.
+        Punkte und Meilensteine gehören nicht zu dieser Einwilligung; für sie fragen wir dich
+        gesondert (siehe „Punkte“).
       </p>
       <p>
         Willigst du ein, speichern wir deine Kennung, <strong>den Zeitpunkt und die Kennung
         des Wortlauts</strong>, dem du zugestimmt hast (sein Stand-Datum, bei einem zweiten
         Wortlaut vom selben Tag mit einem Buchstaben dahinter), damit wir
-        nachweisen können, worin du eingewilligt hast.
+        nachweisen können, worin du eingewilligt hast. Ändern wir den Wortlaut so, dass er mehr
+        umfasst, ein Widerruf weiter reicht oder wir Zwecke daraus streichen, fragen wir dich beim
+        nächsten Besuch neu; deine
+        frühere Einwilligung zählt dann nicht mehr, du kannst sie aber weiter widerrufen.
+        Gehst du ohne Einwilligung weiter, speichern wir das mit der Fassung des
+        Einwilligungstexts an deinem Konto, damit wir dich nicht bei jedem Öffnen wieder fragen.
+        Willigst du später ein, entfällt der Vermerk; mit deinem Konto wird er gelöscht.
       </p>
       <p>
-        <strong>Widerrufen</strong> kannst du jederzeit im Profilmenü unter „Einwilligung“.
+        <strong>Widerrufen</strong> kannst du jederzeit im Profilmenü unter „Datenschutz-Einstellungen“.
         Dann vermerken wir den Zeitpunkt des Widerrufs an deiner Einwilligung; sie bleibt als
         Nachweis stehen, dass wir uns bis dahin auf sie stützen durften. Danach kannst du
-        nichts mehr beitragen und nichts bewerten. Was du schon gespeichert hast, bleibt, bis
-        du es löschst oder dein Konto löschen lässt; was bis zum Widerruf geschehen ist, bleibt
-        rechtmäßig. Willigst du später erneut ein, kommt eine neue Einwilligung hinzu.
+        nichts mehr beitragen und nichts bewerten, und deine Bewertungen löschen wir.
+        <strong>Innerhalb von sieben Tagen lösen wir auch deine Beiträge, Einwürfe und Sätze
+        von dir</strong>, wie bei der Löschung deines Kontos: Deine Beiträge bleiben stehen und
+        zeigen statt deines Namens „ehemalige Person“, deine Einwürfe löschen wir, und deine Sätze
+        an Einwürfen anderer bleiben ohne deinen Namen (siehe „Beiträge, die du einstellst“ und
+        „Einwürfe in den Fangkorb“). Dafür legen wir einen Löschauftrag an: deine Kennung, der
+        Zeitpunkt deines Widerrufs und die Frist; ist er erledigt, auch wann. Dein Konto bleibt;
+        was bis zum Widerruf geschehen ist, bleibt rechtmäßig. Willigst du später erneut ein, kommt eine neue Einwilligung hinzu; was du danach beiträgst, erfasst ein noch offener Löschauftrag nicht.
+        Wer vor dem 18. November 2026 widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.
       </p>
       <p>
         <strong>Zweck:</strong> deine Mitwirkung verarbeiten zu dürfen und nachzuweisen, dass
@@ -1122,7 +1290,8 @@
         verlangt.<br>
         <strong>Dauer:</strong> Deine Einwilligungen, auch widerrufene, bleiben bis zur
         Löschung deines Kontos (siehe „Deine Rechte“); wie lange deine einzelnen Beiträge und
-        Bewertungen bleiben, steht in ihren Abschnitten.
+        Bewertungen bleiben, steht in ihren Abschnitten. Einen erledigten Löschauftrag löschen
+        wir ein Jahr nach der Erledigung, mit deinem Konto sofort.
       </p>
     </section>
 
@@ -1154,7 +1323,7 @@
         <strong>Datenübertragbarkeit</strong> (Artikel 20) und auf
         <strong>Widerruf einer Einwilligung</strong> mit Wirkung für die Zukunft (Artikel 7
         Absatz 3); deine Einwilligung zur Mitwirkung widerrufst du direkt im Profilmenü unter
-        „Einwilligung“. Wende dich dafür an
+        „Datenschutz-Einstellungen“. Wende dich dafür an
         <a href="mailto:{{ KONTAKT_MAIL }}">{{ KONTAKT_MAIL }}</a>.
       </p>
       <p>
@@ -1235,7 +1404,7 @@
     </section>
 
     <div class="update-notice">
-      <p><strong>Stand:</strong> 5. November 2026</p>
+      <p><strong>Stand:</strong> 18. November 2026</p>
     </div>
   </div>
 </div>

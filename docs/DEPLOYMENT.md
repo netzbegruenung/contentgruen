@@ -80,19 +80,45 @@ model, ~350 MB for CharSplit's n-gram table), loaded in the background about two
 start. If the container has a memory limit, raise it accordingly. The Kürzungsvorschlag (#403)
 uses the same spaCy model and needs no further memory. Since #405 Lingua adds about 45 MB for
 the Sprachhinweis (11 languages, measured in the service image), also preloaded at start. Its
-models make the image about 300 MB larger on disk (the wheel ships all languages).
+models make the image about 300 MB larger on disk (the wheel ships all languages). Since #387
+the NLI-Stufe loads an NLI model (mDeBERTa-v3-base-xnli, fp32) in the background at start
+(`SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI`, default `schatten`): about 1.2 GB more RAM in use and
+up to about 2 GB at the peak while loading (measured on the dev VM, `python -m
+tests.regression.nli_messen --zeit`), and the image grows by about 0.55 GB. If the container has
+a memory limit, raise it accordingly; `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=aus` together with
+`SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI=aus` (#574, below) skips the model and restores the rule
+before #387. The image also carries a second NLI model, the Bestätiger
+(`joeddav/xlm-roberta-large-xnli`, fp32, about 2.2 GB on disk, so the image grows by about that
+much). It is only loaded with `SEMANTIC_SEARCH_NLI_BESTAETIGER=true` (default off, and never with
+the NLI-Stufe `aus`): then plan for up to about 2.2 GB more RAM (measured locally: peak +1.4 to
++1.6 GB). Check the free memory of the host before switching it on. The polarity penalty of the search
+(#574, `SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI`, default `schatten`) uses the same first NLI model,
+so no extra memory while the NLI-Stufe is on; with the NLI-Stufe `aus` it loads the model
+itself (about 1.2 GB) unless it is `aus` too. In `schatten` each search with a full sentence
+adds one background judgement of about 0.3 to 0.45 s CPU: the search itself does not wait, and
+the judgement is skipped (counted as `belegt`) when the model is busy, but while it runs, the
+NLI-Stufe and the "Antwort auf" filter of other requests wait for it (up to their 3 s and 2 s),
+so under load they fall back to the threshold more often. In `an` the search waits for the
+judgement (on the shared dev VM median +0.3 to 0.45 s, 95th percentile up to 1.4 s instead of
+0.14 s). Measure on the target VM with `tests/regression/suche_messen` before switching to `an`.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
-from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:
+from the client address alone (IPv6: its /64; the User-Agent no longer counts since #495,
+`utils/besucher_pseudonym.py`). Search events keep this pseudonym only for the running UTC day;
+the Löschfristen task compacts closed days into day counters at midnight UTC and at start,
+independent of `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB`. Two preconditions:
 
 - **`X-Real-IP` reaches the semantic service.** nginx sets it, YARP in the BFF passes it on
   (`IdentityHeaderTransformTests` checks that it is not stripped). Without it the service only
-  sees its peer, and all visitors with the same User-Agent count as one person. The header is
+  sees its peer, and all visitors count as one person. The header is
   only trustworthy while the BFF and the semantic service are reachable through nginx alone;
   a client that reaches them directly can choose its own address and inflate the person
   counts (the report rate limit relies on the same header).
 - **One uvicorn worker.** The daily key lives in the memory of the process. With several
   workers a visitor would count once per worker; a restart counts visitors again on that day.
+  The milestone badges (#351, `services/abzeichen_service.py`) live there too: with several
+  workers a "no" to visibility or a withdrawn Art. 9 consent would take effect only in one
+  process and stay visible in the others for up to 15 minutes.
 
 ### 🔑 Login (Keycloak)
 
@@ -134,6 +160,23 @@ mail never undoes a Meldung or decision; the log says `SMTP delivery failed (<er
 without the address. Check after setting the variables: report a Beitrag on the test system with
 your own address, then dismiss the Meldung in the moderation; both mails must arrive.
 
+### 🎚 Schalter: upper bound and admin value (#708)
+
+`SEMANTIC_SEARCH_PUNKTE_AKTIV`, `SEMANTIC_SEARCH_ABZEICHEN_SICHTBAR_AKTIV` and
+`SEMANTIC_SEARCH_GEPOSTET_AKTIV` are only **upper bounds** now. A Schalter takes effect only when
+its variable is `true` **and** an admin has switched it on in the app (Admin, „Schalter“; stored
+in the table `schalter`, every change with time and admin Kennung in `schalter_verlauf`). Without
+an entry the admin value is off. Admins can always switch off, but never on above the upper bound
+(the API answers 409). Changes take effect without a restart, in other replicas within about 45 s.
+An admin value „on“ stays when the upper bound is switched off later: the Schalter is then off, but
+if a rollout sets the variable to `true` again, it takes effect without a new admin click. Switch
+it off in the app first if it should stay off. The history in `schalter_verlauf` is deleted after
+12 months by the Löschfristen task (`docs/LOESCHKONZEPT.md`); the current value stays.
+Behaviour change on rollout: a system where a variable is already `true` (for example
+`SEMANTIC_SEARCH_PUNKTE_AKTIV=true` on test) has that function **off** after the update until an
+admin switches it on. Before switching on Punkte or Abzeichen on production: DSFA decided
+(`docs/DSFA.md`, section 7).
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status
@@ -144,14 +187,17 @@ described in [CI.md, "Images and releases"](CI.md#images-and-releases) two CIs b
   the tags the environments use, after running their test suites
   (`tests-backend.yml`, `tests-frontend.yml`, `tests-bff.yml`).
 - **Woodpecker** (`.woodpecker/build.yaml` and `release.yaml`, after a green `ci` run) builds
-  the same images with the same tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
+  the same images with the same release tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
   `:woodpecker-0.9.0`), so the two CIs never overwrite each other's tags. After the switch
   the prefix is gone and the GitHub workflows are removed.
 
-Tags, the same in both CIs (`scripts/image_tags.py`):
+Tags (`scripts/image_tags.py` in Woodpecker):
 
-- **Push to `main`:** `:main` and `:sha-<short>` for the images whose files changed. The test
-  environment runs `:main`, rolled out manually (see above).
+- **Push to `main`:** `:main` for the images whose files changed; GitHub also sets
+  `:sha-<short>`, Woodpecker no longer does (registry space, `docs/CI.md`). A cleanup rule of
+  the organisation removes `sha-` tags older than 7 days; the 5 newest versions per image
+  (all tags counted, `main` and releases included) always stay. The test environment runs
+  `:main`, rolled out manually (see above).
 - **Tag `vX.Y.Z`:** `:X.Y.Z` (the tag without its `v`), `:X.Y` and `:latest` for all four
   images. A prerelease (`v1.2.3-rc.1`) only gets `:1.2.3-rc.1`.
 
@@ -162,6 +208,22 @@ Images are pushed into the Netzbegruenung/Verdigado registry:
 `:latest`. Renovate proposes the next release version; production changes only once the
 operators roll it out. A release tag does not deploy anything by itself. `:latest` is still
 published for whoever wants the newest release, but nothing in production follows it.
+
+**How open apps and installed PWAs get the new version:** the service worker caches nothing,
+`index.html` is served with `no-cache`, so every page load gets the current version. Whoever has
+the app open across a rollout keeps the old code until a route needs a chunk the new container no
+longer has (404, also from an `@defer` block); the frontend then loads that route once with a
+full page load and so gets the new version (`src/app/shared/neue-version.ts`). Before switching it
+checks that the browser is online and, where the error names the chunk, that a `HEAD` on it
+answers 404 (otherwise, as for Safari and `@defer`, that a `HEAD` on `index.html` answers 2xx;
+each check gives up after 5 s); a network error only shows a message. A marker in
+`sessionStorage` (only a timestamp) allows at most one automatic reload per ten minutes; while it
+stands, or without `sessionStorage`, a notice "Gut gesagt wurde aktualisiert – Neu laden" appears
+instead, also for a second rollout within those ten minutes. A `HEAD` answer that was redirected
+(captive portal) does not count. State that only lives in memory or in the navigation's `state`
+is lost by that one reload: search results, a Destillieren handover, and on the "gespeichert"
+page the "Antwort auf" card and the warning that linking failed (`extras.state`). This only hits whoever
+navigates there across a rollout; moving it into the address is open.
 
 #### Releases
 

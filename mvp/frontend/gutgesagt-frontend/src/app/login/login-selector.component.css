@@ -2,41 +2,16 @@
     padding: 20px;
 }
 
-.welcome-section {
+/* Wozu die Anmeldung noetig ist, ueber allem anderen (#600) */
+.anmeldegrund {
+    max-width: 1000px;
+    margin: 4px auto 0;
+    padding: 0 20px;
+    color: var(--akzent-schrift);
+    line-height: 1.3;
+    font-size: 20px;
+    font-weight: 600;
     text-align: center;
-    margin-bottom: 40px;
-}
-
-.welcome-section h1 {
-    margin-bottom: 20px;
-    color: var(--primary-dark);
-}
-
-.welcome-text {
-    font-size: 16px;
-    line-height: 1.6;
-    color: #333;
-    margin-bottom: 15px;
-}
-
-.emphasis {
-    color: var(--primary-dark);
-    font-weight: 500;
-    border-bottom: 2px dotted var(--primary-main);
-    cursor: help;
-}
-
-.login-prompt {
-    font-size: 16px;
-    color: #666;
-    margin-top: 30px;
-    font-weight: 500;
-}
-
-.inline-content {
-    display: flex;
-    align-items: center;
-    margin-bottom: 30px;
 }
 
 /* Registration Information Styles */
@@ -44,59 +19,6 @@
     max-width: 1000px;
     margin: 20px auto 30px;
     padding: 0 20px;
-}
-
-.registration-expansion-panel {
-    background: #f8f9fa;
-    border-left: 4px solid var(--primary-main);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.registration-expansion-panel .mat-expansion-panel-header {
-    background: #f8f9fa !important;
-    padding: 16px 24px;
-}
-
-.registration-expansion-panel .mat-expansion-panel-header:hover {
-    background: #f0f1f2 !important;
-}
-
-.registration-panel-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--primary-dark);
-    font-size: 16px;
-    font-weight: 500;
-    width: 100%;
-}
-
-.registration-panel-title .info-icon {
-    color: var(--primary-dark);
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-}
-
-.expansion-hint {
-    margin-left: auto;
-    color: #666;
-    font-size: 14px;
-    font-weight: normal;
-    padding-right: 24px;
-    white-space: nowrap;
-}
-
-.registration-content {
-    padding: 16px 24px 24px;
-}
-
-.registration-intro {
-    color: #333;
-    font-size: 15px;
-    line-height: 1.5;
-    margin-bottom: 20px;
 }
 
 .registration-options {
@@ -110,13 +32,13 @@
     align-items: flex-start;
     gap: 12px;
     padding: 12px;
-    background: white;
+    background: var(--flaeche);
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--linie);
 }
 
 .registration-option .option-icon {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 24px;
     width: 24px;
     height: 24px;
@@ -130,29 +52,16 @@
 
 .registration-option .option-text strong {
     display: block;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 16px;
     margin-bottom: 6px;
 }
 
 .registration-option .option-text p {
-    color: #555;
+    color: var(--text);
     font-size: 14px;
     line-height: 1.4;
     margin: 0;
-}
-
-.registration-option .email-link {
-    color: var(--primary-dark);
-    text-decoration: none;
-    font-weight: 500;
-    border-bottom: 1px dotted var(--primary-main);
-    transition: all 0.2s ease;
-}
-
-.registration-option .email-link:hover {
-    color: var(--primary-dark);
-    border-bottom-color: var(--primary-main);
 }
 
 .login-selector-container {
@@ -169,36 +78,23 @@
 }
 
 .login-option-card {
-    background: white;
+    background: var(--flaeche);
     padding: 20px;
     border-radius: 8px;
     transition: transform 0.2s ease;
 }
 
-.login-option-card:hover:not(.disabled-option) {
+.login-option-card:hover {
     transform: translateY(-2px);
-}
-
-.login-option-card.disabled-option {
-    opacity: 0.7;
-    background: #f5f5f5;
-}
-
-.login-option-card.disabled-option .login-option-button {
-    cursor: not-allowed;
-}
-
-.login-option-card.disabled-option .login-description {
-    opacity: 0.6;
 }
 
 .disabled-notice {
     margin-top: 12px;
     padding: 8px 12px;
-    background: #fff3cd;
-    border: 1px solid #ffc107;
+    background: var(--hinweis-tint);
+    border: 1px solid var(--hinweis-rand);
     border-radius: 4px;
-    color: #856404;
+    color: var(--hinweis-text);
     font-size: 13px;
     display: flex;
     align-items: center;
@@ -209,7 +105,7 @@
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: #f39c12;
+    color: var(--warning-border);
 }
 
 .login-option-button {
@@ -226,14 +122,8 @@
 /* Beide Anmeldewege im einen Primaergruen, ohne Verlaeufe (#512) */
 .keycloak-button,
 .gutgesagt-button {
-    background: var(--primary-dark);
+    background: var(--primaer);
     color: white;
-}
-
-.keycloak-button:disabled,
-.gutgesagt-button:disabled {
-    background: var(--disabled-bg);
-    color: var(--disabled-color);
 }
 
 .login-icon {
@@ -253,19 +143,6 @@
     font-weight: 500;
 }
 
-.button-subtitle {
-    font-size: 12px;
-    opacity: 0.9;
-    margin-top: 2px;
-}
-
-.login-description {
-    margin-top: 12px;
-    color: #666;
-    font-size: 14px;
-    text-align: center;
-}
-
 .divider-container {
     text-align: center;
     position: relative;
@@ -279,13 +156,13 @@
     top: 50%;
     width: 100%;
     height: 1px;
-    background: #e0e0e0;
+    background: var(--linie);
 }
 
 .divider-text {
-    background: white;
+    background: var(--flaeche);
     padding: 0 16px;
-    color: #999;
+    color: var(--text-leise);
     position: relative;
     font-size: 14px;
 }
@@ -297,7 +174,7 @@
 
 .loading-container p {
     margin-top: 20px;
-    color: #666;
+    color: var(--text-leise);
 }
 
 @media (max-width: 600px) {
@@ -310,28 +187,9 @@
         margin: 15px auto 20px;
     }
 
-    .registration-expansion-panel .mat-expansion-panel-header {
-        padding: 12px 16px;
-    }
-
-    .registration-panel-title {
-        font-size: 14px;
-        gap: 8px;
-    }
-
-    .registration-panel-title .info-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-        flex-shrink: 0;
-    }
-
-    .expansion-hint {
-        display: none;
-    }
-
-    .registration-content {
-        padding: 12px 16px 16px;
+    .anmeldegrund {
+        padding: 0;
+        font-size: 18px;
     }
 
     .registration-option {
@@ -376,5 +234,74 @@
         font-size: 28px;
         width: 28px;
         height: 28px;
+    }
+}
+
+/* Noch kein Konto? Immer sichtbar unter der Anmeldung, so breit wie die Anmeldekarte (Designrunde 17.11.) */
+.konto-weg {
+    max-width: 600px;
+    margin: 32px auto 0;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.konto-weg-titel {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--akzent-schrift);
+}
+
+.konto-weg .einladung-knopf {
+    margin: 4px 0 8px;
+}
+
+/* Vorschau Einladung: eingeklappt, ohne Funktion, bis zur Realm-Umstellung */
+.einladung-vorschau {
+    margin-top: 16px;
+    border: 1px dashed var(--feldrand);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.einladung-vorschau summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-leise);
+    font-weight: 600;
+    list-style: none;
+}
+
+.einladung-vorschau summary:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
+}
+
+.einladung-vorschau-inhalt {
+    margin-top: 12px;
+}
+
+.registration-option.inaktiv .option-icon {
+    opacity: 0.7;
+}
+
+.einladung-vorschau summary::-webkit-details-marker {
+    display: none;
+}
+
+.einladung-vorschau .vorschau-pfeil {
+    margin-left: auto;
+    transition: transform 0.2s;
+}
+
+.einladung-vorschau[open] .vorschau-pfeil {
+    transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .einladung-vorschau .vorschau-pfeil {
+        transition: none;
     }
 }

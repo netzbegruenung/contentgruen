@@ -53,7 +53,7 @@
   position: sticky;
   top: 0;
   z-index: var(--z-index-sticky);
-  background-color: white;
+  background-color: var(--flaeche);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -61,8 +61,8 @@
 .mobile-nav-bar {
   display: flex;
   align-items: center;
-  background-color: white;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background-color: var(--flaeche);
+  border-bottom: 1px solid var(--linie);
   padding: var(--spacing-sm) 0;
 }
 
@@ -75,7 +75,7 @@
   margin: 0;
   font-size: 26px;
   font-weight: 500;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 /* Mobile navigation buttons */
@@ -133,7 +133,7 @@ mat-sidenav-content {
 .mobile-sidenav {
   width: 280px;
   max-width: 85vw;
-  background: white;
+  background: var(--flaeche);
 }
 
 .mobile-menu-content {
@@ -150,7 +150,7 @@ mat-sidenav-content {
 }
 
 .close-menu-button {
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .mobile-menu-user-info {
@@ -162,7 +162,7 @@ mat-sidenav-content {
 
 .mobile-menu-user-info h3 {
   margin: 0 0 16px 0;
-  color: var(--text-primary);
+  color: var(--text);
   font-size: 18px;
 }
 
@@ -186,9 +186,9 @@ mat-sidenav-content {
 .mobile-menu-about {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  border-top: 1px solid var(--linie);
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .mobile-menu-about p {
@@ -196,9 +196,10 @@ mat-sidenav-content {
 }
 
 .mobile-menu-about a {
-  color: var(--primary-dark);
-  text-decoration: none;
+  color: var(--akzent-schrift);
+  text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
 }
+
 
 .mobile-menu-about a:hover {
   text-decoration: underline;
@@ -208,171 +209,6 @@ mat-sidenav-content {
   padding-top: var(--spacing-sm);
   padding-bottom: 0;
   margin-bottom: 0;
-}
-
-/* Mobile results container */
-.mobile-results-container {
-  /* Container for mobile results - maintains layout flow */
-  display: block;
-  width: 100%;
-}
-
-/* Mobile section - minimal styling to let carousel handle layout */
-.mobile-section {
-  /* Section wrapper - maintains layout flow */
-  display: block;
-  width: 100%;
-}
-
-/* Hide content sections on mobile - only show minimal info */
-.mobile-section .content-section {
-  display: none;
-}
-
-/* Removed mobile-carousel-wrapper - no longer needed */
-
-/* Mobile Tab Bar Navigation */
-.mobile-results-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-}
-
-/* Ansichts-Umschalter wie Fangkorb-Tabs und Kurz/Mittel/Lang: graue Kontur,
-   gewaehlt Tanne-Hauch mit Tanne-Text und Unterstrich (#512). */
-.mobile-tab-bar {
-  display: flex;
-  width: calc(100% - 2 * var(--spacing-md));
-  margin: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
-  overflow: hidden;
-  background: var(--bg-card);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--border-radius-medium);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.tab-button {
-  /* Gleich breit und schrumpfbar: Mit dem dritten Tab (Posts) ist bei 360 px
-     kein Platz fuer Symbol, Name und Zahl in einer Zeile - die Zahl bricht um,
-     statt die Leiste seitlich ueberlaufen zu lassen. */
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0 6px;
-  padding: 8px 4px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  position: relative;
-  min-height: 44px;
-}
-
-.tab-button + .tab-button {
-  border-left: 1px solid var(--divider-color);
-}
-
-.tab-button:hover:not(:disabled) {
-  background: var(--hover-bg);
-}
-
-.tab-button.active {
-  color: var(--primary-dark);
-  font-weight: 700;
-  background: var(--auswahl-grund);
-  box-shadow: inset 0 -2px 0 var(--primary-dark);
-}
-
-.tab-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.tab-icon {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.tab-label {
-  font-weight: inherit;
-}
-
-.tab-count {
-  font-size: 12px;
-  color: inherit;
-  opacity: 0.8;
-}
-
-/* Active tab indicator animation */
-.tab-button.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--primary-dark);
-  animation: slide-in 0.3s ease;
-}
-
-@keyframes slide-in {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-/* Mobile empty state */
-.mobile-empty-state {
-  padding: var(--spacing-lg);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.mobile-empty-state h3 {
-  color: var(--primary-dark);
-  margin: 0;
-}
-
-.mobile-empty-state .search-query-info {
-  color: rgba(0, 0, 0, 0.6);
-  font-style: italic;
-  margin: 0;
-}
-
-.mobile-empty-state .empty-icon {
-  font-size: 64px;
-  width: 64px;
-  height: 64px;
-  color: var(--primary-light);
-  opacity: 0.5;
-}
-
-.mobile-action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  width: 100%;
-  max-width: 300px;
-}
-
-.mobile-action-buttons button {
-  width: 100%;
 }
 
 /* Mobile responsive adjustments */
@@ -400,23 +236,10 @@ mat-sidenav-content {
   margin: 0 auto;
 }
 
-.unified-empty-state .empty-icon {
-  font-size: 64px;
-  height: 64px;
-  width: 64px;
-  color: var(--text-secondary);
-  margin: 0 auto 1.5rem;
-  opacity: 0.5;
-}
 
-.unified-empty-state h2 {
-  color: var(--text-primary);
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-}
 
 .unified-empty-state .search-query-info {
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 1.1rem;
   margin-bottom: 1.25rem;
   font-weight: 500;
@@ -461,7 +284,7 @@ mat-sidenav-content {
 
 .unified-empty-state .suggestions li:before {
   content: "•";
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-weight: bold;
   position: absolute;
   left: 0;
@@ -474,7 +297,7 @@ mat-sidenav-content {
 .unified-empty-state .alternative-searches p {
   margin-bottom: 1rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .unified-empty-state .popular-topics {
@@ -498,11 +321,11 @@ mat-sidenav-content {
 .action-section-unified {
   margin-top: 3rem;
   padding-top: 2rem;
-  border-top: 2px solid var(--divider-color);
+  border-top: 2px solid var(--linie);
 }
 
 .action-section-unified .motivation {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-style: italic;
   margin: 0 auto 2rem;
   max-width: 500px;
@@ -537,19 +360,12 @@ mat-sidenav-content {
   }
 }
 
-/* Mobil mit Treffern: ergaenzen unter dem Suchband (dezent) und unter der Liste */
-.mobile-ergaenzen-kopf {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 var(--page-margin, 16px);
-}
-
 .ergaenzen-link {
   min-height: 40px;
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font: inherit;
   font-size: 0.9rem;
   text-decoration: underline;
@@ -558,45 +374,438 @@ mat-sidenav-content {
 }
 
 .ergaenzen-link:focus-visible {
-  outline: 2px solid var(--primary-dark);
+  outline: 2px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
 
-.mobile-ergaenzen {
+/* Rat unter den Treffern, ruhig (#602): kleine graue Zeile mit Info-Symbol,
+   ohne Kasten und Balken, damit er nicht mit den Treffern konkurriert */
+.keine-antwort-noetig {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  max-width: 60rem;
+  margin: 0;
+  color: var(--text-leise);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.keine-antwort-noetig mat-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 18px;
+  margin-top: 1px;
+}
+
+.keine-antwort-noetig strong {
+  font-family: PTSans-bold, Roboto, sans-serif;
+  font-weight: normal;
+}
+
+/* "Nicht dabei?" (#362): Satz und Knopf zum Neu-Anlegen, links in der Hinweisbox */
+.neu-anlegen-satz {
+  margin: 0;
+}
+
+.neu-anlegen-knopf {
+  display: flex;
+}
+
+.hintergrund-ergaenzen {
+  align-self: flex-start;
+}
+
+.nicht-dabei-unten {
+  margin-top: var(--spacing-lg);
+}
+
+.unified-empty-state app-nicht-dabei {
+  margin-bottom: 1.5rem;
+}
+
+.unified-empty-state app-nicht-dabei .action-buttons-top {
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
+
+/* Ergebnisseite als eine Liste (K2+): Kopfband, Chips je Typ, Gruppen je Aussage.
+   Am Handy und am Desktop dieselbe Darstellung; Raster ab 600 px macht die Kartenliste. */
+.ergebnisse {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-xl);
+}
+
+/* Zeile "Erkannt als" statt Kopfband (V3, Designrunde 17.11.): klein unter dem Suchfeld,
+   "Nicht gemeint?" dahinter, rechts "Ergebnis teilen" als Symbol */
+.erkannt-zeile {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--spacing-sm);
-  padding: var(--spacing-lg) var(--page-margin, 16px);
+  margin-bottom: calc(-1 * var(--spacing-sm));
 }
 
-.mobile-ergaenzen-frage {
+/* Persona-Runde 18.11.: die erkannte Aussage deutlicher, "Nicht gemeint?" als Knopf daneben
+   oder (schmal) darunter */
+.erkannt-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-sm);
+  min-width: 0;
   margin: 0;
-  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
-/* Zugeklappter Rat ueber den Treffern; Grund und Balken aus .hinweis-box */
-.keine-antwort-noetig summary {
-  cursor: pointer;
+.erkannt-satz {
+  min-width: 0;
+}
+
+.erkannt-aussage {
   font-family: PTSans-bold, Roboto, sans-serif;
+  font-weight: normal;
+  font-size: 16px;
+  color: var(--text);
 }
 
-.keine-antwort-noetig[open] summary {
-  margin-bottom: var(--spacing-xs);
+.erkannt-umschalter {
+  flex: none;
+  min-height: 44px;
+  color: var(--akzent-schrift);
+  white-space: nowrap;
 }
 
-.mobile-keine-antwort-noetig {
-  padding: var(--spacing-xs) var(--page-margin);
+.erkannt-umschalter:focus-visible {
+  outline: 2px solid var(--akzent-klee);
+  outline-offset: 2px;
 }
 
-/* Mobil: was der Beitragstyp des offenen Tabs ist; Grundregel in styles.css */
-.mobile-section .typ-erklaerung {
+/* Ergebnis teilen (B7): nur das Symbol, Ziel 48 px, rechts buendig zur Spalte */
+.ergebnis-teilen-symbol {
+  flex: none;
+  margin: -8px 0;
+  color: var(--akzent-schrift);
+}
+
+.erkannt-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   margin: 0;
-  padding: var(--spacing-sm) var(--spacing-md) 0;
-  color: var(--text-secondary);
+  padding: 0;
+  list-style: none;
 }
 
-/* Filter nach Thema (#363) */
-.mobile-themen-filter {
-  padding: var(--spacing-xs) var(--page-margin);
+.erkannt-liste[hidden] {
+  display: none;
+}
+
+.erkannt-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 1px solid var(--akzent-klee);
+  border-radius: 18px;
+  font-size: 14px;
+  color: var(--akzent-schrift);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.erkannt-chip:hover {
+  background: var(--primaer-tint);
+}
+
+/* Gruppe je Aussage: Kopf im Stil der Zeile "Antwort auf" der Karte, etwas groesser */
+.gruppe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.gruppe-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 6px;
+  row-gap: 2px;
+  margin: var(--spacing-sm) 0 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--primaer-tint);
+  border-left: 3px solid var(--akzent-klee);
+  border-radius: 8px;
+  font-family: PTSans, Roboto, sans-serif;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.gruppe-kopf--neben {
+  background: var(--primary-tint-faint);
+  border-left-color: var(--text-leise);
+}
+
+.gruppe-icon {
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: var(--akzent-schrift);
+}
+
+.gruppe-label {
+  font-size: 14px;
+  color: var(--text-leise);
+}
+
+.gruppe-aussage {
+  font-family: PTSans-bold-italic, PTSans-bold, Roboto, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.gruppe-zahl {
+  padding: 0 8px;
+  border-radius: 10px;
+  background: var(--mulde);
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Weniger passende Treffer: eingeklappt unter den Gruppen */
+.weitere {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.weitere-umschalter {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 16px 0 8px;
+  border: 1px solid var(--text-leise);
+  border-radius: 22px;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.weitere-umschalter:hover {
+  background: var(--primaer-tint);
+}
+
+.weitere-liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Typ in der Gruppe: kleine Ueberschrift, Erklaerung nur beim ersten Vorkommen */
+.typ-block {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Kleine Abschnittstitel (V3): "Beste Antwort", "Weitere Antworten · 2", "Hintergrundinfo · 1" */
+.typ-ueberschrift {
+  margin: var(--spacing-sm) 0 var(--spacing-xs);
+  font-family: PTSans-bold, Roboto, sans-serif;
+  font-weight: normal;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-leise);
+}
+
+.beste-ueberschrift {
+  color: var(--akzent-schrift);
+}
+
+.weitere-ueberschrift {
+  margin-top: var(--spacing-md);
+}
+
+/* Abschnittstitel ohne ⓘ (Maintainer 18.11.); Hoehe und Abstaende wie mit dem frueheren
+   24-px-Knopf, damit am Handy nichts verrutscht */
+.typ-kopf {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  margin: var(--spacing-md) 0 10px;
+}
+
+.typ-kopf .typ-ueberschrift {
+  margin: 0;
+}
+
+.typ-ueberschrift:focus {
+  outline: none;
+}
+
+
+.alle-zeigen {
+  align-self: center;
+  min-height: 44px;
+  margin-top: var(--spacing-sm);
+  padding: 0 20px;
+  border: 1px solid var(--primaer);
+  border-radius: 22px;
+  background: none;
+  font: inherit;
+  color: var(--akzent-schrift);
+  cursor: pointer;
+}
+
+.alle-zeigen:hover {
+  background: var(--primaer-tint);
+}
+
+/* Eine Spalte, ohne Grund und Rahmen (V3): am Handy innerhalb des Seitenrands, am Desktop
+   hoechstens so breit wie gut lesbar */
+.typ-block app-kartenliste {
+  width: 100%;
+}
+
+.typ-block app-kartenliste ::ng-deep .karte--voll {
+  width: 100%;
+}
+
+/* Dritter Weg ohne Treffer: nur einen Link einwerfen (UX-Review B13) */
+.nur-link {
+  margin: var(--spacing-sm) 0 0;
+  font-size: 0.9rem;
+  color: var(--text-leise);
+}
+
+/* Unter den Treffern dieselbe Spalte wie die Karten (Design-Abnahme V3, 17.11.) */
+.ergebnisse > .weitere,
+.ergebnisse > .nicht-dabei-unten,
+.ergebnisse > .keine-antwort-noetig {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Eine mittige Spalte (Designrunde 18.11.): Rand und Breite macht .inhalt-spalte, die
+   Abschnitte darin bringen keinen eigenen Seitenrand mehr mit. Am Handy wie bisher. */
+.treffer-spalte {
+  --inhalt-breite: 760px;
+}
+
+.treffer-spalte .search-box-content,
+.treffer-spalte .content-section {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* "Zu dieser Antwort" gibt es nur am Desktop ab 1024 px */
+.zu-dieser-antwort-spalte {
+  display: none;
+}
+
+/* Desktop ab 1024 px zweispaltig (Maintainer 18.11.): oben links die beste Antwort offen,
+   rechts daneben "Zu dieser Antwort", je 50 %; darunter ueber die volle Breite die weiteren
+   Antworten und die Typ-Abschnitte, ihre eingeklappten Karten zu zweit. Der Kopf (Suchfeld,
+   "Erkannt als", Teilen) ist immer 1160 px breit, egal ob das Ergebnis zwei Spalten hat oder
+   noch laedt: sonst springt der Suchen-Knopf bei jeder neuen Suche. Einspaltige Ergebnisse
+   und alles unter der Gruppe ("Weitere, weniger passende", "Nicht dabei?", Hinweis) stehen
+   linksbuendig auf Lesebreite; nur der leere Zustand (keine Treffer) bleibt bewusst mittig.
+   Die Reihenfolge im DOM ist die Lesereihenfolge (beste, Kasten, weitere). Im Raster wachsen
+   Karten nicht mit ihrer Nachbarin (align-items: start), auch nicht aufgeklappt. */
+@media (min-width: 1024px) {
+  .treffer-spalte {
+    --inhalt-breite: 1160px;
+    --spalten-abstand: 32px;
+    --treffer-lesebreite: 760px;
+  }
+
+  .treffer-spalte:not(.zweispaltig) .ergebnisse > .gruppe,
+  .treffer-spalte .unified-empty-state,
+  .ergebnisse > .weitere,
+  .ergebnisse > .nicht-dabei-unten,
+  .ergebnisse > .keine-antwort-noetig {
+    max-width: var(--treffer-lesebreite);
+  }
+
+  /* Aufgeklappte Kartentexte unter der Gruppe: hoechstens etwa 90 Zeichen je Zeile */
+  .weitere-liste ::ng-deep .karte-text {
+    max-width: 78ch;
+  }
+
+  /* Jeder Typ-Block ein Raster aus zwei gleichen Spalten; alles ausser der obersten Zeile
+     (beste Antwort und Kasten) laeuft ueber beide */
+  .gruppe.mit-bester .typ-block {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--spalten-abstand);
+    align-items: start;
+  }
+
+  .gruppe.mit-bester .typ-kopf,
+  .gruppe.mit-bester .offene-karten,
+  .gruppe.mit-bester .eingeklappte-karten,
+  .gruppe.mit-bester .alle-zeigen {
+    grid-column: 1 / -1;
+  }
+
+  /* "Beste Antwort" und "Zu dieser Antwort" auf einer Linie, je 24 px hoch; der Kasten teilt
+     ueber subgrid die Zeilen mit Titel und Karte links und waechst nicht in deren Zeile */
+  .gruppe.mit-bester .beste-ueberschrift {
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: var(--spacing-sm);
+    line-height: 24px;
+  }
+
+  .gruppe.mit-bester .beste-antwort {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .gruppe.mit-bester .zu-dieser-antwort-spalte {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    grid-template-rows: subgrid;
+    padding-top: var(--spacing-sm);
+  }
+
+  .gruppe.mit-bester .alle-zeigen {
+    justify-self: center;
+  }
+
+  /* Zwischen offenen und eingeklappten Antworten derselbe Abstand wie zwischen den Karten */
+  .gruppe.mit-bester .offene-karten + .eingeklappte-karten {
+    margin-top: 12px;
+  }
+
+  /* Die weiteren Karten zu zweit; eine aufgeklappte wird hoeher, die Nachbarin nicht.
+     Ebenso die aufgeklappten "Weitere, weniger passende Treffer" (Maintainer 18.11.): dann
+     ueber die volle Breite wie die Gruppe darueber; "Nicht dabei?" und der Hinweis bleiben
+     auf Lesebreite. Die offenen Antworten unter der besten (Maintainer 18.11.) ebenso zu
+     zweit, in Rangfolge zeilenweise; die Nachbarin waechst nicht mit */
+  .gruppe.mit-bester .offene-karten ::ng-deep .kartenliste,
+  .gruppe.mit-bester .eingeklappte-karten ::ng-deep .kartenliste,
+  .zweispaltig .weitere-liste .eingeklappte-karten ::ng-deep .kartenliste {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--spalten-abstand);
+    align-items: start;
+  }
+
+  .treffer-spalte.zweispaltig .ergebnisse > .weitere {
+    max-width: none;
+  }
 }

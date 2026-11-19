@@ -52,7 +52,7 @@ export interface PostSearchResult extends BaseSearchResult {
 
 export interface PostResult extends BaseContentResult {
     platform: string;
-    author: string;
+    author?: string | null;
     url?: string;
     engagement: number;
 }

@@ -144,6 +144,13 @@ def wegwerf_container(warten_s: int = 60) -> Iterator[str]:
         )
 
 
+# Obergrenzen fuer jede Testsitzung: Wartet ein Test auf eine Sperre, die nie frei wird,
+# scheitert er mit "canceling statement due to lock timeout" und der Anweisung, statt
+# den CI-Schritt bis zum Abbruch anzuhalten (main, Pipeline 1257: 46 min still). Was
+# laenger warten soll, setzt es selbst (SET LOCAL, migrationen.einspielen).
+GRENZEN = "-clock_timeout=60s -cstatement_timeout=120s"
+
+
 class Datenbank:
     """
     Ein Schema in der Testdatenbank; ``get_session`` wie bei AppDatabase, damit
@@ -153,7 +160,7 @@ class Datenbank:
     def __init__(self, url: str, schema: str, zeitzone: Optional[str] = None):
         self.url = url
         self.schema = schema
-        optionen = f"-csearch_path={schema}"
+        optionen = f"-csearch_path={schema} {GRENZEN}"
         if zeitzone:
             optionen += f" -ctimezone={zeitzone}"
         # NullPool: jede Verbindung ist eine eigene Sitzung, wie bei psql.
@@ -181,7 +188,12 @@ class Datenbank:
 def schema(url: str, praefix: str = "itest") -> Iterator[Datenbank]:
     """Ein leeres Wegwerf-Schema anlegen und nach dem Block mit allem Inhalt loeschen."""
     name = f"{praefix}_{uuid.uuid4().hex[:8]}"
-    verwaltung = create_engine(url, poolclass=NullPool, isolation_level="AUTOCOMMIT")
+    verwaltung = create_engine(
+        url,
+        poolclass=NullPool,
+        isolation_level="AUTOCOMMIT",
+        connect_args={"options": GRENZEN},
+    )
     try:
         with verwaltung.connect() as c:
             c.execute(text(f"CREATE SCHEMA {name}"))

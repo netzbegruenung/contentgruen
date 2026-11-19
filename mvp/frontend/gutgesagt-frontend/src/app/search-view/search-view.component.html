@@ -1,37 +1,47 @@
 <!-- Titel und Untertitel auf Weiss, direkt darunter die Suche im schmalen gelben
      Band: auf dem Handy soll das Suchfeld ohne Scrollen dastehen. -->
+<!-- Ohne Markenzeile darueber: Das Logo im Kopf nennt den Namen schon (Startseite 16.11.) -->
 <section class="start-hero">
-    <div class="hero-eyebrow">Gut gesagt</div>
     <div class="hero-title">
         Nie wieder sprachlos
     </div>
     <div class="hero-subtitle">
-        Gemeinsam stark: Bewährte Argumente aus der Community.
+        Bewährte Argumente aus der Community.
     </div>
 </section>
 
 <section class="such-band">
     <div class="such-band-inhalt">
-        <p class="such-erklaerung">Post reinkopieren – Antwort finden – Verwenden!</p>
-
-        <app-search class="start-suche"></app-search>
-
-        <p class="beispiel-zeile">
-            Beispiel probieren:
-            <a (click)="performExampleSearch()" (keyup.enter)="performExampleSearch()"
-               tabindex="0" role="button" class="beispiel-link">„Windräder töten die Vögel!“</a>
-        </p>
+        <!-- Ohne Erklaerzeile darueber: Die Beschriftung des Feldes sagt, was hinein gehoert (Startseite 16.11.) -->
+        <!-- Statt „Beispiel probieren“: Das Feld tippt Hot Takes vor (Designrunde 17.11.);
+             das Startbeispiel zeigt auch der Rundgang -->
+        <app-search class="start-suche" feldId="suche" [autofokus]="autofokus" [beispielAnimation]="true"></app-search>
     </div>
 </section>
 
-<!-- Zwei Wege zum Mitmachen. Beide Ziele sind geschuetzt; ohne Anmeldung leitet
-     der AuthGuard zum Login und danach zurueck. -->
+<!-- Willkommen beim ersten Besuch unter dem Suchfeld statt darueber: Mobil stand das
+     Suchfeld sonst erst weit unten (Nutzerfuehrung 13.11.) -->
+<app-rundgang-band ort="start"></app-rundgang-band>
+
+<!-- Fuer Angemeldete, nur wenn es Neues gibt (Nutzerfuehrung 13.11.) -->
+<app-seit-letztem-besuch></app-seit-letztem-besuch>
+
+<!-- Entfaellt ganz, solange zu wenig genutzt wurde (#364). -->
+<app-oft-genutzt></app-oft-genutzt>
+
+<app-recent-content id="recent-content"></app-recent-content>
+
+<!-- Zwei Wege zum Mitmachen, unter den Community-Karten: Der Weg ohne Konto kommt zuerst
+     (Persona-Runde 18.11.). Beide Ziele sind geschuetzt; ohne Anmeldung leitet der AuthGuard
+     erst auf "Das erwartet dich mit Konto" (/mit-konto), von dort zur Anmeldung und danach
+     zurueck. Anonym sagt "mit Konto" das vorher (#644). Je ein kurzer Halbsatz sagt sichtbar,
+     was dahinter passiert (Persona-Runde 18.11.). -->
 <section class="start-kacheln" aria-label="Mitmachen">
     <a class="start-kachel" routerLink="/einwerfen">
         <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
         <span class="kachel-text">
-            <span class="kachel-titel">Einwerfen</span>
-            <span class="kachel-satz">{{ fangkorbKurz }}</span>
+            <span class="kachel-titel">Einwerfen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
+            <span class="kachel-satz">Spruch oder Fundstück schicken</span>
         </span>
         <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </a>
@@ -39,16 +49,11 @@
     <a class="start-kachel" routerLink="/contribute">
         <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
         <span class="kachel-text">
-            <span class="kachel-titel">Beitrag verfassen</span>
-            <span class="kachel-satz">Ausgearbeitet und direkt verwendbar: {{ typLabel('commentary') }}, {{ typLabel('generictext') }} oder {{ typLabel('image') }}.</span>
+            <span class="kachel-titel">Beitragen@if (anonym$ | async) {&nbsp;<span class="kachel-konto">mit Konto</span>}</span>
+            <span class="kachel-satz">Eigene Antwort schreiben</span>
         </span>
         <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </a>
 </section>
-
-<!-- Entfaellt ganz, solange zu wenig genutzt wurde (#364). -->
-<app-oft-genutzt></app-oft-genutzt>
-
-<app-recent-content id="recent-content"></app-recent-content>
 
 <app-about-teaser></app-about-teaser>

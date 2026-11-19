@@ -52,39 +52,29 @@ class AussageTreffer(AussageResponse):
 
 class StatementSource(str, Enum):
     """
-    Woher der Text stammt, den /addStatement anlegen soll.
+    Woher der Text stammt, den /addStatement anlegen soll: nur MANUALLY_CREATED,
+    jemand benennt ausdruecklich eine Aussage und ist ihr Autor.
 
-    Das Frontend ruft denselben Endpunkt aus zwei Situationen auf (beide ueber
-    StatementService.findOrCreateStatement):
-
-    - SEARCH_QUERY: aus der Ergebnisansicht heraus, weil jemand gesucht hat.
-      Niemand hat hier etwas verfasst, also haengt auch niemand am Statement.
-    - MANUALLY_CREATED: aus "Beitrag ergaenzen", wo jemand ausdruecklich eine
-      Aussage benennt, zu der er antworten will.
-
-    Bewusst ein eigenes, zweiwertiges Enum statt ContentOrigin: ueber die API
-    sollen sich weder INITIAL_DATA noch AI_GENERATED setzen lassen.
+    Bewusst ein eigenes Enum statt ContentOrigin: ueber die API sollen sich weder
+    INITIAL_DATA noch AI_GENERATED setzen lassen, und auch nicht SEARCH_QUERY.
+    Die Herkunft Suchanfrage vergibt nur der Suchpfad intern (/searchByText); ueber
+    die API gesetzt, faende sie verborgene Suchanfragen als "dieselbe" und verriete
+    deren ID und Wortlaut (Vormoderation, StatementService.add_statement).
     """
 
-    SEARCH_QUERY = "search_query"
     MANUALLY_CREATED = "manually_created"
 
     def to_content_origin(self) -> ContentOrigin:
-        return (
-            ContentOrigin.SEARCH_QUERY
-            if self is StatementSource.SEARCH_QUERY
-            else ContentOrigin.MANUALLY_CREATED
-        )
+        return ContentOrigin.MANUALLY_CREATED
 
 
 class AddStatementRequest(BaseModel):
     statement: Statement
     source: StatementSource = Field(
-        default=StatementSource.SEARCH_QUERY,
+        default=StatementSource.MANUALLY_CREATED,
         description=(
-            "Aus welcher Situation der Aufruf kommt. Voreinstellung ist die "
-            "datensparsame: ein Aufrufer, der nichts angibt, bekommt kein "
-            "Statement mit Personenbezug."
+            "Nur manually_created: die aufrufende Person benennt die Aussage und "
+            "ist ihr Autor. search_query vergibt nur die Suche selbst."
         ),
     )
 
@@ -174,7 +164,7 @@ class ThemenTestsetResponse(BaseModel):
 
 class UnbeantworteteAussageDto(BaseModel):
     """
-    Eine unbeantwortete Aussage: ID (fuer "Selbst beantworten") und Text, dazu wie
+    Eine unbeantwortete Aussage: ID (fuer "Antworten") und Text, dazu wie
     viele Personen ohne Treffer danach gesucht haben (0: nur ohne Kommentar); wie
     oft gesucht wurde, sehen nur Admins.
     """
@@ -258,7 +248,35 @@ class SearchStatementByTextRequest(BaseModel):
         le=1.0,
         description="Nur Treffer mit mindestens diesem Aehnlichkeitswert",
     )
+    vorschlaege: bool = Field(
+        default=False,
+        description=(
+            "Vorschlaege fuer das Feld 'Antwort auf': nur gepflegte Aussagen ab der "
+            "Vorschlagsschwelle des Dienstes (aussage_vorschlag_schwelle; "
+            "min_similarity wird dann nicht beachtet), hoechstens 5, ohne die, die "
+            "dem Text widersprechen (#387)."
+        ),
+    )
     # TODO: Add a field to specify the search type (content, statement, reply_suggestion, reply_suggestion_candidate)
+
+
+class AehnlicheAussagenRequest(BaseModel):
+    """
+    Aehnliche Aussagen zu einem Suchtext, fuer "Nicht dabei?" auf der Ergebnisseite
+    (#642). Auch ohne Anmeldung; Auswahl wie die Vorschlaege im Feld "Antwort auf"
+    (``vorschlaege``, nur gepflegte Aussagen), deshalb keine weiteren Filter.
+    """
+
+    query_text: str = Field(..., min_length=1, max_length=AUSSAGE_MAX_ZEICHEN)
+    limit: int = Field(default=3, ge=1, le=5)
+
+    @field_validator("query_text")
+    @classmethod
+    def nicht_nur_leerraum(cls, wert: str) -> str:
+        # Nur Leerraum kostete eine Embedding-Suche fuer nichts.
+        if not wert.strip():
+            raise ValueError("query_text darf nicht nur aus Leerraum bestehen")
+        return wert
 
 
 class StatementSearchResponse(BaseModel):

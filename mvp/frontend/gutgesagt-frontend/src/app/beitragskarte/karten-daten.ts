@@ -46,6 +46,48 @@ export interface KartenStatement {
   antwortqualitaet: number;
 }
 
+/** Was das Siegel einer Karte zeigt und erklaert (#427, GLOSSARY.md "Siegel", "Guete"). */
+export interface KartenGuete {
+  /** 1-10; null = "neu", ohne Daten. */
+  wert: number | null;
+  /** Die erfuellten Kriterien des Gegenlesens (Arten wie in gegenlesen.service.ts). */
+  erfuellt: string[];
+  /** Ob Stimmen anderer eingegangen sind (erst ab einer Mindestzahl). */
+  stimmenZaehlen: boolean;
+  /** Zaehler an den Stimm-Knoepfen; null = unter der Mindestzahl oder unbekannt, dann ohne Zahl. */
+  hilfreich: number | null;
+  nichtHilfreich: number | null;
+}
+
+/**
+ * Was eine Karte nach dem Laden selbst aendert: Guete nach einer Stimme, Nutzung nach dem
+ * Kopieren. Die Karte meldet es, damit "Zu dieser Antwort" daneben dasselbe zeigt.
+ */
+export interface KartenKennzahlen {
+  id: string;
+  guete: KartenGuete | undefined;
+  nutzung: number | null;
+}
+
+/** Siegel und Zaehler aus einem Beitrag der Antwort; ohne Feld `guete` (alte Antwort) undefined. */
+type GueteFelder = Pick<
+  BaseContentResult,
+  'guete' | 'guete_erfuellt' | 'guete_stimmen_zaehlen' | 'stimmen_hilfreich' | 'stimmen_nicht_hilfreich'
+>;
+
+export function gueteAus(inhalt: GueteFelder): KartenGuete | undefined {
+  if (inhalt.guete === undefined) {
+    return undefined;
+  }
+  return {
+    wert: inhalt.guete ?? null,
+    erfuellt: inhalt.guete_erfuellt ?? [],
+    stimmenZaehlen: inhalt.guete_stimmen_zaehlen ?? false,
+    hilfreich: inhalt.stimmen_hilfreich ?? null,
+    nichtHilfreich: inhalt.stimmen_nicht_hilfreich ?? null,
+  };
+}
+
 /** Felder, die nur ein Typ hat. */
 export interface KartenExtra {
   kurz?: string;
@@ -117,6 +159,11 @@ export interface KartenDaten {
   eigen?: boolean | null;
   /** Anzeigename ("Anna B."); null ohne Anmeldung oder ohne gespeicherten Namen. */
   autorName: string | null;
+  /**
+   * Meilenstein-Abzeichen am Anzeigenamen (#351): Zahl der erreichten Meilensteine,
+   * nur wenn die Person der Sichtbarkeit zugestimmt hat; fehlt = kein Abzeichen.
+   */
+  autorAbzeichen?: number | null;
   /** Verwendungen; null = unbekannt, dann kein Badge. */
   nutzung: number | null;
   /** Wie viele Beitraege auf diesem beruhen ("N Varianten", #356); fehlt = keine. */
@@ -129,6 +176,8 @@ export interface KartenDaten {
   bildUrl?: string;
   statement?: KartenStatement;
   stimme?: 'like' | 'dislike';
+  /** Siegel und Stimm-Zaehler (#427); fehlt = unbekannt, dann kein Siegel. */
+  guete?: KartenGuete;
   extra?: KartenExtra;
   einwurfAngaben?: EinwurfAngaben;
 }
@@ -155,12 +204,14 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
     autor: inhalt.original_author || null,
     eigen: inhalt.ist_eigener_beitrag ?? null,
     autorName: inhalt.autor_name ?? null,
+    autorAbzeichen: inhalt.autor_abzeichen ?? null,
     nutzung: inhalt.usage_count ?? 0,
     varianten: inhalt.varianten ?? 0,
     quellen: (inhalt.references ?? []).map(quelle),
     bildUrl: inhalt['image_url'] || undefined,
     statement: statement(paket),
     stimme: paket.user_vote === 'like' || paket.user_vote === 'dislike' ? paket.user_vote : undefined,
+    guete: gueteAus(inhalt),
     extra: extra(typ, inhalt),
   };
 }
@@ -271,11 +322,13 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     autor: eintrag.original_author || null,
     eigen: eintrag.ist_eigener_beitrag ?? null,
     autorName: eintrag.autor_name ?? null,
+    autorAbzeichen: eintrag.autor_abzeichen ?? null,
     nutzung: eintrag.usage_count ?? 0,
     nutzungLetzte7Tage: eintrag.nutzung_letzte_7_tage ?? 0,
     nutzungJeFassung: typ === 'commentary' ? (eintrag.nutzung_je_fassung ?? undefined) : undefined,
     quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
+    guete: gueteAus(eintrag),
     // Nur die Fassungen des Kommentars (#355); Post-Angaben zeigt Meine Beitraege nicht.
     extra: typ === 'commentary' ? extra(typ, eintrag as Record<string, any>) : undefined,
   };
@@ -507,9 +560,32 @@ function plattformNameAusUrl(url: string | null): string | null {
   return plattform && plattform !== 'web' ? plattformName(plattform) : null;
 }
 
+/**
+ * Das Praefix, mit dem Einwerfen einen geteilten Seitentitel im Hinweis markiert
+ * (SEITENTITEL_PRAEFIX in einwerfen.component.ts; hier eigens, damit die Karte nicht
+ * vom Formular abhaengt, ein Test haelt beide gleich).
+ */
+export const SEITENTITEL_MARKE = 'Seitentitel: ';
+
+/**
+ * Der Hinweis als Kartentitel. Ein stehengelassenes „Seitentitel: “ aus dem Teilen
+ * faellt weg: Der Seitentitel ist dann der Titel, nicht roh mit Marke davor
+ * (Nutzerfuehrung 13.11.). Gespeichert bleibt der Hinweis, wie er ist.
+ */
+export function hinweisTitel(inhalt: string | null | undefined, url: string | null = null): string | null {
+  let text = inhalt?.trim();
+  const marke = SEITENTITEL_MARKE.trim();
+  if (text?.startsWith(marke)) {
+    // Seitentitel vorn, der Rest des geteilten Texts mit Strich dahinter: Die Karte
+    // zeigt den Titel in einer Zeile, ein Zeilenumbruch fiele dort weg.
+    const [titel, ...rest] = text.slice(marke.length).split('\n');
+    text = [titel.trim(), rest.join(' ').trim()].filter(Boolean).join(' – ');
+  }
+  return text && text !== url ? text : null;
+}
+
 function hinweis(einwurf: Einwurf): string | null {
-  const inhalt = einwurf.content?.trim();
-  return inhalt && inhalt !== einwurf.url ? inhalt : null;
+  return hinweisTitel(einwurf.content, einwurf.url);
 }
 
 // Aussage im Beitragsformular

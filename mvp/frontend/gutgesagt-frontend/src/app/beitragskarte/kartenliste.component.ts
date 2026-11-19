@@ -2,13 +2,16 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { CommonModule } from '@angular/common';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
-import { KartenDaten, KartenVariante } from './karten-daten';
+import { KartenDaten, KartenKennzahlen, KartenVariante } from './karten-daten';
 
 /**
  * Beitragskarten auf hellgrauem Grund. Voll untereinander: mobil (bis 599 px)
- * zeigen Startseite und Suche diese Liste statt des Karussells. Kompakt als Album
+ * zeigen Startseite und Suche diese Liste statt des Karussells. Mit raster stehen
+ * volle Karten ab 600 px nebeneinander in Spalten zu 450 px, so viele die Breite
+ * hergibt, mittig im Rahmen (Treffer der Suche am Desktop, #602). Kompakt als Album
  * (Meine Beitraege): Raster direkt auf dem Seitengrund, 2 Spalten, 3 ab 600 px,
- * 4 ab 960 px. Jede Karte ist so hoch, wie ihr Inhalt es verlangt.
+ * 4 ab 960 px. Untereinander ist jede Karte so hoch, wie ihr Inhalt es verlangt;
+ * in Spalten oder im Album sind die Karten einer Reihe gleich hoch.
  */
 @Component({
   selector: 'app-kartenliste',
@@ -16,9 +19,17 @@ import { KartenDaten, KartenVariante } from './karten-daten';
   imports: [CommonModule, BeitragskarteComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul class="kartenliste" [class.kartenliste--raster]="variante === 'kompakt'">
+    <ul
+      class="kartenliste"
+      [class.kartenliste--raster]="variante === 'kompakt'"
+      [class.kartenliste--spalten]="raster && variante === 'voll' && !schlicht"
+      [class.kartenliste--schlicht]="schlicht"
+    >
       <li *ngFor="let karte of daten; trackBy: nachId">
-        <app-beitragskarte [daten]="karte" [variante]="variante" (angetippt)="angetippt.emit($event)">
+        <app-beitragskarte [daten]="karte" [variante]="variante" [titelEbene]="titelEbene"
+                           [antwortAufZeigen]="antwortAufZeigen" [schlank]="schlank"
+                           [schlicht]="schlicht" [aufklappbar]="aufklappbar" (angetippt)="angetippt.emit($event)"
+                           (kennzahlen)="kennzahlen.emit($event)">
         </app-beitragskarte>
       </li>
     </ul>
@@ -32,7 +43,16 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         margin: 0;
         padding: 16px;
         list-style: none;
-        background: var(--kartenliste-bg);
+        background: var(--kartenliste-grund);
+        border: var(--kartenliste-rand);
+      }
+
+      /* Trefferseite (V3): ohne Grund, Rahmen und Innenabstand, eine Spalte */
+      .kartenliste--schlicht {
+        gap: 12px;
+        padding: 0;
+        background: none;
+        border: none;
       }
 
       .kartenliste--raster {
@@ -41,11 +61,22 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         gap: 12px;
         padding: 0;
         background: none;
+        border: none;
       }
 
       @media (min-width: 600px) {
         .kartenliste--raster {
           grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .kartenliste--spalten {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(0, 450px));
+          /* Restbreite gleich auf beide Seiten statt rechts leer (Designrunde 12.11.) */
+          justify-content: center;
+          gap: 24px;
+          padding: 24px;
+          border-radius: var(--border-radius-medium);
         }
       }
 
@@ -60,9 +91,23 @@ import { KartenDaten, KartenVariante } from './karten-daten';
 export class KartenlisteComponent {
   @Input() daten: KartenDaten[] = [];
   @Input() variante: KartenVariante = 'voll';
+  /** Volle Karten ab 600 px in Spalten statt untereinander. */
+  @Input() raster = false;
+  /** Durchgereicht an die Karten: Ebene der Titel-Ueberschrift (Standard h3). */
+  @Input() titelEbene: 3 | 4 = 3;
+  /** Durchgereicht an die Karten: Zeile "Antwort auf:" (aus, wo die Seite die Aussage nennt). */
+  @Input() antwortAufZeigen = true;
+  /** Durchgereicht an die Karten: ohne "passt auf Mastodon/Bluesky/X" und Alter (Startseite). */
+  @Input() schlank = false;
+  /** Durchgereicht an die Karten: schlichte Karte der Trefferseite; die Liste dann ohne Grund und Rahmen. */
+  @Input() schlicht = false;
+  /** Durchgereicht an die Karten: eingeklappt bis zum Antippen. */
+  @Input() aufklappbar = false;
 
   /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */
   @Output() angetippt = new EventEmitter<KartenDaten>();
+  /** Guete oder Nutzung einer Karte geaendert, unveraendert durchgereicht. */
+  @Output() kennzahlen = new EventEmitter<KartenKennzahlen>();
 
   nachId(_index: number, karte: KartenDaten): string {
     return karte.id;

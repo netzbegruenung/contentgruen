@@ -5,12 +5,13 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { of } from 'rxjs';
-import { RecentContentComponent, TEASER_ANZAHL } from './recent-content.component';
+import { MOBIL_ANZAHL, RecentContentComponent, TEASER_ANZAHL } from './recent-content.component';
 import { ContentService } from '../services/content.service';
 import { LoggingService } from '../services/logging.service';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { ResultCarouselComponent } from '../result-carousel/result-carousel.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
+import { By } from '@angular/platform-browser';
 
 describe('RecentContentComponent', () => {
   let component: RecentContentComponent;
@@ -90,6 +91,35 @@ describe('RecentContentComponent', () => {
     expect(alle('app-kartenliste').length).toBe(1);
     expect(alle('app-result-carousel').length).toBe(0);
     expect(alle('app-beitragskarte').length).toBe(3);
+  });
+
+  it('zeigt mobil hoechstens die neuesten drei Karten (#599)', () => {
+    mobil = true;
+    erstellen(eintraege(5));
+
+    expect(MOBIL_ANZAHL).toBe(3);
+    expect(alle('app-beitragskarte').length).toBe(3);
+  });
+
+  it('zeigt ab 600 px alle fuenf im Karussell', () => {
+    erstellen(eintraege(5));
+
+    expect(alle('app-beitragskarte').length).toBe(5);
+  });
+
+  // Startseite 16.11.: ohne "passt auf Mastodon/Bluesky/X" und Alter, nur in diesem Streifen
+  it('zeigt die Karten schlank, in der Liste wie im Karussell', () => {
+    const schlank = () =>
+      fixture.debugElement
+        .queryAll(By.directive(BeitragskarteStubComponent))
+        .map((karte) => (karte.componentInstance as BeitragskarteStubComponent).schlank);
+
+    erstellen(eintraege(3));
+    expect(schlank()).toEqual([true, true, true]);
+
+    mobil = true;
+    erstellen(eintraege(3));
+    expect(schlank()).toEqual([true, true, true]);
   });
 
   it('zeigt ab 600 px das Karussell', () => {

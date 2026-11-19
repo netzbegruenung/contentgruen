@@ -1,0 +1,13 @@
+<section *ngIf="punkte" class="punkte" aria-labelledby="punkte-titel">
+    <h2 id="punkte-titel">Punkte <span class="punkte-zahl">{{ punkte.gesamt }}</span></h2>
+    <p class="punkte-hinweis">
+        Nur du siehst deine Punkte. Die meisten gibt es, wenn andere deine Beiträge nutzen oder ihnen zustimmen.
+    </p>
+    <ul class="punkte-stufen">
+        <li class="punkte-stufe" data-stufe="wirkung">Wirkung bei anderen: <span class="punkte-wert">{{ punkte.wirkung }}</span></li>
+        <li class="punkte-stufe" data-stufe="tun">Für deine Beiträge und Einwürfe: <span class="punkte-wert">{{ punkte.tun }}</span></li>
+        <!-- Quests gibt es noch nicht (#354); die Stufe erscheint erst, wenn sie etwas bringt -->
+        <li *ngIf="punkte.quests" class="punkte-stufe" data-stufe="quests">Quests: <span class="punkte-wert">{{ punkte.quests }}</span></li>
+    </ul>
+</section>
+<p *ngIf="!punkte && platzhalter" class="punkte-platzhalter" role="status">Punkte werden berechnet …</p>

@@ -12,6 +12,37 @@
     width: 100%;
 }
 
+.such-hinweis {
+    margin: var(--spacing-xs) 0 0;
+    color: var(--text-leise);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* Auf der Startseite dunkler, damit er beruhigt statt zu verschwinden (Persona-Runde 18.11.):
+   Haupttextfarbe, auf dem gelben Band und im Dunkelmodus auf Schiefer deutlich ueber AA */
+.search-container:not(.compact-mode) .such-hinweis {
+    text-align: center;
+    color: var(--text);
+}
+
+/* Startseite am Handy: nicht unter 12 px (Designrunde 18.11.) */
+@media (max-width: 599px) {
+    .search-container:not(.compact-mode) .such-hinweis {
+        font-size: 12.5px;
+    }
+}
+
+/* Auf der Trefferseite kleiner (Designrunde 17.11., V3); der Wortlaut bleibt */
+.compact-mode .such-hinweis {
+    font-size: 12px;
+}
+
+.such-hinweis a {
+    color: inherit;
+    text-decoration: underline;
+}
+
 .search-button-container {
     width: 100%;
 }
@@ -24,13 +55,20 @@
 }
 
 ::ng-deep mat-form-field.left .mdc-text-field {
-  background-color: var(--input-background);
+  background-color: var(--flaeche);
 }
 
 .label {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-sm);
+}
+
+/* Die lange Beschriftung (#644) passt so auch bei 360 px ganz ins Feld */
+@media (max-width: 389px) {
+    .label {
+        font-size: 14px;
+    }
 }
 
 .mat-mdc-form-field {
@@ -48,7 +86,7 @@
     margin-left: 8px;
 
     &:not(:disabled) {
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
     }
 
     &:disabled {
@@ -56,7 +94,7 @@
     }
 
     &:hover:not(:disabled) {
-        background-color: rgba(0, 137, 57, 0.1);
+        background-color: var(--primaer-tint);
     }
 }
 
@@ -117,7 +155,7 @@
     /* Show mobile search button as suffix in compact mode */
     .compact-mode .mobile-search-button {
         display: inline-flex;
-        color: var(--primary-dark);
+        color: var(--akzent-schrift);
         font-size: 20px;
     }
 }
@@ -136,6 +174,43 @@
 }
 
 ::ng-deep .mat-mdc-text-field-wrapper {
-    background-color: var(--input-background) !important;
+    background-color: var(--flaeche) !important;
     box-shadow: none !important;
+}
+
+/* Startseite (ohne compactMode): Suchen ist der eine Hauptknopf, so hoch wie das Feld
+   (56 px, mobil 52 px), Schrift eine Stufe groesser (Designrunde 17.11.). Ueber den
+   Treffern bleibt der Knopf, wie er ist. */
+.search-container:not(.compact-mode) .search-button {
+    height: 56px;
+    font-size: 1.25rem;
+}
+
+@media (max-width: 768px) {
+    .search-container:not(.compact-mode) .search-button {
+        height: 52px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-container:not(.compact-mode) .search-button {
+        font-size: 1.05rem;
+    }
+}
+
+/* Handy: das Feld waechst mit, der Hot Take bricht um (Designrunde 18.11.). Die Hoehe von
+   2 bis 4 Zeilen steht hier statt in cdkAutosizeMinRows/MaxRows: Die Direktive mass die Zeile
+   zu niedrig, und der zweizeilige Platzhalter wurde abgeschnitten (Review #703). Die
+   Direktive setzt nur die Hoehe zum Inhalt, min-/max-height begrenzen sie. */
+textarea.suchfeld-mehrzeilig.mat-mdc-input-element {
+    --zeile: 24px;
+    resize: none;
+    overflow-y: auto;
+    box-sizing: content-box;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: var(--zeile);
+    min-height: calc(2 * var(--zeile));
+    max-height: calc(4 * var(--zeile));
 }

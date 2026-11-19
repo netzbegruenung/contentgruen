@@ -19,6 +19,7 @@ import pytest
 from sqlalchemy import text
 from starlette.requests import Request
 
+from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from infrastructure.database.models import Base, SucheOhneTrefferZeile
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
@@ -28,7 +29,7 @@ from services.suchen_ohne_treffer_service import (
 )
 from tests.integration import postgres
 from tests.integration.postgres import Datenbank
-from utils.besucher_pseudonym import anschluss_pruefwert, besucher_tagespseudonym
+from utils.besucher_pseudonym import besucher_merkmal, besucher_tagespseudonym
 
 TABELLE = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer.sql"
 PERSONEN = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer-personen.sql"
@@ -88,6 +89,8 @@ def _service(db: Datenbank) -> SuchenOhneTrefferService:
             id=AUSSAGE,
             text="Lohnt sich eine Waermepumpe im Altbau?",
             status=ContentStatus.VISIBLE,
+            origin=ContentOrigin.SEARCH_QUERY,
+            replysuggestions_count=0,
         )
     )
     return SuchenOhneTrefferService(repository, aussagen, PersonenDesTages())
@@ -243,10 +246,10 @@ class TestMindestanzahlZaehltPersonen:
     async def test_zwei_besucher_erreichen_die_schwelle_einer_nicht(
         self, neue_datenbank
     ):
-        """Mit Tagespseudonymen der Besucher (#446): Anschluss und User-Agent."""
+        """Mit Tagespseudonymen der Besucher (#446): je Anschluss eines."""
         service = _service(neue_datenbank)
-        eins = besucher_tagespseudonym("198.51.100.5|Firefox", MITTWOCH)
-        zwei = besucher_tagespseudonym("198.51.100.6|Firefox", MITTWOCH)
+        eins = besucher_tagespseudonym("198.51.100.5", MITTWOCH)
+        zwei = besucher_tagespseudonym("198.51.100.6", MITTWOCH)
         andere = _aussage(9)
 
         service.erfassen(AUSSAGE, 0, eins, heute=MITTWOCH)
@@ -259,19 +262,18 @@ class TestMindestanzahlZaehltPersonen:
     async def test_ein_besucher_mit_zwei_user_agents_erreicht_die_schwelle_nicht(
         self, neue_datenbank
     ):
-        """Je Anschluss und Aussage hoechstens eine Person am Tag (#496)."""
+        """Je Anschluss und Aussage hoechstens eine Person am Tag (#495, #496)."""
         service = _service(neue_datenbank)
-        anschluss = anschluss_pruefwert(
-            _anfrage({"X-Real-IP": "198.51.100.5"}), MITTWOCH
-        )
 
         for user_agent in ("Firefox", "Chrome"):
+            merkmal = besucher_merkmal(
+                _anfrage({"X-Real-IP": "198.51.100.5", "User-Agent": user_agent})
+            )
             service.erfassen(
                 AUSSAGE,
                 0,
-                besucher_tagespseudonym(f"198.51.100.5|{user_agent}", MITTWOCH),
+                besucher_tagespseudonym(merkmal, MITTWOCH),
                 heute=MITTWOCH,
-                anschluss_pruefwert=anschluss,
             )
 
         assert await _liste(service) == []

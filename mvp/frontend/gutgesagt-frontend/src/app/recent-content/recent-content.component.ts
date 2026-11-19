@@ -15,6 +15,13 @@ import { ErrorMessageComponent } from '../shared/components/error-message/error-
 /** So viele Beitraege zeigt der Teaser auf der Startseite. */
 export const TEASER_ANZAHL = 5;
 
+/**
+ * Mobil zeigt die Liste nur so viele: fuenf volle Karten untereinander schoben den Rest
+ * der Startseite um rund vier Bildschirmhoehen nach unten (#599). Eine Seite "Alle neuen
+ * Inhalte" gibt es nicht, deshalb nur gekuerzt.
+ */
+export const MOBIL_ANZAHL = 3;
+
 /** /recent liefert nur diese beiden Typen (api/v1/content.py). */
 const TEASER_TYPEN = ['commentary', 'generictext'];
 
@@ -38,6 +45,11 @@ export class RecentContentComponent implements OnInit, OnDestroy {
   /** Bis 599 px eine Liste, darueber das Karussell. */
   istMobil = false;
   private destroy$ = new Subject<void>();
+
+  /** Mobil die neuesten drei, ab 600 px alle im Karussell. */
+  get angezeigteKarten(): KartenDaten[] {
+    return this.istMobil ? this.karten.slice(0, MOBIL_ANZAHL) : this.karten;
+  }
 
   constructor(
     private contentService: ContentService,

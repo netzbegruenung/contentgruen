@@ -9,8 +9,13 @@ jede Anfrage ohnehin mitbringt:
 
 - der Adresse (X-Real-IP hinter nginx, siehe utils/client_identity.py), bei IPv6
   ihr /64 (der Anschluss), weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln;
-- dem User-Agent;
 - dem UTC-Tag.
+
+Der User-Agent geht seit #495 nicht mehr ein: Je weniger Merkmale des Geraets das
+Pseudonym traegt, desto weniger ist es ein Fingerabdruck (§ 25 TDDDG). Ein Besucher
+ist damit ein Anschluss; mehrere Geraete hinter demselben Router zaehlen als einer.
+Das erspart auch den Anschluss-Pruefwert, den es bis dahin neben dem Pseudonym gab
+(#496): Je Anschluss zaehlt schon das Pseudonym hoechstens einen Besucher.
 
 Darueber ein HMAC mit einem Schluessel, den Tagesschluessel je Tag zufaellig
 erzeugt und nur im Speicher haelt. Mit dem Tag wechselt der Schluessel, der alte
@@ -26,10 +31,12 @@ Pseudonym und zaehlt ein zweites Mal. Der Schluessel setzt einen uvicorn-Worker
 voraus wie die Merkliste der Suchen ohne Treffer; mit mehreren Workern zaehlte
 ein Besucher je Worker.
 
-Adresse und User-Agent werden dabei weder gespeichert noch geloggt; das
-Merkmal existiert nur innerhalb der Anfrage. Laenger lebt nur, was daraus mit dem
-Tagesschluessel berechnet ist: bei Suchen ohne Treffer ein Pruefwert aus Pseudonym
-bzw. Anschluss-Pruefwert und Aussage, im Speicher bis Mitternacht (#496).
+Die Adresse wird dabei weder gespeichert noch geloggt; das Merkmal existiert nur
+innerhalb der Anfrage. Laenger lebt nur, was daraus mit dem Tagesschluessel
+berechnet ist: das Pseudonym an Suchereignissen des laufenden Tages (am Tagesende
+verdichtet zu Zaehlern, services/loeschfristen_service.py) und an offenen anonymen
+Meldungen, bei Suchen ohne Treffer ein Pruefwert aus Pseudonym und Aussage, im
+Speicher bis Mitternacht.
 """
 
 import hashlib
@@ -80,16 +87,12 @@ _TAGESSCHLUESSEL = Tagesschluessel()
 
 def besucher_merkmal(request: Request) -> str:
     """
-    Was einen Besucher an einem Tag ausmacht: Anschluss und User-Agent.
+    Was einen Besucher an einem Tag ausmacht: sein Anschluss, sonst nichts (#495).
 
-    Ein X-Session-Id-Header wird nicht mehr beachtet. Ohne lesbare Adresse teilen
-    sich alle Aufrufer mit demselben User-Agent ein Merkmal; sie zaehlen dann als
-    eine Person, was die sichere Richtung ist.
+    Ein X-Session-Id-Header wird nicht beachtet, der User-Agent auch nicht. Ohne
+    lesbare Adresse teilen sich alle Aufrufer ein Merkmal; sie zaehlen dann als eine
+    Person, was die sichere Richtung ist.
     """
-    return f"{_anschluss_teil(request)}|{request.headers.get('User-Agent', '')}"
-
-
-def _anschluss_teil(request: Request) -> str:
     adresse = get_client_address(request)
     return anschluss(adresse) if adresse else "unknown"
 
@@ -106,17 +109,3 @@ def besucher_tagespseudonym(merkmal: str, tag: date) -> str:
         f"{merkmal}|{tag.isoformat()}".encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
-
-
-def anschluss_pruefwert(request: Request, tag: date) -> str:
-    """
-    Anschluss-Pruefwert: der Anschluss allein, ohne User-Agent (#496).
-
-    Fuer "Suchen ohne Treffer": Ein Besucher, der den User-Agent wechselt, hat ein
-    neues Tagespseudonym, aber denselben Anschluss. Kein Tagespseudonym, denn er
-    steht fuer einen Anschluss, nicht fuer eine Person; gebildet aber wie eines,
-    mit dem Schluessel des Tages, und das Praefix trennt ihn von jedem
-    Besuchermerkmal. Er wird nicht gespeichert, nur im Speicher fuer den laufenden
-    Tag gemerkt.
-    """
-    return besucher_tagespseudonym(f"anschluss:{_anschluss_teil(request)}", tag)

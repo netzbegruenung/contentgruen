@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -16,11 +16,24 @@ import { typFarbe } from '../shared/content-type-registry';
 import { PLATTFORMEN, Plattform, plattformAusUrl, plattformName } from '../shared/plattform';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
+import { EinwilligungHinweisComponent } from '../einwilligung/einwilligung-hinweis.component';
+import { einwilligungFehlt } from '../services/art9-einwilligung.service';
+import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import {
+  AntwortAuf,
+  AntwortAufComponent,
+  OHNE_AUSSAGE,
+  zuKurz,
+} from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { alsGespeichert, aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
+import { ThemenWahl } from '../beitragsformular/themen-wahl';
+import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
+import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
 /**
  * Wie beim Bild: Der Post-Titel beschreibt, er folgt der Behauptungsregel fuer
@@ -41,9 +54,10 @@ export const SPEICHERN_FEHLGESCHLAGEN =
  *
  * Der Link fuehrt zum Post selbst; die Plattform folgt ihm, bis die Person sie
  * selbst waehlt. Ein eigenes Herkunft-Feld hat das Formular nicht: Der Link ist
- * der Post selbst (Fachfrage in #338). Posts antworten auf keine Aussage und
- * kennen keine Dublettenpruefung. Nach dem Speichern meldet `success` die ID; wohin es
- * weitergeht, entscheidet der Workflow.
+ * der Post selbst (Fachfrage in #338). Wie Kommentar und Hintergrundinfo kann ein
+ * Post auf eine Aussage antworten (optional, #619); eine Dublettenpruefung kennt er
+ * nicht. Nach dem Speichern meldet `success` ID, Aussage und ob verknuepft wurde;
+ * wohin es weitergeht, entscheidet der Workflow.
  */
 @Component({
   standalone: true,
@@ -52,12 +66,15 @@ export const SPEICHERN_FEHLGESCHLAGEN =
   styleUrls: ['./add-post.component.scss'],
   imports: [
     ...SHARED_IMPORTS,
+    EinwilligungHinweisComponent,
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
     MatSelectModule,
     BeitragskarteComponent,
     FormularHilfeComponent,
+    AntwortAufComponent,
+    ThemenAuswahlComponent,
     GegenlesenComponent,
     SprachhinweisComponent,
     FormularLeisteComponent,
@@ -65,6 +82,9 @@ export const SPEICHERN_FEHLGESCHLAGEN =
   ],
 })
 export class AddPostComponent implements OnChanges {
+  private readonly einwilligungZustand = inject(Art9EinwilligungZustand);
+  /** Einspaltig steht das Gegenlesen kompakt unter dem Textfeld (Nutzerfuehrung 13.11.). */
+  readonly einspaltig = einspaltig();
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('post');
   readonly plattformen = PLATTFORMEN;
@@ -77,6 +97,11 @@ export class AddPostComponent implements OnChanges {
   @Output() success = new EventEmitter<BeitragGespeichert>();
 
   readonly postForm: FormGroup;
+  /** Die Themen einer neuen Aussage (#455). */
+  readonly themenWahl: ThemenWahl;
+
+  /** Was im Antwort-auf-Block gilt. */
+  aussage: AntwortAuf = OHNE_AUSSAGE;
 
   speichert = false;
   fehler: string | null = null;
@@ -85,7 +110,7 @@ export class AddPostComponent implements OnChanges {
   /** Gesetzt, sobald der Post gespeichert ist. */
   responseId = '';
 
-  private vorschauCache?: { werte: unknown; karte: KartenDaten };
+  private vorschauCache?: { werte: unknown; aussage: string; karte: KartenDaten };
 
   constructor(
     fb: FormBuilder,
@@ -95,10 +120,12 @@ export class AddPostComponent implements OnChanges {
     this.postForm = fb.group({
       url: ['', [Validators.required, Validators.pattern(/^https?:\/\/\S+$/)]],
       platform: ['' as Plattform | '', Validators.required],
-      author: ['', [Validators.required, Validators.maxLength(AUTOR_MAX)]],
+      author: ['', [Validators.maxLength(AUTOR_MAX)]],
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
+      themen: [[] as string[]],
     });
+    this.themenWahl = new ThemenWahl(this.postForm.get('themen')!);
     // Die Plattform folgt dem Link, bis die Person sie selbst waehlt.
     this.postForm
       .get('url')!
@@ -123,6 +150,21 @@ export class AddPostComponent implements OnChanges {
     plattform.setValue(plattformAusUrl(url) ?? '');
   }
 
+  /** Was im Antwort-auf-Block gilt; die Themen passen sich an (ThemenWahl). */
+  aussageSetzen(aussage: AntwortAuf): void {
+    this.aussage = aussage;
+    this.themenWahl.anAussageAnpassen(aussage);
+  }
+
+  get zeigtThemen(): boolean {
+    return this.themenWahl.zeigtFuer(this.aussage);
+  }
+
+  /** Aussage ohne Auswahl mit 1-9 Zeichen: Speichern bleibt gesperrt, leer ist erlaubt. */
+  get aussageZuKurz(): boolean {
+    return !this.aussage.id && zuKurz(this.aussage.text);
+  }
+
   get titelLaenge(): number {
     return this.postForm.get('title')?.value?.length ?? 0;
   }
@@ -138,7 +180,7 @@ export class AddPostComponent implements OnChanges {
   get vorschauKarte(): KartenDaten {
     const werte = this.postForm.value;
     const cache = this.vorschauCache;
-    if (cache && cache.werte === werte) {
+    if (cache && cache.werte === werte && cache.aussage === this.aussage.text) {
       return cache.karte;
     }
     const karte = ausSuchergebnis({
@@ -153,16 +195,20 @@ export class AddPostComponent implements OnChanges {
         original_author: 'Du',
       },
       score: 1,
-      statement_text: '',
+      statement_text: this.aussage.text,
       statement_similarity_score: 0,
       reply_relevance: 0,
     } as any);
-    this.vorschauCache = { werte, karte: { ...karte, nutzung: null, erstellt: '', autorName: 'Du' } };
+    this.vorschauCache = {
+      werte,
+      aussage: this.aussage.text,
+      karte: { ...karte, nutzung: null, erstellt: '', autorName: 'Du' },
+    };
     return this.vorschauCache.karte;
   }
 
   speichern(): void {
-    if (this.postForm.invalid) {
+    if (this.postForm.invalid || this.aussageZuKurz) {
       this.postForm.markAllAsTouched();
       return;
     }
@@ -174,7 +220,8 @@ export class AddPostComponent implements OnChanges {
     this.fehler = null;
     this.validierung = null;
 
-    const { url, platform, author, text } = this.postForm.value;
+    const { url, platform, author, text, themen } = this.postForm.value;
+    const aussage = aussageFuerAnfrage(this.aussage, themen ?? []);
     const request: AddPostRequest = {
       post: {
         // Ein Titel ist eine Zeile: eingefuegte Umbrueche werden zu Leerzeichen.
@@ -182,21 +229,29 @@ export class AddPostComponent implements OnChanges {
         text,
         // Gespeichert wird der Name, wie die Karte ihn zeigt.
         platform: plattformName(platform),
-        author: author.trim(),
+        // Optional (#618): leer bleibt leer, damit kein Konto Dritter erfunden wird.
+        author: (author ?? '').trim() || null,
         url: url.trim(),
       },
+      ...aussage,
     };
 
     this.postService.addPost(request).subscribe({
       next: (antwort) => {
         this.speichert = false;
         this.responseId = antwort.id;
-        this.success.emit({ id: antwort.id, aussage: { id: '', text: '' }, verknuepft: true });
+        this.success.emit(alsGespeichert(antwort.id, this.aussage, aussage, antwort));
       },
       error: (error: Error) => {
         // Die Eingaben bleiben stehen; der Knopf speichert dasselbe noch einmal.
         this.logger.error('Error saving post', error);
         this.speichert = false;
+        // Ohne Einwilligung sagt der Hinweiskasten ueber dem Formular, was zu tun ist (B4).
+        if (einwilligungFehlt(error)) {
+          this.fehler = null;
+          this.einwilligungZustand.hinweisZeigen();
+          return;
+        }
         this.validierung = validierungsMeldung(error);
         this.fehler = this.validierung ?? SPEICHERN_FEHLGESCHLAGEN;
       },

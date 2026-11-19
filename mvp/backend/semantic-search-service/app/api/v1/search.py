@@ -34,6 +34,7 @@ from dependencies import (
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
 from services.beitrag_fuer_aufrufer import Aufrufer
+from services.guete_service import guete_ergaenzen
 from services.voting_service import VotingService
 from services.aussage_themen_service import AussageThemenService
 from services.search_tracking_service import (
@@ -46,9 +47,10 @@ from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
 )
-from utils.besucher_pseudonym import anschluss_pruefwert, besucher_merkmal
+from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
 from services.polarity_filter_service import get_polarity_filter_service
+from services.search.polaritaet_nli import get_nli_polaritaet
 from services.keyword_overlap_service import get_keyword_overlap_service
 from dtos.search import (
     CommentarySearchResult,
@@ -63,6 +65,9 @@ from domain.models.content_type import ContentType
 from domain.models.statement import StatementSearchResult
 from services.content.commentary_service import CommentaryService
 from services.content.statement_service import StatementService
+from repositories.implementations.qdrant.statement_repository import (
+    ist_unbeantwortete_suchanfrage,
+)
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 from core.fehler import INTERNER_FEHLER
@@ -79,8 +84,8 @@ router = APIRouter()
 async def aussagetreffer_finden(statement_service: StatementService, query_text: str):
     """
     Die Aussagen mit Antworten, die zur Suchanfrage passen, gewichtet mit
-    Polaritaetsfilter und Schlagwort-Ueberlappung. Liefert die Treffer und die
-    Polaritaets-Metadaten je Aussage. Eigene Funktion, damit das Suchtestset
+    Polaritaetsstrafe (Wortlisten oder NLI-Modell, #574) und Schlagwort-Ueberlappung.
+    Liefert die Treffer und die Polaritaets-Metadaten je Aussage. Eigene Funktion, damit das Suchtestset
     (tests/regression/suche_messen.py) genau so sucht und gewichtet wie die Suche.
     """
     # Query most similar statements that do contain replysuggestions from the statement index
@@ -96,12 +101,12 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
     polarity_filter = get_polarity_filter_service(
         enable_filtering=settings.enable_polarity_filtering
     )
-    statement_index_results, polarity_metadata = (
-        polarity_filter.analyze_and_filter_statement_results(
-            query_text=query_text,
-            statement_results=statement_index_results,
-            get_text_fn=lambda r: r.text,
-        )
+    # Wortlisten oder das NLI-Modell, je nach suche_polaritaet_nli (#574).
+    statement_index_results, polarity_metadata = await get_nli_polaritaet().gewichten(
+        polarity_filter,
+        query_text,
+        statement_index_results,
+        lambda r: r.text,
     )
     logger.debug(
         f"📊 After polarity filtering: {len(statement_index_results)} statement results"
@@ -182,6 +187,42 @@ def suchspezifikationen(
             else []
         ),
     ]
+
+
+async def _aussage_fuer_aufrufer(
+    aufrufer: Aufrufer,
+    statement_service: StatementService,
+    suchen_ohne_treffer: SuchenOhneTrefferService,
+    neu: bool,
+    statement_id,
+    statement_text: str,
+    query_text: str,
+):
+    """
+    ID und Text der Aussage zur Suchanfrage, wie die Antwort sie nennt (Vormoderation,
+    13.11.2026). Ist sie eine unbeantwortete Suchanfrage, die Nicht-Admins nicht sehen
+    (unter der Schwelle oder nicht freigegeben), gibt es weder ihre ID noch ihren
+    Wortlaut, sondern den eigenen Suchtext ohne ID: Das Formular braucht keine ID
+    (es nimmt den Text), und "Nicht dabei?" schlaegt solche Aussagen ohnehin nicht
+    vor. Das gilt auch fuer Admins: Eine Antwort an eine verborgene Suchanfrage
+    haengt das Backend nicht an (SuchanfrageNichtFreigegeben); Admins sehen sie in
+    der Moderation. Eben aus dieser Suche angelegt heisst ungeprueft. Laesst sich
+    das nicht pruefen, wird verborgen.
+    """
+    if statement_id is None:
+        return statement_id, statement_text
+    if not neu:
+        try:
+            aussage = await statement_service.get(statement_id)
+            if not ist_unbeantwortete_suchanfrage(aussage):
+                return statement_id, statement_text
+            if statement_id in await suchen_ohne_treffer.sichtbar_fuer_alle():
+                return statement_id, statement_text
+        except Exception as e:
+            logger.warning(
+                f"Could not check search query statement: {type(e).__name__}"
+            )
+    return None, query_text
 
 
 # Searches for content in various indexes using similarity search
@@ -283,6 +324,8 @@ async def search_by_text(
         orchestrator.enrich_with_usage()
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)
+        # Vor fuer_aufrufer: Die Guete laesst die Stimme des Autors aus (#427).
+        await guete_ergaenzen(orchestrator.inhalte())
         orchestrator.fuer_aufrufer(aufrufer)
         orchestrator.varianten_ergaenzen(varianten)
         try:
@@ -303,10 +346,23 @@ async def search_by_text(
             f"{len(generictext_search_results)} generictexts"
         )
 
+        antwort_id, antwort_text = await _aussage_fuer_aufrufer(
+            aufrufer,
+            statement_service,
+            suchen_ohne_treffer,
+            statement_was_new,
+            statement_id,
+            statement_text,
+            request.query_text,
+        )
         response = SearchResponse(
-            query_was_newly_added_as_statement=statement_was_new,
-            statement_id=str(statement_id) if statement_id is not None else None,
-            statement_text=statement_text,
+            # Verriete Nicht-Admins, ob schon jemand fast gleich gesucht hat
+            # (Vormoderation, P6); das Frontend liest es nicht.
+            query_was_newly_added_as_statement=(
+                statement_was_new if aufrufer.ist_admin else False
+            ),
+            statement_id=str(antwort_id) if antwort_id is not None else None,
+            statement_text=antwort_text,
             commentary_search_results_count=len(commentary_search_results),
             commentary_search_results=commentary_search_results,
             generictext_search_results_count=len(generictext_search_results),
@@ -327,14 +383,12 @@ async def search_by_text(
         # Suchereignis und "Suchen ohne Treffer" bilden das Tagespseudonym aus
         # derselben Kennung und demselben Zeitpunkt: So ist es fuer beide dasselbe,
         # und Pseudonym und Tag gehoeren zusammen, auch kurz vor Mitternacht.
-        # Besucher erkennt der Server an Adresse und User-Agent, nicht mehr an einer
-        # Sitzungskennung aus dem Browser (#446); Angemeldete an ihrer Kennung allein.
+        # Besucher erkennt der Server an ihrem Anschluss, nicht an einer
+        # Sitzungskennung aus dem Browser (#446) und nicht am User-Agent (#495);
+        # Angemeldete an ihrer Kennung allein.
         user_id = validated_user if angemeldet(validated_user) else None
         jetzt = datetime.now(timezone.utc)
         merkmal = None if user_id else besucher_merkmal(http_request)
-        # Besucher: je Anschluss hoechstens eine Person bei Suchen ohne Treffer,
-        # auch wenn der User-Agent wechselt (#496). Angemeldete haben keinen.
-        pruefwert = None if user_id else anschluss_pruefwert(http_request, jetzt.date())
 
         # Track search event for metrics (fire-and-forget, don't block response)
         try:
@@ -365,7 +419,6 @@ async def search_by_text(
                 total_results,
                 tagespseudonym(user_id=user_id, besucher_merkmal=merkmal, moment=jetzt),
                 heute=jetzt.date(),
-                anschluss_pruefwert=pruefwert,
             )
         except Exception as e:
             # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und

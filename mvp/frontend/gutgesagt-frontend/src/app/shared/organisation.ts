@@ -11,9 +11,11 @@ export const ORGANISATION = {
   name: 'Netzbegrünung',
   vereinsname: 'Netzbegrünung e.V.',
   url: 'https://netzbegruenung.de/',
+  /** Mitglied werden: der Weg zum Konto über den Netzbegrünung-Login (Anmeldeseite, Designrunde 17.11.). */
+  mitgliedsantragUrl: 'https://netzbegruenung.de/verein/mitgliedsantrag/',
   /**
    * Fragen und Hinweise zu Gut gesagt, neben dem Knopf „Feedback“ (Kontaktwege, #290).
-   * Dieselbe Adresse gilt für die Bitte um eine Einladung (#492) und für Sicherheitslücken (SECURITY.md, security.txt; #430).
+   * Dieselbe Adresse gilt für Sicherheitslücken (SECURITY.md, security.txt; #430); die Warteliste für Einladungen läuft über „Feedback“.
    */
   gutgesagtMail: 'gutgesagt@netzbegruenung.de',
   /** Der Kanal zum Mitmachen. Kein Kontaktweg für Nutzende: Fragen und Fehler gehen über Feedback oder Mail (#290). */

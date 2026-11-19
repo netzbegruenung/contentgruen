@@ -60,17 +60,23 @@ export class AddPostWorkflowComponent implements OnInit {
 
   onSuccess(ergebnis: BeitragGespeichert): void {
     this.contentRefreshService.triggerRefresh();
+    // Worauf der Post antwortet (#619), wie bei Kommentar und Hintergrundinfo.
+    const zustand: GespeichertZustand = {
+      ...(ergebnis.aussage.text ? { aussage: ergebnis.aussage } : {}),
+      verknuepft: ergebnis.verknuepft,
+      ...(ergebnis.themenHinweis ? { themenHinweis: ergebnis.themenHinweis } : {}),
+    };
 
     if (this.einwurfId) {
       const einwurfId = this.einwurfId;
       this.uebergabe
         .mitBeitragVerknuepfen(einwurfId, ergebnis.id, 'post')
         .subscribe((einwurfVerknuepft) =>
-          this.zurErgebnisseite(ergebnis.id, { [EINWURF_PARAM]: einwurfId }, { einwurfVerknuepft }),
+          this.zurErgebnisseite(ergebnis.id, { [EINWURF_PARAM]: einwurfId }, { ...zustand, einwurfVerknuepft }),
         );
       return;
     }
-    this.zurErgebnisseite(ergebnis.id, {}, {});
+    this.zurErgebnisseite(ergebnis.id, {}, zustand);
   }
 
   private zurErgebnisseite(id: string, queryParams: Record<string, string>, state: GespeichertZustand): void {

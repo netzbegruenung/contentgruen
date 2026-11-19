@@ -1,13 +1,25 @@
-import { Injectable, ErrorHandler } from '@angular/core';
+import { Injectable, ErrorHandler, Injector } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { NeueVersionService, istLadefehler } from '../shared/neue-version';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GlobalErrorHandler implements ErrorHandler {
-  constructor(private snackBar: MatSnackBar) {}
+  constructor(
+    private snackBar: MatSnackBar,
+    // Spaet geholt: Der ErrorHandler entsteht frueh, NeueVersionService haengt am Router.
+    private injector: Injector,
+  ) {}
 
   handleError(error: Error): void {
+    // Ein fehlender Chunk nach einem Deploy ist kein Fehler fuer die Person: neue Version laden.
+    // Kommt der Fehler aus dem Router, hat der NavigationErrorHandler das schon angestossen.
+    if (istLadefehler(error)) {
+      this.injector.get(NeueVersionService).beiFehler(error);
+      return;
+    }
+
     const errorMessage = this.getClientMessage(error);
     const stackTrace = this.getClientStack(error);
 

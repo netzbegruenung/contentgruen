@@ -111,7 +111,7 @@ export function loeschenFehlertext(status: number | undefined): string {
         height: 4px;
         margin: 4px auto 12px;
         border-radius: 2px;
-        background: rgba(0, 0, 0, 0.24);
+        background: var(--feldrand);
       }
 
       app-beitragskarte {
@@ -129,7 +129,7 @@ export function loeschenFehlertext(status: number | undefined): string {
       }
 
       .loeschen-knopf {
-        color: var(--error-color);
+        color: var(--fehler);
       }
     `,
   ],

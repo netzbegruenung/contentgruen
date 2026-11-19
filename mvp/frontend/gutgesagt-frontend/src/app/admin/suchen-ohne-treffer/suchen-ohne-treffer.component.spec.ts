@@ -65,10 +65,24 @@ describe('SuchenOhneTrefferComponent', () => {
     expect(text()).toContain('Keine Suchanfrage ohne Treffer');
   });
 
+  it('laedt beim Zurueckkehren auf den Reiter nach und laesst bei einem Fehler den Stand stehen', () => {
+    spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+    http.expectOne(URL).flush({ wochen: 4, mindestanzahl: 2, suchanfragen: [{ text: 'Windräder töten Vögel', anzahl: 7 }] });
+    fixture.detectChanges();
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    http.expectOne(URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(text()).toContain('Windräder töten Vögel');
+    expect(text()).toContain('Aktualisieren gerade nicht möglich, neuer Versuch in Kürze');
+    fixture.destroy();
+  });
+
   it('meldet einen Ladefehler', () => {
     http.expectOne(URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
-    expect(text()).toContain('konnten nicht geladen werden');
+    expect(text()).toContain('gerade nicht erreichbar, neuer Versuch in Kürze');
   });
 });

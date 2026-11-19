@@ -8,7 +8,6 @@ Aus tests/integration/api/v1/test_moderation_api.py, dort ohne die Fixture
 ``client`` nie gelaufen.
 """
 
-import uuid
 from unittest.mock import Mock
 
 import pytest
@@ -20,11 +19,12 @@ from dependencies import get_moderation_service, get_settings
 
 MITWIRKENDE = {"X-User": "user-1", "X-Is-Admin": "false"}
 
+# Feste Kennungen: die Test-IDs enthalten sie, pytest-xdist verlangt in jedem Worker dieselben.
 ENDPUNKTE = [
     ("get", "/reports"),
     ("get", "/stats"),
-    ("delete", f"/content/commentary/{uuid.uuid4()}"),
-    ("put", f"/reports/{uuid.uuid4()}/dismiss"),
+    ("delete", "/content/commentary/00000000-0000-4000-8000-000000000001"),
+    ("put", "/reports/00000000-0000-4000-8000-000000000002/dismiss"),
     ("post", "/melder/meldungen"),
     ("post", "/melder/angaben-loeschen"),
 ]

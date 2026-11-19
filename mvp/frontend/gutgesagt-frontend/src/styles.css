@@ -65,7 +65,7 @@
 /* Typography - Using consistent Material Design inspired typography with brand fonts */
 h1 {
     font-family: GrueneType, Roboto, sans-serif;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: var(--font-size-h1-desktop);
     line-height: 1.1;
     font-weight: 400;
@@ -75,7 +75,7 @@ h1 {
 
 h2 {
     font-family: GrueneType, Roboto, sans-serif;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: var(--font-size-h2-desktop);
     line-height: 1.1;
     font-weight: 400;
@@ -85,7 +85,7 @@ h2 {
 
 h3 {
     font-family: GrueneType, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: var(--font-size-h3-desktop);
     line-height: 1.1;
     font-weight: 400;
@@ -94,7 +94,7 @@ h3 {
 
 h4 {
     font-family: PTSans-bold, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 25px;
     line-height: 1.3;
     font-weight: 700;
@@ -104,7 +104,7 @@ h4 {
 
 h5 {
     font-family: PTSans-bold, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 20px;
     line-height: 1.3;
     font-weight: 700;
@@ -114,7 +114,7 @@ h5 {
 
 h6 {
     font-family: PTSans-bold, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 16px;
     line-height: 1.3;
     font-weight: 700;
@@ -131,16 +131,16 @@ body {
 
 body {
     min-height: 100vh;
-    background-color: var(--bg-main);
+    background-color: var(--aussen-grund, var(--bg-main));
     font-family: PTSans, Roboto, sans-serif;
-    color: var(--text-primary);
+    color: var(--text);
     overflow-y: auto;
 }
 
 /* Custom scrollbar styling */
 * {
     scrollbar-width: 20px;
-    scrollbar-color: var(--primary-dark) transparent;
+    scrollbar-color: var(--linie-tanne) transparent;
 }
 
 /* Text utility classes - Consolidated naming */
@@ -150,7 +150,7 @@ body {
 
 .emphasis {
     font-weight: 700;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .italic {
@@ -169,7 +169,7 @@ body {
 
 .text-emphasis {
     font-weight: 700;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .text-italic {
@@ -193,13 +193,19 @@ body {
 /* Layout System - Separation of Concerns */
 /* ========================================= */
 
-/* Layout variables */
+/* Layout variables
+ * Seitenrahmen: Jede Seite hat links und rechts --page-margin Rand zum Rand von <main>
+ * (hoechstens 1400 px breit), wie Kopf und Fuss; die Werte fallen mit der Breite (unten).
+ * Schmalere Spalten (Fliesstext, Formulare, Listen) stehen mittig im Rahmen, ihr Inhalt
+ * linksbuendig: Klasse .inhalt-spalte unten (Ausrichtung 17.11., ersetzt "linksbuendig im
+ * Rahmen" vom 12.11.). Nur die Blaetter-Knoepfe der Karussells liegen auf dem Rand. */
 :root {
     --page-margin: 100px;
+    --lesespalte: 720px;
+    --formularspalte: 600px;
     --page-margin-tablet: 50px;
     --page-margin-mobile: 24px;
     --section-gap: 40px;
-    --input-background: white;
 
     /* Mobile layout heights */
     --mobile-header-height: 140px;
@@ -221,6 +227,36 @@ body {
     display: block;
 }
 
+/*
+ * Inhaltsspalte (Ausrichtung 17.11.): Seitenrahmen und mittige Spalte in einem Element.
+ * Links und rechts --page-margin Rand wie Kopf und Fuss; dazwischen hoechstens
+ * --inhalt-breite, die Spalte steht mittig in <main>, ihr Inhalt linksbuendig.
+ * Kopf, Hero und Fuss bleiben ausserhalb und zentriert. Den Abstand oben und unten
+ * setzt die Seite selbst (padding-top/-bottom), nicht das Kuerzel padding.
+ *   --lesen     Fliesstext (Ueber, Rechtliches, Beitrag)       720 px
+ *   --formular  Formulare (Einwerfen)                          600 px
+ *   --liste     Karten- und Listenseiten                      1100 px
+ */
+.inhalt-spalte {
+    --inhalt-breite: var(--lesespalte);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: calc(var(--inhalt-breite) + 2 * var(--page-margin));
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--page-margin);
+    padding-right: var(--page-margin);
+    text-align: left;
+}
+
+.inhalt-spalte--lesen {
+    --inhalt-breite: var(--lesespalte);
+}
+
+.inhalt-spalte--formular {
+    --inhalt-breite: var(--formularspalte);
+}
+
 /* Carousel section - Full width for carousels */
 .carousel-section {
     width: 100%;
@@ -232,7 +268,7 @@ body {
 .card-section {
     padding: var(--spacing-lg) var(--page-margin);
     margin-bottom: var(--section-gap);
-    background: var(--bg-surface);
+    background: var(--flaeche);
     box-shadow: var(--elevation-2);
     border-radius: var(--border-radius-medium);
     margin-left: var(--page-margin);
@@ -272,36 +308,36 @@ body {
     padding: var(--spacing-lg);
     margin: var(--spacing-md) 0;
     border-radius: var(--border-radius-small);
-    background-color: var(--error-bg);
-    color: var(--error-color);
-    border-left: 4px solid var(--error-border);
+    background-color: var(--fehler-tint);
+    color: var(--fehler);
+    border-left: 4px solid var(--fehler);
 }
 
 .success-container {
     padding: var(--spacing-lg);
     margin: var(--spacing-md) 0;
     border-radius: var(--border-radius-small);
-    background-color: var(--success-bg);
-    color: var(--success-color);
-    border-left: 4px solid var(--success-border);
+    background-color: var(--primaer-tint);
+    color: var(--akzent-schrift);
+    border-left: 4px solid var(--primaer-text);
 }
 
 .warning-container {
     padding: var(--spacing-lg);
     margin: var(--spacing-md) 0;
     border-radius: var(--border-radius-small);
-    background-color: var(--warning-bg);
-    color: var(--warning-color);
-    border-left: 4px solid var(--warning-border);
+    background-color: var(--hinweis-tint);
+    color: var(--hinweis-text);
+    border-left: 4px solid var(--hinweis-rand);
 }
 
 .info-container {
     padding: var(--spacing-lg);
     margin: var(--spacing-md) 0;
     border-radius: var(--border-radius-small);
-    background-color: var(--info-bg);
-    color: var(--info-color);
-    border-left: 4px solid var(--info-border);
+    background-color: var(--info-tint);
+    color: var(--info-text);
+    border-left: 4px solid var(--info-rand);
 }
 
 /*
@@ -312,7 +348,7 @@ body {
 .submit-hint {
     font-size: 0.8em;
     line-height: 1.5;
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 /*
@@ -321,11 +357,11 @@ body {
  * im Fangkorb. Abstaende nach aussen setzt die jeweilige Stelle.
  */
 .hinweis-box {
-    background-color: var(--surface-variant);
+    background-color: var(--mulde);
     padding: 12px 16px;
     border-radius: var(--border-radius-medium);
-    border-left: 4px solid var(--primary-main);
-    color: var(--text-primary);
+    border-left: 4px solid var(--linie-klee);
+    color: var(--text);
     font-size: 14px;
     line-height: 1.5;
 }
@@ -338,7 +374,7 @@ body {
    (Ergebnisseite; Satz aus typBeschreibung() der Registry) */
 .typ-erklaerung {
     margin: 0 0 var(--spacing-sm);
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 h2:has(+ .typ-erklaerung) {
@@ -347,12 +383,52 @@ h2:has(+ .typ-erklaerung) {
 
 /* Links */
 a {
-    color: var(--primary-main);
+    color: var(--primaer-text);
     text-decoration: none;
 }
 
 a:hover {
     text-decoration: underline;
+}
+
+/* Im Dunkeln haben Links keine eigene Farbe mehr (hellgrau wie Text): unterstrichen,
+   damit sie ohne Farbe erkennbar sind (#588, Token --link-unterstrich). Links mit Klasse
+   sind Kacheln oder Knoepfe und regeln das selbst. */
+a:not([class]):not(:hover) {
+    text-decoration: var(--link-unterstrich);
+}
+
+/* Volle Knoepfe auf farbigen Baendern (Such-Band, Willkommen/Rundgang): Fuellung und Schrift
+   aus --knopf-auf-band-grund/-schrift (hell Tanne, dunkel Gelb), Rand aus --knopf-rand-auf-band
+   (Entscheidung 13.11., Ersteindruck-Test 14.11.). Beim Suchen-Knopf vor Materials Schatten,
+   damit Hover und Druck ihre Hoehe behalten. Der Fokusrahmen (outline) liegt ausserhalb und
+   bleibt sichtbar. */
+.such-band .search-button-container button {
+    --mat-button-protected-container-elevation-shadow: 0 0 0 2px var(--knopf-rand-auf-band), var(--elevation-2);
+    --mat-button-protected-hover-container-elevation-shadow: 0 0 0 2px var(--knopf-rand-auf-band), var(--elevation-4);
+    --mat-button-protected-focus-container-elevation-shadow: 0 0 0 2px var(--knopf-rand-auf-band), var(--elevation-2);
+    --mat-button-protected-pressed-container-elevation-shadow: 0 0 0 2px var(--knopf-rand-auf-band), var(--elevation-8);
+}
+
+app-rundgang-band .rundgang-knopf.voll {
+    box-shadow: 0 0 0 2px var(--knopf-rand-auf-band);
+}
+
+/* Fokusziel nach dem Ausblenden eines Bands (app-rundgang-band): kein Rahmen um die ganze Seite */
+#hauptinhalt[tabindex='-1']:focus {
+    outline: none;
+}
+
+/* Fuellung und Schrift des Suchen-Knopfs auf dem Band aus Tokens; gegen die !important der
+   Klasse gutgesagt-primary-dark (custom-theme.scss), daher hier ebenso (Ersteindruck-Test 14.11.) */
+.such-band .search-button-container .mat-mdc-raised-button.search-button {
+    background-color: var(--knopf-auf-band-grund) !important;
+    color: var(--knopf-auf-band-schrift) !important;
+    /* Hover und Druck in der Schriftfarbe und kraeftiger als Materials 8 %: auf Gelb sonst
+       kaum zu sehen (Review #689) */
+    --mat-button-protected-state-layer-color: var(--knopf-auf-band-schrift);
+    --mat-button-protected-hover-state-layer-opacity: 0.12;
+    --mat-button-protected-pressed-state-layer-opacity: 0.2;
 }
 
 /* Additional elevation utilities */
@@ -416,24 +492,24 @@ a:hover {
 
 /* Button utilities - Consistent with Material Design */
 .dark-green-button {
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primaer) !important;
     color: white !important;
 }
 
 .primary-button {
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primaer) !important;
     color: white !important;
 }
 
 .accent-button {
-    background-color: var(--accent-main) !important;
+    background-color: var(--akzent) !important;
     color: white !important;
 }
 
 .light-button {
-    background-color: var(--bg-card) !important;
-    color: var(--primary-dark) !important;
-    border: 1px solid var(--primary-dark) !important;
+    background-color: var(--flaeche) !important;
+    color: var(--akzent-schrift) !important;
+    border: 1px solid var(--linie-tanne) !important;
 }
 
 /* Cursor utilities */
@@ -472,25 +548,6 @@ a:hover {
 .form-field-small {
     width: 100%;
     max-width: 400px;
-}
-
-/* Material Design tab customization */
-.mat-tab-label {
-    font-size: 1.2rem;
-    color: white;
-    background-color: #6200ea;
-    padding: 10px;
-    border-radius: var(--border-radius-small);
-    transition: background-color 0.3s;
-}
-
-.mat-tab-label.mat-tab-label-active {
-    background-color: #3700b3;
-}
-
-.mat-tab-group {
-    background-color: #c73d3d;
-    padding: 16px;
 }
 
 /* Responsive design breakpoints */
@@ -616,7 +673,7 @@ a:hover {
 
 /* Focus styles for better keyboard navigation */
 *:focus-visible {
-    outline: 2px solid var(--primary-main);
+    outline: 2px solid var(--akzent-klee);
     outline-offset: 2px;
 }
 
@@ -626,7 +683,7 @@ a:hover {
     left: -9999px;
     z-index: var(--z-index-dropdown);
     padding: var(--spacing-sm) var(--spacing-md);
-    background-color: var(--primary-dark);
+    background-color: var(--primaer);
     color: white;
     text-decoration: none;
 }
@@ -670,7 +727,7 @@ a:hover {
 
 .custom-dialog-container {
     /* Ensure dialog has proper background */
-    background: white;
+    background: var(--flaeche);
     border-radius: 4px;
     box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
                 0 24px 38px 3px rgba(0,0,0,0.14),
@@ -690,19 +747,9 @@ a:hover {
 
 .cdk-overlay-pane:not(.hilfe-seitenleiste) .mat-mdc-dialog-surface {
     display: block !important;
-    background: white !important;
+    background: var(--flaeche) !important;
     max-height: 90vh !important;
     overflow-y: auto !important;
-}
-
-/* Willkommen und Mitmachen-Angebot (#389): runde Ecken, Schleier im Ton des Rundgangs */
-.angebot-fenster .mat-mdc-dialog-surface {
-    border-radius: var(--border-radius-large) !important;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25) !important;
-}
-
-.angebot-schleier {
-    background: var(--rundgang-schleier);
 }
 
 /* Ensure body doesn't get height restricted when dialog opens */
@@ -715,8 +762,8 @@ body.cdk-global-scrollblock {
 
 /* Success Snackbar Styling for Contribution Feedback */
 .mat-mdc-snack-bar-container.success-snackbar {
-    --mdc-snackbar-container-color: var(--primary-dark);
-    --mdc-snackbar-supporting-text-color: white;
+    --mat-snack-bar-container-color: var(--primaer);
+    --mat-snack-bar-supporting-text-color: white;
     --mat-snack-bar-button-color: white;
 }
 
@@ -731,9 +778,57 @@ body.cdk-global-scrollblock {
 }
 
 /* Beitragsformular mit fester Leiste (app-formular-leiste): am Handy unten Platz
-   frei halten, damit Vorschau und Fusszeile nicht darunter verschwinden. */
+   frei halten, damit Vorschau und Fusszeile nicht darunter verschwinden. Das
+   scroll-padding haelt fokussierte Felder und Sprungziele ueber der Leiste (#616). */
 @media (max-width: 599px) {
     body.hat-feste-leiste {
         padding-bottom: var(--feste-leiste-hoehe, 73px);
     }
+
+    html:has(> body.hat-feste-leiste) {
+        scroll-padding-bottom: calc(var(--feste-leiste-hoehe, 73px) + 16px);
+    }
+}
+
+/* Neu-Punkt an „Beitragen“ im Kopf, bis Mitmachen beantwortet ist (#587) */
+.beitragen-knopf,
+.mobile-header .contribute-button {
+    position: relative;
+    overflow: visible;
+}
+
+.neu-punkt {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    /* Groesser und mit hellem Aussenring: gelb auf Gruen allein war zu schwach (UX-Review B19) */
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--primaer);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--flaeche);
+    /* Kegel statt Band: Das Band ist im Dunkelmodus Anthrazit, der Punkt bleibt gelb (#591) */
+    background: var(--rundgang-kegel);
+    pointer-events: none;
+}
+
+/* Material legt den Inhalt in ein eigenes, positioniertes Label; um dessen Abstand zum
+   Rand verschoben sitzt der Punkt an der Ecke des Knopfs */
+.beitragen-knopf .neu-punkt {
+    top: -12px;
+    right: -20px;
+}
+
+/* Material-Erhebungen im Dunkeln mit kraeftigerem Schatten (Sebastian 17.11.) */
+html[data-theme='dark'] .mat-elevation-z2 {
+    box-shadow: var(--elevation-2) !important;
+}
+
+html[data-theme='dark'] .mat-elevation-z8 {
+    box-shadow: var(--elevation-8) !important;
+}
+
+/* Im Dunkeln traegt ein heller Lichtrand oben die Erhebung mit, Schwarz allein verschwindet */
+html[data-theme='dark'] .karte {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }

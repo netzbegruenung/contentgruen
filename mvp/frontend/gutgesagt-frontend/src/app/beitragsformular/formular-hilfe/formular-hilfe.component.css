@@ -19,19 +19,23 @@
     flex: 1;
     margin: 0;
     padding-top: 9px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     line-height: 1.4;
 }
 
 .hilfe-panel {
     margin-top: 4px;
     padding: 4px 0 4px 12px;
-    border-left: 3px solid var(--primary-main);
+    border-left: 3px solid var(--linie-klee);
     line-height: 1.5;
 }
 
 .hilfe-panel p {
     margin: 0;
+}
+
+.hilfe-panel .vorher-nachher-kopf {
+    margin-top: 8px;
 }
 
 .hilfe-regeln {
@@ -52,11 +56,11 @@
 }
 
 .regel-ist .regel-zeichen {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .regel-nicht .regel-zeichen {
-    color: #b3261e;
+    color: var(--fehler);
 }
 
 .hilfe-abschnitt {
@@ -73,5 +77,5 @@
 
 .hilfe-panel .hilfe-hinweis {
     margin-top: 8px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }

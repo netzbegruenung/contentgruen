@@ -126,10 +126,25 @@ describe('AntwortAufComponent', () => {
     knopf.click();
     fixture.detectChanges();
 
-    expect(gemeldet[gemeldet.length - 1]).toEqual({ id: '', text: 'Windräder machen Lärm' });
+    expect(gemeldet[gemeldet.length - 1]).toEqual({ id: '', text: 'Windräder machen Lärm', neuGewaehlt: true });
     expect(seite().querySelector('.karte--kopf .karte-titel')!.textContent).toContain('Windräder machen Lärm');
     expect(seite().querySelector('.neu-marke')!.textContent).toContain('neu');
-    expect(component.wert).toEqual({ id: '', text: 'Windräder machen Lärm' });
+    expect(component.wert).toEqual({ id: '', text: 'Windräder machen Lärm', neuGewaehlt: true });
+  }));
+
+  it('bricht einen Link oder ein langes Wort im Angebot "neu anlegen" um, statt ueberzulaufen', fakeAsync(() => {
+    // Designrunde 12.11.: bei 360 px Breite sprengte ein eingefuegter Link das Formular.
+    statementService.aussageVorschlaege.and.returnValue(of([]));
+    seite().style.display = 'block';
+    seite().style.width = '328px';
+    tippen('Siehe https://www.example.org/ein/sehr/langer/pfad/ohne/umbruch?parameter=wert&noch=mehr');
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+
+    const knopf: HTMLButtonElement = seite().querySelector('.neue-aussage')!;
+    expect(knopf.getBoundingClientRect().width).toBeLessThanOrEqual(328);
+    expect(knopf.scrollWidth).withContext('Text ragt aus dem Knopf').toBeLessThanOrEqual(knopf.clientWidth);
+    expect(seite().scrollWidth).withContext('Block wird breiter als die Seite').toBeLessThanOrEqual(328);
   }));
 
   it('steht unter den Vorschlaegen und kennzeichnet eine vorhandene Aussage nicht als neu', fakeAsync(() => {
@@ -145,7 +160,7 @@ describe('AntwortAufComponent', () => {
     expect(seite().querySelector('.neu-marke')).toBeNull();
   }));
 
-  it('sagt unter dem Feld, was beim Speichern passiert: zu kurz oder neue Aussage', () => {
+  it('sagt unter dem Feld: zu kurz, oder bis zur Wahl vorhandene nehmen oder neu anlegen (#617)', () => {
     tippen('Windrad');
     const hinweis = () => seite().querySelector('mat-hint')!;
     expect(hinweis().textContent).toContain('Mindestens 10 Zeichen – oder leer lassen.');
@@ -153,8 +168,11 @@ describe('AntwortAufComponent', () => {
     expect(component.feldZustand).toBe('zu-kurz');
 
     tippen('Windräder töten Vögel');
-    expect(hinweis().textContent).toContain('Wird als neue Aussage angelegt.');
-    expect(component.feldZustand).toBe('neu');
+    // Tippen allein legt nichts an und behauptet es auch nicht; ohne Vorschlaege keine Wahl nennen
+    expect(hinweis().textContent).toContain('Lege sie neu an – oder lass das Feld leer.');
+    expect(hinweis().textContent).not.toContain('Wird als neue Aussage angelegt');
+    expect(component.feldZustand).toBe('ohne-wahl');
+    expect(gemeldet[gemeldet.length - 1].neuGewaehlt).toBeUndefined();
 
     tippen('');
     expect(hinweis().textContent).toContain('Die Aussage, auf die du reagierst');
@@ -183,6 +201,24 @@ describe('AntwortAufComponent', () => {
     adresse({ id: 'a-1', text: VORSCHLAG.text });
     expect(sprachhinweis().text).withContext('vorhandene Aussage').toBe('');
     flush();
+  }));
+
+  it('nennt die Wahl erst, wenn vorhandene Aussagen dastehen (#617)', fakeAsync(() => {
+    tippen('Wärmepumpen teuer');
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+
+    expect(seite().querySelector('mat-hint')!.textContent).toContain('Nimm eine vorhandene Aussage oder lege sie neu an.');
+  }));
+
+  it('sucht auch fuer den Text aus der Adresse vorhandene Aussagen (#617)', fakeAsync(() => {
+    adresse({ id: '', text: 'Tempo 130 bringt nix' });
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+
+    expect(statementService.aussageVorschlaege).toHaveBeenCalledOnceWith('Tempo 130 bringt nix');
+    expect(seite().querySelectorAll('.vorschlag').length).toBe(1);
+    expect(seite().querySelector('.neue-aussage')).toBeTruthy();
   }));
 
   it('bietet einen zu kurzen Text nicht als neue Aussage an', fakeAsync(() => {

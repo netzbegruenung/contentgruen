@@ -79,7 +79,7 @@ describe('Routentabelle', () => {
     }
   });
 
-  it('fuehrt nach "Selbst beantworten" aus Formular und Ergebnisseite zurueck auf "Hier fehlt eine Antwort"', () => {
+  it('fuehrt nach "Antworten" aus Formular und Ergebnisseite zurueck auf "Hier fehlt eine Antwort"', () => {
     const von = { von: 'hier-fehlt-eine-antwort' };
 
     expect(elternFunktion('workflow/add-commentary')(snapshotMit(von))).toBe('/hier-fehlt-eine-antwort');

@@ -30,7 +30,7 @@ app-formular-hilfe {
   gap: 8px;
   align-items: flex-start;
   margin: 12px 0 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   mat-icon {
     flex: none;
@@ -56,11 +56,11 @@ app-formular-hilfe {
 
 // Ein dezenter Hinweis, kein Fehler: auch ueber 280 Zeichen bleibt es speicherbar.
 .plattform-hinweis {
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .plattform-hinweis.zu-lang {
-  color: #8a5300;
+  color: var(--hinweis-text);
 }
 
 // Textlinks statt Knoepfe fuer Nebensaechliches
@@ -70,19 +70,19 @@ app-formular-hilfe {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 
   &[disabled] {
-    color: var(--text-secondary);
+    color: var(--text-leise);
     cursor: default;
   }
 }
@@ -105,20 +105,48 @@ app-formular-hilfe {
   gap: 6px;
 }
 
-// Am Handy untereinander, damit beide Beschriftungen ganz lesbar bleiben.
+// Gewaehlt ist gruen mit Haekchen, nicht grau: grau liest sich als gesperrt (#616).
+// Am Handy zwei Segmente ueber die volle Breite, die Beschriftung bricht im Segment um.
+// Kein Segment wird schmaler als sein laengstes Wort samt Haekchen: Bei 360 px schnitt
+// das gewaehlte Segment sonst "Kommentarspalten" ab (Designrunde 12.11.). Dann ist das
+// andere Segment etwas schmaler, "Für die eigenen Leute" bricht in mehr Zeilen um.
 .zweck-wahl {
-  flex-wrap: wrap;
   align-self: flex-start;
 
+  ::ng-deep .mat-button-toggle-checked {
+    --mat-minimal-pseudo-checkbox-selected-checkmark-color: white;
+    background: var(--primaer);
+    color: white;
+  }
+
   ::ng-deep .mat-button-toggle-checked .mat-button-toggle-button {
-    color: var(--primary-dark);
+    color: white;
     font-weight: 600;
   }
-}
 
-.formular-fuss {
-  display: flex;
-  justify-content: flex-end;
+  @include bp.mobile-only {
+    align-self: stretch;
+
+    ::ng-deep .mat-button-toggle {
+      flex: 1 1 0;
+      min-width: min-content;
+    }
+
+    // Beide Segmente sind so hoch wie das hoehere; die Beschriftung steht in beiden mittig,
+    // nicht oben im einzeiligen Segment (Designrunde 12.11.)
+    ::ng-deep .mat-button-toggle-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    ::ng-deep .mat-button-toggle-label-content {
+      padding: 6px 8px;
+      line-height: 1.3;
+      white-space: normal;
+    }
+  }
 }
 
 .zuruecksetzen {
@@ -142,9 +170,9 @@ app-formular-hilfe {
 .speicher-fehler {
   margin: 12px 0 0;
   padding: 12px 16px;
-  border-left: 4px solid var(--error-color, #d32f2f);
+  border-left: 4px solid var(--fehler);
   border-radius: 4px;
-  background: rgba(211, 47, 47, 0.08);
+  background: var(--fehler-tint);
 }
 
 // Der Einwurf aus dem Fangkorb ueber dem Formular
@@ -153,7 +181,7 @@ app-formular-hilfe {
   margin-bottom: 16px;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--divider-color);
+  border: 1px solid var(--linie);
 
   @include bp.mobile-only {
     margin: 12px 16px 0;

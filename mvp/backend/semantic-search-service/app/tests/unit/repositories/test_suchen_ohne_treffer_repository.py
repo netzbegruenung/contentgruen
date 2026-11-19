@@ -115,3 +115,38 @@ class TestHaeufigste:
         abfrage = session.execute.call_args.args[0]
         assert "OFFSET" in _sql(abfrage)
         assert 40 in _params(abfrage).values()
+
+
+class TestFreigabe:
+    @pytest.mark.parametrize(
+        "freigabe, erwartet",
+        [
+            ("freigegebene", "suchanfrage_freigaben.freigegeben IS true"),
+            ("entschiedene", "statement_id IN (SELECT suchanfrage_freigaben"),
+            ("unentschiedene", "statement_id NOT IN (SELECT suchanfrage_freigaben"),
+        ],
+    )
+    def test_ueber_der_schwelle_nach_freigabe(
+        self, repository, session, freigabe, erwartet
+    ):
+        session.execute.return_value.scalars.return_value.all.return_value = []
+
+        repository.ueber_der_schwelle(date(2026, 10, 5), 2, freigabe)
+
+        assert erwartet in _sql(session.execute.call_args.args[0])
+
+    def test_haeufigste_ohne_entschiedene(self, repository, session):
+        session.execute.return_value.all.return_value = []
+
+        repository.haeufigste(date(2026, 10, 5), 2, 20, freigabe="unentschiedene")
+
+        assert "NOT IN (SELECT suchanfrage_freigaben.statement_id" in _sql(
+            session.execute.call_args.args[0]
+        )
+
+    def test_ohne_freigabe_kein_blick_auf_die_freigaben(self, repository, session):
+        session.execute.return_value.scalars.return_value.all.return_value = []
+
+        repository.ueber_der_schwelle(date(2026, 10, 5), 2)
+
+        assert "suchanfrage_freigaben" not in _sql(session.execute.call_args.args[0])

@@ -1,5 +1,5 @@
 .mat-spinner-color::ng-deep circle {
-  stroke: rgb(0, 84, 55) !important;
+  stroke: var(--akzent-tanne) !important;
 }
 
 .einwuerfe-laedt {
@@ -12,12 +12,21 @@
 .einwuerfe-statistik {
   margin: var(--spacing-md) 0 12px;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .einwuerfe-leer,
 .einwuerfe-fehler {
-  color: var(--text-secondary);
+  color: var(--text-leise);
+}
+
+.einwuerfe-fehler p {
+  margin: 0 0 12px;
+}
+
+.erneut-versuchen[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 /* Wie im Fangkorb: die Einwurf-Karten untereinander auf dem Kartengrund */
@@ -28,7 +37,8 @@
   margin: 0;
   padding: 16px;
   list-style: none;
-  background: var(--kartenliste-bg);
+  background: var(--mulde);
+  border: var(--kartenliste-rand);
 }
 
 @media (min-width: 600px) {

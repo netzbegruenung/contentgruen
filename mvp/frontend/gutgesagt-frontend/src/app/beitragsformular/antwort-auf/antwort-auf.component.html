@@ -19,7 +19,7 @@
                       cdkTextareaAutosize cdkAutosizeMinRows="1" cdkAutosizeMaxRows="4"></textarea>
             <mat-hint [ngSwitch]="feldZustand" [class.zu-kurz]="feldZustand === 'zu-kurz'">
                 <ng-container *ngSwitchCase="'zu-kurz'">Mindestens {{ minZeichen }} Zeichen – oder leer lassen.</ng-container>
-                <ng-container *ngSwitchCase="'neu'">Wird als neue Aussage angelegt.</ng-container>
+                <ng-container *ngSwitchCase="'ohne-wahl'">{{ vorschlaege.length ? 'Nimm eine vorhandene Aussage oder lege sie neu an.' : 'Lege sie neu an – oder lass das Feld leer.' }}</ng-container>
                 <ng-container *ngSwitchDefault>Die Aussage, auf die du reagierst – oder leer lassen.</ng-container>
             </mat-hint>
         </mat-form-field>
@@ -38,7 +38,7 @@
             </ng-container>
             <button type="button" class="neue-aussage" (click)="alsNeueAussage()">
                 <mat-icon aria-hidden="true">add</mat-icon>
-                <span>Als neue Aussage anlegen: „{{ neu }}“</span>
+                <span class="neue-aussage-text">Als neue Aussage anlegen: „{{ neu }}“</span>
             </button>
         </div>
     </ng-template>

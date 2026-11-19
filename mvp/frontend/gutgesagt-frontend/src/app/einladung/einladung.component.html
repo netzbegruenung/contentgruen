@@ -5,6 +5,24 @@
   <mat-card-content>
     <!-- Immer im DOM, damit Screenreader den Wechsel ansagen; per *ngIf eingefuegte Live-Regionen gehen oft unter. -->
     <p class="unsichtbar" role="status">{{ ansage }}</p>
+    <form *ngIf="stand === 'eingeben'" (ngSubmit)="linkUebernehmen()">
+      <p>
+        Du hast eine Einladung bekommen, als Link oder QR-Code? Öffne sie einfach, oder füge den
+        Link hier ein.
+      </p>
+      <mat-form-field appearance="outline" class="email">
+        <mat-label>Link der Einladung</mat-label>
+        <input #linkFeld matInput name="link" autocomplete="off" autocapitalize="off" spellcheck="false"
+               [(ngModel)]="link" required />
+        <mat-hint>Das Stück nach # reicht auch.</mat-hint>
+      </mat-form-field>
+      <p *ngIf="linkFalsch" class="warnung" role="alert">
+        Das ist kein Link einer Einladung. Bitte prüf ihn noch einmal.
+      </p>
+      <button mat-raised-button color="primary" type="submit" [disabled]="!link.trim()">Weiter</button>
+      <p>Hast du schon ein Konto? Dann <a routerLink="/login">melde dich an</a>.</p>
+    </form>
+
     <p *ngIf="stand === 'pruefe'">Einladung wird geprüft …</p>
 
     <ng-container *ngIf="stand === 'ungueltig'">
@@ -13,6 +31,7 @@
         eingelöst, wie sie erlaubt. Frag die Person, von der du den Link hast, nach einem neuen.
       </p>
       <p>Hast du schon ein Konto? Dann <a routerLink="/login">melde dich an</a>.</p>
+      <button mat-stroked-button type="button" (click)="andererLink()">Anderen Link einfügen</button>
     </ng-container>
 
     <form *ngIf="stand === 'formular' || stand === 'sendet' || stand === 'fehler'" (ngSubmit)="einloesen()">

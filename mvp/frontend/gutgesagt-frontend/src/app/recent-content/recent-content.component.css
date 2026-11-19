@@ -1,11 +1,12 @@
 /* Header section styles - with page margins */
 .recent-content-header {
   padding: 0 var(--page-margin);
-  margin: 2rem 0 1rem 0;
+  /* Oben wie der Abstand unter den Kacheln (Designrunde 17.11.) */
+  margin: var(--spacing-xxl) 0 var(--spacing-md) 0;
 }
 
 .recent-content-header h2 {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-lg);
   /* Uses global h2 styles for green color and larger font */
 }
 
@@ -24,19 +25,19 @@
 .empty-state {
   text-align: center;
   padding: 2rem;
-  color: #666;
-  background: #f5f5f5;
+  color: var(--text-leise);
+  background: var(--mulde);
   border-radius: 8px;
 }
 
 /* Mobile adjustments */
 @media (max-width: 599px) {
   .recent-content-header {
-    margin: 1rem 0;
+    margin: var(--spacing-xl) 0 var(--spacing-md);
   }
 
   .recent-content-header h2 {
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md);
     /* Uses global responsive h2 styles */
   }
 }

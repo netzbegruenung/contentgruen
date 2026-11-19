@@ -32,6 +32,7 @@ ADMIN_ONLY_PATHS = [
     "/api/v1/metrics/usage-trend",
     "/api/v1/metrics/helpful-rate",
     "/api/v1/metrics/bilanz",
+    "/api/v1/metrics/gepostet",
 ]
 
 
@@ -43,6 +44,8 @@ def client():
 
     statement_service = Mock()
     statement_service.count_curated = AsyncMock(return_value=11)
+    # 15 Aussagen, davon 4 unbeantwortete Suchanfragen (Vormoderation).
+    statement_service.count = AsyncMock(return_value=15)
     commentary_service = Mock()
     commentary_service.count = AsyncMock(return_value=22)
     reference_service = Mock()
@@ -102,7 +105,8 @@ class TestGetMetricsStaysPublic:
 
         assert response.status_code == 200
         body = response.json()
-        assert body["content_count"] == 44
+        # 44 Eintraege ohne die 4 unbeantworteten Suchanfragen.
+        assert body["content_count"] == 40
         assert body["statement_count"] == 11
         assert body["commentary_count"] == 22
         assert body["reference_count"] == 33
@@ -181,6 +185,7 @@ class TestGetMetricsCacheConcurrency:
 
         statement_service = Mock()
         statement_service.count_curated = AsyncMock(return_value=1)
+        statement_service.count = AsyncMock(return_value=1)
         commentary_service = Mock()
         commentary_service.count = AsyncMock(return_value=2)
         reference_service = Mock()
@@ -213,3 +218,17 @@ class TestGetMetricsCacheConcurrency:
         assert all(r.content_count == 7 for r in results)
 
         metrics_module._metrics_cache = None
+
+
+def test_content_count_nie_negativ(client):
+    """Faellt der Zaehler aller Eintraege aus (0), wird content_count nicht negativ."""
+    with patch.object(metrics_module, "QdrantRepositoryFactory") as factory:
+        repository = Mock()
+        repository.count = AsyncMock(return_value=0)
+        factory.return_value.create_content_repository.return_value = repository
+        metrics_module._metrics_cache = None
+
+        response = client.get("/api/v1/metrics/getMetrics")
+
+    assert response.status_code == 200
+    assert response.json()["content_count"] == 0

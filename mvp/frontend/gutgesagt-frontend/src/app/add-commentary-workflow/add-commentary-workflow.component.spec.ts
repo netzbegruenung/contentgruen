@@ -16,6 +16,7 @@ import { environment } from '../../environments/environment';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { VORLAGE_NICHT_VERFUEGBAR } from '../beitragsformular/vorlage';
 
 describe('AddCommentaryWorkflowComponent', () => {
@@ -75,6 +76,18 @@ describe('AddCommentaryWorkflowComponent', () => {
     });
   });
 
+  it('reicht "Aussage neu angelegt" an die Ergebnisseite weiter (#617)', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, aussageNeu: true });
+
+    expect(navigieren.calls.mostRecent().args[1]!.state).toEqual({
+      aussage: { id: 'a-1', text: 'Aussage' },
+      verknuepft: true,
+      aussageNeu: true,
+    });
+  });
+
   it('reicht einen Themenhinweis an die Ergebnisseite weiter (#455)', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     const themenHinweis = 'Themen nicht gespeichert.';
@@ -99,6 +112,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
       'vorbefuellungLaden',
       'mitBeitragVerknuepfen',
       'zumNaechsten',
+      'zumNaechstenAusformulieren',
     ]);
     uebergabe.mitBeitragVerknuepfen.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
@@ -155,13 +169,15 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
   it('verknuepft nach der Wahl den Einwurf mit dem vorhandenen Kommentar und geht zum naechsten', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate');
-    const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+    // Die Bestaetigung geht ueber den Meilenstein-Hinweis: mit einem neuen Meilenstein
+    // in derselben Snackbar (#351).
+    const meldung = spyOn(TestBed.inject(MeilensteinHinweisService), 'bestaetigen');
 
     component.onVorhandenGewaehlt('k-alt');
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
-    expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', jasmine.anything());
+    expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('id-1');
+    expect(meldung).toHaveBeenCalledOnceWith(EINWURF_MIT_VORHANDENEM_VERKNUEPFT);
     // Keine Ergebnisseite: gespeichert wurde nichts.
     expect(navigieren).not.toHaveBeenCalled();
   });
@@ -175,13 +191,13 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onVorhandenGewaehlt('k-alt');
 
-    expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
+    expect(uebergabe.zumNaechstenAusformulieren).not.toHaveBeenCalled();
     expect(meldung).toHaveBeenCalledWith(EINWURF_NICHT_VERKNUEPFT, ERNEUT_VERKNUEPFEN, jasmine.anything());
 
     erneut.next();
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledTimes(2);
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
+    expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('id-1');
   });
 
   it('verknuepft beim Trotzdem-Speichern den Einwurf mit dem neuen Kommentar', () => {
@@ -343,6 +359,17 @@ describe('AddCommentaryWorkflowComponent mit Aussage aus der Adresse', () => {
     component.onSuccess({ id: 'k-1', aussage: { id: 'a-1', text: 'Waermepumpen sind zu teuer' }, verknuepft: true });
 
     expect(navigieren.calls.mostRecent().args[1]!.queryParams).toEqual({ von: 'hier-fehlt-eine-antwort' });
+  });
+
+  it('reicht aus "Hier fehlt eine Antwort" die Nachfrage an die Ergebnisseite weiter (Lücke zu)', async () => {
+    await oeffnen({});
+    adresse.next(convertToParamMap({ aussage: 'a-1', von: 'hier-fehlt-eine-antwort', gesucht: '2' }));
+    http.expectOne((req) => req.url === getByIdUrl).flush({ statement_id: 'a-1', statement_text: 'Waermepumpen sind zu teuer' });
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    component.onSuccess({ id: 'k-1', aussage: { id: 'a-1', text: 'Waermepumpen sind zu teuer' }, verknuepft: true });
+
+    expect(navigieren.calls.mostRecent().args[1]!.queryParams).toEqual({ von: 'hier-fehlt-eine-antwort', gesucht: '2' });
   });
 
   it('oeffnet ohne Parameter ein eigenstaendiges Formular', async () => {

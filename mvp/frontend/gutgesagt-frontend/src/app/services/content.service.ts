@@ -7,8 +7,29 @@ import { LoggingService } from './logging.service';
 import { throwError } from 'rxjs';
 import { BaseContentResult } from './dtos/commonDtos';
 
-/** Ein Beitrag unter seiner Adresse (#300): flach wie getById seines Typs, dazu die eigene Stimme. */
-export type BeitragAnsicht = BaseContentResult & Record<string, any> & { user_vote?: 'like' | 'dislike' | null };
+/** Die Aussage, auf die ein Beitrag antwortet (#603). */
+export interface AussageKurz {
+  id: string;
+  text: string;
+}
+
+/** Eine weitere sichtbare Antwort zu dieser Aussage (#603): nur, was die Liste zeigt. */
+export interface WeitereAntwort {
+  id: string;
+  content_type: string;
+  titel: string;
+}
+
+/**
+ * Ein Beitrag unter seiner Adresse (#300): flach wie getById seines Typs, dazu die eigene
+ * Stimme und (#603) die Aussage mit weiteren Antworten; ohne Aussage null und [].
+ */
+export type BeitragAnsicht = BaseContentResult &
+  Record<string, any> & {
+    user_vote?: 'like' | 'dislike' | null;
+    aussage?: AussageKurz | null;
+    weitere_antworten?: WeitereAntwort[];
+  };
 
 export interface RecentContentResponse {
   results_count: number;

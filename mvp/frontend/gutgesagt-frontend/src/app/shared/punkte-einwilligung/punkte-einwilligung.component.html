@@ -1,0 +1,10 @@
+<div *ngIf="stand$ | async as stand" class="punkte-einwilligung">
+    <h3 *ngIf="ueberschrift" class="punkte-einwilligung-titel">{{ ueberschrift }}</h3>
+    <mat-checkbox [checked]="stand.eingewilligt" [disabled]="speichert" (change)="aendern($event)">
+        {{ stand.aktueller_wortlaut.text }}
+    </mat-checkbox>
+    <!-- Immer da, damit Screenreader den neuen Stand ansagen -->
+    <p role="status" class="punkte-einwilligung-stand">
+        <ng-container *ngIf="fehler">Das hat nicht geklappt. Bitte versuch es noch einmal.</ng-container>
+    </p>
+</div>

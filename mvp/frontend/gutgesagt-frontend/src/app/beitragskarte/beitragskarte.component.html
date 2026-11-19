@@ -4,6 +4,56 @@
          [attr.aria-label]="antippbar ? beschriftung : null"
          (click)="antippen()" (keyup.enter)="antippen()">
 
+    <!-- Zuerst, worauf der Beitrag antwortet, dann Titel und Text: sonst lasen sich
+         Kurzfassung und Aussage wie zwei gleichrangige Saetze (#599) -->
+    <ng-container *ngIf="istVoll && !zu">
+        <div class="statement" *ngIf="(antwortAufZeigen || zeigtWerte) && daten.statement as statement">
+            <!-- Fuer Nutzer:innen ohne Werte und ohne Aufklapper (#640, R39): Fuer die Guete
+                 gilt nach aussen nur das Siegel; die Aussage steht hier ganz -->
+            <p class="statement-zeile statement-zeile--fest" *ngIf="!zeigtWerte">
+                <mat-icon class="statement-icon" aria-hidden="true">subdirectory_arrow_left</mat-icon>
+                <span class="statement-label">Antwort auf:</span>
+                <span class="statement-vorschau">„{{ statement.text }}“</span>
+            </p>
+
+            <!-- Admins: Suchuebereinstimmung und Antwortqualitaet zum Nachsehen -->
+            <ng-container *ngIf="zeigtWerte">
+                <div class="statement-zeile" role="button" tabindex="0"
+                     [attr.aria-expanded]="statementOffen"
+                     (click)="statementUmschalten()"
+                     (keydown.enter)="statementUmschalten()"
+                     (keydown.space)="$event.preventDefault(); statementUmschalten()">
+                    <mat-icon class="statement-icon">subdirectory_arrow_left</mat-icon>
+                    <span class="statement-label">Antwort auf:</span>
+                    <span class="statement-vorschau" *ngIf="!statementOffen">„{{ statement.text }}“</span>
+                    <mat-icon class="statement-pfeil" [class.offen]="statementOffen">expand_more</mat-icon>
+                </div>
+
+                <div class="statement-details" *ngIf="statementOffen" @expandCollapse>
+                    <p class="statement-text">„{{ statement.text }}“</p>
+                    <div class="statement-werte">
+                        <span class="statement-wert"
+                              matTooltip="Semantische Ähnlichkeit: Wie gut passt diese gefundene Aussage zu deiner Suchanfrage?"
+                              matTooltipPosition="above" matTooltipShowDelay="500" [matTooltipTouchGestures]="'on'">
+                            <mat-icon>manage_search</mat-icon>
+                            Suchübereinstimmung: {{ statement.aehnlichkeit }}%
+                        </span>
+                        <span class="statement-wert"
+                              matTooltip="Antwortqualität: Wie gut ist dieser Beitrag als Antwort auf diese Aussage bewertet?"
+                              matTooltipPosition="above" matTooltipShowDelay="500" [matTooltipTouchGestures]="'on'">
+                            <mat-icon>verified</mat-icon>
+                            Antwortqualität: {{ statement.antwortqualitaet }}%
+                        </span>
+                    </div>
+                    <p class="statement-hinweis">
+                        <mat-icon>info</mat-icon>
+                        Tippe auf die Werte für mehr Details
+                    </p>
+                </div>
+            </ng-container>
+        </div>
+    </ng-container>
+
     <header class="karte-kopf" *ngIf="!einwurfAngaben" [class.karte-kopf--bild]="kopfBild">
         <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf; fremde Bilder erst auf Klick (#447) -->
         <app-fremdes-bild *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || daten.text || ''" [mitSymbol]="false"></app-fremdes-bild>
@@ -11,18 +61,51 @@
               [attr.aria-label]="typName"
               [matTooltip]="typName" matTooltipPosition="below">{{ emoji }}</span>
 
-        <h3 class="karte-titel" *ngIf="!istKompakt">{{ titelAnzeige }}</h3>
+        <!-- Der Titel fuehrt zur Beitragsseite (#640, R48), ausser auf ihr selbst und in der Vorschau -->
+        <!-- Aufklappbar (Trefferseite, V3): der Titel ist der Knopf, Akkordeon-Muster mit Ueberschrift um den Knopf -->
+        <ng-template #titelInhalt><button *ngIf="aufklappbar; else titelNormal" type="button" class="aufklapp-knopf"
+            [attr.aria-expanded]="offen" [attr.aria-controls]="koerperId"
+            (click)="aufklappenUmschalten($event)"><span class="aufklapp-titel">{{ titelAnzeige }}</span><mat-icon class="aufklapp-pfeil" aria-hidden="true">{{ offen ? 'expand_less' : 'expand_more' }}</mat-icon></button><ng-template #titelNormal><a *ngIf="titelVerlinkt; else titelText" class="titel-link"
+            [routerLink]="beitragAdresse">{{ titelAnzeige }}</a><ng-template #titelText>{{ titelAnzeige }}</ng-template></ng-template></ng-template>
+        <!-- Zweck und Stil als kleine Zeile ueber dem Titel (Designrunde 17.11., Variante A) -->
+        <div class="titel-block" *ngIf="!istKompakt">
+            <ng-container *ngIf="istVoll && !zu"><ng-container *ngTemplateOutlet="angaben; context: { antippbar: true }"></ng-container></ng-container>
+            <h3 class="karte-titel" *ngIf="titelEbene === 3"><ng-container *ngTemplateOutlet="titelInhalt"></ng-container></h3>
+            <h4 class="karte-titel" *ngIf="titelEbene === 4"><ng-container *ngTemplateOutlet="titelInhalt"></ng-container></h4>
+        </div>
 
-        <div class="karte-badges" *ngIf="!istKompakt && !istKopf">
-            <span class="badge badge-neu" *ngIf="istVoll && istNeu"
-                  matTooltip="Neu" matTooltipPosition="left">
-                <mat-icon class="badge-icon">auto_awesome</mat-icon>
-            </span>
+        <div class="karte-badges" *ngIf="!istKompakt && !istKopf && !zu">
+            <!-- Siegel (#427): zeigt die Guete, kein Knopf zum Abstimmen; Antippen erklaert sie -->
+            <button type="button" class="siegel-knopf" *ngIf="istVoll && guete as g"
+                    [matMenuTriggerFor]="siegelMenue"
+                    [attr.aria-label]="siegelBeschriftung"
+                    (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
+                <app-siegel [guete]="g.wert" [glanz]="glanz"></app-siegel>
+            </button>
+            <mat-menu #siegelMenue="matMenu" class="siegel-menue" xPosition="before">
+                <!-- Ein Menuepunkt ohne Aktion: Screenreader lesen den Text vor, statt ein leeres Menue anzusagen -->
+                <div mat-menu-item disableRipple class="siegel-erklaerung" *ngIf="erklaerung as e" (click)="$event.stopPropagation()">
+                    <p class="siegel-erklaerung-kopf">{{ e.ueberschrift }}</p>
+                    <p class="siegel-erklaerung-text">Das Siegel zeigt die Güte des Beitrags. Sie startet mit dem Gegenlesen: feste Regeln, ohne KI.</p>
+                    <ul *ngIf="e.kriterien.length" class="siegel-kriterien">
+                        <li *ngFor="let kriterium of e.kriterien"><mat-icon aria-hidden="true">check</mat-icon>{{ kriterium }}</li>
+                    </ul>
+                    <p class="siegel-erklaerung-text">{{ e.stimmen }} Die Nutzung zählt nicht hinein.</p>
+                    <!-- Glanz (#351): eigenes Abzeichen, keine Stufe der Guete -->
+                    <p class="siegel-erklaerung-text" *ngIf="glanz">{{ GLANZ_TEXT }}</p>
+                </div>
+                <!-- Weiter zur ganzen Erklaerung mit Beispielsiegeln (Ersteindruck-Test 14.11.); erst beim
+                     Oeffnen gebaut, damit nicht jede Karte einen RouterLink anlegt -->
+                <ng-template matMenuContent>
+                    <a mat-menu-item class="siegel-mehr" routerLink="/about" fragment="siegel">Mehr zur Güte</a>
+                </ng-template>
+            </mat-menu>
+            <!-- Als Wort statt Symbol mit Tooltip: am Handy gibt es keinen Tooltip (#616) -->
+            <span class="badge badge-neu" *ngIf="istVoll && istNeu">neu</span>
             <span class="badge badge-beliebt" *ngIf="istVoll && istBeliebt"
                   matTooltip="Beliebt" matTooltipPosition="left">🔥</span>
-            <span class="badge badge-nutzung" *ngIf="nutzung !== null"
-                  [class.nutzung-animiert]="nutzungAnimiert"
-                  matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
+            <!-- Die Nutzung steht beschriftet in der Meta-Zeile unten ("1× genutzt", #599):
+                 Als Kreis "1×" war sie nicht zu deuten, als Pille hier kuerzte sie den Titel. -->
         </div>
     </header>
 
@@ -70,113 +153,88 @@
             </ul>
         </div>
 
-        <!-- Aktionszeile wie bei der vollen Karte: Griff in der Mitte, ⋮ rechts -->
-        <div class="einwurf-aktion" *ngIf="!istKopf && (primaerAktion || menueEintraege.length)">
-            <button *ngIf="primaerAktion as primaer" type="button" mat-raised-button
-                    class="gutgesagt-primary-dark einwurf-primaer"
-                    (click)="aktionAusloesen(primaer.aktion, $event)">
-                <!-- Das Zeichen der naechsten Stufe: wohin der Griff fuehrt -->
-                <span class="knopf-emoji" *ngIf="primaer.emoji as emoji" aria-hidden="true">{{ emoji }}</span>
-                <mat-icon class="knopf-icon" *ngIf="primaer.icon as icon" aria-hidden="true">{{ icon }}</mat-icon>
-                <span class="knopf-wort">{{ primaer.wort }}</span>
-            </button>
-
-            <button *ngIf="menueEintraege.length" type="button" mat-icon-button class="einwurf-menue"
-                    [matMenuTriggerFor]="einwurfMenue"
-                    aria-label="Mehr zu diesem Einwurf"
-                    (click)="$event.stopPropagation()">
-                <mat-icon>more_vert</mat-icon>
-            </button>
-            <mat-menu #einwurfMenue="matMenu">
-                <button mat-menu-item type="button" *ngFor="let eintrag of menueEintraege"
-                        (click)="aktionAusloesen(eintrag.aktion, $event)">
-                    <mat-icon>{{ eintrag.icon }}</mat-icon>
-                    <span>{{ eintrag.wort }}</span>
+        <!-- Fuss aus Aktion und Meta. Hochkant ohne eigene Box (display: contents);
+             quer eine Zeile: Meta links, Griff und ⋮ rechts (Input quer). -->
+        <div class="einwurf-fuss" *ngIf="!istKopf">
+            <!-- Aktionszeile wie bei der vollen Karte: Griff in der Mitte, ⋮ rechts -->
+            <div class="einwurf-aktion" *ngIf="(primaerAktion || menueEintraege.length)">
+                <button *ngIf="primaerAktion as primaer" type="button" mat-raised-button
+                        class="gutgesagt-primary-dark einwurf-primaer"
+                        (click)="aktionAusloesen(primaer.aktion, $event)">
+                    <!-- Das Zeichen der naechsten Stufe: wohin der Griff fuehrt -->
+                    <span class="knopf-emoji" *ngIf="primaer.emoji as emoji" aria-hidden="true">{{ emoji }}</span>
+                    <mat-icon class="knopf-icon" *ngIf="primaer.icon as icon" aria-hidden="true">{{ icon }}</mat-icon>
+                    <span class="knopf-wort">{{ primaer.wort }}</span>
                 </button>
-            </mat-menu>
-        </div>
 
-        <p class="karte-meta einwurf-meta" *ngIf="!istKopf">
-            <ng-container *ngIf="stufeZeigen">
-                <span class="einwurf-stufe">{{ stufenName }}</span>
-                ·
-            </ng-container>
-            <ng-container *ngIf="zeigtEinwerfer">
-                <span class="einwurf-einwerfer">Von: {{ autorAnzeige }}</span>
-                ·
-            </ng-container>
-            <span class="einwurf-alter">{{ daten.erstellt | relativeTime }}</span>
-        </p>
+                <button *ngIf="menueEintraege.length" type="button" mat-icon-button class="einwurf-menue"
+                        [matMenuTriggerFor]="einwurfMenue"
+                        aria-label="Mehr zu diesem Einwurf"
+                        (click)="$event.stopPropagation()">
+                    <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #einwurfMenue="matMenu">
+                    <button mat-menu-item type="button" *ngFor="let eintrag of menueEintraege"
+                            (click)="aktionAusloesen(eintrag.aktion, $event)">
+                        <mat-icon>{{ eintrag.icon }}</mat-icon>
+                        <span>{{ eintrag.wort }}</span>
+                    </button>
+                </mat-menu>
+            </div>
+
+            <p class="karte-meta einwurf-meta">
+                <ng-container *ngIf="stufeZeigen">
+                    <span class="einwurf-stufe">{{ stufenName }}</span>
+                    ·
+                </ng-container>
+                <ng-container *ngIf="zeigtEinwerfer">
+                    <span class="einwurf-einwerfer">Von: {{ autorAnzeige }}</span>
+                    ·
+                </ng-container>
+                <span class="einwurf-alter">{{ daten.erstellt | relativeTime }}</span>
+            </p>
+        </div>
     </ng-container>
 
     <!-- Kompakt (Album): Kopf nur mit Symbol, Titel und Anriss, im Fuss Datum und Nutzung -->
     <ng-container *ngIf="istKompakt">
         <div class="album-inhalt">
             <h3 class="karte-titel">{{ titelAnzeige }}</h3>
-            <ng-container *ngTemplateOutlet="angaben"></ng-container>
+            <ng-container *ngTemplateOutlet="angaben; context: { antippbar: false }"></ng-container>
             <p class="album-anriss" *ngIf="anriss as anriss">{{ anriss }}</p>
         </div>
+        <!-- Die Nutzung ausgeschrieben und lesbar gross, darunter der Zuwachs der letzten 7 Tage (#349) -->
         <footer class="album-fuss">
-            <span class="karte-datum">{{ daten.erstellt | date: 'dd.MM.yyyy' }}</span>
             <span class="album-nutzung">
-                <!-- Zuwachs der letzten 7 Tage (#349), nur wenn es einen gibt -->
-                <span class="nutzung-zuwachs" *ngIf="daten.nutzungLetzte7Tage"
-                      [attr.aria-label]="daten.nutzungLetzte7Tage + ' davon in den letzten 7 Tagen'"
-                      matTooltip="In den letzten 7 Tagen" matTooltipPosition="above">+{{ daten.nutzungLetzte7Tage }}</span>
-                <span class="badge badge-nutzung" [class.ungenutzt]="!nutzung"
-                      matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
+                <span class="badge-nutzung" [class.ungenutzt]="!nutzung"
+                      matTooltip="So oft kopiert oder geteilt" matTooltipPosition="above">{{ albumNutzung }}</span>
+                <span class="nutzung-zuwachs" *ngIf="daten.nutzungLetzte7Tage">+{{ daten.nutzungLetzte7Tage }} diese Woche</span>
             </span>
+            <span class="karte-datum">{{ daten.erstellt | date: 'dd.MM.yyyy' }}</span>
         </footer>
     </ng-container>
 
-    <ng-container *ngIf="istVoll">
-        <div class="statement" *ngIf="daten.statement as statement">
-            <div class="statement-zeile" role="button" tabindex="0"
-                 [attr.aria-expanded]="statementOffen"
-                 (click)="statementUmschalten()"
-                 (keydown.enter)="statementUmschalten()"
-                 (keydown.space)="$event.preventDefault(); statementUmschalten()">
-                <mat-icon class="statement-icon">subdirectory_arrow_left</mat-icon>
-                <span class="statement-label">Antwort auf:</span>
-                <span class="statement-vorschau" *ngIf="!statementOffen">„{{ statement.text }}“</span>
-                <mat-icon class="statement-pfeil" [class.offen]="statementOffen">expand_more</mat-icon>
-            </div>
-
-            <div class="statement-details" *ngIf="statementOffen" @expandCollapse>
-                <p class="statement-text">„{{ statement.text }}“</p>
-                <div class="statement-werte">
-                    <span class="statement-wert"
-                          matTooltip="Semantische Ähnlichkeit: Wie gut passt diese gefundene Aussage zu deiner Suchanfrage?"
-                          matTooltipPosition="above" matTooltipShowDelay="500" [matTooltipTouchGestures]="'on'">
-                        <mat-icon>manage_search</mat-icon>
-                        Suchübereinstimmung: {{ statement.aehnlichkeit }}%
-                    </span>
-                    <span class="statement-wert"
-                          matTooltip="Antwortqualität: Wie gut ist dieser Beitrag als Antwort auf diese Aussage bewertet?"
-                          matTooltipPosition="above" matTooltipShowDelay="500" [matTooltipTouchGestures]="'on'">
-                        <mat-icon>verified</mat-icon>
-                        Antwortqualität: {{ statement.antwortqualitaet }}%
-                    </span>
-                </div>
-                <p class="statement-hinweis">
-                    <mat-icon>info</mat-icon>
-                    Tippe auf die Werte für mehr Details
-                </p>
-            </div>
-        </div>
-
+    <!-- Der Koerper: Ziel des Aufklapp-Knopfs; eingeklappt leer und verborgen -->
+    <div class="karte-koerper" *ngIf="istVoll" [id]="koerperId" [hidden]="zu">
+    <ng-container *ngIf="!zu">
         <div class="karte-inhalt">
-            <ng-container *ngTemplateOutlet="angaben"></ng-container>
 
-            <mat-button-toggle-group *ngIf="hatKurzOderLang" class="textlaenge"
-                                     aria-label="Fassung"
-                                     [value]="gewaehlteFassung"
-                                     [hideSingleSelectionIndicator]="true"
-                                     (change)="fassungWaehlen($event.value)">
-                <mat-button-toggle value="kurz" *ngIf="daten.extra?.kurz">Kurz</mat-button-toggle>
-                <mat-button-toggle value="mittel">Mittel</mat-button-toggle>
-                <mat-button-toggle value="lang" *ngIf="daten.extra?.lang">Lang</mat-button-toggle>
-            </mat-button-toggle-group>
+            <!-- Reiter mit Zeichenzahl, darunter die Marke wie im Formular (#641); bei nur einer Fassung keine Reiter -->
+            <ng-container *ngIf="hatKurzOderLang">
+                <mat-button-toggle-group class="textlaenge"
+                                         aria-label="Fassung"
+                                         [value]="angezeigteFassung"
+                                         [hideSingleSelectionIndicator]="true"
+                                         (change)="fassungWaehlen($event.value)">
+                    <mat-button-toggle *ngFor="let reiter of fassungsReiter; trackBy: reiterSchluessel" [value]="reiter.fassung"
+                                       [aria-label]="reiter.vorgelesen">
+                        <span aria-hidden="true">{{ reiter.label }}<span class="reiter-zeichen" *ngIf="!schlicht"> · {{ reiter.zeichen }}</span></span>
+                    </mat-button-toggle>
+                </mat-button-toggle-group>
+                <p class="fassung-marke" *ngIf="passtAufX">
+                    <mat-icon class="angabe-icon" aria-hidden="true">check</mat-icon>passt auf Mastodon/Bluesky/X
+                </p>
+            </ng-container>
 
             <!-- Meine Beitraege: Nutzung und Zuwachs der letzten 7 Tage je Fassung -->
             <ul class="nutzung-je-fassung" *ngIf="nutzungJeFassung as zeilen" aria-label="Nutzung je Fassung">
@@ -191,11 +249,12 @@
             <p class="post-herkunft" *ngIf="postHerkunft">{{ postHerkunft }}</p>
 
             <div class="karte-bild" *ngIf="daten.bildUrl">
-                <app-fremdes-bild [src]="daten.bildUrl" [alt]="daten.text || daten.titel || ''"></app-fremdes-bild>
+                <app-fremdes-bild [src]="daten.bildUrl" [alt]="vorschau ? '' : daten.text || daten.titel || ''"></app-fremdes-bild>
             </div>
 
+            <!-- Platzhalter "[Hier …]" als Feld zum Ausfuellen (#640, R38); Antippen oeffnet den Platzhalter-Dialog (P19) -->
             <p #textElement class="karte-text" *ngIf="angezeigterText"
-               [class.aufgeklappt]="textAufgeklappt">{{ angezeigterText }}</p>
+               [class.aufgeklappt]="textAufgeklappt"><ng-container *ngFor="let stueck of textStueckeAnzeige"><mark *ngIf="stueck.luecke; else stueckText" class="vorlagen-luecke" (click)="platzhalterAntippen()">{{ stueck.text }}</mark><ng-template #stueckText>{{ stueck.text }}</ng-template></ng-container></p>
             <button type="button" class="mehr-knopf" *ngIf="textGekuerzt || textAufgeklappt"
                     [attr.aria-expanded]="textAufgeklappt"
                     (click)="textUmschalten()">{{ textAufgeklappt ? 'weniger' : 'mehr' }}</button>
@@ -213,16 +272,18 @@
                 <span>{{ daten.extra?.engagement }}</span>
             </div>
 
-            <div class="karte-quellen" *ngIf="zeigtQuellen">
-                <p class="quellen-leer" *ngIf="!daten.quellen.length">Keine Herkunft hinterlegt</p>
-                <ul *ngIf="daten.quellen.length">
+            <!-- Ohne Herkunft keine Zeile: "Keine Herkunft hinterlegt" las sich wie ein Mangel (#599) -->
+            <div class="karte-quellen" *ngIf="zeigtQuellen && daten.quellen.length">
+                <ul>
                     <li class="quelle" *ngFor="let quelle of daten.quellen; let i = index">
-                        <span class="quelle-icon" aria-hidden="true">📚</span>
-                        <a *ngIf="quelle.url; else ohneAdresse" class="quelle-link" [href]="quelle.url"
-                           target="_blank" rel="noopener noreferrer"
-                           [matTooltip]="quelle.beschreibung || 'Herkunft ' + (i + 1)" matTooltipPosition="above">
-                            {{ quelle.url }}
-                        </a>
+                        <span class="quelle-icon" aria-hidden="true" *ngIf="!schlicht">📚</span>
+                        <!-- Die Domain statt der rohen Adresse (#640, R47); die volle Adresse im Tooltip -->
+                        <ng-container *ngIf="quelle.url; else ohneAdresse">
+                            <span class="quelle-wort">{{ schlicht ? 'Quelle:' : 'Herkunft:' }}</span>
+                            <a class="quelle-link" [href]="quelle.url"
+                               target="_blank" rel="noopener noreferrer"
+                               [matTooltip]="quellenTooltip(quelle)" matTooltipPosition="above">{{ quellenDomain(quelle.url) }}</a>
+                        </ng-container>
                         <ng-template #ohneAdresse>
                             <span class="quelle-link"
                                   [matTooltip]="quelle.beschreibung || 'Herkunft ' + (i + 1)" matTooltipPosition="above">
@@ -235,19 +296,27 @@
         </div>
 
         <footer class="karte-fuss">
-            <!-- Vor dem Kopieren: nicht fuer Kommentarspalten gedacht (#357, Variante D) -->
-            <p class="eigene-leute-hinweis" *ngIf="eigeneLeuteAnzeige">Für die eigenen Leute – nicht für Kommentarspalten</p>
             <app-karten-aktionen
                 [inhaltId]="daten.id"
                 [typ]="daten.typ"
                 [kopierText]="kopierText"
                 [kopierBeschriftung]="kopierBeschriftung"
-                [kopierTextMitHerkunft]="kopierTextMitHerkunft"
+                [kopierKurz]="kopierKurz"
+                [kopierHinweis]="kopierHinweis"
+                [zweiteKopie]="zweiteKopie"
                 [stimme]="daten.stimme"
                 [vorschau]="vorschau"
                 [abstimmenSichtbar]="abstimmenSichtbar"
                 [fassung]="fassung"
                 [ansichtVerlinkt]="ansichtVerlinkt"
+                [teilbar]="teilbar ?? ansichtVerlinkt"
+                [teilenImMenue]="schlicht"
+                [titel]="titelAnzeige"
+                [hilfreich]="guete?.hilfreich ?? null"
+                [nichtHilfreich]="guete?.nichtHilfreich ?? null"
+                [eigeneStimmeImZaehler]="!istEigen"
+                (likeToggled)="gueteNachladen()"
+                (dislikeToggled)="gueteNachladen()"
                 (kopiert)="nutzungHochzaehlen()">
             </app-karten-aktionen>
             <!-- Varianten (#356): Beitraege, die auf diesem beruhen -->
@@ -256,19 +325,35 @@
                (click)="$event.stopPropagation()">
                 <mat-icon aria-hidden="true">call_split</mat-icon>{{ varianten }}
             </a>
-            <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter. -->
-            <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container></p>
+            <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter, dazu die Nutzung (#599).
+                 Schlank (Startseite) ohne Alter. -->
+            <p class="karte-meta" *ngIf="zeigtAutor || zeigtAlter || nutzungInMeta"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}<span *ngIf="autorAbzeichen as abzeichen" class="autor-abzeichen" [attr.title]="abzeichenText(abzeichen)"><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M6 .8l1.5 3.3 3.6.4-2.7 2.4.8 3.6L6 8.7 2.8 10.5l.8-3.6L.9 4.5l3.6-.4z" fill="currentColor"></path></svg><span aria-hidden="true">{{ abzeichen }}</span><span class="cdk-visually-hidden">, {{ abzeichenText(abzeichen) }}</span></span></ng-container><ng-container *ngIf="zeigtAutor && zeigtAlter"> · </ng-container><ng-container *ngIf="zeigtAlter">{{ daten.erstellt | relativeTime }}</ng-container><ng-container *ngIf="nutzungInMeta"><ng-container *ngIf="zeigtAutor || zeigtAlter"> · </ng-container><span class="karte-nutzung" [class.nutzung-animiert]="nutzungAnimiert">{{ nutzungAnzeige }} genutzt</span></ng-container></p>
         </footer>
     </ng-container>
+    </div>
 
     <!-- Am Kommentar (#357), in der vollen und der kompakten Karte: Markierung fuer
          die eigenen Leute und der Stil -->
-    <ng-template #angaben>
+    <!-- Der Stil als Chip (#641): Antippen zeigt, was er bewirkt. In der kompakten Karte,
+         die als Ganzes antippbar ist, nur als Etikett ohne eigenen Knopf. -->
+    <ng-template #angaben let-antippbar="antippbar">
         <p class="karte-angaben" *ngIf="eigeneLeuteAnzeige || stilAnzeige">
             <span class="karte-eigene-leute" *ngIf="eigeneLeuteAnzeige as eigene">
                 <mat-icon class="angabe-icon" aria-hidden="true">groups</mat-icon>{{ eigene }}
             </span>
-            <span class="karte-stil" *ngIf="stilAnzeige as stil"><span class="cdk-visually-hidden">Stil: </span>{{ stil }}</span>
+            <ng-container *ngIf="stilAnzeige as stil">
+                <!-- Wie das Siegel: Antippen oeffnet die Erklaerung, auch am Handy -->
+                <button *ngIf="antippbar; else stilEtikett" type="button" class="karte-stil karte-stil--knopf"
+                        [matMenuTriggerFor]="stilMenue"
+                        [attr.aria-label]="'Stil: ' + stil + ', Erklärung öffnen'"
+                        (click)="$event.stopPropagation()">{{ stil }}<mat-icon class="stil-info" aria-hidden="true">info_outline</mat-icon></button>
+                <mat-menu #stilMenue="matMenu" class="stil-menue">
+                    <div mat-menu-item disableRipple class="stil-erklaerung" (click)="$event.stopPropagation()">{{ stilErklaerung }}</div>
+                </mat-menu>
+                <ng-template #stilEtikett>
+                    <span class="karte-stil" [attr.title]="stilErklaerung"><span class="cdk-visually-hidden">Stil: </span>{{ stil }}</span>
+                </ng-template>
+            </ng-container>
         </p>
     </ng-template>
 </article>

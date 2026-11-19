@@ -1,9 +1,9 @@
 .gegenlesen {
   margin-top: 16px;
   padding: 12px 16px;
-  border: 1px solid var(--border-color, #dcdcdc);
+  border: 1px solid var(--feldrand);
   border-radius: 8px;
-  background: var(--bg-surface, #fff);
+  background: var(--flaeche);
 }
 
 .gegenlesen-kopf {
@@ -25,7 +25,7 @@ h4 {
 .gegenlesen-stand,
 .gegenlesen-fuss {
   margin: 2px 0 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 0.875rem;
 }
 
@@ -42,6 +42,95 @@ h4 {
   margin: 12px 0 0;
 }
 
+.gegenlesen-nur-form {
+  margin: 12px 0 0;
+  color: var(--text-leise);
+  font-size: 0.875rem;
+}
+
+.gegenlesen-fragen-titel {
+  margin: 8px 0 0;
+  font-weight: 600;
+}
+
+.gegenlesen-fragen {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
 .gegenlesen-fuss {
   margin-top: 12px;
+}
+
+/* Kompakt unter dem Textfeld: eine Zeile, aufklappbar, gruen bei „Nichts aufgefallen“ (Nutzerfuehrung 13.11.) */
+.gegenlesen.kompakt {
+  margin-top: 4px;
+  padding: 0;
+}
+
+.gegenlesen-zeile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gegenlesen-zeile app-siegel {
+  width: 28px;
+  flex: none;
+}
+
+.gegenlesen-zeile-text {
+  flex: 1;
+  font-weight: 600;
+}
+
+.gegenlesen-pfeil {
+  flex: none;
+  font-size: 14px;
+  color: var(--text-leise);
+}
+
+.gegenlesen-zeile.gut .gegenlesen-zeile-text {
+  color: var(--akzent-schrift);
+}
+
+.gegenlesen.kompakt .gegenlesen-inhalt,
+.gegenlesen.kompakt .gegenlesen-inhalt-fragen,
+.gegenlesen.kompakt .gegenlesen-fuss {
+  padding: 0 16px;
+}
+
+/* Die Fragen bleiben kompakt sichtbar, auch zugeklappt; der Fuss schliesst offen ab */
+.gegenlesen.kompakt .gegenlesen-inhalt-fragen,
+.gegenlesen.kompakt .gegenlesen-fuss {
+  padding-bottom: 12px;
+}
+
+.gegenlesen.kompakt .gegenlesen-fuss {
+  margin-top: 0;
+}
+
+.gegenlesen.kompakt .gegenlesen-nur-form {
+  margin-top: 4px;
+}
+
+/* Aufgeklappt: Abstand zu den Anmerkungen wie am Desktop */
+.gegenlesen.kompakt .gegenlesen-inhalt:not([hidden]) + .gegenlesen-inhalt-fragen .gegenlesen-nur-form {
+  margin-top: 12px;
+}
+
+.gegenlesen.kompakt .gegenlesen-anmerkungen,
+.gegenlesen.kompakt .gegenlesen-gut {
+  margin-top: 4px;
 }

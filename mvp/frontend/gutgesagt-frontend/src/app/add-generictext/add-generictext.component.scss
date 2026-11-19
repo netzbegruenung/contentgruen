@@ -30,7 +30,7 @@ app-formular-hilfe {
   gap: 8px;
   align-items: flex-start;
   margin: 12px 0 0;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   mat-icon {
     flex: none;
@@ -61,19 +61,19 @@ app-formular-hilfe {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 
   &[disabled] {
-    color: var(--text-secondary);
+    color: var(--text-leise);
     cursor: default;
   }
 }
@@ -82,22 +82,11 @@ app-formular-hilfe {
   margin-top: 4px;
 }
 
-// Unter "+ Herkunft": warum sie sich bei Zahlen lohnt
-.herkunft-anstoss {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
+// Unter dem Herkunftsfeld, solange es leer ist: warum sie sich bei Zahlen lohnt
 .herkunft-satz {
-  margin: 0;
+  margin: -12px 0 0;
   font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.formular-fuss {
-  display: flex;
-  justify-content: flex-end;
+  color: var(--text-leise);
 }
 
 .zuruecksetzen {
@@ -121,9 +110,9 @@ app-formular-hilfe {
 .speicher-fehler {
   margin: 12px 0 0;
   padding: 12px 16px;
-  border-left: 4px solid var(--error-color, #d32f2f);
+  border-left: 4px solid var(--fehler);
   border-radius: 4px;
-  background: rgba(211, 47, 47, 0.08);
+  background: var(--fehler-tint);
 }
 
 // Der Einwurf aus dem Fangkorb ueber dem Formular
@@ -132,7 +121,7 @@ app-formular-hilfe {
   margin-bottom: 16px;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--divider-color);
+  border: 1px solid var(--linie);
 
   @include bp.mobile-only {
     margin: 12px 16px 0;

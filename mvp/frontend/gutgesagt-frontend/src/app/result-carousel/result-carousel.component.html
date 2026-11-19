@@ -12,7 +12,7 @@
         <div class="card-spacing-start"></div>
 
         <div class="result-item-wrapper" *ngFor="let karte of daten; trackBy: nachId">
-            <app-beitragskarte [daten]="karte"></app-beitragskarte>
+            <app-beitragskarte [daten]="karte" [schlank]="schlank"></app-beitragskarte>
         </div>
 
         <div class="card-spacing-end"></div>

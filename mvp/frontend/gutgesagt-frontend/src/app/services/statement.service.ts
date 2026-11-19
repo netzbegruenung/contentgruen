@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { tap, map } from 'rxjs/operators';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, tap, map } from 'rxjs/operators';
 import { ParamMap } from '@angular/router';
 import {
   AussageVorabResponse,
@@ -31,18 +31,12 @@ export const AUSSAGE_MIN_ZEICHEN = 3;
 /** Wie viele vorhandene Aussagen das Antwort-auf-Feld hoechstens vorschlaegt. */
 export const VORSCHLAG_ANZAHL = 3;
 
-/**
- * Ab diesem Aehnlichkeitswert (0-1) gilt eine Aussage als Vorschlag. Gemessen fuer
- * intfloat/multilingual-e5-base (passende Aussagen 0,892-0,940, unpassende meist
- * darunter); bei einem Modellwechsel neu messen.
- */
-export const VORSCHLAG_MIN_AEHNLICHKEIT = 0.885;
-
 @Injectable({
   providedIn: 'root'
 })
 export class StatementService {
   private searchStatementsApiUrl = `${environment.baseUrl}/api/v1/statement/searchStatements`;
+  private aehnlicheApiUrl = `${environment.baseUrl}/api/v1/statement/aehnliche`;
   private getStatementByIdApiUrl = `${environment.baseUrl}/api/v1/statement/getById`;
   private unbeantwortetApiUrl = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
   private vorabApiUrl = `${environment.baseUrl}/api/v1/statement/vorab`;
@@ -61,7 +55,7 @@ export class StatementService {
   searchStatements(
     queryText: string,
     limit: number = 10,
-    filter: Pick<SearchStatementByTextRequest, 'nur_kuratiert' | 'min_similarity'> = {},
+    filter: Pick<SearchStatementByTextRequest, 'nur_kuratiert' | 'min_similarity' | 'vorschlaege'> = {},
   ): Observable<StatementSearchResponse> {
     const request: SearchStatementByTextRequest = {
       query_text: queryText,
@@ -79,13 +73,26 @@ export class StatementService {
 
   /**
    * Vorhandene Aussagen, die zum Getippten passen - fuer die Vorschlaege im
-   * Antwort-auf-Feld. Nur gepflegte Aussagen und nur hinreichend aehnliche.
+   * Antwort-auf-Feld. Nur gepflegte Aussagen, nur hinreichend aehnliche und keine,
+   * die dem Getippten widersprechen; Schwelle und Widerspruch entscheidet der
+   * Suchdienst (aussage_vorschlag_schwelle, #387).
    */
   aussageVorschlaege(text: string): Observable<StatementSearchResult[]> {
     return this.searchStatements(text, VORSCHLAG_ANZAHL, {
       nur_kuratiert: true,
-      min_similarity: VORSCHLAG_MIN_AEHNLICHKEIT,
+      vorschlaege: true,
     }).pipe(map((antwort) => antwort.results));
+  }
+
+  /**
+   * Aehnliche Aussagen fuer "Nicht dabei?" auf der Ergebnisseite (#642): dieselbe
+   * Auswahl wie aussageVorschlaege, aber auch fuer Besucher erreichbar (eigener,
+   * oeffentlicher Endpunkt mit Rate-Limit je Adresse).
+   */
+  aehnlicheAussagen(text: string): Observable<StatementSearchResult[]> {
+    return this.http
+      .post<StatementSearchResponse>(this.aehnlicheApiUrl, { query_text: text, limit: VORSCHLAG_ANZAHL }, nurLesend())
+      .pipe(map((antwort) => antwort.results));
   }
 
   getStatementById(statementId: string): Observable<GetStatementByIdResponse> {
@@ -121,15 +128,27 @@ export class StatementService {
    * Mit ?aussage=<id> wird sie geladen. Mit ?searchQuery= steht nur ihr Text fest:
    * Die ID bleibt leer, und angelegt wird nichts - das geschieht erst beim
    * Speichern, im Backend mit der Speicher-Anfrage. Ohne beides ist das Ergebnis leer.
+   *
+   * Stehen beide da (aussageParameterMitText) und kennt getById die ID nicht (404),
+   * gilt der Text: Eine unbeantwortete Suchanfrage unter der Schwelle oder ohne
+   * Freigabe (Vormoderation) liefert das Backend Nicht-Admins nicht aus (#436). Beim
+   * Speichern haengt der Beitrag dann an einer eigenen Aussage mit diesem Text; die
+   * verborgene Suchanfrage findet das Backend dabei nicht als dieselbe.
    */
   aussageAusAdresse(params: ParamMap): Observable<GetStatementByIdResponse> {
     const aussageId = params.get(AUSSAGE_PARAM);
-    if (aussageId) {
-      return this.getStatementById(aussageId);
-    }
     // Wie im Backend (statement_text) hoechstens AUSSAGE_MAX_ZEICHEN - eine lange
     // Suchanfrage wuerde sonst beim Speichern abgelehnt.
     const text = (params.get(SUCHTEXT_PARAM)?.trim() ?? '').slice(0, AUSSAGE_MAX_ZEICHEN).trim();
+    if (aussageId) {
+      return this.getStatementById(aussageId).pipe(
+        catchError((error: unknown) =>
+          error instanceof HttpErrorResponse && error.status === 404 && text
+            ? of({ statement_id: '', statement_text: text })
+            : throwError(() => error),
+        ),
+      );
+    }
     return of({ statement_id: '', statement_text: text });
   }
 }

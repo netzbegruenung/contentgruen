@@ -1,47 +1,24 @@
 .einleitung,
 .hinweis {
-  color: var(--text-secondary);
-}
-
-.aussagen {
-  list-style: none;
-  margin: var(--spacing-md) 0;
-  padding: 0;
-}
-
-.aussage {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--disabled-bg, #f0f0f0);
-}
-
-.aussage-text {
-  margin: 0 0 8px;
-  font-weight: 500;
-}
-
-.aussage-fuss {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.gesucht {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.selbst-beantworten {
-  margin-left: auto;
+  color: var(--text-leise);
 }
 
 .vorab {
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-lg, 24px);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--mulde);
 }
 
-.vorab h2 {
+.vorab-titel {
   font-size: 18px;
+  font-weight: 600;
+  color: var(--akzent-schrift);
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.vorab[open] .vorab-titel {
+  margin-bottom: 8px;
 }
 
 .vorab-feld {
@@ -75,16 +52,17 @@
   padding: 2px 10px;
   border-radius: 12px;
   background: var(--accent-light);
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .themen-umschalter {
+  min-height: 24px; /* Zielgroesse nach WCAG 2.5.8 */
   border: none;
   background: none;
   padding: 2px 0;
   font: inherit;
   font-size: 13px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-decoration: underline;
   cursor: pointer;
 }

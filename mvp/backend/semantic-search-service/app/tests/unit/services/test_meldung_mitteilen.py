@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from domain.models.meldung import MeldungErgebnis
 from domain.models.meldung import MelderAdresse, MelderAngaben
 from infrastructure.mail.versand import Mail, MailNichtVerschickt
 from repositories.content_report_repository import ContentReportRepository
@@ -120,14 +121,16 @@ class TestEingangsbestaetigung:
     async def test_mit_email_geht_eine_bestaetigung_an_die_adresse(
         self, service, postausgang
     ):
-        assert await _melden(service) is True
+        assert await _melden(service)
 
         [mail] = postausgang.an(ANNA)
         assert "eingegangen" in mail.betreff
         assert "Wärmepumpen lohnen sich auch im Altbau" in mail.text
 
     async def test_ohne_email_keine_mail(self, service, postausgang):
-        assert await _melden(service, email=None) is True
+        assert await _melden(service, email=None) == MeldungErgebnis(
+            erfolg=True, neu=True, mit_email=False
+        )
 
         assert postausgang.mails == []
 
@@ -136,7 +139,9 @@ class TestEingangsbestaetigung:
     ):
         report_repo.has_report_from_user.return_value = True
 
-        assert await _melden(service, user_id="person-1") is True
+        assert await _melden(service, user_id="person-1") == MeldungErgebnis(
+            erfolg=True, neu=False, mit_email=False
+        )
 
         assert postausgang.mails == []
 
@@ -146,7 +151,7 @@ class TestEingangsbestaetigung:
         postausgang.kaputt = True
 
         with caplog.at_level(logging.DEBUG):
-            assert await _melden(service) is True
+            assert await _melden(service)
 
         report_repo.create_report.assert_called_once()
         assert ANNA not in caplog.text
@@ -167,7 +172,7 @@ class TestEingangsbestaetigung:
 
         try:
             with caplog.at_level(logging.WARNING):
-                assert await _melden(service) is True
+                assert await _melden(service)
             assert "deadline" in caplog.text
             assert ANNA not in caplog.text
         finally:
@@ -357,5 +362,5 @@ class TestEntscheidungMitteilen:
             mitteilung=MeldungMitteilung(None),
         )
 
-        assert await _melden(service) is True
+        assert await _melden(service)
         assert await service.dismiss_report(str(uuid.uuid4()), "admin-1") is True

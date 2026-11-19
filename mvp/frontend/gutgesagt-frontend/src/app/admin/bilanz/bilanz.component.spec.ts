@@ -140,7 +140,7 @@ describe('BilanzComponent', () => {
       .flush('kaputt', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
-    expect(element().textContent).toContain('konnte nicht geladen werden');
+    expect(element().textContent).toContain('gerade nicht erreichbar, neuer Versuch in Kürze');
     expect(zeilen()).toEqual([]);
   });
 
@@ -155,6 +155,6 @@ describe('BilanzComponent', () => {
     http.expectOne(URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
-    expect(element().textContent).toContain('konnte nicht geladen werden');
+    expect(element().textContent).toContain('gerade nicht erreichbar, neuer Versuch in Kürze');
   });
 });

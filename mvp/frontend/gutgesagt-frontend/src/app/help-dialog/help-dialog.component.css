@@ -12,7 +12,7 @@
     justify-content: space-between;
     gap: var(--spacing-sm);
     padding: 20px 12px 16px 24px;
-    border-bottom: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--linie);
 }
 
 .hilfe-kopf h2 {
@@ -29,7 +29,7 @@
 .hilfe-schliessen {
     flex-shrink: 0;
     min-height: 44px;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .hilfe-inhalt {
@@ -46,7 +46,7 @@
     gap: 16px;
     padding: 14px 20px;
     margin-bottom: 16px;
-    background: var(--rundgang-gelb);
+    background: var(--kopf);
     border-radius: 12px;
 }
 
@@ -67,6 +67,20 @@
     gap: 8px;
 }
 
+/* Dunkelmodus: Kasten bleibt Schiefer (--kopf = --kopf), hervorgehoben wird
+   er gelb über die Band-Tokens wie das Such-Band (Wunsch Sebastian 17.11.). Auf #18212a:
+   Überschrift #e2e88a 12,5:1; Knopf: Schrift #121312 auf #e2e88a 14,3:1, Fläche zum
+   Kasten 12,5:1, Fokusring #4fc3f7 8,1:1. */
+:host-context(html[data-theme='dark']) .rundgang-kasten h3 {
+    color: var(--band-akzent-schrift);
+}
+
+:host-context(html[data-theme='dark']) .rundgang-knopf.umriss.rundgang-starten {
+    background: var(--knopf-auf-band-grund);
+    color: var(--knopf-auf-band-schrift);
+    border-color: var(--knopf-auf-band-grund);
+}
+
 @media (max-width: 599px) {
     .rundgang-kasten {
         align-items: flex-start;
@@ -75,10 +89,55 @@
 
 /* Zwischenueberschriften eine Stufe kleiner, damit die Seitenleiste ruhig bleibt */
 .hilfe-inhalt h3 {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 24px;
     line-height: 1.15;
     margin: 24px 0 8px;
+}
+
+/* Unterpunkte von „Beitragen“ (Beitragstypen, Gut schreiben) eine Stufe darunter */
+.hilfe-inhalt h4 {
+    color: var(--akzent-schrift);
+    font-size: 19px;
+    line-height: 1.2;
+    margin: 18px 0 6px;
+}
+
+/* Links aus der Hilfe auf die Über-Seite: eigene Zeile, 44 px Zielgröße (Touch) */
+.hilfe-siegel-link,
+.hilfe-technik-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    /* Mit Klasse greift die globale Regel nicht: im Dunkeln unterstrichen wie andere Links (#588) */
+    text-decoration: var(--link-unterstrich);
+}
+
+.hilfe-feedback-knopf mat-icon {
+    margin-right: 8px;
+}
+
+/* Als App aufs Handy (18.11.): je Gerät eine fette Zeile, darunter der Schritt */
+.hilfe-als-app-schritte dt {
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.hilfe-als-app-schritte dd {
+    margin: 2px 0 0;
+}
+
+.hilfe-als-app .teilen-symbol {
+    vertical-align: -3px;
+}
+
+.hilfe-fragen dt {
+    font-weight: 600;
+    margin-top: 12px;
+}
+
+.hilfe-fragen dd {
+    margin: 4px 0 0;
 }
 
 @media (max-width: 599px) {
@@ -98,14 +157,14 @@
 .about-link-section {
     margin-top: 30px;
     padding: 20px;
-    background-color: #f5f5f5;
+    background-color: var(--mulde);
     border-radius: 8px;
     text-align: center;
 }
 
 .about-link-section p {
     margin-bottom: 15px;
-    color: #666;
+    color: var(--text-leise);
 }
 
 .about-link-section a {
@@ -115,4 +174,32 @@
 
 .about-link-section mat-icon {
     margin-right: 8px;
+}
+
+/* Drei Beispielsiegel neben dem Link zum Abschnitt „Das Siegel“ (Designrunde 17.11.) */
+.hilfe-siegel-beispiele {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 8px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.hilfe-siegel-beispiele .siegel-reihe {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.hilfe-siegel-beispiele app-siegel {
+    width: 36px;
+}
+
+.hilfe-siegel-beispiele .hilfe-siegel-link {
+    text-decoration: underline;
+}
+
+.hilfe-siegel-beispiele:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
 }

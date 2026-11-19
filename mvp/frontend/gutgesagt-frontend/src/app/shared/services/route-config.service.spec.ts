@@ -10,6 +10,12 @@ describe('RouteConfigService', () => {
     service = TestBed.inject(RouteConfigService);
   });
 
+  it('nennt Anmeldeauswahl und Direktanmeldung "Anmelden" (#645)', () => {
+    expect(service.getRouteConfig('/login').pageTitle).toBe('Anmelden');
+    expect(service.getRouteConfig('/login/managed').pageTitle).toBe('Anmelden');
+    expect(service.getRouteConfig('/login/managed?returnUrl=%2Fcontribute').pageTitle).toBe('Anmelden');
+  });
+
   it('nennt die Destillier-Ansicht im Schritt Typwahl "Ausformulieren"', () => {
     expect(service.getRouteConfig('/destillieren/id-1').pageTitle).toBe('Destillieren');
     expect(service.getRouteConfig('/destillieren/id-1?schritt=typwahl').pageTitle).toBe(
@@ -55,6 +61,7 @@ describe('RouteConfigService', () => {
       '/impressum': 'Impressum',
       '/datenschutz': 'Datenschutz',
       '/nutzungsbedingungen': 'Nutzungsbedingungen',
+      '/einwilligung': 'Datenschutz-Einstellungen',
       '/about': 'Über Gut gesagt',
       '/einladung?code=abc': 'Einladung',
       '/admin/dashboard': 'Admin',
@@ -63,6 +70,12 @@ describe('RouteConfigService', () => {
     for (const [pfad, erwartet] of Object.entries(titel)) {
       expect(service.getRouteConfig(pfad).pageTitle).withContext(pfad).toBe(erwartet);
     }
+  });
+
+  // UX-Review B18: Fragt die App nach der Einwilligung (mit Rueckweg), heisst die Seite so
+  it('nennt /einwilligung mit Rueckweg "Einwilligung", aus dem Profilmenue "Datenschutz-Einstellungen"', () => {
+    expect(service.getRouteConfig('/einwilligung?returnUrl=%2Feinwerfen').pageTitle).toBe('Einwilligung');
+    expect(service.getRouteConfig('/einwilligung').pageTitle).toBe('Datenschutz-Einstellungen');
   });
 
   it('nennt die eigene Adresse eines Beitrags "Beitrag", mit Pfeil (#300)', () => {

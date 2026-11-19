@@ -1,50 +1,54 @@
 // Import shared hero styles
 @use '../shared/styles/hero-styles' as *;
 
+// Abstaende der Startseite aus der Abstandsskala (--spacing-*), mobil je eine Stufe kleiner.
+// Nach #694 stand weniger Text da und alles wirkte gedraengt (Designrunde 17.11.).
+// Grenze mobil: Bei 360 x 740 bleiben Suchfeld und Suchen-Knopf ohne Scrollen sichtbar.
+
 // Titel und Untertitel auf Weiss, mittig begrenzt
 .start-hero {
   max-width: 720px;
   margin: 0 auto;
-  padding: 20px var(--page-margin) 0;
+  padding: var(--spacing-xl) var(--page-margin) 0;
   text-align: center;
 
   @media (max-width: 599px) {
-    padding: 12px var(--page-margin-mobile) 0;
+    padding: var(--spacing-lg) var(--page-margin-mobile) 0;
   }
 }
 
-// Markenname als kleine Zeile ueber der Ueberschrift
-.hero-eyebrow {
-  margin-bottom: 4px;
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
-  text-align: center;
-  text-transform: uppercase;
-  color: var(--primary-dark);
+// Mehr Abstand zwischen Claim und Untertitel; nur hier, die geteilten _hero-styles bleiben
+.start-hero .hero-title {
+  margin-bottom: var(--spacing-md);
 }
 
-// Claim und Untertitel mobil; nur hier, die geteilten _hero-styles bleiben
+.start-hero .hero-subtitle {
+  margin: 0;
+}
+
+// Claim und Untertitel mobil
 @media (max-width: 599px) {
   .start-hero .hero-title {
+    margin-bottom: var(--spacing-sm);
     font-size: 34px;
   }
 
   .start-hero .hero-subtitle {
-    margin: 8px 0 16px;
     font-size: 15px;
     font-weight: normal;
-    color: var(--text-secondary, #555);
+    color: var(--text-leise);
   }
 }
 
-// Schmales gelbes Band: Erklaerzeile, Suchfeld, Knopf, Beispielzeile
+// Gelbes Band: Suchfeld, Knopf, Hinweis, Beispielzeile
 .such-band {
-  margin-top: 16px;
-  padding: 16px;
-  background-color: var(--such-band);
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-md);
+  background-color: var(--kopf);
 
   @media (max-width: 599px) {
-    margin-top: 12px;
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-lg) var(--spacing-md);
   }
 }
 
@@ -54,38 +58,21 @@
   text-align: center;
 }
 
-.such-erklaerung {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: normal;
-  color: var(--primary-dark);
-}
-
 .start-suche {
   display: block;
-  margin-top: 8px;
+  margin-top: 4px;
   text-align: left;
 }
 
-.beispiel-zeile {
-  margin: 8px 0 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary, #555);
+// Abstand vom gelben Band zum Willkommen. Der Rand am Element faellt mit dem Rand des
+// Bandes darin zusammen (der groessere gilt); ist das Willkommen ausgeblendet, faellt er
+// mit dem Rand der Kacheln zusammen, es entsteht keine Luecke.
+app-rundgang-band {
+  display: block;
+  margin-top: var(--spacing-lg);
 
   @media (max-width: 599px) {
-    font-size: 0.85rem;
-    margin-top: 4px;
-  }
-}
-
-.beispiel-link {
-  color: var(--primary-main, #008939);
-  text-decoration: underline;
-  cursor: pointer;
-  font-weight: 500;
-
-  &:hover {
-    color: var(--primary-dark);
+    margin-top: var(--spacing-md);
   }
 }
 
@@ -93,53 +80,78 @@
 .start-kacheln {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  max-width: 720px;
-  margin: 24px auto var(--section-gap);
-  padding: 0 var(--page-margin);
+  gap: var(--spacing-md);
+  // Kanten wie das Suchfeld im Band darueber: 16 px Einzug, ab 752 px die mittige 720er-Spalte
+  margin: var(--spacing-xl) max(var(--spacing-md), calc((100% - var(--lesespalte)) / 2)) var(--spacing-xxl);
 
   @media (max-width: 599px) {
     grid-template-columns: 1fr;
-    gap: 12px;
-    margin-top: 16px;
-    padding: 0 var(--page-margin-mobile);
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
   }
 }
 
-// Weiss mit tannengruenem Rand; bewusst ohne Typfarben
+// Tonal wie ein zweiter Knopf: im Hellen zartes Klee-Gruen ohne sichtbaren Rand, Schrift Tanne
+// (Tokens --mitmachen-kachel-*, Designrunde 17.11.); ohne Token weiss mit tannengruenem Rand.
+// Bewusst ohne Typfarben. Gross wie ein Knopf: 72 px hoch, mobil 64 px.
 .start-kachel {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  border: 2px solid var(--primary-dark);
+  gap: var(--spacing-md);
+  box-sizing: border-box;
+  min-height: 72px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 2px solid var(--kachel-rand, var(--linie-tanne));
   border-radius: 12px;
-  background: #fff;
-  color: var(--text-primary);
+  background: var(--karte-kommentar, var(--flaeche));
+  color: var(--text);
   text-decoration: none;
-  transition: box-shadow var(--transition-fast, 0.2s);
+  // Als Knopf erkennbar: leicht erhoben in Ruhe, beim Zeigen hoeher und eine Spur dunkler,
+  // beim Druecken flach (Designrunde 17.11.)
+  box-shadow: var(--elevation-2, 0 2px 4px rgba(0, 0, 0, 0.15));
+  transition: box-shadow var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s),
+    background-color var(--transition-fast, 0.2s);
 
   &:hover,
   &:focus-visible {
-    box-shadow: var(--elevation-2, 0 2px 8px rgba(0, 0, 0, 0.15));
+    box-shadow: var(--elevation-6, 0 4px 12px rgba(0, 0, 0, 0.2));
+    transform: translateY(-2px);
+    background: color-mix(in srgb, var(--karte-kommentar, var(--flaeche)) 92%, var(--akzent-tanne, #00563a));
+  }
+
+  &:active {
+    box-shadow: var(--elevation-1, 0 1px 2px rgba(0, 0, 0, 0.15));
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover,
+    &:focus-visible {
+      transform: none;
+    }
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 
   @media (max-width: 599px) {
-    padding: 12px 16px;
+    gap: var(--spacing-md);
+    min-height: 64px;
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 }
 
 .kachel-icon {
-  font-size: 32px;
+  font-size: 36px;
   line-height: 1;
 
   @media (max-width: 599px) {
-    font-size: 28px;
+    font-size: 32px;
   }
 }
 
@@ -149,29 +161,68 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  // Fuer die Marke "mit Konto": Beide Kacheln sind gleich breit, die Abfrage greift in beiden.
+  container-type: inline-size;
 }
 
 .kachel-titel {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
-  color: var(--primary-dark);
+  line-height: 1.2;
+  color: var(--akzent-schrift);
 
   @media (max-width: 599px) {
-    font-size: 16px;
+    font-size: 20px;
   }
 }
 
+// Kurzer Halbsatz unter dem Titel: was dahinter passiert (Persona-Runde 18.11.)
 .kachel-satz {
-  font-size: 14px;
-  line-height: 1.4;
-  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--text);
 
   @media (max-width: 599px) {
-    font-size: 13px;
+    font-size: 14px;
+  }
+}
+
+// Anonym: kleiner Hinweis neben dem Titel, dass es ein Konto braucht (#644). Reicht der Platz
+// neben dem laengeren Titel ("Einwerfen") nicht, rutscht er in beiden Kacheln unter den
+// Titel, nicht nur in einer (Designrunde 12.11.). Die Schwellen sind die Breite von
+// "Einwerfen" samt Marke, je Schriftgroesse des Titels (22/20 px: rund 167/152 px), mit etwas Luft.
+.kachel-konto {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--mitmachen-kachel-marke, var(--bg-main));
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-leise);
+  vertical-align: middle;
+}
+
+@container (max-width: 175.98px) {
+  .kachel-konto {
+    display: table;
+    margin: 2px 0 0;
+  }
+}
+
+@media (max-width: 599px) {
+  @container (min-width: 160px) {
+    .kachel-konto {
+      display: inline-block;
+      margin: 0 0 0 6px;
+    }
   }
 }
 
 .kachel-pfeil {
   flex-shrink: 0;
-  color: var(--primary-dark);
+  width: 28px;
+  height: 28px;
+  font-size: 28px;
+  color: var(--akzent-schrift);
 }

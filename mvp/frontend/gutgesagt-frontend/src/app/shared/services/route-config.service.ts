@@ -95,18 +95,20 @@ export class RouteConfigService {
           showContributeButton: false
         };
 
+      // Auswahl und Direktanmeldung heissen beide "Anmelden" (#645, vorher "Gut gesagt – Login")
       case ROUTES.LOGIN:
-      case '/login':
       case '/login-selector':
+      case '/login/managed':
         return {
           pageTitle: PAGE_TITLES.LOGIN,
           showBackButton: true,
           showContributeButton: false
         };
 
-      case '/login/managed':
+      // Vorschau fuer Besucher: Uebersicht oder Rundgang Selbst beitragen ohne Konto
+      case '/mit-konto':
         return {
-          pageTitle: 'Gut gesagt – Login',
+          pageTitle: queryParams.get('ansicht') === 'rundgang' ? PAGE_TITLES.MIT_KONTO_RUNDGANG : PAGE_TITLES.MIT_KONTO,
           showBackButton: true,
           showContributeButton: false
         };
@@ -118,6 +120,13 @@ export class RouteConfigService {
         return { ...defaultConfig, pageTitle: PAGE_TITLES.DATENSCHUTZ };
       case '/nutzungsbedingungen':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.NUTZUNGSBEDINGUNGEN };
+      // Fragt die App (erstes Anmelden, Hinweis beim Beitragen), steht ein Rueckweg in
+      // der Adresse: dann "Einwilligung"; aus dem Profilmenue "Datenschutz-Einstellungen".
+      case '/einwilligung':
+        return {
+          ...defaultConfig,
+          pageTitle: queryParams.has('returnUrl') ? PAGE_TITLES.EINWILLIGUNG_FRAGE : PAGE_TITLES.EINWILLIGUNG,
+        };
       case '/about':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.UEBER };
       case '/einladung':

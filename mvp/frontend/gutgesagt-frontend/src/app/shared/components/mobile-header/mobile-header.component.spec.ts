@@ -12,7 +12,7 @@ describe('MobileHeaderComponent', () => {
   let navigation: jasmine.SpyObj<NavigationService>;
 
   beforeEach(async () => {
-    navigation = jasmine.createSpyObj('NavigationService', ['goBack']);
+    navigation = jasmine.createSpyObj('NavigationService', ['goBack', 'navigateHome']);
 
     await TestBed.configureTestingModule({
       imports: [MobileHeaderComponent],
@@ -20,6 +20,7 @@ describe('MobileHeaderComponent', () => {
         provideRouter([
           { path: 'search', component: LeerComponent },
           { path: 'fangkorb', component: LeerComponent },
+          { path: 'login', component: LeerComponent },
           { path: 'workflow/add-commentary', component: LeerComponent },
         ]),
         { provide: NavigationService, useValue: navigation },
@@ -43,8 +44,8 @@ describe('MobileHeaderComponent', () => {
 
   /**
    * Mobil steht im Kopf der Name der aktuellen Seite, nicht die Marke - deshalb
-   * ist er kein Link. Zur Startseite fuehrt hier der erste Menueeintrag; den
-   * Titel-Link gibt es nur im Desktop-Kopf, wo "Gut gesagt" steht.
+   * ist er kein Link. Zur Startseite fuehren das Logo links und der erste
+   * Menueeintrag (#620).
    */
   it('laesst den Titel reinen Text, auch abseits der Startseite', fakeAsync(() => {
     oeffnen('/fangkorb');
@@ -53,13 +54,24 @@ describe('MobileHeaderComponent', () => {
     expect(titel().textContent!.trim()).toBe('Fangkorb');
   }));
 
-  it('zeigt ohne Pfeil links das Logo, als Bild ohne eigenen Namen (#416)', fakeAsync(() => {
+  it('zeigt ohne Pfeil links das Logo als Link "Startseite", das Bild ohne eigenen Namen (#416, #620)', fakeAsync(() => {
     oeffnen('/search');
 
-    const logo: HTMLImageElement = fixture.nativeElement.querySelector('.mobile-header-left img.kopf-logo');
-    expect(logo).not.toBeNull();
-    expect(logo.getAttribute('src')).toBe('marke/logo.svg');
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.mobile-header-left a.logo-link');
+    expect(link.getAttribute('aria-label')).toBe('Startseite');
+    expect(link.getAttribute('href')).toBe('/');
+    const logo = link.querySelector('img.kopf-logo') as HTMLImageElement;
+    expect(logo.getAttribute('src')).toBe('marke/logo-v2.svg');
     expect(logo.getAttribute('alt')).toBe('');
+  }));
+
+  it('fuehrt mit dem Logo ueber den NavigationService zur Startseite', fakeAsync(() => {
+    oeffnen('/search');
+    navigation.navigateHome.and.resolveTo();
+
+    fixture.nativeElement.querySelector('a.logo-link').click();
+
+    expect(navigation.navigateHome).toHaveBeenCalledTimes(1);
   }));
 
   it('zeigt mit Pfeil kein Logo, der Pfeil steht an seiner Stelle', fakeAsync(() => {
@@ -83,6 +95,60 @@ describe('MobileHeaderComponent', () => {
     expect(titel().querySelector('a')).toBeNull();
     expect(titel().textContent!.trim()).toBe('Gut gesagt');
   }));
+
+  it('zeigt am Beitragen-Knopf einen Neu-Punkt, solange Mitmachen offen ist (#587)', () => {
+    const komponente = fixture.componentInstance;
+    komponente.userInfo = { isAuthenticated: true, userId: 'u1', userName: 'Kim', claims: null };
+    komponente.showContributeButton = true;
+    komponente.beitragenNeu = true;
+    fixture.detectChanges();
+    const knopf: HTMLElement = fixture.nativeElement.querySelector('.contribute-button');
+    expect(knopf.querySelector('.neu-punkt')).not.toBeNull();
+    expect(knopf.getAttribute('aria-label')).toBe('Beitragen');
+
+    komponente.beitragenNeu = false;
+    fixture.detectChanges();
+    expect(knopf.querySelector('.neu-punkt')).toBeNull();
+    expect(knopf.getAttribute('aria-label')).toBe('Beitragen');
+  });
+
+  // R58 (#644): Anonym wirkte der graue Avatar wie ein Konto, "+" fuehrte nur zur Anmeldung
+  it('zeigt anonym einen Text-Knopf "Anmelden" statt Avatar und ohne "+"', () => {
+    const komponente = fixture.componentInstance;
+    komponente.userInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
+    komponente.showContributeButton = true;
+    fixture.detectChanges();
+    const anmelden = spyOn(komponente.login, 'emit');
+
+    const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.anmelden-knopf');
+    expect(knopf.textContent!.trim()).toBe('Anmelden');
+    expect(fixture.nativeElement.querySelector('.mobile-header-avatar-container')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.contribute-button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.menu-button')).not.toBeNull();
+
+    knopf.click();
+    expect(anmelden).toHaveBeenCalled();
+  });
+
+  it('zeigt auf der Anmeldeseite keinen Anmelden-Knopf im Kopf', fakeAsync(() => {
+    fixture.componentInstance.userInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
+    oeffnen('/login');
+    expect(fixture.nativeElement.querySelector('.anmelden-knopf')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.mobile-header-avatar-container')).toBeNull();
+  }));
+
+  it('zeigt angemeldet Avatar und "+", keinen Anmelden-Knopf', () => {
+    const komponente = fixture.componentInstance;
+    komponente.userInfo = { isAuthenticated: true, userId: 'u1', userName: 'Kim', claims: null };
+    komponente.showContributeButton = true;
+    fixture.detectChanges();
+    const menue = spyOn(komponente.openMenu, 'emit');
+
+    expect(fixture.nativeElement.querySelector('.anmelden-knopf')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.contribute-button')).not.toBeNull();
+    (fixture.nativeElement.querySelector('.mobile-header-avatar-container') as HTMLButtonElement).click();
+    expect(menue).toHaveBeenCalled();
+  });
 
   it('gibt den Pfeil an den NavigationService weiter', fakeAsync(() => {
     oeffnen('/fangkorb');
@@ -149,6 +215,24 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
       expect(rechteck('.mobile-header-title').right).toBeLessThanOrEqual(rechteck('.mobile-header-actions').left);
     });
   }
+
+  it('zeigt anonym "Anmelden" und Menue vollstaendig neben einem langen Titel (#644)', () => {
+    const komponente = fixture.componentInstance;
+    fixture.detectChanges();
+    komponente.userInfo = { isAuthenticated: false } as any;
+    komponente.pageTitle = 'Hier fehlt eine Antwort';
+    komponente.showBackButton = true;
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    const kopf = rechteck('.mobile-header');
+
+    for (const selektor of ['.anmelden-knopf', '.menu-button']) {
+      const r = rechteck(selektor);
+      expect(r.width).withContext(`${selektor} Breite`).toBeGreaterThan(0);
+      expect(r.right).withContext(`${selektor} rechts`).toBeLessThanOrEqual(kopf.right);
+    }
+    expect(rechteck('.mobile-header-title').right).toBeLessThanOrEqual(rechteck('.mobile-header-actions').left);
+  });
 
   // A8 aus dem Design-Audit (#512): "Suchergebnisse" und "Hier fehlt eine Antwort"
   // waren abgeschnitten. Lange Titel werden kleiner und duerfen zweizeilig stehen.

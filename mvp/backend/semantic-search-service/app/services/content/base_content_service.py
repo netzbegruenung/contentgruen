@@ -1,6 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Generic
+from typing import Any, Callable, Dict, List, Optional, Sequence, Type, TypeVar, Generic
 import uuid
 import logging
 
@@ -37,6 +37,20 @@ class Dublettenpruefung:
 
     vorhanden: Optional[BaseContentSearchResult]
     aehnlichster: Optional[BaseContentSearchResult]
+
+
+def dublette_nach_schwelle(
+    text: str, treffer: Sequence[BaseContentSearchResult], schwelle: float
+) -> Dublettenpruefung:
+    """Der erste Treffer, der normalisiert gleich ist oder die Schwelle erreicht."""
+    normalform = text_normalisiert(text)
+    aehnlichster = treffer[0] if treffer else None
+    for kandidat in treffer:
+        if ist_dasselbe(
+            normalform, text_normalisiert(kandidat.text), kandidat.score, schwelle
+        ):
+            return Dublettenpruefung(vorhanden=kandidat, aehnlichster=aehnlichster)
+    return Dublettenpruefung(vorhanden=None, aehnlichster=aehnlichster)
 
 
 TRepository = TypeVar("TRepository", bound=IBaseContentRepository)
@@ -113,6 +127,43 @@ class BaseContentService(
         repositories = [service._repository for service in services]
         return await type(repositories[0]).search_batch(repositories, query_text, limit)
 
+    async def _dublettenkandidaten(
+        self,
+        text: str,
+        praefix: str,
+        ausschliessen: Optional[Callable[[BaseContentSearchResult], bool]] = None,
+    ) -> tuple[Optional[BaseContentSearchResult], List[BaseContentSearchResult]]:
+        """
+        Die Kandidaten der Dublettenpruefung: (normalisiert gleicher Eintrag aus dem
+        Keyword-Index oder None, sichtbare Vektortreffer nach Score). Wie in der Suche
+        zaehlen nur sichtbare Eintraege; der Text geht wie in der Suche unveraendert in
+        die Einbettung (#321). Ist der erste Wert gesetzt, ist die Liste leer.
+        Eintraege, fuer die ausschliessen wahr ist, sind keine Kandidaten
+        (Vormoderation, StatementService.add_statement).
+        """
+        normalform = text_normalisiert(text)
+        if normalform:
+            if ausschliessen is None:
+                gleich = await self._repository.finde_normalisiert_gleich(normalform)
+            else:
+                gleich = await self._repository.finde_normalisiert_gleich(
+                    normalform, ausschliessen=ausschliessen
+                )
+            if gleich is not None:
+                return gleich, []
+
+        treffer = await self._repository.search(
+            text, DUBLETTEN_KANDIDATEN, praefix=praefix
+        )
+        # search() liefert nur sichtbare; ein gesperrter Treffer, der doch
+        # durchrutscht, darf nie wiederverwendet werden.
+        return None, [
+            k
+            for k in treffer
+            if k.status == ContentStatus.VISIBLE
+            and (ausschliessen is None or not ausschliessen(k))
+        ]
+
     async def _vorhandenen_finden(
         self, text: str, schwelle: float, praefix: str
     ) -> Dublettenpruefung:
@@ -121,29 +172,12 @@ class BaseContentService(
 
         Normalisiert gleicher Text zaehlt immer (erst per Keyword-Index, dann unter
         den Vektortreffern fuer Altbestand ohne Feld), sonst der beste Vektortreffer
-        ab `schwelle`. Wie in der Suche zaehlen nur sichtbare Eintraege. Der Text geht
-        wie in der Suche unveraendert in die Einbettung (#321).
+        ab `schwelle`.
         """
-        normalform = text_normalisiert(text)
-        if normalform:
-            gleich = await self._repository.finde_normalisiert_gleich(normalform)
-            if gleich is not None:
-                return Dublettenpruefung(vorhanden=gleich, aehnlichster=gleich)
-
-        treffer = await self._repository.search(
-            text, DUBLETTEN_KANDIDATEN, praefix=praefix
-        )
-        aehnlichster = treffer[0] if treffer else None
-        for kandidat in treffer:
-            # search() liefert nur sichtbare; ein gesperrter Treffer, der doch
-            # durchrutscht, darf nie wiederverwendet werden.
-            if kandidat.status != ContentStatus.VISIBLE:
-                continue
-            if ist_dasselbe(
-                normalform, text_normalisiert(kandidat.text), kandidat.score, schwelle
-            ):
-                return Dublettenpruefung(vorhanden=kandidat, aehnlichster=aehnlichster)
-        return Dublettenpruefung(vorhanden=None, aehnlichster=aehnlichster)
+        gleich, treffer = await self._dublettenkandidaten(text, praefix)
+        if gleich is not None:
+            return Dublettenpruefung(vorhanden=gleich, aehnlichster=gleich)
+        return dublette_nach_schwelle(text, treffer, schwelle)
 
     async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
         """

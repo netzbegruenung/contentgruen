@@ -1,0 +1,17 @@
+# Kontext von Dockerfile.ci (Wurzel des Repos): nur, was es kopiert.
+# .woodpecker/ci-image.yaml baut bei Aenderungen genau dieser Dateien neu.
+*
+!Dockerfile.ci
+!mvp/backend/semantic-search-service/requirements.txt
+!mvp/frontend/gutgesagt-frontend/package.json
+!mvp/frontend/gutgesagt-frontend/package-lock.json
+!scripts/ci-installieren.sh
+!scripts/ci-chromium.sh
+# Quellen des Frontends fuer den Angular-Cache (nur eingebunden), ohne lokale Artefakte
+!mvp/frontend/gutgesagt-frontend
+mvp/frontend/gutgesagt-frontend/node_modules
+mvp/frontend/gutgesagt-frontend/.angular
+mvp/frontend/gutgesagt-frontend/dist
+mvp/frontend/gutgesagt-frontend/src/environments/environment.ts
+mvp/frontend/gutgesagt-frontend/coverage
+mvp/frontend/gutgesagt-frontend/**/.env*

@@ -2,9 +2,9 @@
 Der taegliche Bereinigungsjob (Loeschkonzept): loescht Nutzungsereignisse nach
 ihrer Frist.
 
-Derselbe Job verdichtet Suchereignisse nach ihrer eigenen Frist zu
-Tageszaehlern der Suchen ohne Tagespseudonym (#289, siehe SearchTrackingRepository)
-und schreibt die Suchereignisse abgeschlossener Tage gemischt neu (#337).
+Bis #495 verdichtete derselbe Job auch Suchereignisse nach 90 Tagen (#289) und
+mischte die abgeschlossenen Tage (#337). Seitdem verdichtet sie der Task der
+Loeschfristen am Tagesende, ohne Schalter (services/loeschfristen_service.py).
 """
 
 import logging
@@ -15,7 +15,6 @@ import schedule
 import threading
 import time
 
-from repositories.search_tracking_repository import get_search_tracking_repository
 from services.usage_tracking_service import get_usage_service
 from core.config import settings
 
@@ -24,24 +23,19 @@ logger = logging.getLogger(__name__)
 
 class Bereinigungsjob:
     """
-    Der taegliche Bereinigungsjob: Fristen der Nutzungs- und der Suchereignisse und
-    das Mischen abgeschlossener Tage. Ein Schalter fuer alles:
+    Der taegliche Bereinigungsjob: Frist der Nutzungsereignisse. Schalter:
     ``enable_bereinigungsjob`` (core/config.py).
     """
 
-    def __init__(self, retention_days: int = 90, search_event_retention_days: int = 90):
+    def __init__(self, retention_days: int = 90):
         """
         Initialize cleanup service.
 
         Args:
             retention_days: Number of days of usage data to retain (default 90)
-            search_event_retention_days: Number of days of search events to keep as
-                single rows before they become day counters (default 90)
         """
         self.retention_days = retention_days
-        self.search_event_retention_days = search_event_retention_days
         self.usage_service = get_usage_service()
-        self.search_repository = get_search_tracking_repository()
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self.last_cleanup: Optional[datetime] = None
@@ -49,15 +43,11 @@ class Bereinigungsjob:
 
     def cleanup_old_data(self) -> int:
         """
-        Perform cleanup of old usage events, compact old search events and
-        rewrite the search events of closed days in random order.
+        Perform cleanup of old usage events.
 
         Returns:
             Number of usage event records deleted
         """
-        self._verdichte_suchereignisse()
-        self._mische_suchereignisse()
-
         logger.info(
             f"Starting usage data cleanup (retention: {self.retention_days} days)"
         )
@@ -84,34 +74,6 @@ class Bereinigungsjob:
                 f"Error during usage data cleanup: {type(e).__name__}", exc_info=True
             )
             return 0
-
-    def _verdichte_suchereignisse(self) -> None:
-        """Suchereignisse vor der Frist zu Tageszaehlern verdichten.
-
-        Ein Fehler hier haelt die Bereinigung der Nutzungsereignisse nicht auf.
-        """
-        try:
-            self.search_repository.verdichte_alte_suchereignisse(
-                self.search_event_retention_days
-            )
-        except Exception as e:
-            logger.error(
-                f"Error compacting old search events: {type(e).__name__}", exc_info=True
-            )
-
-    def _mische_suchereignisse(self) -> None:
-        """Suchereignisse abgeschlossener Tage gemischt neu schreiben.
-
-        Nach dem Verdichten, damit verdichtete Tage nicht erst gemischt werden.
-        Ein Fehler hier haelt die Bereinigung der Nutzungsereignisse nicht auf.
-        """
-        try:
-            self.search_repository.mische_abgeschlossene_tage()
-        except Exception as e:
-            logger.error(
-                f"Error rewriting search events of closed days: {type(e).__name__}",
-                exc_info=True,
-            )
 
     def _run_scheduled_jobs(self):
         """
@@ -174,7 +136,6 @@ class Bereinigungsjob:
         return {
             "running": self._running,
             "retention_days": self.retention_days,
-            "search_event_retention_days": self.search_event_retention_days,
             "last_cleanup": (
                 self.last_cleanup.isoformat() if self.last_cleanup else None
             ),
@@ -216,10 +177,7 @@ def get_bereinigungsjob(retention_days: Optional[int] = None) -> Bereinigungsjob
 
     if _bereinigungsjob is None:
         days = retention_days or settings.usage_retention_days
-        _bereinigungsjob = Bereinigungsjob(
-            retention_days=days,
-            search_event_retention_days=settings.search_event_retention_days,
-        )
+        _bereinigungsjob = Bereinigungsjob(retention_days=days)
 
     return _bereinigungsjob
 

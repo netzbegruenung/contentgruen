@@ -17,6 +17,9 @@ from unittest.mock import MagicMock, patch
 # Set test environment before any imports
 os.environ["TESTING"] = "true"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+# Die NLI-Stufe (#387) laedt sonst im Schattenbetrieb das NLI-Modell (~1,2 GB) im
+# Hintergrund. Tests der NLI-Stufe geben ihr eine Attrappe und schalten sie selbst an.
+os.environ.setdefault("SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI", "aus")
 
 # Patch logging before imports to prevent initialization errors
 import logging
@@ -122,6 +125,33 @@ def frischer_tagesschluessel(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def schalter_admin_alle_an():
+    """
+    Admin-Werte der Schalter ohne Datenbank (#708): alle an, damit die bisherigen Tests
+    weiter nur die Obergrenze aus ihren Settings pruefen. Die Verknuepfung aus
+    Obergrenze und Admin-Wert (ohne Eintrag aus) pruefen tests/unit/services/
+    test_schalter_service.py und tests/unit/api/test_schalter_api.py mit eigenem Dienst;
+    dass keine Stelle an den Admin-Werten vorbei liest, tests/unit/
+    test_schalter_direktzugriff.py (ueberschreibt dieses Fixture ausdruecklich).
+    """
+    from services.schalter_service import (
+        SCHALTER,
+        SchalterService,
+        schalter_service_setzen,
+    )
+
+    werte = {name: True for name in SCHALTER}
+    schalter_service_setzen(
+        SchalterService(
+            admin_werte_lesen=lambda: werte,
+            admin_wert_setzen=lambda name, an, admin: werte.__setitem__(name, an),
+        )
+    )
+    yield werte
+    schalter_service_setzen(None)
+
+
+@pytest.fixture(autouse=True)
 def anzeigenamen_ohne_datenbank(monkeypatch):
     """
     Der AnzeigenameService haengt an jeder angemeldeten Antwort. Ohne diesen Ersatz
@@ -150,15 +180,57 @@ def art9_einwilligung_ohne_datenbank(monkeypatch):
     setzen ``art9_einwilligung_ohne_datenbank.lesen.return_value = None``.
     """
     import services.art9_einwilligung_service as modul
+    from domain.art9_einwilligung import AKTUELLER_WORTLAUT
     from repositories.art9_einwilligung_repository import Art9Einwilligung
 
     repository = MagicMock()
     repository.lesen.return_value = Art9Einwilligung(
-        wortlaut="2026-11-05",
+        wortlaut=AKTUELLER_WORTLAUT,
         eingewilligt_am=datetime.datetime(2026, 11, 5, tzinfo=datetime.timezone.utc),
         widerrufen_am=None,
     )
+    repository.ohne_lesen.return_value = None
     monkeypatch.setattr(modul, "_service", modul.Art9EinwilligungService(repository))
+    yield repository
+
+
+@pytest.fixture(autouse=True)
+def punkte_einwilligung_ohne_datenbank(monkeypatch):
+    """
+    Punkte, Meilensteine und Muster-Hinweise pruefen die Einwilligung "Punkte und
+    Meilensteine" (#351). Der Ersatz laesst jede Person als eingewilligt durch, ohne
+    PostgreSQL; Tests ohne Einwilligung setzen
+    ``punkte_einwilligung_ohne_datenbank.eingewilligt.return_value = False``.
+    """
+    import repositories.punkte_einwilligung_repository as modul
+
+    repository = MagicMock()
+    repository.eingewilligt.return_value = True
+    repository.lesen.return_value = None
+    monkeypatch.setattr(modul, "_repository", repository)
+    yield repository
+
+
+@pytest.fixture(autouse=True)
+def guete_ohne_datenbank(monkeypatch):
+    """
+    Lesende Antworten ergaenzen an Beitraegen die Guete (#427). Ohne diesen Ersatz
+    baute der erste Aufruf das echte VoteRepository (siehe
+    anzeigenamen_ohne_datenbank) und luede das Sprachmodell. Der Ersatz kennt keine
+    Stimmen und keinen Kriterienanteil: Karten sind "neu". Tests, die mehr brauchen,
+    stellen ``guete_ohne_datenbank.stimmen_je_beitrag.return_value`` ein.
+    """
+    import dependencies
+    from services.gegenlesen.gegenlesen_service import Gegengelesen
+    from services.guete_service import GueteService
+
+    gegenlesen = MagicMock()
+    gegenlesen.gegenlesen.return_value = Gegengelesen(guete=None, anmerkungen=[])
+    repository = MagicMock()
+    repository.stimmen_je_beitrag.return_value = {}
+    monkeypatch.setattr(
+        dependencies, "_guete_service", GueteService(gegenlesen, repository)
+    )
     yield repository
 
 
@@ -174,8 +246,40 @@ def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
 
     repository = MagicMock()
     repository.haeufigste.return_value = []
+    # Keine Suchanfrage ueber der Schwelle (und damit keine fuer alle sichtbar).
+    repository.ueber_der_schwelle.return_value = []
     monkeypatch.setattr(modul, "_repository", repository)
     yield repository
+
+
+@pytest.fixture(autouse=True)
+def suchanfrage_freigaben_ohne_datenbank(monkeypatch):
+    """
+    Wer Aussagen fuer Nicht-Admins liest, fragt die Freigaben der Vormoderation ab
+    (SuchenOhneTrefferService.sichtbar_fuer_alle). Ohne diesen Ersatz baute der erste
+    Aufruf das echte Repository (siehe anzeigenamen_ohne_datenbank). Der Ersatz
+    kennt keine Entscheidung: Keine Suchanfrage ist freigegeben.
+    """
+    import repositories.suchanfrage_freigabe_repository as modul
+
+    repository = MagicMock()
+    repository.entscheidungen.return_value = {}
+    monkeypatch.setattr(modul, "_repository", repository)
+    yield repository
+
+
+@pytest.fixture
+def sichtbare_suchanfragen(suchen_ohne_treffer_ohne_datenbank):
+    """
+    Die unbeantworteten Suchanfragen, die als ueber der Schwelle und freigegeben
+    gelten (Vormoderation): Ein Test legt IDs hinein. Ohne diese Fixture ist keine
+    sichtbar.
+    """
+    sichtbar = set()
+    suchen_ohne_treffer_ohne_datenbank.ueber_der_schwelle.side_effect = (
+        lambda seit_woche, mindestanzahl, freigabe=None: list(sichtbar)
+    )
+    return sichtbar
 
 
 @pytest.fixture(autouse=True)

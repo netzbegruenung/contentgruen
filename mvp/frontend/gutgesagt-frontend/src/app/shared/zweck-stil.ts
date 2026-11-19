@@ -12,20 +12,36 @@ export type Stil = 'sachlich' | 'humorvoll' | 'persoenlich' | 'brueckenbauend' |
 /** Ohne Angabe gilt ein Kommentar als Antwort in Kommentarspalten. */
 export const ZWECK_STANDARD: Zweck = 'kommentarspalte';
 
+/**
+ * Die Anzeige in Alltagssprache (Persona-Runde 18.11.): Karte und Formular zeigen dasselbe
+ * Wort, die Werte im Backend und in der API bleiben unveraendert.
+ */
 export const ZWECK_LABEL: Record<Zweck, string> = {
   kommentarspalte: 'Antwort in Kommentarspalten',
-  eigene_leute: 'Für die eigenen Leute',
+  eigene_leute: 'Für Gleichgesinnte',
 };
 
 export const STIL_LABEL: Record<Stil, string> = {
   sachlich: 'sachlich',
   humorvoll: 'humorvoll',
   persoenlich: 'persönlich',
-  brueckenbauend: 'brückenbauend',
-  bissig: 'bissig',
+  brueckenbauend: 'freundlich',
+  bissig: 'deutlich',
 };
 
-/** "Bissig" gibt es nur beim Zweck "Für die eigenen Leute". */
+/**
+ * Was ein Stil beim Lesen bewirkt, als Erklaerung am Stil-Chip der Karte (#641):
+ * Wer eine Antwort aussucht, waehlt oft nach der Tonlage.
+ */
+export const STIL_ERKLAERUNG: Record<Stil, string> = {
+  sachlich: 'bleibt bei den Fakten, ohne Spitzen',
+  humorvoll: 'nimmt mit einem Augenzwinkern die Schärfe raus',
+  persoenlich: 'erzählt aus eigenem Erleben',
+  brueckenbauend: 'holt Unentschiedene ab, ohne sie vorzuführen',
+  bissig: 'zugespitzt, nur für Gleichgesinnte',
+};
+
+/** "Deutlich" (bissig) gibt es nur beim Zweck "Für Gleichgesinnte" (eigene_leute). */
 export function stileFuer(zweck: Zweck): Stil[] {
   const stile = Object.keys(STIL_LABEL) as Stil[];
   return zweck === 'eigene_leute' ? stile : stile.filter((stil) => stil !== 'bissig');

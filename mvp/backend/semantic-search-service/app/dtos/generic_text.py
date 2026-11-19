@@ -93,6 +93,9 @@ class AddGenericTextResponse(BaseModel):
     # Ihr Text - bei Text-Anfragen kann das eine schon vorhandene, sehr aehnliche
     # Aussage sein, nicht wortgleich mit dem Getippten.
     statement_text: Optional[str] = None
+    # True: Die Aussage kam per Text und wurde eben neu angelegt (Marke "neu" auf der
+    # Seite "Gespeichert", #617); False bei einer vorhandenen oder ohne Aussage.
+    aussage_neu: bool = False
     # Kam die Aussage per Text mit Themen (#455): die Themen, die sie jetzt hat. Weichen
     # sie von den gewaehlten ab, hatte eine vorhandene schon welche, oder das Zuordnen
     # scheiterte (dann leer); das Formular sagt es. Sonst leer.

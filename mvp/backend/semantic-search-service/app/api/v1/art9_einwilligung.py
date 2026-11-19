@@ -19,7 +19,8 @@ from domain.art9_einwilligung import (
     WORTLAUTE,
 )
 from services import art9_einwilligung_service
-from services.art9_einwilligung_service import UnbekannterWortlaut
+from services.abzeichen_service import get_abzeichen_service
+from services.art9_einwilligung_service import UnbekannterWortlaut, WortlautGiltNicht
 
 logger = get_logger(__name__)
 
@@ -39,6 +40,9 @@ class StandResponse(BaseModel):
     widerrufen_am: Optional[datetime]
     # Der Wortlaut, den die App zum Einwilligen zeigt
     aktueller_wortlaut: Wortlaut
+    # Zu welchem Wortlaut die Person bewusst ohne Einwilligung weiterging (B2), sonst
+    # None; die App fuehrt dann nicht bei jedem Start auf /einwilligung.
+    ohne_wortlaut: Optional[str] = None
 
 
 class EinwilligenRequest(BaseModel):
@@ -53,6 +57,7 @@ def _service():
 def stand(user_id: str = Depends(require_user)) -> StandResponse:
     try:
         einwilligung = _service().stand(user_id)
+        ohne_wortlaut = _service().ohne(user_id)
     except Exception as e:
         logger.error(
             f"Art.-9-Einwilligung von {log_pseudonym(user_id)} nicht gelesen: {type(e).__name__}",
@@ -60,13 +65,16 @@ def stand(user_id: str = Depends(require_user)) -> StandResponse:
         )
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
     return StandResponse(
-        eingewilligt=einwilligung is not None and einwilligung.gilt,
+        # Nur eine Einwilligung zu einem geltenden Wortlaut; zu einem frueheren
+        # fragt die App neu (domain/art9_einwilligung.py, GELTENDE_WORTLAUTE).
+        eingewilligt=einwilligung is not None and einwilligung.zaehlt,
         wortlaut=einwilligung.wortlaut if einwilligung else None,
         eingewilligt_am=einwilligung.eingewilligt_am if einwilligung else None,
         widerrufen_am=einwilligung.widerrufen_am if einwilligung else None,
         aktueller_wortlaut=Wortlaut(
             kennung=AKTUELLER_WORTLAUT, text=WORTLAUTE[AKTUELLER_WORTLAUT]
         ),
+        ohne_wortlaut=ohne_wortlaut,
     )
 
 
@@ -80,6 +88,13 @@ def einwilligen(
         raise HTTPException(
             status_code=422, detail="Unbekannter Wortlaut der Einwilligung"
         )
+    except WortlautGiltNicht:
+        # Etwa ein Tab von gestern mit dem vorigen Wortlaut: /einwilligung laedt dann
+        # selbst den aktuellen und bittet, ihn zu lesen (domain/art9_einwilligung.py,
+        # GELTENDE_WORTLAUTE).
+        raise HTTPException(
+            status_code=400, detail="Dieser Wortlaut der Einwilligung gilt nicht mehr"
+        )
     except Exception as e:
         logger.error(
             f"Art.-9-Einwilligung von {log_pseudonym(user_id)} nicht gespeichert: {type(e).__name__}",
@@ -89,8 +104,48 @@ def einwilligen(
     return Response(status_code=204)
 
 
+@router.post("/ohne", status_code=204)
+def ohne_einwilligung_weiter(
+    request: EinwilligenRequest, user_id: str = Depends(require_user)
+) -> Response:
+    """
+    Die Person geht bewusst ohne Einwilligung weiter (UX-Review B2): am Konto mit dem
+    Wortlaut, der da galt. Eine spaetere Einwilligung hebt das auf.
+    """
+    try:
+        _service().ohne_merken(user_id, request.wortlaut)
+    except UnbekannterWortlaut:
+        raise HTTPException(
+            status_code=422, detail="Unbekannter Wortlaut der Einwilligung"
+        )
+    except Exception as e:
+        logger.error(
+            f"Ohne Einwilligung von {log_pseudonym(user_id)} nicht gespeichert: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    return Response(status_code=204)
+
+
 @router.delete("", status_code=204)
 def widerrufen(user_id: str = Depends(require_user)) -> Response:
+    # Ohne Einwilligung keine Meilensteine: das sichtbare Abzeichen sofort weg, und ein
+    # frueheres Ja gilt nicht ueber eine neue Einwilligung hinweg (#351). Zuerst und
+    # unabhaengig vom Widerruf: Scheitert eines von beiden, laeuft das andere trotzdem.
+    abzeichen_fehlgeschlagen = False
+    abzeichen = get_abzeichen_service()
+    if abzeichen is not None:
+        try:
+            abzeichen.zuruecknehmen(user_id)
+        except Exception as e:
+            abzeichen_fehlgeschlagen = True
+            logger.error(
+                f"Zustimmung zur Sichtbarkeit von {log_pseudonym(user_id)} nicht zurueckgenommen: {type(e).__name__}",
+                exc_info=True,
+            )
+    # Vermerk, Loeschen der Stimmen und Loeschauftrag in einer Transaktion
+    # (Art9EinwilligungService.widerrufen): Bei einem Fehler gilt die Einwilligung
+    # weiter, und die Person kann erneut widerrufen.
     try:
         _service().widerrufen(user_id)
     except Exception as e:
@@ -98,5 +153,7 @@ def widerrufen(user_id: str = Depends(require_user)) -> Response:
             f"Widerruf der Art.-9-Einwilligung von {log_pseudonym(user_id)} nicht gespeichert: {type(e).__name__}",
             exc_info=True,
         )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    if abzeichen_fehlgeschlagen:
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
     return Response(status_code=204)

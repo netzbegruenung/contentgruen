@@ -4,13 +4,14 @@ import { Vorlage } from '../beitragsformular/vorlage';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 
 import {
   AddGenerictextComponent,
-  DUBLETTE_HINWEIS,
+  DUBLETTE_EIGEN_HINWEIS,
   GENOMMEN_HINWEIS,
   NEHMEN_FEHLGESCHLAGEN,
   SPEICHERN_FEHLGESCHLAGEN,
@@ -24,10 +25,16 @@ import { AddGenericTextRequest, AddGenericTextResponse } from '../services/dtos/
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
 import { environment } from '../../environments/environment';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of as vonWert } from 'rxjs';
+
+/** Zweispaltig wie am Desktop: Gegenlesen neben der Vorschau (Nutzerfuehrung 13.11.). */
+const ZWEISPALTIG = { provide: BreakpointObserver, useValue: { observe: () => vonWert({ matches: false, breakpoints: {} }) } };
 
 /** Gleich gebaut wie das Kommentarformular; hier die Unterschiede und die geteilten Wege. */
 describe('AddGenerictextComponent', () => {
@@ -41,6 +48,7 @@ describe('AddGenerictextComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AddGenerictextComponent, NoopAnimationsModule],
       providers: [
+        ZWEISPALTIG,
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
@@ -145,7 +153,7 @@ describe('AddGenerictextComponent', () => {
 
     it('zeigt Streifen in der Typfarbe und das Typ-Emoji vor der Hilfezeile', () => {
       const bereich: HTMLElement = seite().querySelector('.formular-bereich')!;
-      expect(bereich.style.getPropertyValue('--typ-farbe')).toBe('var(--generictext-bg)');
+      expect(bereich.style.getPropertyValue('--typ-farbe')).toBe('var(--info-tint)');
       expect(seite().querySelector('.hilfe-emoji')!.textContent!.trim()).toBe('📄');
     });
   });
@@ -174,7 +182,7 @@ describe('AddGenerictextComponent', () => {
       expect(hinweise).toContain('10 / 2000');
     });
 
-    it('hat keinen X/Bluesky-Hinweis', () => {
+    it('hat keinen Mastodon/Bluesky/X-Hinweis', () => {
       component.generictextForm.patchValue({ text: 'a'.repeat(300) });
       fixture.detectChanges();
       expect(seite().querySelector('.plattform-hinweis')).toBeNull();
@@ -224,6 +232,21 @@ describe('AddGenerictextComponent', () => {
       expect(erfolg).toHaveBeenCalledOnceWith({ id: 'k-1', aussage: { id: '', text: '' }, verknuepft: true });
     }));
 
+    // UX-Review B4: ohne Einwilligung kein "versuche es erneut", der Hinweiskasten sagt es
+    it('zeigt bei fehlender Einwilligung (403) keine Fehlermeldung und behaelt die Eingaben', fakeAsync(() => {
+      spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValue(throwError(() => ({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })));
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(component.fehler).toBeNull();
+      expect(seite().querySelector('.speicher-fehler')).toBeNull();
+      expect(component.speichert).toBeFalse();
+      expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
+    }));
+
     it('behaelt bei einem Fehler die Eingaben, und "Erneut versuchen" speichert dasselbe noch einmal', fakeAsync(() => {
       const hinzufuegen = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
         throwError(() => new Error('500')),
@@ -268,7 +291,8 @@ describe('AddGenerictextComponent', () => {
 
       const anfrage: AddGenericTextRequest = hinzufuegen.calls.mostRecent().args[0];
       expect(anfrage.statement_id).toBe(ID);
-      expect(anfrage.statement_text).toBeUndefined();
+      // Der Text geht mit (Vormoderation: verborgene Suchanfrage, aussageFuerAnfrage).
+      expect(anfrage.statement_text).toBe('Wärmepumpen sind zu teuer');
       expect(seite().querySelector('.gewaehlt-karte')).toBeTruthy();
     }));
 
@@ -393,6 +417,18 @@ describe('AddGenerictextComponent', () => {
       });
     }));
 
+    it('meldet eine neu angelegte Aussage nur, wenn der Server es sagt (#617)', fakeAsync(() => {
+      speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, aussage_neu: true });
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      tippeAussage('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ aussageNeu: true }));
+    }));
+
     it('behandelt ein fehlendes verknuepft wie false, wenn eine Aussage mitging', fakeAsync(() => {
       speichernMit({});
       const erfolg = spyOn(component.success, 'emit');
@@ -430,8 +466,8 @@ describe('AddGenerictextComponent', () => {
 
       expect(erfolg).not.toHaveBeenCalled();
       expect(component.responseId).toBe('');
-      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo.');
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain('sehr ähnliche Hintergrundinfo');
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo von jemand anderem.');
+      expect(seite().querySelector('app-formular-leiste .leiste-hinweis')!.textContent).toContain('Etwas sehr Ähnliches gibt es schon.');
       expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
 
       expect(component.vorhanden!.aussage).toBeNull();
@@ -474,7 +510,7 @@ describe('AddGenerictextComponent', () => {
       expect(erfolg).not.toHaveBeenCalled();
       expect(component.responseId).toBe('');
       expect(component.vorhanden!.aussage).toBeNull();
-      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(DUBLETTE_HINWEIS);
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(DUBLETTE_EIGEN_HINWEIS);
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).not.toContain('verknüpft');
       expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
       expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
@@ -858,7 +894,7 @@ describe('AddGenerictextComponent', () => {
       fixture.detectChanges();
 
       const status = seite().querySelector('.dubletten-hinweis [role="status"]')!;
-      expect(status.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo.');
+      expect(status.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo von jemand anderem.');
       expect(status.querySelector('.dublette-zustimmen, .dublette-trotzdem')).toBeNull();
     }));
 
@@ -874,7 +910,7 @@ describe('AddGenerictextComponent', () => {
       flush();
       fixture.detectChanges();
 
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler, app-formular-leiste .leiste-hinweis')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
 
@@ -892,7 +928,7 @@ describe('AddGenerictextComponent', () => {
 
       expect(component.vorhanden).toBeNull();
       expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler, app-formular-leiste .leiste-hinweis')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
   });
@@ -911,6 +947,13 @@ describe('AddGenerictextComponent', () => {
       fixture.detectChanges();
     }
 
+    /** Wie "Als neue Aussage anlegen" im Antwort-auf-Block: erst dann gibt es Themen (#617). */
+    function alsNeueAussage(text: string): void {
+      aussageAusAdresse(text);
+      component.aussageSetzen({ id: '', text, neuGewaehlt: true });
+      fixture.detectChanges();
+    }
+
     function auswahl(): HTMLElement | null {
       return seite().querySelector('.optionale-angaben app-themen-auswahl');
     }
@@ -925,7 +968,11 @@ describe('AddGenerictextComponent', () => {
       themenLaden();
       expect(auswahl()).toBeNull();
 
+      // Nur getippt (oder aus der Adresse): noch keine Themen, darunter stehen erst vorhandene (#617)
       aussageAusAdresse('Wärmepumpen sind zu teuer');
+      expect(auswahl()).toBeNull();
+
+      alsNeueAussage('Wärmepumpen sind zu teuer');
 
       expect(auswahl()).toBeTruthy();
       // Wie in „Hier fehlt eine Antwort“.
@@ -947,7 +994,7 @@ describe('AddGenerictextComponent', () => {
         .expectOne(`${environment.baseUrl}/api/v1/statement/themen`)
         .flush('weg', { status: 503, statusText: 'Service Unavailable' });
 
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
 
       expect(auswahl()).toBeNull();
     });
@@ -955,7 +1002,7 @@ describe('AddGenerictextComponent', () => {
     it('schickt die gewaehlten Themen mit dem Text der Aussage', fakeAsync(() => {
       const hinzufuegen = speichernMit();
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
 
       thema('Energie und Heizen').click();
@@ -973,7 +1020,7 @@ describe('AddGenerictextComponent', () => {
 
     it('laesst hoechstens zwei Themen waehlen', () => {
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
 
       thema('Klima').click();
       fixture.detectChanges();
@@ -986,7 +1033,7 @@ describe('AddGenerictextComponent', () => {
     it('schickt ohne Wahl keine Themen', fakeAsync(() => {
       const hinzufuegen = speichernMit();
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
 
       component.speichern();
@@ -998,7 +1045,7 @@ describe('AddGenerictextComponent', () => {
     it('schickt zu einer gewaehlten Aussage keine Themen: Sie behaelt ihre', fakeAsync(() => {
       const hinzufuegen = speichernMit({ statement_id: ID, verknuepft: true });
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       thema('Klima').click();
       aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
       ausfuellen();
@@ -1022,7 +1069,7 @@ describe('AddGenerictextComponent', () => {
       });
       const erfolg = spyOn(component.success, 'emit');
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
       thema('Soziales').click();
 
@@ -1036,7 +1083,7 @@ describe('AddGenerictextComponent', () => {
       speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, themen: [] });
       const erfolg = spyOn(component.success, 'emit');
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
       thema('Soziales').click();
 
@@ -1050,7 +1097,7 @@ describe('AddGenerictextComponent', () => {
       speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, themen: [THEMEN[2]] });
       const erfolg = spyOn(component.success, 'emit');
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       ausfuellen();
       thema('Soziales').click();
 
@@ -1062,7 +1109,7 @@ describe('AddGenerictextComponent', () => {
 
     it('zaehlen fuers Zuruecksetzen als Eingabe und werden mit geleert', () => {
       themenLaden();
-      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      alsNeueAussage('Wärmepumpen sind zu teuer');
       thema('Klima').click();
       dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
 
@@ -1180,6 +1227,39 @@ describe('AddGenerictextComponent', () => {
     }));
   });
 
+  describe('Herkunft offen (Persona-Test Gerd)', () => {
+    it('zeigt das Herkunftsfeld von Anfang an, ohne "+ Herkunft"', () => {
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.herkunft-link')).toBeNull();
+      expect(seite().querySelector('.reference-source-input')).not.toBeNull();
+      expect(seite().querySelector('.herkunft mat-label')!.textContent!.trim()).toBe('Herkunft (empfohlen)');
+      expect(seite().querySelector('.herkunft-satz')!.textContent).toContain('Zahlen und Fakten mit Herkunft sind glaubwürdiger.');
+    });
+
+    it('sagt dem Gegenlesen, ob die Herkunft fehlt, und blendet den Satz mit Herkunft aus', () => {
+      fixture.detectChanges();
+      const gegenlesen = () => fixture.debugElement.query(By.directive(GegenlesenComponent)).componentInstance as GegenlesenComponent;
+      expect(gegenlesen().herkunftEmpfohlen).toBeTrue();
+      expect(gegenlesen().hatHerkunft).toBeFalse();
+
+      component.generictextForm.patchValue({ references: [{ reference_string: 'https://example.org/studie' }] });
+      fixture.detectChanges();
+
+      expect(gegenlesen().hatHerkunft).toBeTrue();
+      expect(seite().querySelector('.herkunft-satz')).toBeNull();
+    });
+
+    it('bleibt nach dem Zuruecksetzen offen', () => {
+      component.generictextForm.patchValue({ references: [{ reference_string: 'https://example.org/studie' }] });
+      component.leeren();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.reference-source-input')).not.toBeNull();
+      expect(component.herkunftFehlt).toBeTrue();
+    });
+  });
+
   describe('Vorbefuellung aus dem Destillier-Ablauf', () => {
     function vorbefuellen(url: string | null): void {
       component.vorbefuellung = { einwurfId: 'id-1', titel: 'Wärmepumpe lohnt sich auch im Altbau', url, kopf: {} as any };
@@ -1191,7 +1271,7 @@ describe('AddGenerictextComponent', () => {
 
       expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich auch im Altbau');
       expect(component.generictextForm.value.references).toEqual([{ reference_string: 'https://example.org/p' }]);
-      expect(component.showReferences).toBeTrue();
+      expect(component.herkunftFehlt).toBeFalse();
     });
 
     it('laesst die Herkunft zu, wenn der Einwurf keinen Link hat', () => {
@@ -1199,9 +1279,8 @@ describe('AddGenerictextComponent', () => {
 
       expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich auch im Altbau');
       expect(component.generictextForm.value.references).toEqual([]);
-      expect(component.showReferences).toBeFalse();
       fixture.detectChanges();
-      expect(seite().querySelector('.herkunft-link')!.textContent).toContain('+ Herkunft');
+      expect(seite().querySelector('.reference-source-input')).not.toBeNull();
       expect(seite().querySelector('.herkunft-satz')!.textContent).toContain('Zahlen und Fakten mit Herkunft sind glaubwürdiger.');
     });
 

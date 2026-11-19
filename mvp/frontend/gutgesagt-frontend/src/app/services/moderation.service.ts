@@ -4,6 +4,23 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { MeldegrundWert } from '../shared/meldegruende';
 import { SperrgrundWert } from '../shared/sperrgruende';
+import { stillerKontext } from '../shared/selbst-nachladen';
+
+/** Ein Schalter (#708, Glossar „Schalter“): wirksam nur mit Obergrenze und Admin-Wert. */
+export interface Schalter {
+  name: string;
+  erklaerung: string;
+  umgebungsvariable: string;
+  /** Server erlaubt (Umgebungsvariable). */
+  obergrenze: boolean;
+  admin_wert: boolean;
+  wirksam: boolean;
+  dsfa_hinweis: string | null;
+}
+
+export interface SchalterListe {
+  schalter: Schalter[];
+}
 
 export interface ReportContentRequest {
   content_id: string;
@@ -13,6 +30,8 @@ export interface ReportContentRequest {
   melder_name: string | null;
   melder_email: string | null;
   guter_glaube: true;
+  /** Angemeldet: Bestaetigung und Entscheidung an die Adresse des Kontos (UX-Review B17). */
+  bestaetigung_an_konto?: boolean;
 }
 
 /**
@@ -27,11 +46,17 @@ export interface NeueMeldung {
   melderName: string | null;
   melderEmail: string | null;
   guterGlaube: true;
+  /** Angemeldet: Die Adresse nimmt der Suchdienst aus dem Konto, nie aus dem Dialog. */
+  bestaetigungAnKonto?: boolean;
 }
 
 export interface ReportContentResponse {
   success: boolean;
   message: string;
+  /** Ob an der Meldung eine Adresse fuer Bestaetigung und Entscheidung steht (fehlt bei aelterem Backend). */
+  mit_email?: boolean;
+  /** Doppelmeldung derselben Person: nichts neu angelegt (Review zu #670). */
+  schon_gemeldet?: boolean;
 }
 
 export interface ContentReport {
@@ -42,6 +67,9 @@ export interface ContentReport {
   description: string | null;
   reported_by_user_id: string | null;
   reported_by_session_id: string | null;
+  /** Anzeigename der meldenden bzw. bearbeitenden Person, wenn bekannt (nur Admin-Listen). */
+  reported_by_name?: string | null;
+  reviewed_by_name?: string | null;
   created: string;
   status: string;
   reviewed_by?: string | null;
@@ -114,6 +142,33 @@ export interface AngabenGeloescht {
   angaben_entfernt: number;
 }
 
+/** Ein offener Löschauftrag nach dem Widerruf der Art.-9-Einwilligung (Glossar „Löschauftrag“). */
+export interface Loeschauftrag {
+  id: string;
+  /** Kennung der Person; Admins sehen sie (Glossar „Kennung“). */
+  user_id: string;
+  anzeigename: string | null;
+  /** Jüngster Widerruf; widerruft die Person nach einer neuen Einwilligung erneut, bleibt es ein Auftrag. */
+  widerrufen_am: string;
+  angelegt_am: string;
+  frist: string;
+  ueberfaellig: boolean;
+  /** Neue Einwilligung nach dem jüngsten Widerruf; was ab da kam, bleibt. Sonst null. */
+  neu_eingewilligt_am: string | null;
+}
+
+export interface LoeschauftraegeResponse {
+  frist_tage: number;
+  auftraege: Loeschauftrag[];
+}
+
+/** Was der Löschablauf geändert hat. */
+export interface LoeschauftragAusgefuehrt {
+  beitraege: number;
+  einwuerfe: number;
+  saetze: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -133,6 +188,7 @@ export class ModerationService {
       melder_name: meldung.melderName,
       melder_email: meldung.melderEmail,
       guter_glaube: meldung.guterGlaube,
+      ...(meldung.bestaetigungAnKonto ? { bestaetigung_an_konto: true } : {}),
     };
 
     return this.http.post<ReportContentResponse>(`${this.baseUrl}/report`, request);
@@ -146,11 +202,11 @@ export class ModerationService {
   getReports(
     status: 'pending' | 'reviewed' | 'dismissed' | 'all' = 'pending',
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
+    still = false
   ): Observable<PendingReportsResponse> {
     // Add cache-busting timestamp to prevent browser caching
     const timestamp = new Date().getTime();
-    console.log(`[ModerationService] getReports called, status: ${status}, timestamp:`, timestamp);
 
     return this.http.get<PendingReportsResponse>(
       `${this.baseUrl}/reports?status=${status}&limit=${limit}&offset=${offset}&_t=${timestamp}`,
@@ -158,7 +214,8 @@ export class ModerationService {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        }
+        },
+        context: still ? stillerKontext() : undefined
       }
     );
   }
@@ -182,8 +239,34 @@ export class ModerationService {
     return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/entsperren`, {});
   }
 
-  getGesperrte(): Observable<GesperrteResponse> {
-    return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`);
+  /** ``still``: Hintergrund-Abfrage, frisch statt aus dem Cache, ohne Umleitung bei 401 (STILLE_ABFRAGE). */
+  getGesperrte(still = false): Observable<GesperrteResponse> {
+    return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`, { context: still ? stillerKontext() : undefined });
+  }
+
+  /** Offene Löschaufträge, die mit der frühesten Frist zuerst. */
+  getLoeschauftraege(still = false): Observable<LoeschauftraegeResponse> {
+    return this.http.get<LoeschauftraegeResponse>(`${this.baseUrl}/loeschauftraege`, {
+      context: still ? stillerKontext() : undefined,
+    });
+  }
+
+  /**
+   * Den Löschablauf für einen Auftrag ausführen: Beiträge anonymisieren, eigene Einwürfe
+   * löschen, Sätze an fremden Einwürfen mit Platzhalter. Danach ist der Auftrag erledigt.
+   */
+  loeschauftragAusfuehren(id: string): Observable<LoeschauftragAusgefuehrt> {
+    return this.http.post<LoeschauftragAusgefuehrt>(`${this.baseUrl}/loeschauftraege/${encodeURIComponent(id)}/ausfuehren`, {});
+  }
+
+  /** Stand aller Schalter (#708): Obergrenze, Admin-Wert, wirksam. */
+  getSchalter(still = false): Observable<SchalterListe> {
+    return this.http.get<SchalterListe>(`${this.baseUrl}/schalter`, { context: still ? stillerKontext() : undefined });
+  }
+
+  /** Admin-Wert setzen; Einschalten über die Obergrenze hinaus lehnt der Server mit 409 ab. */
+  schalterSetzen(name: string, an: boolean): Observable<SchalterListe> {
+    return this.http.put<SchalterListe>(`${this.baseUrl}/schalter/${encodeURIComponent(name)}`, { an });
   }
 
   /**
@@ -208,10 +291,23 @@ export class ModerationService {
     });
   }
 
+  /**
+   * Eine offene Meldung zu einem schon gesperrten Beitrag schließen: Sie steht danach auf
+   * bearbeitet, die meldende Person bekommt die Mail „gesperrt“; keine neue Sperre.
+   */
+  meldungSchliessen(reportId: string): Observable<unknown> {
+    return this.http.put(`${this.baseUrl}/reports/${encodeURIComponent(reportId)}/schliessen`, {});
+  }
+
+  /**
+   * Meldung abweisen. Der Suchdienst liest ``notes`` als Query-Parameter (``notes: Optional[str]``
+   * ohne Body in api/v1/moderation.py); im Body ging die Begründung bisher verloren.
+   */
   dismissReport(reportId: string, notes?: string): Observable<any> {
     return this.http.put(
       `${this.baseUrl}/reports/${reportId}/dismiss`,
-      { notes }
+      {},
+      { params: notes ? { notes } : {} }
     );
   }
 }

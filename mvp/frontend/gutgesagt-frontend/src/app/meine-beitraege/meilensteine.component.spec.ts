@@ -1,0 +1,348 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { Observable, of } from 'rxjs';
+
+import { MeilensteineComponent } from './meilensteine.component';
+import { MEILENSTEINE_GESEHEN_SCHLUESSEL } from './meilenstein-merker';
+import { AuthService } from '../auth/auth.service';
+import { MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
+import { BehaviorSubject } from 'rxjs';
+import {
+  PunkteEinwilligungService,
+  PunkteEinwilligungStand,
+} from '../shared/punkte-einwilligung/punkte-einwilligung.service';
+
+import { AbzeichenSichtbarkeit, Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
+
+describe('MeilensteineComponent (#351)', () => {
+  let fixture: ComponentFixture<MeilensteineComponent>;
+  let speichern: jasmine.Spy<(zeigen: boolean, wortlaut: string) => Observable<boolean>>;
+
+  function meilenstein(felder: Partial<Meilenstein>): Meilenstein {
+    return {
+      kennung: 'nutzung-1',
+      name: 'Erstmals genutzt',
+      untertitel: 'Ausgeflogen',
+      beschreibung: 'Jemand hat deinen Beitrag mitgenommen.',
+      bild: 'meilensteine/vogel.svg',
+      bildnachweis: 'Motiv: Fluent Emoji, © Microsoft Corporation, MIT-Lizenz',
+      art: 'wirkung',
+      schwelle: 1,
+      stand: 0,
+      erreicht: false,
+      ...felder,
+    };
+  }
+
+  beforeEach(() => localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL));
+  afterEach(() => localStorage.removeItem(MEILENSTEINE_GESEHEN_SCHLUESSEL));
+
+  let merkerAktiv = true;
+  afterEach(() => (merkerAktiv = true));
+  const WORTLAUT = { kennung: '2026-11-13', text: 'Freiwillig: …' };
+  let einwilligung: BehaviorSubject<PunkteEinwilligungStand | null | undefined>;
+  let ladenAnzahl = 0;
+  beforeEach(() => {
+    einwilligung = new BehaviorSubject<PunkteEinwilligungStand | null | undefined>({
+      eingewilligt: true,
+      wortlaut: '2026-11-13',
+      aktueller_wortlaut: WORTLAUT,
+    });
+    ladenAnzahl = 0;
+  });
+
+  function erstellen(meilensteine: Meilenstein[], sichtbarkeit: AbzeichenSichtbarkeit | null = null): HTMLElement {
+    speichern = jasmine.createSpy('speichern').and.returnValue(of(true));
+    TestBed.configureTestingModule({
+      imports: [MeilensteineComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { getCurrentUserId: () => 'kim-1' } },
+        { provide: MEILENSTEIN_MERKER, useValue: merkerAktiv },
+        {
+          provide: PunkteEinwilligungService,
+          useValue: {
+            stand$: einwilligung.asObservable(),
+            laden: () => new BehaviorSubject(einwilligung.value ?? null),
+          },
+        },
+        {
+          provide: UsageTrackingService,
+          useValue: {
+            getEigeneMeilensteine: () => {
+              ladenAnzahl += 1;
+              return of(meilensteine);
+            },
+            getAbzeichenSichtbarkeit: () => of(sichtbarkeit),
+            setAbzeichenSichtbarkeit: speichern,
+          },
+        },
+      ],
+    });
+    fixture = TestBed.createComponent(MeilensteineComponent);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('zeigt nichts ohne Meilensteine (Punkte aus, Startkonto, keine Einwilligung)', () => {
+    const element = erstellen([]);
+
+    expect(element.querySelector('.meilensteine')).toBeNull();
+  });
+
+  it('zeigt erreichte als Abzeichen und offene mit Stand', () => {
+    const element = erstellen([
+      meilenstein({ stand: 3, erreicht: true }),
+      meilenstein({ kennung: 'nutzung-10', name: '10-mal genutzt', schwelle: 10, stand: 3 }),
+    ]);
+
+    const eintraege = Array.from(element.querySelectorAll('.meilenstein'));
+    expect(eintraege.length).toBe(2);
+    expect(eintraege[0].classList).toContain('erreicht');
+    expect(eintraege[0].textContent).toContain('Erstmals genutzt');
+    expect(eintraege[0].querySelector('.meilenstein-stand')).toBeNull();
+    expect(eintraege[1].classList).not.toContain('erreicht');
+    expect(eintraege[1].querySelector('.meilenstein-stand')?.textContent).toContain('3/10');
+    expect(element.querySelector('h2')?.textContent).toContain('1 von 2');
+  });
+
+  it('zeigt Namen, Untertitel, Beschreibung und das Motiv im Medaillon', () => {
+    const element = erstellen([meilenstein({ stand: 1, erreicht: true })]);
+
+    const eintrag = element.querySelector('.meilenstein')!;
+    expect(eintrag.querySelector('.meilenstein-name')?.textContent).toContain('Erstmals genutzt');
+    expect(eintrag.querySelector('.meilenstein-untertitel')?.textContent).toContain('Ausgeflogen');
+    expect(eintrag.querySelector('.meilenstein-beschreibung')?.textContent).toContain('mitgenommen');
+    const bild = eintrag.querySelector<HTMLImageElement>('.meilenstein-medaillon img')!;
+    expect(bild.getAttribute('src')).toBe('/meilensteine/vogel.svg');
+    // Schmuck: Name und Zustand stehen als Text daneben.
+    expect(bild.getAttribute('alt')).toBe('');
+    expect(eintrag.querySelector('.meilenstein-medaillon')?.getAttribute('aria-hidden')).toBe('true');
+    // Bildnachweis sichtbar und klein, aufklappbar unter der Liste (nicht nur als title).
+    expect(element.querySelector('details.meilensteine-bildnachweis')?.textContent).toContain('MIT-Lizenz');
+  });
+
+  it('merkt sich die erreichten als gesehen, damit nach dem Einwerfen kein alter Hinweis kommt', () => {
+    erstellen([meilenstein({ stand: 1, erreicht: true }), meilenstein({ kennung: 'nutzung-10', schwelle: 10, stand: 1 })]);
+
+    expect(JSON.parse(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)!)).toEqual(['nutzung-1']);
+  });
+
+  it('zeigt erreichte und den nächsten offenen, den Rest aufklappbar (B14)', () => {
+    const element = erstellen([
+      meilenstein({ kennung: 'a', stand: 1, erreicht: true }),
+      meilenstein({ kennung: 'b', name: 'Nächster' }),
+      meilenstein({ kennung: 'c', name: 'Später', schwelle: 10 }),
+      meilenstein({ kennung: 'd', stand: 1, erreicht: true }),
+      meilenstein({ kennung: 'e', name: 'Noch später', schwelle: 50 }),
+    ]);
+
+    const oben = Array.from(element.querySelectorAll(':scope .meilensteine > .meilensteine-liste > .meilenstein'));
+    expect(oben.map((e) => e.querySelector('.meilenstein-name')?.textContent?.trim())).toEqual([
+      'Erstmals genutzt',
+      'Nächster',
+      'Erstmals genutzt',
+    ]);
+    const weitere = element.querySelector<HTMLDetailsElement>('details.meilensteine-weitere')!;
+    expect(weitere.open).toBeFalse();
+    expect(weitere.querySelector('summary')?.textContent).toContain('Weitere Meilensteine (2)');
+    expect(weitere.querySelectorAll('.meilenstein').length).toBe(2);
+  });
+
+  it('schreibt bei ausgeschaltetem Merker nichts in den Browser (§ 25 TDDDG in Prüfung)', () => {
+    merkerAktiv = false;
+    const element = erstellen([meilenstein({ stand: 1, erreicht: true })]);
+
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
+    expect(element.querySelectorAll('.meilenstein').length).toBe(1);
+  });
+
+  it('schreibt ohne Meilensteine (Punkte aus, keine Einwilligung, Widerruf) keinen Merker', () => {
+    erstellen([]);
+
+    expect(localStorage.getItem(MEILENSTEINE_GESEHEN_SCHLUESSEL)).toBeNull();
+  });
+
+  describe('Einwilligung „Punkte und Meilensteine“ (#351)', () => {
+    it('lädt ohne Einwilligung keine Liste, sondern eine Einladung mit Häkchen', () => {
+      einwilligung.next({ eingewilligt: false, wortlaut: null, aktueller_wortlaut: WORTLAUT });
+      const element = erstellen([]);
+
+      expect(element.querySelector('.meilensteine-einladung')?.textContent).toContain('nur, wenn du sie willst');
+      expect(element.querySelector('app-punkte-einwilligung')).not.toBeNull();
+      expect(element.querySelector('.meilensteine-liste')).toBeNull();
+    });
+
+    it('zeigt ohne eingeschaltete Punkte weder Liste noch Einladung', () => {
+      einwilligung.next(null);
+      const element = erstellen([]);
+
+      expect(element.querySelector('section')).toBeNull();
+    });
+
+    it('lädt nach dem Einwilligen die Meilensteine selbst nach', () => {
+      einwilligung.next({ eingewilligt: false, wortlaut: null, aktueller_wortlaut: WORTLAUT });
+      const element = erstellen([meilenstein({ stand: 1, erreicht: true })]);
+      const vorher = ladenAnzahl;
+
+      einwilligung.next({ eingewilligt: true, wortlaut: '2026-11-13', aktueller_wortlaut: WORTLAUT });
+      fixture.detectChanges();
+
+      expect(ladenAnzahl).toBe(vorher + 1);
+      expect(element.querySelector('.meilensteine-einladung')).toBeNull();
+      expect(element.querySelectorAll('.meilenstein').length).toBe(1);
+    });
+  });
+
+  it('sagt, dass nur die Person selbst sie sieht', () => {
+    const element = erstellen([meilenstein({})]);
+
+    expect(element.textContent).toContain('Nur du siehst deine Meilensteine.');
+  });
+
+  it('nennt den Zustand auch Screenreadern', () => {
+    const element = erstellen([meilenstein({ erreicht: true, stand: 1 }), meilenstein({ kennung: 'x', schwelle: 10, stand: 2 })]);
+
+    const versteckt = Array.from(element.querySelectorAll('.visually-hidden')).map((e) => e.textContent?.trim());
+    expect(versteckt).toEqual([', erreicht', ', noch nicht erreicht: 2 von 10']);
+  });
+
+  describe('Zustimmung zur Sichtbarkeit', () => {
+    const WORTLAUT = {
+      kennung: '2026-11-09-b',
+      text: 'Sollen andere Angemeldete an deinem Namen sehen …?',
+      mehr_dazu: 'Angemeldet sind nicht nur Mitglieder, und ein Screenshot kann es weitertragen.',
+    };
+    const NIE_GEFRAGT: AbzeichenSichtbarkeit = { gefragt: false, zeigen: null, aktueller_wortlaut: WORTLAUT };
+
+    function knopf(element: HTMLElement, text: string): HTMLButtonElement {
+      const treffer = Array.from(element.querySelectorAll('button')).find((b) => b.textContent?.includes(text));
+      expect(treffer).withContext(text).toBeDefined();
+      return treffer as HTMLButtonElement;
+    }
+
+    it('fragt ab dem ersten erreichten Meilenstein mit zwei gleichwertigen Knöpfen', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], NIE_GEFRAGT);
+
+      const frage = element.querySelector('.sichtbarkeit-frage');
+      expect(frage?.textContent).toContain(WORTLAUT.text);
+      const knoepfe = Array.from(frage!.querySelectorAll('button'));
+      expect(knoepfe.map((b) => b.textContent?.trim())).toEqual(['Ja, zeigen', 'Nein, nur für mich']);
+      expect(knoepfe[0].className).toEqual(knoepfe[1].className);
+    });
+
+    it('zeigt die Hinweise aufklappbar unter "Mehr dazu", mit Link zur Datenschutzerklärung', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], NIE_GEFRAGT);
+
+      const mehr = element.querySelector<HTMLDetailsElement>('.sichtbarkeit-frage details');
+      expect(mehr).not.toBeNull();
+      expect(mehr!.open).toBeFalse();
+      expect(mehr!.querySelector('summary')?.textContent).toContain('Mehr dazu');
+      expect(mehr!.textContent).toContain('Screenshot');
+      expect(mehr!.querySelector('a')?.getAttribute('href')).toBe('/datenschutz');
+    });
+
+    it('fragt nicht, solange nur Wegmarken erreicht sind: Sie zählen nicht fürs Abzeichen', () => {
+      const element = erstellen(
+        [meilenstein({ kennung: 'einwurf-1', art: 'weg', erreicht: true, stand: 1 }), meilenstein({})],
+        NIE_GEFRAGT,
+      );
+
+      expect(element.querySelector('.sichtbarkeit-frage')).toBeNull();
+    });
+
+    it('kennzeichnet Wegmarken, wenn das Abzeichen sichtbar ist', () => {
+      const element = erstellen(
+        [meilenstein({ kennung: 'einwurf-1', art: 'weg', erreicht: true, stand: 1 }), meilenstein({ erreicht: true, stand: 1 })],
+        { ...NIE_GEFRAGT, gefragt: true, zeigen: true },
+      );
+
+      const marken = element.querySelectorAll('.meilenstein-wegmarke');
+      expect(marken.length).toBe(1);
+      expect(marken[0].textContent).toContain('zählt nicht fürs Abzeichen');
+    });
+
+    it('nennt bei sichtbarem Abzeichen die Zahl, die andere sehen', () => {
+      const element = erstellen(
+        [meilenstein({ kennung: 'einwurf-1', art: 'weg', erreicht: true, stand: 1 }), meilenstein({ erreicht: true, stand: 1 })],
+        { ...NIE_GEFRAGT, gefragt: true, zeigen: true },
+      );
+
+      expect(element.querySelector('h2')?.textContent).toContain('2 von 2 · Am Namen: 1');
+    });
+
+    it('nennt die Zahl am Namen nicht, solange nur du sie siehst', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], { ...NIE_GEFRAGT, gefragt: true, zeigen: false });
+
+      expect(element.querySelector('h2')?.textContent).not.toContain('Am Namen');
+    });
+
+    it('fragt nicht, solange kein Meilenstein erreicht ist', () => {
+      const element = erstellen([meilenstein({})], NIE_GEFRAGT);
+
+      expect(element.querySelector('.sichtbarkeit-frage')).toBeNull();
+    });
+
+    it('fragt nicht ohne Schalter (Server ohne Sichtbarkeit)', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], null);
+
+      expect(element.querySelector('.sichtbarkeit-frage')).toBeNull();
+      expect(element.textContent).toContain('Nur du siehst deine Meilensteine.');
+    });
+
+    it('speichert ein Ja mit dem Wortlaut und sagt danach, wer es sieht', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], NIE_GEFRAGT);
+
+      knopf(element, 'Ja, zeigen').click();
+      fixture.detectChanges();
+
+      expect(speichern).toHaveBeenCalledWith(true, '2026-11-09-b');
+      expect(element.querySelector('.sichtbarkeit-frage')).toBeNull();
+      expect(element.textContent).toContain('Andere Angemeldete sehen an deinem Namen');
+      expect(element.querySelector('.sichtbarkeit-stand')?.textContent).toContain('für Angemeldete sichtbar');
+    });
+
+    it('nimmt mit einem Klick zurück', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], { ...NIE_GEFRAGT, gefragt: true, zeigen: true });
+
+      knopf(element, 'Nicht mehr zeigen').click();
+      fixture.detectChanges();
+
+      expect(speichern).toHaveBeenCalledWith(false, '2026-11-09-b');
+      expect(element.textContent).toContain('Nur du siehst deine Meilensteine.');
+    });
+
+    it('zeigt vor einer späteren Zustimmung den Wortlaut noch einmal', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], { ...NIE_GEFRAGT, gefragt: true, zeigen: false });
+
+      knopf(element, 'Anderen zeigen').click();
+      fixture.detectChanges();
+
+      expect(speichern).not.toHaveBeenCalled();
+      expect(element.querySelector('.sichtbarkeit-frage')?.textContent).toContain(WORTLAUT.text);
+    });
+
+    it('setzt nach der Antwort den Fokus auf "Nicht mehr zeigen" und sagt den Stand an', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], NIE_GEFRAGT);
+      document.body.appendChild(element);
+
+      knopf(element, 'Ja, zeigen').click();
+      fixture.detectChanges();
+
+      expect(document.activeElement?.textContent).toContain('Nicht mehr zeigen');
+      expect(element.querySelector('[role="status"]')?.textContent).toContain('für Angemeldete sichtbar');
+      element.remove();
+    });
+
+    it('meldet einen Fehler und bleibt bei der alten Antwort', () => {
+      const element = erstellen([meilenstein({ erreicht: true, stand: 1 })], NIE_GEFRAGT);
+      speichern.and.returnValue(of(false));
+
+      knopf(element, 'Ja, zeigen').click();
+      fixture.detectChanges();
+
+      expect(element.querySelector('.sichtbarkeit-fehler')).not.toBeNull();
+      expect(element.querySelector('.sichtbarkeit-frage')).not.toBeNull();
+    });
+  });
+});

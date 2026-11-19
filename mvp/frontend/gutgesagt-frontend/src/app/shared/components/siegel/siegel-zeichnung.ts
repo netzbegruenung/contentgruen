@@ -3,9 +3,10 @@
  * Blase“): Winkel der Hand, Farbe und Text für Screenreader. Die Zeichnung selbst, eine
  * eckige Sprechblase unten links, aus der die Hand oben rechts ragt, steht in
  * `siegel.component.html`, die Hand in `shared/marke/hand.ts`. Das Logo
- * `public/marke/logo.svg` und die Favicons sind dieselbe Zeichnung bei Güte 10; wer die
+ * `public/marke/logo-v2.svg` und die Favicons sind dieselbe Zeichnung bei Güte 10; wer die
  * Blase oder die Hand ändert, ändert sie mit (der Test in `siegel.component.spec.ts`
- * passt darauf auf). Glanz und Krone sind eigene Abzeichen und hängen nicht an der Güte.
+ * passt darauf auf). Den Rand der Blase im Hellen (`siegelRand`) trägt nur das Siegel; das
+ * Logo bleibt bewusst ohne Rand. Glanz ist ein eigenes Abzeichen und hängt nicht an der Güte.
  */
 /** Höchste Güte. Güte 1–10; ohne Daten (`null`) ist ein Beitrag „neu“. */
 export const HOECHSTE_GUETE = 10;
@@ -31,10 +32,18 @@ const zwischen = (a: number, b: number, t: number): number => a + (b - a) * t;
 const runde = (x: number): number => Math.round(x * 10) / 10;
 
 type Hsl = [farbton: number, saettigung: number, helligkeit: number];
-const GRAU: Hsl = [80, 6, 58];
-const GELB: Hsl = [46, 90, 46];
-/** Tannengrün der Seite, `--primary-dark` = #005437 in `src/theme/custom-theme.scss`. */
+// Grau im Farbton des Gelbs: Der Farbton laeuft so nur in eine Richtung, Grau -> Gelb -> Gruen.
+// Vorher lag Grau bei 80 und Gelb bei 46: Die Leiste lief erst zurueck ueber Orange, dann
+// vor zu Gruen (Ersteindruck-Test 14.11.). Gelb bei 52 statt 46 wirkt reiner, nicht orange.
+const GRAU: Hsl = [52, 6, 58];
+const GELB: Hsl = [52, 95, 46];
+/** Tannengrün der Seite, `--akzent-schrift` = #005437 in `src/theme/custom-theme.scss`. */
 const TANNENGRUEN: Hsl = [159.3, 100, 16.5];
+/**
+ * Klee (#008939) als oberes Ende im Dunkelmodus (#588): Tannengrün hebt sich vom dunklen
+ * Kartengrund (#1b2125) kaum ab (1,8:1), Klee erreicht die 3:1 für Grafiken (3,6:1).
+ */
+const KLEE: Hsl = [145, 100, 26.9];
 /** Anteil der Güte-Skala, an dem das Siegel ganz gelb ist. */
 const GELB_BEI = 0.4;
 
@@ -43,16 +52,38 @@ const mische = (von: Hsl, nach: Hsl, t: number): Hsl =>
 
 /**
  * Farbe des Siegels: Grau über Gelb nach Tannengrün, nie Rot (der Farbton bleibt zwischen
- * Gelb und Grün). Güte 10 ist das Tannengrün der Seite, in dem auch das Logo steht.
+ * Gelb und Grün). Güte 10 ist das Tannengrün der Seite, in dem auch das Logo steht; im
+ * Dunkelmodus (`dunkel`) endet die Skala in Klee.
  */
-export function siegelFarbe(guete: number | null): string {
+export function siegelFarbe(guete: number | null, dunkel = false): string {
+  return alsHsl(skala(guete, dunkel ? KLEE : TANNENGRUEN));
+}
+
+/** Farbe auf der Skala Grau – Gelb – `gruen` für eine Güte. */
+function skala(guete: number | null, gruen: Hsl): Hsl {
   const t = (normierteGuete(guete) ?? 0) / HOECHSTE_GUETE;
-  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, TANNENGRUEN, (t - GELB_BEI) / (1 - GELB_BEI));
-  return `hsl(${runde(h)} ${runde(s)}% ${runde(l)}%)`;
+  return t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, gruen, (t - GELB_BEI) / (1 - GELB_BEI));
+}
+
+const alsHsl = ([h, s, l]: Hsl): string => `hsl(${runde(h)} ${runde(s)}% ${runde(l)}%)`;
+
+/** Anteil der Helligkeit, den der Rand der Blase behält. */
+const RAND_HELLIGKEIT = 0.55;
+
+/**
+ * Rand der Blase im Hellen: derselbe Farbton, dunkler. Gelb erreicht auf Weiss keine 3:1
+ * (1.4.11), der Rand schon; im Dunkeln hebt sich die Blase selbst ab, dort kein Rand.
+ */
+export function siegelRand(guete: number | null, dunkel = false): string {
+  if (dunkel) return 'none';
+  const [h, s, l] = skala(guete, TANNENGRUEN);
+  return alsHsl([h, s, l * RAND_HELLIGKEIT]);
 }
 
 /** Was Screenreader über das Siegel sagen. */
-export function siegelText(guete: number | null): string {
+export function siegelText(guete: number | null, glanz = false): string {
   const g = normierteGuete(guete);
-  return g === null ? 'Siegel: neu, noch keine Güte' : `Siegel: Güte ${g} von ${HOECHSTE_GUETE}`;
+  const text = g === null ? 'Siegel: neu, noch keine Güte' : `Siegel: Güte ${g} von ${HOECHSTE_GUETE}`;
+  // Glanz (#351): eigenes Abzeichen, gehört in dieselbe Beschriftung.
+  return glanz ? `${text}, mit Glanz` : text;
 }

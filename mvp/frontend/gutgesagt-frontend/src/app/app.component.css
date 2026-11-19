@@ -2,17 +2,25 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: var(--bg-main);
+    background-color: var(--aussen-grund, var(--bg-main)); /* Seitenfueller neben der Inhaltsspalte */
 }
 
 main {
     flex: 1;
-    background-color: var(--bg-card);
+    background-color: var(--seite-grund);
     max-width: 1400px;
     width: 100%;
     margin: 0 auto;
     overflow: hidden;
     min-height: 100vh;
+    /* Auf kurzen Seiten sitzt die Fusszeile unten statt mitten im Bild, ohne Leere
+       darunter (Designrunde 17.11.) */
+    display: flex;
+    flex-direction: column;
+}
+
+main > .main-content {
+    flex: 1 0 auto;
 }
 
 main * {
@@ -33,7 +41,7 @@ main * {
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: 12px;
     height: var(--header-height-desktop);
     flex-shrink: 0;
 }
@@ -45,7 +53,7 @@ main * {
     margin: 0;
     font-size: var(--font-size-h2-desktop); /* Match h2 size: 40px */
     font-weight: 400; /* Match h2 weight */
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     display: inline-flex;
     align-items: center;
     gap: 12px;
@@ -57,6 +65,18 @@ main * {
     width: 44px;
     height: 44px;
     flex-shrink: 0;
+}
+
+/* Logo als Link zur Startseite (#620) */
+.logo-link {
+    display: block;
+    flex-shrink: 0;
+    border-radius: 8px;
+}
+
+.logo-link:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
 }
 
 .back-button-header {
@@ -114,7 +134,7 @@ main * {
 
 /* Textlinks im Kopf: einer der zwei Stile neben den runden Icon-Knoepfen (#512) */
 .header-link {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -126,6 +146,33 @@ main * {
 
 .header-link .kopf-icon {
     display: none;
+}
+
+/* Die Seite, auf der man ist: dicker unterstrichen, schmal gefuellt (#645) */
+.header-link--aktiv {
+    text-decoration-thickness: 3px;
+}
+
+/* Textlinks, die etwas oeffnen statt zu navigieren, sind Knoepfe: ohne Knopf-Optik (#599) */
+button.header-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+}
+
+/* Zahl offener Meldungen am Admin-Link: neben dem Wort, am runden Knopf oben rechts */
+.header-link {
+    position: relative;
+}
+
+@media (max-width: 1199px) {
+    .header-link app-offene-meldungen-zahl {
+        position: absolute;
+        top: -4px;
+        right: -6px;
+    }
 }
 
 /* Lange Titel ("Hintergrundinfo verfassen") eine Stufe kleiner, damit sie in eine Zeile passen */
@@ -151,13 +198,22 @@ main * {
         height: 44px;
         margin: 0;
         border-radius: 50%;
-        background: var(--bg-card);
+        background: var(--flaeche);
         box-shadow: var(--elevation-1);
-        color: var(--text-primary);
+        color: var(--text);
     }
 
-    .header-link .kopf-icon {
+    .header-link--aktiv {
+        background: var(--accent-light);
+    }
+
+    .header-link .kopf-icon,
+    button.header-link .kopf-icon {
         display: inline-block;
+    }
+
+    button.header-link {
+        background: var(--flaeche);
     }
 
     /* Nur noch fuer Screenreader, wie .cdk-visually-hidden */
@@ -197,11 +253,11 @@ main * {
 
 .help-text {
     margin-top: 10px;
-    background-color: #f0f0f0;
+    background-color: var(--mulde);
     padding: 10px;
     border-radius: var(--border-radius-medium);
     font-size: 14px;
-    color: #333;
+    color: var(--text);
 }
 
 .help-icon {
@@ -232,37 +288,13 @@ main * {
     /* Derselbe Schatten wie die runden Icon-Knoepfe daneben */
     box-shadow: var(--elevation-1);
     border-radius: 50%;
-    background-color: white;
+    background-color: var(--flaeche);
     transition: transform var(--transition-standard), opacity var(--transition-standard);
     flex-shrink: 0;
 }
 
-.profile-avatar.anonymous-avatar-icon {
-    background-color: transparent;
-    box-shadow: none;
-    object-fit: contain;
-}
-
 .avatar-klickbar .profile-avatar:hover {
     transform: scale(1.05);
-}
-
-.anonymous-avatar-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #9e9e9e;
-    border: none;
-    overflow: hidden;
-    padding: 0;
-}
-
-.anonymous-avatar-icon mat-icon {
-    font-size: 32px;
-    width: 32px;
-    height: 32px;
-    line-height: 1;
-    color: white;
 }
 
 /* Mobile styles */
@@ -289,12 +321,6 @@ main * {
     .profile-avatar {
         width: var(--avatar-size-mobile);
         height: var(--avatar-size-mobile);
-    }
-
-    .anonymous-avatar-icon mat-icon {
-        font-size: 28px;
-        width: 28px;
-        height: 28px;
     }
 
     /* Show login status text on mobile, but smaller */
@@ -371,10 +397,6 @@ main * {
         display: inline;
     }
 
-    .desktop-login-text {
-        display: none;
-    }
-
     .mobile-only {
         display: block;
     }
@@ -385,10 +407,6 @@ main * {
 }
 
 @media (min-width: 769px) {
-    .desktop-login-text {
-        display: inline;
-    }
-
     .mobile-only {
         display: none;
     }
@@ -409,7 +427,7 @@ main * {
 
 .mobile-sidenav {
     width: 280px;
-    background-color: var(--bg-card);
+    background-color: var(--flaeche);
 }
 
 .mobile-menu-content {
@@ -422,7 +440,7 @@ main * {
     align-items: center;
     margin-bottom: var(--spacing-lg);
     padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--linie);
 }
 
 .mobile-menu-avatar {
@@ -440,7 +458,7 @@ main * {
 
 .mobile-menu-user-info h3 {
     margin: 0 0 var(--spacing-md) 0;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
 }
 
 .mobile-menu-item {
@@ -454,7 +472,7 @@ main * {
 }
 
 .close-menu-button {
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 /* Mobile menu footer section */
@@ -471,7 +489,7 @@ main * {
 
 .mobile-menu-about {
     padding: var(--spacing-md);
-    background-color: var(--surface-variant);
+    background-color: var(--mulde);
     border-radius: var(--border-radius-medium);
     margin-top: var(--spacing-md);
 }
@@ -479,14 +497,15 @@ main * {
 .mobile-menu-about p {
     margin: 0;
     font-size: 14px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     line-height: 1.5;
 }
 
 .mobile-menu-about a {
-    color: var(--primary-main);
-    text-decoration: none;
+    color: var(--primaer-text);
+    text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
 }
+
 
 .mobile-menu-about a:hover {
     text-decoration: underline;
@@ -496,18 +515,5 @@ main * {
 mat-sidenav-content {
     height: 100%;
     overflow-y: auto;
-    background-color: var(--bg-main);
-}
-
-/* Ketten-Icon im Profilmenue im Platz eines mat-icon, damit die Eintraege fluchten (#512) */
-.profilmenue-emoji {
-    font-size: 20px;
-    line-height: 24px;
-    text-align: center;
-}
-
-/* Ketten-Icon (Emoji) im runden Header-Knopf, so gross wie ein mat-icon */
-.header-emoji {
-    font-size: 20px;
-    line-height: 1;
+    background-color: var(--aussen-grund, var(--bg-main));
 }

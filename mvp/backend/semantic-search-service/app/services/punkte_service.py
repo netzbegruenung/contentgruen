@@ -17,9 +17,11 @@ Woher die drei Stufen kommen:
   Gewicht und Deckel stehen schon in der Konfiguration, weil ADR 0004 alle drei
   Stufen dort verlangt.
 
-Ein Startkonto sammelt keine Punkte, ein Konto ohne geltende Art.-9-Einwilligung
-(nie erteilt oder widerrufen) auch nicht (#559, F559-1): Die Datenschutzerklaerung
-stuetzt die Punkte auf sie. Gefragt wird je Abruf, damit ein Widerruf sofort wirkt.
+Ein Startkonto sammelt keine Punkte, ein Konto ohne geltende Einwilligung "Punkte
+und Meilensteine" (nie erteilt oder widerrufen) auch nicht: Die
+Datenschutzerklaerung stuetzt die Punkte auf diese eigene, freiwillige Einwilligung
+(domain/punkte_einwilligung.py, #351), nicht mehr auf die Art.-9-Einwilligung zur
+Mitwirkung. Gefragt wird je Abruf, damit ein Widerruf sofort wirkt.
 """
 
 import asyncio
@@ -38,7 +40,9 @@ from typing import (
 
 from core.config import Settings
 from domain.punkte import Punktegewichte, Punktestand, Wirkungsdaten, punkte_berechnen
-from services.art9_einwilligung_service import get_art9_einwilligung_service
+from repositories.punkte_einwilligung_repository import (
+    get_punkte_einwilligung_repository,
+)
 
 BEITRAG_WARTEZEIT = timedelta(days=3)
 """
@@ -46,6 +50,9 @@ Ein Beitrag bringt Punkte fuers Tun erst, wenn er so lange steht (ADR 0004).
 ANNAHME (#352): "drei Tage ohne Sperre" heisst: heute sichtbar und mindestens drei
 Tage alt. Eine Sperre, die vorher schon wieder aufgehoben wurde, zaehlt nicht.
 """
+
+KEINE_PUNKTE = Punktestand(tun=0, quests=0, wirkung=0, sammelt=False)
+"""Startkonto oder keine geltende Einwilligung: kein Punktestand, nicht nur 0."""
 
 SichtbareBeitraege = Callable[[str], Awaitable[List[Any]]]
 """Die sichtbaren Beitraege einer Person (ohne Aussagen und Herkuenfte), mit id und created."""
@@ -99,18 +106,18 @@ class PunkteService:
         self._stimmen_und_einwuerfe = stimmen_und_einwuerfe
         self._settings = settings
         self._jetzt = jetzt
-        # Ohne Angabe die gespeicherte Art.-9-Einwilligung; spaet geholt, damit
-        # Tests den Dienst ersetzen koennen (tests/conftest.py).
+        # Ohne Angabe die gespeicherte Einwilligung "Punkte und Meilensteine"; spaet
+        # geholt, damit Tests das Repository ersetzen koennen.
         self._eingewilligt = eingewilligt or (
-            lambda user_id: get_art9_einwilligung_service().eingewilligt(user_id)
+            lambda user_id: get_punkte_einwilligung_repository().eingewilligt(user_id)
         )
 
     async def punkte(self, user_id: str) -> Punktestand:
         gewichte = gewichte_aus(self._settings)
         if self._settings.ist_startkonto(user_id):
-            return punkte_berechnen(Wirkungsdaten(), gewichte)
+            return KEINE_PUNKTE
         if not await asyncio.to_thread(self._eingewilligt, user_id):
-            return punkte_berechnen(Wirkungsdaten(), gewichte)
+            return KEINE_PUNKTE
 
         beitraege = await self._sichtbare_beitraege(user_id)
         ids = [b.id for b in beitraege]

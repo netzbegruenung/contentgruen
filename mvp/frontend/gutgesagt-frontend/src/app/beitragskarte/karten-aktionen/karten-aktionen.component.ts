@@ -20,25 +20,35 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, switchMap, take } from 'rxjs/operators';
 
 import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
-import { UsageTrackingService } from '../../services/usage-tracking.service';
+import { GEPOSTET_NICHT_ANGEBOTEN, UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
-import { HAND_UMRISS } from '../../shared/marke/hand';
 import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
 import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
+import { beitragsLink } from '../../shared/beitrags-link';
+import { TeilenService, hatGeteilt } from '../../shared/teilen.service';
+import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
+import { platzhalterDialogOeffnen } from './platzhalter-dialog.component';
+import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
 
 /**
- * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden, im
+ * So lange steht „Kopiert“: Mit 1,5 s war es beim Wechsel in die andere App schon weg
+ * (Persona-Runde 2, P10).
+ */
+export const KOPIERT_DAUER_MS = 4000;
+
+/**
+ * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, teilen, melden, im
  * Menue der Weg zur eigenen Adresse des Beitrags (/beitrag/:id, #300) und,
  * angemeldet, als Vorlage nehmen (#356).
- * Hat der Beitrag eine Herkunft, steht neben "Kopieren" die Wahl "Text" oder
- * "Text + Herkunft".
+ * Hat der Beitrag eine Herkunft, steht die zweite Kopier-Variante (mit oder ohne
+ * Herkunft) im Menue; welche der Knopf kopiert, entscheidet die Karte (#641).
  *
  * Abstimmen ist optimistisch mit Entprellung und Ruecknahme, dazu 401/403/429-Behandlung
  * (urspruenglich aus BaseResultItemComponent). Die Leiste sitzt in einer eigenen
@@ -50,6 +60,12 @@ import { einwilligungFehlt } from '../../services/art9-einwilligung.service';
  * die Vorschau soll zeigen, wie der Beitrag aussehen wird.
  */
 type Stimme = 'like' | 'dislike' | null;
+
+/** Eine zweite Art zu kopieren, als Eintrag im ⋮-Menue (#641). */
+export interface KopierVariante {
+  text: string;
+  wort: string;
+}
 
 @Component({
   selector: 'app-karten-aktionen',
@@ -66,8 +82,12 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() typ: string | null = null;
   @Input() kopierText = '';
   @Input() kopierBeschriftung = 'Kopieren';
-  /** Text samt Herkunft fuer die Wahl "Text + Herkunft"; leer = keine Herkunft, keine Wahl. */
-  @Input() kopierTextMitHerkunft = '';
+  /** Am Handy statt kopierBeschriftung sichtbar (Bild: "Kopieren"); null = kein Kurzwort. */
+  @Input() kopierKurz: string | null = null;
+  /** Was der Knopf kopiert, als Tooltip (MatTooltip haengt ihn als Beschreibung an); leer = keiner. */
+  @Input() kopierHinweis = '';
+  /** Die andere Variante (mit oder ohne Herkunft) im Menue; null = es gibt nur eine. */
+  @Input() zweiteKopie: KopierVariante | null = null;
   @Input() stimme?: 'like' | 'dislike';
   @Input() vorschau = false;
   /** Aus beim eigenen Beitrag (Album-Sheet in Meine Beitraege); Kopieren und Melden bleiben. */
@@ -76,17 +96,31 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() fassung: Fassung | null = null;
   /** Der Menueeintrag "Beitrag öffnen"; aus auf der eigenen Adresse selbst. */
   @Input() ansichtVerlinkt = true;
+  /** Der Knopf "Teilen" (B7); die Karte gibt ansichtVerlinkt weiter, ausser auf der Beitragsseite. */
+  @Input() teilbar = true;
+  /** Teilen als Eintrag im ⋮-Menue statt als eigener Knopf (schlichte Karte der Trefferseite, V3 17.11.). */
+  @Input() teilenImMenue = false;
+  /** Der Titel des Beitrags: im Namen des Teilen-Knopfs und als Titel im Teilen-Menue. */
+  @Input() titel: string | null = null;
+  /**
+   * Zaehler an den Stimm-Knoepfen (#427), wie der Server sie zuletzt gemeldet hat;
+   * null = unter der Mindestzahl (der Server schickt dann keine, DSFA M5) oder
+   * unbekannt, dann ohne Zahl. Die eigene Stimme rechnet die Leiste sofort ein.
+   */
+  @Input() hilfreich: number | null = null;
+  @Input() nichtHilfreich: number | null = null;
+  /** Aus am eigenen Beitrag: Die Zaehler zeigen nur Stimmen anderer (#427). */
+  @Input() eigeneStimmeImZaehler = true;
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();
-  /** Nach erfolgreichem Kopieren; die Karte zaehlt daraufhin ihre Nutzung hoch. */
+  /** Nach erfolgreichem Kopieren oder Teilen; die Karte zaehlt daraufhin ihre Nutzung hoch. */
   @Output() kopiert = new EventEmitter<void>();
 
   isLiked = false;
   isDisliked = false;
   isVoting = false;
   copyAnimationActive = false;
-  readonly HAND_UMRISS = HAND_UMRISS;
 
   /**
    * Die Stimme, wie sie vor dem ersten Tippen seit dem letzten Abgleich stand;
@@ -100,6 +134,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    * Dislike.
    */
   private ausgang: Stimme | undefined;
+  /** Die eigene Stimme, die in den zuletzt gemeldeten Zaehlern schon steckt. */
+  private stimmeImZaehler: Stimme = null;
   private abgleich = new Subject<void>();
   private abonniert = false;
 
@@ -113,6 +149,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     private logger: LoggingService,
     private dialog: MatDialog,
     private router: Router,
+    private teilenService: TeilenService,
   ) {}
 
   ngOnInit(): void {
@@ -128,7 +165,36 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['stimme'] || changes['inhaltId']) {
       this.initializeVoteState();
+      this.stimmeImZaehler = this.stimme ?? null;
+    } else if (changes['hilfreich'] || changes['nichtHilfreich']) {
+      // Frisch geladen nach einer abgeglichenen Stimme: Die angezeigte steckt jetzt drin.
+      this.stimmeImZaehler = this.angezeigt;
     }
+  }
+
+  get zahlHilfreich(): number | null {
+    return this.zahl(this.hilfreich, 'like');
+  }
+
+  get zahlNichtHilfreich(): number | null {
+    return this.zahl(this.nichtHilfreich, 'dislike');
+  }
+
+  /** Der unsichtbare Name eines Stimm-Knopfs, mit Zaehler, sofern bekannt. */
+  beschriftung(name: string, zahl: number | null): string {
+    if (zahl === null) {
+      return name;
+    }
+    return `${name}, ${zahl} ${zahl === 1 ? 'Stimme' : 'Stimmen'}`;
+  }
+
+  private zahl(gemeldet: number | null, richtung: 'like' | 'dislike'): number | null {
+    if (gemeldet === null || !this.eigeneStimmeImZaehler) {
+      return gemeldet;
+    }
+    const jetzt = this.angezeigt === richtung ? 1 : 0;
+    const drin = this.stimmeImZaehler === richtung ? 1 : 0;
+    return Math.max(0, gemeldet + jetzt - drin);
   }
 
   ngOnDestroy(): void {
@@ -143,22 +209,41 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.umschalten(this.isDisliked ? null : 'dislike');
   }
 
-  /** Der Standard: der Text allein. */
+  /** Was die Karte als Standard vorgibt. */
   kopieren(): void {
     this.inZwischenablage(this.kopierText);
   }
 
-  /** Die Wahl "Text + Herkunft"; zaehlt wie Kopieren als Nutzung. */
-  kopierenMitHerkunft(): void {
-    this.inZwischenablage(this.kopierTextMitHerkunft);
+  /** Die zweite Variante aus dem Menue; zaehlt wie Kopieren als Nutzung. */
+  zweiteKopieren(): void {
+    this.inZwischenablage(this.zweiteKopie?.text ?? '');
   }
 
+  /**
+   * Mit Platzhalter „[Hier …]“ fragt erst der Dialog nach dem eigenen Satz und kopiert
+   * selbst (Persona-Test Dennis, 13.11.); abgebrochen wird nichts kopiert und nichts gezählt.
+   */
   private inZwischenablage(text: string): void {
     if (this.vorschau || !text) {
       return;
     }
+    if (hatLuecke(text)) {
+      platzhalterDialogOeffnen(this.dialog, text)
+        .afterClosed()
+        .subscribe((ergebnis) => {
+          if (ergebnis) {
+            this.nachKopieren(ergebnis.text);
+          }
+        });
+      return;
+    }
     this.clipboard.copy(text);
-    this.snackBar.open('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
+    this.nachKopieren(text);
+  }
+
+  /** Rückmeldung, Animation und Nutzung nach dem Kopieren, gleich ob mit oder ohne Dialog. */
+  private nachKopieren(text: string): void {
+    this.kopiertMelden(text);
 
     this.copyAnimationActive = true;
     setTimeout(() => {
@@ -167,6 +252,99 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     }, 600);
 
     if (this.inhaltId) {
+      this.usageTrackingService.trackContentUsage(this.inhaltId, this.fassung ?? undefined);
+      this.kopiert.emit();
+    }
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Nach dem Kopieren: angemeldet, mit Einwilligung und eingeschalteter Rückmeldung
+   * „Kopiert. Gepostet? [Ja, gepostet]“ (#643), sonst wie bisher nur „Erfolgreich
+   * kopiert!“. Ein Klick auf „Ja, gepostet“ zählt die Person einmal je Woche als
+   * öffentlich gekontert; welcher Beitrag, erfährt der Server dabei nicht.
+   *
+   * Hat der Text noch einen Platzhalter „[Hier …]“ (#640), bleibt es beim Hinweis aufs
+   * Ausfüllen: Gepostet sein kann der Text dann noch nicht.
+   */
+  private kopiertMelden(text: string): void {
+    // Sicherheitsnetz: Seit dem Platzhalter-Dialog kommt hier normalerweise kein Text mit
+    // Luecke an (der Dialog fuellt oder entfernt sie). Bleibt er stehen, falls ein
+    // eingegebener Satz selbst "[Hier …]" enthaelt oder ein Weg am Dialog vorbei kopiert.
+    if (hatLuecke(text)) {
+      // Mit Platzhalter "[Hier …]" erinnert der Hinweis ans Ausfuellen (#640, R38) und bleibt laenger stehen.
+      this.snackBar.open(KOPIERT_MIT_LUECKE, 'OK', { duration: 6000 });
+      return;
+    }
+    const person = this.authService.getUserInfo();
+    const kennung = person?.isAuthenticated ? person.userId : null;
+    if (!kennung) {
+      this.snackBar.open(KOPIERT, 'Schließen', { duration: KOPIERT_DAUER_MS });
+      return;
+    }
+    if (this.usageTrackingService.gepostetBekannt(kennung)) {
+      this.gepostetFragen(kennung);
+      return;
+    }
+    // Noch unbekannt oder nicht angeboten: sofort die gewohnte Bestätigung; kommt vom
+    // Server ein Ja, ersetzt die Frage sie (eine neue Snackbar schließt die alte).
+    this.snackBar.open(KOPIERT, 'Schließen', { duration: KOPIERT_DAUER_MS });
+    if (this.usageTrackingService.gepostetBekannt(kennung) === false) {
+      return;
+    }
+    this.usageTrackingService
+      .gepostetAngeboten(kennung)
+      .pipe(take(1))
+      .subscribe((angeboten) => {
+        if (angeboten) {
+          this.gepostetFragen(kennung);
+        }
+      });
+  }
+
+  private gepostetFragen(kennung: string): void {
+    this.snackBar
+      .open(KOPIERT_GEPOSTET_FRAGE, JA_GEPOSTET, { duration: GEPOSTET_FRAGE_MS })
+      .onAction()
+      .pipe(
+        take(1),
+        switchMap(() => this.usageTrackingService.gepostetMelden(kennung)),
+      )
+      .subscribe((personen) => {
+        if (personen === GEPOSTET_NICHT_ANGEBOTEN) {
+          return;
+        }
+        this.snackBar.open(gepostetDank(personen), 'Schließen', { duration: 5000 });
+      });
+  }
+
+  get teilenSichtbar(): boolean {
+    return this.teilbar && !!this.inhaltId;
+  }
+
+  /** Der unsichtbare Name des Teilen-Knopfs, mit dem Titel des Beitrags, sofern er einen hat. */
+  get teilenBeschriftung(): string {
+    const titel = this.titel?.trim();
+    return titel ? `Beitrag teilen: „${titel}“` : 'Beitrag teilen';
+  }
+
+  /**
+   * Teilen (B7): der Text, den auch "Kopieren" nimmt, und der Link auf die Beitragsseite,
+   * ueber das Teilen-Menue, wo das Geraet eines hat, sonst nur der Link in die Zwischenablage. Eine Karte
+   * teilen zaehlt als Nutzung (docs/VISION.md, Teilen; GLOSSARY.md, Nutzung), ueber
+   * denselben Endpunkt wie Kopieren; ein Abbruch zaehlt nicht. Die eigene Nutzung
+   * verwirft der Server (api/v1/usage.py).
+   */
+  async teilen(): Promise<void> {
+    if (this.vorschau || !this.inhaltId) {
+      return;
+    }
+    const ergebnis = await this.teilenService.teilen({
+      url: beitragsLink(this.inhaltId),
+      text: this.kopierText || undefined,
+      titel: this.titel?.trim() || undefined,
+    });
+    if (hatGeteilt(ergebnis)) {
       this.usageTrackingService.trackContentUsage(this.inhaltId, this.fassung ?? undefined);
       this.kopiert.emit();
     }
@@ -290,7 +468,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       .open('Bitte melde dich an, um abzustimmen', 'Anmelden', { duration: 5000 })
       .onAction()
       .subscribe(() => {
-        this.authService.login();
+        // Zurueck auf diese Seite samt Suche, dort sagt ein Satz, dass Abstimmen jetzt geht
+        this.authService.login('abstimmen');
       });
   }
 

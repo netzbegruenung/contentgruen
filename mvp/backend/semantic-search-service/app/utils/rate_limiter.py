@@ -129,6 +129,11 @@ spracherkennung_rate_limiter = RateLimiter(max_requests=300, window_minutes=10)
 # Kuerzungsvorschlag (#403): nur auf Klick, 60 je Person in 10 Minuten.
 kuerzungsvorschlag_rate_limiter = RateLimiter(max_requests=60, window_minutes=10)
 
+# Aehnliche Aussagen unter "Nicht dabei?" (#642), auch ohne Anmeldung: wie die
+# Suchaussage 60 je Adresse in 10 Minuten. Die Ergebnisseite fragt einmal je Suche;
+# jeder Aufruf kostet Modellaufrufe (Widerspruchspruefung).
+aehnliche_aussagen_rate_limiter = RateLimiter(max_requests=60, window_minutes=10)
+
 # So oft raeumt der Hintergrund-Task abgelaufene Schluessel weg. Ein Schluessel
 # verschwindet damit spaetestens ein Fenster plus dieser Takt nach seinem letzten
 # Aufruf - fuer die Suchaussage zehn plus eine Minute, fuer Einladungen fuenfzehn

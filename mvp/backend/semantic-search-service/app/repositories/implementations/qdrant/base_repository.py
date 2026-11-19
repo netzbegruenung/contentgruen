@@ -3,6 +3,7 @@ import datetime
 import json
 from typing import (
     AbstractSet,
+    Callable,
     Any,
     Dict,
     List,
@@ -36,6 +37,8 @@ from domain.models.content_status import (
     ContentStatus,
 )
 from domain.models.content_origin import ContentOrigin
+from domain.models.content_type import ContentType
+from utils.antwort_ids import FELD_ANTWORT_IDS, antwort_ids
 from utils.data_utils import DataSource
 from utils.text_normalisierung import (
     FELD_TEXT_NORMALISIERT,
@@ -264,7 +267,9 @@ class QdrantBaseRepository(
         ]
 
     async def finde_normalisiert_gleich(
-        self, normalform: str
+        self,
+        normalform: str,
+        ausschliessen: Optional[Callable[[Any], bool]] = None,
     ) -> Optional[TContentSearchResult]:
         """
         Einen Eintrag dieses Typs mit genau dieser Normalform (Payload-Feld
@@ -274,7 +279,9 @@ class QdrantBaseRepository(
 
         Wie search() nur sichtbare: Ein neuer Beitrag haengt sich nie still an einen
         gesperrten oder geloeschten. Gibt es mehrere, entscheidet die Reihenfolge
-        deterministisch: der aelteste (created), dann die ID.
+        deterministisch: der aelteste (created), dann die ID. Eintraege, fuer die
+        ausschliessen wahr ist, zaehlen nicht; dann der naechste (Vormoderation:
+        eine verborgene Suchanfrage, StatementService.add_statement).
         """
         from qdrant_client.models import Filter, FieldCondition, MatchValue
 
@@ -307,14 +314,22 @@ class QdrantBaseRepository(
                 str(punkt.id),
             )
 
-        erster = min(punkte, key=rang)
-        return self.content_search_result_model_class.model_validate(
-            {**erster.payload, "id": str(erster.id), "score": 1.0}
-        )
+        for punkt in sorted(punkte, key=rang):
+            eintrag = self.content_search_result_model_class.model_validate(
+                {**punkt.payload, "id": str(punkt.id), "score": 1.0}
+            )
+            if ausschliessen is None or not ausschliessen(eintrag):
+                return eintrag
+        return None
 
-    async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
+    async def get(
+        self,
+        item_id: uuid.UUID,
+        eintrag_modell: Optional[Type[Any]] = None,
+    ) -> TContentDbEntry:
         """
-        Async implementation of get.
+        Async implementation of get. eintrag_modell ersetzt das Modell des Repositorys
+        beim Lesen des Payloads (wie bei get_by_author).
 
         "Nicht gefunden" und "anderer Inhaltstyp unter dieser ID" sind erwartbar
         (geloeschte Aussage, veralteter Link) und werden als ValueError gemeldet -
@@ -355,7 +370,9 @@ class QdrantBaseRepository(
             raise ValueError(meldung)
 
         try:
-            entry = self.content_db_entry_model_class.model_validate(result)
+            entry = (
+                eintrag_modell or self.content_db_entry_model_class
+            ).model_validate(result)
         except Exception as e:
             logger.error(
                 f"Failed to read item {item_id}: {type(e).__name__}", exc_info=True
@@ -409,6 +426,12 @@ class QdrantBaseRepository(
             # Normalform fuer den exakten Abgleich der Dublettenpruefung.
             if upsert_content_type in TYPEN_MIT_TEXT_NORMALISIERT:
                 data_dict[FELD_TEXT_NORMALISIERT] = text_normalisiert(text)
+
+            # Rueckwaertssuche Beitrag -> Aussage (#603, utils/antwort_ids.py).
+            if upsert_content_type == ContentType.STATEMENT.value:
+                data_dict[FELD_ANTWORT_IDS] = antwort_ids(
+                    data_dict.get("replysuggestions")
+                )
 
             # Upsert to Qdrant
             await self._shared_manager.upsert_batch(

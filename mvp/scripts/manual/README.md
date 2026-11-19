@@ -31,9 +31,19 @@ Standardbibliothek, laeuft von jedem Rechner mit Python 3. Aufruf, Dateiformat u
 Exit-Codes in `mvp/SCRIPTS.md`; Beispiellisten `einwuerfe_beispiel.csv` und
 `einwuerfe_beispiel.md`.
 
+## Startbestand einspielen, Beitraege entfernen (gegen das BFF)
+
+`beitraege_importieren.py <datei> [--sitzung-datei <datei> | --email <konto>] [--adresse <url>] [--ausfuehren]` –
+**schreibend mit `--ausfuehren`.** Legt Kommentare samt Aussage und Herkunft aus einer
+Markdown-Datei an (Startbestand), unter dem angemeldeten Konto. Mit `--entfernen` ist die Datei
+eine Liste `<typ> <id>` und die Beitraege werden endgueltig entfernt (Admin-Konto). Ohne
+`--ausfuehren` ein Trockenlauf. Angemeldet mit dem Sitzungs-Cookie des Browsers (Test,
+Produktion), lokal mit `--email`. Nur Standardbibliothek. Aufruf und Dateiformat in
+`mvp/SCRIPTS.md`; Beispiel `beitraege_beispiel.md`.
+
 ## Bestand in Qdrant (im semantic-search-Container)
 
-Diese beiden Skripte laufen nicht gegen die HTTP-API, sondern per stdin im
+Diese Skripte laufen nicht gegen die HTTP-API, sondern per stdin im
 semantic-search-Container, mit dessen Qdrant-Umgebung:
 
 - `bestand_pruefen.py` – **nur lesend**. Zaehlt Punkte je Typ und Herkunft,
@@ -48,21 +58,32 @@ semantic-search-Container, mit dessen Qdrant-Umgebung:
   jeder Version, die einen weiteren Typ aufnimmt (zuletzt Hintergrundinfos, #301):
   Bis dahin findet die Pruefung aeltere Beitraege dieses Typs nur ueber die
   Einbettung, eine nur klein geschriebene Kopie also nicht.
+- `antwort_ids_nachtragen.py` – traegt das Payload-Feld `antwort_ids` fuer Aussagen
+  nach (IDs ihrer Antworten, Rueckwaertssuche Beitrag → Aussage fuer die Beitragsseite,
+  #603) und legt den Keyword-Index an. Ohne `--ausfuehren` wird nur gezaehlt;
+  idempotent. Nach dem Ausrollen der Version laufen lassen, die das Feld schreibt,
+  in ruhiger Zeit, und danach einmal wiederholen (`nachzutragen: 0`): Eine Antwort, die
+  waehrend des Laufs dazukommt, kann der erste Lauf mit altem Stand ueberschreiben. Bis
+  dahin zeigt die Beitragsseite zu aelteren Beitraegen keine Aussage.
 
 Auf Test/Prod liegt kein Repo-Checkout; die Skripte werden heruntergeladen:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/bestand_pruefen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/bestand_pruefen.py
 docker exec -i gutgesagt-semantic-search python - < bestand_pruefen.py
 
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
 docker exec -i gutgesagt-semantic-search python - < text_normalisiert_nachtragen.py
 docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisiert_nachtragen.py
+
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/antwort_ids_nachtragen.py
+docker exec -i gutgesagt-semantic-search python - < antwort_ids_nachtragen.py
+docker exec -i gutgesagt-semantic-search python - --ausfuehren < antwort_ids_nachtragen.py
 ```
 
 `bestand_pruefen.py` nutzt nur qdrant_client und die Standardbibliothek und laeuft
-auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` braucht den
-ausgerollten neuen Stand.
+auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` und
+`antwort_ids_nachtragen.py` brauchen den ausgerollten neuen Stand.
 
 ## Vektor benennen (im semantic-search-Container)
 
@@ -82,7 +103,7 @@ Reihenfolge, Backup und Rueckweg stehen in `docs/DEPLOYMENT.md`, „Qdrant: name
 Schreiben fehl.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/vektor_benennen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/vektor_benennen.py
 docker exec -i gutgesagt-semantic-search python - < vektor_benennen.py
 docker exec -i gutgesagt-semantic-search python - --ausfuehren < vektor_benennen.py
 docker restart gutgesagt-semantic-search
@@ -124,7 +145,7 @@ Reihenfolge:
    der zweite Lauf noch etwas, ihn mit `--ausfuehren` wiederholen.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/zustaende_umstellen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/zustaende_umstellen.py
 docker exec -i gutgesagt-semantic-search python - < zustaende_umstellen.py
 docker exec -i gutgesagt-semantic-search python - --ausfuehren < zustaende_umstellen.py
 ```

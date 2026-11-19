@@ -12,19 +12,31 @@ export interface AussageInAnfrage {
 /**
  * Themen lassen sich nur fuer eine Aussage per Text waehlen (#455): Sie entsteht erst
  * beim Speichern. Eine gewaehlte, vorhandene Aussage behaelt ihre Themen; die aendert
- * man in „Hier fehlt eine Antwort“ oder auf der Admin-Seite „Themen“.
+ * man in „Hier fehlt eine Antwort“ oder auf der Admin-Seite „Themen“. Und erst, wenn
+ * der Text ausdruecklich als neue Aussage gewaehlt ist: Solange darunter noch
+ * vorhandene zur Wahl stehen, kaemen „Themen der neuen Aussage“ zu frueh (#617).
  */
 export function themenWaehlbar(aussage: AntwortAuf): boolean {
-  return !aussage.id && !!aussage.text;
+  return !aussage.id && !!aussage.text && aussage.neuGewaehlt === true;
 }
+
+/** So lang muss ein Aussagetext mindestens sein, den das Backend annimmt (AUSSAGE_MIN_ZEICHEN dort). */
+const AUSSAGETEXT_MIN_ZEICHEN = 10;
 
 /**
  * Die gewaehlte Aussage per ID, sonst ihr Text mit den gewaehlten Themen, sonst nichts.
- * Leere Themen fehlen in der Anfrage.
+ * Leere Themen fehlen in der Anfrage. Zur ID geht der Text mit, wenn er lang genug ist:
+ * Ist die Aussage eine Suchanfrage, die noch auf Freigabe wartet (Vormoderation),
+ * haengt das Backend die Antwort an eine eigene Aussage mit diesem Text, statt sie zu
+ * verwerfen.
  */
 export function aussageFuerAnfrage(aussage: AntwortAuf, themen: string[]): AussageInAnfrage {
   if (aussage.id) {
-    return { statement_id: aussage.id };
+    const text = aussage.text?.trim() ?? '';
+    return {
+      statement_id: aussage.id,
+      ...(text.length >= AUSSAGETEXT_MIN_ZEICHEN ? { statement_text: aussage.text } : {}),
+    };
   }
   if (!aussage.text) {
     return {};
@@ -47,4 +59,36 @@ export function themenHinweisNachSpeichern(
   }
   const hinweis = themenHinweis(anfrage.themen, antwort.themen ?? []);
   return hinweis ? { themenHinweis: hinweis } : {};
+}
+
+/** Was das Backend nach dem Speichern zur Aussage meldet (Post, Bild, #619; wie Hintergrundinfo). */
+export interface AussageInAntwort {
+  /** Die Aussage, an der der Beitrag jetzt haengt; fehlt ohne Aussage oder wenn das Verknuepfen scheiterte. */
+  statement_id?: string | null;
+  /** Ihr Text; bei Text-Anfragen kann das eine schon vorhandene, aehnliche Aussage sein. */
+  statement_text?: string | null;
+  themen?: Thema[];
+  /** false: Aussage angegeben, aber nicht verknuepft - der Beitrag steht trotzdem. */
+  verknuepft?: boolean;
+}
+
+/**
+ * Das Ergebnis fuer die Ergebnisseite. Wurde eine Aussage mitgeschickt, gilt sie nur
+ * als verknuepft, wenn das Backend es bestaetigt; dann ist es die tatsaechlich
+ * verknuepfte Aussage. Sonst bleibt die eingegebene stehen, damit die Seite sagen kann,
+ * woran es nicht haengt.
+ */
+export function alsGespeichert(
+  id: string,
+  eingegeben: AntwortAuf,
+  anfrage: AussageInAnfrage,
+  antwort: AussageInAntwort,
+): { id: string; aussage: AntwortAuf; verknuepft: boolean; themenHinweis?: string } {
+  const aussageGeschickt = !!(anfrage.statement_id || anfrage.statement_text);
+  const verknuepft = !aussageGeschickt || antwort.verknuepft === true;
+  const aussage =
+    aussageGeschickt && verknuepft && antwort.statement_id
+      ? { id: antwort.statement_id, text: antwort.statement_text ?? eingegeben.text }
+      : eingegeben;
+  return { id, aussage, verknuepft, ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft) };
 }

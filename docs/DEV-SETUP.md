@@ -7,11 +7,19 @@
    Der Frontend-Container (8080) wird dafür nicht gebraucht; `mvp/run-local.sh up` startet ihn trotzdem mit.
 3. Frontend: `cd mvp/frontend/gutgesagt-frontend && npm ci && npx ng serve`
    Fehlt `src/environments/environment.ts`, vorher `environment.local.ts` dorthin kopieren.
-4. http://localhost:4200 → Anmelden → Beta-Zugang (Direktanmeldung): `test.user@example.com` / `Liebe>Hass!`.
+4. http://localhost:4200 → Anmelden → „Mit E-Mail anmelden“ (Direktanmeldung): `test.user@example.com` / `Liebe>Hass!`.
 
 Die App ruft das BFF relativ auf (`baseUrl: ''`). `ng serve` leitet `/api`, `/content`, `/recent`, `/getMetrics`,
 `/report` und `/reports` per `proxy.conf.json` an http://localhost:5054 weiter – kein CORS, Cookies same-origin.
 Ein älteres lokales `environment.ts` mit `baseUrl: 'http://localhost:5054'` auf `''` umstellen.
+
+### Vorschau wie Test/Produktion
+
+Auf Test und Produktion ist nur die Keycloak-Anmeldung an, die Direktanmeldung aus. Um Anmeldeseite und
+Anmeldeknöpfe so zu sehen, wie Nutzer:innen sie sehen, `npx ng serve --proxy-config proxy.prod-modi.cjs` starten:
+`/api/auth/modes` wird dann lokal mit `{"keycloakEnabled":true,"managedAuthEnabled":false}` beantwortet, alles
+andere geht wie gewohnt an das BFF auf 5054. Der Keycloak-Knopf führt lokal ins Leere; zum Anmelden wieder ohne
+`--proxy-config` starten.
 
 ## Dev-VM (Agenten-Sandbox): `mvp/run-local.sh`
 

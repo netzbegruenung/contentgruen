@@ -1,24 +1,53 @@
 <div class="search-container" [class.compact-mode]="compactMode">
     <form (ngSubmit)="onSearch()" class="search-form" [class.search-form-compact]="compactMode">
-        <mat-form-field appearance="outline" class="search-field">
+        <mat-form-field appearance="outline" class="search-field"
+                        [floatLabel]="beispielAnimation && beispielText ? 'always' : 'auto'">
+            <!-- Ohne Pflichtstern: Auf einer Seite mit nur einem Feld war er Formularsprache (#644) -->
             <mat-label>
-                <span class="label">
-                    Aussage, Post, Text oder Schlagwort
-                </span>
+                <span class="label">{{ feldName }}</span>
             </mat-label>
-            <input matInput [(ngModel)]="searchQuery" name="searchQuery" required>
+            <!-- Unter 600 px waechst das Feld mit (2 bis 4 Zeilen, Hoehe in der CSS), damit der Hot Take
+                 umbricht statt aus dem Feld zu laufen; Enter sucht, ein Suchtext bleibt eine Zeile
+                 (Designrunde 18.11.) -->
+            @if (schmal) {
+                <textarea matInput #feld class="suchfeld-mehrzeilig" [id]="feldId"
+                          [ngModel]="searchQuery" (ngModelChange)="feldGeaendert($event)" name="searchQuery"
+                          cdkTextareaAutosize enterkeyhint="search"
+                          [attr.aria-describedby]="hinweisId"
+                          [placeholder]="beispielAnimation && !searchQuery ? beispielText : ''"
+                          (keydown.enter)="enterImFeld($event)" (keydown.shift.enter)="enterImFeld($event)"
+                          (beforeinput)="umbruchImFeld($event)"
+                          (pointerdown)="beispielBeenden()" (input)="beispielBeenden()" (paste)="beispielBeenden()"></textarea>
+            } @else {
+                <input matInput #feld [id]="feldId" [(ngModel)]="searchQuery" name="searchQuery"
+                       enterkeyhint="search"
+                       [attr.aria-describedby]="hinweisId"
+                       [placeholder]="beispielAnimation && !searchQuery ? beispielText : ''"
+                       (keydown.enter)="enterImFeld($event)"
+                       (pointerdown)="beispielBeenden()" (input)="beispielBeenden()" (paste)="beispielBeenden()">
+            }
             <!-- Search button as suffix icon on mobile in compact mode -->
-            <button mat-icon-button matSuffix type="submit" class="mobile-search-button"
-                    *ngIf="compactMode"
-                    [disabled]="!searchQuery || !searchQuery.trim()">
-                <mat-icon>search</mat-icon>
-            </button>
+            @if (compactMode) {
+                <button mat-icon-button matSuffix type="submit" class="mobile-search-button"
+                        [disabled]="!searchQuery || !searchQuery.trim()">
+                    <mat-icon>search</mat-icon>
+                </button>
+            }
         </mat-form-field>
-        <!-- Search button: below input on main page, inline on results page desktop -->
+        <!-- Search button: below input on main page, inline on results page desktop.
+             Ein Knopf: Solange das leere Feld Hot Takes zeigt, sucht er den gezeigten (Designrunde 18.11.) -->
         <div class="search-button-container" [class.desktop-inline]="compactMode" [class.desktop-only]="compactMode">
-            <button mat-raised-button class="gutgesagt-primary-dark search-button" type="submit">
-                <mat-icon>search</mat-icon> Suchen
+            <button mat-raised-button class="gutgesagt-primary-dark search-button" type="submit"
+                    [attr.aria-label]="beispielZustand ? 'Beispiel ausprobieren: ' + beispielSatz : null"
+                    (focus)="beispielAnhalten()">
+                <mat-icon>search</mat-icon> {{ beispielZustand ? 'Beispiel ausprobieren' : 'Suchen' }}
             </button>
         </div>
     </form>
+    <!-- Leise unter dem Feld, ohne Symbol: Information, keine Warnung (Persona-Test Gerd);
+         ueber den Treffern einzeilig (E5) -->
+    <p class="such-hinweis" [id]="hinweisId">
+        {{ suchhinweis }}
+        <a routerLink="/datenschutz" [fragment]="suchanfragenAbschnitt">{{ compactMode ? 'Mehr' : 'Mehr dazu im Datenschutz' }}</a>
+    </p>
 </div>

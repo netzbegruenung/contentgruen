@@ -3,6 +3,16 @@ import { provideRouter } from '@angular/router';
 
 import { abschnitt as abschnittIn, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
+import { SUCHANFRAGEN_ABSCHNITT } from '../search/search.component';
+import { HOME_HINWEIS_MERKER, MEILENSTEIN_MERKER } from '../shared/geraetespeicher-schalter';
+
+/** Der Satz zu Widerrufen vor dem Einspielen: mit Platzhalter oder mit Datum („1. Dezember 2026“). */
+const WIDERRUF_VOR_DEM_EINSPIELEN = new RegExp(
+  'Wer vor dem (\\[Datum des Einspielens\\]|([1-9]|[12]\\d|3[01])\\. ' +
+    '(Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember) \\d{4}) ' +
+    'widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ' +
+    'ab diesem Tag von ihm\\.'
+);
 
 /**
  * Die Datenschutzerklaerung beschreibt, was die App tut (#222). Geprueft wird der Text,
@@ -52,12 +62,26 @@ describe('DatenschutzComponent', () => {
     });
   });
 
+  describe('Rückmeldung „Ja, gepostet“ (#643)', () => {
+    it('nennt Prüfwert statt Kennung, kein Beitrag, Wochenfrist, lit. f und die Art.-9-Einwilligung', () => {
+      const text = abschnitt('Rückmeldung „Ja, gepostet“');
+
+      expect(text).toContain('nur einen Prüfwert');
+      expect(text).toContain('welchen Beitrag du gepostet hast, speichern wir nicht');
+      expect(text).toContain('bis kurz nach Ende der Kalenderwoche');
+      expect(text).toContain('Widerrufst du sie, erscheint die Frage nicht mehr');
+      expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
+      expect(text).toContain('Artikel 9 Absatz 2 Buchstabe a DSGVO');
+    });
+  });
+
   describe('Rückmeldung zur Nutzung (#349)', () => {
     it('nennt die gespeicherte Zahl ohne Zeitpunkt, lit. f und die Frist bis zur Kontolöschung', () => {
       const text = abschnitt('Rückmeldung zur Nutzung deiner Beiträge');
 
       expect(text).toContain('Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt');
-      expect(text).toContain('nur eine Zahl');
+      expect(text).toContain('nur zwei Zahlen');
+      expect(text).toContain('wie viele Einwürfe anderer es im Fangkorb gab');
       expect(text).toContain('Wann du da warst, speichern wir nicht');
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
       expect(text).toContain('bis zur Löschung deines Kontos');
@@ -70,9 +94,10 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('alle angemeldeten Mitwirkenden');
       expect(text).toContain('„Hier fehlt eine Antwort“');
-      expect(text).toContain('Danach wurde ohne Treffer gesucht: n Personen');
+      expect(text).toContain('n Personen suchten das ohne Treffer');
       expect(text).toContain('die Zahl der Suchen sehen sie nicht');
-      expect(text).toContain('Administratorinnen und Administratoren, zusätzlich mit der Zahl der Suchen');
+      expect(text).toContain('das Moderationsteam, zusätzlich mit der Zahl der Suchen');
+      expect(text).toContain('erst nach Prüfung durch das Moderationsteam');
     });
 
     it('bezieht die Zwei-Personen-Schwelle auf die Listen, nicht auf die Auffindbarkeit', () => {
@@ -105,8 +130,16 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('kann danach für alle auffindbar werden');
       expect(text).not.toContain('ist danach für alle auffindbar');
-      expect(text).toContain('nur unseren Administratorinnen und Administratoren');
+      expect(text).toContain('nur unserem Moderationsteam (unseren Administratorinnen und Administratoren)');
       expect(text).toContain('mindestens zwei verschiedene Personen innerhalb von vier Wochen');
+      // Vormoderation (13.11.2026): erst nach Prüfung, auch nicht über eine gleichlautende Aussage.
+      expect(text).toContain('Ein freigegebener Eintrag ist für alle sichtbar, solange in den letzten vier Wochen');
+      expect(text).toContain('dauerhaft, sobald jemand einen Beitrag als Antwort darauf eingestellt hat');
+      expect(text).toContain('Dafür entsteht eine eigene Aussage mit dem Wortlaut dieser Person');
+      // Übernommen wird nur eine sichtbare Suchanfrage (freigegeben und über der Schwelle).
+      expect(abschnitt('Suchen ohne Treffer')).toContain('einer für alle sichtbaren (freigegebenen), noch unbeantworteten Suchanfrage');
+      // Keine Ausnahme für den Bestand (Entscheidung des Maintainers vom 13.11.2026).
+      expect(text).toContain('nur wegen der Zahl der Suchen sichtbar waren, sind es erst nach dieser Prüfung wieder; hatte schon jemand darauf geantwortet, bleiben sie sichtbar');
       expect(text).toContain('Gib nichts in das Suchfeld ein, was nicht öffentlich werden soll');
     });
   });
@@ -133,6 +166,26 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Offene Meldungen haben keine Frist');
       expect(text).toContain('Artikel 20 DSA');
       expect(text).not.toContain('keine Löschfrist');
+    });
+
+    // PR #670 (freigegeben 13./14.11.2026): Kontoadresse mit Häkchen; geht mit dem Konto
+    // (person_loeschen.sql loescht die Meldungen der Person samt Adresse)
+    it('Meldungen Angemeldeter: Kontoadresse nur mit Häkchen, geht mit dem Konto', () => {
+      const text = abschnitt('Meldungen von Beiträgen');
+
+      expect(text).toContain('Bestätigung und Entscheidung per Mail an mein Konto');
+      expect(text).toContain('ohne Häkchen speichern wir keine Adresse');
+      expect(text).toContain('löschst du dein Konto, löschen wir deine Meldungen samt Adresse mit');
+      expect(text).not.toContain('auch wenn du dein Konto vorher löschst');
+      expect(abschnitt('Anmeldung und Zugang')).toContain('speichern wir die E-Mail-Adresse deines Kontos an dieser Meldung');
+    });
+
+    it('Art.-9-Einwilligung: „ohne Einwilligung weiter“ am Konto, Punkte gesondert (PR #670)', () => {
+      const text = abschnitt('Rückschlüsse auf deine politische Haltung');
+
+      expect(text).toContain('Gehst du ohne Einwilligung weiter, speichern wir das mit der Fassung des');
+      expect(text).toContain('Punkte und Meilensteine gehören nicht zu dieser Einwilligung');
+      expect(abschnitt('Punkte')).toContain('eine eigene, freiwillige Einwilligung');
     });
 
     it('Sperren: Kennung des Autors, Widerspruch, 180 Tage nach der Aufhebung (#448)', () => {
@@ -217,9 +270,18 @@ describe('DatenschutzComponent', () => {
     it('Punkte: ohne Einwilligung keine Punkte, kein Paar-Prüfwert, kein Muster-Hinweis (#562)', () => {
       const text = abschnitt('Punkte');
 
-      expect(text).toContain('Ohne diese Einwilligung (nie erteilt oder widerrufen) hat dein Konto keine Punkte');
+      expect(text).toContain('Ohne sie (nie erteilt oder widerrufen) berechnen wir für dein Konto keine Punkte und keine Meilensteine');
       expect(text).toContain('weder ein Paar-Prüfwert noch ein Muster-Hinweis, der es nennt');
-      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung macht, bringen niemandem Punkte');
+      expect(text).toContain('Kopien, die ein Konto ohne Einwilligung zu seiner Mitwirkung macht, bringen niemandem Punkte');
+    });
+
+    it('Punkte: eigene, freiwillige Einwilligung, getrennt von der zur Mitwirkung (#351)', () => {
+      const text = abschnitt('Punkte');
+
+      expect(text).toContain('deine eigene, freiwillige Einwilligung „Punkte und Meilensteine“');
+      expect(text).toContain('nichts ist vorausgewählt');
+      expect(text).toContain('Ohne sie kannst du genauso beitragen und bewerten');
+      expect(text).toContain('jederzeit in den „Datenschutz-Einstellungen“ widerrufen; danach wird nichts mehr berechnet');
       expect(text).not.toContain('Bevor wir Punkte einschalten');
     });
 
@@ -245,6 +307,12 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('solange Punkte ausgeschaltet sind');
       expect(text).toContain('hat keine Folgen für dich');
     });
+  });
+
+  // Sprungziel des Hinweises unter dem Suchfeld (search.component.ts, SUCHANFRAGEN_ABSCHNITT)
+  it('trägt am Abschnitt „Deine Suchanfragen“ die Sprungmarke des Suchfelds', () => {
+    const ziel = seite.querySelector(`#${SUCHANFRAGEN_ABSCHNITT}`)!;
+    expect(ziel.querySelector('h2')!.textContent!.trim()).toBe('Deine Suchanfragen');
   });
 
   describe('Gegenlesen (#358)', () => {
@@ -417,12 +485,14 @@ describe('DatenschutzComponent', () => {
     });
   });
 
-  describe('Suchvorgänge (#239, #289)', () => {
-    it('nennt den Tag statt eines Zeitpunkts und die Frist von 90 Tagen mit Tageszähler', () => {
+  describe('Suchvorgänge (#239, #289, #495)', () => {
+    it('nennt den Tag statt eines Zeitpunkts und das Ende des Tages als Frist mit Tageszähler', () => {
       const text = abschnitt('Suchvorgänge');
 
       expect(text).toContain('den Tag (keine Uhrzeit)');
-      expect(text).toContain('nach 90 Tagen automatisch');
+      expect(text).toContain('dieses nur bis zum Ende des Tages');
+      expect(text).toContain('automatisch nach Ablauf ihres Tages');
+      expect(text).not.toContain('nach 90 Tagen');
       expect(text).toContain(
         'je Tag nur, wie oft gesucht wurde, wie oft davon ohne Treffer und von wie vielen verschiedenen Pseudonymen',
       );
@@ -431,14 +501,18 @@ describe('DatenschutzComponent', () => {
   });
 
   describe('Tagespseudonym statt Kennung im Browser (#446)', () => {
-    it('Suchvorgänge: Besucher über IP-Adresse, User-Agent und einen täglich neuen, nicht gespeicherten Schlüssel', () => {
+    it('Suchvorgänge: Besucher über die IP-Adresse allein und einen täglich neuen, nicht gespeicherten Schlüssel', () => {
       const text = abschnitt('Suchvorgänge');
 
       expect(text).toContain('nichts in deinem Browser ab');
-      expect(text).toContain('deiner IP-Adresse');
-      expect(text).toContain('(User-Agent)');
+      expect(text).toContain('nur aus dem heutigen Datum und deiner IP-Adresse');
+      // #495: kein User-Agent mehr im Pseudonym.
+      expect(text).toContain('Die Bezeichnung deines Browsers (User-Agent) und andere Merkmale deines Geräts gehen nicht ein.');
+      expect(text).toContain('hat deshalb an einem Tag dasselbe Pseudonym');
+      expect(text).toContain('im Mobilfunknetz teilen sich oft viele Menschen eine Adresse');
+      expect(text).toContain('wenige Minuten später noch einmal');
       expect(text).toContain('jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends speichert');
-      expect(text).toContain('IP-Adresse und User-Agent werden dabei weder gespeichert noch protokolliert');
+      expect(text).toContain('Die IP-Adresse wird dabei weder gespeichert noch protokolliert');
       expect(text).not.toContain('Sitzungskennung');
       // Der Schlüssel wechselt mit der ersten Suche des neuen Tages, nicht um Mitternacht.
       expect(text).toContain('Mit der ersten Suche eines neuen Tages ersetzt er ihn');
@@ -452,9 +526,11 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Suchen ohne Treffer');
 
       expect(text).toContain('anderes Netz');
-      // #496: der Anschluss-Prüfwert; ein anderer Browser am selben Anschluss zählt nicht mehr neu.
-      expect(text).toContain('aus deinem Anschluss');
+      // #495: das Pseudonym selbst steht für den Anschluss; ein anderer Browser zählt nicht neu.
+      expect(text).toContain('nur aus deinem Anschluss entsteht');
       expect(text).toContain('je Anschluss höchstens eine Person');
+      expect(text).not.toContain('Zusätzlich merken wir uns');
+      expect(text).toContain('Summe der Personen der einzelnen Tage');
       expect(text).toContain('als eine, auch mit verschiedenen Browsern');
       expect(text).not.toContain('anderen Browser</strong>');
       expect(text).not.toContain('anderen Browser oder');
@@ -466,6 +542,10 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('nicht ablesen, welches Konto einen Beitrag verwendet hat');
       expect(text).not.toContain('höchstens 30 Tage');
+      // #495: der Prüfwert ohne Anmeldung nur aus dem Anschluss.
+      expect(text).toContain('(ohne Anmeldung: vom selben Anschluss)');
+      expect(text).not.toContain('mit demselben Browser');
+      expect(text).not.toContain('und der Bezeichnung deines');
     });
 
     it('Meldungen: ohne Konto das Tagespseudonym, nur bis zum Abschluss', () => {
@@ -572,11 +652,42 @@ describe('DatenschutzComponent', () => {
     it('Art.-9-Einwilligung: Widerruf im Profilmenü, Folgen und Dauer bis zur Kontolöschung (#557)', () => {
       const text = abschnitt('Rückschlüsse auf deine politische Haltung');
 
-      expect(text).toContain('Widerrufen kannst du jederzeit im Profilmenü unter „Einwilligung“');
-      expect(text).toContain('Was du schon gespeichert hast, bleibt, bis du es löschst oder dein Konto löschen lässt');
+      expect(text).toContain('Widerrufen kannst du jederzeit im Profilmenü unter „Datenschutz-Einstellungen“');
+      expect(text).toContain('nichts mehr beitragen und nichts bewerten, und deine Bewertungen löschen wir');
+      expect(text).not.toContain('Was du sonst gespeichert hast, bleibt, bis du es löschst');
+      expect(text).not.toContain('Was du schon gespeichert hast, bleibt');
       expect(text).toContain('was bis zum Widerruf geschehen ist, bleibt rechtmäßig');
       expect(text).toContain('Deine Einwilligungen, auch widerrufene, bleiben bis zur Löschung deines Kontos');
       expect(abschnitt('Deine Rechte')).toContain('deine Einwilligungen samt Widerrufen und die Muster-Hinweise, die dein Konto nennen');
+    });
+
+    it('Art.-9-Einwilligung: der Widerruf legt einen Löschauftrag an, binnen sieben Tagen (DSFA R9b)', () => {
+      const text = abschnitt('Rückschlüsse auf deine politische Haltung');
+
+      expect(text).toContain('Innerhalb von sieben Tagen lösen wir auch deine Beiträge, Einwürfe und Sätze von dir');
+      // Widerrufe vor dem Einspielen: Frist ab dem Einspielen. Bis zum Release steht der Platzhalter,
+      // danach ein Datum (docs/DEPLOYMENT.md, Releases); bei Tags prüft scripts/release_platzhalter.py,
+      // dass der Platzhalter ersetzt ist.
+      expect(text).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(text).toContain('zeigen statt deines Namens „ehemalige Person“, deine Einwürfe löschen wir');
+      expect(text).toContain('Dafür legen wir einen Löschauftrag an: deine Kennung, der Zeitpunkt deines Widerrufs und die Frist');
+      expect(text).toContain('Einen erledigten Löschauftrag löschen wir ein Jahr nach der Erledigung, mit deinem Konto sofort');
+      expect(text).toContain('Dein Konto bleibt');
+      expect(text).toContain('fragen wir dich beim nächsten Besuch neu; deine frühere Einwilligung zählt dann nicht mehr');
+      // Neue Einwilligung vor der Ausfuehrung (Entscheidung Maintainer, 13.11.2026)
+      expect(text).toContain('was du danach beiträgst, erfasst ein noch offener Löschauftrag nicht');
+      expect(abschnitt('Beiträge, die du einstellst')).toContain('Widerrufst du deine Art.-9-Einwilligung, ersetzen wir deine Kennung ebenso, innerhalb von sieben Tagen');
+      expect(abschnitt('Einwürfe in den Fangkorb')).toContain('Widerrufst du deine Art.-9-Einwilligung, tun wir dasselbe innerhalb von sieben Tagen');
+    });
+
+    it('Satz zu Widerrufen vor dem Einspielen: Platzhalter oder echtes Datum, sonst nichts', () => {
+      const satz = (tag: string) =>
+        `Wer vor dem ${tag} widerrufen hat, dessen Beiträge, Einwürfe und Sätze lösen wir innerhalb von sieben Tagen ab diesem Tag von ihm.`;
+
+      expect(satz('[Datum des Einspielens]')).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('1. Dezember 2026')).toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('[Datum]')).not.toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
+      expect(satz('Dezember 2026')).not.toMatch(WIDERRUF_VOR_DEM_EINSPIELEN);
     });
   });
 
@@ -592,6 +703,27 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('deine Filter im Fangkorb');
       expect(text).toContain('Teilen-Menü');
       expect(text).toContain('Service Worker');
+    });
+
+    it('Gerätespeicher: der Merker für das Neuladen nach einer neuen Version (neue-version.ts)', () => {
+      const text = abschnitt('Weitere Einträge').replace(/\s+/g, ' ');
+
+      expect(text).toContain(
+        'den Zeitpunkt, zu dem die Seite wegen einer neuen Version von Gut gesagt von selbst neu geladen hat ' +
+          '(nur ein Merker, damit das nicht in einer Schleife geschieht; er gilt nur zehn Minuten)',
+      );
+    });
+
+    it('Gerätespeicher: der angefangene Kommentar bis zum Tabschluss, höchstens eine Stunde (E1, 14.11.2026)', () => {
+      const text = abschnitt('Weitere Einträge').replace(/\s+/g, ' ');
+
+      expect(text).toContain(
+        'Schreibst du einen Kommentar und wechselst kurz in eine andere App, merkt sich dein Browser den ' +
+          'angefangenen Kommentar bis zum Schließen des Tabs, höchstens eine Stunde lang: Titel, Text, Kurz- und ' +
+          'Langfassung, Zweck und Stil, die Aussage, auf die er antwortet, und einen Prüfwert, der ihn deinem Konto ' +
+          'zuordnet, nicht deinen Namen. Wir löschen ihn, sobald du den Kommentar speicherst, das Formular leerst, ' +
+          'dich abmeldest oder deine Einwilligung widerrufst. Er verlässt dein Gerät nicht von selbst.',
+      );
     });
 
     it('Gerätespeicher: das Profilbild liegt nur nach eigener Wahl im Browser, bis zum Zurücksetzen (#437)', () => {
@@ -662,6 +794,75 @@ describe('DatenschutzComponent', () => {
 
     it('nennt den Klick auch beim Abruf außerhalb der EU', () => {
       expect(abschnitt('Keine Übermittlung außerhalb der EU')).toContain('erst nach deinem Klick auf „Bild laden“');
+    });
+
+    it('nennt die Mitverantwortung für die Übermittlung an den fremden Server (EuGH C-40/17)', () => {
+      const text = abschnitt('Keine Übermittlung außerhalb der EU');
+      expect(text).toContain('Für das Einbinden und damit für die Übermittlung deiner IP-Adresse an den fremden Server sind wir mitverantwortlich');
+      expect(text).toContain('was der fremde Server danach mit den Daten macht, verantwortet sein Betreiber');
+      expect(ganzerText()).not.toContain('Diesen Abruf richtet dein Browser aus, nicht wir');
+    });
+  });
+
+  describe('Merker der Meilensteine (#351, § 25 TDDDG geprüft 13.11.2026)', () => {
+    function mitMerker(aktiv: boolean): string {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [DatenschutzComponent],
+        providers: [provideRouter([]), { provide: MEILENSTEIN_MERKER, useValue: aktiv }],
+      });
+      const fixture = TestBed.createComponent(DatenschutzComponent);
+      fixture.detectChanges();
+      return normalisiert((fixture.nativeElement as HTMLElement).textContent);
+    }
+
+    it('beschreibt mit Merker Hinweis und Browser-Vermerk im freigegebenen Wortlaut', () => {
+      const text = mitMerker(true);
+
+      expect(text).toContain('nach dem Anmelden gilt, was du bis dahin erreicht hast, still als gesehen');
+      expect(text).toContain(
+        'Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint, merkt sich dein Browser, welche du schon gesehen hast. ' +
+          'Der Vermerk enthält keine Angaben über dich, geht nicht an uns und wird beim Abmelden und beim nächsten Anmelden gelöscht.',
+      );
+      expect(text).not.toContain('Prüfwert deiner Kennung');
+    });
+
+    it('lässt beides weg, wenn der Merker ausgeschaltet ist', () => {
+      const text = mitMerker(false);
+
+      expect(text).not.toContain('merkt sich nur dein Browser');
+      expect(text).not.toContain('Damit ein Hinweis zu deinen Meilensteinen nur einmal erscheint');
+    });
+  });
+
+  describe('Merker des Hinweises zum Home-Bildschirm (14.11.2026)', () => {
+    const ABSATZ =
+      'Auf iPhone und iPad zeigen wir einen Hinweis, wie du Gut gesagt auf deinen Home-Bildschirm legst. ' +
+      'Blendest du ihn aus, merkt sich dein Browser das, damit er nicht wiederkommt. Der Vermerk enthält ' +
+      'keine Angaben über dich, bleibt auch über das Schließen hinaus, bis du die Websitedaten dieser Seite ' +
+      'löschst, und geht nicht an uns.';
+
+    function mitMerker(aktiv: boolean): string {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [DatenschutzComponent],
+        providers: [provideRouter([]), { provide: HOME_HINWEIS_MERKER, useValue: aktiv }],
+      });
+      const fixture = TestBed.createComponent(DatenschutzComponent);
+      fixture.detectChanges();
+      return normalisiert((fixture.nativeElement as HTMLElement).textContent);
+    }
+
+    it('Schalter aus: kein Absatz, die zwei Vermerke wie bisher', () => {
+      const text = mitMerker(false);
+      expect(text).not.toContain('Auf iPhone und iPad zeigen wir einen Hinweis');
+      expect(text).toContain('sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich.');
+    });
+
+    it('Schalter an: der Absatz im freigegebenen Wortlaut, der Satz zu den zwei Vermerken bleibt wie auf main', () => {
+      const text = mitMerker(true);
+      expect(text).toContain(ABSATZ);
+      expect(text).toContain('sie schon gesehen hast. Das sind zwei Vermerke ohne Angaben über dich.');
     });
   });
 });

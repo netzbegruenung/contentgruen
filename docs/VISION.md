@@ -76,7 +76,9 @@ Bedarf erkennt Gut gesagt nur aus eigenen Signalen: Suchen ohne Treffer, „Hier
 - **Sechs Regeln** in der Formularhilfe: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden; kurz, ohne Belehrung, ohne Häme.
 - **Nichts erfinden.** Eigene Erlebnisse nur als Platzhalter („[Hier ein eigenes Erlebnis: …]“); erfundene Erlebnisse oder Zahlen sind ein Meldegrund.
 - **Schreibhilfen**: der Küchenzuruf als Leitfrage für die Kurzfassung („Was würdest du in einem Satz durch die Küche rufen?“); erst der Aufhänger, dann der Beleg; die Lesenden als Hauptfigur („du“); optional die Gliederung Ausgang, Wandel, Ziel für die Langfassung; Zahlen in den Alltag übersetzen.
+- **Gegenlesen ohne KI** live beim Schreiben, als Anmerkung unter der Vorschau, ohne Sperre (Entscheidung D4, #358): Schlüsselwörter der Aussage übernommen, Beginn mit Verneinung, Satz länger als etwa 12 bis 15 Wörter, Begriff aus der Liste „statt X sag Y“ (im Repo, per PR gepflegt, Startliste mit Fachwörtern wie „Diskurs“ oder „Transformation“), dazu Passiv und lange zusammengesetzte Wörter. Für den Ton der Nachbarin außerdem: Gedankenstriche mitten im Satz (nicht in Aufzählungen und Bereichen wie „3–5“), die Parteistimme („die Grünen fordern“, „wir Grüne“; Liste im Repo wie „statt X sag Y“; nicht in Zitaten und nicht verneint), ein behauptender Titel mit Fragezeichen am Ende und, wo das Formular ein Herkunftsfeld hat, Zahlen ohne Herkunft (ein Link in der Langfassung zählt als Herkunft; ausgenommen sind Jahreszahlen, kleine Aufzählungen, Datum und Uhrzeit, Ordinalzahlen wie „20. Jahrhundert“, „§ 218“, „Tempo 30“, Namen wie „Linie 14 fährt“ (nur Ziffern nach einem großgeschriebenen Wort, ohne Komma und Punkt und ohne folgendes großgeschriebenes Wort; „im Jahr 5000 Bäume“ zählt), Ziffern in Links und in Wörtern wie „49-Euro-Ticket“).
 - **Gegenlesen ohne KI** live beim Schreiben, als Anmerkung unter der Vorschau, ohne Sperre (Entscheidung D4, #358): Schlüsselwörter der Aussage übernommen, Beginn mit Verneinung, Satz länger als etwa 12 bis 15 Wörter, Begriff aus der Liste „statt X sag Y“ (im Repo, per PR gepflegt, Startliste mit Fachwörtern wie „Diskurs“ oder „Transformation“), dazu Passiv und lange zusammengesetzte Wörter.
+- **Form und Inhalt getrennt**: Das Gegenlesen sagt ehrlich, dass es nur die Form prüft („Die App sieht, wie du schreibst, nicht ob es stimmt.“), und zeigt darunter, sobald gegengelesen ist, drei Inhaltsfragen: Steht jede Zahl genau so in der Quelle? Ein Gedanke? Bestätigt dein Argument den Spruch? Zu Letzterem zeigt die Formularhilfe beim Kommentar ein Beispiel schwach/besser; die ausführliche Liste (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle, bald veraltende Zahlen meiden, wie eine Nachbarin statt wie eine Partei, Kurzfassung für Chat und Infostand möglichst unter 140 Zeichen) steht im Hilfe-Dialog. Fehlende Herkunft und die Parteistimme erkennt das Gegenlesen nur in einfachen Fällen.
 - **Fassungen**: Beim Kommentar ist der Haupttext (Mittel) Pflicht, Kurz (≤ 280 Zeichen) und Lang (Begründung, Herkunft) sind optional. Die Karte zeigt Reiter nur für vorhandene Fassungen, Kopieren und Nutzung je Fassung.
 - **Stil** optional (sachlich, humorvoll, persönlich, brückenbauend; bissig nur beim Zweck „für die eigenen Leute“), sichtbar an der Karte.
 - **Titel** bleibt Pflicht, die Hilfe zeigt gute und schwache Beispiele. Beim Post ist der Text Pflicht und in eigenen Worten.
@@ -88,7 +90,7 @@ Bedarf erkennt Gut gesagt nur aus eigenen Signalen: Suchen ohne Treffer, „Hier
 - Teilen-Knöpfe auf der Ergebnisseite („Ergebnis teilen“) und an jeder Karte (Link auf die Beitragsansicht); mobil das Teilen-Menü, am Desktop Link kopieren. Mastodon ist ein Ziel neben anderen.
 - Linkvorschau für Beitragsansichten und Ergebnisseiten („Antworten auf: …“).
 - Eine Karte teilen zählt als Nutzung; eine Ergebnisseite teilen und geteilte Links öffnen zählt nicht.
-- Kopieren bleibt Text ohne Link auf Gut gesagt, wahlweise „Text“ oder „Text + Herkunft“.
+- Kopieren bleibt Text ohne Link auf Gut gesagt, an der Hintergrundinfo samt Herkunft, sonst nur der Text; die andere Variante steht im ⋮-Menü.
 - Datenschutz: Referrer-Policy `strict-origin`; wer geteilte Links öffnet, wird nicht protokolliert, weder in der App noch im vorgelagerten Webserver (#336).
 
 ## Motivation
@@ -96,7 +98,7 @@ Bedarf erkennt Gut gesagt nur aus eigenen Signalen: Suchen ohne Treffer, „Hier
 Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antrieb und kommt direkt nach dem Launch, nicht erst am Ende der Roadmap.
 
 - **Rückmeldung**: „Meine Beiträge“ zeigt die Nutzung je Beitrag und Fassung mit dem Zuwachs der letzten Woche; beim Anmelden ein Hinweis „Seit deinem letzten Besuch wurden deine Beiträge 12-mal genutzt“, nur in der App.
-- **Meilensteine**: erste Nutzung durch andere, 10, 50, 100 Nutzungen, erste Stimme; ein kleines Abzeichen am Anzeigenamen, das nur mit Opt-in der Person erscheint und nur für Angemeldete.
+- **Meilensteine**: erste Nutzung durch andere, 10, 50, 100 Nutzungen, erste Zustimmung, dazu Unterstützungsarbeit (Einwürfe ausformuliert) und Wegmarken fürs eigene Tun (erster Einwurf, erster Beitrag, der hält, erste Gegenrede), je mit sprechendem Namen, kurzer Beschreibung und Bild; ein kleines Abzeichen am Anzeigenamen, das nur mit Opt-in der Person erscheint, nur für Angemeldete und ohne Wegmarken (#351, ADR 0004).
 - **Punkte** in drei Stufen ([ADR 0004](./adr/0004-punkte-aus-wirkung-bei-anderen.md)): kleine, gedeckelte Punkte fürs Tun, mehr für abgeschlossene Quests, die großen für die Wirkung bei anderen (Nutzung durch andere als Hauptanteil, Zustimmung). Bewerten bringt keine Punkte.
 - **Ranglisten** für Einzelne, je Woche und je Monat, nur für Angemeldete: die ersten 10 und der eigene Platz. Nur wer zugestimmt hat, erscheint dort: Beim ersten Punkt fragt die App einmal mit zwei gleichwertigen Knöpfen, nichts ist vorbelegt, die Antwort lässt sich jederzeit ändern. Schon die Teilnahme verrät eine politische Haltung (DSGVO Art. 9).
 - **Quests**: zwei Tagesaufgaben am Tag und ein gemeinsames Wochenziel. Zum Start: eine unbeantwortete Aussage beantworten, eine Fassung ergänzen, eine Variante anlegen, einen Einwurf ausformulieren, einen Einwurf einwerfen, drei Beiträge bewerten. Später ein wählbarer Schwerpunkt (Sammeln oder Formulieren), langfristig vielleicht Fähigkeiten, die realen Tätigkeiten entsprechen. Kein kriegerisches Setting.
@@ -108,19 +110,19 @@ Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antri
 ## Suche und Struktur
 
 - **Testset vor Stellschrauben.** Ein kleines Set aus Suchanfragen und erwarteten Treffern misst, wie oft die Suche richtig und falsch trifft; danach werden Schwellen eingestellt. Dasselbe Set ist das Tor für Roadmap-Stufe 3.
-- **Lieber keine Antwort als eine falsche.** Bei null Treffern zeigt die Seite höchstens drei ähnliche Aussagen, markiert als „passt vielleicht“, dazu wie viele Personen schon danach gesucht haben, „Selbst beantworten“ und den Weg zu „Hier fehlt eine Antwort“.
+- **Lieber keine Antwort als eine falsche.** Bei null Treffern zeigt die Seite höchstens drei ähnliche Aussagen, markiert als „passt vielleicht“, dazu wie viele Personen schon danach gesucht haben, „Antworten“ und den Weg zu „Hier fehlt eine Antwort“.
 - **Themen** aus einer festen, kurzen Liste (per PR gepflegt), ein bis zwei je Aussage; keine freien Tags. Ab Roadmap-Stufe 3 schlägt eine Automatik Themen vor.
 - Die Ergebnisseite erklärt in je einer Zeile, was ein Kommentar und was eine Hintergrundinfo ist. Keine Autovervollständigung: Die Suche ist auf ganze Sätze ausgelegt.
 
 ## Erfolg messen
 
-Drei Kennzahlen, ohne feste Zielwerte: Personen pro Tag, die suchen, im Wochenmittel (das Tagespseudonym wechselt täglich, Personen über eine Woche sind nicht zählbar); Nutzungen pro Woche; Anteil der Suchen ohne Treffer. Der interne Launch liefert die Basislinie; acht Wochen nach dem öffentlichen Launch wird Bilanz gezogen, mit vorher festgelegten Signalen und Konsequenzen (#417). Admins sehen die Kennzahlen je Woche im Dashboard unter „Bilanz“.
+Drei Kennzahlen, ohne feste Zielwerte: Personen pro Tag, die suchen, im Wochenmittel (das Tagespseudonym wechselt täglich, Personen über eine Woche sind nicht zählbar); Nutzungen pro Woche; Anteil der Suchen ohne Treffer. Der interne Launch liefert die Basislinie; acht Wochen nach dem öffentlichen Launch wird Bilanz gezogen, mit vorher festgelegten Signalen und Konsequenzen (#417, [`BILANZ.md`](./BILANZ.md)). Admins sehen die Kennzahlen je Woche im Dashboard unter „Bilanz“.
 
 ## Weg zum Launch
 
 1. Einwürfe aus gesammeltem Material vorbereiten, per Skript, mit Link als Herkunft (#341, #288).
 2. Schreibwochenende im Gründungsteam: die 10 bis 15 häufigsten Aussagen mit je zwei Kommentaren (einer für die Kommentarspalte, einer sachlich mit Herkunft) und einige Posts.
-3. Nutzertest mit drei bis fünf Personen auf diesem Bestand, mobil zuerst, mit mindestens einer Person mit wenig Digitalerfahrung und einer außerhalb des akademischen Milieus. Bis dahin nur Qualität und Launch-Blocker.
+3. Nutzertest mit drei bis fünf Personen auf diesem Bestand, mobil zuerst, mit mindestens einer Person mit wenig Digitalerfahrung und einer außerhalb des akademischen Milieus ([`NUTZERTEST.md`](./NUTZERTEST.md)). Bis dahin nur Qualität und Launch-Blocker.
 4. Was den Launch blockiert, beheben.
 5. Launch in der Netzbegrünung.
 6. Eine Woche später ein Schreibsprint in der Netzbegrünung, mit „Hier fehlt eine Antwort“ und Rückmeldung zur Nutzung.

@@ -49,6 +49,17 @@ describe('KuerzungsvorschlagComponent', () => {
     fixture.detectChanges();
   }
 
+  it('zeigt die Knöpfe als Textlinks im App-Stil, nicht im Browser-Grau (P38)', () => {
+    vorschlagHolen('Die Wärmepumpe spart viel Geld.');
+
+    for (const text of ['Übernehmen', 'Verwerfen']) {
+      const stil = getComputedStyle(knopf(text));
+      expect(stil.textDecorationLine).toContain('underline');
+      expect(stil.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+      expect(stil.borderTopStyle).toBe('none');
+    }
+  });
+
   it('fragt nur auf Klick, nicht beim Schreiben', () => {
     fixture.componentRef.setInput('text', LANG + ' Noch ein Satz.');
     fixture.detectChanges();

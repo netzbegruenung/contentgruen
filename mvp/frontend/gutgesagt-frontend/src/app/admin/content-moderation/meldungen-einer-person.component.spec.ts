@@ -113,6 +113,25 @@ describe('MeldungenEinerPersonComponent', () => {
       expect(text).toContain('Anna Beispiel');
     });
 
+    it('zeigt beim Konto den Anzeigenamen, ohne Namen die Kurzform der Kennung', async () => {
+      moderation.meldungenEinerPerson.and.returnValue(
+        of({
+          total: 2,
+          reports: [
+            meldung({ reported_by_user_id: 'f3a9c1d2-7b4e-4c55-9a10-2e8d6b0c7f11', reported_by_name: 'Anna B.' }),
+            meldung({ id: 'report-2', reported_by_user_id: 'f3a9c1d2-7b4e-4c55-9a10-2e8d6b0c7f12', reported_by_name: null }),
+          ],
+        })
+      );
+      eingeben('name', 'Anna Beispiel');
+
+      await suchen();
+
+      const text = element().textContent!.replace(/\s+/g, ' ');
+      expect(text).toContain('Konto: Anna B.');
+      expect(text).toMatch(/Konto: Person [0-9a-f]{8}/);
+    });
+
     it('sagt, wenn nichts gespeichert ist, und bietet kein Löschen an', async () => {
       moderation.meldungenEinerPerson.and.returnValue(of({ total: 0, reports: [] }));
       eingeben('email', 'niemand@example.org');

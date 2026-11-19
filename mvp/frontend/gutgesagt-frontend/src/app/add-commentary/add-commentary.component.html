@@ -14,23 +14,12 @@
 
     <div class="content-wrapper">
         <div class="form-column">
-            <form [formGroup]="commentaryForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
+            <!-- Ohne Art.-9-Einwilligung: Hinweis mit Weg dorthin; die Eingabe uebersteht ihn (B4) -->
+            <app-einwilligung-hinweis [formular]="commentaryForm"></app-einwilligung-hinweis>
+            <form [formGroup]="commentaryForm" (ngSubmit)="absendenGeklickt()" class="beitrag-formular" novalidate>
                 <app-antwort-auf [aussage]="aussageAusAdresse" [hinweis]="aussageHinweis"
                                  (aussageChange)="aussageSetzen($event)">
                 </app-antwort-auf>
-
-                <mat-form-field appearance="outline" class="formular-feld">
-                    <mat-label>Titel</mat-label>
-                    <!-- Zweizeilig, damit ein ganzer Satz sichtbar bleibt; Enter bricht nicht um -->
-                    <textarea matInput id="title" formControlName="title" required
-                              [attr.maxlength]="titelMax" placeholder="Was ist der Punkt? Ein Satz."
-                              cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="4"
-                              (keydown.enter)="$event.preventDefault()"></textarea>
-                    <mat-hint align="end">{{ titelLaenge }} / {{ titelMax }}</mat-hint>
-                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('required')">Der Titel fehlt.</mat-error>
-                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('minlength')">Mindestens 3 Zeichen.</mat-error>
-                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('maxlength')">Höchstens {{ titelMax }} Zeichen.</mat-error>
-                </mat-form-field>
 
                 <mat-form-field appearance="outline" class="formular-feld">
                     <mat-label>Kommentar</mat-label>
@@ -44,6 +33,24 @@
                     <mat-error *ngIf="commentaryForm.get('text')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
                     <mat-error *ngIf="commentaryForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
+                <!-- Einspaltig direkt unter dem Feld, damit man es beim Tippen sieht (Nutzerfuehrung 13.11.) -->
+                <app-gegenlesen *ngIf="einspaltig()" [kompakt]="true" [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"
+                                [hatHerkunft]="hatHerkunft"></app-gegenlesen>
+
+                <!-- Titel unter dem Text, vorbelegt aus ihm (E2, titelVorschlag); bleibt Pflicht und aenderbar -->
+                <mat-form-field appearance="outline" class="formular-feld titel-feld">
+                    <mat-label>Titel</mat-label>
+                    <!-- Zweizeilig, damit ein ganzer Satz sichtbar bleibt; Enter bricht nicht um -->
+                    <textarea matInput id="title" formControlName="title" required
+                              [attr.maxlength]="titelMax" placeholder="Was ist der Punkt? Ein Satz."
+                              cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="4"
+                              (keydown.enter)="$event.preventDefault()"></textarea>
+                    <mat-hint align="end">{{ titelLaenge }} / {{ titelMax }}</mat-hint>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('required')">Der Titel fehlt.</mat-error>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('minlength')">Mindestens 3 Zeichen.</mat-error>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('maxlength')">Höchstens {{ titelMax }} Zeichen.</mat-error>
+                </mat-form-field>
+
 
                 <button *ngIf="!zeigtFassungen" type="button" class="text-link fassungen-link" (click)="fassungenZeigen()">
                     + Weitere Fassungen
@@ -54,7 +61,7 @@
                         <textarea #kurzFeld matInput id="kurz" formControlName="kurz" [attr.maxlength]="kurzMax"
                                   placeholder="Der Punkt in einem Satz"
                                   cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="6"></textarea>
-                        <mat-hint>für X/Bluesky</mat-hint>
+                        <mat-hint>für Mastodon/Bluesky/X</mat-hint>
                         <mat-hint align="end">{{ kurzLaenge }} / {{ kurzMax }}</mat-hint>
                         <mat-error *ngIf="commentaryForm.get('kurz')?.hasError('maxlength')">Höchstens {{ kurzMax }} Zeichen.</mat-error>
                     </mat-form-field>
@@ -76,8 +83,7 @@
                     <div class="zweck-feld">
                         <span class="feld-beschriftung" id="zweck-beschriftung">Zweck</span>
                         <mat-button-toggle-group formControlName="zweck" class="zweck-wahl"
-                                                 aria-labelledby="zweck-beschriftung"
-                                                 [hideSingleSelectionIndicator]="true">
+                                                 aria-labelledby="zweck-beschriftung">
                             <mat-button-toggle *ngFor="let zweck of zwecke" [value]="zweck">{{ zweckLabel[zweck] }}</mat-button-toggle>
                         </mat-button-toggle-group>
                     </div>
@@ -87,7 +93,7 @@
                             <mat-option [value]="null">Ohne</mat-option>
                             <mat-option *ngFor="let stil of stile" [value]="stil">{{ stilLabel[stil] }}</mat-option>
                         </mat-select>
-                        <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„bissig“ nur für die eigenen Leute</mat-hint>
+                        <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„deutlich“ nur für Gleichgesinnte</mat-hint>
                     </mat-form-field>
                     <div *ngIf="zeigtThemen" class="themen-feld">
                         <span class="feld-beschriftung">Themen der neuen Aussage</span>
@@ -107,11 +113,6 @@
                     </app-reference-input>
                 </div>
 
-                <div class="formular-fuss">
-                    <button type="button" class="text-link zuruecksetzen" (click)="zuruecksetzen()"
-                            [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
-                </div>
-
                 <app-sprachhinweis [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text"></app-sprachhinweis>
                 <p appCc0Hinweis></p>
 
@@ -120,16 +121,20 @@
                                        [kannZustimmen]="kannZustimmen" [kannNehmen]="kannNehmen" nehmenText="Vorhandenen nehmen"
                                        [beschaeftigt]="beschaeftigt" [nehmenGesperrt]="aussageZuKurz" [nimmt]="nimmt"
                                        [fehler]="entscheidungsFehler" (ansehen)="vorhandenAnsehen()" (zustimmen)="zustimmen()"
-                                       (nehmen)="nehmen()" (trotzdem)="trotzdemSpeichern()"></app-dubletten-hinweis>
+                                       (nehmen)="nehmen()"></app-dubletten-hinweis>
 
                 <app-formular-leiste *ngIf="!responseId"
-                                     [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : offeneEntscheidung ? dublettenHinweis : null"
-                                     [aktion]="!fehler && offeneEntscheidung ? 'Ansehen' : null" (aktionGeklickt)="vorhandenAnsehen()">
-                    <button mat-raised-button type="submit" class="submit-btn"
+                                     [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : null"
+                                     [hinweis]="dublettenLeistenHinweis"
+                                     [aktion]="dublettenLeistenAktion" (aktionGeklickt)="dublettenLeistenAktionAusfuehren()">
+                    <button mat-raised-button type="submit" class="submit-btn" [class.dublette-trotzdem]="offeneEntscheidung"
                             [disabled]="beschaeftigt || commentaryForm.invalid || aussageZuKurz">
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
-                        {{ fehler && !validierung ? 'Erneut versuchen' : 'Kommentar speichern' }}
+                        {{ fehler && !validierung ? 'Erneut versuchen' : offeneEntscheidung ? 'Trotzdem speichern' : 'Kommentar speichern' }}
                     </button>
+                    <!-- Zweitaktion neben dem Hauptknopf, nicht rechts abseits (Ausrichtung 17.11.) -->
+                    <button type="button" class="text-link zuruecksetzen" (click)="zuruecksetzen()"
+                            [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
                 </app-formular-leiste>
             </form>
         </div>
@@ -139,7 +144,8 @@
                 <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
-            <app-gegenlesen [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"></app-gegenlesen>
+            <app-gegenlesen *ngIf="!einspaltig()" [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"
+                            [hatHerkunft]="hatHerkunft"></app-gegenlesen>
         </section>
     </div>
 </div>

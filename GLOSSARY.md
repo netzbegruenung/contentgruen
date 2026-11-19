@@ -106,9 +106,23 @@ _Avoid_: Testset (allein), Messset (das sind Textpaare)
 Eine Suche, deren erster angezeigter Beitrag nicht auf die Suchanfrage passt, oder die etwas anzeigt, obwohl im Bestand nichts passt. Gemessen im Suchtestset; das Gegenstück zur Suche ohne Treffer, bei der nichts angezeigt wird. Für die Suche selbst passt bei einem Fehltreffer etwas ausreichend (über der Schwelle); er zählt deshalb nie als Suche ohne Treffer.
 _Avoid_: falsch positiv
 
+**Ähnliche Aussagen**:
+Vorhandene gepflegte Aussagen, die einer Eingabe nahekommen, auch dieselbe Behauptung in anderen Worten: höchstens drei, ab einer unteren Grenze der Ähnlichkeit (heute 0,885). Das Beitragsformular schlägt sie im Feld „Antwort auf“ vor; bei null Treffern soll die Ergebnisseite sie als „passt vielleicht“ zeigen (`docs/VISION.md`). Das Suchtestset misst, wie oft die erwartete Aussage darunter ist; die untere Grenze dafür prüft der nächtliche Lauf.
+_Avoid_: Dubletten (Dubletten sind gleiche Beiträge)
+
+**Nächtlicher Lauf**:
+Die CI-Pipeline, die jede Nacht und auf Anstoß Messset und Suchtestset mit dem echten Einbettungsmodell misst und mit dem Soll vergleicht, dazu das Tor für Roadmap-Stufe 3 und die untere Grenze für ähnliche Aussagen (`.woodpecker/nacht.yaml`, `docs/CI.md`). Kein Pflichtstatus für PRs.
+
 **Zerfaserung**:
 Wenn dieselbe Behauptung als mehrere Aussagen im Bestand liegt, etwa weil eine Suchanfrage in anderen Worten nicht auf der vorhandenen Aussage landet, sondern eine neue ergibt. Antworten, Nutzung und Suchen ohne Treffer verteilen sich dann auf mehrere Aussagen. Das Suchtestset misst sie, die NLI-Stufe (#387) soll sie verhindern.
 _Avoid_: Fragmentierung, Dubletten (Dubletten sind gleiche Beiträge)
+
+**NLI-Stufe**:
+Die zweite Stufe der Prüfung, ob ein neuer Text dieselbe Aussage ist wie eine vorhandene (#387): Die Einbettung sucht wenige ähnliche Aussagen als Kandidaten, ein lokales NLI-Modell prüft je Paar, ob beide Texte einander folgern und keiner dem anderen widerspricht. Fragen gegen Behauptungen und Texte mit anderen Quantoren („manche“, „alle“, „nie“) prüft es nicht, sie bleiben getrennt. Bei einer Übernahme bleibt der Wortlaut der vorhandenen Aussage. Im **Schattenbetrieb** entscheidet weiter die Ähnlichkeitsschwelle, die NLI-Stufe urteilt nur mit und wird gezählt, bis die Auswertung die Umstellung trägt. Ist das Modell nicht verfügbar, gilt die Schwelle. Dasselbe Modell filtert die Vorschläge im Feld „Antwort auf“: Eine Aussage, die dem Getippten widerspricht, wird nicht vorgeschlagen. In der Suche kann es die Polaritätsstrafe übernehmen (#574, schaltbar): Eine Aussage, die einer Suchanfrage in beiden Richtungen widerspricht, rückt nach hinten, und ihre Antworten zeigt die Suche nicht; Fragen und Schlagwörter prüft es dort nicht.
+_Avoid_: Paraphrasen-Erkennung, KI-Prüfung (es erzeugt keinen Text)
+
+**Bestätiger**:
+Ein zweites NLI-Modell in der NLI-Stufe, abschaltbar. Verfehlt das erste Modell ein Paar knapp, ohne zu widersprechen, darf der Bestätiger es als dieselbe Aussage bestätigen, wenn er beide Richtungen sicher folgert. Das erste Modell behält ein Veto: Widerspricht es oder folgert es kaum, bleibt das Paar getrennt.
 
 ### Stufen eines Einwurfs
 
@@ -159,8 +173,16 @@ Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Ze
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
 **Schreibregel**:
-Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
+Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog. Was das Gegenlesen nicht oder nur in einfachen Fällen erkennt (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle u. a.), nennt es als drei Inhaltsfragen; ausführlich steht es im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
+
+**Platzhalter**:
+Die Stelle in eckigen Klammern im Text eines Beitrags, „[Hier …]“, die die Person vor dem Posten selbst füllt, etwa mit einem eigenen Erlebnis (Schreibregel: eigene Erlebnisse nur als Platzhalter). Die Karte hebt ihn als Feld hervor, und nach dem Kopieren erinnert der Hinweis daran, ihn auszufüllen. Andere eckige Klammern wie „[1]“ sind kein Platzhalter. Bis 13.11. hieß er „Lücke“; im Code tragen Datei und Bezeichner (`vorlagen-luecke.ts`, `.vorlagen-luecke`) noch den alten Namen.
+_Avoid_: Lücke (das ist eine unbeantwortete Aussage), Vorlagen-Lücke, Leerstelle
+
+**Lücke**:
+Eine Aussage in „Hier fehlt eine Antwort“, auf die noch keine Antwort passt. Wer sie beantwortet, schließt die Lücke: Die Ergebnisseite sagt dann „Lücke zu“ mit der Zahl der Personen, die ohne Treffer danach gesucht haben, und bietet die nächste an. Die Startseite nennt Angemeldeten unter „Seit deinem letzten Besuch“, wie viele Lücken warten. Im Code steht das Wort nur in `shared/luecke-texte.ts`. Bis 13.11. hieß so der Platzhalter.
+_Avoid_: Platzhalter (das ist die Stelle „[Hier …]“ im Text), offene Frage
 
 **Schreibhilfe**:
 Ein Kniff, mit dem ein Text besser ankommt, etwa der Küchenzuruf („Was würdest du in einem Satz durch die Küche rufen?“) als Leitfrage für die Kurzfassung, der Aufhänger vor der Begründung, die Lesenden als Hauptfigur oder Zahlen, die in den Alltag übersetzt sind. Anders als eine Schreibregel ist sie ein Angebot.
@@ -181,6 +203,14 @@ _Avoid_: Content-Typ, Inhaltsart, Kategorie
 **Aussage**:
 Eine Behauptung oder Frage aus der Debatte, auf die man eine gute Antwort braucht, etwa ein Vorwurf gegen grüne Politik oder „Wie erkläre ich die Wärmepumpe?“.
 _Avoid_: Statement, These, Angriff
+
+**Aussagekarte**:
+Eine unbeantwortete Aussage als Karte, im Stil der Karte eines Beitrags: das Kopfband mit der Aussage, darunter die Nachfrage und die Themen, im Fuß „Antworten“. Sie steht in „Hier fehlt eine Antwort“ und im leeren Zustand von „Meine Beiträge“. Inhalte erscheinen als Karten: Beiträge und Einwürfe als Karte, Aussagen als Aussagekarte.
+_Avoid_: Aussagezeile, Statement-Karte
+
+**Zu dieser Antwort**:
+Der Kasten auf der Ergebnisseite am Desktop rechts neben der besten Antwort mit dem, was ihre schlichte Karte nicht oder nur hinter einem Antippen zeigt: Länge und Plattform je Fassung, Erklärung von Stil und Güte, das Alter; keine Angaben zu Personen.
+_Avoid_: Hintergrundinfo (ein Beitragstyp), Details, Seitenleiste
 
 **Kommentar**:
 Eine Antwort, die man direkt posten kann, mit einer Mittelfassung und optional einer Kurz- und einer Langfassung, mit einem Stil und einem Zweck.
@@ -254,7 +284,7 @@ Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstell
 _Avoid_: Quelle, Referenz, Reference, Beleg (und nicht für den Einstieg in ein Formular)
 
 **Stil**:
-Die Tonlage eines Kommentars, etwa sachlich, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“.
+Die Tonlage eines Kommentars, etwa sachlich, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“. Die Oberfläche zeigt „brückenbauend“ als „freundlich“ und „bissig“ als „deutlich“ (Persona-Runde 18.11.); die Werte bleiben.
 _Avoid_: Ton, Tonalität
 
 **Fassung**:
@@ -262,7 +292,7 @@ Eine der Längen eines Kommentars: Kurz (bis 280 Zeichen), Mittel (der Haupttext
 _Avoid_: Version, Variante, Länge
 
 **Zweck**:
-Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder für die eigenen Leute.
+Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder für die eigenen Leute (in der Oberfläche „Für Gleichgesinnte“).
 _Avoid_: Zielgruppe, Modus, Kanal
 
 **Variante**:
@@ -298,24 +328,28 @@ _Avoid_: Hash, Fingerabdruck
 **Paar-Prüfwert**:
 Der Prüfwert der Muster-Hinweise für „ein Konto hat einen Beitrag eines anderen Kontos genutzt“: aus den Kennungen beider Konten mit dem Fensterschlüssel berechnet, ohne Beitrag und Datum, weil er das Fenster von sieben Tagen überdauern muss. Er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung; nach einem Neustart beginnt ein Muster neu. Er entsteht nur, wenn beide Konten eine Art.-9-Einwilligung haben (#559). Wie der Prüfwert lässt er sich auch mit Datenbank und Konfiguration nicht nachrechnen.
 
+**Öffentlich gekontert**:
+Was eine angemeldete Person nach dem Kopieren mit „Ja, gepostet“ meldet: Sie hat den Text öffentlich als Antwort gepostet. Gezählt wird je Kalenderwoche jede Person einmal, nicht jeder Klick, und ohne den Beitrag; das ist der Nordstern (verschiedene Menschen je Woche, die öffentlich kontern). Gemerkt wird dafür bis Wochenende nur ein Prüfwert aus der Kennung mit einem Wochenschlüssel im Arbeitsspeicher, danach nur die Zahl der Woche. Nur mit Art.-9-Einwilligung, ohne Startkonten, hinter einem Schalter (#643). Den Link zum eigenen Post fragt Gut gesagt nicht ab.
+_Avoid_: geteilt (das ist Nutzung), Conversion
+
 **Oft genutzt**:
 Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde, gezählt als entdoppelte Nutzung. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
 _Avoid_: Trending, Trend, beliebt, Top-Beiträge
 
 **Stimme**:
-Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung.
+Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung. Sie gilt der Behauptung im Titel: Ändert die Autorin den Titel so, dass er nach der NLI-Stufe etwas anderes behauptet, verfallen die Stimmen; kleine Korrekturen und Änderungen nur am Text lassen sie stehen.
 _Avoid_: Vote, Like, Daumen
 
 **Siegel**:
-Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb tannengrün. Nach unten zeigt es nie, rot wird es nie. Glanz und Krone sind eigene Abzeichen am Siegel, keine Stufen der Güte, und können bei jeder Güte auftreten: Glanz heißt, der Beitrag hat viel Wirkung; die Krone zeichnet die Person aus. Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, die dieselbe Hand einfarbig als Umriss zeigen.
+Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb tannengrün. Nach unten zeigt es nie, rot wird es nie. Glanz ist ein eigenes Abzeichen am Siegel, keine Stufe der Güte, und kann bei jeder Güte auftreten: Der Beitrag hat viel Wirkung (ab 25 Nutzungen am Zähler der Karte, auch für Besucher, #351). Eine Krone für die Person trägt das Siegel nicht mehr: Sie beschrieb die Autorin, nicht den Beitrag (Entscheidung 14.11.); die Meilensteine stehen als Abzeichen am Anzeigenamen. Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, runde Knöpfe mit schlanken Umriss-Daumen ohne Sprechblase (#641).
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:
-Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
+Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen, auf der Karte dasselbe Gegenlesen ohne die Aussage (ohne die Regel zu übernommenen Schlüsselwörtern, denn ein Beitrag kann auf mehrere Aussagen antworten). Stimmen anderer zählen erst ab einer Mindestzahl verschiedener Stimmender, ohne Startkonten und ohne die eigene Stimme; ihr Anteil an der Güte wächst mit ihrer Zahl, bleibt aber begrenzt. Die App erklärt das so: Die Güte startet mit dem Gegenlesen als erster Einschätzung, und je mehr Menschen bewerten, desto mehr zählt ihr Urteil. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
-Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv und lange zusammengesetzte Wörter. Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
+Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv, lange zusammengesetzte Wörter, Gedankenstriche, Parteistimme, ein Titel als Frage (nur bei behauptenden Titeln, Kommentar und Hintergrundinfo; es zählt nur das Fragezeichen am Ende) und Zahlen ohne Herkunft (nur im Formular mit Herkunftsfeld; die Karte prüft diese Regel nicht, sie kennt die Herkunft beim Gegenlesen nicht). Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
 _Avoid_: Prüfung, Lektorat, Check, Validierung
 
 **Anmerkung**:
@@ -351,35 +385,39 @@ Ein neuer Beitrag, der einem vorhandenen desselben Beitragstyps fast gleicht; ei
 _Avoid_: Duplikat, Doppelung
 
 **Unbeantwortete Aussage**:
-Eine Aussage ohne Kommentar oder eine, nach der mindestens zwei Personen ohne Treffer gesucht haben. Mitwirkende sehen sie in „Hier fehlt eine Antwort“ und dürfen dort Aussagen auch vorab anlegen.
+Eine Aussage ohne Kommentar, auch eine, nach der mindestens zwei Personen ohne Treffer gesucht haben; stammt sie aus einer noch unbeantworteten Suchanfrage, erst nach Freigabe in der Vormoderation. Mitwirkende sehen sie in „Hier fehlt eine Antwort“ und dürfen dort Aussagen auch vorab anlegen. Sobald ein sichtbarer Kommentar an ihr hängt, ist sie beantwortet und verschwindet von der Liste, auch wenn ihre Suchen ohne Treffer noch gezählt sind; ein gesperrter oder gelöschter Kommentar zählt nicht.
 _Avoid_: Offene Aussage (offen ist eine Stufe eines Einwurfs), Wunsch, Anfrage
 
 **Suchanfrage**:
 Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber häufige Suchanfragen ohne Treffer zeigen, welche Aussagen noch Antworten brauchen.
 _Avoid_: Query, Suchbegriff
 
+**Vormoderation**:
+Die Prüfung einer unbeantworteten Suchanfrage durch das Moderationsteam (die Admins), bevor andere sie sehen (Entscheidung des Maintainers vom 13.11.2026). Erreicht eine Aussage aus einer Suchanfrage, auf die noch niemand geantwortet hat, die Schwelle der Suchen ohne Treffer, steht sie in der Moderation unter „Suchanfragen“; das Moderationsteam gibt sie frei oder lehnt sie ab, etwa wenn der Text Namen Dritter enthält. Für alle anderen sichtbar ist sie nur über der Schwelle und freigegeben; eine ungeprüfte oder abgelehnte bleibt unsichtbar. Sie gilt dann auch nicht als dieselbe Aussage, wenn jemand den gleichen Text als Aussage anlegt oder beantwortet: Es entsteht eine neue Aussage mit dessen Wortlaut, nur eine weitere Suche landet weiter auf ihr. Eine freigegebene, auf die jemand antwortet, gilt wie jede Aussage. Auch der Bestand bei der Einführung geht durch die Vormoderation; vorab freigegeben wurde nichts. „Freigeben“ meint nur diese Entscheidung, nicht den Zustand Sichtbar eines Beitrags.
+_Avoid_: Offene Aussage, Veröffentlichen
+
 **Suche ohne Treffer**:
-Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen. Unterschieden werden die Personen über ihr Tagespseudonym, deshalb zählt dieselbe Person an zwei Tagen zweimal. Je Anschluss und Aussage zählt am Tag höchstens ein Besucher als Person, damit ein Wechsel des User-Agents allein keine zweite Person ergibt; mehrere Besucher hinter demselben Anschluss zählen deshalb als eine.
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen und jede nur, solange sie keinen sichtbaren Kommentar hat (unbeantwortete Aussage). Unterschieden werden die Personen über ihr Tagespseudonym, nur am selben Tag und nur im Arbeitsspeicher; gespeichert wird je Woche die Summe der Personen der einzelnen Tage. Dieselbe Person zählt an zwei Tagen deshalb zweimal, ein Pseudonym über Tagesgrenzen braucht es nicht. Weil das Tagespseudonym eines Besuchers für seinen Anschluss steht, zählt je Anschluss und Aussage am Tag höchstens ein Besucher als Person; mehrere Besucher hinter demselben Anschluss zählen als eine, auch mit verschiedenen Browsern.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit noch eine fortlaufende Nummer, die die Reihenfolge der Suchen eines Tages verriete. Über Uhrzeit oder Nummer lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat (nur wer die Datenbank selbst liest, sieht die Reihenfolge der Zeilen des laufenden Tages; der tägliche Bereinigungsjob schreibt jeden abgeschlossenen Tag gemischt neu, solange er eingeschaltet ist). Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit noch eine fortlaufende Nummer, die die Reihenfolge der Suchen eines Tages verriete. Über Uhrzeit oder Nummer lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat (nur wer die Datenbank selbst liest, sieht die Reihenfolge der Zeilen des laufenden Tages). Es besteht nur bis zum Ende seines Tages: Kurz nach Mitternacht (UTC) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter, ohne Schalter (#495; bis dahin nach 90 Tagen).
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tageszähler der Suchen**:
-Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die Zahl der Suchen, die Zahl der Suchen ohne Treffer und die Zahl der Personen, aber kein Tagespseudonym. Tage, die vor dieser Spalte verdichtet wurden, kennen die Suchen ohne Treffer nicht. Kennzahlen über längere Zeiträume zählen ihn mit.
+Was von den Suchereignissen eines Tages bleibt, sobald er abgeschlossen ist: das Datum, die Zahl der Suchen, die Zahl der Suchen ohne Treffer und die Zahl der Personen (verschiedene Tagespseudonyme, beim Verdichten gezählt), aber kein Tagespseudonym. Tage, die vor dieser Spalte verdichtet wurden, kennen die Suchen ohne Treffer nicht. Kennzahlen über mehrere Tage zählen ihn mit; Personen pro Tag und ihr Wochenmittel kommen für abgeschlossene Tage nur aus ihm. Wie sich die Suchen eines Tages auf die Personen verteilen (etwa ein Median), weiß er nicht.
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
-Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme; bei Suchen ohne Treffer zählt je Anschluss höchstens ein Besucher.
+Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen des laufenden Tages statt einer Kennung (danach bleibt nur der Tageszähler der Suchen) und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme, bei Besuchern also Anschlüsse.
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Besuchermerkmal**:
-Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei IPv6 nur ihr vorderer Teil, der den Anschluss bezeichnet) und der User-Agent des Browsers. Es existiert nur während einer Anfrage und wird weder gespeichert noch protokolliert. Wer am selben Anschluss denselben Browser nutzt, hat dasselbe Besuchermerkmal.
+Woraus der Server das Tagespseudonym eines Besuchers bildet: der Anschluss, also die IP-Adresse (bei IPv6 nur ihr vorderer Teil), sonst nichts. Den User-Agent nimmt es seit #495 nicht mehr auf, damit das Pseudonym möglichst wenig über das Gerät trägt. Es existiert nur während einer Anfrage und wird weder gespeichert noch protokolliert. Alle Besucher am selben Anschluss haben dasselbe Besuchermerkmal, auch mit verschiedenen Browsern oder Geräten.
 _Avoid_: Fingerprint
 
 **Tagesschlüssel**:
-Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen. Die Prüfwerte der entdoppelten Nutzung bildet ein zweiter, davon unabhängiger Tagesschlüssel, der beim ersten Prüfwert eines neuen Tages wechselt.
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet. Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen. Die Prüfwerte der entdoppelten Nutzung bildet ein zweiter, davon unabhängiger Tagesschlüssel, der beim ersten Prüfwert eines neuen Tages wechselt.
 _Avoid_: Salt, Secret
 
 **Fensterschlüssel**:
@@ -387,11 +425,11 @@ Der geheime Schlüssel der Paar-Prüfwerte. Er entsteht je Block von sieben Tage
 _Avoid_: Wochenschlüssel, Salt, Secret
 
 **Anschluss**:
-Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein und begrenzt bei Suchen ohne Treffer die Personen: je Anschluss und Aussage höchstens eine am Tag.
+Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er ist das Besuchermerkmal und geht in das Rate-Limit ein; Kennzahlen, die Personen zählen, zählen je Anschluss höchstens einen Besucher am Tag (außer nach einem Neustart, der den Tagesschlüssel verwirft).
 _Avoid_: IP, Netz
 
 **Anschluss-Prüfwert**:
-Ein Wert, der bei Suchen ohne Treffer den Anschluss eines Besuchers an einem Tag wiedererkennbar macht: aus dem Anschluss allein (ohne User-Agent) und dem Datum mit dem Tagesschlüssel berechnet. Kein Tagespseudonym, denn er steht für einen Anschluss, nicht für eine Person. Er liegt nur im Arbeitsspeicher, in der Merkliste des Tages, und wird um Mitternacht verworfen; gespeichert oder protokolliert wird er nie. Angemeldete haben keinen.
+Nur noch historisch: der Wert, der seit #496 bis zur Umstellung für #495 (November 2026) bei Suchen ohne Treffer den Anschluss eines Besuchers neben seinem Tagespseudonym wiedererkennbar machte, weil das Tagespseudonym damals auch den User-Agent enthielt. Seit das Besuchermerkmal nur noch der Anschluss ist, leistet das Tagespseudonym dasselbe; den Anschluss-Prüfwert gibt es nicht mehr. Gespeichert wurde er nie.
 _Avoid_: Anschluss-Pseudonym, Anschluss-Tagespseudonym
 
 **Sitzungskennung**:
@@ -403,18 +441,30 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:
-Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Auf der Startseite steht für Angemeldete dazu „Seit deinem letzten Besuch“ mit höchstens drei kleinen Kacheln, je eine große Zahl mit kurzem Text, die ganze Kachel ein Link (seit 18.11.2026; vorher eine Zeile mit Links): neue Nutzungen (dieselbe Zahl), neue Einwürfe anderer im Fangkorb und wie viele Lücken in „Hier fehlt eine Antwort“ warten; ohne Neues steht nichts da. Auch die Einwürfe sind ein Zählerstand am Konto wie die Nutzung, kein Zeitpunkt, und nichts davon liegt im Browser.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Willkommen**:
-Das Fenster beim ersten Besuch: ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, gleichwertig mit „Später“. Ob es gezeigt wurde, merkt sich nur der Browser; ein zweiter Besuch zeigt es nicht mehr.
+Das gelbe Band beim ersten Besuch auf der Startseite, unter dem Suchfeld (vorher darüber; mobil stand das Suchfeld dann erst weit unten), kein Fenster (#587; seit #599 nicht mehr über den Treffern): ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, daneben „Ausblenden“. Ob die Person reagiert hat (Rundgang gestartet oder ausgeblendet), merkt sich nur der Browser; danach kommt das Band nicht wieder. Nach der Anmeldung kommt nur die Art.-9-Einwilligung; „Selbst beitragen“ bietet erst ein Band auf Beitragen an (#587, gestaffelt; seit #644 nicht mehr im Fangkorb).
+
+**App-Hinweis**:
+Das Band „Gut gesagt als App“ auf der Startseite, unter dem Suchfeld, frühestens im Besuch nach dem Willkommen und nie zugleich mit einem anderen Band. Auf iPhone und iPad in Safari ist es eine Anleitung (Teilen, dann „Zum Home-Bildschirm“); in Chrome und Edge auf Android und Computer steht es nur da, wenn der Browser das Installieren anbietet, und hat dann einen Knopf „Installieren“ (18.11.). Nach „Ausblenden“ kommt es nicht wieder; der Browser merkt sich das unter demselben Vermerk auf allen Geräten, und nur, solange der Schalter für diesen Merker an ist. Nach dem Installieren ist es weg. Die Hilfe erklärt das Installieren je Gerät im Abschnitt „Als App aufs Handy“, mit demselben Knopf, wenn der Browser ihn anbietet.
+_Avoid_: PWA-Banner, Install-Prompt
 
 **Rundgang**:
-Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Mitmachen“ wird nach der ersten Anmeldung einmal angeboten und zeigt Beitragen, Einwerfen, Fangkorb und Meine Beiträge. Beide lassen sich über Hilfe und Menü jederzeit wieder starten. Angeboten, nie erzwungen.
+Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Selbst beitragen“ (bis #644 „Mitmachen“) zeigt Angemeldeten Beitragen, Einwerfen, Fangkorb und Meine Beiträge, Besuchern stattdessen die drei Bilder der Vorschau mit Konto nacheinander („Selbst beitragen (3 Bilder)“, seit 17.11.); nach der Art.-9-Einwilligung trägt „Beitragen“ im Kopf einen Neu-Punkt, und wer zum ersten Mal auf Beitragen ankommt, bekommt dort im Band „Kurz zeigen, wie Beitragen geht?“ angeboten; der Rundgang beginnt dann beim Einwerfen. Beides bleibt, bis die Person darauf reagiert. Beide lassen sich über Hilfe und Menü jederzeit wieder starten; dort stehen sie mit Schrittzahl, etwa „Antwort finden (5 Schritte)“. Angeboten, nie erzwungen.
 _Avoid_: Tour, Onboarding, Tutorial
 
+**Vorschau mit Konto**:
+Die Seite „Das erwartet dich mit Konto“ (/mit-konto) für Besucher: drei Bilder aus der angemeldeten Oberfläche mit je einem Satz (Einwerfen, Ausformulieren, Bewerten), darunter „Mit Netzbegrünung-Konto anmelden“ und „Erst mal weiter suchen“. Besucher landen dort statt auf der Anmeldung, wenn sie Einwerfen, Beitragen oder den Fangkorb öffnen; nach der Anmeldung geht es zum ursprünglichen Ziel. Angemeldete sehen sie nie. Dieselben drei Bilder und Sätze zeigt der Rundgang „Selbst beitragen“ für Besucher, eines nach dem anderen (Entscheidung 17.11.).
+_Avoid_: Teaser, Paywall
+
+**Neu-Punkt**:
+Der gelbe Punkt an „Beitragen“ im Kopf (Desktop und Handy): Er erscheint nach der Art.-9-Einwilligung und bleibt, bis die Person den Rundgang „Selbst beitragen“ beantwortet hat (gestartet oder abgelehnt, #587). Sein Tooltip sagt „Neu: so geht Beitragen“ (#644). Kein eigener Vermerk im Browser; er folgt dem Vermerk des Rundgangs.
+_Avoid_: Badge, Benachrichtigungspunkt
+
 **Punkte**:
-Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte. Ein Konto ohne geltende Art.-9-Einwilligung (nie erteilt oder widerrufen) hat keine Punkte, wie ein Startkonto (#559).
+Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte. Ein Konto ohne geltende Einwilligung „Punkte und Meilensteine“ (nie erteilt oder widerrufen) hat keine Punkte, wie ein Startkonto (#351; bis dahin hing das an der Art.-9-Einwilligung, #559). Den Punktestand sieht nur die Person selbst, gesamt und je Stufe in „Meine Beiträge“, nur bei eingeschalteten Punkten; er wird nicht gespeichert, sondern bei jedem Abruf berechnet (#352).
 _Avoid_: XP, Score, Karma
 
 **Muster-Hinweis**:
@@ -442,12 +492,24 @@ Gut gesagt als Ort, an dem Mitwirkende Beiträge gemeinsam herstellen und dabei 
 _Avoid_: Kommandozentrale, Armee, Agentur
 
 **Level**:
-Was eine Person mit ihren Punkten erreicht, in aufsteigender Folge; ein höheres Level schaltet neue Aktionen frei. Wie Punktestand, Quests und Meilenstein-Abzeichen sieht die Person es nur selbst, solange sie nicht gesondert zustimmt, es anderen Angemeldeten zu zeigen. Bisher nur im Wortlaut der Art.-9-Einwilligung genannt (#559); gebaut wird es mit [#564](https://git.verdigado.com/Netzbegruenung/gutgesagt/issues/564).
+Was eine Person mit ihren Punkten erreicht, in aufsteigender Folge; ein höheres Level schaltet neue Aktionen frei. Wie Punktestand, Quests und Meilenstein-Abzeichen sieht die Person es nur selbst, solange sie nicht gesondert zustimmt, es anderen Angemeldeten zu zeigen. Bis `2026-11-12` im Wortlaut der Art.-9-Einwilligung genannt (#559), seit `2026-11-13` nicht mehr; gebaut wird es mit [#564](https://git.verdigado.com/Netzbegruenung/gutgesagt/issues/564).
 _Avoid_: Rang
 
 **Meilenstein**:
-Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; dafür gibt es ein Abzeichen, das am Anzeigenamen nur steht, wenn die Person gesondert zustimmt, es anderen zu zeigen, und dann nur für Angemeldete.
+Eine erreichte Schwelle bei der eigenen Mitwirkung, etwa die erste Nutzung durch andere. Jeder hat einen sprechenden Namen (wofür es ihn gibt, etwa „Erster Einwurf“), darunter klein einen Untertitel mit einer Redewendung (etwa „Fundstück“), eine kurze Beschreibung und ein Bild: ein Motiv aus Fluent Emoji in einem Medaillon, tannengrün, wenn erreicht, grau gestrichelt, wenn offen; Bild und Bildnachweis stehen je Meilenstein und lassen sich einzeln durch ein eigenes Bild ersetzen. Drei Arten (#351): Wirkung (erste Nutzung durch andere, 10, 50 und 100 Nutzungen, entdoppelt wie für Punkte, erste Zustimmung anderer), Unterstützungsarbeit (der erste und 10 ausformulierte Einwürfe anderer, 10 eigene Einwürfe, die andere ausformuliert haben) und Wegmarken für das eigene Tun. Nur Wirkung und Unterstützungsarbeit zählen für das Abzeichen am Anzeigenamen, das nur steht, wenn die Person gesondert zustimmt, es anderen zu zeigen, und dann nur für Angemeldete. Gezählt wird nur mit nicht gesperrten Beiträgen; Startkonten zählen auf keiner Seite mit (weder ihre Nutzung, Stimmen und Einwürfe noch ihr Ausformulieren), und ein Startkonto und ein Konto ohne Einwilligung „Punkte und Meilensteine“ haben keine. Meilensteine werden nicht gespeichert: Wird ein Beitrag gesperrt oder gelöscht, kann ein erreichter wieder verschwinden. Die Person sieht sie in „Meine Beiträge“, wie die Punkte nur bei eingeschalteten Punkten; einen neu erreichten nennt ein kurzer Hinweis, direkt nach dem Einwerfen (auf der Karte nach dem Einwurf), Ausformulieren oder Speichern eines Kommentars; was schon genannt wurde, merkt sich nur der Browser, ohne Angaben über die Person, gelöscht bei jedem An- und Abmelden; nach dem Anmelden gilt alles bis dahin Erreichte still als gesehen. Andere Angemeldete sehen an ihren Beiträgen neben dem Anzeigenamen nur die Zahl der erreichten Meilensteine ohne Wegmarken, und nur nach ihrer Zustimmung zur Sichtbarkeit; Besucher nie (#351).
 _Avoid_: Achievement, Badge, Erfolg
+
+**Einwilligung Punkte und Meilensteine**:
+Die eigene, freiwillige Einwilligung einer angemeldeten Person, dass Gut gesagt aus ihrer Mitwirkung Punkte und Meilensteine berechnet, die nur sie sieht, und dass Admins einen Muster-Hinweis bekommen, wenn sich zwei Konten auffällig oft gegenseitig nutzen (Art. 9 Abs. 2 lit. a DSGVO, #351). Getrennt von der Art.-9-Einwilligung zur Mitwirkung, damit niemand Punkte hinnehmen muss, um beitragen zu dürfen (Art. 7 Abs. 4); ohne sie kann die Person genauso beitragen und bewerten. Ein eigenes Häkchen in „Meine Beiträge“ und in den Datenschutz-Einstellungen, nichts vorausgewählt, nur mit eingeschalteten Punkten angeboten; gespeichert wird jede Antwort mit Kennung des Wortlauts und Zeitpunkt, ein Widerruf ist eine neue Antwort und wirkt sofort. Ohne sie keine Punkte, keine Meilensteine (auch keine Wegmarken), kein Abzeichen und kein Muster-Hinweis, der das Konto nennt. Das Abzeichen am Namen braucht zusätzlich die Zustimmung zur Sichtbarkeit.
+_Avoid_: Opt-in, Gamification-Einwilligung
+
+**Wegmarke**:
+Ein Meilenstein für das eigene Tun, nicht für die Wirkung bei anderen (#351): der erste Einwurf (nicht verworfen), der erste Beitrag, der heute sichtbar und mindestens drei Tage alt ist (dieselbe Regel wie für die Punkte), und der erste Kommentar, den eine sichtbare Aussage als Antwort führt. Wegmarken sieht nur die Person selbst; sie zählen nicht für das Abzeichen am Anzeigenamen und lösen die Frage nach der Zustimmung zur Sichtbarkeit nicht aus. Nicht zu verwechseln mit dem Weg eines Einwurfs.
+_Avoid_: Achievement, Erfolg
+
+**Zustimmung zur Sichtbarkeit**:
+Die gesonderte Einwilligung einer Person, dass andere Angemeldete ihre Meilenstein-Abzeichen am Anzeigenamen sehen (#351, ADR 0004). Ab dem ersten erreichten Meilenstein, der keine Wegmarke ist, fragt „Meine Beiträge“ einmal mit einer kurzen Frage und zwei gleichwertigen Knöpfen, nichts ist vorbelegt; was die Einwilligung außerdem wissen muss (nicht nur Mitglieder sind angemeldet, Screenshots, Datenschutzerklärung), steht aufklappbar unter „Mehr dazu“ direkt darunter; die Antwort lässt sich dort jederzeit ändern, ein Nein wirkt sofort. Gespeichert wird jede Antwort mit Zeitpunkt und Kennung des Wortlauts. Sie setzt die Art.-9-Einwilligung voraus, ersetzt sie aber nicht: Ohne Art.-9-Einwilligung gibt es keine Meilensteine und damit nichts zu zeigen, und ein Widerruf der Art.-9-Einwilligung hält ein früheres Ja als Nein fest. Gilt bisher nur für Abzeichen; Punkte, Level, Quests und Ranglisten bekommen ihre eigene.
+_Avoid_: Opt-in, Freigabe, Sichtbarkeitseinstellung
 
 **Meine Einwürfe**:
 Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit ihrer Stufe sieht: Ausformulierte führen zu ihren Beiträgen, verworfene sind als solche erkennbar. Ist keiner der Beiträge eines ausformulierten Einwurfs mehr sichtbar, steht statt „Ausformuliert“ „Beitrag gesperrt“ oder „Beitrag gelöscht“, und es gibt nichts anzusehen; so auch beim Einwerfen. Im Fangkorb steht Ausformuliertes nicht. Nach dem Ausformulieren des eigenen Einwurfs führt „Zu meinen Einwürfen“ hierher; nach einem fremden geht es mit „Zum Fangkorb“ in den Fangkorb. Hier erfährt der Einwerfer, was aus seinen Fundstücken geworden ist. Die Karten bieten dieselben Griffe wie im Fangkorb; ein offener Einwurf lässt sich von hier aus gleich destillieren.
@@ -458,7 +520,7 @@ Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unt
 _Avoid_: Usage Stats, Nutzerstatistik
 
 **Bilanz**:
-Der Abgleich der Kennzahlen nach dem öffentlichen Launch mit der Basislinie aus dem internen Launch (#417). Admins sehen die Kennzahlen dafür je Kalenderwoche: Personen pro Tag, die suchen (Wochenmittel der Tagespseudonyme), Nutzungen pro Woche, Anteil der Suchen ohne Treffer und Nutzungen je Suche. Feste Zielwerte gibt es nicht; ein Signal ist eine Abweichung von der Basislinie.
+Der Abgleich der Kennzahlen nach dem öffentlichen Launch mit der Basislinie aus dem internen Launch (#417). Admins sehen die Kennzahlen dafür je Kalenderwoche: Personen pro Tag, die suchen (Wochenmittel der Personen aus den Tageszählern der Suchen), Nutzungen pro Woche, Anteil der Suchen ohne Treffer und Nutzungen je Suche. Feste Zielwerte gibt es nicht; ein Signal ist eine Abweichung von der Basislinie.
 _Avoid_: Zielerreichung, KPI, MVP-Ziele
 
 **Basislinie**:
@@ -499,21 +561,37 @@ _Avoid_: Mandant, Tenant, Keycloak (für den Realm allein)
 Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends. Ein Konto aus einer Einladung, dessen Link nie benutzt wurde (kein Passwort, Adresse nie bestätigt), wird nach der Frist im Löschkonzept gelöscht.
 _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 
+**Warteliste**:
+Bis Einladungen gehen (Umstellung auf den eigenen Realm), schicken Interessierte über „Feedback“ ihre Mail-Adresse; daraus bekommen sie zum Start ihre Einladung. Keine eigene Liste im System: Die Einträge sind Feedback mit vorbelegtem Text, die Adresse dient nur der Einladung.
+_Avoid_: Anmeldeliste, Vormerkung
+
 **Einlösung**:
 Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt, auch wenn es zur Adresse schon ein Konto gibt oder die Adresse einen Tippfehler hat; nur wenn Keycloak das Konto nicht anlegen konnte, wird sie zurückgenommen. Die Zahl erlaubter Einlösungen begrenzt eine Einladung.
 _Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
+
+**Startbeispiel**:
+Die Aussage, die das leere Suchfeld auf der Startseite als erste vortippt und hinter „Beispiel ausprobieren“ sucht; danach tippt es weitere Aussagen des Startbestands vor (im Code `HOT_TAKES`) und bleibt am Ende beim Startbeispiel stehen. Der Rundgang „Antwort finden“ füllt sie in Schritt 1 ins Suchfeld und zeigt ihre Treffer. Sie steht wörtlich im Startbestand und in den Testdaten des Dev-Stacks (`mvp/data/seed`), damit die Suche sicher Kommentare findet.
+_Avoid_: Beispielsuche, Demo-Aussage
+
+**Startbestand**:
+Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start schreibt, damit Gut gesagt nicht leer beginnt. Er wird wie jeder Beitrag angelegt, über das Formular oder das Importskript aus einer Datei.
+_Avoid_: Seed, Grundbestand, Demo-Inhalt
 
 **Startkonto**:
 Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
 **Art.-9-Einwilligung**:
-Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist (ein zweiter Wortlaut vom selben Tag mit Suffix). Der Wortlaut nennt als Zwecke auch Punktestand, Level, Quests und Meilenstein-Abzeichen (nur für die Person, solange sie nicht gesondert zustimmt, sie anderen Angemeldeten zu zeigen), die Freischaltungen eines höheren Levels und Muster-Hinweise (#559). Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten, und sie hat keine eigenen Punkte; kopiert sie einen Beitrag, zählt das am Zähler der Karte, aber ohne Prüfwert und Paar-Prüfwert: Die Kopie bringt der Autorin keine Punkte und ergibt keinen Muster-Hinweis (#559). Widerrufen geht jederzeit im Profilmenü unter „Einwilligung“; schon Gespeichertes bleibt dann, bis die Person es löscht oder ihr Konto löschen lässt. Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit dem Opt-in für die Sichtbarkeit von Punkten, Level, Quests und Abzeichen. Ablauf: `docs/ART9_EINWILLIGUNG.md`.
+Die ausdrückliche Einwilligung einer angemeldeten Person, dass Gut gesagt ihre Mitwirkung verarbeitet, auch wenn sich daraus auf ihre politische Meinung schließen lässt (Art. 9 Abs. 2 lit. a DSGVO, #489). Die App fragt nach dem ersten Anmelden mit einem eigenen Häkchen, getrennt von den Nutzungsbedingungen und nicht vorbelegt; gespeichert werden der Zeitpunkt und die Kennung des Wortlauts, die sein Stand-Datum ist (ein zweiter Wortlaut vom selben Tag mit Suffix). Punkte, Meilensteine, Level, Quests und Muster-Hinweise gehören seit dem Wortlaut `2026-11-13` nicht mehr dazu (Entscheidung Maintainer, 13.11.2026, ErwG 43 und Art. 7 Abs. 4 DSGVO); für Punkte und Meilensteine fragt die App vor dem Einschalten gesondert und freiwillig (#668). Die Wortlaute `2026-11-05-b` bis `2026-11-12` nannten sie noch (#559). Ohne sie kann die Person suchen und lesen, aber nichts beitragen und nichts bewerten, und sie hat keine eigenen Punkte; kopiert sie einen Beitrag, zählt das am Zähler der Karte, aber ohne Prüfwert und Paar-Prüfwert: Die Kopie bringt der Autorin keine Punkte und ergibt keinen Muster-Hinweis (#559). Widerrufen geht jederzeit im Profilmenü unter „Datenschutz-Einstellungen“ (bis #644 „Einwilligung“); dann werden ihre Bewertungen gelöscht, und es entsteht ein Löschauftrag für ihre Beiträge, Einwürfe und Sätze. Eine Einwilligung zählt nur zu einem geltenden Wortlaut; wer einem früheren zugestimmt hat, wird neu gefragt (seit `2026-11-13`). Nicht zu verwechseln mit der Zustimmung zu den Nutzungsbedingungen und mit der Zustimmung zur Sichtbarkeit (bisher für Abzeichen; Punkte, Level, Quests und Ranglisten bekommen ihre eigene). Ablauf: `docs/ART9_EINWILLIGUNG.md`.
 _Avoid_: Consent, Opt-in, Datenschutz-Häkchen, Zustimmung (die gilt den Nutzungsbedingungen)
 
 **Besucher**:
 Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitragen dürfen.
 _Avoid_: Gast, anonymer Nutzer
+
+**Teaser**:
+Ein Mitmach-Element, das Besucher sehen, obwohl sie es erst nach dem Anmelden benutzen können: ausgegraut oder mit einem kurzen Hinweis zur Anmeldung, etwa die Kacheln „Einwerfen“ und „Beitrag verfassen“ mit dem Zusatz „mit Konto“, die Stimm-Knöpfe (ein Tipp zeigt „Bitte melde dich an, um abzustimmen“ mit „Anmelden“) und die Führung „Selbst beitragen“. Grundsatz (Entscheidung Maintainer, 13.11.2026, UX-Review): Mitmach-Elemente werden Besuchern als Teaser gezeigt, nicht ausgeblendet, damit sie sehen, was mit Konto geht. Ein Teaser führt zur Anmeldung und danach an dieselbe Stelle zurück; er speichert nichts. Dasselbe Muster gilt für Angemeldete ohne Art.-9-Einwilligung: Formulare zeigen einen Hinweis mit „Einwilligen“, statt zu verschwinden.
+_Avoid_: Anteaser, Lockangebot
 
 **Profilbild**:
 Das Bild, das Mitwirkende im Kopf der Seite vertritt. Ohne eigene Wahl ist es fest aus der Kennung abgeleitet und nirgends gespeichert; wählen Mitwirkende im Profilmenü selbst eines der Bilder, merkt sich ihr Browser diese Wahl, bis sie sie zurücksetzen. Die Auswahl ist nicht nach Geschlecht eingeteilt. Besucher haben kein Profilbild, nur einen Platzhalter.
@@ -532,8 +610,12 @@ Der Name, unter dem eine Person anderen Mitwirkenden gezeigt wird: Vorname und I
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Ehemalige Person**:
-Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
+Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat oder deren Löschauftrag ausgeführt ist: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
+
+**Löschauftrag**:
+Was der Widerruf der Art.-9-Einwilligung anlegt: Ein Admin führt binnen sieben Tagen den Löschablauf für die Person aus. Ihre Beiträge zeigen danach „ehemalige Person“, ihre Einwürfe sind gelöscht, ihre Sätze an Einwürfen anderer tragen einen Platzhalter. Konto, Anzeigename und die Einwilligung als Nachweis bleiben. Was die Person nach einer neuen Einwilligung beiträgt, bleibt; ohne neue Einwilligung erfasst er alles. Je Person gibt es höchstens einen offenen; Admins sehen offene unter „Moderation“, „Löschaufträge“, überfällige hervorgehoben. Ein erledigter Auftrag geht nach seiner Löschfrist.
+_Avoid_: Löschantrag (den stellt eine Person selbst), Löschanfrage, Ticket
 
 **Löschfrist**:
 Wie lange eine Datenart gespeichert bleibt, bevor ein täglicher Task sie von selbst löscht. Die Fristen stehen im Löschkonzept. Eine Löschfrist ist etwas anderes als das Löschen auf Antrag einer Person.
@@ -546,3 +628,7 @@ _Avoid_: Usage-Cleanup, Cleanup-Service
 **Admin**:
 Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Widersprüche prüft, Einwürfe verwirft, Einladungen verwaltet und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion
+
+**Schalter**:
+Eine Funktion, die sich ein- und ausschalten lässt, ohne den Code zu ändern. Bei Punkten, Abzeichen am Anzeigenamen und „Ja, gepostet“ hat ein Schalter zwei Teile: die **Obergrenze**, die der Server aus seiner Umgebung setzt, und den **Admin-Wert**, den ein Admin auf der Admin-Seite „Schalter“ setzt. Wirksam ist der Schalter nur, wenn beide an sind; ohne Admin-Wert ist er aus. Über die Obergrenze hinaus einschalten kann kein Admin, ausschalten jederzeit; jede Änderung steht mit Zeitpunkt und Kennung des Admins im Verlauf (#708). Abzeichen wirken nur zusammen mit den Punkten.
+_Avoid_: Feature-Flag, Toggle, Flag

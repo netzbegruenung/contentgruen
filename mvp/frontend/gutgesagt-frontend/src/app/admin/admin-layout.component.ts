@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { ZuTunComponent } from './zu-tun/zu-tun.component';
 
 /**
  * Rahmen des Admin-Bereichs: Navigation links, mobil als Zeile ueber dem Inhalt.
@@ -10,11 +11,13 @@ import { MatIconModule } from '@angular/material/icon';
  * App-Kopf wie auf jeder Seite, und die fest offene Seitenleiste liess auf dem Handy
  * fuer den Inhalt rund 150 px. Kein eigener Zurueck-Knopf: Der Pfeil im Kopf fuehrt
  * von hier auf die Startseite (data.parent an der Route /admin).
+ *
+ * Ueber dem Inhalt steht auf jeder Admin-Seite die Zeile „Zu tun“ (ZuTunComponent).
  */
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIconModule],
+  imports: [CommonModule, RouterModule, MatIconModule, ZuTunComponent],
   template: `
     <div class="admin-container">
       <nav class="admin-nav" aria-label="Admin-Bereich">
@@ -30,9 +33,15 @@ import { MatIconModule } from '@angular/material/icon';
           <mat-icon aria-hidden="true">label</mat-icon>
           <span>Themen</span>
         </a>
+        <a routerLink="/admin/schalter" routerLinkActive="aktiv" ariaCurrentWhenActive="page">
+          <mat-icon aria-hidden="true">toggle_on</mat-icon>
+          <span>Schalter</span>
+        </a>
       </nav>
 
       <div class="admin-content">
+        <!-- Was ansteht, auf jeder Admin-Seite oben; laedt selbst nach -->
+        <app-zu-tun></app-zu-tun>
         <router-outlet></router-outlet>
       </div>
     </div>
@@ -65,20 +74,20 @@ import { MatIconModule } from '@angular/material/icon';
       min-height: 44px;
       padding: 0 var(--spacing-md);
       border-radius: var(--border-radius-medium);
-      color: var(--text-secondary);
+      color: var(--text-leise);
       font-weight: 500;
       text-decoration: none;
       white-space: nowrap;
     }
 
     .admin-nav a:hover {
-      background-color: var(--hover-bg);
+      background-color: var(--mulde);
     }
 
     /* Gewaehlt wie bei den Ansichts-Umschaltern: Tanne-Hauch, Tanne-Text */
     .admin-nav a.aktiv {
-      background-color: var(--auswahl-grund);
-      color: var(--primary-dark);
+      background-color: var(--primaer-tint);
+      color: var(--akzent-schrift);
       font-weight: 700;
     }
 
@@ -96,7 +105,7 @@ import { MatIconModule } from '@angular/material/icon';
       .admin-nav {
         flex-direction: row;
         overflow-x: auto;
-        border-bottom: 1px solid var(--divider-color);
+        border-bottom: 1px solid var(--linie);
       }
 
       .admin-nav a {
@@ -104,7 +113,20 @@ import { MatIconModule } from '@angular/material/icon';
       }
 
       .admin-nav a.aktiv {
-        box-shadow: inset 0 -2px 0 var(--primary-dark);
+        box-shadow: inset 0 -2px 0 var(--akzent-tanne);
+      }
+    }
+
+    /* Am Handy passen die drei Links nur ohne Symbol in eine Zeile ("Ther…" war abgeschnitten) */
+    @container (max-width: 479px) {
+      .admin-nav a {
+        flex: 1 1 auto;
+        justify-content: center;
+        padding: 0 var(--spacing-sm);
+      }
+
+      .admin-nav mat-icon {
+        display: none;
       }
     }
   `]

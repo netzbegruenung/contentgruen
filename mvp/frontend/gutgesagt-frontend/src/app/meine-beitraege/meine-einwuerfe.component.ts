@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { MatButtonModule } from '@angular/material/button';
+import { Subject, Subscription } from 'rxjs';
+import { takeUntil, timeout } from 'rxjs/operators';
 
 import { EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
@@ -12,6 +13,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { EinwurfAktion, KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 import { EinwurfAktionenService } from '../fangkorb/einwurf-aktionen.service';
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
+import { LADE_TIMEOUT_MS, LadeWiederholung } from '../shared/lade-wiederholung';
 
 /**
  * Meine Einwuerfe: was aus den eigenen Einwuerfen geworden ist.
@@ -24,7 +26,7 @@ import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
 @Component({
   selector: 'app-meine-einwuerfe',
   standalone: true,
-  imports: [CommonModule, MatPaginator, MatProgressSpinnerModule, BeitragskarteComponent],
+  imports: [CommonModule, MatPaginator, MatProgressSpinnerModule, MatButtonModule, BeitragskarteComponent],
   templateUrl: './meine-einwuerfe.component.html',
   styleUrls: ['./meine-einwuerfe.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,10 +41,20 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
   pageIndex = 0;
   isLoading = true;
   ladefehler = false;
+  /** Nach einem Ladefehler: ein neuer Versuch laeuft gerade. */
+  erneutLaedt = false;
+  /** Nach einem Ladefehler: Die Liste versucht es von selbst weiter (lohntWiederholung). */
+  versuchtWeiter = false;
+  /** Live-Region: nur der erste Fehler und die Rueckkehr, nicht jeder Versuch. */
+  ansage = '';
   /** Bis 599 px zeigt der Paginator nur Bereich und Pfeile, ohne Seitengroesse. */
   istMobil = false;
 
   private destroy$ = new Subject<void>();
+  /** Nach einem Ladefehler versucht die Liste es selbst wieder, wie der Fangkorb. */
+  private wiederholung = new LadeWiederholung(this.destroy$);
+  /** Die laufende Ladeanfrage; ein neues laden() beendet sie. */
+  private ladeAbo: Subscription | null = null;
 
   constructor(
     private einwurfService: EinwurfService,
@@ -50,6 +62,7 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
     private logger: LoggingService,
     private breakpointObserver: BreakpointObserver,
     private cdr: ChangeDetectorRef,
+    private host: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit(): void {
@@ -64,30 +77,72 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.ladeAbo?.unsubscribe();
+    this.wiederholung.abbrechen();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
+  /**
+   * Laedt die Seite der eigenen Einwuerfe. Nach einem Fehler bleibt die Meldung
+   * stehen, waehrend der naechste Versuch laeuft; nie "bitte neu laden".
+   */
   laden(): void {
-    this.isLoading = true;
-    this.ladefehler = false;
-    this.einwurfService
+    // Nur die neueste Anfrage zaehlt: Eine aeltere (z. B. vor dem Blaettern) darf
+    // weder die Liste ueberschreiben noch einen Versuch planen.
+    this.ladeAbo?.unsubscribe();
+    this.wiederholung.abbrechen();
+    if (this.ladefehler) {
+      this.erneutLaedt = true;
+    } else {
+      this.isLoading = true;
+    }
+    this.cdr.markForCheck();
+    this.ladeAbo = this.einwurfService
       .eigeneLaden(this.pageIndex + 1, this.pageSize)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(timeout({ first: LADE_TIMEOUT_MS }), takeUntil(this.destroy$))
       .subscribe({
         next: (daten) => {
+          const nachFehler = this.ladefehler;
+          const aktiv = document.activeElement;
+          const fokusAmKnopf =
+            !!aktiv && this.host.nativeElement.contains(aktiv) && aktiv.classList.contains('erneut-versuchen');
           this.karten = daten.results.map(ausEinwurf);
           this.gesamt = daten.total_records_count;
           this.isLoading = false;
+          this.ladefehler = false;
+          this.erneutLaedt = false;
+          this.wiederholung.erfolg();
+          if (nachFehler) {
+            this.ansage = 'Deine Einwürfe wieder geladen.';
+          }
           this.cdr.markForCheck();
+          if (fokusAmKnopf) {
+            // Der Knopf verschwindet mit dem Erfolg; der Fokus geht in die Liste.
+            this.cdr.detectChanges();
+            this.host.nativeElement.querySelector<HTMLElement>('.einwuerfe-inhalt')?.focus();
+          }
         },
         error: (error) => {
           this.logger.error('Eigene Einwürfe konnten nicht geladen werden', error);
+          if (!this.ladefehler) {
+            this.ansage = 'Deine Einwürfe konnten gerade nicht geladen werden.';
+          }
           this.isLoading = false;
           this.ladefehler = true;
+          this.erneutLaedt = false;
+          this.versuchtWeiter = this.wiederholung.fehlgeschlagen(error, () => this.laden());
           this.cdr.markForCheck();
         },
       });
+  }
+
+  /** "Erneut versuchen": sofort; waehrend ein Versuch laeuft (aria-disabled), nichts. */
+  erneutVersuchen(): void {
+    if (this.erneutLaedt) {
+      return;
+    }
+    this.laden();
   }
 
   get statistik(): string {

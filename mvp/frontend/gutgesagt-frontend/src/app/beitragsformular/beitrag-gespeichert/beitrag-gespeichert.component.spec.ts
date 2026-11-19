@@ -1,12 +1,18 @@
+import { Component, Input, Type, forwardRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 
-import { BeitragGespeichertComponent, EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT } from './beitrag-gespeichert.component';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { TEILEN_LINK_KOPIERT, TEILEN_NAVIGATOR, TeilenNavigator } from '../../shared/teilen.service';
+
+import { BeitragGespeichertComponent, EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT, beitragLink } from './beitrag-gespeichert.component';
 import { GespeichertZustand, gespeichertEltern } from './gespeichert-adresse';
 import { CommentaryService } from '../../services/commentary.service';
 import { GenericTextService } from '../../services/generic-text.service';
 import { PostService } from '../../services/post.service';
+import { ImageService } from '../../services/image.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { Einwurf, EinwurfService } from '../../services/einwurf.service';
@@ -14,18 +20,39 @@ import { FILTER_SCHLUESSEL, filterLaden } from '../../fangkorb/fangkorb-filter';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../../beitragskarte/beitragskarte.stub';
+import { KartenDaten } from '../../beitragskarte/karten-daten';
+
+/** Karte mit gewaehlter Fassung Kurz: steht fuer die echte Karte, damit die Seite ihren Text liest. */
+@Component({
+  selector: 'app-beitragskarte',
+  standalone: true,
+  template: '<article class="karte-stub">{{ daten?.titel }}</article>',
+  providers: [{ provide: BeitragskarteComponent, useExisting: forwardRef(() => KarteMitKurzFassungStub) }],
+})
+class KarteMitKurzFassungStub extends BeitragskarteStubComponent {
+  @Input() override daten?: KartenDaten;
+  readonly kopierText = 'Kurz gesagt';
+  readonly titelAnzeige = 'Titel wie angezeigt';
+}
 
 describe('BeitragGespeichertComponent', () => {
   let fixture: ComponentFixture<BeitragGespeichertComponent>;
   let commentaryService: jasmine.SpyObj<CommentaryService>;
   let postService: jasmine.SpyObj<PostService>;
+  let imageService: jasmine.SpyObj<ImageService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
   let navigation: jasmine.SpyObj<NavigationService>;
   let einwurfService: jasmine.SpyObj<EinwurfService>;
   /** Was das Nachladen des Einwurfs liefert; Standard: der eigene. */
   let geladenerEinwurf: Observable<Einwurf>;
+  /** Das Teilen-Menue des Geraets; ohne share wie am Desktop ohne Web Share API. */
+  let nav: TeilenNavigator;
+  /** Was statt der echten Karte gerendert wird. */
+  let karteStub: Type<unknown>;
 
   beforeEach(() => {
+    nav = {};
+    karteStub = BeitragskarteStubComponent;
     geladenerEinwurf = of({ id: 'e-1', ist_eigener_einwurf: true } as Einwurf);
   });
 
@@ -42,10 +69,14 @@ describe('BeitragGespeichertComponent', () => {
         : throwError(() => new Error('404')),
     );
     postService = jasmine.createSpyObj('PostService', ['getPostById']);
+    imageService = jasmine.createSpyObj('ImageService', ['getImageById']);
+    imageService.getImageById.and.returnValue(
+      of({ id: 'k-1', title: 'Solardach auf der Grundschule', text: 'Unterschrift', content_type: 'image', image_url: '/assets/dach.jpg' } as any),
+    );
     postService.getPostById.and.returnValue(
       of({ id: 'k-1', title: 'Ein Reel zur Wärmepumpe', text: 'Text', content_type: 'post', platform: 'Instagram', author: '@konto' } as any),
     );
-    uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
+    uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten', 'zumNaechstenAusformulieren']);
     navigation = jasmine.createSpyObj('NavigationService', ['navigateToResult', 'navigateToMeineEinwuerfe']);
     einwurfService = jasmine.createSpyObj('EinwurfService', ['einwurfLaden']);
     einwurfService.einwurfLaden.and.callFake(() => geladenerEinwurf);
@@ -57,10 +88,12 @@ describe('BeitragGespeichertComponent', () => {
         { provide: CommentaryService, useValue: commentaryService },
         { provide: GenericTextService, useValue: jasmine.createSpyObj('GenericTextService', ['getGenericTextById']) },
         { provide: PostService, useValue: postService },
+        { provide: ImageService, useValue: imageService },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn']) },
         { provide: DestillierUebergabeService, useValue: uebergabe },
         { provide: NavigationService, useValue: navigation },
         { provide: EinwurfService, useValue: einwurfService },
+        { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -72,7 +105,7 @@ describe('BeitragGespeichertComponent', () => {
     })
       .overrideComponent(BeitragGespeichertComponent, {
         remove: { imports: [BeitragskarteComponent] },
-        add: { imports: [BeitragskarteStubComponent] },
+        add: { imports: [karteStub] },
       })
       .compileComponents();
 
@@ -108,9 +141,22 @@ describe('BeitragGespeichertComponent', () => {
     expect(commentaryService.getCommentaryById).not.toHaveBeenCalled();
     expect(seite().textContent).toContain('Dein Post ist gespeichert.');
     expect(seite().querySelector('.gespeichert-karte')!.textContent).toContain('Ein Reel zur Wärmepumpe');
-    expect(knoepfe()).toEqual(['Noch einen Post', 'Meine Beiträge']);
+    expect(knoepfe()).toEqual(['Noch einen Post', 'Teilen', 'Meine Beiträge']);
     (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-post']);
+  });
+
+  it('zeigt das gespeicherte Bild und bietet noch eins an (#619)', async () => {
+    await oeffnen({}, { aussage: { id: 'a-1', text: 'Solar lohnt sich nicht' }, verknuepft: true }, true, 'image');
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    expect(imageService.getImageById).toHaveBeenCalledOnceWith('k-1');
+    expect(seite().textContent).toContain('Dein Bild ist gespeichert.');
+    expect(seite().querySelector('.gespeichert-karte')!.textContent).toContain('Solardach auf der Grundschule');
+    expect(seite().textContent).toContain('Solar lohnt sich nicht');
+    expect(knoepfe()).toEqual(['Noch ein Bild', 'Zur Aussage', 'Teilen', 'Meine Beiträge']);
+    (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
+    expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-image']);
   });
 
   describe('Knoepfe je Herkunft', () => {
@@ -118,7 +164,7 @@ describe('BeitragGespeichertComponent', () => {
       await oeffnen();
       const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
-      expect(knoepfe()).toEqual(['Noch einen Kommentar', 'Meine Beiträge']);
+      expect(knoepfe()).toEqual(['Noch einen Kommentar', 'Teilen', 'Meine Beiträge']);
       (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
       expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary']);
       expect(seite().querySelector('a.meine-beitraege')!.getAttribute('href')).toBe('/contributions');
@@ -129,10 +175,10 @@ describe('BeitragGespeichertComponent', () => {
       const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
       expect(einwurfService.einwurfLaden).toHaveBeenCalledOnceWith('e-1');
-      expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Meine Beiträge']);
+      expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Teilen', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+      expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('e-1');
 
       // Ausformuliertes liegt in keinem Tab, sondern unter "Meine Einwuerfe" (#508, F1).
       (seite().querySelector('.zu-meinen-einwuerfen') as HTMLButtonElement).click();
@@ -150,7 +196,7 @@ describe('BeitragGespeichertComponent', () => {
         await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: true });
         const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
-        expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
+        expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Teilen', 'Meine Beiträge']);
         (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
 
         expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
@@ -165,7 +211,7 @@ describe('BeitragGespeichertComponent', () => {
 
       expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT);
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+      expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('e-1');
     });
 
     it('Fangkorb: nicht verknuepft fuehrt "Zum Fangkorb" nach Ausformulieren, wo der Einwurf noch liegt', async () => {
@@ -184,7 +230,7 @@ describe('BeitragGespeichertComponent', () => {
     it('Suche: zurueck zur Suche mit der urspruenglichen Anfrage', async () => {
       await oeffnen({ von: 'suche', suche: 'Wärmepumpen zu teuer' });
 
-      expect(knoepfe()).toEqual(['Zurück zur Suche', 'Meine Beiträge']);
+      expect(knoepfe()).toEqual(['Zurück zur Suche', 'Teilen', 'Meine Beiträge']);
       (seite().querySelector('.zur-suche') as HTMLButtonElement).click();
       expect(navigation.navigateToResult).toHaveBeenCalledOnceWith('Wärmepumpen zu teuer');
     });
@@ -195,6 +241,44 @@ describe('BeitragGespeichertComponent', () => {
 
       (seite().querySelector('.zur-suche') as HTMLButtonElement).click();
       expect(navigieren).toHaveBeenCalledOnceWith(['/search']);
+    });
+  });
+
+  describe('Lücke zu (Nutzerfuehrung 13.11.)', () => {
+    const aussage = { aussage: { id: 'a-1', text: 'Windkraft tötet Vögel' }, verknuepft: true };
+
+    it('sagt nach "Hier fehlt eine Antwort" Lücke zu, mit der Nachfrage, und bietet die nächste an', async () => {
+      await oeffnen({ von: 'hier-fehlt-eine-antwort', gesucht: '2' }, aussage);
+      const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+      expect(seite().querySelector('.luecke-zu-titel')!.textContent!.trim()).toBe('Lücke zu.');
+      expect(seite().querySelector('.luecke-zu')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        'Lücke zu. 2 Personen haben danach gesucht, ab jetzt finden sie was.',
+      );
+      expect(seite().textContent).not.toContain('Dein Kommentar ist gespeichert.');
+      expect(knoepfe()[0]).toBe('Nächste Lücke');
+      expect(knoepfe()).not.toContain('Noch einen Kommentar');
+      (seite().querySelector('.naechste-luecke') as HTMLButtonElement).click();
+      expect(navigieren).toHaveBeenCalledOnceWith(['/hier-fehlt-eine-antwort']);
+    });
+
+    it('spricht bei einer Person im Singular und ohne Zahl allgemein', async () => {
+      await oeffnen({ von: 'hier-fehlt-eine-antwort', gesucht: '1' }, aussage);
+      expect(seite().querySelector('.luecke-zu')!.textContent).toContain('Eine Person hat danach gesucht, ab jetzt findet sie was.');
+
+      TestBed.resetTestingModule();
+      await oeffnen({ von: 'hier-fehlt-eine-antwort' }, aussage);
+      expect(seite().querySelector('.luecke-zu')!.textContent).toContain('Wer danach sucht, findet ab jetzt deine Antwort.');
+    });
+
+    it('bleibt beim allgemeinen Satz, wenn die Verknüpfung scheiterte oder es nicht von dort kam', async () => {
+      await oeffnen({ von: 'hier-fehlt-eine-antwort', gesucht: '3' }, { ...aussage, verknuepft: false });
+      expect(seite().querySelector('.luecke-zu')).toBeNull();
+      expect(knoepfe()).toContain('Noch einen Kommentar');
+
+      TestBed.resetTestingModule();
+      await oeffnen({ gesucht: '3' }, aussage);
+      expect(seite().querySelector('.luecke-zu')).toBeNull();
     });
   });
 
@@ -234,12 +318,118 @@ describe('BeitragGespeichertComponent', () => {
       expect(seite().querySelector('.themen-hinweis')).toBeNull();
     });
 
+    it('markiert eine eben neu angelegte Aussage mit "neu" (#617)', async () => {
+      await oeffnen({}, { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true, aussageNeu: true });
+
+      expect(seite().querySelector('.gespeichert-label .neu-marke')!.textContent).toBe('neu');
+    });
+
+    it('markiert eine vorhandene Aussage nicht als neu', async () => {
+      await oeffnen({}, { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true });
+
+      expect(seite().querySelector('.neu-marke')).toBeNull();
+    });
+
+    it('fuehrt "Zur Aussage" in die Suche nach ihr (#617)', async () => {
+      await oeffnen({}, { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true });
+
+      expect(knoepfe()).toEqual(['Noch einen Kommentar', 'Zur Aussage', 'Teilen', 'Meine Beiträge']);
+      (seite().querySelector('.zur-aussage') as HTMLButtonElement).click();
+      expect(navigation.navigateToResult).toHaveBeenCalledOnceWith('Wärmepumpen sind zu teuer');
+    });
+
+    it('laesst "Zur Aussage" weg, wenn "Zurueck zur Suche" dorthin fuehrt', async () => {
+      await oeffnen(
+        { von: 'suche', suche: 'Wärmepumpen sind zu teuer' },
+        { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true },
+      );
+
+      expect(seite().querySelector('.zur-aussage')).toBeNull();
+      expect(seite().querySelector('.zur-suche')).toBeTruthy();
+    });
+
+    it('bietet "Zur Aussage" nicht an, wenn nicht verknuepft', async () => {
+      await oeffnen({}, { aussage: { id: '', text: 'Wärmepumpen sind zu teuer' }, verknuepft: false });
+
+      expect(seite().querySelector('.zur-aussage')).toBeNull();
+    });
+
     it('kommt nach dem Neuladen ohne State ohne Antwort-auf aus', async () => {
       await oeffnen({ einwurf: 'e-1' });
 
       expect(seite().querySelector('.gespeichert-aussage')).toBeNull();
       expect(seite().querySelector('.gespeichert-warnung')).toBeNull();
       expect(seite().textContent).toContain('Dein Kommentar ist gespeichert.');
+    });
+  });
+
+  describe('Teilen (B7, vorher Link kopieren #617)', () => {
+    function teilenKnopf(): HTMLButtonElement {
+      return seite().querySelector('.gespeichert-knoepfe button.teilen') as HTMLButtonElement;
+    }
+
+    it('oeffnet das Teilen-Menue des Geraets mit Text und eigener Adresse, ohne Nutzung', async () => {
+      await oeffnen();
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+      const kopieren = spyOn(TestBed.inject(Clipboard), 'copy');
+
+      await fixture.componentInstance.teilen();
+
+      expect(nav.share).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({ url: `${window.location.origin}/beitrag/k-1`, title: 'Wärmepumpe lohnt sich', text: 'Text' }),
+      );
+      expect(kopieren).not.toHaveBeenCalled();
+    });
+
+    it('schickt die auf der Karte gewaehlte Fassung, wie das Teilen-Symbol der Karte (P03)', async () => {
+      karteStub = KarteMitKurzFassungStub;
+      await oeffnen();
+      nav.share = jasmine.createSpy('share').and.resolveTo(undefined);
+
+      await fixture.componentInstance.teilen();
+
+      expect(nav.share).toHaveBeenCalledOnceWith(jasmine.objectContaining({ text: 'Kurz gesagt', title: 'Titel wie angezeigt' }));
+    });
+
+    it('kopiert ohne Teilen-Menue die eigene Adresse und sagt es', async () => {
+      await oeffnen();
+      const kopieren = spyOn(TestBed.inject(Clipboard), 'copy').and.returnValue(true);
+      const snack = spyOn(TestBed.inject(MatSnackBar), 'open');
+
+      teilenKnopf().click();
+      await fixture.whenStable();
+
+      expect(kopieren).toHaveBeenCalledOnceWith(`${window.location.origin}/beitrag/k-1`);
+      expect(snack.calls.mostRecent().args[0]).toBe(TEILEN_LINK_KOPIERT);
+    });
+
+    it('sagt, wenn das Kopieren nicht klappt', async () => {
+      await oeffnen();
+      spyOn(TestBed.inject(Clipboard), 'copy').and.returnValue(false);
+      const snack = spyOn(TestBed.inject(MatSnackBar), 'open');
+
+      await fixture.componentInstance.teilen();
+
+      expect(snack.calls.mostRecent().args[0]).toBe(`Kopieren hat nicht geklappt. Der Link: ${window.location.origin}/beitrag/k-1`);
+    });
+
+    it('meldet nichts, wenn das Teilen abgebrochen wird', async () => {
+      await oeffnen();
+      nav.share = jasmine.createSpy('share').and.rejectWith(new DOMException('abgebrochen', 'AbortError'));
+      const snack = spyOn(TestBed.inject(MatSnackBar), 'open');
+
+      await fixture.componentInstance.teilen();
+
+      expect(snack).not.toHaveBeenCalled();
+    });
+
+    it('baut die Adresse mit kodierter ID', () => {
+      expect(beitragLink('a b', 'https://example.org')).toBe('https://example.org/beitrag/a%20b');
+    });
+
+    it('fehlt, solange der Beitrag nicht ladbar ist', async () => {
+      await oeffnen({}, undefined, false);
+      expect(seite().querySelector('.teilen')).toBeNull();
     });
   });
 
@@ -259,5 +449,23 @@ describe('BeitragGespeichertComponent', () => {
     expect(gespeichertEltern(snapshot({ von: 'suche', suche: 'a b' }))).toBe('/result?searchQuery=a%20b');
     expect(gespeichertEltern(snapshot({ von: 'suche' }))).toBe('/search');
     expect(gespeichertEltern(snapshot({}))).toBe('/contribute');
+  });
+
+  it('gibt der Karte die Herkunft mit Link, wie getById sie liefert (Persona-Test Gerd)', async () => {
+    await oeffnen();
+    commentaryService.getCommentaryById.and.returnValue(
+      of({
+        id: 'k-1',
+        title: 'Wärmepumpe lohnt sich',
+        text: 'Text',
+        content_type: 'commentary',
+        references: [{ reference_id: '6f1c2d3e-0000-4000-8000-000000000001', created: '', reference_text: 'https://example.org/studie' }],
+      } as any),
+    );
+    fixture.componentInstance.ngOnInit();
+
+    expect(fixture.componentInstance.karte!.quellen).toEqual([
+      { id: '6f1c2d3e-0000-4000-8000-000000000001', url: 'https://example.org/studie', beschreibung: undefined },
+    ]);
   });
 });

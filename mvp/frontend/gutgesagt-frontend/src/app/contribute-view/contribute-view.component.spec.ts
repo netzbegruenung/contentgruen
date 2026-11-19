@@ -47,11 +47,20 @@ describe('ContributeViewComponent', () => {
   describe('Kette', () => {
     beforeEach(() => erstellen());
 
-    it('zeigt Einwerfen, Fangkorb und die vier Typen als Zeilen', () => {
+    // Designrunde 12.11.: erst der Weg vom Rohen zum Ergebnis, dann die Typen (vorher #620 umgekehrt)
+    it('zeigt zuerst Einwerfen, Fangkorb und Meine Beitraege, dann die vier Typen', () => {
       expect(zeilen().map((zeile) => zeile.querySelector('.typ-titel')!.textContent!.trim()))
         .toEqual(['Schnell einwerfen', 'Fangkorb', 'Meine Beiträge', 'Kommentar', 'Hintergrundinfo', 'Bild', 'Post']);
-      expect(fixture.nativeElement.querySelector('.einleitung .erstnutzer-satz').textContent)
-        .toContain('Gut gesagt ist neu.');
+    });
+
+    it('stellt den Erstnutzer-Satz unter die Typen, nicht davor', () => {
+      const satz: HTMLElement = fixture.nativeElement.querySelector('.verfassen-abschnitt .erstnutzer-satz');
+      expect(satz.textContent).toContain('Gut gesagt ist neu.');
+      expect(satz.previousElementSibling!.matches('nav.typ-liste')).toBeTrue();
+    });
+
+    it('nutzt einen Kartenstil fuer alle Zeilen', () => {
+      expect(fixture.nativeElement.querySelector('.rahmen-kachel')).toBeNull();
     });
 
     it('bettet kein Formular und kein Akkordeon ein', () => {
@@ -61,28 +70,30 @@ describe('ContributeViewComponent', () => {
         .toBeNull();
     });
 
-    it('gliedert die Kette in Einwerfen, Weiterarbeiten und Verfassen', () => {
+    it('gliedert die Seite in Kette und Verfassen mit Abschnittsueberschriften', () => {
       const ueberschriften: HTMLElement[] = Array.from(
         fixture.nativeElement.querySelectorAll('.typ-zwischenueberschrift'),
       );
-      const [einwerfen, weiterarbeiten, verfassen] = ueberschriften;
+      const [kette, verfassen] = ueberschriften;
 
-      expect(ueberschriften.map((u) => u.textContent!.trim())).toEqual(['Einwerfen', 'Weiterarbeiten', 'Verfassen']);
-      expect(einwerfen.nextElementSibling!.classList).toContain('einwerfen-block');
-      expect(weiterarbeiten.nextElementSibling!.classList).toContain('fangkorb-block');
-      expect(weiterarbeiten.nextElementSibling!.nextElementSibling!.classList).toContain('beitraege-block');
+      expect(ueberschriften.map((u) => u.textContent!.trim())).toEqual(['Einwerfen und weiterarbeiten', 'Direkt verfassen']);
+      expect(ueberschriften.every((u) => u.tagName === 'H2')).toBeTrue();
+      const ketteZeilen = Array.from(kette.nextElementSibling!.querySelectorAll('button.typ-zeile'));
+      const bloecke = ['einwerfen-block', 'fangkorb-block', 'beitraege-block'];
+      expect(ketteZeilen.map((z) => bloecke.find((k) => z.classList.contains(k)))).toEqual(bloecke);
       expect(verfassen.nextElementSibling!.matches('nav.typ-liste')).toBeTrue();
       expect(verfassen.nextElementSibling!.querySelectorAll('button.typ-zeile').length).toBe(4);
     });
 
     it('fuehrt mit der Einwerfen-Zeile zum Formular, mit der Fangkorb-Zeile zur Liste', () => {
-      zeilen()[0].click();
+      const [einwerfen, fangkorb, beitraege] = zeilen();
+      einwerfen.click();
       expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
 
-      zeilen()[1].click();
+      fangkorb.click();
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
 
-      zeilen()[2].click();
+      beitraege.click();
       expect(router.navigate).toHaveBeenCalledWith(['/contributions']);
     });
 

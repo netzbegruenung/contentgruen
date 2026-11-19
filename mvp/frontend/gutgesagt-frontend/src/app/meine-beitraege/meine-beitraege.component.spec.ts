@@ -4,7 +4,7 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
 import { MeineBeitraegeComponent } from './meine-beitraege.component';
@@ -15,6 +15,8 @@ import { BeitragSheetComponent, GEAENDERT, GELOESCHT } from '../beitragskarte/be
 import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
 import { NavigationService } from '../services/navigation.service';
+import { StatementService } from '../services/statement.service';
+import { PUNKTE_EINWILLIGUNG_AUS } from '../shared/punkte-einwilligung/punkte-einwilligung.testing';
 
 describe('MeineBeitraegeComponent', () => {
   let fixture: ComponentFixture<MeineBeitraegeComponent>;
@@ -25,8 +27,11 @@ describe('MeineBeitraegeComponent', () => {
   let sheetErgebnis: Observable<unknown>;
   let kennung: string | null;
   let nutzungsstatistik: UserUsageStats | null;
+  /** Was "Hier fehlt eine Antwort" liefert; Standard: keine. */
+  let unbeantworteteLaden: jasmine.Spy;
 
   beforeEach(() => {
+    unbeantworteteLaden = jasmine.createSpy('unbeantworteteAussagen').and.returnValue(of([]));
     sheetErgebnis = of(undefined);
     kennung = null;
     nutzungsstatistik = null;
@@ -57,11 +62,16 @@ describe('MeineBeitraegeComponent', () => {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
+        PUNKTE_EINWILLIGUNG_AUS,
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
         { provide: MeineBeitraegeService, useValue: { meineBeitraege } },
-        { provide: UsageTrackingService, useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik) } },
+        {
+          provide: UsageTrackingService,
+          useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik), getEigeneMeilensteine: () => of([]), getEigenePunkte: () => of(null), getAbzeichenSichtbarkeit: () => of(null) },
+        },
         { provide: EinwurfService, useValue: { eigeneLaden } },
         { provide: SperrnachrichtService, useValue: { meine: () => of([]) } },
+        { provide: StatementService, useValue: { unbeantworteteAussagen: unbeantworteteLaden } },
         {
           provide: AuthService,
           // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.
@@ -257,14 +267,14 @@ describe('MeineBeitraegeComponent', () => {
     expect(erste.querySelector('.album-inhalt .karte-titel')!.textContent).toContain('Wärmepumpe lohnt sich auch im Altbau');
     expect(erste.querySelector('.album-anriss')!.textContent).toContain('Text der Hintergrundinfo');
     expect(erste.querySelector('.album-fuss .karte-datum')!.textContent!.trim()).toBe('13.09.2026');
-    expect(erste.querySelector('.album-fuss .badge-nutzung')!.textContent!.trim()).toBe('12×');
+    expect(erste.querySelector('.album-fuss .badge-nutzung')!.textContent!.trim()).toBe('12× genutzt');
     expect(erste.getAttribute('aria-label')).toBe('Hintergrundinfo: Wärmepumpe lohnt sich auch im Altbau');
   });
 
   it('zeigt die Statistik als eine Textzeile, ohne Hinweisbox und Kacheln', async () => {
     await erstellen([beitrag(), beitrag({ id: 'b2', usage_count: 3 })]);
 
-    expect(text('.album-statistik')).toBe('2 Beiträge · 15× genutzt');
+    expect(text('.album-statistik')).toBe('Deine 2 Beiträge wurden 15-mal genutzt.');
     expect(fixture.nativeElement.querySelector('.info-message')).toBeNull();
     expect(fixture.nativeElement.querySelector('.stat-card')).toBeNull();
   });
@@ -272,7 +282,7 @@ describe('MeineBeitraegeComponent', () => {
   it('schreibt einen Beitrag im Singular und nimmt die Gesamtnutzung, wenn es sie gibt', async () => {
     await erstellen([beitrag()]);
 
-    expect(text('.album-statistik')).toBe('1 Beitrag · 12× genutzt');
+    expect(text('.album-statistik')).toBe('Dein Beitrag wurde 12-mal genutzt.');
 
     fixture.componentInstance.nutzungsstatistik = {
       user_id: 'person-1',
@@ -281,7 +291,8 @@ describe('MeineBeitraegeComponent', () => {
       top_content: [],
     };
     fixture.componentInstance.totalRecords = 25;
-    expect(fixture.componentInstance.statistik).toBe('25 Beiträge · 40× genutzt');
+    // Nicht alle Beitraege geladen: keine Zahl fuer die Woche
+    expect(fixture.componentInstance.statistik).toBe('Deine 25 Beiträge wurden 40-mal genutzt.');
   });
 
   describe('Nutzungsstatistik', () => {
@@ -293,7 +304,28 @@ describe('MeineBeitraegeComponent', () => {
 
       await erstellen([beitrag()]);
 
-      expect(text('.album-statistik')).toBe('1 Beitrag · 40× genutzt');
+      expect(text('.album-statistik')).toBe('Dein Beitrag wurde 40-mal genutzt.');
+    });
+
+    // UX-Review B11: bei 0 Nutzungen erklaeren, was genutzt heisst, und den naechsten Schritt nennen
+    it('erklaert bei 0 Nutzungen, was „genutzt“ heisst, und nennt den naechsten Schritt', async () => {
+      kennung = 'person-1';
+      nutzungsstatistik = { user_id: 'person-1', unique_contents_contributed: 1, total_usage_count: 0, top_content: [] };
+
+      await erstellen([beitrag({ usage_count: 0 })]);
+
+      expect(text('[data-testid=nutzung-leer]')).toContain('Noch hat niemand deine Beiträge genutzt.');
+      expect(text('[data-testid=nutzung-leer]')).toContain('Genutzt heißt: Jemand hat einen davon kopiert oder geteilt.');
+      expect(text('[data-testid=nutzung-leer]')).toContain('teil seinen Link');
+      // Nicht doppelt: „noch nicht genutzt“ steht nur in der Box (P52)
+      expect(fixture.nativeElement.querySelector('.album-statistik')).toBeNull();
+    });
+
+    it('zeigt die Erklaerung nicht, sobald etwas genutzt wurde oder die Statistik fehlt', async () => {
+      kennung = 'person-1';
+      nutzungsstatistik = { user_id: 'person-1', unique_contents_contributed: 1, total_usage_count: 3, top_content: [] };
+      await erstellen([beitrag()]);
+      expect(fixture.nativeElement.querySelector('[data-testid=nutzung-leer]')).toBeNull();
     });
 
     it('faellt ohne Nutzungsstatistik auf die Summe der Seite zurueck', async () => {
@@ -301,7 +333,52 @@ describe('MeineBeitraegeComponent', () => {
 
       await erstellen([beitrag()]);
 
-      expect(text('.album-statistik')).toBe('1 Beitrag · 12× genutzt');
+      expect(text('.album-statistik')).toBe('Dein Beitrag wurde 12-mal genutzt.');
+    });
+  });
+
+  describe('Wirkung zuerst (Nutzerfuehrung 13.11.)', () => {
+    it('nennt die Nutzung dieser Woche und erklaert, was genutzt heisst', async () => {
+      await erstellen([
+        beitrag({ usage_count: 5, nutzung_letzte_7_tage: 2 }),
+        beitrag({ id: 'b2', usage_count: 3, nutzung_letzte_7_tage: 1 }),
+      ]);
+
+      expect(text('.album-statistik')).toBe('Deine 2 Beiträge wurden 8-mal genutzt, 3 davon diese Woche.');
+      expect(text('.nutzung-erklaerung')).toBe('Genutzt heißt: Jemand hat den Beitrag kopiert oder geteilt.');
+    });
+
+    it('zeigt ohne Nutzung keine Erklaerung', async () => {
+      await erstellen([beitrag({ usage_count: 0 })]);
+
+      expect(text('.album-statistik')).toBe('Dein Beitrag wurde noch nicht genutzt.');
+      expect(fixture.nativeElement.querySelector('.nutzung-erklaerung')).toBeNull();
+    });
+
+    it('sortiert die Beitraege nach Nutzung, bei Gleichstand wie der Server', async () => {
+      await erstellen([
+        beitrag({ id: 'a', title: 'Neu und ungenutzt', usage_count: 0 }),
+        beitrag({ id: 'b', title: 'Viel genutzt', usage_count: 9 }),
+        beitrag({ id: 'c', title: 'Etwas genutzt', usage_count: 2 }),
+        beitrag({ id: 'd', title: 'Auch ungenutzt', usage_count: 0 }),
+      ]);
+
+      expect(karten().map((karte) => karte.querySelector('.karte-titel')!.textContent!.trim())).toEqual([
+        'Viel genutzt',
+        'Etwas genutzt',
+        'Neu und ungenutzt',
+        'Auch ungenutzt',
+      ]);
+    });
+
+    it('stellt Satz und Beitraege vor Punkte und Meilensteine', async () => {
+      await erstellen([beitrag()]);
+      const bereich = fixture.nativeElement.querySelector('#meine-bereich-beitraege') as HTMLElement;
+      const reihenfolge = Array.from(bereich.querySelectorAll('.album-statistik, app-kartenliste, app-punkte, app-meilensteine')).map(
+        (el) => (el as HTMLElement).tagName.toLowerCase() === 'p' ? 'satz' : (el as HTMLElement).tagName.toLowerCase(),
+      );
+
+      expect(reihenfolge).toEqual(['satz', 'app-kartenliste', 'app-punkte', 'app-meilensteine']);
     });
   });
 
@@ -381,7 +458,7 @@ describe('MeineBeitraegeComponent', () => {
     expect(laden).toHaveBeenCalledTimes(2);
     expect(laden.calls.mostRecent().args).toEqual([1, 24]);
     expect(karten().length).toBe(1);
-    expect(text('.album-statistik')).toContain('1 Beitrag');
+    expect(text('.album-statistik')).toContain('Dein Beitrag');
   });
 
   it('springt eine Seite zurück, wenn der letzte Beitrag einer Seite gelöscht ist', async () => {
@@ -447,6 +524,57 @@ describe('MeineBeitraegeComponent', () => {
 
     expect(text('.beitraege-leer')).toBe('Du hast noch keine Beiträge.');
     expect(karten().length).toBe(0);
+  });
+
+  describe('erster Schritt im leeren Zustand (#645)', () => {
+    function unbeantwortete(n: number) {
+      return Array.from({ length: n }, (_, i) => ({
+        statement_id: `a-${i + 1}`,
+        statement_text: `Unbeantwortete Aussage ${i + 1}`,
+        personen_ohne_treffer: 0,
+        themen: [],
+      }));
+    }
+
+    function eintraege(): HTMLElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('[data-testid="unbeantwortete-aussage"]'));
+    }
+
+    it('zeigt die ersten drei unbeantworteten Aussagen mit "Antworten" ins Kommentarformular', async () => {
+      unbeantworteteLaden.and.returnValue(of(unbeantwortete(5)));
+      await erstellen([]);
+
+      expect(text('.erster-schritt h2')).toBe('Fang mit einer unbeantworteten Aussage an');
+      expect(eintraege().map((e) => e.querySelector('.aussagekarte-titel')!.textContent!.trim())).toEqual([
+        'Unbeantwortete Aussage 1',
+        'Unbeantwortete Aussage 2',
+        'Unbeantwortete Aussage 3',
+      ]);
+      const antworten = eintraege()[0].querySelector('a.antworten') as HTMLAnchorElement;
+      expect(antworten.textContent!.trim()).toBe('Antworten');
+      // Nebenknopf: "Beitragen" bleibt der einzige Hauptknopf der Seite
+      expect(antworten.classList).not.toContain('dark-green-button');
+      expect(antworten.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1&von=hier-fehlt-eine-antwort');
+      expect(
+        (fixture.nativeElement.querySelector('.alle-unbeantworteten') as HTMLAnchorElement).getAttribute('href'),
+      ).toBe('/hier-fehlt-eine-antwort');
+      // "Beitragen" bleibt als zweiter Weg.
+      expect(fixture.nativeElement.querySelector('.beitraege-leer-knopf')).not.toBeNull();
+    });
+
+    it('zeigt ohne unbeantwortete Aussagen oder bei einem Ladefehler nur "Beitragen"', async () => {
+      unbeantworteteLaden.and.returnValue(throwError(() => new Error('weg')));
+      await erstellen([]);
+
+      expect(fixture.nativeElement.querySelector('.erster-schritt')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.beitraege-leer-knopf')).not.toBeNull();
+    });
+
+    it('fragt mit eigenen Beiträgen nicht nach unbeantworteten Aussagen', async () => {
+      await erstellen([beitrag()]);
+
+      expect(unbeantworteteLaden).not.toHaveBeenCalled();
+    });
   });
 
   // Design-Audit C8 (#512): Der leere Zustand war nur ein Satz, ohne Weg weiter.

@@ -46,6 +46,9 @@ class Punktestand:
     tun: int
     quests: int
     wirkung: int
+    # False: Das Konto sammelt keine Punkte (Startkonto, keine geltende
+    # Art.-9-Einwilligung). Dann gibt es keinen Punktestand, nicht nur 0 (#352).
+    sammelt: bool = True
 
     @property
     def gesamt(self) -> int:

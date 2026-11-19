@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 
 import { convertToParamMap } from '@angular/router';
 
-import { StatementService, VORSCHLAG_ANZAHL, VORSCHLAG_MIN_AEHNLICHKEIT } from './statement.service';
+import { StatementService, VORSCHLAG_ANZAHL } from './statement.service';
 import { environment } from '../../environments/environment';
 import { NUR_LESEND } from '../auth/cache.interceptor';
 
@@ -35,6 +35,39 @@ describe('StatementService: Aussage eines Beitragsformulars', () => {
       anfrage.flush({ statement_id: 'a-1', statement_text: 'Text' });
 
       expect(ergebnis).toEqual({ statement_id: 'a-1', statement_text: 'Text' });
+    });
+
+    it('nimmt den Text aus ?searchQuery=, wenn die ID 404 gibt (Suchanfrage unter der Schwelle)', () => {
+      let ergebnis: unknown;
+      service.aussageAusAdresse(convertToParamMap({ aussage: 'a-1', searchQuery: '  Wer zahlt das  ' }))
+        .subscribe((aussage) => (ergebnis = aussage));
+
+      httpMock.expectOne((req) => req.url === getByIdUrl)
+        .flush('Statement not found', { status: 404, statusText: 'Not Found' });
+
+      expect(ergebnis).toEqual({ statement_id: '', statement_text: 'Wer zahlt das' });
+    });
+
+    it('meldet den Fehler weiter, wenn die ID 404 gibt und kein Text da ist', () => {
+      let fehler: any;
+      service.aussageAusAdresse(convertToParamMap({ aussage: 'a-1' }))
+        .subscribe({ error: (e) => (fehler = e) });
+
+      httpMock.expectOne((req) => req.url === getByIdUrl)
+        .flush('Statement not found', { status: 404, statusText: 'Not Found' });
+
+      expect(fehler?.status).toBe(404);
+    });
+
+    it('meldet andere Fehler weiter, auch mit Text', () => {
+      let fehler: any;
+      service.aussageAusAdresse(convertToParamMap({ aussage: 'a-1', searchQuery: 'Wer zahlt das' }))
+        .subscribe({ error: (e) => (fehler = e) });
+
+      httpMock.expectOne((req) => req.url === getByIdUrl)
+        .flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(fehler?.status).toBe(500);
     });
 
     it('kuerzt eine lange ?searchQuery= auf 1000 Zeichen', () => {
@@ -69,7 +102,7 @@ describe('StatementService: Vorschlaege im Antwort-auf-Feld', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('fragt nur gepflegte, hinreichend aehnliche Aussagen ab', () => {
+  it('fragt Vorschlaege an, Schwelle und Widerspruch entscheidet der Suchdienst', () => {
     let ergebnis: unknown;
     service.aussageVorschlaege('Wärmepumpen teuer').subscribe((vorschlaege) => (ergebnis = vorschlaege));
 
@@ -78,7 +111,7 @@ describe('StatementService: Vorschlaege im Antwort-auf-Feld', () => {
       query_text: 'Wärmepumpen teuer',
       limit: VORSCHLAG_ANZAHL,
       nur_kuratiert: true,
-      min_similarity: VORSCHLAG_MIN_AEHNLICHKEIT,
+      vorschlaege: true,
     });
     anfrage.flush({ results: [{ id: 'a-1', text: 'x', replysuggestions_count: 1, score: 0.7 }] });
 

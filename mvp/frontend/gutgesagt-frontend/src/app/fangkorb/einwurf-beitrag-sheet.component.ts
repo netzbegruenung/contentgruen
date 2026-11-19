@@ -113,12 +113,12 @@ interface Geladen {
         height: 4px;
         margin: 4px auto 12px;
         border-radius: 2px;
-        background: rgba(0, 0, 0, 0.24);
+        background: var(--feldrand);
       }
 
       .sheet-titel {
         margin: 0 0 12px;
-        color: var(--text-secondary);
+        color: var(--text-leise);
         font-size: 14px;
       }
 
@@ -145,7 +145,7 @@ interface Geladen {
       .sheet-fehler {
         margin: 0;
         padding: 16px 0;
-        color: var(--text-secondary);
+        color: var(--text-leise);
       }
 
       app-beitragskarte {

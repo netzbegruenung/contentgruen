@@ -25,6 +25,7 @@ from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 from services.anzeigename_service import get_anzeigename_service
 from services.bilanz_service import BilanzService
+from services.gepostet_service import GepostetService, get_gepostet_service
 from services.metrics_service import get_metrics_service
 from services.muster_hinweise_service import MUSTER_FRIST_TAGE, MusterHinweiseService
 from services.suchen_ohne_treffer_service import (
@@ -34,6 +35,7 @@ from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
 )
 from core.config import Settings
+from services.schalter_service import schalter_wirksam
 from core.logging import get_logger
 from core.fehler import INTERNER_FEHLER
 
@@ -91,11 +93,11 @@ class SearchesPerUserResponse(BaseModel):
 
     total_users counts active user-days, not distinct people: search events carry a
     pseudonym that rotates daily, so nobody can be followed across the window.
+    No median since #495: closed days keep only counters, not searches per pseudonym.
     """
 
     period_days: int
     average: float
-    median: int
     total_users: int
     total_searches: int
 
@@ -220,11 +222,20 @@ async def get_metrics(
 
             repository_factory = QdrantRepositoryFactory()
             content_repository = repository_factory.create_content_repository(settings)
-            content_count = await content_repository.count()
+            # Ohne unbeantwortete Suchanfragen, wie statement_count: Sonst verriete
+            # der Zaehler (auch Anonymen) jede neue Suchanfrage (Vormoderation).
+            statement_count = await statement_service.count_curated()
+            # count() liefert bei einem Fehler 0; nie negativ melden.
+            content_count = max(
+                0,
+                await content_repository.count()
+                - await statement_service.count()
+                + statement_count,
+            )
 
             metrics = GetMetricsResponse(
                 content_count=content_count,
-                statement_count=await statement_service.count_curated(),
+                statement_count=statement_count,
                 commentary_count=await commentary_service.count(),
                 reference_count=await reference_service.count(),
             )
@@ -311,7 +322,7 @@ async def get_searches_per_user(
         days: Number of days to analyze (default: 7)
 
     Returns:
-        SearchesPerUserResponse with average, median, and distribution stats
+        SearchesPerUserResponse with average and totals
     """
     try:
         metrics_service = get_metrics_service()
@@ -445,6 +456,49 @@ def get_bilanz(
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
+class GepostetWocheResponse(BaseModel):
+    woche: date = Field(description="Montag der Kalenderwoche (UTC)")
+    personen: int
+
+
+class GepostetResponse(BaseModel):
+    aktiv: bool
+    woechentlich: List[GepostetWocheResponse]
+
+
+@router.get("/gepostet", response_model=GepostetResponse)
+async def get_gepostet(
+    wochen: int = Query(
+        8,
+        ge=1,
+        le=52,
+        description="Zeitraum in Kalenderwochen, die laufende eingeschlossen",
+    ),
+    admin_user: str = Depends(require_admin),
+    settings: Settings = Depends(get_settings),
+    dienst: GepostetService = Depends(get_gepostet_service),
+):
+    """
+    Der Nordstern (#643): je Kalenderwoche, wie viele verschiedene Personen nach dem
+    Kopieren "Ja, gepostet" gemeldet haben. Nur Zahlen, keine Kennungen
+    (services/gepostet_service.py). Ohne ``gepostet_aktiv`` entstehen keine Meldungen;
+    ``aktiv`` sagt das.
+    """
+    if not schalter_wirksam("gepostet", settings):
+        return GepostetResponse(aktiv=False, woechentlich=[])
+    try:
+        zeilen = await asyncio.to_thread(dienst.wochen, wochen)
+    except Exception as e:
+        logger.error(f"Error fetching Gepostet: {type(e).__name__}", exc_info=True)
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    return GepostetResponse(
+        aktiv=True,
+        woechentlich=[
+            GepostetWocheResponse(woche=z.woche, personen=z.personen) for z in zeilen
+        ],
+    )
+
+
 @router.get("/suchen-ohne-treffer", response_model=SuchenOhneTrefferResponse)
 async def get_suchen_ohne_treffer(
     wochen: int = Query(
@@ -507,7 +561,7 @@ async def get_muster_hinweise(
     Automatik (services/muster_hinweise_service.py). Ohne ``punkte_aktiv`` entstehen
     keine Hinweise; ``aktiv`` sagt das dem Dashboard.
     """
-    if not settings.punkte_aktiv:
+    if not schalter_wirksam("punkte", settings):
         return MusterHinweiseResponse(
             aktiv=False, frist_tage=MUSTER_FRIST_TAGE, hinweise=[]
         )

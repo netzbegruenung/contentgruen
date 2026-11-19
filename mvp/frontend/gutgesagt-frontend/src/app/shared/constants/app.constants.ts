@@ -52,7 +52,7 @@ export const CONTENT_ICONS = {
 export const PAGE_TITLES = {
   HOME: 'Gut gesagt',
   SEARCH_RESULTS: 'Suchergebnisse',
-  CONTRIBUTE: 'Beitrag verfassen',
+  CONTRIBUTE: 'Beitragen', // wie der Knopf im Kopf (GLOSSARY: Beitragen ist die Seite, Verfassen ein Weg darauf)
   MEINE_BEITRAEGE: 'Meine Beiträge',
   RAW_INPUT: EINWERFEN_TITEL,
   RAW_INPUT_LIST: 'Fangkorb',
@@ -72,10 +72,17 @@ export const PAGE_TITLES = {
   POST_FORM: `${typLabel('post')} verfassen`,
   GESPEICHERT: 'Gespeichert',
   LOGIN: 'Anmelden',
+  // Vorschau fuer Besucher (/mit-konto): Uebersicht bzw. Rundgang ohne Konto
+  MIT_KONTO: 'Mit Konto',
+  MIT_KONTO_RUNDGANG: 'Selbst beitragen',
   HELP: 'Hilfe',
   IMPRESSUM: 'Impressum',
   DATENSCHUTZ: 'Datenschutz',
   NUTZUNGSBEDINGUNGEN: 'Nutzungsbedingungen',
+  // Wie der Menuepunkt (DATENSCHUTZ_EINSTELLUNGEN in fangkorb-texte.ts, #644)
+  EINWILLIGUNG: 'Datenschutz-Einstellungen',
+  // Wenn die App nach der Einwilligung fragt (mit Rueckweg), nicht aus dem Profilmenue (UX-Review B18)
+  EINWILLIGUNG_FRAGE: 'Einwilligung',
   UEBER: 'Über Gut gesagt',
   EINLADUNG: 'Einladung',
   ADMIN: 'Admin'

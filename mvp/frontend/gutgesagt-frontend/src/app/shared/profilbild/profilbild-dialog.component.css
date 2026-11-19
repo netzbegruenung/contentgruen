@@ -36,16 +36,16 @@
 }
 
 .profilbild-option:has(.profilbild-radio:checked) {
-  border-color: var(--primary-main);
-  background-color: var(--selected-bg);
+  border-color: var(--akzent-klee);
+  background-color: var(--karte-kommentar);
 }
 
 .profilbild-option:has(.profilbild-radio:focus-visible) {
-  outline: 3px solid var(--primary-dark);
+  outline: 3px solid var(--akzent-tanne);
   outline-offset: 2px;
 }
 
 .hinweis {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }

@@ -1,0 +1,32 @@
+<article class="aussagekarte" [attr.aria-labelledby]="titelId">
+    <header class="aussagekarte-kopf">
+        <mat-icon class="aussagekarte-icon" aria-hidden="true">format_quote</mat-icon>
+        <div class="aussagekarte-kopftext">
+            <span class="aussagekarte-art">Unbeantwortete Aussage</span>
+            <ng-container *ngIf="ebene === 2; else ebeneDrei">
+                <h2 #titel class="aussagekarte-titel" [class.aussagekarte-titel--zu]="!aufgeklappt" [id]="titelId">{{ text }}</h2>
+            </ng-container>
+            <ng-template #ebeneDrei>
+                <h3 #titel class="aussagekarte-titel" [class.aussagekarte-titel--zu]="!aufgeklappt" [id]="titelId">{{ text }}</h3>
+            </ng-template>
+            <button *ngIf="gekuerzt || aufgeklappt" type="button" class="ganz-lesen"
+                    [attr.aria-expanded]="aufgeklappt" [attr.aria-controls]="titelId"
+                    [attr.aria-describedby]="titelId"
+                    (click)="umschalten()">{{ aufgeklappt ? 'Weniger zeigen' : 'Ganz lesen' }}</button>
+        </div>
+    </header>
+    <div class="aussagekarte-inhalt">
+        <p *ngIf="gesucht" class="gesucht">{{ gesucht }}</p>
+        <ng-content></ng-content>
+    </div>
+    <footer class="aussagekarte-fuss">
+        <a *ngIf="knopf === 'haupt'; else nebenKnopf" mat-raised-button class="dark-green-button antworten"
+           [routerLink]="antwortenPfad" [queryParams]="antwortenParams"
+           [attr.aria-describedby]="titelId">Antworten</a>
+        <ng-template #nebenKnopf>
+            <a mat-stroked-button class="antworten"
+               [routerLink]="antwortenPfad" [queryParams]="antwortenParams"
+               [attr.aria-describedby]="titelId">Antworten</a>
+        </ng-template>
+    </footer>
+</article>

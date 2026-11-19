@@ -1,4 +1,5 @@
-import { Component, ElementRef, Inject, ViewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Inject, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -12,11 +13,25 @@ import { MatIconModule } from '@angular/material/icon';
 import { ModerationService } from '../../../services/moderation.service';
 import { MELDEGRUENDE, MeldegrundWert, brauchtBegruendung } from '../../meldegruende';
 import { istEmailAdresse } from '../../email-adresse';
+import { AuthService } from '../../../auth/auth.service';
+
+interface FehlendeAngabe {
+  text: string;
+  /** Endet mit einem Nebensatz, den vor „und“ ein Komma schliesst. */
+  endetMitNebensatz?: boolean;
+}
 
 export interface ReportDialogData {
   contentId: string;
   contentType: string;
 }
+
+/**
+ * Ob das Haekchen „Bestaetigung und Entscheidung per Mail an mein Konto“ vorausgewaehlt
+ * ist. Vorerst nein (Datenschutz durch Voreinstellung, Art. 25 Abs. 2 DSGVO), bis der
+ * Maintainer entschieden hat; umstellen nur hier.
+ */
+export const MELDEN_AN_KONTO_VORAUSGEWAEHLT = false;
 
 // Grenzen wie im Suchdienst (api/v1/moderation.py: MELDER_NAME_MAX, MELDER_EMAIL_MAX).
 export const MELDER_NAME_MAX = 200;
@@ -26,7 +41,11 @@ export const MELDER_EMAIL_MAX = 254;
 /**
  * Der Meldedialog. Der DSA gilt fuer Gut gesagt (#438).
  * Deshalb fragt er die Angaben nach Art. 16 Abs. 2 DSA ab: Name und E-Mail-Adresse
- * freiwillig, die Erklaerung guten Glaubens als Pflicht. Bestaetigt wird der Eingang
+ * freiwillig, die Erklaerung guten Glaubens als Pflicht. Angemeldete fragt er weder
+ * nach Name noch nach Adresse (UX-Review B17, Entscheidung Maintainer 13.11.2026): Die
+ * Meldung haengt an ihrem Konto (``reported_by_user_id``), und ein vorausgewaehltes
+ * Haekchen laesst den Suchdienst Bestaetigung und Entscheidung an die Adresse des
+ * Kontos schicken. Die Adresse kommt dort aus dem Konto (BFF), nie aus dem Dialog. Bestaetigt wird der Eingang
  * hier; mit E-Mail-Adresse schickt der Suchdienst die Bestaetigung und spaeter die
  * Entscheidung auch per Mail (#493, services/meldung_mitteilen.py).
  */
@@ -49,7 +68,8 @@ export const MELDER_EMAIL_MAX = 254;
   styleUrls: ['./report-dialog.component.css']
 })
 export class ReportDialogComponent {
-  selectedReason: MeldegrundWert = 'spam';
+  /** Nicht vorbelegt (#581): Den Meldegrund waehlt die Person selbst. */
+  selectedReason: MeldegrundWert | null = null;
   description: string = '';
   melderName = '';
   melderEmail = '';
@@ -58,6 +78,10 @@ export class ReportDialogComponent {
   submitted = false;
   /** Ob die abgeschickte Meldung eine E-Mail-Adresse trug: davon haengt die Bestaetigung ab. */
   mitEmail = false;
+  /** Doppelmeldung: Die Person hat diesen Beitrag schon gemeldet, nichts Neues angelegt. */
+  schonGemeldet = false;
+  /** Angemeldet mit Haekchen, aber der Suchdienst hat keine Adresse (etwa keine bestaetigte im Konto). */
+  kontoOhneMail = false;
   /** Erst nach dem Verlassen des Feldes zeigt der Dialog, dass die Adresse nicht stimmt. */
   emailVerlassen = false;
   error: string | null = null;
@@ -71,12 +95,24 @@ export class ReportDialogComponent {
   readonly reasons = MELDEGRUENDE;
   readonly nameMax = MELDER_NAME_MAX;
   readonly emailMax = MELDER_EMAIL_MAX;
+  /**
+   * Angemeldet: kein Namens- und kein Adressfeld, die Meldung haengt am Konto. Folgt der
+   * Anmeldung, auch wenn sie erst nach dem Oeffnen feststeht (Review zu #670).
+   */
+  angemeldet = false;
+  /** Angemeldet: Bestaetigung und Entscheidung per Mail an das Konto. */
+  bestaetigungAnKonto = MELDEN_AN_KONTO_VORAUSGEWAEHLT;
 
   constructor(
     public dialogRef: MatDialogRef<ReportDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ReportDialogData,
-    private moderationService: ModerationService
-  ) {}
+    private moderationService: ModerationService,
+    authService: AuthService,
+  ) {
+    authService.userInfo$
+      .pipe(takeUntilDestroyed(inject(DestroyRef)))
+      .subscribe((info) => (this.angemeldet = !!info?.isAuthenticated));
+  }
 
   get emailUngueltig(): boolean {
     const email = this.melderEmail.trim();
@@ -88,40 +124,80 @@ export class ReportDialogComponent {
   }
 
   get begruendungPflicht(): boolean {
-    return brauchtBegruendung(this.selectedReason);
+    return this.selectedReason !== null && brauchtBegruendung(this.selectedReason);
+  }
+
+  /**
+   * Was zum Melden noch fehlt, in der Reihenfolge der Felder. Der Dialog nennt es
+   * neben dem ausgegrauten „Melden“ (#581), weil Checkbox und Felder auf kleinen
+   * Bildschirmen unter dem Falz liegen. Fuer den Hinweis zaehlt die E-Mail-Adresse
+   * erst nach dem Verlassen des Feldes, wie ihre Fehlermeldung; fuer den Knopf sofort.
+   */
+  private fehlendeAngaben(fuerHinweis: boolean): FehlendeAngabe[] {
+    const fehlt: FehlendeAngabe[] = [];
+    if (this.selectedReason === null) {
+      fehlt.push({ text: 'ein Grund' });
+    }
+    if (this.begruendungPflicht && this.description.trim() === '') {
+      fehlt.push({ text: 'die Begründung, warum der Beitrag rechtswidrig ist', endetMitNebensatz: true });
+    }
+    if (!this.angemeldet && (fuerHinweis ? this.emailFehlerZeigen : this.emailUngueltig)) {
+      fehlt.push({ text: 'eine gültige E-Mail-Adresse (oder das Feld leer lassen)' });
+    }
+    if (!this.guterGlaube) {
+      fehlt.push({ text: 'deine Erklärung guten Glaubens' });
+    }
+    return fehlt;
+  }
+
+  /** Der Hinweis neben „Melden“; leer, wenn nichts fehlt oder gerade gesendet wird. */
+  get fehltHinweis(): string {
+    const fehlt = this.submitting ? [] : this.fehlendeAngaben(true);
+    if (fehlt.length === 0) {
+      return '';
+    }
+    if (fehlt.length === 1) {
+      return `Zum Melden fehlt noch: ${fehlt[0].text}.`;
+    }
+    const davor = fehlt.slice(0, -1);
+    // Ein Nebensatz („…, warum … ist“) vor „und“ wird mit einem Komma geschlossen.
+    const komma = davor[davor.length - 1].endetMitNebensatz ? ',' : '';
+    const liste = `${davor.map((a) => a.text).join(', ')}${komma} und ${fehlt[fehlt.length - 1].text}`;
+    return `Zum Melden fehlen noch: ${liste}.`;
   }
 
   get kannMelden(): boolean {
-    return (
-      !this.submitting &&
-      !!this.selectedReason &&
-      this.guterGlaube &&
-      !this.emailUngueltig &&
-      (!this.begruendungPflicht || this.description.trim() !== '')
-    );
+    return !this.submitting && this.fehlendeAngaben(false).length === 0;
   }
 
   submitReport() {
-    if (!this.kannMelden) {
+    const grund = this.selectedReason;
+    if (!this.kannMelden || grund === null) {
       return;
     }
     this.submitting = true;
     this.error = null;
-    const melderEmail = this.melderEmail.trim() || null;
+    const melderEmail = this.angemeldet ? null : this.melderEmail.trim() || null;
+    const anKonto = this.angemeldet && this.bestaetigungAnKonto;
 
     this.moderationService.reportContent({
       contentId: this.data.contentId,
       contentType: this.data.contentType,
-      reason: this.selectedReason,
+      reason: grund,
       description: this.description || undefined,
-      melderName: this.melderName.trim() || null,
+      melderName: this.angemeldet ? null : this.melderName.trim() || null,
       melderEmail,
       guterGlaube: true,
+      ...(anKonto ? { bestaetigungAnKonto: true } : {}),
     }).subscribe({
-      next: () => {
+      next: (antwort) => {
         this.submitting = false;
         this.submitted = true;
-        this.mitEmail = melderEmail !== null;
+        // Die Zusage einer Mail richtet sich nach dem, was der Suchdienst gespeichert hat:
+        // Fuer Angemeldete kann die Adresse fehlen (Sitzung abgelaufen, keine im Konto).
+        this.mitEmail = antwort?.mit_email ?? (melderEmail !== null || anKonto);
+        this.schonGemeldet = antwort?.schon_gemeldet === true;
+        this.kontoOhneMail = anKonto && !this.mitEmail && !this.schonGemeldet;
       },
       error: (error) => {
         this.submitting = false;

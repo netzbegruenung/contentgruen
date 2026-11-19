@@ -7,7 +7,9 @@ from uuid import UUID
 
 from dependencies import (
     get_aufrufer,
+    get_aussage_themen_service,
     get_image_service,
+    get_statement_service,
     require_art9_einwilligung,
 )
 from dtos.image import (
@@ -22,9 +24,17 @@ from domain.models.image import ImageDbEntry
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
+from domain.models.content_type import ContentType
+from services.antwort_auf import als_antwort_verknuepfen
+from services.aussage_themen_service import AussageThemenService
+from services.content.statement_service import StatementService
 from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 router = APIRouter()
+
+# Gewicht der Verknuepfung, wenn die Person die Aussage selbst nennt (#619); wie
+# beim Kommentar (api/v1/commentary.py). Gerankt wird je Beitragstyp.
+BILD_RELEVANZ = 1.0
 logger = logging.getLogger(__name__)
 
 
@@ -80,13 +90,16 @@ async def get_all(
 async def add_image(
     request: AddImageRequest,
     image_service: BaseContentService = Depends(get_image_service),
+    statement_service: StatementService = Depends(get_statement_service),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
     x_user: str = Header(...),
 ) -> AddImageResponse:
     """
     Ein Bild mit Unterschrift speichern; es ist sofort sichtbar. Returns 201.
 
     Die Unterschrift ist Pflicht (AddImageRequest, sonst 422); sie kommt von der Person
-    (ADR 0003).
+    (ADR 0003). Mit Aussage (ID oder Text) haengt das Bild danach als Antwort an ihr
+    (#619); scheitert das, bleibt es gespeichert, und verknuepft ist False.
     """
     try:
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -104,7 +117,16 @@ async def add_image(
         )
 
         image_id = await image_service.add(entry)
-        return AddImageResponse(id=image_id)
+        antwort_auf = await als_antwort_verknuepfen(
+            request,
+            image_id,
+            ContentType.IMAGE,
+            BILD_RELEVANZ,
+            x_user,
+            statement_service,
+            themen_service,
+        )
+        return AddImageResponse(id=image_id, **antwort_auf.model_dump())
 
     except HTTPException:
         raise

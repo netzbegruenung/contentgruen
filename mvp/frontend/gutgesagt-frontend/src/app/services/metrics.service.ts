@@ -8,6 +8,7 @@ import {
   SuchenOhneTrefferResponse,
 } from './dtos/metricsDtos';
 import { environment } from '../../environments/environment';
+import { stillerKontext } from '../shared/selbst-nachladen';
 
 export interface MVPMetrics {
   timestamp: string;
@@ -37,20 +38,28 @@ export class MetricsService {
     return this.http.get<GetMetricsResponse>(`${this.baseUrl}/getMetrics`);
   }
 
-  getMVPDashboard(): Observable<MVPMetrics> {
-    return this.http.get<MVPMetrics>(`${this.baseUrl}/mvp-dashboard`);
+  /** ``still``: Hintergrund-Abfrage, frisch statt aus dem Cache, ohne Umleitung bei 401 (STILLE_ABFRAGE). */
+  getMVPDashboard(still = false): Observable<MVPMetrics> {
+    return this.http.get<MVPMetrics>(`${this.baseUrl}/mvp-dashboard`, { context: still ? stillerKontext() : undefined });
   }
 
-  getBilanz(wochen: number): Observable<BilanzResponse> {
-    return this.http.get<BilanzResponse>(`${this.baseUrl}/bilanz`, { params: { wochen } });
+  getBilanz(wochen: number, still = false): Observable<BilanzResponse> {
+    return this.http.get<BilanzResponse>(`${this.baseUrl}/bilanz`, {
+      params: { wochen },
+      context: still ? stillerKontext() : undefined,
+    });
   }
 
   // Zeitraum: Standard des Backends; die Antwort nennt ihn.
-  getSuchenOhneTreffer(): Observable<SuchenOhneTrefferResponse> {
-    return this.http.get<SuchenOhneTrefferResponse>(`${this.baseUrl}/suchen-ohne-treffer`);
+  getSuchenOhneTreffer(still = false): Observable<SuchenOhneTrefferResponse> {
+    return this.http.get<SuchenOhneTrefferResponse>(`${this.baseUrl}/suchen-ohne-treffer`, {
+      context: still ? stillerKontext() : undefined,
+    });
   }
 
-  getMusterHinweise(): Observable<MusterHinweiseResponse> {
-    return this.http.get<MusterHinweiseResponse>(`${this.baseUrl}/muster-hinweise`);
+  getMusterHinweise(still = false): Observable<MusterHinweiseResponse> {
+    return this.http.get<MusterHinweiseResponse>(`${this.baseUrl}/muster-hinweise`, {
+      context: still ? stillerKontext() : undefined,
+    });
   }
 }

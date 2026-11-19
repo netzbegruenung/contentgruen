@@ -76,7 +76,8 @@ $gutgesagt-light-green-palette: (
 // .dark-green-button. Vorher zog es Klee (500), und beide standen nebeneinander (#512).
 $gutgesagt-primary: mat.m2-define-palette($gutgesagt-green-palette, 800, 300, 900);
 $gutgesagt-accent: mat.m2-define-palette($gutgesagt-light-green-palette, 500, 300, 700);
-$gutgesagt-warn: mat.m2-define-palette(mat.$m2-red-palette);
+// Warnfarbe Rot 800 (#c62828, = --fehler): Weiss darauf 5,62:1; Rot 500 (#f44336) hatte 3,68:1
+$gutgesagt-warn: mat.m2-define-palette(mat.$m2-red-palette, 800, 300, 900);
 
 // Custom typography configuration with your fonts
 $gutgesagt-typography: mat.m2-define-typography-config(
@@ -92,7 +93,8 @@ $gutgesagt-typography: mat.m2-define-typography-config(
   $body-1: mat.m2-define-typography-level(16px, 24px, 400, 'PTSans, Roboto, sans-serif', 0.03125em),
   $body-2: mat.m2-define-typography-level(14px, 20px, 400, 'PTSans, Roboto, sans-serif', 0.01786em),
   $caption: mat.m2-define-typography-level(12px, 20px, 400, 'PTSans, Roboto, sans-serif', 0.03333em),
-  $button: mat.m2-define-typography-level(14px, 14px, 500, 'PTSans-bold, Roboto, sans-serif', 0.08929em),
+  // Knoepfe mit normaler Laufweite: die Material-Sperrung (0.08929em) machte lange Beschriftungen unruhig (#599)
+  $button: mat.m2-define-typography-level(14px, 14px, 500, 'PTSans-bold, Roboto, sans-serif', 0.01em),
   $overline: mat.m2-define-typography-level(10px, 16px, 400, 'PTSans, Roboto, sans-serif', 0.15em),
 );
 
@@ -113,26 +115,84 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
 
 // CSS Custom Properties for consistent theming
 :root {
-  // Primary colors from Material palette
-  --primary-main: #008939;
-  --primary-light: #8abd24;
-  --primary-dark: #005437;
+  // Palette (aufgeraeumt 18.11.): ein Name je Rolle, ein Wert je Rolle. Gegenstueck dunkel im
+  // Block html[data-theme='dark']. Kontraste nach WCAG 2.2 AA auf --flaeche (Weiss).
+  // Flaechen
+  --flaeche: #ffffff; // Karten, Felder, Inhaltsbereich
+  --mulde: #f5f5f5; // eingelassene Flaechen: Aussagen, Hover, gesperrt, Grund unter Kartenlisten
+  // Schrift
+  --text: #212121;
+  --text-leise: #666666; // 5,74:1 auf Weiss, 5,27:1 auf --mulde
+  // Linien
+  --linie: #e0e0e0; // Trennlinien, Zierde (kein 3:1 noetig)
+  --feldrand: #8c8478; // Raender von Feldern und Kaesten, 3,69:1 auf Weiss
+  // Gruen
+  --primaer: #005437; // Tanne: volle Knoepfe, Leisten, Snackbar
+  --primaer-text: #007830; // Klee als Schrift (Links), 5,63:1 auf Weiss
+  --akzent: #8abd24; // Grashalm
+  --primaer-tint: #ebf6ef; // Hellgruen: Erfolg, Auswahl
+  // Ueberschriften und Akzentschrift: im Hellen Tanne, im Dunkeln fast Weiss (#588)
+  --akzent-schrift: var(--primaer);
+  // Status
+  --fehler: #c62828; // Weiss darauf 5,62:1
+  --fehler-tint: #ffebee;
+  --hinweis-tint: #fff3cd; // Hinweis und Warnung: eine Gold-Familie
+  --hinweis-rand: #a87f00; // 3,68:1 auf Weiss
+  --hinweis-text: #856404;
+  --info-tint: #e3f2fd;
+  --info-text: #0d47a1;
+  --info-rand: #1976d2;
+  // Beitragstypen (Kartenkopf, flach)
+  --karte-kommentar: #e6f0d2; // auch Auswahl, Willkommen, Kacheln der Startseite
+  --karte-bild: #ede7f6;
+  --karte-post: #fde3cf;
+  // Gelbes Band hinter der Suche auf der Startseite (bewusst nicht Sonne, #512), Willkommen,
+  // Hilfe-Kasten (#389)
+  --kopf: #f6ff7c;
 
-  // Accent colors
-  --accent-main: #8abd24;
+  // Kleine Markierungen (Fokusring, aktiver Reiter, Ladekreis) und gruene Linien (Kachelrand,
+  // Randstrich). Im Hellen Tanne bzw. Klee; im Dunkeln Markierungen in Grashalm,
+  // Linien neutral, damit Gruen dort nur noch Knopf-Fuellung und kleiner Akzent ist (#588).
+  --akzent-tanne: var(--primaer);
+  --akzent-klee: var(--primaer-text);
+  --linie-tanne: var(--primaer);
+  --linie-klee: var(--primaer-text);
+
   --accent-light: #c4dc7c;
-  --accent-dark: #639318;
-
-  // Background colors
   --bg-main: rgb(245, 241, 233);
-  --bg-card: white;
-  --bg-surface: white;
 
-  // Text colors following Material Design
-  --text-primary: rgba(0, 0, 0, 0.87);
-  --text-secondary: rgba(0, 0, 0, 0.60);
-  --text-disabled: rgba(0, 0, 0, 0.38);
-  --text-hint: rgba(0, 0, 0, 0.38);
+  // Werte, die nur im Dunkeln abweichen (Gegenstueck im Block html[data-theme='dark'])
+  --link-unterstrich: none;
+  --filter-aktiv-grund: var(--akzent);
+  --referenz-marke-schrift: white;
+  --knopf-rand-auf-band: transparent;
+  // Volle Knoepfe und Akzentschrift auf den Baendern (Such-Band, Willkommen): im Hellen Tanne
+  // und Weiss bzw. Tanne wie ueberall; im Dunkeln eigene Werte (Ersteindruck-Test 14.11.)
+  --knopf-auf-band-grund: var(--primaer);
+  --knopf-auf-band-schrift: white;
+  --band-akzent-schrift: var(--akzent-schrift);
+  // Zweiter Knopf auf dem Willkommen-Band ("Rundgang starten"): im Hellen wie die vollen
+  // Knoepfe auf dem Band, im Dunkeln Umriss in Gelb, damit nur "Suchen" voll leuchtet
+  --knopf-zweit-grund: var(--knopf-auf-band-grund);
+  --knopf-zweit-schrift: var(--knopf-auf-band-schrift);
+  --knopf-zweit-rand: 2px solid var(--knopf-auf-band-grund);
+  // Rand der Kartenliste: im Hellen keiner, im Dunkeln 1 px
+  --kartenliste-rand: none;
+  // Grund des Inhaltsbereichs (<main>): im Hellen weiss wie die Karten, im Dunkeln die
+  // unterste Stufe, damit Karten und Kacheln darueber heller liegen (Dunkelmodus Schiefer 17.11.)
+  --seite-grund: var(--flaeche);
+  // Tisch unter dem Karussell (ab 600 px): im Hellen eingelassen, im Dunkeln flach mit Rand
+  --karussell-rand: 1px solid var(--linie);
+  --karussell-schatten: inset 0 3px 6px 0 rgba(0, 0, 0, 0.12), inset 0 2px 4px 0 rgba(0, 0, 0, 0.15),
+    inset 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  // Grund unter Kartenlisten: im Hellen --mulde, im Dunkeln wie die Seitenfueller (Sebastian 17.11.)
+  --kartenliste-grund: var(--mulde);
+  // Offene Schritte im Rundgang-Fortschritt: im Hellen Klee-zart, im Dunkeln --feldrand (3:1)
+  --rundgang-offen: var(--karte-kommentar);
+  // Rand der Kacheln auf der Startseite (2 px): im Hellen wie die Flaeche, im Dunkeln sichtbar
+  --kachel-rand: var(--karte-kommentar);
+  // Material-Felder: Rand mit 3:1 wie alle Feld- und Kastenraender (Material: 38 % Schwarz, 2,7:1)
+  --mat-form-field-outlined-outline-color: var(--feldrand);
 
   // Spacing system (8px grid)
   --spacing-xs: 4px;
@@ -146,64 +206,256 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --elevation-0: none;
   --elevation-1: 0 2px 1px -1px rgba(0,0,0,0.2), 0 1px 1px 0 rgba(0,0,0,0.14), 0 1px 3px 0 rgba(0,0,0,0.12);
   --elevation-2: 0 3px 1px -2px rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 1px 5px 0 rgba(0,0,0,0.12);
-  --elevation-3: 0 3px 3px -2px rgba(0,0,0,0.2), 0 3px 4px 0 rgba(0,0,0,0.14), 0 1px 8px 0 rgba(0,0,0,0.12);
   --elevation-4: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12);
   --elevation-6: 0 3px 5px -1px rgba(0,0,0,0.2), 0 6px 10px 0 rgba(0,0,0,0.14), 0 1px 18px 0 rgba(0,0,0,0.12);
   --elevation-8: 0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12);
-  --elevation-12: 0 7px 8px -4px rgba(0,0,0,0.2), 0 12px 17px 2px rgba(0,0,0,0.14), 0 5px 22px 4px rgba(0,0,0,0.12);
-  --elevation-16: 0 8px 10px -5px rgba(0,0,0,0.2), 0 16px 24px 2px rgba(0,0,0,0.14), 0 6px 30px 5px rgba(0,0,0,0.12);
-  --elevation-24: 0 11px 15px -7px rgba(0,0,0,0.2), 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12);
 
   // Border radius
   --border-radius-small: 4px;
   --border-radius-medium: 8px;
   --border-radius-large: 16px;
 
-  // Status colors
-  --error-bg: #ffebee;
-  --error-color: #c62828;
-  --error-border: #f44336;
-  --success-bg: #e8f5e9;
-  --success-color: var(--primary-dark);
-  --success-border: var(--primary-main);
-  --warning-bg: #fff3e0;
-  --warning-color: #e65100;
+  // Status
   --warning-border: #ff9800;
-  --info-bg: #e3f2fd;
-  --info-color: #0d47a1;
-  --info-border: #2196f3;
+  // Klee-Hauch (Zeile "Antwort auf" in der Karte) und Erfolg-Hauch: im Hellen --primaer-tint,
+  // im Dunkeln eigene Werte
+  --primary-tint-faint: var(--primaer-tint);
+  --success-faint: var(--primaer-tint);
+  // Trend im Admin-Dashboard
+  --trend-steigt: var(--primaer);
 
-  // Content type colors
-  --commentary-bg: #e6f0d2; // Light green for commentary
-  --generictext-bg: #e3f2fd; // Light blue for generic text
-  --image-bg: #ede7f6; // Light violet for images
-  --post-bg: #fde3cf; // Apricot for social-media posts
-  --statement-bg: #f5f5f5; // Light gray: statements, Einwuerfe ohne Beitrag
-  --kartenliste-bg: #f4f4f2; // Grund unter Kartenlisten, damit Karten als Karten lesbar sind
-  --such-band: #f6ff7c; // Gelbes Band hinter der Suche auf der Startseite; bewusst nicht Sonne (#512)
-  --rundgang-gelb: var(--such-band); // Band im Willkommen, Rahmen des Lichtkegels, Hilfe-Kasten (#389)
-  --rundgang-balken: #ecefd0; // Fortschrittsbalken im Rundgang, noch offene Schritte
+  --rundgang-kegel: var(--kopf); // Rahmen des Lichtkegels; im Dunkeln heller als das Band (#588)
   --rundgang-schleier: rgba(0, 25, 15, 0.55); // Abdunklung um den Lichtkegel
   --rundgang-fokus: #0ba1dd; // Fokusring der Rundgang-Knoepfe, hebt sich von Gelb und Tanne ab
   --einwurf-grund: #faf6ec; // Papier/Sand: offene und destillierte Einwuerfe im Fangkorb, Saetze darin bleiben weiss
 
-  // Neutral colors
-  --divider-color: #e0e0e0;
-  --border-color: #ccc;
-  --hover-bg: #f5f5f5;
-  --selected-bg: #e6f0d2; // Keep for backward compatibility
-  --auswahl-grund: rgba(0, 84, 55, 0.07); // Tanne-Hauch: gewaehlter Ansichts-Umschalter, aktiver Admin-Link
-  --disabled-bg: #f5f5f5;
-  --disabled-color: rgba(0, 0, 0, 0.38);
-
-  // Surface colors
-  --surface-variant: #fafafa;
+  --primary-line: rgba(0, 120, 48, 0.3); // --primaer-text (#007830) mit 30 %
   --surface-elevated: white;
 
   // Transitions
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-standard: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Startseite im Hellen (Designrunde 17.11., Variante b+K2): Willkommen und die Kacheln
+// "Einwerfen"/"Beitragen" in zartem Klee-Gruen wie der Kartenkopf (--karte-kommentar), damit
+// sich das Willkommen vom gelben Suchband absetzt und "Suchen" der eine volle Knopf bleibt.
+// Hier nur, was im Hellen anders ist; eigene Dunkel-Werte gehoeren in den Block
+// html[data-theme='dark'].
+html:not([data-theme='dark']) {
+  --mitmachen-kachel-marke: var(--flaeche); // Grund der Marke "mit Konto" auf der Kachel
+  --willkommen-fokus: var(--akzent-tanne); // Fokusring der Knoepfe im Willkommen (7,6:1 auf Klee-zart)
+}
+
+// Dunkelmodus (#588). Welche Palette gilt, steht als data-theme am <html>: gesetzt vom
+// Skript in index.html (eigene Wahl aus dem localStorage, sonst die Einstellung des Geraets)
+// und vom FarbschemaService beim Umschalten. Alles, was im Dunkeln anders aussieht, ist ein
+// Token in diesem Block; eine neue Dunkel-Palette tauscht nur die Werte hier.
+// Flaechen neutral Anthrazit, Gruen nur als Akzent (Knoepfe, Links,
+// Siegel), keine gruen getoenten Flaechen. Knoepfe in Klee statt Tanne, damit sie sich
+// vom dunklen Grund abheben; Schrift hellgrau, Grashalm nur fuer kleine Markierungen.
+$gutgesagt-dark-primary: mat.m2-define-palette($gutgesagt-green-palette, 500, 300, 700);
+$gutgesagt-dark-theme: mat.m2-define-dark-theme((
+  color: (
+    primary: $gutgesagt-dark-primary,
+    accent: $gutgesagt-accent,
+    warn: $gutgesagt-warn,
+  ),
+));
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  @include mat.all-component-colors($gutgesagt-dark-theme);
+
+  & {
+    color-scheme: dark;
+    // Palette n2 (Entscheidung 13.11.): leicht gruenliche Anthrazit-Flaechen, Such-Band in Moos.
+    // Palette "Schiefer" (Entscheidung 17.11.): kuehles Blaugrau, je hoeher desto heller (Seite,
+    // Karte, Kartenkopf, Erhoehung), Baender in Schiefer-Gruen, Gelb gedaempft und nur einmal
+    // voll ("Suchen"), Schrift leicht kuehl getoent
+
+    // Palette (Gegenstueck zu :root)
+    --flaeche: #1b2125;
+    --mulde: #21282c;
+    --text: #ededee;
+    --text-leise: #c4c5c6;
+    --linie: #2e363b;
+    --feldrand: #697574; // kleinster Wert mit 3:1 auf allen Flaechen bis zur Erhoehung (3,0:1)
+    --primaer: #0b7a40; // Schiefer: Klee eine Spur tiefer, blendet weniger (5,4:1 mit Weiss)
+    --primaer-text: #ebebeb;
+    --akzent: #8abd24;
+    --primaer-tint: #2b3134;
+    --akzent-schrift: #f2f2f2;
+    --fehler: #ff8a80; // Fehlertext; Warn-Knoepfe (Material warn) bleiben #c62828 mit Weiss
+    --fehler-tint: #2c1a1b;
+    --hinweis-tint: #2c2717;
+    --hinweis-rand: #d9a91a;
+    --hinweis-text: #ffe08a;
+    --info-tint: #172230;
+    --info-text: #90caf9;
+    --info-rand: #64b5f6;
+    // Beitragstypen: dunkle, fast neutrale Baender; unterscheidbar bleiben sie ueber das Symbol
+    --karte-kommentar: #1f272b; // auch Auswahl, Willkommen, Kacheln der Startseite
+    --karte-bild: #24221e;
+    --karte-post: #28201b;
+    --kopf: #18212a; // Schiefer ohne Gruenstich
+
+    // Schrift, Ueberschriften und Links hellgrau statt Grashalm ("zu limonig", 07.11.);
+    // Gruen bleibt Knopf-Fuellung (Klee) und kleine Markierung (Grashalm).
+    --akzent-tanne: #8abd24;
+    --akzent-klee: #8abd24;
+    --linie-tanne: #7b817c;
+    --linie-klee: #7b817c;
+
+    --accent-light: #2a2d2b; // neutral: Themen-Marken sind Flaechen, kein Akzent
+
+    --bg-main: #121619;
+    --surface-elevated: #242b30;
+
+    --success-faint: #1f2120;
+    --warning-border: #ffa726;
+    --trend-steigt: var(--akzent);
+
+    --kartenliste-rand: 1px solid var(--feldrand);
+    --kartenliste-grund: var(--aussen-grund); // Mulde unter den Karten wie die Seitenfueller (Sebastian 17.11.)
+    --rundgang-offen: var(--feldrand); // 3,4:1 auf der Blase (--flaeche)
+    --seite-grund: var(--bg-main);
+    --karussell-rand: none; // ohne hellen Rand, die Mulde traegt sich ueber Farbe und Innenschatten (Sebastian 17.11.)
+    --karussell-schatten: inset 0 3px 8px rgba(0, 0, 0, 0.6); // Mulde sichtbar (Sebastian 17.11.)
+    --karussell-grund: var(--aussen-grund);
+    --einwurf-grund: #1f1e1a;
+
+    // Such-Band (--kopf): dunkles Moos statt Leuchtgelb; das Gelb aus Hell tragen die Knoepfe und die
+    // Akzentschrift auf den Baendern (--knopf-auf-band-*, --band-akzent-schrift) und der Lichtkegel
+    --aussen-grund: #0b0e10; // Seitenfueller neben der Inhaltsspalte, eine Stufe unter der Seite (Designrunde 17.11.)
+    // Schatten im Dunkeln kraeftiger, sonst unsichtbar (Sebastian 17.11.)
+    --elevation-1: 0 1px 3px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.45);
+    --elevation-2: 0 2px 6px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.5);
+    --elevation-4: 0 4px 12px rgba(0,0,0,0.62), 0 2px 5px rgba(0,0,0,0.5);
+    --elevation-6: 0 6px 18px rgba(0,0,0,0.65), 0 3px 6px rgba(0,0,0,0.5);
+    --elevation-8: 0 8px 24px rgba(0,0,0,0.68), 0 4px 8px rgba(0,0,0,0.5);
+    --rundgang-kegel: #d8e05a;
+    --rundgang-schleier: rgba(0, 0, 0, 0.65);
+    --rundgang-fokus: #4fc3f7;
+
+    // Links sind im Dunkeln hellgrau wie der Text: unterstrichen, damit sie erkennbar bleiben
+    --link-unterstrich: underline;
+    // Gewaehlter Filter im Fangkorb: --akzent-schrift und --primaer-text sind hier beide hell
+    --filter-aktiv-grund: #2c3439;
+    // Blau und Orange sind hier heller: dunkle Schrift auf den Referenz-Marken
+    --referenz-marke-schrift: var(--bg-main);
+    // Klee-Knoepfe auf dem Moos-Band (Suchen, Rundgang starten): heller Rand, sonst unter 3:1 zum Band
+    --knopf-rand-auf-band: transparent;
+
+    --primary-tint-faint: rgba(255, 255, 255, 0.04);
+    --primary-line: rgba(138, 189, 36, 0.4);
+
+    // Volle Knoepfe und Akzentschrift auf den Baendern
+    --knopf-auf-band-grund: #e2e88a;
+    --knopf-auf-band-schrift: #121312;
+    --band-akzent-schrift: #e2e88a;
+    // Startseite (Gegenstueck zum Block html:not([data-theme='dark'])): Willkommen und Kacheln
+    // im Ton des Such-Bands, eine Stufe heller, weil sie auf der Seite liegen und sich sonst
+    // mit dem Such-Band darueber vermischen (12 px Luft am Handy). Flaeche der Kacheln
+    // --karte-kommentar (#1f272b, seit 18.11.), Rand 2 px in --feldrand, damit sich die Kachel
+    // von der Seite abhebt. Marke "mit Konto" auf dem Seitengrund.
+    --kachel-rand: var(--feldrand);
+    --mitmachen-kachel-marke: var(--bg-main);
+    --willkommen-fokus: var(--rundgang-fokus);
+    --knopf-zweit-grund: transparent;
+    --knopf-zweit-schrift: var(--band-akzent-schrift);
+    --knopf-zweit-rand: 1px solid var(--band-akzent-schrift);
+
+    // Material-Flaechen auf die eigenen Grautoene statt Materials #424242/#303030
+    --mat-app-background-color: var(--bg-main);
+    --mat-sidenav-content-background-color: var(--aussen-grund, var(--bg-main)); // Seitenfueller (Designrunde 17.11.)
+    --mat-card-elevated-container-color: var(--flaeche);
+    --mat-card-outlined-container-color: var(--flaeche);
+    --mat-card-filled-container-color: var(--flaeche);
+    --mat-dialog-container-color: var(--flaeche);
+    --mat-table-background-color: var(--flaeche);
+    --mat-paginator-container-background-color: var(--flaeche);
+    --mat-expansion-container-background-color: var(--flaeche);
+    --mat-bottom-sheet-container-background-color: var(--flaeche);
+    --mat-sidenav-container-background-color: var(--flaeche);
+    --mat-stepper-container-color: var(--flaeche);
+    --mat-datepicker-calendar-container-background-color: var(--surface-elevated);
+    --mat-menu-container-color: var(--surface-elevated);
+    --mat-select-panel-background-color: var(--surface-elevated);
+    --mat-autocomplete-background-color: var(--surface-elevated);
+    --mat-button-toggle-background-color: var(--flaeche);
+    --mat-button-toggle-selected-state-background-color: var(--karte-kommentar);
+    --mat-button-protected-container-color: var(--surface-elevated);
+    --mat-option-selected-state-label-text-color: var(--akzent-schrift);
+    --mat-form-field-outlined-focus-label-text-color: var(--akzent-schrift);
+    --mat-form-field-filled-focus-label-text-color: var(--akzent-schrift);
+    --mat-form-field-focus-select-arrow-color: var(--akzent-schrift);
+    --mat-select-focused-arrow-color: var(--akzent-schrift);
+    // Fehler an Feldern als Schrift in --fehler: Materials warn (#c62828) haette auf
+    // Anthrazit nur 3,6:1
+    --mat-form-field-error-text-color: var(--fehler);
+    --mat-form-field-error-trailing-icon-color: var(--fehler);
+    --mat-form-field-error-hover-trailing-icon-color: var(--fehler);
+    --mat-form-field-error-focus-trailing-icon-color: var(--fehler);
+    --mat-form-field-outlined-error-caret-color: var(--fehler);
+    --mat-form-field-outlined-error-label-text-color: var(--fehler);
+    --mat-form-field-outlined-error-focus-label-text-color: var(--fehler);
+    --mat-form-field-outlined-error-hover-label-text-color: var(--fehler);
+    --mat-form-field-outlined-error-outline-color: var(--fehler);
+    --mat-form-field-outlined-error-focus-outline-color: var(--fehler);
+    --mat-form-field-outlined-error-hover-outline-color: var(--fehler);
+  }
+
+  // Klee als Schrift erreicht auf Anthrazit kein AA: Text-Knoepfe, Icons und Reiter hellgrau
+  .mat-mdc-button.mat-primary,
+  .mat-mdc-outlined-button.mat-primary {
+    --mat-button-text-label-text-color: var(--akzent-schrift);
+    --mat-button-outlined-label-text-color: var(--akzent-schrift);
+  }
+
+  .mat-mdc-icon-button.mat-primary {
+    --mat-icon-button-icon-color: var(--akzent-schrift);
+  }
+
+  .mat-icon.mat-primary {
+    --mat-icon-color: var(--akzent-schrift);
+  }
+
+  // Warn als Schrift, Umriss und Icon in --fehler: Materials warn (#c62828) haette auf --flaeche
+  // nur 2,89:1. Volle Warn-Knoepfe bleiben #c62828 mit Weiss (5,62:1).
+  .mat-mdc-button.mat-warn,
+  .mat-mdc-outlined-button.mat-warn {
+    --mat-button-text-label-text-color: var(--fehler);
+    --mat-button-outlined-label-text-color: var(--fehler);
+    --mat-button-outlined-outline-color: var(--fehler);
+  }
+
+  .mat-mdc-icon-button.mat-warn {
+    --mat-icon-button-icon-color: var(--fehler);
+  }
+
+  // Inhaltsspalte ohne Schatten: auf dunklem Grund wirkt er kaum, die Hoehe zeigen die
+  // helleren Flaechen (Design-Review 17.11.)
+  main#hauptinhalt {
+    box-shadow: none;
+  }
+
+  // Suchfeld: Rand wie alle Raender, Klee erst im Fokus (Materials Fokusfarbe), damit der
+  // Rand nicht mit dem Suchen-Knopf konkurriert (Design-Review 17.11.)
+  .search-field {
+    --mat-form-field-outlined-outline-color: var(--feldrand);
+  }
+
+  .mat-mdc-tab-group,
+  .mat-mdc-tab-nav-bar {
+    --mat-tab-active-label-text-color: var(--akzent-schrift);
+    --mat-tab-active-focus-label-text-color: var(--akzent-schrift);
+    --mat-tab-active-hover-label-text-color: var(--akzent-schrift);
+  }
 }
 
 // Dialogtitel wie die Seitentitel: GrueneType in Tanne, Groesse der mobilen h2.
@@ -214,57 +466,57 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --mat-dialog-subhead-line-height: 1.1;
   --mat-dialog-subhead-weight: 400;
   --mat-dialog-subhead-tracking: 0.00735em;
-  --mat-dialog-subhead-color: var(--primary-dark);
+  --mat-dialog-subhead-color: var(--akzent-schrift);
 }
 
 // Hilfe als Seitenleiste rechts (hilfeOeffnen): ohne runde Ecken, randlos an der Kante.
 // panelClass liegt im Overlay ausserhalb der Komponente, deshalb hier.
 .hilfe-seitenleiste {
   --mat-dialog-container-shape: 0;
-  --mat-dialog-supporting-text-color: var(--text-primary);
+  --mat-dialog-supporting-text-color: var(--text);
 }
 
 // Utility classes for common patterns
 .gutgesagt-primary-bg {
-  background-color: var(--primary-dark) !important;
+  background-color: var(--primaer) !important;
   color: white !important;
 }
 
 .gutgesagt-primary-dark-bg {
-  background-color: var(--primary-dark) !important;
+  background-color: var(--primaer) !important;
   color: white !important;
 }
 
 .gutgesagt-accent-bg {
-  background-color: var(--accent-main) !important;
+  background-color: var(--akzent) !important;
   color: white !important;
 }
 
 .gutgesagt-surface-bg {
-  background-color: var(--bg-card) !important;
-  color: var(--text-primary) !important;
+  background-color: var(--flaeche) !important;
+  color: var(--text) !important;
 }
 
 // Material button customizations
 .mat-mdc-raised-button {
   &.gutgesagt-primary {
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primaer) !important;
     color: white !important;
   }
 
   &.gutgesagt-primary-dark {
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primaer) !important;
     color: white !important;
   }
 
   &.gutgesagt-accent {
-    background-color: var(--accent-main) !important;
+    background-color: var(--akzent) !important;
     color: white !important;
   }
 
   &.gutgesagt-surface {
-    background-color: var(--bg-card) !important;
-    color: var(--primary-dark) !important;
+    background-color: var(--flaeche) !important;
+    color: var(--akzent-schrift) !important;
   }
 }
 

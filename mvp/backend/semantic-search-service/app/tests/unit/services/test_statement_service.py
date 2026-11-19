@@ -245,7 +245,15 @@ class TestAntwortVerknuepfen:
 
     @pytest.fixture
     def service(self, test_settings, repository_factory):
-        return StatementService(test_settings, repository_factory=repository_factory)
+        from unittest.mock import AsyncMock
+
+        service = StatementService(test_settings, repository_factory=repository_factory)
+        # Alle Antworten sichtbar; die Zaehlung selbst pruefen test_antwortzahl.py
+        # und die Moderationstests.
+        service._repository.sichtbare_antworten_zaehlen = AsyncMock(
+            side_effect=lambda ids: len(list(ids))
+        )
+        return service
 
     @staticmethod
     def _aussage(replysuggestions=None):
@@ -286,7 +294,7 @@ class TestAntwortVerknuepfen:
         )
 
         # ID und Text der tatsaechlich verknuepften Aussage, nicht der mitgeschickte Text
-        assert ergebnis == (statement_id, "Die gespeicherte Aussage")
+        assert ergebnis == (statement_id, "Die gespeicherte Aussage", False)
         service.add_statement.assert_not_awaited()
         service.add_statementreplysuggestion_to_statement.assert_awaited_once_with(
             statement_id=statement_id,
@@ -314,7 +322,8 @@ class TestAntwortVerknuepfen:
             " Waermepumpen sind zu teuer ",
         )
 
-        assert ergebnis == (statement_id, "Waermepumpen sind viel zu teuer")
+        # Eine vorhandene: nicht neu angelegt (#617)
+        assert ergebnis == (statement_id, "Waermepumpen sind viel zu teuer", False)
         statement, autor, status, herkunft = service.add_statement.call_args.args
         assert statement.text == "Waermepumpen sind zu teuer"
         assert autor == "person-1"
@@ -355,6 +364,28 @@ class TestAntwortVerknuepfen:
         assert len(aussage.replysuggestions) == 2
         assert aussage.replysuggestions_count == 2
         service.update_statement.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_neue_antwort_zaehlt_nur_sichtbare(self, service):
+        """Die Zahl wird neu gezaehlt, nicht hochgezaehlt (#631): Eine gesperrte
+        Antwort an der Aussage zaehlt nicht, eine falsche alte Zahl heilt."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        gesperrt = uuid.uuid4()
+        aussage = self._aussage([MagicMock(id=gesperrt)])
+        aussage.replysuggestions_count = 1
+        service.get = AsyncMock(return_value=aussage)
+        service.update_statement = AsyncMock()
+        service._repository.sichtbare_antworten_zaehlen = AsyncMock(
+            side_effect=lambda ids: len([i for i in ids if i != gesperrt])
+        )
+
+        await service.add_statementreplysuggestion_to_statement(
+            uuid.uuid4(), uuid.uuid4(), ContentType.COMMENTARY, 1.0
+        )
+
+        assert len(aussage.replysuggestions) == 2
+        assert aussage.replysuggestions_count == 1
 
     @pytest.mark.asyncio
     async def test_parallele_verknuepfungen_verlieren_keine(self, service):

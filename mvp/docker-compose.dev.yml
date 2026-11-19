@@ -92,9 +92,9 @@ services:
       - DOCKER_CONTAINER=true
       - SEMANTIC_SEARCH_DATA_PATH=/data/seed/v1.0
       - SEMANTIC_SEARCH_METADATA_PATH=/metadata
-      # The E5 model is baked into the image at build time. Offline mode skips the
-      # startup round-trips to huggingface.co that would otherwise stall the boot.
-      - HF_HUB_OFFLINE=1
+      # HF_HUB_OFFLINE=1 comes from the Dockerfile: both models are baked into the
+      # image at build time, and offline mode skips the startup round-trips to
+      # huggingface.co that would otherwise stall the boot (#578).
       # Development logging: Verbose for debugging
       - SEMANTIC_SEARCH_LOG_LEVEL=DEBUG
     volumes:

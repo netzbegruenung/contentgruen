@@ -8,6 +8,7 @@ import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component'
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { PostService } from '../services/post.service';
+import { ImageService } from '../services/image.service';
 import { LoggingService } from '../services/logging.service';
 
 describe('BeitragAnsehenService', () => {
@@ -29,6 +30,7 @@ describe('BeitragAnsehenService', () => {
         { provide: CommentaryService, useValue: kommentare },
         { provide: GenericTextService, useValue: hintergrund },
         { provide: PostService, useValue: posts },
+        { provide: ImageService, useValue: jasmine.createSpyObj('ImageService', ['getImageById']) },
         { provide: MatBottomSheet, useValue: sheet },
         { provide: MatSnackBar, useValue: snackBar },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn']) },

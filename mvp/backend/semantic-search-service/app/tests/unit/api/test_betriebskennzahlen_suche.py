@@ -4,7 +4,7 @@ GET /metrics nach einer Suche durch den echten Router: keine Personendaten in de
 Eine angemeldete Testperson sucht mit einem Merkmal im Suchtext, das sonst nirgends
 vorkommt; Kennung, Anzeigename, Adresse (X-Real-IP) und User-Agent gehen in den
 Kopfzeilen mit, so wie nginx und das BFF sie setzen. Dieselbe Suche laeuft danach noch
-einmal als Besucher, dessen Tagespseudonym aus Adresse und User-Agent entsteht (#446).
+einmal als Besucher, dessen Tagespseudonym aus der Adresse entsteht (#446, seit #495 ohne User-Agent).
 Zuletzt ruft die Testperson einen Pfad mit ihrer Kennung darin auf, den es nicht gibt.
 In /metrics darf keiner dieser Werte stehen, und jeder Label-Wert der Route muss
 eine registrierte Routen-Vorlage sein, kein Pfad mit ID.

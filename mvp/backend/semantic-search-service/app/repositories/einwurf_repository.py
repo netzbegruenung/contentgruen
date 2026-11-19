@@ -283,6 +283,25 @@ class EinwurfRepository:
             )
             raise
 
+    def count_von_anderen(self, user_id: str, nur_offene: bool = False) -> int:
+        """
+        Anzahl der Einwuerfe, die nicht von ``user_id`` stammen, auch die ohne
+        Einwerfer (Kanaele ohne Sitzung). Ohne ``nur_offene`` in jedem Stand: der
+        Zaehlerstand fuer "neue Einwuerfe im Fangkorb" (GeseheneNutzungRepository).
+        Mit ``nur_offene`` nur offene und destillierte, die Obergrenze der Anzeige.
+        """
+        with self.db.get_session() as session:
+            query = session.query(Einwurf).filter(
+                or_(Einwurf.submitted_by.is_(None), Einwurf.submitted_by != user_id)
+            )
+            if nur_offene:
+                query = query.filter(
+                    Einwurf.status.in_(
+                        [EinwurfStatus.OPEN.value, EinwurfStatus.IN_PROGRESS.value]
+                    )
+                )
+            return query.count()
+
     def count(
         self, status: Optional[str] = None, submitted_by: Optional[str] = None
     ) -> int:

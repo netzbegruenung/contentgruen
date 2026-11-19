@@ -5,11 +5,19 @@ die Zeile mit dem Zeitpunkt des Widerrufs stehen, erneutes Einwilligen ersetzt
 sie. Dazu laeuft die Migration auf einer Datenbank ohne die Tabelle.
 """
 
+import uuid
+
 import pytest
 from sqlalchemy import text
 
-from infrastructure.database.models import Art9EinwilligungZeile, Base
+from domain.art9_einwilligung import AKTUELLER_WORTLAUT
+from infrastructure.database.models import (
+    Art9EinwilligungZeile,
+    Art9OhneEinwilligungZeile,
+    Base,
+)
 from repositories.art9_einwilligung_repository import Art9EinwilligungRepository
+from repositories.vote_repository import VoteRepository
 from services.art9_einwilligung_service import (
     Art9EinwilligungService,
     UnbekannterWortlaut,
@@ -17,6 +25,7 @@ from services.art9_einwilligung_service import (
 from tests.integration import postgres
 
 MIGRATION = postgres.MIGRATIONEN / "2026-11-05-art9-einwilligung.sql"
+MIGRATION_OHNE = postgres.MIGRATIONEN / "2026-11-13-art9-ohne-einwilligung.sql"
 PERSON = "person-mit-einwilligung"
 
 pytestmark = pytest.mark.integration
@@ -25,7 +34,8 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def datenbank(wegwerf_schema):
     Base.metadata.create_all(
-        wegwerf_schema.engine, tables=[Art9EinwilligungZeile.__table__]
+        wegwerf_schema.engine,
+        tables=[Art9EinwilligungZeile.__table__, Art9OhneEinwilligungZeile.__table__],
     )
     return wegwerf_schema
 
@@ -111,11 +121,72 @@ class TestDienst:
         dienst = Art9EinwilligungService(repository)
         assert not dienst.eingewilligt(PERSON)
 
-        dienst.einwilligen(PERSON, "2026-11-05")
+        dienst.einwilligen(PERSON, AKTUELLER_WORTLAUT)
         assert dienst.eingewilligt(PERSON)
 
         dienst.widerrufen(PERSON)
         assert not dienst.eingewilligt(PERSON)
+
+    def test_widerruf_loescht_die_stimmen_der_person_und_nur_ihre(
+        self, repository, datenbank
+    ):
+        stimmen = VoteRepository(datenbank)
+        stimmen.create_votes_table()
+        beitrag = str(uuid.uuid4())
+        with datenbank.engine.begin() as c:
+            for person, inhalt, art in [
+                (PERSON, beitrag, "like"),
+                (PERSON, str(uuid.uuid4()), "dislike"),
+                ("andere-person", beitrag, "like"),
+            ]:
+                c.execute(
+                    text(
+                        "INSERT INTO votes (user_id, content_id, vote_type)"
+                        " VALUES (:p, :i, :a)"
+                    ),
+                    {"p": person, "i": inhalt, "a": art},
+                )
+        dienst = Art9EinwilligungService(repository, stimmen)
+        dienst.einwilligen(PERSON, AKTUELLER_WORTLAUT)
+
+        dienst.widerrufen(PERSON)
+
+        with datenbank.engine.connect() as c:
+            uebrig = c.execute(text("SELECT user_id FROM votes")).scalars().all()
+        assert uebrig == ["andere-person"]
+        assert not dienst.eingewilligt(PERSON)
+
+    def test_bei_loeschfehler_kein_vermerk(self, repository, datenbank):
+        """Eine Transaktion: Scheitert das Loeschen, gilt die Einwilligung weiter."""
+        from unittest.mock import MagicMock
+
+        stimmen = MagicMock()
+        stimmen.loeschen_fuer_person.side_effect = RuntimeError("Datenbank weg")
+        dienst = Art9EinwilligungService(repository, stimmen)
+        dienst.einwilligen(PERSON, AKTUELLER_WORTLAUT)
+
+        with pytest.raises(RuntimeError):
+            dienst.widerrufen(PERSON)
+
+        assert dienst.eingewilligt(PERSON)
+        assert repository.lesen(PERSON).widerrufen_am is None
+
+    def test_frueherer_wortlaut_zaehlt_nicht_bis_zur_neuen_einwilligung(
+        self, repository
+    ):
+        """2026-11-13: Wer einem frueheren Wortlaut zugestimmt hat, wird neu gefragt."""
+        dienst = Art9EinwilligungService(repository)
+        repository.einwilligen(PERSON, "2026-11-12")
+        assert not dienst.eingewilligt(PERSON)
+        assert repository.lesen(PERSON).gilt
+
+        dienst.einwilligen(PERSON, AKTUELLER_WORTLAUT)
+
+        assert dienst.eingewilligt(PERSON)
+        assert _zeilen(repository.db) == [
+            ("2026-11-12", False),
+            (AKTUELLER_WORTLAUT, False),
+        ]
 
     def test_unbekannter_wortlaut_speichert_nichts(self, repository):
         dienst = Art9EinwilligungService(repository)
@@ -130,6 +201,8 @@ def test_migration_legt_die_tabelle_an_und_darf_zweimal_laufen(postgres_url):
     with postgres.schema(postgres_url, "itest_art9") as db:
         postgres.migration(db, MIGRATION)
         postgres.migration(db, MIGRATION)
+        # Die Einwilligung raeumt "ohne Einwilligung weiter" ab (PR #670)
+        postgres.migration(db, MIGRATION_OHNE)
 
         repository = Art9EinwilligungRepository(db)
         repository.einwilligen(PERSON, "2026-11-05")

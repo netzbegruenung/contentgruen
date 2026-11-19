@@ -12,7 +12,7 @@
     align-items: center;
     margin-bottom: var(--spacing-lg);
     padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--linie);
     flex-shrink: 0;
 }
 
@@ -38,7 +38,7 @@
     flex-direction: column;
     font-size: 16px;
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--text);
 }
 
 .mobile-menu-user-info {
@@ -58,14 +58,23 @@
     margin-right: var(--spacing-sm);
 }
 
-/* Ketten-Icons (Emoji) auf derselben Flaeche wie die mat-icons daneben */
-.mobile-menu-item .menu-emoji {
-    display: inline-block;
-    width: 24px;
-    margin-right: var(--spacing-sm);
-    font-size: 20px;
-    line-height: 1;
-    text-align: center;
+/* Die aktuelle Seite (#644): getoent und mit Balken links, nicht nur per Farbe */
+.mobile-menu-item.aktiv:not(.mobile-menu-beitragen) {
+    background-color: var(--bg-main);
+    box-shadow: inset 3px 0 0 var(--akzent-schrift);
+    font-weight: 600;
+}
+
+.mobile-menu-item.mobile-menu-beitragen.aktiv {
+    box-shadow: 0 0 0 2px var(--flaeche), 0 0 0 4px var(--akzent-schrift);
+}
+
+/* Ueberschrift einer Gruppe ohne eigenen Knopf (Rundgang) */
+.mobile-menu-gruppentitel {
+    padding: 0 var(--spacing-sm);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-leise);
 }
 
 /* Die Eintraege unter Beitragen, eingerueckt wie eine Untergruppe */
@@ -77,7 +86,7 @@
 }
 
 .close-menu-button {
-    color: var(--text-secondary);
+    color: var(--text-leise);
 }
 
 /* Mobile menu footer section */
@@ -96,7 +105,7 @@
 
 .mobile-menu-about {
     padding: var(--spacing-md);
-    background-color: var(--surface-variant);
+    background-color: var(--mulde);
     border-radius: var(--border-radius-medium);
     margin-top: var(--spacing-md);
 }
@@ -104,14 +113,15 @@
 .mobile-menu-about p {
     margin: 0;
     font-size: 14px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     line-height: 1.5;
 }
 
 .mobile-menu-about a {
-    color: var(--primary-main);
-    text-decoration: none;
+    color: var(--primaer-text);
+    text-decoration: var(--link-unterstrich); /* im Dunkeln unterstrichen (#588) */
 }
+
 
 .mobile-menu-about a:hover {
     text-decoration: underline;

@@ -63,6 +63,17 @@ describe('FormularHilfeComponent', () => {
       expect(hilfen.join(' ')).toContain('Alltag');
     });
 
+    it('zeigt schwach und besser zu „den Spruch nicht bestätigen“', () => {
+      aufklappen();
+
+      expect(texte('.vorher-nachher-kopf')[0]).toContain('Die Energiewende macht den Strom teurer.');
+      const schwach = texte('.vorher-schwach');
+      expect(schwach.length).toBe(1);
+      expect(schwach[0]).toContain('zahlt seit 2022 der Bund');
+      expect(schwach[0]).toContain('bestätigt');
+      expect(texte('.nachher-besser')[0]).toContain('Sonne und Wind brauchen kein Gas.');
+    });
+
     it('zeigt gute und schwache Titel, die schwachen mit Grund', () => {
       aufklappen();
 
@@ -102,6 +113,7 @@ describe('FormularHilfeComponent', () => {
       expect(seite().querySelector('.hilfe-panel')!.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
       // Post-Titel folgen der Behauptungsregel nicht (CODING_STANDARDS.md, "A Titel is a claim")
       expect(seite().querySelector('.titel-beispiele')).toBeNull();
+      expect(seite().querySelector('.vorher-nachher')).toBeNull();
     });
   });
 

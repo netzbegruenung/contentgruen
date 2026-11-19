@@ -1,7 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
+import { LeerComponent } from '../../../testing/routen-ohne-waechter';
+import { of } from 'rxjs';
+import { ZuTunService } from '../../../services/zu-tun.service';
 
 import { MobileMenuComponent } from './mobile-menu';
+import { FarbschemaService } from '../../../services/farbschema.service';
 
 describe('MobileMenuComponent', () => {
   let component: MobileMenuComponent;
@@ -10,7 +14,17 @@ describe('MobileMenuComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MobileMenuComponent],
-      providers: [provideRouter([])]
+      providers: [provideRouter([
+        { path: 'fangkorb', component: LeerComponent },
+        { path: 'impressum', component: LeerComponent },
+      ]),
+      {
+        provide: ZuTunService,
+        useValue: {
+          meldungen$: of({ daten: { anzahl: 2, mehr: false, aelteste: null }, fehler: false }),
+          suchanfragen$: of({ daten: { anzahl: 0 }, fehler: false }),
+        },
+      }]
     })
     .compileComponents();
 
@@ -27,6 +41,26 @@ describe('MobileMenuComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  // Der Dienst ist ersetzt: Ein echtes Umschalten setzte data-theme am Testdokument
+  it('schaltet hell/dunkel um, beschriftet nach Zustand und laesst das Menue offen', () => {
+    const farbschema = TestBed.inject(FarbschemaService);
+    let dunkel = false;
+    spyOn(farbschema, 'dunkel').and.callFake(() => dunkel);
+    const umschalten = spyOn(farbschema, 'umschalten').and.callFake(() => (dunkel = !dunkel));
+    const schliessen = spyOn(component.closeMenu, 'emit');
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    const knopf = () => fixture.nativeElement.querySelector('.mobile-menu-farbschema') as HTMLButtonElement;
+    expect(knopf().textContent).toContain('Dunkel anzeigen');
+    knopf().click();
+    fixture.detectChanges();
+
+    expect(umschalten).toHaveBeenCalledTimes(1);
+    expect(knopf().textContent).toContain('Hell anzeigen');
+    expect(schliessen).not.toHaveBeenCalled();
+  });
+
   it('bietet Feedback auch ohne Anmeldung an und schliesst danach das Menue', () => {
     const feedback = spyOn(component.feedback, 'emit');
     const schliessen = spyOn(component.closeMenu, 'emit');
@@ -41,27 +75,52 @@ describe('MobileMenuComponent', () => {
 
   // Rundgaenge wieder aufrufen (#389)
   describe('Rundgang', () => {
-    it('bietet „Rundgang starten“ auch ohne Anmeldung an und schliesst danach das Menue', () => {
+    it('bietet „Antwort finden“ auch ohne Anmeldung an und schliesst danach das Menue', () => {
       const rundgang = spyOn(component.rundgang, 'emit');
       const schliessen = spyOn(component.closeMenu, 'emit');
 
       const eintrag = fixture.nativeElement.querySelector('.mobile-menu-rundgang') as HTMLButtonElement;
-      expect(eintrag.textContent).toContain('Rundgang starten');
+      expect(eintrag.textContent).toContain('Antwort finden (5 Schritte)');
       eintrag.click();
 
       expect(rundgang).toHaveBeenCalledWith('antwort-finden');
       expect(schliessen).toHaveBeenCalled();
-      expect(fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen')).toBeNull();
     });
 
-    it('bietet Angemeldeten zusaetzlich den Rundgang Mitmachen an', () => {
+    it('bietet Besuchern Selbst beitragen als Bildergeschichte an (17.11.)', () => {
+      const rundgang = spyOn(component.rundgang, 'emit');
+      const schliessen = spyOn(component.closeMenu, 'emit');
+      const eintrag = fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen') as HTMLButtonElement;
+      expect(eintrag.textContent).toContain('Selbst beitragen (3 Bilder)');
+      expect(eintrag.hasAttribute('aria-disabled')).toBeFalse();
+      eintrag.click();
+
+      expect(rundgang).toHaveBeenCalledWith('mitmachen');
+      expect(schliessen).toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.mobile-menu-mitmachen-hinweis')).toBeNull();
+    });
+
+    it('bietet Angemeldeten zusaetzlich den Rundgang Selbst beitragen an', () => {
       component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
       fixture.detectChanges();
       const rundgang = spyOn(component.rundgang, 'emit');
 
-      (fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen') as HTMLButtonElement).click();
+      const eintrag = fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen') as HTMLButtonElement;
+      expect(eintrag.textContent).toContain('Selbst beitragen (4 Schritte)');
+      eintrag.click();
 
       expect(rundgang).toHaveBeenCalledWith('mitmachen');
+      expect(eintrag.hasAttribute('aria-disabled')).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.mobile-menu-mitmachen-hinweis')).toBeNull();
+    });
+
+    // R61 (#644): Zwei Rundgaenge hatten dasselbe Faehnchen
+    it('gibt beiden Rundgaengen je ein eigenes Icon', () => {
+      component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+      fixture.detectChanges();
+      const icon = (sel: string) => fixture.nativeElement.querySelector(`${sel} mat-icon`).textContent.trim();
+
+      expect(icon('.mobile-menu-rundgang')).not.toBe(icon('.mobile-menu-rundgang-mitmachen'));
     });
   });
 
@@ -140,6 +199,15 @@ describe('MobileMenuComponent', () => {
     expect(component.closeMenu.emit).toHaveBeenCalled();
   });
 
+  it('zeigt am Admin-Link die Zahl offener Meldungen', () => {
+    component.userInfo = { isAuthenticated: true, isAdmin: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+
+    const eintrag = link('.mobile-menu-admin');
+    expect(eintrag.querySelector('.zahl')!.textContent!.trim()).toBe('2');
+    expect(eintrag.textContent!.replace(/\s+/g, ' ')).toContain('Admin2, 2 offene Meldungen');
+  });
+
   it('zeigt den Admin-Bereich nur Admins', () => {
     component.userInfo = { isAuthenticated: true, isAdmin: false, userId: 'u-1', userName: 'Anna B.', claims: null };
     fixture.detectChanges();
@@ -160,13 +228,42 @@ describe('MobileMenuComponent', () => {
     expect(schliessen).toHaveBeenCalled();
   });
 
-  it('bietet Angemeldeten die Art.-9-Einwilligung an (#489)', () => {
+  it('bietet Angemeldeten die Art.-9-Einwilligung als "Datenschutz-Einstellungen" an (#489, #644)', () => {
     component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
     fixture.detectChanges();
 
     const eintrag = link('.mobile-menu-einwilligung');
     expect(eintrag?.getAttribute('href')).toBe('/einwilligung');
-    expect(eintrag?.textContent).toContain('Einwilligung');
+    expect(eintrag?.textContent!.trim()).toBe('fact_check Datenschutz-Einstellungen');
+  });
+
+  // R61 (#644): Emojis und Linien-Icons standen gemischt
+  it('nimmt fuer alle Eintraege Material-Icons, keine Emojis', () => {
+    component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.menu-emoji')).toBeNull();
+    for (const sel of ['.mobile-menu-einwerfen', '.mobile-menu-fangkorb', '.mobile-menu-beitraege']) {
+      expect(fixture.nativeElement.querySelector(`${sel} mat-icon`)).withContext(sel).not.toBeNull();
+      expect(fixture.nativeElement.querySelector(sel).textContent).not.toMatch(/\p{Extended_Pictographic}/u);
+    }
+  });
+
+  // R61 (#644): Die aktuelle Seite war nicht markiert
+  it('hebt die aktuelle Seite hervor und setzt aria-current', async () => {
+    component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    await TestBed.inject(Router).navigateByUrl('/fangkorb?x=1');
+    fixture.detectChanges();
+
+    const fangkorb = fixture.nativeElement.querySelector('.mobile-menu-fangkorb') as HTMLElement;
+    expect(fangkorb.classList).toContain('aktiv');
+    expect(fangkorb.getAttribute('aria-current')).toBe('page');
+    expect(fixture.nativeElement.querySelectorAll('[aria-current="page"]').length).toBe(1);
+
+    await TestBed.inject(Router).navigateByUrl('/impressum');
+    fixture.detectChanges();
+    expect(fangkorb.getAttribute('aria-current')).toBeNull();
+    expect(link('.legal-impressum').getAttribute('aria-current')).toBe('page');
   });
 
   it('zeigt "Profilbild wählen" ohne Anmeldung nicht', () => {

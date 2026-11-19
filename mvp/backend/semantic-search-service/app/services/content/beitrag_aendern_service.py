@@ -4,12 +4,16 @@ auch Kurz- und Langfassung (#551).
 
 Aenderbar sind Kommentar und Hintergrundinfo, die beiden Beitragstypen mit Herkunft
 und Titelregel (CODING_STANDARDS.md). Es gelten dieselben Grenzen wie beim Anlegen.
-Geschrieben werden nur die geaenderten Felder; Stimmen, Nutzung, Verknuepfungen mit
-Aussagen und Einwuerfen bleiben. Der Vektor wird aus dem neuen Text berechnet, damit
+Geschrieben werden nur die geaenderten Felder; Nutzung, Verknuepfungen mit Aussagen
+und Einwuerfen bleiben. Stimmen bleiben, solange der Titel - die Behauptung des
+Beitrags - dieselbe Behauptung trifft; erkennt die NLI-Stufe das nicht, verfallen sie
+(#427, StatementService.gleiche_behauptung). Ohne Entscheidung (Stufe nicht an, kein
+Modell, keine Antwort) bleiben sie. Der Vektor wird aus dem neuen Text berechnet, damit
 die Suche ihn findet, und edit_history haelt fest, wer wann geaendert hat (ohne den
 alten Wortlaut).
 """
 
+import asyncio
 import json
 import logging
 import uuid
@@ -20,7 +24,7 @@ from typing import Awaitable, Callable, Dict, List, Optional
 from pydantic import ValidationError
 
 from core.fehler import Validierungsfehler
-from domain.content_registry import BEITRAGSTYPEN
+from domain.content_registry import BEITRAGSTYPEN, REGISTRY
 from domain.models.content_status import AUSGEBLENDET
 from domain.models.content_type import ContentType
 from domain.models.edit_entry import EditEntry
@@ -29,6 +33,7 @@ from domain.models.zeit import utc_jetzt
 from dtos.commentary import KOMMENTAR_TEXT_MAX, KURZFASSUNG_MAX, LANGFASSUNG_MAX
 from dtos.generic_text import HINTERGRUNDINFO_TEXT_MAX
 from repositories.interfaces.base_content_repository import IBaseContentRepository
+from utils.text_normalisierung import text_normalisiert
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +49,14 @@ HerkunftId = Callable[[str, Optional[str], str], Awaitable[uuid.UUID]]
 
 # Ob zum Beitrag eine Meldung offen ist (ContentReportRepository.hat_offene_meldung).
 OffeneMeldung = Callable[[uuid.UUID], bool]
+
+# Ob die neue Fassung (zweiter Text) dieselbe Behauptung trifft wie die alte (erster);
+# None, wenn niemand entscheiden kann (StatementService.gleiche_behauptung).
+GleicheBehauptung = Callable[[str, str], Awaitable[Optional[bool]]]
+
+# Alle Stimmen zu einem Beitrag loeschen, gibt die Zahl zurueck
+# (VoteRepository.loeschen_fuer_beitrag).
+StimmenLoeschen = Callable[[uuid.UUID], int]
 
 
 class TextZuLang(Validierungsfehler):
@@ -90,10 +103,14 @@ class BeitragAendernService:
         repository: IBaseContentRepository,
         herkunft_id: HerkunftId,
         offene_meldung: OffeneMeldung,
+        gleiche_behauptung: Optional[GleicheBehauptung] = None,
+        stimmen_loeschen: Optional[StimmenLoeschen] = None,
     ):
         self.repository = repository
         self.herkunft_id = herkunft_id
         self.offene_meldung = offene_meldung
+        self.gleiche_behauptung = gleiche_behauptung
+        self.stimmen_loeschen = stimmen_loeschen
 
     async def aendern(
         self, beitrag_id: uuid.UUID, aufrufer: str, aenderung: Aenderung
@@ -134,6 +151,8 @@ class BeitragAendernService:
             raise TextZuLang(f"Der Text darf höchstens {hoechstens} Zeichen lang sein")
         fassungen = _fassungen(beitrag.content_type, aenderung)
 
+        alter_titel = await self._alter_titel(beitrag_id, beitrag.content_type)
+
         jetzt = utc_jetzt()
         verknuepfungen = [
             # Kommentar und Hintergrundinfo speichern ihre Herkunft gleich.
@@ -169,7 +188,62 @@ class BeitragAendernService:
             beitrag_id, beitrag.content_type.value, felder, nicht_aus=AUSGEBLENDET
         )
         logger.info(f"Beitrag {beitrag_id} vom Autor geaendert")
+        await self._stimmen_pruefen(beitrag_id, alter_titel, aenderung.titel)
         return AenderErgebnis.GEAENDERT
+
+    async def _alter_titel(
+        self, beitrag_id: uuid.UUID, content_type: ContentType
+    ) -> Optional[str]:
+        """
+        Der Titel vor der Aenderung, nur wenn Stimmen verfallen koennen. Das aggregierte
+        Repository liest ohne Titel; darum das Modell des Typs (Kommentar und
+        Hintergrundinfo haben einen). None, wenn er sich nicht lesen laesst: Dann
+        entscheidet niemand, die Stimmen bleiben.
+        """
+        if self.gleiche_behauptung is None or self.stimmen_loeschen is None:
+            return None
+        try:
+            typisiert = await self.repository.get(
+                beitrag_id, eintrag_modell=REGISTRY[content_type].db_entry_model
+            )
+        except Exception as e:
+            logger.warning(f"Alter Titel nicht lesbar: {type(e).__name__}")
+            return None
+        return getattr(typisiert, "title", None)
+
+    async def _stimmen_pruefen(
+        self, beitrag_id: uuid.UUID, alter_titel: Optional[str], neuer_titel: str
+    ) -> None:
+        """
+        Stimmen verfallen, wenn der neue Titel nicht dieselbe Behauptung trifft wie der
+        alte (#427). Erst nach dem Schreiben: Die Aenderung steht auch dann, wenn die
+        Pruefung oder das Loeschen scheitert; die Stimmen bleiben dann.
+        """
+        if (
+            self.gleiche_behauptung is None
+            or self.stimmen_loeschen is None
+            or not alter_titel
+        ):
+            return
+        if text_normalisiert(alter_titel) == text_normalisiert(neuer_titel):
+            return
+        try:
+            gleich = await self.gleiche_behauptung(alter_titel, neuer_titel)
+        except Exception as e:
+            logger.warning(f"Pruefung der Behauptung gescheitert: {type(e).__name__}")
+            return
+        if gleich is not False:
+            return
+        try:
+            verfallen = await asyncio.to_thread(self.stimmen_loeschen, beitrag_id)
+        except Exception as e:
+            logger.error(
+                f"Stimmen zu Beitrag {beitrag_id} nicht verfallen: {type(e).__name__}"
+            )
+            return
+        logger.info(
+            f"Beitrag {beitrag_id}: andere Behauptung, {verfallen} Stimmen verfallen"
+        )
 
 
 def _fassungen(content_type: ContentType, aenderung: Aenderung) -> dict:

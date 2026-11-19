@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { cacheInterceptor, cacheService, NUR_LESEND, nurLesend } from './cache.interceptor';
 import { EinwurfService } from '../services/einwurf.service';
 import { environment } from '../../environments/environment';
+import { stillerKontext } from '../shared/selbst-nachladen';
 
 describe('cacheInterceptor', () => {
   let http: HttpClient;
@@ -136,6 +137,24 @@ describe('cacheInterceptor', () => {
     expect(danach).toEqual([{ stand: 'neu' }]);
   });
 
+  it('holt eine stille Hintergrund-Abfrage frisch und legt ihre Antwort in den Cache', () => {
+    holen(`${api}/metrics/bilanz`);
+    httpMock.expectOne(`${api}/metrics/bilanz`).flush({ stand: 'alt' });
+
+    http.get(`${api}/metrics/bilanz`, { context: stillerKontext() }).subscribe();
+    httpMock.expectOne(`${api}/metrics/bilanz`).flush({ stand: 'neu' });
+
+    expect(holen(`${api}/metrics/bilanz`)).toEqual([{ stand: 'neu' }]);
+  });
+
+  it('haelt die Moderation nie im Cache: Meldungen, Sperren und Loeschauftraege muessen frisch sein', () => {
+    holen(`${api}/moderation/gesperrt`);
+    httpMock.expectOne(`${api}/moderation/gesperrt`).flush({ stand: 'alt' });
+
+    holen(`${api}/moderation/gesperrt`);
+    httpMock.expectOne(`${api}/moderation/gesperrt`).flush({ stand: 'neu' });
+  });
+
   it('haelt den Fangkorb nie im Cache', () => {
     holen(`${api}/rawinput/getRawInputs?page=1`);
     httpMock.expectOne(`${api}/rawinput/getRawInputs?page=1`).flush({ stand: 'alt' });
@@ -150,6 +169,17 @@ describe('cacheInterceptor', () => {
 
     holen(`${api}/statement/unbeantwortet`);
     httpMock.expectOne(`${api}/statement/unbeantwortet`).flush({ aussagen: [] });
+  });
+
+  it('haelt den eigenen Punktestand nie im Cache, er laedt jede Minute nach (#352)', () => {
+    const erstes = holen(`${api}/usage/users/me/punkte`);
+    httpMock.expectOne(`${api}/usage/users/me/punkte`).flush({ gesamt: 1 });
+
+    const zweites = holen(`${api}/usage/users/me/punkte`);
+    httpMock.expectOne(`${api}/usage/users/me/punkte`).flush({ gesamt: 2 });
+
+    expect(erstes).toEqual([{ gesamt: 1 }]);
+    expect(zweites).toEqual([{ gesamt: 2 }]);
   });
 
   for (const pfad of ['/api/check-session', '/api/user-info']) {

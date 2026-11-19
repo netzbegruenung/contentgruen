@@ -11,6 +11,7 @@ Nichts davon wird gespeichert oder geloggt: Das Ergebnis sieht nur die schreiben
 """
 
 import math
+import re
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -24,6 +25,7 @@ import yaml
 SPACY_MODELL = "de_core_news_sm"
 
 STATT_SAG_DATEI = Path(__file__).with_name("statt_sag.yaml")
+PARTEISTIMME_DATEI = Path(__file__).with_name("parteistimme.yaml")
 
 #: Ab so vielen Wörtern gilt ein Satz als lang ("etwa 12 bis 15", docs/VISION.md).
 SATZ_MAX_WOERTER = 15
@@ -50,24 +52,49 @@ ZERLEGUNG_AB = 0.6
 #: ("Verantwortungs + Losigkeit" -0,86, "Unverhältnis + Mäßigkeit" -1,22).
 ERKLAEREN_AB = -0.7
 
-#: Abzug je Art von Anmerkung von der höchsten Güte 10. Verneinung und übernommene
-#: Schlüsselwörter wiegen schwer, weil sie den Vorwurf wiederholen; ein kürzerer Satz
-#: oder eine entfernte Verneinung hebt die Güte damit sichtbar um mindestens zwei.
+#: Zahlen ohne Herkunft: Ziffern bis zu dieser Zahl ohne Einheit sind eine kleine
+#: Aufzählung ("3 Gründe", "1.") und zählen nicht.
+AUFZAEHLUNG_BIS = 12
+#: Eine Jahreszahl allein ("seit 2020", "bis 2035") ist keine Zahl, die eine Herkunft
+#: braucht.
+JAHRESZAHLEN = range(1900, 2100)
+#: So viele Zahlen nennt die Anmerkung, danach "und weitere".
+ZAHLEN_NENNEN = 3
+
 #: Die Arten von Anmerkungen, je eine Regel; das Frontend kennt dieselben
-#: (gegenlesen.service.ts).
+#: (gegenlesen.service.ts, siegel-erklaerung.ts).
 Art = Literal[
-    "verneinung", "schluesselwoerter", "satzlaenge", "statt_sag", "passiv", "kompositum"
+    "verneinung",
+    "schluesselwoerter",
+    "satzlaenge",
+    "statt_sag",
+    "passiv",
+    "kompositum",
+    "gedankenstrich",
+    "parteistimme",
+    "titel_frage",
+    "zahl_ohne_herkunft",
 ]
 #: Wo eine Anmerkung (zuerst) zutrifft.
 Stelle = Literal["titel", "text"]
 
+#: Abzug je Art von Anmerkung von der höchsten Güte 10. Verneinung und übernommene
+#: Schlüsselwörter wiegen schwer, weil sie den Vorwurf wiederholen; ein kürzerer Satz
+#: oder eine entfernte Verneinung hebt die Güte damit sichtbar um mindestens zwei.
+#: Die Parteistimme wiegt wie die Schlüsselwörter: Sie verfehlt den Kern des Tons
+#: (die Nachbarin spricht, nicht die Partei), und wer sie umschreibt, sieht das am
+#: Siegel. Die übrigen sind Feinschliff und ziehen einen Punkt ab.
 GEWICHTE: Dict[Art, int] = {
     "verneinung": 3,
     "schluesselwoerter": 2,
     "satzlaenge": 2,
+    "parteistimme": 2,
     "statt_sag": 1,
     "passiv": 1,
     "kompositum": 1,
+    "gedankenstrich": 1,
+    "titel_frage": 1,
+    "zahl_ohne_herkunft": 1,
 }
 GUETE_MAX = 10
 GUETE_MIN = 1
@@ -96,6 +123,64 @@ _FUGEN = ("s", "es")
 #: Rest mindestens so lang ist.
 _REST_AB_ZEICHEN = 3
 
+#: Gedankenstrich: Halbgeviert- oder Geviertstrich mit Leerzeichen davor und danach
+#: ("so – oder so"), am Zeilenanfang nicht (Aufzählung), und der Geviertstrich auch
+#: ohne Leerzeichen ("so—oder so"). Bindestriche ("Klima-Schutz") sind andere Zeichen.
+_GEDANKENSTRICH = re.compile(r"(?<=\S[^\S\n])[–—](?=\s)|(?<=\w)—(?=\w)")
+#: Was nach einem Fragezeichen am Ende eines Titels noch stehen darf (wie ist_frage in
+#: services/dieselbe_behauptung/regel.py, ohne dessen Fragewörter am Anfang), dazu
+#: Ausrufezeichen und Auslassung ("Echt?!", "Und dann?…").
+_TITEL_SCHLUSS = " \t\r\n\"'„“”‚‘’«»)!…"
+#: Anführungszeichen: Darin zitiert der Beitrag, statt selbst zu sprechen.
+_ZITAT = re.compile(
+    r"„[^“”\n]*[“”]|\"[^\"\n]*\"|»[^«\n]*«|«[^»\n]*»|‚[^‘’\n]*[‘’]|“[^”\n]*”"
+)
+_VERNEINT = {"kein", "nicht", "nie", "niemals", "niemand", "niemandem"}
+#: Größenwörter: nach einer Ziffer eine Einheit ("3 Prozent"), nach einem Zahlwort
+#: selbst eine Zahl ("zehn Prozent").
+_GROESSENWOERTER = r"Prozent|Million(?:en)?|Milliarden?|Mio\.?|Mrd\.?"
+#: Zahlwörter vor einem Größenwort ("zehn Prozent", "drei Millionen").
+_ZAHLWOERTER = (
+    r"ein|eine|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|halbe"
+    r"|\w+zehn|\w+zig|\w+ßig|\w*hundert|\w*tausend"
+)
+#: Einheiten, mit denen auch eine kleine Ziffer eine Zahl ist ("3 Prozent", "5 €").
+_EINHEIT = re.compile(
+    rf"\s?(?:%|€|Euro\b|Cent\b|(?:{_GROESSENWOERTER})(?!\w))", re.IGNORECASE
+)
+_ZIFFERN = re.compile(r"(?<![\w,.])\d[\d.,]*(?<![.,])(?!\w)")
+_GROESSENWORT = re.compile(
+    rf"\b(?P<zahlwort>(?:{_ZAHLWOERTER})\s+)(?:{_GROESSENWOERTER})(?!\w)",
+    re.IGNORECASE,
+)
+#: Ziffern, die keine Zahl mit Herkunft sind: Links, Uhrzeit, Datum, Paragraf, "Tempo 30",
+#: Ziffern vor einem Bindestrich-Wort ("1,5-Grad-Ziel", "49-Euro-Ticket") und der Name
+#: "Bündnis 90", auch am Satzanfang (dort greift _ist_name nicht).
+_KEINE_ZAHL = re.compile(
+    r"(?:https?://|www\.)\S+"
+    r"|\b\d{1,2}:\d{2}\b"
+    r"|\b\d{1,2}\s*Uhr\b"
+    r"|\b\d{1,2}\.\d{1,2}\.(?:\d{2,4}\b)?"
+    r"|§+\s*\d+\w*"
+    r"|\bTempo\s*\d+"
+    r"|\d[\d.,]*-(?=\w)"
+    r"|Bündnis\s*90",
+    re.IGNORECASE,
+)
+#: Eine Ordinalzahl mit Punkt ("24. Oktober", "20. Jahrhundert", "am 3. und 4. Mai").
+_ORDINALZAHL = re.compile(r"\b(\d{1,4})\.(?=\s*[„\"'(]*(\w+))")
+#: Nach "<Zahl>." machen diese Wörter die Zahl zur Ordinalzahl, wie NACH_ORDINALZAHL
+#: in titel-vorschlag.ts; dazu jedes klein geschriebene Wort.
+_NACH_ORDINALZAHL = {
+    "januar", "jänner", "februar", "märz", "april", "mai", "juni", "juli", "august",
+    "september", "oktober", "november", "dezember", "jahrhundert", "jahrtausend",
+}  # fmt: skip
+#: Das Wort direkt vor einer Ziffer, und was davor steht (für _ist_name).
+_WORT_DAVOR = re.compile(r"(\S?)\s*(\w+)\s+$")
+#: Ein großgeschriebenes Wort direkt nach einer Ziffer: Dann zählt sie etwas
+#: ("5000 Bäume"), statt einen Namen zu tragen.
+_WORT_DANACH = re.compile(r"\s+(\w)")
+
 
 @dataclass(frozen=True)
 class Anmerkung:
@@ -113,6 +198,31 @@ class Gegengelesen:
     #: Kriterienanteil der Güte, 1–10; None, solange Titel und Text leer sind ("neu").
     guete: Optional[int]
     anmerkungen: List[Anmerkung]
+
+
+@dataclass(frozen=True)
+class Parteistimme:
+    """Die Liste parteistimme.yaml: Subjekt mit Verb, und feste Folgen von Grundformen."""
+
+    #: (Grundformen des Subjekts, Grundformen der Verben)
+    wer_tut: List[Tuple[frozenset, frozenset]] = field(default_factory=list)
+    folgen: List[Tuple[str, ...]] = field(default_factory=list)
+
+
+def lade_parteistimme(datei: Path = PARTEISTIMME_DATEI) -> Parteistimme:
+    eintraege = yaml.safe_load(datei.read_text(encoding="utf-8")) or []
+
+    def klein(woerter) -> List[str]:
+        return [str(w).lower() for w in woerter]
+
+    return Parteistimme(
+        wer_tut=[
+            (frozenset(klein(e["wer"])), frozenset(klein(e["tut"])))
+            for e in eintraege
+            if "wer" in e
+        ],
+        folgen=[tuple(klein(e["folge"])) for e in eintraege if "folge" in e],
+    )
 
 
 def lade_statt_sag_liste(
@@ -176,9 +286,13 @@ class GegenlesenService:
         self,
         statt_sag: Dict[str, Tuple[str, List[str]]],
         werkzeuge: Sprachwerkzeuge,
+        parteistimme: Optional[Parteistimme] = None,
     ):
         self._statt_sag = statt_sag
         self._werkzeuge = werkzeuge
+        self._parteistimme = (
+            parteistimme if parteistimme is not None else lade_parteistimme()
+        )
 
     def gegenlesen(
         self,
@@ -186,8 +300,12 @@ class GegenlesenService:
         text: str,
         aussage: Optional[str],
         titel_ist_behauptung: bool = True,
+        hat_herkunft: Optional[bool] = None,
     ) -> Gegengelesen:
-        # Ein Post-Titel beschreibt, statt zu behaupten: dort keine Verneinungsregel.
+        # Ein Post-Titel beschreibt, statt zu behaupten: dort keine Verneinungsregel
+        # und keine Regel zum Titel als Frage. ``hat_herkunft`` ist None, wenn das
+        # Formular kein Herkunftsfeld hat (Post, Bild) oder die Karte gegenliest: Dann
+        # entfällt die Regel zu Zahlen ohne Herkunft.
         titel, text, aussage = (
             (titel or "").strip(),
             (text or "").strip(),
@@ -221,6 +339,14 @@ class GegenlesenService:
                 self._statt_sag_finden(saetze),
                 self._passiv(saetze),
                 self._komposita(saetze),
+                self._gedankenstrich(titel, text),
+                self._parteistimme_finden(saetze),
+                self._titel_frage(titel) if titel_ist_behauptung else None,
+                (
+                    self._zahl_ohne_herkunft(titel, text)
+                    if hat_herkunft is False
+                    else None
+                ),
             )
             if a is not None
         ]
@@ -354,8 +480,8 @@ class GegenlesenService:
             art="passiv",
             stelle=gefunden[0][0],
             text=(
-                f"Passiv: {_aufzaehlen(woerter)}. Sag, wer handelt: "
-                "„Die Regierung beschließt …“ statt „… wird beschlossen“."
+                f"Passiv: {_aufzaehlen(woerter)}. Sag, wer handelt, "
+                "dann liest es sich klarer."
             ),
             woerter=woerter,
         )
@@ -366,6 +492,12 @@ class GegenlesenService:
             for token in satz:
                 if token.pos_ not in _NOMEN or len(token.text) < (
                     KOMPOSITUM_AB_ZEICHEN
+                ):
+                    continue
+                # Mit Bindestrich ist ein Wort schon gegliedert ("Klima-Schutz-Gesetz",
+                # #618); jeder Teil zählt dann für sich.
+                if "-" in token.text and all(
+                    len(teil) < KOMPOSITUM_AB_ZEICHEN for teil in token.text.split("-")
                 ):
                     continue
                 # Lang ist lang, auch wenn CharSplit unsicher ist; die Zerlegung
@@ -385,7 +517,127 @@ class GegenlesenService:
             woerter=[wort for _, wort, _ in gefunden],
         )
 
+    def _gedankenstrich(self, titel: str, text: str) -> Optional[Anmerkung]:
+        for stelle, inhalt in (("titel", titel), ("text", text)):
+            # Ein Zahlenbereich mit Leerzeichen ("3 – 5") ist kein Gedankenstrich.
+            striche = [
+                m.group()
+                for m in _GEDANKENSTRICH.finditer(inhalt)
+                if not _zwischen_ziffern(inhalt, m.start())
+            ]
+            if striche:
+                return Anmerkung(
+                    art="gedankenstrich",
+                    stelle=stelle,
+                    text=(
+                        f"Gedankenstrich („{striche[0]}“): Das liest sich wie ein "
+                        "Einschub. Ein Punkt macht es klarer."
+                    ),
+                    woerter=sorted(set(striche)),
+                )
+        return None
+
+    def _parteistimme_finden(self, saetze) -> Optional[Anmerkung]:
+        gefunden: List[Tuple[str, str]] = []
+        for stelle, satz in saetze:
+            for wendung in self._wendungen(satz):
+                if wendung not in (w for _, w in gefunden):
+                    gefunden.append((stelle, wendung))
+        if not gefunden:
+            return None
+        woerter = [w for _, w in gefunden]
+        return Anmerkung(
+            art="parteistimme",
+            stelle=gefunden[0][0],
+            text=(
+                f"Klingt nach Partei: {_aufzaehlen(f'„{w}“' for w in woerter)}. "
+                "Erzähl es lieber so, wie du es deiner Nachbarin sagen würdest."
+            ),
+            woerter=woerter,
+        )
+
+    def _titel_frage(self, titel: str) -> Optional[Anmerkung]:
+        # Nur das Fragezeichen am Ende. Ein Verb vorn ist hier keine Frage ("Helfen
+        # statt meckern", "Braucht keiner: die Ölheizung"), anders als bei Suchanfragen
+        # im Abgleich auf dieselbe Aussage (ist_frage, #387).
+        if not titel.rstrip(_TITEL_SCHLUSS).endswith("?"):
+            return None
+        return Anmerkung(
+            art="titel_frage",
+            stelle="titel",
+            text=(
+                "Der Titel ist eine Frage. Die Frage steckt schon in der Aussage; "
+                "sag im Titel deine Antwort."
+            ),
+        )
+
+    def _zahl_ohne_herkunft(self, titel: str, text: str) -> Optional[Anmerkung]:
+        gefunden: List[Tuple[str, str]] = []
+        for stelle, inhalt in (("titel", titel), ("text", text)):
+            for zahl in _zahlen(inhalt):
+                if zahl not in (z for _, z in gefunden):
+                    gefunden.append((stelle, zahl))
+        if not gefunden:
+            return None
+        woerter = [z for _, z in gefunden]
+        # Bei vielen Zahlen nennt der Satz die ersten; markiert werden alle.
+        genannt = [f"„{z}“" for z in woerter[:ZAHLEN_NENNEN]]
+        zahl, stammen = (
+            ("Zahl", "stammt") if len(woerter) == 1 else ("Zahlen", "stammen")
+        )
+        if len(woerter) > ZAHLEN_NENNEN:
+            genannt.append("weitere")
+        return Anmerkung(
+            art="zahl_ohne_herkunft",
+            stelle=gefunden[0][0],
+            text=(
+                f"{zahl} ohne Herkunft: {_aufzaehlen(genannt)}. Trag bei „Herkunft“ "
+                f"ein, woher sie {stammen}."
+            ),
+            woerter=woerter,
+        )
+
     # --- Hilfen --------------------------------------------------------------
+
+    def _wendungen(self, satz) -> List[str]:
+        """Die Wendungen der Parteistimme in einem Satz, so wie sie dort stehen."""
+        liste = self._parteistimme
+        # Zitiert der Beitrag den Spruch ("„Die Grünen wollen alles verbieten“"),
+        # spricht er nicht selbst.
+        woerter = [t for t in _woerter(satz) if not _im_zitat(t)]
+        formen = [_grundformen(t.lemma_) | _grundformen(t.text) for t in woerter]
+        wendungen: List[str] = []
+        for i in range(len(woerter)):
+            for folge in liste.folgen:
+                stueck = formen[i : i + len(folge)]
+                if len(stueck) == len(folge) and all(
+                    teil in f for teil, f in zip(folge, stueck)
+                ):
+                    wendungen.append(
+                        " ".join(t.text for t in woerter[i : i + len(folge)])
+                    )
+        for token, f in zip(woerter, formen):
+            # Das Subjekt, auch als zweites Glied ("Bündnis 90/Die Grünen fordert").
+            subjekt = token.dep_ == "sb" or (
+                token.dep_ == "cj" and token.head.dep_ == "sb"
+            )
+            if not subjekt:
+                continue
+            verb = token.head.head if token.dep_ == "cj" else token.head
+            # Verneint ("Die Grünen wollen kein Heizungsverbot") antwortet der Satz
+            # auf den Vorwurf; das merkt die Verneinungsregel an, wenn es vorn steht.
+            if _im_zitat(verb) or _verneint(verb):
+                continue
+            verbformen = _grundformen(verb.lemma_) | _grundformen(verb.text)
+            for wer, tut in liste.wer_tut:
+                if f & wer and verbformen & tut:
+                    vorne, hinten = sorted((token, verb), key=lambda t: t.i)
+                    wendung = f"{vorne.text} {hinten.text}"
+                    # "Wir Grüne fordern" ist schon als Folge "Wir Grüne" gefunden.
+                    if not any(token.text in w.split() for w in wendungen):
+                        wendungen.append(wendung)
+                    break
+        return wendungen
 
     def _erklaeren(self, wort: str) -> str:
         """Die Zerlegung als Klammer, nur wenn CharSplit sich einigermaßen sicher ist."""
@@ -416,6 +668,110 @@ class GegenlesenService:
             if wert >= ZERLEGUNG_AB:
                 formen |= _grundformen(bestimmung) | _grundformen(kopf)
         return formen
+
+
+def _im_zitat(token) -> bool:
+    """Steht das Wort zwischen Anführungszeichen?"""
+    return any(m.start() < token.idx < m.end() for m in _ZITAT.finditer(token.doc.text))
+
+
+def _verneint(verb, tiefer: bool = True) -> bool:
+    """
+    Hängt am Verb eine Verneinung, auch als "kein" vor seinem Objekt? Bei Modalverb und
+    Infinitiv auch am Infinitiv ("wollen kein Heizungsverbot einführen").
+    """
+    for kind in verb.children:
+        if kind.dep_ == "ng" or kind.lemma_.lower() in _VERNEINT:
+            return True
+        if any(
+            enkel.dep_ == "nk" and enkel.lemma_.lower() == "kein"
+            for enkel in kind.children
+        ):
+            return True
+        if tiefer and kind.dep_ == "oc" and _verneint(kind, tiefer=False):
+            return True
+    return False
+
+
+def _zwischen_ziffern(inhalt: str, i: int) -> bool:
+    """Steht der Strich an Stelle i zwischen zwei Zahlen ("3 – 5")?"""
+    davor = inhalt[:i].rstrip()
+    danach = inhalt[i + 1 :].lstrip()
+    return bool(davor[-1:].isdigit() and danach[:1].isdigit())
+
+
+def _zahlen(inhalt: str) -> List[str]:
+    """
+    Die Zahlen, die eine Herkunft brauchen, so wie sie im Text stehen. Bewusst schlicht:
+
+    - Ziffern zählen, auch mit Punkt oder Komma ("10.000", "3,5"), mit Einheit
+      ("30 Prozent", "5 €").
+    - Nicht: eine Jahreszahl allein (1900 bis 2099, "seit 2020"); kleine Ziffern bis
+      AUFZAEHLUNG_BIS ohne Einheit ("3 Gründe", "1."); Ordinalzahlen ("24. Oktober",
+      "20. Jahrhundert"); Datum und Uhrzeit ("3.10.2025", "18:30", "18 Uhr");
+      Paragrafen ("§ 218"), "Tempo 30"; Ziffern vor einem Bindestrich-Wort
+      ("1,5-Grad-Ziel", "49-Euro-Ticket"); Ziffern in Wörtern ("CO2") und in Links;
+      eine Ziffer nur aus Ziffern ohne Einheit nach einem großgeschriebenen Wort mitten
+      im Satz, das sie benennt, wenn danach kein großgeschriebenes Wort folgt ("Linie
+      14 fährt", "Stuttgart 21", "Bündnis 90"; aber "im Jahr 5000 Bäume", "Hamburg hat
+      1.500 Busse").
+    - Größenwörter zählen nach einem Zahlwort ("zehn Prozent"), allein nicht ("Wie viel
+      Prozent?", "Millionen Menschen").
+    """
+    inhalt = _ohne_ordinalzahlen(
+        _KEINE_ZAHL.sub(lambda m: " " * len(m.group()), inhalt)
+    )
+    zahlen: List[Tuple[int, str]] = []
+    belegt: List[range] = []
+    for m in _ZIFFERN.finditer(inhalt):
+        einheit = _EINHEIT.match(inhalt, m.end())
+        ende = einheit.end() if einheit else m.end()
+        if einheit is None:
+            if (
+                m.group().isdigit()
+                and not _gross_danach(inhalt, m.end())
+                and _ist_name(inhalt[: m.start()])
+            ):
+                continue
+            if m.group().isdigit():
+                wert = int(m.group())
+                if wert <= AUFZAEHLUNG_BIS or wert in JAHRESZAHLEN:
+                    continue
+        zahlen.append((m.start(), inhalt[m.start() : ende]))
+        belegt.append(range(m.start(), ende))
+    for m in _GROESSENWORT.finditer(inhalt):
+        if not any(m.start() in r for r in belegt):
+            zahlen.append((m.start(), m.group()))
+    return [z for _, z in sorted(zahlen)]
+
+
+def _ohne_ordinalzahlen(inhalt: str) -> str:
+    """Ordinalzahlen durch Leerzeichen ersetzen, damit die Stellen gleich bleiben."""
+
+    def ersetzen(m) -> str:
+        wort = m.group(2)
+        if wort.lower() in _NACH_ORDINALZAHL or wort[0].islower():
+            return " " * len(m.group())
+        return m.group()
+
+    return _ORDINALZAHL.sub(ersetzen, inhalt)
+
+
+def _gross_danach(inhalt: str, ende: int) -> bool:
+    """Folgt auf die Ziffer ein großgeschriebenes Wort ("5000 Bäume")?"""
+    m = _WORT_DANACH.match(inhalt, ende)
+    return m is not None and m.group(1).isupper()
+
+
+def _ist_name(davor: str) -> bool:
+    """Steht direkt vor der Ziffer ein großgeschriebenes Wort, das nicht den Satz beginnt?"""
+    # Nur das Ende: Die Suche läuft für jede Ziffer, der Text davor kann lang sein.
+    davor = davor[-60:]
+    m = _WORT_DAVOR.search(davor)
+    if m is None or not m.group(2)[0].isupper():
+        return False
+    zeichen = m.group(1)
+    return bool(zeichen) and zeichen not in ".!?:" and m.start(2) > 0
 
 
 def _ist_inhaltswort(token) -> bool:

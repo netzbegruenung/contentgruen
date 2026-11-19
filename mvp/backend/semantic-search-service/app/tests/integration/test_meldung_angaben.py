@@ -100,3 +100,51 @@ async def test_get_pending_reports_meldung_von_vor_438_hat_keine_angaben(
     assert meldung["melder_name"] is None
     assert meldung["melder_email"] is None
     assert meldung["guter_glaube"] is None
+
+
+@pytest.mark.parametrize(
+    "haekchen, gespeichert", [(True, "test.user@example.com"), (False, None)]
+)
+async def test_melde_route_nimmt_fuer_angemeldete_die_kontoadresse(
+    service, haekchen, gespeichert
+):
+    """
+    UX-Review B17: Angemeldete geben keine Adresse ein. Mit Haekchen landet die Adresse
+    des Kontos (X-User-Email vom BFF) an der Meldung, eine im Koerper nie; ohne Haekchen
+    keine.
+    """
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from unittest.mock import Mock
+
+    from api.v1 import moderation as moderation_module
+    from dependencies import get_moderation_service, get_settings
+    from utils.rate_limiter import RateLimiter
+
+    app = FastAPI()
+    app.include_router(moderation_module.router, prefix="/api/v1/moderation")
+    app.dependency_overrides[get_settings] = lambda: Mock()
+    app.dependency_overrides[get_moderation_service] = lambda: service
+    service.content_exists = AsyncMock(return_value=True)
+
+    with patch.object(
+        moderation_module,
+        "report_rate_limiter",
+        RateLimiter(max_requests=5, window_minutes=15),
+    ):
+        antwort = TestClient(app).post(
+            "/api/v1/moderation/report",
+            json={
+                "content_id": str(uuid.uuid4()),
+                "content_type": "commentary",
+                "reason": "spam",
+                "guter_glaube": True,
+                "melder_email": "fremd@example.com",
+                "bestaetigung_an_konto": haekchen,
+            },
+            headers={"X-User": "person-1", "X-User-Email": "test.user%40example.com"},
+        )
+
+    assert antwort.status_code == 200
+    [meldung] = await service.get_pending_reports()
+    assert meldung["melder_email"] == gespeichert

@@ -18,7 +18,7 @@ from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 from api.v1.image import router as image_router
-from dependencies import get_image_service
+from dependencies import get_image_service, get_statement_service
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import ContentStatus
 from domain.models.edit_entry import EditEntry
@@ -52,7 +52,15 @@ BILD_FELDER = {
     "usage_count",
     "autor_name",
     "ist_eigener_beitrag",
+    # Meilenstein-Abzeichen der Autorin (#351), nur mit Zustimmung, sonst null.
+    "autor_abzeichen",
     "original_author",
+    # Fuer das Siegel und die Stimm-Knoepfe (#427): Guete und Summen, keine Kennungen.
+    "guete",
+    "guete_erfuellt",
+    "guete_stimmen_zaehlen",
+    "stimmen_hilfreich",
+    "stimmen_nicht_hilfreich",
 }
 
 
@@ -71,6 +79,8 @@ def client(image_service):
     app = FastAPI()
     app.include_router(image_router, prefix="/api/v1/image")
     app.dependency_overrides[get_image_service] = lambda: image_service
+    # Ohne Aussage in der Anfrage wird nichts verknuepft (#619); der Dienst muss nur da sein.
+    app.dependency_overrides[get_statement_service] = lambda: Mock()
     return TestClient(app)
 
 
@@ -130,7 +140,11 @@ def test_add_image_mit_unterschrift_antwortet_201_mit_id(client):
     )
 
     assert response.status_code == 201
-    assert response.content == f'{{"id":"{BILD_ID}"}}'.encode()
+    antwort = response.json()
+    assert antwort["id"] == str(BILD_ID)
+    # Ohne Aussage haengt das Bild an keiner (#619).
+    assert antwort["statement_id"] is None
+    assert antwort["verknuepft"] is True
 
 
 def test_add_image_dokumentiert_nur_201():

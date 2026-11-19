@@ -4,6 +4,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 
 import { BeitragAnsichtComponent } from './beitrag-ansicht.component';
+import { beitragsLink } from '../shared/beitrags-link';
 import { BeitragAnsicht, ContentService } from '../services/content.service';
 import { LoggingService } from '../services/logging.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -124,6 +125,45 @@ describe('BeitragAnsichtComponent', () => {
 
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a.zur-suche');
       expect(link.getAttribute('href')).toBe('/search');
+    });
+  });
+
+  describe('Teilen (B7, vorher Link kopieren #603)', () => {
+    it('baut die Adresse aus Origin und ID', () => {
+      expect(beitragsLink('b-1', 'https://gutgesagt.example')).toBe('https://gutgesagt.example/beitrag/b-1');
+    });
+
+    it('teilt ueber die Karte selbst (angezeigte Fassung, Nutzung samt Zaehler), kein Knopf darunter', async () => {
+      await oeffnen(of(beitrag()), 'b-7');
+      expect(karte()!.teilbar).toBeTrue();
+      expect(karte()!.ansichtVerlinkt).toBeFalse();
+      expect(fixture.nativeElement.querySelector('button.teilen, button.link-kopieren')).toBeNull();
+    });
+  });
+
+  describe('Aussage und weitere Antworten (#603)', () => {
+    function kontext(): HTMLElement | null {
+      return fixture.nativeElement.querySelector('app-beitrag-kontext');
+    }
+
+    it('gibt Aussage und weitere Antworten aus der Antwort weiter', async () => {
+      const aussage = { id: 'a-1', text: 'Wärmepumpen funktionieren nur im Neubau!' };
+      const weitere = [{ id: 'b-2', content_type: 'commentary', titel: 'Altbau geht' }];
+      await oeffnen(of(beitrag({ aussage, weitere_antworten: weitere })));
+      expect(fixture.componentInstance.kontext).toEqual({ aussage, weitere });
+      expect(kontext()?.textContent).toContain('Wärmepumpen funktionieren nur im Neubau!');
+      expect(kontext()?.textContent).toContain('Altbau geht');
+    });
+
+    it('kommt ohne die Felder aus (aelteres Backend)', async () => {
+      await oeffnen(of(beitrag()));
+      expect(fixture.componentInstance.kontext).toEqual({ aussage: null, weitere: [] });
+    });
+
+    it('fehlt ohne Beitrag', async () => {
+      await oeffnen(fehler(404));
+      fixture.detectChanges();
+      expect(kontext()).toBeNull();
     });
   });
 });

@@ -4,10 +4,13 @@ from uuid import UUID
 
 from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.image import Image
+from dtos.antwort_auf import AntwortAufAnfrage, AntwortAufErgebnis
 from dtos.beitrag import BeitragResponse
 
 
-class AddImageRequest(BaseModel):
+class AddImageRequest(AntwortAufAnfrage):
+    # Worauf das Bild antwortet (statement_id, statement_text, themen): optional,
+    # wie beim Kommentar (#619, dtos/antwort_auf.py).
     image: Image
     # Kennung des CC0-Hinweises, den die Person beim Speichern gesehen hat (#431,
     # domain/cc0_hinweis.py).
@@ -22,8 +25,8 @@ class AddImageRequest(BaseModel):
         return image
 
 
-class AddImageResponse(BaseModel):
-    """Antwort auf addImage: die ID des gespeicherten Bildes."""
+class AddImageResponse(AntwortAufErgebnis):
+    """Antwort auf addImage: die ID des gespeicherten Bildes und woran es haengt."""
 
     id: UUID
 

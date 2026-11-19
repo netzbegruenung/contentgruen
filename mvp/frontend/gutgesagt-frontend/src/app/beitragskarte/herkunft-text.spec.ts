@@ -1,4 +1,4 @@
-import { herkunftText } from './herkunft-text';
+import { herkunftDomain, herkunftText } from './herkunft-text';
 import { KartenDaten } from './karten-daten';
 
 describe('herkunftText', () => {
@@ -75,5 +75,16 @@ describe('herkunftText', () => {
 
   it('kennt beim Bild keine Herkunft', () => {
     expect(herkunftText(daten({ typ: 'image', bildUrl: 'https://example.org/bild.jpg' }))).toBe('');
+  });
+});
+
+describe('herkunftDomain (#640, R47)', () => {
+  it('nimmt die Domain ohne www.', () => {
+    expect(herkunftDomain('https://www.lfu.bayern.de/natur/index.htm')).toBe('lfu.bayern.de');
+    expect(herkunftDomain('http://example.org/a?b=c')).toBe('example.org');
+  });
+
+  it('laesst eine unlesbare Adresse, wie sie ist', () => {
+    expect(herkunftDomain('Rede im Landtag, 3.5.2026')).toBe('Rede im Landtag, 3.5.2026');
   });
 });

@@ -8,11 +8,12 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Grund</mat-label>
-      <mat-select [(ngModel)]="selectedReason">
+      <mat-select [(ngModel)]="selectedReason" required>
         <mat-option *ngFor="let reason of reasons" [value]="reason.value">
           {{ reason.label }}
         </mat-option>
       </mat-select>
+      <mat-error>Bitte wähle einen Grund.</mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
@@ -26,7 +27,8 @@
         [placeholder]="begruendungPflicht ? 'Welches Gesetz verletzt er, und wodurch?' : 'Was genau stimmt nicht?'"></textarea>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <!-- Angemeldete nicht nach dem Namen fragen: Die Meldung haengt an ihrem Konto (B17) -->
+    <mat-form-field *ngIf="!angemeldet" appearance="outline" class="full-width">
       <mat-label>Dein Name (optional)</mat-label>
       <input matInput
              name="melder_name"
@@ -35,7 +37,13 @@
              autocomplete="name" />
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <!-- Angemeldete: keine Adresse eintippen, die des Kontos nimmt der Suchdienst (B17) -->
+    <mat-checkbox *ngIf="angemeldet" data-testid="melden-an-konto" [(ngModel)]="bestaetigungAnKonto"
+                  class="an-konto">
+      Bestätigung und Entscheidung per Mail an mein Konto
+    </mat-checkbox>
+
+    <mat-form-field *ngIf="!angemeldet" appearance="outline" class="full-width">
       <mat-label>Deine E-Mail-Adresse (optional)</mat-label>
       <input matInput
              type="email"
@@ -49,7 +57,7 @@
       <mat-hint *ngIf="!emailFehlerZeigen">Nur wenn du Bestätigung und Entscheidung per E-Mail willst.</mat-hint>
     </mat-form-field>
     <!-- Erst nach dem Verlassen des Feldes, sonst kündigt ein Screenreader den Fehler bei jedem Zeichen an. -->
-    <p *ngIf="emailFehlerZeigen" id="melder-email-fehler" class="feld-fehler" role="alert">Das ist keine E-Mail-Adresse.</p>
+    <p *ngIf="!angemeldet && emailFehlerZeigen" id="melder-email-fehler" class="feld-fehler" role="alert">Das ist keine E-Mail-Adresse.</p>
 
     <mat-checkbox data-testid="melden-guter-glaube"
                   [(ngModel)]="guterGlaube"
@@ -63,7 +71,7 @@
     </p>
 
     <p class="hinweis">
-      Name und E-Mail-Adresse sehen nur Admins. Mehr dazu in der
+      {{ angemeldet ? 'Die Adresse deines Kontos sehen nur Admins, und nur mit Häkchen.' : 'Name und E-Mail-Adresse sehen nur Admins.' }} Mehr dazu in der
       <a href="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
     </p>
 
@@ -74,14 +82,23 @@
 
   <div mat-dialog-content *ngIf="submitted" class="success-message" role="status" tabindex="-1" #bestaetigung>
     <mat-icon class="success-icon">check_circle</mat-icon>
-    <p>Deine Meldung ist eingegangen.</p>
-    <p class="sub-message">
-      Menschen aus unserem Team prüfen sie.
-      <ng-container *ngIf="mitEmail">Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.</ng-container>
-    </p>
+    <!-- Doppelmeldung: nichts Neues angelegt, keine Mail (Review zu #670) -->
+    <p *ngIf="schonGemeldet" data-testid="schon-gemeldet">Du hast diesen Beitrag schon gemeldet.</p>
+    <ng-container *ngIf="!schonGemeldet">
+      <p>Deine Meldung ist eingegangen.</p>
+      <p class="sub-message">
+        Menschen aus unserem Team prüfen sie.
+        <ng-container *ngIf="mitEmail">Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.</ng-container>
+        <ng-container *ngIf="kontoOhneMail">An dein Konto können wir keine Mail schicken; die Meldung ist trotzdem eingegangen.</ng-container>
+      </p>
+    </ng-container>
   </div>
 
-  <div mat-dialog-actions align="end" *ngIf="!submitted">
+  <div mat-dialog-actions align="end" *ngIf="!submitted" class="aktionen">
+    <!-- Steht bei den Knoepfen, damit es ohne Scrollen zu sehen ist (#581). -->
+    <p class="fehlt-hinweis" aria-live="polite">
+      <span *ngIf="fehltHinweis as hinweis" id="melden-fehlt" data-testid="melden-fehlt">{{ hinweis }}</span>
+    </p>
     <button mat-button (click)="close(false)" [disabled]="submitting">
       Abbrechen
     </button>
@@ -89,6 +106,7 @@
       mat-raised-button
       color="warn"
       data-testid="melden-senden"
+      [attr.aria-describedby]="fehltHinweis ? 'melden-fehlt' : null"
       (click)="submitReport()"
       [disabled]="!kannMelden">
       <span *ngIf="!submitting">Melden</span>

@@ -9,6 +9,7 @@ import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { PostService } from '../services/post.service';
+import { ImageService } from '../services/image.service';
 import { LoggingService } from '../services/logging.service';
 import { resolveContentType } from '../shared/content-type-registry';
 
@@ -23,6 +24,7 @@ export class BeitragAnsehenService {
     private commentaryService: CommentaryService,
     private genericTextService: GenericTextService,
     private postService: PostService,
+    private imageService: ImageService,
     private bottomSheet: MatBottomSheet,
     private snackBar: MatSnackBar,
     private logger: LoggingService,
@@ -35,7 +37,7 @@ export class BeitragAnsehenService {
   }
 
   oeffnen(id: string, contentType: string | null | undefined): void {
-    const karte$ = this.karteLaden(id, contentType);
+    const karte$ = this.kannAnsehen(contentType) ? this.karteLaden(id, contentType) : null;
     if (!karte$) {
       return;
     }
@@ -51,7 +53,8 @@ export class BeitragAnsehenService {
 
   /**
    * Einen gespeicherten Beitrag als KartenDaten laden; null fuer Typen, die sich
-   * hier nicht zeigen lassen. Auch die Ergebnisseite nach dem Speichern laedt so.
+   * hier nicht zeigen lassen. Auch die Ergebnisseite nach dem Speichern laedt so,
+   * dort auch das Bild (#619); im Bottom Sheet bleibt es aussen vor (kannAnsehen).
    */
   karteLaden(id: string, contentType: string | null | undefined): Observable<KartenDaten> | null {
     const typ = resolveContentType(contentType);
@@ -69,6 +72,11 @@ export class BeitragAnsehenService {
       return this.postService
         .getPostById(id)
         .pipe(map((inhalt) => ausSuchergebnis({ post_result: inhalt, score: 1 } as any)));
+    }
+    if (typ === 'image') {
+      return this.imageService
+        .getImageById(id)
+        .pipe(map((inhalt) => ausSuchergebnis({ image_result: inhalt, score: 1 } as any)));
     }
     return null;
   }

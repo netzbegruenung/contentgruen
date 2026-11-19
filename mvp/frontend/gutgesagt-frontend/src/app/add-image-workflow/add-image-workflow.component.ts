@@ -1,51 +1,35 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { AddImageComponent } from '../add-image/add-image.component';
 import { ContentRefreshService } from '../services/content-refresh.service';
-import { LoggingService } from '../services/logging.service';
+import { gespeichertPfad } from '../shared/formular-adresse';
+import { BeitragGespeichert, GespeichertZustand } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 
+/**
+ * Die Seite unter /workflow/add-image. Nach dem Speichern die Ergebnisseite wie bei
+ * Kommentar, Hintergrundinfo und Post (#619); sie ersetzt das Formular im Verlauf.
+ */
 @Component({
   standalone: true,
   selector: 'app-add-image-workflow',
   templateUrl: './add-image-workflow.component.html',
   styleUrls: ['./add-image-workflow.component.css'],
-  imports: [
-    CommonModule,
-    AddImageComponent,
-  ],
+  imports: [CommonModule, AddImageComponent],
 })
 export class AddImageWorkflowComponent {
   constructor(
     private router: Router,
-    private logger: LoggingService,
     private contentRefreshService: ContentRefreshService,
-    private snackBar: MatSnackBar,
   ) {}
 
-  onSuccess(responseId: string): void {
+  onSuccess(ergebnis: BeitragGespeichert): void {
     this.contentRefreshService.triggerRefresh();
-
-    const snackBarRef = this.snackBar.open(
-      'Vielen Dank! Dein Bild hilft der gesamten Community. Du kannst deine Beiträge und deren Nutzung auf der "Meine Beiträge" Seite verfolgen.',
-      'Meine Beiträge ansehen',
-      {
-        duration: 8000,
-        horizontalPosition: 'center',
-        verticalPosition: 'bottom',
-        panelClass: ['success-snackbar'],
-      },
-    );
-
-    snackBarRef.onAction().subscribe(() => {
-      this.router.navigate(['/contributions']);
-    });
-
-    this.router.navigate(['/contribute']);
-  }
-
-  onCancel(): void {
-    this.router.navigate(['/contribute']);
+    const state: GespeichertZustand = {
+      ...(ergebnis.aussage.text ? { aussage: ergebnis.aussage } : {}),
+      verknuepft: ergebnis.verknuepft,
+      ...(ergebnis.themenHinweis ? { themenHinweis: ergebnis.themenHinweis } : {}),
+    };
+    this.router.navigate(gespeichertPfad('image', ergebnis.id), { state, replaceUrl: true });
   }
 }

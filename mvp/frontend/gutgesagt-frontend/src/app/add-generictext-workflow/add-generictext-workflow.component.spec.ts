@@ -74,6 +74,18 @@ describe('AddGenerictextWorkflowComponent', () => {
     });
   });
 
+  it('reicht "Aussage neu angelegt" an die Ergebnisseite weiter (#617)', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, aussageNeu: true });
+
+    expect(navigieren.calls.mostRecent().args[1]!.state).toEqual({
+      aussage: { id: 'a-1', text: 'Aussage' },
+      verknuepft: true,
+      aussageNeu: true,
+    });
+  });
+
   it('reicht einen Themenhinweis an die Ergebnisseite weiter (#455)', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     const themenHinweis = 'Themen nicht gespeichert.';
@@ -98,6 +110,7 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
       'vorbefuellungLaden',
       'mitBeitragVerknuepfen',
       'zumNaechsten',
+      'zumNaechstenAusformulieren',
     ]);
     uebergabe.mitBeitragVerknuepfen.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
@@ -136,7 +149,7 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
 
     expect(uebergabe.vorbefuellungLaden).toHaveBeenCalledWith('id-1');
     expect(formular.generictextForm.value.title).toBe('Waermepumpe lohnt sich auch im Altbau');
-    expect(formular.showReferences).toBeTrue();
+    expect(formular.herkunftFehlt).toBeFalse();
   });
 
   it('verknuepft den Einwurf nach dem Speichern und zeigt die Ergebnisseite mit Herkunft Fangkorb', () => {
@@ -159,7 +172,7 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
     component.onVorhandenGewaehlt('h-alt');
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'h-alt', 'generic_text');
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
+    expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('id-1');
     expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENER_VERKNUEPFT, 'OK', jasmine.anything());
     // Keine Ergebnisseite: gespeichert wurde nichts.
     expect(navigieren).not.toHaveBeenCalled();
@@ -174,13 +187,13 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onVorhandenGewaehlt('h-alt');
 
-    expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
+    expect(uebergabe.zumNaechstenAusformulieren).not.toHaveBeenCalled();
     expect(meldung).toHaveBeenCalledWith(EINWURF_NICHT_VERKNUEPFT, ERNEUT_VERKNUEPFEN, jasmine.anything());
 
     erneut.next();
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledTimes(2);
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
+    expect(uebergabe.zumNaechstenAusformulieren).toHaveBeenCalledOnceWith('id-1');
   });
 
   it('reicht die Wahl im Formular an den Workflow weiter', () => {

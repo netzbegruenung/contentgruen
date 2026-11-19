@@ -26,10 +26,16 @@ from dependencies import (
     get_image_service,
     get_post_service,
     get_reference_service,
+    get_statement_service,
     get_voting_service,
 )
 from domain.models.content import ContentDbEntry
 from domain.models.content_type import ContentType
+from domain.models.statement import (
+    AntwortKurz,
+    StatementDbEntry,
+    StatementReplysuggestion,
+)
 from services.beitrag_laden import BeitragUnlesbar
 from services.content.base_content_service import BaseContentService
 from tests.conftest import create_base_content_fields
@@ -83,7 +89,16 @@ def stimmen():
 
 
 @pytest.fixture
-def client(dienste, laden, herkunft, nutzung, stimmen):
+def aussagen():
+    """Der StatementService, soweit die Seite ihn braucht: ohne Aussage."""
+    dienst = MagicMock()
+    dienst.zu_antwort = AsyncMock(return_value=[])
+    dienst.sichtbare_antworten = AsyncMock(return_value=[])
+    return dienst
+
+
+@pytest.fixture
+def client(dienste, laden, herkunft, nutzung, stimmen, aussagen):
     app = FastAPI()
     app.include_router(content_router, prefix="/api/v1/content")
     app.dependency_overrides.update(
@@ -95,6 +110,7 @@ def client(dienste, laden, herkunft, nutzung, stimmen):
             get_image_service: lambda: dienste[ContentType.IMAGE],
             get_reference_service: lambda: herkunft,
             get_voting_service: lambda: stimmen,
+            get_statement_service: lambda: aussagen,
         }
     )
     with patch("api.v1.content.get_usage_service", return_value=nutzung):
@@ -223,3 +239,77 @@ class TestBeitragAnsicht:
 
     def test_keine_uuid_ist_422(self, client):
         assert client.get("/api/v1/content/beitrag/kein-beitrag").status_code == 422
+
+
+def _vorschlag(beitrag_id, relevanz=1.0, typ=ContentType.COMMENTARY):
+    return StatementReplysuggestion(
+        id=beitrag_id,
+        content_type=typ,
+        relevance=relevanz,
+        created="2026-11-01T12:00:00Z",
+        updated="2026-11-01T12:00:00Z",
+        number_of_usages=0,
+    )
+
+
+def _aussage(text, *vorschlaege):
+    return StatementDbEntry(
+        **create_base_content_fields(),
+        id=uuid.uuid4(),
+        text=text,
+        replysuggestions=list(vorschlaege),
+        replysuggestions_count=len(vorschlaege),
+    )
+
+
+@pytest.mark.unit
+class TestBeitragKontext:
+    """#603: die Aussage, auf die der Beitrag antwortet, und weitere Antworten."""
+
+    def test_ohne_aussage_none_und_leer(self, client, aussagen):
+        body = client.get(URL).json()
+
+        assert body["aussage"] is None
+        assert body["weitere_antworten"] == []
+        aussagen.zu_antwort.assert_awaited_once_with(BEITRAG_ID)
+
+    def test_aussage_und_weitere_antworten(self, client, aussagen):
+        andere = uuid.uuid4()
+        aussage = _aussage(
+            "Wärmepumpen taugen nichts im Altbau",
+            _vorschlag(BEITRAG_ID),
+            _vorschlag(andere, 0.8),
+        )
+        aussagen.zu_antwort.return_value = [aussage]
+        aussagen.sichtbare_antworten.return_value = [
+            AntwortKurz(
+                id=andere, content_type=ContentType.GENERIC_TEXT, titel="Feldtest"
+            )
+        ]
+
+        body = client.get(URL).json()
+
+        assert body["aussage"] == {
+            "id": str(aussage.id),
+            "text": "Wärmepumpen taugen nichts im Altbau",
+        }
+        assert body["weitere_antworten"] == [
+            {"id": str(andere), "content_type": "generic_text", "titel": "Feldtest"}
+        ]
+        # Der Beitrag selbst ist keine weitere Antwort.
+        aussagen.sichtbare_antworten.assert_awaited_once_with([andere])
+
+    def test_stoerung_beim_nachschlagen_laesst_die_seite_stehen(self, client, aussagen):
+        aussagen.zu_antwort.side_effect = RuntimeError("Qdrant weg")
+
+        antwort = client.get(URL)
+
+        assert antwort.status_code == 200
+        assert antwort.json()["aussage"] is None
+        assert antwort.json()["weitere_antworten"] == []
+
+    def test_bei_404_wird_nicht_nachgeschlagen(self, client, laden, aussagen):
+        laden.return_value = None
+
+        assert client.get(URL).status_code == 404
+        aussagen.zu_antwort.assert_not_awaited()

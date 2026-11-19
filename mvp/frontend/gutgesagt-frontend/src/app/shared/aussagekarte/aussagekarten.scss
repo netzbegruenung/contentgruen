@@ -1,0 +1,14 @@
+@use '../styles/karte';
+
+// Aussagekarten auf dem Kartengrund wie app-kartenliste; ab 600 px im Raster.
+// align-items: start, damit eine lange Aussage nicht die ganze Reihe streckt.
+.aussagekarten {
+  @include karte.kartengrund;
+  margin: var(--spacing-md) 0;
+
+  @media (min-width: 600px) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+    align-items: start;
+  }
+}

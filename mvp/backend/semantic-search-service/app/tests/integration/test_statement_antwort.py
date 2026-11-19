@@ -16,6 +16,7 @@ from domain.models.content_type import ContentType
 from domain.models.statement import Statement
 from services.content.statement_service import StatementService
 
+from tests.integration.beitrag_helfer import sichtbarer_beitrag
 from tests.integration.conftest import requires_qdrant
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
@@ -63,16 +64,21 @@ async def test_kuratierte_suche_laesst_unbeantwortete_suchanfragen_weg(
     assert {r.id for r in nur_kuratiert} == {kuratiert}
 
 
-async def test_beantwortete_suchanfrage_gilt_als_kuratiert(statement_service):
+async def test_beantwortete_suchanfrage_gilt_als_kuratiert(
+    statement_service, sichtbare_suchanfragen
+):
     suchanfrage = await _anlegen(
         statement_service,
         "Windräder machen Vögel kaputt",
         SEARCH_QUERY_AUTHOR,
         ContentOrigin.SEARCH_QUERY,
     )
+    # Antworten gibt es nur an sichtbaren Suchanfragen (Vormoderation).
+    sichtbare_suchanfragen.add(suchanfrage)
 
+    beitrag_id = await sichtbarer_beitrag(statement_service, ContentType.COMMENTARY)
     await statement_service.beitrag_als_antwort_verknuepfen(
-        uuid.uuid4(), ContentType.COMMENTARY, 1.0, "person-1", suchanfrage
+        beitrag_id, ContentType.COMMENTARY, 1.0, "person-1", suchanfrage
     )
 
     treffer = await statement_service.search_filtered(
@@ -82,7 +88,7 @@ async def test_beantwortete_suchanfrage_gilt_als_kuratiert(statement_service):
 
 
 async def test_verknuepfen_per_text_und_ohne_dublette(statement_service):
-    beitrag_id = uuid.uuid4()
+    beitrag_id = await sichtbarer_beitrag(statement_service, ContentType.COMMENTARY)
 
     erste = await statement_service.beitrag_als_antwort_verknuepfen(
         beitrag_id,
@@ -99,8 +105,10 @@ async def test_verknuepfen_per_text_und_ohne_dublette(statement_service):
         statement_text="Klimaschutz zerstört Arbeitsplätze",
     )
 
-    assert erste == zweite
-    statement_id, statement_text = erste
+    # Die erste legt die Aussage an, die zweite findet dieselbe (#617: Marke "neu").
+    assert erste[:2] == zweite[:2]
+    assert (erste[2], zweite[2]) == (True, False)
+    statement_id, statement_text, _ = erste
     assert statement_text == "Klimaschutz zerstört Arbeitsplätze"
     aussage = await statement_service.get(statement_id)
     assert [r.id for r in aussage.replysuggestions] == [beitrag_id]
@@ -118,7 +126,10 @@ async def test_parallele_verknuepfungen_derselben_aussage(statement_service):
         "person-1",
         ContentOrigin.MANUALLY_CREATED,
     )
-    beitraege = [uuid.uuid4() for _ in range(5)]
+    beitraege = [
+        await sichtbarer_beitrag(statement_service, ContentType.COMMENTARY)
+        for _ in range(5)
+    ]
 
     await asyncio.gather(
         *(

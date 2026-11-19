@@ -2,7 +2,7 @@
 // This module contains common styles to reduce duplication
 //
 // Optik fuer alle Formulare: durchgehend weiss, keine nummerierten Schrittkoepfe
-// und keine Trennlinien zwischen den Abschnitten, Knoepfe in --primary-dark (Tanne).
+// und keine Trennlinien zwischen den Abschnitten, Knoepfe in --akzent-schrift (Tanne).
 
 @use 'breakpoints' as bp;
 
@@ -56,7 +56,7 @@
     margin: 0;
     font-size: 1.5rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text);
 
     @include bp.mobile-only {
       font-size: 1.2rem;
@@ -66,7 +66,7 @@
   .content-type-description {
     margin: 4px 0 0 0;
     font-size: 0.95rem;
-    color: var(--text-secondary);
+    color: var(--text-leise);
 
     @include bp.mobile-only {
       font-size: 0.85rem;
@@ -82,10 +82,10 @@
   }
 
   .context-section {
-    background: white;
+    background: var(--flaeche);
     border-radius: var(--border-radius-large);
     padding: 32px;
-    border: 2px solid #e8f5e9;
+    border: 2px solid var(--primaer-tint);
     position: relative;
     margin-bottom: 24px;
 
@@ -94,7 +94,7 @@
       border: none;
       border-radius: 0;
       margin: 0;
-      background: white;
+      background: var(--flaeche);
     }
   }
 
@@ -111,7 +111,7 @@
     h3 {
       margin: 0;
       font-size: 1.35rem;
-      color: var(--text-primary);
+      color: var(--text);
       font-weight: 600;
 
       @include bp.mobile-only {
@@ -139,7 +139,7 @@
     gap: 12px;
     font-size: 1.05rem;
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--text);
     margin-left: 12px;
 
     @include bp.mobile-only {
@@ -151,7 +151,7 @@
   .toggle-icon {
     font-size: 22px;
     vertical-align: middle;
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
   }
 }
 
@@ -177,8 +177,8 @@
     display: flex;
     gap: 16px;
     padding: 20px;
-    background: linear-gradient(135deg, #E3F2FD 0%, #F3F9FF 100%);
-    border-left: 4px solid #2196F3;
+    background: var(--info-tint);
+    border-left: 4px solid var(--info-rand);
     border-radius: 8px;
     margin-bottom: 20px;
     box-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);
@@ -192,7 +192,7 @@
   }
 
   .info-icon {
-    color: #2196F3;
+    color: var(--info-rand);
     flex-shrink: 0;
     font-size: 24px;
   }
@@ -203,7 +203,7 @@
 
   .instruction-title {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text);
     margin: 0 0 4px 0;
 
     @include bp.mobile-only {
@@ -212,7 +212,7 @@
   }
 
   .instruction-detail {
-    color: var(--text-secondary);
+    color: var(--text-leise);
     margin: 0 0 8px 0;
     font-size: 0.95rem;
 
@@ -222,7 +222,7 @@
   }
 
   .instruction-example {
-    color: var(--text-secondary);
+    color: var(--text-leise);
     font-style: italic;
     margin: 0;
     font-size: 0.9rem;
@@ -247,13 +247,13 @@
   .statement-preview {
     margin-top: 20px;
     padding: 20px;
-    background: linear-gradient(135deg, #FFF9E6 0%, #FFF3CD 100%);
+    background: var(--hinweis-tint);
     border-radius: 12px;
-    border: 2px solid #FFE082;
+    border: 2px solid var(--hinweis-rand);
     position: relative;
 
     @include bp.mobile-only {
-      border: 1px solid #FFE082;
+      border: 1px solid var(--hinweis-rand);
       border-radius: 8px;
       margin-left: 0;
       margin-right: 0;
@@ -265,14 +265,14 @@
     bottom: -32px;
     left: 50%;
     transform: translateX(-50%);
-    background: white;
+    background: var(--flaeche);
     border-radius: 50%;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #e8f5e9;
+    border: 2px solid var(--primaer-tint);
     z-index: 5;
 
     @include bp.mobile-only {
@@ -280,7 +280,7 @@
     }
 
     mat-icon {
-      color: var(--primary-dark);
+      color: var(--akzent-schrift);
       font-size: 20px;
       width: 20px;
       height: 20px;
@@ -291,7 +291,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--text-secondary);
+    color: var(--text-leise);
     font-size: 0.9rem;
     margin-bottom: 8px;
     text-transform: uppercase;
@@ -299,12 +299,12 @@
   }
 
   .quote-icon {
-    color: #ff9800;
+    color: var(--warning-border);
   }
 
   .statement-quote-box {
     padding: 12px;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--flaeche);
     border-radius: 4px;
     margin-bottom: 12px;
   }
@@ -312,7 +312,7 @@
   .statement-quote {
     font-size: 1.1rem;
     font-style: italic;
-    color: var(--text-primary);
+    color: var(--text);
     line-height: 1.5;
   }
 
@@ -330,9 +330,9 @@
     padding: 20px 0;
     position: relative;
     z-index: 10;
-    background: white;
-    border-left: 2px solid #e8f5e9;
-    border-right: 2px solid #e8f5e9;
+    background: var(--flaeche);
+    border-left: 2px solid var(--primaer-tint);
+    border-right: 2px solid var(--primaer-tint);
   }
 
   .reply-arrow-container {
@@ -340,9 +340,9 @@
     align-items: center;
     gap: 12px;
     padding: 10px 20px;
-    background: #f8f9fa;
+    background: var(--mulde);
     border-radius: 20px;
-    border: 1px solid var(--primary-dark);
+    border: 1px solid var(--linie-tanne);
     animation: fadeInScale 0.4s ease-out;
 
     @include bp.mobile-only {
@@ -362,7 +362,7 @@
   }
 
   .reply-arrow {
-    color: var(--primary-dark);
+    color: var(--akzent-schrift);
     font-size: 28px;
     animation: bounce 2s infinite;
 
@@ -377,7 +377,7 @@
   }
 
   .reply-text {
-    color: var(--text-primary);
+    color: var(--text);
     font-weight: 600;
     font-size: 0.95rem;
     text-transform: uppercase;
@@ -401,9 +401,9 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    background: white;
+    background: var(--flaeche);
     padding: 32px;
-    border: 2px solid #e8f5e9;
+    border: 2px solid var(--primaer-tint);
     border-radius: var(--border-radius-large);
 
     &.connected-sections {
@@ -426,7 +426,7 @@
       display: block;
       border: none;
       border-radius: 0;
-      background: white;
+      background: var(--flaeche);
       gap: var(--spacing-md);
     }
   }
@@ -479,14 +479,14 @@
 
     h3 {
       margin: 0;
-      color: var(--primary-dark);
+      color: var(--akzent-schrift);
       font-size: 1.1rem;
       font-weight: 500;
       flex: 1;
     }
 
     mat-icon {
-      color: #999;
+      color: var(--text-leise);
       font-size: 18px;
       width: 18px;
       height: 18px;
@@ -531,7 +531,7 @@
 
   .input-label {
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--text);
     font-size: 0.95rem;
   }
 
@@ -555,7 +555,7 @@
   .submit-hint {
     margin: 24px 0 0;
     padding-top: 24px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--linie);
   }
 
   // Trennlinie wandert an den Hinweis, damit Hinweis und Knopf als ein Block
@@ -567,7 +567,7 @@
 
     @include bp.mobile-only {
       padding-top: var(--spacing-md);
-      border-top: 2px solid var(--divider-color);
+      border-top: 2px solid var(--linie);
     }
   }
 
@@ -577,15 +577,15 @@
     justify-content: space-between;
     margin-top: 24px;
     padding-top: 24px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--linie);
 
     @include bp.mobile-only {
       flex-direction: column;
       position: sticky;
       bottom: 0;
-      background-color: white;
+      background-color: var(--flaeche);
       padding: var(--spacing-md);
-      border-top: 2px solid var(--divider-color);
+      border-top: 2px solid var(--linie);
       z-index: 50;
 
       button {
@@ -596,7 +596,7 @@
   }
 
   .cancel-btn {
-    color: #666;
+    color: var(--text-leise);
 
     mat-icon {
       margin-right: 4px;
@@ -608,16 +608,16 @@
 
   .submit-btn {
     min-width: 200px;
-    background-color: var(--primary-dark) !important;
+    background-color: var(--primaer) !important;
     color: white !important;
 
     &:hover:not([disabled]) {
-      background-color: var(--primary-dark) !important;
+      background-color: var(--primaer) !important;
     }
 
     &[disabled] {
-      background-color: var(--disabled-bg, #e0e0e0) !important;
-      color: var(--text-secondary) !important;
+      background-color: var(--mulde) !important;
+      color: var(--text-leise) !important;
     }
 
     mat-icon {
@@ -643,11 +643,11 @@
     h3 {
       margin: 0 0 var(--spacing-sm) 0;
       font-size: 1.3rem;
-      color: var(--text-primary);
+      color: var(--text);
     }
 
     p {
-      color: var(--text-secondary);
+      color: var(--text-leise);
       margin: 0 0 var(--spacing-lg) 0;
     }
   }
@@ -660,7 +660,7 @@
     font-size: 64px;
     width: 64px;
     height: 64px;
-    color: var(--success-color);
+    color: var(--akzent-schrift);
     margin-bottom: var(--spacing-md);
   }
 
@@ -668,13 +668,13 @@
     font-size: 64px;
     width: 64px;
     height: 64px;
-    color: var(--error-color);
+    color: var(--fehler);
     margin-bottom: var(--spacing-md);
   }
 
   .error-message {
-    color: var(--error-color);
-    background: rgba(211, 47, 47, 0.1);
+    color: var(--fehler);
+    background: var(--fehler-tint);
     padding: var(--spacing-sm) var(--spacing-md);
     border-radius: var(--border-radius-small);
     margin-bottom: var(--spacing-lg);
@@ -686,11 +686,11 @@
     justify-content: center;
 
     button[mat-raised-button] {
-      background-color: var(--primary-dark) !important;
+      background-color: var(--primaer) !important;
       color: white !important;
 
       &:hover {
-        background-color: var(--primary-dark) !important;
+        background-color: var(--primaer) !important;
       }
     }
 
@@ -713,7 +713,7 @@
     }
 
     .mat-mdc-text-field-wrapper {
-      background-color: var(--bg-surface) !important;
+      background-color: var(--flaeche) !important;
     }
 
     .mat-mdc-form-field-focus-overlay {
@@ -724,7 +724,7 @@
       .mdc-notched-outline__leading,
       .mdc-notched-outline__notch,
       .mdc-notched-outline__trailing {
-        border-color: var(--divider-color) !important;
+        border-color: var(--linie) !important;
       }
     }
 
@@ -732,12 +732,12 @@
       .mdc-notched-outline__leading,
       .mdc-notched-outline__notch,
       .mdc-notched-outline__trailing {
-        border-color: var(--primary-dark) !important;
+        border-color: var(--akzent-tanne) !important;
       }
     }
 
     .mat-mdc-progress-spinner circle {
-      stroke: var(--primary-dark) !important;
+      stroke: var(--akzent-tanne) !important;
     }
   }
 }
@@ -783,8 +783,17 @@
   }
 
   .feld-beschriftung {
-    color: var(--text-secondary);
+    color: var(--text-leise);
     font-size: 0.875rem;
+  }
+}
+
+// Fester Abstand zwischen den Feldern (#616): Hinweis- und Fehlerzeilen unter einem
+// Feld stossen sonst an die Beschriftung des naechsten.
+@mixin feld-abstand {
+  .beitrag-formular .formular-feld,
+  .beitrag-formular app-antwort-auf {
+    margin-bottom: 12px;
   }
 }
 
@@ -803,4 +812,5 @@
   @include material-overrides;
   @include references-section;
   @include optionale-angaben;
+  @include feld-abstand;
 }

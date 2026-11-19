@@ -14,9 +14,11 @@ import pytest
 
 from services.loeschfristen_service import (
     EINWURF_OHNE_BEITRAG_TAGE,
+    ERLEDIGTER_LOESCHAUFTRAG_TAGE,
     GELOESCHTER_BEITRAG_TAGE,
     MELDUNG_NACH_BEARBEITUNG_TAGE,
     NIE_BENUTZTES_KONTO_TAGE,
+    SCHALTER_VERLAUF_TAGE,
     SPERRE_NACH_AUFHEBUNG_TAGE,
     LoeschfristenService,
     loeschen_im_takt,
@@ -56,8 +58,20 @@ def sperren():
 
 
 @pytest.fixture
-def service(meldungen, einwuerfe, beitraege, moderation, sperren):
-    return LoeschfristenService(meldungen, einwuerfe, beitraege, moderation, sperren)
+def suchereignisse():
+    return Mock(**{"verdichten_vor.return_value": 0})
+
+
+@pytest.fixture
+def service(meldungen, einwuerfe, beitraege, moderation, sperren, suchereignisse):
+    return LoeschfristenService(
+        meldungen,
+        einwuerfe,
+        beitraege,
+        moderation,
+        sperren,
+        suchereignisse=suchereignisse,
+    )
 
 
 def test_fristen_wie_im_loeschkonzept():
@@ -67,9 +81,139 @@ def test_fristen_wie_im_loeschkonzept():
     assert GELOESCHTER_BEITRAG_TAGE == 30
     assert SPERRE_NACH_AUFHEBUNG_TAGE == 180
     assert NIE_BENUTZTES_KONTO_TAGE == 30
+    assert ERLEDIGTER_LOESCHAUFTRAG_TAGE == 365
+
+
+class TestLoeschauftraege:
+    """Erledigte Loeschauftraege nach dem Widerruf (DSFA R9b)."""
+
+    @pytest.fixture
+    def loeschauftraege(self):
+        return Mock(
+            **{
+                "erledigte_loeschen_vor.return_value": 0,
+                "ueberfaellige_zaehlen.return_value": 0,
+            }
+        )
+
+    @pytest.fixture
+    def service(
+        self, meldungen, einwuerfe, beitraege, moderation, sperren, loeschauftraege
+    ):
+        return LoeschfristenService(
+            meldungen,
+            einwuerfe,
+            beitraege,
+            moderation,
+            sperren,
+            loeschauftraege=loeschauftraege,
+        )
+
+    async def test_erledigt_vor_365_tagen(self, service, loeschauftraege):
+        await service.fristen_anwenden(HEUTE)
+
+        loeschauftraege.erledigte_loeschen_vor.assert_called_once_with(
+            datetime(2025, 10, 29, tzinfo=timezone.utc)
+        )
+
+    async def test_ueberfaellige_als_warning_nur_mit_zahl(
+        self, service, loeschauftraege, caplog
+    ):
+        loeschauftraege.ueberfaellige_zaehlen.return_value = 2
+
+        with caplog.at_level("WARNING"):
+            await service.fristen_anwenden(HEUTE)
+
+        warnungen = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warnungen) == 1
+        assert warnungen[0].getMessage().startswith("2 Loeschauftraege past")
+
+    async def test_keine_warning_ohne_ueberfaellige(self, service, caplog):
+        with caplog.at_level("WARNING"):
+            await service.fristen_anwenden(HEUTE)
+
+        assert not [r for r in caplog.records if r.levelname == "WARNING"]
+
+    async def test_fehler_haelt_die_anderen_nicht_auf(
+        self, service, loeschauftraege, beitraege
+    ):
+        loeschauftraege.erledigte_loeschen_vor.side_effect = RuntimeError("db weg")
+
+        await service.fristen_anwenden(HEUTE)
+
+        beitraege.geloeschte_laden.assert_awaited_once()
+
+
+class TestSchalterVerlauf:
+    """Verlauf der Schalter nach einem Jahr (#708, Entscheidung 18.11.2026)."""
+
+    @pytest.fixture
+    def schalter(self):
+        return Mock(**{"verlauf_loeschen_vor.return_value": 0})
+
+    @pytest.fixture
+    def service(self, meldungen, einwuerfe, beitraege, moderation, sperren, schalter):
+        return LoeschfristenService(
+            meldungen, einwuerfe, beitraege, moderation, sperren, schalter=schalter
+        )
+
+    def test_frist_ein_jahr(self):
+        assert SCHALTER_VERLAUF_TAGE == 365
+
+    async def test_verlauf_vor_einem_jahr_geht(self, service, schalter):
+        await service.fristen_anwenden(HEUTE)
+
+        schalter.verlauf_loeschen_vor.assert_called_once_with(
+            datetime(2025, 10, 29, tzinfo=timezone.utc)
+        )
+
+    async def test_fehler_haelt_die_anderen_nicht_auf(
+        self, service, schalter, beitraege
+    ):
+        schalter.verlauf_loeschen_vor.side_effect = RuntimeError("db weg")
+
+        await service.fristen_anwenden(HEUTE)
+
+        beitraege.geloeschte_laden.assert_awaited_once()
 
 
 class TestPostgres:
+    async def test_suchereignisse_abgeschlossener_tage_werden_verdichtet(
+        self, service, suchereignisse
+    ):
+        """Das Tagespseudonym bleibt nur bis zum Lauf nach Mitternacht (#495)."""
+        await service.fristen_anwenden(HEUTE)
+
+        suchereignisse.verdichten_vor.assert_called_once_with(
+            datetime(2026, 10, 29, tzinfo=timezone.utc)
+        )
+
+    async def test_fehler_beim_verdichten_haelt_die_anderen_nicht_auf(
+        self, service, suchereignisse, meldungen
+    ):
+        suchereignisse.verdichten_vor.side_effect = RuntimeError("db weg")
+
+        await service.fristen_anwenden(HEUTE)
+
+        meldungen.bearbeitete_loeschen_vor.assert_called_once()
+        assert service.verdichten_offen is True
+
+    async def test_gelungenes_verdichten_ist_nicht_offen(self, service):
+        await service.fristen_anwenden(HEUTE)
+
+        assert service.verdichten_offen is False
+
+    async def test_ohne_suchereignisse_kein_verdichten(
+        self, meldungen, einwuerfe, beitraege, moderation, sperren
+    ):
+        service = LoeschfristenService(
+            meldungen, einwuerfe, beitraege, moderation, sperren
+        )
+
+        await service.fristen_anwenden(HEUTE)
+
+        meldungen.bearbeitete_loeschen_vor.assert_called_once()
+
     async def test_meldungen_bearbeitet_vor_180_tagen(self, service, meldungen):
         await service.fristen_anwenden(HEUTE)
 
@@ -195,3 +339,41 @@ class TestTakt:
                 await loeschen_im_takt(service, takt_sekunden=5)
 
         assert service.fristen_anwenden.await_count == 2
+
+    async def test_loeschen_im_takt_holt_gescheitertes_verdichten_nach_einer_stunde_nach(
+        self,
+    ):
+        """Sonst ueberlebte das Tagespseudonym bis zur naechsten Mitternacht (#495)."""
+        service = Mock(verdichten_offen=True)
+        service.fristen_anwenden = AsyncMock()
+        schlafen = AsyncMock(side_effect=asyncio.CancelledError())
+
+        with patch("services.loeschfristen_service.asyncio.sleep", schlafen), patch(
+            "services.loeschfristen_service.sekunden_bis_mitternacht",
+            return_value=20 * 60 * 60,
+        ):
+            with pytest.raises(asyncio.CancelledError):
+                await loeschen_im_takt(service)
+
+        schlafen.assert_awaited_once_with(60 * 60)
+
+    async def test_loeschen_im_takt_zweiter_lauf_kurz_nach_mitternacht(self):
+        """Nachzuegler des Vortags verlieren ihr Pseudonym Minuten spaeter (#495)."""
+        service = Mock(verdichten_offen=False)
+        service.fristen_anwenden = AsyncMock()
+        schlafen = AsyncMock(side_effect=[None, asyncio.CancelledError()])
+
+        with patch("services.loeschfristen_service.asyncio.sleep", schlafen), patch(
+            "services.loeschfristen_service.sekunden_bis_mitternacht",
+            # erster Lauf 00:00:01, zweiter 00:05:01
+            side_effect=[24 * 60 * 60 - 1, 24 * 60 * 60 - 301],
+        ):
+            with pytest.raises(asyncio.CancelledError):
+                await loeschen_im_takt(service)
+
+        assert service.fristen_anwenden.await_count == 2
+        # danach wieder bis kurz nach der naechsten Mitternacht
+        assert [c.args[0] for c in schlafen.await_args_list] == [
+            5 * 60,
+            24 * 60 * 60 - 300,
+        ]

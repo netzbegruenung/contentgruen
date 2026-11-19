@@ -98,7 +98,7 @@ class TestRecorder:
 
 
 SEARCH_URL = "/api/v1/search/searchByText"
-# Ein Besucher hinter nginx: Adresse aus X-Real-IP, dazu der User-Agent.
+# Ein Besucher hinter nginx: Adresse aus X-Real-IP; der User-Agent geht nicht ein.
 BESUCHER = {"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"}
 
 
@@ -256,7 +256,7 @@ class TestSuchenOhneTreffer:
 
         _, ereignis = tracking.return_value.track_search.call_args
         assert ereignis["results_count"] == 0
-        # Angemeldet geht weder Adresse noch User-Agent ein.
+        # Angemeldet geht die Adresse nicht ein.
         assert ereignis["besucher_merkmal"] is None
         assert ereignis["user_id"] == "person-1"
         aufruf = suchen_ohne_treffer.erfassen.call_args
@@ -327,9 +327,10 @@ class TestSuchenOhneTreffer:
         assert eins is not None
         assert eins == zwei
 
-    def test_anderer_browser_am_selben_anschluss_hat_ein_anderes_tagespseudonym(
+    def test_anderer_browser_am_selben_anschluss_ist_dieselbe_person(
         self, suchapp, suchen_ohne_treffer
     ):
+        """Der User-Agent geht nicht ein (#495): je Anschluss ein Besucher."""
         app, service = suchapp
         service.add_statement = AsyncMock(return_value=(False, uuid.uuid4(), "klima"))
         app.dependency_overrides[get_search_query_statement_recorder] = _recorder
@@ -341,44 +342,24 @@ class TestSuchenOhneTreffer:
             {**BESUCHER, "User-Agent": "Chrome"},
         )
 
-        assert eins != zwei
-
-    def test_anderer_browser_am_selben_anschluss_meldet_denselben_anschluss(
-        self, suchapp, suchen_ohne_treffer
-    ):
-        """Daran zaehlt die Kennzahl ihn nicht als weitere Person (#496)."""
-        app, service = suchapp
-        service.add_statement = AsyncMock(return_value=(False, uuid.uuid4(), "klima"))
-        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
-        client = TestClient(app)
-
-        for headers in (BESUCHER, {**BESUCHER, "User-Agent": "Chrome"}):
-            client.post(
-                SEARCH_URL, json={"query_text": "klima", "limit": 10}, headers=headers
-            )
-
-        eins, zwei = (
-            a.kwargs["anschluss_pruefwert"]
-            for a in suchen_ohne_treffer.erfassen.call_args_list
-        )
         assert eins is not None
         assert eins == zwei
 
-    def test_angemeldet_meldet_keinen_anschluss(self, suchapp, suchen_ohne_treffer):
-        """Angemeldete erkennt der Server an der Kennung; der Anschluss geht nicht ein."""
+    def test_anderer_anschluss_ist_eine_andere_person(
+        self, suchapp, suchen_ohne_treffer
+    ):
         app, service = suchapp
         service.add_statement = AsyncMock(return_value=(False, uuid.uuid4(), "klima"))
         app.dependency_overrides[get_search_query_statement_recorder] = _recorder
 
-        TestClient(app).post(
-            SEARCH_URL,
-            json={"query_text": "klima", "limit": 10},
-            headers={"X-User": "person-1", **BESUCHER},
+        eins, zwei = self._pseudonyme(
+            app,
+            suchen_ohne_treffer,
+            BESUCHER,
+            {**BESUCHER, "X-Real-IP": "198.51.100.6"},
         )
 
-        assert (
-            suchen_ohne_treffer.erfassen.call_args.kwargs["anschluss_pruefwert"] is None
-        )
+        assert eins != zwei
 
     def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
         self, suchapp, suchen_ohne_treffer

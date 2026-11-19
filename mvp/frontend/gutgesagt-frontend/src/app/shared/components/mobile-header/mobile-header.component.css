@@ -4,8 +4,8 @@
   justify-content: space-between;
   height: 56px;
   padding: 0 4px;
-  background-color: white;
-  border-bottom: 1px solid var(--divider-color);
+  background-color: var(--flaeche);
+  border-bottom: 1px solid var(--linie);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -37,6 +37,15 @@
   height: 32px;
 }
 
+.logo-link {
+  border-radius: 8px;
+}
+
+.logo-link:focus-visible {
+  outline: 2px solid var(--akzent-tanne);
+  outline-offset: -2px;
+}
+
 /*
  * min-width: 0, damit der Titel schrumpfen darf. Ohne das ist die Mindestbreite
  * eines Flex-Elements seine Textbreite: Ein langer Titel ("Beitrag verfassen")
@@ -49,7 +58,7 @@
   font-family: GrueneType, Roboto, sans-serif;
   font-size: 28px; /* Match h2 mobile size */
   font-weight: 400; /* Match h2 weight */
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
@@ -92,13 +101,22 @@
 }
 
 .contribute-button {
-  color: rgba(0, 0, 0, 0.87); /* Standard Material Design icon color */
+  color: var(--text); /* Standard Material Design icon color */
 }
 
 .mobile-header-avatar-container {
   width: 48px;
   height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
   cursor: pointer;
+}
+
+.mobile-header-avatar-container:focus-visible {
+  outline: 2px solid var(--akzent-tanne);
+  outline-offset: 2px;
 }
 
 .mobile-header-avatar {
@@ -109,18 +127,14 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
-.mobile-header-avatar:active {
+.mobile-header-avatar-container:active .mobile-header-avatar {
   opacity: 0.8;
 }
 
-.mobile-header-avatar.anonymous-avatar-icon {
-  width: 48px;
-  height: 48px;
-  opacity: 0.7;
-  filter: grayscale(100%);
-  object-fit: contain;
-  background-color: transparent;
-  box-shadow: none;
+/* Anonym: Text statt Avatar-Platzhalter (#644) */
+.anmelden-knopf {
+  color: var(--akzent-schrift);
+  font-weight: 500;
 }
 
 .menu-button {

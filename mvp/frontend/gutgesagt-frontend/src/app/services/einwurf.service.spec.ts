@@ -171,6 +171,26 @@ describe('EinwurfService', () => {
       expect(naechster?.id).toBe('id-naechster');
     });
 
+    it('bietet in der Serie beim Ausformulieren nur Destilliertes an, den eigenen Satz zuerst', () => {
+      let naechster: Einwurf | null | undefined;
+      service.naechsterZumAusformulieren('id-aktuell').subscribe((e) => (naechster = e));
+      const satz = { id: 's', user_id: null, sentence: 'Ein Satz', updated_at: '2026-11-13T10:00:00Z' };
+
+      httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush({
+        results_count: 5,
+        total_records_count: 5,
+        results: [
+          einwurf({ id: 'id-roh' }),
+          einwurf({ id: 'id-aktuell', status: 'in_progress', own_draft: 'meiner', drafts: [satz] }),
+          einwurf({ id: 'id-fremd', status: 'in_progress', drafts: [satz] }),
+          einwurf({ id: 'id-verworfen', status: 'discarded', own_draft: 'weg', drafts: [satz] }),
+          einwurf({ id: 'id-eigen', status: 'in_progress', own_draft: 'meiner', drafts: [satz] }),
+        ],
+      });
+
+      expect(naechster?.id).toBe('id-eigen');
+    });
+
     it('bietet auch Destilliertes an, solange es keinen eigenen Satz gibt', () => {
       let naechster: Einwurf | null | undefined;
       service.naechsterOffenerEinwurf().subscribe((e) => (naechster = e));

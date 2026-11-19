@@ -110,6 +110,17 @@ def test_build_und_release_bauen_gleich():
     assert ohne_unterschiede(BUILD) == ohne_unterschiede(RELEASE)
 
 
+def test_semantic_search_cache_aus_dem_main_image():
+    # Ohne Cache ergab jeder Build rund 4 GB neue Schichten in der Registry (Platte voll,
+    # 14.11.). Der Cache kommt aus dem main-Tag dieser CI, mit ihrem Praefix: Fällt der
+    # Praefix beim Umstieg weg, muss der Cache mitziehen, sonst baut alles wieder neu.
+    praefix = schritte(BUILD)[TAGS]["environment"].get("IMAGE_TAG_PRAEFIX", "")
+    schritt = schritte(BUILD)["semantic-search"]["settings"]
+    assert schritt["cache_from"] == [f"{schritt['repo']}:{praefix}main"]
+    # inline: Cache-Metadaten im Image selbst, kein zusätzliches Cache-Image in der Registry
+    assert schritt["cache_to"] == "type=inline"
+
+
 def test_ein_plugin_image_mit_digest():
     images = {s["image"] for w in (BUILD, RELEASE) for s in build_schritte(w).values()}
     assert len(images) == 1
@@ -117,7 +128,8 @@ def test_ein_plugin_image_mit_digest():
 
 
 def test_tag_skript_im_python_image_der_ci():
-    python = schritte(CI)["python-installieren"]["image"]
+    # ci-bericht laeuft im blanken Python-Image, die anderen Python-Schritte im CI-Image
+    python = schritte(CI)["ci-bericht"]["image"]
     assert schritte(BUILD)[TAGS]["image"] == python
 
 

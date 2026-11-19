@@ -2,7 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { merkerEntfernen } from '../meine-beitraege/meilenstein-merker';
+import { kommentarEntwurfLoeschen } from '../beitragsformular/kommentar-entwurf';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { ANLASS_PARAM, Anmeldeanlass } from './anmeldeanlass';
 
 export interface UserInfo {
   isAuthenticated: boolean;
@@ -24,10 +27,21 @@ export class AuthService {
     private router: Router
   ) { }
 
-  login() {
-    // Always navigate to the login selector page
-    // The selector will determine which auth methods are available
-    this.router.navigate(['/login']);
+  /**
+   * Zur Login-Auswahl, mit der jetzigen Seite samt Suche (Query) als Rueckkehrziel; vorher
+   * ging es danach immer auf die Startseite. Ein Anlass kommt als Parameter ins Ziel,
+   * nach der Rueckkehr sagt die App dazu einen Satz (hinweisNachAnmeldung). Auf der
+   * Login-Seite selbst bleibt deren Rueckkehrziel, wie bei AppComponent.loginWithReturnUrl.
+   */
+  login(anlass?: Anmeldeanlass) {
+    if (this.router.url.startsWith('/login')) {
+      return;
+    }
+    const hier = this.router.parseUrl(this.router.url);
+    if (anlass) {
+      hier.queryParams = { ...hier.queryParams, [ANLASS_PARAM]: anlass };
+    }
+    this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.serializeUrl(hier) } });
   }
 
   // Gut gesagt managed login with email and password
@@ -61,6 +75,10 @@ export class AuthService {
   }
 
   logout() {
+    // Der Merker der angezeigten Meilensteine gilt nur für diese Anmeldung (#351).
+    merkerEntfernen();
+    // Der Kommentar-Entwurf im Tab gehört zu dieser Anmeldung (E1).
+    kommentarEntwurfLoeschen();
     // Use the API logout endpoint which properly handles both Keycloak and managed users
     this.http.post(`${environment.baseUrl}/api/auth/logout`, {}, {
       withCredentials: true

@@ -49,18 +49,18 @@ test('Verfassen: Aufbau und Bedienung des Kommentarformulars', async ({ page, bi
     await bild('04-platzhalter-fokus');
   });
 
-  await test.step('Zaehler, X/Bluesky-Hinweis, Autosize', async () => {
+  await test.step('Zaehler, Mastodon/Bluesky/X-Hinweis, Autosize', async () => {
     await page.locator('textarea#title').fill(`${TESTDATEN_PRAEFIX} Windräder sind besser als ihr Ruf`);
     const satz = 'Windräder liefern günstigen Strom und schützen das Klima. ';
     const text250 = `${TESTDATEN_PRAEFIX} ${satz.repeat(6)}`.slice(0, 250);
     await page.locator('textarea#text').fill(text250);
     const hoehe250 = await page.locator('textarea#text').evaluate((el) => (el as HTMLElement).offsetHeight);
     await expect.soft(page.locator('mat-hint', { hasText: '250 / 500' })).toBeVisible();
-    await expect.soft(page.locator('.plattform-hinweis')).toHaveText('passt auf X/Bluesky');
+    await expect.soft(page.locator('.plattform-hinweis')).toHaveText('passt auf Mastodon/Bluesky/X');
     await bild('05-text-250');
 
     await page.locator('textarea#text').fill(`${TESTDATEN_PRAEFIX} ${satz.repeat(8)}`.slice(0, 300));
-    await expect.soft(page.locator('.plattform-hinweis')).toHaveText('zu lang für X/Bluesky');
+    await expect.soft(page.locator('.plattform-hinweis')).toHaveText('zu lang für Mastodon/Bluesky/X');
     await expect.soft(page.locator('mat-form-field:has(#text) mat-error')).toHaveCount(0);
     const hoehe300 = await page.locator('textarea#text').evaluate((el) => (el as HTMLElement).offsetHeight);
     expect.soft(hoehe300, 'Textfeld waechst mit').toBeGreaterThan(hoehe250);
@@ -85,7 +85,7 @@ test('Verfassen: Aufbau und Bedienung des Kommentarformulars', async ({ page, bi
   await test.step('Vorschau ohne Neu-Zeichen, 0× und Info-Icon', async () => {
     await page.locator('.preview-column').scrollIntoViewIfNeeded();
     await expect.soft(page.locator('.preview-column .badge-neu')).toHaveCount(0);
-    await expect.soft(page.locator('.preview-column .badge-nutzung')).toHaveCount(0);
+    await expect.soft(page.locator('.preview-column .karte-nutzung')).toHaveCount(0);
     await expect.soft(page.locator('.preview-header mat-icon')).toHaveCount(0);
     await expect.soft(page.locator('.preview-column .karte-meta')).toHaveText('Von: Du');
     await bild('09-vorschau');
@@ -106,8 +106,9 @@ test('Verfassen: Aufbau und Bedienung des Kommentarformulars', async ({ page, bi
     expect.soft(lage.unten).toBe(lage.fenster);
     test.info().annotations.push({ type: 'Leistenhoehe', description: `${lage.hoehe}px` });
     await bild('10-leiste');
+    // Beim Tippen bleibt die Leiste stehen, ueber der Tastatur (#616)
     await page.locator('textarea#text').focus();
-    await expect.soft(leiste).toBeHidden();
+    await expect.soft(leiste).toBeVisible();
     await bild('11-leiste-beim-tippen');
     await page.locator('textarea#text').blur();
   });

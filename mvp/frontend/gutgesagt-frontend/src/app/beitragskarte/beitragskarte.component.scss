@@ -14,7 +14,7 @@
 }
 
 .karte {
-  --karten-farbe: var(--statement-bg);
+  --karten-farbe: var(--mulde);
   --titel-zeilen: 3;
   --text-zeilen: 12;
 
@@ -23,27 +23,27 @@
   height: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  background: var(--bg-card);
-  color: var(--text-primary);
+  background: var(--flaeche);
+  color: var(--text);
   border-radius: var(--border-radius-large);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .typ-commentary {
-  --karten-farbe: var(--commentary-bg);
+  --karten-farbe: var(--karte-kommentar);
 }
 
 .typ-generictext {
-  --karten-farbe: var(--generictext-bg);
+  --karten-farbe: var(--info-tint);
 }
 
 .typ-image {
-  --karten-farbe: var(--image-bg);
+  --karten-farbe: var(--karte-bild);
   --titel-zeilen: 4;
 }
 
 .typ-post {
-  --karten-farbe: var(--post-bg);
+  --karten-farbe: var(--karte-post);
 }
 
 .karte--voll {
@@ -109,13 +109,41 @@
   font-size: 19px;
   font-weight: 700;
   line-height: 1.3;
-  color: var(--text-primary);
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 
+// Als h4 (Ergebnisseite) ohne die Laufweite der globalen h4
+h4.karte-titel {
+  letter-spacing: normal;
+}
+
+// Der Titel als Link zur Beitragsseite (#640, R48): sieht aus wie der Titel, unterstrichen erst beim Zeigen
+.titel-link {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--akzent-klee);
+    outline-offset: 2px;
+    text-decoration: underline;
+  }
+}
+
+// Drei Titelzeilen Platz reserviert der Kopf, nicht der Titel: So steht ein ein- oder
+// zweizeiliger Titel senkrecht mittig im Kopf (Designrunde 17.11.). 19 px Titelschrift.
 @media (min-width: 600px) {
+  .karte--voll .karte-kopf {
+    min-height: calc(3 * 1.3 * 19px + 2 * var(--spacing-md));
+    box-sizing: border-box;
+  }
+
   .karte--voll .karte-titel {
-    min-height: calc(3 * 1.3em);
+    min-height: 0;
   }
 }
 
@@ -125,6 +153,82 @@
   gap: 6px;
 }
 
+// Siegel (#427): sieht nicht nach Knopf aus - kein Rahmen, kein Hintergrund -, ist fuer
+// Tastatur und Screenreader aber einer, weil Antippen die Erklaerung oeffnet.
+.siegel-knopf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: help;
+  border-radius: 8px;
+
+  // 36 statt 30 px: Der Glanz war auf der Karte kaum zu sehen (Ersteindruck-Test 14.11.)
+  app-siegel {
+    width: 36px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primaer-text);
+    outline-offset: 2px;
+  }
+}
+
+// Als Menuepunkt (fuer Screenreader) gestaltet wie ein Textfeld: mehrzeilig, kein Hover.
+.siegel-erklaerung.mat-mdc-menu-item {
+  display: block;
+  height: auto;
+  min-height: 0;
+  cursor: default;
+  white-space: normal;
+  max-width: 280px;
+  padding: 4px 16px 8px;
+  background: none;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+// Weiter zur Ueber-Seite: als Link erkennbar, auch im Dunkeln (Ersteindruck-Test 14.11.)
+.siegel-mehr.mat-mdc-menu-item {
+  min-height: 44px;
+  color: var(--akzent-schrift);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.siegel-erklaerung-kopf {
+  margin: 4px 0;
+  font-weight: 700;
+}
+
+.siegel-erklaerung-text {
+  margin: 4px 0;
+}
+
+.siegel-kriterien {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: var(--primaer-text);
+  }
+}
+
 .badge {
   display: flex;
   align-items: center;
@@ -132,7 +236,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--bg-card);
+  background: var(--flaeche);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   font-size: 12px;
   font-weight: 600;
@@ -140,8 +244,12 @@
 }
 
 .badge-neu {
-  background: var(--primary-dark);
+  width: auto;
+  padding: 0 10px;
+  border-radius: 18px;
+  background: var(--primaer);
   color: white;
+  font-size: 13px;
 }
 
 .badge-beliebt {
@@ -153,10 +261,15 @@
   font-weight: 700;
 }
 
-.badge-icon {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
+// Nutzung in der Meta-Zeile; inline-block, damit sie beim Hochzaehlen kurz waechst.
+// Lesbar gross und in Textfarbe, auch wenn die Meta-Zeile sonst klein und grau ist:
+// Sie ist die soziale Bestaetigung der Karte (Nutzerfuehrung 13.11.).
+.karte-nutzung {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .nutzung-animiert {
@@ -170,16 +283,32 @@
   align-items: center;
   min-height: 36px;
   padding: var(--spacing-sm) var(--spacing-md);
-  background: rgba(0, 137, 57, 0.04);
+  background: var(--primary-tint-faint);
   cursor: pointer;
 
   &:hover {
-    background: rgba(0, 137, 57, 0.08);
+    background: var(--primaer-tint);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-main);
+    outline: 2px solid var(--akzent-klee);
     outline-offset: -2px;
+  }
+}
+
+// Ohne Aufklapper (#640, R39): kein Knopf, die Aussage bricht um statt abgeschnitten zu werden
+.statement-zeile--fest {
+  align-items: flex-start;
+  margin: 0;
+  cursor: default;
+
+  &:hover {
+    background: var(--primary-tint-faint);
+  }
+
+  .statement-vorschau {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -189,7 +318,7 @@
   height: 18px;
   margin-right: var(--spacing-sm);
   font-size: 18px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 .statement-label {
@@ -197,7 +326,7 @@
   margin-right: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   white-space: nowrap;
 }
 
@@ -216,7 +345,7 @@
   height: 20px;
   margin-left: auto;
   font-size: 20px;
-  color: var(--primary-main);
+  color: var(--primaer-text);
   transition: transform 0.3s ease;
 
   &.offen {
@@ -227,7 +356,7 @@
 .statement-details {
   overflow: hidden;
   padding: 0 var(--spacing-md);
-  border-bottom: 1px solid rgba(0, 137, 57, 0.3);
+  border-bottom: 1px solid var(--primary-line);
 }
 
 .statement-text {
@@ -235,7 +364,7 @@
   font-size: 14px;
   font-style: italic;
   line-height: 1.7;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .statement-werte {
@@ -251,16 +380,16 @@
   gap: 6px;
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-small);
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--mulde);
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   cursor: help;
 
   mat-icon {
     width: 16px;
     height: 16px;
     font-size: 16px;
-    color: var(--primary-main);
+    color: var(--primaer-text);
   }
 }
 
@@ -271,13 +400,13 @@
   gap: 6px;
   margin: 0 0 12px;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   mat-icon {
     width: 14px;
     height: 14px;
     font-size: 14px;
-    color: var(--primary-main);
+    color: var(--primaer-text);
   }
 }
 
@@ -305,6 +434,26 @@
   }
 }
 
+// Platzhalter "[Hier …]" als Feld zum Ausfuellen (#640, R38)
+.vorlagen-luecke {
+  padding: 0 2px;
+  border-radius: 2px;
+  background: var(--hinweis-tint);
+  color: inherit;
+  text-decoration: underline dashed;
+  text-decoration-color: var(--hinweis-rand);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+
+  // Ansage fuer Screenreader per CSS: generierter Inhalt landet beim Markieren und
+  // Kopieren von Hand nicht in der Zwischenablage, ein versteckter Span schon.
+  &::before {
+    content: '' / 'Platzhalter zum Ausfüllen: ';
+  }
+}
+
 .mehr-knopf {
   align-self: flex-start;
   min-height: 32px;
@@ -314,7 +463,7 @@
   font: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: var(--primary-main);
+  color: var(--primaer-text);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -325,7 +474,7 @@
   max-height: 400px;
   object-fit: contain;
   border-radius: var(--border-radius-small);
-  background: var(--surface-variant);
+  background: var(--mulde);
 }
 
 // Zweck und Stil am Kommentar (#357): klein ueber dem Text, die Markierung betont
@@ -336,7 +485,7 @@
   gap: var(--spacing-sm);
   margin: 0;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .karte-eigene-leute {
@@ -347,7 +496,7 @@
   border-radius: var(--border-radius-large);
   // Variante D (Tanne, #357): nur Farben aus der Palette, kein Gelb - Sonne ist
   // fuer eine andere Markierung reserviert.
-  background: var(--primary-dark);
+  background: var(--primaer);
   color: white;
   font-weight: 600;
 
@@ -358,15 +507,7 @@
 
 // Die ganze Karte traegt die Markierung als Rand links (Klasse aus kartenKlassen).
 .karte.karte--eigene-leute {
-  border-left: 6px solid var(--primary-dark);
-}
-
-.eigene-leute-hinweis {
-  margin: 0;
-  padding: var(--spacing-sm) var(--spacing-md) 0;
-  font-size: 12px;
-  text-align: center;
-  color: var(--primary-dark);
+  border-left: 6px solid var(--akzent-tanne);
 }
 
 .angabe-icon {
@@ -375,19 +516,85 @@
   font-size: 16px;
 }
 
+// Stil als Chip (#641): sichtbar als Angabe, nicht als graue Kursivschrift.
 .karte-stil {
-  font-style: italic;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 8px;
+  border: 1px solid var(--linie);
+  border-radius: var(--border-radius-large);
+  background: var(--primaer-tint);
+  color: var(--akzent-schrift);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.karte-stil--knopf {
+  cursor: pointer;
+  // Tippflaeche groesser als der Chip, ohne ihn aufzublaehen
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -8px -4px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primaer-text);
+    outline-offset: 2px;
+  }
+}
+
+.stil-info {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.stil-erklaerung.mat-mdc-menu-item {
+  display: block;
+  height: auto;
+  min-height: 0;
+  cursor: default;
+  white-space: normal;
+  max-width: 280px;
+  padding: 8px 16px;
+  background: none;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+// Unter den Fassungs-Reitern, wie der Hinweis im Formular (#641)
+.fassung-marke {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-leise);
+
+  .angabe-icon {
+    color: var(--primaer-text);
+  }
+}
+
+.reiter-zeichen {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
 }
 
 .post-herkunft {
   margin: 0;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .post-link,
 .quelle-link {
-  color: var(--primary-main);
+  color: var(--primaer-text);
   text-decoration: underline;
   overflow-wrap: anywhere;
 }
@@ -401,7 +608,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   mat-icon {
     width: 16px;
@@ -413,9 +620,9 @@
 .karte-quellen {
   margin-top: var(--spacing-sm);
   padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--divider-color);
+  border-top: 1px solid var(--linie);
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   ul {
     margin: 0;
@@ -424,8 +631,8 @@
   }
 }
 
-.quellen-leer {
-  margin: 0;
+.quelle-wort {
+  flex-shrink: 0;
 }
 
 .quelle {
@@ -443,12 +650,12 @@
   display: flex;
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--divider-color);
+  border: 1px solid var(--linie);
   border-radius: var(--border-radius-medium);
-  --mat-button-toggle-text-color: var(--text-secondary);
-  --mat-button-toggle-selected-state-text-color: var(--primary-dark);
-  --mat-button-toggle-selected-state-background-color: var(--auswahl-grund);
-  --mat-button-toggle-divider-color: var(--divider-color);
+  --mat-button-toggle-text-color: var(--text-leise);
+  --mat-button-toggle-selected-state-text-color: var(--akzent-schrift);
+  --mat-button-toggle-selected-state-background-color: var(--primaer-tint);
+  --mat-button-toggle-divider-color: var(--linie);
 
   ::ng-deep .mat-button-toggle {
     flex: 1 1 0;
@@ -466,7 +673,7 @@
   }
 
   ::ng-deep .mat-button-toggle-checked {
-    box-shadow: inset 0 -2px 0 var(--primary-dark);
+    box-shadow: inset 0 -2px 0 var(--akzent-tanne);
   }
 
   ::ng-deep .mat-button-toggle-checked .mat-button-toggle-label-content {
@@ -489,7 +696,7 @@
   justify-content: center;
   min-height: 32px;
   font-size: 13px;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   text-decoration: underline;
   text-underline-offset: 3px;
 
@@ -500,7 +707,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 }
@@ -511,7 +718,22 @@
   font-size: 12px;
   line-height: 1.3;
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--text-leise);
+}
+
+/* Meilenstein-Abzeichen am Anzeigenamen (#351) */
+.autor-abzeichen {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--primaer-tint);
+  color: var(--akzent-tanne);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  vertical-align: baseline;
 }
 
 @include bp.mobile-only {
@@ -537,10 +759,10 @@
     font-size: 16px;
   }
 
-  .badge-icon {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
+  .badge-neu {
+    width: auto;
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .statement-zeile {
@@ -575,7 +797,7 @@
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 
@@ -617,7 +839,7 @@
     width: 22px;
     height: 22px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--flaeche);
     font-size: 13px;
   }
 }
@@ -647,14 +869,15 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.4;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   overflow-wrap: anywhere;
 }
 
 .album-fuss {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   margin-top: auto;
   padding: var(--spacing-sm) 12px;
@@ -662,20 +885,35 @@
 
 .karte-datum {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
+// Die Nutzung zuerst und lesbar gross, der Zuwachs der Woche darunter (Nutzerfuehrung 13.11.).
 .album-nutzung {
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  .badge-nutzung {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+
+    // Ohne Nutzung lesbar, aber ruhig
+    &.ungenutzt {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-leise);
+    }
+  }
 }
 
-// Der Zuwachs der Woche: klein und in der Akzentfarbe, damit er neben der Summe auffaellt.
+// Der Zuwachs der Woche in der Akzentfarbe, damit er neben der Summe auffaellt.
 .nutzung-zuwachs {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
 }
 
 // Meine Beitraege: je Fassung eine Angabe in einer Zeile, umbrechend am Handy (#355).
@@ -687,7 +925,7 @@
   padding: 0;
   list-style: none;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 
   li {
     display: inline-flex;
@@ -697,7 +935,7 @@
 
   .fassung-nutzung {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text);
   }
 }
 
@@ -706,7 +944,7 @@
   background: none;
   box-shadow: none;
   font-weight: 400;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Einwurf-Karte: dieselbe Anatomie wie die volle Karte - Kopfband, weisser Koerper,
@@ -722,7 +960,7 @@
   width: 100%;
 
   &:focus-visible {
-    outline: 2px solid var(--primary-dark);
+    outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;
   }
 
@@ -741,7 +979,7 @@
 
 .stufe-verworfen .einwurf-band,
 .stufe-verworfen .einwurf-linkzeile {
-  background: var(--disabled-bg);
+  background: var(--mulde);
 }
 
 .einwurf-band {
@@ -774,18 +1012,18 @@
   min-height: 44px;
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--karten-farbe);
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 13px;
   text-decoration: none;
 
   // Die Bandfarbe bleibt stehen, der Tipp legt nur einen Schleier darueber.
   &:hover,
   &:focus-visible {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04));
+    background-image: linear-gradient(var(--mulde), var(--mulde));
   }
 
   &:active {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.09), rgba(0, 0, 0, 0.09));
+    background-image: linear-gradient(var(--linie), var(--linie));
   }
 }
 
@@ -800,7 +1038,7 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .einwurf-adresse {
@@ -826,17 +1064,17 @@
 .einwurf-verworfen {
   flex-shrink: 0;
   padding: 2px var(--spacing-sm);
-  border: 1px solid rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--feldrand);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Koerper: weiss wie bei der vollen Karte, die Saetze nur am gruenen Balken.
 .einwurf-koerper {
   padding: var(--spacing-md) var(--spacing-md) 0;
-  background: var(--bg-card);
+  background: var(--flaeche);
 }
 
 .einwurf-saetze {
@@ -853,7 +1091,7 @@
   align-items: baseline;
   gap: var(--spacing-sm);
   padding-left: 10px;
-  border-left: 3px solid var(--primary-light);
+  border-left: 3px solid var(--akzent);
 }
 
 // Der Satz bricht um - bis zu drei Zeilen, dann abgeschnitten. Einzeilig
@@ -872,17 +1110,17 @@
 .satz-status {
   flex-shrink: 0;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 .satz-status--fertig {
-  color: var(--primary-dark);
+  color: var(--akzent-schrift);
   font-weight: 600;
 }
 
 .einwurf-mehr {
   padding-left: 13px;
-  color: var(--text-secondary);
+  color: var(--text-leise);
   font-size: 12px;
 }
 
@@ -898,7 +1136,7 @@
 .einwurf-menue {
   grid-column: 3;
   justify-self: end;
-  color: var(--text-secondary);
+  color: var(--text-leise);
 }
 
 // Derselbe Knopf wie "Kopieren" auf der vollen Karte: gefuellt, gruen (die Farbe
@@ -933,8 +1171,188 @@
   padding-top: 0;
 }
 
+// Hochkant traegt der Fuss nichts zum Layout bei: Aktion und Meta stehen wie bisher
+// untereinander im Fluss der Karte.
+.einwurf-fuss {
+  display: contents;
+}
+
+// Quer (Fangkorb am Desktop): eine Zeile unten in der Karte. Die Aktion steht im DOM
+// vor der Meta (Tab-Reihenfolge wie hochkant), row-reverse stellt sie nach rechts.
+.karte--quer {
+  .einwurf-fuss {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-top: auto;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .einwurf-aktion {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--spacing-sm);
+    padding: 0;
+  }
+
+  .einwurf-meta {
+    padding: 0;
+    text-align: left;
+  }
+}
+
 .einwurf-alter,
 .einwurf-stufe,
 .einwurf-einwerfer {
   white-space: nowrap;
+}
+
+// Variante A (Designrunde 17.11.): Zweck und Stil als kleine Zeile ueber dem Titel, ohne Chips
+.titel-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.karte-kopf .karte-angaben {
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--akzent-schrift);
+
+  .karte-eigene-leute {
+    padding: 0;
+    background: none;
+    color: inherit;
+    font-weight: inherit;
+
+    .angabe-icon {
+      color: inherit;
+      width: 14px;
+      height: 14px;
+      font-size: 14px;
+    }
+  }
+
+  .karte-eigene-leute + .karte-stil::before {
+    content: '·';
+    margin-right: 6px;
+  }
+
+  .karte-stil {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+  }
+}
+
+// Koerper der vollen Karte: ohne eigene Box, nur Ziel von aria-controls (Trefferseite, V3)
+.karte-koerper {
+  display: contents;
+}
+
+.karte-koerper[hidden] {
+  display: none;
+}
+
+// Schlichte Karte der Trefferseite (Designrunde 17.11., V3): Titel kleiner, Siegel auf
+// drei Viertel, Reiter als Textreiter ohne Kasten, Quelle klein ohne Trennlinie.
+.karte--schlicht {
+  .karte-titel {
+    font-size: 1.05rem;
+    line-height: 1.3;
+    min-height: 0;
+  }
+
+  .siegel-knopf {
+    min-width: 27px;
+    min-height: 27px;
+
+    app-siegel {
+      width: 27px;
+    }
+  }
+
+  .textlaenge {
+    border: 0;
+    border-radius: 0;
+    --mat-button-toggle-selected-state-background-color: transparent;
+    --mat-button-toggle-divider-color: transparent;
+  }
+
+  .karte-quellen {
+    margin-top: var(--spacing-xs);
+    padding-top: 0;
+    border-top: 0;
+    font-size: 12px;
+  }
+
+  .quelle {
+    margin-bottom: 0;
+  }
+}
+
+// Im Band nur so hoch wie der Titel; die drei reservierten Titelzeilen gelten hier nicht
+@media (min-width: 600px) {
+  .karte--schlicht.karte--voll .karte-kopf {
+    min-height: 0;
+  }
+}
+
+// Eingeklappt: nur Symbol, Titel und Pfeil, schmales Band
+.karte--zu .karte-kopf {
+  padding-block: var(--spacing-sm);
+}
+
+// Der Titel als Knopf: sieht aus wie der Titel, ganze Breite tippbar, Pfeil rechts
+.aufklapp-knopf {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  border-radius: 6px;
+
+  &:focus-visible {
+    outline: 2px solid var(--akzent-klee);
+    outline-offset: 2px;
+  }
+}
+
+.aufklapp-titel {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--titel-zeilen);
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.aufklapp-pfeil {
+  flex: none;
+  color: var(--text-leise);
+}
+
+// Der Titel klammert nicht mehr die Zeilen, wenn er im Knopf steht: Der Knopf ist kein Box-Clamp
+.karte-titel:has(.aufklapp-knopf) {
+  display: block;
 }

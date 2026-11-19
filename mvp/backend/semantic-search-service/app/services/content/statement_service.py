@@ -1,21 +1,36 @@
 import asyncio
+import threading
 import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
-from typing import AbstractSet, Dict, List, Optional, Tuple
+from typing import AbstractSet, Callable, Dict, FrozenSet, List, Optional, Tuple
 import uuid
 import logging
+from collections.abc import Iterable, Set
 
 from pydantic import ValidationError
 
-from core.config import Settings
-from services.content.base_content_service import BaseContentService, Dublettenpruefung
+from core.config import (
+    NLI_BESTAETIGER_MODELL,
+    NLI_BESTAETIGER_TOKENIZER,
+    NLI_MODELL,
+    Settings,
+)
+from services.content.base_content_service import (
+    BaseContentService,
+    Dublettenpruefung,
+    dublette_nach_schwelle,
+)
+from services.dieselbe_behauptung.nli_modell import NliModell, NliPruefer, nli_modell
+from services.dieselbe_behauptung.schatten import Schattenprotokoll
+from services.dieselbe_behauptung import fassung, regel, stufe
 from repositories.interfaces.statement_repository import (
     IStatementRepository,
 )
 from repositories.interfaces.repository_factory import IRepositoryFactory
 from domain.models.statement import (
+    AntwortKurz,
     Statement,
     StatementDbEntry,
     StatementSearchResult,
@@ -26,9 +41,42 @@ from domain.models.content_type import ContentType
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS, ContentStatus
 from domain.models.content_origin import ContentOrigin
-from utils.text_normalisierung import SperreJeText
+from utils.text_normalisierung import SperreJeText, text_normalisiert
 
 logger = logging.getLogger(__name__)
+
+
+# So lange warten die Pruefung auf dieselbe Aussage und der Filter der Vorschlaege
+# hoechstens auf das NLI-Modell (Sekunden); danach gilt die Schwelle bzw. ungefiltert.
+DIESELBE_WARTET_HOECHSTENS = 3.0
+VORSCHLAG_WARTET_HOECHSTENS = 2.0
+
+
+def _normalisiert_gleich(
+    text: str, treffer: List[BaseContentSearchResult]
+) -> Optional[BaseContentSearchResult]:
+    """Ein normalisiert gleicher Treffer (Altbestand ohne Payload-Feld): Er gilt immer
+    als dieselbe, vor jedem Score und jedem NLI-Urteil."""
+    normalform = text_normalisiert(text)
+    if not normalform:
+        return None
+    return next((t for t in treffer if text_normalisiert(t.text) == normalform), None)
+
+
+def _ist_unbeantwortete_suchanfrage(aussage) -> bool:
+    """Aus einer Suche und ohne Antwortvorschlag (wie ist_unbeantwortete_suchanfrage)."""
+    return (
+        aussage.origin is ContentOrigin.SEARCH_QUERY
+        and aussage.replysuggestions_count < 1
+    )
+
+
+class SuchanfrageNichtFreigegeben(Exception):
+    """
+    Eine Antwort soll an eine unbeantwortete Suchanfrage, die kein Admin freigegeben
+    hat (Vormoderation): Das machte sie mit ihrem Wortlaut fuer alle sichtbar.
+    Bewusst kein ValueError, damit sie nirgends als "nicht gefunden" durchgeht.
+    """
 
 
 class AussageNichtGefunden(ValueError):
@@ -42,6 +90,9 @@ class StatementService(
         self,
         settings: Settings,
         repository_factory: Optional[IRepositoryFactory] = None,
+        nli: Optional[NliPruefer] = None,
+        nli_warten: bool = False,
+        bestaetiger: Optional[NliPruefer] = None,
     ):
         # Use provided factory or default to QdrantRepositoryFactory
         if repository_factory is None:
@@ -60,6 +111,28 @@ class StatementService(
         # Eine Sperre je normalisiertem Text um Pruefen-und-Anlegen in add_statement.
         self._text_sperre = SperreJeText()
 
+        # NLI-Stufe (#387). Ohne Modell (aus) gilt allein die Schwelle. Ein Modell je
+        # Prozess: Das Seeding nutzt dasselbe, schon vorgeladene wie der Dienst.
+        if nli is None and settings.dieselbe_aussage_nli != "aus":
+            nli = nli_modell(NLI_MODELL)
+        self._nli: Optional[NliPruefer] = nli
+        # Der Bestaetiger (nli_bestaetiger): zweites Modell, nur mit NLI-Stufe.
+        if (
+            bestaetiger is None
+            and settings.nli_bestaetiger
+            and settings.dieselbe_aussage_nli != "aus"
+        ):
+            bestaetiger = nli_modell(NLI_BESTAETIGER_MODELL, NLI_BESTAETIGER_TOKENIZER)
+        self._bestaetiger: Optional[NliPruefer] = bestaetiger if nli else None
+        # nli_warten: auf das Modell warten statt nach DIESELBE_WARTET_HOECHSTENS die
+        # Schwelle gelten zu lassen - fuer das Seeding, bei dem niemand auf die Antwort
+        # wartet und sonst die ersten Aussagen waehrend des Ladens nach der Schwelle
+        # gingen (eine Regel fuer alle Wege).
+        self._nli_warten = nli_warten
+        self.schattenprotokoll = Schattenprotokoll()
+        self._schatten_laeuft = False
+        self._schatten_tasks: set[asyncio.Task] = set()
+
         repository = repository_factory.create_statement_repository(settings)
         content_repository = repository_factory.create_content_repository(settings)
 
@@ -70,6 +143,34 @@ class StatementService(
             StatementDbEntry,
             StatementSearchResult,
         )
+
+    def nli_vorladen(self) -> None:
+        """Die NLI-Modelle im Hintergrund laden, wenn die NLI-Stufe sie braucht: den
+        Bestaetiger erst nach dem ersten Modell, damit sich die Spitzen beim Laden
+        nicht addieren."""
+        modelle = [
+            m for m in (self._nli, self._bestaetiger) if isinstance(m, NliModell)
+        ]
+        if not modelle:
+            return
+
+        def laden():
+            for modell in modelle:
+                modell.laden_abwarten()
+
+        threading.Thread(target=laden, name="nli-vorladen", daemon=True).start()
+
+    async def nli_laden_abwarten(self) -> bool:
+        """Warten, bis das NLI-Modell geladen ist; True, wenn es bereitsteht. Fuer
+        Messskripte, die gleich nach dem Start fragen und sonst die Schwelle messen."""
+        if isinstance(self._bestaetiger, NliModell):
+            if not await asyncio.to_thread(self._bestaetiger.laden_abwarten):
+                logger.warning(
+                    "Bestaetiger nicht geladen: Es urteilt nur das erste Modell."
+                )
+        if isinstance(self._nli, NliModell):
+            return await asyncio.to_thread(self._nli.laden_abwarten)
+        return self._nli is not None
 
     async def search_statements(
         self, query_text: str, limit: int = 10, min_replysuggestions_count: int = 0
@@ -151,12 +252,37 @@ class StatementService(
         """
         return await self._repository.kuratierte()
 
+    async def zaehle_unbeantwortete_suchanfragen(
+        self, ids: AbstractSet[uuid.UUID]
+    ) -> int:
+        """Wie viele der IDs sichtbare unbeantwortete Suchanfragen sind (Vormoderation)."""
+        return await self._repository.zaehle_unbeantwortete_suchanfragen(ids)
+
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
         Sichtbare Aussagen ohne Kommentar, ohne die unbeantworteten Suchanfragen;
         Grundlage von "Hier fehlt eine Antwort" (StatementRepository.ohne_kommentar).
         """
         return await self._repository.ohne_kommentar()
+
+    async def mit_kommentar(self, ids: Iterable[uuid.UUID]) -> Set[uuid.UUID]:
+        """
+        Welche dieser Aussagen einen sichtbaren Kommentar haben
+        (StatementRepository.mit_kommentar): fuer "Hier fehlt eine Antwort".
+        """
+        return await self._repository.mit_kommentar(ids)
+
+    async def zu_antwort(self, beitrag_id: uuid.UUID) -> List[StatementDbEntry]:
+        """Sichtbare Aussagen, auf die der Beitrag antwortet (#603)."""
+        return await self._repository.zu_antwort(beitrag_id)
+
+    async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
+        """Ob eine sichtbare Aussage einen dieser Beitraege als Antwort fuehrt (#351)."""
+        return await self._repository.beantwortet_einer(beitrag_ids)
+
+    async def sichtbare_antworten(self, ids: List[uuid.UUID]) -> List[AntwortKurz]:
+        """Die sichtbaren Beitraege unter den IDs, mit Typ und Titel (#603)."""
+        return await self._repository.sichtbare_antworten(ids)
 
     async def vorab_anlegen(
         self, text: str, author: str
@@ -165,8 +291,9 @@ class StatementService(
         Eine Aussage vorab anlegen ("Hier fehlt eine Antwort"), mit der Person als
         Autorin. Gibt es dieselbe schon (add_statement), kommt sie zurueck.
 
-        Ist die vorhandene eine unbeantwortete Suchanfrage, uebernimmt die Person
-        sie: Herkunft und Autor wechseln, und die Aussage erscheint danach wie eine
+        Ist die vorhandene eine unbeantwortete Suchanfrage (das kann nach der
+        Vormoderation nur eine freigegebene sein, add_statement), uebernimmt die
+        Person sie: Herkunft und Autor wechseln, und die Aussage erscheint danach wie eine
         vorab angelegte auf der Seite. Sonst bliebe sie dort unsichtbar, obwohl die
         Person gerade dieselbe Aussage benannt hat. Andere vorhandene Aussagen
         bleiben unveraendert.
@@ -182,10 +309,10 @@ class StatementService(
 
         async with self._verknuepfungs_sperre(statement_id):
             aussage = await self._aussage_laden(statement_id)
-            if (
-                aussage.origin is ContentOrigin.SEARCH_QUERY
-                and aussage.replysuggestions_count == 0
-            ):
+            # Unter der Sperre noch einmal: Nur eine sichtbare wird uebernommen.
+            if _ist_unbeantwortete_suchanfrage(
+                aussage
+            ) and await self._suchanfrage_sichtbar(statement_id):
                 aussage.origin = ContentOrigin.MANUALLY_CREATED
                 aussage.original_author = author
                 aussage.last_modified_by = author
@@ -198,17 +325,197 @@ class StatementService(
         """
         Die Aussage, auf der dieser Text landen wuerde, ohne etwas anzulegen: dieselbe
         Pruefung wie in add_statement. None, wenn er eine neue Aussage ergaebe. Fuer die
-        Messung der Zerfaserung im Suchtestset (tests/regression/suche_messen.py).
+        Messung der Zerfaserung im Suchtestset (tests/regression/suche_messen.py) und
+        den Bericht ueber den Bestand (tests/regression/dieselbe_bericht.py).
         """
-        return (await self._dieselbe_pruefen(text)).vorhanden
+        return (await self._dieselbe_pruefen(text, schatten=False)).vorhanden
 
-    async def _dieselbe_pruefen(self, text: str) -> Dublettenpruefung:
-        """Die Dublettenpruefung fuer Aussagen, gemeinsam fuer add_statement und
-        vorhandene_finden: normalisiert gleich oder query/query-Aehnlichkeit ab
-        statement_similarity_threshold."""
-        return await self._vorhandenen_finden(
-            text, self.settings.statement_similarity_threshold, praefix="query"
+    async def _dieselbe_pruefen(
+        self,
+        text: str,
+        schatten: bool,
+        ausschliessen: Optional[Callable[[BaseContentSearchResult], bool]] = None,
+    ) -> Dublettenpruefung:
+        """
+        Die Pruefung auf dieselbe Aussage, gemeinsam fuer add_statement und
+        vorhandene_finden. Normalisiert gleich zaehlt immer. Sonst je nach
+        dieselbe_aussage_nli:
+
+        - aus, oder das NLI-Modell ist nicht verfuegbar: query/query-Aehnlichkeit ab
+          statement_similarity_threshold (Regel vor #387).
+        - schatten: dieselbe Entscheidung; mit schatten=True urteilt die NLI-Stufe im
+          Hintergrund mit und wird nur gezaehlt (Schattenprotokoll).
+        - an: die NLI-Stufe entscheidet (_nli_entscheiden).
+        """
+        if ausschliessen is None:
+            gleich, treffer = await self._dublettenkandidaten(text, praefix="query")
+        else:
+            gleich, treffer = await self._dublettenkandidaten(
+                text, praefix="query", ausschliessen=ausschliessen
+            )
+        if gleich is not None:
+            return Dublettenpruefung(vorhanden=gleich, aehnlichster=gleich)
+        heute = dublette_nach_schwelle(
+            text, treffer, self.settings.statement_similarity_threshold
         )
+        modus = self.settings.dieselbe_aussage_nli
+        gleich = _normalisiert_gleich(text, treffer)
+        if gleich is not None:
+            return Dublettenpruefung(vorhanden=gleich, aehnlichster=heute.aehnlichster)
+        if self._nli is None or modus == "aus":
+            return heute
+        if modus == "an":
+            nach_nli = await self._nli_entscheiden(text, treffer)
+            return heute if nach_nli is None else nach_nli
+        if schatten:
+            self._schatten_starten(text, treffer, heute)
+        return heute
+
+    async def _nli_entscheiden(
+        self, text: str, treffer: List[BaseContentSearchResult]
+    ) -> Optional[Dublettenpruefung]:
+        """
+        Die Entscheidung der NLI-Stufe (stufe.dieselben_finden, dieselbe Funktion wie im
+        Bericht ueber den Bestand): der Kandidat mit der staerksten beidseitigen
+        Folgerung, der dieselbe Behauptung ist; ist es keiner, mit Bestaetiger der, den
+        er bestaetigt; sonst keiner. None, wenn das erste Modell nicht urteilen konnte -
+        dann gilt die Schwelle.
+        """
+        aehnlichster = treffer[0] if treffer else None
+        # Begrenzt warten (beide Modelle zusammen): Ist das Modell belegt oder laedt
+        # noch, gilt die Schwelle, statt dass alle Suchen hintereinander auf die
+        # Sperre warten.
+        dieselben = await stufe.dieselben_finden(
+            text,
+            treffer,
+            self._nli,
+            self._bestaetiger,
+            self.settings,
+            warte_hoechstens=None if self._nli_warten else DIESELBE_WARTET_HOECHSTENS,
+        )
+        if dieselben is None:
+            return None
+        return Dublettenpruefung(
+            vorhanden=stufe.staerkste(dieselben), aehnlichster=aehnlichster
+        )
+
+    def _schatten_starten(
+        self,
+        text: str,
+        treffer: List[BaseContentSearchResult],
+        heute: Dublettenpruefung,
+    ) -> None:
+        """
+        Schattenbetrieb: die NLI-Stufe im Hintergrund urteilen lassen, ohne dass die
+        Anfrage wartet. Laeuft schon ein Urteil, wird dieses uebersprungen (gezaehlt),
+        damit sich beim Seeding oder unter Last keine Warteschlange bildet.
+        """
+        if self._schatten_laeuft:
+            self.schattenprotokoll.zaehlen("uebersprungen")
+            return
+        self._schatten_laeuft = True
+
+        async def urteilen():
+            try:
+                nach_nli = await self._nli_entscheiden(text, treffer)
+                self.schattenprotokoll.vergleichen(heute.vorhanden, nach_nli)
+            except Exception as e:  # der Schatten darf nie etwas stoeren
+                logger.warning("NLI-Schatten gescheitert (%s)", type(e).__name__)
+            finally:
+                self._schatten_laeuft = False
+
+        task = asyncio.create_task(urteilen())
+        # Referenz halten: asyncio haelt Tasks nur schwach.
+        self._schatten_tasks.add(task)
+        task.add_done_callback(self._schatten_tasks.discard)
+
+    async def gleiche_behauptung(self, alt: str, neu: str) -> Optional[bool]:
+        """
+        Ob eine geaenderte Fassung dieselbe Behauptung trifft wie die alte (#427,
+        fassung.gleiche_behauptung, dieselbe Entscheidung wie fuer Aussagen). Nur mit
+        dieselbe_aussage_nli = an und verfuegbarem Modell; sonst None, ebenso wenn das
+        Modell nicht rechtzeitig urteilt oder etwas scheitert: Dann entscheidet
+        niemand, und die Stimmen bleiben (Regel vor #427).
+        """
+        if self._nli is None or self.settings.dieselbe_aussage_nli != "an":
+            return None
+        try:
+            return await fassung.gleiche_behauptung(
+                alt,
+                neu,
+                self._nli,
+                self._bestaetiger,
+                self.settings,
+                self._aehnlichkeit,
+                warte_hoechstens=(
+                    None if self._nli_warten else DIESELBE_WARTET_HOECHSTENS
+                ),
+            )
+        except Exception as e:
+            logger.warning(
+                "Pruefung der geaenderten Fassung gescheitert (%s)", type(e).__name__
+            )
+            return None
+
+    async def _aehnlichkeit(self, alt: str, neu: str) -> float:
+        """query/query-Aehnlichkeit wie bei den Kandidaten der Pruefung auf dieselbe
+        Aussage; die Vektoren sind normiert, das Skalarprodukt ist der Kosinus."""
+        from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
+
+        einbettung = get_embeddings_manager()
+
+        def rechnen() -> float:
+            a = einbettung.encode_text(alt, content_type="statement")
+            b = einbettung.encode_text(neu, content_type="statement")
+            return float(sum(x * y for x, y in zip(a, b)))
+
+        return await asyncio.to_thread(rechnen)
+
+    async def ohne_widerspruch(
+        self,
+        text: str,
+        treffer: List[StatementSearchResult],
+        hoechstens: Optional[int] = None,
+    ) -> List[StatementSearchResult]:
+        """
+        Die Treffer ohne die, die dem Text in einer Richtung widersprechen
+        (aussage_vorschlag_widerspruch_ab) - fuer die Vorschlaege im Feld "Antwort
+        auf". Ohne NLI-Modell (aus oder nicht verfuegbar) bleiben alle.
+
+        Mit hoechstens prueft das Modell die Treffer in Score-Reihenfolge stapelweise
+        und hoert auf, sobald so viele uebrig sind: Meist reicht ein Stapel, statt bei
+        jedem Tastendruck den ganzen Vorrat zu pruefen. Kann das Modell einen Stapel
+        nicht pruefen, bleiben dieser und die restlichen Treffer ungefiltert.
+        """
+        if self._nli is None or self.settings.dieselbe_aussage_nli == "aus":
+            return treffer
+        behalten: List[StatementSearchResult] = []
+        rest = list(treffer)
+        while rest and (hoechstens is None or len(behalten) < hoechstens):
+            groesse = len(rest) if hoechstens is None else hoechstens - len(behalten)
+            stapel, rest = rest[:groesse], rest[groesse:]
+            try:
+                # Nicht auf das Laden oder ein laufendes Urteil warten: Die Vorschlaege
+                # kommen beim Tippen, lieber ungefiltert als spaet.
+                urteile = await self._nli.urteile(
+                    [(text, t.text) for t in stapel],
+                    warte_hoechstens=VORSCHLAG_WARTET_HOECHSTENS,
+                )
+            except Exception as e:
+                logger.warning(
+                    "NLI-Filter der Vorschlaege gescheitert (%s)", type(e).__name__
+                )
+                urteile = None
+            if urteile is None:
+                return behalten + stapel + rest
+            behalten += [
+                t
+                for t, u in zip(stapel, urteile)
+                if not regel.widerspricht(
+                    u, self.settings.aussage_vorschlag_widerspruch_ab
+                )
+            ]
+        return behalten
 
     async def add_statement(
         self,
@@ -222,10 +529,22 @@ class StatementService(
         """
         Eine Aussage anlegen - oder die vorhandene liefern, wenn es dieselbe schon gibt.
 
-        Dieselbe ist: normalisiert gleicher Text (utils/text_normalisierung.py) oder
-        query/query-Aehnlichkeit >= statement_similarity_threshold. Inhaltlich nur
-        aehnliche Aussagen gelten nicht als dieselbe - sie schlaegt das Formular vor,
-        uebernommen wird still nichts. Gilt fuer alle Wege: Formular, Suche, Seeding.
+        Dieselbe ist: normalisiert gleicher Text (utils/text_normalisierung.py) oder,
+        je nach NLI-Stufe (_dieselbe_pruefen), query/query-Aehnlichkeit >=
+        statement_similarity_threshold bzw. dieselbe Behauptung nach dem NLI-Modell.
+        Inhaltlich nur aehnliche Aussagen gelten nicht als dieselbe - sie schlaegt das
+        Formular vor, uebernommen wird still nichts. Gilt fuer alle Wege: Formular,
+        Suche, Seeding. Bei einer vorhandenen bleibt deren Wortlaut; der neue Text
+        wird nicht gespeichert (#387, vgl. #370).
+
+        Vormoderation (Entscheidung des Maintainers vom 13.11.2026): Ausser fuer eine
+        Suche (origin SEARCH_QUERY) gilt eine unbeantwortete Suchanfrage, die kein
+        Admin freigegeben hat oder die unter der Schwelle liegt (verborgen wie beim
+        Lesen, SuchenOhneTrefferService.sichtbar_fuer_alle), nicht als dieselbe: Sie
+        ist schon kein Kandidat, der naechste sichtbare gilt, sonst entsteht eine neue
+        Aussage mit dem eingegebenen Text. Sonst machte eine Antwort oder das
+        Vorab-Anlegen sie mit ihrem Wortlaut fuer alle sichtbar, die Antwort hier
+        verriete ihn, und jeder weitere gleiche Text ergaebe eine weitere Aussage.
 
         Pruefen und Schreiben laufen unter einer Sperre je normalisiertem Text, damit
         zwei gleichzeitige Anfragen mit demselben neuen Text nicht zwei Aussagen anlegen.
@@ -234,7 +553,19 @@ class StatementService(
             - (neu angelegt, ID, Text) - bei einer vorhandenen Aussage deren ID und Text.
         """
         async with self._text_sperre.halten(statement.text):
-            pruefung = await self._dieselbe_pruefen(statement.text)
+            ausschliessen = None
+            if origin is not ContentOrigin.SEARCH_QUERY:
+                sichtbare = await self._sichtbare_suchanfragen()
+
+                def ausschliessen(eintrag) -> bool:
+                    return (
+                        _ist_unbeantwortete_suchanfrage(eintrag)
+                        and eintrag.id not in sichtbare
+                    )
+
+            pruefung = await self._dieselbe_pruefen(
+                statement.text, schatten=True, ausschliessen=ausschliessen
+            )
             vorhandene, bester = pruefung.vorhanden, pruefung.aehnlichster
             if vorhandene is not None:
                 # DEBUG: Jede Suche laeuft hier durch; eine INFO-Zeile mit ID und
@@ -268,6 +599,27 @@ class StatementService(
                 f"Successfully created new statement with ID {statement_input.id}"
             )
             return True, statement_input.id, statement_input.text
+
+    async def _sichtbare_suchanfragen(self) -> FrozenSet[uuid.UUID]:
+        """
+        Die unbeantworteten Suchanfragen, die Nicht-Admins sehen: ueber der Schwelle
+        und freigegeben (wie SuchenOhneTrefferService.sichtbar_fuer_alle). Ist die
+        Datenbank nicht erreichbar, gilt keine als sichtbar: lieber eine Aussage
+        doppelt als ein ungepruefter Suchtext sichtbar.
+        """
+        # Spaet importiert: der Dienst der Kennzahl haengt selbst am StatementService.
+        from services.suchen_ohne_treffer_service import sichtbare_suchanfragen
+
+        try:
+            return await asyncio.to_thread(sichtbare_suchanfragen)
+        except Exception as e:
+            logger.warning(
+                f"Vormoderation lookup failed ({type(e).__name__}), treating as hidden"
+            )
+            return frozenset()
+
+    async def _suchanfrage_sichtbar(self, statement_id: uuid.UUID) -> bool:
+        return statement_id in await self._sichtbare_suchanfragen()
 
     async def update_statement(self, updated_statement: StatementDbEntry) -> uuid.UUID:
 
@@ -322,8 +674,17 @@ class StatementService(
         content_type: ContentType,
         relevance: float,
     ) -> bool:
-        """Lesen, aendern, schreiben - nur unter der Sperre der Aussage aufrufen."""
+        """
+        Lesen, aendern, schreiben - nur unter der Sperre der Aussage aufrufen.
+        SuchanfrageNichtFreigegeben bei einer nicht freigegebenen unbeantworteten
+        Suchanfrage (Vormoderation): Freigeben ist der ausdrueckliche Weg, auch fuer
+        Admins; eine Antwort soll ihn nicht stillschweigend ersetzen.
+        """
         statement_db_entry = await self._aussage_laden(statement_id)
+        if _ist_unbeantwortete_suchanfrage(
+            statement_db_entry
+        ) and not await self._suchanfrage_sichtbar(statement_id):
+            raise SuchanfrageNichtFreigegeben(str(statement_id))
 
         # Zweimal dieselbe Antwort (etwa ein wiederholter Speicheraufruf) haengt
         # nicht doppelt an und zaehlt nicht doppelt.
@@ -346,7 +707,13 @@ class StatementService(
         )
 
         statement_db_entry.replysuggestions.append(statement_replysuggestion)
-        statement_db_entry.replysuggestions_count += 1
+        # Neu zaehlen statt +1: nur sichtbare Antworten (#631), und eine Zahl, die
+        # ein gleichzeitiges Sperren verfaelscht hat, stimmt danach wieder.
+        statement_db_entry.replysuggestions_count = (
+            await self._repository.sichtbare_antworten_zaehlen(
+                vorschlag.id for vorschlag in statement_db_entry.replysuggestions
+            )
+        )
 
         await self.update_statement(statement_db_entry)
 
@@ -373,7 +740,7 @@ class StatementService(
         author: str,
         statement_id: Optional[uuid.UUID] = None,
         statement_text: Optional[str] = None,
-    ) -> Optional[Tuple[uuid.UUID, str]]:
+    ) -> Optional[Tuple[uuid.UUID, str, bool]]:
         """
         Einen gerade gespeicherten Beitrag als Antwort an seine Aussage haengen.
 
@@ -384,7 +751,9 @@ class StatementService(
 
         Returns:
         - ID und Text der tatsaechlich verknuepften Aussage (mit Text kann das eine
-          schon vorhandene, sehr aehnliche sein), oder None ohne Aussage.
+          schon vorhandene, sehr aehnliche sein) und ob sie eben neu angelegt wurde
+          (fuer die Marke "neu" auf der Seite "Gespeichert", #617), oder None ohne
+          Aussage.
 
         Raises:
         - AussageNichtGefunden, wenn die Aussage zur ID nicht existiert; sonst, was
@@ -394,15 +763,27 @@ class StatementService(
         if statement_id is None and not text:
             return None
 
+        neu = False
+        if statement_id is not None:
+            aussage = await self._aussage_laden(statement_id)
+            if _ist_unbeantwortete_suchanfrage(
+                aussage
+            ) and not await self._suchanfrage_sichtbar(statement_id):
+                # Vormoderation: Die Suchanfrage gibt es fuer den Aufrufer nicht (wie
+                # getById). Mit Text wie add_statement eine eigene Aussage, sonst
+                # "nicht gefunden"; ihr Wortlaut geht nie zurueck.
+                if not text:
+                    raise AussageNichtGefunden(str(statement_id))
+                statement_id = None
+            else:
+                aussage_text = aussage.text
         if statement_id is None:
-            _, statement_id, aussage_text = await self.add_statement(
+            neu, statement_id, aussage_text = await self.add_statement(
                 Statement(text=text, replysuggestions=[]),
                 author,
                 NEW_CONTENT_STATUS,
                 ContentOrigin.MANUALLY_CREATED,
             )
-        else:
-            aussage_text = (await self._aussage_laden(statement_id)).text
 
         await self.add_statementreplysuggestion_to_statement(
             statement_id=statement_id,
@@ -410,4 +791,4 @@ class StatementService(
             content_type=content_type,
             relevance=relevance,
         )
-        return statement_id, aussage_text
+        return statement_id, aussage_text, neu

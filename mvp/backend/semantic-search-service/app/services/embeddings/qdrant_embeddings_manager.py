@@ -32,6 +32,7 @@ from fastapi import FastAPI
 from core.config import EMBEDDING_MODELL, EMBEDDING_VEKTOR, Settings
 from core.logging import get_logger
 from domain.interfaces.embeddings_manager import IEmbeddingsManager, Suchparameter
+from utils.antwort_ids import FELD_ANTWORT_IDS
 from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
 
 logger = get_logger(__name__)
@@ -261,7 +262,8 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                     f"✅ Using existing collection {self.collection_name} with {info.points_count} points"
                 )
 
-            await self._text_normalisiert_index_sicherstellen()
+            await self._keyword_index_sicherstellen(FELD_TEXT_NORMALISIERT)
+            await self._keyword_index_sicherstellen(FELD_ANTWORT_IDS)
 
         except Exception as e:
             logger.error(
@@ -299,27 +301,29 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             return embedding
         return {self._vektorname: embedding}
 
-    async def _text_normalisiert_index_sicherstellen(self) -> None:
+    async def _keyword_index_sicherstellen(self, feld: str) -> None:
         """
-        Keyword-Index fuer den exakten Textabgleich der Dublettenpruefung - auch auf
-        einer schon bestehenden Collection. Ohne Index filtert Qdrant trotzdem
-        richtig, nur langsamer; deshalb nur eine Warnung, wenn das Anlegen scheitert.
-        Den Feldinhalt fuer den Altbestand traegt scripts/manual/
-        text_normalisiert_nachtragen.py nach.
+        Keyword-Index fuer ein Payload-Feld - auch auf einer schon bestehenden
+        Collection: text_normalisiert fuer den exakten Textabgleich der
+        Dublettenpruefung, antwort_ids fuer die Rueckwaertssuche Beitrag -> Aussage
+        (#603). Ohne Index filtert Qdrant trotzdem richtig, nur langsamer; deshalb
+        nur eine Warnung, wenn das Anlegen scheitert. Den Feldinhalt fuer den
+        Altbestand tragen scripts/manual/text_normalisiert_nachtragen.py und
+        scripts/manual/antwort_ids_nachtragen.py nach.
         """
         try:
             info = await self._async_client.get_collection(self.collection_name)
-            if FELD_TEXT_NORMALISIERT in (info.payload_schema or {}):
+            if feld in (info.payload_schema or {}):
                 return
             await self._async_client.create_payload_index(
                 collection_name=self.collection_name,
-                field_name=FELD_TEXT_NORMALISIERT,
+                field_name=feld,
                 field_schema="keyword",
             )
-            logger.info(f"✅ Created payload index for {FELD_TEXT_NORMALISIERT}")
+            logger.info(f"✅ Created payload index for {feld}")
         except Exception as e:
             logger.warning(
-                f"⚠️ Could not create payload index for {FELD_TEXT_NORMALISIERT}: {type(e).__name__}"
+                f"⚠️ Could not create payload index for {feld}: {type(e).__name__}"
             )
 
     async def shutdown(self) -> None:

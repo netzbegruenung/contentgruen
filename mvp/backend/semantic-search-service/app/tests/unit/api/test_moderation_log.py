@@ -7,7 +7,6 @@ den Meldungen in PostgreSQL (reviewed_by); das Log braucht es nicht.
 """
 
 import logging
-import uuid
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -20,8 +19,10 @@ from dependencies import get_moderation_service, get_settings
 
 ADMIN_KENNUNG = "admin.person@example.org"
 ADMIN = {"X-User": ADMIN_KENNUNG, "X-Is-Admin": "true"}
-CONTENT_ID = str(uuid.uuid4())
-REPORT_ID = str(uuid.uuid4())
+# Feste Kennungen: die Test-IDs der Parametrisierung enthalten sie, und pytest-xdist
+# verlangt in jedem Worker dieselben IDs (check.sh -n).
+CONTENT_ID = "00000000-0000-4000-8000-000000000001"
+REPORT_ID = "00000000-0000-4000-8000-000000000002"
 
 
 @pytest.fixture

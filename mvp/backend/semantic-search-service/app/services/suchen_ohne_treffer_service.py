@@ -24,15 +24,13 @@ Tagespseudonym (SearchTrackingService), und das hat Grenzen:
   Merkmal gibt es bewusst nicht;
 - wer sich am selben Tag anmeldet, zaehlt danach unter der Nutzerkennung als
   weitere Person; Besucher und Konto zu verbinden waere neuer Personenbezug;
-- Besucher erkennt der Server an Anschluss und User-Agent (#446). Wer das Netz
-  wechselt, ist eine neue Person. Je Anschluss und Aussage zaehlt am Tag aber
-  hoechstens ein Besucher als Person (#496): Den User-Agent bestimmt der Browser,
-  ein Wechsel allein brachte sonst eine Aussage ueber die Schwelle. Mehrere
-  Besucher hinter demselben Anschluss (Buero, Familie) zaehlen deshalb als eine;
-  fehlt die Adresse ganz (X-Real-IP nicht gesetzt), teilen sich alle Besucher
-  einen Anschluss und erreichen die Schwelle allein nie.
+- Besucher erkennt der Server an ihrem Anschluss allein (#446, seit #495 ohne
+  User-Agent). Wer das Netz wechselt, ist eine neue Person; mehrere Besucher
+  hinter demselben Anschluss (Buero, Familie) zaehlen als eine, auch mit
+  verschiedenen Browsern. Fehlt die Adresse ganz (X-Real-IP nicht gesetzt), teilen
+  sich alle Besucher einen Anschluss und erreichen die Schwelle allein nie.
 
-Welche Personen und Anschluesse eine Aussage heute schon gezaehlt haben, haelt
+Welche Personen eine Aussage heute schon gezaehlt haben, haelt
 PersonenDesTages nur im Speicher und nur fuer den laufenden UTC-Tag; um Mitternacht verwirft
 loeschen_im_takt die Merkliste. In der Datenbank landet nur die Zahl. Nach einem
 Neustart am selben Tag kann eine Person deshalb ein zweites Mal zaehlen; das ist
@@ -50,6 +48,15 @@ Wochen vor der Aufbewahrungsgrenze loescht loeschen_im_takt, ein eigener
 Hintergrund-Task aus main.py, taeglich und zusaetzlich um Mitternacht (UTC). Er
 haengt bewusst nicht am Bereinigungsjob, der sich abschalten laesst: Die
 Datenschutzerklaerung sagt die Loeschung nach acht Wochen ohne Bedingung zu. Gerechnet wird in UTC wie bei search_events.
+
+Vormoderation (Entscheidung des Maintainers vom 13.11.2026, P6): Eine unbeantwortete
+Suchanfrage (aus einer Suche und ohne Antwortvorschlag) sehen Nicht-Admins nicht
+schon ueber der Schwelle, sondern erst, wenn ein Admin sie zusaetzlich freigegeben
+hat (sichtbar_fuer_alle). Admins pruefen in der Moderation die Eintraege ueber der
+Schwelle (zu_pruefen) und geben frei oder lehnen ab (entscheiden); abgelehnte
+bleiben fuer Nicht-Admins unsichtbar. Gespeichert wird je Aussage nur die
+Entscheidung und ihr Zeitpunkt (repositories/suchanfrage_freigabe_repository.py).
+Aussagen mit Antwort und alle anderen Aussagen betrifft das nicht.
 """
 
 import asyncio
@@ -57,12 +64,24 @@ import hashlib
 import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import FrozenSet, List, Optional, Set, Tuple
+from typing import FrozenSet, List, Optional, Set
+
+from pydantic import ValidationError
 
 from core.logging import get_logger
 from domain.models.content_status import ContentStatus
-from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
-from services.content.statement_service import StatementService
+from repositories.implementations.qdrant.statement_repository import (
+    ist_unbeantwortete_suchanfrage,
+)
+from repositories.suchanfrage_freigabe_repository import (
+    SuchanfrageFreigabeRepository,
+)
+from repositories.suchen_ohne_treffer_repository import (
+    FREIGEGEBENE,
+    UNENTSCHIEDENE,
+    SuchenOhneTrefferRepository,
+)
+from services.content.statement_service import AussageNichtGefunden, StatementService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht, wochenbeginn
 
 logger = get_logger(__name__)
@@ -75,10 +94,17 @@ WOCHEN_MAX = AUFBEWAHRUNG_WOCHEN
 MINDESTANZAHL = 2
 LIMIT_STANDARD = 20
 LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
-# Obergrenze der Merkliste: Eintraege je Tag, einer je (Person, Aussage) und bei
-# Besuchern einer je (Anschluss, Aussage); je Eintrag 32 Bytes plus Verwaltung des
-# Sets, zusammen gut 10 MB.
+# Obergrenze der Merkliste: Eintraege je Tag, einer je (Person, Aussage); je
+# Eintrag 32 Bytes plus Verwaltung des Sets, zusammen gut 10 MB.
 MERKLISTE_MAX = 100_000
+# Hoechstens so viele Eintraege der Kennzahl werden fuer die Liste "Suchanfragen
+# freigeben" gelesen; danach fallen Aussagen ohne Suchanfrage und schon
+# entschiedene weg.
+ZU_PRUEFEN_KANDIDATEN = 200
+
+
+class KeineUnbeantworteteSuchanfrage(ValueError):
+    """Freigeben und Ablehnen gibt es nur fuer unbeantwortete Suchanfragen."""
 
 
 @dataclass(frozen=True)
@@ -92,11 +118,30 @@ class SucheOhneTreffer:
     text: str
     anzahl: int
     personen: int
+    # Aus einer Suche und ohne Antwortvorschlag: faellt unter die Vormoderation.
+    unbeantwortete_suchanfrage: bool = False
 
 
 def _seit_woche(wochen: int, heute: Optional[date] = None) -> date:
     """Montag der ersten Woche im Zeitraum: die laufende und die (wochen - 1) davor."""
     return wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
+
+
+def sichtbare_suchanfragen(heute: Optional[date] = None) -> FrozenSet[uuid.UUID]:
+    """
+    Synchron und ohne Dienst: die Aussagen ueber der Schwelle, die ein Admin
+    freigegeben hat, wie SuchenOhneTrefferService.sichtbar_fuer_alle. Fuer die
+    Schreibwege des StatementService (Vormoderation), der den Dienst nicht kennt.
+    """
+    from repositories.suchen_ohne_treffer_repository import (
+        get_suchen_ohne_treffer_repository,
+    )
+
+    return frozenset(
+        get_suchen_ohne_treffer_repository().ueber_der_schwelle(
+            _seit_woche(WOCHEN_STANDARD, heute), MINDESTANZAHL, FREIGEGEBENE
+        )
+    )
 
 
 def aufbewahrungsgrenze(heute: Optional[date] = None) -> date:
@@ -118,12 +163,12 @@ def _kennung(pseudonym: str, statement_id: uuid.UUID) -> bytes:
 class PersonenDesTages:
     """
     Merkt sich fuer den laufenden UTC-Tag, welche Personen zu welcher Aussage schon
-    gezaehlt sind, als SHA-256 ueber (Tagespseudonym, Aussage), bei Besuchern
-    zusaetzlich ueber (Anschluss-Pruefwert, Aussage). Der Hash haelt nur
-    Pseudonym und Aussage-ID aus Logs und Fehlermeldungen heraus; wer den Speicher
-    des Prozesses auslesen kann, kann ihn mit search_events abgleichen. Der Schutz
-    liegt darin, dass nichts davon gespeichert wird und die Liste mit dem Tag
-    verfaellt.
+    gezaehlt sind, als SHA-256 ueber (Tagespseudonym, Aussage). Bei Besuchern steht
+    das Tagespseudonym fuer ihren Anschluss, also zaehlt je Anschluss und Aussage
+    hoechstens einer. Der Hash haelt nur Pseudonym und Aussage-ID aus Logs und
+    Fehlermeldungen heraus; wer den Speicher des Prozesses auslesen kann, kann ihn
+    mit den Suchereignissen des laufenden Tages abgleichen. Der Schutz liegt darin,
+    dass nichts davon gespeichert wird und die Liste mit dem Tag verfaellt.
     """
 
     def __init__(self, obergrenze: int = MERKLISTE_MAX):
@@ -131,51 +176,23 @@ class PersonenDesTages:
         self._gezaehlt: Set[bytes] = set()
         self._obergrenze = obergrenze
 
-    def neu(
-        self,
-        pseudonym: str,
-        statement_id: uuid.UUID,
-        tag: date,
-        anschluss_pruefwert: Optional[str] = None,
-    ) -> bool:
+    def neu(self, pseudonym: str, statement_id: uuid.UUID, tag: date) -> bool:
         """
-        True, wenn die Person die Aussage an diesem Tag noch nicht gezaehlt hat und,
-        bei Besuchern, auch niemand vom selben Anschluss (anschluss_pruefwert, #496).
+        True, wenn die Person die Aussage an diesem Tag noch nicht gezaehlt hat.
         Ist die Merkliste voll, False: lieber eine Person zu wenig als eine zu viel.
         """
         if tag != self._tag:
             self._tag = tag
             self._gezaehlt = set()
-        kennungen = self._kennungen(pseudonym, statement_id, anschluss_pruefwert)
-        if (
-            any(k in self._gezaehlt for k in kennungen)
-            or len(self._gezaehlt) + len(kennungen) > self._obergrenze
-        ):
+        kennung = _kennung(pseudonym, statement_id)
+        if kennung in self._gezaehlt or len(self._gezaehlt) >= self._obergrenze:
             return False
-        self._gezaehlt.update(kennungen)
+        self._gezaehlt.add(kennung)
         return True
 
-    def vergessen(
-        self,
-        pseudonym: str,
-        statement_id: uuid.UUID,
-        anschluss_pruefwert: Optional[str] = None,
-    ) -> None:
+    def vergessen(self, pseudonym: str, statement_id: uuid.UUID) -> None:
         """Eine Person wieder streichen, deren Zaehlung nicht geschrieben wurde."""
-        self._gezaehlt.difference_update(
-            self._kennungen(pseudonym, statement_id, anschluss_pruefwert)
-        )
-
-    @staticmethod
-    def _kennungen(
-        pseudonym: str, statement_id: uuid.UUID, anschluss_pruefwert: Optional[str]
-    ) -> Tuple[bytes, ...]:
-        if anschluss_pruefwert is None:
-            return (_kennung(pseudonym, statement_id),)
-        return (
-            _kennung(pseudonym, statement_id),
-            _kennung(anschluss_pruefwert, statement_id),
-        )
+        self._gezaehlt.discard(_kennung(pseudonym, statement_id))
 
     def verwerfen_vor(self, tag: date) -> None:
         """Die Merkliste vergessen, wenn sie zu einem frueheren Tag gehoert."""
@@ -226,10 +243,13 @@ class SuchenOhneTrefferService:
         repository: SuchenOhneTrefferRepository,
         statement_service: StatementService,
         personen: PersonenDesTages,
+        freigaben: Optional[SuchanfrageFreigabeRepository] = None,
     ):
         self._repository = repository
         self._statement_service = statement_service
         self._personen = personen
+        # Nur zum Entscheiden gebraucht; gelesen wird ueber die Kennzahl (SQL-Join).
+        self._freigaben = freigaben
 
     def erfassen(
         self,
@@ -237,7 +257,6 @@ class SuchenOhneTrefferService:
         treffer: int,
         pseudonym: Optional[str],
         heute: Optional[date] = None,
-        anschluss_pruefwert: Optional[str] = None,
     ) -> None:
         """
         Eine Suche zaehlen, wenn sie keinen Beitrag fand, und die suchende Person,
@@ -245,10 +264,9 @@ class SuchenOhneTrefferService:
 
         pseudonym ist das Tagespseudonym aus SearchTrackingService und heute der
         Tag, zu dem es gehoert. Ohne Pseudonym zaehlt die Suche, aber keine
-        Person. anschluss_pruefwert ist bei Besuchern ihr Anschluss-Pruefwert
-        (utils/besucher_pseudonym.py): Je Anschluss und Aussage zaehlt am Tag
-        hoechstens eine Person, sonst machte ein Wechsel des User-Agents allein aus
-        einer Person zwei (#496). Angemeldete haben keinen.
+        Person. Das Pseudonym eines Besuchers steht fuer seinen Anschluss
+        (utils/besucher_pseudonym.py), also zaehlt je Anschluss und Aussage am Tag
+        hoechstens ein Besucher.
         Ohne Aussage (das Rate-Limit hat das Anlegen ausgelassen) gibt es nichts,
         woran sich zaehlen liesse; die Suche faellt dann aus der Kennzahl.
         Datenbankfehler gehen an den Aufrufer.
@@ -257,7 +275,7 @@ class SuchenOhneTrefferService:
             return
         tag = heute or heute_utc()
         neue_person = pseudonym is not None and self._personen.neu(
-            pseudonym, statement_id, tag, anschluss_pruefwert
+            pseudonym, statement_id, tag
         )
         try:
             self._repository.zaehlen(statement_id, wochenbeginn(tag), neue_person)
@@ -265,7 +283,7 @@ class SuchenOhneTrefferService:
             # Nicht geschrieben, also auch nicht gezaehlt: die naechste Suche der
             # Person soll sie nachtragen koennen.
             if neue_person:
-                self._personen.vergessen(pseudonym, statement_id, anschluss_pruefwert)
+                self._personen.vergessen(pseudonym, statement_id)
             raise
 
     async def haeufigste(
@@ -273,30 +291,54 @@ class SuchenOhneTrefferService:
         wochen: int = WOCHEN_STANDARD,
         limit: int = LIMIT_STANDARD,
         heute: Optional[date] = None,
+        freigabe: Optional[str] = None,
+        ohne_verborgene: bool = False,
     ) -> List[SucheOhneTreffer]:
         """
-        Die haeufigsten Suchanfragen ohne Treffer der letzten Wochen.
+        Die haeufigsten Suchanfragen ohne Treffer der letzten Wochen; mit freigabe nur
+        die so entschiedenen (SuchenOhneTrefferRepository, Vormoderation). Mit
+        ohne_verborgene fallen unbeantwortete Suchanfragen heraus, die Nicht-Admins
+        nicht sehen (sichtbar_fuer_alle), und zwar vor der Begrenzung: Das Nachladen
+        fuellt die Liste mit den naechsten auf ("Hier fehlt eine Antwort").
 
         Der Zeitraum umfasst die laufende Woche und die (wochen - 1) davor. Aussagen,
         die es nicht mehr gibt oder die nicht sichtbar sind, fallen heraus; damit
         die Liste trotzdem bis zu limit Eintraege hat, wird seitenweise nachgeladen.
         """
         seit_woche = _seit_woche(wochen, heute)
+        sichtbar = (
+            await self.sichtbar_fuer_alle(wochen=wochen, heute=heute)
+            if ohne_verborgene
+            else None
+        )
 
         ergebnis: List[SucheOhneTreffer] = []
         offset = 0
         while len(ergebnis) < limit:
             zeilen = self._repository.haeufigste(
-                seit_woche, MINDESTANZAHL, limit, offset
+                seit_woche, MINDESTANZAHL, limit, offset, freigabe
             )
             aussagen = await asyncio.gather(
                 *(self._sichtbare_aussage(statement_id) for statement_id, *_ in zeilen)
             )
             for (statement_id, anzahl, personen), aussage in zip(zeilen, aussagen):
-                if aussage is not None:
-                    ergebnis.append(
-                        SucheOhneTreffer(statement_id, aussage.text, anzahl, personen)
+                if aussage is None:
+                    continue
+                if (
+                    sichtbar is not None
+                    and ist_unbeantwortete_suchanfrage(aussage)
+                    and statement_id not in sichtbar
+                ):
+                    continue
+                ergebnis.append(
+                    SucheOhneTreffer(
+                        statement_id,
+                        aussage.text,
+                        anzahl,
+                        personen,
+                        ist_unbeantwortete_suchanfrage(aussage),
                     )
+                )
             if len(zeilen) < limit:
                 break
             offset += limit
@@ -325,6 +367,86 @@ class SuchenOhneTrefferService:
             self._repository.ueber_der_schwelle, seit_woche, MINDESTANZAHL
         )
         return frozenset(ids)
+
+    async def sichtbar_fuer_alle(
+        self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
+    ) -> FrozenSet[uuid.UUID]:
+        """
+        Die unbeantworteten Suchanfragen, die Nicht-Admins sehen (#436, Vormoderation):
+        ueber der Schwelle und von einem Admin freigegeben, in einer Abfrage.
+        Wie ueber_der_schwelle stehen darin auch Aussagen, die keine Suchanfragen
+        sind; fuer sie hat die Menge keine Wirkung (api/v1/statement.py filtert in
+        Qdrant nur unbeantwortete Suchanfragen).
+        """
+        seit_woche = _seit_woche(wochen, heute)
+        ids = await asyncio.to_thread(
+            self._repository.ueber_der_schwelle,
+            seit_woche,
+            MINDESTANZAHL,
+            FREIGEGEBENE,
+        )
+        return frozenset(ids)
+
+    async def zu_pruefen(
+        self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
+    ) -> List[SucheOhneTreffer]:
+        """
+        Fuer die Moderation: unbeantwortete Suchanfragen ueber der Schwelle, ueber die
+        noch kein Admin entschieden hat, die mit den meisten Personen zuerst. Unter
+        der Schwelle zeigt die Liste nichts: Admins sehen in der Kennzahl ebenfalls
+        erst Eintraege ab MINDESTANZAHL Personen, und sichtbar wuerde darunter ohnehin
+        nichts. Entschiedene fallen schon in SQL heraus, damit sie keine neuen aus den
+        ersten ZU_PRUEFEN_KANDIDATEN verdraengen.
+        """
+        kandidaten = await self.haeufigste(
+            wochen=wochen,
+            limit=ZU_PRUEFEN_KANDIDATEN,
+            heute=heute,
+            freigabe=UNENTSCHIEDENE,
+        )
+        offen = [k for k in kandidaten if k.unbeantwortete_suchanfrage]
+        return sorted(offen, key=lambda k: k.personen, reverse=True)
+
+    async def anzahl_zu_pruefen(
+        self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
+    ) -> int:
+        """
+        Wie viele Eintraege zu_pruefen liefern wuerde, fuer den Zaehler am
+        Umschalter: eine SQL-Abfrage und ein Zaehlaufruf in Qdrant statt einer
+        Abfrage je Aussage. Hoechstens ZU_PRUEFEN_KANDIDATEN, wie die Liste.
+        """
+        seit_woche = _seit_woche(wochen, heute)
+        ids = await asyncio.to_thread(
+            self._repository.ueber_der_schwelle,
+            seit_woche,
+            MINDESTANZAHL,
+            UNENTSCHIEDENE,
+        )
+        if not ids:
+            return 0
+        anzahl = await self._statement_service.zaehle_unbeantwortete_suchanfragen(
+            frozenset(ids)
+        )
+        return min(anzahl, ZU_PRUEFEN_KANDIDATEN)
+
+    async def entscheiden(self, statement_id: uuid.UUID, freigegeben: bool) -> None:
+        """
+        Eine unbeantwortete Suchanfrage freigeben oder ablehnen. Eine spaetere
+        Entscheidung ersetzt die fruehere. AussageNichtGefunden, wenn es die Aussage
+        nicht gibt; KeineUnbeantworteteSuchanfrage fuer jede andere Aussage.
+        """
+        if self._freigaben is None:
+            raise RuntimeError("Vormoderation ohne Repository")
+        try:
+            aussage = await self._statement_service.get(statement_id)
+        except (AussageNichtGefunden, ValidationError):
+            # Nicht lesbar ist kaputt, nicht abwesend (wie getById).
+            raise
+        except ValueError as e:
+            raise AussageNichtGefunden(str(statement_id)) from e
+        if not ist_unbeantwortete_suchanfrage(aussage):
+            raise KeineUnbeantworteteSuchanfrage(str(statement_id))
+        await asyncio.to_thread(self._freigaben.entscheiden, statement_id, freigegeben)
 
     async def _sichtbare_aussage(self, statement_id: uuid.UUID):
         try:

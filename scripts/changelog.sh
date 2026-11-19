@@ -11,7 +11,7 @@ set -euo pipefail
 
 BIS="${1:-origin/main}"
 FORGE="https://git.verdigado.com/Netzbegruenung/gutgesagt"
-GH="https://github.com/netzbegruenung/contentgruen"
+GH="https://github.com/netzbegruenung/gutgesagt"
 
 ref_pruefen() {
   git rev-parse --verify -q "${1}^{commit}" >/dev/null || { echo "Ref $1 fehlt: erst git fetch origin --tags" >&2; exit 1; }

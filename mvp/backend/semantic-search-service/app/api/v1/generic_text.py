@@ -105,6 +105,7 @@ async def get_by_id(
     ),
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
     aufrufer: Aufrufer = Depends(get_aufrufer),
+    reference_service: ReferenceService = Depends(get_reference_service),
 ) -> HintergrundinfoResponse:
     try:
         # Retrieve generic text by ID
@@ -117,6 +118,9 @@ async def get_by_id(
                 detail=f"GenericText with id {generic_text_id} not found",
             )
 
+        # Wie die Beitragsansicht: Link und Beschreibung der Herkunft fuer die Karte, sonst
+        # zeigt die Ergebnisseite nach dem Speichern nur "Herkunft 1" (Persona-Test Gerd).
+        await reference_service.herkunft_ergaenzen(generic_text)
         return als_responses(HintergrundinfoResponse, [generic_text], aufrufer)[0]
 
     except Exception as e:
@@ -211,6 +215,7 @@ async def add_generic_text(
         # Dublette True nur, wenn die genommene jetzt an der Aussage haengt.
         statement_id = None
         statement_text = None
+        aussage_neu = False
         themen: List[str] = []
         verknuepft = dublette is None
         aussage_mitgeschickt = bool(
@@ -218,7 +223,7 @@ async def add_generic_text(
         )
         if aussage_mitgeschickt and (dublette is None or dublette.genommen):
             try:
-                statement_id, statement_text = (
+                statement_id, statement_text, aussage_neu = (
                     await statement_service.beitrag_als_antwort_verknuepfen(
                         beitrag_id=generic_text_id,
                         content_type=ContentType.GENERIC_TEXT,
@@ -252,6 +257,7 @@ async def add_generic_text(
             id=generic_text_id,
             statement_id=statement_id,
             statement_text=statement_text,
+            aussage_neu=aussage_neu,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
             vorhanden=VorhandenDto.aus(dublette),

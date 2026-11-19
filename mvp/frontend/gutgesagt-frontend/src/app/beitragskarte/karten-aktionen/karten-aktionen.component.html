@@ -3,74 +3,84 @@
     Ein [attr.aria-disabled] am Knopf ueberschreibt MatButton mit seiner Host-Bindung.
 -->
 <div class="aktionen" [attr.aria-disabled]="vorschau || null">
-    <!-- Einfarbige Umriss-Hand, damit sich die Knöpfe vom farbigen Siegel abheben (#416) -->
+    <!-- Schlanke Material-Umriss-Daumen im Kreis-Knopf (#641, entschieden 10.11.): heben sich vom Siegel ab,
+         der Daumen in der Sprechblase bleibt dem Siegel vorbehalten -->
     <div class="stimmen" *ngIf="abstimmenSichtbar">
         <button mat-icon-button type="button" class="stimme-knopf"
                 [class.active-button]="isLiked"
                 [attr.aria-pressed]="isLiked"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
-                aria-label="Gefällt mir"
-                matTooltip="Gefällt mir" matTooltipPosition="above"
+                [attr.aria-label]="beschriftung('Hilfreich', zahlHilfreich)"
+                matTooltip="Hilfreich" matTooltipPosition="above"
                 (click)="toggleLike()">
-            <svg class="stimm-hand" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path [attr.d]="HAND_UMRISS" fill="currentColor"/></svg>
+            <mat-icon aria-hidden="true">thumb_up_off_alt</mat-icon>
         </button>
+        <!-- Zaehler (#427): Summe der Stimmen anderer, erst ab der Mindestzahl; vorgelesen steht er im Namen des Knopfs -->
+        <span class="stimm-zahl" *ngIf="zahlHilfreich !== null" aria-hidden="true">{{ zahlHilfreich }}</span>
         <button mat-icon-button type="button" class="stimme-knopf"
                 [class.active-button]="isDisliked"
                 [attr.aria-pressed]="isDisliked"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
-                aria-label="Gefällt mir nicht"
-                matTooltip="Gefällt mir nicht" matTooltipPosition="above"
+                [attr.aria-label]="beschriftung('Nicht hilfreich', zahlNichtHilfreich)"
+                matTooltip="Nicht hilfreich" matTooltipPosition="above"
                 (click)="toggleDislike()">
-            <svg class="stimm-hand runter" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path [attr.d]="HAND_UMRISS" fill="currentColor"/></svg>
+            <mat-icon aria-hidden="true">thumb_down_off_alt</mat-icon>
         </button>
+        <span class="stimm-zahl" *ngIf="zahlNichtHilfreich !== null" aria-hidden="true">{{ zahlNichtHilfreich }}</span>
     </div>
 
-    <!-- Kopieren und die Wahl daneben teilen sich die mittlere Spalte -->
+    <!-- Ein Knopf ohne Pfeil daneben (#641): Was er kopiert, sagt der Tooltip (auch als Beschreibung vorgelesen); die andere Variante steht im ⋮-Menue -->
     <div class="kopieren">
         <button mat-raised-button type="button" class="gutgesagt-primary-dark kopieren-knopf"
                 [class.copy-success]="copyAnimationActive"
                 [aria-disabled]="vorschau"
                 [tabIndex]="vorschau ? -1 : undefined"
+                [class.mit-kurzwort]="!!kopierKurz"
+                [attr.aria-label]="kopierKurz ? kopierBeschriftung : null"
+                [matTooltip]="kopierHinweis" matTooltipPosition="above" matTooltipShowDelay="500"
                 (click)="kopieren()">
             <mat-icon>content_copy</mat-icon>
-            <span>{{ kopierBeschriftung }}</span>
+            <!-- Am Handy das Kurzwort, falls es eins gibt (Bild: "Kopieren", Entscheidung 14.11.);
+                 der Name des Knopfs bleibt das lange Wort -->
+            <span class="kopieren-wort kopieren-wort--lang">{{ kopierBeschriftung }}</span>
+            <span class="kopieren-wort kopieren-wort--kurz" *ngIf="kopierKurz">{{ kopierKurz }}</span>
         </button>
-
-        <!-- Die Wahl gibt es nur, wenn der Beitrag eine Herkunft hat -->
-        <ng-container *ngIf="kopierTextMitHerkunft">
-            <button mat-icon-button type="button" class="kopier-wahl-knopf"
-                    [matMenuTriggerFor]="kopierWahl"
-                    [aria-disabled]="vorschau"
-                    [tabIndex]="vorschau ? -1 : undefined"
-                    aria-label="Text oder Text + Herkunft"
-                    matTooltip="Text oder Text + Herkunft" matTooltipPosition="above">
-                <mat-icon>arrow_drop_down</mat-icon>
-            </button>
-            <mat-menu #kopierWahl="matMenu">
-                <button mat-menu-item type="button" class="kopier-wahl-eintrag" (click)="kopieren()">
-                    <mat-icon>content_copy</mat-icon>
-                    <span>Text</span>
-                </button>
-                <button mat-menu-item type="button" class="kopier-wahl-eintrag" (click)="kopierenMitHerkunft()">
-                    <mat-icon>library_books</mat-icon>
-                    <span>Text + Herkunft</span>
-                </button>
-            </mat-menu>
-        </ng-container>
     </div>
 
-    <button mat-icon-button type="button" class="menue-knopf"
-            [matMenuTriggerFor]="menue"
-            [aria-disabled]="vorschau"
-            [tabIndex]="vorschau ? -1 : undefined"
-            aria-label="Mehr Optionen"
-            matTooltip="Mehr Optionen" matTooltipPosition="above">
-        <mat-icon>more_vert</mat-icon>
-    </button>
+    <div class="rechts">
+        <!-- Teilen (B7, docs/VISION.md): das Teilen-Menue, wo das Geraet eines hat, sonst Link kopieren.
+             Ohne Tooltip: Der Name sagt es schon, sonst kaeme es doppelt an. -->
+        <button mat-icon-button type="button" class="teilen-knopf" *ngIf="teilenSichtbar && !teilenImMenue"
+                [aria-disabled]="vorschau"
+                [tabIndex]="vorschau ? -1 : undefined"
+                [attr.aria-label]="teilenBeschriftung"
+                (click)="teilen()">
+            <mat-icon aria-hidden="true">share</mat-icon>
+        </button>
+        <button mat-icon-button type="button" class="menue-knopf"
+                [matMenuTriggerFor]="menue"
+                [aria-disabled]="vorschau"
+                [tabIndex]="vorschau ? -1 : undefined"
+                aria-label="Mehr Optionen"
+                matTooltip="Mehr Optionen" matTooltipPosition="above">
+            <mat-icon>more_vert</mat-icon>
+        </button>
+    </div>
 
     <mat-menu #menue="matMenu">
+        <!-- Schlichte Karte (Trefferseite): Teilen hier statt als eigener Knopf -->
+        <button mat-menu-item type="button" class="teilen-eintrag" *ngIf="teilenSichtbar && teilenImMenue"
+                [attr.aria-label]="teilenBeschriftung" (click)="teilen()">
+            <mat-icon>share</mat-icon>
+            <span>Teilen</span>
+        </button>
+        <!-- "Link kopieren" (#640, R48) ist im Knopf "Teilen" aufgegangen: Ohne Teilen-Menue kopiert er den Link -->
+        <button mat-menu-item type="button" class="zweite-kopie" *ngIf="zweiteKopie as zweite" (click)="zweiteKopieren()">
+            <mat-icon>content_copy</mat-icon>
+            <span>{{ zweite.wort }}</span>
+        </button>
         <button mat-menu-item type="button" *ngIf="kannAlsVorlage" (click)="alsVorlageNehmen()">
             <mat-icon>call_split</mat-icon>
             <span>Als Vorlage nehmen</span>

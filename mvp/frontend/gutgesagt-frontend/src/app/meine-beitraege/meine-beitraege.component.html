@@ -25,11 +25,34 @@
         <div *ngIf="!isLoading">
             <ng-container *ngIf="!karten.length">
                 <p class="beitraege-leer">Du hast noch keine Beiträge.</p>
+                <!-- Ein konkreter erster Schritt statt nur "Beitragen" (#645) -->
+                <section *ngIf="unbeantworteteAussagen.length" class="erster-schritt" aria-labelledby="erster-schritt-titel">
+                    <h2 id="erster-schritt-titel">Fang mit einer unbeantworteten Aussage an</h2>
+                    <ul class="unbeantwortete-aussagen aussagekarten">
+                        <li *ngFor="let aussage of unbeantworteteAussagen" data-testid="unbeantwortete-aussage">
+                            <app-aussagekarte [text]="aussage.statement_text"
+                                              [titelId]="'unbeantwortet-' + aussage.statement_id"
+                                              [ebene]="3"
+                                              knopf="neben"
+                                              [antwortenPfad]="kommentarFormular"
+                                              [antwortenParams]="beantwortenParams(aussage)"></app-aussagekarte>
+                        </li>
+                    </ul>
+                    <a class="alle-unbeantworteten" [routerLink]="hierFehltEineAntwortPfad">Alle in „Hier fehlt eine Antwort“</a>
+                </section>
                 <button mat-raised-button type="button" class="dark-green-button beitraege-leer-knopf"
                         (click)="zumBeitragen()">Beitragen</button>
             </ng-container>
 
-            <p *ngIf="karten.length" class="album-statistik">{{ statistik }}</p>
+            <!-- Wirkung zuerst: der Satz, darunter die Beitraege nach Nutzung; Punkte und Meilensteine danach (Nutzerfuehrung 13.11.) -->
+            <!-- Bei 0 Nutzungen sagt es die Box darunter; zweimal derselbe Satz wirkte doppelt (Persona-Runde 2, P52) -->
+            <p *ngIf="karten.length && !nochNichtGenutzt" class="album-statistik">{{ statistik }}</p>
+            <!-- Bei 0 Nutzungen: was „genutzt“ heisst und was als Naechstes hilft (UX-Review B11) -->
+            <p *ngIf="nochNichtGenutzt" class="hinweis-box nutzung-leer" data-testid="nutzung-leer">
+                Noch hat niemand deine Beiträge genutzt. Genutzt heißt: Jemand hat einen davon kopiert oder geteilt.
+                Öffne einen Beitrag und teil seinen Link, dann findet er schneller seinen Weg.
+            </p>
+            <p *ngIf="karten.length && gesamtNutzung > 0" class="nutzung-erklaerung">Genutzt heißt: Jemand hat den Beitrag kopiert oder geteilt.</p>
 
             <app-kartenliste *ngIf="karten.length"
                              variante="kompakt"
@@ -43,6 +66,12 @@
             [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
             (page)="onPageChange($event)">
         </mat-paginator>
+
+        <!-- Nur fuer die Person selbst; bei ausgeschalteten Punkten leer (#352) -->
+        <app-punkte></app-punkte>
+
+        <!-- Nur fuer die Person selbst; ohne Meilensteine (Punkte aus, keine Einwilligung) leer (#351) -->
+        <app-meilensteine></app-meilensteine>
     </div>
 
     <!-- Erst beim ersten Oeffnen geladen, danach nur versteckt: Seite und Liste bleiben beim Wechseln stehen -->

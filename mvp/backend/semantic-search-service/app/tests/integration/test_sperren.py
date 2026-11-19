@@ -121,6 +121,12 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
                 vector={EMBEDDING_VEKTOR: [0.1] * groesse},
                 payload={"content_type": typ, "text": TEXT},
             ),
+            # Die uebrige Antwort ist sichtbar: Die Zahl zaehlt nur sichtbare (#631).
+            PointStruct(
+                id=andere,
+                vector={EMBEDDING_VEKTOR: [0.1] * groesse},
+                payload={"content_type": typ, "text": TEXT, "status": "visible"},
+            ),
             PointStruct(
                 id=aussage_id,
                 vector={
@@ -157,3 +163,58 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
     assert json.loads(aussage.payload["replysuggestions"]) == [{"id": andere}]
     assert aussage.payload["replysuggestions_count"] == 1
     assert aussage.vector == vorher.vector
+
+
+async def test_antwortzahl_folgt_sperre(
+    post_service, moderation, real_embeddings_manager
+):
+    """
+    Sperren senkt die Zahl "N Antworten" der Aussage, Entsperren hebt sie wieder
+    (#631). Der Verweis bleibt stehen; Qdrant schreibt nur das Zahlfeld.
+    """
+    from qdrant_client.models import PointStruct
+
+    from core.config import EMBEDDING_VEKTOR
+
+    post_id, andere_id = uuid.uuid4(), uuid.uuid4()
+    await post_service._upsert(post_beitrag(post_id))
+    await post_service._upsert(post_beitrag(andere_id))
+    aussage_id = str(uuid.uuid4())
+    sammlung = await real_embeddings_manager.async_client.get_collection(
+        real_embeddings_manager.collection_name
+    )
+    groesse = sammlung.config.params.vectors[EMBEDDING_VEKTOR].size
+    verweise = json.dumps([{"id": str(post_id)}, {"id": str(andere_id)}])
+    await real_embeddings_manager.async_client.upsert(
+        collection_name=real_embeddings_manager.collection_name,
+        points=[
+            PointStruct(
+                id=aussage_id,
+                vector={EMBEDDING_VEKTOR: [0.2] * groesse},
+                payload={
+                    "content_type": ContentType.STATEMENT.value,
+                    "text": "Bringt ein Tempolimit etwas?",
+                    "status": "visible",
+                    "replysuggestions": verweise,
+                    "replysuggestions_count": 2,
+                },
+            )
+        ],
+        wait=True,
+    )
+
+    async def aussage():
+        [punkt] = await real_embeddings_manager.async_client.retrieve(
+            collection_name=real_embeddings_manager.collection_name,
+            ids=[aussage_id],
+            with_payload=True,
+        )
+        return punkt.payload
+
+    await moderation.sperren(str(post_id), gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
+    gesperrt = await aussage()
+    assert gesperrt["replysuggestions_count"] == 1
+    assert gesperrt["replysuggestions"] == verweise
+
+    await moderation.entsperren(str(post_id))
+    assert (await aussage())["replysuggestions_count"] == 2

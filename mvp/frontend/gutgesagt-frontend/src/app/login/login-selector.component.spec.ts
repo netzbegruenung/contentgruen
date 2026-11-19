@@ -1,10 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { LoginSelectorComponent } from './login-selector.component';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { LoginSelectorComponent, WARTELISTE_TEXT } from './login-selector.component';
+import { EINLADUNG_AB } from '../shared/einladung-ab';
+import { ORGANISATION } from '../shared/organisation';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
-import { ORGANISATION } from '../shared/organisation';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
 describe('LoginSelectorComponent', () => {
   let component: LoginSelectorComponent;
@@ -43,174 +46,129 @@ describe('LoginSelectorComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('Texte zum eigenen Realm (#492)', () => {
-    const text = (selector: string): string => {
-      const element: HTMLElement | null = fixture.nativeElement.querySelector(selector);
-      expect(element).withContext(selector).not.toBeNull();
-      return (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
-    };
+  // Designrunde 17.11.: Anmeldung oben, darunter immer sichtbar, wie man zu einem Konto kommt
+  describe('Noch kein Konto?', () => {
+    it('nennt die Mitgliedschaft mit Link zum Mitgliedsantrag, auch waehrend die Anmeldewege laden', () => {
+      const weg = fixture.nativeElement.querySelector('.konto-weg') as HTMLElement;
 
-    beforeEach(() => {
-      component.isLoading = false;
-      fixture.detectChanges();
+      expect(weg.querySelector('h2')?.textContent?.trim()).toBe('Noch kein Konto?');
+      expect(weg.querySelector('a')?.getAttribute('href')).toBe(ORGANISATION.mitgliedsantragUrl);
+      expect(weg.querySelector('a')?.textContent?.trim()).toBe(`Mitglied der ${ORGANISATION.name}`);
     });
 
-    it('nennt im Hinweis Netzbegrünung-Login und Einladung statt „keine Selbstregistrierung“', () => {
-      const titel = text('.registration-panel-title');
+    it('zeigt die Einladung bis zur Realm-Umstellung nur als eingeklappte Vorschau ohne Funktion', () => {
+      const vorschau = fixture.nativeElement.querySelector('details.einladung-vorschau') as HTMLDetailsElement;
 
-      expect(titel).toContain('Netzbegrünung-Login');
-      expect(titel).toContain('Einladung');
-      expect(fixture.nativeElement.textContent).not.toContain('Selbstregistrierung');
+      expect(vorschau.open).toBeFalse();
+      expect(vorschau.querySelector('summary')?.textContent).toContain(`Ab ${EINLADUNG_AB}`);
+      expect((vorschau.querySelector('.einladung-knopf') as HTMLButtonElement).disabled).toBeTrue();
+      expect(vorschau.querySelector('a[href="/einladung"]')).toBeNull();
     });
 
-    it('erklärt den Weg über den Link einer Einladung', () => {
-      const inhalt = text('.registration-content');
+    it('oeffnet fuer die Warteliste den Feedback-Dialog mit vorbelegtem Text', () => {
+      const dialog = fixture.debugElement.injector.get(MatDialog);
+      const offen = spyOn(dialog, 'open').and.returnValue({} as MatDialogRef<unknown>);
 
-      expect(inhalt).toContain('Hast du eine Einladung bekommen, öffne ihren Link');
-      expect(inhalt).not.toContain('Einladungslink');
-      expect(inhalt).toContain('Mail-Adresse und Passwort');
-    });
+      (fixture.nativeElement.querySelector('.warteliste-knopf') as HTMLButtonElement).click();
 
-    it('verweist im Hinweis nicht auf eine Karte, die abgeschaltet sein kann', () => {
-      expect(text('.registration-content')).not.toContain('unten bei');
-    });
-
-    it('bittet nur Personen ohne Netzbegrünung-Mitgliedschaft, um eine Einladung zu fragen', () => {
-      expect(text('.registration-content')).toContain('Kein Mitglied bei der Netzbegrünung und noch keine Einladung');
-    });
-
-    it('nimmt Vereinsname und Link der Netzbegrünung aus der Organisationskonstante', () => {
-      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.registration-content .option-text a');
-
-      expect(link.textContent?.trim()).toBe(ORGANISATION.vereinsname);
-      expect(link.getAttribute('href')).toBe(ORGANISATION.url);
-      expect(text('.registration-content')).toContain(`Konto bei der ${ORGANISATION.name} an`);
-      expect(text('.registration-content')).toContain(`Kein Mitglied bei der ${ORGANISATION.name}`);
-    });
-
-    it('sagt Mitgliedern nicht, dass ihr Konto erst beim ersten Mal entsteht', () => {
-      expect(text('.registration-content')).toContain('Hast du noch kein Konto bei Gut gesagt, entsteht es dabei.');
-      expect(text('.registration-content')).not.toContain('Beim ersten Mal');
-    });
-
-    it('beschriftet die Anmeldung über den Realm mit Netzbegrünung-Login und Einladung', () => {
-      expect(text('.keycloak-button .button-title')).toBe('Anmelden');
-      expect(text('.keycloak-button .button-subtitle')).toBe('Netzbegrünung-Login oder Einladung');
-      expect(text('.keycloak-button ~ .login-description')).toContain('„Mit Netzbegrünung anmelden“');
-      expect(text('.keycloak-button ~ .login-description')).toContain('„Passwort vergessen“');
-    });
-
-    it('schickt umgezogene Beta-Zugänge zur Anmeldung über den Realm (#488)', () => {
-      expect(text('.keycloak-button ~ .login-description'))
-        .toContain('Konto aus einer Einladung oder deinen bisherigen Beta-Zugang');
-    });
-
-    it('beschriftet die Direktanmeldung als Beta-Zugang', () => {
-      component.authModes = { keycloakEnabled: false, managedAuthEnabled: true };
-      fixture.detectChanges();
-
-      expect(text('.gutgesagt-button .button-title')).toBe('Beta-Zugang');
-      expect(text('.gutgesagt-button ~ .login-description')).toContain('Beta-Zugang');
-    });
-
-    it('blendet die Karte Beta-Zugang aus, wenn die Direktanmeldung aus ist (#488)', () => {
-      component.authModes = { keycloakEnabled: true, managedAuthEnabled: false };
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('.gutgesagt-button')).toBeNull();
-      expect(fixture.nativeElement.querySelector('.divider-container')).toBeNull();
-      expect(fixture.nativeElement.querySelectorAll('.login-option-card').length).toBe(1);
-      expect(fixture.nativeElement.querySelector('.keycloak-button')).not.toBeNull();
-    });
-
-    it('zeigt die Karte Beta-Zugang, solange die Direktanmeldung an ist (Dev-Stack)', () => {
-      component.authModes = { keycloakEnabled: false, managedAuthEnabled: true };
-      fixture.detectChanges();
-
-      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.gutgesagt-button');
-      expect(knopf).not.toBeNull();
-      expect(knopf.disabled).toBeFalse();
-      expect(fixture.nativeElement.querySelector('.divider-container')).not.toBeNull();
-    });
-
-    it('verwendet keine Begriffe, die das Glossar für die Anmeldung meidet, auch nicht in Attributen', () => {
-      component.authModes = { keycloakEnabled: true, managedAuthEnabled: true };
-      fixture.detectChanges();
-      const box: HTMLElement = fixture.nativeElement.querySelector('.component-box');
-      const attribute = Array.from(box.querySelectorAll('*'))
-        .flatMap(element => ['aria-label', 'title', 'alt'].map(name => element.getAttribute(name) ?? ''));
-      const alles = [text('.component-box'), ...attribute].join(' ');
-
-      for (const gemieden of [
-        'Keycloak', 'SSO', 'Vereinslogin', 'Beta-Account', 'manueller User', 'Managed User', 'Netzbegrünung Login',
-        'Managed Login', 'Managed Auth', 'Dummy-Login', 'Registrierungslink', 'Einladungscode', 'Invite', 'Realm'
-      ]) {
-        expect(alles).not.toContain(gemieden);
-      }
+      expect(offen).toHaveBeenCalledWith(
+        FeedbackDialogComponent,
+        jasmine.objectContaining({ data: { text: WARTELISTE_TEXT } }),
+      );
     });
   });
 
-  describe('Expandable Registration Info', () => {
-    it('should initialize with registration info collapsed', () => {
-      expect(component.isRegistrationInfoExpanded).toBeFalsy();
-    });
+  describe('Grund und nur eingeschaltete Anmeldewege (#600)', () => {
+    let http: HttpTestingController;
 
-    it('should toggle registration info expansion state', () => {
-      const initialState = component.isRegistrationInfoExpanded;
-
-      // Simulate clicking the expansion panel header
-      component.isRegistrationInfoExpanded = !component.isRegistrationInfoExpanded;
+    function modes(keycloakEnabled: boolean, managedAuthEnabled: boolean): HTMLElement {
+      http = TestBed.inject(HttpTestingController);
+      http.expectOne(r => r.url.endsWith('/api/auth/modes')).flush({ keycloakEnabled, managedAuthEnabled });
       fixture.detectChanges();
+      return fixture.nativeElement;
+    }
 
-      expect(component.isRegistrationInfoExpanded).toBe(!initialState);
+    it('blendet die ausgeschaltete Direktanmeldung aus statt sie auszugrauen (Test, Produktion)', () => {
+      const el = modes(true, false);
 
-      // Toggle back
-      component.isRegistrationInfoExpanded = !component.isRegistrationInfoExpanded;
+      expect(el.querySelector('.keycloak-button')).not.toBeNull();
+      expect(el.querySelector('.gutgesagt-button')).toBeNull();
+      expect(el.querySelector('.divider-container')).toBeNull();
+      expect(el.querySelector('.disabled-notice')).toBeNull();
+      expect(el.querySelector('.login-options button[disabled]')).toBeNull();
+    });
+
+    it('blendet den ausgeschalteten Netzbegrünung-Login aus (Dev-Stack)', () => {
+      const el = modes(false, true);
+
+      expect(el.querySelector('.keycloak-button')).toBeNull();
+      expect(el.querySelector('.gutgesagt-button')).not.toBeNull();
+      expect(el.querySelector('.divider-container')).toBeNull();
+    });
+
+    it('zeigt beide Wege mit "oder", wenn beide an sind', () => {
+      const el = modes(true, true);
+
+      expect(el.querySelector('.keycloak-button')).not.toBeNull();
+      expect(el.querySelector('.gutgesagt-button')).not.toBeNull();
+      expect(el.querySelector('.divider-container')).not.toBeNull();
+    });
+
+    it('sagt, dass Anmelden nicht geht, wenn kein Weg an ist', () => {
+      const el = modes(false, false);
+
+      expect(el.querySelector('.disabled-notice')?.textContent).toContain('Anmelden ist gerade nicht möglich');
+    });
+
+    it('zeigt beide Wege, wenn die Modi nicht zu laden sind, statt einen toten Weg', () => {
+      http = TestBed.inject(HttpTestingController);
+      http.expectOne(r => r.url.endsWith('/api/auth/modes')).flush('x', { status: 500, statusText: 'err' });
       fixture.detectChanges();
+      const el: HTMLElement = fixture.nativeElement;
 
-      expect(component.isRegistrationInfoExpanded).toBe(initialState);
+      expect(el.querySelector('.keycloak-button')).not.toBeNull();
+      expect(el.querySelector('.gutgesagt-button')).not.toBeNull();
     });
 
-    it('should display correct expansion hint text based on state', () => {
-      // When collapsed
-      component.isRegistrationInfoExpanded = false;
-      fixture.detectChanges();
+    it('nennt den Netzbegrünung-Login ohne Keycloak und SSO', () => {
+      const el = modes(true, false);
+      const text = el.textContent ?? '';
 
-      let compiled = fixture.nativeElement;
-      let expansionHint = compiled.querySelector('.expansion-hint');
-
-      if (expansionHint) {
-        expect(expansionHint.textContent).toContain('Mehr Informationen');
-      }
-
-      // When expanded
-      component.isRegistrationInfoExpanded = true;
-      fixture.detectChanges();
-
-      compiled = fixture.nativeElement;
-      expansionHint = compiled.querySelector('.expansion-hint');
-
-      if (expansionHint) {
-        expect(expansionHint.textContent).toContain('Weniger anzeigen');
-      }
+      expect(el.querySelector('.keycloak-button')?.textContent).toContain('Mit Netzbegrünung-Konto anmelden');
+      expect(text).not.toMatch(/Keycloak|SSO|Selbstregistrierung|Beta-Account/);
+      expect(text).toContain('Noch kein Konto?');
     });
 
-    it('should render expansion panel with correct binding', () => {
-      const compiled = fixture.nativeElement;
-      const expansionPanel = compiled.querySelector('mat-expansion-panel');
+    it('zeigt ohne Ziel aus "Antworten" keinen Grund', () => {
+      const el = modes(true, false);
 
-      // Note: In a real test environment with Angular Material properly configured,
-      // we would check the expanded attribute. Here we just verify the component has the property
-      expect(component.hasOwnProperty('isRegistrationInfoExpanded')).toBeTruthy();
+      expect(el.querySelector('.anmeldegrund')).toBeNull();
     });
+  });
+});
 
-    it('nennt für die Bitte um eine Einladung die Kontaktadresse aus der Organisationskonstante (#430, #492)', () => {
-      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.email-link');
+describe('LoginSelectorComponent nach "Antworten" (#600)', () => {
+  afterEach(() => sessionStorage.removeItem('loginReturnUrl'));
 
-      expect(link.textContent?.trim()).toBe(ORGANISATION.gutgesagtMail);
-      expect(link.getAttribute('href')).toBe(
-        `mailto:${ORGANISATION.gutgesagtMail}?subject=${encodeURIComponent('Einladung zu Gut gesagt')}`
-      );
-    });
+  it('sagt oben, wozu die Anmeldung nötig ist', async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginSelectorComponent, HttpClientTestingModule, BrowserAnimationsModule],
+      providers: [
+        { provide: Router, useValue: { navigate: jasmine.createSpy('navigate'), url: '/login' } },
+        { provide: ActivatedRoute, useValue: {
+          snapshot: { queryParams: { returnUrl: '/workflow/add-commentary?aussage=f6efb534-ee3a-4969-b8b8-2f1f9b9bb95d' } },
+          params: of({}),
+          queryParams: of({})
+        } }
+      ]
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(LoginSelectorComponent);
+    fixture.detectChanges();
+
+    const grund: HTMLElement | null = fixture.nativeElement.querySelector('.anmeldegrund');
+    expect(grund?.textContent?.trim()).toBe('Zum Beantworten melde dich an.');
+    // Der Grund steht ueber den Anmeldewegen und dem Hinweis zum Konto
+    expect(fixture.nativeElement.querySelector('.component-box').firstElementChild).toBe(grund);
   });
 });

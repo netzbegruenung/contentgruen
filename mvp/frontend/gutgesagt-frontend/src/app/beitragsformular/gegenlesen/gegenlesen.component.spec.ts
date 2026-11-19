@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { GegenlesenComponent } from './gegenlesen.component';
+import { ANSAGE_PAUSE_MS, GegenlesenComponent, INHALT_FRAGEN } from './gegenlesen.component';
 import { GEGENLESEN_VERZOEGERUNG_MS, Gegengelesen } from './gegenlesen.service';
 import { environment } from '../../../environments/environment';
 
@@ -49,6 +49,8 @@ describe('GegenlesenComponent', () => {
   }
 
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
+  const fragen = (): string[] =>
+    Array.from(element().querySelectorAll('.gegenlesen-fragen li')).map((li) => li.textContent!.trim());
   const siegelText = (): string | null => element().querySelector('app-siegel svg')?.getAttribute('aria-label') ?? null;
 
   it('fragt erst eine Sekunde nach der letzten Eingabe, einmal', fakeAsync(() => {
@@ -77,7 +79,26 @@ describe('GegenlesenComponent', () => {
 
     const anfrage = http.expectOne(PFAD);
     expect(anfrage.request.body.titel_ist_behauptung).toBe(false);
+    // Ohne Herkunftsfeld (Post, Bild) geht hat_herkunft gar nicht mit, auch nicht als null.
+    expect('hat_herkunft' in anfrage.request.body).toBeFalse();
     anfrage.flush({ guete: 10, anmerkungen: [] });
+  }));
+
+  it('sagt, ob eine Herkunft da ist, und liest neu, wenn sie dazukommt', fakeAsync(() => {
+    fixture.componentRef.setInput('hatHerkunft', false);
+    schreibe('Wärmepumpe lohnt sich', 'Sie spart 30 Prozent.');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const ohne = http.expectOne(PFAD);
+    expect(ohne.request.body.hat_herkunft).toBe(false);
+    ohne.flush({ guete: 9, anmerkungen: [] });
+
+    fixture.componentRef.setInput('hatHerkunft', true);
+    fixture.detectChanges();
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const mit = http.expectOne(PFAD);
+    expect(mit.request.body.hat_herkunft).toBe(true);
+    mit.flush({ guete: 10, anmerkungen: [] });
+    tick(ANSAGE_PAUSE_MS);
   }));
 
   it('zeigt das Siegel mit der Güte und die Anmerkungen darunter', fakeAsync(() => {
@@ -90,6 +111,11 @@ describe('GegenlesenComponent', () => {
     const anmerkungen = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((li) => li.textContent?.trim());
     expect(anmerkungen).toEqual(['Der Titel beginnt mit „Nicht“. Sag lieber, was stimmt.']);
     expect(element().textContent).toContain('Nur du siehst');
+    expect(fragen()).toEqual([...INHALT_FRAGEN]);
+    expect(element().querySelector('.gegenlesen-nur-form')).not.toBeNull();
+    expect((element().querySelector('.gegenlesen-fuss') as HTMLElement).hidden).toBeFalse();
+    expect(element().querySelector('.gegenlesen-inhalt-fragen')!.closest('[hidden]')).toBeNull();
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe('Nach festen Regeln, ohne generative KI');
   }));
 
   it('sagt, wenn nichts aufgefallen ist', fakeAsync(() => {
@@ -100,8 +126,30 @@ describe('GegenlesenComponent', () => {
 
     expect(siegelText()).toBe('Siegel: Güte 10 von 10');
     expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(0);
-    expect(element().textContent).toContain('Nichts aufgefallen');
+    expect(element().querySelector('.gegenlesen-gut')!.textContent!.trim()).toBe('Form: nichts aufgefallen.');
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe('Nach festen Regeln, ohne generative KI');
   }));
+
+  it('trennt Form und Inhalt: drei Fragen, die nur du beantworten kannst', fakeAsync(() => {
+    schreibe('Wärmepumpe lohnt sich auch im Altbau');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+    fixture.detectChanges();
+
+    expect(element().querySelector('.gegenlesen-nur-form')!.textContent!.trim()).toBe(
+      'Die App sieht, wie du schreibst, nicht ob es stimmt.',
+    );
+    expect(element().querySelector('.gegenlesen-fragen-titel')!.textContent!.trim()).toBe('Inhalt prüfst du:');
+    expect(fragen()).toEqual([
+      'Steht jede Zahl genau so in der Quelle?',
+      'Ein Gedanke?',
+      'Bestätigt dein Argument den Spruch?',
+    ]);
+  }));
+
+  it('zeigt die Inhaltsfragen erst, wenn etwas gegengelesen ist', () => {
+    expect(element().querySelector('.gegenlesen-fragen')).toBeNull();
+  });
 
   it('dreht das Siegel nach oben, wenn der Text besser wird', fakeAsync(() => {
     schreibe('Nicht die Wärmepumpe ist das Problem');
@@ -127,6 +175,17 @@ describe('GegenlesenComponent', () => {
 
     expect(siegelText()).toBe('Siegel: neu, noch keine Güte');
     expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(0);
+  }));
+
+  // Persona-Test Gerd: „Wer liest mit, eine KI?“ – die Antwort stand erst nach dem Tippen da
+  it('sagt schon vor dem Tippen, dass es nach festen Regeln liest, ohne generative KI', fakeAsync(() => {
+    schreibe('', '');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectNone(PFAD);
+
+    expect(element().querySelector('.gegenlesen-stand')!.textContent!.trim()).toBe(
+      'Schreib los, dann liest es mit: nach festen Regeln, ohne generative KI.',
+    );
   }));
 
   it('verschwindet still, wenn der Dienst nicht antwortet', fakeAsync(() => {
@@ -160,7 +219,7 @@ describe('GegenlesenComponent', () => {
     expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(1);
   }));
 
-  it('sagt neue Anmerkungen in einer Region an, die schon vorher da ist', fakeAsync(() => {
+  it('sagt nur die Zahl an, in einer Region, die schon vorher da ist, und erst nach einer Pause', fakeAsync(() => {
     const region = element().querySelector('[aria-live="polite"]');
     expect(region).not.toBeNull();
 
@@ -170,6 +229,272 @@ describe('GegenlesenComponent', () => {
     fixture.detectChanges();
 
     expect(element().querySelector('[aria-live="polite"]')).toBe(region);
-    expect(region!.querySelector('.gegenlesen-anmerkung')).not.toBeNull();
+    expect(region!.querySelector('.gegenlesen-anmerkung')).toBeNull();
+    expect(region!.textContent!.trim()).toBe('');
+
+    tick(ANSAGE_PAUSE_MS);
+    fixture.detectChanges();
+    expect(region!.textContent!.trim()).toBe('1 Anmerkung');
   }));
+
+  describe('Herkunft fehlt (Persona-Test Gerd)', () => {
+    const HINWEIS = 'Ohne Herkunft glaubt dir das kaum jemand. Nenn, woher es stammt: ein Link oder eine Fundstelle.';
+
+    /** Wie die Hintergrundinfo: Herkunftsfeld leer, eigener Hinweis empfohlen. */
+    function herkunft(da: boolean): void {
+      fixture.componentRef.setInput('herkunftEmpfohlen', true);
+      fixture.componentRef.setInput('hatHerkunft', da);
+    }
+
+    function gegengelesen(antwort: Gegengelesen): void {
+      schreibe('Abschaltsysteme gibt es nur an einem Teil der Windräder', 'Eine Zahl ohne Beleg.');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(antwort);
+      // Die Ansage fuer Screenreader wartet ANSAGE_PAUSE_MS; danach ist keine Uhr mehr offen
+      tick(ANSAGE_PAUSE_MS);
+      fixture.detectChanges();
+    }
+
+    it('meldet statt "Nichts aufgefallen" die fehlende Herkunft, ohne Anfrage dafür', fakeAsync(() => {
+      herkunft(false);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+
+      expect(element().querySelector('.herkunft-fehlt')!.textContent!.trim()).toBe(HINWEIS);
+      expect(element().querySelector('.gegenlesen-gut')).toBeNull();
+    }));
+
+    it('weicht der genaueren Anmerkung zu Zahlen ohne Herkunft', fakeAsync(() => {
+      herkunft(false);
+      const zahl = 'Zahlen ohne Herkunft: „30 Prozent“. Nenn, woher sie stammen, dann glaubt man sie eher.';
+      gegengelesen({
+        guete: 9,
+        anmerkungen: [{ art: 'zahl_ohne_herkunft', stelle: 'text', text: zahl, woerter: ['30 Prozent'] }],
+      });
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      const punkte = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((p) => p.textContent!.trim());
+      expect(punkte).toEqual([zahl]);
+    }));
+
+    it('steht vor den Anmerkungen des Dienstes', fakeAsync(() => {
+      herkunft(false);
+      gegengelesen(MIT_ANMERKUNG);
+
+      const punkte = Array.from(element().querySelectorAll('.gegenlesen-anmerkung')).map((p) => p.textContent!.trim());
+      expect(punkte).toEqual([HINWEIS, MIT_ANMERKUNG.anmerkungen[0].text]);
+    }));
+
+    it('verschwindet, sobald eine Herkunft da ist, und der Dienst liest neu', fakeAsync(() => {
+      herkunft(false);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+
+      herkunft(true);
+      fixture.detectChanges();
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      const neu = http.expectOne(PFAD);
+      expect(neu.request.body.hat_herkunft).toBe(true);
+      neu.flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      expect(element().querySelector('.gegenlesen-gut')).not.toBeNull();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('kompakt: Zeile, Farbe und Ansage folgen der Herkunft', fakeAsync(() => {
+      fixture.componentRef.setInput('kompakt', true);
+      herkunft(false);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+      const zeile = element().querySelector('.gegenlesen-zeile')!;
+      const ansage = () => element().querySelector('.gegenlesen-ansage')!.textContent!.trim();
+      expect(ansage()).toBe('1 Anmerkung');
+
+      herkunft(true);
+      fixture.detectChanges();
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      tick(ANSAGE_PAUSE_MS);
+      fixture.detectChanges();
+
+      expect(zeile.textContent).toContain('Gegenlesen: Nichts aufgefallen');
+      expect(zeile.classList).toContain('gut');
+      expect(ansage()).toBe('Nichts aufgefallen');
+
+      // Und zurueck: Herkunft wieder leer
+      herkunft(false);
+      fixture.detectChanges();
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      tick(ANSAGE_PAUSE_MS);
+      fixture.detectChanges();
+
+      expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
+      expect(zeile.classList).not.toContain('gut');
+      expect(ansage()).toBe('1 Anmerkung');
+    }));
+
+    it('kommt nur, wo das Formular ihn empfiehlt (Kommentar: nur die Zahl-Regel)', fakeAsync(() => {
+      fixture.componentRef.setInput('hatHerkunft', false);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+      expect(element().querySelector('.gegenlesen-gut')).not.toBeNull();
+    }));
+
+    it('mahnt im leeren Formular noch nicht', () => {
+      herkunft(false);
+      fixture.detectChanges();
+
+      expect(element().querySelector('.herkunft-fehlt')).toBeNull();
+    });
+
+    it('zaehlt kompakt als Anmerkung mit, statt gruen "Nichts aufgefallen" zu zeigen', fakeAsync(() => {
+      fixture.componentRef.setInput('kompakt', true);
+      herkunft(false);
+      gegengelesen({ guete: 10, anmerkungen: [] });
+      const zeile = element().querySelector('.gegenlesen-zeile')!;
+
+      expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
+      expect(zeile.classList).not.toContain('gut');
+      expect(element().querySelector('.gegenlesen-ansage')!.textContent!.trim()).toBe('1 Anmerkung');
+    }));
+  });
+
+  it('meldet sich nicht bei jedem Ergebnis, solange weiter getippt wird (entprellt)', fakeAsync(() => {
+    const region = element().querySelector('[aria-live="polite"]')!;
+
+    schreibe('Nicht die Wärmepumpe ist das Problem');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+    tick(ANSAGE_PAUSE_MS - 200);
+    schreibe('Die Wärmepumpe lohnt sich');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+    fixture.detectChanges();
+    expect(region.textContent!.trim()).toBe('');
+
+    tick(ANSAGE_PAUSE_MS);
+    fixture.detectChanges();
+    expect(region.textContent!.trim()).toBe('Nichts aufgefallen');
+  }));
+
+  describe('kompakt unter dem Textfeld (Nutzerfuehrung 13.11.)', () => {
+    // Im fakeAsync der Tests setzen: Ein Eingang ausserhalb startete die Entprellung
+    // mit echter Uhr, und tick() erreichte sie nicht mehr.
+    function kompakt(): void {
+      fixture.componentRef.setInput('kompakt', true);
+    }
+
+    it('zeigt eine Zeile mit der Zahl und klappt mit der ersten Anmerkung selbst auf (P33)', fakeAsync(() => {
+      kompakt();
+      schreibe('Nicht die Wärmepumpe ist das Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+      const zeile = element().querySelector('.gegenlesen-zeile') as HTMLButtonElement;
+      const inhalt = element().querySelector('.gegenlesen-inhalt') as HTMLElement;
+
+      expect(zeile.textContent).toContain('Gegenlesen: 1 Anmerkung');
+      expect(zeile.getAttribute('aria-expanded')).toBe('true');
+      // Die Zeile klappt Anmerkungen und Fuss; beide stehen in aria-controls
+      expect(zeile.getAttribute('aria-controls')).toBe('gegenlesen-inhalt gegenlesen-fuss');
+      expect(element().querySelector('#gegenlesen-fuss')).not.toBeNull();
+      expect(inhalt.hidden).toBeFalse();
+      expect(inhalt.textContent).toContain('Sag lieber, was stimmt.');
+
+      zeile.click();
+      fixture.detectChanges();
+      expect(zeile.getAttribute('aria-expanded')).toBe('false');
+      expect(inhalt.hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('bleibt zu, wenn die Person selbst zugeklappt hat', fakeAsync(() => {
+      kompakt();
+      schreibe('Nicht die Wärmepumpe ist das Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+      (element().querySelector('.gegenlesen-zeile') as HTMLButtonElement).click();
+
+      schreibe('Nicht die Wärmepumpe ist das eigentliche Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('bleibt bei „Nichts aufgefallen“ zu', fakeAsync(() => {
+      kompakt();
+      schreibe('Wärmepumpe lohnt sich auch im Altbau');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('zeigt die Inhaltsfragen gleich, auch zugeklappt (Handy, 18.11.)', fakeAsync(() => {
+      kompakt();
+      schreibe('Wärmepumpe lohnt sich auch im Altbau');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      const block = element().querySelector('.gegenlesen-inhalt-fragen') as HTMLElement;
+      expect(block.hidden).toBeFalse();
+      expect(block.closest('[hidden]')).toBeNull();
+      expect(fragen()).toEqual([...INHALT_FRAGEN]);
+      expect(block.textContent).toContain('Die App sieht, wie du schreibst, nicht ob es stimmt.');
+      expect((element().querySelector('.gegenlesen-fuss') as HTMLElement).hidden).toBeTrue();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('lässt die Fragen stehen, wenn die Person die Anmerkungen zuklappt', fakeAsync(() => {
+      kompakt();
+      schreibe('Nicht die Wärmepumpe ist das Problem');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+      fixture.detectChanges();
+      (element().querySelector('.gegenlesen-zeile') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect((element().querySelector('.gegenlesen-inhalt') as HTMLElement).hidden).toBeTrue();
+      expect((element().querySelector('.gegenlesen-inhalt-fragen') as HTMLElement).closest('[hidden]')).toBeNull();
+      expect(fragen().length).toBe(3);
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('zeigt vor dem ersten Gegenlesen noch keine Fragen', fakeAsync(() => {
+      kompakt();
+      fixture.detectChanges();
+      expect(element().querySelector('.gegenlesen-inhalt-fragen')).toBeNull();
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('wird bei „Nichts aufgefallen“ gruen', fakeAsync(() => {
+      kompakt();
+      schreibe('Wärmepumpe lohnt sich auch im Altbau');
+      tick(GEGENLESEN_VERZOEGERUNG_MS);
+      http.expectOne(PFAD).flush({ guete: 10, anmerkungen: [] });
+      fixture.detectChanges();
+      const zeile = element().querySelector('.gegenlesen-zeile')!;
+
+      expect(zeile.textContent).toContain('Gegenlesen: Nichts aufgefallen');
+      expect(zeile.classList).toContain('gut');
+      tick(ANSAGE_PAUSE_MS);
+    }));
+
+    it('lädt vor dem ersten Gegenlesen ein', fakeAsync(() => {
+      kompakt();
+      fixture.detectChanges();
+      expect(element().querySelector('.gegenlesen-zeile')!.textContent).toContain('Gegenlesen: liest mit, sobald du schreibst');
+      tick(ANSAGE_PAUSE_MS);
+    }));
+  });
 });
