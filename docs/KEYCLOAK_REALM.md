@@ -84,9 +84,11 @@ Deshalb in dieser Reihenfolge, nicht anders:
 
 1. Die Datenschutzerklärung beschreibt Selbstregistrierung über eine Einladung und die
    Anmeldung über den eigenen Realm (#490); diese Fassung muss ausgerollt sein. Nach dem
-   Umstellen den Satz „Bis wir die Anmeldung umgestellt haben …“ unter „Anmeldung und
-   Zugang“ und den Einschub „(bis zur Umstellung vom Identitätsdienst der Netzbegrünung)“
-   unter „Anmeldung über die Netzbegrünung“ entfernen.
+   Umstellen sind der Satz „Bis wir die Anmeldung umgestellt haben …“ unter „Anmeldung und
+   Zugang“ und der Einschub „(bis zur Umstellung vom Identitätsdienst der Netzbegrünung)“
+   unter „Anmeldung über die Netzbegrünung“ entfernt. Solange der Realm keine Mails
+   schickt und Einlösen deshalb aus ist, steht dort „Einladungen lassen sich noch nicht
+   einlösen.“; der Satz geht, wenn Einlösen eingeschaltet wird.
 2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (unten,
    „Kennungen umstellen“).
 3. Erst dann, gemeinsam: BFF auf den neuen Realm (`Keycloak__*`) und Einlösen im

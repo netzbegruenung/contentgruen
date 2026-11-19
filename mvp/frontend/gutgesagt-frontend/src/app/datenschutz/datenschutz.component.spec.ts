@@ -410,8 +410,10 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Realm „gutgesagt“');
       expect(text).toContain('Ohne Einladung kann niemand selbst ein Konto anlegen');
       expect(text).not.toContain('eine Selbstregistrierung gibt es nicht');
-      // Bis zur Umstellung gilt noch die direkte Anmeldung bei der Netzbegrünung.
-      expect(text).toContain('Bis wir die Anmeldung umgestellt haben');
+      // Seit dem Umzug auf den Realm (#79) gilt die Anmeldung dort; Einlösen kommt erst mit dem Mailversand.
+      expect(text).not.toContain('Bis wir die Anmeldung umgestellt haben');
+      expect(text).not.toContain('bis zur Umstellung vom Identitätsdienst der Netzbegrünung');
+      expect(text).toContain('Einladungen lassen sich noch nicht einlösen');
     });
 
     it('Einladung: Mail-Adresse an den Anmeldedienst, Mail über dessen Mailserver, keine Adresse an der Einladung', () => {
