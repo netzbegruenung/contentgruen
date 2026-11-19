@@ -1,5 +1,9 @@
-/** Die CC0-Erklaerung, auf die das Wort "CC0" im Hinweis und NB §4 verlinken. */
-export const CC0_ERKLAERUNG_URL = 'https://creativecommons.org/publicdomain/zero/1.0/deed.de';
+/**
+ * Die CC0-Erklaerung, auf die das Wort "CC0" im Hinweis und NB §4 verlinken: der deutsche
+ * Rechtstext (legalcode), nicht die Kurzfassung (deed), die selbst kein Rechtstext ist.
+ * Datierte Kopie als Beleg: docs/CC0_LEGALCODE_DE_2026-11-19.md.
+ */
+export const CC0_ERKLAERUNG_URL = 'https://creativecommons.org/publicdomain/zero/1.0/legalcode.de';
 
 /**
  * Der CC0-Hinweis ueber dem Absenden-Knopf, gleich in allen Formularen, die etwas fuer

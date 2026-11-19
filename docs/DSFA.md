@@ -313,7 +313,7 @@ Empfänger und Ort“.
   aus (`ss/services/loeschauftrag_service.py`); bis dahin behalten Beiträge, Einwürfe und Sätze
   Kennung und Anzeigenamen (LK „Löschauftrag nach dem Widerruf“). Was die Person nach einer neuen
   Einwilligung beiträgt, bleibt; ohne neue Einwilligung erfasst der Auftrag alles (Entscheidung
-  Maintainer, 13.11.2026). Der Wortlaut `2026-11-13`
+  Maintainer, 13.11.2026). Der Wortlaut `2026-11-13` (in diesen Sätzen wortgleich `2026-11-19`)
   (`ss/domain/art9_einwilligung.py`) sagt das: „Innerhalb von sieben Tagen werden auch meine
   Beiträge, Einwürfe und Sätze von mir gelöst: […] Was ich nach einer neuen Einwilligung
   beitrage, bleibt davon unberührt. Mein Konto bleibt.“ Wer einem früheren Wortlaut zugestimmt

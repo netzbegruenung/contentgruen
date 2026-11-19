@@ -60,6 +60,10 @@ describe('NutzungsbedingungenComponent', () => {
     expect(seite.querySelector(`a[href="${CC0_ERKLAERUNG_URL}"]`)).toBeTruthy();
   });
 
+  it('verlinkt als CC0-Erklärung den deutschen Rechtstext, nicht die Kurzfassung (Stand 19.11.2026)', () => {
+    expect(CC0_ERKLAERUNG_URL).toBe('https://creativecommons.org/publicdomain/zero/1.0/legalcode.de');
+  });
+
   it('sagt nirgends „unwiderruflich“, weder im Text noch im CC0-Hinweis (Entscheidung 29.10.2026)', () => {
     expect(normalisiert(seite.textContent)).not.toContain('unwiderruflich');
     expect(hinweisText(CONSENT_HINWEIS)).not.toContain('unwiderruflich');
@@ -79,14 +83,29 @@ describe('NutzungsbedingungenComponent', () => {
 
     expect(text).toContain('Soweit der Verzicht nicht wirkt, räumst du mit derselben Erklärung jeder Person');
     expect(text).toContain('zeitlich, räumlich und inhaltlich unbeschränktes Nutzungsrecht');
-    expect(text).toContain('Ersatzlizenz in Abschnitt 3 der CC0-Erklärung');
+    // Stand 19.11.2026: "ergänzt" statt "entspricht", denn CC0 Abschnitt 3 ist nicht
+    // übertragbar und nicht unterlizenzierbar, das Nutzungsrecht hier schon.
+    expect(text).toContain('Das ergänzt die Ersatzlizenz in Abschnitt 3 der CC0-Erklärung');
+    expect(text).not.toContain('entspricht der Ersatzlizenz');
   });
 
-  it('räumt das Nutzungsrecht in Abschnitt 4 wie CC0 für bekannte und künftige Nutzungsarten ein (#521)', () => {
+  it('räumt das Nutzungsrecht in Abschnitt 4 wie CC0 für bekannte und heute noch unbekannte Nutzungsarten ein (#521, Stand 19.11.2026)', () => {
     const text = abschnittNummer('4.');
 
-    expect(text).toContain('für bekannte und künftige Nutzungsarten');
+    expect(text).toContain('für bekannte und heute noch unbekannte Nutzungsarten');
     expect(text).not.toContain('alle bekannten Nutzungsarten');
+  });
+
+  it('nennt in Abschnitt 4 Urheberschaft und Verzicht wie die CC0-Erklärung (Stand 19.11.2026)', () => {
+    const text = abschnittNummer('4.');
+
+    expect(text).toContain('Alle dürfen deinen Text kopieren, verändern und veröffentlichen');
+    expect(text).toContain('auch ohne deinen Namen zu nennen');
+    expect(text).toContain(
+      'Du bleibst Urheberin oder Urheber deines Textes, verzichtest jedoch darauf, seine Nutzung urheberrechtlich zu beschränken',
+    );
+    expect(text).toContain('Eine Pflicht zur Namensnennung für Weiterverwendende entsteht daraus nicht');
+    expect(text).not.toContain('Du behältst deine Urheberschaft');
   });
 
   it('lässt in Abschnitt 5 nur frei zugängliche fremde Bilder einbinden und sperrt andere erst nach Prüfung (#521)', () => {

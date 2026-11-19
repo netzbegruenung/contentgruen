@@ -24,7 +24,10 @@ Dienst, Frontend und diese Liste dieselben Kennungen kennen.
 ## Wortlaute
 
 Links stehen auf „CC0“ (CC0-Erklärung von Creative Commons) und „Nutzungsbedingungen“
-(`/nutzungsbedingungen`), beide im neuen Tab; den Link auf „CC0“ gibt es seit #415. Mit #415
+(`/nutzungsbedingungen`), beide im neuen Tab; den Link auf „CC0“ gibt es seit #415. Er zeigt
+seit dem Stand der Nutzungsbedingungen vom 19. November 2026 auf den deutschen Rechtstext
+(`legalcode.de`, Kopie als Beleg: `docs/CC0_LEGALCODE_DE_2026-11-19.md`), vorher auf die
+Kurzfassung (`deed.de`); der Wortlaut des Hinweises ist gleich, deshalb keine neue Kennung. Mit #415
 heißt es außerdem „stimmst den Nutzungsbedingungen zu“ statt „bestätigst die
 Nutzungsbedingungen“, weil „bestätigen“ nur nach Kenntnisnahme klingt; daher die neuen
 Kennungen. Gezeigt wird der Hinweis von `shared/cc0-hinweis/` in allen Formularen.
