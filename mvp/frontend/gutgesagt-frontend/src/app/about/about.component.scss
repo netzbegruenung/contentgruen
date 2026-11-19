@@ -93,6 +93,23 @@
         height: 120px;
       }
     }
+
+    // Platzhalter mit Initialen, bis ein Foto da ist; Weiss auf --primaer: 9,0:1 hell, 5,4:1 dunkel
+    .profile-initialen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primaer);
+      color: #ffffff;
+      font-size: 3rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      user-select: none;
+
+      @media (max-width: 768px) {
+        font-size: 2.4rem;
+      }
+    }
   }
 
   .personal-content {
@@ -119,6 +136,12 @@
     text-align: center;
     gap: 1.5rem;
   }
+}
+
+// Zweite Karte und Dank mit Abstand zur Karte darueber
+.personal-intro + .personal-intro,
+.danke {
+  margin-top: 2.5rem;
 }
 
 .timeline {
