@@ -449,8 +449,10 @@ Startbestand (der volle Wortlaut liegt nur auf Produktion); dann zeigt S112 ihn 
 (= 0,831 · 0,7), wie auf Produktion.
 
 Seitdem kommen die Antworten einer Aussage ohne Bezug über den direkten Weg nur mit eigener
-Ähnlichkeit ab `suche_bezug_direkt_ab` = 0,86. Gemessen wie oben (135 von 138 Fällen, mit dem
-nachgestellten Kommentar):
+Ähnlichkeit ab `suche_bezug_direkt_ab` = 0,86. Gemessen wie oben (135 von 138 Fällen), aber
+mit dem nachgestellten Kommentar; deshalb weicht die Zeile „vorher“ von der Zeile „Standard“
+der Tabelle oben ab (88 statt 87 Treffer, der Kommentar zeigt sich bei mehreren fremden Fällen
+direkt):
 
 | bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | 25 fremde: mit „Erkannt als“ / nur direkt | Präzision | Recall@10 | Seed: Treffer / Recall@10 |
 |---|---|---|---|---|---|---|---|---|
@@ -462,10 +464,14 @@ nachgestellten Kommentar):
 - **Ab 0,86** zeigen S112 („Open Source ist unsicher!“), S123 („Ein neues Handy lohnt sich
   nicht“, Antwort zu Balkonsolar, 0,830) und S136 nichts mehr. Fünf Treffer gehen verloren, deren
   passende Antwort nur noch direkt kam: S02, S46, S76, S78 (Umgangssprache, 0,837 bis 0,851) und
-  S99 (verwandt). Bei S02 und S76 nennt „Meintest du …?“ die Aussage.
+  S99 (verwandt). Bei S02 und S76 nennt „Meintest du …?“ die Aussage. Zwei davon werden
+  Fehltreffer (6 statt 4): S46 und S99 zeigen dann eine unpassende direkte Antwort einer
+  Aussage, die nicht unter den fünf Aussagetreffern ist.
 - **Eine Schwelle trennt nicht:** Direkte Antworten verworfener Aussagen liegen passend zwischen
   0,820 und 0,879, unpassend bis 0,872 (S82, Verneinung). 0,86 lässt S69 (0,869) und S133 (0,879)
-  und hält den Befund mit 0,03 Abstand fern. Ohne Ausnahme gehen auch S69 und S133 verloren, und
+  und hält den Befund mit 0,03 Abstand fern; dafür bleibt S82 („Bio ist für alle bezahlbar“) mit
+  einer Antwort zur gegenteiligen Bio-Aussage (0,872). Der Abstand ist am nachgestellten Satz
+  gemessen, nicht am vollen Wortlaut auf Produktion. Ohne Ausnahme gehen auch S69 und S133 verloren, und
   am Seed fällt Recall@10 auf 0,82, mit der Toleranz unter das Tor 0,80.
 - **Was bleibt:** S125 („Katzen wollen gar nicht arbeiten“) und S129 („Man darf ja gar nicht mehr
   rauchen“) zeigen denselben kurzen Kommentar direkt (0,831), weil die Migranten-Aussage bei ihnen
@@ -473,7 +479,8 @@ nachgestellten Kommentar):
   Grenze für den ganzen direkten Weg fern (letzte Zeile): gleiche Treffer am Startbestand, aber am
   Seed, der mehr Beiträge nur direkt findet, Recall@10 0,76 unter dem Tor.
 - **Seed** (nächtlicher Lauf): S02 und S29 verlieren ihre direkte Antwort, S30 wird Treffer. Soll
-  nachgezogen.
+  nachgezogen. Das Tor Recall@10 hat damit genau einen Fall Luft: 32 von 38 sind 0,84, einer
+  weniger 0,816, zwei weniger 0,789 und rot.
 
 ## Nächtlicher Lauf
 

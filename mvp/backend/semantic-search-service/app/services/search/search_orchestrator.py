@@ -111,7 +111,10 @@ class SearchOrchestrator:
         # Antworten von Aussagen, die der Suchanfrage widersprechen (#574) oder keinen
         # Bezug zu ihr haben (services/search/bezug.py): Sie kommen nicht ueber den
         # direkten Weg zurueck, ausser ihr Rohscore erreicht den Wert hier (ohne Bezug:
-        # suche_bezug_direkt_ab; bei Widerspruch nie, math.inf).
+        # suche_bezug_direkt_ab; bei Widerspruch nie, math.inf). Haengt eine Antwort an
+        # mehreren solchen Aussagen, gilt das Strengere. Hat eine weitere Aussage mit
+        # Bezug sie unter der Schwelle, bleibt sie trotzdem ausgeschlossen (bewusst:
+        # lieber keine Antwort als eine fragliche).
         self._ausgeschlossen: Dict[object, float] = {}
         # Per-type result buckets, preserving spec order.
         self._results: Dict[ContentType, List] = {

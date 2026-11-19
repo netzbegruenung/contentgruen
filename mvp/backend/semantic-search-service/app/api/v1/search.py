@@ -87,9 +87,12 @@ router = APIRouter()
 
 async def aussagetreffer_finden(statement_service: StatementService, query_text: str):
     """
-    Die Aussagen mit Antworten, die zur Suchanfrage passen, ohne die ohne Bezug zu ihr
-    (services/search/bezug.py), gewichtet mit Polaritaetsstrafe (Wortlisten oder
-    NLI-Modell, #574) und Schlagwort-Ueberlappung.
+    Die Aussagen mit Antworten, die zur Suchanfrage passen, gewichtet mit
+    Polaritaetsstrafe (Wortlisten oder NLI-Modell, #574) und Schlagwort-Ueberlappung.
+    Aussagen ohne Bezug (services/search/bezug.py) stehen am Ende mit Score 0 und einem
+    Eintrag antworten_ausschliessen/antworten_direkt_ab in den Metadaten: So haelt der
+    Orchestrator ihre Antworten vom direkten Weg fern. Ueber die Aussage selbst fallen
+    sie nur weg, weil der kombinierte Score (hoechstens 0,3) unter jeder Schwelle liegt.
     Liefert die Treffer und die Polaritaets-Metadaten je Aussage. Eigene Funktion, damit das Suchtestset
     (tests/regression/suche_messen.py) genau so sucht und gewichtet wie die Suche.
     """
