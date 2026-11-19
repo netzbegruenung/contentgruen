@@ -25,6 +25,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
         '1 neuer Einwurf im Fangkorb',
         '4 Aussagen ohne Antwort: Lücken in „Hier fehlt eine Antwort“',
       ]);
+      expect(neuesListe(1, 0, 0)[0].satz).toBe('1 Nutzung deiner Beiträge seit deinem letzten Besuch');
       expect(neuesListe(0, 0, 1)[0].satz).toBe('1 Aussage ohne Antwort: Lücke in „Hier fehlt eine Antwort“');
       liste.forEach((e) => expect(e.satz).toContain(`${e.zahl} ${e.wort}`));
     });

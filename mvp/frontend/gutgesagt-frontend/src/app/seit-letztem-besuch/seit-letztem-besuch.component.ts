@@ -34,13 +34,14 @@ export interface NeuesEintrag {
 export function neuesListe(nutzung: number | null, einwuerfe: number, aussagen: number, aussagenMehr = false): NeuesEintrag[] {
   const liste: NeuesEintrag[] = [];
   if (nutzung && nutzung > 0) {
+    const nutzungWort = nutzung === 1 ? 'Nutzung deiner Beiträge' : 'Nutzungen deiner Beiträge';
     liste.push({
       art: 'nutzung',
       ziel: ROUTES.MEINE_BEITRAEGE,
       icon: 'trending_up',
       zahl: `${nutzung}`,
-      wort: nutzung === 1 ? 'Nutzung deiner Beiträge' : 'Nutzungen deiner Beiträge',
-      satz: `${nutzung} ${nutzung === 1 ? 'Nutzung' : 'Nutzungen'} deiner Beiträge seit deinem letzten Besuch`,
+      wort: nutzungWort,
+      satz: `${nutzung} ${nutzungWort} seit deinem letzten Besuch`,
     });
   }
   if (einwuerfe > 0) {
