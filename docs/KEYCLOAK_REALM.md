@@ -87,14 +87,17 @@ Deshalb in dieser Reihenfolge, nicht anders:
    Umstellen sind der Satz „Bis wir die Anmeldung umgestellt haben …“ unter „Anmeldung und
    Zugang“ und der Einschub „(bis zur Umstellung vom Identitätsdienst der Netzbegrünung)“
    unter „Anmeldung über die Netzbegrünung“ entfernt. Solange der Realm keine Mails
-   schickt und Einlösen deshalb aus ist, steht dort „Einladungen lassen sich noch nicht
-   einlösen.“; der Satz geht, wenn Einlösen eingeschaltet wird.
+   schickt und Einlösen deshalb aus ist, steht dort, dass Einladungen und „Passwort
+   vergessen“ noch nicht gehen; der Satz geht, wenn Einlösen eingeschaltet wird.
 2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (unten,
    „Kennungen umstellen“).
 3. Erst dann, gemeinsam: BFF auf den neuen Realm (`Keycloak__*`) und Einlösen im
    Semantic-Service einschalten (`SEMANTIC_SEARCH_KEYCLOAK_*`). Wer nur Einlösen einschaltet,
    verteilt Links für Konten, mit denen sich niemand in der App anmelden kann; das Dashboard
-   warnt dann nicht mehr.
+   warnt dann nicht mehr. Schickt der Realm noch keine Mails, zieht die BFF allein um und
+   Einlösen kommt nach, sobald der Mailversand steht: Ohne ihn scheitert jede Einlösung an der
+   Mail „Passwort festlegen“, und das Dashboard warnt weiter, dass Links ins Leere führen. In
+   der Zeit *Forgot password* unter *Realm settings → Login* ausschalten.
 
 ## Kennungen umstellen
 
@@ -249,8 +252,8 @@ BFF (`Keycloak`-Abschnitt, in Umgebungsvariablen mit `__`):
 | `Keycloak__ClientSecret` | Secret des Clients `gutgesagt` |
 
 Semantic-Service (Einladungen einlösen; ohne die ersten drei lassen sich Einladungen nur
-verwalten, das Admin-Dashboard sagt dann, dass Links ins Leere führen). Erst zusammen mit
-der BFF setzen, siehe „Reihenfolge beim Umstellen“:
+verwalten, das Admin-Dashboard sagt dann, dass Links ins Leere führen). Frühestens zusammen
+mit der BFF setzen und erst, wenn der Realm Mails schickt, siehe „Reihenfolge beim Umstellen“:
 
 | Variable | Wert |
 |---|---|
