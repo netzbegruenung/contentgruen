@@ -123,6 +123,11 @@ export class ReportDialogComponent {
     return this.emailVerlassen && this.emailUngueltig;
   }
 
+  /** Gemeldet wird eine Aussage (Aussagekarte), kein Beitrag: Die Texte nennen sie so. */
+  get istAussage(): boolean {
+    return this.data.contentType === 'statement';
+  }
+
   get begruendungPflicht(): boolean {
     return this.selectedReason !== null && brauchtBegruendung(this.selectedReason);
   }
@@ -139,7 +144,10 @@ export class ReportDialogComponent {
       fehlt.push({ text: 'ein Grund' });
     }
     if (this.begruendungPflicht && this.description.trim() === '') {
-      fehlt.push({ text: 'die Begründung, warum der Beitrag rechtswidrig ist', endetMitNebensatz: true });
+      fehlt.push({
+        text: `die Begründung, warum ${this.istAussage ? 'die Aussage' : 'der Beitrag'} rechtswidrig ist`,
+        endetMitNebensatz: true,
+      });
     }
     if (!this.angemeldet && (fuerHinweis ? this.emailFehlerZeigen : this.emailUngueltig)) {
       fehlt.push({ text: 'eine gültige E-Mail-Adresse (oder das Feld leer lassen)' });

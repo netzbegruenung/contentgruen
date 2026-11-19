@@ -27,6 +27,7 @@ import {
   BestaetigungsDialogDaten,
 } from '../../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
+import { AUSSAGE_NICHT_ENTFERNT, entfernenFrage } from '../../shared/aussagekarte/aussage-entfernen';
 import { LoeschauftraegeComponent } from './loeschauftraege.component';
 import { SuchanfragenFreigebenComponent } from './suchanfragen-freigeben.component';
 import { MELDUNGEN_GRENZE, ZuTunService } from '../../services/zu-tun.service';
@@ -693,6 +694,36 @@ export class ContentModerationComponent implements OnInit {
         }
       }
     });
+  }
+
+  /** Eine gemeldete Aussage (content_type "statement"): Sie laesst sich endgueltig entfernen. */
+  istAussage(report: ContentReport): boolean {
+    return report.content_type === 'statement';
+  }
+
+  /**
+   * Eine gemeldete Aussage endgueltig entfernen, nach derselben Rueckfrage wie auf der
+   * Aussagekarte. Offene Meldungen zu ihr setzt das Backend auf bearbeitet.
+   */
+  aussageEntfernen(report: ContentReport) {
+    if (this.erledigtMelden(report)) return;
+    const text = (report.content?.['text'] as string | undefined) ?? report.content_id;
+    this.dialog
+      .open(BestaetigungsDialogComponent, { data: entfernenFrage(text), autoFocus: 'dialog', width: '480px', maxWidth: '95vw' })
+      .afterClosed()
+      .subscribe((ja) => {
+        if (ja !== true || this.erledigtMelden(report)) {
+          return;
+        }
+        this.generation++;
+        this.moderationService.aussageEntfernen(report.content_id).subscribe({
+          next: () => {
+            this.snackBar.open('Aussage entfernt', 'OK', { duration: 3000 });
+            this.nachAktion();
+          },
+          error: () => this.snackBar.open(AUSSAGE_NICHT_ENTFERNT, 'OK', { duration: 5000 }),
+        });
+      });
   }
 
   /** Eine erledigte Meldung (ausgegraut) bekommt keine Aktion mehr; das sagt eine Snackbar. */

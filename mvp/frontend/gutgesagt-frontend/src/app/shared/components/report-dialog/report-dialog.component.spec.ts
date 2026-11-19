@@ -73,6 +73,18 @@ describe('ReportDialogComponent', () => {
 
   // Design-Audit A3/B8 (#512): Auf dem Handy war der Dialog rechts abgeschnitten
   // (min-width 400 px in einem 312 px breiten Dialog), die Felder grau hinterlegt.
+  it('nennt eine gemeldete Aussage "Aussage", nicht "Beitrag"', () => {
+    fixture.componentInstance.data.contentType = 'statement';
+    fixture.componentInstance.selectedReason = 'illegal_content';
+    fixture.detectChanges();
+
+    expect(element().querySelector('h2')?.textContent).toContain('Aussage melden');
+    expect(element().querySelector('.description')?.textContent).toContain('diese Aussage');
+    expect(element().textContent).toContain('Warum ist die Aussage rechtswidrig?');
+    expect(element().textContent).not.toContain('Beitrag');
+    expect(fixture.componentInstance.fehltHinweis).toContain('warum die Aussage rechtswidrig ist');
+  });
+
   describe('auf dem Handy', () => {
     it('oeffnet hoechstens 95 % der Fensterbreite breit', () => {
       const dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);

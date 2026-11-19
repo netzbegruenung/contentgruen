@@ -235,6 +235,16 @@ export class ModerationService {
     });
   }
 
+  /**
+   * Eine Aussage endgueltig entfernen (nur Admins): samt Verweisen, Stimmen und Varianten,
+   * offene Meldungen zu ihr gelten danach als bearbeitet (moderation_service.delete_content).
+   */
+  aussageEntfernen(aussageId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(
+      `${this.baseUrl}/content/statement/${encodeURIComponent(aussageId)}`,
+    );
+  }
+
   entsperren(contentId: string): Observable<SperreResponse> {
     return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/entsperren`, {});
   }
