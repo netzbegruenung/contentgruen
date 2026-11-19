@@ -690,6 +690,20 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
       expect(seite.querySelector('.mobile-tab-bar, app-result-carousel')).withContext('keine Tabs, kein Karussell').toBeNull();
     });
 
+    it(`klappt im aufgeklappten Bereich "Weitere" die Karten nicht noch einmal ein (${wo})`, async () => {
+      const seite = await oeffnen(mobil, GEMISCHT());
+      seite.querySelector<HTMLButtonElement>('.weitere-umschalter')!.click();
+      fixture.detectChanges();
+      const karten = seite.querySelectorAll('.weitere-liste app-beitragskarte');
+      expect(karten.length).toBe(3);
+      karten.forEach((karte) => {
+        expect(karte.querySelector('.aufklapp-knopf')).withContext('kein zweites Aufklappen').toBeNull();
+        expect(karte.querySelector('.karte-inhalt')).withContext('Inhalt steht da').toBeTruthy();
+      });
+      // Die erkannte Gruppe bleibt wie gehabt: ausser der besten eingeklappt
+      expect(seite.querySelector('.gruppe:not(.weitere-liste .gruppe) .eingeklappte-karten .aufklapp-knopf')).toBeTruthy();
+    });
+
     it(`zeigt an den Karten keine eigene Antwort-auf-Zeile, die Gruppe traegt die Aussage (${wo})`, async () => {
       const seite = await oeffnen(mobil, GEMISCHT());
       seite.querySelector<HTMLButtonElement>('.weitere-umschalter')!.click();

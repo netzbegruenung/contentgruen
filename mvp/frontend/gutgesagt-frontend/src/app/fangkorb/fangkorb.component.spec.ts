@@ -114,7 +114,9 @@ describe('FangkorbComponent', () => {
   }
 
   function zaehler(name: string): string {
-    return tabKnopf(name).querySelector('.tab-zahl')!.textContent!.trim();
+    // Ohne das Symbol, das am Handy vor der Zahl steht
+    const zahl = tabKnopf(name).querySelector('.tab-zahl')!;
+    return Array.from(zahl.childNodes).filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join('').trim();
   }
 
   function filterKnopf(beschriftung: string): HTMLButtonElement {
@@ -474,6 +476,19 @@ describe('FangkorbComponent', () => {
       expect(rechteck('.filterleiste').top).toBeGreaterThanOrEqual(zweiter.bottom);
       expect(kartenKomponenten().map((karte) => karte.quer)).toEqual([true]);
       expect(karten()[0].classList).toContain('karte--quer');
+    });
+
+    it('zeigt am Desktop die Erklaerung immer, ohne ?-Knopf, und die Kettensymbole an den Tabs', () => {
+      breit$.next(true);
+      erstellen([]);
+
+      expect(fixture.nativeElement.querySelector('.erklaerung')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.erklaerung-umschalter')).toBeNull();
+      const emojis = Array.from(fixture.nativeElement.querySelectorAll('.tab-emoji') as NodeListOf<HTMLElement>).map(
+        (e) => e.textContent!.trim(),
+      );
+      expect(emojis).toEqual(['⚗️', '🖋️']);
+      expect(fixture.nativeElement.querySelector('.tab-name .tab-emoji')).toBeTruthy();
     });
 
     it('legt Einwerfen am Desktop als Knopf in die Seitenleiste statt schwebend', () => {

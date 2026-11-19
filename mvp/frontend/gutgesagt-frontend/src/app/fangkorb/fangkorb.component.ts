@@ -20,7 +20,7 @@ import { EinwurfAktionenService } from './einwurf-aktionen.service';
 import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
 import { Plattform, PLATTFORMEN } from '../shared/plattform';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
@@ -81,6 +81,12 @@ export const SEITENLEISTE_MEDIEN = '(min-width: 1024px)';
 export class FangkorbComponent implements OnInit, OnDestroy {
   readonly plattformen = PLATTFORMEN;
   readonly tabs = TABS;
+  /** Dieselben Symbole wie auf den Karten-Knoepfen und Stufen (KETTEN_ICONS). */
+  readonly tabEmoji: Record<FangkorbTab, string> = {
+    destillieren: KETTEN_ICONS.destillieren,
+    ausformulieren: KETTEN_ICONS.verfassen,
+  };
+  readonly einwerfenEmoji = KETTEN_ICONS.einwerfen;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
 
   /** Die Langfassung hinter dem Hilfe-Icon; zu, bis jemand danach fragt. */
