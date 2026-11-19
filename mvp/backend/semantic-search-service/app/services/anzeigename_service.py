@@ -9,13 +9,20 @@ Worker (Dockerfile), der Cache ist damit der einzige.
 
 Fehlt der Header, bleibt ein gespeicherter Name stehen: Das ist auch der Fall
 eines BFF ohne diese Funktion, und der soll nichts loeschen.
+
+Startkonten (GLOSSARY.md "Startkonto") sind Funktionskonten, keine Personen: Fuer
+sie legt der Dienst den ungekuerzten Namen aus X-User-Full-Name ab ("Redaktion Gut
+gesagt" statt "Redaktion G."). Fuer alle anderen wird dieser Header verworfen. Weil
+der Prozess-Cache nach jedem Start leer ist und der volle Name sich vom gespeicherten
+unterscheidet, ersetzt ihn der erste Request des Startkontos nach dem Deploy.
 """
 
 import logging
 import unicodedata
-from typing import Dict, Iterable, Optional
+from typing import Dict, FrozenSet, Iterable, Optional
 from urllib.parse import unquote
 
+from core.config import settings
 from repositories.user_repository import UserRepository, get_user_repository
 from utils.aufrufer import ANONYM
 
@@ -67,15 +74,28 @@ def anzeigename_aus_header(roh: Optional[str]) -> Optional[str]:
 
 
 class AnzeigenameService:
-    def __init__(self, repository: UserRepository):
+    def __init__(
+        self, repository: UserRepository, startkonten: FrozenSet[str] = frozenset()
+    ):
         self._repository = repository
+        self._startkonten = frozenset(startkonten)
         self._bekannt: Dict[str, str] = {}
 
-    def merken(self, user_id: Optional[str], roh: Optional[str]) -> None:
-        """Den Namen aus dem Header ablegen, falls er neu ist. Wirft nie."""
+    def merken(
+        self,
+        user_id: Optional[str],
+        roh: Optional[str],
+        roh_voll: Optional[str] = None,
+    ) -> None:
+        """
+        Den Namen aus dem Header ablegen, falls er neu ist. Fuer ein Startkonto
+        der volle Name aus ``roh_voll``, sofern das BFF einen schickt. Wirft nie.
+        """
         if not angemeldet(user_id) or user_id == EHEMALIGE_PERSON_KENNUNG:
             return
         name = anzeigename_aus_header(roh)
+        if user_id in self._startkonten:
+            name = anzeigename_aus_header(roh_voll) or name
         if name is None or self._bekannt.get(user_id) == name:
             return
         try:
@@ -113,5 +133,7 @@ _anzeigename_service: Optional[AnzeigenameService] = None
 def get_anzeigename_service() -> AnzeigenameService:
     global _anzeigename_service
     if _anzeigename_service is None:
-        _anzeigename_service = AnzeigenameService(get_user_repository())
+        _anzeigename_service = AnzeigenameService(
+            get_user_repository(), settings.startkonto_kennungen()
+        )
     return _anzeigename_service
