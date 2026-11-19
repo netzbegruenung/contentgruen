@@ -76,8 +76,10 @@ flowchart LR
 - **Semantic search:** Python with FastAPI. Qdrant stores the vectors, PostgreSQL the other data.
 - **Own language models, own servers.** The search understands meaning, not just words, using
   multilingual E5 embeddings. An NLI model helps recognise when the same statement is worded
-  differently. spaCy gives hints on form while you write. All models run locally inside the
-  service. Search texts and contributions stay on the project's own servers, which is good for
+  differently. spaCy gives hints on form while you write. These specialised models run
+  locally inside the service. A general-purpose language model would only be used where no
+  specialised tool fits, and then on the project's own infrastructure, never with external
+  providers. Search texts and contributions stay on the project's own servers, which is good for
   privacy.
 
 ### Quick start

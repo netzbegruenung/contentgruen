@@ -75,7 +75,9 @@ flowchart LR
 - **Semantische Suche:** Python mit FastAPI. Qdrant speichert die Vektoren, PostgreSQL die übrigen Daten.
 - **Eigene Sprachmodelle, eigene Server.** Die Suche versteht Bedeutung, nicht nur Wörter: mit
   mehrsprachigen E5-Embeddings. Ein NLI-Modell hilft zu erkennen, wenn dieselbe Aussage anders
-  formuliert ist. spaCy gibt beim Schreiben Hinweise zur Form. Alle Modelle laufen lokal im Dienst. So
+  formuliert ist. spaCy gibt beim Schreiben Hinweise zur Form. Diese spezialisierten Modelle
+  laufen lokal im Dienst. Ein allgemeines Sprachmodell käme nur dort zum Einsatz, wo kein
+  Spezialwerkzeug passt, und dann auf eigener Infrastruktur, nie bei externen Anbietern. So
   bleiben Suchtexte und Beiträge auf den eigenen Servern, gut für den Datenschutz.
 
 ### Schnellstart
