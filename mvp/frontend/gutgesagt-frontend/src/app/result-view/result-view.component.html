@@ -21,6 +21,17 @@
     [retryAction]="retrySearch">
 </app-error-message>
 
+<!-- Testeingabe ("test", "hallo", "hilfe"; GLOSSARY): statt Treffern eine freundliche Karte, gesucht
+     wird nicht. Die Region steht immer da, damit Screenreader die Karte ankuendigen (aria-live). -->
+<div class="testeingabe-region" aria-live="polite">
+    <section class="testeingabe-karte hinweis-box" *ngIf="testeingabe" aria-labelledby="testeingabe-text">
+        <p class="testeingabe-text" id="testeingabe-text">{{ testeingabe }}</p>
+        <p class="testeingabe-aufruf">{{ testeingabeAufruf }}:</p>
+        <a class="erkannt-chip testeingabe-beispiel" [routerLink]="['/result']"
+           [queryParams]="{ searchQuery: testeingabeBeispiel }">„{{ testeingabeBeispiel }}“</a>
+    </section>
+</div>
+
 <!-- Unter den Treffern, ruhig und offen: nicht auf jede Aussage antworten (docs/VISION.md, #602).
      Gemeint ist Melden auf der Plattform der Aussage, nicht die Meldung eines Beitrags hier. -->
 <ng-template #keineAntwortNoetig>
