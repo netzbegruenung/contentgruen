@@ -49,7 +49,11 @@ from services.search.search_query_statement import (
 )
 from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
-from services.polarity_filter_service import get_polarity_filter_service
+from services.polarity_filter_service import (
+    PolarityFilterResult,
+    get_polarity_filter_service,
+)
+from services.search.bezug_nli import get_aussage_bezug
 from services.search.polaritaet_nli import get_nli_polaritaet
 from services.keyword_overlap_service import get_keyword_overlap_service
 from dtos.search import (
@@ -98,6 +102,20 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
     )
     logger.debug(f"📊 Statement search results: {len(statement_index_results)} items")
 
+    # Aussagen ohne inhaltlichen Bezug zur Suchanfrage (services/search/bezug_nli.py),
+    # an der Aehnlichkeit der Einbettung vor Polaritaet und Schlagwoertern gemessen.
+    ohne_bezug_positionen = await get_aussage_bezug().ohne_bezug(
+        query_text, statement_index_results, lambda r: r.text, lambda r: r.score
+    )
+    ohne_bezug = [
+        r for i, r in enumerate(statement_index_results) if i in ohne_bezug_positionen
+    ]
+    statement_index_results = [
+        r
+        for i, r in enumerate(statement_index_results)
+        if i not in ohne_bezug_positionen
+    ]
+
     polarity_filter = get_polarity_filter_service(
         enable_filtering=settings.enable_polarity_filtering
     )
@@ -126,7 +144,22 @@ async def aussagetreffer_finden(statement_service: StatementService, query_text:
     logger.debug(
         f"📊 After keyword overlap boosting: {len(statement_index_results)} statement results"
     )
-    return statement_index_results, polarity_metadata
+    # Ohne Bezug: Score 0, und wie bei einem Widerspruch (#574) kommen ihre Antworten
+    # auch nicht ueber den direkten Weg zurueck. Sonst stuende eine Antwort auf die fremde
+    # Aussage als direkter Treffer doch wieder vorn.
+    for aussage in ohne_bezug:
+        polarity_metadata[aussage.id] = PolarityFilterResult(
+            original_score=aussage.score,
+            adjusted_score=0.0,
+            polarity_penalty_applied=0.0,
+            polarity_mismatch_detected=False,
+            query_polarity="nli",
+            result_polarity="ohne_bezug",
+            explanation="NLI: kein Bezug zur Suchanfrage",
+            antworten_ausschliessen=True,
+        )
+        aussage.score = 0.0
+    return statement_index_results + ohne_bezug, polarity_metadata
 
 
 async def treffer_sammeln(

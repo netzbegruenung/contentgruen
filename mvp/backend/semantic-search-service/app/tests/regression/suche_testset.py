@@ -264,6 +264,32 @@ FAELLE = tuple(Fall(*f) for f in (
     ("S109", "E-Autos sind auch nicht klimafreundlicher!", "satz", "umformulierung", (EAUTO,), True, "eigen"),
     ("S110", "Tempolimit? Bringt fürs Klima gar nichts!", "satz", "umgangssprache", (TEMPO,), True, "eigen"),
     ("S111", "Wärmepumpen taugen nur für Neubauten!", "satz", "umformulierung", (NEUBAU,), True, "eigen"),
+    # Bezug: fremde Behauptungen, die nur ein Schlagwort oder den Satzbau mit einer Aussage
+    # des Startbestands teilen (nur_mit). S112 zeigte auf Produktion 0.9.0 "Erkannt als
+    # Migranten machen unsere Städte unsicher." (services/search/bezug_nli.py).
+    ("S112", "Open Source ist unsicher!", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S113", "Windows ist unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S114", "Das Passwort ist unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S115", "Die Autobahn ist unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S116", "Die Zukunft ist unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S117", "Tauben machen unsere Städte dreckig", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S118", "Touristen machen unsere Städte voll", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S119", "Kaffee ist zu teuer", "satz", "fremd", KEINE, False, "eigen", (TICKET,)),
+    ("S120", "Das Fitnessstudio ist zu teuer und nützt nichts", "satz", "fremd", KEINE, False, "eigen", (TICKET,)),
+    ("S121", "Das Wetter ist teuer", "satz", "fremd", KEINE, False, "eigen", (BALKON,)),
+    ("S122", "Mein Handy ist zu laut", "satz", "fremd", KEINE, False, "eigen", (MEINUNG,)),
+    ("S123", "Ein neues Handy lohnt sich nicht", "satz", "fremd", KEINE, False, "eigen", (BALKON,)),
+    ("S124", "Netflix lohnt sich nicht mehr", "satz", "fremd", KEINE, False, "eigen", (BUERGERGELD,)),
+    ("S125", "Katzen wollen gar nicht arbeiten", "satz", "fremd", KEINE, False, "eigen", (FLUECHTLINGE,)),
+    ("S126", "Golf ist nur was für Reiche", "satz", "fremd", KEINE, False, "eigen", (BIO,)),
+    ("S127", "Linux ist nur was für Nerds", "satz", "fremd", KEINE, False, "eigen", (BIO,)),
+    ("S128", "Hunde gehören nicht in die Stadt", "satz", "fremd", KEINE, False, "eigen", (WOLF,)),
+    ("S129", "Man darf ja gar nicht mehr rauchen", "satz", "fremd", KEINE, False, "eigen", (MEINUNG,)),
+    ("S130", "Mein Nachbar behandelt mich wie einen Kriminellen", "satz", "fremd", KEINE, False, "eigen", (LANDWIRTE,)),
+    ("S131", "Smartphones machen unsere Kinder dumm", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    # Gegenprobe zu S112 ff.: dieselbe oder eine verwandte Behauptung in anderen Worten.
+    ("S132", "Wegen der Migranten ist es in unseren Städten gefährlich", "satz", "umformulierung", (MIGRANTEN,), True, "eigen"),
+    ("S133", "Durch die Zuwanderung gibt es mehr Kriminalität", "satz", "verwandt", (MIGRANTEN,), False, "eigen"),
 ))
 # fmt: on
 

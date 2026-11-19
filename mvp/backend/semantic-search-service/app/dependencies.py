@@ -116,12 +116,13 @@ def initialize_services() -> None:
     # NLI-Stufe (#387): das Modell im Hintergrund laden, damit die erste Suche nicht
     # darauf wartet. Ohne Modell gilt die Schwelle, der Start scheitert nicht daran.
     statement_service_instance.nli_vorladen()
-    # Die Polaritaet der Suche (#574) nutzt dasselbe Modell; ist die NLI-Stufe aus,
-    # laedt es hier, sonst wartete die Suche vergeblich auf ein nie geladenes Modell.
+    # Die Polaritaet der Suche (#574) und der Bezug (services/search/bezug_nli.py) nutzen
+    # dasselbe Modell; ist die NLI-Stufe aus, laedt es hier, sonst wartete die Suche
+    # vergeblich auf ein nie geladenes Modell.
     if (
         settings_instance.suche_polaritaet_nli != "aus"
-        and settings_instance.dieselbe_aussage_nli == "aus"
-    ):
+        or settings_instance.suche_bezug_nli
+    ) and settings_instance.dieselbe_aussage_nli == "aus":
         from core.config import NLI_MODELL
         from services.dieselbe_behauptung.nli_modell import nli_modell
 

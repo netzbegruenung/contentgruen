@@ -150,7 +150,7 @@ geschrieben, um gefunden zu werden. Die Bewertung der Schwelle steht unter „Er
 Startbestand“; die Zeile der Schwelle von heute ist hier das Soll des nächtlichen Laufs.
 Die Zeile 0,82 ist am 18.11.2026 mit dem nächtlichen Lauf nachgemessen, mit den fünf
 Hot Takes des Starts (S107 bis S111, 47 Fälle, 38 mit Erwartung; alle fünf Treffer, vier
-davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen.
+davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen. Am 19.11.2026 mit der Untergrenze des Bezugs (Abschnitt „Bezug“) nachgemessen: Treffer, Fehltreffer, keine und Recall gleich, sechs unpassende direkte Beiträge weniger (Präzision 0,51 statt 0,49).
 
 | Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|---|---|
@@ -159,7 +159,7 @@ davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen
 | 0.79 | 30/33 | 2 | 1 | 1/9 / 8 | 0.25 | 0.91 | 0.94 | 0.97 | 13 / 203 |
 | 0.80 | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.88 | 0.91 | 0.94 | 11 / 136 |
 | 0.81 | 28/33 | 3 | 2 | 3/9 / 6 | 0.39 | 0.88 | 0.91 | 0.94 | 21 / 102 |
-| 0.82 (heute) | 32/38 | 3 | 3 | 4/9 / 5 | 0.49 | 0.87 | 0.89 | 0.89 | 17 / 61 |
+| 0.82 (heute) | 32/38 | 3 | 3 | 4/9 / 5 | 0.51 | 0.87 | 0.89 | 0.89 | 17 / 55 |
 | 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 0.76 | 0.76 | 12 / 15 |
 | 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
@@ -368,6 +368,66 @@ Verbotspartei“) und S62 („Balkonsolar lohnt sich“): Beide Aussagen bestraf
   zeigen richtig nichts, ein passender Treffer geht verloren, die Präzision bleibt. Der
   Standard bleibt `schatten`; im Log steht dann, wie oft Wortlisten und Modell bei echten
   Suchen auseinanderliegen.
+
+## Bezug
+
+Befund auf Produktion 0.9.0 (19.11.2026): Die Suchanfrage „Open Source ist unsicher!“ zeigte
+„Erkannt als ‚Migranten machen unsere Städte unsicher.‘“ und als beste Antwort einen Kommentar
+zur Migration. Ursache: Die Einbettung gibt dem Paar 0,862 (gleicher Satzbau, gemeinsames
+Schlagwort „unsicher“). Ein Kommentar hat die Relevanz 1,0 (`KOMMENTAR_RELEVANZ`), der
+kombinierte Score `0,7 · 0,862 + 0,3 · 1,0 = 0,903` liegt weit über der Schwelle 0,82; mit
+Relevanz 1,0 reicht einer Aussage schon eine Ähnlichkeit über 0,743. Fremde Sätze liegen bei
+`intfloat/multilingual-e5-base` aber meist zwischen 0,84 und 0,91. Der Seed misst das nicht:
+Er lädt Antworten mit Relevanz 0,7 (`content_orchestrator.py`), dort braucht eine Aussage über
+0,786.
+
+Darum gilt für Behauptungen als Suchanfrage (drei Wörter und mehr, keine Frage) eine
+**Untergrenze** der Ähnlichkeit, `suche_bezug_ab` = 0,87 (`services/search/bezug_nli.py`):
+Darunter zählt eine Aussage nicht, ihre Antworten kommen auch nicht über den direkten Weg.
+Optional (`suche_bezug_nli`, Standard aus) prüft zwischen 0,87 und `suche_bezug_sicher_ab` =
+0,92 das NLI-Modell, ob es in einer Richtung mindestens `suche_bezug_folgerung_ab` = 0,2
+Folgerung sieht.
+
+Gemessen am 19.11.2026 lokal am freigegebenen Startbestand (30 Aussagen, 60 Kommentare,
+Antworten mit Relevanz 1,0 wie beim Import über die API), mit
+`SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=an` wie auf Produktion, ohne Bestätiger. Dazu kommen
+S112 bis S133: 20 fremde Behauptungen, die nur Satzbau oder ein Schlagwort mit einer Aussage
+des Startbestands teilen, und zwei Gegenproben. 130 von 133 Fällen gemessen:
+
+| bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | davon fremd (S112–S131): Fehltreffer | Präzision | Recall@10 | Aussagetreffer je Suche: Median / 95. Perzentil |
+|---|---|---|---|---|---|---|---|---|
+| vorher | 89/97 | 4 | 4 | 5/33 / 28 | 20 | 0.31 | 0.96 | 46 / 103 ms |
+| Untergrenze 0,87 (Standard) | 87/97 | 6 | 4 | 14/33 / 19 | 11 | 0.34 | 0.94 | 49 / 94 ms |
+| Untergrenze und NLI (`suche_bezug_nli`) | 81/97 | 7 | 9 | 22/33 / 11 | 4 | 0.48 | 0.85 | 150 / 514 ms |
+
+- **Untergrenze:** S112 bis S116, S119, S120, S128 und S131 zeigen nichts mehr (Ähnlichkeit
+  0,84 bis 0,87, etwa „Windows ist unsicher“ 0,860). Zwei Treffer gehen verloren, beide
+  Umgangssprache unter 0,87 (S46 „… gehen bei uns die Lichter aus“, S78 „Der Wolf reißt
+  unsere Schafe“); vorn steht dann ein direkter, unpassender Beitrag. Keine wörtliche Aussage,
+  keine Umformulierung und kein Schlagwort geht verloren (Schlagwörter und Fragen prüft die
+  Untergrenze nicht).
+- **Gleich gebaute Sätze** liegen höher als manche Umformulierung und bleiben mit der
+  Untergrenze allein: „Katzen wollen gar nicht arbeiten“ zu „Flüchtlinge wollen gar nicht
+  arbeiten.“ (0,912), „Touristen machen unsere Städte voll“ zu der Migranten-Aussage (0,896),
+  „Golf ist nur was für Reiche“ (0,907). Umgekehrt liegen S76 „Wölfe haben in Deutschland
+  nichts verloren“ (0,897) und S102 (0,894) darunter. Eine Schwelle trennt das nicht.
+- **Mit NLI** fallen auch sie weg (Folgerung in beiden Richtungen unter 0,1), bis auf S117
+  „Tauben machen unsere Städte dreckig“ (0,36). Dafür gehen sechs weitere Treffer verloren,
+  vor allem Umgangssprache: S02, S69, S73, S76, S102, S133 (S02 „Windkraftanlagen bringen
+  massenhaft Vögel um“: Folgerung 0,00 und 0,20); S24 kommt dazu. Bei fünf der sechs steht die
+  erwartete Aussage unter den ähnlichen Aussagen (ab 0,885), wie sie „Meintest du …?“ auf
+  der Seite ohne Treffer anbietet. Die Suche wartet auf das
+  Modell: im Median rund 0,1 s mehr, im 95. Perzentil 0,4 s (Dev-VM, geteilt).
+- **Am Seed** (nächtlicher Lauf) ändert die Untergrenze keine Einordnung; mit NLI wären es 30
+  statt 32 Treffer und Recall@10 0,82, mit der Toleranz unter dem Tor 0,80. Das Soll bleibt.
+- Verworfen (Vorläufe ohne Untergrenze, gegen 0,92 und 0,2): NLI-Band ab 0,90 (gleich viele
+  Treffer, ein fremder Fall mehr), ab 0,94 oder Folgerung ab 0,3 bzw. 0,5 (zwei bis fünf
+  Treffer weniger für ein bis zwei fremde Fälle); Untergrenze 0,86 mit NLI (gleich, aber der
+  Befund hinge dann am Modell); der Abstand der besten Aussage zur fünften (trennt gleich
+  gebaute Sätze ebenso wenig).
+- Nachmessen: am Startbestand mit Relevanz 1,0 (Import über die API); Variablen
+  `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI`, `…_BEZUG_AB`, `…_BEZUG_SICHER_AB`,
+  `…_BEZUG_FOLGERUNG_AB` vor den Befehl oben.
 
 ## Nächtlicher Lauf
 

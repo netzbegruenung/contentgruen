@@ -350,6 +350,19 @@ class Settings(BaseSettings):
     # Gemessen in tests/regression/SUCHTESTSET.md (Abschnitt Polaritaet mit NLI).
     suche_polaritaet_nli: NliModus = "schatten"
     suche_polaritaet_widerspruch_ab: float = Field(default=0.9, ge=0.0, le=1.0)
+    # Bezug (services/search/bezug_nli.py), nur fuer eine Behauptung als Suchanfrage, an
+    # der Aehnlichkeit der Einbettung: Eine Aussage unter suche_bezug_ab zaehlt nicht,
+    # sie und ihre Antworten fallen weg. Gegen "Erkannt als" mit einer fremden Aussage,
+    # die nur ein Schlagwort teilt ("Open Source ist unsicher!" zu "Migranten machen
+    # unsere Staedte unsicher.", 0,862). Mit suche_bezug_nli zaehlt eine Aussage bis
+    # suche_bezug_sicher_ab zudem nur, wenn das NLI-Modell (NLI_MODELL) in einer Richtung
+    # mindestens suche_bezug_folgerung_ab Folgerung sieht (ohne Modell: zaehlt); das
+    # haelt auch gleich gebaute Saetze fern, kostet aber Treffer und Zeit. Gemessen in
+    # tests/regression/SUCHTESTSET.md (Abschnitt Bezug).
+    suche_bezug_nli: bool = False
+    suche_bezug_ab: float = Field(default=0.87, ge=0.0, le=1.0)
+    suche_bezug_sicher_ab: float = Field(default=0.92, ge=0.0, le=1.0)
+    suche_bezug_folgerung_ab: float = Field(default=0.2, ge=0.0, le=1.0)
 
     # Keyword overlap boosting configuration
     enable_keyword_overlap_boost: bool = (

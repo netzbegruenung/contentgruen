@@ -101,6 +101,10 @@ NLI-Stufe and the "Antwort auf" filter of other requests wait for it (up to thei
 so under load they fall back to the threshold more often. In `an` the search waits for the
 judgement (on the shared dev VM median +0.3 to 0.45 s, 95th percentile up to 1.4 s instead of
 0.14 s). Measure on the target VM with `tests/regression/suche_messen` before switching to `an`.
+The NLI check of the Bezug (`SEMANTIC_SEARCH_SUCHE_BEZUG_NLI=true`, default off) uses the same
+model the same way (it loads it itself while the NLI-Stufe is `aus`): each search with a full
+sentence waits for one judgement of the Aussagen between 0.87 and 0.92 (on the shared dev VM
+median +0.1 s, 95th percentile 0.5 s instead of 0.1 s).
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address alone (IPv6: its /64; the User-Agent no longer counts since #495,
