@@ -709,7 +709,7 @@ export class ContentModerationComponent implements OnInit {
     if (this.erledigtMelden(report)) return;
     const text = (report.content?.['text'] as string | undefined) ?? report.content_id;
     this.dialog
-      .open(BestaetigungsDialogComponent, { data: entfernenFrage(text), autoFocus: 'dialog' })
+      .open(BestaetigungsDialogComponent, { data: entfernenFrage(text), autoFocus: 'dialog', width: '480px', maxWidth: '95vw' })
       .afterClosed()
       .subscribe((ja) => {
         if (ja !== true || this.erledigtMelden(report)) {

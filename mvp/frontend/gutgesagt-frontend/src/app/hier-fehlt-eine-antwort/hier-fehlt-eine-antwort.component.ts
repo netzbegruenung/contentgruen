@@ -175,7 +175,7 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
    */
   entfernen(aussage: UnbeantworteteAussage, liste?: HTMLElement): void {
     this.dialog
-      .open(BestaetigungsDialogComponent, { data: entfernenFrage(aussage.statement_text), autoFocus: 'dialog' })
+      .open(BestaetigungsDialogComponent, { data: entfernenFrage(aussage.statement_text), autoFocus: 'dialog', width: '480px', maxWidth: '95vw' })
       .afterClosed()
       .subscribe((ja) => {
         if (ja !== true) {
