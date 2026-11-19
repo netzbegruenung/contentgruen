@@ -180,14 +180,19 @@ class TestStartkontoVollerName:
             (STARTKONTO, "Redaktion G."),
         ]
 
-    def test_dienst_nimmt_die_liste_aus_der_konfiguration(self, monkeypatch):
+    def test_ohne_liste_gilt_die_konfiguration(self, repository, monkeypatch):
         from services import anzeigename_service as modul
 
-        monkeypatch.setattr(modul, "_anzeigename_service", None)
-        monkeypatch.setattr(modul, "get_user_repository", MagicMock)
         monkeypatch.setattr(modul.settings, "startkonten", f" {STARTKONTO} ,andere")
+        service = AnzeigenameService(repository)
 
-        assert modul.get_anzeigename_service()._startkonten == {STARTKONTO, "andere"}
+        service.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+        service.merken("kennung-1", "Anna%20B.", "Anna%20Berger")
+
+        assert [c.args for c in repository.anzeigename_speichern.call_args_list] == [
+            (STARTKONTO, "Redaktion Gut gesagt"),
+            ("kennung-1", "Anna B."),
+        ]
 
 
 @pytest.mark.unit

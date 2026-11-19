@@ -22,7 +22,7 @@ Request nach dem Neustart legt wieder den gekuerzten Namen ab.
 
 import logging
 import unicodedata
-from typing import Dict, FrozenSet, Iterable, Optional
+from typing import Callable, Dict, FrozenSet, Iterable, Optional
 from urllib.parse import unquote
 
 from core.config import settings
@@ -78,10 +78,17 @@ def anzeigename_aus_header(roh: Optional[str]) -> Optional[str]:
 
 class AnzeigenameService:
     def __init__(
-        self, repository: UserRepository, startkonten: FrozenSet[str] = frozenset()
+        self,
+        repository: UserRepository,
+        startkonten: Optional[FrozenSet[str]] = None,
     ):
+        """``startkonten`` nur fuer Tests; sonst gilt settings.ist_startkonto."""
         self._repository = repository
-        self._startkonten = frozenset(startkonten)
+        self._ist_startkonto: Callable[[Optional[str]], bool] = (
+            settings.ist_startkonto
+            if startkonten is None
+            else frozenset(startkonten).__contains__
+        )
         self._bekannt: Dict[str, str] = {}
 
     def merken(
@@ -97,7 +104,7 @@ class AnzeigenameService:
         if not angemeldet(user_id) or user_id == EHEMALIGE_PERSON_KENNUNG:
             return
         name = anzeigename_aus_header(roh)
-        if user_id in self._startkonten:
+        if self._ist_startkonto(user_id):
             name = anzeigename_aus_header(roh_voll) or name
         if name is None or self._bekannt.get(user_id) == name:
             return
@@ -136,7 +143,5 @@ _anzeigename_service: Optional[AnzeigenameService] = None
 def get_anzeigename_service() -> AnzeigenameService:
     global _anzeigename_service
     if _anzeigename_service is None:
-        _anzeigename_service = AnzeigenameService(
-            get_user_repository(), settings.startkonto_kennungen()
-        )
+        _anzeigename_service = AnzeigenameService(get_user_repository())
     return _anzeigename_service

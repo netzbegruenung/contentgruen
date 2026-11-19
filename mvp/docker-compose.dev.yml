@@ -141,6 +141,9 @@ services:
       - MANAGED_USERS_PATH=/config/managed-users.json
       # Kommaseparierte Admin-Kennungen (docs/ARCHITECTURE.md); leer = allein isAdmin entscheidet.
       - ADMIN_USER_IDS=
+      # Startkonten (GLOSSARY.md): nur fuer sie geht der volle Name an den Suchdienst. Muss
+      # SEMANTIC_SEARCH_STARTKONTEN entsprechen, sonst fehlt der volle Name still.
+      - STARTKONTEN=
     volumes:
       - ./config:/config:ro  # Mount config directory for managed users
       - bff_dataprotection_keys:/keys  # Persist DataProtection keys across container recreates
