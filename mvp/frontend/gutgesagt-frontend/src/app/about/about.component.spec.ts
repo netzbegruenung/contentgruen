@@ -162,16 +162,15 @@ describe('AboutComponent', () => {
       expect(namen).toEqual(['Sebastian Banach', 'Aila Banach']);
     });
 
-    it('nennt Ailas Rolle und zeigt bis zum Foto ihre Initialen ohne kaputtes Bild', () => {
+    it('nennt Ailas Rolle und zeigt ihr Foto', () => {
       const karte = abschnitt.querySelector('.person-aila')!;
 
       expect(karte.querySelector('.role')!.textContent!.trim()).toBe('Konzeption & Kommunikation');
       expect(einzeilig(karte)).toContain('Aila unterstützt Gut gesagt bei Konzeption und Kommunikation.');
       expect(einzeilig(karte)).toContain('Versteht man das sofort?');
-      const initialen = karte.querySelector('.profile-initialen')!;
-      expect(initialen.textContent!.trim()).toBe('AB');
-      expect(initialen.getAttribute('aria-hidden')).toBe('true');
-      expect(karte.querySelector('img')).toBeNull();
+      const foto = karte.querySelector('img.profile-image')!;
+      expect(foto.getAttribute('src')).toBe('/profilbild-aila.jpg');
+      expect(foto.getAttribute('alt')).toBe('Aila Banach');
     });
 
     it('dankt allen Helfenden ohne weitere Namen', () => {
