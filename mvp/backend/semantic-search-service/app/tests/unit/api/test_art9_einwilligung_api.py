@@ -131,7 +131,7 @@ class TestStand:
         assert stand["eingewilligt"] is False
         assert stand["wortlaut"] == frueher
         assert stand["widerrufen_am"] is None
-        assert stand["aktueller_wortlaut"]["kennung"] == "2026-11-13"
+        assert stand["aktueller_wortlaut"]["kennung"] == AKTUELLER_WORTLAUT
 
     def test_get_widerrufen_nicht_eingewilligt_wortlaut_bleibt(
         self, client, repository
@@ -189,7 +189,7 @@ class TestWortlaute:
         """
         text = WORTLAUTE[AKTUELLER_WORTLAUT]
 
-        assert AKTUELLER_WORTLAUT == "2026-11-13"
+        assert AKTUELLER_WORTLAUT == "2026-11-19"
         for wort in (
             "Punktestand",
             "Level",
@@ -200,8 +200,9 @@ class TestWortlaute:
         ):
             assert wort not in text, wort
         assert (
-            "Gut gesagt nutzt meine Mitwirkung nur für den Betrieb der Plattform, wertet "
-            "sie nicht nach politischer Haltung aus und gibt sie nicht an Dritte weiter."
+            "Gut gesagt nutzt meine Mitwirkung nur für den Betrieb der Plattform, "
+            "erstellt daraus keine politischen Profile, bewertet keine politischen "
+            "Überzeugungen und gibt sie nicht an Dritte weiter."
         ) in text
 
     def test_aktueller_wortlaut_nennt_den_menuepunkt_datenschutz_einstellungen(self):
@@ -272,14 +273,46 @@ class TestWortlaute:
         assert WORTLAUTE["2026-11-13"] == vorher
         assert "2026-11-14" not in WORTLAUTE
 
-    def test_nur_der_aktuelle_wortlaut_zaehlt(self):
-        """Fruehere Einwilligungen zaehlen nicht (GELTENDE_WORTLAUTE, 13.11.2026)."""
-        assert GELTENDE_WORTLAUTE == {AKTUELLER_WORTLAUT}
+    def test_wortlaut_vom_19_11_ist_nur_klarer(self):
+        """
+        Entwurf der juristischen Pruefung vom 19.11.2026: drei Stellen klarer gefasst,
+        Zwecke, Datenarten und Folgen wie 2026-11-13. Sonst wortgleich; deshalb keine
+        neue Frage (docs/ART9_EINWILLIGUNG.md, „Wortlaut ändern“).
+        """
+        vorher = (
+            WORTLAUTE["2026-11-13"]
+            .replace(
+                "wertet sie nicht nach politischer Haltung aus",
+                "erstellt daraus keine politischen Profile, bewertet keine politischen "
+                "Überzeugungen",
+            )
+            .replace(
+                "jederzeit im Profilmenü",
+                "jederzeit mit Wirkung für die Zukunft im Profilmenü",
+            )
+            .replace(
+                "Mein Konto bleibt.",
+                "Was andere vor dem Widerruf nach der CC0-Erklärung rechtmäßig "
+                "übernommen haben, kann Gut gesagt nicht zurückholen. Mein Konto bleibt.",
+            )
+        )
+        assert WORTLAUTE["2026-11-19"] == vorher
+        assert "2026-11-20" not in WORTLAUTE
+
+    def test_geltend_sind_die_wortlaute_seit_dem_13_11(self):
+        """
+        Einwilligungen vor 2026-11-13 zaehlen nicht (GELTENDE_WORTLAUTE, 13.11.2026);
+        2026-11-19 ist nur klarer, deshalb zaehlt 2026-11-13 weiter.
+        """
+        assert GELTENDE_WORTLAUTE == {"2026-11-13", "2026-11-19"}
+        assert AKTUELLER_WORTLAUT in GELTENDE_WORTLAUTE
         assert all(k in WORTLAUTE for k in GELTENDE_WORTLAUTE)
         assert not geltender_wortlaut("2026-11-12")
         assert Art9Einwilligung(AKTUELLER_WORTLAUT, AM, None).zaehlt
+        assert Art9Einwilligung("2026-11-13", AM, None).zaehlt
         assert not Art9Einwilligung("2026-11-12", AM, None).zaehlt
         assert not Art9Einwilligung(AKTUELLER_WORTLAUT, AM, SPAETER).zaehlt
+        assert not Art9Einwilligung("2026-11-13", AM, SPAETER).zaehlt
 
     def test_frueherer_wortlaut_bleibt_bekannt(self):
         """Eine gespeicherte Kennung behaelt ihren Text (docs/ART9_EINWILLIGUNG.md)."""

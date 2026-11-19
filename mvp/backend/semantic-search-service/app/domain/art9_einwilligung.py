@@ -147,11 +147,41 @@ WORTLAUTE: Mapping[str, str] = MappingProxyType(
             "beitrage, bleibt davon unberührt. Mein Konto bleibt. Was bis zum "
             "Widerruf geschehen ist, bleibt rechtmäßig."
         ),
+        # Klarer gefasst, nur zugunsten der Person (Entwurf der juristischen Pruefung vom
+        # 19.11.2026, Entscheidung Maintainer beim Merge): Zwecke, Datenarten und Folgen
+        # wie 2026-11-13. Drei Stellen sind neu (ein Test sichert, dass sonst alles
+        # wortgleich ist): „erstellt daraus keine politischen Profile, bewertet keine
+        # politischen Ueberzeugungen“ statt „wertet sie nicht nach politischer Haltung
+        # aus“; „jederzeit mit Wirkung fuer die Zukunft“; vor „Mein Konto bleibt.“ der
+        # Satz zu dem, was andere nach der CC0-Erklaerung schon uebernommen haben.
+        # Keine neue Frage: 2026-11-13 bleibt in GELTENDE_WORTLAUTE.
+        "2026-11-19": (
+            "Ich willige ausdrücklich ein, dass Gut gesagt meine Mitwirkung "
+            "verarbeitet, auch wenn sich daraus auf meine politische Meinung "
+            "schließen lässt (Art. 9 Abs. 2 lit. a DSGVO). Das betrifft Beiträge, "
+            "Einwürfe, Sätze und Bewertungen, die ich mit meinem Konto speichere, "
+            "und meinen Anzeigenamen daran. Beiträge sind für alle sichtbar, mein "
+            "Anzeigename nur für Angemeldete. Gut gesagt nutzt meine Mitwirkung "
+            "nur für den Betrieb der Plattform, erstellt daraus keine politischen "
+            "Profile, bewertet keine politischen Überzeugungen und gibt sie nicht "
+            "an Dritte weiter. Ich kann die Einwilligung jederzeit mit Wirkung für "
+            "die Zukunft im Profilmenü unter „Datenschutz-Einstellungen“ widerrufen. "
+            "Danach kann ich nichts mehr beitragen oder bewerten, und meine "
+            "Bewertungen werden gelöscht. Innerhalb von sieben Tagen werden auch "
+            "meine Beiträge, Einwürfe und Sätze von mir gelöst: Meine Beiträge "
+            "bleiben stehen und zeigen „ehemalige Person“ statt meines Namens, "
+            "meine Einwürfe werden gelöscht, und meine Sätze an Einwürfen anderer "
+            "bleiben ohne meinen Namen. Was ich nach einer neuen Einwilligung "
+            "beitrage, bleibt davon unberührt. Was andere vor dem Widerruf nach der "
+            "CC0-Erklärung rechtmäßig übernommen haben, kann Gut gesagt nicht "
+            "zurückholen. Mein Konto bleibt. Was bis zum Widerruf geschehen ist, "
+            "bleibt rechtmäßig."
+        ),
     }
 )
 
 # Der Wortlaut, den die App heute zeigt.
-AKTUELLER_WORTLAUT = "2026-11-13"
+AKTUELLER_WORTLAUT = "2026-11-19"
 
 # Wortlaute, deren Einwilligung heute zaehlt. Eine Einwilligung zu einem anderen
 # bekannten Wortlaut bleibt als Nachweis stehen und kann widerrufen werden, zaehlt
@@ -159,8 +189,9 @@ AKTUELLER_WORTLAUT = "2026-11-13"
 # Einwilligung verlangt, ist gesperrt, bis die Person dem aktuellen Wortlaut
 # zustimmt. Bis 2026-11-12 galt jede Kennung (redaktionelle Aenderungen ohne neue
 # Frage); 2026-11-13 erweitert die Folgen des Widerrufs, deshalb nur dieser
-# (Entscheidung Maintainer, 13.11.2026, docs/ART9_EINWILLIGUNG.md).
-GELTENDE_WORTLAUTE = frozenset({"2026-11-13"})
+# (Entscheidung Maintainer, 13.11.2026, docs/ART9_EINWILLIGUNG.md). 2026-11-19 ist
+# nur klarer und wirkt nur zugunsten der Person, deshalb zaehlt 2026-11-13 weiter.
+GELTENDE_WORTLAUTE = frozenset({"2026-11-13", "2026-11-19"})
 
 
 def bekannter_wortlaut(kennung: str) -> bool:
