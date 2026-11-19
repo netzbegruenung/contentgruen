@@ -27,6 +27,11 @@ import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component
 import { SprachhinweisComponent } from '../shared/components/sprachhinweis/sprachhinweis.component';
 import { AussagekarteComponent, jeAussage } from '../shared/aussagekarte/aussagekarte.component';
 import { LADE_TIMEOUT_MS, LadeWiederholung } from '../shared/lade-wiederholung';
+import { MatDialog } from '@angular/material/dialog';
+import { AuthService } from '../auth/auth.service';
+import { ModerationService } from '../services/moderation.service';
+import { BestaetigungsDialogComponent } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
+import { AUSSAGE_NICHT_ENTFERNT, entfernenFrage } from '../shared/aussagekarte/aussage-entfernen';
 
 /**
  * "Hier fehlt eine Antwort": Mitwirkende sehen die unbeantworteten Aussagen (ohne
@@ -143,11 +148,53 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   private readonly wiederholung = new LadeWiederholung(this.destroy$);
   speichert = false;
   meldung = '';
+  /** Fehler beim Entfernen einer Aussage; steht ueber der Liste, bis der naechste Versuch gelingt. */
+  entfernenFehler = '';
 
   constructor(
     private statementService: StatementService,
     private themenService: ThemenService,
+    private authService: AuthService,
+    private moderationService: ModerationService,
+    private dialog: MatDialog,
   ) {}
+
+  /** Melden auf jeder Aussagekarte; die Seite ist nur fuer Angemeldete (AuthGuard). */
+  get angemeldet(): boolean {
+    return !!this.authService.getUserInfo()?.isAuthenticated;
+  }
+
+  /** "Aussage entfernen" nur mit Admin-Rolle; das Backend prueft sie ebenfalls (require_admin). */
+  get istAdmin(): boolean {
+    return !!this.authService.getUserInfo()?.isAdmin;
+  }
+
+  /**
+   * Nach der Rueckfrage endgueltig entfernen. Die Karte verschwindet ohne Neuladen; der
+   * Fokus geht auf die Liste, weil Menue und Karte weg sind, und die Live-Region sagt es an.
+   */
+  entfernen(aussage: UnbeantworteteAussage, liste?: HTMLElement): void {
+    this.dialog
+      .open(BestaetigungsDialogComponent, { data: entfernenFrage(aussage.statement_text), autoFocus: 'dialog' })
+      .afterClosed()
+      .subscribe((ja) => {
+        if (ja !== true) {
+          return;
+        }
+        this.moderationService.aussageEntfernen(aussage.statement_id).subscribe({
+          next: () => {
+            this.entfernenFehler = '';
+            this.aussagen = (this.aussagen ?? []).filter((a) => a.statement_id !== aussage.statement_id);
+            if (this.themenBearbeiten === aussage.statement_id) {
+              this.themenBearbeiten = null;
+            }
+            this.ansage = 'Aussage entfernt.';
+            liste?.focus();
+          },
+          error: () => (this.entfernenFehler = AUSSAGE_NICHT_ENTFERNT),
+        });
+      });
+  }
 
   ngOnInit(): void {
     this.themenService.liste().subscribe({

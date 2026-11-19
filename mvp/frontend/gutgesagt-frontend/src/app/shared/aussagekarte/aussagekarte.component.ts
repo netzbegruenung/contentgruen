@@ -4,10 +4,12 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  EventEmitter,
   Input,
   NgZone,
   OnChanges,
   OnDestroy,
+  Output,
   SimpleChanges,
   QueryList,
   ViewChildren,
@@ -16,6 +18,13 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
+import { meldeDialogOeffnen } from '../components/report-dialog/report-dialog.component';
+
+/** content_type einer Aussage in Meldungen und beim Entfernen (ContentType.STATEMENT im Suchdienst). */
+export const AUSSAGE_INHALTSTYP = 'statement';
 
 /**
  * Aussagekarte: eine unbeantwortete Aussage als Karte im Stil der Beitragskarte
@@ -28,6 +37,10 @@ import { MatIconModule } from '@angular/material/icon';
  * zugeklappt hoechstens vier Zeilen; "Ganz lesen" erscheint nur, wenn etwas fehlt.
  * Gekuerzt wird nur sichtbar: Screenreader hoeren ueber aria-describedby am
  * Knopf immer den vollen Text.
+ *
+ * Im Fuss neben "Antworten" ein Menue wie bei Beitraegen: "Aussage melden" fuer
+ * Angemeldete (meldbar), "Aussage entfernen" fuer Admins (entfernbar). Entfernen
+ * meldet die Karte nur (entfernen); Rueckfrage und Aufruf macht die Seite.
  */
 /**
  * Merkt sich ein Ergebnis je statement_id, etwa die Query-Parameter von "Antworten":
@@ -54,7 +67,7 @@ export function jeAussage<A extends { statement_id: string }, E>(
 @Component({
   selector: 'app-aussagekarte',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatIconModule],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './aussagekarte.component.html',
   styleUrls: ['./aussagekarte.component.scss'],
@@ -73,6 +86,14 @@ export class AussagekarteComponent implements AfterViewInit, OnChanges, OnDestro
   /** Ziel von "Antworten" (Kommentarformular) samt Query-Parametern. */
   @Input({ required: true }) antwortenPfad = '';
   @Input() antwortenParams: Record<string, string> = {};
+  /** Kennung der Aussage; noetig fuer Melden. */
+  @Input() aussageId = '';
+  /** "Aussage melden" im Menue; nur fuer Angemeldete. */
+  @Input() meldbar = false;
+  /** "Aussage entfernen" im Menue; nur fuer Admins (das Backend prueft die Rolle). */
+  @Input() entfernbar = false;
+  /** Der Admin will die Aussage entfernen; die Seite fragt nach und ruft das Backend. */
+  @Output() readonly entfernen = new EventEmitter<void>();
 
   @ViewChildren('titel') private titel!: QueryList<ElementRef<HTMLElement>>;
 
@@ -83,7 +104,13 @@ export class AussagekarteComponent implements AfterViewInit, OnChanges, OnDestro
   constructor(
     private readonly cdr: ChangeDetectorRef,
     private readonly zone: NgZone,
+    private readonly dialog: MatDialog,
   ) {}
+
+  /** Der Meldedialog wie bei Beitraegen, mit content_type "statement". */
+  melden(): void {
+    meldeDialogOeffnen(this.dialog, { contentId: this.aussageId, contentType: AUSSAGE_INHALTSTYP });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     // Anderer Text: nach dem Rendern neu messen, ob "Ganz lesen" noch gebraucht wird

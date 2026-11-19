@@ -24,14 +24,20 @@
 
     <ng-container *ngIf="aussagen">
         <!-- Inhalte sind Karten: jede Aussage als Aussagekarte, Themen im Koerper der Karte -->
-        <ul *ngIf="aussagen.length > 0; else leer" class="aussagen aussagekarten">
+        <p *ngIf="entfernenFehler" class="hinweis entfernen-fehler" role="alert">{{ entfernenFehler }}</p>
+        <!-- tabindex -1: Nach dem Entfernen einer Aussage geht der Fokus hierher, ihre Karte ist weg -->
+        <ul *ngIf="aussagen.length > 0; else leer" #liste tabindex="-1" class="aussagen aussagekarten">
             <li *ngFor="let aussage of aussagen; trackBy: nachAussage" data-testid="unbeantwortete-aussage">
                 <app-aussagekarte [text]="aussage.statement_text"
                                   [titelId]="'aussage-' + aussage.statement_id"
                                   [ebene]="2"
                                   [gesucht]="gesuchtMarker(aussage)"
                                   [antwortenPfad]="kommentarFormular"
-                                  [antwortenParams]="beantwortenParams(aussage)">
+                                  [antwortenParams]="beantwortenParams(aussage)"
+                                  [aussageId]="aussage.statement_id"
+                                  [meldbar]="angemeldet"
+                                  [entfernbar]="istAdmin"
+                                  (entfernen)="entfernen(aussage, liste)">
                     <div class="aussage-themen" *ngIf="themen.length">
                         <span *ngFor="let thema of aussage.themen" class="thema-marke">{{ thema.name }}</span>
                         <button type="button" class="themen-umschalter"

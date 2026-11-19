@@ -1,22 +1,21 @@
 <article class="aussagekarte" [attr.aria-labelledby]="titelId">
     <header class="aussagekarte-kopf">
-        <mat-icon class="aussagekarte-icon" aria-hidden="true">format_quote</mat-icon>
-        <div class="aussagekarte-kopftext">
-            <span class="aussagekarte-art">Unbeantwortete Aussage</span>
-            <ng-container *ngIf="ebene === 2; else ebeneDrei">
-                <h2 #titel class="aussagekarte-titel" [class.aussagekarte-titel--zu]="!aufgeklappt" [id]="titelId">{{ text }}</h2>
-            </ng-container>
-            <ng-template #ebeneDrei>
-                <h3 #titel class="aussagekarte-titel" [class.aussagekarte-titel--zu]="!aufgeklappt" [id]="titelId">{{ text }}</h3>
-            </ng-template>
-            <button *ngIf="gekuerzt || aufgeklappt" type="button" class="ganz-lesen"
-                    [attr.aria-expanded]="aufgeklappt" [attr.aria-controls]="titelId"
-                    [attr.aria-describedby]="titelId"
-                    (click)="umschalten()">{{ aufgeklappt ? 'Weniger zeigen' : 'Ganz lesen' }}</button>
-        </div>
+        <!-- Das grosse Zitatzeichen ist nur Schmuck; die Art der Karte steht als Text darueber -->
+        <span class="aussagekarte-zitat" aria-hidden="true">“</span>
+        <span class="aussagekarte-art">Unbeantwortete Aussage</span>
+        <ng-container *ngIf="ebene === 2; else ebeneDrei">
+            <h2 #titel class="aussagekarte-titel" [class.aussagekarte-titel--zu]="!aufgeklappt" [id]="titelId">{{ text }}</h2>
+        </ng-container>
+        <ng-template #ebeneDrei>
+            <h3 #titel class="aussagekarte-titel" [class.aussagekarte-titel--zu]="!aufgeklappt" [id]="titelId">{{ text }}</h3>
+        </ng-template>
+        <button *ngIf="gekuerzt || aufgeklappt" type="button" class="ganz-lesen"
+                [attr.aria-expanded]="aufgeklappt" [attr.aria-controls]="titelId"
+                [attr.aria-describedby]="titelId"
+                (click)="umschalten()">{{ aufgeklappt ? 'Weniger zeigen' : 'Ganz lesen' }}</button>
     </header>
     <div class="aussagekarte-inhalt">
-        <p *ngIf="gesucht" class="gesucht">{{ gesucht }}</p>
+        <p *ngIf="gesucht" class="gesucht"><mat-icon class="gesucht-icon" aria-hidden="true">person_search</mat-icon><span class="gesucht-text">{{ gesucht }}</span></p>
         <ng-content></ng-content>
     </div>
     <footer class="aussagekarte-fuss">
@@ -28,5 +27,24 @@
                [routerLink]="antwortenPfad" [queryParams]="antwortenParams"
                [attr.aria-describedby]="titelId">Antworten</a>
         </ng-template>
+        <!-- Melden (Angemeldete) und Entfernen (Admins) im Menue wie bei Beitraegen: die Karte bleibt ruhig -->
+        <ng-container *ngIf="meldbar || entfernbar">
+            <button mat-icon-button type="button" class="menue-knopf"
+                    [matMenuTriggerFor]="menue"
+                    aria-label="Mehr Optionen" [attr.aria-describedby]="titelId"
+                    matTooltip="Mehr Optionen" matTooltipPosition="above">
+                <mat-icon aria-hidden="true">more_vert</mat-icon>
+            </button>
+            <mat-menu #menue="matMenu" xPosition="before">
+                <button mat-menu-item type="button" class="melden" *ngIf="meldbar" (click)="melden()">
+                    <mat-icon aria-hidden="true">flag</mat-icon>
+                    <span>Aussage melden</span>
+                </button>
+                <button mat-menu-item type="button" class="entfernen" *ngIf="entfernbar" (click)="entfernen.emit()">
+                    <mat-icon aria-hidden="true">delete_forever</mat-icon>
+                    <span>Aussage entfernen</span>
+                </button>
+            </mat-menu>
+        </ng-container>
     </footer>
 </article>

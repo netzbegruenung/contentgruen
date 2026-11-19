@@ -1,7 +1,12 @@
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { AussagekarteComponent, jeAussage } from './aussagekarte.component';
+import { MatDialog } from '@angular/material/dialog';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { AUSSAGE_INHALTSTYP, AussagekarteComponent, jeAussage } from './aussagekarte.component';
+import { ReportDialogComponent } from '../components/report-dialog/report-dialog.component';
 
 const LANG = 'Windräder töten die Vögel, ' + 'und überhaupt ist alles viel zu teuer und zu laut und zu hoch, '.repeat(8);
 
@@ -12,7 +17,9 @@ const LANG = 'Windräder töten die Vögel, ' + 'und überhaupt ist alles viel z
     <div [style.width.px]="breite">
       <app-aussagekarte [text]="text" titelId="aussage-a-1" [ebene]="ebene" [knopf]="knopf"
                         [gesucht]="gesucht" antwortenPfad="/workflow/add-commentary"
-                        [antwortenParams]="{ aussage: 'a-1' }">
+                        [antwortenParams]="{ aussage: 'a-1' }"
+                        aussageId="a-1" [meldbar]="meldbar" [entfernbar]="entfernbar"
+                        (entfernen)="entfernt = entfernt + 1">
         <span class="projiziert">Themen</span>
       </app-aussagekarte>
     </div>
@@ -24,6 +31,9 @@ class GastgeberComponent {
   knopf: 'haupt' | 'neben' = 'haupt';
   gesucht = '';
   breite = 260;
+  meldbar = false;
+  entfernbar = false;
+  entfernt = 0;
 }
 
 /** Ein Frame warten, damit ResizeObserver und requestAnimationFrame durchlaufen. */
@@ -35,7 +45,7 @@ describe('AussagekarteComponent', () => {
   let fixture: ComponentFixture<GastgeberComponent>;
 
   function erstellen(werte: Partial<GastgeberComponent> = {}): HTMLElement {
-    TestBed.configureTestingModule({ imports: [GastgeberComponent], providers: [provideRouter([])] });
+    TestBed.configureTestingModule({ imports: [GastgeberComponent], providers: [provideRouter([]), provideNoopAnimations(), provideHttpClient(), provideHttpClientTesting()] });
     fixture = TestBed.createComponent(GastgeberComponent);
     Object.assign(fixture.componentInstance, werte);
     fixture.detectChanges();
@@ -74,7 +84,7 @@ describe('AussagekarteComponent', () => {
   it('zeigt die Nachfrage nur, wenn es sie gibt', () => {
     expect(erstellen().querySelector('.gesucht')).toBeNull();
     TestBed.resetTestingModule();
-    expect(erstellen({ gesucht: '2 Personen suchten das ohne Treffer' }).querySelector('.gesucht')?.textContent?.trim()).toBe(
+    expect(erstellen({ gesucht: '2 Personen suchten das ohne Treffer' }).querySelector('.gesucht-text')?.textContent?.trim()).toBe(
       '2 Personen suchten das ohne Treffer',
     );
   });
@@ -146,6 +156,44 @@ describe('AussagekarteComponent', () => {
     fixture.detectChanges();
     const knopf = el.querySelector('button.ganz-lesen') as HTMLButtonElement;
     expect(knopf.getAttribute('aria-describedby')).toBe('aussage-a-1');
+  });
+
+  it('zeigt ohne Melden und Entfernen kein Menü', () => {
+    expect(erstellen().querySelector('.menue-knopf')).toBeNull();
+  });
+
+  it('öffnet über das Menü den Meldedialog mit der Aussage als content_type "statement"', async () => {
+    const el = erstellen({ meldbar: true });
+    const oeffnen = spyOn(TestBed.inject(MatDialog), 'open').and.callThrough();
+    const menue = el.querySelector('.aussagekarte-fuss button.menue-knopf') as HTMLButtonElement;
+    expect(menue.getAttribute('aria-label')).toBe('Mehr Optionen');
+    menue.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(document.querySelector('.mat-mdc-menu-panel button.entfernen')).toBeNull();
+    const melden = document.querySelector('.mat-mdc-menu-panel button.melden') as HTMLButtonElement;
+    expect(melden.textContent).toContain('Aussage melden');
+    melden.click();
+
+    const [dialog, konfig] = oeffnen.calls.mostRecent().args;
+    expect(dialog).toBe(ReportDialogComponent);
+    expect(konfig?.data).toEqual({ contentId: 'a-1', contentType: AUSSAGE_INHALTSTYP });
+    expect(AUSSAGE_INHALTSTYP).toBe('statement');
+    TestBed.inject(MatDialog).closeAll();
+  });
+
+  it('meldet "Aussage entfernen" an die Seite, nur wenn entfernbar', async () => {
+    const el = erstellen({ entfernbar: true });
+    (el.querySelector('button.menue-knopf') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(document.querySelector('.mat-mdc-menu-panel button.melden')).toBeNull();
+    const entfernen = document.querySelector('.mat-mdc-menu-panel button.entfernen') as HTMLButtonElement;
+    expect(entfernen.textContent).toContain('Aussage entfernen');
+    entfernen.click();
+    expect(fixture.componentInstance.entfernt).toBe(1);
   });
 
   it('meldet den ResizeObserver beim Zerstören ab', () => {

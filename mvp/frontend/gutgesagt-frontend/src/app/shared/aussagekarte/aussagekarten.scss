@@ -1,14 +1,20 @@
-@use '../styles/karte';
-
-// Aussagekarten auf dem Kartengrund wie app-kartenliste; ab 600 px im Raster.
-// align-items: start, damit eine lange Aussage nicht die ganze Reihe streckt.
+// Aussagekarten im Raster wie die Beitragskarten auf der Trefferseite: ohne grauen Grund,
+// die Karten liegen mit ihrem Schatten auf der Seite (Designrunde 19.11.; vorher Kopfband
+// in --mulde auf --mulde). Mobil untereinander, ab 600 px im Raster; alle Reihen gleich
+// hoch (grid-auto-rows: 1fr), damit nichts versetzt steht.
 .aussagekarten {
-  @include karte.kartengrund;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   margin: var(--spacing-md) 0;
+  padding: 0;
+  list-style: none;
 
   @media (min-width: 600px) {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
-    align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+    grid-auto-rows: 1fr;
+    align-items: stretch;
+    gap: 24px;
   }
 }

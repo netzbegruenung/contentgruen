@@ -256,6 +256,17 @@
               <mat-icon>block</mat-icon>
               Sperren
             </button>
+            <!-- Gemeldete Aussage: auch endgueltig entfernen, wie aus der Aussagekarte -->
+            <button
+              *ngIf="report.content && istAussage(report)"
+              mat-stroked-button
+              class="aussage-entfernen"
+              [disabled]="istErledigt(report)" disabledInteractive
+              (click)="aussageEntfernen(report); $event.stopPropagation()"
+              matTooltip="Aussage endgültig entfernen, mit Verweisen und Stimmen">
+              <mat-icon>delete_forever</mat-icon>
+              Aussage entfernen
+            </button>
             <button
               *ngIf="istGesperrt(report)"
               mat-button
