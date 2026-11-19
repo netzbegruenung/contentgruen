@@ -9,12 +9,12 @@ The hand in the logo, favicon, Siegel and vote buttons is the "Thumbs up" emoji 
 ## Live Systems
 
 - **Test System**: https://gutgesagt-test.netzbegruenung.de
-  Login: button "Mit Netzbegrünung-Konto anmelden"; it leads to the sign-in page of the own Keycloak
-  realm („Mit Netzbegrünung anmelden“, or mail and password for an account from an Einladung). The
-  accounts are not part of this repository.
+  Login: button "Mit Netzbegrünung-Konto anmelden"; it leads to the sign-in page of the Keycloak realm
+  `gutgesagt` ("Mit Netzbegrünung anmelden", or mail and password for a Startkonto or, later, an
+  account from an Einladung). The accounts are not part of this repository.
 
 - **Production**: [https://gutgesagt.netzbegruenung.de](https://gutgesagt.netzbegruenung.de)
-  Signs in through the own Keycloak realm „Gut gesagt“, with the Netzbegrünung as identity provider
+  Signs in through the own Keycloak realm `gutgesagt`, with the Netzbegrünung as identity provider
   (`docs/KEYCLOAK_REALM.md`).
   `contentgruen.de` currently redirects here.
 

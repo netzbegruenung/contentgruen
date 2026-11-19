@@ -23,7 +23,7 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 - **Access**: https://gutgesagt-test.netzbegruenung.de
 - **Infrastructure**: Docker containers on verdigado's internal infrastructure
 - **Authentication**: Whatever the BFF configuration enables (`GET /api/auth/modes`): the own Keycloak
-  realm „Gut gesagt“ and/or the Direktanmeldung; the accounts are not part of this repository. The
+  realm `gutgesagt` and/or the Direktanmeldung; the accounts are not part of this repository. The
   login selection shows only the enabled ways (#600)
 - **Management**: Rolled out manually on verdigado's internal infrastructure; details are documented internally
 
@@ -31,7 +31,7 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 - **Purpose**: Live system for Netzbegrünung members
 - **Access**: https://gutgesagt.netzbegruenung.de (contentgruen.de redirects here)
 - **Infrastructure**: Docker containers on verdigado's internal infrastructure
-- **Authentication**: Own Keycloak realm „Gut gesagt“, Netzbegrünung as identity provider
+- **Authentication**: Own Keycloak realm `gutgesagt`, Netzbegrünung as identity provider
   (`docs/KEYCLOAK_REALM.md`)
 - **Management**: Rolled out on verdigado's internal infrastructure; details are documented internally
 
