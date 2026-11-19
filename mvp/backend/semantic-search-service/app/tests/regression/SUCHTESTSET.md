@@ -150,7 +150,7 @@ geschrieben, um gefunden zu werden. Die Bewertung der Schwelle steht unter „Er
 Startbestand“; die Zeile der Schwelle von heute ist hier das Soll des nächtlichen Laufs.
 Die Zeile 0,82 ist am 18.11.2026 mit dem nächtlichen Lauf nachgemessen, mit den fünf
 Hot Takes des Starts (S107 bis S111, 47 Fälle, 38 mit Erwartung; alle fünf Treffer, vier
-davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen. Am 19.11.2026 mit dem Bezug (Abschnitt „Bezug“) nachgemessen: Treffer, Fehltreffer, keine und Recall gleich; S42 („Das Deutschlandticket ist zu teuer“, ohne Erwartung) zeigt nichts mehr (Präzision 0,52 statt 0,49).
+davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen. Am 19.11.2026 mit dem Bezug (Abschnitt „Bezug“) nachgemessen: Treffer, Fehltreffer, keine und Recall gleich; S42 („Das Deutschlandticket ist zu teuer“, ohne Erwartung) zeigt nichts mehr (Präzision 0,52 statt 0,49). Nochmals am 19.11.2026 mit der Grenze des direkten Wegs (Abschnitt „Direkter Weg“): S02 und S29 ohne Treffer, S30 jetzt Treffer, Recall@10 0,84, Präzision 0,61.
 
 | Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|---|---|
@@ -159,7 +159,7 @@ davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen
 | 0.79 | 30/33 | 2 | 1 | 1/9 / 8 | 0.25 | 0.91 | 0.94 | 0.97 | 13 / 203 |
 | 0.80 | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.88 | 0.91 | 0.94 | 11 / 136 |
 | 0.81 | 28/33 | 3 | 2 | 3/9 / 6 | 0.39 | 0.88 | 0.91 | 0.94 | 21 / 102 |
-| 0.82 (heute) | 32/38 | 3 | 3 | 5/9 / 4 | 0.52 | 0.87 | 0.89 | 0.89 | 17 / 61 |
+| 0.82 (heute) | 31/38 | 2 | 5 | 5/9 / 4 | 0.61 | 0.84 | 0.84 | 0.84 | 14 / 34 |
 | 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 0.76 | 0.76 | 12 / 15 |
 | 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
@@ -388,7 +388,8 @@ Einbettung, für Suchanfragen ab drei Wörtern (Schlagwörter nicht):
 - zwischen 0,87 und `suche_bezug_sicher_ab` = 0,92 zählt sie bei einer Behauptung nur, wenn
   das NLI-Modell in einer Richtung mindestens `suche_bezug_folgerung_ab` = 0,2 Folgerung
   sieht (`suche_bezug_nli`, an; Fragen und ohne Modell: zählt);
-- ihre Antworten bleiben auf dem direkten Weg möglich, dann ohne „Erkannt als“.
+- ihre Antworten bringt der direkte Weg nur mit eigener Ähnlichkeit ab `suche_bezug_direkt_ab` = 0,86
+  (Abschnitt „Direkter Weg“ unten; die Tabelle hier ist ohne diese Grenze gemessen).
 
 Gemessen am 19.11.2026 lokal am freigegebenen Startbestand (30 Aussagen, 60 Kommentare,
 Antworten mit Relevanz 1,0 wie beim Import über die API), mit
@@ -432,7 +433,54 @@ Startbestands teilen (S112 bis S131, S134 bis S138, davon zwei Fragen), und zwei
   Untergrenze 0,86 (gleich, aber der Befund hinge dann am Modell); Abstand der besten zur
   fünften Aussage (trennt gleich gebaute Sätze nicht besser).
 - Nachmessen: am Startbestand mit Relevanz 1,0; Variablen `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI`,
-  `…_BEZUG_AB`, `…_BEZUG_SICHER_AB`, `…_BEZUG_FOLGERUNG_AB` vor den Befehl oben.
+  `…_BEZUG_AB`, `…_BEZUG_SICHER_AB`, `…_BEZUG_FOLGERUNG_AB`, `…_BEZUG_DIREKT_AB` vor den
+  Befehl oben.
+
+### Direkter Weg
+
+Befund auf Produktion 0.9.2 (19.11.2026): „Open Source ist unsicher!“ zeigte kein „Erkannt als“
+mehr, aber unter „Passt zu deinem Suchtext“ als beste Antwort einen kurzen Kommentar zur
+Migranten-Aussage („Arbeitserlaubnis ist Schuld“, ein Satz). Ursache: Der Bezug verwirft die
+Aussage, ihre Antworten kamen aber über den direkten Weg, der den Beitrag selbst mit der
+Suchanfrage vergleicht (Rohscore über 0,82, ohne Relevanz). Kurze Texte liegen dort hoch: Der
+erste Satz des Kommentars hat zu „Open Source ist unsicher!“ 0,831, mit zwei weiteren Sätzen
+0,796. Lokal nachgestellt mit diesem Satz als drittem Kommentar der Migranten-Aussage im
+Startbestand (der volle Wortlaut liegt nur auf Produktion); dann zeigt S112 ihn direkt mit 0,582
+(= 0,831 · 0,7), wie auf Produktion.
+
+Seitdem kommen die Antworten einer Aussage ohne Bezug über den direkten Weg nur mit eigener
+Ähnlichkeit ab `suche_bezug_direkt_ab` = 0,86. Gemessen wie oben (135 von 138 Fällen), aber
+mit dem nachgestellten Kommentar; deshalb weicht die Zeile „vorher“ von der Zeile „Standard“
+der Tabelle oben ab (88 statt 87 Treffer, der Kommentar zeigt sich bei mehreren fremden Fällen
+direkt):
+
+| bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | 25 fremde: mit „Erkannt als“ / nur direkt | Präzision | Recall@10 | Seed: Treffer / Recall@10 |
+|---|---|---|---|---|---|---|---|---|
+| vorher (0.9.2) | 88/97 | 4 | 5 | 21/38 / 17 | 2 / 5 | 0.43 | 0.94 | 32/38 / 0.89 |
+| **ab 0,86 (Standard)** | 83/97 | 6 | 8 | 24/38 / 14 | 2 / 2 | 0.47 | 0.87 | 31/38 / 0.84 |
+| nie (ohne Ausnahme) | 81/97 | 7 | 9 | 25/38 / 13 | 2 / 2 | 0.47 | 0.85 | 30/38 / 0.82 |
+| direkter Weg für alle Suchanfragen ab drei Wörtern erst ab 0,86 | 83/97 | 2 | 12 | 28/38 / 10 | 2 / 0 | 0.67 | 0.87 | 29/38 / 0.76 |
+
+- **Ab 0,86** zeigen S112 („Open Source ist unsicher!“), S123 („Ein neues Handy lohnt sich
+  nicht“, Antwort zu Balkonsolar, 0,830) und S136 nichts mehr. Fünf Treffer gehen verloren, deren
+  passende Antwort nur noch direkt kam: S02, S46, S76, S78 (Umgangssprache, 0,837 bis 0,851) und
+  S99 (verwandt). Bei S02 und S76 nennt „Meintest du …?“ die Aussage. Zwei davon werden
+  Fehltreffer (6 statt 4): S46 und S99 zeigen dann eine unpassende direkte Antwort einer
+  Aussage, die nicht unter den fünf Aussagetreffern ist.
+- **Eine Schwelle trennt nicht:** Direkte Antworten verworfener Aussagen liegen passend zwischen
+  0,820 und 0,879, unpassend bis 0,872 (S82, Verneinung). 0,86 lässt S69 (0,869) und S133 (0,879)
+  und hält den Befund mit 0,03 Abstand fern; dafür bleibt S82 („Bio ist für alle bezahlbar“) mit
+  einer Antwort zur gegenteiligen Bio-Aussage (0,872). Der Abstand ist am nachgestellten Satz
+  gemessen, nicht am vollen Wortlaut auf Produktion. Ohne Ausnahme gehen auch S69 und S133 verloren, und
+  am Seed fällt Recall@10 auf 0,82, mit der Toleranz unter das Tor 0,80.
+- **Was bleibt:** S125 („Katzen wollen gar nicht arbeiten“) und S129 („Man darf ja gar nicht mehr
+  rauchen“) zeigen denselben kurzen Kommentar direkt (0,831), weil die Migranten-Aussage bei ihnen
+  nicht unter den fünf Aussagetreffern ist und der Bezug sie gar nicht prüft. Das hielte erst eine
+  Grenze für den ganzen direkten Weg fern (letzte Zeile): gleiche Treffer am Startbestand, aber am
+  Seed, der mehr Beiträge nur direkt findet, Recall@10 0,76 unter dem Tor.
+- **Seed** (nächtlicher Lauf): S02 und S29 verlieren ihre direkte Antwort, S30 wird Treffer. Soll
+  nachgezogen. Das Tor Recall@10 hat damit genau einen Fall Luft: 32 von 38 sind 0,84, einer
+  weniger 0,816, zwei weniger 0,789 und rot.
 
 ## Nächtlicher Lauf
 
@@ -457,7 +505,7 @@ Geprüft wird bei der Schwelle von heute (Werte in `nachtlauf.py`):
   Wer Modell, Schwelle, Stemmer, Normalisierung oder das Set ändert, zieht `SOLL` und
   diese Seite im selben PR nach (ein Unit-Test vergleicht beide).
 - **Tor für Roadmap-Stufe 3** (`docs/VISION.md`): Recall@10 mindestens 0,80 und Präzision
-  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,89 und 0,49.
+  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,84 und 0,61.
 - **Untere Grenze für ähnliche Aussagen:** Bei mindestens 70 % der Fälle mit Erwartung
   ist eine erwartete Aussage unter den ähnlichen Aussagen. Am Seed heute 79 %.
 

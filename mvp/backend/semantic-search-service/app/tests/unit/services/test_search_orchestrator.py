@@ -331,3 +331,74 @@ def test_gleicher_score_haelt_die_kommentarspalten_antwort_vorn():
     orchestrator.sort_and_truncate(5)
 
     assert orchestrator.results_for(ContentType.COMMENTARY) == [spalte, eigene]
+
+
+def _ausschluss(direkt_ab):
+    return PolarityFilterResult(
+        original_score=0.9,
+        adjusted_score=0.0,
+        polarity_penalty_applied=0.0,
+        polarity_mismatch_detected=direkt_ab is None,
+        query_polarity="nli" if direkt_ab is None else "bezug",
+        result_polarity="widerspruch" if direkt_ab is None else "ohne_bezug",
+        explanation="",
+        antworten_ausschliessen=True,
+        antworten_direkt_ab=direkt_ab,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("widerspruch_zuerst", [True, False])
+async def test_widerspruch_bleibt_strenger_als_ohne_bezug(widerspruch_zuerst):
+    """
+    Haengt eine Antwort an einer Aussage, die widerspricht (#574: nie direkt), und an
+    einer ohne Bezug (direkt ab 0,86), gilt das Strengere, egal in welcher Reihenfolge.
+    Andere direkte Treffer bleiben, auch knapp ueber der Schwelle 0,82.
+    """
+    antwort, fremd = _post(), _post()
+    antwort.title, fremd.title = "antwort", "fremd"
+    antwort.score, fremd.score = 0.9, 0.84
+    service = MagicMock()
+    service.get = AsyncMock(return_value=antwort)
+
+    def aussage():
+        return SimpleNamespace(
+            id=uuid.uuid4(),
+            text="Aussage",
+            score=0.0,
+            replysuggestions=[
+                SimpleNamespace(
+                    id=antwort.id, content_type=ContentType.POST, relevance=1
+                )
+            ],
+        )
+
+    widerspricht, ohne_bezug = aussage(), aussage()
+    polaritaet = {
+        widerspricht.id: _ausschluss(None),
+        ohne_bezug.id: _ausschluss(0.86),
+    }
+    reihenfolge = (
+        [widerspricht, ohne_bezug] if widerspruch_zuerst else [ohne_bezug, widerspricht]
+    )
+    orchestrator = SearchOrchestrator(
+        specs=[
+            ContentTypeSearchSpec(
+                ContentType.POST, service, PostSearchResultDto, "post_result"
+            )
+        ],
+        reference_service=None,
+        usage_service=None,
+        voting_service=None,
+    )
+
+    await orchestrator.collect_statement_based(reihenfolge, 10, polaritaet)
+    with patch(
+        "services.search.search_orchestrator.BaseContentService.search_batch",
+        AsyncMock(return_value=[[antwort, fremd]]),
+    ):
+        await orchestrator.collect_direct("Open Source ist unsicher!", 10)
+
+    treffer = orchestrator.results_for(ContentType.POST)
+    assert [t.post_result.title for t in treffer] == ["fremd"]

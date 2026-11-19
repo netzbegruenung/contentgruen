@@ -12,6 +12,7 @@ Behavior is intentionally identical to the prior hand-rolled branches; the searc
 characterization test (tests/unit/api/test_search_ranking.py) pins it.
 """
 
+import math
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type
@@ -107,9 +108,14 @@ class SearchOrchestrator:
         self._reference_service = reference_service
         self._usage_service = usage_service
         self._voting_service = voting_service
-        # Antworten von Aussagen, die der Suchanfrage widersprechen (#574): Sie kommen
-        # auch nicht ueber den direkten Weg zurueck.
-        self._ausgeschlossen: set = set()
+        # Antworten von Aussagen, die der Suchanfrage widersprechen (#574) oder keinen
+        # Bezug zu ihr haben (services/search/bezug.py): Sie kommen nicht ueber den
+        # direkten Weg zurueck, ausser ihr Rohscore erreicht den Wert hier (ohne Bezug:
+        # suche_bezug_direkt_ab; bei Widerspruch nie, math.inf). Haengt eine Antwort an
+        # mehreren solchen Aussagen, gilt das Strengere. Hat eine weitere Aussage mit
+        # Bezug sie unter der Schwelle, bleibt sie trotzdem ausgeschlossen (bewusst:
+        # lieber keine Antwort als eine fragliche).
+        self._ausgeschlossen: Dict[object, float] = {}
         # Per-type result buckets, preserving spec order.
         self._results: Dict[ContentType, List] = {
             spec.content_type: [] for spec in specs
@@ -183,9 +189,12 @@ class SearchOrchestrator:
         for statement_result in statement_index_results:
             polarity_info = polarity_metadata.get(statement_result.id)
             if polarity_info is not None and polarity_info.antworten_ausschliessen:
-                self._ausgeschlossen.update(
-                    r.id for r in statement_result.replysuggestions
-                )
+                ab = polarity_info.antworten_direkt_ab
+                for r in statement_result.replysuggestions:
+                    self._ausgeschlossen[r.id] = max(
+                        self._ausgeschlossen.get(r.id, -math.inf),
+                        math.inf if ab is None else ab,
+                    )
             for replysuggestion in statement_result.replysuggestions:
                 spec = self._specs.get(replysuggestion.content_type)
                 combined_score = (
@@ -265,7 +274,9 @@ class SearchOrchestrator:
             for content_result in direct_results:
                 if content_result.id in statement_based_ids:
                     continue
-                if content_result.id in self._ausgeschlossen:
+                if content_result.score < self._ausgeschlossen.get(
+                    content_result.id, -math.inf
+                ):
                     continue
 
                 # Der Schwellwert entscheidet ueber die Aufnahme und prueft deshalb
