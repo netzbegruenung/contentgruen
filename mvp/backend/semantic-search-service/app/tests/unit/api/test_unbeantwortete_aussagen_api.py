@@ -284,7 +284,7 @@ class TestVorab:
         themen_service.ergaenzen.assert_awaited_once_with(vorhanden, ["soziales"])
 
     @pytest.mark.parametrize(
-        "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa"]]
+        "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa", "soziales"]]
     )
     def test_ungueltige_themen_werden_vor_dem_anlegen_abgewiesen(
         self, statement_service, themen_service, themen

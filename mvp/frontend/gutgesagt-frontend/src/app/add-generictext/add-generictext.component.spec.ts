@@ -1018,16 +1018,19 @@ describe('AddGenerictextComponent', () => {
       expect('themen' in anfrage.generictext).toBeFalse();
     }));
 
-    it('laesst hoechstens zwei Themen waehlen', () => {
-      themenLaden();
+    it('laesst hoechstens drei Themen waehlen', () => {
+      themenLaden([...THEMEN, { schluessel: 'europa', name: 'Europa' }]);
       alsNeueAussage('Wärmepumpen sind zu teuer');
 
       thema('Klima').click();
       fixture.detectChanges();
       thema('Soziales').click();
       fixture.detectChanges();
+      expect(thema('Energie und Heizen').disabled).toBeFalse();
+      thema('Energie und Heizen').click();
+      fixture.detectChanges();
 
-      expect(thema('Energie und Heizen').disabled).toBeTrue();
+      expect(thema('Europa').disabled).toBeTrue();
     });
 
     it('schickt ohne Wahl keine Themen', fakeAsync(() => {

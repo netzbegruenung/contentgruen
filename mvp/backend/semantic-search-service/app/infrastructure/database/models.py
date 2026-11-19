@@ -435,7 +435,7 @@ class VarianteZeile(Base):
 class AussageThemaZeile(Base):
     """Ein Thema an einer Aussage, aus der festen Liste (domain/themen.py).
 
-    Je Aussage hoechstens zwei Zeilen; das prueft AussageThemenService, nicht die
+    Je Aussage hoechstens drei Zeilen; das prueft AussageThemenService, nicht die
     Tabelle. zuordnungsart unterscheidet die Zuordnung von Hand von der einer spaeteren
     Automatik. Traegt bewusst weder Kennung noch Zeitpunkt: Die Zuordnungen von
     Hand sind das Testset fuer Themenvorschlaege und sollen ohne Personendaten

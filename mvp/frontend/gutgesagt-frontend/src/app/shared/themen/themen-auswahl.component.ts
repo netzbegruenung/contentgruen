@@ -4,9 +4,9 @@ import { Thema } from '../../services/dtos/themenDtos';
 import { HOECHSTENS_THEMEN_JE_AUSSAGE } from '../../services/themen.service';
 
 /**
- * Ein bis zwei Themen fuer eine Aussage waehlen, optional. Jedes Thema ist ein
- * Umschalter; sind zwei gewaehlt, lassen sich weitere erst nach dem Abwaehlen
- * eines der beiden waehlen.
+ * Ein bis drei Themen fuer eine Aussage waehlen, optional. Jedes Thema ist ein
+ * Umschalter; sind drei gewaehlt, lassen sich weitere erst nach dem Abwaehlen
+ * eines davon waehlen.
  */
 @Component({
   selector: 'app-themen-auswahl',
@@ -21,7 +21,7 @@ import { HOECHSTENS_THEMEN_JE_AUSSAGE } from '../../services/themen.service';
               [disabled]="!istGewaehlt(thema) && voll"
               (click)="umschalten(thema)">{{ thema.name }}</button>
     </div>
-    <p class="themen-hinweis">Bis zu zwei Themen, optional.</p>
+    <p class="themen-hinweis">Bis zu drei Themen, optional.</p>
   `,
   styleUrls: ['./themen.css'],
 })

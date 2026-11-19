@@ -8,7 +8,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
-import { ResultViewComponent, erkannteAussage, themenDerTreffer } from './result-view.component';
+import { ResultViewComponent, erkannteAussage, erkannteMitThemen, themenDerTreffer } from './result-view.component';
 import { By } from '@angular/platform-browser';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { AuthService } from '../auth/auth.service';
@@ -532,6 +532,43 @@ describe('erkannteAussage', () => {
 
   it('gibt null, wenn nur direkte Treffer ohne Aussage da sind', () => {
     expect(erkannteAussage(antwort([treffer(null, '', 0.9)]))).toBeNull();
+  });
+});
+
+describe('erkannteMitThemen', () => {
+  const ID = '11111111-2222-4333-8444-555555555555';
+  const KLIMA = { schluessel: 'klima', name: 'Klima' };
+  const WOHNEN = { schluessel: 'wohnen', name: 'Wohnen' };
+  const antwort = (kommentare: any[]) =>
+    ({
+      query_was_newly_added_as_statement: false,
+      statement_id: null,
+      statement_text: '',
+      commentary_search_results_count: kommentare.length,
+      commentary_search_results: kommentare,
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+    }) as any;
+
+  it('nimmt die Themen von einem Treffer der erkannten Aussage, als eigenes Array', () => {
+    const themen = [KLIMA, WOHNEN];
+    const a = antwort([{ score: 0.9, statement_id: ID, statement_text: 'A', themen }]);
+
+    const ergebnis = erkannteMitThemen(a, { id: ID, text: 'A' });
+
+    expect(ergebnis).toEqual({ statement_id: ID, themen: [KLIMA, WOHNEN] });
+    expect(ergebnis!.themen).not.toBe(themen);
+  });
+
+  it('gibt eine Aussage ohne Themen mit leerer Liste', () => {
+    const a = antwort([{ score: 0.9, statement_id: ID, statement_text: 'A' }]);
+    expect(erkannteMitThemen(a, { id: ID, text: 'A' })).toEqual({ statement_id: ID, themen: [] });
+  });
+
+  it('gibt null ohne erkannte Aussage oder ohne ihre ID', () => {
+    const a = antwort([{ score: 0.9, statement_id: null, statement_text: 'A' }]);
+    expect(erkannteMitThemen(a, null)).toBeNull();
+    expect(erkannteMitThemen(a, { id: null, text: 'A' })).toBeNull();
   });
 });
 

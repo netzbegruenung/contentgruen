@@ -1,7 +1,7 @@
 """
 Themen an Aussagen: von Hand zuordnen, lesen und als Testset exportieren.
 
-Eine Aussage hat null bis zwei Themen aus der festen Liste (domain/themen.py).
+Eine Aussage hat null bis drei Themen aus der festen Liste (domain/themen.py).
 Gespeichert wird je Zuordnung nur Aussage, Thema und Zuordnungsart, keine Person und
 kein Zeitpunkt: Das Testset fuer spaetere Themenvorschlaege (#401) soll ohne
 Personendaten exportierbar sein, und wer zugeordnet hat, braucht niemand.
@@ -100,7 +100,7 @@ class AussageThemenService:
         leere Liste entfernt alle.
 
         Raises:
-            ThemaUngueltig: unbekanntes Thema oder mehr als zwei.
+            ThemaUngueltig: unbekanntes Thema oder mehr als drei.
             AussageNichtGefunden: Die Aussage gibt es nicht, oder sie ist nicht
                 sichtbar (gesperrt oder geloescht).
         """

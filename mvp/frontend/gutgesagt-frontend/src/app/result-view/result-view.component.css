@@ -496,6 +496,11 @@ mat-sidenav-content {
   color: var(--akzent-schrift);
 }
 
+/* Themen der erkannten Aussage unter der Zeile; gleicht deren negativen Abstand aus */
+.erkannt-themen {
+  margin-top: var(--spacing-sm);
+}
+
 .erkannt-liste {
   display: flex;
   flex-wrap: wrap;

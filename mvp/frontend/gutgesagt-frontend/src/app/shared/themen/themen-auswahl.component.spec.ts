@@ -6,6 +6,7 @@ const THEMEN: Thema[] = [
   { schluessel: 'klima', name: 'Klima' },
   { schluessel: 'verkehr', name: 'Verkehr' },
   { schluessel: 'europa', name: 'Europa' },
+  { schluessel: 'soziales', name: 'Soziales' },
 ];
 
 describe('ThemenAuswahlComponent', () => {
@@ -45,12 +46,24 @@ describe('ThemenAuswahlComponent', () => {
     expect(gemeldet).toEqual([[]]);
   });
 
-  it('laesst hoechstens zwei Themen zu', () => {
+  it('laesst ein drittes Thema zu', () => {
     setzen(['klima', 'verkehr']);
 
-    expect(knopf('Europa').disabled).toBeTrue();
-    expect(knopf('Klima').disabled).toBeFalse();
+    expect(knopf('Europa').disabled).toBeFalse();
     knopf('Europa').click();
+    expect(gemeldet).toEqual([['klima', 'verkehr', 'europa']]);
+  });
+
+  it('laesst hoechstens drei Themen zu, ein viertes nicht', () => {
+    setzen(['klima', 'verkehr', 'europa']);
+
+    expect(knopf('Soziales').disabled).toBeTrue();
+    expect(knopf('Klima').disabled).toBeFalse();
+    knopf('Soziales').click();
     expect(gemeldet).toEqual([]);
+  });
+
+  it('nennt die Grenze im Hinweis', () => {
+    expect(fixture.nativeElement.querySelector('.themen-hinweis').textContent.trim()).toBe('Bis zu drei Themen, optional.');
   });
 });

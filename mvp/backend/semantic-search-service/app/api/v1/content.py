@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from dependencies import (
     require_art9_einwilligung,
     get_aufrufer,
+    get_aussage_themen_service,
     get_beitrag_aendern_service,
     get_beitrag_laden,
     get_beitrag_loeschen_service,
@@ -34,7 +35,8 @@ from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
 from services.guete_service import als_responses_mit_guete, guete_ergaenzen
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
-from services.beitrag_kontext import BeitragKontext, kontext_laden
+from services.aussage_themen_service import AussageThemenService
+from services.beitrag_kontext import BeitragKontext, kontext_laden, themen_ergaenzen
 from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.content.base_content_service import BaseContentService
 from dtos.beitrag import (
@@ -292,6 +294,7 @@ async def beitrag_ansehen(
     aufrufer: Aufrufer = Depends(get_aufrufer),
     voting_service: VotingService = Depends(get_voting_service),
     statement_service: StatementService = Depends(get_statement_service),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
 ) -> Dict[str, Any]:
     """
     Ein Beitrag jedes Typs unter seiner eigenen Adresse (/beitrag/:id, #300).
@@ -309,7 +312,7 @@ async def beitrag_ansehen(
     Seite das Abstimmen anbietet (Entscheidung @BanSe 03.11.); ohne Anmeldung None.
 
     aussage und weitere_antworten (#603): die Aussage, auf die der Beitrag
-    antwortet (ID, Text), und bis zu fuenf weitere sichtbare Antworten zu ihr (ID,
+    antwortet (ID, Text, Themen), und bis zu fuenf weitere sichtbare Antworten zu ihr (ID,
     Typ, Titel); ohne Aussage None und []. Scheitert das Nachschlagen, bleibt die
     Seite mit dem Beitrag allein (services/beitrag_kontext.py).
     """
@@ -367,6 +370,11 @@ async def beitrag_ansehen(
     except Exception as e:
         logger.warning(f"Kontext zu /beitrag nicht ladbar: {type(e).__name__}")
         kontext = BeitragKontext()
+    try:
+        themen_ergaenzen(kontext, themen_service)
+    except Exception as e:
+        # Ohne Themen bleibt die Aussage stehen; die Seite zeigt dann keine.
+        logger.warning(f"Themen zu /beitrag nicht ladbar: {type(e).__name__}")
     return {
         **antwort.model_dump(mode="json"),
         "user_vote": stimme,

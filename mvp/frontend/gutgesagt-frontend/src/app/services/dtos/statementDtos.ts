@@ -74,7 +74,7 @@ export interface UnbeantworteteAussage {
     statement_id: string;
     statement_text: string;
     personen_ohne_treffer: number;
-    /** Hoechstens zwei, in der Reihenfolge der Themenliste. */
+    /** Hoechstens drei, in der Reihenfolge der Themenliste. */
     themen: Thema[];
 }
 
@@ -84,7 +84,7 @@ export interface UnbeantworteteAussagenResponse {
 
 export interface AussageVorabRequest {
     text: string;
-    /** Optional ein bis zwei Themen-Schluessel. */
+    /** Optional ein bis drei Themen-Schluessel. */
     themen?: string[];
 }
 
