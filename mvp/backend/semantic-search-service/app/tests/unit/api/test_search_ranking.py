@@ -712,3 +712,54 @@ class TestBezug:
         )
 
         assert resp.json()["commentary_search_results_count"] == 1
+
+
+@pytest.mark.api
+class TestInhaltstor:
+    """
+    Produktion 0.9.3: "Open Source ist unsicher!" zeigte unter "Passt zu deinem
+    Suchtext" den Kommentar "Arbeitserlaubnis ist Schuld" (208 Zeichen, eigene
+    Aehnlichkeit 0,821). Seine Aussage war nicht unter den Aussagetreffern, der Bezug
+    pruefte sie nicht (services/search/inhaltstor.py).
+    """
+
+    def _tor(self, aussagen):
+        from services.search.inhaltstor import Inhaltstor
+        from tests.unit.services.test_inhaltstor import _Werkzeuge
+
+        return Inhaltstor(
+            _Werkzeuge(), AsyncMock(return_value=aussagen), 0.82, 0.92, 0.90
+        )
+
+    def test_fremder_kommentar_ausserhalb_der_aussagetreffer_kommt_nicht(
+        self, search_client
+    ):
+        from tests.unit.services.test_inhaltstor import (
+            ARBEITSERLAUBNIS_TEXT,
+            ARBEITSERLAUBNIS_TITEL,
+            FLUECHTLINGE,
+        )
+
+        kommentar = _commentary_search_hit(score=0.821)
+        kommentar.title, kommentar.text = ARBEITSERLAUBNIS_TITEL, ARBEITSERLAUBNIS_TEXT
+        client = search_client(statement_results=[], direct_commentaries=[kommentar])
+        aussage = MagicMock(text=FLUECHTLINGE)
+        with patch("api.v1.search.inhaltstor_fuer", return_value=self._tor([aussage])):
+            resp = client.post(
+                SEARCH_URL,
+                json={"query_text": "Open Source ist unsicher!", "limit": 10},
+            )
+
+        assert resp.json()["commentary_search_results_count"] == 0
+
+    def test_ohne_inhaltstor_kam_er_direkt(self, search_client):
+        # Gegenprobe: derselbe Aufbau ohne Tor zeigt den Kommentar (wie 0.9.3).
+        kommentar = _commentary_search_hit(score=0.821)
+        client = search_client(statement_results=[], direct_commentaries=[kommentar])
+        with patch("api.v1.search.inhaltstor_fuer", return_value=None):
+            resp = client.post(
+                SEARCH_URL,
+                json={"query_text": "Open Source ist unsicher!", "limit": 10},
+            )
+
+        assert resp.json()["commentary_search_results_count"] == 1

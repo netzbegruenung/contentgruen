@@ -289,6 +289,14 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
   entailment of at least `SEMANTIC_SEARCH_SUCHE_BEZUG_FOLGERUNG_AB` (0.2) in one direction; the
   search waits for it (2 s at most, then they count). Measured in
   `tests/regression/SUCHTESTSET.md`, section Bezug.
+- `SEMANTIC_SEARCH_SUCHE_INHALTSTOR` - for a query of three words or more (default `true`),
+  a hit in the uncertain band counts only if query and hit share a content word: a lemma of
+  the query's nouns or proper nouns in the Aussage, the contribution's title or text, or on
+  the direct path the Aussagen it answers (`antwort_ids`) (`services/search/inhaltstor.py`).
+  Band: Aussage similarity from `…_INHALTSTOR_AB` (0.82) to below `…_INHALTSTOR_AUSSAGE_BIS`
+  (0.92), direct raw score above 0.82 to below `…_INHALTSTOR_DIREKT_BIS` (0.90). spaCy model
+  of Gegenlesen; open without nouns or before the model is loaded. Measured in
+  `tests/regression/SUCHTESTSET.md`, section Inhaltstor.
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts

@@ -1,7 +1,7 @@
 import datetime
 from domain.models.zeit import UtcZeit
 from pydantic import BaseModel, ValidationError, field_validator
-from typing import List
+from typing import List, Optional
 import json
 import uuid
 
@@ -129,6 +129,10 @@ class StatementSearchResult(StatementDbEntry, BaseContentSearchResult):
     """
     Representing a statement with score and additional result metadata
     """
+
+    # Aehnlichkeit der Einbettung, bevor Polaritaet und Schlagwoerter ``score``
+    # aendern (api/v1/search.py, aussagetreffer_finden); fuer das Inhaltstor.
+    aehnlichkeit: Optional[float] = None
 
 
 _FRUEHESTE = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)

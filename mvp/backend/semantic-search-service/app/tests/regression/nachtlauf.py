@@ -45,8 +45,8 @@ ABWEICHUNG = 1
 # nur an einem Bestand ohne diese Seed-Aussagen (Startbestand) und aendert das Soll nicht.
 SOLL: Dict[str, int] = {
     "gemessen": 47,
-    "treffer": 31,
-    "fehltreffer": 2,
+    "treffer": 32,
+    "fehltreffer": 1,
     "keine": 5,
     "ohne_richtig_keine": 5,
     "ohne_fehltreffer": 4,

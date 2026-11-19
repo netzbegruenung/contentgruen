@@ -97,7 +97,10 @@ class SearchOrchestrator:
         usage_service,
         voting_service,
         schwelle: float = MINIMUM_SCORE_THRESHOLD,
+        inhaltstor=None,
     ):
+        # services/search/inhaltstor.py; None: aus (Tests, Aufrufer ohne Suchanfrage).
+        self._inhaltstor = inhaltstor
         # Treffer bis einschliesslich dieser Schwelle fallen weg. Der Dienst nutzt immer
         # MINIMUM_SCORE_THRESHOLD; das Suchtestset (tests/regression/suche_messen.py)
         # laesst je zu messender Schwelle einen eigenen Orchestrator laufen.
@@ -185,6 +188,7 @@ class SearchOrchestrator:
         statement_index_results: List,
         limit: int,
         polarity_metadata: dict,
+        query_text: Optional[str] = None,
     ) -> None:
         for statement_result in statement_index_results:
             polarity_info = polarity_metadata.get(statement_result.id)
@@ -227,6 +231,21 @@ class SearchOrchestrator:
                         f"{statement_result.id}). Error: {type(e).__name__}"
                     )
                     continue
+
+                # Im unsicheren Band nur mit gemeinsamem Inhaltswort.
+                if self._inhaltstor is not None and query_text:
+                    aehnlichkeit = getattr(statement_result, "aehnlichkeit", None)
+                    if not self._inhaltstor.aussage_zaehlt(
+                        query_text,
+                        (
+                            statement_result.score
+                            if aehnlichkeit is None
+                            else aehnlichkeit
+                        ),
+                        statement_result.text,
+                        content_result,
+                    ):
+                        continue
 
                 await self._enrich_references(content_result)
 
@@ -286,6 +305,13 @@ class SearchOrchestrator:
                 # muessen, was eine Kosinus-Aehnlichkeit nie erreicht. Der Zweig
                 # konnte dadurch nie etwas liefern.
                 if content_result.score <= self._schwelle:
+                    continue
+
+                # Im unsicheren Band nur mit gemeinsamem Inhaltswort, auch mit den
+                # Aussagen, auf die der Beitrag antwortet (Inhaltstor).
+                if self._inhaltstor is not None and not (
+                    await self._inhaltstor.direkt_zaehlt(query_text, content_result)
+                ):
                     continue
 
                 # Die Penalty bleibt und wirkt weiter auf das Ranking: ein direkter
