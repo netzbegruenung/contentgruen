@@ -10,16 +10,27 @@
 
 <!-- Loading Spinner -->
 <app-loading-spinner
-    [loading]="(loading$ | async) || false"
+    [loading]="!ohneSuche && ((loading$ | async) || false)"
     message="Suche läuft...">
 </app-loading-spinner>
 
 <!-- Error Message -->
 <app-error-message
-    [error]="(error$ | async) || ''"
+    [error]="ohneSuche ? '' : ((error$ | async) || '')"
     [showRetry]="true"
     [retryAction]="retrySearch">
 </app-error-message>
+
+<!-- Testeingabe ("test", "hallo", "hilfe"; GLOSSARY): statt Treffern eine freundliche Karte, gesucht
+     wird nicht. Die Region steht immer da, damit Screenreader die Karte ankuendigen (aria-live). -->
+<div class="testeingabe-region" aria-live="polite">
+    <section class="testeingabe-karte hinweis-box" *ngIf="testeingabe">
+        <p class="testeingabe-text">{{ testeingabe }}</p>
+        <p class="testeingabe-aufruf">{{ testeingabeAufruf }}:</p>
+        <a class="erkannt-chip testeingabe-beispiel" [routerLink]="['/result']"
+           [queryParams]="{ searchQuery: testeingabeBeispiel }">„{{ testeingabeBeispiel }}“</a>
+    </section>
+</div>
 
 <!-- Unter den Treffern, ruhig und offen: nicht auf jede Aussage antworten (docs/VISION.md, #602).
      Gemeint ist Melden auf der Plattform der Aussage, nicht die Meldung eines Beitrags hier. -->
@@ -37,7 +48,7 @@
 </ng-template>
 
 <!-- Eine Darstellung fuer Handy und Desktop: Zeile "Erkannt als", beste Antwort, Rest eingeklappt -->
-<ng-container *ngIf="!(loading$ | async) && (searchResponse$ | async) && angezeigt">
+<ng-container *ngIf="!ohneSuche && !(loading$ | async) && (searchResponse$ | async) && angezeigt">
 
     <!-- Ohne Treffer: kein leerer Kasten, sondern Antworten, aehnliche Aussagen und "Oft gesucht" -->
     <section class="content-section" *ngIf="!hatTreffer">

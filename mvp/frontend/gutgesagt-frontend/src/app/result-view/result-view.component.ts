@@ -41,6 +41,7 @@ import {
   aussageSchluessel,
   gruppieren,
 } from './ergebnis-gruppen';
+import { TESTEINGABE_AUFRUF, TESTEINGABE_BEISPIEL, testeingabeArt, testeingabeText } from '../shared/testeingabe';
 
 /** Wie viele aehnliche Aussagen die Zeile "Erkannt als" unter "Nicht gemeint?" anbietet. */
 const ALTERNATIVEN_ERKANNT = 3;
@@ -245,6 +246,20 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   /** "Nicht gemeint?" klappt die Alternativen erst auf. */
   alternativenOffen = false;
 
+  /**
+   * Der Text der Karte bei einer Testeingabe ("test", "hallo", "hilfe"; GLOSSARY), sonst null.
+   * Dann wird nicht gesucht: Die Suche legte den Text sonst als Aussage an.
+   */
+  testeingabe: string | null = null;
+  /**
+   * Die aktuelle Suchanfrage ist eine Testeingabe: Treffer, Ladeanzeige und Fehler bleiben weg,
+   * auch wenn die Antwort einer vorigen Suche noch spaet eintrifft. Sofort gesetzt, die Karte
+   * kommt erst nach dem Zeichnen.
+   */
+  ohneSuche = false;
+  readonly testeingabeAufruf = TESTEINGABE_AUFRUF;
+  readonly testeingabeBeispiel = TESTEINGABE_BEISPIEL;
+
   constructor(
     private searchService: SearchService,
     private stateService: StateManagementService,
@@ -435,10 +450,33 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     // sofort, nicht erst mit loading=true. Wer in diesem Fenster auf "hinzufuegen"
     // tippt, darf nicht an die alte Aussage antworten.
     this.stateService.neueSucheBeginnen();
+    this.testeingabe = null;
+    const art = testeingabeArt(this.searchQuery);
+    this.ohneSuche = art !== null;
+    if (art) {
+      // Kein Suchaufruf, also keine Aussage, keine Suche ohne Treffer, keine Luecke.
+      this.stateService.setSearchQuery(this.searchQuery);
+      this.stateService.setLoading(false);
+      const suchtext = this.searchQuery;
+      const text = testeingabeText(art);
+      // Erst nach dem Zeichnen: Die aria-live-Region steht dann schon und kuendigt die Karte an.
+      Promise.resolve().then(() => {
+        if (this.searchQuery !== suchtext) {
+          return;
+        }
+        this.testeingabe = text;
+        this.cdr.markForCheck();
+      });
+      return;
+    }
     this.fetchSearchResults();
   }
 
   private fetchSearchResults(): void {
+    // Auch "Erneut versuchen" sucht keine Testeingabe: Der Suchaufruf legte sie als Aussage an.
+    if (testeingabeArt(this.searchQuery)) {
+      return;
+    }
     this.searchService.search(this.searchQuery, 10).subscribe();
   }
 
