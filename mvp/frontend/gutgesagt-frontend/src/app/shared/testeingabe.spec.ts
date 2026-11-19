@@ -1,4 +1,4 @@
-import { TESTEINGABEN, TesteingabeArt, normalisieren, testeingabeArt, testeingabeText } from './testeingabe';
+import { TESTEINGABEN, TESTEINGABE_BEISPIEL, TesteingabeArt, normalisieren, testeingabeArt, testeingabeText } from './testeingabe';
 
 describe('Testeingabe', () => {
   describe('testeingabeArt', () => {
@@ -67,6 +67,11 @@ describe('Testeingabe', () => {
 
   describe('Liste und Texte', () => {
     const alle = (Object.keys(TESTEINGABEN) as TesteingabeArt[]).map((art) => TESTEINGABEN[art]);
+
+    it('das Beispiel ist selbst keine Testeingabe, ein Klick sucht es also', () => {
+      expect(TESTEINGABE_BEISPIEL.length).toBeGreaterThan(10);
+      expect(testeingabeArt(TESTEINGABE_BEISPIEL)).toBeNull();
+    });
 
     it('jede Gruppe hat zwei oder drei Texte', () => {
       for (const gruppe of alle) {

@@ -1308,6 +1308,30 @@ describe('ResultViewComponent: Testeingabe', () => {
     return http.match((r) => r.url.endsWith('/api/v1/search/searchByText')).length;
   }
 
+  // Keine weiteren Aufrufe, etwa an andere Endpunkte, die eine Aussage anlegen koennten.
+  afterEach(() => http.verify());
+
+  it('zeigt keine spaete Antwort einer vorigen Suche unter der Karte', async () => {
+    const { harness, seite } = await oeffnen('Klimaschutz ist zu teuer');
+    const offen = http.expectOne((r) => r.url.endsWith('/api/v1/search/searchByText'));
+    await harness.navigateByUrl('result?searchQuery=test', ResultViewComponent);
+    await harness.fixture.whenStable();
+    offen.flush({
+      query_was_newly_added_as_statement: true,
+      statement_id: null,
+      statement_text: 'Klimaschutz ist zu teuer',
+      commentary_search_results_count: 0,
+      commentary_search_results: [],
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+    });
+    harness.detectChanges();
+    expect(suchaufrufe()).withContext('fuer "test" kein neuer Suchaufruf').toBe(0);
+    expect(seite.querySelector('.testeingabe-karte')).toBeTruthy();
+    expect(seite.querySelector('.unified-empty-state')).withContext('alte Antwort bleibt weg').toBeNull();
+    expect(seite.querySelector('app-nicht-dabei')).toBeNull();
+  });
+
   for (const eingabe of ['test', 'Hallo!', 'Was ist das?', 'ASDF']) {
     it(`sucht bei "${eingabe}" nicht und zeigt die Karte`, async () => {
       const { seite } = await oeffnen(eingabe);

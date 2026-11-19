@@ -10,7 +10,7 @@ import { HOT_TAKES } from './startbeispiel';
  * Wörter und Texte stehen nur hier. Ein Wort gilt nur, wenn es die ganze Eingabe ist
  * (siehe normalisieren); „Testergebnis Corona“ oder „Hallo, die Grünen …“ suchen normal.
  * Texte: freundlich, höchstens 140 Zeichen, keine Gedankenstriche, kein Spott, keine
- * Parteistimme (geprüft in testeingabe.spec.ts).
+ * Parteistimme (Länge und Gedankenstriche prüft testeingabe.spec.ts, den Ton das Review).
  */
 export type TesteingabeArt = 'test' | 'gruss' | 'frage';
 

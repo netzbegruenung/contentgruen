@@ -251,6 +251,12 @@ export class ResultViewComponent implements OnInit, OnDestroy {
    * Dann wird nicht gesucht: Die Suche legte den Text sonst als Aussage an.
    */
   testeingabe: string | null = null;
+  /**
+   * Die aktuelle Suchanfrage ist eine Testeingabe: Treffer, Ladeanzeige und Fehler bleiben weg,
+   * auch wenn die Antwort einer vorigen Suche noch spaet eintrifft. Sofort gesetzt, die Karte
+   * kommt erst nach dem Zeichnen.
+   */
+  ohneSuche = false;
   readonly testeingabeAufruf = TESTEINGABE_AUFRUF;
   readonly testeingabeBeispiel = TESTEINGABE_BEISPIEL;
 
@@ -446,6 +452,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.stateService.neueSucheBeginnen();
     this.testeingabe = null;
     const art = testeingabeArt(this.searchQuery);
+    this.ohneSuche = art !== null;
     if (art) {
       // Kein Suchaufruf, also keine Aussage, keine Suche ohne Treffer, keine Luecke.
       this.stateService.setSearchQuery(this.searchQuery);
@@ -466,6 +473,10 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   private fetchSearchResults(): void {
+    // Auch "Erneut versuchen" sucht keine Testeingabe: Der Suchaufruf legte sie als Aussage an.
+    if (testeingabeArt(this.searchQuery)) {
+      return;
+    }
     this.searchService.search(this.searchQuery, 10).subscribe();
   }
 
