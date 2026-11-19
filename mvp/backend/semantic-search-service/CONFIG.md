@@ -69,6 +69,10 @@ nano .env
 | `SEMANTIC_SEARCH_SUCHE_BEZUG_SICHER_AB` | With `…_BEZUG_NLI`: from this similarity an Aussage counts without the model | `0.92` |
 | `SEMANTIC_SEARCH_SUCHE_BEZUG_FOLGERUNG_AB` | With `…_BEZUG_NLI`: minimum entailment (either direction) for an Aussage in the band | `0.2` |
 | `SEMANTIC_SEARCH_SUCHE_BEZUG_DIREKT_AB` | Answers of an Aussage without Bezug come via the direct path only if their own raw similarity to the query reaches this value (otherwise a short answer to the unrelated Aussage stood there as best answer, 0.83 on production 0.9.2). `1.01` turns the exception off | `0.86` |
+| `SEMANTIC_SEARCH_SUCHE_INHALTSTOR` | Inhaltstor (`services/search/inhaltstor.py`): for a query of three words or more, a hit in the uncertain band counts only if a lemma of the query's nouns and proper nouns appears in the Aussage, the contribution's title or text, or (direct path only) the Aussagen it answers. Query without nouns, keyword queries or spaCy model not loaded yet: gate open. Same model as Gegenlesen, no extra RAM; `tests/regression/SUCHTESTSET.md`, section Inhaltstor | `true` |
+| `SEMANTIC_SEARCH_SUCHE_INHALTSTOR_AB` | With `…_INHALTSTOR`: lower end of the band (Aussage similarity, raw score on the direct path) | `0.82` |
+| `SEMANTIC_SEARCH_SUCHE_INHALTSTOR_AUSSAGE_BIS` | With `…_INHALTSTOR`: from this Aussage similarity a statement hit counts without a shared word | `0.92` |
+| `SEMANTIC_SEARCH_SUCHE_INHALTSTOR_DIREKT_BIS` | With `…_INHALTSTOR`: from this raw score a direct hit counts without a shared word | `0.90` |
 | `SEMANTIC_SEARCH_APP_DATABASE_URL` | App database connection string | localhost:5433 |
 | `SEMANTIC_SEARCH_LOG_LEVEL` | Logging level (DEBUG, INFO, etc.) | INFO |
 | `SEMANTIC_SEARCH_KEYCLOAK_URL`, `…_KEYCLOAK_ADMIN_CLIENT_ID`, `…_KEYCLOAK_ADMIN_CLIENT_SECRET` | Keycloak admin API for redeeming Einladungen; without them Einladungen can only be managed. Set only together with the BFF switch to the new realm (`docs/KEYCLOAK_REALM.md`, order) | unset |

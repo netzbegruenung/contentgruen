@@ -108,6 +108,12 @@ median +0.07 s, 95th percentile 0.35 s instead of 0.10 s). Together with the pol
 a search waits for the model twice in a row, each up to 2 s, so up to 4 s when it is busy.
 `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI=false` keeps only the lower limit, without the model.
 
+The Inhaltstor of the search (`SEMANTIC_SEARCH_SUCHE_INHALTSTOR`, default `true`) uses the spaCy
+model `de_core_news_sm` that is already loaded at start for Gegenlesen, so it needs no extra
+RAM. Until the model is loaded the gate stays open; the search does not wait for it. Runtime
+cost was not measurable (median 156 to 168 ms with and without). `SEMANTIC_SEARCH_SUCHE_INHALTSTOR=false`
+switches it off.
+
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address alone (IPv6: its /64; the User-Agent no longer counts since #495,
 `utils/besucher_pseudonym.py`). Search events keep this pseudonym only for the running UTC day;

@@ -106,6 +106,10 @@ _Avoid_: Testset (allein), Messset (das sind Textpaare)
 Ob eine Aussage inhaltlich zu einer Suchanfrage passt und nicht nur im Satzbau oder in einem Schlagwort ähnelt („Open Source ist unsicher!“ und „Migranten machen unsere Städte unsicher.“). Die Suche prüft ihn bei Suchanfragen ab drei Wörtern an einer Untergrenze der Ähnlichkeit: Darunter zählt eine Aussage nicht als Treffer. Bei Behauptungen prüft knapp darüber das Modell der NLI-Stufe, ob es in einer Richtung etwas folgert. Ihre Antworten zeigt die Suche auch direkt nur, wenn sie selbst der Suchanfrage sehr ähnlich sind. Schlagwörter prüft sie nicht. Messung in `tests/regression/SUCHTESTSET.md`, Abschnitt „Bezug“.
 _Avoid_: Relevanz (das ist das Gewicht einer Antwort an ihrer Aussage)
 
+**Inhaltstor**:
+Ob Suchanfrage und Treffer ein Inhaltswort teilen. Bei Suchanfragen ab drei Wörtern zählt ein Treffer knapp über der Schwelle nur, wenn ein Nomen oder Eigenname der Suchanfrage (als Lemma) in seiner Aussage, im Titel oder Text des Beitrags oder in den Aussagen steht, auf die er antwortet. Ergänzt den Bezug für Treffer, die er nicht sieht, etwa direkte Antworten von Aussagen außerhalb der fünf Aussagetreffer. Suchanfragen ohne Nomen und Schlagwörter prüft es nicht. Messung in `tests/regression/SUCHTESTSET.md`, Abschnitt „Inhaltstor“.
+_Avoid_: Schlagwortfilter (es vergleicht Lemmata, nur im unsicheren Band), Thema (kein Themenmodell)
+
 **Fehltreffer**:
 Eine Suche, deren erster angezeigter Beitrag nicht auf die Suchanfrage passt, oder die etwas anzeigt, obwohl im Bestand nichts passt. Gemessen im Suchtestset; das Gegenstück zur Suche ohne Treffer, bei der nichts angezeigt wird. Für die Suche selbst passt bei einem Fehltreffer etwas ausreichend (über der Schwelle); er zählt deshalb nie als Suche ohne Treffer.
 _Avoid_: falsch positiv

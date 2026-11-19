@@ -150,7 +150,7 @@ geschrieben, um gefunden zu werden. Die Bewertung der Schwelle steht unter „Er
 Startbestand“; die Zeile der Schwelle von heute ist hier das Soll des nächtlichen Laufs.
 Die Zeile 0,82 ist am 18.11.2026 mit dem nächtlichen Lauf nachgemessen, mit den fünf
 Hot Takes des Starts (S107 bis S111, 47 Fälle, 38 mit Erwartung; alle fünf Treffer, vier
-davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen. Am 19.11.2026 mit dem Bezug (Abschnitt „Bezug“) nachgemessen: Treffer, Fehltreffer, keine und Recall gleich; S42 („Das Deutschlandticket ist zu teuer“, ohne Erwartung) zeigt nichts mehr (Präzision 0,52 statt 0,49). Nochmals am 19.11.2026 mit der Grenze des direkten Wegs (Abschnitt „Direkter Weg“): S02 und S29 ohne Treffer, S30 jetzt Treffer, Recall@10 0,84, Präzision 0,61.
+davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen. Am 19.11.2026 mit dem Bezug (Abschnitt „Bezug“) nachgemessen: Treffer, Fehltreffer, keine und Recall gleich; S42 („Das Deutschlandticket ist zu teuer“, ohne Erwartung) zeigt nichts mehr (Präzision 0,52 statt 0,49). Nochmals am 19.11.2026 mit der Grenze des direkten Wegs (Abschnitt „Direkter Weg“): S02 und S29 ohne Treffer, S30 jetzt Treffer, Recall@10 0,84, Präzision 0,61. Mit dem Inhaltstor (Abschnitt „Inhaltstor“): S09 jetzt Treffer statt Fehltreffer, Präzision 0,66.
 
 | Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|---|---|
@@ -159,7 +159,7 @@ davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen
 | 0.79 | 30/33 | 2 | 1 | 1/9 / 8 | 0.25 | 0.91 | 0.94 | 0.97 | 13 / 203 |
 | 0.80 | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.88 | 0.91 | 0.94 | 11 / 136 |
 | 0.81 | 28/33 | 3 | 2 | 3/9 / 6 | 0.39 | 0.88 | 0.91 | 0.94 | 21 / 102 |
-| 0.82 (heute) | 31/38 | 2 | 5 | 5/9 / 4 | 0.61 | 0.84 | 0.84 | 0.84 | 14 / 34 |
+| 0.82 (heute) | 32/38 | 1 | 5 | 5/9 / 4 | 0.66 | 0.84 | 0.84 | 0.84 | 13 / 22 |
 | 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 0.76 | 0.76 | 12 / 15 |
 | 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
@@ -482,6 +482,50 @@ direkt):
   nachgezogen. Das Tor Recall@10 hat damit genau einen Fall Luft: 32 von 38 sind 0,84, einer
   weniger 0,816, zwei weniger 0,789 und rot.
 
+### Inhaltstor
+
+Befund auf Produktion 0.9.3 (19.11.2026): „Open Source ist unsicher!“ zeigte unter „Passt zu
+deinem Suchtext“ einen alten Kommentar zur Arbeitserlaubnis von Geflüchteten („Arbeitserlaubnis
+ist Schuld“, 208 Zeichen). Er kam über den direkten Weg (eigene Ähnlichkeit 0,821, Schwelle
+0,82); seine Aussage war nicht unter den fünf Aussagetreffern, also prüfte der Bezug sie nicht
+(Abschnitt „Direkter Weg“, „Was bleibt“).
+
+Seitdem prüft die Suche das **Inhaltstor** (`services/search/inhaltstor.py`), für
+Suchanfragen ab drei Wörtern (Schlagwörter nicht): Ein Treffer im unsicheren Band zählt nur,
+wenn ein Lemma der Nomen und Eigennamen der Suchanfrage (spaCy `de_core_news_sm`, dasselbe
+Modell wie das Gegenlesen) unter den Lemmata seiner Aussage oder von Titel und Text des
+Beitrags ist; beim direkten Weg auch der Aussagen, auf die er antwortet (Payload-Feld
+`antwort_ids`).
+
+- Band: Aussagetreffer mit Ähnlichkeit der Aussage ab `suche_inhaltstor_ab` = 0,82 bis unter
+  `suche_inhaltstor_aussage_bis` = 0,92; direkte Treffer mit Rohscore über 0,82 bis unter
+  `suche_inhaltstor_direkt_bis` = 0,90.
+- Offen bleibt das Tor bei Suchanfragen ohne Nomen, bei Schlagwörtern und solange das
+  Sprachmodell nicht geladen ist.
+
+Gemessen am 19.11.2026 lokal am Startbestand wie oben (135 von 138 Fällen, Schwelle 0,82), mit
+dem echten Kommentar an einer nachgestellten alten Aussage außerhalb der fünf Aussagetreffer:
+
+<!-- Zahlen vorläufig -->
+| bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | 25 fremde: mit „Erkannt als“ / nur direkt | Präzision | Recall@10 | Seed: Treffer / Recall@10 |
+|---|---|---|---|---|---|---|---|---|
+| vorher (0.9.3) | 83/97 | 6 | 8 | 24/38 / 14 | 2 / 2 | 0.48 | 0.87 | 31/38 / 0.84 |
+| **Inhaltstor (Standard)** | 83/97 | 4 | 10 | 27/38 / 11 | 2 / 1 | 0.61 | 0.87 | 32/38 / 0.84 |
+
+- **Mit Inhaltstor** zeigen S112 (der Befund), S40 und S66 nichts mehr. S09 und S99 werden von
+  Fehltreffer zu keine. Treffer und Recall bleiben gleich.
+- **Am Seed** (nächtlicher Lauf): S09 wird Treffer (32 statt 31, ein Fehltreffer weniger),
+  Präzision 0,66. Soll nachgezogen.
+- **Was bleibt:** S129 („Man darf ja gar nicht mehr rauchen“, kein Nomen, Tor offen), S117
+  („Tauben machen unsere Städte dreckig“, teilt „Stadt“) und S138 („Radfahrer machen unsere
+  Städte unsicher“, über dem Band).
+- **Laufzeit:** nicht messbar (Median 156 bis 168 ms mit und ohne).
+- Verworfen: Tor für alle Suchanfragen samt Schlagwörtern (77/97, am Seed Recall@10 0,79 unter
+  dem Tor 0,80; zusammengesetzte Wörter wie „Heizungsverbot“ zu „Heizung“ teilen kein Lemma);
+  Thema über die Einbettung (71/97, am Seed Recall@10 0,63).
+- Nachmessen: Variablen `SEMANTIC_SEARCH_SUCHE_INHALTSTOR`, `…_INHALTSTOR_AB`,
+  `…_INHALTSTOR_AUSSAGE_BIS`, `…_INHALTSTOR_DIREKT_BIS` vor den Befehl oben.
+
 ## Nächtlicher Lauf
 
 `.woodpecker/nacht.yaml` (#391) misst jede Nacht und auf Anstoß das Messset und das
@@ -505,7 +549,7 @@ Geprüft wird bei der Schwelle von heute (Werte in `nachtlauf.py`):
   Wer Modell, Schwelle, Stemmer, Normalisierung oder das Set ändert, zieht `SOLL` und
   diese Seite im selben PR nach (ein Unit-Test vergleicht beide).
 - **Tor für Roadmap-Stufe 3** (`docs/VISION.md`): Recall@10 mindestens 0,80 und Präzision
-  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,84 und 0,61.
+  mindestens 0,25, unabhängig vom Soll. Am Seed heute 0,84 und 0,66.
 - **Untere Grenze für ähnliche Aussagen:** Bei mindestens 70 % der Fälle mit Erwartung
   ist eine erwartete Aussage unter den ähnlichen Aussagen. Am Seed heute 79 %.
 
