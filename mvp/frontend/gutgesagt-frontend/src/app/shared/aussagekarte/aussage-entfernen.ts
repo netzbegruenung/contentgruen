@@ -14,6 +14,7 @@ export function entfernenFrage(text: string): BestaetigungsDialogDaten {
       'Das lässt sich nicht rückgängig machen. Offene Meldungen zu ihr gelten danach als bearbeitet.',
     ja: 'Endgültig entfernen',
     nein: 'Abbrechen',
+    warnung: true,
   };
 }
 

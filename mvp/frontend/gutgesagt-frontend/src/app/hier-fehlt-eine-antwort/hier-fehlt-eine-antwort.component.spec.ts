@@ -468,6 +468,7 @@ describe('HierFehltEineAntwortComponent', () => {
       expect(daten.titel).toContain('endgültig');
       expect(daten.text).toContain('„Wärmepumpen sind zu teuer“');
       expect(daten.text).toContain('nicht rückgängig');
+      expect((daten as { warnung?: boolean }).warnung).toBeTrue();
 
       const anfrage = http.expectOne(ENTFERNEN_URL('a-1'));
       expect(anfrage.request.method).toBe('DELETE');
