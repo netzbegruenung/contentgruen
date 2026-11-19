@@ -10,7 +10,7 @@ export function entfernenFrage(text: string): BestaetigungsDialogDaten {
   return {
     titel: 'Aussage endgültig entfernen?',
     text:
-      `„${text}“ wird endgültig entfernt, mit ihren Themen, Stimmen und Verweisen. ` +
+      `„${text}“ wird endgültig entfernt, mit ihren Stimmen und Verweisen. ` +
       'Das lässt sich nicht rückgängig machen. Offene Meldungen zu ihr gelten danach als bearbeitet.',
     ja: 'Endgültig entfernen',
     nein: 'Abbrechen',

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Subject, Subscription } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
@@ -150,6 +150,7 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   meldung = '';
   /** Fehler beim Entfernen einer Aussage; steht ueber der Liste, bis der naechste Versuch gelingt. */
   entfernenFehler = '';
+  @ViewChild('einleitung') private einleitung?: ElementRef<HTMLElement>;
 
   constructor(
     private statementService: StatementService,
@@ -181,17 +182,22 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
         if (ja !== true) {
           return;
         }
+        const weg = () => {
+          this.entfernenFehler = '';
+          this.aussagen = (this.aussagen ?? []).filter((a) => a.statement_id !== aussage.statement_id);
+          if (this.themenBearbeiten === aussage.statement_id) {
+            this.themenBearbeiten = null;
+          }
+          // Mit dem Text: Zweimal derselbe Wert in der Live-Region wird nicht erneut angesagt
+          this.ansage = `Aussage entfernt: „${aussage.statement_text}“`;
+          // Die Liste verschwindet mit der letzten Karte; dann traegt die Einleitung den Fokus
+          setTimeout(() => (this.aussagen?.length ? liste : this.einleitung?.nativeElement)?.focus());
+        };
+        this.entfernenFehler = '';
         this.moderationService.aussageEntfernen(aussage.statement_id).subscribe({
-          next: () => {
-            this.entfernenFehler = '';
-            this.aussagen = (this.aussagen ?? []).filter((a) => a.statement_id !== aussage.statement_id);
-            if (this.themenBearbeiten === aussage.statement_id) {
-              this.themenBearbeiten = null;
-            }
-            this.ansage = 'Aussage entfernt.';
-            liste?.focus();
-          },
-          error: () => (this.entfernenFehler = AUSSAGE_NICHT_ENTFERNT),
+          next: weg,
+          // 404: schon entfernt, etwa von einer anderen Admin; die Karte geht trotzdem
+          error: (fehler) => (fehler?.status === 404 ? weg() : (this.entfernenFehler = AUSSAGE_NICHT_ENTFERNT)),
         });
       });
   }

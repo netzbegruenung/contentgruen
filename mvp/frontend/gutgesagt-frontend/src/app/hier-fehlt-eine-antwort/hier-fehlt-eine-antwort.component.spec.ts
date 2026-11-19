@@ -456,7 +456,7 @@ describe('HierFehltEineAntwortComponent', () => {
       expect(karten().every((k) => k.entfernbar)).toBeTrue();
     });
 
-    it('fragt vor dem Entfernen nach, sagt "endgültig" und nimmt die Karte ohne Neuladen weg', () => {
+    it('fragt vor dem Entfernen nach, sagt "endgültig" und nimmt die Karte ohne Neuladen weg', fakeAsync(() => {
       als({ isAdmin: true });
       liefern(ZWEI);
       const offen = rueckfrage(true);
@@ -476,9 +476,38 @@ describe('HierFehltEineAntwortComponent', () => {
 
       expect(aussagen().length).toBe(1);
       expect(aussagen()[0].textContent).toContain('Windräder sind hässlich');
-      expect(element().querySelector('[aria-live="polite"]')?.textContent).toContain('Aussage entfernt.');
+      tick();
+      expect(element().querySelector('[aria-live="polite"]')?.textContent).toContain('Aussage entfernt: „Wärmepumpen sind zu teuer“');
       expect(document.activeElement).toBe(element().querySelector('ul.aussagen'));
-    });
+    }));
+
+    it('setzt den Fokus nach der letzten Karte auf die Einleitung', fakeAsync(() => {
+      als({ isAdmin: true });
+      liefern([ZWEI[0]]);
+      rueckfrage(true);
+
+      karten()[0].entfernen.emit();
+      http.expectOne(ENTFERNEN_URL('a-1')).flush({ success: true, message: 'ok' });
+      fixture.detectChanges();
+      tick();
+
+      expect(aussagen().length).toBe(0);
+      expect(document.activeElement).toBe(element().querySelector('p.einleitung'));
+    }));
+
+    it('nimmt die Karte auch weg, wenn die Aussage schon entfernt war (404)', fakeAsync(() => {
+      als({ isAdmin: true });
+      liefern(ZWEI);
+      rueckfrage(true);
+
+      karten()[0].entfernen.emit();
+      http.expectOne(ENTFERNEN_URL('a-1')).flush('weg', { status: 404, statusText: 'Not Found' });
+      fixture.detectChanges();
+      tick();
+
+      expect(aussagen().length).toBe(1);
+      expect(element().querySelector('.entfernen-fehler')).toBeNull();
+    }));
 
     it('entfernt nichts, wenn der Admin abbricht', () => {
       als({ isAdmin: true });

@@ -74,6 +74,7 @@
   color: var(--text);
 }
 
+.einleitung:focus,
 .aussagen:focus {
   outline: none;
 }

@@ -213,7 +213,7 @@ Eine Behauptung oder Frage aus der Debatte, auf die man eine gute Antwort brauch
 _Avoid_: Statement, These, Angriff
 
 **Aussagekarte**:
-Eine unbeantwortete Aussage als Karte, im Stil der Karte eines Beitrags: das Kopfband mit der Aussage (Papier-Ton und großes Zitatzeichen, seit 19.11.2026), darunter die Nachfrage als Marke und die Themen, im Fuß „Antworten“ und ein Menü mit „Aussage melden“ (Angemeldete) und „Aussage entfernen“ (nur Admins, endgültig, nach Rückfrage). Sie steht in „Hier fehlt eine Antwort“ und im leeren Zustand von „Meine Beiträge“. Inhalte erscheinen als Karten: Beiträge und Einwürfe als Karte, Aussagen als Aussagekarte.
+Eine unbeantwortete Aussage als Karte, im Stil der Karte eines Beitrags: das Kopfband mit der Aussage, darunter die Nachfrage als Marke und die Themen, im Fuß „Antworten“ und ein Menü mit „Aussage melden“ (Angemeldete) und „Aussage entfernen“ (nur Admins, endgültig, nach Rückfrage). Sie steht in „Hier fehlt eine Antwort“ und im leeren Zustand von „Meine Beiträge“. Inhalte erscheinen als Karten: Beiträge und Einwürfe als Karte, Aussagen als Aussagekarte.
 _Avoid_: Aussagezeile, Statement-Karte
 
 **Zu dieser Antwort**:
