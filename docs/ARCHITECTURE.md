@@ -371,8 +371,7 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - Woodpecker checks every pull request on Forgejo (`.woodpecker/ci.yaml`, required status
   for `main`, see `docs/CI.md`)
 - Image builds after a green `ci` run: Woodpecker (`.woodpecker/build.yaml` on `main`,
-  `release.yaml` on `v*` tags), for now next to GitHub Actions on the mirror
-  (`.github/workflows/build.yml`, `release.yml`) until the switch in `docs/CI.md`
+  `release.yaml` on `v*` tags); the GitHub mirror runs no CI
 - Container registry at git.verdigado.com (`netzbegruenung-images`)
 - Test: runs the floating `:main` tag, rolled out manually by the operators
 - Production: pins a release version (`:X.Y.Z`) by digest; how it updates: `docs/DEPLOYMENT.md`, "Updating Production"

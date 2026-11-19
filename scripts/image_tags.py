@@ -1,7 +1,7 @@
 """Image-Tags fuer den Build in Woodpecker (.woodpecker/build.yaml, release.yaml, #327).
 
-Dieselben Release-Tags wie zuvor docker/metadata-action in der GitHub-CI, damit Deployment
-und Renovate unveraendert weiterlaufen:
+Dieselben Release-Tags wie zuvor docker/metadata-action in der frueheren GitHub-CI, damit
+Deployment und Renovate unveraendert weiterlaufen:
 
 - push auf main (und manuell): nur ``main``. Kein ``sha-<kurz>`` je Commit: Jeder Tag haelt
   sein Image in der Registry fest, ein ueberschriebenes ``main`` raeumt Forgejo dagegen
@@ -9,9 +9,6 @@ und Renovate unveraendert weiterlaufen:
   voll (docs/CI.md, "Images and releases").
 - Tag ``vX.Y.Z``: ``X.Y.Z``, ``X.Y`` und ``latest``; eine Vorabversion (``v1.2.3-rc.1``)
   bekommt nur ``1.2.3-rc.1``, damit sie ``latest`` und damit Produktion nie bewegt.
-
-``IMAGE_TAG_PRAEFIX`` setzt vor jeden Tag einen Praefix, solange Woodpecker parallel zur
-GitHub-CI baut und deren Tags nicht ueberschreiben darf.
 
 Aufruf im Pipeline-Schritt: ``python3 scripts/image_tags.py <datei>``; liest
 CI_PIPELINE_EVENT, CI_COMMIT_TAG und CI_COMMIT_SHA und schreibt je Tag eine Zeile, die das
@@ -32,7 +29,7 @@ SEMVER = re.compile(
 )
 
 
-def image_tags(ereignis, git_tag, commit_sha, praefix=""):
+def image_tags(ereignis, git_tag, commit_sha):
     """Die Tags fuer ein Woodpecker-Ereignis; ValueError, wenn es keine geben darf."""
     if ereignis in ("push", "manual"):
         if not commit_sha:
@@ -49,7 +46,7 @@ def image_tags(ereignis, git_tag, commit_sha, praefix=""):
             tags = [version, f"{treffer.group('major')}.{treffer.group('minor')}", "latest"]
     else:
         raise ValueError(f"Ereignis {ereignis!r} baut keine Images")
-    return [praefix + tag for tag in tags]
+    return tags
 
 
 def main(argumente):
@@ -61,7 +58,6 @@ def main(argumente):
             os.environ.get("CI_PIPELINE_EVENT", ""),
             os.environ.get("CI_COMMIT_TAG", ""),
             os.environ.get("CI_COMMIT_SHA", ""),
-            os.environ.get("IMAGE_TAG_PRAEFIX", ""),
         )
     except ValueError as fehler:
         print(f"image_tags: {fehler}", file=sys.stderr)

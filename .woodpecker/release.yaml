@@ -1,5 +1,5 @@
 # Baut bei einem Tag vX.Y.Z alle vier Images und pusht X.Y.Z, X.Y und latest (eine
-# Vorabversion nur X.Y.Z), wie bisher .github/workflows/release.yml (#327). Erst nach
+# Vorabversion nur X.Y.Z), wie frueher der GitHub-Workflow release.yml (#327). Erst nach
 # gruenem ci (depends_on), also nur, was auch main bestanden haette. Ein Tag, der keine
 # SemVer-Version ist, macht image-tags rot und baut nichts.
 # Die Version im Footer kommt aus dem Tag (Build-Arg APP_VERSION), nicht aus package.json.
@@ -14,10 +14,6 @@ steps:
   - name: image-tags
     image: python:3.13-slim
     depends_on: []
-    environment:
-      # Parallelbetrieb neben der GitHub-CI: eigene Tags, bis docs/CI.md "Umstieg" erledigt ist.
-      # In build.yaml und release.yaml gleich (scripts/tests/test_woodpecker_images.py).
-      IMAGE_TAG_PRAEFIX: woodpecker-
     commands:
       - python3 scripts/image_tags.py .image-tags
 
@@ -67,10 +63,10 @@ steps:
       tags_file: .image-tags
       # Schichten aus dem letzten main-Build wiederverwenden (Cache-Metadaten inline im
       # Image, kein eigenes Cache-Image): Ohne Cache ergab jeder Build rund 4 GB neue
-      # Schichten in der Registry, auch wenn sich nur der Code aenderte. Tag mit dem
-      # IMAGE_TAG_PRAEFIX oben (scripts/tests/test_woodpecker_images.py).
+      # Schichten in der Registry, auch wenn sich nur der Code aenderte
+      # (scripts/tests/test_woodpecker_images.py).
       cache_from:
-        - git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:woodpecker-main
+        - git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search:main
       cache_to: type=inline
       username:
         from_secret: registry_user
