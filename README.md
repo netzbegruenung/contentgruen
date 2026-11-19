@@ -26,7 +26,7 @@ oft erst später ein. Gut gesagt hilft, sie schnell zu finden.
   mitlesen, nicht an die Person, die den Spruch geschrieben hat.
 - **Kurz, mittel oder lang.** Viele Antworten gibt es in mehreren Fassungen: kurz für Chat und
   Infostand, mittel für die Kommentarspalte, lang mit Begründung.
-- **In verschiedenen Tönen.** Sachlich, humorvoll, persönlich oder brückenbauend.
+- **In verschiedenen Tönen.** Sachlich, humorvoll, persönlich oder freundlich.
 - **Mit Quellen.** Hintergrundinfos nennen ihre Herkunft, damit jede Zahl nachprüfbar ist.
 - **Von vielen gemacht.** Menschen schreiben die Antworten, andere bewerten, nutzen und
   verbessern sie. Welche Antwort oben steht, entscheiden Ähnlichkeit, Stimmen und Nutzung, keine
@@ -74,8 +74,8 @@ flowchart LR
 - **BFF** (Backend for Frontend): .NET mit YARP, kümmert sich um Anmeldung und leitet Anfragen weiter.
 - **Semantische Suche:** Python mit FastAPI. Qdrant speichert die Vektoren, PostgreSQL die übrigen Daten.
 - **Eigene Sprachmodelle, eigene Server.** Die Suche versteht Bedeutung, nicht nur Wörter: mit
-  mehrsprachigen E5-Embeddings. Ein NLI-Modell erkennt, wenn dieselbe Aussage anders formuliert
-  ist. spaCy gibt beim Schreiben Hinweise zur Form. Alle Modelle laufen lokal im Dienst. So
+  mehrsprachigen E5-Embeddings. Ein NLI-Modell hilft zu erkennen, wenn dieselbe Aussage anders
+  formuliert ist. spaCy gibt beim Schreiben Hinweise zur Form. Alle Modelle laufen lokal im Dienst. So
   bleiben Suchtexte und Beiträge auf den eigenen Servern, gut für den Datenschutz.
 
 ### Schnellstart
@@ -89,8 +89,9 @@ docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up
 ```
 
-Die App läuft dann unter [http://localhost:8080](http://localhost:8080). Anmeldung mit dem
-Testkonto und Entwicklung einzelner Teile: [CONTRIBUTING](.github/CONTRIBUTING.md).
+Die App läuft dann unter [http://localhost:8080](http://localhost:8080). Für die Anmeldung mit
+dem Testkonto vor dem Start eine Konfigurationsdatei kopieren; wie das geht und wie man einzelne
+Teile entwickelt, steht in [CONTRIBUTING](.github/CONTRIBUTING.md).
 
 ### Mehr Doku
 

@@ -28,7 +28,7 @@ comes to mind only later. Gut gesagt helps you find one fast.
   person who posted the slogan.
 - **Short, medium or long.** Many replies come in several versions: short for chats and
   information stands, medium for the comment section, long with the reasoning.
-- **In different tones.** Factual, humorous, personal or bridge-building.
+- **In different tones.** Factual, humorous, personal or friendly.
 - **With sources.** Background facts name where they come from, so every number can be checked.
 - **Made by many.** People write the replies; others rate, use and improve them. Similarity,
   votes and usage decide which reply comes first, not an official line.
@@ -75,7 +75,7 @@ flowchart LR
 - **BFF** (Backend for Frontend): .NET with YARP, handles sign-in and forwards requests.
 - **Semantic search:** Python with FastAPI. Qdrant stores the vectors, PostgreSQL the other data.
 - **Own language models, own servers.** The search understands meaning, not just words, using
-  multilingual E5 embeddings. An NLI model recognises when the same statement is worded
+  multilingual E5 embeddings. An NLI model helps recognise when the same statement is worded
   differently. spaCy gives hints on form while you write. All models run locally inside the
   service. Search texts and contributions stay on the project's own servers, which is good for
   privacy.
@@ -91,8 +91,9 @@ docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up
 ```
 
-The app then runs at [http://localhost:8080](http://localhost:8080). Signing in with the test
-account and developing single parts: [CONTRIBUTING](.github/CONTRIBUTING.md).
+The app then runs at [http://localhost:8080](http://localhost:8080). To sign in with the test
+account, copy a configuration file before starting; how to do that and how to develop single
+parts is in [CONTRIBUTING](.github/CONTRIBUTING.md).
 
 ### More documentation
 
@@ -112,7 +113,7 @@ Everything else is in [`docs/`](docs/).
 The code is licensed under the [GNU Affero General Public License v3.0](LICENSE). Authors put
 their own wording in the app under CC0.
 
-The hand in the logo, favicon, Siegel and vote buttons is the "Thumbs up" emoji from
+The hand in the logo, favicon, seal badge and vote buttons is the "Thumbs up" emoji from
 [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT, Copyright Microsoft
 Corporation), see [FLUENT-EMOJI-LIZENZ.txt](mvp/frontend/gutgesagt-frontend/public/marke/FLUENT-EMOJI-LIZENZ.txt).
 The profile pictures are Fluent Emoji 3D as well, see
