@@ -86,8 +86,8 @@ the NLI-Stufe loads an NLI model (mDeBERTa-v3-base-xnli, fp32) in the background
 up to about 2 GB at the peak while loading (measured on the dev VM, `python -m
 tests.regression.nli_messen --zeit`), and the image grows by about 0.55 GB. If the container has
 a memory limit, raise it accordingly; `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=aus` together with
-`SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI=aus` (#574, below) skips the model and restores the rule
-before #387. The image also carries a second NLI model, the Bestätiger
+`SEMANTIC_SEARCH_SUCHE_POLARITAET_NLI=aus` (#574, below) and `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI=false`
+skips the model and restores the rule before #387. The image also carries a second NLI model, the Bestätiger
 (`joeddav/xlm-roberta-large-xnli`, fp32, about 2.2 GB on disk, so the image grows by about that
 much). It is only loaded with `SEMANTIC_SEARCH_NLI_BESTAETIGER=true` (default off, and never with
 the NLI-Stufe `aus`): then plan for up to about 2.2 GB more RAM (measured locally: peak +1.4 to
@@ -101,10 +101,12 @@ NLI-Stufe and the "Antwort auf" filter of other requests wait for it (up to thei
 so under load they fall back to the threshold more often. In `an` the search waits for the
 judgement (on the shared dev VM median +0.3 to 0.45 s, 95th percentile up to 1.4 s instead of
 0.14 s). Measure on the target VM with `tests/regression/suche_messen` before switching to `an`.
-The NLI check of the Bezug (`SEMANTIC_SEARCH_SUCHE_BEZUG_NLI=true`, default off) uses the same
+The NLI check of the Bezug (`SEMANTIC_SEARCH_SUCHE_BEZUG_NLI`, default `true`) uses the same
 model the same way (it loads it itself while the NLI-Stufe is `aus`): each search with a full
-sentence waits for one judgement of the Aussagen between 0.87 and 0.92 (on the shared dev VM
-median +0.1 s, 95th percentile 0.5 s instead of 0.1 s).
+statement waits for one judgement of the Aussagen between 0.87 and 0.92 (on the shared dev VM
+median +0.07 s, 95th percentile 0.35 s instead of 0.10 s). Together with the polarity in `an`,
+a search waits for the model twice in a row, each up to 2 s, so up to 4 s when it is busy.
+`SEMANTIC_SEARCH_SUCHE_BEZUG_NLI=false` keeps only the lower limit, without the model.
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address alone (IPv6: its /64; the User-Agent no longer counts since #495,

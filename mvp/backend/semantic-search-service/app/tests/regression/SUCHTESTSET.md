@@ -150,7 +150,7 @@ geschrieben, um gefunden zu werden. Die Bewertung der Schwelle steht unter „Er
 Startbestand“; die Zeile der Schwelle von heute ist hier das Soll des nächtlichen Laufs.
 Die Zeile 0,82 ist am 18.11.2026 mit dem nächtlichen Lauf nachgemessen, mit den fünf
 Hot Takes des Starts (S107 bis S111, 47 Fälle, 38 mit Erwartung; alle fünf Treffer, vier
-davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen. Am 19.11.2026 mit der Untergrenze des Bezugs (Abschnitt „Bezug“) nachgemessen: Treffer, Fehltreffer, keine und Recall gleich, sechs unpassende direkte Beiträge weniger (Präzision 0,51 statt 0,49).
+davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen. Am 19.11.2026 mit dem Bezug (Abschnitt „Bezug“) nachgemessen: Treffer, Fehltreffer, keine und Recall gleich; S42 („Das Deutschlandticket ist zu teuer“, ohne Erwartung) zeigt nichts mehr (Präzision 0,52 statt 0,49).
 
 | Schwelle | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | Präzision | Recall@5 | Recall@10 | Recall (Seite) | direkt: passend / angezeigt |
 |---|---|---|---|---|---|---|---|---|---|
@@ -159,7 +159,7 @@ davon zerfasern); die übrigen Zeilen sind die Messung vom 05.11. mit 42 Fällen
 | 0.79 | 30/33 | 2 | 1 | 1/9 / 8 | 0.25 | 0.91 | 0.94 | 0.97 | 13 / 203 |
 | 0.80 | 29/33 | 2 | 2 | 2/9 / 7 | 0.32 | 0.88 | 0.91 | 0.94 | 11 / 136 |
 | 0.81 | 28/33 | 3 | 2 | 3/9 / 6 | 0.39 | 0.88 | 0.91 | 0.94 | 21 / 102 |
-| 0.82 (heute) | 32/38 | 3 | 3 | 4/9 / 5 | 0.51 | 0.87 | 0.89 | 0.89 | 17 / 55 |
+| 0.82 (heute) | 32/38 | 3 | 3 | 5/9 / 4 | 0.52 | 0.87 | 0.89 | 0.89 | 17 / 61 |
 | 0.84 | 24/33 | 3 | 6 | 5/9 / 4 | 0.70 | 0.76 | 0.76 | 0.76 | 12 / 15 |
 | 0.86 | 17/33 | 1 | 15 | 5/9 / 4 | 0.71 | 0.52 | 0.52 | 0.52 | 8 / 8 |
 
@@ -381,53 +381,58 @@ Relevanz 1,0 reicht einer Aussage schon eine Ähnlichkeit über 0,743. Fremde S�
 Er lädt Antworten mit Relevanz 0,7 (`content_orchestrator.py`), dort braucht eine Aussage über
 0,786.
 
-Darum gilt für Behauptungen als Suchanfrage (drei Wörter und mehr, keine Frage) eine
-**Untergrenze** der Ähnlichkeit, `suche_bezug_ab` = 0,87 (`services/search/bezug_nli.py`):
-Darunter zählt eine Aussage nicht, ihre Antworten kommen auch nicht über den direkten Weg.
-Optional (`suche_bezug_nli`, Standard aus) prüft zwischen 0,87 und `suche_bezug_sicher_ab` =
-0,92 das NLI-Modell, ob es in einer Richtung mindestens `suche_bezug_folgerung_ab` = 0,2
-Folgerung sieht.
+Darum prüft die Suche den **Bezug** (`services/search/bezug.py`), an der Ähnlichkeit der
+Einbettung, für Suchanfragen ab drei Wörtern (Schlagwörter nicht):
+
+- unter `suche_bezug_ab` = 0,87 zählt eine Aussage nicht;
+- zwischen 0,87 und `suche_bezug_sicher_ab` = 0,92 zählt sie bei einer Behauptung nur, wenn
+  das NLI-Modell in einer Richtung mindestens `suche_bezug_folgerung_ab` = 0,2 Folgerung
+  sieht (`suche_bezug_nli`, an; Fragen und ohne Modell: zählt);
+- ihre Antworten bleiben auf dem direkten Weg möglich, dann ohne „Erkannt als“.
 
 Gemessen am 19.11.2026 lokal am freigegebenen Startbestand (30 Aussagen, 60 Kommentare,
 Antworten mit Relevanz 1,0 wie beim Import über die API), mit
 `SEMANTIC_SEARCH_DIESELBE_AUSSAGE_NLI=an` wie auf Produktion, ohne Bestätiger. Dazu kommen
-S112 bis S133: 20 fremde Behauptungen, die nur Satzbau oder ein Schlagwort mit einer Aussage
-des Startbestands teilen, und zwei Gegenproben. 130 von 133 Fällen gemessen:
+25 fremde Suchanfragen, die nur Satzbau oder ein Schlagwort mit einer Aussage des
+Startbestands teilen (S112 bis S131, S134 bis S138, davon zwei Fragen), und zwei Gegenproben
+(S132, S133). 135 von 138 Fällen gemessen:
 
-| bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | davon fremd (S112–S131): Fehltreffer | Präzision | Recall@10 | Aussagetreffer je Suche: Median / 95. Perzentil |
+| bei 0,82 | Treffer | Fehltreffer | keine | ohne Erwartung: keine / Fehltreffer | 25 fremde: mit „Erkannt als“ / nur direkt | Präzision | Recall@10 | Aussagetreffer je Suche: Median / 95. Perzentil |
 |---|---|---|---|---|---|---|---|---|
-| vorher | 89/97 | 4 | 4 | 5/33 / 28 | 20 | 0.31 | 0.96 | 46 / 103 ms |
-| Untergrenze 0,87 (Standard) | 87/97 | 6 | 4 | 14/33 / 19 | 11 | 0.34 | 0.94 | 49 / 94 ms |
-| Untergrenze und NLI (`suche_bezug_nli`) | 81/97 | 7 | 9 | 22/33 / 11 | 4 | 0.48 | 0.85 | 150 / 514 ms |
+| vorher | 89/97 | 4 | 4 | 5/38 / 33 | 23 / 0 | 0.30 | 0.96 | 49 / 102 ms |
+| nur Untergrenze (`suche_bezug_nli=false`) | 88/97 | 5 | 4 | 16/38 / 22 | 12 / 0 | 0.33 | 0.96 | 47 / 88 ms |
+| **Untergrenze und NLI (Standard)** | 87/97 | 5 | 5 | 24/38 / 14 | 2 / 2 | 0.44 | 0.94 | 118 / 345 ms |
 
-- **Untergrenze:** S112 bis S116, S119, S120, S128 und S131 zeigen nichts mehr (Ähnlichkeit
-  0,84 bis 0,87, etwa „Windows ist unsicher“ 0,860). Zwei Treffer gehen verloren, beide
-  Umgangssprache unter 0,87 (S46 „… gehen bei uns die Lichter aus“, S78 „Der Wolf reißt
-  unsere Schafe“); vorn steht dann ein direkter, unpassender Beitrag. Keine wörtliche Aussage,
-  keine Umformulierung und kein Schlagwort geht verloren (Schlagwörter und Fragen prüft die
-  Untergrenze nicht).
-- **Gleich gebaute Sätze** liegen höher als manche Umformulierung und bleiben mit der
-  Untergrenze allein: „Katzen wollen gar nicht arbeiten“ zu „Flüchtlinge wollen gar nicht
-  arbeiten.“ (0,912), „Touristen machen unsere Städte voll“ zu der Migranten-Aussage (0,896),
-  „Golf ist nur was für Reiche“ (0,907). Umgekehrt liegen S76 „Wölfe haben in Deutschland
-  nichts verloren“ (0,897) und S102 (0,894) darunter. Eine Schwelle trennt das nicht.
-- **Mit NLI** fallen auch sie weg (Folgerung in beiden Richtungen unter 0,1), bis auf S117
-  „Tauben machen unsere Städte dreckig“ (0,36). Dafür gehen sechs weitere Treffer verloren,
-  vor allem Umgangssprache: S02, S69, S73, S76, S102, S133 (S02 „Windkraftanlagen bringen
-  massenhaft Vögel um“: Folgerung 0,00 und 0,20); S24 kommt dazu. Bei fünf der sechs steht die
-  erwartete Aussage unter den ähnlichen Aussagen (ab 0,885), wie sie „Meintest du …?“ auf
-  der Seite ohne Treffer anbietet. Die Suche wartet auf das
-  Modell: im Median rund 0,1 s mehr, im 95. Perzentil 0,4 s (Dev-VM, geteilt).
-- **Am Seed** (nächtlicher Lauf) ändert die Untergrenze keine Einordnung; mit NLI wären es 30
-  statt 32 Treffer und Recall@10 0,82, mit der Toleranz unter dem Tor 0,80. Das Soll bleibt.
-- Verworfen (Vorläufe ohne Untergrenze, gegen 0,92 und 0,2): NLI-Band ab 0,90 (gleich viele
-  Treffer, ein fremder Fall mehr), ab 0,94 oder Folgerung ab 0,3 bzw. 0,5 (zwei bis fünf
-  Treffer weniger für ein bis zwei fremde Fälle); Untergrenze 0,86 mit NLI (gleich, aber der
-  Befund hinge dann am Modell); der Abstand der besten Aussage zur fünften (trennt gleich
-  gebaute Sätze ebenso wenig).
-- Nachmessen: am Startbestand mit Relevanz 1,0 (Import über die API); Variablen
-  `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI`, `…_BEZUG_AB`, `…_BEZUG_SICHER_AB`,
-  `…_BEZUG_FOLGERUNG_AB` vor den Befehl oben.
+- **Untergrenze:** „Open Source ist unsicher!“ (0,862), „Windows ist unsicher“ (0,860), „Ist Open
+  Source unsicher?“ (0,822) und acht weitere fremde Fälle zeigen nichts mehr. Verloren geht ein
+  Treffer: S78 („Der Wolf reißt unsere Schafe, der muss weg“, 0,865), vorn steht dann eine
+  direkte Antwort zu einer anderen Aussage.
+- **Gleich gebaute Sätze** liegen höher als manche Umformulierung, eine Schwelle trennt sie
+  nicht: „Katzen wollen gar nicht arbeiten“ zu „Flüchtlinge wollen gar nicht arbeiten.“ (0,912),
+  „Golf ist nur was für Reiche“ zu „Bio ist nur was für Reiche.“ (0,907), dagegen S76 „Wölfe
+  haben in Deutschland nichts verloren“ (0,897). Das NLI-Modell folgert bei den fremden in
+  keiner Richtung (unter 0,1).
+- **Mit NLI** verlieren zehn weitere fremde Fälle das „Erkannt als“ (zwei zeigen dann eine
+  direkte Antwort, unten). Sechs passende Fälle verlieren ihre Aussage, S46 und S78 an der
+  Untergrenze, S02, S69, S76 und S133 am Modell (Umgangssprache; S02 „Windkraftanlagen bringen
+  massenhaft Vögel um“: Folgerung 0,00 und 0,20). Ihre Antworten kommen über den direkten Weg
+  und bleiben Treffer. Verloren gehen S09 (Ersatz, verwandt), S73 und S102; S24 kommt dazu. Mit
+  Ausschluss der Antworten vom direkten Weg wären es 81 statt 87 Treffer gewesen.
+- **Was bleibt:** S117 „Tauben machen unsere Städte dreckig“ (Folgerung 0,36) und S138
+  „Radfahrer machen unsere Städte unsicher“ (0,925, über `suche_bezug_sicher_ab`) zeigen weiter
+  „Erkannt als ‚Migranten machen unsere Städte unsicher.‘“. S123 („Ein neues Handy lohnt sich
+  nicht“) und S129 („Man darf ja gar nicht mehr rauchen“) zeigen eine Antwort über den direkten
+  Weg, ohne „Erkannt als“; bei S123 ist es eine Antwort zu Balkonsolar.
+- **Laufzeit:** Die Suche wartet bei Behauptungen auf das Modell (höchstens 2 s): auf der
+  geteilten Dev-VM im Median rund 0,07 s mehr, im 95. Perzentil 0,25 s.
+- **Am Seed** (nächtlicher Lauf): Treffer, Fehltreffer, keine und Recall gleich; S42 („Das
+  Deutschlandticket ist zu teuer“, ohne Erwartung) zeigt nichts mehr. Soll nachgezogen.
+- Verworfen (Vorläufe, gegen 0,92 und 0,2): NLI-Band ab 0,90 (ein fremder Fall mehr), ab 0,94
+  oder Folgerung ab 0,3 bzw. 0,5 (zwei bis fünf Treffer weniger für ein bis zwei fremde Fälle);
+  Untergrenze 0,86 (gleich, aber der Befund hinge dann am Modell); Abstand der besten zur
+  fünften Aussage (trennt gleich gebaute Sätze nicht besser).
+- Nachmessen: am Startbestand mit Relevanz 1,0; Variablen `SEMANTIC_SEARCH_SUCHE_BEZUG_NLI`,
+  `…_BEZUG_AB`, `…_BEZUG_SICHER_AB`, `…_BEZUG_FOLGERUNG_AB` vor den Befehl oben.
 
 ## Nächtlicher Lauf
 

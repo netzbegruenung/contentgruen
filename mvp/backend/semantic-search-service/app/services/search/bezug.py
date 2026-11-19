@@ -9,28 +9,39 @@ nur 0,743 (0,7 * Aehnlichkeit + 0,3 * Relevanz), und die Ergebnisseite zeigte "E
 als" mit der fremden Aussage. Gemessen in tests/regression/SUCHTESTSET.md, Abschnitt
 "Bezug".
 
-Fuer eine Behauptung als Suchanfrage (urteilbar wie bei der Polaritaet, #574) gilt
+Fuer eine Suchanfrage ab MINDESTENS_WOERTER Woertern (Behauptung oder Frage) gilt
 deshalb, an der Aehnlichkeit der Einbettung vor Polaritaet und Schlagwoertern:
 
-- unter suche_bezug_ab: kein Bezug. Am Startbestand kostet das zwei Treffer, beide
-  Umgangssprache.
-- ab suche_bezug_ab: Bezug. Nur mit suche_bezug_nli (Standard aus) gilt das erst ab
-  suche_bezug_sicher_ab; dazwischen nur, wenn das NLI-Modell (NLI_MODELL, dasselbe
-  Objekt wie die NLI-Stufe) in einer Richtung mindestens suche_bezug_folgerung_ab
-  Folgerung sieht. Gleich gebaute Saetze ueber anderes ("Golf ist nur was fuer Reiche"
-  zu "Bio ist nur was fuer Reiche.") folgern in keiner Richtung, Umformulierungen meist
-  in einer; Umgangssprache aber oft auch nicht. Ist das Modell nicht geladen oder
-  laenger als SUCHE_WARTET_HOECHSTENS belegt, bleibt die Aussage.
+- unter suche_bezug_ab: kein Bezug.
+- ab suche_bezug_sicher_ab: Bezug, ohne Modell.
+- dazwischen bei einer Frage: Bezug. Bei einer Behauptung (urteilbar wie bei der
+  Polaritaet, #574) nur, wenn das NLI-Modell (NLI_MODELL, dasselbe Objekt wie die
+  NLI-Stufe) in einer Richtung mindestens suche_bezug_folgerung_ab Folgerung sieht.
+  Gleich gebaute Saetze ueber anderes ("Golf ist nur was fuer Reiche" zu "Bio ist nur
+  was fuer Reiche.") folgern in keiner Richtung, Umformulierungen meist in einer. Mit
+  suche_bezug_nli = false, ohne geladenes Modell oder wenn es laenger als
+  SUCHE_WARTET_HOECHSTENS belegt ist: Bezug.
 
-Fragen und Schlagwoerter prueft das nicht (wie bei der Polaritaet): Sie liegen oft
-niedriger, und fuer sie gilt die Schwelle der Suche allein.
+Eine Aussage ohne Bezug faellt aus den Aussagetreffern. Ihre Antworten kann der
+direkte Weg trotzdem bringen, wenn sie selbst der Suchanfrage aehnlich genug sind; sie
+stehen dann ohne "Erkannt als" da. Am Startbestand holt das sechs Faelle Umgangssprache
+zurueck ("Woelfe haben in Deutschland nichts verloren"); ein fremder Fall ("Ein neues
+Handy lohnt sich nicht") zeigt dafuer eine Antwort zu Balkonsolar, ohne "Erkannt als".
+
+Schlagwoerter (unter MINDESTENS_WOERTER Woertern) prueft das nicht: Sie liegen oft
+niedriger, etwa "Genderzwang" oder "Migration Kriminalitaet", und fuer sie gilt die
+Schwelle der Suche allein. Die Fragen des Suchtestsets liegen bei 0,896 bis 0,901.
 """
 
 import logging
 from typing import Callable, List, Optional, Set, TypeVar
 
 from services.dieselbe_behauptung.nli_modell import NliPruefer
-from services.search.polaritaet_nli import SUCHE_WARTET_HOECHSTENS, urteilbar
+from services.search.polaritaet_nli import (
+    MINDESTENS_WOERTER,
+    SUCHE_WARTET_HOECHSTENS,
+    urteilbar,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +69,7 @@ class AussageBezug:
         get_score_fn: Callable[[T], float],
     ) -> Set[int]:
         """Die Positionen in ``treffer`` ohne Bezug zur Suchanfrage (Regeln oben)."""
-        if not treffer or not urteilbar(query_text):
+        if not treffer or len(query_text.split()) < MINDESTENS_WOERTER:
             return set()
         ohne = {i for i, t in enumerate(treffer) if get_score_fn(t) < self._ab}
         band = [
@@ -66,7 +77,7 @@ class AussageBezug:
             for i, t in enumerate(treffer)
             if self._ab <= get_score_fn(t) < self._sicher_ab
         ]
-        if not band or self._nli is None:
+        if not band or self._nli is None or not urteilbar(query_text):
             return ohne
         try:
             urteile = await self._nli.urteile(

@@ -32,7 +32,7 @@ from fastapi.testclient import TestClient
 
 from api.v1.search import router as search_router
 from core.config import settings
-from services.search.bezug_nli import AussageBezug
+from services.search.bezug import AussageBezug
 from services.search.polaritaet_nli import NliPolaritaet
 from services.search.search_orchestrator import (
     MINIMUM_SCORE_THRESHOLD,
@@ -589,7 +589,7 @@ class TestBezug:
     """
     Fehltreffer von Produktion 0.9.0: "Open Source ist unsicher!" zeigte "Erkannt als
     Migranten machen unsere Städte unsicher." (Aehnlichkeit 0,862, mit einem Kommentar
-    der Relevanz 1,0 kombiniert 0,903 > 0,82). services/search/bezug_nli.py.
+    der Relevanz 1,0 kombiniert 0,903 > 0,82). services/search/bezug.py.
     """
 
     MIGRANTEN = "Migranten machen unsere Städte unsicher."
@@ -610,8 +610,9 @@ class TestBezug:
         assert resp.status_code == 200
         assert resp.json()["commentary_search_results_count"] == 0
 
-    def test_antworten_der_fremden_aussage_auch_nicht_direkt(self, search_client):
-        # Kaeme ihr Kommentar ueber den direkten Weg, stuende er doch als beste Antwort da.
+    def test_direkter_weg_bleibt_ohne_erkannt_als(self, search_client):
+        # Die Aussage faellt weg, ihr Kommentar darf ueber den direkten Weg kommen, wenn
+        # er selbst ueber der Schwelle liegt: dann ohne Aussage, also ohne "Erkannt als".
         kommentar = _commentary_search_hit(score=0.83)
         client = search_client(
             statement_results=[self._migranten(0.862, kommentar.id)],
@@ -620,6 +621,18 @@ class TestBezug:
 
         resp = client.post(
             SEARCH_URL, json={"query_text": "Open Source ist unsicher!", "limit": 10}
+        )
+
+        treffer = resp.json()["commentary_search_results"]
+        assert len(treffer) == 1
+        assert treffer[0]["statement_id"] is None
+        assert treffer[0]["statement_text"] == ""
+
+    def test_frage_bekommt_die_untergrenze(self, search_client):
+        client = search_client(statement_results=[self._migranten(0.822, uuid.uuid4())])
+
+        resp = client.post(
+            SEARCH_URL, json={"query_text": "Ist Open Source unsicher?", "limit": 10}
         )
 
         assert resp.json()["commentary_search_results_count"] == 0

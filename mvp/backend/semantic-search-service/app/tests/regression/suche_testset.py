@@ -266,7 +266,7 @@ FAELLE = tuple(Fall(*f) for f in (
     ("S111", "Wärmepumpen taugen nur für Neubauten!", "satz", "umformulierung", (NEUBAU,), True, "eigen"),
     # Bezug: fremde Behauptungen, die nur ein Schlagwort oder den Satzbau mit einer Aussage
     # des Startbestands teilen (nur_mit). S112 zeigte auf Produktion 0.9.0 "Erkannt als
-    # Migranten machen unsere Städte unsicher." (services/search/bezug_nli.py).
+    # Migranten machen unsere Städte unsicher." (services/search/bezug.py).
     ("S112", "Open Source ist unsicher!", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
     ("S113", "Windows ist unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
     ("S114", "Das Passwort ist unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
@@ -290,6 +290,13 @@ FAELLE = tuple(Fall(*f) for f in (
     # Gegenprobe zu S112 ff.: dieselbe oder eine verwandte Behauptung in anderen Worten.
     ("S132", "Wegen der Migranten ist es in unseren Städten gefährlich", "satz", "umformulierung", (MIGRANTEN,), True, "eigen"),
     ("S133", "Durch die Zuwanderung gibt es mehr Kriminalität", "satz", "verwandt", (MIGRANTEN,), False, "eigen"),
+    # Dieselbe Luecke als Frage und in Saetzen, die naeher am Satzbau der Aussage liegen
+    # (Review des Bezugs): die Untergrenze haelt nur die ersten fern.
+    ("S134", "Ist Open Source unsicher?", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S135", "Macht Open Source unsere Server unsicher?", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S136", "Open Source macht unsere Server unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S137", "E-Scooter machen unsere Städte unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
+    ("S138", "Radfahrer machen unsere Städte unsicher", "satz", "fremd", KEINE, False, "eigen", (MIGRANTEN,)),
 ))
 # fmt: on
 

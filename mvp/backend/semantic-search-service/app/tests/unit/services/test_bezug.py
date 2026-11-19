@@ -1,5 +1,5 @@
 """
-Bezug einer Aussage zur Suchanfrage (services/search/bezug_nli.py), mit einer Attrappe
+Bezug einer Aussage zur Suchanfrage (services/search/bezug.py), mit einer Attrappe
 statt des Modells. Scores und Urteile sind die am Startbestand gemessenen
 (tests/regression/SUCHTESTSET.md, Abschnitt Bezug): Aehnlichkeit der Einbettung,
 Folgerung hin/rueck aus NLI_MODELL.
@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import pytest
 
 from services.dieselbe_behauptung.regel import Richtung, Urteil
-from services.search.bezug_nli import AussageBezug
+from services.search.bezug import AussageBezug
 
 MIGRANTEN = "Migranten machen unsere Städte unsicher."
 BIO = "Bio ist nur was für Reiche."
@@ -135,11 +135,29 @@ async def test_ohne_urteil_bleibt_das_band(nli):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "anfrage", ["Migration Kriminalität", "Ist Open Source unsicher?", "unsicher"]
-)
-async def test_fragen_und_schlagwoerter_prueft_es_nicht(anfrage):
+@pytest.mark.parametrize("anfrage", ["Migration Kriminalität", "unsicher"])
+async def test_schlagwoerter_prueft_es_nicht(anfrage):
     nli = AttrappenNli()
     treffer = [Treffer(MIGRANTEN, 0.80)]
     assert await _ohne(_bezug(nli), anfrage, treffer) == set()
     assert nli.aufrufe == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_frage_bekommt_die_untergrenze_aber_kein_modell():
+    # "Ist Open Source unsicher?" (0,822) zeigte sonst dieselbe fremde Aussage.
+    nli = AttrappenNli()
+    treffer = [Treffer(MIGRANTEN, 0.822), Treffer(BIO, 0.90)]
+    assert await _ohne(_bezug(nli), "Ist Open Source unsicher?", treffer) == {0}
+    assert nli.aufrufe == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("score,ohne", [(0.869, {0}), (0.87, set()), (0.876, set())])
+async def test_grenze_der_untergrenze(score, ohne):
+    # 0,876: "Durch die Zuwanderung gibt es mehr Kriminalität" zur Migranten-Aussage
+    # bleibt ohne Modell.
+    anfrage = "Durch die Zuwanderung gibt es mehr Kriminalität"
+    assert await _ohne(_bezug(None), anfrage, [Treffer(MIGRANTEN, score)]) == ohne

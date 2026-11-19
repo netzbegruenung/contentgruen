@@ -677,6 +677,12 @@ async def dienste_starten() -> Dienste:
     from services.search.polaritaet_nli import get_nli_polaritaet
 
     await get_nli_polaritaet().laden_abwarten()
+    # Und fuer den Bezug (services/search/bezug.py), falls nur er das Modell braucht.
+    if settings.suche_bezug_nli:
+        from core.config import NLI_MODELL
+        from services.dieselbe_behauptung.nli_modell import nli_modell
+
+        await asyncio.to_thread(nli_modell(NLI_MODELL).laden_abwarten)
     return Dienste(
         statement_service=get_statement_service(),
         zaehler=NliZaehler.einsetzen(get_statement_service()),
