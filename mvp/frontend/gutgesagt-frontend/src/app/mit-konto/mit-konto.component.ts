@@ -1,19 +1,14 @@
-import { HttpClient } from '@angular/common/http';
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
-import { keycloakAnmelden } from '../login/keycloak-anmeldung';
 import { ANSICHT_PARAM, VORSCHAU_SCHRITTE, ZIEL_PARAM, vorschauZiel } from './vorschau-schritte';
 
 /**
- * Beschriftung des Hauptknopfs, wie auf der Login-Auswahl: ein Knopf für alle, die Seite des
- * Realms bietet Netzbegrünung und Mail/Passwort an (Entscheidung 20.11.). Ist Keycloak
- * abgeschaltet (Entwicklung), führt derselbe Knopf zur Auswahl.
+ * Beschriftung des Hauptknopfs. Er führt zur Login-Auswahl mit dem Ziel, wie der Knopf im
+ * Kopf; dort stehen beide Wege, „Mit Netzbegrünung anmelden“ und der für Einladungskonten
+ * (Entscheidung 20.11.).
  */
 export const ANMELDEN_KNOPF = 'Anmelden';
 export const WEITER_SUCHEN = 'Erst mal weiter suchen';
@@ -21,11 +16,6 @@ export const WEITER_SUCHEN = 'Erst mal weiter suchen';
 export const VORSCHAU_ETIKETT = 'Vorschau';
 /** Über den Bildern: Es sind Bilder der angemeldeten Oberfläche, nicht die Seite selbst. */
 export const VORSCHAU_SATZ = 'Eine Vorschau: So sieht Gut gesagt aus, wenn du angemeldet bist.';
-
-interface AuthModes {
-  keycloakEnabled: boolean;
-  managedAuthEnabled: boolean;
-}
 
 /**
  * „Das erwartet dich mit Konto“ (Entscheidung Sebastian 17.11.): Besucher sehen, was ein
@@ -50,7 +40,6 @@ interface AuthModes {
 export class MitKontoComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly http = inject(HttpClient);
 
   readonly schritte = VORSCHAU_SCHRITTE;
   readonly weiterSuchen = WEITER_SUCHEN;
@@ -66,31 +55,13 @@ export class MitKontoComponent {
   readonly schritt = computed(() => this.schritte[this.index()]);
   readonly letzter = computed(() => this.index() === this.schritte.length - 1);
 
-  /**
-   * null, bis /api/auth/modes antwortet; bis dahin und bei einem Fehler gilt die
-   * Netzbegrünung-Anmeldung (sonst wirft das Signal und der Anmeldeknopf fällt aus).
-   */
-  private readonly modes = toSignal(
-    this.http.get<AuthModes>(`${environment.baseUrl}/api/auth/modes`).pipe(
-      map((m) => m as AuthModes | null),
-      catchError(() => of(null)),
-    ),
-    { initialValue: null },
-  );
-  private readonly mitKeycloak = computed(() => this.modes()?.keycloakEnabled !== false);
   readonly anmeldenText = ANMELDEN_KNOPF;
 
   private readonly schrittTitel = viewChild<ElementRef<HTMLElement>>('schrittTitel');
 
-  /** Fenster, über das die Netzbegrünung-Anmeldung die Seite verlässt; Tests ersetzen es. */
-  fenster: Pick<Window, 'location'> = window;
-
+  /** Zur Login-Auswahl mit beiden Wegen; nach der Anmeldung geht es auf das Ziel. */
   anmelden(): void {
-    if (this.mitKeycloak()) {
-      keycloakAnmelden(this.ziel(), this.fenster);
-    } else {
-      void this.router.navigate(['/login'], { queryParams: { returnUrl: this.ziel() } });
-    }
+    void this.router.navigate(['/login'], { queryParams: { returnUrl: this.ziel() } });
   }
 
   weiter(): void {

@@ -9,8 +9,8 @@ import { rueckkehrzielMerken } from './rueckkehrziel';
 export type KeycloakWeg = 'netzbegruenung';
 
 /**
- * Zur Anmeldung über den Realm (Keycloak), danach zurück auf `ziel`. Aus der Login-Auswahl,
- * der Vorschau „Das erwartet dich mit Konto“ und dem Einlösen einer Einladung.
+ * Zur Anmeldung über den Realm (Keycloak), danach zurück auf `ziel`. Aus der Login-Auswahl
+ * und dem Einlösen einer Einladung.
  *
  * Das Ziel geht zweimal mit: im sessionStorage und als Parameter, denn der BFF schickt den
  * Browser nach der Anmeldung direkt dorthin, und das hängt nicht davon ab, dass der
