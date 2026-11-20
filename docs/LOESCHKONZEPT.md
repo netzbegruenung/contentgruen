@@ -353,7 +353,7 @@ Verzeichnis der Verarbeitungstätigkeiten).
 | Zugriffsprotokolle des Webservers der Anwendung, Protokolle der Anwendung | **keine**; Ziel 14 Tage, noch nicht ausgerollt | Betrieb am Host; unter „Was nicht gelöscht wird“ (#485, #336) |
 | Zähler der Rate-Limits | höchstens etwa 16 Minuten, nur im Arbeitsspeicher | Anwendung; Datenschutzerklärung zu Suche, Meldungen, Feedback, Einladungen, Gegenlesen |
 | Sicherungskopien | bis zu 28 Tage (7 Tages-, 4 Wochenstände) | `mvp/scripts/backup/backup.sh`; unter „Was nicht gelöscht wird“ |
-| Beta-Zugänge (`managed-users.json`) | bis von Hand entfernt | Schritt 4 im „Ablauf“; Datenschutzerklärung „Zugang, den wir selbst anlegen“ |
+| Beta-Zugänge (`managed-users.json`) | auf Test und Produktion seit dem Realm-Umzug (20.11.2026) entfernt, die Zugänge sind Konten im Realm (#488); in der Entwicklung nur Beispielkonten | Schritt 4 im „Ablauf“ |
 
 ## Feedback
 
