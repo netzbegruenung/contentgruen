@@ -154,10 +154,12 @@ describe('EinladungComponent', () => {
     expect(vorname.getAttribute('autocomplete')).toBe('given-name');
     expect(nachname.getAttribute('autocomplete')).toBe('family-name');
     expect(vorname.getAttribute('aria-describedby')).toContain('name-hinweis');
-    expect(el().querySelector('#name-hinweis')?.textContent).toContain('„Anna B.“');
+    expect(nachname.getAttribute('aria-describedby')).toContain('name-hinweis');
+    expect(el().querySelector('#name-hinweis')?.textContent).toContain(
+      'Du kannst auch einen anderen Namen angeben; wir zeigen ihn als ‚Vorname N.‘ an.',
+    );
     const labels = Array.from(el().querySelectorAll('mat-label')).map((l) => l.textContent?.trim());
     expect(labels).toEqual(jasmine.arrayContaining(['Vorname', 'Nachname', 'Mail-Adresse']));
-    expect(el().textContent).toContain('„Anna B.“');
   });
 
   it('laesst ohne Namen nicht absenden', () => {
