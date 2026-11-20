@@ -118,6 +118,13 @@ describe('GegenlesenComponent', () => {
     const zweite = http.expectOne(PFAD);
     expect('herkunft_ohne_fundstelle' in zweite.request.body).toBeFalse();
     zweite.flush({ guete: 10, anmerkungen: [] });
+
+    fixture.componentRef.setInput('zweck', 'kommentarspalte');
+    fixture.detectChanges();
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const dritte = http.expectOne(PFAD);
+    expect(dritte.request.body.zweck).toBe('kommentarspalte');
+    dritte.flush({ guete: 10, anmerkungen: [] });
     tick(ANSAGE_PAUSE_MS);
   }));
 

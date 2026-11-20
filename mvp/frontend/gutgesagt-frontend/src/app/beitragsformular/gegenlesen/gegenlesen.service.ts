@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import type { Zweck } from '../../shared/zweck-stil';
 
 /** Wartezeit nach der letzten Eingabe, bevor gegengelesen wird (#358: „etwa 1 s“). */
 export const GEGENLESEN_VERZOEGERUNG_MS = 1000;
@@ -31,8 +32,8 @@ export interface Anmerkung {
   zaehlt?: boolean;
 }
 
-/** Wofür ein Kommentar geschrieben ist; wie `Zweck` in `shared/zweck-stil.ts`. */
-export type GegenlesenZweck = 'kommentarspalte' | 'eigene_leute';
+/** Wofür ein Kommentar geschrieben ist (`shared/zweck-stil.ts`). */
+export type GegenlesenZweck = Zweck;
 
 /** Optionale Angaben des Formulars, die das Gegenlesen genauer machen. */
 export interface GegenlesenKontext {

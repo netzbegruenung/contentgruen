@@ -693,7 +693,15 @@ class TestScheinbeleg:
                 "Wirtschaftsstudien zeigen eine hohe Rendite.",
                 "Wirtschaftsstudien zeigen",
             ),
-            ("Eine Untersuchung bestätigt das.", "Untersuchung bestätigt"),
+            ("Umfragen bestätigen das.", "Umfragen bestätigen"),
+            # Parteien und Alltagskürzel nennen keine Quelle.
+            ("Zahlen zeigen, dass der ÖPNV hilft.", "Zahlen zeigen"),
+            ("Studien zeigen, dass die CDU falsch liegt.", "Studien zeigen"),
+            # Im nächsten Satz zählt nur Zahl, Jahr oder Kürzel, kein beliebiger Name.
+            (
+                "Studien zeigen, dass Busse helfen. Die Grünen fordern das.",
+                "Studien zeigen",
+            ),
             ("Laut Studien fahren mehr Leute Bus.", "Laut Studien"),
             ("Das hilft laut aktuellen Berichten vielen.", "laut aktuellen Berichten"),
         ],
@@ -710,7 +718,10 @@ class TestScheinbeleg:
         [
             # Zahl, Jahr, Kürzel oder Organisation im selben Satz nennen den Beleg.
             "Studien zeigen, dass 30 Prozent mehr Bus fahren.",
-            "Eine Studie von 2023 zeigt, dass Busse helfen.",
+            "Studien von 2023 zeigen, dass Busse helfen.",
+            # Die Einzahl verweist meist auf eine eben genannte Studie.
+            "Das Umweltbundesamt hat eine Studie veröffentlicht. Die Studie zeigt das.",
+            "Eine Untersuchung bestätigt das.",
             "Studien des DIW zeigen, dass Busse helfen.",
             "Laut Studien des Umweltbundesamts fahren mehr Leute Bus.",
             # Oder im nächsten Satz.
@@ -740,7 +751,7 @@ class TestScheinbeleg:
 class TestHerkunftOhneFundstelle:
     # Ob eine Angabe eine Fundstelle nennt, prüft das Formular (herkunftsangaben.ts);
     # hier geht nur das Ja/Nein ein.
-    def test_ohne_fundstelle_meldet_und_zaehlt_als_ohne_herkunft(self, service):
+    def test_ohne_fundstelle_ersetzt_die_zahl_ohne_herkunft(self, service):
         ergebnis = service.gegenlesen(
             titel="Wärmepumpe lohnt sich",
             text="Die Pumpe spart 30 Prozent.",
@@ -748,12 +759,35 @@ class TestHerkunftOhneFundstelle:
             hat_herkunft=True,
             herkunft_ohne_fundstelle=True,
         )
+        ohne_herkunft = service.gegenlesen(
+            titel="Wärmepumpe lohnt sich",
+            text="Die Pumpe spart 30 Prozent.",
+            aussage="",
+            hat_herkunft=False,
+        )
 
         fundstelle = anmerkung(ergebnis, "herkunft_ohne_fundstelle")
+        assert fundstelle.woerter == ["30 Prozent"]
         assert "Verlinke die Seite" in fundstelle.text
-        # Die Startseite gilt als fehlende Herkunft: Die Zahl braucht eine.
-        assert "zahl_ohne_herkunft" in arten(ergebnis)
-        assert ergebnis.guete == 10 - 2 - 1
+        # Dieselbe Lücke, genauer gesagt: nicht zusätzlich die Zahl ohne Herkunft, und
+        # eine Startseite steht nie schlechter als gar keine Herkunft.
+        assert "zahl_ohne_herkunft" not in arten(ergebnis)
+        assert ergebnis.guete == ohne_herkunft.guete
+
+    @pytest.mark.parametrize("hat_herkunft", [True, None])
+    def test_ohne_zahl_oder_ohne_herkunftsfeld_nichts(self, service, hat_herkunft):
+        # Ohne Zahl kostet die Startseite nichts; ohne Herkunftsfeld (Post, Bild)
+        # gibt es keine Fundstelle, auch wenn das Ja/Nein mitkommt.
+        for text in ("Die Pumpe spart Geld.", "Die Pumpe spart 30 Prozent."):
+            ergebnis = service.gegenlesen(
+                titel="Wärmepumpe lohnt sich",
+                text=text,
+                aussage="",
+                hat_herkunft=hat_herkunft if "30" in text else True,
+                herkunft_ohne_fundstelle=True,
+            )
+            erwartet = hat_herkunft is not None and "30" in text
+            assert ("herkunft_ohne_fundstelle" in arten(ergebnis)) is erwartet
 
     def test_mit_fundstelle_nichts(self, service):
         ergebnis = service.gegenlesen(
@@ -799,6 +833,8 @@ class TestErlebnis:
             "Unsere Kinder sollen saubere Luft atmen.",
             "[Hier ein eigenes Erlebnis: mein Nachbar und seine Pumpe] Das lohnt sich.",
             "Frag doch mal deine Nachbarin.",
+            # Im Zitat spricht jemand anderes.
+            "„Mein Nachbar spart Geld“, sagt die Werbung.",
         ],
     )
     def test_kein_erlebnis(self, service, text):
@@ -835,6 +871,16 @@ class TestHaeme:
 
         assert "haeme" not in arten(ergebnis)
 
+    @pytest.mark.parametrize(
+        "text", ["Das glaubst du doch selbst nicht. 🙄", "Du glaubst das? 🙄"]
+    )
+    def test_gleichgesinnte_emoji_gehoert_zum_satz_davor(self, service, text):
+        ergebnis = service.gegenlesen(
+            titel="Busse helfen", text=text, aussage="", zweck="eigene_leute"
+        )
+
+        assert "haeme" in arten(ergebnis)
+
     def test_gleichgesinnte_spott_gegen_die_person(self, service):
         ergebnis = service.gegenlesen(
             titel="Busse helfen",
@@ -851,6 +897,8 @@ class TestHaeme:
         "text",
         [
             "Klar ist: Der Bus kommt öfter.",
+            # Mitten im Satz ist "aber klar" ein Zugeständnis.
+            "Das dauert, aber klar, es lohnt sich.",
             "Na klar fährt der Bus auch sonntags.",
             "Wir fahren gern Bus. 😊",
         ],
@@ -910,6 +958,28 @@ class TestParteistimmeErweitert:
         ergebnis = service.gegenlesen(titel="Busse helfen", text=text, aussage="")
 
         assert wendung in anmerkung(ergebnis, "parteistimme").woerter
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            # Ohne Partikel ist "erkennen" kein Anerkennen.
+            "Die Bundesregierung erkennt das Problem endlich.",
+            "Die Grünen erkennen den Fehler.",
+        ],
+    )
+    def test_trennbare_verben_nur_mit_partikel(self, service, text):
+        ergebnis = service.gegenlesen(titel="Busse helfen", text=text, aussage="")
+
+        assert "parteistimme" not in arten(ergebnis)
+
+    def test_anerkennen_mit_partikel(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Busse helfen",
+            text="Die Grünen erkennen die Leistung der Fahrer an.",
+            aussage="",
+        )
+
+        assert anmerkung(ergebnis, "parteistimme").woerter == ["Grünen erkennen"]
 
     def test_gleichgesinnte_ohne_abzug(self, service):
         text = "Die Grünen wollen mehr Busse."

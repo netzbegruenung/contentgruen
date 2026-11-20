@@ -10,11 +10,12 @@
 # folge:   Grundformen, die direkt aufeinander folgen ("wir Grüne", "unsere Partei").
 #
 # Ergänzt nach der Gegenlesen-Messung (535 KI-Inputs, 19.11.2026): Ampel, Koalition,
-# Bundesregierung und Fraktion sprechen wie die Partei; trennbare Verben stehen mit
-# ihrem Stamm ("strebt an" -> streben, "erkennt an" -> erkennen, "setzt durch" -> setzen).
+# Bundesregierung und Fraktion sprechen wie die Partei. Trennbare Verben stehen ganz
+# ("strebt … an" -> anstreben, "erkennt … an" -> anerkennen), der Dienst setzt die
+# Partikel davor; "setzen" steht schon für "setzen sich ein".
 - wer: [grüne, ampel, koalition, bundesregierung, fraktion]
-  tut: [wollen, fordern, verlangen, setzen, kämpfen, planen, versprechen, streben,
-        anstreben, zielen, fördern, durchsetzen, verstehen, erkennen, anerkennen]
+  tut: [wollen, fordern, verlangen, setzen, kämpfen, planen, versprechen, anstreben,
+        zielen, fördern, durchsetzen, verstehen, anerkennen]
 - wer: [wir]
   tut: [fordern, verlangen]
 - folge: [wir, grüne]

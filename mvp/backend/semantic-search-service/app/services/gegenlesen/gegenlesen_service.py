@@ -89,10 +89,12 @@ Stelle = Literal["titel", "text"]
 #: Die Parteistimme verfehlt den Kern des Tons (die Nachbarin spricht, nicht die
 #: Partei) und wiegt drei: In der Gegenlesen-Messung (535 KI-Inputs, 19.11.2026)
 #: trennte sie als einzige Regel verworfene von übernommenen Inputs (8 gegen 4 Prozent).
-#: Scheinbeleg, Herkunft ohne Fundstelle und Häme betreffen den Inhalt und wiegen
-#: zwei wie die Schlüsselwörter; die Floskel am Anfang und die übrigen sind
-#: Feinschliff und ziehen einen Punkt ab. Das Erlebnis ist eine Anmerkung ohne Abzug
-#: (ZAEHLT_NIE): Ein echtes Erlebnis ist erlaubt, als Platzhalter passt es für alle.
+#: Scheinbeleg und Häme betreffen den Inhalt und wiegen zwei wie die Schlüsselwörter;
+#: höher gewichtet trennte die Messung schlechter. Die Herkunft ohne Fundstelle
+#: ersetzt die Zahl ohne Herkunft und wiegt wie sie, damit eine Startseite nie
+#: schlechter steht als gar keine Herkunft. Die Floskel am Anfang und die übrigen sind
+#: Feinschliff und ziehen einen Punkt ab. Das Erlebnis wiegt null (ZAEHLT_NIE): Ein
+#: echtes Erlebnis ist erlaubt, als Platzhalter passt es für alle.
 GEWICHTE: Dict[Art, int] = {
     "verneinung": 3,
     "schluesselwoerter": 2,
@@ -105,14 +107,14 @@ GEWICHTE: Dict[Art, int] = {
     "titel_frage": 1,
     "zahl_ohne_herkunft": 1,
     "scheinbeleg": 2,
-    "herkunft_ohne_fundstelle": 2,
+    "herkunft_ohne_fundstelle": 1,
     "erlebnis": 0,
     "haeme": 2,
     "floskel": 1,
 }
-#: Arten, deren Anmerkung nie von der Güte abzieht. Auf der Karte sind
+#: Arten, deren Anmerkung nie von der Güte abzieht (Gewicht null). Auf der Karte sind
 #: sie kein Kriterium (guete_service.py).
-ZAEHLT_NIE = frozenset({"erlebnis"})
+ZAEHLT_NIE = frozenset(art for art, gewicht in GEWICHTE.items() if gewicht == 0)
 #: Der Zweck „Für Gleichgesinnte“ (Zweck.EIGENE_LEUTE in domain/models/commentary.py;
 #: hier als Text, damit der Dienst ohne das Datenmodell auskommt).
 ZWECK_EIGENE_LEUTE = "eigene_leute"
@@ -205,16 +207,15 @@ _WORT_DANACH = re.compile(r"\s+(\w)")
 
 #: Scheinbeleg: Studien, Daten oder Zahlen "zeigen", ohne dass eine genannt ist
 #: (Gegenlesen-Messung 19.11.2026). Auch in Zusammensetzungen ("Wirtschaftsstudien
-#: zeigen") und mit "laut" ("laut Studien", "laut aktuellen Berichten").
+#: zeigen") und mit "laut" ("laut Studien", "laut aktuellen Berichten"). Nur die
+#: Mehrzahl: "Die Studie zeigt" verweist oft auf eine eben genannte.
 #: "Daten" und "Zahlen" nur als ganzes Wort ("Soldaten zeigen" ist kein Beleg).
 _BELEGWORT = (
-    r"(?:(?:[A-ZÄÖÜ]\w*?)?(?i:studie|studien|statistik|statistiken|untersuchung"
-    r"|untersuchungen|analyse|analysen|bericht|berichte|umfrage|umfragen|erhebung"
-    r"|erhebungen)|Daten|Zahlen)"
+    r"(?:(?:[A-ZÄÖÜ]\w*?)?(?i:studien|statistiken|untersuchungen|analysen|berichte"
+    r"|umfragen|erhebungen)|Daten|Zahlen)"
 )
 _SCHEINBELEG = re.compile(
-    rf"\b{_BELEGWORT}\s+(?:zeigen|zeigt|belegen|belegt|bestätigen|bestätigt"
-    rf"|beweisen|beweist)\b"
+    rf"\b{_BELEGWORT}\s+(?:zeigen|belegen|bestätigen|beweisen)\b"
     r"|\b[Ll]aut\s+(?:\w+\s+)?(?:\w*(?i:studien|berichten|umfragen|statistiken"
     r"|untersuchungen)|Experten|Expertinnen|Fachleuten)\b"
 )
@@ -222,6 +223,8 @@ _SCHEINBELEG = re.compile(
 _QUELLE_DANACH = re.compile(r"\s+(?:des|der|von|vom|aus)\s+[A-ZÄÖÜ]")
 #: Was einen Beleg nennt: eine Ziffer (Zahl, Jahr) oder ein Kürzel wie "DIW", "UBA".
 _BELEG_NENNT = re.compile(r"\d|\b[A-ZÄÖÜ]{2,}\b")
+#: Kürzel, die keine Quelle nennen: Parteien und Alltagswörter.
+_KEIN_QUELLENKUERZEL = {"CDU", "CSU", "SPD", "FDP", "AFD", "BSW", "ÖPNV", "EU", "USA"}
 #: Eigennamen, die eine Quelle nennen (spaCy-Entitäten); Orte nennen keine.
 _QUELLEN_ENTITAETEN = {"ORG", "PER"}
 
@@ -245,9 +248,13 @@ _ERLEBNIS = re.compile(
 _KLAMMER = re.compile(r"\[[^\]\n]*\]")
 
 #: Häme-Marker: Spott über die Gegenseite statt einer Antwort.
+#: "Aber klar," nur am Satzanfang: mitten im Satz ist es oft ein Zugeständnis
+#: ("Das dauert, aber klar, es lohnt sich").
 _HAEME = re.compile(
-    r"\b[Aa]ber klar,|,\s*wa\?|\b[Mm]erkste selbst\b|\b[Rr]eally\?|🙄|🤦|🤷|🤡"
+    r"^\W*Aber klar,|,\s*wa\?|\b[Mm]erkste selbst\b|\b[Rr]eally\?|🙄|🤦|🤷|🤡"
 )
+#: Ein Satz nur aus Satzzeichen und Emoji: spaCy trennt "Glaubst du? 🙄" in zwei.
+_NUR_ZEICHEN = re.compile(r"^[\W_]*$")
 #: Die angesprochene Person: Bei "Für Gleichgesinnte" zählt Häme nur, wenn sie trifft.
 _DU = re.compile(r"\b(?:[Dd]u|[Dd]ich|[Dd]ir|[Dd]ein\w*)\b")
 
@@ -405,6 +412,8 @@ class GegenlesenService:
         if not titel and not text:
             return Gegengelesen(guete=None, anmerkungen=[])
         gleichgesinnte = zweck == ZWECK_EIGENE_LEUTE
+        # Ohne Herkunftsfeld (Post, Bild) gibt es keine Fundstelle zu prüfen.
+        herkunft_ohne_fundstelle = herkunft_ohne_fundstelle and hat_herkunft is not None
         if herkunft_ohne_fundstelle:
             hat_herkunft = False
 
@@ -437,12 +446,11 @@ class GegenlesenService:
                 self._parteistimme_finden(saetze, gleichgesinnte),
                 self._titel_frage(titel) if titel_ist_behauptung else None,
                 (
-                    self._zahl_ohne_herkunft(titel, text)
+                    self._zahl_ohne_herkunft(titel, text, herkunft_ohne_fundstelle)
                     if hat_herkunft is False
                     else None
                 ),
                 self._scheinbeleg(saetze),
-                self._herkunft_ohne_fundstelle() if herkunft_ohne_fundstelle else None,
                 self._erlebnis(titel, text),
                 self._haeme(saetze, gleichgesinnte),
                 self._floskel(saetze),
@@ -683,7 +691,9 @@ class GegenlesenService:
             ),
         )
 
-    def _zahl_ohne_herkunft(self, titel: str, text: str) -> Optional[Anmerkung]:
+    def _zahl_ohne_herkunft(
+        self, titel: str, text: str, ohne_fundstelle: bool = False
+    ) -> Optional[Anmerkung]:
         gefunden: List[Tuple[str, str]] = []
         for stelle, inhalt in (("titel", titel), ("text", text)):
             for zahl in _zahlen(inhalt):
@@ -699,6 +709,19 @@ class GegenlesenService:
         )
         if len(woerter) > ZAHLEN_NENNEN:
             genannt.append("weitere")
+        if ohne_fundstelle:
+            # Herkunft ist eingetragen, nennt aber keine Fundstelle: dieselbe Lücke,
+            # genauer gesagt (und nicht zusätzlich abgezogen).
+            return Anmerkung(
+                art="herkunft_ohne_fundstelle",
+                stelle=gefunden[0][0],
+                text=(
+                    f"Die Herkunft zu {_aufzaehlen(genannt)} ist nur eine Startseite "
+                    "oder eine Datei auf deinem Rechner. Verlinke die Seite, auf der "
+                    "es steht."
+                ),
+                woerter=woerter,
+            )
         return Anmerkung(
             art="zahl_ohne_herkunft",
             stelle=gefunden[0][0],
@@ -715,14 +738,22 @@ class GegenlesenService:
             m = _SCHEINBELEG.search(inhalt)
             if m is None:
                 continue
-            # Ein Beleg im selben oder im nächsten Satz des Texts nennt die Quelle.
+            # Die Quelle steht im selben Satz (auch als Name einer Organisation oder
+            # Person) oder im nächsten Satz des Texts (als Zahl, Jahr oder Kürzel).
             naechster = (
-                [texte[i + 1]]
+                texte[i + 1][1]
                 if i + 1 < len(texte) and texte[i + 1][0] == stelle
-                else []
+                else ""
             )
-            if _QUELLE_DANACH.match(inhalt, m.end()) or any(
-                _nennt_beleg(t, s) for _, t, s in [(stelle, inhalt, satz)] + naechster
+            if (
+                _QUELLE_DANACH.match(inhalt, m.end())
+                or _nennt_beleg(inhalt)
+                or any(
+                    t.ent_type_ in _QUELLEN_ENTITAETEN
+                    and t.text.upper() not in _KEIN_QUELLENKUERZEL
+                    for t in satz
+                )
+                or _nennt_beleg(naechster)
             ):
                 continue
             return Anmerkung(
@@ -736,20 +767,12 @@ class GegenlesenService:
             )
         return None
 
-    def _herkunft_ohne_fundstelle(self) -> Anmerkung:
-        return Anmerkung(
-            art="herkunft_ohne_fundstelle",
-            stelle="text",
-            text=(
-                "Die Herkunft zeigt nur auf eine Startseite oder eine Datei auf deinem "
-                "Rechner. Verlinke die Seite, auf der es steht, dann findet man es."
-            ),
-        )
-
     def _erlebnis(self, titel: str, text: str) -> Optional[Anmerkung]:
         for stelle, inhalt in (("titel", titel), ("text", text)):
-            # Im Platzhalter ist das Erlebnis gewollt; die Stellen bleiben gleich.
-            inhalt = _KLAMMER.sub(lambda m: " " * len(m.group()), inhalt)
+            # Im Platzhalter ist das Erlebnis gewollt, im Zitat spricht jemand anderes;
+            # die Stellen bleiben gleich.
+            for muster in (_KLAMMER, _ZITAT):
+                inhalt = muster.sub(lambda m: " " * len(m.group()), inhalt)
             gefunden = list(
                 dict.fromkeys(m.group() for m in _ERLEBNIS.finditer(inhalt))
             )
@@ -767,15 +790,20 @@ class GegenlesenService:
         return None
 
     def _haeme(self, saetze, gleichgesinnte: bool) -> Optional[Anmerkung]:
+        davor = ""
         for stelle, satz in saetze:
             inhalt = _satztext(satz)
             m = _HAEME.search(inhalt)
             if m is None:
+                davor = inhalt
                 continue
             if gleichgesinnte:
                 # Unter Gleichgesinnten ist Biss gewollt; nur Spott, der die Person
-                # trifft ("du", "dein"), ist zu viel.
-                if not _DU.search(inhalt):
+                # trifft ("du", "dein"), ist zu viel. Ein Emoji allein gehört zum
+                # Satz davor ("Glaubst du das? 🙄").
+                bezug = inhalt + (davor if _NUR_ZEICHEN.match(inhalt) else "")
+                if not _DU.search(bezug):
+                    davor = inhalt
                     continue
                 text = (
                     f"Das trifft die Person („{m.group()}“), nicht ihr Argument. "
@@ -836,6 +864,13 @@ class GegenlesenService:
             if _im_zitat(verb) or _verneint(verb):
                 continue
             verbformen = _grundformen(verb.lemma_) | _grundformen(verb.text)
+            # Trennbare Verben mit ihrer Partikel: "strebt … an" -> anstreben,
+            # "erkennt … an" -> anerkennen ("erkennt das Problem" bleibt erkennen).
+            verbformen |= {
+                kind.lower_ + verb.lemma_.lower()
+                for kind in verb.children
+                if kind.dep_ == "svp"
+            }
             for wer, tut in liste.wer_tut:
                 if f & wer and verbformen & tut:
                     vorne, hinten = sorted((token, verb), key=lambda t: t.i)
@@ -882,10 +917,10 @@ def _satztext(satz) -> str:
     return "".join(t.text_with_ws for t in satz)
 
 
-def _nennt_beleg(inhalt: str, satz) -> bool:
-    """Nennt der Satz eine Quelle: Ziffer, Jahr, Kürzel oder Organisation/Person?"""
-    return bool(_BELEG_NENNT.search(inhalt)) or any(
-        t.ent_type_ in _QUELLEN_ENTITAETEN for t in satz
+def _nennt_beleg(inhalt: str) -> bool:
+    """Nennt der Text eine Ziffer, ein Jahr oder ein Kürzel wie "DIW" (keine Partei)?"""
+    return any(
+        m.group() not in _KEIN_QUELLENKUERZEL for m in _BELEG_NENNT.finditer(inhalt)
     )
 
 
