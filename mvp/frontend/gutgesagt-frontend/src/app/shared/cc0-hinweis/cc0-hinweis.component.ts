@@ -4,7 +4,8 @@ import { CC0_ERKLAERUNG_URL, CONSENT_HINWEIS, ConsentHinweis } from '../consent-
 
 /**
  * Der CC0-Hinweis ueber dem Absende-Knopf (GLOSSARY.md, "CC0-Hinweis"): Mit dem Absenden
- * stellt die Person ihre Formulierung unter CC0 und stimmt den Nutzungsbedingungen zu (#415).
+ * stellt die Person ihre Formulierung unter CC0, die Nutzungsbedingungen gelten (#415).
+ * Zugestimmt wird ihnen seit dem Stand vom 20.11.2026 per Haekchen auf /einwilligung (NB §2).
  * Beide verlinkt, jeweils im neuen Tab, damit das Formular offen bleibt.
  *
  * Als Attribut an einem `<p>`, damit der Absatz im Formular an seiner Stelle steht:
