@@ -173,7 +173,7 @@ Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitra
 _Avoid_: Tooltip, Anleitung, Hilfetext
 
 **CC0-Hinweis**:
-Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und stimmt den Nutzungsbedingungen zu; beide sind verlinkt. Über ihn sind die Nutzungsbedingungen einbezogen (#415), nicht durch bloße Nutzung. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
+Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0; die Nutzungsbedingungen gelten, beide sind verlinkt. Bis zum Stand der Nutzungsbedingungen vom 19. November 2026 waren sie über ihn einbezogen (#415); seit dem Stand vom 20. November 2026 stimmt man ihnen mit dem Häkchen auf `/einwilligung` zu (NB §2). Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
 **Stand der Nutzungsbedingungen**:

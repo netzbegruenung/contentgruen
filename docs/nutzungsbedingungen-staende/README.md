@@ -61,9 +61,9 @@ läuft:
 Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein. Seit dem
 Stand vom 20. November 2026 kommt die Zustimmung nach §2 und §10 nur über das Häkchen der App
 (Schritt 3); das Absenden unter dem CC0-Hinweis gibt nur noch den Text nach §4 frei. Wer nicht
-zustimmt, kann mit dem Konto nichts einstellen und nichts bewerten, Lesen bleibt (§10). Neben
-dem Häkchen fragt Schritt 6 ein zweites Mal; ob er bei diesem Stand entfällt, entscheidet der
-Maintainer (PR der Rechtstexte für 0.9.8).
+zustimmt, kann mit dem Konto nichts einstellen und nichts bewerten, Lesen bleibt (§10). Die
+Pflichtaktion wird mit 0.9.8 abgeschaltet; Schritt 6 entfällt für den Stand vom 20. November 2026,
+weil die App selbst neu fragt (Entscheidung Maintainer, 20.11.2026).
 
 Das erneute Auslösen in Schritt 6 geht nicht über die Oberfläche der Admin-Konsole für alle auf
 einmal, sondern über die Admin-Schnittstelle von Keycloak: für jedes Konto `requiredActions` um

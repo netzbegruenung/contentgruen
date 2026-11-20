@@ -98,7 +98,7 @@ frei. Die Absätze oben und unter „Offen“ zum CC0-Hinweis als Weg der Zustim
 **CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts`, gezeigt
 von `shared/cc0-hinweis/`, und verlinkt CC0 (seit #415) und die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
 unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter.“ (seit #415;
-vorher „bestätigst die Nutzungsbedingungen“) Keine
+vorher „bestätigst die Nutzungsbedingungen“; seit 0.9.8 „…unter CC0; es gelten die Nutzungsbedingungen – keine personenbezogenen Daten Dritter.“, Kennungen `2026-11-20-formular` und `-satz`, `docs/CC0_HINWEIS_WORTLAUTE.md`) Keine
 Checkbox; die bewusste Handlung ist das Absenden. Beim Satz, der beim Tippen gespeichert wird,
 ist die eigene Fassung so gewollt (Entscheidung 29.10.2026 in #439). Dass die Freigabe nicht
 zurückgenommen werden kann, steht in den Nutzungsbedingungen, nicht im Hinweis (ebenfalls
