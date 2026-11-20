@@ -2,8 +2,10 @@
 Nie benutzte Konten aus Einladungen loeschen (#538).
 
 Keycloak ist eine Attrappe hinter httpx.MockTransport mit einer Handvoll Konten. Nie
-benutzt ist ein Konto, das noch auf seine Pflichtaktion wartet, die Mail-Adresse nie
-bestaetigt hat, kein Passwort hat und mit keinem Identity Provider verknuepft ist.
+benutzt ist ein Konto, das noch auf seine Pflichtaktion wartet, kein Passwort hat, mit
+keinem Identity Provider verknuepft ist und entweder die Mail-Adresse nie bestaetigt
+hat oder "Passwort festlegen" noch am Konto traegt (Link bestaetigt, Passwort nie
+gesetzt).
 """
 
 from datetime import datetime, timezone
@@ -36,16 +38,8 @@ def _konto(kennung, angelegt=VORHER, **extra):
 class Keycloak:
     """Haelt Konten, Passwoerter und Verknuepfungen; zeichnet die Anfragen auf."""
 
-    def __init__(
-        self,
-        konten,
-        passwort=(),
-        verknuepft=(),
-        von_hand_geloescht=(),
-        filtert=True,
-    ):
+    def __init__(self, konten, passwort=(), verknuepft=(), von_hand_geloescht=()):
         self.konten = {k["id"]: k for k in konten}
-        self.filtert = filtert
         self.passwort = set(passwort)
         self.verknuepft = set(verknuepft)
         self.von_hand_geloescht = set(von_hand_geloescht)
@@ -58,13 +52,7 @@ class Keycloak:
             return httpx.Response(200, json={"access_token": "tok"})
         if request.method == "GET" and pfad == ADMIN:
             p = request.url.params
-            treffer = [
-                k
-                for k in self.konten.values()
-                if not self.filtert
-                or p.get("emailVerified") != "false"
-                or not k["emailVerified"]
-            ]
+            treffer = list(self.konten.values())
             erste = int(p.get("first", 0))
             anzahl = int(p["max"])
             return httpx.Response(200, json=treffer[erste : erste + anzahl])
@@ -125,13 +113,63 @@ def test_benutzte_konten_bleiben():
     assert keycloak.geloescht() == []
 
 
-def test_bestaetigtes_konto_bleibt_auch_ohne_filter_in_keycloak():
-    # Uebergeht Keycloak den Filter emailVerified, entscheidet das Konto selbst.
-    keycloak = Keycloak([_konto("bestaetigt", emailVerified=True)], filtert=False)
+def test_link_bestaetigt_aber_nie_ein_passwort_wird_geloescht():
+    # Entscheidung 20.11.: Die Frist gilt auch, wenn der Link die Adresse bestaetigt
+    # hat, aber nie ein Passwort kam.
+    keycloak = Keycloak(
+        [
+            _konto(
+                "abgebrochen",
+                emailVerified=True,
+                requiredActions=["TERMS_AND_CONDITIONS", "UPDATE_PASSWORD"],
+            ),
+            _konto(
+                "abgebrochen-jung",
+                angelegt=NACHHER,
+                emailVerified=True,
+                requiredActions=["TERMS_AND_CONDITIONS", "UPDATE_PASSWORD"],
+            ),
+        ]
+    )
+
+    anzahl = _konten(keycloak).nie_benutzte_loeschen(GRENZE)
+
+    assert anzahl == 1
+    assert keycloak.geloescht() == ["abgebrochen"]
+
+
+def test_beta_zugang_und_vorab_angelegte_bleiben_ohne_nachfrage():
+    # Beta-Zugang (#488): bestaetigt, ohne Passwort, ohne "Passwort festlegen" am
+    # Konto; seine Beitraege sind schon umgezogen. Vorab angelegt (#487): bestaetigt.
+    keycloak = Keycloak(
+        [
+            _konto("beta", emailVerified=True),
+            _konto("vorab", emailVerified=True),
+        ],
+        verknuepft=["vorab"],
+    )
 
     anzahl = _konten(keycloak).nie_benutzte_loeschen(GRENZE)
 
     assert anzahl == 0
+    assert keycloak.geloescht() == []
+    # Fuer sie fragt der Lauf weder Passwort noch Verknuepfung ab.
+    assert [r for r in keycloak.anfragen if r.url.path.startswith(ADMIN + "/")] == []
+
+
+def test_link_bestaetigt_mit_passwort_aus_passwort_vergessen_bleibt():
+    keycloak = Keycloak(
+        [
+            _konto(
+                "nachgeholt",
+                emailVerified=True,
+                requiredActions=["TERMS_AND_CONDITIONS", "UPDATE_PASSWORD"],
+            )
+        ],
+        passwort=["nachgeholt"],
+    )
+
+    assert _konten(keycloak).nie_benutzte_loeschen(GRENZE) == 0
     assert keycloak.geloescht() == []
 
 
@@ -159,11 +197,12 @@ def test_schon_geloeschtes_konto_haelt_den_lauf_nicht_auf():
     assert anzahl == 1
 
 
-def test_fragt_nur_unbestaetigte_konten_ab():
+def test_liest_alle_konten_mit_pflichtaktionen():
     keycloak = Keycloak([])
 
     _konten(keycloak).nie_benutzte_loeschen(GRENZE)
 
     liste = next(r for r in keycloak.anfragen if r.url.path == ADMIN)
-    assert liste.url.params["emailVerified"] == "false"
+    # Kein Filter emailVerified mehr: Auch bestaetigte Konten koennen faellig sein.
+    assert "emailVerified" not in liste.url.params
     assert liste.url.params["briefRepresentation"] == "false"

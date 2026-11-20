@@ -321,8 +321,8 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   oder eine Beschwerde belegen lässt, wann der Löschablauf lief. Der Auftrag trägt nur Kennung
   und drei Zeitpunkte, keinen Inhalt; den Widerruf selbst belegt weiter die Zeile in
   `art9_einwilligungen`, solange das Konto besteht.
-- **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
-  hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
+- **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt oder
+  nach dem Öffnen nie ein Passwort setzt, hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
   Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
   UTC-Tagen ab dem Anlegen, der tägliche Lauf löscht also 33 bis 35 Tage danach. Was „nie
   benutzt“ heißt, steht unter „Einladungen“.
@@ -395,18 +395,21 @@ und der Ablauf oben erfasst die Tabelle nicht.
   steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
   Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
   Zähler vergleichen.
-- **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): Mail-Adresse
-  nicht bestätigt, Pflichtaktion „Terms and Conditions“ offen, kein Passwort, keine
-  Verknüpfung mit einem Identity Provider (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
+- **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): Pflichtaktion
+  „Terms and Conditions“ offen, kein Passwort (kein Credential), keine Verknüpfung mit einem
+  Identity Provider, und dazu Mail-Adresse nicht bestätigt oder „Passwort festlegen“ noch am
+  Konto (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
   angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
   sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
   unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
   Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht.
 - **Link geöffnet, aber kein Passwort:** Der Link in der Mail bestätigt die Adresse, sobald die
   Person ihn öffnet und bestätigt (Pflichtaktion `VERIFY_EMAIL` im Link), noch vor dem Passwort.
-  Bricht sie danach ab, ist die Adresse bestätigt, und der Task lässt das Konto stehen: Es
-  gehört nachweislich der Person mit dieser Adresse, und sie kommt über „Passwort vergessen“
-  hinein. Es trägt nur Adresse und Namen und wird wie jedes Konto auf Bitte gelöscht.
+  Bricht sie danach ab, ist die Adresse bestätigt, aber „Passwort festlegen“
+  (`UPDATE_PASSWORD`) steht noch am Konto; Keycloak nimmt es erst weg, wenn ein Passwort gesetzt
+  ist. Auch ein solches Konto gilt als nie benutzt und geht nach derselben Frist (Entscheidung
+  20.11.). Beta-Zugänge (#488) tragen „Passwort festlegen“ nicht am Konto und bleiben, auch
+  ohne Passwort: Ihre Beiträge sind schon dorthin umgezogen.
 
 ## Vier Fallen
 

@@ -31,6 +31,13 @@ logger = get_logger(__name__)
 # docs/KEYCLOAK_REALM.md). Keycloak weist ein Konto mit einer unbekannten
 # Pflichtaktion ab; dann schlaegt jedes Einloesen fehl.
 PFLICHTAKTIONEN = ["TERMS_AND_CONDITIONS"]
+# Ein Konto aus einer Einladung traegt dazu "Passwort festlegen" als Pflichtaktion am
+# Konto. Keycloak nimmt sie weg, sobald ein Passwort gesetzt ist (ueber den Link oder
+# "Passwort vergessen"). Daran erkennt nie_benutzte_loeschen ein Konto, dessen Link
+# geoeffnet und bestaetigt wurde, ohne dass je ein Passwort kam; Beta-Zugaenge (#488)
+# tragen sie nicht und bleiben. Doppelt gefragt wird nicht: Aktionen am Konto und im
+# Link fuehrt Keycloak als eine Menge.
+EINLADUNG_PFLICHTAKTIONEN = PFLICHTAKTIONEN + ["UPDATE_PASSWORD"]
 # Was der Link in der Mail tut. Mit VERIFY_EMAIL setzt Keycloak die Adresse auf
 # bestaetigt, sobald jemand den Link oeffnet und bestaetigt (26.8.2,
 # ExecuteActionsActionTokenHandler.handleToken); ohne sie schickte Keycloak beim ersten
@@ -102,7 +109,9 @@ class KeycloakKonten:
         nachname: Optional[str] = None,
     ) -> KontoErgebnis:
         admin = self._admin
-        konto = _konto(email, email_bestaetigt=False)
+        konto = _konto(
+            email, email_bestaetigt=False, pflichtaktionen=EINLADUNG_PFLICHTAKTIONEN
+        )
         # Beide oder keiner, wie bei _konto_mit_namen. Ohne Namen fragt Keycloak beim
         # ersten Anmelden danach, weil das Benutzerprofil sie verlangt.
         if vorname and nachname:
@@ -342,26 +351,30 @@ class KeycloakKonten:
         """
         Loescht Konten, die vor ``angelegt_vor`` angelegt und nie benutzt wurden, und
         gibt die Zahl der in diesem Lauf geloeschten zurueck. Nie benutzt: Die
-        Mail-Adresse ist nicht bestaetigt, die Pflichtaktion aus dem Anlegen steht noch
-        aus, es gibt kein Passwort und keine Verknuepfung mit einem Identity Provider.
-        So sieht ein Konto aus einer Einladung aus, dessen Link niemand geoeffnet hat.
-        Wer ihn oeffnet und bestaetigt, bestaetigt damit die Adresse (VERIFY_EMAIL in
-        MAIL_AKTIONEN), auch wenn er danach kein Passwort setzt; ein solches Konto bleibt
-        stehen, die Person kommt ueber "Passwort vergessen" hinein. Vorab angelegte
-        Konten (#487) sind verknuepft.
+        Pflichtaktion aus dem Anlegen steht noch aus, es gibt kein Credential (also kein
+        Passwort) und keine Verknuepfung mit einem Identity Provider, und dazu eines von
+        beiden:
+
+        - Die Mail-Adresse ist nicht bestaetigt: Den Link hat niemand geoeffnet.
+        - "Passwort festlegen" steht noch am Konto (EINLADUNG_PFLICHTAKTIONEN): Den Link
+          hat jemand geoeffnet und bestaetigt (VERIFY_EMAIL in MAIL_AKTIONEN bestaetigt
+          dabei die Adresse), aber nie ein Passwort gesetzt.
+
+        Vorab angelegte Konten (#487) sind verknuepft; Beta-Zugaenge (#488) sind
+        bestaetigt und tragen "Passwort festlegen" nicht am Konto.
         """
         grenze_ms = int(angelegt_vor.timestamp() * 1000)
         with self._client() as http:
             sitzung = _Sitzung(self, http)
             # Erst alle Seiten lesen, dann loeschen: Loeschen verschoebe die Seiten.
+            # Gelesen werden alle Konten: Nach Pflichtaktionen filtert die
+            # Admin-Schnittstelle nicht. Teuer sind nur die Abfragen in _benutzt, und
+            # die gehen nur an Konten, die _sieht_nie_benutzt_aus.
             faellig = [
                 konto["id"]
-                for konto in self._unbestaetigte_konten(sitzung)
-                # emailVerified auch hier: Der Filter in der Anfrage allein haelt ein
-                # bestaetigtes Konto nicht fern, falls Keycloak ihn uebergeht.
-                if konto.get("emailVerified") is False
-                and konto.get("createdTimestamp", grenze_ms) < grenze_ms
-                and set(PFLICHTAKTIONEN) <= set(konto.get("requiredActions") or [])
+                for konto in self._alle_konten(sitzung)
+                if konto.get("createdTimestamp", grenze_ms) < grenze_ms
+                and _sieht_nie_benutzt_aus(konto)
                 and not self._benutzt(sitzung, konto["id"])
             ]
             geloescht = 0
@@ -375,14 +388,13 @@ class KeycloakKonten:
                 geloescht += 1
         return geloescht
 
-    def _unbestaetigte_konten(self, sitzung: "_Sitzung") -> List[dict]:
+    def _alle_konten(self, sitzung: "_Sitzung") -> List[dict]:
         konten: List[dict] = []
         while True:
             antwort = sitzung.anfrage(
                 "GET",
                 self._admin,
                 params={
-                    "emailVerified": "false",
                     # Die kurze Form laesst requiredActions weg.
                     "briefRepresentation": "false",
                     "first": str(len(konten)),
@@ -404,14 +416,26 @@ class KeycloakKonten:
         return False
 
 
-def _konto(email: str, email_bestaetigt: bool) -> Dict[str, object]:
+def _sieht_nie_benutzt_aus(konto: Mapping[str, object]) -> bool:
+    """Die Bedingungen aus nie_benutzte_loeschen, die am Konto selbst stehen."""
+    aktionen = set(konto.get("requiredActions") or [])  # type: ignore[arg-type]
+    if not set(PFLICHTAKTIONEN) <= aktionen:
+        return False
+    return konto.get("emailVerified") is False or "UPDATE_PASSWORD" in aktionen
+
+
+def _konto(
+    email: str,
+    email_bestaetigt: bool,
+    pflichtaktionen: List[str] = PFLICHTAKTIONEN,
+) -> Dict[str, object]:
     """Ein Konto im Realm: die Adresse als Benutzername, Pflichtaktion Nutzungsbedingungen."""
     return {
         "username": email,
         "email": email,
         "enabled": True,
         "emailVerified": email_bestaetigt,
-        "requiredActions": PFLICHTAKTIONEN,
+        "requiredActions": list(pflichtaktionen),
     }
 
 

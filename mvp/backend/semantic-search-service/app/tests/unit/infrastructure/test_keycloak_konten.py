@@ -82,7 +82,9 @@ def test_legt_konto_an_und_loest_passwort_mail_aus():
     assert konto["email"] == "neu@example.org"
     assert konto["username"] == "neu@example.org"
     assert konto["enabled"] is True
-    assert konto["requiredActions"] == ["TERMS_AND_CONDITIONS"]
+    # "Passwort festlegen" auch am Konto: daran erkennt die Loeschfrist (#538) ein
+    # Konto, dessen Link bestaetigt, aber nie ein Passwort gesetzt wurde.
+    assert konto["requiredActions"] == ["TERMS_AND_CONDITIONS", "UPDATE_PASSWORD"]
     assert anlegen.headers["Authorization"] == "Bearer tok"
     # Ohne VERIFY_EMAIL bliebe die Adresse unbestaetigt, und Keycloak schickte beim
     # ersten Anmelden eine zweite Mail.
