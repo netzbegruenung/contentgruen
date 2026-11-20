@@ -92,12 +92,12 @@ export class LoginSelectorComponent implements OnInit {
     this.router.navigate(['/']);
   }
 
-  /** Warteliste fuer Einladungen ueber den Feedback-Dialog, Text vorbelegt (Designrunde 17.11.). */
   /** Zur Seite, auf der man den Link einer Einladung einfügt (#429). */
   einladungEinloesen(): void {
     this.router.navigate(['/einladung']);
   }
 
+  /** Warteliste fuer Einladungen ueber den Feedback-Dialog, Text vorbelegt (Designrunde 17.11.). */
   aufWarteliste(): void {
     feedbackDialogOeffnen(this.dialog, WARTELISTE_TEXT);
   }
