@@ -126,7 +126,7 @@ describe('HelpDialogComponent', () => {
       fixture.detectChanges();
 
       const knopf = fixture.nativeElement.querySelector('.rundgang-mitmachen') as HTMLButtonElement;
-      expect(knopf.textContent!.trim()).toBe('Selbst beitragen (4 Schritte)');
+      expect(knopf.textContent!.trim()).toBe('Selbst beitragen (5 Schritte)');
       knopf.click();
 
       expect(rundgang.starten).toHaveBeenCalledWith('mitmachen');

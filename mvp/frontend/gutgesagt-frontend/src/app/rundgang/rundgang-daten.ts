@@ -125,7 +125,8 @@ export const MITMACHEN_ANGEBOT: Angebot = {
   rundgang: 'mitmachen',
   schluessel: MITMACHEN_SCHLUESSEL,
   titel: 'Kurz zeigen, wie Beitragen geht?',
-  satz: 'Drei Schritte: Fundstücke einwerfen, im Fangkorb weiterarbeiten und deine Beiträge im Blick behalten.',
+  // Die drei Schritte der Kette, wie sie oben auf der Beitragen-Seite stehen (20.11.)
+  satz: 'Drei Schritte: Fundstücke einwerfen, Einwürfe destillieren und Sätze zu Beiträgen ausformulieren.',
   // Wer hier ist, hat „Beitragen“ schon gefunden: Der Rundgang beginnt beim Einwerfen.
   // Nicht auf /einwerfen: Das ist ein Formular (oft per Teilen schon gefüllt), und der
   // Rundgang spielt auf /contribute; „Zeig mir’s“ würde den Einwurf verwerfen.
@@ -239,7 +240,7 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
     schritte: [
       {
         titel: 'Beitragen',
-        text: 'Hier geht es zu allem, womit du mitmachst: einwerfen, weiterarbeiten und Beiträge verfassen.',
+        text: 'Hier geht es zu allem, womit du mitmachst: einwerfen, destillieren, ausformulieren oder direkt verfassen.',
         ziel: '.beitragen-knopf, .mobile-header .contribute-button',
       },
       {
@@ -250,12 +251,19 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
         ziel: '.einwerfen-block',
         seite: { pfad: '/contribute' },
       },
+      // Destillieren und Ausformulieren je ein Schritt, wie die Kacheln der Kette; beide
+      // fuehren in ihren Tab im Fangkorb (Sebastian 20.11., vorher ein Schritt „Fangkorb“)
       {
-        titel: 'Fangkorb',
+        titel: 'Destillieren',
         text:
-          'Im Fangkorb liegen die Einwürfe aller. Destilliere einen zu einem Satz oder formuliere einen ' +
-          'Satz zum Beitrag aus.',
-        ziel: '.fangkorb-block',
+          'Im Fangkorb liegen die Einwürfe aller. Nimm dir einen und sag in einem Satz, was der Punkt ist.',
+        ziel: '.destillieren-block',
+        seite: { pfad: '/contribute' },
+      },
+      {
+        titel: 'Ausformulieren',
+        text: 'Aus einem Satz wird ein Beitrag: Typ wählen, Text schreiben, Herkunft angeben.',
+        ziel: '.ausformulieren-block',
         seite: { pfad: '/contribute' },
       },
       {

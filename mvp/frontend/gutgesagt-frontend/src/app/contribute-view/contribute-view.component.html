@@ -1,37 +1,45 @@
 <!--
-    Oben die Kette vom Rohen zum Ergebnis: Einwerfen, Fangkorb, Meine Beitraege; darunter die
-    vier Beitragstypen zum direkten Verfassen. Am Desktop die Kette in einer Reihe und die Typen
-    zweispaltig, mobil alles untereinander in derselben Reihenfolge (Designrunde 12.11., vorher
-    Verfassen zuerst nach #620).
+    Oben die Kette in drei Schritten (Einwerfen, Destillieren, Ausformulieren), mit Pfeilen
+    zwischen den Kacheln; darunter die vier Beitragstypen zum direkten Verfassen, dann der
+    Erstnutzer-Satz und abgesetzt der Knopf zu den eigenen Beitraegen (Sebastian 20.11.). Am
+    Desktop die Kette in einer Reihe und die Typen zweispaltig, mobil alles untereinander.
 -->
 <div class="typ-zeilen">
     <section class="typ-abschnitt ketten-abschnitt">
         <h2 class="typ-zwischenueberschrift" id="abschnitt-kette">Einwerfen und weiterarbeiten</h2>
-        <nav class="typ-liste ketten-liste" aria-labelledby="abschnitt-kette">
-            <button type="button" class="typ-zeile einwerfen-block" (click)="navigateToEinwerfen()">
-                <span class="typ-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
-                <span class="typ-text">
-                    <span class="typ-titel">{{ einwerfenTitel }}</span>
-                    <span class="typ-satz">{{ fangkorbKurz }}</span>
-                </span>
-                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
-            </button>
-            <button type="button" class="typ-zeile fangkorb-block" (click)="navigateToFangkorb()">
-                <span class="typ-icon" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
-                <span class="typ-text">
-                    <span class="typ-titel">Fangkorb</span>
-                    <span class="typ-satz">Einwürfe destillieren oder Sätze ausformulieren.</span>
-                </span>
-                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
-            </button>
-            <button type="button" class="typ-zeile beitraege-block" (click)="navigateToMeineBeitraege()">
-                <span class="typ-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
-                <span class="typ-text">
-                    <span class="typ-titel">Meine Beiträge</span>
-                    <span class="typ-satz">Was du eingestellt hast und wie oft es genutzt wurde.</span>
-                </span>
-                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
-            </button>
+        <nav aria-labelledby="abschnitt-kette">
+            <!-- role="list": Safari nimmt einer Liste ohne Aufzaehlungszeichen sonst die Listen-Semantik -->
+            <ol class="ketten-liste" role="list">
+                <li class="ketten-schritt">
+                    <button type="button" class="typ-zeile einwerfen-block" (click)="navigateToEinwerfen()">
+                        <span class="typ-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+                        <span class="typ-text">
+                            <span class="typ-titel">{{ einwerfenTitel }}</span>
+                            <span class="typ-satz">{{ fangkorbKurz }}</span>
+                        </span>
+                    </button>
+                </li>
+                <li class="ketten-schritt">
+                    <mat-icon class="ketten-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+                    <button type="button" class="typ-zeile destillieren-block" (click)="fangkorbOeffnen('destillieren')">
+                        <span class="typ-icon" aria-hidden="true">{{ kettenIcons.destillieren }}</span>
+                        <span class="typ-text">
+                            <span class="typ-titel">Einwürfe destillieren</span>
+                            <span class="typ-satz">In einem Satz sagen, was der Punkt ist.</span>
+                        </span>
+                    </button>
+                </li>
+                <li class="ketten-schritt">
+                    <mat-icon class="ketten-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+                    <button type="button" class="typ-zeile ausformulieren-block" (click)="fangkorbOeffnen('ausformulieren')">
+                        <span class="typ-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
+                        <span class="typ-text">
+                            <span class="typ-titel">Sätze ausformulieren</span>
+                            <span class="typ-satz">Aus dem Satz einen Beitrag machen.</span>
+                        </span>
+                    </button>
+                </li>
+            </ol>
         </nav>
     </section>
 
@@ -44,7 +52,6 @@
                     <span class="typ-titel">{{ typLabel('commentary') }}</span>
                     <span class="typ-satz">{{ typBeschreibung('commentary') }}</span>
                 </span>
-                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
             </button>
             <button type="button" class="typ-zeile generictext-card" (click)="formularOeffnen('generictext')">
                 <span class="typ-icon" aria-hidden="true">📄</span>
@@ -52,7 +59,6 @@
                     <span class="typ-titel">{{ typLabel('generictext') }}</span>
                     <span class="typ-satz">{{ typBeschreibung('generictext') }}</span>
                 </span>
-                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
             </button>
             <button type="button" class="typ-zeile image-card" (click)="formularOeffnen('image')">
                 <span class="typ-icon" aria-hidden="true">🖼️</span>
@@ -60,7 +66,6 @@
                     <span class="typ-titel">{{ typLabel('image') }}</span>
                     <span class="typ-satz">{{ typBeschreibung('image') }}</span>
                 </span>
-                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
             </button>
             <button type="button" class="typ-zeile post-card" (click)="formularOeffnen('post')">
                 <span class="typ-icon" aria-hidden="true">📣</span>
@@ -68,9 +73,18 @@
                     <span class="typ-titel">{{ typLabel('post') }}</span>
                     <span class="typ-satz">{{ typBeschreibung('post') }}</span>
                 </span>
-                <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
             </button>
         </nav>
-        <p class="hinweis-box erstnutzer-satz">{{ erstnutzerSatz }}</p>
     </section>
+
+    <p class="erstnutzer-satz">{{ erstnutzerSatz }}</p>
+
+    <!-- Kein Arbeitsschritt, sondern die eigene Sammlung: deshalb ein Knopf statt einer Kachel -->
+    <div class="meine-beitraege-zeile">
+        <button mat-stroked-button type="button" class="meine-beitraege-knopf beitraege-block"
+                (click)="navigateToMeineBeitraege()">
+            <mat-icon aria-hidden="true">{{ menueIcons.meineBeitraege }}</mat-icon>
+            Meine Beiträge
+        </button>
+    </div>
 </div>
