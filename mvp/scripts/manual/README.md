@@ -183,15 +183,13 @@ Aufruf in `docs/KEYCLOAK_REALM.md`, „Kennungen umstellen“; getestet in
 
 ## Zeitpunkte der Keycloak-Zustimmung archivieren (im semantic-search-Container)
 
-`keycloak_nb_zeitpunkte.py [--zeitpunkte | --attribut-loeschen [--ausfuehren]]` – **lesend;
-schreibend nur mit `--attribut-loeschen --ausfuehren`** (entfernt das Attribut nach dem
-Archivieren, braucht „Unmanaged attributes: Admin can edit“). Zaehlt die Konten im Realm
+`keycloak_nb_zeitpunkte.py [--zeitpunkte]` – **nur lesend.** Zaehlt die Konten im Realm
 von Gut gesagt mit Zeitpunkt der Pflichtaktion „Terms and Conditions“ (Attribut
 `terms_and_conditions`, Unix-Sekunden, Keycloak 26.8.2); mit `--zeitpunkte` folgen nach
-einer Trennzeile Kennung und Zeitpunkt je Konto (Personendaten, nur in eine Datei auf dem
-Host). Vor dem Abschalten der Pflichtaktion, wenn die App die Nutzungsbedingungen selbst
-fragt (`docs/ART9_EINWILLIGUNG.md`). Die Admin-Schnittstelle zeigt das Attribut nur mit
-„Unmanaged attributes: Admin can view“ im Realm; Aufruf und Hinweis im Kopf des Skripts.
+einer Trennzeile Kennung und Zeitpunkt je Konto (Personendaten, nur ins Archiv auf dem Host,
+`docs/LOESCHKONZEPT.md`). Laeuft vor dem Abschalten der Pflichtaktion: Keycloak zeigt das
+Attribut nur, solange sie eingeschaltet ist, und laesst es ueber die Admin-Schnittstelle nie
+schreiben. Geloescht wird es danach in der Datenbank von Keycloak (`docs/KEYCLOAK_REALM.md`).
 Tests: `tests/unit/services/test_keycloak_nb_zeitpunkte_skript.py`.
 
 ## Beitraege anonymisieren (im semantic-search-Container)

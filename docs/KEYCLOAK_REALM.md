@@ -39,8 +39,37 @@ Standardliste von Keycloak, und was fehlt, gäbe es danach im Realm nicht.
   `infrastructure/keycloak_konten.py` ist leer). Ein bestehender Realm schaltet sie am
   Rollout-Tag ab, erst nachdem die Zeitpunkte archiviert sind und 0.9.8 live ist; danach wird
   das Attribut `terms_and_conditions` an allen Konten gelöscht (Reihenfolge:
-  `docs/ART9_EINWILLIGUNG.md`, „Keycloak“; Archiv: `docs/LOESCHKONZEPT.md`). Keycloak überspringt eine abgeschaltete Pflichtaktion auch bei Konten, die sie
-  noch tragen (26.8.2, `AuthenticationManager.getApplicableRequiredAction`).
+  `docs/ART9_EINWILLIGUNG.md`, „Keycloak“; Archiv: `docs/LOESCHKONZEPT.md`; Befehle unten).
+  Keycloak überspringt eine abgeschaltete Pflichtaktion auch bei Konten, die sie noch tragen
+  (26.8.2, `AuthenticationManager.getApplicableRequiredAction`).
+
+### Attribut der alten Zustimmung löschen (Rollout 0.9.8)
+
+Keycloak 26.8.2 führt `terms_and_conditions` im Benutzerprofil als eigenes Attribut, das über die
+Admin-Schnittstelle nie schreibbar und nur lesbar ist, solange die Pflichtaktion an ist
+(`DeclarativeUserProfileProviderFactory.createUserResourceValidation`). Exportieren
+(`mvp/scripts/manual/keycloak_nb_zeitpunkte.py`) geht deshalb nur vorher, Löschen nur in der
+Datenbank von Keycloak (Tabellen `USER_ATTRIBUTE`, `USER_ENTITY`, `REALM`), nach dem Archivieren
+und dem Abschalten. Erst zählen, dann löschen, mit `psql` in der Datenbank von Keycloak:
+
+```sql
+SELECT count(*) FROM user_attribute
+WHERE name IN ('terms_and_conditions', 'TERMS_AND_CONDITIONS')
+  AND user_id IN (SELECT id FROM user_entity
+                  WHERE realm_id = (SELECT id FROM realm WHERE name = 'gutgesagt'));
+```
+
+```sql
+DELETE FROM user_attribute
+WHERE name IN ('terms_and_conditions', 'TERMS_AND_CONDITIONS')
+  AND user_id IN (SELECT id FROM user_entity
+                  WHERE realm_id = (SELECT id FROM realm WHERE name = 'gutgesagt'));
+```
+
+(Die Großschreibung hat Keycloak 21.0.0 kurz verwendet, `TermsAndConditions.processAction`.)
+Danach den Benutzer-Cache leeren, sonst liefert Keycloak die alten Werte aus dem Cache: in der
+Admin-Konsole im Realm `master`, Benutzermenü oben rechts → *Clear Caches* → *User Cache* →
+*Clear* (braucht `manage-realm`, das Dienstkonto `gutgesagt-einladungen` hat es nicht).
 
 Platzhalter, vor dem Import ersetzen:
 

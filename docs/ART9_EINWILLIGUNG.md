@@ -162,8 +162,8 @@ beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
   `keycloak_konten.py` ist leer. Am Rollout-Tag: Zeitpunkte nur lesend ins Archiv exportieren
   (`docs/LOESCHKONZEPT.md`, „Archiv der Keycloak-Zeitpunkte“), 0.9.8 live und die Seite prüfen,
   dann die Pflichtaktion im Realm abschalten, dann das Attribut `terms_and_conditions` an allen
-  Konten löschen (`mvp/scripts/manual/keycloak_nb_zeitpunkte.py --attribut-loeschen`, Pflicht;
-  `docs/KEYCLOAK_REALM.md`). Bis dahin fragt Keycloak kurz doppelt; andersherum entstünden
+  Konten in der Datenbank von Keycloak löschen (Pflicht; die Admin-Schnittstelle schreibt es
+  nie; `docs/KEYCLOAK_REALM.md`, „Attribut der alten Zustimmung löschen“). Bis dahin fragt Keycloak kurz doppelt; andersherum entstünden
   Konten ohne Zustimmung.
 
 ## Wortlaut ändern
