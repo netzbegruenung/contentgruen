@@ -74,6 +74,11 @@ Art = Literal[
     "parteistimme",
     "titel_frage",
     "zahl_ohne_herkunft",
+    "scheinbeleg",
+    "herkunft_ohne_fundstelle",
+    "erlebnis",
+    "haeme",
+    "floskel",
 ]
 #: Wo eine Anmerkung (zuerst) zutrifft.
 Stelle = Literal["titel", "text"]
@@ -81,21 +86,36 @@ Stelle = Literal["titel", "text"]
 #: Abzug je Art von Anmerkung von der höchsten Güte 10. Verneinung und übernommene
 #: Schlüsselwörter wiegen schwer, weil sie den Vorwurf wiederholen; ein kürzerer Satz
 #: oder eine entfernte Verneinung hebt die Güte damit sichtbar um mindestens zwei.
-#: Die Parteistimme wiegt wie die Schlüsselwörter: Sie verfehlt den Kern des Tons
-#: (die Nachbarin spricht, nicht die Partei), und wer sie umschreibt, sieht das am
-#: Siegel. Die übrigen sind Feinschliff und ziehen einen Punkt ab.
+#: Die Parteistimme verfehlt den Kern des Tons (die Nachbarin spricht, nicht die
+#: Partei) und wiegt drei: In der Gegenlesen-Messung (535 KI-Inputs, 19.11.2026)
+#: trennte sie als einzige Regel verworfene von übernommenen Inputs (8 gegen 4 Prozent).
+#: Scheinbeleg, Herkunft ohne Fundstelle und Häme betreffen den Inhalt und wiegen
+#: zwei wie die Schlüsselwörter; die Floskel am Anfang und die übrigen sind
+#: Feinschliff und ziehen einen Punkt ab. Das Erlebnis ist eine Anmerkung ohne Abzug
+#: (ZAEHLT_NIE): Ein echtes Erlebnis ist erlaubt, als Platzhalter passt es für alle.
 GEWICHTE: Dict[Art, int] = {
     "verneinung": 3,
     "schluesselwoerter": 2,
     "satzlaenge": 2,
-    "parteistimme": 2,
+    "parteistimme": 3,
     "statt_sag": 1,
     "passiv": 1,
     "kompositum": 1,
     "gedankenstrich": 1,
     "titel_frage": 1,
     "zahl_ohne_herkunft": 1,
+    "scheinbeleg": 2,
+    "herkunft_ohne_fundstelle": 2,
+    "erlebnis": 0,
+    "haeme": 2,
+    "floskel": 1,
 }
+#: Arten, deren Anmerkung nie von der Güte abzieht. Auf der Karte sind
+#: sie kein Kriterium (guete_service.py).
+ZAEHLT_NIE = frozenset({"erlebnis"})
+#: Der Zweck „Für Gleichgesinnte“ (Zweck.EIGENE_LEUTE in domain/models/commentary.py;
+#: hier als Text, damit der Dienst ohne das Datenmodell auskommt).
+ZWECK_EIGENE_LEUTE = "eigene_leute"
 GUETE_MAX = 10
 GUETE_MIN = 1
 
@@ -131,9 +151,11 @@ _GEDANKENSTRICH = re.compile(r"(?<=\S[^\S\n])[–—](?=\s)|(?<=\w)—(?=\w)")
 #: services/dieselbe_behauptung/regel.py, ohne dessen Fragewörter am Anfang), dazu
 #: Ausrufezeichen und Auslassung ("Echt?!", "Und dann?…").
 _TITEL_SCHLUSS = " \t\r\n\"'„“”‚‘’«»)!…"
-#: Anführungszeichen: Darin zitiert der Beitrag, statt selbst zu sprechen.
+#: Anführungszeichen: Darin zitiert der Beitrag, statt selbst zu sprechen. Auch
+#: gerade einfache ('so'), aber nicht der Apostroph in einem Wort ("gab's").
 _ZITAT = re.compile(
     r"„[^“”\n]*[“”]|\"[^\"\n]*\"|»[^«\n]*«|«[^»\n]*»|‚[^‘’\n]*[‘’]|“[^”\n]*”"
+    r"|(?<!\w)'[^'\n]+'(?!\w)"
 )
 _VERNEINT = {"kein", "nicht", "nie", "niemals", "niemand", "niemandem"}
 #: Größenwörter: nach einer Ziffer eine Einheit ("3 Prozent"), nach einem Zahlwort
@@ -181,6 +203,61 @@ _WORT_DAVOR = re.compile(r"(\S?)\s*(\w+)\s+$")
 #: ("5000 Bäume"), statt einen Namen zu tragen.
 _WORT_DANACH = re.compile(r"\s+(\w)")
 
+#: Scheinbeleg: Studien, Daten oder Zahlen "zeigen", ohne dass eine genannt ist
+#: (Gegenlesen-Messung 19.11.2026). Auch in Zusammensetzungen ("Wirtschaftsstudien
+#: zeigen") und mit "laut" ("laut Studien", "laut aktuellen Berichten").
+#: "Daten" und "Zahlen" nur als ganzes Wort ("Soldaten zeigen" ist kein Beleg).
+_BELEGWORT = (
+    r"(?:(?:[A-ZÄÖÜ]\w*?)?(?i:studie|studien|statistik|statistiken|untersuchung"
+    r"|untersuchungen|analyse|analysen|bericht|berichte|umfrage|umfragen|erhebung"
+    r"|erhebungen)|Daten|Zahlen)"
+)
+_SCHEINBELEG = re.compile(
+    rf"\b{_BELEGWORT}\s+(?:zeigen|zeigt|belegen|belegt|bestätigen|bestätigt"
+    rf"|beweisen|beweist)\b"
+    r"|\b[Ll]aut\s+(?:\w+\s+)?(?:\w*(?i:studien|berichten|umfragen|statistiken"
+    r"|untersuchungen)|Experten|Expertinnen|Fachleuten)\b"
+)
+#: Direkt danach genannt: "laut Studien des Umweltbundesamts", "Daten vom DIW".
+_QUELLE_DANACH = re.compile(r"\s+(?:des|der|von|vom|aus)\s+[A-ZÄÖÜ]")
+#: Was einen Beleg nennt: eine Ziffer (Zahl, Jahr) oder ein Kürzel wie "DIW", "UBA".
+_BELEG_NENNT = re.compile(r"\d|\b[A-ZÄÖÜ]{2,}\b")
+#: Eigennamen, die eine Quelle nennen (spaCy-Entitäten); Orte nennen keine.
+_QUELLEN_ENTITAETEN = {"ORG", "PER"}
+
+#: Erlebnis ohne Platzhalter: "mein Nachbar", "unsere Oma", "bei uns im Dorf".
+#: Nur ganze Wörter: "Nachbarland" ist kein Erlebnis. "Unsere Kinder" ist oft
+#: allgemein gemeint; Kinder und Eltern zählen darum nur mit "mein".
+_PERSONEN = (
+    r"Nachbar|Nachbarin|Nachbarn|Nachbarinnen|Schwester|Bruder|Schwager|Schwägerin"
+    r"|Onkel|Tante|Oma|Opa|Großmutter|Großvater|Mutter|Vater|Mama|Papa|Neffe|Nichte"
+    r"|Cousin|Cousine|Kollege|Kollegin|Kollegen|Chef|Chefin|Bürgermeister"
+    r"|Bürgermeisterin|Freund|Freundin|Bäcker|Bäckerin|Hausarzt|Hausärztin"
+)
+_NUR_MIT_MEIN = r"Tochter|Sohn|Kinder|Eltern|Enkel|Enkelin|Frau|Mann"
+_ERLEBNIS = re.compile(
+    rf"\b[Mm]ein(?:e|em|en|er)?\s+(?:\w+-)?(?:{_PERSONEN}|{_NUR_MIT_MEIN})\b"
+    rf"|\b[Uu]nser(?:e|em|en|er)?\s+(?:\w+-)?(?:{_PERSONEN})\b"
+    r"|\b[Bb]ei uns im (?:Ort|Dorf|Viertel|Kiez|Landkreis)\b"
+    r"|\b[Ii]n unserem (?:Ort|Dorf|Viertel|Kiez|Landkreis)\b"
+)
+#: Der Platzhalter "[Hier …]" und andere eckige Klammern: Darin ist ein Erlebnis gewollt.
+_KLAMMER = re.compile(r"\[[^\]\n]*\]")
+
+#: Häme-Marker: Spott über die Gegenseite statt einer Antwort.
+_HAEME = re.compile(
+    r"\b[Aa]ber klar,|,\s*wa\?|\b[Mm]erkste selbst\b|\b[Rr]eally\?|🙄|🤦|🤷|🤡"
+)
+#: Die angesprochene Person: Bei "Für Gleichgesinnte" zählt Häme nur, wenn sie trifft.
+_DU = re.compile(r"\b(?:[Dd]u|[Dd]ich|[Dd]ir|[Dd]ein\w*)\b")
+
+#: Floskel am Satzanfang: "Im Alltag zeigt sich, dass …". Nur mit "dass": "Im Alltag
+#: merkst du das an der Stromrechnung" ist ein Bild mit Inhalt.
+_FLOSKEL = re.compile(
+    r"^(?:Im Alltag\s+(?:zeigt|zeigen|sehen|sieht|erleben|erlebt|spüren|spürt|merken"
+    r"|merkt|wird|bemerken)\b[^.!?]*?\bdass\b|Jeder Beitrag zählt\b)"
+)
+
 
 @dataclass(frozen=True)
 class Anmerkung:
@@ -191,6 +268,9 @@ class Anmerkung:
     text: str
     #: Die betroffenen Wörter, so wie sie im Beitrag stehen.
     woerter: List[str] = field(default_factory=list)
+    #: Zieht die Anmerkung von der Güte ab? Nicht beim Erlebnis (ZAEHLT_NIE) und nicht
+    #: bei der Parteistimme für Gleichgesinnte.
+    zaehlt: bool = True
 
 
 @dataclass(frozen=True)
@@ -306,11 +386,17 @@ class GegenlesenService:
         aussage: Optional[str],
         titel_ist_behauptung: bool = True,
         hat_herkunft: Optional[bool] = None,
+        herkunft_ohne_fundstelle: bool = False,
+        zweck: Optional[str] = None,
     ) -> Gegengelesen:
         # Ein Post-Titel beschreibt, statt zu behaupten: dort keine Verneinungsregel
         # und keine Regel zum Titel als Frage. ``hat_herkunft`` ist None, wenn das
         # Formular kein Herkunftsfeld hat (Post, Bild) oder die Karte gegenliest: Dann
         # entfällt die Regel zu Zahlen ohne Herkunft.
+        # ``herkunft_ohne_fundstelle``: Eingetragen ist nur eine Startseite oder ein
+        # lokaler Pfad (das Formular prüft das, herkunftsangaben.ts); das zählt als
+        # fehlende Herkunft. ``zweck`` "eigene_leute": Parteistimme ohne
+        # Abzug, Häme nur, wenn sie die Person trifft.
         titel, text, aussage = (
             (titel or "").strip(),
             (text or "").strip(),
@@ -318,6 +404,9 @@ class GegenlesenService:
         )
         if not titel and not text:
             return Gegengelesen(guete=None, anmerkungen=[])
+        gleichgesinnte = zweck == ZWECK_EIGENE_LEUTE
+        if herkunft_ohne_fundstelle:
+            hat_herkunft = False
 
         analysieren = self._werkzeuge.analysieren
         titel_doc = analysieren(titel) if titel else None
@@ -345,17 +434,22 @@ class GegenlesenService:
                 self._passiv(saetze),
                 self._komposita(saetze),
                 self._gedankenstrich(titel, text),
-                self._parteistimme_finden(saetze),
+                self._parteistimme_finden(saetze, gleichgesinnte),
                 self._titel_frage(titel) if titel_ist_behauptung else None,
                 (
                     self._zahl_ohne_herkunft(titel, text)
                     if hat_herkunft is False
                     else None
                 ),
+                self._scheinbeleg(saetze),
+                self._herkunft_ohne_fundstelle() if herkunft_ohne_fundstelle else None,
+                self._erlebnis(titel, text),
+                self._haeme(saetze, gleichgesinnte),
+                self._floskel(saetze),
             )
             if a is not None
         ]
-        abzug = sum(GEWICHTE[a.art] for a in anmerkungen)
+        abzug = sum(GEWICHTE[a.art] for a in anmerkungen if a.zaehlt)
         return Gegengelesen(
             guete=max(GUETE_MIN, GUETE_MAX - abzug), anmerkungen=anmerkungen
         )
@@ -542,7 +636,7 @@ class GegenlesenService:
                 )
         return None
 
-    def _parteistimme_finden(self, saetze) -> Optional[Anmerkung]:
+    def _parteistimme_finden(self, saetze, gleichgesinnte: bool) -> Optional[Anmerkung]:
         gefunden: List[Tuple[str, str]] = []
         for stelle, satz in saetze:
             for wendung in self._wendungen(satz):
@@ -551,11 +645,24 @@ class GegenlesenService:
         if not gefunden:
             return None
         woerter = [w for _, w in gefunden]
+        wendungen = _aufzaehlen(f"„{w}“" for w in woerter)
+        if gleichgesinnte:
+            # Für die eigenen Leute ist die Parteistimme gewollt: kein Abzug.
+            return Anmerkung(
+                art="parteistimme",
+                stelle=gefunden[0][0],
+                text=(
+                    f"Klingt nach Partei: {wendungen}. Unter Gleichgesinnten passt "
+                    "das; für fremde Kommentarspalten erzähl es wie deiner Nachbarin."
+                ),
+                woerter=woerter,
+                zaehlt=False,
+            )
         return Anmerkung(
             art="parteistimme",
             stelle=gefunden[0][0],
             text=(
-                f"Klingt nach Partei: {_aufzaehlen(f'„{w}“' for w in woerter)}. "
+                f"Klingt nach Partei: {wendungen}. "
                 "Erzähl es lieber so, wie du es deiner Nachbarin sagen würdest."
             ),
             woerter=woerter,
@@ -601,6 +708,101 @@ class GegenlesenService:
             ),
             woerter=woerter,
         )
+
+    def _scheinbeleg(self, saetze) -> Optional[Anmerkung]:
+        texte = [(stelle, _satztext(satz), satz) for stelle, satz in saetze]
+        for i, (stelle, inhalt, satz) in enumerate(texte):
+            m = _SCHEINBELEG.search(inhalt)
+            if m is None:
+                continue
+            # Ein Beleg im selben oder im nächsten Satz des Texts nennt die Quelle.
+            naechster = (
+                [texte[i + 1]]
+                if i + 1 < len(texte) and texte[i + 1][0] == stelle
+                else []
+            )
+            if _QUELLE_DANACH.match(inhalt, m.end()) or any(
+                _nennt_beleg(t, s) for _, t, s in [(stelle, inhalt, satz)] + naechster
+            ):
+                continue
+            return Anmerkung(
+                art="scheinbeleg",
+                stelle=stelle,
+                text=(
+                    f"„{m.group()}“, aber welche? Nenn die Quelle mit Namen oder Jahr, "
+                    "sonst klingt es nur nach Beleg."
+                ),
+                woerter=[m.group()],
+            )
+        return None
+
+    def _herkunft_ohne_fundstelle(self) -> Anmerkung:
+        return Anmerkung(
+            art="herkunft_ohne_fundstelle",
+            stelle="text",
+            text=(
+                "Die Herkunft zeigt nur auf eine Startseite oder eine Datei auf deinem "
+                "Rechner. Verlinke die Seite, auf der es steht, dann findet man es."
+            ),
+        )
+
+    def _erlebnis(self, titel: str, text: str) -> Optional[Anmerkung]:
+        for stelle, inhalt in (("titel", titel), ("text", text)):
+            # Im Platzhalter ist das Erlebnis gewollt; die Stellen bleiben gleich.
+            inhalt = _KLAMMER.sub(lambda m: " " * len(m.group()), inhalt)
+            gefunden = list(
+                dict.fromkeys(m.group() for m in _ERLEBNIS.finditer(inhalt))
+            )
+            if gefunden:
+                return Anmerkung(
+                    art="erlebnis",
+                    stelle=stelle,
+                    text=(
+                        f"Eigenes Erlebnis ({_aufzaehlen(f'„{w}“' for w in gefunden)})? "
+                        "Schreib es als [Hier …], dann setzt jede ihr eigenes ein."
+                    ),
+                    woerter=gefunden,
+                    zaehlt=False,
+                )
+        return None
+
+    def _haeme(self, saetze, gleichgesinnte: bool) -> Optional[Anmerkung]:
+        for stelle, satz in saetze:
+            inhalt = _satztext(satz)
+            m = _HAEME.search(inhalt)
+            if m is None:
+                continue
+            if gleichgesinnte:
+                # Unter Gleichgesinnten ist Biss gewollt; nur Spott, der die Person
+                # trifft ("du", "dein"), ist zu viel.
+                if not _DU.search(inhalt):
+                    continue
+                text = (
+                    f"Das trifft die Person („{m.group()}“), nicht ihr Argument. "
+                    "Biss gern, aber lass den Spott über sie weg."
+                )
+            else:
+                text = (
+                    f"Klingt nach Spott („{m.group()}“). Wer sich verspottet fühlt, "
+                    "hört nicht mehr zu. Sag lieber ruhig, was stimmt."
+                )
+            return Anmerkung(art="haeme", stelle=stelle, text=text, woerter=[m.group()])
+        return None
+
+    def _floskel(self, saetze) -> Optional[Anmerkung]:
+        for stelle, satz in saetze:
+            m = _FLOSKEL.match(_satztext(satz).strip())
+            if m is not None:
+                return Anmerkung(
+                    art="floskel",
+                    stelle=stelle,
+                    text=(
+                        f"Floskel am Anfang („{m.group()}“). Fang gleich mit dem an, "
+                        "was du zeigen willst."
+                    ),
+                    woerter=[m.group()],
+                )
+        return None
 
     # --- Hilfen --------------------------------------------------------------
 
@@ -673,6 +875,18 @@ class GegenlesenService:
             if wert >= ZERLEGUNG_AB:
                 formen |= _grundformen(bestimmung) | _grundformen(kopf)
         return formen
+
+
+def _satztext(satz) -> str:
+    """Der Satz als Text, wie er im Beitrag steht."""
+    return "".join(t.text_with_ws for t in satz)
+
+
+def _nennt_beleg(inhalt: str, satz) -> bool:
+    """Nennt der Satz eine Quelle: Ziffer, Jahr, Kürzel oder Organisation/Person?"""
+    return bool(_BELEG_NENNT.search(inhalt)) or any(
+        t.ent_type_ in _QUELLEN_ENTITAETEN for t in satz
+    )
 
 
 def _im_zitat(token) -> bool:

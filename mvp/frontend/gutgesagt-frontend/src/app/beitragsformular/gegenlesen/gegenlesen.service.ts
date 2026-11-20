@@ -18,10 +18,36 @@ export interface Anmerkung {
     | 'gedankenstrich'
     | 'parteistimme'
     | 'titel_frage'
-    | 'zahl_ohne_herkunft';
+    | 'zahl_ohne_herkunft'
+    | 'scheinbeleg'
+    | 'herkunft_ohne_fundstelle'
+    | 'erlebnis'
+    | 'haeme'
+    | 'floskel';
   stelle: 'titel' | 'text';
   text: string;
   woerter: string[];
+  /** `false` bei einer Anmerkung ohne Abzug von der Güte (etwa das Erlebnis). */
+  zaehlt?: boolean;
+}
+
+/** Wofür ein Kommentar geschrieben ist; wie `Zweck` in `shared/zweck-stil.ts`. */
+export type GegenlesenZweck = 'kommentarspalte' | 'eigene_leute';
+
+/** Optionale Angaben des Formulars, die das Gegenlesen genauer machen. */
+export interface GegenlesenKontext {
+  /**
+   * Ob das Formular eine Herkunft hat; ``null`` ohne Herkunftsfeld (Post, Bild), dann
+   * entfaellt die Regel zu Zahlen ohne Herkunft.
+   */
+  hatHerkunft?: boolean | null;
+  /**
+   * Eingetragen ist nur eine Startseite oder ein lokaler Pfad; das zaehlt als fehlende
+   * Herkunft. Auch nur Ja/Nein, die Herkunft selbst geht nicht mit.
+   */
+  herkunftOhneFundstelle?: boolean;
+  /** Fuer Gleichgesinnte zieht die Parteistimme nicht ab. */
+  zweck?: GegenlesenZweck | null;
 }
 
 export interface Gegengelesen {
@@ -37,16 +63,12 @@ export class GegenlesenService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * ``hatHerkunft``: ob das Formular eine Herkunft hat; ``null`` ohne Herkunftsfeld (Post,
-   * Bild), dann entfaellt die Regel zu Zahlen ohne Herkunft. Nur Ja/Nein geht mit.
-   */
   gegenlesen(
     titel: string,
     text: string,
     aussage: string,
     titelIstBehauptung: boolean,
-    hatHerkunft: boolean | null = null,
+    { hatHerkunft = null, herkunftOhneFundstelle = false, zweck = null }: GegenlesenKontext = {},
   ): Observable<Gegengelesen> {
     return this.http.post<Gegengelesen>(this.url, {
       titel,
@@ -54,6 +76,8 @@ export class GegenlesenService {
       aussage,
       titel_ist_behauptung: titelIstBehauptung,
       ...(hatHerkunft === null ? {} : { hat_herkunft: hatHerkunft }),
+      ...(herkunftOhneFundstelle ? { herkunft_ohne_fundstelle: true } : {}),
+      ...(zweck === null ? {} : { zweck }),
     });
   }
 }

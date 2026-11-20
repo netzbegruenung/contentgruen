@@ -20,6 +20,13 @@ export const KRITERIUM_ERFUELLT: Record<Anmerkung['art'], string> = {
   titel_frage: 'Titel als Behauptung, nicht als Frage',
   // Prüft nur das Formular, das die Herkunft kennt; auf der Karte nie erfüllt gemeldet.
   zahl_ohne_herkunft: 'Zahlen mit Herkunft',
+  scheinbeleg: 'Belege mit Quelle statt „Studien zeigen“',
+  // Wie die Zahlen ohne Herkunft nur im Formular, das die Herkunft kennt.
+  herkunft_ohne_fundstelle: 'Herkunft mit Fundstelle',
+  // Eine Anmerkung ohne Abzug; auf der Karte nie als Kriterium gemeldet.
+  erlebnis: 'Erlebnisse als Platzhalter',
+  haeme: 'Ohne Spott',
+  floskel: 'Ohne Floskel am Anfang',
 };
 
 export interface SiegelErklaerung {

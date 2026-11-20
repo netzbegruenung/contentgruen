@@ -6,7 +6,7 @@ import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap } from 'rxjs/operators';
 
 import { SiegelComponent } from '../../shared/components/siegel/siegel.component';
-import { GEGENLESEN_VERZOEGERUNG_MS, Gegengelesen, GegenlesenService } from './gegenlesen.service';
+import { GEGENLESEN_VERZOEGERUNG_MS, Gegengelesen, GegenlesenService, GegenlesenZweck } from './gegenlesen.service';
 
 /** Was gerade im Formular steht. */
 interface Eingabe {
@@ -15,6 +15,8 @@ interface Eingabe {
   aussage: string;
   titelIstBehauptung: boolean;
   hatHerkunft: boolean | null;
+  herkunftOhneFundstelle: boolean;
+  zweck: GegenlesenZweck | null;
 }
 
 /**
@@ -91,6 +93,13 @@ export class GegenlesenComponent implements OnChanges {
    * Dienst neu, denn die Regel und damit die Guete haengen daran.
    */
   @Input() hatHerkunft: boolean | null = null;
+  /**
+   * Eingetragen ist nur eine Startseite oder ein lokaler Pfad (herkunftsangaben.ts): Das
+   * zaehlt als fehlende Herkunft und bekommt eine eigene Anmerkung.
+   */
+  @Input() herkunftOhneFundstelle = false;
+  /** Zweck eines Kommentars; fuer Gleichgesinnte zieht die Parteistimme nicht ab. */
+  @Input() zweck: GegenlesenZweck | null = null;
   /**
    * Fehlt die Herkunft, sagt das ein eigener Hinweis (HERKUNFT_FEHLT), auch ohne Zahl im
    * Text; nur die Hintergrundinfo setzt das (Persona-Test Gerd).
@@ -174,13 +183,19 @@ export class GegenlesenComponent implements OnChanges {
             a.text === b.text &&
             a.aussage === b.aussage &&
             a.titelIstBehauptung === b.titelIstBehauptung &&
-            a.hatHerkunft === b.hatHerkunft,
+            a.hatHerkunft === b.hatHerkunft &&
+            a.herkunftOhneFundstelle === b.herkunftOhneFundstelle &&
+            a.zweck === b.zweck,
         ),
         switchMap((e) =>
           !e.titel && !e.text
             ? of(NOCH_LEER)
             : service
-                .gegenlesen(e.titel, e.text, e.aussage, e.titelIstBehauptung, e.hatHerkunft)
+                .gegenlesen(e.titel, e.text, e.aussage, e.titelIstBehauptung, {
+                  hatHerkunft: e.hatHerkunft,
+                  herkunftOhneFundstelle: e.herkunftOhneFundstelle,
+                  zweck: e.zweck,
+                })
                 .pipe(
                   catchError((fehler: unknown) =>
                     of<typeof ZU_VIELE | null>(
@@ -218,6 +233,8 @@ export class GegenlesenComponent implements OnChanges {
       aussage: this.aussage ?? '',
       titelIstBehauptung: this.titelIstBehauptung,
       hatHerkunft: this.hatHerkunft,
+      herkunftOhneFundstelle: this.herkunftOhneFundstelle,
+      zweck: this.zweck,
     });
   }
 }

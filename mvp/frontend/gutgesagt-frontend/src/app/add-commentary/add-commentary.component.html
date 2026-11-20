@@ -35,7 +35,7 @@
                 </mat-form-field>
                 <!-- Einspaltig direkt unter dem Feld, damit man es beim Tippen sieht (Nutzerfuehrung 13.11.) -->
                 <app-gegenlesen *ngIf="einspaltig()" [kompakt]="true" [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"
-                                [hatHerkunft]="hatHerkunft"></app-gegenlesen>
+                                [hatHerkunft]="hatHerkunft" [herkunftOhneFundstelle]="herkunftOhneFundstelle" [zweck]="commentaryForm.value.zweck"></app-gegenlesen>
 
                 <!-- Titel unter dem Text, vorbelegt aus ihm (E2, titelVorschlag); bleibt Pflicht und aenderbar -->
                 <mat-form-field appearance="outline" class="formular-feld titel-feld">
@@ -145,7 +145,7 @@
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
             <app-gegenlesen *ngIf="!einspaltig()" [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"
-                            [hatHerkunft]="hatHerkunft"></app-gegenlesen>
+                            [hatHerkunft]="hatHerkunft" [herkunftOhneFundstelle]="herkunftOhneFundstelle" [zweck]="commentaryForm.value.zweck"></app-gegenlesen>
         </section>
     </div>
 </div>

@@ -4,9 +4,10 @@ Die Güte an Beiträgen, wie Karten sie im Siegel zeigen (#427; Rechnung: domain
 Der Kriterienanteil kommt aus dem Gegenlesen (#358) über Titel und Text, ohne die
 Aussage: Ein Beitrag kann auf mehrere Aussagen antworten, die Güte gehört aber zum
 Beitrag. Die Regel „übernommene Schlüsselwörter“ prüft deshalb nur das Formular, das
-die Aussage kennt, ebenso „Zahl ohne Herkunft“, die wissen muss, ob eine Herkunft
-eingetragen ist. Das Ergebnis des Gegenlesens wird nicht gespeichert, nur im
-Arbeitsspeicher je Titel und Text zwischengehalten.
+die Aussage kennt, ebenso „Zahl ohne Herkunft“ und „Herkunft ohne Fundstelle“, die die
+eingetragene Herkunft kennen müssen. Der Zweck des Kommentars geht mit wie im Formular:
+Für Gleichgesinnte zieht die Parteistimme nicht ab. Das Ergebnis des Gegenlesens wird
+nicht gespeichert, nur im Arbeitsspeicher je Titel, Text und Zweck zwischengehalten.
 
 Gezählt werden die Stimmen anderer: ohne Startkonten (#352) und ohne die Stimme der
 Person, die den Beitrag geschrieben hat; dieselben Summen zeigen die Zähler an den
@@ -26,7 +27,11 @@ from core.logging import get_logger
 from domain.guete import Guetegewichte, guete_berechnen
 from domain.models.content_type import ContentType
 from domain.models.vote import VoteType
-from services.gegenlesen.gegenlesen_service import GEWICHTE, GegenlesenService
+from services.gegenlesen.gegenlesen_service import (
+    GEWICHTE,
+    ZAEHLT_NIE,
+    GegenlesenService,
+)
 
 logger = get_logger(__name__)
 
@@ -38,10 +43,17 @@ ZWISCHENSPEICHER_GROESSE = 4096
 _BESCHREIBENDE_TITEL = {ContentType.POST.value, ContentType.IMAGE.value}
 
 #: Arten, die die Karte prüft. Die Schlüsselwörter brauchen die Aussage (siehe oben),
-#: die Zahlen ohne Herkunft das Formular, das weiß, ob eine Herkunft eingetragen ist;
-#: die Karte liest ohne beides gegen.
-_NUR_IM_FORMULAR = {"schluesselwoerter", "zahl_ohne_herkunft"}
-_KARTEN_ARTEN = [art for art in GEWICHTE if art not in _NUR_IM_FORMULAR]
+#: die Zahlen ohne Herkunft und die Herkunft ohne Fundstelle das Formular, das die
+#: Herkunft kennt; die Karte liest ohne beides gegen. Arten ohne Abzug (ZAEHLT_NIE)
+#: sind kein Kriterium.
+_NUR_IM_FORMULAR = {
+    "schluesselwoerter",
+    "zahl_ohne_herkunft",
+    "herkunft_ohne_fundstelle",
+}
+_KARTEN_ARTEN = [
+    art for art in GEWICHTE if art not in _NUR_IM_FORMULAR and art not in ZAEHLT_NIE
+]
 #: Regeln, die nur für behauptende Titel gelten, wie im Formular.
 _NUR_BEHAUPTUNG = {"verneinung", "titel_frage"}
 
@@ -51,6 +63,12 @@ Kriterien = Tuple[Optional[int], List[str]]
 def _typ(objekt: Any) -> str:
     typ = getattr(objekt, "content_type", None)
     return getattr(typ, "value", typ) or ""
+
+
+def _zweck(objekt: Any) -> Optional[str]:
+    """Der Zweck eines Kommentars als Text ("eigene_leute"), sonst None."""
+    zweck = getattr(objekt, "zweck", None)
+    return getattr(zweck, "value", zweck)
 
 
 class GueteService:
@@ -66,21 +84,27 @@ class GueteService:
         self._startkonten = frozenset(startkonten)
         self._gewichte = gewichte
         self._lock = threading.Lock()
-        self._zwischenspeicher: "OrderedDict[Tuple[str, str, bool], Kriterien]" = (
-            OrderedDict()
-        )
+        self._zwischenspeicher: (
+            "OrderedDict[Tuple[str, str, bool, Optional[str]], Kriterien]"
+        ) = OrderedDict()
         self._modell_fehlt_geloggt = False
 
-    def kriterien(self, titel: str, text: str, behauptung: bool) -> Kriterien:
+    def kriterien(
+        self, titel: str, text: str, behauptung: bool, zweck: Optional[str] = None
+    ) -> Kriterien:
         """Kriterienanteil und die erfüllten Kriterien; (None, []) ohne Text oder Modell."""
-        schluessel = ((titel or "").strip(), (text or "").strip(), behauptung)
+        schluessel = ((titel or "").strip(), (text or "").strip(), behauptung, zweck)
         with self._lock:
             if schluessel in self._zwischenspeicher:
                 self._zwischenspeicher.move_to_end(schluessel)
                 return self._zwischenspeicher[schluessel]
         try:
             ergebnis = self._gegenlesen.gegenlesen(
-                schluessel[0], schluessel[1], None, titel_ist_behauptung=behauptung
+                schluessel[0],
+                schluessel[1],
+                None,
+                titel_ist_behauptung=behauptung,
+                zweck=zweck,
             )
         except (ImportError, OSError) as fehler:
             # Sprachmodell nicht installiert: Karten bleiben ohne Kriterienanteil.
@@ -137,6 +161,7 @@ class GueteService:
                 getattr(objekt, "title", None) or "",
                 getattr(objekt, "text", None) or "",
                 _typ(objekt) not in _BESCHREIBENDE_TITEL,
+                _zweck(objekt),
             )
             # Nur Stimmen anderer, fuer Guete wie Zaehler: Zaehlten die Zaehler die
             # eigene Stimme mit, verrieten sie neben "Stimmen zaehlen noch nicht",
