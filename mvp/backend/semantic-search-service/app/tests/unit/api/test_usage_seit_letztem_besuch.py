@@ -9,6 +9,7 @@ POST, weil der Aufruf den gezeigten Stand fortschreibt.
 
 import asyncio
 import time
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -39,6 +40,14 @@ def einwuerfe():
     repo.count_von_anderen = Mock(
         side_effect=lambda person, nur_offene=False: 5 if nur_offene else 12
     )
+    repo.count_ausformuliert_von_anderen = Mock(return_value=2)
+    return repo
+
+
+@pytest.fixture
+def inhalte():
+    repo = Mock()
+    repo.count_neue_von_anderen = AsyncMock(return_value=6)
     return repo
 
 
@@ -57,7 +66,7 @@ def unbeantwortete():
 
 
 @pytest.fixture
-def client(dienst, einwuerfe, gesehen, unbeantwortete):
+def client(dienst, einwuerfe, gesehen, unbeantwortete, inhalte):
     app = FastAPI()
     app.include_router(usage_router, prefix="/api/v1/usage")
     app.dependency_overrides[get_einwurf_repository] = lambda: einwuerfe
@@ -66,7 +75,9 @@ def client(dienst, einwuerfe, gesehen, unbeantwortete):
         lambda: unbeantwortete
     )
 
-    with patch.object(usage_module, "get_usage_service", return_value=dienst):
+    with patch.object(
+        usage_module, "get_usage_service", return_value=dienst
+    ), patch.object(usage_module, "get_content_repository", return_value=inhalte):
         yield TestClient(app)
 
 
@@ -80,6 +91,8 @@ class TestSeitLetztemBesuch:
             "neue_einwuerfe": 3,
             "unbeantwortete_aussagen": 2,
             "unbeantwortete_aussagen_mehr": False,
+            "ausformulierte_einwuerfe": 2,
+            "neue_beitraege": 6,
         }
         dienst.nutzung_seit_letztem_besuch.assert_awaited_once_with("kim-1")
 
@@ -135,10 +148,12 @@ class TestSeitDeinemLetztenBesuch:
         unbeantwortete.liste.assert_awaited_once_with(mit_themen=False)
 
     def test_fehler_bei_einwuerfen_und_aussagen_lassen_die_nutzung_stehen(
-        self, client, einwuerfe, unbeantwortete, caplog
+        self, client, einwuerfe, unbeantwortete, inhalte, caplog
     ):
         einwuerfe.count_von_anderen.side_effect = RuntimeError("kaputt")
+        einwuerfe.count_ausformuliert_von_anderen.side_effect = RuntimeError("kaputt")
         unbeantwortete.liste.side_effect = RuntimeError("kaputt")
+        inhalte.count_neue_von_anderen.side_effect = RuntimeError("kaputt")
 
         antwort = client.post(URL, headers={"X-User": "kim-1"})
 
@@ -148,6 +163,8 @@ class TestSeitDeinemLetztenBesuch:
             "neue_einwuerfe": 0,
             "unbeantwortete_aussagen": 0,
             "unbeantwortete_aussagen_mehr": False,
+            "ausformulierte_einwuerfe": 0,
+            "neue_beitraege": 0,
         }
         assert "kim-1" not in caplog.text
 
@@ -210,3 +227,54 @@ class TestSeitDeinemLetztenBesuch:
         assert antwort.json()["unbeantwortete_aussagen"] == 1
         # Nacheinander waeren es ueber 1,2 s (Nutzung, Einwuerfe, Luecken)
         assert dauer < 1.0
+
+
+class TestKachelnMitZeitraum:
+    """
+    Kacheln ohne Zaehlerstand (20.11.): eigene Einwuerfe, die andere ausformuliert
+    haben, und neue Beitraege anderer, je in den letzten sieben Tagen. Dafuer wird
+    nichts gespeichert.
+    """
+
+    def test_zaehlt_ab_sieben_tagen_vor_jetzt(self, client, einwuerfe, inhalte):
+        vorher = datetime.now(timezone.utc)
+        client.post(URL, headers={"X-User": "kim-1"})
+        nachher = datetime.now(timezone.utc)
+
+        person, seit = einwuerfe.count_ausformuliert_von_anderen.call_args.args
+        assert person == "kim-1"
+        assert vorher - timedelta(days=7) <= seit <= nachher - timedelta(days=7)
+        person, seit_inhalte, typen = inhalte.count_neue_von_anderen.call_args.args
+        assert person == "kim-1"
+        assert seit_inhalte == seit
+        # Die Typen von /content/recent, wie sie im Payload stehen
+        assert set(typen) == {"commentary", "generic_text"}
+
+    def test_speichert_dafuer_nichts(self, client, gesehen):
+        client.post(URL, headers={"X-User": "kim-1"})
+
+        # Der einzige Stand bleibt der der Einwuerfe (und der Nutzung im Dienst)
+        assert [c[0] for c in gesehen.method_calls] == [
+            "neue_einwuerfe_seit_letztem_besuch"
+        ]
+
+    def test_nie_negativ(self, client, einwuerfe, inhalte):
+        einwuerfe.count_ausformuliert_von_anderen.return_value = -1
+        inhalte.count_neue_von_anderen.return_value = -4
+
+        antwort = client.post(URL, headers={"X-User": "kim-1"}).json()
+
+        assert antwort["ausformulierte_einwuerfe"] == 0
+        assert antwort["neue_beitraege"] == 0
+
+    def test_suchindex_aus_kostet_nur_die_beitraege(self, client, caplog):
+        with patch.object(
+            usage_module, "get_content_repository", side_effect=RuntimeError("weg")
+        ):
+            antwort = client.post(URL, headers={"X-User": "kim-1"})
+
+        assert antwort.status_code == 200
+        assert antwort.json()["neue_beitraege"] == 0
+        assert antwort.json()["ausformulierte_einwuerfe"] == 2
+        assert antwort.json()["nutzung_seit_letztem_besuch"] == 4
+        assert "kim-1" not in caplog.text

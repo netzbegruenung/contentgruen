@@ -11,6 +11,7 @@ from typing import (
     Optional,
     Type,
 )
+import datetime
 import uuid
 
 from domain.models.base_content import (
@@ -183,6 +184,16 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
             Count of items by the author
         """
         pass
+
+    async def count_neue_von_anderen(
+        self, user_id: str, seit: datetime.datetime, content_types: Sequence[str]
+    ) -> int:
+        """
+        Sichtbare Eintraege dieser Typen, die seit ``seit`` angelegt wurden und nicht
+        von ``user_id`` stammen ("Seit deinem letzten Besuch", neue Beitraege der
+        Community). Nicht abstrakt: Nur das Qdrant-Repository braucht es.
+        """
+        raise NotImplementedError
 
     # Topic and category methods (optional - can be implemented by repositories that support them)
 
