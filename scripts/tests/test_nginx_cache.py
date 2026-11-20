@@ -97,7 +97,13 @@ def test_nichts_aus_public_ein_jahr(konfiguration):
 @pytest.mark.parametrize("konfiguration", KONFIGURATIONEN)
 @pytest.mark.parametrize(
     "pfad",
-    ["/profilbild-2026.jpg", "/avatars/fuchs.png", "/marke/wegweiser.svg", "/fonts/roboto-latin.woff2"],
+    [
+        "/profilbild-2026.jpg",
+        "/avatars/fuchs.png",
+        "/marke/wegweiser.svg",
+        "/fonts/roboto-latin.woff2",
+        "/vorschau/bewerten-v1.webp",
+    ],
 )
 def test_ungehashte_dateien_revalidieren(konfiguration, pfad):
     assert (PUBLIC / pfad.lstrip("/")).is_file(), pfad
