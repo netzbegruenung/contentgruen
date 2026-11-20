@@ -49,22 +49,35 @@ Keycloak 26.8.2 führt `terms_and_conditions` im Benutzerprofil als eigenes Attr
 Admin-Schnittstelle nie schreibbar und nur lesbar ist, solange die Pflichtaktion an ist
 (`DeclarativeUserProfileProviderFactory.createUserResourceValidation`). Exportieren
 (`mvp/scripts/manual/keycloak_nb_zeitpunkte.py`) geht deshalb nur vorher, Löschen nur in der
-Datenbank von Keycloak (Tabellen `USER_ATTRIBUTE`, `USER_ENTITY`, `REALM`), nach dem Archivieren
-und dem Abschalten. Erst zählen, dann löschen, mit `psql` in der Datenbank von Keycloak:
+Datenbank von Keycloak (Tabellen `USER_ATTRIBUTE`, `USER_ENTITY`, `REALM`; die Befehle sind für
+PostgreSQL, Tabellennamen klein), nach dem Archivieren und dem Abschalten. Erst zählen: Die Summe
+muss gleich „mit Zeitpunkt“ plus „ohne lesbare Zahl“ aus dem letzten Lauf des Exportskripts sein
+(Werte in Großschreibung liest das Skript nicht; stehen welche da, erst klären), sonst nicht
+löschen:
 
 ```sql
-SELECT count(*) FROM user_attribute
+SELECT name, count(*) FROM user_attribute
 WHERE name IN ('terms_and_conditions', 'TERMS_AND_CONDITIONS')
   AND user_id IN (SELECT id FROM user_entity
-                  WHERE realm_id = (SELECT id FROM realm WHERE name = 'gutgesagt'));
+                  WHERE realm_id = (SELECT id FROM realm WHERE name = 'gutgesagt'))
+GROUP BY name;
 ```
 
+Dann löschen, in einer Transaktion (`DELETE n` muss die Summe von eben sein, sonst `ROLLBACK;`):
+
 ```sql
+BEGIN;
 DELETE FROM user_attribute
 WHERE name IN ('terms_and_conditions', 'TERMS_AND_CONDITIONS')
   AND user_id IN (SELECT id FROM user_entity
                   WHERE realm_id = (SELECT id FROM realm WHERE name = 'gutgesagt'));
+COMMIT;
 ```
+
+Derselbe Zeitpunkt kann noch an zwei Stellen stehen, wenn der Realm Ereignisse speichert (die
+Vorlage schaltet das nicht ein): Login-Ereignisse `CUSTOM_REQUIRED_ACTION` in `EVENT_ENTITY` und
+Admin-Ereignisse mit Darstellung in `ADMIN_EVENT_ENTITY`. Ist *Realm settings → Events → Save
+events* an, gehen sie mit der Frist der übrigen Ereignisse; sonst ist nichts zu tun.
 
 (Die Großschreibung hat Keycloak 21.0.0 kurz verwendet, `TermsAndConditions.processAction`.)
 Danach den Benutzer-Cache leeren, sonst liefert Keycloak die alten Werte aus dem Cache: in der

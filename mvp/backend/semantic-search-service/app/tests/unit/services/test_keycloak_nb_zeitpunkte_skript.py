@@ -70,7 +70,7 @@ def test_liest_zeitpunkte_seitenweise_und_aendert_nichts(skript, monkeypatch):
     assert ergebnis.zeitpunkte == {
         "a": datetime(2025, 11, 2, 8, 0, tzinfo=timezone.utc)
     }
-    assert ergebnis.unlesbar == {"c": "kaputt"}
+    assert ergebnis.unlesbar == {"c": "['kaputt']"}
     assert ergebnis.ohne_zeitpunkt == 2
     assert {a.method for a in anfragen} == {"POST", "GET"}
     assert [a.method for a in anfragen].count("POST") == 1
@@ -106,3 +106,31 @@ def test_unlesbare_werte_kommen_mit_ins_archiv(skript, capsys):
     skript.zeitpunkte_ausgeben(ergebnis)
 
     assert "c,unlesbar:kaputt" in capsys.readouterr().out
+
+
+def test_netzwerkfehler_ohne_url_und_kennung(skript, monkeypatch, capsys):
+    """Text und URL eines Netzwerkfehlers koennen Kennungen tragen: nur der Klassenname."""
+    import sys
+    import types
+
+    def kaputt(*_a, **_k):
+        raise httpx.ConnectError("https://kc.example/admin/realms/g/users/kennung-123")
+
+    monkeypatch.setattr(skript, "zeitpunkte_lesen", kaputt)
+    einstellungen = types.SimpleNamespace(
+        keycloak_url="https://kc.example",
+        keycloak_realm="gutgesagt",
+        keycloak_admin_client_id="id",
+        keycloak_admin_client_secret="geheim",
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "core.config",
+        types.SimpleNamespace(Settings=lambda: einstellungen),
+    )
+    monkeypatch.setattr(sys, "argv", ["keycloak_nb_zeitpunkte.py"])
+
+    assert skript.main() == 1
+    fehler = capsys.readouterr().err
+    assert "ConnectError" in fehler
+    assert "kennung-123" not in fehler

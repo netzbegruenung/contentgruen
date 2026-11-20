@@ -30,9 +30,10 @@ Trennzeile je Konto Kennung und Zeitpunkt (Personendaten): nur ins Archiv auf de
     # 1. Nur zaehlen
     docker exec -i gutgesagt-semantic-search python - < keycloak_nb_zeitpunkte.py
 
-    # 2. Ins Archiv (Ort, Rechte und Frist: docs/LOESCHKONZEPT.md)
-    docker exec -i gutgesagt-semantic-search python - --zeitpunkte \\
-        < keycloak_nb_zeitpunkte.py > <archivdatei>
+    # 2. Ins Archiv (Ort, Rechte und Frist: docs/LOESCHKONZEPT.md); erst in eine neue
+    #    Datei, ersetzt nur bei Erfolg (ein Fehlschlag leert so kein bestehendes Archiv)
+    (umask 077; docker exec -i gutgesagt-semantic-search python - --zeitpunkte \\
+        < keycloak_nb_zeitpunkte.py > <archivdatei>.neu) && mv <archivdatei>.neu <archivdatei>
 """
 
 import argparse
@@ -120,7 +121,8 @@ def zeitpunkte_lesen(
                     continue
                 zeitpunkt = _zeitpunkt(werte)
                 if zeitpunkt is None:
-                    ergebnis.unlesbar[konto["id"]] = ",".join(map(str, werte))
+                    # repr: Komma oder Zeilenumbruch im Rohwert braechen das Format
+                    ergebnis.unlesbar[konto["id"]] = repr(list(werte))
                 else:
                     ergebnis.zeitpunkte[konto["id"]] = zeitpunkt
             erstes += len(seite)
@@ -142,7 +144,8 @@ def zahlen_ausgeben(ergebnis: Ergebnis) -> None:
             f"Hinweis: kein Konto mit Zeitpunkt. Keycloak zeigt {ATTRIBUT} nur, solange"
             ' die Pflichtaktion "Terms and Conditions" eingeschaltet ist; ist sie'
             ' schon aus, vorher kurz wieder einschalten (nur "Enabled", nicht'
-            ' "Set as default action") und erneut laufen lassen.'
+            ' "Set as default action"; solange fragt Keycloak Konten, die sie noch'
+            " tragen) und erneut laufen lassen."
         )
 
 
