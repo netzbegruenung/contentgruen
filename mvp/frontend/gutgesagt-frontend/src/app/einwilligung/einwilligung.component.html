@@ -32,8 +32,7 @@
         <div class="block">
           <mat-checkbox #nbHaekchen name="nbAngehakt" [(ngModel)]="nbAngehakt" (change)="nbGeaendert()"
             class="haekchen" data-testid="nb-haekchen" [required]="true"
-            [aria-describedby]="nbFehler ? 'nb-pflicht nb-fehler' : 'nb-pflicht'"
-            [attr.aria-invalid]="nbFehler ? 'true' : null">
+            [aria-describedby]="nbFehler ? 'nb-pflicht nb-fehler' : 'nb-pflicht'">
             {{ texte.nbLabel }}
           </mat-checkbox>
           <p class="unter-haekchen" id="nb-pflicht">

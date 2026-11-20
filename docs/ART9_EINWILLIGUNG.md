@@ -119,7 +119,7 @@ beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
 
 - **Nutzungsbedingungen:** Pflicht, Link auf `/nutzungsbedingungen` mit Stand direkt am Häkchen.
   Das Häkchen heißt nie „Einwilligung“; einen Knopf „Alle annehmen“ gibt es nicht. „Weiter“
-  ohne dieses Häkchen zeigt eine Fehlermeldung daran (`role="alert"`, `aria-invalid`, per
+  ohne dieses Häkchen zeigt eine Fehlermeldung daran (`role="alert"`, per
   `aria-describedby` verbunden) und setzt den Fokus auf das Häkchen.
 - **Art.-9-Einwilligung:** freiwillig, ohne Pflichtzeichen, „Freiwillig, nötig zum Mitmachen“
   und der Hinweis auf den Widerruf direkt darunter (Art. 7 Abs. 3 S. 3 DSGVO). „Weiter“ geht mit

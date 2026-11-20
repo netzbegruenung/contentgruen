@@ -23,6 +23,12 @@ export type Art9Zustand = 'unbekannt' | 'eingewilligt' | 'fehlt';
 @Injectable({ providedIn: 'root' })
 export class Art9EinwilligungZustand {
   private readonly stand = new BehaviorSubject<Art9Zustand>('unbekannt');
+  private readonly nb = new BehaviorSubject<boolean>(false);
+  /**
+   * Ob zum Beitragen die Zustimmung zu den Nutzungsbedingungen fehlt (nicht die
+   * Einwilligung); dann nennt der Hinweiskasten sie statt der Einwilligung.
+   */
+  readonly nbFehlt$ = this.nb.asObservable().pipe(distinctUntilChanged());
   readonly zustand$ = this.stand.asObservable().pipe(distinctUntilChanged());
   private hinweise = 0;
   /**
@@ -40,6 +46,15 @@ export class Art9EinwilligungZustand {
 
   setzen(zustand: Art9Zustand): void {
     if (this.stand.value !== zustand) this.stand.next(zustand);
+  }
+
+  /** Ob die Zustimmung zu den Nutzungsbedingungen fehlt (setzen Dienst und Interceptor). */
+  nbSetzen(fehlt: boolean): void {
+    if (this.nb.value !== fehlt) this.nb.next(fehlt);
+  }
+
+  get nbFehlt(): boolean {
+    return this.nb.value;
   }
 
   /** Ein Hinweiskasten ist auf der Seite; die Rückgabe meldet ihn wieder ab. */

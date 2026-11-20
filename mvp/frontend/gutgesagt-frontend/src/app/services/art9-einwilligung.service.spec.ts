@@ -476,6 +476,7 @@ describe('Art9EinwilligungService', () => {
 
       expect(service.geklaert()).toBeNull();
       expect(zustand.wert).toBe('fehlt');
+      expect(zustand.nbFehlt).toBeTrue();
       expect(router.navigate).toHaveBeenCalled();
 
       service.nutzungsbedingungenZustimmen('2026-11-19', true).subscribe();
@@ -485,6 +486,7 @@ describe('Art9EinwilligungService', () => {
 
       expect(service.geklaert()).toBe('kim');
       expect(zustand.wert).toBe('eingewilligt');
+      expect(zustand.nbFehlt).toBeFalse();
     });
 
     it('einwilligungFehlt erkennt auch die fehlende Zustimmung', () => {

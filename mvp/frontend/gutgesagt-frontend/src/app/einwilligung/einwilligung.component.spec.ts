@@ -171,6 +171,23 @@ describe('EinwilligungComponent', () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith('/einwerfen');
     });
 
+    it('Nutzungsbedingungen gespeichert, Einwilligung 400: laedt neu, fragt nur noch die Einwilligung', async () => {
+      starten();
+      standLiefern(stand({ nutzungsbedingungen: NB_FEHLT }));
+      await anhaken('nb-haekchen');
+      await anhaken('art9-haekchen');
+
+      knopf('Weiter').click();
+      http.expectOne({ method: 'POST', url: NB_URL }).flush(null, { status: 204, statusText: 'No Content' });
+      http.expectOne({ method: 'POST', url: URL }).flush({}, { status: 400, statusText: 'Bad Request' });
+      standLiefern(stand({ nutzungsbedingungen: { ...NB_FEHLT, zugestimmt: true, stand: '2026-11-19' } }));
+
+      expect(el().querySelector('[data-testid=wortlaut-geaendert]')).not.toBeNull();
+      expect(el().querySelector('[data-testid=nb-haekchen]')).toBeNull();
+      expect(knopf('Einwilligen und weiter')).toBeTruthy();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
     it('schon eingewilligt (Bestandskonto): nur das Haekchen der Nutzungsbedingungen', async () => {
       starten();
       standLiefern(

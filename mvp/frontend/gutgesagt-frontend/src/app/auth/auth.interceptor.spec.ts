@@ -147,6 +147,20 @@ describe('AuthInterceptor', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   }));
 
+  it('nennt bei fehlender Zustimmung die Nutzungsbedingungen, nicht die Einwilligung', fakeAsync(() => {
+    (router as any).url = '/einwerfen';
+    httpClient.post('/api/v1/rawinput/addRawInput', {}).subscribe({ error: () => {} });
+
+    httpMock
+      .expectOne('/api/v1/rawinput/addRawInput')
+      .flush({ detail: 'nutzungsbedingungen_fehlen' }, { status: 403, statusText: 'Forbidden' });
+    tick();
+
+    expect(snackBar.open).toHaveBeenCalledWith(jasmine.stringContaining('Nutzungsbedingungen'), 'Zustimmen', jasmine.any(Object));
+    expect(TestBed.inject(Art9EinwilligungZustand).nbFehlt).toBeTrue();
+    expect(router.navigate).not.toHaveBeenCalled();
+  }));
+
   it('oeffnet den Hinweis nach dem Fehlerzweig des Aufrufers, damit dessen Hinweis ihn nicht ersetzt', fakeAsync(() => {
     const reihenfolge: string[] = [];
     snackBar.open.and.callFake(((text: string) => {

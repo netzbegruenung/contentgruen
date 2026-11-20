@@ -14,6 +14,9 @@ export const EINWILLIGUNG_HINWEIS_TITEL = 'Zum Beitragen brauchst du deine Einwi
 export const EINWILLIGUNG_HINWEIS_TEXT =
   'Suchen und Lesen geht auch ohne. Was du hier schon eingegeben hast, bleibt stehen, bis du zurück bist.';
 export const EINWILLIGUNG_HINWEIS_KNOPF = 'Einwilligen';
+/** Dasselbe, wenn nicht die Einwilligung, sondern die Zustimmung zu den Nutzungsbedingungen fehlt. */
+export const NB_HINWEIS_TITEL = 'Zum Beitragen brauchst du deine Zustimmung zu den Nutzungsbedingungen.';
+export const NB_HINWEIS_KNOPF = 'Zustimmen';
 
 /**
  * Der Hinweiskasten über einem Formular, wenn die Art.-9-Einwilligung fehlt (UX-Review
@@ -39,11 +42,11 @@ export const EINWILLIGUNG_HINWEIS_KNOPF = 'Einwilligen';
     <div *ngIf="zeigen$ | async" class="hinweis-box einwilligung-hinweis" role="status" tabindex="-1"
          data-testid="einwilligung-hinweis">
       <p>
-        <strong>{{ titel }}</strong>
+        <strong>{{ (nbFehlt$ | async) ? nbTitel : titel }}</strong>
         {{ text }}
       </p>
       <button mat-raised-button color="primary" type="button" class="einwilligen" (click)="einwilligen()">
-        {{ knopf }}
+        {{ (nbFehlt$ | async) ? nbKnopf : knopf }}
       </button>
     </div>
   `,
@@ -73,11 +76,14 @@ export class EinwilligungHinweisComponent implements OnInit, OnDestroy {
   readonly titel = EINWILLIGUNG_HINWEIS_TITEL;
   readonly text = EINWILLIGUNG_HINWEIS_TEXT;
   readonly knopf = EINWILLIGUNG_HINWEIS_KNOPF;
+  readonly nbTitel = NB_HINWEIS_TITEL;
+  readonly nbKnopf = NB_HINWEIS_KNOPF;
   private readonly zustand = inject(Art9EinwilligungZustand);
   private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly zone = inject(NgZone);
   readonly zeigen$ = this.zustand.zustand$.pipe(map((zustand) => zustand === 'fehlt'));
+  readonly nbFehlt$ = this.zustand.nbFehlt$;
   private abmelden?: () => void;
   private blickAbo?: { unsubscribe(): void };
 

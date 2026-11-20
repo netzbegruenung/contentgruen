@@ -240,6 +240,7 @@ export class Art9EinwilligungService implements OnDestroy {
   nutzungsbedingungenZustimmen(stand: string, schonEingewilligt: boolean): Observable<void> {
     return this.http.post<void>(this.nbUrl, { stand }).pipe(
       tap(() => {
+        this.zustand.nbSetzen(false);
         if (schonEingewilligt) {
           this.geklaertSetzen(this.kennung);
           this.zustand.setzen('eingewilligt');
@@ -299,6 +300,7 @@ export class Art9EinwilligungService implements OnDestroy {
           this.zustand.kennung = kennung;
           this.geklaertSetzen(null); // abgemeldet oder andere Person: neu klaeren
           this.zustand.setzen('unbekannt');
+          this.zustand.nbSetzen(false);
         }),
         filter((kennung): kennung is string => !!kennung),
         // Scheitert die Abfrage, nicht umleiten: Das Backend sperrt trotzdem, und der
@@ -309,6 +311,7 @@ export class Art9EinwilligungService implements OnDestroy {
             tap((stand) => {
               if (!stand || beitragenFrei(stand)) this.geklaertSetzen(kennung);
               if (stand) this.zustand.setzen(beitragenFrei(stand) ? 'eingewilligt' : 'fehlt');
+              this.zustand.nbSetzen(nutzungsbedingungenFehlen(stand));
               // Ohne Einwilligung kein Beitragen: ein alter Merker in diesem Browser geht (#351).
               if (stand && !stand.eingewilligt) {
                 merkerEntfernen();
@@ -348,6 +351,7 @@ export class Art9EinwilligungService implements OnDestroy {
       .subscribe((stand) => {
         if (!stand) return;
         this.zustand.setzen(beitragenFrei(stand) ? 'eingewilligt' : 'fehlt');
+        this.zustand.nbSetzen(nutzungsbedingungenFehlen(stand));
         // Widerruf in einem anderen Tab: auch der Kommentar-Entwurf dieses Tabs geht (E1).
         if (!stand.eingewilligt) kommentarEntwurfLoeschen();
         // Ein Widerruf in einem anderen Tab nimmt auch hier die Klaerung zurueck (#587).

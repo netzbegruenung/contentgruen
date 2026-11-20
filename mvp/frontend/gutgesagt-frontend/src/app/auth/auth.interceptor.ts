@@ -57,6 +57,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
       const einwilligungHier = einwilligungFehlt(error) && ohneEinwilligungsUmleitung(router.url ?? '/');
       if (einwilligungFehlt(error)) {
         einwilligungZustand.setzen('fehlt');
+        einwilligungZustand.nbSetzen(error.error?.detail === NUTZUNGSBEDINGUNGEN_FEHLEN);
       }
       if (einwilligungFehlt(error) && !einwilligungZustand.hinweisDa && !einwilligungHier) {
         const nb = error.error?.detail === NUTZUNGSBEDINGUNGEN_FEHLEN;
