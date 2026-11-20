@@ -181,6 +181,17 @@ Aufruf in `docs/KEYCLOAK_REALM.md`, „Kennungen umstellen“; getestet in
 `tests/integration/test_kennungen_umstellen_postgres.py` (PostgreSQL, Ablauf) und
 `test_kennungen_umstellen_skript.py` (Aufruf).
 
+## Zeitpunkte der Keycloak-Zustimmung archivieren (im semantic-search-Container)
+
+`keycloak_nb_zeitpunkte.py [--zeitpunkte]` – **nur lesend.** Zaehlt die Konten im Realm
+von Gut gesagt mit Zeitpunkt der Pflichtaktion „Terms and Conditions“ (Attribut
+`terms_and_conditions`, Unix-Sekunden, Keycloak 26.8.2); mit `--zeitpunkte` folgen nach
+einer Trennzeile Kennung und Zeitpunkt je Konto (Personendaten, nur in eine Datei auf dem
+Host). Vor dem Abschalten der Pflichtaktion, wenn die App die Nutzungsbedingungen selbst
+fragt (`docs/ART9_EINWILLIGUNG.md`). Die Admin-Schnittstelle zeigt das Attribut nur mit
+„Unmanaged attributes: Admin can view“ im Realm; Aufruf und Hinweis im Kopf des Skripts.
+Tests: `tests/unit/services/test_keycloak_nb_zeitpunkte_skript.py`.
+
 ## Beitraege anonymisieren (im semantic-search-Container)
 
 `beitraege_anonymisieren.py <kennung> [--ausfuehren]` – **schreibend mit

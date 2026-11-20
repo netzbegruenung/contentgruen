@@ -111,6 +111,48 @@ die die App selbst einholt, nicht Keycloak (Entscheidung Maintainer, 05.11.2026,
 - **Löschen und Umstellen:** Die Zeile (und die in `art9_ohne_einwilligung`) geht mit dem Konto (`docs/LOESCHKONZEPT.md`, Schritt 2)
   und zieht beim Umstellen der Kennungen mit (`services/wartung/kennungen_umstellen.py`).
 
+## Nutzungsbedingungen auf derselben Seite
+
+Neue Konten stimmen nur noch einmal in der App zu (Entscheidung Maintainer, 20.11.2026):
+`/einwilligung` fragt, solange die Zustimmung zu den Nutzungsbedingungen in der App fehlt,
+beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
+
+- **Nutzungsbedingungen:** Pflicht, Link auf `/nutzungsbedingungen` mit Stand direkt am Häkchen.
+  Das Häkchen heißt nie „Einwilligung“; einen Knopf „Alle annehmen“ gibt es nicht. „Weiter“
+  ohne dieses Häkchen zeigt eine Fehlermeldung daran (`role="alert"`, `aria-invalid`, per
+  `aria-describedby` verbunden) und setzt den Fokus auf das Häkchen.
+- **Art.-9-Einwilligung:** freiwillig, ohne Pflichtzeichen, „Freiwillig, nötig zum Mitmachen“
+  und der Hinweis auf den Widerruf direkt darunter (Art. 7 Abs. 3 S. 3 DSGVO). „Weiter“ geht mit
+  den Nutzungsbedingungen allein; dann merkt sich das Konto „ohne Einwilligung weiter“ wie oben (B2),
+  Lesen und Suchen gehen, gesperrt bleibt wie bisher. Wer schon eingewilligt hat, sieht nur das
+  erste Häkchen.
+- **Texte:** Die Sätze um die Häkchen stehen in
+  `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung-texte.ts`, als Platzhalter
+  bis zur Freigabe; den Wortlaut der Einwilligung liefert weiter das Backend.
+- **Speichern:** Tabelle `nutzungsbedingungen_zustimmungen`, je Zustimmung eine Zeile mit Kennung
+  der Person, Zeitpunkt und Stand der Nutzungsbedingungen (Kennung `JJJJ-MM-TT` wie der Ordner in
+  `docs/nutzungsbedingungen-staende/`; `STAENDE`, `AKTUELLER_STAND` und `GELTENDE_STAENDE` in
+  `mvp/backend/semantic-search-service/app/domain/nutzungsbedingungen.py`). Es gilt die jüngste
+  Zeile; ein Widerruf ist nicht vorgesehen, wer nicht mehr will, lässt das Konto löschen. Die Zeilen
+  gehen mit dem Konto (`person_loeschen.sql`) und ziehen beim Umstellen der Kennungen mit.
+  Endpunkte: `GET`/`POST /api/v1/nutzungsbedingungen`; den Stand liefert auch
+  `GET /api/v1/art9-einwilligung` im Feld `nutzungsbedingungen`, damit die App nach dem Anmelden
+  mit einer Abfrage entscheidet.
+- **Hinführen:** `zurEinwilligungUmleiten` führt ohne Zustimmung immer auf `/einwilligung`, auch
+  wer zur Einwilligung schon entschieden hat. So werden Bestandskonten einmal neu gefragt
+  (Entscheidung Maintainer, 20.11.2026); ihre Zustimmung in Keycloak wird nicht übernommen.
+- **Sperren, serverseitig:** `require_art9_einwilligung` prüft vor der Einwilligung die Zustimmung
+  und antwortet ohne sie mit 403 `nutzungsbedingungen_fehlen`, an genau den Endpunkten in
+  `GESPERRT` (und beim Ausformulieren). Die App behandelt das wie das fehlende
+  `art9_einwilligung_fehlt` (Hinweiskasten bzw. Snackbar, Weg auf `/einwilligung`).
+- **Neuer Stand der Nutzungsbedingungen:** in `STAENDE` eintragen und `AKTUELLER_STAND` setzen
+  (`scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass er zur Stand-Zeile der Seite
+  passt). Reine Korrektur: in `GELTENDE_STAENDE` aufnehmen, niemand wird neu gefragt. Wesentlich:
+  `GELTENDE_STAENDE` nur mit dem neuen Stand, alle werden beim nächsten Besuch neu gefragt.
+- **Keycloak:** Die Pflichtaktion „Terms and Conditions“ läuft vorerst weiter. Reihenfolge: diese
+  Seite live, dann `PFLICHTAKTIONEN` in `keycloak_konten.py` anpassen, dann die Pflichtaktion im
+  Realm abschalten (`docs/KEYCLOAK_REALM.md`).
+
 ## Wortlaut ändern
 
 Der Wortlaut steht an einer Stelle: `WORTLAUTE` in

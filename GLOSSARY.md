@@ -180,6 +180,10 @@ _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des
 Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (mit dem nächsten Absenden unter dem CC0-Hinweis, NB §10); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
+**Zustimmung zu den Nutzungsbedingungen**:
+Die Annahme der Nutzungsbedingungen durch eine angemeldete Person, in der App mit einem eigenen, nicht vorbelegten Häkchen auf `/einwilligung`, zusammen mit, aber getrennt von der Art.-9-Einwilligung (Entscheidung Maintainer, 20.11.2026). Sie ist Pflicht, um mit Konto beizutragen und zu bewerten, und ein Vertrag (Art. 6 Abs. 1 lit. b DSGVO), keine Einwilligung. Gespeichert werden Person, Zeitpunkt und Stand der Nutzungsbedingungen (`nutzungsbedingungen_zustimmungen`). Bis zur Umstellung fragt daneben noch die Keycloak-Pflichtaktion „Terms and Conditions“. Ablauf: `docs/ART9_EINWILLIGUNG.md`, „Nutzungsbedingungen auf derselben Seite“.
+_Avoid_: NB-Einwilligung, Consent, Alle annehmen
+
 **Schreibregel**:
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog. Was das Gegenlesen nicht oder nur in einfachen Fällen erkennt (ein Gedanke je Beitrag, Zahlen mit selbst geöffneter Quelle u. a.), nennt es als drei Inhaltsfragen; ausführlich steht es im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette

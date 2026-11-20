@@ -451,6 +451,47 @@ describe('Art9EinwilligungService', () => {
     expect(entwurfHolen('/einwerfen', 'alex')).toBeUndefined();
   });
 
+  describe('Nutzungsbedingungen (eine Seite, 20.11.2026)', () => {
+    const NB_URL = `${environment.baseUrl}/api/v1/nutzungsbedingungen`;
+    const nb = (zugestimmt: boolean) => ({
+      zugestimmt,
+      stand: zugestimmt ? '2026-11-19' : null,
+      zugestimmt_am: zugestimmt ? '2026-11-20T09:00:00Z' : null,
+      aktueller_stand: { kennung: '2026-11-19', stand: '19. November 2026' },
+    });
+
+    it('fuehrt Bestandskonten ohne Zustimmung hin, auch wenn sie eingewilligt haben oder ohne weiter sind', () => {
+      expect(zurEinwilligungUmleiten({ ...stand(true), nutzungsbedingungen: nb(false) })).toBeTrue();
+      expect(zurEinwilligungUmleiten({ ...stand(false), ohne_wortlaut: '2026-11-05-b', nutzungsbedingungen: nb(false) })).toBeTrue();
+      expect(zurEinwilligungUmleiten({ ...stand(true), nutzungsbedingungen: nb(true) })).toBeFalse();
+      // Backend ohne das Feld: wie bisher
+      expect(zurEinwilligungUmleiten(stand(true))).toBeFalse();
+    });
+
+    it('eingewilligt ohne Zustimmung: nicht geklaert, Beitragen gesperrt; nach der Zustimmung frei', () => {
+      const zustand = TestBed.inject(Art9EinwilligungZustand);
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush({ ...stand(true), nutzungsbedingungen: nb(false) });
+
+      expect(service.geklaert()).toBeNull();
+      expect(zustand.wert).toBe('fehlt');
+      expect(router.navigate).toHaveBeenCalled();
+
+      service.nutzungsbedingungenZustimmen('2026-11-19', true).subscribe();
+      const anfrage = http.expectOne({ method: 'POST', url: NB_URL });
+      expect(anfrage.request.body).toEqual({ stand: '2026-11-19' });
+      anfrage.flush(null);
+
+      expect(service.geklaert()).toBe('kim');
+      expect(zustand.wert).toBe('eingewilligt');
+    });
+
+    it('einwilligungFehlt erkennt auch die fehlende Zustimmung', () => {
+      expect(einwilligungFehlt({ status: 403, error: { detail: 'nutzungsbedingungen_fehlen' } })).toBeTrue();
+    });
+  });
+
   it('einwilligungFehlt erkennt nur 403 mit Kennzeichen', () => {
     expect(einwilligungFehlt({ status: 403, error: { detail: 'art9_einwilligung_fehlt' } })).toBeTrue();
     expect(einwilligungFehlt({ status: 403, error: { detail: 'anderes' } })).toBeFalse();

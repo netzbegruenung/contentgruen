@@ -6,11 +6,19 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PublicEndpoints } from '../shared/public-endpoints';
-import { einwilligungFehlt, ohneEinwilligungsUmleitung, zurEinwilligungFuehren } from '../services/art9-einwilligung.service';
+import {
+  NUTZUNGSBEDINGUNGEN_FEHLEN,
+  einwilligungFehlt,
+  ohneEinwilligungsUmleitung,
+  zurEinwilligungFuehren,
+} from '../services/art9-einwilligung.service';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 import { STILLE_ABFRAGE } from '../shared/selbst-nachladen';
 
 export const EINWILLIGUNG_FEHLT_HINWEIS = 'Zum Beitragen und Bewerten brauchst du deine Einwilligung.';
+/** Dasselbe, wenn die Zustimmung zu den Nutzungsbedingungen fehlt; die führt auf dieselbe Seite. */
+export const NUTZUNGSBEDINGUNGEN_FEHLEN_HINWEIS =
+  'Zum Beitragen und Bewerten brauchst du deine Zustimmung zu den Nutzungsbedingungen.';
 const HINWEIS_DAUER_MS = 10000;
 
 export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
@@ -51,9 +59,14 @@ export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
         einwilligungZustand.setzen('fehlt');
       }
       if (einwilligungFehlt(error) && !einwilligungZustand.hinweisDa && !einwilligungHier) {
+        const nb = error.error?.detail === NUTZUNGSBEDINGUNGEN_FEHLEN;
         setTimeout(() =>
           snackBar
-            .open(EINWILLIGUNG_FEHLT_HINWEIS, 'Einwilligen', { duration: HINWEIS_DAUER_MS })
+            .open(
+              nb ? NUTZUNGSBEDINGUNGEN_FEHLEN_HINWEIS : EINWILLIGUNG_FEHLT_HINWEIS,
+              nb ? 'Zustimmen' : 'Einwilligen',
+              { duration: HINWEIS_DAUER_MS },
+            )
             .onAction()
             .subscribe(() => zurEinwilligungFuehren(router)),
         );
