@@ -106,10 +106,12 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       liked();
       fixture.detectChanges();
 
-      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_UNTER_DEN_ERSTEN, 'OK', STIMM_DANK_MS);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_UNTER_DEN_ERSTEN, 'Schließen', STIMM_DANK_MS);
       expect(DANK_UNTER_DEN_ERSTEN).toContain('mindestens 3');
       expect(fixture.nativeElement.querySelector('.stimm-dank')).toBeNull();
       expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Danke');
+      // Kein zweiter Weg daneben: nur die eine Snackbar ueber den Meilenstein-Dienst.
+      expect(snackBar.open).not.toHaveBeenCalled();
     }));
 
     it('dankt ab der Schwelle kurz, auch fuer „Nicht hilfreich“', fakeAsync(() => {
@@ -119,13 +121,13 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.toggleDislike();
       tick(50);
 
-      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_ZAEHLT, 'OK', STIMM_DANK_MS);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_ZAEHLT, 'Schließen', STIMM_DANK_MS);
     }));
 
     it('dankt ohne Angabe zur Guete schlicht', fakeAsync(() => {
       liked();
 
-      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_SCHLICHT, 'OK', STIMM_DANK_MS);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_SCHLICHT, 'Schließen', STIMM_DANK_MS);
     }));
 
     it('sagt am eigenen Beitrag, dass die Stimme nicht in die Guete zaehlt', fakeAsync(() => {
@@ -134,7 +136,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       liked();
 
-      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_EIGENER_BEITRAG, 'OK', STIMM_DANK_MS);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_EIGENER_BEITRAG, 'Schließen', STIMM_DANK_MS);
     }));
 
     it('dankt beim Zuruecknehmen nicht', fakeAsync(() => {
@@ -147,6 +149,18 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       tick(50);
 
       expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledTimes(1);
+    }));
+
+    it('verdraengt die offene Frage „Gepostet?“ nicht', fakeAsync(() => {
+      (snackBar as unknown as { _openedSnackBarRef: unknown })._openedSnackBarRef = {
+        instance: { data: { message: 'Kopiert. Gepostet?', action: 'Ja, gepostet' } },
+      };
+      component.stimmenZaehlen = false;
+
+      liked();
+
+      expect(meilensteinHinweis.bestaetigen).not.toHaveBeenCalled();
+      expect(component.isLiked).toBeTrue();
     }));
 
     it('zeigt bei einem Fehler keinen Dank', fakeAsync(() => {

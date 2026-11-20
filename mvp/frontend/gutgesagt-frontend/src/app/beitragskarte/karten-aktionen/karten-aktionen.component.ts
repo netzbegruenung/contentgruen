@@ -312,6 +312,12 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       });
   }
 
+  /** Ob gerade die Snackbar „Kopiert. Gepostet? [Ja, gepostet]“ offen ist, von welcher Karte auch immer. */
+  private gepostetFrageOffen(): boolean {
+    const offen = this.snackBar._openedSnackBarRef?.instance as { data?: { action?: string } } | undefined;
+    return offen?.data?.action === JA_GEPOSTET;
+  }
+
   private gepostetFragen(kennung: string): void {
     this.snackBar
       .open(KOPIERT_GEPOSTET_FRAGE, JA_GEPOSTET, { duration: GEPOSTET_FRAGE_MS })
@@ -457,12 +463,14 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       next: () => {
         this.ausgang = undefined;
         this.isVoting = false;
-        if (dank) {
+        // Steht noch die Frage „Gepostet?“ nach dem Kopieren, verdrängt der Dank sie nicht:
+        // Sonst wäre „Ja, gepostet“ weg, bevor die Person es treffen kann.
+        if (dank && !this.gepostetFrageOffen()) {
           // Sofort-Dank als Snackbar wie beim Kopieren (Entscheidung 20.11.2026): unten
           // eingeblendet, per aria-live angesagt, ohne die Karte zu verschieben. Ist dabei
           // ein Meilenstein wie „Erste 10 Bewertungen“ neu, steht er in derselben Snackbar.
           // Den Dienst erst hier holen: Karten ohne Abstimmen brauchen ihn nicht.
-          this.injector.get(MeilensteinHinweisService).bestaetigen(dank, 'OK', STIMM_DANK_MS);
+          this.injector.get(MeilensteinHinweisService).bestaetigen(dank, 'Schließen', STIMM_DANK_MS);
         }
         gemeldet.emit(contentId);
         this.cdr.markForCheck();
