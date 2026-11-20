@@ -7,7 +7,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { hilfeOeffnen } from '../help-dialog/help-dialog.component';
 import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 import { ORGANISATION } from '../shared/organisation';
-import { EINLADUNG_AB } from '../shared/einladung-ab';
 import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saetze';
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 
@@ -30,7 +29,6 @@ import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 })
 export class AboutComponent {
   readonly organisation = ORGANISATION;
-  readonly einladungAb = EINLADUNG_AB;
   readonly keineGenerativeKi = KEINE_GENERATIVE_KI;
   readonly sucheMitSprachmodellen = SUCHE_MIT_SPRACHMODELLEN;
   /** Beispielsiegel unter „Bewerten“: neu, dann Güte 1 bis 10 (#427). */

@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LoginSelectorComponent, WARTELISTE_TEXT } from './login-selector.component';
-import { EINLADUNG_AB } from '../shared/einladung-ab';
 import { ORGANISATION } from '../shared/organisation';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -56,13 +55,15 @@ describe('LoginSelectorComponent', () => {
       expect(weg.querySelector('a')?.textContent?.trim()).toBe(`Mitglied der ${ORGANISATION.name}`);
     });
 
-    it('zeigt die Einladung bis zur Realm-Umstellung nur als eingeklappte Vorschau ohne Funktion', () => {
-      const vorschau = fixture.nativeElement.querySelector('details.einladung-vorschau') as HTMLDetailsElement;
+    it('fuehrt seit dem Realm-Umzug zum Einloesen der Einladung, ohne Vorschau (Entscheidung 20.11.)', () => {
+      const weg = fixture.nativeElement.querySelector('.konto-weg') as HTMLElement;
+      const knopf = weg.querySelector('.einladung-knopf') as HTMLButtonElement;
 
-      expect(vorschau.open).toBeFalse();
-      expect(vorschau.querySelector('summary')?.textContent).toContain(`Ab ${EINLADUNG_AB}`);
-      expect((vorschau.querySelector('.einladung-knopf') as HTMLButtonElement).disabled).toBeTrue();
-      expect(vorschau.querySelector('a[href="/einladung"]')).toBeNull();
+      expect(weg.querySelector('details')).toBeNull();
+      expect(weg.textContent).not.toMatch(/Ab \d/);
+      expect(knopf.disabled).toBeFalse();
+      knopf.click();
+      expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/einladung']);
     });
 
     it('oeffnet fuer die Warteliste den Feedback-Dialog mit vorbelegtem Text', () => {
