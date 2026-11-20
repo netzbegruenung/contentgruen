@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { VotingService, VoteResponse, VoteStats } from './voting.service';
+import { VotingService, VoteResponse } from './voting.service';
 import { LoggingService } from './logging.service';
 import { environment } from '../../environments/environment';
 import { NUR_LESEND } from '../auth/cache.interceptor';
@@ -321,41 +321,4 @@ describe('VotingService', () => {
     });
   });
 
-  describe('getVoteStats', () => {
-    it('should get vote statistics for a content item', () => {
-      const contentId = '123e4567-e89b-12d3-a456-426614174000';
-      const mockStats: VoteStats = {
-        content_id: contentId,
-        likes: 10,
-        dislikes: 2,
-        score: 0.833
-      };
-
-      service.getVoteStats(contentId).subscribe(stats => {
-        expect(stats).toEqual(mockStats);
-      });
-
-      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/voting/content/${contentId}/stats`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockStats);
-    });
-
-    it('should handle error when getting vote stats', () => {
-      const contentId = '123e4567-e89b-12d3-a456-426614174000';
-
-      service.getVoteStats(contentId).subscribe({
-        next: () => fail('should have failed'),
-        error: (error) => {
-          expect(error.status).toBe(500);
-          expect(loggingService.logError).toHaveBeenCalledWith(
-            'Failed to get vote stats',
-            jasmine.any(Object)
-          );
-        }
-      });
-
-      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/voting/content/${contentId}/stats`);
-      req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
-    });
-  });
 });

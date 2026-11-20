@@ -179,38 +179,6 @@ class VotingService:
             )
             return {}
 
-    def get_content_vote_stats(self, content_id: uuid.UUID) -> dict:
-        """Get voting statistics for a content item."""
-        try:
-            counts = self.vote_repository.get_vote_counts(content_id, self._startkonten)
-            score = self.vote_repository.get_content_score(
-                content_id, self._startkonten
-            )
-
-            return {
-                "content_id": str(content_id),
-                "likes": counts["likes"],
-                "dislikes": counts["dislikes"],
-                "score": score,
-            }
-        except OperationalError as e:
-            logger.error(f"Database error getting vote stats: {type(e).__name__}")
-            # Return default stats on error
-            return {
-                "content_id": str(content_id),
-                "likes": 0,
-                "dislikes": 0,
-                "score": 0.5,
-            }
-        except Exception as e:
-            logger.error(f"Unexpected error getting vote stats: {type(e).__name__}")
-            return {
-                "content_id": str(content_id),
-                "likes": 0,
-                "dislikes": 0,
-                "score": 0.5,
-            }
-
     def remove_vote(self, user_id: str, content_id: uuid.UUID) -> bool:
         """Remove a user's vote for a content item."""
         try:
