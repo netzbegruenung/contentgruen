@@ -559,7 +559,7 @@ Empfänger und Ort“.
 
 - **Zweck:** Mitwirkenden zeigen, dass ihre Beiträge helfen (`DSE:589`), und auf der Startseite unter „Seit deinem letzten Besuch“, was seitdem neu ist (Nutzerführung 13.11.).
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. f (`DSE:590-592`).
-- **Daten:** je Kennung zwei Zählerstände (Nutzung, Einwürfe anderer beim letzten Besuch), kein Zeitpunkt (`ss/infrastructure/database/models.py`, `GeseheneNutzung`). Nur Zählerstand, Zeitpunkt nur grob ableitbar (für Admins mit DB-Zugriff): Der Einwurf-Stand und `raw_inputs.created_at` grenzen ein, wann der letzte Besuch etwa war. „Wann du da warst, speichern wir nicht“ bleibt wahr; gerundet wird nicht.
+- **Daten:** je Kennung zwei Zählerstände (Nutzung, Einwürfe anderer beim letzten Besuch), kein Zeitpunkt (`ss/infrastructure/database/models.py`, `GeseheneNutzung`). Nur Zählerstand, Zeitpunkt nur grob ableitbar (für Admins mit DB-Zugriff): Der Einwurf-Stand und `raw_inputs.created_at` grenzen ein, wann der letzte Besuch etwa war. „Wann du da warst, speichern wir nicht“ bleibt wahr; gerundet wird nicht. Dazu zwei Zahlen über die letzten 7 Tage, beim Besuch berechnet und nicht gespeichert: eigene Einwürfe, die andere ausformuliert haben, und neue Kommentare und Hintergrundinfos anderer (#741).
 - **Frist:** bis zur Kontolöschung (`DSE:593`).
 - **Risiko:** gering. **Offen:** Die Rückmeldung läuft unter lit. f, obwohl sie an der Mitwirkung
   hängt, die sonst unter Art. 9 Abs. 2 lit. a steht.

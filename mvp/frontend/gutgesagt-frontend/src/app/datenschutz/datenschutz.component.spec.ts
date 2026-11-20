@@ -83,6 +83,12 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('nur zwei Zahlen');
       expect(text).toContain('wie viele Einwürfe anderer es im Fangkorb gab');
       expect(text).toContain('Wann du da warst, speichern wir nicht');
+      // Die zwei 7-Tage-Zahlen der Startseite (#741), Wortlaut freigegeben 20.11.
+      expect(text).toContain(
+        'Zwei weitere Zahlen auf der Startseite berechnen wir bei jedem Besuch neu und speichern sie nicht: ' +
+          'wie viele deiner Einwürfe andere in den letzten sieben Tagen ausformuliert haben und wie viele neue ' +
+          'Kommentare und Hintergrundinfos anderer es in dieser Zeit auf der Plattform gab.',
+      );
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
       expect(text).toContain('bis zur Löschung deines Kontos');
     });

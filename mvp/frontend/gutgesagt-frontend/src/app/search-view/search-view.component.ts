@@ -100,6 +100,8 @@ export class SearchViewComponent implements AfterViewInit {
           if (element) {
             this.logger.info(`[${scrollTimestamp}] === SCROLLING TO RECENT CONTENT ===`);
             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Der Fokus folgt dem Sprung: Die angeklickte Kachel verschwindet danach (WCAG 2.4.3)
+            element.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
           } else {
             this.logger.error(`[${scrollTimestamp}] Could not find element with id 'recent-content'`);
           }

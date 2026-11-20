@@ -251,3 +251,64 @@ class TestNeueEinwuerfeSeitLetztemBesuch:
         with datenbank.get_session() as s:
             zeile = s.get(GeseheneNutzung, AUTORIN)
             assert (zeile.nutzung, zeile.einwuerfe) == (3, 8)
+
+
+class TestAusformulierteEinwuerfe:
+    """
+    Kachel "Einwuerfe von dir ausformuliert" (20.11.): eigene Einwuerfe, die andere
+    in den letzten sieben Tagen ausformuliert haben; ein Zeitraum, kein Stand.
+    """
+
+    def test_zaehlt_eigene_einwuerfe_die_andere_ausformuliert_haben(
+        self, datenbank
+    ):  # noqa: F811
+        from infrastructure.database.models import AusformuliertIn, Einwurf
+        from repositories.einwurf_repository import EinwurfRepository
+
+        jetzt = datetime.now(timezone.utc)
+        eigen, zweifach, selbst, alt, fremd, ohne = (uuid.uuid4() for _ in range(6))
+        with datenbank.get_session() as s:
+            for kennung, von in [
+                (eigen, AUTORIN),
+                (zweifach, AUTORIN),
+                (selbst, AUTORIN),
+                (alt, AUTORIN),
+                (fremd, "andere"),
+                (ohne, AUTORIN),
+            ]:
+                s.add(
+                    Einwurf(
+                        id=kennung,
+                        url=f"https://example.org/{kennung}",
+                        submitted_by=von,
+                    )
+                )
+            s.flush()
+            for einwurf, wer, vor_tagen in [
+                (eigen, "andere", 1),
+                # In zwei Beitraegen ausformuliert: zaehlt einmal
+                (zweifach, "andere", 2),
+                (zweifach, "dritte", 3),
+                # Selbst ausformuliert zaehlt nicht
+                (selbst, AUTORIN, 1),
+                # Aelter als sieben Tage
+                (alt, "andere", 8),
+                # Fremder Einwurf, von der Autorin ausformuliert
+                (fremd, AUTORIN, 1),
+                # Ohne Ausformulierer (Altbestand)
+                (ohne, None, 1),
+            ]:
+                s.add(
+                    AusformuliertIn(
+                        raw_input_id=einwurf,
+                        content_id=uuid.uuid4(),
+                        created_by=wer,
+                        created_at=jetzt - timedelta(days=vor_tagen),
+                    )
+                )
+        repo = EinwurfRepository(datenbank)
+
+        seit = jetzt - timedelta(days=7)
+        assert repo.count_ausformuliert_von_anderen(AUTORIN, seit) == 2
+        assert repo.count_ausformuliert_von_anderen("andere", seit) == 1
+        assert repo.count_ausformuliert_von_anderen("niemand", seit) == 0

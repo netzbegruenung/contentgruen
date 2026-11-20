@@ -1,6 +1,6 @@
-/* Kleine Kacheln mit Zahl (Entscheidung 18.11.), im Stil der Mitmachen-Kacheln der
-   Startseite: dieselben Tokens fuer Flaeche, Rand und Schatten, aber ohne Pfeil und
-   kleiner. Kein roter Zaehler. */
+/* Bis zu vier kleine Kacheln mit Zahl (Entscheidungen 18.11. und 20.11.), im Stil der
+   Mitmachen-Kacheln der Startseite: dieselben Tokens fuer Flaeche, Rand und Schatten, aber
+   ohne Pfeil und kleiner. Eine allein ist eine breite Zeile mit Knopf. Kein roter Zaehler. */
 .seit-besuch {
   /* Kanten wie Suchfeld und .start-kacheln: 16 px Einzug, ab 752 px die mittige 720er-Spalte */
   margin: var(--spacing-xl, 32px) max(var(--spacing-md, 16px), calc((100% - var(--lesespalte, 720px)) / 2)) 0;
@@ -13,7 +13,8 @@
 
 .seit-besuch-kacheln {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* So viele Spalten wie Kacheln (2 bis 4), damit keine Luecke rechts bleibt */
+  grid-template-columns: repeat(var(--seit-besuch-spalten, 3), minmax(0, 1fr));
   gap: var(--spacing-md, 16px);
   margin: 0;
   padding: 0;
@@ -23,7 +24,8 @@
 .seit-besuch-kachel {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* Oben buendig: Zahlen in einer Reihe, auch wenn ein Text zwei Zeilen braucht */
+  justify-content: flex-start;
   gap: 4px;
   box-sizing: border-box;
   height: 100%;
@@ -37,6 +39,11 @@
   box-shadow: var(--elevation-2, 0 2px 4px rgba(0, 0, 0, 0.15));
   transition: box-shadow var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s),
     background-color var(--transition-fast, 0.2s);
+}
+
+.seit-besuch-kacheln.vier .seit-besuch-kachel {
+  /* Vier in der 720er-Spalte: weniger Innenabstand, sonst brechen die Woerter einzeln */
+  padding: var(--spacing-md, 16px);
 }
 
 .seit-besuch-kachel:hover,
@@ -93,14 +100,79 @@
   color: var(--text);
 }
 
-/* Handy: drei schmale nebeneinander, kleiner und mit weniger Innenabstand */
+/* Zeitraum statt „seit dem letzten Besuch“: kleiner, aber in Textfarbe (auch auf der
+   Hover-Flaeche AA; --text-leise erreicht dort keine 4,5:1) */
+.seit-besuch-zeitraum {
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+/* Nur eine Kachel: breite Zeile mit Satz und Knopf, dieselbe Flaeche wie die Kacheln */
+.seit-besuch-zeile {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md, 16px);
+  box-sizing: border-box;
+  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
+  border: 2px solid var(--kachel-rand, var(--linie-tanne));
+  border-radius: 12px;
+  background: var(--karte-kommentar, var(--flaeche));
+  color: var(--text);
+  box-shadow: var(--elevation-2, 0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.seit-besuch-satz {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.seit-besuch-satz .seit-besuch-zahl {
+  font-size: 26px;
+  margin-right: 2px;
+}
+
+.seit-besuch-knopf {
+  flex-shrink: 0;
+}
+
+/* Handy: 2 x 2; eine dritte Kachel nimmt die ganze Zeile */
 @media (max-width: 599px) {
   .seit-besuch {
     margin-top: var(--spacing-lg, 24px);
   }
 
   .seit-besuch-kacheln {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--spacing-sm, 8px);
+  }
+
+  .seit-besuch-kacheln > li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .seit-besuch-kacheln.vier .seit-besuch-kachel {
+    padding: 10px 12px;
+  }
+
+  /* Die Zeile bricht: Icon und Satz oben, der Knopf darunter ueber die ganze Breite */
+  .seit-besuch-zeile {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    gap: var(--spacing-sm, 8px) 12px;
+  }
+
+  .seit-besuch-satz {
+    flex: 1 1 0;
+  }
+
+  .seit-besuch-knopf {
+    flex-basis: 100%;
   }
 
   .seit-besuch-kachel {

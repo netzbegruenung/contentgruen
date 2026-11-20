@@ -338,6 +338,30 @@ class TestAutorenzuordnungOhneSuchanfragen:
         assert bedingungen["original_author"].match.value == "testuser"
         assert bedingungen["content_type"].match.value == "statement"
 
+    @pytest.mark.asyncio
+    async def test_count_neue_von_anderen_sichtbar_seit_ohne_eigene(
+        self, repository_mit_client
+    ):
+        """Kachel "neue Beitraege" (20.11.): Zeitraum, Typen, ohne eigene, ohne Gesperrte."""
+        import datetime as dt
+
+        repository, client = repository_mit_client
+        client.count.return_value = MagicMock(count=5)
+        seit = dt.datetime(2026, 11, 13, tzinfo=dt.timezone.utc)
+
+        anzahl = await repository.count_neue_von_anderen(
+            "testuser", seit, ("commentary", "generic_text")
+        )
+
+        assert anzahl == 5
+        zaehlung = client.count.call_args.kwargs["count_filter"]
+        must = {b.key: b for b in zaehlung.must if b.key != "content_type"}
+        assert must["created"].range.gte == seit
+        assert ["commentary", "generic_text"] in self._typ_eingrenzungen(zaehlung)
+        nicht = [(b.key, b.match.value) for b in zaehlung.must_not]
+        assert ("original_author", "testuser") in nicht
+        assert any(key == "status" for key, _ in nicht)
+
     @staticmethod
     def _typ_eingrenzungen(such_filter) -> list:
         return [

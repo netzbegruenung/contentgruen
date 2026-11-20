@@ -129,11 +129,26 @@ class BesuchResponse(BaseModel):
     unbeantwortete_aussagen: int = 0
     # Die Liste hat ihre Grenze erreicht: Es koennen mehr warten ("50+").
     unbeantwortete_aussagen_mehr: bool = False
+    # Einwuerfe der Person, die andere in den letzten BESUCH_ZEITRAUM_TAGE Tagen
+    # ausformuliert haben. Ein Zeitraum, kein Stand: dafuer wird nichts gespeichert.
+    ausformulierte_einwuerfe: int = 0
+    # Kommentare und Hintergrundinfos anderer aus den letzten BESUCH_ZEITRAUM_TAGE
+    # Tagen, die Typen von "Frisch aus der Community". Ebenfalls ein Zeitraum.
+    neue_beitraege: int = 0
 
 
-# So lange warten Einwuerfe und Luecken hoechstens; danach gilt 0, damit die
-# Rueckmeldung zur Nutzung beim Anmelden nicht auf sie wartet.
+# So lange warten die Nebenzahlen (alles ausser der Nutzung) hoechstens; danach gilt
+# 0, damit die Rueckmeldung zur Nutzung beim Anmelden nicht auf sie wartet.
 BESUCH_NEBENZAHLEN_TIMEOUT_S = 1.5
+
+# Zeitraum der Kacheln ohne Zaehlerstand ("in 7 Tagen"), wie der Zuwachs in Meine
+# Beitraege. Ein Stand je Konto wie bei den Einwuerfen braeuchte neue Spalten und
+# eine Erweiterung der Datenschutzerklaerung ("nur zwei Zahlen").
+BESUCH_ZEITRAUM_TAGE = 7
+
+# Die Typen, die /content/recent ("Frisch aus der Community") zeigt: Die Kachel
+# "neue Beitraege" fuehrt dorthin und zaehlt deshalb dieselben.
+FRISCH_TYPEN = (ContentType.COMMENTARY.value, ContentType.GENERIC_TEXT.value)
 
 
 class PunkteResponse(BaseModel):
@@ -768,6 +783,7 @@ async def besuch(
     unbeantwortete: UnbeantworteteAussagenService = Depends(
         get_unbeantwortete_aussagen_service
     ),
+    settings: Settings = Depends(get_settings),
 ):
     """
     Ein Besuch der angemeldeten Person: wie oft ihre Beitraege seitdem genutzt
@@ -777,15 +793,24 @@ async def besuch(
     POST, weil der Aufruf den gezeigten Stand fortschreibt; ein zweiter Aufruf
     direkt danach liefert 0. Die Person kommt aus ``X-User``, nicht aus dem Pfad (#284).
     """
-    # Alle drei Zahlen zugleich: Einwuerfe und Luecken haben eine Zeitgrenze, die
-    # Nutzung nicht; scheitert sie, ist der Besuch gescheitert (500).
+    seit = datetime.now(timezone.utc) - timedelta(days=BESUCH_ZEITRAUM_TAGE)
+    # Alle Zahlen zugleich: Die Nebenzahlen haben eine Zeitgrenze, die Nutzung
+    # nicht; scheitert sie, ist der Besuch gescheitert (500).
     try:
-        anzahl, neu, wartend = await asyncio.gather(
+        anzahl, neu, wartend, ausformuliert, beitraege = await asyncio.gather(
             get_usage_service().nutzung_seit_letztem_besuch(current_user),
             _hoechstens(
                 _neue_einwuerfe(current_user, einwuerfe, gesehen), 0, "Neue Einwuerfe"
             ),
             _hoechstens(_unbeantwortete_aussagen(unbeantwortete), 0, "Unbeantwortete"),
+            _hoechstens(
+                _ausformulierte_einwuerfe(current_user, einwuerfe, seit),
+                0,
+                "Ausformulierte Einwuerfe",
+            ),
+            _hoechstens(
+                _neue_beitraege(current_user, settings, seit), 0, "Neue Beitraege"
+            ),
         )
     except Exception as e:
         logger.error(
@@ -798,6 +823,8 @@ async def besuch(
         neue_einwuerfe=neu,
         unbeantwortete_aussagen=wartend,
         unbeantwortete_aussagen_mehr=wartend >= LIMIT_STANDARD,
+        ausformulierte_einwuerfe=max(0, ausformuliert),
+        neue_beitraege=max(0, beitraege),
     )
 
 
@@ -850,6 +877,40 @@ async def _unbeantwortete_aussagen(dienst: UnbeantworteteAussagenService) -> int
         return len(await dienst.liste(mit_themen=False))
     except Exception as e:
         logger.warning(f"Unbeantwortete Aussagen nicht gezaehlt: {type(e).__name__}")
+        return 0
+
+
+async def _ausformulierte_einwuerfe(
+    person: str, einwuerfe: EinwurfRepository, seit: datetime
+) -> int:
+    """
+    Eigene Einwuerfe, die andere seit ``seit`` ausformuliert haben. Liest nur, was
+    "Meine Einwuerfe" ohnehin zeigt; bei einem Fehler 0.
+    """
+    try:
+        return await asyncio.to_thread(
+            einwuerfe.count_ausformuliert_von_anderen, person, seit
+        )
+    except Exception as e:
+        logger.warning(
+            f"Ausformulierte Einwuerfe fuer {log_pseudonym(person)} nicht gezaehlt: "
+            f"{type(e).__name__}"
+        )
+        return 0
+
+
+async def _neue_beitraege(person: str, settings: Settings, seit: datetime) -> int:
+    """
+    Kommentare und Hintergrundinfos anderer seit ``seit``, sichtbar wie in "Frisch
+    aus der Community". Das Repository entsteht erst hier, damit ein Ausfall des
+    Suchindex nur diese Zahl kostet; bei einem Fehler 0.
+    """
+    try:
+        return await get_content_repository(settings).count_neue_von_anderen(
+            person, seit, FRISCH_TYPEN
+        )
+    except Exception as e:
+        logger.warning(f"Neue Beitraege nicht gezaehlt: {type(e).__name__}")
         return 0
 
 
