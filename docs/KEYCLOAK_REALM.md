@@ -51,21 +51,29 @@ Admin-Schnittstelle nie schreibbar und nur lesbar ist, solange die Pflichtaktion
 (`mvp/scripts/manual/keycloak_nb_zeitpunkte.py`) geht deshalb nur vorher, Löschen nur in der
 Datenbank von Keycloak (Tabellen `USER_ATTRIBUTE`, `USER_ENTITY`, `REALM`; die Befehle sind für
 PostgreSQL, Tabellennamen klein), nach dem Archivieren und dem Abschalten, eingeschränkt auf den
-Realm `gutgesagt` und das Attribut `terms_and_conditions`. In `psql` in der Datenbank von Keycloak,
-gestartet nach `umask 077` (damit die Sicherung 0600 wird):
+Realm `gutgesagt` und das Attribut `terms_and_conditions`.
 
-1. Vorher die betroffenen Zeilen sichern (Personendaten; Datei 0600, nach erfolgreichem Abschluss
-   löschen, das Archiv aus dem Exportskript bleibt):
+1. Vorher die betroffenen Zeilen sichern (Personendaten): als CSV über `STDOUT`, damit die Datei
+   dort entsteht, wo die Shell sie hinlenkt, mit 0600, auch wenn `psql` per `docker exec` im
+   Container läuft; nach erfolgreichem Abschluss löschen, das Archiv aus dem Exportskript bleibt.
+   `<psql>` ist der Aufruf in die Datenbank von Keycloak (etwa `docker exec -i <container> psql -U
+   <user> <db>`):
 
-   ```sql
-   \copy (SELECT ua.* FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions') TO 'terms_and_conditions-zeilen.csv' WITH CSV HEADER
+   ```bash
+   S=/opt/gutgesagt-archiv/terms_and_conditions-zeilen.csv
+   (umask 077; <psql> -c "\copy (SELECT ua.* FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions') TO STDOUT WITH CSV HEADER" > "$S.neu") && mv "$S.neu" "$S" && ls -l "$S"
    ```
 
 2. In einer Transaktion zählen, löschen, nachzählen. Die erste Zahl muss gleich „mit Zeitpunkt“
    plus „ohne lesbare Zahl“ aus dem letzten Lauf des Exportskripts sein und `DELETE n` gleich ihr,
-   die zweite 0; sonst `ROLLBACK;` statt `COMMIT;`:
+   die zweite 0; sonst `ROLLBACK;` statt `COMMIT;`. Die SQL zählt Zeilen, das Skript Konten ohne
+   Dienstkonten; weicht es ab, sind das meist Konten, die zwischen dem letzten Export und dem
+   Abschalten zugestimmt haben: ihre Zeilen aus der Sicherung ins Archiv übernehmen
+   (`kennung,zeitpunkt`), dann erneut. Die Zeile mit `TERMS_AND_CONDITIONS` zählt nur mit, ob es
+   die Schreibweise aus Keycloak 21.0.0 gibt; steht dort mehr als 0, erst klären:
 
    ```sql
+   SELECT count(*) FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'TERMS_AND_CONDITIONS';
    BEGIN;
    SELECT count(*) FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions';
    DELETE FROM user_attribute ua USING user_entity ue, realm r WHERE ue.id = ua.user_id AND r.id = ue.realm_id AND r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions';
@@ -77,9 +85,6 @@ Derselbe Zeitpunkt kann noch an zwei Stellen stehen, wenn der Realm Ereignisse s
 Vorlage schaltet das nicht ein): Login-Ereignisse `CUSTOM_REQUIRED_ACTION` in `EVENT_ENTITY` und
 Admin-Ereignisse mit Darstellung in `ADMIN_EVENT_ENTITY`. Ist *Realm settings → Events → Save
 events* an, gehen sie mit der Frist der übrigen Ereignisse; sonst ist nichts zu tun.
-
-(Eine Schreibweise `TERMS_AND_CONDITIONS` aus Keycloak 21.0.0 bleibt bewusst außen vor; sie
-liest auch das Exportskript nicht.)
 
 Danach den Benutzer-Cache leeren, sonst liefert Keycloak die alten Werte aus dem Cache: in der
 Admin-Konsole im Realm `master`, Benutzermenü oben rechts → *Clear Caches* → *User Cache* →
