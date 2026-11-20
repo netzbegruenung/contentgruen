@@ -41,7 +41,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
     it('fuehrt ausformulierte Einwuerfe auf „Meine Einwürfe“, neue Beitraege auf „Frisch aus der Community“', () => {
       const [ausformuliert, beitraege] = neuesListe({ nutzung_seit_letztem_besuch: 0, ausformulierte_einwuerfe: 2, neue_beitraege: 5 });
       expect([ausformuliert.ziel, ausformuliert.queryParams, ausformuliert.fragment]).toEqual(['/contributions', { tab: 'einwuerfe' }, undefined]);
-      expect([beitraege.ziel, beitraege.queryParams, beitraege.fragment]).toEqual(['/', undefined, 'recent-content']);
+      expect([beitraege.ziel, beitraege.queryParams, beitraege.fragment]).toEqual(['/search', undefined, 'recent-content']);
     });
 
     it('nennt den Zeitraum, wo die Zahl nicht seit dem letzten Besuch zaehlt', () => {
@@ -225,7 +225,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
       (liste.querySelector('a.nutzung') as HTMLAnchorElement).click();
       fixture.detectChanges();
       expect(links(fixture)).toContain('5 neue Beiträge, letzte 7 Tage');
-      expect(fixture.nativeElement.querySelector('a.beitraege').getAttribute('href')).toBe('/#recent-content');
+      expect(fixture.nativeElement.querySelector('a.beitraege').getAttribute('href')).toBe('/search#recent-content');
     });
 
     it('macht aus einer einzelnen Kachel eine breite Zeile mit Satz und Knopf zum Ziel', () => {
@@ -263,7 +263,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
       fixture.detectChanges();
 
       const knopf: HTMLAnchorElement = fixture.nativeElement.querySelector('.seit-besuch-zeile.beitraege a.seit-besuch-knopf');
-      expect(knopf.getAttribute('href')).toBe('/#recent-content');
+      expect(knopf.getAttribute('href')).toBe('/search#recent-content');
       expect(knopf.textContent).toContain('Frisch aus der Community');
     });
 

@@ -24,7 +24,8 @@
 .seit-besuch-kachel {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* Oben buendig: Zahlen in einer Reihe, auch wenn ein Text zwei Zeilen braucht */
+  justify-content: flex-start;
   gap: 4px;
   box-sizing: border-box;
   height: 100%;

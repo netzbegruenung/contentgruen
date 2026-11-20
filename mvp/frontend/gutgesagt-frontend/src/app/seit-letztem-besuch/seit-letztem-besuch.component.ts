@@ -139,7 +139,8 @@ export function neuesListe(stand: NeuesStand): NeuesEintrag[] {
     const wort = beitraege === 1 ? 'neuer Beitrag' : 'neue Beiträge';
     liste.push({
       art: 'beitraege',
-      ziel: ROUTES.HOME,
+      // Die Startseite ist /search; '/' leitet um und verliert dabei den Anker
+      ziel: ROUTES.SEARCH,
       fragment: 'recent-content',
       icon: 'feed',
       zahl: `${beitraege}`,
