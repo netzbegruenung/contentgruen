@@ -81,6 +81,8 @@ export class RundgangComponent implements OnDestroy {
   private lauf = 0;
   private nachsuchen = 0;
   private readonly beimScrollen = () => this.ausrichten();
+  /** Mobil: Platz unter dem Inhalt, den ein Ziel am Seitenende braucht (platzSchaffen). */
+  private platzUnten: { el: HTMLElement; alt: string } | null = null;
 
   constructor() {
     effect(() => {
@@ -153,11 +155,13 @@ export class RundgangComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     document.removeEventListener('scroll', this.beimScrollen, true);
+    this.platzFreigeben();
   }
 
   private async zeigen(s: RundgangStand | null): Promise<void> {
     const lauf = ++this.lauf;
     this.nachsuchen = 0;
+    this.platzFreigeben();
     if (!s) {
       if (this.stand()) {
         this.stand.set(null);
@@ -223,7 +227,30 @@ export class RundgangComponent implements OnDestroy {
     const alt = ziel.style.scrollMarginTop;
     ziel.style.scrollMarginTop = `${oben}px`;
     ziel.scrollIntoView({ block: 'start', behavior: 'auto' });
+    if (this.schmal) this.platzSchaffen(ziel, unten);
     ziel.style.scrollMarginTop = alt;
+  }
+
+  /**
+   * Mobil: Steht das Ziel am Seitenende, laesst sich die Seite nicht weit genug schieben,
+   * und die Karte unten deckt es zu (etwa „Meine Beiträge“ auf der Beitragen-Seite). Dann
+   * bekommt der Hauptinhalt fuer diesen Schritt so viel Platz unten, wie fehlt.
+   */
+  private platzSchaffen(ziel: HTMLElement, unten: number): void {
+    const fehlt = ziel.getBoundingClientRect().bottom - unten;
+    const haupt = document.getElementById('hauptinhalt');
+    if (fehlt <= 0 || !haupt) return;
+    this.platzUnten = { el: haupt, alt: haupt.style.paddingBottom };
+    const bisher = parseFloat(getComputedStyle(haupt).paddingBottom) || 0;
+    haupt.style.paddingBottom = `${bisher + fehlt}px`;
+    ziel.scrollIntoView({ block: 'start', behavior: 'auto' });
+  }
+
+  /** Nimmt den Platz aus platzSchaffen zurueck: beim naechsten Schritt und am Ende. */
+  private platzFreigeben(): void {
+    if (!this.platzUnten) return;
+    this.platzUnten.el.style.paddingBottom = this.platzUnten.alt;
+    this.platzUnten = null;
   }
 
   /** Versucht es kurz darauf erneut, solange derselbe Schritt steht und die Wartezeit reicht. */

@@ -95,6 +95,12 @@
     --mat-button-outlined-label-text-size: 16px;
 }
 
+/* Materials .mdc-button hebt den globalen Fokusrahmen auf; derselbe Ring wie an den Kacheln */
+.meine-beitraege-knopf:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
+}
+
 .typ-zeile {
     display: flex;
     align-items: center;
