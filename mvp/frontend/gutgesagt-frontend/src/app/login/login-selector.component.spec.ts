@@ -131,11 +131,11 @@ describe('LoginSelectorComponent', () => {
       expect(el.querySelector('.gutgesagt-button')).not.toBeNull();
     });
 
-    it('nennt den Netzbegrünung-Login ohne Keycloak und SSO', () => {
+    it('nennt die Anmeldung über den Realm schlicht „Anmelden“, ohne Keycloak und SSO (20.11.)', () => {
       const el = modes(true, false);
       const text = el.textContent ?? '';
 
-      expect(el.querySelector('.keycloak-button')?.textContent).toContain('Mit Netzbegrünung-Konto anmelden');
+      expect(el.querySelector('.keycloak-button .button-title')?.textContent?.trim()).toBe('Anmelden');
       expect(text).not.toMatch(/Keycloak|SSO|Selbstregistrierung|Beta-Account/);
       expect(text).toContain('Noch kein Konto?');
     });

@@ -476,7 +476,7 @@ Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt 
 _Avoid_: Tour, Onboarding, Tutorial
 
 **Vorschau mit Konto**:
-Die Seite „Das erwartet dich mit Konto“ (/mit-konto) für Besucher: drei Bilder aus der angemeldeten Oberfläche mit je einem Satz (Einwerfen, Ausformulieren, Bewerten), darunter „Mit Netzbegrünung-Konto anmelden“ und „Erst mal weiter suchen“. Besucher landen dort statt auf der Anmeldung, wenn sie Einwerfen, Beitragen oder den Fangkorb öffnen; nach der Anmeldung geht es zum ursprünglichen Ziel. Angemeldete sehen sie nie. Dieselben drei Bilder und Sätze zeigt der Rundgang „Selbst beitragen“ für Besucher, eines nach dem anderen (Entscheidung 17.11.).
+Die Seite „Das erwartet dich mit Konto“ (/mit-konto) für Besucher: drei Bilder aus der angemeldeten Oberfläche mit je einem Satz (Einwerfen, Ausformulieren, Bewerten), darunter „Anmelden“ und „Erst mal weiter suchen“. Besucher landen dort statt auf der Anmeldung, wenn sie Einwerfen, Beitragen oder den Fangkorb öffnen; nach der Anmeldung geht es zum ursprünglichen Ziel. Angemeldete sehen sie nie. Dieselben drei Bilder und Sätze zeigt der Rundgang „Selbst beitragen“ für Besucher, eines nach dem anderen (Entscheidung 17.11.).
 _Avoid_: Teaser, Paywall
 
 **Neu-Punkt**:

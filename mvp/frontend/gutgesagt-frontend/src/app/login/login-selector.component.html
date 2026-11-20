@@ -6,14 +6,14 @@
         <!-- Only the enabled login options; a switched-off one is hidden, not greyed out (#600) -->
         <div class="login-options">
 
-            <!-- Netzbegrünung-Login (Keycloak) -->
+            <!-- Anmeldung über den Realm: Netzbegrünung oder Mail/Passwort bietet dessen Seite an (20.11.) -->
             <div class="login-option-card mat-elevation-z2" *ngIf="authModes.keycloakEnabled">
                 <button mat-raised-button
                         class="login-option-button keycloak-button"
                         (click)="loginWithKeycloak()">
                     <mat-icon class="login-icon">vpn_key</mat-icon>
                     <div class="button-content">
-                        <span class="button-title">Mit Netzbegrünung-Konto anmelden</span>
+                        <span class="button-title">Anmelden</span>
                     </div>
                 </button>
             </div>
