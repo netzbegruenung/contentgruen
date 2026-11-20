@@ -3,12 +3,14 @@
 Die Nutzungsbedingungen (`nutzungsbedingungen.component.html`) tragen unten eine Stand-Zeile mit
 Tagesdatum. Dieses Datum ist der **Stand der Nutzungsbedingungen** (`GLOSSARY.md`): Es benennt
 genau einen Text. Geänderte Bedingungen gelten für eine Person erst, wenn sie ihnen zugestimmt hat
-(NB §10, #466). Die Zustimmung kommt wie die erste über den CC0-Hinweis beim Absenden (NB §2,
-#415): Er verlinkt immer den aktuellen Stand, also stimmt jemand mit dem nächsten Absenden dem
-Stand zu, der dann live ist (seit #521). Daneben fragt vorerst die Keycloak-Pflichtaktion
-„Terms and Conditions“ beim Anmelden (#429; bleibt vorerst, Entscheidung Maintainer, 02.11.2026).
-§10 nennt sie nur als Möglichkeit („etwa bei der Anmeldung“) und stimmt deshalb mit und ohne
-sie. Fällt sie weg, entfallen die Schritte 4 und 5 unten
+(NB §10, #466). Seit dem Stand vom 20. November 2026 kommt die Zustimmung mit einem eigenen
+Häkchen auf `/einwilligung`, bei der ersten Anmeldung und nach jedem wesentlichen Stand neu
+(NB §2 und §10, #731); die App speichert sie mit dem Stand (Schritt 3). Bis dahin kam sie über
+den CC0-Hinweis beim Absenden (NB §2, #415, #521); der Hinweis verlinkt die Bedingungen weiter,
+das Absenden gibt aber nur noch den Text nach §4 frei. Bis 0.9.8 fragte daneben die
+Keycloak-Pflichtaktion „Terms and Conditions“ beim Anmelden (#429); sie wird mit 0.9.8
+abgeschaltet, nachdem die Zeitpunkte archiviert sind (Entscheidung Maintainer, 20.11.2026;
+Folgeschritte in #731). Damit entfallen die Schritte 5 und 6 unten
 (`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
 
 Bei der Pflichtaktion speichert Keycloak nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
@@ -38,26 +40,33 @@ diesem Zeitpunkt live war.
    kollidieren zwei PRs nicht, die am selben Stand ändern (#500). Die alten Ordner bleiben.
    `scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass der Stand der Seite hier
    steht und dass Ordner und Stand zusammenpassen.
-3. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum in `stand.md` eintragen, beim
+3. In der App (`mvp/backend/semantic-search-service/app/domain/nutzungsbedingungen.py`): den
+   Stand in `STAENDE` eintragen und `AKTUELLER_STAND` setzen; bei einer reinen Korrektur den
+   Stand zu `GELTENDE_STAENDE` hinzufügen (niemand wird gefragt), bei einem wesentlichen
+   `GELTENDE_STAENDE` nur mit ihm (alle stimmen beim nächsten Besuch auf `/einwilligung` neu zu;
+   bis dahin sind Beitragen und Bewerten gesperrt, Lesen nicht, `docs/ART9_EINWILLIGUNG.md`).
+4. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum in `stand.md` eintragen, beim
    vorigen Stand das „bis“-Datum. Bei einer reinen Korrektur ist der Ablauf hier zu Ende.
 
-Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer), solange die Pflichtaktion
-läuft:
+Nur bis 0.9.8, solange die Pflichtaktion lief, bei einem wesentlichen Stand gleich nach dem
+Deploy (Maintainer; mit 0.9.8 entfallen, `termsText` ist aus der Vorlage entfernt):
 
-4. Den Text, den Keycloak bei der Pflichtaktion zeigt, auf den neuen Stand bringen; ohne das
+5. Den Text, den Keycloak bei der Pflichtaktion zeigt, auf den neuen Stand bringen; ohne das
    stimmen die Personen dem alten Stand-Datum zu. Diesen Text (`termsText`) liefert die
    Realm-Vorlage aus #429 mit Link und Stand-Datum, ein eigenes Theme gibt es nicht; ändern in
    Vorlage und Realm wie in `docs/KEYCLOAK_REALM.md` beschrieben.
-5. Die Pflichtaktion „Terms and Conditions“ für alle Konten im Realm von Gut gesagt erneut
+6. Die Pflichtaktion „Terms and Conditions“ für alle Konten im Realm von Gut gesagt erneut
    auslösen (siehe unten). Der Realm gehört nur zu Gut gesagt (#429); in einem geteilten Realm
    träfe das auch Konten, die Gut gesagt nie nutzen.
 
-Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein. Alle
-abzumelden ist seit #521 nicht mehr nötig: Wer mit einer laufenden Sitzung weiterarbeitet und
-etwas absendet, stimmt dabei über den CC0-Hinweis dem neuen Stand zu; wer nur liest oder
-bewertet, für den bleibt der vorige Stand (§10).
+Bis 0.9.8 fragte Keycloak bei der nächsten Anmeldung; wer nicht zustimmte, kam nicht hinein. Seit dem
+Stand vom 20. November 2026 kommt die Zustimmung nach §2 und §10 nur über das Häkchen der App
+(Schritt 3); das Absenden unter dem CC0-Hinweis gibt nur noch den Text nach §4 frei. Wer nicht
+zustimmt, kann mit dem Konto nichts einstellen und nichts bewerten, Lesen bleibt (§10). Die
+Pflichtaktion wird mit 0.9.8 abgeschaltet; Schritt 6 entfällt für den Stand vom 20. November 2026,
+weil die App selbst neu fragt (Entscheidung Maintainer, 20.11.2026).
 
-Das erneute Auslösen in Schritt 5 geht nicht über die Oberfläche der Admin-Konsole für alle auf
+Das erneute Auslösen in Schritt 6 geht nicht über die Oberfläche der Admin-Konsole für alle auf
 einmal, sondern über die Admin-Schnittstelle von Keycloak: für jedes Konto `requiredActions` um
 den Alias der Pflichtaktion ergänzen, ohne andere offene Pflichtaktionen (etwa „E-Mail
 bestätigen“) zu überschreiben. Den Alias liefert

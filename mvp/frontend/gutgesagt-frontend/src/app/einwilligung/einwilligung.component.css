@@ -69,3 +69,26 @@
   font-size: 12px;
   color: var(--text-leise);
 }
+
+/* Gemeinsame Seite mit den Nutzungsbedingungen: je Häkchen ein Block */
+.block {
+  margin: 8px 0 12px;
+}
+
+/* Hinweise direkt unter einem Häkchen, eingerückt auf die Höhe des Label-Texts (Häkchen 40 px) */
+.unter-haekchen {
+  margin: 0 0 6px 40px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-leise);
+}
+
+.unter-haekchen.warnung {
+  color: var(--fehler);
+  font-weight: 500;
+}
+
+.unter-haekchen-frei {
+  margin: 8px 0 12px;
+  font-size: 14px;
+}

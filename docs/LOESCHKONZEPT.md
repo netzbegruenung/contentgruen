@@ -112,7 +112,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    Einwilligung weiter“ mit dem Wortlaut, PR #670), in `abzeichen_sichtbarkeit` (jede
    Antwort auf die Frage nach der Sichtbarkeit der Abzeichen, auch ein Nein; #351), in
    `punkte_einwilligung` (jede Antwort auf die Einwilligung „Punkte und Meilensteine“, auch
-   ein Widerruf; #351) und die in
+   ein Widerruf; #351), in `nutzungsbedingungen_zustimmungen` (jede Zustimmung zu den
+   Nutzungsbedingungen in der App mit Zeitpunkt und Stand) und die in
    `loeschauftraege` (offene und erledigte Löschaufträge nach einem Widerruf)
    löschen, ebenso jeden Muster-Hinweis
    (`muster_hinweise`, #352), der die Person nennt. Der Anzeigename steht **nur dort** — weder in Qdrant
@@ -152,6 +153,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
    (`BFF/Services/ManagedUserService.cs:128`).
+   Steht die Kennung im **Archiv der Keycloak-Zeitpunkte** (unten), dort ihre Zeile löschen:
+   `sed -i '/^<kennung>,/d' /opt/gutgesagt-archiv/nb-zeitpunkte-keycloak.txt`.
 
 ## Löschauftrag nach dem Widerruf
 
@@ -250,6 +253,8 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Löschaufträge, erledigt | 365 Tage (entschieden 13.11.2026) | Ausführung (`erledigt_am`); mit dem Konto sofort (Schritt 2) |
 | Zustimmung zur Sichtbarkeit der Abzeichen (`abzeichen_sichtbarkeit`) | solange das Konto besteht | — Nachweis der Zustimmung (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351) | solange das Konto besteht | — Nachweis der Einwilligung und des Widerrufs (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
+| Zustimmung zu den Nutzungsbedingungen in der App (`nutzungsbedingungen_zustimmungen`) | solange das Konto besteht | — Nachweis des Vertragsschlusses und des Stands, dem die Person zugestimmt hat (Art. 6 Abs. 1 lit. b DSGVO); geht mit dem Konto (Schritt 2) |
+| Archiv der Keycloak-Zeitpunkte der Zustimmung zu den Nutzungsbedingungen (bis 0.9.8): Kennung und Zeitpunkt | bis zur Löschung des Kontos (Entscheidung Maintainer 20.11.2026) | — am Rollout-Tag von 0.9.8 exportiert, zuletzt direkt vor dem Abschalten der Pflichtaktion, nach `/opt/gutgesagt-archiv/nb-zeitpunkte-keycloak.txt` auf dem Prod-Host (Verzeichnis 0700 root, nicht in einen Container gemountet und nicht Teil der Backups), Datei 0600 root (`mvp/scripts/manual/keycloak_nb_zeitpunkte.py --zeitpunkte`); danach wird das Attribut in Keycloak gelöscht. Mit dem Konto geht die Zeile (Schritt 4). Nachweis, wann die Person bis 0.9.8 zugestimmt hat |
 | Meilenstein-Abzeichen am Anzeigenamen (#351) | keine Speicherung | — nur im Arbeitsspeicher, alle 15 Minuten neu berechnet, nach einem Neustart leer; nach dem Löschkommando (Schritt 2) höchstens noch bis zum nächsten Lauf |
 | Schalter (`schalter`) und ihr Verlauf (`schalter_verlauf`, #708): Admin-Wert, Zeitpunkt, Kennung des Admins | Verlauf: 12 Monate ab der Änderung, Bereinigungslauf (Task der Löschfristen, `SCHALTER_VERLAUF_TAGE` in `services/loeschfristen_service.py`, unabhängig vom abschaltbaren Bereinigungsjob; Entscheidung Maintainer 18.11.2026). Der aktuelle Stand in `schalter` bleibt. | Kennung des Admins: mit seinem Konto geleert (`person_loeschen.sql`), beim Umstellen der Kennungen mit umgeschrieben (#487) — betrifft nur Admins, nicht Nutzende; die Kennung steht nur dort, kein Klarname |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |
@@ -397,11 +402,13 @@ und der Ablauf oben erfasst die Tabelle nicht.
   Zähler vergleichen.
 - **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): kein Passwort
   (kein Credential), keine Verknüpfung mit einem Identity Provider, und dazu entweder
-  Mail-Adresse nicht bestätigt und Pflichtaktion „Terms and Conditions“ offen, oder „Passwort
-  festlegen“ noch am Konto (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
+  Mail-Adresse nicht bestätigt und Pflichtaktion „Terms and Conditions“ offen (Konten von vor
+  0.9.8, als Keycloak die Nutzungsbedingungen noch fragte), oder „Passwort festlegen“ noch am
+  Konto (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
   angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
-  sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
-  unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
+  sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort geht nach der
+  Frist ebenso, wenn es „Passwort festlegen“ trägt (oder, aus der Zeit vor 0.9.8, unbestätigt die
+  alte Pflichtaktion); ohne eine davon bleibt es. Ohne Zugang zur
   Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht.
 - **Link geöffnet, aber kein Passwort:** Der Link in der Mail bestätigt die Adresse, sobald die
   Person ihn öffnet und bestätigt (Pflichtaktion `VERIFY_EMAIL` im Link), noch vor dem Passwort.
@@ -681,7 +688,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, art9_ohne_einwilligung, abzeichen_sichtbarkeit, punkte_einwilligung, loeschauftraege;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise, art9_einwilligungen, art9_ohne_einwilligung, abzeichen_sichtbarkeit, punkte_einwilligung, nutzungsbedingungen_zustimmungen, loeschauftraege;"
 ```
 
 ```bash

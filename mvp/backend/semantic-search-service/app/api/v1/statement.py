@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from dependencies import (
     require_art9_einwilligung,
+    require_nutzungsbedingungen,
     get_aufrufer,
     get_aussage_themen_service,
     get_statement_service,
@@ -268,7 +269,12 @@ async def themen_liste() -> ThemenResponse:
 # Die Themen einer Aussage von Hand setzen: ersetzt die bisherigen, eine leere
 # Liste entfernt alle. Jede angemeldete Person darf zuordnen; gespeichert wird
 # nicht, wer es war (services/aussage_themen_service.py).
-@router.put("/themen/zuordnen", response_model=ThemenZuordnenResponse)
+# Die Zuordnung sehen alle (Themenfilter): nur mit Zustimmung zu den Nutzungsbedingungen.
+@router.put(
+    "/themen/zuordnen",
+    response_model=ThemenZuordnenResponse,
+    dependencies=[Depends(require_nutzungsbedingungen)],
+)
 async def themen_zuordnen(
     request: ThemenZuordnenRequest,
     user_id: str = Depends(require_user),
@@ -509,6 +515,9 @@ async def add_statement(
 @router.post(
     "/addReplysuggestionToStatement",
     response_model=AddReplysuggestionToStatementResponse,
+    # Haengt einen Beitrag als Antwort an eine Aussage, sichtbar fuer alle: nur mit
+    # Zustimmung zu den Nutzungsbedingungen.
+    dependencies=[Depends(require_nutzungsbedingungen)],
 )
 async def add_replysuggestion_to_statement(
     request: AddReplysuggestionToStatementRequest,

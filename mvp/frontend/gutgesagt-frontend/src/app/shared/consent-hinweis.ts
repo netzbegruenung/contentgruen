@@ -9,26 +9,27 @@ export const CC0_ERKLAERUNG_URL = 'https://creativecommons.org/publicdomain/zero
  * Der CC0-Hinweis ueber dem Absenden-Knopf, gleich in allen Formularen, die etwas fuer
  * andere sichtbar speichern (Einwurf, Kommentar, Hintergrundinfo, Bild, Post,
  * Aussage vorab anlegen in "Hier fehlt eine Antwort"; der Satz beim Destillieren mit eigenem
- * Wortlaut, siehe unten). Er traegt die CC0-Freigabe und bezieht die Nutzungsbedingungen ein
- * (#415). In Teilen, weil "CC0" und "Nutzungsbedingungen" im Template als Links stehen
+ * Wortlaut, siehe unten). Er traegt die CC0-Freigabe und verlinkt die Nutzungsbedingungen;
+ * zugestimmt wird ihnen seit dem Stand vom 20.11.2026 mit dem Haekchen auf /einwilligung
+ * (NB Paragraf 2), nicht mehr mit dem Absenden. In Teilen, weil "CC0" und "Nutzungsbedingungen" im Template als Links stehen
  * (`Cc0HinweisComponent`).
  *
  * Jeder Wortlaut hat eine Kennung, die mit Beitrag, Satz und Einwurf gespeichert wird
  * (#431). Wer den Wortlaut aendert, vergibt eine neue: docs/CC0_HINWEIS_WORTLAUTE.md.
  */
 export const CONSENT_HINWEIS = {
-  kennung: '2026-11-02-formular',
+  kennung: '2026-11-20-formular',
   vorCc0: 'Mit dem Absenden stellst du deine eigene Formulierung unter ',
   cc0: 'CC0',
-  nachCc0: ' und stimmst den ',
+  nachCc0: '; es gelten die ',
   nutzungsbedingungen: 'Nutzungsbedingungen',
-  nachNutzungsbedingungen: ' zu – keine personenbezogenen Daten Dritter.',
+  nachNutzungsbedingungen: ' – keine personenbezogenen Daten Dritter.',
 } as const;
 
 /** Beim Satz gibt es keinen Absenden-Knopf: Er wird beim Tippen gespeichert. */
 export const CONSENT_HINWEIS_SATZ = {
   ...CONSENT_HINWEIS,
-  kennung: '2026-11-02-satz',
+  kennung: '2026-11-20-satz',
   vorCc0: 'Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter ',
 } as const;
 
