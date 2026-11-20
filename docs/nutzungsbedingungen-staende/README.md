@@ -7,10 +7,11 @@ genau einen Text. Geänderte Bedingungen gelten für eine Person erst, wenn sie 
 Häkchen auf `/einwilligung`, bei der ersten Anmeldung und nach jedem wesentlichen Stand neu
 (NB §2 und §10, #731); die App speichert sie mit dem Stand (Schritt 3). Bis dahin kam sie über
 den CC0-Hinweis beim Absenden (NB §2, #415, #521); der Hinweis verlinkt die Bedingungen weiter,
-das Absenden gibt aber nur noch den Text nach §4 frei. Daneben fragt vorerst noch die
-Keycloak-Pflichtaktion „Terms and Conditions“ beim Anmelden (#429), bis sie nach dem Archivieren
-der Zeitpunkte abgeschaltet wird (Folgeschritte in #731). Fällt sie weg, entfallen die Schritte
-5 und 6 unten (`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
+das Absenden gibt aber nur noch den Text nach §4 frei. Bis 0.9.8 fragte daneben die
+Keycloak-Pflichtaktion „Terms and Conditions“ beim Anmelden (#429); sie wird mit 0.9.8
+abgeschaltet, nachdem die Zeitpunkte archiviert sind (Entscheidung Maintainer, 20.11.2026;
+Folgeschritte in #731). Damit entfallen die Schritte 5 und 6 unten
+(`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
 
 Bei der Pflichtaktion speichert Keycloak nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
 zugestimmt hat, ergibt sich deshalb aus diesem Verzeichnis: der Stand, der zu diesem Zeitpunkt
@@ -58,7 +59,7 @@ läuft:
    auslösen (siehe unten). Der Realm gehört nur zu Gut gesagt (#429); in einem geteilten Realm
    träfe das auch Konten, die Gut gesagt nie nutzen.
 
-Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein. Seit dem
+Bis 0.9.8 fragte Keycloak bei der nächsten Anmeldung; wer nicht zustimmte, kam nicht hinein. Seit dem
 Stand vom 20. November 2026 kommt die Zustimmung nach §2 und §10 nur über das Häkchen der App
 (Schritt 3); das Absenden unter dem CC0-Hinweis gibt nur noch den Text nach §4 frei. Wer nicht
 zustimmt, kann mit dem Konto nichts einstellen und nichts bewerten, Lesen bleibt (§10). Die

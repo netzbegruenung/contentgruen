@@ -93,7 +93,9 @@ er nur noch als Möglichkeit.
 20. November 2026 stimmt man den Nutzungsbedingungen mit einem eigenen Häkchen auf `/einwilligung`
 zu, bei der ersten Anmeldung und nach jedem wesentlichen Stand neu (NB §2 und §10); die App
 speichert Zeitpunkt und Stand. Das Absenden unter dem CC0-Hinweis gibt nur noch den Text nach §4
-frei. Die Absätze oben und unter „Offen“ zum CC0-Hinweis als Weg der Zustimmung gelten bis dahin.
+frei. Die Keycloak-Pflichtaktion wird mit 0.9.8 abgeschaltet (Entscheidung Maintainer,
+20.11.2026). Die Absätze oben und unter „Offen“ zum CC0-Hinweis als Weg der Zustimmung und zum
+offenen Wegfall der Pflichtaktion gelten bis dahin.
 
 **CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts`, gezeigt
 von `shared/cc0-hinweis/`, und verlinkt CC0 (seit #415) und die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
@@ -248,7 +250,8 @@ entfernt. Die beiden früher hier geführten inhaltlichen Blocker sind aufgelös
    Prüfliste. Diese Liste ist keine Rechtsberatung und ersetzt sie nicht.
 2. **Die Consent-Frage aus Abschnitt 5** ist entschieden; der Hinweis in den Formularen
    steht (#431) und bezieht die Nutzungsbedingungen ein (#415). Die Zustimmung
-   beim Anmelden (#429) bleibt vorerst daneben, Wegfall offen. Sie berührt den
+   beim Anmelden (#429) wird mit 0.9.8 abgeschaltet (Entscheidung Maintainer, 20.11.2026);
+   seitdem stimmt man per Häkchen in der App zu (#731). Sie berührt den
    Datenschutz an einer Stelle mit: § 25 TDDDG (Prüfliste, Punkt 3).
 3. **Eine USt-IdNr.-Rückfrage** im Impressum (I11).
 
