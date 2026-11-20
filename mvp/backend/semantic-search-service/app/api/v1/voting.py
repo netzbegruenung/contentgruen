@@ -208,12 +208,4 @@ def get_user_votes_batch(
     return voting_service.get_user_votes_for_contents(user_id, content_ids)
 
 
-@router.get("/content/{content_id}/stats")
-def get_vote_stats(
-    content_id: uuid.UUID, voting_service: VotingService = Depends(get_voting_service)
-) -> dict:
-    """Get voting statistics for a content item (likes, dislikes, score)."""
-    return voting_service.get_content_vote_stats(content_id)
-
-
 # Legacy endpoint removed - use DELETE /content/{id}/like or /content/{id}/dislike instead

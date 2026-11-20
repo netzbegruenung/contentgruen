@@ -268,22 +268,3 @@ class VoteRepository:
                     (row.user_id, row.vote_type)
                 )
         return ergebnis
-
-    def get_content_score(
-        self, content_id: uuid.UUID, ausgenommen: Iterable[str] = ()
-    ) -> float:
-        """
-        Calculate a score for a content item based on votes.
-        Returns a value between 0 and 1, where:
-        - 0.5 = neutral (no votes or equal likes/dislikes)
-        - > 0.5 = more likes than dislikes
-        - < 0.5 = more dislikes than likes
-        """
-        counts = self.get_vote_counts(content_id, ausgenommen)
-        total_votes = counts["likes"] + counts["dislikes"]
-
-        if total_votes == 0:
-            return 0.5
-
-        # Simple ratio: likes / total_votes
-        return counts["likes"] / total_votes
