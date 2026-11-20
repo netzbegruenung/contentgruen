@@ -50,7 +50,8 @@ def test_logo_im_kopf_mit_neuem_namen_und_vorhanden():
     pfade = {m for v in vorlagen for m in re.findall(r'src="(marke/[^"]+)"', v.read_text(encoding="utf-8"))}
     assert "marke/logo-v2.svg" in pfade
     assert "marke/logo.svg" not in pfade
-    assert "marke/logo-v2.svg" in _verweise_index()
+    # Das SVG-Favicon ist seit "-v3" das Logo auf dem App-Gelb, nicht mehr das freistehende Logo
+    assert "marke/favicon-v3.svg" in _verweise_index()
     fehlend = sorted(p for p in pfade if not (PUBLIC / p).is_file())
     assert not fehlend, f"genannt, aber nicht unter public/: {fehlend}"
 
@@ -73,6 +74,16 @@ def test_apple_touch_icon_180_ohne_transparenz():
     bild = Image.open(PUBLIC / pfad.group(1))
     assert bild.size == (180, 180)
     assert bild.mode == "RGB"
+
+
+def test_symbolgrund_ist_das_app_gelb():
+    # Startbild (background_color) und Symbolgrund sind das Gelb des Such-Bandes (--kopf, Hellmodus)
+    theme = (FRONTEND / "src/theme/custom-theme.scss").read_text(encoding="utf-8")
+    kopf = re.search(r"--kopf:\s*(#[0-9a-fA-F]{6});", theme).group(1).lower()
+    assert json.loads(MANIFEST.read_text(encoding="utf-8"))["background_color"].lower() == kopf
+    bild = Image.open(PUBLIC / "marke/icon-512-v3.png").convert("RGB")
+    r, g, b = bild.getpixel((2, 2))
+    assert f"#{r:02x}{g:02x}{b:02x}" == kopf
 
 
 def test_manifest_startet_ohne_browserleiste():
