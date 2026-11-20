@@ -130,6 +130,7 @@ export class RouteConfigService {
       case '/about':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.UEBER };
       case '/einladung':
+      case '/einladung/anmelden':
         return { ...defaultConfig, pageTitle: PAGE_TITLES.EINLADUNG };
 
       default:

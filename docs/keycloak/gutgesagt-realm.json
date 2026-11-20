@@ -45,6 +45,7 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "https://bff.gutgesagt.netzbegruenung.de/signin-oidc",
+        "https://gutgesagt.netzbegruenung.de/einladung/anmelden",
         "https://gutgesagt.netzbegruenung.de/"
       ],
       "webOrigins": [],

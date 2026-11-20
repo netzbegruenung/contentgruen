@@ -47,9 +47,12 @@ Platzhalter, vor dem Import ersetzen:
   `<keycloak>/realms/gutgesagt/broker/netzbegruenung/endpoint` ist. Das Secret danach in der
   Oberfläche beim Identity Provider eintragen.
 - Die Adressen von App und BFF in den Redirect-URIs von `gutgesagt`, falls nicht die
-  Produktion gemeint ist. Die Vorlage erlaubt genau zwei: `/signin-oidc` der BFF und die
-  App-Adresse, auf die der Link in der Mail zurückführt (`SEMANTIC_SEARCH_APP_URL`, mit `/`
-  am Ende).
+  Produktion gemeint ist. Die Vorlage erlaubt genau drei, jede exakt (Keycloak vergleicht
+  ohne `*` die ganze Adresse): `/signin-oidc` der BFF; `<app>/einladung/anmelden`, auf die der
+  Link in der Mail nach dem Passwort führt und die gleich die Anmeldung startet; und die
+  App-Adresse selbst (`SEMANTIC_SEARCH_APP_URL`, genau so geschrieben, auch beim `/` am Ende).
+  Fehlt die mittlere, weist Keycloak die Mail ab, und der Semantic-Service schickt sie mit der
+  App-Adresse noch einmal, mit einer Warnung im Log; man meldet sich dann selbst an.
 
 Keycloak erzeugt die Client-Secrets beim Import; sie stehen danach unter *Clients →
 Credentials*.
