@@ -180,7 +180,7 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   Art.-9-Einwilligung.
 - **Betroffene:** alle, die kopieren oder teilen; Mitwirkende, deren Beiträge genutzt werden.
 - **Daten:** Nutzungsereignisse ohne Kennung (Beitrag, Art, Zeitpunkt, Geräteklasse, Fassung);
-  Prüfwert der entdoppelten Nutzung; je Kennung zwei Zählerstände für die Rückmeldung und „Seit deinem letzten Besuch“ (Nutzung, Einwürfe anderer; kein Zeitpunkt, aus dem Einwurf-Stand und `raw_inputs.created_at` nur grob ableitbar, für Admins mit DB-Zugriff); je Person und
+  Prüfwert der entdoppelten Nutzung; je Kennung zwei Zählerstände für die Rückmeldung und „Seit deinem letzten Besuch“ (Nutzung, Einwürfe anderer; kein Zeitpunkt, aus dem Einwurf-Stand und `raw_inputs.created_at` nur grob ableitbar, für Admins mit DB-Zugriff; zwei weitere Zahlen über 7 Tage nur beim Besuch berechnet, nicht gespeichert, #741); je Person und
   Woche ein Prüfwert „Ja, gepostet“, danach nur die Zahl der Woche.
 - **Empfänger:** Zähler an der Karte für alle; die Rückmeldung nur für die Person; Zahlen je
   Woche für Admins.
