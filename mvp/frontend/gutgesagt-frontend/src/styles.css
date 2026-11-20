@@ -395,6 +395,13 @@ body {
 }
 
 /* Materials .mdc-button hebt den globalen Fokusrahmen auf; derselbe Ring wie an den Kacheln */
+/* Als Link (<a mat-stroked-button>) beim Zeigen nicht unterstreichen wie die globale a:hover-Regel:
+   sonst saehe "Fangkorb ansehen" anders aus als der Knopf "Meine Beitraege" */
+.nebenweg-knopf:hover {
+    text-decoration: none;
+}
+
+.nebenweg-knopf.mdc-button:focus-visible,
 .nebenweg-knopf:focus-visible {
     outline: 2px solid var(--akzent-tanne);
     outline-offset: 2px;

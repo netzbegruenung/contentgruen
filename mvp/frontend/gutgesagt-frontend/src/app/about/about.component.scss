@@ -68,7 +68,8 @@
   }
 
   // Der letzte Block eines Abschnitts traegt keinen Abstand nach unten: den setzt der Abschnitt
-  > :last-child {
+  > :last-child,
+  > :last-child > :last-child {
     margin-bottom: 0;
   }
 
@@ -316,7 +317,7 @@ a {
   }
 }
 
-// Erster Abschnitt: Abstand zum Hero wie bisher (Hero unten 16 px + 24 px)
+// Erster Abschnitt: Abstand zum Hero am Desktop wie bisher (Hero unten 16 px + 24 px), mobil 8 + 24 px
 .content-section.zweck {
   padding-top: var(--spacing-lg);
 }

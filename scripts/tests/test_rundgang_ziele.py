@@ -11,6 +11,9 @@ vorkommen: das Element als Komponente im Baum, jede Klasse in einem Template die
 Bei Alternativen (`a, b`, Desktop und Handy) muss jede vorkommen. Ob das Ziel im Browser
 sichtbar ist (z. B. erst nach einer Suche), prueft das nicht; den Rendertest der
 Beitragen-Seite hat contribute-view.component.spec.ts.
+
+Grenzen: Klassen zaehlen im ganzen Baum, nicht je Element; Ziele in Dialogen und Klassen aus
+`[ngClass]` oder `[class]="…"` findet er nicht und meldet sie dann (laut, nicht still).
 """
 
 import pathlib
@@ -62,11 +65,16 @@ def _baum(wurzel: str, index: dict[str, str]) -> dict[str, str]:
         if selektor in gesehen or selektor not in index:
             continue
         gesehen[selektor] = index[selektor]
-        offen.extend(re.findall(r"<(app-[\w-]+)", index[selektor]))
+        offen.extend(re.findall(r"<(app-[\w-]+)", _ohne_kommentare(index[selektor])))
     return gesehen
 
 
+def _ohne_kommentare(template: str) -> str:
+    return re.sub(r"<!--.*?-->", "", template, flags=re.DOTALL)
+
+
 def _klassen(template: str) -> set[str]:
+    template = _ohne_kommentare(template)
     klassen = set()
     for wert in re.findall(r'\bclass="([^"]*)"', template):
         klassen.update(re.sub(r"\{\{.*?\}\}", " ", wert).split())
@@ -125,6 +133,11 @@ def test_jeder_schritt_hat_ein_ziel():
     schritte = _schritte()
     # Antwort finden (5) und Selbst beitragen (5): faellt die Zahl, liest der Test die Datei falsch
     assert len(schritte) >= 10, schritte
+    # Jedes `ziel:` der Rundgaenge wurde gelesen; ein Ziel in doppelten Anfuehrungszeichen,
+    # als Konstante oder zusammengesetzt fiele sonst still heraus
+    text = DATEN.read_text(encoding="utf-8")
+    rundgaenge = text[text.index("export const RUNDGAENGE") :]
+    assert len(schritte) == rundgaenge.count("ziel:"), "Ziel nicht als '…' lesbar"
 
 
 def test_jedes_ziel_steht_auf_seiner_seite():
@@ -147,6 +160,8 @@ def test_findet_ein_umbenanntes_ziel():
     baum = _baum("app-root", index)
     baum.update(_baum(_routen_selektor("/contribute", index), index))
     assert _fehlt(".beitraege-block", baum) == []
+    # Auskommentierte Klassen zaehlen nicht
+    assert ".nur-im-kommentar" not in _klassen('<!-- <p class="nur-im-kommentar"> -->')
     assert _fehlt(".gibt-es-nicht, .beitraege-block", baum) == [
         ".gibt-es-nicht in '.gibt-es-nicht'"
     ]
