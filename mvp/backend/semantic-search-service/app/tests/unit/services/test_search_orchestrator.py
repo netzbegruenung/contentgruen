@@ -245,6 +245,12 @@ async def test_treffer_tragen_die_themen_der_aussage_ueber_die_sie_gefunden_wurd
     assert direkter_treffer.themen == []
     themen_service.themen_von.assert_called_once_with([aussage_id])
 
+    # Nach einem Fehler beim Nachschlagen: None statt leer, nur bei Treffern mit Aussage
+    orchestrator.themen_unbekannt()
+
+    assert ueber_aussage.themen is None
+    assert direkter_treffer.themen == []
+
 
 def _kommentar_treffer(score: float, zweck: Zweck, aussage=None) -> SimpleNamespace:
     return SimpleNamespace(

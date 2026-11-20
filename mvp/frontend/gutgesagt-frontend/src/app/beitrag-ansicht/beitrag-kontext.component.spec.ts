@@ -63,6 +63,28 @@ describe('BeitragKontextComponent (#603)', () => {
     expect(marken).toEqual(['Energie und Heizen']);
   });
 
+  it('bietet ohne bekannte Themen (null oder aelterer Dienst) kein Zuordnen an', async () => {
+    const element = await zeigen({ ...aussage, themen: null });
+    expect(element.querySelector('app-aussage-themen')).toBeNull();
+    fixture.componentRef.setInput('aussage', aussage);
+    fixture.detectChanges();
+    expect(element.querySelector('app-aussage-themen')).toBeNull();
+  });
+
+  it('behaelt geaenderte Themen, solange die Aussage dieselbe bleibt', async () => {
+    await zeigen({ ...aussage, themen: [] });
+    const vorher = fixture.componentInstance.mitThemen!;
+    vorher.themen = [{ schluessel: 'wohnen', name: 'Wohnen' }];
+
+    fixture.componentRef.setInput('weitere', weitere);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.mitThemen).toBe(vorher);
+
+    fixture.componentRef.setInput('aussage', { id: 'a-2', text: 'Andere Aussage', themen: [] });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.mitThemen).toEqual({ statement_id: 'a-2', themen: [] });
+  });
+
   it('laesst die Ueberschrift ohne weitere Antworten weg', async () => {
     const element = await zeigen(aussage, []);
     expect(element.querySelector('.antwort-auf')).not.toBeNull();

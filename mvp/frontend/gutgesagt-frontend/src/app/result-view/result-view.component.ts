@@ -131,14 +131,18 @@ export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null
 
 /**
  * Die erkannte Aussage mit ihren Themen, fuer die Themen an der Zeile "Erkannt als": die
- * Themen traegt jeder ihrer Treffer. null ohne ID (nur Text): dann laesst sich nichts zuordnen.
+ * Themen traegt jeder ihrer Treffer. null ohne ID (nur Text) und ohne bekannte Themen
+ * (null: Nachschlagen gescheitert); ein Zuordnen ersetzte sonst die vorhandenen.
  */
 export function erkannteMitThemen(antwort: SearchResponse, erkannt: ErkannteAussage | null): AussageMitThemenFeld | null {
   if (!erkannt || !istAussageId(erkannt.id)) {
     return null;
   }
   const treffer = alleTreffer(antwort).find((t) => t.statement_id === erkannt.id);
-  return { statement_id: erkannt.id, themen: [...(treffer?.themen ?? [])] };
+  if (!treffer || !Array.isArray(treffer.themen)) {
+    return null;
+  }
+  return { statement_id: erkannt.id, themen: [...treffer.themen] };
 }
 
 /** Der Gruppenschluessel der erkannten Aussage (wie aussageSchluessel); null ohne. */

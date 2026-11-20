@@ -396,6 +396,13 @@ class SearchOrchestrator:
         for result in treffer:
             result.themen = themen_dtos(themen.get(result.statement_id, ()))
 
+    def themen_unbekannt(self) -> None:
+        """Nach einem Fehler beim Nachschlagen: Treffer mit Aussage tragen themen None."""
+        for spec in self._specs.values():
+            for result in self._results[spec.content_type]:
+                if result.statement_id is not None:
+                    result.themen = None
+
     def inhalte(self) -> List:
         """Die Beitraege aller Treffer, als Response-DTOs."""
         return [

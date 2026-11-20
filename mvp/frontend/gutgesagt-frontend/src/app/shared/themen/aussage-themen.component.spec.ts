@@ -100,6 +100,62 @@ describe('AussageThemenComponent', () => {
     expect(e.querySelector('.themen-speichert')).toBeNull();
   });
 
+  it('nennt die Marken als Liste „Themen“ fuer Screenreader', () => {
+    const e = zeigen({ statement_id: 'a-1', themen: [KLIMA, VERKEHR] }, false);
+
+    const liste = e.querySelector('[role="list"]')!;
+    expect(liste.getAttribute('aria-label')).toBe('Themen');
+    expect(liste.querySelectorAll('[role="listitem"]').length).toBe(2);
+  });
+
+  it('speichert zwei schnelle Klicks der Reihe nach; der letzte gilt, der Spinner bleibt bis zum Ende', () => {
+    const e = zeigen({ statement_id: 'a-1', themen: [] }, true);
+    umschalter(e)!.click();
+    fixture.detectChanges();
+
+    chip(e, 'Klima').click();
+    fixture.detectChanges();
+    chip(e, 'Wohnen').click();
+    fixture.detectChanges();
+    expect(marken(e)).toEqual(['Klima', 'Wohnen']);
+
+    const erste = http.expectOne(ZUORDNEN_URL);
+    expect(erste.request.body.themen).toEqual(['klima']);
+    erste.flush({ statement_id: 'a-1', themen: [KLIMA] });
+    fixture.detectChanges();
+    expect(e.querySelector('.themen-speichert')).withContext('zweiter Auftrag noch offen').not.toBeNull();
+    expect(marken(e)).toEqual(['Klima', 'Wohnen']);
+
+    const zweite = http.expectOne(ZUORDNEN_URL);
+    expect(zweite.request.body.themen).toEqual(['klima', 'wohnen']);
+    zweite.flush({ statement_id: 'a-1', themen: [KLIMA, WOHNEN] });
+    fixture.detectChanges();
+
+    expect(e.querySelector('.themen-speichert')).toBeNull();
+    expect(marken(e)).toEqual(['Klima', 'Wohnen']);
+    expect(e.querySelector('[aria-live="polite"]')?.textContent?.trim()).toBe('Themen gespeichert.');
+  });
+
+  it('beginnt bei einer anderen Aussage zugeklappt und ohne Fehler', () => {
+    const e = zeigen({ statement_id: 'a-1', themen: [KLIMA] }, true);
+    umschalter(e)!.click();
+    fixture.detectChanges();
+    chip(e, 'Verkehr').click();
+    fixture.detectChanges();
+    http.expectOne(ZUORDNEN_URL).flush({}, { status: 500, statusText: 'Fehler' });
+    fixture.detectChanges();
+    expect(e.querySelector('[role="alert"]')).not.toBeNull();
+
+    fixture.componentRef.setInput('aussage', { statement_id: 'a-2', themen: [WOHNEN] });
+    fixture.detectChanges();
+
+    expect(marken(e)).toEqual(['Wohnen']);
+    expect(e.querySelector('.themen-bearbeiten')).toBeNull();
+    expect(e.querySelector('[role="alert"]')).toBeNull();
+    expect(umschalter(e)!.getAttribute('aria-expanded')).toBe('false');
+    expect(umschalter(e)!.hasAttribute('aria-controls')).toBeFalse();
+  });
+
   it('nimmt nach dem Abmelden den Umschalter weg', () => {
     const e = zeigen({ statement_id: 'a-1', themen: [KLIMA] }, true);
     expect(umschalter(e)).not.toBeNull();

@@ -119,12 +119,19 @@ export class BeitragKontextComponent implements OnChanges {
   @Input() aussage: AussageKurz | null = null;
   @Input() weitere: WeitereAntwort[] = [];
 
-  /** Einmal je Aussage gebildet: app-aussage-themen aendert darin die Themen. */
+  /**
+   * Einmal je Aussage gebildet: app-aussage-themen aendert darin die Themen. null ohne
+   * bekannte Themen (nicht nachschlagbar oder aelterer Dienst): kein Zuordnen, das die
+   * vorhandenen ersetzte.
+   */
   mitThemen: AussageMitThemenFeld | null = null;
 
   ngOnChanges(): void {
-    if (this.aussage?.id !== this.mitThemen?.statement_id) {
-      this.mitThemen = this.aussage ? { statement_id: this.aussage.id, themen: [...(this.aussage.themen ?? [])] } : null;
+    const themen = this.aussage?.themen;
+    if (!this.aussage || !Array.isArray(themen)) {
+      this.mitThemen = null;
+    } else if (this.aussage.id !== this.mitThemen?.statement_id) {
+      this.mitThemen = { statement_id: this.aussage.id, themen: [...themen] };
     }
   }
 

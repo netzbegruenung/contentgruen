@@ -12,8 +12,11 @@ import { Thema } from './dtos/themenDtos';
 export interface AussageKurz {
   id: string;
   text: string;
-  /** Die Themen der Aussage, in der Reihenfolge der Liste; fehlt bei aelteren Diensten. */
-  themen?: Thema[];
+  /**
+   * Die Themen der Aussage, in der Reihenfolge der Liste. null: nicht nachschlagbar;
+   * fehlt bei aelteren Diensten. In beiden Faellen bietet die Seite kein Zuordnen an.
+   */
+  themen?: Thema[] | null;
 }
 
 /** Eine weitere sichtbare Antwort zu dieser Aussage (#603): nur, was die Liste zeigt. */

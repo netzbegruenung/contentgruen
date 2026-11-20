@@ -561,8 +561,13 @@ describe('erkannteMitThemen', () => {
   });
 
   it('gibt eine Aussage ohne Themen mit leerer Liste', () => {
-    const a = antwort([{ score: 0.9, statement_id: ID, statement_text: 'A' }]);
+    const a = antwort([{ score: 0.9, statement_id: ID, statement_text: 'A', themen: [] }]);
     expect(erkannteMitThemen(a, { id: ID, text: 'A' })).toEqual({ statement_id: ID, themen: [] });
+  });
+
+  it('gibt null, wenn die Themen nicht nachschlagbar waren (null)', () => {
+    const a = antwort([{ score: 0.9, statement_id: ID, statement_text: 'A', themen: null }]);
+    expect(erkannteMitThemen(a, { id: ID, text: 'A' })).toBeNull();
   });
 
   it('gibt null ohne erkannte Aussage oder ohne ihre ID', () => {
@@ -699,6 +704,34 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
 
   /** Die Aufklapp-Knoepfe der eingeklappten Karten. */
   const aufklapper = (seite: Element) => Array.from(seite.querySelectorAll<HTMLButtonElement>('.aufklapp-knopf'));
+
+  describe('Themen der erkannten Aussage', () => {
+    const KLIMA = { schluessel: 'klima', name: 'Klima' };
+    const WOHNEN = { schluessel: 'wohnen', name: 'Wohnen' };
+
+    function themenListeLaden(): void {
+      TestBed.inject(HttpTestingController)
+        .match((r) => r.url.endsWith('/api/v1/statement/themen'))
+        .forEach((r) => r.flush({ themen: [KLIMA, WOHNEN] }));
+      neuZeichnen();
+    }
+
+    it('zeigt sie unter "Erkannt als", angemeldet mit "Themen ändern"', async () => {
+      const seite = await oeffnen(false, antwort({ k: [{ ...erkannt('commentary', 'k-1', 0.9), themen: [KLIMA, WOHNEN] }] }));
+      themenListeLaden();
+
+      const themen = seite.querySelector('.erkannt-themen')!;
+      expect(texte(themen, '.thema-marke')).toEqual(['Klima', 'Wohnen']);
+      expect(text(themen.querySelector('.themen-umschalter'))).toBe('Themen ändern');
+    });
+
+    it('bietet ohne bekannte Themen (null) kein Zuordnen an', async () => {
+      const seite = await oeffnen(false, antwort({ k: [{ ...erkannt('commentary', 'k-1', 0.9), themen: null }] }));
+      themenListeLaden();
+
+      expect(seite.querySelector('app-aussage-themen')).toBeNull();
+    });
+  });
 
   for (const mobil of [false, true]) {
     const wo = mobil ? 'Handy' : 'Desktop';

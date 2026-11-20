@@ -31,8 +31,9 @@ class AussageKurz:
     id: uuid.UUID
     text: str
     # Schluessel der Themen in der Reihenfolge der Liste; die Seite zeigt sie und
-    # bietet Angemeldeten das Zuordnen an (themen_ergaenzen).
-    themen: List[str] = field(default_factory=list)
+    # bietet Angemeldeten das Zuordnen an (themen_ergaenzen). None: nicht
+    # nachschlagbar, dann kein Zuordnen (es ersetzte die vorhandenen Themen).
+    themen: Optional[List[str]] = field(default_factory=list)
 
 
 @dataclass
@@ -46,11 +47,17 @@ class BeitragKontext:
                 {
                     "id": str(self.aussage.id),
                     "text": self.aussage.text,
-                    "themen": [
-                        {"schluessel": t.schluessel, "name": t.name}
-                        for t in (NACH_SCHLUESSEL.get(s) for s in self.aussage.themen)
-                        if t is not None
-                    ],
+                    "themen": (
+                        None
+                        if self.aussage.themen is None
+                        else [
+                            {"schluessel": t.schluessel, "name": t.name}
+                            for t in (
+                                NACH_SCHLUESSEL.get(s) for s in self.aussage.themen
+                            )
+                            if t is not None
+                        ]
+                    ),
                 }
                 if self.aussage
                 else None

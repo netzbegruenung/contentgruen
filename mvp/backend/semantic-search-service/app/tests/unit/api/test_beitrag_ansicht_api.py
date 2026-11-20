@@ -337,7 +337,9 @@ class TestBeitragKontext:
         body = client.get(URL).json()
 
         assert body["aussage"]["text"] == "Wärmepumpen taugen nichts im Altbau"
-        assert body["aussage"]["themen"] == []
+        # None, nicht leer: Leer saehe aus wie "keine Themen", und ein Klick auf
+        # "Themen zuordnen" ersetzte die vorhandenen.
+        assert body["aussage"]["themen"] is None
 
     def test_stoerung_beim_nachschlagen_laesst_die_seite_stehen(self, client, aussagen):
         aussagen.zu_antwort.side_effect = RuntimeError("Qdrant weg")

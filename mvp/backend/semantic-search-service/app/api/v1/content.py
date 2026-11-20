@@ -373,8 +373,11 @@ async def beitrag_ansehen(
     try:
         themen_ergaenzen(kontext, themen_service)
     except Exception as e:
-        # Ohne Themen bleibt die Aussage stehen; die Seite zeigt dann keine.
+        # Die Aussage bleibt stehen; themen None, damit die Seite kein Zuordnen
+        # anbietet (es ersetzte die vorhandenen Themen).
         logger.warning(f"Themen zu /beitrag nicht ladbar: {type(e).__name__}")
+        if kontext.aussage is not None:
+            kontext.aussage.themen = None
     return {
         **antwort.model_dump(mode="json"),
         "user_vote": stimme,

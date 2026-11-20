@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -16,6 +25,8 @@ let naechsteId = 0;
  * wie in „Hier fehlt eine Antwort“: Der Umschalter klappt die Themenauswahl auf, jeder
  * Klick speichert gleich (ThemenService.aendern), ein Spinner zeigt das Speichern.
  * Abgemeldete sehen nur die Marken; ohne Themen zeigt die Komponente ihnen nichts.
+ * Sind die Themen unbekannt (Nachschlagen gescheitert), uebergibt die Seite keine Aussage:
+ * Ein Klick auf „Themen zuordnen“ ersetzte sonst die vorhandenen.
  */
 @Component({
   selector: 'app-aussage-themen',
@@ -25,9 +36,11 @@ let naechsteId = 0;
   template: `
     <ng-container *ngIf="aussage as a">
       <div class="aussage-themen" *ngIf="a.themen.length || bearbeitbar">
-        <span *ngFor="let thema of a.themen" class="thema-marke">{{ thema.name }}</span>
+        <span *ngIf="a.themen.length" class="marken" role="list" aria-label="Themen">
+          <span *ngFor="let thema of a.themen" class="thema-marke" role="listitem">{{ thema.name }}</span>
+        </span>
         <button *ngIf="bearbeitbar" type="button" class="themen-umschalter"
-                [attr.aria-expanded]="offen" [attr.aria-controls]="id"
+                [attr.aria-expanded]="offen" [attr.aria-controls]="offen ? id : null"
                 (click)="umschalten()">{{ a.themen.length ? 'Themen ändern' : 'Themen zuordnen' }}</button>
         <mat-spinner *ngIf="speichert" class="themen-speichert" diameter="16"
                      aria-label="Themen werden gespeichert"></mat-spinner>
@@ -38,6 +51,7 @@ let naechsteId = 0;
                             (gewaehltChange)="setzen(a, $event)"></app-themen-auswahl>
         <p *ngIf="fehler" class="themen-fehler" role="alert">{{ fehler }}</p>
       </div>
+      <span class="visually-hidden" aria-live="polite">{{ ansage }}</span>
     </ng-container>
   `,
   styles: [
@@ -46,7 +60,8 @@ let naechsteId = 0;
         display: block;
       }
 
-      .aussage-themen {
+      .aussage-themen,
+      .marken {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -98,7 +113,7 @@ let naechsteId = 0;
     `,
   ],
 })
-export class AussageThemenComponent implements OnInit {
+export class AussageThemenComponent implements OnInit, OnChanges {
   /** Die Aussage mit ihren Themen; die Komponente aendert `themen` beim Speichern. */
   @Input() aussage: AussageMitThemenFeld | null = null;
 
@@ -107,6 +122,8 @@ export class AussageThemenComponent implements OnInit {
   offen = false;
   speichert = false;
   fehler: string | null = null;
+  /** Fuer Screenreader, wenn alles gespeichert ist. */
+  ansage = '';
   readonly id = `aussage-themen-${naechsteId++}`;
 
   constructor(
@@ -115,6 +132,17 @@ export class AussageThemenComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private destroyRef: DestroyRef,
   ) {}
+
+  /** Eine andere Aussage (neue Suche) beginnt zugeklappt, ohne Fehler und Spinner der vorigen. */
+  ngOnChanges(changes: SimpleChanges): void {
+    const vorher = changes['aussage']?.previousValue as AussageMitThemenFeld | null | undefined;
+    if (vorher && vorher.statement_id !== this.aussage?.statement_id) {
+      this.offen = false;
+      this.fehler = null;
+      this.speichert = false;
+      this.ansage = '';
+    }
+  }
 
   ngOnInit(): void {
     this.authService.userInfo$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((info) => {
@@ -161,13 +189,21 @@ export class AussageThemenComponent implements OnInit {
   setzen(aussage: AussageMitThemenFeld, schluessel: string[]): void {
     this.fehler = null;
     this.speichert = true;
+    this.ansage = '';
     this.themenService.aendern(
       aussage,
       schluessel,
       this.liste,
       () => (this.fehler = THEMEN_NICHT_GESPEICHERT),
       (offen) => {
+        // Nur fuer die angezeigte Aussage: Eine Antwort zur vorigen setzt hier nichts
+        if (aussage !== this.aussage) {
+          return;
+        }
         this.speichert = offen > 0;
+        if (offen === 0 && !this.fehler) {
+          this.ansage = 'Themen gespeichert.';
+        }
         this.cdr.markForCheck();
       },
     );
