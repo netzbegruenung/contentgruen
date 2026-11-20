@@ -50,36 +50,37 @@ Admin-Schnittstelle nie schreibbar und nur lesbar ist, solange die Pflichtaktion
 (`DeclarativeUserProfileProviderFactory.createUserResourceValidation`). Exportieren
 (`mvp/scripts/manual/keycloak_nb_zeitpunkte.py`) geht deshalb nur vorher, Löschen nur in der
 Datenbank von Keycloak (Tabellen `USER_ATTRIBUTE`, `USER_ENTITY`, `REALM`; die Befehle sind für
-PostgreSQL, Tabellennamen klein), nach dem Archivieren und dem Abschalten. Erst zählen: Die Summe
-muss gleich „mit Zeitpunkt“ plus „ohne lesbare Zahl“ aus dem letzten Lauf des Exportskripts sein
-(Werte in Großschreibung liest das Skript nicht; stehen welche da, erst klären), sonst nicht
-löschen:
+PostgreSQL, Tabellennamen klein), nach dem Archivieren und dem Abschalten, eingeschränkt auf den
+Realm `gutgesagt` und das Attribut `terms_and_conditions`. In `psql` in der Datenbank von Keycloak,
+gestartet nach `umask 077` (damit die Sicherung 0600 wird):
 
-```sql
-SELECT name, count(*) FROM user_attribute
-WHERE name IN ('terms_and_conditions', 'TERMS_AND_CONDITIONS')
-  AND user_id IN (SELECT id FROM user_entity
-                  WHERE realm_id = (SELECT id FROM realm WHERE name = 'gutgesagt'))
-GROUP BY name;
-```
+1. Vorher die betroffenen Zeilen sichern (Personendaten; Datei 0600, nach erfolgreichem Abschluss
+   löschen, das Archiv aus dem Exportskript bleibt):
 
-Dann löschen, in einer Transaktion (`DELETE n` muss die Summe von eben sein, sonst `ROLLBACK;`):
+   ```sql
+   \copy (SELECT ua.* FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions') TO 'terms_and_conditions-zeilen.csv' WITH CSV HEADER
+   ```
 
-```sql
-BEGIN;
-DELETE FROM user_attribute
-WHERE name IN ('terms_and_conditions', 'TERMS_AND_CONDITIONS')
-  AND user_id IN (SELECT id FROM user_entity
-                  WHERE realm_id = (SELECT id FROM realm WHERE name = 'gutgesagt'));
-COMMIT;
-```
+2. In einer Transaktion zählen, löschen, nachzählen. Die erste Zahl muss gleich „mit Zeitpunkt“
+   plus „ohne lesbare Zahl“ aus dem letzten Lauf des Exportskripts sein und `DELETE n` gleich ihr,
+   die zweite 0; sonst `ROLLBACK;` statt `COMMIT;`:
+
+   ```sql
+   BEGIN;
+   SELECT count(*) FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions';
+   DELETE FROM user_attribute ua USING user_entity ue, realm r WHERE ue.id = ua.user_id AND r.id = ue.realm_id AND r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions';
+   SELECT count(*) FROM user_attribute ua JOIN user_entity ue ON ue.id = ua.user_id JOIN realm r ON r.id = ue.realm_id WHERE r.name = 'gutgesagt' AND ua.name = 'terms_and_conditions';
+   COMMIT;
+   ```
 
 Derselbe Zeitpunkt kann noch an zwei Stellen stehen, wenn der Realm Ereignisse speichert (die
 Vorlage schaltet das nicht ein): Login-Ereignisse `CUSTOM_REQUIRED_ACTION` in `EVENT_ENTITY` und
 Admin-Ereignisse mit Darstellung in `ADMIN_EVENT_ENTITY`. Ist *Realm settings → Events → Save
 events* an, gehen sie mit der Frist der übrigen Ereignisse; sonst ist nichts zu tun.
 
-(Die Großschreibung hat Keycloak 21.0.0 kurz verwendet, `TermsAndConditions.processAction`.)
+(Eine Schreibweise `TERMS_AND_CONDITIONS` aus Keycloak 21.0.0 bleibt bewusst außen vor; sie
+liest auch das Exportskript nicht.)
+
 Danach den Benutzer-Cache leeren, sonst liefert Keycloak die alten Werte aus dem Cache: in der
 Admin-Konsole im Realm `master`, Benutzermenü oben rechts → *Clear Caches* → *User Cache* →
 *Clear* (braucht `manage-realm`, das Dienstkonto `gutgesagt-einladungen` hat es nicht).
