@@ -5,6 +5,7 @@ import {
   KEIN_FILTER,
   OHNE_THEMA,
   abschnittStand,
+  beitraegeInThemen,
   abschnitte,
   albumEintrag,
   filterAktiv,
@@ -168,6 +169,14 @@ describe('Album (album.ts)', () => {
     it('liefert null, wenn alle erreicht sind oder es keine gibt', () => {
       expect(naechsterMeilenstein([m('a', 'wirkung', 1, 1, true)])).toBeNull();
       expect(naechsterMeilenstein([])).toBeNull();
+    });
+  });
+
+  describe('beitraegeInThemen', () => {
+    it('nennt Beitraege und Themen in Ein- und Mehrzahl', () => {
+      expect(beitraegeInThemen({ beitraege: 244, nutzung: 0, dieseWoche: 0, themen: 12 })).toBe('244 Beiträge in 12 Themen');
+      expect(beitraegeInThemen({ beitraege: 1, nutzung: 0, dieseWoche: 0, themen: 1 })).toBe('1 Beitrag in 1 Thema');
+      expect(beitraegeInThemen({ beitraege: 3, nutzung: 0, dieseWoche: 0, themen: 0 })).toBe('3 Beiträge');
     });
   });
 });

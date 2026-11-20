@@ -87,14 +87,13 @@ function nutzungsZeile(label: string, nutzung: number, zuwachs: number): Nutzung
 }
 
 /**
- * Die eine Karte fuer Beitraege, in vier Varianten (siehe KartenVariante).
+ * Die eine Karte fuer Beitraege, in drei Varianten (siehe KartenVariante).
  *
  * Die Karte kennt keine Datenquelle, nur KartenDaten; die Adapter in karten-daten.ts
  * bringen Suche, Meine Beitraege und Fangkorb darauf. Abstimmen, Kopieren und Melden
  * stecken in app-karten-aktionen und erscheinen nur in der vollen Variante.
  *
- * Die volle Karte hat Knoepfe und ist deshalb selbst kein Tipp-Ziel. Kompakte Karten
- * sind als Ganzes antippbar und melden das ueber `angetippt`. Die Einwurf-Karte traegt
+ * Die volle Karte hat Knoepfe und ist deshalb selbst kein Tipp-Ziel. Die Einwurf-Karte traegt
  * statt eines Flaechentipps genau einen Primaerknopf und ein ⋮-Menue und meldet
  * beides ueber `aktion`; wohin es geht, entscheidet die Seite.
  *
@@ -195,8 +194,6 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    */
   @Input() eigenesAlbum = false;
 
-  /** Tipp auf eine antippbare Karte (kompakt). */
-  @Output() angetippt = new EventEmitter<KartenDaten>();
   /** Primaerknopf oder Menueeintrag auf einer Einwurf-Karte. */
   @Output() aktion = new EventEmitter<EinwurfAktion>();
   /** Guete oder Nutzung haben sich an dieser Karte geaendert (Stimme, Kopieren). */
@@ -336,9 +333,6 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.variante === 'voll';
   }
 
-  get istKompakt(): boolean {
-    return this.variante === 'kompakt';
-  }
 
   get istKopf(): boolean {
     return this.variante === 'kopf';
@@ -515,14 +509,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return eintraege;
   }
 
-  /** Kompakt steht ohne Titel (Altbestand) der Text im Titelfeld. */
   get titelAnzeige(): string | null {
-    return this.istKompakt ? this.daten.titel || this.daten.text : this.daten.titel;
-  }
-
-  /** Bild im Kopfband, nur im Album; die volle Karte zeigt ihr Bild im Inhalt. */
-  get kopfBild(): string | null {
-    return this.istKompakt ? (this.daten.bildUrl ?? null) : null;
+    return this.daten.titel;
   }
 
   /**
@@ -534,31 +522,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return (this.nutzung ?? 0) >= 1 && !this.vorschau;
   }
 
-  /**
-   * Die Nutzung im Fuss der kompakten Karte, ausgeschrieben statt nur "3×": in Meine
-   * Beitraege soll man ohne Tooltip lesen koennen, was die Zahl heisst.
-   */
-  get albumNutzung(): string {
-    const nutzung = this.nutzung ?? 0;
-    return nutzung ? `${nutzung}× genutzt` : 'Noch nicht genutzt';
-  }
-
   /** Text des Nutzungs-Badges fuer alle Varianten, "3×"; unbekannt zaehlt als 0. */
   get nutzungAnzeige(): string {
     return `${this.nutzung ?? 0}×`;
-  }
-
-  /** Anriss im Album: der Text unter dem Titel; ohne Titel steht er schon im Titelfeld. */
-  get anriss(): string | null {
-    return this.daten.titel ? this.daten.text : null;
-  }
-
-  get antippbar(): boolean {
-    return this.istKompakt;
-  }
-
-  get beschriftung(): string {
-    return `${this.typName}: ${this.titelAnzeige ?? ''}`;
   }
 
   /** Am Kommentar (#357): der Stil als Wort, sonst null. */
@@ -788,12 +754,6 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   /** Eine UUID ohne Adresse zeigt die Vorschau als "Herkunft n" statt als Kennung. */
   quellenName(id: string, index: number): string {
     return /^[0-9a-f-]{36}$/i.test(id) ? `Herkunft ${index + 1}` : id;
-  }
-
-  antippen(): void {
-    if (this.antippbar) {
-      this.angetippt.emit(this.daten);
-    }
   }
 
   /** Knoepfe auf der Einwurf-Karte melden nur, was gewollt ist - wohin es fuehrt, weiss die Seite. */

@@ -3,7 +3,8 @@
          [class.deckel--mit-meilenstein]="naechsterMeilenstein" aria-labelledby="album-deckel-titel">
     <h2 id="album-deckel-titel" class="cdk-visually-hidden">Dein Album in Zahlen</h2>
     <div class="deckel-zahlen">
-        <ul class="zahlen">
+        <p class="beitraege-gross" *ngIf="beitraegeGross" data-testid="beitraege-gross">{{ beitraegeSatz }}</p>
+        <ul class="zahlen" *ngIf="!beitraegeGross">
             <li class="zahl">
                 <span class="zahl-wert">{{ zahlen.beitraege }}</span>
                 <span class="zahl-name">{{ zahlen.beitraege === 1 ? 'Beitrag' : 'Beiträge' }}</span>

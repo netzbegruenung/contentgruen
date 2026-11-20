@@ -219,3 +219,15 @@ export function naechsterMeilenstein(meilensteine: Meilenstein[]): Meilenstein |
     return unterschied === 0 && m.art === 'wirkung' && bester.art !== 'wirkung' ? m : bester;
   }, null);
 }
+
+/**
+ * Der große Satz im Deckel ohne Nutzung und ohne Meilensteine (keine Punkte oder keine
+ * Einwilligung, Entscheidung Sebastian 20.11.): „244 Beiträge in 12 Themen“ statt „0× genutzt“.
+ */
+export function beitraegeInThemen(zahlen: AlbumKennzahlen): string {
+  const beitraege = zahlen.beitraege === 1 ? '1 Beitrag' : `${zahlen.beitraege} Beiträge`;
+  if (!zahlen.themen) {
+    return beitraege;
+  }
+  return `${beitraege} in ${zahlen.themen === 1 ? '1 Thema' : `${zahlen.themen} Themen`}`;
+}

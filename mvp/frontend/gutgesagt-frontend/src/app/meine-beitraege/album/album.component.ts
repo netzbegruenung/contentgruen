@@ -34,6 +34,7 @@ import {
   KEIN_FILTER,
   SUCHE_AB,
   abschnittStand,
+  beitraegeInThemen,
   abschnitte,
   filterAktiv,
   filtern,
@@ -50,7 +51,8 @@ export const SUCHE_WARTEN_MS = 150;
  * Das Album in „Meine Beiträge“ (Variante A „Album nach Thema“, Sebastian und Aila 20.11.).
  *
  * Oben der Deckel mit drei Zahlen und dem Wirkungssatz. Ohne jede Nutzung steht statt
- * „0× genutzt“ der nächste Meilenstein groß mit Balken (Entscheidung 20.11.).
+ * „0× genutzt“ der nächste Meilenstein groß mit Balken, ohne Meilensteine (Punkte aus
+ * oder keine Einwilligung) groß „244 Beiträge in 12 Themen“ (Entscheidungen 20.11.).
  *
  * Darunter eine klebende Suche über die eigenen Beiträge mit Filtern Thema, Stil und
  * „genutzt“ und der Trefferzahl. Sie läuft im Browser: Die Seite lädt ohnehin alle
@@ -208,6 +210,18 @@ export class AlbumComponent implements OnChanges, AfterViewInit, OnDestroy {
   /** Ohne jede Nutzung: der nächste Meilenstein groß statt „0× genutzt“ (Entscheidung 20.11.). */
   get meilensteinGross(): boolean {
     return this.zahlen.nutzung === 0 && this.naechsterMeilenstein !== null;
+  }
+
+  /**
+   * Ohne Nutzung und ohne Meilenstein (Punkte aus oder keine Einwilligung): statt der drei
+   * Zahlen mit „0× genutzt“ groß „244 Beiträge in 12 Themen“ (Entscheidung 20.11.).
+   */
+  get beitraegeGross(): boolean {
+    return this.zahlen.nutzung === 0 && this.naechsterMeilenstein === null;
+  }
+
+  get beitraegeSatz(): string {
+    return beitraegeInThemen(this.zahlen);
   }
 
   get meilensteinProzent(): number {

@@ -115,11 +115,21 @@ describe('AlbumComponent', () => {
       expect(text('[data-testid="nutzung-leer"]')).toContain('Genutzt heißt');
     });
 
-    it('zeigt ohne Meilensteine (keine Einwilligung) auch bei 0 die Zahl', () => {
+    it('zeigt ohne Meilensteine (keine Einwilligung) bei 0 Nutzungen gross die Beitraege statt „0×“', () => {
       erstellen(viele(4), null);
 
-      expect(text('[data-testid="zahl-genutzt"]')).toContain('0×');
+      expect(text('[data-testid="beitraege-gross"]')).toBe('4 Beiträge in 3 Themen');
+      expect(el().querySelector('[data-testid="zahl-genutzt"]')).toBeNull();
+      expect(el().querySelector('.zahlen')).toBeNull();
       expect(el().querySelector('[data-testid="naechster-meilenstein"]')).toBeNull();
+      expect(text('.wirkung')).toBe('Deine 4 Beiträge wurden noch nicht genutzt.');
+    });
+
+    it('zeigt ohne Meilensteine mit Nutzung die drei Zahlen wie sonst', () => {
+      erstellen(viele(4, (i) => ({ usage_count: i })), null);
+
+      expect(el().querySelector('[data-testid="beitraege-gross"]')).toBeNull();
+      expect(text('[data-testid="zahl-genutzt"]')).toContain('6×');
     });
   });
 

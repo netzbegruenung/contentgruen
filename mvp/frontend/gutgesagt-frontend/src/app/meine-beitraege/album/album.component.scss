@@ -47,6 +47,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+// Ohne Nutzung und ohne Meilenstein: die Beitraege gross statt „0× genutzt“
+.beitraege-gross {
+  margin: 0;
+  font-family: GrueneType, PTSans, Roboto, sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--band-akzent-schrift);
+}
+
 .zahl-name {
   font-size: 14px;
   line-height: 1.3;
