@@ -29,11 +29,11 @@ logger = get_logger(__name__)
 
 # Pflichtaktionen jedes neuen Kontos: keine. Die Nutzungsbedingungen fragt seit 0.9.8 die
 # App auf /einwilligung (domain/nutzungsbedingungen.py), die Keycloak-Pflichtaktion
-# "Terms and Conditions" wird danach abgeschaltet (docs/KEYCLOAK_REALM.md). Ein Konto mit
-# einer Pflichtaktion, die der Realm nicht kennt, weist Keycloak ab; deshalb steht sie
-# hier nicht mehr, bevor sie im Realm abgeschaltet wird.
+# "Terms and Conditions" wird danach abgeschaltet (docs/KEYCLOAK_REALM.md). Solange sie im
+# Realm noch Default action ist, haengt Keycloak sie beim Anlegen selbst an; die
+# Loeschfrist erkennt solche Konten trotzdem an UPDATE_PASSWORD.
 PFLICHTAKTIONEN: List[str] = []
-# Die Pflichtaktion der Nutzungsbedingungen bis 0.9.8: Konten von davor tragen sie noch,
+# Die Pflichtaktion der Nutzungsbedingungen bis 0.9.8: aeltere Konten tragen sie noch,
 # solange ihr Link nie geoeffnet wurde (nie_benutzte_loeschen).
 ALTE_NB_PFLICHTAKTION = "TERMS_AND_CONDITIONS"
 # Ein Konto aus einer Einladung traegt dazu "Passwort festlegen" als Pflichtaktion am
@@ -360,8 +360,8 @@ class KeycloakKonten:
         Provider, und dazu eines von beiden:
 
         - Die Mail-Adresse ist nicht bestaetigt und die alte Pflichtaktion
-          ALTE_NB_PFLICHTAKTION steht noch aus: ein Konto von vor 0.9.8, dessen Link
-          niemand geoeffnet hat.
+          ALTE_NB_PFLICHTAKTION steht noch aus: ein aelteres Konto, dessen Link niemand
+          geoeffnet hat.
         - "Passwort festlegen" steht noch am Konto (EINLADUNG_PFLICHTAKTIONEN): Den Link
           hat jemand geoeffnet und bestaetigt (VERIFY_EMAIL in MAIL_AKTIONEN bestaetigt
           dabei die Adresse), aber nie ein Passwort gesetzt; seit 0.9.8 auch, wenn den
@@ -432,7 +432,7 @@ def _sieht_nie_benutzt_aus(konto: Mapping[str, object]) -> bool:
     # noch UPDATE_PASSWORD.
     if "UPDATE_PASSWORD" in aktionen:
         return True
-    # Konten aus Einladungen von vor 0.9.8 tragen kein UPDATE_PASSWORD am Konto, aber die
+    # Konten aus Einladungen von vor #730 tragen kein UPDATE_PASSWORD am Konto, aber die
     # alte Pflichtaktion, solange der Link nie geoeffnet wurde.
     return ALTE_NB_PFLICHTAKTION in aktionen and konto.get("emailVerified") is False
 

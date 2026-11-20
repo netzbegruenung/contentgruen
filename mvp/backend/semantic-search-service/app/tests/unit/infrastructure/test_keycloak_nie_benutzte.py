@@ -224,6 +224,11 @@ def test_seit_0_9_8_ohne_nutzungsbedingungen_am_konto():
     keycloak = Keycloak(
         [
             _konto("nie-geoeffnet", requiredActions=["UPDATE_PASSWORD"]),
+            # Uebergangszeit: Keycloak haengt die noch eingeschaltete Default action an.
+            _konto(
+                "uebergang",
+                requiredActions=["TERMS_AND_CONDITIONS", "UPDATE_PASSWORD"],
+            ),
             _konto("ohne-aktion", requiredActions=[]),
             _konto("beta-neu", emailVerified=True, requiredActions=[]),
         ]
@@ -231,5 +236,5 @@ def test_seit_0_9_8_ohne_nutzungsbedingungen_am_konto():
 
     anzahl = _konten(keycloak).nie_benutzte_loeschen(GRENZE)
 
-    assert anzahl == 1
-    assert keycloak.geloescht() == ["nie-geoeffnet"]
+    assert anzahl == 2
+    assert keycloak.geloescht() == ["nie-geoeffnet", "uebergang"]

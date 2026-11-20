@@ -37,8 +37,8 @@ Standardliste von Keycloak, und was fehlt, gäbe es danach im Realm nicht.
   eigenem Häkchen und speichert die Zustimmung mit Stand (`docs/ART9_EINWILLIGUNG.md`); neue
   Konten bekommen keine Pflichtaktion mehr (`PFLICHTAKTIONEN` in
   `infrastructure/keycloak_konten.py` ist leer). Ein bestehender Realm schaltet sie am
-  Rollout-Tag ab, erst nachdem 0.9.8 live ist und die Zeitpunkte archiviert sind (Reihenfolge
-  im PR #731). Keycloak überspringt eine abgeschaltete Pflichtaktion auch bei Konten, die sie
+  Rollout-Tag ab, erst nachdem die Zeitpunkte archiviert sind und 0.9.8 live ist (Reihenfolge:
+  `docs/ART9_EINWILLIGUNG.md`, „Keycloak“). Keycloak überspringt eine abgeschaltete Pflichtaktion auch bei Konten, die sie
   noch tragen (26.8.2, `AuthenticationManager.getApplicableRequiredAction`).
 
 Platzhalter, vor dem Import ersetzen:

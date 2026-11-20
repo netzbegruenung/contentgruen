@@ -403,8 +403,9 @@ und der Ablauf oben erfasst die Tabelle nicht.
   0.9.8, als Keycloak die Nutzungsbedingungen noch fragte), oder „Passwort festlegen“ noch am
   Konto (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
   angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
-  sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
-  unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
+  sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort geht nach der
+  Frist ebenso, wenn es „Passwort festlegen“ trägt (oder, aus der Zeit vor 0.9.8, unbestätigt die
+  alte Pflichtaktion); ohne eine davon bleibt es. Ohne Zugang zur
   Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht.
 - **Link geöffnet, aber kein Passwort:** Der Link in der Mail bestätigt die Adresse, sobald die
   Person ihn öffnet und bestätigt (Pflichtaktion `VERIFY_EMAIL` im Link), noch vor dem Passwort.

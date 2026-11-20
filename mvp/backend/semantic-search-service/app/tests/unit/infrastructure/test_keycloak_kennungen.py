@@ -14,7 +14,6 @@ import pytest
 from domain.interfaces.konten_im_realm import BetaZugang
 from infrastructure.keycloak_konten import (
     MAIL_AKTIONEN_BESTAETIGT,
-    PFLICHTAKTIONEN,
     KeycloakKonten,
 )
 
@@ -172,7 +171,7 @@ class TestBetaZugaengeUmziehen:
         # Daraus bildet die BFF wie bisher aus dem displayName "Anna B.".
         assert konto["firstName"] == "Anna"
         assert konto["lastName"] == "Maria von Beispiel"
-        assert konto["requiredActions"] == PFLICHTAKTIONEN
+        assert konto["requiredActions"] == []  # seit 0.9.8 keine Pflichtaktion
         assert "federatedIdentities" not in konto
         # Die Adresse war schon die Anmeldung des Beta-Zugangs. Unbestaetigt hielte die
         # Loeschfrist fuer nie benutzte Konten aus Einladungen (#538) das Konto samt
@@ -283,7 +282,7 @@ class TestKontenVerknuepftAnlegen:
         (konto,) = keycloak.angelegt()
         assert konto["email"] == "anna@example.org"
         assert konto["emailVerified"] is True
-        assert konto["requiredActions"] == PFLICHTAKTIONEN
+        assert konto["requiredActions"] == []  # seit 0.9.8 keine Pflichtaktion
         assert konto["federatedIdentities"] == [
             {
                 "identityProvider": "netzbegruenung",
