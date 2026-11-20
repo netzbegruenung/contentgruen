@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, AbstractSet, Iterable, List, Optional, Set
+from typing import TYPE_CHECKING, AbstractSet, Dict, Iterable, List, Optional, Set
 import asyncio
 import logging
 import uuid
@@ -32,6 +32,9 @@ logger = logging.getLogger(__name__)
 # Wie viele Aussagen zu einem Beitrag zu_antwort hoechstens liest. Ein Beitrag
 # antwortet meist auf eine, selten auf wenige Aussagen.
 AUSSAGEN_JE_ANTWORT_HOECHSTENS = 20
+# zu_antworten: so viele Beitrags-IDs je Filter (MatchAny) und Punkte je Seite.
+ANTWORTEN_JE_ABFRAGE = 100
+ANTWORTEN_SEITE = 256
 
 # Beitragstypen, die als weitere Antwort aufgelistet werden; Aussagen und Herkunft
 # sind keine Beitraege (ADR 0002). Dieselbe Menge wie BEITRAGSTYPEN_WERTE in
@@ -413,6 +416,63 @@ class StatementRepository(
                     f"Payload ungueltig ({fehler.error_count()} Fehler)"
                 )
         return aussagen
+
+    async def zu_antworten(
+        self, beitrag_ids: List[uuid.UUID]
+    ) -> Dict[uuid.UUID, List[StatementDbEntry]]:
+        """
+        Wie zu_antwort, fuer viele Beitraege auf einmal (Album in "Meine Beitraege"):
+        je Block von ANTWORTEN_JE_ABFRAGE Beitraegen eine gefilterte Abfrage ueber
+        antwort_ids (MatchAny), durchgeblaettert, statt einer Abfrage je Beitrag.
+        Beitraege ohne sichtbare Aussage fehlen im Ergebnis.
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchAny, MatchValue
+
+        gesucht = {str(i): i for i in beitrag_ids}
+        ergebnis: Dict[uuid.UUID, List[StatementDbEntry]] = {}
+        schluessel = sorted(gesucht)
+        for start in range(0, len(schluessel), ANTWORTEN_JE_ABFRAGE):
+            block = schluessel[start : start + ANTWORTEN_JE_ABFRAGE]
+            weiter = None
+            while True:
+                punkte, weiter = await self._shared_manager.async_client.scroll(
+                    collection_name=self._shared_manager.collection_name,
+                    scroll_filter=Filter(
+                        must=[
+                            FieldCondition(
+                                key="content_type",
+                                match=MatchValue(value=self.content_type),
+                            ),
+                            FieldCondition(
+                                key=FELD_ANTWORT_IDS, match=MatchAny(any=block)
+                            ),
+                            *nur_sichtbar_bedingungen(),
+                        ]
+                    ),
+                    limit=ANTWORTEN_SEITE,
+                    offset=weiter,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+                for punkt in punkte:
+                    payload = dict(punkt.payload or {})
+                    payload["id"] = str(punkt.id)
+                    try:
+                        aussage = self.content_db_entry_model_class.model_validate(
+                            payload
+                        )
+                    except ValidationError as fehler:
+                        logger.warning(
+                            f"zu_antworten: Punkt {punkt.id} uebersprungen, "
+                            f"Payload ungueltig ({fehler.error_count()} Fehler)"
+                        )
+                        continue
+                    for antwort in payload.get(FELD_ANTWORT_IDS) or []:
+                        if antwort in gesucht:
+                            ergebnis.setdefault(gesucht[antwort], []).append(aussage)
+                if weiter is None:
+                    break
+        return ergebnis
 
     async def beantwortet_einer(self, beitrag_ids: List[uuid.UUID]) -> bool:
         """

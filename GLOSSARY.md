@@ -308,8 +308,12 @@ Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage g
 _Avoid_: Remix, Kopie, Fassung, Fork
 
 **Thema**:
-Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens drei. Freie Schlagworte gibt es nicht.
+Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens drei. Freie Schlagworte gibt es nicht. Jedes Thema hat ein Motiv, ein kleines Bild neben seinem Namen (Fluent Emoji wie bei den Meilensteinen, bei Europa eine eigene Zeichnung der Europaflagge); es ist rein dekorativ, der Name steht immer daneben.
 _Avoid_: Tag, Topic, Kategorie, Schlagwort
+
+**Album**:
+Die eigenen Beiträge in „Meine Beiträge“, als volle Karten in einklappbaren Abschnitten je Thema der Aussage, auf die sie antworten, meistgenutzte zuerst; Beiträge ohne Thema stehen zuletzt unter „Ohne Thema“. Ein Beitrag, dessen Aussage mehrere Themen hat, steht in jedem dieser Abschnitte. Oben ein Deckel mit der Zahl der Beiträge, ihrer Nutzung und der Themen; ohne jede Nutzung steht dort statt der Nutzung der nächste Meilenstein. Ab sieben Beiträgen gibt es eine Suche nur über die eigenen Beiträge.
+_Avoid_: Sammlung, Galerie, Profil
 
 **Zuordnungsart**:
 Wie ein Thema an eine Aussage kam: von Hand durch eine Person oder später durch eine Automatik. Wer zugeordnet hat und wann, wird nicht gespeichert.
@@ -449,7 +453,7 @@ Nur noch historisch: die Zufallskennung, die die SPA bis #446 für 30 Tage im Br
 _Avoid_: Session-ID
 
 **Meine Beiträge**:
-Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen, darüber den Sperrnachrichten zu gesperrten eigenen Beiträgen, und „Meine Einwürfe“.
+Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen als Album, darüber den Sperrnachrichten zu gesperrten eigenen Beiträgen, und „Meine Einwürfe“.
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:

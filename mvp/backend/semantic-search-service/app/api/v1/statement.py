@@ -261,7 +261,10 @@ async def vorab_anlegen(
 @router.get("/themen", response_model=ThemenResponse)
 async def themen_liste() -> ThemenResponse:
     return ThemenResponse(
-        themen=[ThemaDto(schluessel=t.schluessel, name=t.name) for t in THEMEN]
+        themen=[
+            ThemaDto(schluessel=t.schluessel, name=t.name, motiv=t.motiv)
+            for t in THEMEN
+        ]
     )
 
 

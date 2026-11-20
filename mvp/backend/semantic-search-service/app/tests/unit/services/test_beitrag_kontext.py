@@ -159,7 +159,11 @@ def test_themen_ergaenzen_traegt_die_themen_der_aussage_nach():
 
     # Unbekannte Schluessel fallen in der Antwort weg.
     assert kontext.als_json()["aussage"]["themen"] == [
-        {"schluessel": "natur-umwelt", "name": "Natur und Umwelt"}
+        {
+            "schluessel": "natur-umwelt",
+            "name": "Natur und Umwelt",
+            "motiv": "themen/natur-umwelt.svg",
+        }
     ]
 
 

@@ -832,3 +832,23 @@ html[data-theme='dark'] .mat-elevation-z8 {
 html[data-theme='dark'] .karte {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
+
+/*
+ * Klebende Suche im Album von „Meine Beiträge“: position: sticky wirkt nur, wenn kein
+ * Vorfahr ein Scroll-Container ist. main (overflow: hidden) und mat-sidenav-content
+ * (overflow-y: auto) sind es, scrollen aber nie selbst; gescrollt wird das Dokument.
+ * Nur auf dieser Seite: clip schneidet wie hidden ab, ohne Scroll-Container zu sein.
+ * Ohne :has (alte Browser) klebt die Suche nicht, sonst aendert sich nichts.
+ */
+main:has(app-album .suche) {
+    overflow: clip;
+}
+
+mat-sidenav-content:has(app-album .suche) {
+    overflow: visible;
+}
+
+/* Fokus nicht verdeckt (WCAG 2.4.11): Was per Tastatur in den Blick scrollt, bleibt unter der klebenden Suche sichtbar. */
+html:has(app-album .suche) {
+    scroll-padding-top: 140px;
+}

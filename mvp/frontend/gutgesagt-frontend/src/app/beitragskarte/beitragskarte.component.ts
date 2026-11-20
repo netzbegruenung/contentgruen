@@ -54,6 +54,7 @@ import { GLANZ_TEXT, hatGlanz } from '../shared/components/siegel/siegel-auszeic
 import { ContentService } from '../services/content.service';
 import { ROUTES } from '../shared/constants/app.constants';
 import { TextStueck, textStuecke } from '../shared/vorlagen-luecke';
+import { istAenderbar } from './aenderbar';
 
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
@@ -187,6 +188,12 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * erscheint an Ort und Stelle.
    */
   @Input() aufklappbar = false;
+  /**
+   * Im eigenen Album (Meine Beitraege, Variante A 20.11.): Aendern, Teilen als Hauptknopf
+   * und im ⋮-Menue Kopieren, Oeffnen, Als Vorlage und Loeschen statt Abstimmen und
+   * Kopieren; ohne "Von: Du" (es sind alles die eigenen) und ohne die Werte der Suche.
+   */
+  @Input() eigenesAlbum = false;
 
   /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
@@ -194,6 +201,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Output() aktion = new EventEmitter<EinwurfAktion>();
   /** Guete oder Nutzung haben sich an dieser Karte geaendert (Stimme, Kopieren). */
   @Output() kennzahlen = new EventEmitter<KartenKennzahlen>();
+  /** Im eigenen Album: "Ändern" angetippt; den Dialog oeffnet die Seite. */
+  @Output() aendern = new EventEmitter<KartenDaten>();
+  /** Im eigenen Album: "Beitrag löschen" angetippt; Rueckfrage und Loeschen macht die Seite. */
+  @Output() loeschen = new EventEmitter<KartenDaten>();
 
   nutzung: number | null = null;
   /** Aufgeklappt (nur mit aufklappbar). */
@@ -268,7 +279,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * der Meta-Zeile allein das Alter.
    */
   get zeigtAutor(): boolean {
-    return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName || this.daten.eigen != null);
+    return !this.eigenesAlbum && this.angemeldet && (!!this.daten.autor || !!this.daten.autorName || this.daten.eigen != null);
   }
 
   /** Das Alter ("vor 2 Tagen") in der Meta-Zeile; nicht in der schlanken Karte der Startseite. */
@@ -674,7 +685,12 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * Nutzer:innen widersprachen sie dem Siegel, und die Uebereinstimmung lag ueber 100 %.
    */
   get zeigtWerte(): boolean {
-    return this.istAdmin;
+    return this.istAdmin && !this.eigenesAlbum;
+  }
+
+  /** Im eigenen Album der Knopf "Ändern": nur Kommentar und Hintergrundinfo (#299). */
+  get aenderbar(): boolean {
+    return istAenderbar(this.daten.typ);
   }
 
   /** Der Titel fuehrt zur Beitragsseite (#640, R48); nicht auf ihr selbst und nicht in der Vorschau. */

@@ -1,40 +1,40 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { Observable, of, throwError } from 'rxjs';
-import { delay } from 'rxjs/operators';
 
 import { MeineBeitraegeComponent } from './meine-beitraege.component';
+import { AlbumComponent } from './album/album.component';
 import { MeineBeitraegeService } from '../services/meine-beitraege.service';
-import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
+import { Meilenstein, UsageTrackingService } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
-import { BeitragSheetComponent, GEAENDERT, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
+import { BeitragVerwaltenService } from '../beitragskarte/beitrag-verwalten.service';
 import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
 import { NavigationService } from '../services/navigation.service';
 import { StatementService } from '../services/statement.service';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { VotingService } from '../services/voting.service';
+import { LoggingService } from '../services/logging.service';
 import { PUNKTE_EINWILLIGUNG_AUS } from '../shared/punkte-einwilligung/punkte-einwilligung.testing';
 
 describe('MeineBeitraegeComponent', () => {
   let fixture: ComponentFixture<MeineBeitraegeComponent>;
   let router: Router;
-  let bottomSheet: MatBottomSheet;
   let eigeneLaden: jasmine.Spy;
-  /** Womit das Bottom Sheet schliesst; Standard: ohne Ergebnis. */
-  let sheetErgebnis: Observable<unknown>;
-  let kennung: string | null;
-  let nutzungsstatistik: UserUsageStats | null;
+  let alleLaden: jasmine.Spy;
+  let meilensteine: Meilenstein[];
+  let verwalten: jasmine.SpyObj<BeitragVerwaltenService>;
   /** Was "Hier fehlt eine Antwort" liefert; Standard: keine. */
   let unbeantworteteLaden: jasmine.Spy;
 
   beforeEach(() => {
     unbeantworteteLaden = jasmine.createSpy('unbeantworteteAussagen').and.returnValue(of([]));
-    sheetErgebnis = of(undefined);
-    kennung = null;
-    nutzungsstatistik = null;
+    meilensteine = [];
+    verwalten = jasmine.createSpyObj('BeitragVerwaltenService', ['aendern', 'loeschen']);
   });
 
   function beitrag(felder: Record<string, unknown> = {}): any {
@@ -53,44 +53,67 @@ describe('MeineBeitraegeComponent', () => {
     };
   }
 
-  function konfigurieren(meineBeitraege: (seite: number, groesse: number) => Observable<any>, mobil = false): void {
+  function meilenstein(felder: Partial<Meilenstein>): Meilenstein {
+    return {
+      kennung: 'm',
+      name: 'Meilenstein',
+      untertitel: '',
+      beschreibung: '',
+      bild: 'meilensteine/vogel.svg',
+      bildnachweis: '',
+      art: 'wirkung',
+      schwelle: 1,
+      stand: 0,
+      erreicht: false,
+      ...felder,
+    };
+  }
+
+  function konfigurieren(laden: () => Observable<any>): void {
     eigeneLaden = jasmine
       .createSpy('eigeneLaden')
       .and.returnValue(of({ results_count: 0, results: [], total_records_count: 0 }));
+    alleLaden = jasmine.createSpy('alleMeineBeitraege').and.callFake(laden);
     TestBed.configureTestingModule({
       imports: [MeineBeitraegeComponent],
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
         PUNKTE_EINWILLIGUNG_AUS,
-        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
-        { provide: MeineBeitraegeService, useValue: { meineBeitraege } },
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
+        { provide: MeineBeitraegeService, useValue: { alleMeineBeitraege: alleLaden } },
         {
           provide: UsageTrackingService,
-          useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik), getEigeneMeilensteine: () => of([]), getEigenePunkte: () => of(null), getAbzeichenSichtbarkeit: () => of(null) },
+          useValue: {
+            getEigeneMeilensteine: () => of(meilensteine),
+            getEigenePunkte: () => of(null),
+            getAbzeichenSichtbarkeit: () => of(null),
+            trackContentUsage: () => undefined,
+            gepostetBekannt: () => false,
+          },
         },
+        { provide: BeitragVerwaltenService, useValue: verwalten },
+        // Die vollen Karten im Album bringen ihre Aktionsleiste mit.
+        { provide: VotingService, useValue: jasmine.createSpyObj('VotingService', ['setLike']) },
+        { provide: Clipboard, useValue: jasmine.createSpyObj('Clipboard', ['copy']) },
+        { provide: MatSnackBar, useValue: jasmine.createSpyObj('MatSnackBar', ['open']) },
+        { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['error', 'debug', 'info', 'warn']) },
         { provide: EinwurfService, useValue: { eigeneLaden } },
         { provide: SperrnachrichtService, useValue: { meine: () => of([]) } },
         { provide: StatementService, useValue: { unbeantworteteAussagen: unbeantworteteLaden } },
         {
           provide: AuthService,
-          // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.
-          useValue: { getCurrentUserId: () => kennung, getUserInfo: () => null, userInfo$: of(null) },
+          useValue: { getCurrentUserId: () => null, getUserInfo: () => null, userInfo$: of(null) },
         },
       ],
     });
 
     router = TestBed.inject(Router);
     spyOn(router, 'navigate').and.resolveTo(true);
-    bottomSheet = TestBed.inject(MatBottomSheet);
-    spyOn(bottomSheet, 'open').and.callFake(() => ({ afterDismissed: () => sheetErgebnis }) as any);
   }
 
-  async function erstellen(results: any[], mobil = false): Promise<void> {
-    konfigurieren(
-      () => of({ results_count: results.length, total_records_count: results.length, results }),
-      mobil,
-    );
+  async function erstellen(results: any[]): Promise<void> {
+    konfigurieren(() => of({ beitraege: results, gesamt: results.length }));
     await TestBed.compileComponents();
     fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
@@ -104,6 +127,10 @@ describe('MeineBeitraegeComponent', () => {
 
   function karten(): HTMLElement[] {
     return Array.from(fixture.nativeElement.querySelectorAll('app-beitragskarte article'));
+  }
+
+  function album(): AlbumComponent {
+    return fixture.debugElement.query((el) => el.componentInstance instanceof AlbumComponent).componentInstance;
   }
 
   describe('Tabs', () => {
@@ -126,7 +153,7 @@ describe('MeineBeitraegeComponent', () => {
 
       expect(tabs().map((tab) => tab.textContent!.trim())).toEqual(['Meine Beiträge', 'Meine Einwürfe']);
       expect(tabs()[0].getAttribute('aria-selected')).toBe('true');
-      expect(sichtbar('app-kartenliste')).toBeTrue();
+      expect(sichtbar('app-album')).toBeTrue();
       expect(fixture.nativeElement.querySelector('app-meine-einwuerfe')).toBeNull();
       expect(eigeneLaden).not.toHaveBeenCalled();
     });
@@ -138,13 +165,13 @@ describe('MeineBeitraegeComponent', () => {
 
       expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
       expect(sichtbar('app-meine-einwuerfe')).toBeTrue();
-      expect(sichtbar('app-kartenliste')).toBeFalse();
+      expect(sichtbar('app-album')).toBeFalse();
       expect(eigeneLaden).toHaveBeenCalledTimes(1);
     });
 
     // #508: Nach dem Ausformulieren geht es hierher, wo der Einwurf als ausformuliert steht.
     it('oeffnet "Meine Einwürfe" auf dem Ruecksprung nach dem Ausformulieren', async () => {
-      konfigurieren(() => of({ results_count: 0, total_records_count: 0, results: [] }));
+      konfigurieren(() => of({ beitraege: [], gesamt: 0 }));
       TestBed.inject(Router).resetConfig([{ path: 'contributions', component: MeineBeitraegeComponent }]);
       (router.navigate as jasmine.Spy).and.callThrough();
       const harness = await RouterTestingHarness.create();
@@ -206,317 +233,85 @@ describe('MeineBeitraegeComponent', () => {
     });
   });
 
-  it('beschriftet den Paginator auf Deutsch', async () => {
-    await erstellen(Array.from({ length: 25 }, (_, i) => beitrag({ id: `b${i}` })));
+  it('laedt alle eigenen Beitraege und zeigt sie im Album als volle Karten', async () => {
+    await erstellen([beitrag({ id: 'b1' }), beitrag({ id: 'b2', title: 'Tempo 30 rettet Leben' })]);
 
-    expect(text('.mat-mdc-paginator-page-size-label')).toBe('Einträge pro Seite:');
-    expect(text('.mat-mdc-paginator-range-label')).toBe('1 – 24 von 25');
-  });
-
-  it('zeigt mobil nur Bereich und Pfeile, ohne Seitengroesse', async () => {
-    await erstellen(Array.from({ length: 30 }, (_, i) => beitrag({ id: `b${i}` })), true);
-
-    expect(fixture.nativeElement.querySelector('.mat-mdc-paginator-page-size')).toBeNull();
-    expect(text('.mat-mdc-paginator-range-label')).toBe('1 – 24 von 30');
-    expect(fixture.nativeElement.querySelector('.mat-mdc-paginator-navigation-next')).not.toBeNull();
-  });
-
-  it('laedt nach zweimal "Weiter" Seite 3, auch wenn die Antwort auf sich warten laesst', fakeAsync(() => {
-    const geladen: number[][] = [];
-    konfigurieren((seite, groesse) => {
-      geladen.push([seite, groesse]);
-      const results = Array.from({ length: 24 }, (_, i) => beitrag({ id: `s${seite}-${i}` }));
-      return of({ results_count: 24, total_records_count: 60, results }).pipe(delay(50));
-    });
-    fixture = TestBed.createComponent(MeineBeitraegeComponent);
-
-    const laden = () => {
-      fixture.detectChanges();
-      tick(50);
-      fixture.detectChanges();
-    };
-    const weiter = () => (fixture.nativeElement.querySelector('.mat-mdc-paginator-navigation-next') as HTMLButtonElement).click();
-
-    laden();
-    weiter();
-    laden();
-    weiter();
-    laden();
-
-    expect(geladen).toEqual([[1, 24], [2, 24], [3, 24]]);
-    expect(text('.mat-mdc-paginator-range-label')).toBe('49 – 60 von 60');
-  }));
-
-  it('zeigt bis 24 Beitraege keinen Paginator', async () => {
-    await erstellen(Array.from({ length: 24 }, (_, i) => beitrag({ id: `b${i}` })));
-
-    expect(karten().length).toBe(24);
+    expect(alleLaden).toHaveBeenCalledTimes(1);
+    expect(fixture.nativeElement.querySelector('app-album')).not.toBeNull();
+    expect(karten().length).toBe(2);
     expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
   });
 
-  it('zeigt Beitraege als Album-Karten mit Typfarbe, Titel, Anriss, Datum und Nutzung', async () => {
-    await erstellen([beitrag(), beitrag({ id: 'b2', content_type: 'commentary', title: 'Zweiter' })]);
-    const [erste, zweite] = karten();
-
-    expect(karten().length).toBe(2);
-    expect(fixture.nativeElement.querySelector('table')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.kartenliste--raster')).not.toBeNull();
-    expect(erste.classList).toContain('karte--kompakt');
-    expect(erste.classList).toContain('typ-generictext');
-    expect(zweite.classList).toContain('typ-commentary');
-    expect(erste.querySelector('.album-inhalt .karte-titel')!.textContent).toContain('Wärmepumpe lohnt sich auch im Altbau');
-    expect(erste.querySelector('.album-anriss')!.textContent).toContain('Text der Hintergrundinfo');
-    expect(erste.querySelector('.album-fuss .karte-datum')!.textContent!.trim()).toBe('13.09.2026');
-    expect(erste.querySelector('.album-fuss .badge-nutzung')!.textContent!.trim()).toBe('12× genutzt');
-    expect(erste.getAttribute('aria-label')).toBe('Hintergrundinfo: Wärmepumpe lohnt sich auch im Altbau');
-  });
-
-  it('zeigt die Statistik als eine Textzeile, ohne Hinweisbox und Kacheln', async () => {
-    await erstellen([beitrag(), beitrag({ id: 'b2', usage_count: 3 })]);
-
-    expect(text('.album-statistik')).toBe('Deine 2 Beiträge wurden 15-mal genutzt.');
-    expect(fixture.nativeElement.querySelector('.info-message')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.stat-card')).toBeNull();
-  });
-
-  it('schreibt einen Beitrag im Singular und nimmt die Gesamtnutzung, wenn es sie gibt', async () => {
+  it('gibt dem Album den offenen Meilenstein, dem die Person am naechsten ist', async () => {
+    meilensteine = [
+      meilenstein({ kennung: 'a', erreicht: true, stand: 1 }),
+      meilenstein({ kennung: 'x', art: 'weg' }),
+      meilenstein({ kennung: 'b', name: '10-mal genutzt', schwelle: 10, stand: 6 }),
+      meilenstein({ kennung: 'c', name: '50-mal genutzt', schwelle: 50, stand: 6 }),
+    ];
     await erstellen([beitrag()]);
 
-    expect(text('.album-statistik')).toBe('Dein Beitrag wurde 12-mal genutzt.');
-
-    fixture.componentInstance.nutzungsstatistik = {
-      user_id: 'person-1',
-      unique_contents_contributed: 1,
-      total_usage_count: 40,
-      top_content: [],
-    };
-    fixture.componentInstance.totalRecords = 25;
-    // Nicht alle Beitraege geladen: keine Zahl fuer die Woche
-    expect(fixture.componentInstance.statistik).toBe('Deine 25 Beiträge wurden 40-mal genutzt.');
+    expect(album().naechsterMeilenstein?.kennung).toBe('b');
   });
 
-  describe('Nutzungsstatistik', () => {
-    // Die Nutzung ueber alle Seiten kommt vom Suchdienst; die Person ergibt sich aus der
-    // Anmeldung, nicht aus der Adresse (#284).
-    it('zeigt angemeldet die Nutzung aus der Nutzungsstatistik', async () => {
-      kennung = 'person-1';
-      nutzungsstatistik = { user_id: 'person-1', unique_contents_contributed: 1, total_usage_count: 40, top_content: [] };
-
-      await erstellen([beitrag()]);
-
-      expect(text('.album-statistik')).toBe('Dein Beitrag wurde 40-mal genutzt.');
-    });
-
-    // UX-Review B11: bei 0 Nutzungen erklaeren, was genutzt heisst, und den naechsten Schritt nennen
-    it('erklaert bei 0 Nutzungen, was „genutzt“ heisst, und nennt den naechsten Schritt', async () => {
-      kennung = 'person-1';
-      nutzungsstatistik = { user_id: 'person-1', unique_contents_contributed: 1, total_usage_count: 0, top_content: [] };
-
-      await erstellen([beitrag({ usage_count: 0 })]);
-
-      expect(text('[data-testid=nutzung-leer]')).toContain('Noch hat niemand deine Beiträge genutzt.');
-      expect(text('[data-testid=nutzung-leer]')).toContain('Genutzt heißt: Jemand hat einen davon kopiert oder geteilt.');
-      expect(text('[data-testid=nutzung-leer]')).toContain('teil seinen Link');
-      // Nicht doppelt: „noch nicht genutzt“ steht nur in der Box (P52)
-      expect(fixture.nativeElement.querySelector('.album-statistik')).toBeNull();
-    });
-
-    it('zeigt die Erklaerung nicht, sobald etwas genutzt wurde oder die Statistik fehlt', async () => {
-      kennung = 'person-1';
-      nutzungsstatistik = { user_id: 'person-1', unique_contents_contributed: 1, total_usage_count: 3, top_content: [] };
-      await erstellen([beitrag()]);
-      expect(fixture.nativeElement.querySelector('[data-testid=nutzung-leer]')).toBeNull();
-    });
-
-    it('faellt ohne Nutzungsstatistik auf die Summe der Seite zurueck', async () => {
-      kennung = 'person-1';
-
-      await erstellen([beitrag()]);
-
-      expect(text('.album-statistik')).toBe('Dein Beitrag wurde 12-mal genutzt.');
-    });
-  });
-
-  describe('Wirkung zuerst (Nutzerfuehrung 13.11.)', () => {
-    it('nennt die Nutzung dieser Woche und erklaert, was genutzt heisst', async () => {
-      await erstellen([
-        beitrag({ usage_count: 5, nutzung_letzte_7_tage: 2 }),
-        beitrag({ id: 'b2', usage_count: 3, nutzung_letzte_7_tage: 1 }),
-      ]);
-
-      expect(text('.album-statistik')).toBe('Deine 2 Beiträge wurden 8-mal genutzt, 3 davon diese Woche.');
-      expect(text('.nutzung-erklaerung')).toBe('Genutzt heißt: Jemand hat den Beitrag kopiert oder geteilt.');
-    });
-
-    it('zeigt ohne Nutzung keine Erklaerung', async () => {
-      await erstellen([beitrag({ usage_count: 0 })]);
-
-      expect(text('.album-statistik')).toBe('Dein Beitrag wurde noch nicht genutzt.');
-      expect(fixture.nativeElement.querySelector('.nutzung-erklaerung')).toBeNull();
-    });
-
-    it('sortiert die Beitraege nach Nutzung, bei Gleichstand wie der Server', async () => {
-      await erstellen([
-        beitrag({ id: 'a', title: 'Neu und ungenutzt', usage_count: 0 }),
-        beitrag({ id: 'b', title: 'Viel genutzt', usage_count: 9 }),
-        beitrag({ id: 'c', title: 'Etwas genutzt', usage_count: 2 }),
-        beitrag({ id: 'd', title: 'Auch ungenutzt', usage_count: 0 }),
-      ]);
-
-      expect(karten().map((karte) => karte.querySelector('.karte-titel')!.textContent!.trim())).toEqual([
-        'Viel genutzt',
-        'Etwas genutzt',
-        'Neu und ungenutzt',
-        'Auch ungenutzt',
-      ]);
-    });
-
-    it('stellt Satz und Beitraege vor Punkte und Meilensteine', async () => {
-      await erstellen([beitrag()]);
-      const bereich = fixture.nativeElement.querySelector('#meine-bereich-beitraege') as HTMLElement;
-      const reihenfolge = Array.from(bereich.querySelectorAll('.album-statistik, app-kartenliste, app-punkte, app-meilensteine')).map(
-        (el) => (el as HTMLElement).tagName.toLowerCase() === 'p' ? 'satz' : (el as HTMLElement).tagName.toLowerCase(),
-      );
-
-      expect(reihenfolge).toEqual(['satz', 'app-kartenliste', 'app-punkte', 'app-meilensteine']);
-    });
-  });
-
-  it('zeigt 24 Beitraege pro Seite', async () => {
+  it('stellt das Album vor Punkte und Meilensteine', async () => {
     await erstellen([beitrag()]);
 
-    expect(fixture.componentInstance.pageSize).toBe(24);
+    const bereich = fixture.nativeElement.querySelector('#meine-bereich-beitraege') as HTMLElement;
+    const reihenfolge = Array.from(bereich.querySelectorAll('app-album, app-punkte, app-meilensteine')).map((e) =>
+      e.tagName.toLowerCase(),
+    );
+    expect(reihenfolge).toEqual(['app-album', 'app-punkte', 'app-meilensteine']);
   });
 
-  it('zeigt im Album keinen Volltext, keine Autorzeile und keine Aktionen', async () => {
+  it('laedt nach dem Ändern still nach und laesst das Album stehen', async () => {
+    verwalten.aendern.and.returnValue(of(true));
     await erstellen([beitrag()]);
-    const [karte] = karten();
+    const vorher = album();
 
-    expect(karte.querySelector('.karte-text')).toBeNull();
-    expect(karte.querySelector('.karte-meta')).toBeNull();
-    expect(karte.querySelector('app-karten-aktionen')).toBeNull();
-    expect(karte.querySelector('.badge-neu')).toBeNull();
+    album().aendern.emit(album().eintraege[0].karte);
+    fixture.detectChanges();
+
+    expect(verwalten.aendern).toHaveBeenCalledWith(jasmine.objectContaining({ id: 'b1' }));
+    expect(alleLaden).toHaveBeenCalledTimes(2);
+    expect(album()).toBe(vorher);
   });
 
-  it('oeffnet beim Tippen den Beitrag im Bottom Sheet und startet keine Suche', async () => {
-    await erstellen([beitrag()]);
-
-    karten()[0].click();
-
-    const oeffnen = bottomSheet.open as jasmine.Spy;
-    expect(oeffnen).toHaveBeenCalledTimes(1);
-    const [komponente, konfiguration] = oeffnen.calls.mostRecent().args;
-    expect(komponente).toBe(BeitragSheetComponent);
-    expect(konfiguration.data).toEqual(jasmine.objectContaining({ id: 'b1', titel: 'Wärmepumpe lohnt sich auch im Altbau' }));
-    expect(konfiguration.ariaLabel).toBe('Wärmepumpe lohnt sich auch im Altbau');
-    expect(router.navigate).not.toHaveBeenCalled();
-  });
-
-  it('oeffnet das Bottom Sheet auch mit Enter und ohne Titel', async () => {
-    await erstellen([beitrag({ title: null })]);
-    const [karte] = karten();
-
-    karte.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
-
-    expect(karte.querySelector('.karte-titel')!.textContent).toContain('Text der Hintergrundinfo');
-    expect(karte.querySelector('.album-anriss')).toBeNull();
-    const oeffnen = bottomSheet.open as jasmine.Spy;
-    expect(oeffnen).toHaveBeenCalledTimes(1);
-    const [komponente, konfiguration] = oeffnen.calls.mostRecent().args;
-    expect(komponente).toBe(BeitragSheetComponent);
-    expect(konfiguration.ariaLabel).toBe('Text der Hintergrundinfo');
-    expect(router.navigate).not.toHaveBeenCalled();
-  });
-
-  it('erlaubt im Bottom Sheet das Löschen des eigenen Beitrags', async () => {
+  it('laedt nach abgebrochenem Ändern nicht nach', async () => {
+    verwalten.aendern.and.returnValue(of(false));
     await erstellen([beitrag()]);
 
-    karten()[0].click();
+    album().aendern.emit(album().eintraege[0].karte);
 
-    const [, konfiguration] = (bottomSheet.open as jasmine.Spy).calls.mostRecent().args;
-    expect(konfiguration.data.loeschbar).toBeTrue();
+    expect(alleLaden).toHaveBeenCalledTimes(1);
   });
 
-  it('laedt nach dem Löschen die Seite neu, ohne den gelöschten Beitrag', async () => {
-    const vorher = [beitrag(), beitrag({ id: 'b2', title: 'Tempolimit spart sofort CO2' })];
-    const nachher = [beitrag({ id: 'b2', title: 'Tempolimit spart sofort CO2' })];
-    const laden = jasmine
-      .createSpy('meineBeitraege')
-      .and.returnValues(
-        of({ results_count: 2, total_records_count: 2, results: vorher }),
-        of({ results_count: 1, total_records_count: 1, results: nachher }),
-      );
-    konfigurieren(laden);
-    sheetErgebnis = of(GELOESCHT);
+  it('laedt nach dem Löschen nach, ohne den gelöschten Beitrag', async () => {
+    let antwort = [beitrag({ id: 'b1' }), beitrag({ id: 'b2' })];
+    verwalten.loeschen.and.returnValue(of(true));
+    konfigurieren(() => of({ beitraege: antwort, gesamt: antwort.length }));
     await TestBed.compileComponents();
     fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
 
-    karten()[0].click();
+    antwort = [beitrag({ id: 'b2' })];
+    album().loeschen.emit(album().eintraege[0].karte);
     fixture.detectChanges();
 
-    expect(laden).toHaveBeenCalledTimes(2);
-    expect(laden.calls.mostRecent().args).toEqual([1, 24]);
+    expect(verwalten.loeschen).toHaveBeenCalledWith('b1');
     expect(karten().length).toBe(1);
-    expect(text('.album-statistik')).toContain('Dein Beitrag');
   });
 
-  it('springt eine Seite zurück, wenn der letzte Beitrag einer Seite gelöscht ist', async () => {
-    const seite = (n: number) =>
-      Array.from({ length: n }, (_, i) => beitrag({ id: `b${i}`, title: `Beitrag Nummer ${i}` }));
-    const laden = jasmine
-      .createSpy('meineBeitraege')
-      .and.returnValues(
-        of({ results_count: 24, total_records_count: 25, results: seite(24) }),
-        of({ results_count: 1, total_records_count: 25, results: seite(1) }),
-        of({ results_count: 24, total_records_count: 24, results: seite(24) }),
-      );
-    konfigurieren(laden);
-    await TestBed.compileComponents();
-    fixture = TestBed.createComponent(MeineBeitraegeComponent);
-    fixture.detectChanges();
-    fixture.componentInstance.onPageChange({ pageIndex: 1, pageSize: 24, length: 25 } as any);
-    fixture.detectChanges();
-    sheetErgebnis = of(GELOESCHT);
-
-    karten()[0].click();
-
-    expect(laden.calls.mostRecent().args).toEqual([1, 24]);
-    expect(fixture.componentInstance.pageIndex).toBe(0);
-  });
-
-  it('erlaubt im Bottom Sheet das Ändern nur bei Kommentar und Hintergrundinfo', async () => {
-    await erstellen([
-      beitrag(),
-      beitrag({ id: 'b2', content_type: 'commentary', title: 'Tempolimit spart sofort CO2' }),
-      beitrag({ id: 'b3', content_type: 'post', title: 'Ein Post zum Tempolimit' }),
-    ]);
-    const aenderbar = (i: number) => {
-      karten()[i].click();
-      return (bottomSheet.open as jasmine.Spy).calls.mostRecent().args[1].data.aenderbar;
-    };
-
-    expect([aenderbar(0), aenderbar(1), aenderbar(2)]).toEqual([true, true, false]);
-  });
-
-  it('laedt nach dem Ändern die aktuelle Seite neu', async () => {
-    const laden = jasmine
-      .createSpy('meineBeitraege')
-      .and.returnValues(
-        of({ results_count: 1, total_records_count: 1, results: [beitrag()] }),
-        of({ results_count: 1, total_records_count: 1, results: [beitrag({ title: 'Neuer Titel mit Haltung' })] }),
-      );
-    konfigurieren(laden);
-    sheetErgebnis = of(GEAENDERT);
+  it('bietet bei einem Ladefehler einen neuen Versuch an, ohne „neu laden“', async () => {
+    konfigurieren(() => throwError(() => new Error('weg')));
     await TestBed.compileComponents();
     fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
 
-    karten()[0].click();
-    fixture.detectChanges();
-
-    expect(laden).toHaveBeenCalledTimes(2);
-    expect(karten()[0].textContent).toContain('Neuer Titel mit Haltung');
+    const meldung = text('[role="alert"]');
+    expect(meldung).toContain('ließen sich gerade nicht laden');
+    expect(meldung).not.toMatch(/neu laden/i);
+    expect(fixture.nativeElement.querySelector('.beitraege-leer')).toBeNull();
   });
 
   it('sagt, wenn es noch keine Beitraege gibt', async () => {

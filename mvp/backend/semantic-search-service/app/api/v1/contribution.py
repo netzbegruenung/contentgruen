@@ -1,7 +1,13 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Query
 
-from dependencies import get_aufrufer, get_settings, get_reference_service
+from dependencies import (
+    get_aufrufer,
+    get_aussage_themen_service,
+    get_reference_service,
+    get_settings,
+    get_statement_service,
+)
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
@@ -11,7 +17,10 @@ from dtos.contribution import (
     GetContributionsOfUserResponse,
     MeinBeitragResponse,
 )
+from services.aussage_themen_service import AussageThemenService
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
+from services.beitrag_kontext import aussagen_fuers_album
+from services.content.statement_service import StatementService
 from domain.content_registry import BEITRAGSTYPEN_WERTE
 from services.usage_tracking_service import get_usage_service
 from core.config import Settings
@@ -32,6 +41,8 @@ async def search_content(
     page_size: int = Query(default=20, ge=1, le=100),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
+    statement_service: StatementService = Depends(get_statement_service),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
 ) -> GetContributionsOfUserResponse:
     # Vor dem try: sonst wuerde das 401 unten zu einem 500.
     if not aufrufer.angemeldet:
@@ -104,6 +115,25 @@ async def search_content(
             mit_nutzung = [
                 {**eintrag, "nutzung_je_fassung": None} for eintrag in mit_nutzung
             ]
+
+        # Worauf jeder Beitrag antwortet, mit Themen: das Album ordnet danach. Faellt
+        # das aus, kommt die Liste trotzdem, alle Beitraege stehen dann "Ohne Thema".
+        try:
+            aussagen = await aussagen_fuers_album(
+                [beitrag.id for beitrag in beitraege],
+                statement_service,
+                themen_service,
+            )
+            nach_id = {str(k): v for k, v in aussagen.items()}
+            mit_nutzung = [
+                {**eintrag, "aussage": nach_id.get(str(eintrag["id"]))}
+                for eintrag in mit_nutzung
+            ]
+        except Exception as e:
+            logger.warning(
+                f"Aussagen fuer Meine Beitraege nicht lesbar, ohne Thema: "
+                f"{type(e).__name__}"
+            )
 
         # Nur eigene Beitraege: das Kennzeichen ist immer gesetzt, die Kennung bleibt
         # wie ueberall nur Admins; Bearbeitungshistorie geht nicht nach aussen (#385).

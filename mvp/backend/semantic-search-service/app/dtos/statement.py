@@ -97,16 +97,20 @@ AUSSAGE_MAX_ZEICHEN = 1000
 
 
 class ThemaDto(BaseModel):
-    """Ein Thema aus der festen Liste: Schluessel (gespeichert) und Name (Anzeige)."""
+    """
+    Ein Thema aus der festen Liste: Schluessel (gespeichert), Name (Anzeige) und Motiv
+    (Pfad eines SVG unter public/ im Frontend, rein dekorativ).
+    """
 
     schluessel: str
     name: str
+    motiv: str
 
 
 def themen_dtos(schluessel: Iterable[str]) -> List[ThemaDto]:
     """Die Themen als DTOs; Schluessel, die nicht (mehr) in der Liste stehen, fallen weg."""
     return [
-        ThemaDto(schluessel=t.schluessel, name=t.name)
+        ThemaDto(schluessel=t.schluessel, name=t.name, motiv=t.motiv)
         for t in (NACH_SCHLUESSEL.get(s) for s in schluessel)
         if t is not None
     ]

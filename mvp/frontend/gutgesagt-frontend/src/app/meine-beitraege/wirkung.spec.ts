@@ -1,5 +1,4 @@
-import { KartenDaten } from '../beitragskarte/karten-daten';
-import { nachNutzung, wirkungssatz } from './wirkung';
+import { wirkungssatz } from './wirkung';
 
 describe('wirkungssatz', () => {
   it('nennt Nutzung und Woche', () => {
@@ -18,15 +17,5 @@ describe('wirkungssatz', () => {
 
   it('sagt ohne Nutzung "noch nicht genutzt"', () => {
     expect(wirkungssatz(1, 0, 0)).toBe('Dein Beitrag wurde noch nicht genutzt.');
-  });
-});
-
-describe('nachNutzung', () => {
-  const karte = (id: string, nutzung: number | null) => ({ id, nutzung }) as KartenDaten;
-
-  it('stellt die meistgenutzten nach vorn und haelt sonst die Reihenfolge', () => {
-    const sortiert = nachNutzung([karte('a', 0), karte('b', 4), karte('c', null), karte('d', 4), karte('e', 1)]);
-
-    expect(sortiert.map((k) => k.id)).toEqual(['b', 'd', 'e', 'a', 'c']);
   });
 });

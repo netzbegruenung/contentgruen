@@ -315,6 +315,10 @@
                 [hilfreich]="guete?.hilfreich ?? null"
                 [nichtHilfreich]="guete?.nichtHilfreich ?? null"
                 [eigeneStimmeImZaehler]="!istEigen"
+                [album]="eigenesAlbum"
+                [aenderbar]="aenderbar"
+                (aendern)="aendern.emit(daten)"
+                (loeschen)="loeschen.emit(daten)"
                 (likeToggled)="gueteNachladen()"
                 (dislikeToggled)="gueteNachladen()"
                 (kopiert)="nutzungHochzaehlen()">
