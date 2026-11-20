@@ -725,6 +725,27 @@ describe('ResultViewComponent: Zeile "Erkannt als", beste Antwort und Gruppen je
       expect(text(themen.querySelector('.themen-umschalter'))).toBe('Themen ändern');
     });
 
+    it('zieht den Themenfilter nach einer Zuordnung gleich nach, ohne neue Suche', async () => {
+      const seite = await oeffnen(false, antwort({ k: [{ ...erkannt('commentary', 'k-1', 0.9), themen: [KLIMA] }] }));
+      themenListeLaden();
+      const filter = () => texte(seite.querySelector('.themen-filter-leiste')!, 'button');
+      expect(filter()).toEqual(['Alle Themen', 'Klima']);
+
+      seite.querySelector<HTMLButtonElement>('.erkannt-themen .themen-umschalter')!.click();
+      neuZeichnen();
+      Array.from(seite.querySelectorAll<HTMLButtonElement>('.erkannt-themen .thema-chip'))
+        .find((k) => text(k) === 'Wohnen')!
+        .click();
+      neuZeichnen();
+      expect(filter()).withContext('sofort, vor der Antwort').toEqual(['Alle Themen', 'Klima', 'Wohnen']);
+
+      const http = TestBed.inject(HttpTestingController);
+      http.expectOne((r) => r.url.endsWith('/api/v1/statement/themen/zuordnen')).flush({ statement_id: ERKANNT_ID, themen: [KLIMA, WOHNEN] });
+      neuZeichnen();
+      expect(filter()).toEqual(['Alle Themen', 'Klima', 'Wohnen']);
+      http.expectNone((r) => r.url.endsWith('/api/v1/search/searchByText'));
+    });
+
     it('bietet ohne bekannte Themen (null) kein Zuordnen an', async () => {
       const seite = await oeffnen(false, antwort({ k: [{ ...erkannt('commentary', 'k-1', 0.9), themen: null }] }));
       themenListeLaden();

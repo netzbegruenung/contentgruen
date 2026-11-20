@@ -103,7 +103,8 @@
             </button>
         </div>
         <!-- Die Themen der erkannten Aussage; Angemeldete ordnen sie hier zu (wie in "Hier fehlt eine Antwort") -->
-        <app-aussage-themen *ngIf="erkannteThemen" class="erkannt-themen" [aussage]="erkannteThemen"></app-aussage-themen>
+        <app-aussage-themen *ngIf="erkannteThemen" class="erkannt-themen" [aussage]="erkannteThemen"
+                            (themenChange)="erkannteThemenGeaendert($event)"></app-aussage-themen>
         <ul class="erkannt-liste" id="erkannt-liste" *ngIf="erkannt && alternativen.length" [hidden]="!alternativenOffen">
             <li *ngFor="let a of alternativen">
                 <a class="erkannt-chip" [routerLink]="['/result']" [queryParams]="{ searchQuery: a.text }">{{ a.text }}</a>

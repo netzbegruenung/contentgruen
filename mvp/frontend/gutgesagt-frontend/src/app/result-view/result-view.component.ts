@@ -341,6 +341,29 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Die Themen der erkannten Aussage haben sich geaendert (app-aussage-themen): Treffer
+   * und Themenfilter ziehen gleich nach, ohne neue Suche. Ein aktives Thema, das es
+   * unter den Treffern nicht mehr gibt, faellt weg; sonst stuende die Seite leer.
+   */
+  erkannteThemenGeaendert(themen: Thema[]): void {
+    const id = this.erkannteThemen?.statement_id;
+    if (!this.antwort || !id) {
+      return;
+    }
+    for (const treffer of alleTreffer(this.antwort)) {
+      if (treffer.statement_id === id) {
+        treffer.themen = [...themen];
+      }
+    }
+    this.themenDerTreffer = themenDerTreffer(this.antwort, erkannterSchluessel(this.erkannt));
+    if (this.aktivesThema && !this.themenDerTreffer.some((t) => t.schluessel === this.aktivesThema)) {
+      this.aktivesThema = null;
+    }
+    this.anzeigen();
+    this.cdr.markForCheck();
+  }
+
   /** Nach einem Thema filtern; null = alle. */
   nachThemaFiltern(thema: string | null): void {
     this.aktivesThema = thema;

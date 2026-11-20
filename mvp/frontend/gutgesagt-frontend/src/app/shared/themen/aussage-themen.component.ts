@@ -3,9 +3,11 @@ import {
   ChangeDetectorRef,
   Component,
   DestroyRef,
+  EventEmitter,
   Input,
   OnChanges,
   OnInit,
+  Output,
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -116,6 +118,12 @@ let naechsteId = 0;
 export class AussageThemenComponent implements OnInit, OnChanges {
   /** Die Aussage mit ihren Themen; die Komponente aendert `themen` beim Speichern. */
   @Input() aussage: AussageMitThemenFeld | null = null;
+  /**
+   * Die Themen, die die Aussage jetzt zeigt: gleich nach dem Klick und noch einmal, wenn
+   * alles gespeichert ist (nach einem Fehler der Stand davor). Die Ergebnisseite zieht
+   * damit ihren Themenfilter nach, ohne neue Suche.
+   */
+  @Output() themenChange = new EventEmitter<Thema[]>();
 
   liste: Thema[] = [];
   angemeldet = false;
@@ -201,11 +209,15 @@ export class AussageThemenComponent implements OnInit, OnChanges {
           return;
         }
         this.speichert = offen > 0;
-        if (offen === 0 && !this.fehler) {
-          this.ansage = 'Themen gespeichert.';
+        if (offen === 0) {
+          if (!this.fehler) {
+            this.ansage = 'Themen gespeichert.';
+          }
+          this.themenChange.emit(aussage.themen);
         }
         this.cdr.markForCheck();
       },
     );
+    this.themenChange.emit(aussage.themen);
   }
 }
