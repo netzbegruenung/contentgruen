@@ -1,8 +1,8 @@
 """
 Symbole der App: Jede Datei, die index.html (Favicons, apple-touch-icon, og:image) oder das
-Manifest nennt, liegt unter public/. nginx liefert Bilder mit "expires 1y" aus; ein
-geaendertes Symbol bekommt deshalb einen neuen Dateinamen, und ein vergessener Verweis darauf
-faellt hier auf statt erst als fehlendes Symbol auf dem Handy.
+Manifest nennt, liegt unter public/. Ein vergessener oder vertippter Verweis faellt hier auf
+statt erst als fehlendes Symbol auf dem Handy (die "-v2"-Namen stammen aus der Zeit, als nginx
+Bilder ein Jahr cachen liess; Cache-Regeln: test_nginx_cache.py).
 """
 
 import json
