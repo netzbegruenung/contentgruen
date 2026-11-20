@@ -161,7 +161,8 @@ Deshalb in dieser Reihenfolge, nicht anders:
    unter „Anmelde-Cookie“ und der Zeile „Beta-Zugänge“ in der Tabelle des Löschkonzepts.
    Der Absatz „legen wir das Konto im Anmeldedienst vorab an“ stimmt nur, wenn der Lauf
    unten mit `--konten-anlegen` lief; auf Produktion lief er ohne (20.11.), dort entfällt der
-   Absatz.
+   Absatz. Für Produktion erledigt mit #738 (20.11.2026); eine neue Instanz geht diese Punkte
+   wieder durch.
 2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (unten,
    „Kennungen umstellen“).
 3. Erst dann, gemeinsam: BFF auf den neuen Realm (`Keycloak__*`) und Einlösen im

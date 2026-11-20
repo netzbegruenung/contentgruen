@@ -410,8 +410,9 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Realm „gutgesagt“');
       expect(text).toContain('Ohne Einladung kann niemand selbst ein Konto anlegen');
       expect(text).not.toContain('eine Selbstregistrierung gibt es nicht');
-      // Bis zur Umstellung gilt noch die direkte Anmeldung bei der Netzbegrünung.
-      expect(text).toContain('Bis wir die Anmeldung umgestellt haben');
+      // Seit dem Realm-Umzug (20.11.) kein Übergangssatz mehr (#738)
+      expect(text).not.toContain('Bis wir die Anmeldung umgestellt haben');
+      expect(text).not.toContain('bis zur Umstellung vom');
     });
 
     it('Einladung: Mail-Adresse an den Anmeldedienst, Mail über dessen Mailserver, keine Adresse an der Einladung', () => {
@@ -434,12 +435,16 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
     });
 
-    it('Netzbegrünung: Konto vorab mit der Mail-Adresse aus dem Realm der Netzbegrünung, ohne Mail (#527)', () => {
+    it('Netzbegrünung: kein vorab angelegtes Konto, der Lauf auf Produktion war ohne (#738)', () => {
       const text = abschnitt('Anmeldung über die Netzbegrünung');
 
-      expect(text).toContain('legen wir das Konto im Anmeldedienst vorab an');
-      expect(text).toContain('mit deiner E-Mail-Adresse aus dem Identitätsdienst der Netzbegrünung');
-      expect(text).toContain('Eine E-Mail bekommst du dabei nicht');
+      expect(text).toContain('Bei deiner ersten Anmeldung legt der Anmeldedienst dafür ein Konto an');
+      expect(text).not.toContain('vorab an');
+    });
+
+    it('kein Zugang, den wir selbst anlegen, seit dem Realm-Umzug (#738)', () => {
+      expect(ganzerText()).not.toContain('Zugang, den wir selbst anlegen');
+      expect(ganzerText()).not.toContain('einen Zugang von Hand anlegen');
     });
 
     it('Wo deine Daten liegen: Anmeldedienst samt Mailversand beim Auftragsverarbeiter (Entscheidung 03.11.2026)', () => {
@@ -495,16 +500,18 @@ describe('DatenschutzComponent', () => {
       expect(text).not.toContain('Es bleibt ohne Passwort stehen');
     });
 
-    it('Netzbegrünung: Dauer für das vorab angelegte Konto, Angaben vom Anmeldedienst', () => {
+    it('Netzbegrünung: Angaben vom Anmeldedienst', () => {
       const text = abschnitt('Anmeldung über die Netzbegrünung');
 
-      expect(text).toContain('Das Konto bleibt danach wie jedes andere, bis wir es löschen');
-      expect(text).toContain('erhält diese Plattform vom Anmeldedienst');
+      expect(text).toContain('erhält diese Plattform vom Anmeldedienst eine Kennung');
       expect(text).toContain('Das gilt für alle Anmeldewege');
     });
 
-    it('Anmelde-Cookie: alle drei Kontoarten', () => {
-      expect(abschnitt('Anmelde-Cookie')).toContain('mit einem Konto aus einer Einladung und mit einem Zugang');
+    it('Anmelde-Cookie: beide Anmeldewege (#738)', () => {
+      const text = abschnitt('Anmelde-Cookie');
+      expect(text).toContain('Das gilt für beide Anmeldewege: über die Netzbegrünung und mit einem Konto aus einer Einladung.');
+      expect(text).toContain('die der Anmeldedienst übermittelt, aber keine Zugangs-Tokens');
+      expect(text).not.toContain('selbst anlegen');
     });
   });
 
@@ -780,11 +787,6 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Sie gehen nicht an uns und werden nicht gezählt.');
     });
 
-    it('Anmelde-Cookie: Angaben des Dienstes nur bei der Anmeldung über Anmeldedienst oder Netzbegrünung', () => {
-      expect(abschnitt('Anmelde-Cookie')).toContain(
-        'bei der Anmeldung über den Anmeldedienst oder die Netzbegrünung dazu die übrigen Angaben, die der Dienst übermittelt',
-      );
-    });
 
     it('kein KI-Vorschlag für Bildunterschriften mehr, also auch kein Anbieter in den USA (#393)', () => {
       const text = abschnitt('Keine Übermittlung außerhalb der EU');
