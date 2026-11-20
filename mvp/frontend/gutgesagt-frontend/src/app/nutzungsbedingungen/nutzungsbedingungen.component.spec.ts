@@ -47,12 +47,13 @@ describe('NutzungsbedingungenComponent', () => {
     );
   });
 
-  it('bezieht sich in Abschnitt 2 über den Hinweis über dem Absende-Knopf ein, nicht durch bloße Nutzung (#415)', () => {
+  it('bezieht sich in Abschnitt 2 mit einem eigenen Häkchen bei der ersten Anmeldung ein, nicht durch bloße Nutzung (0.9.8)', () => {
     const text = abschnittNummer('2.');
 
-    expect(text).toContain('Diesen Bedingungen stimmst du zu, wenn du etwas einstellst');
-    expect(text).toContain('mit dem Absenden stimmst du ihnen zu');
-    expect(text).toContain('schon mit dem Speichern beim Tippen');
+    expect(text).toContain('Diesen Bedingungen stimmst du bei der ersten Anmeldung zu, mit einem eigenen Häkchen');
+    expect(text).toContain('mit dem Absenden gibst du deinen Text nach Abschnitt 4 frei');
+    expect(text).toContain('geschieht die Freigabe schon mit dem Speichern beim Tippen');
+    expect(text).not.toContain('mit dem Absenden stimmst du ihnen zu');
     expect(normalisiert(seite.textContent)).not.toMatch(/mit der Nutzung|durch die Nutzung/);
   });
 
@@ -124,19 +125,23 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).not.toContain('Widersprichst du nicht');
     expect(text).toContain('Geänderte Bedingungen gelten für dich erst, wenn du ihnen zustimmst');
     expect(text).toContain('Bis dahin gilt für dich der Stand, der vorher für dich galt');
-    expect(text).toContain('Schweigen oder bloßes Weiternutzen, etwa Lesen oder Bewerten, gilt nicht als Zustimmung');
+    expect(text).toContain('Schweigen oder bloßes Weiternutzen, etwa Lesen, gilt nicht als Zustimmung');
+    expect(text).not.toContain('etwa Lesen oder Bewerten');
     expect(text).toContain('Ab diesem Stand bewahren wir jeden Stand dieser Bedingungen');
   });
 
-  it('holt die Zustimmung in Abschnitt 10 mit dem nächsten Absenden ein, eine Frage beim Anmelden nur als Möglichkeit (#521)', () => {
+  it('fragt in Abschnitt 10 mit einem Häkchen neu, wenn sich die Bedingungen ändern (0.9.8)', () => {
     const text = abschnittNummer('10.');
 
-    // Ohne Pflichtaktion: der Hinweis über dem Absende-Knopf (Abschnitt 2) verlinkt den aktuellen Stand.
-    expect(text).toContain('wenn du das nächste Mal etwas einstellst');
-    expect(text).toContain('Der Hinweis über dem Absende-Knopf verlinkt immer den aktuellen Stand');
-    // Mit Pflichtaktion: stimmt weiter, ohne sie zu versprechen.
-    expect(text).toContain('Fragen wir dich schon vorher, etwa bei der Anmeldung');
-    expect(text).not.toContain('Bei deiner nächsten Anmeldung zeigen wir dir');
+    expect(text).toContain('Bei der ersten Anmeldung stimmst du mit einem Häkchen zu');
+    expect(text).toContain(
+      'fragen wir dich mit einem Häkchen neu, wenn du Gut gesagt das nächste Mal mit deinem Konto nutzt',
+    );
+    expect(text).toContain('Willst du nicht zustimmen, kannst du mit deinem Konto nichts mehr einstellen und nichts bewerten');
+    // Die Zustimmung kommt nicht mehr über das Absenden und nicht über die Keycloak-Pflichtaktion.
+    expect(text).not.toContain('wenn du das nächste Mal etwas einstellst');
+    expect(text).not.toContain('Fragen wir dich schon vorher, etwa bei der Anmeldung');
+    expect(text).not.toContain('kommst du ohne Zustimmung nicht mehr hinein');
     expect(text).not.toContain('melden wir beim Wechsel alle ab');
   });
 

@@ -78,7 +78,7 @@ BEITRAGSTYPEN = ("commentary", "generic_text", "post", "image")
 # Kennt ein aelterer Dienst die Kennung noch nicht, legt das Skript ohne Kennung
 # an, wie der Dienst es fuer eine aeltere App im Browser-Cache annimmt, und
 # sagt das (``importieren``).
-CC0_WORTLAUT = "2026-11-02-formular"
+CC0_WORTLAUT = "2026-11-20-formular"
 CC0_UNBEKANNT = "Unbekannter Wortlaut des CC0-Hinweises"
 
 
