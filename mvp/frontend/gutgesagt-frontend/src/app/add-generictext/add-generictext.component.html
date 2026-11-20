@@ -46,7 +46,7 @@
                 </mat-form-field>
                 <!-- Einspaltig direkt unter dem Feld, damit man es beim Tippen sieht (Nutzerfuehrung 13.11.) -->
                 <app-gegenlesen *ngIf="einspaltig()" [kompakt]="true" [titel]="generictextForm.value.title" [text]="generictextForm.value.text" [aussage]="aussage.text"
-                                [hatHerkunft]="!herkunftFehlt" [herkunftEmpfohlen]="true"></app-gegenlesen>
+                                [hatHerkunft]="!herkunftFehlt" [herkunftOhneFundstelle]="herkunftOhneFundstelle" [herkunftEmpfohlen]="true"></app-gegenlesen>
 
                 <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
                 <div *ngIf="zeigtThemen" class="optionale-angaben">
@@ -99,7 +99,7 @@
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
             <app-gegenlesen *ngIf="!einspaltig()" [titel]="generictextForm.value.title" [text]="generictextForm.value.text" [aussage]="aussage.text"
-                            [hatHerkunft]="!herkunftFehlt" [herkunftEmpfohlen]="true"></app-gegenlesen>
+                            [hatHerkunft]="!herkunftFehlt" [herkunftOhneFundstelle]="herkunftOhneFundstelle" [herkunftEmpfohlen]="true"></app-gegenlesen>
         </section>
     </div>
 </div>

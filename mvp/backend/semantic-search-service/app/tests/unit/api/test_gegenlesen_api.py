@@ -71,11 +71,12 @@ def test_liefert_guete_und_anmerkungen(client, service):
                 "stelle": "titel",
                 "text": "Der Titel beginnt mit „Nicht“.",
                 "woerter": ["Nicht"],
+                "zaehlt": True,
             }
         ],
     }
     service.gegenlesen.assert_called_once_with(
-        "Nicht so", "Ein Text.", "Eine Aussage", True, None
+        "Nicht so", "Ein Text.", "Eine Aussage", True, None, False, None
     )
 
 
@@ -83,7 +84,9 @@ def test_aussage_und_text_sind_optional(client, service):
     response = client.post(PFAD, json={"titel": "Nur ein Titel"}, headers=ANGEMELDET)
 
     assert response.status_code == 200
-    service.gegenlesen.assert_called_once_with("Nur ein Titel", "", None, True, None)
+    service.gegenlesen.assert_called_once_with(
+        "Nur ein Titel", "", None, True, None, False, None
+    )
 
 
 def test_post_titel_ist_keine_behauptung(client, service):
@@ -95,7 +98,7 @@ def test_post_titel_ist_keine_behauptung(client, service):
 
     assert response.status_code == 200
     service.gegenlesen.assert_called_once_with(
-        "Nicht vergessen: Sommerfest", "", None, False, None
+        "Nicht vergessen: Sommerfest", "", None, False, None, False, None
     )
 
 
@@ -110,8 +113,58 @@ def test_herkunft_als_ja_oder_nein(client, service, hat_herkunft):
 
     assert response.status_code == 200
     service.gegenlesen.assert_called_once_with(
-        "T", "30 Prozent", None, True, hat_herkunft
+        "T", "30 Prozent", None, True, hat_herkunft, False, None
     )
+
+
+def test_fundstelle_und_zweck_gehen_mit(client, service):
+    # Ob die Herkunft nur eine Startseite ist, als Ja/Nein (die Herkunft selbst geht nicht
+    # mit); der Zweck, damit die Parteistimme bei Gleichgesinnten nicht abzieht.
+    response = client.post(
+        PFAD,
+        json={
+            "titel": "T",
+            "text": "30 Prozent",
+            "hat_herkunft": True,
+            "herkunft_ohne_fundstelle": True,
+            "zweck": "eigene_leute",
+        },
+        headers=ANGEMELDET,
+    )
+
+    assert response.status_code == 200
+    service.gegenlesen.assert_called_once_with(
+        "T", "30 Prozent", None, True, True, True, "eigene_leute"
+    )
+
+
+@pytest.mark.parametrize(
+    "feld", [{"zweck": "irgendwas"}, {"herkunft_ohne_fundstelle": "vielleicht"}]
+)
+def test_unbekannter_zweck_oder_kein_ja_nein_422(client, service, feld):
+    response = client.post(PFAD, json={"titel": "T", **feld}, headers=ANGEMELDET)
+
+    assert response.status_code == 422
+    service.gegenlesen.assert_not_called()
+
+
+def test_anmerkung_ohne_abzug_hat_zaehlt_false(client, service):
+    service.gegenlesen.return_value = Gegengelesen(
+        guete=10,
+        anmerkungen=[
+            Anmerkung(
+                art="erlebnis",
+                stelle="text",
+                text="Eigenes Erlebnis?",
+                woerter=["mein Nachbar"],
+                zaehlt=False,
+            )
+        ],
+    )
+
+    response = client.post(PFAD, json={"titel": "T"}, headers=ANGEMELDET)
+
+    assert response.json()["anmerkungen"][0]["zaehlt"] is False
 
 
 @pytest.mark.parametrize("kopf", [{}, {"X-User": "anonymous"}])

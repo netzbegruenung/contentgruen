@@ -101,6 +101,43 @@ describe('GegenlesenComponent', () => {
     tick(ANSAGE_PAUSE_MS);
   }));
 
+  it('schickt Fundstelle und Zweck als Angaben mit und liest neu, wenn sie sich ändern', fakeAsync(() => {
+    fixture.componentRef.setInput('hatHerkunft', true);
+    fixture.componentRef.setInput('herkunftOhneFundstelle', true);
+    fixture.componentRef.setInput('zweck', 'eigene_leute');
+    schreibe('Wärmepumpe lohnt sich', 'Sie spart 30 Prozent.');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const erste = http.expectOne(PFAD);
+    expect(erste.request.body.herkunft_ohne_fundstelle).toBe(true);
+    expect(erste.request.body.zweck).toBe('eigene_leute');
+    erste.flush({ guete: 7, anmerkungen: [] });
+
+    fixture.componentRef.setInput('herkunftOhneFundstelle', false);
+    fixture.detectChanges();
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const zweite = http.expectOne(PFAD);
+    expect('herkunft_ohne_fundstelle' in zweite.request.body).toBeFalse();
+    zweite.flush({ guete: 10, anmerkungen: [] });
+
+    fixture.componentRef.setInput('zweck', 'kommentarspalte');
+    fixture.detectChanges();
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const dritte = http.expectOne(PFAD);
+    expect(dritte.request.body.zweck).toBe('kommentarspalte');
+    dritte.flush({ guete: 10, anmerkungen: [] });
+    tick(ANSAGE_PAUSE_MS);
+  }));
+
+  it('schickt ohne Angaben weder Fundstelle noch Zweck', fakeAsync(() => {
+    schreibe('Wärmepumpe lohnt sich');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    const anfrage = http.expectOne(PFAD);
+    expect('herkunft_ohne_fundstelle' in anfrage.request.body).toBeFalse();
+    expect('zweck' in anfrage.request.body).toBeFalse();
+    anfrage.flush({ guete: 10, anmerkungen: [] });
+    tick(ANSAGE_PAUSE_MS);
+  }));
+
   it('zeigt das Siegel mit der Güte und die Anmerkungen darunter', fakeAsync(() => {
     schreibe('Nicht die Wärmepumpe ist das Problem');
     tick(GEGENLESEN_VERZOEGERUNG_MS);

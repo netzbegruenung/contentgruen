@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from core.logging import get_logger
 from dependencies import get_gegenlesen_service, require_user
+from domain.models.commentary import Zweck
 from services.gegenlesen.gegenlesen_service import Art, GegenlesenService, Stelle
 from utils.rate_limiter import gegenlesen_rate_limiter
 
@@ -43,6 +44,12 @@ class GegenlesenRequest(BaseModel):
     #: (Post, Bild: kein eigenes Herkunftsfeld), entfällt die Regel zu Zahlen ohne
     #: Herkunft. Nur ein Ja/Nein, die Herkunft selbst geht nicht mit.
     hat_herkunft: Optional[bool] = None
+    #: Eingetragen ist nur eine Startseite oder ein lokaler Pfad, keine Fundstelle; das
+    #: prüft das Formular. Auch nur ein Ja/Nein, und es zählt als fehlende Herkunft.
+    herkunft_ohne_fundstelle: bool = False
+    #: Zweck eines Kommentars: Für Gleichgesinnte zieht die Parteistimme nicht ab, und
+    #: Häme zählt nur, wenn sie die angesprochene Person trifft.
+    zweck: Optional[Zweck] = None
 
 
 class AnmerkungResponse(BaseModel):
@@ -50,6 +57,8 @@ class AnmerkungResponse(BaseModel):
     stelle: Stelle
     text: str
     woerter: List[str]
+    #: False bei einer Anmerkung ohne Abzug von der Güte.
+    zaehlt: bool = True
 
 
 class GegenlesenResponse(BaseModel):
@@ -75,6 +84,8 @@ async def gegenlesen(
             request.aussage,
             request.titel_ist_behauptung,
             request.hat_herkunft,
+            request.herkunft_ohne_fundstelle,
+            request.zweck.value if request.zweck else None,
         )
     except (ImportError, OSError) as fehler:
         # Sprachmodell nicht installiert: Das Formular zeigt dann einfach nichts.
