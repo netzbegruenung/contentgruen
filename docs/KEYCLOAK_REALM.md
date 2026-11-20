@@ -122,18 +122,21 @@ die Einlöseseite nennt dieselbe Frist.
 
 `keycloak-theme/gutgesagt/` ist das Login- und Mail-Theme des Realms, ohne Java und ohne
 Build. Es erbt von den Themes, die Keycloak mitbringt (`keycloak.v2` für die Seiten, `base`
-für die Mails), und überschreibt keine Seitenvorlage:
+für die Mails). Der Aufbau folgt der Startseite: weißer Kopf mit Logo, kursive Schlagzeile,
+das Formular im gelben Band.
 
 | Datei | Inhalt |
 |---|---|
-| `login/resources/css/gutgesagt.css` | Farben (nur in den `--gg-`Variablen oben, hell und dunkel, Werte aus `custom-theme.scss`), Schrift PT Sans, gelbes Band mit Logo und Name |
+| `login/resources/css/gutgesagt.css` | Farben (nur in den `--gg-`Variablen, hell und dunkel, Werte aus `custom-theme.scss`), Schrift PT Sans, Kopf, Band, Knöpfe |
+| `login/footer.ftl` | Hinweiszeile unter dem Formular („Lesen und Suchen geht ohne Konto“) |
+| `login/info.ftl` | Zwischenseite der Aktions-Links ohne doppelten Titel; sonst wie bei Keycloak |
 | `login/messages/messages_de.properties` | Seitentexte in Du-Form |
-| `email/html/template.ftl` | Rahmen aller HTML-Mails (Band mit Logo, Fuß); der Inhalt bleibt die Vorlage von Keycloak |
-| `email/messages/messages_de.properties` | Mailtexte in Du-Form, Betreff und Text- wie HTML-Fassung |
+| `email/html/template.ftl` | Rahmen der HTML-Mails (Name als Text, Schlagzeile, Band mit Knopf, Fuß) |
+| `email/html/executeActions.ftl`, `password-reset.ftl` | Einladung („Passwort festlegen“) und „Passwort vergessen“ mit Knopf; die übrigen Mails und alle Textfassungen kommen von Keycloak |
+| `email/messages/messages_de.properties` | Mailtexte in Du-Form (Betreff, Textfassung, Knopf und Absätze) |
 
-Das Logo der Mails lädt von `https://gutgesagt.netzbegruenung.de/marke/favicon-64-v2.png`;
-blockiert ein Mailprogramm Bilder, bleibt der Name als Text. Realm overrides (*Realm settings →
-Localization*) gehen den Texten des Themes vor.
+Die Mails laden nichts nach (kein Bild). Realm overrides (*Realm settings → Localization*)
+gehen den Texten des Themes vor.
 
 Auf dem Keycloak liegt `themes/gutgesagt` als Verweis auf einen festen Git-Stand dieses Repos.
 Keycloak liest Themes aus `themes/` bei jedem Aufruf; ein neues Theme ist ohne Neustart wählbar

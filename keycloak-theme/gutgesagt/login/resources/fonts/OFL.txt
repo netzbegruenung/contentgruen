@@ -1,4 +1,4 @@
-PT Sans (PTS55F.ttf, PTS75F.ttf), Lizenztext aus der Namenstabelle der Schriftdatei:
+PT Sans (PTS55F.ttf, PTS75F.ttf, PTS76F.ttf), Lizenztext aus der Namenstabelle der Schriftdatei:
 
 This Font Software is Copyright (c) 2010, ParaType Ltd. (http://paratype.com/public). All Rights Reserved.
 "PT Sans" is a Reserved Font Name for this Font Software.

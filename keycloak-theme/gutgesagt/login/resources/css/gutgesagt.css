@@ -189,3 +189,106 @@ a:not(.pf-v5-c-button) { text-decoration: underline; }
   .pf-v5-c-login__main-body { padding-left: 20px; padding-right: 20px; }
   #kc-page-title { font-size: 1.5rem; }
 }
+
+/* ===================================================================================
+   Seitenaufbau wie die Startseite (Variante C, gewählt 20.11.): weißer Kopf mit Logo und Wortmarke, große kursive
+   Schlagzeile in Tanne, darunter das gelbe Band über die volle Breite wie das Suchband der
+   Startseite (search-view.component.scss .such-band), darin Formular, breiter Knopf, Hinweis.
+   Überschreibt Teile der Regeln oben (Karte, Pille), die Variablen bleiben die Stellschrauben.
+   =================================================================================== */
+@font-face { font-family: "PT Sans GG"; src: url("../fonts/PTS76F.ttf") format("truetype"); font-weight: 700; font-style: italic; font-display: swap; }
+
+:root {
+  --gg-seite: #ffffff;          /* --seite-grund (= --flaeche) */
+  --gg-kopf-knopf: #005437;     /* --knopf-auf-band-grund */
+  --gg-kopf-knopf-hover: #00422b;
+  --gg-auf-kopf-knopf: #ffffff; /* --knopf-auf-band-schrift */
+  --gg-kopf-leise: #666666;     /* Hinweiszeile im Band, 5,34:1 auf #f6ff7c */
+  --gg-feld: #ffffff;           /* Felder im Band */
+  --gg-knopf-radius: 6px;       /* Suchen-Knopf der Startseite: eckig, keine Pille */
+  --gg-spalte: 560px;           /* Breite von Formular und Knopf im Band */
+}
+.pf-v5-theme-dark {
+  --gg-seite: #121619;          /* --seite-grund dunkel */
+  --gg-kopf-knopf: #e2e88a;     /* dunkel: gedämpftes Gelb wie „Suchen“ */
+  --gg-kopf-knopf-hover: #d4da7a;
+  --gg-auf-kopf-knopf: #121312;
+  --gg-kopf-leise: #c4c5c6;     /* 9,42:1 auf #18212a */
+  --gg-feld: #1b2125;
+  --gg-titel: #f2f2f2;
+}
+
+.login-pf body, body#keycloak-bg { background: var(--gg-seite) !important; }
+.pf-v5-c-login__container { grid-template-columns: minmax(0, 1fr); padding: 0; max-width: none; width: 100%; row-gap: 0; --pf-v5-c-login__container--RowGap: 0; }
+.pf-v5-c-login__header { --pf-v5-c-login__header--MarginBottom: 0; --pf-v5-c-login__header--xl--MarginTop: 0; --pf-v5-c-login__header--xl--MarginBottom: 0; display: block; }
+.pf-v5-c-login__header .pf-v5-c-brand { margin: 0 !important; }
+
+/* Kopf: links Logo und Wortmarke wie in der App-Kopfzeile */
+.pf-v5-c-login__header { padding: 16px; max-width: 1080px; width: 100%; margin: 0 auto; text-align: left; }
+#kc-header-wrapper { color: var(--gg-titel) !important; font-size: 2rem; font-style: italic; letter-spacing: -0.01em !important; gap: 10px; }
+#kc-header-wrapper::before { width: 40px; height: 40px; }
+
+/* Hauptteil ohne Karte */
+.pf-v5-c-login__main { background: none; --pf-v5-c-login__main--BackgroundColor: transparent; box-shadow: none; border-radius: 0; margin: 0; }
+.pf-v5-c-login__main-header { display: block; text-align: center; --pf-v5-c-login__main-header--PaddingTop: 0; padding: 24px 16px 0; max-width: 760px; margin: 0 auto; }
+#kc-page-title { color: var(--gg-titel); font-style: italic; font-weight: 700; font-size: 3rem; line-height: 1.05; letter-spacing: -0.015em; }
+
+/* Das Band: volle Breite, Inhalt in der mittigen Spalte */
+.pf-v5-c-login__main-body {
+  background: var(--gg-kopf); margin-top: 32px;
+  padding: 32px max(16px, calc((100% - var(--gg-spalte)) / 2)) 24px;
+}
+.pf-v5-c-login__main > .pf-v5-c-login__main-footer:last-child {
+  display: block; background: var(--gg-kopf); padding: 0 max(16px, calc((100% - var(--gg-spalte)) / 2)) 32px;
+}
+.pf-v5-c-login__main-body > .pf-v5-c-login__main-footer { padding: 0; }
+#kc-social-providers .pf-v5-c-login__main-body { background: none; margin: 0; padding: 0; }
+
+/* Felder im Band: weiß, Rand feldrand (3,43:1 zum Band) */
+.pf-v5-c-form-control { --pf-v5-c-form-control--BackgroundColor: var(--gg-feld); background: var(--gg-feld); }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control { background: var(--gg-feld); }
+.pf-v5-c-form__label-text { color: var(--gg-kopf-text); }
+.pf-v5-theme-dark .pf-v5-c-form__label-text { color: var(--gg-text); }
+
+/* Knöpfe: eckig wie „Suchen“, breit über die Feldbreite; der volle Knopf in kopf-knopf */
+.pf-v5-c-button, .pf-v5-c-button::after { --pf-v5-c-button--BorderRadius: var(--gg-knopf-radius); --pf-v5-c-button--after--BorderRadius: var(--gg-knopf-radius); border-radius: var(--gg-knopf-radius); }
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--BackgroundColor: var(--gg-kopf-knopf);
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--gg-kopf-knopf-hover);
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--gg-kopf-knopf-hover);
+  --pf-v5-c-button--m-primary--Color: var(--gg-auf-kopf-knopf);
+  --pf-v5-c-button--m-primary--hover--Color: var(--gg-auf-kopf-knopf);
+  --pf-v5-c-button--m-primary--focus--Color: var(--gg-auf-kopf-knopf);
+  font-size: 1.0625rem;
+}
+.pf-v5-c-button.pf-m-tertiary, .pf-v5-c-button.pf-m-secondary {
+  --pf-v5-c-button--m-tertiary--BackgroundColor: transparent;
+  --pf-v5-c-button--m-tertiary--Color: var(--gg-kopf-text);
+  --pf-v5-c-button--m-tertiary--after--BorderColor: var(--gg-kopf-text);
+  --pf-v5-c-button--m-secondary--Color: var(--gg-kopf-text);
+  --pf-v5-c-button--m-secondary--after--BorderColor: var(--gg-kopf-text);
+  font-weight: 400;
+}
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control, .pf-v5-c-input-group .pf-v5-c-button.pf-m-control::after { border-radius: 0 8px 8px 0; }
+.kc-login-divider { color: var(--gg-kopf-leise); }
+.kc-login-divider::before, .kc-login-divider::after { background: var(--gg-kopf-leise) !important; opacity: .5; }
+.pf-v5-c-login__main-body a:not(.pf-v5-c-button) { color: var(--gg-kopf-text); text-decoration: underline; }
+
+/* Info-/Fehlerseiten: Weiter-Link als breiter eckiger Knopf in kopf-knopf */
+#kc-info-message p > a:only-child, #kc-error-message #backToApplication {
+  border-radius: var(--gg-knopf-radius); background: var(--gg-kopf-knopf); color: var(--gg-auf-kopf-knopf) !important; text-decoration: none !important;
+}
+#kc-info-message p > a:only-child:hover, #kc-error-message #backToApplication:hover { background: var(--gg-kopf-knopf-hover); color: var(--gg-auf-kopf-knopf); }
+
+/* Hinweiszeile unter dem Knopf (footer.ftl), Stil wie die Hinweiszeile im Suchband */
+.gg-hinweis { margin: 0; text-align: center; font-size: 0.875rem; line-height: 1.45; color: var(--gg-kopf-leise); }
+.gg-hinweis a { color: inherit !important; text-decoration: underline; }
+
+@media (max-width: 599px) {
+  .pf-v5-c-login__header { padding: 12px 16px; }
+  #kc-header-wrapper { font-size: 1.5rem; }
+  #kc-header-wrapper::before { width: 32px; height: 32px; }
+  .pf-v5-c-login__main-header { padding: 16px 16px 0; }
+  #kc-page-title { font-size: 2.125rem; }
+  .pf-v5-c-login__main-body { margin-top: 20px; padding-top: 24px; padding-left: 16px; padding-right: 16px; }
+}
