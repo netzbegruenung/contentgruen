@@ -40,6 +40,9 @@ PFLICHTAKTIONEN = ["TERMS_AND_CONDITIONS"]
 # schon bestaetigt ist. Die Reihenfolge hier ist die, in der Mail und Bestaetigungsseite
 # die Schritte nennen.
 MAIL_AKTIONEN = ["UPDATE_PASSWORD", "VERIFY_EMAIL"]
+# Beta-Zugaenge (#488) ziehen mit bestaetigter Adresse um; dort nannten Mail und
+# Bestaetigungsseite sonst einen Schritt "E-Mail verifizieren", der nichts tut.
+MAIL_AKTIONEN_BESTAETIGT = ["UPDATE_PASSWORD"]
 # Wohin der Link nach dem letzten Schritt fuehrt, unter der App-Adresse: Die Seite
 # startet gleich die Anmeldung (Frontend, einladung/einladung-anmelden.component.ts).
 # Keycloak beendet den Link ohne Anmeldung; ohne diese Seite stuende die Person
@@ -245,13 +248,18 @@ class KeycloakKonten:
                 konto_id = self._konto_id(antwort)
                 ergebnis.angelegt[kennung] = konto_id
                 try:
-                    self._mail_ausloesen(sitzung.anfrage, konto_id).raise_for_status()
+                    self._mail_ausloesen(
+                        sitzung.anfrage, konto_id, MAIL_AKTIONEN_BESTAETIGT
+                    ).raise_for_status()
                 except httpx.HTTPError:
                     ergebnis.ohne_mail.append(kennung)
         return ergebnis
 
     def _mail_ausloesen(
-        self, anfrage: Callable[..., httpx.Response], konto_id: str
+        self,
+        anfrage: Callable[..., httpx.Response],
+        konto_id: str,
+        aktionen: List[str] = MAIL_AKTIONEN,
     ) -> httpx.Response:
         """
         Keycloak schickt die Mail "Passwort festlegen". Der Link fuehrt danach auf
@@ -262,7 +270,7 @@ class KeycloakKonten:
         """
         url = f"{self._admin}/{konto_id}/execute-actions-email"
         antwort = anfrage(
-            "PUT", url, params=self._mail_parameter(anmelden=True), json=MAIL_AKTIONEN
+            "PUT", url, params=self._mail_parameter(anmelden=True), json=aktionen
         )
         if antwort.status_code == 400 and self._app_client_id and self._app_url:
             logger.warning(
@@ -273,7 +281,7 @@ class KeycloakKonten:
                 "PUT",
                 url,
                 params=self._mail_parameter(anmelden=False),
-                json=MAIL_AKTIONEN,
+                json=aktionen,
             )
         return antwort
 

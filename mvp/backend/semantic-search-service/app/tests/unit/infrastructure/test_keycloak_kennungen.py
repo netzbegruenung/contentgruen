@@ -13,7 +13,7 @@ import pytest
 
 from domain.interfaces.konten_im_realm import BetaZugang
 from infrastructure.keycloak_konten import (
-    MAIL_AKTIONEN,
+    MAIL_AKTIONEN_BESTAETIGT,
     PFLICHTAKTIONEN,
     KeycloakKonten,
 )
@@ -183,7 +183,7 @@ class TestBetaZugaengeUmziehen:
             for r in keycloak.anfragen
             if r.url.path.endswith("/execute-actions-email")
         ]
-        assert json.loads(mail.content) == MAIL_AKTIONEN
+        assert json.loads(mail.content) == MAIL_AKTIONEN_BESTAETIGT
 
     def test_ein_wort_als_name_ergibt_wie_bisher_keinen_namen(self):
         """Die BFF zeigte dafuer keinen Anzeigenamen; mit Vorname allein zeigte sie ihn."""

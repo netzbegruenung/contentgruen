@@ -42,9 +42,10 @@ CODE_MAX = 64
 # Vor- und Nachname gehen an Keycloak (firstName, lastName). Erlaubt ist, was das
 # Benutzerprofil von Keycloak erlaubt (Validator person-name-prohibited-characters,
 # 26.8.2); sonst lehnte Keycloak das Konto ab, und die Seite meldete einen
-# Serverfehler statt eines falschen Namens. Laenger als 100 Zeichen heisst niemand.
+# Serverfehler statt eines falschen Namens. Dazu "@": Daraus bildete die BFF keinen
+# Anzeigenamen (DisplayNamePolicy). Laenger als 100 Zeichen heisst niemand.
 NAME_MAX = 100
-NAME_VERBOTEN = re.compile(r'[<>&"\v$%!#?§;*~/\\|^=\[\]{}()\x00-\x1f\x7f]')
+NAME_VERBOTEN = re.compile(r'[<>&"\v$%!#?§;*~/\\|^=\[\]{}()@\x00-\x1f\x7f]')
 
 
 class EinladungAnlegenRequest(BaseModel):

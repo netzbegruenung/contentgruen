@@ -43,15 +43,17 @@
         <mat-form-field appearance="outline">
           <mat-label>Vorname</mat-label>
           <input matInput name="vorname" autocomplete="given-name" [maxlength]="nameMax"
+                 aria-describedby="name-hinweis" [attr.aria-invalid]="stand === 'fehler' && fehler === 'name'"
                  [(ngModel)]="vorname" required />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Nachname</mat-label>
           <input matInput name="nachname" autocomplete="family-name" [maxlength]="nameMax"
+                 aria-describedby="name-hinweis" [attr.aria-invalid]="stand === 'fehler' && fehler === 'name'"
                  [(ngModel)]="nachname" required />
         </mat-form-field>
       </div>
-      <p class="hinweis">
+      <p class="hinweis" id="name-hinweis">
         In Gut gesagt erscheinst du mit Vornamen und dem ersten Buchstaben des Nachnamens, etwa
         „Anna B.“
       </p>
@@ -64,7 +66,7 @@
           Das sieht nicht wie eine Mail-Adresse aus. Bitte prüf sie noch einmal.
         </p>
         <p *ngSwitchCase="'name'" class="warnung" role="alert">
-          Bitte prüf deinen Namen: Zeichen wie ! / ( ) &lt; &gt; gehen darin nicht.
+          Bitte prüf deinen Namen: Zeichen wie ! / ( ) &#64; &lt; &gt; gehen darin nicht.
         </p>
         <p *ngSwitchCase="'zu_oft'" class="warnung" role="alert">
           Von hier kamen gerade sehr viele Versuche. Bitte versuch es in einer Viertelstunde noch einmal.
@@ -89,7 +91,7 @@
       <!-- "drei Tage": MAIL_GUELTIG_SEKUNDEN in infrastructure/keycloak_konten.py -->
       <p>
         Schau in dein Postfach: Dort ist eine Mail, mit der du dein Passwort festlegst. Der Link darin
-        gilt drei Tage. Danach geht es direkt zur Anmeldung.
+        gilt drei Tage. Danach meldest du dich gleich an.
       </p>
       <p>
         Keine Mail bekommen, oder gab es schon ein Konto mit dieser Adresse? Dann

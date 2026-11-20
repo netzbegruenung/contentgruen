@@ -153,6 +153,8 @@ describe('EinladungComponent', () => {
     const nachname = el().querySelector<HTMLInputElement>('input[name="nachname"]')!;
     expect(vorname.getAttribute('autocomplete')).toBe('given-name');
     expect(nachname.getAttribute('autocomplete')).toBe('family-name');
+    expect(vorname.getAttribute('aria-describedby')).toContain('name-hinweis');
+    expect(el().querySelector('#name-hinweis')?.textContent).toContain('„Anna B.“');
     const labels = Array.from(el().querySelectorAll('mat-label')).map((l) => l.textContent?.trim());
     expect(labels).toEqual(jasmine.arrayContaining(['Vorname', 'Nachname', 'Mail-Adresse']));
     expect(el().textContent).toContain('„Anna B.“');
@@ -181,6 +183,7 @@ describe('EinladungComponent', () => {
 
     http.expectNone(`${URL}/einloesen`);
     expect(el().querySelector('[role="alert"]')?.textContent).toContain('prüf deinen Namen');
+    expect(el().querySelector('input[name="vorname"]')?.getAttribute('aria-invalid')).toBe('true');
   });
 
   it('sagt bei 422 zum Namen, dass der Name nicht passt, nicht die Adresse', () => {

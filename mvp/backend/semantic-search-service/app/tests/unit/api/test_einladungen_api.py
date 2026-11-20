@@ -234,6 +234,7 @@ class TestEinloesen:
             {"vorname": "  ", "nachname": "Beispiel"},
             {"vorname": "Anna", "nachname": "<b>Beispiel</b>"},
             {"vorname": "Anna!", "nachname": "Beispiel"},
+            {"vorname": "Anna", "nachname": "anna@example.org"},
             {"vorname": "A" * 101, "nachname": "Beispiel"},
         ],
     )

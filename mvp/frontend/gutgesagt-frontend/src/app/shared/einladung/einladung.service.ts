@@ -8,10 +8,10 @@ import { stillerKontext } from '../selbst-nachladen';
 export const EINLADUNG_NOTIZ_MAX = 200;
 export const EINLADUNG_EINLOESUNGEN_MAX = 1000;
 // Wie NAME_MAX und NAME_VERBOTEN in api/v1/einladungen.py: was das Benutzerprofil von
-// Keycloak bei Vor- und Nachnamen ablehnt.
+// Keycloak bei Vor- und Nachnamen ablehnt, dazu "@" (kein Anzeigename in der BFF).
 export const EINLADUNG_NAME_MAX = 100;
 // eslint-disable-next-line no-control-regex
-const NAME_VERBOTEN = /[<>&"\v$%!#?§;*~/\\|^=[\]{}()\x00-\x1f\x7f]/;
+const NAME_VERBOTEN = /[<>&"\v$%!#?§;*~/\\|^=[\]{}()@\x00-\x1f\x7f]/;
 
 /** Ob Keycloak den Namen nimmt; leer zählt nicht als gültig. */
 export function nameGueltig(name: string): boolean {
