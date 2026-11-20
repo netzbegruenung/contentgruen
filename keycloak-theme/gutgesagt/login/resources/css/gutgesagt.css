@@ -117,6 +117,7 @@
 .pf-v5-c-form-control > input { min-height: 46px; }
 .pf-v5-c-form-control::before { border: 1px solid var(--gg-feldrand) !important; border-radius: inherit; }
 .pf-v5-c-form-control::after { border: 0 !important; }
+.pf-v5-c-form-control.pf-m-error::before { border-color: var(--gg-fehler-text) !important; }
 .pf-v5-c-form-control:focus-within { outline: 3px solid var(--gg-fokus); outline-offset: 1px; }
 .pf-v5-c-form-control input:focus-visible { outline: none; }
 .pf-v5-c-input-group .pf-v5-c-input-group__item.pf-m-fill .pf-v5-c-form-control { --pf-v5-c-form-control--BorderRadius: 8px 0 0 8px; border-radius: 8px 0 0 8px; }
@@ -155,8 +156,9 @@
 .pf-v5-c-button:focus-visible, a:focus-visible, select:focus-visible, input[type="checkbox"]:focus-visible {
   outline: 3px solid var(--gg-fokus); outline-offset: 2px;
 }
+/* Links im Text unterstrichen, nicht nur farbig (WCAG 1.4.1); Knöpfe ausgenommen */
 a { color: var(--gg-link); }
-.pf-v5-theme-dark a:not(.pf-v5-c-button) { text-decoration: underline; }
+a:not(.pf-v5-c-button) { text-decoration: underline; }
 .kc-login-divider { color: var(--gg-text-leise); }
 
 /* Meldungen */

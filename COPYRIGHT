@@ -28,6 +28,13 @@ is in mvp/frontend/gutgesagt-frontend/public/themen/FLUENT-EMOJI-LIZENZ.txt. Exc
 public/themen/europa.svg is an own drawing of the European emblem, not from Fluent
 Emoji; its source and terms of use are in public/themen/HINWEIS-EUROPA.txt.
 
+The Keycloak theme in keycloak-theme/gutgesagt/login/resources/ contains the logo hand
+from Fluent Emoji (img/logo.svg, img/favicon.ico; https://github.com/microsoft/fluentui-emoji),
+Copyright (c) Microsoft Corporation, used under the MIT License, modified (license text in
+img/FLUENT-EMOJI-LIZENZ.txt), and PT Sans (fonts/PTS55F.ttf, fonts/PTS75F.ttf), Copyright (c)
+2010 ParaType Ltd., used under the SIL Open Font License 1.1, unmodified (license text in
+fonts/OFL.txt).
+
 The stemmer in mvp/backend/semantic-search-service/app/utils/german_stemmer.py follows
 the CISTEM reference implementation (https://github.com/LeonieWeissweiler/CISTEM),
 Copyright (c) 2017 Leonie Weißweiler, used under the MIT License, modified. The license

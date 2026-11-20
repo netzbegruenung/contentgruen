@@ -135,12 +135,11 @@ Das Logo der Mails lädt von `https://gutgesagt.netzbegruenung.de/marke/favicon-
 blockiert ein Mailprogramm Bilder, bleibt der Name als Text. Realm overrides (*Realm settings →
 Localization*) gehen den Texten des Themes vor.
 
-Auf den Keycloak kommt das Theme per Salt (State `keycloak.theme-gutgesagt`): Er lädt das
-Archiv des Git-Stands aus dem Pillar `keycloak:gutgesagt_theme_ref` und verlinkt
-`themes/gutgesagt` darauf. Keycloak liest Themes aus `themes/` bei jedem Aufruf; ein neues
-Theme ist ohne Neustart wählbar (*Realm settings → Themes*: Login theme und Email theme
-`gutgesagt`). Ändert sich ein schon geladenes Theme, gilt die Änderung erst nach einem
-Neustart von Keycloak, weil Keycloak geladene Themes zwischenspeichert.
+Auf dem Keycloak liegt `themes/gutgesagt` als Verweis auf einen festen Git-Stand dieses Repos.
+Keycloak liest Themes aus `themes/` bei jedem Aufruf; ein neues Theme ist ohne Neustart wählbar
+(*Realm settings → Themes*: Login theme und Email theme `gutgesagt`). Ein neuer Stand eines schon
+geladenen Themes braucht einen Neustart von Keycloak, weil Keycloak `theme.properties`, Texte
+und Templates geladener Themes zwischenspeichert.
 
 `scripts/tests/test_keycloak_theme.py` prüft Texte (kein gerades `'`, Klammern nur als
 Platzhalter), Eltern-Themes und dass Farben nur in den Variablen stehen.
