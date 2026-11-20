@@ -31,8 +31,8 @@
   <meta name="gutgesagt-version" content="${APP_VERSION}">
   <!-- Bilder lieferte nginx bis zum 20.11.2026 mit "expires 1y" aus, deshalb tragen die Symbole
        und das Logo vom 29.10. "-v2"; die alten Dateien bleiben fuer alte Verweise liegen. Seitdem
-       fragen Browser bei ungehashten Dateien aus public/ vor jeder Nutzung nach ("no-cache"),
-       ein geaendertes Bild darf seinen Namen behalten. Dass jede hier und im Manifest genannte Datei existiert, prueft
+       liegen ungehashte Dateien aus public/ nur einen Tag im Cache, danach fragt der Browser
+       nach: Ein geaendertes Bild darf seinen Namen behalten und ist hoechstens einen Tag alt. Dass jede hier und im Manifest genannte Datei existiert, prueft
        scripts/tests/test_symbole.py. -->
   <link rel="icon" type="image/svg+xml" href="marke/logo-v2.svg">
   <link rel="icon" type="image/png" sizes="64x64" href="marke/favicon-64-v2.png">

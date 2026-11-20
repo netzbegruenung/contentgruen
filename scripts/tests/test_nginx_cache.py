@@ -3,6 +3,7 @@ Cache-Regeln des Frontend-nginx (nginx.conf fuer Test und Produktion, nginx.dock
 den Dev-Stack): Nur Dateien mit Inhalts-Hash im Namen liegen ein Jahr im Cache. Alle anderen
 statischen Dateien kommen ungehasht aus public/ und behalten beim Ersetzen ihren Namen; mit
 "expires 1y" sahen Browser nach #725 ein Jahr lang das alte /profilbild-2026.jpg (20.11.2026).
+Sie liegen jetzt einen Tag im Cache, danach fragt der Browser per ETag nach.
 
 Ohne nginx: Der Test liest die location-Bloecke aus beiden Dateien und waehlt fuer einen Pfad
 die Regel wie nginx ("=" vor Regex, Regex in Reihenfolge der Datei, sonst Praefix). Die
@@ -33,6 +34,7 @@ GEHASHT = [
     "/media/roboto-latin-4KX2JQ7M.woff2",
 ]
 EIN_JAHR = "public, max-age=31536000, immutable"
+EIN_TAG = "public, max-age=86400"
 
 
 def _regeln(konfiguration: str) -> list[tuple[str, str, str | None]]:
@@ -90,7 +92,7 @@ def test_gehashte_dateien_ein_jahr(konfiguration, pfad):
 @pytest.mark.parametrize("konfiguration", KONFIGURATIONEN)
 def test_nichts_aus_public_ein_jahr(konfiguration):
     """Keine ungehashte Datei darf der Hash-Regel zufaellig gleichen (etwa mensch-01.png)."""
-    zu_lange = [p for p in _public_dateien() if "max-age" in (_cache_control(konfiguration, p) or "")]
+    zu_lange = [p for p in _public_dateien() if _cache_control(konfiguration, p) == EIN_JAHR]
     assert not zu_lange
 
 
@@ -105,9 +107,9 @@ def test_nichts_aus_public_ein_jahr(konfiguration):
         "/vorschau/bewerten-v1.webp",
     ],
 )
-def test_ungehashte_dateien_revalidieren(konfiguration, pfad):
+def test_ungehashte_dateien_einen_tag(konfiguration, pfad):
     assert (PUBLIC / pfad.lstrip("/")).is_file(), pfad
-    assert _cache_control(konfiguration, pfad) == "no-cache"
+    assert _cache_control(konfiguration, pfad) == EIN_TAG
 
 
 @pytest.mark.parametrize("konfiguration", KONFIGURATIONEN)
