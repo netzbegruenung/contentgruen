@@ -113,6 +113,88 @@ class TestNamen:
         repository.anzeigename_speichern.assert_not_called()
 
 
+STARTKONTO = "redaktion-startkonto"
+VOLL = "Redaktion%20Gut%20gesagt"
+
+
+@pytest.mark.unit
+class TestStartkontoVollerName:
+    """Startkonten sind Funktionskonten und zeigen den ungekuerzten Namen."""
+
+    def test_startkonto_bekommt_den_vollen_namen(self, repository):
+        service = AnzeigenameService(repository, frozenset({STARTKONTO}))
+
+        service.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+
+        repository.anzeigename_speichern.assert_called_once_with(
+            STARTKONTO, "Redaktion Gut gesagt"
+        )
+
+    def test_normales_konto_bleibt_gekuerzt(self, repository):
+        service = AnzeigenameService(repository, frozenset({STARTKONTO}))
+
+        service.merken("kennung-1", "Anna%20B.", "Anna%20Berger")
+
+        repository.anzeigename_speichern.assert_called_once_with("kennung-1", "Anna B.")
+
+    def test_leere_startkonten_liste_aendert_nichts(self, repository):
+        service = AnzeigenameService(repository, frozenset())
+
+        service.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+
+        repository.anzeigename_speichern.assert_called_once_with(
+            STARTKONTO, "Redaktion G."
+        )
+
+    def test_startkonto_ohne_vollen_namen_nimmt_den_gekuerzten(self, repository):
+        service = AnzeigenameService(repository, frozenset({STARTKONTO}))
+
+        service.merken(STARTKONTO, "Redaktion%20G.")
+
+        repository.anzeigename_speichern.assert_called_once_with(
+            STARTKONTO, "Redaktion G."
+        )
+
+    def test_nach_neustart_ersetzt_der_volle_name_den_gekuerzten(self, repository):
+        # Vor dem Deploy abgelegt: "Redaktion G.". Der neue Prozess hat einen leeren
+        # Cache und schreibt beim ersten Request des Startkontos den vollen Namen.
+        vorher = AnzeigenameService(repository)
+        vorher.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+        nachher = AnzeigenameService(repository, frozenset({STARTKONTO}))
+        nachher.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+        nachher.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+
+        assert [c.args for c in repository.anzeigename_speichern.call_args_list] == [
+            (STARTKONTO, "Redaktion G."),
+            (STARTKONTO, "Redaktion Gut gesagt"),
+        ]
+
+    def test_aus_der_liste_entfernt_wird_wieder_gekuerzt(self, repository):
+        vorher = AnzeigenameService(repository, frozenset({STARTKONTO}))
+        vorher.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+        nachher = AnzeigenameService(repository, frozenset())
+        nachher.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+
+        assert [c.args for c in repository.anzeigename_speichern.call_args_list] == [
+            (STARTKONTO, "Redaktion Gut gesagt"),
+            (STARTKONTO, "Redaktion G."),
+        ]
+
+    def test_ohne_liste_gilt_die_konfiguration(self, repository, monkeypatch):
+        from services import anzeigename_service as modul
+
+        monkeypatch.setattr(modul.settings, "startkonten", f" {STARTKONTO} ,andere")
+        service = AnzeigenameService(repository)
+
+        service.merken(STARTKONTO, "Redaktion%20G.", VOLL)
+        service.merken("kennung-1", "Anna%20B.", "Anna%20Berger")
+
+        assert [c.args for c in repository.anzeigename_speichern.call_args_list] == [
+            (STARTKONTO, "Redaktion Gut gesagt"),
+            ("kennung-1", "Anna B."),
+        ]
+
+
 @pytest.mark.unit
 class TestDependency:
     """anzeigename_merken liest genau die beiden Header, die das BFF setzt."""
@@ -139,6 +221,28 @@ class TestDependency:
 
         repository.anzeigename_speichern.assert_called_once_with(
             "kennung-1", "Jürgen Ö."
+        )
+
+    def test_voller_name_wird_an_den_dienst_gereicht(self, repository, monkeypatch):
+        service = AnzeigenameService(repository, frozenset({STARTKONTO}))
+        monkeypatch.setattr(dependencies, "get_anzeigename_service", lambda: service)
+        app = FastAPI(dependencies=[Depends(dependencies.anzeigename_merken)])
+
+        @app.get("/ping")
+        def ping():
+            return {}
+
+        TestClient(app).get(
+            "/ping",
+            headers={
+                "X-User": STARTKONTO,
+                "X-User-Display-Name": "Redaktion%20G.",
+                "X-User-Full-Name": VOLL,
+            },
+        )
+
+        repository.anzeigename_speichern.assert_called_once_with(
+            STARTKONTO, "Redaktion Gut gesagt"
         )
 
     def test_ohne_header_kein_zugriff(self, client, repository):

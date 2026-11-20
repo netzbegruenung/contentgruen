@@ -159,4 +159,28 @@ public class DisplayNamePolicyTests
 
         Assert.Null(DisplayNamePolicy.From(user));
     }
+
+    [Fact]
+    public void FullFrom_GivenNameAndSurname_KeepsEveryWord()
+    {
+        var user = Mit((ClaimTypes.GivenName, "Redaktion"), (ClaimTypes.Surname, "Gut  gesagt"));
+
+        Assert.Equal("Redaktion Gut gesagt", DisplayNamePolicy.FullFrom(user));
+    }
+
+    [Fact]
+    public void FullFrom_OnlyNameClaim_KeepsEveryWord()
+    {
+        Assert.Equal("Redaktion Gut gesagt", DisplayNamePolicy.FullFrom(Mit(("name", "Redaktion Gut gesagt"))));
+    }
+
+    [Fact]
+    public void FullFrom_SingleWordOrAddress_GivesNothing()
+    {
+        Assert.Null(DisplayNamePolicy.FullFrom(Mit(("name", "Redaktion"))));
+        Assert.Null(DisplayNamePolicy.FullFrom(Mit((ClaimTypes.GivenName, "Kim"))));
+        Assert.Null(DisplayNamePolicy.FullFrom(Mit(("name", "test.user@example.com x"))));
+        Assert.Null(DisplayNamePolicy.FullFrom(Mit(
+            (ClaimTypes.GivenName, "test.user@example.com"), (ClaimTypes.Surname, "x"))));
+    }
 }

@@ -578,16 +578,18 @@ def get_current_user_optional(
 def anzeigename_merken(
     x_user: Optional[str] = Header(None, alias="X-User"),
     x_user_display_name: Optional[str] = Header(None, alias="X-User-Display-Name"),
+    x_user_full_name: Optional[str] = Header(None, alias="X-User-Full-Name"),
 ) -> None:
     """
     App-weite Dependency (main.py): den Anzeigenamen aus dem BFF-Header ablegen.
+    Den vollen Namen nimmt der Dienst nur fuer Startkonten (anzeigename_service).
 
     Synchron, damit FastAPI sie im Threadpool ausfuehrt - der seltene Schreibzugriff
     blockiert so nicht die Event-Loop. Ohne Header passiert nichts, auch kein
     Datenbankzugriff.
     """
     if x_user_display_name:
-        get_anzeigename_service().merken(x_user, x_user_display_name)
+        get_anzeigename_service().merken(x_user, x_user_display_name, x_user_full_name)
 
 
 def ist_admin_kopf(x_is_admin: Optional[str]) -> bool:

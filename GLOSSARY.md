@@ -590,7 +590,7 @@ Die Kommentare zu häufigen Aussagen, die das Gründungsteam vor dem Start schre
 _Avoid_: Seed, Grundbestand, Demo-Inhalt
 
 **Startkonto**:
-Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
+Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Ein Startkonto ist ein Funktionskonto, keine Person: Sein Anzeigename ist der volle Name aus der Anmeldung, nicht Vorname und Initial. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
 **Art.-9-Einwilligung**:
@@ -618,7 +618,7 @@ Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personen
 _Avoid_: User-ID, Nutzer-ID
 
 **Anzeigename**:
-Der Name, unter dem eine Person anderen Mitwirkenden gezeigt wird: Vorname und Initial des Nachnamens aus der Anmeldung, etwa „Anna B.“. Besucher sehen keine Anzeigenamen, und niemand sieht den vollen Namen aus dem Login.
+Der Name, unter dem eine Person anderen Mitwirkenden gezeigt wird: Vorname und Initial des Nachnamens aus der Anmeldung, etwa „Anna B.“. Besucher sehen keine Anzeigenamen, und niemand sieht den vollen Namen aus dem Login. Ausnahme Startkonto: Als Funktionskonto zeigt es Vor- und Nachname aus der Anmeldung ungekürzt, etwa „Redaktion Gut gesagt“.
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Ehemalige Person**:
