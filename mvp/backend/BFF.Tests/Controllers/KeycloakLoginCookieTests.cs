@@ -57,8 +57,23 @@ public class KeycloakLoginCookieTests
         public string? Nonce { get; set; }
         public required SigningCredentials Credentials { get; init; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        /// <summary>Formular des letzten Pushed Authorization Request, falls einer kam.</summary>
+        public Dictionary<string, string>? ParRequest { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request.RequestUri!.AbsoluteUri == ParEndpoint)
+            {
+                var form = await request.Content!.ReadAsStringAsync(cancellationToken);
+                ParRequest = QueryHelpers.ParseQuery(form).ToDictionary(p => p.Key, p => p.Value.ToString());
+                return new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new StringContent(
+                        "{\"request_uri\":\"urn:ietf:params:oauth:request_uri:test\",\"expires_in\":60}",
+                        Encoding.UTF8, "application/json")
+                };
+            }
+
             const string accessToken = "test-access-token";
             var hash = SHA256.HashData(Encoding.ASCII.GetBytes(accessToken));
             var now = DateTime.UtcNow;
@@ -89,14 +104,16 @@ public class KeycloakLoginCookieTests
                 id_token = idToken
             });
 
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(body, Encoding.UTF8, "application/json")
-            });
+            };
         }
     }
 
-    private static (WebApplicationFactory<Program> Factory, FakeTokenEndpoint Endpoint) CreateHost(string authority = Authority)
+    private const string ParEndpoint = Authority + "/protocol/openid-connect/ext/par/request";
+
+    private static (WebApplicationFactory<Program> Factory, FakeTokenEndpoint Endpoint) CreateHost(string authority = Authority, bool mitPar = false)
     {
         var key = new RsaSecurityKey(RSA.Create(2048)) { KeyId = "test-key" };
         var endpoint = new FakeTokenEndpoint
@@ -111,6 +128,12 @@ public class KeycloakLoginCookieTests
             TokenEndpoint = Authority + "/protocol/openid-connect/token"
         };
         configuration.SigningKeys.Add(key);
+        if (mitPar)
+        {
+            // Wie Keycloak: die Discovery nennt einen PAR-Endpunkt, und der OIDC-Handler von
+            // .NET 9 schickt die Parameter dann im Backchannel statt in der Adresse.
+            configuration.PushedAuthorizationRequestEndpoint = ParEndpoint;
+        }
 
         var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -143,7 +166,7 @@ public class KeycloakLoginCookieTests
     /// Spielt die Anmeldung durch und gibt die Antwort von /signin-oidc zurueck. Auch fuer
     /// SitzungNachKontoloeschungTests, die ein echtes Keycloak-Cookie brauchen.
     /// </summary>
-    internal static async Task<HttpResponseMessage> LoginAsync(string? returnUrl, string authority = Authority)
+    internal static async Task<HttpResponseMessage> LoginAsync(string? returnUrl, string authority = Authority, string? weg = null)
     {
         var (host, endpoint) = CreateHost(authority);
         using var factory = host;
@@ -153,9 +176,7 @@ public class KeycloakLoginCookieTests
             HandleCookies = false
         });
 
-        var loginPath = "/api/auth/login/keycloak"
-                        + (returnUrl is null ? "" : "?returnUrl=" + Uri.EscapeDataString(returnUrl));
-        using var challenge = await client.GetAsync(loginPath);
+        using var challenge = await client.GetAsync(LoginPath(returnUrl, weg));
         Assert.Equal(HttpStatusCode.Redirect, challenge.StatusCode);
 
         var authorize = QueryHelpers.ParseQuery(challenge.Headers.Location!.Query);
@@ -177,6 +198,30 @@ public class KeycloakLoginCookieTests
         callback.Headers.Add("Cookie", string.Join("; ", cookies));
 
         return await client.SendAsync(callback);
+    }
+
+    private static string LoginPath(string? returnUrl, string? weg)
+    {
+        var query = new List<string>();
+        if (returnUrl is not null) query.Add("returnUrl=" + Uri.EscapeDataString(returnUrl));
+        if (weg is not null) query.Add("weg=" + Uri.EscapeDataString(weg));
+        return "/api/auth/login/keycloak" + (query.Count == 0 ? "" : "?" + string.Join("&", query));
+    }
+
+    /// <summary>Nur die Challenge: die Query der Weiterleitung zum Authorization-Endpunkt.</summary>
+    private static async Task<Dictionary<string, Microsoft.Extensions.Primitives.StringValues>> AuthorizeQueryAsync(string? weg)
+    {
+        var (host, _) = CreateHost();
+        using var factory = host;
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = false
+        });
+
+        using var challenge = await client.GetAsync(LoginPath("/fangkorb", weg));
+        Assert.Equal(HttpStatusCode.Redirect, challenge.StatusCode);
+        return QueryHelpers.ParseQuery(challenge.Headers.Location!.Query);
     }
 
     internal static SetCookieHeaderValue AuthCookie(HttpResponseMessage response)
@@ -247,5 +292,94 @@ public class KeycloakLoginCookieTests
     public void LoginRedirectTarget_OnlyAcceptsPathsInsideTheFrontend(string? returnUrl, string expected)
     {
         Assert.Equal(expected, AuthController.LoginRedirectTarget(FrontendUrl + "/", returnUrl));
+    }
+
+    // Anmeldung auf /login (20.11.): "Mit Netzbegruenung anmelden" springt ueber die
+    // Anmeldeseite des Realms gleich zur Netzbegruenung; ohne weg bleibt es bei der Seite
+    // mit E-Mail und Passwort fuer Einladungskonten.
+    [Fact]
+    public async Task KeycloakChallenge_WegNetzbegruenung_SendsIdpHint()
+    {
+        var authorize = await AuthorizeQueryAsync(weg: "netzbegruenung");
+
+        Assert.Equal("netzbegruenung", authorize["kc_idp_hint"].ToString());
+    }
+
+    /// <summary>
+    /// Keycloak nennt in der Discovery einen PAR-Endpunkt; .NET 9 schickt die Parameter dann im
+    /// Backchannel, und die Adresse fuer den Browser traegt nur noch request_uri. Der Hint muss
+    /// deshalb im PAR-Formular stehen (Keycloak liest ihn dort ab 26.6).
+    /// </summary>
+    [Fact]
+    public async Task KeycloakChallenge_WithPar_SendsIdpHintInPushedRequest()
+    {
+        var (host, endpoint) = CreateHost(mitPar: true);
+        using var factory = host;
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = false
+        });
+
+        using var challenge = await client.GetAsync(LoginPath("/fangkorb", "netzbegruenung"));
+
+        Assert.Equal(HttpStatusCode.Redirect, challenge.StatusCode);
+        Assert.NotNull(endpoint.ParRequest);
+        Assert.Equal("netzbegruenung", endpoint.ParRequest!["kc_idp_hint"]);
+        Assert.Equal("urn:ietf:params:oauth:request_uri:test",
+            QueryHelpers.ParseQuery(challenge.Headers.Location!.Query)["request_uri"].ToString());
+    }
+
+    [Fact]
+    public async Task KeycloakChallenge_WithPar_WithoutWeg_SendsNoIdpHint()
+    {
+        var (host, endpoint) = CreateHost(mitPar: true);
+        using var factory = host;
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = false
+        });
+
+        using var challenge = await client.GetAsync(LoginPath("/fangkorb", weg: null));
+
+        Assert.Equal(HttpStatusCode.Redirect, challenge.StatusCode);
+        Assert.NotNull(endpoint.ParRequest);
+        Assert.False(endpoint.ParRequest!.ContainsKey("kc_idp_hint"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("Netzbegruenung")]
+    [InlineData("google")]
+    [InlineData("netzbegruenung&kc_idp_hint=google")]
+    public async Task KeycloakChallenge_WithoutKnownWeg_SendsNoIdpHint(string? weg)
+    {
+        var authorize = await AuthorizeQueryAsync(weg);
+
+        Assert.False(authorize.ContainsKey("kc_idp_hint"), $"kc_idp_hint for weg={weg ?? "null"}");
+    }
+
+    [Fact]
+    public async Task KeycloakLogin_WegNetzbegruenung_StillReturnsToReturnUrl()
+    {
+        using var response = await LoginAsync(returnUrl: "/fangkorb", weg: "netzbegruenung");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal(FrontendUrl + "/fangkorb", response.Headers.Location!.OriginalString);
+        AuthCookie(response);
+    }
+
+    [Theory]
+    [InlineData("netzbegruenung", "netzbegruenung")]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData("NETZBEGRUENUNG", null)]
+    [InlineData(" netzbegruenung", null)]
+    [InlineData("einladung", null)]
+    public void IdpHintFuer_OnlyTheFixedWeg(string? weg, string? expected)
+    {
+        Assert.Equal(expected, AuthController.IdpHintFuer(weg));
     }
 }

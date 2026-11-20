@@ -79,8 +79,17 @@ export class LoginSelectorComponent implements OnInit {
       });
   }
 
+  /** Fenster, über das die Anmeldung über den Realm die Seite verlässt; Tests ersetzen es. */
+  fenster: Pick<Window, 'location'> = window;
+
+  /** Hauptweg: gleich zur Netzbegrünung, ohne die Anmeldeseite des Realms (20.11.). */
   loginWithKeycloak(): void {
-    keycloakAnmelden(this.returnUrl);
+    keycloakAnmelden(this.returnUrl, this.fenster, 'netzbegruenung');
+  }
+
+  /** Weg für Einladungskonten: die Anmeldeseite des Realms mit E-Mail und Passwort. */
+  mitEinladungskontoAnmelden(): void {
+    keycloakAnmelden(this.returnUrl, this.fenster);
   }
 
   loginWithGutGesagt(): void {

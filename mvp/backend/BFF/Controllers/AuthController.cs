@@ -142,18 +142,45 @@ public class AuthController : ControllerBase
     // this action at all.
     [HttpGet("login/keycloak")]
     [HttpPost("login/keycloak")]
-    public IActionResult LoginKeycloak([FromQuery] string? returnUrl = null)
+    public IActionResult LoginKeycloak([FromQuery] string? returnUrl = null, [FromQuery] string? weg = null)
     {
         var frontendUrl = _configuration.GetValue<string>("FRONTEND_URL", "http://localhost:4200")!;
         var redirectUrl = LoginRedirectTarget(frontendUrl, returnUrl);
 
+        var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+        var idpHint = IdpHintFuer(weg);
+        if (idpHint is not null)
+        {
+            // Parameters statt Items: lebt nur fuer diese Challenge und landet nicht im state.
+            // OnRedirectToIdentityProvider in Program.cs setzt daraus kc_idp_hint.
+            properties.Parameters[IdpHintParameter] = idpHint;
+        }
+
         // Trigger Keycloak authentication. Returning the challenge as the action result keeps the
         // 302 the OIDC handler produces -- calling ChallengeAsync and then returning Ok() would
         // overwrite that status with 200 and leave a Location header no browser follows.
-        return Challenge(
-            new AuthenticationProperties { RedirectUri = redirectUrl },
-            OpenIdConnectDefaults.AuthenticationScheme);
+        return Challenge(properties, OpenIdConnectDefaults.AuthenticationScheme);
     }
+
+    /// <summary>
+    /// Keycloak-Parameter, der die eigene Anmeldeseite des Realms ueberspringt und gleich zum
+    /// genannten Identity Provider weiterleitet (Identity Provider Redirector im Browser-Flow).
+    /// </summary>
+    public const string IdpHintParameter = "kc_idp_hint";
+
+    /// <summary>Wert von <c>weg</c>, der direkt zur Netzbegruenung fuehrt.</summary>
+    public const string WegNetzbegruenung = "netzbegruenung";
+
+    /// <summary>Alias des Identity Providers im Realm (docs/keycloak/gutgesagt-realm.json).</summary>
+    public const string IdpAliasNetzbegruenung = "netzbegruenung";
+
+    /// <summary>
+    /// Der Identity Provider zum Anmeldeweg <paramref name="weg"/>, oder null fuer die
+    /// Anmeldeseite des Realms (Einladungskonten mit E-Mail und Passwort). Nur der eine feste
+    /// Wert fuehrt zu einem Hint; nichts aus der Query geht ungeprueft an Keycloak.
+    /// </summary>
+    public static string? IdpHintFuer(string? weg) =>
+        string.Equals(weg, WegNetzbegruenung, StringComparison.Ordinal) ? IdpAliasNetzbegruenung : null;
 
     /// <summary>
     /// Wohin der Browser nach der Keycloak-Anmeldung zurueckkehrt: die Frontend-Adresse plus

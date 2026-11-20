@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Yarp.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.Transforms;
+using BFF.Controllers;
 using BFF.Services;
 using BFF.Logging;
 using BFF.Proxy;
@@ -139,6 +140,15 @@ if (useKeycloak)
                 var host = context.Request.Host;
                 var path = context.Options.CallbackPath;
                 context.ProtocolMessage.RedirectUri = $"{scheme}://{host}{path}";
+
+                // "Mit Netzbegruenung anmelden" auf /login: gleich zum Identity Provider statt
+                // ueber die Anmeldeseite des Realms. Der Wert kommt aus AuthController.IdpHintFuer,
+                // also nur der feste Alias, nie etwas aus der Query.
+                if (context.Properties.Parameters.TryGetValue(AuthController.IdpHintParameter, out var idpHint)
+                    && idpHint is string alias)
+                {
+                    context.ProtocolMessage.SetParameter(AuthController.IdpHintParameter, alias);
+                }
                 return Task.CompletedTask;
             },
             OnTicketReceived = context =>

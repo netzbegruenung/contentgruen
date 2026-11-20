@@ -119,11 +119,19 @@
     text-transform: none;
 }
 
-/* Beide Anmeldewege im einen Primaergruen, ohne Verlaeufe (#512) */
+/* Alle Anmeldewege im einen Primaergruen, ohne Verlaeufe (#512) */
 .keycloak-button,
+.einladungskonto-button,
 .gutgesagt-button {
     background: var(--primaer);
     color: white;
+}
+
+/* Beide Wege über den Realm gleich gross untereinander (Entscheidung 20.11.) */
+.realm-wege {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .login-icon {

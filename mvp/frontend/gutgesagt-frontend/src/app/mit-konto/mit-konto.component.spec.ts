@@ -5,18 +5,13 @@ import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angul
 import { BehaviorSubject } from 'rxjs';
 import { ANMELDEN_KNOPF, MitKontoComponent, VORSCHAU_ETIKETT, VORSCHAU_SATZ, WEITER_SUCHEN } from './mit-konto.component';
 import { VORSCHAU_SCHRITTE } from './vorschau-schritte';
-import { RUECKKEHRZIEL_SCHLUESSEL } from '../login/rueckkehrziel';
 
 describe('MitKontoComponent', () => {
   let fixture: ComponentFixture<MitKontoComponent>;
   let http: HttpTestingController;
   let query: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
-  let fenster: { location: { href: string } };
 
-  function starten(
-    params: Record<string, string>,
-    modes: { keycloakEnabled: boolean; managedAuthEnabled: boolean } | 'fehler' = { keycloakEnabled: true, managedAuthEnabled: false },
-  ): HTMLElement {
+  function starten(params: Record<string, string>): HTMLElement {
     query = new BehaviorSubject(convertToParamMap(params));
     TestBed.configureTestingModule({
       imports: [MitKontoComponent],
@@ -29,12 +24,6 @@ describe('MitKontoComponent', () => {
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(MitKontoComponent);
-    fenster = { location: { href: '' } };
-    fixture.componentInstance.fenster = fenster as unknown as Window;
-    fixture.detectChanges();
-    const anfrage = http.expectOne((r) => r.url.endsWith('/api/auth/modes'));
-    if (modes === 'fehler') anfrage.flush('kaputt', { status: 500, statusText: 'Server Error' });
-    else anfrage.flush(modes);
     fixture.detectChanges();
     return fixture.nativeElement;
   }
@@ -43,7 +32,6 @@ describe('MitKontoComponent', () => {
 
   afterEach(() => {
     http.verify();
-    sessionStorage.removeItem(RUECKKEHRZIEL_SCHLUESSEL);
   });
 
   describe('Übersicht', () => {
@@ -75,31 +63,15 @@ describe('MitKontoComponent', () => {
       });
     });
 
-    it('meldet über den Realm an und merkt sich das Ziel', () => {
+    // Entscheidung 20.11.: zur Login-Auswahl mit beiden Wegen, wie der Knopf im Kopf
+    it('führt zur Login-Auswahl, mit Ziel, ohne Sprung zu Keycloak', () => {
       const seite = starten({ ziel: '/einwerfen?von=fangkorb' });
-      const knopf = seite.querySelector('.mk-anmelden') as HTMLButtonElement;
-      expect(text(knopf)).toContain(ANMELDEN_KNOPF);
-      knopf.click();
-      expect(fenster.location.href).toContain('/api/auth/login/keycloak?returnUrl=%2Feinwerfen%3Fvon%3Dfangkorb');
-      expect(sessionStorage.getItem(RUECKKEHRZIEL_SCHLUESSEL)).toBe('/einwerfen?von=fangkorb');
-    });
-
-    it('meldet auch dann über den Realm an, wenn /api/auth/modes scheitert', () => {
-      const seite = starten({ ziel: '/fangkorb' }, 'fehler');
-      const knopf = seite.querySelector('.mk-anmelden') as HTMLButtonElement;
-      expect(text(knopf)).toContain(ANMELDEN_KNOPF);
-      knopf.click();
-      expect(fenster.location.href).toContain('/api/auth/login/keycloak?returnUrl=%2Ffangkorb');
-    });
-
-    it('führt ohne Netzbegrünung-Anmeldung zur Login-Auswahl, mit Ziel', () => {
-      const seite = starten({ ziel: '/fangkorb' }, { keycloakEnabled: false, managedAuthEnabled: true });
       const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
       const knopf = seite.querySelector('.mk-anmelden') as HTMLButtonElement;
       expect(text(knopf)).toContain(ANMELDEN_KNOPF);
       knopf.click();
-      expect(navigate).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: '/fangkorb' } });
-      expect(fenster.location.href).toBe('');
+      expect(navigate).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: '/einwerfen?von=fangkorb' } });
+      http.expectNone(() => true);
     });
 
     it('bietet den Weg zurück zur Suche und zu „Noch kein Konto?“ auf der Anmeldung', () => {
@@ -113,8 +85,9 @@ describe('MitKontoComponent', () => {
 
     it('nimmt ein fremdes Ziel nicht an', () => {
       const seite = starten({ ziel: '//fremd.example' });
+      const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
       (seite.querySelector('.mk-anmelden') as HTMLButtonElement).click();
-      expect(fenster.location.href).toContain('returnUrl=%2Fcontribute');
+      expect(navigate).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: '/contribute' } });
     });
   });
 
