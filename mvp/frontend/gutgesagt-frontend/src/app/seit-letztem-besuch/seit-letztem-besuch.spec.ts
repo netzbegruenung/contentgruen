@@ -81,7 +81,7 @@ describe('Seit deinem letzten Besuch (Nutzerfuehrung 13.11.)', () => {
         neue_beitraege: 5,
       });
       expect(liste.map((e) => [`${e.zahl} ${e.zeile}`, e.knopf])).toEqual([
-        ['1 Nutzung deiner Beiträge. Sieh nach, welche gebraucht werden.', 'Meine Beiträge'],
+        ['1 Nutzung deiner Beiträge. Sieh nach, welche genutzt werden.', 'Meine Beiträge'],
         ['2 Einwürfe von dir haben andere in den letzten 7 Tagen ausformuliert.', 'Meine Einwürfe'],
         ['1 neuer Einwurf wartet im Fangkorb.', 'Zum Fangkorb'],
         ['12 Aussagen warten auf eine Antwort.', 'Hier fehlt eine Antwort'],

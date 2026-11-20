@@ -74,7 +74,7 @@ export function neuesListe(stand: NeuesStand): NeuesEintrag[] {
       zahl: `${nutzung}`,
       wort,
       satz: `${nutzung} ${wort}`,
-      zeile: `${wort}. Sieh nach, welche gebraucht werden.`,
+      zeile: `${wort}. Sieh nach, welche genutzt werden.`,
       knopf: PAGE_TITLES.MEINE_BEITRAEGE,
     });
   }
