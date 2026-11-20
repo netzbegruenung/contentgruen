@@ -18,7 +18,7 @@ import { LoggingService } from '../services/logging.service';
 import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 import { Meilenstein } from '../services/usage-tracking.service';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, MENUE_ICONS } from '../shared/fangkorb-texte';
 import { Art9EinwilligungZustand } from '../services/art9-einwilligung-zustand';
 
 describe('hinweisVorschlag', () => {
@@ -143,13 +143,20 @@ describe('EinwerfenComponent', () => {
       expect(kopf.textContent).toContain(FANGKORB_BESCHREIBUNG);
     });
 
-    it('führt mit einem Text-Link unter dem Formular in den Fangkorb; "Einwerfen" bleibt der einzige Knopf (#645)', () => {
+    it('führt mit dem Nebenweg-Knopf wie "Meine Beiträge" in den Fangkorb; "Einwerfen" bleibt der einzige Knopf im Formular (#645)', () => {
       const seite: HTMLElement = fixture.nativeElement;
-      const link = seite.querySelector('a.fangkorb-link') as HTMLAnchorElement;
+      const link = seite.querySelector('a.fangkorb-knopf') as HTMLAnchorElement;
 
       expect(link.textContent?.trim()).toContain('Fangkorb ansehen');
       expect(link.getAttribute('href')).toBe('/fangkorb');
       expect(link.closest('form')).toBeNull();
+      // Dieselbe Optik wie "Meine Beiträge" auf der Beitragen-Seite (Sebastian 20.11.)
+      expect(link.classList).toContain('nebenweg-knopf');
+      expect(link.hasAttribute('mat-stroked-button')).toBeTrue();
+      expect(link.parentElement!.classList).toContain('nebenweg-zeile');
+      expect(link.querySelector('mat-icon')!.textContent!.trim()).toBe(MENUE_ICONS.fangkorb);
+      // Die Fussnote steht ueber der Trennlinie, der Knopf darunter
+      expect(link.parentElement!.previousElementSibling!.classList).toContain('einwurf-fussnote');
       const knoepfe = Array.from(seite.querySelectorAll('.einwurf-aktionen button'));
       expect(knoepfe.length).toBe(1);
       expect(knoepfe[0].textContent).toContain('Einwerfen');

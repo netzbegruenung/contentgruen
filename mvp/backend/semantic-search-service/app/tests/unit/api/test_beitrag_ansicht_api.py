@@ -320,8 +320,12 @@ class TestBeitragKontext:
         body = client.get(URL).json()
 
         assert body["aussage"]["themen"] == [
-            {"schluessel": "energie-heizen", "name": "Energie und Heizen"},
-            {"schluessel": "wohnen", "name": "Wohnen"},
+            {
+                "schluessel": "energie-heizen",
+                "name": "Energie und Heizen",
+                "motiv": "themen/energie-heizen.svg",
+            },
+            {"schluessel": "wohnen", "name": "Wohnen", "motiv": "themen/wohnen.svg"},
         ]
         themen.themen_von.assert_called_once_with([aussage.id])
 

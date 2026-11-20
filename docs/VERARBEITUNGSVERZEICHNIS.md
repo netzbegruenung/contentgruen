@@ -82,8 +82,10 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 - **Betroffene:** Mitglieder der Netzbegrünung mit Netzbegrünung-Login, Personen mit Konto aus
   einer Einladung, Personen mit Beta-Zugang.
 - **Daten:** Kennung, Anzeigename (Vorname und Initial); Kennung, E-Mail-Adresse und Name im
-  verschlüsselten Anmelde-Cookie; bei Konten aus Einladungen im Anmeldedienst E-Mail-Adresse und
-  Passwort-Hash (DSE „Konto aus einer Einladung“); beim Beta-Zugang E-Mail-Adresse, Anzeigename und Prüfsumme des
+  verschlüsselten Anmelde-Cookie; bei Konten aus Einladungen im Anmeldedienst E-Mail-Adresse,
+  Vor- und Nachname und Passwort-Hash (DSE „Konto aus einer Einladung“); in der Plattform die
+  Zustimmung zu den Nutzungsbedingungen (Kennung, Zeitpunkt, Stand) und das Archiv der bis zur
+  Umstellung im Anmeldedienst gespeicherten Zustimmungszeitpunkte; beim Beta-Zugang E-Mail-Adresse, Anzeigename und Prüfsumme des
   Passworts in einer Konfigurationsdatei; Anmelde-Cookie; an Einladungen nur Zähler und Notiz.
   Im Browser bis zum Tabschluss, höchstens eine Stunde, ein angefangener Kommentar mit Prüfwert
   des Kontos (DSE „Weitere Einträge“, E1).
@@ -99,13 +101,16 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
 ### T2 Einwilligungen
 
 - **Zweck:** Rechtsgrundlage der Mitwirkung einholen und nachweisen; gesonderte Zustimmung zur
-  Sichtbarkeit der Meilenstein-Abzeichen.
+  Sichtbarkeit der Meilenstein-Abzeichen; Zustimmung zu den Nutzungsbedingungen (auf derselben
+  Seite, eigenes Häkchen) nachweisen.
 - **Rechtsgrundlage:** Art. 9 Abs. 2 lit. a, Nachweis nach Art. 7 Abs. 1; für die
-  Abzeichen Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a.
+  Abzeichen Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a; für die Zustimmung zu den
+  Nutzungsbedingungen Art. 6 Abs. 1 lit. b.
 - **Betroffene:** angemeldete Personen.
 - **Daten:** Kennung, Zeitpunkt, Kennung des Wortlauts, Zeitpunkt des Widerrufs; je Antwort zur
   Sichtbarkeit Kennung, Ja/Nein, Wortlaut, Zeitpunkt; je Widerruf ein Löschauftrag mit Kennung,
-  Zeitpunkt, Frist und Zeitpunkt der Ausführung.
+  Zeitpunkt, Frist und Zeitpunkt der Ausführung; je Zustimmung zu den Nutzungsbedingungen
+  Kennung, Zeitpunkt und Stand (`nutzungsbedingungen_zustimmungen`).
 - **Empfänger:** wie oben, nur Admins in der Datenbank.
 - **Fristen:** solange das Konto besteht, auch widerrufene (LK „Ablauf“, Schritt 2; für die
   Abzeichen auch LK „Fristen“); Löschaufträge offen bis zur Ausführung, erledigte nach LK
@@ -175,7 +180,7 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   Art.-9-Einwilligung.
 - **Betroffene:** alle, die kopieren oder teilen; Mitwirkende, deren Beiträge genutzt werden.
 - **Daten:** Nutzungsereignisse ohne Kennung (Beitrag, Art, Zeitpunkt, Geräteklasse, Fassung);
-  Prüfwert der entdoppelten Nutzung; je Kennung zwei Zählerstände für die Rückmeldung und „Seit deinem letzten Besuch“ (Nutzung, Einwürfe anderer; kein Zeitpunkt, aus dem Einwurf-Stand und `raw_inputs.created_at` nur grob ableitbar, für Admins mit DB-Zugriff); je Person und
+  Prüfwert der entdoppelten Nutzung; je Kennung zwei Zählerstände für die Rückmeldung und „Seit deinem letzten Besuch“ (Nutzung, Einwürfe anderer; kein Zeitpunkt, aus dem Einwurf-Stand und `raw_inputs.created_at` nur grob ableitbar, für Admins mit DB-Zugriff; zwei weitere Zahlen über 7 Tage nur beim Besuch berechnet, nicht gespeichert, #741); je Person und
   Woche ein Prüfwert „Ja, gepostet“, danach nur die Zahl der Woche.
 - **Empfänger:** Zähler an der Karte für alle; die Rückmeldung nur für die Person; Zahlen je
   Woche für Admins.

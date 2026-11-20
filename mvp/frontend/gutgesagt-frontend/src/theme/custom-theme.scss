@@ -163,7 +163,6 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
 
   // Werte, die nur im Dunkeln abweichen (Gegenstueck im Block html[data-theme='dark'])
   --link-unterstrich: none;
-  --filter-aktiv-grund: var(--akzent);
   --referenz-marke-schrift: white;
   --knopf-rand-auf-band: transparent;
   // Volle Knoepfe und Akzentschrift auf den Baendern (Such-Band, Willkommen): im Hellen Tanne
@@ -344,8 +343,6 @@ html[data-theme='dark'] {
 
     // Links sind im Dunkeln hellgrau wie der Text: unterstrichen, damit sie erkennbar bleiben
     --link-unterstrich: underline;
-    // Gewaehlter Filter im Fangkorb: --akzent-schrift und --primaer-text sind hier beide hell
-    --filter-aktiv-grund: #2c3439;
     // Blau und Orange sind hier heller: dunkle Schrift auf den Referenz-Marken
     --referenz-marke-schrift: var(--bg-main);
     // Klee-Knoepfe auf dem Moos-Band (Suchen, Rundgang starten): heller Rand, sonst unter 3:1 zum Band

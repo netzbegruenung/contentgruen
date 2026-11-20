@@ -1,6 +1,6 @@
 <mat-card class="einwilligung">
   <mat-card-header>
-    <mat-card-title>Einwilligung</mat-card-title>
+    <mat-card-title>{{ nbNoetig && (zustand === 'frage' || zustand === 'sendet') ? texte.titel : 'Einwilligung' }}</mat-card-title>
   </mat-card-header>
   <mat-card-content>
     <p *ngIf="zustand === 'laedt'" role="status">Einen Moment …</p>
@@ -10,7 +10,7 @@
       <button mat-stroked-button type="button" (click)="nochmal()">Noch einmal</button>
     </ng-container>
 
-    <form *ngIf="stand && (zustand === 'frage' || zustand === 'sendet')" (ngSubmit)="einwilligen()">
+    <form *ngIf="stand && (zustand === 'frage' || zustand === 'sendet')" (ngSubmit)="absenden()" novalidate>
       <p *ngIf="wortlautGeaendert" class="hinweis" role="alert" data-testid="wortlaut-geaendert">
         Der Text hat sich gerade geändert. Bitte lies ihn und stimm neu zu.
       </p>
@@ -22,41 +22,93 @@
         Du hast am {{ stand.eingewilligt_am | date: 'dd.MM.yyyy' }} einem früheren Wortlaut zugestimmt. Er hat sich
         geändert: Ein Widerruf löst jetzt auch deine Beiträge, Einwürfe und Sätze von dir. Deshalb fragen wir dich neu.
       </p>
-      <p>
-        Was du bei Gut gesagt beiträgst und bewertest, kann zeigen, wie du politisch denkst. Solche Daten darf
-        Gut gesagt nur mit deiner ausdrücklichen Einwilligung verarbeiten. Ohne sie kannst du suchen und lesen, aber nichts
-        beitragen und nichts bewerten.
-      </p>
       <!--
-        Am Haekchen nur der erste Satz des Wortlauts, unveraendert; der ganze Wortlaut steht
-        aufklappbar direkt darunter (#620). Der Text selbst kommt weiter vom Backend; der
-        Volltext beschreibt das Haekchen auch fuer Screenreader (aria-describedby), auch zugeklappt.
+        Nutzungsbedingungen fehlen in der App: beides auf einer Seite, zwei getrennte Häkchen,
+        nichts vorbelegt. Das erste ist ein Vertrag (Pflicht), das zweite die freiwillige
+        Art.-9-Einwilligung; „Weiter“ geht mit dem ersten allein. Texte: einwilligung-texte.ts.
       -->
-      <mat-checkbox name="angehakt" [(ngModel)]="angehakt" class="haekchen"
-        [aria-describedby]="labelSatz !== stand.aktueller_wortlaut.text ? 'einwilligung-wortlaut-voll' : ''">
-        {{ labelSatz }}
-      </mat-checkbox>
-      <details class="wortlaut-aufklapp" *ngIf="labelSatz !== stand.aktueller_wortlaut.text">
-        <summary>Ganzen Wortlaut lesen</summary>
-        <p class="wortlaut-voll" id="einwilligung-wortlaut-voll">{{ stand.aktueller_wortlaut.text }}</p>
-      </details>
-      <!-- ErwG 42 DSGVO: wer verantwortlich ist und wo die Zwecke stehen, direkt am Häkchen -->
-      <p class="fussnote">
-        Verantwortlich ist {{ verein }}. Mehr dazu in der
-        <a routerLink="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
-      </p>
-      <div class="knoepfe">
-        <button mat-raised-button color="primary" type="submit" [disabled]="!angehakt || zustand === 'sendet'">
-          Einwilligen und weiter
-        </button>
-        <button mat-stroked-button type="button" (click)="ohneEinwilligung()" [disabled]="zustand === 'sendet'">
-          Ohne Einwilligung weiter
-        </button>
-        <button *ngIf="fruehereEinwilligung" mat-stroked-button color="warn" type="button"
-          (click)="widerrufenKlick()" [disabled]="zustand === 'sendet'">
-          Frühere Einwilligung widerrufen
-        </button>
-      </div>
+      <ng-container *ngIf="nbNoetig && stand.nutzungsbedingungen as nb; else nurEinwilligung">
+        <p>{{ texte.einleitung }}</p>
+        <div class="block">
+          <mat-checkbox #nbHaekchen name="nbAngehakt" [(ngModel)]="nbAngehakt" (change)="nbGeaendert()"
+            class="haekchen" data-testid="nb-haekchen" [required]="true"
+            [aria-describedby]="nbFehler ? 'nb-pflicht nb-fehler' : 'nb-pflicht'">
+            {{ texte.nbLabel }}
+          </mat-checkbox>
+          <p class="unter-haekchen" id="nb-pflicht">
+            {{ texte.nbPflicht }}
+            <a routerLink="/nutzungsbedingungen" target="_blank" rel="noopener">{{ texte.nbLink }}</a>
+            (Stand: {{ nb.aktueller_stand.stand }})
+          </p>
+          <p *ngIf="nbFehler" class="warnung unter-haekchen" id="nb-fehler" role="alert" data-testid="nb-fehler">
+            {{ texte.nbFehler }}
+          </p>
+        </div>
+        <div class="block" *ngIf="!stand.eingewilligt; else einwilligungBesteht">
+          <mat-checkbox name="angehakt" [(ngModel)]="angehakt" class="haekchen" data-testid="art9-haekchen"
+            [aria-describedby]="labelSatz !== stand.aktueller_wortlaut.text ? 'art9-freiwillig einwilligung-wortlaut-voll' : 'art9-freiwillig'">
+            {{ labelSatz }}
+          </mat-checkbox>
+          <p class="unter-haekchen" id="art9-freiwillig">{{ texte.art9Freiwillig }}</p>
+          <details class="wortlaut-aufklapp" *ngIf="labelSatz !== stand.aktueller_wortlaut.text">
+            <summary>Ganzen Wortlaut lesen</summary>
+            <p class="wortlaut-voll" id="einwilligung-wortlaut-voll">{{ stand.aktueller_wortlaut.text }}</p>
+          </details>
+        </div>
+        <ng-template #einwilligungBesteht>
+          <p class="unter-haekchen-frei" role="status">{{ texte.art9Besteht }}</p>
+        </ng-template>
+        <p class="fussnote">
+          Verantwortlich ist {{ verein }}. Mehr dazu in der
+          <a routerLink="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
+        </p>
+        <div class="knoepfe">
+          <button mat-raised-button color="primary" type="submit" [disabled]="zustand === 'sendet'">
+            {{ texte.weiter }}
+          </button>
+          <button *ngIf="fruehereEinwilligung" mat-stroked-button color="warn" type="button"
+            (click)="widerrufenKlick()" [disabled]="zustand === 'sendet'">
+            Frühere Einwilligung widerrufen
+          </button>
+        </div>
+      </ng-container>
+      <ng-template #nurEinwilligung>
+        <p>
+          Was du bei Gut gesagt beiträgst und bewertest, kann zeigen, wie du politisch denkst. Solche Daten darf
+          Gut gesagt nur mit deiner ausdrücklichen Einwilligung verarbeiten. Ohne sie kannst du suchen und lesen, aber nichts
+          beitragen und nichts bewerten.
+        </p>
+        <!--
+          Am Haekchen nur der erste Satz des Wortlauts, unveraendert; der ganze Wortlaut steht
+          aufklappbar direkt darunter (#620). Der Text selbst kommt weiter vom Backend; der
+          Volltext beschreibt das Haekchen auch fuer Screenreader (aria-describedby), auch zugeklappt.
+        -->
+        <mat-checkbox name="angehakt" [(ngModel)]="angehakt" class="haekchen"
+          [aria-describedby]="labelSatz !== stand.aktueller_wortlaut.text ? 'einwilligung-wortlaut-voll' : ''">
+          {{ labelSatz }}
+        </mat-checkbox>
+        <details class="wortlaut-aufklapp" *ngIf="labelSatz !== stand.aktueller_wortlaut.text">
+          <summary>Ganzen Wortlaut lesen</summary>
+          <p class="wortlaut-voll" id="einwilligung-wortlaut-voll">{{ stand.aktueller_wortlaut.text }}</p>
+        </details>
+        <!-- ErwG 42 DSGVO: wer verantwortlich ist und wo die Zwecke stehen, direkt am Häkchen -->
+        <p class="fussnote">
+          Verantwortlich ist {{ verein }}. Mehr dazu in der
+          <a routerLink="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
+        </p>
+        <div class="knoepfe">
+          <button mat-raised-button color="primary" type="submit" [disabled]="!angehakt || zustand === 'sendet'">
+            Einwilligen und weiter
+          </button>
+          <button mat-stroked-button type="button" (click)="ohneEinwilligung()" [disabled]="zustand === 'sendet'">
+            Ohne Einwilligung weiter
+          </button>
+          <button *ngIf="fruehereEinwilligung" mat-stroked-button color="warn" type="button"
+            (click)="widerrufenKlick()" [disabled]="zustand === 'sendet'">
+            Frühere Einwilligung widerrufen
+          </button>
+        </div>
+      </ng-template>
     </form>
 
     <ng-container *ngIf="stand && (zustand === 'eingewilligt' || zustand === 'widerruft')">
@@ -65,6 +117,13 @@
           *ngIf="wortlautVom as vom"
         >
           (Wortlaut vom {{ vom | date: 'dd.MM.yyyy' }})</ng-container
+        >.
+      </p>
+      <p *ngIf="stand.nutzungsbedingungen?.zugestimmt_am as am" data-testid="nb-zugestimmt">
+        Den Nutzungsbedingungen hast du am {{ am | date: 'dd.MM.yyyy' }} zugestimmt<ng-container
+          *ngIf="stand.nutzungsbedingungen?.stand as nbStand"
+        >
+          (Stand vom {{ nbStand | date: 'dd.MM.yyyy' }})</ng-container
         >.
       </p>
       <blockquote *ngIf="stand.wortlaut === stand.aktueller_wortlaut.kennung" class="wortlaut">

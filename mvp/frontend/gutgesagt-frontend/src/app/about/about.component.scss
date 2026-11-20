@@ -30,46 +30,51 @@
 }
 
 // Rahmen und mittige Lesespalte (720 px) aus .inhalt-spalte (styles.css); der Hero
-// bleibt volle Breite und zentriert, hier nur der Abstand oben und unten (Ausrichtung 17.11.)
+// bleibt volle Breite und zentriert (Ausrichtung 17.11.). Vertikale Rhythmik (Sebastian 20.11.):
+// Abschnitt zu Abschnitt --spacing-xxl (mobil --spacing-xl), Ueberschrift zu Text
+// --spacing-md, Absatz zu Absatz --spacing-md. Vorher stapelten sich Innenabstand oben und
+// unten, --section-gap und der letzte Absatz zu 104 px zwischen den Abschnitten.
 .content-section {
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-bottom: var(--spacing-xxl);
 
   h2 {
     /* Uses global h2 styles */
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--spacing-md);
   }
 
   h3 {
     /* Uses global h3 styles */
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md);
   }
 
   p {
     font-size: 1rem;
     line-height: 1.6;
     color: var(--text);
-    margin-bottom: 1rem;
+    margin: 0 0 var(--spacing-md);
   }
 
   ul {
-    margin: 1.5rem 0;
-    padding-left: 1.5rem;
+    margin: var(--spacing-md) 0;
+    padding-left: var(--spacing-lg);
 
     li {
-      margin-bottom: 0.75rem;
+      margin-bottom: var(--spacing-sm);
       line-height: 1.6;
       color: var(--text);
     }
   }
 
-  @media (max-width: 768px) {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+  // Der letzte Block eines Abschnitts traegt keinen Abstand nach unten: den setzt der Abschnitt
+  > :last-child,
+  > :last-child > :last-child {
+    margin-bottom: 0;
+  }
 
-    h2 {
-      margin-bottom: 1rem;
-    }
+  @media (max-width: 768px) {
+    margin-bottom: var(--spacing-xl);
   }
 }
 
@@ -247,11 +252,12 @@ a {
 }
 
 // „So geht's“ öffnet die Hilfe: ein Knopf, der wie ein Link aussieht, 44 px Zielgröße (Touch)
+// Inline mit Polster statt eigener 44-px-Zeile: so steht der Link im Satz und haengt nicht allein
+// unter dem Absatz (Sebastian 20.11.); die Zielflaeche bleibt 44 px hoch.
 .so-gehts-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0;
+  display: inline;
+  padding: 12px 0;
+  margin: -12px 0;
   border: 0;
   background: none;
   font: inherit;
@@ -265,8 +271,8 @@ a {
 }
 
 // Beispielsiegel unter „Bewerten“ (#427): umbrechend, damit sie auch mobil passen
-.siegel-absatz {
-  margin: var(--spacing-xs, 4px) 0;
+.content-section .siegel-absatz {
+  margin: var(--spacing-sm) 0 0;
 }
 
 // Alle zwoelf Beispiele in einer Reihe, Groesse aus der Spaltenbreite (Designrunde 17.11.)
@@ -309,4 +315,9 @@ a {
       font-size: 0.95rem;
     }
   }
+}
+
+// Erster Abschnitt: Abstand zum Hero am Desktop wie bisher (Hero unten 16 px + 24 px), mobil 8 + 24 px
+.content-section.zweck {
+  padding-top: var(--spacing-lg);
 }

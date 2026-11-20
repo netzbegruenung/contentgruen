@@ -2,19 +2,14 @@ import { NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, Inject, signal } from '@angular/core';
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { filter, finalize, switchMap } from 'rxjs/operators';
+import { finalize } from 'rxjs/operators';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenDaten } from './karten-daten';
-import { MeineBeitraegeService } from '../services/meine-beitraege.service';
-import { BeitragAendernDialogComponent } from './beitrag-aendern-dialog.component';
-import {
-  BestaetigungsDialogComponent,
-  BestaetigungsDialogDaten,
-} from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
+import { BeitragVerwaltenService } from './beitrag-verwalten.service';
+
+export { loeschenFehlertext } from './beitrag-verwalten.service';
 
 /** Ab so vielen Pixeln nach unten schliesst ein Wisch das Sheet. */
 export const WISCH_SCHWELLE = 80;
@@ -32,27 +27,6 @@ export const GELOESCHT = 'geloescht';
 
 /** Ergebnis des Sheets, wenn der Autor den Beitrag geaendert hat (#299); die Liste laedt dann neu. */
 export const GEAENDERT = 'geaendert';
-
-const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
-  titel: 'Beitrag löschen?',
-  text:
-    'Niemand findet ihn danach mehr, auch nicht in „Meine Beiträge“. Gespeichert bleibt er trotzdem, ' +
-    'und zurückholen kannst du ihn nicht. Macht er dich erkennbar, entfernen wir ihn auf deinen Hinweis ganz ' +
-    '(siehe Datenschutz).',
-  ja: 'Löschen',
-  nein: 'Abbrechen',
-};
-
-/**
- * Was beim Loeschen schiefging. 401 behandelt der Auth-Interceptor (Anmeldung); 403
- * heisst, der Beitrag ist nicht der eigene, und "noch einmal" waere ein falscher Rat.
- */
-export function loeschenFehlertext(status: number | undefined): string {
-  if (status === 403) {
-    return 'Löschen kann nur der Autor des Beitrags.';
-  }
-  return 'Löschen hat nicht geklappt. Versuch es gleich noch einmal.';
-}
 
 /**
  * Ein Beitrag aus dem Album als volle Karte im Bottom Sheet, mit Kopieren, Melden und
@@ -147,9 +121,7 @@ export class BeitragSheetComponent {
     @Inject(MAT_BOTTOM_SHEET_DATA) readonly daten: BeitragSheetDaten,
     private sheet: MatBottomSheetRef<BeitragSheetComponent>,
     private element: ElementRef<HTMLElement>,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
-    private beitraege: MeineBeitraegeService,
+    private verwalten: BeitragVerwaltenService,
   ) {}
 
   /** Den Beitrag im Dialog aendern; gespeichert, ist die Karte veraltet und das Sheet schliesst. */
@@ -158,48 +130,30 @@ export class BeitragSheetComponent {
       return;
     }
     this.aendertGerade.set(true);
-    this.dialog
-      .open(BeitragAendernDialogComponent, { data: this.daten, width: '560px', maxWidth: '95vw' })
-      .afterClosed()
+    this.verwalten
+      .aendern(this.daten)
       .pipe(finalize(() => this.aendertGerade.set(false)))
       .subscribe((gespeichert) => {
-        if (gespeichert === true) {
-          this.snackBar.open('Beitrag geändert', 'OK', { duration: 3000 });
+        if (gespeichert) {
           this.sheet.dismiss(GEAENDERT);
         }
       });
   }
 
-  /** Ein 404 heisst: schon geloescht oder gesperrt. Fuer die Liste ist er so oder so weg. */
+  /** Nach der Rueckfrage loeschen; ist der Beitrag weg (auch schon vorher, 404), schliesst das Sheet. */
   loeschen(): void {
     if (this.loeschtGerade()) {
       return;
     }
     this.loeschtGerade.set(true);
-    this.dialog
-      .open(BestaetigungsDialogComponent, { data: LOESCHEN_FRAGE, autoFocus: 'dialog' })
-      .afterClosed()
-      .pipe(
-        filter((ja) => ja === true),
-        switchMap(() => this.beitraege.beitragLoeschen(this.daten.id)),
-        finalize(() => this.loeschtGerade.set(false)),
-      )
-      .subscribe({
-        next: () => this.weg('Beitrag gelöscht'),
-        error: (fehler) => {
-          if (fehler?.status === 404) {
-            this.weg('Der Beitrag ist nicht mehr da.');
-            return;
-          }
-          this.snackBar.open(loeschenFehlertext(fehler?.status), 'OK', { duration: 5000 });
-        },
+    this.verwalten
+      .loeschen(this.daten.id)
+      .pipe(finalize(() => this.loeschtGerade.set(false)))
+      .subscribe((weg) => {
+        if (weg) {
+          this.sheet.dismiss(GELOESCHT);
+        }
       });
-  }
-
-  /** Der Beitrag ist fuer die Liste weg: geloescht oder inzwischen nicht mehr da (404). */
-  private weg(meldung: string): void {
-    this.snackBar.open(meldung, 'OK', { duration: 3000 });
-    this.sheet.dismiss(GELOESCHT);
   }
 
   @HostListener('touchstart', ['$event'])

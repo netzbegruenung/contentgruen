@@ -21,6 +21,7 @@ from api.v1.einwurf import router as einwurf_router
 from api.v1.reference import router as reference_router
 from api.v1.statement import router as statement_router
 from dependencies import (
+    get_aussage_themen_service,
     get_commentary_service,
     get_generic_text_service,
     get_post_service,
@@ -481,6 +482,10 @@ def meine_client(anzeigenamen_ohne_datenbank):
     nutzung.enrich_content_with_usage.side_effect = lambda eintraege: eintraege
     meine_app.dependency_overrides[get_settings] = lambda: MagicMock()
     meine_app.dependency_overrides[get_reference_service] = lambda: MagicMock()
+    meine_app.dependency_overrides[get_statement_service] = lambda: MagicMock(
+        zu_antworten=AsyncMock(return_value={})
+    )
+    meine_app.dependency_overrides[get_aussage_themen_service] = lambda: MagicMock()
     with patch.object(
         contribution_module, "QdrantRepositoryFactory", return_value=factory
     ), patch.object(contribution_module, "get_usage_service", return_value=nutzung):

@@ -23,6 +23,7 @@ from domain.art9_einwilligung import (
     WORTLAUT_KENNUNG_MAX,
     geltender_wortlaut,
 )
+from domain.nutzungsbedingungen import AKTUELLER_STAND, STAENDE
 from repositories.art9_einwilligung_repository import Art9Einwilligung
 
 pytestmark = [pytest.mark.unit, pytest.mark.api]
@@ -99,6 +100,15 @@ class TestStand:
                 "text": WORTLAUTE[AKTUELLER_WORTLAUT],
             },
             "ohne_wortlaut": None,
+            "nutzungsbedingungen": {
+                "zugestimmt": True,
+                "stand": AKTUELLER_STAND,
+                "zugestimmt_am": "2026-11-20T00:00:00Z",
+                "aktueller_stand": {
+                    "kennung": AKTUELLER_STAND,
+                    "stand": STAENDE[AKTUELLER_STAND],
+                },
+            },
         }
         repository.lesen.assert_called_once_with("user-001")
 
@@ -625,6 +635,8 @@ OFFEN = {
     # Die Einwilligung selbst und "ohne Einwilligung weiter" (B2)
     ("POST", "/api/v1/art9-einwilligung"),
     ("POST", "/api/v1/art9-einwilligung/ohne"),
+    # Die Zustimmung zu den Nutzungsbedingungen selbst (auf derselben Seite)
+    ("POST", "/api/v1/nutzungsbedingungen"),
     # Suchen und Lesen per POST
     ("POST", "/api/v1/search/searchByText"),
     ("POST", "/api/v1/post/searchPost"),

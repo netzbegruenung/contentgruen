@@ -79,9 +79,8 @@ async function ohneStack(page: Page): Promise<Stand> {
   return stand;
 }
 
-// Designrunde 17.11.: Bis zur Realm-Umstellung zeigt die Login-Seite die Einladung nur als
-// eingeklappte Vorschau ohne Funktion; die Seite /einladung selbst bleibt erreichbar
-test('Login-Seite: Einladung als Vorschau, Link einfügen, Konto anlegen', async ({ page, bild }) => {
+// Seit dem Realm-Umzug (Entscheidung 20.11.) führt die Login-Seite direkt zum Einlösen
+test('Login-Seite: Einladung einlösen, Link einfügen, Konto anlegen', async ({ page, bild }) => {
   const stand = await ohneStack(page);
   await page.goto('/login');
 
@@ -89,14 +88,8 @@ test('Login-Seite: Einladung als Vorschau, Link einfügen, Konto anlegen', async
   await expect(weg).toContainText('Noch kein Konto?');
   await expect(weg).toBeInViewport();
   await bild('login-noch-kein-konto');
-  const vorschau = weg.locator('details.einladung-vorschau');
-  await expect(vorschau).not.toHaveAttribute('open', /.*/);
-  await vorschau.locator('summary').click();
-  await expect(vorschau.getByRole('button', { name: 'Einladung einlösen' })).toBeDisabled();
-  await expect(vorschau.getByRole('button', { name: 'Auf die Warteliste' })).toBeEnabled();
-  await bild('login-einladung-vorschau', true);
-
-  await page.goto('/einladung');
+  await expect(weg.getByRole('button', { name: 'Auf die Warteliste' })).toBeEnabled();
+  await weg.getByRole('button', { name: 'Einladung einlösen' }).click();
   await expect(page).toHaveURL(/\/einladung$/);
   const feld = page.getByLabel('Link der Einladung');
   await expect(feld).toBeVisible();

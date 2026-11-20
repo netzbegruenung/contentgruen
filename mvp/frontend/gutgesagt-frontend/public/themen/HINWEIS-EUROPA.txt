@@ -1,0 +1,33 @@
+europa.svg: das Motiv des Themas „Europa“
+
+Was es ist
+Eine eigene, vereinfachte Zeichnung des Europäischen Emblems (Europaflagge): zwölf
+goldene fünfzackige Sterne, aufrecht, in den Positionen der Stunden eines
+Zifferblatts auf einem Kreis, auf blauem Grund, Seitenverhältnis 3:2. Fluent Emoji hat
+keine Flaggen, deshalb steht dieses Motiv nicht in FLUENT-EMOJI-LIZENZ.txt.
+
+Konstruktion (gerechnet, nicht abgezeichnet)
+- Flagge 30 x 20 in einem Feld von 32 x 32 wie die Fluent-Motive, Ecken mit Radius 2.
+- Radius des Sternenkreises: ein Drittel der Flaggenhöhe; Radius des Umkreises eines
+  Sterns: ein Achtzehntel der Flaggenhöhe; je ein Stern oben, die Spitze nach oben.
+- Farben wie in der offiziellen Reproduktion (EU-emblem_RGB.svg): Blau #003399,
+  Gelb #FFCC00. Abgeglichen mit „Normal reproduction in colour - SVG“ auf
+  https://european-union.europa.eu/principles-countries-history/symbols/european-flag_en
+  (abgerufen am 20.11.2026).
+
+Gebrauchsbedingungen
+Rechtliche Hinweise der EU, Abschnitt „Use of the EU emblem by third parties“,
+https://european-union.europa.eu/legal-notice_en (abgerufen am 20.11.2026), gestützt auf
+die Verwaltungsvereinbarung mit dem Europarat (ABl. C 271 vom 8.9.2012, 2012/C 271/04):
+Jede natürliche oder juristische Person darf das Emblem verwenden, solange das
+(a) nicht den Eindruck einer Verbindung zu Organen oder Einrichtungen der EU oder des
+Europarats erweckt, die nicht besteht, (b) nicht glauben lässt, sie unterstützten,
+förderten oder billigten die Nutzung, und (c) keinem Ziel dient, das mit den Zielen und
+Grundsätzen der EU oder des Europarats unvereinbar oder sonst rechtswidrig ist. Unter
+diesen Bedingungen ist keine schriftliche Erlaubnis nötig. Eine Eintragung als Marke
+ist ausgeschlossen. Die CC-BY-Lizenz der EU-Inhalte gilt für das Emblem nicht.
+
+Wie Gut gesagt es nutzt
+Nur als kleines Symbol neben dem Wort „Europa“ für das Thema, rein dekorativ
+(aria-hidden), nicht im Logo, nicht als Siegel oder Auszeichnung und ohne Text, der
+eine Verbindung zur EU oder eine Billigung nahelegt.

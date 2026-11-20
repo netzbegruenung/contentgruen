@@ -677,6 +677,41 @@ class QdrantBaseRepository(
             )
             return 0
 
+    async def count_neue_von_anderen(
+        self, user_id: str, seit: datetime.datetime, content_types: Sequence[str]
+    ) -> int:
+        """
+        Sichtbare Eintraege der Typen ``content_types``, angelegt seit ``seit``, ohne
+        die von ``user_id``: die Kachel "neue Beitraege" auf der Startseite. Dieselbe
+        Sichtbarkeit wie get_recent ("Frisch aus der Community"), auf das sie fuehrt.
+
+        ``created`` steht als ISO-Zeichenkette im Payload; Qdrant vergleicht sie als
+        Zeitpunkt (DatetimeRange), auch ohne Payload-Index. Ein Fehler geht an den
+        Aufrufer, der dann 0 zeigt.
+        """
+        from qdrant_client.models import (
+            DatetimeRange,
+            FieldCondition,
+            Filter,
+            MatchAny,
+            MatchValue,
+        )
+
+        sichtbar = self._sichtbar_filter()
+        must = list(sichtbar.must or []) + [
+            FieldCondition(key="content_type", match=MatchAny(any=list(content_types))),
+            FieldCondition(key="created", range=DatetimeRange(gte=seit)),
+        ]
+        must_not = list(sichtbar.must_not or []) + [
+            FieldCondition(key="original_author", match=MatchValue(value=user_id))
+        ]
+        result = await self._shared_manager.async_client.count(
+            collection_name=self._shared_manager.collection_name,
+            count_filter=Filter(must=must, must_not=must_not),
+            exact=True,
+        )
+        return result.count
+
     async def has_content(self) -> bool:
         """
         Check if there's any content for this content_type in the collection.

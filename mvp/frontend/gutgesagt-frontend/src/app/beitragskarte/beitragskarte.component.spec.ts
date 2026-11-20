@@ -358,12 +358,6 @@ describe('BeitragskarteComponent', () => {
       zeigen(ausSuchergebnis(paket('commentary_result')), { vorschau: true });
       expect(titelLink()).toBeNull();
     });
-
-    it('verlinkt kompakte Karten nicht, die sind als Ganzes antippbar', () => {
-      zeigen(ausSuchergebnis(paket('commentary_result')), { variante: 'kompakt' });
-
-      expect(element('a.titel-link')).toBeNull();
-    });
   });
 
   describe('Lücke in der Vorlage (#640, R38)', () => {
@@ -510,18 +504,6 @@ describe('BeitragskarteComponent', () => {
       expect(document.querySelector('.stil-erklaerung')?.textContent!.trim()).toBe('freundlich: holt Unentschiedene ab, ohne sie vorzuführen');
     });
 
-    it('zeigt Markierung und Stil auch in der kompakten Karte (Meine Beitraege)', () => {
-      zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'humorvoll' })), {
-        variante: 'kompakt',
-      });
-
-      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für Gleichgesinnte');
-      expect(element('.album-inhalt .karte-stil')?.textContent).toContain('humorvoll');
-      // Die kompakte Karte ist als Ganzes antippbar: dort kein eigener Knopf, die Erklaerung als title
-      expect(element('.album-inhalt button.karte-stil')).toBeNull();
-      expect(element('.album-inhalt .karte-stil').getAttribute('title')).toBe('humorvoll: nimmt mit einem Augenzwinkern die Schärfe raus');
-    });
-
     describe('Markierung fuer die eigenen Leute (Variante D, Tanne)', () => {
       const TANNE = 'rgb(0, 84, 55)'; // var(--akzent-schrift), #005437
       const WEISS = 'rgb(255, 255, 255)';
@@ -543,20 +525,6 @@ describe('BeitragskarteComponent', () => {
         expect(etikett.color).toBe(TANNE);
       });
 
-      it('setzt das Etikett in der kompakten Karte weiss auf Tanne', () => {
-        eigeneLeute('kompakt');
-        const etikett = getComputedStyle(element('.karte-eigene-leute'));
-        const icon = getComputedStyle(element('.karte-eigene-leute .angabe-icon'));
-
-        expect(etikett.backgroundColor).toBe(TANNE);
-        expect(etikett.color).toBe(WEISS);
-        expect(icon.color).toBe(WEISS);
-        expect(etikett.fontWeight).toBe('600');
-        expect(etikett.paddingLeft).toBe('8px');
-        expect(etikett.paddingTop).toBe('1px');
-        expect(etikett.borderTopLeftRadius).toBe('16px'); // var(--border-radius-large)
-      });
-
       it('gibt der ganzen Karte links einen Rand in Tanne', () => {
         eigeneLeute();
         const karte = getComputedStyle(element('.karte'));
@@ -565,12 +533,6 @@ describe('BeitragskarteComponent', () => {
         expect(karte.borderLeftWidth).toBe('6px');
         expect(karte.borderLeftStyle).toBe('solid');
         expect(karte.borderLeftColor).toBe(TANNE);
-      });
-
-      it('auch die kompakte Karte bekommt den Rand', () => {
-        eigeneLeute('kompakt');
-
-        expect(element('.karte').classList).toContain('karte--eigene-leute');
       });
 
       // Designrunde 17.11.: Die Zeile ueber dem Titel sagt es schon, keine zweite Zeile im Fuss
@@ -912,7 +874,7 @@ describe('BeitragskarteComponent', () => {
 
     it('zeigt die Nutzung beschriftet in der Meta-Zeile statt als Kreis im Kopf (#599)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 1 })));
-      expect(element('.karte-kopf .badge-nutzung')).toBeNull();
+      expect(element('.karte-kopf')!.textContent).not.toContain('×');
       expect(element('.karte-meta').textContent).toContain('1× genutzt');
     });
 
@@ -1213,160 +1175,34 @@ describe('BeitragskarteComponent', () => {
       spalte.remove();
     });
   });
-  describe('Kompakt', () => {
-    it('zeigt als Album Symbol im Kopf, Titel und Anriss auf zwei Zeilen, Datum und Nutzung im Fuss', () => {
-      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 7, created: '2026-09-13T12:00:00' })), {
-        variante: 'kompakt',
-      });
-      const karte = element('.karte');
-
-      expect(karte.classList).toContain('karte--kompakt');
-      expect(karte.classList).toContain('typ-commentary');
-      expect(element('.karte-kopf .karte-icon').textContent!.trim()).toBe('💬');
-      expect(element('.karte-kopf .karte-titel')).toBeNull();
-      expect(element('.karte-kopf .karte-badges')).toBeNull();
-      expect(element('.album-inhalt .karte-titel').textContent).toContain('Test Title');
-      expect(getComputedStyle(element('.karte-titel')).webkitLineClamp).toBe('2');
-      expect(getComputedStyle(element('.karte-titel')).fontSize).toBe('15px');
-      expect(element('.album-anriss').textContent).toContain('Test text');
-      expect(getComputedStyle(element('.album-anriss')).webkitLineClamp).toBe('2');
-      expect(getComputedStyle(element('.album-anriss')).fontSize).toBe('13px');
-      expect(element('.album-fuss .karte-datum').textContent!.trim()).toBe('13.09.2026');
-      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7× genutzt');
-      expect(getComputedStyle(element('.album-fuss .badge-nutzung')).fontSize).toBe('15px');
-      expect(element('.badge-nutzung').classList).not.toContain('ungenutzt');
-      expect(element('.statement')).toBeNull();
-      expect(element('.karte-text')).toBeNull();
-      expect(element('.karte-meta')).toBeNull();
-      expect(element('app-karten-aktionen')).toBeNull();
-    });
-
-    it('zeigt ein Bild im Kopfband erst auf Klick, das Symbol darauf, mit dem Titel als alt (#447)', () => {
-      const daten = ausSuchergebnis(
-        paket('image_result', { content_type: 'image', title: 'Solardach der Schule', image_url: 'https://example.org/dach.jpg' }),
+  describe('Fremde Bilder (#447)', () => {
+    it('laedt kein fremdes Bild, bevor jemand "Bild laden" waehlt', () => {
+      zeigen(
+        ausSuchergebnis(
+          paket('image_result', { content_type: 'image', title: 'Dach', image_url: 'https://example.org/dach.jpg' }),
+        ),
       );
 
-      zeigen(daten, { variante: 'kompakt' });
-      const angetippt = jasmine.createSpy('angetippt');
-      component.angetippt.subscribe(angetippt);
-
-      expect(element('.karte-kopf').classList).toContain('karte-kopf--bild');
-      expect(element('.karte-kopf img')).toBeNull();
-      const knopf = element<HTMLButtonElement>('.karte-kopf .kopf-bild button.bild-laden');
-      expect(knopf.getAttribute('aria-label')).toBe('Bild laden: Solardach der Schule');
-      expect(knopf.querySelector('.bild-laden-symbol')).toBeNull();
-
-      knopf.click();
-      fixture.detectChanges();
-      const bild = element<HTMLImageElement>('.karte-kopf .kopf-bild img');
-
-      expect(angetippt).not.toHaveBeenCalled();
-      expect(bild.getAttribute('src')).toBe('https://example.org/dach.jpg');
-      expect(bild.alt).toBe('Solardach der Schule');
-      expect(getComputedStyle(bild).objectFit).toBe('cover');
-      expect(element('.karte-kopf .karte-icon').textContent!.trim()).toBe('🖼️');
-    });
-
-    it('laedt kein fremdes Bild, bevor jemand "Bild laden" waehlt, auch nicht im Kopfband (#447)', () => {
-      const daten = ausSuchergebnis(
-        paket('image_result', { content_type: 'image', title: 'Dach', image_url: 'https://example.org/dach.jpg' }),
-      );
-
-      zeigen(daten);
       expect(fixture.nativeElement.querySelectorAll('img').length).toBe(0);
       expect(element('.karte-bild button.bild-laden').textContent).toContain('Bild laden');
-
-      zeigen(daten, { variante: 'kompakt' });
-      expect(fixture.nativeElement.querySelectorAll('img').length).toBe(0);
     });
 
-    it('stellt in voller und kompakter Karte ohne Klick keine Anfrage an den fremden Server (#447)', async () => {
+    it('stellt ohne Klick keine Anfrage an den fremden Server', async () => {
       const anfragen = new Anfragen();
       anfragen.starten();
       try {
         const voll = fremdeAdresse();
-        const kompakt = fremdeAdresse();
         zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', title: 'Dach', image_url: voll })));
-        zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', title: 'Dach', image_url: kompakt })), {
-          variante: 'kompakt',
-        });
 
-        const angefragt = await anfragen.abwarten();
-        expect(angefragt).not.toContain(voll);
-        expect(angefragt).not.toContain(kompakt);
+        expect(await anfragen.abwarten()).not.toContain(voll);
 
-        element<HTMLButtonElement>('.karte-kopf button.bild-laden').click();
+        element<HTMLButtonElement>('.karte-bild button.bild-laden').click();
         fixture.detectChanges();
-        await bildFertig(element<HTMLImageElement>('.karte-kopf img'));
-        expect(await anfragen.abwarten()).toContain(kompakt);
+        await bildFertig(element<HTMLImageElement>('.karte-bild img'));
+        expect(await anfragen.abwarten()).toContain(voll);
       } finally {
         anfragen.beenden();
       }
-    });
-
-    it('laesst das Kopfband ohne Bild wie bisher und aendert die volle Karte nicht', () => {
-      zeigen(ausSuchergebnis(paket('commentary_result')), { variante: 'kompakt' });
-      expect(element('.kopf-bild')).toBeNull();
-      expect(element('.karte-kopf').classList).not.toContain('karte-kopf--bild');
-
-      zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', image_url: 'https://example.org/dach.jpg' })));
-      expect(element('.kopf-bild')).toBeNull();
-      expect(element('.karte-bild app-fremdes-bild')).not.toBeNull();
-    });
-
-    it('zeigt ohne oder mit unbekannter Nutzung dezent "Noch nicht genutzt"', () => {
-      const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 0 }));
-
-      zeigen(daten, { variante: 'kompakt' });
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('Noch nicht genutzt');
-      expect(element('.badge-nutzung').classList).toContain('ungenutzt');
-
-      zeigen({ ...daten, nutzung: null }, { variante: 'kompakt' });
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('Noch nicht genutzt');
-      expect(element('.badge-nutzung').classList).toContain('ungenutzt');
-    });
-
-    it('zeigt im Fuss den Zuwachs der letzten 7 Tage ausgeschrieben unter der Nutzung', () => {
-      const daten = { ...ausSuchergebnis(paket('commentary_result', { usage_count: 7 })), nutzungLetzte7Tage: 2 };
-
-      zeigen(daten, { variante: 'kompakt' });
-      const zuwachs = element('.album-fuss .nutzung-zuwachs');
-
-      expect(zuwachs.textContent!.trim()).toBe('+2 diese Woche');
-      expect(getComputedStyle(zuwachs).fontSize).toBe('13px');
-      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7× genutzt');
-    });
-
-    it('zeigt ohne Zuwachs keinen Zuwachs', () => {
-      const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 7 }));
-
-      zeigen({ ...daten, nutzungLetzte7Tage: 0 }, { variante: 'kompakt' });
-      expect(element('.nutzung-zuwachs')).toBeNull();
-
-      zeigen(daten, { variante: 'kompakt' });
-      expect(element('.nutzung-zuwachs')).toBeNull();
-    });
-
-    it('meldet kompakt den Tipp, voll nicht', () => {
-      const daten = ausSuchergebnis(paket('commentary_result'));
-      zeigen(daten, { variante: 'kompakt' });
-      const kompakt = jasmine.createSpy('kompakt');
-      component.angetippt.subscribe(kompakt);
-
-      element('.karte').click();
-
-      expect(kompakt).toHaveBeenCalledOnceWith(daten);
-      expect(element('.karte').getAttribute('role')).toBe('link');
-      expect(element('.karte').getAttribute('tabindex')).toBe('0');
-
-      zeigen(daten);
-      const voll = jasmine.createSpy('voll');
-      component.angetippt.subscribe(voll);
-
-      element('.karte').click();
-
-      expect(voll).not.toHaveBeenCalled();
-      expect(element('.karte').getAttribute('role')).toBeNull();
     });
   });
 
@@ -1418,7 +1254,6 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-badges')).toBeNull();
       expect(element('.karte-inhalt')).toBeNull();
       expect(element('app-karten-aktionen')).toBeNull();
-      expect(element('.album-fuss')).toBeNull();
       expect(element('.karte').getAttribute('role')).toBeNull();
     });
   });

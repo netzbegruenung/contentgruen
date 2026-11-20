@@ -13,10 +13,10 @@ import { Thema } from '../../services/dtos/themenDtos';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="themen-filter" role="group" aria-label="Nach Thema filtern">
-      <button type="button" class="thema-chip" [class.gewaehlt]="aktiv === null"
+      <button type="button" class="chip thema-chip" [class.gewaehlt]="aktiv === null"
               [attr.aria-pressed]="aktiv === null"
               (click)="waehlen(null)">Alle Themen</button>
-      <button *ngFor="let thema of themen" type="button" class="thema-chip"
+      <button *ngFor="let thema of themen" type="button" class="chip thema-chip"
               [class.gewaehlt]="aktiv === thema.schluessel"
               [attr.aria-pressed]="aktiv === thema.schluessel"
               (click)="waehlen(thema.schluessel)">{{ thema.name }}</button>

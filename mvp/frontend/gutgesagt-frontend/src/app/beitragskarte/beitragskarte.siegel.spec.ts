@@ -144,9 +144,8 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       expect(siegel()).toBeNull();
     });
 
-    it('Antippen öffnet die Erklärung und nicht die Karte', () => {
+    it('Antippen öffnet die Erklärung', () => {
       zeigen();
-      const angetippt = spyOn(fixture.componentInstance.angetippt, 'emit');
       fixture.nativeElement.querySelector('.siegel-knopf').click();
       fixture.detectChanges();
 
@@ -156,7 +155,6 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       expect(erklaerung.textContent).toContain('Beginnt ohne Verneinung');
       expect(erklaerung.textContent).toContain('Kurze Sätze');
       expect(erklaerung.textContent).toContain('zählen, sobald genug zusammenkommen');
-      expect(angetippt).not.toHaveBeenCalled();
       // Kein leeres Menü für Screenreader: die Erklärung ist der eine Menüpunkt.
       expect(erklaerung.getAttribute('role')).toBe('menuitem');
     });

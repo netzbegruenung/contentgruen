@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from pydantic import BaseModel, field_validator, model_validator
 from typing import Dict, List, Optional
@@ -13,6 +14,7 @@ from domain.models.commentary import (
 from domain.models.content import ContentDbEntry
 from domain.models.content_type import ContentType
 from dtos.beitrag import BeitragResponse
+from dtos.statement import ThemaDto
 
 
 ###   Responses   ###
@@ -86,6 +88,17 @@ class FassungsNutzung(BaseModel):
     letzte_7_tage: int = 0
 
 
+class AussageImAlbum(BaseModel):
+    """
+    Die Aussage, auf die ein Beitrag in "Meine Beitraege" antwortet, mit ihren Themen
+    (Album nach Thema); dieselbe Wahl wie auf der Beitragsseite.
+    """
+
+    id: uuid.UUID
+    text: str
+    themen: List[ThemaDto] = []
+
+
 class MeinBeitragResponse(BeitragResponse):
     """
     Ein Beitrag in "Meine Beitraege", wie er nach aussen geht (#385).
@@ -106,6 +119,9 @@ class MeinBeitragResponse(BeitragResponse):
     # anderen Typen oder wenn die Zahlen nicht lesbar waren.
     nutzung_je_fassung: Optional[Dict[Fassung, FassungsNutzung]] = None
     references: List[CommentaryReference] = []
+    # Worauf der Beitrag antwortet, mit Themen (Album); None ohne sichtbare Aussage
+    # oder wenn sie nicht nachschlagbar war.
+    aussage: Optional[AussageImAlbum] = None
 
 
 class GetContributionsOfUserResponse(BaseModel):

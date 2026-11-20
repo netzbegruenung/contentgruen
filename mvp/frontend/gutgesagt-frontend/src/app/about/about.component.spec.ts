@@ -88,6 +88,9 @@ describe('AboutComponent', () => {
     expect(einzeilig(abschnitt)).toContain('Die Antworten schreiben viele Menschen gemeinsam');
     expect(einzeilig(abschnitt)).toContain('Jeden Schritt kann eine andere Person machen');
     expect(einzeilig(abschnitt)).toContain('Mitwirken können heute Mitglieder der');
+    // Beta-Zugaenge gibt es nach dem Realm-Umzug nicht mehr (#488), Einladungen seit 20.11.
+    expect(einzeilig(abschnitt)).toContain(`Mitglieder der ${ORGANISATION.name} und Personen mit Einladung`);
+    expect(einzeilig(abschnitt)).not.toContain('Beta-Zugang');
     // Der Anker #siegel ist von der Karte verlinkt (beitragskarte.siegel.spec.ts)
     expect(abschnitt.querySelector('#siegel')).not.toBeNull();
   });

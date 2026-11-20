@@ -12,7 +12,6 @@ import { KEINE_GENERATIVE_KI, SUCHE_MIT_SPRACHMODELLEN } from '../shared/ki-saet
 import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
 import { HILFE_PARAM, HelpDialogComponent, hilfeNachAnmeldung, hilfeOeffnen } from './help-dialog.component';
-import { EINLADUNG_AB } from '../shared/einladung-ab';
 import { SELBST_PRUEFEN } from '../shared/schreibregeln';
 
 describe('HelpDialogComponent', () => {
@@ -269,10 +268,11 @@ describe('HelpDialogComponent', () => {
     });
   });
 
-  it('sagt, wie man zu einem Konto kommt: Netzbegrünung-Konto, Einladung ab 4. Dezember, Warteliste', () => {
+  it('sagt, wie man zu einem Konto kommt: Netzbegrünung-Konto, Einladung, Warteliste', () => {
     const text = (fixture.nativeElement.querySelector('.hilfe-konto') as HTMLElement).textContent!;
     expect(text).toContain('Netzbegrünung-Konto');
-    expect(text).toContain(`Ab ${EINLADUNG_AB}`);
+    expect(text).toContain('Konto aus einer Einladung');
+    expect(text).not.toMatch(/Ab \d/);
     expect(text).toContain('Warteliste');
     expect(text).toContain('„Feedback“');
   });

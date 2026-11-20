@@ -25,32 +25,7 @@
   }
 }
 
-.thema-chip {
-  border: 1px solid var(--linie-tanne);
-  border-radius: var(--border-radius-medium);
-  background: transparent;
-  color: var(--akzent-schrift);
-  padding: 4px 12px;
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.thema-chip.gewaehlt {
-  background: var(--primaer);
-  /* Weiss wie der gewaehlte Zweck: --flaeche ist im Dunkeln dunkelgrau, auf Klee 3,34:1 */
-  color: white;
-}
-
-.thema-chip:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.thema-chip:focus-visible {
-  outline: 2px solid var(--akzent-tanne);
-  outline-offset: 2px;
-}
+/* Aussehen der Chips: global .chip (styles.css), gleich im Fangkorb und im Album */
 
 .themen-hinweis {
   margin: 4px 0 0;

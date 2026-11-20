@@ -14,7 +14,7 @@ import { MatButtonModule } from '@angular/material/button';
         <div class="error-content">
           <mat-icon class="error-icon">error_outline</mat-icon>
           <div class="error-text">
-            <h3>{{ title || 'Ein Fehler ist aufgetreten' }}</h3>
+            <h3>{{ title || 'Das hat nicht geklappt' }}</h3>
             <p>{{ error }}</p>
           </div>
         </div>

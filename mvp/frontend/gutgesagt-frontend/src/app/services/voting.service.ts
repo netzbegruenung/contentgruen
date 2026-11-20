@@ -17,13 +17,6 @@ export interface VoteResponse {
   message: string;
 }
 
-export interface VoteStats {
-  content_id: string;
-  likes: number;
-  dislikes: number;
-  score: number;
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -144,19 +137,4 @@ export class VotingService {
       })
     );
   }
-
-  /**
-   * Get voting statistics for a content item (likes, dislikes, score)
-   */
-  getVoteStats(contentId: string): Observable<VoteStats> {
-    return this.http.get<VoteStats>(`${this.apiUrl}/content/${contentId}/stats`).pipe(
-      catchError(error => {
-        this.loggingService.logError('Failed to get vote stats', error);
-        return throwError(() => error);
-      })
-    );
-  }
-
-  // Legacy method - kept for backward compatibility
-  // Use removeLike() or removeDislike() instead
 }

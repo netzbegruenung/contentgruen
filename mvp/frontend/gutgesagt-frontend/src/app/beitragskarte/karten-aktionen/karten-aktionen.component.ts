@@ -56,7 +56,7 @@ export const KOPIERT_DAUER_MS = 4000;
  *
  * Abstimmen ist optimistisch mit Entprellung und Ruecknahme, dazu 401/403/429-Behandlung
  * (urspruenglich aus BaseResultItemComponent). Die Leiste sitzt in einer eigenen
- * Komponente, damit kompakte Karten und Einwurf-Karten, die als Ganzes antippbar sind,
+ * Komponente, damit Einwurf- und Kopf-Karten, die keine Aktionsleiste haben,
  * keine Knoepfe und keine Dienste mitschleppen.
  *
  * In der Formular-Vorschau ist die Leiste sichtbar wie in der Suche, reagiert aber
@@ -121,7 +121,19 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
    */
   @Input() stimmenZaehlen: boolean | null = null;
 
+  /**
+   * Eigenes Album in Meine Beitraege (Variante A, 20.11.): Aendern, Teilen als Hauptknopf,
+   * im Menue Kopieren, Oeffnen, Als Vorlage und Loeschen; kein Abstimmen, kein Melden.
+   */
+  @Input() album = false;
+  /** Im Album: der Knopf "Ändern" (nur Kommentar und Hintergrundinfo, istAenderbar). */
+  @Input() aenderbar = false;
+
   @Output() likeToggled = new EventEmitter<string>();
+  /** Im Album: "Ändern" angetippt; den Dialog oeffnet die Seite. */
+  @Output() aendern = new EventEmitter<void>();
+  /** Im Album: "Beitrag löschen" angetippt; Rueckfrage und Loeschen macht die Seite. */
+  @Output() loeschen = new EventEmitter<void>();
   @Output() dislikeToggled = new EventEmitter<string>();
   /** Nach erfolgreichem Kopieren oder Teilen; die Karte zaehlt daraufhin ihre Nutzung hoch. */
   @Output() kopiert = new EventEmitter<void>();
@@ -342,6 +354,12 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   get teilenBeschriftung(): string {
     const titel = this.titel?.trim();
     return titel ? `Beitrag teilen: „${titel}“` : 'Beitrag teilen';
+  }
+
+  /** Der unsichtbare Name des Knopfs "Ändern", mit dem Titel wie beim Teilen. */
+  get aendernBeschriftung(): string {
+    const titel = this.titel?.trim();
+    return titel ? `Beitrag ändern: „${titel}“` : 'Beitrag ändern';
   }
 
   /**

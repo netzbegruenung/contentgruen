@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 /** Ein Link, der nach dem Klick fuer diesen App-Start verschwindet. */
-export type NeuesArt = 'nutzung' | 'einwuerfe' | 'aussagen';
+export type NeuesArt = 'nutzung' | 'ausformuliert' | 'einwuerfe' | 'aussagen' | 'beitraege';
 
 /**
  * Vorgaenger-Staende im Browser aus der Entwicklung von #672; nie in einem Release, aber

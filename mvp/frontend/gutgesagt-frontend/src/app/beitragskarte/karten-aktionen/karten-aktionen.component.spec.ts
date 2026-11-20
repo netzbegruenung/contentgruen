@@ -1137,6 +1137,63 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     }));
   });
 
+  describe('eigenes Album (Meine Beitraege, Variante A)', () => {
+    function menue(): string[] {
+      fixture.nativeElement.querySelector('.menue-knopf').click();
+      fixture.detectChanges();
+      const panele = document.querySelectorAll('.mat-mdc-menu-panel');
+      return Array.from(panele[panele.length - 1].querySelectorAll('[mat-menu-item] .mat-mdc-menu-item-text')).map((e) =>
+        e.textContent!.trim(),
+      );
+    }
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('album', true);
+      fixture.componentRef.setInput('aenderbar', true);
+      fixture.componentRef.setInput('titel', 'Wärmepumpe lohnt sich auch im Altbau');
+      fixture.detectChanges();
+    });
+
+    afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((e) => (e.innerHTML = '')));
+
+    it('zeigt Ändern links, Teilen als Hauptknopf und ⋮, ohne Abstimmen und Kopieren-Knopf', () => {
+      const leiste: HTMLElement = fixture.nativeElement;
+      expect(leiste.querySelector('.aendern-knopf')!.getAttribute('aria-label')).toBe(
+        'Beitrag ändern: „Wärmepumpe lohnt sich auch im Altbau“',
+      );
+      expect(leiste.querySelector('.teilen-haupt')!.textContent).toContain('Teilen');
+      expect(leiste.querySelector('.stimme-knopf')).toBeNull();
+      expect(leiste.querySelector('.teilen-knopf')).toBeNull();
+    });
+
+    it('fuehrt im Menue Kopieren, Oeffnen, Als Vorlage und Loeschen, ohne Melden', () => {
+      expect(menue()).toEqual(['Kopieren', 'Beitrag öffnen', 'Als Vorlage nehmen', 'Beitrag löschen']);
+    });
+
+    it('meldet Ändern und Löschen nach aussen', () => {
+      const aendern = jasmine.createSpy('aendern');
+      const loeschen = jasmine.createSpy('loeschen');
+      component.aendern.subscribe(aendern);
+      component.loeschen.subscribe(loeschen);
+
+      fixture.nativeElement.querySelector('.aendern-knopf').click();
+      menue();
+      const eintraege = document.querySelectorAll('.loeschen-eintrag');
+      (eintraege[eintraege.length - 1] as HTMLElement).click();
+
+      expect(aendern).toHaveBeenCalledTimes(1);
+      expect(loeschen).toHaveBeenCalledTimes(1);
+    });
+
+    it('zeigt Ändern nur, wo es geht (Kommentar, Hintergrundinfo)', () => {
+      fixture.componentRef.setInput('aenderbar', false);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.aendern-knopf')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.teilen-haupt')).not.toBeNull();
+    });
+  });
+
   it('laesst „Kopiert“ 4 s stehen, lang genug fuer den Wechsel in die andere App (P10)', () => {
     expect(KOPIERT_DAUER_MS).toBe(4000);
   });

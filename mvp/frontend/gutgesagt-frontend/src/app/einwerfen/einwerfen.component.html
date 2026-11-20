@@ -117,18 +117,20 @@
 
     </form>
 
-    <!-- Nebenweg als Text-Link unter dem Formular: "Einwerfen" bleibt der einzige Knopf (#645) -->
-    <p class="fangkorb-weg">
-        <a class="fangkorb-link" [routerLink]="fangkorbPfad">
-            <span class="knopf-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>Fangkorb ansehen
-        </a>
-    </p>
-
     <div class="einwurf-fussnote">
         <p>
             Der Fangkorb ist ein gemeinsamer Vorrat: Andere sehen deine Einwürfe und
             können sie ausarbeiten.
         </p>
+    </div>
+
+    <!-- Nebenweg in den Fangkorb: derselbe Knopf wie "Meine Beiträge" auf der Beitragen-Seite
+         (Sebastian 20.11.), ausserhalb des Formulars; "Einwerfen" bleibt der einzige volle Knopf (#645) -->
+    <div class="nebenweg-zeile fangkorb-weg">
+        <a mat-stroked-button class="nebenweg-knopf fangkorb-knopf" [routerLink]="fangkorbPfad">
+            <mat-icon aria-hidden="true">{{ menueIcons.fangkorb }}</mat-icon>
+            Fangkorb ansehen
+        </a>
     </div>
 
 </div>

@@ -83,6 +83,12 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('nur zwei Zahlen');
       expect(text).toContain('wie viele Einwürfe anderer es im Fangkorb gab');
       expect(text).toContain('Wann du da warst, speichern wir nicht');
+      // Die zwei 7-Tage-Zahlen der Startseite (#741), Wortlaut freigegeben 20.11.
+      expect(text).toContain(
+        'Zwei weitere Zahlen auf der Startseite berechnen wir bei jedem Besuch neu und speichern sie nicht: ' +
+          'wie viele deiner Einwürfe andere in den letzten sieben Tagen ausformuliert haben und wie viele neue ' +
+          'Kommentare und Hintergrundinfos anderer es in dieser Zeit auf der Plattform gab.',
+      );
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
       expect(text).toContain('bis zur Löschung deines Kontos');
     });
@@ -410,14 +416,15 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Realm „gutgesagt“');
       expect(text).toContain('Ohne Einladung kann niemand selbst ein Konto anlegen');
       expect(text).not.toContain('eine Selbstregistrierung gibt es nicht');
-      // Bis zur Umstellung gilt noch die direkte Anmeldung bei der Netzbegrünung.
-      expect(text).toContain('Bis wir die Anmeldung umgestellt haben');
+      // Seit dem Realm-Umzug (20.11.) kein Übergangssatz mehr (#738)
+      expect(text).not.toContain('Bis wir die Anmeldung umgestellt haben');
+      expect(text).not.toContain('bis zur Umstellung vom');
     });
 
     it('Einladung: Mail-Adresse an den Anmeldedienst, Mail über dessen Mailserver, keine Adresse an der Einladung', () => {
       const text = abschnitt('Konto aus einer Einladung');
 
-      expect(text).toContain('gibst du eine E-Mail-Adresse ein');
+      expect(text).toContain('und eine E-Mail-Adresse ein');
       expect(text).toContain('über seinen Mailserver');
       expect(text).toContain('Die Plattform selbst speichert und protokolliert deine E-Mail-Adresse nicht');
       expect(text).toContain('An der Einladung speichern wir nur, wie oft sie eingelöst wurde');
@@ -434,12 +441,16 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
     });
 
-    it('Netzbegrünung: Konto vorab mit der Mail-Adresse aus dem Realm der Netzbegrünung, ohne Mail (#527)', () => {
+    it('Netzbegrünung: kein vorab angelegtes Konto, der Lauf auf Produktion war ohne (#738)', () => {
       const text = abschnitt('Anmeldung über die Netzbegrünung');
 
-      expect(text).toContain('legen wir das Konto im Anmeldedienst vorab an');
-      expect(text).toContain('mit deiner E-Mail-Adresse aus dem Identitätsdienst der Netzbegrünung');
-      expect(text).toContain('Eine E-Mail bekommst du dabei nicht');
+      expect(text).toContain('Bei deiner ersten Anmeldung legt der Anmeldedienst dafür ein Konto an');
+      expect(text).not.toContain('vorab an');
+    });
+
+    it('kein Zugang, den wir selbst anlegen, seit dem Realm-Umzug (#738)', () => {
+      expect(ganzerText()).not.toContain('Zugang, den wir selbst anlegen');
+      expect(ganzerText()).not.toContain('einen Zugang von Hand anlegen');
     });
 
     it('Wo deine Daten liegen: Anmeldedienst samt Mailversand beim Auftragsverarbeiter (Entscheidung 03.11.2026)', () => {
@@ -454,34 +465,59 @@ describe('DatenschutzComponent', () => {
       );
     });
 
-    it('Einladung: Kennung und Mail-Adresse beim Anmelden, kein Anzeigename aus der Adresse', () => {
+    it('Einladung: Kennung, Mail-Adresse und Name beim Anmelden, Anzeigename aus dem Namen, nicht aus der Adresse (#730)', () => {
       const text = abschnitt('Konto aus einer Einladung');
 
       expect(text).toContain('erhält die Plattform vom Anmeldedienst deine Kennung und deine E-Mail-Adresse');
-      expect(text).toContain('aus deiner E-Mail-Adresse bilden wir keinen Anzeigenamen');
+      expect(text).toContain('Außerdem erhält sie deinen Vor- und Nachnamen');
+      expect(text).toContain('deinen Anzeigenamen, etwa „Anna B.“, und speichern nur diesen');
+      expect(text).toContain('Aus deiner E-Mail-Adresse bilden wir keinen Anzeigenamen');
+      expect(text).not.toContain('Einen Namen hat ein Konto aus einer Einladung nicht');
     });
 
-    it('Einladung: Konto bleibt, bis wir es löschen; nie benutztes 30 Tage nach Ablauf des Links (#538)', () => {
+    it('Einladung: Name und Mail-Adresse an den Anmeldedienst, Zweck mit Name (#730)', () => {
+      const text = abschnitt('Konto aus einer Einladung');
+
+      expect(text).toContain('gibst du deinen Vor- und Nachnamen und eine E-Mail-Adresse ein');
+      expect(text).toContain('ohne es selbst zu speichern');
+      expect(text).toContain('dein Vor- und Nachname und dein Passwort');
+      expect(text).toContain('dich in E-Mails des Anmeldedienstes mit deinem Namen anzusprechen');
+      expect(text).toContain('Deinen vollen Namen speichert nur der Anmeldedienst');
+    });
+
+    it('Einladung: Keycloak-Zeitpunkt der NB-Zustimmung nur bei alten Konten, archiviert, dann gelöscht (0.9.8)', () => {
+      const text = abschnitt('Konto aus einer Einladung');
+
+      expect(text).toContain('Bei Konten von vor dem 20. November 2026 außerdem der Zeitpunkt');
+      expect(text).toContain('nachdem wir sie in der Plattform archiviert haben');
+      expect(text).toContain('siehe „Deine Zustimmung und deine Einwilligung“');
+      expect(text).not.toContain('[Datum der Umstellung]');
+    });
+
+    it('Einladung: Konto bleibt, bis wir es löschen; ohne Passwort 30 Tage nach Ablauf des Links (#538, #730)', () => {
       const text = abschnitt('Konto aus einer Einladung');
 
       expect(text).toContain('Das Konto im Anmeldedienst bleibt, bis wir es löschen');
-      expect(text).toContain('dessen Link nie benutzt wurde');
+      expect(text).toContain('Ein Konto, für das nie ein Passwort festgelegt wurde');
+      expect(text).toContain('oder du nach dem Öffnen des Links abgebrochen hast');
       // NIE_BENUTZTES_KONTO_TAGE und MAIL_GUELTIG_SEKUNDEN im Semantic-Service
-      expect(text).toContain('Wir löschen es automatisch 30 Tage nach Ablauf des Links, also etwa 33 Tage nach dem Einlösen');
+      expect(text).toContain('löschen wir automatisch 30 Tage nach Ablauf des Links, also etwa 33 Tage nach dem Einlösen');
       expect(text).not.toContain('bis du oder wir es löschen');
       expect(text).not.toContain('Es bleibt ohne Passwort stehen');
     });
 
-    it('Netzbegrünung: Dauer für das vorab angelegte Konto, Angaben vom Anmeldedienst', () => {
+    it('Netzbegrünung: Angaben vom Anmeldedienst', () => {
       const text = abschnitt('Anmeldung über die Netzbegrünung');
 
-      expect(text).toContain('Das Konto bleibt danach wie jedes andere, bis wir es löschen');
-      expect(text).toContain('erhält diese Plattform vom Anmeldedienst');
+      expect(text).toContain('erhält diese Plattform vom Anmeldedienst eine Kennung');
       expect(text).toContain('Das gilt für alle Anmeldewege');
     });
 
-    it('Anmelde-Cookie: alle drei Kontoarten', () => {
-      expect(abschnitt('Anmelde-Cookie')).toContain('mit einem Konto aus einer Einladung und mit einem Zugang');
+    it('Anmelde-Cookie: beide Anmeldewege (#738)', () => {
+      const text = abschnitt('Anmelde-Cookie');
+      expect(text).toContain('Das gilt für beide Anmeldewege: über die Netzbegrünung und mit einem Konto aus einer Einladung.');
+      expect(text).toContain('die der Anmeldedienst übermittelt, aber keine Zugangs-Tokens');
+      expect(text).not.toContain('selbst anlegen');
     });
   });
 
@@ -649,6 +685,18 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Ohne Einwilligung kannst du suchen und lesen, aber nichts beitragen und nichts bewerten');
     });
 
+    it('Zustimmung zu den NB: eigenes Häkchen, Vertrag lit. b, Nachweis lit. f, bis zur Kontolöschung (0.9.8)', () => {
+      const text = abschnitt('Rückschlüsse auf deine politische Haltung');
+
+      expect(text).toContain('Deine Zustimmung und deine Einwilligung');
+      expect(text).toContain('zwei Dinge, getrennt und mit je einem eigenen Häkchen, keins vorbelegt');
+      expect(text).toContain('Die Zustimmung zu den Nutzungsbedingungen ist ein Vertrag (Rechtsgrundlage Art. 6 Abs. 1 lit. b DSGVO)');
+      expect(text).toContain('den Zeitpunkt und den Stand der Nutzungsbedingungen, dem du zugestimmt hast');
+      expect(text).toContain('(Art. 6 Abs. 1 lit. f DSGVO)');
+      expect(text).toContain('Deine Zustimmungen zu den Nutzungsbedingungen bleiben ebenso bis zur Löschung deines Kontos');
+      expect(normalisiert(seite.textContent)).not.toContain('(siehe „Deine Einwilligung“)');
+    });
+
     it('Art.-9-Einwilligung: Widerruf im Profilmenü, Folgen und Dauer bis zur Kontolöschung (#557)', () => {
       const text = abschnitt('Rückschlüsse auf deine politische Haltung');
 
@@ -745,11 +793,6 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Sie gehen nicht an uns und werden nicht gezählt.');
     });
 
-    it('Anmelde-Cookie: Angaben des Dienstes nur bei der Anmeldung über Anmeldedienst oder Netzbegrünung', () => {
-      expect(abschnitt('Anmelde-Cookie')).toContain(
-        'bei der Anmeldung über den Anmeldedienst oder die Netzbegrünung dazu die übrigen Angaben, die der Dienst übermittelt',
-      );
-    });
 
     it('kein KI-Vorschlag für Bildunterschriften mehr, also auch kein Anbieter in den USA (#393)', () => {
       const text = abschnitt('Keine Übermittlung außerhalb der EU');

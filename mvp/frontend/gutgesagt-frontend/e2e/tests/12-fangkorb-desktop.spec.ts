@@ -68,7 +68,7 @@ for (const { breite, schema } of FAELLE) {
     const leiste = (await page.locator('.steuerung').boundingBox())!;
     const liste = (await page.locator('.liste').boundingBox())!;
     expect(leiste.x + leiste.width).toBeLessThanOrEqual(liste.x);
-    await expect(page.locator('.steuerung').getByRole('button', { name: 'Etwas einwerfen' })).toBeVisible();
+    await expect(page.locator('.steuerung').getByRole('button', { name: 'Einwerfen', exact: true })).toBeVisible();
     await expect(page.locator('.einwerfen-fab')).toHaveCount(0);
 
     // Quer: Meta-Zeile links neben dem Griff

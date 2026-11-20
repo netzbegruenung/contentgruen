@@ -1,0 +1,564 @@
+@use '../../shared/styles/breakpoints' as bp;
+
+// Das Album nutzt nur Tokens des Designblatts (theme/custom-theme.scss); hell und dunkel
+// kommen von dort. Volle Knoepfe bleiben im Dunkeln in ihrer Markenfarbe (--primaer).
+
+:host {
+  display: block;
+  // Listenseite: hoechstens 1100 px, mittig (Ausrichtungsregel)
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+// Deckel: Markenflaeche wie das Such-Band
+.deckel {
+  margin: var(--spacing-md) 0 0;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-large);
+  background: var(--kopf);
+  color: var(--text);
+}
+
+.zahlen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deckel--meilenstein-gross .zahlen {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.zahl {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.zahl-wert {
+  font-family: GrueneType, PTSans, Roboto, sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--band-akzent-schrift);
+  font-variant-numeric: tabular-nums;
+}
+
+// Ohne Nutzung und ohne Meilenstein: die Beitraege gross statt „0× genutzt“
+.beitraege-gross {
+  margin: 0;
+  font-family: GrueneType, PTSans, Roboto, sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--band-akzent-schrift);
+}
+
+.zahl-name {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.zahl-zusatz {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--band-akzent-schrift);
+}
+
+.wirkung {
+  margin: 12px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.leer-hinweis {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.naechster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--feldrand);
+}
+
+// Medaillon wie bei den Meilensteinen: offen, grau gestrichelt
+.naechster-medaillon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 2px dashed var(--feldrand);
+  border-radius: 50%;
+  background: var(--flaeche);
+
+  img {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.naechster-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.naechster-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.balken {
+  display: block;
+  height: 10px;
+  margin-top: 6px;
+  overflow: hidden;
+  border: 1px solid var(--feldrand);
+  border-radius: 999px;
+  background: var(--flaeche);
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--knopf-auf-band-grund);
+  }
+}
+
+// Ohne Nutzung: der Meilenstein ist die Hauptsache des Deckels (Entscheidung 20.11.)
+.deckel--meilenstein-gross {
+  .naechster-medaillon {
+    width: 64px;
+    height: 64px;
+
+    img {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  .naechster-name {
+    font-family: GrueneType, PTSans, Roboto, sans-serif;
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--band-akzent-schrift);
+  }
+
+  .naechster-stand {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .balken {
+    height: 16px;
+  }
+}
+
+.klebe-marke {
+  height: 1px;
+  margin-bottom: -1px;
+}
+
+// Suche: klebt oben, solange das Album im Bild ist
+.suche {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  margin: var(--spacing-md) calc(-1 * var(--page-margin)) 0;
+  padding: 12px var(--page-margin) 4px;
+  background: var(--seite-grund);
+  border-bottom: 1px solid var(--linie);
+}
+
+.suche--klebt {
+  box-shadow: var(--elevation-2);
+}
+
+.suche-zeile {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.filter-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: var(--spacing-sm);
+  margin-top: 12px;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// Feld mit Namen auf dem Rand wie die Material-Felder (outline)
+.feld {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-width: 0;
+
+  input,
+  select {
+    width: 100%;
+    height: 48px;
+    padding: 0 12px;
+    border: 1px solid var(--feldrand);
+    border-radius: var(--border-radius-medium);
+    background: var(--flaeche);
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+  }
+
+  select {
+    appearance: none;
+    padding-right: 32px;
+    text-overflow: ellipsis;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 18px) 21px, calc(100% - 13px) 21px;
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+  }
+
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 0;
+    border-color: var(--akzent-tanne);
+  }
+}
+
+.feld-name {
+  position: absolute;
+  top: -9px;
+  left: 10px;
+  z-index: 1;
+  max-width: calc(100% - 20px);
+  padding: 0 4px;
+  overflow: hidden;
+  background: var(--seite-grund);
+  color: var(--text-leise);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.feld--suche {
+  input {
+    padding-left: 42px;
+    padding-right: 44px;
+  }
+
+  input::-webkit-search-cancel-button {
+    appearance: none;
+    display: none;
+  }
+}
+
+.feld-symbol {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  color: var(--text-leise);
+  pointer-events: none;
+}
+
+.leeren {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-leise);
+  cursor: pointer;
+}
+
+// Aussehen aus dem globalen .chip (styles.css); hier nur so hoch wie die Auswahlfelder daneben
+.chip {
+  height: 48px;
+  white-space: nowrap;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
+.treffer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  min-height: 32px;
+  margin-top: 6px;
+  color: var(--text-leise);
+  font-size: 14px;
+}
+
+.textknopf {
+  min-height: 32px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--primaer-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.knopf-umriss {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--feldrand);
+  border-radius: 999px;
+  background: var(--flaeche);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nichts {
+  margin: var(--spacing-lg) 0;
+  padding: 20px;
+  border-radius: var(--border-radius-medium);
+  background: var(--mulde);
+  text-align: center;
+
+  p {
+    margin: 0 0 8px;
+  }
+}
+
+.nichts-titel {
+  font-weight: 700;
+}
+
+// Abschnitte je Thema
+.abschnitt {
+  margin-top: var(--spacing-md);
+  overflow: hidden;
+  border: 1px solid var(--linie);
+  border-radius: var(--border-radius-large);
+  background: var(--mulde);
+}
+
+.abschnitt-kopf {
+  margin: 0;
+  font: inherit;
+}
+
+.abschnitt-knopf {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px var(--spacing-md);
+  border: 0;
+  background: var(--flaeche);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: -4px;
+  }
+}
+
+.abschnitt-motiv {
+  display: flex;
+  grid-row: span 3;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+
+  img {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.abschnitt-name {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.abschnitt-pfeil {
+  grid-row: 1 / span 3;
+  grid-column: 3;
+  transition: transform var(--transition-standard);
+}
+
+.abschnitt-knopf[aria-expanded='true'] .abschnitt-pfeil {
+  transform: rotate(180deg);
+}
+
+.abschnitt-stand {
+  grid-column: 2;
+  color: var(--text-leise);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.abschnitt-balken {
+  grid-column: 2;
+  height: 8px;
+  margin-top: 2px;
+  background: var(--mulde);
+
+  i {
+    background: var(--primaer);
+  }
+}
+
+.abschnitt-inhalt {
+  padding: var(--spacing-md);
+}
+
+.mehr-zeigen {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-md);
+}
+
+// Karten: eine Spalte am Handy, zwei ab 760 px, drei ab 1060 px
+.raster {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-lg) var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.raster--flach {
+  margin-top: var(--spacing-lg);
+}
+
+@media (min-width: 760px) {
+  .raster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1060px) {
+  .raster {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+// Lasche „genutzt“: sitzt aussen an der Karte, die Karte bleibt wie auf der Ergebnisseite
+.platz {
+  position: relative;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 4px;
+    border-radius: var(--border-radius-large);
+  }
+}
+
+.platz--genutzt {
+  padding-top: 26px;
+}
+
+.lasche {
+  position: absolute;
+  top: 0;
+  left: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 10px 10px 0 0;
+  background: var(--primaer);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+// Europa: die blaue Flagge braucht im Dunkeln eine helle Kante (3:1 zur Flaeche)
+:host-context(html[data-theme='dark']) img[src$='themen/europa.svg'] {
+  filter: drop-shadow(1px 0 0 var(--feldrand)) drop-shadow(-1px 0 0 var(--feldrand))
+    drop-shadow(0 1px 0 var(--feldrand)) drop-shadow(0 -1px 0 var(--feldrand));
+}
+
+@include bp.desktop-and-above {
+  // Zwei Spalten nur mit Meilenstein; ohne bliebe die rechte leer
+  .deckel--mit-meilenstein {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 0 32px;
+    padding: 20px 24px;
+  }
+
+  .naechster {
+    margin-top: 0;
+    padding: 0 0 0 24px;
+    border-top: 0;
+    border-left: 1px solid var(--feldrand);
+  }
+
+  .zahl-wert {
+    font-size: 44px;
+  }
+
+  .suche {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    column-gap: var(--spacing-sm);
+  }
+
+  .filter-zeile {
+    margin-top: 0;
+  }
+
+  .treffer {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abschnitt-pfeil {
+    transition: none;
+  }
+}

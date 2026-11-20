@@ -537,7 +537,7 @@ describe('FangkorbComponent', () => {
       const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.steuerung button.einwerfen-knopf');
 
       expect(fixture.nativeElement.querySelector('button.einwerfen-fab')).toBeNull();
-      expect(knopf.textContent).toContain('Etwas einwerfen');
+      expect(knopf.textContent!.trim()).toBe('add Einwerfen');
 
       klicken(knopf);
 

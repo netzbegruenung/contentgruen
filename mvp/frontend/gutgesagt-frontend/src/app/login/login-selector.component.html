@@ -6,14 +6,14 @@
         <!-- Only the enabled login options; a switched-off one is hidden, not greyed out (#600) -->
         <div class="login-options">
 
-            <!-- Netzbegrünung-Login (Keycloak) -->
+            <!-- Anmeldung über den Realm: Netzbegrünung oder Mail/Passwort bietet dessen Seite an (20.11.) -->
             <div class="login-option-card mat-elevation-z2" *ngIf="authModes.keycloakEnabled">
                 <button mat-raised-button
                         class="login-option-button keycloak-button"
                         (click)="loginWithKeycloak()">
                     <mat-icon class="login-icon">vpn_key</mat-icon>
                     <div class="button-content">
-                        <span class="button-title">Mit Netzbegrünung-Konto anmelden</span>
+                        <span class="button-title">Anmelden</span>
                     </div>
                 </button>
             </div>
@@ -53,46 +53,35 @@
                     <p>Mit deinem {{ organisation.name }}-Konto meldest du dich dann oben an.</p>
                 </div>
             </div>
-        </div>
-
-        <!-- Einladungen kommen mit der Realm-Umstellung (#79, #524): bis dahin als Vorschau,
-             eingeklappt und ohne Funktion (Entscheidung Sebastian 17.11.) -->
-        <details class="einladung-vorschau">
-            <summary>
-                <mat-icon class="option-icon">schedule</mat-icon>
-                <span>Ab {{ einladungAb }}: Konto mit Einladung</span>
-                <mat-icon class="vorschau-pfeil" aria-hidden="true">expand_more</mat-icon>
-            </summary>
-            <div class="registration-options einladung-vorschau-inhalt">
-                <div class="registration-option inaktiv">
-                    <mat-icon class="option-icon">qr_code_2</mat-icon>
-                    <div class="option-text">
-                        <strong>Link oder QR-Code bekommen?</strong>
-                        <p>Dann legst du dein Konto selbst an.</p>
-                        <button mat-stroked-button type="button" class="einladung-knopf" disabled>
-                            <mat-icon>link</mat-icon>
-                            Einladung einlösen
-                        </button>
-                    </div>
-                </div>
-                <div class="registration-option">
-                    <mat-icon class="option-icon">mail</mat-icon>
-                    <div class="option-text">
-                        <strong>Auf die Warteliste</strong>
-                        <p>Schick uns über „Feedback“ deine Mail-Adresse, dann bekommst du zum {{ einladungAb }} deine Einladung.</p>
-                        <button mat-stroked-button type="button" class="warteliste-knopf" (click)="aufWarteliste()">
-                            <mat-icon>feedback</mat-icon>
-                            Auf die Warteliste
-                        </button>
-                    </div>
+            <div class="registration-option">
+                <mat-icon class="option-icon">qr_code_2</mat-icon>
+                <div class="option-text">
+                    <strong>Link oder QR-Code bekommen?</strong>
+                    <p>Dann legst du dein Konto selbst an.</p>
+                    <button mat-stroked-button type="button" class="einladung-knopf" (click)="einladungEinloesen()">
+                        <mat-icon>link</mat-icon>
+                        Einladung einlösen
+                    </button>
                 </div>
             </div>
-        </details>
+            <div class="registration-option">
+                <mat-icon class="option-icon">mail</mat-icon>
+                <div class="option-text">
+                    <strong>Auf die Warteliste</strong>
+                    <p>Schick uns über „Feedback“ deine Mail-Adresse, dann bekommst du eine Einladung.</p>
+                    <button mat-stroked-button type="button" class="warteliste-knopf" (click)="aufWarteliste()">
+                        <mat-icon>feedback</mat-icon>
+                        Auf die Warteliste
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </section>
 
 
     <div class="loading-container" *ngIf="isLoading">
         <mat-spinner diameter="40"></mat-spinner>
-        <p>Lade Anmeldeoptionen...</p>
+        <p>Anmeldewege werden geladen …</p>
     </div>
 </div>

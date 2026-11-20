@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -147,4 +147,30 @@ describe('SearchViewComponent', () => {
     expect(fixture.nativeElement.querySelector('.metric-card')).toBeNull();
     expect(http.match((anfrage) => anfrage.url.includes('metrics')).length).toBe(0);
   });
+});
+
+describe('SearchViewComponent mit Anker #recent-content', () => {
+  it('setzt nach dem Sprung den Fokus auf „Frisch aus der Community“ (WCAG 2.4.3, 20.11.)', fakeAsync(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideAnimations(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { params: of({}), queryParams: of({}), fragment: of('recent-content'), snapshot: { params: {}, queryParams: {} } },
+        },
+      ],
+      imports: [SearchViewComponent],
+    });
+    const fixture = TestBed.createComponent(SearchViewComponent);
+    fixture.detectChanges();
+    const ueberschrift: HTMLElement = fixture.nativeElement.querySelector('#recent-content h2');
+
+    tick(100);
+
+    expect(ueberschrift.getAttribute('tabindex')).toBe('-1');
+    expect(document.activeElement).toBe(ueberschrift);
+  }));
 });

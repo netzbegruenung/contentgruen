@@ -26,7 +26,7 @@
                  [class.pending-reference]="ref.isPending">
                 <div class="reference-content">
                     <mat-icon class="reference-icon"
-                              [matTooltip]="ref.isPending ? 'Wird hinzugefügt...' : (ref.is_new ? 'Neue Herkunft' : 'Herkunft, auf die sich schon andere Beiträge stützen')">
+                              [matTooltip]="ref.isPending ? 'Wird hinzugefügt …' : (ref.is_new ? 'Neue Herkunft' : 'Herkunft, auf die sich schon andere Beiträge stützen')">
                         <ng-container *ngIf="!ref.isPending">
                             {{ ref.is_new ? 'add_link' : 'link' }}
                         </ng-container>
@@ -71,7 +71,7 @@
                             Wiederverwendet
                         </span>
                         <span class="reference-badge pending" *ngIf="ref.isPending">
-                            Wird hinzugefügt...
+                            Wird hinzugefügt …
                         </span>
                     </div>
                 </div>

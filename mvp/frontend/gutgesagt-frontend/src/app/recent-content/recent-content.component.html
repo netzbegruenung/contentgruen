@@ -1,11 +1,12 @@
 <!-- Recent Content Header -->
 <div class="recent-content-header">
-  <h2>Frisch aus der Community</h2>
+  <!-- tabindex -1: Der Sprung von „Seit deinem letzten Besuch“ setzt den Fokus hierher (WCAG 2.4.3) -->
+  <h2 tabindex="-1">Frisch aus der Community</h2>
 
   <!-- Loading Spinner -->
   <app-loading-spinner
     [loading]="loading"
-    message="Lade neueste Inhalte...">
+    message="Neueste Beiträge werden geladen …">
   </app-loading-spinner>
 
   <!-- Error Message -->
@@ -17,7 +18,7 @@
 
   <!-- Empty State -->
   <div *ngIf="!loading && !error && karten.length === 0" class="empty-state">
-    <p>Keine neuen Inhalte verfügbar.</p>
+    <p>Noch keine neuen Beiträge.</p>
   </div>
 </div>
 

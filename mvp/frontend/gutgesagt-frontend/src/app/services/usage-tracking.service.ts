@@ -116,6 +116,10 @@ export interface BesuchResponse {
   unbeantwortete_aussagen?: number;
   /** Die Liste hat ihre Grenze erreicht: Es können mehr warten („50+“). */
   unbeantwortete_aussagen_mehr?: boolean;
+  /** Eigene Einwürfe, die andere in den letzten 7 Tagen ausformuliert haben (Zeitraum, kein Stand). */
+  ausformulierte_einwuerfe?: number;
+  /** Kommentare und Hintergrundinfos anderer aus den letzten 7 Tagen (Zeitraum, kein Stand). */
+  neue_beitraege?: number;
 }
 
 export interface TrendingContent {

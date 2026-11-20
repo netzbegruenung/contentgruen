@@ -8,10 +8,9 @@ import { KartenDaten, KartenKennzahlen, KartenVariante } from './karten-daten';
  * Beitragskarten auf hellgrauem Grund. Voll untereinander: mobil (bis 599 px)
  * zeigen Startseite und Suche diese Liste statt des Karussells. Mit raster stehen
  * volle Karten ab 600 px nebeneinander in Spalten zu 450 px, so viele die Breite
- * hergibt, mittig im Rahmen (Treffer der Suche am Desktop, #602). Kompakt als Album
- * (Meine Beitraege): Raster direkt auf dem Seitengrund, 2 Spalten, 3 ab 600 px,
- * 4 ab 960 px. Untereinander ist jede Karte so hoch, wie ihr Inhalt es verlangt;
- * in Spalten oder im Album sind die Karten einer Reihe gleich hoch.
+ * hergibt, mittig im Rahmen (Treffer der Suche am Desktop, #602). Untereinander ist
+ * jede Karte so hoch, wie ihr Inhalt es verlangt; in Spalten sind die Karten einer
+ * Reihe gleich hoch.
  */
 @Component({
   selector: 'app-kartenliste',
@@ -21,14 +20,13 @@ import { KartenDaten, KartenKennzahlen, KartenVariante } from './karten-daten';
   template: `
     <ul
       class="kartenliste"
-      [class.kartenliste--raster]="variante === 'kompakt'"
       [class.kartenliste--spalten]="raster && variante === 'voll' && !schlicht"
       [class.kartenliste--schlicht]="schlicht"
     >
       <li *ngFor="let karte of daten; trackBy: nachId">
         <app-beitragskarte [daten]="karte" [variante]="variante" [titelEbene]="titelEbene"
                            [antwortAufZeigen]="antwortAufZeigen" [schlank]="schlank"
-                           [schlicht]="schlicht" [aufklappbar]="aufklappbar" (angetippt)="angetippt.emit($event)"
+                           [schlicht]="schlicht" [aufklappbar]="aufklappbar"
                            (kennzahlen)="kennzahlen.emit($event)">
         </app-beitragskarte>
       </li>
@@ -55,20 +53,7 @@ import { KartenDaten, KartenKennzahlen, KartenVariante } from './karten-daten';
         border: none;
       }
 
-      .kartenliste--raster {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        padding: 0;
-        background: none;
-        border: none;
-      }
-
       @media (min-width: 600px) {
-        .kartenliste--raster {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
         .kartenliste--spalten {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(0, 450px));
@@ -77,12 +62,6 @@ import { KartenDaten, KartenKennzahlen, KartenVariante } from './karten-daten';
           gap: 24px;
           padding: 24px;
           border-radius: var(--border-radius-medium);
-        }
-      }
-
-      @media (min-width: 960px) {
-        .kartenliste--raster {
-          grid-template-columns: repeat(4, minmax(0, 1fr));
         }
       }
     `,
@@ -104,8 +83,6 @@ export class KartenlisteComponent {
   /** Durchgereicht an die Karten: eingeklappt bis zum Antippen. */
   @Input() aufklappbar = false;
 
-  /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */
-  @Output() angetippt = new EventEmitter<KartenDaten>();
   /** Guete oder Nutzung einer Karte geaendert, unveraendert durchgereicht. */
   @Output() kennzahlen = new EventEmitter<KartenKennzahlen>();
 

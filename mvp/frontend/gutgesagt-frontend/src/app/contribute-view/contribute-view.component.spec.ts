@@ -82,6 +82,9 @@ describe('ContributeViewComponent', () => {
     it('setzt Meine Beitraege als eigenen Knopf unter den Satz, nicht als Kachel', () => {
       const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.meine-beitraege-knopf');
       expect(knopf.textContent).toContain('Meine Beiträge');
+      // Dieselbe Optik wie "Fangkorb ansehen" auf der Einwerfen-Seite (Sebastian 20.11.)
+      expect(knopf.classList).toContain('nebenweg-knopf');
+      expect(knopf.parentElement!.classList).toContain('nebenweg-zeile');
       expect(knopf.classList.contains('typ-zeile')).toBeFalse();
       expect(knopf.closest('section')).toBeNull();
       expect(knopf.parentElement!.previousElementSibling!.matches('.erstnutzer-satz')).toBeTrue();

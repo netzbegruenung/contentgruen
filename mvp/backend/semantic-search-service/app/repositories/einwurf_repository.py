@@ -302,6 +302,30 @@ class EinwurfRepository:
                 )
             return query.count()
 
+    def count_ausformuliert_von_anderen(self, user_id: str, seit: datetime) -> int:
+        """
+        Wie viele Einwuerfe von ``user_id`` andere seit ``seit`` ausformuliert haben:
+        die Kachel "Einwuerfe von dir ausformuliert" auf der Startseite. Jeder
+        Einwurf zaehlt einmal, auch wenn er in mehreren Beitraegen ausformuliert
+        wurde. Was die Person selbst ausformuliert hat, zaehlt nicht; eine
+        Verknuepfung ohne Ausformulierer (aus der Zeit vor ``created_by``) auch nicht.
+
+        Liest nur, was "Meine Einwuerfe" schon zeigt, und speichert nichts.
+        """
+        with self.db.get_session() as session:
+            return (
+                session.query(func.count(func.distinct(AusformuliertIn.raw_input_id)))
+                .join(Einwurf, Einwurf.id == AusformuliertIn.raw_input_id)
+                .filter(
+                    Einwurf.submitted_by == user_id,
+                    AusformuliertIn.created_by.is_not(None),
+                    AusformuliertIn.created_by != user_id,
+                    AusformuliertIn.created_at >= seit,
+                )
+                .scalar()
+                or 0
+            )
+
     def count(
         self, status: Optional[str] = None, submitted_by: Optional[str] = None
     ) -> int:

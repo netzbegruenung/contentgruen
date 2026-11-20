@@ -4,6 +4,11 @@ export interface Thema {
     schluessel: string;
     /** Die Anzeige. */
     name: string;
+    /**
+     * Pfad eines SVG unter public/, etwa „themen/klima.svg“: rein dekorativ, der Name
+     * steht immer daneben. Einzige Quelle ist domain/themen.json im Backend.
+     */
+    motiv?: string;
 }
 
 export interface ThemenResponse {
