@@ -55,6 +55,7 @@ MOTIVE = [
     ("handschlag.svg", "assets/Handshake/Flat/handshake_flat.svg"),
     ("fueller.svg", "assets/Fountain pen/Flat/fountain_pen_flat.svg"),
     ("nase.svg", "assets/Nose/Default/Flat/nose_flat_default.svg"),
+    ("waage.svg", "assets/Balance scale/Flat/balance_scale_flat.svg"),
 ]
 
 # Motive, die ueber dem Original noch etwas bekommen.

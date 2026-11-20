@@ -58,6 +58,8 @@ describe('PunkteComponent (#352)', () => {
     expect(titel(element)).toContain('32');
     expect(element.querySelector('[data-stufe="wirkung"]')?.textContent).toContain('30');
     expect(element.querySelector('[data-stufe="tun"]')?.textContent).toContain('2');
+    // Seit 20.11.2026 stecken auch die Punkte fuers Bewerten in dieser Stufe.
+    expect(element.querySelector('[data-stufe="tun"]')?.textContent).toContain('Bewertungen');
     expect(element.querySelector('.punkte-hinweis')?.textContent).toContain('Nur du siehst deine Punkte');
   });
 

@@ -18,7 +18,8 @@ Woher die Zahlen kommen:
 - Wegmarken (eigenes Tun, zaehlen nicht fuers Abzeichen): eigene Einwuerfe, die nicht
   verworfen sind; sichtbare Beitraege, die mindestens BEITRAG_WARTEZEIT alt sind
   (dieselbe Regel wie fuer die Punkte); sichtbare Kommentare, die eine sichtbare
-  Aussage als Antwort fuehrt.
+  Aussage als Antwort fuehrt; eigene Stimmen zu fremden Beitraegen (dieselbe Zaehlung
+  wie fuer die Punkte, ohne Tagesdeckel).
 
 Weil nichts gespeichert wird, kann ein erreichter Meilenstein wieder verschwinden,
 etwa wenn ein Beitrag gesperrt oder geloescht wird; das ist der Preis dafuer, dass es
@@ -32,7 +33,7 @@ sofort wirkt.
 
 import asyncio
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, List, Optional, Protocol, Set
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Protocol, Set
 
 from core.config import Settings
 from domain.meilensteine import Meilenstein, Meilensteindaten, meilensteine_berechnen
@@ -62,6 +63,8 @@ class MeilensteinQuellen(Protocol):
     ) -> int: ...
 
     def eigene_einwuerfe(self, user_id: str) -> int: ...
+
+    def bewertungen_je_tag(self, user_id: str, ohne_beitraege: List) -> Dict: ...
 
 
 class MeilensteineService:
@@ -118,9 +121,14 @@ class MeilensteineService:
         eingeworfen = await asyncio.to_thread(
             quelle.eigene_einwuerfe_von_anderen_ausformuliert, user_id, startkonten
         )
-        einwuerfe = gehalten = zu_aussagen = 0
+        einwuerfe = gehalten = zu_aussagen = bewertungen = 0
         if mit_wegmarken:
             einwuerfe = await asyncio.to_thread(quelle.eigene_einwuerfe, user_id)
+            bewertungen = sum(
+                (
+                    await asyncio.to_thread(quelle.bewertungen_je_tag, user_id, ids)
+                ).values()
+            )
             grenze = self._jetzt() - BEITRAG_WARTEZEIT
             gehalten = sum(
                 1 for b in beitraege if b.created.astimezone(timezone.utc) <= grenze
@@ -138,6 +146,7 @@ class MeilensteineService:
                 einwuerfe=einwuerfe,
                 beitraege_gehalten=gehalten,
                 kommentare_zu_aussagen=zu_aussagen,
+                bewertungen=bewertungen,
             )
         )
         return alle if mit_wegmarken else [m for m in alle if m.zaehlt_fuers_abzeichen]

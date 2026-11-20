@@ -18,6 +18,7 @@ import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 import { siegelErklaerung } from '../shared/components/siegel/siegel-erklaerung';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 
 /** Das Siegel auf echten Karten und die Zaehler an den Stimm-Knoepfen (#427). */
 describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
@@ -84,6 +85,8 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
     await TestBed.configureTestingModule({
       imports: [BeitragskarteComponent, NoopAnimationsModule],
       providers: [
+        // Nach einer Stimme fragt die Leiste nach neuen Meilensteinen; hier ohne Wirkung.
+        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['bestaetigen']) },
         { provide: VotingService, useValue: votingService },
         { provide: ContentService, useValue: contentService },
         { provide: MatSnackBar, useValue: jasmine.createSpyObj('MatSnackBar', ['open']) },

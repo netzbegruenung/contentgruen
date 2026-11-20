@@ -8,7 +8,7 @@ Drei Arten:
 - Unterstuetzung: Arbeit, die selbst keine Nutzung erzeugt (ADR 0004, "Drei Stufen"):
   fremde Einwuerfe ausformuliert, eigene Einwuerfe, die andere ausformuliert haben.
 - Weg: eine Wegmarke, das eigene Tun (erster Einwurf, erster Beitrag, der drei Tage
-  steht, erster Kommentar zu einer Aussage). Wegmarken sieht nur die Person selbst;
+  steht, erster Kommentar zu einer Aussage, die ersten 10 Bewertungen). Wegmarken sieht nur die Person selbst;
   sie zaehlen nicht fuer das Abzeichen am Namen, damit die
   Zahl dort weiter Anerkennung durch andere zeigt (docs/DSFA.md V22).
 
@@ -56,6 +56,8 @@ class Meilensteindaten:
     einwuerfe: int = 0
     beitraege_gehalten: int = 0
     kommentare_zu_aussagen: int = 0
+    # Eigene Stimmen zu fremden Beitraegen (dieselbe Zaehlung wie fuer die Punkte).
+    bewertungen: int = 0
 
 
 @dataclass(frozen=True)
@@ -140,6 +142,19 @@ MEILENSTEINE: Tuple[Meilensteinart, ...] = (
         art=WEG,
         feld="kommentare_zu_aussagen",
         schwelle=1,
+    ),
+    Meilensteinart(
+        kennung="bewertungen-10",
+        name="Erste 10 Bewertungen",
+        untertitel="Zünglein an der Waage",
+        beschreibung=(
+            "Zehnmal hast du gesagt, was hilft und was nicht. Ohne Stimmen wie "
+            "deine wüsste das Siegel nicht, wohin der Daumen zeigen soll."
+        ),
+        bild=_bild("waage.svg"),
+        art=WEG,
+        feld="bewertungen",
+        schwelle=10,
     ),
     Meilensteinart(
         kennung="ausformuliert-1",

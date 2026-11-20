@@ -33,6 +33,7 @@ class _Quellen:
         eingeworfen=0,
         einwuerfe=0,
         beantwortet=(),
+        bewertungen=None,
     ):
         self.beitraege = list(beitraege)
         self.nutzung = nutzung or {}
@@ -42,6 +43,8 @@ class _Quellen:
         self.einwuerfe = einwuerfe
         self.beantwortet = {str(i) for i in beantwortet}
         self.gefragt_nach_antworten: List = []
+        self.bewertungen = bewertungen or {}
+        self.bewertungen_gefragt: List = []
         self.aufrufe: List[str] = []
 
     async def sichtbare_beitraege(self, user_id: str) -> List:
@@ -67,6 +70,10 @@ class _Quellen:
     def eigene_einwuerfe(self, user_id: str) -> int:
         self.einwuerfe_von = user_id
         return self.einwuerfe
+
+    def bewertungen_je_tag(self, user_id: str, ohne_beitraege) -> Dict:
+        self.bewertungen_gefragt.append((user_id, list(ohne_beitraege)))
+        return self.bewertungen
 
     async def beantwortet_einer(self, ids) -> bool:
         self.gefragt_nach_antworten.append(list(ids))
@@ -204,6 +211,20 @@ async def test_ohne_kommentare_keine_abfrage_der_aussagen():
     assert quellen.gefragt_nach_antworten == []
 
 
+async def test_erste_10_bewertungen_ohne_tagesdeckel_und_ohne_eigene_beitraege():
+    eigener = _beitrag()
+    quellen = _Quellen(
+        [eigener],
+        bewertungen={JETZT.date(): 8, (JETZT - timedelta(days=1)).date(): 2},
+    )
+
+    meilensteine = _nach_kennung(await _service(quellen).meilensteine(KIM))
+
+    assert meilensteine["bewertungen-10"].stand == 10
+    assert meilensteine["bewertungen-10"].erreicht
+    assert quellen.bewertungen_gefragt == [(KIM, [eigener.id])]
+
+
 async def test_ohne_wegmarken_fuers_abzeichen_ohne_ihre_abfragen():
     quellen = _Quellen([_beitrag(typ="commentary")], einwuerfe=1, zustimmungen=1)
 
@@ -213,6 +234,7 @@ async def test_ohne_wegmarken_fuers_abzeichen_ohne_ihre_abfragen():
     assert "einwurf-1" not in _nach_kennung(meilensteine)
     assert _nach_kennung(meilensteine)["zustimmung-1"].erreicht
     assert quellen.gefragt_nach_antworten == []
+    assert quellen.bewertungen_gefragt == []
     assert not hasattr(quellen, "einwuerfe_von")
 
 

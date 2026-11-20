@@ -24,6 +24,7 @@ def test_ohne_wirkung_kein_meilenstein_erreicht():
         "einwurf-1",
         "beitrag-gehalten-1",
         "aussage-kommentiert-1",
+        "bewertungen-10",
         "ausformuliert-1",
         "nutzung-1",
         "nutzung-10",
@@ -73,6 +74,19 @@ def test_wegmarken_ab_eins_zaehlen_nicht_fuers_abzeichen():
     assert all(m.art == WEG and not m.zaehlt_fuers_abzeichen for m in meilensteine)
     # Nicht "Widerspruch": Das ist im Glossar der Einwand gegen eine Sperre.
     assert meilensteine[2].name == "Erste Gegenrede"
+
+
+def test_erste_10_bewertungen_als_wegmarke():
+    assert _erreicht(Meilensteindaten(bewertungen=9)) == []
+    meilensteine = [
+        m
+        for m in meilensteine_berechnen(Meilensteindaten(bewertungen=10))
+        if m.erreicht
+    ]
+
+    assert [m.kennung for m in meilensteine] == ["bewertungen-10"]
+    assert meilensteine[0].name == "Erste 10 Bewertungen"
+    assert meilensteine[0].art == WEG and not meilensteine[0].zaehlt_fuers_abzeichen
 
 
 def test_wirkung_und_unterstuetzung_zaehlen_fuers_abzeichen():

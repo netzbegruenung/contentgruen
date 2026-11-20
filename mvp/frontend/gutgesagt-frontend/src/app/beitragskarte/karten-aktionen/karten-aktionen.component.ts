@@ -8,7 +8,9 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  Injector,
   SimpleChanges,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Clipboard } from '@angular/cdk/clipboard';
@@ -36,6 +38,8 @@ import { TeilenService, hatGeteilt } from '../../shared/teilen.service';
 import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
 import { platzhalterDialogOeffnen } from './platzhalter-dialog.component';
 import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
+import { MeilensteinHinweisService } from '../../meine-beitraege/meilenstein-hinweis.service';
+import { STIMM_DANK_MS, stimmDank } from './stimm-dank-texte';
 
 /**
  * So lange steht „Kopiert“: Mit 1,5 s war es beim Wechsel in die andere App schon weg
@@ -111,6 +115,11 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() nichtHilfreich: number | null = null;
   /** Aus am eigenen Beitrag: Die Zaehler zeigen nur Stimmen anderer (#427). */
   @Input() eigeneStimmeImZaehler = true;
+  /**
+   * Ob Stimmen an diesem Beitrag schon in die Güte zählen (`guete_stimmen_zaehlen`), wie die
+   * Karte es zuletzt geladen hat; null = unbekannt. Nur für den Sofort-Dank.
+   */
+  @Input() stimmenZaehlen: boolean | null = null;
 
   /**
    * Eigenes Album in Meine Beitraege (Variante A, 20.11.): Aendern, Teilen als Hauptknopf,
@@ -131,6 +140,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
 
   isLiked = false;
   isDisliked = false;
+  private injector = inject(Injector);
   isVoting = false;
   copyAnimationActive = false;
 
@@ -314,6 +324,12 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       });
   }
 
+  /** Ob gerade die Snackbar „Kopiert. Gepostet? [Ja, gepostet]“ offen ist, von welcher Karte auch immer. */
+  private gepostetFrageOffen(): boolean {
+    const offen = this.snackBar._openedSnackBarRef?.instance as { data?: { action?: string } } | undefined;
+    return offen?.data?.action === JA_GEPOSTET;
+  }
+
   private gepostetFragen(kennung: string): void {
     this.snackBar
       .open(KOPIERT_GEPOSTET_FRAGE, JA_GEPOSTET, { duration: GEPOSTET_FRAGE_MS })
@@ -448,6 +464,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
 
     const contentId = this.inhaltId;
     this.isVoting = true;
+    // Stand vor der Stimme: Er entscheidet, ob die Person unter den Ersten ist.
+    const dank = ziel === null ? null : stimmDank(this.stimmenZaehlen, !this.eigeneStimmeImZaehler);
 
     const anfrage =
       ziel === 'like'
@@ -463,6 +481,15 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       next: () => {
         this.ausgang = undefined;
         this.isVoting = false;
+        // Steht noch die Frage „Gepostet?“ nach dem Kopieren, verdrängt der Dank sie nicht:
+        // Sonst wäre „Ja, gepostet“ weg, bevor die Person es treffen kann.
+        if (dank && !this.gepostetFrageOffen()) {
+          // Sofort-Dank als Snackbar wie beim Kopieren (Entscheidung 20.11.2026): unten
+          // eingeblendet, per aria-live angesagt, ohne die Karte zu verschieben. Ist dabei
+          // ein Meilenstein wie „Erste 10 Bewertungen“ neu, steht er in derselben Snackbar.
+          // Den Dienst erst hier holen: Karten ohne Abstimmen brauchen ihn nicht.
+          this.injector.get(MeilensteinHinweisService).bestaetigen(dank.text, 'Schließen', STIMM_DANK_MS, dank.icon);
+        }
         gemeldet.emit(contentId);
         this.cdr.markForCheck();
       },

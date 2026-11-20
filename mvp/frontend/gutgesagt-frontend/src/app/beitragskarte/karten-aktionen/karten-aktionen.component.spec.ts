@@ -15,6 +15,14 @@ import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { KOPIERT } from '../../shared/vorlagen-luecke';
 import { TEILEN_LINK_KOPIERT, TEILEN_NAVIGATOR, TeilenNavigator } from '../../shared/teilen.service';
+import { MeilensteinHinweisService } from '../../meine-beitraege/meilenstein-hinweis.service';
+import {
+  DANK_EIGENER_BEITRAG,
+  DANK_SCHLICHT,
+  DANK_UNTER_DEN_ERSTEN,
+  DANK_ZAEHLT,
+  STIMM_DANK_MS,
+} from './stimm-dank-texte';
 
 /**
  * Portiert aus commentary-result-item.component.voting.spec.ts; statt eines
@@ -29,6 +37,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
   let fixture: ComponentFixture<KartenAktionenComponent>;
   let votingService: jasmine.SpyObj<VotingService>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let meilensteinHinweis: jasmine.SpyObj<MeilensteinHinweisService>;
   /** Das Teilen-Menue des Geraets; ohne share wie am Desktop ohne Web Share API. */
   let nav: TeilenNavigator;
 
@@ -66,12 +75,14 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
         { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) },
         { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
+        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['bestaetigen']) },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
     fixture = TestBed.createComponent(KartenAktionenComponent);
     component = fixture.componentInstance;
+    meilensteinHinweis = TestBed.inject(MeilensteinHinweisService) as jasmine.SpyObj<MeilensteinHinweisService>;
     votingService = TestBed.inject(VotingService) as jasmine.SpyObj<VotingService>;
     snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
 
@@ -79,6 +90,98 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     component.typ = 'commentary';
     component.kopierText = 'Test text';
     component.ngOnInit();
+  });
+
+  describe('Sofort-Dank (20.11.2026)', () => {
+    function liked(): void {
+      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
+      component.toggleLike();
+      tick(50);
+    }
+
+    it('zeigt den Dank als Snackbar, nicht in der Karte: kein Layout-Sprung', fakeAsync(() => {
+      component.stimmenZaehlen = false;
+      fixture.detectChanges();
+
+      liked();
+      fixture.detectChanges();
+
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_UNTER_DEN_ERSTEN.text, 'Schließen', STIMM_DANK_MS, DANK_UNTER_DEN_ERSTEN.icon);
+      // Wortlaut freigegeben 20.11.2026; das Symbol steht getrennt, damit es nicht vorgelesen wird.
+      expect(DANK_UNTER_DEN_ERSTEN).toEqual({ icon: '🌱', text: 'Danke! Du bist unter den Ersten. Ab 3 Stimmen zählt sie.' });
+      expect(DANK_ZAEHLT).toEqual({ icon: '👍', text: 'Danke! Deine Stimme zählt.' });
+      expect(DANK_SCHLICHT).toEqual({ icon: '👍', text: 'Danke für deine Stimme!' });
+      expect(DANK_EIGENER_BEITRAG).toEqual({ icon: '✔️', text: 'Gespeichert. Eigene Stimmen zählen nicht.' });
+      expect(fixture.nativeElement.querySelector('.stimm-dank')).toBeNull();
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Danke');
+      // Kein zweiter Weg daneben: nur die eine Snackbar ueber den Meilenstein-Dienst.
+      expect(snackBar.open).not.toHaveBeenCalled();
+    }));
+
+    it('dankt ab der Schwelle kurz, auch fuer „Nicht hilfreich“', fakeAsync(() => {
+      votingService.setDislike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'dislike', message: '' }));
+      component.stimmenZaehlen = true;
+
+      component.toggleDislike();
+      tick(50);
+
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_ZAEHLT.text, 'Schließen', STIMM_DANK_MS, DANK_ZAEHLT.icon);
+    }));
+
+    it('dankt ohne Angabe zur Guete schlicht', fakeAsync(() => {
+      liked();
+
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_SCHLICHT.text, 'Schließen', STIMM_DANK_MS, DANK_SCHLICHT.icon);
+    }));
+
+    it('sagt am eigenen Beitrag, dass die Stimme nicht in die Guete zaehlt', fakeAsync(() => {
+      component.stimmenZaehlen = false;
+      component.eigeneStimmeImZaehler = false;
+
+      liked();
+
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_EIGENER_BEITRAG.text, 'Schließen', STIMM_DANK_MS, DANK_EIGENER_BEITRAG.icon);
+    }));
+
+    it('dankt beim Zuruecknehmen nicht', fakeAsync(() => {
+      votingService.removeLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: null, message: '' }));
+      component.stimmenZaehlen = false;
+      liked();
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledTimes(1);
+
+      component.toggleLike();
+      tick(50);
+
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledTimes(1);
+    }));
+
+    it('verdraengt die offene Frage „Gepostet?“ nicht', fakeAsync(() => {
+      (snackBar as unknown as { _openedSnackBarRef: unknown })._openedSnackBarRef = {
+        instance: { data: { message: 'Kopiert. Gepostet?', action: 'Ja, gepostet' } },
+      };
+      component.stimmenZaehlen = false;
+
+      liked();
+
+      expect(meilensteinHinweis.bestaetigen).not.toHaveBeenCalled();
+      expect(component.isLiked).toBeTrue();
+    }));
+
+    it('zeigt bei einem Fehler keinen Dank', fakeAsync(() => {
+      votingService.setLike.and.returnValue(throwError(() => ({ status: 500 })));
+      component.stimmenZaehlen = false;
+
+      component.toggleLike();
+      tick(50);
+
+      expect(meilensteinHinweis.bestaetigen).not.toHaveBeenCalled();
+    }));
+
+    it('laesst das Ziel des Rundgangs (.stimmen) bei den Knoepfen', () => {
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.stimmen')).not.toBeNull();
+    });
   });
 
   describe('Vote Initialization', () => {

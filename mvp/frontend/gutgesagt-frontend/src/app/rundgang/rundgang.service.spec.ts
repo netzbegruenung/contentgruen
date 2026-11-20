@@ -422,4 +422,11 @@ describe('RundgangService', () => {
       expect(service.beitragenNeu()).toBeFalse();
     });
   });
+
+  it('zeigt im Schritt „Abstimmen“ auf die Stimm-Knöpfe und nennt den Sofort-Dank darunter (20.11.2026)', () => {
+    const schritt = RUNDGAENGE['antwort-finden'].schritte.find((s) => s.titel === 'Abstimmen');
+
+    expect(schritt?.ziel).toBe('app-beitragskarte .stimmen');
+    expect(schritt?.text).toContain('unter den Ersten');
+  });
 });

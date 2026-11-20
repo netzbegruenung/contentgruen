@@ -2,10 +2,12 @@
 Punkte in drei Stufen (ADR 0004, Ergaenzung 28.10.2026; GLOSSARY.md "Punkte", #352).
 
 - Tun bringt kleine Punkte, gedeckelt je Tag: ein Beitrag, der drei Tage ohne Sperre
-  steht, und ein Einwurf, der ausformuliert wurde (fuer die einwerfende Person).
+  steht, und ein Einwurf, der ausformuliert wurde (fuer die einwerfende Person). Dazu
+  kommt seit dem 20.11.2026 ein kleiner Punkt je Stimme zu einem fremden Beitrag, mit
+  eigenem Tagesdeckel (ADR 0004, Ergaenzung 20.11.2026).
 - Abgeschlossene Quests bringen mehr, ebenfalls je Tag gedeckelt.
 - Die Wirkung bei anderen bringt die grossen Punkte: entdoppelte Nutzung und Zustimmung
-  durch andere. Ablehnung zieht nichts ab, Bewerten bringt keine Punkte.
+  durch andere. Ablehnung zieht nichts ab.
 
 Hier steht nur die Rechnung. Woher die Zahlen kommen (welche Nutzung zaehlt, welche
 Beitraege noch Punkte tragen), entscheidet services/punkte_service.py; die Gewichte
@@ -28,6 +30,9 @@ class Punktegewichte:
     deckel_tun_je_tag: int
     quest: int
     deckel_quests_je_tag: int
+    # Bewerten: je Stimme, je Tag eigens gedeckelt; 0 schaltet es aus.
+    bewertung: int = 0
+    deckel_bewertungen_je_tag: int = 0
 
 
 @dataclass(frozen=True)
@@ -39,6 +44,8 @@ class Wirkungsdaten:
     beitraege_je_tag: Dict[date, int] = field(default_factory=dict)
     einwuerfe_ausformuliert_je_tag: Dict[date, int] = field(default_factory=dict)
     quests_je_tag: Dict[date, int] = field(default_factory=dict)
+    # Eigene Stimmen zu fremden Beitraegen je Tag ihrer letzten Aenderung.
+    bewertungen_je_tag: Dict[date, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -65,6 +72,10 @@ def punkte_berechnen(daten: Wirkungsdaten, gewichte: Punktegewichte) -> Punktest
             * gewichte.einwurf_ausformuliert,
         )
         for tag in tage
+    )
+    tun += sum(
+        min(gewichte.deckel_bewertungen_je_tag, anzahl * gewichte.bewertung)
+        for anzahl in daten.bewertungen_je_tag.values()
     )
     quests = sum(
         min(gewichte.deckel_quests_je_tag, anzahl * gewichte.quest)

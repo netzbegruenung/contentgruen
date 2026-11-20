@@ -5,7 +5,7 @@
     </p>
     <ul class="punkte-stufen">
         <li class="punkte-stufe" data-stufe="wirkung">Wirkung bei anderen: <span class="punkte-wert">{{ punkte.wirkung }}</span></li>
-        <li class="punkte-stufe" data-stufe="tun">Für deine Beiträge und Einwürfe: <span class="punkte-wert">{{ punkte.tun }}</span></li>
+        <li class="punkte-stufe" data-stufe="tun">Für Beiträge, Einwürfe und Bewertungen: <span class="punkte-wert">{{ punkte.tun }}</span></li>
         <!-- Quests gibt es noch nicht (#354); die Stufe erscheint erst, wenn sie etwas bringt -->
         <li *ngIf="punkte.quests" class="punkte-stufe" data-stufe="quests">Quests: <span class="punkte-wert">{{ punkte.quests }}</span></li>
     </ul>
