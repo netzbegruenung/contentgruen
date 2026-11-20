@@ -401,10 +401,9 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    background: var(--flaeche);
-    padding: 32px;
-    border: 2px solid var(--primaer-tint);
-    border-radius: var(--border-radius-large);
+    // Ohne Kasten wie Einwerfen und Destillieren (Sebastian 20.11.): die Spalten fluchten mit
+    // Kopf und Rahmen der Seite
+    padding: var(--spacing-lg) 0 0;
 
     &.connected-sections {
       margin-top: -24px;
@@ -798,7 +797,34 @@
 }
 
 // Export all mixins as a single include
+// "Zuruecksetzen" neben dem Speichern-Knopf, in allen vier Formularen gleich (Sebastian 20.11.)
+@mixin zuruecksetzen-link {
+  .zuruecksetzen {
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--akzent-schrift);
+    font: inherit;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--akzent-tanne);
+      outline-offset: 2px;
+    }
+
+    &[disabled] {
+      color: var(--text-leise);
+      cursor: default;
+    }
+  }
+}
+
 @mixin contribution-form-styles {
+  @include zuruecksetzen-link;
   @include content-type-indicator;
   @include context-section;
   @include reply-toggle;

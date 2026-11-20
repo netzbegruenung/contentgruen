@@ -514,21 +514,9 @@ mat-sidenav-content {
   display: none;
 }
 
+/* Aussehen aus dem globalen .chip (styles.css); eine lange Aussage bricht um */
 .erkannt-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 4px 12px;
-  border: 1px solid var(--akzent-klee);
-  border-radius: 18px;
-  font-size: 14px;
-  color: var(--akzent-schrift);
-  text-decoration: none;
-  box-sizing: border-box;
-}
-
-.erkannt-chip:hover {
-  background: var(--primaer-tint);
+  text-align: left;
 }
 
 /* Gruppe je Aussage: Kopf im Stil der Zeile "Antwort auf" der Karte, etwas groesser */

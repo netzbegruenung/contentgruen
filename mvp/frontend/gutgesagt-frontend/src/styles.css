@@ -371,6 +371,54 @@ body {
 }
 
 /*
+ * Chip: ein Filter oder eine Auswahl, als Pille (Sebastian 20.11.: ein Stil fuer Themenfilter,
+ * Themenwahl, Fangkorb-Filter, Album und erkannte Aussagen). Rand mit 3:1 wie Felder, gewaehlt
+ * voll in Tanne mit Weiss (hell 9,9:1, dunkel 5,4:1); im Dunkeln nicht aufgehellt. Gewaehlt
+ * zeigt die Seite ueber aria-pressed oder aria-expanded, Themen zusaetzlich ueber .gewaehlt.
+ */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-sizing: border-box;
+    min-height: 40px;
+    padding: 4px 14px;
+    border: 1px solid var(--feldrand);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--akzent-schrift);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.chip[aria-pressed='true'],
+.chip[aria-expanded='true'],
+.chip.gewaehlt {
+    border-color: var(--primaer);
+    background: var(--primaer);
+    color: white;
+    font-weight: 500;
+}
+
+.chip:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.chip:focus-visible {
+    outline: 2px solid var(--akzent-tanne);
+    outline-offset: 2px;
+}
+
+a.chip:hover {
+    background: var(--primaer-tint);
+    text-decoration: none;
+}
+
+/*
  * Nebenweg am Seitenende: ein Weg zur eigenen Sammlung oder zur Liste, kein Arbeitsschritt.
  * Mittig unter einer Trennlinie, Umriss-Knopf mit Material-Icon. Dieselbe Klasse fuer
  * "Meine Beitraege" (Beitragen-Seite) und "Fangkorb ansehen" (Einwerfen-Seite), damit beide

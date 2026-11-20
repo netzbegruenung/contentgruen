@@ -27,7 +27,7 @@
     <section class="testeingabe-karte hinweis-box" *ngIf="testeingabe">
         <p class="testeingabe-text">{{ testeingabe }}</p>
         <p class="testeingabe-aufruf">{{ testeingabeAufruf }}:</p>
-        <a class="erkannt-chip testeingabe-beispiel" [routerLink]="['/result']"
+        <a class="chip erkannt-chip testeingabe-beispiel" [routerLink]="['/result']"
            [queryParams]="{ searchQuery: testeingabeBeispiel }">„{{ testeingabeBeispiel }}“</a>
     </section>
 </div>
@@ -107,7 +107,7 @@
                             (themenChange)="erkannteThemenGeaendert($event)"></app-aussage-themen>
         <ul class="erkannt-liste" id="erkannt-liste" *ngIf="erkannt && alternativen.length" [hidden]="!alternativenOffen">
             <li *ngFor="let a of alternativen">
-                <a class="erkannt-chip" [routerLink]="['/result']" [queryParams]="{ searchQuery: a.text }">{{ a.text }}</a>
+                <a class="chip erkannt-chip" [routerLink]="['/result']" [queryParams]="{ searchQuery: a.text }">{{ a.text }}</a>
             </li>
         </ul>
 

@@ -1,3 +1,4 @@
+import { MatDialog } from '@angular/material/dialog';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
@@ -236,6 +237,39 @@ describe('AddPostComponent', () => {
       component.speichern();
       expect(senden).toHaveBeenCalled();
       expect(senden.calls.mostRecent().args[0].statement_text).toBeUndefined();
+    });
+  });
+
+  // Wie Kommentar und Hintergrundinfo (Sebastian 20.11.)
+  describe('Zuruecksetzen', () => {
+    let dialogOeffnen: jasmine.Spy;
+
+    beforeEach(() => {
+      dialogOeffnen = spyOn(fixture.debugElement.injector.get(MatDialog), 'open');
+    });
+
+    it('steht als Zweitaktion neben dem Speichern-Knopf', () => {
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('app-formular-leiste button.zuruecksetzen');
+      expect(knopf.textContent!.trim()).toBe('Zurücksetzen');
+      expect(knopf.previousElementSibling!.classList).toContain('submit-btn');
+    });
+
+    it('fragt nach, sobald etwas eingetragen ist, und leert erst nach Ja', () => {
+      component.postForm.patchValue({ url: 'https://example.org/p/1', title: 'Wärmepumpe lohnt sich im Altbau', text: 'Ein Post, der zeigt, wie es geht.' });
+      dialogOeffnen.and.returnValue({ afterClosed: () => of(false) } as any);
+      component.zuruecksetzen();
+      expect(dialogOeffnen).toHaveBeenCalledTimes(1);
+      expect(component.postForm.value.title).not.toBe('');
+
+      dialogOeffnen.and.returnValue({ afterClosed: () => of(true) } as any);
+      component.zuruecksetzen();
+      expect(component.postForm.value.title).toBe('');
+      expect(component.aussage).toEqual(OHNE_AUSSAGE);
+    });
+
+    it('fragt bei leerem Formular nicht nach', () => {
+      component.zuruecksetzen();
+      expect(dialogOeffnen).not.toHaveBeenCalled();
     });
   });
 });

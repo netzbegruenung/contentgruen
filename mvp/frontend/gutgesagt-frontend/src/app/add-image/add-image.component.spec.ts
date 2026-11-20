@@ -1,3 +1,4 @@
+import { MatDialog } from '@angular/material/dialog';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
@@ -241,6 +242,39 @@ describe('AddImageComponent', () => {
       ladefehlerInVorschau('https://example.org/weg.png');
 
       expect(element<HTMLButtonElement>('.submit-btn')!.disabled).toBeFalse();
+    });
+  });
+
+  // Wie Kommentar und Hintergrundinfo (Sebastian 20.11.)
+  describe('Zuruecksetzen', () => {
+    let dialogOeffnen: jasmine.Spy;
+
+    beforeEach(() => {
+      dialogOeffnen = spyOn(fixture.debugElement.injector.get(MatDialog), 'open');
+    });
+
+    it('steht als Zweitaktion neben dem Speichern-Knopf', () => {
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('app-formular-leiste button.zuruecksetzen');
+      expect(knopf.textContent!.trim()).toBe('Zurücksetzen');
+      expect(knopf.previousElementSibling!.classList).toContain('submit-btn');
+    });
+
+    it('fragt nach, sobald etwas eingetragen ist, und leert erst nach Ja', () => {
+      component.imageForm.patchValue({ image_url: 'https://example.org/bild.png', title: 'Solardach auf dem Rathaus', caption: 'Ein Bild, das für sich spricht.' });
+      dialogOeffnen.and.returnValue({ afterClosed: () => of(false) } as any);
+      component.zuruecksetzen();
+      expect(dialogOeffnen).toHaveBeenCalledTimes(1);
+      expect(component.imageForm.value.title).not.toBe('');
+
+      dialogOeffnen.and.returnValue({ afterClosed: () => of(true) } as any);
+      component.zuruecksetzen();
+      expect(component.imageForm.value.title).toBe('');
+      expect(component.aussage).toEqual(OHNE_AUSSAGE);
+    });
+
+    it('fragt bei leerem Formular nicht nach', () => {
+      component.zuruecksetzen();
+      expect(dialogOeffnen).not.toHaveBeenCalled();
     });
   });
 });

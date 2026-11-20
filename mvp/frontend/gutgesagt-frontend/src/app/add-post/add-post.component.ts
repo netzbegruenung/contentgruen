@@ -1,9 +1,11 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, ViewChild, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { MatSelectModule } from '@angular/material/select';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatDialog } from '@angular/material/dialog';
+import { filter } from 'rxjs/operators';
 
 import { PostService, AddPostRequest } from '../services/post.service';
 import { LoggingService } from '../services/logging.service';
@@ -32,6 +34,10 @@ import {
 } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { alsGespeichert, aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
 import { ThemenWahl } from '../beitragsformular/themen-wahl';
+import {
+  BestaetigungsDialogComponent,
+  BestaetigungsDialogDaten,
+} from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
@@ -59,6 +65,16 @@ export const SPEICHERN_FEHLGESCHLAGEN =
  * nicht. Nach dem Speichern meldet `success` ID, Aussage und ob verknuepft wurde;
  * wohin es weitergeht, entscheidet der Workflow.
  */
+/** Rueckfrage vor dem Leeren, wie in Kommentar und Hintergrundinfo. */
+function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
+  return {
+    titel: 'Formular zurücksetzen?',
+    text: `Link, Plattform, Gepostet von, Titel, Text, ${mitThemen ? 'Themen und ' : ''}Aussage werden geleert.`,
+    ja: 'Zurücksetzen',
+    nein: 'Abbrechen',
+  };
+}
+
 @Component({
   standalone: true,
   selector: 'app-add-post',
@@ -100,6 +116,8 @@ export class AddPostComponent implements OnChanges {
   /** Die Themen einer neuen Aussage (#455). */
   readonly themenWahl: ThemenWahl;
 
+  @ViewChild(AntwortAufComponent) antwortAuf?: AntwortAufComponent;
+
   /** Was im Antwort-auf-Block gilt. */
   aussage: AntwortAuf = OHNE_AUSSAGE;
 
@@ -116,6 +134,7 @@ export class AddPostComponent implements OnChanges {
     fb: FormBuilder,
     private postService: PostService,
     private logger: LoggingService,
+    private dialog: MatDialog,
   ) {
     this.postForm = fb.group({
       url: ['', [Validators.required, Validators.pattern(/^https?:\/\/\S+$/)]],
@@ -148,6 +167,36 @@ export class AddPostComponent implements OnChanges {
       return;
     }
     plattform.setValue(plattformAusUrl(url) ?? '');
+  }
+
+  /** Etwas eingetragen oder eine Aussage gewaehlt: dann fragt Zuruecksetzen nach. */
+  get hatEingaben(): boolean {
+    const werte = this.postForm.value as Record<string, unknown>;
+    const ausgefuellt = Object.values(werte).some((w) => (Array.isArray(w) ? w.length > 0 : !!String(w ?? '').trim()));
+    return ausgefuellt || !!this.aussage.id || !!this.aussage.text;
+  }
+
+  /** "Zuruecksetzen" wie in Kommentar und Hintergrundinfo: mit Eingaben erst nach Rueckfrage. */
+  zuruecksetzen(): void {
+    if (!this.hatEingaben) {
+      this.leeren();
+      return;
+    }
+    this.dialog
+      .open(BestaetigungsDialogComponent, { data: zuruecksetzenFrage(this.zeigtThemen), autoFocus: 'dialog' })
+      .afterClosed()
+      .pipe(filter((ja) => ja === true))
+      .subscribe(() => this.leeren());
+  }
+
+  leeren(): void {
+    this.postForm.reset({ url: '', platform: '', author: '', title: '', text: '', themen: [] });
+    // Die Plattform folgt danach wieder dem Link
+    this.postForm.get('platform')!.markAsPristine();
+    this.antwortAuf?.leeren();
+    this.aussage = OHNE_AUSSAGE;
+    this.fehler = null;
+    this.validierung = null;
   }
 
   /** Was im Antwort-auf-Block gilt; die Themen passen sich an (ThemenWahl). */
