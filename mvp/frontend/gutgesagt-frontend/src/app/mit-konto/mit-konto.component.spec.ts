@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
-import { ANMELDEN_KNOPF, ANMELDEN_KNOPF_OHNE_KEYCLOAK, MitKontoComponent, VORSCHAU_ETIKETT, VORSCHAU_SATZ, WEITER_SUCHEN } from './mit-konto.component';
+import { ANMELDEN_KNOPF, MitKontoComponent, VORSCHAU_ETIKETT, VORSCHAU_SATZ, WEITER_SUCHEN } from './mit-konto.component';
 import { VORSCHAU_SCHRITTE } from './vorschau-schritte';
 import { RUECKKEHRZIEL_SCHLUESSEL } from '../login/rueckkehrziel';
 
@@ -75,7 +75,7 @@ describe('MitKontoComponent', () => {
       });
     });
 
-    it('meldet mit dem Netzbegrünung-Konto an und merkt sich das Ziel', () => {
+    it('meldet über den Realm an und merkt sich das Ziel', () => {
       const seite = starten({ ziel: '/einwerfen?von=fangkorb' });
       const knopf = seite.querySelector('.mk-anmelden') as HTMLButtonElement;
       expect(text(knopf)).toContain(ANMELDEN_KNOPF);
@@ -84,7 +84,7 @@ describe('MitKontoComponent', () => {
       expect(sessionStorage.getItem(RUECKKEHRZIEL_SCHLUESSEL)).toBe('/einwerfen?von=fangkorb');
     });
 
-    it('meldet auch dann mit dem Netzbegrünung-Konto an, wenn /api/auth/modes scheitert', () => {
+    it('meldet auch dann über den Realm an, wenn /api/auth/modes scheitert', () => {
       const seite = starten({ ziel: '/fangkorb' }, 'fehler');
       const knopf = seite.querySelector('.mk-anmelden') as HTMLButtonElement;
       expect(text(knopf)).toContain(ANMELDEN_KNOPF);
@@ -96,7 +96,7 @@ describe('MitKontoComponent', () => {
       const seite = starten({ ziel: '/fangkorb' }, { keycloakEnabled: false, managedAuthEnabled: true });
       const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
       const knopf = seite.querySelector('.mk-anmelden') as HTMLButtonElement;
-      expect(text(knopf)).toContain(ANMELDEN_KNOPF_OHNE_KEYCLOAK);
+      expect(text(knopf)).toContain(ANMELDEN_KNOPF);
       knopf.click();
       expect(navigate).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: '/fangkorb' } });
       expect(fenster.location.href).toBe('');

@@ -22,15 +22,17 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 - **Purpose**: Integration testing and demos
 - **Access**: https://gutgesagt-test.netzbegruenung.de
 - **Infrastructure**: Docker containers on verdigado's internal infrastructure
-- **Authentication**: Whatever the BFF configuration enables (`GET /api/auth/modes`): Keycloak and/or
-  Direktanmeldung; the accounts are not part of this repository
+- **Authentication**: Whatever the BFF configuration enables (`GET /api/auth/modes`); since the realm
+  move on 20 November 2026 only the own Keycloak realm `gutgesagt`, like production. The accounts are
+  not part of this repository. The login selection shows only the enabled ways (#600)
 - **Management**: Rolled out manually on verdigado's internal infrastructure; details are documented internally
 
 ### 4. Production Environment
 - **Purpose**: Live system for Netzbegrünung members
 - **Access**: https://gutgesagt.netzbegruenung.de (contentgruen.de redirects here)
 - **Infrastructure**: Docker containers on verdigado's internal infrastructure
-- **Authentication**: Keycloak SSO integration
+- **Authentication**: Own Keycloak realm `gutgesagt`, Netzbegrünung as identity provider
+  (`docs/KEYCLOAK_REALM.md`)
 - **Management**: Rolled out on verdigado's internal infrastructure; details are documented internally
 
 ## Service Architecture
@@ -159,12 +161,12 @@ referrer, and no line for searches or the results page (#275, see
 
 ## Authentication Flow
 
-### Direktanmeldung (Beta-Zugang)
-Login with e-mail address and password, for Beta-Zugang accounts. It does not depend on the
+### Direktanmeldung (development only)
+Login with e-mail address and password from a users file. It does not depend on the
 environment: it is on whenever `ENABLE_MANAGED_AUTH` is true (the default) and the BFF finds a
-non-empty users file. Local and Docker development log in this way. In test and production the
-Beta-Zugänge move into the Keycloak realm and the file goes away (#488,
-`docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“).
+non-empty users file. Local and Docker development log in this way. Since the realm move on
+20 November 2026 it is off in test and production: the former Beta-Zugänge moved into the
+Keycloak realm (#488, `docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“).
 
 1. User enters e-mail address and password in frontend ("Direktanmeldung")
 2. Frontend POSTs to BFF `/api/auth/login/managed`
@@ -340,7 +342,8 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 ## Security Considerations
 
 ### Local/Test
-- Direktanmeldung; locally with the example accounts from `managed-users.example.json`
+- Locally Direktanmeldung with the example accounts from `managed-users.example.json`; test signs
+  in through the Keycloak realm like production
 - No TLS (HTTP only)
 - Open CORS for development
 

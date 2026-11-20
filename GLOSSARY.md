@@ -476,7 +476,7 @@ Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt 
 _Avoid_: Tour, Onboarding, Tutorial
 
 **Vorschau mit Konto**:
-Die Seite „Das erwartet dich mit Konto“ (/mit-konto) für Besucher: drei Bilder aus der angemeldeten Oberfläche mit je einem Satz (Einwerfen, Ausformulieren, Bewerten), darunter „Mit Netzbegrünung-Konto anmelden“ und „Erst mal weiter suchen“. Besucher landen dort statt auf der Anmeldung, wenn sie Einwerfen, Beitragen oder den Fangkorb öffnen; nach der Anmeldung geht es zum ursprünglichen Ziel. Angemeldete sehen sie nie. Dieselben drei Bilder und Sätze zeigt der Rundgang „Selbst beitragen“ für Besucher, eines nach dem anderen (Entscheidung 17.11.).
+Die Seite „Das erwartet dich mit Konto“ (/mit-konto) für Besucher: drei Bilder aus der angemeldeten Oberfläche mit je einem Satz (Einwerfen, Ausformulieren, Bewerten), darunter „Anmelden“ und „Erst mal weiter suchen“. Besucher landen dort statt auf der Anmeldung, wenn sie Einwerfen, Beitragen oder den Fangkorb öffnen; nach der Anmeldung geht es zum ursprünglichen Ziel. Angemeldete sehen sie nie. Dieselben drei Bilder und Sätze zeigt der Rundgang „Selbst beitragen“ für Besucher, eines nach dem anderen (Entscheidung 17.11.).
 _Avoid_: Teaser, Paywall
 
 **Neu-Punkt**:
@@ -558,7 +558,7 @@ Alle Personen, die Gut gesagt verwenden, angemeldet oder nicht. Sie sind entwede
 _Avoid_: User, Nutzer, Anwender
 
 **Mitwirkende**:
-Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und bewerten dürfen. Heute sind das Mitglieder der Netzbegrünung, Personen mit Beta-Zugang und Personen, die über eine Einladung ein Konto angelegt haben.
+Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und bewerten dürfen. Heute sind das Mitglieder der Netzbegrünung und Personen mit einem Konto aus einer Einladung oder aus einem umgezogenen Beta-Zugang.
 _Avoid_: User, Mitglieder
 
 **Beta-Zugang**:
@@ -570,7 +570,7 @@ Die Anmeldung eines Beta-Zugangs mit Mail-Adresse und Passwort direkt an der BFF
 _Avoid_: Managed Login, Managed Auth, Dummy-Login
 
 **Netzbegrünung-Login**:
-Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Mit dem eigenen Realm von Gut gesagt (#429) läuft sie, sobald die App darauf umgestellt ist, über diesen Realm, in dem die Netzbegrünung Identity Provider ist; die Kennung ist dann die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
+Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Seit dem 20. November 2026 läuft sie über den eigenen Realm von Gut gesagt (#429), in dem die Netzbegrünung Identity Provider ist; die Kennung ist die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
 _Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
 
 **Realm**:
@@ -582,7 +582,7 @@ Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto i
 _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 
 **Warteliste**:
-Bis Einladungen gehen (Umstellung auf den eigenen Realm), schicken Interessierte über „Feedback“ ihre Mail-Adresse; daraus bekommen sie zum Start ihre Einladung. Keine eigene Liste im System: Die Einträge sind Feedback mit vorbelegtem Text, die Adresse dient nur der Einladung.
+Interessierte ohne Einladung schicken über „Feedback“ ihre Mail-Adresse und bekommen daraus eine Einladung. Keine eigene Liste im System: Die Einträge sind Feedback mit vorbelegtem Text, die Adresse dient nur der Einladung.
 _Avoid_: Anmeldeliste, Vormerkung
 
 **Einlösung**:

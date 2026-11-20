@@ -116,7 +116,7 @@ test('Besucher: nach der Anmeldung zurueck, wohin es gehen sollte', async ({ pag
   await page.locator('.mk-anmelden').click();
   await page.waitForURL(/\/login\?/);
   expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/fangkorb');
-  await page.getByRole('button', { name: /Direktanmeldung/ }).click();
+  await page.getByRole('button', { name: /Mit E-Mail anmelden/ }).click();
   await page.waitForURL(/\/login\/managed/);
   await page.locator('input[formControlName="email"]').fill(KONTO.email);
   await page.locator('input[formControlName="password"]').fill(KONTO.passwort);

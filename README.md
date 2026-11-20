@@ -44,7 +44,7 @@ oft erst später ein. Gut gesagt hilft, sie schnell zu finden.
    finden andere die besten Antworten schneller.
 
 Suchen geht ohne Anmeldung. Wer selbst Antworten schreibt oder Fundstücke einwirft, meldet sich
-mit einem Konto der Netzbegrünung an.
+mit einem Konto der Netzbegrünung oder mit einem Konto aus einer Einladung an.
 
 ## 🤝 Mitmachen
 

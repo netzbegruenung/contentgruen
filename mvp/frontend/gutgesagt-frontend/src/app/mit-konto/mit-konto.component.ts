@@ -10,10 +10,12 @@ import { environment } from '../../environments/environment';
 import { keycloakAnmelden } from '../login/keycloak-anmeldung';
 import { ANSICHT_PARAM, VORSCHAU_SCHRITTE, ZIEL_PARAM, vorschauZiel } from './vorschau-schritte';
 
-/** Beschriftung des Hauptknopfs, wie auf der Login-Auswahl. */
-export const ANMELDEN_KNOPF = 'Mit Netzbegrünung-Konto anmelden';
-/** Ist die Netzbegrünung-Anmeldung abgeschaltet (Entwicklung), führt der Knopf zur Auswahl. */
-export const ANMELDEN_KNOPF_OHNE_KEYCLOAK = 'Anmelden';
+/**
+ * Beschriftung des Hauptknopfs, wie auf der Login-Auswahl: ein Knopf für alle, die Seite des
+ * Realms bietet Netzbegrünung und Mail/Passwort an (Entscheidung 20.11.). Ist Keycloak
+ * abgeschaltet (Entwicklung), führt derselbe Knopf zur Auswahl.
+ */
+export const ANMELDEN_KNOPF = 'Anmelden';
 export const WEITER_SUCHEN = 'Erst mal weiter suchen';
 /** Etikett auf jedem Vorschaurahmen; steht auch vor dem Alternativtext. */
 export const VORSCHAU_ETIKETT = 'Vorschau';
@@ -76,7 +78,7 @@ export class MitKontoComponent {
     { initialValue: null },
   );
   private readonly mitKeycloak = computed(() => this.modes()?.keycloakEnabled !== false);
-  readonly anmeldenText = computed(() => (this.mitKeycloak() ? ANMELDEN_KNOPF : ANMELDEN_KNOPF_OHNE_KEYCLOAK));
+  readonly anmeldenText = ANMELDEN_KNOPF;
 
   private readonly schrittTitel = viewChild<ElementRef<HTMLElement>>('schrittTitel');
 

@@ -17,7 +17,6 @@ import { Art9EinwilligungService } from '../services/art9-einwilligung.service';
 import { RundgangService } from '../rundgang/rundgang.service';
 import { AppInstallierenService } from '../rundgang/app-installieren.service';
 import { RundgangId, rundgangBeschriftung } from '../rundgang/rundgang-daten';
-import { EINLADUNG_AB } from '../shared/einladung-ab';
 import { SiegelComponent } from '../shared/components/siegel/siegel.component';
 
 /**
@@ -60,7 +59,6 @@ export class HelpDialogComponent {
   readonly angemeldet = !!inject(AuthService).getUserInfo()?.isAuthenticated;
   /** Ohne Konto: „Selbst beitragen (3 Bilder)“, die Bildergeschichte statt der echten Oberfläche. */
   readonly selbstBeitragen = rundgangBeschriftung('mitmachen', this.angemeldet);
-  readonly einladungAb = EINLADUNG_AB;
 
   private readonly rundgang = inject(RundgangService);
   private readonly dialog = inject(MatDialog);

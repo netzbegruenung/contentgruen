@@ -134,20 +134,19 @@ independent of `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB`. Two preconditions:
 
 ### 🔑 Login (Keycloak)
 
-#429 prepares an own realm „Gut gesagt“; the BFF takes the realm from `Keycloak__Authority`,
+Since 20 November 2026 test and production sign in through the own realm „Gut gesagt“ (#429),
+with the Netzbegrünung as identity provider; the BFF takes the realm from `Keycloak__Authority`,
 and the semantic service creates accounts from Einladungen through the Keycloak admin API.
-Until the switch, sign-in stays on the Netzbegrünung realm.
 
-**Do not switch `Keycloak__Authority` to the new realm before the Kennungen are migrated:**
-every member gets a new `sub` there, and their contributions, votes, admin rights and the
-deletion list still hold the old one. Switch the BFF and enable redemption
-(`SEMANTIC_SEARCH_KEYCLOAK_*`) together, after the privacy policy covers self-registration.
-Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
+For a new instance or a rebuilt realm, keep the order of the move: **do not point
+`Keycloak__Authority` at a new realm before the Kennungen are migrated**, since every member
+gets a new `sub` there. Switch the BFF and enable redemption (`SEMANTIC_SEARCH_KEYCLOAK_*`)
+together. Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
 
-Beta-Zugänge (`managed-users.json`, Direktanmeldung) move into the realm in the same run as
-the Kennungen (`--beta-zugaenge`, #488). Together with the BFF switch, remove the file and its
-mount from test and production and set `ENABLE_MANAGED_AUTH=false`; the Direktanmeldung stays
-for the dev stack only. Steps: `docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“.
+The Beta-Zugänge (`managed-users.json`, Direktanmeldung) moved into the realm in the same run
+as the Kennungen (`--beta-zugaenge`, #488). Test and production run without the file (and should
+set `ENABLE_MANAGED_AUTH=false`); the Direktanmeldung stays for the dev stack only. Steps:
+`docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“.
 
 ### ✉️ Mail (Meldungen)
 

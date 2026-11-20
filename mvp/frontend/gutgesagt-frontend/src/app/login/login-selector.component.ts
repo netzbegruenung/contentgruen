@@ -9,7 +9,6 @@ import { keycloakAnmelden } from './keycloak-anmeldung';
 import { MatDialog } from '@angular/material/dialog';
 import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 import { ORGANISATION } from '../shared/organisation';
-import { EINLADUNG_AB } from '../shared/einladung-ab';
 
 /** Vorbelegt im Feedback-Dialog, damit die Warteliste von anderem Feedback zu trennen ist. */
 export const WARTELISTE_TEXT = 'Bitte setzt mich auf die Warteliste für eine Einladung.';
@@ -36,7 +35,6 @@ export class LoginSelectorComponent implements OnInit {
   /** Wozu die Anmeldung nötig ist, aus dem Ziel; null zeigt keinen Satz (#600). */
   anmeldegrund: string | null = null;
   readonly organisation = ORGANISATION;
-  readonly einladungAb = EINLADUNG_AB;
 
   constructor(
     private authService: AuthService,
@@ -92,6 +90,11 @@ export class LoginSelectorComponent implements OnInit {
 
   navigateToStart(): void {
     this.router.navigate(['/']);
+  }
+
+  /** Zur Seite, auf der man den Link einer Einladung einfügt (#429). */
+  einladungEinloesen(): void {
+    this.router.navigate(['/einladung']);
   }
 
   /** Warteliste fuer Einladungen ueber den Feedback-Dialog, Text vorbelegt (Designrunde 17.11.). */
