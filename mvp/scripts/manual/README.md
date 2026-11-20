@@ -183,7 +183,9 @@ Aufruf in `docs/KEYCLOAK_REALM.md`, „Kennungen umstellen“; getestet in
 
 ## Zeitpunkte der Keycloak-Zustimmung archivieren (im semantic-search-Container)
 
-`keycloak_nb_zeitpunkte.py [--zeitpunkte]` – **nur lesend.** Zaehlt die Konten im Realm
+`keycloak_nb_zeitpunkte.py [--zeitpunkte | --attribut-loeschen [--ausfuehren]]` – **lesend;
+schreibend nur mit `--attribut-loeschen --ausfuehren`** (entfernt das Attribut nach dem
+Archivieren, braucht „Unmanaged attributes: Admin can edit“). Zaehlt die Konten im Realm
 von Gut gesagt mit Zeitpunkt der Pflichtaktion „Terms and Conditions“ (Attribut
 `terms_and_conditions`, Unix-Sekunden, Keycloak 26.8.2); mit `--zeitpunkte` folgen nach
 einer Trennzeile Kennung und Zeitpunkt je Konto (Personendaten, nur in eine Datei auf dem

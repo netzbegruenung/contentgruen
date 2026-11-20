@@ -127,8 +127,8 @@ beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
   Lesen und Suchen gehen, gesperrt bleibt wie bisher. Wer schon eingewilligt hat, sieht nur das
   erste Häkchen.
 - **Texte:** Die Sätze um die Häkchen stehen in
-  `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung-texte.ts`, als Platzhalter
-  bis zur Freigabe; den Wortlaut der Einwilligung liefert weiter das Backend.
+  `mvp/frontend/gutgesagt-frontend/src/app/einwilligung/einwilligung-texte.ts` (freigegeben am
+  20.11.2026); den Wortlaut der Einwilligung liefert weiter das Backend.
 - **Speichern:** Tabelle `nutzungsbedingungen_zustimmungen`, je Zustimmung eine Zeile mit Kennung
   der Person, Zeitpunkt und Stand der Nutzungsbedingungen (Kennung `JJJJ-MM-TT` wie der Ordner in
   `docs/nutzungsbedingungen-staende/`; `STAENDE`, `AKTUELLER_STAND` und `GELTENDE_STAENDE` in
@@ -159,9 +159,11 @@ beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
   passt). Reine Korrektur: in `GELTENDE_STAENDE` aufnehmen, niemand wird neu gefragt. Wesentlich:
   `GELTENDE_STAENDE` nur mit dem neuen Stand, alle werden beim nächsten Besuch neu gefragt.
 - **Keycloak:** Die Pflichtaktion „Terms and Conditions“ entfällt mit 0.9.8: `PFLICHTAKTIONEN` in
-  `keycloak_konten.py` ist leer. Am Rollout-Tag: Zeitpunkte nur lesend exportieren, 0.9.8 live
-  und die Seite prüfen, erst dann die Pflichtaktion im Realm abschalten
-  (`docs/KEYCLOAK_REALM.md`). Bis dahin fragt Keycloak kurz doppelt; andersherum entstünden
+  `keycloak_konten.py` ist leer. Am Rollout-Tag: Zeitpunkte nur lesend ins Archiv exportieren
+  (`docs/LOESCHKONZEPT.md`, „Archiv der Keycloak-Zeitpunkte“), 0.9.8 live und die Seite prüfen,
+  dann die Pflichtaktion im Realm abschalten, dann das Attribut `terms_and_conditions` an allen
+  Konten löschen (`mvp/scripts/manual/keycloak_nb_zeitpunkte.py --attribut-loeschen`, Pflicht;
+  `docs/KEYCLOAK_REALM.md`). Bis dahin fragt Keycloak kurz doppelt; andersherum entstünden
   Konten ohne Zustimmung.
 
 ## Wortlaut ändern

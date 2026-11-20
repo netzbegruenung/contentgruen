@@ -153,6 +153,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
    (`BFF/Services/ManagedUserService.cs:128`).
+   Steht die Kennung im **Archiv der Keycloak-Zeitpunkte** (unten), dort ihre Zeile löschen:
+   `sed -i '/^<kennung>,/d' /opt/gutgesagt-backups/archiv/nb-zeitpunkte-keycloak.txt`.
 
 ## Löschauftrag nach dem Widerruf
 
@@ -252,6 +254,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Zustimmung zur Sichtbarkeit der Abzeichen (`abzeichen_sichtbarkeit`) | solange das Konto besteht | — Nachweis der Zustimmung (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Einwilligung „Punkte und Meilensteine“ (`punkte_einwilligung`, #351) | solange das Konto besteht | — Nachweis der Einwilligung und des Widerrufs (Art. 7 Abs. 1 DSGVO), geht mit dem Konto (Schritt 2) |
 | Zustimmung zu den Nutzungsbedingungen in der App (`nutzungsbedingungen_zustimmungen`) | solange das Konto besteht | — Nachweis des Vertragsschlusses und des Stands, dem die Person zugestimmt hat (Art. 6 Abs. 1 lit. b DSGVO); geht mit dem Konto (Schritt 2) |
+| Archiv der Keycloak-Zeitpunkte der Zustimmung zu den Nutzungsbedingungen (bis 0.9.8): Kennung und Zeitpunkt | bis zur Löschung des Kontos (Entscheidung Maintainer 20.11.2026) | — einmal am Rollout-Tag von 0.9.8 exportiert nach `/opt/gutgesagt-backups/archiv/nb-zeitpunkte-keycloak.txt` auf dem Prod-Host, Rechte 0600 root (`mvp/scripts/manual/keycloak_nb_zeitpunkte.py --zeitpunkte`); danach wird das Attribut in Keycloak gelöscht. Mit dem Konto geht die Zeile (Schritt 4). Nachweis, wann die Person bis 0.9.8 zugestimmt hat |
 | Meilenstein-Abzeichen am Anzeigenamen (#351) | keine Speicherung | — nur im Arbeitsspeicher, alle 15 Minuten neu berechnet, nach einem Neustart leer; nach dem Löschkommando (Schritt 2) höchstens noch bis zum nächsten Lauf |
 | Schalter (`schalter`) und ihr Verlauf (`schalter_verlauf`, #708): Admin-Wert, Zeitpunkt, Kennung des Admins | Verlauf: 12 Monate ab der Änderung, Bereinigungslauf (Task der Löschfristen, `SCHALTER_VERLAUF_TAGE` in `services/loeschfristen_service.py`, unabhängig vom abschaltbaren Bereinigungsjob; Entscheidung Maintainer 18.11.2026). Der aktuelle Stand in `schalter` bleibt. | Kennung des Admins: mit seinem Konto geleert (`person_loeschen.sql`), beim Umstellen der Kennungen mit umgeschrieben (#487) — betrifft nur Admins, nicht Nutzende; die Kennung steht nur dort, kein Klarname |
 | Konten aus Einladungen im Realm, nie benutzt (#538) | 30 Tage nach Ablauf des Links, also etwa 33 Tage | Anlegen des Kontos beim Einlösen (`createdTimestamp` in Keycloak; der Link gilt drei Tage) |

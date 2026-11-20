@@ -2,7 +2,8 @@
  * Texte der Seite /einwilligung, wenn sie die Nutzungsbedingungen und die
  * Art.-9-Einwilligung zusammen fragt (Entscheidung Maintainer, 20.11.2026).
  *
- * ENTWURF, FREIGABE OFFEN: nach der juristischen Gegenlese vom 20.11.2026, bis der Maintainer die Texte freigibt. Den
+ * Freigegeben vom Maintainer am 20.11.2026 (Teil A Abschnitt 1), nach der juristischen
+ * Gegenlese. Änderungen am Wortlaut nur mit neuer Freigabe. Den
  * Wortlaut der Einwilligung selbst liefert weiter das Backend (domain/art9_einwilligung.py);
  * hier stehen nur die Sätze um die Häkchen. Das Häkchen der Nutzungsbedingungen heißt nie
  * „Einwilligung“ (es ist ein Vertrag), und es gibt keinen Knopf „Alle annehmen“.

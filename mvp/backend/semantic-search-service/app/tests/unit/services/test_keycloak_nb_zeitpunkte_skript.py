@@ -95,3 +95,98 @@ def test_ohne_jeden_zeitpunkt_der_hinweis_auf_unmanaged_attributes(skript, capsy
     skript.zahlen_ausgeben(skript.Ergebnis(konten=3))
 
     assert "Unmanaged attributes" in capsys.readouterr().out
+
+
+class _KeycloakMitKonten:
+    """Konten im Speicher; PUT ersetzt die Darstellung, ausser ``nur_lesen``."""
+
+    def __init__(self, konten, nur_lesen=False):
+        self.konten = {k["id"]: k for k in konten}
+        self.nur_lesen = nur_lesen
+        self.puts = []
+
+    def __call__(self, anfrage: httpx.Request) -> httpx.Response:
+        import json
+
+        pfad = anfrage.url.path
+        if pfad.endswith("/token"):
+            return httpx.Response(200, json={"access_token": "t"})
+        if pfad.endswith("/users") and anfrage.method == "GET":
+            erstes = int(anfrage.url.params["first"])
+            return httpx.Response(200, json=list(self.konten.values())[erstes:])
+        kennung = pfad.rsplit("/", 1)[-1]
+        if anfrage.method == "GET":
+            return httpx.Response(200, json=self.konten[kennung])
+        if anfrage.method == "PUT":
+            koerper = json.loads(anfrage.content)
+            self.puts.append(koerper)
+            if not self.nur_lesen:
+                self.konten[kennung] = koerper
+            return httpx.Response(204)
+        return httpx.Response(405)
+
+
+def _konten_mit_attribut():
+    return [
+        {
+            "id": "a",
+            "username": "a@x",
+            "email": "a@x",
+            "firstName": "Anna",
+            "attributes": {"terms_and_conditions": ["1762070400"], "andere": ["1"]},
+        },
+        {"id": "b", "username": "b@x", "attributes": {}},
+    ]
+
+
+def test_attribut_loeschen_trockenlauf_zaehlt_und_schreibt_nichts(skript):
+    keycloak = _KeycloakMitKonten(_konten_mit_attribut())
+
+    bericht = skript.attribut_loeschen(
+        "https://kc.example",
+        "gutgesagt",
+        "id",
+        "geheim",
+        False,
+        httpx.MockTransport(keycloak),
+    )
+
+    assert bericht.mit_attribut == 1
+    assert bericht.ausgefuehrt is False
+    assert keycloak.puts == []
+
+
+def test_attribut_loeschen_entfernt_nur_dieses_attribut(skript):
+    keycloak = _KeycloakMitKonten(_konten_mit_attribut())
+
+    bericht = skript.attribut_loeschen(
+        "https://kc.example",
+        "gutgesagt",
+        "id",
+        "geheim",
+        True,
+        httpx.MockTransport(keycloak),
+    )
+
+    assert (bericht.geloescht, bericht.fehler, bericht.unveraendert) == (1, 0, 0)
+    (geschrieben,) = keycloak.puts
+    assert geschrieben["attributes"] == {"andere": ["1"]}
+    assert geschrieben["firstName"] == "Anna"
+    assert geschrieben["username"] == "a@x"
+
+
+def test_attribut_loeschen_meldet_wenn_keycloak_es_stehen_laesst(skript, capsys):
+    keycloak = _KeycloakMitKonten(_konten_mit_attribut(), nur_lesen=True)
+
+    bericht = skript.attribut_loeschen(
+        "https://kc.example",
+        "gutgesagt",
+        "id",
+        "geheim",
+        True,
+        httpx.MockTransport(keycloak),
+    )
+    skript.loeschbericht_ausgeben(bericht)
+
+    assert bericht.unveraendert == 1
+    assert "Admin can edit" in capsys.readouterr().out
