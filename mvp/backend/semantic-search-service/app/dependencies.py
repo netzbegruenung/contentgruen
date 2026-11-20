@@ -640,8 +640,8 @@ def require_nutzungsbedingungen(
     fuer andere Sichtbares anlegen oder fremde Inhalte beeinflussen, aber keine
     Art.-9-Daten speichern (Themen zuordnen, Antwortvorschlag an eine Aussage haengen);
     wo die Art.-9-Einwilligung noetig ist, prueft ``require_art9_einwilligung`` beides.
-    Die Liste prueft ``tests/unit/api/test_nutzungsbedingungen_api.py`` (NB_GESPERRT,
-    NB_OFFEN). Ohne Anmeldung laesst sie durch; ob jemand angemeldet sein muss,
+    Die Liste prueft ``tests/unit/api/test_nutzungsbedingungen_api.py`` (NB_NUR, mit
+    GESPERRT aus test_art9_einwilligung_api.py). Ohne Anmeldung laesst sie durch; ob jemand angemeldet sein muss,
     entscheidet der Endpunkt (am BFF sind beide nur angemeldet erreichbar).
     """
     if not angemeldet(x_user):

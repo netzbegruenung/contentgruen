@@ -55,6 +55,14 @@ export function nutzungsbedingungenFehlen(stand: Art9EinwilligungStand | null | 
   return !!stand?.nutzungsbedingungen && !stand.nutzungsbedingungen.zugestimmt;
 }
 
+/**
+ * Ob zum Beitragen nur die Zustimmung zu den Nutzungsbedingungen fehlt, die Einwilligung aber
+ * gilt: Dann nennen Hinweiskasten und Snackbar die Nutzungsbedingungen statt der Einwilligung.
+ */
+export function nurNutzungsbedingungenFehlen(stand: Art9EinwilligungStand | null | undefined): boolean {
+  return !!stand && stand.eingewilligt && nutzungsbedingungenFehlen(stand);
+}
+
 /** Ob die Person beitragen und bewerten kann: Nutzungsbedingungen zugestimmt und eingewilligt. */
 export function beitragenFrei(stand: Art9EinwilligungStand): boolean {
   return stand.eingewilligt && !nutzungsbedingungenFehlen(stand);
@@ -264,6 +272,7 @@ export class Art9EinwilligungService implements OnDestroy {
       tap(() => {
         this.geklaertSetzen(null);
         this.zustand.setzen('fehlt');
+        this.zustand.nbSetzen(false);
         // Aufräumen nach dem Widerruf: Der Merker der angezeigten Meilensteine geht mit (#351),
         // ebenso ein Kommentar-Entwurf im Tab (E1).
         merkerEntfernen();
@@ -311,7 +320,7 @@ export class Art9EinwilligungService implements OnDestroy {
             tap((stand) => {
               if (!stand || beitragenFrei(stand)) this.geklaertSetzen(kennung);
               if (stand) this.zustand.setzen(beitragenFrei(stand) ? 'eingewilligt' : 'fehlt');
-              this.zustand.nbSetzen(nutzungsbedingungenFehlen(stand));
+              this.zustand.nbSetzen(nurNutzungsbedingungenFehlen(stand));
               // Ohne Einwilligung kein Beitragen: ein alter Merker in diesem Browser geht (#351).
               if (stand && !stand.eingewilligt) {
                 merkerEntfernen();
@@ -351,7 +360,7 @@ export class Art9EinwilligungService implements OnDestroy {
       .subscribe((stand) => {
         if (!stand) return;
         this.zustand.setzen(beitragenFrei(stand) ? 'eingewilligt' : 'fehlt');
-        this.zustand.nbSetzen(nutzungsbedingungenFehlen(stand));
+        this.zustand.nbSetzen(nurNutzungsbedingungenFehlen(stand));
         // Widerruf in einem anderen Tab: auch der Kommentar-Entwurf dieses Tabs geht (E1).
         if (!stand.eingewilligt) kommentarEntwurfLoeschen();
         // Ein Widerruf in einem anderen Tab nimmt auch hier die Klaerung zurueck (#587).

@@ -62,7 +62,9 @@ läuft:
 Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein. Alle
 abzumelden ist seit #521 nicht mehr nötig: Wer mit einer laufenden Sitzung weiterarbeitet und
 etwas absendet, stimmt dabei über den CC0-Hinweis dem neuen Stand zu; wer nur liest oder
-bewertet, für den bleibt der vorige Stand (§10).
+bewertet, für den bleibt der vorige Stand (§10). Seit die App selbst fragt (Schritt 3), gilt das
+nur noch fürs Lesen: Bewerten verlangt dort die Zustimmung zum geltenden Stand (juristische
+Prüfung, 20.11.2026; §10 zieht mit der Textfreigabe nach).
 
 Das erneute Auslösen in Schritt 6 geht nicht über die Oberfläche der Admin-Konsole für alle auf
 einmal, sondern über die Admin-Schnittstelle von Keycloak: für jedes Konto `requiredActions` um

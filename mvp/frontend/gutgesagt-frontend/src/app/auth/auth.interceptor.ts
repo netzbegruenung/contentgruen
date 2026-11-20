@@ -57,10 +57,15 @@ export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
       const einwilligungHier = einwilligungFehlt(error) && ohneEinwilligungsUmleitung(router.url ?? '/');
       if (einwilligungFehlt(error)) {
         einwilligungZustand.setzen('fehlt');
-        einwilligungZustand.nbSetzen(error.error?.detail === NUTZUNGSBEDINGUNGEN_FEHLEN);
+        // Fehlt die Einwilligung, gilt die NB-Zustimmung (das Backend prueft sie zuerst). Fehlt
+        // die NB-Zustimmung, bleibt, was der Dienst aus dem Stand weiss: Ob auch die
+        // Einwilligung fehlt, sagt dieses 403 nicht.
+        if (error.error?.detail !== NUTZUNGSBEDINGUNGEN_FEHLEN) einwilligungZustand.nbSetzen(false);
       }
       if (einwilligungFehlt(error) && !einwilligungZustand.hinweisDa && !einwilligungHier) {
-        const nb = error.error?.detail === NUTZUNGSBEDINGUNGEN_FEHLEN;
+        // Die Nutzungsbedingungen nur nennen, wenn die Einwilligung bekanntermassen gilt; fehlt
+        // beides, fuehrt "Einwilligen" auf dieselbe Seite, die beides fragt.
+        const nb = error.error?.detail === NUTZUNGSBEDINGUNGEN_FEHLEN && einwilligungZustand.nbFehlt;
         setTimeout(() =>
           snackBar
             .open(

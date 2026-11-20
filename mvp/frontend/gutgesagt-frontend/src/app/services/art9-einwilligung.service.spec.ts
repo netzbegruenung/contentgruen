@@ -489,6 +489,16 @@ describe('Art9EinwilligungService', () => {
       expect(zustand.nbFehlt).toBeFalse();
     });
 
+    it('neues Konto ohne beides: Hinweis nennt die Einwilligung, nicht nur die Nutzungsbedingungen', () => {
+      const zustand = TestBed.inject(Art9EinwilligungZustand);
+      service.starten();
+      anmeldung.next(angemeldet('kim'));
+      http.expectOne(ADRESSE).flush({ ...stand(false), nutzungsbedingungen: nb(false) });
+
+      expect(zustand.wert).toBe('fehlt');
+      expect(zustand.nbFehlt).toBeFalse();
+    });
+
     it('einwilligungFehlt erkennt auch die fehlende Zustimmung', () => {
       expect(einwilligungFehlt({ status: 403, error: { detail: 'nutzungsbedingungen_fehlen' } })).toBeTrue();
     });

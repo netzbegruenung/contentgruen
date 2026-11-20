@@ -147,8 +147,12 @@ beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
   ohne Art.-9-Daten für andere Sichtbares anlegt oder fremde Inhalte beeinflusst: Themen
   zuordnen und einen Antwortvorschlag an eine Aussage hängen (`NB_NUR` in
   `tests/unit/api/test_nutzungsbedingungen_api.py`). Offen bleiben Melden, Widerspruch,
-  Feedback, eigene Einstellungen (Punkte, Abzeichen), Besuch zählen, Löschen, Widerruf und
-  Konto beenden (Maßstab der juristischen Prüfung, 20.11.2026). Die App behandelt das wie das fehlende
+  Feedback, eigene Einstellungen (Punkte, Abzeichen), Besuch zählen, Suchen, Löschen, Widerruf
+  und Konto beenden (Maßstab der juristischen Prüfung, 20.11.2026). Bewusst offen bleibt auch das
+  Zählen einer Kopie (`POST /api/v1/usage/content/{content_id}/usage`), obwohl es die Zähler
+  fremder Beiträge bewegt: Es zählt auch ohne Konto, eine Sperre nur für Angemeldete wäre
+  wirkungslos. Admins brauchen die Zustimmung auch auf ihrer Seite „Themen zuordnen“ (derselbe
+  Endpunkt). Die App behandelt das wie das fehlende
   `art9_einwilligung_fehlt` (Hinweiskasten bzw. Snackbar, Weg auf `/einwilligung`).
 - **Neuer Stand der Nutzungsbedingungen:** in `STAENDE` eintragen und `AKTUELLER_STAND` setzen
   (`scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass er zur Stand-Zeile der Seite
