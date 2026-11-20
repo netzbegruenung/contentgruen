@@ -21,6 +21,7 @@ import {
   DANK_SCHLICHT,
   DANK_UNTER_DEN_ERSTEN,
   DANK_ZAEHLT,
+  STIMM_DANK_MS,
 } from './stimm-dank-texte';
 
 /**
@@ -74,7 +75,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
         { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) },
         { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
-        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['pruefen']) },
+        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['bestaetigen']) },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -92,36 +93,23 @@ describe('KartenAktionenComponent - Abstimmen', () => {
   });
 
   describe('Sofort-Dank (20.11.2026)', () => {
-    const dankText = (): string =>
-      (fixture.nativeElement.querySelector('.stimm-dank') as HTMLElement).textContent?.trim() ?? '';
-
-    it('steht als leerer Statusbereich schon vor der Stimme im DOM (aria-live)', () => {
-      fixture.detectChanges();
-      const bereich = fixture.nativeElement.querySelector('.stimm-dank') as HTMLElement;
-
-      expect(bereich.getAttribute('role')).toBe('status');
-      expect(bereich.getAttribute('aria-live')).toBe('polite');
-      expect(dankText()).toBe('');
-    });
-
-    it('laesst das Ziel des Rundgangs (.stimmen) bei den Knoepfen, der Dank steht darunter', () => {
-      fixture.detectChanges();
-      const stimmen = fixture.nativeElement.querySelector('.stimmen') as HTMLElement;
-
-      expect(stimmen).not.toBeNull();
-      expect(stimmen.querySelector('.stimm-dank')).toBeNull();
-    });
-
-    it('sagt unter der Schwelle, dass die Person unter den Ersten ist', fakeAsync(() => {
+    function liked(): void {
       votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
-      component.stimmenZaehlen = false;
-
       component.toggleLike();
       tick(50);
+    }
+
+    it('zeigt den Dank als Snackbar, nicht in der Karte: kein Layout-Sprung', fakeAsync(() => {
+      component.stimmenZaehlen = false;
       fixture.detectChanges();
 
-      expect(dankText()).toBe(DANK_UNTER_DEN_ERSTEN);
+      liked();
+      fixture.detectChanges();
+
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_UNTER_DEN_ERSTEN, 'OK', STIMM_DANK_MS);
       expect(DANK_UNTER_DEN_ERSTEN).toContain('mindestens 3');
+      expect(fixture.nativeElement.querySelector('.stimm-dank')).toBeNull();
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Danke');
     }));
 
     it('dankt ab der Schwelle kurz, auch fuer „Nicht hilfreich“', fakeAsync(() => {
@@ -130,57 +118,35 @@ describe('KartenAktionenComponent - Abstimmen', () => {
 
       component.toggleDislike();
       tick(50);
-      fixture.detectChanges();
 
-      expect(dankText()).toBe(DANK_ZAEHLT);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_ZAEHLT, 'OK', STIMM_DANK_MS);
     }));
 
     it('dankt ohne Angabe zur Guete schlicht', fakeAsync(() => {
-      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
+      liked();
 
-      component.toggleLike();
-      tick(50);
-
-      expect(component.stimmDankText).toBe(DANK_SCHLICHT);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_SCHLICHT, 'OK', STIMM_DANK_MS);
     }));
 
     it('sagt am eigenen Beitrag, dass die Stimme nicht in die Guete zaehlt', fakeAsync(() => {
-      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
       component.stimmenZaehlen = false;
       component.eigeneStimmeImZaehler = false;
 
-      component.toggleLike();
-      tick(50);
+      liked();
 
-      expect(component.stimmDankText).toBe(DANK_EIGENER_BEITRAG);
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledOnceWith(DANK_EIGENER_BEITRAG, 'OK', STIMM_DANK_MS);
     }));
 
-    it('raeumt den Dank beim Zuruecknehmen weg und prueft dann keinen Meilenstein', fakeAsync(() => {
-      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
+    it('dankt beim Zuruecknehmen nicht', fakeAsync(() => {
       votingService.removeLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: null, message: '' }));
       component.stimmenZaehlen = false;
+      liked();
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledTimes(1);
 
       component.toggleLike();
       tick(50);
-      expect(meilensteinHinweis.pruefen).toHaveBeenCalledTimes(1);
-      component.toggleLike();
-      tick(50);
 
-      expect(component.stimmDankText).toBe('');
-      expect(meilensteinHinweis.pruefen).toHaveBeenCalledTimes(1);
-    }));
-
-    it('vergisst den Dank, wenn die Leiste einen anderen Beitrag bekommt', fakeAsync(() => {
-      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
-      component.stimmenZaehlen = false;
-      component.toggleLike();
-      tick(50);
-      expect(component.stimmDankText).toBe(DANK_UNTER_DEN_ERSTEN);
-
-      component.inhaltId = 'anderer-beitrag';
-      component.ngOnChanges({ inhaltId: new SimpleChange(INHALT_ID, 'anderer-beitrag', false) });
-
-      expect(component.stimmDankText).toBe('');
+      expect(meilensteinHinweis.bestaetigen).toHaveBeenCalledTimes(1);
     }));
 
     it('zeigt bei einem Fehler keinen Dank', fakeAsync(() => {
@@ -190,9 +156,14 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.toggleLike();
       tick(50);
 
-      expect(component.stimmDankText).toBe('');
-      expect(meilensteinHinweis.pruefen).not.toHaveBeenCalled();
+      expect(meilensteinHinweis.bestaetigen).not.toHaveBeenCalled();
     }));
+
+    it('laesst das Ziel des Rundgangs (.stimmen) bei den Knoepfen', () => {
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.stimmen')).not.toBeNull();
+    });
   });
 
   describe('Vote Initialization', () => {

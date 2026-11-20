@@ -86,7 +86,7 @@ describe('Beitragskarte: Siegel und Stimmen (#427)', () => {
       imports: [BeitragskarteComponent, NoopAnimationsModule],
       providers: [
         // Nach einer Stimme fragt die Leiste nach neuen Meilensteinen; hier ohne Wirkung.
-        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['pruefen']) },
+        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['bestaetigen']) },
         { provide: VotingService, useValue: votingService },
         { provide: ContentService, useValue: contentService },
         { provide: MatSnackBar, useValue: jasmine.createSpyObj('MatSnackBar', ['open']) },

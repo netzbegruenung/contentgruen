@@ -108,7 +108,7 @@ describe('BeitragskarteComponent', () => {
       imports: [BeitragskarteComponent, NoopAnimationsModule],
       providers: [
         // Nach einer Stimme fragt die Leiste nach neuen Meilensteinen; hier ohne Wirkung.
-        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['pruefen']) },
+        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['bestaetigen']) },
         { provide: VotingService, useValue: votingService },
         { provide: MatSnackBar, useValue: snackBar },
         { provide: AuthService, useValue: authServiceSpy },

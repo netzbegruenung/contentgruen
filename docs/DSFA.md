@@ -621,8 +621,8 @@ Empfänger und Ort“.
   verrät ihr nichts, was sie nicht selbst getan hat. Der Hinweis auf einen neu erreichten
   Meilenstein kommt jetzt auch nach einer Stimme. Die Erklärung nennt das noch nicht: vor dem
   Einschalten nachziehen (Abschnitt 7).
-- **Sofort-Dank nach einer Stimme (20.11.2026):** Die Karte dankt der abstimmenden Person unter
-  den Knöpfen; liegt der Beitrag noch unter der Mindestzahl (M5), sagt der Dank, dass die Person
+- **Sofort-Dank nach einer Stimme (20.11.2026):** Eine kurze Einblendung (Snackbar, nur auf
+  ihrem Gerät) dankt der abstimmenden Person; liegt der Beitrag noch unter der Mindestzahl (M5), sagt der Dank, dass die Person
   unter den Ersten ist und ihre Stimme ab drei Stimmenden zählt. Daraus erfährt sie, dass weniger
   als drei andere abgestimmt haben, nicht wie. Das ist nicht neu: Jede Antwort trägt schon
   `guete_stimmen_zaehlen` an jedem Beitrag, für alle, die ihn sehen (V5), und die Zähler fehlen

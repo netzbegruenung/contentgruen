@@ -1,5 +1,6 @@
 /**
  * Der Sofort-Dank nach einer Stimme (Entscheidung Maintainer 20.11.2026), an einer Stelle.
+ * Er kommt als Snackbar wie beim Kopieren, nicht in der Karte: Die Karte behält ihre Größe.
  *
  * Stimmen gehen erst ab einer Mindestzahl verschiedener Stimmender in die Güte ein (DSFA,
  * Maßnahme M5; domain/guete.py). Darunter tut sich nach der ersten Stimme nichts
@@ -17,6 +18,9 @@
  * `SEMANTIC_SEARCH_GUETE_STIMMEN_AB` (core/config.py); wer ihn ändert, ändert ihn hier mit.
  */
 export const STIMMEN_AB = 3;
+
+/** So lange steht der Dank; der längere Satz unter der Schwelle braucht Lesezeit. */
+export const STIMM_DANK_MS = 8000;
 
 /** Unter der Schwelle: positiv, die Person ist unter den Ersten. */
 export const DANK_UNTER_DEN_ERSTEN =

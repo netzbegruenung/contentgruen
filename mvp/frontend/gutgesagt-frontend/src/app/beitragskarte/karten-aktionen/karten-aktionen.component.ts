@@ -39,7 +39,7 @@ import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-lu
 import { platzhalterDialogOeffnen } from './platzhalter-dialog.component';
 import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
 import { MeilensteinHinweisService } from '../../meine-beitraege/meilenstein-hinweis.service';
-import { stimmDank } from './stimm-dank-texte';
+import { STIMM_DANK_MS, stimmDank } from './stimm-dank-texte';
 
 /**
  * So lange steht „Kopiert“: Mit 1,5 s war es beim Wechsel in die andere App schon weg
@@ -128,13 +128,6 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
 
   isLiked = false;
   isDisliked = false;
-  /**
-   * Der Sofort-Dank unter den Knöpfen nach einer gesetzten Stimme, nur für die Person
-   * selbst; leer, solange nichts zu sagen ist. Der Bereich steht immer im DOM
-   * (role="status"), damit Screenreader den Text beim Erscheinen vorlesen. Er bleibt
-   * stehen, bis die Stimme zurückgenommen wird: nichts verschwindet, bevor es gelesen ist.
-   */
-  stimmDankText = '';
   private injector = inject(Injector);
   isVoting = false;
   copyAnimationActive = false;
@@ -183,10 +176,6 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['stimme'] || changes['inhaltId']) {
       this.initializeVoteState();
       this.stimmeImZaehler = this.stimme ?? null;
-      // Eine wiederverwendete Karte mit anderem Beitrag zeigt keinen fremden Dank.
-      if (changes['inhaltId']) {
-        this.stimmDankText = '';
-      }
     } else if (changes['hilfreich'] || changes['nichtHilfreich']) {
       // Frisch geladen nach einer abgeglichenen Stimme: Die angezeigte steckt jetzt drin.
       this.stimmeImZaehler = this.angezeigt;
@@ -468,11 +457,12 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       next: () => {
         this.ausgang = undefined;
         this.isVoting = false;
-        this.stimmDankText = dank;
-        if (ziel !== null) {
-          // Ein Meilenstein wie „Erste 10 Bewertungen“ wird direkt nach der Stimme genannt.
+        if (dank) {
+          // Sofort-Dank als Snackbar wie beim Kopieren (Entscheidung 20.11.2026): unten
+          // eingeblendet, per aria-live angesagt, ohne die Karte zu verschieben. Ist dabei
+          // ein Meilenstein wie „Erste 10 Bewertungen“ neu, steht er in derselben Snackbar.
           // Den Dienst erst hier holen: Karten ohne Abstimmen brauchen ihn nicht.
-          this.injector.get(MeilensteinHinweisService).pruefen();
+          this.injector.get(MeilensteinHinweisService).bestaetigen(dank, 'OK', STIMM_DANK_MS);
         }
         gemeldet.emit(contentId);
         this.cdr.markForCheck();
