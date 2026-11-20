@@ -224,6 +224,20 @@ describe('RundgangService', () => {
       }
     });
 
+    it('geht in Selbst beitragen die drei Schritte der Beitragen-Seite durch, dann Meine Beiträge (20.11.)', () => {
+      const schritte = RUNDGAENGE['mitmachen'].schritte;
+      expect(schritte.map((s) => s.titel)).toEqual(['Beitragen', 'Einwerfen', 'Destillieren', 'Ausformulieren', 'Meine Beiträge']);
+      expect(schritte.slice(1).map((s) => s.ziel)).toEqual([
+        '.einwerfen-block',
+        '.destillieren-block',
+        '.ausformulieren-block',
+        '.beitraege-block',
+      ]);
+      expect(MITMACHEN_ANGEBOT.satz).toBe(
+        'Drei Schritte: Fundstücke einwerfen, Einwürfe destillieren und Sätze zu Beiträgen ausformulieren.',
+      );
+    });
+
     it('blättert zurück, aber nicht vor den ersten Schritt', async () => {
       await service.starten('antwort-finden');
       await service.zurueck();
@@ -236,7 +250,7 @@ describe('RundgangService', () => {
     it('endet nach dem letzten Schritt mit Weiter', async () => {
       userInfo.next(angemeldet);
       await service.starten('mitmachen');
-      for (let i = 0; i < 4; i++) await service.weiter();
+      for (let i = 0; i < RUNDGAENGE['mitmachen'].schritte.length; i++) await service.weiter();
       expect(service.aktiv()).toBeNull();
     });
 
