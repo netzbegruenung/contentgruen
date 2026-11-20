@@ -304,7 +304,9 @@
 
 .fangkorb--seitenleiste .tab.aktiv .tab-zahl {
   background: var(--akzent-tanne);
-  color: #fff;
+  /* Schrift in der Flaechenfarbe: hell Weiss auf Tanne, dunkel Schiefer auf Grashalm (10,0:1);
+     Weiss auf Grashalm hatte im Dunkeln nur 2,3:1 */
+  color: var(--flaeche);
 }
 
 .fangkorb--seitenleiste .tab + .tab {

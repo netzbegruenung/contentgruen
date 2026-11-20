@@ -5,11 +5,11 @@
 -->
 <div class="component-box fangkorb" [class.fangkorb--seitenleiste]="seitenleiste">
     <div class="steuerung">
-        <!-- Am Desktop ein Knopf oben in der Seitenleiste statt des schwebenden -->
+        <!-- Am Desktop ein Knopf oben in der Seitenleiste statt des schwebenden, gleich beschriftet -->
         <button *ngIf="seitenleiste" mat-flat-button type="button" class="einwerfen-knopf"
                 (click)="zumEinwerfen()">
             <mat-icon aria-hidden="true">add</mat-icon>
-            Etwas einwerfen
+            Einwerfen
         </button>
 
         <div class="guidance">

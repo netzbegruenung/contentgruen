@@ -5,7 +5,7 @@
   <!-- Loading Spinner -->
   <app-loading-spinner
     [loading]="loading"
-    message="Lade neueste Inhalte...">
+    message="Neueste Beiträge werden geladen …">
   </app-loading-spinner>
 
   <!-- Error Message -->
@@ -17,7 +17,7 @@
 
   <!-- Empty State -->
   <div *ngIf="!loading && !error && karten.length === 0" class="empty-state">
-    <p>Keine neuen Inhalte verfügbar.</p>
+    <p>Noch keine neuen Beiträge.</p>
   </div>
 </div>
 
