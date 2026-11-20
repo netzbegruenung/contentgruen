@@ -57,8 +57,11 @@ def ausgabe(name: str) -> list[str]:
     return (lauf.stdout + lauf.stderr).splitlines()
 
 
-def starten(konfiguration: str) -> str:
-    """Container starten, bei belegtem Port neu; liefert den Containernamen."""
+def starten(konfiguration: str, *zusaetzlich: str) -> str:
+    """Container starten, bei belegtem Port neu; liefert den Containernamen.
+
+    ``zusaetzlich``: weitere Argumente fuer ``docker run`` vor dem Image, etwa ein
+    Netz oder eine eigene index.html (``test_linkvorschau_nginx.py``)."""
     for versuch in range(1, VERSUCHE + 1):
         name = f"gutgesagt-itest-nginx-{uuid.uuid4().hex[:8]}"
         try:
@@ -77,6 +80,7 @@ def starten(konfiguration: str) -> str:
                 f"{FRONTEND / 'nginx.protokoll.conf'}:/etc/nginx/conf.d/00-protokoll.conf:ro",
                 "--publish",
                 "127.0.0.1::80",
+                *zusaetzlich,
                 image(),
                 timeout=300,
             )

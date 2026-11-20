@@ -42,3 +42,38 @@ def test_og_bild_absolut_und_im_public_ordner():
     praefix = "https://gutgesagt.netzbegruenung.de/"
     assert bild.startswith(praefix), "WhatsApp zeigt nur Bilder mit absoluter Adresse"
     assert (FRONTEND / "public" / bild[len(praefix) :]).is_file()
+
+
+# Vorschau je Beitrag und fuer die Ergebnisseite (#360): nginx ersetzt per SSI den Block
+# "linkvorschau_allgemein" durch das Stueck aus api/v1/linkvorschau.py. Wie das in nginx
+# wirkt, prueft tests/integration/test_linkvorschau_nginx.py im Suchdienst.
+LINKVORSCHAU = WURZEL / "mvp/backend/semantic-search-service/app/services/linkvorschau.py"
+
+
+def test_allgemeine_angaben_im_ssi_block():
+    text = INDEX.read_text(encoding="utf-8")
+    block = re.search(
+        r'<!--# block name="linkvorschau_allgemein" -->(.*?)<!--# endblock -->\s*'
+        r'<!--# include virtual="\$linkvorschau" stub="linkvorschau_allgemein" -->',
+        text,
+        re.S,
+    )
+    assert block, "SSI-Block fuer die Linkvorschau fehlt oder ist umgestellt"
+    im_block = dict(META.findall(block.group(1)))
+    # Genau das, was das Stueck des Suchdienstes ersetzt; Bild und Seitenname bleiben aussen.
+    assert set(im_block) == {"og:title", "og:description", "twitter:description"}
+    assert text.count("<!--#") == 3
+
+
+def test_allgemeine_beschreibung_im_suchdienst_gleich():
+    quelle = LINKVORSCHAU.read_text(encoding="utf-8")
+    beschreibung = re.search(r'ALLGEMEINE_BESCHREIBUNG = \(?\s*"([^"]+)"', quelle).group(1)
+    assert beschreibung == _meta()["og:description"]
+
+
+def test_beide_nginx_konfigurationen_werten_ssi_aus():
+    for konfiguration in ("nginx.conf", "nginx.docker.conf"):
+        text = (FRONTEND / konfiguration).read_text(encoding="utf-8")
+        assert text.count("ssi on;") == 2, konfiguration
+        assert "location /_linkvorschau/ {\n        internal;" in text, konfiguration
+        assert "set $linkvorschau_dienst gutgesagt-semantic-search:8000;" in text, konfiguration

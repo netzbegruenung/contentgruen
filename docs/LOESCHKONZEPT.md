@@ -623,7 +623,11 @@ und der Ablauf oben erfasst die Tabelle nicht.
     Anfrage samt Adresszusatz und Referrer, etwa im Dev-Stack `connect() failed …`, wenn
     das BFF nicht antwortet. Den Ausgang einer solchen Anfrage zeigt das Zugriffsprotokoll
     mit dem Status (413, 502 …). Zeilen außerhalb einer Anfrage (Start, Konfiguration,
-    Worker) schreibt nginx weiter. Belegt mit
+    Worker) schreibt nginx weiter. Für die Linkvorschau der Ergebnisseite (#360) reicht
+    es den Suchtext in einer internen Anfrage weiter: Die schreibt keine Zeile
+    (`log_subrequest` ist aus), und beim Suchdienst kommt der Suchtext im Header
+    `X-Suchtext` an, nicht in der Adresse; der Suchdienst loggt ihn nicht
+    (`app/api/v1/linkvorschau.py`, `app/tests/integration/test_linkvorschau_nginx.py`). Belegt mit
     `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
     `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen
     Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem

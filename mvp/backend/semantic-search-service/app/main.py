@@ -49,6 +49,7 @@ from api.v1.einladungen import router as einladungen_router
 from api.v1.gegenlesen import router as gegenlesen_router
 from api.v1.spracherkennung import router as spracherkennung_router
 from api.v1.varianten import router as varianten_router
+from api.v1.linkvorschau import router as linkvorschau_router
 from api.v1.kuerzungsvorschlag import router as kuerzungsvorschlag_router
 from api.v1.art9_einwilligung import router as art9_einwilligung_router
 from api.v1.nutzungsbedingungen import router as nutzungsbedingungen_router
@@ -362,6 +363,10 @@ app.include_router(
 )
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
 app.include_router(varianten_router, prefix="/api/v1/varianten", tags=["varianten"])
+# Nur fuer den nginx im Frontend-Image (#360); am BFF hinter der Anmeldung.
+app.include_router(
+    linkvorschau_router, prefix="/api/v1/linkvorschau", tags=["linkvorschau"]
+)
 app.include_router(
     spracherkennung_router, prefix="/api/v1/spracherkennung", tags=["spracherkennung"]
 )
