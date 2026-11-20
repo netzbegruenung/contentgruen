@@ -6,9 +6,9 @@
         <!-- Only the enabled login options; a switched-off one is hidden, not greyed out (#600) -->
         <div class="login-options">
 
-            <!-- Anmeldung über den Realm (20.11.): der Hauptknopf geht gleich zur Netzbegrünung,
-                 der Nebenweg zur Realm-Seite mit E-Mail und Passwort für Einladungskonten -->
-            <div class="login-option-card mat-elevation-z2" *ngIf="authModes.keycloakEnabled">
+            <!-- Anmeldung über den Realm (20.11.): zwei gleichwertige Wege. Netzbegrünung geht
+                 gleich zum Identity Provider, Einladungskonten zur Realm-Seite mit E-Mail und Passwort -->
+            <div class="login-option-card realm-wege mat-elevation-z2" *ngIf="authModes.keycloakEnabled">
                 <button mat-raised-button
                         type="button"
                         class="login-option-button keycloak-button"
@@ -18,10 +18,15 @@
                         <span class="button-title">Mit {{ organisation.name }} anmelden</span>
                     </div>
                 </button>
-                <p class="einladungskonto-zeile">
-                    Eingeladen?
-                    <button type="button" class="einladungskonto-link" (click)="mitEinladungskontoAnmelden()">Mit Einladungskonto anmelden</button>
-                </p>
+                <button mat-raised-button
+                        type="button"
+                        class="login-option-button einladungskonto-button"
+                        (click)="mitEinladungskontoAnmelden()">
+                    <mat-icon class="login-icon" aria-hidden="true">mail</mat-icon>
+                    <div class="button-content">
+                        <span class="button-title">Mit Einladungskonto anmelden</span>
+                    </div>
+                </button>
             </div>
 
             <div class="divider-container" *ngIf="authModes.keycloakEnabled && authModes.managedAuthEnabled">

@@ -87,7 +87,7 @@ export class LoginSelectorComponent implements OnInit {
     keycloakAnmelden(this.returnUrl, this.fenster, 'netzbegruenung');
   }
 
-  /** Nebenweg für Einladungskonten: die Anmeldeseite des Realms mit E-Mail und Passwort. */
+  /** Weg für Einladungskonten: die Anmeldeseite des Realms mit E-Mail und Passwort. */
   mitEinladungskontoAnmelden(): void {
     keycloakAnmelden(this.returnUrl, this.fenster);
   }

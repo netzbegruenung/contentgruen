@@ -163,22 +163,31 @@ describe('LoginSelectorComponent', () => {
 
       it('„Mit Einladungskonto anmelden“ führt ohne weg zur Anmeldeseite des Realms', () => {
         const el = modes(true, false);
-        const link = el.querySelector('.einladungskonto-link') as HTMLButtonElement;
+        const knopf = el.querySelector('.einladungskonto-button') as HTMLButtonElement;
 
-        expect(link.tagName).toBe('BUTTON');
-        expect(link.type).toBe('button');
-        expect(link.textContent?.trim()).toBe('Mit Einladungskonto anmelden');
-        expect(link.closest('.einladungskonto-zeile')?.textContent).toContain('Eingeladen?');
+        expect(knopf.type).toBe('button');
+        expect(knopf.querySelector('.button-title')?.textContent?.trim()).toBe('Mit Einladungskonto anmelden');
+        expect(el.textContent).not.toContain('Eingeladen?');
 
-        link.click();
+        knopf.click();
 
         expect(fenster.location.href).toBe(`${environment.baseUrl}/api/auth/login/keycloak?returnUrl=%2Ffangkorb`);
       });
 
-      it('zeigt den Nebenweg nicht, wenn der Realm aus ist (Dev-Stack)', () => {
+      it('zeigt beide Wege gleichwertig: gleiche Knopfklasse, Netzbegrünung oben', () => {
+        const el = modes(true, false);
+        const knoepfe = Array.from(el.querySelectorAll('.realm-wege button')) as HTMLButtonElement[];
+
+        expect(knoepfe.length).toBe(2);
+        expect(knoepfe[0].classList).toContain('keycloak-button');
+        expect(knoepfe[1].classList).toContain('einladungskonto-button');
+        knoepfe.forEach((k) => expect(k.classList).toContain('login-option-button'));
+      });
+
+      it('zeigt den Weg für Einladungskonten nicht, wenn der Realm aus ist (Dev-Stack)', () => {
         const el = modes(false, true);
 
-        expect(el.querySelector('.einladungskonto-link')).toBeNull();
+        expect(el.querySelector('.einladungskonto-button')).toBeNull();
       });
     });
 

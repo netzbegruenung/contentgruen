@@ -119,38 +119,19 @@
     text-transform: none;
 }
 
-/* Beide Anmeldewege im einen Primaergruen, ohne Verlaeufe (#512) */
+/* Alle Anmeldewege im einen Primaergruen, ohne Verlaeufe (#512) */
 .keycloak-button,
+.einladungskonto-button,
 .gutgesagt-button {
     background: var(--primaer);
     color: white;
 }
 
-/* Nebenweg für Einladungskonten unter dem Hauptknopf: dezent als Textlink, immer
-   unterstrichen, damit er auch im Dunkeln ohne eigene Linkfarbe erkennbar bleibt (20.11.) */
-.einladungskonto-zeile {
-    margin: 12px 0 0;
-    text-align: center;
-    color: var(--text-leise);
-    font-size: 15px;
-}
-
-.einladungskonto-link {
-    /* Zielflaeche mind. 24px hoch (WCAG 2.5.8) */
-    min-height: 32px;
-    padding: 4px 6px;
-    background: none;
-    border: 0;
-    border-radius: 4px;
-    color: var(--primaer-text);
-    font: inherit;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    cursor: pointer;
-}
-
-.einladungskonto-link:hover {
-    text-decoration-thickness: 2px;
+/* Beide Wege über den Realm gleich gross untereinander (Entscheidung 20.11.) */
+.realm-wege {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .login-icon {
