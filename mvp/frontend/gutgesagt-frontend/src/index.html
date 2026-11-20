@@ -24,15 +24,15 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Build-Kennung fuer den Footer: replace-env.sh setzt Commit und Version beim Containerstart
-       hier ein, nicht in den *.js-Dateien. Deren Name entsteht vor der Ersetzung, nginx liefert
-       sie mit "expires 1y" aus, und der Footer zeigte so den Commit eines alten Builds;
+       hier ein, nicht in den *.js-Dateien. Deren Name entsteht vor der Ersetzung, nginx laesst
+       sie ein Jahr im Cache, und der Footer zeigte so den Commit eines alten Builds;
        index.html liefert nginx ohne Cache. -->
   <meta name="gutgesagt-commit" content="${GIT_SHA}">
   <meta name="gutgesagt-version" content="${APP_VERSION}">
-  <!-- Bilder liefert nginx mit "expires 1y" aus: Ein geaendertes Logo braucht einen
-       neuen Dateinamen, sonst sehen wiederkehrende Besucher ein Jahr lang das alte. Die
-       Symbole und das Logo vom 29.10. tragen deshalb "-v2"; die alten Dateien bleiben fuer alte Verweise
-       liegen. Dass jede hier und im Manifest genannte Datei existiert, prueft
+  <!-- Bilder lieferte nginx bis zum 20.11.2026 mit "expires 1y" aus, deshalb tragen die Symbole
+       und das Logo vom 29.10. "-v2"; die alten Dateien bleiben fuer alte Verweise liegen. Seitdem
+       liegen ungehashte Dateien aus public/ nur einen Tag im Cache, danach fragt der Browser
+       nach: Ein geaendertes Bild darf seinen Namen behalten und ist hoechstens einen Tag alt. Dass jede hier und im Manifest genannte Datei existiert, prueft
        scripts/tests/test_symbole.py. -->
   <link rel="icon" type="image/svg+xml" href="marke/logo-v2.svg">
   <link rel="icon" type="image/png" sizes="64x64" href="marke/favicon-64-v2.png">
