@@ -8,7 +8,7 @@
 <p><@layout.gruss/></p>
 <p>${msg("gutgesagtExecText")}</p>
 <@layout.band href=link label=msg("gutgesagtExecKnopf") hinweis=msg("gutgesagtExecGueltig", linkExpirationFormatter(linkExpiration))/>
-<#if requiredActionsText?has_content><p>${msg("gutgesagtExecSchritte", requiredActionsText)}</p></#if>
+<#if requiredActions?? && requiredActions?has_content && (requiredActions?size gt 1 || requiredActions[0] != "UPDATE_PASSWORD")><p>${msg("gutgesagtExecSchritte", requiredActionsText)}</p></#if>
 <@layout.klartextlink href=link/>
 <p>${msg("gutgesagtExecIgnorieren")}</p>
 </@layout.emailLayout>

@@ -68,3 +68,12 @@ def test_farben_stehen_nur_in_den_variablen():
 def test_css_verweist_nur_auf_vorhandene_dateien():
     for ziel in re.findall(r'url\("\.\./([^"]+)"\)', CSS.read_text(encoding="utf-8")):
         assert (THEME / "login/resources" / ziel).is_file(), ziel
+
+
+def test_jeder_eigene_text_in_den_vorlagen_ist_da():
+    # Ein fehlender Key fiele erst in der echten Mail oder Seite auf (Keycloak zeigt den Key).
+    for teil in ("login", "email"):
+        texte = _properties(THEME / teil / "messages/messages_de.properties")
+        for vorlage in (THEME / teil).rglob("*.ftl"):
+            for schluessel in re.findall(r'msg\("(gutgesagt\w+)"', vorlage.read_text()):
+                assert schluessel in texte, f"{vorlage.name}: {schluessel} fehlt"

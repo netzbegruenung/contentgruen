@@ -19,7 +19,7 @@
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;">
 <tr><td align="center" style="padding:16px 12px 24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#ffffff;">
-<tr><td style="padding:8px 24px 0 24px;font-family:'PT Sans',Arial,Helvetica,sans-serif;font-size:24px;line-height:1.2;font-weight:bold;font-style:italic;color:#005437;">&#128077;&nbsp;Gut gesagt</td></tr>
+<tr><td style="padding:8px 24px 0 24px;font-family:'PT Sans',Arial,Helvetica,sans-serif;font-size:24px;line-height:1.2;font-weight:bold;font-style:italic;color:#005437;"><span aria-hidden="true">&#128077;&nbsp;</span>Gut gesagt</td></tr>
 <tr><td class="gg-inhalt" style="padding:24px 24px 8px 24px;font-family:'PT Sans',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#212121;">
 <#nested>
 </td></tr>
