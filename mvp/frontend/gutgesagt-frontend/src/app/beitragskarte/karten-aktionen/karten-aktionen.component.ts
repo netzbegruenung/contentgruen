@@ -183,6 +183,10 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['stimme'] || changes['inhaltId']) {
       this.initializeVoteState();
       this.stimmeImZaehler = this.stimme ?? null;
+      // Eine wiederverwendete Karte mit anderem Beitrag zeigt keinen fremden Dank.
+      if (changes['inhaltId']) {
+        this.stimmDankText = '';
+      }
     } else if (changes['hilfreich'] || changes['nichtHilfreich']) {
       // Frisch geladen nach einer abgeglichenen Stimme: Die angezeigte steckt jetzt drin.
       this.stimmeImZaehler = this.angezeigt;

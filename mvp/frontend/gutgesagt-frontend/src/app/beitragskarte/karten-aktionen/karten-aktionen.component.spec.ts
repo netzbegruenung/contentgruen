@@ -170,6 +170,19 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(meilensteinHinweis.pruefen).toHaveBeenCalledTimes(1);
     }));
 
+    it('vergisst den Dank, wenn die Leiste einen anderen Beitrag bekommt', fakeAsync(() => {
+      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
+      component.stimmenZaehlen = false;
+      component.toggleLike();
+      tick(50);
+      expect(component.stimmDankText).toBe(DANK_UNTER_DEN_ERSTEN);
+
+      component.inhaltId = 'anderer-beitrag';
+      component.ngOnChanges({ inhaltId: new SimpleChange(INHALT_ID, 'anderer-beitrag', false) });
+
+      expect(component.stimmDankText).toBe('');
+    }));
+
     it('zeigt bei einem Fehler keinen Dank', fakeAsync(() => {
       votingService.setLike.and.returnValue(throwError(() => ({ status: 500 })));
       component.stimmenZaehlen = false;

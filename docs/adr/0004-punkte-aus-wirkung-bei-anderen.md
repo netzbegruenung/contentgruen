@@ -12,7 +12,7 @@ Damit die Punkte nicht zu fälschen sind, zählt eine Nutzung für Punkte höchs
 
 Damit auch Neue sofort eine Rückmeldung sehen, gibt es Punkte in drei Stufen:
 
-- **Tun** bringt kleine Punkte, gedeckelt je Tag: ein gespeicherter Beitrag, ein Einwurf, der ausformuliert wird (für die einwerfende Person). Ein Beitrag zählt erst, wenn er drei Tage ohne Sperre steht. Bewerten bringt keine Punkte, damit Stimmen ein echtes Signal bleiben.
+- **Tun** bringt kleine Punkte, gedeckelt je Tag: ein gespeicherter Beitrag, ein Einwurf, der ausformuliert wird (für die einwerfende Person). Ein Beitrag zählt erst, wenn er drei Tage ohne Sperre steht. Bewerten bringt keine Punkte, damit Stimmen ein echtes Signal bleiben (überholt, siehe Ergänzung 20.11.2026).
 - **Explizite Aufgaben** (abgeschlossene Quests) bringen mehr, ebenfalls gedeckelt.
 - **Wirkung bei anderen** (Nutzung, Zustimmung) bringt die großen Punkte und bleibt der Hauptanteil.
 
@@ -40,7 +40,7 @@ Neben den Meilensteinen für die Wirkung bei anderen und für Unterstützungsarb
 
 ## Bewerten bringt kleine Punkte (Ergänzung 20.11.2026, Entscheidung Maintainer)
 
-Bisher brachte Bewerten keine Punkte, damit Stimmen ein echtes Signal bleiben („Drei Stufen“ oben). Abstimmen wirkte damit am Anfang vergebens: Die Güte zählt Stimmen erst ab drei verschiedenen Stimmenden (DSFA, M5), nach der ersten Stimme tat sich nichts Sichtbares. Jetzt bringt jede Stimme zu einem fremden Beitrag einen kleinen Punkt fürs Tun (`punkte_bewertung`, Standard 1), je Tag eigens gedeckelt (`punkte_deckel_bewertungen_je_tag`, Standard 3) und getrennt vom Deckel für Beiträge und Einwürfe. Die Richtung zählt nicht: „Nicht hilfreich“ bringt so viel wie „hilfreich“, damit Punkte keine Richtung belohnen. Stimmen zu eigenen sichtbaren Beiträgen zählen nicht, eine zurückgenommene Stimme fällt weg, gezählt wird der Tag ihrer letzten Änderung. Dazu kommt die Wegmarke „Erste 10 Bewertungen“; wie alle Wegmarken zählt sie nicht fürs Abzeichen. Das Signal der Stimmen bleibt geschützt, weil drei Punkte am Tag kaum zum Massenklicken reizen und die großen Punkte weiter aus der Wirkung bei anderen kommen. Die Sätze „Bewerten bringt keine Punkte“ oben sind damit überholt.
+Bisher brachte Bewerten keine Punkte, damit Stimmen ein echtes Signal bleiben („Drei Stufen“ oben). Abstimmen wirkte damit am Anfang vergebens: Die Güte zählt Stimmen erst ab drei verschiedenen Stimmenden (DSFA, M5), nach der ersten Stimme tat sich nichts Sichtbares. Jetzt bringt jede Stimme zu einem fremden Beitrag einen kleinen Punkt fürs Tun (`punkte_bewertung`, Standard 1), je Tag eigens gedeckelt (`punkte_deckel_bewertungen_je_tag`, Standard 3) und getrennt vom Deckel für Beiträge und Einwürfe. Die Richtung zählt nicht: „Nicht hilfreich“ bringt so viel wie „hilfreich“, damit Punkte keine Richtung belohnen. Stimmen zu eigenen sichtbaren Beiträgen zählen nicht, eine zurückgenommene Stimme fällt weg, gezählt wird der Tag ihrer letzten Änderung; wer eine alte Stimme umdreht, verschiebt sie damit auf heute, mehr als der Tagesdeckel kommt so nicht zusammen. Stimmen zu gesperrten Beiträgen zählen mit (bekannte Lücke, klein unter dem Deckel). Dazu kommt die Wegmarke „Erste 10 Bewertungen“; wie alle Wegmarken zählt sie nicht fürs Abzeichen. Das Signal der Stimmen bleibt geschützt, weil drei Punkte am Tag kaum zum Massenklicken reizen und die großen Punkte weiter aus der Wirkung bei anderen kommen. Die Sätze „Bewerten bringt keine Punkte“ oben sind damit überholt.
 
 ## Considered Options
 

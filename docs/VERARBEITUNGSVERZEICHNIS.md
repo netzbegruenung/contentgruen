@@ -197,8 +197,8 @@ Rechtsgrundlagen wie in der Datenschutzerklärung; juristisch geprüft hat sie n
   Zustimmung (T2).
 - **Betroffene:** angemeldete Personen mit Einwilligung „Punkte und Meilensteine“, ohne
   Startkonten; Muster-Hinweise nur, wenn beide Konten eingewilligt haben.
-- **Daten:** Punkte und Meilensteine nicht gespeichert, bei jedem Abruf berechnet;
-  Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen; je Antwort auf die Einwilligung eine
+- **Daten:** Punkte und Meilensteine nicht gespeichert, bei jedem Abruf berechnet, seit
+  20.11.2026 auch aus den eigenen Bewertungen (T4) je Tag; Paar-Prüfwerte; Muster-Hinweise mit zwei Kennungen; je Antwort auf die Einwilligung eine
   Zeile mit Kennung, ja/nein, Wortlaut und Zeitpunkt.
 - **Empfänger:** Punkte nur für die Person; Abzeichen für andere Angemeldete mit Zustimmung;
   Muster-Hinweise nur für Admins.
