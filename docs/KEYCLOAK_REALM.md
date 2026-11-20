@@ -118,6 +118,36 @@ Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semant
 jedem Aufruf mit (`MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py`, drei Tage);
 die Einlöseseite nennt dieselbe Frist.
 
+## Theme
+
+`keycloak-theme/gutgesagt/` ist das Login- und Mail-Theme des Realms, ohne Java und ohne
+Build. Es erbt von den Themes, die Keycloak mitbringt (`keycloak.v2` für die Seiten, `base`
+für die Mails). Der Aufbau folgt der Startseite: weißer Kopf mit Logo, kursive Schlagzeile,
+das Formular im gelben Band.
+
+| Datei | Inhalt |
+|---|---|
+| `login/resources/css/gutgesagt.css` | Farben (nur in den `--gg-`Variablen, hell und dunkel, Werte aus `custom-theme.scss`), Schrift PT Sans, Kopf, Band, Knöpfe |
+| `login/footer.ftl` | Hinweiszeile unter dem Formular („Lesen und Suchen geht ohne Konto“), nicht auf Info-, Fehler- und Abmeldeseiten |
+| `login/info.ftl` | Zwischenseite der Aktions-Links ohne doppelten Titel; sonst wie bei Keycloak |
+| `login/messages/messages_de.properties` | Seitentexte in Du-Form |
+| `email/html/template.ftl` | Rahmen der HTML-Mails (Name als Text, Schlagzeile, Band mit Knopf, Fuß) |
+| `email/html/executeActions.ftl`, `password-reset.ftl` | Einladung („Passwort festlegen“) und „Passwort vergessen“ mit Knopf; die übrigen Mails und alle Textfassungen kommen von Keycloak |
+| `email/messages/messages_de.properties` | Mailtexte in Du-Form (Betreff, Textfassung, Knopf und Absätze) |
+
+Die Mails laden nichts nach (kein Bild). Die Texte kommen nur aus dem Theme (Entscheidung
+20.11.): keine Realm overrides (*Realm settings → Localization*) für diese Keys anlegen, sie
+gingen den Texten des Themes vor.
+
+Auf dem Keycloak liegt `themes/gutgesagt` als Verweis auf einen festen Git-Stand dieses Repos.
+Keycloak liest Themes aus `themes/` bei jedem Aufruf; ein neues Theme ist ohne Neustart wählbar
+(*Realm settings → Themes*: Login theme und Email theme `gutgesagt`). Ein neuer Stand eines schon
+geladenen Themes braucht einen Neustart von Keycloak, weil Keycloak `theme.properties`, Texte
+und Templates geladener Themes zwischenspeichert.
+
+`scripts/tests/test_keycloak_theme.py` prüft Texte (kein gerades `'`, Klammern nur als
+Platzhalter), Eltern-Themes und dass Farben nur in den Variablen stehen.
+
 ## Keycloak ab 26.8.2: Admin-API-Scope
 
 Seit Keycloak 26.8.2 nimmt die Admin-Schnittstelle nur noch Tokens an, die für sie
