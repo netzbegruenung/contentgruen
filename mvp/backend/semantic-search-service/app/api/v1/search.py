@@ -374,10 +374,13 @@ async def search_by_text(
         try:
             orchestrator.themen_ergaenzen(themen_service)
         except Exception as e:
-            # Ohne Themen bleibt die Suche nutzbar; nur der Filter fehlt dann.
+            # Ohne Themen bleibt die Suche nutzbar; nur der Filter fehlt dann. None
+            # statt leer, damit die Seite kein Zuordnen anbietet (es ersetzte die
+            # vorhandenen Themen).
             logger.warning(
                 f"Failed to add Themen to search results: {type(e).__name__}"
             )
+            orchestrator.themen_unbekannt()
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
         generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)

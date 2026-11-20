@@ -97,12 +97,13 @@ def _service(aussagen=(), repository=None):
 async def test_zuordnen_speichert_themen_von_hand():
     service, repository = _service([_aussage(A, "Windräder töten Vögel")])
 
-    themen = await service.zuordnen(A, ["natur-umwelt", "energie-heizen"])
+    themen = await service.zuordnen(A, ["natur-umwelt", "energie-heizen", "klima"])
 
-    assert themen == ["natur-umwelt", "energie-heizen"]
+    assert themen == ["natur-umwelt", "energie-heizen", "klima"]
     assert repository.zeilen[A] == [
         ("natur-umwelt", VON_HAND),
         ("energie-heizen", VON_HAND),
+        ("klima", VON_HAND),
     ]
 
 
@@ -130,7 +131,7 @@ async def test_zuordnen_weist_unbekannte_und_zu_viele_themen_ab():
     with pytest.raises(ThemaUngueltig):
         await service.zuordnen(A, ["windkraft"])
     with pytest.raises(ThemaUngueltig):
-        await service.zuordnen(A, ["klima", "verkehr", "europa"])
+        await service.zuordnen(A, ["klima", "verkehr", "europa", "soziales"])
     assert repository.zeilen == {}
 
 

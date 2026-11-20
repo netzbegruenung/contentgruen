@@ -308,7 +308,7 @@ Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage g
 _Avoid_: Remix, Kopie, Fassung, Fork
 
 **Thema**:
-Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens zwei. Freie Schlagworte gibt es nicht.
+Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens drei. Freie Schlagworte gibt es nicht.
 _Avoid_: Tag, Topic, Kategorie, Schlagwort
 
 **Zuordnungsart**:

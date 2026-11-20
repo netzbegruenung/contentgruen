@@ -66,6 +66,9 @@ export interface BaseSearchResult {
     user_vote?: string;  // "like", "dislike", or undefined
     /** Die Aussage, ueber die der Beitrag gefunden wurde; fehlt bei direkten Treffern. */
     statement_id?: string | null;
-    /** Die Themen dieser Aussage, fuer den Themenfilter der Ergebnisseite. */
-    themen?: Thema[];
+    /**
+     * Die Themen dieser Aussage, fuer den Themenfilter der Ergebnisseite. null: nicht
+     * nachschlagbar; dann bietet die Seite kein Zuordnen an.
+     */
+    themen?: Thema[] | null;
 }

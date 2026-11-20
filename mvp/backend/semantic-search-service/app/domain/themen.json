@@ -5,10 +5,17 @@
   { "schluessel": "landwirtschaft-ernaehrung", "name": "Landwirtschaft und Ernährung" },
   { "schluessel": "natur-umwelt", "name": "Natur und Umwelt" },
   { "schluessel": "wirtschaft-arbeit", "name": "Wirtschaft und Arbeit" },
+  { "schluessel": "haushalt-steuern", "name": "Haushalt und Steuern" },
   { "schluessel": "soziales", "name": "Soziales" },
+  { "schluessel": "wohnen", "name": "Wohnen" },
+  { "schluessel": "gesundheit", "name": "Gesundheit" },
+  { "schluessel": "bildung", "name": "Bildung" },
+  { "schluessel": "digitales", "name": "Digitales" },
   { "schluessel": "migration", "name": "Migration" },
   { "schluessel": "demokratie-freiheit", "name": "Demokratie und Freiheit" },
+  { "schluessel": "extremismus", "name": "Extremismus" },
   { "schluessel": "europa", "name": "Europa" },
+  { "schluessel": "frieden-sicherheit", "name": "Frieden und Sicherheit" },
   { "schluessel": "stadt-land", "name": "Stadt und Land" },
   { "schluessel": "gleichstellung-vielfalt", "name": "Gleichstellung und Vielfalt" }
 ]

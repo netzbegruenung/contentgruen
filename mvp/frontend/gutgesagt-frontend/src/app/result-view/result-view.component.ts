@@ -19,6 +19,8 @@ import { FORMULAR_PFAD, aussageParameterMitText, istAussageId } from '../shared/
 import { BaseSearchResult } from '../services/dtos/commonDtos';
 import { Thema } from '../services/dtos/themenDtos';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
+import { AussageThemenComponent } from '../shared/themen/aussage-themen.component';
+import { AussageMitThemenFeld } from '../services/themen.service';
 import { NichtDabeiComponent } from '../nicht-dabei/nicht-dabei.component';
 import { OftGesuchtComponent } from '../oft-gesucht/oft-gesucht.component';
 import { KartenDaten, KartenKennzahlen, ausSuchergebnis } from '../beitragskarte/karten-daten';
@@ -127,6 +129,22 @@ export function erkannteAussage(antwort: SearchResponse): ErkannteAussage | null
   return gewaehlt.aussage;
 }
 
+/**
+ * Die erkannte Aussage mit ihren Themen, fuer die Themen an der Zeile "Erkannt als": die
+ * Themen traegt jeder ihrer Treffer. null ohne ID (nur Text) und ohne bekannte Themen
+ * (null: Nachschlagen gescheitert); ein Zuordnen ersetzte sonst die vorhandenen.
+ */
+export function erkannteMitThemen(antwort: SearchResponse, erkannt: ErkannteAussage | null): AussageMitThemenFeld | null {
+  if (!erkannt || !istAussageId(erkannt.id)) {
+    return null;
+  }
+  const treffer = alleTreffer(antwort).find((t) => t.statement_id === erkannt.id);
+  if (!treffer || !Array.isArray(treffer.themen)) {
+    return null;
+  }
+  return { statement_id: erkannt.id, themen: [...treffer.themen] };
+}
+
 /** Der Gruppenschluessel der erkannten Aussage (wie aussageSchluessel); null ohne. */
 export function erkannterSchluessel(erkannt: ErkannteAussage | null): string | null {
   return erkannt ? erkannt.id || `text:${erkannt.text}` : null;
@@ -169,6 +187,7 @@ export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null
     LoadingSpinnerComponent,
     ErrorMessageComponent,
     ThemenFilterComponent,
+    AussageThemenComponent,
     NichtDabeiComponent,
     OftGesuchtComponent
   ],
@@ -196,6 +215,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   bekannteAussagen: string[] = [];
   /** In der Zeile "Erkannt als" (#642, V3); aus allen Treffern, nicht nur denen zum Thema. */
   erkannt: ErkannteAussage | null = null;
+  /** Die erkannte Aussage mit ihren Themen, zum Ansehen und Zuordnen (app-aussage-themen). */
+  erkannteThemen: AussageMitThemenFeld | null = null;
 
   // Einmal je Suchantwort und Wahl umgerechnet, nicht im Template: neue Objekte bei
   // jeder Change Detection setzten die Karten zurueck (Kurz/Lang, Aufklapper).
@@ -306,6 +327,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         // Die Alternativen gehoeren zur vorigen Suche; "Nicht dabei?" meldet neu.
         this.alternativen = [];
         this.erkannt = response ? erkannteAussage(response) : null;
+        this.erkannteThemen = response ? erkannteMitThemen(response, this.erkannt) : null;
         this.themenDerTreffer = response ? themenDerTreffer(response, erkannterSchluessel(this.erkannt)) : [];
         this.anzeigen();
       });
@@ -317,6 +339,29 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         this.performSearch();
       }
     });
+  }
+
+  /**
+   * Die Themen der erkannten Aussage haben sich geaendert (app-aussage-themen): Treffer
+   * und Themenfilter ziehen gleich nach, ohne neue Suche. Ein aktives Thema, das es
+   * unter den Treffern nicht mehr gibt, faellt weg; sonst stuende die Seite leer.
+   */
+  erkannteThemenGeaendert(themen: Thema[]): void {
+    const id = this.erkannteThemen?.statement_id;
+    if (!this.antwort || !id) {
+      return;
+    }
+    for (const treffer of alleTreffer(this.antwort)) {
+      if (treffer.statement_id === id) {
+        treffer.themen = [...themen];
+      }
+    }
+    this.themenDerTreffer = themenDerTreffer(this.antwort, erkannterSchluessel(this.erkannt));
+    if (this.aktivesThema && !this.themenDerTreffer.some((t) => t.schluessel === this.aktivesThema)) {
+      this.aktivesThema = null;
+    }
+    this.anzeigen();
+    this.cdr.markForCheck();
   }
 
   /** Nach einem Thema filtern; null = alle. */

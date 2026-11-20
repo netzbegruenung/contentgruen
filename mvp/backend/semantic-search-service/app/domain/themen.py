@@ -19,8 +19,8 @@ from pydantic import AfterValidator
 
 from core.fehler import Validierungsfehler
 
-# Glossar: "eine Aussage hat hoechstens zwei".
-HOECHSTENS_JE_AUSSAGE = 2
+# Glossar: "eine Aussage hat hoechstens drei".
+HOECHSTENS_JE_AUSSAGE = 3
 
 _DATEI = Path(__file__).with_name("themen.json")
 
@@ -41,7 +41,7 @@ class Zuordnungsart(StrEnum):
 
 
 class ThemaUngueltig(Validierungsfehler):
-    """Ein Schluessel steht nicht in der Liste, oder es sind mehr als zwei."""
+    """Ein Schluessel steht nicht in der Liste, oder es sind mehr als drei."""
 
 
 def _laden() -> Tuple[Thema, ...]:

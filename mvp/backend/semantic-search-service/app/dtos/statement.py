@@ -128,7 +128,7 @@ class ThemenResponse(BaseModel):
 
 class ThemenZuordnenRequest(BaseModel):
     statement_id: uuid.UUID
-    # Hoechstens zwei aus der Liste; geprueft in AussageThemenService.zuordnen.
+    # Hoechstens drei aus der Liste; geprueft in AussageThemenService.zuordnen.
     themen: List[str] = Field(default_factory=list)
 
 
@@ -186,7 +186,7 @@ class AussageVorabRequest(BaseModel):
     )
     themen: List[str] = Field(
         default_factory=list,
-        description="Optional ein bis zwei Themen aus der Liste (domain/themen.json)",
+        description="Optional ein bis drei Themen aus der Liste (domain/themen.json)",
     )
 
     @field_validator("text")

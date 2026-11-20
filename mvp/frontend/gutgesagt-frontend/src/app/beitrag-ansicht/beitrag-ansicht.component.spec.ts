@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 
@@ -36,6 +37,9 @@ describe('BeitragAnsichtComponent', () => {
       imports: [BeitragAnsichtComponent],
       providers: [
         provideRouter([]),
+        // Die Themen der Aussage (app-aussage-themen) laden die Themenliste
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: ActivatedRoute, useValue: { paramMap: params.asObservable() } },
         { provide: ContentService, useValue: contentService },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn', 'error']) },

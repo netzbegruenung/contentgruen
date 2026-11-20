@@ -6,11 +6,17 @@ import { tap, catchError, map } from 'rxjs/operators';
 import { LoggingService } from './logging.service';
 import { throwError } from 'rxjs';
 import { BaseContentResult } from './dtos/commonDtos';
+import { Thema } from './dtos/themenDtos';
 
 /** Die Aussage, auf die ein Beitrag antwortet (#603). */
 export interface AussageKurz {
   id: string;
   text: string;
+  /**
+   * Die Themen der Aussage, in der Reihenfolge der Liste. null: nicht nachschlagbar;
+   * fehlt bei aelteren Diensten. In beiden Faellen bietet die Seite kein Zuordnen an.
+   */
+  themen?: Thema[] | null;
 }
 
 /** Eine weitere sichtbare Antwort zu dieser Aussage (#603): nur, was die Liste zeigt. */

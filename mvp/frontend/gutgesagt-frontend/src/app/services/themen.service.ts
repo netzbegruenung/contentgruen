@@ -13,8 +13,8 @@ import {
   ThemenZuordnenResponse,
 } from './dtos/themenDtos';
 
-/** Wie im Backend (domain/themen.py): eine Aussage hat hoechstens zwei Themen. */
-export const HOECHSTENS_THEMEN_JE_AUSSAGE = 2;
+/** Wie im Backend (domain/themen.py): eine Aussage hat hoechstens drei Themen. */
+export const HOECHSTENS_THEMEN_JE_AUSSAGE = 3;
 
 /** Eine angezeigte Aussage mit ihren Themen, wie sie die Listen fuehren. */
 export interface AussageMitThemenFeld {
@@ -64,11 +64,19 @@ export class ThemenService {
    * aufbaut. Gespeichert wird der Reihe nach, damit am Ende der letzte Klick gilt;
    * ist nichts mehr offen, zeigt die Aussage den zuletzt gespeicherten Stand. Das
    * ist nach einem Fehler der Stand vor dem gescheiterten Klick, und `fehler` wird gerufen.
+   * `fertig` kommt nach jeder Antwort mit der Zahl noch offener Auftraege, etwa fuer einen
+   * Spinner und fuer Seiten mit OnPush, die den neuen Stand sonst nicht zeigten.
    */
-  aendern(aussage: AussageMitThemenFeld, schluessel: string[], liste: Thema[], fehler: () => void): void {
+  aendern(
+    aussage: AussageMitThemenFeld,
+    schluessel: string[],
+    liste: Thema[],
+    fehler: () => void,
+    fertig?: (offen: number) => void,
+  ): void {
     let warteschlange = this.warteschlangen.get(aussage);
     if (!warteschlange) {
-      warteschlange = this.warteschlange(aussage, fehler);
+      warteschlange = this.warteschlange(aussage, fehler, fertig);
       this.warteschlangen.set(aussage, warteschlange);
     }
     aussage.themen = schluessel
@@ -77,7 +85,11 @@ export class ThemenService {
     warteschlange.next(schluessel);
   }
 
-  private warteschlange(aussage: AussageMitThemenFeld, fehler: () => void): Subject<string[]> {
+  private warteschlange(
+    aussage: AussageMitThemenFeld,
+    fehler: () => void,
+    fertig?: (offen: number) => void,
+  ): Subject<string[]> {
     const auftraege = new Subject<string[]>();
     let gespeichert = aussage.themen;
     let offen = 0;
@@ -100,6 +112,7 @@ export class ThemenService {
         if (offen === 0) {
           aussage.themen = gespeichert;
         }
+        fertig?.(offen);
       });
     return auftraege;
   }

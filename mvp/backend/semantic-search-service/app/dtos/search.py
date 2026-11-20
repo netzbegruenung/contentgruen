@@ -43,7 +43,9 @@ class SearchByTextRequest(BaseModel):
 #
 # statement_id und themen: die Aussage, ueber die der Beitrag gefunden wurde, und
 # deren Themen, fuer den Themenfilter der Ergebnisseite (#363). Ein direkter Treffer
-# ohne Aussage hat keine ID und keine Themen.
+# ohne Aussage hat keine ID und keine Themen. themen None: Die Themen liessen sich
+# nicht nachschlagen; die Seite bietet dann kein Zuordnen an, sonst ersetzte ein Klick
+# die vorhandenen Themen.
 
 
 class CommentarySearchResult(BaseModel):
@@ -52,7 +54,7 @@ class CommentarySearchResult(BaseModel):
     statement_similarity_score: float
     reply_relevance: float
     statement_id: Optional[uuid.UUID] = None
-    themen: List[ThemaDto] = []
+    themen: Optional[List[ThemaDto]] = []
     commentary_result: KommentarResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
@@ -66,7 +68,7 @@ class GenericTextSearchResult(BaseModel):
     statement_similarity_score: float
     reply_relevance: float
     statement_id: Optional[uuid.UUID] = None
-    themen: List[ThemaDto] = []
+    themen: Optional[List[ThemaDto]] = []
     generictext_result: HintergrundinfoResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
@@ -80,7 +82,7 @@ class PostSearchResult(BaseModel):
     statement_similarity_score: float
     reply_relevance: float
     statement_id: Optional[uuid.UUID] = None
-    themen: List[ThemaDto] = []
+    themen: Optional[List[ThemaDto]] = []
     post_result: PostResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
@@ -94,7 +96,7 @@ class ImageSearchResult(BaseModel):
     statement_similarity_score: Optional[float] = None
     reply_relevance: Optional[float] = None
     statement_id: Optional[uuid.UUID] = None
-    themen: List[ThemaDto] = []
+    themen: Optional[List[ThemaDto]] = []
     image_result: BildResponse
     user_vote: Optional[str] = None
     polarity_mismatch_detected: Optional[bool] = None

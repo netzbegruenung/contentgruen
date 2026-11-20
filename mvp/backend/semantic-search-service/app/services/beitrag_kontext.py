@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from domain.models.statement import AntwortKurz, StatementDbEntry, angelegt_am
+from domain.themen import NACH_SCHLUESSEL
 
 # Wie viele weitere Antworten die Seite zeigt; der Rest steht in der Suche, auf die
 # "Antwort auf" verlinkt.
@@ -29,6 +30,10 @@ VORSCHLAEGE_HOECHSTENS = 50
 class AussageKurz:
     id: uuid.UUID
     text: str
+    # Schluessel der Themen in der Reihenfolge der Liste; die Seite zeigt sie und
+    # bietet Angemeldeten das Zuordnen an (themen_ergaenzen). None: nicht
+    # nachschlagbar, dann kein Zuordnen (es ersetzte die vorhandenen Themen).
+    themen: Optional[List[str]] = field(default_factory=list)
 
 
 @dataclass
@@ -39,7 +44,21 @@ class BeitragKontext:
     def als_json(self) -> dict:
         return {
             "aussage": (
-                {"id": str(self.aussage.id), "text": self.aussage.text}
+                {
+                    "id": str(self.aussage.id),
+                    "text": self.aussage.text,
+                    "themen": (
+                        None
+                        if self.aussage.themen is None
+                        else [
+                            {"schluessel": t.schluessel, "name": t.name}
+                            for t in (
+                                NACH_SCHLUESSEL.get(s) for s in self.aussage.themen
+                            )
+                            if t is not None
+                        ]
+                    ),
+                }
                 if self.aussage
                 else None
             ),
@@ -66,6 +85,14 @@ def aussage_waehlen(
         aussagen,
         key=lambda a: (-_relevanz(a, beitrag_id), angelegt_am(a), str(a.id)),
     )
+
+
+def themen_ergaenzen(kontext: BeitragKontext, themen_service) -> None:
+    """Die Themen der Aussage nachtragen (AussageThemenService.themen_von)."""
+    if kontext.aussage is not None:
+        kontext.aussage.themen = themen_service.themen_von([kontext.aussage.id]).get(
+            kontext.aussage.id, []
+        )
 
 
 async def kontext_laden(beitrag_id: uuid.UUID, statement_service) -> BeitragKontext:

@@ -883,7 +883,7 @@ class TestThemenDerAussage:
         themen_service.ergaenzen.assert_awaited_once_with(statement_id, ["klima"])
 
     @pytest.mark.parametrize(
-        "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa"]]
+        "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa", "soziales"]]
     )
     def test_ungueltige_themen_werden_vor_dem_speichern_abgewiesen(
         self, dienste, themen
