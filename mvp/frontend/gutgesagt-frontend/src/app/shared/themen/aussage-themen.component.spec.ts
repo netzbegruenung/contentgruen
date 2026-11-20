@@ -195,4 +195,20 @@ describe('AussageThemenComponent', () => {
 
     expect(umschalter(e)!.textContent?.trim()).toBe('Themen ändern');
   });
+
+  it('laedt die Themenliste beim naechsten Anmelden neu, wenn der erste Versuch scheiterte', () => {
+    const e = zeigen({ statement_id: 'a-1', themen: [KLIMA] }, false);
+    nutzer.next(ANGEMELDET);
+    fixture.detectChanges();
+    http.expectOne(LISTE_URL).flush({}, { status: 401, statusText: 'Unauthorized' });
+    fixture.detectChanges();
+    expect(umschalter(e)).toBeNull();
+
+    nutzer.next(null);
+    nutzer.next(ANGEMELDET);
+    fixture.detectChanges();
+    listeLiefern();
+
+    expect(umschalter(e)!.textContent?.trim()).toBe('Themen ändern');
+  });
 });

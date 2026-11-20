@@ -6,14 +6,21 @@ import { KONTO } from './konto';
  * ist, fuehrt zur Anmeldung. Laeuft ohne gespeicherte Sitzung.
  */
 test('Besucher: Suche ohne Anmeldung', async ({ page, bild }) => {
+  // Kein 401 ausser den Anmelde-Pruefungen: Ein 401 einer Nebenabfrage leitete auf /login um
+  // (Themenliste unter der erkannten Aussage, Befund auf Test, v0.9.9).
+  const abgewiesen: string[] = [];
+  page.on('response', (r) => {
+    const pfad = new URL(r.url()).pathname;
+    if (r.status() === 401 && !['/api/check-session', '/api/user-info'].includes(pfad)) abgewiesen.push(pfad);
+  });
   const suche = page.waitForResponse((r) => r.url().includes('/api/v1/search/searchByText'));
   await page.goto(`/result?searchQuery=${encodeURIComponent('Windräder töten Vögel')}`);
   expect((await suche).status()).toBe(200);
   await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });
-  // Erst wenn alles geladen ist: Ein 401 einer Nebenabfrage (etwa der Themenliste unter der
-  // erkannten Aussage) leitete sonst danach noch auf /login um (Befund auf Test, v0.9.9).
+  // Erst wenn alles geladen ist, sonst kaeme eine Umleitung nach der Pruefung.
   await page.waitForLoadState('networkidle');
   expect(new URL(page.url()).pathname).toBe('/result');
+  expect(abgewiesen).toEqual([]);
   // Ohne Anmeldung kein Autor auf den Karten (beitragskarte: zeigtAutor)
   await expect.soft(page.locator('app-kartenliste .karte-meta', { hasText: 'Von:' })).toHaveCount(0);
   await bild('90-besucher-suche');

@@ -13,7 +13,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
-import { catchError, distinctUntilChanged, filter, map, switchMap, take } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, map, switchMap } from 'rxjs/operators';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../auth/auth.service';
 import { Thema } from '../../services/dtos/themenDtos';
@@ -166,11 +166,12 @@ export class AussageThemenComponent implements OnInit, OnChanges {
     });
     // Die Liste braucht nur, wer zuordnet: Abgemeldeten antwortet das BFF auf
     // /api/v1/statement/themen mit 401, und das fuehrte Besucher von der Ergebnisseite
-    // auf /login. Deshalb erst nach dem Anmelden laden.
+    // auf /login. Deshalb erst nach dem Anmelden laden, bei jedem Anmelden neu: Scheiterte
+    // ein Versuch (etwa still mit 401 bei abgelaufener Sitzung), kommt die Liste mit dem
+    // naechsten Anmelden, ohne die Seite neu zu laden. Gelungen liegt sie im Dienst bereit.
     angemeldet$
       .pipe(
         filter((angemeldet) => angemeldet),
-        take(1),
         switchMap(() => this.themenService.liste().pipe(catchError(() => of([] as Thema[])))),
       )
       .subscribe((liste) => {
