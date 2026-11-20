@@ -26,7 +26,7 @@ Durchprobieren von Passwörtern liegen bei Keycloak. Warum so: ADR 0006
 | Realm `gutgesagt`, Selbstregistrierung aus | Konten entstehen nur über eine Einladung oder den Identity Provider |
 | Anmelden mit Mail-Adresse, Passwort vergessen, Mail-Bestätigung, Brute-Force-Schutz | alles von Keycloak |
 | Client `gutgesagt` | Anmeldung der App (BFF, Authorization Code mit PKCE) |
-| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users`, Client Scope `kc-admin-api` | der Semantic-Service legt damit Konten aus Einladungen an und löscht nie benutzte nach der Frist (#538, `docs/LOESCHKONZEPT.md`); engere Rechte für „Konto anlegen“ bietet Keycloak nicht; den Scope verlangt Keycloak ab 26.8 (unten) |
+| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users`, Client Scope `kc-admin-api` | der Semantic-Service legt damit Konten aus Einladungen an und löscht nie benutzte nach der Frist (#538, `docs/LOESCHKONZEPT.md`); engere Rechte für „Konto anlegen“ bietet Keycloak nicht; den Scope verlangt Keycloak ab 26.8.2 (unten) |
 | Identity Provider `netzbegruenung` | Netzbegrünung-Login; Adresse und Client sind Platzhalter |
 
 Die Pflichtaktionen stehen bewusst nicht in der Vorlage: Eine Liste dort ersetzt die
@@ -75,21 +75,21 @@ Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semant
 jedem Aufruf mit (`MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py`, drei Tage);
 die Einlöseseite nennt dieselbe Frist.
 
-## Keycloak ab 26.8: Admin-API-Scope
+## Keycloak ab 26.8.2: Admin-API-Scope
 
-Seit Keycloak 26.8 nimmt die Admin-Schnittstelle nur noch Tokens an, die für sie
+Seit Keycloak 26.8.2 nimmt die Admin-Schnittstelle nur noch Tokens an, die für sie
 ausgestellt sind: Scope `kc-admin-api` im Token und die Admin-Adresse des Realms
 (`<keycloak>/admin/realms/gutgesagt`) als Audience. Die Rolle `manage-users` allein reicht
 nicht mehr. Beides setzt der Client Scope `kc-admin-api`, den Keycloak in jedem Realm
-anlegt (beim Anlegen und bei der Migration auf 26.8), aber nur `admin-cli` und
-`security-admin-console` zuweist.
+anlegt (beim Anlegen und bei der Migration auf 26.8.2; 26.8.0 und 26.8.1 kennen ihn noch
+nicht), aber nur `admin-cli` und `security-admin-console` zuweist.
 
 Symptom, wenn er am Client `gutgesagt-einladungen` fehlt: Jeder Aufruf der Admin-Schnittstelle
 endet mit 401, und Keycloak schreibt dazu auf INFO nichts ins Log. Das trifft das Einlösen
 von Einladungen, das Löschen nie benutzter Konten (#538) und `kennungen_umstellen.py`.
-Ob ein Token passt, zeigt sein Inhalt (`aud`, `scope`), nicht die Token-Introspection:
-Die meldet ab 26 `active: false`, wenn der fragende Client nicht in der Audience steht,
-das ist kein Fehler.
+Ob ein Token passt, zeigt sein Inhalt (`aud`, `scope`), nicht die Token-Introspection.
+Die meldet `active: false`, wenn der fragende Client nicht in der Audience steht; das ist
+kein Fehler.
 
 Die Vorlage weist den Scope dem Client als *Default* zu (`defaultClientScopes`, daneben die
 übrigen Standard-Scopes, die der Client sonst vom Realm bekäme); ein neuer Realm aus der
@@ -158,8 +158,8 @@ Das Image des Semantic-Service muss diesen Stand schon enthalten; ein älteres b
 (eine Änderung an einem Beitrag während des Laufs kann verloren gehen), in dieser
 Reihenfolge.
 
-Die Root-Shell auf den Hosts ist zsh; die Blöcke unten sind Bash (Arrays, `read -p`), also
-zuerst `bash` starten. Dann das Secret des Clients `gutgesagt-einladungen` mit dieser Zeile
+Die Root-Shell auf den Hosts ist zsh, und dort heißt `read -p` etwas anderes (Coprozess);
+also zuerst `bash` starten. Dann das Secret des Clients `gutgesagt-einladungen` mit dieser Zeile
 abfragen, einzeln einfügen und das Secret eintippen; nicht zusammen mit dem nächsten Block
 einfügen, `read` nähme sonst dessen erste Zeile als Secret. So landet es auch nicht in der
 History.

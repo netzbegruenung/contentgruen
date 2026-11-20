@@ -1,9 +1,9 @@
 """
-Ab Keycloak 26.8 nimmt die Admin-Schnittstelle nur Tokens mit dem Scope kc-admin-api und
+Ab Keycloak 26.8.2 nimmt die Admin-Schnittstelle nur Tokens mit dem Scope kc-admin-api und
 der Audience <keycloak>/admin/realms/<realm> an. Beides setzt der Client Scope
 kc-admin-api, den Keycloak in jedem Realm anlegt, aber nur admin-cli und
 security-admin-console zuweist. Ohne ihn am Client gutgesagt-einladungen endet jeder
-Aufruf der Admin-Schnittstelle mit 401 (docs/KEYCLOAK_REALM.md, „Keycloak ab 26.8“).
+Aufruf der Admin-Schnittstelle mit 401 (docs/KEYCLOAK_REALM.md, „Keycloak ab 26.8.2“).
 """
 
 import json
