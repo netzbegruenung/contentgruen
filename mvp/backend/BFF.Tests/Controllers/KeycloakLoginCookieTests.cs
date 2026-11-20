@@ -143,7 +143,7 @@ public class KeycloakLoginCookieTests
     /// Spielt die Anmeldung durch und gibt die Antwort von /signin-oidc zurueck. Auch fuer
     /// SitzungNachKontoloeschungTests, die ein echtes Keycloak-Cookie brauchen.
     /// </summary>
-    internal static async Task<HttpResponseMessage> LoginAsync(string? returnUrl, string authority = Authority)
+    internal static async Task<HttpResponseMessage> LoginAsync(string? returnUrl, string authority = Authority, string? weg = null)
     {
         var (host, endpoint) = CreateHost(authority);
         using var factory = host;
@@ -153,9 +153,7 @@ public class KeycloakLoginCookieTests
             HandleCookies = false
         });
 
-        var loginPath = "/api/auth/login/keycloak"
-                        + (returnUrl is null ? "" : "?returnUrl=" + Uri.EscapeDataString(returnUrl));
-        using var challenge = await client.GetAsync(loginPath);
+        using var challenge = await client.GetAsync(LoginPath(returnUrl, weg));
         Assert.Equal(HttpStatusCode.Redirect, challenge.StatusCode);
 
         var authorize = QueryHelpers.ParseQuery(challenge.Headers.Location!.Query);
@@ -177,6 +175,30 @@ public class KeycloakLoginCookieTests
         callback.Headers.Add("Cookie", string.Join("; ", cookies));
 
         return await client.SendAsync(callback);
+    }
+
+    private static string LoginPath(string? returnUrl, string? weg)
+    {
+        var query = new List<string>();
+        if (returnUrl is not null) query.Add("returnUrl=" + Uri.EscapeDataString(returnUrl));
+        if (weg is not null) query.Add("weg=" + Uri.EscapeDataString(weg));
+        return "/api/auth/login/keycloak" + (query.Count == 0 ? "" : "?" + string.Join("&", query));
+    }
+
+    /// <summary>Nur die Challenge: die Query der Weiterleitung zum Authorization-Endpunkt.</summary>
+    private static async Task<Dictionary<string, Microsoft.Extensions.Primitives.StringValues>> AuthorizeQueryAsync(string? weg)
+    {
+        var (host, _) = CreateHost();
+        using var factory = host;
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = false
+        });
+
+        using var challenge = await client.GetAsync(LoginPath("/fangkorb", weg));
+        Assert.Equal(HttpStatusCode.Redirect, challenge.StatusCode);
+        return QueryHelpers.ParseQuery(challenge.Headers.Location!.Query);
     }
 
     internal static SetCookieHeaderValue AuthCookie(HttpResponseMessage response)
@@ -247,5 +269,51 @@ public class KeycloakLoginCookieTests
     public void LoginRedirectTarget_OnlyAcceptsPathsInsideTheFrontend(string? returnUrl, string expected)
     {
         Assert.Equal(expected, AuthController.LoginRedirectTarget(FrontendUrl + "/", returnUrl));
+    }
+
+    // Anmeldung auf /login (20.11.): "Mit Netzbegruenung anmelden" springt ueber die
+    // Anmeldeseite des Realms gleich zur Netzbegruenung; ohne weg bleibt es bei der Seite
+    // mit E-Mail und Passwort fuer Einladungskonten.
+    [Fact]
+    public async Task KeycloakChallenge_WegNetzbegruenung_SendsIdpHint()
+    {
+        var authorize = await AuthorizeQueryAsync(weg: "netzbegruenung");
+
+        Assert.Equal("netzbegruenung", authorize["kc_idp_hint"].ToString());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("Netzbegruenung")]
+    [InlineData("google")]
+    [InlineData("netzbegruenung&kc_idp_hint=google")]
+    public async Task KeycloakChallenge_WithoutKnownWeg_SendsNoIdpHint(string? weg)
+    {
+        var authorize = await AuthorizeQueryAsync(weg);
+
+        Assert.False(authorize.ContainsKey("kc_idp_hint"), $"kc_idp_hint for weg={weg ?? "null"}");
+    }
+
+    [Fact]
+    public async Task KeycloakLogin_WegNetzbegruenung_StillReturnsToReturnUrl()
+    {
+        using var response = await LoginAsync(returnUrl: "/fangkorb", weg: "netzbegruenung");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal(FrontendUrl + "/fangkorb", response.Headers.Location!.OriginalString);
+        AuthCookie(response);
+    }
+
+    [Theory]
+    [InlineData("netzbegruenung", "netzbegruenung")]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData("NETZBEGRUENUNG", null)]
+    [InlineData(" netzbegruenung", null)]
+    [InlineData("einladung", null)]
+    public void IdpHintFuer_OnlyTheFixedWeg(string? weg, string? expected)
+    {
+        Assert.Equal(expected, AuthController.IdpHintFuer(weg));
     }
 }

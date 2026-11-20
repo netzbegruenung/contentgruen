@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LoginSelectorComponent, WARTELISTE_TEXT } from './login-selector.component';
 import { ORGANISATION } from '../shared/organisation';
+import { environment } from '../../environments/environment';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -131,13 +132,54 @@ describe('LoginSelectorComponent', () => {
       expect(el.querySelector('.gutgesagt-button')).not.toBeNull();
     });
 
-    it('nennt die Anmeldung über den Realm schlicht „Anmelden“, ohne Keycloak und SSO (20.11.)', () => {
+    it('nennt die Anmeldung „Mit Netzbegrünung anmelden“, ohne Keycloak und SSO (20.11.)', () => {
       const el = modes(true, false);
       const text = el.textContent ?? '';
 
-      expect(el.querySelector('.keycloak-button .button-title')?.textContent?.trim()).toBe('Anmelden');
+      expect(el.querySelector('.keycloak-button .button-title')?.textContent?.trim()).toBe(`Mit ${ORGANISATION.name} anmelden`);
       expect(text).not.toMatch(/Keycloak|SSO|Selbstregistrierung|Beta-Account/);
       expect(text).toContain('Noch kein Konto?');
+    });
+
+    // 20.11.: ein Zwischenschritt weniger fuer Mitglieder, Einladungskonten behalten ihren Weg
+    describe('zwei Wege über den Realm', () => {
+      let fenster: { location: { href: string } };
+
+      beforeEach(() => {
+        fenster = { location: { href: '' } };
+        component.fenster = fenster as unknown as Pick<Window, 'location'>;
+        component.returnUrl = '/fangkorb';
+      });
+
+      afterEach(() => sessionStorage.removeItem('loginReturnUrl'));
+
+      it('Hauptknopf geht mit weg=netzbegruenung gleich zur Netzbegrünung', () => {
+        const el = modes(true, false);
+
+        (el.querySelector('.keycloak-button') as HTMLButtonElement).click();
+
+        expect(fenster.location.href).toBe(`${environment.baseUrl}/api/auth/login/keycloak?weg=netzbegruenung&returnUrl=%2Ffangkorb`);
+      });
+
+      it('„Mit Einladungskonto anmelden“ führt ohne weg zur Anmeldeseite des Realms', () => {
+        const el = modes(true, false);
+        const link = el.querySelector('.einladungskonto-link') as HTMLButtonElement;
+
+        expect(link.tagName).toBe('BUTTON');
+        expect(link.type).toBe('button');
+        expect(link.textContent?.trim()).toBe('Mit Einladungskonto anmelden');
+        expect(link.closest('.einladungskonto-zeile')?.textContent).toContain('Eingeladen?');
+
+        link.click();
+
+        expect(fenster.location.href).toBe(`${environment.baseUrl}/api/auth/login/keycloak?returnUrl=%2Ffangkorb`);
+      });
+
+      it('zeigt den Nebenweg nicht, wenn der Realm aus ist (Dev-Stack)', () => {
+        const el = modes(false, true);
+
+        expect(el.querySelector('.einladungskonto-link')).toBeNull();
+      });
     });
 
     it('zeigt ohne Ziel aus "Antworten" keinen Grund', () => {

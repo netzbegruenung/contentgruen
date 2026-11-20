@@ -7,7 +7,11 @@ Konto:
 
 - **Netzbegrünung-Login:** Die Netzbegrünung ist Identity Provider im Realm („Mit
   Netzbegrünung anmelden“ auf der Anmeldeseite von Keycloak). Beim ersten Anmelden legt
-  Keycloak dazu ein Konto im Realm an.
+  Keycloak dazu ein Konto im Realm an. Der Knopf „Mit Netzbegrünung anmelden“ auf `/login`
+  der App überspringt die Anmeldeseite von Keycloak: Der BFF schickt dann
+  `kc_idp_hint=netzbegruenung` mit (`/api/auth/login/keycloak?weg=netzbegruenung`), und der
+  Identity Provider Redirector im Standard-Browser-Flow leitet gleich weiter. Konten aus einer
+  Einladung nehmen dort „Mit Einladungskonto anmelden“, den Weg ohne Hint.
 - **Einladung:** Ein Admin legt im Admin-Dashboard eine Einladung an und gibt den Link weiter.
   Wer ihn öffnet, gibt eine Mail-Adresse ein; Gut gesagt legt das Konto über die
   Admin-Schnittstelle von Keycloak an, und Keycloak schickt die Mail „Passwort festlegen“.

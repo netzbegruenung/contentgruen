@@ -570,7 +570,7 @@ Die Anmeldung eines Beta-Zugangs mit Mail-Adresse und Passwort direkt an der BFF
 _Avoid_: Managed Login, Managed Auth, Dummy-Login
 
 **Netzbegrünung-Login**:
-Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Seit dem 20. November 2026 läuft sie über den eigenen Realm von Gut gesagt (#429), in dem die Netzbegrünung Identity Provider ist; die Kennung ist die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
+Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Seit dem 20. November 2026 läuft sie über den eigenen Realm von Gut gesagt (#429), in dem die Netzbegrünung Identity Provider ist; die Kennung ist die des Kontos in diesem Realm. „Mit Netzbegrünung anmelden“ auf der Login-Seite führt direkt zur Netzbegrünung, ohne die Anmeldeseite des Realms; Konten aus einer Einladung melden sich dort über „Mit Einladungskonto anmelden“ an. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
 _Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
 
 **Realm**:
