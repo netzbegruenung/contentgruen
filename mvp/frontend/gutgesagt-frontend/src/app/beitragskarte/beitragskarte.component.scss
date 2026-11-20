@@ -483,21 +483,12 @@ h4.karte-titel {
   color: var(--text-leise);
 }
 
+// Steht nur noch im Kopf der vollen Karte als kleine Zeile (Designrunde 17.11.,
+// Variante A); Farbe und Schrift setzt .karte-kopf .karte-angaben.
 .karte-eigene-leute {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 1px 8px;
-  border-radius: var(--border-radius-large);
-  // Variante D (Tanne, #357): nur Farben aus der Palette, kein Gelb - Sonne ist
-  // fuer eine andere Markierung reserviert.
-  background: var(--primaer);
-  color: white;
-  font-weight: 600;
-
-  .angabe-icon {
-    color: white;
-  }
 }
 
 // Die ganze Karte traegt die Markierung als Rand links (Klasse aus kartenKlassen).
@@ -511,18 +502,16 @@ h4.karte-titel {
   font-size: 16px;
 }
 
-// Stil als Chip (#641): sichtbar als Angabe, nicht als graue Kursivschrift.
+// Stil (#641) als Angabe in der Kopfzeile; ein Knopf ohne eigenen Kasten.
 .karte-stil {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 1px 8px;
-  border: 1px solid var(--linie);
-  border-radius: var(--border-radius-large);
-  background: var(--primaer-tint);
-  color: var(--akzent-schrift);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
   font: inherit;
-  line-height: 1.5;
 }
 
 .karte-stil--knopf {
@@ -1091,11 +1080,6 @@ h4.karte-titel {
   color: var(--akzent-schrift);
 
   .karte-eigene-leute {
-    padding: 0;
-    background: none;
-    color: inherit;
-    font-weight: inherit;
-
     .angabe-icon {
       color: inherit;
       width: 14px;
@@ -1110,10 +1094,6 @@ h4.karte-titel {
   }
 
   .karte-stil {
-    padding: 0;
-    border: 0;
-    background: none;
-    color: inherit;
     letter-spacing: inherit;
     text-transform: inherit;
     font-weight: inherit;

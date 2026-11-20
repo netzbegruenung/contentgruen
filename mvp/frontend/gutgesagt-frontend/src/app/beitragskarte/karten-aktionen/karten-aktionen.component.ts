@@ -52,7 +52,7 @@ export const KOPIERT_DAUER_MS = 4000;
  *
  * Abstimmen ist optimistisch mit Entprellung und Ruecknahme, dazu 401/403/429-Behandlung
  * (urspruenglich aus BaseResultItemComponent). Die Leiste sitzt in einer eigenen
- * Komponente, damit kompakte Karten und Einwurf-Karten, die als Ganzes antippbar sind,
+ * Komponente, damit Einwurf- und Kopf-Karten, die keine Aktionsleiste haben,
  * keine Knoepfe und keine Dienste mitschleppen.
  *
  * In der Formular-Vorschau ist die Leiste sichtbar wie in der Suche, reagiert aber

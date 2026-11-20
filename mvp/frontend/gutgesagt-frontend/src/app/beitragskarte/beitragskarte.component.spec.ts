@@ -871,7 +871,7 @@ describe('BeitragskarteComponent', () => {
 
     it('zeigt die Nutzung beschriftet in der Meta-Zeile statt als Kreis im Kopf (#599)', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 1 })));
-      expect(element('.karte-kopf .badge-nutzung')).toBeNull();
+      expect(element('.karte-kopf')!.textContent).not.toContain('×');
       expect(element('.karte-meta').textContent).toContain('1× genutzt');
     });
 
