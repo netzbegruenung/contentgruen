@@ -36,7 +36,7 @@
 
 // Vertikale Rhythmik wie auf der Ueber-Seite (Sebastian 20.11.): Abschnitt zu Abschnitt
 // --spacing-xxl, mobil --spacing-xl (je die Haelfte ueber und unter der Trennlinie),
-// Ueberschrift zu Text und Absatz zu Absatz --spacing-md
+// Ueberschrift (h2, h3) zu Text und Absatz zu Absatz --spacing-md
 .legal-section {
   padding: var(--spacing-lg) 0;
 
@@ -68,7 +68,7 @@
   h3 {
     color: var(--text);
     margin-top: var(--spacing-lg);
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
     font-size: 1.3rem;
     font-weight: 500;
 

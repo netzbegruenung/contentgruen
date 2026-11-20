@@ -54,6 +54,16 @@ function aufgeloest(adresse: string): string {
   }
 }
 
+/** Rueckfrage vor dem Leeren, wie in Kommentar und Hintergrundinfo. */
+function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
+  return {
+    titel: 'Formular zurücksetzen?',
+    text: `Bild-URL, Titel, Bildunterschrift, ${mitThemen ? 'Themen und ' : ''}Aussage werden geleert.`,
+    ja: 'Zurücksetzen',
+    nein: 'Abbrechen',
+  };
+}
+
 /**
  * Das Bild-Formular, mit denselben Bausteinen wie Kommentar, Hintergrundinfo und Post
  * (#619): Formularhilfe, "Antwort auf (optional)", Bild-URL, Titel und Unterschrift,
@@ -66,16 +76,6 @@ function aufgeloest(adresse: string): string {
  * Laesst sich das Bild in der Vorschau nicht laden, sagt es ein Hinweis am Feld. Ein
  * fremdes Bild laedt erst auf Klick (#447); der Hinweis kommt dann auch erst danach.
  */
-/** Rueckfrage vor dem Leeren, wie in Kommentar und Hintergrundinfo. */
-function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
-  return {
-    titel: 'Formular zurücksetzen?',
-    text: `Bild-URL, Titel, Bildunterschrift, ${mitThemen ? 'Themen und ' : ''}Aussage werden geleert.`,
-    ja: 'Zurücksetzen',
-    nein: 'Abbrechen',
-  };
-}
-
 @Component({
   standalone: true,
   selector: 'app-add-image',

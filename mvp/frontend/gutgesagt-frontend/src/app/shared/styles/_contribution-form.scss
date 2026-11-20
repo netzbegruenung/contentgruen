@@ -405,28 +405,17 @@
     // Kopf und Rahmen der Seite
     padding: var(--spacing-lg) 0 0;
 
-    &.connected-sections {
-      margin-top: -24px;
-
-      @include bp.mobile-only {
-        margin-top: 0;
-      }
-    }
-
     @media (max-width: 1024px) {
       grid-template-columns: 1fr;
     }
 
+    // Mobil ohne eigenen Rand und ohne eigene Flaeche: die Felder fluchten mit Kopf und
+    // Einwerfen (Rand aus --page-margin des Workflows)
     @include bp.mobile-only {
       width: 100%;
       max-width: 100%;
-      padding: 16px;
-      gap: 0;
+      padding: var(--spacing-md) 0 0;
       display: block;
-      border: none;
-      border-radius: 0;
-      background: var(--flaeche);
-      gap: var(--spacing-md);
     }
   }
 
@@ -796,7 +785,6 @@
   }
 }
 
-// Export all mixins as a single include
 // "Zuruecksetzen" neben dem Speichern-Knopf, in allen vier Formularen gleich (Sebastian 20.11.)
 @mixin zuruecksetzen-link {
   .zuruecksetzen {
@@ -823,6 +811,7 @@
   }
 }
 
+// Export all mixins as a single include
 @mixin contribution-form-styles {
   @include zuruecksetzen-link;
   @include content-type-indicator;

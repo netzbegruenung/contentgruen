@@ -517,6 +517,9 @@ mat-sidenav-content {
 /* Aussehen aus dem globalen .chip (styles.css); eine lange Aussage bricht um */
 .erkannt-chip {
   text-align: left;
+  overflow-wrap: anywhere;
+  /* Bricht die Aussage auf mehrere Zeilen, stieße die Schrift an eine volle Rundung */
+  border-radius: var(--border-radius-large);
 }
 
 /* Gruppe je Aussage: Kopf im Stil der Zeile "Antwort auf" der Karte, etwas groesser */

@@ -65,19 +65,16 @@
         <!-- Am Handy eine Zeile, seitlich scrollbar: erst die eigenen, dann Plattformen -->
         <div class="filterleiste" role="group" aria-label="Fangkorb filtern">
             <div class="filtergruppe">
-                <button type="button" class="chip filter-chip nur-meine"
-                        [class.aktiv]="filter.nurMeine" [attr.aria-pressed]="filter.nurMeine"
+                <button type="button" class="chip filter-chip nur-meine" [attr.aria-pressed]="filter.nurMeine"
                         (click)="nurMeineUmschalten()">nur meine</button>
                 <!-- Standardmaessig aus: Weggelegtes taucht sonst wieder auf -->
-                <button type="button" class="chip filter-chip verworfen"
-                        [class.aktiv]="filter.verworfenSichtbar" [attr.aria-pressed]="filter.verworfenSichtbar"
+                <button type="button" class="chip filter-chip verworfen" [attr.aria-pressed]="filter.verworfenSichtbar"
                         (click)="verworfenUmschalten()">verworfen</button>
             </div>
             <span class="filter-trenner" aria-hidden="true"></span>
             <div class="filtergruppe" role="group" aria-label="Plattformen">
                 <button *ngFor="let plattform of plattformen" type="button"
                         class="chip filter-chip plattform-filter"
-                        [class.aktiv]="plattformGewaehlt(plattform.wert)"
                         [attr.aria-pressed]="plattformGewaehlt(plattform.wert)"
                         (click)="plattformUmschalten(plattform.wert)">{{ plattform.name }}</button>
             </div>

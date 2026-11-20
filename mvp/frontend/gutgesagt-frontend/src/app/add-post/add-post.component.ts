@@ -54,6 +54,16 @@ export const AUTOR_MAX = 200;
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';
 
+/** Rueckfrage vor dem Leeren, wie in Kommentar und Hintergrundinfo. */
+function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
+  return {
+    titel: 'Formular zurücksetzen?',
+    text: `Link, Plattform, Gepostet von, Titel, Text, ${mitThemen ? 'Themen und ' : ''}Aussage werden geleert.`,
+    ja: 'Zurücksetzen',
+    nein: 'Abbrechen',
+  };
+}
+
 /**
  * Das Post-Formular: Link, Plattform, wer ihn gepostet hat, Titel und in eigenen
  * Worten, worum es geht - daneben (am Handy darunter) die Vorschau.
@@ -65,16 +75,6 @@ export const SPEICHERN_FEHLGESCHLAGEN =
  * nicht. Nach dem Speichern meldet `success` ID, Aussage und ob verknuepft wurde;
  * wohin es weitergeht, entscheidet der Workflow.
  */
-/** Rueckfrage vor dem Leeren, wie in Kommentar und Hintergrundinfo. */
-function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
-  return {
-    titel: 'Formular zurücksetzen?',
-    text: `Link, Plattform, Gepostet von, Titel, Text, ${mitThemen ? 'Themen und ' : ''}Aussage werden geleert.`,
-    ja: 'Zurücksetzen',
-    nein: 'Abbrechen',
-  };
-}
-
 @Component({
   standalone: true,
   selector: 'app-add-post',

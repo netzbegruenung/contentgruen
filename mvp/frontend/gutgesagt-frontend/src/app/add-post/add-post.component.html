@@ -89,7 +89,7 @@
                     </button>
                     <!-- Zweitaktion neben dem Hauptknopf wie in Kommentar und Hintergrundinfo -->
                     <button type="button" class="zuruecksetzen" (click)="zuruecksetzen()"
-                            [disabled]="speichert">Zurücksetzen</button>
+                            [disabled]="speichert || !!responseId">Zurücksetzen</button>
                 </app-formular-leiste>
             </form>
         </div>
