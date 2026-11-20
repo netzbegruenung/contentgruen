@@ -137,7 +137,4 @@ export class VotingService {
       })
     );
   }
-
-  // Legacy method - kept for backward compatibility
-  // Use removeLike() or removeDislike() instead
 }

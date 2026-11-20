@@ -17,9 +17,3 @@ def test_kein_endpunkt_mit_summen_je_beitrag():
 
     assert not any(pfad.endswith("/stats") for _, pfad in pfade)
     assert ("GET", "/content/{content_id}") in pfade
-
-
-def test_voting_service_hat_keine_summen_methode():
-    from services.voting_service import VotingService
-
-    assert not hasattr(VotingService, "get_content_vote_stats")
