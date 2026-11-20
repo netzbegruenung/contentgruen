@@ -8,7 +8,9 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  Injector,
   SimpleChanges,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Clipboard } from '@angular/cdk/clipboard';
@@ -36,6 +38,8 @@ import { TeilenService, hatGeteilt } from '../../shared/teilen.service';
 import { KOPIERT, KOPIERT_MIT_LUECKE, hatLuecke } from '../../shared/vorlagen-luecke';
 import { platzhalterDialogOeffnen } from './platzhalter-dialog.component';
 import { GEPOSTET_FRAGE_MS, JA_GEPOSTET, KOPIERT_GEPOSTET_FRAGE, gepostetDank } from './gepostet-texte';
+import { MeilensteinHinweisService } from '../../meine-beitraege/meilenstein-hinweis.service';
+import { stimmDank } from './stimm-dank-texte';
 
 /**
  * So lange steht „Kopiert“: Mit 1,5 s war es beim Wechsel in die andere App schon weg
@@ -111,6 +115,11 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() nichtHilfreich: number | null = null;
   /** Aus am eigenen Beitrag: Die Zaehler zeigen nur Stimmen anderer (#427). */
   @Input() eigeneStimmeImZaehler = true;
+  /**
+   * Ob Stimmen an diesem Beitrag schon in die Güte zählen (`guete_stimmen_zaehlen`), wie die
+   * Karte es zuletzt geladen hat; null = unbekannt. Nur für den Sofort-Dank.
+   */
+  @Input() stimmenZaehlen: boolean | null = null;
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();
@@ -119,6 +128,14 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
 
   isLiked = false;
   isDisliked = false;
+  /**
+   * Der Sofort-Dank unter den Knöpfen nach einer gesetzten Stimme, nur für die Person
+   * selbst; leer, solange nichts zu sagen ist. Der Bereich steht immer im DOM
+   * (role="status"), damit Screenreader den Text beim Erscheinen vorlesen. Er bleibt
+   * stehen, bis die Stimme zurückgenommen wird: nichts verschwindet, bevor es gelesen ist.
+   */
+  stimmDankText = '';
+  private injector = inject(Injector);
   isVoting = false;
   copyAnimationActive = false;
 
@@ -430,6 +447,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
 
     const contentId = this.inhaltId;
     this.isVoting = true;
+    // Stand vor der Stimme: Er entscheidet, ob die Person unter den Ersten ist.
+    const dank = ziel === null ? '' : stimmDank(this.stimmenZaehlen, !this.eigeneStimmeImZaehler);
 
     const anfrage =
       ziel === 'like'
@@ -445,6 +464,12 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       next: () => {
         this.ausgang = undefined;
         this.isVoting = false;
+        this.stimmDankText = dank;
+        if (ziel !== null) {
+          // Ein Meilenstein wie „Erste 10 Bewertungen“ wird direkt nach der Stimme genannt.
+          // Den Dienst erst hier holen: Karten ohne Abstimmen brauchen ihn nicht.
+          this.injector.get(MeilensteinHinweisService).pruefen();
+        }
         gemeldet.emit(contentId);
         this.cdr.markForCheck();
       },

@@ -64,3 +64,32 @@ def test_punkte_berechnen_gesamt_ist_summe_der_stufen():
     stand = punkte_berechnen(daten, GEWICHTE)
 
     assert stand.gesamt == 15 + 1 + 4
+
+
+def test_punkte_berechnen_bewerten_gedeckelt_je_tag_neben_dem_tun():
+    gewichte = Punktegewichte(
+        nutzung=10,
+        zustimmung=5,
+        beitrag=1,
+        einwurf_ausformuliert=1,
+        deckel_tun_je_tag=3,
+        quest=4,
+        deckel_quests_je_tag=8,
+        bewertung=1,
+        deckel_bewertungen_je_tag=3,
+    )
+    daten = Wirkungsdaten(
+        beitraege_je_tag={MONTAG: 5},
+        bewertungen_je_tag={MONTAG: 100, DIENSTAG: 1},
+    )
+
+    stand = punkte_berechnen(daten, gewichte)
+
+    assert stand.tun == 3 + 3 + 1
+    assert stand.wirkung == 0
+
+
+def test_punkte_berechnen_ohne_gewicht_fuers_bewerten_keine_punkte():
+    stand = punkte_berechnen(Wirkungsdaten(bewertungen_je_tag={MONTAG: 5}), GEWICHTE)
+
+    assert stand.gesamt == 0

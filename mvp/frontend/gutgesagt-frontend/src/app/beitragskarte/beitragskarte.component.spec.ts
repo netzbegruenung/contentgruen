@@ -17,6 +17,7 @@ import { Einwurf } from '../services/einwurf.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
 import { Anfragen, bildFertig, fremdeAdresse } from '../testing/anfragen';
 import { provideRouter } from '@angular/router';
+import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
 
 /**
  * Portiert aus den Specs der vier alten Karten (commentary-, generictext- und
@@ -106,6 +107,8 @@ describe('BeitragskarteComponent', () => {
     await TestBed.configureTestingModule({
       imports: [BeitragskarteComponent, NoopAnimationsModule],
       providers: [
+        // Nach einer Stimme fragt die Leiste nach neuen Meilensteinen; hier ohne Wirkung.
+        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['pruefen']) },
         { provide: VotingService, useValue: votingService },
         { provide: MatSnackBar, useValue: snackBar },
         { provide: AuthService, useValue: authServiceSpy },

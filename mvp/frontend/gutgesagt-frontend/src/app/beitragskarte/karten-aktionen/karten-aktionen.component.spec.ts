@@ -15,6 +15,13 @@ import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { KOPIERT } from '../../shared/vorlagen-luecke';
 import { TEILEN_LINK_KOPIERT, TEILEN_NAVIGATOR, TeilenNavigator } from '../../shared/teilen.service';
+import { MeilensteinHinweisService } from '../../meine-beitraege/meilenstein-hinweis.service';
+import {
+  DANK_EIGENER_BEITRAG,
+  DANK_SCHLICHT,
+  DANK_UNTER_DEN_ERSTEN,
+  DANK_ZAEHLT,
+} from './stimm-dank-texte';
 
 /**
  * Portiert aus commentary-result-item.component.voting.spec.ts; statt eines
@@ -29,6 +36,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
   let fixture: ComponentFixture<KartenAktionenComponent>;
   let votingService: jasmine.SpyObj<VotingService>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let meilensteinHinweis: jasmine.SpyObj<MeilensteinHinweisService>;
   /** Das Teilen-Menue des Geraets; ohne share wie am Desktop ohne Web Share API. */
   let nav: TeilenNavigator;
 
@@ -66,12 +74,14 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
         { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) },
         { provide: TEILEN_NAVIGATOR, useFactory: () => nav },
+        { provide: MeilensteinHinweisService, useValue: jasmine.createSpyObj('MeilensteinHinweisService', ['pruefen']) },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
     fixture = TestBed.createComponent(KartenAktionenComponent);
     component = fixture.componentInstance;
+    meilensteinHinweis = TestBed.inject(MeilensteinHinweisService) as jasmine.SpyObj<MeilensteinHinweisService>;
     votingService = TestBed.inject(VotingService) as jasmine.SpyObj<VotingService>;
     snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
 
@@ -79,6 +89,97 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     component.typ = 'commentary';
     component.kopierText = 'Test text';
     component.ngOnInit();
+  });
+
+  describe('Sofort-Dank (20.11.2026)', () => {
+    const dankText = (): string =>
+      (fixture.nativeElement.querySelector('.stimm-dank') as HTMLElement).textContent?.trim() ?? '';
+
+    it('steht als leerer Statusbereich schon vor der Stimme im DOM (aria-live)', () => {
+      fixture.detectChanges();
+      const bereich = fixture.nativeElement.querySelector('.stimm-dank') as HTMLElement;
+
+      expect(bereich.getAttribute('role')).toBe('status');
+      expect(bereich.getAttribute('aria-live')).toBe('polite');
+      expect(dankText()).toBe('');
+    });
+
+    it('laesst das Ziel des Rundgangs (.stimmen) bei den Knoepfen, der Dank steht darunter', () => {
+      fixture.detectChanges();
+      const stimmen = fixture.nativeElement.querySelector('.stimmen') as HTMLElement;
+
+      expect(stimmen).not.toBeNull();
+      expect(stimmen.querySelector('.stimm-dank')).toBeNull();
+    });
+
+    it('sagt unter der Schwelle, dass die Person unter den Ersten ist', fakeAsync(() => {
+      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
+      component.stimmenZaehlen = false;
+
+      component.toggleLike();
+      tick(50);
+      fixture.detectChanges();
+
+      expect(dankText()).toBe(DANK_UNTER_DEN_ERSTEN);
+      expect(DANK_UNTER_DEN_ERSTEN).toContain('mindestens 3');
+    }));
+
+    it('dankt ab der Schwelle kurz, auch fuer „Nicht hilfreich“', fakeAsync(() => {
+      votingService.setDislike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'dislike', message: '' }));
+      component.stimmenZaehlen = true;
+
+      component.toggleDislike();
+      tick(50);
+      fixture.detectChanges();
+
+      expect(dankText()).toBe(DANK_ZAEHLT);
+    }));
+
+    it('dankt ohne Angabe zur Guete schlicht', fakeAsync(() => {
+      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
+
+      component.toggleLike();
+      tick(50);
+
+      expect(component.stimmDankText).toBe(DANK_SCHLICHT);
+    }));
+
+    it('sagt am eigenen Beitrag, dass die Stimme nicht in die Guete zaehlt', fakeAsync(() => {
+      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
+      component.stimmenZaehlen = false;
+      component.eigeneStimmeImZaehler = false;
+
+      component.toggleLike();
+      tick(50);
+
+      expect(component.stimmDankText).toBe(DANK_EIGENER_BEITRAG);
+    }));
+
+    it('raeumt den Dank beim Zuruecknehmen weg und prueft dann keinen Meilenstein', fakeAsync(() => {
+      votingService.setLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: 'like', message: '' }));
+      votingService.removeLike.and.returnValue(of({ content_id: INHALT_ID, vote_type: null, message: '' }));
+      component.stimmenZaehlen = false;
+
+      component.toggleLike();
+      tick(50);
+      expect(meilensteinHinweis.pruefen).toHaveBeenCalledTimes(1);
+      component.toggleLike();
+      tick(50);
+
+      expect(component.stimmDankText).toBe('');
+      expect(meilensteinHinweis.pruefen).toHaveBeenCalledTimes(1);
+    }));
+
+    it('zeigt bei einem Fehler keinen Dank', fakeAsync(() => {
+      votingService.setLike.and.returnValue(throwError(() => ({ status: 500 })));
+      component.stimmenZaehlen = false;
+
+      component.toggleLike();
+      tick(50);
+
+      expect(component.stimmDankText).toBe('');
+      expect(meilensteinHinweis.pruefen).not.toHaveBeenCalled();
+    }));
   });
 
   describe('Vote Initialization', () => {

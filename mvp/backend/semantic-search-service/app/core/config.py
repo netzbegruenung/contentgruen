@@ -297,6 +297,11 @@ class Settings(BaseSettings):
     punkte_deckel_tun_je_tag: int = Field(default=3, ge=0)
     punkte_quest: int = Field(default=4, ge=0)
     punkte_deckel_quests_je_tag: int = Field(default=8, ge=0)
+    # Bewerten (Entscheidung Maintainer 20.11.2026): ein kleiner Punkt je Stimme zu
+    # einem fremden Beitrag, je Tag eigens gedeckelt gegen Massenklicks und getrennt vom
+    # Deckel fuers Tun, damit Abstimmen das Schreiben nicht verdraengt.
+    punkte_bewertung: int = Field(default=1, ge=0)
+    punkte_deckel_bewertungen_je_tag: int = Field(default=3, ge=0)
 
     # Guete eines Beitrags (#427, domain/guete.py): Stimmen anderer zaehlen erst ab
     # so vielen verschiedenen Stimmenden (DSFA, Massnahme M5), ihr Gewicht waechst mit

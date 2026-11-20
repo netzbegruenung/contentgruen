@@ -81,7 +81,7 @@ Für den Grundbetrieb ohne Punkte trifft sicher nur WP-248-Kriterium 4 (vertraul
 |---|---|---|
 | **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:489-490`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete. Vorschlag zusätzlich: keine Linkvorschau für Ranglisten und eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | geringes Risiko (8.4) |
 | **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Mit einem Schlüssel aus der Konfiguration könnte, wer Datenbank und Schlüssel hat, für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | **Umgesetzt** (PR #476): Entdoppelung über Prüfwerte statt Protokoll, und beide Schlüssel liegen nur im Speicher, nach dem Muster des Tagesschlüssels der Besucher (`ss/utils/besucher_pseudonym.py:45-73`): Prüfwerte mit einem eigenen Tagesschlüssel, Paar-Prüfwerte mit einem Fensterschlüssel, der je 7 Tage wechselt und den vorigen einen Block lang zum Vergleich behält (`ss/services/entdoppelung.py:10-30,54-86` (#476)). Kein Bezug mehr zu `SEMANTIC_SEARCH_ACTOR_HASH_SECRET`. Nach einem Neustart beginnt ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | geringes Risiko (8.4) |
-| **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug, keine Punkte fürs Bewerten (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md:9-19`). | Risiko (mittlere Klasse, 8.4); in der Acht-Wochen-Bilanz ansehen |
+| **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug; Bewerten bringt seit 20.11.2026 nur einen kleinen, je Tag eigens gedeckelten Punkt je Stimme, unabhängig von der Richtung (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md`, Ergänzung 20.11.2026). | Risiko (mittlere Klasse, 8.4); in der Acht-Wochen-Bilanz ansehen |
 
 Eingestuft nach DSK-Kurzpapier Nr. 18 (Methode in 8.4): Mit diesen Maßnahmen bleibt für die
 Punkte selbst höchstens die mittlere Klasse „Risiko“ (Risiko 3). Ob die Aufsichtsbehörde
@@ -178,6 +178,9 @@ ein Admin ihn unter „Admin“, „Schalter“ einschaltet (`docs/DEPLOYMENT.md
 Offen:
 
 - DSFA übernommen (Abschnitt 6).
+- Datenschutzerklärung, Abschnitt „Punkte“: nennt Punkte fürs Bewerten, die Wegmarke „Erste 10
+  Bewertungen“ und den Hinweis nach einer Stimme (eigenes Ticket, Rechtstexte; V11 Nachtrag
+  20.11.2026).
 - Für die Abzeichen am Anzeigenamen zusätzlich (zweiter Schalter `abzeichen_sichtbar_aktiv`):
   Frage 6 beantwortet, Wortlaut der Frage nach der Sichtbarkeit und Absatz der
   Datenschutzerklärung freigegeben (8.2, V22).
@@ -607,6 +610,24 @@ Empfänger und Ort“.
   ohne deren Abfragen. Ob ein Einwurf der erste ist, liest die Karte nach dem
   Einwurf aus der Zahl der eigenen Einwürfe (`getOwnRawInputs`, vorhanden).
   Die Erklärung nennt die neue Liste unter „Punkte“.
+- **Punkte fürs Bewerten und Wegmarke „Erste 10 Bewertungen“ (Entscheidung Maintainer
+  20.11.2026, gebaut, ausgeschaltet):** Je eigener Stimme zu einem fremden Beitrag ein Punkt
+  fürs Tun, je Tag höchstens drei (`punkte_bewertung`, `punkte_deckel_bewertungen_je_tag`), und
+  die Wegmarke ab zehn solchen Stimmen. Gelesen werden nur die eigenen Zeilen der Person aus V5
+  (Beitrag und Tag der letzten Änderung, ohne die Richtung auszuwerten); Stimmen zu den eigenen
+  sichtbaren Beiträgen zählen nicht. Keine neue Speicherung, nichts für andere sichtbar, nur mit
+  Einwilligung „Punkte und Meilensteine“, deren Wortlaut „aus meiner Mitwirkung“ das Bewerten
+  umfasst. Neu ist die Zählung der eigenen Stimmen je Tag; sie sieht nur die Person, und sie
+  verrät ihr nichts, was sie nicht selbst getan hat. Der Hinweis auf einen neu erreichten
+  Meilenstein kommt jetzt auch nach einer Stimme. Die Erklärung nennt das noch nicht: vor dem
+  Einschalten nachziehen (Abschnitt 7).
+- **Sofort-Dank nach einer Stimme (20.11.2026):** Die Karte dankt der abstimmenden Person unter
+  den Knöpfen; liegt der Beitrag noch unter der Mindestzahl (M5), sagt der Dank, dass die Person
+  unter den Ersten ist und ihre Stimme ab drei Stimmenden zählt. Daraus erfährt sie, dass weniger
+  als drei andere abgestimmt haben, nicht wie. Das ist nicht neu: Jede Antwort trägt schon
+  `guete_stimmen_zaehlen` an jedem Beitrag, für alle, die ihn sehen (V5), und die Zähler fehlen
+  darunter. Der Dank nimmt den Stand, den die Karte schon hat; der Dienst liefert dafür nichts
+  Neues und keinen Zähler. M5 bleibt unverändert.
 
 #### V12 Meldungen
 

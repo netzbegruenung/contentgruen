@@ -77,6 +77,30 @@ class TestPunkteQuellen:
         assert repo.zustimmungen([eins, zwei], {"kim-1", "start-9"}) == 3
         assert repo.zustimmungen([], {"kim-1"}) == 0
 
+    def test_bewertungen_je_tag_ohne_eigene_beitraege(self, datenbank):  # noqa: F811
+        repo = PunkteRepository(datenbank)
+        eigener, fremd, fremd2, fremd3 = (uuid.uuid4() for _ in range(4))
+        _stimme(datenbank, "kim-1", eigener, "like")
+        _stimme(datenbank, "kim-1", fremd, "like")
+        _stimme(datenbank, "kim-1", fremd2, "dislike")
+        _stimme(datenbank, "kim-1", fremd3, "like")
+        _stimme(datenbank, "bo-2", fremd, "like")
+        with datenbank.get_session() as s:
+            s.execute(
+                text(
+                    "UPDATE votes SET created = '2026-11-18 23:30:00'"
+                    " WHERE user_id = 'kim-1' AND content_id = :c"
+                ),
+                {"c": str(fremd3)},
+            )
+
+        je_tag = repo.bewertungen_je_tag("kim-1", [eigener])
+
+        assert je_tag.pop(date(2026, 11, 18)) == 1
+        assert list(je_tag.values()) == [2]
+        assert sum(repo.bewertungen_je_tag("kim-1", []).values()) == 4
+        assert repo.bewertungen_je_tag("niemand", [eigener]) == {}
+
     def test_einwuerfe_ausformuliert_je_tag_der_ersten_verknuepfung(
         self, datenbank  # noqa: F811
     ):

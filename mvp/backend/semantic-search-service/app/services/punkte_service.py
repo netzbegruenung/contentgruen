@@ -12,7 +12,11 @@ Woher die drei Stufen kommen:
   die von Startkonten zaehlen nicht; Ablehnung zieht nichts ab.
 - Tun: je sichtbarem Beitrag, der mindestens BEITRAG_WARTEZEIT alt ist, und je
   Einwurf der Person, der ebenso lange in einem nicht gesperrten Beitrag
-  ausformuliert ist; je Tag gedeckelt.
+  ausformuliert ist; je Tag gedeckelt. Dazu je eigener Stimme zu einem fremden
+  Beitrag ein kleiner Punkt, mit eigenem Tagesdeckel (Entscheidung Maintainer
+  20.11.2026): Stimmen zu den eigenen sichtbaren Beitraegen zaehlen nicht, sonst liesse
+  sich der Deckel am eigenen Bestand erklicken. Gezaehlt wird der Tag, an dem die
+  Stimme zuletzt gesetzt wurde; eine zurueckgenommene Stimme faellt weg.
 - Quests: ANNAHME (#352): gibt es noch nicht; die Stufe bleibt 0, bis sie kommen.
   Gewicht und Deckel stehen schon in der Konfiguration, weil ADR 0004 alle drei
   Stufen dort verlangt.
@@ -71,6 +75,10 @@ class StimmenUndEinwuerfe(Protocol):
         self, user_id: str, bis: datetime
     ) -> Dict[date, int]: ...
 
+    def bewertungen_je_tag(
+        self, user_id: str, ohne_beitraege: List[Any]
+    ) -> Dict[date, int]: ...
+
 
 def gewichte_aus(settings: Settings) -> Punktegewichte:
     return Punktegewichte(
@@ -81,6 +89,8 @@ def gewichte_aus(settings: Settings) -> Punktegewichte:
         deckel_tun_je_tag=settings.punkte_deckel_tun_je_tag,
         quest=settings.punkte_quest,
         deckel_quests_je_tag=settings.punkte_deckel_quests_je_tag,
+        bewertung=settings.punkte_bewertung,
+        deckel_bewertungen_je_tag=settings.punkte_deckel_bewertungen_je_tag,
     )
 
 
@@ -138,6 +148,9 @@ class PunkteService:
             user_id,
             bis=grenze,
         )
+        bewertungen = await asyncio.to_thread(
+            self._stimmen_und_einwuerfe.bewertungen_je_tag, user_id, ids
+        )
         stehende = [
             b.created.astimezone(timezone.utc).date()
             for b in beitraege
@@ -148,5 +161,6 @@ class PunkteService:
             zustimmungen=zustimmungen,
             beitraege_je_tag=_je_tag(stehende),
             einwuerfe_ausformuliert_je_tag=einwuerfe,
+            bewertungen_je_tag=bewertungen,
         )
         return punkte_berechnen(daten, gewichte)

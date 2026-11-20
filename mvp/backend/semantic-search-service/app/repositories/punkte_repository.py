@@ -1,6 +1,6 @@
 """
 Abfragen fuer die Punkte (#352) und die Meilensteine (#351): Zustimmung anderer zu
-Beitraegen und ausformulierte Einwuerfe. Was daraus wird, steht in
+Beitraegen, eigene Stimmen und ausformulierte Einwuerfe. Was daraus wird, steht in
 services/punkte_service.py und services/meilensteine_service.py.
 """
 
@@ -8,7 +8,7 @@ import uuid
 from datetime import date, datetime
 from typing import Dict, List, Optional, Set
 
-from sqlalchemy import bindparam, func, select
+from sqlalchemy import bindparam, func, select, text
 
 from infrastructure.database.connection import AppDatabase, get_app_database
 from domain.models.einwurf import EinwurfStatus
@@ -35,6 +35,31 @@ class PunkteRepository:
         abfrage = abfrage.bindparams(bindparam("ids", expanding=True))
         with self.db.get_session() as session:
             return session.execute(abfrage, werte).scalar_one()
+
+    def bewertungen_je_tag(
+        self, user_id: str, ohne_beitraege: List[uuid.UUID]
+    ) -> Dict[date, int]:
+        """
+        Die eigenen Stimmen der Person, gezaehlt je UTC-Tag ihrer letzten Aenderung
+        (``created`` setzt vote_repository.upsert_vote bei jedem Setzen neu, in UTC).
+        Stimmen zu ``ohne_beitraege`` (den eigenen sichtbaren Beitraegen) zaehlen nicht.
+        Eine zurueckgenommene Stimme hat keine Zeile mehr und faellt damit weg.
+        """
+        sql = (
+            "SELECT date(created) AS tag, count(*) AS anzahl FROM votes"
+            " WHERE user_id = :user_id"
+        )
+        werte: Dict = {"user_id": user_id}
+        if ohne_beitraege:
+            sql += " AND NOT (content_id IN :ohne)"
+            werte["ohne"] = [str(i) for i in ohne_beitraege]
+        abfrage = text(sql + " GROUP BY date(created)")
+        if ohne_beitraege:
+            abfrage = abfrage.bindparams(bindparam("ohne", expanding=True))
+        with self.db.get_session() as session:
+            return {
+                zeile.tag: zeile.anzahl for zeile in session.execute(abfrage, werte)
+            }
 
     def einwuerfe_ausformuliert_je_tag(
         self, user_id: str, bis: datetime

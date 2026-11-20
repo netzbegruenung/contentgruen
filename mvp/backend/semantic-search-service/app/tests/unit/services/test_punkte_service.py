@@ -28,12 +28,16 @@ def _beitrag(alter_tage: float) -> SimpleNamespace:
 class _Quellen:
     """Steht fuer Qdrant und PostgreSQL: liefert, was ihm gegeben wird."""
 
-    def __init__(self, beitraege, nutzung=None, zustimmungen=0, einwuerfe=None):
+    def __init__(
+        self, beitraege, nutzung=None, zustimmungen=0, einwuerfe=None, bewertungen=None
+    ):
         self.beitraege = beitraege
         self.nutzung = nutzung or {}
         self.zustimmungen_zahl = zustimmungen
         self.einwuerfe = einwuerfe or {}
+        self.bewertungen = bewertungen or {}
         self.ausgenommen = None
+        self.bewertungen_ohne = None
 
     async def sichtbare_beitraege(self, user_id: str) -> List:
         return self.beitraege
@@ -48,6 +52,10 @@ class _Quellen:
     def einwuerfe_ausformuliert_je_tag(self, user_id: str, bis) -> Dict[date, int]:
         self.einwuerfe_bis = bis
         return self.einwuerfe
+
+    def bewertungen_je_tag(self, user_id: str, ohne_beitraege) -> Dict[date, int]:
+        self.bewertungen_ohne = list(ohne_beitraege)
+        return self.bewertungen
 
 
 def _service(
@@ -108,6 +116,42 @@ async def test_punkte_tun_mit_ausformulierten_einwuerfen_je_tag_gedeckelt():
     assert stand.tun == 3 + 1
     # Einwuerfe warten wie Beitraege drei Tage.
     assert quellen.einwuerfe_bis == JETZT - timedelta(days=3)
+
+
+async def test_punkte_bewerten_je_tag_eigens_gedeckelt():
+    """
+    Ein Punkt je Stimme, je Tag hoechstens drei (Entscheidung 20.11.2026), getrennt
+    vom Deckel fuers Tun: Wer an einem Tag schreibt und abstimmt, bekommt beides.
+    """
+    tag = (JETZT - timedelta(days=5)).date()
+    quellen = _Quellen(
+        [_beitrag(5), _beitrag(5), _beitrag(5)],
+        bewertungen={tag: 40, tag - timedelta(1): 2},
+    )
+
+    stand = await _service(
+        quellen, punkte_bewertung=1, punkte_deckel_bewertungen_je_tag=3
+    ).punkte(KIM)
+
+    assert stand.tun == 3 + 3 + 2
+    assert stand.wirkung == 0
+
+
+async def test_punkte_bewerten_ohne_stimmen_zu_eigenen_beitraegen():
+    eigener = _beitrag(1)
+    quellen = _Quellen([eigener])
+
+    await _service(quellen).punkte(KIM)
+
+    assert quellen.bewertungen_ohne == [eigener.id]
+
+
+async def test_punkte_bewerten_ausgeschaltet_mit_null():
+    quellen = _Quellen([], bewertungen={JETZT.date(): 5})
+
+    stand = await _service(quellen, punkte_bewertung=0).punkte(KIM)
+
+    assert stand.gesamt == 0
 
 
 async def test_punkte_startkonto_sammelt_keine():
@@ -183,6 +227,7 @@ async def test_get_punkte_service_liest_nur_sichtbare_beitraege_der_person():
         nutzung.return_value.get_nutzung_entdoppelt_batch.return_value = {}
         stimmen.return_value.zustimmungen.return_value = 0
         stimmen.return_value.einwuerfe_ausformuliert_je_tag.return_value = {}
+        stimmen.return_value.bewertungen_je_tag.return_value = {}
 
         stand = await get_punkte_service(Settings()).punkte(KIM)
 

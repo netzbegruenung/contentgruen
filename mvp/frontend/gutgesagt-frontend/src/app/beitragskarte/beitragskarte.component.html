@@ -315,6 +315,7 @@
                 [hilfreich]="guete?.hilfreich ?? null"
                 [nichtHilfreich]="guete?.nichtHilfreich ?? null"
                 [eigeneStimmeImZaehler]="!istEigen"
+                [stimmenZaehlen]="guete ? guete.stimmenZaehlen : null"
                 (likeToggled)="gueteNachladen()"
                 (dislikeToggled)="gueteNachladen()"
                 (kopiert)="nutzungHochzaehlen()">

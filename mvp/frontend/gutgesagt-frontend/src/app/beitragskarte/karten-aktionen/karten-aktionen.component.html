@@ -97,3 +97,7 @@
         </button>
     </mat-menu>
 </div>
+
+<!-- Sofort-Dank nach einer Stimme (Entscheidung 20.11.2026), nur fuer die abstimmende Person.
+     Der Bereich steht immer da (aria-live braucht ihn vor dem Text); leer ohne Hoehe. -->
+<p class="stimm-dank" role="status" aria-live="polite" *ngIf="abstimmenSichtbar">{{ stimmDankText }}</p>
