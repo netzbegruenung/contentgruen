@@ -225,6 +225,14 @@ export const routes: Routes = [
         data: { parent: '/login' }
     },
     {
+        // Ziel des Links in der Mail "Passwort festlegen": startet gleich die Anmeldung.
+        // Die volle Adresse steht in den Valid Redirect URIs des Clients (ANMELDEN_PFAD in
+        // infrastructure/keycloak_konten.py).
+        path: 'einladung/anmelden',
+        loadComponent: () => import('./einladung/einladung-anmelden.component').then(m => m.EinladungAnmeldenComponent),
+        data: { parent: '/search' }
+    },
+    {
         // Einladung einloesen (#429); der Code steht hinter #, siehe einladungslink.
         path: 'einladung',
         loadComponent: () => import('./einladung/einladung.component').then(m => m.EinladungComponent),

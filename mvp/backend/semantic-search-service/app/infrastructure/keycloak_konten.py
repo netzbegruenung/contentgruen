@@ -7,12 +7,12 @@ Dienstkonto nur die Rolle manage-users aus realm-management hat; einen engeren
 Zuschnitt fuer "Konten anlegen" bietet Keycloak nicht. Welche Schritte das
 Einrichten braucht: docs/KEYCLOAK_REALM.md.
 
-Was hinausgeht, ist nur die Mail-Adresse. Den Code der Einladung erfaehrt Keycloak
+Was hinausgeht, sind Mail-Adresse und Name. Den Code der Einladung erfaehrt Keycloak
 nicht (services/einladung_service.py).
 """
 
 from datetime import datetime
-from typing import Dict, Iterable, List, Mapping, Optional
+from typing import Callable, Dict, Iterable, List, Mapping, Optional
 
 import httpx
 
@@ -31,8 +31,21 @@ logger = get_logger(__name__)
 # docs/KEYCLOAK_REALM.md). Keycloak weist ein Konto mit einer unbekannten
 # Pflichtaktion ab; dann schlaegt jedes Einloesen fehl.
 PFLICHTAKTIONEN = ["TERMS_AND_CONDITIONS"]
-# Was der Link in der Mail tut. Keycloak bestaetigt dabei auch die Mail-Adresse.
-MAIL_AKTIONEN = ["UPDATE_PASSWORD"]
+# Was der Link in der Mail tut. Mit VERIFY_EMAIL setzt Keycloak die Adresse auf
+# bestaetigt, sobald jemand den Link oeffnet und bestaetigt (26.8.2,
+# ExecuteActionsActionTokenHandler.handleToken); ohne sie schickte Keycloak beim ersten
+# Anmelden eine zweite Mail "E-Mail verifizieren", weil der Realm bestaetigte Adressen
+# verlangt. Doppelt gefragt wird nicht: Die Reihenfolge der Schritte legt Keycloak nach
+# den Prioritaeten im Realm fest, und VERIFY_EMAIL zeigt keine Seite, wenn die Adresse
+# schon bestaetigt ist. Die Reihenfolge hier ist die, in der Mail und Bestaetigungsseite
+# die Schritte nennen.
+MAIL_AKTIONEN = ["UPDATE_PASSWORD", "VERIFY_EMAIL"]
+# Wohin der Link nach dem letzten Schritt fuehrt, unter der App-Adresse: Die Seite
+# startet gleich die Anmeldung (Frontend, einladung/einladung-anmelden.component.ts).
+# Keycloak beendet den Link ohne Anmeldung; ohne diese Seite stuende die Person
+# abgemeldet auf der Startseite. Die Adresse muss genau so unter den Valid Redirect URIs
+# des Clients stehen, sonst weist Keycloak die Mail ab (_mail_ausloesen).
+ANMELDEN_PFAD = "einladung/anmelden"
 ZEITLIMIT_SEKUNDEN = 10.0
 KONTEN_JE_SEITE = 100
 
@@ -79,26 +92,33 @@ class KeycloakKonten:
     def _konto_id(angelegt: httpx.Response) -> str:
         return angelegt.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
 
-    def konto_anlegen(self, email: str) -> KontoErgebnis:
+    def konto_anlegen(
+        self,
+        email: str,
+        vorname: Optional[str] = None,
+        nachname: Optional[str] = None,
+    ) -> KontoErgebnis:
         admin = self._admin
+        konto = _konto(email, email_bestaetigt=False)
+        # Beide oder keiner, wie bei _konto_mit_namen. Ohne Namen fragt Keycloak beim
+        # ersten Anmelden danach, weil das Benutzerprofil sie verlangt.
+        if vorname and nachname:
+            konto["firstName"] = vorname
+            konto["lastName"] = nachname
         with self._client() as http:
             kopf = {"Authorization": f"Bearer {self._token(http)}"}
-            antwort = http.post(
-                admin,
-                headers=kopf,
-                json=_konto(email, email_bestaetigt=False),
-            )
+            antwort = http.post(admin, headers=kopf, json=konto)
             if antwort.status_code == 409:
                 return KontoErgebnis.VORHANDEN
             antwort.raise_for_status()
             konto_id = self._konto_id(antwort)
 
             try:
-                http.put(
-                    f"{admin}/{konto_id}/execute-actions-email",
-                    headers=kopf,
-                    params=self._mail_parameter(),
-                    json=MAIL_AKTIONEN,
+                self._mail_ausloesen(
+                    lambda methode, url, **kw: http.request(
+                        methode, url, headers=kopf, **kw
+                    ),
+                    konto_id,
                 ).raise_for_status()
             except httpx.HTTPError:
                 # Ein Konto ohne Mail kann niemand nutzen, und es blockierte die Adresse:
@@ -225,21 +245,48 @@ class KeycloakKonten:
                 konto_id = self._konto_id(antwort)
                 ergebnis.angelegt[kennung] = konto_id
                 try:
-                    sitzung.anfrage(
-                        "PUT",
-                        f"{self._admin}/{konto_id}/execute-actions-email",
-                        params=self._mail_parameter(),
-                        json=MAIL_AKTIONEN,
-                    ).raise_for_status()
+                    self._mail_ausloesen(sitzung.anfrage, konto_id).raise_for_status()
                 except httpx.HTTPError:
                     ergebnis.ohne_mail.append(kennung)
         return ergebnis
 
-    def _mail_parameter(self) -> Dict[str, str]:
+    def _mail_ausloesen(
+        self, anfrage: Callable[..., httpx.Response], konto_id: str
+    ) -> httpx.Response:
+        """
+        Keycloak schickt die Mail "Passwort festlegen". Der Link fuehrt danach auf
+        ANMELDEN_PFAD. Steht diese Adresse (noch) nicht unter den Valid Redirect URIs,
+        antwortet Keycloak mit 400; dann geht die Mail mit der App-Adresse hinaus wie
+        bisher, und die Person meldet sich danach selbst an. So haengt das Einloesen
+        nicht davon ab, ob der Schritt in Keycloak vor oder nach dem Release kommt.
+        """
+        url = f"{self._admin}/{konto_id}/execute-actions-email"
+        antwort = anfrage(
+            "PUT", url, params=self._mail_parameter(anmelden=True), json=MAIL_AKTIONEN
+        )
+        if antwort.status_code == 400 and self._app_client_id and self._app_url:
+            logger.warning(
+                "Keycloak rejected the login route as redirect URI; "
+                f"add {self._anmelden_url()} to the client's valid redirect URIs"
+            )
+            antwort = anfrage(
+                "PUT",
+                url,
+                params=self._mail_parameter(anmelden=False),
+                json=MAIL_AKTIONEN,
+            )
+        return antwort
+
+    def _anmelden_url(self) -> str:
+        return f"{(self._app_url or '').rstrip('/')}/{ANMELDEN_PFAD}"
+
+    def _mail_parameter(self, anmelden: bool) -> Dict[str, str]:
         parameter = {"lifespan": str(MAIL_GUELTIG_SEKUNDEN)}
         if self._app_client_id and self._app_url:
             parameter["client_id"] = self._app_client_id
-            parameter["redirect_uri"] = self._app_url
+            parameter["redirect_uri"] = (
+                self._anmelden_url() if anmelden else self._app_url
+            )
         return parameter
 
     def _konto_zur_adresse(self, sitzung: "_Sitzung", adresse: str) -> Optional[str]:
@@ -289,9 +336,11 @@ class KeycloakKonten:
         gibt die Zahl der in diesem Lauf geloeschten zurueck. Nie benutzt: Die
         Mail-Adresse ist nicht bestaetigt, die Pflichtaktion aus dem Anlegen steht noch
         aus, es gibt kein Passwort und keine Verknuepfung mit einem Identity Provider.
-        So sieht ein Konto aus einer Einladung aus, dessen Link niemand geoeffnet hat;
-        wer ihn oeffnet, setzt ein Passwort und bestaetigt dabei die Adresse. Vorab
-        angelegte Konten (#487) sind verknuepft.
+        So sieht ein Konto aus einer Einladung aus, dessen Link niemand geoeffnet hat.
+        Wer ihn oeffnet und bestaetigt, bestaetigt damit die Adresse (VERIFY_EMAIL in
+        MAIL_AKTIONEN), auch wenn er danach kein Passwort setzt; ein solches Konto bleibt
+        stehen, die Person kommt ueber "Passwort vergessen" hinein. Vorab angelegte
+        Konten (#487) sind verknuepft.
         """
         grenze_ms = int(angelegt_vor.timestamp() * 1000)
         with self._client() as http:

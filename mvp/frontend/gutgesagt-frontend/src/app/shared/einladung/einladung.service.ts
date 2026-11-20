@@ -7,6 +7,17 @@ import { stillerKontext } from '../selbst-nachladen';
 // Grenzen wie im Backend (services/einladung_service.py).
 export const EINLADUNG_NOTIZ_MAX = 200;
 export const EINLADUNG_EINLOESUNGEN_MAX = 1000;
+// Wie NAME_MAX und NAME_VERBOTEN in api/v1/einladungen.py: was das Benutzerprofil von
+// Keycloak bei Vor- und Nachnamen ablehnt.
+export const EINLADUNG_NAME_MAX = 100;
+// eslint-disable-next-line no-control-regex
+const NAME_VERBOTEN = /[<>&"\v$%!#?§;*~/\\|^=[\]{}()\x00-\x1f\x7f]/;
+
+/** Ob Keycloak den Namen nimmt; leer zählt nicht als gültig. */
+export function nameGueltig(name: string): boolean {
+  const n = name.trim();
+  return n.length > 0 && n.length <= EINLADUNG_NAME_MAX && !NAME_VERBOTEN.test(n);
+}
 
 export type EinladungZustand = 'aktiv' | 'abgeschaltet' | 'abgelaufen' | 'aufgebraucht';
 
@@ -67,7 +78,7 @@ export class EinladungService {
       .pipe(map((antwort) => antwort.einloesbar));
   }
 
-  einloesen(code: string, email: string): Observable<unknown> {
-    return this.http.post(`${this.baseUrl}/einloesen`, { code, email });
+  einloesen(code: string, email: string, vorname: string, nachname: string): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/einloesen`, { code, email, vorname, nachname });
   }
 }

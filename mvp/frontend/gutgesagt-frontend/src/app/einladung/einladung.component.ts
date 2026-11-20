@@ -7,14 +7,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { EinladungService } from '../shared/einladung/einladung.service';
+import { EINLADUNG_NAME_MAX, EinladungService, nameGueltig } from '../shared/einladung/einladung.service';
 
 type Stand = 'eingeben' | 'pruefe' | 'ungueltig' | 'formular' | 'sendet' | 'gesendet' | 'fehler';
 /** Warum Einloesen scheiterte, nach dem Status der Antwort (api/v1/einladungen.py). */
-type Fehler = 'adresse' | 'zu_oft' | 'nicht_eingerichtet' | 'unbekannt';
+type Fehler = 'adresse' | 'name' | 'zu_oft' | 'nicht_eingerichtet' | 'unbekannt';
 
 const FEHLER_NACH_STATUS: Record<number, Fehler> = {
-  422: 'adresse',
   429: 'zu_oft',
   503: 'nicht_eingerichtet',
 };
@@ -30,6 +29,13 @@ const ANSAGE: Record<Stand, string> = {
   // Die Fehlertexte stehen mit role="alert" im Template.
   fehler: '',
 };
+
+/** 422 wegen des Namens statt der Adresse: FastAPI nennt das Feld in detail[].loc. */
+function fehlerBei422(e: HttpErrorResponse): Fehler {
+  const details: unknown = e.error?.detail;
+  const felder = Array.isArray(details) ? details.flatMap((d) => (Array.isArray(d?.loc) ? d.loc : [])) : [];
+  return felder.includes('vorname') || felder.includes('nachname') ? 'name' : 'adresse';
+}
 
 /** Zeichen eines Codes: secrets.token_urlsafe im Backend, hoechstens CODE_MAX (api/v1/einladungen.py). */
 const CODE_MUSTER = /^[A-Za-z0-9_-]{1,64}$/;
@@ -48,8 +54,10 @@ export function codeAusEingabe(eingabe: string): string | null {
 }
 
 /**
- * Eine Einladung einloesen (#429): Mail-Adresse eingeben, Gut gesagt legt das Konto
- * an, Keycloak schickt die Mail zum Festlegen des Passworts. Der Code steht hinter #
+ * Eine Einladung einloesen (#429): Name und Mail-Adresse eingeben, Gut gesagt legt das
+ * Konto an, Keycloak schickt die Mail zum Festlegen des Passworts. Der Name geht gleich
+ * ans Konto, sonst fragte Keycloak beim ersten Anmelden danach; der Link in der Mail
+ * bestaetigt die Adresse und fuehrt danach in die Anmeldung (einladung-anmelden). Der Code steht hinter #
  * im Link (einladungslink), damit er in keinem Server-Log landet. Ohne Code, etwa ueber
  * „Einladung einlösen“ auf der Login-Seite, fragt die Seite nach dem Link.
  */
@@ -64,6 +72,9 @@ export class EinladungComponent implements OnInit {
   stand: Stand = 'pruefe';
   fehler: Fehler = 'unbekannt';
   email = '';
+  vorname = '';
+  nachname = '';
+  readonly nameMax = EINLADUNG_NAME_MAX;
   /** Der eingefuegte Link, solange die Seite ohne Code aufgerufen wurde. */
   link = '';
   linkFalsch = false;
@@ -122,20 +133,29 @@ export class EinladungComponent implements OnInit {
     });
   }
 
+  get vollstaendig(): boolean {
+    return !!(this.email.trim() && this.vorname.trim() && this.nachname.trim());
+  }
+
   einloesen() {
     const email = this.email.trim();
-    if (!email || this.stand === 'sendet') {
+    if (!this.vollstaendig || this.stand === 'sendet') {
+      return;
+    }
+    if (!nameGueltig(this.vorname) || !nameGueltig(this.nachname)) {
+      this.fehler = 'name';
+      this.stand = 'fehler';
       return;
     }
     this.stand = 'sendet';
-    this.einladungService.einloesen(this.code, email).subscribe({
+    this.einladungService.einloesen(this.code, email, this.vorname.trim(), this.nachname.trim()).subscribe({
       next: () => (this.stand = 'gesendet'),
       error: (e: HttpErrorResponse) => {
         if (e.status === 410) {
           this.stand = 'ungueltig';
           return;
         }
-        this.fehler = FEHLER_NACH_STATUS[e.status] ?? 'unbekannt';
+        this.fehler = e.status === 422 ? fehlerBei422(e) : (FEHLER_NACH_STATUS[e.status] ?? 'unbekannt');
         this.stand = 'fehler';
       },
     });

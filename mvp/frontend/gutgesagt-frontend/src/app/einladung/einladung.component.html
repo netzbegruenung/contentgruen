@@ -36,8 +36,24 @@
 
     <form *ngIf="stand === 'formular' || stand === 'sendet' || stand === 'fehler'" (ngSubmit)="einloesen()">
       <p>
-        Gib deine Mail-Adresse ein. Du bekommst eine Mail, mit der du dein Passwort festlegst; danach
-        meldest du dich an.
+        Gib deinen Namen und deine Mail-Adresse ein. Du bekommst eine Mail, mit der du dein Passwort
+        festlegst; danach meldest du dich an.
+      </p>
+      <div class="namen">
+        <mat-form-field appearance="outline">
+          <mat-label>Vorname</mat-label>
+          <input matInput name="vorname" autocomplete="given-name" [maxlength]="nameMax"
+                 [(ngModel)]="vorname" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Nachname</mat-label>
+          <input matInput name="nachname" autocomplete="family-name" [maxlength]="nameMax"
+                 [(ngModel)]="nachname" required />
+        </mat-form-field>
+      </div>
+      <p class="hinweis">
+        In Gut gesagt erscheinst du mit Vornamen und dem ersten Buchstaben des Nachnamens, etwa
+        „Anna B.“
       </p>
       <mat-form-field appearance="outline" class="email">
         <mat-label>Mail-Adresse</mat-label>
@@ -46,6 +62,9 @@
       <ng-container *ngIf="stand === 'fehler'" [ngSwitch]="fehler">
         <p *ngSwitchCase="'adresse'" class="warnung" role="alert">
           Das sieht nicht wie eine Mail-Adresse aus. Bitte prüf sie noch einmal.
+        </p>
+        <p *ngSwitchCase="'name'" class="warnung" role="alert">
+          Bitte prüf deinen Namen: Zeichen wie ! / ( ) &lt; &gt; gehen darin nicht.
         </p>
         <p *ngSwitchCase="'zu_oft'" class="warnung" role="alert">
           Von hier kamen gerade sehr viele Versuche. Bitte versuch es in einer Viertelstunde noch einmal.
@@ -61,7 +80,7 @@
         Mit dem Konto gelten die <a routerLink="/nutzungsbedingungen">Nutzungsbedingungen</a>; mehr
         zum Umgang mit deinen Daten steht in der <a routerLink="/datenschutz">Datenschutzerklärung</a>.
       </p>
-      <button mat-raised-button color="primary" type="submit" [disabled]="!email.trim() || stand === 'sendet'">
+      <button mat-raised-button color="primary" type="submit" [disabled]="!vollstaendig || stand === 'sendet'">
         Konto anlegen
       </button>
     </form>
@@ -70,7 +89,7 @@
       <!-- "drei Tage": MAIL_GUELTIG_SEKUNDEN in infrastructure/keycloak_konten.py -->
       <p>
         Schau in dein Postfach: Dort ist eine Mail, mit der du dein Passwort festlegst. Der Link darin
-        gilt drei Tage.
+        gilt drei Tage. Danach geht es direkt zur Anmeldung.
       </p>
       <p>
         Keine Mail bekommen, oder gab es schon ein Konto mit dieser Adresse? Dann

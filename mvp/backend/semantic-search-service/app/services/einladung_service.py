@@ -5,8 +5,9 @@ Konto im Realm von Gut gesagt an. Gruppenlink und persoenlicher Link sind dersel
 Mechanismus, nur mit anderen Zahlen.
 
 Ablauf beim Einloesen: die Einloesung zaehlen (atomar in der Datenbank, nur solange
-die Einladung aktiv ist), dann das Konto ueber die Keycloak-Admin-Schnittstelle
-anlegen; Keycloak schickt die Mail "Passwort festlegen". Scheitert Keycloak, wird die
+die Einladung aktiv ist), dann das Konto mit Vor- und Nachname ueber die
+Keycloak-Admin-Schnittstelle anlegen; Keycloak schickt die Mail "Passwort festlegen",
+deren Link auch die Adresse bestaetigt. Scheitert Keycloak, wird die
 Einloesung zurueckgenommen. Gibt es zur Adresse schon ein Konto, bleibt sie gezaehlt:
 Der Zaehler zaehlt Einloesungen, nicht angelegte Konten. Wuerde sie zurueckgenommen,
 verriete /pruefen danach, dass die Adresse ein Konto hat (etwa bei einem persoenlichen
@@ -16,8 +17,8 @@ entsteht dann fuer sie, und die Mail geht dorthin.
 Datenschutz: Am Konto steht nicht, ueber welche Einladung es entstand, und an der
 Einladung keine Mail-Adresse, nur der Zaehler. Sonst liesse sich aus einer Einladung
 etwa fuer eine bestimmte Gruppe die Zugehoerigkeit einer Person ableiten (Art. 9
-DSGVO). Keycloak bekommt deshalb nie den Code, die Datenbank nie die Mail-Adresse,
-und keine Logzeile nennt eines von beiden.
+DSGVO). Keycloak bekommt deshalb nie den Code, die Datenbank weder Mail-Adresse noch
+Namen, und keine Logzeile nennt eines davon.
 """
 
 import enum
@@ -140,7 +141,14 @@ class EinladungService:
             and Einladung.aus_zeile(zeile).zustand(heute) is EinladungZustand.AKTIV
         )
 
-    def einloesen(self, code: str, email: str, heute: Optional[date] = None) -> None:
+    def einloesen(
+        self,
+        code: str,
+        email: str,
+        heute: Optional[date] = None,
+        vorname: Optional[str] = None,
+        nachname: Optional[str] = None,
+    ) -> None:
         """
         Legt ueber die Einladung ein Konto an. Gibt es zur Adresse schon eines, endet
         der Aufruf genauso und zaehlt genauso: Ob eine Adresse ein Konto hat, erfaehrt
@@ -151,7 +159,7 @@ class EinladungService:
         if not self._repository.einloesung_zaehlen(code, heute or heute_utc()):
             raise EinladungUngueltig()
         try:
-            ergebnis = self._konten.konto_anlegen(email)
+            ergebnis = self._konten.konto_anlegen(email, vorname, nachname)
         except Exception as e:
             self._repository.einloesung_zuruecknehmen(code)
             # Ohne Adresse und Code, nur die Art des Fehlers.

@@ -77,7 +77,7 @@ nano .env
 | `SEMANTIC_SEARCH_LOG_LEVEL` | Logging level (DEBUG, INFO, etc.) | INFO |
 | `SEMANTIC_SEARCH_KEYCLOAK_URL`, `…_KEYCLOAK_ADMIN_CLIENT_ID`, `…_KEYCLOAK_ADMIN_CLIENT_SECRET` | Keycloak admin API for redeeming Einladungen; without them Einladungen can only be managed. Set only together with the BFF switch to the new realm (`docs/KEYCLOAK_REALM.md`, order) | unset |
 | `SEMANTIC_SEARCH_KEYCLOAK_REALM` | Realm the accounts are created in | `gutgesagt` |
-| `SEMANTIC_SEARCH_KEYCLOAK_APP_CLIENT_ID`, `SEMANTIC_SEARCH_APP_URL` | Where the link in the "set password" mail leads afterwards | unset |
+| `SEMANTIC_SEARCH_KEYCLOAK_APP_CLIENT_ID`, `SEMANTIC_SEARCH_APP_URL` | Where the link in the "set password" mail leads afterwards: `<app>/einladung/anmelden`, which starts the login; must be a valid redirect URI of the client, otherwise the mail falls back to `<app>` | unset |
 
 ## Path Validation
 

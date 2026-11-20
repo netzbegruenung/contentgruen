@@ -198,7 +198,9 @@ class Settings(BaseSettings):
     keycloak_admin_client_id: Optional[str] = None
     keycloak_admin_client_secret: Optional[str] = None
     # Wohin der Link in der Mail "Passwort festlegen" danach fuehrt: Client der App und
-    # ihre Adresse. Ohne beide endet er auf der Kontoseite von Keycloak.
+    # ihre Adresse; der Link zeigt auf <app_url>/einladung/anmelden, die Seite startet
+    # gleich die Anmeldung (ANMELDEN_PFAD in infrastructure/keycloak_konten.py). Ohne
+    # beide endet er auf der Kontoseite von Keycloak.
     keycloak_app_client_id: Optional[str] = None
     app_url: Optional[str] = None
 

@@ -402,6 +402,11 @@ und der Ablauf oben erfasst die Tabelle nicht.
   sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
   unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
   Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht.
+- **Link geöffnet, aber kein Passwort:** Der Link in der Mail bestätigt die Adresse, sobald die
+  Person ihn öffnet und bestätigt (Pflichtaktion `VERIFY_EMAIL` im Link), noch vor dem Passwort.
+  Bricht sie danach ab, ist die Adresse bestätigt, und der Task lässt das Konto stehen: Es
+  gehört nachweislich der Person mit dieser Adresse, und sie kommt über „Passwort vergessen“
+  hinein. Es trägt nur Adresse und Namen und wird wie jedes Konto auf Bitte gelöscht.
 
 ## Vier Fallen
 
