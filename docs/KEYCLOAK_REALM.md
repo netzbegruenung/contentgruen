@@ -59,24 +59,11 @@ Platzhalter, vor dem Import ersetzen:
 Keycloak erzeugt die Client-Secrets beim Import; sie stehen danach unter *Clients →
 Credentials*.
 
-Bis 0.9.8 zeigte Keycloak bei der Pflichtaktion den Text `localizationTexts.de.termsText` aus der
-Vorlage; er bleibt dort stehen, bis er nach dem Abschalten aufgeräumt wird, und wirkt nur, solange
-die Pflichtaktion an ist.
-Ein eigenes Theme gibt es nicht: Keycloak gibt diesen Text als HTML aus (`terms.ftl`,
-`kcSanitize`), Link und Stand-Datum stehen also direkt darin. Er verlinkt die Seite
-`/nutzungsbedingungen` und nennt ihren Stand, etwa „(Stand: 30. Oktober 2026)“;
-`scripts/tests/test_keycloak_nutzungsbedingungen.py` prüft, dass der Stand mit der Stand-Zeile
-der Seite übereinstimmt. Keycloak speichert bei der Zustimmung nur den Zeitpunkt; welchem Text
-jemand zugestimmt hat, sagt nur dieses Datum.
-
-Bei einem neuen Stand der Nutzungsbedingungen deshalb Vorlage und Realm nachziehen: in der
-Vorlage `termsText` (der Test schlägt sonst fehl), im laufenden Realm *Realm settings →
-Localization → Realm overrides → de → termsText*; ein erneuter Import ändert einen bestehenden
-Realm nicht. Der Text nennt nach dem Link in drei Punkten das Wichtigste (CC0, eigene Texte,
-Sperren) und sagt, was „Annehmen“ und „Ablehnen“ bewirken (#491). Der Wortlaut ist vorläufig, bis
-die Prüfung mit #296 durch ist (Lückenliste P12); danach wird er nur in der Vorlage und im Realm
-ersetzt. Die ausdrückliche Einwilligung nach Art. 9 DSGVO als eigenes Häkchen ist in der Vorlage
-noch nicht enthalten (Folgeticket).
+Bis 0.9.8 zeigte Keycloak bei der Pflichtaktion den Text `localizationTexts.de.termsText`; er ist
+aus der Vorlage entfernt (#731), weil die Nutzungsbedingungen seitdem nur über das Häkchen der App
+angenommen werden (NB §2). Ein bestehender Realm behält seinen Override unter *Realm settings →
+Localization → Realm overrides*; er wirkt nur, solange die Pflichtaktion an ist, und kann nach dem
+Abschalten weg. Die Art.-9-Einwilligung fragt die App selbst (#489, `docs/ART9_EINWILLIGUNG.md`).
 
 Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semantic-Service bei
 jedem Aufruf mit (`MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py`, drei Tage);

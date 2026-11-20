@@ -48,8 +48,8 @@ diesem Zeitpunkt live war.
 4. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum in `stand.md` eintragen, beim
    vorigen Stand das „bis“-Datum. Bei einer reinen Korrektur ist der Ablauf hier zu Ende.
 
-Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer), solange die Pflichtaktion
-läuft:
+Nur bis 0.9.8, solange die Pflichtaktion lief, bei einem wesentlichen Stand gleich nach dem
+Deploy (Maintainer; mit 0.9.8 entfallen, `termsText` ist aus der Vorlage entfernt):
 
 5. Den Text, den Keycloak bei der Pflichtaktion zeigt, auf den neuen Stand bringen; ohne das
    stimmen die Personen dem alten Stand-Datum zu. Diesen Text (`termsText`) liefert die

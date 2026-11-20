@@ -124,7 +124,8 @@ Unsere Einschätzung, nicht geprüft: Das trägt die Einbeziehung (§ 305 Abs. 2
 Hinweis bei Vertragsschluss), die Rechteeinräumung unter CC0 das Absenden als bewusste Handlung.
 Ob das trägt, klärt #296. Wer nie etwas absendet, hat nicht zugestimmt; zum Lesen und Suchen
 braucht es kein Konto (NB §2). Wer angemeldet nur bewertet, sieht den Hinweis aber nie und hat
-ebenfalls nicht zugestimmt; das deckt bis jetzt nur die Pflichtaktion aus #429 ab.
+ebenfalls nicht zugestimmt; das deckte bis 0.9.8 nur die Pflichtaktion aus #429 ab, seitdem das
+Häkchen der App.
 
 **Nachweis:** Jeder Wortlaut hat eine Kennung; sie wird mit jedem neuen Beitrag (Qdrant-Payload),
 Satz und Einwurf (PostgreSQL, `cc0_wortlaut`) gespeichert (Entscheidung 29.10.2026 in #439).
@@ -149,14 +150,14 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
   Zu #521 entschieden (Maintainer, 03.11.2026), nicht Teil von #296: Zustimmung durch Absenden
   unter dem CC0-Hinweis bleibt so (§10), §5 behält die Bedingung „nicht erkennbar ohne Erlaubnis
   der Berechtigten“ und sperrt nach Prüfung, §4 nennt § 31a UrhG nicht.
-- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Wegfall offen
-  (Entscheidung Maintainer, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
+- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): **entschieden, entfällt mit 0.9.8**
+  (Entscheidung Maintainer, 20.11.2026, #731; vorher: bleibt vorerst, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
   Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem CC0-Hinweis.
   Die Zustimmung von Personen, die nur bewerten, hängt ebenfalls an ihr (bis 0.9.8; seitdem
   das Häkchen der App, Nachtrag oben). Die
   Art.-9-Einwilligung (D-N15) hängt seit #489 nicht mehr daran: Die App fragt selbst, mit
   eigenem Häkchen; ihr Wortlaut ist vorläufig und offen für #296 (P11).
-  Der Zustimmungstext der Pflichtaktion selbst ist vorläufig und offen für #296 (P12, #491).
+  Der Zustimmungstext der Pflichtaktion (P12, #491) entfällt mit ihr.
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
   Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
   dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.
