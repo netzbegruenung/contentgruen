@@ -158,9 +158,11 @@ beides auf einer Seite, mit zwei getrennten, nicht vorbelegten Häkchen.
   (`scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass er zur Stand-Zeile der Seite
   passt). Reine Korrektur: in `GELTENDE_STAENDE` aufnehmen, niemand wird neu gefragt. Wesentlich:
   `GELTENDE_STAENDE` nur mit dem neuen Stand, alle werden beim nächsten Besuch neu gefragt.
-- **Keycloak:** Die Pflichtaktion „Terms and Conditions“ läuft vorerst weiter. Reihenfolge: diese
-  Seite live, dann `PFLICHTAKTIONEN` in `keycloak_konten.py` anpassen, dann die Pflichtaktion im
-  Realm abschalten (`docs/KEYCLOAK_REALM.md`).
+- **Keycloak:** Die Pflichtaktion „Terms and Conditions“ entfällt mit 0.9.8: `PFLICHTAKTIONEN` in
+  `keycloak_konten.py` ist leer. Am Rollout-Tag: Zeitpunkte nur lesend exportieren, 0.9.8 live
+  und die Seite prüfen, erst dann die Pflichtaktion im Realm abschalten
+  (`docs/KEYCLOAK_REALM.md`). Bis dahin fragt Keycloak kurz doppelt; andersherum entstünden
+  Konten ohne Zustimmung.
 
 ## Wortlaut ändern
 

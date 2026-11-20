@@ -27,10 +27,15 @@ from domain.interfaces.konten_im_realm import (
 
 logger = get_logger(__name__)
 
-# Die Pflichtaktion "Terms and Conditions" muss im Realm eingeschaltet sein (Schritt in
-# docs/KEYCLOAK_REALM.md). Keycloak weist ein Konto mit einer unbekannten
-# Pflichtaktion ab; dann schlaegt jedes Einloesen fehl.
-PFLICHTAKTIONEN = ["TERMS_AND_CONDITIONS"]
+# Pflichtaktionen jedes neuen Kontos: keine. Die Nutzungsbedingungen fragt seit 0.9.8 die
+# App auf /einwilligung (domain/nutzungsbedingungen.py), die Keycloak-Pflichtaktion
+# "Terms and Conditions" wird danach abgeschaltet (docs/KEYCLOAK_REALM.md). Ein Konto mit
+# einer Pflichtaktion, die der Realm nicht kennt, weist Keycloak ab; deshalb steht sie
+# hier nicht mehr, bevor sie im Realm abgeschaltet wird.
+PFLICHTAKTIONEN: List[str] = []
+# Die Pflichtaktion der Nutzungsbedingungen bis 0.9.8: Konten von davor tragen sie noch,
+# solange ihr Link nie geoeffnet wurde (nie_benutzte_loeschen).
+ALTE_NB_PFLICHTAKTION = "TERMS_AND_CONDITIONS"
 # Ein Konto aus einer Einladung traegt dazu "Passwort festlegen" als Pflichtaktion am
 # Konto. Keycloak nimmt sie weg, sobald ein Passwort gesetzt ist (ueber den Link oder
 # "Passwort vergessen"). Daran erkennt nie_benutzte_loeschen ein Konto, dessen Link
@@ -354,12 +359,13 @@ class KeycloakKonten:
         Credential (also kein Passwort) und keine Verknuepfung mit einem Identity
         Provider, und dazu eines von beiden:
 
-        - Die Mail-Adresse ist nicht bestaetigt und die Pflichtaktion aus dem Anlegen
-          steht noch aus: Den Link hat niemand geoeffnet.
+        - Die Mail-Adresse ist nicht bestaetigt und die alte Pflichtaktion
+          ALTE_NB_PFLICHTAKTION steht noch aus: ein Konto von vor 0.9.8, dessen Link
+          niemand geoeffnet hat.
         - "Passwort festlegen" steht noch am Konto (EINLADUNG_PFLICHTAKTIONEN): Den Link
           hat jemand geoeffnet und bestaetigt (VERIFY_EMAIL in MAIL_AKTIONEN bestaetigt
-          dabei die Adresse), vielleicht auch den Nutzungsbedingungen zugestimmt, aber
-          nie ein Passwort gesetzt.
+          dabei die Adresse), aber nie ein Passwort gesetzt; seit 0.9.8 auch, wenn den
+          Link niemand geoeffnet hat.
 
         Vorab angelegte Konten (#487) sind verknuepft; Beta-Zugaenge (#488) sind
         bestaetigt und tragen "Passwort festlegen" nicht am Konto.
@@ -420,12 +426,15 @@ class KeycloakKonten:
 def _sieht_nie_benutzt_aus(konto: Mapping[str, object]) -> bool:
     """Die Bedingungen aus nie_benutzte_loeschen, die am Konto selbst stehen."""
     aktionen = set(konto.get("requiredActions") or [])  # type: ignore[arg-type]
-    # Ohne Nutzungsbedingungen: Keycloak fragt sie vor dem Passwort ab (Prioritaet 20
-    # vor 57, DefaultRequiredActions) und nimmt sie nach der Zustimmung vom Konto. Wer
-    # zustimmt und auf der Passwortseite abbricht, traegt nur noch UPDATE_PASSWORD.
+    # Unabhaengig von den Nutzungsbedingungen: Solange Keycloak sie noch fragte, nahm es
+    # sie nach der Zustimmung vom Konto, vor dem Passwort (Prioritaet 20 vor 57,
+    # DefaultRequiredActions). Wer zustimmte und auf der Passwortseite abbrach, traegt nur
+    # noch UPDATE_PASSWORD.
     if "UPDATE_PASSWORD" in aktionen:
         return True
-    return set(PFLICHTAKTIONEN) <= aktionen and konto.get("emailVerified") is False
+    # Konten aus Einladungen von vor 0.9.8 tragen kein UPDATE_PASSWORD am Konto, aber die
+    # alte Pflichtaktion, solange der Link nie geoeffnet wurde.
+    return ALTE_NB_PFLICHTAKTION in aktionen and konto.get("emailVerified") is False
 
 
 def _konto(
@@ -433,7 +442,7 @@ def _konto(
     email_bestaetigt: bool,
     pflichtaktionen: List[str] = PFLICHTAKTIONEN,
 ) -> Dict[str, object]:
-    """Ein Konto im Realm: die Adresse als Benutzername, Pflichtaktion Nutzungsbedingungen."""
+    """Ein Konto im Realm: die Adresse als Benutzername, mit ``pflichtaktionen``."""
     return {
         "username": email,
         "email": email,

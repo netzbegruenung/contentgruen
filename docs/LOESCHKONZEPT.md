@@ -399,8 +399,9 @@ und der Ablauf oben erfasst die Tabelle nicht.
   Zähler vergleichen.
 - **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): kein Passwort
   (kein Credential), keine Verknüpfung mit einem Identity Provider, und dazu entweder
-  Mail-Adresse nicht bestätigt und Pflichtaktion „Terms and Conditions“ offen, oder „Passwort
-  festlegen“ noch am Konto (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
+  Mail-Adresse nicht bestätigt und Pflichtaktion „Terms and Conditions“ offen (Konten von vor
+  0.9.8, als Keycloak die Nutzungsbedingungen noch fragte), oder „Passwort festlegen“ noch am
+  Konto (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
   angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
   sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
   unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur

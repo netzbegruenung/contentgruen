@@ -181,7 +181,7 @@ Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Ze
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
 **Zustimmung zu den Nutzungsbedingungen**:
-Die Annahme der Nutzungsbedingungen durch eine angemeldete Person, in der App mit einem eigenen, nicht vorbelegten Häkchen auf `/einwilligung`, zusammen mit, aber getrennt von der Art.-9-Einwilligung (Entscheidung Maintainer, 20.11.2026). Sie ist Pflicht, um mit Konto beizutragen und zu bewerten, und ein Vertrag (Art. 6 Abs. 1 lit. b DSGVO), keine Einwilligung. Gespeichert werden Person, Zeitpunkt und Stand der Nutzungsbedingungen (`nutzungsbedingungen_zustimmungen`). Bis zur Umstellung fragt daneben noch die Keycloak-Pflichtaktion „Terms and Conditions“. Ablauf: `docs/ART9_EINWILLIGUNG.md`, „Nutzungsbedingungen auf derselben Seite“.
+Die Annahme der Nutzungsbedingungen durch eine angemeldete Person, in der App mit einem eigenen, nicht vorbelegten Häkchen auf `/einwilligung`, zusammen mit, aber getrennt von der Art.-9-Einwilligung (Entscheidung Maintainer, 20.11.2026). Sie ist Pflicht, um mit Konto beizutragen und zu bewerten, und ein Vertrag (Art. 6 Abs. 1 lit. b DSGVO), keine Einwilligung. Gespeichert werden Person, Zeitpunkt und Stand der Nutzungsbedingungen (`nutzungsbedingungen_zustimmungen`). Bis 0.9.8 fragte die Keycloak-Pflichtaktion „Terms and Conditions“; sie entfällt. Ablauf: `docs/ART9_EINWILLIGUNG.md`, „Nutzungsbedingungen auf derselben Seite“.
 _Avoid_: NB-Einwilligung, Consent, Alle annehmen
 
 **Schreibregel**:

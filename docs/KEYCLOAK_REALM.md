@@ -30,14 +30,16 @@ Durchprobieren von Passwörtern liegen bei Keycloak. Warum so: ADR 0006
 | Identity Provider `netzbegruenung` | Netzbegrünung-Login; Adresse und Client sind Platzhalter |
 
 Die Pflichtaktionen stehen bewusst nicht in der Vorlage: Eine Liste dort ersetzt die
-Standardliste von Keycloak, und was fehlt, gäbe es danach im Realm nicht. Nach dem Import
-deshalb von Hand:
+Standardliste von Keycloak, und was fehlt, gäbe es danach im Realm nicht.
 
-- *Authentication → Required actions → Terms and Conditions*: `Enabled` und
-  `Set as default action` an. Dann stimmt jedes neue Konto beim ersten Anmelden den
-  Nutzungsbedingungen zu, auch über den Identity Provider. Ohne diesen Schritt weist
-  Keycloak jedes Konto aus einer Einladung ab (`PFLICHTAKTIONEN` in
-  `infrastructure/keycloak_konten.py`).
+- *Authentication → Required actions → Terms and Conditions*: seit 0.9.8 `Enabled` und
+  `Set as default action` aus. Die Nutzungsbedingungen fragt die App auf `/einwilligung` mit
+  eigenem Häkchen und speichert die Zustimmung mit Stand (`docs/ART9_EINWILLIGUNG.md`); neue
+  Konten bekommen keine Pflichtaktion mehr (`PFLICHTAKTIONEN` in
+  `infrastructure/keycloak_konten.py` ist leer). Ein bestehender Realm schaltet sie am
+  Rollout-Tag ab, erst nachdem 0.9.8 live ist und die Zeitpunkte archiviert sind (Reihenfolge
+  im PR #731). Keycloak überspringt eine abgeschaltete Pflichtaktion auch bei Konten, die sie
+  noch tragen (26.8.2, `AuthenticationManager.getApplicableRequiredAction`).
 
 Platzhalter, vor dem Import ersetzen:
 
@@ -57,7 +59,9 @@ Platzhalter, vor dem Import ersetzen:
 Keycloak erzeugt die Client-Secrets beim Import; sie stehen danach unter *Clients →
 Credentials*.
 
-Bei der Pflichtaktion zeigt Keycloak den Text `localizationTexts.de.termsText` aus der Vorlage.
+Bis 0.9.8 zeigte Keycloak bei der Pflichtaktion den Text `localizationTexts.de.termsText` aus der
+Vorlage; er bleibt dort stehen, bis er nach dem Abschalten aufgeräumt wird, und wirkt nur, solange
+die Pflichtaktion an ist.
 Ein eigenes Theme gibt es nicht: Keycloak gibt diesen Text als HTML aus (`terms.ftl`,
 `kcSanitize`), Link und Stand-Datum stehen also direkt darin. Er verlinkt die Seite
 `/nutzungsbedingungen` und nennt ihren Stand, etwa „(Stand: 30. Oktober 2026)“;
@@ -138,8 +142,8 @@ wieder.
 
 Ein Konto im Realm entsteht für ein Mitglied sonst erst bei der ersten Anmeldung über den
 Realm. Vor dem Umstellen der BFF legt das Skript es deshalb an (`--konten-anlegen`):
-verknüpft mit der alten Kennung, ohne Mail, mit der Pflichtaktion für die
-Nutzungsbedingungen. Wer sich danach mit der Netzbegrünung anmeldet, landet in genau
+verknüpft mit der alten Kennung, ohne Mail (bis 0.9.8 mit der Pflichtaktion für die
+Nutzungsbedingungen, seitdem fragt sie die App). Wer sich danach mit der Netzbegrünung anmeldet, landet in genau
 diesem Konto. Dafür braucht es die Mail-Adresse, denn im Realm ist sie der
 Benutzername. Ist eine Adresse im Realm schon vergeben, etwa über eine Einladung,
 verknüpft das Skript nichts und nennt die Kennung. Ob diese Person ihr Konto aus der
@@ -234,7 +238,7 @@ in das Konto im Realm mit seiner Mail-Adresse um:
   Netzbegrünung, gehen die Beiträge des Beta-Zugangs dorthin. Die Adresse ist im Realm
   der Benutzername; wer sie hat, ist dieselbe Person.
 - Sonst legt der Lauf ein Konto an: Vor- und Nachname aus `displayName` (der Anzeigename
-  bleibt derselbe, „Anna B.“; aus einem einzelnen Wort wie bisher keiner), Pflichtaktion Nutzungsbedingungen, Adresse als bestätigt, und Keycloak
+  bleibt derselbe, „Anna B.“; aus einem einzelnen Wort wie bisher keiner), ohne Pflichtaktion (die Nutzungsbedingungen fragt seit 0.9.8 die App), Adresse als bestätigt, und Keycloak
   schickt die Mail „Passwort festlegen“ (drei Tage gültig, danach „Passwort vergessen“). Das
   alte Passwort lässt sich nicht mitnehmen, Keycloak kennt bcrypt nicht. Bestätigt, weil die
   Adresse schon die Anmeldung des Beta-Zugangs war, und damit die Löschfrist für nie
