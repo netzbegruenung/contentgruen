@@ -17,7 +17,7 @@ import {
   felderAusShareDaten,
 } from '../share-target/share-target.guard';
 import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
-import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS, MENUE_ICONS } from '../shared/fangkorb-texte';
 import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { LoggingService } from '../services/logging.service';
 import { MeilensteinHinweisService } from '../meine-beitraege/meilenstein-hinweis.service';
@@ -118,6 +118,7 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
   readonly fangkorbPfad = ROUTES.RAW_INPUT_LIST;
   readonly kettenIcons = KETTEN_ICONS;
+  readonly menueIcons = MENUE_ICONS;
 
   einwurfForm: FormGroup;
 

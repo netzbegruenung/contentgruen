@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatDialog } from '@angular/material/dialog';
+import { filter } from 'rxjs/operators';
 
 import { AddImageRequest, ImageService } from '../services/image.service';
 import { LoggingService } from '../services/logging.service';
@@ -29,6 +31,10 @@ import {
 } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { alsGespeichert, aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
 import { ThemenWahl } from '../beitragsformular/themen-wahl';
+import {
+  BestaetigungsDialogComponent,
+  BestaetigungsDialogDaten,
+} from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { einspaltig } from '../beitragsformular/gegenlesen/einspaltig';
 
@@ -46,6 +52,16 @@ function aufgeloest(adresse: string): string {
   } catch {
     return adresse;
   }
+}
+
+/** Rueckfrage vor dem Leeren, wie in Kommentar und Hintergrundinfo. */
+function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
+  return {
+    titel: 'Formular zurücksetzen?',
+    text: `Bild-URL, Titel, Bildunterschrift, ${mitThemen ? 'Themen und ' : ''}Aussage werden geleert.`,
+    ja: 'Zurücksetzen',
+    nein: 'Abbrechen',
+  };
 }
 
 /**
@@ -96,6 +112,8 @@ export class AddImageComponent implements AfterViewInit, OnDestroy {
   /** Die Themen einer neuen Aussage (#455). */
   readonly themenWahl: ThemenWahl;
 
+  @ViewChild(AntwortAufComponent) antwortAuf?: AntwortAufComponent;
+
   /** Was im Antwort-auf-Block gilt. */
   aussage: AntwortAuf = OHNE_AUSSAGE;
 
@@ -123,6 +141,7 @@ export class AddImageComponent implements AfterViewInit, OnDestroy {
     fb: FormBuilder,
     private imageService: ImageService,
     private logger: LoggingService,
+    private dialog: MatDialog,
   ) {
     this.imageForm = fb.group({
       image_url: ['', [Validators.required, Validators.pattern(/^https?:\/\/\S+$/)]],
@@ -161,6 +180,35 @@ export class AddImageComponent implements AfterViewInit, OnDestroy {
     }
     this.bildLadefehler = true;
   };
+
+  /** Etwas eingetragen oder eine Aussage gewaehlt: dann fragt Zuruecksetzen nach. */
+  get hatEingaben(): boolean {
+    const werte = this.imageForm.value as Record<string, unknown>;
+    const ausgefuellt = Object.values(werte).some((w) => (Array.isArray(w) ? w.length > 0 : !!String(w ?? '').trim()));
+    return ausgefuellt || !!this.aussage.id || !!this.aussage.text;
+  }
+
+  /** "Zuruecksetzen" wie in Kommentar und Hintergrundinfo: mit Eingaben erst nach Rueckfrage. */
+  zuruecksetzen(): void {
+    if (!this.hatEingaben) {
+      this.leeren();
+      return;
+    }
+    this.dialog
+      .open(BestaetigungsDialogComponent, { data: zuruecksetzenFrage(this.zeigtThemen), autoFocus: 'dialog' })
+      .afterClosed()
+      .pipe(filter((ja) => ja === true))
+      .subscribe(() => this.leeren());
+  }
+
+  leeren(): void {
+    this.imageForm.reset({ image_url: '', title: '', caption: '', themen: [] });
+    this.bildLadefehler = false;
+    this.antwortAuf?.leeren();
+    this.aussage = OHNE_AUSSAGE;
+    this.fehler = null;
+    this.validierung = null;
+  }
 
   /** Was im Antwort-auf-Block gilt; die Themen passen sich an (ThemenWahl). */
   aussageSetzen(aussage: AntwortAuf): void {

@@ -15,7 +15,7 @@ import { HOECHSTENS_THEMEN_JE_AUSSAGE } from '../../services/themen.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="themen-auswahl" role="group" [attr.aria-label]="beschriftung">
-      <button *ngFor="let thema of themen" type="button" class="thema-chip"
+      <button *ngFor="let thema of themen" type="button" class="chip thema-chip"
               [class.gewaehlt]="istGewaehlt(thema)"
               [attr.aria-pressed]="istGewaehlt(thema)"
               [disabled]="!istGewaehlt(thema) && voll"

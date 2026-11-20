@@ -68,6 +68,9 @@
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
                         {{ fehler && !validierung ? 'Erneut versuchen' : 'Bild speichern' }}
                     </button>
+                    <!-- Zweitaktion neben dem Hauptknopf wie in Kommentar und Hintergrundinfo -->
+                    <button type="button" class="zuruecksetzen" (click)="zuruecksetzen()"
+                            [disabled]="speichert || !!responseId">Zurücksetzen</button>
                 </app-formular-leiste>
             </form>
         </div>

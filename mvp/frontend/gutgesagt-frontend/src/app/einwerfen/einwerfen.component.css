@@ -60,25 +60,10 @@
     min-height: 48px;
 }
 
-/* Der Weg in den Fangkorb ist ein Text-Link, kein zweiter Knopf (#645) */
+/* Weg in den Fangkorb: Optik aus .nebenweg-zeile und .nebenweg-knopf (styles.css), wie
+   "Meine Beitraege" auf der Beitragen-Seite; Abstand nach oben wie dort (--spacing-lg) */
 .fangkorb-weg {
-    margin: var(--spacing-md, 16px) 0 0;
-}
-
-.fangkorb-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    color: var(--akzent-schrift);
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-}
-
-.knopf-emoji {
-    margin-right: 8px;
-    font-size: 18px;
-    line-height: 1;
+    margin-top: var(--spacing-lg, 24px);
 }
 
 .knopf-spinner {
@@ -127,10 +112,9 @@
     color: var(--fehler);
 }
 
+/* Ohne eigene Linie: die Trennlinie traegt der Fangkorb-Knopf darunter */
 .einwurf-fussnote {
     margin-top: var(--spacing-lg, 24px);
-    padding-top: var(--spacing-md, 16px);
-    border-top: 1px solid var(--linie);
     font-size: 14px;
     color: var(--text-leise);
 }

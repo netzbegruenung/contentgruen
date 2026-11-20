@@ -109,7 +109,7 @@ export class RecentContentComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.logger.error('Failed to load recent content', error);
-        this.error = 'Fehler beim Laden der neuesten Inhalte';
+        this.error = 'Die neuesten Beiträge konnten gerade nicht geladen werden.';
         this.loading = false;
         this.cdr.detectChanges();
       }
