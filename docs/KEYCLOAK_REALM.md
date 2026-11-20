@@ -128,15 +128,16 @@ das Formular im gelben Band.
 | Datei | Inhalt |
 |---|---|
 | `login/resources/css/gutgesagt.css` | Farben (nur in den `--gg-`Variablen, hell und dunkel, Werte aus `custom-theme.scss`), Schrift PT Sans, Kopf, Band, Knöpfe |
-| `login/footer.ftl` | Hinweiszeile unter dem Formular („Lesen und Suchen geht ohne Konto“) |
+| `login/footer.ftl` | Hinweiszeile unter dem Formular („Lesen und Suchen geht ohne Konto“), nicht auf Info-, Fehler- und Abmeldeseiten |
 | `login/info.ftl` | Zwischenseite der Aktions-Links ohne doppelten Titel; sonst wie bei Keycloak |
 | `login/messages/messages_de.properties` | Seitentexte in Du-Form |
 | `email/html/template.ftl` | Rahmen der HTML-Mails (Name als Text, Schlagzeile, Band mit Knopf, Fuß) |
 | `email/html/executeActions.ftl`, `password-reset.ftl` | Einladung („Passwort festlegen“) und „Passwort vergessen“ mit Knopf; die übrigen Mails und alle Textfassungen kommen von Keycloak |
 | `email/messages/messages_de.properties` | Mailtexte in Du-Form (Betreff, Textfassung, Knopf und Absätze) |
 
-Die Mails laden nichts nach (kein Bild). Realm overrides (*Realm settings → Localization*)
-gehen den Texten des Themes vor.
+Die Mails laden nichts nach (kein Bild). Die Texte kommen nur aus dem Theme (Entscheidung
+20.11.): keine Realm overrides (*Realm settings → Localization*) für diese Keys anlegen, sie
+gingen den Texten des Themes vor.
 
 Auf dem Keycloak liegt `themes/gutgesagt` als Verweis auf einen festen Git-Stand dieses Repos.
 Keycloak liest Themes aus `themes/` bei jedem Aufruf; ein neues Theme ist ohne Neustart wählbar
