@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, Subject, of } from 'rxjs';
 import { catchError, concatMap, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { stillerKontext } from '../shared/selbst-nachladen';
 import {
   AussageMitThemen,
   AussagenMitThemenResponse,
@@ -43,7 +44,8 @@ export class ThemenService {
 
   /** Die feste Liste, einmal je Sitzung geladen; sie aendert sich nur mit einem Release. */
   liste(): Observable<Thema[]> {
-    this.liste$ ??= this.http.get<ThemenResponse>(this.basis).pipe(
+    // Still: Ein 401 (Sitzung abgelaufen) laesst die Auswahl leer, statt auf /login umzuleiten.
+    this.liste$ ??= this.http.get<ThemenResponse>(this.basis, { context: stillerKontext() }).pipe(
       map((antwort) => antwort.themen),
       shareReplay({ bufferSize: 1, refCount: false }),
     );

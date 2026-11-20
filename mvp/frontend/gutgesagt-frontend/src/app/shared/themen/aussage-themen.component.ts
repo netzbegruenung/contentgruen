@@ -12,6 +12,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, map, switchMap } from 'rxjs/operators';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../auth/auth.service';
 import { Thema } from '../../services/dtos/themenDtos';
@@ -153,22 +155,28 @@ export class AussageThemenComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
-    this.authService.userInfo$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((info) => {
-      this.angemeldet = !!info?.isAuthenticated;
+    const angemeldet$ = this.authService.userInfo$.pipe(
+      map((info) => !!info?.isAuthenticated),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef),
+    );
+    angemeldet$.subscribe((angemeldet) => {
+      this.angemeldet = angemeldet;
       this.cdr.markForCheck();
     });
-    this.themenService
-      .liste()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (liste) => {
-          this.liste = liste;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.liste = [];
-          this.cdr.markForCheck();
-        },
+    // Die Liste braucht nur, wer zuordnet: Abgemeldeten antwortet das BFF auf
+    // /api/v1/statement/themen mit 401, und das fuehrte Besucher von der Ergebnisseite
+    // auf /login. Deshalb erst nach dem Anmelden laden, bei jedem Anmelden neu: Scheiterte
+    // ein Versuch (etwa still mit 401 bei abgelaufener Sitzung), kommt die Liste mit dem
+    // naechsten Anmelden, ohne die Seite neu zu laden. Gelungen liegt sie im Dienst bereit.
+    angemeldet$
+      .pipe(
+        filter((angemeldet) => angemeldet),
+        switchMap(() => this.themenService.liste().pipe(catchError(() => of([] as Thema[])))),
+      )
+      .subscribe((liste) => {
+        this.liste = liste;
+        this.cdr.markForCheck();
       });
   }
 
