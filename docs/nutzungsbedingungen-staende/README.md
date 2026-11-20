@@ -44,8 +44,6 @@ diesem Zeitpunkt live war.
    Stand zu `GELTENDE_STAENDE` hinzufügen (niemand wird gefragt), bei einem wesentlichen
    `GELTENDE_STAENDE` nur mit ihm (alle stimmen beim nächsten Besuch auf `/einwilligung` neu zu;
    bis dahin sind Beitragen und Bewerten gesperrt, Lesen nicht, `docs/ART9_EINWILLIGUNG.md`).
-   Das Zusammenspiel mit dem CC0-Hinweis (§10, „wer nur liest oder bewertet“) ist eine offene
-   Fachfrage im PR, der die Seite einführt.
 4. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum in `stand.md` eintragen, beim
    vorigen Stand das „bis“-Datum. Bei einer reinen Korrektur ist der Ablauf hier zu Ende.
 
@@ -60,12 +58,12 @@ läuft:
    auslösen (siehe unten). Der Realm gehört nur zu Gut gesagt (#429); in einem geteilten Realm
    träfe das auch Konten, die Gut gesagt nie nutzen.
 
-Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein. Alle
-abzumelden ist seit #521 nicht mehr nötig: Wer mit einer laufenden Sitzung weiterarbeitet und
-etwas absendet, stimmt dabei über den CC0-Hinweis dem neuen Stand zu; wer nur liest oder
-bewertet, für den bleibt der vorige Stand (§10). Seit die App selbst fragt (Schritt 3), gilt das
-nur noch fürs Lesen: Bewerten verlangt dort die Zustimmung zum geltenden Stand (juristische
-Prüfung, 20.11.2026; §10 zieht mit der Textfreigabe nach).
+Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein. Seit dem
+Stand vom 20. November 2026 kommt die Zustimmung nach §2 und §10 nur über das Häkchen der App
+(Schritt 3); das Absenden unter dem CC0-Hinweis gibt nur noch den Text nach §4 frei. Wer nicht
+zustimmt, kann mit dem Konto nichts einstellen und nichts bewerten, Lesen bleibt (§10). Neben
+dem Häkchen fragt Schritt 6 ein zweites Mal; ob er bei diesem Stand entfällt, entscheidet der
+Maintainer (PR der Rechtstexte für 0.9.8).
 
 Das erneute Auslösen in Schritt 6 geht nicht über die Oberfläche der Admin-Konsole für alle auf
 einmal, sondern über die Admin-Schnittstelle von Keycloak: für jedes Konto `requiredActions` um

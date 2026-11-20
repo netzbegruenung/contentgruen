@@ -89,6 +89,12 @@ ob sie ganz entfällt, ist offen (Entscheidung Maintainer, 02.11.2026). Seit #52
 Zustimmung zu geänderten Bedingungen ebenfalls über den CC0-Hinweis ein; die Pflichtaktion nennt
 er nur noch als Möglichkeit.
 
+**Nachtrag (0.9.8, #731, Wortlaut freigegeben vom Maintainer, 20.11.2026):** Seit dem Stand vom
+20. November 2026 stimmt man den Nutzungsbedingungen mit einem eigenen Häkchen auf `/einwilligung`
+zu, bei der ersten Anmeldung und nach jedem wesentlichen Stand neu (NB §2 und §10); die App
+speichert Zeitpunkt und Stand. Das Absenden unter dem CC0-Hinweis gibt nur noch den Text nach §4
+frei. Die Absätze oben und unter „Offen“ zum CC0-Hinweis als Weg der Zustimmung gelten bis dahin.
+
 **CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts`, gezeigt
 von `shared/cc0-hinweis/`, und verlinkt CC0 (seit #415) und die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
 unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter.“ (seit #415;
@@ -144,7 +150,8 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
 - Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Wegfall offen
   (Entscheidung Maintainer, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
   Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem CC0-Hinweis.
-  Die Zustimmung von Personen, die nur bewerten, hängt ebenfalls an ihr. Die
+  Die Zustimmung von Personen, die nur bewerten, hängt ebenfalls an ihr (bis 0.9.8; seitdem
+  das Häkchen der App, Nachtrag oben). Die
   Art.-9-Einwilligung (D-N15) hängt seit #489 nicht mehr daran: Die App fragt selbst, mit
   eigenem Häkchen; ihr Wortlaut ist vorläufig und offen für #296 (P11).
   Der Zustimmungstext der Pflichtaktion selbst ist vorläufig und offen für #296 (P12, #491).
