@@ -1,0 +1,189 @@
+/* Gut gesagt: Login-Theme für den Realm gutgesagt (Keycloak 26.8.2, Eltern-Theme keycloak.v2).
+   Lädt nach PatternFly 5 und keycloak.v2 css/styles.css. Farben stehen nur in den --gg-Variablen
+   ganz oben (Werte aus mvp/frontend/gutgesagt-frontend/src/theme/custom-theme.scss, Stand 20.11.);
+   wer das Aussehen ändert, ändert dort. Dunkel: keycloak.v2 setzt .pf-v5-theme-dark nach
+   prefers-color-scheme. */
+
+@font-face { font-family: "PT Sans GG"; src: url("../fonts/PTS55F.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "PT Sans GG"; src: url("../fonts/PTS75F.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
+
+:root {
+  --gg-aussen: #f5f1e9;        /* --bg-main */
+  --gg-karte: #ffffff;         /* --flaeche */
+  --gg-text: #212121;          /* --text */
+  --gg-text-leise: #666666;    /* --text-leise, 5,74:1 auf Weiß */
+  --gg-titel: #005437;         /* --akzent-schrift (Tanne) */
+  --gg-primaer: #005437;       /* --primaer: volle Knöpfe */
+  --gg-primaer-hover: #00422b;
+  --gg-auf-primaer: #ffffff;
+  --gg-link: #007830;          /* --primaer-text (Klee), 5,63:1 auf Weiß */
+  --gg-feldrand: #8c8478;      /* --feldrand, 3,69:1 auf Weiß */
+  --gg-linie: #e0e0e0;         /* --linie */
+  --gg-fokus: #005437;         /* --akzent-tanne */
+  --gg-kopf: #f6ff7c;          /* --kopf: gelbes Band */
+  --gg-kopf-text: #005437;
+  --gg-fehler-tint: #ffebee; --gg-fehler-text: #c62828;
+  --gg-erfolg-tint: #ebf6ef; --gg-erfolg-text: #005437;
+  --gg-hinweis-tint: #fff3cd; --gg-hinweis-text: #856404;
+  --gg-info-tint: #e3f2fd; --gg-info-text: #0d47a1;
+  --gg-schatten: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --gg-band: 168px;            /* Höhe des gelben Bands */
+  --gg-schrift: "PT Sans GG", "PT Sans", Roboto, Arial, sans-serif;
+  --gg-logo: url("../img/logo.svg");
+}
+
+.pf-v5-theme-dark {
+  --gg-aussen: #0b0e10;        /* --aussen-grund */
+  --gg-karte: #1b2125;
+  --gg-text: #ededee;
+  --gg-text-leise: #c4c5c6;
+  --gg-titel: #f2f2f2;
+  --gg-primaer: #0b7a40;       /* Schiefer, Weiß darauf 5,4:1 */
+  --gg-primaer-hover: #096635;
+  --gg-auf-primaer: #ffffff;
+  --gg-link: #ebebeb;          /* im Dunkeln Links hell und unterstrichen, Knöpfe bleiben grün */
+  --gg-feldrand: #697574;
+  --gg-linie: #2e363b;
+  --gg-fokus: #8abd24;         /* Grashalm */
+  --gg-kopf: #18212a;
+  --gg-kopf-text: #e2e88a;     /* --band-akzent-schrift */
+  --gg-fehler-tint: #2c1a1b; --gg-fehler-text: #ff8a80;
+  --gg-erfolg-tint: #2b3134; --gg-erfolg-text: #f2f2f2;
+  --gg-hinweis-tint: #2c2717; --gg-hinweis-text: #ffe08a;
+  --gg-info-tint: #172230; --gg-info-text: #90caf9;
+  --gg-schatten: 0 2px 6px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* PatternFly an die Variablen hängen */
+:root, .pf-v5-theme-dark {
+  --pf-v5-global--FontFamily--text: var(--gg-schrift);
+  --pf-v5-global--FontFamily--heading: var(--gg-schrift);
+  --pf-v5-global--Color--100: var(--gg-text);
+  --pf-v5-global--Color--200: var(--gg-text-leise);
+  --pf-v5-global--link--Color: var(--gg-link);
+  --pf-v5-global--link--Color--hover: var(--gg-link);
+  --pf-v5-global--primary-color--100: var(--gg-primaer);
+  --pf-v5-global--BackgroundColor--100: var(--gg-karte);
+  --pf-v5-global--BorderColor--100: var(--gg-feldrand);
+  --keycloak-card-top-color: transparent;
+}
+
+/* Seite: gelbes Band oben, darunter Sand */
+.login-pf body, body#keycloak-bg {
+  background: linear-gradient(var(--gg-kopf) 0 var(--gg-band), var(--gg-aussen) var(--gg-band)) !important;
+  color: var(--gg-text);
+  font-family: var(--gg-schrift);
+}
+.pf-v5-c-login { --pf-v5-c-login--PaddingTop: 0; background: none; align-items: start !important; min-height: 100vh; }
+.pf-v5-c-login__container { grid-template-columns: minmax(0, 30rem); padding: 0 16px; align-content: start; }
+
+/* Kopf: Logo (Daumen-Sprechblase) und Name. Das Logo ist Schmuck neben dem sichtbaren Namen,
+   daher Hintergrundbild ohne eigenen Alternativtext. */
+.pf-v5-c-login__header { padding: 36px 0 28px; margin: 0; text-align: center; }
+#kc-header-wrapper {
+  display: inline-flex; align-items: center; gap: 12px;
+  text-transform: none !important; letter-spacing: 0 !important;
+  color: var(--gg-kopf-text) !important;
+  font-family: var(--gg-schrift); font-size: 2.25rem; font-weight: 700; line-height: 1.1;
+}
+#kc-header-wrapper::before {
+  content: ""; flex: 0 0 auto; width: 52px; height: 52px;
+  background: var(--gg-logo) center / contain no-repeat;
+}
+
+/* Karte */
+.pf-v5-c-login__main {
+  --pf-v5-c-login__main--BackgroundColor: var(--gg-karte);
+  background: var(--gg-karte); border-radius: 16px; box-shadow: var(--gg-schatten);
+  margin-bottom: 32px;
+}
+.pf-v5-c-login__main-header { border-top: 0 !important; padding: 32px 32px 8px; --pf-v5-c-login__main-header--PaddingTop: 32px; }
+.pf-v5-c-login__main-body { padding-left: 32px; padding-right: 32px; padding-bottom: 32px; }
+#kc-social-providers .pf-v5-c-login__main-body { padding-bottom: 0; }
+/* leere Fußbereiche (nur Leerraum im Markup) nicht als Abstand stehen lassen */
+.pf-v5-c-login__main-footer:not(:has(*)) { display: none; }
+.pf-v5-c-login__main-footer:last-child { padding-bottom: 24px; }
+.pf-v5-c-login__main-header-utilities { display: none; }
+#kc-page-title { color: var(--gg-titel); font-weight: 700; font-size: 1.75rem; line-height: 1.2; }
+
+/* Felder: Rand rundum in --gg-feldrand (3:1), Fokus als Ring */
+.pf-v5-c-form__label-text { font-weight: 700; color: var(--gg-text); }
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--BorderRadius: 8px;
+  --pf-v5-c-form-control--BackgroundColor: var(--gg-karte);
+  --pf-v5-c-form-control--Color: var(--gg-text);
+  min-height: 48px; font-size: 1rem;
+}
+.pf-v5-c-form-control > input { min-height: 46px; }
+.pf-v5-c-form-control::before { border: 1px solid var(--gg-feldrand) !important; border-radius: inherit; }
+.pf-v5-c-form-control::after { border: 0 !important; }
+.pf-v5-c-form-control:focus-within { outline: 3px solid var(--gg-fokus); outline-offset: 1px; }
+.pf-v5-c-form-control input:focus-visible { outline: none; }
+.pf-v5-c-input-group .pf-v5-c-input-group__item.pf-m-fill .pf-v5-c-form-control { --pf-v5-c-form-control--BorderRadius: 8px 0 0 8px; border-radius: 8px 0 0 8px; }
+
+/* Knöpfe: Pille wie in der App */
+.pf-v5-c-button { --pf-v5-c-button--BorderRadius: 999px; --pf-v5-c-button--after--BorderRadius: 999px; font-weight: 700; min-height: 48px; font-size: 1rem; }
+.pf-v5-c-button::after { border-radius: 999px; }
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--BackgroundColor: var(--gg-primaer);
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--gg-primaer-hover);
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--gg-primaer-hover);
+  --pf-v5-c-button--m-primary--Color: var(--gg-auf-primaer);
+  --pf-v5-c-button--m-primary--hover--Color: var(--gg-auf-primaer);
+  --pf-v5-c-button--m-primary--focus--Color: var(--gg-auf-primaer);
+}
+.pf-v5-c-button.pf-m-secondary, .pf-v5-c-button.pf-m-tertiary {
+  --pf-v5-c-button--m-secondary--Color: var(--gg-text);
+  --pf-v5-c-button--m-secondary--after--BorderColor: var(--gg-feldrand);
+  --pf-v5-c-button--m-secondary--hover--after--BorderColor: var(--gg-fokus);
+  --pf-v5-c-button--m-tertiary--Color: var(--gg-text);
+  --pf-v5-c-button--m-tertiary--after--BorderColor: var(--gg-feldrand);
+  --pf-v5-c-button--m-tertiary--BackgroundColor: var(--gg-karte);
+}
+/* Auge im Passwortfeld: eckig zum Feld hin */
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
+  --pf-v5-c-button--BorderRadius: 0 8px 8px 0; --pf-v5-c-button--after--BorderColor: transparent;
+  min-height: 0; height: 100%;
+  background: var(--gg-karte); color: var(--gg-text);
+  border: 1px solid var(--gg-feldrand); border-left: 0; border-radius: 0 8px 8px 0;
+}
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control::after { border-radius: 0 8px 8px 0; }
+#kc-social-providers .pf-v5-c-button.pf-m-tertiary { justify-content: center !important; gap: 8px; }
+#kc-social-providers .pf-v5-c-button img, #kc-social-providers picture { display: none; }
+
+/* Fokus immer sichtbar (WCAG 2.4.7, 2.4.11) */
+.pf-v5-c-button:focus-visible, a:focus-visible, select:focus-visible, input[type="checkbox"]:focus-visible {
+  outline: 3px solid var(--gg-fokus); outline-offset: 2px;
+}
+a { color: var(--gg-link); }
+.pf-v5-theme-dark a:not(.pf-v5-c-button) { text-decoration: underline; }
+.kc-login-divider { color: var(--gg-text-leise); }
+
+/* Meldungen */
+.pf-v5-c-alert { border-radius: 8px; box-shadow: none; border-top: 0; border-left: 4px solid currentColor; }
+.pf-v5-c-alert__title { font-weight: 400; }
+.pf-v5-c-alert.pf-m-danger  { background: var(--gg-fehler-tint);  color: var(--gg-fehler-text);  --pf-v5-c-alert__title--Color: var(--gg-fehler-text);  --pf-v5-c-alert__icon--Color: var(--gg-fehler-text); }
+.pf-v5-c-alert.pf-m-success { background: var(--gg-erfolg-tint);  color: var(--gg-erfolg-text);  --pf-v5-c-alert__title--Color: var(--gg-erfolg-text);  --pf-v5-c-alert__icon--Color: var(--gg-erfolg-text); }
+.pf-v5-c-alert.pf-m-warning { background: var(--gg-hinweis-tint); color: var(--gg-hinweis-text); --pf-v5-c-alert__title--Color: var(--gg-hinweis-text); --pf-v5-c-alert__icon--Color: var(--gg-hinweis-text); }
+.pf-v5-c-alert.pf-m-info    { background: var(--gg-info-tint);    color: var(--gg-info-text);    --pf-v5-c-alert__title--Color: var(--gg-info-text);    --pf-v5-c-alert__icon--Color: var(--gg-info-text); }
+.pf-v5-c-helper-text__item-text.pf-m-error, .kc-feedback-text.pf-m-error { color: var(--gg-fehler-text); }
+
+/* Info- und Fehlerseiten (base info.ftl/error.ftl): der Weiter-Link als Knopf */
+#kc-info-message .instruction, #kc-error-message .instruction { font-size: 1.0625rem; line-height: 1.5; margin-bottom: 16px; }
+#kc-info-message p:last-child, #kc-error-message p:last-child { margin-bottom: 0; }
+#kc-info-message p > a:only-child, #kc-error-message #backToApplication {
+  display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 24px;
+  padding: 0 24px; border-radius: 999px; font-weight: 700; text-decoration: none;
+  background: var(--gg-primaer); color: var(--gg-auf-primaer);
+}
+#kc-info-message p > a:only-child:hover, #kc-error-message #backToApplication:hover { background: var(--gg-primaer-hover); color: var(--gg-auf-primaer); }
+
+@media (max-width: 480px) {
+  :root, .pf-v5-theme-dark { --gg-band: 132px; }
+  .pf-v5-c-login__header { padding: 24px 0 20px; }
+  #kc-header-wrapper { font-size: 1.875rem; gap: 10px; }
+  #kc-header-wrapper::before { width: 44px; height: 44px; }
+  .pf-v5-c-login__main-header { padding: 24px 20px 4px; }
+  .pf-v5-c-login__main-body { padding-left: 20px; padding-right: 20px; }
+  #kc-page-title { font-size: 1.5rem; }
+}

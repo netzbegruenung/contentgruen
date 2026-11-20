@@ -118,6 +118,33 @@ Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semant
 jedem Aufruf mit (`MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py`, drei Tage);
 die Einlöseseite nennt dieselbe Frist.
 
+## Theme
+
+`keycloak-theme/gutgesagt/` ist das Login- und Mail-Theme des Realms, ohne Java und ohne
+Build. Es erbt von den Themes, die Keycloak mitbringt (`keycloak.v2` für die Seiten, `base`
+für die Mails), und überschreibt keine Seitenvorlage:
+
+| Datei | Inhalt |
+|---|---|
+| `login/resources/css/gutgesagt.css` | Farben (nur in den `--gg-`Variablen oben, hell und dunkel, Werte aus `custom-theme.scss`), Schrift PT Sans, gelbes Band mit Logo und Name |
+| `login/messages/messages_de.properties` | Seitentexte in Du-Form |
+| `email/html/template.ftl` | Rahmen aller HTML-Mails (Band mit Logo, Fuß); der Inhalt bleibt die Vorlage von Keycloak |
+| `email/messages/messages_de.properties` | Mailtexte in Du-Form, Betreff und Text- wie HTML-Fassung |
+
+Das Logo der Mails lädt von `https://gutgesagt.netzbegruenung.de/marke/favicon-64-v2.png`;
+blockiert ein Mailprogramm Bilder, bleibt der Name als Text. Realm overrides (*Realm settings →
+Localization*) gehen den Texten des Themes vor.
+
+Auf den Keycloak kommt das Theme per Salt (State `keycloak.theme-gutgesagt`): Er lädt das
+Archiv des Git-Stands aus dem Pillar `keycloak:gutgesagt_theme_ref` und verlinkt
+`themes/gutgesagt` darauf. Keycloak liest Themes aus `themes/` bei jedem Aufruf; ein neues
+Theme ist ohne Neustart wählbar (*Realm settings → Themes*: Login theme und Email theme
+`gutgesagt`). Ändert sich ein schon geladenes Theme, gilt die Änderung erst nach einem
+Neustart von Keycloak, weil Keycloak geladene Themes zwischenspeichert.
+
+`scripts/tests/test_keycloak_theme.py` prüft Texte (kein gerades `'`, Klammern nur als
+Platzhalter), Eltern-Themes und dass Farben nur in den Variablen stehen.
+
 ## Keycloak ab 26.8.2: Admin-API-Scope
 
 Seit Keycloak 26.8.2 nimmt die Admin-Schnittstelle nur noch Tokens an, die für sie
