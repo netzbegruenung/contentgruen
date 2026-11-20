@@ -26,7 +26,7 @@ Durchprobieren von Passwörtern liegen bei Keycloak. Warum so: ADR 0006
 | Realm `gutgesagt`, Selbstregistrierung aus | Konten entstehen nur über eine Einladung oder den Identity Provider |
 | Anmelden mit Mail-Adresse, Passwort vergessen, Mail-Bestätigung, Brute-Force-Schutz | alles von Keycloak |
 | Client `gutgesagt` | Anmeldung der App (BFF, Authorization Code mit PKCE) |
-| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users` | der Semantic-Service legt damit Konten aus Einladungen an und löscht nie benutzte nach der Frist (#538, `docs/LOESCHKONZEPT.md`); engere Rechte für „Konto anlegen“ bietet Keycloak nicht |
+| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users`, Client Scope `kc-admin-api` | der Semantic-Service legt damit Konten aus Einladungen an und löscht nie benutzte nach der Frist (#538, `docs/LOESCHKONZEPT.md`); engere Rechte für „Konto anlegen“ bietet Keycloak nicht; den Scope verlangt Keycloak ab 26.8.2 (unten) |
 | Identity Provider `netzbegruenung` | Netzbegrünung-Login; Adresse und Client sind Platzhalter |
 
 Die Pflichtaktionen stehen bewusst nicht in der Vorlage: Eine Liste dort ersetzt die
@@ -74,6 +74,32 @@ noch nicht enthalten (Folgeticket).
 Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semantic-Service bei
 jedem Aufruf mit (`MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py`, drei Tage);
 die Einlöseseite nennt dieselbe Frist.
+
+## Keycloak ab 26.8.2: Admin-API-Scope
+
+Seit Keycloak 26.8.2 nimmt die Admin-Schnittstelle nur noch Tokens an, die für sie
+ausgestellt sind: Scope `kc-admin-api` im Token und die Admin-Adresse des Realms
+(`<keycloak>/admin/realms/gutgesagt`) als Audience. Die Rolle `manage-users` allein reicht
+nicht mehr. Beides setzt der Client Scope `kc-admin-api`, den Keycloak in jedem Realm
+anlegt (beim Anlegen und bei der Migration auf 26.8.2; 26.8.0 und 26.8.1 kennen ihn noch
+nicht), aber nur `admin-cli` und `security-admin-console` zuweist.
+
+Symptom, wenn er am Client `gutgesagt-einladungen` fehlt: Jeder Aufruf der Admin-Schnittstelle
+endet mit 401, und Keycloak schreibt dazu auf INFO nichts ins Log. Das trifft das Einlösen
+von Einladungen, das Löschen nie benutzter Konten (#538) und `kennungen_umstellen.py`.
+Ob ein Token passt, zeigt sein Inhalt (`aud`, `scope`), nicht die Token-Introspection.
+Die meldet `active: false`, wenn der fragende Client nicht in der Audience steht; das ist
+kein Fehler.
+
+Die Vorlage weist den Scope dem Client als *Default* zu (`defaultClientScopes`, daneben die
+übrigen Standard-Scopes, die der Client sonst vom Realm bekäme); ein neuer Realm aus der
+Vorlage braucht also nichts von Hand. In einem bestehenden Realm:
+
+- *Clients → gutgesagt-einladungen → Client scopes → Add client scope → `kc-admin-api` →
+  Add → Default*.
+- Nur an diesem Client, nicht realmweit: In der Liste *Client scopes* bleibt der
+  *Assigned type* von `kc-admin-api` auf `None`. Sonst bekäme jeder neue Client den Scope,
+  und auch die Tokens der App trügen die Audience der Admin-Schnittstelle.
 
 ## Reihenfolge beim Umstellen
 
@@ -130,13 +156,23 @@ anzulegenden Konten fehlen.
 Das Image des Semantic-Service muss diesen Stand schon enthalten; ein älteres bricht mit
 `ModuleNotFoundError` ab, bevor es etwas schreibt. Auf dem Host, in einer ruhigen Zeit
 (eine Änderung an einem Beitrag während des Laufs kann verloren gehen), in dieser
-Reihenfolge:
+Reihenfolge.
+
+Die Root-Shell auf den Hosts ist zsh, und dort heißt `read -p` etwas anderes (Coprozess);
+also zuerst `bash` starten. Dann das Secret des Clients `gutgesagt-einladungen` mit dieser Zeile
+abfragen, einzeln einfügen und das Secret eintippen; nicht zusammen mit dem nächsten Block
+einfügen, `read` nähme sonst dessen erste Zeile als Secret. So landet es auch nicht in der
+History.
+
+```bash
+read -rs -p 'Secret gutgesagt-einladungen: ' SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET; echo
+```
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/gutgesagt/main/mvp/scripts/manual/kennungen_umstellen.py
-# Zugang zum Realm, falls im Container noch nicht gesetzt (Secret nicht in die History):
+# Zugang zum Realm, falls im Container noch nicht gesetzt:
 export SEMANTIC_SEARCH_KEYCLOAK_URL=<keycloak> SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID=gutgesagt-einladungen
-read -rs SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET; export SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET
+export SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET
 KC=(-e SEMANTIC_SEARCH_KEYCLOAK_URL -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID
     -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET)
 # ADMIN_USER_IDS der BFF, die Löschliste und die Beta-Zugänge der BFF (managed-users.json)
